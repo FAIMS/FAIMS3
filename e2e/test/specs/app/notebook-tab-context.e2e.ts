@@ -28,11 +28,8 @@ const waitForTab = async (tab: string) => {
   );
 };
 
-/** Opens the first record in the list on screen, and returns its id. */
-const openFirstRecord = async (notebookUrl: string) => {
-  const row = await $('.MuiDataGrid-row');
-  await row.waitForClickable({timeout: 20000});
-  await row.click();
+/** Waits for a record to open under the notebook, and returns its id. */
+const waitForRecordOpen = async (notebookUrl: string) => {
   const recordUrl = await waitForUrl(`${notebookUrl}/view-record/`, {
     timeout: 20000,
     timeoutMsg: 'Expected the record route nested under the notebook',
@@ -40,8 +37,30 @@ const openFirstRecord = async (notebookUrl: string) => {
   return recordUrl.split('/view-record/')[1].replace(/[?#].*$/, '');
 };
 
+/** Opens the record whose row carries the given text, and returns its id. */
+const openRecordSaying = async (notebookUrl: string, text: string) => {
+  const rowSaying = async () => {
+    for (const row of await $$('.MuiDataGrid-row')) {
+      if ((await row.getText()).includes(text)) return row;
+    }
+    return undefined;
+  };
+  await browser.waitUntil(async () => (await rowSaying()) !== undefined, {
+    timeout: 20000,
+    timeoutMsg: `Expected a record list row saying "${text}"`,
+  });
+  const row = await rowSaying();
+  if (row === undefined) {
+    throw new Error(`Expected a record list row saying "${text}"`);
+  }
+  await row.click();
+  return waitForRecordOpen(notebookUrl);
+};
+
 describe('App — notebook tab in context', () => {
   const noteText = `E2E tab context ${Date.now()}`;
+  /** A second record, made only to be deleted, named so as not to match above. */
+  const spareText = `E2E spare record ${Date.now()}`;
   /** The notebook route, e.g. /surveys/<server>/<project> */
   let notebookUrl = '';
 
@@ -73,7 +92,7 @@ describe('App — notebook tab in context', () => {
 
     await byTestId('app-notebook-tab-my-records').click();
     await waitForTab('my-records');
-    await openFirstRecord(notebookUrl);
+    await openRecordSaying(notebookUrl, noteText);
     await captureStep({surface: 'app', label: 'tab-context-record'});
 
     const back = await $('[aria-label="Back"]');
@@ -89,11 +108,12 @@ describe('App — notebook tab in context', () => {
 
   it('should return to the list after deleting the record', async () => {
     // A record of its own to delete, so the editor test after it still has one
-    await AppRecordsPage.createTextRecord(`${noteText} spare`);
+    // to open and no record another spec left behind is taken away
+    await AppRecordsPage.createTextRecord(spareText);
     await byTestId('app-notebook-tab-my-records').click();
     await waitForTab('my-records');
 
-    await openFirstRecord(notebookUrl);
+    await openRecordSaying(notebookUrl, spareText);
     // Delete sits on the record's own Info tab, not the one it opens on
     const info = await $('[aria-label="Record view tabs"]').$('button*=Info');
     await info.waitForClickable({timeout: 15000});
@@ -101,7 +121,9 @@ describe('App — notebook tab in context', () => {
     await waitForTestId('delete-btn', {timeout: 20000});
     await byTestId('delete-btn').click();
     // The confirm button stays disabled until the acknowledgement is ticked
-    const acknowledge = await $('.MuiCheckbox-root');
+    const acknowledge = await $(
+      '[aria-labelledby="record-delete-dialog-title"]'
+    ).$('.MuiCheckbox-root');
     await acknowledge.waitForClickable({timeout: 15000});
     await acknowledge.click();
     await waitForTestId('confirm-delete', {timeout: 15000});
@@ -115,7 +137,9 @@ describe('App — notebook tab in context', () => {
   });
 
   it('should nest the editor under the notebook, naming no tab', async () => {
-    const recordId = await openFirstRecord(notebookUrl);
+    await byTestId('app-notebook-tab-my-records').click();
+    await waitForTab('my-records');
+    const recordId = await openRecordSaying(notebookUrl, noteText);
     const edit = await $('button*=Edit record');
     await edit.waitForClickable({timeout: 20000});
     await edit.click();
