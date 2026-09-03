@@ -22,7 +22,9 @@ export type ConditionRuleOperator =
   | 'contains-one-of'
   | 'does-not-contain-any-of'
   | 'contains-all-of'
-  | 'does-not-contain-all-of';
+  | 'does-not-contain-all-of'
+  | 'is-one-of'
+  | 'is-not-one-of';
 
 /** UI labels for condition operators (keys match persisted `operator` strings). */
 export const allOperators = new Map<ConditionRuleOperator, string>([
@@ -46,6 +48,8 @@ export const allOperators = new Map<ConditionRuleOperator, string>([
   ['does-not-contain-any-of', 'List does not contain any of these values'],
   ['contains-all-of', 'List contains all of these values'],
   ['does-not-contain-all-of', 'List does not contain all of these values'],
+  ['is-one-of', 'Is one of'],
+  ['is-not-one-of', 'Is not one of'],
 ]);
 
 export type OperatorInfo = {description: string; example?: string};
@@ -107,6 +111,12 @@ export const operatorDetails: Record<ConditionRuleOperator, OperatorInfo> = {
   'does-not-contain-all-of': {
     description:
       'The list must not contain all selected values at the same time.',
+  },
+  'is-one-of': {
+    description: 'The field value must be one of the selected options.',
+  },
+  'is-not-one-of': {
+    description: 'The field value must not be any of the selected options.',
   },
 };
 
