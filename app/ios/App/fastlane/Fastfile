@@ -149,6 +149,11 @@ platform :ios do
       merge_commit_filtering: "exclude_merges"
     )
 
+    puts "Deploying to TestFlight with app identifier: #{VITE_APPLE_BUNDLE_IDENTIFIER}"
+    puts "Deploying to TestFlight with apple_id: #{DEVELOPER_APP_ID}"
+
+    UI.user_error!("Missing app identifier for TestFlight deploy") if VITE_APPLE_BUNDLE_IDENTIFIER.to_s.empty?
+
     pilot(
       apple_id: "#{DEVELOPER_APP_ID}",
       app_identifier: "#{VITE_APPLE_BUNDLE_IDENTIFIER}",
