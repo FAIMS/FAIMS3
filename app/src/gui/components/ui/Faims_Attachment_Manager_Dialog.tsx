@@ -129,7 +129,7 @@ export default function FaimsAttachmentManagerDialog(props: DiagProps) {
               projectId: project_id,
             })}
           >
-            Go to settings
+            Go to {config.notebookNameCapitalized}
           </Button>
         </DialogActions>
       )}

@@ -15,7 +15,7 @@
  * - Supports revision viewing via ?revisionId parameter
  *
  * ROUTE:
- * /<notebook-plural>/:serverId/:projectId/:planId?/:tab?/view-record/:recordId?tab=view|info|history|status&revisionId=:revisionId
+ * /<notebook-plural>/:serverId/:projectId/:planId?/view-record/:recordId?tab=view|info|history|status&revisionId=:revisionId
  */
 import {
   DatabaseInterface,
@@ -73,8 +73,8 @@ import BackButton from '../components/ui/BackButton';
 import {theme} from '../themes';
 
 /**
- * Tabs of the record view page, in its own `?tab=` query param rather than the
- * notebook's `:tab` path segment.
+ * Tabs of the record view page, in its own `?tab=` query param rather than in
+ * the context a notebook view's tab is held in.
  */
 const RECORD_TABS = {
   VIEW: 'view',

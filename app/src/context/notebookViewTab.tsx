@@ -5,8 +5,10 @@
  *
  * The notebook's own view and a plan's view get a context each, so a plan
  * models its screens however it likes rather than sharing the tabs the default
- * view carries. A plan's tab starts over when the plan on screen changes, since
- * a slug from one plan means nothing in the next.
+ * view carries. Each holds a tab per thing it belongs to rather than one tab
+ * outright: the app bar links straight from one notebook to the next, which
+ * leaves this mounted, and a slug from one notebook or plan means nothing in
+ * the next.
  */
 
 import {
@@ -18,64 +20,74 @@ import {
   useState,
 } from 'react';
 import {useParams} from 'react-router-dom';
+import {NotebookViewTab} from '../gui/components/notebook/types';
 
-/** The tab a view is on, and the way it moves. */
-export interface NotebookViewTab {
-  /** Absent until the view has moved, which is the view's own default. */
-  current: string | undefined;
-  select: (tab: string) => void;
+/** The tab each view is on, by the notebook or plan it belongs to. */
+interface TabStore {
+  tabs: Record<string, string>;
+  select: (scope: string, tab: string) => void;
 }
 
-const NotebookTabContext = createContext<NotebookViewTab | undefined>(
-  undefined
-);
-const PlanTabContext = createContext<NotebookViewTab | undefined>(undefined);
+const NotebookTabContext = createContext<TabStore | undefined>(undefined);
+const PlanTabContext = createContext<TabStore | undefined>(undefined);
 
 const TabProvider = ({
   context,
   children,
 }: {
-  context: Context<NotebookViewTab | undefined>;
+  context: Context<TabStore | undefined>;
   children: ReactNode;
 }) => {
-  const [current, select] = useState<string>();
-  const value = useMemo(() => ({current, select}), [current]);
+  const [tabs, setTabs] = useState<Record<string, string>>({});
+  const value = useMemo(
+    () => ({
+      tabs,
+      select: (scope: string, tab: string) =>
+        setTabs(current => ({...current, [scope]: tab})),
+    }),
+    [tabs]
+  );
   return <context.Provider value={value}>{children}</context.Provider>;
 };
 
-const useTab = (
-  context: Context<NotebookViewTab | undefined>,
-  provider: string
-) => {
-  const value = useContext(context);
-  if (value === undefined) {
-    throw new Error(`tab read outside ${provider}`);
+const useScopedTab = (
+  context: Context<TabStore | undefined>,
+  scope: string
+): NotebookViewTab => {
+  const store = useContext(context);
+  if (store === undefined) {
+    throw new Error('tab read outside NotebookViewTabProvider');
   }
-  return value;
-};
-
-/**
- * @throws if used outside NotebookViewTabProvider, which every screen under the
- * notebook route is
- */
-export const useNotebookTab = () =>
-  useTab(NotebookTabContext, 'NotebookViewTabProvider');
-
-/**
- * @throws if used outside NotebookViewTabProvider, which every screen under the
- * notebook route is
- */
-export const usePlanTab = () =>
-  useTab(PlanTabContext, 'NotebookViewTabProvider');
-
-/** Mounted on the notebook route, so a record screen under it leaves the tabs standing. */
-export const NotebookViewTabProvider = ({children}: {children: ReactNode}) => {
-  const {planId} = useParams<{planId?: string}>();
-  return (
-    <TabProvider context={NotebookTabContext}>
-      <TabProvider key={planId} context={PlanTabContext}>
-        {children}
-      </TabProvider>
-    </TabProvider>
+  return useMemo(
+    () => ({
+      current: store.tabs[scope],
+      select: (tab: string) => store.select(scope, tab),
+    }),
+    [store, scope]
   );
 };
+
+/**
+ * @throws if used outside NotebookViewTabProvider, which every screen under the
+ * notebook route is
+ */
+export const useNotebookTab = (): NotebookViewTab => {
+  const {serverId, projectId} = useParams();
+  return useScopedTab(NotebookTabContext, `${serverId}/${projectId}`);
+};
+
+/**
+ * @throws if used outside NotebookViewTabProvider, which every screen under the
+ * notebook route is
+ */
+export const usePlanTab = (): NotebookViewTab => {
+  const {serverId, projectId, planId} = useParams();
+  return useScopedTab(PlanTabContext, `${serverId}/${projectId}/${planId}`);
+};
+
+/** Mounted on the notebook route, so a record screen under it leaves the tabs standing. */
+export const NotebookViewTabProvider = ({children}: {children: ReactNode}) => (
+  <TabProvider context={NotebookTabContext}>
+    <TabProvider context={PlanTabContext}>{children}</TabProvider>
+  </TabProvider>
+);

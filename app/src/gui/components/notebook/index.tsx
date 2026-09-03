@@ -9,7 +9,6 @@ import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project, selectProjectById} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
-import {NotebookViewTab} from '../../../context/notebookViewTab';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
 import {
   invalidateProjectHydration,
@@ -25,6 +24,7 @@ import {OverviewMap} from './OverviewMap';
 import PushOnlySyncBanner from './PushOnlySyncBanner';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
+import {NotebookViewTab, resolveTab} from './types';
 
 // This view's tab slugs, default first
 const TABS = [
@@ -123,7 +123,7 @@ export default function NotebookComponent({
     username: activeUser?.username ?? '',
   });
 
-  const currentTab = TABS.find(t => t === tab.current) ?? TABS[0];
+  const currentTab = resolveTab(TABS, tab.current);
 
   // Fetch records from the (local) DB with configurable auto refetch.
   // Skip while the compiled UI spec is still loading.

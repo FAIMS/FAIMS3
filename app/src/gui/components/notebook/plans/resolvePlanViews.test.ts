@@ -94,6 +94,19 @@ describe('resolvePlanViews with one plan', () => {
     expect(r.active).toBeUndefined();
     expect(r.showChooser).toBe(true);
   });
+
+  it('opens the plan for a segment naming no plan at all', () => {
+    // A link written before the tab left the route, so the segment is a tab
+    // slug. It names no plan, so it is spent, and the notebook opens as it
+    // would with nothing after the project.
+    const r = resolvePlanViews({
+      uiDefinition: {plans: [counted()]},
+      planId: 'settings',
+      getView,
+    });
+    expect(r.active?.plan.planId).toBe(COUNTED_PLAN_TYPE);
+    expect(r.showChooser).toBe(false);
+  });
 });
 
 describe('resolvePlanViews with several plans', () => {
@@ -122,9 +135,9 @@ describe('resolvePlanViews with several plans', () => {
     expect(r.showChooser).toBe(true);
   });
 
-  it('offers the chooser for an unknown plan id', () => {
-    // A stale link names a plan the notebook no longer carries; ask rather
-    // than guess which of the others was meant.
+  it('offers the chooser for a segment naming no plan', () => {
+    // A stale link, whether it named a plan the notebook has dropped or a tab
+    // from before the tab left the route; ask rather than guess.
     const r = resolvePlanViews({uiDefinition, planId: 'gone', getView});
     expect(r.active).toBeUndefined();
     expect(r.showChooser).toBe(true);

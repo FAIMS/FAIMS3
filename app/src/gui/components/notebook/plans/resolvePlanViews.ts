@@ -37,10 +37,14 @@ export const resolvePlanViews = <C>({
     .filter((entry): entry is PlanView<C> => entry.Component !== undefined);
 
   const named = plans.find(p => p.plan.planId === planId);
-  // A route naming a plan this build cannot render must not silently open a
-  // different plan, so it asks rather than falling back to the only one.
-  const namesMissingPlan = planId !== undefined && !named;
+  // Matched against every declared plan, not just the ones with a view: a route
+  // naming a plan this build cannot render must not silently open a different
+  // one, so it asks. A segment naming no plan the notebook declares is a stale
+  // link, and opens the notebook as though it had named none.
+  const namesUnrenderablePlan =
+    planId !== undefined && !named && declared.some(p => p.planId === planId);
   const active =
-    named ?? (namesMissingPlan || plans.length !== 1 ? undefined : plans[0]);
+    named ??
+    (namesUnrenderablePlan || plans.length !== 1 ? undefined : plans[0]);
   return {plans, active, showChooser: !active && plans.length > 0};
 };

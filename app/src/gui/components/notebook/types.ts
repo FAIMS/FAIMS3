@@ -4,9 +4,25 @@ import {
   type RecordStatusReport,
   type RegisteredPlan,
 } from '@faims3/data-model';
-import {NotebookViewTab} from '../../../context/notebookViewTab';
 import {Project} from '../../../context/slices/projectSlice';
 import {RecordStatus} from '../../../utils/recordAudit';
+
+/**
+ * The tab a view is on, and the way it moves. Held above the record screens
+ * nested under the notebook route, so opening a record and coming back returns
+ * to the tab that was left.
+ */
+export interface NotebookViewTab {
+  /** Absent until the view has moved, which is the view's own default. */
+  current: string | undefined;
+  select: (tab: string) => void;
+}
+
+/** The view's tab, or its default, which is the first slug it declares. */
+export const resolveTab = <T extends string>(
+  tabs: readonly [T, ...T[]],
+  current: string | undefined
+): T => tabs.find(tab => tab === current) ?? tabs[0];
 
 /**
  * The explicit prop contract for a notebook view.  Includes the

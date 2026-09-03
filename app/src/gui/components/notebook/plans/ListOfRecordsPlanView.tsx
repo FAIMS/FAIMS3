@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import {useCallback, useMemo} from 'react';
 import {RecordsTable} from '../record_table';
-import {NotebookViewComponentProps} from '../types';
+import {NotebookViewComponentProps, resolveTab} from '../types';
 import {config} from '../../../../buildconfig';
 import {planRecordLabel} from './planViewRecords';
 
@@ -29,7 +29,7 @@ const TABS = ['planned', 'collected', 'details', 'settings', 'map'] as const;
 export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
   const {project, tab, uiSpecification, records, actions, status} = props;
 
-  const currentTab = TABS.find(t => t === tab.current) ?? TABS[0];
+  const currentTab = resolveTab(TABS, tab.current);
 
   // A claimed entry is proof the record exists, but an unclaimed one is not
   // proof it does not: the list can hide records the user may not read, and
@@ -113,19 +113,19 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
             aria-controls="collected-tabpanel"
           />
           <Tab
-            value={'details'}
+            value="details"
             label="Details"
             id="details-tab"
             aria-controls="details-tabpanel"
           />
           <Tab
-            value={'settings'}
+            value="settings"
             label="Settings"
             id="settings-tab"
             aria-controls="settings-tabpanel"
           />
           <Tab
-            value={'map'}
+            value="map"
             label="Overview Map"
             id="overview-map-tab"
             aria-controls="overview-map-tabpanel"
@@ -193,21 +193,21 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
         </TabPanel>
 
         <TabPanel
-          value={'details'}
+          value="details"
           id="details-tabpanel"
           aria-labelledby="details-tab"
         >
           <props.components.MetadataDisplayComponent />
         </TabPanel>
         <TabPanel
-          value={'settings'}
+          value="settings"
           id="settings-tabpanel"
           aria-labelledby="settings-tab"
         >
           <props.components.NotebookSettings />
         </TabPanel>
         <TabPanel
-          value={'map'}
+          value="map"
           id="overview-map-tabpanel"
           aria-labelledby="overview-map-tab"
         >
