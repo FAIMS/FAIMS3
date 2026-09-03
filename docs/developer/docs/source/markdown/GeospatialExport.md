@@ -14,6 +14,7 @@ How the API turns notebook map fields into GeoJSON, KML, and GeoPackage (`.gpkg`
 
 - `geojson`, `kml`, `geopackage` — one format, streamed to the client
 - `full` — ZIP archive; spatial formats controlled by `includeGeoJSON`, `includeKML`, `includeGeoPackage` (all default `true`)
+- Optional exclusive `updatedAfter` / `updatedBefore` (epoch milliseconds) restrict which records are walked. The same bounds apply to CSV, ZIP, and full export. See [Records CRUD API](RecordsCRUDApi.md).
 
 **Implementation files** (under `api/src/couchdb/export/`):
 
@@ -42,7 +43,7 @@ flowchart TD
   J --> K[.gpkg file]
 ```
 
-Every export path funnels through **`iterateSpatialFeatures`**: one walk over notebook records, one call to `onFeature` per geometry. Archive exports use **`appendSpatialFormatsToArchive`**, which fans the same features to every enabled format in that single pass (no second DB scan when full export requests GeoJSON + KML + GeoPackage together).
+Every export path funnels through **`iterateSpatialFeatures`**: one walk over notebook records (honouring an optional exclusive `updatedAfter` / `updatedBefore` window), one call to `onFeature` per geometry. Archive exports use **`appendSpatialFormatsToArchive`**, which fans the same features to every enabled format in that single pass (no second DB scan when full export requests GeoJSON + KML + GeoPackage together).
 
 ## Record → feature
 

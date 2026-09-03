@@ -20,7 +20,7 @@ export const PhotoExportDialog = () => {
   return (
     <Dialog>
       <DialogTrigger asChild className="w-fit">
-        <Button>Photo Export</Button>
+        <Button data-testid="web-export-photos-button">Photo Export</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

@@ -16,6 +16,7 @@ FAIMS3 Developer Documentation
    markdown/MetadataMigrationGuide.md
    markdown/NotebookMigrations.md
    markdown/RecordsCRUDApi.md
+   markdown/PollingHydratedRecords.md
    markdown/GeospatialExport.md
    markdown/Long-lived-tokens.md
    markdown/TokenManagement.md
