@@ -38,6 +38,7 @@ import {FormBreadcrumbs} from './navigation/NavigationBreadcrumbs';
 import {onChangeTemplatedFields} from './templatedFields';
 import {onChangeComputedFields} from './computedFields';
 import {
+  buildConditionValues,
   resolveParentValues,
   resolveRelatedValues,
   linkedRecordId,
@@ -167,7 +168,10 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(
     currentlyVisibleMap({
-      values: formDataExtractor({fullData: props.initialData ?? {}}),
+      values: buildConditionValues({
+        values: formDataExtractor({fullData: props.initialData ?? {}}),
+        context: buildContext(),
+      }),
       uiSpec: dataEngine.uiSpec,
       viewsetId: props.formId,
     })
@@ -186,6 +190,8 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   const pendingValuesRef = useRef(false);
   const isSavingRef = useRef(false);
+  /** True after a successful content save this session — flush then stamps the record. */
+  const contentSavedThisSessionRef = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
   /** Drives save-status UI; refs alone do not trigger re-renders. */
   const [hasPendingSave, setHasPendingSave] = useState(false);
@@ -250,12 +256,15 @@ export const EditableFormManager: React.FC<
   const updateVisibility = useCallback(() => {
     setVisibleMap(
       currentlyVisibleMap({
-        values: formDataExtractor({fullData: form.state.values}),
+        values: buildConditionValues({
+          values: formDataExtractor({fullData: form.state.values}),
+          context: buildContext(),
+        }),
         uiSpec: dataEngine.uiSpec,
         viewsetId: props.formId,
       })
     );
-  }, [dataEngine.uiSpec, props.formId]);
+  }, [dataEngine.uiSpec, props.formId, buildContext]);
 
   const debouncedUpdateVisibility = useMemo(
     () => debounce(updateVisibility, VISIBILITY_DEBOUNCE_MS),
@@ -309,8 +318,10 @@ export const EditableFormManager: React.FC<
         updatedBy: props.activeUser,
         update: form.state.values ?? {},
         mode: props.mode,
+        bumpRevisionUpdatedAt: true,
       });
 
+      contentSavedThisSessionRef.current = true;
       pendingValuesRef.current = false;
       setHasPendingSave(false);
       attachmentSaveTrace('performSave:complete', {
@@ -407,8 +418,18 @@ export const EditableFormManager: React.FC<
       }
       await new Promise(resolve => setTimeout(resolve, 50));
     }
+
+    // Record stamp only on flush (nav / Finish), not every debounced keystroke.
+    if (contentSavedThisSessionRef.current) {
+      try {
+        await dataEngine.core.stampRecordUpdatedAt(props.recordId);
+        contentSavedThisSessionRef.current = false;
+      } catch (error) {
+        logError(new Error('Failed to stamp record updatedAt:'), {error});
+      }
+    }
     attachmentSaveTrace('flushSave:complete', {waitIterations});
-  }, [debouncedSave, debugMode]);
+  }, [debouncedSave, debugMode, dataEngine, props.recordId]);
 
   const hasPendingChanges = useCallback((): boolean => {
     return pendingValuesRef.current || isSavingRef.current;
@@ -425,7 +446,9 @@ export const EditableFormManager: React.FC<
         existingSchema: validationSchema.current,
         formId: props.formId,
         uiSpec: dataEngine.uiSpec,
-        data,
+        // Merge parent/related values so visibility-aware recompilation
+        // sees conditions on them.
+        data: buildConditionValues({values: data, context: buildContext()}),
         config: {visibleBehaviour: 'ignore'},
       });
 
@@ -551,6 +574,9 @@ export const EditableFormManager: React.FC<
         setHasPendingSave(true);
         debouncedSave();
       }
+      // Conditions may reference parent values directly - refresh visibility
+      // now that they are resolved.
+      updateVisibility();
     });
     return () => {
       cancelled = true;

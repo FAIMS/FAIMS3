@@ -266,6 +266,7 @@ export async function updateHeads({
   revisions.add(newRevisionId);
   record.revisions = Array.from(revisions);
   record.revisions.sort();
+  record.updatedAt = new Date().toISOString();
 
   await dataDb.put(record);
 }
@@ -310,6 +311,7 @@ export async function mergeRecordConflicts({
   // Get current heads, revisions as sets for easy merging
   const heads = new Set<RevisionID>(record.heads);
   const revisions = new Set<RevisionID>(record.revisions);
+  let latestUpdatedAt = record.updatedAt;
 
   // Get the additional conflicted revisions
   const conflictedDocs = await dataDb.get(record._id, {
@@ -326,6 +328,12 @@ export async function mergeRecordConflicts({
     for (const rev of tmpRecord.revisions) {
       revisions.add(rev);
     }
+    if (
+      tmpRecord.updatedAt &&
+      (!latestUpdatedAt || tmpRecord.updatedAt > latestUpdatedAt)
+    ) {
+      latestUpdatedAt = tmpRecord.updatedAt;
+    }
     // We will delete the additional revisions
     tmpRecord._deleted = true;
     newDocs.push(tmpRecord);
@@ -334,6 +342,7 @@ export async function mergeRecordConflicts({
   record.heads.sort();
   record.revisions = Array.from(revisions);
   record.revisions.sort();
+  record.updatedAt = latestUpdatedAt ?? new Date().toISOString();
   newDocs.push(record);
   await dataDb.bulkDocs(newDocs);
   return record;
@@ -631,7 +640,7 @@ export async function fetchAndHydrateRecord({
     revision_id: revId,
     created: new Date(record.created),
     created_by: record.created_by,
-    updated: new Date(revision.created),
+    updated: new Date(record.updatedAt),
     updated_by: revision.created_by,
     conflicts: record.heads.length > 1,
     deleted: revision.deleted ? true : false,
@@ -759,7 +768,7 @@ export async function listRecordMetadata({
           revision_id: revId,
           created: new Date(record.created),
           created_by: record.created_by,
-          updated: new Date(revision.created),
+          updated: new Date(record.updatedAt),
           updated_by: revision.created_by,
           conflicts: record.heads.length > 1,
           deleted: revision.deleted ? true : false,
@@ -1160,6 +1169,7 @@ export async function addNewRevisionFromForm({
     parents: parents,
     created: record.updated.toISOString(),
     created_by: record.updated_by,
+    updatedAt: record.updated.toISOString(),
     type: record.type,
     ugc_comment: record.ugc_comment,
     relationship: record.relationship,
@@ -1296,6 +1306,7 @@ export async function initialiseRecordForNewRevision({
     record_format_version: 1,
     created: record.updated.toISOString(),
     created_by: record.updated_by,
+    updatedAt: record.updated.toISOString(),
     revisions: [revision_id],
     heads: [revision_id],
     type: record.type,

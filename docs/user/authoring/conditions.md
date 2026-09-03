@@ -32,7 +32,10 @@ operators available depend on the type of the field.
 
 For select and checkbox
 values you will see _equal_ and _not equal_ which compare the field value to
-one of the possible values in the field.
+one of the possible values in the field. For Select single fields you can also
+use _is-one-of_ and _is-not-one-of_ to compare against several options at once
+— for example, show a section when _Rock Type_ is one of _Igneous_ or
+_Metamorphic_.
 
 For fields with a string value you will
 also see _greater_, _less_, _contains_ and _regex_. The _greater_ and _less_
@@ -60,6 +63,8 @@ For comparing a field's value against a single value.
 | --------------------------- | -------------------------------------------------------------- |
 | **equal**                   | Field value matches the specified value exactly.               |
 | **not-equal**               | Field value does not match the specified value.                |
+| **is-one-of**               | Field value is any of the specified options.                   |
+| **is-not-one-of**           | Field value is none of the specified options.                  |
 | **greater**                 | Field value is greater than the specified number.              |
 | **less**                    | Field value is less than the specified number.                 |
 | **contains**                | Field value contains the specified substring.                  |
@@ -108,3 +113,29 @@ refers to.
 
 The 'Add Another Condition' button below a complex condition will add a new clause
 into an existing 'or' or 'and' condition.
+
+## Referencing Parent and Linked Record Values
+
+Conditions can compare against values from outside the current record,
+using the same references available in Templated Strings and computed
+fields.
+
+When the form is a child of another form, a condition can test a field
+on the record's parent. These appear in the condition's field picker as
+_Parent › Field Name_, and are stored using the `_PARENT.` prefix, e.g.
+`_PARENT.Site-Name`.
+
+When the form holds a
+[Related Records](../field-types/relationship-fields/related-records.md)
+field with a **Linked** relation that allows only a single link, a
+condition can test a field on the linked record. These appear in the
+field picker as _Link Field Name › Field Name_.
+
+All operators work with these references exactly as they do with the
+form's own fields. When the referenced value is not available — the
+record has no parent, no record is linked, or the field is empty — the
+condition behaves as it would for an empty local field: for example,
+**equal** does not match and **not-equal** does.
+
+While a record is being edited, conditions re-evaluate automatically if
+the linked record is changed.

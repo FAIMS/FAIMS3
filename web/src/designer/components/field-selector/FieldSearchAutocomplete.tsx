@@ -8,6 +8,7 @@ import Autocomplete, {AutocompleteProps} from '@mui/material/Autocomplete';
 import {useEffect, useMemo} from 'react';
 import {
   buildFieldSearchEntry,
+  FieldSearchEntry,
   FieldSearchFilters,
   FieldSearchResult,
   FieldSearchScope,
@@ -87,6 +88,7 @@ export type FieldSearchAutocompleteProps = {
   clearOnEscape?: boolean;
   /** Clear the search input after a field is selected (for insert/picker use cases). */
   clearOnSelect?: boolean;
+  extraEntries?: FieldSearchEntry[];
 };
 
 /**
@@ -109,6 +111,7 @@ export const FieldSearchAutocomplete = ({
   size = 'medium',
   clearOnEscape = true,
   clearOnSelect = false,
+  extraEntries,
 }: FieldSearchAutocompleteProps) => {
   const allFields = useAppSelector(selectUiFields);
   const views = useAppSelector(selectUiViews);
@@ -118,12 +121,27 @@ export const FieldSearchAutocomplete = ({
       scope,
       filters,
       limit,
+      extraEntries,
     });
 
   const selectedResult = useMemo((): FieldSearchResult | null => {
     if (!value) return null;
     const fromResults = results.find(r => r.fieldId === value);
     if (fromResults) return fromResults;
+    // A selected reference entry (parent/related) isn't in the store -
+    // synthesize its row from the entry itself.
+    const fromExtra = extraEntries?.find(e => e.fieldId === value);
+    if (fromExtra) {
+      return {
+        fieldId: value,
+        field: fromExtra.field,
+        label: fromExtra.label,
+        helperText: fromExtra.helperText,
+        viewSetLabel: fromExtra.viewSetLabel,
+        sectionLabel: fromExtra.sectionLabel,
+        score: 0,
+      };
+    }
     // Selected id may be outside current search results — synthesize a display row.
     const field = allFields[value];
     if (!field) {

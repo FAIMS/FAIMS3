@@ -25,6 +25,10 @@ import {
   RecordID,
   RevisionHistoryEntry,
   formatTimestamp,
+  getRecordContextFromRecord,
+  RecordContext,
+  resolveParentValues,
+  resolveRelatedValues,
 } from '@faims3/data-model';
 import {
   DataView,
@@ -200,7 +204,10 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
                 ? `${updated.ugcComment};${val}`
                 : val;
               // save the update
-              await dataEngine.hydrated.updateRevision(updated);
+              await dataEngine.hydrated.updateRevision(updated, {
+                bumpRevisionUpdatedAt: true,
+                bumpRecordUpdatedAt: true,
+              });
             }}
           />
         </Stack>
@@ -215,6 +222,7 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
 interface ViewTabContentProps {
   /** The notebook plan and tab this page sits under, which its record links stay on. */
   notebook: RecordRouteNotebook;
+  recordId: RecordID;
   formData: NonNullable<
     Awaited<ReturnType<DataEngine['form']['getExistingFormData']>>
   >;
@@ -238,8 +246,35 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
   getDataEngine,
   getAttachmentService,
   isDeleted,
+  recordId,
 }) => {
   const nav = useNavigate();
+
+  // Resolve parent and linked-record values so field/section conditions
+  // referencing them evaluate correctly. Until resolved, conditions see
+  // missing values, matching previous behaviour.
+  const {data: recordContext} = useQuery({
+    queryKey: ['recordContext', recordId, formData.formId],
+    queryFn: async (): Promise<RecordContext> => {
+      const engine = getDataEngine();
+      const parentValues = await resolveParentValues({
+        engine,
+        recordId,
+        formId: formData.formId,
+      });
+      const relatedValues = await resolveRelatedValues({
+        engine,
+        values: formData.data,
+        formId: formData.formId,
+      });
+      return {
+        ...getRecordContextFromRecord({record: formData.context.record}),
+        parentValues: parentValues ?? undefined,
+        relatedValues,
+      };
+    },
+    networkMode: 'always',
+  });
 
   const nestedEditButton: React.FC<{recordId: string}> = isDeleted
     ? () => null
@@ -270,6 +305,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
     uiSpecification: uiSpec,
     formData: formData.data,
     hrid: formData.context.hrid,
+    context: recordContext,
     tools: {
       getAttachmentService,
       getDataEngine,
@@ -327,6 +363,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
         data={formData.data}
         formId={formData.formId}
         uiSpec={uiSpec}
+        context={recordContext}
       />
       {
         // Edit button below progress bar
@@ -679,6 +716,7 @@ export const ViewRecordPage: React.FC = () => {
           <ViewTabContent
             notebook={notebook}
             formData={formData}
+            recordId={recordId}
             onEditRecord={() => {
               nav(getEditRecordRoute({...notebook, recordId, mode: 'parent'}));
             }}

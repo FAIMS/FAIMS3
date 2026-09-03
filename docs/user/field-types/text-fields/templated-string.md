@@ -86,6 +86,9 @@ If a record has no parent (for example, it was created directly from
 the record list), the parent reference renders as empty text and the
 rest of the template is unaffected.
 
+The same reference can be used in
+[field and section conditions](../../authoring/conditions.md).
+
 ### Referencing Linked Record Values
 
 When the form holds a
@@ -114,6 +117,9 @@ whenever the record is next opened or saved. If the parent is edited
 in the meantime, the stored value reflects the parent as of the
 record's last save — the same behaviour as the
 [Parent Field Value](../display-fields/parent-field-value.md) field.
+
+The same reference can be used in
+[field and section conditions](../../authoring/conditions.md).
 
 ### Shared Field Options
 

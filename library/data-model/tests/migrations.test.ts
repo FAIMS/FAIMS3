@@ -33,6 +33,7 @@ import {
   V3InviteDBFields,
   VerificationChallengeV3ExistingDocument,
   LEGACY_INLINE_NOTEBOOK_DB_PREFIX,
+  dataV1toV2Migration,
 } from '../src/data_storage';
 import {
   TemplateV1Fields,
@@ -2022,6 +2023,122 @@ MIGRATION_TEST_CASES.push(...AUTH_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PEOPLE_V4_TO_V5_MIGRATION_TEST_CASES);
 
+const noopGetDbById = async () => {
+  throw new Error('getDbById should not be used by data v1→v2');
+};
+
+const DATA_V1_TO_V2_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'data v1 to v2 - revision gets updatedAt from created',
+    dbType: DatabaseType.DATA,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'frev-data-v2-1',
+      _rev: '1-a',
+      revision_format_version: 1,
+      avps: {},
+      record_id: 'rec-data-v2-1',
+      parents: [],
+      created: '2020-01-01T00:00:00.000Z',
+      created_by: 'user',
+      type: 'A',
+    },
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'frev-data-v2-1',
+        _rev: '1-a',
+        revision_format_version: 1,
+        avps: {},
+        record_id: 'rec-data-v2-1',
+        parents: [],
+        created: '2020-01-01T00:00:00.000Z',
+        created_by: 'user',
+        type: 'A',
+        updatedAt: '2020-01-01T00:00:00.000Z',
+      },
+    },
+  },
+  {
+    name: 'data v1 to v2 - revision already stamped is a no-op',
+    dbType: DatabaseType.DATA,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'frev-data-v2-2',
+      _rev: '1-a',
+      revision_format_version: 1,
+      avps: {},
+      record_id: 'rec-data-v2-2',
+      parents: [],
+      created: '2020-01-01T00:00:00.000Z',
+      created_by: 'user',
+      type: 'A',
+      updatedAt: '2020-02-02T00:00:00.000Z',
+    },
+    expectedResult: {action: 'none'},
+  },
+  {
+    name: 'data v1 to v2 - AVP is a no-op',
+    dbType: DatabaseType.DATA,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'avp-data-v2-1',
+      _rev: '1-a',
+      avp_format_version: 1,
+      type: 'faims-core::String',
+      data: 'x',
+      revision_id: 'frev-1',
+      record_id: 'rec-1',
+      created: '2020-01-01T00:00:00.000Z',
+      created_by: 'user',
+    },
+    expectedResult: {action: 'none'},
+  },
+  {
+    name: 'data v1 to v2 - record without db falls back to now',
+    dbType: DatabaseType.DATA,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'rec-data-v2-fallback',
+      _rev: '1-a',
+      record_format_version: 1,
+      created: '2019-01-01T00:00:00.000Z',
+      created_by: 'user',
+      revisions: ['frev-missing'],
+      heads: ['frev-missing'],
+      type: 'A',
+    },
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'rec-data-v2-fallback',
+        _rev: '1-a',
+        record_format_version: 1,
+        created: '2019-01-01T00:00:00.000Z',
+        created_by: 'user',
+        revisions: ['frev-missing'],
+        heads: ['frev-missing'],
+        type: 'A',
+        updatedAt: 'placeholder',
+      },
+    },
+    equalityFunction: (actual, expected) => {
+      const {updatedAt: actualUpdatedAt, ...actualRest} = actual;
+      const {updatedAt: _ignored, ...expectedRest} = expected;
+      return (
+        JSON.stringify(actualRest) === JSON.stringify(expectedRest) &&
+        typeof actualUpdatedAt === 'string' &&
+        !Number.isNaN(Date.parse(actualUpdatedAt))
+      );
+    },
+  },
+];
+MIGRATION_TEST_CASES.push(...DATA_V1_TO_V2_MIGRATION_TEST_CASES);
+
 describe('Migration Specific Tests', () => {
   /**
    * Test individual migration functions
@@ -2211,6 +2328,85 @@ describe('Migration Specific Tests', () => {
       }
 
       await metaDb.destroy();
+    });
+
+    it('dataV1toV2Migration fills record updatedAt from the head revision', async () => {
+      const dataDb = new PouchDB('data-v1-v2-head', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+
+      await dataDb.put({
+        _id: 'frev-head',
+        revision_format_version: 1,
+        avps: {},
+        record_id: 'rec-head',
+        parents: [],
+        created: '2021-06-15T12:00:00.000Z',
+        created_by: 'user',
+        type: 'A',
+      });
+
+      const inputDoc = {
+        _id: 'rec-head',
+        _rev: '1-a',
+        record_format_version: 1,
+        created: '2021-01-01T00:00:00.000Z',
+        created_by: 'user',
+        revisions: ['frev-head'],
+        heads: ['frev-head'],
+        type: 'A',
+      };
+
+      const result = await dataV1toV2Migration(inputDoc, {
+        getDbById: noopGetDbById,
+        db: dataDb,
+      });
+
+      expect(result.action).toBe('update');
+      if (result.action === 'update') {
+        expect(result.updatedRecord.updatedAt).toBe('2021-06-15T12:00:00.000Z');
+      }
+
+      await dataDb.destroy();
+    });
+
+    it('dataV1toV2Migration prefers head updatedAt over head created', async () => {
+      const dataDb = new PouchDB('data-v1-v2-head-updated', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+
+      await dataDb.put({
+        _id: 'frev-head-updated',
+        revision_format_version: 1,
+        avps: {},
+        record_id: 'rec-head-updated',
+        parents: [],
+        created: '2021-06-15T12:00:00.000Z',
+        created_by: 'user',
+        type: 'A',
+        updatedAt: '2021-07-01T00:00:00.000Z',
+      });
+
+      const result = await dataV1toV2Migration(
+        {
+          _id: 'rec-head-updated',
+          _rev: '1-a',
+          record_format_version: 1,
+          created: '2021-01-01T00:00:00.000Z',
+          created_by: 'user',
+          revisions: ['frev-head-updated'],
+          heads: ['frev-head-updated'],
+          type: 'A',
+        },
+        {getDbById: noopGetDbById, db: dataDb}
+      );
+
+      expect(result.action).toBe('update');
+      if (result.action === 'update') {
+        expect(result.updatedRecord.updatedAt).toBe('2021-07-01T00:00:00.000Z');
+      }
+
+      await dataDb.destroy();
     });
   });
 });
