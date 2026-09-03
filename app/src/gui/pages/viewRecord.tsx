@@ -220,7 +220,7 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
  * Props for the ViewTabContent component
  */
 interface ViewTabContentProps {
-  /** The notebook plan and tab this page sits under, which its record links stay on. */
+  /** The notebook and plan this page sits under, which its record links stay on. */
   notebook: RecordRouteNotebook;
   recordId: RecordID;
   formData: NonNullable<
