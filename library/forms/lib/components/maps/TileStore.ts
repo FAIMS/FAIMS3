@@ -43,7 +43,7 @@ import {
   TileDbMigrationState,
 } from './migrations';
 import {getMapStylesheet} from './styles';
-import {StoredTile, StoredTileSet} from './tileStoreUtils';
+import {InitTileDbResult, StoredTile, StoredTileSet} from './tileStoreUtils';
 import {MapConfig} from './types';
 
 // When downloading maps we start at this zoom level
@@ -94,10 +94,6 @@ const TILE_URL_MAP: {
   },
 };
 
-export type InitialiseTileDbResult = {
-  databaseReset: boolean;
-};
-
 // MapTileDatabase - a singleton class holding the tile database references
 // manages creation of the IndexedDB database and object stores.  Used by TileStoreBase
 // to access the stored tiles and tile-sets.
@@ -125,7 +121,7 @@ class MapTileDatabase {
 
   // Initialise the database and object-store wrappers.
   // Clients can await this to ensure the offline-map database is ready.
-  async initDB(): Promise<InitialiseTileDbResult> {
+  async initDB(): Promise<InitTileDbResult> {
     try {
       await this.openDatabase();
       return {
@@ -239,7 +235,7 @@ class MapTileDatabase {
   }
 }
 
-export const initialiseMaps = async (): Promise<InitialiseTileDbResult> => {
+export const initialiseMaps = async (): Promise<InitTileDbResult> => {
   // initialise the tile store used for offline maps
   const database = MapTileDatabase.getInstance();
   return database.initDB();

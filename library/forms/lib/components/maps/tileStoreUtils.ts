@@ -51,6 +51,11 @@ export interface StoredTileSet {
   offlineMapRegion?: import('@faims3/data-model').OfflineMapRegion;
 }
 
+export type InitTileDbResult = {
+  // True if a failed migration caused the database to be wiped and reset.
+  databaseReset: boolean;
+};
+
 /**
  * Create a unique id for a user-created offline map.
  *

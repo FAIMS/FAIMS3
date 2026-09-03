@@ -1,4 +1,4 @@
-import {initialiseMaps, logError, logInfo, logWarn} from '@faims3/forms';
+import {logError, logInfo, logWarn} from '@faims3/forms';
 import {configureStore} from '@reduxjs/toolkit';
 import React, {useEffect, useRef} from 'react';
 import {
@@ -274,10 +274,9 @@ export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
     mounted.current = true;
 
     const init = async () => {
-      // Initialise offline-map IndexedDB storage.
-      await initialiseMaps()
-        .then(({databaseReset}) => {
-          if (databaseReset) {
+      await initialise()
+        .then(({offlineMapsDBReset}) => {
+          if (offlineMapsDBReset) {
             dispatch(
               addAlert({
                 message:
@@ -288,25 +287,15 @@ export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
           }
         })
         .catch(err => {
-          console.error('Could not initialise offline maps: ', err);
+          console.error('Could not initialise: ', err);
           dispatch(
             addAlert({
-              message: 'Failed to initialise offline maps.',
+              message:
+                err instanceof Error ? err.message : 'Initialisation failed',
               severity: 'error',
             })
           );
         });
-      // PouchDB inisitalise
-      await initialise().catch(err => {
-        console.error('Could not initialise: ', err);
-        dispatch(
-          addAlert({
-            message:
-              err instanceof Error ? err.message : 'Initialisation failed',
-            severity: 'error',
-          })
-        );
-      });
     };
 
     // Run initialisation logic
