@@ -396,6 +396,8 @@ if (ENABLE_RECORDS_CRUD_MUTATIONS) {
           update: req.body.update,
           mode: req.body.mode ?? 'parent',
           updatedBy: req.user.user_id,
+          bumpRevisionUpdatedAt: true,
+          bumpRecordUpdatedAt: true,
         });
         res.json({revisionId: updated._id});
       } catch (err) {

@@ -52,7 +52,6 @@ import {
   PutUpdateNotebookUiSpecificationInputSchema,
   removeProjectRole,
   Role,
-  slugify,
   userCanReadTemplateDocument,
   userHasProjectRole,
 } from '@faims3/data-model';
@@ -81,6 +80,10 @@ import {
 } from '../couchdb/export/geospatialExport';
 import {stripDeletedRelatedRefsFromRecordData} from '../couchdb/export/stripDeletedRelatedRefs';
 import {FullExportConfigSchema} from '../couchdb/export/types';
+import {
+  contentDispositionAttachment,
+  sanitizeDownloadFilename,
+} from '../couchdb/export/utils';
 import {deleteAllInvitesForProject} from '../couchdb/invites';
 import {
   applyNotebookLifecycleStatus,
@@ -98,8 +101,8 @@ import {
   updateProjectOfflineMapRegion,
   updateProjectUiSpecification,
 } from '../couchdb/notebooks';
+import {createNotebookFromTemplate, getTemplate} from '../couchdb/templates';
 import {createTombstoneDocument} from '../couchdb/tombstones';
-import {getTemplate} from '../couchdb/templates';
 import {
   filterPeopleUsersForList,
   getCouchUserFromEmailOrUserId,
@@ -481,11 +484,10 @@ api.post(
       return 'template_id' in payload;
     };
 
-    let uiSpecification;
+    let projectID: string | undefined;
     const projectName: string = req.body.name;
     const description =
       'description' in req.body ? req.body.description : undefined;
-    let templateId: string | undefined = undefined;
 
     if (isFromTemplate(req.body)) {
       const template = await getTemplate(req.body.template_id);
@@ -504,30 +506,28 @@ api.post(
         );
       }
 
-      if (template.archived === true) {
-        throw new Exceptions.InvalidRequestException(
-          'Cannot create a notebook from an archived template.'
-        );
-      }
-
-      uiSpecification = template.uiSpecification;
-      templateId = template._id;
+      projectID = await createNotebookFromTemplate({
+        template,
+        projectName,
+        description,
+        teamId: req.body.teamId,
+        createdBy: req.user.user_id,
+        planConfig: req.body.planConfig,
+      });
     } else if (isFromScratch(req.body)) {
-      uiSpecification = req.body.uiSpecification;
+      projectID = await createNotebook({
+        projectName,
+        uiSpecification: req.body.uiSpecification,
+        description,
+        teamId: req.body.teamId,
+        createdBy: req.user.user_id,
+      });
     } else {
       throw new Exceptions.ValidationException(
         'Could not parse input payload as either a from scratch or from template creation. Contact a system administrator and validate payload integrity.'
       );
     }
 
-    const projectID = await createNotebook({
-      projectName,
-      uiSpecification,
-      description,
-      templateId,
-      teamId: req.body.teamId,
-      createdBy: req.user.user_id,
-    });
     if (projectID) {
       // Make the user an admin of this notebook
       addProjectRole({
@@ -913,22 +913,26 @@ api.get(
           `Form with id ${payload.viewID} not found in notebook`
         );
       }
-      exportLabel = uiSpec.viewsets[payload.viewID].label ?? payload.viewID;
+      // Form labels are user-controlled; never interpolate them raw into headers.
+      exportLabel = sanitizeDownloadFilename(
+        uiSpec.viewsets[payload.viewID].label ?? payload.viewID,
+        sanitizeDownloadFilename(payload.viewID, 'export')
+      );
     } else {
-      exportLabel = slugify(payload.projectID);
+      exportLabel = sanitizeDownloadFilename(payload.projectID);
     }
 
     if (payload.format === 'csv') {
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="${exportLabel}-export.csv"`
+        contentDispositionAttachment(`${exportLabel}-export.csv`)
       );
       streamNotebookRecordsAsCSV(payload.projectID, payload.viewID!, res);
     } else if (payload.format === 'zip') {
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="${exportLabel}-photos.zip"`
+        contentDispositionAttachment(`${exportLabel}-photos.zip`)
       );
       res.setHeader('Content-Type', 'application/zip');
       streamNotebookFilesAsZip({
@@ -940,14 +944,14 @@ api.get(
       res.setHeader('Content-Type', 'application/geo+json');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="${slugify(payload.projectID)}-export.geojson"`
+        contentDispositionAttachment(`${exportLabel}-export.geojson`)
       );
       streamNotebookRecordsAsGeoJSON(payload.projectID, res);
     } else if (payload.format === 'kml') {
       res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="${slugify(payload.projectID)}-export.kml"`
+        contentDispositionAttachment(`${exportLabel}-export.kml`)
       );
       streamNotebookRecordsAsKML(payload.projectID, res);
     } else if (payload.format === 'geopackage') {
@@ -956,7 +960,7 @@ api.get(
       res.setHeader('Content-Type', 'application/geopackage+sqlite3');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="${slugify(payload.projectID)}-export.gpkg"`
+        contentDispositionAttachment(`${exportLabel}-export.gpkg`)
       );
       await streamNotebookRecordsAsGeoPackage(payload.projectID, res);
     } else if (payload.format === 'full') {
@@ -964,7 +968,7 @@ api.get(
       res.setHeader('Content-Type', 'application/zip');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="${fullFilename}"`
+        contentDispositionAttachment(fullFilename)
       );
       await streamFullExport({
         projectId: payload.projectID,

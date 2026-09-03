@@ -582,4 +582,84 @@ describe('ConditionControl', () => {
       );
     });
   });
+
+  test('single-select offers is-one-of and coerces the value to an array', async () => {
+    const store = createDesignerStore();
+    const {migrated: notebook} = migrateNotebook(sampleNotebook);
+    store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));
+
+    const condition: ConditionType = {
+      operator: 'equal',
+      field: 'Type',
+      value: 'Igneous',
+    };
+
+    const onChangeFn = vi.fn();
+    render(
+      <WithProviders store={store}>
+        <ConditionControl initial={condition} onChange={onChangeFn} />
+      </WithProviders>
+    );
+
+    const operatorControl = screen.getByTestId('operator-input');
+    fireEvent.mouseDown(within(operatorControl).getByRole('combobox'));
+
+    expect(screen.getByRole('option', {name: /is one of/i})).toBeDefined();
+    expect(screen.getByRole('option', {name: /is not one of/i})).toBeDefined();
+
+    fireEvent.click(screen.getByRole('option', {name: /is one of/i}));
+
+    await waitFor(() => {
+      expect(onChangeFn.mock.lastCall).toStrictEqual([
+        {
+          field: 'Type',
+          operator: 'is-one-of',
+          value: ['Igneous'],
+        },
+      ]);
+    });
+
+    fireEvent.mouseDown(
+      within(screen.getByTestId('value-input')).getByRole('combobox')
+    );
+    expect(screen.getAllByRole('checkbox').length).toBeGreaterThan(1);
+  });
+
+  test('single-select coerces is-one-of values back to a scalar for equal', async () => {
+    const store = createDesignerStore();
+    const {migrated: notebook} = migrateNotebook(sampleNotebook);
+    store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));
+
+    const condition: ConditionType = {
+      operator: 'is-one-of',
+      field: 'Type',
+      value: ['Igneous', 'Metamorphic'],
+    };
+
+    const onChangeFn = vi.fn();
+    render(
+      <WithProviders store={store}>
+        <ConditionControl initial={condition} onChange={onChangeFn} />
+      </WithProviders>
+    );
+
+    fireEvent.mouseDown(
+      within(screen.getByTestId('operator-input')).getByRole('combobox')
+    );
+    fireEvent.click(
+      screen.getByRole('option', {
+        name: (label: string) => label.startsWith('Equal to'),
+      })
+    );
+
+    await waitFor(() => {
+      expect(onChangeFn.mock.lastCall).toStrictEqual([
+        {
+          field: 'Type',
+          operator: 'equal',
+          value: 'Igneous',
+        },
+      ]);
+    });
+  });
 });

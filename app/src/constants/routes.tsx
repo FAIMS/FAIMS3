@@ -18,7 +18,8 @@
  *   TODO
  */
 
-import {AvpUpdateMode, ProjectID, RecordID} from '@faims3/data-model';
+import {AvpUpdateMode, RecordID} from '@faims3/data-model';
+import {useEffect} from 'react';
 import {config} from '../buildconfig';
 
 export const INDEX = '/';
@@ -26,14 +27,7 @@ export const SIGN_IN = '/signin/';
 export const AUTH_RETURN = '/auth-return/';
 export const NOT_FOUND = '/not-found';
 export const INDIVIDUAL_NOTEBOOK_ROUTE = `/${config.notebookNamePlural}/`;
-export const INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q = 'tab';
 export const NOTEBOOK_LIST_ROUTE = '/';
-export const RECORD_LIST = '/records';
-export const RECORD_EXISTING = '/records/';
-export const RECORD_VIEW = '/view-record/';
-export const RECORD_CREATE = '/new/';
-export const RECORD_RECORD = '/record/';
-export const REVISION = '/revision/';
 export const ABOUT_BUILD = '/about-build';
 export const OFFLINE_MAPS = '/offline-maps';
 export const AUTOINCREMENT = '/autoincrements/';
@@ -43,73 +37,99 @@ export const HELP = '/help';
 export const USER_ACTIVE_TESTR = '/test';
 export const POUCH_EXPLORER = '/pouchDB';
 
+const EDIT_RECORD_SEGMENT = 'records';
+const VIEW_RECORD_SEGMENT = 'view-record';
+
+/** Tab slugs more than one view carries; a view without one shows its default. */
+export const SHARED_TAB = {
+  map: 'map',
+  details: 'details',
+  settings: 'settings',
+} as const;
+
+/**
+ * The tab matching the route's slug, or the view's default. A slug the view
+ * does not carry redirects to the default, so the URL names the tab on screen
+ * and the record links built under it resolve.
+ */
+export const useResolveTab = <T extends string>(
+  tabs: readonly [T, ...T[]],
+  tab: string | undefined,
+  setTab: (tab: string) => void
+): T => {
+  const match = tabs.find(t => t === tab);
+  useEffect(() => {
+    if (tab !== undefined && match === undefined) setTab(tabs[0]);
+  }, [tab, match, setTab, tabs]);
+  return match ?? tabs[0];
+};
+
+/** Keyed by the tab shown; optional, so tab-less links still resolve. */
+export const NOTEBOOK_ROUTE_PATH = `${INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:projectId/:tab?`;
+export const EDIT_RECORD_ROUTE_PATH = `${EDIT_RECORD_SEGMENT}/:recordId`;
+export const VIEW_RECORD_ROUTE_PATH = `${VIEW_RECORD_SEGMENT}/:recordId`;
+
+/**
+ * @returns /<notebook-plural>/<server>/<project>[/<tab>]
+ */
 export function getNotebookRoute({
   serverId,
   projectId,
+  tab,
 }: {
   serverId: string;
   projectId: string;
-}) {
-  return INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId;
-}
-
-/**
- * Generates a route to a record in the format
- *
- * @returns /<notebook-plural>/<server>/<project>/records/<recordId>/revision/<revisionId>
- */
-export function getEditRecordRoute({
-  serverId,
-  projectId,
-  recordId,
-  mode,
-}: {
-  serverId: string;
-  projectId: ProjectID;
-  recordId: RecordID;
-  mode?: AvpUpdateMode;
-}) {
-  if (!!serverId && !!projectId && !!recordId) {
-    return (
-      INDIVIDUAL_NOTEBOOK_ROUTE +
-      serverId +
-      '/' +
-      projectId +
-      RECORD_EXISTING +
-      recordId +
-      (mode ? `?mode=${mode}` : '')
-    );
-  }
-  console.error('Trying to create record route with missing details!');
-  console.error({serverId, projectId, recordId});
-  throw Error(
-    'project_id, record_id and revision_id are required for this route'
-  );
-}
-
-/**
- * Generates a route to a record in the format
- *
- * @returns /<notebook-plural>/<server>/<project>/view-record/<recordId>?revisionId=<revisionId>
- */
-export function getViewRecordRoute({
-  serverId,
-  projectId,
-  recordId,
-  revisionId,
-}: {
-  serverId: string;
-  projectId: ProjectID;
-  recordId: RecordID;
-  revisionId?: RecordID;
+  tab?: string;
 }) {
   return (
     INDIVIDUAL_NOTEBOOK_ROUTE +
     serverId +
     '/' +
     projectId +
-    RECORD_VIEW +
-    recordId +
+    (tab ? '/' + tab : '')
+  );
+}
+
+/** One up from a record route: the notebook, on the tab it was opened from. */
+export const NOTEBOOK_FROM_RECORD_ROUTE = '..';
+
+/** The notebook a record link nests under: ids from the project, tab from the route. */
+export type RecordRouteNotebook = {
+  serverId: string;
+  projectId: string;
+  tab?: string;
+};
+
+/**
+ * @returns /<notebook-plural>/<server>/<project>[/<tab>]/records/<recordId>
+ */
+export function getEditRecordRoute({
+  recordId,
+  mode,
+  ...notebook
+}: RecordRouteNotebook & {
+  recordId: RecordID;
+  mode?: AvpUpdateMode;
+}) {
+  return (
+    `${getNotebookRoute(notebook)}/${EDIT_RECORD_SEGMENT}/${recordId}` +
+    (mode ? `?mode=${mode}` : '')
+  );
+}
+
+/**
+ * @returns /<notebook-plural>/<server>/<project>[/<tab>]/view-record/<recordId>
+ */
+export function getViewRecordRoute({
+  recordId,
+  revisionId,
+  ...notebook
+}: RecordRouteNotebook & {
+  recordId: RecordID;
+  revisionId?: RecordID;
+}) {
+  return (
+    `${getNotebookRoute(notebook)}/${VIEW_RECORD_SEGMENT}/${recordId}` +
     (revisionId ? `?revisionId=${revisionId}` : '')
   );
 }

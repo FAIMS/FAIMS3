@@ -19,7 +19,11 @@
  */
 import {batchWriteDocuments} from '@faims3/data-model';
 import {open} from 'node:fs/promises';
-import {initialiseDataDb, localGetProjectsDb} from '.';
+import {
+  initialiseDataDb,
+  localGetProjectsDb,
+  migrateAllProjectDataDbs,
+} from '.';
 
 /**
  * restoreFromBackup - restore databases from a JSONL backup file
@@ -161,4 +165,8 @@ export const restoreFromBackup = async ({
     await file.close();
   }
   console.log(`Restore completed. Total records processed: ${processedCount}`);
+
+  // Restored data DBs may predate data v2 (`updatedAt` on records/revisions).
+  // Init writes the DB at the current design docs but does not migrate content.
+  await migrateAllProjectDataDbs();
 };

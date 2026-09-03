@@ -53,3 +53,6 @@ export const selectVisibleTypes = (state: AppState) =>
 
 /** True after local edits until save/reset (see `modifiedStatus-reducer`). */
 export const selectModifiedFlag = (state: AppState) => state.modified;
+
+/** Whether this designer session edits a notebook or a template. */
+export const selectDesignerMode = (state: AppState) => state.mode;

@@ -1,4 +1,3 @@
-export * from './addressTypes';
 export * from './addressAutosuggest/types';
 export * from './addressAutosuggest/mapbox';
 export * from './addressAutosuggest/maptiler';

@@ -19,8 +19,9 @@
  *   _PARENT.<Field-ID> references usable in computed expressions on that form.
  *   Shared by the notebook-load compile pass, the designer's live expression
  *   validation, and the forms runtime. Also home of the shared child-relation
- *   field scan (getChildRelationParams, fieldIdsForViewset) that the record
- *   status report reuses.
+ *   field scan (getChildRelationParams) that the record status report reuses,
+ *   and merges the <Rel-Field-ID>.<Field-ID> references typed by
+ *   relatedForms.ts into the same compile.
  */
 
 import {
@@ -31,6 +32,8 @@ import {
   extractExpressionReferences,
   FAIMS_TYPE_TO_EXPR_TYPE,
 } from './expressions';
+import {fieldIdsForViewset, ParentScanUiSpec} from './formScan';
+import {buildRelatedFieldTypes, splitRelatedReference} from './relatedForms';
 import {
   FieldDefinition,
   RELATED_RECORD_SELECTOR,
@@ -40,29 +43,6 @@ import {
 
 /** Prefix marking a reference to a field on the parent record. Reserved. */
 export const PARENT_REFERENCE_PREFIX = '_PARENT.';
-
-/** The slice of a ui-spec the parent-form scan reads. Structural, so the
- * designer can pass its redux field/view/viewset maps directly. */
-export interface ParentScanUiSpec {
-  fields: Record<string, FieldDefinition>;
-  views: Record<string, {fields: string[]}>;
-  viewsets: Record<string, {views: string[]}>;
-}
-
-/** Field IDs across all views of a viewset; stale view ids are skipped. Lives
- * here, not in utils.ts, which imports this module via the compile pass. */
-export const fieldIdsForViewset = (
-  uiSpecification: Pick<ParentScanUiSpec, 'views' | 'viewsets'>,
-  viewSetId: string
-): string[] => {
-  const viewset = uiSpecification.viewsets[viewSetId];
-  if (!viewset) return [];
-  const ids: string[] = [];
-  for (const viewId of viewset.views) {
-    ids.push(...(uiSpecification.views[viewId]?.fields ?? []));
-  }
-  return ids;
-};
 
 /** The scan reads only these keys; a malformed unrelated param (e.g. a string
  * `multiple` in a hand-edited notebook) must not hide the relation. */
@@ -257,5 +237,37 @@ export const compileComputedExpressionForForm = ({
   }
 
   for (const [k, v] of parentTypes) fieldTypes.set(k, v);
+
+  // Related record references: <Rel-Field-ID>.<Field-ID> reads a field on the
+  // record linked through a single-link Linked Related Records field on this
+  // form. Targeted errors first, then merge the typed references.
+  const {types: relatedTypes, relatedFields} = buildRelatedFieldTypes({
+    uiSpecification,
+    formId,
+  });
+  for (const ref of extractExpressionReferences(source)) {
+    if (ref.startsWith(PARENT_REFERENCE_PREFIX)) continue;
+    if (fieldTypes.has(ref) || relatedTypes.has(ref)) continue;
+    const parts = splitRelatedReference(ref);
+    if (!parts) continue; // plain unknown local ref: compiler reports it
+    const {relFieldId, fieldId} = parts;
+    const rel = relatedFields.get(relFieldId);
+    if (!rel) {
+      throw new ExpressionError(
+        `{${ref}}: "${relFieldId}" is not a Linked Related Records field on this form`
+      );
+    }
+    if (rel.multiple) {
+      throw new ExpressionError(
+        `{${ref}}: "${relFieldId}" allows multiple linked records - only ` +
+          'single-link Related Records fields can be referenced'
+      );
+    }
+    throw new ExpressionError(
+      `{${ref}}: field "${fieldId}" was not found on form "${rel.relatedFormId}"`
+    );
+  }
+  for (const [k, v] of relatedTypes) fieldTypes.set(k, v);
+
   return compileComputedExpression(source, fieldTypes, requiredType);
 };

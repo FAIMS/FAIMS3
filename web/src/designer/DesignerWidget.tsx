@@ -40,8 +40,13 @@ import {
 } from 'react-router-dom';
 import {createDesignerStore} from './createDesignerStore';
 import {createDesignerTheme} from './theme';
-import type {Notebook, NotebookWithHistory} from './state/initial';
+import type {
+  DesignerDocumentMode,
+  Notebook,
+  NotebookWithHistory,
+} from './state/initial';
 import {stripDesignerIdentifiers, toNotebook} from './domain/notebook/adapters';
+import {slugify} from './domain/notebook/ids';
 import {THEME} from '../lib/theme';
 import {NotebookEditor} from './components/notebook-editor';
 import {DesignerEditingProvider} from './state/editing-context';
@@ -56,6 +61,8 @@ import {DesignPanel} from './components/design-panel';
 export interface DesignerWidgetProps {
   /** Initial notebook; undefined shows empty state until parent supplies data. */
   notebook?: NotebookWithHistory;
+  /** Whether this session edits a notebook or a template (templates may carry a planTemplate). */
+  designerMode?: DesignerDocumentMode;
   /** Used for the exported JSON filename (survey/template display name). */
   exportBaseName?: string;
   /** Records already collected. Drives the field-ID warning; omit for templates. */
@@ -80,6 +87,7 @@ export interface DesignerWidgetProps {
  */
 export function DesignerWidget({
   notebook,
+  designerMode = 'project',
   exportBaseName,
   existingRecordCount,
   onClose,
@@ -117,6 +125,8 @@ export function DesignerWidget({
         past: [],
         future: [],
       },
+      planTemplate: notebook.planTemplate ?? null,
+      plan: notebook.plan ?? null,
     };
   }, [notebook]);
 
@@ -139,12 +149,12 @@ export function DesignerWidget({
 
   // 2. Keep one Redux store for a notebook identity; do not reset on same-notebook refetch.
   const [store, setStore] = useState(() =>
-    createDesignerStore(processedNotebook, debug)
+    createDesignerStore(processedNotebook, debug, designerMode)
   );
 
   useEffect(() => {
-    setStore(createDesignerStore(processedNotebook, debug));
-  }, [notebookIdentity, debug]);
+    setStore(createDesignerStore(processedNotebook, debug, designerMode));
+  }, [notebookIdentity, debug, designerMode]);
 
   // Local UI state
   const [loading, setLoading] = useState(true);
@@ -184,8 +194,7 @@ export function DesignerWidget({
     const blob = new Blob([JSON.stringify(exportNotebook, null, 2)], {
       type: 'application/json',
     });
-    const filename =
-      String(exportBaseName ?? 'notebook').replace(/\s+/g, '_') + '.json';
+    const filename = `${slugify(String(exportBaseName ?? 'notebook')) || 'notebook'}.json`;
     const file = new File([blob], filename, {
       type: 'application/json',
     });
@@ -193,7 +202,7 @@ export function DesignerWidget({
     setAnimateOut(true);
     setAnimateIn(false);
     window.setTimeout(() => doClose(file), animationDuration);
-  }, [animationDuration, doClose, store]);
+  }, [animationDuration, doClose, exportBaseName, store]);
 
   /** Close without saving after user confirms cancel dialog. */
   const handleCancel = useCallback(() => {

@@ -105,6 +105,37 @@ the record is next opened or saved; if the parent changes in the
 meantime, the stored value reflects the parent as of the record's last
 save.
 
+The same reference can be used in
+[field and section conditions](../../authoring/conditions.md).
+
+### Referencing Linked Record Values
+
+When the form holds a
+[Related Records](../relationship-fields/related-records.md) field with
+a **Linked** relation that allows only a single link, the expression
+can reference fields on the linked record by joining the two Field IDs
+with a dot: `{Link-Field-ID.Field-ID}`. For example, with a Related
+Records field `Core-Calibration` linking one Calibration record,
+`{Wet-Mass-g} - {Core-Calibration.Cutter-Mass-g}` subtracts the linked
+record's cutter mass. An **Insert linked record field** picker below
+the expression lists the available fields.
+
+Linked record references are type checked against the linked form, and
+may point at the linked record's computed fields and Templated Strings,
+whose stored values are used. Fields that allow multiple links, and
+Child-relation fields, cannot be referenced this way (children
+reference their parent with `_PARENT.`); the editor reports these with
+a specific error.
+
+If nothing is linked, the reference has no value and the result stays
+blank. The value updates while editing whenever the link is changed,
+and otherwise re-derives when the record is opened or saved — if the
+linked record changes in the meantime, the stored value reflects it as
+of this record's last save.
+
+The same reference can be used in
+[field and section conditions](../../authoring/conditions.md).
+
 ### Shared Field Options
 
 Configure any of the shared field options as needed.

@@ -127,6 +127,8 @@ export type EncodedRecord = PouchDB.Core.Document<{
   record_format_version: number;
   created: string;
   created_by: string;
+  /** When the current head revision was last created or replaced. */
+  updatedAt: string;
   revisions: RevisionID[];
   heads: RevisionID[];
   type: FAIMSTypeName;
@@ -145,6 +147,8 @@ export interface Revision {
   parents: RevisionID[];
   created: string;
   created_by: string;
+  /** When this revision document was last written. */
+  updatedAt: string;
   type: FAIMSTypeName;
   deleted?: boolean;
   ugc_comment?: string;

@@ -1,6 +1,6 @@
 import {Skeleton, Typography} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
-import {resolveParentFieldValue} from '../../../../fieldRegistry/fields/ParentFieldDisplay/resolveParentField';
+import {resolveParentFieldValue} from '@faims3/data-model';
 import {DataViewFieldRender} from '../../../types';
 import {EmptyResponsePlaceholder, TextWrapper} from '../wrappers';
 

@@ -644,10 +644,13 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         : {...existing, linked: [...(existing?.linked ?? []), relation]};
 
     // Persist the updated relationship on the target record's revision
-    await props.config.dataEngine().hydrated.updateRevision({
-      ...record.revision,
-      relationship,
-    });
+    await props.config.dataEngine().hydrated.updateRevision(
+      {
+        ...record.revision,
+        relationship,
+      },
+      {bumpRevisionUpdatedAt: true, bumpRecordUpdatedAt: true}
+    );
   };
 
   // One query per linked id (order matches `normalizedLinks`) for list display
@@ -714,13 +717,16 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           inst.fieldId === props.fieldId
         )
     );
-    await engine.hydrated.updateRevision({
-      ...peer.revision,
-      relationship: {
-        ...(rel ?? {}),
-        linked: newLinked,
+    await engine.hydrated.updateRevision(
+      {
+        ...peer.revision,
+        relationship: {
+          ...(rel ?? {}),
+          linked: newLinked,
+        },
       },
-    });
+      {bumpRevisionUpdatedAt: true, bumpRecordUpdatedAt: true}
+    );
     const remaining = normalizedLinks.filter(
       l => l.record_id !== link.record_id
     );
