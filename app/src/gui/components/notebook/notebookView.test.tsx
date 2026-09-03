@@ -11,6 +11,7 @@ import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as ROUTES from '../../../constants/routes';
 import {NotebookRouteProvider} from '../../../context/notebookRoute';
+import {NotebookViewTabProvider} from '../../../context/notebookViewTab';
 import {Project} from '../../../context/slices/projectSlice';
 import {NotebookView} from './notebookView';
 
@@ -21,7 +22,6 @@ const {navigate, routeParams, allRecords} = vi.hoisted(() => ({
       serverId?: string;
       projectId?: string;
       planId?: string;
-      tab?: string;
     },
   },
   allRecords: {
@@ -35,8 +35,8 @@ vi.mock('react-router-dom', async () => ({
   useParams: () => routeParams.current,
 }));
 
-// Every plan gets a view, which reports the tab move and the records it was
-// handed, which are the two things the props contract promises it
+// Every plan gets a view, which reports the tab it is on and the records it
+// was handed, which are the two things the props contract promises it
 vi.mock('./plans', async () => {
   const actual = await vi.importActual<object>('./plans');
   const React = await import('react');
@@ -48,8 +48,13 @@ vi.mock('./plans', async () => {
         null,
         React.createElement(
           'button',
-          {onClick: () => props.actions.setTab('all-records')},
+          {onClick: () => props.tab.select('all-records')},
           'show a tab'
+        ),
+        React.createElement(
+          'span',
+          {'data-testid': 'view-tab'},
+          props.tab.current ?? 'none'
         ),
         React.createElement(
           'span',
@@ -140,19 +145,21 @@ const record = (recordId: string, planId?: string, reference?: string) => ({
   planReference: planId && planReferenceFor({planId, reference}),
 });
 
-const renderNotebook = (params: {planId?: string; tab?: string}) => {
+const renderNotebook = (params: {planId?: string}) => {
   // The notebook's own ids come from the route, as they do in the app
   routeParams.current = {serverId: 'srv', projectId: 'proj', ...params};
   render(
     <QueryClientProvider client={new QueryClient()}>
       <NotebookRouteProvider>
-        <NotebookView project={project} />
+        <NotebookViewTabProvider>
+          <NotebookView project={project} />
+        </NotebookViewTabProvider>
       </NotebookRouteProvider>
     </QueryClientProvider>
   );
 };
 
-const notebookRoute = (next: {planId?: string; tab?: string}) =>
+const notebookRoute = (next: {planId?: string}) =>
   ROUTES.getNotebookRoute({serverId: 'srv', projectId: 'proj', ...next});
 
 beforeEach(() => {
@@ -170,13 +177,11 @@ describe('NotebookView navigation', () => {
     });
   });
 
-  it('replaces the notebook entry when a tab is shown', async () => {
+  it('shows the tab the view selects without touching the route', async () => {
     renderNotebook({planId: 'lab'});
     await userEvent.click(screen.getByRole('button', {name: 'show a tab'}));
-    expect(navigate).toHaveBeenCalledWith(
-      notebookRoute({planId: 'lab', tab: 'all-records'}),
-      {replace: true}
-    );
+    expect(screen.getByTestId('view-tab')).toHaveTextContent('all-records');
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('replaces the notebook entry when the plan is changed', async () => {

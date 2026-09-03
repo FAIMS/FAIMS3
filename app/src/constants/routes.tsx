@@ -19,7 +19,6 @@
  */
 
 import {AvpUpdateMode, RecordID} from '@faims3/data-model';
-import {useEffect} from 'react';
 import {config} from '../buildconfig';
 
 export const INDEX = '/';
@@ -40,74 +39,42 @@ export const POUCH_EXPLORER = '/pouchDB';
 const EDIT_RECORD_SEGMENT = 'records';
 const VIEW_RECORD_SEGMENT = 'view-record';
 
-/** Tab slugs more than one view carries; a view without one shows its default. */
-export const SHARED_TAB = {
-  map: 'map',
-  details: 'details',
-  settings: 'settings',
-} as const;
-
 /**
- * The tab matching the route's slug, or the view's default. A slug the view
- * does not carry redirects to the default, so the URL names the tab on screen
- * and the record links built under it resolve. A route naming no tab is left
- * alone: that is the notebook's own URL, and a record link may be written from
- * it.
+ * The plan on screen, optional so a notebook with no plan view still resolves.
+ * The tab within a view is not here: it lives in the view's own context, so a
+ * plan gains screens of its own without the route gaining segments.
  */
-export const useResolveTab = <T extends string>(
-  tabs: readonly [T, ...T[]],
-  tab: string | undefined,
-  setTab: (tab: string) => void
-): T => {
-  const match = tabs.find(t => t === tab);
-  useEffect(() => {
-    if (tab !== undefined && match === undefined) setTab(tabs[0]);
-  }, [tab, match, setTab, tabs]);
-  return match ?? tabs[0];
-};
-
-/**
- * The plan on screen and the tab within it, both optional so shorter links
- * still resolve. A lone trailing segment always lands in `planId`, so the
- * notebook views read one that names no plan as a bare tab slug.
- */
-export const NOTEBOOK_ROUTE_PATH = `${INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:projectId/:planId?/:tab?`;
+export const NOTEBOOK_ROUTE_PATH = `${INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:projectId/:planId?`;
 export const EDIT_RECORD_ROUTE_PATH = `${EDIT_RECORD_SEGMENT}/:recordId`;
 export const VIEW_RECORD_ROUTE_PATH = `${VIEW_RECORD_SEGMENT}/:recordId`;
 
 /**
- * @returns /<notebook-plural>/<server>/<project>[/<plan>][/<tab>]
- *
- * A tab named without a plan takes the plan's segment, which is where a lone
- * trailing segment is read back from.
+ * @returns /<notebook-plural>/<server>/<project>[/<plan>]
  */
 export function getNotebookRoute({
   serverId,
   projectId,
   planId,
-  tab,
 }: {
   serverId: string;
   projectId: string;
   planId?: string;
-  tab?: string;
 }) {
   return (
     INDIVIDUAL_NOTEBOOK_ROUTE +
-    [serverId, projectId, planId, tab].filter(Boolean).join('/')
+    [serverId, projectId, planId].filter(Boolean).join('/')
   );
 }
 
-/** The notebook a record link nests under: ids from the project, plan and tab from the route. */
+/** The notebook a record link nests under: ids from the project, plan from the route. */
 export type RecordRouteNotebook = {
   serverId: string;
   projectId: string;
   planId?: string;
-  tab?: string;
 };
 
 /**
- * @returns /<notebook-plural>/<server>/<project>[/<plan>][/<tab>]/records/<recordId>
+ * @returns /<notebook-plural>/<server>/<project>[/<plan>]/records/<recordId>
  */
 export function getEditRecordRoute({
   recordId,
@@ -124,7 +91,7 @@ export function getEditRecordRoute({
 }
 
 /**
- * @returns /<notebook-plural>/<server>/<project>[/<plan>][/<tab>]/view-record/<recordId>
+ * @returns /<notebook-plural>/<server>/<project>[/<plan>]/view-record/<recordId>
  */
 export function getViewRecordRoute({
   recordId,

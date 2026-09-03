@@ -9,8 +9,8 @@ import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project, selectProjectById} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
+import {NotebookViewTab} from '../../../context/notebookViewTab';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
-import {SHARED_TAB, useResolveTab} from '../../../constants/routes';
 import {
   invalidateProjectHydration,
   invalidateProjectRecordList,
@@ -30,9 +30,9 @@ import NotebookSettings from './settings';
 const TABS = [
   'my-records',
   'other-records',
-  SHARED_TAB.map,
-  SHARED_TAB.details,
-  SHARED_TAB.settings,
+  'map',
+  'details',
+  'settings',
 ] as const;
 
 /**
@@ -87,8 +87,7 @@ function a11yProps(tab: string) {
  */
 type NotebookComponentProps = {
   project: Project;
-  tab?: string;
-  setTab: (tab: string) => void;
+  tab: NotebookViewTab;
 };
 
 /**
@@ -101,7 +100,6 @@ type NotebookComponentProps = {
 export default function NotebookComponent({
   project,
   tab,
-  setTab,
 }: NotebookComponentProps) {
   const theme = useTheme();
   const isMedium = useMediaQuery(theme.breakpoints.up('md'));
@@ -125,7 +123,7 @@ export default function NotebookComponent({
     username: activeUser?.username ?? '',
   });
 
-  const currentTab = useResolveTab(TABS, tab, setTab);
+  const currentTab = TABS.find(t => t === tab.current) ?? TABS[0];
 
   // Fetch records from the (local) DB with configurable auto refetch.
   // Skip while the compiled UI spec is still loading.
@@ -154,7 +152,7 @@ export default function NotebookComponent({
   const viewsets = uiSpecification.viewsets;
 
   const goToSyncSettings = () => {
-    setTab(SHARED_TAB.settings);
+    tab.select('settings');
   };
 
   // recordLabel based on viewsets
@@ -234,7 +232,7 @@ export default function NotebookComponent({
           >
             <Tabs
               value={currentTab}
-              onChange={(_event, newTab: string) => setTab(newTab)}
+              onChange={(_event, newTab: string) => tab.select(newTab)}
               aria-label={`${config.notebookName} tabs`}
               indicatorColor="secondary"
               sx={{
@@ -279,22 +277,22 @@ export default function NotebookComponent({
               )}
 
               <Tab
-                value={SHARED_TAB.map}
+                value="map"
                 label="Map"
                 data-testid="app-notebook-tab-map"
-                {...a11yProps(SHARED_TAB.map)}
+                {...a11yProps('map')}
               />
               <Tab
-                value={SHARED_TAB.details}
+                value="details"
                 label="Details"
                 data-testid="app-notebook-tab-details"
-                {...a11yProps(SHARED_TAB.details)}
+                {...a11yProps('details')}
               />
               <Tab
-                value={SHARED_TAB.settings}
+                value="settings"
                 label="Settings"
                 data-testid="app-notebook-tab-settings"
-                {...a11yProps(SHARED_TAB.settings)}
+                {...a11yProps('settings')}
               />
             </Tabs>
           </Paper>
@@ -334,7 +332,7 @@ export default function NotebookComponent({
           />
         </TabPanel>
 
-        <TabPanel value={currentTab} tab={SHARED_TAB.map}>
+        <TabPanel value={currentTab} tab="map">
           <OverviewMap
             records={records}
             project_id={project.projectId}
@@ -342,11 +340,11 @@ export default function NotebookComponent({
           />
         </TabPanel>
 
-        <TabPanel value={currentTab} tab={SHARED_TAB.details}>
+        <TabPanel value={currentTab} tab="details">
           <MetadataDisplayComponent project={project} templateId={templateId} />
         </TabPanel>
 
-        <TabPanel value={currentTab} tab={SHARED_TAB.settings}>
+        <TabPanel value={currentTab} tab="settings">
           <NotebookSettings uiSpec={uiSpecification} />
         </TabPanel>
       </Box>

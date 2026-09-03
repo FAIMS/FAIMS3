@@ -11,7 +11,6 @@ const {navigate, routeParams} = vi.hoisted(() => ({
       serverId?: string;
       projectId?: string;
       planId?: string;
-      tab?: string;
     },
   },
 }));
@@ -24,19 +23,18 @@ vi.mock('react-router-dom', async () => ({
 
 /** Reports what the context says, and moves within the notebook on demand. */
 const Consumer = () => {
-  const {notebook, notebookRoute, showPlanTab} = useNotebookRoute();
+  const {notebook, notebookRoute, showPlan} = useNotebookRoute();
   return (
     <>
       <span data-testid="notebook">{JSON.stringify(notebook)}</span>
       <span data-testid="notebook-route">{notebookRoute}</span>
-      <button onClick={() => showPlanTab({planId: 'lab', tab: 'all-records'})}>
-        show a plan tab
-      </button>
+      <button onClick={() => showPlan('lab')}>show a plan</button>
+      <button onClick={() => showPlan()}>change plan</button>
     </>
   );
 };
 
-const renderConsumer = (params: {planId?: string; tab?: string}) => {
+const renderConsumer = (params: {planId?: string}) => {
   routeParams.current = {serverId: 'srv', projectId: 'proj', ...params};
   render(
     <NotebookRouteProvider>
@@ -48,31 +46,36 @@ const renderConsumer = (params: {planId?: string; tab?: string}) => {
 beforeEach(() => navigate.mockClear());
 
 describe('useNotebookRoute', () => {
-  it('names the notebook the route addresses, plan and tab included', () => {
-    renderConsumer({planId: 'lab', tab: 'all-records'});
+  it('names the notebook the route addresses, plan included', () => {
+    renderConsumer({planId: 'lab'});
     expect(screen.getByTestId('notebook')).toHaveTextContent(
       JSON.stringify({
         serverId: 'srv',
         projectId: 'proj',
         planId: 'lab',
-        tab: 'all-records',
       })
     );
   });
 
-  it('returns a screen under the notebook to the plan and tab it was opened from', () => {
-    renderConsumer({planId: 'lab', tab: 'all-records'});
+  it('returns a screen under the notebook to the plan it was opened from', () => {
+    renderConsumer({planId: 'lab'});
     expect(screen.getByTestId('notebook-route')).toHaveTextContent(
-      '/surveys/srv/proj/lab/all-records'
+      '/surveys/srv/proj/lab'
     );
   });
 
   it('replaces the entry on a move within the notebook', async () => {
     renderConsumer({});
-    await userEvent.click(screen.getByRole('button'));
-    expect(navigate).toHaveBeenCalledWith('/surveys/srv/proj/lab/all-records', {
+    await userEvent.click(screen.getByRole('button', {name: 'show a plan'}));
+    expect(navigate).toHaveBeenCalledWith('/surveys/srv/proj/lab', {
       replace: true,
     });
+  });
+
+  it('drops the plan to return to the chooser', async () => {
+    renderConsumer({planId: 'lab'});
+    await userEvent.click(screen.getByRole('button', {name: 'change plan'}));
+    expect(navigate).toHaveBeenCalledWith('/surveys/srv/proj', {replace: true});
   });
 
   it('refuses to serve a screen outside the notebook route', () => {

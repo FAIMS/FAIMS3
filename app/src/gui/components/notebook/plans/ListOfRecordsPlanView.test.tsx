@@ -38,17 +38,19 @@ const record = (recordId: string, reference?: string): MinimalRecordMetadata =>
       reference && planReferenceFor({planId: plan.planId, reference}),
   }) as MinimalRecordMetadata;
 
-const renderView = (planRecords: MinimalRecordMetadata[], tab = 'collected') =>
+const renderView = (
+  planRecords: MinimalRecordMetadata[],
+  currentTab = 'collected'
+) =>
   render(
     <ListOfRecordsPlanView
       {...({
         project: {},
         plan,
-        tab,
+        tab: {current: currentTab, select: vi.fn()},
         uiSpecification: {viewsets: {Site: {label: 'Site'}}, visible_types: []},
         records: {planRecords, syncStatus: {status: {}, recordHashes: {}}},
         actions: {
-          setTab: vi.fn(),
           setQuery: vi.fn(),
           createRecord: vi.fn(),
           navigateToRecord: vi.fn(),

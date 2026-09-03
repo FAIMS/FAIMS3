@@ -36,10 +36,10 @@ const renderView = (planRecords: MinimalRecordMetadata[]) =>
       {...({
         project: {},
         plan,
+        tab: {current: undefined, select: vi.fn()},
         uiSpecification: {viewsets: {Site: {label: 'Site'}}, visible_types: []},
         records: {planRecords, syncStatus: {status: {}, recordHashes: {}}},
         actions: {
-          setTab: vi.fn(),
           setQuery: vi.fn(),
           refreshRecordList: vi.fn(),
         },

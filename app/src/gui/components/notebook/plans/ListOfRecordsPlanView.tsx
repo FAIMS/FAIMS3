@@ -14,19 +14,12 @@ import {
 } from '@mui/material';
 import {useCallback, useMemo} from 'react';
 import {RecordsTable} from '../record_table';
-import {SHARED_TAB, useResolveTab} from '../../../../constants/routes';
 import {NotebookViewComponentProps} from '../types';
 import {config} from '../../../../buildconfig';
 import {planRecordLabel} from './planViewRecords';
 
 // This view's tab slugs, default first
-const TABS = [
-  'planned',
-  'collected',
-  SHARED_TAB.details,
-  SHARED_TAB.settings,
-  SHARED_TAB.map,
-] as const;
+const TABS = ['planned', 'collected', 'details', 'settings', 'map'] as const;
 
 /**
  * A view component for the list of records plan type. Shows pre-populated cards
@@ -36,7 +29,7 @@ const TABS = [
 export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
   const {project, tab, uiSpecification, records, actions, status} = props;
 
-  const currentTab = useResolveTab(TABS, tab, actions.setTab);
+  const currentTab = TABS.find(t => t === tab.current) ?? TABS[0];
 
   // A claimed entry is proof the record exists, but an unclaimed one is not
   // proof it does not: the list can hide records the user may not read, and
@@ -104,7 +97,7 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
 
       <TabContext value={currentTab}>
         <TabList
-          onChange={(event, newValue) => actions.setTab(newValue)}
+          onChange={(event, newValue) => tab.select(newValue)}
           aria-label={`${plan.label} tabs`}
         >
           <Tab
@@ -120,19 +113,19 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
             aria-controls="collected-tabpanel"
           />
           <Tab
-            value={SHARED_TAB.details}
+            value={'details'}
             label="Details"
             id="details-tab"
             aria-controls="details-tabpanel"
           />
           <Tab
-            value={SHARED_TAB.settings}
+            value={'settings'}
             label="Settings"
             id="settings-tab"
             aria-controls="settings-tabpanel"
           />
           <Tab
-            value={SHARED_TAB.map}
+            value={'map'}
             label="Overview Map"
             id="overview-map-tab"
             aria-controls="overview-map-tabpanel"
@@ -200,21 +193,21 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
         </TabPanel>
 
         <TabPanel
-          value={SHARED_TAB.details}
+          value={'details'}
           id="details-tabpanel"
           aria-labelledby="details-tab"
         >
           <props.components.MetadataDisplayComponent />
         </TabPanel>
         <TabPanel
-          value={SHARED_TAB.settings}
+          value={'settings'}
           id="settings-tabpanel"
           aria-labelledby="settings-tab"
         >
           <props.components.NotebookSettings />
         </TabPanel>
         <TabPanel
-          value={SHARED_TAB.map}
+          value={'map'}
           id="overview-map-tabpanel"
           aria-labelledby="overview-map-tab"
         >

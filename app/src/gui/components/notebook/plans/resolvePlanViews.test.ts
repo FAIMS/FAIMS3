@@ -30,32 +30,21 @@ const unregistered = {
   planType: 'Unregistered',
 } as RegisteredPlan;
 
-/** The route params of a notebook opened with neither segment. */
-const noSegments = {planId: undefined, tab: undefined};
+/** The route params of a notebook opened without naming a plan. */
+const noPlan = {planId: undefined};
 
 describe('resolvePlanViews with no plan view', () => {
   it('has no active plan when the notebook has no plan', () => {
-    const r = resolvePlanViews({uiDefinition: {}, ...noSegments, getView});
+    const r = resolvePlanViews({uiDefinition: {}, ...noPlan, getView});
     expect(r.plans).toEqual([]);
     expect(r.active).toBeUndefined();
     expect(r.showChooser).toBe(false);
   });
 
-  it('reads a lone segment as the tab when there is no plan to name', () => {
-    const r = resolvePlanViews({
-      uiDefinition: {},
-      planId: 'details',
-      tab: undefined,
-      getView,
-    });
-    expect(r.showChooser).toBe(false);
-    expect(r.planTab).toBe('details');
-  });
-
   it('skips a plan whose type has no registered view', () => {
     const r = resolvePlanViews({
       uiDefinition: {plans: [unregistered]},
-      ...noSegments,
+      ...noPlan,
       getView,
     });
     expect(r.plans).toEqual([]);
@@ -65,22 +54,20 @@ describe('resolvePlanViews with no plan view', () => {
 });
 
 describe('resolvePlanViews with one plan', () => {
-  it('shows the plan the route names, on the tab it names', () => {
+  it('shows the plan the route names', () => {
     const r = resolvePlanViews({
       uiDefinition: {plans: [counted()]},
       planId: COUNTED_PLAN_TYPE,
-      tab: 'details',
       getView,
     });
     expect(r.showChooser).toBe(false);
     expect(r.active?.plan.planId).toBe(COUNTED_PLAN_TYPE);
-    expect(r.planTab).toBe('details');
   });
 
   it('opens the plan directly, with nothing to choose between', () => {
     const r = resolvePlanViews({
       uiDefinition: {plans: [counted()]},
-      ...noSegments,
+      ...noPlan,
       getView,
     });
     expect(r.showChooser).toBe(false);
@@ -91,11 +78,9 @@ describe('resolvePlanViews with one plan', () => {
     const r = resolvePlanViews({
       uiDefinition: {plans: [counted(), unregistered]},
       planId: COUNTED_PLAN_TYPE,
-      tab: 'details',
       getView,
     });
     expect(r.showChooser).toBe(false);
-    expect(r.planTab).toBe('details');
   });
 
   it('asks rather than open a different plan than the route names', () => {
@@ -104,35 +89,10 @@ describe('resolvePlanViews with one plan', () => {
     const r = resolvePlanViews({
       uiDefinition: {plans: [counted(), unregistered]},
       planId: 'Unregistered',
-      tab: 'details',
       getView,
     });
     expect(r.active).toBeUndefined();
     expect(r.showChooser).toBe(true);
-  });
-
-  it("asks rather than open this plan under an unrenderable plan's segment", () => {
-    // A lone segment, so nothing distinguishes it from a tab slug except that
-    // the notebook declares a plan by that name.
-    const r = resolvePlanViews({
-      uiDefinition: {plans: [counted(), unregistered]},
-      planId: 'Unregistered',
-      tab: undefined,
-      getView,
-    });
-    expect(r.active).toBeUndefined();
-    expect(r.showChooser).toBe(true);
-  });
-
-  it("resolves a lone segment naming no plan as this plan's tab", () => {
-    const r = resolvePlanViews({
-      uiDefinition: {plans: [counted()]},
-      planId: 'details',
-      tab: undefined,
-      getView,
-    });
-    expect(r.active?.plan.planId).toBe(COUNTED_PLAN_TYPE);
-    expect(r.planTab).toBe('details');
   });
 });
 
@@ -142,7 +102,7 @@ describe('resolvePlanViews with several plans', () => {
   };
 
   it('lists every plan that has a view, in declared order', () => {
-    const r = resolvePlanViews({uiDefinition, ...noSegments, getView});
+    const r = resolvePlanViews({uiDefinition, ...noPlan, getView});
     expect(r.plans.map(p => p.plan.planId)).toEqual([
       COUNTED_PLAN_TYPE,
       'lab-samples',
@@ -150,19 +110,14 @@ describe('resolvePlanViews with several plans', () => {
     expect(r.showChooser).toBe(true);
   });
 
-  it('shows the plan the route names, and its own slug', () => {
-    const r = resolvePlanViews({
-      uiDefinition,
-      planId: 'lab-samples',
-      tab: 'details',
-      getView,
-    });
+  it('shows the plan the route names', () => {
+    const r = resolvePlanViews({uiDefinition, planId: 'lab-samples', getView});
     expect(r.active?.plan.planId).toBe('lab-samples');
-    expect(r.planTab).toBe('details');
+    expect(r.showChooser).toBe(false);
   });
 
   it('offers the chooser when the route names no plan', () => {
-    const r = resolvePlanViews({uiDefinition, ...noSegments, getView});
+    const r = resolvePlanViews({uiDefinition, ...noPlan, getView});
     expect(r.active).toBeUndefined();
     expect(r.showChooser).toBe(true);
   });
@@ -170,76 +125,13 @@ describe('resolvePlanViews with several plans', () => {
   it('offers the chooser for an unknown plan id', () => {
     // A stale link names a plan the notebook no longer carries; ask rather
     // than guess which of the others was meant.
-    const r = resolvePlanViews({
-      uiDefinition,
-      planId: 'gone',
-      tab: 'details',
-      getView,
-    });
+    const r = resolvePlanViews({uiDefinition, planId: 'gone', getView});
     expect(r.active).toBeUndefined();
     expect(r.showChooser).toBe(true);
-    // The slug survives, so the chooser can carry it into whichever plan wins
-    expect(r.planTab).toBe('details');
-  });
-
-  it('offers the chooser for a lone segment naming no plan', () => {
-    const r = resolvePlanViews({
-      uiDefinition,
-      planId: 'details',
-      tab: undefined,
-      getView,
-    });
-    expect(r.active).toBeUndefined();
-    expect(r.showChooser).toBe(true);
-    expect(r.planTab).toBe('details');
-  });
-
-  it('opens the plan a lone segment names, carrying no slug', () => {
-    // What the chooser writes when the route carried no slug. The view then
-    // resolves its own default without touching the URL.
-    const r = resolvePlanViews({
-      uiDefinition,
-      planId: 'lab-samples',
-      tab: undefined,
-      getView,
-    });
-    expect(r.active?.plan.planId).toBe('lab-samples');
-    expect(r.planTab).toBeUndefined();
-    expect(r.showChooser).toBe(false);
-  });
-
-  it('reads a lone segment naming a plan as the plan, not as a tab', () => {
-    // The only ambiguity a lone segment carries: a plan id that also reads as
-    // a tab slug. The plan takes it, so the segment always names what the
-    // route's first optional param is for.
-    const r = resolvePlanViews({
-      uiDefinition: {plans: [counted(), list({planId: 'details'})]},
-      planId: 'details',
-      tab: undefined,
-      getView,
-    });
-    expect(r.active?.plan.planId).toBe('details');
-    expect(r.planTab).toBeUndefined();
-  });
-
-  it("leaves that plan's own tabs reachable under it", () => {
-    const r = resolvePlanViews({
-      uiDefinition: {plans: [counted(), list({planId: 'details'})]},
-      planId: 'details',
-      tab: 'details',
-      getView,
-    });
-    expect(r.active?.plan.planId).toBe('details');
-    expect(r.planTab).toBe('details');
   });
 
   it('carries the plan instance so a view need not read the project', () => {
-    const r = resolvePlanViews({
-      uiDefinition,
-      planId: 'lab-samples',
-      tab: 'details',
-      getView,
-    });
+    const r = resolvePlanViews({uiDefinition, planId: 'lab-samples', getView});
     expect(r.active?.plan).toEqual(uiDefinition.plans[1]);
   });
 });

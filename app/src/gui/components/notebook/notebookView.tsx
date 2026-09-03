@@ -38,6 +38,7 @@ import {useQueryClient} from '@tanstack/react-query';
 import {NotebookViewComponentProps} from './types';
 import {localGetDataDb} from '../../../utils/database';
 import {useNotebookRoute} from '../../../context/notebookRoute';
+import {useNotebookTab, usePlanTab} from '../../../context/notebookViewTab';
 import {useNavigate} from 'react-router-dom';
 import NotebookSettings from './settings';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -149,8 +150,8 @@ function NotebookViewWithSpec({
   const dispatch = useAppDispatch();
 
   // Change plan is the way back to the chooser.
-  const {notebook, showPlanTab} = useNotebookRoute();
-  const {planId, tab} = notebook;
+  const {notebook, showPlan} = useNotebookRoute();
+  const {planId} = notebook;
 
   /**
    * Create a new record - function passed in to the view component to create new records,
@@ -240,27 +241,21 @@ function NotebookViewWithSpec({
     plans: planViews,
     active: activePlan,
     showChooser,
-    planTab,
   } = useMemo(
     () =>
       resolvePlanViews({
         uiDefinition: project.uiDefinition,
         planId,
-        tab,
         getView: getNotebookView,
       }),
-    [project.uiDefinition, planId, tab]
+    [project.uiDefinition, planId]
   );
 
-  // A plan view sets only its own slug, so pair it with the plan on screen and
-  // the URL keeps naming both. Without a plan the slug stands alone, which is
-  // the tab-only shape the default notebook view has.
-  const setTab = useCallback(
-    (nextTab: string) => {
-      showPlanTab({planId: activePlan?.plan.planId, tab: nextTab});
-    },
-    [showPlanTab, activePlan]
-  );
+  // A plan's tab is its own, so a plan free to model screens or regions rather
+  // than tabs leaves the tabs the default view carries alone.
+  const notebookTab = useNotebookTab();
+  const planTab = usePlanTab();
+  const tab = activePlan ? planTab : notebookTab;
 
   // Completion roll-up per record the plan on screen claims, for its cell's
   // status; only that plan's view can display it, so the walks stop at its own
@@ -288,7 +283,7 @@ function NotebookViewWithSpec({
   const props: NotebookViewComponentProps = useMemo(
     () => ({
       project,
-      tab: planTab,
+      tab,
       plan: activePlan?.plan,
       uiSpecification: uiSpecification,
       actions: {
@@ -296,7 +291,6 @@ function NotebookViewWithSpec({
         setQuery,
         createRecord,
         navigateToRecord,
-        setTab,
       },
       status: {
         // Never-loaded, not merely in-flight: the hook's isLoading stays true
@@ -344,14 +338,13 @@ function NotebookViewWithSpec({
       setQuery,
       createRecord,
       navigateToRecord,
-      setTab,
+      tab,
       isAllowedToAddRecords,
       isDownloadingRecords,
       records,
       recordStatus.data,
       planRecordStatusReports,
       planRecords,
-      planTab,
       activePlan,
     ]
   );
@@ -362,11 +355,7 @@ function NotebookViewWithSpec({
       <PlanChooser
         plans={planViews.map(({plan}) => plan)}
         heading={uiSpecification.settings.planChooserMarkdown}
-        // Keep any slug the link carried, so an unqualified deep link still
-        // lands on its tab.
-        onSelect={(chosenPlanId: string) =>
-          showPlanTab({planId: chosenPlanId, tab: planTab})
-        }
+        onSelect={showPlan}
       />
     );
   }
@@ -383,7 +372,7 @@ function NotebookViewWithSpec({
         <Button
           size="small"
           startIcon={<ArrowBackIcon />}
-          onClick={() => showPlanTab({})}
+          onClick={() => showPlan()}
           data-testid="plan-change"
           sx={{alignSelf: 'flex-start', textTransform: 'none'}}
         >
@@ -400,5 +389,5 @@ function NotebookViewWithSpec({
   // TODO: port this component to use the same interface
   // as our custom plan view components once we have sorted
   // out what that interface looks like
-  return <NotebookComponent project={project} tab={planTab} setTab={setTab} />;
+  return <NotebookComponent project={project} tab={tab} />;
 }

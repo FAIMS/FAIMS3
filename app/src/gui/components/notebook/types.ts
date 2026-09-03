@@ -4,6 +4,7 @@ import {
   type RecordStatusReport,
   type RegisteredPlan,
 } from '@faims3/data-model';
+import {NotebookViewTab} from '../../../context/notebookViewTab';
 import {Project} from '../../../context/slices/projectSlice';
 import {RecordStatus} from '../../../utils/recordAudit';
 
@@ -61,8 +62,6 @@ interface ActionProps {
   ) => Promise<void>;
   // Navigate to the view page for the given record
   navigateToRecord: (record: MinimalRecordMetadata) => void;
-  // Show the given tab, putting its slug in the URL
-  setTab: (tab: string) => void;
 }
 
 // Components that might be used in the notebook display
@@ -74,10 +73,10 @@ interface ComponentProps {
 
 export interface NotebookViewComponentProps {
   project: Project;
-  // The tab slug from the URL, which a view resolves with `useResolveTab`.
-  // Scoped to this view's plan: the plan has a route segment of its own, so
-  // this is only ever the view's own slug.
-  tab?: string;
+  // The tab this view is on. Scoped to the view, and held above the record
+  // screens nested under the notebook route, so opening a record and coming
+  // back returns to it.
+  tab: NotebookViewTab;
   // The plan instance this view is rendering. A notebook may carry several, so
   // a view must read this rather than reaching into the project for `plan`.
   plan?: RegisteredPlan;

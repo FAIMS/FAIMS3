@@ -1,8 +1,8 @@
 /**
  * @file The notebook a screen sits in, and the moves within it. Everything
- * under the notebook route reads the plan and tab from here rather than from
- * the route's own params, so a screen that needs more of them later gains it
- * here instead of gaining another segment.
+ * under the notebook route reads the plan from here rather than from the
+ * route's own params, so a screen that needs more of it later gains it here
+ * instead of gaining another segment.
  */
 
 import {createContext, ReactNode, useContext, useMemo} from 'react';
@@ -11,16 +11,12 @@ import * as ROUTES from '../constants/routes';
 import {RecordRouteNotebook} from '../constants/routes';
 
 export type NotebookRouteContextType = {
-  /** The notebook on screen with the plan and tab it stands on: what a link under it is built from. */
+  /** The notebook on screen with the plan it stands on: what a link under it is built from. */
   notebook: RecordRouteNotebook;
-  /** Where a screen under the notebook returns to, the plan and tab it was opened from included. */
+  /** Where a screen under the notebook returns to, the plan it was opened from included. */
   notebookRoute: string;
-  /**
-   * The plan and tab to show, both absolute: a lone trailing segment reads as
-   * either, so only the notebook view, which knows the plans, can say what the
-   * pair is.
-   */
-  showPlanTab: (next: {planId?: string; tab?: string}) => void;
+  /** The plan to show, or none of them, which is the chooser. */
+  showPlan: (planId?: string) => void;
 };
 
 const NotebookRouteContext = createContext<
@@ -43,11 +39,10 @@ export const useNotebookRoute = () => {
 
 /** Mounted on the notebook route, so the notebook view and the record screens under it share one answer. */
 export const NotebookRouteProvider = ({children}: {children: ReactNode}) => {
-  const {serverId, projectId, planId, tab} = useParams<{
+  const {serverId, projectId, planId} = useParams<{
     serverId: string;
     projectId: string;
     planId?: string;
-    tab?: string;
   }>();
   const navigate = useNavigate();
 
@@ -57,24 +52,23 @@ export const NotebookRouteProvider = ({children}: {children: ReactNode}) => {
       serverId: serverId as string,
       projectId: projectId as string,
       planId,
-      tab,
     };
     return {
       notebook,
       notebookRoute: ROUTES.getNotebookRoute(notebook),
-      // Every move within a notebook replaces, plan and tab alike, so leaving
-      // one costs a single Back press.
-      showPlanTab: (next: {planId?: string; tab?: string}) =>
+      // Every move within a notebook replaces, so leaving one costs a single
+      // Back press.
+      showPlan: (nextPlanId?: string) =>
         navigate(
           ROUTES.getNotebookRoute({
             serverId: notebook.serverId,
             projectId: notebook.projectId,
-            ...next,
+            planId: nextPlanId,
           }),
           {replace: true}
         ),
     };
-  }, [serverId, projectId, planId, tab, navigate]);
+  }, [serverId, projectId, planId, navigate]);
 
   return (
     <NotebookRouteContext.Provider value={value}>
