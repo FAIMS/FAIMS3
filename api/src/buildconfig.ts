@@ -31,7 +31,12 @@
  *   dedicated exports for DI / test replacement.
  */
 
-import {configHelpers, slugify} from '@faims3/data-model';
+import {
+  configHelpers,
+  RECORDS_HYDRATED_PAGE_LIMIT_DEFAULT,
+  RECORDS_HYDRATED_PAGE_LIMIT_MAX,
+  slugify,
+} from '@faims3/data-model';
 import {existsSync} from 'fs';
 import {z} from 'zod';
 import {
@@ -395,6 +400,33 @@ const EnvSchema = z
         }
         return parsed;
       }),
+    /**
+     * Max records per GET …/records/hydrated page. Default 150; clamped to
+     * 1–500. Hydrated pages carry full field payloads (e.g. MapFormField
+     * polygons), so this stays well below the metadata list cap of 500.
+     */
+    RECORDS_HYDRATED_PAGE_LIMIT: z
+      .string()
+      .optional()
+      .transform((v): number => {
+        if (configHelpers.isBlank(v)) {
+          return RECORDS_HYDRATED_PAGE_LIMIT_DEFAULT;
+        }
+        const parsed = parseInt(v, 10);
+        if (Number.isNaN(parsed) || parsed < 1) {
+          console.warn(
+            `Invalid value "${v}" for RECORDS_HYDRATED_PAGE_LIMIT. Must be a positive integer. Falling back to default ${RECORDS_HYDRATED_PAGE_LIMIT_DEFAULT}.`
+          );
+          return RECORDS_HYDRATED_PAGE_LIMIT_DEFAULT;
+        }
+        if (parsed > RECORDS_HYDRATED_PAGE_LIMIT_MAX) {
+          console.warn(
+            `RECORDS_HYDRATED_PAGE_LIMIT ${parsed} exceeds max ${RECORDS_HYDRATED_PAGE_LIMIT_MAX}; clamping.`
+          );
+          return RECORDS_HYDRATED_PAGE_LIMIT_MAX;
+        }
+        return parsed;
+      }),
     /** Present when running under Jest; contributes to `runningUnderTest`. */
     JEST_WORKER_ID: z.string().optional(),
     /** Node environment; `'test'` contributes to `runningUnderTest`. */
@@ -485,6 +517,7 @@ const EnvSchema = z
       jsonBodyLimit: env.JSON_BODY_LIMIT,
       urlencodedBodyLimit: env.URLENCODED_BODY_LIMIT,
       restoreUploadMaxBytes: env.RESTORE_UPLOAD_MAX_BYTES,
+      recordsHydratedPageLimit: env.RECORDS_HYDRATED_PAGE_LIMIT,
       localCouchdbAuth,
       conductorInstanceName,
       localLoginEnabled: env.DISABLE_LOCAL_LOGIN,

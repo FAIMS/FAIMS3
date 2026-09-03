@@ -17,6 +17,8 @@ FAIMS3 Developer Documentation
    markdown/RecordsCRUDApi.md
    markdown/NotebookDefinition.md
    markdown/CouchBackupRecoveryGuideAWS.md
+   markdown/PollingHydratedRecords.md
+   markdown/GeospatialExport.md
    markdown/Long-lived-tokens.md
    markdown/TokenManagement.md
    markdown/TestDatasetSeeding.md
