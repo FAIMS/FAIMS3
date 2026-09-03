@@ -32,7 +32,10 @@ operators available depend on the type of the field.
 
 For select and checkbox
 values you will see _equal_ and _not equal_ which compare the field value to
-one of the possible values in the field.
+one of the possible values in the field. For Select single fields you can also
+use _is-one-of_ and _is-not-one-of_ to compare against several options at once
+— for example, show a section when _Rock Type_ is one of _Igneous_ or
+_Metamorphic_.
 
 For fields with a string value you will
 also see _greater_, _less_, _contains_ and _regex_. The _greater_ and _less_
@@ -60,6 +63,8 @@ For comparing a field's value against a single value.
 | --------------------------- | -------------------------------------------------------------- |
 | **equal**                   | Field value matches the specified value exactly.               |
 | **not-equal**               | Field value does not match the specified value.                |
+| **is-one-of**               | Field value is any of the specified options.                   |
+| **is-not-one-of**           | Field value is none of the specified options.                  |
 | **greater**                 | Field value is greater than the specified number.              |
 | **less**                    | Field value is less than the specified number.                 |
 | **contains**                | Field value contains the specified substring.                  |
