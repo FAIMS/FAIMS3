@@ -6,6 +6,9 @@
  * Every step here navigates by clicking, since loading a URL afresh is what
  * drops the context. That a tab the user picked survives the record screen
  * mounting over it is pinned by `notebookViewTab.test.tsx`.
+ *
+ * The editor test runs last: the editor carries no Back control, so nothing can
+ * follow it.
  */
 import {loginAppPersona} from '../../helpers/auth.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
@@ -84,29 +87,17 @@ describe('App — notebook tab in context', () => {
     await captureStep({surface: 'app', label: 'tab-context-back-to-list'});
   });
 
-  it('should nest the editor under the notebook, naming no tab', async () => {
-    const recordId = await openFirstRecord(notebookUrl);
-    const edit = await $('button*=Edit record');
-    await edit.waitForClickable({timeout: 20000});
-    await edit.click();
-    await waitForUrl(
-      url =>
-        url.replace(/[?#].*$/, '') === `${notebookUrl}/records/${recordId}`,
-      {
-        timeout: 20000,
-        timeoutMsg: 'Expected the editor route nested under the notebook',
-      }
-    );
-    await captureStep({surface: 'app', label: 'tab-context-edit'});
-  });
-
   it('should return to the list after deleting the record', async () => {
-    const back = await $('[aria-label="Back"]');
-    await back.waitForClickable({timeout: 15000});
-    await back.click();
+    // A record of its own to delete, so the editor test after it still has one
+    await AppRecordsPage.createTextRecord(`${noteText} spare`);
+    await byTestId('app-notebook-tab-my-records').click();
     await waitForTab('my-records');
 
     await openFirstRecord(notebookUrl);
+    // Delete sits on the record's own Info tab, not the one it opens on
+    const info = await $('[aria-label="Record view tabs"]').$('button*=Info');
+    await info.waitForClickable({timeout: 15000});
+    await info.click();
     await waitForTestId('delete-btn', {timeout: 20000});
     await byTestId('delete-btn').click();
     // The confirm button stays disabled until the acknowledgement is ticked
@@ -121,5 +112,21 @@ describe('App — notebook tab in context', () => {
     });
     await waitForTab('my-records');
     await captureStep({surface: 'app', label: 'tab-context-after-delete'});
+  });
+
+  it('should nest the editor under the notebook, naming no tab', async () => {
+    const recordId = await openFirstRecord(notebookUrl);
+    const edit = await $('button*=Edit record');
+    await edit.waitForClickable({timeout: 20000});
+    await edit.click();
+    await waitForUrl(
+      url =>
+        url.replace(/[?#].*$/, '') === `${notebookUrl}/records/${recordId}`,
+      {
+        timeout: 20000,
+        timeoutMsg: 'Expected the editor route nested under the notebook',
+      }
+    );
+    await captureStep({surface: 'app', label: 'tab-context-edit'});
   });
 });
