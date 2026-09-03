@@ -19,3 +19,8 @@ dist/
 
 # generated assets
 public
+
+# Vitest browser dumps a PNG next to the spec on failure. These are local
+# debug artifacts (machine-, theme-, and window-size-specific), not visual
+# baselines — same class of file as e2e/screenshots.
+**/__screenshots__/

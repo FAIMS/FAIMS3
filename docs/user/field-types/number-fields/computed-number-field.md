@@ -105,6 +105,9 @@ the record is next opened or saved; if the parent changes in the
 meantime, the stored value reflects the parent as of the record's last
 save.
 
+The same reference can be used in
+[field and section conditions](../../authoring/conditions.md).
+
 ### Referencing Linked Record Values
 
 When the form holds a
@@ -129,6 +132,9 @@ blank. The value updates while editing whenever the link is changed,
 and otherwise re-derives when the record is opened or saved — if the
 linked record changes in the meantime, the stored value reflects it as
 of this record's last save.
+
+The same reference can be used in
+[field and section conditions](../../authoring/conditions.md).
 
 ### Shared Field Options
 
