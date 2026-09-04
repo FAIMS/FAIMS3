@@ -263,11 +263,6 @@ function buildEnvMap(
     ios: {
       VITE_APPLE_BUNDLE_IDENTIFIER: base.VITE_APPLE_BUNDLE_IDENTIFIER,
       VITE_APP_STORE_CONNECT_TEAM_ID: base.VITE_APP_STORE_CONNECT_TEAM_ID,
-      DEVELOPER_PORTAL_TEAM_ID: coalesce(
-        mobile.ios?.developerPortalTeamId,
-        mobile.ios?.appStoreConnectTeamId,
-        ''
-      ),
       FASTLANE_APPLE_ID: coalesce(mobile.ios?.appleId, ''),
       FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: coalesce(
         mobile.ios?.appleApplicationSpecificPassword,

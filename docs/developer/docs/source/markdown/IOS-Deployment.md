@@ -263,7 +263,7 @@ necessarily leak authentication against non target applications.
 
 Both variants still need the shared Match and team identity values:
 `MATCH_GIT_URL`, `MATCH_PASSWORD`, `GIT_AUTHORIZATION`,
-`VITE_APPLE_BUNDLE_IDENTIFIER` / `APPLE_BUNDLE_IDENTIFIER`, `DEVELOPER_PORTAL_TEAM_ID`, and
+`VITE_APPLE_BUNDLE_IDENTIFIER` / `APPLE_BUNDLE_IDENTIFIER`, and
 `APP_STORE_CONNECT_TEAM_ID` (`VITE_APP_STORE_CONNECT_TEAM_ID`).
 
 ### Creating an Individual API key
