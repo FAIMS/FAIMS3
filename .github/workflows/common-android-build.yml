@@ -1,0 +1,187 @@
+name: Reusable Android Mobile Build
+
+on:
+  workflow_call:
+    inputs:
+      android_deploy_track:
+        description: Google Play deploy track.
+        required: false
+        type: string
+        default: internal
+      enable_bugsnag_sourcemaps:
+        description: Upload Bugsnag sourcemaps after building the web app.
+        required: false
+        type: boolean
+        default: false
+      serverprefix:
+        description: Optional serverprefix exported before build.
+        required: false
+        type: string
+        default: ''
+      config_environment:
+        description: The configuration environment to use for the build.
+        required: true
+        type: string
+    secrets:
+      GIT_AUTHORIZATION:
+        required: true
+      SOPS_AGE_KEY:
+        required: true
+
+jobs:
+  android-build:
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-pnpm-store
+        with:
+          path: ~/.pnpm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Setup sops (encryption tool for managing secrets)
+        uses: nhedger/setup-sops@v2
+        with:
+          version: 3.13.3
+
+      - name: Setup age (encryption tool used by sops)
+        uses: alessiodionisi/setup-age-action@v1.4.0
+        with:
+          version: 1.3.2
+
+      - name: Declare some variables
+        shell: bash
+        run: |
+          echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
+          echo "app_version=$(jq -r '.version' app/package.json)" >> "$GITHUB_ENV"
+
+      - name: Create version string
+        shell: bash
+        run: |
+          echo "version_string=v${app_version}-android-#${sha_short}" >> "$GITHUB_ENV"
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Checkout deployment config repository
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ vars.APP_CONFIG_REPO_SLUG }}
+          token: ${{ secrets.GIT_AUTHORIZATION }}
+          ref: ${{ vars.MOBILE_CONFIG_BRANCH || 'main' }}
+          path: config_repo
+
+      - name: Generate build environment from deployment config
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          set -euo pipefail
+          CONFIG_ENV="${{ inputs.config_environment }}"
+          BASE_CONFIG="config_repo/mobile/${CONFIG_ENV}/build-config.json"
+          SECRETS_CONFIG="config_repo/mobile/${CONFIG_ENV}/build-secrets.enc.json"
+
+          if [[ ! -f "$BASE_CONFIG" ]]; then
+            echo "Missing base config: $BASE_CONFIG" >&2
+            exit 1
+          fi
+
+          if [[ -f "$SECRETS_CONFIG" ]]; then
+            jq -s '.[0] * .[1]' "$BASE_CONFIG" <(sops --decrypt "$SECRETS_CONFIG") \
+              | pnpm generate-build-config --config - --platform android \
+              | grep -E '^[A-Z0-9_]+=' >> "$GITHUB_ENV"
+          else
+            pnpm generate-build-config --config "$BASE_CONFIG" --platform android \
+              | grep -E '^[A-Z0-9_]+=' >> "$GITHUB_ENV"
+          fi
+
+      - name: Set up adopt JDK 1.21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'adopt'
+          java-version: '21'
+
+      - name: Set up ruby env
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3.1
+          bundler-cache: true
+          working-directory: app/android
+
+      - name: Decode Service Account Key JSON File
+        uses: timheuer/base64-to-file@v1
+        id: service_account_json_file
+        with:
+          fileName: 'fastlane-android-google-play-key.json'
+          encodedString: ${{ env.GPLAY_SERVICE_ACCOUNT_KEY_JSON }}
+
+      - name: Decode Keystore File
+        uses: timheuer/base64-to-file@v1
+        id: android_keystore
+        with:
+          fileName: 'android-signing-keystore.jks'
+          encodedString: ${{ env.KEYSTORE_FILE }}
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Building webapp
+        shell: bash
+        run: |
+          export platform="github-actions-play"
+          if [[ -n "${{ inputs.serverprefix }}" ]]; then
+            export serverprefix="${{ inputs.serverprefix }}"
+          fi
+
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      - name: Upload Bugsnag sourcemaps
+        if: ${{ inputs.enable_bugsnag_sourcemaps }}
+        run: |
+          cd app
+          ./bin/bugsnag-sourcemaps.sh ANDROID
+
+      - run: pnpm --filter=@faims3/app run app-update android
+
+      - run: pnpm --filter=@faims3/app run webapp-sync -- --deployment android
+
+      - name: Fastlane
+        run: |
+          cd app/android
+          bundle install
+          VERSION_NAME="$version_string" bundle exec fastlane deploy_fieldmark
+        env:
+          APP_ID: ${{ env.APP_ID }}
+          ANDROID_RELEASE_STATUS: ${{ env.ANDROID_RELEASE_STATUS }}
+          ANDROID_DEPLOY_TRACK: ${{ inputs.android_deploy_track }}
+          JAVA_KEYSTORE: ${{ steps.android_keystore.outputs.filePath }}
+          JAVA_KEYSTORE_PASSWORD: ${{ env.JAVA_KEYSTORE_PASSWORD }}
+          JAVA_KEY: ${{ env.JAVA_KEY }}
+          JAVA_KEY_PASSWORD: ${{ env.JAVA_KEY_PASSWORD }}
+          ANDROID_JSON_KEY_FILE: ${{ steps.service_account_json_file.outputs.filePath }}
