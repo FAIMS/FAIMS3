@@ -98,7 +98,7 @@
     "@vitest/browser-webdriverio": "^4.1.8",
     "autoprefixer": "^10.4.20",
     "jsdom": "^22.1.0",
-    "postcss": "^8.5.10",
+    "postcss": "^8.5.23",
     "tailwindcss": "^3.4.16",
     "typescript": "^7.0.2",
     "vite": "^7.3.2",
