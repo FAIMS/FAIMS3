@@ -29,6 +29,15 @@ import {View} from 'ol';
 import {Extent} from 'ol/extent';
 import Feature from 'ol/Feature';
 import {Point} from 'ol/geom';
+import {
+  DoubleClickZoom,
+  DragPan,
+  KeyboardPan,
+  KeyboardZoom,
+  MouseWheelZoom,
+  PinchRotate,
+  PinchZoom,
+} from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import {transform, transformExtent} from 'ol/proj';
@@ -54,14 +63,19 @@ import {
 } from './controls/map-controls';
 import {MapControlsOverlay, MapControlStack} from './controls/primitives';
 import {MapControlThemeProvider} from './mapTheme';
-import {createTileStore} from './TileStore';
 import {MapConfig} from './types';
+import {createTileStore} from './tileDB/TileStore';
 
 export const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
 const MIN_ZOOM = 12;
 
 const LAST_LOCATION_KEY = 'last_map_center';
+
+const MAP_VIEW_ANIMATION_DURATION_MS = 800;
+const MAP_VIEW_FIT_PADDING_PX = [24, 24, 24, 24];
+// fallback to Sydney
+const FALLBACK_MAP_CENTER: [number, number] = [151.2093, -33.8688];
 
 function saveLastLocation(coords: [number, number]) {
   try {
@@ -120,6 +134,12 @@ export interface MapComponentProps {
 
   /** When false, hides zoom, compass, layer toggle, and location controls. */
   showControls?: boolean;
+
+  /** Whether to auto-fly to the first valid current location. Defaults to true. */
+  autoFlyToCurrentLocation?: boolean;
+
+  /** When true, disables user map navigation such as pan, zoom, and rotation. */
+  lockNavigation?: boolean;
 }
 
 /**
@@ -142,7 +162,10 @@ export const MapComponent = (props: MapComponentProps) => (
 
 /** OpenLayers map with optional controls, GPS overlay, and layer toggle. */
 const MapComponentImpl = (props: MapComponentProps) => {
+  // Defaults
   const showControls = props.showControls ?? true;
+  const autoFlyToCurrentLocation = props.autoFlyToCurrentLocation ?? true;
+
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [zoomLevel, setZoomLevel] = useState(props.zoom || MIN_ZOOM); // Default zoom level
   const [attribution, setAttribution] = useState<string | null>(null);
@@ -194,38 +217,14 @@ const MapComponentImpl = (props: MapComponentProps) => {
 
   // Use the custom hook for location which we only need if we don't have a center or extent
   // passed in props
-  const {data: currentPosition, isLoading: loadingLocation} =
-    useCurrentLocation();
+  const {data: currentPosition} = useCurrentLocation();
 
   const positionLayerRef = useRef<VectorLayer>();
   const watchIdRef = useRef<string | null>(null);
   const liveLocationRef = useRef<Position | null>(null);
 
-  // Determine map center based on props or current location.
-  // Priority: explicit center > extent > live GPS > cached position > last saved location > Sydney
-  const mapCenter = useMemo(() => {
-    if (props.center) {
-      return props.center;
-    } else if (props.extent) {
-      // find the centre of the extent and return that
-      const centerX = (props.extent[0] + props.extent[2]) / 2;
-      const centerY = (props.extent[1] + props.extent[3]) / 2;
-      return [centerX, centerY];
-    }
-    // otherwise rely on current location
-    if (liveLocationRef.current) {
-      return getCoordinates(liveLocationRef.current ?? undefined);
-    } else if (!loadingLocation && currentPosition) {
-      return getCoordinates(currentPosition);
-    } else {
-      // use the last location the user had the map open at, so it feels
-      // consistent even when GPS is slow or unavailable
-      const cached = loadLastLocation();
-      if (cached) return cached;
-      // final fallback to Sydney
-      return [151.2093, -33.8688];
-    }
-  }, [props.center, props.extent, currentPosition, loadingLocation]);
+  const hasInitialisedViewRef = useRef(false);
+  const hasHandledFirstCurrentLocationRef = useRef(false);
 
   /**
    * Initializes the map instance with base tile layers and zoom controls.
@@ -251,7 +250,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
     const view = new View({
       projection: defaultMapProjection,
       zoom: zoomLevel,
-      minZoom: isOnline ? 0 : 12,
+      minZoom: 0,
       maxZoom: MAX_ZOOM,
     });
 
@@ -320,6 +319,122 @@ const MapComponentImpl = (props: MapComponentProps) => {
       }
     };
   }, []);
+
+  // Enable or disable user map navigation while leaving non-navigation
+  // interactions, such as drawing, unaffected.
+  useEffect(() => {
+    if (!map || props.lockNavigation === undefined) {
+      return;
+    }
+
+    map.getInteractions().forEach(interaction => {
+      if (
+        interaction instanceof DragPan ||
+        interaction instanceof MouseWheelZoom ||
+        interaction instanceof DoubleClickZoom ||
+        interaction instanceof PinchZoom ||
+        interaction instanceof PinchRotate ||
+        interaction instanceof KeyboardPan ||
+        interaction instanceof KeyboardZoom
+      ) {
+        interaction.setActive(!props.lockNavigation);
+      }
+    });
+  }, [map, props.lockNavigation]);
+
+  /**
+   * Apply the configured extent/center to the map view.
+   *
+   * The first run establishes the initial view:
+   * - extent takes priority over center, otherwise the cached/fallback location is used.
+   * - Initial view positioning is applied immediately without animation.
+   *
+   * On later runs, changes to extent or center are animated.
+   * If either is cleared, the current map position is preserved.
+   */
+  useEffect(() => {
+    if (!map) {
+      return;
+    }
+
+    const view = map.getView();
+    const isInitialView = !hasInitialisedViewRef.current;
+
+    // Track the initial view separately from later prop changes.
+    if (isInitialView) {
+      hasInitialisedViewRef.current = true;
+    }
+
+    // Extent takes priority over center. Later extent changes are animated.
+    if (props.extent) {
+      view.cancelAnimations();
+      view.fit(
+        transformExtent(props.extent, 'EPSG:4326', view.getProjection()),
+        {
+          padding: MAP_VIEW_FIT_PADDING_PX,
+          maxZoom: props.zoom,
+          duration: isInitialView ? undefined : MAP_VIEW_ANIMATION_DURATION_MS,
+        }
+      );
+
+      return;
+    }
+
+    if (props.center) {
+      const center = transform(props.center, 'EPSG:4326', defaultMapProjection);
+
+      // Apply the configured center immediately on first load, then animate changes.
+      if (isInitialView) {
+        view.setCenter(center);
+      } else {
+        view.cancelAnimations();
+        view.animate({
+          center,
+          duration: MAP_VIEW_ANIMATION_DURATION_MS,
+        });
+      }
+
+      return;
+    }
+
+    // Only use the cached/fallback position when the map first opens.
+    // If center/extent is later cleared, preserve the current map view.
+    if (isInitialView) {
+      const initialCenter = loadLastLocation() ?? FALLBACK_MAP_CENTER;
+
+      view.setCenter(
+        transform(initialCenter, 'EPSG:4326', defaultMapProjection)
+      );
+    }
+  }, [map, props.center, props.extent, props.zoom]);
+
+  // Optionally auto-fly to the first valid current GPS location.
+  useEffect(() => {
+    if (
+      !map ||
+      !autoFlyToCurrentLocation ||
+      !currentPosition ||
+      hasHandledFirstCurrentLocationRef.current
+    ) {
+      return;
+    }
+
+    const coords = getCoordinates(currentPosition);
+    if (!coords) {
+      return;
+    }
+
+    // Only handle the first successful current location result.
+    // Later location updates only update the GPS marker, not the map view.
+    hasHandledFirstCurrentLocationRef.current = true;
+
+    const view = map.getView();
+    view.cancelAnimations();
+    view.animate({
+      center: transform(coords, 'EPSG:4326', defaultMapProjection),
+      duration: MAP_VIEW_ANIMATION_DURATION_MS,
+    });
+  }, [map, currentPosition, autoFlyToCurrentLocation]);
 
   // Create a layer to show the live cursor, return functions
   // that can be used to update the cursor location and accuracy
@@ -424,45 +539,18 @@ const MapComponentImpl = (props: MapComponentProps) => {
   const centerMap = () => {
     if (map && liveLocationRef.current) {
       const coords = getCoordinates(liveLocationRef.current);
+
       if (coords) {
-        const center = transform(coords, 'EPSG:4326', defaultMapProjection);
-        map.getView().setCenter(center);
+        const view = map.getView();
+
+        view.cancelAnimations();
+        view.animate({
+          center: transform(coords, 'EPSG:4326', defaultMapProjection),
+          duration: MAP_VIEW_ANIMATION_DURATION_MS,
+        });
       }
     }
   };
-
-  // Here we set the extent of the map or just the center depending on
-  // what information we are given
-  useEffect(() => {
-    if (map && mapCenter) {
-      // move the map to the center and fit the extent
-      if (mapCenter) {
-        const center = transform(mapCenter, 'EPSG:4326', defaultMapProjection);
-
-        // we set the map extent if we were given one or if not,
-        // set the map center which will either have been passed
-        // in or derived from the current location
-        if (props.extent) {
-          // need to transform the extent to the map projection
-          map
-            .getView()
-            .fit(
-              transformExtent(
-                props.extent,
-                'EPSG:4326',
-                map.getView().getProjection()
-              ),
-              {
-                padding: [20, 20, 20, 20],
-                maxZoom: props.zoom,
-              }
-            );
-        } else {
-          map.getView().setCenter(center);
-        }
-      }
-    }
-  }, [map, mapCenter, props.center, props.extent, props.zoom]);
 
   // callback to add the map to the DOM
   // here is where we actually create the map if it doesn't exist already

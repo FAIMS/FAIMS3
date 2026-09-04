@@ -9,7 +9,7 @@ import type {OfflineMapRegion} from '@faims3/data-model';
 import {boundingExtent} from 'ol/extent';
 import {transformExtent} from 'ol/proj';
 import type {MapConfig} from './types';
-import {VectorTileStore, type StoredTileSet} from './TileStore';
+import {StoredTileSet, VectorTileStore} from './tileDB';
 
 /** Download lifecycle state derived from a stored tile set record. */
 export type TileSetDownloadStatus =
@@ -60,14 +60,13 @@ export function extent4326ToOfflineMapRegion(
   };
 }
 
-/** Internal tile-set name for a project-associated offline map download. */
-export function projectOfflineMapSetName(projectId: string): string {
-  return `@project/${projectId}`;
-}
-
-/** Whether a tile set name was created by {@link projectOfflineMapSetName}. */
-export function isProjectOfflineMapSetName(setName: string): boolean {
-  return setName.startsWith('@project/');
+/** Convert an EPSG:3857 tile-set extent into a preview region. */
+export function extent3857ToOfflineMapRegion(
+  extent3857: number[]
+): OfflineMapRegion {
+  return extent4326ToOfflineMapRegion(
+    transformExtent(extent3857, 'EPSG:3857', 'EPSG:4326')
+  );
 }
 
 /** User-visible label for a stored tile set. */
