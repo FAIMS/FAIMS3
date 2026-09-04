@@ -12,6 +12,7 @@ import {
   buildParentFieldTypes,
   buildRelatedFieldTypes,
   encodeMetadataRef,
+  isReferenceableMetadataKey,
   PARENT_REFERENCE_PREFIX,
   UiSpecModel,
 } from '@faims3/data-model';
@@ -118,11 +119,13 @@ export const TemplatedStringFieldEditor = ({
   // Notebook metadata usable as {{_METADATA.key}}.
   const metadataVariables = useMemo(
     () =>
-      Object.keys(custom).map(key => ({
-        name: encodeMetadataRef(key),
-        displayName: `Notebook: ${key}`,
-        type: 'field' as const,
-      })),
+      Object.keys(custom)
+        .filter(isReferenceableMetadataKey)
+        .map(key => ({
+          name: encodeMetadataRef(key),
+          displayName: `Notebook: ${key}`,
+          type: 'field' as const,
+        })),
     [custom]
   );
 

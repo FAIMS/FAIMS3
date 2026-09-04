@@ -2,6 +2,7 @@ import {
   buildParentFieldTypes,
   buildRelatedFieldTypes,
   decodeParentRef,
+  isReferenceableMetadataKey,
   splitRelatedReference,
   UiSpecModel,
   decodeMetadataRef,
@@ -171,7 +172,7 @@ export const useConditionRuleFieldContext = (props: {
       });
     }
     // Notebook metadata keys, referenceable as _METADATA.<key>.
-    for (const key of Object.keys(custom)) {
+    for (const key of Object.keys(custom).filter(isReferenceableMetadataKey)) {
       const ref = encodeMetadataRef(key);
       defs[ref] = metadataFieldDef(key);
       entries.push({

@@ -27,6 +27,18 @@ import {ExprType} from './expressions';
 /** Reserved prefix addressing a key in the notebook's custom metadata. */
 export const METADATA_REFERENCE_PREFIX = '_METADATA.';
 
+/** Keys usable in references: letters, digits, hyphen, underscore. Dots break
+ * template lookup (Mustache nesting), spaces and braces break the reference
+ * syntax itself. */
+export const METADATA_KEY_PATTERN = /^[A-Za-z0-9_-]+$/;
+
+/** Whether a custom metadata key can be referenced in expressions, templates
+ * and conditions. Unsafe keys still work as plain metadata - they are just
+ * not offered or accepted as references. */
+export function isReferenceableMetadataKey(key: string): boolean {
+  return METADATA_KEY_PATTERN.test(key);
+}
+
 /** Every metadata value is a string. */
 export const METADATA_EXPR_TYPE: ExprType = 'string';
 

@@ -41,7 +41,7 @@ import {
   informationUpdated,
 } from '../state/metadata-reducer';
 import {settingsUpdated} from '../store/slices/uiSpec';
-import {encodeMetadataRef} from '@faims3/data-model';
+import {encodeMetadataRef, METADATA_KEY_PATTERN} from '@faims3/data-model';
 import {
   findFieldDependencyReferences,
   type FieldDependencyReference,
@@ -118,6 +118,13 @@ export const InfoPanel = () => {
     const key = customFieldName.trim();
     if (!key) {
       setAlert('Enter a field name.');
+      return;
+    }
+    if (!METADATA_KEY_PATTERN.test(key)) {
+      setAlert(
+        'Field names can only use letters, numbers, hyphens and underscores, ' +
+          'so they can be referenced in conditions, templates and expressions.'
+      );
       return;
     }
     if (key in custom) {

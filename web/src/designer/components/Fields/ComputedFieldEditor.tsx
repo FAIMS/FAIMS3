@@ -33,6 +33,7 @@ import {
   decodeMetadataRef,
   encodeMetadataRef,
   extractExpressionReferences,
+  isReferenceableMetadataKey,
 } from '@faims3/data-model';
 import {
   selectUiFields,
@@ -150,10 +151,9 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
   // Notebook metadata referenceable as {_METADATA.key}.
   const metadataOptions = useMemo(
     () =>
-      Object.keys(custom).map(key => ({
-        ref: encodeMetadataRef(key),
-        label: key,
-      })),
+      Object.keys(custom)
+        .filter(isReferenceableMetadataKey)
+        .map(key => ({ref: encodeMetadataRef(key), label: key})),
     [custom]
   );
 
@@ -169,11 +169,16 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
         requiredType,
       });
       // The compile pass types any key; only the designer knows which exist.
-      const missing = extractExpressionReferences(expression)
+      const metadataKeys = extractExpressionReferences(expression)
         .map(decodeMetadataRef)
-        .find(key => key !== null && !(key in custom));
-      return missing
-        ? `{${encodeMetadataRef(missing)}}: "${missing}" is not a custom metadata key on this notebook (see the Info panel)`
+        .filter((key): key is string => key !== null);
+      const missing = metadataKeys.find(key => !(key in custom));
+      if (missing) {
+        return `{${encodeMetadataRef(missing)}}: "${missing}" is not a custom metadata key on this notebook (see the Info panel)`;
+      }
+      const unsafe = metadataKeys.find(key => !isReferenceableMetadataKey(key));
+      return unsafe
+        ? `{${encodeMetadataRef(unsafe)}}: "${unsafe}" cannot be referenced - rename it to use only letters, numbers, hyphens and underscores`
         : null;
     } catch (e) {
       return e instanceof ExpressionError ? e.message : 'Invalid expression';
