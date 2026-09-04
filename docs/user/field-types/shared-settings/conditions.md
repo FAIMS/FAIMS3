@@ -27,9 +27,12 @@ details of creating and editing conditions.
 
 - **Conditions are evaluated dynamically** — fields appear and
   disappear instantly as the controlling field's value changes.
-- **Conditions can only reference fields in the same form.** You
-  cannot reference fields in a different form or in a parent/child
-  record.
+- **Conditions reference fields in the same form** and, beyond it,
+  values from the record's parent, from records linked through a
+  single-link Related Records field, and from the {{notebook}}'s
+  custom metadata. See
+  [Conditions](../../authoring/conditions.md) for the details of
+  each.
 - **Sections hide automatically** when all their fields are hidden
   by conditions, keeping the form tidy.
 - **Hidden fields retain their data.** If a collector fills in a

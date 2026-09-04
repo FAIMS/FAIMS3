@@ -43,6 +43,12 @@ export const selectUiFields = (state: AppState) =>
 export const selectUiViews = (state: AppState) =>
   selectPresentUiSpec(state).views;
 
+const EMPTY_CUSTOM_METADATA: Record<string, string> = {};
+
+/** Custom metadata key/value pairs; a stable empty object when none are set. */
+export const selectCustomMetadata = (state: AppState) =>
+  state.notebook.metadata.custom ?? EMPTY_CUSTOM_METADATA;
+
 /** Form id → viewset map. */
 export const selectUiViewSets = (state: AppState) =>
   selectPresentUiSpec(state).viewsets;

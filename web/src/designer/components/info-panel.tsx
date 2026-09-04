@@ -28,7 +28,7 @@ import {
   Divider,
 } from '@mui/material';
 import DebouncedTextField from './debounced-text-field';
-import {useState, useRef} from 'react';
+import {useState, useRef, useMemo} from 'react';
 import {useAppSelector, useAppDispatch} from '../state/hooks';
 import {MdxEditor} from './mdx-editor';
 import {MDXEditorMethods} from '@mdxeditor/editor';
@@ -41,17 +41,77 @@ import {
   informationUpdated,
 } from '../state/metadata-reducer';
 import {settingsUpdated} from '../store/slices/uiSpec';
+import {encodeMetadataRef, METADATA_KEY_PATTERN} from '@faims3/data-model';
+import {
+  findFieldDependencyReferences,
+  type FieldDependencyReference,
+} from '@/lib/conditionUtils';
+import {
+  selectUiViews,
+  selectUiViewSets,
+  selectCustomMetadata,
+} from '../store/selectors';
+
+/** Location and kind of one reference, for the blocked-removal message. */
+const describeReference = (ref: FieldDependencyReference): string => {
+  const kind = {
+    'section-condition': 'section condition',
+    'field-condition': 'field condition',
+    'templated-string': 'templated string',
+    'computed-expression': 'computed expression',
+  }[ref.type];
+  const where = [ref.formLabel, ref.sectionLabel, ref.fieldLabel ?? ref.fieldId]
+    .filter(Boolean)
+    .join(' › ');
+  return `${where || 'unknown location'} (${kind})`;
+};
 
 /** Notebook design info: settings toggles, typed metadata, and custom key/value pairs. */
 export const InfoPanel = () => {
   const information = useAppSelector(
     state => state.notebook.metadata.information
   );
-  const custom = useAppSelector(state => state.notebook.metadata.custom ?? {});
+  const custom = useAppSelector(selectCustomMetadata);
   const settings = useAppSelector(
     state => state.notebook.uiSpec.present.settings
   );
+  const allFields = useAppSelector(
+    state => state.notebook.uiSpec.present.fields
+  );
+  const views = useAppSelector(selectUiViews);
+  const viewsets = useAppSelector(selectUiViewSets);
   const dispatch = useAppDispatch();
+
+  // References to each custom key from conditions, templates and expressions,
+  // shown per key and used to block removal of a referenced key.
+  const usageByKey = useMemo(() => {
+    const usage: Record<string, FieldDependencyReference[]> = {};
+    for (const key of Object.keys(custom)) {
+      usage[key] = findFieldDependencyReferences(
+        encodeMetadataRef(key),
+        allFields,
+        views,
+        viewsets
+      );
+    }
+    return usage;
+  }, [custom, allFields, views, viewsets]);
+
+  // Removing a key that conditions, templates or expressions reference would
+  // silently blank them, so block it the way field deletion is blocked.
+  const removeCustomField = (key: string) => {
+    const usage = usageByKey[key] ?? [];
+    if (usage.length === 0) {
+      dispatch(customFieldRemoved({key}));
+      return;
+    }
+    setAlert(
+      `Cannot remove "${key}": it is referenced by ${usage.length} ` +
+        `${usage.length === 1 ? 'place' : 'places'}: ${usage
+          .map(describeReference)
+          .join('; ')}.`
+    );
+  };
 
   const purposeRef = useRef<MDXEditorMethods>(null);
 
@@ -69,6 +129,13 @@ export const InfoPanel = () => {
     const key = customFieldName.trim();
     if (!key) {
       setAlert('Enter a field name.');
+      return;
+    }
+    if (!METADATA_KEY_PATTERN.test(key)) {
+      setAlert(
+        'Field names can only use letters, numbers, hyphens and underscores, ' +
+          'so they can be referenced in conditions, templates and expressions.'
+      );
       return;
     }
     if (key in custom) {
@@ -227,6 +294,16 @@ export const InfoPanel = () => {
                   name="custom_field_name"
                   size="small"
                   value={customFieldName}
+                  error={
+                    customFieldName.trim() !== '' &&
+                    !METADATA_KEY_PATTERN.test(customFieldName.trim())
+                  }
+                  helperText={
+                    customFieldName.trim() !== '' &&
+                    !METADATA_KEY_PATTERN.test(customFieldName.trim())
+                      ? 'Letters, numbers, hyphens and underscores only'
+                      : undefined
+                  }
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                     setCustomFieldName(event.target.value)
                   }
@@ -277,11 +354,23 @@ export const InfoPanel = () => {
                       );
                     }}
                   />
+                  {(usageByKey[key] ?? []).length > 0 && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{display: 'block', mt: 0.5}}
+                    >
+                      Referenced by{' '}
+                      {(usageByKey[key] ?? [])
+                        .map(describeReference)
+                        .join('; ')}
+                    </Typography>
+                  )}
                   <Button
                     size="small"
                     color="secondary"
                     sx={{mt: 0.5}}
-                    onClick={() => dispatch(customFieldRemoved({key}))}
+                    onClick={() => removeCustomField(key)}
                   >
                     Remove
                   </Button>

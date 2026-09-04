@@ -454,8 +454,8 @@ const projectsSlice = createSlice({
       }
 
       const compiledSpecId = buildCompiledSpecId({
-        projectId: payload.projectId,
-        serverId: server.serverId,
+        id: {projectId: payload.projectId, serverId: server.serverId},
+        uiSpec: payload.uiDefinition.uiSpec,
       });
       compiledSpecService.compileAndRegisterSpec(
         compiledSpecId,
@@ -637,18 +637,26 @@ const projectsSlice = createSlice({
         );
       }
 
+      const existingProject = server.projects[payload.projectId];
+
       const compiledSpecId = buildCompiledSpecId({
-        projectId: payload.projectId,
-        serverId: server.serverId,
+        id: {projectId: payload.projectId, serverId: server.serverId},
+        uiSpec: payload.uiDefinition.uiSpec,
       });
+      // Spec changed: drop the old compilation so entries don't accumulate.
+      // Covers legacy non-hashed IDs from persisted state too.
+      if (
+        existingProject.uiSpecificationId &&
+        existingProject.uiSpecificationId !== compiledSpecId
+      ) {
+        compiledSpecService.removeSpec(existingProject.uiSpecificationId);
+      }
       compiledSpecService.compileAndRegisterSpec(
         compiledSpecId,
         payload.uiDefinition.uiSpec
       );
 
       server.couchDbUrl = payload.couchDbUrl;
-
-      const existingProject = server.projects[payload.projectId];
 
       // Now we can update it
       server.projects[payload.projectId] = {

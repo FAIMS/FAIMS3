@@ -232,6 +232,8 @@ interface ViewTabContentProps {
   getAttachmentService: () => ReturnType<typeof createProjectAttachmentService>;
   onEditRecord: () => void;
   isDeleted: boolean;
+  /** The notebook's custom metadata, referenced as _METADATA.<key> */
+  metadataValues?: Record<string, string>;
 }
 
 /**
@@ -247,6 +249,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
   getAttachmentService,
   isDeleted,
   recordId,
+  metadataValues,
 }) => {
   const nav = useNavigate();
 
@@ -254,7 +257,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
   // referencing them evaluate correctly. Until resolved, conditions see
   // missing values, matching previous behaviour.
   const {data: recordContext} = useQuery({
-    queryKey: ['recordContext', recordId, formData.formId],
+    queryKey: ['recordContext', recordId, formData.formId, metadataValues],
     queryFn: async (): Promise<RecordContext> => {
       const engine = getDataEngine();
       const parentValues = await resolveParentValues({
@@ -271,6 +274,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
         ...getRecordContextFromRecord({record: formData.context.record}),
         parentValues: parentValues ?? undefined,
         relatedValues,
+        metadataValues,
       };
     },
     networkMode: 'always',
@@ -730,6 +734,7 @@ export const ViewRecordPage: React.FC = () => {
             getDataEngine={getDataEngine}
             getAttachmentService={getAttachmentService}
             isDeleted={isDeleted}
+            metadataValues={project?.uiDefinition.metadata.custom}
           />
         </TabPanel>
 
