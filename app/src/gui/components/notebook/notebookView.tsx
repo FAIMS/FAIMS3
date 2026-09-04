@@ -336,9 +336,6 @@ function NotebookViewWithSpec({
     return <PlanComponent {...props} />;
   }
 
-  // fallback to the default notebook component
-  // TODO: port this component to use the same interface
-  // as our custom plan view components once we have sorted
-  // out what that interface looks like
-  return <NotebookComponent project={project} tab={tab} setTab={setTab} />;
+  // Fallback: the default notebook view, on the same interface as plan views
+  return <NotebookComponent {...props} />;
 }
