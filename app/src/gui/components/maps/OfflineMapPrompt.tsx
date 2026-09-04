@@ -1,3 +1,12 @@
+import type {OfflineMapRegion} from '@faims3/data-model';
+import {
+  OfflineMapRegionEditor,
+  ProgressBar,
+  formatOfflineMapSizeMb,
+  isOfflineMapDownloadCancelledError,
+  tileSetDownloadProgress,
+  type StoredTileSet,
+} from '@faims3/forms';
 import {
   Alert,
   Button,
@@ -10,15 +19,6 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import type {OfflineMapRegion} from '@faims3/data-model';
-import {
-  OfflineMapRegionEditor,
-  ProgressBar,
-  formatOfflineMapSizeMb,
-  projectOfflineMapSetName,
-  tileSetDownloadProgress,
-  type StoredTileSet,
-} from '@faims3/forms';
 import {useEffect, useState} from 'react';
 import {config, getMapConfig} from '../../../buildconfig';
 import {
@@ -28,7 +28,6 @@ import {
 } from '../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {useIsOnline} from '../../../utils/customHooks';
-import {isOfflineMapDownloadCancelledError} from '@faims3/forms';
 import {
   cancelProjectOfflineMapDownload,
   downloadProjectOfflineMap,
@@ -90,10 +89,9 @@ export function NotebookOfflineMapPrompt() {
     if (!isDownloading || !pending) {
       return;
     }
-    const setName = projectOfflineMapSetName(pending.projectId);
     const handleDownloadProgress = (event: Event) => {
       const tileSet = (event as CustomEvent<StoredTileSet>).detail;
-      if (tileSet?.setName !== setName) {
+      if (tileSet?.projectId !== pending.projectId) {
         return;
       }
       const progress = tileSetDownloadProgress(tileSet);
@@ -264,6 +262,10 @@ export function NotebookOfflineMapPrompt() {
             showRegionStatus={false}
             showMapControls={false}
             mapHeight={mapHeight}
+            mapComponentProps={{
+              autoFlyToCurrentLocation: false,
+              lockNavigation: true,
+            }}
           />
         </Stack>
       </DialogContent>

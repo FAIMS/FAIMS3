@@ -17,7 +17,8 @@
  * `/api/notebooks/:id/records`.
  *
  * Read routes are always registered: GET `…/metadata` (paginated, permission-filtered
- * metadata) and GET `…/:recordId` (full form data). Mutation routes (POST create, POST
+ * metadata), GET `…/hydrated` (paginated metadata plus field values), and GET
+ * `…/:recordId` (full form data). Mutation routes (POST create, POST
  * fork revision, PUT update, DELETE soft-delete) are compiled in but only registered
  * when {@link ENABLE_RECORDS_CRUD_MUTATIONS} is true.
  */
@@ -29,6 +30,8 @@ import {
   DataEngine,
   DeleteRecordQuerySchema,
   DocumentNotFoundError,
+  GetListHydratedRecordsQuerySchema,
+  GetListHydratedRecordsResponse,
   GetListRecordsQuerySchema,
   GetListRecordsResponse,
   GetRecordQuerySchema,
@@ -50,16 +53,18 @@ import {
 import express, {Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
+import {config} from '../buildconfig';
 import {getDataDb} from '../couchdb';
 import {getCompiledUiSpecModel} from '../couchdb/notebooks';
 import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 import {canDeleteRecord, canEditRecord, canReadRecord} from '../recordAuth';
+import {parseUpdatedTimeFilterFromQuery} from './updatedTimeQuery';
 
 /**
  * When `true`, registers mutation routes: POST `/` (create), POST `/:recordId/revisions` (fork),
  * PUT `/:recordId` (update), and DELETE `/:recordId` (soft-delete).
- * When `false`, only read routes are registered (GET `/metadata`, GET `/:recordId`).
+ * When `false`, only read routes are registered (GET `/metadata`, GET `/hydrated`, GET `/:recordId`).
  */
 export const ENABLE_RECORDS_CRUD_MUTATIONS = false;
 
@@ -184,6 +189,7 @@ recordsRouter.get(
     // Omitted or any value other than the string "false" keeps deleted records out.
     const filterDeleted = req.query.filterDeleted === 'false' ? false : true;
     const {formId, limit, startKey} = req.query;
+    const updatedFilter = parseUpdatedTimeFilterFromQuery(req.query);
     const rawLimit =
       limit !== undefined && limit !== '' ? parseInt(limit, 10) : NaN;
     // Cap page size; invalid or missing limit leaves choice to the data engine.
@@ -212,6 +218,7 @@ recordsRouter.get(
         limit: limitNum,
         startKey,
         formId,
+        ...updatedFilter,
       });
 
       const records = result.records.map(r => ({
@@ -224,6 +231,92 @@ recordsRouter.get(
         records,
         ...(result.nextStartKey !== undefined
           ? {nextStartKey: result.nextStartKey}
+          : {}),
+      });
+    } catch (err) {
+      mapDataModelError(err);
+    }
+  }
+);
+
+/**
+ * GET /api/notebooks/:id/records/hydrated — paginated metadata stubs plus
+ * hydrated form data (`data[fieldId] = { data, annotation?, attachments? }`).
+ *
+ * Same auth and listing semantics as GET `/metadata` (`READ_MY_PROJECT_RECORDS`
+ * at the project gate, then `canReadRecord` per row). Not `EXPORT_PROJECT_DATA`
+ * and not the legacy unpaginated dump on GET `/records/`.
+ *
+ * Registered before `/:recordId` so Express does not treat `hydrated` as an id.
+ *
+ * A failed hydrate omits that row (does not 500 the page) and lists
+ * `{recordId, revisionId}` in optional `errors`. `nextStartKey` still
+ * comes from the metadata listing. Time-window cursors are JSON
+ * `[updatedMs, recordId]` — same as metadata.
+ */
+recordsRouter.get(
+  '/hydrated',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.READ_MY_PROJECT_RECORDS,
+    getResourceId: req => req.params.id,
+  }),
+  validate({
+    params: z.object({id: z.string().min(1)}),
+    query: GetListHydratedRecordsQuerySchema,
+  }),
+  async (req, res: Response<GetListHydratedRecordsResponse>) => {
+    if (!req.user) throw new Exceptions.UnauthorizedException();
+    const projectId = projectIdFromReq(req);
+    const filterDeleted = req.query.filterDeleted === 'false' ? false : true;
+    const {formId, limit, startKey} = req.query;
+    const updatedFilter = parseUpdatedTimeFilterFromQuery(req.query);
+    const pageLimit = config.recordsHydratedPageLimit;
+    const rawLimit =
+      limit !== undefined && limit !== '' ? parseInt(limit, 10) : NaN;
+    if (Number.isFinite(rawLimit) && rawLimit > pageLimit) {
+      throw new Exceptions.InvalidRequestException(
+        `limit must be between 1 and ${pageLimit}`
+      );
+    }
+    const limitNum =
+      Number.isFinite(rawLimit) && rawLimit >= 1 ? rawLimit : pageLimit;
+
+    try {
+      const dataDb = await getDataDb(projectId);
+      const uiSpec = await getCompiledUiSpecModel(projectId);
+      const engine = new DataEngine({
+        dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
+        uiSpec,
+      });
+
+      const result = await engine.form.listHydratedRecords({
+        projectId,
+        filterDeleted,
+        filterFunction: rec =>
+          canReadRecord({
+            user: req.user!,
+            projectId,
+            createdBy: rec.createdBy,
+          }),
+        limit: limitNum,
+        startKey,
+        formId,
+        ...updatedFilter,
+      });
+
+      const records = result.records.map(r => ({
+        ...r,
+        created: r.created.toISOString(),
+        updated: r.updated.toISOString(),
+      }));
+      res.json({
+        records,
+        ...(result.nextStartKey !== undefined
+          ? {nextStartKey: result.nextStartKey}
+          : {}),
+        ...(result.errors !== undefined && result.errors.length > 0
+          ? {errors: result.errors}
           : {}),
       });
     } catch (err) {

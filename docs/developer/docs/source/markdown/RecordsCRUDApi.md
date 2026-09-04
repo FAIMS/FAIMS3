@@ -1,6 +1,6 @@
 # Records CRUD API
 
-> **Current availability:** The running Conductor API exposes **read-only** record routes: **GET** `/api/notebooks/:id/records/metadata` (list metadata) and **GET** `/api/notebooks/:id/records/:recordId` (single record). **Create** (POST), **fork revision** (POST `…/revisions`), **update** (PUT), and **delete** are **not enabled** until `ENABLE_RECORDS_CRUD_MUTATIONS` is set to `true` in `api/src/api/records.ts`. They are gated off while we finish design work so modification operations are **safe and well-defined at the API boundary** (validation, conflicts, attachments, and related semantics). The sections below describe the intended contract once those routes are turned on.
+> **Current availability:** The running Conductor API exposes **read-only** record routes: **GET** `/api/notebooks/:id/records/metadata` (list metadata), **GET** `/api/notebooks/:id/records/hydrated` (paginated metadata plus field values), and **GET** `/api/notebooks/:id/records/:recordId` (single record). **Create** (POST), **fork revision** (POST `…/revisions`), **update** (PUT), and **delete** are **not enabled** until `ENABLE_RECORDS_CRUD_MUTATIONS` is set to `true` in `api/src/api/records.ts`. They are gated off while we finish design work so modification operations are **safe and well-defined at the API boundary** (validation, conflicts, attachments, and related semantics). The sections below describe the intended contract once those routes are turned on.
 
 ## Overview
 
@@ -65,12 +65,34 @@ Returns a permission-filtered list of minimal record metadata (no field values).
 
 **Query parameters**:
 
-| Parameter       | Type   | Required | Description                                                                       |
-| --------------- | ------ | -------- | --------------------------------------------------------------------------------- |
-| `formId`        | string | No       | Filter by record type (form/viewset ID).                                          |
-| `limit`         | number | No       | Max number of records (1–500).                                                    |
-| `startKey`      | string | No       | Pagination cursor from a previous response.                                       |
-| `filterDeleted` | string | No       | `"true"` (default) or `"false"`. If `"false"`, soft-deleted records are included. |
+| Parameter       | Type   | Required | Description                                                                                      |
+| --------------- | ------ | -------- | ------------------------------------------------------------------------------------------------ |
+| `formId`        | string | No       | Filter by record type (form/viewset ID).                                                         |
+| `limit`         | number | No       | Max number of records (1–500).                                                                   |
+| `startKey`      | string | No       | Pagination cursor from a previous response.                                                      |
+| `filterDeleted` | string | No       | `"true"` (default) or `"false"`. If `"false"`, soft-deleted records are included.                |
+| `updatedAfter`  | string | No       | Exclusive lower bound on last-updated time, as epoch **milliseconds** (record `updated` > this). |
+| `updatedBefore` | string | No       | Exclusive upper bound on last-updated time, as epoch **milliseconds** (record `updated` < this). |
+
+When both `updatedAfter` and `updatedBefore` are set they must satisfy `updatedAfter < updatedBefore`; otherwise the API returns **400**. Either bound may be omitted. With neither bound, all records are listed (current behaviour). Soft-delete filtering is unchanged (`filterDeleted` still defaults to hiding deletes).
+
+The document `updated` field is an ISO timestamp; the query arguments are millisecond integers as strings (same pattern as `limit`). Example:
+
+```
+GET /api/notebooks/:id/records/metadata?updatedAfter=1700000000000&updatedBefore=1710000000000
+```
+
+When a time window is active, `nextStartKey` is a JSON cursor `[updatedMs, recordId]` rather than a bare record id.
+
+**Paging vs filters:** `limit` / `startKey` (and the time index, when a window is set) select a **database page first**. `formId`, permission checks, and `filterDeleted` run **after** that page. A response can therefore be `records: []` (or shorter than `limit`) while `nextStartKey` is still present — more matching rows may exist on later pages. Clients must keep requesting the next page while `nextStartKey` is set, even when the current page is empty. The server does **not** auto-advance through empty pages (that would turn a filtered list into an unbounded scan).
+
+**Legacy dump** **GET** `/api/notebooks/:id/records/` remains the unpaginated export-shaped dump and requires `EXPORT_PROJECT_DATA`. It accepts the same `updatedAfter` / `updatedBefore` exclusive-ms query parameters and returns only records in that window. Use `/records/metadata` for the lightweight listing and `/records/hydrated` for paged field values.
+
+**Export** **GET** `/api/notebooks/:id/records/export` accepts the same bounds (plus `format`, `viewID`, and full-export include flags). They are stored on the download JWT and applied when **GET** `/api/notebooks/download/:downloadToken` streams CSV, ZIP, GeoJSON, KML, GeoPackage, or a full ZIP.
+
+```
+GET /api/notebooks/:id/records/export?format=csv&viewID=FORM2&updatedAfter=1700000000000&updatedBefore=1710000000000
+```
 
 **Response** (200 OK):
 
@@ -90,9 +112,80 @@ Returns a permission-filtered list of minimal record metadata (no field values).
       "type": "FORM2",
       "relationship": null
     }
+  ],
+  "nextStartKey": "rec-abc123-..."
+}
+```
+
+When a time window is active, `nextStartKey` is a JSON cursor `[updatedMs, recordId]` instead of a bare record id.
+
+---
+
+### List hydrated records
+
+**GET** `/api/notebooks/:id/records/hydrated`
+
+Returns a permission-filtered, paginated list of records. Each item is the **metadata stub** (same fields as `/metadata`) plus the **single-record payload** (`formId`, `data`, `context`) so a poller can read field values without a second GET. `data[fieldId]` is wrapped `{ data, annotation?, attachments? }` — the same shape as **GET** `/records/:recordId`, not the flat export `RecordMetadata.data`.
+
+**Required permission**: at least `READ_MY_PROJECT_RECORDS` on the project, then `canReadRecord` per row (same filter as `/metadata`). This route does **not** require `EXPORT_PROJECT_DATA`.
+
+**Query parameters** (same names as `/metadata`):
+
+| Parameter       | Type   | Required | Description                                                                                                                                                                                          |
+| --------------- | ------ | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `formId`        | string | No       | Filter by record type (form/viewset ID).                                                                                                                                                             |
+| `limit`         | number | No       | Max records on this page. Defaults to `RECORDS_HYDRATED_PAGE_LIMIT` (env, default **150**). Must be ≤ the configured max (absolute ceiling **500**). Values above the configured max return **400**. |
+| `startKey`      | string | No       | Pagination cursor from a previous response.                                                                                                                                                          |
+| `filterDeleted` | string | No       | `"true"` (default) or `"false"`. If `"false"`, soft-deleted records are included.                                                                                                                    |
+| `updatedAfter`  | string | No       | Exclusive lower bound on last-updated time, as epoch **milliseconds** (record `updated` > this).                                                                                                     |
+| `updatedBefore` | string | No       | Exclusive upper bound on last-updated time, as epoch **milliseconds** (record `updated` < this).                                                                                                     |
+
+When either time bound is set, listing uses the time index and `nextStartKey` is a JSON cursor `[updatedMs, recordId]` (same as `/metadata`). A bare record-id cursor with a time bound yields an empty page. With neither bound, `startKey` is the existing non-time record-id cursor from `listMinimalRecordMetadata`.
+
+If one record fails to hydrate (corrupt AVP, missing revision, …), that item is **omitted** from `records` and listed in optional `errors` as `{ recordId, revisionId }`. The rest of the page is still returned (**200**). The cursor still advances from the metadata listing so the poller does not stall. The same **page-then-filter** rule as `/metadata` applies: keep paging while `nextStartKey` is present.
+
+**Response** (200 OK):
+
+```json
+{
+  "records": [
+    {
+      "projectId": "1693291182736-campus-survey-demo",
+      "recordId": "rec-abc123-...",
+      "revisionId": "frev-def456-...",
+      "created": "2024-01-15T10:00:00.000Z",
+      "createdBy": "admin",
+      "updated": "2024-01-15T11:00:00.000Z",
+      "updatedBy": "admin",
+      "conflicts": false,
+      "deleted": false,
+      "type": "FORM2",
+      "relationship": null,
+      "formId": "FORM2",
+      "data": {
+        "hridFORM2": {
+          "data": "Element: Test-00001",
+          "attachments": []
+        }
+      },
+      "context": {
+        "hrid": "Element: Test-00001",
+        "record": {"...": "..."},
+        "revision": {"...": "..."}
+      }
+    }
+  ],
+  "nextStartKey": "[1700000000000,\"rec-abc123-...\"]",
+  "errors": [
+    {
+      "recordId": "rec-skipped-...",
+      "revisionId": "frev-skipped-..."
+    }
   ]
 }
 ```
+
+`revisionId` is the stub/head revision (same as **GET** `/records/:recordId`). `errors` is omitted when every listed stub hydrated.
 
 ---
 
@@ -320,6 +413,7 @@ or a message string depending on the middleware.
 | Method | Path                                             | Permission (project)    | Record-level check | Description              |
 | ------ | ------------------------------------------------ | ----------------------- | ------------------ | ------------------------ |
 | GET    | `/api/notebooks/:id/records/metadata`            | READ_MY_PROJECT_RECORDS | Applied in filter  | List record metadata     |
+| GET    | `/api/notebooks/:id/records/hydrated`            | READ_MY_PROJECT_RECORDS | Applied in filter  | List hydrated records    |
 | POST   | `/api/notebooks/:id/records`                     | CREATE_PROJECT_RECORD   | —                  | Create record            |
 | GET    | `/api/notebooks/:id/records/:recordId`           | READ\_\*                | Read this record   | Get one record           |
 | POST   | `/api/notebooks/:id/records/:recordId/revisions` | EDIT_MY_PROJECT_RECORDS | Edit this record   | Fork revision (new head) |
@@ -404,4 +498,6 @@ If the head already has exactly one parent (e.g. you forked earlier), you can us
 
 - [PermissionModel](PermissionModel.md) — Actions, roles, and resource-specific permissions.
 - [Long-lived-tokens](Long-lived-tokens.md) — Obtaining and using access tokens for API calls.
+- [Polling hydrated records](PollingHydratedRecords.md) — Incremental poll + local cache for dashboards and maps.
 - [Forms overview](forms/01-overview.md) — UI specification, viewsets, and field definitions (form IDs and field IDs come from the project UI spec).
+- OpenAPI: `api/public/swagger.json` (paths under `/notebooks/{id}/records/…`).

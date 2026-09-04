@@ -30,6 +30,7 @@ export const INDIVIDUAL_NOTEBOOK_ROUTE = `/${config.notebookNamePlural}/`;
 export const NOTEBOOK_LIST_ROUTE = '/';
 export const ABOUT_BUILD = '/about-build';
 export const OFFLINE_MAPS = '/offline-maps';
+export const OFFLINE_MAP_NEW = `${OFFLINE_MAPS}/new`;
 export const AUTOINCREMENT = '/autoincrements/';
 export const PROJECT_ATTACHMENT = '/attachment/';
 export const SWITCH_ORG = '/switch-organisation';
@@ -132,4 +133,13 @@ export function getViewRecordRoute({
     `${getNotebookRoute(notebook)}/${VIEW_RECORD_SEGMENT}/${recordId}` +
     (revisionId ? `?revisionId=${revisionId}` : '')
   );
+}
+
+/**
+ * Generates the edit route for a downloaded offline map.
+ *
+ * @returns /offline-maps/map/<offlineMapId>
+ */
+export function getOfflineMapEditRoute({offlineMapId}: {offlineMapId: string}) {
+  return `${OFFLINE_MAPS}/map/${offlineMapId}`;
 }
