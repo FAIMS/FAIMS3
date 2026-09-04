@@ -7,7 +7,7 @@ import {
   offlineMapRegionsEqual,
   tileSetDownloadProgress,
 } from './offlineMapRegionUtils';
-import {StoredTileSet} from './tileStoreUtils';
+import {StoredTileSet} from './tileDB';
 
 const region: OfflineMapRegion = {
   type: 'Polygon',

@@ -26,15 +26,9 @@
 import 'fake-indexeddb/auto';
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest';
 import {deleteDatabase, requestAsPromise} from '../../IDBUtils';
-import {OFFLINE_MAP_ID_PREFIX} from '../../tileStoreUtils';
-import {
-  migrateV1ToV2,
-  TileSetV1,
-  TileSetV2,
-  TileV1,
-  TileV2,
-  validateV2,
-} from './migrateV2';
+import {TileSetV1, TileSetV2, TileV1, TileV2} from '../../tileDB';
+import {OFFLINE_MAP_ID_PREFIX} from '../../tileDB/tileStoreUtils';
+import {migrateV1ToV2, validateV2} from './migrateV2';
 import {
   openDbForTest,
   readAll,

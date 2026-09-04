@@ -23,43 +23,17 @@
  * cached tile's set membership so references remain consistent.
  */
 
-import {z} from 'zod';
-import {createOfflineMapId} from '../../tileStoreUtils';
 import {requestAsPromise, scanStore} from '../../IDBUtils';
+import {
+  TileSetV1Schema,
+  TileSetV2,
+  TileSetV2Schema,
+  TileV1Schema,
+  TileV2,
+  TileV2Schema,
+} from '../../tileDB';
+import {createOfflineMapId} from '../../tileDB/tileStoreUtils';
 import type {TileDbMigrationFunction} from '../types';
-
-// Validate the fields required from stored tile records during migration.
-const TileV1Schema = z.object({
-  url: z.string(),
-  data: z.unknown(),
-  sets: z.array(z.string()),
-});
-export type TileV1 = z.infer<typeof TileV1Schema>;
-
-// Validate the fields required from stored tile-set records during migration.
-const TileSetV1Schema = z.object({
-  setName: z.string(),
-  extent: z.array(z.number()).min(4),
-  minZoom: z.number(),
-  maxZoom: z.number(),
-  size: z.number(),
-  expectedTileCount: z.number(),
-  created: z.date(),
-  tileKeys: z.array(z.unknown()),
-  projectId: z.string().optional(),
-  label: z.string().optional(),
-  offlineMapRegion: z.unknown().optional(),
-});
-export type TileSetV1 = z.infer<typeof TileSetV1Schema>;
-
-// V2 keeps the same stored record shapes as V1.
-// The v2 migration changes the data invariant rather than the schema:
-// legacy @project/... IDs are replaced with generated offline-map IDs.
-const TileV2Schema = TileV1Schema;
-export type TileV2 = z.infer<typeof TileV2Schema>;
-
-const TileSetV2Schema = TileSetV1Schema;
-export type TileSetV2 = z.infer<typeof TileSetV2Schema>;
 
 // Prefix used by legacy project-associated tile-set IDs.
 const V1_LEGACY_PROJECT_SET_PREFIX = '@project/';

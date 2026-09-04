@@ -8,9 +8,8 @@
 import type {OfflineMapRegion} from '@faims3/data-model';
 import {boundingExtent} from 'ol/extent';
 import {transformExtent} from 'ol/proj';
-import {VectorTileStore} from './TileStore';
 import type {MapConfig} from './types';
-import {StoredTileSet} from './tileStoreUtils';
+import {StoredTileSet, VectorTileStore} from './tileDB';
 
 /** Download lifecycle state derived from a stored tile set record. */
 export type TileSetDownloadStatus =

@@ -22,10 +22,10 @@ import {
   formatOfflineMapSizeBytes,
   OfflineMapRegionEditor,
   ProgressBar,
+  StoredTileSet,
   tileSetDisplayName,
   tileSetDownloadProgress,
   VectorTileStore,
-  type StoredTileSet,
 } from '@faims3/forms';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';

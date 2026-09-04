@@ -33,7 +33,7 @@ import VectorTileSource from 'ol/source/VectorTile';
 import Tile from 'ol/Tile';
 import {TileCoord} from 'ol/tilecoord';
 import VectorTile from 'ol/VectorTile';
-import {IDBObjectStore} from './IDBObjectStore';
+import {IDBObjectStore} from '../IDBObjectStore';
 import {
   deleteDatabase,
   handleTileDbUpgrade,
@@ -41,10 +41,11 @@ import {
   TILE_DB_TARGET_VERSIONS,
   TileDbMigrationError,
   TileDbMigrationState,
-} from './migrations';
-import {getMapStylesheet} from './styles';
-import {InitTileDbResult, StoredTile, StoredTileSet} from './tileStoreUtils';
-import {MapConfig} from './types';
+} from '../migrations';
+import {getMapStylesheet} from '../styles';
+import {InitTileDbResult} from './tileStoreUtils';
+import {MapConfig} from '../types';
+import {StoredTile, StoredTileSet} from './types';
 
 // When downloading maps we start at this zoom level
 const START_ZOOM = 2;

@@ -3,6 +3,5 @@ export * from './migrations';
 export * from './OfflineMapRegionEditor';
 export * from './offlineMapRegionUtils';
 export * from './styles';
-export * from './TileStore';
+export * from './tileDB';
 export * from './types';
-export * from './tileStoreUtils';
