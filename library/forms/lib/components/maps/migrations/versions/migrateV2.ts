@@ -31,7 +31,7 @@ import {
   TileV1Schema,
   TileV2,
   TileV2Schema,
-} from '../../tileDB';
+} from '../../tileDB/types';
 import {createOfflineMapId} from '../../tileDB/tileStoreUtils';
 import type {TileDbMigrationFunction} from '../types';
 
