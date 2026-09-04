@@ -261,7 +261,6 @@ push_config() {
   validate_local_json "$local_secrets_file" true
 
   prepare_repository "$branch" "$repo_path" "$repo_url"
-  trap cleanup EXIT
 
   local repo_config_path="mobile/${environment}/build-config.json"
   local repo_secrets_path="mobile/${environment}/build-secrets.enc.json"
@@ -272,14 +271,14 @@ push_config() {
   preflight_sops "$WORK_REPO_PATH" "$repo_secrets_file"
   mkdir -p "$repo_env_dir"
 
-  local tmp_existing_secrets
-  local tmp_merged_secrets
+  local tmp_existing_secrets=""
+  local tmp_merged_secrets=""
   local config_changed=false
   local secrets_changed=false
 
   tmp_existing_secrets="$(mktemp)"
   tmp_merged_secrets="$(mktemp)"
-  trap 'rm -f "$tmp_existing_secrets" "$tmp_merged_secrets"; cleanup' EXIT
+  trap 'rm -f "${tmp_existing_secrets:-}" "${tmp_merged_secrets:-}"; cleanup' EXIT
 
   # Check if build-config.json has changed
   if [[ -f "$repo_config_file" ]]; then
