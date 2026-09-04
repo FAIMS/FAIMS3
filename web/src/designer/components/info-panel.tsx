@@ -52,18 +52,18 @@ import {
   selectCustomMetadata,
 } from '../store/selectors';
 
-/** Short description of a reference for the blocked-removal message. */
+/** Location and kind of one reference, for the blocked-removal message. */
 const describeReference = (ref: FieldDependencyReference): string => {
-  switch (ref.type) {
-    case 'section-condition':
-      return `section condition on ${ref.sectionLabel ?? 'unknown section'}`;
-    case 'templated-string':
-      return `templated string ${ref.fieldLabel ?? ref.fieldId ?? 'unknown field'}`;
-    case 'computed-expression':
-      return `computed expression ${ref.fieldLabel ?? ref.fieldId ?? 'unknown field'}`;
-    default:
-      return `field condition on ${ref.fieldLabel ?? ref.fieldId ?? 'unknown field'}`;
-  }
+  const kind = {
+    'section-condition': 'section condition',
+    'field-condition': 'field condition',
+    'templated-string': 'templated string',
+    'computed-expression': 'computed expression',
+  }[ref.type];
+  const where = [ref.formLabel, ref.sectionLabel, ref.fieldLabel ?? ref.fieldId]
+    .filter(Boolean)
+    .join(' › ');
+  return `${where || 'unknown location'} (${kind})`;
 };
 
 /** Notebook design info: settings toggles, typed metadata, and custom key/value pairs. */
@@ -96,9 +96,10 @@ export const InfoPanel = () => {
       return;
     }
     setAlert(
-      `Cannot remove "${key}": it is referenced by ${usage
-        .map(describeReference)
-        .join(', ')}.`
+      `Cannot remove "${key}": it is referenced by ${usage.length} ` +
+        `${usage.length === 1 ? 'place' : 'places'}: ${usage
+          .map(describeReference)
+          .join('; ')}.`
     );
   };
 
