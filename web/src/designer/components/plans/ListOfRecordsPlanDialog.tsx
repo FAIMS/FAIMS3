@@ -13,8 +13,8 @@
 // limitations under the License.
 
 /**
- * @file Authoring dialog for a List of Records plan template: pick the target
- * form and the subset of its fields the record list pre-fills.
+ * @file Authoring dialog for a List of Records plan template: name it, then
+ * pick the target form and the subset of its fields the record list pre-fills.
  */
 
 import {useEffect, useMemo, useState} from 'react';
@@ -34,9 +34,11 @@ import {
   useTheme,
 } from '@mui/material';
 import {
+  authoredSchema,
   LIST_OF_RECORDS_PLAN_TYPE,
   listPlanTemplateSchema,
 } from '@faims3/data-model';
+import {PlanFields, usePlanFields} from './PlanFields';
 import {
   designerCancelButtonSx,
   designerDialogActionsSx,
@@ -47,11 +49,15 @@ import {SimpleFieldWrapper} from '../Fields/SimpleFieldWrapper';
 import {FieldSearchAutocomplete} from '../field-selector';
 import type {PlanDialogProps} from '../../plans';
 
+// The same value every save, so it is built once rather than per save
+const authoredListPlanTemplateSchema = authoredSchema(listPlanTemplateSchema);
+
 /** Pick the form and pre-filled fields for a List of Records plan. */
 export const ListOfRecordsPlanDialog = ({
   open,
   uiSpec,
   initialTemplate,
+  takenLabels,
   onClose,
   onSave,
 }: PlanDialogProps) => {
@@ -60,6 +66,7 @@ export const ListOfRecordsPlanDialog = ({
 
   const viewSets = uiSpec.viewsets;
 
+  const planFields = usePlanFields({open, initialTemplate, takenLabels});
   const [formType, setFormType] = useState('');
   const [recordFields, setRecordFields] = useState<string[]>([]);
   const [alertMessage, setAlertMessage] = useState('');
@@ -92,8 +99,8 @@ export const ListOfRecordsPlanDialog = ({
   }, [open, initialTemplate, viewSets]);
 
   const fieldLabel = (fieldName: string): string => {
-    const label = uiSpec.fields[fieldName]?.['component-parameters']?.label;
-    return typeof label === 'string' && label ? label : fieldName;
+    const authored = uiSpec.fields[fieldName]?.['component-parameters']?.label;
+    return typeof authored === 'string' && authored ? authored : fieldName;
   };
 
   const addField = (fieldName: string) => {
@@ -114,8 +121,9 @@ export const ListOfRecordsPlanDialog = ({
   };
 
   const handleSave = () => {
-    const result = listPlanTemplateSchema.safeParse({
+    const result = authoredListPlanTemplateSchema.safeParse({
       planType: LIST_OF_RECORDS_PLAN_TYPE,
+      ...planFields.authored,
       formType,
       recordFields,
     });
@@ -141,30 +149,34 @@ export const ListOfRecordsPlanDialog = ({
       </DialogTitle>
       <DialogContent sx={{...designerDialogContentSx, pt: 4}}>
         <Box sx={{maxWidth: 740, width: '100%', mx: 'auto'}}>
-          <SimpleFieldWrapper
-            heading="Form"
-            helperText={
-              alertMessage ||
-              'Records of this form are created from the planned list. The list itself is supplied when a notebook is created from this template.'
-            }
-          >
-            <TextField
-              select
-              fullWidth
-              value={formType}
-              error={Boolean(alertMessage)}
-              onChange={event => handleFormChange(event.target.value)}
-              sx={{mt: 0.85}}
+          <PlanFields state={planFields} />
+
+          <Box sx={{mt: 3}}>
+            <SimpleFieldWrapper
+              heading="Form"
+              helperText={
+                alertMessage ||
+                'Records of this form are created from the planned list. The list itself is supplied when a notebook is created from this template.'
+              }
             >
-              {Object.entries(viewSets).map(([id, viewSet]) =>
-                viewSet ? (
-                  <MenuItem key={id} value={id}>
-                    {viewSet.label}
-                  </MenuItem>
-                ) : null
-              )}
-            </TextField>
-          </SimpleFieldWrapper>
+              <TextField
+                select
+                fullWidth
+                value={formType}
+                error={Boolean(alertMessage)}
+                onChange={event => handleFormChange(event.target.value)}
+                sx={{mt: 0.85}}
+              >
+                {Object.entries(viewSets).map(([id, viewSet]) =>
+                  viewSet ? (
+                    <MenuItem key={id} value={id}>
+                      {viewSet.label}
+                    </MenuItem>
+                  ) : null
+                )}
+              </TextField>
+            </SimpleFieldWrapper>
+          </Box>
 
           {formType && (
             <Box sx={{mt: 3}}>
@@ -237,7 +249,11 @@ export const ListOfRecordsPlanDialog = ({
         <Button onClick={onClose} sx={designerCancelButtonSx}>
           Cancel
         </Button>
-        <Button variant="contained" disabled={!formType} onClick={handleSave}>
+        <Button
+          variant="contained"
+          disabled={!formType || !planFields.canSave}
+          onClick={handleSave}
+        >
           Save Plan
         </Button>
       </DialogActions>

@@ -13,7 +13,8 @@
 // limitations under the License.
 
 /**
- * @file Interaction tests for the List of Records plan dialog's field picker.
+ * @file Interaction tests for the List of Records plan dialog: its field picker
+ * and the label and description every plan dialog authors.
  */
 
 import {LIST_OF_RECORDS_PLAN_TYPE, migrateNotebook} from '@faims3/data-model';
@@ -43,7 +44,11 @@ const WithProviders = ({
 );
 
 /** Render the dialog editing a plan on the sample notebook's one form. */
-const renderDialog = (recordFields: string[]) => {
+const renderDialog = (
+  recordFields: string[],
+  label = 'Lab samples',
+  takenLabels: string[] = []
+) => {
   const store = createDesignerStore();
   const {migrated: notebook} = migrateNotebook(sampleNotebook);
   store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));
@@ -55,10 +60,13 @@ const renderDialog = (recordFields: string[]) => {
         open
         uiSpec={store.getState().notebook.uiSpec.present}
         initialTemplate={{
+          planId: LIST_OF_RECORDS_PLAN_TYPE,
           planType: LIST_OF_RECORDS_PLAN_TYPE,
+          label,
           formType: 'Primary',
           recordFields,
         }}
+        takenLabels={takenLabels}
         onClose={vi.fn()}
         onSave={onSave}
       />
@@ -125,6 +133,74 @@ describe('ListOfRecordsPlanDialog', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Save Plan'}));
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({recordFields: ['Sample-Photograph']})
+    );
+  });
+
+  test('will not save a plan with no label to show on the chooser', () => {
+    const {onSave} = renderDialog(['Identifier'], '');
+
+    const save = screen.getByRole('button', {name: 'Save Plan'});
+    expect(save).toHaveProperty('disabled', true);
+
+    fireEvent.change(screen.getByTestId('plan-label'), {
+      target: {value: 'Lab samples'},
+    });
+    fireEvent.click(save);
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({label: 'Lab samples'})
+    );
+  });
+
+  test("will not save a plan reusing another plan's label", () => {
+    const {onSave} = renderDialog(['Identifier'], 'Field survey', [
+      'Field survey',
+    ]);
+
+    const save = screen.getByRole('button', {name: 'Save Plan'});
+    expect(save).toHaveProperty('disabled', true);
+
+    fireEvent.change(screen.getByTestId('plan-label'), {
+      target: {value: 'Lab samples'},
+    });
+    fireEvent.click(save);
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({label: 'Lab samples'})
+    );
+  });
+
+  test('reads a stored label as taken however it is spaced', () => {
+    const {onSave} = renderDialog(['Identifier'], 'Field survey', [
+      ' Field survey ',
+    ]);
+
+    expect(screen.getByRole('button', {name: 'Save Plan'})).toHaveProperty(
+      'disabled',
+      true
+    );
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  test('saves a description alongside the label', () => {
+    const {onSave} = renderDialog(['Identifier']);
+
+    fireEvent.change(screen.getByTestId('plan-description'), {
+      target: {value: '  Check each sample in against the field list.  '},
+    });
+    fireEvent.click(screen.getByRole('button', {name: 'Save Plan'}));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        label: 'Lab samples',
+        description: 'Check each sample in against the field list.',
+      })
+    );
+  });
+
+  test('saves no description where the author left it blank', () => {
+    const {onSave} = renderDialog(['Identifier']);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Save Plan'}));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.not.objectContaining({description: expect.anything()})
     );
   });
 

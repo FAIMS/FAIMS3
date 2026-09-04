@@ -1,4 +1,4 @@
-import {LIST_OF_RECORDS_PLAN_TYPE, ListPlan} from '@faims3/data-model';
+import {LIST_OF_RECORDS_PLAN_TYPE, planReferenceFor} from '@faims3/data-model';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
@@ -14,18 +14,12 @@ import {
 } from '@mui/material';
 import {useCallback, useMemo} from 'react';
 import {RecordsTable} from '../record_table';
-import {SHARED_TAB, useResolveTab} from '../../../../constants/routes';
-import {NotebookViewComponentProps} from '../types';
+import {NotebookViewComponentProps, resolveTab} from '../types';
 import {config} from '../../../../buildconfig';
+import {planRecordLabel} from './planViewRecords';
 
 // This view's tab slugs, default first
-const TABS = [
-  'planned',
-  'all-records',
-  SHARED_TAB.details,
-  SHARED_TAB.settings,
-  SHARED_TAB.map,
-] as const;
+const TABS = ['planned', 'collected', 'details', 'settings', 'map'] as const;
 
 /**
  * A view component for the list of records plan type. Shows pre-populated cards
@@ -35,14 +29,7 @@ const TABS = [
 export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
   const {project, tab, uiSpecification, records, actions, status} = props;
 
-  const currentTab = useResolveTab(TABS, tab, actions.setTab);
-
-  // recordLabel based on viewsets
-  const recordLabel =
-    uiSpecification.visible_types?.length === 1
-      ? uiSpecification.viewsets[uiSpecification.visible_types[0]]?.label ||
-        uiSpecification.visible_types[0]
-      : 'Record';
+  const currentTab = resolveTab(TABS, tab.current);
 
   // A claimed entry is proof the record exists, but an unclaimed one is not
   // proof it does not: the list can hide records the user may not read, and
@@ -50,22 +37,22 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
   const unclaimedMayBeStale =
     !status.canReadAllRecords || status.isDownloadingRecords;
 
-  // work out which records we've already created from the plan
-  // by checking the planReference field in the record metadata
+  // work out which records we've already created from the plan by checking the
+  // planReference field in the record metadata, which names the claiming plan
   const existingRecords: Record<string, boolean> = useMemo(() => {
     const existing: Record<string, boolean> = {};
-    records.allRecords.forEach(record => {
+    records.planRecords.forEach(record => {
       if (record.planReference) {
         existing[record.planReference] = true;
       }
     });
     return existing;
-  }, [records.allRecords]);
+  }, [records.planRecords]);
 
   const navigateToRecord = useCallback(
     (planReference: string) => {
       // find the record with the given planReference
-      const record = records.allRecords.find(
+      const record = records.planRecords.find(
         r => r.planReference === planReference
       );
       // and navigate to it if we found it
@@ -73,11 +60,12 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
         actions.navigateToRecord(record);
       }
     },
-    [records.allRecords, actions.navigateToRecord]
+    [records.planRecords, actions.navigateToRecord]
   );
 
-  // Should not need this but it guards the type cast below
-  if (project.uiDefinition?.plan?.planType !== LIST_OF_RECORDS_PLAN_TYPE) {
+  // The notebook may carry several plans, so the one to render arrives in
+  // props rather than being read back off the project.
+  if (props.plan?.planType !== LIST_OF_RECORDS_PLAN_TYPE) {
     return (
       <div>
         ListOfRecordsPlanView: Not a list of records plan for this{' '}
@@ -85,29 +73,32 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
       </div>
     );
   }
-  // this really is a list of records plan
-  const plan = project.uiDefinition.plan as ListPlan | undefined;
-  if (!plan) {
-    return <div>No plan defined for this {config.notebookName}</div>;
-  }
+  const plan = props.plan;
   const plannedRecords = plan.records;
   if (!plannedRecords) {
     return <div>No planned records defined for this {config.notebookName}</div>;
   }
 
+  const recordLabel = planRecordLabel({uiSpecification, plan});
+
   return (
     <>
+      {/* The plan's label leads, since the plan type names nothing a user has
+      seen and two plans may sit on the one form */}
       <Alert severity="info">
-        <b>List of Records Plan</b>: Collect {plan.formType} records.{' '}
+        <b>{plan.label}</b>: collect {recordLabel} records.{' '}
         {!plan.allowExtraRecords
           ? 'Do not allow extra records'
           : 'Extra records allowed'}
+        {/* A notebook with one plan never shows the chooser, so this is the
+        only place its description is read */}
+        {plan.description && <div>{plan.description}</div>}
       </Alert>
 
       <TabContext value={currentTab}>
         <TabList
-          onChange={(event, newValue) => actions.setTab(newValue)}
-          aria-label={`List of Records Plan tabs`}
+          onChange={(event, newValue) => tab.select(newValue)}
+          aria-label={`${plan.label} tabs`}
         >
           <Tab
             label={`Planned ${recordLabel}s`}
@@ -116,25 +107,25 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
             aria-controls="planned-tabpanel"
           />
           <Tab
-            value="all-records"
-            label={`All ${recordLabel}s`}
-            id="all-tab"
-            aria-controls="all-tabpanel"
+            value="collected"
+            label={`Collected ${recordLabel}s`}
+            id="collected-tab"
+            aria-controls="collected-tabpanel"
           />
           <Tab
-            value={SHARED_TAB.details}
+            value="details"
             label="Details"
             id="details-tab"
             aria-controls="details-tabpanel"
           />
           <Tab
-            value={SHARED_TAB.settings}
+            value="settings"
             label="Settings"
             id="settings-tab"
             aria-controls="settings-tabpanel"
           />
           <Tab
-            value={SHARED_TAB.map}
+            value="map"
             label="Overview Map"
             id="overview-map-tab"
             aria-controls="overview-map-tabpanel"
@@ -158,9 +149,15 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
             columns={{xs: 4, sm: 8, md: 12}}
           >
             {Object.entries(plannedRecords).map(
-              ([planReference, plannedRecord]) => {
+              ([reference, plannedRecord]) => {
+                // The plan id qualifies the reference, so a record created here
+                // is claimed by this plan rather than by whichever reuses the key
+                const planReference = planReferenceFor({
+                  planId: plan.planId,
+                  reference,
+                });
                 return (
-                  <Grid key={planReference} size={4}>
+                  <Grid key={reference} size={4}>
                     <RecordCard
                       record={plannedRecord}
                       type={plan.formType}
@@ -178,14 +175,14 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
           </Grid>
         </TabPanel>
         <TabPanel
-          value="all-records"
-          id="all-tabpanel"
-          aria-labelledby="all-tab"
+          value="collected"
+          id="collected-tabpanel"
+          aria-labelledby="collected-tab"
         >
           <RecordsTable
             project={project}
             maxRows={25}
-            rows={records.allRecords ?? []}
+            rows={records.planRecords}
             loading={status.isLoading}
             viewsets={uiSpecification.viewsets}
             handleQueryFunction={actions.setQuery}
@@ -196,21 +193,21 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
         </TabPanel>
 
         <TabPanel
-          value={SHARED_TAB.details}
+          value="details"
           id="details-tabpanel"
           aria-labelledby="details-tab"
         >
           <props.components.MetadataDisplayComponent />
         </TabPanel>
         <TabPanel
-          value={SHARED_TAB.settings}
+          value="settings"
           id="settings-tabpanel"
           aria-labelledby="settings-tab"
         >
           <props.components.NotebookSettings />
         </TabPanel>
         <TabPanel
-          value={SHARED_TAB.map}
+          value="map"
           id="overview-map-tabpanel"
           aria-labelledby="overview-map-tab"
         >

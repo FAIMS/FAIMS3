@@ -2,9 +2,27 @@ import {
   type CompiledNotebookUiSpec,
   type MinimalRecordMetadata,
   type RecordStatusReport,
+  type RegisteredPlan,
 } from '@faims3/data-model';
 import {Project} from '../../../context/slices/projectSlice';
 import {RecordStatus} from '../../../utils/recordAudit';
+
+/**
+ * The tab a view is on, and the way it moves. Held above the record screens
+ * nested under the notebook route, so opening a record and coming back returns
+ * to the tab that was left.
+ */
+export interface NotebookViewTab {
+  /** Absent until the view has moved, which is the view's own default. */
+  current: string | undefined;
+  select: (tab: string) => void;
+}
+
+/** The view's tab, or its default, which is the first slug it declares. */
+export const resolveTab = <T extends string>(
+  tabs: readonly [T, ...T[]],
+  current: string | undefined
+): T => tabs.find(tab => tab === current) ?? tabs[0];
 
 /**
  * The explicit prop contract for a notebook view.  Includes the
@@ -17,12 +35,9 @@ import {RecordStatus} from '../../../utils/recordAudit';
  */
 
 interface RecordListProps {
-  // All records in the notebook
-  allRecords: MinimalRecordMetadata[];
-  // Records created by the current user
-  myRecords: MinimalRecordMetadata[];
-  // Records created by other users
-  otherRecords: MinimalRecordMetadata[];
+  // The records the plan on screen claims, scoped before they reach a view, so
+  // a view and the components it is handed answer alike.
+  planRecords: MinimalRecordMetadata[];
   // The current sync status of the records in the notebook
   syncStatus: RecordStatus;
   // Recursive completion report per record claiming a plan reference
@@ -63,8 +78,6 @@ interface ActionProps {
   ) => Promise<void>;
   // Navigate to the view page for the given record
   navigateToRecord: (record: MinimalRecordMetadata) => void;
-  // Show the given tab, putting its slug in the URL
-  setTab: (tab: string) => void;
 }
 
 // Components that might be used in the notebook display
@@ -76,8 +89,13 @@ interface ComponentProps {
 
 export interface NotebookViewComponentProps {
   project: Project;
-  // The tab slug from the URL, which a view resolves with `useResolveTab`
-  tab?: string;
+  // The tab this view is on. Scoped to the view, and held above the record
+  // screens nested under the notebook route, so opening a record and coming
+  // back returns to it.
+  tab: NotebookViewTab;
+  // The plan instance this view is rendering. A notebook may carry several, so
+  // a view must read this rather than reaching into the project for `plan`.
+  plan?: RegisteredPlan;
   uiSpecification: CompiledNotebookUiSpec;
   records: RecordListProps;
   actions: ActionProps;

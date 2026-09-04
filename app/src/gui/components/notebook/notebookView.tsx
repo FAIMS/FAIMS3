@@ -29,15 +29,20 @@ import {
   useRecordList,
 } from '../../../utils/customHooks';
 import CircularLoading from '../ui/circular_loading';
-import {getNotebookView} from './plans';
+import {getNotebookView, PlanChooser, resolvePlanViews} from './plans';
+import {recordsClaimedBy} from './plans/planViewRecords';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
 import {useCallback, useMemo, useState} from 'react';
 import {config} from '../../../buildconfig';
 import {useQueryClient} from '@tanstack/react-query';
 import {NotebookViewComponentProps} from './types';
 import {localGetDataDb} from '../../../utils/database';
-import {useNavigate, useParams} from 'react-router-dom';
+import {useNotebookRoute} from '../../../context/notebookRoute';
+import {useNotebookTab, usePlanTab} from '../../../context/notebookViewTab';
+import {useNavigate} from 'react-router-dom';
 import NotebookSettings from './settings';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import {Button} from '@mui/material';
 import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './OverviewMap';
 
@@ -144,22 +149,9 @@ function NotebookViewWithSpec({
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const {tab} = useParams<{tab?: string}>();
-
-  // Replace rather than push, so leaving a notebook costs one Back press
-  const setTab = useCallback(
-    (nextTab: string) => {
-      navigate(
-        ROUTES.getNotebookRoute({
-          serverId: project.serverId,
-          projectId: project.projectId,
-          tab: nextTab,
-        }),
-        {replace: true}
-      );
-    },
-    [navigate, project.serverId, project.projectId]
-  );
+  // Change plan is the way back to the chooser.
+  const {notebook, showPlan} = useNotebookRoute();
+  const {planId} = notebook;
 
   /**
    * Create a new record - function passed in to the view component to create new records,
@@ -202,9 +194,7 @@ function NotebookViewWithSpec({
         });
         navigate(
           ROUTES.getEditRecordRoute({
-            serverId: project.serverId,
-            projectId: project.projectId,
-            tab,
+            ...notebook,
             recordId: record._id,
             mode: 'new',
           })
@@ -227,9 +217,7 @@ function NotebookViewWithSpec({
       isAllowedToAddRecords,
       dataEngine,
       navigate,
-      project.serverId,
-      project.projectId,
-      tab,
+      notebook,
       dispatch,
     ]
   );
@@ -239,40 +227,70 @@ function NotebookViewWithSpec({
     (record: MinimalRecordMetadata) => {
       navigate(
         ROUTES.getViewRecordRoute({
-          serverId: project.serverId,
-          projectId: project.projectId,
-          tab,
+          ...notebook,
           recordId: record.recordId,
         })
       );
     },
-    [navigate, project.serverId, project.projectId, tab]
+    [navigate, notebook]
   );
 
-  // does this notebook have a plan, and do we have a view component for it
-  const planType = project.uiDefinition?.plan?.planType;
-  const PlanComponent = getNotebookView(planType);
+  // Every plan the notebook carries that has a view registered for it, and
+  // which one the route addresses.
+  const {
+    plans: planViews,
+    active: activePlan,
+    showChooser,
+  } = useMemo(
+    () =>
+      resolvePlanViews({
+        uiDefinition: project.uiDefinition,
+        planId,
+        getView: getNotebookView,
+      }),
+    [project.uiDefinition, planId]
+  );
 
-  // Completion roll-up per plan-claiming record, for its cell's status; only a
-  // registered plan view can display it, so gate the walks on one
+  // A plan's tab is its own, so a plan free to model screens or regions rather
+  // than tabs leaves the tabs the default view carries alone.
+  const notebookTab = useNotebookTab();
+  const planTab = usePlanTab();
+  const tab = activePlan ? planTab : notebookTab;
+
+  // Completion roll-up per record the plan on screen claims, for its cell's
+  // status; only that plan's view can display it, so the walks stop at its own
   const planRecordStatusReports = usePlanRecordStatusReports({
     projectId: project.projectId,
     uiSpecification,
     records: records.allRecords,
-    enabled: PlanComponent !== undefined,
+    planId: activePlan?.plan.planId,
   });
+
+  // Every record the plan on screen claims. Scoping once here hands a plan view
+  // and the map beside it one answer, rather than each scoping again. Without a
+  // plan nothing reads these: the chooser and the default view take no props.
+  const planRecords = useMemo(
+    () =>
+      activePlan
+        ? recordsClaimedBy({
+            records: records.allRecords,
+            planId: activePlan.plan.planId,
+          })
+        : [],
+    [records.allRecords, activePlan]
+  );
 
   const props: NotebookViewComponentProps = useMemo(
     () => ({
       project,
       tab,
+      plan: activePlan?.plan,
       uiSpecification: uiSpecification,
       actions: {
         refreshRecordList,
         setQuery,
         createRecord,
         navigateToRecord,
-        setTab,
       },
       status: {
         // Never-loaded, not merely in-flight: the hook's isLoading stays true
@@ -290,9 +308,7 @@ function NotebookViewWithSpec({
         isDownloadingRecords,
       },
       records: {
-        allRecords: records.allRecords,
-        myRecords: records.myRecords,
-        otherRecords: records.otherRecords,
+        planRecords,
         syncStatus: recordStatus.data ?? {status: {}, recordHashes: {}},
         planRecordStatusReports,
       },
@@ -306,8 +322,9 @@ function NotebookViewWithSpec({
         ),
         OverviewMap: () => (
           <OverviewMap
-            serverId={project.serverId}
-            records={records}
+            // The same records the plan's lists hold, so tapping a pin cannot
+            // open a record a list says is not there
+            records={{allRecords: planRecords}}
             project_id={project.projectId}
             uiSpec={uiSpecification}
           />
@@ -316,29 +333,61 @@ function NotebookViewWithSpec({
     }),
     [
       project,
-      tab,
       uiSpecification,
       refreshRecordList,
       setQuery,
       createRecord,
       navigateToRecord,
-      setTab,
+      tab,
       isAllowedToAddRecords,
       isDownloadingRecords,
       records,
       recordStatus.data,
       planRecordStatusReports,
+      planRecords,
+      activePlan,
     ]
   );
 
+  // more than one plan to pick from, and none picked yet
+  if (showChooser) {
+    return (
+      <PlanChooser
+        plans={planViews.map(({plan}) => plan)}
+        heading={uiSpecification.settings.planChooserMarkdown}
+        onSelect={showPlan}
+      />
+    );
+  }
+
   // delegate to the plan view component
-  if (PlanComponent) {
-    return <PlanComponent {...props} />;
+  if (activePlan) {
+    const {Component} = activePlan;
+    // Back leaves the notebook, so where there was a choice of plan to make,
+    // this is the way back to it.
+    return planViews.length > 1 ? (
+      // No wrapper, so the plan view's own children stay direct children of the
+      // page's Stack and a plan lays out the same however many sit beside it
+      <>
+        <Button
+          size="small"
+          startIcon={<ArrowBackIcon />}
+          onClick={() => showPlan()}
+          data-testid="plan-change"
+          sx={{alignSelf: 'flex-start', textTransform: 'none'}}
+        >
+          Change plan
+        </Button>
+        <Component {...props} />
+      </>
+    ) : (
+      <Component {...props} />
+    );
   }
 
   // fallback to the default notebook component
   // TODO: port this component to use the same interface
   // as our custom plan view components once we have sorted
   // out what that interface looks like
-  return <NotebookComponent project={project} tab={tab} setTab={setTab} />;
+  return <NotebookComponent project={project} tab={tab} />;
 }

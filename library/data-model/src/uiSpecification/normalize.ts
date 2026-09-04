@@ -12,7 +12,12 @@ import {
   TemplateDefinitionSchema,
   type NotebookDefinition,
 } from './types';
-import {safeValidatePlan, safeValidatePlanTemplate} from '../plans';
+import {
+  findDuplicatePlanIds,
+  findDuplicatePlanLabels,
+  safeValidatePlan,
+  safeValidatePlanTemplate,
+} from '../plans';
 
 export {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION};
 
@@ -130,8 +135,45 @@ function normalizeUiSpecificationBundle<
 }
 
 /**
- * Accept a legacy or current notebook template JSON bundle, then validate its
- * plan template, if any, against that plan type's own schema.
+ * Reject a set of plans or plan templates a notebook could not offer: an id
+ * repeated between two of them, a label repeated between two of them, or one
+ * that its own plan type refuses. All are caught at load rather than when the
+ * plan's tab is first opened.
+ */
+function assertPlansAddressable({
+  plans,
+  validate,
+  what,
+  label,
+}: {
+  plans: {planId: string; label: string}[] | undefined;
+  validate: (plan: unknown) => {success: boolean};
+  what: string;
+  label: string;
+}): void {
+  const duplicateIds = findDuplicatePlanIds(plans);
+  if (duplicateIds.length) {
+    throw new Error(`Repeated plan id ${duplicateIds.join(', ')} in ${label}`);
+  }
+
+  // The chooser has only the label to tell two plans apart by
+  const duplicateLabels = findDuplicatePlanLabels(plans);
+  if (duplicateLabels.length) {
+    throw new Error(
+      `Repeated plan label ${duplicateLabels.join(', ')} in ${label}`
+    );
+  }
+
+  for (const plan of plans ?? []) {
+    if (!validate(plan).success) {
+      throw new Error(`Invalid ${what} "${plan.planId}" in ${label}`);
+    }
+  }
+}
+
+/**
+ * Accept a legacy or current notebook template JSON bundle, then validate each
+ * plan template it carries against that plan type's own schema.
  */
 export function normalizeNotebookTemplateUiSpecification(
   raw: unknown
@@ -142,19 +184,19 @@ export function normalizeNotebookTemplateUiSpecification(
     label: 'template uiSpecification',
   });
 
-  if (
-    definition.planTemplate &&
-    !safeValidatePlanTemplate(definition.planTemplate).success
-  ) {
-    throw new Error('Invalid plan template in template uiSpecification');
-  }
+  assertPlansAddressable({
+    plans: definition.planTemplates,
+    validate: safeValidatePlanTemplate,
+    what: 'plan template',
+    label: 'template uiSpecification',
+  });
 
   return definition;
 }
 
 /**
- * Accept a legacy or current notebook JSON bundle, then validate its plan, if
- * any, against that plan type's own schema.
+ * Accept a legacy or current notebook JSON bundle, then validate each plan it
+ * carries against that plan type's own schema.
  */
 export function normalizeNotebookUiSpecification(
   raw: unknown
@@ -165,9 +207,12 @@ export function normalizeNotebookUiSpecification(
     label: 'uiSpecification',
   });
 
-  if (definition.plan && !safeValidatePlan(definition.plan).success) {
-    throw new Error('Invalid plan in uiSpecification');
-  }
+  assertPlansAddressable({
+    plans: definition.plans,
+    validate: safeValidatePlan,
+    what: 'plan',
+    label: 'uiSpecification',
+  });
 
   return definition;
 }

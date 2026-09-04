@@ -1,0 +1,86 @@
+// Copyright 2023 FAIMS Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @file Plan template partition slice: the plan templates authored on a
+ * template, in the order the app offers them in.
+ */
+
+import {createSlice, PayloadAction} from '@reduxjs/toolkit';
+import {
+  derivePlanId,
+  type AuthoredPlanTemplate,
+  type PlanTemplate,
+} from '@faims3/data-model';
+
+const planTemplatesReducer = createSlice({
+  name: 'planTemplates',
+  initialState: [] as PlanTemplate[],
+  reducers: {
+    /**
+     * Append a plan template authored in the designer UI, minting the id that
+     * addresses it. Minted here rather than derived on read, so a later reorder
+     * cannot re-address a plan whose config a caller already keyed by id.
+     */
+    planTemplateAdded: (state, action: PayloadAction<AuthoredPlanTemplate>) => {
+      const taken = new Set(state.map(p => p.planId));
+      state.push({
+        ...action.payload,
+        planId: derivePlanId(action.payload.planType, taken),
+      });
+    },
+    /**
+     * Replace the plan template at an index, keeping its position. The dialog
+     * authors everything but the id, which is minted once and kept.
+     */
+    planTemplateSet: (
+      state,
+      action: PayloadAction<{index: number; planTemplate: AuthoredPlanTemplate}>
+    ) => {
+      const {index, planTemplate} = action.payload;
+      const existing = state[index];
+      if (!existing) return;
+      state[index] = {...planTemplate, planId: existing.planId};
+    },
+    /** Remove the plan template at an index. */
+    planTemplateRemoved: (state, action: PayloadAction<number>) => {
+      state.splice(action.payload, 1);
+    },
+    /**
+     * Move a plan template one place up or down. The array order is the order
+     * the app's plan chooser offers the plans in, so this is how a template
+     * author sets that order. Ids are minted on add, so moving keeps each
+     * plan's own.
+     */
+    planTemplateMoved: (
+      state,
+      action: PayloadAction<{index: number; direction: 'up' | 'down'}>
+    ) => {
+      const {index, direction} = action.payload;
+      const to = direction === 'up' ? index - 1 : index + 1;
+      if (!(index in state) || !(to in state)) return;
+      const [moved] = state.splice(index, 1);
+      state.splice(to, 0, moved);
+    },
+  },
+});
+
+export const {
+  planTemplateAdded,
+  planTemplateSet,
+  planTemplateRemoved,
+  planTemplateMoved,
+} = planTemplatesReducer.actions;
+
+export default planTemplatesReducer.reducer;

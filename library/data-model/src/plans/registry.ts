@@ -8,6 +8,7 @@ import {
   PlanTemplateSchema,
   PlanTemplateSchemaWithLiteral,
   PlanTypeDefinition,
+  PlanTypeSchema,
   ValidationResult,
 } from './types';
 import {builtInPlanTypes} from './builtins';
@@ -45,6 +46,20 @@ export const getPlanTypeDefinition = (
   return registry.get(planType);
 };
 
+/**
+ * Plan ids are minted from the plan type, so it has to survive a route segment.
+ * Throws naming the offending type; every registry that keys on a plan type
+ * holds this rule, the designer's included.
+ */
+export const assertRegistrablePlanType = (planType: string) => {
+  const validType = PlanTypeSchema.safeParse(planType);
+  if (!validType.success) {
+    throw new Error(
+      `Plan type ${planType} cannot be registered: ${validType.error.issues[0].message}`
+    );
+  }
+};
+
 // Register a plan type definition with a plan registry, by default with
 // the defaultPlanRegistry. The planType from the plan template schema is used
 // as the key in the registry.
@@ -67,6 +82,8 @@ export const registerPlanType = <
   if (registry.has(planType)) {
     throw new Error(`Plan type ${planType} is already registered`);
   }
+
+  assertRegistrablePlanType(planType);
 
   registry.set(planType, definition as unknown as AnyPlanTypeDefinition);
 };

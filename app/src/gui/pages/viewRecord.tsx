@@ -15,7 +15,7 @@
  * - Supports revision viewing via ?revisionId parameter
  *
  * ROUTE:
- * /<notebook-plural>/:serverId/:projectId/:tab?/view-record/:recordId?tab=view|info|history|status&revisionId=:revisionId
+ * /<notebook-plural>/:serverId/:projectId/:planId?/view-record/:recordId?tab=view|info|history|status&revisionId=:revisionId
  */
 import {
   DatabaseInterface,
@@ -59,13 +59,13 @@ import {config, getMapConfig} from '../../buildconfig';
 import {
   getEditRecordRoute,
   getViewRecordRoute,
-  NOTEBOOK_FROM_RECORD_ROUTE,
   RecordRouteNotebook,
 } from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
+import {useNotebookRoute} from '../../context/notebookRoute';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
 import {tryLocalGetDataDb} from '../../utils/database';
 import {NOTEBOOK_LIST_ROUTE} from '../../utils/remoteProjectRemoval';
@@ -77,8 +77,8 @@ import BackButton from '../components/ui/BackButton';
 import {theme} from '../themes';
 
 /**
- * Tabs of the record view page, in its own `?tab=` query param rather than the
- * notebook's `:tab` path segment.
+ * Tabs of the record view page, in its own `?tab=` query param rather than in
+ * the context a notebook view's tab is held in.
  */
 const RECORD_TABS = {
   VIEW: 'view',
@@ -220,7 +220,7 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
  * Props for the ViewTabContent component
  */
 interface ViewTabContentProps {
-  /** The notebook tab this page sits under, which its record links stay on. */
+  /** The notebook and plan this page sits under, which its record links stay on. */
   notebook: RecordRouteNotebook;
   recordId: RecordID;
   formData: NonNullable<
@@ -513,12 +513,10 @@ const HistoryTabContent: React.FC<{
  * `enabled: canLoadRecord`; a `useEffect` redirects when the project disappears.
  */
 export const ViewRecordPage: React.FC = () => {
-  const {serverId, projectId, tab, recordId} = useParams<{
-    serverId: string;
-    projectId: ProjectID;
-    tab?: string;
-    recordId: RecordID;
-  }>();
+  const {recordId} = useParams<{recordId: RecordID}>();
+  // The notebook this record sits in, and the way back out of it.
+  const {notebook, notebookRoute} = useNotebookRoute();
+  const {serverId, projectId} = notebook;
 
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
@@ -674,16 +672,13 @@ export const ViewRecordPage: React.FC = () => {
 
   const isDeleted = Boolean(formData.context.revision.deleted);
 
-  // The tab the record was opened from, which its own links keep
-  const notebook: RecordRouteNotebook = {serverId, projectId, tab};
-
   return (
     <Stack spacing={2}>
       {/* Header */}
       <Stack spacing={2}>
         <Stack direction="row" spacing={2} sx={{alignItems: 'center'}}>
           {/* Back to record link */}
-          <BackButton link={NOTEBOOK_FROM_RECORD_ROUTE} />
+          <BackButton link={notebookRoute} />
           <Typography variant="h3" color={theme.palette.text.primary}>
             Viewing: {formLabel}
           </Typography>

@@ -19,7 +19,6 @@
  */
 
 import {AvpUpdateMode, RecordID} from '@faims3/data-model';
-import {useEffect} from 'react';
 import {config} from '../buildconfig';
 
 export const INDEX = '/';
@@ -40,68 +39,42 @@ export const POUCH_EXPLORER = '/pouchDB';
 const EDIT_RECORD_SEGMENT = 'records';
 const VIEW_RECORD_SEGMENT = 'view-record';
 
-/** Tab slugs more than one view carries; a view without one shows its default. */
-export const SHARED_TAB = {
-  map: 'map',
-  details: 'details',
-  settings: 'settings',
-} as const;
-
 /**
- * The tab matching the route's slug, or the view's default. A slug the view
- * does not carry redirects to the default, so the URL names the tab on screen
- * and the record links built under it resolve.
+ * The plan on screen, optional so a notebook with no plan view still resolves.
+ * The tab within a view is not here: it lives in the view's own context, so a
+ * plan gains screens of its own without the route gaining segments.
  */
-export const useResolveTab = <T extends string>(
-  tabs: readonly [T, ...T[]],
-  tab: string | undefined,
-  setTab: (tab: string) => void
-): T => {
-  const match = tabs.find(t => t === tab);
-  useEffect(() => {
-    if (tab !== undefined && match === undefined) setTab(tabs[0]);
-  }, [tab, match, setTab, tabs]);
-  return match ?? tabs[0];
-};
-
-/** Keyed by the tab shown; optional, so tab-less links still resolve. */
-export const NOTEBOOK_ROUTE_PATH = `${INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:projectId/:tab?`;
+export const NOTEBOOK_ROUTE_PATH = `${INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:projectId/:planId?`;
 export const EDIT_RECORD_ROUTE_PATH = `${EDIT_RECORD_SEGMENT}/:recordId`;
 export const VIEW_RECORD_ROUTE_PATH = `${VIEW_RECORD_SEGMENT}/:recordId`;
 
 /**
- * @returns /<notebook-plural>/<server>/<project>[/<tab>]
+ * @returns /<notebook-plural>/<server>/<project>[/<plan>]
  */
 export function getNotebookRoute({
   serverId,
   projectId,
-  tab,
+  planId,
 }: {
   serverId: string;
   projectId: string;
-  tab?: string;
+  planId?: string;
 }) {
   return (
     INDIVIDUAL_NOTEBOOK_ROUTE +
-    serverId +
-    '/' +
-    projectId +
-    (tab ? '/' + tab : '')
+    [serverId, projectId, planId].filter(Boolean).join('/')
   );
 }
 
-/** One up from a record route: the notebook, on the tab it was opened from. */
-export const NOTEBOOK_FROM_RECORD_ROUTE = '..';
-
-/** The notebook a record link nests under: ids from the project, tab from the route. */
+/** The notebook a record link nests under: ids from the project, plan from the route. */
 export type RecordRouteNotebook = {
   serverId: string;
   projectId: string;
-  tab?: string;
+  planId?: string;
 };
 
 /**
- * @returns /<notebook-plural>/<server>/<project>[/<tab>]/records/<recordId>
+ * @returns /<notebook-plural>/<server>/<project>[/<plan>]/records/<recordId>
  */
 export function getEditRecordRoute({
   recordId,
@@ -118,7 +91,7 @@ export function getEditRecordRoute({
 }
 
 /**
- * @returns /<notebook-plural>/<server>/<project>[/<tab>]/view-record/<recordId>
+ * @returns /<notebook-plural>/<server>/<project>[/<plan>]/view-record/<recordId>
  */
 export function getViewRecordRoute({
   recordId,

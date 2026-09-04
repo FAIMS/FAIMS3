@@ -61,7 +61,7 @@ import {DesignPanel} from './components/design-panel';
 export interface DesignerWidgetProps {
   /** Initial notebook; undefined shows empty state until parent supplies data. */
   notebook?: NotebookWithHistory;
-  /** Whether this session edits a notebook or a template (templates may carry a planTemplate). */
+  /** Whether this session edits a notebook or a template (templates may carry plan templates). */
   designerMode?: DesignerDocumentMode;
   /** Used for the exported JSON filename (survey/template display name). */
   exportBaseName?: string;
@@ -125,8 +125,8 @@ export function DesignerWidget({
         past: [],
         future: [],
       },
-      planTemplate: notebook.planTemplate ?? null,
-      plan: notebook.plan ?? null,
+      planTemplates: notebook.planTemplates ?? [],
+      plans: notebook.plans ?? [],
     };
   }, [notebook]);
 
