@@ -574,6 +574,11 @@ export const UiConfiguration = z
      * as VITE_ENABLE_PLANS_IN_DESIGNER.
      */
     enablePlansInDesigner: z.boolean().default(true),
+    /**
+     * When true (default), the record view shows a "Status" tab. When false,
+     * the tab is hidden. Passed to the app build as VITE_SHOW_STATUS_TAB.
+     */
+    showStatusTab: z.boolean().default(true),
   })
   .refine(
     data => {
