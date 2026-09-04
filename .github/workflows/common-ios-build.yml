@@ -151,7 +151,6 @@ jobs:
           verbose: false
         env:
           VITE_APP_STORE_CONNECT_TEAM_ID: '${{ env.VITE_APP_STORE_CONNECT_TEAM_ID }}'
-          DEVELOPER_APP_ID: '${{ env.DEVELOPER_APP_ID }}'
           VITE_APPLE_BUNDLE_IDENTIFIER: '${{ env.VITE_APPLE_BUNDLE_IDENTIFIER }}'
           DEVELOPER_PORTAL_TEAM_ID: '${{ env.DEVELOPER_PORTAL_TEAM_ID }}'
           FASTLANE_APPLE_ID: '${{ env.FASTLANE_APPLE_ID }}'
@@ -163,5 +162,3 @@ jobs:
           APPLE_KEY_ID: '${{ env.APPLE_KEY_ID }}'
           APPLE_ISSUER_ID: '${{ env.APPLE_ISSUER_ID }}'
           APPLE_KEY_CONTENT: '${{ env.APPLE_KEY_CONTENT }}'
-          BROWSERSTACK_USERNAME: '${{ env.BROWSERSTACK_USERNAME }}'
-          BROWSERSTACK_ACCESS_KEY: '${{ env.BROWSERSTACK_ACCESS_KEY }}'

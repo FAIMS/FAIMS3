@@ -290,8 +290,6 @@ function buildEnvMap(
         mobile.ios?.appleIndividualKeyContent,
         ''
       ),
-      BROWSERSTACK_USERNAME: coalesce(mobile.ios?.browserstackUsername, ''),
-      BROWSERSTACK_ACCESS_KEY: coalesce(mobile.ios?.browserstackAccessKey, ''),
     },
   };
 

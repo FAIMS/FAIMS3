@@ -131,8 +131,6 @@ export const MobileBuildConfigSchema = z
         appleKeyContent: z.string().optional(),
         appleIndividualKeyId: z.string().optional(),
         appleIndividualKeyContent: z.string().optional(),
-        browserstackUsername: z.string().optional(),
-        browserstackAccessKey: z.string().optional(),
       })
       .passthrough()
       .default({}),

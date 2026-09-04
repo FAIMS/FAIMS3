@@ -74,9 +74,7 @@
       "provisioningProfileSpecifier": "",
       "appleKeyId": "",
       "appleIssuerId": "",
-      "appleKeyContent": "",
-      "browserstackUsername": "",
-      "browserstackAccessKey": ""
+      "appleKeyContent": ""
     }
   },
   "urls": {

@@ -118,8 +118,6 @@ Notes:
 | `mobile.ios.appleKeyId` (fallback `mobile.ios.appleIndividualKeyId`)             | `APPLE_KEY_ID`                                 | `build-secrets.enc.json`                  |
 | `mobile.ios.appleIssuerId`                                                       | `APPLE_ISSUER_ID`                              | `build-secrets.enc.json` (team-key flows) |
 | `mobile.ios.appleKeyContent` (fallback `mobile.ios.appleIndividualKeyContent`)   | `APPLE_KEY_CONTENT`                            | `build-secrets.enc.json`                  |
-| `mobile.ios.browserstackUsername`                                                | `BROWSERSTACK_USERNAME`                        | `build-secrets.enc.json`                  |
-| `mobile.ios.browserstackAccessKey`                                               | `BROWSERSTACK_ACCESS_KEY`                      | `build-secrets.enc.json`                  |
 
 Notes:
 

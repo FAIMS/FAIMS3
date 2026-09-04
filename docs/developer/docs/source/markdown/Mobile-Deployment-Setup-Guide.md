@@ -108,7 +108,6 @@ It contains entries like:
 - Google Play service account JSON/base64 data
 - iOS Match password
 - Apple API key material
-- BrowserStack credentials
 - any other secret values that should not sit in plain-text GitHub variables
 
 Do not commit this file to the app repo. It should only exist locally while you
