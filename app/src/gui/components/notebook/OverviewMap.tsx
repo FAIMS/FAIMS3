@@ -573,6 +573,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
         parentSetMap={setMap}
         extent={featuresExtent}
         config={mapConfig}
+        autoFlyToCurrentLocation={false}
       />
       <Popover
         open={!!selectedFeature && !!popoverAnchorPosition}

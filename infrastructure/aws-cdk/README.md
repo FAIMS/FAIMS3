@@ -349,6 +349,7 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `deleteOnDeactivation`: (Optional) When `true`, manual notebook deactivation wipes local Pouch data in the mobile app (`VITE_DELETE_ON_DEACTIVATION`). Defaults to `false` when omitted.
   - `excludedTeamRoles`: (Optional) Array of team role enum values to hide from Control Centre team-role dropdowns (e.g. `["TEAM_MEMBER_CREATOR"]`). Passed to the web build as `VITE_EXCLUDED_TEAM_ROLES`. Valid values: `TEAM_MEMBER`, `TEAM_MEMBER_CREATOR`, `TEAM_MANAGER`, `TEAM_ADMIN`. When omitted, all team roles are shown.
   - `enablePlansInDesigner`: (Optional) When `true` (default), the designer can add a plan to templates that do not already have one. When `false`, Add Plan is hidden; templates that already have a plan can still be reconfigured. Passed to the web build as `VITE_ENABLE_PLANS_IN_DESIGNER`.
+  - `showStatusTab`: (Optional) When `true` (default), the record view shows a "Status" tab. When `false`, the tab is hidden. Passed to the app build as `VITE_SHOW_STATUS_TAB`.
   - `offlineMaps`: Map and tile configuration for the app.
     - `mapSource`: Map tile provider: `osm` or `maptiler`
     - `mapSourceKey`: (Optional) API key for the map tile service (e.g. MapTiler)

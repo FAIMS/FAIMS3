@@ -78,26 +78,26 @@ apply to the Fieldmark app path above. Appium (`test:e2e:android` /
 
 ### Tier 3 — Admin, permissions, offline UI, exports
 
-| Spec                              | Covers                                                               |
-| --------------------------------- | -------------------------------------------------------------------- |
-| `web/users-admin.e2e.ts`          | Users admin list, password-reset link, disable dialog, global invite |
-| `web/profile-tokens.e2e.ts`       | Long-lived API tokens: list, create, revoke                          |
-| `web/exports.e2e.ts`              | Export tab / Data Export dialog (download-dir assert deferred)       |
-| `web/offline-map-region.e2e.ts`   | Offline Map UI; OpenLayers draw/save deferred                        |
-| `web/permissions-matrix.e2e.ts`   | Invite role options and create controls by persona                   |
-| `app/impersonation.e2e.ts`        | Ops admin impersonates seed user; guest has no impersonate menu      |
-| `conductor/password-reset.e2e.ts` | Forgot-password form + admin-generated reset link (no mail catcher)  |
+| Spec                              | Covers                                                                                                             |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `web/users-admin.e2e.ts`          | Users admin list, password-reset link, disable dialog, global invite                                               |
+| `web/profile-tokens.e2e.ts`       | Long-lived API tokens: list, create, revoke                                                                        |
+| `web/exports.e2e.ts`              | Export tab; checkbox reveals From/To on Full / Data / Photo; time-range query params; file download still deferred |
+| `web/offline-map-region.e2e.ts`   | Offline Map UI; OpenLayers draw/save deferred                                                                      |
+| `web/permissions-matrix.e2e.ts`   | Invite role options and create controls by persona                                                                 |
+| `app/impersonation.e2e.ts`        | Ops admin impersonates seed user; guest has no impersonate menu                                                    |
+| `conductor/password-reset.e2e.ts` | Forgot-password form + admin-generated reset link (no mail catcher)                                                |
 
 ### Tier 4 — Deferred / not yet automated
 
-| Area                          | Notes                                              |
-| ----------------------------- | -------------------------------------------------- |
-| CDP offline collect           | Classic WebDriver limitation; no `offline-collect` |
-| Chrome download assert        | Export dialog covered; file download not asserted  |
-| OpenLayers draw/save          | Region UI only                                     |
-| SSO mock                      | External IdP                                       |
-| Designer field-type matrix    | Beyond minimal text field                          |
-| Appium mobile (`wdio.mobile`) | Separate path; not in CI Chromium job              |
+| Area                          | Notes                                                                           |
+| ----------------------------- | ------------------------------------------------------------------------------- |
+| CDP offline collect           | Classic WebDriver limitation; no `offline-collect`                              |
+| Chrome download assert        | Time-range query params covered via fetch intercept; file download not asserted |
+| OpenLayers draw/save          | Region UI only                                                                  |
+| SSO mock                      | External IdP                                                                    |
+| Designer field-type matrix    | Beyond minimal text field                                                       |
+| Appium mobile (`wdio.mobile`) | Separate path; not in CI Chromium job                                           |
 
 ## Personas (seed)
 

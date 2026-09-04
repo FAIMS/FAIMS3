@@ -10,6 +10,10 @@ import {z} from 'zod';
 import {Field, Form} from '../form';
 import {ChevronRight} from 'lucide-react';
 import {config} from '@/constants';
+import {
+  ExportTimeRangeFields,
+  useExportTimeRange,
+} from './export-time-range-fields';
 
 export type ExportType = 'csv' | 'geojson' | 'kml' | 'geopackage';
 type ExportCategory = 'tabular' | 'geospatial';
@@ -25,6 +29,7 @@ const ExportProjectForm = () => {
   const [exportCategory, setExportCategory] = useState<ExportCategory | null>(
     null
   );
+  const timeRange = useExportTimeRange();
 
   const uiSpec = data?.uiSpecification.uiSpec;
 
@@ -56,6 +61,7 @@ const ExportProjectForm = () => {
       name: 'form',
       label: 'Form',
       schema: z.string().min(1, 'Please select a form'),
+      testId: 'web-export-data-form',
       options: data?.uiSpecification.uiSpec.viewsets
         ? Object.keys(viewSets).map(name => ({
             label: viewSets[name].label || name,
@@ -95,7 +101,9 @@ const ExportProjectForm = () => {
     format: ExportType;
   }) => {
     if (user) {
-      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?format=${format}&viewID=${form}`;
+      const params = new URLSearchParams({format, viewID: form});
+      timeRange.appendTo(params);
+      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?${params.toString()}`;
 
       const response = await fetch(exportUrl, {
         headers: {
@@ -103,6 +111,16 @@ const ExportProjectForm = () => {
           Authorization: `Bearer ${user.token}`,
         },
       });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: {message?: string};
+        } | null;
+        return {
+          message:
+            body?.error?.message ??
+            'Export failed. Please try again or contact support.',
+        };
+      }
       const downloadUrl = ((await response.json()) as GetExportNotebookResponse)
         .url;
 
@@ -113,7 +131,9 @@ const ExportProjectForm = () => {
 
   const handleGeospatialSubmit = async ({format}: {format: ExportType}) => {
     if (user) {
-      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?format=${format}`;
+      const params = new URLSearchParams({format});
+      timeRange.appendTo(params);
+      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?${params.toString()}`;
 
       const response = await fetch(exportUrl, {
         headers: {
@@ -154,6 +174,7 @@ const ExportProjectForm = () => {
         <div className="flex flex-col gap-3">
           <button
             onClick={() => setExportCategory('tabular')}
+            data-testid="web-export-data-tabular"
             className="flex items-center justify-between p-4 rounded-lg border border-border bg-background shadow-sm hover:shadow-md hover:border-foreground/20 transition-all duration-200 text-left group"
           >
             <div className="flex-1">
@@ -209,7 +230,14 @@ const ExportProjectForm = () => {
           fields={tabularFields}
           onSubmit={handleTabularSubmit}
           submitButtonText="Download CSV"
+          submitButtonTestId="web-export-data-download"
           defaultValues={tabularDefaultValues}
+          footer={<ExportTimeRangeFields {...timeRange} />}
+          disableSubmission={
+            timeRange.error
+              ? {disabled: true, reason: timeRange.error}
+              : undefined
+          }
         />
       </div>
     );
@@ -237,6 +265,12 @@ const ExportProjectForm = () => {
         onSubmit={handleGeospatialSubmit}
         submitButtonText="Download"
         defaultValues={geospatialDefaultValues}
+        footer={<ExportTimeRangeFields {...timeRange} />}
+        disableSubmission={
+          timeRange.error
+            ? {disabled: true, reason: timeRange.error}
+            : undefined
+        }
       />
     </div>
   );

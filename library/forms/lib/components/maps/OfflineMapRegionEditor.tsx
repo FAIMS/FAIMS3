@@ -29,7 +29,7 @@ import {transformExtent} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import {Fill, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {MapComponent} from './MapComponent';
+import {MapComponent, MapComponentProps} from './MapComponent';
 import {
   extent4326ToOfflineMapRegion,
   offlineMapRegionToExtent4326,
@@ -59,10 +59,19 @@ export type OfflineMapRegionEditorProps = {
   /** When true, immediately starts map drawing once the map is ready. */
   drawingActive?: boolean;
   onDrawingActiveChange?: (active: boolean) => void;
+  /** Called when the first point of the rectangle has been placed or cleared. */
+  onFirstPointPlacedChange?: (placed: boolean) => void;
+  /** Increment to clear the current in-progress or completed sketch/region from outside the editor. */
+  clearDrawingRequestId?: number;
   /** Overlay text shown while drawing; defaults to a click-drag instruction. */
   drawingInstruction?: string;
   /** Save or clear-saved action shown beside the draw/clear controls. */
   persistenceAction?: OfflineMapPersistenceAction;
+  /** Additional props forwarded to the underlying map component. */
+  mapComponentProps?: Omit<
+    MapComponentProps,
+    'config' | 'parentSetMap' | 'extent' | 'showControls'
+  >;
 };
 
 const DEFAULT_DRAWING_INSTRUCTION =
@@ -85,18 +94,24 @@ export function OfflineMapRegionEditor({
   showControls = true,
   drawingActive = false,
   onDrawingActiveChange,
+  onFirstPointPlacedChange,
+  clearDrawingRequestId,
   drawingInstruction = DEFAULT_DRAWING_INSTRUCTION,
   persistenceAction,
+  mapComponentProps = {},
 }: OfflineMapRegionEditorProps) {
   const [map, setMap] = useState<Map | undefined>();
   const [isDrawing, setIsDrawing] = useState(false);
   const vectorSourceRef = useRef(new VectorSource());
   const vectorLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
   const drawRef = useRef<Draw | null>(null);
+  // Track the previous request so the initial render does not trigger a clear.
+  const previousClearDrawingRequestIdRef = useRef(clearDrawingRequestId);
 
   const showRegionOnMap = useCallback(
     (theMap: Map, nextRegion?: OfflineMapRegion) => {
-      // Render the saved/draft polygon and fit the view to it.
+      // Render the saved/draft polygon
+      // MapComponent will fit the view when the region changes.
       const source = vectorSourceRef.current;
       source.clear();
 
@@ -121,9 +136,6 @@ export function OfflineMapRegionEditor({
         ],
       ]);
       source.addFeature(feature);
-      theMap
-        .getView()
-        .fit(extent3857, {padding: [24, 24, 24, 24], maxZoom: 14});
     },
     []
   );
@@ -138,6 +150,7 @@ export function OfflineMapRegionEditor({
         source: vectorSourceRef.current,
         style: regionStyle,
         zIndex: 997,
+        updateWhileAnimating: true,
       });
       map.addLayer(layer);
       vectorLayerRef.current = layer;
@@ -162,7 +175,8 @@ export function OfflineMapRegionEditor({
     }
     setIsDrawing(false);
     onDrawingActiveChange?.(false);
-  }, [map, onDrawingActiveChange]);
+    onFirstPointPlacedChange?.(false);
+  }, [map, onDrawingActiveChange, onFirstPointPlacedChange]);
 
   const startDrawing = useCallback(() => {
     if (!map || readOnly) {
@@ -174,6 +188,7 @@ export function OfflineMapRegionEditor({
     }
 
     vectorSourceRef.current.clear();
+    onFirstPointPlacedChange?.(false);
 
     const draw = new Draw({
       source: vectorSourceRef.current,
@@ -184,6 +199,7 @@ export function OfflineMapRegionEditor({
 
     draw.on('drawstart', () => {
       vectorSourceRef.current.clear();
+      onFirstPointPlacedChange?.(true);
     });
 
     draw.on('drawend', event => {
@@ -207,7 +223,14 @@ export function OfflineMapRegionEditor({
     drawRef.current = draw;
     setIsDrawing(true);
     onDrawingActiveChange?.(true);
-  }, [map, onRegionChange, onDrawingActiveChange, readOnly, stopDrawing]);
+  }, [
+    map,
+    onRegionChange,
+    onDrawingActiveChange,
+    onFirstPointPlacedChange,
+    readOnly,
+    stopDrawing,
+  ]);
 
   useEffect(() => {
     if (drawingActive && map && !readOnly && !isDrawing) {
@@ -221,9 +244,31 @@ export function OfflineMapRegionEditor({
     }
   }, [drawingActive, isDrawing, stopDrawing]);
 
-  const handleClear = () => {
+  const clearDrawing = useCallback(() => {
+    // Discard any in-progress sketch before clearing the selection.
+    drawRef.current?.abortDrawing();
+    // Remove any completed rectangle from the vector source.
     vectorSourceRef.current.clear();
+    // Reset the parent's first point selection state.
+    onFirstPointPlacedChange?.(false);
     onRegionChange(null);
+  }, [onFirstPointPlacedChange, onRegionChange]);
+
+  // Clear the drawing when a new external clear request is received.
+  useEffect(() => {
+    if (
+      clearDrawingRequestId === undefined ||
+      clearDrawingRequestId === previousClearDrawingRequestIdRef.current
+    ) {
+      return;
+    }
+
+    clearDrawing();
+    previousClearDrawingRequestIdRef.current = clearDrawingRequestId;
+  }, [clearDrawingRequestId, clearDrawing]);
+
+  const handleClear = () => {
+    clearDrawing();
   };
 
   return (
@@ -304,6 +349,9 @@ export function OfflineMapRegionEditor({
           </Alert>
         )}
         <MapComponent
+          // prefer putting the spread first,
+          // so the editor-owned props can never accidentally be overridden later
+          {...mapComponentProps}
           parentSetMap={setMap}
           config={config}
           showControls={showMapControls}

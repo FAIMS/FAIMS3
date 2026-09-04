@@ -9,6 +9,10 @@ import {
 } from '@faims3/data-model';
 import {useMemo, useState} from 'react';
 import {config} from '@/constants';
+import {
+  ExportTimeRangeFields,
+  useExportTimeRange,
+} from './export-time-range-fields';
 
 interface ExportOptions {
   includeTabular: boolean;
@@ -39,6 +43,7 @@ const ExportFullForm = () => {
   const [options, setOptions] = useState<ExportOptions>(DEFAULT_OPTIONS);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const timeRange = useExportTimeRange();
 
   const isValidForSpatial = useMemo(() => {
     if (!data) return false;
@@ -70,6 +75,7 @@ const ExportFullForm = () => {
         includeGeoPackage: options.includeGeoPackage.toString(),
         includeMetadata: options.includeMetadata.toString(),
       });
+      timeRange.appendTo(params);
 
       const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?${params.toString()}`;
       const response = await fetch(exportUrl, {
@@ -302,10 +308,13 @@ const ExportFullForm = () => {
         </button>
       </div>
 
+      <ExportTimeRangeFields {...timeRange} />
+
       {/* Submit button */}
       <button
         onClick={handleSubmit}
-        disabled={!hasSelection || isSubmitting}
+        disabled={!hasSelection || isSubmitting || Boolean(timeRange.error)}
+        data-testid="web-export-full-download"
         className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isSubmitting ? 'Preparing Export...' : 'Download Full Export'}

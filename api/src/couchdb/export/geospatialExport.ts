@@ -22,6 +22,7 @@ import {
   ProjectID,
   buildViewsetFieldSummaries,
   notebookRecordIterator,
+  UpdatedTimeFilter,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {createReadStream, createWriteStream} from 'fs';
@@ -68,6 +69,8 @@ interface SpatialExportContext {
   uiSpecification: CompiledNotebookUiSpec;
   viewFieldsMap: Record<string, FieldSummary[]>;
   hasSpatialFields: boolean;
+  /** Exclusive updatedAt window forwarded to {@link notebookRecordIterator}. */
+  exportFilter?: UpdatedTimeFilter;
 }
 
 /**
@@ -87,10 +90,12 @@ interface ProcessedRecord {
  * Initializes the context required for spatial export operations.
  *
  * @param projectId - The project identifier
+ * @param exportFilter - Optional exclusive updatedAt window applied to record iteration
  * @returns Context object with database, UI spec, field map, and spatial field status
  */
 async function initSpatialExportContext(
-  projectId: ProjectID
+  projectId: ProjectID,
+  exportFilter?: UpdatedTimeFilter
 ): Promise<SpatialExportContext> {
   const dataDb = await getDataDb(projectId);
   const uiSpecification = await getCompiledUiSpecModel(projectId);
@@ -100,7 +105,13 @@ async function initSpatialExportContext(
     viewFieldsMap[viewsetID].some(fSummary => fSummary.isSpatial)
   );
 
-  return {dataDb, uiSpecification, viewFieldsMap, hasSpatialFields};
+  return {
+    dataDb,
+    uiSpecification,
+    viewFieldsMap,
+    hasSpatialFields,
+    exportFilter,
+  };
 }
 
 /**
@@ -119,6 +130,7 @@ async function createRecordIterator(
     projectId,
     uiSpecification: context.uiSpecification,
     includeAttachments: false,
+    ...context.exportFilter,
   });
 }
 
@@ -832,18 +844,21 @@ function createInitialStats(
  * @param projectId - Project identifier
  * @param archive - Archiver instance to append to
  * @param formats - Which output formats to produce (at least one required)
+ * @param exportFilter - Optional exclusive updatedAt window
  * @returns Statistics per requested format and whether the project has spatial fields
  */
 export const appendSpatialFormatsToArchive = async ({
   projectId,
   archive,
   formats,
+  exportFilter,
 }: {
   projectId: ProjectID;
   archive: archiver.Archiver;
   formats: SpatialArchiveFormatConfig;
+  exportFilter?: UpdatedTimeFilter;
 }): Promise<SpatialArchiveExportResult> => {
-  const context = await initSpatialExportContext(projectId);
+  const context = await initSpatialExportContext(projectId, exportFilter);
   const result: SpatialArchiveExportResult = {
     hasSpatialFields: context.hasSpatialFields,
   };
@@ -1153,13 +1168,15 @@ async function buildGeoPackageFromProject(
  *
  * @param projectId - Project identifier
  * @param res - Writable stream for output
+ * @param exportFilter - Optional exclusive updatedAt window
  * @throws Error if no spatial fields exist in the project
  */
 export const streamNotebookRecordsAsGeoJSON = async (
   projectId: ProjectID,
-  res: NodeJS.WritableStream
+  res: NodeJS.WritableStream,
+  exportFilter?: UpdatedTimeFilter
 ): Promise<void> => {
-  const context = await initSpatialExportContext(projectId);
+  const context = await initSpatialExportContext(projectId, exportFilter);
 
   if (!context.hasSpatialFields) {
     res.end();
@@ -1189,13 +1206,15 @@ export const streamNotebookRecordsAsGeoJSON = async (
  *
  * @param projectId - Project identifier
  * @param res - Writable stream for output
+ * @param exportFilter - Optional exclusive updatedAt window
  * @throws Error if no spatial fields exist or GDAL is unavailable
  */
 export const streamNotebookRecordsAsGeoPackage = async (
   projectId: ProjectID,
-  res: NodeJS.WritableStream
+  res: NodeJS.WritableStream,
+  exportFilter?: UpdatedTimeFilter
 ): Promise<void> => {
-  const context = await initSpatialExportContext(projectId);
+  const context = await initSpatialExportContext(projectId, exportFilter);
 
   if (!context.hasSpatialFields) {
     res.end();
@@ -1233,13 +1252,15 @@ export const streamNotebookRecordsAsGeoPackage = async (
  *
  * @param projectId - Project identifier
  * @param res - Writable stream for output
+ * @param exportFilter - Optional exclusive updatedAt window
  * @throws Error if no spatial fields exist in the project
  */
 export const streamNotebookRecordsAsKML = async (
   projectId: ProjectID,
-  res: NodeJS.WritableStream
+  res: NodeJS.WritableStream,
+  exportFilter?: UpdatedTimeFilter
 ): Promise<void> => {
-  const context = await initSpatialExportContext(projectId);
+  const context = await initSpatialExportContext(projectId, exportFilter);
 
   if (!context.hasSpatialFields) {
     res.end();
