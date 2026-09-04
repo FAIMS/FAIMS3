@@ -35,7 +35,8 @@
     "forceRemoteDeletion": "never",
     "deleteOnDeactivation": false,
     "excludedTeamRoles": ["TEAM_MEMBER_CREATOR"],
-    "enablePlansInDesigner": true
+    "enablePlansInDesigner": true,
+    "showStatusTab": true
   },
   "supportLinks": {
     "supportEmail": "support@your-domain.com",

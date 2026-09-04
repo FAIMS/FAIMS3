@@ -207,6 +207,7 @@ export class FaimsInfraStack extends cdk.Stack {
       deleteOnDeactivation: config.uiConfiguration.deleteOnDeactivation,
       excludedTeamRoles: config.uiConfiguration.excludedTeamRoles,
       enablePlansInDesigner: config.uiConfiguration.enablePlansInDesigner,
+      showStatusTab: config.uiConfiguration.showStatusTab,
     });
 
     // Backup setup
