@@ -65,7 +65,6 @@
     "ios": {
       "bundleIdentifier": "org.fedarch.faims3",
       "appStoreConnectTeamId": "XXXXXXXXX",
-      "developerAppId": "",
       "developerPortalTeamId": "XXXXXXXXX",
       "appleId": "",
       "appleApplicationSpecificPassword": "",

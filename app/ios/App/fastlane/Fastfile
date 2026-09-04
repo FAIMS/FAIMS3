@@ -1,7 +1,6 @@
 
 default_platform(:ios)
 
-DEVELOPER_APP_ID = ENV["DEVELOPER_APP_ID"]
 VITE_APPLE_BUNDLE_IDENTIFIER = ENV["VITE_APPLE_BUNDLE_IDENTIFIER"]
 APPLE_ISSUER_ID = ENV["APPLE_ISSUER_ID"]
 APPLE_KEY_ID = ENV["APPLE_KEY_ID"]
@@ -41,61 +40,6 @@ def appstore_profile_specifier
 end
 
 platform :ios do
- 
-  lane :closed_beta_browserstack do
-    ensure_temp_keychain()
-
-    api_key = app_store_connect_api_key(
-      key_id: APPLE_KEY_ID,
-      issuer_id: APPLE_ISSUER_ID,
-      key_content: APPLE_KEY_CONTENT,
-      duration: 1200,
-      in_house: false
-    )
-
-    cocoapods(
-      clean_install: true
-    )
-
-    match(
-      type: 'development',
-      storage_mode: "git",
-      app_identifier: "#{VITE_APPLE_BUNDLE_IDENTIFIER}",
-      git_url: ENV["MATCH_GIT_URL"],
-      git_basic_authorization: Base64.strict_encode64(ENV["GIT_AUTHORIZATION"]),
-      readonly: false,
-      keychain_name: KEYCHAIN_NAME,
-      keychain_password: KEYCHAIN_PASSWORD,
-      api_key: api_key
-    )
-
-    update_project_team(
-      path: "App.xcodeproj",
-      teamid: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
-    )
-
-    gym(
-      configuration: "Debug",
-      workspace: "App.xcworkspace",
-      scheme: "App",
-      export_method: "development",
-      export_options: {
-        provisioningProfiles: {
-            DEVELOPER_APP_ID => "match Development #{VITE_APPLE_BUNDLE_IDENTIFIER}"
-        },
-        teamID: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
-      }
-    )
-
-    upload_to_browserstack_app_automate(
-      browserstack_username: "#{BROWSERSTACK_USERNAME}",
-      browserstack_access_key: "#{BROWSERSTACK_ACCESS_KEY}",
-      custom_id: "ios-github-actions-fastlane"
-    )
-
-    delete_temp_keychain()
-  end
-
 
   lane :closed_beta_testflight do
     ensure_temp_keychain()
@@ -281,7 +225,6 @@ platform :ios do
     )
 
     pilot(
-      apple_id: "#{DEVELOPER_APP_ID}",
       app_identifier: "#{VITE_APPLE_BUNDLE_IDENTIFIER}",
       skip_waiting_for_build_processing: true,
       skip_submission: true,

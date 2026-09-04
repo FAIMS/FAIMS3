@@ -263,7 +263,6 @@ function buildEnvMap(
     ios: {
       VITE_APPLE_BUNDLE_IDENTIFIER: base.VITE_APPLE_BUNDLE_IDENTIFIER,
       VITE_APP_STORE_CONNECT_TEAM_ID: base.VITE_APP_STORE_CONNECT_TEAM_ID,
-      DEVELOPER_APP_ID: coalesce(mobile.ios?.developerAppId, ''),
       DEVELOPER_PORTAL_TEAM_ID: coalesce(
         mobile.ios?.developerPortalTeamId,
         mobile.ios?.appStoreConnectTeamId,

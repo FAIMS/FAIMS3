@@ -118,7 +118,6 @@ export const MobileBuildConfigSchema = z
     ios: z
       .object({
         bundleIdentifier: z.string().default('org.fedarch.faims3').optional(),
-        developerAppId: z.string().optional(),
         developerPortalTeamId: z.string().optional(),
         appStoreConnectTeamId: z.string().optional(),
         appleId: z.string().optional(),

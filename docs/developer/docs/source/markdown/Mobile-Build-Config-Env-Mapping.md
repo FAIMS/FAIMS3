@@ -109,7 +109,6 @@ Notes:
 | -------------------------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------- |
 | `mobile.ios.bundleIdentifier`                                                    | `VITE_APPLE_BUNDLE_IDENTIFIER`                 | `build-config.json`                       |
 | `mobile.ios.appStoreConnectTeamId`                                               | `VITE_APP_STORE_CONNECT_TEAM_ID`               | `build-config.json`                       |
-| `mobile.ios.developerAppId`                                                      | `DEVELOPER_APP_ID`                             | `build-config.json`                       |
 | `mobile.ios.developerPortalTeamId` (fallback `mobile.ios.appStoreConnectTeamId`) | `DEVELOPER_PORTAL_TEAM_ID`                     | `build-config.json`                       |
 | `mobile.ios.appleId`                                                             | `FASTLANE_APPLE_ID`                            | `build-secrets.enc.json`                  |
 | `mobile.ios.appleApplicationSpecificPassword`                                    | `FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD` | `build-secrets.enc.json`                  |
