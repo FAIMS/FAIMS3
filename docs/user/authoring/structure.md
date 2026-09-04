@@ -23,7 +23,7 @@ Survey and template properties are split into two layers:
 - **Notebook version** — your own version label for the form definition
 - **Enable QR code search** — when enabled, users can search records by QR code on the record list
 
-You can still add **custom** key/value pairs in the designer; these are kept for compatibility but are not part of the fixed design fields above.
+You can also add **custom** key/value pairs in the designer. As well as recording organisation-specific information, custom fields can be referenced from conditions, templated strings and computed fields using the `_METADATA.` prefix, letting one design adapt its forms to per-survey settings. See [Conditions](./conditions.md) for details. Field names can only use letters, numbers, hyphens and underscores, and a custom field that is referenced cannot be removed until the references are changed.
 
 ## {{Notebook}} Design
 

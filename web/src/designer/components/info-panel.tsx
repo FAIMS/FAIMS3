@@ -28,7 +28,7 @@ import {
   Divider,
 } from '@mui/material';
 import DebouncedTextField from './debounced-text-field';
-import {useState, useRef} from 'react';
+import {useState, useRef, useMemo} from 'react';
 import {useAppSelector, useAppDispatch} from '../state/hooks';
 import {MdxEditor} from './mdx-editor';
 import {MDXEditorMethods} from '@mdxeditor/editor';
@@ -82,15 +82,25 @@ export const InfoPanel = () => {
   const viewsets = useAppSelector(selectUiViewSets);
   const dispatch = useAppDispatch();
 
+  // References to each custom key from conditions, templates and expressions,
+  // shown per key and used to block removal of a referenced key.
+  const usageByKey = useMemo(() => {
+    const usage: Record<string, FieldDependencyReference[]> = {};
+    for (const key of Object.keys(custom)) {
+      usage[key] = findFieldDependencyReferences(
+        encodeMetadataRef(key),
+        allFields,
+        views,
+        viewsets
+      );
+    }
+    return usage;
+  }, [custom, allFields, views, viewsets]);
+
   // Removing a key that conditions, templates or expressions reference would
   // silently blank them, so block it the way field deletion is blocked.
   const removeCustomField = (key: string) => {
-    const usage = findFieldDependencyReferences(
-      encodeMetadataRef(key),
-      allFields,
-      views,
-      viewsets
-    );
+    const usage = usageByKey[key] ?? [];
     if (usage.length === 0) {
       dispatch(customFieldRemoved({key}));
       return;
@@ -284,6 +294,16 @@ export const InfoPanel = () => {
                   name="custom_field_name"
                   size="small"
                   value={customFieldName}
+                  error={
+                    customFieldName.trim() !== '' &&
+                    !METADATA_KEY_PATTERN.test(customFieldName.trim())
+                  }
+                  helperText={
+                    customFieldName.trim() !== '' &&
+                    !METADATA_KEY_PATTERN.test(customFieldName.trim())
+                      ? 'Letters, numbers, hyphens and underscores only'
+                      : undefined
+                  }
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                     setCustomFieldName(event.target.value)
                   }
@@ -334,6 +354,18 @@ export const InfoPanel = () => {
                       );
                     }}
                   />
+                  {(usageByKey[key] ?? []).length > 0 && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{display: 'block', mt: 0.5}}
+                    >
+                      Referenced by{' '}
+                      {(usageByKey[key] ?? [])
+                        .map(describeReference)
+                        .join('; ')}
+                    </Typography>
+                  )}
                   <Button
                     size="small"
                     color="secondary"
