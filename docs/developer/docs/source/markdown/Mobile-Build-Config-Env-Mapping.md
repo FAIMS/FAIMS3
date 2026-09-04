@@ -105,18 +105,18 @@ Notes:
 
 ## iOS mapping
 
-| JSON field                                                                       | Generated env var                              | Typical file                              |
-| -------------------------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------- |
-| `mobile.ios.bundleIdentifier`                                                    | `VITE_APPLE_BUNDLE_IDENTIFIER`                 | `build-config.json`                       |
-| `mobile.ios.appStoreConnectTeamId`                                               | `VITE_APP_STORE_CONNECT_TEAM_ID`               | `build-config.json`                       |
-| `mobile.ios.appleId`                                                             | `FASTLANE_APPLE_ID`                            | `build-secrets.enc.json`                  |
-| `mobile.ios.appleApplicationSpecificPassword`                                    | `FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD` | `build-secrets.enc.json`                  |
-| `mobile.ios.matchPassword`                                                       | `MATCH_PASSWORD`                               | `build-secrets.enc.json`                  |
-| `mobile.ios.gitAuthorization`                                                    | `GIT_AUTHORIZATION`                            | optional in JSON                          |
-| `mobile.ios.provisioningProfileSpecifier`                                        | `PROVISIONING_PROFILE_SPECIFIER`               | `build-config.json` or secrets            |
-| `mobile.ios.appleKeyId` (fallback `mobile.ios.appleIndividualKeyId`)             | `APPLE_KEY_ID`                                 | `build-secrets.enc.json`                  |
-| `mobile.ios.appleIssuerId`                                                       | `APPLE_ISSUER_ID`                              | `build-secrets.enc.json` (team-key flows) |
-| `mobile.ios.appleKeyContent` (fallback `mobile.ios.appleIndividualKeyContent`)   | `APPLE_KEY_CONTENT`                            | `build-secrets.enc.json`                  |
+| JSON field                                                                     | Generated env var                              | Typical file                              |
+| ------------------------------------------------------------------------------ | ---------------------------------------------- | ----------------------------------------- |
+| `mobile.ios.bundleIdentifier`                                                  | `VITE_APPLE_BUNDLE_IDENTIFIER`                 | `build-config.json`                       |
+| `mobile.ios.appStoreConnectTeamId`                                             | `VITE_APP_STORE_CONNECT_TEAM_ID`               | `build-config.json`                       |
+| `mobile.ios.appleId`                                                           | `FASTLANE_APPLE_ID`                            | `build-secrets.enc.json`                  |
+| `mobile.ios.appleApplicationSpecificPassword`                                  | `FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD` | `build-secrets.enc.json`                  |
+| `mobile.ios.matchPassword`                                                     | `MATCH_PASSWORD`                               | `build-secrets.enc.json`                  |
+| `mobile.ios.gitAuthorization`                                                  | `GIT_AUTHORIZATION`                            | optional in JSON                          |
+| `mobile.ios.provisioningProfileSpecifier`                                      | `PROVISIONING_PROFILE_SPECIFIER`               | `build-config.json` or secrets            |
+| `mobile.ios.appleKeyId` (fallback `mobile.ios.appleIndividualKeyId`)           | `APPLE_KEY_ID`                                 | `build-secrets.enc.json`                  |
+| `mobile.ios.appleIssuerId`                                                     | `APPLE_ISSUER_ID`                              | `build-secrets.enc.json` (team-key flows) |
+| `mobile.ios.appleKeyContent` (fallback `mobile.ios.appleIndividualKeyContent`) | `APPLE_KEY_CONTENT`                            | `build-secrets.enc.json`                  |
 
 Notes:
 
