@@ -150,6 +150,29 @@ export const updateTemplateUiSpecificationRequest = async ({
     }
   );
 
+/** PUT /api/templates/:templateId/uiSpecification/from-xlsform — replace
+ * the template design from an uploaded XLSForm (.xlsx) file. */
+export const updateTemplateUiSpecificationFromXlsformRequest = async ({
+  user,
+  templateId,
+  fileBase64,
+}: {
+  user: User;
+  templateId: string;
+  fileBase64: string;
+}) =>
+  await fetch(
+    `${config.apiUrl}/api/templates/${encodeURIComponent(templateId)}/uiSpecification/from-xlsform`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({fileBase64}),
+    }
+  );
+
 /** PUT /api/templates/:templateId/team — change owning team only. */
 export const modifyTeamForTemplate = async ({
   templateId,

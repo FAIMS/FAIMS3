@@ -39,7 +39,7 @@ export const EditTemplateDialog = ({onSuccess}: {onSuccess: () => void}) => {
           <Tooltip>
             <TooltipTrigger className="w-fit">
               <Button variant="outline" disabled={true}>
-                Replace Template JSON
+                Replace Template JSON or XLSForm
                 <Pencil />
               </Button>
             </TooltipTrigger>
@@ -52,17 +52,18 @@ export const EditTemplateDialog = ({onSuccess}: {onSuccess: () => void}) => {
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild className="w-fit">
             <Button variant="outline">
-              Replace Template JSON
+              Replace Template
               <Pencil />
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Replace Template JSON</DialogTitle>
+              <DialogTitle>Replace Template</DialogTitle>
               <DialogDescription>
                 Upload a JSON file with top-level metadata and uiSpec (same
-                shape as Download JSON). This replaces the template design only;
-                it does not change title, description, or team.
+                shape as Download JSON), or an XLSForm (.xlsx). This replaces
+                the template design only; it does not change title, description,
+                or team.
               </DialogDescription>
             </DialogHeader>
             <UpdateTemplateForm setDialogOpen={setOpen} onSuccess={onSuccess} />
