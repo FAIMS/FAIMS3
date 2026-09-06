@@ -1,0 +1,22 @@
+{
+  "name": "@faims3/build-config",
+  "version": "1.6.2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "tsx src/generate-build-config.ts",
+    "validate-coverage": "tsx src/validate-generated-env.ts",
+    "test": "tsx --test test/generate-build-config.test.ts"
+  },
+  "dependencies": {
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "tsx": "^4.22.4",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": "24"
+  },
+  "packageManager": "pnpm@11.6.0"
+}

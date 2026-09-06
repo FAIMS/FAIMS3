@@ -275,6 +275,11 @@ const EnvSchema = z
       ] as const satisfies readonly NavigationStyleOption[],
       'none'
     ),
+    /** Theme for the application */
+    VITE_THEME: configHelpers.enumDefault(
+      ['default', 'fieldmark', 'bssTheme'] as const satisfies readonly string[],
+      'default'
+    ),
     /** Show the record-links feature when exactly `'true'`. */
     VITE_SHOW_RECORD_LINKS: configHelpers.truthyOnlyEquals('true'),
     /** Automatically migrate old v1.0-style databases on startup. */
@@ -425,6 +430,7 @@ const EnvSchema = z
       privacyPolicyUrl: env.VITE_APP_PRIVACY_POLICY_URL,
       contactUrl: env.VITE_APP_CONTACT_URL,
       supportEmail: env.VITE_SUPPORT_EMAIL,
+      theme: env.VITE_THEME,
       tokenRefreshIntervalMs: env.VITE_TOKEN_REFRESH_INTERVAL_MS,
       tokenRefreshWindowMs: env.VITE_TOKEN_REFRESH_WINDOW_MS,
       loginBannerGraceMs: env.VITE_LOGIN_BANNER_GRACE_MS,

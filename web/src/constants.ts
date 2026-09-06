@@ -88,7 +88,12 @@ const EnvSchema = z
     /** Optional docs / help site URL. */
     VITE_DOCS_URL: configHelpers.stringDefault(''),
     /** Theme identifier applied to the Control Centre chrome. */
+    VITE_THEME: configHelpers.enumDefault(
+      ['default', 'fieldmark', 'bssTheme'] as const satisfies readonly string[],
+      'default'
+    ),
     VITE_APP_THEME: configHelpers.stringDefault('default'),
+
     /** Enables developer-only UI when exactly `'true'`. */
     VITE_DEVELOPER_MODE: z
       .string()
