@@ -41,7 +41,6 @@ import {
   informationUpdated,
 } from '../state/metadata-reducer';
 import {settingsUpdated} from '../store/slices/uiSpec';
-import {getSettingsSections} from '../features/design/settings-section-registry';
 
 /** Notebook design info: settings toggles, typed metadata, and custom key/value pairs. */
 export const InfoPanel = () => {
@@ -121,15 +120,6 @@ export const InfoPanel = () => {
               Useful if your form includes a QR code field.
             </FormHelperText>
           </Grid>
-
-          {getSettingsSections().map(([id, Section]) => (
-            <Grid size={12} key={id}>
-              <Section
-                settings={settings}
-                onChange={update => dispatch(settingsUpdated(update))}
-              />
-            </Grid>
-          ))}
 
           <Grid size={12}>
             <Divider />
