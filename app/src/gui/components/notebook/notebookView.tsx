@@ -309,6 +309,7 @@ function NotebookViewWithSpec({
       },
       records: {
         planRecords,
+        notebookRecords: records.allRecords,
         syncStatus: recordStatus.data ?? {status: {}, recordHashes: {}},
         planRecordStatusReports,
       },
@@ -320,11 +321,12 @@ function NotebookViewWithSpec({
             templateId={project.templateId}
           />
         ),
-        OverviewMap: () => (
+        OverviewMap: ({records: plotted}) => (
           <OverviewMap
-            // The same records the plan's lists hold, so tapping a pin cannot
-            // open a record a list says is not there
-            records={{allRecords: planRecords}}
+            // The plan's own records unless the view asks for others, so
+            // tapping a pin cannot open a record the list beside it says is
+            // not there.
+            records={{allRecords: plotted ?? planRecords}}
             project_id={project.projectId}
             uiSpec={uiSpecification}
           />

@@ -15,7 +15,7 @@ import {NotebookViewTabProvider} from '../../../context/notebookViewTab';
 import {Project} from '../../../context/slices/projectSlice';
 import {NotebookView} from './notebookView';
 
-const {navigate, routeParams, allRecords} = vi.hoisted(() => ({
+const {navigate, routeParams, allRecords, plotAll} = vi.hoisted(() => ({
   navigate: vi.fn(),
   routeParams: {
     current: {} as {
@@ -27,6 +27,8 @@ const {navigate, routeParams, allRecords} = vi.hoisted(() => ({
   allRecords: {
     current: [] as Array<{recordId: string; planReference?: string}>,
   },
+  // Whether the view asks the map for the whole notebook rather than its plan's
+  plotAll: {current: false},
 }));
 
 vi.mock('react-router-dom', async () => ({
@@ -63,7 +65,16 @@ vi.mock('./plans', async () => {
             .map((record: MinimalRecordMetadata) => record.recordId)
             .join(' ')
         ),
-        React.createElement(props.components.OverviewMap)
+        React.createElement(
+          'span',
+          {'data-testid': 'notebook-records'},
+          props.records.notebookRecords
+            .map((record: MinimalRecordMetadata) => record.recordId)
+            .join(' ')
+        ),
+        React.createElement(props.components.OverviewMap, {
+          records: plotAll.current ? props.records.notebookRecords : undefined,
+        })
       ),
   };
 });
@@ -165,6 +176,7 @@ const notebookRoute = (next: {planId?: string}) =>
 beforeEach(() => {
   navigate.mockClear();
   allRecords.current = [];
+  plotAll.current = false;
 });
 afterEach(() => cleanup());
 
@@ -234,6 +246,26 @@ describe('NotebookView record scoping', () => {
     expect(screen.getByTestId('plotted-records')).toHaveTextContent('mine');
     expect(screen.getByTestId('plotted-records')).not.toHaveTextContent(
       'theirs'
+    );
+  });
+
+  // A plan that processes rather than collects claims nothing, so the scoped
+  // list is not the one it works from.
+  it('hands a plan view the whole notebook beside the records it claims', () => {
+    allRecords.current = [record('mine', 'lab'), record('theirs', 'field')];
+    renderNotebook({planId: 'lab'});
+    expect(screen.getByTestId('handed-records')).toHaveTextContent('mine');
+    expect(screen.getByTestId('notebook-records')).toHaveTextContent(
+      'mine theirs'
+    );
+  });
+
+  it('lets a view plot records beyond the ones its plan claims', () => {
+    allRecords.current = [record('mine', 'lab'), record('theirs', 'field')];
+    plotAll.current = true;
+    renderNotebook({planId: 'lab'});
+    expect(screen.getByTestId('plotted-records')).toHaveTextContent(
+      'mine theirs'
     );
   });
 });

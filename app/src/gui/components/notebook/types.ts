@@ -38,6 +38,13 @@ interface RecordListProps {
   // The records the plan on screen claims, scoped before they reach a view, so
   // a view and the components it is handed answer alike.
   planRecords: MinimalRecordMetadata[];
+  // Every record in the notebook, whichever plan claims it. A claim names the
+  // plan that MADE a record, so a plan that processes rather than collects is
+  // claimed nothing and would otherwise be handed an empty list; a plan that
+  // cross-references another's records reads them here too. Scoping is a view's
+  // own decision, not one made for it: `planRecords` is the common answer, and
+  // this is the whole notebook when a view needs it.
+  notebookRecords: MinimalRecordMetadata[];
   // The current sync status of the records in the notebook
   syncStatus: RecordStatus;
   // Recursive completion report per record claiming a plan reference
@@ -84,7 +91,9 @@ interface ActionProps {
 interface ComponentProps {
   NotebookSettings: React.ComponentType<{}>;
   MetadataDisplayComponent: React.ComponentType<{}>;
-  OverviewMap: React.ComponentType<{}>;
+  // Plots `planRecords` unless the view names the records to plot, so a view
+  // showing more than its own plan's records can hold the map to the same set.
+  OverviewMap: React.ComponentType<{records?: MinimalRecordMetadata[]}>;
 }
 
 export interface NotebookViewComponentProps {
