@@ -15,21 +15,25 @@ import {NotebookViewTabProvider} from '../../../context/notebookViewTab';
 import {Project} from '../../../context/slices/projectSlice';
 import {NotebookView} from './notebookView';
 
-const {navigate, routeParams, allRecords, plotAll} = vi.hoisted(() => ({
-  navigate: vi.fn(),
-  routeParams: {
-    current: {} as {
-      serverId?: string;
-      projectId?: string;
-      planId?: string;
+const {navigate, routeParams, allRecords, plotAll, queries} = vi.hoisted(
+  () => ({
+    navigate: vi.fn(),
+    routeParams: {
+      current: {} as {
+        serverId?: string;
+        projectId?: string;
+        planId?: string;
+      },
     },
-  },
-  allRecords: {
-    current: [] as Array<{recordId: string; planReference?: string}>,
-  },
-  // Whether the view asks the map for the whole notebook rather than its plan's
-  plotAll: {current: false},
-}));
+    allRecords: {
+      current: [] as Array<{recordId: string; planReference?: string}>,
+    },
+    // Whether the view asks the map for the whole notebook rather than its plan's
+    plotAll: {current: false},
+    // Every search the record list was asked for, newest last
+    queries: {current: [] as string[]},
+  })
+);
 
 vi.mock('react-router-dom', async () => ({
   ...(await vi.importActual<object>('react-router-dom')),
@@ -52,6 +56,11 @@ vi.mock('./plans', async () => {
           'button',
           {onClick: () => props.tab.select('all-records')},
           'show a tab'
+        ),
+        React.createElement(
+          'button',
+          {onClick: () => props.actions.setQuery('needle')},
+          'search'
         ),
         React.createElement(
           'span',
@@ -104,13 +113,17 @@ vi.mock('../../../utils/customHooks', () => ({
   useIsAuthorisedTo: () => false,
   useIsRecordDownloadUnderway: () => false,
   usePlanRecordStatusReports: () => new Map(),
-  useRecordList: () => ({
-    allRecords: allRecords.current,
-    myRecords: [],
-    otherRecords: [],
-    isLoading: false,
-    canReadAllRecords: true,
-  }),
+  // Records the query it was asked for, which is what filters the whole notebook
+  useRecordList: ({query}: {query: string}) => {
+    queries.current.push(query);
+    return {
+      allRecords: allRecords.current,
+      myRecords: [],
+      otherRecords: [],
+      isLoading: false,
+      canReadAllRecords: true,
+    };
+  },
 }));
 vi.mock('../../../utils/apiHooks/notebooks', () => ({
   useRecordAudit: () => ({data: undefined}),
@@ -159,7 +172,7 @@ const record = (recordId: string, planId?: string, reference?: string) => ({
 const renderNotebook = (params: {planId?: string}) => {
   // The notebook's own ids come from the route, as they do in the app
   routeParams.current = {serverId: 'srv', projectId: 'proj', ...params};
-  render(
+  const {rerender} = render(
     <QueryClientProvider client={new QueryClient()}>
       <NotebookRouteProvider>
         <NotebookViewTabProvider>
@@ -168,6 +181,7 @@ const renderNotebook = (params: {planId?: string}) => {
       </NotebookRouteProvider>
     </QueryClientProvider>
   );
+  return {rerender};
 };
 
 const notebookRoute = (next: {planId?: string}) =>
@@ -177,6 +191,7 @@ beforeEach(() => {
   navigate.mockClear();
   allRecords.current = [];
   plotAll.current = false;
+  queries.current = [];
 });
 afterEach(() => cleanup());
 
@@ -258,6 +273,26 @@ describe('NotebookView record scoping', () => {
     expect(screen.getByTestId('notebook-records')).toHaveTextContent(
       'mine theirs'
     );
+  });
+
+  it('drops the search when the plan changes', async () => {
+    const {rerender} = renderNotebook({planId: 'lab'});
+    await userEvent.click(screen.getByRole('button', {name: 'search'}));
+    expect(queries.current.at(-1)).toBe('needle');
+
+    // The route is what changes the plan, so the view is not remounted and its
+    // search would otherwise thin what the next plan sees
+    routeParams.current = {...routeParams.current, planId: 'field'};
+    rerender(
+      <QueryClientProvider client={new QueryClient()}>
+        <NotebookRouteProvider>
+          <NotebookViewTabProvider>
+            <NotebookView project={project} />
+          </NotebookViewTabProvider>
+        </NotebookRouteProvider>
+      </QueryClientProvider>
+    );
+    expect(queries.current.at(-1)).toBe('');
   });
 
   it('lets a view plot records beyond the ones its plan claims', () => {

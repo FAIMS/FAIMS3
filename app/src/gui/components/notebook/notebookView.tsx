@@ -153,6 +153,16 @@ function NotebookViewWithSpec({
   const {notebook, showPlan} = useNotebookRoute();
   const {planId} = notebook;
 
+  // The search filters the whole notebook, so a search left running on one
+  // plan would thin what the next one sees, down to a map grid drawing cells
+  // as unclaimed. Reset while rendering the new plan rather than in an effect,
+  // so no frame ever draws one plan against another's filtered records.
+  const [queriedPlanId, setQueriedPlanId] = useState(planId);
+  if (queriedPlanId !== planId) {
+    setQueriedPlanId(planId);
+    setQuery('');
+  }
+
   /**
    * Create a new record - function passed in to the view component to create new records,
    *  bundles up all of the app internal access that is needed to do this so that the
