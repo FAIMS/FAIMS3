@@ -38,9 +38,9 @@ interface RecordListProps {
   // The records the plan on screen claims, scoped before they reach a view, so
   // a view and the components it is handed answer alike.
   planRecords: MinimalRecordMetadata[];
-  // Every record in the notebook.
+  // Every record in the notebook matching the current search.
   notebookRecords: MinimalRecordMetadata[];
-  // The notebook's records created by the active user, and by everyone else.
+  // The same records again, split into those the active user made and the rest.
   myRecords: MinimalRecordMetadata[];
   otherRecords: MinimalRecordMetadata[];
   // The current sync status of the records in the notebook
