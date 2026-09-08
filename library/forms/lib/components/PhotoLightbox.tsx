@@ -1,8 +1,14 @@
-import CloseIcon from '@mui/icons-material/Close';
-import {Dialog, DialogContent, IconButton} from '@mui/material';
+/*
+ * Copyright 2026 FAIMS Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ */
+
 import {Box} from '@mui/material';
 import React, {useRef} from 'react';
 import {TransformComponent, TransformWrapper} from 'react-zoom-pan-pinch';
+import {MediaLightbox} from './MediaLightbox';
 
 /**
  * Full-screen photo lightbox.
@@ -19,8 +25,8 @@ import {TransformComponent, TransformWrapper} from 'react-zoom-pan-pinch';
  *    so we don't close right after the user lifts their finger).
  *  - Tap the X (visible below the app bar) to close.
  *
- * Used by TakePhoto (edit + view) and the advanced helper image viewer in
- * FieldWrapper.
+ * Used by TakePhoto (edit + view), Sketch view mode, and the advanced helper
+ * image viewer in FieldWrapper. The shared chrome lives in {@link MediaLightbox}.
  */
 export const PhotoLightbox: React.FC<{
   url: string;
@@ -40,59 +46,17 @@ export const PhotoLightbox: React.FC<{
   };
 
   return (
-    <Dialog
-      open
+    <MediaLightbox
       onClose={onClose}
-      maxWidth={false}
-      fullScreen
-      sx={{
-        '& .MuiDialog-paper': {
-          backgroundColor: 'rgba(0,0,0,0.92)',
-        },
+      closeOnBackdrop
+      onBackdropClick={handleBackgroundClick}
+      closeAriaLabel="Close preview"
+      contentSx={{
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
-      <DialogContent
-        onClick={handleBackgroundClick}
-        sx={{
-          p: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-          position: 'relative',
-          // The library owns touch handling on its own surface; outside of
-          // it (the dark margins) we just want a clean tap-to-close.
-          touchAction: 'manipulation',
-        }}
-      >
-        <IconButton
-          aria-label="Close preview"
-          size="large"
-          onClick={e => {
-            e.stopPropagation();
-            onClose();
-          }}
-          sx={{
-            position: 'absolute',
-            top: 'max(56px, env(safe-area-inset-top, 0px) + 48px)',
-            left: 16,
-            // Sit above the transform wrapper so it stays tappable when zoomed.
-            zIndex: 2,
-            color: 'white',
-            bgcolor: 'rgba(255, 255, 255, 0.22)',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
-            padding: 2,
-            '& .MuiSvgIcon-root': {
-              fontSize: 32,
-            },
-            '&:hover': {
-              bgcolor: 'rgba(255, 255, 255, 0.32)',
-              boxShadow: '0 6px 24px rgba(0, 0, 0, 0.35)',
-            },
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
+      <Box sx={{flex: 1, minHeight: 0, width: '100%', height: '100%'}}>
         <TransformWrapper
           minScale={1}
           maxScale={5}
@@ -132,7 +96,7 @@ export const PhotoLightbox: React.FC<{
             />
           </TransformComponent>
         </TransformWrapper>
-      </DialogContent>
-    </Dialog>
+      </Box>
+    </MediaLightbox>
   );
 };

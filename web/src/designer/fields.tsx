@@ -404,6 +404,25 @@ const fields: {[key: string]: FieldType} = {
     order: 21,
   },
 
+  Sketch: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'Sketch',
+    'type-returned': 'faims-attachment::Files',
+    'component-parameters': {
+      name: 'sketch-field',
+      helperText: '',
+      advancedHelperText: '',
+      label: 'Sketch',
+    },
+    initialValue: null,
+    humanReadableName: 'Sketch',
+    humanReadableDescription:
+      'Draw a freehand sketch with ink, lines, and shapes',
+    category: CategoryKey.MEDIA,
+    showInChooser: true,
+    order: 21.5,
+  },
+
   TakePoint: {
     'component-namespace': 'faims-custom',
     'component-name': 'TakePoint',

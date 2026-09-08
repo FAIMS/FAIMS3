@@ -246,6 +246,9 @@ use:
   **[Take Photo](../media-fields/take-photo.md)** — integrates with the device camera
   and preserves GPS metadata on mobile. Can also upload photos,
   supporting workflows that mix on-device and external cameras.
+- **On-device drawings (profiles, outlines, site sketches)** →
+  **[Sketch](../media-fields/sketch.md)** — full-screen ink and shape editor;
+  stores editable strokes plus a PNG that syncs like a photo.
 - **Documents, drawings, or other files** →
   **[Upload a File](../media-fields/attach-file.md)** — accepts any file type.
 

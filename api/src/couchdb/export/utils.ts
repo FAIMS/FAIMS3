@@ -37,6 +37,7 @@ export function getComponentKey(namespace: string, name: string): string {
 const ATTACHMENT_COMPONENTS = new Set([
   'faims-custom::TakePhoto',
   'faims-custom::FileUploader',
+  'faims-custom::Sketch',
 ]);
 
 /** Component key for single-point GPS location (lat/long/accuracy). */
