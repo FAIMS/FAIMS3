@@ -29,7 +29,6 @@ export const buildCorsAllowlist = (): string[] => {
   const candidates = [
     config.conductorPublicUrl,
     config.webAppPublicUrl,
-    config.designerUrl,
     config.newConductorUrl,
     ...config.redirectWhitelist,
   ];
