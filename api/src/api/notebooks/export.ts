@@ -95,7 +95,7 @@ import {parseUpdatedTimeFilterFromQuery} from '../updatedTimeQuery';
 export const notebookExportRouter: express.Router = express.Router();
 
 // =============================================================================
-// Types for download format and grant mint 
+// Types for download format and grant mint
 // =============================================================================
 
 /** Optional exclusive `updatedAfter` / `updatedBefore` query (epoch-ms strings). */
