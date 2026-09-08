@@ -28,11 +28,18 @@ import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {FieldSearchAutocomplete} from '../field-selector';
 import {applyFieldFilters} from '../../features/field-search';
-import {fieldIdsForViewset} from '@faims3/data-model';
+import {
+  fieldIdsForViewset,
+  decodeMetadataRef,
+  encodeMetadataRef,
+  extractExpressionReferences,
+  isReferenceableMetadataKey,
+} from '@faims3/data-model';
 import {
   selectUiFields,
   selectUiViews,
   selectUiViewSets,
+  selectCustomMetadata,
 } from '../../store/selectors';
 import DebouncedTextField from '../debounced-text-field';
 import {BaseFieldEditor} from './BaseFieldEditor';
@@ -71,6 +78,7 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
     state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const allFields = useAppSelector(selectUiFields);
+  const custom = useAppSelector(selectCustomMetadata);
   const views = useAppSelector(selectUiViews);
   const viewsets = useAppSelector(selectUiViewSets);
   const dispatch = useAppDispatch();
@@ -140,6 +148,15 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
     });
   }, [uiSpecForCompile, viewsetId]);
 
+  // Notebook metadata referenceable as {_METADATA.key}.
+  const metadataOptions = useMemo(
+    () =>
+      Object.keys(custom)
+        .filter(isReferenceableMetadataKey)
+        .map(key => ({ref: encodeMetadataRef(key), label: key})),
+    [custom]
+  );
+
   // Compile with the per-form wrapper so {_PARENT.Field-ID} references
   // validate against this form's possible parent forms.
   const validationError = useMemo(() => {
@@ -151,11 +168,22 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
         formId: viewsetId,
         requiredType,
       });
-      return null;
+      // The compile pass types any key; only the designer knows which exist.
+      const metadataKeys = extractExpressionReferences(expression)
+        .map(decodeMetadataRef)
+        .filter((key): key is string => key !== null);
+      const missing = metadataKeys.find(key => !(key in custom));
+      if (missing) {
+        return `{${encodeMetadataRef(missing)}}: "${missing}" is not a custom metadata key on this notebook (see the Info panel)`;
+      }
+      const unsafe = metadataKeys.find(key => !isReferenceableMetadataKey(key));
+      return unsafe
+        ? `{${encodeMetadataRef(unsafe)}}: "${unsafe}" cannot be referenced - rename it to use only letters, numbers, hyphens and underscores`
+        : null;
     } catch (e) {
       return e instanceof ExpressionError ? e.message : 'Invalid expression';
     }
-  }, [expression, uiSpecForCompile, viewsetId, requiredType]);
+  }, [expression, uiSpecForCompile, viewsetId, requiredType, custom]);
 
   const updateExpression = (value: string) => {
     const newField = withUpdatedField(field, nextField => {
@@ -300,6 +328,30 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
                     }}
                   >
                     {relatedFieldOptions.map(({ref, label}) => (
+                      <MenuItem key={ref} value={ref}>
+                        {label} ({ref})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            )}
+            {metadataOptions.length > 0 && (
+              <Box sx={{mt: 1, maxWidth: 400}}>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="metadata-insert-label">
+                    Insert notebook metadata
+                  </InputLabel>
+                  <Select
+                    labelId="metadata-insert-label"
+                    label="Insert notebook metadata"
+                    value=""
+                    data-testid="computed-metadata-insert"
+                    onChange={e => {
+                      if (e.target.value) insertFieldRef(e.target.value);
+                    }}
+                  >
+                    {metadataOptions.map(({ref, label}) => (
                       <MenuItem key={ref} value={ref}>
                         {label} ({ref})
                       </MenuItem>

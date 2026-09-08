@@ -151,6 +151,11 @@ export function renderTemplate({
     }
     filteredValues['_PARENT'] = parent;
   }
+  // Notebook metadata values available as {{_METADATA.key}}. Plain strings,
+  // so no per-field expansion.
+  if (context.metadataValues) {
+    filteredValues['_METADATA'] = {...context.metadataValues};
+  }
   // Linked record values available as {{Rel-Field-ID.Field-ID}}. The link
   // field's key now holds the linked record's values; a bare {{Rel-Field-ID}}
   // still renders what it did before via the non-enumerable toString.
