@@ -12,6 +12,7 @@ FAIMS3 Developer Documentation
    markdown/ProjectLifecycle.md
    markdown/PermissionModel.md
    markdown/NotebookDefinition.md
+   markdown/Data-Collection-Plans.md
    markdown/AppInitialisation.md
    markdown/MetadataMigrationGuide.md
    markdown/NotebookMigrations.md
