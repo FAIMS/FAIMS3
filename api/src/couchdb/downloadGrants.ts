@@ -33,19 +33,6 @@ export const grantIdFromDocId = (docId: string): string =>
     ? docId.slice(AUTH_RECORD_ID_PREFIXES.downloadgrant.length)
     : docId;
 
-/** Constant-time string compare for secret hashes. */
-const hashesEqual = (left: string, right: string): boolean => {
-  const a = Buffer.from(left, 'utf8');
-  const b = Buffer.from(right, 'utf8');
-  if (a.length !== b.length) {
-    return false;
-  }
-  return crypto.timingSafeEqual(
-    new Uint8Array(a.buffer, a.byteOffset, a.byteLength),
-    new Uint8Array(b.buffer, b.byteOffset, b.byteLength)
-  );
-};
-
 /**
  * Fields copied onto a new grant (plus generated id, secret hash, expiry).
  * Persistable grant metadata only — not documentType / used / secretHash /
@@ -238,7 +225,7 @@ export const consumeDownloadGrant = async ({
     return {ok: false, reason: 'expired'};
   }
   if (cookieSecret !== undefined) {
-    if (!hashesEqual(grant.secretHash, hashChallengeCode(cookieSecret))) {
+    if (grant.secretHash !== hashChallengeCode(cookieSecret)) {
       return {ok: false, reason: 'invalid'};
     }
   }
@@ -262,4 +249,4 @@ export const consumeDownloadGrant = async ({
 export const verifyDownloadGrantCookieSecret = (
   grant: DownloadGrantExistingDocument,
   cookieSecret: string
-): boolean => hashesEqual(grant.secretHash, hashChallengeCode(cookieSecret));
+): boolean => grant.secretHash === hashChallengeCode(cookieSecret);

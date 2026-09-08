@@ -8,10 +8,6 @@
  * - KML spatial export
  * - GeoPackage spatial export
  * - Metadata JSON with export statistics
- *
- * Format enum and include-flag config live in `@faims3/data-model`
- * (`ExportFormatSchema`, `FullExportConfigSchema`) so the download-grant
- * document and this streamer share one product shape.
  */
 
 import type {FullExportConfig} from '@faims3/data-model';

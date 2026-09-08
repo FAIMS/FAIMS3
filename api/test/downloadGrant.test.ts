@@ -133,10 +133,7 @@ describe('Download grants', () => {
     const first = await mintAdminExport();
     const second = await mintAdminExport();
     const urlB = downloadPath((second.body as {url: string}).url);
-    await request(app)
-      .get(urlB)
-      .set('Cookie', cookieHeader(first))
-      .expect(401);
+    await request(app).get(urlB).set('Cookie', cookieHeader(first)).expect(401);
   });
 
   it('rejects after the grant owner is disabled', async () => {

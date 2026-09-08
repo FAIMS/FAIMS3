@@ -15,14 +15,15 @@ export const DOWNLOAD_COOKIE_PATH = '/api/notebooks/download';
 export const isRequestHttps = (req: {
   secure?: boolean;
   get?: (name: string) => string | undefined;
-}): boolean => req.secure === true || req.get?.('x-forwarded-proto') === 'https';
+}): boolean =>
+  req.secure === true || req.get?.('x-forwarded-proto') === 'https';
 
 /** Cookie name: `__Secure-` prefix is required when the cookie is Secure. */
 export const downloadCookieName = (secure: boolean): string =>
   secure ? DOWNLOAD_COOKIE_SECURE_NAME : DOWNLOAD_COOKIE_NAME;
 
 /** Split a `Cookie` header into name → value. Values stay URL-decoded. */
-const parseCookieHeader = (
+export const parseCookieHeader = (
   header: string | undefined
 ): Record<string, string> => {
   const out: Record<string, string> = {};
@@ -119,10 +120,6 @@ export const setDownloadGrantCookie = ({
 };
 
 /**
- * Clear both cookie name variants so a leftover Secure/non-Secure cookie
- * cannot redeem after a successful consume.
- */
-/**
  * Shared caches must not store mint or redeem responses. The grant id is in
  * the URL; without these headers a proxy keyed only on that URL can serve
  * an export after a legitimate redeem with no cookie or Bearer.
@@ -133,6 +130,10 @@ export const setDownloadNoStoreHeaders = (res: Response): void => {
   res.setHeader('Vary', 'Authorization, Cookie');
 };
 
+/**
+ * Clear both cookie name variants so a leftover Secure/non-Secure cookie
+ * cannot redeem after a successful consume.
+ */
 export const clearDownloadGrantCookie = ({
   res,
   secure,
