@@ -11,7 +11,7 @@ import {
 } from '@/lib/rootDescriptionField';
 import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
-import {useMemo} from 'react';
+import {useMemo, useState} from 'react';
 import {resourceNameSchema} from '@/lib/input-limits';
 import {INPUT_LIMITS} from '@faims3/data-model';
 import {TemplateOwnerCallout} from './template-owner-callout';
@@ -22,6 +22,9 @@ import {
   getTeamFieldState,
   resolveTeamId,
 } from './template-team-field';
+import {PlanConfigSection} from '@/components/plans/PlanConfigSection';
+import {getPlanConfigType, type PlanConfig} from '@/components/plans/registry';
+import {errorMessageFromNotebookJsonBody} from '@/hooks/project-hooks';
 
 interface CreateProjectFromTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -67,9 +70,22 @@ export function CreateProjectFromTemplateForm({
     possibleTeams,
   });
 
-  // A plan template is instantiated from a planConfig the dashboard cannot yet
-  // collect, so creating from such a template has to go through the API.
+  // A plan template needs instantiation-time config, gathered by the
+  // registered config form and sent as planConfig
   const planTemplate = template?.uiSpecification?.planTemplate;
+  const planUiSpec = template?.uiSpecification?.uiSpec;
+  const [planConfig, setPlanConfig] = useState<PlanConfig | undefined>();
+
+  const planDisable = (() => {
+    if (!planTemplate || planConfig) return undefined;
+    const planType = planTemplate.planType as string;
+    return {
+      disabled: true,
+      reason: getPlanConfigType(planType)
+        ? `Complete the plan configuration to create this ${config.notebookName}.`
+        : `This template defines a ${planType} plan that cannot be configured here.`,
+    };
+  })();
 
   const teamLabel = `Create ${config.notebookName} in this team${
     canCreateGlobally ? ' (optional)' : ''
@@ -140,14 +156,20 @@ export function CreateProjectFromTemplateForm({
         name,
         ...rootDescriptionForApi(description),
         ...(chosenTeamId ? {teamId: chosenTeamId} : {}),
+        ...(planConfig ? {planConfig} : {}),
       } satisfies PostCreateNotebookInput),
     });
 
-    if (!response.ok)
+    if (!response.ok) {
+      const json = await response.json().catch(() => undefined);
       return {
         type: 'submit',
-        message: `Error creating ${config.notebookName}.`,
+        message: errorMessageFromNotebookJsonBody(
+          json,
+          `Error creating ${config.notebookName}.`
+        ),
       };
+    }
 
     // Creator is granted PROJECT_ADMIN server-side; refresh JWT so list APIs
     // include the new notebook (same as CreateProjectForm).
@@ -182,14 +204,16 @@ export function CreateProjectFromTemplateForm({
         onSubmit={onSubmit}
         submitButtonText={`Create ${config.notebookNameCapitalized}`}
         defaultValues={defaultTeamId ? {team: defaultTeamId} : undefined}
-        disableSubmission={
-          planTemplate
-            ? {
-                disabled: true,
-                reason: `This template defines a ${planTemplate.planType} plan. Create the ${config.notebookName} through the API, which takes the plan's configuration.`,
-              }
-            : undefined
+        footer={
+          planTemplate && planUiSpec ? (
+            <PlanConfigSection
+              template={planTemplate}
+              uiSpec={planUiSpec}
+              onChange={setPlanConfig}
+            />
+          ) : undefined
         }
+        disableSubmission={planDisable}
       />
     </div>
   );

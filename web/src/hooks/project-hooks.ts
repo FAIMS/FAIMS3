@@ -38,12 +38,14 @@ export const createProjectFromTemplate = async ({
   description,
   template,
   teamId,
+  planConfig,
 }: {
   user: User;
   name: string;
   description?: string;
   template: string;
   teamId?: string;
+  planConfig?: Record<string, unknown>;
 }) =>
   await fetch(`${config.apiUrl}/api/notebooks`, {
     method: 'POST',
@@ -56,6 +58,7 @@ export const createProjectFromTemplate = async ({
       name,
       ...rootDescriptionForApi(description),
       teamId,
+      ...(planConfig ? {planConfig} : {}),
     }),
   });
 

@@ -62,7 +62,7 @@ export const ProjectFromTemplateDialog = () => {
           Create {config.notebookNameCapitalized}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create {config.notebookNameCapitalized}</DialogTitle>
           <DialogDescription>

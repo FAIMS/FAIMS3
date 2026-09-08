@@ -10,6 +10,7 @@ import {Divider} from '../ui/word-divider';
 import {
   createProjectFromFile,
   createProjectFromTemplate,
+  errorMessageFromNotebookJsonBody,
 } from '@/hooks/project-hooks';
 import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
 import {designFileSchema, resourceNameSchema} from '@/lib/input-limits';
@@ -149,7 +150,14 @@ export function CreateProjectForm({
     }
 
     if (!response.ok) {
-      return {type: 'submit', message: `Error creating ${config.notebookName}`};
+      const json = await response.json().catch(() => undefined);
+      return {
+        type: 'submit',
+        message: errorMessageFromNotebookJsonBody(
+          json,
+          `Error creating ${config.notebookName}`
+        ),
+      };
     }
     // need to refresh our auth token to get permissions on this new template
     const {message, status} = await refreshToken();
