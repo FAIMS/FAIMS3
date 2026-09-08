@@ -7,9 +7,10 @@
  * Note that this is the full {@link NotebookUiSpec} — decoded views (no fviews /
  * encode step), including settings and schemaVersion, with compiled conditionals.
  *
- * NOTE The ID used here is arbitrary so long as it unique to the server +
- * project combo. To this end, databaseHelpers has a buildCompiledSpecId
- * function which takes the server and project and combines them to form an ID.
+ * NOTE The ID must be unique to the server + project + spec content combo:
+ * databaseHelpers' buildCompiledSpecId combines the server and project IDs
+ * with a content hash of the uiSpec, so a changed spec gets a new ID and
+ * consumers selecting uiSpecificationId re-render onto the new compilation.
  */
 
 import {

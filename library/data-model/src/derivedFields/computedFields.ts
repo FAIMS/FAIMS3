@@ -34,6 +34,11 @@ import {logWarn} from '../logging';
 import {RecordContext} from './recordContext';
 import {TEMPLATED_STRING_FIELD_NAME} from './templatedFields';
 import {coerceToExprType, hasComputedValueChanged} from './valueUtils';
+import {
+  decodeMetadataRef,
+  isMetadataRef,
+  METADATA_EXPR_TYPE,
+} from '../uiSpecification';
 
 // Computed field components and the value type each produces.
 const COMPUTED_FIELD_NAMES = ['ComputedNumber', 'ComputedText'];
@@ -62,6 +67,9 @@ const DERIVED_FIELD_NAMES = [
  * supplied via context.parentValues (see resolveParentValues). A referenced
  * parent value that is missing - including when the record has no parent -
  * leaves the result blank.
+ *
+ * _METADATA.<key> references resolve from the notebook's custom metadata
+ * (context.metadataValues); an undefined key leaves the result blank.
  *
  * @param values Current form data values
  * @param uiSpecification The compiled UI spec (see compileUiSpecConditionals)
@@ -152,6 +160,15 @@ export function recomputeComputedFields({
     );
   };
 
+  // Resolves a _METADATA.<key> reference from the notebook's custom metadata.
+  const resolveMetadataRef = (ref: string): ExprValue | null => {
+    const key = decodeMetadataRef(ref);
+    if (key === null) {
+      return null;
+    }
+    return coerceToExprType(context?.metadataValues?.[key], METADATA_EXPR_TYPE);
+  };
+
   // Resolves a <Rel-Field-ID>.<Field-ID> reference from the linked record's
   // stored values (see resolveRelatedValues). As with parent references, the
   // linked record's derived fields are usable and the field's type is looked
@@ -180,6 +197,15 @@ export function recomputeComputedFields({
     for (const ref of references) {
       if (isParentRef(ref)) {
         const value = resolveParentRef(ref);
+        if (value === null) {
+          incomplete = true;
+          break;
+        }
+        scope.set(ref, value);
+        continue;
+      }
+      if (isMetadataRef(ref)) {
+        const value = resolveMetadataRef(ref);
         if (value === null) {
           incomplete = true;
           break;
