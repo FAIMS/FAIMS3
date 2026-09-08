@@ -423,16 +423,16 @@ export async function getUserInfoForProject({
  * Remove a user from the database
  * @param user - the user to remove
  */
-export function removeUser(user: ExistingPeopleDBDocument) {
+export async function removeUser(
+  user: ExistingPeopleDBDocument
+): Promise<void> {
   const usersDb = getUsersDB();
-  usersDb
-    .get(user._id)
-    .then(doc => {
-      return usersDb.remove(doc);
-    })
-    .catch(err => {
-      throw new Error(`User not found or could not be removed! Error: ${err}.`);
-    });
+  try {
+    const doc = await usersDb.get(user._id);
+    await usersDb.remove(doc);
+  } catch (err) {
+    throw new Error(`User not found or could not be removed! Error: ${err}.`);
+  }
 }
 
 /**

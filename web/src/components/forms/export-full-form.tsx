@@ -4,6 +4,8 @@ import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {
+  DEFAULT_FULL_EXPORT_CONFIG,
+  FullExportConfig,
   GetExportNotebookResponse,
   isValidForSpatialExport,
 } from '@faims3/data-model';
@@ -14,24 +16,6 @@ import {
   useExportTimeRange,
 } from './export-time-range-fields';
 
-interface ExportOptions {
-  includeTabular: boolean;
-  includeAttachments: boolean;
-  includeGeoJSON: boolean;
-  includeKML: boolean;
-  includeGeoPackage: boolean;
-  includeMetadata: boolean;
-}
-
-const DEFAULT_OPTIONS: ExportOptions = {
-  includeTabular: true,
-  includeAttachments: true,
-  includeGeoJSON: true,
-  includeKML: true,
-  includeGeoPackage: true,
-  includeMetadata: true,
-};
-
 /**
  * ExportFullForm component renders a form for downloading a complete project export.
  * It allows users to configure which components to include in the export ZIP.
@@ -40,7 +24,9 @@ const ExportFullForm = () => {
   const user = useRequiredUser();
   const {projectId} = Route.useParams();
   const {data} = useGetProject({user, projectId});
-  const [options, setOptions] = useState<ExportOptions>(DEFAULT_OPTIONS);
+  const [options, setOptions] = useState<FullExportConfig>({
+    ...DEFAULT_FULL_EXPORT_CONFIG,
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const timeRange = useExportTimeRange();
@@ -56,7 +42,7 @@ const ExportFullForm = () => {
     return null;
   }
 
-  const handleOptionChange = (key: keyof ExportOptions, value: boolean) => {
+  const handleOptionChange = (key: keyof FullExportConfig, value: boolean) => {
     setOptions(prev => ({...prev, [key]: value}));
   };
 
@@ -79,6 +65,8 @@ const ExportFullForm = () => {
 
       const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?${params.toString()}`;
       const response = await fetch(exportUrl, {
+        // Include cookies so the mint response can set the download-grant cookie
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,

@@ -877,8 +877,11 @@ describe('API tests', () => {
             ? new URL(redirectURL).pathname
             : redirectURL;
 
+          expect(urlPath.split('/').pop()!).not.toContain('.');
+
           await request(app)
             .get(urlPath)
+            .set('Authorization', `Bearer ${adminToken}`)
             .expect('Content-Type', 'text/csv')
             .expect(response => {
               // response body should be csv data

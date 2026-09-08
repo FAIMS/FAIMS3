@@ -826,8 +826,8 @@
     },
     "/notebooks/{id}/records/export": {
       "get": {
-        "summary": "Request signed URL for notebook records export",
-        "description": "Builds a short-lived signed JWT and returns a JSON object with an absolute URL to `GET /notebooks/download/{token}`. Supports CSV, ZIP, GeoJSON, KML, GeoPackage, and FULL (multi-part ZIP). CSV requires viewID. For format=full, optional boolean query flags (default true) select which parts are included: includeTabular, includeAttachments, includeGeoJSON, includeKML, includeGeoPackage, includeMetadata. Optional exclusive `updatedAfter` / `updatedBefore` (epoch ms) are stored on the JWT and applied when the download streams.",
+        "summary": "Request a download URL for notebook records export",
+        "description": "Mints a single-use download grant and returns `{ url }` to `GET /notebooks/download/{grantId}`. The URL is not a capability. Redeem with the same Authorization Bearer used here (headless/API), or via the HttpOnly cookie set on this response (Control Centre). Supports CSV, ZIP, GeoJSON, KML, GeoPackage, and FULL (multi-part ZIP). CSV requires viewID. For format=full, optional boolean query flags (default true) select which parts are included: includeTabular, includeAttachments, includeGeoJSON, includeKML, includeGeoPackage, includeMetadata. Optional exclusive `updatedAfter` / `updatedBefore` (epoch ms) are stored on the grant and applied when the download streams.",
         "tags": ["Notebooks"],
         "parameters": [
           {
@@ -925,7 +925,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Exclusive lower bound on last-updated time, as epoch milliseconds (record updatedAt > this). Stored on the download JWT. When both bounds are set, updatedAfter must be less than updatedBefore."
+            "description": "Exclusive lower bound on last-updated time, as epoch milliseconds (record updatedAt > this). Stored on the download grant. When both bounds are set, updatedAfter must be less than updatedBefore."
           },
           {
             "name": "updatedBefore",
@@ -934,7 +934,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Exclusive upper bound on last-updated time, as epoch milliseconds (record updatedAt < this). Stored on the download JWT."
+            "description": "Exclusive upper bound on last-updated time, as epoch milliseconds (record updatedAt < this). Stored on the download grant."
           }
         ],
         "security": [
@@ -944,7 +944,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Signed download URL (token expires in a few minutes)",
+            "description": "Single-use download URL. The grant id is not a capability; redeem with Authorization Bearer or the HttpOnly download cookie (expires in 5 minutes).",
             "content": {
               "application/json": {
                 "schema": {
@@ -961,6 +961,9 @@
           },
           "404": {
             "description": "Notebook or form not found"
+          },
+          "429": {
+            "description": "Too many export requests in the current window"
           }
         }
       }
@@ -968,7 +971,7 @@
     "/notebooks/{id}/records/{viewID}.{format}": {
       "get": {
         "summary": "Generate download token for notebook records (deprecated)",
-        "description": "DEPRECATED: Use /notebooks/{id}/records/export instead. Generates a signed JWT token and redirects to download endpoint for exporting notebook records in CSV or ZIP format.",
+        "description": "DEPRECATED: Use /notebooks/{id}/records/export instead. Mints a single-use download grant and redirects to GET /notebooks/download/{grantId} (redeem with Bearer or cookie) for CSV or ZIP.",
         "deprecated": true,
         "tags": ["Notebooks"],
         "parameters": [
@@ -1008,31 +1011,39 @@
         ],
         "responses": {
           "302": {
-            "description": "Redirect to download endpoint with JWT token"
+            "description": "Redirect to download endpoint with grant id (redeem with Bearer or cookie)"
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
           },
           "404": {
             "description": "Notebook or form not found"
+          },
+          "429": {
+            "description": "Too many export requests in the current window"
           }
         }
       }
     },
-    "/notebooks/download/{downloadToken}": {
+    "/notebooks/download/{grantId}": {
       "get": {
-        "summary": "Download notebook records using JWT token",
-        "description": "Downloads notebook records in the format specified by the JWT token. Token expires in 5 minutes. Supports CSV, ZIP, GeoJSON, KML, GeoPackage, and FULL. Optional updatedAfter / updatedBefore exclusive-ms bounds from the export request are applied when streaming.",
+        "summary": "Download notebook records using a single-use grant",
+        "description": "Redeems a single-use grant and streams the export. The grant id is not a capability. Send `Authorization: Bearer <access_token>` (same token as /export; required for headless/API clients) or the HttpOnly download cookie set when the grant was minted. The owner is re-checked (disabled + EXPORT_PROJECT_DATA) before consume. Grants expire in 5 minutes and cannot be reused. Supports CSV, ZIP, GeoJSON, KML, GeoPackage, and FULL. Optional updatedAfter / updatedBefore exclusive-ms bounds from the export request are applied when streaming.",
         "tags": ["Notebooks"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
         "parameters": [
           {
-            "name": "downloadToken",
+            "name": "grantId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "Signed JWT download token containing download parameters (projectID, format, viewID, userID, optional updatedAfter / updatedBefore)"
+            "description": "Opaque grant id from the export response URL. Not a JWT. Redeem with Bearer or the download cookie."
           }
         ],
         "responses": {
@@ -1082,6 +1093,9 @@
           },
           "404": {
             "description": "Notebook or form not found"
+          },
+          "429": {
+            "description": "Too many export requests in the current window"
           }
         }
       }
@@ -2941,7 +2955,7 @@
         "url": {
           "type": "string",
           "format": "uri",
-          "description": "Absolute URL for GET /api/notebooks/download/{token}"
+          "description": "Absolute URL for GET /api/notebooks/download/{grantId}. Redeem with Authorization Bearer or the download cookie."
         }
       },
       "required": ["url"]

@@ -24,6 +24,8 @@ import {
   compileUiSpecConditionals,
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
+  ExportFormat,
+  ExportFormatSchema,
   GetExportNotebookResponse,
   getIdsByFieldName,
   getNotebookFieldTypes,
@@ -61,12 +63,29 @@ import {
   userCanReadTemplateDocument,
   userHasProjectRole,
 } from '@faims3/data-model';
-import express, {Response} from 'express';
-import {jwtVerify, SignJWT} from 'jose';
+import express, {Request, Response} from 'express';
 import {z} from 'zod';
+import {upgradeCouchUserToExpressUser} from '../auth/keySigning/create';
+import {validateToken} from '../auth/keySigning/read';
 import validate from '../middleware/validate';
-import {config, keyService} from '../buildconfig';
+import {config} from '../buildconfig';
 import {getDataDb} from '../couchdb';
+import {
+  consumeDownloadGrant,
+  CreateDownloadGrantInput,
+  createDownloadGrant,
+  getDownloadGrant,
+  verifyDownloadGrantCookieSecret,
+} from '../couchdb/downloadGrants';
+import {
+  clearDownloadGrantCookie,
+  isRequestHttps,
+  readDownloadGrantCookie,
+  setDownloadGrantCookie,
+  setDownloadNoStoreHeaders,
+} from '../downloadCookie';
+import {exportRateLimit} from '../exportRateLimiter';
+import {inviteAuditFromRequest, logDownloadAudit} from '../logging';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
   generateFilenameForAttachment,
@@ -85,7 +104,6 @@ import {
   streamNotebookRecordsAsKML,
 } from '../couchdb/export/geospatialExport';
 import {stripDeletedRelatedRefsFromRecordData} from '../couchdb/export/stripDeletedRelatedRefs';
-import {FullExportConfigSchema} from '../couchdb/export/types';
 import {
   contentDispositionAttachment,
   sanitizeDownloadFilename,
@@ -120,6 +138,7 @@ import {
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {
+  extractBearerToken,
   isAllowedToMiddleware,
   requireAuthenticationAPI,
   userCanDo,
@@ -162,31 +181,8 @@ function permissionRequiredForNotebookStatusChange(
 }
 
 // =============================================================================
-// Types for download format and token payloads (must be before records router)
+// Types for download format and grant mint (must be before records router)
 // =============================================================================
-
-const DownloadFormatSchema = z.enum([
-  'csv',
-  'zip',
-  'geojson',
-  'kml',
-  'geopackage',
-  'full',
-]);
-type DownloadFormat = z.infer<typeof DownloadFormatSchema>;
-
-const DownloadTokenPayloadSchema = z.object({
-  projectID: z.string(),
-  format: DownloadFormatSchema,
-  viewID: z.string().optional(),
-  userID: z.string(),
-  // Full export config (only present when format === 'full')
-  fullConfig: FullExportConfigSchema.optional(),
-  // Exclusive epoch-ms window copied onto the download JWT
-  updatedAfter: z.number().optional(),
-  updatedBefore: z.number().optional(),
-});
-type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
 
 /** Optional exclusive `updatedAfter` / `updatedBefore` query (epoch-ms strings). */
 const UpdatedTimeQuerySchema = z
@@ -199,48 +195,95 @@ const UpdatedTimeQuerySchema = z
   });
 
 // Formats requiring a view ID
-const REQUIRES_VIEW_ID: DownloadFormat[] = ['csv'];
+const REQUIRES_VIEW_ID: ExportFormat[] = ['csv'];
 
-// Download tokens last this long
-const DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5;
-
-const generateDownloadToken = async ({
-  user,
+/**
+ * Mint a single-use download grant, set the HttpOnly cookie, and respond.
+ *
+ * Default path returns `{ url }` rather than redirecting — hard to carefully
+ * handle the auto-redirect while triggering export only once. `redirect: true`
+ * is the legacy `/:id/records/:viewID.:format` path. The grant id in the URL
+ * is not a capability: redeem with Bearer or the cookie set here.
+ */
+const mintExportDownload = async ({
+  req,
+  res,
   payload,
+  redirect = false,
 }: {
-  user: Express.User;
-  payload: DownloadTokenPayload;
+  req: Request;
+  res: Response;
+  payload: CreateDownloadGrantInput;
+  redirect?: boolean;
 }) => {
-  const signingKey = await keyService.getSigningKey();
-  const token = await new SignJWT(payload)
-    .setProtectedHeader({
-      alg: signingKey.alg,
-      kid: signingKey.kid,
-    })
-    .setSubject(user.user_id)
-    .setIssuedAt()
-    .setIssuer(signingKey.instanceName)
-    .setExpirationTime(DOWNLOAD_TOKEN_EXPIRY_MINUTES.toString() + 'm')
-    .sign(signingKey.privateKey);
-  return token;
+  const {grantId, secret} = await createDownloadGrant({
+    ...payload,
+    impersonatingUserId:
+      payload.impersonatingUserId ?? req.user?.impersonatingUserId,
+  });
+
+  setDownloadGrantCookie({
+    res,
+    grantId,
+    secret,
+    secure: isRequestHttps(req),
+  });
+
+  logDownloadAudit({
+    event: 'download.mint',
+    outcome: 'success',
+    grantId,
+    userId: payload.userId,
+    projectID: payload.projectID,
+    format: payload.format,
+    impersonatingUserId: req.user?.impersonatingUserId,
+    ...inviteAuditFromRequest(req),
+  });
+
+  const url = `${config.conductorPublicUrl}/api/notebooks/download/${grantId}`;
+  setDownloadNoStoreHeaders(res);
+  if (redirect) {
+    return res.redirect(url);
+  }
+  return res.json({url});
 };
 
-const validateDownloadToken = async ({
-  token,
-}: {
-  token: string;
-}): Promise<DownloadTokenPayload | null> => {
-  const signingKey = await keyService.getSigningKey();
-  try {
-    const result = await jwtVerify(token, signingKey.publicKey, {
-      algorithms: [signingKey.alg],
-      issuer: signingKey.instanceName,
-    });
-    return DownloadTokenPayloadSchema.parse(result.payload);
-  } catch {
-    console.log('invalid token');
-    return null;
+/**
+ * Audit a failed consume and throw. `forbidden` is 403 (wrong user /
+ * permission revoked); everything else is 401 so we do not confirm the
+ * grant exists to an unauthenticated caller.
+ */
+const denyDownload = (
+  req: {ip?: string; get?: (name: string) => string | undefined},
+  reason: string,
+  extra: {
+    grantId?: string;
+    auth?: 'cookie' | 'bearer';
+    userId?: string;
+    projectID?: string;
+    format?: string;
+    status?: 'unauthorized' | 'forbidden';
+  } = {}
+): never => {
+  logDownloadAudit({
+    event: 'download.consume',
+    outcome: 'failure',
+    reason,
+    grantId: extra.grantId,
+    auth: extra.auth,
+    userId: extra.userId,
+    projectID: extra.projectID,
+    format: extra.format,
+    ...inviteAuditFromRequest(req),
+  });
+  if (extra.status === 'forbidden') {
+    throw new Exceptions.ForbiddenException(
+      'You are not authorized to perform this action.'
+    );
   }
+  throw new Exceptions.UnauthorizedException(
+    'Cannot download without a valid grant.'
+  );
 };
 
 // =============================================================================
@@ -250,8 +293,9 @@ const validateDownloadToken = async ({
 /**
  * Export record data.
  *
- * This route redirects to a new URL containing a signed JWT with download
- * details. The JWT is then validated by the /download/:downloadToken route.
+ * Mints a single-use download grant and returns `{ url }`. The URL is not a
+ * capability: redeem with the same Authorization Bearer (headless/API) or
+ * the HttpOnly cookie set on this response (Control Centre window.open).
  *
  * Supported formats:
  * - csv: Requires viewID, exports tabular data for a single view
@@ -269,7 +313,7 @@ const validateDownloadToken = async ({
  * - includeGeoPackage (default: true)
  * - includeMetadata (default: true)
  *
- * Optional exclusive time window (epoch-ms strings), stored on the download JWT:
+ * Optional exclusive time window (epoch-ms strings), stored on the grant:
  * - updatedAfter — record.updatedAt > this
  * - updatedBefore — record.updatedAt < this
  * Both may be omitted. When both are set, updatedAfter must be less than
@@ -284,11 +328,12 @@ api.get(
       return req.params.id;
     },
   }),
+  exportRateLimit,
   validate({
     query: z
       .object({
         viewID: z.string().optional(),
-        format: DownloadFormatSchema,
+        format: ExportFormatSchema,
         // Full export options
         includeTabular: z.string().optional().default('true'),
         includeAttachments: z.string().optional().default('true'),
@@ -313,10 +358,10 @@ api.get(
 
     const updatedFilter = parseUpdatedTimeFilterFromQuery(req.query);
 
-    const payload: DownloadTokenPayload = {
+    const payload: CreateDownloadGrantInput = {
       projectID: req.params.id,
       format: req.query.format,
-      userID: req.user.user_id,
+      userId: req.user.user_id,
       ...updatedFilter,
     };
 
@@ -373,17 +418,7 @@ api.get(
       });
     }
 
-    // Build the download token
-    const jwt = await generateDownloadToken({
-      user: req.user,
-      payload: payload,
-    });
-
-    // Return the url explicitly - rather than a redirect. Hard to carefully
-    // handle the auto redirect while triggering export only once
-    return res.json({
-      url: config.conductorPublicUrl + `/api/notebooks/download/${jwt}`,
-    });
+    return mintExportDownload({req, res, payload});
   }
 );
 
@@ -400,6 +435,7 @@ api.get(
       return req.params.id;
     },
   }),
+  exportRateLimit,
   validate({
     params: z.object({
       id: z.string(),
@@ -424,19 +460,14 @@ api.get(
       );
     }
 
-    const payload: DownloadTokenPayload = {
+    const payload: CreateDownloadGrantInput = {
       projectID: req.params.id,
       format: req.params.format,
-      userID: req.user.user_id,
+      userId: req.user.user_id,
       viewID: req.params.viewID,
     };
 
-    // Build the download token payload
-    const jwt = await generateDownloadToken({
-      user: req.user,
-      payload: payload,
-    });
-    return res.redirect(`/api/notebooks/download/${jwt}`);
+    return mintExportDownload({req, res, payload, redirect: true});
   }
 );
 
@@ -925,100 +956,210 @@ api.get(
 );
 
 /**
- * Download route - validates JWT and streams the appropriate export format.
+ * Download route — redeem a single-use grant and stream the export.
  *
- * This route handles the actual file streaming for all export formats.
- * The JWT contains all necessary information about what to export,
- * including optional updatedAfter / updatedBefore exclusive-ms bounds.
+ * Authenticators (either is enough; Bearer wins if both are sent):
+ * - Authorization: Bearer (headless / API — same access token as /export)
+ * - HttpOnly download cookie (Control Centre window.open)
+ *
+ * The grant id in the URL is not a capability. Live disabled +
+ * EXPORT_PROJECT_DATA checks run before consume.
  */
 api.get(
-  '/download/:downloadToken',
-  validate({params: z.object({downloadToken: z.string()})}),
+  '/download/:grantId',
+  exportRateLimit,
+  validate({params: z.object({grantId: z.string().min(1).max(128)})}),
   async (req, res) => {
-    // Validate payload
-    const payload = await validateDownloadToken({
-      token: req.params.downloadToken,
-    });
-
-    // If invalid/issue - throw
-    if (!payload) {
-      throw new Exceptions.InvalidRequestException(
-        'Cannot download without a valid downloadToken.'
-      );
+    const grantId = req.params.grantId;
+    // Legacy JWT download URLs were three base64url segments joined by `.`.
+    if (grantId.includes('.')) {
+      return denyDownload(req, 'jwt_url', {grantId});
     }
 
-    // Depending on the format type - handle differently
+    const loadedGrant = await getDownloadGrant(grantId);
+    if (
+      !loadedGrant ||
+      loadedGrant.used ||
+      loadedGrant.expiryTimestampMs < Date.now()
+    ) {
+      return denyDownload(
+        req,
+        !loadedGrant ? 'invalid' : loadedGrant.used ? 'used' : 'expired',
+        {grantId}
+      );
+    }
+    const grant = loadedGrant;
+
+    const bearer = extractBearerToken(req);
+    const cookie = readDownloadGrantCookie(req);
+    let auth: 'bearer' | 'cookie';
+
+    // Bearer wins when both authenticators are present (headless / API).
+    if (bearer) {
+      const tokenUser = await validateToken(bearer);
+      if (!tokenUser) {
+        return denyDownload(req, 'invalid_bearer', {
+          grantId,
+          auth: 'bearer',
+        });
+      }
+      if (tokenUser.user_id !== grant.userId) {
+        return denyDownload(req, 'wrong_user', {
+          grantId,
+          auth: 'bearer',
+          userId: tokenUser.user_id,
+          projectID: grant.projectID,
+          format: grant.format,
+          status: 'forbidden',
+        });
+      }
+      auth = 'bearer';
+    } else if (cookie) {
+      if (
+        cookie.grantId !== grantId ||
+        !verifyDownloadGrantCookieSecret(grant, cookie.secret)
+      ) {
+        return denyDownload(req, 'invalid_cookie', {
+          grantId,
+          auth: 'cookie',
+        });
+      }
+      auth = 'cookie';
+    } else {
+      return denyDownload(req, 'unauthenticated', {grantId});
+    }
+
+    // Live disabled + EXPORT_PROJECT_DATA checks run before consume.
+    const dbUser = await getCouchUserFromEmailOrUserId(grant.userId);
+    if (!dbUser || isPeopleUserAccountDisabled(dbUser)) {
+      return denyDownload(req, !dbUser ? 'user_missing' : 'user_disabled', {
+        grantId,
+        auth,
+        userId: grant.userId,
+        projectID: grant.projectID,
+        format: grant.format,
+      });
+    }
+
+    const expressUser = await upgradeCouchUserToExpressUser({dbUser});
+    if (
+      !userCanDo({
+        user: expressUser,
+        action: Action.EXPORT_PROJECT_DATA,
+        resourceId: grant.projectID,
+      })
+    ) {
+      return denyDownload(req, 'permission_revoked', {
+        grantId,
+        auth,
+        userId: grant.userId,
+        projectID: grant.projectID,
+        format: grant.format,
+        status: 'forbidden',
+      });
+    }
+
+    const consumed = await consumeDownloadGrant({
+      grantId,
+      cookieSecret: auth === 'cookie' ? cookie?.secret : undefined,
+    });
+    if (!consumed.ok) {
+      return denyDownload(req, consumed.reason, {
+        grantId,
+        auth,
+        userId: grant.userId,
+        projectID: grant.projectID,
+        format: grant.format,
+      });
+    }
+
+    clearDownloadGrantCookie({res, secure: isRequestHttps(req)});
+    logDownloadAudit({
+      event: 'download.consume',
+      outcome: 'success',
+      grantId,
+      auth,
+      userId: grant.userId,
+      projectID: grant.projectID,
+      format: grant.format,
+      impersonatingUserId: grant.impersonatingUserId,
+      ...inviteAuditFromRequest(req),
+    });
+
     let exportLabel = '';
-    if (REQUIRES_VIEW_ID.includes(payload.format) || payload.viewID) {
-      const uiSpec = await getUiSpecModel(payload.projectID);
-      if (!payload.viewID) {
+    if (REQUIRES_VIEW_ID.includes(grant.format) || grant.viewID) {
+      const uiSpec = await getUiSpecModel(grant.projectID);
+      if (!grant.viewID) {
         throw new Exceptions.InvalidRequestException(
           'Must provide viewID for this export format.'
         );
       }
 
-      if (!(uiSpec && payload.viewID in uiSpec.viewsets)) {
+      if (!(uiSpec && grant.viewID in uiSpec.viewsets)) {
         throw new Exceptions.ItemNotFoundException(
-          `Form with id ${payload.viewID} not found in notebook`
+          `Form with id ${grant.viewID} not found in notebook`
         );
       }
       // Form labels are user-controlled; never interpolate them raw into headers.
       exportLabel = sanitizeDownloadFilename(
-        uiSpec.viewsets[payload.viewID].label ?? payload.viewID,
-        sanitizeDownloadFilename(payload.viewID, 'export')
+        uiSpec.viewsets[grant.viewID].label ?? grant.viewID,
+        sanitizeDownloadFilename(grant.viewID, 'export')
       );
     } else {
-      exportLabel = sanitizeDownloadFilename(payload.projectID);
+      exportLabel = sanitizeDownloadFilename(grant.projectID);
     }
 
     const exportFilter: UpdatedTimeFilter = {
-      ...(payload.updatedAfter !== undefined
-        ? {updatedAfter: payload.updatedAfter}
+      ...(grant.updatedAfter !== undefined
+        ? {updatedAfter: grant.updatedAfter}
         : {}),
-      ...(payload.updatedBefore !== undefined
-        ? {updatedBefore: payload.updatedBefore}
+      ...(grant.updatedBefore !== undefined
+        ? {updatedBefore: grant.updatedBefore}
         : {}),
     };
 
-    if (payload.format === 'csv') {
+    setDownloadNoStoreHeaders(res);
+
+    // Depending on the format type - handle differently
+    if (grant.format === 'csv') {
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader(
         'Content-Disposition',
         contentDispositionAttachment(`${exportLabel}-export.csv`)
       );
       streamNotebookRecordsAsCSV(
-        payload.projectID,
-        payload.viewID!,
+        grant.projectID,
+        grant.viewID!,
         res,
         exportFilter
       );
-    } else if (payload.format === 'zip') {
+    } else if (grant.format === 'zip') {
       res.setHeader(
         'Content-Disposition',
         contentDispositionAttachment(`${exportLabel}-photos.zip`)
       );
       res.setHeader('Content-Type', 'application/zip');
       streamNotebookFilesAsZip({
-        projectId: payload.projectID,
-        targetViewID: payload.viewID,
+        projectId: grant.projectID,
+        targetViewID: grant.viewID,
         res,
         exportFilter,
       });
-    } else if (payload.format === 'geojson') {
+    } else if (grant.format === 'geojson') {
       res.setHeader('Content-Type', 'application/geo+json');
       res.setHeader(
         'Content-Disposition',
         contentDispositionAttachment(`${exportLabel}-export.geojson`)
       );
-      streamNotebookRecordsAsGeoJSON(payload.projectID, res, exportFilter);
-    } else if (payload.format === 'kml') {
+      streamNotebookRecordsAsGeoJSON(grant.projectID, res, exportFilter);
+    } else if (grant.format === 'kml') {
       res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
       res.setHeader(
         'Content-Disposition',
         contentDispositionAttachment(`${exportLabel}-export.kml`)
       );
-      streamNotebookRecordsAsKML(payload.projectID, res, exportFilter);
-    } else if (payload.format === 'geopackage') {
+      streamNotebookRecordsAsKML(grant.projectID, res, exportFilter);
+    } else if (grant.format === 'geopackage') {
       // Layers grouped by form + geometry type; built via temp GeoJSON + ogr2ogr.
       await assertGdalAvailable();
       res.setHeader('Content-Type', 'application/geopackage+sqlite3');
@@ -1027,27 +1168,27 @@ api.get(
         contentDispositionAttachment(`${exportLabel}-export.gpkg`)
       );
       await streamNotebookRecordsAsGeoPackage(
-        payload.projectID,
+        grant.projectID,
         res,
         exportFilter
       );
-    } else if (payload.format === 'full') {
-      const fullFilename = generateFullExportFilename(payload.projectID);
+    } else if (grant.format === 'full') {
+      const fullFilename = generateFullExportFilename(grant.projectID);
       res.setHeader('Content-Type', 'application/zip');
       res.setHeader(
         'Content-Disposition',
         contentDispositionAttachment(fullFilename)
       );
       await streamFullExport({
-        projectId: payload.projectID,
-        userId: payload.userID,
-        config: payload.fullConfig,
+        projectId: grant.projectID,
+        userId: grant.userId,
+        config: grant.fullConfig,
         res,
         exportFilter,
       });
     } else {
       throw new Exceptions.InvalidRequestException(
-        `Unknown export format: ${payload.format}`
+        `Unknown export format: ${grant.format}`
       );
     }
   }
