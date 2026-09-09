@@ -30,7 +30,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import {Button, IconButton} from '@mui/material';
 import React from 'react';
 import {useNavigate} from 'react-router-dom';
-import {NOTEBOOK_FROM_RECORD_ROUTE} from '../../../constants/routes';
+import {useNotebookRoute} from '../../../context/notebookRoute';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
@@ -72,6 +72,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
   const [open, setOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const history = useNavigate();
+  const {notebookRoute} = useNotebookRoute();
   const dispatch = useAppDispatch();
   const handleClickOpen = () => {
     setOpen(true);
@@ -112,7 +113,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
           })
         );
         handleClose();
-        history(NOTEBOOK_FROM_RECORD_ROUTE);
+        history(notebookRoute);
       })
       .catch(err => {
         console.error('Failed to delete', recordId, err);
