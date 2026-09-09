@@ -131,6 +131,16 @@ vi.mock('./plans', async () => {
         ),
         React.createElement(
           'span',
+          {'data-testid': 'editable-records'},
+          props.records.notebookRecords
+            .filter((record: MinimalRecordMetadata) =>
+              props.actions.canEditRecord(record)
+            )
+            .map((record: MinimalRecordMetadata) => record.recordId)
+            .join(' ')
+        ),
+        React.createElement(
+          'span',
           {'data-testid': 'handed-records'},
           props.records.planRecords
             .map((record: MinimalRecordMetadata) => record.recordId)
@@ -221,11 +231,16 @@ const plans = [
   {planId: 'lab', planType: 'Counted', label: 'Lab'},
 ];
 
+// The survey's own state, which a closed survey takes out of every write
+const projectStatus = {current: ProjectStatus.OPEN};
+
 const project = {
   projectId: 'proj',
   serverId: 'srv',
   name: 'Two plans',
-  status: ProjectStatus.OPEN,
+  get status() {
+    return projectStatus.current;
+  },
   isActivated: true,
   uiSpecificationId: 'spec',
   uiDefinition: {plans} as unknown as NotebookDefinition,
@@ -269,6 +284,7 @@ beforeEach(() => {
   engine.existing = undefined;
   engine.failLink = false;
   childField.current = 'many-layers';
+  projectStatus.current = ProjectStatus.OPEN;
 });
 afterEach(() => cleanup());
 
@@ -301,6 +317,24 @@ describe('NotebookView navigation', () => {
     for (const call of navigate.mock.calls) {
       expect(call[1]).toEqual({replace: true});
     }
+  });
+});
+
+describe('NotebookView canEditRecord', () => {
+  it('lets a view edit a record the user is authorised for', () => {
+    authorised.current = true;
+    allRecords.current = [{recordId: 'r1', createdBy: 'testuser'}];
+    renderNotebook({planId: 'field'});
+    expect(screen.getByTestId('editable-records')).toHaveTextContent('r1');
+  });
+
+  it('edits nothing while the survey is closed', () => {
+    // A closed survey takes no writes, whoever the user is.
+    authorised.current = true;
+    projectStatus.current = ProjectStatus.CLOSED;
+    allRecords.current = [{recordId: 'r1', createdBy: 'testuser'}];
+    renderNotebook({planId: 'field'});
+    expect(screen.getByTestId('editable-records')).toHaveTextContent('');
   });
 });
 

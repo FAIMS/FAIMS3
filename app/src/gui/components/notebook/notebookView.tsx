@@ -100,13 +100,20 @@ function NotebookViewWithSpec({
     action: Action.EDIT_ALL_PROJECT_RECORDS,
     resourceId: project.projectId,
   });
-  /** Whether the active user may edit this record: their own, or anyone's. */
+  /** Whether the active user may edit this record: the project open, and the
+   * record their own or anyone's. */
   const canEditRecord = useCallback(
     (record: MinimalRecordMetadata) =>
-      record.createdBy === activeUser?.username
+      project.status === ProjectStatus.OPEN &&
+      (record.createdBy === activeUser?.username
         ? isAllowedToEditOwnRecords
-        : isAllowedToEditOthersRecords,
-    [activeUser, isAllowedToEditOwnRecords, isAllowedToEditOthersRecords]
+        : isAllowedToEditOthersRecords),
+    [
+      activeUser,
+      project.status,
+      isAllowedToEditOwnRecords,
+      isAllowedToEditOthersRecords,
+    ]
   );
 
   const isAllowedToAddRecords =
