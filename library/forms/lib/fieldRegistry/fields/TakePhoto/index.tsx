@@ -227,7 +227,7 @@ const ActionButton: React.FC<{
 };
 
 /**
- * The "Take photo" + "Gallery" pair. 
+ * The "Take photo" + "Gallery" pair.
  */
 const PhotoActions: React.FC<{
   onAddPhoto: () => void;
