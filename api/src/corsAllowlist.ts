@@ -22,8 +22,8 @@ const httpOrigin = (value: string | undefined): string | undefined => {
 };
 
 /**
- * Origins Conductor may CORS-allow: Conductor, Control Centre, Designer,
- * the field app, and http(s) entries from {@link config.redirectWhitelist}.
+ * Origins Conductor may CORS-allow: Conductor, the web app, the new
+ * Conductor, and http(s) entries from {@link config.redirectWhitelist}.
  */
 export const buildCorsAllowlist = (): string[] => {
   const candidates = [
