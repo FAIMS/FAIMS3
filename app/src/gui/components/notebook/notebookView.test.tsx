@@ -46,7 +46,10 @@ const {
   // What the fake data engine was asked to write, and what it holds already
   engine: {
     updates: [] as Array<Record<string, {data: unknown}>>,
+    modes: [] as string[],
     existing: undefined as unknown,
+    // Whether writing the parent's link fails after the child is written
+    failLink: false,
   },
   // The parent field the mock view's button hangs its child off
   childField: {current: 'many-layers'},
@@ -385,6 +388,9 @@ describe('NotebookView createChildRecord', () => {
     authorised.current = true;
     childField.current = fieldId;
     engine.existing = existing;
+    // The link is written onto the parent, so the parent has to be a record
+    // this user can see and edit
+    allRecords.current = [{recordId: 'parent-1', createdBy: 'testuser'}];
     renderNotebook({planId: 'field'});
     await userEvent.click(screen.getByText('add a child'));
     return engine.updates[0]?.[fieldId]?.data;
@@ -451,8 +457,38 @@ describe('NotebookView createChildRecord', () => {
     // the user looking for something that is there.
     engine.failLink = true;
     authorised.current = true;
+    allRecords.current = [{recordId: 'parent-1', createdBy: 'testuser'}];
     renderNotebook({planId: 'field'});
     await userEvent.click(screen.getByText('add a child'));
+    expect(addAlert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Record was created but could not be linked to its parent',
+      })
+    );
+  });
+
+  it('refuses a parent the user cannot see', async () => {
+    authorised.current = true;
+    childField.current = 'many-layers';
+    allRecords.current = [];
+    renderNotebook({planId: 'field'});
+    await userEvent.click(screen.getByText('add a child'));
+    expect(engine.updates).toEqual([]);
+    expect(addAlert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'You do not have permission to add to that record',
+      })
+    );
+  });
+
+  it('refuses to replace the link a single-link field already holds', async () => {
+    // Overwriting drops the parent's side while the old child keeps its parent
+    // edge, leaving the two disagreeing about the same relationship.
+    const written = await addChild('single-test', {
+      record_id: 'child-0',
+      relation_type_vocabPair: ['has child', 'is child of'],
+    });
+    expect(written).toBeUndefined();
     expect(addAlert).toHaveBeenCalledWith(
       expect.objectContaining({
         message: 'Record was created but could not be linked to its parent',

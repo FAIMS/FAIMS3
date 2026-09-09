@@ -92,6 +92,15 @@ function NotebookViewWithSpec({
   const [query, setQuery] = useState<string>('');
   const queryClient = useQueryClient();
 
+  const isAllowedToEditOwnRecords = useIsAuthorisedTo({
+    action: Action.EDIT_MY_PROJECT_RECORDS,
+    resourceId: project.projectId,
+  });
+  const isAllowedToEditOthersRecords = useIsAuthorisedTo({
+    action: Action.EDIT_ALL_PROJECT_RECORDS,
+    resourceId: project.projectId,
+  });
+
   const isAllowedToAddRecords =
     useIsAuthorisedTo({
       action: Action.CREATE_PROJECT_RECORD,
@@ -257,6 +266,27 @@ function NotebookViewWithSpec({
     }) => {
       if (!(activeUser && isAllowedToAddRecords)) return;
 
+      // The link is written onto the parent, so editing it must be allowed as
+      // well as creating the child. A record absent from the list is one this
+      // user cannot see, which is not one to write to either.
+      const parentRecord = records.allRecords.find(
+        record => record.recordId === parentRecordId
+      );
+      const mayEditParent =
+        parentRecord &&
+        (parentRecord.createdBy === activeUser.username
+          ? isAllowedToEditOwnRecords
+          : isAllowedToEditOthersRecords);
+      if (!mayEditParent) {
+        dispatch(
+          addAlert({
+            message: 'You do not have permission to add to that record',
+            severity: 'error',
+          })
+        );
+        return;
+      }
+
       // The pair a Child related-record field stores, the parent's view first.
       const relationTypeVocabPair: [string, string] = [
         'has child',
@@ -300,6 +330,13 @@ function NotebookViewWithSpec({
         const isMultipleLink =
           uiSpecification.fields[parentFieldId]?.['component-parameters']
             ?.multiple === true;
+        if (!isMultipleLink && links.length > 0) {
+          // Overwriting would drop the parent's side of the existing link
+          // while its child kept the parent edge, leaving the two disagreeing.
+          throw new Error(
+            `Field ${parentFieldId} already holds a record and takes only one`
+          );
+        }
         const revision = await engine.form.createRevision({
           recordId: parentRecordId,
           revisionId: existing.revisionId,
@@ -347,6 +384,9 @@ function NotebookViewWithSpec({
     [
       activeUser,
       isAllowedToAddRecords,
+      isAllowedToEditOwnRecords,
+      isAllowedToEditOthersRecords,
+      records.allRecords,
       dataEngine,
       navigate,
       notebook,
