@@ -177,24 +177,44 @@ export default function NoteBooks() {
               display: 'flex',
               flexDirection: 'column',
               gap: 0,
+              // Constrain to the cell so the name can truncate instead of
+              // pushing the chip out of view.
+              minWidth: 0,
+              maxWidth: '100%',
             }}
           >
-            <Typography
-              variant={is_xs ? 'body2' : 'body1'}
+            {/* Chip sits inline with the name: rows have a fixed height, so a
+                stacked chip would push the name out of the visible cell. */}
+            <Box
               sx={{
-                fontWeight: row.isActivated ? 'bold' : 'normal',
-                color: row.isActivated ? 'black' : grey[800],
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                minWidth: 0,
               }}
             >
-              {row.name ?? 'Unknown ' + config.notebookNameCapitalized}
-            </Typography>
-            {compatibilityChipProps(row.schemaCompatibility) && (
-              <Box sx={{mt: 0.5}}>
-                <NotebookSchemaCompatibilityChip
-                  compatibility={row.schemaCompatibility}
-                />
-              </Box>
-            )}
+              <Typography
+                variant={is_xs ? 'body2' : 'body1'}
+                sx={{
+                  fontWeight: row.isActivated ? 'bold' : 'normal',
+                  color: row.isActivated ? 'black' : grey[800],
+                  // Let the name give way to the chip on narrow screens
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {row.name ?? 'Unknown ' + config.notebookNameCapitalized}
+              </Typography>
+              {compatibilityChipProps(row.schemaCompatibility) && (
+                <Box sx={{flexShrink: 0, display: 'flex'}}>
+                  <NotebookSchemaCompatibilityChip
+                    compatibility={row.schemaCompatibility}
+                  />
+                </Box>
+              )}
+            </Box>
             {listDescription &&
               (isNotebookListDescriptionTruncated(row.description) ? (
                 <Tooltip title={row.description?.trim() ?? ''}>
