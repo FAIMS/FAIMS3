@@ -2,7 +2,7 @@ import {Exif} from '@capacitor-community/exif';
 import {Camera, CameraResultType, CameraSource, Photo} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
 import {Geolocation} from '@capacitor/geolocation';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
+import AddIcon from '@mui/icons-material/Add';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -144,8 +144,173 @@ const TakePhotoPreview: React.FC<TakePhotoFieldProps> = props => {
 // ============================================================================
 
 /**
+ * Single labelled action (icon with a "+" badge over a label). The icon lives in
+ * a fixed-height zone so the two buttons always line up, even if a label wraps.
+ */
+const ActionButton: React.FC<{
+  icon: React.ReactElement;
+  label: string;
+  ariaLabel: string;
+  onClick: () => void;
+}> = ({icon, label, ariaLabel, onClick}) => {
+  const theme = useTheme();
+
+  return (
+    <Box
+      role="button"
+      tabIndex={0}
+      aria-label={ariaLabel}
+      onClick={onClick}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 1,
+        p: 1,
+        cursor: 'pointer',
+        borderRadius: theme.spacing(1),
+        outline: 'none',
+        transition: 'background-color 120ms ease',
+        '&:hover': {bgcolor: theme.palette.action.hover},
+        '&:focus-visible': {bgcolor: theme.palette.action.hover},
+      }}
+    >
+      <Box
+        sx={{
+          height: 52,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Box sx={{position: 'relative', display: 'inline-flex', lineHeight: 0}}>
+          {icon}
+          <Box
+            sx={{
+              position: 'absolute',
+              right: -8,
+              bottom: -6,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: theme.palette.background.paper,
+              borderRadius: '50%',
+              p: '1px',
+            }}
+          >
+            <AddIcon
+              sx={{
+                fontSize: 18,
+                color: theme.palette.primary.main,
+                stroke: theme.palette.primary.main,
+                strokeWidth: 1.5,
+              }}
+            />
+          </Box>
+        </Box>
+      </Box>
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{whiteSpace: 'nowrap'}}
+      >
+        {label}
+      </Typography>
+    </Box>
+  );
+};
+
+/**
+ * The "Take photo" + "Gallery" pair. 
+ */
+const PhotoActions: React.FC<{
+  onAddPhoto: () => void;
+  onPickFromGallery: () => void;
+}> = ({onAddPhoto, onPickFromGallery}) => {
+  const theme = useTheme();
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        gap: 3,
+      }}
+    >
+      <Tooltip title="Take a new photo with your camera">
+        <Box component="span" sx={{display: 'inline-flex'}}>
+          <ActionButton
+            icon={
+              <CameraAltIcon
+                sx={{fontSize: 48, color: theme.palette.primary.main}}
+              />
+            }
+            label="Take photo"
+            ariaLabel="Take photo"
+            onClick={onAddPhoto}
+          />
+        </Box>
+      </Tooltip>
+      <Tooltip title="Select multiple photos at once from your gallery">
+        <Box component="span" sx={{display: 'inline-flex'}}>
+          <ActionButton
+            icon={
+              <PhotoLibraryIcon
+                sx={{fontSize: 48, color: theme.palette.primary.main}}
+              />
+            }
+            label="Gallery"
+            ariaLabel="Add photos from gallery, multiple selection allowed"
+            onClick={onPickFromGallery}
+          />
+        </Box>
+      </Tooltip>
+    </Box>
+  );
+};
+
+/**
+ * Gallery tile: the action pair inside a card, sized as one grid cell so it
+ * sits beside the photo thumbnails.
+ */
+const PhotoActionsTile: React.FC<{
+  onAddPhoto: () => void;
+  onPickFromGallery: () => void;
+}> = ({onAddPhoto, onPickFromGallery}) => {
+  const theme = useTheme();
+
+  return (
+    <Paper
+      sx={{
+        aspectRatio: '4/3',
+        borderRadius: theme.spacing(1),
+        boxShadow: theme.shadows[2],
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 1.5,
+        '&:hover': {boxShadow: theme.shadows[4]},
+      }}
+    >
+      <PhotoActions
+        onAddPhoto={onAddPhoto}
+        onPickFromGallery={onPickFromGallery}
+      />
+    </Paper>
+  );
+};
+
+/**
  * Empty state component displayed when no photos have been captured yet.
- * Shows a call-to-action button to take the first photo.
+ * Shows the same action pair used in the gallery so the design stays consistent.
  */
 const EmptyState: React.FC<{
   onAddPhoto: () => void;
@@ -154,59 +319,41 @@ const EmptyState: React.FC<{
 }> = ({onAddPhoto, onPickFromGallery, disabled}) => {
   const theme = useTheme();
 
+  if (disabled) {
+    return (
+      <Paper
+        sx={{
+          padding: theme.spacing(4),
+          textAlign: 'center',
+          bgcolor: theme.palette.grey[100],
+          borderRadius: theme.spacing(2),
+          marginTop: theme.spacing(2),
+        }}
+      >
+        <CameraAltIcon sx={{fontSize: 48, color: 'text.secondary', mb: 1}} />
+        <Typography variant="body2" color="text.secondary">
+          No photos
+        </Typography>
+      </Paper>
+    );
+  }
+
   return (
-    <Paper
+    <Box
       sx={{
-        padding: theme.spacing(4),
         textAlign: 'center',
-        bgcolor: theme.palette.grey[100],
-        borderRadius: theme.spacing(2),
-        marginTop: theme.spacing(2),
+        padding: theme.spacing(3),
+        marginTop: theme.spacing(1),
       }}
     >
-      <CameraAltIcon sx={{fontSize: 48, color: 'text.secondary', mb: 2}} />
       <Typography variant="h6" gutterBottom>
-        No Photos Yet
+        No photos selected yet
       </Typography>
-      <Box
-        sx={{
-          display: 'flex',
-          gap: 1,
-          justifyContent: 'center',
-          flexWrap: 'wrap',
-        }}
-      >
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={onAddPhoto}
-          disabled={disabled}
-          startIcon={<CameraAltIcon />}
-        >
-          Take First Photo
-        </Button>
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={onPickFromGallery}
-          disabled={disabled}
-          startIcon={<PhotoLibraryIcon />}
-        >
-          Choose from Gallery
-        </Button>
-      </Box>
-      <Typography
-        variant="caption"
-        sx={{
-          display: 'block',
-          mt: 1.5,
-          fontStyle: 'italic',
-          color: theme.palette.text.secondary,
-        }}
-      >
-        Note: you can select multiple photos at once from the gallery.
-      </Typography>
-    </Paper>
+      <PhotoActions
+        onAddPhoto={onAddPhoto}
+        onPickFromGallery={onPickFromGallery}
+      />
+    </Box>
   );
 };
 
@@ -518,105 +665,17 @@ const PhotoGallery: React.FC<{
         <Box
           sx={{
             display: 'grid',
-            gap: theme.spacing(1),
+            gap: theme.spacing(1.5),
             padding: theme.spacing(1),
-            gridTemplateColumns: {
-              xs: 'repeat(2, 1fr)',
-              sm: 'repeat(4, 1fr)',
-              md: 'repeat(6, 1fr)',
-              lg: 'repeat(8, 1fr)',
-            },
+            gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
             width: '100%',
           }}
         >
           {!disabled && (
-            <ImageItemContainer>
-              <Paper
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'stretch',
-                  overflow: 'hidden',
-                }}
-              >
-                <Box
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Take photo"
-                  onClick={onAddPhoto}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      onAddPhoto();
-                    }
-                  }}
-                  sx={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 0.5,
-                    cursor: 'pointer',
-                    outline: 'none',
-                    '&:hover': {bgcolor: theme.palette.action.hover},
-                    '&:focus-visible': {
-                      bgcolor: theme.palette.action.hover,
-                    },
-                  }}
-                >
-                  <AddCircleIcon
-                    sx={{fontSize: 40, color: theme.palette.primary.main}}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    Take photo
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    width: '1px',
-                    bgcolor: theme.palette.divider,
-                    my: 1,
-                  }}
-                />
-                <Tooltip title="Select multiple photos at once from your gallery">
-                  <Box
-                    role="button"
-                    tabIndex={0}
-                    aria-label="Add photos from gallery, multiple selection allowed"
-                    onClick={onPickFromGallery}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        onPickFromGallery();
-                      }
-                    }}
-                    sx={{
-                      flex: 1,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 0.5,
-                      cursor: 'pointer',
-                      outline: 'none',
-                      '&:hover': {bgcolor: theme.palette.action.hover},
-                      '&:focus-visible': {
-                        bgcolor: theme.palette.action.hover,
-                      },
-                    }}
-                  >
-                    <PhotoLibraryIcon
-                      sx={{fontSize: 40, color: theme.palette.primary.main}}
-                    />
-                    <Typography variant="caption" color="text.secondary">
-                      Gallery
-                    </Typography>
-                  </Box>
-                </Tooltip>
-              </Paper>
-            </ImageItemContainer>
+            <PhotoActionsTile
+              onAddPhoto={onAddPhoto}
+              onPickFromGallery={onPickFromGallery}
+            />
           )}
 
           {/* Photo Grid - unified pending + loaded */}
