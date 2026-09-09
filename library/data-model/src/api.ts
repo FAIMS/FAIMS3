@@ -494,6 +494,10 @@ export type GetExportNotebookResponse = z.infer<
   typeof GetExportNotebookResponseSchema
 >;
 
+// Export format + full-export include flags live in ./exportTypes so the
+// authDB grant schema can compose them without importing this file
+// (this module already imports ./data_storage). Re-exported from index.ts.
+
 // =================
 // TEMPLATES CRUD
 // =================
