@@ -1,5 +1,6 @@
 import {
   Action,
+  claimsPlan,
   CompiledNotebookUiSpec,
   computeRecordStatusReport,
   DatabaseInterface,
@@ -173,7 +174,7 @@ export function buildStatusReportKey({
 }
 
 /**
- * Recursive status reports for every record claiming a plan reference, for
+ * Recursive status reports for every record the plan on screen claims, for
  * plan views that display per-record completion. One query per claiming
  * record, on the Status tab's own key, so reports land incrementally and
  * either surface serves the other's cache. A report spans the record's whole
@@ -186,23 +187,27 @@ export function usePlanRecordStatusReports({
   projectId,
   uiSpecification,
   records,
-  enabled,
+  planId,
 }: {
   projectId: string;
   uiSpecification: CompiledNotebookUiSpec;
   records: MinimalRecordMetadata[];
-  /** Pass false where no view displays the reports, to skip the walks. */
-  enabled: boolean;
+  /** The plan on screen; without one no view displays a report, so none is computed. */
+  planId?: string;
 }): ReadonlyMap<string, RecordStatusReport> {
   const queryClient = useQueryClient();
   // Undefined while the notebook is being removed; the queries wait it out
   const dataDb = tryLocalGetDataDb(projectId);
   const claimingRecords = useMemo(
     () =>
-      records.filter(
-        record => !record.deleted && record.planReference !== undefined
-      ),
-    [records]
+      planId === undefined
+        ? []
+        : records.filter(
+            record =>
+              !record.deleted &&
+              claimsPlan({planReference: record.planReference, planId})
+          ),
+    [records, planId]
   );
   // Head revisions of the whole list: unlike `updated` (the author device's
   // clock), a synced-in edit always changes a revisionId
@@ -253,7 +258,7 @@ export function usePlanRecordStatusReports({
       networkMode: 'always' as const,
       // Freshness comes from the invalidation above
       staleTime: Infinity,
-      enabled: enabled && dataDb !== undefined,
+      enabled: dataDb !== undefined,
     })),
     combine: combineReports,
   });

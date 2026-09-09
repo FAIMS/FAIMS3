@@ -336,6 +336,8 @@ export const DesignPanel = () => {
   return (
     <>
       <TabContext value={tabIndex}>
+        <PlanTemplateManager />
+
         <Box
           sx={{
             mb: 1.25,
@@ -399,7 +401,6 @@ export const DesignPanel = () => {
           >
             New Form
           </Button>
-          <PlanTemplateManager />
         </Box>
 
         <Box
