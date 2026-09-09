@@ -283,7 +283,10 @@ export function Form<
                                   value={field.value || undefined}
                                   disabled={isDisabled}
                                 >
-                                  <SelectTrigger className="w-full">
+                                  <SelectTrigger
+                                    className="w-full"
+                                    data-testid={testId}
+                                  >
                                     <SelectValue
                                       placeholder={
                                         placeholder ?? `Select ${label ?? name}`

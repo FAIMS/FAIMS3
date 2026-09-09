@@ -79,19 +79,19 @@ The workspaces and their entry points:
 
 | Workspace                | Entry                                                                        | Notes                                                 |
 | ------------------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `api`                    | `src/index.ts`, `src/scripts/*.ts`                                           | Express server + ts-node CLIs; Mocha tests via plugin |
+| `api`                    | `src/index.ts`, `src/scripts/*.ts`                                           | Express server + tsx CLIs; Vitest tests via plugin    |
 | `app`                    | `src/index.tsx`                                                              | Vite/Vitest + Capacitor                               |
 | `web`                    | `src/main.tsx`                                                               | Vite/Vitest + TanStack Router (`routeTree.gen.ts`)    |
 | `library/forms`          | `lib/index.ts`, `src/main.tsx`                                               | Published lib (`lib/`) + dev harness (`src/`)         |
-| `library/data-model`     | `src/index.ts`                                                               | Jest tests via plugin                                 |
-| `infrastructure/aws-cdk` | `bin/aws-cdk-faims-infra.ts`, `validateConfig.ts`                            | Code lives in `lib/`/`bin/`, not `src/`               |
-| `e2e` (`@faims3/e2e`)    | `wdio*.conf.ts`, `test/specs/**/*.e2e.ts`, `chrome-headless-capabilities.ts` | WebdriverIO + Appium                                  |
+| `library/data-model`     | `src/index.ts`                                                               | Jest (+ `@swc/jest`) tests via plugin                 |
+| `infrastructure/aws-cdk` | `bin/aws-cdk-faims-infra.ts`, `validateConfig.ts`                            | Code lives in `lib/`/`bin/`, not `src/`; Jest via SWC |
+| `e2e` (`@faims3/e2e`)    | `wdio*.conf.ts`, `test/specs/**/*.e2e.ts`, `chrome-headless-capabilities.ts` | WebdriverIO + Appium (Mocha framework under WDIO)     |
 
 Knip auto-detects and runs **tool plugins** based on each workspace's
-dependencies and config files (Vite, Vitest, Jest, Mocha, WebdriverIO,
-Capacitor, MSW, ts-node, Oxlint). These contribute extra entry points (for
-example Vitest `setupFiles`, Mocha specs from `.mocharc.json`, and the
-WebdriverIO config) so that test-only dependencies are correctly seen as used.
+dependencies and config files (Vite, Vitest, Jest, WebdriverIO, Capacitor,
+MSW, Oxlint). These contribute extra entry points (for example Vitest
+`setupFiles` / `vitest.config.ts`, Jest configs, and the WebdriverIO config)
+so that test-only dependencies are correctly seen as used.
 
 The config also sets:
 
@@ -113,7 +113,7 @@ run-script ...` is a built-in pnpm subcommand, not an external binary.
   - `app`: `@capacitor/android`, `@capacitor/ios` — native platform packages,
     consumed by the native build, never imported in TS.
   - `e2e`: `@wdio/local-runner`, `@wdio/appium-service`, `appium`,
-    `appium-uiautomator2-driver`, `chromedriver`, `ts-node` — loaded by the
+    `appium-uiautomator2-driver`, `chromedriver`, `tsx` — loaded by the
     WebdriverIO runner / Appium at runtime via config strings.
 
 ## A note on the `api` workspace and `.gitignore`

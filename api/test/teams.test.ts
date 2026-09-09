@@ -35,7 +35,7 @@ import {
   PutUpdateTeamResponse,
   PutUpdateTeamResponseSchema,
 } from '@faims3/data-model';
-import {expect} from 'chai';
+import {beforeEach, describe, expect, it} from 'vitest';
 import {Express} from 'express';
 import request from 'supertest';
 import {app} from '../src/expressSetup';
@@ -182,31 +182,31 @@ describe('Teams API tests', () => {
     // List and verify the new team
     await listTeams(app).then(teamList => {
       // Check that the list exists and has one entry
-      expect(teamList.teams.length).to.equal(1);
+      expect(teamList.teams.length).toBe(1);
 
       // Get the first entry and check ID matches
       const entry = teamList.teams[0];
-      expect(entry._id).to.equal(teamId1);
-      expect(entry.name).to.equal('First Test Team');
-      expect(entry.description).to.equal('First test team description');
+      expect(entry._id).toBe(teamId1);
+      expect(entry.name).toBe('First Test Team');
+      expect(entry.description).toBe('First test team description');
 
       // Check timestamps and creator fields exist
-      expect(entry).to.have.property('createdAt');
-      expect(entry).to.have.property('updatedAt');
-      expect(entry).to.have.property('createdBy');
+      expect(entry).toHaveProperty('createdAt');
+      expect(entry).toHaveProperty('updatedAt');
+      expect(entry).toHaveProperty('createdBy');
     });
 
     // Get the specific team
     await getATeam(app, teamId1).then(team => {
       // Check properties match
-      expect(team._id).to.equal(teamId1);
-      expect(team.name).to.equal('First Test Team');
-      expect(team.description).to.equal('First test team description');
+      expect(team._id).toBe(teamId1);
+      expect(team.name).toBe('First Test Team');
+      expect(team.description).toBe('First test team description');
 
       // Check timestamps and creator fields exist
-      expect(team).to.have.property('createdAt');
-      expect(team).to.have.property('updatedAt');
-      expect(team).to.have.property('createdBy');
+      expect(team).toHaveProperty('createdAt');
+      expect(team).toHaveProperty('updatedAt');
+      expect(team).toHaveProperty('createdBy');
     });
 
     // Create another team
@@ -219,27 +219,27 @@ describe('Teams API tests', () => {
     // List and check for both teams
     await listTeams(app).then(teamList => {
       // Check that the list exists and has two entries
-      expect(teamList.teams.length).to.equal(2);
+      expect(teamList.teams.length).toBe(2);
 
       // Find both teams in the list
       const firstTeam = teamList.teams.find(t => t._id === teamId1);
       const secondTeam = teamList.teams.find(t => t._id === teamId2);
 
-      expect(firstTeam).to.not.be.undefined;
-      expect(secondTeam).to.not.be.undefined;
+      expect(firstTeam).not.toBeUndefined();
+      expect(secondTeam).not.toBeUndefined();
 
       // Check properties of second team
       if (secondTeam) {
-        expect(secondTeam.name).to.equal('Second Test Team');
-        expect(secondTeam.description).to.equal('Second test team description');
+        expect(secondTeam.name).toBe('Second Test Team');
+        expect(secondTeam.description).toBe('Second test team description');
       }
     });
 
     // Get the second team specifically
     await getATeam(app, teamId2).then(team => {
-      expect(team._id).to.equal(teamId2);
-      expect(team.name).to.equal('Second Test Team');
-      expect(team.description).to.equal('Second test team description');
+      expect(team._id).toBe(teamId2);
+      expect(team.name).toBe('Second Test Team');
+      expect(team.description).toBe('Second test team description');
     });
 
     // Delete the second team
@@ -247,8 +247,8 @@ describe('Teams API tests', () => {
 
     // List again and check there's only one team
     await listTeams(app).then(teamList => {
-      expect(teamList.teams.length).to.equal(1);
-      expect(teamList.teams[0]._id).to.equal(teamId1);
+      expect(teamList.teams.length).toBe(1);
+      expect(teamList.teams[0]._id).toBe(teamId1);
     });
 
     // Delete the first team
@@ -256,7 +256,7 @@ describe('Teams API tests', () => {
 
     // List again and check there are no teams
     await listTeams(app).then(teamList => {
-      expect(teamList.teams.length).to.equal(0);
+      expect(teamList.teams.length).toBe(0);
     });
   });
 
@@ -272,25 +272,25 @@ describe('Teams API tests', () => {
       name: 'Updated Team Name',
     }).then(updatedTeam => {
       // Check the updated properties
-      expect(updatedTeam.name).to.equal('Updated Team Name');
+      expect(updatedTeam.name).toBe('Updated Team Name');
       // Description should remain unchanged
-      expect(updatedTeam.description).to.equal('Original description');
+      expect(updatedTeam.description).toBe('Original description');
       // updatedAt should be changed
-      expect(updatedTeam.updatedAt).to.be.greaterThan(team.updatedAt);
+      expect(updatedTeam.updatedAt).toBeGreaterThan(team.updatedAt);
     });
 
     // Get the team and verify updates
     await getATeam(app, team._id).then(fetchedTeam => {
-      expect(fetchedTeam.name).to.equal('Updated Team Name');
-      expect(fetchedTeam.description).to.equal('Original description');
+      expect(fetchedTeam.name).toBe('Updated Team Name');
+      expect(fetchedTeam.description).toBe('Original description');
     });
 
     // Update just the description
     await updateATeam(app, team._id, {
       description: 'Updated description',
     }).then(updatedTeam => {
-      expect(updatedTeam.name).to.equal('Updated Team Name');
-      expect(updatedTeam.description).to.equal('Updated description');
+      expect(updatedTeam.name).toBe('Updated Team Name');
+      expect(updatedTeam.description).toBe('Updated description');
     });
 
     // Update both name and description
@@ -298,8 +298,8 @@ describe('Teams API tests', () => {
       name: 'Final Team Name',
       description: 'Final description',
     }).then(updatedTeam => {
-      expect(updatedTeam.name).to.equal('Final Team Name');
-      expect(updatedTeam.description).to.equal('Final description');
+      expect(updatedTeam.name).toBe('Final Team Name');
+      expect(updatedTeam.description).toBe('Final description');
     });
   });
 
@@ -310,7 +310,7 @@ describe('Teams API tests', () => {
     // Make list request on empty database
     await listTeams(app).then(teamList => {
       // Check that the list exists and has empty length
-      expect(teamList.teams.length).to.equal(0);
+      expect(teamList.teams.length).toBe(0);
     });
   });
 
@@ -329,14 +329,14 @@ describe('Teams API tests', () => {
       .expect(404)
       // Check the error response
       .then(res => {
-        expect(res.body).to.have.property('error');
-        expect(res.body.error).to.have.property('message');
-        expect(res.body.error).to.have.property('status');
+        expect(res.body).toHaveProperty('error');
+        expect(res.body.error).toHaveProperty('message');
+        expect(res.body.error).toHaveProperty('status');
         // Check for expected error message
-        expect(res.body.error.message).to.include(
+        expect(res.body.error.message).toContain(
           'Are you sure the ID is correct?'
         );
-        expect(res.body.error.status).to.equal(404);
+        expect(res.body.error.status).toBe(404);
       });
 
     // Create a team first to make sure other teams are working
@@ -361,14 +361,14 @@ describe('Teams API tests', () => {
       .expect(404)
       // Check the error response
       .then(res => {
-        expect(res.body).to.have.property('error');
-        expect(res.body.error).to.have.property('message');
-        expect(res.body.error).to.have.property('status');
+        expect(res.body).toHaveProperty('error');
+        expect(res.body.error).toHaveProperty('message');
+        expect(res.body.error).toHaveProperty('status');
         // Check for expected error message
-        expect(res.body.error.message).to.include(
+        expect(res.body.error.message).toContain(
           'Are you sure the ID is correct?'
         );
-        expect(res.body.error.status).to.equal(404);
+        expect(res.body.error.status).toBe(404);
       });
 
     // Create a team first to make sure other teams are working
@@ -387,14 +387,14 @@ describe('Teams API tests', () => {
       .expect(404)
       // Check the error response
       .then(res => {
-        expect(res.body).to.have.property('error');
-        expect(res.body.error).to.have.property('message');
-        expect(res.body.error).to.have.property('status');
+        expect(res.body).toHaveProperty('error');
+        expect(res.body.error).toHaveProperty('message');
+        expect(res.body.error).toHaveProperty('status');
         // Check for expected error message
-        expect(res.body.error.message).to.include(
+        expect(res.body.error.message).toContain(
           'Are you sure the ID is correct?'
         );
-        expect(res.body.error.status).to.equal(404);
+        expect(res.body.error.status).toBe(404);
       });
   });
 
@@ -410,14 +410,14 @@ describe('Teams API tests', () => {
       .expect(400)
       // Check error response
       .then(res => {
-        expect(res.body).to.be.an('array');
-        expect(res.body.length).to.be.at.least(1);
+        expect(res.body).toBeInstanceOf(Array);
+        expect(res.body.length).toBeGreaterThanOrEqual(1);
 
         const err = res.body[0];
-        expect(err).to.have.property('type');
-        expect(err.type).to.equal('Body');
+        expect(err).toHaveProperty('type');
+        expect(err.type).toBe('Body');
         // Error should mention name field
-        expect(JSON.stringify(err.errors)).to.include('name');
+        expect(JSON.stringify(err.errors)).toContain('name');
       });
   });
 

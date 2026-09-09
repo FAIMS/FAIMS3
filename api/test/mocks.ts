@@ -16,7 +16,9 @@ import {
   getUsersDB,
   initialiseDbAndKeys,
   getTeamsDB,
+  getTombstoneDB,
   getInvitesDB,
+  getMigrationDb,
 } from '../src/couchdb';
 import {registerAdminUser} from '../src/couchdb/users';
 
@@ -70,6 +72,12 @@ export const resetDatabases = async () => {
 
   const teamsDB = getTeamsDB();
   await clearDB(teamsDB);
+
+  const tombstoneDB = getTombstoneDB();
+  await clearDB(tombstoneDB);
+
+  const migrationsDB = getMigrationDb();
+  await clearDB(migrationsDB);
 
   for (const dbKey of Object.keys(databaseList)) {
     const toClear = ['metadata', 'projects'];

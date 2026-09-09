@@ -23,7 +23,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 PouchDB.plugin(PouchDBFind);
 
 import {addGlobalRole, Role} from '@faims3/data-model';
-import {expect} from 'chai';
+import {expect} from 'vitest';
 import {addLocalPasswordForUser} from '../src/auth/helpers';
 import {
   generateJwtFromUser,
@@ -73,8 +73,10 @@ export const beforeApiTests = async () => {
     await getExpressUserFromEmailOrUserId(adminUserName);
 
   // If this is null then the admin user wasn't seeded properly
-  expect(possibleAdminUser, 'Admin user was null from the database.').to.not.be
-    .null;
+  expect(
+    possibleAdminUser,
+    'Admin user was null from the database.'
+  ).not.toBeNull();
   const adminUser = possibleAdminUser!;
 
   // Create the admin token
@@ -87,8 +89,10 @@ export const beforeApiTests = async () => {
     email: localEmail,
   });
   // If this is null then the createUser function is not working
-  expect(possibleLocalUser, 'Local user was null from create function.').to.not
-    .be.null;
+  expect(
+    possibleLocalUser,
+    'Local user was null from create function.'
+  ).not.toBeNull();
   const localUser = possibleLocalUser!;
 
   // save user and create password
@@ -105,8 +109,10 @@ export const beforeApiTests = async () => {
   });
 
   // If this is null then the createUser function is not working
-  expect(possibleNbUser, 'Notebook user was null from create user function.').to
-    .not.be.null;
+  expect(
+    possibleNbUser,
+    'Notebook user was null from create user function.'
+  ).not.toBeNull();
   const nbUser = possibleNbUser!;
 
   // save user and create password

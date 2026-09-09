@@ -24,6 +24,7 @@ import {
   customFieldUpdated,
   informationUpdated,
 } from './metadata-reducer';
+import {planTemplateRemoved, planTemplateSet} from './planTemplate-reducer';
 import {
   fieldAdded,
   fieldDeleted,
@@ -75,7 +76,9 @@ const modifiedStatusReducer = createSlice({
       .addCase(viewSetDeleted, () => true)
       .addCase(viewSetMoved, () => true)
       .addCase(viewSetRenamed, () => true)
-      .addCase(formVisibilityUpdated, () => true);
+      .addCase(formVisibilityUpdated, () => true)
+      .addCase(planTemplateSet, () => true)
+      .addCase(planTemplateRemoved, () => true);
   },
 });
 

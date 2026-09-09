@@ -147,6 +147,19 @@ type FieldReturnType =
   | 'faims-pos::Location';
 ```
 
+### Template functions
+
+A field can supply a `templateFunction` that converts its stored value into
+the text a templated string renders (for example, the address field renders
+its `display_name`). These functions are defined in `@faims3/data-model`
+(`derivedFields/templateFunctions.ts`) rather than on the field itself,
+because template rendering runs both in the app and server-side, and the
+field registry pulls in React. The registry entry references the function
+from data-model's builtin map, so both sides render identically.
+
+To add one for a new field: add the function to the builtin map in
+data-model, then reference it from the field's `FieldInfo.templateFunction`.
+
 ## Adding a New Field
 
 ### Step 1: Create Field Directory

@@ -350,7 +350,7 @@ Use this when transferring a single {{notebook}} while keeping team structure in
 
 - **Expiry**: Invites can have an expiration date after which they can no longer be used
 - **Uses remaining**: You can limit how many times an invite code can be used
-- **Sharing methods**: Once created, the system generates a Code, Link, and QR Code — share these with invitees via email, message, or in person
+- **Sharing methods**: Once created, share the QR code or invite link (preferred). The invite code is available under Advanced for manual entry if needed.
 
 **Creating global invites (system-level roles):**
 
@@ -376,7 +376,7 @@ Global invites grant system-level roles (such as Operations Administrator) to an
 Once created, the invite appears in the Invites tab:
 
 ```{screenshot} user-roles/02-users-invites-tab.png
-:alt: Users page Invites tab showing a table of global invitations with columns for Name, Role, Expiry, Uses remaining, Code, Link, QR Code, and Remove
+:alt: Users page Invites tab showing a table of global invitations with columns for Name, Role, Expiry, Uses remaining, QR Code, Link, Advanced, and Remove
 :align: right
 :width: 100%
 ```
@@ -401,7 +401,7 @@ Once created, the invite appears in the Invites tab:
 Once created, the invite appears in the Invites tab:
 
 ```{screenshot} user-roles/08a-teams-invites-tab.png
-:alt: Team Invites tab showing list of pending invitations with columns for Name, Role, Expiry, Uses remaining, Code, Link, QR Code, and Remove
+:alt: Team Invites tab showing list of pending invitations with columns for Name, Role, Expiry, Uses remaining, QR Code, Link, Advanced, and Remove
 :align: right
 :width: 100%
 ```
@@ -422,7 +422,7 @@ Once created, the invite appears in the Invites tab:
 Once created, the invite appears in the Invites tab:
 
 ```{screenshot} user-roles/11-notebooks-invites-active.png
-:alt: {{Notebook}} Invites tab showing list of active invitations with columns for Name, Role, Expiry, Uses remaining, Code, Link, QR Code, and Remove; includes + Create Invite button
+:alt: {{Notebook}} Invites tab showing list of active invitations with columns for Name, Role, Expiry, Uses remaining, QR Code, Link, Advanced, and Remove; includes + Create Invite button
 :align: right
 :width: 100%
 ```
@@ -615,7 +615,7 @@ The **Users** page has two tabs: **Users** (for direct role management) and **In
 
 **Viewing and managing global invites:**
 
-The Invites tab shows all active global invitations. From here you can copy invite codes or links, display QR codes, and remove invites that are no longer needed.
+The Invites tab shows all active global invitations. From here you can display QR codes, copy invite links, reveal invite codes under Advanced if needed, and remove invites that are no longer needed.
 
 For detailed screenshots of this interface, see [Managing Invites](#28-managing-invites) in Common Tasks.
 

@@ -9,7 +9,9 @@ import {initialiseMaps} from '../lib/components/maps';
 
 const queryClient = new QueryClient({});
 
-initialiseMaps();
+initialiseMaps().catch(error => {
+  console.error('Failed to initialise offline maps', error);
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

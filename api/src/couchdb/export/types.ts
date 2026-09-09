@@ -10,38 +10,13 @@
  * - Metadata JSON with export statistics
  */
 
-import {z} from 'zod';
+import type {FullExportConfig} from '@faims3/data-model';
 
-/**
- * Configuration schema for full export options.
- * All options default to true if not specified.
- *
- * Spatial formats (GeoJSON, KML, GeoPackage) are produced in one record iteration
- * when more than one is enabled.
- */
-export const FullExportConfigSchema = z.object({
-  includeTabular: z.boolean().default(true),
-  includeAttachments: z.boolean().default(true),
-  includeGeoJSON: z.boolean().default(true),
-  includeKML: z.boolean().default(true),
-  /** OGC GeoPackage (.gpkg) for desktop GIS; requires GDAL on the API server. */
-  includeGeoPackage: z.boolean().default(true),
-  includeMetadata: z.boolean().default(true),
-});
-
-export type FullExportConfig = z.infer<typeof FullExportConfigSchema>;
-
-/**
- * Default configuration - include everything
- */
-export const DEFAULT_FULL_EXPORT_CONFIG: FullExportConfig = {
-  includeTabular: true,
-  includeAttachments: true,
-  includeGeoJSON: true,
-  includeKML: true,
-  includeGeoPackage: true,
-  includeMetadata: true,
-};
+export {
+  DEFAULT_FULL_EXPORT_CONFIG,
+  FullExportConfigSchema,
+} from '@faims3/data-model';
+export type {FullExportConfig};
 
 /**
  * Statistics for a single view's CSV export
@@ -122,14 +97,4 @@ export interface FullExportMetadata {
   };
   includedFiles: string[]; // Flat list of all paths for RO-Crate "hasPart"
   warnings: string[];
-}
-
-/**
- * Extended download token payload for full exports
- */
-export interface FullDownloadTokenPayload {
-  projectID: string;
-  format: 'full';
-  userID: string;
-  config: FullExportConfig;
 }

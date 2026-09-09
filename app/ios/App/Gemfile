@@ -1,6 +1,8 @@
 source "https://rubygems.org"
 
-gem "fastlane"
+# 2.233+ uploads binaries with Individual ASC API keys via altool
+# (--api-key-subject user) instead of falling back to Apple ID + ASP.
+gem "fastlane", ">= 2.233.0"
 gem "cocoapods"
 
 plugins_path = File.join(File.dirname(__FILE__), 'fastlane', 'Pluginfile')

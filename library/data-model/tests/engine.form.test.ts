@@ -3,6 +3,7 @@ import * as path from 'path';
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import {
+  CompiledNotebookUiSpec,
   DatabaseInterface,
   DataDocument,
   DataEngine,
@@ -31,10 +32,11 @@ describe('Form Operations', () => {
       adapter: 'memory',
     }) as DatabaseInterface<DataDocument>;
 
-    // Initialize engine
+    // Initialize engine. The test spec is the raw (uncompiled) form, which is
+    // sufficient for these tests; cast it to the compiled type the engine expects.
     engine = new DataEngine({
       dataDb: db,
-      uiSpec: uiSpec,
+      uiSpec: uiSpec as unknown as CompiledNotebookUiSpec,
     });
   });
 
@@ -57,11 +59,13 @@ describe('Form Operations', () => {
       expect(result.record.type).toBe('A');
       expect(result.record.created_by).toBe('test-user');
       expect(result.record.created).toBeDefined();
+      expect(result.record.updatedAt).toBe(result.record.created);
 
       expect(result.revision._id).toBeDefined();
       expect(result.revision._rev).toBeDefined();
       expect(result.revision.type).toBe('A');
       expect(result.revision.created_by).toBe('test-user');
+      expect(result.revision.updatedAt).toBe(result.revision.created);
       expect(result.revision.record_id).toBe(result.record._id);
     });
 
@@ -244,6 +248,29 @@ describe('Form Operations', () => {
       expect(firstAvp.faims_attachments?.[0].filename).toBe('initial.txt');
       expect(firstAvp.faims_attachments?.[0].file_type).toBe('text/plain');
     });
+
+    test('should create record with planReference', async () => {
+      const formRecord: NewFormRecord = {
+        formId: 'A',
+        createdBy: 'test-user',
+        planReference: 'plan-123',
+      };
+
+      const result = await engine.form.createRecord(formRecord);
+
+      expect(result.record.planReference).toBe('plan-123');
+    });
+
+    test('should not include planReference if not provided', async () => {
+      const formRecord: NewFormRecord = {
+        formId: 'A',
+        createdBy: 'test-user',
+      };
+
+      const result = await engine.form.createRecord(formRecord);
+
+      expect(result.record.planReference).toBeUndefined();
+    });
   });
 
   describe('createRevision', () => {
@@ -376,6 +403,29 @@ describe('Form Operations', () => {
       expect(updatedRecord.revisions).toContain(oldHeadId);
       expect(updatedRecord.revisions).toContain(childRevision._id);
       expect(updatedRecord.revisions).toHaveLength(2);
+    });
+
+    test('should stamp record updatedAt when forking a head', async () => {
+      const initialResult = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+      const createdUpdatedAt = initialResult.record.updatedAt;
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const childRevision = await engine.form.createRevision({
+        recordId: initialResult.record._id,
+        revisionId: initialResult.revision._id,
+        createdBy: 'user-2',
+      });
+
+      const updatedRecord = await engine.core.getRecord(
+        initialResult.record._id
+      );
+
+      expect(updatedRecord.updatedAt).toBe(childRevision.updatedAt);
+      expect(updatedRecord.updatedAt).not.toBe(createdUpdatedAt);
     });
 
     test('should throw error if revision does not belong to record', async () => {
@@ -1215,6 +1265,309 @@ describe('Form Operations', () => {
       expect(formData.data['Fourth-1'].data).toBe('complete');
       expect(formData.data['Fourth-1'].annotation?.annotation).toBe('full');
       expect(formData.data['Fourth-1'].attachments).toHaveLength(1);
+    });
+  });
+
+  describe('getHistoryData', () => {
+    test('should return revision authorship and changed fields', async () => {
+      const initialResult = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+
+      // Set a field so the revision has a change to report
+      await engine.form.updateRevision({
+        revisionId: initialResult.revision._id,
+        recordId: initialResult.record._id,
+        update: {
+          'First-1': {data: 'test value'},
+        },
+        mode: 'new',
+        updatedBy: 'user-1',
+      });
+
+      const history = await engine.form.getHistoryData({
+        recordId: initialResult.record._id,
+      });
+
+      expect(history).toHaveLength(1);
+      expect(history[0].revisionId).toBe(initialResult.revision._id);
+      expect(history[0].createdBy).toBe('user-1');
+      // The first revision has no parent, so every field it set is reported
+      expect(Object.values(history[0].changedFields).flat()).toContain(
+        'First-1'
+      );
+    });
+  });
+
+  describe('updatedAt bump flags', () => {
+    test('updateRevision without flags leaves record and revision stamps', async () => {
+      const created = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+      const recordStamp = created.record.updatedAt;
+      const revisionStamp = created.revision.updatedAt;
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const updated = await engine.form.updateRevision({
+        revisionId: created.revision._id,
+        recordId: created.record._id,
+        update: {'First-1': {data: 'changed'}},
+        mode: 'new',
+        updatedBy: 'user-1',
+      });
+
+      const record = await engine.core.getRecord(created.record._id);
+      expect(record.updatedAt).toBe(recordStamp);
+      expect(updated.updatedAt).toBe(revisionStamp);
+    });
+
+    test('updateRevision can bump revision updatedAt only', async () => {
+      const created = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+      const recordStamp = created.record.updatedAt;
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const updated = await engine.form.updateRevision({
+        revisionId: created.revision._id,
+        recordId: created.record._id,
+        update: {'First-1': {data: 'changed'}},
+        mode: 'new',
+        updatedBy: 'user-1',
+        bumpRevisionUpdatedAt: true,
+      });
+
+      const record = await engine.core.getRecord(created.record._id);
+      expect(record.updatedAt).toBe(recordStamp);
+      expect(updated.updatedAt).not.toBe(created.revision.updatedAt);
+    });
+
+    test('updateRevision can bump record updatedAt', async () => {
+      const created = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      await engine.form.updateRevision({
+        revisionId: created.revision._id,
+        recordId: created.record._id,
+        update: {'First-1': {data: 'changed'}},
+        mode: 'new',
+        updatedBy: 'user-1',
+        bumpRecordUpdatedAt: true,
+      });
+
+      const record = await engine.core.getRecord(created.record._id);
+      expect(record.updatedAt).not.toBe(created.record.updatedAt);
+    });
+  });
+
+  describe('stampUpdatedAtIfNewer', () => {
+    test('does not stamp when nothing is newer than the current timestamps', async () => {
+      const created = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+
+      const result = await engine.form.stampUpdatedAtIfNewer({
+        recordId: created.record._id,
+        revisionId: created.revision._id,
+      });
+
+      expect(result.stamped).toBe(false);
+      const record = await engine.core.getRecord(created.record._id);
+      const revision = await engine.core.getRevision(created.revision._id);
+      expect(record.updatedAt).toBe(created.record.updatedAt);
+      expect(revision.updatedAt).toBe(created.revision.updatedAt);
+    });
+
+    test('force stamps record and revision even when times already match', async () => {
+      const created = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const result = await engine.form.stampUpdatedAtIfNewer({
+        recordId: created.record._id,
+        revisionId: created.revision._id,
+        force: true,
+      });
+
+      expect(result.stamped).toBe(true);
+      const record = await engine.core.getRecord(created.record._id);
+      const revision = await engine.core.getRevision(created.revision._id);
+      expect(record.updatedAt).not.toBe(created.record.updatedAt);
+      expect(revision.updatedAt).not.toBe(created.revision.updatedAt);
+      expect(record.updatedAt).toBe(revision.updatedAt);
+    });
+
+    test('stamps record and revision when revision updatedAt is already ahead', async () => {
+      const created = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      await engine.form.updateRevision({
+        revisionId: created.revision._id,
+        recordId: created.record._id,
+        update: {'First-1': {data: 'changed'}},
+        mode: 'new',
+        updatedBy: 'user-1',
+        bumpRevisionUpdatedAt: true,
+      });
+
+      const result = await engine.form.stampUpdatedAtIfNewer({
+        recordId: created.record._id,
+        revisionId: created.revision._id,
+      });
+
+      expect(result.stamped).toBe(true);
+      const record = await engine.core.getRecord(created.record._id);
+      const revision = await engine.core.getRevision(created.revision._id);
+      expect(record.updatedAt).not.toBe(created.record.updatedAt);
+      expect(record.updatedAt).toBe(revision.updatedAt);
+    });
+
+    test('stamps both after a later field write that did not bump timestamps', async () => {
+      const created = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+
+      await engine.form.updateRevision({
+        revisionId: created.revision._id,
+        recordId: created.record._id,
+        update: {'First-1': {data: 'name'}},
+        mode: 'new',
+        updatedBy: 'user-1',
+        bumpRevisionUpdatedAt: true,
+      });
+      await engine.core.stampRecordUpdatedAt(created.record._id);
+
+      const afterFirst = await engine.core.getRecord(created.record._id);
+      const revAfterFirst = await engine.core.getRevision(created.revision._id);
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Location-like later field: AVP is written, no timestamp bump flags.
+      await engine.form.updateRevision({
+        revisionId: created.revision._id,
+        recordId: created.record._id,
+        update: {
+          'First-1': {data: 'name'},
+          'Second-1': {data: 'location-here'},
+        },
+        mode: 'new',
+        updatedBy: 'user-1',
+      });
+
+      const recordBeforeFlush = await engine.core.getRecord(created.record._id);
+      const revisionBeforeFlush = await engine.core.getRevision(
+        created.revision._id
+      );
+      expect(recordBeforeFlush.updatedAt).toBe(afterFirst.updatedAt);
+      expect(revisionBeforeFlush.updatedAt).toBe(revAfterFirst.updatedAt);
+
+      const result = await engine.form.stampUpdatedAtIfNewer({
+        recordId: created.record._id,
+        revisionId: created.revision._id,
+      });
+
+      expect(result.stamped).toBe(true);
+      const record = await engine.core.getRecord(created.record._id);
+      const revision = await engine.core.getRevision(created.revision._id);
+      expect(record.updatedAt).not.toBe(afterFirst.updatedAt);
+      expect(revision.updatedAt).not.toBe(revAfterFirst.updatedAt);
+      expect(record.updatedAt).toBe(revision.updatedAt);
+    });
+
+    test('stamps both after an in-place field write that did not bump timestamps', async () => {
+      const created = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+
+      await engine.form.updateRevision({
+        revisionId: created.revision._id,
+        recordId: created.record._id,
+        update: {'First-1': {data: 'initial'}},
+        mode: 'new',
+        updatedBy: 'user-1',
+        bumpRevisionUpdatedAt: true,
+      });
+      await engine.core.stampRecordUpdatedAt(created.record._id);
+
+      const afterFirst = await engine.core.getRecord(created.record._id);
+      const revAfterFirst = await engine.core.getRevision(created.revision._id);
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      await engine.form.updateRevision({
+        revisionId: created.revision._id,
+        recordId: created.record._id,
+        update: {'First-1': {data: 'updated in place'}},
+        mode: 'new',
+        updatedBy: 'user-1',
+      });
+
+      const result = await engine.form.stampUpdatedAtIfNewer({
+        recordId: created.record._id,
+        revisionId: created.revision._id,
+      });
+
+      expect(result.stamped).toBe(true);
+      const record = await engine.core.getRecord(created.record._id);
+      const revision = await engine.core.getRevision(created.revision._id);
+      expect(record.updatedAt).not.toBe(afterFirst.updatedAt);
+      expect(revision.updatedAt).not.toBe(revAfterFirst.updatedAt);
+      expect(record.updatedAt).toBe(revision.updatedAt);
+    });
+
+    test('stamps using the later of multiple heads on conflict', async () => {
+      const created = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+      const olderUpdatedAt = created.record.updatedAt;
+
+      await new Promise(resolve => setTimeout(resolve, 15));
+
+      const child = await engine.form.createRevision({
+        recordId: created.record._id,
+        revisionId: created.revision._id,
+        createdBy: 'user-1',
+      });
+
+      const record = await engine.core.getRecord(created.record._id);
+      await engine.core.updateRecord({
+        ...record,
+        heads: [created.revision._id, child._id],
+        updatedAt: olderUpdatedAt,
+      });
+
+      await expect(
+        engine.form.getCurrentRevisionId({recordId: created.record._id})
+      ).rejects.toMatchObject({name: 'RecordConflictError'});
+
+      const result = await engine.form.stampUpdatedAtIfNewer({
+        recordId: created.record._id,
+      });
+      expect(result.stamped).toBe(true);
+      const stamped = await engine.core.getRecord(created.record._id);
+      expect(Date.parse(stamped.updatedAt)).toBeGreaterThan(
+        Date.parse(olderUpdatedAt)
+      );
     });
   });
 });

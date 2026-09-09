@@ -16,10 +16,11 @@ fi
 
 # replace occurrences of the app name 'Fieldmark' and id 'org.fedarch.faims3'
 # with configured values VITE_APP_NAME and VITE_APP_ID
-# Note: Capacitor runtime config now comes from capacitor.config.ts.
-# This script updates manifest/resources/assets only.
 
 echo "Configuring app name ${VITE_APP_NAME} and id ${VITE_APP_ID}"
+
+# app name and appId → capacitor.config.json (also honors CAP_ANDROID_ADB_FORWARD / CAP_SERVER_URL)
+./bin/generateCapacitorConfig.sh
 
 # public/manifest.json
 
@@ -41,22 +42,24 @@ EOT
 
 ## Now run the asset generation script
 
-echo "Generating assets for ${VITE_THEME} theme"
+THEME=${VITE_THEME:-default}
 
-npx capacitor-assets generate --assetPath "./public/base-assets/${VITE_THEME}" \
+echo "Generating assets for ${THEME} theme"
+
+pnpm dlx sssf-capacitor-assets generate --assetPath "./public/base-assets/${THEME}" \
   --pwaManifestPath ./public/manifest.json \
   --iconBackgroundColorDark '#001d34' \
   --splashBackgroundColorDark '#001d34'
 
 ## capacitor-assets can put the pwa icons in the wrong place sometimes
-if test -f icons/icon-48.webp; then
+if test -f icons/icon-192.png; then
   echo "Moving icons into public"
   mkdir -p ./public/assets
   mv icons ./public/assets/icons
 fi
 
 ## copy the icons over to web/ as well (check they exist first)
-if test -f ./public/assets/icons/icon-48.webp; then
+if test -f ./public/assets/icons/icon-192.png; then
   rm -rf ../web/public/assets/icons
   mkdir -p ../web/public/assets/
   cp -r ./public/assets/icons ../web/public/assets/icons

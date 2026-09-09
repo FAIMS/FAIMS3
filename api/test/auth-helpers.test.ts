@@ -10,14 +10,14 @@
  * Unless required by applicable law or agreed to in writing software
  * distributed under the License is distributed on an "AS IS" BASIS
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
+ * See the License, for the specific language governing permissions and
  * limitations under the License.
  *
  * Filename: auth-helpers.test.ts
  * Description:
  *   Unit tests for ssoVerify, identifyUser, and applyProvisionPolicy in
- *   auth/helpers.ts. These tests mock all CouchDB and external dependencies
- *   so no real database connection is required.
+ *   auth/helpers.ts. These tests mock CouchDB dependencies via vi.mock so no
+ *   real database connection is required.
  */
 
 import {
@@ -25,32 +25,47 @@ import {
   PeopleDBDocument,
   Role,
 } from '@faims3/data-model';
-import {expect} from 'chai';
-import sinon from 'sinon';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-// ─── Import modules whose exports we will stub ────────────────────────────────
-// We import the modules themselves so sinon can stub their exported functions.
-// This works because ts-node compiles to CommonJS, making exports mutable.
+vi.mock('../src/couchdb/users', async importOriginal => {
+  const actual = await importOriginal<typeof import('../src/couchdb/users')>();
+  return {
+    ...actual,
+    getCouchUserFromEmailOrUserId: vi.fn(),
+    createUser: vi.fn(),
+    saveCouchUser: vi.fn(),
+  };
+});
 
-import * as keySigningModule from '../src/auth/keySigning/create';
-import * as buildconfig from '../src/buildconfig';
-import * as teamsModule from '../src/couchdb/teams';
-import * as usersModule from '../src/couchdb/users';
+vi.mock('../src/couchdb/teams', async importOriginal => {
+  const actual = await importOriginal<typeof import('../src/couchdb/teams')>();
+  return {
+    ...actual,
+    createTeamDocument: vi.fn(),
+  };
+});
 
-// Import the functions under test — must come after the module imports above
-// so that when helpers.ts is loaded, the stubs are already in place on the
-// shared module objects.
+import {config} from '../src/buildconfig';
 import {
   applyProvisionPolicy,
   identifyUser,
   ssoVerify,
 } from '../src/auth/helpers';
+import * as teamsModule from '../src/couchdb/teams';
+import * as usersModule from '../src/couchdb/users';
+
+const getCouchUserFromEmailOrUserId = vi.mocked(
+  usersModule.getCouchUserFromEmailOrUserId
+);
+const createUser = vi.mocked(usersModule.createUser);
+const saveCouchUser = vi.mocked(usersModule.saveCouchUser);
+const createTeamDocument = vi.mocked(teamsModule.createTeamDocument);
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
 
 /** Override PROVISION_SSO_USERS_POLICY for the duration of a test */
 function setPolicy(policy: string) {
-  (buildconfig.config as any).provisionSSOUsersPolicy = policy;
+  (config as any).provisionSSOUsersPolicy = policy;
 }
 
 /** Build a minimal ExistingPeopleDBDocument */
@@ -102,106 +117,101 @@ const displayNameFn = (profile: any): string =>
 /** A minimal SSO profile */
 const baseProfile = {id: 'sso-id-1', displayName: 'Test User'};
 
+function resetAuthMocks() {
+  getCouchUserFromEmailOrUserId.mockReset();
+  createUser.mockReset();
+  saveCouchUser.mockReset();
+  createTeamDocument.mockReset();
+}
+
 // ─── identifyUser ─────────────────────────────────────────────────────────────
 describe('identifyUser', () => {
-  let getCouchUserStub: sinon.SinonStub;
-
   beforeEach(() => {
-    getCouchUserStub = sinon.stub(usersModule, 'getCouchUserFromEmailOrUserId');
+    resetAuthMocks();
   });
 
   afterEach(() => {
-    sinon.restore();
+    vi.clearAllMocks();
   });
 
   it('throws when given an empty email list', async () => {
-    try {
-      await identifyUser([], 'Google');
-      expect.fail('Expected an error to be thrown');
-    } catch (err: any) {
-      expect(err.message).to.include('verified email addresses');
-    }
+    await expect(identifyUser([], 'Google')).rejects.toThrow(
+      'verified email addresses'
+    );
   });
 
   it('includes the strategy name in the no-emails error message', async () => {
-    try {
-      await identifyUser([], 'MyCustomSAML');
-      expect.fail('Expected an error to be thrown');
-    } catch (err: any) {
-      expect(err.message).to.include('MyCustomSAML');
-    }
+    await expect(identifyUser([], 'MyCustomSAML')).rejects.toThrow(
+      'MyCustomSAML'
+    );
   });
 
   it('returns undefined when no user matches any email', async () => {
-    getCouchUserStub.resolves(null);
+    getCouchUserFromEmailOrUserId.mockResolvedValue(null);
 
     const result = await identifyUser(['nobody@example.com'], 'Google');
 
-    expect(result).to.be.undefined;
+    expect(result).toBeUndefined();
   });
 
   it('returns the matching user when exactly one email matches', async () => {
     const user = buildExistingUser();
-    getCouchUserStub.resolves(user);
+    getCouchUserFromEmailOrUserId.mockResolvedValue(user);
 
     const result = await identifyUser(['user@example.com'], 'Google');
 
-    expect(result).to.equal(user);
+    expect(result).toBe(user);
   });
 
   it('returns the single underlying user when multiple emails resolve to the same account', async () => {
     const user = buildExistingUser();
-    // Both emails resolve to the same user (same _id)
-    getCouchUserStub.resolves(user);
+    getCouchUserFromEmailOrUserId.mockResolvedValue(user);
 
     const result = await identifyUser(
       ['user@example.com', 'also@example.com'],
       'Google'
     );
 
-    expect(result).to.equal(user);
-    expect(getCouchUserStub.callCount).to.equal(2);
+    expect(result).toBe(user);
+    expect(getCouchUserFromEmailOrUserId).toHaveBeenCalledTimes(2);
   });
 
   it('throws when multiple emails match different accounts', async () => {
     const userA = buildExistingUser({_id: 'user-a'});
     const userB = buildExistingUser({_id: 'user-b'});
-    getCouchUserStub.onFirstCall().resolves(userA);
-    getCouchUserStub.onSecondCall().resolves(userB);
+    getCouchUserFromEmailOrUserId
+      .mockResolvedValueOnce(userA)
+      .mockResolvedValueOnce(userB);
 
-    try {
-      await identifyUser(['a@example.com', 'b@example.com'], 'Google');
-      expect.fail('Expected an error to be thrown');
-    } catch (err: any) {
-      expect(err.message).to.include('more than one');
-    }
+    await expect(
+      identifyUser(['a@example.com', 'b@example.com'], 'Google')
+    ).rejects.toThrow('more than one');
   });
 
   it('includes the strategy name in the multiple-accounts error message', async () => {
     const userA = buildExistingUser({_id: 'user-a'});
     const userB = buildExistingUser({_id: 'user-b'});
-    getCouchUserStub.onFirstCall().resolves(userA);
-    getCouchUserStub.onSecondCall().resolves(userB);
+    getCouchUserFromEmailOrUserId
+      .mockResolvedValueOnce(userA)
+      .mockResolvedValueOnce(userB);
 
-    try {
-      await identifyUser(['a@example.com', 'b@example.com'], 'MyCustomSAML');
-      expect.fail('Expected an error to be thrown');
-    } catch (err: any) {
-      expect(err.message).to.include('MyCustomSAML');
-    }
+    await expect(
+      identifyUser(['a@example.com', 'b@example.com'], 'MyCustomSAML')
+    ).rejects.toThrow('MyCustomSAML');
   });
 
   it('returns the matched user when only one of several emails matches', async () => {
     const user = buildExistingUser();
-    getCouchUserStub.onFirstCall().resolves(null);
-    getCouchUserStub.onSecondCall().resolves(user);
+    getCouchUserFromEmailOrUserId
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(user);
 
     const result = await identifyUser(
       ['unknown@example.com', 'user@example.com'],
       'Google'
     );
 
-    expect(result).to.equal(user);
+    expect(result).toBe(user);
   });
 });
 
@@ -215,42 +225,26 @@ describe('applyProvisionPolicy', () => {
     userDisplayName: displayNameFn,
   };
 
-  let createUserStub: sinon.SinonStub;
-  let createTeamStub: sinon.SinonStub;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-
   beforeEach(() => {
-    createUserStub = sinon.stub(usersModule, 'createUser');
-    createTeamStub = sinon.stub(teamsModule, 'createTeamDocument');
-    // stub saveCouchUser to prevent real DB calls in applyProvisionPolicy tests
-    sinon.stub(usersModule, 'saveCouchUser').resolves();
-
-    // Default: createUser returns a valid new user
-    const newUser = buildNewUser();
-    createUserStub.resolves([newUser, '']);
+    resetAuthMocks();
+    saveCouchUser.mockResolvedValue(undefined as any);
+    createUser.mockResolvedValue([buildNewUser(), '']);
   });
 
   afterEach(() => {
-    sinon.restore();
+    vi.clearAllMocks();
   });
-
-  // ── policy: reject ──────────────────────────────────────────────────────────
 
   describe('policy: reject', () => {
     beforeEach(() => setPolicy('reject'));
 
     it('throws without creating a user', async () => {
-      try {
-        await applyProvisionPolicy(baseArgs);
-        expect.fail('Expected an error to be thrown');
-      } catch (err: any) {
-        expect(err.message).to.include('does not exist in our system');
-      }
-      expect(createUserStub.called).to.be.false;
+      await expect(applyProvisionPolicy(baseArgs)).rejects.toThrow(
+        'does not exist in our system'
+      );
+      expect(createUser).not.toHaveBeenCalled();
     });
   });
-
-  // ── policy: general-user ────────────────────────────────────────────────────
 
   describe('policy: general-user', () => {
     beforeEach(() => setPolicy('general-user'));
@@ -258,40 +252,40 @@ describe('applyProvisionPolicy', () => {
     it('creates a new user', async () => {
       await applyProvisionPolicy(baseArgs);
 
-      expect(createUserStub.calledOnce).to.be.true;
+      expect(createUser).toHaveBeenCalledTimes(1);
     });
 
     it('adds the GENERAL_USER global role to the new user', async () => {
       const newUser = buildNewUser({globalRoles: []});
-      createUserStub.resolves([newUser, '']);
+      createUser.mockResolvedValue([newUser, '']);
 
       await applyProvisionPolicy(baseArgs);
 
-      expect(newUser.globalRoles).to.include(Role.GENERAL_USER);
+      expect(newUser.globalRoles).toContain(Role.GENERAL_USER);
     });
 
     it('does not create a team', async () => {
       await applyProvisionPolicy(baseArgs);
 
-      expect(createTeamStub.called).to.be.false;
+      expect(createTeamDocument).not.toHaveBeenCalled();
     });
 
     it('returns the new user document', async () => {
       const newUser = buildNewUser();
-      createUserStub.resolves([newUser, '']);
+      createUser.mockResolvedValue([newUser, '']);
 
       const result = await applyProvisionPolicy(baseArgs);
 
-      expect(result).to.equal(newUser);
+      expect(result).toBe(newUser);
     });
 
     it('links the SSO profile to the new user', async () => {
       const newUser = buildNewUser();
-      createUserStub.resolves([newUser, '']);
+      createUser.mockResolvedValue([newUser, '']);
 
       await applyProvisionPolicy(baseArgs);
 
-      expect(newUser.profiles['google']).to.equal(baseProfile);
+      expect(newUser.profiles['google']).toBe(baseProfile);
     });
 
     it('uses the first email as primary email and username', async () => {
@@ -300,56 +294,51 @@ describe('applyProvisionPolicy', () => {
         emails: ['first@example.com', 'second@example.com'],
       });
 
-      const callArg = createUserStub.firstCall.args[0];
-      expect(callArg.email).to.equal('first@example.com');
-      expect(callArg.username).to.equal('first@example.com');
+      const callArg = createUser.mock.calls[0][0];
+      expect(callArg.email).toBe('first@example.com');
+      expect(callArg.username).toBe('first@example.com');
     });
 
     it('throws when createUser returns null', async () => {
-      createUserStub.resolves([null, 'db error']);
+      createUser.mockResolvedValue([null, 'db error']);
 
-      try {
-        await applyProvisionPolicy(baseArgs);
-        expect.fail('Expected an error to be thrown');
-      } catch (err: any) {
-        expect(err.message).to.include('unable to create new user');
-      }
+      await expect(applyProvisionPolicy(baseArgs)).rejects.toThrow(
+        'unable to create new user'
+      );
     });
   });
-
-  // ── policy: own-team ────────────────────────────────────────────────────────
 
   describe('policy: own-team', () => {
     beforeEach(() => {
       setPolicy('own-team');
-      createTeamStub.resolves({_id: 'team-abc'});
+      createTeamDocument.mockResolvedValue({_id: 'team-abc'} as any);
     });
 
     it('creates a new user', async () => {
       await applyProvisionPolicy(baseArgs);
 
-      expect(createUserStub.calledOnce).to.be.true;
+      expect(createUser).toHaveBeenCalledTimes(1);
     });
 
     it('creates a personal team named after the user', async () => {
       const newUser = buildNewUser({name: 'Alice'});
-      createUserStub.resolves([newUser, '']);
+      createUser.mockResolvedValue([newUser, '']);
 
       await applyProvisionPolicy(baseArgs);
 
-      expect(createTeamStub.calledOnce).to.be.true;
-      const callArg = createTeamStub.firstCall.args[0];
-      expect(callArg.name).to.equal('Personal: Alice');
+      expect(createTeamDocument).toHaveBeenCalledTimes(1);
+      const callArg = createTeamDocument.mock.calls[0][0];
+      expect(callArg.name).toBe('Personal: Alice');
     });
 
     it('adds the TEAM_MANAGER team role to the new user', async () => {
       const newUser = buildNewUser({teamRoles: []});
-      createUserStub.resolves([newUser, '']);
-      createTeamStub.resolves({_id: 'team-abc'});
+      createUser.mockResolvedValue([newUser, '']);
+      createTeamDocument.mockResolvedValue({_id: 'team-abc'} as any);
 
       await applyProvisionPolicy(baseArgs);
 
-      expect(newUser.teamRoles).to.deep.include({
+      expect(newUser.teamRoles).toContainEqual({
         resourceId: 'team-abc',
         role: Role.TEAM_MANAGER,
       });
@@ -358,46 +347,43 @@ describe('applyProvisionPolicy', () => {
     it('does not call addGlobalRole', async () => {
       const result = await applyProvisionPolicy(baseArgs);
 
-      expect(result.globalRoles).to.be.empty;
+      expect(result.globalRoles).toHaveLength(0);
     });
 
     it('returns the new user document', async () => {
       const newUser = buildNewUser();
-      createUserStub.resolves([newUser, '']);
+      createUser.mockResolvedValue([newUser, '']);
 
       const result = await applyProvisionPolicy(baseArgs);
 
-      expect(result).to.equal(newUser);
+      expect(result).toBe(newUser);
     });
 
     it('sets createdBy to the new user id on the team', async () => {
       const newUser = buildNewUser({_id: 'user-xyz'});
-      createUserStub.resolves([newUser, '']);
+      createUser.mockResolvedValue([newUser, '']);
 
       await applyProvisionPolicy(baseArgs);
 
-      const callArg = createTeamStub.firstCall.args[0];
-      expect(callArg.createdBy).to.equal('user-xyz');
+      const callArg = createTeamDocument.mock.calls[0][0];
+      expect(callArg.createdBy).toBe('user-xyz');
     });
 
     it('links the SSO profile to the new user', async () => {
       const newUser = buildNewUser();
-      createUserStub.resolves([newUser, '']);
+      createUser.mockResolvedValue([newUser, '']);
 
       await applyProvisionPolicy(baseArgs);
 
-      expect(newUser.profiles['google']).to.equal(baseProfile);
+      expect(newUser.profiles['google']).toBe(baseProfile);
     });
 
     it('throws when createUser returns null', async () => {
-      createUserStub.resolves([null, 'db error']);
+      createUser.mockResolvedValue([null, 'db error']);
 
-      try {
-        await applyProvisionPolicy(baseArgs);
-        expect.fail('Expected an error to be thrown');
-      } catch (err: any) {
-        expect(err.message).to.include('unable to create new user');
-      }
+      await expect(applyProvisionPolicy(baseArgs)).rejects.toThrow(
+        'unable to create new user'
+      );
     });
   });
 });
@@ -413,34 +399,20 @@ describe('ssoVerify', () => {
     userDisplayName: displayNameFn,
   };
 
-  let getCouchUserStub: sinon.SinonStub;
-  let saveCouchUserStub: sinon.SinonStub;
-  let createUserStub: sinon.SinonStub;
-  let createTeamStub: sinon.SinonStub;
-  let done: sinon.SinonSpy;
+  type DoneFn = (error: any, user?: any, info?: any) => void;
+  let done: ReturnType<typeof vi.fn<DoneFn>>;
 
   beforeEach(() => {
-    getCouchUserStub = sinon.stub(usersModule, 'getCouchUserFromEmailOrUserId');
-    saveCouchUserStub = sinon.stub(usersModule, 'saveCouchUser');
-    createUserStub = sinon.stub(usersModule, 'createUser');
-    createTeamStub = sinon.stub(teamsModule, 'createTeamDocument');
-    // upgradeCouchUserToExpressUser is no longer called by ssoVerify;
-    // stub it anyway to prevent any accidental real calls
-    sinon.stub(keySigningModule, 'upgradeCouchUserToExpressUser');
-
-    // Sensible defaults
-    setPolicy('reject'); // safe default — prevents accidental provisioning
-    saveCouchUserStub.resolves();
-    createTeamStub.resolves({_id: 'team-new'});
-
-    done = sinon.spy();
+    resetAuthMocks();
+    setPolicy('reject');
+    saveCouchUser.mockResolvedValue(undefined as any);
+    createTeamDocument.mockResolvedValue({_id: 'team-new'} as any);
+    done = vi.fn<DoneFn>();
   });
 
   afterEach(() => {
-    sinon.restore();
+    vi.clearAllMocks();
   });
-
-  // ── Guard clauses ────────────────────────────────────────────────────────────
 
   describe('guard clauses', () => {
     it('calls done with error when session has no action', async () => {
@@ -450,10 +422,10 @@ describe('ssoVerify', () => {
         done,
       });
 
-      expect(done.calledOnce).to.be.true;
-      const [err, user] = done.firstCall.args;
-      expect(err).to.be.instanceOf(Error);
-      expect(user).to.be.undefined;
+      expect(done).toHaveBeenCalledTimes(1);
+      const [err, user] = done.mock.calls[0];
+      expect(err).toBeInstanceOf(Error);
+      expect(user).toBeUndefined();
     });
 
     it('calls done with error when action is register but no inviteId', async () => {
@@ -463,14 +435,16 @@ describe('ssoVerify', () => {
         done,
       });
 
-      expect(done.calledOnce).to.be.true;
-      const [err, user] = done.firstCall.args;
-      expect(err).to.be.instanceOf(Error);
-      expect(user).to.be.undefined;
+      expect(done).toHaveBeenCalledTimes(1);
+      const [err, user] = done.mock.calls[0];
+      expect(err).toBeInstanceOf(Error);
+      expect(user).toBeUndefined();
     });
 
     it('calls done with error when identifyUser throws', async () => {
-      getCouchUserStub.rejects(new Error('db connection failure'));
+      getCouchUserFromEmailOrUserId.mockRejectedValue(
+        new Error('db connection failure')
+      );
 
       await ssoVerify({
         ...baseArgs,
@@ -478,19 +452,17 @@ describe('ssoVerify', () => {
         done,
       });
 
-      expect(done.calledOnce).to.be.true;
-      const [err, user] = done.firstCall.args;
-      expect(err.message).to.include('db connection failure');
-      expect(user).to.be.undefined;
+      expect(done).toHaveBeenCalledTimes(1);
+      const [err, user] = done.mock.calls[0];
+      expect(err.message).toContain('db connection failure');
+      expect(user).toBeUndefined();
     });
   });
-
-  // ── Login: existing user ──────────────────────────────────────────────────────
 
   describe('login: existing user', () => {
     it('calls done with null error and the raw db user', async () => {
       const existingUser = buildExistingUser();
-      getCouchUserStub.resolves(existingUser);
+      getCouchUserFromEmailOrUserId.mockResolvedValue(existingUser);
 
       await ssoVerify({
         ...baseArgs,
@@ -498,17 +470,15 @@ describe('ssoVerify', () => {
         done,
       });
 
-      expect(done.calledOnce).to.be.true;
-      const [err, user] = done.firstCall.args;
-      expect(err).to.be.null;
-      // ssoVerify returns a raw PeopleDBDocument; upgradeCouchUserToExpressUser
-      // is called later by completePostAuth in the route callback layer
-      expect(user).to.equal(existingUser);
+      expect(done).toHaveBeenCalledTimes(1);
+      const [err, user] = done.mock.calls[0];
+      expect(err).toBeNull();
+      expect(user).toBe(existingUser);
     });
 
     it('links the SSO profile when not already present', async () => {
       const existingUser = buildExistingUser({profiles: {}});
-      getCouchUserStub.resolves(existingUser);
+      getCouchUserFromEmailOrUserId.mockResolvedValue(existingUser);
 
       await ssoVerify({
         ...baseArgs,
@@ -516,8 +486,8 @@ describe('ssoVerify', () => {
         done,
       });
 
-      expect(existingUser.profiles['google']).to.equal(baseProfile);
-      expect(saveCouchUserStub.calledWith(existingUser)).to.be.true;
+      expect(existingUser.profiles['google']).toBe(baseProfile);
+      expect(saveCouchUser).toHaveBeenCalledWith(existingUser);
     });
 
     it('does not overwrite an existing SSO profile link', async () => {
@@ -525,7 +495,7 @@ describe('ssoVerify', () => {
       const existingUser = buildExistingUser({
         profiles: {google: existingProfile},
       });
-      getCouchUserStub.resolves(existingUser);
+      getCouchUserFromEmailOrUserId.mockResolvedValue(existingUser);
 
       await ssoVerify({
         ...baseArgs,
@@ -533,16 +503,14 @@ describe('ssoVerify', () => {
         done,
       });
 
-      expect(existingUser.profiles['google']).to.equal(existingProfile);
-      expect(saveCouchUserStub.called).to.be.false;
+      expect(existingUser.profiles['google']).toBe(existingProfile);
+      expect(saveCouchUser).not.toHaveBeenCalled();
     });
   });
 
-  // ── Login: unknown user (provisioning) ────────────────────────────────────────
-
   describe('login: unknown user', () => {
     beforeEach(() => {
-      getCouchUserStub.resolves(null);
+      getCouchUserFromEmailOrUserId.mockResolvedValue(null);
     });
 
     it('calls done with error when policy is reject', async () => {
@@ -554,17 +522,17 @@ describe('ssoVerify', () => {
         done,
       });
 
-      expect(done.calledOnce).to.be.true;
-      const [err, user] = done.firstCall.args;
-      expect(err).to.be.instanceOf(Error);
-      expect(err.message).to.include('does not exist in our system');
-      expect(user).to.be.undefined;
+      expect(done).toHaveBeenCalledTimes(1);
+      const [err, user] = done.mock.calls[0];
+      expect(err).toBeInstanceOf(Error);
+      expect(err.message).toContain('does not exist in our system');
+      expect(user).toBeUndefined();
     });
 
     it('creates a new user and calls done with success when policy is general-user', async () => {
       setPolicy('general-user');
       const newUser = buildNewUser();
-      createUserStub.resolves([newUser, '']);
+      createUser.mockResolvedValue([newUser, '']);
 
       await ssoVerify({
         ...baseArgs,
@@ -572,16 +540,16 @@ describe('ssoVerify', () => {
         done,
       });
 
-      expect(createUserStub.calledOnce).to.be.true;
-      const [err, user] = done.firstCall.args;
-      expect(err).to.be.null;
-      expect(user).to.equal(newUser);
+      expect(createUser).toHaveBeenCalledTimes(1);
+      const [err, user] = done.mock.calls[0];
+      expect(err).toBeNull();
+      expect(user).toBe(newUser);
     });
 
     it('creates a new user and team and calls done with success when policy is own-team', async () => {
       setPolicy('own-team');
       const newUser = buildNewUser();
-      createUserStub.resolves([newUser, '']);
+      createUser.mockResolvedValue([newUser, '']);
 
       await ssoVerify({
         ...baseArgs,
@@ -589,16 +557,16 @@ describe('ssoVerify', () => {
         done,
       });
 
-      expect(createUserStub.calledOnce).to.be.true;
-      expect(createTeamStub.calledOnce).to.be.true;
-      const [err, user] = done.firstCall.args;
-      expect(err).to.be.null;
-      expect(user).to.equal(newUser);
+      expect(createUser).toHaveBeenCalledTimes(1);
+      expect(createTeamDocument).toHaveBeenCalledTimes(1);
+      const [err, user] = done.mock.calls[0];
+      expect(err).toBeNull();
+      expect(user).toBe(newUser);
     });
 
     it('calls done with error when provisioning fails', async () => {
       setPolicy('general-user');
-      createUserStub.resolves([null, 'db error']);
+      createUser.mockResolvedValue([null, 'db error']);
 
       await ssoVerify({
         ...baseArgs,
@@ -606,25 +574,21 @@ describe('ssoVerify', () => {
         done,
       });
 
-      const [err, user] = done.firstCall.args;
-      expect(err).to.be.instanceOf(Error);
-      expect(err.message).to.include('unable to create new user');
-      expect(user).to.be.undefined;
+      const [err, user] = done.mock.calls[0];
+      expect(err).toBeInstanceOf(Error);
+      expect(err.message).toContain('unable to create new user');
+      expect(user).toBeUndefined();
     });
   });
 
-  // ── Register: new user ────────────────────────────────────────────────────────
-
   describe('register: new user', () => {
     beforeEach(() => {
-      // invite validation is now handled by completePostAuth in the route layer,
-      // not by ssoVerify — no invite stubs needed here
-      getCouchUserStub.resolves(null);
+      getCouchUserFromEmailOrUserId.mockResolvedValue(null);
     });
 
     it('creates a new user and calls done with success', async () => {
       const newUser = buildNewUser();
-      createUserStub.resolves([newUser, '']);
+      createUser.mockResolvedValue([newUser, '']);
 
       await ssoVerify({
         ...baseArgs,
@@ -632,15 +596,15 @@ describe('ssoVerify', () => {
         done,
       });
 
-      expect(createUserStub.calledOnce).to.be.true;
-      const [err, user] = done.firstCall.args;
-      expect(err).to.be.null;
-      expect(user).to.equal(newUser);
+      expect(createUser).toHaveBeenCalledTimes(1);
+      const [err, user] = done.mock.calls[0];
+      expect(err).toBeNull();
+      expect(user).toBe(newUser);
     });
 
     it('links the SSO profile to the newly created user', async () => {
       const newUser = buildNewUser();
-      createUserStub.resolves([newUser, '']);
+      createUser.mockResolvedValue([newUser, '']);
 
       await ssoVerify({
         ...baseArgs,
@@ -648,16 +612,14 @@ describe('ssoVerify', () => {
         done,
       });
 
-      expect(newUser.profiles['google']).to.equal(baseProfile);
+      expect(newUser.profiles['google']).toBe(baseProfile);
     });
   });
-
-  // ── Register: user already exists (upgrade path) ──────────────────────────────
 
   describe('register: existing user (login upgrade path)', () => {
     it('logs in the existing user without creating a new one', async () => {
       const existingUser = buildExistingUser({profiles: {}});
-      getCouchUserStub.resolves(existingUser);
+      getCouchUserFromEmailOrUserId.mockResolvedValue(existingUser);
 
       await ssoVerify({
         ...baseArgs,
@@ -665,15 +627,15 @@ describe('ssoVerify', () => {
         done,
       });
 
-      expect(createUserStub.called).to.be.false;
-      const [err, user] = done.firstCall.args;
-      expect(err).to.be.null;
-      expect(user).to.equal(existingUser);
+      expect(createUser).not.toHaveBeenCalled();
+      const [err, user] = done.mock.calls[0];
+      expect(err).toBeNull();
+      expect(user).toBe(existingUser);
     });
 
     it('links the SSO profile to the existing user if not already linked', async () => {
       const existingUser = buildExistingUser({profiles: {}});
-      getCouchUserStub.resolves(existingUser);
+      getCouchUserFromEmailOrUserId.mockResolvedValue(existingUser);
 
       await ssoVerify({
         ...baseArgs,
@@ -681,12 +643,12 @@ describe('ssoVerify', () => {
         done,
       });
 
-      expect(existingUser.profiles['google']).to.equal(baseProfile);
+      expect(existingUser.profiles['google']).toBe(baseProfile);
     });
 
     it('saves the updated existing user', async () => {
       const existingUser = buildExistingUser({profiles: {}});
-      getCouchUserStub.resolves(existingUser);
+      getCouchUserFromEmailOrUserId.mockResolvedValue(existingUser);
 
       await ssoVerify({
         ...baseArgs,
@@ -694,7 +656,7 @@ describe('ssoVerify', () => {
         done,
       });
 
-      expect(saveCouchUserStub.calledWith(existingUser)).to.be.true;
+      expect(saveCouchUser).toHaveBeenCalledWith(existingUser);
     });
 
     it('adds all verified emails to the existing user', async () => {
@@ -702,7 +664,7 @@ describe('ssoVerify', () => {
         emails: [{email: 'original@example.com', verified: true}],
         profiles: {},
       });
-      getCouchUserStub.resolves(existingUser);
+      getCouchUserFromEmailOrUserId.mockResolvedValue(existingUser);
 
       await ssoVerify({
         ...baseArgs,
@@ -712,8 +674,8 @@ describe('ssoVerify', () => {
       });
 
       const emailValues = existingUser.emails.map((e: any) => e.email);
-      expect(emailValues).to.include('user@example.com');
-      expect(emailValues).to.include('alt@example.com');
+      expect(emailValues).toContain('user@example.com');
+      expect(emailValues).toContain('alt@example.com');
     });
   });
 });

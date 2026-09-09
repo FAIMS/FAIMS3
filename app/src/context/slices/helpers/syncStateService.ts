@@ -7,6 +7,13 @@ export interface SyncState {
   status: 'initial' | 'active' | 'paused' | 'error' | 'denied';
   lastUpdated: number;
   pendingRecords: number;
+  /**
+   * Has the pull side caught up with the remote since this state was created?
+   * False through the initial download, true once a pull reports nothing
+   * pending or pauses cleanly. Lets consumers tell "records may still be
+   * arriving" from "local data is as complete as sync can make it".
+   */
+  isPullCaughtUp: boolean;
   errorMessage?: string;
   lastChangeStats?: {
     docsRead: number;
@@ -96,6 +103,22 @@ class SyncStateService {
   }
 
   /**
+   * Record that the PULL side paused, the only pause that may raise the
+   * pull-catch-up marker: a clean pull pause means nothing is left to fetch,
+   * while one carrying an error is retrying, not finished.
+   *
+   * Kept out of {@link setPaused} because the aggregate `paused` of a two-way
+   * sync arrives with the child's error stripped, so an offline device would
+   * look finished. Moves only the marker; status stays with {@link setPaused}.
+   */
+  recordPullPause(serverId: string, projectId: string, error?: Error): void {
+    if (error) {
+      return;
+    }
+    this.updateSyncState(serverId, projectId, {isPullCaughtUp: true});
+  }
+
+  /**
    * Set sync state to error
    */
   setError(serverId: string, projectId: string, error: Error): SyncState {
@@ -122,22 +145,31 @@ class SyncStateService {
     serverId: string,
     projectId: string,
     info: {
-      pending: number;
+      /** Undefined when the source did not report it, which is not zero. */
+      pending: number | undefined;
       docsRead: number;
       docsWritten: number;
       direction: 'push' | 'pull';
     }
   ): SyncState {
-    return this.updateSyncState(serverId, projectId, {
+    const update: Partial<SyncState> = {
       status: 'active',
-      pendingRecords: info.pending,
+      pendingRecords: info.pending ?? 0,
       errorMessage: undefined,
       lastChangeStats: {
         docsRead: info.docsRead,
         docsWritten: info.docsWritten,
         direction: info.direction,
       },
-    });
+    };
+    // Only a pull batch moves the marker; push batches say nothing about the
+    // pull side. An unreported `pending` stays behind rather than reading as
+    // zero, which would let the first batch of a bulk download declare
+    // catch-up; a genuinely idle pull raises it via {@link recordPullPause}.
+    if (info.direction === 'pull') {
+      update.isPullCaughtUp = info.pending === 0;
+    }
+    return this.updateSyncState(serverId, projectId, update);
   }
 
   /**
@@ -174,6 +206,7 @@ class SyncStateService {
       status: 'initial',
       lastUpdated: Date.now(),
       pendingRecords: 0,
+      isPullCaughtUp: false,
     };
   }
 }

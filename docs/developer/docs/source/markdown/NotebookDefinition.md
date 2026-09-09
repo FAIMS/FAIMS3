@@ -134,7 +134,7 @@ Optional startup migration: `MIGRATE_NOTEBOOKS_ON_STARTUP` still runs notebook m
 After all projects are on v4 with inlined specs, operators can remove orphaned Couch databases:
 
 ```sh
-cd api && pnpm run delete-metadata-databases -- --dry-run
+cd api && pnpm run delete-metadata-databases --dry-run
 ```
 
 See `api/src/scripts/deleteMetadataDatabases.ts`.

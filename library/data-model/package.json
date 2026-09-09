@@ -1,6 +1,6 @@
 {
   "name": "@faims3/data-model",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "Database access layer for FAIMS3",
   "license": "Apache",
   "author": "",
@@ -51,13 +51,18 @@
     "@types/pouchdb": "^6.4.2",
     "jsep": "^1.4.0",
     "lodash": "^4.18.1",
+    "mustache": "^4.2.0",
     "pouchdb-security-helper": "^2.1.2",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@fast-check/jest": "^1.6.0",
+    "@swc-contrib/mut-cjs-exports": "^14.15.0",
+    "@swc/core": "^1.13.3",
+    "@swc/jest": "^0.2.39",
     "@types/jest": "^29.4.0",
     "@types/lodash": "^4.14.191",
+    "@types/mustache": "^4.2.6",
     "@types/node": "^24",
     "fast-check": "^3.6.3",
     "gts": "^5.3.1",
@@ -65,8 +70,7 @@
     "madge": "^8.0.0",
     "pouchdb-adapter-memory": "^9.0.0",
     "pouchdb-find": "^9.0.0",
-    "ts-jest": "^29.0.5",
-    "typescript": "^5.9.2"
+    "typescript": "^7.0.2"
   },
   "peerDependencies": {
     "pouchdb": "^9.0.0"

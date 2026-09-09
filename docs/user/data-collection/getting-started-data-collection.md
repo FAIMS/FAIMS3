@@ -36,8 +36,9 @@ that is configured.
 
 From here you can login if you already have an account, or refer to your {{notebook}} invitation and:
 
-- enter an **access code**, or
-- scan a **QR code**
+- scan an **invite QR code** (preferred), or
+- open an **invite link**, or
+- as a last resort, enter an **invite code**
 
 to **register** an account and get access to that {{Notebook}}.
 
@@ -45,17 +46,15 @@ to **register** an account and get access to that {{Notebook}}.
 If you already have an account on the {{FAIMS}} server, use the button to login instead of registering a new account.  Once you are logged in you will be given access to the {{Notebook}}. For more information, see [Login](login.md).
 ```
 
-### a) Invitation Codes
+### a) Invitations
 
-An **access code** contains a server prefix and six character code, eg _FMRK-ABC123_, and gives you access to a specific {{notebook}}. Enter the six character code (eg _ABC123_) on the **Login** screen:
+Prefer scanning the **QR code** or opening the **invite link** shared with you. Tap **Scan invite QR code** on the login screen to open the registration flow.
 
 ```{screenshot} getting-started/access-code-mobile.png
-:alt: Access Code Screen
+:alt: Invite screen
 ```
 
-Once you enter the code, you will see the **Registration** screen.
-
-If you have a **QR code**, click the QR Code button and scan the QR code with your device to get to the registration screen.
+If you cannot scan a QR code, use **Advanced: enter invite code instead** and paste the full invite code (server prefix plus random code).
 
 For more information see [Invitations](invitations.md).
 

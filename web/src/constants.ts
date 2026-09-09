@@ -1,4 +1,9 @@
-import {configHelpers, Resource, resourceRoles} from '@faims3/data-model';
+import {
+  configHelpers,
+  INVITE_EXPIRY_HINT_DAYS,
+  Resource,
+  resourceRoles,
+} from '@faims3/data-model';
 import {MapConfig, MapStylesheetNameType} from '@faims3/forms';
 import pluralize from 'pluralize';
 import {z} from 'zod';
@@ -311,10 +316,10 @@ const EnvSchema = z
       /** Session token refresh interval (ms); currently hardcoded to 3 minutes. */
       refreshIntervalMs: DEFAULT_REFRESH_INTERVAL_MS,
       /**
-       * Invite expiry duration chips. Hardcoded; could later mirror
-       * `VITE_LONG_LIVED_TOKEN_DURATION_HINTS`.
+       * Invite expiry duration chips. Capped at {@link INVITE_EXPIRY_HINT_DAYS}
+       * (max 90 days).
        */
-      inviteTokenHints: DEFAULT_HINTS,
+      inviteTokenHints: [...INVITE_EXPIRY_HINT_DAYS],
       /** Help-docs URL for long-lived tokens in the profile UI. */
       longLivedTokenHelpLink: DEFAULT_LONG_LIVED_TOKEN_HELP_LINK,
       /**

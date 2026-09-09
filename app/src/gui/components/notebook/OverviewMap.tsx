@@ -20,15 +20,14 @@
 
 import {
   CompiledNotebookUiSpec,
-  DatabaseInterface,
-  DataDocument,
   DataEngine,
   getOverviewMapTypes,
   MinimalRecordMetadata,
   NotebookUiSpec,
   ProjectID,
+  formatTimestamp,
 } from '@faims3/data-model';
-import {GeoJSONFeatureOrCollectionSchema, MapComponent} from '@faims3/forms';
+import {MapComponent} from '@faims3/forms';
 import {
   Alert,
   Box,
@@ -50,11 +49,14 @@ import VectorSource from 'ol/source/Vector';
 import {Fill, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Link as RouterLink} from 'react-router-dom';
+import {Link as RouterLink, useParams} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
-import {localGetDataDb} from '../../../utils/database';
-import {formatTimestamp} from '../../../utils/formUtilities';
+import {
+  useRecordFeatures,
+  type RecordFeatureCollection,
+  type RecordFeatureProps,
+} from './recordFeatures';
 
 interface OverviewMapProps {
   /** Notebook UI spec (compiled fields/views + settings / schemaVersion for {@link DataEngine}). */
@@ -62,13 +64,6 @@ interface OverviewMapProps {
   project_id: ProjectID;
   serverId: string;
   records: {allRecords: MinimalRecordMetadata[]};
-}
-
-interface FeatureProps {
-  name: string;
-  record_id: string;
-  revision_id: string;
-  form_id: string;
 }
 
 /** Distinct colors for form types on the map */
@@ -85,29 +80,6 @@ const FORM_TYPE_COLORS = [
   '#dd3497', // pink
 ];
 
-interface GeoJSONFeature {
-  type: string;
-  geometry?: unknown;
-  properties?: FeatureProps;
-}
-
-interface FeatureCollection {
-  type: 'FeatureCollection';
-  features: GeoJSONFeature[];
-}
-
-/**
- * Get the names of all GIS fields in a UI Specification
- */
-const getGISFields = (uiSpec: NotebookUiSpec): string[] => {
-  const fields = Object.getOwnPropertyNames(uiSpec.fields);
-  return fields.filter(
-    (field: string) =>
-      uiSpec.fields[field]['component-name'] === 'MapFormField' ||
-      uiSpec.fields[field]['component-name'] === 'TakePoint'
-  );
-};
-
 /** Query key prefix for overview map record hydration (data engine) */
 const OVERVIEW_MAP_RECORD_KEY_PREFIX = 'overview-map-record';
 
@@ -116,7 +88,7 @@ const OVERVIEW_MAP_RECORD_KEY_PREFIX = 'overview-map-record';
  * via the data engine's hydration module (React Query) and shows key metadata.
  */
 interface SelectedRecordPopoverContentProps {
-  feature: FeatureProps;
+  feature: RecordFeatureProps;
   project_id: ProjectID;
   serverId: string;
   uiSpec: NotebookUiSpec;
@@ -134,6 +106,9 @@ const SelectedRecordPopoverContent = ({
   uiSpec,
   dataEngine,
 }: SelectedRecordPopoverContentProps) => {
+  const {tab} = useParams<{tab?: string}>();
+  const notebook = {serverId, projectId: project_id, tab};
+
   // Prevent the same tap that opened the popover from immediately activating the
   // view record button (which would navigate away).
   const [buttonInteractionAllowed, setButtonInteractionAllowed] =
@@ -187,8 +162,7 @@ const SelectedRecordPopoverContent = ({
         <Button
           component={RouterLink}
           to={ROUTES.getViewRecordRoute({
-            serverId,
-            projectId: project_id,
+            ...notebook,
             recordId: feature.record_id,
           })}
           size="small"
@@ -217,8 +191,7 @@ const SelectedRecordPopoverContent = ({
     hydrated.record.created;
 
   const viewUrl = ROUTES.getViewRecordRoute({
-    serverId,
-    projectId: project_id,
+    ...notebook,
     recordId: feature.record_id,
     revisionId: feature.revision_id,
   });
@@ -276,9 +249,8 @@ const SelectedRecordPopoverContent = ({
 export const OverviewMap = (props: OverviewMapProps) => {
   const {uiSpec, project_id, serverId, records} = props;
   const [map, setMap] = useState<Map | undefined>(undefined);
-  const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
-    null
-  );
+  const [selectedFeature, setSelectedFeature] =
+    useState<RecordFeatureProps | null>(null);
   /** Popover anchor in viewport coordinates (set when opening so position is reliable on first open) */
   const [popoverAnchorPosition, setPopoverAnchorPosition] = useState<{
     left: number;
@@ -301,155 +273,34 @@ export const OverviewMap = (props: OverviewMapProps) => {
   // When the popover was opened (timestamp). Used to ignore immediate backdropClick from the same touch.
   const popoverOpenedAtRef = useRef<number>(0);
   // Ref so the vector layer style function can read current selection and highlight it
-  const selectedFeatureRef = useRef<FeatureProps | null>(null);
+  const selectedFeatureRef = useRef<RecordFeatureProps | null>(null);
 
   const mapConfig = getMapConfig();
 
-  // Memoize the data engine to prevent recreation on every render
-  const dataEngine = useMemo(() => {
-    const dataDb = localGetDataDb(project_id);
-    return new DataEngine({
-      dataDb: dataDb as DatabaseInterface<DataDocument>,
-      uiSpec,
-    });
-  }, [project_id, uiSpec]);
-
-  // Memoize GIS fields
-  const gisFields = useMemo(() => getGISFields(uiSpec), [uiSpec]);
-
+  // Only forms configured to display on the overview map: this tab's own scope
   const overviewMapTypes = useMemo(() => getOverviewMapTypes(uiSpec), [uiSpec]);
 
-  const mapRecords = useMemo(
-    () =>
-      records.allRecords?.filter(record =>
-        overviewMapTypes.includes(record.type)
-      ) ?? [],
-    [records.allRecords, overviewMapTypes]
-  );
-
-  /**
-   * Extract features from a single record for the given GIS fields
-   */
-  const extractFeaturesFromRecord = useCallback(
-    async (
-      record: MinimalRecordMetadata,
-      fields: string[]
-    ): Promise<GeoJSONFeature[]> => {
-      const features: GeoJSONFeature[] = [];
-
-      // TODO this is not optimal for efficiency
-      const revision = await dataEngine.core.getRevision(record.revisionId);
-
-      await Promise.all(
-        fields.map(async field => {
-          try {
-            const avpId = revision.avps[field];
-            if (!avpId) return;
-
-            const avpData = await dataEngine.core.getAvp(avpId);
-            const dataRaw = avpData?.data;
-            if (!dataRaw) return;
-
-            const {data: geoJson, success} =
-              GeoJSONFeatureOrCollectionSchema.safeParse(dataRaw);
-
-            if (!success) {
-              return;
-            }
-
-            const baseProperties: FeatureProps = {
-              // TODO bring back HRID - or maybe only on records we click on?
-              name: record.recordId,
-              record_id: record.recordId,
-              revision_id: record.revisionId,
-              form_id: record.type,
-            };
-
-            if (geoJson.type === 'FeatureCollection') {
-              // Handle FeatureCollection with multiple features
-              geoJson.features?.forEach(feature => {
-                if (feature && feature.geometry) {
-                  features.push({
-                    ...feature,
-                    properties: baseProperties,
-                  });
-                }
-              });
-            } else if (geoJson.type === 'Feature') {
-              // Handle single Feature or geometry object
-              features.push({
-                ...geoJson,
-                properties: baseProperties,
-              });
-            }
-          } catch (error) {
-            // Log but don't fail - skip this field/record combination
-            console.warn(
-              `Failed to extract GIS data for record ${record.recordId}, field ${field}:`,
-              error
-            );
-          }
-        })
-      );
-
-      return features;
-    },
-    [dataEngine]
-  );
-
-  /**
-   * Query function to fetch all features from all records
-   */
-  const fetchAllFeatures = useCallback(async (): Promise<FeatureCollection> => {
-    if (gisFields.length === 0 || mapRecords.length === 0) {
-      return {type: 'FeatureCollection', features: []};
-    }
-
-    // Process records in parallel with concurrency limit to avoid overwhelming the DB
-    const BATCH_SIZE = 10;
-    const allFeatures: GeoJSONFeature[] = [];
-
-    for (let i = 0; i < mapRecords.length; i += BATCH_SIZE) {
-      const batch = mapRecords.slice(i, i + BATCH_SIZE);
-      const batchResults = await Promise.all(
-        batch.map(record => extractFeaturesFromRecord(record, gisFields))
-      );
-      allFeatures.push(...batchResults.flat());
-    }
-
-    return {
-      type: 'FeatureCollection',
-      features: allFeatures,
-    };
-  }, [gisFields, mapRecords, extractFeaturesFromRecord]);
-
-  // Use React Query to manage the async feature fetching
+  // The records' GIS features, plus the hook's memoized data engine and GIS
+  // field list
   const {
     data: featureCollection,
     isLoading,
     isError,
     error,
-  } = useQuery({
-    queryKey: [
-      'overview-map-features',
-      project_id,
-      mapRecords.map(r => `${r.recordId}:${r.revisionId}`).join(','),
-      gisFields.join(','),
-      overviewMapTypes.join(','),
-    ],
-    queryFn: fetchAllFeatures,
-    enabled: gisFields.length > 0 && mapRecords.length > 0,
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    retry: 2,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000),
+    dataEngine,
+    gisFields,
+  } = useRecordFeatures({
+    projectId: project_id,
+    uiSpec,
+    records: records.allRecords,
+    recordTypes: overviewMapTypes,
   });
 
   /**
    * Build a map from form_id to color for styling features by form type.
    */
   const getFormIdToColor = useCallback(
-    (features: FeatureCollection): Record<string, string> => {
+    (features: RecordFeatureCollection): Record<string, string> => {
       const formIds = [
         ...new Set(
           features.features
@@ -470,7 +321,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
    * Add the features to the map and set the map view to encompass the features.
    */
   const addFeaturesToMap = useCallback(
-    (theMap: Map, features: FeatureCollection) => {
+    (theMap: Map, features: RecordFeatureCollection) => {
       // Remove existing layer if present
       if (vectorLayerRef.current) {
         theMap.removeLayer(vectorLayerRef.current);
@@ -571,7 +422,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
         olFeature => {
           const props = olFeature.getProperties();
           if (props.record_id) {
-            return props as FeatureProps;
+            return props as RecordFeatureProps;
           }
           return undefined;
         },
@@ -722,6 +573,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
         parentSetMap={setMap}
         extent={featuresExtent}
         config={mapConfig}
+        autoFlyToCurrentLocation={false}
       />
       <Popover
         open={!!selectedFeature && !!popoverAnchorPosition}

@@ -7,6 +7,15 @@ import {FieldType} from '../../state/initial';
 import {MustacheTemplateBuilder} from '../TemplateBuilder';
 import DebouncedTextField from '../debounced-text-field';
 import {fieldUpdated} from '../../store/slices/uiSpec';
+import {selectCustomMetadata} from '../../store/selectors';
+import {
+  buildParentFieldTypes,
+  buildRelatedFieldTypes,
+  encodeMetadataRef,
+  isReferenceableMetadataKey,
+  PARENT_REFERENCE_PREFIX,
+  UiSpecModel,
+} from '@faims3/data-model';
 
 type PropType = {
   fieldName: string;
@@ -28,6 +37,7 @@ export const TemplatedStringFieldEditor = ({
   const allFields = useAppSelector(
     state => state.notebook.uiSpec.present.fields
   );
+  const custom = useAppSelector(selectCustomMetadata);
   const dispatch = useAppDispatch();
   const textAreaRef = useRef(null) as MutableRefObject<unknown>;
 
@@ -40,6 +50,9 @@ export const TemplatedStringFieldEditor = ({
     state => state.notebook.uiSpec.present.viewsets[viewsetId]
   );
   const views = useAppSelector(state => state.notebook.uiSpec.present.views);
+  const viewsets = useAppSelector(
+    state => state.notebook.uiSpec.present.viewsets
+  );
 
   /**
    * Collects all fields that belong to any view in the current viewset
@@ -82,6 +95,63 @@ export const TemplatedStringFieldEditor = ({
       type: 'field' as const,
     };
   });
+
+  // Parent fields usable as {{_PARENT.Field-ID}}.
+  const parentVariables = useMemo(() => {
+    const {types} = buildParentFieldTypes({
+      uiSpecification: {
+        fields: allFields,
+        views,
+        viewsets,
+      } as unknown as UiSpecModel,
+      formId: viewsetId,
+    });
+    return [...types.keys()].map(ref => {
+      const id = ref.slice(PARENT_REFERENCE_PREFIX.length);
+      return {
+        name: ref,
+        displayName: `Parent: ${getFieldLabel(allFields[id]) || id}`,
+        type: 'field' as const,
+      };
+    });
+  }, [allFields, views, viewsets, viewsetId]);
+
+  // Notebook metadata usable as {{_METADATA.key}}.
+  const metadataVariables = useMemo(
+    () =>
+      Object.keys(custom)
+        .filter(isReferenceableMetadataKey)
+        .map(key => ({
+          name: encodeMetadataRef(key),
+          displayName: `Notebook: ${key}`,
+          type: 'field' as const,
+        })),
+    [custom]
+  );
+
+  // Fields on linked records usable as {{Rel-Field-ID.Field-ID}}.
+  const relatedVariables = useMemo(() => {
+    const {types} = buildRelatedFieldTypes({
+      uiSpecification: {
+        fields: allFields,
+        views,
+        viewsets,
+      } as unknown as UiSpecModel,
+      formId: viewsetId,
+    });
+    return [...types.keys()].map(ref => {
+      const dot = ref.indexOf('.');
+      const relFieldId = ref.slice(0, dot);
+      const id = ref.slice(dot + 1);
+      const relLabel = getFieldLabel(allFields[relFieldId]) || relFieldId;
+      const label = getFieldLabel(allFields[id]) || id;
+      return {
+        name: ref,
+        displayName: `${relLabel} > ${label}`,
+        type: 'field' as const,
+      };
+    });
+  }, [allFields, views, viewsets, viewsetId]);
 
   const updateFieldFromState = (newState: TemplatedStringProps) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
@@ -187,7 +257,12 @@ export const TemplatedStringFieldEditor = ({
         open={isBuilderOpen}
         onClose={() => setIsBuilderOpen(false)}
         initialTemplate={state.template}
-        variables={fieldVariables}
+        variables={[
+          ...fieldVariables,
+          ...parentVariables,
+          ...relatedVariables,
+          ...metadataVariables,
+        ]}
         systemVariables={systemVariables}
         onSave={handleTemplateChange}
       />

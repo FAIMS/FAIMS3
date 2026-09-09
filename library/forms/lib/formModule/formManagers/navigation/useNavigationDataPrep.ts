@@ -337,6 +337,8 @@ export function useNavigationDataPreparation({
           recordId: parentFormData.context.record._id,
           update: parentFormData.data,
           updatedBy: activeUser,
+          bumpRevisionUpdatedAt: true,
+          bumpRecordUpdatedAt: true,
         });
 
         // Flush current form before navigating

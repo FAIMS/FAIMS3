@@ -43,6 +43,12 @@ export const selectUiFields = (state: AppState) =>
 export const selectUiViews = (state: AppState) =>
   selectPresentUiSpec(state).views;
 
+const EMPTY_CUSTOM_METADATA: Record<string, string> = {};
+
+/** Custom metadata key/value pairs; a stable empty object when none are set. */
+export const selectCustomMetadata = (state: AppState) =>
+  state.notebook.metadata.custom ?? EMPTY_CUSTOM_METADATA;
+
 /** Form id → viewset map. */
 export const selectUiViewSets = (state: AppState) =>
   selectPresentUiSpec(state).viewsets;
@@ -53,3 +59,6 @@ export const selectVisibleTypes = (state: AppState) =>
 
 /** True after local edits until save/reset (see `modifiedStatus-reducer`). */
 export const selectModifiedFlag = (state: AppState) => state.modified;
+
+/** Whether this designer session edits a notebook or a template. */
+export const selectDesignerMode = (state: AppState) => state.mode;

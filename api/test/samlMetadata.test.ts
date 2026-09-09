@@ -1,4 +1,4 @@
-import {expect} from 'chai';
+import {describe, expect, it} from 'vitest';
 import {injectSpSsoDescriptorErrorUrl} from '../src/auth/strategies/samlMetadataXml';
 
 describe('SAML metadata XML helpers', () => {
@@ -10,10 +10,10 @@ describe('SAML metadata XML helpers', () => {
         xml,
         'https://conduct.example/auth/vanguard/sso-error'
       );
-      expect(out).to.include(
+      expect(out).toContain(
         'errorURL="https://conduct.example/auth/vanguard/sso-error"'
       );
-      expect(out).to.include('<SPSSODescriptor errorURL=');
+      expect(out).toContain('<SPSSODescriptor errorURL=');
     });
 
     it('escapes XML attribute characters', () => {
@@ -23,16 +23,14 @@ describe('SAML metadata XML helpers', () => {
         xml,
         'https://ex.example/page?q=1&foo=a"b'
       );
-      expect(out).to.include('&amp;');
-      expect(out).to.include('&quot;');
+      expect(out).toContain('&amp;');
+      expect(out).toContain('&quot;');
     });
 
     it('is idempotent when errorURL already present', () => {
       const xml =
         '<SPSSODescriptor errorURL="https://already.set/" protocolSupportEnumeration="x">';
-      expect(injectSpSsoDescriptorErrorUrl(xml, 'https://other/')).to.equal(
-        xml
-      );
+      expect(injectSpSsoDescriptorErrorUrl(xml, 'https://other/')).toBe(xml);
     });
   });
 });

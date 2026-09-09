@@ -20,6 +20,11 @@ export type MigrationContext = {
    * no creator. Defaults to {@link DEFAULT_MIGRATION_CREATED_BY}.
    */
   migrationCreatedBy?: string;
+  /**
+   * The database currently being migrated. Used for same-DB lookups (e.g. a
+   * record reading its head revision) without going through {@link getDbById}.
+   */
+  db?: DatabaseInterface;
 };
 
 // Check if we are testing
@@ -34,6 +39,7 @@ export enum DatabaseType {
   PROJECTS = 'PROJECTS',
   TEMPLATES = 'TEMPLATES',
   TEAMS = 'TEAMS',
+  TOMBSTONE = 'TOMBSTONE',
 }
 
 export const DATABASE_TYPES = [
@@ -45,6 +51,7 @@ export const DATABASE_TYPES = [
   DatabaseType.PROJECTS,
   DatabaseType.TEMPLATES,
   DatabaseType.TEAMS,
+  DatabaseType.TOMBSTONE,
 ] as const;
 export type DATABASE_TYPE = (typeof DATABASE_TYPES)[number];
 

@@ -67,6 +67,10 @@ export function CreateProjectFromTemplateForm({
     possibleTeams,
   });
 
+  // A plan template is instantiated from a planConfig the dashboard cannot yet
+  // collect, so creating from such a template has to go through the API.
+  const planTemplate = template?.uiSpecification?.planTemplate;
+
   const teamLabel = `Create ${config.notebookName} in this team${
     canCreateGlobally ? ' (optional)' : ''
   }`;
@@ -178,6 +182,14 @@ export function CreateProjectFromTemplateForm({
         onSubmit={onSubmit}
         submitButtonText={`Create ${config.notebookNameCapitalized}`}
         defaultValues={defaultTeamId ? {team: defaultTeamId} : undefined}
+        disableSubmission={
+          planTemplate
+            ? {
+                disabled: true,
+                reason: `This template defines a ${planTemplate.planType} plan. Create the ${config.notebookName} through the API, which takes the plan's configuration.`,
+              }
+            : undefined
+        }
       />
     </div>
   );

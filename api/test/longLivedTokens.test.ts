@@ -29,7 +29,7 @@ import {
   PutRevokeLongLivedTokenRequest,
   PutUpdateLongLivedTokenRequest,
 } from '@faims3/data-model';
-import {expect} from 'chai';
+import {beforeEach, describe, expect, it} from 'vitest';
 import request from 'supertest';
 import {config} from '../src/buildconfig';
 import {getAuthDB} from '../src/couchdb';
@@ -68,20 +68,20 @@ describe('Long-Lived Token Tests', () => {
         expiryTimestampMs: DEFAULT_EXPIRY,
       });
 
-      expect(record._id).to.include('longlived_');
-      expect(record.documentType).to.equal('longlived');
-      expect(record.title).to.equal('Test Token');
-      expect(record.enabled).to.be.true;
-      expect(token).to.be.a('string');
+      expect(record._id).toContain('longlived_');
+      expect(record.documentType).toBe('longlived');
+      expect(record.title).toBe('Test Token');
+      expect(record.enabled).toBe(true);
+      expect(token).toBeTypeOf('string');
 
       // Can retrieve by ID
       const fetched = await getTokenById(record._id);
-      expect(fetched.title).to.equal('Test Token');
+      expect(fetched.title).toBe('Test Token');
 
       // Can retrieve by hash
       const tokenHash = hashChallengeCode(token);
       const fetchedByHash = await getTokenByTokenHash(tokenHash);
-      expect(fetchedByHash!._id).to.equal(record._id);
+      expect(fetchedByHash!._id).toBe(record._id);
     });
 
     it('enforces expiry limits', async () => {
@@ -100,7 +100,7 @@ describe('Long-Lived Token Tests', () => {
           });
           expect.fail('Should have thrown an error for expiry beyond limit');
         } catch (error: any) {
-          expect(error.message).to.include('Invalid expiry date');
+          expect(error.message).toContain('Invalid expiry date');
         }
       }
     });
@@ -116,7 +116,7 @@ describe('Long-Lived Token Tests', () => {
 
       // Revoke the token
       const revokedToken = await revokeLongLivedToken(record._id);
-      expect(revokedToken.enabled).to.be.false;
+      expect(revokedToken.enabled).toBe(false);
     });
   });
 
@@ -133,8 +133,8 @@ describe('Long-Lived Token Tests', () => {
         localUserToken
       ).expect(201);
 
-      expect(response.body.title).to.equal('API Test Token');
-      expect(response.body.token).to.be.a('string'); // Only returned on creation
+      expect(response.body.title).toBe('API Test Token');
+      expect(response.body.token).toBeTypeOf('string'); // Only returned on creation
     });
 
     it('POST / requires authentication', async () => {
@@ -171,9 +171,9 @@ describe('Long-Lived Token Tests', () => {
         localUserToken
       ).expect(200);
 
-      expect(response.body.tokens).to.have.lengthOf(1);
-      expect(response.body.tokens[0].title).to.equal('Local Token');
-      expect(response.body.tokens[0].token).to.be.undefined; // Never returned
+      expect(response.body.tokens).toHaveLength(1);
+      expect(response.body.tokens[0].title).toBe('Local Token');
+      expect(response.body.tokens[0].token).toBeUndefined(); // Never returned
     });
 
     it('GET /?all=true requires admin permissions', async () => {
@@ -247,7 +247,7 @@ describe('Long-Lived Token Tests', () => {
         .send({token} as PostLongLivedTokenExchangeInput)
         .expect(200);
 
-      expect(response.body.token).to.be.a('string');
+      expect(response.body.token).toBeTypeOf('string');
 
       // Verify the access token works
       await request(app)
@@ -265,7 +265,7 @@ describe('Long-Lived Token Tests', () => {
         expiryTimestampMs: DEFAULT_EXPIRY,
       });
 
-      expect(record.lastUsedTimestampMs).to.be.undefined;
+      expect(record.lastUsedTimestampMs).toBeUndefined();
 
       await request(app)
         .post('/api/auth/exchange-long-lived-token')
@@ -273,7 +273,7 @@ describe('Long-Lived Token Tests', () => {
         .expect(200);
 
       const updatedRecord = await getTokenById(record._id);
-      expect(updatedRecord.lastUsedTimestampMs).to.be.a('number');
+      expect(updatedRecord.lastUsedTimestampMs).toBeTypeOf('number');
     });
 
     it('rejects invalid, revoked, and expired tokens', async () => {
@@ -375,20 +375,20 @@ describe('Long-Lived Token Tests', () => {
       });
 
       // Verify the raw token is not stored
-      expect(record.tokenHash).to.not.equal(token);
-      expect(record.tokenHash).to.be.a('string');
+      expect(record.tokenHash).not.toBe(token);
+      expect(record.tokenHash).toBeTypeOf('string');
 
       // Verify the hash matches expected
       const expectedHash = hashChallengeCode(token);
-      expect(record.tokenHash).to.equal(expectedHash);
+      expect(record.tokenHash).toBe(expectedHash);
 
       // Can't find by raw token
       const foundByRaw = await getTokenByTokenHash(token);
-      expect(foundByRaw).to.be.undefined;
+      expect(foundByRaw).toBeUndefined();
 
       // Can find by hash
       const foundByHash = await getTokenByTokenHash(expectedHash);
-      expect(foundByHash!._id).to.equal(record._id);
+      expect(foundByHash!._id).toBe(record._id);
     });
 
     it('different tokens generate different hashes', async () => {
@@ -408,8 +408,8 @@ describe('Long-Lived Token Tests', () => {
         expiryTimestampMs: DEFAULT_EXPIRY,
       });
 
-      expect(token1).to.not.equal(token2);
-      expect(record1.tokenHash).to.not.equal(record2.tokenHash);
+      expect(token1).not.toBe(token2);
+      expect(record1.tokenHash).not.toBe(record2.tokenHash);
     });
 
     it('API never returns token values after creation', async () => {
@@ -427,9 +427,9 @@ describe('Long-Lived Token Tests', () => {
       ).expect(200);
 
       const token = response.body.tokens.find((t: any) => t.id === record._id);
-      expect(token).to.not.be.undefined;
-      expect(token.token).to.be.undefined;
-      expect(token.tokenHash).to.be.undefined;
+      expect(token).not.toBeUndefined();
+      expect(token.token).toBeUndefined();
+      expect(token.tokenHash).toBeUndefined();
     });
 
     it('validates tokens correctly', async () => {
@@ -445,14 +445,14 @@ describe('Long-Lived Token Tests', () => {
 
       // Valid token
       let validation = await validateLongLivedToken(tokenHash, false);
-      expect(validation.valid).to.be.true;
-      expect(validation.user).to.not.be.undefined;
+      expect(validation.valid).toBe(true);
+      expect(validation.user).not.toBeUndefined();
 
       // After revocation
       await revokeLongLivedToken(record._id);
       validation = await validateLongLivedToken(tokenHash, false);
-      expect(validation.valid).to.be.false;
-      expect(validation.validationError).to.include('revoked');
+      expect(validation.valid).toBe(false);
+      expect(validation.validationError).toContain('revoked');
     });
 
     it('enforces expiry via database manipulation', async () => {
@@ -473,8 +473,8 @@ describe('Long-Lived Token Tests', () => {
       // Should fail validation
       const tokenHash = hashChallengeCode(token);
       const validation = await validateLongLivedToken(tokenHash, false);
-      expect(validation.valid).to.be.false;
-      expect(validation.validationError).to.include('expired');
+      expect(validation.valid).toBe(false);
+      expect(validation.validationError).toContain('expired');
     });
   });
 

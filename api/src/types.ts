@@ -32,11 +32,17 @@ export interface CustomRequest {
   flash(type: string): any[];
   flash(): {[key: string]: any[]};
 
-  // Session can include the invite (possibly)
-  session: CustomSessionData;
+  // Shape matches cookie-session's CookieSessionRequest so Express.Request can
+  // extend both without a TS7 incompatible-property merge error. Custom fields
+  // live on CookieSessionObject via the augmentation below.
+  session?: CookieSessionInterfaces.CookieSessionObject | null;
 }
 
 declare global {
+  namespace CookieSessionInterfaces {
+    interface CookieSessionObject extends CustomSessionData {}
+  }
+
   namespace Express {
     interface User extends PeopleDBDocument {
       // The drilled resource roles which pre-compute the teams membership etc

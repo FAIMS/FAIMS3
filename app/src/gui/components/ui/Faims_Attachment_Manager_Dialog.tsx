@@ -124,13 +124,12 @@ export default function FaimsAttachmentManagerDialog(props: DiagProps) {
             color="primary"
             size="large"
             component={RouterLink}
-            to={
-              ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-              props.serverId +
-              '/' +
-              project_id +
-              `?${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q}=settings`
-            }
+            // A view without a settings tab lands the user on its default
+            to={ROUTES.getNotebookRoute({
+              serverId: props.serverId,
+              projectId: project_id,
+              tab: ROUTES.SHARED_TAB.settings,
+            })}
           >
             Go to settings
           </Button>

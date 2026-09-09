@@ -65,16 +65,83 @@ The template supports:
 - **System variables** — inserts values such as the record creator or
   creation time.
 
-All referenced fields must be in the same form as the Templated String.
-A Templated String cannot reference another Templated String.
+Referenced fields are normally in the same form as the Templated
+String, but fields from the record's parent can also be referenced (see
+below). A Templated String cannot reference another Templated String in
+the same form.
+
+### Referencing Parent Record Values
+
+When the form is a child of another form (linked through a
+Child-relation Related Records field), the template can reference
+fields on the record's parent using the `_PARENT.` prefix, e.g.
+`{{_PARENT.Site-Name}}-{{Feature-type}}`. The Visual Builder lists the
+available parent fields with a "Parent:" prefix.
+
+Unlike same-form references, a parent reference may point at the
+parent's own Templated Strings and computed fields — so a child's
+identifier can be built from the parent's identifier.
+
+If a record has no parent (for example, it was created directly from
+the record list), the parent reference renders as empty text and the
+rest of the template is unaffected.
+
+The same reference can be used in
+[field and section conditions](../../authoring/conditions.md).
+
+### Referencing Linked Record Values
+
+When the form holds a
+[Related Records](../relationship-fields/related-records.md) field with
+a **Linked** relation that allows only a single link, the template can
+reference fields on the linked record by joining the two Field IDs with
+a dot: `{{Link-Field-ID.Field-ID}}`. For example, with a Related
+Records field `Core-Calibration` linking one Calibration record,
+`{{Core-Calibration.Cutter-ID}}-{{Wet-Mass-g}}` includes the linked
+record's cutter ID. The Visual Builder lists the available linked
+record fields as "Link field > Field".
+
+As with parent references, a linked record reference may point at the
+linked record's Templated Strings and computed fields, whose stored
+values are used.
+
+If nothing is linked, the reference renders as empty text. The values
+update while editing whenever the link is changed, and otherwise
+re-derive when the record is opened or saved — so a change to the
+linked record itself appears the next time this record is opened.
+Fields that allow multiple links, and Child-relation fields, cannot be
+referenced this way (children reference their parent with `_PARENT.`).
+
+The generated value is stored when the record is saved and updates
+whenever the record is next opened or saved. If the parent is edited
+in the meantime, the stored value reflects the parent as of the
+record's last save — the same behaviour as the
+[Parent Field Value](../display-fields/parent-field-value.md) field.
+
+The same reference can be used in
+[field and section conditions](../../authoring/conditions.md).
+
+### Referencing Notebook Metadata Values
+
+The template can include a value from the {{notebook}}'s custom metadata
+(the custom fields on the Info panel in the {{Notebook}} Editor) using
+the `_METADATA.` prefix: `{{_METADATA.Field-Name}}`. For example, with a
+custom field `season` set to `2026A`, `{{_METADATA.season}}-{{Site-Code}}`
+begins every identifier with the season. The Visual Builder lists custom
+fields as "Notebook: Field Name".
+
+Metadata applies across every record and cannot change while a record is
+open, so the reference simply renders the current value; if the
+{{notebook}} has no custom field with that name, it renders as empty
+text. A custom field that a template references cannot be removed from
+the Info panel until the template is changed.
 
 ### Shared Field Options
 
 Configure any of the shared field options as needed.
 
 For settings shared across all field types — including Required,
-Annotation, Uncertainty, Conditions, Copy value to new records,
-and Display in child records — see
+Annotation, Uncertainty, Conditions, and Copy value to new records — see
 [Field Options](../shared-settings/field-options.md).
 
 ## Tips

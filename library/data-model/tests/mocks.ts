@@ -100,7 +100,6 @@ export const sampleUiSpecForViewId = ({
         },
         condition: null,
         persistent: false,
-        displayParent: false,
       },
       age: {
         'component-namespace': 'formik-material-ui',
@@ -131,7 +130,6 @@ export const sampleUiSpecForViewId = ({
         },
         condition: null,
         persistent: false,
-        displayParent: false,
       },
     },
     views: {

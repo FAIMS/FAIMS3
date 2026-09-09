@@ -103,6 +103,19 @@ export class MalformedParentsError extends Error {
 }
 
 /**
+ * Thrown when a record's form (viewset) is missing from the notebook's
+ * ui-spec, e.g. after the form was removed, so completion is unmeasurable.
+ */
+export class UnknownFormTypeError extends Error {
+  constructor(recordId: string, formId: string) {
+    super(
+      `Record "${recordId}" has form type "${formId}" which is not in the notebook's ui-spec.`
+    );
+    this.name = 'UnknownFormTypeError';
+  }
+}
+
+/**
  * Thrown when a mutation targets a record whose head revision is soft-deleted.
  */
 export class RecordDeletedError extends Error {

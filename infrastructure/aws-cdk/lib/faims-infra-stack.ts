@@ -8,6 +8,7 @@ import {FaimsConductor} from './components/conductor';
 import {FaimsFrontEnd} from './components/front-end';
 import {FaimsNetworking} from './components/networking';
 import {EC2CouchDB} from './components/couch-db';
+import {FaimsTtlCleanup} from './components/ttl-cleanup';
 import {Config} from './config';
 
 /**
@@ -125,6 +126,9 @@ export class FaimsInfraStack extends cdk.Stack {
         config.security.maximumLongLivedTokenDurationDays,
       rateLimiterEnabled: config.security.rateLimiterEnabled,
       authAttemptLimiterEnabled: config.security.authAttemptLimiterEnabled,
+      exportRateLimiterEnabled: config.security.exportRateLimiterEnabled,
+      exportRateLimiterWindowMs: config.security.exportRateLimiterWindowMs,
+      exportRateLimiterPerWindow: config.security.exportRateLimiterPerWindow,
       couchDbAdminSecret: couchDb.passwordSecret,
       couchDBEndpoint: couchDb.couchEndpoint,
       couchDBPort: couchDb.exposedPort,
@@ -150,6 +154,24 @@ export class FaimsInfraStack extends cdk.Stack {
       localhostWhitelist: config.conductor.localhostWhitelist,
       bugsnagApiKey: config.bugMonitoring.bugsnagKey,
     });
+
+    // TTL CLEANUP (scheduled one-shot; not in-process cron)
+    // =====================================================
+    // Deploy API image with ttlCleanup before enabling in an environment.
+    if (config.ttlCleanup.enabled) {
+      new FaimsTtlCleanup(this, 'ttl-cleanup', {
+        vpc: networking.vpc,
+        cluster: conductor.cluster,
+        securityGroups: [conductor.serviceSecurityGroup],
+        containerImage: conductor.containerImage,
+        environment: conductor.environment,
+        secrets: conductor.secrets,
+        privateKeySecretArn: config.secrets.privateKey,
+        config: config.ttlCleanup,
+        // Same ops SNS/email as CouchDB monitoring alarms.
+        alarmTopic: couchDb.alarmSNSTopic,
+      });
+    }
 
     // FRONT-END
     // =========
@@ -187,6 +209,8 @@ export class FaimsInfraStack extends cdk.Stack {
         config.uiConfiguration.forceRemoteDeletion ?? 'never',
       deleteOnDeactivation: config.uiConfiguration.deleteOnDeactivation,
       excludedTeamRoles: config.uiConfiguration.excludedTeamRoles,
+      enablePlansInDesigner: config.uiConfiguration.enablePlansInDesigner,
+      showStatusTab: config.uiConfiguration.showStatusTab,
     });
 
     // Backup setup

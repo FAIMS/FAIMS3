@@ -3,7 +3,7 @@ import {addressFieldSpec} from './fields/AddressField';
 import {advancedSelectFieldSpec} from './fields/AdvancedSelect';
 import {audioRecorderFieldSpec} from './fields/AudioRecorder';
 import {checkboxFieldSpec} from './fields/CheckboxField';
-import {computedFieldSpec} from './fields/ComputedField';
+import {computedNumberSpec, computedTextSpec} from './fields/ComputedFields';
 import {
   datePickerFieldSpec,
   dateTimePickerFieldSpec,
@@ -29,6 +29,7 @@ import {
   splitRegistryKey,
 } from './registryApi';
 import {FieldInfo} from './types';
+import {parentFieldDisplaySpec} from './fields/ParentFieldDisplay';
 
 // Re-export the lookup API so existing `from './registry'` imports keep working.
 export {FORCE_IGNORED_FIELDS, getFieldInfo} from './registryApi';
@@ -56,9 +57,11 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   monthPickerFieldSpec,
   percentageSliderFieldSpec,
   numberFieldSpec,
-  computedFieldSpec,
+  computedNumberSpec,
+  computedTextSpec,
   addressFieldSpec,
   audioRecorderFieldSpec,
+  parentFieldDisplaySpec,
 ];
 
 /**

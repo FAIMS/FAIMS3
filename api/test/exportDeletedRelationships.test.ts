@@ -23,7 +23,7 @@ import {
   ProjectDataObject,
   ProjectID,
 } from '@faims3/data-model';
-import {expect} from 'chai';
+import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {processRecordForSpatial} from '../src/couchdb/export/geospatialExport';
 import {
   buildExportReadyDataCopy,
@@ -241,9 +241,9 @@ describe('export deleted relationship stripping', () => {
       uiSpecification: uiSpec,
     });
 
-    expect(dataCopy.relF).to.be.an('array');
-    expect((dataCopy.relF as unknown[]).length).to.equal(1);
-    expect((dataCopy.relF as {record_id: string}[])[0].record_id).to.equal(
+    expect(dataCopy.relF).toBeInstanceOf(Array);
+    expect((dataCopy.relF as unknown[]).length).toBe(1);
+    expect((dataCopy.relF as {record_id: string}[])[0].record_id).toBe(
       live.record._id
     );
   });
@@ -291,9 +291,9 @@ describe('export deleted relationship stripping', () => {
       'VA'
     );
 
-    expect(row.relF).to.be.a('string');
-    expect(row.relF).to.include(live.record._id);
-    expect(row.relF).to.not.include(doomed.record._id);
+    expect(row.relF).toBeTypeOf('string');
+    expect(row.relF).toContain(live.record._id);
+    expect(row.relF).not.toContain(doomed.record._id);
   });
 
   it('buildExportReadyDataCopy leaves non-related fields untouched', async () => {
@@ -317,7 +317,7 @@ describe('export deleted relationship stripping', () => {
       dataDb: db as DatabaseInterface<ProjectDataObject>,
       uiSpecification: uiSpec,
     });
-    expect(JSON.stringify(ready.mapF)).to.equal(mapBefore);
+    expect(JSON.stringify(ready.mapF)).toBe(mapBefore);
   });
 
   it('processRecordForSpatial strips deleted links from feature properties (GeoJSON / KML path)', async () => {
@@ -354,9 +354,9 @@ describe('export deleted relationship stripping', () => {
       uiSpec
     );
 
-    expect(processed.geometries.length).to.be.greaterThan(0);
+    expect(processed.geometries.length).toBeGreaterThan(0);
     const relSerialized = processed.baseProperties.relF as string;
-    expect(relSerialized).to.include(live.record._id);
-    expect(relSerialized).to.not.include(doomed.record._id);
+    expect(relSerialized).toContain(live.record._id);
+    expect(relSerialized).not.toContain(doomed.record._id);
   });
 });

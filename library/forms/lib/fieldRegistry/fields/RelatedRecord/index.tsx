@@ -4,6 +4,7 @@ import {
   FormRelationship,
   FormRelationshipInstance,
   HydratedRecord,
+  relatedRecordAvpEntries,
 } from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
@@ -533,10 +534,10 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     [rawValue]
   );
 
-  const normalizedLinks = useMemo(() => {
-    if (!value) return [];
-    return Array.isArray(value) ? value : [value];
-  }, [value]);
+  const normalizedLinks = useMemo(
+    () => (value ? relatedRecordAvpEntries(value) : []),
+    [value]
+  );
 
   // Display label for record type
   const relatedRecordTypeLabel = useMemo(() => {
@@ -643,10 +644,13 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         : {...existing, linked: [...(existing?.linked ?? []), relation]};
 
     // Persist the updated relationship on the target record's revision
-    await props.config.dataEngine().hydrated.updateRevision({
-      ...record.revision,
-      relationship,
-    });
+    await props.config.dataEngine().hydrated.updateRevision(
+      {
+        ...record.revision,
+        relationship,
+      },
+      {bumpRevisionUpdatedAt: true, bumpRecordUpdatedAt: true}
+    );
   };
 
   // One query per linked id (order matches `normalizedLinks`) for list display
@@ -713,13 +717,16 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           inst.fieldId === props.fieldId
         )
     );
-    await engine.hydrated.updateRevision({
-      ...peer.revision,
-      relationship: {
-        ...(rel ?? {}),
-        linked: newLinked,
+    await engine.hydrated.updateRevision(
+      {
+        ...peer.revision,
+        relationship: {
+          ...(rel ?? {}),
+          linked: newLinked,
+        },
       },
-    });
+      {bumpRevisionUpdatedAt: true, bumpRecordUpdatedAt: true}
+    );
     const remaining = normalizedLinks.filter(
       l => l.record_id !== link.record_id
     );
@@ -1030,4 +1037,5 @@ export const relatedRecordFieldSpec: FieldInfo = {
     config: {},
     attributes: {singleColumn: true},
   },
+  excludeFromParentDisplay: true,
 };

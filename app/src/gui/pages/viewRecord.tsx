@@ -6,15 +6,16 @@
  *   parent/linked records and an edit button.
  * - Info: Shows record metadata (creation/modification details) and provides
  *   delete functionality.
+ * - Status: Completion of the record rolled up over its child-record tree.
  *
  * Features:
- * - Tab state synchronized with URL query parameter (?tab=view|info)
+ * - Tab state synchronized with URL query parameter (?tab=view|info|history|status)
  * - Fetches and caches record data via TanStack Query
  * - Resolves implied parent/linked relationships for navigation
  * - Supports revision viewing via ?revisionId parameter
  *
  * ROUTE:
- * /<notebook-plural>/:serverId/:projectId/view-record/:recordId?tab=view|info&revisionId=:revisionId
+ * /<notebook-plural>/:serverId/:projectId/:tab?/view-record/:recordId?tab=view|info|history|status&revisionId=:revisionId
  */
 import {
   DatabaseInterface,
@@ -22,6 +23,12 @@ import {
   DataEngine,
   ProjectID,
   RecordID,
+  RevisionHistoryEntry,
+  formatTimestamp,
+  getRecordContextFromRecord,
+  RecordContext,
+  resolveParentValues,
+  resolveRelatedValues,
 } from '@faims3/data-model';
 import {
   DataView,
@@ -40,6 +47,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  Link,
   Stack,
   Tab,
   Typography,
@@ -47,11 +55,12 @@ import {
 import {useQuery} from '@tanstack/react-query';
 import React, {useCallback, useEffect} from 'react';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
-import {getMapConfig} from '../../buildconfig';
+import {config, getMapConfig} from '../../buildconfig';
 import {
   getEditRecordRoute,
-  getNotebookRoute,
   getViewRecordRoute,
+  NOTEBOOK_FROM_RECORD_ROUTE,
+  RecordRouteNotebook,
 } from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
@@ -62,16 +71,20 @@ import {tryLocalGetDataDb} from '../../utils/database';
 import {NOTEBOOK_LIST_ROUTE} from '../../utils/remoteProjectRemoval';
 import RecordDelete from '../components/notebook/delete';
 import RecordMeta from '../components/record/meta';
+import {RecordStatus} from '../components/record/status';
 import UGCReport from '../components/record/UGCReport';
 import BackButton from '../components/ui/BackButton';
 import {theme} from '../themes';
 
 /**
- * Available tabs for the record view page
+ * Tabs of the record view page, in its own `?tab=` query param rather than the
+ * notebook's `:tab` path segment.
  */
 const RECORD_TABS = {
   VIEW: 'view',
   INFO: 'info',
+  HISTORY: 'history',
+  STATUS: 'status',
 } as const;
 
 type RecordTab = (typeof RECORD_TABS)[keyof typeof RECORD_TABS];
@@ -83,9 +96,10 @@ const DEFAULT_TAB: RecordTab = RECORD_TABS.VIEW;
  * Type guard to check if a string is a valid RecordTab
  */
 function isValidTab(value: string | null): value is RecordTab {
-  return (
-    value !== null && Object.values(RECORD_TABS).includes(value as RecordTab)
-  );
+  if (value === null) return false;
+  // A bookmarked ?tab=status must fall back once the tab is switched off.
+  if (value === RECORD_TABS.STATUS && !config.showStatusTab) return false;
+  return Object.values(RECORD_TABS).includes(value as RecordTab);
 }
 
 /**
@@ -127,7 +141,6 @@ function useTabState(): [RecordTab, (tab: RecordTab) => void] {
 interface InfoTabContentProps {
   projectId: ProjectID;
   recordId: RecordID;
-  serverId: string;
   hrid: string;
   revisionId: string;
   dataEngine: DataEngine;
@@ -141,22 +154,12 @@ interface InfoTabContentProps {
 const InfoTabContent: React.FC<InfoTabContentProps> = ({
   projectId,
   recordId,
-  serverId,
   dataEngine,
   revisionId,
   hrid,
   isDeleted,
   recordCreatedBy,
 }) => {
-  const nav = useNavigate();
-
-  const handleRefresh = useCallback(() => {
-    return new Promise<void>(resolve => {
-      nav(getNotebookRoute({serverId, projectId}));
-      resolve();
-    });
-  }, [nav, serverId, projectId]);
-
   return (
     <Stack spacing={3}>
       <RecordMeta
@@ -172,9 +175,7 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
             hrid={hrid}
             recordId={recordId}
             revisionId={revisionId}
-            serverId={serverId}
             showLabel={true}
-            handleRefresh={handleRefresh}
           />
         </Box>
       )}
@@ -203,7 +204,10 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
                 ? `${updated.ugcComment};${val}`
                 : val;
               // save the update
-              await dataEngine.hydrated.updateRevision(updated);
+              await dataEngine.hydrated.updateRevision(updated, {
+                bumpRevisionUpdatedAt: true,
+                bumpRecordUpdatedAt: true,
+              });
             }}
           />
         </Stack>
@@ -216,34 +220,65 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
  * Props for the ViewTabContent component
  */
 interface ViewTabContentProps {
+  /** The notebook tab this page sits under, which its record links stay on. */
+  notebook: RecordRouteNotebook;
+  recordId: RecordID;
   formData: NonNullable<
     Awaited<ReturnType<DataEngine['form']['getExistingFormData']>>
   >;
   uiSpec: NonNullable<ReturnType<typeof compiledSpecService.getSpec>>;
-  projectId: ProjectID;
-  serverId: string;
   impliedRelationships?: ImpliedRelationship[];
   getDataEngine: () => DataEngine;
   getAttachmentService: () => ReturnType<typeof createProjectAttachmentService>;
   onEditRecord: () => void;
   isDeleted: boolean;
+  /** The notebook's custom metadata, referenced as _METADATA.<key> */
+  metadataValues?: Record<string, string>;
 }
 
 /**
  * Content for the View tab - displays the record data
  */
 const ViewTabContent: React.FC<ViewTabContentProps> = ({
+  notebook,
   formData,
   onEditRecord,
   uiSpec,
-  projectId,
-  serverId,
   impliedRelationships,
   getDataEngine,
   getAttachmentService,
   isDeleted,
+  recordId,
+  metadataValues,
 }) => {
   const nav = useNavigate();
+
+  // Resolve parent and linked-record values so field/section conditions
+  // referencing them evaluate correctly. Until resolved, conditions see
+  // missing values, matching previous behaviour.
+  const {data: recordContext} = useQuery({
+    queryKey: ['recordContext', recordId, formData.formId, metadataValues],
+    queryFn: async (): Promise<RecordContext> => {
+      const engine = getDataEngine();
+      const parentValues = await resolveParentValues({
+        engine,
+        recordId,
+        formId: formData.formId,
+      });
+      const relatedValues = await resolveRelatedValues({
+        engine,
+        values: formData.data,
+        formId: formData.formId,
+      });
+      return {
+        ...getRecordContextFromRecord({record: formData.context.record}),
+        parentValues: parentValues ?? undefined,
+        relatedValues,
+        metadataValues,
+      };
+    },
+    networkMode: 'always',
+  });
 
   const nestedEditButton: React.FC<{recordId: string}> = isDeleted
     ? () => null
@@ -254,9 +289,8 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
           onClick={() => {
             nav(
               getEditRecordRoute({
-                projectId,
+                ...notebook,
                 recordId: props.recordId,
-                serverId,
                 mode: 'parent',
               })
             );
@@ -275,23 +309,22 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
     uiSpecification: uiSpec,
     formData: formData.data,
     hrid: formData.context.hrid,
+    context: recordContext,
     tools: {
       getAttachmentService,
       getDataEngine,
       getRecordRoute: params =>
         getViewRecordRoute({
-          projectId,
+          ...notebook,
           recordId: params.recordId,
-          serverId,
           revisionId: params.revisionId,
         }),
       editRecordButtonComponent: nestedEditButton,
       navigateToRecord: params => {
         nav(
           getViewRecordRoute({
-            projectId,
+            ...notebook,
             recordId: params.recordId,
-            serverId,
             revisionId: params.revisionId,
           })
         );
@@ -317,9 +350,8 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
         onClick: () =>
           nav(
             getViewRecordRoute({
-              projectId,
+              ...notebook,
               recordId: relationship.recordId,
-              serverId,
             })
           ),
       });
@@ -335,6 +367,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
         data={formData.data}
         formId={formData.formId}
         uiSpec={uiSpec}
+        context={recordContext}
       />
       {
         // Edit button below progress bar
@@ -358,6 +391,125 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
 };
 
 /**
+ * Content for the History tab - displays revision history and metadata
+ * @param props.recordId - ID of the record to fetch history for
+ * @param props.dataEngine - DataEngine instance for fetching data
+ */
+const HistoryTabContent: React.FC<{
+  recordId: RecordID;
+  dataEngine: DataEngine;
+  uiSpec: NonNullable<ReturnType<typeof compiledSpecService.getSpec>>;
+}> = ({recordId, dataEngine, uiSpec}) => {
+  // Fetch the revision history (createdBy / created per revision)
+  const {
+    data: historyData,
+    isError,
+    isPending,
+    error,
+  } = useQuery({
+    queryKey: ['historyData', recordId],
+    queryFn: async () =>
+      dataEngine.form.getHistoryData({
+        recordId,
+      }),
+    networkMode: 'always',
+    // Refetch on every mount so the trail is fresh, but keep the cached data
+    // available during the background refetch so revisiting the tab does not
+    // blank the list behind a spinner.
+    refetchOnMount: 'always',
+  });
+
+  if (isPending) {
+    return (
+      <Box sx={{display: 'flex', justifyContent: 'center', p: 4}}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Box sx={{p: 2}}>
+        <Typography color="error">
+          An error occurred while fetching record history. Error:{' '}
+          {error?.message ?? 'unknown'}.
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (!historyData) {
+    return (
+      <Box sx={{p: 2}}>
+        <Typography color="error">Record data not found.</Typography>
+      </Box>
+    );
+  }
+
+  const revisionIdsRevision = new Map<string, RevisionHistoryEntry>(
+    historyData.map(entry => [entry.revisionId, entry])
+  );
+
+  const formatRevisionMetadata = (entry?: RevisionHistoryEntry) => {
+    return entry
+      ? `${entry.createdBy} at ${formatTimestamp(new Date(entry.created).getTime())}`
+      : 'unknown';
+  };
+
+  return (
+    <Stack spacing={4}>
+      <Typography variant="h5">Revision History</Typography>
+      {historyData
+        .slice()
+        .sort((a, b) => b.created.localeCompare(a.created))
+        .map((entry, e, historyData) => {
+          const parentFields = Object.entries(entry.changedFields);
+          return (
+            <Stack key={entry.revisionId} spacing={2}>
+              <Typography variant="body1" id={entry.revisionId}>
+                {entry.deleted ? 'Record deleted by ' : 'Revision created by '}
+                <span style={{textDecoration: 'underline'}}>
+                  {formatRevisionMetadata(entry)}
+                </span>
+              </Typography>
+              <Stack sx={{pl: 2}}>
+                {parentFields.map(([parentId, fields]) => (
+                  <Typography variant="body1" key={parentId}>
+                    Fields changed
+                    {revisionIdsRevision.has(parentId) &&
+                    (parentFields.length > 1 ||
+                      parentId !== historyData[e + 1]?.revisionId) ? (
+                      <>
+                        {' '}
+                        compared to{' '}
+                        <Link href={`#${parentId}`}>
+                          {formatRevisionMetadata(
+                            revisionIdsRevision.get(parentId)
+                          )}
+                        </Link>
+                      </>
+                    ) : (
+                      ''
+                    )}
+                    :{' '}
+                    {fields
+                      .map(
+                        fieldId =>
+                          uiSpec.fields[fieldId]?.['component-parameters']
+                            ?.label ?? fieldId
+                      )
+                      .join(', ') || 'None'}
+                  </Typography>
+                ))}
+              </Stack>
+            </Stack>
+          );
+        })}
+    </Stack>
+  );
+};
+
+/**
  * Main ViewRecordPage component with tab navigation.
  *
  * Hooks are declared unconditionally so upstream notebook removal (which drops
@@ -365,9 +517,10 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
  * `enabled: canLoadRecord`; a `useEffect` redirects when the project disappears.
  */
 export const ViewRecordPage: React.FC = () => {
-  const {serverId, projectId, recordId} = useParams<{
+  const {serverId, projectId, tab, recordId} = useParams<{
     serverId: string;
     projectId: ProjectID;
+    tab?: string;
     recordId: RecordID;
   }>();
 
@@ -492,9 +645,6 @@ export const ViewRecordPage: React.FC = () => {
     return <div>UI Specification not found</div>;
   }
 
-  // back button goes to the notebook list page
-  const backLink = getNotebookRoute({serverId, projectId});
-
   // Loading state
   if (isPending || isRefetching) {
     return (
@@ -528,13 +678,16 @@ export const ViewRecordPage: React.FC = () => {
 
   const isDeleted = Boolean(formData.context.revision.deleted);
 
+  // The tab the record was opened from, which its own links keep
+  const notebook: RecordRouteNotebook = {serverId, projectId, tab};
+
   return (
     <Stack spacing={2}>
       {/* Header */}
       <Stack spacing={2}>
         <Stack direction="row" spacing={2} sx={{alignItems: 'center'}}>
           {/* Back to record link */}
-          <BackButton link={backLink} />
+          <BackButton link={NOTEBOOK_FROM_RECORD_ROUTE} />
           <Typography variant="h3" color={theme.palette.text.primary}>
             Viewing: {formLabel}
           </Typography>
@@ -561,29 +714,27 @@ export const ViewRecordPage: React.FC = () => {
           <TabList onChange={handleTabChange} aria-label="Record view tabs">
             <Tab label="Record" value={RECORD_TABS.VIEW} />
             <Tab label="Info" value={RECORD_TABS.INFO} />
+            <Tab label="History" value={RECORD_TABS.HISTORY} />
+            {config.showStatusTab && (
+              <Tab label="Status" value={RECORD_TABS.STATUS} />
+            )}
           </TabList>
         </Box>
 
         <TabPanel value={RECORD_TABS.VIEW} sx={{p: 0, pt: 2}}>
           <ViewTabContent
+            notebook={notebook}
             formData={formData}
+            recordId={recordId}
             onEditRecord={() => {
-              nav(
-                getEditRecordRoute({
-                  projectId,
-                  recordId,
-                  serverId,
-                  mode: 'parent',
-                })
-              );
+              nav(getEditRecordRoute({...notebook, recordId, mode: 'parent'}));
             }}
             uiSpec={uiSpec}
-            projectId={projectId}
-            serverId={serverId}
             impliedRelationships={impliedRelationships}
             getDataEngine={getDataEngine}
             getAttachmentService={getAttachmentService}
             isDeleted={isDeleted}
+            metadataValues={project?.uiDefinition.metadata.custom}
           />
         </TabPanel>
 
@@ -594,7 +745,6 @@ export const ViewRecordPage: React.FC = () => {
               projectId={projectId}
               hrid={formData.context.hrid}
               recordId={recordId}
-              serverId={serverId}
               revisionId={revisionId}
               isDeleted={isDeleted}
               recordCreatedBy={formData.context.record.createdBy}
@@ -603,6 +753,26 @@ export const ViewRecordPage: React.FC = () => {
             <CircularProgress />
           )}
         </TabPanel>
+
+        <TabPanel value={RECORD_TABS.HISTORY} sx={{p: 0, pt: 2}}>
+          <HistoryTabContent
+            recordId={recordId}
+            dataEngine={getDataEngine()}
+            uiSpec={uiSpec}
+          />
+        </TabPanel>
+
+        {config.showStatusTab && (
+          <TabPanel value={RECORD_TABS.STATUS} sx={{p: 0, pt: 2}}>
+            <RecordStatus
+              notebook={notebook}
+              recordId={recordId}
+              projectId={projectId}
+              dataEngine={getDataEngine()}
+              isDeleted={isDeleted}
+            />
+          </TabPanel>
+        )}
       </TabContext>
     </Stack>
   );

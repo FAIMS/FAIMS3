@@ -42,12 +42,12 @@ This would restore records from the backup file to all databases. To limit the
 databases restored to those matching the regular expression `mybackup.*`:
 
 ```shell
-pnpm run restore-backup -- --pattern 'mybackup.*' fieldmark-backup-2025-06-19-1750363850254.jsonl
+pnpm run restore-backup --pattern 'mybackup.*' fieldmark-backup-2025-06-19-1750363850254.jsonl
 ```
 
 By default, existing records will not be overwritten when the backup is restored.
 To overwrite existing records, add the `--force` flag to the command line:
 
 ```shell
-pnpm run restore-backup -- --force fieldmark-backup-2025-06-19-1750363850254.jsonl
+pnpm run restore-backup --force fieldmark-backup-2025-06-19-1750363850254.jsonl
 ```

@@ -25,7 +25,7 @@ export const AppBarHeading = ({link}: AppBarHeadingProps) => (
     }}
   >
     <Box sx={{paddingRight: 0.5}}>
-      <img src="/assets/icons/icon-48.webp" />
+      <img src="/assets/icons/icon-192.png" width={48} height={48} />
     </Box>
     <h2>{config.headingAppName}</h2>
   </NavLink>

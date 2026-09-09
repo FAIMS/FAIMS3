@@ -280,6 +280,47 @@ export const viewsDocument = {
         }
       }),
     },
+
+    // DOWNLOAD GRANTS
+    // ===============
+
+    // All download grants by _id
+    downloadGrants: {
+      map: convertToCouchDBString(doc => {
+        const DOCUMENT_TYPE = 'downloadgrant';
+        const ID_PREFIX = 'downloadgrant_';
+
+        // Check that document type is defined and that the type is
+        // downloadgrant and the prefix is correct
+        if (
+          doc.documentType &&
+          doc.documentType === DOCUMENT_TYPE &&
+          doc._id.indexOf(ID_PREFIX) === 0
+        ) {
+          // Emit the whole grant object indexed by the _id
+          emit(doc._id, doc);
+        }
+      }),
+    },
+    // Download grants for a specific user (by user id)
+    downloadGrantsByUserId: {
+      map: convertToCouchDBString(doc => {
+        const DOCUMENT_TYPE = 'downloadgrant';
+        const ID_PREFIX = 'downloadgrant_';
+
+        // Check that document type is defined and that the type is
+        // downloadgrant and the prefix is correct
+        if (
+          doc.documentType &&
+          doc.documentType === DOCUMENT_TYPE &&
+          doc._id.indexOf(ID_PREFIX) === 0 &&
+          doc.userId
+        ) {
+          // Emit the record by userId
+          emit(doc.userId, doc);
+        }
+      }),
+    },
   },
 };
 

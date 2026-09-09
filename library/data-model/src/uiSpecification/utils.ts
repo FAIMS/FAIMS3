@@ -1,17 +1,19 @@
 import {HRID_STRING} from '../datamodel';
 import {FAIMSTypeName} from '../types';
 import {slugify} from '../utils';
-import {compileExpression, getDependantFields} from './conditionals';
-import {compileComputedExpression} from './expressions';
+import {compileExpression} from './conditionals';
+import {ExprType, FAIMS_TYPE_TO_EXPR_TYPE} from './expressions';
 import {
   CompiledUiSpecModel,
-  CompiledUiSpecSections,
+  FieldDefinition,
   HridFieldMap,
   NotebookUiSpec,
   UiSpecModel,
   UiSpecForm,
   ValuesObject,
 } from './types';
+import {compileComputedExpressionForForm} from './parentForms';
+import {fieldIdsForViewset} from './formScan';
 
 /**
  * Retrieves a viewset from the UI specification by its ID
@@ -79,11 +81,14 @@ export const getFieldNamesForView = ({
 };
 
 /**
- * Gets all field names across all views in a viewset
+ * Gets all field names across all views in a viewset. Validates the ids, then
+ * delegates enumeration to {@link fieldIdsForViewset} so the strict and
+ * tolerant listings cannot drift apart.
  * @param {Object} params - The parameters object
  * @param {UiSpecModel} params.uiSpecification - The UI specification containing viewsets
  * @param {string} params.viewSetId - The ID of the viewset to get fields from
  * @returns {string[]} Combined array of field names from all views in the viewset
+ * @throws {Error} If the viewset ID or one of its view IDs is not in the specification
  */
 export const getFieldNamesForViewset = ({
   uiSpecification,
@@ -92,15 +97,13 @@ export const getFieldNamesForViewset = ({
   uiSpecification: UiSpecModel;
   viewSetId: string;
 }): string[] => {
-  const viewset = getViewsetByViewsetId({uiSpecification, viewSetId});
-  let fieldNames: string[] = [];
-  for (const viewId of viewset.views) {
-    fieldNames = [
-      ...fieldNames,
-      ...getFieldNamesForView({uiSpecification, viewId}),
-    ];
+  // Validation only: the getters throw on unknown/stale ids the tolerant
+  // enumeration below would silently skip
+  for (const viewId of getViewsetByViewsetId({uiSpecification, viewSetId})
+    .views) {
+    getViewByViewId({uiSpecification, viewId});
   }
-  return fieldNames;
+  return fieldIdsForViewset(uiSpecification, viewSetId);
 };
 
 /**
@@ -391,8 +394,7 @@ export const currentlyVisibleViews = ({
   values: ValuesObject;
   viewsetId: string;
 }) => {
-  // Build a set of visible fields within visible views
-  return getViewsMatchingCondition(uiSpec, values, [], viewsetId, {});
+  return getViewsMatchingCondition(uiSpec, values, viewsetId);
 };
 
 /**
@@ -413,13 +415,7 @@ export const currentlyVisibleFields = ({
   const views = currentlyVisibleViews({values, uiSpec, viewsetId});
   const visibleFields: string[] = [];
   for (const v of views) {
-    const fieldsMatching = getFieldsMatchingCondition(
-      uiSpec,
-      values,
-      [],
-      v,
-      {}
-    );
+    const fieldsMatching = getFieldsMatchingCondition(uiSpec, values, v);
     // Add all fields to visible fields set
     for (const f of fieldsMatching) {
       visibleFields.push(f);
@@ -427,6 +423,17 @@ export const currentlyVisibleFields = ({
   }
   return visibleFields;
 };
+
+// Map from section -> list of visible fields - section included IFF it's
+// visible at all
+export type FieldVisibilityMap = Record<string, string[]>;
+
+/** Distinct visible fields: a field listed in several visible sections is still one field. */
+export function visibleFieldSet(
+  visibilityMap: FieldVisibilityMap
+): Set<string> {
+  return new Set(Object.values(visibilityMap).flat());
+}
 
 /**
  * For the given ui spec, viewset and current form values, considers conditional
@@ -437,16 +444,21 @@ export const currentlyVisibleMap = ({
   values,
   uiSpec,
   viewsetId,
+  includeStaticallyHidden,
 }: {
   uiSpec: CompiledUiSpecModel;
   values: ValuesObject;
   viewsetId: string;
-}) => {
+  /** Also include condition-visible fields that are statically hidden. */
+  includeStaticallyHidden?: boolean;
+}): FieldVisibilityMap => {
   // Build a set of visible fields within visible views
   const views = currentlyVisibleViews({values, uiSpec, viewsetId});
-  const visibleMap: Record<string, string[]> = {};
+  const visibleMap: FieldVisibilityMap = {};
   for (const v of views) {
-    visibleMap[v] = getFieldsMatchingCondition(uiSpec, values, [], v, {});
+    visibleMap[v] = getFieldsMatchingCondition(uiSpec, values, v, {
+      includeStaticallyHidden,
+    });
   }
   return visibleMap;
 };
@@ -473,88 +485,58 @@ export const requiredFields = (
   );
 };
 
+/** Hidden explicitly in element props - e.g. templated field */
+export const isFieldStaticallyHidden = (
+  field: FieldDefinition | undefined
+): boolean => !!field?.['component-parameters']?.hidden;
+
 // Return a list of field or view names that should be shown, taking account
 // of branching logic.
 
 export function getFieldsMatchingCondition(
   uiSpec: CompiledUiSpecModel,
   values: {[field_name: string]: any},
-  fieldNames: string[],
   viewName: string,
-  touched: {[field_name: string]: any}
+  options?: {includeStaticallyHidden?: boolean}
 ) {
-  let modified = Object.keys(touched);
-  if (values.updateField) modified.push(values.updateField);
-  modified = modified.filter((f: string) => is_controller_field(uiSpec, f));
-  const allFields = getFieldsForView(uiSpec, viewName);
-  // run the checks if there are modified control fields or the original views are empty
-  if (modified.length > 0 || fieldNames.length === 0) {
-    // filter the whole set of views
-    const result = allFields.filter(field => {
-      const fieldDetails = uiSpec.fields[field];
-      // Visibility condition function (compiled specs always set one; default
-      // to visible if absent, mirroring getViewsMatchingCondition).
-      const visibleByCondition = fieldDetails.conditionFn
-        ? fieldDetails.conditionFn(values)
-        : true;
-      return (
-        visibleByCondition &&
-        // Hidden explicitly in element props - e.g. templated field
-        !fieldDetails['component-parameters']?.hidden
-      );
-    });
-    return result;
-  } else {
-    // shortcut return the existing set of fieldNames
-    return fieldNames;
-  }
+  return getFieldsForView(uiSpec, viewName).filter(field => {
+    const fieldDetails = uiSpec.fields[field];
+    // A stale id in the view's field list (field since deleted) is not visible
+    if (!fieldDetails) {
+      return false;
+    }
+    // Visibility condition function (compiled specs always set one; default
+    // to visible if absent, mirroring getViewsMatchingCondition).
+    const visibleByCondition = fieldDetails.conditionFn
+      ? fieldDetails.conditionFn(values)
+      : true;
+    return (
+      visibleByCondition &&
+      (options?.includeStaticallyHidden ||
+        !isFieldStaticallyHidden(fieldDetails))
+    );
+  });
 }
 
 export function getViewsMatchingCondition(
   uiSpec: CompiledUiSpecModel,
   values: {[field_name: string]: any},
-  views: string[],
-  viewsetName: string,
-  touched: {[field_name: string]: any} = {}
+  viewsetName: string
 ) {
-  let modified = Object.keys(touched);
-  if (values.updateField) modified.push(values.updateField);
-  modified = modified.filter((f: string) => is_controller_field(uiSpec, f));
-  const allViews = getViewsForViewSet(uiSpec, viewsetName);
-  // run the checks if there are modified control fields or the original views are empty
-  if (modified.length > 0 || views.length === 0) {
-    // filter the whole set of views
-    const result = allViews.filter(view => {
-      const fn = uiSpec.views[view].conditionFn;
-      if (fn !== undefined) return fn(values);
-      else return true;
-    });
-    return result;
-  } else {
-    // shortcut return the existing set of views
-    return views;
-  }
-}
-
-// check whether this field is a 'controller' field for branching
-// logic, return true if it is, false otherwise
-//
-function is_controller_field(uiSpec: CompiledUiSpecModel, field: string) {
-  // check that this is a field, touched can contain non-field stuff
-  if (uiSpec.fields[field] === undefined) {
-    return false;
-  }
-
-  // a controller field is one referenced by a conditional expression
-  return Boolean(uiSpec.conditional_sources?.has(field));
+  return getViewsForViewSet(uiSpec, viewsetName).filter(view => {
+    // A stale id in the viewset's view list (section since deleted) is not visible
+    const viewDetails = uiSpec.views[view];
+    if (!viewDetails) {
+      return false;
+    }
+    const fn = viewDetails.conditionFn;
+    if (fn !== undefined) return fn(values);
+    else return true;
+  });
 }
 
 // compile all conditional expressions in this UiSpec and store the
 // compiled versions as a property `conditionFn` on the field or view
-// also collect a Set of field names that are used in condition expressions
-// so that we can react to changes in these fields and update the visible
-// fields/views
-//
 export function compileUiSpecConditionals(
   uiSpecification: UiSpecModel | NotebookUiSpec
 ) {
@@ -563,43 +545,59 @@ export function compileUiSpecConditionals(
   // any field/view with no condition will get a conditionFn returning true
   // so we can always just call this fn to filter fields/views
 
-  // Compiled functions and conditional_sources are attached in place: callers
-  // may read the passed-in spec directly rather than the (typed) return value.
-  const depFields: string[] = [];
+  // Compiled functions are attached in place; the function returns nothing.
+  const expressionFieldTypes = new Map<string, ExprType>();
+  for (const field in uiSpecification.fields) {
+    const t =
+      FAIMS_TYPE_TO_EXPR_TYPE[uiSpecification.fields[field]['type-returned']];
+    if (t) expressionFieldTypes.set(field, t);
+  }
+
+  // Required return type per computed field component.
+  const COMPUTED_RETURN_TYPES: {[componentName: string]: ExprType} = {
+    ComputedNumber: 'number',
+    ComputedText: 'string',
+  };
 
   for (const field in uiSpecification.fields) {
     const fieldDef = uiSpecification.fields[field];
     fieldDef.conditionFn = compileExpression(fieldDef.condition);
-    depFields.push(...getDependantFields(fieldDef.condition));
 
-    // Compile ComputedField expressions at notebook load, attaching the
+    // Compile computed field expressions at notebook load, attaching the
     // evaluator and its references in place (mirrors conditionFn above).
-    if (fieldDef['component-name'] === 'ComputedField') {
+    // The expression is type checked against the other fields' types and
+    // must produce the component's declared return type.
+    const requiredType = COMPUTED_RETURN_TYPES[fieldDef['component-name']];
+    if (requiredType) {
       const expr = fieldDef['component-parameters']?.expression;
       if (typeof expr === 'string' && expr.trim() !== '') {
         try {
-          const compiled = compileComputedExpression(expr);
+          // Per-form compile so parent.<Field-ID> references type against
+          // this form's possible parent forms.
+          const compiled = compileComputedExpressionForForm({
+            source: expr,
+            uiSpecification: uiSpecification as UiSpecModel,
+            formId:
+              getViewsetForField(uiSpecification as UiSpecModel, field) ?? '',
+            requiredType,
+          });
           fieldDef.expressionFn = compiled.evaluate;
           fieldDef.expressionRefs = compiled.references;
         } catch (e) {
           // Invalid expression: leave unset so recompute yields a blank value.
-          console.warn(`ComputedField "${field}" has an invalid expression`, e);
+          console.warn(
+            `Computed field "${field}" has an invalid expression`,
+            e
+          );
         }
       }
     }
   }
 
-  const views: CompiledUiSpecSections = {};
   for (const view in uiSpecification.views) {
     const viewDef = uiSpecification.views[view];
     viewDef.conditionFn = compileExpression(viewDef.condition);
-    views[view] = viewDef;
-    depFields.push(...getDependantFields(viewDef.condition));
   }
-
-  // dependant fields are the conditional sources reacted to on value change
-  const conditional_sources = new Set(depFields);
-  uiSpecification.conditional_sources = conditional_sources;
 }
 
 export function getFieldsForViewSet(
@@ -702,6 +700,34 @@ export function getSummaryFieldInformation(
     enabled,
     fieldNames: enabled ? summaryFields : [],
   };
+}
+
+/**
+ * Values of a form's summary_fields for display, keyed by field id in
+ * summary_fields order. A missing value maps to null so JSON serialization
+ * keeps the key. By default every stored value is returned (the record list
+ * shows stored data as-is); pass visibleFields to drop fields outside it (the
+ * Status tab drops condition-hidden fields, whose leftover values are stale).
+ */
+export function getSummaryValues({
+  uiSpec,
+  formId,
+  values,
+  visibleFields,
+}: {
+  uiSpec: UiSpecModel;
+  formId: string;
+  values: ValuesObject;
+  /** When set, only fields in this set are returned. */
+  visibleFields?: ReadonlySet<string>;
+}): Record<string, unknown> {
+  const {fieldNames} = getSummaryFieldInformation(uiSpec, formId);
+  const summaryValues: Record<string, unknown> = {};
+  for (const fieldName of fieldNames) {
+    if (visibleFields && !visibleFields.has(fieldName)) continue;
+    summaryValues[fieldName] = values[fieldName] ?? null;
+  }
+  return summaryValues;
 }
 
 export function getFieldsForView(uiSpecification: UiSpecModel, viewId: string) {

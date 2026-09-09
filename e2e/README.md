@@ -26,8 +26,10 @@ AUTH_ATTEMPT_LIMITER_ENABLED=false
 
 `RATE_LIMITER_ENABLED` is the Express HTTP IP limiter;
 `AUTH_ATTEMPT_LIMITER_ENABLED` is the CouchDB-backed email-code /
-verification-challenge attempt limits (see `api/.env.dist`). Restart the API
-after changing them.
+verification-challenge attempt limits (see `api/.env.dist`). Export mint/redeem
+has a separate limiter (`EXPORT_RATE_LIMITER_ENABLED`, default 20 req / 10 min)
+that stays on when the global IP limiter is off. Restart the API after changing
+them.
 
 Copy `e2e/.env.dist` → `e2e/.env` (seed passwords match the dist defaults).
 
@@ -107,7 +109,7 @@ Helpers live in `test/helpers/` (see `test/helpers/README.md`). Prefer
 | `TEST_MANAGER_BLUE_*` / `CROSS_*` | Team/project management                                                                                          |
 | `TEST_MEMBER_BOTH_*`              | Create within team; projects list                                                                                |
 | `TEST_RED_MEMBER_CREATOR_*`       | Template creation                                                                                                |
-| `TEST_PROJECT_CONTRIBUTOR_*`      | App record create/edit (Red `e2e-minimal` notebook)                                                              |
+| `TEST_PROJECT_CONTRIBUTOR_*`      | App record create/edit and overview-map geometry (Red `e2e-minimal` notebook)                                    |
 | `TEST_PROJECT_GUEST_*`            | Read-only / limited UI                                                                                           |
 
 Default seed notebooks: Red = `api/notebooks/e2e-minimal.json`, Blue =

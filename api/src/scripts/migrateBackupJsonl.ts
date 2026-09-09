@@ -4,8 +4,8 @@
  * v3 project rows) to projects DB v4 (inlined uiSpecification, no metadataDb).
  *
  * Usage (from api/):
- *   pnpm exec ts-node src/scripts/migrateBackupJsonl.ts test/backup-short.jsonl
- *   pnpm exec ts-node src/scripts/migrateBackupJsonl.ts test/backup.jsonl --replace
+ *   pnpm exec tsx src/scripts/migrateBackupJsonl.ts test/backup-short.jsonl
+ *   pnpm exec tsx src/scripts/migrateBackupJsonl.ts test/backup.jsonl --replace
  *
  * By default writes `<input>.migrated.jsonl` next to each input file.
  */
@@ -48,8 +48,8 @@ Options:
   --help, -h      Show this help
 
 Examples:
-  pnpm exec ts-node src/scripts/migrateBackupJsonl.ts test/backup-short.jsonl
-  pnpm exec ts-node src/scripts/migrateBackupJsonl.ts test/backup.jsonl --replace
+  pnpm exec tsx src/scripts/migrateBackupJsonl.ts test/backup-short.jsonl
+  pnpm exec tsx src/scripts/migrateBackupJsonl.ts test/backup.jsonl --replace
 `);
 }
 

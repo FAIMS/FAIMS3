@@ -1,6 +1,7 @@
 import {
   Action,
   CompiledNotebookUiSpec,
+  computeRecordStatusReport,
   DatabaseInterface,
   DataDbType,
   DataDocument,
@@ -8,17 +9,25 @@ import {
   fetchAndHydrateRecord,
   isAuthorized,
   MinimalRecordMetadata,
+  RecordStatusReport,
   UiSpecModel,
 } from '@faims3/data-model';
-import {QueryClient, useQuery} from '@tanstack/react-query';
+import {fieldCompletionResolver} from '@faims3/forms';
+import {
+  QueryClient,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import _ from 'lodash';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
-import {useSearchParams} from 'react-router-dom';
 import * as ROUTES from '../constants/routes';
 import {selectActiveUser} from '../context/slices/authSlice';
+import {syncStateService} from '../context/slices/helpers/syncStateService';
 import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
+import {syncModeIncludesPull, type SyncMode} from '../sync/syncMode';
 import {shouldDisplayRecordMinimalMetadata} from '../users';
 import {localGetDataDb, tryLocalGetDataDb} from './database';
 
@@ -101,185 +110,6 @@ export function useIsOnline(): UseIsOnlineResponse {
   };
 }
 
-/*
-QUERY PARAMS MANAGER
-====================
-*/
-
-/**
- * Configuration for a single query parameter
- * @template T The type of the parameter value
- */
-type QueryParamConfig<T> = {
-  /** The key used in the URL query string */
-  key: string;
-  /** Default value if the parameter is not present */
-  defaultValue?: T;
-  /** Function to convert the string from the URL to the parameter type */
-  parser?: (value: string) => T;
-  /** Function to convert the parameter value to a string for the URL */
-  serializer?: (value: T) => string;
-};
-
-type QueryParamValue<T> = T | undefined;
-
-/**
- * Hook result containing the current parameters and methods to update them
- */
-type UseQueryParamsResult<T extends Record<string, any>> = {
-  /** Current parameter values */
-  params: {[K in keyof T]: QueryParamValue<T[K]>};
-  /** Set a single parameter value */
-  setParam: <K extends keyof T>(key: K, value: T[K] | undefined) => void;
-  /** Set multiple parameter values at once */
-  setParams: (values: Partial<{[K in keyof T]: T[K] | undefined}>) => void;
-  /** Remove a single parameter */
-  removeParam: (key: keyof T) => void;
-  /** Remove all parameters */
-  removeAllParams: () => void;
-};
-
-// Default converters if none provided in config
-const defaultParser = (value: string) => value;
-const defaultSerializer = (value: any) => String(value);
-
-/**
- * Hook to manage URL query parameters with type safety
- *
- * @example
- * // Track the active tab index in the URL
- * const { params, setParam } = useQueryParams<{tabIndex: number}>({
- *   tabIndex: {
- *     key: 'tab',
- *     defaultValue: 0,
- *     parser: value => parseInt(value)
- *   }
- * });
- *
- * // URL will show ?tab=0 by default
- * // params.tabIndex will be the current tab number
- * // setParam('tabIndex', 2) will update URL to ?tab=2
- */
-export function useQueryParams<T extends Record<string, any>>(config: {
-  [K in keyof T]: QueryParamConfig<T[K]>;
-}): UseQueryParamsResult<T> {
-  // Use React Router's search params hook for URL management
-  const [searchParams, setSearchParams] = useSearchParams();
-  // Track initial mount to only set defaults once
-  const isInitialMount = useRef(true);
-
-  useEffect(() => {
-    // Only run this effect on the first mount
-    if (isInitialMount.current) {
-      const updates = new URLSearchParams(searchParams);
-      let hasUpdates = false;
-
-      // Check each configured parameter
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      Object.entries(config).forEach(([_, paramConfig]) => {
-        const value = searchParams.get(paramConfig.key);
-        // If param is missing from URL but has a default value, add it
-        if (value === null && paramConfig.defaultValue !== undefined) {
-          // Use serialiser to add value to URL
-          const serializer = paramConfig.serializer || defaultSerializer;
-          updates.set(paramConfig.key, serializer(paramConfig.defaultValue));
-          hasUpdates = true;
-        }
-      });
-
-      // Only update URL if we added any default values
-      if (hasUpdates) {
-        setSearchParams(updates);
-      }
-      isInitialMount.current = false;
-    }
-  }, [config, searchParams, setSearchParams]);
-
-  // Convert URL string values to typed parameters
-  const params = Object.entries(config).reduce(
-    (acc, [key, paramConfig]) => {
-      const value = searchParams.get(paramConfig.key);
-      const parser = paramConfig.parser || defaultParser;
-
-      // Use parsed URL value if present, otherwise use default
-      acc[key as keyof T] =
-        value !== null ? parser(value) : paramConfig.defaultValue;
-
-      return acc;
-    },
-    {} as {[K in keyof T]: QueryParamValue<T[K]>}
-  );
-
-  // Update a single parameter in the URL
-  const setParam = useCallback(
-    <K extends keyof T>(key: K, value: T[K] | undefined) => {
-      const paramConfig = config[key];
-      const serializer = paramConfig.serializer || defaultSerializer;
-
-      setSearchParams(prev => {
-        const next = new URLSearchParams(prev);
-        // Remove param if value is undefined, otherwise set it
-        if (value === undefined) {
-          next.delete(paramConfig.key);
-        } else {
-          next.set(paramConfig.key, serializer(value));
-        }
-        return next;
-      });
-    },
-    [config, setSearchParams]
-  );
-
-  // Update multiple parameters at once
-  const setMultipleParams = useCallback(
-    (values: Partial<{[K in keyof T]: T[K] | undefined}>) => {
-      setSearchParams(prev => {
-        const next = new URLSearchParams(prev);
-
-        // Process each parameter update
-        Object.entries(values).forEach(([key, value]) => {
-          const paramConfig = config[key as keyof T];
-          const serializer = paramConfig.serializer || defaultSerializer;
-
-          if (value === undefined) {
-            next.delete(paramConfig.key);
-          } else {
-            next.set(paramConfig.key, serializer(value));
-          }
-        });
-
-        return next;
-      });
-    },
-    [config, setSearchParams]
-  );
-
-  // Remove a specific parameter from the URL
-  const removeParam = useCallback(
-    (key: keyof T) => {
-      setSearchParams(prev => {
-        const next = new URLSearchParams(prev);
-        next.delete(config[key].key);
-        return next;
-      });
-    },
-    [config, setSearchParams]
-  );
-
-  // Clear all parameters from the URL
-  const removeAllParams = useCallback(() => {
-    setSearchParams(new URLSearchParams());
-  }, [setSearchParams]);
-
-  return {
-    params,
-    setParam,
-    setParams: setMultipleParams,
-    removeParam,
-    removeAllParams,
-  };
-}
-
 /**
  * NOTE: as of major-form-refactor - this is irrelevant, however there could
  * still be some drafts sitting around?
@@ -323,6 +153,110 @@ export function buildHydrateKeys({
   revisionId: string;
 }) {
   return [HYDRATION_KEY_PREFIX, projectId, recordId, revisionId];
+}
+
+/**
+ * Query key for a record's status report, shared by the Status tab and
+ * {@link usePlanRecordStatusReports} so either surface serves the other's
+ * cache. The hydration prefix adds it to project-wide cancel/reset sweeps;
+ * freshness comes from the Status tab's refetchOnMount and the plan hook's
+ * revision-driven invalidation.
+ */
+export function buildStatusReportKey({
+  projectId,
+  recordId,
+}: {
+  projectId: string;
+  recordId: string;
+}) {
+  return [HYDRATION_KEY_PREFIX, projectId, recordId, 'statusReport'];
+}
+
+/**
+ * Recursive status reports for every record claiming a plan reference, for
+ * plan views that display per-record completion. One query per claiming
+ * record, on the Status tab's own key, so reports land incrementally and
+ * either surface serves the other's cache. A report spans the record's whole
+ * child subtree, so any head-revision change in the notebook invalidates every
+ * report; invalidation rather than a version in the key keeps each query's
+ * identity stable, so a recomputing entry keeps its previous result instead of
+ * flashing back to pending.
+ */
+export function usePlanRecordStatusReports({
+  projectId,
+  uiSpecification,
+  records,
+  enabled,
+}: {
+  projectId: string;
+  uiSpecification: CompiledNotebookUiSpec;
+  records: MinimalRecordMetadata[];
+  /** Pass false where no view displays the reports, to skip the walks. */
+  enabled: boolean;
+}): ReadonlyMap<string, RecordStatusReport> {
+  const queryClient = useQueryClient();
+  // Undefined while the notebook is being removed; the queries wait it out
+  const dataDb = tryLocalGetDataDb(projectId);
+  const claimingRecords = useMemo(
+    () =>
+      records.filter(
+        record => !record.deleted && record.planReference !== undefined
+      ),
+    [records]
+  );
+  // Head revisions of the whole list: unlike `updated` (the author device's
+  // clock), a synced-in edit always changes a revisionId
+  const dataVersion = useMemo(
+    () =>
+      records
+        .map(record => `${record.recordId}:${record.revisionId}`)
+        .sort()
+        .join(' '),
+    [records]
+  );
+  useEffect(() => {
+    void queryClient.invalidateQueries({
+      predicate: query =>
+        query.queryKey[0] === HYDRATION_KEY_PREFIX &&
+        query.queryKey[1] === projectId &&
+        query.queryKey[3] === 'statusReport',
+    });
+  }, [queryClient, projectId, dataVersion, uiSpecification]);
+  // Stable across renders, so an unchanged result set keeps its Map identity
+  // and downstream memos hold
+  const combineReports = useCallback(
+    (results: Array<{data: RecordStatusReport | undefined}>) => {
+      const reports = new Map<string, RecordStatusReport>();
+      results.forEach((result, index) => {
+        if (result.data) {
+          reports.set(claimingRecords[index].recordId, result.data);
+        }
+      });
+      return reports as ReadonlyMap<string, RecordStatusReport>;
+    },
+    [claimingRecords]
+  );
+  return useQueries({
+    queries: claimingRecords.map(record => ({
+      queryKey: buildStatusReportKey({projectId, recordId: record.recordId}),
+      queryFn: () =>
+        computeRecordStatusReport({
+          engine: new DataEngine({
+            dataDb: dataDb as DatabaseInterface<DataDocument>,
+            uiSpec: uiSpecification,
+          }),
+          recordId: record.recordId,
+          projectId,
+          // Same per-field scoring as the form's progress bar
+          isCompleteResolver: fieldCompletionResolver,
+        }),
+      networkMode: 'always' as const,
+      // Freshness comes from the invalidation above
+      staleTime: Infinity,
+      enabled: enabled && dataDb !== undefined,
+    })),
+    combine: combineReports,
+  });
 }
 
 /**
@@ -399,6 +333,9 @@ export function invalidateProjectRecordList({
   }
 }
 
+/** Shared empty list for a record query that has not loaded. */
+const NO_RECORDS: MinimalRecordMetadata[] = [];
+
 /**
  * Returns a list of all records, and active user records. This applies the
  * built in getMetadataForAllRecords filtering (which does client side
@@ -454,6 +391,25 @@ export const useRecordList = ({
   const token = activeUser?.parsedToken;
   const dataDb = tryLocalGetDataDb(projectId);
   const canQueryRecords = enabled && !!dataDb && !!token && !!uiSpec;
+
+  /**
+   * Whether the returned lists can contain every record in the project. The
+   * queryFn filters through {@link shouldDisplayRecordMinimalMetadata}, so
+   * when this is false a record's absence proves nothing: hidden records may
+   * exist. Computed from the same token that filter reads.
+   *
+   * Only currently used in third party plugins, not dead code.
+   */
+  const canReadAllRecords = useMemo(
+    () =>
+      !!token &&
+      isAuthorized({
+        decodedToken: token,
+        action: Action.READ_ALL_PROJECT_RECORDS,
+        resourceId: projectId,
+      }),
+    [token, projectId]
+  );
 
   // First - just fetch a list of all unhydrated records
   const unhydratedRecordQuery = useQuery({
@@ -540,8 +496,19 @@ export const useRecordList = ({
     },
   });
 
-  // Get all rows - defaulting to an empty list
-  const allRows = unhydratedRecordQuery.data ?? [];
+  /**
+   * Whether the list has never loaded, so an empty list means "not known yet"
+   * rather than "no records".
+   *
+   * Deliberately not the query's own `isLoading`, which goes false when the
+   * initial fetch fails, presenting the empty fallback as a loaded, empty
+   * list.
+   */
+  const isLoading = unhydratedRecordQuery.data === undefined;
+
+  // Get all rows - defaulting to an empty list. The fallback is shared so an
+  // unloaded query keeps the same identity across renders.
+  const allRows = unhydratedRecordQuery.data ?? NO_RECORDS;
 
   // Memoize the calculation of the non-draft rows
   const nonDraftRecords = useMemo(() => {
@@ -621,13 +588,81 @@ export const useRecordList = ({
     );
   }
 
-  // return both curated record lists and the underlying query where necessary
-  return {
-    allRecords: nonDraftRecords,
-    myRecords: myRecords,
-    otherRecords: otherRecords,
-    initialQuery: unhydratedRecordQuery,
-  };
+  // Memoized so a caller's own memos hold over an unchanged result set. Exposes
+  // `refetch`, which is identity stable, rather than the query, which is not.
+  const refetch = unhydratedRecordQuery.refetch;
+  return useMemo(
+    () => ({
+      allRecords: nonDraftRecords,
+      myRecords: myRecords,
+      otherRecords: otherRecords,
+      isLoading,
+      canReadAllRecords,
+      refetch,
+    }),
+    [
+      nonDraftRecords,
+      myRecords,
+      otherRecords,
+      isLoading,
+      canReadAllRecords,
+      refetch,
+    ]
+  );
+};
+
+/** Poll interval for the in-memory per-project sync state. */
+const SYNC_STATE_POLL_INTERVAL_MS = 1000;
+
+/**
+ * Whether a record download is underway for a project, polled from the
+ * in-memory {@link syncStateService}. While true, records that exist on the
+ * server may not yet be local, so a consumer must not read a record's absence
+ * as proof that none exists. False when the project never pulls, and on error
+ * or denial, so an offline device keeps working from its local data.
+ *
+ * Only currently used in third party plugins, not dead code.
+ */
+export const useIsRecordDownloadUnderway = ({
+  serverId,
+  projectId,
+  syncMode,
+}: {
+  serverId: string;
+  projectId: string;
+  /** The project's replication direction; only pull modes can download. */
+  syncMode: SyncMode;
+}): boolean => {
+  const computeIsDownloadUnderway = useCallback((): boolean => {
+    if (!syncModeIncludesPull(syncMode)) {
+      return false;
+    }
+    const syncState = syncStateService.getSyncStateOrDefault(
+      serverId,
+      projectId
+    );
+    // Errors and denials will not download any time soon; treating them as
+    // downloading would blank consumers forever on an offline device.
+    if (syncState.status === 'error' || syncState.status === 'denied') {
+      return false;
+    }
+    return !syncState.isPullCaughtUp;
+  }, [serverId, projectId, syncMode]);
+
+  const [isDownloadUnderway, setIsDownloadUnderway] = useState(
+    computeIsDownloadUnderway
+  );
+
+  useEffect(() => {
+    // The sync state lives outside React, so poll it; setState with an
+    // unchanged boolean re-renders nothing.
+    const tick = () => setIsDownloadUnderway(computeIsDownloadUnderway());
+    tick();
+    const interval = setInterval(tick, SYNC_STATE_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [computeIsDownloadUnderway]);
+
+  return isDownloadUnderway;
 };
 
 /** useQuery to fetch and hydrate individual targeted revision of record */

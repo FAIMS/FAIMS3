@@ -23,7 +23,7 @@ Survey and template properties are split into two layers:
 - **Notebook version** — your own version label for the form definition
 - **Enable QR code search** — when enabled, users can search records by QR code on the record list
 
-You can still add **custom** key/value pairs in the designer; these are kept for compatibility but are not part of the fixed design fields above.
+You can also add **custom** key/value pairs in the designer. As well as recording organisation-specific information, custom fields can be referenced from conditions, templated strings and computed fields using the `_METADATA.` prefix, letting one design adapt its forms to per-survey settings. See [Conditions](./conditions.md) for details. Field names can only use letters, numbers, hyphens and underscores, and a custom field that is referenced cannot be removed until the references are changed.
 
 ## {{Notebook}} Design
 
@@ -139,12 +139,13 @@ There is also the option here to add a condition to the field. This will mean th
 field would only be shown if the condition is met. See the [page on conditions](../field-types/shared-settings/conditions.md)
 for details.
 
-The final two checkboxes relate to the behaviour of the system in relation to other records.
+The final checkbox relates to the behaviour of the system in relation to other records.
 _Copy value to new records_ means that whatever the most recent value of this field is, that
 will be pre-copied into the same field when the next record is created. This is useful if
 you are collecting data in a location and one value - eg. the site address - is the same
 for many records.
 
-The _Display in child records_ checkbox configures whether the value of this field will
-be available to view in any child records that are created. This might be used to have
-the site name visible while filling out details of a building on the site, for example.
+To make a value from this form visible while filling out its child records — for
+example, showing the site name while recording a building on the site — add a
+[Parent Field Value](../field-types/display-fields/parent-field-value.md) field
+to the child form and choose which field to display.

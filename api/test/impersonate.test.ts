@@ -30,7 +30,7 @@ import {
   PostRefreshTokenResponseSchema,
   Role,
 } from '@faims3/data-model';
-import {expect} from 'chai';
+import {beforeEach, describe, expect, it} from 'vitest';
 import request from 'supertest';
 import {
   generateJwtFromUser,
@@ -69,7 +69,7 @@ const createUserWithRolesAndToken = async ({
 }): Promise<string> => {
   const signingKey = await keyService.getSigningKey();
   const [dbUser, error] = await createUser({username, name: username});
-  expect(dbUser, `Failed to create user ${username}: ${error}`).to.not.be.null;
+  expect(dbUser, `Failed to create user ${username}: ${error}`).not.toBeNull();
   for (const role of roles) {
     addGlobalRole({user: dbUser!, role});
   }
@@ -114,15 +114,15 @@ describe('user impersonation', () => {
       .expect(200)
       .then(res => PostImpersonateUserResponseSchema.parse(res.body));
 
-    expect(body.accessToken).to.be.a('string');
-    expect(body.refreshToken).to.be.a('string');
+    expect(body.accessToken).toBeTypeOf('string');
+    expect(body.refreshToken).toBeTypeOf('string');
 
     // The access token should authenticate as the TARGET user, and carry the
     // acting admin's id for auditing.
     const decoded = await validateToken(body.accessToken);
-    expect(decoded, 'access token did not validate').to.not.be.undefined;
-    expect(decoded!.user_id).to.equal(targetUsername);
-    expect(decoded!.impersonatingUserId).to.equal(opsAdminUsername);
+    expect(decoded, 'access token did not validate').not.toBeUndefined();
+    expect(decoded!.user_id).toBe(targetUsername);
+    expect(decoded!.impersonatingUserId).toBe(opsAdminUsername);
   });
 
   it('allows a general (cluster) admin to impersonate (via inheritance)', async () => {
@@ -133,8 +133,8 @@ describe('user impersonation', () => {
       .then(res => PostImpersonateUserResponseSchema.parse(res.body));
 
     const decoded = await validateToken(body.accessToken);
-    expect(decoded!.user_id).to.equal(targetUsername);
-    expect(decoded!.impersonatingUserId).to.equal(adminUserName);
+    expect(decoded!.user_id).toBe(targetUsername);
+    expect(decoded!.impersonatingUserId).toBe(adminUserName);
   });
 
   it('rejects impersonating yourself', async () => {
@@ -186,7 +186,7 @@ describe('user impersonation', () => {
       .then(res => PostRefreshTokenResponseSchema.parse(res.body));
 
     const decoded = await validateToken(refreshed.token);
-    expect(decoded!.user_id).to.equal(targetUsername);
-    expect(decoded!.impersonatingUserId).to.equal(opsAdminUsername);
+    expect(decoded!.user_id).toBe(targetUsername);
+    expect(decoded!.impersonatingUserId).toBe(opsAdminUsername);
   });
 });

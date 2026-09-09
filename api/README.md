@@ -123,6 +123,44 @@ all json files in the `notebooks` folder:
 pnpm run load-templates
 ```
 
+## Dump user emails (ops)
+
+For maintenance notices, dump addresses from the people DB (requires `.env`
+pointing at the target Couch, e.g. via
+`infrastructure/aws-cdk/scripts/env-from-cdk-stack.sh`):
+
+```bash
+pnpm run dump-user-emails                 # one email per line (stdout)
+pnpm run dump-user-emails --format=bcc # comma-separated BCC field
+pnpm run dump-user-emails --format=csv > users.csv
+```
+
+By default skips addresses matching `test` or `demo` (anywhere) or
+`example.com`. Override with `--skip=pat1,pat2` (comma-separated regexes) or
+`--no-skip`. Disabled accounts are omitted unless `--include-disabled`. Counts
+go to stderr.
+
+## TTL cleanup (ops)
+
+One-shot job that deletes expired ephemeral CouchDB documents in `auth` and
+`invites` (refresh tokens, email codes, verification challenges, expired
+invites; optionally long-lived tokens). Rate-limit retention windows for email
+codes / verification challenges are respected. Survey tombstones and
+people/project/`data-*` docs are never touched.
+
+```bash
+pnpm run ttl-cleanup --dry-run
+pnpm run ttl-cleanup
+pnpm run ttl-cleanup --include-longlived --compact
+```
+
+Exhausted-but-unexpired invites are kept by default (uses may be raised later).
+Pass `--delete-exhausted-invites` only if you intentionally want those removed
+too. Prefer `--dry-run` first against the target Couch.
+
+Retention rules, flags, and AWS scheduling notes:
+[TtlCleanup.md](../docs/developer/docs/source/markdown/TtlCleanup.md).
+
 ## Development
 
 There is an alternate docker compose file for development that mounts the
@@ -144,10 +182,24 @@ docker compose -f docker-compose.dev.yml up
 
 ## Tests
 
-Run tests inside the conductor instance:
+API unit tests use [Vitest](https://vitest.dev/) (Node environment), matching
+`app` / `web` / `forms`. Assertions use Vitest `expect`; cross-module
+dependencies are mocked with `vi.mock` / `vi.spyOn` (Mocha/Chai/Sinon removed).
+Tests run serially (`fileParallelism: false`, single fork) because they share
+in-memory PouchDB and the Express app singleton. `test/setup.ts` registers the
+PouchDB memory adapter and applies the Express async-error Layer patch before
+route modules load (see comments in that file and `vitest.config.ts`).
 
 ```bash
+# From repo root or api/
+pnpm --filter=@faims3/api test
+pnpm --filter=@faims3/api test:watch
+pnpm --filter=@faims3/api coverage
+```
 
+Inside Docker:
+
+```bash
 docker compose exec conductor pnpm run test
 ```
 

@@ -38,7 +38,7 @@ Before diving into procedures, here's how management differs across the three ar
 
 | Location                  | How to Add User                              | How to Add Role                    | How to Change Role                            | How to Remove                                                                     |
 | ------------------------- | -------------------------------------------- | ---------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- |
-| **Users** (system)        | Create a global invite (Users → Invites tab) | Click "add" button in Roles column | Click × on role badge, then add new role      | Click × on role badge (removes role only)                                         |
+| **Users** (system)        | Create a global invite (Users → Invites tab) | Click "add" button in Roles column | Click × on role badge, then add new role      | Click × on role badge (removes role only), or **Disable** to disable the account  |
 | **Teams → Users**         | Click "+ Add user" or go to **Invites** tab  | Click "+" on existing member's row | Click × on role badge, then add new role      | Click × on role badge (removes role only), or trash icon (removes user from team) |
 | **{{Notebooks}} → Users** | Go to **Invites** tab                        | N/A (one role per user)            | Remove user, then re-invite with desired role | Click trash icon (removes user from {{notebook}})                                 |
 
@@ -75,7 +75,8 @@ This means you can:
 - View all system users and their roles
 - Add or remove system roles (General User, Content Creator, Operations Administrator, Super User)
 - Reset user passwords (for non-SSO configurations)
-- Remove user accounts
+- Impersonate a user to see the {{Dashboard}} as they do
+- Disable user accounts ({{notebooks}} and records they contributed are retained)
 
 **Team management:**
 
@@ -149,9 +150,10 @@ When you log in to the {{FAIMS}} {{Dashboard}}, you'll see a left sidebar with t
 
 - **Users** — View all system users and their roles (requires appropriate permissions)
 - **Teams** — View and manage teams
+- **Archive** — Archived {{notebooks}}, templates, and disabled users
 
 ```{screenshot} user-roles/01-dashboard-sidebar.png
-:alt: {{FAIMS}} {{Dashboard}} showing left sidebar with Content section ({{Notebooks}}, Templates) and Management section (Users, Teams), plus the Users page with Users and Invites tabs, displaying Name, Email, Roles columns with role badges such as General User and Super User
+:alt: {{FAIMS}} {{Dashboard}} showing left sidebar with Content section ({{Notebooks}}, Templates) and Management section (Users, Teams, Archive), plus the Users page with Users and Invites tabs, displaying Name, Email, Roles, Reset Password, Impersonate, and Disable columns with role badges such as General User and Super User
 :align: right
 :width: 100%
 ```
@@ -185,7 +187,8 @@ You cannot manually create user accounts through the {{Dashboard}} — users mus
    - **Email** — User's email address
    - **Roles** — System roles with "add" button and role badges
    - **Reset Password** — Not applicable for SSO deployments; password management is handled through your institution's identity provider
-   - **Remove** — Remove user from system
+   - **Impersonate** — Sign in as this user to see exactly what they see (not available for your own account or Super Users)
+   - **Disable** — Disable the account so the user can no longer sign in ({{notebooks}} and records they contributed are retained). Disabled users appear under **Archive → Users**, where they can be re-enabled.
 
 The screenshot above shows this view, with the sidebar navigation on the left and the Users table in the main content area.
 
@@ -240,13 +243,13 @@ Only users with the **Operations Administrator** or **Super User** system role c
    - **Role** — The system role invitees will receive (displayed as a role badge)
    - **Expiry** — When the invitation expires
    - **Uses remaining** — How many more times the invite can be used
-   - **Code** — A short code users can enter manually (click to copy)
-   - **Link** — A URL users can click to accept the invitation (click to copy)
-   - **QR Code** — Click to display a scannable QR code for mobile devices
+   - **QR Code** — Click to display a scannable QR code (preferred share method)
+   - **Link** — Copy a URL users can open to accept the invitation
+   - **Code** — Reveal the invite code for manual entry if needed (button labelled **Show code**)
    - **Remove** — Delete the invitation
 
 ```{screenshot} user-roles/02-users-invites-tab.png
-:alt: Users page Invites tab showing a table of global invitations with columns for Name, Role, Expiry, Uses remaining, Code, Link, QR Code, and Remove
+:alt: Users page Invites tab showing a table of global invitations with columns for Name, Role, Expiry, Uses remaining, QR Code, Link, Code, and Remove
 :align: right
 :width: 100%
 ```
@@ -418,16 +421,16 @@ The **Invites** tab allows you to create invitation links that users can use to 
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Expiry**         | The date/time after which the invite link no longer works. Expired invites cannot be extended — create a new one instead.                            |
 | **Uses remaining** | Limits how many people can use this invite. Use multi-use invites for workshops or group onboarding. Leave unlimited (default) for open invitations. |
-| **Code**           | A short code users can enter manually                                                                                                                |
-| **Link**           | A URL that users can click to accept the invitation                                                                                                  |
-| **QR Code**        | Scannable code for mobile devices — useful for in-person onboarding                                                                                  |
+| **QR Code**        | Scannable invite for mobile devices — preferred for in-person onboarding                                                                             |
+| **Link**           | A URL that users can open to accept the invitation                                                                                                   |
+| **Code**           | Reveal the invite code for manual entry when a QR/link cannot be used (button labelled **Show code**)                                                |
 
 #### Viewing and Managing Invites
 
 The Invites tab shows all active invitations with their status.
 
 ```{screenshot} user-roles/08a-teams-invites-tab.png
-:alt: Team Invites tab showing list of pending invitations with columns for Name, Role, Expiry, Uses remaining, Code, Link, QR Code, and Remove
+:alt: Team Invites tab showing list of pending invitations with columns for Name, Role, Expiry, Uses remaining, QR Code, Link, Code, and Remove
 :align: right
 :width: 100%
 ```
@@ -455,7 +458,7 @@ From here you can:
 1. Click **{{Notebooks}}** in the left sidebar
 
 ```{screenshot} user-roles/09a-notebooks-view.png
-:alt: {{Notebooks}} list view showing sidebar with {{Notebooks}} expanded, and main content area with table columns for Name, Team, Template, {{Notebook}} Lead, and Description (optional short blurb when set)
+:alt: {{Notebooks}} list view showing sidebar with {{Notebooks}} expanded, and main content area with table columns for Name, Team, Template, Created by, Created, and Description (optional short blurb when set)
 :align: right
 :width: 100%
 ```
@@ -475,13 +478,14 @@ From here you can:
 
 ### {{Notebook}} Tabs Overview
 
-| Tab         | Purpose                                                                       |
-| ----------- | ----------------------------------------------------------------------------- |
-| **Details** | {{Notebook}} name, optional description, and metadata                         |
-| **Invites** | Invitation links for adding users                                             |
-| **Users**   | Current {{notebook}} users and their roles                                    |
-| **Export**  | Export {{notebook}} data                                                      |
-| **Actions** | Edit {{notebook}}, assign to team, download/replace JSON, {{notebook}} status |
+| Tab             | Purpose                                                                       |
+| --------------- | ----------------------------------------------------------------------------- |
+| **Details**     | {{Notebook}} name, optional description, and metadata                         |
+| **Invites**     | Invitation links for adding users                                             |
+| **Users**       | Current {{notebook}} users and their roles                                    |
+| **Export**      | Export {{notebook}} data                                                      |
+| **Offline Map** | Configure an offline map region for field use                                 |
+| **Actions**     | Edit {{notebook}}, assign to team, download/replace JSON, {{notebook}} status |
 
 ### Understanding {{Notebook}} Roles
 
@@ -519,24 +523,24 @@ Unlike Teams, you **cannot add users directly** to a {{notebook}}. Instead, you 
 Once created, invitations appear in the **Invites** tab where you can manage them:
 
 ```{screenshot} user-roles/11-notebooks-invites-active.png
-:alt: {{Notebook}} Invites tab showing list of active invitations with columns for Name, Role, Expiry, Uses remaining, Code, Link, QR Code, and Remove; includes + Create Invite button
+:alt: {{Notebook}} Invites tab showing list of active invitations with columns for Name, Role, Expiry, Uses remaining, QR Code, Link, Code, and Remove; includes + Create Invite button
 :align: right
 :width: 100%
 ```
 
 The Invites tab shows:
 
-| Column             | Description                                                  |
-| ------------------ | ------------------------------------------------------------ |
-| **Name**           | The invitation title/description                             |
-| **Role**           | The {{notebook}} role recipients will receive                |
-| **Expiry**         | When the invite expires — create a new invite if one expires |
-| **Uses remaining** | How many more people can use this invite                     |
-| **Code**           | Short code for manual entry                                  |
-| **Link**           | Clickable URL to share                                       |
-| **QR Code**        | Scannable code for mobile onboarding                         |
+| Column             | Description                                                                   |
+| ------------------ | ----------------------------------------------------------------------------- |
+| **Name**           | The invitation title/description                                              |
+| **Role**           | The {{notebook}} role recipients will receive                                 |
+| **Expiry**         | When the invite expires — create a new invite if one expires                  |
+| **Uses remaining** | How many more people can use this invite                                      |
+| **QR Code**        | Scannable invite for mobile onboarding (preferred)                            |
+| **Link**           | Invite URL to share                                                           |
+| **Code**           | Reveal invite code for manual entry if needed (button labelled **Show code**) |
 
-> **Tip:** Use multi-use invites with QR codes for field team onboarding sessions. Each team member can scan the same code to join with the appropriate role.
+> **Tip:** Use multi-use invites with QR codes for field team onboarding sessions. Each team member can scan the same QR code to join with the appropriate role.
 
 ### Removing a User from a {{Notebook}}
 
@@ -631,7 +635,9 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
    - Navigate to each {{notebook}} → Users tab → trash icon
 2. **Remove from team**:
    - Navigate to team → Users tab → red trash icon
-3. **Note**: You cannot revoke system roles — contact a system administrator (Super User or Operations Administrator)
+3. **Disable the account** (optional, system-wide):
+   - Navigate to **Users** → **Disable** column
+   - Disabled users can be re-enabled later from **Archive → Users**
 
 ---
 
@@ -659,12 +665,12 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
 
 ### {{Notebook}} Roles
 
-| Role                | Permissions                                                         |
-| ------------------- | ------------------------------------------------------------------- |
-| Project Admin       | Full control, manage administrators                                 |
-| Project Manager     | Edit design, close {{notebook}}, export, manage invites/access      |
-| Project Contributor | Edit others' records (plus all Guest permissions)                   |
-| Project Guest       | Activate {{notebook}}, create records, view/edit/delete own records |
+| Role          | Permissions                                                         |
+| ------------- | ------------------------------------------------------------------- |
+| Administrator | Full control, manage administrators                                 |
+| Manager       | Edit design, close {{notebook}}, export, manage invites/access      |
+| Contributor   | Edit others' records (plus all Guest permissions)                   |
+| Guest         | Activate {{notebook}}, create records, view/edit/delete own records |
 
 ### Permission Matrix — {{Notebooks}}
 
@@ -684,19 +690,19 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
 
 ### Permission Matrix — Teams
 
-| Action                                   | Member | Member Creator | Manager |                    Admin                    |
-| ---------------------------------------- | :----: | :------------: | :-----: | :-----------------------------------------: |
-| View team details and members            |   ✅   |       ✅       |   ✅    |                     ✅                      |
-| View team templates                      |   ✅   |       ❌       |   ✅    |                     ✅                      |
-| Access team {{notebooks}} (virtual role) |   ✅   |       ❌       |   ✅    |                     ✅                      |
-| Create {{notebooks}} in team             |   ❌   |       ✅       |   ✅    |                     ✅                      |
-| Create templates in team                 |   ❌   |       ❌       |   ✅    |                     ✅                      |
-| Edit team details                        |   ❌   |       ❌       |   ✅    |                     ✅                      |
-| Add/remove team members                  |   ❌   |       ❌       |   ✅    |                     ✅                      |
-| Manage team invites                      |   ❌   |       ❌       |   ✅    |                     ✅                      |
-| Add/remove team managers                 |   ❌   |       ❌       |   ❌    |                     ✅                      |
-| Add team admins                          |   ❌   |       ❌       |   ❌    | Operations Administrator or Super User only |
-| Delete team                              |   ❌   |       ❌       |   ❌    |                     ✅                      |
+| Action                                   | Team Member (Contributor) | Team Member (Creator) | Team Manager |             Team Administrator              |
+| ---------------------------------------- | :-----------------------: | :-------------------: | :----------: | :-----------------------------------------: |
+| View team details and members            |            ✅             |          ✅           |      ✅      |                     ✅                      |
+| View team templates                      |            ✅             |          ❌           |      ✅      |                     ✅                      |
+| Access team {{notebooks}} (virtual role) |            ✅             |          ❌           |      ✅      |                     ✅                      |
+| Create {{notebooks}} in team             |            ❌             |          ✅           |      ✅      |                     ✅                      |
+| Create templates in team                 |            ❌             |          ❌           |      ✅      |                     ✅                      |
+| Edit team details                        |            ❌             |          ❌           |      ✅      |                     ✅                      |
+| Add/remove team members                  |            ❌             |          ❌           |      ✅      |                     ✅                      |
+| Manage team invites                      |            ❌             |          ❌           |      ✅      |                     ✅                      |
+| Add/remove team managers                 |            ❌             |          ❌           |      ❌      |                     ✅                      |
+| Add team admins                          |            ❌             |          ❌           |      ❌      | Operations Administrator or Super User only |
+| Delete team                              |            ❌             |          ❌           |      ❌      |                     ✅                      |
 
 > ⚠️ **Note**: Team Member (Creator) can create {{notebooks}} but does NOT automatically get access to existing team {{notebooks}}. This is by design for teaching environments where students create isolated {{notebooks}}.
 >
@@ -759,5 +765,5 @@ Remove from both locations if needed.
 
 ---
 
-_Guide Version: 1.8_
-_Last Updated: 2026-02-24_
+_Guide Version: 1.9_
+_Last Updated: 2026-08-13_

@@ -68,6 +68,31 @@ const isNumberOrDateField = (fieldDef: FieldType | null): boolean => {
   ].includes(fieldDef['component-name']);
 };
 
+/** Operators whose condition value is a list of options, not a single value. */
+const isMultiValueOperator = (operator: ConditionRuleOperator): boolean =>
+  operator === 'is-one-of' || operator === 'is-not-one-of';
+
+/**
+ * Converts the stored rule value when switching between a single-value
+ * operator (string) and a multi-value operator (string[]).
+ */
+const coerceValueForOperator = (
+  value: unknown,
+  nextOperator: ConditionRuleOperator
+): unknown => {
+  if (isMultiValueOperator(nextOperator)) {
+    if (Array.isArray(value)) return value;
+    if (value === '' || value === undefined || value === null) return [];
+    return [value];
+  }
+
+  if (Array.isArray(value)) {
+    return value.length > 0 ? value[0] : '';
+  }
+
+  return value;
+};
+
 // Get the allowed operators for a field based on its type and parameters
 const getAllowedOperatorsForField = (
   fieldDef: FieldType | null
@@ -89,7 +114,11 @@ const getAllowedOperatorsForField = (
   }
   // Checkbox is true/false so only equal makes sense
   if (cName === 'Checkbox') return ['equal'];
-  // String valued fields with options, only equality comparisons make sense
+  // Select single: equality, or membership in a list of options
+  if (cName === 'Select' || cName === 'RadioGroup') {
+    return ['equal', 'not-equal', 'is-one-of', 'is-not-one-of'];
+  }
+  // Other option fields (none currently) keep equality only
   if (isPredefinedOptions(fieldDef)) return ['equal', 'not-equal'];
   // Fields we can compare order for (numbers, dates) get greater/less as well
   if (isNumberOrDateField(fieldDef)) {
@@ -135,7 +164,8 @@ const isValueValidForField = (
   // targetFieldDef
   fieldDef: FieldType | null,
   // condition rule value
-  value: unknown
+  value: unknown,
+  operator?: ConditionRuleOperator
 ): boolean => {
   if (!fieldDef) return true;
 
@@ -155,16 +185,21 @@ const isValueValidForField = (
     return true;
   }
 
+  const isListedOption = (item: unknown) =>
+    possibleOptions.some(option => option.value === item);
+
   if (cName === 'Select' || cName === 'RadioGroup') {
-    return possibleOptions.some(option => option.value === value);
+    if (operator && isMultiValueOperator(operator)) {
+      if (!Array.isArray(value)) return false;
+      return value.every(isListedOption);
+    }
+    return isListedOption(value);
   }
 
   if (cName === 'MultiSelect') {
     if (!Array.isArray(value)) return false;
 
-    return value.every(item =>
-      possibleOptions.some(option => option.value === item)
-    );
+    return value.every(isListedOption);
   }
 
   if (cName === 'Checkbox') {
@@ -175,17 +210,88 @@ const isValueValidForField = (
 };
 
 /**
+ * Multi-option value picker used by MultiSelect conditions and by
+ * is-one-of / is-not-one-of on Select single fields.
+ */
+const MultiValueSelect = (props: {
+  editorId: string;
+  value: unknown;
+  possibleOptions: SelectableConditionOption[];
+  valueMismatch: boolean;
+  showLabels: boolean;
+  onChange: (nextValue: RuleCondition['value']) => void;
+}) => {
+  const {
+    editorId,
+    value,
+    possibleOptions,
+    valueMismatch,
+    showLabels,
+    onChange,
+  } = props;
+  const selectedValues = Array.isArray(value) ? (value as string[]) : [];
+  const valueLabelId = `condition-value-label-${editorId}`;
+
+  return (
+    <FormControl sx={{minWidth: 0, width: '100%'}} error={valueMismatch}>
+      {showLabels && <InputLabel id={valueLabelId}>Value</InputLabel>}
+      <Select
+        multiple
+        data-testid="value-input"
+        labelId={showLabels ? valueLabelId : undefined}
+        label={showLabels ? 'Value' : undefined}
+        value={selectedValues}
+        onChange={event => {
+          const nextValue = event.target.value;
+          onChange(
+            typeof nextValue === 'string' ? nextValue.split(',') : nextValue
+          );
+        }}
+        renderValue={selected =>
+          selected
+            .map(selectedValue => {
+              const option = possibleOptions.find(
+                item => item.value === selectedValue
+              );
+              return option ? option.label : selectedValue;
+            })
+            .join(', ')
+        }
+      >
+        {possibleOptions.map(option => (
+          <MenuItem key={option.value} value={option.value}>
+            <Checkbox checked={selectedValues.includes(option.value)} />
+            <ListItemText primary={option.label} />
+          </MenuItem>
+        ))}
+      </Select>
+
+      {valueMismatch && (
+        <FormHelperText>
+          Invalid values: "
+          {selectedValues
+            .filter(v => !possibleOptions.some(opt => opt.value === v))
+            .join(', ')}
+          "
+        </FormHelperText>
+      )}
+    </FormControl>
+  );
+};
+
+/**
  * Renders the value input for a condition rule.
  *
- * The input type depends on the selected field component:
+ * The input type depends on the selected field component and operator:
  * - text input for free-text, number, and date-like fields
- * - select input for single-choice fields
- * - multi-select input for MultiSelect fields
+ * - select input for single-choice fields (equal / not-equal)
+ * - multi-select input for MultiSelect fields and is-one-of / is-not-one-of
  * - boolean select input for Checkbox fields
  */
 const ValueEditor = (props: {
   fieldDef: FieldType;
   editorId: string;
+  operator: ConditionRuleOperator;
   value: unknown;
   valueMismatch: boolean;
   onChange: (patch: Partial<RuleCondition>) => void;
@@ -194,6 +300,7 @@ const ValueEditor = (props: {
   const {
     fieldDef,
     editorId,
+    operator,
     value,
     valueMismatch,
     onChange,
@@ -216,10 +323,24 @@ const ValueEditor = (props: {
 
   switch (componentName) {
     /**
-     * Single-choice fields use a normal Select.
+     * Single-choice fields: a normal Select, or a multi-select when the
+     * operator compares against a list of options.
      */
     case 'Select':
     case 'RadioGroup': {
+      if (isMultiValueOperator(operator)) {
+        return (
+          <MultiValueSelect
+            editorId={editorId}
+            value={value}
+            possibleOptions={possibleOptions}
+            valueMismatch={valueMismatch}
+            showLabels={showLabels}
+            onChange={updateValue}
+          />
+        );
+      }
+
       const hasValue = value !== '' && value !== undefined && value !== null;
       const isValidOption = possibleOptions.some(
         option => option.value === value
@@ -256,53 +377,15 @@ const ValueEditor = (props: {
      * MultiSelect values are stored as an array.
      */
     case 'MultiSelect': {
-      const selectedValues = Array.isArray(value) ? (value as string[]) : [];
-
       return (
-        <FormControl sx={{minWidth: 0, width: '100%'}} error={valueMismatch}>
-          {showLabels && <InputLabel id={valueLabelId}>Value</InputLabel>}
-          <Select
-            multiple
-            data-testid="value-input"
-            labelId={showLabels ? valueLabelId : undefined}
-            label={showLabels ? 'Value' : undefined}
-            value={selectedValues}
-            onChange={event => {
-              const nextValue = event.target.value;
-              updateValue(
-                typeof nextValue === 'string' ? nextValue.split(',') : nextValue
-              );
-            }}
-            // Render selected values as labels
-            renderValue={selected =>
-              selected
-                .map(selectedValue => {
-                  const option = possibleOptions.find(
-                    item => item.value === selectedValue
-                  );
-                  return option ? option.label : selectedValue;
-                })
-                .join(', ')
-            }
-          >
-            {possibleOptions.map(option => (
-              <MenuItem key={option.value} value={option.value}>
-                <Checkbox checked={selectedValues.includes(option.value)} />
-                <ListItemText primary={option.label} />
-              </MenuItem>
-            ))}
-          </Select>
-
-          {valueMismatch && (
-            <FormHelperText>
-              Invalid values: "
-              {selectedValues
-                .filter(v => !possibleOptions.some(opt => opt.value === v))
-                .join(', ')}
-              "
-            </FormHelperText>
-          )}
-        </FormControl>
+        <MultiValueSelect
+          editorId={editorId}
+          value={value}
+          possibleOptions={possibleOptions}
+          valueMismatch={valueMismatch}
+          showLabels={showLabels}
+          onChange={updateValue}
+        />
       );
     }
 
@@ -396,10 +479,11 @@ export type ConditionRuleInputsProps = {
 export const ConditionRuleInputs = (props: ConditionRuleInputsProps) => {
   const {rule, onChange, field, view, showLabels} = props;
 
-  const {allFields, fieldSearchScope} = useConditionRuleFieldContext({
-    field,
-    view,
-  });
+  const {allFields, fieldSearchScope, referenceEntries} =
+    useConditionRuleFieldContext({
+      field,
+      view,
+    });
 
   // Reference the operator input so the dropdown can match its width.
   const operatorControlRef = useRef<HTMLDivElement>(null);
@@ -417,7 +501,11 @@ export const ConditionRuleInputs = (props: ConditionRuleInputsProps) => {
 
   const targetFieldDef = rule.field ? (allFields[rule.field] ?? null) : null;
   const allowedOperators = getAllowedOperatorsForField(targetFieldDef);
-  const valueMismatch = !isValueValidForField(targetFieldDef, rule.value);
+  const valueMismatch = !isValueValidForField(
+    targetFieldDef,
+    rule.value,
+    rule.operator
+  );
 
   const operatorOptions = allowedOperators.map(operator => ({
     value: operator,
@@ -466,6 +554,7 @@ export const ConditionRuleInputs = (props: ConditionRuleInputsProps) => {
           value={rule.field || null}
           onChange={fieldId => updateField(fieldId || '')}
           scope={fieldSearchScope}
+          extraEntries={referenceEntries}
           data-testid="field-input"
           label={showLabels ? 'Field' : undefined}
           placeholder="Field"
@@ -505,11 +594,14 @@ export const ConditionRuleInputs = (props: ConditionRuleInputsProps) => {
 
             return allOperators.get(selected)?.toLowerCase() ?? selected;
           }}
-          onChange={event =>
+          onChange={event => {
+            const nextOperator = event.target
+              .value as ConditionRuleNode['operator'];
             onChange({
-              operator: event.target.value as ConditionRuleNode['operator'],
-            })
-          }
+              operator: nextOperator,
+              value: coerceValueForOperator(rule.value, nextOperator),
+            });
+          }}
           onOpen={updateOperatorMenuWidth}
           MenuProps={{
             slotProps: {
@@ -567,6 +659,7 @@ export const ConditionRuleInputs = (props: ConditionRuleInputsProps) => {
         <ValueEditor
           fieldDef={targetFieldDef}
           editorId={rule.editorId}
+          operator={rule.operator}
           value={rule.value}
           valueMismatch={valueMismatch}
           onChange={onChange}

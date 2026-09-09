@@ -76,7 +76,10 @@ export default function TabProjectGrid({
   }) => {
     if (row.isActivated)
       history(
-        `${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${row.serverId}/${row.projectId}`
+        ROUTES.getNotebookRoute({
+          serverId: row.serverId,
+          projectId: row.projectId,
+        })
       );
   };
 

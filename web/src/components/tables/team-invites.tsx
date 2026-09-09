@@ -1,7 +1,8 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {RoleCard} from '../ui/role-card';
-import {CopyButton} from '../ui/copy-button';
+import {CopyInviteLink} from '../ui/copy-invite-link';
+import {ShowInviteCode} from '../ui/show-invite-code';
 import {QRCodeDialog} from '../dialogs/qr-code-dialog';
 import {
   Action,
@@ -111,38 +112,6 @@ export const useGetTeamInviteColumns = ({
       },
     },
     {
-      accessorKey: 'code',
-      header: ({column}) => (
-        <DataTableColumnHeader column={column} title="Code" />
-      ),
-      cell: ({
-        row: {
-          original: {_id},
-        },
-      }) => (
-        <div>
-          <CopyButton value={_id}>
-            <code>{_id}</code>
-          </CopyButton>
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'url',
-      header: 'Link',
-      cell: ({
-        row: {
-          original: {_id, url},
-        },
-      }) => {
-        return (
-          <CopyButton value={url}>
-            <code>link:{_id}</code>
-          </CopyButton>
-        );
-      },
-    },
-    {
       accessorKey: 'qrCode',
       header: () => <div className="flex justify-center">QR Code</div>,
       cell: ({
@@ -151,7 +120,33 @@ export const useGetTeamInviteColumns = ({
         },
       }) => (
         <div className="flex justify-center">
-          <QRCodeDialog src={qrCode} />
+          <QRCodeDialog src={qrCode} resourceLabel="team" />
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'url',
+      header: () => <div className="flex justify-center">Link</div>,
+      cell: ({
+        row: {
+          original: {url},
+        },
+      }) => (
+        <div className="flex justify-center">
+          <CopyInviteLink url={url} />
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'code',
+      header: () => <div className="flex justify-center">Code</div>,
+      cell: ({
+        row: {
+          original: {_id},
+        },
+      }) => (
+        <div className="flex justify-center">
+          <ShowInviteCode code={_id} />
         </div>
       ),
     },
@@ -161,7 +156,7 @@ export const useGetTeamInviteColumns = ({
   if (canRemoveSomeInvite) {
     baseColumns.push({
       id: 'remove-invite',
-      header: 'Remove',
+      header: () => <div className="flex justify-center">Remove</div>,
       cell: ({
         row: {
           original: {_id, role},

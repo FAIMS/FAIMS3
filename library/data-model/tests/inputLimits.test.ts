@@ -3,6 +3,7 @@
  * and the .max() caps applied across the API request schemas.
  */
 import {
+  AuthContextSchema,
   CreateNotebookFromScratchSchema,
   CreateNotebookFromTemplateSchema,
   estimateJsonBytes,
@@ -56,6 +57,21 @@ describe('auth schemas', () => {
       password: 'password123',
     });
     expect(result.success).toBe(true);
+  });
+
+  it('rejects an oversized inviteId on auth context', () => {
+    expect(
+      AuthContextSchema.safeParse({
+        action: 'register',
+        inviteId: longString(INPUT_LIMITS.ID_MAX_LENGTH + 1),
+      }).success
+    ).toBe(false);
+    expect(
+      AuthContextSchema.safeParse({
+        action: 'register',
+        inviteId: 'FAIMS-abcdefghijklmnop',
+      }).success
+    ).toBe(true);
   });
 
   it('rejects oversized registration name and password', () => {
@@ -222,6 +238,38 @@ describe('invite schemas', () => {
       PostCreateGlobalInviteInputSchema.safeParse({
         role: Role.GENERAL_USER,
         name: longString(INPUT_LIMITS.INVITE_NAME_MAX_LENGTH + 1),
+      }).success
+    ).toBe(false);
+  });
+
+  it('rejects invite expiry beyond 90 days and accepts a 5-day expiry', () => {
+    const now = Date.now();
+    expect(
+      PostCreateResourceInviteInputSchema.safeParse({
+        role: Role.PROJECT_CONTRIBUTOR,
+        name: 'Field crew invite',
+        expiry: now + 91 * 24 * 60 * 60 * 1000,
+      }).success
+    ).toBe(false);
+    expect(
+      PostCreateResourceInviteInputSchema.safeParse({
+        role: Role.PROJECT_CONTRIBUTOR,
+        name: 'Field crew invite',
+        expiry: now - 1000,
+      }).success
+    ).toBe(false);
+    expect(
+      PostCreateResourceInviteInputSchema.safeParse({
+        role: Role.PROJECT_CONTRIBUTOR,
+        name: 'Field crew invite',
+        expiry: now + 5 * 24 * 60 * 60 * 1000,
+      }).success
+    ).toBe(true);
+    expect(
+      PostCreateGlobalInviteInputSchema.safeParse({
+        role: Role.GENERAL_USER,
+        name: 'Global invite',
+        expiry: now + 91 * 24 * 60 * 60 * 1000,
       }).success
     ).toBe(false);
   });

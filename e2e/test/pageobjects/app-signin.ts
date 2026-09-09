@@ -36,8 +36,8 @@ class LoginPage extends Page {
     return $('*=- or -'); // Divider text
   }
 
-  get shortCodeInput() {
-    return $('[data-testid="short-code-only"]'); // Input for short code
+  get inviteCodeInput() {
+    return $('[data-testid="invite-code-entry"]'); // Manual invite code entry
   }
 
   /**

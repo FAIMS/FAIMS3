@@ -29,7 +29,7 @@ import {
   PostRefreshTokenInput,
   PostRefreshTokenResponseSchema,
 } from '@faims3/data-model';
-import {expect} from 'chai';
+import {beforeEach, describe, expect, it} from 'vitest';
 import request from 'supertest';
 import {generateUserToken} from '../src/auth/keySigning/create';
 import {
@@ -65,13 +65,13 @@ describe('token refresh tests', () => {
 
   it('generate refresh token', async () => {
     const adminUser = await getExpressUserFromEmailOrUserId(adminUserName);
-    expect(adminUser).to.be.not.undefined;
+    expect(adminUser).not.toBeUndefined();
 
     // true indicates generation of refresh token
     const tokens = await generateUserToken(adminUser!, true);
 
     // expect a refresh token to be present
-    expect(tokens.refreshToken).to.be.not.undefined;
+    expect(tokens.refreshToken).not.toBeUndefined();
   });
 
   it('check that refresh token CRUD methods work', async () => {
@@ -89,10 +89,10 @@ describe('token refresh tests', () => {
 
     // check there are no tokens for all list methods
     let allTokens = await getAllTokens();
-    expect(allTokens.length).to.equal(0);
+    expect(allTokens.length).toBe(0);
 
     const adminUserTokens = await getTokensByUserId(adminUser.user_id!);
-    expect(adminUserTokens.length).to.equal(0);
+    expect(adminUserTokens.length).toBe(0);
 
     // generate a token for each user and check that the query methods work as expected
 
@@ -107,58 +107,58 @@ describe('token refresh tests', () => {
     // get admin user's token
     let tokenList = [];
     tokenList = await getTokensByUserId(adminUser.user_id);
-    expect(tokenList.length).to.equal(1);
-    expect(tokenList[0].token).to.equal(adminUserRefresh);
+    expect(tokenList.length).toBe(1);
+    expect(tokenList[0].token).toBe(adminUserRefresh);
 
     // get local user's token
     tokenList = await getTokensByUserId(localUser.user_id);
-    expect(tokenList.length).to.equal(1);
-    expect(tokenList[0].token).to.equal(localUserRefresh);
+    expect(tokenList.length).toBe(1);
+    expect(tokenList[0].token).toBe(localUserRefresh);
 
     // get notebook user's token
     tokenList = await getTokensByUserId(notebookUser.user_id);
-    expect(tokenList.length).to.equal(1);
-    expect(tokenList[0].token).to.equal(notebookUserRefresh);
+    expect(tokenList.length).toBe(1);
+    expect(tokenList[0].token).toBe(notebookUserRefresh);
 
     // try fetching tokens directly by token and then by token doc ID
     let fetchedTokenDoc;
 
     // admin
     fetchedTokenDoc = (await getTokenByToken(adminUserRefresh))!;
-    expect(fetchedTokenDoc).to.not.be.undefined;
-    expect(fetchedTokenDoc?.token).to.eq(adminUserRefresh);
+    expect(fetchedTokenDoc).not.toBeUndefined();
+    expect(fetchedTokenDoc?.token).toBe(adminUserRefresh);
 
     fetchedTokenDoc = await getTokenByTokenId(fetchedTokenDoc._id);
-    expect(fetchedTokenDoc).to.not.be.undefined;
-    expect(fetchedTokenDoc?.token).to.eq(adminUserRefresh);
+    expect(fetchedTokenDoc).not.toBeUndefined();
+    expect(fetchedTokenDoc?.token).toBe(adminUserRefresh);
 
     // local
     fetchedTokenDoc = (await getTokenByToken(localUserRefresh))!;
-    expect(fetchedTokenDoc).to.not.be.undefined;
-    expect(fetchedTokenDoc?.token).to.eq(localUserRefresh);
+    expect(fetchedTokenDoc).not.toBeUndefined();
+    expect(fetchedTokenDoc?.token).toBe(localUserRefresh);
 
     fetchedTokenDoc = await getTokenByTokenId(fetchedTokenDoc._id);
-    expect(fetchedTokenDoc).to.not.be.undefined;
-    expect(fetchedTokenDoc?.token).to.eq(localUserRefresh);
+    expect(fetchedTokenDoc).not.toBeUndefined();
+    expect(fetchedTokenDoc?.token).toBe(localUserRefresh);
 
     // notebook
     fetchedTokenDoc = (await getTokenByToken(notebookUserRefresh))!;
-    expect(fetchedTokenDoc).to.not.be.undefined;
-    expect(fetchedTokenDoc?.token).to.eq(notebookUserRefresh);
+    expect(fetchedTokenDoc).not.toBeUndefined();
+    expect(fetchedTokenDoc?.token).toBe(notebookUserRefresh);
 
     fetchedTokenDoc = await getTokenByTokenId(fetchedTokenDoc._id);
-    expect(fetchedTokenDoc).to.not.be.undefined;
-    expect(fetchedTokenDoc?.token).to.eq(notebookUserRefresh);
+    expect(fetchedTokenDoc).not.toBeUndefined();
+    expect(fetchedTokenDoc?.token).toBe(notebookUserRefresh);
 
     // now get all tokens
 
     allTokens = await getAllTokens();
     let rawTokenList = allTokens.map(t => t.token);
-    expect(allTokens.length).to.equal(3);
+    expect(allTokens.length).toBe(3);
 
     // check each token is present to make sure not duplicated or other issue
     for (const t of [adminUserRefresh, notebookUserRefresh, localUserRefresh]) {
-      expect(rawTokenList).to.include(t);
+      expect(rawTokenList).toContain(t);
     }
 
     // delete a token by token and ensure that works
@@ -166,9 +166,9 @@ describe('token refresh tests', () => {
 
     allTokens = await getAllTokens();
     rawTokenList = allTokens.map(t => t.token);
-    expect(allTokens.length).to.equal(2);
+    expect(allTokens.length).toBe(2);
     for (const t of [adminUserRefresh, notebookUserRefresh]) {
-      expect(rawTokenList).to.include(t);
+      expect(rawTokenList).toContain(t);
     }
 
     fetchedTokenDoc = (await getTokenByToken(notebookUserRefresh))!;
@@ -176,9 +176,9 @@ describe('token refresh tests', () => {
 
     allTokens = await getAllTokens();
     rawTokenList = allTokens.map(t => t.token);
-    expect(allTokens.length).to.equal(1);
+    expect(allTokens.length).toBe(1);
     for (const t of [adminUserRefresh]) {
-      expect(rawTokenList).to.include(t);
+      expect(rawTokenList).toContain(t);
     }
   });
 
@@ -193,28 +193,28 @@ describe('token refresh tests', () => {
     let valid = await validateRefreshToken(refresh);
 
     // check valid
-    expect(valid.valid).to.be.true;
-    expect(valid.validationError).to.be.undefined;
+    expect(valid.valid).toBe(true);
+    expect(valid.validationError).toBeUndefined();
 
     // also check its valid if we use correct user ID
     valid = await validateRefreshToken(refresh, localUser.user_id);
 
     // check valid
-    expect(valid.valid).to.be.true;
-    expect(valid.validationError).to.be.undefined;
+    expect(valid.valid).toBe(true);
+    expect(valid.validationError).toBeUndefined();
 
     // also check its invalid if we use wrong user ID (but still a valid user ID)
     valid = await validateRefreshToken(refresh, adminUser.user_id);
 
     // check invalid
-    expect(valid.valid).to.be.false;
-    expect(valid.validationError).to.not.be.undefined;
+    expect(valid.valid).toBe(false);
+    expect(valid.validationError).not.toBeUndefined();
 
     // Now invalidate the token
     await invalidateToken(refresh);
     valid = await validateRefreshToken(refresh, adminUser.user_id);
-    expect(valid.valid).to.be.false;
-    expect(valid.validationError).to.not.be.undefined;
+    expect(valid.valid).toBe(false);
+    expect(valid.validationError).not.toBeUndefined();
 
     // Now generate a new token with a very short expiry
     refresh = (
@@ -225,9 +225,9 @@ describe('token refresh tests', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     valid = await validateRefreshToken(refresh);
-    expect(valid.valid).to.be.false;
-    expect(valid.validationError).to.not.be.undefined;
-    expect(valid.validationError).to.include('expired');
+    expect(valid.valid).toBe(false);
+    expect(valid.validationError).not.toBeUndefined();
+    expect(valid.validationError).toContain('expired');
   });
 
   it('use refresh token to generate new token', async () => {
@@ -298,17 +298,17 @@ describe('token refresh tests', () => {
     });
 
     // Verify the tokens exist and are strings
-    expect(exchangeToken).to.be.a('string');
-    expect(refresh.token).to.be.a('string');
+    expect(exchangeToken).toBeTypeOf('string');
+    expect(refresh.token).toBeTypeOf('string');
 
     // Verify the refresh token document has the correct exchange token hash and is not used
-    expect(refresh.exchangeTokenHash).to.be.a('string');
-    expect(refresh.exchangeTokenUsed).to.be.false;
+    expect(refresh.exchangeTokenHash).toBeTypeOf('string');
+    expect(refresh.exchangeTokenUsed).toBe(false);
 
     // Verify we can look up the token by its ID and token
     const tokenByToken = await getTokenByToken(refresh.token);
-    expect(tokenByToken).to.not.be.undefined;
-    expect(tokenByToken!.token).to.equal(refresh.token);
+    expect(tokenByToken).not.toBeUndefined();
+    expect(tokenByToken!.token).toBe(refresh.token);
 
     // Verify we can find the token by the exchange token hash
     // Use the hash verification code function to check hash lookup
@@ -316,9 +316,9 @@ describe('token refresh tests', () => {
     const tokensByExchangeHash = await getTokensByExchangeTokenHash({
       exchangeTokenHash: hash,
     });
-    expect(tokensByExchangeHash.length).to.equal(1);
-    expect(tokensByExchangeHash[0]).to.not.be.undefined;
-    expect(tokensByExchangeHash[0].token).to.equal(refresh.token);
+    expect(tokensByExchangeHash.length).toBe(1);
+    expect(tokensByExchangeHash[0]).not.toBeUndefined();
+    expect(tokensByExchangeHash[0].token).toBe(refresh.token);
   });
 
   it('should successfully exchange token for refresh and access tokens', async () => {
@@ -342,13 +342,13 @@ describe('token refresh tests', () => {
       });
 
     // Verify both tokens are returned
-    expect(response.accessToken).to.be.a('string');
-    expect(response.refreshToken).to.equal(refresh.token);
+    expect(response.accessToken).toBeTypeOf('string');
+    expect(response.refreshToken).toBe(refresh.token);
 
     // Verify the exchange token is now marked as used
     const tokenDoc = await getTokenByToken(refresh.token);
-    expect(tokenDoc).to.not.be.undefined;
-    expect(tokenDoc!.exchangeTokenUsed).to.be.true;
+    expect(tokenDoc).not.toBeUndefined();
+    expect(tokenDoc!.exchangeTokenUsed).toBe(true);
 
     // Verify the access token works by using it to access a protected resource
     await listTemplates(app, response.accessToken);
@@ -469,7 +469,7 @@ describe('token refresh tests', () => {
       });
 
     // Verify the new access token works
-    expect(refreshResponse.token).to.be.a('string');
+    expect(refreshResponse.token).toBeTypeOf('string');
     await listTemplates(app, refreshResponse.token);
   });
 
@@ -585,7 +585,7 @@ describe('token refresh tests', () => {
 
     // Verify the token is valid before logout
     const validBefore = await validateRefreshToken(refreshToken);
-    expect(validBefore.valid).to.be.true;
+    expect(validBefore.valid).toBe(true);
 
     // Perform logout with the refresh token
     await requestAuthAndType(
@@ -595,12 +595,12 @@ describe('token refresh tests', () => {
 
     // Verify the token is no longer valid after logout
     const validAfter = await validateRefreshToken(refreshToken);
-    expect(validAfter.valid).to.be.false;
+    expect(validAfter.valid).toBe(false);
 
     // Verify refresh token is marked as disabled
     const tokenDoc = await getTokenByToken(refreshToken);
-    expect(tokenDoc).to.not.be.undefined;
-    expect(tokenDoc!.enabled).to.be.false;
+    expect(tokenDoc).not.toBeUndefined();
+    expect(tokenDoc!.enabled).toBe(false);
   });
 
   it('should reject refresh attempts with a logged out token', async () => {
@@ -636,7 +636,7 @@ describe('token refresh tests', () => {
 
     // Verify admin's token is valid
     const validBefore = await validateRefreshToken(adminRefreshToken);
-    expect(validBefore.valid).to.be.true;
+    expect(validBefore.valid).toBe(true);
 
     // Try to logout admin's token while authenticated as local user
     await requestAuthAndType(
@@ -646,7 +646,7 @@ describe('token refresh tests', () => {
 
     // Verify admin's token is still valid (wasn't invalidated)
     const validAfter = await validateRefreshToken(adminRefreshToken);
-    expect(validAfter.valid).to.be.true;
+    expect(validAfter.valid).toBe(true);
   });
 
   it('should handle logout with invalid refresh token gracefully', async () => {
@@ -680,8 +680,8 @@ describe('token refresh tests', () => {
 
     // Verify all tokens exist and are valid
     let tokens = await getTokensByUserId(localUser.user_id!);
-    expect(tokens.length).to.equal(3);
-    expect(tokens.every(t => t.enabled)).to.be.true;
+    expect(tokens.length).toBe(3);
+    expect(tokens.every(t => t.enabled)).toBe(true);
 
     // Logout each token one by one
     await requestAuthAndType(
@@ -701,7 +701,7 @@ describe('token refresh tests', () => {
 
     // Verify all tokens are now disabled
     tokens = await getTokensByUserId(localUser.user_id!);
-    expect(tokens.length).to.equal(3);
-    expect(tokens.every(t => !t.enabled)).to.be.true;
+    expect(tokens.length).toBe(3);
+    expect(tokens.every(t => !t.enabled)).toBe(true);
   });
 });

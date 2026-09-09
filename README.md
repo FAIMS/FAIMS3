@@ -488,3 +488,20 @@ two options:
 git pull
 ./scripts/release.sh finalize 1.5.0 --push
 ```
+
+## Contributing to FAIMS3 and DCO
+
+Contributions to this Open Source project are welcome in the form of pull requests. If you
+wish to get involved with the project please contact one of the developers.
+
+This project uses the [Developer Certificate of Origin](https://developercertificate.org/) to
+ensure that contributors certify that they wrote or otherwise have the right to submit
+the code they are contributing to the project. All commits should be signed with the
+`-s` flag on `git commit`.
+
+If you forget to sign an individual commit, you can push a subsequent commit with a remediation
+message of the form:
+
+```text
+I, A. User <user@example.com>, hereby add my Signed-off-by to this commit: <commit-hash>
+```

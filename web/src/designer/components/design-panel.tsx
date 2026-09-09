@@ -41,6 +41,7 @@ import {TabContext} from '@mui/lab';
 import {useState, useEffect, useRef} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FormEditor} from './form-editor';
+import {PlanTemplateManager} from './plans/PlanTemplateManager';
 import {
   designerCancelButtonSx,
   designerDialogActionsSx,
@@ -398,6 +399,7 @@ export const DesignPanel = () => {
           >
             New Form
           </Button>
+          <PlanTemplateManager />
         </Box>
 
         <Box

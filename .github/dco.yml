@@ -1,0 +1,6 @@
+# If a DCO sign-off is missed, we allow a followup commit
+# with the wording "I, A. User <user@example.com>, hereby add my Signed-off-by to this commit: <commit-hash>"
+#
+# A remediation commit can include more than one line in this format if needed
+allowRemediationCommits:
+  individual: true

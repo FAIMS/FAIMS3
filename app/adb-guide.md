@@ -182,17 +182,19 @@ adb devices        # Should show your phone
 
 The shell script `dev-adb.sh` sets up port forwarding to the android device/simulator
 so that the API, CouchDB and the app development server are visible as localhost.
-It then runs `cap sync` and `cap run android` with the `CAP_ANDROID_ADB_FORWARD`
-environment variable set.
+It regenerates `capacitor.config.json` with ADB live-reload settings, then runs
+`cap sync` and `cap run android`.
 
 ```bash
 ./dev-adb.sh
 ```
 
-`capacitor.config.ts` is the source of truth for app configuration.
-`CAP_ANDROID_ADB_FORWARD=true` enables local device server settings (including `cleartext` and
-`http://localhost:3000` by default). When combined with the port forwarding
-above, this allows the on-device app to use the local running servers
+`capacitor.config.dist.json` is the template; `pnpm run generate-capacitor-config`
+(also invoked by prebuild `runconfig`) writes `capacitor.config.json` with
+`VITE_APP_NAME` / `VITE_APP_ID` substituted from the environment.
+`CAP_ANDROID_ADB_FORWARD=true` enables local device server settings (including
+`cleartext` and `http://localhost:3000` by default). When combined with the port
+forwarding above, this allows the on-device app to use the local running servers
 and enables live-reload of application code.
 
 Once the app is installed, changes to web code will hot-reload automatically.
@@ -279,11 +281,11 @@ Should show:
 (reverse) tcp:5984 tcp:5984
 ```
 
-Also verify you used ADB mode when syncing/running:
+Also verify the generated Capacitor config has the live-reload server URL:
 
 ```bash
-echo "$CAP_ANDROID_ADB_FORWARD"
-# Should be true when using one-off exports in the command line.
+jq '.server.url, .plugins.CapacitorHttp.enabled' capacitor.config.json
+# Expect "http://localhost:3000" and true after ./dev-adb.sh (or generate-capacitor-config with CAP_ANDROID_ADB_FORWARD=true)
 ```
 
 ### Build fails with Java errors
@@ -305,7 +307,9 @@ echo $JAVA_HOME        # Should point to Java 21
 
 ## Files Reference
 
-| File                   | Purpose                          |
-| ---------------------- | -------------------------------- |
-| `capacitor.config.ts`  | Active Capacitor config source   |
-| `setup-adb-testing.sh` | Helper for env-based ADB testing |
+| File                             | Purpose                                   |
+| -------------------------------- | ----------------------------------------- |
+| `capacitor.config.dist.json`     | Template Capacitor config (committed)     |
+| `capacitor.config.json`          | Generated Capacitor config (gitignored)   |
+| `bin/generateCapacitorConfig.sh` | Writes config from dist + env / ADB flags |
+| `dev-adb.sh`                     | Port-forward + ADB config + sync/run      |

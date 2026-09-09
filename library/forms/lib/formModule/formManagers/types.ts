@@ -9,9 +9,7 @@ import type {IAutosuggestAddressService} from '../../addressAutosuggest/types';
 import {AutoIncrementService} from '../incrementer';
 import {MapConfig} from '../../components/maps/types';
 
-// Map from section -> list of visible fields - section included IFF it's
-// visible at all
-export type FieldVisibilityMap = Record<string, string[]>;
+export type {FieldVisibilityMap} from '@faims3/data-model';
 
 /**
  * Base interface for form configuration modes.

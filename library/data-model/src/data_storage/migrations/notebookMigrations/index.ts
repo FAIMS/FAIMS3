@@ -3,9 +3,11 @@ import {migrateToV2} from './migrateV2';
 import {migrateToV3} from './migrateV3';
 import {migrateToV4} from './migrateV4';
 import {migrateToV5} from './migrateV5';
+import {migrateToV6} from './migrateV6';
+import {migrateToV7} from './migrateV7';
 
 /** Target schema version after {@link migrateNotebook} completes. */
-export const CURRENT_NOTEBOOK_UI_SCHEMA_VERSION = '5.0';
+export const CURRENT_NOTEBOOK_UI_SCHEMA_VERSION = '7.0';
 
 type NotebookWithSchemaVersion = {
   metadata?: {schema_version?: string | null};
@@ -33,6 +35,8 @@ export function getNotebookSchemaVersion(
 export {migrateToV3} from './migrateV3';
 export {migrateToV4} from './migrateV4';
 export {migrateToV5} from './migrateV5';
+export {migrateToV6} from './migrateV6';
+export {migrateToV7} from './migrateV7';
 
 /**
  * Migrate a notebook to the latest version, validating as we go.
@@ -75,8 +79,22 @@ export const migrateNotebook = (
 
   if (getNotebookSchemaVersion(result) === '4.0') {
     // Input type is NotebookAfterV4
-    // Output type is NotebookDefinition (current schema)
+    // Output type is NotebookDefinitionV5
     result = migrateToV5(result);
+    changed = true;
+  }
+
+  if (getNotebookSchemaVersion(result) === '5.0') {
+    // Input type is NotebookDefinitionV5
+    // Output type is NotebookDefinitionV6
+    result = migrateToV6(result);
+    changed = true;
+  }
+
+  if (getNotebookSchemaVersion(result) === '6.0') {
+    // Input type is NotebookDefinitionV6
+    // Output type is NotebookDefinition (current schema)
+    result = migrateToV7(result);
     changed = true;
   }
 
