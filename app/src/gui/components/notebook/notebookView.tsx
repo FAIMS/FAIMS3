@@ -12,6 +12,7 @@ import {
   FormUpdateData,
   MinimalRecordMetadata,
   ProjectStatus,
+  relatedRecordAvpEntries,
 } from '@faims3/data-model';
 import NotebookComponent from '.';
 import {addAlert} from '../../../context/slices/alertSlice';
@@ -232,6 +233,128 @@ function NotebookViewWithSpec({
     ]
   );
 
+  /**
+   * Create a child record of an existing record and navigate to its edit page.
+   *
+   * Writes both halves of the link the related record field would have
+   * written: the `parent` edge on the new record, and the new record's entry
+   * in the parent's related-record field, so a view that creates a child
+   * leaves the parent form reading as it would after an in-form create.
+   *
+   * @param formType The viewset of the new child record
+   * @param parentRecordId The record the child hangs off
+   * @param parentFieldId The parent's related-record field holding the link
+   */
+  const createChildRecord = useCallback(
+    async ({
+      formType,
+      parentRecordId,
+      parentFieldId,
+    }: {
+      formType: string;
+      parentRecordId: string;
+      parentFieldId: string;
+    }) => {
+      if (!(activeUser && isAllowedToAddRecords)) return;
+
+      // The pair a Child related-record field stores, the parent's view first.
+      const relationTypeVocabPair: [string, string] = [
+        'has child',
+        'is child of',
+      ];
+      let isChildCreated = false;
+      try {
+        const engine = dataEngine();
+        const {record} = await engine.form.createRecord({
+          formId: formType,
+          createdBy: activeUser.username,
+          relationship: {
+            parent: [
+              {
+                recordId: parentRecordId,
+                fieldId: parentFieldId,
+                relationTypeVocabPair,
+              },
+            ],
+          },
+        });
+        isChildCreated = true;
+
+        // Read the head rather than trusting the record list, which the
+        // notebook polls and can be a revision behind.
+        const existing = await engine.form.getExistingFormData({
+          recordId: parentRecordId,
+        });
+        // A related-record value is a list or a single bare entry, so read it
+        // the way every other reader does.
+        const currentValue = existing.data?.[parentFieldId]?.data;
+        const links =
+          currentValue === undefined || currentValue === null
+            ? []
+            : relatedRecordAvpEntries(currentValue);
+        const link = {
+          record_id: record._id,
+          relation_type_vocabPair: relationTypeVocabPair,
+        };
+        // A single-link field stores one link, not a list of one.
+        const isMultipleLink =
+          uiSpecification.fields[parentFieldId]?.['component-parameters']
+            ?.multiple === true;
+        const revision = await engine.form.createRevision({
+          recordId: parentRecordId,
+          revisionId: existing.revisionId,
+          createdBy: activeUser.username,
+        });
+        // updateRevision replaces the revision's whole field map, so the
+        // parent's other values go back with it rather than being dropped.
+        await engine.form.updateRevision({
+          revisionId: revision._id,
+          recordId: parentRecordId,
+          update: {
+            ...existing.data,
+            [parentFieldId]: {
+              ...existing.data?.[parentFieldId],
+              data: isMultipleLink ? [...links, link] : link,
+            },
+          },
+          mode: 'parent',
+          updatedBy: activeUser.username,
+          bumpRecordUpdatedAt: true,
+        });
+
+        navigate(
+          ROUTES.getEditRecordRoute({
+            ...notebook,
+            recordId: record._id,
+            mode: 'new',
+          })
+        );
+      } catch (err) {
+        // Surface and resolve, like createRecord. The child is written before
+        // the parent's link, so a failure after it leaves a record that exists
+        // but is not listed on its parent.
+        console.error('Failed to create child record', formType, err);
+        dispatch(
+          addAlert({
+            message: isChildCreated
+              ? 'Record was created but could not be linked to its parent'
+              : 'Record could not be created',
+            severity: 'error',
+          })
+        );
+      }
+    },
+    [
+      activeUser,
+      isAllowedToAddRecords,
+      dataEngine,
+      navigate,
+      notebook,
+      uiSpecification,
+      dispatch,
+    ]
+  );
+
   // View/Edit an existing record by navigating to the record view page
   const navigateToRecord = useCallback(
     (record: MinimalRecordMetadata) => {
@@ -300,6 +423,7 @@ function NotebookViewWithSpec({
         refreshRecordList,
         setQuery,
         createRecord,
+        createChildRecord,
         navigateToRecord,
       },
       status: {
@@ -351,6 +475,7 @@ function NotebookViewWithSpec({
       refreshRecordList,
       setQuery,
       createRecord,
+      createChildRecord,
       navigateToRecord,
       tab,
       isAllowedToAddRecords,

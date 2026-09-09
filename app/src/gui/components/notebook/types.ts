@@ -81,6 +81,14 @@ interface ActionProps {
     data: Record<string, any>,
     planReference?: string
   ) => Promise<void>;
+  // Create a child record of an existing record, linked from one of that
+  // record's related-record fields, and navigate to it. Writes both halves of
+  // the link, so the parent form reads as it would after an in-form create.
+  createChildRecord: (args: {
+    formType: string;
+    parentRecordId: string;
+    parentFieldId: string;
+  }) => Promise<void>;
   // Navigate to the view page for the given record
   navigateToRecord: (record: MinimalRecordMetadata) => void;
 }
