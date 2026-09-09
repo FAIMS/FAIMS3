@@ -1,5 +1,7 @@
 export * from './ConfirmDialog';
 export * from './maps';
+export * from './MediaLightbox';
+export * from './PhotoLightbox';
 export * from './ProgressBar';
 export * from './qrCodes';
 export * from './RecordDeleteConfirmDialog';

@@ -19,6 +19,7 @@ import {radioGroupFieldSpec} from './fields/RadioGroup';
 import {relatedRecordFieldSpec} from './fields/RelatedRecord';
 import {richTextFieldSpec} from './fields/RichText';
 import {selectFieldSpec} from './fields/SelectField';
+import {sketchFieldSpec} from './fields/Sketch';
 import {takePhotoFieldSpec} from './fields/TakePhoto';
 import {takePointFieldSpec} from './fields/TakePoint';
 import {templatedStringFieldSpec} from './fields/TemplatedStringField';
@@ -42,6 +43,7 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   richTextFieldSpec,
   selectFieldSpec,
   takePhotoFieldSpec,
+  sketchFieldSpec,
   fileUploaderFieldSpec,
   relatedRecordFieldSpec,
   templatedStringFieldSpec,
