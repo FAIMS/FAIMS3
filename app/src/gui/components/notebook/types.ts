@@ -81,9 +81,8 @@ interface ActionProps {
     data: Record<string, any>,
     planReference?: string
   ) => Promise<void>;
-  // Create a child record of an existing record, linked from one of that
-  // record's related-record fields, and navigate to it. Writes both halves of
-  // the link, so the parent form reads as it would after an in-form create.
+  // Create a child record linked from one of the parent's related-record
+  // fields, and navigate to it. Writes both halves of the link.
   createChildRecord: (args: {
     formType: string;
     parentRecordId: string;
@@ -91,6 +90,8 @@ interface ActionProps {
   }) => Promise<void>;
   // Navigate to the view page for the given record
   navigateToRecord: (record: MinimalRecordMetadata) => void;
+  // Whether the user may edit this record; createChildRecord refuses if not.
+  canEditRecord: (record: MinimalRecordMetadata) => boolean;
 }
 
 // Components that might be used in the notebook display

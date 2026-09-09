@@ -100,6 +100,14 @@ function NotebookViewWithSpec({
     action: Action.EDIT_ALL_PROJECT_RECORDS,
     resourceId: project.projectId,
   });
+  /** Whether the active user may edit this record: their own, or anyone's. */
+  const canEditRecord = useCallback(
+    (record: MinimalRecordMetadata) =>
+      record.createdBy === activeUser?.username
+        ? isAllowedToEditOwnRecords
+        : isAllowedToEditOthersRecords,
+    [activeUser, isAllowedToEditOwnRecords, isAllowedToEditOthersRecords]
+  );
 
   const isAllowedToAddRecords =
     useIsAuthorisedTo({
@@ -243,16 +251,8 @@ function NotebookViewWithSpec({
   );
 
   /**
-   * Create a child record of an existing record and navigate to its edit page.
-   *
-   * Writes both halves of the link the related record field would have
-   * written: the `parent` edge on the new record, and the new record's entry
-   * in the parent's related-record field, so a view that creates a child
-   * leaves the parent form reading as it would after an in-form create.
-   *
-   * @param formType The viewset of the new child record
-   * @param parentRecordId The record the child hangs off
-   * @param parentFieldId The parent's related-record field holding the link
+   * Create a child record and navigate to its edit page, writing both halves of
+   * the link so the parent form reads as it would after an in-form create.
    */
   const createChildRecord = useCallback(
     async ({
@@ -266,18 +266,12 @@ function NotebookViewWithSpec({
     }) => {
       if (!(activeUser && isAllowedToAddRecords)) return;
 
-      // The link is written onto the parent, so editing it must be allowed as
-      // well as creating the child. A record absent from the list is one this
-      // user cannot see, which is not one to write to either.
+      // The link is written onto the parent, so editing it must be allowed
+      // too, and a record absent from the list is one this user cannot see.
       const parentRecord = records.allRecords.find(
         record => record.recordId === parentRecordId
       );
-      const mayEditParent =
-        parentRecord &&
-        (parentRecord.createdBy === activeUser.username
-          ? isAllowedToEditOwnRecords
-          : isAllowedToEditOthersRecords);
-      if (!mayEditParent) {
+      if (!parentRecord || !canEditRecord(parentRecord)) {
         dispatch(
           addAlert({
             message: 'You do not have permission to add to that record',
@@ -315,8 +309,7 @@ function NotebookViewWithSpec({
         const existing = await engine.form.getExistingFormData({
           recordId: parentRecordId,
         });
-        // A related-record value is a list or a single bare entry, so read it
-        // the way every other reader does.
+        // A related-record value is a list or a single bare entry.
         const currentValue = existing.data?.[parentFieldId]?.data;
         const links =
           currentValue === undefined || currentValue === null
@@ -326,7 +319,6 @@ function NotebookViewWithSpec({
           record_id: record._id,
           relation_type_vocabPair: relationTypeVocabPair,
         };
-        // A single-link field stores one link, not a list of one.
         const isMultipleLink =
           uiSpecification.fields[parentFieldId]?.['component-parameters']
             ?.multiple === true;
@@ -367,9 +359,8 @@ function NotebookViewWithSpec({
           })
         );
       } catch (err) {
-        // Surface and resolve, like createRecord. The child is written before
-        // the parent's link, so a failure after it leaves a record that exists
-        // but is not listed on its parent.
+        // Surface and resolve, like createRecord. The child is written first,
+        // so a later failure leaves a record not listed on its parent.
         console.error('Failed to create child record', formType, err);
         dispatch(
           addAlert({
@@ -384,8 +375,7 @@ function NotebookViewWithSpec({
     [
       activeUser,
       isAllowedToAddRecords,
-      isAllowedToEditOwnRecords,
-      isAllowedToEditOthersRecords,
+      canEditRecord,
       records.allRecords,
       dataEngine,
       navigate,
@@ -465,6 +455,7 @@ function NotebookViewWithSpec({
         createRecord,
         createChildRecord,
         navigateToRecord,
+        canEditRecord,
       },
       status: {
         // Never-loaded, not merely in-flight: the hook's isLoading stays true
@@ -517,6 +508,7 @@ function NotebookViewWithSpec({
       createRecord,
       createChildRecord,
       navigateToRecord,
+      canEditRecord,
       tab,
       isAllowedToAddRecords,
       isDownloadingRecords,
