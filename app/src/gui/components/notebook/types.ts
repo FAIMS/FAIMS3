@@ -1,7 +1,6 @@
 import {
   type CompiledNotebookUiSpec,
   type MinimalRecordMetadata,
-  type RecordStatusReport,
   type RegisteredPlan,
 } from '@faims3/data-model';
 import {Project} from '../../../context/slices/projectSlice';
@@ -45,9 +44,6 @@ interface RecordListProps {
   otherRecords: MinimalRecordMetadata[];
   // The current sync status of the records in the notebook
   syncStatus: RecordStatus;
-  // Recursive completion report per record claiming a plan reference
-  // (recordId -> report); entries appear as each record's report computes
-  planRecordStatusReports: ReadonlyMap<string, RecordStatusReport>;
 }
 
 interface StatusProps {
