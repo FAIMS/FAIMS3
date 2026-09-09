@@ -1,14 +1,15 @@
 import {Exif} from '@capacitor-community/exif';
-import {Camera, CameraResultType, Photo} from '@capacitor/camera';
+import {Camera, CameraResultType, CameraSource, Photo} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
 import {Geolocation} from '@capacitor/geolocation';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
+import AddIcon from '@mui/icons-material/Add';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ImageIcon from '@mui/icons-material/Image';
+import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import SyncIcon from '@mui/icons-material/Sync';
-import {Alert, Box, Paper, Typography, useTheme} from '@mui/material';
+import {Alert, Box, Paper, Tooltip, Typography, useTheme} from '@mui/material';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -38,9 +39,16 @@ import {TakePhotoRender} from '../../../rendering/fields/view/specialised/TakePh
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
-// Reduce image size by scaling down capacitor quality
 const IMAGE_QUALITY_0_100 = 60;
 const MAX_IMAGE_WIDTH = 1920;
+const MAX_GALLERY_BATCH = 10;
+
+/**
+ * Backing out of the camera or picker rejects rather than returning empty, and
+ * is a normal user action rather than a failure worth logging.
+ */
+const isCancellation = (err: unknown): boolean =>
+  /cancel/i.test(err instanceof Error ? err.message : String(err ?? ''));
 
 // Types & Schema
 // ============================================================================
@@ -136,39 +144,216 @@ const TakePhotoPreview: React.FC<TakePhotoFieldProps> = props => {
 // ============================================================================
 
 /**
- * Empty state component displayed when no photos have been captured yet.
- * Shows a call-to-action button to take the first photo.
+ * Single labelled action (icon with a "+" badge over a label). The icon lives in
+ * a fixed-height zone so the two buttons always line up, even if a label wraps.
  */
-const EmptyState: React.FC<{
+const ActionButton: React.FC<{
+  icon: React.ReactElement;
+  label: string;
+  ariaLabel: string;
+  onClick: () => void;
+}> = ({icon, label, ariaLabel, onClick}) => {
+  const theme = useTheme();
+
+  return (
+    <Box
+      role="button"
+      tabIndex={0}
+      aria-label={ariaLabel}
+      onClick={onClick}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 1,
+        p: 1,
+        cursor: 'pointer',
+        borderRadius: theme.spacing(1),
+        outline: 'none',
+        transition: 'background-color 120ms ease',
+        '&:hover': {bgcolor: theme.palette.action.hover},
+        '&:focus-visible': {bgcolor: theme.palette.action.hover},
+      }}
+    >
+      <Box
+        sx={{
+          height: 52,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Box sx={{position: 'relative', display: 'inline-flex', lineHeight: 0}}>
+          {icon}
+          <Box
+            sx={{
+              position: 'absolute',
+              right: -8,
+              bottom: -6,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: theme.palette.background.paper,
+              borderRadius: '50%',
+              p: '1px',
+            }}
+          >
+            <AddIcon
+              sx={{
+                fontSize: 18,
+                color: theme.palette.primary.main,
+                stroke: theme.palette.primary.main,
+                strokeWidth: 1.5,
+              }}
+            />
+          </Box>
+        </Box>
+      </Box>
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{whiteSpace: 'nowrap'}}
+      >
+        {label}
+      </Typography>
+    </Box>
+  );
+};
+
+/**
+ * The "Take photo" + "Gallery" pair.
+ */
+const PhotoActions: React.FC<{
   onAddPhoto: () => void;
-  disabled: boolean;
-}> = ({onAddPhoto, disabled}) => {
+  onPickFromGallery: () => void;
+}> = ({onAddPhoto, onPickFromGallery}) => {
+  const theme = useTheme();
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        gap: 3,
+      }}
+    >
+      <Tooltip title="Take a new photo with your camera">
+        <Box component="span" sx={{display: 'inline-flex'}}>
+          <ActionButton
+            icon={
+              <CameraAltIcon
+                sx={{fontSize: 48, color: theme.palette.primary.main}}
+              />
+            }
+            label="Take photo"
+            ariaLabel="Take photo"
+            onClick={onAddPhoto}
+          />
+        </Box>
+      </Tooltip>
+      <Tooltip title="Select multiple photos at once from your gallery">
+        <Box component="span" sx={{display: 'inline-flex'}}>
+          <ActionButton
+            icon={
+              <PhotoLibraryIcon
+                sx={{fontSize: 48, color: theme.palette.primary.main}}
+              />
+            }
+            label="Gallery"
+            ariaLabel="Add photos from gallery, multiple selection allowed"
+            onClick={onPickFromGallery}
+          />
+        </Box>
+      </Tooltip>
+    </Box>
+  );
+};
+
+/**
+ * Gallery tile: the action pair inside a card, sized as one grid cell so it
+ * sits beside the photo thumbnails.
+ */
+const PhotoActionsTile: React.FC<{
+  onAddPhoto: () => void;
+  onPickFromGallery: () => void;
+}> = ({onAddPhoto, onPickFromGallery}) => {
   const theme = useTheme();
 
   return (
     <Paper
       sx={{
-        padding: theme.spacing(4),
-        textAlign: 'center',
-        bgcolor: theme.palette.grey[100],
-        borderRadius: theme.spacing(2),
-        marginTop: theme.spacing(2),
+        aspectRatio: '4/3',
+        borderRadius: theme.spacing(1),
+        boxShadow: theme.shadows[2],
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 1.5,
+        '&:hover': {boxShadow: theme.shadows[4]},
       }}
     >
-      <CameraAltIcon sx={{fontSize: 48, color: 'text.secondary', mb: 2}} />
-      <Typography variant="h6" gutterBottom>
-        No Photos Yet
-      </Typography>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={onAddPhoto}
-        disabled={disabled}
-        startIcon={<CameraAltIcon />}
-      >
-        Take First Photo
-      </Button>
+      <PhotoActions
+        onAddPhoto={onAddPhoto}
+        onPickFromGallery={onPickFromGallery}
+      />
     </Paper>
+  );
+};
+
+/**
+ * Empty state component displayed when no photos have been captured yet.
+ * Shows the same action pair used in the gallery so the design stays consistent.
+ */
+const EmptyState: React.FC<{
+  onAddPhoto: () => void;
+  onPickFromGallery: () => void;
+  disabled: boolean;
+}> = ({onAddPhoto, onPickFromGallery, disabled}) => {
+  const theme = useTheme();
+
+  if (disabled) {
+    return (
+      <Paper
+        sx={{
+          padding: theme.spacing(4),
+          textAlign: 'center',
+          bgcolor: theme.palette.grey[100],
+          borderRadius: theme.spacing(2),
+          marginTop: theme.spacing(2),
+        }}
+      >
+        <CameraAltIcon sx={{fontSize: 48, color: 'text.secondary', mb: 1}} />
+        <Typography variant="body2" color="text.secondary">
+          No photos
+        </Typography>
+      </Paper>
+    );
+  }
+
+  return (
+    <Box
+      sx={{
+        textAlign: 'center',
+        padding: theme.spacing(3),
+        marginTop: theme.spacing(1),
+      }}
+    >
+      <Typography variant="h6" gutterBottom>
+        No photos selected yet
+      </Typography>
+      <PhotoActions
+        onAddPhoto={onAddPhoto}
+        onPickFromGallery={onPickFromGallery}
+      />
+    </Box>
   );
 };
 
@@ -404,8 +589,16 @@ const PhotoGallery: React.FC<{
   pendingPhotos: Map<string, PendingPhoto>;
   onDelete: (index: number) => void;
   onAddPhoto: () => void;
+  onPickFromGallery: () => void;
   disabled: boolean;
-}> = ({photos, pendingPhotos, onDelete, onAddPhoto, disabled}) => {
+}> = ({
+  photos,
+  pendingPhotos,
+  onDelete,
+  onAddPhoto,
+  onPickFromGallery,
+  disabled,
+}) => {
   const theme = useTheme();
 
   // Delete confirmation dialog state
@@ -472,35 +665,17 @@ const PhotoGallery: React.FC<{
         <Box
           sx={{
             display: 'grid',
-            gap: theme.spacing(1),
+            gap: theme.spacing(1.5),
             padding: theme.spacing(1),
-            gridTemplateColumns: {
-              xs: 'repeat(2, 1fr)',
-              sm: 'repeat(4, 1fr)',
-              md: 'repeat(6, 1fr)',
-              lg: 'repeat(8, 1fr)',
-            },
+            gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
             width: '100%',
           }}
         >
-          {/* Add Photo Button */}
           {!disabled && (
-            <ImageItemContainer>
-              <Paper
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                }}
-                onClick={onAddPhoto}
-              >
-                <AddCircleIcon
-                  sx={{fontSize: 48, color: theme.palette.primary.main}}
-                />
-              </Paper>
-            </ImageItemContainer>
+            <PhotoActionsTile
+              onAddPhoto={onAddPhoto}
+              onPickFromGallery={onPickFromGallery}
+            />
           )}
 
           {/* Photo Grid - unified pending + loaded */}
@@ -624,6 +799,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   // Track URLs that need cleanup on unmount
   const pendingUrlsRef = useRef<Set<string>>(new Set());
 
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   // Get attachment service (guaranteed to exist in full mode)
   const attachmentService = context.attachmentEngine();
 
@@ -674,12 +851,131 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   }, []);
 
   /**
-   * Captures a photo from the device camera.
-   * On native platforms, attempts to add geolocation EXIF data.
-   * On web, uses base64 encoding for photo transfer.
-   *
-   * Uses optimistic updates to show the photo immediately while
-   * the database write happens in the background.
+   * Shows a thumbnail immediately and returns its temporary id. Kept separate
+   * from storage so a batch can be previewed at once, before the slower
+   * per-photo writes begin.
+   */
+  const addPendingPreview = useCallback((photoBlob: Blob): string => {
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    const optimisticUrl = URL.createObjectURL(photoBlob);
+    pendingUrlsRef.current.add(optimisticUrl);
+    setPendingPhotos(current => {
+      const updated = new Map(current);
+      updated.set(tempId, {
+        url: optimisticUrl,
+        attachmentId: null,
+        capturedAt: Date.now(),
+      });
+      return updated;
+    });
+
+    return tempId;
+  }, []);
+
+  /**
+   * Drops an optimistic preview that will never be confirmed (save failed, or
+   * batch aborted). Idempotent — safe to call after storage already succeeded.
+   */
+  const removePendingPhoto = useCallback((tempId: string) => {
+    setPendingPhotos(current => {
+      const pending = current.get(tempId);
+      if (!pending) return current;
+      URL.revokeObjectURL(pending.url);
+      pendingUrlsRef.current.delete(pending.url);
+      const updated = new Map(current);
+      updated.delete(tempId);
+      return updated;
+    });
+  }, []);
+
+  /**
+   * Writes one already-previewed image to storage. `path` is only supplied for
+   * camera captures: geotagging uses the *current* position, which is only
+   * correct for a photo taken here and now.
+   */
+  const storePhoto = useCallback(
+    async ({
+      tempId,
+      photoBlob,
+      format,
+      path,
+    }: {
+      tempId: string;
+      photoBlob: Blob;
+      format: string;
+      path?: string;
+    }) => {
+      if (Capacitor.getPlatform() !== 'web' && path) {
+        // Native: attempt to add geolocation EXIF data
+        try {
+          const position = await Geolocation.getCurrentPosition({
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          });
+
+          if (position) {
+            await Exif.setCoordinates({
+              pathToImage: path,
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            });
+          }
+        } catch (e) {
+          logWarn('Could not add geolocation to photo:', e);
+        }
+      }
+
+      attachmentSaveTrace('TakePhoto:save-start', {
+        fieldId,
+        blobSize: photoBlob.size,
+        format,
+      });
+
+      let newId: string;
+      try {
+        newId = await addAttachment({
+          // Blob attachments are faster - especially on native
+          blob: photoBlob,
+          contentType: `image/${format}`,
+          type: 'photo',
+          fileFormat: format,
+        });
+      } catch (err) {
+        // Drop the optimistic preview so the user isn't left with a photo
+        // stuck on "Saving..." forever. Rethrow so the caller can surface it.
+        removePendingPhoto(tempId);
+        throw err;
+      }
+
+      // Mark storage complete; keep optimistic preview until useAttachments loads.
+      // The Saving overlay hides once attachmentId is set (see PendingPhotoItem).
+      setPendingPhotos(current => {
+        const updated = new Map(current);
+        const pending = updated.get(tempId);
+        if (pending) {
+          updated.set(tempId, {...pending, attachmentId: newId});
+        }
+        return updated;
+      });
+
+      props.setFieldData((prev: string[] | undefined) => [
+        ...(prev ?? []),
+        newId,
+      ]);
+
+      attachmentSaveTrace('TakePhoto:save-complete', {
+        fieldId,
+        attachmentId: newId,
+      });
+    },
+    [fieldId, addAttachment, removePendingPhoto]
+  );
+
+  /**
+   * Opens the camera directly (no "take or select" prompt) so repeat capture is
+   * a single tap. Selecting existing images is a separate control.
    */
   const takePhoto = useCallback(async () => {
     let attachmentLockHeld = false;
@@ -718,13 +1014,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         allowEditing: false,
         resultType: isWeb ? CameraResultType.Base64 : CameraResultType.Uri,
         correctOrientation: true,
-        promptLabelHeader: 'Take or select a photo',
+        source: CameraSource.Camera,
       });
-
-      // Generate temporary ID for optimistic display
-      const tempId = `temp-${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2)}`;
 
       let photoBlob: Blob;
 
@@ -740,82 +1031,116 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         photoBlob = await response.blob();
       }
 
-      // Setup optimistic preview
-      const optimisticUrl = URL.createObjectURL(photoBlob);
-      pendingUrlsRef.current.add(optimisticUrl);
-      setPendingPhotos(current => {
-        const updated = new Map(current);
-        updated.set(tempId, {
-          url: optimisticUrl,
-          attachmentId: null,
-          capturedAt: Date.now(),
-        });
-        return updated;
-      });
-
-      if (!isWeb) {
-        // Native: attempt to add geolocation EXIF data
-        try {
-          const position = await Geolocation.getCurrentPosition({
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0,
-          });
-
-          if (position && photoResult.path) {
-            await Exif.setCoordinates({
-              pathToImage: photoResult.path,
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            });
-          }
-        } catch (e) {
-          logWarn('Could not add geolocation to photo:', e);
-        }
-      }
-
-      attachmentSaveTrace('TakePhoto:save-start', {
-        fieldId,
-        blobSize: photoBlob.size,
+      setSaveError(null);
+      await storePhoto({
+        tempId: addPendingPreview(photoBlob),
+        photoBlob,
         format: photoResult.format,
-      });
-
-      const newId = await addAttachment({
-        // Blob attachments are faster - especially on native
-        blob: photoBlob,
-        contentType: `image/${photoResult.format}`,
-        type: 'photo',
-        fileFormat: photoResult.format,
-      });
-
-      // Mark storage complete; keep optimistic preview until useAttachments loads.
-      // The Saving overlay hides once attachmentId is set (see PendingPhotoItem).
-      setPendingPhotos(current => {
-        const updated = new Map(current);
-        const pending = updated.get(tempId);
-        if (pending) {
-          updated.set(tempId, {...pending, attachmentId: newId});
-        }
-        return updated;
-      });
-
-      props.setFieldData((prev: string[] | undefined) => [
-        ...(prev ?? []),
-        newId,
-      ]);
-
-      attachmentSaveTrace('TakePhoto:save-complete', {
-        fieldId,
-        attachmentId: newId,
+        path: photoResult.path,
       });
     } catch (err: any) {
+      if (isCancellation(err)) return;
       logError(new Error('Failed to capture photo:'), {error: err});
+      setSaveError('Could not save the photo. Please try again.');
     } finally {
       if (attachmentLockHeld) {
         setAttachmentSaving?.(false);
       }
     }
-  }, [fieldId, addAttachment, setAttachmentSaving]);
+  }, [addPendingPreview, storePhoto, setAttachmentSaving]);
+
+  /**
+   * Adds existing images from the device gallery. Multi-select, so a batch can
+   * be attached in one pass; each is saved through the same path as a capture.
+   */
+  const pickFromGallery = useCallback(async () => {
+    let attachmentLockHeld = false;
+    try {
+      if (Capacitor.getPlatform() !== 'web') {
+        const permissions = await Camera.requestPermissions({
+          permissions: ['photos'],
+        });
+        if (permissions.photos === 'denied') {
+          setNoPermission(true);
+          return;
+        }
+      }
+
+      const {photos} = await Camera.pickImages({
+        quality: IMAGE_QUALITY_0_100,
+        width: MAX_IMAGE_WIDTH,
+        correctOrientation: true,
+        limit: MAX_GALLERY_BATCH,
+      });
+
+      if (photos.length === 0) return;
+
+      // Defensive cap: some platforms/versions ignore `limit`. Trim here so
+      // we never process more than MAX_GALLERY_BATCH regardless of platform.
+      const overLimit = photos.length > MAX_GALLERY_BATCH;
+      const selected = overLimit ? photos.slice(0, MAX_GALLERY_BATCH) : photos;
+
+      setSaveError(
+        overLimit
+          ? `You can add up to ${MAX_GALLERY_BATCH} photos at once — only the first ${MAX_GALLERY_BATCH} will be added.`
+          : null
+      );
+
+      setAttachmentSaving?.(true);
+      attachmentLockHeld = true;
+
+      // Preview the whole selection first so every thumbnail appears at once,
+      // rather than trickling in behind each write. If a fetch fails mid-batch
+      // we roll back the previews already added so nothing gets stuck.
+      const pending: {tempId: string; photoBlob: Blob; format: string}[] = [];
+      try {
+        for (const photo of selected) {
+          const response = await fetch(photo.webPath);
+          const photoBlob = await response.blob();
+          pending.push({
+            tempId: addPendingPreview(photoBlob),
+            photoBlob,
+            format: photo.format,
+          });
+        }
+      } catch (err) {
+        for (const item of pending) {
+          removePendingPhoto(item.tempId);
+        }
+        throw err;
+      }
+
+      // Sequential writes: concurrent PouchDB attachment writes contend, and
+      // this keeps the saved order the same as the picked order. No `path` is
+      // passed, so gallery images keep their original EXIF location.
+      // Per-item try/catch so one bad write doesn't strand the remaining
+      // previews on "Saving..." — storePhoto already drops its own preview
+      // on failure, we just tally and continue.
+      let failures = 0;
+      for (const item of pending) {
+        try {
+          await storePhoto(item);
+        } catch (err) {
+          failures++;
+          logError(new Error('Failed to save gallery photo:'), {error: err});
+        }
+      }
+      if (failures > 0) {
+        const plural = pending.length === 1 ? '' : 's';
+        setSaveError(
+          `Could not save ${failures} of ${pending.length} photo${plural}. Please try again.`
+        );
+      }
+    } catch (err: any) {
+      if (isCancellation(err)) return;
+      logError(new Error('Failed to add photos from gallery:'), {error: err});
+      setSaveError('Could not add photos from your gallery. Please try again.');
+    } finally {
+      if (attachmentLockHeld) {
+        setAttachmentSaving?.(false);
+      }
+    }
+  }, [addPendingPreview, removePendingPhoto, storePhoto, setAttachmentSaving]);
 
   /**
    * Deletes a photo at the specified index from the field's attachments.
@@ -852,18 +1177,34 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
           </Alert>
         )}
 
+        {/* Save Error - shown when a capture or gallery pick failed to persist */}
+        {saveError && (
+          <Alert
+            severity="error"
+            sx={{mb: 2}}
+            onClose={() => setSaveError(null)}
+          >
+            {saveError}
+          </Alert>
+        )}
+
         {/* Camera Permission Warning */}
         {noPermission && <CameraPermissionIssue appName={appName} />}
 
         {/* Photo Display */}
         {!hasAnyPhotos ? (
-          <EmptyState onAddPhoto={takePhoto} disabled={disabled} />
+          <EmptyState
+            onAddPhoto={takePhoto}
+            onPickFromGallery={pickFromGallery}
+            disabled={disabled}
+          />
         ) : (
           <PhotoGallery
             photos={loadedPhotos}
             pendingPhotos={pendingPhotos}
             onDelete={handleDelete}
             onAddPhoto={takePhoto}
+            onPickFromGallery={pickFromGallery}
             disabled={disabled}
           />
         )}
