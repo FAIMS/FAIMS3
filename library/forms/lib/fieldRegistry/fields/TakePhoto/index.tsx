@@ -529,73 +529,93 @@ const PhotoGallery: React.FC<{
             width: '100%',
           }}
         >
-          {/* Take Photo — opens the camera straight away */}
           {!disabled && (
             <ImageItemContainer>
               <Paper
                 sx={{
                   height: '100%',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: 0.5,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
+                  flexDirection: 'row',
+                  alignItems: 'stretch',
+                  overflow: 'hidden',
                 }}
-                onClick={onAddPhoto}
-                aria-label="Take photo"
               >
-                <AddCircleIcon
-                  sx={{fontSize: 48, color: theme.palette.primary.main}}
-                />
-                <Typography variant="caption" color="text.secondary">
-                  Take photo
-                </Typography>
-              </Paper>
-            </ImageItemContainer>
-          )}
-
-          {/* Add from gallery — separate so capture stays a single tap */}
-          {!disabled && (
-            <ImageItemContainer>
-              <Tooltip title="Select multiple photos at once from your gallery">
-                <Paper
+                <Box
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Take photo"
+                  onClick={onAddPhoto}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onAddPhoto();
+                    }
+                  }}
                   sx={{
-                    height: '100%',
-                    position: 'relative',
+                    flex: 1,
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 0.5,
                     alignItems: 'center',
                     justifyContent: 'center',
+                    gap: 0.5,
                     cursor: 'pointer',
+                    outline: 'none',
+                    '&:hover': {bgcolor: theme.palette.action.hover},
+                    '&:focus-visible': {
+                      bgcolor: theme.palette.action.hover,
+                    },
                   }}
-                  onClick={onPickFromGallery}
-                  aria-label="Add photos from gallery, multiple selection allowed"
                 >
-                  <PhotoLibraryIcon
-                    sx={{fontSize: 48, color: theme.palette.primary.main}}
+                  <AddCircleIcon
+                    sx={{fontSize: 40, color: theme.palette.primary.main}}
                   />
                   <Typography variant="caption" color="text.secondary">
-                    Gallery
+                    Take photo
                   </Typography>
-                  {/* Small corner note; absolute so it never shifts the icon. */}
-                  <Typography
-                    variant="caption"
+                </Box>
+                <Box
+                  sx={{
+                    width: '1px',
+                    bgcolor: theme.palette.divider,
+                    my: 1,
+                  }}
+                />
+                <Tooltip title="Select multiple photos at once from your gallery">
+                  <Box
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Add photos from gallery, multiple selection allowed"
+                    onClick={onPickFromGallery}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onPickFromGallery();
+                      }
+                    }}
                     sx={{
-                      position: 'absolute',
-                      bottom: 2,
-                      right: 6,
-                      fontSize: '0.65rem',
-                      fontStyle: 'italic',
-                      lineHeight: 1,
-                      color: theme.palette.text.secondary,
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 0.5,
+                      cursor: 'pointer',
+                      outline: 'none',
+                      '&:hover': {bgcolor: theme.palette.action.hover},
+                      '&:focus-visible': {
+                        bgcolor: theme.palette.action.hover,
+                      },
                     }}
                   >
-                    multiple
-                  </Typography>
-                </Paper>
-              </Tooltip>
+                    <PhotoLibraryIcon
+                      sx={{fontSize: 40, color: theme.palette.primary.main}}
+                    />
+                    <Typography variant="caption" color="text.secondary">
+                      Gallery
+                    </Typography>
+                  </Box>
+                </Tooltip>
+              </Paper>
             </ImageItemContainer>
           )}
 
