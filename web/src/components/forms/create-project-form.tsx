@@ -8,9 +8,12 @@ import {useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
 import {Divider} from '../ui/word-divider';
 import {
-  createProjectFromFile,
   createProjectFromTemplate,
+  createProjectFromUiSpecification,
 } from '@/hooks/project-hooks';
+import {convertXlsformToUiSpecification} from '@/hooks/xlsform-hooks';
+import {prepareNotebookUiSpecificationInputForApi} from '@faims3/data-model';
+import {toast} from 'sonner';
 import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
 import {designFileSchema, resourceNameSchema} from '@/lib/input-limits';
 import {INPUT_LIMITS, ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
@@ -69,7 +72,7 @@ export function CreateProjectForm({
     },
     {
       name: 'file',
-      label: 'JSON File (optional)',
+      label: 'JSON or XLSForm File (optional)',
       type: 'file',
       schema: designFileSchema().optional(),
       excludedBy: 'template',
@@ -110,6 +113,7 @@ export function CreateProjectForm({
    * @param {{name: string, template?: string, file?: File}} params - The submitted form values.
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
+
   const onSubmit = async ({
     name,
     description,
@@ -118,8 +122,11 @@ export function CreateProjectForm({
     team,
   }: onSubmitProps) => {
     let response;
+    let skippedFromConversion: {name: string; type: string}[] = [];
+    const isXlsform = !!file && file.name.toLowerCase().endsWith('.xlsx');
+
     if (template) {
-      // Create from selected template
+      // Create from selected template — unrelated to file conversion, unchanged
       response = await createProjectFromTemplate({
         user,
         name,
@@ -128,29 +135,52 @@ export function CreateProjectForm({
         teamId: specifiedTeam ?? team,
       });
     } else {
-      // No template chosen: either use uploaded file or default blank notebook
-      let fileToUpload = file;
-      if (!fileToUpload) {
-        // Construct a File object
-        const blob = new Blob([JSON.stringify(blankNotebook)], {
-          type: 'application/json',
+      let uiSpecification: unknown;
+
+      if (isXlsform) {
+        const converted = await convertXlsformToUiSpecification({
+          user,
+          file: file!,
         });
-        fileToUpload = new File([blob], 'sample_notebook.json', {
-          type: 'application/json',
-        });
+        if (!converted.ok) {
+          return {type: 'submit', message: converted.message};
+        }
+        uiSpecification = converted.uiSpecification;
+        skippedFromConversion = converted.skipped;
+      } else if (file) {
+        const text = await file.text();
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          return {type: 'submit', message: 'Invalid JSON file'};
+        }
+        const prepared = prepareNotebookUiSpecificationInputForApi(parsed);
+        if (!prepared.ok) {
+          return {type: 'submit', message: prepared.message};
+        }
+        uiSpecification = prepared.uiSpecification;
+      } else {
+        const prepared =
+          prepareNotebookUiSpecificationInputForApi(blankNotebook);
+        uiSpecification = prepared.ok
+          ? prepared.uiSpecification
+          : blankNotebook;
       }
-      response = await createProjectFromFile({
+
+      response = await createProjectFromUiSpecification({
         user,
         name,
         description,
-        file: fileToUpload,
         teamId: specifiedTeam ?? team,
+        uiSpecification,
       });
     }
 
     if (!response.ok) {
       return {type: 'submit', message: `Error creating ${config.notebookName}`};
     }
+
     // need to refresh our auth token to get permissions on this new template
     const {message, status} = await refreshToken();
     if (status === 'error') {
@@ -159,11 +189,24 @@ export function CreateProjectForm({
         message: `template created but failed to refresh user token: ${message}`,
       };
     }
-
     await queryClient.invalidateQueries({queryKey: ['projects']});
     await queryClient.invalidateQueries({queryKey: ['projectsbyteam']});
 
     setDialogOpen(false);
+
+    if (isXlsform) {
+      if (skippedFromConversion.length > 0) {
+        const summary = skippedFromConversion
+          .map(s => `${s.name} (${s.type})`)
+          .join(', ');
+        toast.warning(
+          `${config.notebookNameCapitalized} created, but ${skippedFromConversion.length} question${skippedFromConversion.length === 1 ? '' : 's'} could not be converted: ${summary}`,
+          {duration: 15000}
+        );
+      } else {
+        toast.success(`${config.notebookNameCapitalized} created successfully`);
+      }
+    }
   };
 
   return (

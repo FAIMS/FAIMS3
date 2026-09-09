@@ -55,6 +55,12 @@ import {validateLongLivedToken} from '../couchdb/longLivedTokens';
 import {nowIso} from '../time';
 import {hashChallengeCode} from '../utils';
 
+import {parseXlsformBuffer} from '../utils/xlsformParsing';
+import {
+  convertXlsformToNotebookDefinition,
+  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+} from '@faims3/data-model';
+
 // TODO: configure this directory
 // Cap the restore upload size (configurable via RESTORE_UPLOAD_MAX_BYTES)
 const upload = multer({
@@ -93,6 +99,46 @@ api.post(
   async (req, res) => {
     await initialiseDbAndKeys({force: true});
     res.json({success: true});
+  }
+);
+
+const PostConvertXlsformInputSchema = z.object({
+  /** Base64-encoded contents of the uploaded .xlsx file. */
+  fileBase64: z.string().min(1),
+});
+
+/**
+ * POST convert an uploaded XLSForm (.xlsx) file into a Fieldmark
+ * uiSpecification. Returns only the uiSpec -- no name, team, or other
+ * template/project metadata -- so the caller can pass the result into the
+ * existing template/project creation or update endpoints.
+ */
+api.post(
+  '/convert-xlsform',
+  requireAuthenticationAPI,
+  validate({
+    body: PostConvertXlsformInputSchema,
+  }),
+  async (
+    req,
+    res: Response<{
+      uiSpecification: Record<string, unknown>;
+      skipped: {name: string; type: string}[];
+    }>
+  ) => {
+    const {fileBase64} = req.body;
+
+    const fileBuffer = Buffer.from(fileBase64, 'base64');
+    const sheets = await parseXlsformBuffer(fileBuffer);
+    const {notebook, skipped} = convertXlsformToNotebookDefinition(
+      sheets,
+      CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+    );
+
+    res.json({
+      uiSpecification: notebook as unknown as Record<string, unknown>,
+      skipped,
+    });
   }
 );
 

@@ -1,15 +1,16 @@
 import {useRequiredUser} from '@/hooks/auth-hooks';
 import {Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
-import {designFileSchema, fileToBase64} from '@/lib/input-limits';
+import {designFileSchema} from '@/lib/input-limits';
 import {config} from '@/constants';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {
   errorMessageFromTemplateJsonBody,
   updateTemplateUiSpecificationRequest,
-  updateTemplateUiSpecificationFromXlsformRequest,
 } from '@/hooks/template-hooks';
 import {prepareNotebookUiSpecificationInputForApi} from '@faims3/data-model';
+import {toast} from 'sonner';
+import {convertXlsformToUiSpecification} from '@/hooks/xlsform-hooks';
 
 export const fields = [
   {
@@ -38,53 +39,36 @@ export function UpdateTemplateForm({
 
   const onSubmit = async ({file}: {file: File}) => {
     const isXlsform = file.name.toLowerCase().endsWith('.xlsx');
+    let uiSpecification: unknown;
+    let skippedFromConversion: {name: string; type: string}[] = [];
 
     if (isXlsform) {
-      const fileBase64 = await fileToBase64(file);
-      if (!fileBase64) {
-        return {type: 'submit', message: 'Error reading file'};
+      const converted = await convertXlsformToUiSpecification({user, file});
+      if (!converted.ok) {
+        return {type: 'submit', message: converted.message};
       }
-
-      const uiResponse = await updateTemplateUiSpecificationFromXlsformRequest({
-        user,
-        templateId,
-        fileBase64,
-      });
-      if (!uiResponse.ok) {
-        const json: unknown = await uiResponse.json().catch(() => undefined);
-        return {
-          type: 'submit',
-          message:
-            'Error updating template design: ' +
-            errorMessageFromTemplateJsonBody(json, uiResponse.statusText),
-        };
+      uiSpecification = converted.uiSpecification;
+      skippedFromConversion = converted.skipped;
+    } else {
+      const jsonString = await readFileAsText(file);
+      if (!jsonString) return {type: 'submit', message: 'Error reading file'};
+      let payload: unknown;
+      try {
+        payload = JSON.parse(jsonString);
+      } catch {
+        return {type: 'submit', message: 'Invalid JSON file'};
       }
-
-      onSuccess();
-      setDialogOpen(false);
-      return;
-    }
-
-    const jsonString = await readFileAsText(file);
-
-    if (!jsonString) return {type: 'submit', message: 'Error reading file'};
-
-    let payload: unknown;
-    try {
-      payload = JSON.parse(jsonString);
-    } catch {
-      return {type: 'submit', message: 'Invalid JSON file'};
-    }
-
-    const prepared = prepareNotebookUiSpecificationInputForApi(payload);
-    if (!prepared.ok) {
-      return {type: 'submit', message: prepared.message};
+      const prepared = prepareNotebookUiSpecificationInputForApi(payload);
+      if (!prepared.ok) {
+        return {type: 'submit', message: prepared.message};
+      }
+      uiSpecification = prepared.uiSpecification;
     }
 
     const uiResponse = await updateTemplateUiSpecificationRequest({
       user,
       templateId,
-      uiSpecification: prepared.uiSpecification,
+      uiSpecification,
     });
     if (!uiResponse.ok) {
       const json: unknown = await uiResponse.json().catch(() => undefined);
@@ -98,13 +82,25 @@ export function UpdateTemplateForm({
 
     onSuccess();
     setDialogOpen(false);
+
+    if (skippedFromConversion.length > 0) {
+      const summary = skippedFromConversion
+        .map(s => `${s.name} (${s.type})`)
+        .join(', ');
+      toast.warning(
+        `Template design updated, but ${skippedFromConversion.length} question${skippedFromConversion.length === 1 ? '' : 's'} could not be converted: ${summary}`,
+        {duration: 15000}
+      );
+    } else if (isXlsform) {
+      toast.success('Template design updated successfully');
+    }
   };
 
   return (
     <Form
       fields={fields}
       onSubmit={onSubmit}
-      submitButtonText="Replace Template JSON"
+      submitButtonText="Replace Template"
       submitButtonVariant="destructive"
       warningMessage={`Editing the template does not change any of the ${config.notebookName}s created from it.  This may create inconsistencies in your data.`}
     />

@@ -3,8 +3,8 @@ import * as Exceptions from '../exceptions';
 import type {XlsformSheets} from '@faims3/data-model';
 
 const surveySchema = {
-  type: {column: 'type', type: String, required: true},
-  name: {column: 'name', type: String, required: true},
+  type: {column: 'type', type: String, required: false},
+  name: {column: 'name', type: String, required: false},
   label: {column: 'label', type: String, required: false},
   hint: {column: 'hint', type: String, required: false},
   required: {column: 'required', type: String, required: false},
@@ -14,9 +14,9 @@ const surveySchema = {
 };
 
 const choicesSchema = {
-  listName: {column: 'list_name', type: String, required: true},
-  name: {column: 'name', type: String, required: true},
-  label: {column: 'label', type: String, required: true},
+  listName: {column: 'list_name', type: String, required: false},
+  name: {column: 'name', type: String, required: false},
+  label: {column: 'label', type: String, required: false},
 };
 
 const settingsSchema = {
@@ -53,10 +53,22 @@ export async function parseXlsformBuffer(
     );
   }
 
+  // Blank separator rows and structural rows without a name (e.g. "end group")
+  // are valid, common parts of a real XLSForm -- filter them out here rather
+  // than rejecting the whole file.
+
+  const survey = (surveyResult.objects ?? []).filter(
+    row => row && row.type && row.name
+  );
+
   const choicesSheet = sheets.find(s => s.sheet === 'choices');
   const choicesResult = choicesSheet
     ? parseSheetData(choicesSheet.data, choicesSchema)
     : {objects: []};
+
+  const choices = (choicesResult.objects ?? []).filter(
+    row => row && row.listName && row.name
+  );
 
   const settingsSheet = sheets.find(s => s.sheet === 'settings');
   const settingsResult = settingsSheet
@@ -64,8 +76,8 @@ export async function parseXlsformBuffer(
     : {objects: []};
 
   return {
-    survey: surveyResult.objects ?? [],
-    choices: choicesResult.objects ?? [],
+    survey,
+    choices,
     settings: settingsResult.objects ?? [],
   };
 }

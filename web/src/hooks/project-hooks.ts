@@ -8,6 +8,7 @@ import {
 } from '@faims3/data-model';
 import {rootDescriptionForApi} from '@/lib/rootDescriptionField';
 import {config} from '@/constants';
+import {designFileSchema, fileToBase64} from '@/lib/input-limits';
 
 export function errorMessageFromNotebookJsonBody(
   json: unknown,
@@ -110,6 +111,38 @@ export const createProjectFromFile = async ({
     }),
   });
 };
+
+/**
+ * Creates a new project from an already-resolved uiSpecification (e.g.
+ * from JSON parsing or from POST /api/convert-xlsform), bypassing the
+ * file-reading that createProjectFromFile does internally.
+ */
+export const createProjectFromUiSpecification = async ({
+  user,
+  name,
+  description,
+  teamId,
+  uiSpecification,
+}: {
+  user: User;
+  name: string;
+  description?: string;
+  teamId?: string;
+  uiSpecification: unknown;
+}) =>
+  await fetch(`${config.apiUrl}/api/notebooks`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${user.token}`,
+    },
+    body: JSON.stringify({
+      name,
+      ...rootDescriptionForApi(description),
+      teamId,
+      uiSpecification,
+    }),
+  });
 
 /** PUT /api/notebooks/:projectId — merge name and/or description only. */
 export const updateNotebookMetadataRequest = async ({

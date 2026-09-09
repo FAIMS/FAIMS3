@@ -8,7 +8,9 @@ import {
   errorMessageFromNotebookJsonBody,
   updateNotebookUiSpecificationRequest,
 } from '@/hooks/project-hooks';
+import {convertXlsformToUiSpecification} from '@/hooks/xlsform-hooks';
 import {prepareNotebookUiSpecificationInputForApi} from '@faims3/data-model';
+import {toast} from 'sonner';
 
 const fields = [
   {
@@ -21,7 +23,8 @@ const fields = [
 /**
  * UpdateProjectForm replaces the project notebook design via PUT
  * /api/notebooks/:projectId/uiSpecification. Accepts legacy or current
- * notebook JSON (same loose validation as create-from-file).
+ * notebook JSON, or an XLSForm (.xlsx) file, which is converted via
+ * POST /api/convert-xlsform before being sent through the same update call.
  */
 export function UpdateProjectForm({
   setDialogOpen,
@@ -34,26 +37,37 @@ export function UpdateProjectForm({
   const {projectId} = Route.useParams();
 
   const onSubmit = async ({file}: {file: File}) => {
-    const jsonString = await readFileAsText(file);
+    const isXlsform = file.name.toLowerCase().endsWith('.xlsx');
+    let uiSpecification: unknown;
+    let skippedFromConversion: {name: string; type: string}[] = [];
 
-    if (!jsonString) return {type: 'submit', message: 'Error reading file'};
-
-    let payload: unknown;
-    try {
-      payload = JSON.parse(jsonString);
-    } catch {
-      return {type: 'submit', message: 'Invalid JSON file'};
-    }
-
-    const prepared = prepareNotebookUiSpecificationInputForApi(payload);
-    if (!prepared.ok) {
-      return {type: 'submit', message: prepared.message};
+    if (isXlsform) {
+      const converted = await convertXlsformToUiSpecification({user, file});
+      if (!converted.ok) {
+        return {type: 'submit', message: converted.message};
+      }
+      uiSpecification = converted.uiSpecification;
+      skippedFromConversion = converted.skipped;
+    } else {
+      const jsonString = await readFileAsText(file);
+      if (!jsonString) return {type: 'submit', message: 'Error reading file'};
+      let payload: unknown;
+      try {
+        payload = JSON.parse(jsonString);
+      } catch {
+        return {type: 'submit', message: 'Invalid JSON file'};
+      }
+      const prepared = prepareNotebookUiSpecificationInputForApi(payload);
+      if (!prepared.ok) {
+        return {type: 'submit', message: prepared.message};
+      }
+      uiSpecification = prepared.uiSpecification;
     }
 
     const uiResponse = await updateNotebookUiSpecificationRequest({
       user,
       projectId,
-      uiSpecification: prepared.uiSpecification,
+      uiSpecification,
     });
     if (!uiResponse.ok) {
       const json: unknown = await uiResponse.json().catch(() => undefined);
@@ -67,6 +81,20 @@ export function UpdateProjectForm({
 
     onSuccess();
     setDialogOpen(false);
+
+    if (skippedFromConversion.length > 0) {
+      const summary = skippedFromConversion
+        .map(s => `${s.name} (${s.type})`)
+        .join(', ');
+      toast.warning(
+        `${config.notebookNameCapitalized} design updated, but ${skippedFromConversion.length} question${skippedFromConversion.length === 1 ? '' : 's'} could not be converted: ${summary}`,
+        {duration: 15000}
+      );
+    } else if (isXlsform) {
+      toast.success(
+        `${config.notebookNameCapitalized} design updated successfully`
+      );
+    }
   };
 
   return (

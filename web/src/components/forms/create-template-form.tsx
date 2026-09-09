@@ -33,6 +33,8 @@ import {
   resourceNameSchema,
   fileToBase64,
 } from '@/lib/input-limits';
+import {toast} from 'sonner';
+import {convertXlsformToUiSpecification} from '@/hooks/xlsform-hooks';
 
 interface CreateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -142,64 +144,21 @@ export function CreateTemplateForm({
     const {name, description, file, team, visibility} = values;
     const isPublic = canCreatePublicTemplate && visibility === 'public';
     let uiSpecification: unknown = blankNotebook;
+    let skippedFromConversion: {name: string; type: string}[] = [];
 
     const isXlsform = !!file && file.name.toLowerCase().endsWith('.xlsx');
-    const chosenTeamId = resolveTemplateTeamId({
-      canCreateGlobally,
-      specifiedTeam,
-      possibleTeams,
-      team,
-    });
 
     if (isXlsform) {
-      // Server-side conversion path: skip local JSON parsing entirely.
-      const fileBase64 = await fileToBase64(file!);
-      if (!fileBase64) {
-        return {type: 'submit', message: 'Error reading file'};
+      const converted = await convertXlsformToUiSpecification({
+        user,
+        file: file!,
+      });
+      if (!converted.ok) {
+        return {type: 'submit', message: converted.message};
       }
-
-      try {
-        const res = await fetch(`${config.apiUrl}/api/templates/from-xlsform`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`,
-          },
-          body: JSON.stringify({
-            teamId: chosenTeamId,
-            name,
-            ...rootDescriptionForApi(description),
-            isPublic,
-            fileBase64,
-          }),
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => undefined);
-          return {
-            type: 'submit',
-            message:
-              body?.error?.message ??
-              'Failed to create template from XLSForm file',
-          };
-        }
-        const {message, status} = await refreshToken();
-        if (status === 'error') {
-          return {
-            type: 'submit',
-            message: `template created but failed to refresh user token: ${message}`,
-          };
-        }
-      } catch {
-        return {type: 'submit', message: 'Failed to create template'};
-      }
-
-      await queryClient.invalidateQueries({queryKey: ['templates']});
-      await queryClient.invalidateQueries({queryKey: ['templatesbyteam']});
-      setDialogOpen(false);
-      return;
-    }
-
-    if (file) {
+      uiSpecification = converted.uiSpecification;
+      skippedFromConversion = converted.skipped;
+    } else if (file) {
       const text = await readFileAsText(file);
       if (!text) {
         return {type: 'submit', message: 'Error reading file'};
@@ -217,6 +176,13 @@ export function CreateTemplateForm({
       uiSpecification = prepared.uiSpecification;
     }
 
+    const chosenTeamId = resolveTemplateTeamId({
+      canCreateGlobally,
+      specifiedTeam,
+      possibleTeams,
+      team,
+    });
+
     try {
       const res = await fetch(`${config.apiUrl}/api/templates/`, {
         method: 'POST',
@@ -233,7 +199,6 @@ export function CreateTemplateForm({
         }),
       });
       if (!res.ok) throw new Error(res.statusText);
-      // need to refresh our auth token to get permissions on this new template
       const {message, status} = await refreshToken();
       if (status === 'error') {
         return {
@@ -245,10 +210,21 @@ export function CreateTemplateForm({
       return {type: 'submit', message: 'Failed to create template'};
     }
 
-    // query invalidations
     await queryClient.invalidateQueries({queryKey: ['templates']});
     await queryClient.invalidateQueries({queryKey: ['templatesbyteam']});
     setDialogOpen(false);
+
+    if (skippedFromConversion.length > 0) {
+      const summary = skippedFromConversion
+        .map(s => `${s.name} (${s.type})`)
+        .join(', ');
+      toast.warning(
+        `Template created, but ${skippedFromConversion.length} question${skippedFromConversion.length === 1 ? '' : 's'} could not be converted: ${summary}`,
+        {duration: 15000}
+      );
+    } else if (isXlsform) {
+      toast.success('Template created successfully');
+    }
   };
 
   if (!canCreateTemplate) {

@@ -117,7 +117,13 @@ import {
 } from '../middleware';
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
+
 import {recordsRouter} from './records';
+import {parseXlsformBuffer} from '../utils/xlsformParsing';
+import {
+  convertXlsformToNotebookDefinition,
+  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+} from '@faims3/data-model';
 
 // This must occur before express api is used
 patch();
