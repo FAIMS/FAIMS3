@@ -23,7 +23,8 @@ import {
   resolveTeamId,
 } from './template-team-field';
 import {PlanConfigSection} from '@/components/plans/PlanConfigSection';
-import {getPlanConfigType, type PlanConfig} from '@/components/plans/registry';
+import {planSubmissionGate} from '@/components/plans/planSubmissionGate';
+import {type PlanConfig} from '@/components/plans/registry';
 import {errorMessageFromNotebookJsonBody} from '@/hooks/project-hooks';
 
 interface CreateProjectFromTemplateFormProps {
@@ -49,7 +50,10 @@ export function CreateProjectFromTemplateForm({
   const {templateId} = Route.useParams();
   const queryClient = useQueryClient();
   const {data: teamsData} = useGetTeams({user});
-  const {data: template} = useGetTemplate({user, templateId});
+  const {data: template, isLoading: templateLoading} = useGetTemplate({
+    user,
+    templateId,
+  });
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
 
   const possibleTeams = getPossibleTeamsForAction({
@@ -76,16 +80,11 @@ export function CreateProjectFromTemplateForm({
   const planUiSpec = template?.uiSpecification?.uiSpec;
   const [planConfig, setPlanConfig] = useState<PlanConfig | undefined>();
 
-  const planDisable = (() => {
-    if (!planTemplate || planConfig) return undefined;
-    const planType = planTemplate.planType as string;
-    return {
-      disabled: true,
-      reason: getPlanConfigType(planType)
-        ? `Complete the plan configuration to create this ${config.notebookName}.`
-        : `This template defines a ${planType} plan that cannot be configured here.`,
-    };
-  })();
+  const planDisable = planSubmissionGate({
+    planTemplate,
+    planConfig,
+    isLoading: templateLoading,
+  });
 
   const teamLabel = `Create ${config.notebookName} in this team${
     canCreateGlobally ? ' (optional)' : ''

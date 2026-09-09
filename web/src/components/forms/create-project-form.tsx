@@ -2,9 +2,10 @@ import {Field, Form} from '@/components/form';
 import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {useGetTeams, useGetTemplates} from '@/hooks/queries';
+import {useGetTeams, useGetTemplate, useGetTemplates} from '@/hooks/queries';
 import {Action, TemplateListItem} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
+import {useCallback, useState} from 'react';
 import {z} from 'zod';
 import {Divider} from '../ui/word-divider';
 import {
@@ -15,6 +16,9 @@ import {
 import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
 import {designFileSchema, resourceNameSchema} from '@/lib/input-limits';
 import {INPUT_LIMITS, ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
+import {PlanConfigSection} from '@/components/plans/PlanConfigSection';
+import {planSubmissionGate} from '@/components/plans/planSubmissionGate';
+import {type PlanConfig} from '@/components/plans/registry';
 
 // Import the default sample notebook JSON
 import blankNotebook from '../../../notebooks/blank-notebook.json';
@@ -47,6 +51,42 @@ export function CreateProjectForm({
   const {data: templates} = useGetTemplates({user});
   const {data: teams} = useGetTeams({user});
 
+  // The template picker only has list items; fetch the full document so a
+  // planTemplate can be configured the same way as the template-detail form.
+  const [selectedTemplateId, setSelectedTemplateId] = useState<
+    string | undefined
+  >();
+  const [planConfig, setPlanConfig] = useState<PlanConfig | undefined>();
+  const onSelectedTemplateIdChange = useCallback(
+    (templateId: string | undefined) => {
+      setSelectedTemplateId(current => {
+        if (current !== templateId) {
+          setPlanConfig(undefined);
+        }
+        return templateId;
+      });
+    },
+    []
+  );
+  const {
+    data: selectedTemplate,
+    isLoading,
+    isError,
+  } = useGetTemplate({
+    user,
+    templateId: selectedTemplateId ?? '',
+    enabled: Boolean(selectedTemplateId),
+  });
+
+  const planTemplate = selectedTemplate?.uiSpecification?.planTemplate;
+  const planUiSpec = selectedTemplate?.uiSpecification?.uiSpec;
+  const planDisable = planSubmissionGate({
+    planTemplate,
+    planConfig,
+    isLoading: Boolean(selectedTemplateId) && isLoading,
+    isError: Boolean(selectedTemplateId) && isError,
+  });
+
   const fields: Field[] = [
     {
       name: 'name',
@@ -67,6 +107,10 @@ export function CreateProjectForm({
       })),
       schema: z.any().optional(),
       excludedBy: 'file',
+      onChange: value =>
+        onSelectedTemplateIdChange(
+          typeof value === 'string' && value ? value : undefined
+        ),
     },
     {
       name: 'file',
@@ -127,6 +171,7 @@ export function CreateProjectForm({
         description,
         template,
         teamId: specifiedTeam ?? team,
+        planConfig,
       });
     } else {
       // No template chosen: either use uploaded file or default blank notebook
@@ -183,6 +228,17 @@ export function CreateProjectForm({
       submitButtonTestId="web-projects-create-submit"
       // pass in team ID default, if provided
       defaultValues={{team: defaultValues?.teamId}}
+      footer={
+        planTemplate && planUiSpec ? (
+          <PlanConfigSection
+            key={selectedTemplateId}
+            template={planTemplate}
+            uiSpec={planUiSpec}
+            onChange={setPlanConfig}
+          />
+        ) : undefined
+      }
+      disableSubmission={planDisable}
     />
   );
 }

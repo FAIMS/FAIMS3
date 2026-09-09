@@ -23,6 +23,7 @@ import {describe, expect, test, vi} from 'vitest';
 import {CountedPlanConfigForm} from './CountedPlanConfigForm';
 import {ListOfRecordsPlanConfigForm} from './ListOfRecordsPlanConfigForm';
 import {PlanConfigSection} from './PlanConfigSection';
+import {planSubmissionGate} from './planSubmissionGate';
 import {
   createPlanConfigRegistry,
   getPlanConfigType,
@@ -190,6 +191,40 @@ describe('ListOfRecordsPlanConfigForm', () => {
     expect(lastCall(onChange)).toBeDefined();
     fireEvent.click(screen.getByLabelText('Remove planned-1'));
     expect(lastCall(onChange)).toBeUndefined();
+  });
+});
+
+describe('planSubmissionGate', () => {
+  test('allows submit when there is no plan template', () => {
+    expect(planSubmissionGate({})).toBeUndefined();
+  });
+
+  test('blocks while the template is loading', () => {
+    expect(planSubmissionGate({isLoading: true})?.reason).toMatch(/Loading/);
+  });
+
+  test('blocks when the template fetch fails', () => {
+    expect(planSubmissionGate({isError: true})?.reason).toMatch(
+      /Could not load/
+    );
+  });
+
+  test('blocks until a valid config is supplied', () => {
+    expect(
+      planSubmissionGate({planTemplate: {planType: COUNTED_PLAN_TYPE}})?.reason
+    ).toMatch(/Complete the plan/);
+    expect(
+      planSubmissionGate({
+        planTemplate: {planType: COUNTED_PLAN_TYPE},
+        planConfig: {numberRequired: 3, allowExtraRecords: false},
+      })
+    ).toBeUndefined();
+  });
+
+  test('blocks unregistered plan types', () => {
+    expect(
+      planSubmissionGate({planTemplate: {planType: 'MapGrid'}})?.reason
+    ).toMatch(/cannot be configured/);
   });
 });
 

@@ -57,10 +57,12 @@ so `planTemplate` survives the round trip.
 
 ## Instantiating plans in the web manager
 
-Creating a notebook from a template with a `planTemplate`
-(`web/src/components/forms/create-project-from-template.tsx`) renders a
+Creating a notebook from a template with a `planTemplate` — both from the
+template detail page (`create-project-from-template.tsx`) and from the
+notebooks-page template picker (`create-project-form.tsx`) — renders a
 configuration section for the plan type and gates submission until it is
-complete. The config is sent as `planConfig` with the create request; the API
+complete. The notebooks-page form fetches the full template once one is
+selected. The config is sent as `planConfig` with the create request; the API
 performs the validation described above.
 
 The config forms are registered in `web/src/components/plans/registry.ts`,
