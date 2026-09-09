@@ -60,16 +60,20 @@ interface NotebookDefinition {
 - **`fields`**, **`views`**, **`viewsets`**, **`visible_types`** — same logical content as the legacy Couch `ui-specification` document, but **`fviews` is decoded to `views`** when persisted (current schema).
 - Inner field keys remain **legacy-shaped** (`component-namespace`, `type-returned`, …) — not renamed in this pass.
 - **`settings`** — functional toggles (camelCase), e.g. `showQrCodeButton` (former loose `metadata.showQRCodeButton`).
-- **`schemaVersion`** — notebook JSON schema version (`CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`); drives `migrateNotebook`. Lives on **`uiSpec`**, not under `metadata.information`.
+- **`schemaVersion`** — the **platform format version** of the notebook JSON. Strict semver `MAJOR.MINOR.PATCH` (epoch starts at `1.0.0`; current value is `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`). Drives `migrateNotebook` on write and the app's compatibility tier on read (patch = silent, newer minor = degraded render with a warning, newer major = rejected form with a skeleton). Lives on **`uiSpec`**, not under `metadata.information`. The deprecated two-part values (`1.0`…`7.0`) are collapsed to `1.0.0` on migration. This is **not** the author-managed `metadata.information.notebookVersion` label.
 
 ### `metadata` partition
 
-| Sub-key       | Purpose                                                                                                                                             |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `information` | Non-functional design documentation (`purposeMarkdown`, `projectLeadLabel`, `leadInstitution`, `notebookVersion`, optional `derivedFromTemplateId`) |
-| `custom`      | Optional org-specific key/value bag for keys that do not fit the typed core                                                                         |
+| Sub-key       | Purpose                                                                                                                                                                                                               |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `information` | Non-functional design documentation (`purposeMarkdown`, `projectLeadLabel`, `leadInstitution`, `notebookVersion` — a free-text author label, not the platform `schemaVersion` — and optional `derivedFromTemplateId`) |
+| `custom`      | Optional org-specific key/value bag for keys that do not fit the typed core                                                                                                                                           |
 
-Dropped from the typed core (not migrated into `custom`): `accesses`, `ispublic`, `isrequest`, `sections`, `filenames`, empty `meta`, `template_id` inside metadata, `project_id`, `project_status`, etc. See `migrateV4.ts` for the authoritative lists.
+Dropped from the typed core (not migrated into `custom`): `accesses`, `ispublic`, `isrequest`, `sections`, `filenames`, empty `meta`, `template_id` inside metadata, `project_id`, `project_status`, etc. See the `V5_KEYS_MAPPED` / `V5_KEYS_DROPPED` sets in `notebookMigrations/steps/legacyToV1.ts` for the authoritative lists.
+
+### Zod models and versioned types
+
+`library/data-model/src/uiSpecification/types.ts` defines the notebook JSON model in **versioned blocks** with paired inferred types — `NotebookDefinitionV1Schema` / `NotebookDefinitionV1`, `NotebookUiSpecV1Schema`, `NotebookMetadataV1Schema`, `TemplateDefinitionV1Schema`, `CompiledNotebookDefinitionV1Schema`, … — following the `projectsDB/types.ts` / `templatesDB/types.ts` convention. The unversioned names (`NotebookDefinitionSchema`, `NotebookDefinition`, `TemplateDefinition`, …) are **aliases of the latest block**; import those unless you are writing a migration step. `schemaVersion` is validated by `NotebookSchemaSemverSchema` (`uiSpecification/schemaVersion.ts`).
 
 ## Deploying an upgrade
 
@@ -125,7 +129,7 @@ Legacy exports with top-level `metadata` + `ui-specification` (kebab-case, `fvie
 
 ## Migrations
 
-1. **Notebook JSON** (`migrateNotebook` in `notebookMigrations/index.ts`): sequential steps through historical versions until **`CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`**. See the pipeline table in [Notebook migrations](./NotebookMigrations.md).
+1. **Notebook JSON** (`migrateNotebook` in `notebookMigrations/runner.ts`): a typed harness (registry + path finder + per-step migrate/validate) that brings any document up to **`CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`**. All pre-semver shapes collapse in one `legacy → 1.0.0` step. See [Notebook migrations](./NotebookMigrations.md).
 2. **Projects DB** (`projectsV3toV4Migration`): reads legacy metadata DB + project doc, builds `uiSpecification`, adds root `description` (when derivable from legacy metadata) / audit fields, removes `metadataDb`.
 3. **Templates DB** — analogous template v4 → v5 migration.
 

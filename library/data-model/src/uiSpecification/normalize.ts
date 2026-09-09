@@ -4,6 +4,8 @@ import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   getNotebookSchemaVersion,
   migrateNotebook,
+  NOTEBOOK_SCHEMA_LEGACY,
+  resolveNotebookSchemaMigrationStart,
 } from '../data_storage/migrations/notebookMigrations';
 import {
   NotebookDefinitionSchema,
@@ -13,6 +15,7 @@ import {
   type NotebookDefinition,
 } from './types';
 import {safeValidatePlan, safeValidatePlanTemplate} from '../plans';
+import {compareNotebookSchemaSemver} from './schemaVersion';
 
 export {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION};
 
@@ -26,18 +29,24 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Whether {@link migrateNotebook} should run. Missing version is treated as v1
- * (same rule as the migration engine). Compares only to
- * {@link CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}.
+ * Whether {@link migrateNotebook} should run: true for any legacy (non strict
+ * semver) version and for strict versions **older** than
+ * {@link CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}. A version that is equal to or
+ * **newer** than current never needs migration — forward compatibility is
+ * decided by `assessNotebookSchemaCompatibility`, not by migrating.
  */
 export function notebookUiSpecificationNeedsMigration(
   raw: Record<string, unknown>
 ): boolean {
-  const version = getNotebookSchemaVersion(raw as NotebookSchemaVersionCarrier);
-  if (version === undefined || version === null) {
+  const start = resolveNotebookSchemaMigrationStart(
+    getNotebookSchemaVersion(raw as NotebookSchemaVersionCarrier)
+  );
+  if (start === NOTEBOOK_SCHEMA_LEGACY) {
     return true;
   }
-  return version !== CURRENT_NOTEBOOK_UI_SCHEMA_VERSION;
+  return (
+    compareNotebookSchemaSemver(start, CURRENT_NOTEBOOK_UI_SCHEMA_VERSION) < 0
+  );
 }
 
 /** Maximum serialized size (bytes) for an incoming ui-specification (design file). */

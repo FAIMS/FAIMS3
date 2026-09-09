@@ -31,8 +31,13 @@ import {
 import CircularLoading from '../ui/circular_loading';
 import {getNotebookView} from './plans';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
-import {useCallback, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {Stack} from '@mui/material';
 import {config} from '../../../buildconfig';
+import {
+  NotebookSchemaDegradedAlert,
+  NotebookSchemaIncompatibleView,
+} from './NotebookSchemaCompatibility';
 import {useQueryClient} from '@tanstack/react-query';
 import {NotebookViewComponentProps} from './types';
 import {localGetDataDb} from '../../../utils/database';
@@ -57,18 +62,75 @@ type NotebookViewProps = {
  *
  */
 export function NotebookView({project}: NotebookViewProps) {
-  const {uiSpecificationId} = project;
+  const {uiSpecificationId, schemaCompatibility} = project;
   const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
-  if (!uiSpecification) {
-    return <CircularLoading label="Loading" />;
-  } else {
+  const compileError = compiledSpecService.getCompileError(uiSpecificationId);
+  const waitedForSpec = useDelayedFlag(SPEC_WAIT_MS, !uiSpecification);
+
+  // Tier: incompatible — the stored definition is a placeholder (or the last
+  // good one kept for local data); never render it as a form.
+  if (schemaCompatibility?.tier === 'incompatible') {
     return (
+      <NotebookSchemaIncompatibleView
+        project={project}
+        compatibility={schemaCompatibility}
+        extraReason={compileError}
+      />
+    );
+  }
+
+  if (!uiSpecification) {
+    // Compilation threw (recorded by the service) — fail soft immediately.
+    if (compileError) {
+      return (
+        <NotebookSchemaIncompatibleView
+          project={project}
+          compatibility={schemaCompatibility}
+          extraReason={`The ${config.notebookName} design could not be compiled: ${compileError}`}
+        />
+      );
+    }
+    // Briefly allow for hydration; then stop spinning forever and explain.
+    if (!waitedForSpec) {
+      return <CircularLoading label="Loading" />;
+    }
+    return (
+      <NotebookSchemaIncompatibleView
+        project={project}
+        compatibility={schemaCompatibility}
+        extraReason={`The ${config.notebookName} design is not available on this device. Refresh the ${config.notebookName} list and try again.`}
+      />
+    );
+  }
+
+  return (
+    <Stack spacing={2}>
+      {schemaCompatibility?.tier === 'degraded' && (
+        <NotebookSchemaDegradedAlert compatibility={schemaCompatibility} />
+      )}
       <NotebookViewWithSpec
         project={project}
         uiSpecification={uiSpecification}
       />
-    );
-  }
+    </Stack>
+  );
+}
+
+/** How long to show the spinner for a missing compiled spec before failing soft. */
+const SPEC_WAIT_MS = 2500;
+
+/** Becomes true `ms` after `active` turns on; resets when `active` is false. */
+function useDelayedFlag(ms: number, active: boolean): boolean {
+  const [flag, setFlag] = useState(false);
+  useEffect(() => {
+    if (!active) {
+      setFlag(false);
+      return;
+    }
+    const handle = setTimeout(() => setFlag(true), ms);
+    return () => clearTimeout(handle);
+  }, [ms, active]);
+  return flag;
 }
 
 /*

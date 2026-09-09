@@ -4,6 +4,7 @@ import {PlanTemplateSchema} from '../plans/types';
 // augmentations are in scope here, making the stored `plan` a narrowable union.
 import {RegisteredPlanSchema} from '../plans';
 import {ExprValue} from './expressions';
+import {NotebookSchemaSemverSchema} from './schemaVersion';
 
 // ============================================================================
 // Basic aliases
@@ -285,18 +286,38 @@ export type CompiledUiSpecModel = z.infer<typeof CompiledUiSpecModelSchema>;
 //
 // Runtime-validated schemas and their inferred types for a notebook definition:
 // the UI spec, its functional settings, and non-functional design metadata.
+//
+// Versioning convention (same as `projectsDB/types.ts` / `templatesDB/types.ts`):
+// each notebook JSON schema *shape* gets a numbered `V<n>` block with paired
+// `<Name>V<n>Schema` + `z.infer` type, and the unversioned names at the bottom
+// ("Current exports") alias the latest block. `uiSpec.schemaVersion` is a
+// strict `MAJOR.MINOR.PATCH` string (see `schemaVersion.ts`); V1 is epoch
+// `1.0.0`. The deprecated two-part `1.0`…`7.0` ladder has no Zod blocks here —
+// it is collapsed by `notebookMigrations/steps/legacyToV1.ts`.
+//
+// Adding a shape change: add a `V<n+1>` block (extend/omit from `V<n>`), add a
+// harness step `<prev> → <next>` in `notebookMigrations/registry.ts`, then
+// re-point the current aliases. Patch bumps that do not change the model do
+// not need a new block.
 // ============================================================================
 
-/** UI behaviour toggles. */
-export const NotebookSettingsSchema = z.object({
+// =============
+// V1 Definition (schemaVersion epoch 1.0.0)
+// =============
+
+/** UI behaviour toggles (V1). */
+export const NotebookSettingsV1Schema = z.object({
   /** When true, show “search by QR” on the record list for this survey. */
   showQrCodeButton: z.boolean(),
 });
-export type NotebookSettings = z.infer<typeof NotebookSettingsSchema>;
+export type NotebookSettingsV1 = z.infer<typeof NotebookSettingsV1Schema>;
 
-/** Non-functional **design** documentation bundled with the form definition. */
-export const NotebookInformationSchema = z.object({
-  /** Notebook / designer semver or similar; user managed. */
+/** Non-functional **design** documentation bundled with the form definition (V1). */
+export const NotebookInformationV1Schema = z.object({
+  /**
+   * Author-managed version label for the form design (free text). This is
+   * **not** the platform `schemaVersion` and is never used for compatibility.
+   */
   notebookVersion: z.string(),
   /** Long-form design intent (formerly `pre_description`). */
   purposeMarkdown: z.string(),
@@ -310,47 +331,47 @@ export const NotebookInformationSchema = z.object({
    */
   derivedFromTemplateId: z.string().optional(),
 });
-export type NotebookInformation = z.infer<typeof NotebookInformationSchema>;
+export type NotebookInformationV1 = z.infer<typeof NotebookInformationV1Schema>;
 
-/** Typed design metadata plus optional org extensions. */
-export const NotebookMetadataSchema = z.object({
+/** Typed design metadata plus optional org extensions (V1). */
+export const NotebookMetadataV1Schema = z.object({
   /** Non-functional information about the notebook. */
-  information: NotebookInformationSchema,
+  information: NotebookInformationV1Schema,
   /** Optional key/value bag for org-specific tagging; not for settings or user ids. */
   custom: z.record(z.string(), z.any()).optional(),
 });
-export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;
+export type NotebookMetadataV1 = z.infer<typeof NotebookMetadataV1Schema>;
 
 /**
- * Inlined merge of the former notebook JSON and metadata DB. `uiSpec` = decoded
- * **`UiSpecModel`** (`fields`, `views (sections)`, `viewsets (forms)`,
- * `visible_types`) plus **`settings`** and **`schemaVersion`**.
+ * Inlined merge of the former notebook JSON and metadata DB (V1). `uiSpec` =
+ * decoded **`UiSpecModel`** (`fields`, `views (sections)`, `viewsets (forms)`,
+ * `visible_types`) plus **`settings`** and a strict-semver **`schemaVersion`**.
  */
-export const NotebookUiSpecSchema = UiSpecModelSchema.and(
+export const NotebookUiSpecV1Schema = UiSpecModelSchema.and(
   z.object({
     /** UI functional settings. */
-    settings: NotebookSettingsSchema,
-    /** Drives notebook migration / compatibility. */
-    schemaVersion: z.string(),
+    settings: NotebookSettingsV1Schema,
+    /** Platform format version; drives migration and app compatibility. */
+    schemaVersion: NotebookSchemaSemverSchema,
   })
 );
-export type NotebookUiSpec = z.infer<typeof NotebookUiSpecSchema>;
+export type NotebookUiSpecV1 = z.infer<typeof NotebookUiSpecV1Schema>;
 
 /**
- * Compiled counterpart of {@link NotebookUiSpec}: same shape but with sections
+ * Compiled counterpart of {@link NotebookUiSpecV1}: same shape but with sections
  * compiled (conditions turned into `conditionFn`s), as per
  * {@link CompiledUiSpecModelSchema}.
  */
-export const CompiledNotebookUiSpecSchema = CompiledUiSpecModelSchema.and(
+export const CompiledNotebookUiSpecV1Schema = CompiledUiSpecModelSchema.and(
   z.object({
     /** UI functional settings. */
-    settings: NotebookSettingsSchema,
-    /** Drives notebook migration / compatibility. */
-    schemaVersion: z.string(),
+    settings: NotebookSettingsV1Schema,
+    /** Platform format version; drives migration and app compatibility. */
+    schemaVersion: NotebookSchemaSemverSchema,
   })
 );
-export type CompiledNotebookUiSpec = z.infer<
-  typeof CompiledNotebookUiSpecSchema
+export type CompiledNotebookUiSpecV1 = z.infer<
+  typeof CompiledNotebookUiSpecV1Schema
 >;
 
 /*
@@ -358,12 +379,12 @@ export type CompiledNotebookUiSpec = z.infer<
  * It has the same uiSpec and metadata as a notebook but includes an optional plan template
  * that will be used to instantiate a plan when a notebook is created from the template.
  */
-export const TemplateDefinitionSchema = z.object({
-  uiSpec: NotebookUiSpecSchema,
-  metadata: NotebookMetadataSchema,
+export const TemplateDefinitionV1Schema = z.object({
+  uiSpec: NotebookUiSpecV1Schema,
+  metadata: NotebookMetadataV1Schema,
   planTemplate: PlanTemplateSchema.optional(),
 });
-export type TemplateDefinition = z.infer<typeof TemplateDefinitionSchema>;
+export type TemplateDefinitionV1 = z.infer<typeof TemplateDefinitionV1Schema>;
 
 /*
  * Notebook definition is what is stored in the DB and downloaded/uploaded as JSON.
@@ -374,22 +395,58 @@ export type TemplateDefinition = z.infer<typeof TemplateDefinitionSchema>;
  * at some point. Until we work out how to do this we can use the plan slot in the template for
  * the schema.
  */
-export const NotebookDefinitionSchema = z.object({
-  uiSpec: NotebookUiSpecSchema,
-  metadata: NotebookMetadataSchema,
+export const NotebookDefinitionV1Schema = z.object({
+  uiSpec: NotebookUiSpecV1Schema,
+  metadata: NotebookMetadataV1Schema,
   plan: RegisteredPlanSchema.optional(),
 });
-export type NotebookDefinition = z.infer<typeof NotebookDefinitionSchema>;
+export type NotebookDefinitionV1 = z.infer<typeof NotebookDefinitionV1Schema>;
 
 /**
- * Compiled counterpart of {@link NotebookDefinition}: identical shape but with a
- * compiled {@link CompiledNotebookUiSpec} in place of the plain `uiSpec`.
+ * Compiled counterpart of {@link NotebookDefinitionV1}: identical shape but with a
+ * compiled {@link CompiledNotebookUiSpecV1} in place of the plain `uiSpec`.
  */
-export const CompiledNotebookDefinitionSchema = z.object({
-  uiSpec: CompiledNotebookUiSpecSchema,
-  metadata: NotebookMetadataSchema,
+export const CompiledNotebookDefinitionV1Schema = z.object({
+  uiSpec: CompiledNotebookUiSpecV1Schema,
+  metadata: NotebookMetadataV1Schema,
   plan: RegisteredPlanSchema.optional(),
 });
+export type CompiledNotebookDefinitionV1 = z.infer<
+  typeof CompiledNotebookDefinitionV1Schema
+>;
+
+// =============
+// Current exports
+// =============
+//
+// Unversioned names alias the latest V-block so existing imports stay stable.
+// Re-point these when a new V-block is added.
+
+export const NotebookSettingsSchema = NotebookSettingsV1Schema;
+export type NotebookSettings = z.infer<typeof NotebookSettingsSchema>;
+
+export const NotebookInformationSchema = NotebookInformationV1Schema;
+export type NotebookInformation = z.infer<typeof NotebookInformationSchema>;
+
+export const NotebookMetadataSchema = NotebookMetadataV1Schema;
+export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;
+
+export const NotebookUiSpecSchema = NotebookUiSpecV1Schema;
+export type NotebookUiSpec = z.infer<typeof NotebookUiSpecSchema>;
+
+export const CompiledNotebookUiSpecSchema = CompiledNotebookUiSpecV1Schema;
+export type CompiledNotebookUiSpec = z.infer<
+  typeof CompiledNotebookUiSpecSchema
+>;
+
+export const TemplateDefinitionSchema = TemplateDefinitionV1Schema;
+export type TemplateDefinition = z.infer<typeof TemplateDefinitionSchema>;
+
+export const NotebookDefinitionSchema = NotebookDefinitionV1Schema;
+export type NotebookDefinition = z.infer<typeof NotebookDefinitionSchema>;
+
+export const CompiledNotebookDefinitionSchema =
+  CompiledNotebookDefinitionV1Schema;
 export type CompiledNotebookDefinition = z.infer<
   typeof CompiledNotebookDefinitionSchema
 >;

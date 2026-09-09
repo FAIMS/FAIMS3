@@ -20,7 +20,10 @@
 
 import Bugsnag from '@bugsnag/js';
 import BugsnagPluginReact from '@bugsnag/plugin-react';
-import {setAttachmentSaveTraceEnabled} from '@faims3/data-model';
+import {
+  setAttachmentSaveTraceEnabled,
+  type NotebookSchemaCompatibility,
+} from '@faims3/data-model';
 import {FormLogger, LoggingService} from '@faims3/forms';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import {Button, Grid, Typography} from '@mui/material';
@@ -127,19 +130,194 @@ export const ErrorPage = () => {
   );
 };
 
+/** True when a real Bugsnag key is configured and the client was started. */
+export const bugsnagEnabled: boolean =
+  !!config.bugsnagKey && config.bugsnagKey !== '<your bugsnag API key>';
+
 export const logError = (error: any) => {
-  if (config.bugsnagKey) {
+  if (bugsnagEnabled) {
     Bugsnag.notify(error);
   } else {
     console.error('LogError:', error);
   }
 };
 
+// ============================================================================
+// Structured compatibility reporting (notebook schema ↔ app, app ↔ server)
+// ============================================================================
+
+/** Which relationship a compatibility report describes. */
+export type CompatibilityReportKind = 'notebook-schema' | 'app-server';
+
+/** Metadata attached to every compatibility report (Bugsnag `compatibility` tab). */
+export type CompatibilityReportMetadata = {
+  kind: CompatibilityReportKind;
+  severity: 'warning' | 'error';
+  appVersion: string;
+  serverVersion?: string;
+  serverId?: string;
+  projectId?: string;
+  notebookName?: string;
+  /** `uiSpec.schemaVersion` exactly as found on the notebook, if any. */
+  notebookSchemaVersion?: string;
+  /** `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION` for this build. */
+  appSchemaVersion?: string;
+  tier?: NotebookSchemaCompatibility['tier'];
+  relation?: NotebookSchemaCompatibility['relation'];
+  reason: string;
+  /** Where the report originated (e.g. `app-ingest`, `compile`, `version-warning`). */
+  source: string;
+};
+
+/** In-memory dedupe so a report fires once per distinct situation per session. */
+const reportedCompatibilityKeys = new Set<string>();
+
+function reportCompatibility(
+  message: string,
+  metadata: CompatibilityReportMetadata,
+  dedupeKey: string
+): void {
+  if (reportedCompatibilityKeys.has(dedupeKey)) {
+    return;
+  }
+  reportedCompatibilityKeys.add(dedupeKey);
+
+  if (bugsnagEnabled) {
+    Bugsnag.notify(new Error(message), event => {
+      event.severity = metadata.severity;
+      event.context = `compatibility:${metadata.kind}`;
+      event.addMetadata('compatibility', metadata);
+    });
+  } else {
+    const log = metadata.severity === 'error' ? console.error : console.warn;
+    log(`[Compatibility] ${message}`, metadata);
+  }
+}
+
+/**
+ * Report a notebook schema compatibility outcome. `compatible` tiers are not
+ * reported (legacy / older notebooks migrating successfully is normal);
+ * `degraded` is a warning, `incompatible` an error. Deduped per
+ * server + notebook + tier + version + reason for the session.
+ */
+export function reportNotebookSchemaCompatibility({
+  compatibility,
+  projectId,
+  serverId,
+  serverVersion,
+  notebookName,
+  source,
+}: {
+  compatibility: NotebookSchemaCompatibility;
+  projectId: string;
+  serverId: string;
+  serverVersion?: string;
+  notebookName?: string;
+  source: string;
+}): void {
+  if (compatibility.tier === 'compatible') {
+    return;
+  }
+  const severity = compatibility.tier === 'incompatible' ? 'error' : 'warning';
+  const message = `Notebook schema ${compatibility.tier}: ${projectId} (schemaVersion ${
+    compatibility.notebookSchemaVersion ?? 'none'
+  } vs app ${compatibility.appSchemaVersion})`;
+
+  reportCompatibility(
+    message,
+    {
+      kind: 'notebook-schema',
+      severity,
+      appVersion: config.appVersion,
+      serverVersion,
+      serverId,
+      projectId,
+      notebookName,
+      notebookSchemaVersion: compatibility.notebookSchemaVersion,
+      appSchemaVersion: compatibility.appSchemaVersion,
+      tier: compatibility.tier,
+      relation: compatibility.relation,
+      reason: compatibility.reason,
+      source,
+    },
+    [
+      'notebook-schema',
+      serverId,
+      projectId,
+      compatibility.tier,
+      compatibility.notebookSchemaVersion ?? '',
+      compatibility.reason,
+    ].join('|')
+  );
+}
+
+/**
+ * Report a failure to compile a notebook's UI spec (conditions / expressions)
+ * as an `incompatible`-severity notebook-schema event.
+ */
+export function reportNotebookCompileFailure({
+  uiSpecificationId,
+  schemaVersion,
+  error,
+}: {
+  uiSpecificationId: string;
+  schemaVersion?: string;
+  error: unknown;
+}): void {
+  const reason = error instanceof Error ? error.message : String(error);
+  reportCompatibility(
+    `Notebook UI spec failed to compile: ${uiSpecificationId}`,
+    {
+      kind: 'notebook-schema',
+      severity: 'error',
+      appVersion: config.appVersion,
+      notebookSchemaVersion: schemaVersion,
+      tier: 'incompatible',
+      reason,
+      source: 'compile',
+    },
+    ['compile', uiSpecificationId, reason].join('|')
+  );
+}
+
+/**
+ * Report an app ↔ server version mismatch (context for notebook issues).
+ * Warning severity; deduped per server + version pair for the session.
+ */
+export function reportAppServerVersionMismatch({
+  serverId,
+  serverVersion,
+  source = 'version-warning',
+}: {
+  serverId: string;
+  serverVersion: string;
+  source?: string;
+}): void {
+  reportCompatibility(
+    `App version ${config.appVersion} does not match server ${serverId} version ${serverVersion}`,
+    {
+      kind: 'app-server',
+      severity: 'warning',
+      appVersion: config.appVersion,
+      serverVersion,
+      serverId,
+      reason: `App ${config.appVersion} and server ${serverVersion} differ at major.minor.`,
+      source,
+    },
+    ['app-server', serverId, config.appVersion, serverVersion].join('|')
+  );
+}
+
+/** Test hook: clear session dedupe state. */
+export function resetCompatibilityReportDedupe(): void {
+  reportedCompatibilityKeys.clear();
+}
+
 let bugsnag;
 
-if (config.bugsnagKey && config.bugsnagKey !== '<your bugsnag API key>') {
+if (bugsnagEnabled) {
   Bugsnag.start({
-    apiKey: config.bugsnagKey,
+    apiKey: config.bugsnagKey!,
     appVersion: config.appVersion,
     plugins: [new BugsnagPluginReact()],
   });

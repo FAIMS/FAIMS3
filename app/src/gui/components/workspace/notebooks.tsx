@@ -59,6 +59,10 @@ import {
   InviteCodeEntry,
   InviteQRScanner,
 } from '../authentication/inviteCodeEntry';
+import {
+  compatibilityChipProps,
+  NotebookSchemaCompatibilityChip,
+} from '../notebook/NotebookSchemaCompatibility';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
@@ -184,6 +188,13 @@ export default function NoteBooks() {
             >
               {row.name ?? 'Unknown ' + config.notebookNameCapitalized}
             </Typography>
+            {compatibilityChipProps(row.schemaCompatibility) && (
+              <Box sx={{mt: 0.5}}>
+                <NotebookSchemaCompatibilityChip
+                  compatibility={row.schemaCompatibility}
+                />
+              </Box>
+            )}
             {listDescription &&
               (isNotebookListDescriptionTruncated(row.description) ? (
                 <Tooltip title={row.description?.trim() ?? ''}>

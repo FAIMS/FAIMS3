@@ -12,3 +12,4 @@ app/public/manifest.json
 __pycache__/
 *.py[cod]
 .cursor
+.jest-cache

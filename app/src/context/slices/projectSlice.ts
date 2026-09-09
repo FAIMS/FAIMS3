@@ -2,6 +2,7 @@ import {
   couchInitialiser,
   initDataDB,
   NotebookDefinition,
+  NotebookSchemaCompatibility,
   OfflineMapRegion,
   ProjectDataObject,
   ProjectListItem,
@@ -45,6 +46,7 @@ import {offlineMapRegionsEqual} from '@faims3/forms';
 import type {SyncMode} from '../../sync/syncMode';
 import {isReplicating, syncModeIncludesPull} from '../../sync/syncMode';
 import {clearPushOnlyBannerDismissal} from '../../utils/pushOnlyBannerDismissal';
+import {reportNotebookSchemaCompatibility} from '../../logging';
 import {
   cancelProjectQueries,
   handleRemoteProjectRemoved,
@@ -167,8 +169,19 @@ export interface ProjectInformation {
   description?: string;
   /** Source template when created from a template. */
   templateId?: string;
-  /** Inlined uiSpecification from GET /api/notebooks/:id (current notebook schema). */
+  /**
+   * Inlined uiSpecification from GET /api/notebooks/:id (current notebook
+   * schema). When {@link schemaCompatibility} is `incompatible` this is either
+   * the last good definition or an empty placeholder — check the tier before
+   * rendering a form.
+   */
   uiDefinition: NotebookDefinition;
+  /**
+   * How the server's notebook schema version relates to this build
+   * (`compatible` / `degraded` / `incompatible`) with a human readable reason.
+   * Absent on state persisted before compatibility tracking; treat as compatible.
+   */
+  schemaCompatibility?: NotebookSchemaCompatibility;
   /** Survey lifecycle. */
   status: ProjectStatus;
   /** Last update from the server, when known. */
@@ -301,6 +314,7 @@ function retainedProjectFields(project: Project) {
   return {
     projectId: project.projectId,
     uiDefinition: project.uiDefinition,
+    schemaCompatibility: project.schemaCompatibility,
     uiSpecificationId: project.uiSpecificationId,
     description: project.description,
     templateId: project.templateId,
@@ -479,6 +493,7 @@ const projectsSlice = createSlice({
         templateId: payload.templateId,
         updatedAt: payload.updatedAt,
         uiDefinition: payload.uiDefinition,
+        schemaCompatibility: payload.schemaCompatibility,
 
         uiSpecificationId: compiledSpecId,
 
@@ -669,6 +684,7 @@ const projectsSlice = createSlice({
         templateId: payload.templateId,
         updatedAt: payload.updatedAt,
         uiDefinition: payload.uiDefinition,
+        schemaCompatibility: payload.schemaCompatibility,
         uiSpecificationId: compiledSpecId,
         status: payload.status,
         recordCount: mergeRecordCount(
@@ -1903,7 +1919,20 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           serverId,
         });
 
+        if (meta.schemaCompatibility) {
+          reportNotebookSchemaCompatibility({
+            compatibility: meta.schemaCompatibility,
+            projectId,
+            serverId,
+            serverVersion: server.serverVersion,
+            notebookName: meta.name,
+            source: 'app-ingest',
+          });
+        }
+
         if (!existingProject) {
+          // An ingest failure still lists the notebook: the placeholder
+          // definition and the `incompatible` tier drive the skeleton UI.
           actions.push(
             addProject({
               name: meta.name,
@@ -1911,6 +1940,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
               templateId: meta.templateId,
               updatedAt: meta.updatedAt,
               uiDefinition: meta.uiDefinition,
+              schemaCompatibility: meta.schemaCompatibility,
               projectId,
               serverId,
               couchDbUrl: details.dataDb.base_url!,
@@ -1919,6 +1949,18 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             })
           );
         } else {
+          // When the server's design cannot be interpreted, keep the last good
+          // local definition (so existing records stay readable) and surface
+          // the new compatibility state instead of replacing it with the
+          // placeholder.
+          const incomingIncompatible =
+            meta.schemaCompatibility?.tier === 'incompatible';
+          const existingUsable =
+            existingProject.schemaCompatibility?.tier !== 'incompatible';
+          const nextUiDefinition =
+            incomingIncompatible && existingUsable
+              ? existingProject.uiDefinition
+              : meta.uiDefinition;
           const nextOfflineMapRegion = meta.offlineMapRegion;
           if (
             config.offlineMaps &&
@@ -1942,7 +1984,8 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
               description: meta.description ?? existingProject.description,
               templateId: meta.templateId ?? existingProject.templateId,
               updatedAt: meta.updatedAt ?? existingProject.updatedAt,
-              uiDefinition: meta.uiDefinition,
+              uiDefinition: nextUiDefinition,
+              schemaCompatibility: meta.schemaCompatibility,
               projectId,
               serverId,
               couchDbUrl: details.dataDb.base_url!,
