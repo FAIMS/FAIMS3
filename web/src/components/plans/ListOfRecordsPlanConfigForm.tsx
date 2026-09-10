@@ -5,7 +5,10 @@
 
 import {useEffect, useRef, useState} from 'react';
 import {Plus, Trash2} from 'lucide-react';
-import {listPlanTemplateConfigSchema} from '@faims3/data-model';
+import {
+  isListPlanSupportedFieldType,
+  listPlanTemplateConfigSchema,
+} from '@faims3/data-model';
 import {Button} from '@/components/ui/button';
 import {Checkbox} from '@/components/ui/checkbox';
 import {Input} from '@/components/ui/input';
@@ -18,12 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  fieldLabel,
-  formLabel,
-  SUPPORTED_RECORD_FIELD_TYPES,
-  type PlanConfigFormProps,
-} from './types';
+import {fieldLabel, formLabel, type PlanConfigFormProps} from './types';
 
 type Row = {ref: string; values: Record<string, unknown>};
 
@@ -40,11 +38,6 @@ const cellKind = (typeReturned?: string): CellKind => {
   return 'text';
 };
 
-const isSupported = (typeReturned?: string) =>
-  (SUPPORTED_RECORD_FIELD_TYPES as readonly string[]).includes(
-    typeReturned ?? ''
-  );
-
 export const ListOfRecordsPlanConfigForm = ({
   template,
   uiSpec,
@@ -55,8 +48,16 @@ export const ListOfRecordsPlanConfigForm = ({
   // Monotonic so a removed row's reference is never reused
   const nextRef = useRef(1);
 
-  const recordFields = (template.recordFields as string[]) ?? [];
   const targetForm = formLabel(uiSpec, template.formType as string);
+  // Only fields the list can pre-fill with a simple value get a column; the
+  // rest are entered on each record in the app
+  const allFields = (template.recordFields as string[]) ?? [];
+  const recordFields = allFields.filter(field =>
+    isListPlanSupportedFieldType(uiSpec.fields[field]?.['type-returned'])
+  );
+  const skippedFields = allFields.filter(
+    field => !recordFields.includes(field)
+  );
 
   useEffect(() => {
     if (rows.length === 0) {
@@ -133,22 +134,9 @@ export const ListOfRecordsPlanConfigForm = ({
         <TableHeader>
           <TableRow>
             <TableHead>Reference</TableHead>
-            {recordFields.map(field => {
-              const typeReturned = uiSpec.fields[field]?.['type-returned'];
-              return (
-                <TableHead key={field}>
-                  {fieldLabel(uiSpec, field)}
-                  {!isSupported(typeReturned) && (
-                    <span
-                      className="block text-xs font-normal text-amber-600"
-                      title={`Entered as text; ${typeReturned ?? 'this type'} is not supported yet`}
-                    >
-                      entered as text
-                    </span>
-                  )}
-                </TableHead>
-              );
-            })}
+            {recordFields.map(field => (
+              <TableHead key={field}>{fieldLabel(uiSpec, field)}</TableHead>
+            ))}
             <TableHead className="w-12" />
           </TableRow>
         </TableHeader>
@@ -184,6 +172,12 @@ export const ListOfRecordsPlanConfigForm = ({
           )}
         </TableBody>
       </Table>
+      {skippedFields.length > 0 && (
+        <p className="text-sm text-amber-600">
+          Not pre-filled here, entered on each record in the app:{' '}
+          {skippedFields.map(field => fieldLabel(uiSpec, field)).join(', ')}.
+        </p>
+      )}
       <div>
         <Button
           type="button"

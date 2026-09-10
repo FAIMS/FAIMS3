@@ -89,8 +89,10 @@ type it holds:
   is component-based: an editable table with a column per `recordFields`
   entry, input type following the field's `type-returned` (Integer and Number
   give numeric inputs stored as numbers, Bool a checkbox, everything else
-  text). Fields whose type is not in `SUPPORTED_RECORD_FIELD_TYPES` are
-  flagged "entered as text" in the column header. Rows are given sequential
+  text). Only fields whose type is in `LIST_PLAN_SUPPORTED_FIELD_TYPES`
+  (data-model) get a column; the Designer's picker offers only those, and a
+  template that already carries another gets a note that it is entered on
+  each record in the app instead. Rows are given sequential
   reference ids that are never reused after removal, since the id becomes the
   record's `planReference` in the app.
 

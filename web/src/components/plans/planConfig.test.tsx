@@ -200,7 +200,7 @@ describe('ListOfRecordsPlanConfigForm', () => {
     expect(lastCall(onChange)).toBeUndefined();
   });
 
-  test('flags a field whose type it can only enter as text', () => {
+  test('skips a field whose type it cannot pre-fill', () => {
     render(
       <ListOfRecordsPlanConfigForm
         template={{...listTemplate, recordFields: ['Name', 'When']}}
@@ -208,7 +208,10 @@ describe('ListOfRecordsPlanConfigForm', () => {
         onChange={vi.fn()}
       />
     );
-    expect(screen.getAllByText('entered as text')).toHaveLength(1);
+    expect(screen.queryByText('When')).toBeNull();
+    expect(screen.getByText(/entered on each record/).textContent).toContain(
+      'When'
+    );
   });
 });
 

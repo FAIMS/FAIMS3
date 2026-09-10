@@ -99,22 +99,33 @@ describe('ListOfRecordsPlanDialog', () => {
     const input = within(screen.getByTestId('list-plan-field-add')).getByRole(
       'combobox'
     );
-    fireEvent.change(input, {target: {value: 'photograph'}});
-    fireEvent.click(await screen.findByRole('option', {name: /photograph/i}));
+    fireEvent.change(input, {target: {value: 'length'}});
+    fireEvent.click(await screen.findByRole('option', {name: /length/i}));
 
-    expect(chipFor('Sample Photograph')).toBeDefined();
+    expect(chipFor('Length (mm)')).toBeDefined();
 
     fireEvent.click(screen.getByRole('button', {name: 'Save Plan'}));
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
         formType: 'Primary',
-        recordFields: ['Identifier', 'Sample-Photograph'],
+        recordFields: ['Identifier', 'Length-mm'],
       })
     );
   });
 
+  test('does not offer a field the list cannot pre-fill', async () => {
+    renderDialog(['Identifier']);
+
+    const input = within(screen.getByTestId('list-plan-field-add')).getByRole(
+      'combobox'
+    );
+    // A photo has no simple value a planned record could carry
+    fireEvent.change(input, {target: {value: 'photograph'}});
+    expect(await screen.findByText('No fields left to add')).toBeDefined();
+  });
+
   test('a chosen field can be removed and is offered again', async () => {
-    const {onSave} = renderDialog(['Identifier', 'Sample-Photograph']);
+    const {onSave} = renderDialog(['Identifier', 'Length-mm']);
 
     const input = within(screen.getByTestId('list-plan-field-add')).getByRole(
       'combobox'
@@ -124,7 +135,7 @@ describe('ListOfRecordsPlanDialog', () => {
     expect(await screen.findByText('No fields left to add')).toBeDefined();
 
     fireEvent.click(within(chipFor('Identifier')).getByTestId('CancelIcon'));
-    expect(chosenFieldLabels()).toEqual(['Sample Photograph']);
+    expect(chosenFieldLabels()).toEqual(['Length (mm)']);
     // Removing it puts it back in the picker
     expect(
       await screen.findByRole('option', {name: /identifier/i})
@@ -132,7 +143,7 @@ describe('ListOfRecordsPlanDialog', () => {
 
     fireEvent.click(screen.getByRole('button', {name: 'Save Plan'}));
     expect(onSave).toHaveBeenCalledWith(
-      expect.objectContaining({recordFields: ['Sample-Photograph']})
+      expect.objectContaining({recordFields: ['Length-mm']})
     );
   });
 

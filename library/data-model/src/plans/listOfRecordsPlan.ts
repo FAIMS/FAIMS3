@@ -7,6 +7,19 @@ import {
 
 export const LIST_OF_RECORDS_PLAN_TYPE = 'ListOfRecords' as const;
 
+/** Field return types a list plan's recordData can supply as simple values. */
+export const LIST_PLAN_SUPPORTED_FIELD_TYPES = [
+  'faims-core::String',
+  'faims-core::Integer',
+  'faims-core::Number',
+  'faims-core::Bool',
+] as const;
+
+export const isListPlanSupportedFieldType = (typeReturned?: string) =>
+  (LIST_PLAN_SUPPORTED_FIELD_TYPES as readonly string[]).includes(
+    typeReturned ?? ''
+  );
+
 // A list of records plan defines a set of records that should be
 // collected with a few properties of each record included in the plan.
 export const listPlanTemplateConfigSchema = z.object({

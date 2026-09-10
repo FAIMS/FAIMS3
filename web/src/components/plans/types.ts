@@ -22,14 +22,6 @@ export type PlanConfigUiSpec = {
   fields: Record<string, PlanConfigField | undefined>;
 };
 
-/** Field return types the List of Records table can enter directly. */
-export const SUPPORTED_RECORD_FIELD_TYPES = [
-  'faims-core::String',
-  'faims-core::Integer',
-  'faims-core::Number',
-  'faims-core::Bool',
-] as const;
-
 /** What a field-based plan type is handed to build its fields. */
 export type PlanConfigContext = {
   template: PlanTemplate;
