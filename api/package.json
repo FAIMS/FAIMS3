@@ -112,7 +112,7 @@
     "supertest": "^7.1.4",
     "tsx": "^4.20.3",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.11"
   },
   "engines": {
     "node": "24"
