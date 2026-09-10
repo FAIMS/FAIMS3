@@ -225,19 +225,28 @@ export function NotebookSchemaDegradedAlert({
 /**
  * Fail-soft skeleton for a notebook whose design this build cannot safely
  * render: title/status context, an explanation, a copyable diagnostic, and
- * the design metadata when it could be salvaged. No record list and no
- * record creation. Activation is left alone so local data is not trapped.
+ * the design metadata when it could be salvaged. Activation is left alone so
+ * local data is not trapped.
+ *
+ * - `variant="full"` (default): no usable local design — shows the metadata
+ *   block and a "records unavailable" notice.
+ * - `variant="header"`: a last good design is available locally, so the
+ *   caller renders a read-only record list beneath this banner. Create and
+ *   edit remain blocked (see `isNotebookDesignLocked`).
  */
 export function NotebookSchemaIncompatibleView({
   project,
   compatibility,
   extraReason,
+  variant = 'full',
 }: {
   project: Project;
   compatibility?: NotebookSchemaCompatibility;
   /** Compile or other failure detail when `compatibility` alone is not the cause. */
   extraReason?: string;
+  variant?: 'full' | 'header';
 }) {
+  const withRecords = variant === 'header';
   const serverVersion = useAppSelector(
     state => state.projects.servers[project.serverId]?.serverVersion
   );
@@ -300,15 +309,15 @@ export function NotebookSchemaIncompatibleView({
           {isNewerMajor
             ? `Update the app to a version that supports ${config.notebookName} schema ${compatibility?.notebookSchemaVersion}. `
             : `Contact the ${config.notebookName} owner or a system administrator with the report below. `}
-          Records already on this device are kept and will continue to sync;
-          creating new records is disabled until the {config.notebookName} can
-          be loaded.
+          {withRecords
+            ? `Records already on this device are kept, will continue to sync, and can be viewed below using the last design this app understood; creating or editing records is disabled until the ${config.notebookName} can be loaded.`
+            : `Records already on this device are kept and will continue to sync; creating new records is disabled until the ${config.notebookName} can be loaded.`}
         </Typography>
       </Alert>
 
       <CopyableCompatibilityReport report={report} />
 
-      {hasMetadata && (
+      {!withRecords && hasMetadata && (
         <Paper variant="outlined" sx={{p: 1}}>
           <MetadataDisplayComponent
             project={project}
@@ -317,15 +326,36 @@ export function NotebookSchemaIncompatibleView({
         </Paper>
       )}
 
-      <Paper variant="outlined" sx={{p: 2}}>
-        <Typography variant="subtitle2" gutterBottom>
-          Records
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          The record list is unavailable because the {config.notebookName}{' '}
-          design could not be loaded.
-        </Typography>
-      </Paper>
+      {!withRecords && (
+        <Paper variant="outlined" sx={{p: 2}}>
+          <Typography variant="subtitle2" gutterBottom>
+            Records
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            The record list is unavailable because the {config.notebookName}{' '}
+            design could not be loaded.
+          </Typography>
+        </Paper>
+      )}
     </Stack>
+  );
+}
+
+/** Short banner for record pages when the design is locked (view allowed, edit blocked). */
+export function NotebookDesignLockedAlert({
+  compatibility,
+}: {
+  compatibility?: NotebookSchemaCompatibility;
+}) {
+  return (
+    <Alert severity="warning" data-testid="notebook-design-locked-alert">
+      <AlertTitle>
+        This {config.notebookName} cannot be edited with this version of the app
+      </AlertTitle>
+      {compatibility?.reason ??
+        `The ${config.notebookName} design could not be loaded.`}{' '}
+      Records can be viewed but not changed until the {config.notebookName} can
+      be loaded.
+    </Alert>
   );
 }

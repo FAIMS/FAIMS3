@@ -51,17 +51,18 @@ apply to the Fieldmark app path above. Appium (`test:e2e:android` /
 
 ### Tier 1 — Core happy paths
 
-| Spec                                 | Covers                                                                  |
-| ------------------------------------ | ----------------------------------------------------------------------- |
-| `web/teams.e2e.ts`                   | Teams list, create team, team detail tabs                               |
-| `web/templates-create.e2e.ts`        | Templates list, create template from team                               |
-| `web/projects-create.e2e.ts`         | Create project dialog                                                   |
-| `web/designer-basic.e2e.ts`          | Open designer from template (minimal form + text + save when available) |
-| `app/notebook-activate.e2e.ts`       | Notebook workspace, Active / Not Active tabs, activate control          |
-| `app/record-crud.e2e.ts`             | Open notebook, add record, create text record, list/search              |
-| `app/notebook-map.e2e.ts`            | Capture a point, open the Map tab, assert record geometry plots         |
-| `app/notebook-tab-route.e2e.ts`      | Tab in the URL, back/edit/delete from a record return to that tab       |
-| `journeys/template-to-record.e2e.ts` | Cross-surface: templates in Control Centre → Fieldmark workspace        |
+| Spec                                       | Covers                                                                                              |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `web/teams.e2e.ts`                         | Teams list, create team, team detail tabs                                                           |
+| `web/templates-create.e2e.ts`              | Templates list, create template from team                                                           |
+| `web/projects-create.e2e.ts`               | Create project dialog                                                                               |
+| `web/designer-basic.e2e.ts`                | Open designer from template (minimal form + text + save when available)                             |
+| `app/notebook-activate.e2e.ts`             | Notebook workspace, Active / Not Active tabs, activate control                                      |
+| `app/record-crud.e2e.ts`                   | Open notebook, add record, create text record, list/search                                          |
+| `app/notebook-map.e2e.ts`                  | Capture a point, open the Map tab, assert record geometry plots                                     |
+| `app/notebook-schema-compatibility.e2e.ts` | Future-schema fixtures: list chips, incompatible skeleton + copy report, no create; degraded banner |
+| `app/notebook-tab-route.e2e.ts`            | Tab in the URL, back/edit/delete from a record return to that tab                                   |
+| `journeys/template-to-record.e2e.ts`       | Cross-surface: templates in Control Centre → Fieldmark workspace                                    |
 
 ### Tier 2 — Lifecycle & invites
 
@@ -113,6 +114,7 @@ Credentials live in `e2e/.env.dist` (copy to `e2e/.env`). Dataset:
 | `TEST_PROJECT_CONTRIBUTOR_*`      | App record create/edit, overview-map geometry (Red `e2e-minimal`)    |
 | `TEST_PROJECT_GUEST_*`            | Read-only / limited UI                                               |
 | `TEST_USER_*`                     | Generic member (`seed-user@faims.test`)                              |
+| `TEST_SCHEMA_TESTER_*`            | App schema-compatibility fail-soft (future-schema fixture notebooks) |
 
 Default seed notebooks: Red = `api/notebooks/e2e-minimal.json`, Blue =
 `api/notebooks/sample_notebook.json` (`TEST_SEED_NOTEBOOKS` override).

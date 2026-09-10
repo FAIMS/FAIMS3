@@ -111,9 +111,13 @@ Helpers live in `test/helpers/` (see `test/helpers/README.md`). Prefer
 | `TEST_RED_MEMBER_CREATOR_*`       | Template creation                                                                                                |
 | `TEST_PROJECT_CONTRIBUTOR_*`      | App record create/edit and overview-map geometry (Red `e2e-minimal` notebook)                                    |
 | `TEST_PROJECT_GUEST_*`            | Read-only / limited UI                                                                                           |
+| `TEST_SCHEMA_TESTER_*`            | App schema-compatibility fail-soft: contributor on the seeded future-schema fixture notebooks only               |
 
 Default seed notebooks: Red = `api/notebooks/e2e-minimal.json`, Blue =
-`api/notebooks/sample_notebook.json` (override via `TEST_SEED_NOTEBOOKS`).
+`api/notebooks/sample_notebook.json` (override via `TEST_SEED_NOTEBOOKS`). The
+seed also writes two copies of the Red design stamped with a newer major /
+newer minor `schemaVersion` (`notebook_seed_future_*`) for
+`app/notebook-schema-compatibility.e2e.ts`.
 
 ## Spec layout
 

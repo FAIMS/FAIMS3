@@ -22,6 +22,38 @@ vi.mock('./MetadataDisplay', () => ({
   MetadataDisplayComponent: () => <div data-testid="metadata-display" />,
 }));
 
+// Read-only browsing test: stub the data-layer hooks NotebookViewWithSpec
+// needs, and register a plan view that echoes the create permission it is
+// handed so the gating can be asserted without a live record list.
+vi.mock('../../../utils/customHooks', () => ({
+  useIsAuthorisedTo: () => true,
+  useIsRecordDownloadUnderway: () => false,
+  usePlanRecordStatusReports: () => ({}),
+  useRecordList: () => ({
+    allRecords: [],
+    myRecords: [],
+    otherRecords: [],
+    isLoading: false,
+    canReadAllRecords: true,
+    refetch: vi.fn(),
+  }),
+  invalidateProjectRecordList: vi.fn(),
+  invalidateProjectHydration: vi.fn(),
+}));
+vi.mock('../../../utils/apiHooks/notebooks', () => ({
+  useRecordAudit: () => ({data: undefined}),
+}));
+vi.mock('../../../utils/database', () => ({
+  localGetDataDb: () => ({}),
+}));
+vi.mock('./plans', () => ({
+  getNotebookView: () => (props: any) => (
+    <div data-testid="plan-view">
+      create-allowed:{String(props.status.isAllowedToAddRecords)}
+    </div>
+  ),
+}));
+
 vi.mock('react-router-dom', async () => {
   const actual = (await vi.importActual('react-router-dom')) satisfies Object;
   return {
@@ -105,6 +137,55 @@ describe('NotebookView fail-soft tiers', () => {
     expect(
       screen.getByTestId('notebook-schema-chip-incompatible')
     ).toBeTruthy();
+  });
+
+  it('incompatible with a last good design: banner + read-only records, create blocked', () => {
+    const project = baseProject();
+    // A real (non-placeholder) last good graph is stored locally
+    project.uiDefinition.uiSpec.fields = {
+      title: {
+        'component-namespace': 'faims-custom',
+        'component-name': 'TextField',
+        'type-returned': 'faims-core::String',
+        'component-parameters': {label: 'Title', name: 'title'},
+      },
+    } as any;
+    project.uiDefinition.uiSpec.views = {s1: {fields: ['title'], label: 'S'}};
+    project.uiDefinition.uiSpec.viewsets = {f1: {views: ['s1'], label: 'F'}};
+    project.uiDefinition.uiSpec.visible_types = ['f1'];
+    project.schemaCompatibility = {
+      tier: 'incompatible',
+      relation: 'newer-major',
+      appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+      notebookSchemaVersion: '99.0.0',
+      requiresMigration: false,
+      reason: 'Notebook schemaVersion 99.0.0 has a newer major version',
+    };
+    specs.set('spec-1', {
+      ...project.uiDefinition.uiSpec,
+      conditionFns: {},
+    });
+
+    act(() => {
+      render(
+        <TestWrapper>
+          <NotebookView project={project} />
+        </TestWrapper>
+      );
+    });
+
+    // Banner + report still present …
+    expect(
+      screen.getByTestId('notebook-schema-incompatible-view')
+    ).toBeTruthy();
+    expect(
+      screen.getByTestId('notebook-compatibility-copy-report')
+    ).toBeTruthy();
+    // … but the record list renders (read-only) instead of "unavailable"
+    expect(screen.queryByText(/record list is unavailable/i)).toBeNull();
+    expect(screen.getByTestId('plan-view').textContent).toContain(
+      'create-allowed:false'
+    );
   });
 
   it('shows the skeleton with the compile error when the spec failed to compile', () => {

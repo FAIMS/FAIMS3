@@ -7,6 +7,7 @@ import React, {useState} from 'react';
 import {config} from '../../../buildconfig';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
+import {isNotebookDesignLocked} from '../../../context/slices/helpers/notebookDefinition';
 import {Project, selectProjectById} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
@@ -111,7 +112,10 @@ export default function NotebookComponent({
     useIsAuthorisedTo({
       action: Action.CREATE_PROJECT_RECORD,
       resourceId: project.projectId,
-    }) && project.status === ProjectStatus.OPEN;
+    }) &&
+    project.status === ProjectStatus.OPEN &&
+    // Never accept new data against a design this build cannot interpret.
+    !isNotebookDesignLocked(project);
 
   const {uiSpecificationId} = project;
   const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);

@@ -46,6 +46,7 @@ import {
 } from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
+import {isNotebookDesignLocked} from '../../context/slices/helpers/notebookDefinition';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
@@ -54,6 +55,7 @@ import {tryLocalGetDataDb} from '../../utils/database';
 import {NOTEBOOK_LIST_ROUTE} from '../../utils/remoteProjectRemoval';
 import {useAutoIncrementService} from '../../utils/useIncrementerService';
 import {AutoIncrementEditForm} from '../components/autoincrement/edit-form';
+import {NotebookDesignLockedAlert} from '../components/notebook/NotebookSchemaCompatibility';
 import {theme} from '../themes';
 
 const DEFAULT_LAYOUT: 'tabs' | 'inline' = 'tabs';
@@ -423,6 +425,26 @@ export const EditRecordPage = () => {
 
   if (!recordId) {
     return <div>Record ID not specified</div>;
+  }
+
+  // Design locked (incompatible schema): the compiled spec is the last good
+  // design, fine for read-only viewing but never for accepting new data.
+  if (isNotebookDesignLocked(project)) {
+    return (
+      <Stack spacing={2} sx={{p: 2}} data-testid="edit-record-design-locked">
+        <NotebookDesignLockedAlert
+          compatibility={project.schemaCompatibility}
+        />
+        <Button
+          variant="outlined"
+          onClick={() =>
+            navigate(getViewRecordRoute({projectId, recordId, serverId, tab}))
+          }
+        >
+          Open read-only view
+        </Button>
+      </Stack>
+    );
   }
 
   if (!formConfig) {

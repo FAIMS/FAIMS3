@@ -29,6 +29,10 @@ The app compares a notebook's `schemaVersion` with its own `CURRENT` via `assess
 | **newer major**                    | `incompatible` | form graph not parsed; skeleton + copyable diagnostic report |
 | migration or validation failure    | `incompatible` | skeleton + report                                            |
 
+For `incompatible`, the app is **field-friendly rather than all-or-nothing**: the notebook stays listed (with a chip), the last good design already on the device is kept so existing records can be listed and viewed read-only, and **creating or editing** records is blocked everywhere (`isNotebookDesignLocked`). A notebook that was never readable holds an empty placeholder design and shows the skeleton only.
+
+The tier is persisted per project but re-evaluated against the running build on **every startup** (`reassessSchemaCompatibility`, before `compileSpecs`), so an offline upgrade or downgrade never shows a stale chip. A previously `incompatible` notebook is not promoted until its design has actually been re-downloaded.
+
 Bump guidance when changing the schema:
 
 - **patch** — additive / safe; an older app must render the notebook correctly without noticing.

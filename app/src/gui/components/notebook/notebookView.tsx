@@ -17,6 +17,10 @@ import NotebookComponent from '.';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
+import {
+  isNotebookDesignLocked,
+  isPlaceholderNotebookDefinition,
+} from '../../../context/slices/helpers/notebookDefinition';
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import * as ROUTES from '../../../constants/routes';
@@ -67,15 +71,37 @@ export function NotebookView({project}: NotebookViewProps) {
   const compileError = compiledSpecService.getCompileError(uiSpecificationId);
   const waitedForSpec = useDelayedFlag(SPEC_WAIT_MS, !uiSpecification);
 
-  // Tier: incompatible — the stored definition is a placeholder (or the last
-  // good one kept for local data); never render it as a form.
+  // Tier: incompatible — the stored definition is either a placeholder or the
+  // last good design kept so local data is not trapped. With a usable last
+  // good design, render a read-only record list under the banner (create and
+  // edit are blocked via `isNotebookDesignLocked`); otherwise show the
+  // skeleton only.
   if (schemaCompatibility?.tier === 'incompatible') {
+    const canBrowseLocalRecords =
+      !!uiSpecification &&
+      !compileError &&
+      !isPlaceholderNotebookDefinition(project.uiDefinition);
+    if (!canBrowseLocalRecords) {
+      return (
+        <NotebookSchemaIncompatibleView
+          project={project}
+          compatibility={schemaCompatibility}
+          extraReason={compileError}
+        />
+      );
+    }
     return (
-      <NotebookSchemaIncompatibleView
-        project={project}
-        compatibility={schemaCompatibility}
-        extraReason={compileError}
-      />
+      <Stack spacing={2}>
+        <NotebookSchemaIncompatibleView
+          project={project}
+          compatibility={schemaCompatibility}
+          variant="header"
+        />
+        <NotebookViewWithSpec
+          project={project}
+          uiSpecification={uiSpecification}
+        />
+      </Stack>
     );
   }
 
@@ -152,7 +178,10 @@ function NotebookViewWithSpec({
     useIsAuthorisedTo({
       action: Action.CREATE_PROJECT_RECORD,
       resourceId: project.projectId,
-    }) && project.status === ProjectStatus.OPEN;
+    }) &&
+    project.status === ProjectStatus.OPEN &&
+    // Never accept new data against a design this build cannot interpret.
+    !isNotebookDesignLocked(project);
 
   // Records on the server may still be downloading into the local database:
   // while true, a record's absence from the lists proves nothing.

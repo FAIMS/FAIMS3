@@ -33,6 +33,7 @@ import {reportNotebookSchemaCompatibility} from '../../logging';
 import projectsReducer, {
   initialiseProjects,
   initialProjectState,
+  reassessSchemaCompatibility,
   type ProjectsState,
 } from './projectSlice';
 
@@ -236,5 +237,93 @@ describe('initialiseProjects notebook schema fail-soft', () => {
       store.getState().projects.servers[serverId].projects['nb-1'];
     expect(project.schemaCompatibility?.tier).toBe('degraded');
     expect(project.uiDefinition.uiSpec.fields).toHaveProperty('title');
+  });
+});
+
+describe('reassessSchemaCompatibility (startup, offline-safe)', () => {
+  beforeEach(() => {
+    vi.mocked(reportNotebookSchemaCompatibility).mockClear();
+  });
+
+  it('re-tiers a persisted newer-major design after an app downgrade and keeps its graph', () => {
+    const [major] = CURRENT_NOTEBOOK_UI_SCHEMA_VERSION.split('.');
+    const newer = currentDefinition();
+    newer.uiSpec.schemaVersion = `${Number(major) + 1}.0.0`;
+    const store = makeStore({
+      'nb-1': {
+        projectId: 'nb-1',
+        serverId,
+        name: 'Newer',
+        status: ProjectStatus.OPEN,
+        isActivated: true,
+        uiDefinition: newer as any,
+        uiSpecificationId: 'old-spec',
+        schemaCompatibility: {
+          tier: 'compatible',
+          relation: 'current',
+          appSchemaVersion: `${Number(major) + 1}.0.0`,
+          notebookSchemaVersion: `${Number(major) + 1}.0.0`,
+          requiresMigration: false,
+          reason: 'ok',
+        },
+      },
+      'nb-2': {
+        projectId: 'nb-2',
+        serverId,
+        name: 'Fine',
+        status: ProjectStatus.OPEN,
+        isActivated: true,
+        uiDefinition: currentDefinition() as any,
+        uiSpecificationId: 'spec-2',
+        schemaCompatibility: {
+          tier: 'compatible',
+          relation: 'current',
+          appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+          notebookSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+          requiresMigration: false,
+          reason: 'ok',
+        },
+      },
+    });
+
+    store.dispatch(reassessSchemaCompatibility());
+
+    const projects = store.getState().projects.servers[serverId].projects;
+    expect(projects['nb-1'].schemaCompatibility?.tier).toBe('incompatible');
+    expect(projects['nb-1'].schemaCompatibility?.appSchemaVersion).toBe(
+      CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+    );
+    expect(projects['nb-1'].uiDefinition.uiSpec.fields).toHaveProperty('title');
+    expect(projects['nb-1'].isActivated).toBe(true);
+    // Already assessed by this build: untouched, not re-reported.
+    expect(projects['nb-2'].schemaCompatibility?.tier).toBe('compatible');
+    expect(reportNotebookSchemaCompatibility).toHaveBeenCalledTimes(1);
+    expect(reportNotebookSchemaCompatibility).toHaveBeenCalledWith(
+      expect.objectContaining({projectId: 'nb-1', source: 'persisted-reassess'})
+    );
+  });
+
+  it('assesses projects persisted before compatibility tracking existed', () => {
+    const store = makeStore({
+      'nb-1': {
+        projectId: 'nb-1',
+        serverId,
+        name: 'Untracked',
+        status: ProjectStatus.OPEN,
+        isActivated: false,
+        uiDefinition: currentDefinition() as any,
+        uiSpecificationId: 'spec-1',
+      },
+    });
+
+    store.dispatch(reassessSchemaCompatibility());
+
+    const project =
+      store.getState().projects.servers[serverId].projects['nb-1'];
+    expect(project.schemaCompatibility).toMatchObject({
+      tier: 'compatible',
+      appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+    });
+    expect(reportNotebookSchemaCompatibility).not.toHaveBeenCalled();
   });
 });

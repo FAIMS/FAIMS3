@@ -39,6 +39,7 @@ import {
   addProjectRole,
   addTeamRole,
   addTemplateRole,
+  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   ExistingPeopleDBDocument,
   ExistingProjectDocument,
   ExistingTeamsDBDocument,
@@ -90,7 +91,27 @@ const SEED_IDS = {
   blueTemplate: 'template_seed_blue',
   redNotebook: 'notebook_seed_red',
   blueNotebook: 'notebook_seed_blue',
+  /**
+   * Schema-compatibility fixtures: copies of the Red design stamped with a
+   * `uiSpec.schemaVersion` this build does not know yet (newer major / newer
+   * minor). Written straight to Couch (the API would reject them), owned by an
+   * otherwise unused team so no other persona's lists change. Exercised by
+   * `e2e/test/specs/app/notebook-schema-compatibility.e2e.ts`.
+   */
+  schemaTeam: 'team_seed_schema',
+  futureMajorNotebook: 'notebook_seed_future_major',
+  futureMinorNotebook: 'notebook_seed_future_minor',
 } as const;
+
+/** Next major / next minor relative to this build's notebook schema. */
+const FUTURE_SCHEMA_VERSIONS = (() => {
+  const [major, minor] =
+    CURRENT_NOTEBOOK_UI_SCHEMA_VERSION.split('.').map(Number);
+  return {
+    newerMajor: `${major + 1}.0.0`,
+    newerMinor: `${major}.${minor + 1}.0`,
+  };
+})();
 
 const DEFAULT_NOTEBOOK_PATHS = [
   './notebooks/e2e-minimal.json',
@@ -108,10 +129,13 @@ const NOTEBOOK_PATHS = process.env.TEST_SEED_NOTEBOOKS
 interface SeedContext {
   redTeamId: string;
   blueTeamId: string;
+  schemaTeamId: string;
   redTemplateId: string;
   blueTemplateId: string;
   redNotebookId: string;
   blueNotebookId: string;
+  futureMajorNotebookId: string;
+  futureMinorNotebookId: string;
 }
 
 interface UserSpec {
@@ -279,6 +303,28 @@ const USER_SPECS: UserSpec[] = [
       });
     },
   },
+
+  // ── seed-schema-tester ────────────────────────────────────────────────────
+  // Contributor on the future-schema fixtures only (no team membership), so
+  // the app's compatibility chips / skeleton can be exercised without changing
+  // what any other persona sees.
+  {
+    email: 'seed-schema-tester@faims.test',
+    tag: 'SCHEMA_TESTER',
+    name: 'Schema Compatibility Tester',
+    assignResourceRoles(user, ctx) {
+      addProjectRole({
+        user,
+        role: Role.PROJECT_CONTRIBUTOR,
+        projectId: ctx.futureMajorNotebookId,
+      });
+      addProjectRole({
+        user,
+        role: Role.PROJECT_CONTRIBUTOR,
+        projectId: ctx.futureMinorNotebookId,
+      });
+    },
+  },
 ];
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -435,17 +481,29 @@ async function upsertSeedNotebook({
   uiSpecification,
   templateId,
   teamId,
+  schemaVersionOverride,
 }: {
   id: string;
   projectName: string;
   description?: string;
   uiSpecification: Record<string, unknown>;
-  templateId: string;
+  templateId?: string;
   teamId: string;
+  /**
+   * Stamp `uiSpec.schemaVersion` after normalisation. Only for compatibility
+   * fixtures: lets the seed write a design "from the future" that the API's
+   * own validation would refuse.
+   */
+  schemaVersionOverride?: string;
 }): Promise<string> {
   const projectsDb = localGetProjectsDb();
-  const normalizedUiSpecification =
-    normalizeUiSpecificationOrThrow(uiSpecification);
+  const normalized = normalizeUiSpecificationOrThrow(uiSpecification);
+  const normalizedUiSpecification = schemaVersionOverride
+    ? {
+        ...normalized,
+        uiSpec: {...normalized.uiSpec, schemaVersion: schemaVersionOverride},
+      }
+    : normalized;
   const now = nowIso();
   const dataDBName = `data-${id}`;
 
@@ -562,8 +620,9 @@ function printSummary(
   console.log('═══════════════════════════════════════════════════════════\n');
 
   console.log('TEAMS');
-  console.log(`  Red Team   : ${ctx.redTeamId}`);
-  console.log(`  Blue Team  : ${ctx.blueTeamId}`);
+  console.log(`  Red Team    : ${ctx.redTeamId}`);
+  console.log(`  Blue Team   : ${ctx.blueTeamId}`);
+  console.log(`  Schema Team : ${ctx.schemaTeamId}`);
 
   console.log('\nTEMPLATES');
   console.log(`  Red Template  : ${ctx.redTemplateId}`);
@@ -572,6 +631,12 @@ function printSummary(
   console.log('\nNOTEBOOKS (surveys)');
   console.log(`  Red Notebook  : ${ctx.redNotebookId}`);
   console.log(`  Blue Notebook : ${ctx.blueNotebookId}`);
+  console.log(
+    `  Future major  : ${ctx.futureMajorNotebookId} (schemaVersion ${FUTURE_SCHEMA_VERSIONS.newerMajor})`
+  );
+  console.log(
+    `  Future minor  : ${ctx.futureMinorNotebookId} (schemaVersion ${FUTURE_SCHEMA_VERSIONS.newerMinor})`
+  );
 
   console.log('\nUSERS');
   const header = `  ${'Email'.padEnd(42)} ${'Global Roles'.padEnd(40)} Team Roles`;
@@ -629,6 +694,13 @@ const main = async () => {
       description: 'Seed test team Blue — exercises cross-team visibility',
       now,
     });
+    const schemaTeam = await upsertSeedTeam({
+      id: SEED_IDS.schemaTeam,
+      name: 'Schema Compatibility Team',
+      description:
+        'Seed team owning notebooks stamped with future schema versions (app fail-soft e2e)',
+      now,
+    });
 
     // ── Phase 3: Templates ────────────────────────────────────────────────────
     console.log('\nPhase 3: Upserting templates...');
@@ -681,13 +753,41 @@ const main = async () => {
       teamId: blueTeam._id,
     });
 
+    // Compatibility fixtures: same design as Red, but stamped with a schema
+    // version newer than this build (newer major → `incompatible`, newer minor
+    // → `degraded`). The API's startup migration leaves newer versions alone.
+    const futureMajorNotebookId = await upsertSeedNotebook({
+      id: SEED_IDS.futureMajorNotebook,
+      projectName: `Future Schema (newer major ${FUTURE_SCHEMA_VERSIONS.newerMajor}) — ${redTemplateSpec.name}`,
+      uiSpecification: redTemplateSpec.uiSpecification,
+      description: seedDescription(
+        `Fixture: schemaVersion ${FUTURE_SCHEMA_VERSIONS.newerMajor}; the app must list it, flag it and block record creation`
+      ),
+      teamId: schemaTeam._id,
+      schemaVersionOverride: FUTURE_SCHEMA_VERSIONS.newerMajor,
+    });
+
+    const futureMinorNotebookId = await upsertSeedNotebook({
+      id: SEED_IDS.futureMinorNotebook,
+      projectName: `Future Schema (newer minor ${FUTURE_SCHEMA_VERSIONS.newerMinor}) — ${redTemplateSpec.name}`,
+      uiSpecification: redTemplateSpec.uiSpecification,
+      description: seedDescription(
+        `Fixture: schemaVersion ${FUTURE_SCHEMA_VERSIONS.newerMinor}; the app must render it with a warning`
+      ),
+      teamId: schemaTeam._id,
+      schemaVersionOverride: FUTURE_SCHEMA_VERSIONS.newerMinor,
+    });
+
     const ctx: SeedContext = {
       redTeamId: redTeam._id,
       blueTeamId: blueTeam._id,
+      schemaTeamId: schemaTeam._id,
       redTemplateId: redTemplate._id,
       blueTemplateId: blueTemplate._id,
       redNotebookId,
       blueNotebookId,
+      futureMajorNotebookId,
+      futureMinorNotebookId,
     };
 
     // ── Phase 5: Users + roles ────────────────────────────────────────────────

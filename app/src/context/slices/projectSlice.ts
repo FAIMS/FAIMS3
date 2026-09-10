@@ -19,6 +19,7 @@ import {config} from '../../buildconfig';
 import {AppDispatch, RootState} from '../store';
 import {AuthState, isTokenValid, selectActiveServerId} from './authSlice';
 import {compiledSpecService} from './helpers/compiledSpecService';
+import {reassessPersistedNotebookDefinition} from './helpers/notebookDefinition';
 import {
   buildCompiledSpecId,
   buildPouchIdentifier,
@@ -695,6 +696,42 @@ const projectsSlice = createSlice({
         // treat a missing payload field the same as explicit undefined.
         offlineMapRegion: payload.offlineMapRegion,
       };
+    },
+
+    /**
+     * Re-evaluate every persisted project's `schemaCompatibility` against this
+     * build's `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`.
+     *
+     * The stored tier was computed by whichever app version last fetched the
+     * notebook; after an upgrade or downgrade (especially offline) it may be
+     * stale. Run on startup before `compileSpecs`. See
+     * {@link reassessPersistedNotebookDefinition} for the rules.
+     */
+    reassessSchemaCompatibility: state => {
+      for (const server of Object.values(state.servers)) {
+        for (const project of Object.values(server.projects)) {
+          const next = reassessPersistedNotebookDefinition(project);
+          if (!next.changed) continue;
+          project.schemaCompatibility = next.schemaCompatibility;
+          if (next.uiDefinition !== project.uiDefinition) {
+            project.uiDefinition = next.uiDefinition;
+            project.uiSpecificationId = buildCompiledSpecId({
+              id: {projectId: project.projectId, serverId: server.serverId},
+              uiSpec: next.uiDefinition.uiSpec,
+            });
+          }
+          if (next.schemaCompatibility.tier !== 'compatible') {
+            reportNotebookSchemaCompatibility({
+              compatibility: next.schemaCompatibility,
+              projectId: project.projectId,
+              serverId: server.serverId,
+              serverVersion: server.serverVersion,
+              notebookName: project.name,
+              source: 'persisted-reassess',
+            });
+          }
+        }
+      }
     },
 
     /**
@@ -2455,6 +2492,7 @@ export const {
   updateServerDetails,
   markInitialised,
   deactivateProject,
+  reassessSchemaCompatibility,
   setPendingOfflineMapDownloadPrompt,
   clearPendingOfflineMapDownloadPrompt,
 } = projectsSlice.actions;

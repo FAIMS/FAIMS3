@@ -64,12 +64,14 @@ import {
 } from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
+import {isNotebookDesignLocked} from '../../context/slices/helpers/notebookDefinition';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
 import {tryLocalGetDataDb} from '../../utils/database';
 import {NOTEBOOK_LIST_ROUTE} from '../../utils/remoteProjectRemoval';
 import RecordDelete from '../components/notebook/delete';
+import {NotebookDesignLockedAlert} from '../components/notebook/NotebookSchemaCompatibility';
 import RecordMeta from '../components/record/meta';
 import {RecordStatus} from '../components/record/status';
 import UGCReport from '../components/record/UGCReport';
@@ -232,6 +234,8 @@ interface ViewTabContentProps {
   getAttachmentService: () => ReturnType<typeof createProjectAttachmentService>;
   onEditRecord: () => void;
   isDeleted: boolean;
+  /** False when the record may be viewed but not edited (deleted, or design locked). */
+  canEdit: boolean;
   /** The notebook's custom metadata, referenced as _METADATA.<key> */
   metadataValues?: Record<string, string>;
 }
@@ -247,7 +251,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
   impliedRelationships,
   getDataEngine,
   getAttachmentService,
-  isDeleted,
+  canEdit,
   recordId,
   metadataValues,
 }) => {
@@ -280,7 +284,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
     networkMode: 'always',
   });
 
-  const nestedEditButton: React.FC<{recordId: string}> = isDeleted
+  const nestedEditButton: React.FC<{recordId: string}> = !canEdit
     ? () => null
     : props => (
         <Button
@@ -372,7 +376,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
       {
         // Edit button below progress bar
       }
-      {!isDeleted && (
+      {canEdit && (
         <Button
           variant="outlined"
           startIcon={<EditIcon />}
@@ -677,6 +681,10 @@ export const ViewRecordPage: React.FC = () => {
   const formLabel = uiSpec.viewsets[formData.formId]?.label ?? formData.formId;
 
   const isDeleted = Boolean(formData.context.revision.deleted);
+  // Incompatible design: the record renders via the last good design but must
+  // not be edited against it.
+  const designLocked = isNotebookDesignLocked(project);
+  const canEdit = !isDeleted && !designLocked;
 
   // The tab the record was opened from, which its own links keep
   const notebook: RecordRouteNotebook = {serverId, projectId, tab};
@@ -707,6 +715,11 @@ export const ViewRecordPage: React.FC = () => {
           below, but it cannot be edited.
         </Alert>
       )}
+      {designLocked && !isDeleted && (
+        <NotebookDesignLockedAlert
+          compatibility={project.schemaCompatibility}
+        />
+      )}
 
       {/* Tab Navigation */}
       <TabContext value={activeTab}>
@@ -734,6 +747,7 @@ export const ViewRecordPage: React.FC = () => {
             getDataEngine={getDataEngine}
             getAttachmentService={getAttachmentService}
             isDeleted={isDeleted}
+            canEdit={canEdit}
             metadataValues={project?.uiDefinition.metadata.custom}
           />
         </TabPanel>

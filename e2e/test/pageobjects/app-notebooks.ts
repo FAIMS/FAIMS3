@@ -100,14 +100,43 @@ class AppNotebooksPage extends Page {
 
   /** True if any notebook row on the current tab contains `name`. */
   async hasNotebookNamed(name: string): Promise<boolean> {
+    return (await this.findNotebookRow(name)) !== undefined;
+  }
+
+  /** The notebook row on the current tab whose text contains `name`, if any. */
+  async findNotebookRow(name: string) {
     const rows = await $$('[data-testid="app-notebook-row"]');
     for (const row of rows) {
       const text = await row.getText();
       if (text.includes(name)) {
-        return true;
+        return row;
       }
     }
-    return false;
+    return undefined;
+  }
+
+  /** Wait for the row named `name` on the current tab and return it. */
+  async waitForNotebookRow(name: string, timeout = 30000) {
+    await browser.waitUntil(async () => await this.hasNotebookNamed(name), {
+      timeout,
+      timeoutMsg: `Expected a notebook row named "${name}"`,
+    });
+    const row = await this.findNotebookRow(name);
+    if (!row) {
+      throw new Error(`Notebook row "${name}" disappeared`);
+    }
+    return row;
+  }
+
+  /** On the Active tab, click the row named `name` to open that notebook. */
+  async openActiveNotebookNamed(name: string) {
+    await this.waitForActiveNotebookNamed(name);
+    const row = await this.waitForNotebookRow(name);
+    await row.click();
+    await browser.waitUntil(
+      async () => /\/(surveys|notebooks)\//.test(await browser.getUrl()),
+      {timeout: 15000, timeoutMsg: `Expected to navigate into "${name}"`}
+    );
   }
 
   /**
