@@ -1,4 +1,4 @@
-// Copyright 2026 FAIMS Project
+// Copyright 2023 FAIMS Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,14 +13,15 @@
 // limitations under the License.
 
 /**
- * @file Tests for the plan config registry and the built-in config forms:
- * each form emits a schema-valid config only once its input is complete.
+ * @file Tests for the plan config registry, the built-in config forms and the
+ * submission gate: each plan reports a schema-valid config only once its
+ * input is complete.
  */
 
 import {COUNTED_PLAN_TYPE, LIST_OF_RECORDS_PLAN_TYPE} from '@faims3/data-model';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {describe, expect, test, vi} from 'vitest';
-import {CountedPlanConfigForm} from './CountedPlanConfigForm';
+import {countedPlanConfig, countedPlanFields} from './countedPlanFields';
 import {ListOfRecordsPlanConfigForm} from './ListOfRecordsPlanConfigForm';
 import {PlanConfigSection} from './PlanConfigSection';
 import {planSubmissionGate} from './planSubmissionGate';
@@ -33,7 +34,7 @@ import {
 
 const uiSpec: PlanConfigUiSpec = {
   viewsets: {FORM1: {label: 'Form One', views: ['SECTION1']}},
-  views: {SECTION1: {fields: ['Name', 'Count', 'Flag']}},
+  views: {SECTION1: {fields: ['Name', 'Count', 'Flag', 'When']}},
   fields: {
     Name: {
       'component-parameters': {label: 'Name'},
@@ -47,12 +48,23 @@ const uiSpec: PlanConfigUiSpec = {
       'component-parameters': {label: 'Flag'},
       'type-returned': 'faims-core::Bool',
     },
+    When: {
+      'component-parameters': {label: 'When'},
+      'type-returned': 'faims-core::Datetime',
+    },
   },
 };
 
-const countedTemplate = {planType: COUNTED_PLAN_TYPE, formType: 'FORM1'};
+const countedTemplate = {
+  planType: COUNTED_PLAN_TYPE,
+  planId: 'counted',
+  label: 'Count survey',
+  formType: 'FORM1',
+};
 const listTemplate = {
   planType: LIST_OF_RECORDS_PLAN_TYPE,
+  planId: 'list',
+  label: 'Site list',
   formType: 'FORM1',
   recordFields: ['Name', 'Count', 'Flag'],
 };
@@ -62,10 +74,12 @@ const lastCall = (fn: ReturnType<typeof vi.fn>) =>
 
 describe('plan config registry', () => {
   test('resolves the built-in plan types', () => {
-    expect(getPlanConfigType(COUNTED_PLAN_TYPE)?.label).toBe('Counted');
-    expect(getPlanConfigType(LIST_OF_RECORDS_PLAN_TYPE)?.label).toBe(
-      'List of Records'
-    );
+    const counted = getPlanConfigType(COUNTED_PLAN_TYPE);
+    expect(counted?.label).toBe('Counted');
+    expect(counted && 'fields' in counted).toBe(true);
+    const list = getPlanConfigType(LIST_OF_RECORDS_PLAN_TYPE);
+    expect(list?.label).toBe('List of Records');
+    expect(list && 'ConfigForm' in list).toBe(true);
     expect(getPlanConfigType('MapGrid')).toBeUndefined();
   });
 
@@ -84,49 +98,42 @@ describe('plan config registry', () => {
   });
 });
 
-describe('CountedPlanConfigForm', () => {
-  test('emits a config only for a positive whole number', () => {
-    const onChange = vi.fn();
-    render(
-      <CountedPlanConfigForm
-        template={countedTemplate}
-        uiSpec={uiSpec}
-        onChange={onChange}
-      />
-    );
-    expect(lastCall(onChange)).toBeUndefined();
-
-    const input = screen.getByLabelText('Number of Form One records required');
-    fireEvent.change(input, {target: {value: '0'}});
-    expect(lastCall(onChange)).toBeUndefined();
-
-    fireEvent.change(input, {target: {value: '5'}});
-    expect(lastCall(onChange)).toEqual({
-      numberRequired: 5,
-      allowExtraRecords: false,
-    });
-
-    fireEvent.click(screen.getByTestId('plan-config-allow-extra'));
-    expect(lastCall(onChange)).toEqual({
-      numberRequired: 5,
-      allowExtraRecords: true,
-    });
+describe('countedPlanFields', () => {
+  const fields = countedPlanFields({
+    template: countedTemplate,
+    uiSpec,
+    prefix: 'plan0_',
   });
 
-  test('shows an error once the field is left invalid', () => {
-    render(
-      <CountedPlanConfigForm
-        template={countedTemplate}
-        uiSpec={uiSpec}
-        onChange={vi.fn()}
-      />
-    );
-    const input = screen.getByLabelText('Number of Form One records required');
-    fireEvent.change(input, {target: {value: '2.5'}});
-    fireEvent.blur(input);
+  test('prefixes its field names and labels the target form', () => {
+    expect(fields.map(f => f.name)).toEqual([
+      'plan0_numberRequired',
+      'plan0_allowExtraRecords',
+    ]);
+    expect(fields[0].label).toBe('Number of Form One records required');
+  });
+
+  test('accepts only a positive whole number', () => {
+    const schema = fields[0].schema;
+    expect(schema.safeParse(undefined).success).toBe(false);
+    expect(schema.safeParse(0).success).toBe(false);
+    expect(schema.safeParse(2.5).success).toBe(false);
+    expect(schema.safeParse(5).success).toBe(true);
+  });
+
+  test('assembles the config from form values', () => {
     expect(
-      screen.getByText('Enter a whole number greater than zero.')
-    ).toBeTruthy();
+      countedPlanConfig(
+        {plan0_numberRequired: 5, plan0_allowExtraRecords: undefined},
+        'plan0_'
+      )
+    ).toEqual({numberRequired: 5, allowExtraRecords: false});
+    expect(
+      countedPlanConfig(
+        {plan0_numberRequired: 3, plan0_allowExtraRecords: true},
+        'plan0_'
+      )
+    ).toEqual({numberRequired: 3, allowExtraRecords: true});
   });
 });
 
@@ -192,10 +199,21 @@ describe('ListOfRecordsPlanConfigForm', () => {
     fireEvent.click(screen.getByLabelText('Remove planned-1'));
     expect(lastCall(onChange)).toBeUndefined();
   });
+
+  test('flags a field whose type it can only enter as text', () => {
+    render(
+      <ListOfRecordsPlanConfigForm
+        template={{...listTemplate, recordFields: ['Name', 'When']}}
+        uiSpec={uiSpec}
+        onChange={vi.fn()}
+      />
+    );
+    expect(screen.getAllByText('entered as text')).toHaveLength(1);
+  });
 });
 
 describe('planSubmissionGate', () => {
-  test('allows submit when there is no plan template', () => {
+  test('allows submit when there are no plan templates', () => {
     expect(planSubmissionGate({})).toBeUndefined();
   });
 
@@ -209,42 +227,50 @@ describe('planSubmissionGate', () => {
     );
   });
 
-  test('blocks until a valid config is supplied', () => {
+  test('leaves field-based plans to the form', () => {
     expect(
-      planSubmissionGate({planTemplate: {planType: COUNTED_PLAN_TYPE}})?.reason
-    ).toMatch(/Complete the plan/);
+      planSubmissionGate({planTemplates: [countedTemplate]})
+    ).toBeUndefined();
+  });
+
+  test('blocks a component-based plan until its config is supplied', () => {
+    expect(planSubmissionGate({planTemplates: [listTemplate]})?.reason).toMatch(
+      /Complete the Site list plan/
+    );
     expect(
       planSubmissionGate({
-        planTemplate: {planType: COUNTED_PLAN_TYPE},
-        planConfig: {numberRequired: 3, allowExtraRecords: false},
+        planTemplates: [listTemplate],
+        componentConfigs: {list: {recordData: {}, allowExtraRecords: false}},
       })
     ).toBeUndefined();
   });
 
   test('blocks unregistered plan types', () => {
     expect(
-      planSubmissionGate({planTemplate: {planType: 'MapGrid'}})?.reason
+      planSubmissionGate({
+        planTemplates: [{planType: 'MapGrid', planId: 'grid', label: 'Grid'}],
+      })?.reason
     ).toMatch(/cannot be configured/);
   });
 });
 
 describe('PlanConfigSection', () => {
-  test('renders the registered form for a known plan type', () => {
+  test('renders the registered form under the plan label', () => {
     render(
       <PlanConfigSection
-        template={countedTemplate}
+        template={listTemplate}
         uiSpec={uiSpec}
         onChange={vi.fn()}
       />
     );
-    expect(screen.getByText('Counted plan')).toBeTruthy();
-    expect(screen.getByTestId('plan-config-number-required')).toBeTruthy();
+    expect(screen.getByText('Site list plan')).toBeTruthy();
+    expect(screen.getByTestId('plan-config-add-record')).toBeTruthy();
   });
 
   test('explains when no form is registered for the plan type', () => {
     render(
       <PlanConfigSection
-        template={{planType: 'MapGrid', formType: 'FORM1'}}
+        template={{planType: 'MapGrid', planId: 'grid', label: 'Grid'}}
         uiSpec={uiSpec}
         onChange={vi.fn()}
       />

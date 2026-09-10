@@ -1,12 +1,12 @@
 /**
  * @file Registry of plan configuration forms shown when a notebook is created
- * from a template with a planTemplate. Mirrors the designer's plan registry
+ * from a template with plan templates. Mirrors the designer's plan registry
  * (designer/plans.tsx) and data-model's runtime registry: a Map with lazy
  * built-in installation so external plan modules can register their own.
  */
 
 import {COUNTED_PLAN_TYPE, LIST_OF_RECORDS_PLAN_TYPE} from '@faims3/data-model';
-import {CountedPlanConfigForm} from './CountedPlanConfigForm';
+import {countedPlanConfig, countedPlanFields} from './countedPlanFields';
 import {ListOfRecordsPlanConfigForm} from './ListOfRecordsPlanConfigForm';
 import type {PlanConfigType} from './types';
 
@@ -36,7 +36,8 @@ const builtInPlanConfigTypes: PlanConfigType[] = [
   {
     planType: COUNTED_PLAN_TYPE,
     label: 'Counted',
-    ConfigForm: CountedPlanConfigForm,
+    fields: countedPlanFields,
+    toConfig: countedPlanConfig,
   },
   {
     planType: LIST_OF_RECORDS_PLAN_TYPE,

@@ -18,7 +18,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {fieldLabel, formLabel, type PlanConfigFormProps} from './types';
+import {
+  fieldLabel,
+  formLabel,
+  SUPPORTED_RECORD_FIELD_TYPES,
+  type PlanConfigFormProps,
+} from './types';
 
 type Row = {ref: string; values: Record<string, unknown>};
 
@@ -34,6 +39,11 @@ const cellKind = (typeReturned?: string): CellKind => {
   if (typeReturned === 'faims-core::Bool') return 'boolean';
   return 'text';
 };
+
+const isSupported = (typeReturned?: string) =>
+  (SUPPORTED_RECORD_FIELD_TYPES as readonly string[]).includes(
+    typeReturned ?? ''
+  );
 
 export const ListOfRecordsPlanConfigForm = ({
   template,
@@ -123,9 +133,22 @@ export const ListOfRecordsPlanConfigForm = ({
         <TableHeader>
           <TableRow>
             <TableHead>Reference</TableHead>
-            {recordFields.map(field => (
-              <TableHead key={field}>{fieldLabel(uiSpec, field)}</TableHead>
-            ))}
+            {recordFields.map(field => {
+              const typeReturned = uiSpec.fields[field]?.['type-returned'];
+              return (
+                <TableHead key={field}>
+                  {fieldLabel(uiSpec, field)}
+                  {!isSupported(typeReturned) && (
+                    <span
+                      className="block text-xs font-normal text-amber-600"
+                      title={`Entered as text; ${typeReturned ?? 'this type'} is not supported yet`}
+                    >
+                      entered as text
+                    </span>
+                  )}
+                </TableHead>
+              );
+            })}
             <TableHead className="w-12" />
           </TableRow>
         </TableHeader>
@@ -174,13 +197,13 @@ export const ListOfRecordsPlanConfigForm = ({
       </div>
       <div className="flex items-center gap-2">
         <Checkbox
-          id="plan-allow-extra"
+          id={`plan-allow-extra-${template.planId}`}
           checked={allowExtraRecords}
           onCheckedChange={value => setAllowExtraRecords(value === true)}
           data-testid="plan-config-allow-extra"
         />
         <Label
-          htmlFor="plan-allow-extra"
+          htmlFor={`plan-allow-extra-${template.planId}`}
           className="font-normal cursor-pointer"
         >
           Allow records beyond the planned list

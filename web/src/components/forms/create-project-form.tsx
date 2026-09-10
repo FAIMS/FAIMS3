@@ -16,9 +16,7 @@ import {
 import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
 import {designFileSchema, resourceNameSchema} from '@/lib/input-limits';
 import {INPUT_LIMITS, ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
-import {PlanConfigSection} from '@/components/plans/PlanConfigSection';
-import {planSubmissionGate} from '@/components/plans/planSubmissionGate';
-import {type PlanConfig} from '@/components/plans/registry';
+import {usePlanConfigs} from '@/components/plans/usePlanConfigs';
 
 // Import the default sample notebook JSON
 import blankNotebook from '../../../notebooks/blank-notebook.json';
@@ -51,21 +49,13 @@ export function CreateProjectForm({
   const {data: templates} = useGetTemplates({user});
   const {data: teams} = useGetTeams({user});
 
-  // The template picker only has list items; fetch the full document so a
-  // planTemplate can be configured the same way as the template-detail form.
+  // The template picker only has list items; fetch the full document so its
+  // plan templates can be configured the same way as the template-detail form.
   const [selectedTemplateId, setSelectedTemplateId] = useState<
     string | undefined
   >();
-  const [planConfig, setPlanConfig] = useState<PlanConfig | undefined>();
   const onSelectedTemplateIdChange = useCallback(
-    (templateId: string | undefined) => {
-      setSelectedTemplateId(current => {
-        if (current !== templateId) {
-          setPlanConfig(undefined);
-        }
-        return templateId;
-      });
-    },
+    (templateId: string | undefined) => setSelectedTemplateId(templateId),
     []
   );
   const {
@@ -78,11 +68,9 @@ export function CreateProjectForm({
     enabled: Boolean(selectedTemplateId),
   });
 
-  const planTemplate = selectedTemplate?.uiSpecification?.planTemplate;
-  const planUiSpec = selectedTemplate?.uiSpecification?.uiSpec;
-  const planDisable = planSubmissionGate({
-    planTemplate,
-    planConfig,
+  const plans = usePlanConfigs({
+    planTemplates: selectedTemplate?.uiSpecification?.planTemplates ?? [],
+    uiSpec: selectedTemplate?.uiSpecification?.uiSpec,
     isLoading: Boolean(selectedTemplateId) && isLoading,
     isError: Boolean(selectedTemplateId) && isError,
   });
@@ -141,27 +129,25 @@ export function CreateProjectForm({
     dividers.push({index: 4, component: <div className="h-5" />});
   }
 
+  const withPlans = plans.appendTo({fields, dividers});
+
   interface onSubmitProps {
     name: string;
     description?: string;
     team?: string;
     template?: string;
     file?: File;
+    [key: string]: unknown;
   }
 
   /**
    * Handles the form submission
    *
-   * @param {{name: string, template?: string, file?: File}} params - The submitted form values.
+   * @param {onSubmitProps} values - The submitted form values.
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
-  const onSubmit = async ({
-    name,
-    description,
-    template,
-    file,
-    team,
-  }: onSubmitProps) => {
+  const onSubmit = async (values: onSubmitProps) => {
+    const {name, description, template, file, team} = values;
     let response;
     if (template) {
       // Create from selected template
@@ -171,7 +157,7 @@ export function CreateProjectForm({
         description,
         template,
         teamId: specifiedTeam ?? team,
-        planConfig,
+        planConfigs: plans.toPlanConfigs(values),
       });
     } else {
       // No template chosen: either use uploaded file or default blank notebook
@@ -221,24 +207,15 @@ export function CreateProjectForm({
 
   return (
     <Form
-      fields={fields}
-      dividers={dividers}
+      fields={withPlans.fields}
+      dividers={withPlans.dividers}
       onSubmit={onSubmit}
       submitButtonText={`Create ${config.notebookNameCapitalized}`}
       submitButtonTestId="web-projects-create-submit"
       // pass in team ID default, if provided
       defaultValues={{team: defaultValues?.teamId}}
-      footer={
-        planTemplate && planUiSpec ? (
-          <PlanConfigSection
-            key={selectedTemplateId}
-            template={planTemplate}
-            uiSpec={planUiSpec}
-            onChange={setPlanConfig}
-          />
-        ) : undefined
-      }
-      disableSubmission={planDisable}
+      footer={plans.footer}
+      disableSubmission={plans.gate}
     />
   );
 }

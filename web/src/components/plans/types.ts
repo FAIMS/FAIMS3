@@ -5,19 +5,37 @@
 
 import type {ComponentType} from 'react';
 import type {PlanTemplate} from '@faims3/data-model';
+import type {Field} from '@/components/form';
 
 /** Instantiation-time config; validated server-side against the plan type's configSchema. */
 export type PlanConfig = Record<string, unknown>;
+
+type PlanConfigField = {
+  'component-parameters'?: {label?: unknown};
+  'type-returned'?: string;
+};
 
 /** The uiSpec slice config forms read. Structural so external plan types can implement it. */
 export type PlanConfigUiSpec = {
   viewsets: Record<string, {label?: string; views: string[]} | undefined>;
   views: Record<string, {fields: string[]} | undefined>;
-  fields: Record<
-    string,
-    | {'component-parameters'?: {label?: unknown}; 'type-returned'?: string}
-    | undefined
-  >;
+  fields: Record<string, PlanConfigField | undefined>;
+};
+
+/** Field return types the List of Records table can enter directly. */
+export const SUPPORTED_RECORD_FIELD_TYPES = [
+  'faims-core::String',
+  'faims-core::Integer',
+  'faims-core::Number',
+  'faims-core::Bool',
+] as const;
+
+/** What a field-based plan type is handed to build its fields. */
+export type PlanConfigContext = {
+  template: PlanTemplate;
+  uiSpec: PlanConfigUiSpec;
+  /** Prefix for this plan's field names; unique per plan within the form. */
+  prefix: string;
 };
 
 export type PlanConfigFormProps = {
@@ -27,11 +45,18 @@ export type PlanConfigFormProps = {
   onChange: (config: PlanConfig | undefined) => void;
 };
 
-export type PlanConfigType = {
-  planType: string;
-  label: string;
-  ConfigForm: ComponentType<PlanConfigFormProps>;
-};
+/**
+ * A plan type either contributes fields to the create form (validated and
+ * styled by Form) or, when its input is too custom for that, renders its own
+ * component in the form's footer and reports a schema-valid config.
+ */
+export type PlanConfigType = {planType: string; label: string} & (
+  | {
+      fields: (context: PlanConfigContext) => Field[];
+      toConfig: (values: Record<string, unknown>, prefix: string) => PlanConfig;
+    }
+  | {ConfigForm: ComponentType<PlanConfigFormProps>}
+);
 
 /** Display label for a form id, falling back to the id. */
 export const formLabel = (uiSpec: PlanConfigUiSpec, formType: string) =>

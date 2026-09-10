@@ -11,7 +11,7 @@ import {
 } from '@/lib/rootDescriptionField';
 import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
-import {useMemo, useState} from 'react';
+import {useMemo} from 'react';
 import {resourceNameSchema} from '@/lib/input-limits';
 import {INPUT_LIMITS} from '@faims3/data-model';
 import {TemplateOwnerCallout} from './template-owner-callout';
@@ -22,9 +22,7 @@ import {
   getTeamFieldState,
   resolveTeamId,
 } from './template-team-field';
-import {PlanConfigSection} from '@/components/plans/PlanConfigSection';
-import {planSubmissionGate} from '@/components/plans/planSubmissionGate';
-import {type PlanConfig} from '@/components/plans/registry';
+import {usePlanConfigs} from '@/components/plans/usePlanConfigs';
 import {errorMessageFromNotebookJsonBody} from '@/hooks/project-hooks';
 
 interface CreateProjectFromTemplateFormProps {
@@ -74,15 +72,10 @@ export function CreateProjectFromTemplateForm({
     possibleTeams,
   });
 
-  // A plan template needs instantiation-time config, gathered by the
-  // registered config form and sent as planConfig
-  const planTemplate = template?.uiSpecification?.planTemplate;
-  const planUiSpec = template?.uiSpecification?.uiSpec;
-  const [planConfig, setPlanConfig] = useState<PlanConfig | undefined>();
-
-  const planDisable = planSubmissionGate({
-    planTemplate,
-    planConfig,
+  // Every plan template needs its own config, keyed by plan id, sent as planConfigs
+  const plans = usePlanConfigs({
+    planTemplates: template?.uiSpecification?.planTemplates ?? [],
+    uiSpec: template?.uiSpecification?.uiSpec,
     isLoading: templateLoading,
   });
 
@@ -96,7 +89,7 @@ export function CreateProjectFromTemplateForm({
       : `Choose a team for this ${config.notebookName}, or leave blank to create outside any team.`
     : undefined;
 
-  const fields = useMemo(() => {
+  const formFields = useMemo(() => {
     const result: Field[] = [
       {
         name: 'name',
@@ -120,24 +113,24 @@ export function CreateProjectFromTemplateForm({
       );
     }
 
-    return result;
+    return plans.appendTo({fields: result});
   }, [
     canCreateGlobally,
+    plans,
     possibleTeams,
     showTeamDropdown,
     teamDescription,
     teamLabel,
   ]);
 
-  const onSubmit = async ({
-    name,
-    description,
-    team,
-  }: {
-    name: string;
-    description?: string;
-    team?: string;
-  }) => {
+  const onSubmit = async (
+    values: {name: string; description?: string; team?: string} & Record<
+      string,
+      unknown
+    >
+  ) => {
+    const {name, description, team} = values;
+    const planConfigs = plans.toPlanConfigs(values);
     const chosenTeamId = resolveTeamId({
       canCreateGlobally,
       possibleTeams,
@@ -155,7 +148,7 @@ export function CreateProjectFromTemplateForm({
         name,
         ...rootDescriptionForApi(description),
         ...(chosenTeamId ? {teamId: chosenTeamId} : {}),
-        ...(planConfig ? {planConfig} : {}),
+        ...(planConfigs ? {planConfigs} : {}),
       } satisfies PostCreateNotebookInput),
     });
 
@@ -199,20 +192,13 @@ export function CreateProjectFromTemplateForm({
         />
       ) : null}
       <Form
-        fields={fields}
+        fields={formFields.fields}
+        dividers={formFields.dividers}
         onSubmit={onSubmit}
         submitButtonText={`Create ${config.notebookNameCapitalized}`}
         defaultValues={defaultTeamId ? {team: defaultTeamId} : undefined}
-        footer={
-          planTemplate && planUiSpec ? (
-            <PlanConfigSection
-              template={planTemplate}
-              uiSpec={planUiSpec}
-              onChange={setPlanConfig}
-            />
-          ) : undefined
-        }
-        disableSubmission={planDisable}
+        footer={plans.footer}
+        disableSubmission={plans.gate}
       />
     </div>
   );
