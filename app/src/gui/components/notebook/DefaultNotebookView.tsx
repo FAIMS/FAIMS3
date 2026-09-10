@@ -67,14 +67,14 @@ function a11yProps(tab: string) {
 }
 
 /**
- * NotebookComponent is the default notebook view, used when a notebook has no
- * plan or no view is registered for its plan type. It conforms to
+ * DefaultNotebookView is the default notebook view, used when a notebook has
+ * no plan or no view is registered for its plan type. It conforms to
  * NotebookViewComponentProps like any registered plan view.
  *
  * @param props - The notebook view props assembled by NotebookView.
- * @returns The JSX element for the NotebookComponent.
+ * @returns The JSX element for the DefaultNotebookView.
  */
-export default function NotebookComponent(props: NotebookViewComponentProps) {
+export default function DefaultNotebookView(props: NotebookViewComponentProps) {
   const {project, tab, uiSpecification, records, actions, status, components} =
     props;
   const theme = useTheme();

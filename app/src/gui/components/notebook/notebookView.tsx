@@ -13,7 +13,7 @@ import {
   MinimalRecordMetadata,
   ProjectStatus,
 } from '@faims3/data-model';
-import NotebookComponent from '.';
+import DefaultNotebookView from './DefaultNotebookView';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
@@ -51,7 +51,7 @@ type NotebookViewProps = {
 };
 
 /**
- * NotebookView takes the place of the old NotebookComponent as the
+ * NotebookView takes the place of the old default notebook component as the
  * way to display a notebook. It defaults to the old view but can be
  * overridden if there is a plan associated with the notebook that has
  * a custom view registered for it.
@@ -400,5 +400,5 @@ function NotebookViewWithSpec({
   }
 
   // Fallback: the default notebook view, on the same interface as plan views
-  return <NotebookComponent {...props} />;
+  return <DefaultNotebookView {...props} />;
 }

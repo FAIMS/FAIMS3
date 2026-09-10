@@ -129,7 +129,9 @@ vi.mock('../../../utils/apiHooks/notebooks', () => ({
   useRecordAudit: () => ({data: undefined}),
 }));
 vi.mock('../../../utils/database', () => ({localGetDataDb: () => ({})}));
-vi.mock('.', () => ({default: () => <div>default notebook view</div>}));
+vi.mock('./DefaultNotebookView', () => ({
+  default: () => <div>default notebook view</div>,
+}));
 vi.mock('./settings', () => ({default: () => null}));
 vi.mock('./MetadataDisplay', () => ({MetadataDisplayComponent: () => null}));
 // Reports the records it plots, so the map and the lists can be held to one answer
