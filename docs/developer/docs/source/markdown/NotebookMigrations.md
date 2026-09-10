@@ -14,8 +14,8 @@ Do not confuse `uiSpec.schemaVersion` with `metadata.information.notebookVersion
 
 Version is read from, in order:
 
-1. Legacy wire: `metadata.schema_version`
-2. Current wire: `uiSpec.schemaVersion`
+1. Current wire: `uiSpec.schemaVersion`
+2. Legacy wire: `metadata.schema_version` (only when `uiSpec.schemaVersion` is absent)
 
 ### Compatibility tiers
 
@@ -29,7 +29,7 @@ The app compares a notebook's `schemaVersion` with its own `CURRENT` via `assess
 | **newer major**                    | `incompatible` | form graph not parsed; skeleton + copyable diagnostic report |
 | migration or validation failure    | `incompatible` | skeleton + report                                            |
 
-For `incompatible`, the app is **field-friendly rather than all-or-nothing**: the notebook stays listed (with a chip), the last good design already on the device is kept so existing records can be listed and viewed read-only, and **creating or editing** records is blocked everywhere (`isNotebookDesignLocked`). A notebook that was never readable holds an empty placeholder design and shows the skeleton only.
+For `incompatible`, the app is **field-friendly rather than all-or-nothing**: the notebook stays listed (with a chip), the last good design already on the device is kept so existing records can be listed and viewed read-only, and **creating, editing or deleting** records is blocked everywhere (`isNotebookDesignLocked`). A notebook that was never readable holds an empty placeholder design and shows the skeleton only. First activation of that never-readable design is blocked (`isNotebookActivationBlocked`); a `degraded` (newer minor) notebook still activates after a warning. Patch differences do not change activation.
 
 The tier is persisted per project but re-evaluated against the running build on **every startup** (`reassessSchemaCompatibility`, before `compileSpecs`), so an offline upgrade or downgrade never shows a stale chip. A previously `incompatible` notebook is not promoted until its design has actually been re-downloaded.
 
@@ -71,7 +71,7 @@ Path finding rules match the Couch harness: `from === to` → no steps; `from > 
 - **API (write path)** — `PUT /api/notebooks/:id/uiSpecification`, template equivalents and notebook creation normalise the body via `normalizeNotebookUiSpecification` (`uiSpecification/normalize.ts`): migrate when `notebookUiSpecificationNeedsMigration` (legacy or older than `CURRENT`; never for newer semver), then **strict** Zod, then assert the stored version equals `CURRENT`. A newer-than-current document is rejected on write.
 - **App (read path)** — `ingestNotebookUiSpecification` never throws for a version mismatch; it returns `{ok, definition?, compatibility, error?}` and the app persists `compatibility` on the project (`Project.schemaCompatibility`) to drive the tiered UI and Bugsnag reporting.
 - **Optional startup** — `MIGRATE_NOTEBOOKS_ON_STARTUP` still triggers notebook migration during `validateDatabases` when enabled.
-- **Designer** — `web/src/designer/integration/legacyNotebook.ts` migrates on load and warns; new designs are created at `CURRENT`.
+- **Designer** — `web/src/designer/integration/legacyNotebook.ts` migrates on load and warns; a newer stamp that still parses the current Zod model is opened (with a warning) rather than rejected. New designs are created at `CURRENT`.
 
 ## Projects / templates DB migrations
 

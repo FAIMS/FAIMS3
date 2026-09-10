@@ -93,6 +93,23 @@ export function isNotebookDesignLocked(
 }
 
 /**
+ * Block first activation when this build cannot interpret the design and
+ * there is no last-good graph on the device (newer major or failed parse).
+ * Already-activated notebooks keep their sync controls. A last-good graph
+ * may be re-activated so local data is not trapped.
+ */
+export function isNotebookActivationBlocked(
+  project:
+    | Pick<Project, 'schemaCompatibility' | 'uiDefinition'>
+    | undefined
+): boolean {
+  return (
+    isNotebookDesignLocked(project) &&
+    isPlaceholderNotebookDefinition(project?.uiDefinition)
+  );
+}
+
+/**
  * Re-evaluate a persisted project's compatibility against **this** build.
  *
  * `schemaCompatibility` is written by whichever app version last fetched the

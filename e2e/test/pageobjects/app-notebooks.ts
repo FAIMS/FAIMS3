@@ -1,4 +1,4 @@
-import {$$, browser} from '@wdio/globals';
+import {$$, browser, expect} from '@wdio/globals';
 import {Page} from './page.ts';
 import {getAppUrl} from '../helpers/env.ts';
 import {byTestId} from '../helpers/selectors.ts';
@@ -126,6 +126,22 @@ class AppNotebooksPage extends Page {
       throw new Error(`Notebook row "${name}" disappeared`);
     }
     return row;
+  }
+
+  /**
+   * On Not Active tab, open a notebook whose activation is blocked
+   * (newer-major / never-readable) by clicking the row.
+   */
+  async openNotActiveNotebookNamed(name: string) {
+    await this.openNotActiveTab();
+    const row = await this.waitForNotebookRow(name);
+    const activate = await row.$('[data-testid="app-notebook-activate-button"]');
+    await expect(activate).toBeDisabled();
+    await row.click();
+    await browser.waitUntil(
+      async () => /\/(surveys|notebooks)\//.test(await browser.getUrl()),
+      {timeout: 15000, timeoutMsg: `Expected to navigate into "${name}"`}
+    );
   }
 
   /** On the Active tab, click the row named `name` to open that notebook. */

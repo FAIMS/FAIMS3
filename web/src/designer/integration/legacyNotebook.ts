@@ -1,6 +1,6 @@
 /**
  * @file Normalize API/upload `uiSpecification` JSON for the designer: detect schema version
- * (legacy `metadata.schema_version` or `uiSpec.schemaVersion`), migrate when needed, then
+ * (`uiSpec.schemaVersion`, else legacy `metadata.schema_version`), migrate when needed, then
  * validate as {@link NotebookDefinition} (or {@link TemplateDefinition} in template mode).
  */
 
@@ -64,7 +64,8 @@ export function readUiSpecificationSchemaVersion(
  * 1. Reads version via {@link getNotebookSchemaVersion} (legacy or current field).
  * 2. Runs {@link migrateNotebook} when version is missing or below {@link CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}.
  * 3. Validates with {@link NotebookDefinitionSchema}, or {@link TemplateDefinitionSchema}
- *    in template mode so an optional planTemplate is preserved.
+ *    in template mode so an optional planTemplate is preserved. A newer
+ *    `schemaVersion` that still parses is accepted with a warning (not rejected).
  */
 export function tryNormalizeApiUiSpecification(
   raw: unknown,
@@ -101,13 +102,13 @@ export function tryNormalizeApiUiSpecification(
     };
   }
 
+  // Accept a newer stamp when the current Zod model still parses (API +
+  // designer ship together, so this is only a brief skew / rollback case).
   const versionAfter = parsed.data.uiSpec.schemaVersion;
-  if (versionAfter !== CURRENT_NOTEBOOK_UI_SCHEMA_VERSION) {
-    return {
-      ok: false,
-      message: `uiSpecification must use schema version ${CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} after migration (got ${versionAfter ?? 'none'})`,
-    };
-  }
+  const versionWarning =
+    versionAfter !== CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+      ? `This design uses schema version ${versionAfter} (this editor expects ${CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}).`
+      : undefined;
 
   const migrated = needsMigration;
   const warning =
@@ -115,7 +116,7 @@ export function tryNormalizeApiUiSpecification(
       ? versionBefore == null
         ? `This design had no schema version and was migrated to ${CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}. Save to persist the updated structure.`
         : `This design used schema version ${versionBefore} and was migrated to ${CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}. Save to persist the updated structure.`
-      : undefined;
+      : versionWarning;
 
   // Read from candidate: the ternary-selected schema's inferred type drops
   // planTemplate, but safeValidatePlanTemplate handles unknown input anyway

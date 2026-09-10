@@ -148,6 +148,7 @@ interface InfoTabContentProps {
   dataEngine: DataEngine;
   isDeleted: boolean;
   recordCreatedBy: string;
+  designLocked: boolean;
 }
 
 /**
@@ -161,6 +162,7 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
   hrid,
   isDeleted,
   recordCreatedBy,
+  designLocked,
 }) => {
   return (
     <Stack spacing={3}>
@@ -169,7 +171,7 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
         record_id={recordId}
         revision_id={revisionId}
       />
-      {!isDeleted && (
+      {!isDeleted && !designLocked && (
         <Box>
           <RecordDelete
             projectId={projectId}
@@ -762,6 +764,7 @@ export const ViewRecordPage: React.FC = () => {
               revisionId={revisionId}
               isDeleted={isDeleted}
               recordCreatedBy={formData.context.record.createdBy}
+              designLocked={designLocked}
             />
           ) : (
             <CircularProgress />

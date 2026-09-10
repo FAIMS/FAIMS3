@@ -6,7 +6,7 @@
  * `api/src/scripts/seedTestDataset.ts`, `FUTURE_SCHEMA_VERSIONS`):
  *
  * - "Future Schema (newer major …)" → tier `incompatible`: listed with a chip,
- *   opens to the skeleton + copyable diagnostic report, no record creation.
+ *   activation disabled, row still opens the skeleton + copyable report.
  * - "Future Schema (newer minor …)" → tier `degraded`: listed with a chip,
  *   renders with a warning banner, record creation still available.
  *
@@ -57,8 +57,9 @@ describe('App — Notebook schema compatibility (fail-soft)', () => {
   });
 
   it('opens the newer-major notebook to the skeleton with a copyable report', async () => {
-    await AppNotebooksPage.activateNotebookNamed(NEWER_MAJOR);
-    await AppNotebooksPage.openActiveNotebookNamed(NEWER_MAJOR);
+    // First activation of a never-readable design is blocked; the row still
+    // opens so the diagnostic is reachable without downloading records.
+    await AppNotebooksPage.openNotActiveNotebookNamed(NEWER_MAJOR);
 
     await waitForTestId('notebook-schema-incompatible-view', {timeout: 20000});
     await expect(byTestId('notebook-schema-chip-incompatible')).toBeDisplayed();

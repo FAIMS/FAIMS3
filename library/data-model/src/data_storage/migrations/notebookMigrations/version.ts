@@ -25,21 +25,22 @@ export type NotebookWithSchemaVersion = {
 };
 
 /**
- * Read the raw schema version from legacy `metadata.schema_version` or current
- * `uiSpec.schemaVersion`. Returns the string as stored (which may be a
- * deprecated two-part value such as `'7.0'`); use
- * `resolveNotebookSchemaMigrationStart` to classify it.
+ * Read the raw schema version. Prefer current `uiSpec.schemaVersion` so a
+ * leftover legacy `metadata.schema_version` cannot shadow a current stamp.
+ * Fall back to `metadata.schema_version` for pre-restructure wire. Returns
+ * the string as stored (which may be a deprecated two-part value such as
+ * `'7.0'`); use `resolveNotebookSchemaMigrationStart` to classify it.
  */
 export function getNotebookSchemaVersion(
   notebook: NotebookWithSchemaVersion
 ): string | undefined {
-  const legacy = notebook?.metadata?.schema_version;
-  if (legacy != null) {
-    return legacy;
-  }
   const fromUiSpec = notebook?.uiSpec?.schemaVersion;
   if (fromUiSpec != null) {
     return fromUiSpec;
+  }
+  const legacy = notebook?.metadata?.schema_version;
+  if (legacy != null) {
+    return legacy;
   }
   return undefined;
 }

@@ -9,6 +9,7 @@ import {
   IncompatibleNotebookSchemaError,
   ingestNotebookUiSpecification,
 } from '../src/uiSpecification/schemaCompatibility';
+import {getNotebookSchemaVersion} from '../src/data_storage/migrations/notebookMigrations/version';
 import {
   compareNotebookSchemaSemver,
   isNotebookSchemaSemver,
@@ -23,6 +24,23 @@ const withVersion = (version: string) => {
   nb.uiSpec.schemaVersion = version;
   return nb;
 };
+
+describe('getNotebookSchemaVersion', () => {
+  it('prefers uiSpec.schemaVersion when a leftover legacy key is also present', () => {
+    expect(
+      getNotebookSchemaVersion({
+        metadata: {schema_version: '7.0'},
+        uiSpec: {schemaVersion: '1.0.0'},
+      })
+    ).toBe('1.0.0');
+  });
+
+  it('falls back to metadata.schema_version when uiSpec has no stamp', () => {
+    expect(
+      getNotebookSchemaVersion({metadata: {schema_version: '7.0'}})
+    ).toBe('7.0');
+  });
+});
 
 describe('strict schema semver primitives', () => {
   it.each(['1.0.0', '0.0.0', '12.34.56'])('accepts %s', v => {

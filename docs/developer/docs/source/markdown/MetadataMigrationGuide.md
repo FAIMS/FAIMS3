@@ -143,7 +143,7 @@ Inside `uiSpecification`:
 2. Open a migrated survey: first launch after upgrade runs **redux-persist migration** (`migrateProjectsPersistedState`) on cached project state, re-evaluates each cached design's compatibility against the installed build (`reassessSchemaCompatibility`), then syncs from API (`projectInformationFromGetNotebook` → `ingestNotebookUiSpecification`).
 3. Confirm forms render and notebook summary shows root `description` (when set) / design
    fields as expected.
-4. In the workspace list, no notebook should carry a **"Newer format"** or **"Cannot open"** chip. A chip means the app build is older than the design's `schemaVersion` (update the app) or the design failed migration/validation (open the notebook and use **Copy report** to capture the diagnostic; the same details are sent to Bugsnag). An `incompatible` notebook still lists its local records read-only; create/edit are disabled until it can be loaded.
+4. In the workspace list, no notebook should carry a **"Needs app update"** or **"Limited support"** chip. A chip means the app build is older than the design's `schemaVersion` (update the app) or the design failed migration/validation (open the notebook and use **Copy report** to capture the diagnostic; the same details are sent to Bugsnag). An `incompatible` notebook still lists its local records read-only; create/edit/delete are disabled until it can be loaded. First activation of a never-readable (newer-major) notebook is blocked; a newer-minor notebook warns on activate.
 
 ### 3.4 Metadata database cleanup dry-run
 

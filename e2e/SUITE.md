@@ -60,7 +60,7 @@ apply to the Fieldmark app path above. Appium (`test:e2e:android` /
 | `app/notebook-activate.e2e.ts`             | Notebook workspace, Active / Not Active tabs, activate control                                      |
 | `app/record-crud.e2e.ts`                   | Open notebook, add record, create text record, list/search                                          |
 | `app/notebook-map.e2e.ts`                  | Capture a point, open the Map tab, assert record geometry plots                                     |
-| `app/notebook-schema-compatibility.e2e.ts` | Future-schema fixtures: list chips, incompatible skeleton + copy report, no create; degraded banner |
+| `app/notebook-schema-compatibility.e2e.ts` | Future-schema fixtures: list chips, major activation blocked, skeleton + copy report; degraded banner + activate warning |
 | `app/notebook-tab-route.e2e.ts`            | Tab in the URL, back/edit/delete from a record return to that tab                                   |
 | `journeys/template-to-record.e2e.ts`       | Cross-surface: templates in Control Centre → Fieldmark workspace                                    |
 

@@ -8,6 +8,7 @@ import {
 } from '@faims3/data-model';
 import {
   ingestLegacyPersistedProjectForStore,
+  isNotebookActivationBlocked,
   isNotebookDesignLocked,
   isPlaceholderNotebookDefinition,
   notebookDefinitionFromLegacyPersistedProject,
@@ -191,6 +192,42 @@ describe('isPlaceholderNotebookDefinition / isNotebookDesignLocked', () => {
         },
       })
     ).toBe(true);
+  });
+
+  it('blocks first activation only when incompatible and there is no last-good graph', () => {
+    const locked = {
+      schemaCompatibility: {
+        tier: 'incompatible' as const,
+        relation: 'newer-major' as const,
+        appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+        requiresMigration: false,
+        reason: '',
+      },
+    };
+    expect(
+      isNotebookActivationBlocked({
+        ...locked,
+        uiDefinition: placeholderNotebookDefinition(),
+      })
+    ).toBe(true);
+    expect(
+      isNotebookActivationBlocked({
+        ...locked,
+        uiDefinition: realLegacyDefinition(),
+      })
+    ).toBe(false);
+    expect(
+      isNotebookActivationBlocked({
+        schemaCompatibility: {
+          tier: 'degraded',
+          relation: 'newer-minor',
+          appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+          requiresMigration: false,
+          reason: '',
+        },
+        uiDefinition: placeholderNotebookDefinition(),
+      })
+    ).toBe(false);
   });
 });
 
