@@ -8,6 +8,8 @@ There are three types of export from {{FAIMS}}:
 
 Data can be exported from the selected {{Notebook}} on the [{{Dashboard}}](../admin/web.md).
 
+On the export screen you can optionally tick **Only include records within a time range** and set **From** / **To**. Those bounds apply to tabular, spatial, attachment, and full exports. Leave the checkbox off to export every record.
+
 ## Tabular data
 
 The default method of export is tabular data in the form of _comma separated values_ (csv).

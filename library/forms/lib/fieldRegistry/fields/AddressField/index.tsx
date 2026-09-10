@@ -29,7 +29,6 @@ import {
 import {FormFieldContextProps} from '../../../formModule/types';
 import {EmptyResponsePlaceholder} from '../../../rendering/fields/view/wrappers/PrimitiveWrappers';
 import {DataViewFieldRender} from '../../../rendering/types';
-import {logWarn} from '../../../logging';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 

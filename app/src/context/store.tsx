@@ -1,3 +1,4 @@
+import {logError, logInfo, logWarn} from '@faims3/forms';
 import {configureStore} from '@reduxjs/toolkit';
 import React, {useEffect, useRef} from 'react';
 import {
@@ -19,7 +20,6 @@ import {
 } from 'redux-persist';
 import {PersistGate} from 'redux-persist/integration/react';
 import {config} from '../buildconfig';
-import {logError, logInfo, logWarn} from '@faims3/forms';
 import LoadingApp from '../gui/components/loadingApp';
 import {logError as logAppError} from '../logging';
 import {initialise} from '../sync/initialize';
@@ -30,11 +30,11 @@ import authReducer, {
   selectIsAuthenticated,
 } from './slices/authSlice';
 import {databaseService} from './slices/helpers/databaseService';
+import projectsReducer from './slices/projectSlice';
 import {
   migrateProjectsPersistedState,
   migrateProjectsSyncModeV2,
 } from './slices/projectsPersistMigration';
-import projectsReducer from './slices/projectSlice';
 
 // The below configures indexed DB storage which has a greater limit than
 // localStorage. UI specs contain images.
@@ -274,16 +274,28 @@ export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
     mounted.current = true;
 
     const init = async () => {
-      await initialise().catch(err => {
-        console.error('Could not initialise: ', err);
-        dispatch(
-          addAlert({
-            message:
-              err instanceof Error ? err.message : 'Initialisation failed',
-            severity: 'error',
-          })
-        );
-      });
+      await initialise()
+        .then(({offlineMapsDBReset}) => {
+          if (offlineMapsDBReset) {
+            dispatch(
+              addAlert({
+                message:
+                  'An error occurred while upgrading your offline maps. You may need to re-download your offline map regions.',
+                severity: 'warning',
+              })
+            );
+          }
+        })
+        .catch(err => {
+          console.error('Could not initialise: ', err);
+          dispatch(
+            addAlert({
+              message:
+                err instanceof Error ? err.message : 'Initialisation failed',
+              severity: 'error',
+            })
+          );
+        });
     };
 
     // Run initialisation logic

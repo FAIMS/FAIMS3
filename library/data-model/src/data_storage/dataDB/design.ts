@@ -203,6 +203,17 @@ export const indexDocument = {
           }
       }),
     },
+    // One row per record HEAD, keyed by parsed updatedAt then record id.
+    recordByUpdated: {
+      map: convertToCouchDBString(doc => {
+        if (doc.record_format_version === 1 && doc.updatedAt) {
+          const ts = Date.parse(doc.updatedAt);
+          if (!Number.isNaN(ts)) {
+            emit([ts, doc._id], 1);
+          }
+        }
+      }),
+    },
     revision: {
       map: convertToCouchDBString(doc => {
         if (doc.revision_format_version === 1) emit(doc._id, 1);

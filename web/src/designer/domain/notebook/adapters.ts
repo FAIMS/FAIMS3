@@ -42,8 +42,8 @@ export const toNotebookWithHistory = (
     past: [],
     future: [],
   },
-  planTemplate: notebook.planTemplate ?? null,
-  plan: notebook.plan ?? null,
+  planTemplates: notebook.planTemplates ?? [],
+  plans: notebook.plans ?? [],
 });
 
 /**

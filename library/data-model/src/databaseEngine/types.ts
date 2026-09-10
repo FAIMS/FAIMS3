@@ -31,7 +31,7 @@ export const v1RecordDBFieldsSchema = z
     record_format_version: z.number(),
     created: z.iso.datetime(),
     created_by: z.string(),
-    /** When the current head revision was last created or replaced. */
+    /** When the current head was last created, replaced, or finish/flush-stamped. */
     updatedAt: z.iso.datetime(),
     revisions: z.array(z.string()),
     heads: z.array(z.string()),
@@ -908,7 +908,7 @@ export interface MinimalRecordMetadata {
   revisionId: string;
   created: Date;
   createdBy: string;
-  /** Record `updatedAt` (when the current head was last created, replaced, or flushed). */
+  /** Record `updatedAt` (when the current head was last created, replaced, or finish/flush-stamped). */
   updated: Date;
   updatedBy: string;
   conflicts: boolean;
@@ -929,6 +929,35 @@ export interface MinimalRecordMetadataResult {
   /** Count of records skipped due to errors */
   errorCount: number;
   /** When paginating, pass this as startKey for the next page (only set when more results exist) */
+  nextStartKey?: string;
+}
+
+/**
+ * One row of a paginated hydrated list: metadata stub plus hydrated form data.
+ * `data[fieldId]` is `{ data, annotation?, attachments? }`, not a raw value.
+ */
+export type HydratedListRecord = MinimalRecordMetadata & {
+  formId: string;
+  data: FormUpdateData;
+  context: InitialFormData['context'];
+};
+
+/** One row that listed as metadata but failed to hydrate. */
+export type HydratedListHydrationError = {
+  recordId: string;
+  revisionId: string;
+};
+
+/**
+ * Result from listing hydrated records. Failed hydrates are omitted (not a
+ * page-level error); `errorCount` includes those skips and `errors` lists
+ * `{recordId, revisionId}` for each failed hydrate.
+ */
+export interface HydratedListRecordResult {
+  records: HydratedListRecord[];
+  count: number;
+  errorCount: number;
+  errors?: HydratedListHydrationError[];
   nextStartKey?: string;
 }
 

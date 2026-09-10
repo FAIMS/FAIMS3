@@ -25,6 +25,7 @@ import MVT from 'ol/format/MVT';
 import {Geometry} from 'ol/geom';
 import TileLayer from 'ol/layer/Tile';
 import VectorTileLayer from 'ol/layer/VectorTile';
+import {XYZ} from 'ol/source';
 import {LoaderOptions} from 'ol/source/DataTile';
 import ImageTileSource from 'ol/source/ImageTile';
 import OSM, {ATTRIBUTION} from 'ol/source/OSM';
@@ -32,10 +33,19 @@ import VectorTileSource from 'ol/source/VectorTile';
 import Tile from 'ol/Tile';
 import {TileCoord} from 'ol/tilecoord';
 import VectorTile from 'ol/VectorTile';
-import {MapConfig} from './types';
-import {IDBObjectStore} from './IDBObjectStore';
-import {getMapStylesheet} from './styles';
-import {XYZ} from 'ol/source';
+import {IDBObjectStore} from '../IDBObjectStore';
+import {
+  handleTileDbUpgrade,
+  TILE_DB_MIGRATION_STORE,
+  TILE_DB_TARGET_VERSIONS,
+  TileDbMigrationError,
+  TileDbMigrationState,
+} from '../migrations';
+import {getMapStylesheet} from '../styles';
+import {InitTileDbResult} from './tileStoreUtils';
+import {MapConfig} from '../types';
+import {StoredTile, StoredTileSet} from './types';
+import {deleteDatabase} from '../IDBUtils';
 
 // When downloading maps we start at this zoom level
 const START_ZOOM = 2;
@@ -85,38 +95,6 @@ const TILE_URL_MAP: {
   },
 };
 
-// Types stored in the map tile database
-// StoredTile is the raw tile cache, basically a URL and the blob
-// returned when we request it.  The sets property records which
-// tile-sets this belongs to so that when we're deleting sets
-// we don't remove this stored tile if it belongs to another one as well
-interface StoredTile {
-  url: string;
-  data: Blob;
-  sets: string[];
-}
-
-// StoreTileSet is a collection of stored tiles. We record the extent and the min/max
-// zoom levels.  The size is calculated after download and cached for future reporting.
-// the expected tile count is stored to be able to show the progress loading bar
-// tileKeys references the individual StoredTile records.
-export interface StoredTileSet {
-  setName: string;
-  extent: number[];
-  minZoom: number;
-  maxZoom: number;
-  size: number;
-  expectedTileCount: number;
-  created: Date;
-  tileKeys: IDBValidKey[];
-  /** When set, this tile set is removed when the project is deactivated. */
-  projectId?: string;
-  /** Optional display label (defaults to setName in UI). */
-  label?: string;
-  /** Source offline map region this tile set was downloaded for. */
-  offlineMapRegion?: import('@faims3/data-model').OfflineMapRegion;
-}
-
 // MapTileDatabase - a singleton class holding the tile database references
 // manages creation of the IndexedDB database and object stores.  Used by TileStoreBase
 // to access the stored tiles and tile-sets.
@@ -131,10 +109,9 @@ class MapTileDatabase {
   // references to the individual object stores within the database
   tileDB!: IDBObjectStore<StoredTile>;
   tileSetDB!: IDBObjectStore<StoredTileSet>;
+  migrationDB!: IDBObjectStore<TileDbMigrationState>;
 
-  constructor() {
-    this.initDB();
-  }
+  constructor() {}
 
   static getInstance(): MapTileDatabase {
     if (!MapTileDatabase.#instance) {
@@ -143,51 +120,126 @@ class MapTileDatabase {
     return MapTileDatabase.#instance;
   }
 
-  // Initialise the database and the two object stores that we'll rely on
-  // called from the constructor but could also be awaited by a client if
-  // they wanted to ensure that the db is ready
-  initDB(): Promise<void> {
+  // Initialise the database and object-store wrappers.
+  // Clients can await this to ensure the offline-map database is ready.
+  async initDB(): Promise<InitTileDbResult> {
+    try {
+      await this.openDatabase();
+      return {
+        databaseReset: false,
+      };
+    } catch (error) {
+      // Only reset the offline-map database when migration specifically failed.
+      // Other IndexedDB errors are surfaced without wiping cached data
+      if (!(error instanceof TileDbMigrationError)) throw error;
+
+      console.warn(
+        '[tiles_db] Migration failed; resetting offline map database'
+      );
+      await this.resetDatabase();
+
+      return {
+        databaseReset: true,
+      };
+    }
+  }
+
+  // Open the offline map database and run any required upgrade migrations.
+  private openDatabase({
+    // Recreate the object store wrappers for the newly opened connection.
+    updateReference = false,
+  }: {
+    updateReference?: boolean;
+  } = {}): Promise<void> {
     return new Promise((resolve, reject) => {
-      // incrementing the version number will allow update to the schema
-      const DB_VERSION = 1;
-      const request = indexedDB.open(MapTileDatabase.DB_NAME, DB_VERSION);
+      // Open the tile database at the current application database version.
+      // Increasing the version triggers onupgradeneeded so migrations can run.
+      const request = indexedDB.open(
+        MapTileDatabase.DB_NAME,
+        TILE_DB_TARGET_VERSIONS
+      );
+
       request.onerror = () => reject(request.error);
       // fired on every run, call makeDatabases to initialise this object
       request.onsuccess = () => {
+        // Create wrappers for the successfully opened database connection.
         this.makeDatabases(request.result);
         resolve();
       };
-      // event fired after the initial creation of the database, here we
-      // create the object stores. Note we also call makeDatabases because this
-      // method runs before onsuccess above but only when DB_NAME doesn't exist
-      request.onupgradeneeded = (event: any) => {
-        if (event.target) {
-          const db = event.target.result;
-          this.makeDatabases(db);
-          if (this.tileDB) this.tileDB.createObjectStore();
-          if (this.tileSetDB) this.tileSetDB.createObjectStore();
+
+      // Fired when the database is first created or its version increases.
+      // Create required stores and run migrations in the upgrade transaction.
+      request.onupgradeneeded = event => {
+        const db = request.result;
+
+        // IndexedDB provides one versionchange transaction for the whole upgrade.
+        // Schema and data changes must use this transaction so they commit or
+        // roll back together.
+        const transaction = request.transaction;
+
+        if (!transaction) {
+          throw new Error('Tile database upgrade transaction is unavailable');
         }
+
+        this.makeDatabases(db, updateReference);
+
+        if (this.tileDB) this.tileDB.createObjectStore();
+        if (this.tileSetDB) this.tileSetDB.createObjectStore();
+        if (this.migrationDB) this.migrationDB.createObjectStore();
+
+        // Run migrations inside the active versionchange transaction. If
+        // migration or validation fails, the transaction is aborted and this
+        // open request fails so initDB() can run the fallback recovery path.
+        handleTileDbUpgrade(db, transaction, event.oldVersion, () => {
+          reject(new TileDbMigrationError());
+        });
       };
     });
   }
 
   // Make the individual databases (object stores) that will store the individual
   // tile/tileSet records
-  makeDatabases(db: IDBDatabase) {
+  private makeDatabases(
+    // IndexedDB connection used by the object store wrappers.
+    db: IDBDatabase,
+    // Recreate wrappers so they reference the new database connection.
+    updateReference = false
+  ) {
     MapTileDatabase.db = db;
-    if (!this.tileDB) {
+    if (updateReference || !this.tileDB) {
       this.tileDB = new IDBObjectStore<StoredTile>(db, 'tiles', ['url']);
     }
-    if (!this.tileSetDB)
+    if (updateReference || !this.tileSetDB)
       this.tileSetDB = new IDBObjectStore<StoredTileSet>(db, 'tileSets', [
         'setName',
       ]);
+    if (updateReference || !this.migrationDB) {
+      this.migrationDB = new IDBObjectStore<TileDbMigrationState>(
+        db,
+        TILE_DB_MIGRATION_STORE,
+        'id'
+      );
+    }
+  }
+
+  // Reset the offline-map database and reopen it at the current version.
+  private async resetDatabase(): Promise<void> {
+    // Close the old database connection before deleting the database.
+    MapTileDatabase.db?.close();
+    // Offline maps are recreatable cached data. Reset the database so the
+    // application can continue with a clean current-version database.
+    await deleteDatabase(MapTileDatabase.DB_NAME);
+    // A newly created database starts directly at the current version,
+    // so no historical data migration is required.
+    // Recreate the object-store wrappers so they reference the new database.
+    await this.openDatabase({updateReference: true});
   }
 }
 
-export const initialiseMaps = () => {
+export const initialiseMaps = async (): Promise<InitTileDbResult> => {
   // initialise the tile store used for offline maps
-  MapTileDatabase.getInstance().initDB();
+  const database = MapTileDatabase.getInstance();
+  return database.initDB();
 };
 
 /**
@@ -322,9 +374,10 @@ abstract class TileStoreBase {
     // don't want the map key in the stored URL
     const cleanURL = url.replace(this.config.mapSourceKey, '');
     const tile = {url: cleanURL, data, sets: [set]};
-    const existingTile = await this.tileStore.tileDB.get(url);
+    const existingTile = await this.tileStore.tileDB.get([cleanURL]);
     if (existingTile) {
-      tile.sets = [...existingTile.sets, set];
+      // setName should already be unique, but avoid storing duplicate references
+      tile.sets = [...new Set([...existingTile.sets, set])];
     }
     const tileKey = await this.tileStore.tileDB.put(tile);
     const size = tile.data.size;
@@ -504,7 +557,7 @@ abstract class TileStoreBase {
         ? {offlineMapRegion: options.offlineMapRegion}
         : {}),
     };
-    this.tileStore.tileSetDB.put(tileSet);
+    await this.tileStore.tileSetDB.put(tileSet);
 
     return tileSet;
   }
@@ -542,7 +595,7 @@ abstract class TileStoreBase {
 
       // update the record with the tile count
       tileSet.expectedTileCount = tileCoords.length;
-      this.tileStore.tileSetDB.put(tileSet);
+      await this.tileStore.tileSetDB.put(tileSet);
 
       // Create batches of downloads to avoid overwhelming the browser
       const BATCH_SIZE = 10;
@@ -620,6 +673,36 @@ abstract class TileStoreBase {
     } else {
       return [];
     }
+  }
+
+  /** Get a stored tile set by its internal id. */
+  async getTileSet(setName: string): Promise<StoredTileSet | undefined> {
+    return this.tileStore.tileSetDB.get([setName]);
+  }
+
+  /** Update the user-visible name of a stored tile set. */
+  async renameTileSet(setName: string, label: string): Promise<StoredTileSet> {
+    const tileSet = await this.tileStore.tileSetDB.get([setName]);
+
+    if (!tileSet) {
+      throw new Error(`Offline map '${setName}' does not exist`);
+    }
+
+    tileSet.label = label;
+    await this.tileStore.tileSetDB.put(tileSet);
+
+    return tileSet;
+  }
+
+  /** Get the stored offline map associated with a project. */
+  async getTileSetForProject(
+    projectId: string
+  ): Promise<StoredTileSet | undefined> {
+    const tileSets = await this.tileStore.tileSetDB.getAll();
+
+    return tileSets
+      ?.filter(tileSet => tileSet.projectId === projectId)
+      .sort((a, b) => b.created.getTime() - a.created.getTime())[0];
   }
 
   async removeTileSet(setName: string) {

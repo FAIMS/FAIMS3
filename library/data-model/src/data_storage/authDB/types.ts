@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {ExportFormatSchema, FullExportConfigSchema} from '../../exportTypes';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
 import {DatabaseInterface} from '../../types';
 
@@ -485,27 +486,143 @@ export type LongLivedTokenV5ExistingDocument = z.infer<
   typeof LongLivedTokenV5ExistingDocumentSchema
 >;
 
+// =============
+// V6 Definition
+// =============
+
+// V6 - existing record types unchanged
+export const RefreshRecordV6FieldsSchema = RefreshRecordV5FieldsSchema;
+export const EmailCodeV6FieldsSchema = EmailCodeV5FieldsSchema;
+export const VerificationChallengeV6FieldsSchema =
+  VerificationChallengeV5FieldsSchema;
+export const LongLivedTokenV6FieldsSchema = LongLivedTokenV5FieldsSchema;
+
+/**
+ * Export formats stored on a download grant. Same schema as the export API
+ * ({@link ExportFormatSchema}); aliased here so the V6 grant fields stay
+ * readable next to the other auth record types.
+ */
+export const DownloadGrantFormatSchema = ExportFormatSchema;
+export type DownloadGrantFormat = z.infer<typeof DownloadGrantFormatSchema>;
+
+/**
+ * Full-export include flags stored on the grant when format === 'full'.
+ * Same schema as {@link FullExportConfigSchema}.
+ */
+export const DownloadGrantFullConfigSchema = FullExportConfigSchema;
+export type DownloadGrantFullConfig = z.infer<
+  typeof DownloadGrantFullConfigSchema
+>;
+
+// V6 - single-use export download grant. The public id is the uuid suffix of
+// `_id` (`downloadgrant_<uuid>`). Only the SHA-256 of the cookie secret is stored.
+export const DownloadGrantV6FieldsSchema = z.object({
+  // Discriminator field
+  documentType: z.literal('downloadgrant'),
+  // Which user ID minted this grant
+  userId: z.string(),
+  // Notebook to export
+  projectID: z.string(),
+  // Export format (csv, zip, geojson, kml, geopackage, full)
+  format: DownloadGrantFormatSchema,
+  // Required for csv; optional for zip
+  viewID: z.string().optional(),
+  // Full-export include flags (only present when format === 'full')
+  fullConfig: DownloadGrantFullConfigSchema.optional(),
+  // Exclusive epoch-ms window applied when the download streams
+  updatedAfter: z.number().optional(),
+  updatedBefore: z.number().optional(),
+  // SHA-256 of the browser cookie secret (never the secret itself)
+  secretHash: z.string(),
+  // True after a successful consume or revoke
+  used: z.boolean(),
+  // When does it expire? unix timestamp in ms
+  expiryTimestampMs: z.number(),
+  // When was it created? unix timestamp in ms
+  createdTimestampMs: z.number(),
+  // Present only for impersonation sessions: the admin who minted
+  impersonatingUserId: z.string().optional(),
+});
+
+export const AuthRecordV6FieldsSchema = z.discriminatedUnion('documentType', [
+  RefreshRecordV6FieldsSchema,
+  EmailCodeV6FieldsSchema,
+  VerificationChallengeV6FieldsSchema,
+  LongLivedTokenV6FieldsSchema,
+  DownloadGrantV6FieldsSchema,
+]);
+
+export const AuthRecordV6DocumentSchema = z.discriminatedUnion('documentType', [
+  CouchDocumentSchema.extend(RefreshRecordV6FieldsSchema.shape),
+  CouchDocumentSchema.extend(EmailCodeV6FieldsSchema.shape),
+  CouchDocumentSchema.extend(VerificationChallengeV6FieldsSchema.shape),
+  CouchDocumentSchema.extend(LongLivedTokenV6FieldsSchema.shape),
+  CouchDocumentSchema.extend(DownloadGrantV6FieldsSchema.shape),
+]);
+export type AuthRecordV6Document = z.infer<typeof AuthRecordV6DocumentSchema>;
+
+export const AuthRecordV6ExistingDocumentSchema = z.discriminatedUnion(
+  'documentType',
+  [
+    CouchExistingDocumentSchema.extend(RefreshRecordV6FieldsSchema.shape),
+    CouchExistingDocumentSchema.extend(EmailCodeV6FieldsSchema.shape),
+    CouchExistingDocumentSchema.extend(
+      VerificationChallengeV6FieldsSchema.shape
+    ),
+    CouchExistingDocumentSchema.extend(LongLivedTokenV6FieldsSchema.shape),
+    CouchExistingDocumentSchema.extend(DownloadGrantV6FieldsSchema.shape),
+  ]
+);
+export type AuthRecordV6ExistingDocument = z.infer<
+  typeof AuthRecordV6ExistingDocumentSchema
+>;
+
+export type RefreshRecordV6Fields = z.infer<typeof RefreshRecordV6FieldsSchema>;
+export type EmailCodeV6Fields = z.infer<typeof EmailCodeV6FieldsSchema>;
+export type VerificationChallengeV6Fields = z.infer<
+  typeof VerificationChallengeV6FieldsSchema
+>;
+export type LongLivedTokenV6Fields = z.infer<
+  typeof LongLivedTokenV6FieldsSchema
+>;
+export type DownloadGrantV6Fields = z.infer<typeof DownloadGrantV6FieldsSchema>;
+export type AuthRecordV6Fields = z.infer<typeof AuthRecordV6FieldsSchema>;
+
+export const DownloadGrantV6DocumentSchema = CouchDocumentSchema.extend(
+  DownloadGrantV6FieldsSchema.shape
+);
+export type DownloadGrantV6Document = z.infer<
+  typeof DownloadGrantV6DocumentSchema
+>;
+
+export const DownloadGrantV6ExistingDocumentSchema =
+  CouchExistingDocumentSchema.extend(DownloadGrantV6FieldsSchema.shape);
+export type DownloadGrantV6ExistingDocument = z.infer<
+  typeof DownloadGrantV6ExistingDocumentSchema
+>;
+
 // CURRENT EXPORTS
 // ===============
 
 // Fields
-export const AuthRecordFieldsSchema = AuthRecordV5FieldsSchema;
-export type AuthRecordFields = AuthRecordV5Fields;
+export const AuthRecordFieldsSchema = AuthRecordV6FieldsSchema;
+export type AuthRecordFields = AuthRecordV6Fields;
 
 // possibly existing document schemas
-export const AuthRecordDocumentSchema = AuthRecordV5DocumentSchema;
-export type AuthRecordDocument = AuthRecordV5Document;
+export const AuthRecordDocumentSchema = AuthRecordV6DocumentSchema;
+export type AuthRecordDocument = AuthRecordV6Document;
 
 // existing document schemas
 export const AuthRecordExistingDocumentSchema =
-  AuthRecordV5ExistingDocumentSchema;
-export type AuthRecordExistingDocument = AuthRecordV5ExistingDocument;
+  AuthRecordV6ExistingDocumentSchema;
+export type AuthRecordExistingDocument = AuthRecordV6ExistingDocument;
 
 // Helper types for specific record documents
-export type RefreshRecordFields = RefreshRecordV5Fields;
-export type EmailCodeFields = EmailCodeV5Fields;
-export type VerificationChallengeFields = VerificationChallengeV5Fields;
-export type LongLivedTokenFields = LongLivedTokenV5Fields;
+export type RefreshRecordFields = RefreshRecordV6Fields;
+export type EmailCodeFields = EmailCodeV6Fields;
+export type VerificationChallengeFields = VerificationChallengeV6Fields;
+export type LongLivedTokenFields = LongLivedTokenV6Fields;
+export type DownloadGrantFields = DownloadGrantV6Fields;
 
 // refresh token
 export const RefreshRecordDocumentSchema = RefreshRecordV5DocumentSchema;
@@ -537,12 +654,20 @@ export const LongLivedTokenExistingDocumentSchema =
   LongLivedTokenV5ExistingDocumentSchema;
 export type LongLivedTokenExistingDocument = LongLivedTokenV5ExistingDocument;
 
+// download grant
+export const DownloadGrantDocumentSchema = DownloadGrantV6DocumentSchema;
+export type DownloadGrantDocument = DownloadGrantV6Document;
+export const DownloadGrantExistingDocumentSchema =
+  DownloadGrantV6ExistingDocumentSchema;
+export type DownloadGrantExistingDocument = DownloadGrantV6ExistingDocument;
+
 // ID prefix map
 export const AUTH_RECORD_ID_PREFIXES = {
   refresh: 'refresh_',
   emailcode: 'emailcode_',
   verification: 'verification_',
   longlived: 'longlived_',
+  downloadgrant: 'downloadgrant_',
 } as const;
 
 // Database
@@ -550,4 +675,5 @@ export type GetRefreshTokenIndex = 'id' | 'token';
 export type GetEmailCodeIndex = 'id' | 'code';
 export type GetVerificationChallengeIndex = 'id' | 'code';
 export type GetLongLivedTokenIndex = 'id' | 'tokenHash';
+export type GetDownloadGrantIndex = 'id' | 'userId';
 export type AuthDatabase = DatabaseInterface<AuthRecordFields>;

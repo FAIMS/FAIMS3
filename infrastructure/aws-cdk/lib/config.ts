@@ -574,6 +574,11 @@ export const UiConfiguration = z
      * as VITE_ENABLE_PLANS_IN_DESIGNER.
      */
     enablePlansInDesigner: z.boolean().default(true),
+    /**
+     * When true (default), the record view shows a "Status" tab. When false,
+     * the tab is hidden. Passed to the app build as VITE_SHOW_STATUS_TAB.
+     */
+    showStatusTab: z.boolean().default(true),
   })
   .refine(
     data => {
@@ -590,6 +595,10 @@ export const UiConfiguration = z
     }
   );
 
+/** Defaults shared with Conductor env wiring (`EXPORT_RATE_LIMITER_*`). */
+export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS = 600_000;
+export const DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW = 20;
+
 export const SecurityConfigSchema = z.object({
   /** Maximum number of days for long lived tokens */
   maximumLongLivedTokenDurationDays: z.number().int().min(1).optional(),
@@ -605,6 +614,30 @@ export const SecurityConfigSchema = z.object({
    * production even when HTTP rate limiting is disabled upstream.
    */
   authAttemptLimiterEnabled: z.boolean().default(true),
+  /**
+   * Dedicated export mint/redeem limiter (`EXPORT_RATE_LIMITER_ENABLED`).
+   * Default true. Independent of `rateLimiterEnabled` so ZIP/GDAL work
+   * stays capped when the global IP limiter is off (upstream WAF).
+   */
+  exportRateLimiterEnabled: z.boolean().default(true),
+  /**
+   * Export-limiter window in milliseconds (`EXPORT_RATE_LIMITER_WINDOW_MS`).
+   * Default 600000 (10 minutes).
+   */
+  exportRateLimiterWindowMs: z
+    .number()
+    .int()
+    .min(1000)
+    .default(DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS),
+  /**
+   * Export mint/redeem requests allowed per window
+   * (`EXPORT_RATE_LIMITER_PER_WINDOW`). Default 20.
+   */
+  exportRateLimiterPerWindow: z
+    .number()
+    .int()
+    .min(1)
+    .default(DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW),
 });
 
 // Define the schema
@@ -682,6 +715,9 @@ export const ConfigSchema = z.object({
     maximumLongLivedTokenDurationDays: 90,
     rateLimiterEnabled: true,
     authAttemptLimiterEnabled: true,
+    exportRateLimiterEnabled: true,
+    exportRateLimiterWindowMs: DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS,
+    exportRateLimiterPerWindow: DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW,
   }),
   /** Bugsnag/monitoring */
   bugMonitoring: BugMonitoringConfigurationSchema,

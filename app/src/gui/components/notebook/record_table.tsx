@@ -39,7 +39,8 @@ import {
 } from '@mui/x-data-grid';
 import {useQueries} from '@tanstack/react-query';
 import {ReactNode, useCallback, useMemo, useState} from 'react';
-import {useNavigate, useParams} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
+import {useNotebookRoute} from '../../../context/notebookRoute';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
@@ -1095,15 +1096,11 @@ export function RecordsTable(props: RecordsTableProps) {
     loading,
     viewsets,
     recordStatus,
-    project: {uiSpecificationId: uiSpecId, projectId: project_id, serverId},
+    project: {uiSpecificationId: uiSpecId, projectId: project_id},
   } = props;
 
   const history = useNavigate();
-  const {tab} = useParams<{tab?: string}>();
-  const notebook = useMemo(
-    () => ({serverId, projectId: project_id, tab}),
-    [serverId, project_id, tab]
-  );
+  const {notebook} = useNotebookRoute();
   const styles = useDataGridStyles();
 
   // Get UI specification

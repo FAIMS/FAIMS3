@@ -2,9 +2,9 @@
  * TTL cleanup for ephemeral auth / invite CouchDB documents.
  *
  * Deletes expired refresh tokens, email codes, verification challenges,
- * invites, and (optionally) long-lived tokens after retention windows that
- * preserve auth rate-limiting. Never touches people, projects, data-*, or
- * survey tombstones.
+ * download grants, invites, and (optionally) long-lived tokens after
+ * retention windows that preserve auth rate-limiting. Never touches people,
+ * projects, data-*, or survey tombstones.
  *
  * Pure retention predicates are exported for unit tests; {@link runTtlCleanup}
  * performs the paginated sweep + bulkDocs deletes.
@@ -13,6 +13,7 @@
 import {
   AUTH_RECORD_ID_PREFIXES,
   DatabaseInterface,
+  DownloadGrantExistingDocument,
   EmailCodeExistingDocument,
   ExistingInvitesDBDocument,
   LongLivedTokenExistingDocument,
@@ -34,6 +35,8 @@ export const DEFAULT_REFRESH_GRACE_MS = 24 * 60 * 60 * 1000; // 1 day
 export const DEFAULT_RATE_LIMIT_GRACE_MS = 60 * 60 * 1000; // 1 hour
 export const DEFAULT_INVITE_GRACE_MS = 0;
 export const DEFAULT_LONG_LIVED_AUDIT_RETENTION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+/** Grace after download-grant expiry (or use) before the row is swept. */
+export const DEFAULT_DOWNLOAD_GRANT_GRACE_MS = 60 * 60 * 1000; // 1 hour
 export const DEFAULT_BATCH_SIZE = 100;
 export const DEFAULT_ERROR_THRESHOLD = 0;
 
@@ -42,7 +45,8 @@ export type TtlDocType =
   | 'emailcode'
   | 'verification'
   | 'invite'
-  | 'longlived';
+  | 'longlived'
+  | 'downloadgrant';
 
 export type TtlTypeStats = {
   scanned: number;
@@ -68,6 +72,8 @@ export type TtlCleanupOptions = {
    */
   deleteExhaustedInvites?: boolean;
   longLivedAuditRetentionMs?: number;
+  /** Grace after download-grant expiry before delete (default 1 hour). */
+  downloadGrantGraceMs?: number;
   batchSize?: number;
   /** Exit non-zero when errors exceed this (default 0 → any error fails). */
   errorThreshold?: number;
@@ -89,6 +95,7 @@ const emptyStats = (): TtlCleanupStats => ({
   verification: {scanned: 0, deleted: 0, skipped: 0, errors: 0},
   invite: {scanned: 0, deleted: 0, skipped: 0, errors: 0},
   longlived: {scanned: 0, deleted: 0, skipped: 0, errors: 0},
+  downloadgrant: {scanned: 0, deleted: 0, skipped: 0, errors: 0},
 });
 
 type DeletableDoc = {_id: string; _rev: string};
@@ -240,6 +247,24 @@ export const shouldDeleteLongLivedToken = (
       doc.createdTimestampMs);
 
   return auditAnchor < nowMs - auditRetentionMs;
+};
+
+/**
+ * Download grants: delete when used or expired, after a short grace so a
+ * just-consumed grant remains briefly auditable in Couch.
+ */
+export const shouldDeleteDownloadGrant = (
+  doc: Pick<
+    DownloadGrantExistingDocument,
+    '_id' | 'documentType' | 'used' | 'expiryTimestampMs'
+  >,
+  nowMs: number,
+  graceMs = DEFAULT_DOWNLOAD_GRANT_GRACE_MS
+): boolean => {
+  if (doc.documentType !== 'downloadgrant') return false;
+  if (!isAuthPrefixMatch(doc._id, 'downloadgrant')) return false;
+  if (!doc.used && doc.expiryTimestampMs >= nowMs) return false;
+  return doc.expiryTimestampMs < nowMs - graceMs;
 };
 
 type StartkeyPage<T> = {
@@ -491,6 +516,8 @@ export const runTtlCleanup = async (
   const deleteExhaustedInvites = options.deleteExhaustedInvites ?? false;
   const longLivedAuditRetentionMs =
     options.longLivedAuditRetentionMs ?? DEFAULT_LONG_LIVED_AUDIT_RETENTION_MS;
+  const downloadGrantGraceMs =
+    options.downloadGrantGraceMs ?? DEFAULT_DOWNLOAD_GRANT_GRACE_MS;
   const batchSize = options.batchSize ?? DEFAULT_BATCH_SIZE;
   const errorThreshold = options.errorThreshold ?? DEFAULT_ERROR_THRESHOLD;
   const nowMs = options.nowMs ?? Date.now();
@@ -530,6 +557,17 @@ export const runTtlCleanup = async (
     docType: 'verification',
     shouldDelete: doc =>
       shouldDeleteVerificationChallenge(doc, nowMs, rateLimitGraceMs),
+    stats,
+    batchSize,
+    dryRun,
+  });
+
+  // 3b. Download grants (used or expired + grace)
+  await sweepAuthType<DownloadGrantExistingDocument>({
+    viewName: 'viewsDocument/downloadGrants',
+    docType: 'downloadgrant',
+    shouldDelete: doc =>
+      shouldDeleteDownloadGrant(doc, nowMs, downloadGrantGraceMs),
     stats,
     batchSize,
     dryRun,

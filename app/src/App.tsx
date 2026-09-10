@@ -40,10 +40,12 @@ import './App.css';
 import {config} from './buildconfig';
 import {TolerantPrivateRoute} from './constants/privateRouter';
 import * as ROUTES from './constants/routes';
+import {NotebookRouteProvider} from './context/notebookRoute';
+import {NotebookViewTabProvider} from './context/notebookViewTab';
 import {NotificationProvider} from './context/popup';
 import {InitialiseGate, StateProvider} from './context/store';
 import {AuthReturn} from './gui/components/authentication/auth_return';
-import {MapDownload} from './gui/components/maps/MapDownload';
+import {DownloadOfflineMap} from './gui/components/maps/DownloadOfflineMap';
 import {NotebookOfflineMapPrompt} from './gui/components/maps/OfflineMapPrompt';
 import MainLayout from './gui/layout';
 import NotFound404 from './gui/pages/404';
@@ -60,6 +62,8 @@ import {VersionWarning} from './gui/components/VersionWarning';
 import {registerAppRouter} from './appRouter';
 import {queryClient} from './queryClient';
 import {useProjectRouteGuard} from './utils/useProjectRouteGuard';
+import {OfflineMapManager} from './gui/components/maps/OfflineMapManager';
+import {EditOfflineMap} from './gui/components/maps/EditOfflineMap';
 
 // =============================================================================
 // REACT QUERY CONFIGURATION
@@ -161,7 +165,11 @@ const routes: RouteObject[] = [
         path: ROUTES.NOTEBOOK_ROUTE_PATH,
         element: (
           <TolerantPrivateRoute>
-            <Outlet />
+            <NotebookRouteProvider>
+              <NotebookViewTabProvider>
+                <Outlet />
+              </NotebookViewTabProvider>
+            </NotebookRouteProvider>
           </TolerantPrivateRoute>
         ),
         children: [
@@ -195,7 +203,17 @@ const routes: RouteObject[] = [
         ? [
             {
               path: ROUTES.OFFLINE_MAPS,
-              element: <MapDownload />,
+              element: <OfflineMapManager />,
+            },
+            {
+              path: ROUTES.OFFLINE_MAP_NEW,
+              element: <DownloadOfflineMap />,
+            },
+            {
+              path: ROUTES.getOfflineMapEditRoute({
+                offlineMapId: ':offlineMapId',
+              }),
+              element: <EditOfflineMap />,
             },
           ]
         : []),

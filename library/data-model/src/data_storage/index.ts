@@ -31,6 +31,7 @@ export * from './internals';
 export * from './merging';
 export * from './queries';
 export * from './storageFunctions';
+export * from './updatedTimeFilter';
 export * from './utils';
 
 // Nested folders

@@ -4,20 +4,19 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React from 'react';
 import {config} from '../../../buildconfig';
-import {SHARED_TAB, useResolveTab} from '../../../constants/routes';
 import {DE_ACTIVATE_VERB} from '../workspace/notebooks';
 import AddRecordButtons from './add_record_by_type';
 import PushOnlySyncBanner from './PushOnlySyncBanner';
 import {RecordsTable} from './record_table';
-import {NotebookViewComponentProps} from './types';
+import {NotebookViewComponentProps, resolveTab} from './types';
 
 // This view's tab slugs, default first
 const TABS = [
   'my-records',
   'other-records',
-  SHARED_TAB.map,
-  SHARED_TAB.details,
-  SHARED_TAB.settings,
+  'map',
+  'details',
+  'settings',
 ] as const;
 
 /**
@@ -81,10 +80,9 @@ export default function NotebookComponent(props: NotebookViewComponentProps) {
   const theme = useTheme();
   const isMedium = useMediaQuery(theme.breakpoints.up('md'));
 
-  const currentTab = useResolveTab(TABS, tab, actions.setTab);
+  const currentTab = resolveTab(TABS, tab.current);
 
   const viewsets = uiSpecification.viewsets;
-
   // recordLabel based on viewsets
   const recordLabel =
     uiSpecification.visible_types?.length === 1
@@ -94,6 +92,11 @@ export default function NotebookComponent(props: NotebookViewComponentProps) {
 
   // Tab counts show only visible types; the tables keep the unfiltered lists
   const visibleTypes = getVisibleTypes(uiSpecification);
+  // Forms to offer an add button for: those listed as visible, less any viewset
+  // that opts out of one.
+  const addableTypes = visibleTypes.filter(
+    type => viewsets[type]?.is_visible !== false
+  );
   const visibleMyRecords = records.myRecords.filter(r =>
     visibleTypes.includes(r.type)
   );
@@ -114,14 +117,14 @@ export default function NotebookComponent(props: NotebookViewComponentProps) {
       )}
       <PushOnlySyncBanner
         project={project}
-        onGoToSyncSettings={() => actions.setTab(SHARED_TAB.settings)}
+        onGoToSyncSettings={() => tab.select('settings')}
       />
       <Box>
         {status.isAllowedToAddRecords && (
           <Box sx={{mb: 1.5}}>
             <AddRecordButtons
               project={project}
-              recordLabel={recordLabel}
+              formTypes={addableTypes}
               refreshList={actions.refreshRecordList}
             />
           </Box>
@@ -147,7 +150,7 @@ export default function NotebookComponent(props: NotebookViewComponentProps) {
           >
             <Tabs
               value={currentTab}
-              onChange={(_event, newTab: string) => actions.setTab(newTab)}
+              onChange={(_event, newTab: string) => tab.select(newTab)}
               aria-label={`${config.notebookName} tabs`}
               indicatorColor="secondary"
               sx={{
@@ -192,22 +195,22 @@ export default function NotebookComponent(props: NotebookViewComponentProps) {
               )}
 
               <Tab
-                value={SHARED_TAB.map}
+                value="map"
                 label="Map"
                 data-testid="app-notebook-tab-map"
-                {...a11yProps(SHARED_TAB.map)}
+                {...a11yProps('map')}
               />
               <Tab
-                value={SHARED_TAB.details}
+                value="details"
                 label="Details"
                 data-testid="app-notebook-tab-details"
-                {...a11yProps(SHARED_TAB.details)}
+                {...a11yProps('details')}
               />
               <Tab
-                value={SHARED_TAB.settings}
+                value="settings"
                 label="Settings"
                 data-testid="app-notebook-tab-settings"
-                {...a11yProps(SHARED_TAB.settings)}
+                {...a11yProps('settings')}
               />
             </Tabs>
           </Paper>
@@ -241,15 +244,17 @@ export default function NotebookComponent(props: NotebookViewComponentProps) {
           />
         </TabPanel>
 
-        <TabPanel value={currentTab} tab={SHARED_TAB.map}>
-          <components.OverviewMap />
+        <TabPanel value={currentTab} tab="map">
+          {/* The injected map plots the plan's records by default, and there
+          is no plan here, so name the whole notebook's */}
+          <components.OverviewMap records={records.notebookRecords} />
         </TabPanel>
 
-        <TabPanel value={currentTab} tab={SHARED_TAB.details}>
+        <TabPanel value={currentTab} tab="details">
           <components.MetadataDisplayComponent />
         </TabPanel>
 
-        <TabPanel value={currentTab} tab={SHARED_TAB.settings}>
+        <TabPanel value={currentTab} tab="settings">
           <components.NotebookSettings />
         </TabPanel>
       </Box>

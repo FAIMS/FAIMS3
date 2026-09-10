@@ -1,6 +1,6 @@
+import {DateTimeLocalInput} from '@/components/date-time-local-input';
 import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
 import {Button} from '@/components/ui/button';
-import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {
   Select,
@@ -240,20 +240,14 @@ export const ExpirySelector: React.FC<ExpirySelectorProps> = ({
           </Select>
         </div>
       ) : (
-        <div className="space-y-2">
-          <Label htmlFor="custom-datetime" className="text-sm font-medium">
-            {customLabel}
-          </Label>
-          <Input
-            id="custom-datetime"
-            type="datetime-local"
-            value={getDateTimeLocalValue()}
-            min={minDateString}
-            max={maxDateString}
-            onChange={e => handleCustomDateTimeChange(e.target.value)}
-            className="w-full"
-          />
-        </div>
+        <DateTimeLocalInput
+          id="custom-datetime"
+          label={customLabel}
+          value={getDateTimeLocalValue()}
+          min={minDateString}
+          max={maxDateString}
+          onChange={handleCustomDateTimeChange}
+        />
       )}
 
       {/* Current Selection Display */}

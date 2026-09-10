@@ -121,6 +121,21 @@ record's last save — the same behaviour as the
 The same reference can be used in
 [field and section conditions](../../authoring/conditions.md).
 
+### Referencing Notebook Metadata Values
+
+The template can include a value from the {{notebook}}'s custom metadata
+(the custom fields on the Info panel in the {{Notebook}} Editor) using
+the `_METADATA.` prefix: `{{_METADATA.Field-Name}}`. For example, with a
+custom field `season` set to `2026A`, `{{_METADATA.season}}-{{Site-Code}}`
+begins every identifier with the season. The Visual Builder lists custom
+fields as "Notebook: Field Name".
+
+Metadata applies across every record and cannot change while a record is
+open, so the reference simply renders the current value; if the
+{{notebook}} has no custom field with that name, it renders as empty
+text. A custom field that a template references cannot be removed from
+the Info panel until the template is changed.
+
 ### Shared Field Options
 
 Configure any of the shared field options as needed.

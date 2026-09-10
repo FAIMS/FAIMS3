@@ -35,7 +35,8 @@
     "forceRemoteDeletion": "never",
     "deleteOnDeactivation": false,
     "excludedTeamRoles": ["TEAM_MEMBER_CREATOR"],
-    "enablePlansInDesigner": true
+    "enablePlansInDesigner": true,
+    "showStatusTab": true
   },
   "supportLinks": {
     "supportEmail": "support@your-domain.com",
@@ -192,7 +193,10 @@
   "security": {
     "maximumLongLivedTokenDurationDays": 90,
     "rateLimiterEnabled": true,
-    "authAttemptLimiterEnabled": true
+    "authAttemptLimiterEnabled": true,
+    "exportRateLimiterEnabled": true,
+    "exportRateLimiterWindowMs": 600000,
+    "exportRateLimiterPerWindow": 20
   },
   "bugMonitoring": {
     "bugsnagKey": "1234-your-key"

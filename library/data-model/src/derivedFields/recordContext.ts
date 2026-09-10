@@ -39,6 +39,8 @@ export interface RecordContext {
   // Raw field values of records linked through single-link Related Records
   // fields, keyed by that field's ID (see resolveRelatedValues)
   relatedValues?: Record<string, ValuesObject>;
+  // The notebook's custom metadata, referenced as _METADATA.<key>
+  metadataValues?: Record<string, string>;
 }
 
 /**
