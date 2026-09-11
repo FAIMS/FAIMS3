@@ -555,37 +555,18 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     error: createError,
   } = useMutation({
     mutationFn: async () => {
-      // New record carries the edge: Child → `parent` on the new row; Linked →
-      // `linked` on the new row.
-      let relationship: FormRelationship;
-      const relation = {
-        fieldId: props.fieldId,
-        recordId: props.config.recordId,
-        relationTypeVocabPair: relationTypeToPair(props.relation_type),
-      };
-      if (props.relation_type === 'faims-core::Child') {
-        relationship = {
-          parent: [relation],
-        };
-      } else {
-        relationship = {
-          linked: [relation],
-        };
-      }
-
-      const res = await props.config.dataEngine().form.createRecord({
+      // The engine derives the related form, the relation and its vocab pair
+      // from this field, and writes the new row's own edge.
+      const res = await props.config.dataEngine().form.createRelatedRecord({
+        parentRecordId: props.config.recordId,
+        parentFieldId: props.fieldId,
         createdBy: props.config.user,
-        formId: props.related_type,
-        relationship,
+        parentFieldValue: props.value,
       });
 
-      props.setFieldData([
-        ...normalizedLinks,
-        {
-          record_id: res.record._id,
-          relation_type_vocabPair: relationTypeToPair(props.relation_type),
-        },
-      ] satisfies RelatedFieldValue);
+      // The parent's side goes through the open form, not a revision: a
+      // revision written under it would be lost to the commit below.
+      props.setFieldData(res.linked as RelatedFieldValue);
 
       // Persist the parent form so the new link is saved before we navigate
       // away.

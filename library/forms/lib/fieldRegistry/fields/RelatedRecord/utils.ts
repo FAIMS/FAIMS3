@@ -2,12 +2,6 @@
 // Utility Functions
 // ============================================================================
 
-import type {RelatedType} from '@faims3/data-model';
-
-export function relationTypeToPair(type: RelatedType): [string, string] {
-  if (type === 'faims-core::Child') {
-    return ['has child', 'is child of'];
-  } else {
-    return ['is linked to', 'is linked from'];
-  }
-}
+// One definition, in the engine, so this field and a view creating a related
+// record from outside a form agree on what a relation stores.
+export {relationTypeToPair} from '@faims3/data-model';

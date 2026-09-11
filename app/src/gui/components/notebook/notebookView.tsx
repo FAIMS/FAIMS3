@@ -12,7 +12,6 @@ import {
   FormUpdateData,
   MinimalRecordMetadata,
   ProjectStatus,
-  relatedRecordAvpEntries,
 } from '@faims3/data-model';
 import NotebookComponent from '.';
 import {addAlert} from '../../../context/slices/alertSlice';
@@ -263,11 +262,9 @@ function NotebookViewWithSpec({
    */
   const createChildRecord = useCallback(
     async ({
-      formType,
       parentRecordId,
       parentFieldId,
     }: {
-      formType: string;
       parentRecordId: string;
       parentFieldId: string;
     }) => {
@@ -288,54 +285,25 @@ function NotebookViewWithSpec({
         return;
       }
 
-      // The pair a Child related-record field stores, the parent's view first.
-      const relationTypeVocabPair: [string, string] = [
-        'has child',
-        'is child of',
-      ];
       let isChildCreated = false;
       try {
         const engine = dataEngine();
-        const {record} = await engine.form.createRecord({
-          formId: formType,
-          createdBy: activeUser.username,
-          relationship: {
-            parent: [
-              {
-                recordId: parentRecordId,
-                fieldId: parentFieldId,
-                relationTypeVocabPair,
-              },
-            ],
-          },
-        });
-        isChildCreated = true;
-
         // Read the head rather than trusting the record list, which the
         // notebook polls and can be a revision behind.
         const existing = await engine.form.getExistingFormData({
           recordId: parentRecordId,
         });
-        // A related-record value is a list or a single bare entry.
-        const currentValue = existing.data?.[parentFieldId]?.data;
-        const links =
-          currentValue === undefined || currentValue === null
-            ? []
-            : relatedRecordAvpEntries(currentValue);
-        const link = {
-          record_id: record._id,
-          relation_type_vocabPair: relationTypeVocabPair,
-        };
-        const isMultipleLink =
-          uiSpecification.fields[parentFieldId]?.['component-parameters']
-            ?.multiple === true;
-        if (!isMultipleLink && links.length > 0) {
-          // Overwriting would drop the parent's side of the existing link
-          // while its child kept the parent edge, leaving the two disagreeing.
-          throw new Error(
-            `Field ${parentFieldId} already holds a record and takes only one`
-          );
-        }
+        // The engine derives the related form, the relation and its vocab pair
+        // from the field, writes the new row's own edge, and hands back what
+        // this field must hold. No open form here, so that goes in a revision.
+        const {record, linked} = await engine.form.createRelatedRecord({
+          parentRecordId,
+          parentFieldId,
+          createdBy: activeUser.username,
+          parentFieldValue: existing.data?.[parentFieldId]?.data,
+        });
+        isChildCreated = true;
+
         const revision = await engine.form.createRevision({
           recordId: parentRecordId,
           revisionId: existing.revisionId,
@@ -350,7 +318,7 @@ function NotebookViewWithSpec({
             ...existing.data,
             [parentFieldId]: {
               ...existing.data?.[parentFieldId],
-              data: isMultipleLink ? [...links, link] : link,
+              data: linked,
             },
           },
           mode: 'parent',
@@ -368,7 +336,7 @@ function NotebookViewWithSpec({
       } catch (err) {
         // Surface and resolve, like createRecord. The child is written first,
         // so a later failure leaves a record not listed on its parent.
-        console.error('Failed to create child record', formType, err);
+        console.error('Failed to create child record', parentFieldId, err);
         dispatch(
           addAlert({
             message: isChildCreated
@@ -387,7 +355,6 @@ function NotebookViewWithSpec({
       dataEngine,
       navigate,
       notebook,
-      uiSpecification,
       dispatch,
     ]
   );

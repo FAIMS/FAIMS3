@@ -84,7 +84,6 @@ interface ActionProps {
   // Create a child record linked from one of the parent's related-record
   // fields, and navigate to it. Writes both halves of the link.
   createChildRecord: (args: {
-    formType: string;
     parentRecordId: string;
     parentFieldId: string;
   }) => Promise<void>;

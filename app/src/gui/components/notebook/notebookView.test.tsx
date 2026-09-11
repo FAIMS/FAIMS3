@@ -4,6 +4,8 @@ import {
   NotebookDefinition,
   planReferenceFor,
   ProjectStatus,
+  readRelatedLinks,
+  withRelatedLink,
 } from '@faims3/data-model';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {cleanup, render, screen} from '@testing-library/react';
@@ -62,6 +64,37 @@ vi.mock('@faims3/data-model', async () => {
     DataEngine: class {
       form = {
         createRecord: async () => ({record: {_id: 'child-1'}}),
+        // The engine derives the relation from the field; the mock spec gives
+        // 'single-test' one link and every other field many. The real link
+        // helpers do the shaping, so the tests below check what the app
+        // actually stores rather than a restatement of it.
+        createRelatedRecord: async ({
+          parentFieldId,
+          parentFieldValue,
+        }: {
+          parentFieldId: string;
+          parentFieldValue: unknown;
+        }) => {
+          const isMultiple = parentFieldId !== 'single-test';
+          const links = readRelatedLinks(parentFieldValue);
+          if (!isMultiple && links.length > 0) {
+            throw new Error(
+              `Field ${parentFieldId} already holds a record and takes only one`
+            );
+          }
+          const link = {
+            record_id: 'child-1',
+            relation_type_vocabPair: ['has child', 'is child of'] as [
+              string,
+              string,
+            ],
+          };
+          return {
+            record: {_id: 'child-1'},
+            link,
+            linked: withRelatedLink({links, link, isMultiple}),
+          };
+        },
         getExistingFormData: async () => ({
           revisionId: 'rev-1',
           data: {[childField.current]: {data: engine.existing}},
