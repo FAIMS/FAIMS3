@@ -49,6 +49,12 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
     return existing;
   }, [records.planRecords]);
 
+  // Before the type guard so hook order holds; stable for the table's memos
+  const formTypes = useMemo(
+    () => (props.plan && 'formType' in props.plan ? [props.plan.formType] : []),
+    [props.plan]
+  );
+
   const navigateToRecord = useCallback(
     (planReference: string) => {
       // find the record with the given planReference
@@ -185,6 +191,7 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
             rows={records.planRecords}
             loading={status.isLoading}
             viewsets={uiSpecification.viewsets}
+            formTypes={formTypes}
             handleQueryFunction={actions.setQuery}
             handleRefresh={() => {}} // Note this is not used in RecordsTable
             recordLabel={recordLabel}
