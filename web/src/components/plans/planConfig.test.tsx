@@ -18,7 +18,11 @@
  * input is complete.
  */
 
-import {COUNTED_PLAN_TYPE, LIST_OF_RECORDS_PLAN_TYPE} from '@faims3/data-model';
+import {
+  COUNTED_PLAN_TYPE,
+  LIST_OF_RECORDS_PLAN_TYPE,
+  LIST_OF_FORMS_PLAN_TYPE,
+} from '@faims3/data-model';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {describe, expect, test, vi} from 'vitest';
 import {countedPlanConfig, countedPlanFields} from './countedPlanFields';
@@ -80,6 +84,9 @@ describe('plan config registry', () => {
     const list = getPlanConfigType(LIST_OF_RECORDS_PLAN_TYPE);
     expect(list?.label).toBe('List of Records');
     expect(list && 'ConfigForm' in list).toBe(true);
+    const forms = getPlanConfigType(LIST_OF_FORMS_PLAN_TYPE);
+    expect(forms?.label).toBe('List of Forms');
+    expect(forms && 'fields' in forms).toBe(true);
     expect(getPlanConfigType('MapGrid')).toBeUndefined();
   });
 
