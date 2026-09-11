@@ -2,18 +2,21 @@ import {Field, Form} from '@/components/form';
 import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {useGetTeams, useGetTemplates} from '@/hooks/queries';
+import {useGetTeams, useGetTemplate, useGetTemplates} from '@/hooks/queries';
 import {Action, TemplateListItem} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
+import {useCallback, useState} from 'react';
 import {z} from 'zod';
 import {Divider} from '../ui/word-divider';
 import {
   createProjectFromFile,
   createProjectFromTemplate,
+  errorMessageFromNotebookJsonBody,
 } from '@/hooks/project-hooks';
 import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
 import {designFileSchema, resourceNameSchema} from '@/lib/input-limits';
 import {INPUT_LIMITS, ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
+import {usePlanConfigs} from '@/components/plans/usePlanConfigs';
 
 // Import the default sample notebook JSON
 import blankNotebook from '../../../notebooks/blank-notebook.json';
@@ -46,6 +49,32 @@ export function CreateProjectForm({
   const {data: templates} = useGetTemplates({user});
   const {data: teams} = useGetTeams({user});
 
+  // The template picker only has list items; fetch the full document so its
+  // plan templates can be configured the same way as the template-detail form.
+  const [selectedTemplateId, setSelectedTemplateId] = useState<
+    string | undefined
+  >();
+  const onSelectedTemplateIdChange = useCallback(
+    (templateId: string | undefined) => setSelectedTemplateId(templateId),
+    []
+  );
+  const {
+    data: selectedTemplate,
+    isLoading,
+    isError,
+  } = useGetTemplate({
+    user,
+    templateId: selectedTemplateId ?? '',
+    enabled: Boolean(selectedTemplateId),
+  });
+
+  const plans = usePlanConfigs({
+    planTemplates: selectedTemplate?.uiSpecification?.planTemplates ?? [],
+    uiSpec: selectedTemplate?.uiSpecification?.uiSpec,
+    isLoading: Boolean(selectedTemplateId) && isLoading,
+    isError: Boolean(selectedTemplateId) && isError,
+  });
+
   const fields: Field[] = [
     {
       name: 'name',
@@ -66,6 +95,10 @@ export function CreateProjectForm({
       })),
       schema: z.any().optional(),
       excludedBy: 'file',
+      onChange: value =>
+        onSelectedTemplateIdChange(
+          typeof value === 'string' && value ? value : undefined
+        ),
     },
     {
       name: 'file',
@@ -96,27 +129,25 @@ export function CreateProjectForm({
     dividers.push({index: 4, component: <div className="h-5" />});
   }
 
+  const withPlans = plans.appendTo({fields, dividers});
+
   interface onSubmitProps {
     name: string;
     description?: string;
     team?: string;
     template?: string;
     file?: File;
+    [key: string]: unknown;
   }
 
   /**
    * Handles the form submission
    *
-   * @param {{name: string, template?: string, file?: File}} params - The submitted form values.
+   * @param {onSubmitProps} values - The submitted form values.
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
-  const onSubmit = async ({
-    name,
-    description,
-    template,
-    file,
-    team,
-  }: onSubmitProps) => {
+  const onSubmit = async (values: onSubmitProps) => {
+    const {name, description, template, file, team} = values;
     let response;
     if (template) {
       // Create from selected template
@@ -126,6 +157,7 @@ export function CreateProjectForm({
         description,
         template,
         teamId: specifiedTeam ?? team,
+        planConfigs: plans.toPlanConfigs(values),
       });
     } else {
       // No template chosen: either use uploaded file or default blank notebook
@@ -149,7 +181,14 @@ export function CreateProjectForm({
     }
 
     if (!response.ok) {
-      return {type: 'submit', message: `Error creating ${config.notebookName}`};
+      const json = await response.json().catch(() => undefined);
+      return {
+        type: 'submit',
+        message: errorMessageFromNotebookJsonBody(
+          json,
+          `Error creating ${config.notebookName}`
+        ),
+      };
     }
     // need to refresh our auth token to get permissions on this new template
     const {message, status} = await refreshToken();
@@ -168,13 +207,15 @@ export function CreateProjectForm({
 
   return (
     <Form
-      fields={fields}
-      dividers={dividers}
+      fields={withPlans.fields}
+      dividers={withPlans.dividers}
       onSubmit={onSubmit}
       submitButtonText={`Create ${config.notebookNameCapitalized}`}
       submitButtonTestId="web-projects-create-submit"
       // pass in team ID default, if provided
       defaultValues={{team: defaultValues?.teamId}}
+      footer={plans.footer}
+      disableSubmission={plans.gate}
     />
   );
 }

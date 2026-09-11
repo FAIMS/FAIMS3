@@ -22,7 +22,7 @@ import {
 import {Input} from '@/components/ui/input';
 import {Checkbox} from '@/components/ui/checkbox';
 import {Label} from '@/components/ui/label';
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {Alert, AlertTitle, AlertDescription} from './ui/alert';
 import {
   Select,
@@ -59,6 +59,11 @@ export interface Field {
   checkboxLabel?: string;
   /** When true, optional select fields show a clear button to reset the value. */
   clearable?: boolean;
+  /**
+   * Watcher: called when this field's value changes (including the initial
+   * value). Does not replace RHF's input handler.
+   */
+  onChange?: (value: unknown) => void;
 }
 
 interface Divider {
@@ -106,6 +111,7 @@ function CheckboxControlRow({
  * @param {string} props.submitButtonText - The text to display on the submit button.
  * @param {DefaultValues<TSchema>} props.defaultValues - Default values for form fields.
  * @param {{disabled: boolean | ((data: TSchema) => boolean); reason: string}} props.disableSubmission - Optional object to disable form submission with a reason.
+ * @param {Partial<Record<string, (value: unknown) => void>>} props.watch - Optional per-field watchers, same contract as {@link Field.onChange}.
  * @returns {JSX.Element} The rendered Form component.
  */
 export function Form<
@@ -124,6 +130,7 @@ export function Form<
   defaultValues,
   footer = undefined,
   disableSubmission,
+  watch,
 }: {
   fields: TFields;
   dividers?: Divider[];
@@ -138,6 +145,8 @@ export function Form<
     disabled: boolean | ((data: TSchema) => boolean);
     reason: string;
   };
+  /** Per-field watchers; merged with each field's `onChange`. */
+  watch?: Partial<Record<string, (value: unknown) => void>>;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -170,6 +179,33 @@ export function Form<
     ) as Resolver<TSchema>,
     defaultValues,
   });
+
+  // Field.onChange + Form.watch share one RHF subscription. Callbacks live
+  // in a ref so a new fields/watch identity does not resubscribe.
+  const watchersRef = useRef<Record<string, (value: unknown) => void>>({});
+  watchersRef.current = {};
+  for (const field of fields) {
+    if (field.onChange) watchersRef.current[field.name] = field.onChange;
+  }
+  if (watch) {
+    for (const [name, callback] of Object.entries(watch)) {
+      if (callback) watchersRef.current[name] = callback;
+    }
+  }
+
+  useEffect(() => {
+    const notify = (name: string, value: unknown) => {
+      watchersRef.current[name]?.(value);
+    };
+    for (const name of Object.keys(watchersRef.current)) {
+      notify(name, form.getValues(name as Path<TSchema>));
+    }
+    const {unsubscribe} = form.watch((values, info) => {
+      if (!info.name) return;
+      notify(info.name, values[info.name as Path<TSchema>]);
+    });
+    return unsubscribe;
+  }, [form]);
 
   const isSubmitDisabled =
     isSubmitting ||
