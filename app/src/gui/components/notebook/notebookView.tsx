@@ -25,7 +25,6 @@ import {
   invalidateProjectRecordList,
   useIsAuthorisedTo,
   useIsRecordDownloadUnderway,
-  usePlanRecordStatusReports,
   useRecordList,
 } from '../../../utils/customHooks';
 import CircularLoading from '../ui/circular_loading';
@@ -267,15 +266,6 @@ function NotebookViewWithSpec({
   const planTab = usePlanTab();
   const tab = activePlan ? planTab : notebookTab;
 
-  // Completion roll-up per record the plan on screen claims, for its cell's
-  // status; only that plan's view can display it, so the walks stop at its own
-  const planRecordStatusReports = usePlanRecordStatusReports({
-    projectId: project.projectId,
-    uiSpecification,
-    records: records.allRecords,
-    planId: activePlan?.plan.planId,
-  });
-
   // Every record the plan on screen claims. Scoping once here hands a plan view
   // and the map beside it one answer, rather than each scoping again. Without a
   // plan nothing reads these: the chooser and the default view take no props.
@@ -323,7 +313,6 @@ function NotebookViewWithSpec({
         myRecords: records.myRecords,
         otherRecords: records.otherRecords,
         syncStatus: recordStatus.data ?? {status: {}, recordHashes: {}},
-        planRecordStatusReports,
       },
       components: {
         NotebookSettings: () => <NotebookSettings uiSpec={uiSpecification} />,
@@ -357,7 +346,6 @@ function NotebookViewWithSpec({
       isDownloadingRecords,
       records,
       recordStatus.data,
-      planRecordStatusReports,
       planRecords,
       activePlan,
     ]
