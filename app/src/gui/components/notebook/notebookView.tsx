@@ -5,6 +5,7 @@
 
 import {
   Action,
+  canEditProjectRecord,
   CompiledNotebookUiSpec,
   DatabaseInterface,
   DataDocument,
@@ -89,6 +90,21 @@ function NotebookViewWithSpec({
   const activeUser = useAppSelector(selectActiveUser);
   const [query, setQuery] = useState<string>('');
   const queryClient = useQueryClient();
+
+  /** Whether the active user may edit this record: the project open, and the
+   * record their own or anyone's. */
+  const canEditRecord = useCallback(
+    (record: MinimalRecordMetadata) =>
+      !!activeUser &&
+      project.status === ProjectStatus.OPEN &&
+      canEditProjectRecord({
+        decodedToken: activeUser.parsedToken,
+        projectId: project.projectId,
+        recordCreatedBy: record.createdBy,
+        actingUserId: activeUser.username,
+      }),
+    [activeUser, project.status, project.projectId]
+  );
 
   const isAllowedToAddRecords =
     useIsAuthorisedTo({
@@ -231,6 +247,109 @@ function NotebookViewWithSpec({
     ]
   );
 
+  /**
+   * Create a child record and navigate to its edit page, writing both halves of
+   * the link so the parent form reads as it would after an in-form create.
+   */
+  const createChildRecord = useCallback(
+    async ({
+      parentRecordId,
+      parentFieldId,
+    }: {
+      parentRecordId: string;
+      parentFieldId: string;
+    }) => {
+      if (!(activeUser && isAllowedToAddRecords)) return;
+
+      // The link is written onto the parent, so editing it must be allowed
+      // too, and a record absent from the list is one this user cannot see.
+      const parentRecord = records.allRecords.find(
+        record => record.recordId === parentRecordId
+      );
+      if (!parentRecord || !canEditRecord(parentRecord)) {
+        dispatch(
+          addAlert({
+            message: 'You do not have permission to add to that record',
+            severity: 'error',
+          })
+        );
+        return;
+      }
+
+      let isChildCreated = false;
+      try {
+        const engine = dataEngine();
+        // Read the head rather than trusting the record list, which the
+        // notebook polls and can be a revision behind.
+        const existing = await engine.form.getExistingFormData({
+          recordId: parentRecordId,
+        });
+        // The engine derives the related form, the relation and its vocab pair
+        // from the field, writes the new row's own edge, and hands back what
+        // this field must hold. No open form here, so that goes in a revision.
+        const {record, linked} = await engine.form.createRelatedRecord({
+          parentRecordId,
+          parentFieldId,
+          createdBy: activeUser.username,
+          parentFieldValue: existing.data?.[parentFieldId]?.data,
+        });
+        isChildCreated = true;
+
+        const revision = await engine.form.createRevision({
+          recordId: parentRecordId,
+          revisionId: existing.revisionId,
+          createdBy: activeUser.username,
+        });
+        // updateRevision replaces the revision's whole field map, so the
+        // parent's other values go back with it rather than being dropped.
+        await engine.form.updateRevision({
+          revisionId: revision._id,
+          recordId: parentRecordId,
+          update: {
+            ...existing.data,
+            [parentFieldId]: {
+              ...existing.data?.[parentFieldId],
+              data: linked,
+            },
+          },
+          mode: 'parent',
+          updatedBy: activeUser.username,
+          bumpRecordUpdatedAt: true,
+        });
+
+        navigate(
+          ROUTES.getEditRecordRoute({
+            ...notebook,
+            recordId: record._id,
+            mode: 'new',
+          })
+        );
+      } catch (err) {
+        // Surface and resolve, like createRecord. The child is written first,
+        // so a later failure leaves a record not listed on its parent.
+        console.error('Failed to create child record', parentFieldId, err);
+        dispatch(
+          addAlert({
+            message: isChildCreated
+              ? 'Record was created but could not be linked to its parent'
+              : 'Record could not be created',
+            severity: 'error',
+          })
+        );
+      }
+    },
+    [
+      activeUser,
+      isAllowedToAddRecords,
+      canEditRecord,
+      records.allRecords,
+      dataEngine,
+      navigate,
+      notebook,
+      dispatch,
+    ]
+  );
+
   // View/Edit an existing record by navigating to the record view page
   const navigateToRecord = useCallback(
     (record: MinimalRecordMetadata) => {
@@ -290,7 +409,9 @@ function NotebookViewWithSpec({
         refreshRecordList,
         setQuery,
         createRecord,
+        createChildRecord,
         navigateToRecord,
+        canEditRecord,
       },
       status: {
         // Never-loaded, not merely in-flight: the hook's isLoading stays true
@@ -340,7 +461,9 @@ function NotebookViewWithSpec({
       refreshRecordList,
       setQuery,
       createRecord,
+      createChildRecord,
       navigateToRecord,
+      canEditRecord,
       tab,
       isAllowedToAddRecords,
       isDownloadingRecords,
