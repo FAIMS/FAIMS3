@@ -174,8 +174,10 @@ export function buildStatusReportKey({
 }
 
 /**
- * Recursive status reports for every record the plan on screen claims, for
- * plan views that display per-record completion. One query per claiming
+ * Recursive status reports for every record the plan on screen claims, for a
+ * plan view that displays per-record completion. Called by the view that wants
+ * them rather than by the notebook, so a view that does not is not walking
+ * every record. One query per claiming
  * record, on the Status tab's own key, so reports land incrementally and
  * either surface serves the other's cache. A report spans the record's whole
  * child subtree, so any head-revision change in the notebook invalidates every

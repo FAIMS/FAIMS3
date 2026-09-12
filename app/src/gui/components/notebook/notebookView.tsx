@@ -14,7 +14,7 @@ import {
   MinimalRecordMetadata,
   ProjectStatus,
 } from '@faims3/data-model';
-import NotebookComponent from '.';
+import DefaultNotebookView from './DefaultNotebookView';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
@@ -26,7 +26,6 @@ import {
   invalidateProjectRecordList,
   useIsAuthorisedTo,
   useIsRecordDownloadUnderway,
-  usePlanRecordStatusReports,
   useRecordList,
 } from '../../../utils/customHooks';
 import CircularLoading from '../ui/circular_loading';
@@ -52,7 +51,7 @@ type NotebookViewProps = {
 };
 
 /**
- * NotebookView takes the place of the old NotebookComponent as the
+ * NotebookView takes the place of the old default notebook component as the
  * way to display a notebook. It defaults to the old view but can be
  * overridden if there is a plan associated with the notebook that has
  * a custom view registered for it.
@@ -386,15 +385,6 @@ function NotebookViewWithSpec({
   const planTab = usePlanTab();
   const tab = activePlan ? planTab : notebookTab;
 
-  // Completion roll-up per record the plan on screen claims, for its cell's
-  // status; only that plan's view can display it, so the walks stop at its own
-  const planRecordStatusReports = usePlanRecordStatusReports({
-    projectId: project.projectId,
-    uiSpecification,
-    records: records.allRecords,
-    planId: activePlan?.plan.planId,
-  });
-
   // Every record the plan on screen claims. Scoping once here hands a plan view
   // and the map beside it one answer, rather than each scoping again. Without a
   // plan nothing reads these: the chooser and the default view take no props.
@@ -444,7 +434,6 @@ function NotebookViewWithSpec({
         myRecords: records.myRecords,
         otherRecords: records.otherRecords,
         syncStatus: recordStatus.data ?? {status: {}, recordHashes: {}},
-        planRecordStatusReports,
       },
       components: {
         NotebookSettings: () => <NotebookSettings uiSpec={uiSpecification} />,
@@ -480,7 +469,6 @@ function NotebookViewWithSpec({
       isDownloadingRecords,
       records,
       recordStatus.data,
-      planRecordStatusReports,
       planRecords,
       activePlan,
     ]
@@ -522,9 +510,6 @@ function NotebookViewWithSpec({
     );
   }
 
-  // fallback to the default notebook component
-  // TODO: port this component to use the same interface
-  // as our custom plan view components once we have sorted
-  // out what that interface looks like
-  return <NotebookComponent project={project} tab={tab} />;
+  // Fallback: the default notebook view, on the same interface as plan views
+  return <DefaultNotebookView {...props} />;
 }

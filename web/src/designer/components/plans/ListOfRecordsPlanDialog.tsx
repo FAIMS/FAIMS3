@@ -35,6 +35,7 @@ import {
 } from '@mui/material';
 import {
   authoredSchema,
+  isListPlanSupportedFieldType,
   LIST_OF_RECORDS_PLAN_TYPE,
   listPlanTemplateSchema,
 } from '@faims3/data-model';
@@ -78,6 +79,19 @@ export const ListOfRecordsPlanDialog = ({
       viewId => uiSpec.views[viewId]?.fields ?? []
     );
   }, [formType, uiSpec]);
+
+  // Fields the list cannot pre-fill with a simple value are not offered
+  const unsupportedFields = useMemo(
+    () =>
+      formFields.filter(
+        fieldName =>
+          !isListPlanSupportedFieldType(
+            uiSpec.fields[fieldName]?.['type-returned']
+          )
+      ),
+    [formFields, uiSpec]
+  );
+  const offerableCount = formFields.length - unsupportedFields.length;
 
   // Re-derive local state each time the dialog opens
   useEffect(() => {
@@ -182,12 +196,14 @@ export const ListOfRecordsPlanDialog = ({
             <Box sx={{mt: 3}}>
               <SimpleFieldWrapper
                 heading="Pre-filled fields"
-                helperText="Fields of the form that each planned record supplies values for."
+                helperText="Fields of the form that each planned record supplies values for. Text, number and yes/no fields can be pre-filled."
               >
                 <Box sx={{mt: 0.85}}>
-                  {formFields.length === 0 ? (
+                  {offerableCount === 0 ? (
                     <Typography variant="body2" color="text.secondary">
-                      This form has no fields yet.
+                      {formFields.length === 0
+                        ? 'This form has no fields yet.'
+                        : 'This form has no fields the list can pre-fill.'}
                     </Typography>
                   ) : (
                     /* Picker reads the designer store, the same uiSpec the dialog is given */
@@ -197,7 +213,12 @@ export const ListOfRecordsPlanDialog = ({
                         if (fieldName) addField(fieldName);
                       }}
                       scope={{kind: 'viewset', viewsetId: formType}}
-                      filters={{excludeFieldIds: recordFields}}
+                      filters={{
+                        excludeFieldIds: [
+                          ...recordFields,
+                          ...unsupportedFields,
+                        ],
+                      }}
                       // Every field of the form stays reachable by browsing, not only the first page
                       limit={formFields.length}
                       label="Add field"
@@ -214,20 +235,24 @@ export const ListOfRecordsPlanDialog = ({
                     {recordFields.map(fieldName => {
                       // A field can be deleted from the form after the plan chose it
                       const onForm = formFields.includes(fieldName);
+                      const supported = !unsupportedFields.includes(fieldName);
                       const chip = (
                         <Chip
                           key={fieldName}
                           label={fieldLabel(fieldName)}
-                          color={onForm ? 'default' : 'warning'}
+                          color={onForm && supported ? 'default' : 'warning'}
                           onDelete={() => removeField(fieldName)}
                         />
                       );
-                      return onForm ? (
-                        chip
-                      ) : (
+                      if (onForm && supported) return chip;
+                      return (
                         <Tooltip
                           key={fieldName}
-                          title="This field is no longer on the form"
+                          title={
+                            onForm
+                              ? "This field's type cannot be pre-filled by the list"
+                              : 'This field is no longer on the form'
+                          }
                         >
                           <span>{chip}</span>
                         </Tooltip>
