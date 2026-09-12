@@ -5,6 +5,7 @@
 
 import {
   Action,
+  canEditProjectRecord,
   CompiledNotebookUiSpec,
   DatabaseInterface,
   DataDocument,
@@ -91,28 +92,19 @@ function NotebookViewWithSpec({
   const [query, setQuery] = useState<string>('');
   const queryClient = useQueryClient();
 
-  const isAllowedToEditOwnRecords = useIsAuthorisedTo({
-    action: Action.EDIT_MY_PROJECT_RECORDS,
-    resourceId: project.projectId,
-  });
-  const isAllowedToEditOthersRecords = useIsAuthorisedTo({
-    action: Action.EDIT_ALL_PROJECT_RECORDS,
-    resourceId: project.projectId,
-  });
   /** Whether the active user may edit this record: the project open, and the
    * record their own or anyone's. */
   const canEditRecord = useCallback(
     (record: MinimalRecordMetadata) =>
+      !!activeUser &&
       project.status === ProjectStatus.OPEN &&
-      (record.createdBy === activeUser?.username
-        ? isAllowedToEditOwnRecords
-        : isAllowedToEditOthersRecords),
-    [
-      activeUser,
-      project.status,
-      isAllowedToEditOwnRecords,
-      isAllowedToEditOthersRecords,
-    ]
+      canEditProjectRecord({
+        decodedToken: activeUser.parsedToken,
+        projectId: project.projectId,
+        recordCreatedBy: record.createdBy,
+        actingUserId: activeUser.username,
+      }),
+    [activeUser, project.status, project.projectId]
   );
 
   const isAllowedToAddRecords =

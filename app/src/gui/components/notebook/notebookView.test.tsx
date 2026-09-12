@@ -61,6 +61,9 @@ vi.mock('@faims3/data-model', async () => {
   const actual = await vi.importActual<object>('@faims3/data-model');
   return {
     ...actual,
+    // notebookView asks the shared helper, so the tests drive it here rather
+    // than through the permission hook it no longer calls.
+    canEditProjectRecord: () => authorised.current,
     DataEngine: class {
       form = {
         createRecord: async () => ({record: {_id: 'child-1'}}),
@@ -212,7 +215,7 @@ const uiSpecification = {
 
 vi.mock('../../../context/store', () => ({
   useAppDispatch: () => vi.fn(),
-  useAppSelector: () => ({username: 'testuser'}),
+  useAppSelector: () => ({username: 'testuser', parsedToken: {}}),
 }));
 vi.mock('../../../context/slices/authSlice', () => ({
   selectActiveUser: vi.fn(),
