@@ -280,6 +280,52 @@ function NotebookViewWithSpec({
     [records.allRecords, activePlan]
   );
 
+  // Each of these is a component the views render, so React compares them by
+  // reference: rebuild one and the subtree under it unmounts, losing its
+  // state. Held apart from the props memo, which recomputes whenever the
+  // record list polls, and keyed on only what each one actually reads.
+  const NotebookSettingsView = useMemo(
+    () => () => <NotebookSettings uiSpec={uiSpecification} />,
+    [uiSpecification]
+  );
+
+  const MetadataView = useMemo(
+    () => () => (
+      <MetadataDisplayComponent
+        project={project}
+        templateId={project.templateId}
+      />
+    ),
+    [project]
+  );
+
+  // Alone among the three in reading the records, so alone in still being
+  // rebuilt when they change. Capturing them in a ref instead would buy the
+  // map a stable identity by reading a value React had not committed.
+  const OverviewMapView = useMemo(
+    () =>
+      ({records: plotted}: {records?: MinimalRecordMetadata[]}) => (
+        <OverviewMap
+          // The plan's own records unless the view asks for others, so
+          // tapping a pin cannot open a record the list beside it says is
+          // not there.
+          records={{allRecords: plotted ?? planRecords}}
+          project_id={project.projectId}
+          uiSpec={uiSpecification}
+        />
+      ),
+    [planRecords, project.projectId, uiSpecification]
+  );
+
+  const components: NotebookViewComponentProps['components'] = useMemo(
+    () => ({
+      NotebookSettings: NotebookSettingsView,
+      MetadataDisplayComponent: MetadataView,
+      OverviewMap: OverviewMapView,
+    }),
+    [NotebookSettingsView, MetadataView, OverviewMapView]
+  );
+
   const props: NotebookViewComponentProps = useMemo(
     () => ({
       project,
@@ -314,25 +360,7 @@ function NotebookViewWithSpec({
         otherRecords: records.otherRecords,
         syncStatus: recordStatus.data ?? {status: {}, recordHashes: {}},
       },
-      components: {
-        NotebookSettings: () => <NotebookSettings uiSpec={uiSpecification} />,
-        MetadataDisplayComponent: () => (
-          <MetadataDisplayComponent
-            project={project}
-            templateId={project.templateId}
-          />
-        ),
-        OverviewMap: ({records: plotted}) => (
-          <OverviewMap
-            // The plan's own records unless the view asks for others, so
-            // tapping a pin cannot open a record the list beside it says is
-            // not there.
-            records={{allRecords: plotted ?? planRecords}}
-            project_id={project.projectId}
-            uiSpec={uiSpecification}
-          />
-        ),
-      },
+      components,
     }),
     [
       project,
@@ -348,6 +376,7 @@ function NotebookViewWithSpec({
       recordStatus.data,
       planRecords,
       activePlan,
+      components,
     ]
   );
 
