@@ -227,4 +227,44 @@ describe('Recursive record history', () => {
     });
     await expect(history(photo.recordId)).rejects.toThrow(RecordDeletedError);
   });
+
+  test('a record linked from two fields is walked once, not once per field', async () => {
+    // Same record id stored in two different Child fields of the one parent.
+    const shared = await create('Photo');
+    const {recordId: siteId} = await create('Site', {
+      'site-id': {data: 'S1'},
+      photos: {data: [link(shared.recordId)]},
+      features: {data: [link(shared.recordId)]},
+    });
+
+    const visits: string[] = [];
+    const real = engine.form.getExistingFormData.bind(engine.form);
+    engine.form.getExistingFormData = (args: {recordId: string}) => {
+      visits.push(args.recordId);
+      return real(args);
+    };
+
+    const result = await history(siteId);
+    expect(visits.filter(id => id === shared.recordId)).toHaveLength(1);
+    // Both fields still report it
+    expect(childField(result, 'photos').children[0].recordId).toBe(
+      shared.recordId
+    );
+    expect(childField(result, 'features').children[0].recordId).toBe(
+      shared.recordId
+    );
+  });
+
+  test('a Linked relation is not a child and is not walked', async () => {
+    const other = await create('Calibration');
+    const {recordId: siteId} = await create('Site', {
+      'site-id': {data: 'S1'},
+      // calibration-ref is faims-core::Linked, not Child
+      'calibration-ref': {data: [link(other.recordId)]},
+    });
+    const result = await history(siteId);
+    expect(
+      result.childFields.find(f => f.fieldId === 'calibration-ref')
+    ).toBeUndefined();
+  });
 });

@@ -405,9 +405,13 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
  */
 const RevisionList: React.FC<{
   entries: RevisionHistoryEntry[];
+  /** Anchors are scoped to the record: one record can appear under two of a
+   * parent's fields, and a bare revision id would then be in the page twice. */
+  recordId: RecordID;
   uiSpec: NonNullable<ReturnType<typeof compiledSpecService.getSpec>>;
-}> = ({entries, uiSpec}) => {
+}> = ({entries, recordId, uiSpec}) => {
   const historyData = entries;
+  const anchor = (revisionId: string) => `${recordId}-${revisionId}`;
 
   const revisionIdsRevision = new Map<string, RevisionHistoryEntry>(
     historyData.map(entry => [entry.revisionId, entry])
@@ -428,7 +432,7 @@ const RevisionList: React.FC<{
           const parentFields = Object.entries(entry.changedFields);
           return (
             <Stack key={entry.revisionId} spacing={2}>
-              <Typography variant="body1" id={entry.revisionId}>
+              <Typography variant="body1" id={anchor(entry.revisionId)}>
                 {entry.deleted ? 'Record deleted by ' : 'Revision created by '}
                 <span style={{textDecoration: 'underline'}}>
                   {formatRevisionMetadata(entry)}
@@ -444,7 +448,7 @@ const RevisionList: React.FC<{
                       <>
                         {' '}
                         compared to{' '}
-                        <Link href={`#${parentId}`}>
+                        <Link href={`#${anchor(parentId)}`}>
                           {formatRevisionMetadata(
                             revisionIdsRevision.get(parentId)
                           )}
@@ -504,7 +508,11 @@ const HistoryNode: React.FC<{
       )}
     </Stack>
 
-    <RevisionList entries={history.entries} uiSpec={uiSpec} />
+    <RevisionList
+      entries={history.entries}
+      recordId={history.recordId}
+      uiSpec={uiSpec}
+    />
 
     {history.childFields.map(field => (
       <Box

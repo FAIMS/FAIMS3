@@ -64,16 +64,16 @@ async function walk(
 
   const childPath = new Set(path).add(recordId);
   const outcomes = new Map<string, RecursiveRecordHistory | null>();
+  // Set: two fields may link the same record, and walking it twice would
+  // fetch its whole subtree twice. Each field still renders it below.
   await Promise.all(
-    links
-      .flatMap(link => link.childIds)
-      .map(async childId => {
-        try {
-          outcomes.set(childId, await walk(ctx, childId, childPath));
-        } catch (err) {
-          outcomes.set(childId, absorbSkippableChildError(err));
-        }
-      })
+    [...new Set(links.flatMap(link => link.childIds))].map(async childId => {
+      try {
+        outcomes.set(childId, await walk(ctx, childId, childPath));
+      } catch (err) {
+        outcomes.set(childId, absorbSkippableChildError(err));
+      }
+    })
   );
 
   const childFields = links.flatMap(
