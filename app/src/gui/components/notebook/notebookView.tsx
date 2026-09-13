@@ -31,7 +31,7 @@ import CircularLoading from '../ui/circular_loading';
 import {getNotebookView, PlanChooser, resolvePlanViews} from './plans';
 import {recordsClaimedBy} from './plans/planViewRecords';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
-import {useCallback, useMemo, useState} from 'react';
+import {useCallback, useMemo, useRef, useState} from 'react';
 import {config} from '../../../buildconfig';
 import {useQueryClient} from '@tanstack/react-query';
 import {NotebookViewComponentProps} from './types';
@@ -280,6 +280,38 @@ function NotebookViewWithSpec({
     [records.allRecords, activePlan]
   );
 
+  // Read at render time so the map still follows the plan's records without
+  // the component itself having to change identity when they do.
+  const planRecordsRef = useRef(planRecords);
+  planRecordsRef.current = planRecords;
+
+  // Held apart from the props memo, and keyed only on what they actually read.
+  // A component defined inside that memo is a new element type on every
+  // recompute, and the record list polls, so the subtree under each of these
+  // used to unmount and remount every few seconds, closing an open dialog.
+  const components: NotebookViewComponentProps['components'] = useMemo(
+    () => ({
+      NotebookSettings: () => <NotebookSettings uiSpec={uiSpecification} />,
+      MetadataDisplayComponent: () => (
+        <MetadataDisplayComponent
+          project={project}
+          templateId={project.templateId}
+        />
+      ),
+      OverviewMap: ({records: plotted}) => (
+        <OverviewMap
+          // The plan's own records unless the view asks for others, so
+          // tapping a pin cannot open a record the list beside it says is
+          // not there.
+          records={{allRecords: plotted ?? planRecordsRef.current}}
+          project_id={project.projectId}
+          uiSpec={uiSpecification}
+        />
+      ),
+    }),
+    [project, uiSpecification]
+  );
+
   const props: NotebookViewComponentProps = useMemo(
     () => ({
       project,
@@ -314,25 +346,7 @@ function NotebookViewWithSpec({
         otherRecords: records.otherRecords,
         syncStatus: recordStatus.data ?? {status: {}, recordHashes: {}},
       },
-      components: {
-        NotebookSettings: () => <NotebookSettings uiSpec={uiSpecification} />,
-        MetadataDisplayComponent: () => (
-          <MetadataDisplayComponent
-            project={project}
-            templateId={project.templateId}
-          />
-        ),
-        OverviewMap: ({records: plotted}) => (
-          <OverviewMap
-            // The plan's own records unless the view asks for others, so
-            // tapping a pin cannot open a record the list beside it says is
-            // not there.
-            records={{allRecords: plotted ?? planRecords}}
-            project_id={project.projectId}
-            uiSpec={uiSpecification}
-          />
-        ),
-      },
+      components,
     }),
     [
       project,
@@ -348,6 +362,7 @@ function NotebookViewWithSpec({
       recordStatus.data,
       planRecords,
       activePlan,
+      components,
     ]
   );
 
