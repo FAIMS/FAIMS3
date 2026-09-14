@@ -342,8 +342,7 @@ const EmptyState: React.FC<{
   return (
     <Box
       sx={{
-        padding: theme.spacing(3),
-        marginTop: theme.spacing(1),
+        paddingY: theme.spacing(2),
       }}
     >
       <Typography variant="h6" gutterBottom>
