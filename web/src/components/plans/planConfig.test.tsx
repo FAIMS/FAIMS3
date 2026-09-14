@@ -23,12 +23,13 @@ import {
   LIST_OF_RECORDS_PLAN_TYPE,
   LIST_OF_FORMS_PLAN_TYPE,
 } from '@faims3/data-model';
-import {fireEvent, render, screen} from '@testing-library/react';
+import {fireEvent, render, renderHook, screen} from '@testing-library/react';
 import {describe, expect, test, vi} from 'vitest';
 import {countedPlanConfig, countedPlanFields} from './countedPlanFields';
 import {ListOfRecordsPlanConfigForm} from './ListOfRecordsPlanConfigForm';
 import {PlanConfigSection} from './PlanConfigSection';
 import {planSubmissionGate} from './planSubmissionGate';
+import {usePlanConfigs} from './usePlanConfigs';
 import {
   createPlanConfigRegistry,
   getPlanConfigType,
@@ -71,6 +72,13 @@ const listTemplate = {
   label: 'Site list',
   formType: 'FORM1',
   recordFields: ['Name', 'Count', 'Flag'],
+};
+
+const formsTemplate = {
+  planType: LIST_OF_FORMS_PLAN_TYPE,
+  planId: 'forms',
+  label: 'Equipment',
+  formTypes: ['FORM1'],
 };
 
 const lastCall = (fn: ReturnType<typeof vi.fn>) =>
@@ -261,6 +269,25 @@ describe('planSubmissionGate', () => {
         planTemplates: [{planType: 'MapGrid', planId: 'grid', label: 'Grid'}],
       })?.reason
     ).toMatch(/cannot be configured/);
+  });
+});
+
+describe('usePlanConfigs', () => {
+  test('heads a plan with nothing to configure, and still sends its config', () => {
+    const {result} = renderHook(() =>
+      usePlanConfigs({planTemplates: [formsTemplate], uiSpec})
+    );
+
+    // A heading past the last field, which Form renders after them
+    const {fields, dividers} = result.current.appendTo({fields: []});
+    expect(fields).toEqual([]);
+    expect(dividers.map(d => d.index)).toEqual([0]);
+    render(<>{dividers[0].component}</>);
+    expect(screen.getByText('Equipment plan')).toBeTruthy();
+    expect(screen.getByText('This plan needs no configuration.')).toBeTruthy();
+
+    expect(result.current.gate).toBeUndefined();
+    expect(result.current.toPlanConfigs({})).toEqual({forms: {}});
   });
 });
 
