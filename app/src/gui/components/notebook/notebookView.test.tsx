@@ -112,7 +112,6 @@ vi.mock('../../../utils/customHooks', () => ({
   invalidateProjectRecordList: vi.fn(),
   useIsAuthorisedTo: () => false,
   useIsRecordDownloadUnderway: () => false,
-  usePlanRecordStatusReports: () => new Map(),
   // Records the query it was asked for, which is what filters the whole notebook
   useRecordList: ({query}: {query: string}) => {
     queries.current.push(query);

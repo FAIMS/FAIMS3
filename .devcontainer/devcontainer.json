@@ -28,7 +28,6 @@
 
     "ANDROID_APP_PUBLIC_URL": "https://play.google.com/store/apps/details?id=org.fedarch.faims3",
     "IOS_APP_PUBLIC_URL": "https://apps.apple.com/au/app/fieldmark/id1592632372",
-    "DESIGNER_URL": "https://designer.testing.fieldmark.app",
 
     "EMAIL_SERVICE_TYPE": "MOCK",
     "EMAIL_FROM_ADDRESS": "notifications@example.com",
