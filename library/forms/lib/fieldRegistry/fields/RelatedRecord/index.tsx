@@ -5,6 +5,7 @@ import {
   FormRelationshipInstance,
   HydratedRecord,
   relatedRecordAvpEntries,
+  relationTypeToPair,
 } from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
@@ -58,7 +59,6 @@ import {
   RelatedRecordFieldProps,
   relatedRecordPropsSchema,
 } from './types';
-import {relationTypeToPair} from './utils';
 
 /**
  * Related record field: create new records of a related type, link existing ones,
