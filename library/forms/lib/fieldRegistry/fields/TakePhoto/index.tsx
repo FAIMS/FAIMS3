@@ -143,6 +143,9 @@ const TakePhotoPreview: React.FC<TakePhotoFieldProps> = props => {
 // UI Components
 // ============================================================================
 
+/** Matches the + badge's `right` overhang so the icon stays optically centered. */
+const ADD_BADGE_OVERHANG_PX = 8;
+
 /**
  * Single labelled action (icon with a "+" badge over a label). The icon lives in
  * a fixed-height zone so the two buttons always line up, even if a label wraps.
@@ -177,6 +180,7 @@ const ActionButton: React.FC<{
         borderRadius: theme.spacing(1),
         outline: 'none',
         transition: 'background-color 120ms ease',
+        width: '100%',
         '&:hover': {bgcolor: theme.palette.action.hover},
         '&:focus-visible': {bgcolor: theme.palette.action.hover},
       }}
@@ -189,12 +193,21 @@ const ActionButton: React.FC<{
           justifyContent: 'center',
         }}
       >
-        <Box sx={{position: 'relative', display: 'inline-flex', lineHeight: 0}}>
+        <Box
+          sx={{
+            position: 'relative',
+            display: 'inline-flex',
+            lineHeight: 0,
+            // The + badge is position:absolute and hangs off the right; include
+            // that overhang so flex centering uses the icon+badge as a unit.
+            paddingRight: `${ADD_BADGE_OVERHANG_PX}px`,
+          }}
+        >
           {icon}
           <Box
             sx={{
               position: 'absolute',
-              right: -8,
+              right: 0,
               bottom: -6,
               display: 'flex',
               alignItems: 'center',
@@ -228,26 +241,51 @@ const ActionButton: React.FC<{
 
 /**
  * The "Take photo" + "Gallery" pair.
+ *
+ * Uses equal columns so the two icons share a common center line — otherwise
+ * the wider "Take photo" label pulls the pair's visual center to the right.
  */
 const PhotoActions: React.FC<{
   onAddPhoto: () => void;
   onPickFromGallery: () => void;
   justify?: 'center' | 'flex-start';
-}> = ({onAddPhoto, onPickFromGallery, justify = 'center'}) => {
+  /** Empty state: full-width centered row on narrow viewports. */
+  stretchOnNarrow?: boolean;
+}> = ({
+  onAddPhoto,
+  onPickFromGallery,
+  justify = 'center',
+  stretchOnNarrow = false,
+}) => {
   const theme = useTheme();
+
+  const actionSlotSx = {
+    display: 'flex',
+    justifyContent: 'center',
+    minWidth: 0,
+    ...(stretchOnNarrow && {
+      flex: {xs: 1, sm: 'unset'},
+      width: {xs: '100%', sm: 'auto'},
+    }),
+  };
 
   return (
     <Box
       sx={{
-        display: 'flex',
+        display: stretchOnNarrow
+          ? {xs: 'flex', sm: 'inline-grid'}
+          : 'inline-grid',
+        gridTemplateColumns: '1fr 1fr',
         flexDirection: 'row',
         alignItems: 'flex-start',
-        justifyContent: justify,
+        justifyItems: 'stretch',
+        justifyContent: stretchOnNarrow ? {xs: 'center', sm: justify} : justify,
+        width: stretchOnNarrow ? {xs: '100%', sm: 'auto'} : undefined,
         gap: 3,
       }}
     >
       <Tooltip title="Take a new photo with your camera">
-        <Box component="span" sx={{display: 'inline-flex'}}>
+        <Box component="span" sx={actionSlotSx}>
           <ActionButton
             icon={
               <CameraAltIcon
@@ -261,7 +299,7 @@ const PhotoActions: React.FC<{
         </Box>
       </Tooltip>
       <Tooltip title="Select multiple photos at once from your gallery">
-        <Box component="span" sx={{display: 'inline-flex'}}>
+        <Box component="span" sx={actionSlotSx}>
           <ActionButton
             icon={
               <PhotoLibraryIcon
@@ -352,6 +390,7 @@ const EmptyState: React.FC<{
         onAddPhoto={onAddPhoto}
         onPickFromGallery={onPickFromGallery}
         justify="flex-start"
+        stretchOnNarrow
       />
     </Box>
   );
