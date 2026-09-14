@@ -19,7 +19,10 @@ import {config} from '../../buildconfig';
 import {AppDispatch, RootState} from '../store';
 import {AuthState, isTokenValid, selectActiveServerId} from './authSlice';
 import {compiledSpecService} from './helpers/compiledSpecService';
-import {reassessPersistedNotebookDefinition} from './helpers/notebookDefinition';
+import {
+  isPlaceholderNotebookDefinition,
+  reassessPersistedNotebookDefinition,
+} from './helpers/notebookDefinition';
 import {
   buildCompiledSpecId,
   buildPouchIdentifier,
@@ -1986,16 +1989,20 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             })
           );
         } else {
-          // When the server's design cannot be interpreted, keep the last good
-          // local definition (so existing records stay readable) and surface
+          // When the server's design cannot be interpreted, keep any real
+          // local form graph (so existing records stay readable) and surface
           // the new compatibility state instead of replacing it with the
-          // placeholder.
+          // placeholder. Key off the stored graph, not the stored tier:
+          // after the first incompatible fetch the tier is already
+          // `incompatible`, and a later refresh / restart would otherwise
+          // wipe the last-good design.
           const incomingIncompatible =
             meta.schemaCompatibility?.tier === 'incompatible';
-          const existingUsable =
-            existingProject.schemaCompatibility?.tier !== 'incompatible';
+          const existingHasUsableGraph = !isPlaceholderNotebookDefinition(
+            existingProject.uiDefinition
+          );
           const nextUiDefinition =
-            incomingIncompatible && existingUsable
+            incomingIncompatible && existingHasUsableGraph
               ? existingProject.uiDefinition
               : meta.uiDefinition;
           const nextOfflineMapRegion = meta.offlineMapRegion;

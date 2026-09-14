@@ -179,7 +179,7 @@ const PERSONA_ENV: Record<PersonaKey, {user: string; pass: string}> = {
     user: 'TEST_PROJECT_GUEST_USERNAME',
     pass: 'TEST_PROJECT_GUEST_PASSWORD',
   },
-  /** Contributor on the future-schema fixture notebooks only (seed). */
+  /** Contributor on the schema-compatibility fixture notebooks only (seed). */
   schemaTester: {
     user: 'TEST_SCHEMA_TESTER_USERNAME',
     pass: 'TEST_SCHEMA_TESTER_PASSWORD',

@@ -224,6 +224,95 @@ describe('initialiseProjects notebook schema fail-soft', () => {
     expect(project.uiDefinition.uiSpec.fields).toHaveProperty('title');
   });
 
+  it('keeps the last good definition across a second sync while already incompatible', async () => {
+    const good = currentDefinition();
+    const store = makeStore({
+      'nb-1': {
+        projectId: 'nb-1',
+        serverId,
+        name: 'Notebook One',
+        status: ProjectStatus.OPEN,
+        isActivated: true,
+        uiDefinition: good as any,
+        uiSpecificationId: 'old-spec',
+        schemaCompatibility: {
+          tier: 'incompatible',
+          relation: 'newer-major',
+          appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+          notebookSchemaVersion: '99.0.0',
+          requiresMigration: false,
+          reason: 'already flagged',
+        },
+      },
+    });
+
+    const def = currentDefinition();
+    def.uiSpec.schemaVersion = '99.0.0';
+    def.uiSpec.fields = {};
+    stubFetch(def);
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    const project =
+      store.getState().projects.servers[serverId].projects['nb-1'];
+    expect(project.schemaCompatibility?.tier).toBe('incompatible');
+    expect(project.uiDefinition.uiSpec.fields).toHaveProperty('title');
+  });
+
+  it('does not invent a graph when the existing definition is already a placeholder', async () => {
+    const store = makeStore({
+      'nb-1': {
+        projectId: 'nb-1',
+        serverId,
+        name: 'Notebook One',
+        status: ProjectStatus.OPEN,
+        isActivated: false,
+        uiDefinition: {
+          uiSpec: {
+            fields: {},
+            views: {},
+            viewsets: {},
+            visible_types: [],
+            settings: {showQrCodeButton: false},
+            schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+          },
+          metadata: {
+            information: {
+              notebookVersion: '',
+              purposeMarkdown: 'Old purpose',
+              projectLeadLabel: '',
+              leadInstitution: '',
+            },
+          },
+        } as any,
+        uiSpecificationId: 'placeholder-spec',
+        schemaCompatibility: {
+          tier: 'incompatible',
+          relation: 'newer-major',
+          appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+          notebookSchemaVersion: '99.0.0',
+          requiresMigration: false,
+          reason: 'already flagged',
+        },
+      },
+    });
+
+    const def = currentDefinition();
+    def.uiSpec.schemaVersion = '99.0.0';
+    stubFetch(def);
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    const project =
+      store.getState().projects.servers[serverId].projects['nb-1'];
+    expect(project.schemaCompatibility?.tier).toBe('incompatible');
+    expect(project.uiDefinition.uiSpec.fields).toEqual({});
+    // Incoming placeholder salvages metadata from the server's design.
+    expect(project.uiDefinition.metadata.information.purposeMarkdown).toBe(
+      'Purpose'
+    );
+  });
+
   it('marks a newer minor as degraded but stores the best-effort definition', async () => {
     const def = currentDefinition();
     const [major, minor, patch] = CURRENT_NOTEBOOK_UI_SCHEMA_VERSION.split('.');

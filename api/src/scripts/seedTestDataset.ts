@@ -92,15 +92,18 @@ const SEED_IDS = {
   redNotebook: 'notebook_seed_red',
   blueNotebook: 'notebook_seed_blue',
   /**
-   * Schema-compatibility fixtures: copies of the Red design stamped with a
-   * `uiSpec.schemaVersion` this build does not know yet (newer major / newer
-   * minor). Written straight to Couch (the API would reject them), owned by an
-   * otherwise unused team so no other persona's lists change. Exercised by
+   * Schema-compatibility fixtures: copies of the Red design. Future major /
+   * minor are stamped with a `uiSpec.schemaVersion` this build does not know
+   * (written straight to Couch; the API would reject them). Last-good stays
+   * at `CURRENT` so e2e can activate it, then stamp the server copy newer
+   * and assert the local graph is kept. Owned by an otherwise unused team
+   * so no other persona's lists change. Exercised by
    * `e2e/test/specs/app/notebook-schema-compatibility.e2e.ts`.
    */
   schemaTeam: 'team_seed_schema',
   futureMajorNotebook: 'notebook_seed_future_major',
   futureMinorNotebook: 'notebook_seed_future_minor',
+  lastGoodNotebook: 'notebook_seed_last_good',
 } as const;
 
 /** Next major / next minor relative to this build's notebook schema. */
@@ -136,6 +139,7 @@ interface SeedContext {
   blueNotebookId: string;
   futureMajorNotebookId: string;
   futureMinorNotebookId: string;
+  lastGoodNotebookId: string;
 }
 
 interface UserSpec {
@@ -305,9 +309,9 @@ const USER_SPECS: UserSpec[] = [
   },
 
   // ── seed-schema-tester ────────────────────────────────────────────────────
-  // Contributor on the future-schema fixtures only (no team membership), so
-  // the app's compatibility chips / skeleton can be exercised without changing
-  // what any other persona sees.
+  // Contributor on the schema-compatibility fixtures only (no team
+  // membership), so the app's chips / skeleton / last-good path can be
+  // exercised without changing what any other persona sees.
   {
     email: 'seed-schema-tester@faims.test',
     tag: 'SCHEMA_TESTER',
@@ -322,6 +326,11 @@ const USER_SPECS: UserSpec[] = [
         user,
         role: Role.PROJECT_CONTRIBUTOR,
         projectId: ctx.futureMinorNotebookId,
+      });
+      addProjectRole({
+        user,
+        role: Role.PROJECT_CONTRIBUTOR,
+        projectId: ctx.lastGoodNotebookId,
       });
     },
   },
@@ -637,6 +646,9 @@ function printSummary(
   console.log(
     `  Future minor  : ${ctx.futureMinorNotebookId} (schemaVersion ${FUTURE_SCHEMA_VERSIONS.newerMinor})`
   );
+  console.log(
+    `  Last-good     : ${ctx.lastGoodNotebookId} (schemaVersion ${CURRENT_NOTEBOOK_UI_SCHEMA_VERSION})`
+  );
 
   console.log('\nUSERS');
   const header = `  ${'Email'.padEnd(42)} ${'Global Roles'.padEnd(40)} Team Roles`;
@@ -778,6 +790,18 @@ const main = async () => {
       schemaVersionOverride: FUTURE_SCHEMA_VERSIONS.newerMinor,
     });
 
+    // Current-schema copy: e2e activates this, then stamps Couch to a newer
+    // major to exercise last-good retention across list refresh / reload.
+    const lastGoodNotebookId = await upsertSeedNotebook({
+      id: SEED_IDS.lastGoodNotebook,
+      projectName: 'Last Good Schema (current)',
+      uiSpecification: redTemplateSpec.uiSpecification,
+      description: seedDescription(
+        `Fixture: schemaVersion ${CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}; activate, then stamp newer to test last-good retention`
+      ),
+      teamId: schemaTeam._id,
+    });
+
     const ctx: SeedContext = {
       redTeamId: redTeam._id,
       blueTeamId: blueTeam._id,
@@ -788,6 +812,7 @@ const main = async () => {
       blueNotebookId,
       futureMajorNotebookId,
       futureMinorNotebookId,
+      lastGoodNotebookId,
     };
 
     // ── Phase 5: Users + roles ────────────────────────────────────────────────

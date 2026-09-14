@@ -16,6 +16,7 @@ duplicating env reads, waits, or screenshot logic in specs.
 | `report.ts`     | Static `index.html` gallery (failure-first) from `manifest.json`           |
 | `hooks.ts`      | WDIO hooks wired from conf files                                           |
 | `seed.ts`       | Optional API helpers: invites, notebooks, tombstones, project roles        |
+| `couch.ts`      | Node-side Couch writes the API will not accept (stamp `schemaVersion`)     |
 
 ## Screenshot modes (`SCREENSHOT_MODE`)
 

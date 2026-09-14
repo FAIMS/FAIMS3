@@ -1,19 +1,28 @@
 /**
  * Notebook schema compatibility — app fail-soft path (schemaTester persona).
  *
- * The seed writes two copies of the Red design straight to CouchDB with a
- * `uiSpec.schemaVersion` this build does not know (see
- * `api/src/scripts/seedTestDataset.ts`, `FUTURE_SCHEMA_VERSIONS`):
+ * The seed writes copies of the Red design for this persona (see
+ * `api/src/scripts/seedTestDataset.ts`):
  *
  * - "Future Schema (newer major …)" → tier `incompatible`: listed with a chip,
  *   activation disabled, row still opens the skeleton + copyable report.
  * - "Future Schema (newer minor …)" → tier `degraded`: listed with a chip,
  *   renders with a warning banner, record creation still available.
+ * - "Last Good Schema (current)" → starts readable; this spec stamps Couch to
+ *   a newer major after activate + create, then asserts the last-good graph
+ *   (and the local record) survive list refresh and reload.
  *
- * Covers the list chip → skeleton → copy report flow end to end, and that the
- * persisted tier survives a reload.
+ * Covers the list chip → skeleton → copy report flow, the last-good path, and
+ * that the persisted tier survives a reload.
  */
 import {loginAppPersona} from '../../helpers/auth.ts';
+import {
+  nextMajorSchemaVersion,
+  readNotebookSchemaVersion,
+  SEED_LAST_GOOD_NOTEBOOK_ID,
+  SEED_LAST_GOOD_NOTEBOOK_NAME,
+  stampNotebookSchemaVersion,
+} from '../../helpers/couch.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
 import {byTestId} from '../../helpers/selectors.ts';
 import {waitForTestId} from '../../helpers/wait.ts';
@@ -129,5 +138,102 @@ describe('App — Notebook schema compatibility (fail-soft)', () => {
     await expect(AppRecordsPage.addButton).toBeDisplayed();
 
     await captureStep({surface: 'app', label: 'schema-compat-degraded'});
+  });
+});
+
+describe('App — Notebook schema compatibility (last-good after upgrade)', () => {
+  const noteText = `Last-good e2e ${Date.now()}`;
+  let originalSchemaVersion = '';
+
+  before(async () => {
+    await browser.reloadSession();
+    await loginAppPersona('schemaTester');
+    await AppNotebooksPage.open();
+    await AppNotebooksPage.waitForWorkspace();
+    await AppNotebooksPage.activateNotebookNamed(SEED_LAST_GOOD_NOTEBOOK_NAME);
+    await AppNotebooksPage.openActiveNotebookNamed(
+      SEED_LAST_GOOD_NOTEBOOK_NAME
+    );
+    await AppRecordsPage.createTextRecord(noteText);
+  });
+
+  after(async () => {
+    if (!originalSchemaVersion) return;
+    await stampNotebookSchemaVersion(
+      SEED_LAST_GOOD_NOTEBOOK_ID,
+      originalSchemaVersion
+    );
+  });
+
+  it('keeps records and blocks create after the server design becomes a newer major', async () => {
+    originalSchemaVersion = await readNotebookSchemaVersion(
+      SEED_LAST_GOOD_NOTEBOOK_ID
+    );
+    await stampNotebookSchemaVersion(
+      SEED_LAST_GOOD_NOTEBOOK_ID,
+      nextMajorSchemaVersion(originalSchemaVersion)
+    );
+
+    await AppNotebooksPage.open();
+    await AppNotebooksPage.waitForWorkspace();
+    await AppNotebooksPage.refreshNotebookList();
+
+    await AppNotebooksPage.openActiveTab();
+    const row = await AppNotebooksPage.waitForNotebookRow(
+      SEED_LAST_GOOD_NOTEBOOK_NAME
+    );
+    await expect(
+      row.$('[data-testid="notebook-schema-chip-incompatible"]')
+    ).toBeDisplayed();
+
+    await AppNotebooksPage.openActiveNotebookNamed(
+      SEED_LAST_GOOD_NOTEBOOK_NAME
+    );
+    await waitForTestId('notebook-schema-incompatible-view', {timeout: 20000});
+    expect(await AppRecordsPage.addButton.isExisting()).toBe(false);
+    await browser.waitUntil(
+      async () => {
+        const body = await $('body').getText();
+        return body.includes(noteText) || body.includes(noteText.slice(0, 12));
+      },
+      {
+        timeout: 20000,
+        timeoutMsg: `Expected last-good record "${noteText}" still listed`,
+      }
+    );
+
+    await captureStep({surface: 'app', label: 'schema-compat-last-good'});
+  });
+
+  it('keeps the last-good graph after a second list refresh', async () => {
+    await AppNotebooksPage.open();
+    await AppNotebooksPage.waitForWorkspace();
+    await AppNotebooksPage.refreshNotebookList();
+    await AppNotebooksPage.openActiveNotebookNamed(
+      SEED_LAST_GOOD_NOTEBOOK_NAME
+    );
+
+    await waitForTestId('notebook-schema-incompatible-view', {timeout: 20000});
+    expect(await AppRecordsPage.addButton.isExisting()).toBe(false);
+    await browser.waitUntil(
+      async () => (await $('body').getText()).includes(noteText.slice(0, 12)),
+      {
+        timeout: 20000,
+        timeoutMsg: `Expected last-good record still listed after second refresh`,
+      }
+    );
+  });
+
+  it('keeps the last-good graph after a reload', async () => {
+    await browser.refresh();
+    await waitForTestId('notebook-schema-incompatible-view', {timeout: 30000});
+    expect(await AppRecordsPage.addButton.isExisting()).toBe(false);
+    await browser.waitUntil(
+      async () => (await $('body').getText()).includes(noteText.slice(0, 12)),
+      {
+        timeout: 20000,
+        timeoutMsg: `Expected last-good record still listed after reload`,
+      }
+    );
   });
 });
