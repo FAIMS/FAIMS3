@@ -232,7 +232,8 @@ const ActionButton: React.FC<{
 const PhotoActions: React.FC<{
   onAddPhoto: () => void;
   onPickFromGallery: () => void;
-}> = ({onAddPhoto, onPickFromGallery}) => {
+  justify?: 'center' | 'flex-start';
+}> = ({onAddPhoto, onPickFromGallery, justify = 'center'}) => {
   const theme = useTheme();
 
   return (
@@ -241,7 +242,7 @@ const PhotoActions: React.FC<{
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'flex-start',
-        justifyContent: 'center',
+        justifyContent: justify,
         gap: 3,
       }}
     >
@@ -341,7 +342,6 @@ const EmptyState: React.FC<{
   return (
     <Box
       sx={{
-        textAlign: 'center',
         padding: theme.spacing(3),
         marginTop: theme.spacing(1),
       }}
@@ -352,6 +352,7 @@ const EmptyState: React.FC<{
       <PhotoActions
         onAddPhoto={onAddPhoto}
         onPickFromGallery={onPickFromGallery}
+        justify="flex-start"
       />
     </Box>
   );
