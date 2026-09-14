@@ -77,15 +77,15 @@ interface ActionProps {
     data: Record<string, any>,
     planReference?: string
   ) => Promise<void>;
-  // Create a child record linked from one of the parent's related-record
-  // fields, and navigate to it. Writes both halves of the link.
-  createChildRecord: (args: {
+  // Create a record linked from one of this record's related-record fields,
+  // and navigate to it. Writes both halves of the link.
+  createRelatedRecord: (args: {
     parentRecordId: string;
     parentFieldId: string;
   }) => Promise<void>;
   // Navigate to the view page for the given record
   navigateToRecord: (record: MinimalRecordMetadata) => void;
-  // Whether the user may edit this record; createChildRecord refuses if not.
+  // Whether the user may edit this record; createRelatedRecord refuses if not.
   canEditRecord: (record: MinimalRecordMetadata) => boolean;
 }
 

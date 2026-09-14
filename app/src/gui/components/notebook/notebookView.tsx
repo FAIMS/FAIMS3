@@ -248,10 +248,10 @@ function NotebookViewWithSpec({
   );
 
   /**
-   * Create a child record and navigate to its edit page, writing both halves of
-   * the link so the parent form reads as it would after an in-form create.
+   * Create a related record and navigate to its edit page, writing both halves
+   * of the link so the parent form reads as it would after an in-form create.
    */
-  const createChildRecord = useCallback(
+  const createRelatedRecord = useCallback(
     async ({
       parentRecordId,
       parentFieldId,
@@ -327,7 +327,7 @@ function NotebookViewWithSpec({
       } catch (err) {
         // Surface and resolve, like createRecord. The child is written first,
         // so a later failure leaves a record not listed on its parent.
-        console.error('Failed to create child record', parentFieldId, err);
+        console.error('Failed to create related record', parentFieldId, err);
         dispatch(
           addAlert({
             message: isChildCreated
@@ -409,7 +409,7 @@ function NotebookViewWithSpec({
         refreshRecordList,
         setQuery,
         createRecord,
-        createChildRecord,
+        createRelatedRecord,
         navigateToRecord,
         canEditRecord,
       },
@@ -461,7 +461,7 @@ function NotebookViewWithSpec({
       refreshRecordList,
       setQuery,
       createRecord,
-      createChildRecord,
+      createRelatedRecord,
       navigateToRecord,
       canEditRecord,
       tab,

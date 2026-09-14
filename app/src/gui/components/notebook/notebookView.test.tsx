@@ -43,7 +43,7 @@ const {
   plotAll: {current: false},
   // Every search the record list was asked for, newest last
   queries: {current: [] as string[]},
-  // Whether the user may add records; createChildRecord refuses without it
+  // Whether the user may add records; createRelatedRecord refuses without it
   authorised: {current: false},
   // What the fake data engine was asked to write, and what it holds already
   engine: {
@@ -152,7 +152,7 @@ vi.mock('./plans', async () => {
           'button',
           {
             onClick: () =>
-              props.actions.createChildRecord({
+              props.actions.createRelatedRecord({
                 formType: 'Density',
                 parentRecordId: 'parent-1',
                 parentFieldId: childField.current,
@@ -453,7 +453,7 @@ describe('NotebookView record scoping', () => {
   });
 });
 
-describe('NotebookView createChildRecord', () => {
+describe('NotebookView createRelatedRecord', () => {
   /** Render, click the mock view's child button, and return what was written. */
   const addChild = async (fieldId: string, existing?: unknown) => {
     authorised.current = true;
