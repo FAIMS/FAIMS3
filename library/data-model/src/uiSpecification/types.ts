@@ -385,3 +385,45 @@ export const NotebookDefinitionUploadSchema = z
       'JSON must use top-level metadata and uiSpec (not a wrapped uiSpecification object)',
   })
   .pipe(NotebookDefinitionSchema);
+
+// XLSForm conversion input shapes
+//
+// What we expect after read-excel-file + parseSheetData has parsed an
+// uploaded .xlsx workbook's survey/choices/settings sheets into row objects.
+
+/** A single row from an XLSForm's `survey` sheet. */
+export const SurveyRowSchema = z.object({
+  type: z.string(),
+  name: z.string(),
+  label: z.string().optional(),
+  hint: z.string().optional(),
+  /** Literal "yes" or blank, per the XLSForm spec -- not a real boolean cell. */
+  required: z.string().optional(),
+  relevant: z.string().optional(),
+  calculation: z.string().optional(),
+  appearance: z.string().optional(),
+});
+export type SurveyRow = z.infer<typeof SurveyRowSchema>;
+
+/** A single row from an XLSForm's `choices` sheet. */
+export const ChoiceRowSchema = z.object({
+  listName: z.string(),
+  name: z.string(),
+  label: z.string(),
+});
+export type ChoiceRow = z.infer<typeof ChoiceRowSchema>;
+
+/** A single row from an XLSForm's `settings` sheet. */
+export const SettingsRowSchema = z.object({
+  form_title: z.string().optional(),
+  form_id: z.string().optional(),
+});
+export type SettingsRow = z.infer<typeof SettingsRowSchema>;
+
+/** The three parsed sheets of an XLSForm workbook, ready for conversion. */
+export const XlsformSheetsSchema = z.object({
+  survey: z.array(SurveyRowSchema),
+  choices: z.array(ChoiceRowSchema),
+  settings: z.array(SettingsRowSchema),
+});
+export type XlsformSheets = z.infer<typeof XlsformSheetsSchema>;

@@ -9,81 +9,23 @@
  * calculate logic, no repeats (repeats are unsupported in Fieldmark --
  * see the repeating-questions addendum).
  *
- * Field names are derived directly from each XLSForm row's own `name`
+ * Field names are derived directly from each XLSForm row's own 'name'
  * column, so re-converting the same file produces the same field names
- * every time -- required for the Replace Template JSON flow to not
+ * every time. This is required for the Replace Template JSON flow to not
  * silently orphan existing project data on re-import.
  */
 
 // ---------------------------------------------------------------------------
 // Input shapes -- what we expect after read-excel-file + parseSheetData
 // ---------------------------------------------------------------------------
-
-export interface SurveyRow {
-  type: string;
-  name: string;
-  label?: string;
-  hint?: string;
-  required?: string; // literal "yes" or blank, per the XLSForm spec
-  relevant?: string;
-  calculation?: string;
-  appearance?: string;
-}
-
-export interface ChoiceRow {
-  listName: string;
-  name: string;
-  label: string;
-}
-
-export interface SettingsRow {
-  form_title?: string;
-  form_id?: string;
-}
-
-export interface XlsformSheets {
-  survey: SurveyRow[];
-  choices: ChoiceRow[];
-  settings: SettingsRow[];
-}
-
-// ---------------------------------------------------------------------------
-// Output shapes -- the pieces of a NotebookDefinition we build up.
-// These mirror what's confirmed in library/data-model/src/uiSpecification/types.ts;
-// duplicated here as a plain type rather than imported, so this file has no
-// hard dependency direction assumed yet -- swap for the real imports once
-// this lives inside library/data-model.
-// ---------------------------------------------------------------------------
-
-interface FieldDefinition {
-  'component-namespace': string;
-  'component-name': string;
-  'type-returned': string;
-  'component-parameters': Record<string, unknown>;
-  initialValue: unknown;
-}
-
-interface NotebookDefinition {
-  uiSpec: {
-    fields: Record<string, FieldDefinition>;
-    views: Record<string, {label: string; fields: string[]}>;
-    viewsets: Record<
-      string,
-      {label: string; views: string[]; hridField: string}
-    >;
-    visible_types: string[];
-    settings: {showQrCodeButton: boolean};
-    schemaVersion: string;
-  };
-  metadata: {
-    information: {
-      notebookVersion: string;
-      purposeMarkdown: string;
-      projectLeadLabel: string;
-      leadInstitution: string;
-    };
-  };
-}
+import type {
+  SurveyRow,
+  ChoiceRow,
+  SettingsRow,
+  XlsformSheets,
+  FieldDefinition,
+  NotebookDefinition,
+} from './types';
 
 /** Thrown for a row this v1 converter cannot handle. Caller decides whether
  * to abort the whole import or catch this per-row and continue -- see the
