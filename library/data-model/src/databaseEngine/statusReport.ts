@@ -139,7 +139,7 @@ export async function computeRecordStatusReport({
  * unmeasurable child cannot fail the whole report. The same errors on the
  * root record still surface to the caller.
  */
-function absorbSkippableChildError(err: unknown): null {
+export function absorbSkippableChildError(err: unknown): null {
   if (
     err instanceof DocumentNotFoundError ||
     err instanceof NoHeadsError ||
@@ -151,13 +151,13 @@ function absorbSkippableChildError(err: unknown): null {
   throw err;
 }
 
-interface ChildFieldSpec {
+export interface ChildFieldSpec {
   relatedFormId: string;
   required: boolean;
 }
 
 /** Resolves the Child-type RelatedRecordSelector fields of the ui-spec, keyed by field id. */
-function resolveChildFieldSpecs(
+export function resolveChildFieldSpecs(
   uiSpec: DataEngine['uiSpec']
 ): Map<string, ChildFieldSpec> {
   const specs = new Map<string, ChildFieldSpec>();
@@ -182,19 +182,45 @@ interface CollectedChildField extends ChildFieldSpec {
   childIds: string[];
 }
 
-/** Reads the form's Child-type RelatedRecordSelector fields and their linked child ids. */
-function collectChildFields(
-  ctx: WalkContext,
-  formId: string,
-  visibleFields: ReadonlySet<string>,
-  data: FormUpdateData | undefined
-): CollectedChildField[] {
-  const collected: CollectedChildField[] = [];
+/** One Child-type field of a form, and the records it links to. */
+export interface ChildRecordLink {
+  fieldId: string;
+  relatedFormId: string;
+  /** Distinct linked child ids; cross-project and malformed links excluded. */
+  childIds: string[];
+}
+
+/**
+ * The Child-type RelatedRecordSelector fields of a form and the child records
+ * each links to, read from the parent's own stored values.
+ *
+ * Shared with the recursive history walk, which needs the same links but none
+ * of the completion scoring, so the two cannot disagree about what counts as a
+ * child.
+ *
+ * @param uiSpec - The project's compiled ui specification
+ * @param childFieldSpecs - Child-type fields, from {@link resolveChildFieldSpecs}
+ * @param projectId - Links tagged with another project id are skipped
+ * @param formId - The parent's form
+ * @param data - The parent's stored values, absent on an empty record
+ */
+export function collectChildRecordLinks({
+  uiSpec,
+  childFieldSpecs,
+  projectId,
+  formId,
+  data,
+}: {
+  uiSpec: DataEngine['uiSpec'];
+  childFieldSpecs: Map<string, ChildFieldSpec>;
+  projectId: string;
+  formId: string;
+  data: FormUpdateData | undefined;
+}): ChildRecordLink[] {
+  const links: ChildRecordLink[] = [];
   // Set: a field listed in two sections is still one child field
-  for (const fieldId of new Set(
-    fieldIdsForViewset(ctx.engine.uiSpec, formId)
-  )) {
-    const spec = ctx.childFieldSpecs.get(fieldId);
+  for (const fieldId of new Set(fieldIdsForViewset(uiSpec, formId))) {
+    const spec = childFieldSpecs.get(fieldId);
     if (!spec) {
       continue;
     }
@@ -209,25 +235,45 @@ function collectChildFields(
       }
       const {record_id: childId, project_id: linkProjectId} = entry.data;
       // An empty-string tag means untagged, like an absent one
-      if (linkProjectId && linkProjectId !== ctx.projectId) {
+      if (linkProjectId && linkProjectId !== projectId) {
         continue;
       }
       if (childId) {
         childIds.add(childId);
       }
     }
-    // A hidden field's linked children are still real records; only its
-    // requirement is masked, like required-field completion
-    const isVisible = visibleFields.has(fieldId);
-    collected.push({
+    links.push({
       fieldId,
       relatedFormId: spec.relatedFormId,
-      required: spec.required && isVisible,
-      isVisible,
       childIds: [...childIds],
     });
   }
-  return collected;
+  return links;
+}
+
+/** Reads the form's Child-type RelatedRecordSelector fields and their linked child ids. */
+function collectChildFields(
+  ctx: WalkContext,
+  formId: string,
+  visibleFields: ReadonlySet<string>,
+  data: FormUpdateData | undefined
+): CollectedChildField[] {
+  return collectChildRecordLinks({
+    uiSpec: ctx.engine.uiSpec,
+    childFieldSpecs: ctx.childFieldSpecs,
+    projectId: ctx.projectId,
+    formId,
+    data,
+  }).map(link => {
+    // A hidden field's linked children are still real records; only its
+    // requirement is masked, like required-field completion
+    const isVisible = visibleFields.has(link.fieldId);
+    return {
+      ...link,
+      required: !!ctx.childFieldSpecs.get(link.fieldId)?.required && isVisible,
+      isVisible,
+    };
+  });
 }
 
 /** Truthy outcomes are live children. */
