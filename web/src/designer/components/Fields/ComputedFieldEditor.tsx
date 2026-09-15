@@ -245,7 +245,7 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
             >
               Reference fields in braces, e.g. {'{Width}'}. Operators:
               <ul style={{margin: '4px 0', paddingLeft: 18}}>
-                <li>Arithmetic (numbers): + - * / %</li>
+                <li>Arithmetic (numbers): + - * / % ^</li>
                 <li>
                   Join text: &amp; — e.g. {'{Site-Code}'} &amp; '-' &amp;{' '}
                   {'{Plot}'}
