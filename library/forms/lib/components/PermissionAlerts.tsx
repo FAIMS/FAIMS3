@@ -73,8 +73,8 @@ export function PhotosPermissionIssue({
       {access === 'limited' ? (
         <>
           {appName} needs access to all photos to add from your gallery. Go to
-          Settings &gt; Privacy & Security &gt; Photos &gt; {appName} and
-          select &quot;All Photos&quot; (not &quot;Selected Photos&quot;).
+          Settings &gt; Privacy & Security &gt; Photos &gt; {appName} and select
+          &quot;All Photos&quot; (not &quot;Selected Photos&quot;).
         </>
       ) : (
         <>
