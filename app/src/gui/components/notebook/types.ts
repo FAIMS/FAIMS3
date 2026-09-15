@@ -77,8 +77,16 @@ interface ActionProps {
     data: Record<string, any>,
     planReference?: string
   ) => Promise<void>;
+  // Create a record linked from one of this record's related-record fields,
+  // and navigate to it. Writes both halves of the link.
+  createRelatedRecord: (args: {
+    parentRecordId: string;
+    parentFieldId: string;
+  }) => Promise<void>;
   // Navigate to the view page for the given record
   navigateToRecord: (record: MinimalRecordMetadata) => void;
+  // Whether the user may edit this record; createRelatedRecord refuses if not.
+  canEditRecord: (record: MinimalRecordMetadata) => boolean;
 }
 
 // Components that might be used in the notebook display
