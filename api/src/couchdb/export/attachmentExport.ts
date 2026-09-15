@@ -2,6 +2,7 @@ import {
   HydratedDataRecord,
   ProjectID,
   notebookRecordIterator,
+  UpdatedTimeFilter,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {getDataDb, getNanoDataDb} from '..';
@@ -46,6 +47,7 @@ export interface AttachmentAppendStats {
  * @param archive - An existing archiver instance to append files to
  * @param targetViewID - Optional specific view to export (exports all views if omitted)
  * @param pathPrefix - Path prefix for files in the archive (e.g., 'attachments/')
+ * @param exportFilter - Optional exclusive updatedAt window
  * @returns Statistics about the exported attachments
  */
 export const appendAttachmentsToArchive = async ({
@@ -53,11 +55,13 @@ export const appendAttachmentsToArchive = async ({
   archive,
   targetViewID,
   pathPrefix = '',
+  exportFilter,
 }: {
   projectId: ProjectID;
   archive: archiver.Archiver;
   targetViewID?: string;
   pathPrefix?: string;
+  exportFilter?: UpdatedTimeFilter;
 }): Promise<AttachmentAppendStats> => {
   const stats: AttachmentAppendStats = {
     fileCount: 0,
@@ -91,6 +95,7 @@ export const appendAttachmentsToArchive = async ({
     uiSpecification: uiSpec,
     viewID: targetViewID, // undefined = all records, otherwise filter by view
     includeAttachments: false, // Critical: don't load attachment binary data
+    ...exportFilter,
   });
 
   let {record, done} = await iterator.next();
@@ -184,6 +189,7 @@ export const appendAttachmentsToArchive = async ({
  * @param projectId - The ID of the project containing the notebook
  * @param targetViewID - The ID of the view to export (if omitted, exports all views)
  * @param res - The writable stream (typically an HTTP response) to pipe the ZIP to
+ * @param exportFilter - Optional exclusive updatedAt window
  *
  * @throws Error if database access fails or archiving encounters an error
  */
@@ -191,10 +197,12 @@ export const streamNotebookFilesAsZip = async ({
   projectId,
   targetViewID,
   res,
+  exportFilter,
 }: {
   projectId: ProjectID;
   targetViewID?: string;
   res: NodeJS.WritableStream;
+  exportFilter?: UpdatedTimeFilter;
 }): Promise<void> => {
   try {
     // Create ZIP archive with minimum compression (images are already compressed)
@@ -206,6 +214,7 @@ export const streamNotebookFilesAsZip = async ({
       archive,
       targetViewID,
       pathPrefix: '', // No prefix for standalone ZIP export
+      exportFilter,
     });
 
     // Handle edge case: no attachments found in any records

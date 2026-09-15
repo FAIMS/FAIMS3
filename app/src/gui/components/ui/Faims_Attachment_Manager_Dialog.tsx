@@ -124,15 +124,12 @@ export default function FaimsAttachmentManagerDialog(props: DiagProps) {
             color="primary"
             size="large"
             component={RouterLink}
-            to={
-              ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-              props.serverId +
-              '/' +
-              project_id +
-              `?${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q}=settings`
-            }
+            to={ROUTES.getNotebookRoute({
+              serverId: props.serverId,
+              projectId: project_id,
+            })}
           >
-            Go to settings
+            Go to {config.notebookNameCapitalized}
           </Button>
         </DialogActions>
       )}

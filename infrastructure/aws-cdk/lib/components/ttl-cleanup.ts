@@ -211,7 +211,10 @@ export class FaimsTtlCleanup extends Construct {
           taskDefinitionArn: [{prefix: taskDefinitionArnPrefix}],
           containers: {
             name: [TTL_CLEANUP_CONTAINER_NAME],
-            exitCode: [events.Match.anythingBut(0)],
+            // Match.anythingBut already serialises as [{ "anything-but": [0] }].
+            // An extra array wrap becomes [[{ ... }]], which EventBridge rejects
+            // ("Match value must be String, number, true, false, or null").
+            exitCode: events.Match.anythingBut(0),
           },
         },
       },

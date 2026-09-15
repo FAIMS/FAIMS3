@@ -16,7 +16,6 @@ import MetadataRenderer from '../metadataRenderer';
 interface MetadataDisplayComponentProps {
   project: Project;
   templateId?: string | null | undefined;
-  handleTabChange: (index: number) => void;
 }
 export const MetadataDisplayComponent = (
   props: MetadataDisplayComponentProps

@@ -1,4 +1,5 @@
 import {
+  buildConditionValues,
   currentlyVisibleFields,
   FieldSummary,
   getNotebookFieldTypes,
@@ -50,10 +51,13 @@ export const DataView: React.FC<DataViewProps> = props => {
   const visibleFields = useMemo(() => {
     return currentlyVisibleFields({
       uiSpec: props.uiSpecification,
-      values: formDataExtractor({fullData: props.formData}),
+      values: buildConditionValues({
+        values: formDataExtractor({fullData: props.formData}),
+        context: props.context,
+      }),
       viewsetId: props.viewsetId,
     });
-  }, [props.uiSpecification, props.hydratedRecord]);
+  }, [props.uiSpecification, props.hydratedRecord, props.context]);
 
   return (
     <Stack spacing={2} sx={{padding: 2}}>

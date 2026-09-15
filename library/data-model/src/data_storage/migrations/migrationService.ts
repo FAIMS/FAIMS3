@@ -28,6 +28,93 @@ function generateErrorLog({
   return `Issue with migration for db type: ${migrationDoc.dbType}, name: ${migrationDoc.dbName}. Reason: ${reason}. Database is at version: ${migrationDoc.version}.`;
 }
 
+function migrateAudit(message: string, details?: Record<string, unknown>) {
+  if (IS_TESTING) {
+    return;
+  }
+  if (details) {
+    console.log(`[migrate] ${message}`, details);
+  } else {
+    console.log(`[migrate] ${message}`);
+  }
+}
+
+/** Handle passed to {@link migrateDbs}. */
+export type MigrationDbHandle = {
+  dbType: DATABASE_TYPE;
+  dbName: string;
+  db: DatabaseInterface;
+};
+
+/**
+ * Minimal project shape needed to name and open a per-project data DB.
+ * Supports current `dataDb` and legacy `data_db`.
+ */
+export type ProjectDataDbRef = {
+  _id: string;
+  dataDb?: {db_name?: string};
+  data_db?: {db_name?: string};
+};
+
+export type QueuedProjectDataDb = MigrationDbHandle & {projectId: string};
+
+/**
+ * Couch database name for a project's data DB.
+ *
+ * Prefer the project document's `db_name` over `db.name`: Pouch handles opened
+ * with a full Couch URL expose the URL as `.name`, which would key the
+ * migration document incorrectly.
+ */
+export function dataDbNameForProject({
+  project,
+  fallbackName,
+}: {
+  project: ProjectDataDbRef;
+  fallbackName: string;
+}): string {
+  return project.dataDb?.db_name ?? project.data_db?.db_name ?? fallbackName;
+}
+
+/**
+ * Build the DATA migration queue from project documents.
+ *
+ * Must accumulate with push/reassign. `Array.concat` without assignment
+ * silently discards every database and `migrateDbs` becomes a no-op.
+ */
+export async function collectProjectDataDbs({
+  projects,
+  openDataDb,
+}: {
+  projects: ProjectDataDbRef[];
+  openDataDb: (projectId: string) => Promise<DatabaseInterface>;
+}): Promise<{
+  queued: QueuedProjectDataDb[];
+  skipped: {projectId: string; error: unknown}[];
+}> {
+  const queued: QueuedProjectDataDb[] = [];
+  const skipped: {projectId: string; error: unknown}[] = [];
+
+  for (const project of projects) {
+    const projectId = project._id;
+    try {
+      const dataDb = await openDataDb(projectId);
+      queued.push({
+        projectId,
+        db: dataDb,
+        dbType: DatabaseType.DATA,
+        dbName: dataDbNameForProject({
+          project,
+          fallbackName: dataDb.name,
+        }),
+      });
+    } catch (error) {
+      skipped.push({projectId, error});
+    }
+  }
+
+  return {queued, skipped};
+}
+
 /**
  * Builds a default migration document for a given database type and name.
  * This is used when initializing a database for the first time.
@@ -182,6 +269,7 @@ export async function performMigration({
   const context: MigrationContext = buildMigrationContext({
     getDbById,
     migrationCreatedBy,
+    db,
   });
   const issues: string[] = [];
   const processedIds = new Set<string>(); // Track IDs of processed documents
@@ -264,9 +352,18 @@ export async function performMigration({
     }
   }
 
+  const processedCount = processedIds.size;
+  migrateAudit('Document scan complete', {
+    processedCount,
+    writtenCount,
+    deletedCount,
+    skippedCount: processedCount - writtenCount - deletedCount,
+    issueCount: issues.length,
+  });
+
   return {
     issues,
-    processedCount: processedIds.size,
+    processedCount,
     writtenCount,
     deletedCount,
   };
@@ -296,7 +393,7 @@ export async function migrateDbs({
   getDbById,
   migrationCreatedBy = DEFAULT_MIGRATION_CREATED_BY,
 }: {
-  dbs: {dbType: DatabaseType; dbName: string; db: DatabaseInterface}[];
+  dbs: MigrationDbHandle[];
   migrationDb: MigrationsDB;
   userId?: string;
   getDbById: GetDbById;
@@ -306,6 +403,16 @@ export async function migrateDbs({
     getDbById,
     migrationCreatedBy,
   });
+
+  migrateAudit('Starting migrateDbs', {
+    databaseCount: dbs.length,
+    databases: dbs.map(d => `${d.dbType}:${d.dbName}`),
+  });
+
+  let skippedUpToDate = 0;
+  let migratedOk = 0;
+  let migratedFailed = 0;
+
   // Process each database one by one
   for (const {dbType, dbName, db} of dbs) {
     // Track migration start time
@@ -331,6 +438,13 @@ export async function migrateDbs({
           dbName,
         });
 
+        migrateAudit('No migration document; creating at defaultVersion', {
+          dbType,
+          dbName,
+          defaultVersion: defaultMigrationFields.version,
+          targetVersion: DB_TARGET_VERSIONS[dbType].targetVersion,
+        });
+
         // Save the new migration document
         const response = await migrationDb.post(defaultMigrationFields);
 
@@ -339,15 +453,23 @@ export async function migrateDbs({
       } else {
         // Use the existing migration document
         migrationDoc = migrationDocs.rows[0].doc!;
+        migrateAudit('Found existing migration document', {
+          dbType,
+          dbName,
+          version: migrationDoc.version,
+          status: migrationDoc.status,
+          targetVersion: DB_TARGET_VERSIONS[dbType].targetVersion,
+        });
       }
 
       // Check if the database is already up to date
       if (isDbUpToDate({migrationDoc})) {
-        if (!IS_TESTING) {
-          console.log(
-            `Database ${dbName} (${dbType}) is already up to date at version ${migrationDoc.version}`
-          );
-        }
+        migrateAudit('Database already at target version; skipping', {
+          dbType,
+          dbName,
+          version: migrationDoc.version,
+        });
+        skippedUpToDate++;
         continue; // Skip to the next database
       }
 
@@ -356,6 +478,13 @@ export async function migrateDbs({
 
       // If no migrations are needed (this should not happen due to isDbUpToDate check, but as a safeguard)
       if (migrationsToApply.length === 0) {
+        migrateAudit('No migration steps despite version mismatch; skipping', {
+          dbType,
+          dbName,
+          version: migrationDoc.version,
+          targetVersion: DB_TARGET_VERSIONS[dbType].targetVersion,
+        });
+        skippedUpToDate++;
         continue;
       }
 
@@ -375,12 +504,13 @@ export async function migrateDbs({
       let currentVersion = migrationDoc.version;
 
       for (const migrationDetail of migrationsToApply) {
-        // Start migration for this step
-        if (!IS_TESTING) {
-          console.log(
-            `Applying migration for ${dbType} from v${migrationDetail.from} to v${migrationDetail.to}: ${migrationDetail.description}`
-          );
-        }
+        migrateAudit('Applying migration step', {
+          dbType,
+          dbName,
+          from: migrationDetail.from,
+          to: migrationDetail.to,
+          description: migrationDetail.description,
+        });
 
         // Add the migration description to the notes
         if (!migrationLogEntry.notes) {
@@ -396,10 +526,20 @@ export async function migrateDbs({
           migrationCreatedBy: migrationContext.migrationCreatedBy,
         });
 
-        // Log stats about this migration step
-        if (!IS_TESTING) {
-          console.log(
-            `Migration step completed. Processed ${result.processedCount} documents, updated ${result.writtenCount} documents.`
+        migrateAudit('Migration step finished', {
+          dbType,
+          dbName,
+          from: migrationDetail.from,
+          to: migrationDetail.to,
+          processedCount: result.processedCount,
+          writtenCount: result.writtenCount,
+          deletedCount: result.deletedCount,
+          issueCount: result.issues.length,
+        });
+        if (result.issues.length > 0 && !IS_TESTING) {
+          console.warn(
+            `[migrate] Issues during ${dbType}:${dbName} v${migrationDetail.from}→v${migrationDetail.to}:`,
+            result.issues
           );
         }
 
@@ -437,23 +577,29 @@ export async function migrateDbs({
       // Save the updated migration document
       await migrationDb.put(migrationDoc);
 
-      // Log completion status
       if (migrationLogEntry.status === 'success') {
-        if (!IS_TESTING) {
-          console.log(
-            `Successfully migrated database ${dbName} (${dbType}) from version ${migrationLogEntry.from} to ${migrationLogEntry.to}`
-          );
-        }
+        migratedOk++;
+        migrateAudit('Database migration succeeded', {
+          dbType,
+          dbName,
+          from: migrationLogEntry.from,
+          to: currentVersion,
+        });
       } else {
+        migratedFailed++;
         if (!IS_TESTING) {
           console.error(
-            `Migration of database ${dbName} (${dbType}) completed with issues. Check migration logs for details.`
+            `[migrate] Database ${dbName} (${dbType}) completed with issues (now at v${currentVersion}; target v${DB_TARGET_VERSIONS[dbType].targetVersion})`
           );
         }
       }
     } catch (error) {
+      migratedFailed++;
       // Handle any unexpected errors in the migration process
-      console.error(`Failed to migrate database ${dbName} (${dbType}):`, error);
+      console.error(
+        `[migrate] Failed to migrate database ${dbName} (${dbType}):`,
+        error
+      );
 
       // Try to update the migration document to reflect the failure if possible
       try {
@@ -494,10 +640,17 @@ export async function migrateDbs({
       } catch (logError) {
         // At this point, we've failed to migrate and also failed to log the failure
         console.error(
-          `Failed to log migration failure for ${dbName} (${dbType}):`,
+          `[migrate] Failed to log migration failure for ${dbName} (${dbType}):`,
           logError
         );
       }
     }
   }
+
+  migrateAudit('migrateDbs finished', {
+    queued: dbs.length,
+    skippedUpToDate,
+    migratedOk,
+    migratedFailed,
+  });
 }

@@ -2,8 +2,8 @@
  * Conductor stdout logging helpers.
  *
  * Request access logs come from morgan (`combined`). This module adds
- * structured audit lines for impersonation and invite-code activity so they
- * can be grepped independently of HTTP access logs.
+ * structured audit lines for impersonation, invite-code, and export-download
+ * activity so they can be grepped independently of HTTP access logs.
  */
 import {INPUT_LIMITS} from '@faims3/data-model';
 import crypto from 'crypto';
@@ -165,6 +165,49 @@ export function logInviteAudit(entry: {
       ts: nowIso(),
       ...rest,
       inviteId: fingerprintInviteIdForAudit(inviteId),
+    })}`
+  );
+}
+
+// Download audit
+// ==============
+// One JSON line per mint/consume, prefixed `[DownloadAudit]`. Cookie values,
+// secrets, and Authorization headers are never logged. Skipped under tests.
+
+/** Mint a grant, or redeem / fail to redeem one. */
+export type DownloadAuditEvent = 'download.mint' | 'download.consume';
+
+export type DownloadAuditOutcome = 'success' | 'failure';
+
+/** How the consume request authenticated (omitted on mint). */
+export type DownloadAuditAuth = 'cookie' | 'bearer';
+
+/**
+ * Structured export-download audit line. Grep `[DownloadAudit]`.
+ * Never logs cookie values, secrets, or Authorization headers.
+ */
+export function logDownloadAudit(entry: {
+  event: DownloadAuditEvent;
+  outcome: DownloadAuditOutcome;
+  grantId?: string;
+  reason?: string;
+  auth?: DownloadAuditAuth;
+  userId?: string;
+  projectID?: string;
+  format?: string;
+  impersonatingUserId?: string;
+  ip?: string;
+  forwardedFor?: string;
+  userAgent?: string;
+}): void {
+  if (config.runningUnderTest) {
+    return;
+  }
+
+  console.log(
+    `[DownloadAudit] ${JSON.stringify({
+      ts: nowIso(),
+      ...entry,
     })}`
   );
 }

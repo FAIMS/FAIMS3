@@ -2,7 +2,10 @@ import {z} from 'zod';
 import {DatabaseInterface, PossibleConnectionInfo} from '../../types';
 import {PersistedRootDescriptionSchema} from '../rootMetadata';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
-import {NotebookDefinitionSchema} from '../../uiSpecification';
+import {
+  NotebookDefinitionSchema,
+  type NotebookDefinition,
+} from '../../uiSpecification';
 import {OfflineMapRegionSchema} from './offlineMapRegion';
 
 /** Couch connection descriptor for per-project data/metadata databases. */
@@ -127,7 +130,10 @@ export const ProjectV4FieldsSchema = z.object({
 
   // UI Specification (now stored in the project)
   // NOTE: This is never 'encoded' anymore - no more fviews etc.
-  uiSpecification: NotebookDefinitionSchema,
+  // Cast so .d.ts keeps ZodType<NotebookDefinition> instead of inlining the
+  // notebook object (that inlining re-exports RegisteredPlan via the package
+  // barrel and forms a declaration cycle).
+  uiSpecification: NotebookDefinitionSchema as z.ZodType<NotebookDefinition>,
 
   /** Optional bounding box for recommended offline map download on activation. */
   offlineMapRegion: OfflineMapRegionSchema.optional(),

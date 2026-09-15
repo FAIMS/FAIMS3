@@ -1,3 +1,4 @@
+import {formDataToValues} from '@faims3/data-model';
 import {FaimsFormData} from './formModule/types';
 
 /** Pulls data out of faims form data */
@@ -6,11 +7,7 @@ export function formDataExtractor({
 }: {
   fullData: FaimsFormData;
 }): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(fullData ?? {})) {
-    out[k] = v.data;
-  }
-  return out;
+  return formDataToValues(fullData);
 }
 
 export const IMAGE_TYPES = [

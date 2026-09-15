@@ -15,6 +15,13 @@ only relationship field type in {{FAIMS}} and is essential for modelling
 the structured data relationships common in archaeological and field
 science recording.
 
+When the field uses a **Linked** relation and allows only a single
+link, other fields on the same form can reference the linked record's
+values — see Referencing Linked Record Values under
+[Templated String](../text-fields/templated-string.md),
+[Computed Number](../number-fields/computed-number-field.md), and
+[Computed Text](../text-fields/computed-text-field.md).
+
 ## Adding the Field
 
 To add this field, open the

@@ -18,7 +18,10 @@
  *   Determines which forms can parent a given form, and types the
  *   _PARENT.<Field-ID> references usable in computed expressions on that form.
  *   Shared by the notebook-load compile pass, the designer's live expression
- *   validation, and the forms runtime.
+ *   validation, and the forms runtime. Also home of the shared child-relation
+ *   field scan (getChildRelationParams) that the record status report reuses,
+ *   and merges the <Rel-Field-ID>.<Field-ID> references typed by
+ *   relatedForms.ts into the same compile.
  */
 
 import {
@@ -29,57 +32,95 @@ import {
   extractExpressionReferences,
   FAIMS_TYPE_TO_EXPR_TYPE,
 } from './expressions';
-import {UiSpecModel} from './types';
+import {fieldIdsForViewset, ParentScanUiSpec} from './formScan';
+import {buildRelatedFieldTypes, splitRelatedReference} from './relatedForms';
+import {
+  FieldDefinition,
+  RELATED_RECORD_SELECTOR,
+  relatedRecordSelectorComponentParamsSchema,
+  UiSpecModel,
+} from './types';
+import {
+  decodeMetadataRef,
+  isMetadataRef,
+  METADATA_EXPR_TYPE,
+  METADATA_REFERENCE_PREFIX,
+} from './metadataReferences';
 
 /** Prefix marking a reference to a field on the parent record. Reserved. */
 export const PARENT_REFERENCE_PREFIX = '_PARENT.';
 
-const RELATED_RECORD_COMPONENT = 'RelatedRecordSelector';
-const CHILD_RELATION = 'faims-core::Child';
+/** The scan reads only these keys; a malformed unrelated param (e.g. a string
+ * `multiple` in a hand-edited notebook) must not hide the relation. */
+const childRelationScanSchema = relatedRecordSelectorComponentParamsSchema.pick(
+  {related_type: true, relation_type: true}
+);
 
-/** Field IDs across all views of a viewset. Local to avoid an import cycle
- * with utils.ts, which imports this module via the compile pass. */
-const fieldIdsForViewset = (
-  uiSpecification: UiSpecModel,
-  viewSetId: string
-): string[] => {
-  const viewset = uiSpecification.viewsets[viewSetId];
-  if (!viewset) return [];
-  const ids: string[] = [];
-  for (const viewId of viewset.views) {
-    ids.push(...(uiSpecification.views[viewId]?.fields ?? []));
+/**
+ * Parses a field as a Child-relation RelatedRecordSelector, null for any other
+ * field (including selectors with malformed parameters). The one definition
+ * keeps parent-form inference, the record status report, and the designer's
+ * ParentFieldDisplayEditor scanning for the same fields.
+ */
+export const getChildRelationParams = (field: FieldDefinition | undefined) => {
+  if (
+    !field ||
+    field['component-namespace'] !== RELATED_RECORD_SELECTOR.namespace ||
+    field['component-name'] !== RELATED_RECORD_SELECTOR.name
+  ) {
+    return null;
   }
-  return ids;
+  const params = childRelationScanSchema.safeParse(
+    field['component-parameters']
+  );
+  return params.success && params.data.relation_type === 'faims-core::Child'
+    ? params.data
+    : null;
 };
 
 /**
  * Form IDs of every form that can parent the given form: those holding a
- * Child-relation RelatedRecordSelector targeting it. Matches the designer's
- * ParentFieldDisplay editor scan.
+ * Child-relation RelatedRecordSelector targeting it.
  */
 export const getParentFormsForForm = ({
   uiSpecification,
   formId,
 }: {
-  uiSpecification: UiSpecModel;
+  uiSpecification: ParentScanUiSpec;
   formId: string;
 }): string[] => {
   const parentForms: string[] = [];
   for (const candidateId of Object.keys(uiSpecification.viewsets)) {
     if (candidateId === formId) continue;
     const isParent = fieldIdsForViewset(uiSpecification, candidateId).some(
-      id => {
-        const f = uiSpecification.fields[id];
-        return (
-          f?.['component-name'] === RELATED_RECORD_COMPONENT &&
-          f['component-parameters']?.related_type === formId &&
-          f['component-parameters']?.relation_type === CHILD_RELATION
-        );
-      }
+      id =>
+        getChildRelationParams(uiSpecification.fields[id])?.related_type ===
+        formId
     );
     if (isParent) parentForms.push(candidateId);
   }
   return parentForms;
+};
+
+/**
+ * Field IDs across every form that can parent the given form: the candidate
+ * set for the designer's ParentFieldDisplay picker, composed from the same
+ * scan (getParentFormsForForm, fieldIdsForViewset) the runtime infers with.
+ */
+export const getParentFormFieldIds = ({
+  uiSpecification,
+  formId,
+}: {
+  uiSpecification: ParentScanUiSpec;
+  formId: string;
+}): Set<string> => {
+  const ids = new Set<string>();
+  for (const parentFormId of getParentFormsForForm({uiSpecification, formId})) {
+    for (const id of fieldIdsForViewset(uiSpecification, parentFormId)) {
+      ids.add(id);
+    }
+  }
+  return ids;
 };
 
 /**
@@ -159,11 +200,13 @@ export const compileComputedExpressionForForm = ({
 }): CompiledExpression => {
   const fieldTypes = new Map<string, ExprType>();
   for (const [id, f] of Object.entries(uiSpecification.fields)) {
-    if (id.startsWith(PARENT_REFERENCE_PREFIX)) {
-      // Reserved prefix - a real field with this ID would be shadowed.
-      throw new ExpressionError(
-        `Field ID "${id}" uses the reserved prefix "${PARENT_REFERENCE_PREFIX}"`
-      );
+    for (const prefix of [PARENT_REFERENCE_PREFIX, METADATA_REFERENCE_PREFIX]) {
+      if (id.startsWith(prefix)) {
+        // Reserved prefix - a real field with this ID would be shadowed.
+        throw new ExpressionError(
+          `Field ID "${id}" uses the reserved prefix "${prefix}"`
+        );
+      }
     }
     const t = FAIMS_TYPE_TO_EXPR_TYPE[f['type-returned'] ?? ''];
     if (t) fieldTypes.set(id, t);
@@ -202,5 +245,50 @@ export const compileComputedExpressionForForm = ({
   }
 
   for (const [k, v] of parentTypes) fieldTypes.set(k, v);
+
+  // Metadata references: _METADATA.<key> reads the notebook's custom metadata.
+  // Keys are not known to the uiSpec, so any key types as string; a key the
+  // notebook does not define reads as blank at runtime.
+  for (const ref of extractExpressionReferences(source)) {
+    if (!isMetadataRef(ref)) continue;
+    if (decodeMetadataRef(ref) === null) {
+      throw new ExpressionError(
+        `{${ref}}: a metadata reference needs a key after "${METADATA_REFERENCE_PREFIX}"`
+      );
+    }
+    fieldTypes.set(ref, METADATA_EXPR_TYPE);
+  }
+
+  // Related record references: <Rel-Field-ID>.<Field-ID> reads a field on the
+  // record linked through a single-link Linked Related Records field on this
+  // form. Targeted errors first, then merge the typed references.
+  const {types: relatedTypes, relatedFields} = buildRelatedFieldTypes({
+    uiSpecification,
+    formId,
+  });
+  for (const ref of extractExpressionReferences(source)) {
+    if (ref.startsWith(PARENT_REFERENCE_PREFIX)) continue;
+    if (fieldTypes.has(ref) || relatedTypes.has(ref)) continue;
+    const parts = splitRelatedReference(ref);
+    if (!parts) continue; // plain unknown local ref: compiler reports it
+    const {relFieldId, fieldId} = parts;
+    const rel = relatedFields.get(relFieldId);
+    if (!rel) {
+      throw new ExpressionError(
+        `{${ref}}: "${relFieldId}" is not a Linked Related Records field on this form`
+      );
+    }
+    if (rel.multiple) {
+      throw new ExpressionError(
+        `{${ref}}: "${relFieldId}" allows multiple linked records - only ` +
+          'single-link Related Records fields can be referenced'
+      );
+    }
+    throw new ExpressionError(
+      `{${ref}}: field "${fieldId}" was not found on form "${rel.relatedFormId}"`
+    );
+  }
+  for (const [k, v] of relatedTypes) fieldTypes.set(k, v);
+
   return compileComputedExpression(source, fieldTypes, requiredType);
 };

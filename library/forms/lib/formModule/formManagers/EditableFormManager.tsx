@@ -4,6 +4,7 @@ import {
   currentlyVisibleMap,
   FormDataEntry,
   getFormLabel,
+  getRelatedRecordFields,
   HydratedRecordDocument,
   ValuesObject,
 } from '@faims3/data-model';
@@ -34,13 +35,16 @@ import {
   useNavigationLogic,
 } from './navigation';
 import {FormBreadcrumbs} from './navigation/NavigationBreadcrumbs';
-import {
-  getRecordContextFromRecord,
-  onChangeTemplatedFields,
-  RecordContext,
-} from './templatedFields';
+import {onChangeTemplatedFields} from './templatedFields';
 import {onChangeComputedFields} from './computedFields';
-import {resolveParentValues} from './resolveParentValues';
+import {
+  buildConditionValues,
+  resolveParentValues,
+  resolveRelatedValues,
+  linkedRecordId,
+  getRecordContextFromRecord,
+  RecordContext,
+} from '@faims3/data-model';
 import {
   FieldVisibilityMap,
   FormNavigationContext,
@@ -58,6 +62,8 @@ import {initializeAutoIncrementFields} from './utils/autoIncrementInitializer';
  * Changes are batched and saved after this delay (in milliseconds).
  */
 const FORM_SYNC_DEBOUNCE_MS = 1000;
+/** Local Pouch writes should succeed; cap retries then show an error. */
+const FLUSH_SAVE_MAX_FAILED_ATTEMPTS = 3;
 
 /** Shorter debounce for responsive UI feedback */
 const VISIBILITY_DEBOUNCE_MS = 150;
@@ -77,6 +83,8 @@ export interface EditableFormManagerProps {
   initialData?: FaimsFormData;
   /** The existing record - this helps build contextual infills */
   existingRecord: HydratedRecordDocument;
+  /** The notebook's custom metadata, referenced as _METADATA.<key> */
+  metadataValues?: Record<string, string>;
   /** The initial revision ID to work on */
   revisionId: string;
   /** The form we are editing */
@@ -146,13 +154,18 @@ export const EditableFormManager: React.FC<
   // parent-only derived fields fill without waiting for user input.
   // ---------------------------------------------------------------------------
   const parentValuesRef = useRef<ValuesObject | null>(null);
+  // Values of records linked through single-link Related Records fields, keyed
+  // by field ID. Re-resolved whenever a link changes (see the effect below).
+  const relatedValuesRef = useRef<Record<string, ValuesObject>>({});
 
   const buildContext = useCallback(
     (): RecordContext => ({
       ...getRecordContextFromRecord({record: props.existingRecord}),
       parentValues: parentValuesRef.current ?? undefined,
+      relatedValues: relatedValuesRef.current,
+      metadataValues: props.metadataValues,
     }),
-    [props.existingRecord]
+    [props.existingRecord, props.metadataValues]
   );
 
   // ---------------------------------------------------------------------------
@@ -160,7 +173,10 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(
     currentlyVisibleMap({
-      values: formDataExtractor({fullData: props.initialData ?? {}}),
+      values: buildConditionValues({
+        values: formDataExtractor({fullData: props.initialData ?? {}}),
+        context: buildContext(),
+      }),
       uiSpec: dataEngine.uiSpec,
       viewsetId: props.formId,
     })
@@ -179,6 +195,8 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   const pendingValuesRef = useRef(false);
   const isSavingRef = useRef(false);
+  /** True after a successful content save this session — flush then stamps the record. */
+  const contentSavedThisSessionRef = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
   /** Drives save-status UI; refs alone do not trigger re-renders. */
   const [hasPendingSave, setHasPendingSave] = useState(false);
@@ -243,12 +261,15 @@ export const EditableFormManager: React.FC<
   const updateVisibility = useCallback(() => {
     setVisibleMap(
       currentlyVisibleMap({
-        values: formDataExtractor({fullData: form.state.values}),
+        values: buildConditionValues({
+          values: formDataExtractor({fullData: form.state.values}),
+          context: buildContext(),
+        }),
         uiSpec: dataEngine.uiSpec,
         viewsetId: props.formId,
       })
     );
-  }, [dataEngine.uiSpec, props.formId]);
+  }, [dataEngine.uiSpec, props.formId, buildContext]);
 
   const debouncedUpdateVisibility = useMemo(
     () => debounce(updateVisibility, VISIBILITY_DEBOUNCE_MS),
@@ -262,7 +283,7 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   // Save Implementation
   // ---------------------------------------------------------------------------
-  const performSave = useCallback(async () => {
+  const performSave = useCallback(async (): Promise<boolean> => {
     attachmentSaveTrace('performSave:start', {
       pendingValues: pendingValuesRef.current,
       isSaving: isSavingRef.current,
@@ -273,6 +294,11 @@ export const EditableFormManager: React.FC<
 
     isSavingRef.current = true;
     setIsSaving(true);
+    // Clear pending at the start so an onChange during this save can re-raise
+    // it. Clearing at the end would drop a location (or other) edit that
+    // landed while the previous snapshot was being written.
+    pendingValuesRef.current = false;
+    setHasPendingSave(false);
 
     try {
       const revisionToUpdate = await ensureWorkingRevision();
@@ -302,16 +328,20 @@ export const EditableFormManager: React.FC<
         updatedBy: props.activeUser,
         update: form.state.values ?? {},
         mode: props.mode,
+        bumpRevisionUpdatedAt: true,
       });
 
-      pendingValuesRef.current = false;
-      setHasPendingSave(false);
+      contentSavedThisSessionRef.current = true;
       attachmentSaveTrace('performSave:complete', {
         revisionId: revisionToUpdate,
       });
+      return true;
     } catch (error) {
+      pendingValuesRef.current = true;
+      setHasPendingSave(true);
       attachmentSaveTrace('performSave:error', {error: String(error)});
       logError(new Error('Failed to update revision:'), {error});
+      return false;
     } finally {
       isSavingRef.current = false;
       setIsSaving(false);
@@ -384,12 +414,8 @@ export const EditableFormManager: React.FC<
 
     debouncedSave.cancel();
 
-    if (pendingValuesRef.current) {
-      attachmentSaveTrace('flushSave:awaiting-performSave');
-      await performSaveRef.current();
-    }
-
-    // Poll the saving ref
+    // Drain an in-flight autosave first so we can then write the latest
+    // in-memory values (a later location pin can arrive mid-save).
     let waitIterations = 0;
     while (isSavingRef.current) {
       waitIterations += 1;
@@ -400,8 +426,73 @@ export const EditableFormManager: React.FC<
       }
       await new Promise(resolve => setTimeout(resolve, 50));
     }
+
+    // Finish / nav must persist current form state when this session edited.
+    // `pending` alone is not enough: an overlapping save used to clear it
+    // after a newer location change was already in memory.
+    const shouldWriteCurrentValues =
+      pendingValuesRef.current || edited || contentSavedThisSessionRef.current;
+    let failedSaves = 0;
+    const saveOrCountFailure = async () => {
+      const ok = await performSaveRef.current();
+      if (!ok) failedSaves += 1;
+      return ok;
+    };
+
+    if (shouldWriteCurrentValues) {
+      attachmentSaveTrace('flushSave:awaiting-performSave', {
+        pendingValues: pendingValuesRef.current,
+        edited,
+      });
+      await saveOrCountFailure();
+    }
+
+    while (pendingValuesRef.current || isSavingRef.current) {
+      if (failedSaves >= FLUSH_SAVE_MAX_FAILED_ATTEMPTS) {
+        handleError(
+          'Could not save this record. Please try again. If this keeps happening, contact support.'
+        );
+        throw new Error(
+          `flushSave: local save failed after ${failedSaves} attempts`
+        );
+      }
+      waitIterations += 1;
+      if (pendingValuesRef.current && !isSavingRef.current) {
+        attachmentSaveTrace('flushSave:draining-pending-after-save');
+        await saveOrCountFailure();
+        continue;
+      }
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
+    // Stamp record + revision on flush (nav / Finish) when this session wrote
+    // data, or when persisted AVP/revision times are already ahead of the
+    // current stamps. On conflict, stamp uses the head with the latest
+    // updatedAt rather than throwing.
+    try {
+      await dataEngine.form.stampUpdatedAtIfNewer({
+        recordId: props.recordId,
+        force: contentSavedThisSessionRef.current,
+      });
+      contentSavedThisSessionRef.current = false;
+    } catch (error) {
+      logError(new Error('Failed to stamp updatedAt on flush:'), {error});
+      handleError(
+        'Saved the record but could not update its timestamp. Please try again.'
+      );
+      throw error instanceof Error
+        ? error
+        : new Error('Failed to stamp updatedAt on flush');
+    }
     attachmentSaveTrace('flushSave:complete', {waitIterations});
-  }, [debouncedSave, debugMode]);
+  }, [
+    debouncedSave,
+    debugMode,
+    dataEngine,
+    props.recordId,
+    edited,
+    handleError,
+  ]);
 
   const hasPendingChanges = useCallback((): boolean => {
     return pendingValuesRef.current || isSavingRef.current;
@@ -418,7 +509,9 @@ export const EditableFormManager: React.FC<
         existingSchema: validationSchema.current,
         formId: props.formId,
         uiSpec: dataEngine.uiSpec,
-        data,
+        // Merge parent/related values so visibility-aware recompilation
+        // sees conditions on them.
+        data: buildConditionValues({values: data, context: buildContext()}),
         config: {visibleBehaviour: 'ignore'},
       });
 
@@ -544,11 +637,96 @@ export const EditableFormManager: React.FC<
         setHasPendingSave(true);
         debouncedSave();
       }
+      // Conditions may reference parent values directly - refresh visibility
+      // now that they are resolved.
+      updateVisibility();
     });
     return () => {
       cancelled = true;
     };
     // Mount-only: record and form identity are fixed for a mounted manager.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Resolve linked record values at mount and again whenever a single-link
+  // Related Records field's link changes, then recompute derived fields and
+  // schedule a save if anything changed - the same contract as the parent
+  // effect above. Watching a signature of the link IDs keeps this from firing
+  // on unrelated edits.
+  useEffect(() => {
+    const linkFields = [
+      ...getRelatedRecordFields({
+        uiSpecification: dataEngine.uiSpec,
+        formId: props.formId,
+      }),
+    ]
+      .filter(([, info]) => !info.multiple)
+      .map(([id]) => id);
+    if (linkFields.length === 0) return;
+
+    // Read only the link fields off the store - a full extract here would
+    // scale with form size and this runs on every store change.
+    const linkValues = (): ValuesObject => {
+      const values: ValuesObject = {};
+      for (const id of linkFields) {
+        values[id] = (
+          form.state.values as Record<string, {data?: unknown} | undefined>
+        )[id]?.data;
+      }
+      return values;
+    };
+    const signatureOf = (values: ValuesObject) =>
+      linkFields
+        .map(id => `${id}=${linkedRecordId(values[id]) ?? ''}`)
+        .join('|');
+
+    let cancelled = false;
+    let latest = 0;
+    let lastSignature: string | null = null;
+
+    const refresh = () => {
+      const values = linkValues();
+      const signature = signatureOf(values);
+      if (signature === lastSignature) return;
+      lastSignature = signature;
+      const token = ++latest;
+      resolveRelatedValues({
+        engine: dataEngine,
+        values,
+        formId: props.formId,
+      }).then(resolved => {
+        // Drop stale responses if the link changed again mid-flight.
+        if (cancelled || token !== latest) return;
+        relatedValuesRef.current = resolved;
+        const computedChanged = onChangeComputedFields({
+          form: form as FaimsForm,
+          formId: props.formId,
+          uiSpec: dataEngine.uiSpec,
+          runListeners: false,
+          context: buildContext(),
+        });
+        const templatedChanged = onChangeTemplatedFields({
+          form: form as FaimsForm,
+          formId: props.formId,
+          uiSpec: dataEngine.uiSpec,
+          runListeners: false,
+          context: buildContext(),
+        });
+        if (computedChanged || templatedChanged) {
+          pendingValuesRef.current = true;
+          setHasPendingSave(true);
+          debouncedSave();
+        }
+      });
+    };
+
+    refresh();
+    const subscription = form.store.subscribe(refresh);
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+    // Mount-only, as above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -779,8 +957,8 @@ export const EditableFormManager: React.FC<
         try {
           await flushSave();
         } catch (err) {
-          // Best-effort flush — in-memory state is still good enough to check against.
           logWarn('[guardFinish] flushSave failed before issue check', {err});
+          return;
         }
 
         const progress = completion({
@@ -811,7 +989,7 @@ export const EditableFormManager: React.FC<
         guardInFlightRef.current = false;
       }
     },
-    [flushSave, dataEngine.uiSpec, props.formId, form, visibleMap]
+    [flushSave, dataEngine.uiSpec, form, visibleMap, props.formId]
   );
 
   // Lock nav buttons while an attachment saves; finish buttons go via guardFinish.
@@ -988,8 +1166,8 @@ export const EditableFormManager: React.FC<
       {/* Form Progress */}
       <LiveFormProgress
         form={form as FaimsForm}
-        formId={props.formId}
         uiSpec={dataEngine.uiSpec}
+        formId={props.formId}
         visibilityMap={visibleMap}
       />
 
@@ -1025,6 +1203,14 @@ export const EditableFormManager: React.FC<
           setConfirmFinishOpen(false);
           const fn = pendingFinishRef.current;
           pendingFinishRef.current = null;
+          // Finish anyway: persist + stamp again in case a location (or other)
+          // edit landed after the first Finish click opened this dialog.
+          try {
+            await flushSave();
+          } catch (err) {
+            logWarn('[Finish anyway] flushSave failed', {err});
+            return;
+          }
           if (fn) await fn();
         }}
         title={`Are you sure you want to finish ${formLabel}?`}

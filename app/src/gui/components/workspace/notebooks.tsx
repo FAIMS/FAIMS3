@@ -287,6 +287,7 @@ export default function NoteBooks() {
             disabled={!showRefreshButton || doRefresh.isPending}
             sx={{backgroundColor: theme.palette.primary.main, flex: 1}}
             startIcon={<RefreshOutlined />}
+            data-testid="app-notebooks-refresh-button"
             onClick={() => {
               doRefresh.mutate();
             }}

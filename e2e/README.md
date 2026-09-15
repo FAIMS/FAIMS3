@@ -26,8 +26,10 @@ AUTH_ATTEMPT_LIMITER_ENABLED=false
 
 `RATE_LIMITER_ENABLED` is the Express HTTP IP limiter;
 `AUTH_ATTEMPT_LIMITER_ENABLED` is the CouchDB-backed email-code /
-verification-challenge attempt limits (see `api/.env.dist`). Restart the API
-after changing them.
+verification-challenge attempt limits (see `api/.env.dist`). Export mint/redeem
+has a separate limiter (`EXPORT_RATE_LIMITER_ENABLED`, default 20 req / 10 min)
+that stays on when the global IP limiter is off. Restart the API after changing
+them.
 
 Copy `e2e/.env.dist` → `e2e/.env` (seed passwords match the dist defaults).
 

@@ -38,6 +38,9 @@ export interface FieldInfo<T extends FullFieldProps = FullFieldProps> {
    * When set, used when expanding Mustache templates (templated string fields)
    * to turn the field's stored value into a display string. Otherwise values
    * are passed through to Mustache as today (objects may stringify poorly).
+   * Define the function in @faims3/data-model's builtin template function
+   * map (derivedFields/templateFunctions.ts) and reference it here, so
+   * server-side evaluation stays identical to the form's.
    */
   templateFunction?: (value: unknown) => string;
   /**

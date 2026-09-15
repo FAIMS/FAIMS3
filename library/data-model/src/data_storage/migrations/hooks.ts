@@ -1,3 +1,4 @@
+import {DatabaseInterface} from '../../types';
 import {GetDbById, MigrationContext} from './types';
 
 /**
@@ -12,11 +13,13 @@ export const DEFAULT_MIGRATION_CREATED_BY = 'admin';
 export function buildMigrationContext({
   getDbById,
   migrationCreatedBy = DEFAULT_MIGRATION_CREATED_BY,
+  db,
 }: {
   getDbById: GetDbById;
   migrationCreatedBy?: string;
+  db?: DatabaseInterface;
 }): MigrationContext {
-  return {getDbById, migrationCreatedBy};
+  return {getDbById, migrationCreatedBy, db};
 }
 
 export function resolveMigrationCreatedBy(context?: MigrationContext): string {

@@ -40,9 +40,9 @@ import {useNavigate, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {useAppSelector} from '../../context/store';
 import {removedNotebookUnavailableCopy} from '../../utils/remoteProjectRemoval';
-import NotebookComponent from '../components/notebook';
 import BackButton from '../components/ui/BackButton';
 import NotFound404 from './404';
+import {NotebookView} from '../components/notebook/notebookView';
 
 /** Shown when the URL names a notebook that no longer exists locally. */
 function NotebookUnavailable() {
@@ -112,7 +112,7 @@ export default function Notebook() {
         </Typography>
       </Stack>
 
-      <NotebookComponent project={project} />
+      <NotebookView project={project} />
     </Stack>
   );
 }

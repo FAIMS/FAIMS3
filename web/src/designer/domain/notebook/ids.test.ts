@@ -3,7 +3,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {resolveAddedFieldKey} from './ids';
+import {resolveAddedFieldKey, sanitizeUserLabel} from './ids';
 
 describe('resolveAddedFieldKey', () => {
   it('slugifies templated string fields like any other field', () => {
@@ -20,5 +20,20 @@ describe('resolveAddedFieldKey', () => {
     expect(resolveAddedFieldKey('New Field', ['Existing-Field'])).toBe(
       'New-Field'
     );
+  });
+});
+
+describe('sanitizeUserLabel', () => {
+  it('keeps ordinary form names', () => {
+    expect(sanitizeUserLabel('Site Survey')).toBe('Site Survey');
+  });
+
+  it('strips CR/LF and other control characters', () => {
+    expect(sanitizeUserLabel('Form\r\nInjected')).toBe('FormInjected');
+    expect(sanitizeUserLabel('Form\u0000Name')).toBe('FormName');
+  });
+
+  it('trims surrounding whitespace', () => {
+    expect(sanitizeUserLabel('  Form  ')).toBe('Form');
   });
 });

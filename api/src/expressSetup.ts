@@ -37,6 +37,7 @@ import {addAuthPages} from './auth/authPages';
 import {addAuthRoutes} from './auth/authRoutes';
 import {registerAuthProviders} from './auth/strategies/applyStrategies';
 import {config} from './buildconfig';
+import {isCorsOriginAllowed} from './corsAllowlist';
 import {
   databaseValidityReport,
   initialiseDbAndKeys,
@@ -67,6 +68,7 @@ import {api as longLivedApi} from './api/longLivedTokens';
 import {api as notebookApi} from './api/notebooks';
 import {api as teamsApi} from './api/teams';
 import {api as templatesApi} from './api/templates';
+import {api as tombstonesApi} from './api/tombstones';
 import {api as usersApi} from './api/users';
 import {api as utilityApi} from './api/utilities';
 import {api as emailVerifyApi} from './api/verificationChallenges';
@@ -132,6 +134,14 @@ if (!IS_TEST && config.rateLimiterEnabled) {
   }
 }
 
+if (!IS_TEST && config.exportRateLimiterEnabled) {
+  console.log(
+    `Activating export rate limiter (${config.exportRateLimiterPerWindow} req / ${config.exportRateLimiterWindowMs} ms)`
+  );
+} else if (!IS_TEST) {
+  console.log('Not enabling export rate limiter (explicitly disabled).');
+}
+
 app.use(morgan('combined'));
 
 // Only parse query parameters into strings, not objects
@@ -185,7 +195,16 @@ app.use(
   express.urlencoded({extended: true, limit: config.urlencodedBodyLimit})
 );
 app.use(express.json({limit: config.jsonBodyLimit}));
-app.use(cors());
+// Restrict browser CORS to the Conductor / Control Centre / app allowlist and
+// allow credentials so the export download-grant cookie can be set.
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      callback(null, isCorsOriginAllowed(origin));
+    },
+    credentials: true,
+  })
+);
 
 app.use(passport.initialize());
 
@@ -197,6 +216,7 @@ app.use(express.static('public'));
 app.use('/api/notebooks', notebookApi);
 app.use('/api/templates', templatesApi);
 app.use('/api/teams', teamsApi);
+app.use('/api/tombstones', tombstonesApi);
 app.use('/api/users', usersApi);
 app.use('/api/verify', emailVerifyApi);
 app.use('/api/reset', resetPasswordApi);

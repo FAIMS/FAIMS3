@@ -706,6 +706,9 @@ importers:
       lodash:
         specifier: ^4.18.1
         version: 4.18.1
+      mustache:
+        specifier: ^4.2.0
+        version: 4.2.0
       pouchdb:
         specifier: ^9.0.0
         version: 9.0.0(encoding@0.1.13)
@@ -734,6 +737,9 @@ importers:
       '@types/lodash':
         specifier: ^4.14.191
         version: 4.17.24
+      '@types/mustache':
+        specifier: ^4.2.6
+        version: 4.2.6
       '@types/node':
         specifier: ^24
         version: 24.13.1
@@ -876,6 +882,9 @@ importers:
       '@vitejs/plugin-react-swc':
         specifier: ^4.0.1
         version: 4.3.1(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      fake-indexeddb:
+        specifier: ^6.2.5
+        version: 6.2.5
       madge:
         specifier: ^8.0.0
         version: 8.0.0(typescript@7.0.2)
@@ -7647,6 +7656,10 @@ packages:
     resolution: {integrity: sha512-GDhU9ntwuKyGXdZBUgTIe+vXnWj0fppUEtMDL0+idd5Sta8TGpHssn/eusA9mrPr9qNDym6SxAYZjNvCn/9RBg==}
     engines: {node: '>= 10.17.0'}
     hasBin: true
+
+  fake-indexeddb@6.2.5:
+    resolution: {integrity: sha512-CGnyrvbhPlWYMngksqrSSUT1BAVP49dZocrHuK0SvtR0D5TMs5wP0o3j7jexDJW01KSadjBp1M/71o/KR3nD1w==}
+    engines: {node: '>=18'}
 
   fast-check@2.25.0:
     resolution: {integrity: sha512-wRUT2KD2lAmT75WNIJIHECawoUUMHM0I5jrlLXGtGeqmPL8jl/EldUDjY1VCp6fDY8yflyfUeIOsOBrIbIiArg==}
@@ -17421,7 +17434,7 @@ snapshots:
   '@vitest/browser-webdriverio@4.1.8(msw@2.14.6(@types/node@24.13.1)(typescript@7.0.2))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))(vitest@4.1.8)(webdriverio@9.27.2)':
     dependencies:
       '@vitest/browser': 4.1.8(msw@2.14.6(@types/node@24.13.1)(typescript@7.0.2))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))(vitest@4.1.8)
-      vitest: 4.1.8(@types/node@24.13.1)(@vitest/browser-webdriverio@4.1.8)(@vitest/coverage-v8@4.1.10)(jsdom@22.1.0)(msw@2.14.6(@types/node@24.13.1)(typescript@7.0.2))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      vitest: 4.1.8(@types/node@24.13.1)(@vitest/browser-webdriverio@4.1.8)(jsdom@22.1.0)(msw@2.14.6(@types/node@24.13.1)(typescript@7.0.2))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       webdriverio: 9.27.2
     transitivePeerDependencies:
       - bufferutil
@@ -17491,7 +17504,7 @@ snapshots:
       pngjs: 7.0.0
       sirv: 3.0.2
       tinyrainbow: 3.1.0
-      vitest: 4.1.8(@types/node@24.13.1)(@vitest/browser-webdriverio@4.1.8)(@vitest/coverage-v8@4.1.10)(jsdom@22.1.0)(msw@2.14.6(@types/node@24.13.1)(typescript@7.0.2))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      vitest: 4.1.8(@types/node@24.13.1)(@vitest/browser-webdriverio@4.1.8)(jsdom@22.1.0)(msw@2.14.6(@types/node@24.13.1)(typescript@7.0.2))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       ws: 8.21.0
     transitivePeerDependencies:
       - bufferutil
@@ -20190,6 +20203,8 @@ snapshots:
       '@types/yauzl': 2.10.3
     transitivePeerDependencies:
       - supports-color
+
+  fake-indexeddb@6.2.5: {}
 
   fast-check@2.25.0:
     dependencies:

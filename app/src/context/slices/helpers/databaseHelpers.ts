@@ -1,4 +1,8 @@
-import {GetNotebookResponse, ProjectStatus} from '@faims3/data-model';
+import {
+  GetNotebookResponse,
+  NotebookUiSpec,
+  ProjectStatus,
+} from '@faims3/data-model';
 import {projectInformationFromGetNotebook} from './notebookDefinition';
 import PouchDB from 'pouchdb-browser';
 import {config} from '../../../buildconfig';
@@ -46,12 +50,52 @@ export const buildSyncId = ({
 };
 
 /**
- * Builds an identifier for the compiled spec service
- * @param id A project identity which includes the server + project
- * @returns A suitable identifier which uniquely identifies a compiled spec
+ * Stable stringify: sorts object keys so logically identical specs
+ * serialise identically regardless of key order.
  */
-export const buildCompiledSpecId = (id: ProjectIdentity): string => {
-  return `${id.serverId}-${id.projectId}`;
+const stableStringify = (value: unknown): string => {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(',')}]`;
+  }
+  return `{${Object.keys(value as Record<string, unknown>)
+    .sort()
+    .map(
+      k =>
+        `${JSON.stringify(k)}:${stableStringify((value as Record<string, unknown>)[k])}`
+    )
+    .join(',')}}`;
+};
+
+/** FNV-1a 32-bit hash, hex encoded. Not cryptographic - identity only. */
+const fnv1a = (input: string): string => {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, '0');
+};
+
+/**
+ * Builds an identifier for the compiled spec service. Includes a content hash
+ * of the uiSpec so that when a refresh delivers a changed spec the ID changes,
+ * and every consumer selecting uiSpecificationId re-renders and looks up the
+ * new compilation. Identical specs produce identical IDs, so a no-op refresh
+ * triggers nothing.
+ * @param id A project identity which includes the server + project
+ * @param uiSpec The (uncompiled) uiSpec the ID identifies
+ */
+export const buildCompiledSpecId = ({
+  id,
+  uiSpec,
+}: {
+  id: ProjectIdentity;
+  uiSpec: NotebookUiSpec;
+}): string => {
+  return `${id.serverId}-${id.projectId}-${fnv1a(stableStringify(uiSpec))}`;
 };
 
 /**
@@ -556,7 +600,7 @@ export const fetchProjectMetadataAndSpec = fetchNotebookDetails;
 /**
  * How the server classifies a notebook that is absent from the active directory
  * listing (`includeArchived=false`). Used to decide immediate archival cleanup
- * vs absent-id streak confirmation.
+ * vs tombstone-confirmed deletion.
  */
 export type NotebookServerLifecycleProbe =
   | 'active'
@@ -567,10 +611,10 @@ export type NotebookServerLifecycleProbe =
 /**
  * GET `/api/notebooks/:id` for a local notebook missing from the active directory.
  *
- * - `archived`: remove locally on first successful read
- * - `missing`: deleted or no access (401/403/404) — caller applies absent streak
+ * - `archived`: remove locally on first successful read (secure lifecycle signal)
+ * - `missing`: deleted or no access (401/403/404) — caller must confirm via tombstone
  * - `active`: still exists but not directory-listed (unexpected); keep local copy
- * - `unreachable`: network/other HTTP failure — do not advance absent streak
+ * - `unreachable`: network/other HTTP failure — keep local copy
  */
 export async function probeNotebookServerLifecycle({
   projectId,
@@ -614,4 +658,51 @@ export async function probeNotebookServerLifecycle({
   }
 
   return 'active';
+}
+
+/**
+ * Result of looking up a survey deletion tombstone.
+ *
+ * - `tombstoned`: server has a tombstone — safe to remove local data
+ * - `not_tombstoned`: 404 — no proof of deletion; keep local data
+ * - `unreachable`: network or other error — keep local data as a precaution
+ */
+export type ProjectTombstoneProbe =
+  | 'tombstoned'
+  | 'not_tombstoned'
+  | 'unreachable';
+
+/**
+ * GET `/api/tombstones/:id` — proof that a survey was permanently deleted.
+ */
+export async function probeProjectTombstone({
+  projectId,
+  serverUrl,
+  token,
+}: {
+  projectId: string;
+  serverUrl: string;
+  token: string;
+}): Promise<ProjectTombstoneProbe> {
+  const url = `${serverUrl}/api/tombstones/${projectId}`;
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch {
+    return 'unreachable';
+  }
+
+  if (response.status === 404) {
+    return 'not_tombstoned';
+  }
+
+  if (response.ok) {
+    return 'tombstoned';
+  }
+
+  return 'unreachable';
 }

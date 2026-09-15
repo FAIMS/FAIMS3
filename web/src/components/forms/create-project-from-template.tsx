@@ -22,6 +22,8 @@ import {
   getTeamFieldState,
   resolveTeamId,
 } from './template-team-field';
+import {usePlanConfigs} from '@/components/plans/usePlanConfigs';
+import {errorMessageFromNotebookJsonBody} from '@/hooks/project-hooks';
 
 interface CreateProjectFromTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -46,7 +48,10 @@ export function CreateProjectFromTemplateForm({
   const {templateId} = Route.useParams();
   const queryClient = useQueryClient();
   const {data: teamsData} = useGetTeams({user});
-  const {data: template} = useGetTemplate({user, templateId});
+  const {data: template, isLoading: templateLoading} = useGetTemplate({
+    user,
+    templateId,
+  });
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
 
   const possibleTeams = getPossibleTeamsForAction({
@@ -67,6 +72,13 @@ export function CreateProjectFromTemplateForm({
     possibleTeams,
   });
 
+  // Every plan template needs its own config, keyed by plan id, sent as planConfigs
+  const plans = usePlanConfigs({
+    planTemplates: template?.uiSpecification?.planTemplates ?? [],
+    uiSpec: template?.uiSpecification?.uiSpec,
+    isLoading: templateLoading,
+  });
+
   const teamLabel = `Create ${config.notebookName} in this team${
     canCreateGlobally ? ' (optional)' : ''
   }`;
@@ -77,7 +89,7 @@ export function CreateProjectFromTemplateForm({
       : `Choose a team for this ${config.notebookName}, or leave blank to create outside any team.`
     : undefined;
 
-  const fields = useMemo(() => {
+  const formFields = useMemo(() => {
     const result: Field[] = [
       {
         name: 'name',
@@ -101,24 +113,24 @@ export function CreateProjectFromTemplateForm({
       );
     }
 
-    return result;
+    return plans.appendTo({fields: result});
   }, [
     canCreateGlobally,
+    plans,
     possibleTeams,
     showTeamDropdown,
     teamDescription,
     teamLabel,
   ]);
 
-  const onSubmit = async ({
-    name,
-    description,
-    team,
-  }: {
-    name: string;
-    description?: string;
-    team?: string;
-  }) => {
+  const onSubmit = async (
+    values: {name: string; description?: string; team?: string} & Record<
+      string,
+      unknown
+    >
+  ) => {
+    const {name, description, team} = values;
+    const planConfigs = plans.toPlanConfigs(values);
     const chosenTeamId = resolveTeamId({
       canCreateGlobally,
       possibleTeams,
@@ -136,14 +148,20 @@ export function CreateProjectFromTemplateForm({
         name,
         ...rootDescriptionForApi(description),
         ...(chosenTeamId ? {teamId: chosenTeamId} : {}),
+        ...(planConfigs ? {planConfigs} : {}),
       } satisfies PostCreateNotebookInput),
     });
 
-    if (!response.ok)
+    if (!response.ok) {
+      const json = await response.json().catch(() => undefined);
       return {
         type: 'submit',
-        message: `Error creating ${config.notebookName}.`,
+        message: errorMessageFromNotebookJsonBody(
+          json,
+          `Error creating ${config.notebookName}.`
+        ),
       };
+    }
 
     // Creator is granted PROJECT_ADMIN server-side; refresh JWT so list APIs
     // include the new notebook (same as CreateProjectForm).
@@ -174,10 +192,13 @@ export function CreateProjectFromTemplateForm({
         />
       ) : null}
       <Form
-        fields={fields}
+        fields={formFields.fields}
+        dividers={formFields.dividers}
         onSubmit={onSubmit}
         submitButtonText={`Create ${config.notebookNameCapitalized}`}
         defaultValues={defaultTeamId ? {team: defaultTeamId} : undefined}
+        footer={plans.footer}
+        disableSubmission={plans.gate}
       />
     </div>
   );

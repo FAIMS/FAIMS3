@@ -4,6 +4,8 @@ import {
   FormRelationship,
   FormRelationshipInstance,
   HydratedRecord,
+  relatedRecordAvpEntries,
+  relationTypeToPair,
 } from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
@@ -57,7 +59,6 @@ import {
   RelatedRecordFieldProps,
   relatedRecordPropsSchema,
 } from './types';
-import {relationTypeToPair} from './utils';
 
 /**
  * Related record field: create new records of a related type, link existing ones,
@@ -533,10 +534,10 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     [rawValue]
   );
 
-  const normalizedLinks = useMemo(() => {
-    if (!value) return [];
-    return Array.isArray(value) ? value : [value];
-  }, [value]);
+  const normalizedLinks = useMemo(
+    () => (value ? relatedRecordAvpEntries(value) : []),
+    [value]
+  );
 
   // Display label for record type
   const relatedRecordTypeLabel = useMemo(() => {
@@ -554,37 +555,18 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     error: createError,
   } = useMutation({
     mutationFn: async () => {
-      // New record carries the edge: Child → `parent` on the new row; Linked →
-      // `linked` on the new row.
-      let relationship: FormRelationship;
-      const relation = {
-        fieldId: props.fieldId,
-        recordId: props.config.recordId,
-        relationTypeVocabPair: relationTypeToPair(props.relation_type),
-      };
-      if (props.relation_type === 'faims-core::Child') {
-        relationship = {
-          parent: [relation],
-        };
-      } else {
-        relationship = {
-          linked: [relation],
-        };
-      }
-
-      const res = await props.config.dataEngine().form.createRecord({
+      // The engine derives the related form, the relation and its vocab pair
+      // from this field, and writes the new row's own edge.
+      const res = await props.config.dataEngine().form.createRelatedRecord({
+        parentRecordId: props.config.recordId,
+        parentFieldId: props.fieldId,
         createdBy: props.config.user,
-        formId: props.related_type,
-        relationship,
+        parentFieldValue: props.value,
       });
 
-      props.setFieldData([
-        ...normalizedLinks,
-        {
-          record_id: res.record._id,
-          relation_type_vocabPair: relationTypeToPair(props.relation_type),
-        },
-      ] satisfies RelatedFieldValue);
+      // The parent's side goes through the open form, not a revision: a
+      // revision written under it would be lost to the commit below.
+      props.setFieldData(res.linked as RelatedFieldValue);
 
       // Persist the parent form so the new link is saved before we navigate
       // away.
@@ -643,10 +625,13 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         : {...existing, linked: [...(existing?.linked ?? []), relation]};
 
     // Persist the updated relationship on the target record's revision
-    await props.config.dataEngine().hydrated.updateRevision({
-      ...record.revision,
-      relationship,
-    });
+    await props.config.dataEngine().hydrated.updateRevision(
+      {
+        ...record.revision,
+        relationship,
+      },
+      {bumpRevisionUpdatedAt: true, bumpRecordUpdatedAt: true}
+    );
   };
 
   // One query per linked id (order matches `normalizedLinks`) for list display
@@ -713,13 +698,16 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           inst.fieldId === props.fieldId
         )
     );
-    await engine.hydrated.updateRevision({
-      ...peer.revision,
-      relationship: {
-        ...(rel ?? {}),
-        linked: newLinked,
+    await engine.hydrated.updateRevision(
+      {
+        ...peer.revision,
+        relationship: {
+          ...(rel ?? {}),
+          linked: newLinked,
+        },
       },
-    });
+      {bumpRevisionUpdatedAt: true, bumpRecordUpdatedAt: true}
+    );
     const remaining = normalizedLinks.filter(
       l => l.record_id !== link.record_id
     );

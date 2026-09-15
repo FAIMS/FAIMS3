@@ -31,6 +31,7 @@ export enum DatabaseType {
   PROJECTS = 'PROJECTS',
   TEMPLATES = 'TEMPLATES',
   TEAMS = 'TEAMS',
+  TOMBSTONE = 'TOMBSTONE',
 }
 ```
 

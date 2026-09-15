@@ -50,7 +50,7 @@ const TemplateActions = () => {
   });
 
   const initialNotebook = useMemo<NotebookWithHistory | undefined>(() => {
-    return toDesignerNotebookWithHistory(data);
+    return toDesignerNotebookWithHistory(data, 'template');
   }, [data]);
 
   const handleEditorClose = (file?: File) => {
@@ -274,6 +274,7 @@ const TemplateActions = () => {
         notebook={initialNotebook}
         exportBaseName={data?.name}
         onClose={handleEditorClose}
+        designerMode="template"
       />
     </>
   );

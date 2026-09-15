@@ -9,7 +9,6 @@
  */
 import {
   compileUiSpecConditionals,
-  DocumentNotFoundError,
   MinimalRecordMetadata,
   type CompiledNotebookUiSpec,
   type NotebookUiSpec,
@@ -20,17 +19,14 @@ import React, {ReactNode} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {getGISFields, useRecordFeatures} from './recordFeatures';
 
-const {getRevision, getAvp} = vi.hoisted(() => ({
-  getRevision: vi.fn(),
-  getAvp: vi.fn(),
-}));
+const {getFieldValues} = vi.hoisted(() => ({getFieldValues: vi.fn()}));
 
 vi.mock('@faims3/data-model', async importOriginal => {
   const actual = await importOriginal<typeof import('@faims3/data-model')>();
   return {
     ...actual,
     DataEngine: class {
-      core = {getRevision, getAvp};
+      hydrated = {getFieldValues};
     },
   };
 });
@@ -138,10 +134,8 @@ const renderFeatures = async (records: MinimalRecordMetadata[] | undefined) => {
 };
 
 beforeEach(() => {
-  getRevision.mockReset();
-  getAvp.mockReset();
-  getRevision.mockResolvedValue({avps: {site_location: 'avp-1'}});
-  getAvp.mockResolvedValue({data: POINT_FEATURE});
+  getFieldValues.mockReset();
+  getFieldValues.mockResolvedValue({site_location: POINT_FEATURE});
 });
 
 describe('getGISFields', () => {
@@ -165,49 +159,17 @@ describe('useRecordFeatures', () => {
       revision_id: 'frev-site',
       form_id: 'Site',
     });
-    expect(getRevision).toHaveBeenCalledWith('frev-site');
-  });
-
-  it('still plots geometry held in a field its form no longer references', async () => {
-    // The Observation form has no spatial field, but this record's AVPs carry
-    // one — the field was moved away or dropped from the section after capture.
-    getRevision.mockResolvedValue({avps: {orphan_location: 'avp-orphan'}});
-
-    const result = await renderFeatures([obsRecord]);
-
-    expect(result.current.data!.features).toHaveLength(1);
-    expect(result.current.data!.features[0].properties?.record_id).toBe(
-      'rec-obs'
-    );
-  });
-
-  it('expands a FeatureCollection into one feature per member', async () => {
-    getAvp.mockResolvedValue({
-      data: {
-        type: 'FeatureCollection',
-        features: [POINT_FEATURE, POINT_FEATURE],
-      },
+    expect(getFieldValues).toHaveBeenCalledWith({
+      revisionId: 'frev-site',
+      fields: expect.arrayContaining(['site_location', 'orphan_location']),
     });
-
-    const result = await renderFeatures([siteRecord]);
-
-    expect(result.current.data!.features).toHaveLength(2);
   });
 
-  it('skips a malformed GIS value without failing the query', async () => {
-    getAvp.mockResolvedValue({data: {type: 'Feature', geometry: null}});
-
-    const result = await renderFeatures([siteRecord]);
-
-    expect(result.current.data!.features).toHaveLength(0);
-    expect(result.current.isError).toBe(false);
-  });
-
-  it('keeps other records when one revision is missing', async () => {
-    getRevision.mockImplementation((revisionId: string) =>
-      revisionId === 'frev-obs'
-        ? Promise.reject(new DocumentNotFoundError(revisionId))
-        : Promise.resolve({avps: {site_location: 'avp-1'}})
+  it('still builds the collection when one record contributes nothing', async () => {
+    getFieldValues.mockImplementation(({revisionId}: {revisionId: string}) =>
+      Promise.resolve(
+        revisionId === 'frev-obs' ? {} : {site_location: POINT_FEATURE}
+      )
     );
 
     const result = await renderFeatures([siteRecord, obsRecord]);
@@ -219,49 +181,48 @@ describe('useRecordFeatures', () => {
     );
   });
 
-  it('skips only the field whose AVP is missing', async () => {
-    getRevision.mockResolvedValue({
-      avps: {site_location: 'avp-gone', orphan_location: 'avp-ok'},
-    });
-    getAvp.mockImplementation((avpId: string) =>
-      avpId === 'avp-gone'
-        ? Promise.reject(new DocumentNotFoundError(avpId))
-        : Promise.resolve({data: POINT_FEATURE})
+  it('still plots geometry held in a field its form no longer references', async () => {
+    // The Observation form has no spatial field, but this record's AVPs carry
+    // one — the field was moved away or dropped from the section after capture.
+    getFieldValues.mockResolvedValue({orphan_location: POINT_FEATURE});
+
+    const result = await renderFeatures([obsRecord]);
+
+    expect(result.current.data!.features).toHaveLength(1);
+    expect(result.current.data!.features[0].properties?.record_id).toBe(
+      'rec-obs'
     );
+  });
+
+  it('expands a FeatureCollection into one feature per member', async () => {
+    getFieldValues.mockResolvedValue({
+      site_location: {
+        type: 'FeatureCollection',
+        features: [POINT_FEATURE, POINT_FEATURE],
+      },
+    });
 
     const result = await renderFeatures([siteRecord]);
 
-    expect(result.current.isError).toBe(false);
-    expect(result.current.data!.features).toHaveLength(1);
+    expect(result.current.data!.features).toHaveLength(2);
   });
 
-  // The hook's `retry: 2` costs a fixed 1s + 2s of backoff before the query
-  // settles, which overruns vitest's 5s default, so this case buys more room.
-  it('surfaces a systemic AVP read failure instead of showing an empty map', async () => {
-    getAvp.mockRejectedValue(new Error('database is closed'));
-
-    const {result} = renderHook(
-      () =>
-        useRecordFeatures({
-          projectId: 'test-project',
-          uiSpec,
-          records: [siteRecord],
-          recordTypes,
-        }),
-      {wrapper}
-    );
-
-    await waitFor(() => expect(result.current.isError).toBe(true), {
-      timeout: 15000,
+  it('skips a malformed GIS value without failing the query', async () => {
+    getFieldValues.mockResolvedValue({
+      site_location: {type: 'Feature', geometry: null},
     });
-    expect(result.current.data).toBeUndefined();
-  }, 20000);
+
+    const result = await renderFeatures([siteRecord]);
+
+    expect(result.current.data!.features).toHaveLength(0);
+    expect(result.current.isError).toBe(false);
+  });
 
   // The hook's `retry: 2` costs a fixed 1s + 2s of backoff before the query
   // settles, which overruns vitest's 5s default, so this case buys more room.
   it('surfaces a systemic read failure instead of showing an empty map', async () => {
     // A database that will not open must not look like "no geometry here"
-    getRevision.mockRejectedValue(new Error('database is closed'));
+    getFieldValues.mockRejectedValue(new Error('database is closed'));
 
     const {result} = renderHook(
       () =>
@@ -295,7 +256,6 @@ describe('useRecordFeatures', () => {
     // The query is gated off, so it never resolves to a collection at all
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.data).toBeUndefined();
-    expect(getRevision).not.toHaveBeenCalled();
-    expect(getAvp).not.toHaveBeenCalled();
+    expect(getFieldValues).not.toHaveBeenCalled();
   });
 });

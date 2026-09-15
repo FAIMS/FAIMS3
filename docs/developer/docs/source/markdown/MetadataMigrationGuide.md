@@ -89,6 +89,7 @@ This calls `initialiseAndMigrateDBs` (`api/src/couchdb/index.ts`), which:
 - Ensures global DBs exist (directory, people, projects, templates, …).
 - Runs `migrateDbs` until **projects** reach version **4** and **templates** version **5**.
 - For each v3 project, **`projectsV3toV4Migration`** opens the legacy **`metadata-{projectId}`** database, merges `ui-specification` + `project-metadata-*` docs, runs **`migrateNotebook`** to the current schema version, and writes **`uiSpecification`** on the project document (and removes **`metadataDb`**).
+- Then queues each project's **data** database and runs `migrateDbs` again (DATA target version **2**: stamp `updatedAt` on records and revisions). Watch for `[migrate]` logs: project count, queued Couch names, skip/apply, and per-step processed/written/deleted counts. If projects exist but **0 data DBs** are queued, data migrations did not run.
 
 **Migration audit fields:** `createdBy` / `createdAt` / `updatedAt` on projects and templates may be filled from migration context when legacy data has no creator (`MigrationContext.migrationCreatedBy` / `DEFAULT_MIGRATION_CREATED_BY`). Historical surveys still have no trustworthy creator in old metadata; do not treat `metadata.information.projectLeadLabel` as `createdBy`.
 

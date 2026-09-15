@@ -40,15 +40,12 @@ const testDeleteData = {
   recordId: 'test-record-id',
   revisionId: 'test-revision-id',
   showLabel: true,
-  handleRefresh: vi.fn(() => {
-    return new Promise<any>(() => {});
-  }),
 };
 
 test('Check delete component', async () => {
   render(
     <TestWrapper>
-      <RecordDelete serverId={'todo'} {...testDeleteData} />
+      <RecordDelete {...testDeleteData} />
     </TestWrapper>
   );
   expect(screen.getByTestId('delete-btn')).toBeTruthy();

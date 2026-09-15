@@ -18,7 +18,7 @@
  */
 
 import {Box, Paper, Typography} from '@mui/material';
-import {getFieldLabel, isBooleanCondition} from '../../../lib/conditionUtils';
+import {isBooleanCondition} from '../../../lib/conditionUtils';
 import {useAppSelector} from '../../state/hooks';
 import {
   allOperators,
@@ -27,6 +27,7 @@ import {
   type ConditionType,
 } from '../../types/condition';
 import {conditionBooleanOperatorColours} from '../designer-style';
+import {getConditionFieldLabel} from '../../../hooks/use-condition-field-context';
 
 /**
  * Renders a read-only preview of the current condition.
@@ -48,7 +49,7 @@ export const ConditionSummary = (props: ConditionSummaryProps) => {
    */
   const getFieldName = (fieldId: string | undefined) => {
     if (!fieldId) return 'Unknown field';
-    return allFields[fieldId] ? getFieldLabel(allFields[fieldId]) : fieldId;
+    return getConditionFieldLabel(fieldId, allFields);
   };
 
   return (

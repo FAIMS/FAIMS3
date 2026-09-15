@@ -6,6 +6,9 @@
 import {browser} from '@wdio/globals';
 import {getConductorUrl, getWebUrl} from './env.ts';
 
+/** Seed template id for the Red team (see api seedTestDataset). */
+export const SEED_RED_TEMPLATE_ID = 'template_seed_red';
+
 export type WebAuthSession = {
   token: string;
   refreshToken?: string;
@@ -40,6 +43,73 @@ export async function getWebAuthSession(): Promise<WebAuthSession> {
     );
   }
   return session;
+}
+
+/**
+ * POST /api/auth/refresh — mint a JWT that includes roles granted since login
+ * (e.g. PROJECT_ADMIN after creating a notebook). Updates Control Centre
+ * localStorage when a session is present.
+ */
+export async function refreshAccessToken(options?: {
+  refreshToken?: string;
+  accessToken?: string;
+}): Promise<string> {
+  const session = options?.refreshToken
+    ? {
+        token: options.accessToken ?? '',
+        refreshToken: options.refreshToken,
+      }
+    : await getWebAuthSession();
+  if (!session.refreshToken) {
+    throw new Error(
+      'No refresh token available — cannot refresh access token after role grants'
+    );
+  }
+  const api = getConductorUrl().replace(/\/$/, '');
+  const result = await browser.execute(
+    async (apiBase: string, bearer: string, refresh: string) => {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (bearer) {
+        headers.Authorization = `Bearer ${bearer}`;
+      }
+      const res = await fetch(`${apiBase}/api/auth/refresh`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({refreshToken: refresh}),
+      });
+      const body = await res.json().catch(() => ({}));
+      return {ok: res.ok, status: res.status, body};
+    },
+    api,
+    session.token,
+    session.refreshToken
+  );
+  if (!result.ok) {
+    throw new Error(
+      `POST /api/auth/refresh failed (${result.status}): ${JSON.stringify(result.body)}`
+    );
+  }
+  const body = result.body as {token?: string};
+  if (!body.token) {
+    throw new Error(
+      `Unexpected /api/auth/refresh response: ${JSON.stringify(result.body)}`
+    );
+  }
+  // Keep Control Centre session in sync when present
+  await browser.execute((nextToken: string) => {
+    const raw = localStorage.getItem('user');
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      parsed.token = nextToken;
+      localStorage.setItem('user', JSON.stringify(parsed));
+    } catch {
+      // ignore
+    }
+  }, body.token);
+  return body.token;
 }
 
 /**
@@ -255,4 +325,160 @@ export async function createGlobalInvite(options: {
     inviteId: body._id,
     registerUrl: buildRegisterUrl(body._id, options.redirect),
   };
+}
+
+/**
+ * POST /api/notebooks — create from template. Returns the new notebook id.
+ */
+export async function createNotebookFromTemplate(options: {
+  name: string;
+  templateId?: string;
+  teamId: string;
+  description?: string;
+  token?: string;
+}): Promise<string> {
+  const result = await apiFetchJson('/api/notebooks', {
+    method: 'POST',
+    token: options.token,
+    body: {
+      name: options.name,
+      template_id: options.templateId ?? SEED_RED_TEMPLATE_ID,
+      teamId: options.teamId,
+      ...(options.description ? {description: options.description} : {}),
+    },
+  });
+  if (!result.ok) {
+    throw new Error(
+      `POST /api/notebooks failed (${result.status}): ${JSON.stringify(result.body)}`
+    );
+  }
+  const body = result.body as {notebook?: string};
+  if (!body.notebook) {
+    throw new Error(
+      `Unexpected create notebook response: ${JSON.stringify(result.body)}`
+    );
+  }
+  return body.notebook;
+}
+
+/**
+ * PUT /api/notebooks/:id/status — OPEN | CLOSED | ARCHIVED.
+ */
+export async function setNotebookStatus(options: {
+  notebookId: string;
+  status: 'OPEN' | 'CLOSED' | 'ARCHIVED';
+  token?: string;
+}): Promise<void> {
+  const result = await apiFetchJson(
+    `/api/notebooks/${options.notebookId}/status`,
+    {
+      method: 'PUT',
+      token: options.token,
+      body: {status: options.status},
+    }
+  );
+  if (!result.ok) {
+    throw new Error(
+      `PUT /api/notebooks/${options.notebookId}/status failed (${result.status}): ${JSON.stringify(result.body)}`
+    );
+  }
+}
+
+/**
+ * POST /api/notebooks/:id/delete — permanent destroy (writes a tombstone).
+ * `confirmName` must match the survey name exactly.
+ */
+export async function deleteNotebookPermanently(options: {
+  notebookId: string;
+  confirmName: string;
+  token?: string;
+}): Promise<void> {
+  const result = await apiFetchJson(
+    `/api/notebooks/${options.notebookId}/delete`,
+    {
+      method: 'POST',
+      token: options.token,
+      body: {confirmName: options.confirmName},
+    }
+  );
+  if (!result.ok) {
+    throw new Error(
+      `POST /api/notebooks/${options.notebookId}/delete failed (${result.status}): ${JSON.stringify(result.body)}`
+    );
+  }
+}
+
+/**
+ * GET /api/tombstones/:id — returns status + body (404 when not tombstoned).
+ */
+export async function getTombstone(
+  notebookId: string,
+  token?: string
+): Promise<{ok: boolean; status: number; body: unknown}> {
+  return apiFetchJson(`/api/tombstones/${notebookId}`, {token});
+}
+
+/**
+ * POST /api/notebooks/:id/users/ — add or remove a project role for a user.
+ */
+export async function setNotebookUserRole(options: {
+  notebookId: string;
+  username: string;
+  role: string;
+  addRole: boolean;
+  token?: string;
+}): Promise<void> {
+  const result = await apiFetchJson(
+    `/api/notebooks/${options.notebookId}/users/`,
+    {
+      method: 'POST',
+      token: options.token,
+      body: {
+        username: options.username,
+        role: options.role,
+        addrole: options.addRole,
+      },
+    }
+  );
+  if (!result.ok) {
+    throw new Error(
+      `POST /api/notebooks/${options.notebookId}/users/ failed (${result.status}): ${JSON.stringify(result.body)}`
+    );
+  }
+}
+
+/**
+ * Create a disposable Red-team notebook, archive it, permanently delete it.
+ * Returns the deleted id (which should have a tombstone).
+ */
+export async function createArchiveAndDeleteNotebook(options: {
+  name: string;
+  teamId?: string;
+  token?: string;
+}): Promise<{notebookId: string; name: string}> {
+  let token = options.token ?? (await getWebAuthSession()).token;
+  const teamId = options.teamId ?? (await findTeamIdByName('Red', token));
+  const notebookId = await createNotebookFromTemplate({
+    name: options.name,
+    teamId,
+    token,
+  });
+  // Creator is granted PROJECT_ADMIN server-side; refresh JWT before lifecycle ops
+  token = await refreshAccessToken();
+  await setNotebookStatus({
+    notebookId,
+    status: 'CLOSED',
+    token,
+  });
+  await setNotebookStatus({
+    notebookId,
+    status: 'ARCHIVED',
+    token,
+  });
+  await deleteNotebookPermanently({
+    notebookId,
+    confirmName: options.name,
+    token,
+  });
+  return {notebookId, name: options.name};
 }

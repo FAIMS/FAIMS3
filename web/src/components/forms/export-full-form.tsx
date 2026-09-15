@@ -4,29 +4,17 @@ import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {
+  DEFAULT_FULL_EXPORT_CONFIG,
+  FullExportConfig,
   GetExportNotebookResponse,
   isValidForSpatialExport,
 } from '@faims3/data-model';
 import {useMemo, useState} from 'react';
 import {config} from '@/constants';
-
-interface ExportOptions {
-  includeTabular: boolean;
-  includeAttachments: boolean;
-  includeGeoJSON: boolean;
-  includeKML: boolean;
-  includeGeoPackage: boolean;
-  includeMetadata: boolean;
-}
-
-const DEFAULT_OPTIONS: ExportOptions = {
-  includeTabular: true,
-  includeAttachments: true,
-  includeGeoJSON: true,
-  includeKML: true,
-  includeGeoPackage: true,
-  includeMetadata: true,
-};
+import {
+  ExportTimeRangeFields,
+  useExportTimeRange,
+} from './export-time-range-fields';
 
 /**
  * ExportFullForm component renders a form for downloading a complete project export.
@@ -36,9 +24,12 @@ const ExportFullForm = () => {
   const user = useRequiredUser();
   const {projectId} = Route.useParams();
   const {data} = useGetProject({user, projectId});
-  const [options, setOptions] = useState<ExportOptions>(DEFAULT_OPTIONS);
+  const [options, setOptions] = useState<FullExportConfig>({
+    ...DEFAULT_FULL_EXPORT_CONFIG,
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const timeRange = useExportTimeRange();
 
   const isValidForSpatial = useMemo(() => {
     if (!data) return false;
@@ -51,7 +42,7 @@ const ExportFullForm = () => {
     return null;
   }
 
-  const handleOptionChange = (key: keyof ExportOptions, value: boolean) => {
+  const handleOptionChange = (key: keyof FullExportConfig, value: boolean) => {
     setOptions(prev => ({...prev, [key]: value}));
   };
 
@@ -70,9 +61,12 @@ const ExportFullForm = () => {
         includeGeoPackage: options.includeGeoPackage.toString(),
         includeMetadata: options.includeMetadata.toString(),
       });
+      timeRange.appendTo(params);
 
       const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?${params.toString()}`;
       const response = await fetch(exportUrl, {
+        // Include cookies so the mint response can set the download-grant cookie
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,
@@ -302,10 +296,13 @@ const ExportFullForm = () => {
         </button>
       </div>
 
+      <ExportTimeRangeFields {...timeRange} />
+
       {/* Submit button */}
       <button
         onClick={handleSubmit}
-        disabled={!hasSelection || isSubmitting}
+        disabled={!hasSelection || isSubmitting || Boolean(timeRange.error)}
+        data-testid="web-export-full-download"
         className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isSubmitting ? 'Preparing Export...' : 'Download Full Export'}
