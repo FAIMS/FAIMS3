@@ -18,7 +18,7 @@
  */
 
 import {Box, Paper, Typography} from '@mui/material';
-import {getFieldLabel, isBooleanCondition} from '../../../lib/conditionUtils';
+import {isBooleanCondition} from '../../../lib/conditionUtils';
 import {useAppSelector} from '../../state/hooks';
 import {
   allOperators,
