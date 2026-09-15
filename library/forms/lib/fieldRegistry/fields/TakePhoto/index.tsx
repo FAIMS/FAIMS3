@@ -175,12 +175,13 @@ const TakePhotoPreview: React.FC<TakePhotoFieldProps> = props => {
 // UI Components
 // ============================================================================
 
-/** Matches the + badge's `right` overhang so the icon stays optically centered. */
-const ADD_BADGE_OVERHANG_PX = 8;
+const ACTION_ICON_PX = 36;
+const ADD_BADGE_PX = 14;
 
 /**
- * Single labelled action (icon with a "+" badge over a label). The icon lives in
- * a fixed-height zone so the two buttons always line up, even if a label wraps.
+ * Single labelled action (icon with a "+" badge over a label). The glyph lives
+ * in a fixed square so camera and gallery share a center line; the badge
+ * overlays the corner and is kept out of layout so it cannot shift the icon.
  */
 const ActionButton: React.FC<{
   icon: React.ReactElement;
@@ -212,8 +213,8 @@ const ActionButton: React.FC<{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 1,
-        p: 1,
+        gap: 0.75,
+        p: 0.5,
         cursor: disabled ? 'default' : 'pointer',
         borderRadius: theme.spacing(1),
         outline: 'none',
@@ -229,51 +230,44 @@ const ActionButton: React.FC<{
     >
       <Box
         sx={{
-          height: 52,
+          position: 'relative',
+          width: ACTION_ICON_PX,
+          height: ACTION_ICON_PX,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          overflow: 'visible',
+          flexShrink: 0,
         }}
       >
+        {icon}
         <Box
           sx={{
-            position: 'relative',
-            display: 'inline-flex',
+            position: 'absolute',
+            right: -3,
+            bottom: -3,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: theme.palette.background.paper,
+            borderRadius: '50%',
             lineHeight: 0,
-            // The + badge is position:absolute and hangs off the right; include
-            // that overhang so flex centering uses the icon+badge as a unit.
-            paddingRight: `${ADD_BADGE_OVERHANG_PX}px`,
           }}
         >
-          {icon}
-          <Box
+          <AddIcon
             sx={{
-              position: 'absolute',
-              right: 0,
-              bottom: -6,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              bgcolor: theme.palette.background.paper,
-              borderRadius: '50%',
-              p: '1px',
+              fontSize: ADD_BADGE_PX,
+              color: theme.palette.primary.main,
+              stroke: theme.palette.primary.main,
+              strokeWidth: 1.5,
             }}
-          >
-            <AddIcon
-              sx={{
-                fontSize: 18,
-                color: theme.palette.primary.main,
-                stroke: theme.palette.primary.main,
-                strokeWidth: 1.5,
-              }}
-            />
-          </Box>
+          />
         </Box>
       </Box>
       <Typography
         variant="body2"
         color="text.secondary"
-        sx={{whiteSpace: 'nowrap'}}
+        sx={{whiteSpace: 'nowrap', lineHeight: 1.2}}
       >
         {label}
       </Typography>
@@ -282,10 +276,10 @@ const ActionButton: React.FC<{
 };
 
 /**
- * The "Take photo" + "Gallery" pair.
+ * The "Camera" + "Gallery" pair.
  *
  * Uses equal columns so the two icons share a common center line — otherwise
- * the wider "Take photo" label pulls the pair's visual center to the right.
+ * a wider label would pull the pair's visual center to the right.
  */
 const PhotoActions: React.FC<{
   onAddPhoto: () => void;
@@ -326,7 +320,7 @@ const PhotoActions: React.FC<{
         justifyItems: 'stretch',
         justifyContent: stretchOnNarrow ? {xs: 'center', sm: justify} : justify,
         width: stretchOnNarrow ? {xs: '100%', sm: 'auto'} : undefined,
-        gap: 3,
+        gap: 1.5,
       }}
     >
       <Tooltip title="Take a new photo with your camera">
@@ -334,11 +328,15 @@ const PhotoActions: React.FC<{
           <ActionButton
             icon={
               <CameraAltIcon
-                sx={{fontSize: 48, color: theme.palette.primary.main}}
+                sx={{
+                  display: 'block',
+                  fontSize: ACTION_ICON_PX,
+                  color: theme.palette.primary.main,
+                }}
               />
             }
-            label="Take photo"
-            ariaLabel="Take photo"
+            label="Camera"
+            ariaLabel="Camera"
             onClick={onAddPhoto}
             disabled={actionsDisabled}
           />
@@ -349,7 +347,11 @@ const PhotoActions: React.FC<{
           <ActionButton
             icon={
               <PhotoLibraryIcon
-                sx={{fontSize: 48, color: theme.palette.primary.main}}
+                sx={{
+                  display: 'block',
+                  fontSize: ACTION_ICON_PX,
+                  color: theme.palette.primary.main,
+                }}
               />
             }
             label="Gallery"
@@ -383,7 +385,7 @@ const PhotoActionsTile: React.FC<{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        p: 1.5,
+        p: 1,
         '&:hover': {boxShadow: theme.shadows[4]},
       }}
     >
@@ -433,7 +435,7 @@ const EmptyState: React.FC<{
         paddingY: theme.spacing(2),
       }}
     >
-      <Typography variant="h6" gutterBottom>
+      <Typography variant="h6" sx={{mb: 1.5}}>
         No photos selected yet
       </Typography>
       <PhotoActions
@@ -763,7 +765,7 @@ const PhotoGallery: React.FC<{
             display: 'grid',
             gap: theme.spacing(1.5),
             padding: theme.spacing(1),
-            gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
             width: '100%',
           }}
         >
