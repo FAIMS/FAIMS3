@@ -50,6 +50,12 @@ const MAX_GALLERY_BATCH = 10;
 const isCancellation = (err: unknown): boolean =>
   /cancel/i.test(err instanceof Error ? err.message : String(err ?? ''));
 
+/** Capacitor iOS still rejects pickImages if Photo Library access was denied. */
+const isPhotosAccessDenied = (err: unknown): boolean =>
+  /denied access to photos/i.test(
+    err instanceof Error ? err.message : String(err ?? '')
+  );
+
 // Types & Schema
 // ============================================================================
 
@@ -1217,7 +1223,11 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
     } catch (err: any) {
       if (isCancellation(err)) return;
       logError(new Error('Failed to add photos from gallery:'), {error: err});
-      setSaveError('Could not add photos from your gallery. Please try again.');
+      setSaveError(
+        isPhotosAccessDenied(err)
+          ? 'Could not open your gallery. If you previously denied photo access, enable Photos for this app in Settings, then try again.'
+          : 'Could not add photos from your gallery. Please try again.'
+      );
     } finally {
       saveInFlightRef.current = false;
       setSaveInFlight(false);
