@@ -56,3 +56,33 @@ export function CameraPermissionIssue({appName}: {appName: string}) {
     </>
   );
 }
+
+/**
+ * iOS-only: Capacitor's pickImages still requires Photo Library authorization
+ * (including rejecting Limited / "Selected Photos" access).
+ */
+export function PhotosPermissionIssue({
+  appName,
+  access,
+}: {
+  appName: string;
+  access: 'denied' | 'limited';
+}) {
+  return (
+    <Alert severity="error" sx={{width: '100%'}}>
+      {access === 'limited' ? (
+        <>
+          {appName} needs access to all photos to add from your gallery. Go to
+          Settings &gt; Privacy & Security &gt; Photos &gt; {appName} and
+          select &quot;All Photos&quot; (not &quot;Selected Photos&quot;).
+        </>
+      ) : (
+        <>
+          Please enable photo library access for {appName}. Go to Settings &gt;
+          Privacy & Security &gt; Photos &gt; {appName} and select &quot;All
+          Photos&quot;.
+        </>
+      )}
+    </Alert>
+  );
+}

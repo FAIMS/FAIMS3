@@ -21,7 +21,10 @@ import ImageListItemBar from '@mui/material/ImageListItemBar';
 import {Buffer} from 'buffer';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {z} from 'zod';
-import {CameraPermissionIssue} from '../../../components/PermissionAlerts';
+import {
+  CameraPermissionIssue,
+  PhotosPermissionIssue,
+} from '../../../components/PermissionAlerts';
 import {PhotoLightbox} from '../../../components/PhotoLightbox';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
 import {
@@ -38,9 +41,12 @@ import {logError, logWarn} from '../../../logging';
 import {TakePhotoRender} from '../../../rendering/fields/view/specialised/TakePhoto';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import {
+  IMAGE_QUALITY_0_100,
+  MAX_IMAGE_WIDTH,
+  preparePhotoBlobForStorage,
+} from './webPhotoFallback';
 
-const IMAGE_QUALITY_0_100 = 60;
-const MAX_IMAGE_WIDTH = 1920;
 const MAX_GALLERY_BATCH = 10;
 
 /**
@@ -55,6 +61,26 @@ const isPhotosAccessDenied = (err: unknown): boolean =>
   /denied access to photos/i.test(
     err instanceof Error ? err.message : String(err ?? '')
   );
+
+type PhotosAccessIssue = 'denied' | 'limited';
+
+/**
+ * Capacitor's iOS pickImages still gates on PHPhotoLibrary authorization
+ * (Limited / "Selected Photos" is treated as a deny). Android Photo Picker
+ * and the web file input do not need this permission.
+ */
+const ensureIosPhotosAccess = async (): Promise<PhotosAccessIssue | null> => {
+  if (Capacitor.getPlatform() !== 'ios') return null;
+
+  let photos = (await Camera.checkPermissions()).photos;
+  if (photos === 'prompt' || photos === 'prompt-with-rationale') {
+    photos = (await Camera.requestPermissions({permissions: ['photos']}))
+      .photos;
+  }
+
+  if (photos === 'granted') return null;
+  return photos === 'limited' ? 'limited' : 'denied';
+};
 
 // Types & Schema
 // ============================================================================
@@ -862,6 +888,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
 
   const appName = props.config.appName;
   const [noPermission, setNoPermission] = useState(false);
+  const [noPhotosPermission, setNoPhotosPermission] =
+    useState<PhotosAccessIssue | null>(null);
 
   // Optimistic photo display state
   // Key is a temporary ID, value contains the blob URL and eventual attachment ID
@@ -1114,11 +1142,18 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         photoBlob = await response.blob();
       }
 
+      // Web plugin ignores quality/width on getPhoto too; native already
+      // resized. See preparePhotoBlobForStorage.
+      const prepared = await preparePhotoBlobForStorage(
+        photoBlob,
+        photoResult.format
+      );
+
       setSaveError(null);
       await storePhoto({
-        tempId: addPendingPreview(photoBlob),
-        photoBlob,
-        format: photoResult.format,
+        tempId: addPendingPreview(prepared.photoBlob),
+        photoBlob: prepared.photoBlob,
+        format: prepared.format,
         path: photoResult.path,
       });
     } catch (err: any) {
@@ -1138,9 +1173,10 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
    * Adds existing images from the device gallery. Multi-select, so a batch can
    * be attached in one pass; each is saved through the same path as a capture.
    *
-   * Do not pre-request the `photos` permission. Android Photo Picker and iOS
-   * PHPicker grant access only to the images the user selects, so a library
-   * permission deny would block a flow that does not need that permission.
+   * Request Photo Library access on iOS only: Capacitor's pickImages still
+   * requires it (and rejects Limited access). Android Photo Picker and the
+   * web file input grant access per selection and must not be blocked by a
+   * library permission deny.
    */
   const pickFromGallery = useCallback(async () => {
     if (saveInFlightRef.current) return;
@@ -1149,6 +1185,13 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
 
     let attachmentLockHeld = false;
     try {
+      const photosAccess = await ensureIosPhotosAccess();
+      if (photosAccess) {
+        setNoPhotosPermission(photosAccess);
+        return;
+      }
+      setNoPhotosPermission(null);
+
       // Block section navigation for the entire gallery flow. Must be set
       // before pickImages so the lock is already active while the picker is
       // open (fetch, preview, and sequential PouchDB writes all run under
@@ -1158,6 +1201,9 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       setAttachmentSaving?.(true);
       attachmentLockHeld = true;
 
+      // quality/width are honoured on iOS/Android only. The web plugin
+      // returns the original File via createObjectURL — see
+      // preparePhotoBlobForStorage, which re-encodes after fetch.
       const {photos} = await Camera.pickImages({
         quality: IMAGE_QUALITY_0_100,
         width: MAX_IMAGE_WIDTH,
@@ -1186,10 +1232,15 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         for (const photo of selected) {
           const response = await fetch(photo.webPath);
           const photoBlob = await response.blob();
-          pending.push({
-            tempId: addPendingPreview(photoBlob),
+          // Web: downscale / JPEG-compress here. Native: passthrough.
+          const prepared = await preparePhotoBlobForStorage(
             photoBlob,
-            format: photo.format,
+            photo.format
+          );
+          pending.push({
+            tempId: addPendingPreview(prepared.photoBlob),
+            photoBlob: prepared.photoBlob,
+            format: prepared.format,
           });
         }
       } catch (err) {
@@ -1201,7 +1252,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
 
       // Sequential writes: concurrent PouchDB attachment writes contend, and
       // this keeps the saved order the same as the picked order. No `path` is
-      // passed, so gallery images keep their original EXIF location.
+      // passed, so native gallery images keep their original EXIF location.
+      // Web re-encoding strips EXIF (see preparePhotoBlobForStorage).
       // Per-item try/catch so one bad write doesn't strand the remaining
       // previews on "Saving..." — storePhoto already drops its own preview
       // on failure, we just tally and continue.
@@ -1222,12 +1274,12 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       }
     } catch (err: any) {
       if (isCancellation(err)) return;
+      if (isPhotosAccessDenied(err)) {
+        setNoPhotosPermission('denied');
+        return;
+      }
       logError(new Error('Failed to add photos from gallery:'), {error: err});
-      setSaveError(
-        isPhotosAccessDenied(err)
-          ? 'Could not open your gallery. If you previously denied photo access, enable Photos for this app in Settings, then try again.'
-          : 'Could not add photos from your gallery. Please try again.'
-      );
+      setSaveError('Could not add photos from your gallery. Please try again.');
     } finally {
       saveInFlightRef.current = false;
       setSaveInFlight(false);
@@ -1286,6 +1338,13 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
 
         {/* Camera Permission Warning */}
         {noPermission && <CameraPermissionIssue appName={appName} />}
+
+        {noPhotosPermission && (
+          <PhotosPermissionIssue
+            appName={appName}
+            access={noPhotosPermission}
+          />
+        )}
 
         {/* Photo Display */}
         {!hasAnyPhotos ? (
