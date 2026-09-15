@@ -155,34 +155,44 @@ const ActionButton: React.FC<{
   label: string;
   ariaLabel: string;
   onClick: () => void;
-}> = ({icon, label, ariaLabel, onClick}) => {
+  disabled?: boolean;
+}> = ({icon, label, ariaLabel, onClick, disabled = false}) => {
   const theme = useTheme();
 
   return (
     <Box
       role="button"
-      tabIndex={0}
+      tabIndex={disabled ? -1 : 0}
       aria-label={ariaLabel}
-      onClick={onClick}
-      onKeyDown={e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick();
-        }
-      }}
+      aria-disabled={disabled}
+      onClick={disabled ? undefined : onClick}
+      onKeyDown={
+        disabled
+          ? undefined
+          : e => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick();
+              }
+            }
+      }
       sx={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         gap: 1,
         p: 1,
-        cursor: 'pointer',
+        cursor: disabled ? 'default' : 'pointer',
         borderRadius: theme.spacing(1),
         outline: 'none',
         transition: 'background-color 120ms ease',
         width: '100%',
-        '&:hover': {bgcolor: theme.palette.action.hover},
-        '&:focus-visible': {bgcolor: theme.palette.action.hover},
+        opacity: disabled ? 0.5 : 1,
+        pointerEvents: disabled ? 'none' : 'auto',
+        '&:hover': disabled ? undefined : {bgcolor: theme.palette.action.hover},
+        '&:focus-visible': disabled
+          ? undefined
+          : {bgcolor: theme.palette.action.hover},
       }}
     >
       <Box
@@ -251,11 +261,14 @@ const PhotoActions: React.FC<{
   justify?: 'center' | 'flex-start';
   /** Empty state: full-width centered row on narrow viewports. */
   stretchOnNarrow?: boolean;
+  /** True while a capture or gallery save is in flight. */
+  actionsDisabled?: boolean;
 }> = ({
   onAddPhoto,
   onPickFromGallery,
   justify = 'center',
   stretchOnNarrow = false,
+  actionsDisabled = false,
 }) => {
   const theme = useTheme();
 
@@ -295,6 +308,7 @@ const PhotoActions: React.FC<{
             label="Take photo"
             ariaLabel="Take photo"
             onClick={onAddPhoto}
+            disabled={actionsDisabled}
           />
         </Box>
       </Tooltip>
@@ -309,6 +323,7 @@ const PhotoActions: React.FC<{
             label="Gallery"
             ariaLabel="Add photos from gallery, multiple selection allowed"
             onClick={onPickFromGallery}
+            disabled={actionsDisabled}
           />
         </Box>
       </Tooltip>
@@ -323,7 +338,8 @@ const PhotoActions: React.FC<{
 const PhotoActionsTile: React.FC<{
   onAddPhoto: () => void;
   onPickFromGallery: () => void;
-}> = ({onAddPhoto, onPickFromGallery}) => {
+  actionsDisabled?: boolean;
+}> = ({onAddPhoto, onPickFromGallery, actionsDisabled = false}) => {
   const theme = useTheme();
 
   return (
@@ -342,6 +358,7 @@ const PhotoActionsTile: React.FC<{
       <PhotoActions
         onAddPhoto={onAddPhoto}
         onPickFromGallery={onPickFromGallery}
+        actionsDisabled={actionsDisabled}
       />
     </Paper>
   );
@@ -355,7 +372,8 @@ const EmptyState: React.FC<{
   onAddPhoto: () => void;
   onPickFromGallery: () => void;
   disabled: boolean;
-}> = ({onAddPhoto, onPickFromGallery, disabled}) => {
+  actionsDisabled?: boolean;
+}> = ({onAddPhoto, onPickFromGallery, disabled, actionsDisabled = false}) => {
   const theme = useTheme();
 
   if (disabled) {
@@ -391,6 +409,7 @@ const EmptyState: React.FC<{
         onPickFromGallery={onPickFromGallery}
         justify="flex-start"
         stretchOnNarrow
+        actionsDisabled={actionsDisabled}
       />
     </Box>
   );
@@ -485,7 +504,8 @@ const PhotoItem: React.FC<{
   data: LoadedPhoto;
   onDelete: () => void;
   onClick: () => void;
-}> = ({data, onDelete, onClick}) => {
+  deleteDisabled?: boolean;
+}> = ({data, onDelete, onClick, deleteDisabled = false}) => {
   const theme = useTheme();
 
   return (
@@ -524,6 +544,8 @@ const PhotoItem: React.FC<{
                 onDelete();
               }}
               size="large"
+              disabled={deleteDisabled}
+              aria-label="Delete photo"
             >
               <DeleteIcon />
             </IconButton>
@@ -610,7 +632,6 @@ type GalleryPhoto =
   | {
       type: 'loaded';
       photo: useAttachmentsResult[number];
-      originalIndex: number;
     }
   | {
       type: 'pending';
@@ -626,10 +647,12 @@ type GalleryPhoto =
 const PhotoGallery: React.FC<{
   photos: useAttachmentsResult;
   pendingPhotos: Map<string, PendingPhoto>;
-  onDelete: (index: number) => void;
+  onDelete: (attachmentId: string) => void;
   onAddPhoto: () => void;
   onPickFromGallery: () => void;
   disabled: boolean;
+  /** True while a capture or gallery save is in flight. */
+  actionsDisabled?: boolean;
 }> = ({
   photos,
   pendingPhotos,
@@ -637,19 +660,22 @@ const PhotoGallery: React.FC<{
   onAddPhoto,
   onPickFromGallery,
   disabled,
+  actionsDisabled = false,
 }) => {
   const theme = useTheme();
 
-  // Delete confirmation dialog state
+  // Delete confirmation dialog state. Store the attachment id, not the
+  // gallery index: addAttachment prepends, so a batch save finishing while
+  // this dialog is open would shift every index and delete the wrong photo.
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [photoToDelete, setPhotoToDelete] = useState<number | null>(null);
+  const [photoToDelete, setPhotoToDelete] = useState<string | null>(null);
 
   // Lightbox state - now stores URL directly to support both loaded and pending
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   // Handlers
-  const handleDeleteClick = (index: number) => {
-    setPhotoToDelete(index);
+  const handleDeleteClick = (attachmentId: string) => {
+    setPhotoToDelete(attachmentId);
     setDeleteDialogOpen(true);
   };
 
@@ -686,13 +712,12 @@ const PhotoGallery: React.FC<{
         .filter((id): id is string => id !== null)
     );
 
-    for (let i = 0; i < photos.length; i++) {
-      const photo = photos[i];
+    for (const photo of photos) {
       // Skip if this photo is still showing as pending
       if (photo.data && pendingAttachmentIds.has(photo.data.id)) {
         continue;
       }
-      result.push({type: 'loaded', photo, originalIndex: i});
+      result.push({type: 'loaded', photo});
     }
 
     return result;
@@ -714,6 +739,7 @@ const PhotoGallery: React.FC<{
             <PhotoActionsTile
               onAddPhoto={onAddPhoto}
               onPickFromGallery={onPickFromGallery}
+              actionsDisabled={actionsDisabled}
             />
           )}
 
@@ -731,7 +757,7 @@ const PhotoGallery: React.FC<{
             }
 
             // Loaded photo
-            const {photo, originalIndex} = entry;
+            const {photo} = entry;
 
             if (photo.isLoading) {
               return (
@@ -749,8 +775,9 @@ const PhotoGallery: React.FC<{
               <PhotoItem
                 key={photo.data.id}
                 data={photo.data}
-                onDelete={() => handleDeleteClick(originalIndex)}
+                onDelete={() => handleDeleteClick(photo.data.id)}
                 onClick={() => setLightboxUrl(photo.data.url)}
+                deleteDisabled={actionsDisabled}
               />
             );
           })}
@@ -784,6 +811,7 @@ const PhotoGallery: React.FC<{
             onClick={handleDeleteConfirm}
             variant="contained"
             color="error"
+            disabled={actionsDisabled}
             sx={{borderRadius: theme.spacing(1), ml: 2}}
           >
             Delete
@@ -839,6 +867,12 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   const pendingUrlsRef = useRef<Set<string>>(new Set());
 
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // In-flight guard: a second Gallery/Camera tap (or a delete) must not
+  // overlap sequential PouchDB writes. The ref is the source of truth so
+  // two clicks in the same tick cannot race past a state update.
+  const saveInFlightRef = useRef(false);
+  const [saveInFlight, setSaveInFlight] = useState(false);
 
   // Get attachment service (guaranteed to exist in full mode)
   const attachmentService = context.attachmentEngine();
@@ -1017,6 +1051,10 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
    * a single tap. Selecting existing images is a separate control.
    */
   const takePhoto = useCallback(async () => {
+    if (saveInFlightRef.current) return;
+    saveInFlightRef.current = true;
+    setSaveInFlight(true);
+
     let attachmentLockHeld = false;
     try {
       const isWeb = Capacitor.getPlatform() === 'web';
@@ -1082,6 +1120,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       logError(new Error('Failed to capture photo:'), {error: err});
       setSaveError('Could not save the photo. Please try again.');
     } finally {
+      saveInFlightRef.current = false;
+      setSaveInFlight(false);
       if (attachmentLockHeld) {
         setAttachmentSaving?.(false);
       }
@@ -1091,19 +1131,26 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   /**
    * Adds existing images from the device gallery. Multi-select, so a batch can
    * be attached in one pass; each is saved through the same path as a capture.
+   *
+   * Do not pre-request the `photos` permission. Android Photo Picker and iOS
+   * PHPicker grant access only to the images the user selects, so a library
+   * permission deny would block a flow that does not need that permission.
    */
   const pickFromGallery = useCallback(async () => {
+    if (saveInFlightRef.current) return;
+    saveInFlightRef.current = true;
+    setSaveInFlight(true);
+
     let attachmentLockHeld = false;
     try {
-      if (Capacitor.getPlatform() !== 'web') {
-        const permissions = await Camera.requestPermissions({
-          permissions: ['photos'],
-        });
-        if (permissions.photos === 'denied') {
-          setNoPermission(true);
-          return;
-        }
-      }
+      // Block section navigation for the entire gallery flow. Must be set
+      // before pickImages so the lock is already active while the picker is
+      // open (fetch, preview, and sequential PouchDB writes all run under
+      // this lock). FormSection remounts on section change
+      // (key={activeSection}); without this lock the field can unmount
+      // mid-pick and the async save continues on a dead instance.
+      setAttachmentSaving?.(true);
+      attachmentLockHeld = true;
 
       const {photos} = await Camera.pickImages({
         quality: IMAGE_QUALITY_0_100,
@@ -1124,9 +1171,6 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
           ? `You can add up to ${MAX_GALLERY_BATCH} photos at once — only the first ${MAX_GALLERY_BATCH} will be added.`
           : null
       );
-
-      setAttachmentSaving?.(true);
-      attachmentLockHeld = true;
 
       // Preview the whole selection first so every thumbnail appears at once,
       // rather than trickling in behind each write. If a fetch fails mid-batch
@@ -1175,6 +1219,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       logError(new Error('Failed to add photos from gallery:'), {error: err});
       setSaveError('Could not add photos from your gallery. Please try again.');
     } finally {
+      saveInFlightRef.current = false;
+      setSaveInFlight(false);
       if (attachmentLockHeld) {
         setAttachmentSaving?.(false);
       }
@@ -1182,17 +1228,18 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   }, [addPendingPreview, removePendingPhoto, storePhoto, setAttachmentSaving]);
 
   /**
-   * Deletes a photo at the specified index from the field's attachments.
+   * Deletes a photo by attachment id. Index-based delete is unsafe: a
+   * gallery batch save prepends to attachments and would shift every index
+   * if a confirm dialog were already open.
    */
   const handleDelete = useCallback(
-    (index: number) => {
-      const currentAttachments = state.value?.attachments || [];
-      const targetId = currentAttachments[index].attachmentId;
-      removeAttachment({attachmentId: targetId});
+    (attachmentId: string) => {
+      if (saveInFlightRef.current) return;
+      removeAttachment({attachmentId});
       const currentData = props.state.value?.data as string[] | undefined;
-      props.setFieldData((currentData ?? []).filter(v => v !== targetId));
+      props.setFieldData((currentData ?? []).filter(v => v !== attachmentId));
     },
-    [state.value, removeAttachment]
+    [removeAttachment]
   );
 
   // Determine if we have any photos to show (either pending or loaded)
@@ -1236,6 +1283,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
             onAddPhoto={takePhoto}
             onPickFromGallery={pickFromGallery}
             disabled={disabled}
+            actionsDisabled={saveInFlight}
           />
         ) : (
           <PhotoGallery
@@ -1245,6 +1293,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
             onAddPhoto={takePhoto}
             onPickFromGallery={pickFromGallery}
             disabled={disabled}
+            actionsDisabled={saveInFlight}
           />
         )}
       </Box>
