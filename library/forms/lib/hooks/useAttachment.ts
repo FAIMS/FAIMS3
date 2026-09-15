@@ -77,6 +77,11 @@ export const useAttachments = (
       // Continue retrying even when offline
       networkMode: 'always',
     })),
+    // Memoise the results array so consumers get a stable reference between
+    // renders while the underlying data is unchanged. Without this, useQueries
+    // returns a fresh array every render, which churns downstream effects/memos
+    // and causes the photo grid to flicker on re-render (e.g. resizing).
+    combine: results => results,
   });
 };
 

@@ -101,7 +101,8 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
         borderStyle: 'solid',
         borderColor: hasErrors ? 'error.main' : 'transparent',
         background: 'transparent',
-        transition: 'all 0.3s ease-in-out',
+        // Border only — `all` also eases width/height during viewport resize.
+        transition: 'border-color 0.3s ease-in-out',
       }}
     >
       {/* Heading (Label) + Info Icon for advanced help */}
