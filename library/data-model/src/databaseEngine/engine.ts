@@ -5,6 +5,8 @@ import {
   CompiledNotebookUiSpec,
   getHridFieldMap,
   HridFieldMap,
+  relatedRecordSelectorComponentParamsSchema,
+  RELATED_RECORD_SELECTOR,
 } from '../uiSpecification';
 import {differenceSets, randomUuid} from '../utils';
 import * as Exceptions from './exceptions';
@@ -57,10 +59,15 @@ import {
   RevisionMetadataQueryResult,
   TimestampBumpOptions,
   toMinimalRevisionMetadata,
+  RelatedRecordFieldAvpEntry,
+  RelatedRecordFieldAvpValue,
 } from './types';
 import {
   normalizeRelationshipInstances,
+  readRelatedLinks,
+  relationTypeToPair,
   toDbRelationshipInstances,
+  withRelatedLink,
 } from './utils';
 import {
   hasUpdatedTimeFilter,
@@ -1495,6 +1502,87 @@ class FormOperations {
       const revOk = Number.isNaN(revMs) ? 0 : revMs;
       return revOk >= latestOk ? rev : latest;
     })._id;
+  }
+
+  /**
+   * Create a record related to `parentRecordId` through one of its
+   * RelatedRecord fields, and hand back the value that field must then hold.
+   * Writing it belongs to the caller: an open form writes it through the form,
+   * a view without one writes a revision.
+   */
+  async createRelatedRecord({
+    parentRecordId,
+    parentFieldId,
+    createdBy,
+    parentFieldValue,
+  }: {
+    parentRecordId: string;
+    parentFieldId: string;
+    createdBy: string;
+    /** What the parent's field holds now, so a link the field cannot take is
+     * refused before a record is written rather than orphaning one. */
+    parentFieldValue: unknown;
+  }): Promise<{
+    record: ExistingRecordDBDocument;
+    revision: ExistingRevisionDBDocument;
+    // Always a real pair: the op mints it rather than reading a stored one,
+    // which may be the empty tuple a legacy row carries.
+    link: RelatedRecordFieldAvpEntry & {
+      relation_type_vocabPair: [string, string];
+    };
+    /** What the parent's field must hold now, in the shape it stores. */
+    linked: RelatedRecordFieldAvpValue;
+  }> {
+    // Gate on the component before the parameters, the way every other
+    // related-field scan here does: a plain field carrying a `related_type`
+    // key is not a selector.
+    const field = this.uiSpec.fields[parentFieldId];
+    const params =
+      field?.['component-namespace'] === RELATED_RECORD_SELECTOR.namespace &&
+      field['component-name'] === RELATED_RECORD_SELECTOR.name
+        ? relatedRecordSelectorComponentParamsSchema.safeParse(
+            field['component-parameters']
+          )
+        : undefined;
+    if (!params?.success) {
+      throw new Error(
+        `Field ${parentFieldId} is not a related-record field of this notebook`
+      );
+    }
+    const {related_type, relation_type, multiple} = params.data;
+    // Both checks run before anything is written: a record created and then
+    // refused its link is an orphan the parent does not list.
+    const links = readRelatedLinks(parentFieldValue);
+    if (!multiple && links.length > 0) {
+      throw new Error(
+        `Field ${parentFieldId} already holds a record and takes only one`
+      );
+    }
+    const relationTypeVocabPair = relationTypeToPair(relation_type);
+    // Child hangs the new row off `parent`, Linked off `linked`.
+    const edge = {
+      fieldId: parentFieldId,
+      recordId: parentRecordId,
+      relationTypeVocabPair,
+    };
+    const {record, revision} = await this.createRecord({
+      createdBy,
+      formId: related_type,
+      relationship:
+        relation_type === 'faims-core::Child'
+          ? {parent: [edge]}
+          : {linked: [edge]},
+    });
+    const link = {
+      record_id: record._id,
+      relation_type_vocabPair: relationTypeVocabPair,
+    };
+    return {
+      record,
+      revision,
+      link,
+      linked: withRelatedLink({links, link, isMultiple: multiple}),
+    };
   }
 
   /**

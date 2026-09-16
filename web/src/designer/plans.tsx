@@ -39,7 +39,8 @@ export type PlanDialogUiSpec = {
   views: Record<string, {fields: string[]} | undefined>;
   fields: Record<
     string,
-    {'component-parameters'?: {label?: unknown}} | undefined
+    | {'component-parameters'?: {label?: unknown}; 'type-returned'?: string}
+    | undefined
   >;
 };
 

@@ -104,8 +104,6 @@ const EnvSchema = z
     ANDROID_APP_PUBLIC_URL: configHelpers.stringDefault(''),
     /** Public URL / store link for the iOS app build (optional). */
     IOS_APP_PUBLIC_URL: configHelpers.stringDefault(''),
-    /** Public URL of the designer / Control Centre when separate from WEB_APP. */
-    DESIGNER_URL: configHelpers.stringDefault(''),
     /** Internal (cluster/localhost) CouchDB URL used by the API process. */
     COUCHDB_INTERNAL_URL: configHelpers.urlNoTrailingSlash(
       DEFAULT_COUCHDB_URL,
@@ -522,7 +520,6 @@ const EnvSchema = z
       webAppPublicUrl: env.WEB_APP_PUBLIC_URL,
       androidAppUrl: env.ANDROID_APP_PUBLIC_URL,
       iosAppUrl: env.IOS_APP_PUBLIC_URL,
-      designerUrl: env.DESIGNER_URL,
       couchdbInternalUrl: env.COUCHDB_INTERNAL_URL,
       couchdbPublicUrl: env.COUCHDB_PUBLIC_URL,
       conductorKeyId,

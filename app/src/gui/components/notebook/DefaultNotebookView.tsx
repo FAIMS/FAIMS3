@@ -1,30 +1,14 @@
-import {Action, getVisibleTypes, ProjectStatus} from '@faims3/data-model';
+import {getVisibleTypes, ProjectStatus} from '@faims3/data-model';
 import {Alert, AlertTitle, Box, Paper, Tab, Tabs} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {useQueryClient} from '@tanstack/react-query';
-import React, {useState} from 'react';
+import React from 'react';
 import {config} from '../../../buildconfig';
-import {selectActiveUser} from '../../../context/slices/authSlice';
-import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
-import {Project, selectProjectById} from '../../../context/slices/projectSlice';
-import {useAppSelector} from '../../../context/store';
-import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
-import {
-  invalidateProjectHydration,
-  invalidateProjectRecordList,
-  useIsAuthorisedTo,
-  useRecordList,
-} from '../../../utils/customHooks';
-import CircularLoading from '../ui/circular_loading';
 import {DE_ACTIVATE_VERB} from '../workspace/notebooks';
 import AddRecordButtons from './add_record_by_type';
-import {MetadataDisplayComponent} from './MetadataDisplay';
-import {OverviewMap} from './OverviewMap';
 import PushOnlySyncBanner from './PushOnlySyncBanner';
 import {RecordsTable} from './record_table';
-import NotebookSettings from './settings';
-import {NotebookViewTab, resolveTab} from './types';
+import {NotebookViewComponentProps, resolveTab} from './types';
 
 // This view's tab slugs, default first
 const TABS = [
@@ -83,78 +67,22 @@ function a11yProps(tab: string) {
 }
 
 /**
- * NotebookComponentProps defines the properties for the NotebookComponent component.
- */
-type NotebookComponentProps = {
-  project: Project;
-  tab: NotebookViewTab;
-};
-
-/**
- * NotebookComponent is a component that displays the main interface for the notebook.
- * It includes tabs for Records, Details, Access, Layers, and Settings.
+ * DefaultNotebookView is the default notebook view, used when a notebook has
+ * no plan or no view is registered for its plan type. It conforms to
+ * NotebookViewComponentProps like any registered plan view.
  *
- * @param props - The properties for the NotebookComponent.
- * @returns The JSX element for the NotebookComponent.
+ * @param props - The notebook view props assembled by NotebookView.
+ * @returns The JSX element for the DefaultNotebookView.
  */
-export default function NotebookComponent({
-  project,
-  tab,
-}: NotebookComponentProps) {
+export default function DefaultNotebookView(props: NotebookViewComponentProps) {
+  const {project, tab, uiSpecification, records, actions, status, components} =
+    props;
   const theme = useTheme();
   const isMedium = useMediaQuery(theme.breakpoints.up('md'));
-  const queryClient = useQueryClient();
-
-  const isAllowedToAddRecords =
-    useIsAuthorisedTo({
-      action: Action.CREATE_PROJECT_RECORD,
-      resourceId: project.projectId,
-    }) && project.status === ProjectStatus.OPEN;
-
-  const {uiSpecificationId} = project;
-  const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
-
-  const activeUser = useAppSelector(selectActiveUser);
-
-  // get the sync status of records in this project
-  const recordStatus = useRecordAudit({
-    projectId: project.projectId,
-    listingId: project.serverId,
-    username: activeUser?.username ?? '',
-  });
 
   const currentTab = resolveTab(TABS, tab.current);
 
-  // Fetch records from the (local) DB with configurable auto refetch.
-  // Skip while the compiled UI spec is still loading.
-  const [query, setQuery] = useState<string>('');
-  const records = useRecordList({
-    query: query,
-    // Profiling enabled when debugging
-    enableProfiling: config.debugApp,
-    projectId: project.projectId,
-    filterDeleted: true,
-    // refetch every 10 seconds (local only fetch - no network traffic here)
-    metadataRefreshIntervalMs: 10000,
-    uiSpecification,
-    enabled: !!uiSpecification,
-  });
-  const forceRecordRefresh = records.refetch;
-
-  const templateId = useAppSelector(
-    state => selectProjectById(state, project.projectId)?.templateId
-  );
-
-  if (!uiSpecification) {
-    return <CircularLoading label="Loading" />;
-  }
-
   const viewsets = uiSpecification.viewsets;
-
-  const goToSyncSettings = () => {
-    tab.select('settings');
-  };
-
   // recordLabel based on viewsets
   const recordLabel =
     uiSpecification.visible_types?.length === 1
@@ -162,6 +90,7 @@ export default function NotebookComponent({
         uiSpecification.visible_types[0]
       : 'Record';
 
+  // Tab counts show only visible types; the tables keep the unfiltered lists
   const visibleTypes = getVisibleTypes(uiSpecification);
   // Forms to offer an add button for: those listed as visible, less any viewset
   // that opts out of one.
@@ -188,26 +117,15 @@ export default function NotebookComponent({
       )}
       <PushOnlySyncBanner
         project={project}
-        onGoToSyncSettings={goToSyncSettings}
+        onGoToSyncSettings={() => tab.select('settings')}
       />
       <Box>
-        {isAllowedToAddRecords && (
+        {status.isAllowedToAddRecords && (
           <Box sx={{mb: 1.5}}>
             <AddRecordButtons
               project={project}
               formTypes={addableTypes}
-              refreshList={() => {
-                invalidateProjectRecordList({
-                  client: queryClient,
-                  projectId: project.projectId,
-                  reset: true,
-                });
-                invalidateProjectHydration({
-                  client: queryClient,
-                  projectId: project.projectId,
-                  reset: true,
-                });
-              }}
+              refreshList={actions.refreshRecordList}
             />
           </Box>
         )}
@@ -215,7 +133,7 @@ export default function NotebookComponent({
         there is a gap on the left due to the hidden left scroll button, this appears
         if you scroll right.  There doesn't seem to be a way to push the content all
         the way to the left when the scroll button is hidden.
-        
+
         Previous margin adjustments have been removed */}
         <Box
           sx={{
@@ -298,54 +216,46 @@ export default function NotebookComponent({
           </Paper>
         </Box>
 
-        {
-          // My records
-        }
         <TabPanel value={currentTab} tab="my-records">
           <RecordsTable
             project={project}
             maxRows={25}
             rows={records.myRecords}
-            loading={records.isLoading}
+            loading={status.isLoading}
             viewsets={viewsets}
-            handleQueryFunction={setQuery}
-            handleRefresh={forceRecordRefresh}
+            handleQueryFunction={actions.setQuery}
+            handleRefresh={actions.refreshRecordList}
             recordLabel={recordLabel}
-            recordStatus={recordStatus.data}
+            recordStatus={records.syncStatus}
           />
         </TabPanel>
-        {
-          // Other records
-        }
 
         <TabPanel value={currentTab} tab="other-records">
           <RecordsTable
             project={project}
             maxRows={25}
             rows={records.otherRecords}
-            loading={records.isLoading}
+            loading={status.isLoading}
             viewsets={viewsets}
-            handleQueryFunction={setQuery}
-            handleRefresh={forceRecordRefresh}
+            handleQueryFunction={actions.setQuery}
+            handleRefresh={actions.refreshRecordList}
             recordLabel={recordLabel}
-            recordStatus={recordStatus.data}
+            recordStatus={records.syncStatus}
           />
         </TabPanel>
 
         <TabPanel value={currentTab} tab="map">
-          <OverviewMap
-            records={records}
-            project_id={project.projectId}
-            uiSpec={uiSpecification}
-          />
+          {/* The injected map plots the plan's records by default, and there
+          is no plan here, so name the whole notebook's */}
+          <components.OverviewMap records={records.notebookRecords} />
         </TabPanel>
 
         <TabPanel value={currentTab} tab="details">
-          <MetadataDisplayComponent project={project} templateId={templateId} />
+          <components.MetadataDisplayComponent />
         </TabPanel>
 
         <TabPanel value={currentTab} tab="settings">
-          <NotebookSettings uiSpec={uiSpecification} />
+          <components.NotebookSettings />
         </TabPanel>
       </Box>
     </Box>

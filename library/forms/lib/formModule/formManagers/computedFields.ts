@@ -23,7 +23,6 @@
 import {
   recomputeComputedFields,
   RecordContext,
-  UiSpecModel,
   CompiledUiSpecModel,
 } from '@faims3/data-model';
 import {formDataExtractor} from '../../utils';
