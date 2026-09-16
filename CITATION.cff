@@ -1,0 +1,75 @@
+cff-version: 1.2.0
+title: Fieldmark (built on FAIMS)
+message: >-
+  If you use this software, please cite both the software itself and the
+  paper listed under preferred-citation.
+type: software
+abstract: >-
+  Fieldmark is open-source software for offline-capable field data
+  collection. Researchers design a notebook in a browser, collect records
+  on Android, iOS, or the web with no network, and sync when a connection
+  returns. Records carry a full version history, and export includes CSV,
+  GeoJSON, KML, GeoPackage, attachments, and an RO-Crate metadata file.
+  Fieldmark is the current generation of the FAIMS platform, and this
+  repository, FAIMS3, is its source. Work published before 2024 generally
+  names the software FAIMS or FAIMS Mobile.
+authors:
+  - family-names: Ross
+    given-names: Shawn
+    orcid: https://orcid.org/0000-0002-6492-9025
+  - family-names: Ballsun-Stanton
+    given-names: Brian
+    orcid: https://orcid.org/0000-0003-4932-7912
+  - family-names: Cassidy
+    given-names: Steve
+    orcid: https://orcid.org/0000-0003-2357-9652
+  - family-names: Crook
+    given-names: Penny
+    orcid: https://orcid.org/0000-0001-8509-7865
+  - family-names: Sobotkova
+    given-names: Adéla
+    orcid: https://orcid.org/0000-0002-4541-3963
+  - name: The FAIMS Project contributors
+repository-code: https://github.com/FAIMS/FAIMS3
+url: https://fieldmark.au
+license: Apache-2.0
+version: 1.6.3
+date-released: '2026-09-03'
+keywords:
+  - field data collection
+  - offline-first
+  - research data management
+  - FAIR data
+  - archaeology
+  - geoscience
+  - ecology
+preferred-citation:
+  type: article
+  title: 'FAIRer Data through Digital Recording: The FAIMS Mobile Experience'
+  authors:
+    - family-names: Ross
+      given-names: Shawn
+      orcid: https://orcid.org/0000-0002-6492-9025
+    - family-names: Ballsun-Stanton
+      given-names: Brian
+      orcid: https://orcid.org/0000-0003-4932-7912
+    - family-names: Cassidy
+      given-names: Steve
+      orcid: https://orcid.org/0000-0003-2357-9652
+    - family-names: Crook
+      given-names: Penny
+      orcid: https://orcid.org/0000-0001-8509-7865
+    - family-names: Klump
+      given-names: Jens
+      orcid: https://orcid.org/0000-0001-5911-6022
+    - family-names: Sobotkova
+      given-names: Adéla
+      orcid: https://orcid.org/0000-0002-4541-3963
+  journal: Journal of Computer Applications in Archaeology
+  volume: 5
+  issue: 1
+  start: 271
+  end: 285
+  year: 2022
+  month: 11
+  doi: 10.5334/jcaa.96
