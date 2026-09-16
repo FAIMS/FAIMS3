@@ -2,7 +2,7 @@ import {z} from 'zod';
 import {DatabaseInterface} from '../../types';
 import {PersistedRootDescriptionSchema} from '../rootMetadata';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
-import {NotebookDefinitionSchema} from '../../uiSpecification/types';
+import {TemplateDefinitionSchema} from '../../uiSpecification/types';
 
 // =============
 // Legacy encoded UI spec (template v1–v4, metadata DB `ui-specification`)
@@ -126,9 +126,9 @@ export const TemplateV5FieldsSchema = z.object({
   // Template lifecycle
   archived: z.boolean().default(false),
 
-  // UI Specification (now stored in the project) NOTE: This is never 'encoded'
+  // UI Specification (now stored on the template) NOTE: This is never 'encoded'
   // anymore - no more fviews etc.
-  uiSpecification: NotebookDefinitionSchema,
+  uiSpecification: TemplateDefinitionSchema,
 });
 export type TemplateV5Fields = z.infer<typeof TemplateV5FieldsSchema>;
 

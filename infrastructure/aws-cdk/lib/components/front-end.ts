@@ -102,6 +102,19 @@ export interface FaimsFrontEndProps {
    * Team roles hidden from Control Centre team-role dropdowns (VITE_EXCLUDED_TEAM_ROLES).
    */
   excludedTeamRoles?: string[];
+
+  /**
+   * When true (default), the designer can add a plan to templates without one
+   * (VITE_ENABLE_PLANS_IN_DESIGNER). When false, only existing plans can be
+   * reconfigured.
+   */
+  enablePlansInDesigner?: boolean;
+
+  /**
+   * When true (default), the record view shows a "Status" tab
+   * (VITE_SHOW_STATUS_TAB). When false, the tab is hidden.
+   */
+  showStatusTab?: boolean;
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -231,6 +244,7 @@ export class FaimsFrontEnd extends Construct {
       VITE_SHOW_WIPE: 'true',
       VITE_SHOW_NEW_NOTEBOOK: 'true',
       VITE_SHOW_POUCHDB_BROWSER: 'true',
+      VITE_SHOW_STATUS_TAB: props.showStatusTab === false ? 'false' : 'true',
       VITE_APP_NAME: props.appName,
       VITE_APP_ID: props.appId,
       VITE_HEADING_APP_NAME: props.headingAppName ?? props.appName,
@@ -309,6 +323,9 @@ export class FaimsFrontEnd extends Construct {
     // Setup a deployment into this bucket with static files
     new aws_s3_deployment.BucketDeployment(this, 'deploy', {
       destinationBucket: this.faimsBucket,
+      // increase memory limit to 2GB for the lambda s3 sync - increases
+      // performance
+      memoryLimit: 2048,
       // Setup with distribution so that the deployment will invalidate
       // distribution cache when the files are redeployed
       distribution: this.faimsDistribution,
@@ -461,6 +478,8 @@ export class FaimsFrontEnd extends Construct {
       ...(props.excludedTeamRoles?.length
         ? {VITE_EXCLUDED_TEAM_ROLES: props.excludedTeamRoles.join(',')}
         : {}),
+      VITE_ENABLE_PLANS_IN_DESIGNER:
+        props.enablePlansInDesigner === false ? 'false' : 'true',
       // Monitoring
       ...(props.bugsnagKey ? {VITE_BUGSNAG_API_KEY: props.bugsnagKey} : {}),
     };
@@ -468,6 +487,9 @@ export class FaimsFrontEnd extends Construct {
     // Setup a deployment into this bucket with static files
     new aws_s3_deployment.BucketDeployment(this, 'web-deploy', {
       destinationBucket: this.webBucket,
+      // increase memory limit to 2GB for the lambda s3 sync - increases
+      // performance
+      memoryLimit: 2048,
       // Setup with distribution so that the deployment will invalidate
       // distribution cache when the files are redeployed
       distribution: this.webDistribution,

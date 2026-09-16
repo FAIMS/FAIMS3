@@ -15,6 +15,13 @@ only relationship field type in {{FAIMS}} and is essential for modelling
 the structured data relationships common in archaeological and field
 science recording.
 
+When the field uses a **Linked** relation and allows only a single
+link, other fields on the same form can reference the linked record's
+values — see Referencing Linked Record Values under
+[Templated String](../text-fields/templated-string.md),
+[Computed Number](../number-fields/computed-number-field.md), and
+[Computed Text](../text-fields/computed-text-field.md).
+
 ## Adding the Field
 
 To add this field, open the
@@ -67,8 +74,7 @@ records are connected:
 Configure any of the shared field options as needed.
 
 For settings shared across all field types — including Required,
-Annotation, Uncertainty, Conditions, Copy value to new records,
-and Display in child records — see
+Annotation, Uncertainty, Conditions, and Copy value to new records — see
 [Field Options](../shared-settings/field-options.md).
 
 ## Tips

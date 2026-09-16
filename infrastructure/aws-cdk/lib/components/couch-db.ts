@@ -85,8 +85,8 @@ export class EC2CouchDB extends Construct {
   private readonly ebsDeviceName: string = '/dev/xvdf';
   /** The device name for the EBS data volume */
   public readonly dataVolume: ec2.Volume;
-  /** The Alarm SNS topic being published to */
-  private readonly alarmSNSTopic: sns.Topic;
+  /** Ops alarm SNS topic (email when monitoring.alarmTopic.emailAddress is set). */
+  public readonly alarmSNSTopic: sns.Topic;
   /** The monitoring config */
   private readonly monitoringConfig?: MonitoringConfig;
   /** Path to AWS cloud watch agent config - be sure to prefix with file:*/
@@ -396,10 +396,18 @@ EOL`,
     // grant permission for the instance to read the secret
     props.cookieSecret.grantRead(this.instance);
 
+    // Include recovery snapshot id in Volume/Attachment construct ids so CFN
+    // *replaces* the volume when the snap changes. Adding SnapshotId on an
+    // existing AWS::EC2::Volume is an invalid in-place update. Empty suffix
+    // when unset keeps logical ids stable for stacks not in recovery.
+    const recoveryVolumeIdSuffix = props.dataVolumeSnapshotId
+      ? `FromSnap${props.dataVolumeSnapshotId.replace(/[^a-zA-Z0-9]/g, '')}`
+      : '';
+
     // Create and attach the EBS volume for CouchDB data
     const dataVolume = new ec2.Volume(
       this,
-      'CouchDBDataVolume' + debugIdPostfix,
+      'CouchDBDataVolume' + debugIdPostfix + recoveryVolumeIdSuffix,
       {
         volumeType: ec2.EbsDeviceVolumeType.GP3,
         availabilityZone: this.instance.instanceAvailabilityZone,
@@ -415,7 +423,7 @@ EOL`,
     // Attach the EBS data volume for couch to the correct path
     new ec2.CfnVolumeAttachment(
       this,
-      'CouchDBVolumeAttachment' + debugIdPostfix,
+      'CouchDBVolumeAttachment' + debugIdPostfix + recoveryVolumeIdSuffix,
       {
         volumeId: dataVolume.volumeId,
         instanceId: this.instance.instanceId,

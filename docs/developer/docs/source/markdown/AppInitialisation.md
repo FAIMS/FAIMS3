@@ -82,3 +82,28 @@ The intialisation then calls `initialiseServers` which sends a request to each
 configured server for its details. It then calls `initialiseProjects` to
 get up to date details of all projects - this will compile the uiSpec if it
 is updated.
+
+## Remote survey cleanup during `initialiseProjects`
+
+`initialiseProjects` (also triggered by the workspace **Refresh** button) fetches
+`GET /api/directory` and merges listed surveys into Redux. Local surveys that are
+**absent** from that active listing are then probed carefully before any local
+data is removed — see [Project lifecycle](./ProjectLifecycle.md) for the full
+server-side status model.
+
+For each locally known survey missing from the directory:
+
+1. **Probe** `GET /api/notebooks/:id` (`probeNotebookServerLifecycle` in
+   `databaseHelpers.ts`).
+2. **Archived** — treated as a secure lifecycle signal; remove the local project
+   immediately (`removeProject` or `detachProjectRetainLocalData` depending on
+   `forceRemoteDeletion`).
+3. **Missing** (401 / 403 / 404 — deleted or no access) — do **not** wipe local
+   data yet. Confirm with `GET /api/tombstones/:id`
+   (`probeProjectTombstone`):
+   - **Tombstoned** (200) — permanent delete is proven; remove local project.
+   - **Not tombstoned** (404) or **any probe/network error** — keep local data as
+     a precaution against server glitches or transient auth failures.
+4. **Active** or **unreachable** — keep local data.
+
+Tombstones are the proof that a survey was intentionally destroyed on the server.

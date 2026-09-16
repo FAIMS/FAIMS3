@@ -23,10 +23,10 @@ import {getCouchUserFromEmailOrUserId} from './users';
 // Expiry time in milliseconds - 24 hours by default
 const VERIFICATION_CHALLENGE_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
-// Rate limiting constants
-const MAX_VERIFICATION_ATTEMPTS = 5; // Maximum number of verification attempts
-const VERIFICATION_RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours window for rate limiting
-const VERIFICATION_COOLDOWN_MS = 30 * 60 * 1000; // 30 minute cooldown after max attempts
+// Rate limiting constants (exported for TTL cleanup retention windows)
+export const MAX_VERIFICATION_ATTEMPTS = 5; // Maximum number of verification attempts
+export const VERIFICATION_RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours window for rate limiting
+export const VERIFICATION_COOLDOWN_MS = 30 * 60 * 1000; // 30 minute cooldown after max attempts
 
 /**
  * Creates a new email verification challenge for a given user.

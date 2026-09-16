@@ -41,6 +41,7 @@ import patch from '../utils/patchExpressAsync';
 import {validateEmailCode} from '../couchdb/emailReset';
 import {RegisteredAuthProviders} from './strategies/applyStrategies';
 import {config} from '../buildconfig';
+import {inviteAuditFromRequest, logInviteAudit} from '../logging';
 
 // This must occur before express app is used
 patch();
@@ -143,9 +144,29 @@ export function addAuthPages(
 
       // Validate the invite is okay
       const invite = await getInvite({inviteId});
+      const validityCheck = invite
+        ? isInviteValid({invite})
+        : {isValid: false, reason: 'Invite not found'};
+
+      logInviteAudit({
+        event: 'invite.lookup',
+        outcome: !invite
+          ? 'not_found'
+          : validityCheck.isValid
+            ? 'valid'
+            : 'invalid',
+        source: 'register_page',
+        inviteId,
+        reason: validityCheck.reason,
+        role: invite?.role,
+        inviteType: invite?.inviteType,
+        resourceType: invite?.resourceType,
+        resourceId: invite?.resourceId,
+        ...inviteAuditFromRequest(req),
+      });
 
       // If invite is not present or invalid
-      if (!invite || !isInviteValid({invite}).isValid) {
+      if (!invite || !validityCheck.isValid) {
         return res.render('invite-error', {redirect});
       }
 

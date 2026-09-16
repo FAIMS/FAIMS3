@@ -16,10 +16,11 @@ fi
 
 # replace occurrences of the app name 'Fieldmark' and id 'org.fedarch.faims3'
 # with configured values VITE_APP_NAME and VITE_APP_ID
-# Note: Capacitor runtime config now comes from capacitor.config.ts.
-# This script updates manifest/resources/assets only.
 
 echo "Configuring app name ${VITE_APP_NAME} and id ${VITE_APP_ID}"
+
+# app name and appId → capacitor.config.json (also honors CAP_ANDROID_ADB_FORWARD / CAP_SERVER_URL)
+./bin/generateCapacitorConfig.sh
 
 # public/manifest.json
 

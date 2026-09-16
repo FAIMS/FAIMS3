@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {AvpUpdateMode, ProjectID, RecordID} from '@faims3/data-model';
+import {AvpUpdateMode, RecordID} from '@faims3/data-model';
 import {config} from '../buildconfig';
 
 export const INDEX = '/';
@@ -26,16 +26,10 @@ export const SIGN_IN = '/signin/';
 export const AUTH_RETURN = '/auth-return/';
 export const NOT_FOUND = '/not-found';
 export const INDIVIDUAL_NOTEBOOK_ROUTE = `/${config.notebookNamePlural}/`;
-export const INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q = 'tab';
 export const NOTEBOOK_LIST_ROUTE = '/';
-export const RECORD_LIST = '/records';
-export const RECORD_EXISTING = '/records/';
-export const RECORD_VIEW = '/view-record/';
-export const RECORD_CREATE = '/new/';
-export const RECORD_RECORD = '/record/';
-export const REVISION = '/revision/';
 export const ABOUT_BUILD = '/about-build';
 export const OFFLINE_MAPS = '/offline-maps';
+export const OFFLINE_MAP_NEW = `${OFFLINE_MAPS}/new`;
 export const AUTOINCREMENT = '/autoincrements/';
 export const PROJECT_ATTACHMENT = '/attachment/';
 export const SWITCH_ORG = '/switch-organisation';
@@ -43,73 +37,82 @@ export const HELP = '/help';
 export const USER_ACTIVE_TESTR = '/test';
 export const POUCH_EXPLORER = '/pouchDB';
 
+const EDIT_RECORD_SEGMENT = 'records';
+const VIEW_RECORD_SEGMENT = 'view-record';
+
+/**
+ * The plan on screen, optional so a notebook with no plan view still resolves.
+ * The tab within a view is not here: it lives in the view's own context, so a
+ * plan gains screens of its own without the route gaining segments.
+ */
+export const NOTEBOOK_ROUTE_PATH = `${INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:projectId/:planId?`;
+export const EDIT_RECORD_ROUTE_PATH = `${EDIT_RECORD_SEGMENT}/:recordId`;
+export const VIEW_RECORD_ROUTE_PATH = `${VIEW_RECORD_SEGMENT}/:recordId`;
+
+/**
+ * @returns /<notebook-plural>/<server>/<project>[/<plan>]
+ */
 export function getNotebookRoute({
   serverId,
   projectId,
+  planId,
 }: {
   serverId: string;
   projectId: string;
+  planId?: string;
 }) {
-  return INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId;
+  return (
+    INDIVIDUAL_NOTEBOOK_ROUTE +
+    [serverId, projectId, planId].filter(Boolean).join('/')
+  );
 }
 
+/** The notebook a record link nests under: ids from the project, plan from the route. */
+export type RecordRouteNotebook = {
+  serverId: string;
+  projectId: string;
+  planId?: string;
+};
+
 /**
- * Generates a route to a record in the format
- *
- * @returns /<notebook-plural>/<server>/<project>/records/<recordId>/revision/<revisionId>
+ * @returns /<notebook-plural>/<server>/<project>[/<plan>]/records/<recordId>
  */
 export function getEditRecordRoute({
-  serverId,
-  projectId,
   recordId,
   mode,
-}: {
-  serverId: string;
-  projectId: ProjectID;
+  ...notebook
+}: RecordRouteNotebook & {
   recordId: RecordID;
   mode?: AvpUpdateMode;
 }) {
-  if (!!serverId && !!projectId && !!recordId) {
-    return (
-      INDIVIDUAL_NOTEBOOK_ROUTE +
-      serverId +
-      '/' +
-      projectId +
-      RECORD_EXISTING +
-      recordId +
-      (mode ? `?mode=${mode}` : '')
-    );
-  }
-  console.error('Trying to create record route with missing details!');
-  console.error({serverId, projectId, recordId});
-  throw Error(
-    'project_id, record_id and revision_id are required for this route'
+  return (
+    `${getNotebookRoute(notebook)}/${EDIT_RECORD_SEGMENT}/${recordId}` +
+    (mode ? `?mode=${mode}` : '')
   );
 }
 
 /**
- * Generates a route to a record in the format
- *
- * @returns /<notebook-plural>/<server>/<project>/view-record/<recordId>?revisionId=<revisionId>
+ * @returns /<notebook-plural>/<server>/<project>[/<plan>]/view-record/<recordId>
  */
 export function getViewRecordRoute({
-  serverId,
-  projectId,
   recordId,
   revisionId,
-}: {
-  serverId: string;
-  projectId: ProjectID;
+  ...notebook
+}: RecordRouteNotebook & {
   recordId: RecordID;
   revisionId?: RecordID;
 }) {
   return (
-    INDIVIDUAL_NOTEBOOK_ROUTE +
-    serverId +
-    '/' +
-    projectId +
-    RECORD_VIEW +
-    recordId +
+    `${getNotebookRoute(notebook)}/${VIEW_RECORD_SEGMENT}/${recordId}` +
     (revisionId ? `?revisionId=${revisionId}` : '')
   );
+}
+
+/**
+ * Generates the edit route for a downloaded offline map.
+ *
+ * @returns /offline-maps/map/<offlineMapId>
+ */
+export function getOfflineMapEditRoute({offlineMapId}: {offlineMapId: string}) {
+  return `${OFFLINE_MAPS}/map/${offlineMapId}`;
 }

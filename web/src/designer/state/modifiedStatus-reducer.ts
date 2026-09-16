@@ -25,6 +25,12 @@ import {
   informationUpdated,
 } from './metadata-reducer';
 import {
+  planTemplateAdded,
+  planTemplateMoved,
+  planTemplateRemoved,
+  planTemplateSet,
+} from './planTemplates-reducer';
+import {
   fieldAdded,
   fieldDeleted,
   fieldMoved,
@@ -75,7 +81,11 @@ const modifiedStatusReducer = createSlice({
       .addCase(viewSetDeleted, () => true)
       .addCase(viewSetMoved, () => true)
       .addCase(viewSetRenamed, () => true)
-      .addCase(formVisibilityUpdated, () => true);
+      .addCase(formVisibilityUpdated, () => true)
+      .addCase(planTemplateAdded, () => true)
+      .addCase(planTemplateSet, () => true)
+      .addCase(planTemplateRemoved, () => true)
+      .addCase(planTemplateMoved, () => true);
   },
 });
 

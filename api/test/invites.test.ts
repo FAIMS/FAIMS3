@@ -27,6 +27,9 @@ import {
   addGlobalRole,
   addProjectRole,
   addTeamRole,
+  DEFAULT_INVITE_EXPIRY_MS,
+  INPUT_LIMITS,
+  MAX_INVITE_EXPIRY_MS,
   PostRegisterInput,
   registerClient,
   Resource,
@@ -89,6 +92,10 @@ describe('Invite Tests', () => {
 
       expect(invite).not.toBeNull();
       expect(invite._id).toContain('-');
+      // `{prefix}-{16-char nanoid body}` — long enough to resist brute force
+      const [, body] = invite._id.split('-');
+      expect(body).toHaveLength(16);
+      expect(body).toMatch(/^[0-9A-Za-z]+$/);
       expect(invite.resourceType).toBe(Resource.PROJECT);
       expect(invite.resourceId).toBe(projectId);
       expect(invite.role).toBe(Role.PROJECT_CONTRIBUTOR);
@@ -97,6 +104,49 @@ describe('Invite Tests', () => {
       expect(invite.usesOriginal).toBe(5);
       expect(invite.usesConsumed).toBe(0);
       expect(invite.uses).toEqual([]);
+    });
+
+    it('defaults new invites to a 5-day expiry', async () => {
+      const before = Date.now();
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+      const invite = await createResourceInvite({
+        resourceType: Resource.PROJECT,
+        resourceId: projectId!,
+        role: Role.PROJECT_CONTRIBUTOR,
+        name: 'Default expiry invite',
+        createdBy: 'admin',
+      });
+      const after = Date.now();
+      expect(invite.expiry).toBeGreaterThanOrEqual(
+        before + DEFAULT_INVITE_EXPIRY_MS
+      );
+      expect(invite.expiry).toBeLessThanOrEqual(
+        after + DEFAULT_INVITE_EXPIRY_MS
+      );
+    });
+
+    it('rejects invites with expiry beyond 90 days', async () => {
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+      await expect(
+        createResourceInvite({
+          resourceType: Resource.PROJECT,
+          resourceId: projectId!,
+          role: Role.PROJECT_CONTRIBUTOR,
+          name: 'Too long invite',
+          createdBy: 'admin',
+          expiry: Date.now() + MAX_INVITE_EXPIRY_MS + 24 * 60 * 60 * 1000,
+        })
+      ).rejects.toThrow(/at most 90 days/);
     });
 
     it('can create an invite for a team', async () => {
@@ -443,6 +493,20 @@ describe('Invite Tests', () => {
       expect(response.body.usesRemaining).toBe(5);
     });
 
+    it('GET /api/invites/:inviteId returns 404 for unknown codes', async () => {
+      await request(app).get('/api/invites/FAIMS-DOESNOTEXIST000').expect(404);
+    });
+
+    it('GET /api/invites/:inviteId rejects oversized invite ids', async () => {
+      const oversized = 'A'.repeat(INPUT_LIMITS.ID_MAX_LENGTH + 1);
+      const response = await request(app)
+        .get(`/api/invites/${oversized}`)
+        .expect(400);
+      expect(response.body[0].errors.issues[0].message).toMatch(
+        /at most 256 characters/i
+      );
+    });
+
     it('GET /api/invites/notebook/:projectId requires authentication', async () => {
       const projectId = await createNotebook({
         projectName: 'test-notebook',
@@ -566,6 +630,25 @@ describe('Invite Tests', () => {
       expect(response.body.usesOriginal).toBe(3);
       expect(response.body.usesConsumed).toBe(0);
       expect(response.body.createdBy).toBe('admin');
+    });
+
+    it('POST /api/invites/notebook/:projectId rejects expiry beyond 90 days', async () => {
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+
+      await request(app)
+        .post(`/api/invites/notebook/${projectId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          role: Role.PROJECT_CONTRIBUTOR,
+          name: 'Too long invite',
+          expiry: Date.now() + MAX_INVITE_EXPIRY_MS + 24 * 60 * 60 * 1000,
+        })
+        .expect(400);
     });
 
     it('POST /api/invites/team/:teamId creates a team invite', async () => {

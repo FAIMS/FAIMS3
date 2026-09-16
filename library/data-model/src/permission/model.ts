@@ -75,6 +75,12 @@ export enum Action {
    */
   DELETE_PROJECT = 'DELETE_PROJECT',
 
+  /**
+   * Look up whether a survey ID has a deletion tombstone (global; survey may no
+   * longer exist). Granted to anyone who can list surveys.
+   */
+  READ_PROJECT_TOMBSTONE = 'READ_PROJECT_TOMBSTONE',
+
   // Data export
   EXPORT_PROJECT_DATA = 'EXPORT_PROJECT_DATA',
 
@@ -404,6 +410,13 @@ export const actionDetails: Record<Action, ActionDetails> = {
     description:
       'Irreversibly delete all server-side survey data (requires archive first). Survey administrators may delete their own surveys.',
     resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.READ_PROJECT_TOMBSTONE]: {
+    name: 'Read Project Tombstone',
+    description:
+      'Look up whether a project was permanently deleted and view basic deletion metadata',
+    resourceSpecific: false,
     resource: Resource.PROJECT,
   },
   [Action.EXPORT_PROJECT_DATA]: {
@@ -1232,6 +1245,7 @@ export const roleActions: Record<
   [Role.GENERAL_USER]: {
     actions: [
       Action.LIST_PROJECTS,
+      Action.READ_PROJECT_TOMBSTONE,
       Action.LIST_TEMPLATES,
       Action.READ_PUBLIC_TEMPLATE_DETAILS,
       Action.VERIFY_EMAIL,

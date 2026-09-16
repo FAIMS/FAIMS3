@@ -3,7 +3,6 @@ import {
   DatabaseInterface,
   DataDocument,
   DataEngine,
-  ProjectID,
   RecordID,
 } from '@faims3/data-model';
 import {
@@ -39,15 +38,12 @@ import {
   getAddressAutosuggestService,
   getMapConfig,
 } from '../../buildconfig';
-import {
-  getEditRecordRoute,
-  getNotebookRoute,
-  getViewRecordRoute,
-} from '../../constants/routes';
+import {getEditRecordRoute, getViewRecordRoute} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
+import {useNotebookRoute} from '../../context/notebookRoute';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
 import {useIsOnline, useUiSpecLayout} from '../../utils/customHooks';
 import {tryLocalGetDataDb} from '../../utils/database';
@@ -89,11 +85,10 @@ export function useFormNavigationContext(): UseFormNavigationContextResult {
  * `canLoadRecord` gating on queries.
  */
 export const EditRecordPage = () => {
-  const {serverId, projectId, recordId} = useParams<{
-    serverId: string;
-    projectId: ProjectID;
-    recordId: RecordID;
-  }>();
+  const {recordId} = useParams<{recordId: RecordID}>();
+  // The notebook this record sits in, and the way back out of it.
+  const {notebook, notebookRoute} = useNotebookRoute();
+  const {serverId, projectId} = notebook;
 
   // Get mode=XXX from the query params
   const [searchParams] = useSearchParams();
@@ -274,9 +269,7 @@ export const EditRecordPage = () => {
         navigateToRecordList: {
           label: 'Return to record list',
           navigate: () => {
-            navigate(
-              getNotebookRoute({serverId: serverId!, projectId: projectId!})
-            );
+            navigate(notebookRoute);
           },
         },
         // Takes you back to view record (note this is only shown if there are no
@@ -284,9 +277,8 @@ export const EditRecordPage = () => {
         navigateToViewRecord: params => {
           navigate(
             getViewRecordRoute({
-              projectId: projectId!,
+              ...notebook,
               recordId: params.recordId,
-              serverId: serverId!,
             })
           );
         },
@@ -331,8 +323,7 @@ export const EditRecordPage = () => {
 
           navigate(
             getEditRecordRoute({
-              serverId: serverId!,
-              projectId: projectId!,
+              ...notebook,
               recordId: targetRecordId,
               mode: targetMode,
             }),
@@ -342,8 +333,7 @@ export const EditRecordPage = () => {
         },
         getToRecordLink(params) {
           return getEditRecordRoute({
-            serverId: serverId!,
-            projectId: projectId!,
+            ...notebook,
             recordId: params.recordId,
             mode,
           });
@@ -362,9 +352,9 @@ export const EditRecordPage = () => {
     // Be more careful with dependencies here to avoid unnecessary re-renders of
     // the editable form
     canLoadRecord,
-    serverId,
     navigationContext,
-    projectId,
+    notebook,
+    notebookRoute,
     recordId,
     mode,
     activeUser,
@@ -448,15 +438,17 @@ export const EditRecordPage = () => {
             <Button
               variant="outlined"
               onClick={() =>
-                navigate(getViewRecordRoute({projectId, recordId, serverId}))
+                navigate(
+                  getViewRecordRoute({
+                    ...notebook,
+                    recordId,
+                  })
+                )
               }
             >
               Open read-only view
             </Button>
-            <Button
-              variant="text"
-              onClick={() => navigate(getNotebookRoute({serverId, projectId}))}
-            >
+            <Button variant="text" onClick={() => navigate(notebookRoute)}>
               {`Back to ${config.notebookName}`}
             </Button>
           </Stack>
@@ -485,6 +477,7 @@ export const EditRecordPage = () => {
               initialData={formData!.data}
               revisionId={formData!.revisionId}
               existingRecord={formData!.context.record}
+              metadataValues={project?.uiDefinition.metadata.custom}
               formId={formData!.formId}
               activeUser={activeUser.username}
               recordId={recordId}

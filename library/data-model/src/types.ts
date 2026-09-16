@@ -127,6 +127,8 @@ export type EncodedRecord = PouchDB.Core.Document<{
   record_format_version: number;
   created: string;
   created_by: string;
+  /** When the current head revision was last created or replaced. */
+  updatedAt: string;
   revisions: RevisionID[];
   heads: RevisionID[];
   type: FAIMSTypeName;
@@ -145,6 +147,8 @@ export interface Revision {
   parents: RevisionID[];
   created: string;
   created_by: string;
+  /** When this revision document was last written. */
+  updatedAt: string;
   type: FAIMSTypeName;
   deleted?: boolean;
   ugc_comment?: string;
@@ -315,6 +319,10 @@ export interface PublicServerInfo {
   name: string;
   conductor_url: string;
   description: string;
+  /**
+   * Invite-code prefix for this server (e.g. `FAIMS` in `FAIMS-…`).
+   * Used when users manually enter an invite code and for multi-server routing.
+   */
   prefix: string;
   /**
    * The version of the server, e.g. 1.3.2. Optional for backwards

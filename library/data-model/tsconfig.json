@@ -25,6 +25,7 @@
     "tests/migrationService2.test.ts",
     "tests/migrations.test.ts",
     "tests/permissionfunctions.test.ts",
-    "tests/conditionals.test.ts"
+    "tests/conditionals.test.ts",
+    "tests/statusReport.test.ts"
   ]
 }

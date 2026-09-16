@@ -43,6 +43,7 @@ import {
   markCodeAsUsed,
   validateEmailCode,
 } from '../couchdb/emailReset';
+import {revokeUnusedGrantsForUser} from '../couchdb/downloadGrants';
 import {getTokenByToken, invalidateToken} from '../couchdb/refreshTokens';
 import {
   getCouchUserFromEmailOrUserId,
@@ -81,6 +82,7 @@ import {
   buildSamlMetadataErrorUrl,
   signSamlMetadata,
 } from './strategies/samlStrategy';
+import {inviteAuditFromRequest, logInviteAudit} from '../logging';
 
 patch();
 
@@ -321,7 +323,7 @@ export function addAuthRoutes(
               action: 'login',
               inviteId: loginPayload.inviteId,
               redirect,
-              req: req as unknown as CustomRequest,
+              req,
               res,
               errorRedirect,
               flashFn: req.flash.bind(req),
@@ -378,6 +380,13 @@ export function addAuthRoutes(
 
         if (!inviteId) {
           // 400 error as this is an invalid request
+          logInviteAudit({
+            event: 'invite.register_missing',
+            outcome: 'failure',
+            action: 'register',
+            reason: 'No invite provided for registration',
+            ...inviteAuditFromRequest(req),
+          });
           res.status(400);
           req.flash('error', {
             registrationError: {msg: 'No invite provided for registration.'},
@@ -496,7 +505,7 @@ export function addAuthRoutes(
                 inviteId,
                 redirect,
                 res,
-                req: req as unknown as CustomRequest,
+                req,
                 errorRedirect,
                 flashFn: req.flash.bind(req),
               });
@@ -514,6 +523,8 @@ export function addAuthRoutes(
               createUser,
               // Pass in the invite - it's all validated
               inviteCode: inviteId,
+              req,
+              action: 'register',
             });
             await saveCouchUser(createdDbUser);
           } catch (e) {
@@ -673,6 +684,9 @@ export function addAuthRoutes(
       if (!user) {
         throw new UnauthorizedException();
       }
+
+      // Logout invalidates unused export grants so a leftover cookie cannot redeem
+      await revokeUnusedGrantsForUser(user.user_id);
 
       // token
       const refresh = await getTokenByToken(refreshToken);
@@ -1008,6 +1022,13 @@ export function addAuthRoutes(
         // SSO round-trip to avoid a confusing failure after the user has
         // authenticated with their identity provider.
         if (action === 'register' && !inviteId) {
+          logInviteAudit({
+            event: 'invite.register_missing',
+            outcome: 'failure',
+            action: 'register',
+            reason: 'No invite provided for SSO registration',
+            ...inviteAuditFromRequest(req),
+          });
           req.flash('error', {
             registrationError: {msg: 'No invite provided for registration.'},
           });
@@ -1113,7 +1134,7 @@ export function addAuthRoutes(
             inviteId: (req.session as CustomSessionData).inviteId,
             redirect,
             res,
-            req: req as unknown as CustomRequest,
+            req,
             errorRedirect,
             flashFn: req.flash.bind(req),
           });

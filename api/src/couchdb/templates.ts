@@ -4,6 +4,8 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-security-helper'));
 
 import type {
+  NotebookDefinition,
+  RegisteredPlan,
   TemplateApiDocument,
   TemplateApiListItem,
 } from '@faims3/data-model';
@@ -23,7 +25,10 @@ import {
   TEMPLATES_BY_TEAM_ID,
   TEMPLATES_LISTING_BY_TEAM_ID,
   TEMPLATES_LISTING_BY_TEMPLATE_ID,
+  getPlanTypeDefinition,
+  normalizeNotebookTemplateUiSpecification,
   normalizeRootDescriptionForStore,
+  notebookUiSpecificationValidationMessage,
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
@@ -31,7 +36,7 @@ import {nowIso} from '../time';
 import {generateRandomString} from '../utils';
 import {
   clearTemplateIdFromProjectsReferencingTemplate,
-  normalizeUiSpecificationOrThrow,
+  createNotebook,
 } from './notebooks';
 import {getTeamById} from './teams';
 import {stripTemplateRolesForTemplateId} from './users';
@@ -239,9 +244,16 @@ export const createTemplate = async ({
 
   // Setup the document with id included
   const now = nowIso();
-  const uiSpecification = normalizeUiSpecificationOrThrow(
-    payload.uiSpecification
-  );
+  let uiSpecification;
+  try {
+    uiSpecification = normalizeNotebookTemplateUiSpecification(
+      payload.uiSpecification
+    );
+  } catch (error) {
+    throw new Exceptions.ValidationException(
+      notebookUiSpecificationValidationMessage(error)
+    );
+  }
   const templateDoc: TemplateDocument = {
     _id: templateId,
     version: 1,
@@ -393,8 +405,15 @@ export const updateTemplateUiSpecification = async (
     | PutUpdateTemplateUiSpecificationInput
     | NotebookUiSpecificationInput
 ): Promise<ExistingTemplateDocument> => {
-  const normalizedUiSpecification =
-    normalizeUiSpecificationOrThrow(uiSpecification);
+  let normalizedUiSpecification;
+  try {
+    normalizedUiSpecification =
+      normalizeNotebookTemplateUiSpecification(uiSpecification);
+  } catch (error) {
+    throw new Exceptions.ValidationException(
+      notebookUiSpecificationValidationMessage(error)
+    );
+  }
   // Now fetch the existing template - this will allow us to get the latest
   // revision etc
   let existingTemplate;
@@ -557,4 +576,125 @@ export const restoreTemplateFromArchive = async (id: string) => {
     );
   }
   return archiveTemplate(id, false);
+};
+
+/**
+ * Create a notebook from a template, instantiating each of the template's plan
+ * templates. Every plan template needs its own config, keyed by the plan id, so
+ * the plan's per-notebook values are supplied at creation.
+ */
+export const createNotebookFromTemplate = async ({
+  template,
+  projectName,
+  description,
+  createdBy,
+  teamId,
+  planConfigs,
+}: {
+  template: ExistingTemplateDocument;
+  projectName: string;
+  description?: string;
+  createdBy: string;
+  teamId?: string;
+  planConfigs?: Record<string, Record<string, unknown>>;
+}) => {
+  if (template.archived === true) {
+    throw new Exceptions.InvalidRequestException(
+      'Cannot create a notebook from an archived template.'
+    );
+  }
+
+  // create the proto notebook definition from the template's uiSpecification
+  const uiSpecification: NotebookDefinition = {
+    metadata: {...template.uiSpecification.metadata},
+    uiSpec: template.uiSpecification.uiSpec,
+  };
+
+  const plans: RegisteredPlan[] = [];
+  const planTemplates = template.uiSpecification.planTemplates ?? [];
+
+  // A config for a plan the template does not carry means the caller read a
+  // different version of it, so its other configs may target the wrong plans.
+  const planIds = new Set(planTemplates.map(p => p.planId));
+  const stale = Object.keys(planConfigs ?? {}).filter(id => !planIds.has(id));
+  if (stale.length > 0) {
+    throw new Exceptions.InvalidRequestException(
+      `The template ${template._id} has no plan ${stale.map(id => `"${id}"`).join(', ')}; the plan configs do not match the template.`
+    );
+  }
+
+  // Instantiate every plan template the template carries, in declared order,
+  // which is the order the app offers them in.
+  for (const planTemplate of planTemplates) {
+    const {planId, planType} = planTemplate;
+    // Get the instantiation function for this plan type
+    const planTypeDefinition = getPlanTypeDefinition(planType);
+    if (!planTypeDefinition) {
+      throw new Exceptions.InternalSystemError(
+        `Cannot create a notebook from template ${template._id} because its plan template "${planId}" is of type ${planType}, which is not recognised.`
+      );
+    }
+    // validate the planTemplate before we use it
+    const planTemplateValidationResult =
+      planTypeDefinition.templateSchema.safeParse(planTemplate);
+    if (!planTemplateValidationResult.success) {
+      throw new Exceptions.InternalSystemError(
+        `Cannot create a notebook from template ${template._id} because its plan template "${planId}" of type ${planType} is invalid: ${planTemplateValidationResult.error.message}`
+      );
+    }
+
+    // we need the config payload for this plan template, defined by
+    // the configSchema property of the plan template
+    const planConfig = planConfigs?.[planId];
+    if (!planConfig) {
+      throw new Exceptions.InvalidRequestException(
+        `The template ${template._id} has a plan template "${planId}" of type ${planType}, so a plan config must be provided for it.`
+      );
+    }
+    // validate the config against the plan type's config schema
+    const configValidationResult =
+      planTypeDefinition.configSchema.safeParse(planConfig);
+    if (!configValidationResult.success) {
+      throw new Exceptions.InvalidRequestException(
+        `The plan config provided for plan "${planId}" of type ${planType} is invalid: ${configValidationResult.error.message}`
+      );
+    }
+
+    // call the plan creator for this plan type
+    const instantiatedPlan = planTypeDefinition.instantiatePlan({
+      template: planTemplate,
+      config: configValidationResult.data,
+    });
+
+    // insert the plan into the uiSpecification for the notebook we're creating
+    // parse it first to make sure it's valid according to the plan type's plan schema
+    const planParseResult = planTypeDefinition.planSchema.safeParse({
+      ...instantiatedPlan,
+      // The template owns these: `instantiatePlan` writes none of them.
+      planId,
+      label: planTemplate.label,
+      ...(planTemplate.description
+        ? {description: planTemplate.description}
+        : {}),
+    });
+    if (!planParseResult.success) {
+      throw new Exceptions.InvalidRequestException(
+        `The instantiated plan "${planId}" of type ${planType} is invalid: ${planParseResult.error.message}`
+      );
+    }
+    plans.push(planParseResult.data);
+  }
+
+  if (plans.length > 0) {
+    uiSpecification.plans = plans;
+  }
+
+  return await createNotebook({
+    projectName,
+    uiSpecification: uiSpecification,
+    description: description,
+    templateId: template._id,
+    teamId: teamId,
+    createdBy: createdBy,
+  });
 };

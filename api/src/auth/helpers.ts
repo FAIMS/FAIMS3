@@ -11,7 +11,7 @@ import {
   VerifiableEmail,
 } from '@faims3/data-model';
 import {pbkdf2Sync, randomBytes} from 'crypto';
-import {Response} from 'express';
+import {Request, Response} from 'express';
 import {ZodError} from 'zod';
 import {config} from '../buildconfig';
 import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
@@ -29,6 +29,7 @@ import {
 } from './passwordStrength';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {createTeamDocument} from '../couchdb/teams';
+import {inviteAuditFromRequest, logInviteAudit} from '../logging';
 
 /**
  * Handles Zod validation errors and flashes them back to the user
@@ -316,10 +317,18 @@ export async function validateAndApplyInviteToUser({
   dbUser,
   inviteCode,
   createUser,
+  req,
+  action,
 }: {
   dbUser?: PeopleDBDocument;
   createUser?: () => Promise<PeopleDBDocument>;
   inviteCode: string;
+  req?: {
+    ip?: string;
+    socket?: {remoteAddress?: string | null};
+    get?: (name: string) => string | undefined;
+  };
+  action?: AuthAction;
 }): Promise<PeopleDBDocument> {
   if (!(createUser || dbUser)) {
     throw new Error(
@@ -327,28 +336,56 @@ export async function validateAndApplyInviteToUser({
     );
   }
 
-  // Try and lookup the invite
-  const invite = await lookupAndValidateInvite({inviteCode});
+  const requestMeta = req ? inviteAuditFromRequest(req) : {};
 
-  let targetDbUser: PeopleDBDocument;
-
-  if (dbUser) {
-    targetDbUser = dbUser;
-  } else {
-    targetDbUser = await createUser!();
-  }
-
-  // Comsume the invite to add the permission to the user
   try {
-    await consumeInvite({invite, user: targetDbUser});
-  } catch (e) {
-    // Failed to consume the invite - do not save the user
-    throw new Error(
-      `Unable to consume the invite which appears valid. Error: ${e}.`
-    );
-  }
+    // Try and lookup the invite
+    const invite = await lookupAndValidateInvite({inviteCode});
 
-  return targetDbUser;
+    let targetDbUser: PeopleDBDocument;
+
+    if (dbUser) {
+      targetDbUser = dbUser;
+    } else {
+      targetDbUser = await createUser!();
+    }
+
+    // Consume the invite to add the permission to the user
+    try {
+      await consumeInvite({invite, user: targetDbUser});
+    } catch (e) {
+      // Failed to consume the invite - do not save the user
+      throw new Error(
+        `Unable to consume the invite which appears valid. Error: ${e}.`
+      );
+    }
+
+    logInviteAudit({
+      event: 'invite.consume',
+      outcome: 'success',
+      inviteId: invite._id,
+      action,
+      userId: targetDbUser._id,
+      role: invite.role,
+      inviteType: invite.inviteType,
+      resourceType: invite.resourceType,
+      resourceId: invite.resourceId,
+      ...requestMeta,
+    });
+
+    return targetDbUser;
+  } catch (e) {
+    logInviteAudit({
+      event: 'invite.consume',
+      outcome: 'failure',
+      inviteId: inviteCode,
+      action,
+      userId: dbUser?._id,
+      reason: e instanceof Error ? e.message : String(e),
+      ...requestMeta,
+    });
+    throw e;
+  }
 }
 
 /**
@@ -507,13 +544,21 @@ export async function completePostAuth({
   action: AuthAction;
   inviteId: string | undefined;
   redirect: string;
-  req: CustomRequest;
+  req: Request;
   res: Response;
   errorRedirect: string;
   flashFn: (type: string, message: any) => void;
 }) {
   // Register always requires an invite
   if (action === 'register' && !inviteId) {
+    logInviteAudit({
+      event: 'invite.register_missing',
+      outcome: 'failure',
+      action,
+      userId: dbUser._id,
+      reason: 'No invite provided for registration',
+      ...inviteAuditFromRequest(req),
+    });
     flashFn('error', {
       registrationError: {msg: 'No invite provided for registration.'},
     });
@@ -526,6 +571,8 @@ export async function completePostAuth({
       const updatedUser = await validateAndApplyInviteToUser({
         inviteCode: inviteId,
         dbUser,
+        req,
+        action,
       });
       await saveCouchUser(updatedUser);
       dbUser = updatedUser;
@@ -540,9 +587,7 @@ export async function completePostAuth({
         return res.status(400).redirect(errorRedirect);
       } else {
         // Soft warning for login — do not block the user from logging in
-        console.warn(
-          `Invite '${inviteId}' could not be applied for user '${dbUser._id}' during login: ${e}`
-        );
+        // Failure is already recorded by validateAndApplyInviteToUser.
         flashFn('warning', {
           inviteWarning: {
             msg: 'The invite code could not be applied (it may be expired or already used), but you have been logged in.',

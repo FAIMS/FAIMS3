@@ -20,9 +20,11 @@
 
 import {
   Action,
+  ExistingInvitesDBDocument,
   GetInviteByIdResponse,
   GetProjectInvitesResponse,
   GetTeamInvitesResponse,
+  IdInputSchema,
   isAuthorized,
   PostCreateResourceInviteInputSchema,
   PostCreateProjectInviteResponse,
@@ -35,7 +37,7 @@ import {
   GetGlobalInvitesResponse,
   PostCreateGlobalInviteInputSchema,
 } from '@faims3/data-model';
-import express, {Response} from 'express';
+import express, {Request, Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
 import {
@@ -50,11 +52,31 @@ import {
 import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 import patch from '../utils/patchExpressAsync';
+import {inviteAuditFromRequest, logInviteAudit} from '../logging';
 
 // This must occur before express api is used
 patch();
 
 export const api: express.Router = express.Router();
+
+function logInviteCreated(
+  req: Request,
+  invite: ExistingInvitesDBDocument,
+  userId: string
+): void {
+  logInviteAudit({
+    event: 'invite.create',
+    outcome: 'success',
+    source: 'api',
+    inviteId: invite._id,
+    userId,
+    role: invite.role,
+    inviteType: invite.inviteType,
+    resourceType: invite.resourceType,
+    resourceId: invite.resourceId,
+    ...inviteAuditFromRequest(req),
+  });
+}
 
 /**
  * GET all project invites
@@ -63,7 +85,7 @@ api.get(
   '/notebook/:projectId',
   requireAuthenticationAPI,
   validate({
-    params: z.object({projectId: z.string()}),
+    params: z.object({projectId: IdInputSchema}),
   }),
   async (
     {user, params: {projectId}},
@@ -108,7 +130,7 @@ api.get(
   '/team/:teamId',
   requireAuthenticationAPI,
   validate({
-    params: z.object({teamId: z.string()}),
+    params: z.object({teamId: IdInputSchema}),
   }),
   async ({user, params: {teamId}}, res: Response<GetTeamInvitesResponse>) => {
     if (!user) {
@@ -150,13 +172,12 @@ api.post(
   '/notebook/:projectId',
   requireAuthenticationAPI,
   validate({
-    params: z.object({projectId: z.string()}),
+    params: z.object({projectId: IdInputSchema}),
     body: PostCreateResourceInviteInputSchema,
   }),
-  async (
-    {user, body, params: {projectId}},
-    res: Response<PostCreateProjectInviteResponse>
-  ) => {
+  async (req, res: Response<PostCreateProjectInviteResponse>) => {
+    const {user, body, params} = req;
+    const {projectId} = params;
     if (!user) {
       throw new Exceptions.UnauthorizedException();
     }
@@ -192,6 +213,7 @@ api.post(
       usesOriginal: body.uses,
     });
 
+    logInviteCreated(req, invite, user.user_id);
     res.json(invite);
   }
 );
@@ -203,13 +225,12 @@ api.post(
   '/team/:teamId',
   requireAuthenticationAPI,
   validate({
-    params: z.object({teamId: z.string()}),
+    params: z.object({teamId: IdInputSchema}),
     body: PostCreateResourceInviteInputSchema,
   }),
-  async (
-    {user, body, params: {teamId}},
-    res: Response<PostCreateTeamInviteResponse>
-  ) => {
+  async (req, res: Response<PostCreateTeamInviteResponse>) => {
+    const {user, body, params} = req;
+    const {teamId} = params;
     if (!user) {
       throw new Exceptions.UnauthorizedException();
     }
@@ -245,6 +266,7 @@ api.post(
       usesOriginal: body.uses,
     });
 
+    logInviteCreated(req, invite, user.user_id);
     res.json(invite);
   }
 );
@@ -257,8 +279,8 @@ api.delete(
   requireAuthenticationAPI,
   validate({
     params: z.object({
-      projectId: z.string(),
-      inviteId: z.string(),
+      projectId: IdInputSchema,
+      inviteId: IdInputSchema,
     }),
   }),
   async ({user, params: {projectId, inviteId}}, res) => {
@@ -316,8 +338,8 @@ api.delete(
   requireAuthenticationAPI,
   validate({
     params: z.object({
-      teamId: z.string(),
-      inviteId: z.string(),
+      teamId: IdInputSchema,
+      inviteId: IdInputSchema,
     }),
   }),
   async ({user, params: {teamId, inviteId}}, res) => {
@@ -399,7 +421,8 @@ api.post(
   validate({
     body: PostCreateGlobalInviteInputSchema,
   }),
-  async ({user, body}, res: Response<PostCreateGlobalInviteResponse>) => {
+  async (req, res: Response<PostCreateGlobalInviteResponse>) => {
+    const {user, body} = req;
     if (!user) {
       throw new Exceptions.UnauthorizedException();
     }
@@ -412,6 +435,7 @@ api.post(
       usesOriginal: body.uses,
     });
 
+    logInviteCreated(req, invite, user.user_id);
     res.json(invite);
   }
 );
@@ -425,7 +449,7 @@ api.delete(
   isAllowedToMiddleware({action: Action.DELETE_GLOBAL_INVITE}),
   validate({
     params: z.object({
-      inviteId: z.string(),
+      inviteId: IdInputSchema,
     }),
   }),
   async ({user, params: {inviteId}}, res) => {
@@ -456,17 +480,39 @@ api.delete(
 api.get(
   '/:inviteId',
   validate({
-    params: z.object({inviteId: z.string()}),
+    params: z.object({inviteId: IdInputSchema}),
   }),
   async (req, res: Response<GetInviteByIdResponse>) => {
-    const invite = await getInvite({inviteId: req.params.inviteId});
+    const inviteId = req.params.inviteId;
+    const requestMeta = inviteAuditFromRequest(req);
+    const invite = await getInvite({inviteId});
 
     if (!invite) {
+      logInviteAudit({
+        event: 'invite.lookup',
+        outcome: 'not_found',
+        source: 'api',
+        inviteId,
+        ...requestMeta,
+      });
       throw new Exceptions.ItemNotFoundException('Invite not found');
     }
 
     // Check if invite is valid
     const validityCheck = isInviteValid({invite});
+
+    logInviteAudit({
+      event: 'invite.lookup',
+      outcome: validityCheck.isValid ? 'valid' : 'invalid',
+      source: 'api',
+      inviteId: invite._id,
+      reason: validityCheck.reason,
+      role: invite.role,
+      inviteType: invite.inviteType,
+      resourceType: invite.resourceType,
+      resourceId: invite.resourceId,
+      ...requestMeta,
+    });
 
     // Return basic info about the invite (without sensitive data)
     res.json({

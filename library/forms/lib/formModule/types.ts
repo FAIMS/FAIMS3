@@ -77,10 +77,4 @@ export type FormFieldContextProps = {
 
 export type FullFieldProps = BaseFieldParameters & FormFieldContextProps;
 
-export type CompletionResult = {
-  progress: number;
-  requiredCount: number;
-  completedCount: number;
-  /** Required fields the user hasn't filled in yet. */
-  incompleteRequired: string[];
-};
+export type {CompletionResult} from '@faims3/data-model';

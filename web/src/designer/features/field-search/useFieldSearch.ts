@@ -42,6 +42,7 @@ export const useFieldSearch = (
     filters,
     limit = 50,
     debounceMs = DEFAULT_DEBOUNCE_MS,
+    extraEntries,
   } = options;
   const [query, setQuery] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,8 +73,11 @@ export const useFieldSearch = (
   );
 
   const entries = useMemo(
-    () => buildFieldSearchEntries(candidateIds, allFields, views, viewsets),
-    [candidateIds, allFields, views, viewsets]
+    () => [
+      ...buildFieldSearchEntries(candidateIds, allFields, views, viewsets),
+      ...(extraEntries ?? []),
+    ],
+    [candidateIds, allFields, views, viewsets, extraEntries]
   );
 
   const results = useMemo(
@@ -86,6 +90,6 @@ export const useFieldSearch = (
     setQuery,
     searchQuery,
     results,
-    candidateCount: candidateIds.length,
+    candidateCount: candidateIds.length + (extraEntries?.length ?? 0),
   };
 };

@@ -8,7 +8,8 @@ Editor._
 ## What This Field Does
 
 A Computed Number derives a number from an expression over other fields
-in the same form — for example, multiplying a mass field by a count, or
+in the form (and, for child records, fields on the record's parent) —
+for example, multiplying a mass field by a count, or
 averaging two measurements. The generated value is read-only for data
 collectors; they see the result but cannot edit it, and it updates
 automatically as the fields it references change.
@@ -80,9 +81,75 @@ Text and checkbox fields can be referenced anywhere in the expression —
 only the final result must be a number. For example,
 `{vegType} == 'plot' ? 3 : 5` is a valid Computed Number.
 
-All referenced fields must be in the same form as the Computed Number. A
+Referenced fields are normally in the same form as the Computed Number;
+fields on the record's parent can also be referenced (see below). A
 Computed Number cannot reference another computed field or a Templated
-String.
+String in the same form.
+
+### Referencing Parent Record Values
+
+When the form is a child of another form (linked through a
+Child-relation Related Records field), the expression can reference
+fields on the record's parent by prefixing the Field ID with `_PARENT.`,
+e.g. `{_PARENT.Calibration-Factor} * {Reading}`. An **Insert parent
+field** picker below the expression lists the available parent fields.
+
+Parent references are type checked like any other reference, and —
+unlike same-form references — may point at the parent's computed fields
+and Templated Strings, whose stored values are used.
+
+If a record has no parent, a parent reference has no value and the
+result stays blank, matching the behaviour for missing same-form
+values. The computed value is stored on save and re-derives whenever
+the record is next opened or saved; if the parent changes in the
+meantime, the stored value reflects the parent as of the record's last
+save.
+
+The same reference can be used in
+[field and section conditions](../../authoring/conditions.md).
+
+### Referencing Linked Record Values
+
+When the form holds a
+[Related Records](../relationship-fields/related-records.md) field with
+a **Linked** relation that allows only a single link, the expression
+can reference fields on the linked record by joining the two Field IDs
+with a dot: `{Link-Field-ID.Field-ID}`. For example, with a Related
+Records field `Core-Calibration` linking one Calibration record,
+`{Wet-Mass-g} - {Core-Calibration.Cutter-Mass-g}` subtracts the linked
+record's cutter mass. An **Insert linked record field** picker below
+the expression lists the available fields.
+
+Linked record references are type checked against the linked form, and
+may point at the linked record's computed fields and Templated Strings,
+whose stored values are used. Fields that allow multiple links, and
+Child-relation fields, cannot be referenced this way (children
+reference their parent with `_PARENT.`); the editor reports these with
+a specific error.
+
+If nothing is linked, the reference has no value and the result stays
+blank. The value updates while editing whenever the link is changed,
+and otherwise re-derives when the record is opened or saved — if the
+linked record changes in the meantime, the stored value reflects it as
+of this record's last save.
+
+The same reference can be used in
+[field and section conditions](../../authoring/conditions.md).
+
+### Referencing Notebook Metadata Values
+
+The expression can read a value from the {{notebook}}'s custom metadata
+(the custom fields on the Info panel in the {{Notebook}} Editor) using
+the `_METADATA.` prefix: `{_METADATA.Field-Name}`. An **Insert notebook
+metadata** picker below the expression lists the available fields.
+
+Every metadata value is text, so a metadata reference is typed as text:
+it can be compared and used in conditionals (for example
+`{_METADATA.units} == 'imperial' ? {Depth-in} * 25.4 : {Depth-mm}`), but
+not used directly in arithmetic. If the {{notebook}} has no custom field
+with that name, the editor reports an error; at run time a missing value
+leaves the result blank. A custom field that an expression references
+cannot be removed from the Info panel until the expression is changed.
 
 ### Shared Field Options
 

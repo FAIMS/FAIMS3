@@ -6,7 +6,7 @@
 #
 # Prerequisites: stack idle (e.g. UPDATE_ROLLBACK_COMPLETE), snapshot taken.
 # After this: pnpm cdk deploy, then refresh EC2_INSTANCE_ID via
-#   pnpm run couch-upgrade-baseline -- --instance-id
+#   pnpm run couch-upgrade-baseline --instance-id
 #
 set -euo pipefail
 
@@ -207,13 +207,17 @@ main() {
 
   cat <<EOF
 
-Ready for instance replace. Next:
+Ready for volume/instance replace. Next:
 
   pnpm cdk deploy
 
-Then refresh EC2_INSTANCE_ID:
+# Recovery (volume replace; instance often still stopped):
+  ./scripts/ec2StartInstance.sh
+  pnpm run couch-upgrade-baseline --instance-id
 
-  pnpm run couch-upgrade-baseline -- --instance-id
+# Upgrade (instance replace): refresh id after deploy, then start if needed:
+  pnpm run couch-upgrade-baseline --instance-id
+  ./scripts/ec2StartInstance.sh
 EOF
 }
 

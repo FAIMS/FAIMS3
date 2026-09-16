@@ -406,7 +406,7 @@ const ConductorConfigSchema = z.object({
   conductorDockerImage: z.string(),
   /** Conductor docker image e.g. latest, sha-123456 */
   conductorDockerImageTag: z.string().default('latest'),
-  /** The prefix to use for the short codes in the app */
+  /** Prefix for generated invite codes (e.g. `FAIMS` → `FAIMS-…`). */
   shortCodePrefix: z.string().default('FAIMS'),
   /** Provision SSO users policy - do we create a new user for an unknown SSO sign-in? Default 'reject' */
   provisionSSOUsersPolicy: z
@@ -476,6 +476,42 @@ const BackupConfigSchema = z
     }
   );
 
+/**
+ * Scheduled one-shot ECS task that runs Conductor TTL cleanup against CouchDB.
+ * Independent of Conductor service scaling (EventBridge Scheduler → RunTask).
+ * See docs/developer/docs/source/markdown/TtlCleanup.md.
+ */
+const TtlCleanupConfigSchema = z.object({
+  /** When false, no schedule / task definition is created. */
+  enabled: z.boolean().default(false),
+  /**
+   * EventBridge Scheduler cron/rate expression. Hours/minutes are interpreted in
+   * `scheduleExpressionTimezone` (default Australia/Sydney), not UTC.
+   */
+  scheduleExpression: z.string().default('cron(0 2 * * ? *)'),
+  /**
+   * IANA timezone for `scheduleExpression` (EventBridge Scheduler
+   * ScheduleExpressionTimezone). Default Australia/Sydney so daily runs stay at
+   * local 02:00 through AEST/AEDT.
+   */
+  scheduleExpressionTimezone: z.string().default('Australia/Sydney'),
+  /** Pass --dry-run to the cleanup script (report only). */
+  dryRun: z.boolean().default(false),
+  /** Pass --compact after successful deletes (prefer rarer cadence). */
+  compact: z.boolean().default(false),
+  /** Pass --include-longlived for optional long-lived token sweep. */
+  includeLongLived: z.boolean().default(false),
+  /**
+   * Pass --delete-exhausted-invites for non-expired invites with exhausted uses.
+   * Default false — exhausted invites may still be useful if uses are raised later.
+   */
+  deleteExhaustedInvites: z.boolean().default(false),
+  /** Fargate CPU units for the cleanup task. */
+  cpu: z.number().int().positive().default(256),
+  /** Fargate memory (MiB) for the cleanup task. */
+  memory: z.number().int().positive().default(512),
+});
+
 const AppSupportLinksSchema = z.object({
   /** The support email address */
   supportEmail: z.string().default('support@fieldmark.au'),
@@ -531,6 +567,18 @@ export const UiConfiguration = z
         ])
       )
       .optional(),
+    /**
+     * When true (default), the designer can add a plan to templates that do
+     * not already have one. When false, Add Plan is hidden; templates that
+     * already have a plan can still be reconfigured. Passed to the web build
+     * as VITE_ENABLE_PLANS_IN_DESIGNER.
+     */
+    enablePlansInDesigner: z.boolean().default(true),
+    /**
+     * When true (default), the record view shows a "Status" tab. When false,
+     * the tab is hidden. Passed to the app build as VITE_SHOW_STATUS_TAB.
+     */
+    showStatusTab: z.boolean().default(true),
   })
   .refine(
     data => {
@@ -547,6 +595,10 @@ export const UiConfiguration = z
     }
   );
 
+/** Defaults shared with Conductor env wiring (`EXPORT_RATE_LIMITER_*`). */
+export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS = 600_000;
+export const DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW = 20;
+
 export const SecurityConfigSchema = z.object({
   /** Maximum number of days for long lived tokens */
   maximumLongLivedTokenDurationDays: z.number().int().min(1).optional(),
@@ -562,6 +614,30 @@ export const SecurityConfigSchema = z.object({
    * production even when HTTP rate limiting is disabled upstream.
    */
   authAttemptLimiterEnabled: z.boolean().default(true),
+  /**
+   * Dedicated export mint/redeem limiter (`EXPORT_RATE_LIMITER_ENABLED`).
+   * Default true. Independent of `rateLimiterEnabled` so ZIP/GDAL work
+   * stays capped when the global IP limiter is off (upstream WAF).
+   */
+  exportRateLimiterEnabled: z.boolean().default(true),
+  /**
+   * Export-limiter window in milliseconds (`EXPORT_RATE_LIMITER_WINDOW_MS`).
+   * Default 600000 (10 minutes).
+   */
+  exportRateLimiterWindowMs: z
+    .number()
+    .int()
+    .min(1000)
+    .default(DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS),
+  /**
+   * Export mint/redeem requests allowed per window
+   * (`EXPORT_RATE_LIMITER_PER_WINDOW`). Default 20.
+   */
+  exportRateLimiterPerWindow: z
+    .number()
+    .int()
+    .min(1)
+    .default(DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW),
 });
 
 // Define the schema
@@ -600,6 +676,21 @@ export const ConfigSchema = z.object({
   couch: CouchConfigSchema,
   /** Backup configuration */
   backup: BackupConfigSchema,
+  /**
+   * Scheduled TTL cleanup of ephemeral auth/invite CouchDB docs.
+   * Disabled by default — enable only after the API image includes ttlCleanup.
+   */
+  ttlCleanup: TtlCleanupConfigSchema.optional().default({
+    enabled: false,
+    scheduleExpression: 'cron(0 2 * * ? *)',
+    scheduleExpressionTimezone: 'Australia/Sydney',
+    dryRun: false,
+    compact: false,
+    includeLongLived: false,
+    deleteExhaustedInvites: false,
+    cpu: 256,
+    memory: 512,
+  }),
   /** Conductor service configuration */
   conductor: ConductorConfigSchema,
   /** Domain configuration for all services */
@@ -624,6 +715,9 @@ export const ConfigSchema = z.object({
     maximumLongLivedTokenDurationDays: 90,
     rateLimiterEnabled: true,
     authAttemptLimiterEnabled: true,
+    exportRateLimiterEnabled: true,
+    exportRateLimiterWindowMs: DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS,
+    exportRateLimiterPerWindow: DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW,
   }),
   /** Bugsnag/monitoring */
   bugMonitoring: BugMonitoringConfigurationSchema,
@@ -638,6 +732,7 @@ export type BugMonitoringConfiguration = z.infer<
   typeof BugMonitoringConfigurationSchema
 >;
 export type ConductorConfig = z.infer<typeof ConductorConfigSchema>;
+export type TtlCleanupConfig = z.infer<typeof TtlCleanupConfigSchema>;
 export type DomainsConfig = z.infer<typeof DomainsConfigSchema>;
 export type SMTPConfig = z.infer<typeof SMTPConfigSchema>;
 export type OfflineMapsConfig = z.infer<typeof OfflineMapsConfigSchema>;

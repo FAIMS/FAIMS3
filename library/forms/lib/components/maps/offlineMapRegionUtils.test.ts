@@ -1,6 +1,5 @@
 import type {OfflineMapRegion} from '@faims3/data-model';
 import {describe, expect, it} from 'vitest';
-import type {StoredTileSet} from './TileStore';
 import {
   deriveTileSetDownloadStatus,
   formatOfflineMapSizeBytes,
@@ -8,6 +7,7 @@ import {
   offlineMapRegionsEqual,
   tileSetDownloadProgress,
 } from './offlineMapRegionUtils';
+import {StoredTileSet} from './tileDB';
 
 const region: OfflineMapRegion = {
   type: 'Polygon',

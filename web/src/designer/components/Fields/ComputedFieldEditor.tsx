@@ -6,27 +6,40 @@ import {
   Box,
   FormHelperText,
   Typography,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {useMemo} from 'react';
 import {
-  compileComputedExpression,
+  buildParentFieldTypes,
+  buildRelatedFieldTypes,
+  compileComputedExpressionForForm,
   ExpressionError,
   ExprType,
   FAIMS_TYPE_TO_EXPR_TYPE,
+  PARENT_REFERENCE_PREFIX,
+  UiSpecModel,
 } from '@faims3/data-model';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {FieldSearchAutocomplete} from '../field-selector';
+import {applyFieldFilters} from '../../features/field-search';
 import {
-  applyFieldFilters,
-  getViewsetFieldIds,
-} from '../../features/field-search';
+  fieldIdsForViewset,
+  decodeMetadataRef,
+  encodeMetadataRef,
+  extractExpressionReferences,
+  isReferenceableMetadataKey,
+} from '@faims3/data-model';
 import {
   selectUiFields,
   selectUiViews,
   selectUiViewSets,
+  selectCustomMetadata,
 } from '../../store/selectors';
 import DebouncedTextField from '../debounced-text-field';
 import {BaseFieldEditor} from './BaseFieldEditor';
@@ -65,9 +78,21 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
     state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const allFields = useAppSelector(selectUiFields);
+  const custom = useAppSelector(selectCustomMetadata);
   const views = useAppSelector(selectUiViews);
   const viewsets = useAppSelector(selectUiViewSets);
   const dispatch = useAppDispatch();
+
+  // The data-model helpers read the uiSpec shape; the designer's slices are
+  // structurally compatible.
+  const uiSpecForCompile = useMemo(
+    () => ({fields: allFields, views, viewsets}) as unknown as UiSpecModel,
+    [allFields, views, viewsets]
+  );
+
+  const getFieldLabelFor = (id: string) =>
+    (allFields[id]?.['component-parameters']?.label as string | undefined) ??
+    id;
 
   const expression =
     (field['component-parameters'].expression as string | undefined) || '';
@@ -86,30 +111,79 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
   const referenceableFieldCount = useMemo(
     () =>
       applyFieldFilters(
-        getViewsetFieldIds(viewsetId, views, viewsets),
+        fieldIdsForViewset({views, viewsets}, viewsetId),
         allFields,
         referenceableFieldFilters
       ).length,
     [viewsetId, views, viewsets, allFields, referenceableFieldFilters]
   );
 
-  // Compile the expression against the current field types, mirroring the
-  // notebook-load compile. Runs when the (debounced) expression or the spec
-  // changes; returns the compile error message, or null when valid/empty.
+  // Parent fields referenceable as {_PARENT.Field-ID}.
+  const parentFieldOptions = useMemo(() => {
+    const {types} = buildParentFieldTypes({
+      uiSpecification: uiSpecForCompile,
+      formId: viewsetId,
+    });
+    return [...types.keys()].map(ref => ({
+      ref,
+      label: getFieldLabelFor(ref.slice(PARENT_REFERENCE_PREFIX.length)),
+    }));
+  }, [uiSpecForCompile, viewsetId]);
+
+  // Fields on records linked through single-link Linked Related Records
+  // fields, referenceable as {Rel-Field-ID.Field-ID}.
+  const relatedFieldOptions = useMemo(() => {
+    const {types} = buildRelatedFieldTypes({
+      uiSpecification: uiSpecForCompile,
+      formId: viewsetId,
+    });
+    return [...types.keys()].map(ref => {
+      const dot = ref.indexOf('.');
+      const relFieldId = ref.slice(0, dot);
+      const fieldId = ref.slice(dot + 1);
+      return {
+        ref,
+        label: `${getFieldLabelFor(relFieldId)} > ${getFieldLabelFor(fieldId)}`,
+      };
+    });
+  }, [uiSpecForCompile, viewsetId]);
+
+  // Notebook metadata referenceable as {_METADATA.key}.
+  const metadataOptions = useMemo(
+    () =>
+      Object.keys(custom)
+        .filter(isReferenceableMetadataKey)
+        .map(key => ({ref: encodeMetadataRef(key), label: key})),
+    [custom]
+  );
+
+  // Compile with the per-form wrapper so {_PARENT.Field-ID} references
+  // validate against this form's possible parent forms.
   const validationError = useMemo(() => {
     if (expression.trim() === '') return null;
-    const fieldTypes = new Map<string, ExprType>();
-    for (const [id, f] of Object.entries(allFields)) {
-      const t = FAIMS_TYPE_TO_EXPR_TYPE[f['type-returned'] ?? ''];
-      if (t) fieldTypes.set(id, t);
-    }
     try {
-      compileComputedExpression(expression, fieldTypes, requiredType);
-      return null;
+      compileComputedExpressionForForm({
+        source: expression,
+        uiSpecification: uiSpecForCompile,
+        formId: viewsetId,
+        requiredType,
+      });
+      // The compile pass types any key; only the designer knows which exist.
+      const metadataKeys = extractExpressionReferences(expression)
+        .map(decodeMetadataRef)
+        .filter((key): key is string => key !== null);
+      const missing = metadataKeys.find(key => !(key in custom));
+      if (missing) {
+        return `{${encodeMetadataRef(missing)}}: "${missing}" is not a custom metadata key on this notebook (see the Info panel)`;
+      }
+      const unsafe = metadataKeys.find(key => !isReferenceableMetadataKey(key));
+      return unsafe
+        ? `{${encodeMetadataRef(unsafe)}}: "${unsafe}" cannot be referenced - rename it to use only letters, numbers, hyphens and underscores`
+        : null;
     } catch (e) {
       return e instanceof ExpressionError ? e.message : 'Invalid expression';
     }
-  }, [expression, allFields, requiredType]);
+  }, [expression, uiSpecForCompile, viewsetId, requiredType, custom]);
 
   const updateExpression = (value: string) => {
     const newField = withUpdatedField(field, nextField => {
@@ -182,28 +256,111 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
                 </li>
                 <li>Logic (true/false): &amp;&amp; || !</li>
                 <li>Conditional: condition ? ifTrue : ifFalse</li>
+                <li>
+                  Parent record fields: {'{_PARENT.Field-ID}'} - value from the
+                  record's parent
+                </li>
+                <li>
+                  Linked record fields: {'{Link-Field-ID.Field-ID}'} - value
+                  from the record linked through a single-link Related Records
+                  field
+                </li>
               </ul>
               The result must be {isText ? 'text' : 'a number'}.
             </Typography>
           </AccordionDetails>
         </Accordion>
         {referenceableFieldCount > 0 ? (
-          <Box sx={{mt: 2, maxWidth: 400}}>
-            <FieldSearchAutocomplete
-              value={null}
-              onChange={fieldId => {
-                if (fieldId) insertFieldRef(fieldId);
-              }}
-              scope={{kind: 'viewset', viewsetId}}
-              filters={referenceableFieldFilters}
-              label="Insert field"
-              placeholder="Search fields…"
-              size="small"
-              clearOnSelect
-              noOptionsText="No field search results"
-              data-testid="computed-field-insert"
-            />
-          </Box>
+          <>
+            <Box sx={{mt: 2, maxWidth: 400}}>
+              <FieldSearchAutocomplete
+                value={null}
+                onChange={fieldId => {
+                  if (fieldId) insertFieldRef(fieldId);
+                }}
+                scope={{kind: 'viewset', viewsetId}}
+                filters={referenceableFieldFilters}
+                label="Insert field"
+                placeholder="Search fields…"
+                size="small"
+                clearOnSelect
+                noOptionsText="No field search results"
+                data-testid="computed-field-insert"
+              />
+            </Box>
+            {parentFieldOptions.length > 0 && (
+              <Box sx={{mt: 1, maxWidth: 400}}>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="parent-field-insert-label">
+                    Insert parent field
+                  </InputLabel>
+                  <Select
+                    labelId="parent-field-insert-label"
+                    label="Insert parent field"
+                    value=""
+                    data-testid="computed-parent-field-insert"
+                    onChange={e => {
+                      if (e.target.value) insertFieldRef(e.target.value);
+                    }}
+                  >
+                    {parentFieldOptions.map(({ref, label}) => (
+                      <MenuItem key={ref} value={ref}>
+                        {label} ({ref})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            )}
+            {relatedFieldOptions.length > 0 && (
+              <Box sx={{mt: 1, maxWidth: 400}}>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="related-field-insert-label">
+                    Insert linked record field
+                  </InputLabel>
+                  <Select
+                    labelId="related-field-insert-label"
+                    label="Insert linked record field"
+                    value=""
+                    data-testid="computed-related-field-insert"
+                    onChange={e => {
+                      if (e.target.value) insertFieldRef(e.target.value);
+                    }}
+                  >
+                    {relatedFieldOptions.map(({ref, label}) => (
+                      <MenuItem key={ref} value={ref}>
+                        {label} ({ref})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            )}
+            {metadataOptions.length > 0 && (
+              <Box sx={{mt: 1, maxWidth: 400}}>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="metadata-insert-label">
+                    Insert notebook metadata
+                  </InputLabel>
+                  <Select
+                    labelId="metadata-insert-label"
+                    label="Insert notebook metadata"
+                    value=""
+                    data-testid="computed-metadata-insert"
+                    onChange={e => {
+                      if (e.target.value) insertFieldRef(e.target.value);
+                    }}
+                  >
+                    {metadataOptions.map(({ref, label}) => (
+                      <MenuItem key={ref} value={ref}>
+                        {label} ({ref})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            )}
+          </>
         ) : (
           <Alert severity="info" sx={{mt: 2}}>
             No referenceable fields in this form. Add number, text, or checkbox

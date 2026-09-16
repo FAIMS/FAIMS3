@@ -1,5 +1,5 @@
-import {Record} from '@faims3/data-model';
 import {RecordContext} from '../gui/components/record/types';
+import {formatTimestamp, Record} from '@faims3/data-model';
 
 /**
  * Converts a record into record context used in the form
@@ -26,110 +26,57 @@ export function formatDate(date: Date | null | undefined): string {
   return formatTimestamp(date.getTime());
 }
 
+/** Placeholder shown when a record value is missing or cannot be rendered. */
+export const MISSING_DATA_PLACEHOLDER = '-';
+
 /**
- * Formats a timestamp into a date-time string in the format "DD/MM/YY H:MMam/pm"
+ * Converts record metadata field values to displayable strings.
  *
- * @param timestamp - Unix timestamp in milliseconds (e.g., from Date.now())
- * @returns Formatted date-time string or empty string if input is invalid
- *
- * @throws Never - Returns empty string for all error cases
- *
- * Handles the following edge cases:
- * - Invalid inputs (null, undefined, NaN, Infinity)
- * - String timestamps (converts to numbers)
- * - Invalid date objects
- * - Out of range values for date components
+ * @param field - The field name to extract from the data
+ * @param data - The data object containing the field
+ * @returns A string representation of the field value, or a fallback value if
+ *          the data is missing or cannot be converted
  */
-export function formatTimestamp(
-  timestamp: string | number | null | undefined,
-  timezone: string | undefined = undefined
-): string {
-  if (timestamp === null || timestamp === undefined) {
-    return '';
-  }
-
-  const timestampNum =
-    typeof timestamp === 'string' ? Number(timestamp) : timestamp;
-
-  if (isNaN(timestampNum) || !isFinite(timestampNum)) {
-    return '';
-  }
-
+export function getDisplayDataFromRecordMetadata({
+  field,
+  data,
+}: {
+  field: string;
+  data: {[key: string]: any};
+}): string {
+  const fallback = MISSING_DATA_PLACEHOLDER;
   try {
-    const date = new Date(timestampNum);
+    if (!data) return fallback;
 
-    // If timezone is specified, convert to that timezone
-    if (timezone) {
-      const options: Intl.DateTimeFormatOptions = {
-        timeZone: timezone,
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: true,
-      };
+    const value = data[field];
 
-      const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(
-        date
-      );
-      const dateParts = parts.reduce(
-        (acc, part) => {
-          acc[part.type] = part.value;
-          return acc;
-        },
-        {} as {[key: string]: string}
-      );
+    if (value === undefined || value === null) return fallback;
 
-      const day = dateParts.day.padStart(2, '0');
-      const month = dateParts.month.padStart(2, '0');
-      const year = dateParts.year.slice(-2);
-
-      let hours = parseInt(dateParts.hour);
-      if (dateParts.dayPeriod === 'PM' && hours !== 12) hours += 12;
-      if (dateParts.dayPeriod === 'AM' && hours === 12) hours = 0;
-
-      hours = hours % 12 || 12;
-      const minutes = dateParts.minute.padStart(2, '0');
-      const ampm = dateParts.dayPeriod.toLowerCase();
-
-      return `${day}-${month}-${year} ${hours}:${minutes}${ampm}`;
+    switch (typeof value) {
+      case 'string':
+        return value.trim() || fallback;
+      case 'number':
+        return Number.isFinite(value) ? value.toString() : fallback;
+      case 'boolean':
+        return value.toString();
+      case 'object':
+        if (Array.isArray(value)) {
+          return value.filter(item => item !== null).join(', ') || fallback;
+        }
+        if (value instanceof Date) {
+          return value.toISOString();
+        }
+        try {
+          const str = JSON.stringify(value);
+          return str === '{}' ? fallback : str;
+        } catch {
+          return fallback;
+        }
+      default:
+        return fallback;
     }
-
-    // Default behavior using local timezone
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = String(date.getFullYear()).slice(-2);
-
-    let hours = date.getHours();
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'pm' : 'am';
-
-    hours = hours % 12;
-    hours = hours || 12;
-
-    return `${day}-${month}-${year} ${hours}:${minutes}${ampm}`;
   } catch (error) {
-    return '';
+    console.warn(`Error formatting field ${field}:`, error);
+    return fallback;
   }
-}
-
-/**
- * Converts field names to a more readable format by:
- * 1. Splitting CamelCase into separate words
- * 2. Replacing hyphens with spaces
- * 3. Trimming any resulting extra whitespace
- *
- * @param fieldName - The input field name to prettify
- * @returns A cleaned and formatted string
- */
-export function prettifyFieldName(fieldName: string): string {
-  return fieldName
-    .replace(/([a-z])([A-Z])/g, '$1 $2') // Split CamelCase by adding space between lower and upper case letters
-    .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2') // Handle consecutive capitals (e.g., APIResponse -> API Response)
-    .replace(/([a-zA-Z])(\d+)/g, '$1 $2') // Split between letters and numbers
-    .replace(/(\d+)([a-zA-Z])/g, '$1 $2') // Split between numbers and letters
-    .replace(/-/g, ' ') // Replace all hyphens with spaces
-    .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-    .trim(); // Remove leading/trailing whitespace
 }

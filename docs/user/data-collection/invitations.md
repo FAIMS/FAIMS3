@@ -1,28 +1,26 @@
 # Notebook Invitations
 
-Once the mobile app has been installed, you can get access to a {{notebook}} by getting an invitation in the form of an **access code** or a **QR code**:
+Once the mobile app has been installed, you can get access to a {{notebook}} by
+accepting an **invite**. Invites are shared primarily as a **QR code** or
+**link**. Typing an invite code is an advanced fallback when those are not
+available.
 
 ```{screenshot} getting-started/access-code-mobile.png
-:alt: Access Code Screen
+:alt: Invite screen
 ```
 
-Only **Team Managers** and **Team Administrators** can generate invitation codes. See [User roles and permissions](../admin/user-roles-and-permissions-guide.md) for more information.
+Only **Team Managers** and **Team Administrators** can generate invitations. See
+[User roles and permissions](../admin/user-roles-and-permissions-guide.md) for
+more information.
 
-## Access Codes
+## QR coded invitations (preferred)
 
-An **access code** looks something like _FMRK-ABC123_ and gives you access to the specified {{notebook}}.
+The **QR code** option is the easiest way to get access to a {{notebook}}. QR
+code invitations can be shared via email, print outs or directly from your
+**Team Manager**'s device.
 
-The first part (_FMRK_) is a prefix that identifies the server and should match the prefix shown in your app.
-
-The six character code (_ABC123_) is the one that you will enter in the app.
-
-Once entered the code, you will see the registration screen.
-
-## QR Coded Invitations
-
-The **QR code** option makes it easy to get access to a {{notebook}}. QR code invitations can be shared via email, print outs or directly from your **Team Manager**'s device.
-
-To accept the invitation, click the QR Code button and scan the QR code with your device to get to the registration screen.
+To accept the invitation, tap **Scan invite QR code** and scan the QR code with
+your device to open the registration screen.
 
 If you don't already have an account on the {{FAIMS}} server, you will be able to
 register for an account at this point. You can either register with your email
@@ -37,3 +35,18 @@ access to the {{notebook}}.
 
 After registering or logging in, you will be shown the main {{notebook}} list in
 the app and you can activate the {{notebook}} you will be working on.
+
+## Invite links
+
+An invite **link** opens the same registration screen as a QR code. Share the
+link by email or message; when opened on a device with the app installed, it
+completes the invite flow.
+
+## Invite codes (advanced)
+
+If you cannot use a QR code or link, you can enter the invite code manually
+under **Advanced: enter invite code instead**.
+
+An invite code looks like _FMRK-aB3xY9…_ — a server prefix, a hyphen, then a
+long random code. Prefer pasting the full code when possible. The prefix
+identifies the server and should match the prefix shown in your app.

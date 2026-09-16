@@ -1,8 +1,11 @@
+import type {MinimalRecordMetadata} from '@faims3/data-model';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {act, renderHook} from '@testing-library/react';
+import {createElement, type ReactNode} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {syncStateService} from '../context/slices/helpers/syncStateService';
 import type {SyncMode} from '../sync/syncMode';
-import {useIsRecordDownloadUnderway} from './customHooks';
+import {useIsRecordDownloadUnderway, useRecordList} from './customHooks';
 
 // The hook reads the sync state service, not the redux store, but importing
 // its module pulls the store in, which initialises its slices in the wrong
@@ -118,5 +121,80 @@ describe('useIsRecordDownloadUnderway', () => {
     expect(clearInterval).toHaveBeenCalledWith(intervalId);
     setInterval.mockRestore();
     clearInterval.mockRestore();
+  });
+});
+
+/**
+ * A caller memoising on this hook's result rebuilds that memo whenever the
+ * result changes identity, remounting whatever the memo built.
+ */
+describe('useRecordList', () => {
+  const projectId = 'test-project';
+
+  /**
+   * The key the hook builds with no search, no active user and no token, which
+   * is what the mocked store gives it.
+   */
+  const recordListKey = [
+    'allrecords',
+    projectId,
+    undefined,
+    true,
+    undefined,
+    undefined,
+    undefined,
+  ];
+
+  const record: MinimalRecordMetadata = {
+    projectId,
+    recordId: 'rec-1',
+    revisionId: 'frev-1',
+    type: 'Site',
+    created: new Date(0),
+    createdBy: 'tester',
+    updated: new Date(0),
+    updatedBy: 'tester',
+    conflicts: false,
+    deleted: false,
+  };
+
+  /** Render against a client, with the fetch gated off so only its cache reads. */
+  const renderRecordList = (client: QueryClient) =>
+    renderHook(
+      () =>
+        useRecordList({
+          projectId,
+          filterDeleted: true,
+          uiSpecification: undefined,
+          enabled: false,
+        }),
+      {
+        wrapper: ({children}: {children: ReactNode}) =>
+          createElement(QueryClientProvider, {client}, children),
+      }
+    );
+
+  it('holds its identity across renders once the list has loaded', () => {
+    const client = new QueryClient();
+    client.setQueryData(recordListKey, [record]);
+
+    const {result, rerender} = renderRecordList(client);
+    const first = result.current;
+    expect(first.allRecords).toEqual([record]);
+
+    rerender();
+
+    expect(result.current).toBe(first);
+  });
+
+  it('holds its identity across renders before the list has loaded', () => {
+    // The empty fallback is where a fresh array per render would leak through
+    const {result, rerender} = renderRecordList(new QueryClient());
+    const first = result.current;
+    expect(first.isLoading).toBe(true);
+
+    rerender();
+
+    expect(result.current).toBe(first);
   });
 });

@@ -190,15 +190,28 @@ export const indexDocument = {
             const conflict = doc.heads.length > 1;
             const created = doc.created;
             const created_by = doc.created_by;
+            const updatedAt = doc.updatedAt;
             const type = doc.type;
             emit(doc._id, {
               _id: doc.heads[0],
               conflict,
               created,
               created_by,
+              updatedAt,
               type,
             });
           }
+      }),
+    },
+    // One row per record HEAD, keyed by parsed updatedAt then record id.
+    recordByUpdated: {
+      map: convertToCouchDBString(doc => {
+        if (doc.record_format_version === 1 && doc.updatedAt) {
+          const ts = Date.parse(doc.updatedAt);
+          if (!Number.isNaN(ts)) {
+            emit([ts, doc._id], 1);
+          }
+        }
       }),
     },
     revision: {

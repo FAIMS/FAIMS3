@@ -6,6 +6,7 @@ import {
   FormUpdateData,
   HydratedRecordDocument,
   IAttachmentService,
+  RecordContext,
 } from '@faims3/data-model';
 import {MapConfig} from '../components/maps/types';
 
@@ -51,6 +52,8 @@ export interface DataViewProps {
   trace: DataViewTraceEntry[];
   // Controls/triggers
   tools: DataViewTools;
+  /** Record context so conditions can see parent/related values. */
+  context?: RecordContext;
 }
 
 // A renderer function component

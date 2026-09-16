@@ -73,8 +73,7 @@ in the Notebook Editor and must be defined via JSON editing.
 Configure any of the shared field options as needed.
 
 For settings shared across all field types — including Required,
-Annotation, Uncertainty, Conditions, Copy value to new records,
-and Display in child records — see
+Annotation, Uncertainty, Conditions, and Copy value to new records — see
 [Field Options](../shared-settings/field-options.md).
 
 ## Tips

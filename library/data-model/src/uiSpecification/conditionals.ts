@@ -207,6 +207,49 @@ export const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every(item => typeof item === 'string');
 
 /**
+ * True when the scalar field value is any of the listed target strings.
+ * Missing field, non-string value, or an empty/invalid target list → false.
+ */
+registerCompiler('is-one-of', (expression: ConditionalExpression) => {
+  return (values: RecordValues) => {
+    if (!(expression.field && expression.field in values)) return false;
+
+    const targets = expression.value as string[] | undefined | null;
+    if (!targets || !isStringArray(targets) || targets.length === 0) {
+      return false;
+    }
+
+    const present = values[expression.field];
+    if (typeof present !== 'string') return false;
+
+    // Strict match, same as equal — no trimming.
+    return targets.some(target => target === present);
+  };
+});
+
+/**
+ * True when the scalar field value is none of the listed target strings.
+ * Missing field, non-string value, or an empty/invalid target list → true,
+ * matching not-equal's missing-field behaviour.
+ */
+registerCompiler('is-not-one-of', (expression: ConditionalExpression) => {
+  return (values: RecordValues) => {
+    if (!(expression.field && expression.field in values)) return true;
+
+    const targets = expression.value as string[] | undefined | null;
+    if (!targets || !isStringArray(targets) || targets.length === 0) {
+      return true;
+    }
+
+    const present = values[expression.field];
+    if (typeof present !== 'string') return true;
+
+    // Strict match, same as not-equal — no trimming.
+    return !targets.some(target => target === present);
+  };
+});
+
+/**
  * This condition checks that the list contains the targeted entry. If an error
  * occurs or other edge case, returns false to reflect 'not' containing.
  */

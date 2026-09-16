@@ -10,7 +10,7 @@
  * Unless required by applicable law or agreed to in writing software
  * distributed under the License is distributed on an "AS IS" BASIS
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
+ * See the License, for the specific language governing permissions and
  * limitations under the License.
  *
  * Filename: signin.tsx
@@ -29,7 +29,10 @@ import {useAppSelector} from '../../context/store';
 import ClusterCard from '../components/authentication/cluster_card';
 import OnboardingComponent from '../components/authentication/oneServerLanding';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import {QRCodeRegistration, ShortCodeRegistration} from './shortcode';
+import {
+  InviteCodeRegistration,
+  InviteQRRegistration,
+} from './inviteRegistration';
 import {CAPACITOR_PLATFORM, IS_WEB_PLATFORM} from '../../buildconfig';
 
 export function SignIn() {
@@ -72,16 +75,14 @@ export function SignIn() {
             </Grid>
           )}
 
-          <Grid size={{lg: 4, md: 6, sm: 8, xs: 12}} key="short-code">
-            <ShortCodeRegistration servers={servers} />
-          </Grid>
-          {IS_WEB_PLATFORM ? (
-            <></>
-          ) : (
-            <Grid size={{lg: 4, md: 6, sm: 8, xs: 12}} key="qr-code">
-              <QRCodeRegistration servers={servers} />
+          {!IS_WEB_PLATFORM && (
+            <Grid size={{lg: 4, md: 6, sm: 8, xs: 12}} key="invite-qr">
+              <InviteQRRegistration servers={servers} />
             </Grid>
           )}
+          <Grid size={{lg: 4, md: 6, sm: 8, xs: 12}} key="invite-code">
+            <InviteCodeRegistration servers={servers} />
+          </Grid>
         </Grid>
       </Box>
     );

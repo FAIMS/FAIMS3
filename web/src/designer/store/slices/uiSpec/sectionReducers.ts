@@ -14,7 +14,11 @@
 
 import {PayloadAction} from '@reduxjs/toolkit';
 import {cloneField} from '../../../domain/notebook/fieldFactory';
-import {buildUniqueFieldName, slugify} from '../../../domain/notebook/ids';
+import {
+  buildUniqueFieldName,
+  sanitizeUserLabel,
+  slugify,
+} from '../../../domain/notebook/ids';
 import {NotebookUISpec} from '../../../state/initial';
 import {ConditionType} from '../../../types/condition';
 
@@ -27,7 +31,7 @@ export const sectionReducers = {
   ) => {
     const {viewId, label} = action.payload;
     if (viewId in state.views) {
-      state.views[viewId].label = label;
+      state.views[viewId].label = sanitizeUserLabel(label);
     } else {
       throw new Error(
         `Can't update unknown section ${viewId} via sectionRenamed action`
@@ -40,9 +44,10 @@ export const sectionReducers = {
     action: PayloadAction<{viewSetId: string; sectionLabel: string}>
   ) => {
     const {viewSetId, sectionLabel} = action.payload;
-    const sectionId = viewSetId + '-' + slugify(sectionLabel);
+    const safeSectionLabel = sanitizeUserLabel(sectionLabel);
+    const sectionId = viewSetId + '-' + slugify(safeSectionLabel);
     const newSection = {
-      label: sectionLabel,
+      label: safeSectionLabel,
       fields: [],
     };
     if (sectionId in state.views) {
@@ -83,17 +88,18 @@ export const sectionReducers = {
       }
     }
 
-    const newSectionId = destViewSetId + '-' + slugify(newSectionLabel);
+    const safeSectionLabel = sanitizeUserLabel(newSectionLabel);
+    const newSectionId = destViewSetId + '-' + slugify(safeSectionLabel);
     if (newSectionId in state.views) {
       throw new Error(
-        `Section ${newSectionLabel} already exists in form ${destViewSetId}.`
+        `Section ${safeSectionLabel} already exists in form ${destViewSetId}.`
       );
     }
 
     const sourceSection = state.views[sourceViewId];
 
     const newSection = {
-      label: newSectionLabel,
+      label: safeSectionLabel,
       fields: [] as string[],
       condition: sourceSection.condition,
     };

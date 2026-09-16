@@ -8,6 +8,16 @@
 import {config, emailService} from '../buildconfig';
 import {EmailOptions} from '../services/emailService';
 
+/** Escape user-controlled text before interpolating it into HTML email bodies. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /**
  * Build a URL with the verification code embedded for easy user access
  *
@@ -135,7 +145,7 @@ If you did not request this verification, please ignore this email.
     <div class="header">
       <h1>Verify Your Email Address</h1>
     </div>
-    <p>Hello ${username},</p>
+    <p>Hello ${escapeHtml(username)},</p>
     <p>Thank you for registering your email address with us. To complete the verification process, please click the button below:</p>
     <a href="${verificationUrl}" class="button">Verify Email</a>
     <p>This verification code will expire in ${expiryHours} hours.</p>
@@ -171,7 +181,7 @@ export function buildPasswordResetUrl({
   code: string;
   redirect: string;
 }): string {
-  return `${config.conductorPublicUrl}/auth/reset-password?code=${encodeURIComponent(code)}&redirect=${redirect}`;
+  return `${config.conductorPublicUrl}/auth/reset-password?code=${encodeURIComponent(code)}&redirect=${encodeURIComponent(redirect)}`;
 }
 
 /**
@@ -285,7 +295,7 @@ If you did not request a password reset, you can safely ignore this email. Your 
     <div class="header">
       <h1>Reset Your Password</h1>
     </div>
-    <p>Hello ${username},</p>
+    <p>Hello ${escapeHtml(username)},</p>
     <p>We received a request to reset your password. To proceed with the password reset, please click the button below:</p>
     <a href="${resetUrl}" class="button">Reset Password</a>
     <p>This link will expire in ${expiryHours} hours.</p>

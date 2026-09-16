@@ -38,8 +38,10 @@ import {
   initProjectsDB,
   initTeamsDB,
   initTemplatesDB,
+  initTombstoneDB,
   InvitesDB,
   GetDbById,
+  collectProjectDataDbs,
   migrateDbs,
   MigrationsDB,
   PeopleDB,
@@ -50,6 +52,7 @@ import {
   ProjectID,
   TeamsDB,
   TemplateDB,
+  TombstoneDB,
 } from '@faims3/data-model';
 import Nano from 'nano';
 import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
@@ -66,6 +69,7 @@ const PEOPLE_DB_NAME = 'people';
 const MIGRATIONS_DB_NAME = 'migrations';
 const INVITE_DB_NAME = 'invites';
 const TEAMS_DB_NAME = 'teams';
+const TOMBSTONE_DB_NAME = 'tombstone';
 
 let _directoryDB: DatabaseInterface | undefined;
 let _projectsDB: DatabaseInterface<ProjectDocument> | undefined;
@@ -74,6 +78,7 @@ let _authDB: AuthDatabase | undefined;
 let _usersDB: PeopleDB | undefined;
 let _invitesDB: InvitesDB | undefined;
 let _teamsDB: TeamsDB | undefined;
+let _tombstoneDB: TombstoneDB | undefined;
 let _migrationsDB: MigrationsDB | undefined;
 
 const pouchOptions = () => {
@@ -278,6 +283,21 @@ export const getTeamsDB = (): TeamsDB => {
   return _teamsDB;
 };
 
+export const getTombstoneDB = (): TombstoneDB => {
+  if (!_tombstoneDB) {
+    const pouch_options = pouchOptions();
+    const dbName = config.couchdbInternalUrl + '/' + TOMBSTONE_DB_NAME;
+    try {
+      _tombstoneDB = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting tombstone database.'
+      );
+    }
+  }
+  return _tombstoneDB;
+};
+
 /**
  * Returns the data DB for a given project - involves fetching the project
  * doc and then fetching the corresponding data db
@@ -365,6 +385,8 @@ export const getDbById: GetDbById = async ({dbType, id}) => {
       return getTemplatesDb();
     case DatabaseType.TEAMS:
       return getTeamsDB();
+    case DatabaseType.TOMBSTONE:
+      return getTombstoneDB();
     default: {
       const _exhaustive: never = dbType;
       throw new Exceptions.InternalSystemError(
@@ -451,6 +473,9 @@ export const initialiseDbAndKeys = async ({
 
   // Teams
   const teamsDB = getTeamsDB();
+
+  // Tombstone
+  const tombstoneDB = getTombstoneDB();
 
   // Templates
   const templatesDb = getTemplatesDb();
@@ -563,6 +588,19 @@ export const initialiseDbAndKeys = async ({
     );
   }
 
+  // Tombstone DB
+  try {
+    await couchInitialiser({
+      db: tombstoneDB,
+      content: initTombstoneDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the tombstone database!...' + e
+    );
+  }
+
   // Migrations DB
   try {
     await couchInitialiser({
@@ -605,6 +643,57 @@ export const initialiseDbAndKeys = async ({
 };
 
 /**
+ * Migrate every project's data DB to the current target version.
+ *
+ * Used after a full stack init and after backup restore (restored record
+ * documents may predate data v2 `updatedAt`).
+ */
+export const migrateAllProjectDataDbs = async () => {
+  const projects = await getAllProjectsDirectory();
+  console.log(
+    `[migrate] Found ${projects.length} project(s); opening data DBs`
+  );
+
+  const {queued: dataDbs, skipped: skippedDataDbs} =
+    await collectProjectDataDbs({
+      projects,
+      openDataDb: async (projectId: string) =>
+        (await getDataDb(projectId)) as DatabaseInterface,
+    });
+
+  for (const {projectId, dbName} of dataDbs) {
+    console.log(
+      `[migrate] Queued data DB for project ${projectId} (${dbName})`
+    );
+  }
+  for (const {projectId, error} of skippedDataDbs) {
+    console.error(
+      `[migrate] Failed to open data DB for project ${projectId}; skipping`,
+      error
+    );
+  }
+
+  if (projects.length > 0 && dataDbs.length === 0) {
+    console.error(
+      `[migrate] ${projects.length} project(s) found but 0 data DBs queued — data migrations will not run`
+    );
+  } else {
+    console.log(
+      `[migrate] Migrating ${dataDbs.length} data DB(s): ${
+        dataDbs.map(d => d.dbName).join(', ') || '(none)'
+      }`
+    );
+  }
+
+  await migrateDbs({
+    dbs: dataDbs,
+    migrationDb: getMigrationDb(),
+    userId: 'system',
+    getDbById,
+  });
+};
+
+/**
  * Initialises and then migrates all databases!
  */
 export const initialiseAndMigrateDBs = async ({
@@ -640,10 +729,20 @@ export const initialiseAndMigrateDBs = async ({
       dbType: DatabaseType.TEMPLATES,
       dbName: TEMPLATES_DB_NAME,
     },
+    {
+      db: getTombstoneDB(),
+      dbType: DatabaseType.TOMBSTONE,
+      dbName: TOMBSTONE_DB_NAME,
+    },
   ];
 
   // Migrate these first
   const migrationsDb = getMigrationDb();
+  console.log(
+    `[migrate] Migrating ${dbs.length} global DB(s): ${dbs
+      .map(d => `${d.dbType}:${d.dbName}`)
+      .join(', ')}`
+  );
   await migrateDbs({
     dbs,
     migrationDb: migrationsDb,
@@ -651,28 +750,7 @@ export const initialiseAndMigrateDBs = async ({
     getDbById,
   });
 
-  // Now migrate all data/metadata DBs
-  const projects = await getAllProjectsDirectory();
-  dbs = [];
-
-  for (const project of projects) {
-    // Project ID
-    const projectId = project._id;
-    const dataDb = (await getDataDb(projectId)) as DatabaseInterface;
-    dbs.concat([
-      {
-        db: dataDb,
-        dbType: DatabaseType.DATA,
-        dbName: dataDb.name,
-      },
-    ]);
-  }
-  await migrateDbs({
-    dbs,
-    migrationDb: migrationsDb,
-    userId: 'system',
-    getDbById,
-  });
+  await migrateAllProjectDataDbs();
 
   // For users, we also establish an admin user, if not already present
   // do this after all migrations so we know the db is up to date
@@ -713,6 +791,12 @@ export const listCouchDatabaseNames = async (): Promise<string[]> => {
 export const destroyCouchDatabase = async (dbName: string): Promise<void> => {
   const nano = await getNanoInstance();
   await nano.db.destroy(dbName);
+};
+
+/** Compacts a CouchDB database by name (reclaims revision bodies). */
+export const compactCouchDatabase = async (dbName: string): Promise<void> => {
+  const nano = await getNanoInstance();
+  await nano.db.compact(dbName);
 };
 
 /**

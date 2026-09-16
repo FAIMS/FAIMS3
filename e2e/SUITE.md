@@ -60,41 +60,44 @@ apply to the Fieldmark app path above. Appium (`test:e2e:android` /
 | `app/notebook-activate.e2e.ts`       | Notebook workspace, Active / Not Active tabs, activate control          |
 | `app/record-crud.e2e.ts`             | Open notebook, add record, create text record, list/search              |
 | `app/notebook-map.e2e.ts`            | Capture a point, open the Map tab, assert record geometry plots         |
+| `app/notebook-tab-context.e2e.ts`    | Tab out of the URL, back/edit/delete from a record return to its list   |
 | `journeys/template-to-record.e2e.ts` | Cross-surface: templates in Control Centre → Fieldmark workspace        |
 
 ### Tier 2 — Lifecycle & invites
 
-| Spec                                     | Covers                                                      |
-| ---------------------------------------- | ----------------------------------------------------------- |
-| `web/team-invites.e2e.ts`                | Team Invites tab, create team invite                        |
-| `web/project-invites.e2e.ts`             | Project Invites tab, create project invite                  |
-| `conductor/register-invite.e2e.ts`       | Register via team invite (new account + existing seed-user) |
-| `web/project-status-archive.e2e.ts`      | Close/reopen project, archive control, archive nav          |
-| `web/template-visibility-archive.e2e.ts` | Template visibility dialog, archive template, archive nav   |
-| `app/sync-settings.e2e.ts`               | Notebook Settings tab, sync mode select, deactivate control |
+| Spec                                     | Covers                                                                    |
+| ---------------------------------------- | ------------------------------------------------------------------------- |
+| `web/team-invites.e2e.ts`                | Team Invites tab, create team invite                                      |
+| `web/project-invites.e2e.ts`             | Project Invites tab, create project invite                                |
+| `conductor/register-invite.e2e.ts`       | Register via team invite (new account + existing seed-user)               |
+| `web/project-status-archive.e2e.ts`      | Close/reopen project, archive control, archive nav                        |
+| `web/project-delete-tombstone.e2e.ts`    | Permanent delete writes tombstone; GET `/api/tombstones/:id`              |
+| `web/template-visibility-archive.e2e.ts` | Template visibility dialog, archive template, archive nav                 |
+| `app/sync-settings.e2e.ts`               | Notebook Settings tab, sync mode select, deactivate control               |
+| `app/survey-remote-cleanup.e2e.ts`       | Tombstone delete removes local survey; missing without tombstone keeps it |
 
 ### Tier 3 — Admin, permissions, offline UI, exports
 
-| Spec                              | Covers                                                               |
-| --------------------------------- | -------------------------------------------------------------------- |
-| `web/users-admin.e2e.ts`          | Users admin list, password-reset link, disable dialog, global invite |
-| `web/profile-tokens.e2e.ts`       | Long-lived API tokens: list, create, revoke                          |
-| `web/exports.e2e.ts`              | Export tab / Data Export dialog (download-dir assert deferred)       |
-| `web/offline-map-region.e2e.ts`   | Offline Map UI; OpenLayers draw/save deferred                        |
-| `web/permissions-matrix.e2e.ts`   | Invite role options and create controls by persona                   |
-| `app/impersonation.e2e.ts`        | Ops admin impersonates seed user; guest has no impersonate menu      |
-| `conductor/password-reset.e2e.ts` | Forgot-password form + admin-generated reset link (no mail catcher)  |
+| Spec                              | Covers                                                                                                             |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `web/users-admin.e2e.ts`          | Users admin list, password-reset link, disable dialog, global invite                                               |
+| `web/profile-tokens.e2e.ts`       | Long-lived API tokens: list, create, revoke                                                                        |
+| `web/exports.e2e.ts`              | Export tab; checkbox reveals From/To on Full / Data / Photo; time-range query params; file download still deferred |
+| `web/offline-map-region.e2e.ts`   | Offline Map UI; OpenLayers draw/save deferred                                                                      |
+| `web/permissions-matrix.e2e.ts`   | Invite role options and create controls by persona                                                                 |
+| `app/impersonation.e2e.ts`        | Ops admin impersonates seed user; guest has no impersonate menu                                                    |
+| `conductor/password-reset.e2e.ts` | Forgot-password form + admin-generated reset link (no mail catcher)                                                |
 
 ### Tier 4 — Deferred / not yet automated
 
-| Area                          | Notes                                              |
-| ----------------------------- | -------------------------------------------------- |
-| CDP offline collect           | Classic WebDriver limitation; no `offline-collect` |
-| Chrome download assert        | Export dialog covered; file download not asserted  |
-| OpenLayers draw/save          | Region UI only                                     |
-| SSO mock                      | External IdP                                       |
-| Designer field-type matrix    | Beyond minimal text field                          |
-| Appium mobile (`wdio.mobile`) | Separate path; not in CI Chromium job              |
+| Area                          | Notes                                                                           |
+| ----------------------------- | ------------------------------------------------------------------------------- |
+| CDP offline collect           | Classic WebDriver limitation; no `offline-collect`                              |
+| Chrome download assert        | Time-range query params covered via fetch intercept; file download not asserted |
+| OpenLayers draw/save          | Region UI only                                                                  |
+| SSO mock                      | External IdP                                                                    |
+| Designer field-type matrix    | Beyond minimal text field                                                       |
+| Appium mobile (`wdio.mobile`) | Separate path; not in CI Chromium job                                           |
 
 ## Personas (seed)
 
