@@ -77,6 +77,11 @@ jobs:
       # https://github.com/android-actions/setup-android
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: 12.0
+          packages: 'platforms;android-36 build-tools;36.0.0'
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses || true
       - name: Building webapp
         run: |
           export platform="github-actions-play"
