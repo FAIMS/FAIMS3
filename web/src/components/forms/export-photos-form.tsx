@@ -56,6 +56,8 @@ const ExportPhotosForm = () => {
       timeRange.appendTo(params);
       const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?${params.toString()}`;
       const response = await fetch(exportUrl, {
+        // Include cookies so the mint response can set the download-grant cookie
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,
@@ -89,6 +91,8 @@ const ExportPhotosForm = () => {
       timeRange.appendTo(params);
       const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?${params.toString()}`;
       const response = await fetch(exportUrl, {
+        // Include cookies so the mint response can set the download-grant cookie
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,

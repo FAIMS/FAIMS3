@@ -2,6 +2,7 @@ import {useAuth} from '@/context/auth-provider';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {
+  ExportFormat,
   GetExportNotebookResponse,
   isValidForSpatialExport,
 } from '@faims3/data-model';
@@ -15,7 +16,7 @@ import {
   useExportTimeRange,
 } from './export-time-range-fields';
 
-export type ExportType = 'csv' | 'geojson' | 'kml' | 'geopackage';
+export type ExportType = Exclude<ExportFormat, 'zip' | 'full'>;
 type ExportCategory = 'tabular' | 'geospatial';
 
 /**
@@ -106,6 +107,8 @@ const ExportProjectForm = () => {
       const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?${params.toString()}`;
 
       const response = await fetch(exportUrl, {
+        // Include cookies so the mint response can set the download-grant cookie
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,
@@ -136,6 +139,8 @@ const ExportProjectForm = () => {
       const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?${params.toString()}`;
 
       const response = await fetch(exportUrl, {
+        // Include cookies so the mint response can set the download-grant cookie
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,

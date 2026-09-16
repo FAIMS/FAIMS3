@@ -118,6 +118,26 @@ describe('plan registry', () => {
     );
   });
 
+  test.each(['lab/samples', 'lab%2Fsamples', 'lab?samples'])(
+    'refuses to register the plan type %s, which would not survive a route',
+    bad => {
+      // Ids are minted from the plan type, so an unroutable type is caught
+      // here rather than at the notebook that carries it.
+      const registry = createPlanRegistry();
+      const templateSchema = z
+        .object({planType: z.literal(bad), formType: z.string()})
+        .passthrough();
+      const definition = {
+        ...testPlanDefinition,
+        templateSchema,
+      } as unknown as typeof testPlanDefinition;
+      expect(() => registerPlanType(definition, registry)).toThrow(
+        /may not contain/
+      );
+      expect(registry.size).toBe(0);
+    }
+  );
+
   test('safeValidatePlan rejects payloads without a valid base plan shape', () => {
     const registry = createPlanRegistry();
     const result = safeValidatePlan({}, registry);
@@ -130,7 +150,10 @@ describe('plan registry', () => {
 
   test('safeValidatePlan rejects unknown plan types', () => {
     const registry = createPlanRegistry();
-    const result = safeValidatePlan({planType: 'UnknownPlan'}, registry);
+    const result = safeValidatePlan(
+      {planId: 'unknown', planType: 'UnknownPlan', label: 'Unknown'},
+      registry
+    );
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -145,7 +168,9 @@ describe('plan registry', () => {
 
     const result = safeValidatePlan(
       {
+        planId: 'test',
         planType: TEST_PLAN_TYPE,
+        label: 'Test',
         formType: 'record-form',
         requiredCount: 3,
       },
@@ -155,7 +180,9 @@ describe('plan registry', () => {
     expect(result).toEqual({
       success: true,
       data: {
+        planId: 'test',
         planType: TEST_PLAN_TYPE,
+        label: 'Test',
         formType: 'record-form',
         requiredCount: 3,
       },

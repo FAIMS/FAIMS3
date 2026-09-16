@@ -37,6 +37,7 @@ import {addAuthPages} from './auth/authPages';
 import {addAuthRoutes} from './auth/authRoutes';
 import {registerAuthProviders} from './auth/strategies/applyStrategies';
 import {config} from './buildconfig';
+import {isCorsOriginAllowed} from './corsAllowlist';
 import {
   databaseValidityReport,
   initialiseDbAndKeys,
@@ -133,6 +134,14 @@ if (!IS_TEST && config.rateLimiterEnabled) {
   }
 }
 
+if (!IS_TEST && config.exportRateLimiterEnabled) {
+  console.log(
+    `Activating export rate limiter (${config.exportRateLimiterPerWindow} req / ${config.exportRateLimiterWindowMs} ms)`
+  );
+} else if (!IS_TEST) {
+  console.log('Not enabling export rate limiter (explicitly disabled).');
+}
+
 app.use(morgan('combined'));
 
 // Only parse query parameters into strings, not objects
@@ -186,7 +195,16 @@ app.use(
   express.urlencoded({extended: true, limit: config.urlencodedBodyLimit})
 );
 app.use(express.json({limit: config.jsonBodyLimit}));
-app.use(cors());
+// Restrict browser CORS to the Conductor / Control Centre / app allowlist and
+// allow credentials so the export download-grant cookie can be set.
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      callback(null, isCorsOriginAllowed(origin));
+    },
+    credentials: true,
+  })
+);
 
 app.use(passport.initialize());
 

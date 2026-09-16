@@ -26,7 +26,12 @@ import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import {Construct} from 'constructs';
 import {getPathToRoot} from '../util/mono';
 import {SharedBalancer} from './networking';
-import {AuthProvidersConfig, ConductorConfig} from '../config';
+import {
+  AuthProvidersConfig,
+  ConductorConfig,
+  DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW,
+  DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS,
+} from '../config';
 
 const DEFAULT_SMTP_CACHE_EXPIRY = 300;
 
@@ -118,6 +123,16 @@ export interface FaimsConductorProps {
    * true. Keep enabled in production even when HTTP limiting is upstream.
    */
   authAttemptLimiterEnabled?: boolean;
+  /**
+   * Dedicated export mint/redeem limiter. Default true. Independent of
+   * rateLimiterEnabled so ZIP/GDAL work stays capped when the global IP
+   * limiter is off.
+   */
+  exportRateLimiterEnabled?: boolean;
+  /** Export-limiter window in milliseconds. Default 600000 (10 minutes). */
+  exportRateLimiterWindowMs?: number;
+  /** Export mint/redeem requests allowed per window. Default 20. */
+  exportRateLimiterPerWindow?: number;
   /** Bugsnag config */
   /** Version e.g. v1.2.3 */
   apiVersion?: string;
@@ -299,6 +314,15 @@ export class FaimsConductor extends Construct {
         props.rateLimiterEnabled === false ? 'false' : 'true',
       AUTH_ATTEMPT_LIMITER_ENABLED:
         props.authAttemptLimiterEnabled === false ? 'false' : 'true',
+      EXPORT_RATE_LIMITER_ENABLED:
+        props.exportRateLimiterEnabled === false ? 'false' : 'true',
+      EXPORT_RATE_LIMITER_WINDOW_MS: `${
+        props.exportRateLimiterWindowMs ?? DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS
+      }`,
+      EXPORT_RATE_LIMITER_PER_WINDOW: `${
+        props.exportRateLimiterPerWindow ??
+        DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW
+      }`,
 
       // Email Service Configuration
       EMAIL_SERVICE_TYPE: props.smtpConfig.emailServiceType,

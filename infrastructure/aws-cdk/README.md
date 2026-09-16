@@ -424,8 +424,11 @@ Note that this validation is at a schema level, it might not catch improperly fo
 - `docs`: Placeholder configuration for the documentation site - currently use `{}`
 - `security`: (Optional) Security-related Conductor API settings. Defaults applied when omitted.
   - `maximumLongLivedTokenDurationDays`: (Optional) Max lifetime in days for long-lived tokens (default 90). Omit or leave unset for infinite when wiring through the stack prop as undefined.
-  - `rateLimiterEnabled`: (default `true`) Express HTTP IP rate limiter (`RATE_LIMITER_ENABLED`). Set `false` when per-IP limiting is handled upstream (e.g. ALB/WAF). Does **not** control CouchDB-backed auth attempt limits.
+  - `rateLimiterEnabled`: (default `true`) Express HTTP IP rate limiter (`RATE_LIMITER_ENABLED`). Set `false` when per-IP limiting is handled upstream (e.g. ALB/WAF). Does **not** control CouchDB-backed auth attempt limits or the export limiter.
   - `authAttemptLimiterEnabled`: (default `true`) Per-user email-code / verification-challenge attempt limits (`AUTH_ATTEMPT_LIMITER_ENABLED`). Keep `true` in production even when HTTP rate limiting is disabled upstream.
+  - `exportRateLimiterEnabled`: (default `true`) Dedicated limiter for notebook export mint/redeem (`EXPORT_RATE_LIMITER_ENABLED`). Independent of `rateLimiterEnabled` so ZIP/GDAL work stays capped when the global IP limiter is off.
+  - `exportRateLimiterWindowMs`: (default `600000`) Export-limiter window in milliseconds (`EXPORT_RATE_LIMITER_WINDOW_MS`).
+  - `exportRateLimiterPerWindow`: (default `20`) Export mint/redeem requests allowed per window (`EXPORT_RATE_LIMITER_PER_WINDOW`). Raise for bulk scripted dumps.
 
 To use a specific configuration when deploying or synthesizing your CDK stack:
 

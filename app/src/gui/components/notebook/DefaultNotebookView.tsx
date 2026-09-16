@@ -1,38 +1,22 @@
-import {Action, getVisibleTypes, ProjectStatus} from '@faims3/data-model';
+import {getVisibleTypes, ProjectStatus} from '@faims3/data-model';
 import {Alert, AlertTitle, Box, Paper, Tab, Tabs} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {useQueryClient} from '@tanstack/react-query';
-import React, {useState} from 'react';
+import React from 'react';
 import {config} from '../../../buildconfig';
-import {selectActiveUser} from '../../../context/slices/authSlice';
-import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
-import {Project, selectProjectById} from '../../../context/slices/projectSlice';
-import {useAppSelector} from '../../../context/store';
-import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
-import {SHARED_TAB, useResolveTab} from '../../../constants/routes';
-import {
-  invalidateProjectHydration,
-  invalidateProjectRecordList,
-  useIsAuthorisedTo,
-  useRecordList,
-} from '../../../utils/customHooks';
-import CircularLoading from '../ui/circular_loading';
 import {DE_ACTIVATE_VERB} from '../workspace/notebooks';
 import AddRecordButtons from './add_record_by_type';
-import {MetadataDisplayComponent} from './MetadataDisplay';
-import {OverviewMap} from './OverviewMap';
 import PushOnlySyncBanner from './PushOnlySyncBanner';
 import {RecordsTable} from './record_table';
-import NotebookSettings from './settings';
+import {NotebookViewComponentProps, resolveTab} from './types';
 
 // This view's tab slugs, default first
 const TABS = [
   'my-records',
   'other-records',
-  SHARED_TAB.map,
-  SHARED_TAB.details,
-  SHARED_TAB.settings,
+  'map',
+  'details',
+  'settings',
 ] as const;
 
 /**
@@ -83,80 +67,22 @@ function a11yProps(tab: string) {
 }
 
 /**
- * NotebookComponentProps defines the properties for the NotebookComponent component.
- */
-type NotebookComponentProps = {
-  project: Project;
-  tab?: string;
-  setTab: (tab: string) => void;
-};
-
-/**
- * NotebookComponent is a component that displays the main interface for the notebook.
- * It includes tabs for Records, Details, Access, Layers, and Settings.
+ * DefaultNotebookView is the default notebook view, used when a notebook has
+ * no plan or no view is registered for its plan type. It conforms to
+ * NotebookViewComponentProps like any registered plan view.
  *
- * @param props - The properties for the NotebookComponent.
- * @returns The JSX element for the NotebookComponent.
+ * @param props - The notebook view props assembled by NotebookView.
+ * @returns The JSX element for the DefaultNotebookView.
  */
-export default function NotebookComponent({
-  project,
-  tab,
-  setTab,
-}: NotebookComponentProps) {
+export default function DefaultNotebookView(props: NotebookViewComponentProps) {
+  const {project, tab, uiSpecification, records, actions, status, components} =
+    props;
   const theme = useTheme();
   const isMedium = useMediaQuery(theme.breakpoints.up('md'));
-  const queryClient = useQueryClient();
 
-  const isAllowedToAddRecords =
-    useIsAuthorisedTo({
-      action: Action.CREATE_PROJECT_RECORD,
-      resourceId: project.projectId,
-    }) && project.status === ProjectStatus.OPEN;
-
-  const {uiSpecificationId} = project;
-  const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
-
-  const activeUser = useAppSelector(selectActiveUser);
-
-  // get the sync status of records in this project
-  const recordStatus = useRecordAudit({
-    projectId: project.projectId,
-    listingId: project.serverId,
-    username: activeUser?.username ?? '',
-  });
-
-  const currentTab = useResolveTab(TABS, tab, setTab);
-
-  // Fetch records from the (local) DB with configurable auto refetch.
-  // Skip while the compiled UI spec is still loading.
-  const [query, setQuery] = useState<string>('');
-  const records = useRecordList({
-    query: query,
-    // Profiling enabled when debugging
-    enableProfiling: config.debugApp,
-    projectId: project.projectId,
-    filterDeleted: true,
-    // refetch every 10 seconds (local only fetch - no network traffic here)
-    metadataRefreshIntervalMs: 10000,
-    uiSpecification,
-    enabled: !!uiSpecification,
-  });
-  const forceRecordRefresh = records.refetch;
-
-  const templateId = useAppSelector(
-    state => selectProjectById(state, project.projectId)?.templateId
-  );
-
-  if (!uiSpecification) {
-    return <CircularLoading label="Loading" />;
-  }
+  const currentTab = resolveTab(TABS, tab.current);
 
   const viewsets = uiSpecification.viewsets;
-
-  const goToSyncSettings = () => {
-    setTab(SHARED_TAB.settings);
-  };
-
   // recordLabel based on viewsets
   const recordLabel =
     uiSpecification.visible_types?.length === 1
@@ -164,7 +90,13 @@ export default function NotebookComponent({
         uiSpecification.visible_types[0]
       : 'Record';
 
+  // Tab counts show only visible types; the tables keep the unfiltered lists
   const visibleTypes = getVisibleTypes(uiSpecification);
+  // Forms to offer an add button for: those listed as visible, less any viewset
+  // that opts out of one.
+  const addableTypes = visibleTypes.filter(
+    type => viewsets[type]?.is_visible !== false
+  );
   const visibleMyRecords = records.myRecords.filter(r =>
     visibleTypes.includes(r.type)
   );
@@ -185,26 +117,15 @@ export default function NotebookComponent({
       )}
       <PushOnlySyncBanner
         project={project}
-        onGoToSyncSettings={goToSyncSettings}
+        onGoToSyncSettings={() => tab.select('settings')}
       />
       <Box>
-        {isAllowedToAddRecords && (
+        {status.isAllowedToAddRecords && (
           <Box sx={{mb: 1.5}}>
             <AddRecordButtons
               project={project}
-              recordLabel={recordLabel}
-              refreshList={() => {
-                invalidateProjectRecordList({
-                  client: queryClient,
-                  projectId: project.projectId,
-                  reset: true,
-                });
-                invalidateProjectHydration({
-                  client: queryClient,
-                  projectId: project.projectId,
-                  reset: true,
-                });
-              }}
+              formTypes={addableTypes}
+              refreshList={actions.refreshRecordList}
             />
           </Box>
         )}
@@ -212,7 +133,7 @@ export default function NotebookComponent({
         there is a gap on the left due to the hidden left scroll button, this appears
         if you scroll right.  There doesn't seem to be a way to push the content all
         the way to the left when the scroll button is hidden.
-        
+
         Previous margin adjustments have been removed */}
         <Box
           sx={{
@@ -229,7 +150,7 @@ export default function NotebookComponent({
           >
             <Tabs
               value={currentTab}
-              onChange={(_event, newTab: string) => setTab(newTab)}
+              onChange={(_event, newTab: string) => tab.select(newTab)}
               aria-label={`${config.notebookName} tabs`}
               indicatorColor="secondary"
               sx={{
@@ -274,76 +195,67 @@ export default function NotebookComponent({
               )}
 
               <Tab
-                value={SHARED_TAB.map}
+                value="map"
                 label="Map"
                 data-testid="app-notebook-tab-map"
-                {...a11yProps(SHARED_TAB.map)}
+                {...a11yProps('map')}
               />
               <Tab
-                value={SHARED_TAB.details}
+                value="details"
                 label="Details"
                 data-testid="app-notebook-tab-details"
-                {...a11yProps(SHARED_TAB.details)}
+                {...a11yProps('details')}
               />
               <Tab
-                value={SHARED_TAB.settings}
+                value="settings"
                 label="Settings"
                 data-testid="app-notebook-tab-settings"
-                {...a11yProps(SHARED_TAB.settings)}
+                {...a11yProps('settings')}
               />
             </Tabs>
           </Paper>
         </Box>
 
-        {
-          // My records
-        }
         <TabPanel value={currentTab} tab="my-records">
           <RecordsTable
             project={project}
             maxRows={25}
             rows={records.myRecords}
-            loading={records.isLoading}
+            loading={status.isLoading}
             viewsets={viewsets}
-            handleQueryFunction={setQuery}
-            handleRefresh={forceRecordRefresh}
+            handleQueryFunction={actions.setQuery}
+            handleRefresh={actions.refreshRecordList}
             recordLabel={recordLabel}
-            recordStatus={recordStatus.data}
+            recordStatus={records.syncStatus}
           />
         </TabPanel>
-        {
-          // Other records
-        }
 
         <TabPanel value={currentTab} tab="other-records">
           <RecordsTable
             project={project}
             maxRows={25}
             rows={records.otherRecords}
-            loading={records.isLoading}
+            loading={status.isLoading}
             viewsets={viewsets}
-            handleQueryFunction={setQuery}
-            handleRefresh={forceRecordRefresh}
+            handleQueryFunction={actions.setQuery}
+            handleRefresh={actions.refreshRecordList}
             recordLabel={recordLabel}
-            recordStatus={recordStatus.data}
+            recordStatus={records.syncStatus}
           />
         </TabPanel>
 
-        <TabPanel value={currentTab} tab={SHARED_TAB.map}>
-          <OverviewMap
-            serverId={project.serverId}
-            records={records}
-            project_id={project.projectId}
-            uiSpec={uiSpecification}
-          />
+        <TabPanel value={currentTab} tab="map">
+          {/* The injected map plots the plan's records by default, and there
+          is no plan here, so name the whole notebook's */}
+          <components.OverviewMap records={records.notebookRecords} />
         </TabPanel>
 
-        <TabPanel value={currentTab} tab={SHARED_TAB.details}>
-          <MetadataDisplayComponent project={project} templateId={templateId} />
+        <TabPanel value={currentTab} tab="details">
+          <components.MetadataDisplayComponent />
         </TabPanel>
 
-        <TabPanel value={currentTab} tab={SHARED_TAB.settings}>
-          <NotebookSettings uiSpec={uiSpecification} />
+        <TabPanel value={currentTab} tab="settings">
+          <components.NotebookSettings />
         </TabPanel>
       </Box>
     </Box>

@@ -11,7 +11,8 @@ import {Button, ButtonGroup, CircularProgress, Stack} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useState} from 'react';
-import {Navigate, useNavigate, useParams} from 'react-router-dom';
+import {Navigate, useNavigate} from 'react-router-dom';
+import {useNotebookRoute} from '../../../context/notebookRoute';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
@@ -22,14 +23,22 @@ import {QRCodeButton} from '@faims3/forms';
 
 type AddRecordButtonsProps = {
   project: Project;
-  recordLabel: string;
   refreshList: () => void;
+  /**
+   * The forms to offer a button for, in the order to offer them. The caller
+   * decides: the notebook's visible forms, or the forms a plan collects, which
+   * a plan may carry several of and need not list among the visible ones.
+   */
+  formTypes: string[];
+  /** Claims for a plan every record these buttons create. */
+  planReference?: string;
 };
 
 export default function AddRecordButtons({
-  project: {projectId, serverId, uiSpecificationId},
+  project: {projectId, uiSpecificationId},
   refreshList,
-  recordLabel,
+  formTypes,
+  planReference,
 }: AddRecordButtonsProps) {
   const theme = useTheme();
   // This page cannot load if no active user
@@ -40,7 +49,7 @@ export default function AddRecordButtons({
     RecordMetadata | undefined
   >(undefined);
   const navigate = useNavigate();
-  const {tab} = useParams<{tab?: string}>();
+  const {notebook} = useNotebookRoute();
   const uiSpec = compiledSpecService.getSpec(uiSpecificationId);
 
   if (uiSpec === undefined) {
@@ -48,7 +57,9 @@ export default function AddRecordButtons({
   }
   const showQRButton = uiSpec.settings.showQrCodeButton;
   const viewsets = uiSpec.viewsets;
-  const visibleTypes = uiSpec.visible_types;
+  // The one button names the form it creates. A caller may name a form the
+  // notebook no longer carries, so fall back to the form's own id.
+  const formLabel = (formType: string) => viewsets[formType]?.label || formType;
 
   const dataDb = localGetDataDb(projectId);
   const dataEngine = () => {
@@ -69,13 +80,12 @@ export default function AddRecordButtons({
       .createRecord({
         createdBy: activeUser.username,
         formId: viewsetName,
+        planReference,
       })
       .then(newRecord =>
         navigate(
           ROUTES.getEditRecordRoute({
-            serverId: serverId,
-            projectId: projectId,
-            tab,
+            ...notebook,
             recordId: newRecord.record._id,
             mode: 'new',
           })
@@ -108,9 +118,7 @@ export default function AddRecordButtons({
     return (
       <Navigate
         to={ROUTES.getEditRecordRoute({
-          serverId: serverId,
-          projectId: projectId || 'dummy',
-          tab,
+          ...notebook,
           recordId: (selectedRecord.record_id || '').toString(),
         })}
       />
@@ -130,7 +138,7 @@ export default function AddRecordButtons({
           {/*If the list of views hasn't loaded yet*/}
           {/*we can still show this button, except it will*/}
           {/*redirect to the Record creation without known type*/}
-          {uiSpec?.visible_types.length === 1 ? (
+          {formTypes.length === 1 ? (
             <Button
               variant="contained"
               color="primary"
@@ -144,34 +152,31 @@ export default function AddRecordButtons({
               }}
               startIcon={<AddCircleSharpIcon />}
               key="newRecord"
-              data-testid={`${visibleTypes[0]}-app-record-add-button`}
-              onClick={handleNewRecord(visibleTypes[0])}
+              data-testid={`${formTypes[0]}-app-record-add-button`}
+              onClick={handleNewRecord(formTypes[0])}
             >
-              Add new {recordLabel}
+              Add new {formLabel(formTypes[0])}
             </Button>
           ) : (
-            visibleTypes.map(
-              (viewset_name: string) =>
-                viewsets[viewset_name].is_visible !== false && (
-                  <Button
-                    key={viewset_name}
-                    startIcon={<AddCircleSharpIcon />}
-                    variant="contained"
-                    data-testid={`${viewset_name}-app-record-add-button`}
-                    sx={{
-                      borderRadius: '8px',
-                      fontWeight: 'bold',
-                      backgroundColor: theme.palette.icon.main,
-                      '&:hover': {
-                        backgroundColor: theme.palette.secondary.dark,
-                      },
-                    }}
-                    onClick={handleNewRecord(viewset_name)}
-                  >
-                    {viewsets[viewset_name].label || `New ${viewset_name}`}
-                  </Button>
-                )
-            )
+            formTypes.map((viewset_name: string) => (
+              <Button
+                key={viewset_name}
+                startIcon={<AddCircleSharpIcon />}
+                variant="contained"
+                data-testid={`${viewset_name}-app-record-add-button`}
+                sx={{
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  backgroundColor: theme.palette.icon.main,
+                  '&:hover': {
+                    backgroundColor: theme.palette.secondary.dark,
+                  },
+                }}
+                onClick={handleNewRecord(viewset_name)}
+              >
+                {viewsets[viewset_name]?.label || `New ${viewset_name}`}
+              </Button>
+            ))
           )}
         </ButtonGroup>
 

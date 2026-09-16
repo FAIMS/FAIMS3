@@ -13,18 +13,19 @@
 // limitations under the License.
 
 /**
- * @file Read-only slice holding a notebook's instantiated plan.
+ * @file Read-only slice holding a notebook's instantiated plans.
  */
 
 import {createSlice} from '@reduxjs/toolkit';
 import {initialState} from './initial';
 
-// The designer never edits an instantiated plan, it only carries it through so
-// that saving a design does not drop it. Set via preloadedState on hydration.
-const planReducer = createSlice({
-  name: 'plan',
-  initialState: initialState.notebook.plan,
+// The designer never edits an instantiated plan, it only carries them through
+// so that saving a design does not drop them. Set via preloadedState on
+// hydration.
+const plansReducer = createSlice({
+  name: 'plans',
+  initialState: initialState.notebook.plans,
   reducers: {},
 });
 
-export default planReducer.reducer;
+export default plansReducer.reducer;

@@ -193,7 +193,10 @@
   "security": {
     "maximumLongLivedTokenDurationDays": 90,
     "rateLimiterEnabled": true,
-    "authAttemptLimiterEnabled": true
+    "authAttemptLimiterEnabled": true,
+    "exportRateLimiterEnabled": true,
+    "exportRateLimiterWindowMs": 600000,
+    "exportRateLimiterPerWindow": 20
   },
   "bugMonitoring": {
     "bugsnagKey": "1234-your-key"

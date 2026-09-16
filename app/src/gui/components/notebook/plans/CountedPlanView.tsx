@@ -1,15 +1,15 @@
-import {COUNTED_PLAN_TYPE, CountedPlan} from '@faims3/data-model';
+import {COUNTED_PLAN_TYPE, planReferenceFor} from '@faims3/data-model';
 import {Alert, Box, Tab} from '@mui/material';
 import AddRecordButtons from '../add_record_by_type';
+import {planRecordLabel} from './planViewRecords';
 import {RecordsTable} from '../record_table';
-import {SHARED_TAB, useResolveTab} from '../../../../constants/routes';
-import {NotebookViewComponentProps} from '../types';
+import {NotebookViewComponentProps, resolveTab} from '../types';
 import TabPanel from '@mui/lab/TabPanel';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 
 // This view's tab slugs, default first
-const TABS = ['planned', SHARED_TAB.details, SHARED_TAB.settings] as const;
+const TABS = ['planned', 'details', 'settings'] as const;
 
 /**
  * A view component for the counted plan type. Shows the record
@@ -20,22 +20,19 @@ const TABS = ['planned', SHARED_TAB.details, SHARED_TAB.settings] as const;
 export const CountedPlanView = (props: NotebookViewComponentProps) => {
   const {project, tab, uiSpecification, records, actions, status} = props;
 
-  const currentTab = useResolveTab(TABS, tab, actions.setTab);
+  const currentTab = resolveTab(TABS, tab.current);
 
-  // Should not need this but it guards the type cast below
-  if (project.uiDefinition?.plan?.planType !== COUNTED_PLAN_TYPE) {
+  // The notebook may carry several plans, so the one to render arrives in
+  // props rather than being read back off the project.
+  if (props.plan?.planType !== COUNTED_PLAN_TYPE) {
     return <div>CountedPlanView: Not a counted plan</div>;
   }
-  // this really is a counted plan
-  const plan: CountedPlan = project.uiDefinition.plan as CountedPlan;
-  if (!plan) {
-    return <div>No plan defined for this notebook</div>;
-  }
+  const plan = props.plan;
 
-  // How many records of the target type have we got
-  const targetRecordCount = records.allRecords.filter(
-    record => record.type === plan.formType
-  ).length;
+  const planReference = planReferenceFor({planId: plan.planId});
+  // The list arrives scoped to this plan, so a second plan collecting the same
+  // form neither takes this target nor shows up in this table
+  const targetRecordCount = records.planRecords.length;
 
   // Records that exist may be missing from the list, so the count is a floor
   // rather than the true total and cannot show the target as reached.
@@ -53,29 +50,29 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
 
   const showAddRecordButtons = status.isAllowedToAddRecords && !targetReached;
 
-  // recordLabel based on viewsets
-  const recordLabel =
-    uiSpecification.visible_types?.length === 1
-      ? uiSpecification.viewsets[uiSpecification.visible_types[0]]?.label ||
-        uiSpecification.visible_types[0]
-      : 'Record';
+  const recordLabel = planRecordLabel({uiSpecification, plan});
 
   return (
     <>
       <div>
+        {/* The plan's label leads, since the plan type names nothing a user
+        has seen and two plans may sit on the one form */}
         <Alert severity="info">
-          <b>Counted Plan</b>: Collect {plan.numberRequired} {plan.formType}{' '}
+          <b>{plan.label}</b>: collect {plan.numberRequired} {recordLabel}{' '}
           records.{' '}
           {!plan.allowExtraRecords
             ? 'Do not allow extra records'
             : 'Extra records allowed'}
+          {/* A notebook with one plan never shows the chooser, so this is the
+          only place its description is read */}
+          {plan.description && <div>{plan.description}</div>}
         </Alert>
       </div>
 
       <TabContext value={currentTab}>
         <TabList
-          onChange={(event, newValue) => actions.setTab(newValue)}
-          aria-label={'Counted Plan tabs'}
+          onChange={(event, newValue) => tab.select(newValue)}
+          aria-label={`${plan.label} tabs`}
         >
           <Tab
             label={`Planned ${recordLabel}s`}
@@ -85,13 +82,13 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
           />
 
           <Tab
-            value={SHARED_TAB.details}
+            value="details"
             label={`Details`}
             id="details-tab"
             aria-controls="details-tabpanel"
           />
           <Tab
-            value={SHARED_TAB.settings}
+            value="settings"
             label={`Settings`}
             id="settings-tab"
             aria-controls="settings-tabpanel"
@@ -107,8 +104,9 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
             <Box sx={{mb: 1.5}}>
               <AddRecordButtons
                 project={project}
-                recordLabel={recordLabel}
                 refreshList={actions.refreshRecordList}
+                formTypes={[plan.formType]}
+                planReference={planReference}
               />
             </Box>
           )}
@@ -125,7 +123,7 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
           <RecordsTable
             project={project}
             maxRows={25}
-            rows={records.allRecords ?? []}
+            rows={records.planRecords}
             loading={status.isLoading}
             viewsets={uiSpecification.viewsets}
             handleQueryFunction={actions.setQuery}
@@ -136,7 +134,7 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
         </TabPanel>
 
         <TabPanel
-          value={SHARED_TAB.details}
+          value="details"
           id="details-tabpanel"
           aria-labelledby="details-tab"
         >
@@ -144,7 +142,7 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
         </TabPanel>
 
         <TabPanel
-          value={SHARED_TAB.settings}
+          value="settings"
           id="settings-tabpanel"
           aria-labelledby="settings-tab"
         >
