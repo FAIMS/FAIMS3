@@ -19,7 +19,7 @@ export const SimpleFieldWrapper = ({
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 0.75,
+        gap: 0.5,
         width: '100%',
         minWidth: 0,
       }}
@@ -27,7 +27,7 @@ export const SimpleFieldWrapper = ({
       <Typography
         component="h4"
         sx={{
-          fontSize: '1rem',
+          fontSize: '0.8125rem',
           fontWeight: 700,
           color: 'text.primary',
           lineHeight: 1.25,

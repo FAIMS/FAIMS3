@@ -302,7 +302,7 @@ export const SectionEditor = ({
   return (
     <>
       {renderSectionToolbar(
-        <Stack spacing={1.5} sx={{mt: 0.75, mb: 2}}>
+        <Stack spacing={1.5} sx={{mt: 0, mb: 0.75}}>
           <Stack
             direction="row"
             sx={{
@@ -379,7 +379,7 @@ export const SectionEditor = ({
               onClick={() => setOpenMoveDialog(true)}
               sx={designerControlLabelSx}
             >
-              Move section to another Form
+              Move section to another form
             </Button>
 
             <Typography sx={designerPipeSx}> | </Typography>
