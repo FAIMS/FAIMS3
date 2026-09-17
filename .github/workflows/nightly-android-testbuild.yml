@@ -90,7 +90,7 @@ jobs:
         uses: android-actions/setup-android@v4
         with:
           log-accepted-android-sdk-licenses: false
-          packages: 'cmdline-tools platform-tools'
+          packages: 'platform-tools'
       - name: Building webapp
         run: |
           export platform="github-actions-play"
