@@ -199,3 +199,57 @@ references:
     year: 2020
     month: 3
     doi: 10.70499/NRQQ4074
+  - type: article
+    title: >-
+      Creating eresearch Tools For Archaeologists: The Federated Archaeological
+      Information Management Systems Project
+    authors:
+      - family-names: Ross
+        given-names: Shawn Adrian
+        orcid: https://orcid.org/0000-0002-6492-9025
+      - family-names: Sobotkova
+        given-names: Adéla
+        orcid: https://orcid.org/0000-0002-4541-3963
+      - family-names: Ballsun-Stanton
+        given-names: Brian
+        orcid: https://orcid.org/0000-0003-4932-7912
+      - family-names: Crook
+        given-names: Penny
+        orcid: https://orcid.org/0000-0001-8509-7865
+    journal: Australian Archaeology
+    volume: 77
+    issue: 1
+    start: 107
+    end: 119
+    year: 2013
+    doi: 10.1080/03122417.2013.11681983
+  - type: article
+    title: >-
+      FAIRer Data through Digital Recording: The FAIMS Mobile Experience
+    authors:
+      - family-names: Ross
+        given-names: Shawn Adrian
+        orcid: https://orcid.org/0000-0002-6492-9025
+      - family-names: Ballsun-Stanton
+        given-names: Brian
+        orcid: https://orcid.org/0000-0003-4932-7912
+      - family-names: Cassidy
+        given-names: Steve
+        orcid: https://orcid.org/0000-0003-2357-9652
+      - family-names: Crook
+        given-names: Penny
+        orcid: https://orcid.org/0000-0001-8509-7865
+      - family-names: Klump
+        given-names: Jens
+        orcid: https://orcid.org/0000-0001-5911-6022
+      - family-names: Sobotkova
+        given-names: Adéla
+        orcid: https://orcid.org/0000-0002-4541-3963
+    journal: Journal of Computer Applications in Archaeology
+    volume: 5
+    issue: 1
+    start: 271
+    end: 285
+    year: 2022
+    month: 11
+    doi: 10.5334/jcaa.96
