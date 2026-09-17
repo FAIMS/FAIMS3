@@ -27,7 +27,7 @@
  *
  *   Typing is strict - there is no implicit coercion, and mismatches are
  *   rejected at compile time so the designer can surface them:
- *   - + - * / %   numbers only
+ *   - + - * / % ^ numbers only (^ is exponentiation, right-associative)
  *   - &           string concatenation only
  *   - && || !     booleans only
  *   - < > <= >=   two numbers or two strings
@@ -41,6 +41,11 @@ import ternary from '@jsep-plugin/ternary';
 // Enable the ternary operator (x ? y : z). Comparison, logical and the '&'
 // operator (used here for concatenation) are built into jsep already.
 jsep.plugins.register(ternary);
+
+// jsep ships ^ as bitwise XOR with lower precedence than +. Re-register it as
+// exponentiation: binds tighter than * and is right-associative, so
+// {a} ^ 2 ^ 3 is {a} ^ 8.
+jsep.addBinaryOp('^', 11, true);
 
 /** Thrown when an expression is malformed, ill-typed, or disallowed. */
 export class ExpressionError extends Error {}
@@ -95,6 +100,7 @@ const arithOps: {[op: string]: (l: number, r: number) => number} = {
   '*': (l, r) => l * r,
   '/': (l, r) => l / r,
   '%': (l, r) => l % r,
+  '^': (l, r) => l ** r,
 };
 const boolOps: {[op: string]: (l: boolean, r: boolean) => boolean} = {
   '&&': (l, r) => l && r,
