@@ -446,8 +446,7 @@ describe('spatial import: kml', () => {
         context,
       });
       expect(result.ok).toBe(false);
-      if (!result.ok)
-        expect(result.errors[0].message).toMatch(/no XML parser/);
+      if (!result.ok) expect(result.errors[0].message).toMatch(/no XML parser/);
     } finally {
       globals.DOMParser = previous;
     }
