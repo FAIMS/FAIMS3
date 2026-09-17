@@ -34,11 +34,33 @@ const surveySchema = {
   appearance: {column: 'appearance', type: String, required: false},
 };
 
-const choicesSchema = {
-  listName: {column: 'list_name', type: String, required: false},
-  name: {column: 'name', type: String, required: false},
-  label: {column: 'label', type: String, required: false},
-};
+/**
+ * Column name for the choices sheet's list identifier. `list_name`
+ * (with an underscore) is the standard used by ODK, KoboToolbox, and the
+ * XLSForm specification itself. `list name` (with a space) is a known
+ * variant used by some other authoring tools, e.g. ArcGIS Survey123.
+ * We accept either, checking the standard name first.
+ */
+function buildChoicesSchema(headerRow: unknown[]) {
+  const headers = headerRow.map(h =>
+    String(h ?? '')
+      .trim()
+      .toLowerCase()
+  );
+  const listNameColumn = headers.includes('list_name')
+    ? 'list_name'
+    : headers.includes('list name')
+      ? 'list name'
+      : 'list_name'; // fall through to the standard name; will surface as
+  // a genuine "column not found" further down if
+  // neither variant is present.
+
+  return {
+    listName: {column: listNameColumn, type: String, required: false},
+    name: {column: 'name', type: String, required: false},
+    label: {column: 'label', type: String, required: false},
+  };
+}
 
 const settingsSchema = {
   form_title: {column: 'form_title', type: String, required: false},
@@ -94,16 +116,27 @@ export async function parseXlsformBuffer(
   );
 
   const choicesSheet = sheets.find(s => s.sheet === 'choices');
-  const choicesResult = choicesSheet
-    ? parseSheetData(choicesSheet.data, choicesSchema)
-    : {objects: []};
 
-  // Same filtering logic as the survey sheet, for the same reason: a
-  // choices sheet can have its own blank separator rows between
-  // different option lists.
-  const choices = (choicesResult.objects ?? []).filter(
-    row => row && row.listName && row.name
-  );
+  let choices: XlsformSheets['choices'] = [];
+  if (choicesSheet) {
+    const choicesSchema = buildChoicesSchema(choicesSheet.data[0] ?? []);
+    const choicesResult = parseSheetData(choicesSheet.data, choicesSchema);
+    choices = (choicesResult.objects ?? []).filter(
+      row => row && row.listName && row.name
+    );
+
+    // If there's a choices sheet with actual data rows, but we ended up
+    // with zero usable choice rows, something is wrong with how it's
+    // structured -- this should not fail silently, since it produces
+    // select fields with empty option lists.
+    if (choicesSheet.data.length > 1 && choices.length === 0) {
+      throw new Exceptions.ValidationException(
+        'The "choices" sheet could not be read. Expected a "list_name" ' +
+          '(or "list name") column, plus "name" and "label" columns, ' +
+          'with at least one row of data.'
+      );
+    }
+  }
 
   // The "settings" sheet is also optional, and unlike survey/choices
   // we don't currently filter its rows at all. In practice it's expected
