@@ -660,11 +660,22 @@ export const createNotebookFromTemplate = async ({
       );
     }
 
-    // call the plan creator for this plan type
-    const instantiatedPlan = planTypeDefinition.instantiatePlan({
-      template: planTemplate,
-      config: configValidationResult.data,
-    });
+    // call the plan creator for this plan type; it throws on a config the
+    // schema accepts but the template does not (say, a required field left
+    // out of one entry), which is the caller's to fix
+    let instantiatedPlan;
+    try {
+      instantiatedPlan = planTypeDefinition.instantiatePlan({
+        template: planTemplate,
+        config: configValidationResult.data,
+      });
+    } catch (err) {
+      throw new Exceptions.InvalidRequestException(
+        `The plan config provided for plan "${planId}" of type ${planType} could not be applied: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    }
 
     // insert the plan into the uiSpecification for the notebook we're creating
     // parse it first to make sure it's valid according to the plan type's plan schema

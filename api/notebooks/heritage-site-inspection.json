@@ -1,0 +1,348 @@
+{
+  "name": "Heritage site inspection",
+  "description": "Example template for a MapCollection plan: a single Site form with a spatial Site-Location field plus scalar identification fields that can be pre-filled from a GeoJSON file. Pair it with heritage-sites.geojson (Points) or heritage-site-extents.geojson (Polygons, switch the plan's spatial field to Site-Extent).",
+  "uiSpecification": {
+    "uiSpec": {
+      "fields": {
+        "hridSite": {
+          "component-namespace": "faims-custom",
+          "component-name": "TemplatedStringField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "name": "hridSite",
+            "label": "Site ID",
+            "fullWidth": true,
+            "required": true,
+            "template": "{{Site-Code}} {{Site-Name}}",
+            "hidden": true,
+            "InputLabelProps": {
+              "label": "Site ID"
+            }
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Site-Code": {
+          "component-namespace": "faims-custom",
+          "component-name": "TextField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "name": "Site-Code",
+            "label": "Site code",
+            "fullWidth": true,
+            "required": true,
+            "helperText": "Register code, e.g. HS-001"
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Site-Name": {
+          "component-namespace": "faims-custom",
+          "component-name": "TextField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "name": "Site-Name",
+            "label": "Site name",
+            "fullWidth": true,
+            "required": false
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Site-Type": {
+          "component-namespace": "faims-custom",
+          "component-name": "RadioGroup",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "name": "Site-Type",
+            "id": "Site-Type",
+            "label": "Site type",
+            "variant": "outlined",
+            "required": false,
+            "helperText": "",
+            "ElementProps": {
+              "enableOtherOption": false,
+              "options": [
+                {"label": "Artefact scatter", "value": "Artefact scatter"},
+                {"label": "Rock shelter", "value": "Rock shelter"},
+                {"label": "Scarred tree", "value": "Scarred tree"},
+                {"label": "Stone arrangement", "value": "Stone arrangement"},
+                {"label": "Historic structure", "value": "Historic structure"}
+              ]
+            }
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Priority": {
+          "component-namespace": "faims-custom",
+          "component-name": "NumberField",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "name": "Priority",
+            "label": "Inspection priority",
+            "fullWidth": true,
+            "required": false,
+            "helperText": "1 = urgent, 5 = routine",
+            "numberType": "integer",
+            "min": 1,
+            "max": 5,
+            "InputProps": {
+              "type": "number"
+            }
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Site-Location": {
+          "component-namespace": "mapping-plugin",
+          "component-name": "MapFormField",
+          "type-returned": "faims-core::JSON",
+          "component-parameters": {
+            "name": "Site-Location",
+            "id": "Site-Location",
+            "variant": "outlined",
+            "required": true,
+            "featureType": "Point",
+            "zoom": 15,
+            "label": "Site location",
+            "geoTiff": "",
+            "helperText": "Planned location from the register; adjust if the site has moved"
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Site-Extent": {
+          "component-namespace": "mapping-plugin",
+          "component-name": "MapFormField",
+          "type-returned": "faims-core::JSON",
+          "component-parameters": {
+            "name": "Site-Extent",
+            "id": "Site-Extent",
+            "variant": "outlined",
+            "required": false,
+            "featureType": "Polygon",
+            "zoom": 16,
+            "label": "Site extent",
+            "geoTiff": "",
+            "helperText": "Trace the boundary of the site"
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "GPS-Fix": {
+          "component-namespace": "faims-custom",
+          "component-name": "TakePoint",
+          "type-returned": "faims-pos::Location",
+          "component-parameters": {
+            "name": "GPS-Fix",
+            "label": "GPS fix on arrival",
+            "buttonLabelText": "Take GPS fix",
+            "helperText": "Capture your actual position when you reach the site",
+            "required": false
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Condition": {
+          "component-namespace": "faims-custom",
+          "component-name": "RadioGroup",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "name": "Condition",
+            "id": "Condition",
+            "label": "Condition",
+            "variant": "outlined",
+            "required": true,
+            "helperText": "",
+            "ElementProps": {
+              "enableOtherOption": false,
+              "options": [
+                {"label": "Good", "value": "Good"},
+                {"label": "Fair", "value": "Fair"},
+                {"label": "Poor", "value": "Poor"},
+                {"label": "Destroyed", "value": "Destroyed"},
+                {"label": "Not located", "value": "Not located"}
+              ]
+            }
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": true,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Inspection-Notes": {
+          "component-namespace": "faims-custom",
+          "component-name": "TextField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "name": "Inspection-Notes",
+            "label": "Inspection notes",
+            "fullWidth": true,
+            "required": false,
+            "multiline": true,
+            "InputProps": {
+              "rows": 4
+            }
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Site-Photo": {
+          "component-namespace": "faims-custom",
+          "component-name": "TakePhoto",
+          "type-returned": "faims-attachment::Files",
+          "component-parameters": {
+            "name": "Site-Photo",
+            "label": "Site photo",
+            "helperText": ""
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        }
+      },
+      "views": {
+        "Site-Identification": {
+          "label": "Identification",
+          "fields": [
+            "hridSite",
+            "Site-Code",
+            "Site-Name",
+            "Site-Type",
+            "Priority"
+          ]
+        },
+        "Site-Location-Section": {
+          "label": "Location",
+          "fields": ["Site-Location", "Site-Extent", "GPS-Fix"]
+        },
+        "Site-Inspection": {
+          "label": "Inspection",
+          "fields": ["Condition", "Inspection-Notes", "Site-Photo"]
+        }
+      },
+      "viewsets": {
+        "Site": {
+          "label": "Site",
+          "views": [
+            "Site-Identification",
+            "Site-Location-Section",
+            "Site-Inspection"
+          ],
+          "hridField": "hridSite",
+          "publishButtonBehaviour": "always"
+        }
+      },
+      "visible_types": ["Site"],
+      "settings": {
+        "showQrCodeButton": false
+      },
+      "schemaVersion": "7.0"
+    },
+    "metadata": {
+      "information": {
+        "notebookVersion": "1.0.0",
+        "purposeMarkdown": "Example MapCollection plan template: inspect a register of known heritage sites.",
+        "projectLeadLabel": "",
+        "leadInstitution": ""
+      }
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import {HRID_STRING} from '../datamodel';
+import {SPATIAL_FIELDS} from '../spatialFields';
 import {FAIMSTypeName} from '../types';
 import {slugify} from '../utils';
 import {compileExpression} from './conditionals';
@@ -264,8 +265,9 @@ export const getFieldToIdsMap = (
   return fieldMap;
 };
 
-// Maintain this list of spatially relevant fields
-export const SPATIAL_FIELDS = ['MapFormField', 'TakePoint'];
+// The list of spatially relevant fields lives in a leaf module so the plans
+// module can read it too; re-exported here for existing importers.
+export {SPATIAL_FIELDS};
 
 export type FieldSummary = {
   name: string;

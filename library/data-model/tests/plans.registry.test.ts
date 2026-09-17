@@ -195,5 +195,7 @@ describe('plan registry', () => {
 
     expect(getPlanTypeDefinition('Counted')).toBeDefined();
     expect(getPlanTypeDefinition('ListOfRecords')).toBeDefined();
+    expect(getPlanTypeDefinition('ListOfForms')).toBeDefined();
+    expect(getPlanTypeDefinition('MapCollection')).toBeDefined();
   });
 });

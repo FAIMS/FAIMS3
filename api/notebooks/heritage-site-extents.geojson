@@ -1,0 +1,123 @@
+{
+  "type": "FeatureCollection",
+  "name": "heritage-site-extents",
+  "description": "Polygon variant of heritage-sites.geojson for a MapCollection plan whose spatial field is Site-Extent (featureType Polygon). HS-107 is a MultiPolygon and is exploded into two planned records.",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "Site-Code": "HS-101",
+        "Site-Name": "Lane Cove weir scatter",
+        "Site-Type": "Artefact scatter",
+        "Priority": 1
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [151.1505, -33.7856],
+            [151.1519, -33.7856],
+            [151.1519, -33.7866],
+            [151.1505, -33.7866],
+            [151.1505, -33.7856]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Site-Code": "HS-102",
+        "Site-Name": "Fairyland shelter",
+        "Site-Type": "Rock shelter",
+        "Priority": 2
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [151.1438, -33.793],
+            [151.1449, -33.7929],
+            [151.1451, -33.7938],
+            [151.1441, -33.7941],
+            [151.1438, -33.793]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Site-Code": "HS-103",
+        "Site-Name": "Whale Rock engraving",
+        "Site-Type": "Stone arrangement",
+        "Priority": 3
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [151.1361, -33.7794],
+            [151.1373, -33.7794],
+            [151.1373, -33.7804],
+            [151.1361, -33.7804],
+            [151.1361, -33.7794]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Site-Code": "HS-105",
+        "Site-Name": "Riverview Road ruin",
+        "Site-Type": "Historic structure",
+        "Priority": 2
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [151.1578, -33.7992],
+            [151.1591, -33.7993],
+            [151.1589, -33.8004],
+            [151.1577, -33.8003],
+            [151.1578, -33.7992]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Site-Code": "HS-107",
+        "Site-Name": "Tunks Park grinding grooves",
+        "Site-Type": "Stone arrangement",
+        "Priority": 3
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [151.1724, -33.8117],
+              [151.1734, -33.8117],
+              [151.1734, -33.8125],
+              [151.1724, -33.8125],
+              [151.1724, -33.8117]
+            ]
+          ],
+          [
+            [
+              [151.1737, -33.811],
+              [151.1746, -33.811],
+              [151.1746, -33.8119],
+              [151.1737, -33.8119],
+              [151.1737, -33.811]
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

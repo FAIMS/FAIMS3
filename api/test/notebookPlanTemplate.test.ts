@@ -32,6 +32,7 @@ const NOTEBOOKS_API_BASE = '/api/notebooks';
 const TEMPLATE_API_BASE = '/api/templates';
 const COUNTED_PLAN_TYPE = 'Counted' as const;
 const LIST_OF_RECORDS_PLAN_TYPE = 'ListOfRecords' as const;
+const MAP_COLLECTION_PLAN_TYPE = 'MapCollection' as const;
 const createTemplateWithPlanTemplates = async (
   ...planTemplates: NonNullable<TemplateDefinition['planTemplates']>
 ) => {
@@ -444,6 +445,105 @@ describe('notebook creation from template with planTemplates', () => {
         allowExtraRecords: true,
       },
     ]);
+  });
+
+  it('creates a notebook and instantiates the map-collection plan from its config', async () => {
+    const template = await createTemplateWithPlanTemplates({
+      planId: MAP_COLLECTION_PLAN_TYPE,
+      planType: MAP_COLLECTION_PLAN_TYPE,
+      label: 'Survey sites',
+      formType: 'survey-form',
+      recordFields: [{fieldId: 'Name', required: true}],
+      spatialFieldId: 'Location',
+    });
+    const spatial = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: {type: 'Point', coordinates: [151.2, -33.9]},
+          properties: null,
+        },
+      ],
+    };
+
+    const notebookId = await requestAuthAndType(
+      request(app)
+        .post(NOTEBOOKS_API_BASE)
+        .send({
+          name: 'mapped notebook',
+          description: testNotebookDescription,
+          template_id: template._id,
+          planConfigs: {
+            [MAP_COLLECTION_PLAN_TYPE]: {
+              recordData: {
+                'planned-1': {
+                  fields: {Name: 'Site 1', Notes: 'ignored'},
+                  spatial,
+                },
+              },
+              allowExtraRecords: false,
+            },
+          },
+        } satisfies CreateNotebookFromTemplate)
+    )
+      .expect(200)
+      .then(res => PostCreateNotebookResponseSchema.parse(res.body).notebook);
+
+    const project = await getProjectById(notebookId);
+    expect(project.uiSpecification.plans).toEqual([
+      {
+        planId: MAP_COLLECTION_PLAN_TYPE,
+        planType: MAP_COLLECTION_PLAN_TYPE,
+        label: 'Survey sites',
+        formType: 'survey-form',
+        spatialFieldId: 'Location',
+        recordFields: [{fieldId: 'Name', required: true}],
+        records: {'planned-1': {fields: {Name: 'Site 1'}, spatial}},
+        allowExtraRecords: false,
+      },
+    ]);
+  });
+
+  it('rejects notebook creation when a map-collection entry lacks a required field', async () => {
+    const template = await createTemplateWithPlanTemplates({
+      planId: MAP_COLLECTION_PLAN_TYPE,
+      planType: MAP_COLLECTION_PLAN_TYPE,
+      label: 'Survey sites',
+      formType: 'survey-form',
+      recordFields: [{fieldId: 'Name', required: true}],
+      spatialFieldId: 'Location',
+    });
+
+    await requestAuthAndType(
+      request(app)
+        .post(NOTEBOOKS_API_BASE)
+        .send({
+          name: 'mapped notebook',
+          description: testNotebookDescription,
+          template_id: template._id,
+          planConfigs: {
+            [MAP_COLLECTION_PLAN_TYPE]: {
+              recordData: {
+                'planned-1': {
+                  fields: {},
+                  spatial: {
+                    type: 'FeatureCollection',
+                    features: [
+                      {
+                        type: 'Feature',
+                        geometry: {type: 'Point', coordinates: [0, 0]},
+                        properties: null,
+                      },
+                    ],
+                  },
+                },
+              },
+              allowExtraRecords: false,
+            },
+          },
+        } satisfies CreateNotebookFromTemplate)
+    ).expect(res => expect(res.status).toBeGreaterThanOrEqual(400));
   });
 
   it('rejects notebook creation when a stored plan template is malformed', async () => {

@@ -22,11 +22,22 @@ import {
   COUNTED_PLAN_TYPE,
   LIST_OF_RECORDS_PLAN_TYPE,
   LIST_OF_FORMS_PLAN_TYPE,
+  MAP_COLLECTION_PLAN_TYPE,
 } from '@faims3/data-model';
-import {fireEvent, render, renderHook, screen} from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import {describe, expect, test, vi} from 'vitest';
 import {countedPlanConfig, countedPlanFields} from './countedPlanFields';
 import {ListOfRecordsPlanConfigForm} from './ListOfRecordsPlanConfigForm';
+import {
+  geometrySummary,
+  MapCollectionPlanConfigForm,
+} from './MapCollectionPlanConfigForm';
 import {PlanConfigSection} from './PlanConfigSection';
 import {planSubmissionGate} from './planSubmissionGate';
 import {usePlanConfigs} from './usePlanConfigs';
@@ -39,8 +50,13 @@ import {
 
 const uiSpec: PlanConfigUiSpec = {
   viewsets: {FORM1: {label: 'Form One', views: ['SECTION1']}},
-  views: {SECTION1: {fields: ['Name', 'Count', 'Flag', 'When']}},
+  views: {SECTION1: {fields: ['Name', 'Count', 'Flag', 'When', 'Where']}},
   fields: {
+    Where: {
+      'component-name': 'MapFormField',
+      'component-parameters': {label: 'Where', featureType: 'Point'},
+      'type-returned': 'faims-core::JSON',
+    },
     Name: {
       'component-parameters': {label: 'Name'},
       'type-returned': 'faims-core::String',
@@ -81,6 +97,35 @@ const formsTemplate = {
   formTypes: ['FORM1'],
 };
 
+const mapTemplate = {
+  planType: MAP_COLLECTION_PLAN_TYPE,
+  planId: 'map',
+  label: 'Site map',
+  formType: 'FORM1',
+  recordFields: [
+    {fieldId: 'Name', required: true},
+    {fieldId: 'Count', required: false},
+  ],
+  spatialFieldId: 'Where',
+};
+
+/** A GeoJSON file as the file input would hand it over. */
+const geoJsonFile = (features: unknown[]) =>
+  new File(
+    [JSON.stringify({type: 'FeatureCollection', features})],
+    'sites.geojson',
+    {type: 'application/geo+json'}
+  );
+
+const pointFeature = (
+  coordinates: number[],
+  properties: Record<string, unknown>
+) => ({
+  type: 'Feature',
+  geometry: {type: 'Point', coordinates},
+  properties,
+});
+
 const lastCall = (fn: ReturnType<typeof vi.fn>) =>
   fn.mock.calls[fn.mock.calls.length - 1]?.[0];
 
@@ -95,6 +140,9 @@ describe('plan config registry', () => {
     const forms = getPlanConfigType(LIST_OF_FORMS_PLAN_TYPE);
     expect(forms?.label).toBe('List of Forms');
     expect(forms && 'fields' in forms).toBe(true);
+    const map = getPlanConfigType(MAP_COLLECTION_PLAN_TYPE);
+    expect(map?.label).toBe('Map Collection');
+    expect(map && 'ConfigForm' in map).toBe(true);
     expect(getPlanConfigType('MapGrid')).toBeUndefined();
   });
 
@@ -227,6 +275,146 @@ describe('ListOfRecordsPlanConfigForm', () => {
     expect(screen.getByText(/entered on each record/).textContent).toContain(
       'When'
     );
+  });
+});
+
+describe('MapCollectionPlanConfigForm', () => {
+  const renderForm = () => {
+    const onChange = vi.fn();
+    render(
+      <MapCollectionPlanConfigForm
+        template={mapTemplate}
+        uiSpec={uiSpec}
+        onChange={onChange}
+      />
+    );
+    return {onChange, input: screen.getByTestId('plan-config-spatial-file')};
+  };
+
+  test('reads a GeoJSON file into one planned record per feature', async () => {
+    const {onChange, input} = renderForm();
+    expect(lastCall(onChange)).toBeUndefined();
+
+    fireEvent.change(input, {
+      target: {
+        files: [
+          geoJsonFile([
+            pointFeature([151, -33], {Name: 'Alpha', Count: '2', Extra: 1}),
+            pointFeature([152, -34], {Name: 'Beta'}),
+          ]),
+        ],
+      },
+    });
+
+    await waitFor(() => expect(lastCall(onChange)).toBeDefined());
+    expect(lastCall(onChange)).toEqual({
+      recordData: {
+        'planned-1': {
+          fields: {Name: 'Alpha', Count: 2},
+          spatial: {
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: {type: 'Point', coordinates: [151, -33]},
+                properties: null,
+              },
+            ],
+          },
+        },
+        'planned-2': {
+          fields: {Name: 'Beta'},
+          spatial: {
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: {type: 'Point', coordinates: [152, -34]},
+                properties: null,
+              },
+            ],
+          },
+        },
+      },
+      allowExtraRecords: false,
+    });
+    expect(
+      screen.getByTestId('plan-config-spatial-summary').textContent
+    ).toMatch(/2 planned Form One records/);
+
+    fireEvent.click(screen.getByTestId('plan-config-allow-extra'));
+    expect(lastCall(onChange).allowExtraRecords).toBe(true);
+  });
+
+  test('stays incomplete and lists the problems when a feature is unusable', async () => {
+    const {onChange, input} = renderForm();
+
+    fireEvent.change(input, {
+      target: {
+        files: [
+          geoJsonFile([
+            pointFeature([151, -33], {Count: 1}), // no Name
+            {
+              type: 'Feature',
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [0, 0],
+                  [1, 1],
+                ],
+              },
+              properties: {Name: 'Line'},
+            },
+          ]),
+        ],
+      },
+    });
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Feature 1: Missing required field Name/);
+    expect(alert.textContent).toMatch(/Feature 2: .*takes a Point/);
+    expect(lastCall(onChange)).toBeUndefined();
+  });
+
+  test('rejects an empty collection and a file that is not JSON', async () => {
+    const {onChange, input} = renderForm();
+
+    fireEvent.change(input, {target: {files: [geoJsonFile([])]}});
+    expect((await screen.findByRole('alert')).textContent).toMatch(
+      /no features/
+    );
+    expect(lastCall(onChange)).toBeUndefined();
+
+    fireEvent.change(input, {
+      target: {files: [new File(['not json'], 'bad.geojson')]},
+    });
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toMatch(/not valid JSON/)
+    );
+    expect(lastCall(onChange)).toBeUndefined();
+  });
+
+  test('summarises an entry geometry', () => {
+    expect(
+      geometrySummary({
+        fields: {},
+        spatial: {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              geometry: {type: 'Point', coordinates: [0, 0]},
+              properties: null,
+            },
+            {
+              type: 'Feature',
+              geometry: {type: 'Point', coordinates: [1, 1]},
+              properties: null,
+            },
+          ],
+        },
+      })
+    ).toBe('Point × 2');
   });
 });
 

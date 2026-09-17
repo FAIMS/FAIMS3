@@ -27,7 +27,7 @@ wherever the app names the plan) and an optional `description`. A
 and installs the built-in types lazily on first lookup, so external modules
 can register additional plan types alongside them.
 
-Three built-in plan types exist:
+Four built-in plan types exist:
 
 - **Counted** — collect a set number of records of one form. The template
   holds `formType`; the config supplies `numberRequired` and
@@ -41,6 +41,53 @@ Three built-in plan types exist:
   records. The template holds `formTypes`, the forms to present in order;
   the config carries nothing, since the forms are fixed by the template.
   The default notebook view is this view configured from `visible_types`.
+- **Map Collection** — collect records against a spatially referenced list.
+  The template holds `formType`, `spatialFieldId` (the one map or GPS field of
+  the form each planned record's geometry is written to) and `recordFields`,
+  the other fields each record pre-fills, each `{fieldId, required}`. The
+  config supplies `recordData`, a map from a plan reference id to an entry
+  `{fields, spatial}`: the pre-fill values and a GeoJSON FeatureCollection of
+  one or more Point, LineString or Polygon features (several features are how
+  an entry carries more than one spatial reference), plus `allowExtraRecords`.
+  Instantiation filters each entry's fields to `recordFields`, and rejects an
+  entry missing a required field or without geometry. The plan carries
+  `spatialFieldId` and `recordFields` from the template so the app can write
+  the geometry to the right field in the shape that field stores: the
+  `MapFormField` a FeatureCollection, the `TakePoint` a single Point feature
+  (`mapCollectionSpatialValue`). The GeoJSON schemas the plan uses live in
+  `plans/planGeoJson.ts`, kept in data-model so plans do not depend on the
+  forms package.
+
+### Spatial import pipeline
+
+A Map Collection config is built from a spatial file by the pipeline in
+`plans/spatialImport`, shared by the web manager and any future API upload:
+
+```
+source -> format adapter -> explode geometry -> group into entries
+       -> extract fields -> build FeatureCollection -> validate -> recordData
+```
+
+- A **format adapter** (`formats/`) turns a parsed file into normalised
+  features (geometry plus attributes). GeoJSON is the one adapter so far: a
+  FeatureCollection with one Feature per planned record; a bare Feature or an
+  empty collection is refused.
+- **`explodeGeometry`** turns a Multi\* or GeometryCollection into simple
+  geometries, so one source feature can yield several spatial references.
+- **`groupEntries`** makes one entry per feature; a strategy that groups
+  several features under one entry slots in here.
+- **`extractFields`** reads `properties[fieldId]` for each record field, by
+  field id rather than label, and coerces to the field's `type-returned` as the
+  list-of-records table does. Other attributes are dropped.
+- **`parseSpatialImport`** runs the stages, checks each entry's geometry suits
+  the spatial field (a `MapFormField`'s `featureType`; a `TakePoint` takes one
+  Point), applies `mapCollectionEntryIssues`, and mints reference ids
+  `planned-1`, `planned-2`… in file order. It reports every problem, by
+  feature index, rather than stopping at the first.
+
+Adding a format means a new adapter implementing `SpatialFormatAdapter`, a
+member of `SPATIAL_IMPORT_FORMATS`, and an entry in the adapter table in
+`pipeline.ts`.
 
 ## Instantiation
 
@@ -98,7 +145,11 @@ type it holds:
   template that already carries another gets a note that it is entered on
   each record in the app instead. Rows are given sequential
   reference ids that are never reused after removal, since the id becomes the
-  record's `planReference` in the app.
+  record's `planReference` in the app. Map Collection is also component-based:
+  a format picker (GeoJSON), a file input, and a preview table of the entries
+  the spatial import pipeline read, with every problem the file has listed
+  by feature. The config is reported only once the file yields at least one
+  valid entry.
 
 A plan whose type has no registered config form shows an explanatory notice
 and blocks creation from the web manager. Adding support for a new plan type
@@ -115,3 +166,20 @@ default notebook view when it has none. Every view receives
 the shape. `RecordsTable` takes a `formTypes` prop naming the forms it lists
 and shapes its columns for; a plan view passes its own form(s), and the
 default view passes `visible_types`.
+
+The Map Collection view (`MapCollectionPlanView`) carries the survey tabs the
+default view has — My and Other records of the plan's form, the Overview Map of
+saved record geometry, Details and Settings — beside two of its own:
+
+- **Record Map** (`PlanRecordMap`) plots every planned entry's geometry from
+  the plan itself, so it needs no record hydration and works before any record
+  exists. An entry whose record has been created (a record in `planRecords`
+  carrying its `planReference`) is green; one still pending is amber. Tapping a
+  feature offers to open the record, or to create it with the entry's fields
+  and geometry as initial data (`mapCollectionInitialRecordData`). It sits on
+  `@faims3/forms`' `MapComponent`, as the Overview Map does, rather than on the
+  `MapWrapper` draw-and-edit dialog the `MapFormField` uses.
+- **Planned records** lists the same entries as cards with the same actions.
+
+Extra-record add buttons appear only when the plan allows extra records; they
+claim their records for the plan at the plan level (no entry suffix).

@@ -30,6 +30,8 @@ export * from './constants';
 export * from './inputLimits';
 export * from './inviteCode';
 export * from './exportTypes';
+// SPATIAL_FIELDS itself reaches the barrel through uiSpecification
+export {isSpatialFieldComponent} from './spatialFields';
 
 // Nested folders
 export * from './datamodel';

@@ -27,10 +27,12 @@ import {
   COUNTED_PLAN_TYPE,
   LIST_OF_FORMS_PLAN_TYPE,
   LIST_OF_RECORDS_PLAN_TYPE,
+  MAP_COLLECTION_PLAN_TYPE,
 } from '@faims3/data-model';
 import {CountedPlanDialog} from './components/plans/CountedPlanDialog';
 import {ListOfFormsPlanDialog} from './components/plans/ListOfFormsPlanDialog';
 import {ListOfRecordsPlanDialog} from './components/plans/ListOfRecordsPlanDialog';
+import {MapCollectionPlanDialog} from './components/plans/MapCollectionPlanDialog';
 
 /**
  * The uiSpec slice plan dialogs read. Structural, not the designer's
@@ -41,7 +43,12 @@ export type PlanDialogUiSpec = {
   views: Record<string, {fields: string[]} | undefined>;
   fields: Record<
     string,
-    | {'component-parameters'?: {label?: unknown}; 'type-returned'?: string}
+    | {
+        /** Read by plans that pick fields by component, such as spatial ones. */
+        'component-name'?: string;
+        'component-parameters'?: {label?: unknown; featureType?: unknown};
+        'type-returned'?: string;
+      }
     | undefined
   >;
 };
@@ -114,6 +121,13 @@ const builtInDesignerPlanTypes: DesignerPlanType[] = [
     description:
       'Present a chosen set of forms for creating and browsing records. Nothing further is configured when a notebook is created from this template.',
     Dialog: ListOfFormsPlanDialog,
+  },
+  {
+    planType: MAP_COLLECTION_PLAN_TYPE,
+    label: 'Map Collection',
+    description:
+      'Collect records against a spatially referenced list. Choose the form, the spatial field each planned record fills, and which other fields it pre-fills; the list itself is supplied as a spatial file when a notebook is created.',
+    Dialog: MapCollectionPlanDialog,
   },
 ];
 

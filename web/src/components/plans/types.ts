@@ -11,7 +11,9 @@ import type {Field} from '@/components/form';
 export type PlanConfig = Record<string, unknown>;
 
 type PlanConfigField = {
-  'component-parameters'?: {label?: unknown};
+  /** Read by plans that write to a field by component, such as spatial ones. */
+  'component-name'?: string;
+  'component-parameters'?: {label?: unknown; featureType?: unknown};
   'type-returned'?: string;
 };
 
