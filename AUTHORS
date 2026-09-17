@@ -1,0 +1,21 @@
+Fieldmark, built on FAIMS
+https://github.com/FAIMS/FAIMS3
+
+Copyright in this repository is held by the organisations below. Source
+files carry an SPDX licence identifier and no copyright notice of their
+own; the licence is in LICENSE, and the holders are listed here.
+
+    Macquarie University                                           2021-2024
+    Commonwealth Scientific and Industrial Research Organisation   2021-2026
+    Electronic Field Notebooks Pty Ltd                             2024-2026
+
+The division between Macquarie University and Electronic Field Notebooks
+follows the Commercial IP Licence Agreement of 30 May 2024. Work before it
+is Macquarie's; Improvements developed independently by Electronic Field
+Notebooks after it are theirs under that agreement.
+
+CSIRO contributions are CSIRO's own. They are contributed under the
+Developer Certificate of Origin (see app/DCO), which certifies the right
+to contribute under the project licence and does not transfer copyright.
+
+Individual contributors are recorded in the commit history.
