@@ -11,6 +11,7 @@ import type {PlanFeatureCollection} from '../planGeoJson';
 import {explodeGeometry} from './explodeGeometry';
 import {extractFields} from './extractFields';
 import {geoJsonAdapter} from './formats/geojson';
+import {kmlAdapter} from './formats/kml';
 import {groupEntries, type GroupingStrategy} from './groupEntries';
 import type {
   EntryDraft,
@@ -24,6 +25,7 @@ import type {
 
 const adapters: Record<SpatialImportFormat, SpatialFormatAdapter> = {
   geojson: geoJsonAdapter,
+  kml: kmlAdapter,
 };
 
 /** The adapter for a format, for pickers to read labels and accept lists. */
@@ -58,7 +60,10 @@ export const parseSpatialImport = ({
   grouping,
 }: {
   format: SpatialImportFormat;
-  /** The parsed file: for GeoJSON, the JSON value. */
+  /**
+   * The file's text, or its parsed form: a JSON value for GeoJSON, an XML
+   * document for KML.
+   */
   source: unknown;
   context: SpatialImportContext;
   grouping?: GroupingStrategy;

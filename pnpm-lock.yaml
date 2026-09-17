@@ -697,6 +697,9 @@ importers:
       '@jsep-plugin/ternary':
         specifier: ^1.1.4
         version: 1.1.4(jsep@1.4.0)
+      '@tmcw/togeojson':
+        specifier: ^7.1.2
+        version: 7.1.2
       '@types/pouchdb':
         specifier: ^6.4.2
         version: 6.4.2
@@ -743,6 +746,9 @@ importers:
       '@types/node':
         specifier: ^24
         version: 24.13.1
+      '@xmldom/xmldom':
+        specifier: ^0.9.12
+        version: 0.9.12
       fast-check:
         specifier: ^3.6.3
         version: 3.23.2
@@ -4890,6 +4896,9 @@ packages:
     peerDependencies:
       webdriverio: '*'
 
+  '@tmcw/togeojson@7.1.2':
+    resolution: {integrity: sha512-QKnFs9DAuqqBVj4d6c69tV1Dj2TspSBTqffivoN0YoBCVdP/JY1+WaYCJbzU49RkoU5NOSOJ3jtFHCdEUVh21A==}
+
   '@tootallnate/once@2.0.1':
     resolution: {integrity: sha512-HqmEUIGRJ5fSXchkVgR5F7qn48bDBzv0kWj/Kfu5e6uci4UlEeng4331LnBkWffb++Ei3FOVLxo8JJWMFBDMeQ==}
     engines: {node: '>= 10'}
@@ -5753,6 +5762,10 @@ packages:
     resolution: {integrity: sha512-A9gOqLdi6cV4ibazAjcQufGj0B1y/vDqYrcuP6d/6x8P27gRS8643Dj9o1dEKtB6O7fwxb2FgBmJS2mX7gpvdw==}
     engines: {node: '>=14.6'}
     deprecated: this version has critical issues, please update to the latest version
+
+  '@xmldom/xmldom@0.9.12':
+    resolution: {integrity: sha512-5AXjrcMClTryPe9LgZrygpB1lj7s0S9E0+W+AHaVKAVyHanafK86iPSvG5xHVSp/jC+VH1UXu0TAEmY279xH7A==}
+    engines: {node: '>=14.6'}
 
   '@zarrita/storage@0.2.0':
     resolution: {integrity: sha512-855ZXqtnds7spnT8vNvD+MXa3QExP1m2GqShe8yt7uZXHnQLgJHgkpVwFjE1B0KDDRO0ki09hmk6OboTaIfPsQ==}
@@ -9785,6 +9798,7 @@ packages:
   nano@10.1.4:
     resolution: {integrity: sha512-bJOFIPLExIbF6mljnfExXX9Cub4W0puhDjVMp+qV40xl/DBvgKao7St4+6/GB6EoHZap7eFnrnx4mnp5KYgwJA==}
     engines: {node: '>=14'}
+    deprecated: nano@10 is now deprecated. Please visit https://www.npmjs.com/package/nano for the latest version
 
   nanoid@3.3.12:
     resolution: {integrity: sha512-ZB9RH/39qpq5Vu6Y+NmUaFhQR6pp+M2Xt76XBnEwDaGcVAqhlvxrl3B2bKS5D3NH3QR76v3aSrKaF/Kiy7lEtQ==}
@@ -16642,6 +16656,8 @@ snapshots:
       simmerjs: 0.5.6
       webdriverio: 9.27.2
 
+  '@tmcw/togeojson@7.1.2': {}
+
   '@tootallnate/once@2.0.1': {}
 
   '@tootallnate/quickjs-emscripten@0.23.0': {}
@@ -17434,7 +17450,7 @@ snapshots:
   '@vitest/browser-webdriverio@4.1.8(msw@2.14.6(@types/node@24.13.1)(typescript@7.0.2))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))(vitest@4.1.8)(webdriverio@9.27.2)':
     dependencies:
       '@vitest/browser': 4.1.8(msw@2.14.6(@types/node@24.13.1)(typescript@7.0.2))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))(vitest@4.1.8)
-      vitest: 4.1.8(@types/node@24.13.1)(@vitest/browser-webdriverio@4.1.8)(jsdom@22.1.0)(msw@2.14.6(@types/node@24.13.1)(typescript@7.0.2))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      vitest: 4.1.8(@types/node@24.13.1)(@vitest/browser-webdriverio@4.1.8)(@vitest/coverage-v8@4.1.10)(jsdom@22.1.0)(msw@2.14.6(@types/node@24.13.1)(typescript@7.0.2))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       webdriverio: 9.27.2
     transitivePeerDependencies:
       - bufferutil
@@ -17504,7 +17520,7 @@ snapshots:
       pngjs: 7.0.0
       sirv: 3.0.2
       tinyrainbow: 3.1.0
-      vitest: 4.1.8(@types/node@24.13.1)(@vitest/browser-webdriverio@4.1.8)(jsdom@22.1.0)(msw@2.14.6(@types/node@24.13.1)(typescript@7.0.2))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      vitest: 4.1.8(@types/node@24.13.1)(@vitest/browser-webdriverio@4.1.8)(@vitest/coverage-v8@4.1.10)(jsdom@22.1.0)(msw@2.14.6(@types/node@24.13.1)(typescript@7.0.2))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       ws: 8.21.0
     transitivePeerDependencies:
       - bufferutil
@@ -17908,6 +17924,8 @@ snapshots:
   '@xmldom/xmldom@0.8.13': {}
 
   '@xmldom/xmldom@0.9.10': {}
+
+  '@xmldom/xmldom@0.9.12': {}
 
   '@zarrita/storage@0.2.0':
     dependencies:

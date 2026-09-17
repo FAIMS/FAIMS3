@@ -1,6 +1,7 @@
 /**
  * @file GeoJSON adapter: a FeatureCollection with one Feature per planned
- * entry. Geometry is passed on unvalidated; the explode stage checks it.
+ * entry, given as file text or an already-parsed JSON value. Geometry is
+ * passed on unvalidated; the explode stage checks it.
  */
 import z from 'zod';
 import type {SpatialFormatAdapter} from '../types';
@@ -20,7 +21,15 @@ export const geoJsonAdapter: SpatialFormatAdapter = {
   format: 'geojson',
   label: 'GeoJSON',
   accept: ['.geojson', '.json', 'application/geo+json', 'application/json'],
-  parse: source => {
+  parse: input => {
+    let source = input;
+    if (typeof input === 'string') {
+      try {
+        source = JSON.parse(input);
+      } catch {
+        return {ok: false, message: 'The file is not valid JSON'};
+      }
+    }
     if (
       typeof source === 'object' &&
       source !== null &&

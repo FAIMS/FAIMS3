@@ -68,10 +68,26 @@ source -> format adapter -> explode geometry -> group into entries
        -> extract fields -> build FeatureCollection -> validate -> recordData
 ```
 
-- A **format adapter** (`formats/`) turns a parsed file into normalised
-  features (geometry plus attributes). GeoJSON is the one adapter so far: a
-  FeatureCollection with one Feature per planned record; a bare Feature or an
-  empty collection is refused.
+- A **format adapter** (`formats/`) turns a file into normalised features
+  (geometry plus attributes). Every adapter takes the file's text, and each
+  also takes its own already-parsed form so a caller holding one need not
+  re-serialise it:
+  - **GeoJSON** (`formats/geojson.ts`): a FeatureCollection with one Feature
+    per planned record; a bare Feature or an empty collection is refused.
+    Also takes the parsed JSON value.
+  - **KML** (`formats/kml.ts`): one Placemark per planned record, converted
+    with [`@tmcw/togeojson`](https://github.com/placemark/togeojson) rather
+    than hand-rolled XML handling. Folders and Documents are flattened in
+    document order; a MultiGeometry becomes a GeometryCollection for the
+    explode stage; a Placemark's `<name>`, `<description>` and
+    `<ExtendedData>` (`<Data name=…>` and `<SchemaData><SimpleData name=…>`)
+    become properties keyed by that name, so attributes match record fields
+    by field id exactly as GeoJSON properties do. GroundOverlays and
+    NetworkLinks are dropped; a document with no Placemarks, or whose root is
+    not `<kml>`, is refused. XML parsing uses whatever `DOMParser` is on
+    `globalThis` (browsers have one; Node callers pass an `@xmldom/xmldom`
+    document instead, as the tests do). Also takes a parsed XML document.
+    KMZ (zipped KML) is not read.
 - **`explodeGeometry`** turns a Multi\* or GeometryCollection into simple
   geometries, so one source feature can yield several spatial references.
 - **`groupEntries`** makes one entry per feature; a strategy that groups
@@ -146,7 +162,7 @@ type it holds:
   each record in the app instead. Rows are given sequential
   reference ids that are never reused after removal, since the id becomes the
   record's `planReference` in the app. Map Collection is also component-based:
-  a format picker (GeoJSON), a file input, and a preview table of the entries
+  a format picker (GeoJSON, KML), a file input, and a preview table of the entries
   the spatial import pipeline read, with every problem the file has listed
   by feature. The config is reported only once the file yields at least one
   valid entry.

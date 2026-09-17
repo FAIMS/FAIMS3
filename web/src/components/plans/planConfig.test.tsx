@@ -394,6 +394,62 @@ describe('MapCollectionPlanConfigForm', () => {
     expect(lastCall(onChange)).toBeUndefined();
   });
 
+  test('reads a KML file once the format is switched', async () => {
+    const {onChange, input} = renderForm();
+    fireEvent.change(screen.getByTestId('plan-config-spatial-format'), {
+      target: {value: 'kml'},
+    });
+    expect(input.getAttribute('accept')).toContain('.kml');
+
+    const kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document>
+  <Placemark>
+    <name>Alpha</name>
+    <ExtendedData>
+      <Data name="Name"><value>Alpha</value></Data>
+      <Data name="Count"><value>2</value></Data>
+    </ExtendedData>
+    <Point><coordinates>151,-33</coordinates></Point>
+  </Placemark>
+</Document></kml>`;
+    fireEvent.change(input, {
+      target: {
+        files: [
+          new File([kml], 'sites.kml', {
+            type: 'application/vnd.google-earth.kml+xml',
+          }),
+        ],
+      },
+    });
+
+    await waitFor(() => expect(lastCall(onChange)).toBeDefined());
+    expect(lastCall(onChange).recordData).toEqual({
+      'planned-1': {
+        fields: {Name: 'Alpha', Count: 2},
+        spatial: {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              geometry: {type: 'Point', coordinates: [151, -33]},
+              properties: null,
+            },
+          ],
+        },
+      },
+    });
+
+    fireEvent.change(input, {
+      target: {files: [new File(['<kml><Placemark>'], 'bad.kml')]},
+    });
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toMatch(
+        /not well-formed XML/
+      )
+    );
+    expect(lastCall(onChange)).toBeUndefined();
+  });
+
   test('summarises an entry geometry', () => {
     expect(
       geometrySummary({

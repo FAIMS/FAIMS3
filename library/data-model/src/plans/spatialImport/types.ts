@@ -9,9 +9,24 @@ import type {
   MapCollectionPlanTemplate,
 } from '../mapCollectionPlan';
 
-/** The file formats the pipeline can read. GeoJSON only, so far. */
-export const SPATIAL_IMPORT_FORMATS = ['geojson'] as const;
+/** The file formats the pipeline can read. */
+export const SPATIAL_IMPORT_FORMATS = ['geojson', 'kml'] as const;
 export type SpatialImportFormat = (typeof SPATIAL_IMPORT_FORMATS)[number];
+
+/**
+ * The parts of an XML DOM document the KML adapter reads. Structural, so the
+ * browser's DOMParser output and an @xmldom/xmldom document both fit without
+ * this library depending on the DOM type library.
+ */
+export type XmlDocumentLike = {
+  documentElement: {localName?: string | null; nodeName: string} | null;
+  getElementsByTagName: (name: string) => {length: number};
+};
+
+/** A DOMParser-shaped constructor, looked up on `globalThis` when needed. */
+export type XmlParserConstructor = new () => {
+  parseFromString: (text: string, mimeType: string) => XmlDocumentLike;
+};
 
 /**
  * One feature as a format adapter hands it on: a geometry (possibly a Multi*
@@ -68,6 +83,11 @@ export type SpatialFormatAdapter = {
   label: string;
   /** File extensions and MIME types a picker should accept. */
   accept: string[];
+  /**
+   * Read a source into features. Every adapter takes the file's text; each
+   * also takes its own already-parsed form (a JSON value for GeoJSON, an XML
+   * document for KML) so callers that have one need not re-serialise it.
+   */
   parse: (
     source: unknown
   ) => {ok: true; features: NormalizedFeature[]} | {ok: false; message: string};

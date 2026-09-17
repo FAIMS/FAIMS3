@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Heritage sites</name>
+    <description>KML twin of heritage-sites.geojson for the heritage-site-inspection.json MapCollection plan (spatial field Site-Location). Attributes are carried as ExtendedData keyed by uiSpec field id; the first Folder uses SchemaData, the rest plain Data elements. HS-007 is a MultiGeometry and is exploded into two planned records.</description>
+
+    <Schema name="Site" id="SiteSchema">
+      <SimpleField name="Site-Code" type="string"/>
+      <SimpleField name="Site-Name" type="string"/>
+      <SimpleField name="Site-Type" type="string"/>
+      <SimpleField name="Priority" type="int"/>
+    </Schema>
+
+    <Style id="site">
+      <IconStyle><scale>1.1</scale></IconStyle>
+    </Style>
+
+    <Folder>
+      <name>Lane Cove River</name>
+      <Placemark id="HS-001">
+        <name>Lane Cove weir scatter</name>
+        <styleUrl>#site</styleUrl>
+        <ExtendedData>
+          <SchemaData schemaUrl="#SiteSchema">
+            <SimpleData name="Site-Code">HS-001</SimpleData>
+            <SimpleData name="Site-Name">Lane Cove weir scatter</SimpleData>
+            <SimpleData name="Site-Type">Artefact scatter</SimpleData>
+            <SimpleData name="Priority">1</SimpleData>
+          </SchemaData>
+        </ExtendedData>
+        <Point><coordinates>151.1512,-33.7861,0</coordinates></Point>
+      </Placemark>
+      <Placemark id="HS-002">
+        <name>Fairyland shelter</name>
+        <styleUrl>#site</styleUrl>
+        <ExtendedData>
+          <SchemaData schemaUrl="#SiteSchema">
+            <SimpleData name="Site-Code">HS-002</SimpleData>
+            <SimpleData name="Site-Name">Fairyland shelter</SimpleData>
+            <SimpleData name="Site-Type">Rock shelter</SimpleData>
+            <SimpleData name="Priority">2</SimpleData>
+          </SchemaData>
+        </ExtendedData>
+        <Point><coordinates>151.1443,-33.7935,0</coordinates></Point>
+      </Placemark>
+      <Placemark id="HS-003">
+        <name>Whale Rock engraving</name>
+        <styleUrl>#site</styleUrl>
+        <ExtendedData>
+          <SchemaData schemaUrl="#SiteSchema">
+            <SimpleData name="Site-Code">HS-003</SimpleData>
+            <SimpleData name="Site-Name">Whale Rock engraving</SimpleData>
+            <SimpleData name="Site-Type">Stone arrangement</SimpleData>
+            <SimpleData name="Priority">3</SimpleData>
+          </SchemaData>
+        </ExtendedData>
+        <Point><coordinates>151.1367,-33.7799,0</coordinates></Point>
+      </Placemark>
+    </Folder>
+
+    <Placemark id="HS-004">
+      <name>HS-004</name>
+      <description>Scarred tree with no register name</description>
+      <ExtendedData>
+        <Data name="Site-Code"><value>HS-004</value></Data>
+        <Data name="Site-Type"><value>Scarred tree</value></Data>
+        <Data name="Priority"><value>4</value></Data>
+      </ExtendedData>
+      <Point><coordinates>151.1291,-33.7724,0</coordinates></Point>
+    </Placemark>
+    <Placemark id="HS-005">
+      <name>Riverview Road ruin</name>
+      <ExtendedData>
+        <Data name="Site-Code"><value>HS-005</value></Data>
+        <Data name="Site-Name"><value>Riverview Road ruin</value></Data>
+        <Data name="Site-Type"><value>Historic structure</value></Data>
+        <Data name="Priority"><value>2</value></Data>
+      </ExtendedData>
+      <Point><coordinates>151.1584,-33.7998,0</coordinates></Point>
+    </Placemark>
+    <Placemark id="HS-006">
+      <name>Buffalo Creek midden</name>
+      <ExtendedData>
+        <Data name="Site-Code"><value>HS-006</value></Data>
+        <Data name="Site-Name"><value>Buffalo Creek midden</value></Data>
+        <Data name="Site-Type"><value>Artefact scatter</value></Data>
+        <Data name="Priority"><value>5</value></Data>
+      </ExtendedData>
+      <Point><coordinates>151.1235,-33.8032,0</coordinates></Point>
+    </Placemark>
+    <Placemark id="HS-007">
+      <name>Tunks Park grinding grooves</name>
+      <ExtendedData>
+        <Data name="Site-Code"><value>HS-007</value></Data>
+        <Data name="Site-Name"><value>Tunks Park grinding grooves</value></Data>
+        <Data name="Site-Type"><value>Stone arrangement</value></Data>
+        <Data name="Priority"><value>3</value></Data>
+      </ExtendedData>
+      <MultiGeometry>
+        <Point><coordinates>151.1729,-33.8121,0</coordinates></Point>
+        <Point><coordinates>151.1741,-33.8115,0</coordinates></Point>
+      </MultiGeometry>
+    </Placemark>
+    <Placemark id="HS-008">
+      <name>Magdala Park shelter</name>
+      <ExtendedData>
+        <Data name="Site-Code"><value>HS-008</value></Data>
+        <Data name="Site-Name"><value>Magdala Park shelter</value></Data>
+        <Data name="Site-Type"><value>Rock shelter</value></Data>
+      </ExtendedData>
+      <Point><coordinates>151.1188,-33.7883,0</coordinates></Point>
+    </Placemark>
+  </Document>
+</kml>

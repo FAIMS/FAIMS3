@@ -1,6 +1,6 @@
 {
   "name": "Heritage site inspection",
-  "description": "Example template for a MapCollection plan: a single Site form with a spatial Site-Location field plus scalar identification fields that can be pre-filled from a GeoJSON file. Pair it with heritage-sites.geojson (Points) or heritage-site-extents.geojson (Polygons, switch the plan's spatial field to Site-Extent).",
+  "description": "Example template for a MapCollection plan: a single Site form with a spatial Site-Location field plus scalar identification fields that can be pre-filled from a GeoJSON file. Pair it with heritage-sites.geojson or heritage-sites.kml (Points) or heritage-site-extents.geojson (Polygons, switch the plan's spatial field to Site-Extent).",
   "uiSpecification": {
     "uiSpec": {
       "fields": {

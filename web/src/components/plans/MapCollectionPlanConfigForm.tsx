@@ -1,6 +1,6 @@
 /**
  * @file Config form for a Map Collection plan: upload a spatial file (GeoJSON
- * for now) holding one feature per planned record, run it through the spatial
+ * or KML) holding one feature per planned record, run it through the spatial
  * import pipeline, and preview the entries it yields.
  */
 
@@ -53,10 +53,13 @@ const spatialFeatureType = (
     ? (featureType as PlanGeometryType)
     : undefined;
 
-/** Read a file as text and parse it as JSON, or explain why that failed. */
-const readJsonFile = async (
+/**
+ * Read a file as text for the format adapter to parse, or explain why not.
+ * Parsing is the adapter's job so each format reports its own errors.
+ */
+const readSpatialFile = async (
   file: File
-): Promise<{ok: true; value: unknown} | {ok: false; message: string}> => {
+): Promise<{ok: true; text: string} | {ok: false; message: string}> => {
   if (file.size > config.maxDesignFileSizeBytes) {
     return {
       ok: false,
@@ -64,9 +67,9 @@ const readJsonFile = async (
     };
   }
   try {
-    return {ok: true, value: JSON.parse(await file.text())};
+    return {ok: true, text: await file.text()};
   } catch {
-    return {ok: false, message: 'The file is not valid JSON.'};
+    return {ok: false, message: 'The file could not be read.'};
   }
 };
 
@@ -131,12 +134,12 @@ export const MapCollectionPlanConfigForm = ({
       setErrors([]);
       setFileName(file?.name ?? null);
       if (!file) return;
-      const read = await readJsonFile(file);
+      const read = await readSpatialFile(file);
       if (!read.ok) {
         setErrors([{message: read.message}]);
         return;
       }
-      const result = parseSpatialImport({format, source: read.value, context});
+      const result = parseSpatialImport({format, source: read.text, context});
       if (result.ok) setRecordData(result.recordData);
       else setErrors(result.errors);
     },
