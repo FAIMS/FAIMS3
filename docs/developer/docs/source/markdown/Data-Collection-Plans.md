@@ -27,7 +27,7 @@ wherever the app names the plan) and an optional `description`. A
 and installs the built-in types lazily on first lookup, so external modules
 can register additional plan types alongside them.
 
-Two built-in plan types exist:
+Three built-in plan types exist:
 
 - **Counted** — collect a set number of records of one form. The template
   holds `formType`; the config supplies `numberRequired` and
@@ -37,6 +37,10 @@ Two built-in plan types exist:
   fields each planned record pre-fills; the config supplies `recordData`,
   a map from a plan reference id to the values for that record, plus
   `allowExtraRecords`. Instantiation filters each record to `recordFields`.
+- **List of Forms** — present a set of forms for creating and browsing
+  records. The template holds `formTypes`, the forms to present in order;
+  the config carries nothing, since the forms are fixed by the template.
+  The default notebook view is this view configured from `visible_types`.
 
 ## Instantiation
 
@@ -108,4 +112,6 @@ The app resolves a view per plan from the plan view registry
 chooser when a notebook carries more than one plan, and falls back to the
 default notebook view when it has none. Every view receives
 `NotebookViewComponentProps`; see the Counted and List of Records views for
-the shape.
+the shape. `RecordsTable` takes a `formTypes` prop naming the forms it lists
+and shapes its columns for; a plan view passes its own form(s), and the
+default view passes `visible_types`.
