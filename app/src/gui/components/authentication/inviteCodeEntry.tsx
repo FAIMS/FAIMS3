@@ -1,25 +1,12 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: inviteCodeEntry.tsx
  * Description:
  *   Compact invite-redemption controls used on sign-in and "add notebook"
  *   flows. Scanning a QR code that encodes a Conductor register URL is the
  *   preferred path (native only). Typing or pasting an invite code is the
  *   advanced fallback when the user has a code but not a QR or link.
- *
  *   Invite document IDs are `{prefix}-{body}`. The prefix identifies which
  *   configured Conductor server to hit; the body is the random code. Length
  *   and alphabet constraints are shared with the API via `@faims3/data-model`.
