@@ -30,8 +30,8 @@ FROM base AS source
 # Copy source code
 COPY . .
 
-# Shared runtime for the three dev services. The monorepo is copied once here so
-# all three images reuse the layer instead of each carrying its own copy.
+# Shared runtime for the three dev services. Compose sets command and ports per
+# service, so one stage serves all three.
 FROM node:24-slim AS runtime
 
 # ogr2ogr for GeoPackage export (see api/src/couchdb/export/gdal.ts), and curl for
@@ -49,18 +49,3 @@ WORKDIR /usr/src
 
 # Copy installed dependencies and source
 COPY --from=source /usr/src .
-
-# API service
-FROM runtime AS api
-EXPOSE 8000
-CMD ["pnpm", "run", "watch-api"]
-
-# App service
-FROM runtime AS app
-EXPOSE 3000
-CMD ["pnpm", "run", "force-start-app"]
-
-# Web service
-FROM runtime AS web
-EXPOSE 3001
-CMD ["pnpm", "run", "web-dev"]

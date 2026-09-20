@@ -8,7 +8,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: api
+      target: runtime
     ports:
       - '0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}'
     volumes:
@@ -37,7 +37,7 @@ services:
     env_file:
       - ./web/.env
     build:
-      target: web
+      target: runtime
     ports:
       - '0.0.0.0:3001:3001'
     volumes:
@@ -53,7 +53,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: app
+      target: runtime
     ports:
       - '3000:3000'
     volumes:
