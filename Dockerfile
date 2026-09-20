@@ -18,9 +18,6 @@ COPY web/package.json ./web/
 COPY library/data-model/package.json ./library/data-model/
 COPY library/forms/package.json ./library/forms/
 
-# Turbo config
-COPY turbo.json ./
-
 # Install dependencies with cache mount
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
   pnpm install --frozen-lockfile
