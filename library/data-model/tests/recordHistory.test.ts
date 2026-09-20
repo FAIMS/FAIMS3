@@ -1,94 +1,62 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import PouchDB from 'pouchdb';
-import PouchDBFind from 'pouchdb-find';
 import {
-  compileUiSpecConditionals,
-  CompiledNotebookUiSpec,
   computeRecursiveRecordHistory,
   DatabaseInterface,
   DataDocument,
   DataEngine,
   FormUpdateData,
-  NotebookDefinition,
   RecordDeletedError,
-  RecursiveRecordHistory,
+  UnknownFormTypeError,
 } from '../src';
-
-PouchDB.plugin(PouchDBFind);
-PouchDB.plugin(require('pouchdb-adapter-memory'));
-
-const CHILD_PAIR: [string, string] = ['is child of', 'has child'];
-const USER = 'test-user';
-const PROJECT = 'test-project';
-
-/** Forward child link as stored in a RelatedRecordSelector field value. */
-const link = (recordId: string) => ({
-  record_id: recordId,
-  relation_type_vocabPair: CHILD_PAIR,
-});
+import {
+  childField,
+  createRecord,
+  createTestEngine,
+  link,
+  PROJECT,
+  USER,
+} from './childTreeTestSupport';
 
 describe('Recursive record history', () => {
   let db: DatabaseInterface<DataDocument>;
   let engine: DataEngine;
   const databaseName = 'test-record-history-db';
 
-  // The same notebook the status report is tested against, so both walks are
-  // exercised over one shape of child links.
-  const uiSpecPath = path.join(__dirname, 'statusReportUiSpec.json');
-  const {uiSpec: rawUiSpec} = JSON.parse(
-    fs.readFileSync(uiSpecPath, 'utf-8')
-  ) as NotebookDefinition;
-  compileUiSpecConditionals(rawUiSpec);
-  const uiSpec = rawUiSpec as unknown as CompiledNotebookUiSpec;
-
   beforeEach(() => {
-    db = new PouchDB(databaseName, {
-      adapter: 'memory',
-    }) as unknown as DatabaseInterface<DataDocument>;
-    engine = new DataEngine({dataDb: db, uiSpec});
+    ({db, engine} = createTestEngine(databaseName));
   });
 
   afterEach(async () => {
     await db.destroy();
   });
 
-  const create = async (
+  const create = (
     formId: string,
     initial: FormUpdateData = {},
     createdBy = USER
-  ) => {
-    const {record, revision} = await engine.form.createRecord({
-      formId,
-      createdBy,
-      initial,
-    });
-    return {recordId: record._id, revisionId: revision._id};
-  };
+  ) => createRecord(engine, formId, initial, createdBy);
 
   /** Adds a revision, so a record has a history longer than its creation. */
   const edit = async (
     created: {recordId: string; revisionId: string},
     update: FormUpdateData,
     updatedBy = USER
-  ) =>
-    engine.form.updateRevision({
+  ) => {
+    const revision = await engine.form.createRevision({
+      recordId: created.recordId,
       revisionId: created.revisionId,
+      createdBy: updatedBy,
+    });
+    return engine.form.updateRevision({
+      revisionId: revision._id,
       recordId: created.recordId,
       update,
-      mode: 'merge',
+      mode: 'parent',
       updatedBy,
     });
+  };
 
   const history = (recordId: string) =>
     computeRecursiveRecordHistory({engine, recordId, projectId: PROJECT});
-
-  /** The child-field entry for fieldId; fails the test if absent. */
-  const childField = (node: RecursiveRecordHistory, fieldId: string) => {
-    const field = node.childFields.find(f => f.fieldId === fieldId);
-    expect(field).toBeDefined();
-    return field!;
-  };
 
   test('a leaf record reports its own revisions and no children', async () => {
     const {recordId} = await create('Photo');
@@ -164,6 +132,38 @@ describe('Recursive record history', () => {
     // The parent's own history names only its own author, which is the gap
     expect(result.entries.map(e => e.createdBy)).toEqual([USER]);
     expect(node.entries.map(e => e.createdBy)).toContain('someone-else');
+  });
+
+  test('a later edit to a child shows in its trail', async () => {
+    const child = await create('Sample', {'sample-type': {data: 'core'}});
+    await edit(child, {'sample-type': {data: 'fines'}}, 'someone-else');
+    const {recordId: parentId} = await create('Sample', {
+      'sample-type': {data: 'soil'},
+      'sub-samples': {data: [link(child.recordId)]},
+    });
+
+    const result = await history(parentId);
+    const node = childField(result, 'sub-samples').children[0];
+    expect(node.entries).toHaveLength(2);
+    expect(node.entries.map(e => e.createdBy)).toContain('someone-else');
+  });
+
+  test('a root whose form is gone is a hard error, as for the status report', async () => {
+    // e.g. the record's form was removed from the notebook after creation
+    const {recordId} = await create('Ghost');
+    await expect(history(recordId)).rejects.toThrow(UnknownFormTypeError);
+  });
+
+  test('a child whose form is gone drops out', async () => {
+    const ghost = await create('Ghost');
+    const {recordId: siteId} = await create('Site', {
+      'site-id': {data: 'S1'},
+      photos: {data: [link(ghost.recordId)]},
+    });
+    const result = await history(siteId);
+    expect(
+      result.childFields.find(f => f.fieldId === 'photos')
+    ).toBeUndefined();
   });
 
   test('a field linking nothing live drops out', async () => {

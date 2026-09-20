@@ -1,3 +1,4 @@
+export * from './childRecordTree';
 export * from './completion';
 export * from './engine';
 export * from './exceptions';

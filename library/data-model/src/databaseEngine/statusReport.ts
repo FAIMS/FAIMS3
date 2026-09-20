@@ -1,10 +1,16 @@
-import {getChildRelationParams} from '../uiSpecification/parentForms';
 import {
   currentlyVisibleMap,
   getSummaryValues,
   isFieldStaticallyHidden,
   visibleFieldSet,
 } from '../uiSpecification/utils';
+import {
+  ChildFieldSpec,
+  ChildRecordLink,
+  ChildTreeWalkContext,
+  resolveChildFieldSpecs,
+  walkChildRecordTree,
+} from './childRecordTree';
 import {
   completion,
   completionFromIncomplete,
@@ -13,26 +19,8 @@ import {
   IsCompleteResolver,
 } from './completion';
 import {DataEngine} from './engine';
-import {
-  DocumentNotFoundError,
-  DocumentValidationError,
-  NoHeadsError,
-  RecordDeletedError,
-  UnknownFormTypeError,
-} from './exceptions';
-import {
-  FormUpdateData,
-  relatedRecordAvpEntries,
-  relatedRecordFieldAvpEntrySchema,
-} from './types';
-import {fieldIdsForViewset} from '../uiSpecification/formScan';
-
-// Only the id and project tag matter here, so legacy vocab-pair drift in a
-// stored link cannot invalidate a live child
-const storedLinkEntrySchema = relatedRecordFieldAvpEntrySchema.pick({
-  record_id: true,
-  project_id: true,
-});
+import {RecordDeletedError} from './exceptions';
+import {InitialFormData} from './types';
 
 /** Status of one Child-type related-record field on a record. */
 export interface RecordStatusChildField {
@@ -85,14 +73,6 @@ function adjustOwnProgressForChildren(
   return completionFromIncomplete(own.requiredCount, [...incomplete]);
 }
 
-interface WalkContext {
-  engine: DataEngine;
-  projectId: string;
-  isCompleteResolver: IsCompleteResolver;
-  /** Child-type fields resolved once per walk; the ui-spec never changes mid-walk. */
-  childFieldSpecs: Map<string, ChildFieldSpec>;
-}
-
 /**
  * Computes the recursive status report for a record: per node the HRID,
  * required-field completion, summary values and the same for child records
@@ -121,196 +101,44 @@ export async function computeRecordStatusReport({
   projectId: string;
   isCompleteResolver: IsCompleteResolver;
 }): Promise<RecordStatusReport> {
-  const ctx: WalkContext = {
+  const ctx: ChildTreeWalkContext = {
     engine,
     projectId,
-    isCompleteResolver,
     childFieldSpecs: resolveChildFieldSpecs(engine.uiSpec),
   };
-  const report = await walk(ctx, recordId, new Set());
+  const report = await walkChildRecordTree<RecordStatusReport, OwnStatus>({
+    ctx,
+    recordId,
+    path: new Set(),
+    startOwnWork: ({node}) =>
+      scoreOwnRecord({engine, isCompleteResolver, node}),
+    buildNode: args =>
+      buildStatusNode({childFieldSpecs: ctx.childFieldSpecs, ...args}),
+  });
   if (report === null) {
     throw new RecordDeletedError(recordId);
   }
   return report;
 }
 
-/**
- * Converts one child's failure to load into a skip: a dangling, corrupt or
- * unmeasurable child cannot fail the whole report. The same errors on the
- * root record still surface to the caller.
- */
-export function absorbSkippableChildError(err: unknown): null {
-  if (
-    err instanceof DocumentNotFoundError ||
-    err instanceof NoHeadsError ||
-    err instanceof DocumentValidationError ||
-    err instanceof UnknownFormTypeError
-  ) {
-    return null;
-  }
-  throw err;
+/** A record's own scoring, computed while its children are walked. */
+interface OwnStatus {
+  rawOwnProgress: CompletionResult;
+  summaryValues: Record<string, unknown>;
+  visibleFields: ReadonlySet<string>;
 }
 
-export interface ChildFieldSpec {
-  relatedFormId: string;
-  required: boolean;
-}
-
-/** Resolves the Child-type RelatedRecordSelector fields of the ui-spec, keyed by field id. */
-export function resolveChildFieldSpecs(
-  uiSpec: DataEngine['uiSpec']
-): Map<string, ChildFieldSpec> {
-  const specs = new Map<string, ChildFieldSpec>();
-  for (const [fieldId, fieldSpec] of Object.entries(uiSpec.fields)) {
-    const params = getChildRelationParams(fieldSpec);
-    if (!params) {
-      continue;
-    }
-    specs.set(fieldId, {
-      relatedFormId: params.related_type,
-      // required is a base field param, outside the selector params schema
-      required: !!fieldSpec['component-parameters']?.required,
-    });
-  }
-  return specs;
-}
-
-interface CollectedChildField extends ChildFieldSpec {
-  fieldId: string;
-  isVisible: boolean;
-  /** Distinct linked child ids; cross-project and malformed links excluded. */
-  childIds: string[];
-}
-
-/** One Child-type field of a form, and the records it links to. */
-export interface ChildRecordLink {
-  fieldId: string;
-  relatedFormId: string;
-  /** Distinct linked child ids; cross-project and malformed links excluded. */
-  childIds: string[];
-}
-
-/**
- * The Child-type RelatedRecordSelector fields of a form and the child records
- * each links to, read from the parent's own stored values.
- *
- * Shared with the recursive history walk, which needs the same links but none
- * of the completion scoring, so the two cannot disagree about what counts as a
- * child.
- *
- * @param uiSpec - The project's compiled ui specification
- * @param childFieldSpecs - Child-type fields, from {@link resolveChildFieldSpecs}
- * @param projectId - Links tagged with another project id are skipped
- * @param formId - The parent's form
- * @param data - The parent's stored values, absent on an empty record
- */
-export function collectChildRecordLinks({
-  uiSpec,
-  childFieldSpecs,
-  projectId,
-  formId,
-  data,
+/** Scores one record's own fields, before its children are known. */
+function scoreOwnRecord({
+  engine,
+  isCompleteResolver,
+  node,
 }: {
-  uiSpec: DataEngine['uiSpec'];
-  childFieldSpecs: Map<string, ChildFieldSpec>;
-  projectId: string;
-  formId: string;
-  data: FormUpdateData | undefined;
-}): ChildRecordLink[] {
-  const links: ChildRecordLink[] = [];
-  // Set: a field listed in two sections is still one child field
-  for (const fieldId of new Set(fieldIdsForViewset(uiSpec, formId))) {
-    const spec = childFieldSpecs.get(fieldId);
-    if (!spec) {
-      continue;
-    }
-    // An absent value flattens to [undefined], which the schema then rejects
-    const rawEntries = relatedRecordAvpEntries(data?.[fieldId]?.data);
-    // Set: an empty id is not a child; a duplicate link is still one child
-    const childIds = new Set<string>();
-    for (const rawEntry of rawEntries) {
-      const entry = storedLinkEntrySchema.safeParse(rawEntry);
-      if (!entry.success) {
-        continue;
-      }
-      const {record_id: childId, project_id: linkProjectId} = entry.data;
-      // An empty-string tag means untagged, like an absent one
-      if (linkProjectId && linkProjectId !== projectId) {
-        continue;
-      }
-      if (childId) {
-        childIds.add(childId);
-      }
-    }
-    links.push({
-      fieldId,
-      relatedFormId: spec.relatedFormId,
-      childIds: [...childIds],
-    });
-  }
-  return links;
-}
-
-/** Reads the form's Child-type RelatedRecordSelector fields and their linked child ids. */
-function collectChildFields(
-  ctx: WalkContext,
-  formId: string,
-  visibleFields: ReadonlySet<string>,
-  data: FormUpdateData | undefined
-): CollectedChildField[] {
-  return collectChildRecordLinks({
-    uiSpec: ctx.engine.uiSpec,
-    childFieldSpecs: ctx.childFieldSpecs,
-    projectId: ctx.projectId,
-    formId,
-    data,
-  }).map(link => {
-    // A hidden field's linked children are still real records; only its
-    // requirement is masked, like required-field completion
-    const isVisible = visibleFields.has(link.fieldId);
-    return {
-      ...link,
-      required: !!ctx.childFieldSpecs.get(link.fieldId)?.required && isVisible,
-      isVisible,
-    };
-  });
-}
-
-/** Truthy outcomes are live children. */
-const isChildReport = (
-  outcome: RecordStatusReport | null | undefined
-): outcome is RecordStatusReport => !!outcome;
-
-/**
- * One node of the walk: a single hydration fetches the record, head revision
- * and AVPs together; null when the record is a deleted child, or would close
- * a cycle (reports under a cut are best-effort and can vary with link order).
- */
-async function walk(
-  ctx: WalkContext,
-  recordId: string,
-  /** Records on the path from the root; cuts the cycles corrupt data can hold. */
-  path: ReadonlySet<string>
-): Promise<RecordStatusReport | null> {
-  if (path.has(recordId)) {
-    return null;
-  }
-  const {engine} = ctx;
-
-  // Default conflict resolution (pickFirst), like the record page's own reads,
-  // so on a conflicted record the Status tab scores the head the form shows
-  const node = await engine.form.getExistingFormData({recordId});
-  if (node.context.revision.deleted) {
-    return null;
-  }
-  // hasOwnProperty, since `in` also matches prototype keys ('constructor')
-  if (
-    !Object.prototype.hasOwnProperty.call(engine.uiSpec.viewsets, node.formId)
-  ) {
-    throw new UnknownFormTypeError(recordId, node.formId);
-  }
-  const {formId, data, context} = node;
-
+  engine: DataEngine;
+  isCompleteResolver: IsCompleteResolver;
+  node: InitialFormData;
+}): OwnStatus {
+  const {formId, data} = node;
   const values = formDataToValues(data);
   // One condition pass serves both consumers: completion excludes statically
   // hidden fields, summary values include them (templated, recomputed at save)
@@ -328,41 +156,73 @@ async function walk(
       ),
     ])
   );
-  const rawOwnProgress = completion({
-    uiSpec: engine.uiSpec,
-    formId,
-    data,
-    visibilityMap,
-    isCompleteResolver: ctx.isCompleteResolver,
+  return {
+    rawOwnProgress: completion({
+      uiSpec: engine.uiSpec,
+      formId,
+      data,
+      visibilityMap,
+      isCompleteResolver,
+    }),
+    summaryValues: getSummaryValues({
+      uiSpec: engine.uiSpec,
+      formId,
+      values,
+      visibleFields: visibleFieldSet(fullVisibilityMap),
+    }),
+    visibleFields: visibleFieldSet(visibilityMap),
+  };
+}
+
+interface CollectedChildField extends ChildRecordLink {
+  required: boolean;
+  isVisible: boolean;
+}
+
+/** Applies the parent's field visibility to its Child-type links. */
+function collectChildFields(
+  childFieldSpecs: Map<string, ChildFieldSpec>,
+  links: ChildRecordLink[],
+  visibleFields: ReadonlySet<string>
+): CollectedChildField[] {
+  return links.map(link => {
+    // A hidden field's linked children are still real records; only its
+    // requirement is masked, like required-field completion
+    const isVisible = visibleFields.has(link.fieldId);
+    return {
+      ...link,
+      required: !!childFieldSpecs.get(link.fieldId)?.required && isVisible,
+      isVisible,
+    };
   });
+}
 
-  const visibleFields = visibleFieldSet(visibilityMap);
+/** Truthy outcomes are live children. */
+const isChildReport = (
+  outcome: RecordStatusReport | null | undefined
+): outcome is RecordStatusReport => !!outcome;
 
-  const summaryValues = getSummaryValues({
-    uiSpec: engine.uiSpec,
-    formId,
-    values,
-    visibleFields: visibleFieldSet(fullVisibilityMap),
-  });
-
-  const collected = collectChildFields(ctx, formId, visibleFields, data);
-  const distinctChildIds = new Set(collected.flatMap(field => field.childIds));
-
-  // One walk per distinct child, so a child linked from several fields is
-  // fetched once and counts as one roll-up unit; branches are independent
-  // (each carries its own path copy), so they walk concurrently
-  const childPath = new Set(path).add(recordId);
-  const outcomes = new Map<string, RecordStatusReport | null>();
-  await Promise.all(
-    [...distinctChildIds].map(async childId => {
-      try {
-        outcomes.set(childId, await walk(ctx, childId, childPath));
-      } catch (err) {
-        outcomes.set(childId, absorbSkippableChildError(err));
-      }
-    })
+/** Rolls one record's own scoring up with the reports of its children. */
+function buildStatusNode({
+  childFieldSpecs,
+  recordId,
+  node,
+  own,
+  links,
+  outcomes,
+}: {
+  childFieldSpecs: Map<string, ChildFieldSpec>;
+  recordId: string;
+  node: InitialFormData;
+  own: OwnStatus;
+  links: ChildRecordLink[];
+  outcomes: ReadonlyMap<string, RecordStatusReport | null>;
+}): RecordStatusReport {
+  const collected = collectChildFields(
+    childFieldSpecs,
+    links,
+    own.visibleFields
   );
-
   const childFields = collected.flatMap((field): RecordStatusChildField[] => {
     const children = field.childIds
       .map(id => outcomes.get(id))
@@ -381,7 +241,10 @@ async function walk(
     ];
   });
 
-  const ownProgress = adjustOwnProgressForChildren(rawOwnProgress, childFields);
+  const ownProgress = adjustOwnProgressForChildren(
+    own.rawOwnProgress,
+    childFields
+  );
 
   // Each live child is one unit alongside the record's own form; an empty
   // required child field is charged once, through ownProgress
@@ -390,16 +253,15 @@ async function walk(
     (sum, child) => sum + child.progress,
     0
   );
-  const progress =
-    (ownProgress.progress + childProgressSum) / (1 + liveReports.length);
 
   return {
     recordId,
-    hrid: context.hrid,
-    formId,
-    progress,
+    hrid: node.context.hrid,
+    formId: node.formId,
+    progress:
+      (ownProgress.progress + childProgressSum) / (1 + liveReports.length),
     ownProgress,
-    summaryValues,
+    summaryValues: own.summaryValues,
     childFields,
   };
 }

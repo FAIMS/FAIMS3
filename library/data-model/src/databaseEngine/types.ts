@@ -796,8 +796,6 @@ export interface RecursiveRecordHistory {
 /** One Child-type field, and the histories of the records it links to. */
 export interface RecursiveRecordHistoryChildField {
   fieldId: string;
-  /** Form the children are created from (`related_type`). */
-  relatedFormId: string;
   children: RecursiveRecordHistory[];
 }
 
