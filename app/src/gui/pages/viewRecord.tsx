@@ -76,6 +76,7 @@ import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {useNotebookRoute} from '../../context/notebookRoute';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
+import {buildRecordHistoryKey} from '../../utils/customHooks';
 import {tryLocalGetDataDb} from '../../utils/database';
 import {NOTEBOOK_LIST_ROUTE} from '../../utils/remoteProjectRemoval';
 import RecordDelete from '../components/notebook/delete';
@@ -410,11 +411,10 @@ const RevisionList: React.FC<{
   recordId: RecordID;
   uiSpec: NonNullable<ReturnType<typeof compiledSpecService.getSpec>>;
 }> = ({entries, recordId, uiSpec}) => {
-  const historyData = entries;
   const anchor = (revisionId: string) => `${recordId}-${revisionId}`;
 
   const revisionIdsRevision = new Map<string, RevisionHistoryEntry>(
-    historyData.map(entry => [entry.revisionId, entry])
+    entries.map(entry => [entry.revisionId, entry])
   );
 
   const formatRevisionMetadata = (entry?: RevisionHistoryEntry) => {
@@ -425,10 +425,10 @@ const RevisionList: React.FC<{
 
   return (
     <Stack spacing={4}>
-      {historyData
+      {entries
         .slice()
         .sort((a, b) => b.created.localeCompare(a.created))
-        .map((entry, e, historyData) => {
+        .map((entry, e, newestFirst) => {
           const parentFields = Object.entries(entry.changedFields);
           return (
             <Stack key={entry.revisionId} spacing={2}>
@@ -444,7 +444,7 @@ const RevisionList: React.FC<{
                     Fields changed
                     {revisionIdsRevision.has(parentId) &&
                     (parentFields.length > 1 ||
-                      parentId !== historyData[e + 1]?.revisionId) ? (
+                      parentId !== newestFirst[e + 1]?.revisionId) ? (
                       <>
                         {' '}
                         compared to{' '}
@@ -550,7 +550,7 @@ const HistoryTabContent: React.FC<{
   notebook: RecordRouteNotebook;
 }> = ({recordId, projectId, dataEngine, uiSpec, notebook}) => {
   const {data, isError, isPending, error} = useQuery({
-    queryKey: ['historyData', projectId, recordId],
+    queryKey: buildRecordHistoryKey({projectId, recordId}),
     queryFn: () =>
       computeRecursiveRecordHistory({
         engine: dataEngine,
