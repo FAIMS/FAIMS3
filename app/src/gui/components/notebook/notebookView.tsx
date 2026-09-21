@@ -5,6 +5,7 @@
 
 import {
   Action,
+  canEditProjectRecord,
   CompiledNotebookUiSpec,
   DatabaseInterface,
   DataDocument,
@@ -13,7 +14,7 @@ import {
   MinimalRecordMetadata,
   ProjectStatus,
 } from '@faims3/data-model';
-import NotebookComponent from '.';
+import DefaultNotebookView from './DefaultNotebookView';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
@@ -29,11 +30,11 @@ import {
   invalidateProjectRecordList,
   useIsAuthorisedTo,
   useIsRecordDownloadUnderway,
-  usePlanRecordStatusReports,
   useRecordList,
 } from '../../../utils/customHooks';
 import CircularLoading from '../ui/circular_loading';
-import {getNotebookView} from './plans';
+import {getNotebookView, PlanChooser, resolvePlanViews} from './plans';
+import {recordsClaimedBy} from './plans/planViewRecords';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {Stack} from '@mui/material';
@@ -45,8 +46,12 @@ import {
 import {useQueryClient} from '@tanstack/react-query';
 import {NotebookViewComponentProps} from './types';
 import {localGetDataDb} from '../../../utils/database';
-import {useNavigate, useParams} from 'react-router-dom';
+import {useNotebookRoute} from '../../../context/notebookRoute';
+import {useNotebookTab, usePlanTab} from '../../../context/notebookViewTab';
+import {useNavigate} from 'react-router-dom';
 import NotebookSettings from './settings';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import {Button} from '@mui/material';
 import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './OverviewMap';
 
@@ -55,7 +60,7 @@ type NotebookViewProps = {
 };
 
 /**
- * NotebookView takes the place of the old NotebookComponent as the
+ * NotebookView takes the place of the old default notebook component as the
  * way to display a notebook. It defaults to the old view but can be
  * overridden if there is a plan associated with the notebook that has
  * a custom view registered for it.
@@ -174,6 +179,21 @@ function NotebookViewWithSpec({
   const [query, setQuery] = useState<string>('');
   const queryClient = useQueryClient();
 
+  /** Whether the active user may edit this record: the project open, and the
+   * record their own or anyone's. */
+  const canEditRecord = useCallback(
+    (record: MinimalRecordMetadata) =>
+      !!activeUser &&
+      project.status === ProjectStatus.OPEN &&
+      canEditProjectRecord({
+        decodedToken: activeUser.parsedToken,
+        projectId: project.projectId,
+        recordCreatedBy: record.createdBy,
+        actingUserId: activeUser.username,
+      }),
+    [activeUser, project.status, project.projectId]
+  );
+
   const isAllowedToAddRecords =
     useIsAuthorisedTo({
       action: Action.CREATE_PROJECT_RECORD,
@@ -235,22 +255,19 @@ function NotebookViewWithSpec({
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const {tab} = useParams<{tab?: string}>();
+  // Change plan is the way back to the chooser.
+  const {notebook, showPlan} = useNotebookRoute();
+  const {planId} = notebook;
 
-  // Replace rather than push, so leaving a notebook costs one Back press
-  const setTab = useCallback(
-    (nextTab: string) => {
-      navigate(
-        ROUTES.getNotebookRoute({
-          serverId: project.serverId,
-          projectId: project.projectId,
-          tab: nextTab,
-        }),
-        {replace: true}
-      );
-    },
-    [navigate, project.serverId, project.projectId]
-  );
+  // The search filters the whole notebook, so a search left running on one
+  // plan would thin what the next one sees, down to a map grid drawing cells
+  // as unclaimed. Reset while rendering the new plan rather than in an effect,
+  // so no frame ever draws one plan against another's filtered records.
+  const [queriedPlanId, setQueriedPlanId] = useState(planId);
+  if (queriedPlanId !== planId) {
+    setQueriedPlanId(planId);
+    setQuery('');
+  }
 
   /**
    * Create a new record - function passed in to the view component to create new records,
@@ -293,9 +310,7 @@ function NotebookViewWithSpec({
         });
         navigate(
           ROUTES.getEditRecordRoute({
-            serverId: project.serverId,
-            projectId: project.projectId,
-            tab,
+            ...notebook,
             recordId: record._id,
             mode: 'new',
           })
@@ -318,9 +333,110 @@ function NotebookViewWithSpec({
       isAllowedToAddRecords,
       dataEngine,
       navigate,
-      project.serverId,
-      project.projectId,
-      tab,
+      notebook,
+      dispatch,
+    ]
+  );
+
+  /**
+   * Create a related record and navigate to its edit page, writing both halves
+   * of the link so the parent form reads as it would after an in-form create.
+   */
+  const createRelatedRecord = useCallback(
+    async ({
+      parentRecordId,
+      parentFieldId,
+    }: {
+      parentRecordId: string;
+      parentFieldId: string;
+    }) => {
+      if (!(activeUser && isAllowedToAddRecords)) return;
+
+      // The link is written onto the parent, so editing it must be allowed
+      // too, and a record absent from the list is one this user cannot see.
+      const parentRecord = records.allRecords.find(
+        record => record.recordId === parentRecordId
+      );
+      if (!parentRecord || !canEditRecord(parentRecord)) {
+        dispatch(
+          addAlert({
+            message: 'You do not have permission to add to that record',
+            severity: 'error',
+          })
+        );
+        return;
+      }
+
+      let isChildCreated = false;
+      try {
+        const engine = dataEngine();
+        // Read the head rather than trusting the record list, which the
+        // notebook polls and can be a revision behind.
+        const existing = await engine.form.getExistingFormData({
+          recordId: parentRecordId,
+        });
+        // The engine derives the related form, the relation and its vocab pair
+        // from the field, writes the new row's own edge, and hands back what
+        // this field must hold. No open form here, so that goes in a revision.
+        const {record, linked} = await engine.form.createRelatedRecord({
+          parentRecordId,
+          parentFieldId,
+          createdBy: activeUser.username,
+          parentFieldValue: existing.data?.[parentFieldId]?.data,
+        });
+        isChildCreated = true;
+
+        const revision = await engine.form.createRevision({
+          recordId: parentRecordId,
+          revisionId: existing.revisionId,
+          createdBy: activeUser.username,
+        });
+        // updateRevision replaces the revision's whole field map, so the
+        // parent's other values go back with it rather than being dropped.
+        await engine.form.updateRevision({
+          revisionId: revision._id,
+          recordId: parentRecordId,
+          update: {
+            ...existing.data,
+            [parentFieldId]: {
+              ...existing.data?.[parentFieldId],
+              data: linked,
+            },
+          },
+          mode: 'parent',
+          updatedBy: activeUser.username,
+          bumpRecordUpdatedAt: true,
+        });
+
+        navigate(
+          ROUTES.getEditRecordRoute({
+            ...notebook,
+            recordId: record._id,
+            mode: 'new',
+          })
+        );
+      } catch (err) {
+        // Surface and resolve, like createRecord. The child is written first,
+        // so a later failure leaves a record not listed on its parent.
+        console.error('Failed to create related record', parentFieldId, err);
+        dispatch(
+          addAlert({
+            message: isChildCreated
+              ? 'Record was created but could not be linked to its parent'
+              : 'Record could not be created',
+            severity: 'error',
+          })
+        );
+      }
+    },
+    [
+      activeUser,
+      isAllowedToAddRecords,
+      canEditRecord,
+      records.allRecords,
+      dataEngine,
+      navigate,
+      notebook,
       dispatch,
     ]
   );
@@ -330,40 +446,109 @@ function NotebookViewWithSpec({
     (record: MinimalRecordMetadata) => {
       navigate(
         ROUTES.getViewRecordRoute({
-          serverId: project.serverId,
-          projectId: project.projectId,
-          tab,
+          ...notebook,
           recordId: record.recordId,
         })
       );
     },
-    [navigate, project.serverId, project.projectId, tab]
+    [navigate, notebook]
   );
 
-  // does this notebook have a plan, and do we have a view component for it
-  const planType = project.uiDefinition?.plan?.planType;
-  const PlanComponent = getNotebookView(planType);
+  // Every plan the notebook carries that has a view registered for it, and
+  // which one the route addresses.
+  const {
+    plans: planViews,
+    active: activePlan,
+    showChooser,
+  } = useMemo(
+    () =>
+      resolvePlanViews({
+        uiDefinition: project.uiDefinition,
+        planId,
+        getView: getNotebookView,
+      }),
+    [project.uiDefinition, planId]
+  );
 
-  // Completion roll-up per plan-claiming record, for its cell's status; only a
-  // registered plan view can display it, so gate the walks on one
-  const planRecordStatusReports = usePlanRecordStatusReports({
-    projectId: project.projectId,
-    uiSpecification,
-    records: records.allRecords,
-    enabled: PlanComponent !== undefined,
-  });
+  // A plan's tab is its own, so a plan free to model screens or regions rather
+  // than tabs leaves the tabs the default view carries alone.
+  const notebookTab = useNotebookTab();
+  const planTab = usePlanTab();
+  const tab = activePlan ? planTab : notebookTab;
+
+  // Every record the plan on screen claims. Scoping once here hands a plan view
+  // and the map beside it one answer, rather than each scoping again. Without a
+  // plan nothing reads these: the chooser and the default view take no props.
+  const planRecords = useMemo(
+    () =>
+      activePlan
+        ? recordsClaimedBy({
+            records: records.allRecords,
+            planId: activePlan.plan.planId,
+          })
+        : [],
+    [records.allRecords, activePlan]
+  );
+
+  // Each of these is a component the views render, so React compares them by
+  // reference: rebuild one and the subtree under it unmounts, losing its
+  // state. Held apart from the props memo, which recomputes whenever the
+  // record list polls, and keyed on only what each one actually reads.
+  const NotebookSettingsView = useMemo(
+    () => () => <NotebookSettings uiSpec={uiSpecification} />,
+    [uiSpecification]
+  );
+
+  const MetadataView = useMemo(
+    () => () => (
+      <MetadataDisplayComponent
+        project={project}
+        templateId={project.templateId}
+      />
+    ),
+    [project]
+  );
+
+  // Alone among the three in reading the records, so alone in still being
+  // rebuilt when they change. Capturing them in a ref instead would buy the
+  // map a stable identity by reading a value React had not committed.
+  const OverviewMapView = useMemo(
+    () =>
+      ({records: plotted}: {records?: MinimalRecordMetadata[]}) => (
+        <OverviewMap
+          // The plan's own records unless the view asks for others, so
+          // tapping a pin cannot open a record the list beside it says is
+          // not there.
+          records={{allRecords: plotted ?? planRecords}}
+          project_id={project.projectId}
+          uiSpec={uiSpecification}
+        />
+      ),
+    [planRecords, project.projectId, uiSpecification]
+  );
+
+  const components: NotebookViewComponentProps['components'] = useMemo(
+    () => ({
+      NotebookSettings: NotebookSettingsView,
+      MetadataDisplayComponent: MetadataView,
+      OverviewMap: OverviewMapView,
+    }),
+    [NotebookSettingsView, MetadataView, OverviewMapView]
+  );
 
   const props: NotebookViewComponentProps = useMemo(
     () => ({
       project,
       tab,
+      plan: activePlan?.plan,
       uiSpecification: uiSpecification,
       actions: {
         refreshRecordList,
         setQuery,
         createRecord,
+        createRelatedRecord,
         navigateToRecord,
-        setTab,
+        canEditRecord,
       },
       status: {
         // Never-loaded, not merely in-flight: the hook's isLoading stays true
@@ -381,55 +566,70 @@ function NotebookViewWithSpec({
         isDownloadingRecords,
       },
       records: {
-        allRecords: records.allRecords,
+        planRecords,
+        notebookRecords: records.allRecords,
         myRecords: records.myRecords,
         otherRecords: records.otherRecords,
         syncStatus: recordStatus.data ?? {status: {}, recordHashes: {}},
-        planRecordStatusReports,
       },
-      components: {
-        NotebookSettings: () => <NotebookSettings uiSpec={uiSpecification} />,
-        MetadataDisplayComponent: () => (
-          <MetadataDisplayComponent
-            project={project}
-            templateId={project.templateId}
-          />
-        ),
-        OverviewMap: () => (
-          <OverviewMap
-            serverId={project.serverId}
-            records={records}
-            project_id={project.projectId}
-            uiSpec={uiSpecification}
-          />
-        ),
-      },
+      components,
     }),
     [
       project,
-      tab,
       uiSpecification,
       refreshRecordList,
       setQuery,
       createRecord,
+      createRelatedRecord,
       navigateToRecord,
-      setTab,
+      canEditRecord,
+      tab,
       isAllowedToAddRecords,
       isDownloadingRecords,
       records,
       recordStatus.data,
-      planRecordStatusReports,
+      planRecords,
+      activePlan,
+      components,
     ]
   );
 
-  // delegate to the plan view component
-  if (PlanComponent) {
-    return <PlanComponent {...props} />;
+  // more than one plan to pick from, and none picked yet
+  if (showChooser) {
+    return (
+      <PlanChooser
+        plans={planViews.map(({plan}) => plan)}
+        heading={uiSpecification.settings.planChooserMarkdown}
+        onSelect={showPlan}
+      />
+    );
   }
 
-  // fallback to the default notebook component
-  // TODO: port this component to use the same interface
-  // as our custom plan view components once we have sorted
-  // out what that interface looks like
-  return <NotebookComponent project={project} tab={tab} setTab={setTab} />;
+  // delegate to the plan view component
+  if (activePlan) {
+    const {Component} = activePlan;
+    // Back leaves the notebook, so where there was a choice of plan to make,
+    // this is the way back to it.
+    return planViews.length > 1 ? (
+      // No wrapper, so the plan view's own children stay direct children of the
+      // page's Stack and a plan lays out the same however many sit beside it
+      <>
+        <Button
+          size="small"
+          startIcon={<ArrowBackIcon />}
+          onClick={() => showPlan()}
+          data-testid="plan-change"
+          sx={{alignSelf: 'flex-start', textTransform: 'none'}}
+        >
+          Change plan
+        </Button>
+        <Component {...props} />
+      </>
+    ) : (
+      <Component {...props} />
+    );
+  }
+
+  // Fallback: the default notebook view, on the same interface as plan views
+  return <DefaultNotebookView {...props} />;
 }

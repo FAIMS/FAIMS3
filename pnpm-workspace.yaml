@@ -36,6 +36,11 @@ peerDependencyRules:
   allowedVersions:
     '@tanstack/zod-adapter>zod': '4'
 
+packageExtensions:
+  '@hookform/resolvers':
+    peerDependencies:
+      zod: '*'
+
 trustPolicyExclude:
   - '@wdio/logger@9.18.0'
   - 'chokidar@4.0.3'

@@ -312,8 +312,13 @@ export const CreateNotebookFromTemplateSchema = z.object({
   description: CreateRootDescriptionSchema,
   template_id: IdInputSchema,
   teamId: z.string().min(1).max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
-  /** Config for instantiating the template's plan template, if it has one. */
-  planConfig: z.record(z.string(), z.unknown()).optional(),
+  /**
+   * Config for instantiating each of the template's plan templates, keyed by
+   * that plan template's own `planId`.
+   */
+  planConfigs: z
+    .record(z.string(), z.record(z.string(), z.unknown()))
+    .optional(),
 });
 export type CreateNotebookFromTemplate = z.infer<
   typeof CreateNotebookFromTemplateSchema

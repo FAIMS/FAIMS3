@@ -21,9 +21,15 @@
  */
 
 import type {ComponentType} from 'react';
-import type {PlanTemplate} from '@faims3/data-model';
-import {COUNTED_PLAN_TYPE, LIST_OF_RECORDS_PLAN_TYPE} from '@faims3/data-model';
+import type {AuthoredPlanTemplate, PlanTemplate} from '@faims3/data-model';
+import {
+  assertRegistrablePlanType,
+  COUNTED_PLAN_TYPE,
+  LIST_OF_FORMS_PLAN_TYPE,
+  LIST_OF_RECORDS_PLAN_TYPE,
+} from '@faims3/data-model';
 import {CountedPlanDialog} from './components/plans/CountedPlanDialog';
+import {ListOfFormsPlanDialog} from './components/plans/ListOfFormsPlanDialog';
 import {ListOfRecordsPlanDialog} from './components/plans/ListOfRecordsPlanDialog';
 
 /**
@@ -35,7 +41,8 @@ export type PlanDialogUiSpec = {
   views: Record<string, {fields: string[]} | undefined>;
   fields: Record<
     string,
-    {'component-parameters'?: {label?: unknown}} | undefined
+    | {'component-parameters'?: {label?: unknown}; 'type-returned'?: string}
+    | undefined
   >;
 };
 
@@ -46,9 +53,14 @@ export type PlanDialogProps = {
   uiSpec: PlanDialogUiSpec;
   /** Present when editing an existing plan template; absent when creating. */
   initialTemplate?: PlanTemplate;
+  /** Labels the template's other plans already carry, which this one may not reuse. */
+  takenLabels: string[];
   onClose: () => void;
-  /** Called with a schema-valid plan template; the caller stores it and closes. */
-  onSave: (planTemplate: PlanTemplate) => void;
+  /**
+   * Called with a schema-valid plan template; the caller stores it and closes.
+   * The id is the store's to mint and keep, so a dialog never authors one.
+   */
+  onSave: (planTemplate: AuthoredPlanTemplate) => void;
 };
 
 export type DesignerPlanType = {
@@ -75,6 +87,9 @@ export const registerDesignerPlanType = (
       `Designer plan type ${definition.planType} is already registered`
     );
   }
+
+  assertRegistrablePlanType(definition.planType);
+
   registry.set(definition.planType, definition);
 };
 
@@ -92,6 +107,13 @@ const builtInDesignerPlanTypes: DesignerPlanType[] = [
     description:
       'Collect records against a pre-defined list. Choose the form and which of its fields the list pre-fills; the list itself is supplied when a notebook is created.',
     Dialog: ListOfRecordsPlanDialog,
+  },
+  {
+    planType: LIST_OF_FORMS_PLAN_TYPE,
+    label: 'List of Forms',
+    description:
+      'Present a chosen set of forms for creating and browsing records. Nothing further is configured when a notebook is created from this template.',
+    Dialog: ListOfFormsPlanDialog,
   },
 ];
 

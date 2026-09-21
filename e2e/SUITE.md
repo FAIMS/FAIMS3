@@ -61,7 +61,7 @@ apply to the Fieldmark app path above. Appium (`test:e2e:android` /
 | `app/record-crud.e2e.ts`                   | Open notebook, add record, create text record, list/search                                                                                                                   |
 | `app/notebook-map.e2e.ts`                  | Capture a point, open the Map tab, assert record geometry plots                                                                                                              |
 | `app/notebook-schema-compatibility.e2e.ts` | Future-schema fixtures: list chips, major activation blocked, skeleton + copy report; degraded banner; last-good records survive a newer-major stamp + list refresh / reload |
-| `app/notebook-tab-route.e2e.ts`            | Tab in the URL, back/edit/delete from a record return to that tab                                                                                                            |
+| `app/notebook-tab-context.e2e.ts`          | Tab out of the URL, back/edit/delete from a record return to its list                                                                                                        |
 | `journeys/template-to-record.e2e.ts`       | Cross-surface: templates in Control Centre → Fieldmark workspace                                                                                                             |
 
 ### Tier 2 — Lifecycle & invites
