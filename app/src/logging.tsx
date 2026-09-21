@@ -130,9 +130,8 @@ export const ErrorPage = () => {
   );
 };
 
-/** True when a real Bugsnag key is configured and the client was started. */
-export const bugsnagEnabled: boolean =
-  !!config.bugsnagKey && config.bugsnagKey !== '<your bugsnag API key>';
+/** True when a Bugsnag key is configured and the client was started. */
+export const bugsnagEnabled: boolean = !!config.bugsnagKey;
 
 export const logError = (error: any) => {
   if (bugsnagEnabled) {
