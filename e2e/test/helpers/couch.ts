@@ -2,41 +2,30 @@
  * Node-side CouchDB helpers for e2e setup that the Conductor API will not
  * accept (e.g. stamping a notebook with a newer-than-current schemaVersion).
  *
- * Credentials default to the local-dev values in `api/.env.dist`. Override
- * with `COUCHDB_INTERNAL_URL` / `COUCHDB_USER` / `COUCHDB_PASSWORD`, or drop
- * those into `api/.env` (loaded here if present).
+ * Credentials come only from `e2e/.env` (or the process environment). Never
+ * from `api/.env`. Targets that do not look local are rejected unless
+ * `E2E_ALLOW_REMOTE_COUCH=true`.
+ *
+ * Defaults match local-dev (`http://localhost:5984`, `admin` /
+ * `aSecretPasswordThatCantBeGuessed`).
  */
-import {config as loadDotenv} from 'dotenv';
-import {existsSync} from 'node:fs';
-import {dirname, resolve} from 'node:path';
-import {fileURLToPath} from 'node:url';
-import {loadE2eEnv} from './env.ts';
-
-const e2eRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-
-let couchEnvLoaded = false;
-
-function loadCouchEnv(): void {
-  if (couchEnvLoaded) return;
-  loadE2eEnv();
-  // Do not override values already in the process environment.
-  for (const rel of ['../api/.env', '../.env']) {
-    const path = resolve(e2eRoot, rel);
-    if (existsSync(path)) {
-      loadDotenv({path, override: false});
-    }
-  }
-  couchEnvLoaded = true;
-}
+import {loadE2eEnv, parseCouchEnv, parseCouchTargetUrl} from './env.ts';
 
 function couchConfig(): {baseUrl: string; user: string; password: string} {
-  loadCouchEnv();
-  const raw =
-    process.env.COUCHDB_INTERNAL_URL ||
-    process.env.COUCHDB_PUBLIC_URL ||
-    'http://localhost:5984';
+  loadE2eEnv();
+  const couch = parseCouchEnv();
+  const raw = couch.internalUrl || couch.publicUrl || 'http://localhost:5984';
+  const url = parseCouchTargetUrl(
+    raw,
+    couch.internalUrl
+      ? 'COUCHDB_INTERNAL_URL'
+      : couch.publicUrl
+        ? 'COUCHDB_PUBLIC_URL'
+        : 'COUCHDB_INTERNAL_URL',
+    couch.allowRemote
+  );
   return {
-    baseUrl: raw.replace(/\/$/, ''),
+    baseUrl: url.href.replace(/\/$/, ''),
     user: process.env.COUCHDB_USER || 'admin',
     password:
       process.env.COUCHDB_PASSWORD || 'aSecretPasswordThatCantBeGuessed',

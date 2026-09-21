@@ -1,6 +1,10 @@
 /**
  * Typed accessors for e2e environment configuration.
  * Load dotenv before reading (see wdio hooks / loadE2eEnv).
+ *
+ * Only `e2e/.env` (falling back to `e2e/.env.dist`) is read. Never load
+ * `api/.env` or the repo-root `.env` — those often hold staging/prod Couch
+ * credentials.
  */
 import {config as loadDotenv} from 'dotenv';
 import {existsSync} from 'node:fs';
@@ -9,7 +13,94 @@ import {fileURLToPath} from 'node:url';
 
 const e2eRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
+/** Couch URL keys that must look local unless {@link E2E_ALLOW_REMOTE_COUCH} is set. */
+export const COUCH_TARGET_ENV_KEYS = [
+  'COUCHDB_INTERNAL_URL',
+  'COUCHDB_PUBLIC_URL',
+] as const;
+
+/**
+ * Opt-out for the local-only Couch guard. Accepts the same truthy strings as
+ * the shared config helpers (`true` / `1` / `on` / `yes`).
+ */
+export const E2E_ALLOW_REMOTE_COUCH = 'E2E_ALLOW_REMOTE_COUCH';
+
+const TRUTHY_FLAG = new Set(['true', '1', 'on', 'yes']);
+
 let envLoaded = false;
+
+function isTruthyFlag(value: string | undefined): boolean {
+  return value !== undefined && TRUTHY_FLAG.has(value.toLowerCase());
+}
+
+/** Loopback IPv4 (`127.0.0.0/8`), IPv6 (`::1`), `localhost`, and `*.localhost`. */
+export function isLocalCouchHostname(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (host === 'localhost' || host.endsWith('.localhost')) return true;
+  if (host === '::1') return true;
+  const ipv4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+  if (!ipv4) return false;
+  const octets = ipv4.slice(1).map(Number);
+  return octets.every(n => n <= 255) && octets[0] === 127;
+}
+
+/**
+ * Parse a Couch target and throw unless the host looks local.
+ * `allowRemote` skips the host check (the URL must still be valid http(s)).
+ */
+export function parseCouchTargetUrl(
+  raw: string,
+  name: string,
+  allowRemote = false
+): URL {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new Error(
+      `${name} is not a valid URL. Expected an absolute http(s) CouchDB target.`
+    );
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error(
+      `${name} must be http(s) (got ${url.protocol}). Refusing to use this CouchDB target.`
+    );
+  }
+  if (!allowRemote && !isLocalCouchHostname(url.hostname)) {
+    throw new Error(
+      `${name} host "${url.hostname}" does not look local. ` +
+        `e2e refuses remote CouchDB targets unless ${E2E_ALLOW_REMOTE_COUCH}=true.`
+    );
+  }
+  return url;
+}
+
+/** Structured Couch settings after the local-target guard. */
+export type ParsedCouchEnv = {
+  internalUrl?: string;
+  publicUrl?: string;
+  allowRemote: boolean;
+};
+
+/**
+ * Parse CouchDB targets from an env object. Throws if any set target does not
+ * look local, unless {@link E2E_ALLOW_REMOTE_COUCH} is truthy.
+ */
+export function parseCouchEnv(
+  env: NodeJS.ProcessEnv = process.env
+): ParsedCouchEnv {
+  const allowRemote = isTruthyFlag(env[E2E_ALLOW_REMOTE_COUCH]);
+  for (const key of COUCH_TARGET_ENV_KEYS) {
+    const value = env[key];
+    if (!value) continue;
+    parseCouchTargetUrl(value, key, allowRemote);
+  }
+  return {
+    internalUrl: env.COUCHDB_INTERNAL_URL || undefined,
+    publicUrl: env.COUCHDB_PUBLIC_URL || undefined,
+    allowRemote,
+  };
+}
 
 export function loadE2eEnv(): void {
   if (envLoaded) return;
@@ -22,6 +113,7 @@ export function loadE2eEnv(): void {
       loadDotenv({path: distPath});
     }
   }
+  parseCouchEnv();
   envLoaded = true;
 }
 

@@ -5,18 +5,18 @@ duplicating env reads, waits, or screenshot logic in specs.
 
 ## Modules
 
-| Module          | Role                                                                       |
-| --------------- | -------------------------------------------------------------------------- |
-| `env.ts`        | Load `e2e/.env`, URLs, screenshot mode, `WDIO_LOG_LEVEL`, personas         |
-| `auth.ts`       | `loginWeb` / `loginApp` / `loginConductor` / logout                        |
-| `wait.ts`       | `waitForUrl`, `waitForTestId`, `waitForGone` (prefer over `browser.pause`) |
-| `selectors.ts`  | `byTestId('…')` → `$('[data-testid="…"]')`                                 |
-| `screenshot.ts` | `captureStep`, `captureDocs`, `captureRaw`, failure dumps                  |
-| `artifacts.ts`  | Run id (`{stamp}-{suite}-{hex}`), dirs, manifest + gallery                 |
-| `report.ts`     | Static `index.html` gallery (failure-first) from `manifest.json`           |
-| `hooks.ts`      | WDIO hooks wired from conf files                                           |
-| `seed.ts`       | Optional API helpers: invites, notebooks, tombstones, project roles        |
-| `couch.ts`      | Node-side Couch writes the API will not accept (stamp `schemaVersion`)     |
+| Module          | Role                                                                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `env.ts`        | Load `e2e/.env` only, URLs, screenshot mode, `WDIO_LOG_LEVEL`, personas. Rejects non-local `COUCHDB_*_URL` unless `E2E_ALLOW_REMOTE_COUCH` |
+| `auth.ts`       | `loginWeb` / `loginApp` / `loginConductor` / logout                                                                                        |
+| `wait.ts`       | `waitForUrl`, `waitForTestId`, `waitForGone` (prefer over `browser.pause`)                                                                 |
+| `selectors.ts`  | `byTestId('…')` → `$('[data-testid="…"]')`                                                                                                 |
+| `screenshot.ts` | `captureStep`, `captureDocs`, `captureRaw`, failure dumps                                                                                  |
+| `artifacts.ts`  | Run id (`{stamp}-{suite}-{hex}`), dirs, manifest + gallery                                                                                 |
+| `report.ts`     | Static `index.html` gallery (failure-first) from `manifest.json`                                                                           |
+| `hooks.ts`      | WDIO hooks wired from conf files                                                                                                           |
+| `seed.ts`       | Optional API helpers: invites, notebooks, tombstones, project roles                                                                        |
+| `couch.ts`      | Node-side Couch writes the API will not accept (stamp `schemaVersion`)                                                                     |
 
 ## Screenshot modes (`SCREENSHOT_MODE`)
 
