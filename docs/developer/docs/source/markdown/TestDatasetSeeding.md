@@ -13,7 +13,7 @@ dataset in the configured CouchDB instance. It is designed to support:
   to exercise the scenarios where a user's visibility of projects differs between
   the two teams they belong to.
 
-> **Idempotent seed.** Re-running the script restores the canonical Red/Blue
+> **Idempotent seed.** Re-running the script restores the canonical Red/Blue/Schema
 > teams, templates, notebooks, and seed personas (stable document IDs under
 > `team_seed_*` / `template_seed_*` / `notebook_seed_*`) to the intended state.
 > It only creates or updates those seed documents and personas — it does not

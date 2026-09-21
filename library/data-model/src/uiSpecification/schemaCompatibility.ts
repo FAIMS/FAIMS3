@@ -1,4 +1,4 @@
-import {z, ZodError} from 'zod';
+import {z} from 'zod';
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   getNotebookSchemaVersion,
@@ -12,6 +12,7 @@ import {
   compareNotebookSchemaSemver,
   parseNotebookSchemaSemver,
 } from './schemaVersion';
+import {notebookUiSpecificationValidationMessage} from './normalize';
 import {
   NotebookDefinitionSchema,
   NotebookInformationSchema,
@@ -101,8 +102,13 @@ export function assessNotebookSchemaCompatibility(
     };
   }
 
-  const nb = parseNotebookSchemaSemver(start)!;
+  const nb = parseNotebookSchemaSemver(start);
   const app = parseNotebookSchemaSemver(appVersion);
+  if (!nb) {
+    throw new Error(
+      `Notebook schema version '${start}' is not a strict MAJOR.MINOR.PATCH`
+    );
+  }
   if (!app) {
     throw new Error(
       `App notebook schema version '${appVersion}' is not a strict MAJOR.MINOR.PATCH`
@@ -244,16 +250,10 @@ export type IngestNotebookUiSpecificationResult =
     };
 
 function describeError(cause: unknown): string {
-  if (cause instanceof ZodError) {
-    return cause.issues
-      .map(issue => {
-        const path = issue.path.length > 0 ? issue.path.join('.') : 'uiSpec';
-        return `${path}: ${issue.message}`;
-      })
-      .join('; ');
-  }
-  if (cause instanceof Error) return cause.message;
-  return String(cause);
+  return notebookUiSpecificationValidationMessage(cause, {
+    fallbackPath: 'uiSpec',
+    issuesOnly: true,
+  });
 }
 
 function incompatible(

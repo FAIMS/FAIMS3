@@ -68,11 +68,13 @@ export type NotebookUiSpecificationInput = z.infer<
   typeof NotebookUiSpecificationInputSchema
 >;
 
-function formatZodIssues(error: ZodError): string {
+function formatZodIssues(
+  error: ZodError,
+  fallbackPath = 'uiSpecification'
+): string {
   return error.issues
     .map(issue => {
-      const path =
-        issue.path.length > 0 ? issue.path.join('.') : 'uiSpecification';
+      const path = issue.path.length > 0 ? issue.path.join('.') : fallbackPath;
       return `${path}: ${issue.message}`;
     })
     .join('; ');
@@ -264,15 +266,27 @@ export function parseNotebookDefinitionUpload(
   return {ok: true, uiSpecification: parsed.data};
 }
 
-/** User-facing message for API validation failures after normalize/migrate. */
+/**
+ * User-facing message for notebook validation / ingest failures.
+ *
+ * Write-path callers keep the default `Invalid uiSpecification:` prefix and
+ * `uiSpecification` fallback path. The read path (`ingestNotebookUiSpecification`)
+ * asks for issues only, with `uiSpec` as the empty-path label.
+ */
 export function notebookUiSpecificationValidationMessage(
-  error: unknown
+  error: unknown,
+  options?: {
+    fallbackPath?: string;
+    /** When true, return Zod issues without the `Invalid uiSpecification:` prefix. */
+    issuesOnly?: boolean;
+  }
 ): string {
   if (error instanceof ZodError) {
-    return `Invalid uiSpecification: ${formatZodIssues(error)}`;
+    const issues = formatZodIssues(error, options?.fallbackPath);
+    return options?.issuesOnly ? issues : `Invalid uiSpecification: ${issues}`;
   }
   if (error instanceof Error) {
     return error.message;
   }
-  return 'Invalid uiSpecification';
+  return options?.issuesOnly ? String(error) : 'Invalid uiSpecification';
 }

@@ -1,4 +1,3 @@
-import type {RelatedType} from '../uiSpecification/types';
 import {
   relatedRecordAvpEntries,
   relatedRecordFieldAvpValueSchema,

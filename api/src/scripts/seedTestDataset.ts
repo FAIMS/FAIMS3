@@ -8,9 +8,11 @@
  * configured CouchDB instance.  The script:
  *
  *   1. Ensures databases / design docs are initialised (does not wipe data).
- *   2. Upserts two teams: Red Team and Blue Team (stable IDs).
- *   3. Upserts one template and one notebook (survey) owned by each team,
- *      sourced from the JSON files under api/notebooks/.
+ *   2. Upserts three teams: Red Team, Blue Team, and Schema Compatibility
+ *      Team (stable IDs).
+ *   3. Upserts one template and one notebook (survey) owned by each of Red
+ *      and Blue, sourced from the JSON files under api/notebooks/, plus
+ *      schema-compatibility fixture notebooks owned by the Schema team.
  *   4. Upserts a set of deterministic users that collectively cover every
  *      role defined in roleDetails, with cross-team memberships designed to
  *      exercise permission-visibility scenarios.
