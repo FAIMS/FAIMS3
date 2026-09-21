@@ -70,7 +70,7 @@ Path finding rules match the Couch harness: `from === to` → no steps; `from > 
 
 - **API (write path)** — `PUT /api/notebooks/:id/uiSpecification`, template equivalents and notebook creation normalise the body via `normalizeNotebookUiSpecification` (`uiSpecification/normalize.ts`): migrate when `notebookUiSpecificationNeedsMigration` (legacy or older than `CURRENT`; never for newer semver), then **strict** Zod, then assert the stored version equals `CURRENT`. A newer-than-current document is rejected on write.
 - **App (read path)** — `ingestNotebookUiSpecification` never throws for a version mismatch; it returns `{ok, definition?, compatibility, error?}` and the app persists `compatibility` on the project (`Project.schemaCompatibility`) to drive the tiered UI and Bugsnag reporting.
-- **Optional startup** — `MIGRATE_NOTEBOOKS_ON_STARTUP` still triggers notebook migration during `validateDatabases` when enabled.
+- **API startup** — `validateDatabases` migrates every project whose inlined spec is still behind the current schema version.
 - **Designer** — `web/src/designer/integration/legacyNotebook.ts` migrates on load and warns; a newer stamp that still parses the current Zod model is opened (with a warning) rather than rejected. New designs are created at `CURRENT`.
 
 ## Projects / templates DB migrations

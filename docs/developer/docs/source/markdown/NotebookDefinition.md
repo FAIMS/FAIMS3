@@ -133,7 +133,7 @@ Legacy exports with top-level `metadata` + `ui-specification` (kebab-case, `fvie
 2. **Projects DB** (`projectsV3toV4Migration`): reads legacy metadata DB + project doc, builds `uiSpecification`, adds root `description` (when derivable from legacy metadata) / audit fields, removes `metadataDb`.
 3. **Templates DB** — analogous template v4 → v5 migration.
 
-Optional startup migration: `MIGRATE_NOTEBOOKS_ON_STARTUP` still runs notebook migrations when validating databases.
+API startup always runs notebook migrations when validating databases.
 
 After all projects are on v4 with inlined specs, operators can remove orphaned Couch databases:
 
