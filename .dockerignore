@@ -3,6 +3,7 @@ docs/
 tests/
 .env
 Dockerfile.build
+Dockerfile.dev
 out
 .git
 *.log

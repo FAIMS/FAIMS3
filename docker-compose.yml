@@ -7,7 +7,7 @@ services:
       - COUCHDB_INTERNAL_URL=http://couchdb:5984
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
       target: runtime
     ports:
       - '0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}'
@@ -37,6 +37,8 @@ services:
     env_file:
       - ./web/.env
     build:
+      context: .
+      dockerfile: Dockerfile.dev
       target: runtime
     ports:
       - '0.0.0.0:3001:3001'
@@ -52,7 +54,7 @@ services:
       - ./app/.env
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
       target: runtime
     ports:
       - '3000:3000'
