@@ -23,12 +23,17 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
   pnpm install --frozen-lockfile
 
 
-# Source stage. Nothing is built here: compose bind-mounts the workspace libraries
-# over this image, so anything built here is hidden anyway (localdev.sh builds them).
+# Source stage. Compose bind-mounts the workspace libraries over this image, so the
+# data-model and forms output built here is masked at runtime (localdev.sh builds
+# them on the host). The api output is not: only api/src and its sibling directories
+# are mounted, so api/build seeds the first `tsc --incremental` in the container.
 FROM base AS source
 
 # Copy source code
 COPY . .
+
+# Build the app and api
+RUN pnpm turbo build --filter=@faims3/api --filter=@faims3/app --filter=@faims3/web
 
 # Shared runtime for the three dev services. Compose sets command and ports per
 # service, so one stage serves all three.
