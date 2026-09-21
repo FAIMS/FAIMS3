@@ -6,6 +6,7 @@ import {
   migrateNotebook,
   NOTEBOOK_SCHEMA_LEGACY,
   resolveNotebookSchemaMigrationStart,
+  type NotebookWithSchemaVersion,
 } from '../data_storage/migrations/notebookMigrations';
 import {
   NotebookDefinitionSchema,
@@ -24,11 +25,6 @@ import {compareNotebookSchemaSemver} from './schemaVersion';
 
 export {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION};
 
-type NotebookSchemaVersionCarrier = {
-  metadata?: {schema_version?: string | null};
-  uiSpec?: {schemaVersion?: string | null};
-};
-
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -44,7 +40,7 @@ export function notebookUiSpecificationNeedsMigration(
   raw: Record<string, unknown>
 ): boolean {
   const start = resolveNotebookSchemaMigrationStart(
-    getNotebookSchemaVersion(raw as NotebookSchemaVersionCarrier)
+    getNotebookSchemaVersion(raw as NotebookWithSchemaVersion)
   );
   if (start === NOTEBOOK_SCHEMA_LEGACY) {
     return true;
@@ -82,10 +78,7 @@ function formatZodIssues(error: ZodError): string {
     .join('; ');
 }
 
-function assertLatestSchemaVersion(notebook: NotebookDefinition): void {
-  const version = getNotebookSchemaVersion(
-    notebook as NotebookSchemaVersionCarrier
-  );
+function assertLatestSchemaVersion(version: unknown): void {
   if (version !== CURRENT_NOTEBOOK_UI_SCHEMA_VERSION) {
     throw new Error(
       `uiSpecification must use schema version ${CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} after migration (got ${version ?? 'none'})`
@@ -138,7 +131,7 @@ function normalizeUiSpecificationBundle<
     throw new Error(`Invalid ${label}: ${formatZodIssues(parsed.error)}`);
   }
 
-  assertLatestSchemaVersion(parsed.data as unknown as NotebookDefinition);
+  assertLatestSchemaVersion(parsed.data.uiSpec.schemaVersion);
 
   return parsed.data;
 }

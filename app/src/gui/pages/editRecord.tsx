@@ -424,9 +424,7 @@ export const EditRecordPage = () => {
         />
         <Button
           variant="outlined"
-          onClick={() =>
-            navigate(getViewRecordRoute({projectId, recordId, serverId, tab}))
-          }
+          onClick={() => navigate(getViewRecordRoute({...notebook, recordId}))}
         >
           Open read-only view
         </Button>

@@ -135,7 +135,9 @@ class AppNotebooksPage extends Page {
   async openNotActiveNotebookNamed(name: string) {
     await this.openNotActiveTab();
     const row = await this.waitForNotebookRow(name);
-    const activate = await row.$('[data-testid="app-notebook-activate-button"]');
+    const activate = await row.$(
+      '[data-testid="app-notebook-activate-button"]'
+    );
     await expect(activate).toBeDisabled();
     await row.click();
     await browser.waitUntil(

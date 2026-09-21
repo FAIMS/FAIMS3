@@ -36,9 +36,9 @@ describe('getNotebookSchemaVersion', () => {
   });
 
   it('falls back to metadata.schema_version when uiSpec has no stamp', () => {
-    expect(
-      getNotebookSchemaVersion({metadata: {schema_version: '7.0'}})
-    ).toBe('7.0');
+    expect(getNotebookSchemaVersion({metadata: {schema_version: '7.0'}})).toBe(
+      '7.0'
+    );
   });
 });
 

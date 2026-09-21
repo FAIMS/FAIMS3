@@ -101,8 +101,8 @@ export default function NotebookActivationSwitch({
               sx={{mb: 2}}
               data-testid="app-notebook-activate-degraded-warning"
             >
-              This {config.notebookName} uses a newer format than this app.
-              Some fields or features may not display or save correctly.
+              This {config.notebookName} uses a newer format than this app. Some
+              fields or features may not display or save correctly.
             </Alert>
           )}
           <Typography variant="body2" sx={{mb: 2}}>

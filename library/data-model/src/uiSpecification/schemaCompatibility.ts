@@ -6,6 +6,7 @@ import {
   NOTEBOOK_SCHEMA_LEGACY,
   resolveNotebookSchemaMigrationStart,
   type NotebookSchemaMigrationContext,
+  type NotebookWithSchemaVersion,
 } from '../data_storage/migrations/notebookMigrations';
 import {
   compareNotebookSchemaSemver,
@@ -227,6 +228,7 @@ const RelaxedNotebookDefinitionSchema = z
   })
   .passthrough();
 
+/** Fail-soft result of {@link ingestNotebookUiSpecification}: a parsed definition or an incompatible error. */
 export type IngestNotebookUiSpecificationResult =
   | {
       ok: true;
@@ -300,7 +302,7 @@ export function ingestNotebookUiSpecification(
     );
   }
 
-  const rawVersion = getNotebookSchemaVersion(raw as any);
+  const rawVersion = getNotebookSchemaVersion(raw as NotebookWithSchemaVersion);
   const compatibility = assessNotebookSchemaCompatibility(
     rawVersion,
     appSchemaVersion
@@ -325,6 +327,10 @@ export function ingestNotebookUiSpecification(
         relaxed.error
       );
     }
+    // Relaxed parse uses z.any() for fields/views/viewsets, which cannot
+    // satisfy NotebookDefinition. A branded type would force every `ok: true`
+    // caller to branch without changing runtime behaviour — degraded ingest
+    // is a best-effort graph under the same public type.
     return {
       ok: true,
       definition: relaxed.data as unknown as NotebookDefinition,

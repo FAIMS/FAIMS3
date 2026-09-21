@@ -712,6 +712,30 @@ describe('NotebookView fail-soft tiers', () => {
     );
   });
 
+  it('shows the degraded banner and a live plan view', () => {
+    const project = failSoftProject();
+    project.schemaCompatibility = {
+      tier: 'degraded',
+      relation: 'newer-minor',
+      appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+      notebookSchemaVersion: '1.1.0',
+      requiresMigration: false,
+      reason: 'Notebook schemaVersion 1.1.0 is newer than this app',
+    };
+    specs.set('spec-1', {
+      ...project.uiDefinition.uiSpec,
+      conditionFns: {},
+    });
+
+    renderFailSoft(project);
+
+    expect(screen.getByTestId('notebook-schema-degraded-alert')).toBeTruthy();
+    expect(screen.getByTestId('plan-view')).toBeTruthy();
+    expect(
+      screen.queryByTestId('notebook-schema-incompatible-view')
+    ).toBeNull();
+  });
+
   it('shows the skeleton with the compile error when the spec failed to compile', () => {
     const project = failSoftProject();
     compileErrors.set('spec-1', 'Unknown operator "frobnicate"');

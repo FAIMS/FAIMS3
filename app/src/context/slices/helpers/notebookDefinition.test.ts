@@ -378,15 +378,18 @@ describe('compiledSpecService', () => {
     const def = notebookDefinitionFromLegacyPersistedProject({
       metadata: legacyNotebook.metadata,
     });
-    // A `null` field body makes JSON clone succeed but compilation blow up.
     const broken = JSON.parse(JSON.stringify(def.uiSpec));
-    broken.views = {bad: {fields: null, condition: {operator: 'nope'}}};
-    broken.fields = {x: null};
+    broken.views ??= {};
+    const firstView = Object.keys(broken.views)[0] ?? 'bad';
+    broken.views[firstView] = {
+      ...(broken.views[firstView] ?? {fields: []}),
+      condition: {operator: 'nopenope'},
+    };
     compiledSpecService.compileAndRegisterSpec(id, broken);
-    // Either compiled (tolerant compiler) or recorded an error — never thrown.
-    const compiled = compiledSpecService.getSpec(id);
-    const error = compiledSpecService.getCompileError(id);
-    expect(compiled !== undefined || error !== undefined).toBe(true);
+    expect(compiledSpecService.getSpec(id)).toBeUndefined();
+    expect(compiledSpecService.getCompileError(id)).toMatch(
+      /Unknown operator nopenope/
+    );
     compiledSpecService.removeSpec(id);
     expect(compiledSpecService.getCompileError(id)).toBeUndefined();
   });

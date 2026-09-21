@@ -33,6 +33,7 @@ import {
   type NotebookWithSchemaVersion,
 } from './version';
 
+/** Outcome of {@link migrateNotebook}: the document at the target version plus which steps ran. */
 export type MigrateNotebookResult = {
   /** True when at least one step ran. */
   changed: boolean;

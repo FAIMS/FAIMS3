@@ -109,6 +109,94 @@ const v3Renames = wire(
   {schema_version: '3.0', name: 'Renames', pre_description: 'v3 fixture'}
 );
 
+/** Schema 3.0 fixture covering former migrateV4 edge cases. */
+const v3RenameEdges = wire(
+  {
+    NotesDefault: {
+      'component-namespace': 'formik-material-ui',
+      'component-name': 'MultipleTextField',
+      'type-returned': 'faims-core::String',
+      'component-parameters': {label: 'Notes', name: 'NotesDefault'},
+      initialValue: '',
+    },
+    CountOpen: {
+      'component-namespace': 'faims-custom',
+      'component-name': 'ControlledNumber',
+      'type-returned': 'faims-core::Integer',
+      'component-parameters': {label: 'Count', name: 'CountOpen'},
+      initialValue: null,
+    },
+    Weight: {
+      'component-namespace': 'faims-custom',
+      'component-name': 'NumberField',
+      'type-returned': 'faims-core::Number',
+      'component-parameters': {
+        label: 'Weight',
+        name: 'Weight',
+        numberType: 'floating',
+        min: 0,
+        max: 100.5,
+      },
+      initialValue: null,
+    },
+    CapturedConflict: {
+      'component-namespace': 'faims-custom',
+      'component-name': 'DateTimeNow',
+      'type-returned': 'faims-core::String',
+      'component-parameters': {
+        label: 'Captured',
+        name: 'CapturedConflict',
+        isAutoPick: false,
+        is_auto_pick: true,
+      },
+      initialValue: '',
+    },
+    AgreeNo: {
+      'component-namespace': 'faims-custom',
+      'component-name': 'Checkbox',
+      'type-returned': 'faims-core::Bool',
+      'component-parameters': {label: 'Agree?', name: 'AgreeNo'},
+      initialValue: false,
+    },
+    CustomCheck: {
+      'component-namespace': 'faims-custom',
+      'component-name': 'Checkbox',
+      'type-returned': 'faims-core::Bool',
+      'component-parameters': {
+        label: 'Custom checkbox',
+        name: 'CustomCheck',
+        ElementProps: {
+          options: [{value: 'agree', label: 'I agree'}],
+        },
+      },
+      initialValue: false,
+    },
+    Many: {
+      'component-namespace': 'faims-custom',
+      'component-name': 'MultiSelect',
+      'type-returned': 'faims-core::Array',
+      'component-parameters': {
+        label: 'Pick many',
+        name: 'Many',
+        ElementProps: {options: [{value: 'x', label: 'X'}]},
+      },
+      initialValue: [],
+    },
+    AlreadyRadio: {
+      'component-namespace': 'faims-custom',
+      'component-name': 'RadioGroup',
+      'type-returned': 'faims-core::String',
+      'component-parameters': {
+        label: 'Pick one',
+        name: 'AlreadyRadio',
+        ElementProps: {options: [{value: 'a', label: 'A'}]},
+      },
+      initialValue: '',
+    },
+  },
+  {schema_version: '3.0', name: 'V4 edges', pre_description: 'v3 edge fixture'}
+);
+
 /** Schema 4.0 fixture exercising the (former v5) restructure. */
 const v4Wire = wire(
   {
@@ -335,6 +423,53 @@ const CASES: NotebookSchemaMigrationTestCase[] = [
         {value: 'a', label: 'A'},
       ]);
 
+      expect(out.uiSpec.schemaVersion).toBe('1.0.0');
+    },
+  },
+  {
+    name: 'schema 3.0: v4 edge cases (defaults, passthrough, no invented limits)',
+    from: NOTEBOOK_SCHEMA_LEGACY,
+    to: LEGACY_TO_V1_TARGET,
+    input: v3RenameEdges,
+    assert: out => {
+      const f = out.uiSpec.fields;
+      expect(f.NotesDefault['component-name']).toBe('TextField');
+      expect(f.NotesDefault['component-parameters'].multiline).toBe(true);
+      expect(f.NotesDefault['component-parameters'].rows).toBe(4);
+      expect(f.NotesDefault['component-parameters'].InputProps).toBeUndefined();
+
+      expect(f.CountOpen['component-name']).toBe('NumberField');
+      expect(f.CountOpen['component-parameters'].numberType).toBe('integer');
+      expect(f.CountOpen['component-parameters'].min).toBeUndefined();
+      expect(f.CountOpen['component-parameters'].max).toBeUndefined();
+
+      expect(f.Weight['component-name']).toBe('NumberField');
+      expect(f.Weight['component-parameters'].numberType).toBe('floating');
+      expect(f.Weight['component-parameters'].min).toBe(0);
+      expect(f.Weight['component-parameters'].max).toBe(100.5);
+
+      expect(f.CapturedConflict['component-name']).toBe('DateTimePicker');
+      expect(f.CapturedConflict['component-parameters'].isAutoPick).toBe(false);
+      expect(
+        f.CapturedConflict['component-parameters'].is_auto_pick
+      ).toBeUndefined();
+      expect(f.CapturedConflict['component-parameters'].show_now_button).toBe(
+        true
+      );
+
+      expect(f.AgreeNo['component-name']).toBe('RadioGroup');
+      expect(f.AgreeNo.initialValue).toBe('');
+
+      expect(f.CustomCheck['component-name']).toBe('RadioGroup');
+      expect(
+        f.CustomCheck['component-parameters'].ElementProps.options
+      ).toEqual([{value: 'agree', label: 'I agree'}]);
+
+      expect(f.Many['component-name']).toBe('MultiSelect');
+      expect(f.AlreadyRadio['component-name']).toBe('RadioGroup');
+      expect(
+        f.AlreadyRadio['component-parameters'].ElementProps.options
+      ).toHaveLength(1);
       expect(out.uiSpec.schemaVersion).toBe('1.0.0');
     },
   },

@@ -23,7 +23,7 @@
  *    `validateFunction` that parses with the new version's schema.
  * 3. Append `{from, to, description, migrationFunction, validateFunction}`
  *    below and bump {@link CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}.
- * 4. Add a table-driven case to `notebookMigrations.test.ts`.
+ * 4. Add a table-driven case to `steps/<step>.test.ts`.
  *
  * Semver policy for the bump: **patch** = additive / safe (older apps render
  * silently), **minor** = significant but non-mission-critical (older apps

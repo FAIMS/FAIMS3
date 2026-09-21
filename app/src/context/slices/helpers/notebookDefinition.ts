@@ -99,9 +99,7 @@ export function isNotebookDesignLocked(
  * may be re-activated so local data is not trapped.
  */
 export function isNotebookActivationBlocked(
-  project:
-    | Pick<Project, 'schemaCompatibility' | 'uiDefinition'>
-    | undefined
+  project: Pick<Project, 'schemaCompatibility' | 'uiDefinition'> | undefined
 ): boolean {
   return (
     isNotebookDesignLocked(project) &&
