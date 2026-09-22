@@ -561,7 +561,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         parentRecordId: props.config.recordId,
         parentFieldId: props.fieldId,
         createdBy: props.config.user,
-        parentFieldValue: props.state.value.data,
+        parentFieldValue: props.state.value?.data,
       });
 
       // The parent's side goes through the open form, not a revision: a

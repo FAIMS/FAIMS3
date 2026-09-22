@@ -47,6 +47,7 @@ function renderRelatedRecordField({
   createRelatedRecord,
   onSetFieldData,
   multiple = true,
+  stateValueUndefined = false,
 }: {
   initialData: LinkEntry[] | LinkEntry | undefined;
   createRelatedRecord: (args: {
@@ -60,6 +61,7 @@ function renderRelatedRecordField({
   }>;
   onSetFieldData?: (value: unknown) => void;
   multiple?: boolean;
+  stateValueUndefined?: boolean;
 }) {
   const commit = vi.fn(async () => undefined);
   const toRecord = vi.fn();
@@ -120,7 +122,7 @@ function renderRelatedRecordField({
           fieldId="samples"
           state={
             {
-              value: {data: fieldData},
+              value: stateValueUndefined ? undefined : {data: fieldData},
               meta: {errors: []},
             } as any
           }
@@ -324,5 +326,51 @@ describe('RelatedRecord create flow', () => {
     expect(setFieldDataValues).toEqual([]);
     expect(commit).not.toHaveBeenCalled();
     expect(toRecord).not.toHaveBeenCalled();
+  });
+
+  it('creates the first related record when initialData is undefined and state.value is undefined', async () => {
+    const user = userEvent.setup();
+    const setFieldDataValues: unknown[] = [];
+
+    const createRelatedRecord = vi.fn(
+      async ({parentFieldValue: _parentFieldValue}) => {
+        const newLink = makeLink('sample-1');
+        return {
+          record: {_id: newLink.record_id},
+          linked: [newLink],
+        };
+      }
+    );
+
+    const {commit, toRecord} = renderRelatedRecordField({
+      initialData: undefined,
+      createRelatedRecord,
+      onSetFieldData: value => setFieldDataValues.push(value),
+      multiple: true,
+      stateValueUndefined: true,
+    });
+
+    await user.click(screen.getByRole('button', {name: /add new sample/i}));
+
+    await waitFor(() => {
+      expect(createRelatedRecord).toHaveBeenCalledTimes(1);
+    });
+
+    expect(createRelatedRecord.mock.calls[0][0]).toMatchObject({
+      parentRecordId: 'parent-1',
+      parentFieldId: 'samples',
+      createdBy: 'user-1',
+      parentFieldValue: undefined,
+    });
+
+    await waitFor(() => {
+      expect(commit).toHaveBeenCalledTimes(1);
+      expect(toRecord).toHaveBeenCalledWith(
+        expect.objectContaining({recordId: 'sample-1', mode: 'new'})
+      );
+    });
+
+    expect(setFieldDataValues.at(-1)).toEqual([makeLink('sample-1')]);
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
