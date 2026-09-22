@@ -111,7 +111,9 @@ member of `SPATIAL_IMPORT_FORMATS`, and an entry in the adapter table in
 a map from `planId` to that plan's config. In `createNotebookFromTemplate`
 (`api/src/couchdb/templates.ts`), every plan template is validated against
 its type's `templateSchema`, must have a config, which is validated against
-`configSchema`, and is instantiated with `instantiatePlan`; the result, with
+`configSchema`, and is instantiated with `instantiatePlan` (which may still
+reject a schema-valid config that fails the type's own rules, for example a
+Map Collection entry missing a required field); the result, with
 the template's `planId`, `label` and `description` added, is validated
 against `planSchema` and stored in the notebook's `plans` in declared order.
 A config for a plan the template does not carry is rejected, since it means

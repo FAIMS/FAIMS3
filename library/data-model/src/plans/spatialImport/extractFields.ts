@@ -6,6 +6,7 @@
  */
 import type {MapCollectionRecordField} from '../mapCollectionPlan';
 
+/** Outcome of coercing one attribute to a field's returned type. */
 export type FieldCoercionResult =
   | {ok: true; value: unknown}
   | {ok: false; message: string};
@@ -52,6 +53,7 @@ export const coerceFieldValue = (
   }
 };
 
+/** Outcome of extracting a planned entry's field values from attributes. */
 export type ExtractFieldsResult =
   | {ok: true; fields: Record<string, unknown>}
   | {ok: false; messages: string[]};

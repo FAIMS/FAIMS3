@@ -33,6 +33,7 @@ export const getSpatialFormatAdapter = (
   format: SpatialImportFormat
 ): SpatialFormatAdapter => adapters[format];
 
+/** Every registered format adapter, for pickers that list formats. */
 export const getSpatialFormatAdapters = (): SpatialFormatAdapter[] =>
   Object.values(adapters);
 

@@ -21,12 +21,14 @@ export type PlanRecordFeatureProps = {
   created: boolean;
 };
 
+/** One plotted feature of a planned entry's geometry. */
 export type PlanRecordFeature = {
   type: 'Feature';
   geometry: PlanGeometry;
   properties: PlanRecordFeatureProps;
 };
 
+/** The FeatureCollection the plan record map plots. */
 export type PlanRecordFeatureCollection = {
   type: 'FeatureCollection';
   features: PlanRecordFeature[];

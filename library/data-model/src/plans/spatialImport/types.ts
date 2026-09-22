@@ -67,12 +67,14 @@ export type SpatialImportContext = {
   };
 };
 
+/** One problem found while reading or validating a spatial import. */
 export type SpatialImportError = {
   /** Source feature index the problem was found at, if it belongs to one. */
   index?: number;
   message: string;
 };
 
+/** Outcome of the spatial import pipeline: entries or every problem found. */
 export type SpatialImportResult =
   | {ok: true; recordData: Record<string, MapCollectionPlanEntry>}
   | {ok: false; errors: SpatialImportError[]};

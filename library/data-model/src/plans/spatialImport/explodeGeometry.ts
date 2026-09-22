@@ -30,6 +30,7 @@ const geometryCollectionSchema = z.object({
   geometries: z.array(z.unknown()).min(1),
 });
 
+/** Outcome of exploding one geometry into simple parts. */
 export type ExplodeResult =
   | {ok: true; geometries: PlanGeometry[]}
   | {ok: false; message: string};

@@ -5,8 +5,10 @@
  */
 import type {EntryDraft, SimpleFeature} from './types';
 
+/** How exploded features are grouped into planned entries. */
 export type GroupingStrategy = 'one-per-feature';
 
+/** Group simple features into planned entries under the chosen strategy. */
 export const groupEntries = (
   features: SimpleFeature[],
   strategy: GroupingStrategy = 'one-per-feature'
