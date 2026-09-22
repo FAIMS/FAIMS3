@@ -47,8 +47,11 @@ function renderRelatedRecordField({
   createRelatedRecord,
   onSetFieldData,
   multiple = true,
+  missingValue = false,
+  allowLinkToExisting = false,
+  linkableRecords = [],
 }: {
-  initialData: LinkEntry[] | LinkEntry | undefined;
+  initialData: unknown;
   createRelatedRecord: (args: {
     parentRecordId: string;
     parentFieldId: string;
@@ -60,9 +63,17 @@ function renderRelatedRecordField({
   }>;
   onSetFieldData?: (value: unknown) => void;
   multiple?: boolean;
+  /** Field has never been written: `state.value` itself is missing. */
+  missingValue?: boolean;
+  allowLinkToExisting?: boolean;
+  linkableRecords?: {
+    success: true;
+    record: ReturnType<typeof makeHydratedRecord>;
+  }[];
 }) {
   const commit = vi.fn(async () => undefined);
   const toRecord = vi.fn();
+  const updateRevision = vi.fn(async () => undefined);
   const getHydratedRecord = vi.fn(async ({recordId}: {recordId: string}) =>
     makeHydratedRecord(recordId)
   );
@@ -79,21 +90,21 @@ function renderRelatedRecordField({
     form: {
       createRelatedRecord,
       getHydratedRecords: vi.fn(async () => ({
-        records: [],
+        records: linkableRecords,
         hasMore: false,
         nextStartKey: undefined,
       })),
     },
     hydrated: {
       getHydratedRecord,
-      updateRevision: vi.fn(async () => undefined),
+      updateRevision,
     },
     deleteRecord: vi.fn(async () => undefined),
   } as unknown as DataEngine;
 
   const Wrapper = () => {
-    const [fieldData, setFieldDataState] =
-      useState<typeof initialData>(initialData);
+    const [fieldData, setFieldDataState] = useState<unknown>(initialData);
+    const [hasEntry, setHasEntry] = useState(!missingValue);
     const queryClient = useMemo(
       () =>
         new QueryClient({
@@ -116,22 +127,23 @@ function renderRelatedRecordField({
           related_type="Sample"
           relation_type="faims-core::Child"
           multiple={multiple}
-          allowLinkToExisting={false}
+          allowLinkToExisting={allowLinkToExisting}
           fieldId="samples"
           state={
             {
-              value: {data: fieldData},
+              value: hasEntry ? {data: fieldData} : undefined,
               meta: {errors: []},
             } as any
           }
           setFieldData={(nextOrUpdater: unknown) => {
-            setFieldDataState(prev => {
+            setHasEntry(true);
+            setFieldDataState((prev: unknown) => {
               const next =
                 typeof nextOrUpdater === 'function'
                   ? (nextOrUpdater as (value: unknown) => unknown)(prev)
                   : nextOrUpdater;
               onSetFieldData?.(next);
-              return next as typeof initialData;
+              return next;
             });
           }}
           setFieldAnnotation={vi.fn()}
@@ -178,6 +190,7 @@ function renderRelatedRecordField({
     commit,
     toRecord,
     getHydratedRecord,
+    updateRevision,
   };
 }
 
@@ -324,5 +337,97 @@ describe('RelatedRecord create flow', () => {
     expect(setFieldDataValues).toEqual([]);
     expect(commit).not.toHaveBeenCalled();
     expect(toRecord).not.toHaveBeenCalled();
+  });
+
+  it('passes undefined when the field has no form value yet', async () => {
+    const user = userEvent.setup();
+    const newLink = makeLink('sample-1');
+    const createRelatedRecord = vi.fn(
+      async ({parentFieldValue}: {parentFieldValue: unknown}) => {
+        expect(parentFieldValue).toBeUndefined();
+        return {
+          record: {_id: newLink.record_id},
+          linked: [newLink],
+        };
+      }
+    );
+
+    const {commit} = renderRelatedRecordField({
+      initialData: undefined,
+      missingValue: true,
+      createRelatedRecord,
+    });
+
+    await user.click(screen.getByRole('button', {name: /add new sample/i}));
+
+    await waitFor(() => {
+      expect(createRelatedRecord).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
+      expect(commit).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('lists a link stored with a legacy empty vocab pair', async () => {
+    renderRelatedRecordField({
+      initialData: {
+        record_id: 'legacy-1',
+        relation_type_vocabPair: [],
+      },
+      createRelatedRecord: vi.fn(),
+    });
+
+    expect(await screen.findByText('legacy-1')).toBeInTheDocument();
+  });
+
+  it('stores one bare entry when linking the first record on a single-value field', async () => {
+    const user = userEvent.setup();
+    const setFieldDataValues: unknown[] = [];
+    const peer = makeHydratedRecord('peer-9');
+
+    const {commit, updateRevision} = renderRelatedRecordField({
+      initialData: undefined,
+      missingValue: true,
+      multiple: false,
+      allowLinkToExisting: true,
+      linkableRecords: [{success: true, record: peer}],
+      createRelatedRecord: vi.fn(),
+      onSetFieldData: value => setFieldDataValues.push(value),
+    });
+
+    await user.click(screen.getByRole('button', {name: /link existing/i}));
+    await user.click(await screen.findByRole('button', {name: /peer-9/i}));
+
+    await waitFor(() => {
+      expect(setFieldDataValues.at(-1)).toEqual({
+        record_id: 'peer-9',
+        relation_type_vocabPair: ['has child', 'is child of'],
+      });
+    });
+    expect(updateRevision).toHaveBeenCalledTimes(1);
+    expect(commit).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses a second link on a single-value field', async () => {
+    const user = userEvent.setup();
+    const setFieldDataValues: unknown[] = [];
+    const peer = makeHydratedRecord('peer-9');
+
+    const {commit, updateRevision} = renderRelatedRecordField({
+      initialData: makeLink('sample-0'),
+      multiple: false,
+      allowLinkToExisting: true,
+      linkableRecords: [{success: true, record: peer}],
+      createRelatedRecord: vi.fn(),
+      onSetFieldData: value => setFieldDataValues.push(value),
+    });
+
+    await user.click(screen.getByRole('button', {name: /link existing/i}));
+    await user.click(await screen.findByRole('button', {name: /peer-9/i}));
+
+    expect(await screen.findByText(/takes only one/i)).toBeInTheDocument();
+    expect(setFieldDataValues).toEqual([]);
+    expect(updateRevision).not.toHaveBeenCalled();
+    expect(commit).not.toHaveBeenCalled();
   });
 });

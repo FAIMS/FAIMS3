@@ -4,8 +4,12 @@ import {
   FormRelationship,
   FormRelationshipInstance,
   HydratedRecord,
+  readRelatedLinks,
+  RelatedRecordFieldAvpEntry,
   relatedRecordAvpEntries,
+  relatedRecordFieldAvpValueSchema,
   relationTypeToPair,
+  withRelatedLink,
 } from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
@@ -52,7 +56,6 @@ import {RelatedRecordRenderer} from '../../../rendering/fields/view/specialised/
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {
-  FieldValueEntry,
   FullRelatedRecordFieldProps,
   RelatedFieldValue,
   relatedFieldValueSchema,
@@ -72,10 +75,13 @@ import {
 // ============================================================================
 
 interface RelatedRecordListItemProps {
-  link: FieldValueEntry;
+  link: RelatedRecordFieldAvpEntry;
   queryResult: UseQueryResult<HydratedRecord | undefined, Error>;
   onNavigate: (recordId: string) => void;
-  onOpenActionsMenu?: (anchor: HTMLElement, link: FieldValueEntry) => void;
+  onOpenActionsMenu?: (
+    anchor: HTMLElement,
+    link: RelatedRecordFieldAvpEntry
+  ) => void;
 }
 
 const RelatedRecordListItem = ({
@@ -116,7 +122,7 @@ const RelatedRecordListItem = ({
           </ListItemIcon>
           <ListItemText
             primary={link.record_id}
-            secondary={link.relation_type_vocabPair[0] + ' (Load Error)'}
+            secondary={`${link.relation_type_vocabPair[0] ?? 'is related to'} (Load Error)`}
             slotProps={{
               primary: {
                 variant: 'body2',
@@ -515,29 +521,28 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [actionMenu, setActionMenu] = useState<{
     anchorEl: HTMLElement;
-    link: FieldValueEntry;
+    link: RelatedRecordFieldAvpEntry;
   } | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<FieldValueEntry | null>(
-    null
-  );
+  const [deleteTarget, setDeleteTarget] =
+    useState<RelatedRecordFieldAvpEntry | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deletePending, setDeletePending] = useState(false);
 
   const queryClient = useQueryClient();
 
-  // Field value may be a single link object or an array when `multiple` is
-  // true; normalize for mapping.
-  const rawValue = props.state.value?.data || undefined;
+  // An empty field has no form entry yet, so `state.value` itself is missing.
+  // A stored value may be one link or a list, including a legacy empty vocab
+  // pair. The storage schema accepts those; the form schema does not, and
+  // using it here hid the links.
+  const rawValue = props.state.value?.data;
+  const isMultiple = props.multiple ?? false;
 
-  const value = useMemo(
-    () => relatedFieldValueSchema.safeParse(rawValue).data,
-    [rawValue]
-  );
-
-  const normalizedLinks = useMemo(
-    () => (value ? relatedRecordAvpEntries(value) : []),
-    [value]
-  );
+  const normalizedLinks = useMemo(() => {
+    const parsed = relatedRecordFieldAvpValueSchema.safeParse(rawValue);
+    if (!parsed.success) return [];
+    return relatedRecordAvpEntries(parsed.data);
+  }, [rawValue]);
 
   // Display label for record type
   const relatedRecordTypeLabel = useMemo(() => {
@@ -561,7 +566,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         parentRecordId: props.config.recordId,
         parentFieldId: props.fieldId,
         createdBy: props.config.user,
-        parentFieldValue: props.state.value.data,
+        parentFieldValue: rawValue,
       });
 
       // The parent's side goes through the open form, not a revision: a
@@ -598,40 +603,63 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
   });
 
   const handleLinkExisting = async (record: HydratedRecord) => {
-    // Local field value lists the chosen record; we also patch the target’s
-    // revision so the graph is consistent.
-    props.setFieldData([
-      ...normalizedLinks,
-      {
-        record_id: record.record._id,
-        relation_type_vocabPair: relationTypeToPair(props.relation_type),
-      },
-    ] satisfies RelatedFieldValue);
+    setLinkError(null);
+    // Same read the engine uses, so a legacy link is kept and a value that
+    // cannot be read is refused rather than written over.
+    let links;
+    try {
+      links = readRelatedLinks(rawValue);
+    } catch (e) {
+      setLinkError(
+        e instanceof Error
+          ? e.message
+          : 'Field holds a related-record value that cannot be read'
+      );
+      return;
+    }
+    if (!isMultiple && links.length > 0) {
+      setLinkError(
+        `Field ${props.fieldId} already holds a record and takes only one`
+      );
+      return;
+    }
 
-    // Build the reciprocal relationship entry for the target record
+    const link = {
+      record_id: record.record._id,
+      relation_type_vocabPair: relationTypeToPair(props.relation_type),
+    };
+    // Reciprocal edge on the target. Child relations go in 'parent'.
     const relation: FormRelationshipInstance = {
       fieldId: props.fieldId,
       recordId: props.config.recordId,
-      relationTypeVocabPair: relationTypeToPair(props.relation_type),
+      relationTypeVocabPair: link.relation_type_vocabPair,
     };
-
-    // Merge with existing relationships on the target record
-    // Child relations go in 'parent' (the child points to its parent)
-    // Other relations go in 'linked'
     const existing = record.revision.relationship;
     const relationship: FormRelationship =
       props.relation_type === 'faims-core::Child'
         ? {...existing, parent: [...(existing?.parent ?? []), relation]}
         : {...existing, linked: [...(existing?.linked ?? []), relation]};
 
-    // Persist the updated relationship on the target record's revision
-    await props.config.dataEngine().hydrated.updateRevision(
-      {
-        ...record.revision,
-        relationship,
-      },
-      {bumpRevisionUpdatedAt: true, bumpRecordUpdatedAt: true}
-    );
+    try {
+      await props.config.dataEngine().hydrated.updateRevision(
+        {
+          ...record.revision,
+          relationship,
+        },
+        {bumpRevisionUpdatedAt: true, bumpRecordUpdatedAt: true}
+      );
+      // A single-value field stores one bare entry. A multi-value field stores
+      // the list. The parent's side is committed here: the peer edge above is
+      // already written, and waiting for autosave leaves them one-sided.
+      props.setFieldData(
+        withRelatedLink({links, link, isMultiple}) as RelatedFieldValue
+      );
+      await props.config.trigger.commit();
+    } catch (e) {
+      setLinkError(
+        e instanceof Error ? e.message : 'Could not link this record.'
+      );
+    }
   };
 
   // One query per linked id (order matches `normalizedLinks`) for list display
@@ -673,7 +701,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
   // Remove this field’s link from the peer’s `linked` array (detach is only
   // offered for Linked; see menu below).
-  const handleDetachLink = async (link: FieldValueEntry) => {
+  const handleDetachLink = async (link: RelatedRecordFieldAvpEntry) => {
     const engine = props.config.dataEngine();
     const peer = await engine.hydrated.getHydratedRecord({
       recordId: link.record_id,
@@ -711,10 +739,10 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     const remaining = normalizedLinks.filter(
       l => l.record_id !== link.record_id
     );
-    const next: RelatedFieldValue | undefined =
+    const next =
       remaining.length === 0
         ? undefined
-        : props.multiple
+        : isMultiple
           ? remaining
           : remaining[0];
     props.setFieldData(next as RelatedFieldValue);
@@ -835,6 +863,11 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           {createError instanceof Error
             ? createError.message
             : 'An error occurred creating the record'}
+        </Alert>
+      )}
+      {linkError && (
+        <Alert severity="error" sx={{mb: 2}}>
+          {linkError}
         </Alert>
       )}
 

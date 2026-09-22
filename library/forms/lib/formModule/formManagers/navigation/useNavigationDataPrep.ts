@@ -7,10 +7,7 @@ import {
 } from '@faims3/data-model';
 import {useQuery, UseQueryResult} from '@tanstack/react-query';
 import {useMemo} from 'react';
-import {
-  relatedFieldValueSchema,
-  relatedRecordPropsSchema,
-} from '../../../fieldRegistry/fields/RelatedRecord/types';
+import {relatedRecordPropsSchema} from '../../../fieldRegistry/fields/RelatedRecord/types';
 import {getImpliedNavigationRelationships} from '../../utils';
 import {FormNavigationContext, FullFormConfig} from '../types';
 import {
@@ -273,18 +270,10 @@ export function useNavigationDataPreparation({
           revisionId: head.revisionId,
         });
 
-        // Get the related field value
+        // The stored value, including none and a legacy empty vocab pair. The
+        // engine accepts both; the form schema does not, and parsing here
+        // refused a create the engine would have kept.
         const relevantFieldValue = parentFormData.data[head.fieldId]?.data;
-        const {success, error} =
-          relatedFieldValueSchema.safeParse(relevantFieldValue);
-
-        if (!success) {
-          onError(
-            'Failed to parse related field data. Try refreshing the app or contact a system administrator.'
-          );
-          logError(new Error('Failed to parse related field value:'), {error});
-          return;
-        }
 
         // The engine derives the related form, the relation and its vocab
         // pair from the field, writes the new row's own edge, and hands back
@@ -296,9 +285,12 @@ export function useNavigationDataPreparation({
           parentFieldValue: relevantFieldValue,
         });
 
-        // The AVP blob, not the field's stricter form value: a link already
-        // stored with the legacy empty vocab pair comes back through here.
-        parentFormData.data[head.fieldId].data = res.linked;
+        // The field may never have been stored on this revision. Assigning
+        // `.data` on a missing entry throws after the child is already written.
+        parentFormData.data[head.fieldId] = {
+          ...parentFormData.data[head.fieldId],
+          data: res.linked,
+        };
 
         // Update parent revision
         await dataEngine.form.updateRevision({
