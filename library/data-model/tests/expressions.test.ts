@@ -107,6 +107,24 @@ describe('compileComputedExpression', () => {
       ).toBe(7);
     });
 
+    it('supports exponentiation', () => {
+      const num = (src: string) =>
+        compileComputedExpression(src, fieldTypes, 'number').evaluate(
+          scope({})
+        );
+      expect(num('2 ^ 10')).toBe(1024);
+      // Binds tighter than * and +
+      expect(num('2 * 3 ^ 2')).toBe(18);
+      expect(num('1 + 3 ^ 2')).toBe(10);
+      // Right-associative
+      expect(num('2 ^ 3 ^ 2')).toBe(512);
+      // Unary minus binds tighter than ^, as in Excel
+      expect(num('-3 ^ 2')).toBe(9);
+      expect(num('-(3 ^ 2)')).toBe(-9);
+      // Non-finite result blanks the field
+      expect(num('0 ^ -1')).toBeNull();
+    });
+
     it('honours precedence and parentheses', () => {
       expect(
         compileComputedExpression('2 + 3 * 4', fieldTypes, 'number').evaluate(

@@ -8,6 +8,8 @@ overrides:
   level: ^7.0.0
   sharp: ^0.34.2
 
+packageExtensionsChecksum: sha256-7EyWhva5Lcamo6pe18OzfUc27A7xbWt39+G/ofluF9k=
+
 importers:
 
   .:
@@ -944,7 +946,7 @@ importers:
         version: link:../library/forms
       '@hookform/resolvers':
         specifier: ^5.2.1
-        version: 5.4.0(react-hook-form@7.78.0(react@18.3.1))
+        version: 5.4.0(react-hook-form@7.78.0(react@18.3.1))(zod@4.4.3)
       '@lexical/react':
         specifier: ^0.12.4
         version: 0.12.6(lexical@0.12.6)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(yjs@13.6.31)
@@ -2102,6 +2104,7 @@ packages:
     resolution: {integrity: sha512-EIsqr/t/qbinPIhGjMdtvutIN1Kk4uwbROE9/UQ93CAVGR7GkA7Y92+fX80OzXi/OB67jVFYwKGO1WzkxmkFZw==}
     peerDependencies:
       react-hook-form: ^7.55.0
+      zod: '*'
 
   '@humanwhocodes/config-array@0.11.14':
     resolution: {integrity: sha512-3T8LkOmg45BV5FICb15QQMsyUSWrQ8AygVfC7ZG32zOalnqrilm018ZVCw0eapXux8FtA33q8PSRSstjee3jSg==}
@@ -13901,10 +13904,11 @@ snapshots:
 
   '@gar/promisify@1.1.3': {}
 
-  '@hookform/resolvers@5.4.0(react-hook-form@7.78.0(react@18.3.1))':
+  '@hookform/resolvers@5.4.0(react-hook-form@7.78.0(react@18.3.1))(zod@4.4.3)':
     dependencies:
       '@standard-schema/utils': 0.3.0
       react-hook-form: 7.78.0(react@18.3.1)
+      zod: 4.4.3
 
   '@humanwhocodes/config-array@0.11.14':
     dependencies:

@@ -67,7 +67,7 @@ The expression is typed and checked when the {{notebook}} is designed —
 mixing types is reported as an error in the Editor. The overall
 expression must produce a **number**. The operators are:
 
-- **Arithmetic** (`+ - * / %`) — numbers only, with parentheses and a
+- **Arithmetic** (`+ - * / % ^`, where `^` is exponentiation) — numbers only, with parentheses and a
   leading minus.
 - **Concatenation** (`&`) — text only (useful inside conditions).
 - **Comparisons** (`< > <= >=`) — two numbers or two texts, producing

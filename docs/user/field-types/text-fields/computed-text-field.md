@@ -69,7 +69,7 @@ mixing types is reported as an error in the Editor. The overall
 expression must produce **text**. The operators are:
 
 - **Concatenation** (`&`) — joins text, e.g. `{Site-Code} & '-A'`.
-- **Arithmetic** (`+ - * / %`) — numbers only (useful inside
+- **Arithmetic** (`+ - * / % ^`) — numbers only (useful inside
   conditions).
 - **Comparisons** (`< > <= >=`) — two numbers or two texts, producing
   true/false; equality (`==`, `!=`) requires matching types.
