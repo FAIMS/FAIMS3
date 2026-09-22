@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import {useMemo, useState} from 'react';
 import {describe, expect, it, vi} from 'vitest';
 import {relatedRecordFieldSpec} from './index';
+import {DataEngine} from '@faims3/data-model';
 
 vi.mock('@faims3/data-model', async () => {
   const actual = await vi.importActual<object>('@faims3/data-model');
@@ -69,7 +70,10 @@ function renderRelatedRecordField({
   const dataEngine = {
     uiSpec: {
       viewsets: {
-        Sample: {label: 'Sample'},
+        Sample: {
+          label: 'Sample',
+          views: [],
+        },
       },
     },
     form: {
@@ -85,7 +89,7 @@ function renderRelatedRecordField({
       updateRevision: vi.fn(async () => undefined),
     },
     deleteRecord: vi.fn(async () => undefined),
-  };
+  } as unknown as DataEngine;
 
   const Wrapper = () => {
     const [fieldData, setFieldDataState] =
@@ -104,6 +108,7 @@ function renderRelatedRecordField({
     return (
       <QueryClientProvider client={queryClient}>
         <relatedRecordFieldSpec.component
+          name="samples"
           label="Related"
           required={false}
           helperText={''}
@@ -113,10 +118,12 @@ function renderRelatedRecordField({
           multiple={multiple}
           allowLinkToExisting={false}
           fieldId="samples"
-          state={{
-            value: {data: fieldData},
-            meta: {errors: []},
-          }}
+          state={
+            {
+              value: {data: fieldData},
+              meta: {errors: []},
+            } as any
+          }
           setFieldData={(nextOrUpdater: unknown) => {
             setFieldDataState(prev => {
               const next =
@@ -132,37 +139,34 @@ function renderRelatedRecordField({
           removeAttachment={vi.fn(async () => undefined)}
           handleBlur={vi.fn()}
           trigger={{commit}}
-          config={{
-            mode: 'full',
-            layout: 'inline',
-            platform: 'web',
-            mapConfig: () => ({}) as any,
-            recordId: 'parent-1',
-            projectId: 'project-1',
-            decodedToken: {},
-            dataEngine: () => dataEngine,
-            attachmentEngine: () => ({}) as any,
-            recordMode: 'parent',
-            navigation: {
-              toRecord,
-              getToRecordLink: () => '/record',
-              navigateToLink: vi.fn(),
-              navigateToRecordList: {
-                label: 'Back',
-                navigate: vi.fn(),
+          config={
+            {
+              mode: 'full',
+              layout: 'inline',
+              platform: 'web',
+              mapConfig: () => ({}) as any,
+              recordId: 'parent-1',
+              projectId: 'project-1',
+              decodedToken: {globalRoles: [], resourceRoles: []},
+              dataEngine: () => dataEngine,
+              attachmentEngine: () => ({}) as any,
+              recordMode: 'parent',
+              navigation: {
+                toRecord,
+                getToRecordLink: () => '/record',
+                navigateToLink: vi.fn(),
+                navigateToRecordList: {
+                  label: 'Back',
+                  navigate: vi.fn(),
+                },
+                navigateToViewRecord: vi.fn(),
               },
-              navigateToViewRecord: vi.fn(),
-            },
-            incrementerService: {} as any,
-            appName: 'test-app',
-            user: 'user-1',
-            navigationContext: {mode: 'root'},
-            attachmentHandlers: {
-              addAttachment: vi.fn(),
-              removeAttachment: vi.fn(),
-            },
-            trigger: {commit},
-          }}
+              incrementerService: {} as any,
+              appName: 'test-app',
+              user: 'user-1',
+              trigger: {commit},
+            } as any
+          }
         />
       </QueryClientProvider>
     );
