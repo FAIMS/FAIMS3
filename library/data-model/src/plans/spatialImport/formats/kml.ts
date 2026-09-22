@@ -58,6 +58,7 @@ const rootName = (document: XmlDocumentLike): string | undefined => {
   return (root.localName ?? root.nodeName.split(':').pop()) || undefined;
 };
 
+/** KML format adapter: Placemark text or a parsed XML document to normalised features. */
 export const kmlAdapter: SpatialFormatAdapter = {
   format: 'kml',
   label: 'KML',

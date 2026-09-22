@@ -17,6 +17,7 @@ const featureCollectionSchema = z.object({
   features: z.array(featureSchema),
 });
 
+/** GeoJSON format adapter: FeatureCollection text or parsed JSON to normalised features. */
 export const geoJsonAdapter: SpatialFormatAdapter = {
   format: 'geojson',
   label: 'GeoJSON',

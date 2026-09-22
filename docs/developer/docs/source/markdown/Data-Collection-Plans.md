@@ -164,10 +164,9 @@ type it holds:
   each record in the app instead. Rows are given sequential
   reference ids that are never reused after removal, since the id becomes the
   record's `planReference` in the app. Map Collection is also component-based:
-  a format picker (GeoJSON, KML), a file input, and a preview table of the entries
-  the spatial import pipeline read, with every problem the file has listed
-  by feature. The config is reported only once the file yields at least one
-  valid entry.
+  a format picker (GeoJSON, KML), a file input, and either a preview table of
+  the entries the spatial import pipeline read, or every problem the file has
+  listed by feature. The config is reported only once every feature is valid.
 
 A plan whose type has no registered config form shows an explanatory notice
 and blocks creation from the web manager. Adding support for a new plan type

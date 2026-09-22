@@ -20,10 +20,7 @@ import {
 
 export const MAP_COLLECTION_PLAN_TYPE = 'MapCollection' as const;
 
-/**
- * Field return types a map collection entry can pre-fill with a simple value:
- * the same set a list of records plan supports.
- */
+/** Whether a field return type can be pre-filled; the same set a list-of-records plan supports. */
 export const isMapCollectionSupportedFieldType = isListPlanSupportedFieldType;
 
 /** Whether a field component can be a map collection plan's spatial field. */
