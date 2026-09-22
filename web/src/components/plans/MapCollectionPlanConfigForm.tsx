@@ -7,6 +7,7 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   getSpatialFormatAdapters,
+  mapCollectionGeometrySummary,
   mapCollectionPlanTemplateConfigSchema,
   parseSpatialImport,
   PLAN_GEOMETRY_TYPES,
@@ -30,20 +31,6 @@ import {
 } from '@/components/ui/table';
 import {config} from '@/constants';
 import {fieldLabel, formLabel, type PlanConfigFormProps} from './types';
-
-/** A short description of an entry's geometry, e.g. "Point" or "Point × 3". */
-export const geometrySummary = (entry: MapCollectionPlanEntry): string => {
-  const counts = new Map<string, number>();
-  for (const feature of entry.spatial.features) {
-    counts.set(
-      feature.geometry.type,
-      (counts.get(feature.geometry.type) ?? 0) + 1
-    );
-  }
-  return [...counts.entries()]
-    .map(([type, count]) => (count > 1 ? `${type} × ${count}` : type))
-    .join(', ');
-};
 
 /** The spatial field's stored feature type, for a MapFormField that names one. */
 const spatialFeatureType = (
@@ -265,7 +252,7 @@ export const MapCollectionPlanConfigForm = ({
                     </TableCell>
                   ))}
                   <TableCell className="whitespace-nowrap">
-                    {geometrySummary(entry)}
+                    {mapCollectionGeometrySummary(entry)}
                   </TableCell>
                 </TableRow>
               ))}

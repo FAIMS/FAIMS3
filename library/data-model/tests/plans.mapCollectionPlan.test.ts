@@ -1,6 +1,7 @@
 import {
   MAP_COLLECTION_PLAN_TYPE,
   instantiateMapCollectionPlan,
+  mapCollectionGeometrySummary,
   mapCollectionInitialRecordData,
   mapCollectionPlanDefinition,
   mapCollectionPlanTemplateConfigSchema,
@@ -199,6 +200,34 @@ describe('map collection plan definition', () => {
       typeof (forTakePoint as {properties: {timestamp: number}}).properties
         .timestamp
     ).toBe('number');
+  });
+
+  test('geometry summary counts each type, and only counts more than one', () => {
+    expect(mapCollectionGeometrySummary({spatial: point(151, -33)})).toBe(
+      'Point'
+    );
+    expect(
+      mapCollectionGeometrySummary({
+        spatial: {
+          type: 'FeatureCollection',
+          features: [
+            ...point(151, -33).features,
+            ...point(152, -34).features,
+            {
+              type: 'Feature',
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [151, -33],
+                  [152, -34],
+                ],
+              },
+              properties: null,
+            },
+          ],
+        },
+      })
+    ).toBe('Point × 2, LineString');
   });
 
   test('initial record data joins the fields to the spatial field', () => {

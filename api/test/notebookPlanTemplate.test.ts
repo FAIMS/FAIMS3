@@ -515,7 +515,7 @@ describe('notebook creation from template with planTemplates', () => {
       spatialFieldId: 'Location',
     });
 
-    await requestAuthAndType(
+    const response = await requestAuthAndType(
       request(app)
         .post(NOTEBOOKS_API_BASE)
         .send({
@@ -543,7 +543,11 @@ describe('notebook creation from template with planTemplates', () => {
             },
           },
         } satisfies CreateNotebookFromTemplate)
-    ).expect(res => expect(res.status).toBeGreaterThanOrEqual(400));
+    ).expect(400);
+
+    // The config is schema-valid, so only instantiation can name the problem
+    expect(response.body.error.message).toMatch(/could not be applied/);
+    expect(response.body.error.message).toMatch(/Missing required field Name/);
   });
 
   it('rejects notebook creation when a stored plan template is malformed', async () => {

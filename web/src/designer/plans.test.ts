@@ -1,8 +1,20 @@
 /**
  * @file Tests for the designer plan registry.
  */
+import {
+  COUNTED_PLAN_TYPE,
+  LIST_OF_FORMS_PLAN_TYPE,
+  LIST_OF_RECORDS_PLAN_TYPE,
+  MAP_COLLECTION_PLAN_TYPE,
+} from '@faims3/data-model';
 import {describe, expect, it} from 'vitest';
-import {createDesignerPlanRegistry, registerDesignerPlanType} from './plans';
+import {MapCollectionPlanDialog} from './components/plans/MapCollectionPlanDialog';
+import {
+  createDesignerPlanRegistry,
+  getDesignerPlanType,
+  getDesignerPlanTypes,
+  registerDesignerPlanType,
+} from './plans';
 
 const definition = (planType: string) => ({
   planType,
@@ -33,5 +45,24 @@ describe('registerDesignerPlanType', () => {
     expect(() =>
       registerDesignerPlanType(definition('lab/samples'), registry)
     ).toThrow(/cannot be registered/);
+  });
+});
+
+describe('getDesignerPlanType', () => {
+  it('installs the built-in plan types on first lookup', () => {
+    expect(getDesignerPlanTypes().map(d => d.planType)).toEqual([
+      COUNTED_PLAN_TYPE,
+      LIST_OF_RECORDS_PLAN_TYPE,
+      LIST_OF_FORMS_PLAN_TYPE,
+      MAP_COLLECTION_PLAN_TYPE,
+    ]);
+    expect(getDesignerPlanType('MapGrid')).toBeUndefined();
+  });
+
+  it('resolves map collection to its label and authoring dialog', () => {
+    const mapCollection = getDesignerPlanType(MAP_COLLECTION_PLAN_TYPE);
+    expect(mapCollection?.label).toBe('Map Collection');
+    expect(mapCollection?.Dialog).toBe(MapCollectionPlanDialog);
+    expect(mapCollection?.description).toMatch(/spatially referenced list/);
   });
 });

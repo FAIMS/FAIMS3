@@ -87,6 +87,7 @@ const renderView = ({
   currentTab = 'record-map',
   planOverride = plan,
   spatialComponent = 'MapFormField',
+  statusOverrides = {},
 }: {
   planRecords?: MinimalRecordMetadata[];
   myRecords?: MinimalRecordMetadata[];
@@ -94,6 +95,12 @@ const renderView = ({
   currentTab?: string;
   planOverride?: RegisteredPlan;
   spatialComponent?: string;
+  /** What the user may see of the notebook's records, when it matters */
+  statusOverrides?: {
+    canReadAllRecords?: boolean;
+    isDownloadingRecords?: boolean;
+    isAllowedToAddRecords?: boolean;
+  };
 } = {}) => {
   const createRecord = vi.fn();
   const navigateToRecord = vi.fn();
@@ -126,6 +133,7 @@ const renderView = ({
           isAllowedToAddRecords: true,
           canReadAllRecords: true,
           isDownloadingRecords: false,
+          ...statusOverrides,
         },
         components: {
           NotebookSettings: () => null,
@@ -204,6 +212,53 @@ describe('MapCollectionPlanView', () => {
       {Name: 'Site 2', Location: spatial},
       'sites/planned-2'
     );
+  });
+
+  it('labels a planned entry with its pre-filled fields and its geometry', () => {
+    renderView({
+      currentTab: 'planned-records',
+      planOverride: {
+        ...plan,
+        records: {
+          ...plan.records,
+          'planned-2': {
+            fields: {Name: 'Site 2'},
+            // An entry carries more than one spatial reference as more features
+            spatial: {
+              type: 'FeatureCollection',
+              features: [...spatial.features, ...spatial.features],
+            },
+          },
+        },
+      } as unknown as RegisteredPlan,
+    });
+    expect(screen.getByTestId('planned-entry-planned-1')).toHaveTextContent(
+      'Name: Site 1'
+    );
+    expect(screen.getByTestId('planned-entry-planned-1')).toHaveTextContent(
+      'Geometry: Point'
+    );
+    expect(screen.getByTestId('planned-entry-planned-2')).toHaveTextContent(
+      'Geometry: Point × 2'
+    );
+  });
+
+  it('warns that a pending entry may already have a record the user cannot read', () => {
+    renderView({statusOverrides: {canReadAllRecords: false}});
+    expect(screen.getByText(/not visible to you yet/)).toBeDefined();
+  });
+
+  it('warns on the planned list while records are still downloading', () => {
+    renderView({
+      currentTab: 'planned-records',
+      statusOverrides: {isDownloadingRecords: true},
+    });
+    expect(screen.getByText(/not visible to you yet/)).toBeDefined();
+  });
+
+  it('does not warn once every record of the plan is visible', () => {
+    renderView();
+    expect(screen.queryByText(/not visible to you yet/)).toBeNull();
   });
 
   it("lists the user's records of the plan's form, whichever plan made them", () => {

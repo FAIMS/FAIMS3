@@ -34,10 +34,7 @@ import {
 import {describe, expect, test, vi} from 'vitest';
 import {countedPlanConfig, countedPlanFields} from './countedPlanFields';
 import {ListOfRecordsPlanConfigForm} from './ListOfRecordsPlanConfigForm';
-import {
-  geometrySummary,
-  MapCollectionPlanConfigForm,
-} from './MapCollectionPlanConfigForm';
+import {MapCollectionPlanConfigForm} from './MapCollectionPlanConfigForm';
 import {PlanConfigSection} from './PlanConfigSection';
 import {planSubmissionGate} from './planSubmissionGate';
 import {usePlanConfigs} from './usePlanConfigs';
@@ -341,6 +338,13 @@ describe('MapCollectionPlanConfigForm', () => {
     expect(
       screen.getByTestId('plan-config-spatial-summary').textContent
     ).toMatch(/2 planned Form One records/);
+    // The preview's last column summarises each entry's geometry
+    expect(
+      screen
+        .getAllByRole('row')
+        .slice(1)
+        .map(row => row.lastElementChild?.textContent)
+    ).toEqual(['Point', 'Point']);
 
     fireEvent.click(screen.getByTestId('plan-config-allow-extra'));
     expect(lastCall(onChange).allowExtraRecords).toBe(true);
@@ -448,29 +452,6 @@ describe('MapCollectionPlanConfigForm', () => {
       )
     );
     expect(lastCall(onChange)).toBeUndefined();
-  });
-
-  test('summarises an entry geometry', () => {
-    expect(
-      geometrySummary({
-        fields: {},
-        spatial: {
-          type: 'FeatureCollection',
-          features: [
-            {
-              type: 'Feature',
-              geometry: {type: 'Point', coordinates: [0, 0]},
-              properties: null,
-            },
-            {
-              type: 'Feature',
-              geometry: {type: 'Point', coordinates: [1, 1]},
-              properties: null,
-            },
-          ],
-        },
-      })
-    ).toBe('Point × 2');
   });
 });
 

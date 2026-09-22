@@ -84,6 +84,26 @@ export type MapCollectionPlanEntry = z.infer<
   typeof mapCollectionPlanEntrySchema
 >;
 
+/**
+ * A short description of an entry's geometry, e.g. "Point" or "Point × 3":
+ * what the designer's preview table and the app's planned entries both label
+ * geometry with.
+ */
+export const mapCollectionGeometrySummary = (
+  entry: Pick<MapCollectionPlanEntry, 'spatial'>
+): string => {
+  const counts = new Map<string, number>();
+  for (const feature of entry.spatial.features) {
+    counts.set(
+      feature.geometry.type,
+      (counts.get(feature.geometry.type) ?? 0) + 1
+    );
+  }
+  return [...counts.entries()]
+    .map(([type, count]) => (count > 1 ? `${type} × ${count}` : type))
+    .join(', ');
+};
+
 export const mapCollectionPlanTemplateConfigSchema = z.object({
   /** The planned entries, keyed by a unique plan reference id. */
   recordData: z.record(z.string(), mapCollectionPlanEntrySchema),

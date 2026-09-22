@@ -6,6 +6,7 @@
  */
 import {
   MAP_COLLECTION_PLAN_TYPE,
+  mapCollectionGeometrySummary,
   mapCollectionInitialRecordData,
   planReferenceFor,
   ProjectStatus,
@@ -28,10 +29,11 @@ import {
 } from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import React, {useCallback, useMemo} from 'react';
+import {useCallback, useMemo} from 'react';
 import {config} from '../../../../buildconfig';
 import {DE_ACTIVATE_VERB} from '../../workspace/notebooks';
 import AddRecordButtons from '../add_record_by_type';
+import {a11yProps, TabPanel} from '../notebookTabs';
 import PushOnlySyncBanner from '../PushOnlySyncBanner';
 import {RecordsTable} from '../record_table';
 import {NotebookViewComponentProps, resolveTab} from '../types';
@@ -52,45 +54,6 @@ const TABS = [
   'details',
   'settings',
 ] as const;
-
-interface TabPanelProps {
-  children?: React.ReactNode;
-  tab: string;
-  value: string;
-}
-
-/** TabPanel renders its children only while its tab is the one shown. */
-function TabPanel({children, value, tab}: TabPanelProps) {
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== tab}
-      id={`${tab}-tabpanel`}
-      aria-labelledby={`${tab}-tab`}
-    >
-      {value === tab && <Box>{children}</Box>}
-    </div>
-  );
-}
-
-const a11yProps = (tab: string) => ({
-  id: `${tab}-tab`,
-  'aria-controls': `${tab}-tabpanel`,
-});
-
-/** A short description of an entry's geometry, e.g. "Point" or "Point × 3". */
-export const entryGeometrySummary = (entry: MapCollectionPlanEntry): string => {
-  const counts = new Map<string, number>();
-  for (const feature of entry.spatial.features) {
-    counts.set(
-      feature.geometry.type,
-      (counts.get(feature.geometry.type) ?? 0) + 1
-    );
-  }
-  return [...counts.entries()]
-    .map(([type, count]) => (count > 1 ? `${type} × ${count}` : type))
-    .join(', ');
-};
 
 /**
  * A view component for the map collection plan type.
@@ -439,7 +402,7 @@ const PlannedEntryCard = ({
           </div>
         ))}
         <div>
-          <strong>Geometry:</strong> {entryGeometrySummary(entry)}
+          <strong>Geometry:</strong> {mapCollectionGeometrySummary(entry)}
         </div>
       </Typography>
     </CardContent>

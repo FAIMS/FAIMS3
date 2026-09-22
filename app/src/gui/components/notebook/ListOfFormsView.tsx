@@ -2,10 +2,11 @@ import {MinimalRecordMetadata, ProjectStatus} from '@faims3/data-model';
 import {Alert, AlertTitle, Box, Paper, Tab, Tabs} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import React, {useMemo} from 'react';
+import {useMemo} from 'react';
 import {config} from '../../../buildconfig';
 import {DE_ACTIVATE_VERB} from '../workspace/notebooks';
 import AddRecordButtons from './add_record_by_type';
+import {a11yProps, TabPanel} from './notebookTabs';
 import PushOnlySyncBanner from './PushOnlySyncBanner';
 import {RecordsTable} from './record_table';
 import {NotebookViewComponentProps, resolveTab} from './types';
@@ -25,43 +26,6 @@ export type ListOfFormsViewProps = NotebookViewComponentProps & {
   /** Claims for a plan every record the view creates. */
   planReference?: string;
 };
-
-interface TabPanelProps {
-  children?: React.ReactNode;
-  /** The tab slug this panel belongs to. */
-  tab: string;
-  /** The tab slug currently shown. */
-  value: string;
-}
-
-/**
- * TabPanel renders its children only while its tab is the one shown.
- */
-function TabPanel(props: TabPanelProps) {
-  const {children, value, tab, ...other} = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== tab}
-      id={`${tab}-tabpanel`}
-      aria-labelledby={`${tab}-tab`}
-      {...other}
-    >
-      {value === tab && <Box>{children}</Box>}
-    </div>
-  );
-}
-
-/**
- * a11yProps returns accessibility props for a tab, pairing it with its panel.
- */
-function a11yProps(tab: string) {
-  return {
-    id: `${tab}-tab`,
-    'aria-controls': `${tab}-tabpanel`,
-  };
-}
 
 /**
  * ListOfFormsView presents a set of forms for creating and browsing records:
