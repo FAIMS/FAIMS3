@@ -42,7 +42,10 @@ import {useMutation} from '@tanstack/react-query';
 import {useState} from 'react';
 import {config, CAPACITOR_PLATFORM} from '../../../buildconfig';
 import {useNotification} from '../../../context/popup';
-import {selectActiveUser} from '../../../context/slices/authSlice';
+import {
+  refreshToken,
+  selectActiveUser,
+} from '../../../context/slices/authSlice';
 import {
   initialiseProjects,
   Project,
@@ -117,6 +120,14 @@ export default function NoteBooks() {
   const doRefresh = useMutation({
     mutationFn: async () => {
       if (!activeUser) return;
+      // ensure refresh token is up to date to catch any new permissions
+      await dispatch(
+        refreshToken({
+          serverId: activeUser.serverId,
+          username: activeUser.username,
+        })
+      );
+
       await dispatch(initialiseProjects({serverId: activeUser.serverId}));
     },
     onSuccess: () => {
