@@ -46,6 +46,9 @@ export interface PreviewFormManagerProps extends ComponentProps<any> {
    * Called with the current values whenever they change, for a host that owns
    * the saving. This manager persists nothing itself, so without it the values
    * an operator enters go nowhere.
+   *
+   * Fires on every change, so the host owns the debounce. `EditableFormManager`
+   * holds its own writes back by `FORM_SYNC_DEBOUNCE_MS` for the same reason.
    */
   onValuesChange?: (values: FaimsFormData) => void;
 }
