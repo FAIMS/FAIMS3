@@ -1,9 +1,9 @@
 import {relatedLinkWrites} from '../src/databaseEngine/utils';
 
 const base = {
-  fieldId: 'Sample-Under-Test',
-  parentRecordId: 'tray-1',
-  targetRecordId: 'sample-1',
+  fieldId: 'Related-Item',
+  parentRecordId: 'parent-1',
+  targetRecordId: 'target-1',
   targetRelationship: undefined,
   isMultiple: false,
 };
@@ -16,14 +16,14 @@ describe('relatedLinkWrites', () => {
       currentFieldValue: undefined,
     });
     expect(fieldValue).toEqual({
-      record_id: 'sample-1',
+      record_id: 'target-1',
       relation_type_vocabPair: ['is linked to', 'is linked from'],
     });
     expect(relationship).toEqual({
       linked: [
         {
-          fieldId: 'Sample-Under-Test',
-          recordId: 'tray-1',
+          fieldId: 'Related-Item',
+          recordId: 'parent-1',
           relationTypeVocabPair: ['is linked to', 'is linked from'],
         },
       ],
@@ -42,7 +42,7 @@ describe('relatedLinkWrites', () => {
 
   it('appends while the field takes many, and replaces while it takes one', () => {
     const held = {
-      record_id: 'sample-0',
+      record_id: 'target-0',
       relation_type_vocabPair: ['is linked to', 'is linked from'] as [
         string,
         string,
@@ -62,7 +62,7 @@ describe('relatedLinkWrites', () => {
       currentFieldValue: [held],
     });
     expect(one.fieldValue).toEqual({
-      record_id: 'sample-1',
+      record_id: 'target-1',
       relation_type_vocabPair: ['is linked to', 'is linked from'],
     });
   });
