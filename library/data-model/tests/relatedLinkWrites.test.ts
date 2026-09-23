@@ -40,31 +40,34 @@ describe('relatedLinkWrites', () => {
     expect(relationship.linked).toBeUndefined();
   });
 
-  it('appends while the field takes many, and replaces while it takes one', () => {
-    const held = {
-      record_id: 'target-0',
-      relation_type_vocabPair: ['is linked to', 'is linked from'] as [
-        string,
-        string,
-      ],
-    };
-    const many = relatedLinkWrites({
+  const held = {
+    record_id: 'target-0',
+    relation_type_vocabPair: ['is linked to', 'is linked from'] as [
+      string,
+      string,
+    ],
+  };
+
+  it('appends while the field takes many', () => {
+    const {fieldValue} = relatedLinkWrites({
       ...base,
       isMultiple: true,
       relationType: 'faims-core::Linked',
       currentFieldValue: [held],
     });
-    expect(many.fieldValue).toHaveLength(2);
+    expect(fieldValue).toHaveLength(2);
+  });
 
-    const one = relatedLinkWrites({
-      ...base,
-      relationType: 'faims-core::Linked',
-      currentFieldValue: [held],
-    });
-    expect(one.fieldValue).toEqual({
-      record_id: 'target-1',
-      relation_type_vocabPair: ['is linked to', 'is linked from'],
-    });
+  it('refuses a second link on a field that takes one, rather than dropping the first', () => {
+    // Replacing would leave the old target's entry pointing back at a record
+    // that no longer names it. The engine refuses the same case on create.
+    expect(() =>
+      relatedLinkWrites({
+        ...base,
+        relationType: 'faims-core::Linked',
+        currentFieldValue: [held],
+      })
+    ).toThrow(/already holds a record and takes only one/);
   });
 
   it('keeps the edges the target already had', () => {

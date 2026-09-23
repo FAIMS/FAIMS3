@@ -95,6 +95,11 @@ export const withRelatedLink = ({
  * Pure, so the two callers that persist differently can still agree on what a
  * link means: a form field writes `fieldValue` through form state, while a
  * caller outside a form writes it through the engine.
+ *
+ * Throws when a field that takes one link already holds one, the way
+ * `DataEngine.createRelatedRecord` does. Replacing it instead would drop a link
+ * while leaving the old target's entry pointing back at this record, and a
+ * caller that means to replace can detach first.
  */
 export const relatedLinkWrites = ({
   fieldId,
@@ -127,6 +132,11 @@ export const relatedLinkWrites = ({
 } => {
   const relationTypeVocabPair = relationTypeToPair(relationType);
   const links = readRelatedLinks(currentFieldValue);
+  if (!isMultiple && links.length > 0) {
+    throw new Error(
+      `Field ${fieldId} already holds a record and takes only one`
+    );
+  }
   const link: RelatedRecordFieldAvpEntry = {
     record_id: targetRecordId,
     relation_type_vocabPair: relationTypeVocabPair,
