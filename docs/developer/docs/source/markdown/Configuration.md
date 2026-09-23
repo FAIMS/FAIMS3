@@ -54,7 +54,7 @@ The form graph uses **`uiSpec.fields`**, **`uiSpec.viewsets`**, and **`uiSpec.vi
 
 **When to use**: Behaviour that applies to one survey/template, is editable in the Designer, and should travel with JSON export/import belongs in **`uiSpecification`**. Survey title and optional short root description are updated via **`PUT /api/notebooks/:id`** (partial body) without replacing the whole design.
 
-**Backwards compatibility**: Upload and API bodies may still use legacy top-level `{ metadata, 'ui-specification' }`; the server migrates to the most recent notebook schema version before persistence. See [Notebook migrations](./NotebookMigrations.md).
+**Backwards compatibility**: Upload and API bodies may still use legacy top-level `{ metadata, 'ui-specification' }` or any pre-semver `schemaVersion`; the server collapses them to the current strict-semver notebook schema version (`MAJOR.MINOR.PATCH`, epoch `1.0.0`) before persistence. Forward compatibility in the app is tiered on `uiSpec.schemaVersion`: same major.minor with a different patch renders silently, a newer minor renders with a warning, a newer major is rejected and shown as a skeleton with a diagnostic report. See [Notebook migrations](./NotebookMigrations.md).
 
 ```mermaid
 graph TD
@@ -68,7 +68,7 @@ graph TD
 
 **When should this be used**: The notebook specification is a powerful form of configuration for the behaviour of a _specific_ notebook. When the behaviour to be configured applies to a) a specific notebook b) individual fields/forms/sections c) some notebooks but not all d) should be configurable by the user within a given deployment, then the notebook specification should be used.
 
-**Note: backwards compatibility**: Making a change to the notebook format should be done in a backwards compatible way if possible - existing functionality should work if the option is missing or has a previous version's implementation. Any change to the format will generally also require an update to the Designer to allow users to customise that option.
+**Note: backwards compatibility**: Making a change to the notebook format should be done in a backwards compatible way if possible - existing functionality should work if the option is missing or has a previous version's implementation. Every format change must bump `uiSpec.schemaVersion` and register a migration step in the harness (`notebookMigrations/registry.ts`): **patch** when older apps render the change correctly without noticing, **minor** when older apps can still render but should warn, **major** when older apps can no longer interpret the form graph. Any change to the format will generally also require an update to the Designer to allow users to customise that option.
 
 A user/developer can therefore change notebook behaviour in the following ways
 

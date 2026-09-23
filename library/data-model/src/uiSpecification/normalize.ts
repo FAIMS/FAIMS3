@@ -4,6 +4,9 @@ import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   getNotebookSchemaVersion,
   migrateNotebook,
+  NOTEBOOK_SCHEMA_LEGACY,
+  resolveNotebookSchemaMigrationStart,
+  type NotebookWithSchemaVersion,
 } from '../data_storage/migrations/notebookMigrations';
 import {
   NotebookDefinitionSchema,
@@ -18,31 +21,33 @@ import {
   safeValidatePlan,
   safeValidatePlanTemplate,
 } from '../plans';
+import {compareNotebookSchemaSemver} from './schemaVersion';
 
 export {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION};
-
-type NotebookSchemaVersionCarrier = {
-  metadata?: {schema_version?: string | null};
-  uiSpec?: {schemaVersion?: string | null};
-};
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /**
- * Whether {@link migrateNotebook} should run. Missing version is treated as v1
- * (same rule as the migration engine). Compares only to
- * {@link CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}.
+ * Whether {@link migrateNotebook} should run: true for any legacy (non strict
+ * semver) version and for strict versions **older** than
+ * {@link CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}. A version that is equal to or
+ * **newer** than current never needs migration — forward compatibility is
+ * decided by `assessNotebookSchemaCompatibility`, not by migrating.
  */
 export function notebookUiSpecificationNeedsMigration(
   raw: Record<string, unknown>
 ): boolean {
-  const version = getNotebookSchemaVersion(raw as NotebookSchemaVersionCarrier);
-  if (version === undefined || version === null) {
+  const start = resolveNotebookSchemaMigrationStart(
+    getNotebookSchemaVersion(raw as NotebookWithSchemaVersion)
+  );
+  if (start === NOTEBOOK_SCHEMA_LEGACY) {
     return true;
   }
-  return version !== CURRENT_NOTEBOOK_UI_SCHEMA_VERSION;
+  return (
+    compareNotebookSchemaSemver(start, CURRENT_NOTEBOOK_UI_SCHEMA_VERSION) < 0
+  );
 }
 
 /** Maximum serialized size (bytes) for an incoming ui-specification (design file). */
@@ -63,20 +68,19 @@ export type NotebookUiSpecificationInput = z.infer<
   typeof NotebookUiSpecificationInputSchema
 >;
 
-function formatZodIssues(error: ZodError): string {
+function formatZodIssues(
+  error: ZodError,
+  fallbackPath = 'uiSpecification'
+): string {
   return error.issues
     .map(issue => {
-      const path =
-        issue.path.length > 0 ? issue.path.join('.') : 'uiSpecification';
+      const path = issue.path.length > 0 ? issue.path.join('.') : fallbackPath;
       return `${path}: ${issue.message}`;
     })
     .join('; ');
 }
 
-function assertLatestSchemaVersion(notebook: NotebookDefinition): void {
-  const version = getNotebookSchemaVersion(
-    notebook as NotebookSchemaVersionCarrier
-  );
+function assertLatestSchemaVersion(version: unknown): void {
   if (version !== CURRENT_NOTEBOOK_UI_SCHEMA_VERSION) {
     throw new Error(
       `uiSpecification must use schema version ${CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} after migration (got ${version ?? 'none'})`
@@ -129,7 +133,7 @@ function normalizeUiSpecificationBundle<
     throw new Error(`Invalid ${label}: ${formatZodIssues(parsed.error)}`);
   }
 
-  assertLatestSchemaVersion(parsed.data as unknown as NotebookDefinition);
+  assertLatestSchemaVersion(parsed.data.uiSpec.schemaVersion);
 
   return parsed.data;
 }
@@ -262,15 +266,27 @@ export function parseNotebookDefinitionUpload(
   return {ok: true, uiSpecification: parsed.data};
 }
 
-/** User-facing message for API validation failures after normalize/migrate. */
+/**
+ * User-facing message for notebook validation / ingest failures.
+ *
+ * Write-path callers keep the default `Invalid uiSpecification:` prefix and
+ * `uiSpecification` fallback path. The read path (`ingestNotebookUiSpecification`)
+ * asks for issues only, with `uiSpec` as the empty-path label.
+ */
 export function notebookUiSpecificationValidationMessage(
-  error: unknown
+  error: unknown,
+  options?: {
+    fallbackPath?: string;
+    /** When true, return Zod issues without the `Invalid uiSpecification:` prefix. */
+    issuesOnly?: boolean;
+  }
 ): string {
   if (error instanceof ZodError) {
-    return `Invalid uiSpecification: ${formatZodIssues(error)}`;
+    const issues = formatZodIssues(error, options?.fallbackPath);
+    return options?.issuesOnly ? issues : `Invalid uiSpecification: ${issues}`;
   }
   if (error instanceof Error) {
     return error.message;
   }
-  return 'Invalid uiSpecification';
+  return options?.issuesOnly ? String(error) : 'Invalid uiSpecification';
 }

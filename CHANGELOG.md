@@ -5,7 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.6.3] - 2026-09-03
+## [1.7.2] - 2026-09-22
+
+### Changes
+
+- allow for undefined state.value in call to createRelatedRecord ([#2338](https://github.com/FAIMS/FAIMS3/pull/2338))
+
+## [1.7.1] - 2026-09-22
+
+### Changes
+
+- Fix/creating related records nuked existing ([#2335](https://github.com/FAIMS/FAIMS3/pull/2335))
+- Fix/record search fails with related record values ([#2333](https://github.com/FAIMS/FAIMS3/pull/2333))
+- fix: mobile app API CORS hotfix ([#2332](https://github.com/FAIMS/FAIMS3/pull/2332))
+- feat: add exponentiation operator ^ to computed expressions (#2323) ([#2326](https://github.com/FAIMS/FAIMS3/pull/2326))
+- fix: declare zod as peer of @hookform/resolvers so web builds ([#2325](https://github.com/FAIMS/FAIMS3/pull/2325))
+- v4 is still pointing to old packages, point it to right packages to i… ([#2324](https://github.com/FAIMS/FAIMS3/pull/2324))
+
+[1.6.3] - 2026-09-03
 
 ### Changes
 

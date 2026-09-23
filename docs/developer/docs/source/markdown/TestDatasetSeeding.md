@@ -13,7 +13,7 @@ dataset in the configured CouchDB instance. It is designed to support:
   to exercise the scenarios where a user's visibility of projects differs between
   the two teams they belong to.
 
-> **Idempotent seed.** Re-running the script restores the canonical Red/Blue
+> **Idempotent seed.** Re-running the script restores the canonical Red/Blue/Schema
 > teams, templates, notebooks, and seed personas (stable document IDs under
 > `team_seed_*` / `template_seed_*` / `notebook_seed_*`) to the intended state.
 > It only creates or updates those seed documents and personas — it does not
@@ -57,13 +57,16 @@ Standard CouchDB connection variables (`COUCHDB_INTERNAL_URL`,
 
 ### Teams
 
-Two teams are upserted (stable IDs `team_seed_red` / `team_seed_blue`), giving
-a Red/Blue axis for cross-team visibility tests.
+Three teams are upserted (stable IDs `team_seed_red` / `team_seed_blue` /
+`team_seed_schema`). Red/Blue give a cross-team visibility axis; the Schema
+team only owns the schema-compatibility fixtures below so they never appear in other
+personas' lists.
 
-| Internal alias | Document ID      | Name      | Purpose                                           |
-| -------------- | ---------------- | --------- | ------------------------------------------------- |
-| `redTeamId`    | `team_seed_red`  | Red Team  | Team where cross-team manager has elevated access |
-| `blueTeamId`   | `team_seed_blue` | Blue Team | Team where the same user has only member access   |
+| Internal alias | Document ID        | Name                      | Purpose                                            |
+| -------------- | ------------------ | ------------------------- | -------------------------------------------------- |
+| `redTeamId`    | `team_seed_red`    | Red Team                  | Team where cross-team manager has elevated access  |
+| `blueTeamId`   | `team_seed_blue`   | Blue Team                 | Team where the same user has only member access    |
+| `schemaTeamId` | `team_seed_schema` | Schema Compatibility Team | Owns notebooks stamped with future schema versions |
 
 ---
 
@@ -93,6 +96,23 @@ templates above.
 | ---------------- | -------------------- | --------- | ---------------------------------- |
 | `redNotebookId`  | `notebook_seed_red`  | Red Team  | `./notebooks/e2e-minimal.json`     |
 | `blueNotebookId` | `notebook_seed_blue` | Blue Team | `./notebooks/sample_notebook.json` |
+
+#### Future-schema fixtures (app fail-soft)
+
+Three extra notebooks copy the Red design and are owned by the Schema team
+(no template). Future major / minor are stamped, **after** normalisation,
+with a `uiSpec.schemaVersion` this build does not know and are written
+straight to CouchDB (the API's own validation would refuse them). Last-good
+stays at `CURRENT` so e2e can activate it, create a record, then stamp Couch
+to a newer major. The API's startup migration leaves newer-than-current
+designs untouched. Used by
+`e2e/test/specs/app/notebook-schema-compatibility.e2e.ts`.
+
+| Internal alias          | Document ID                  | `schemaVersion` (relative to `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`) | Expected app tier              |
+| ----------------------- | ---------------------------- | ------------------------------------------------------------------ | ------------------------------ |
+| `futureMajorNotebookId` | `notebook_seed_future_major` | next major (`X+1.0.0`)                                             | `incompatible`                 |
+| `futureMinorNotebookId` | `notebook_seed_future_minor` | next minor (`X.Y+1.0`)                                             | `degraded`                     |
+| `lastGoodNotebookId`    | `notebook_seed_last_good`    | current (`X.Y.Z`)                                                  | `compatible` (e2e then stamps) |
 
 ---
 
@@ -217,22 +237,40 @@ Blue Notebook and is not shown any other projects.
 
 ---
 
+#### seed-schema-tester@faims.test — Schema Compatibility Tester
+
+Contributor on the schema-compatibility fixture notebooks only; no team
+membership.
+
+| Scope                 | Role                  |
+| --------------------- | --------------------- |
+| Future major Notebook | `PROJECT_CONTRIBUTOR` |
+| Future minor Notebook | `PROJECT_CONTRIBUTOR` |
+| Last-good Notebook    | `PROJECT_CONTRIBUTOR` |
+
+**Test use:** App fail-soft behaviour — compatibility chips in the workspace
+list, incompatible skeleton with copyable diagnostic report and blocked record
+creation, degraded warning banner with record creation still available, and
+last-good retention (records stay listed after the server design jumps major).
+
+---
+
 ## Current Role Assignment Matrix
 
 The table below maps the roles currently assigned by the seed script to the
 seeded users.
 
-| Role                  | User(s)                                                 |
-| --------------------- | ------------------------------------------------------- |
-| `GENERAL_USER`        | All users (default)                                     |
-| `OPERATIONS_ADMIN`    | seed-admin                                              |
-| `TEMPLATE_ADMIN`      | seed-admin (Red)                                        |
-| `TEAM_MANAGER`        | seed-manager-blue (Blue), seed-manager-cross (Red)      |
-| `TEAM_MEMBER`         | seed-manager-cross (Blue), seed-member-both (Red, Blue) |
-| `TEAM_MEMBER_CREATOR` | seed-red-member-creator (Red)                           |
-| `PROJECT_ADMIN`       | seed-admin (Blue)                                       |
-| `PROJECT_CONTRIBUTOR` | seed-project-contributor (Red)                          |
-| `PROJECT_GUEST`       | seed-project-guest (Blue)                               |
+| Role                  | User(s)                                                                                    |
+| --------------------- | ------------------------------------------------------------------------------------------ |
+| `GENERAL_USER`        | All users (default)                                                                        |
+| `OPERATIONS_ADMIN`    | seed-admin                                                                                 |
+| `TEMPLATE_ADMIN`      | seed-admin (Red)                                                                           |
+| `TEAM_MANAGER`        | seed-manager-blue (Blue), seed-manager-cross (Red)                                         |
+| `TEAM_MEMBER`         | seed-manager-cross (Blue), seed-member-both (Red, Blue)                                    |
+| `TEAM_MEMBER_CREATOR` | seed-red-member-creator (Red)                                                              |
+| `PROJECT_ADMIN`       | seed-admin (Blue)                                                                          |
+| `PROJECT_CONTRIBUTOR` | seed-project-contributor (Red), seed-schema-tester (Future major, Future minor, Last-good) |
+| `PROJECT_GUEST`       | seed-project-guest (Blue)                                                                  |
 
 ---
 

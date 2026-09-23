@@ -1,6 +1,6 @@
 {
   "name": "@faims3/api",
-  "version": "1.7.0",
+  "version": "1.7.2",
   "private": true,
   "main": "build/src/index.js",
   "scripts": {
@@ -52,10 +52,10 @@
     "jose": "5.2.3",
     "markdown-it": "^14.1.1",
     "morgan": "^1.10.1",
-    "multer": "^2.2.0",
+    "multer": "^2.3.0",
     "nanoid": "^6.0.1",
     "node-cache": "^5.1.2",
-    "nodemailer": "^9.0.1",
+    "nodemailer": "^9.1.1",
     "oauth": "0.10.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "2.0.0",
@@ -112,7 +112,7 @@
     "supertest": "^7.1.4",
     "tsx": "^4.20.3",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.11"
   },
   "engines": {
     "node": "24"

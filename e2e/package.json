@@ -1,10 +1,11 @@
 {
   "name": "@faims3/e2e",
-  "version": "1.7.0",
+  "version": "1.7.2",
   "private": true,
   "type": "module",
   "scripts": {
     "lint": "oxlint -c ../.oxlintrc.json .",
+    "test": "tsx --test test/helpers/*.test.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit",
     "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt -c ../.oxfmtrc.json .",

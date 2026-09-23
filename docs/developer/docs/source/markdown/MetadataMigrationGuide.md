@@ -56,16 +56,15 @@ Attempt to coordinate step 1/2 below.
 
 The app behaviour is likely to be unstable or completely broken when the app is on v1.5.2 or prior while the backend is ahead, and vice versa.
 
+**Semver epoch.** This release replaces the linear `uiSpec.schemaVersion` sequence (`1.0` … `7.0`) with strict semantic versions starting at **`1.0.0`**, and adds a tiered compatibility check in the app (see [Notebook migrations](./NotebookMigrations.md)). This release:
+
+- Rewrites every pre-semver design (`legacy → 1.0.0`) on API startup and on read paths; there is no Couch DB version bump for it.
+- Requires **app and API to be released together**: an app built before the epoch treats `1.0.0` as an unknown version and fails to open notebooks. An app built at or after the epoch fails **soft** — a notebook whose design it cannot read is still listed, flagged, and its local records remain readable, but create/edit is blocked.
+- Persisted app state written by an older build is re-evaluated on every startup (`reassessSchemaCompatibility`), so an offline device that is upgraded or downgraded shows the correct compatibility tier without a network round-trip.
+
 1. **Deploy Conductor (API)** and **Control Centre (web)** together. The web designer and JSON upload paths expect the new API routes (`PUT …/uiSpecification`, partial `PUT …/:id` for name/description).
 2. **Release mobile app builds** that include this branch (or newer).
-3. Confirm environment for optional notebook re-migration on API boot (defaults **on**):
-
-   ```bash
-   MIGRATE_NOTEBOOKS_ON_STARTUP=true   # default when unset
-   ```
-
-   When `true`, each API startup runs `validateDatabases`, which migrates any project whose inlined `uiSpecification` is still below the current notebook schema version (see §5 below).
-
+3. Each API startup runs `validateDatabases`, which migrates any project whose inlined `uiSpecification` is still below the current notebook schema version (see §5 below).
 4. **Do not delete `metadata-*` Couch databases** until Couch document migration has completed and you have validated samples (see §3).
 
 ---
@@ -120,23 +119,24 @@ Templates: same for **`uiSpecification`**, plus `version`, `archived`, `isPublic
 
 Inside `uiSpecification`:
 
-| Path                                         | Expected                                                                                                 |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `uiSpec.schemaVersion`                       | Matches **`CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`**                                                         |
-| `uiSpec.views`                               | Object (decoded from legacy `fviews`; not `fviews` on persisted doc)                                     |
-| `uiSpec.settings.showQrCodeButton`           | **boolean**                                                                                              |
-| `metadata.information`                       | Object with `notebookVersion`, `purposeMarkdown`, `projectLeadLabel`, `leadInstitution` (camelCase keys) |
-| `metadata.information.derivedFromTemplateId` | Optional string when provenance existed                                                                  |
-| `metadata.custom`                            | Optional; only for unmapped legacy keys                                                                  |
+| Path                                         | Expected                                                                                                                 |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `uiSpec.schemaVersion`                       | Matches **`CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`** (`1.0.0`). Pre-semver values (`1.0`…`7.0`) are rewritten on API startup |
+| `uiSpec.views`                               | Object (decoded from legacy `fviews`; not `fviews` on persisted doc)                                                     |
+| `uiSpec.settings.showQrCodeButton`           | **boolean**                                                                                                              |
+| `metadata.information`                       | Object with `notebookVersion`, `purposeMarkdown`, `projectLeadLabel`, `leadInstitution` (camelCase keys)                 |
+| `metadata.information.derivedFromTemplateId` | Optional string when provenance existed                                                                                  |
+| `metadata.custom`                            | Optional; only for unmapped legacy keys                                                                                  |
 
 **Should not appear** on the persisted bundle: top-level legacy `metadata.name`, `metadata.schema_version`, `metadata.showQRCodeButton`, `metadata.pre_description`, `template_id` inside metadata, `project-metadata-*` docs (once metadata DBs are removed).
 
 ### 3.3 Mobile app
 
 1. Install the **new** app build.
-2. Open a migrated survey: first launch after upgrade runs **redux-persist migration** (`migrateProjectsPersistedState`) on cached project state, then syncs from API (`projectInformationFromGetNotebook` → `normalizeNotebookUiSpecification`).
+2. Open a migrated survey: first launch after upgrade runs **redux-persist migration** (`migrateProjectsPersistedState`) on cached project state, re-evaluates each cached design's compatibility against the installed build (`reassessSchemaCompatibility`), then syncs from API (`projectInformationFromGetNotebook` → `ingestNotebookUiSpecification`).
 3. Confirm forms render and notebook summary shows root `description` (when set) / design
    fields as expected.
+4. In the workspace list, no notebook should carry a **"Needs app update"** or **"Limited support"** chip. A chip means the app build is older than the design's `schemaVersion` (update the app) or the design failed migration/validation (open the notebook and use **Copy report** to capture the diagnostic; the same details are sent to Bugsnag). An `incompatible` notebook still lists its local records read-only; create/edit/delete are disabled until it can be loaded. First activation of a never-readable (newer-major) notebook is blocked; a newer-minor notebook warns on activate.
 
 ### 3.4 Metadata database cleanup dry-run
 
@@ -172,16 +172,16 @@ The current notebook schema version is applied by `migrateNotebook` (often wrapp
 
 ### Server — persists to Couch
 
-| Trigger                                      | Location                                                | Notes                                                                                    |
-| -------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| **POST** create survey (from scratch)        | `createNotebook` in `api/src/couchdb/notebooks.ts`      | Body `name`, optional `description` (max 250), `uiSpecification`; legacy wire accepted   |
-| **POST** create survey (from template)       | Copies `template.uiSpecification` only                  | Optional `description` on POST is **not** taken from the template                        |
-| **PUT** `/api/notebooks/:id/uiSpecification` | `updateProjectUiSpecification`                          | Designer save, full JSON replace                                                         |
-| **PUT** `/api/templates/:id/uiSpecification` | Template equivalent                                     |                                                                                          |
-| **POST** create template                     | `createTemplate`                                        | Body `name`, optional `description` (max 250), `uiSpecification`                         |
-| **Projects DB v3 → v4**                      | `projectsV3toV4Migration`                               | Reads metadata DB + `migrateNotebook`                                                    |
-| **Templates DB v4 → v5**                     | `templatesV4toV5Migration`                              | Same pattern for templates                                                               |
-| **API startup** (optional)                   | `validateDatabases` when `MIGRATE_NOTEBOOKS_ON_STARTUP` | Re-writes projects whose inlined spec version is still behind the current schema version |
+| Trigger                                      | Location                                           | Notes                                                                                                                                                                                                  |
+| -------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **POST** create survey (from scratch)        | `createNotebook` in `api/src/couchdb/notebooks.ts` | Body `name`, optional `description` (max 250), `uiSpecification`; legacy wire accepted                                                                                                                 |
+| **POST** create survey (from template)       | Copies `template.uiSpecification` only             | Optional `description` on POST is **not** taken from the template                                                                                                                                      |
+| **PUT** `/api/notebooks/:id/uiSpecification` | `updateProjectUiSpecification`                     | Designer save, full JSON replace                                                                                                                                                                       |
+| **PUT** `/api/templates/:id/uiSpecification` | Template equivalent                                |                                                                                                                                                                                                        |
+| **POST** create template                     | `createTemplate`                                   | Body `name`, optional `description` (max 250), `uiSpecification`                                                                                                                                       |
+| **Projects DB v3 → v4**                      | `projectsV3toV4Migration`                          | Reads metadata DB + `migrateNotebook`                                                                                                                                                                  |
+| **Templates DB v4 → v5**                     | `templatesV4toV5Migration`                         | Same pattern for templates                                                                                                                                                                             |
+| **API startup**                              | `validateDatabases`                                | Re-writes projects whose inlined spec version is still behind the current schema version (including every pre-semver `N.0` design). Designs **newer** than the API build are logged and left untouched |
 
 **Does not migrate on server:**
 
@@ -198,11 +198,14 @@ The current notebook schema version is applied by `migrateNotebook` (often wrapp
 
 ### Mobile app
 
-| Trigger                                   | Location                                        | Persists?                             |
-| ----------------------------------------- | ----------------------------------------------- | ------------------------------------- |
-| **First boot after upgrade**              | `migrateProjectsPersistedState` (redux-persist) | Local cache only                      |
-| **Fetch survey** from API                 | `projectInformationFromGetNotebook`             | Local state; server already canonical |
-| Legacy cached project (no `uiDefinition`) | `notebookDefinitionFromLegacyPersistedProject`  | Local                                 |
+| Trigger                                   | Location                                                                       | Persists?                             |
+| ----------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------- |
+| **First boot after upgrade**              | `migrateProjectsPersistedState` (redux-persist)                                | Local cache only                      |
+| **Every boot**                            | `reassessSchemaCompatibility` reducer (`initialize()` → before `compileSpecs`) | Local; re-tiers cached designs        |
+| **Fetch survey** from API                 | `projectInformationFromGetNotebook` → `ingestNotebookUiSpecification`          | Local state; server already canonical |
+| Legacy cached project (no `uiDefinition`) | `ingestLegacyPersistedProjectForStore`                                         | Local                                 |
+
+Every app-side path is **fail-soft**: a design the build cannot read is stored as a placeholder (or the last good design is kept) together with a `schemaCompatibility` record — `compatible`, `degraded` (newer minor: renders with a warning) or `incompatible` (newer major, failed migration or invalid: listed with a chip, records read-only, create/edit blocked). Nothing is dropped from the list and the app never hangs on a spinner.
 
 After server migration, apps **refresh** when users sync/open surveys; persisted Redux state is upgraded on rehydrate.
 

@@ -1,9 +1,9 @@
 {
   "name": "faims3",
-  "version": "1.7.0",
+  "version": "1.7.2",
   "description": "",
   "keywords": [],
-  "license": "ISC",
+  "license": "Apache-2.0",
   "author": "",
   "main": "index.js",
   "scripts": {

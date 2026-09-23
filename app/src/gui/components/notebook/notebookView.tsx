@@ -18,6 +18,10 @@ import DefaultNotebookView from './DefaultNotebookView';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
+import {
+  isNotebookDesignLocked,
+  isPlaceholderNotebookDefinition,
+} from '../../../context/slices/helpers/notebookDefinition';
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import * as ROUTES from '../../../constants/routes';
@@ -32,8 +36,13 @@ import CircularLoading from '../ui/circular_loading';
 import {getNotebookView, PlanChooser, resolvePlanViews} from './plans';
 import {recordsClaimedBy} from './plans/planViewRecords';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
-import {useCallback, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {Stack} from '@mui/material';
 import {config} from '../../../buildconfig';
+import {
+  NotebookSchemaDegradedAlert,
+  NotebookSchemaIncompatibleView,
+} from './NotebookSchemaCompatibility';
 import {useQueryClient} from '@tanstack/react-query';
 import {NotebookViewComponentProps} from './types';
 import {localGetDataDb} from '../../../utils/database';
@@ -62,18 +71,97 @@ type NotebookViewProps = {
  *
  */
 export function NotebookView({project}: NotebookViewProps) {
-  const {uiSpecificationId} = project;
+  const {uiSpecificationId, schemaCompatibility} = project;
   const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
-  if (!uiSpecification) {
-    return <CircularLoading label="Loading" />;
-  } else {
+  const compileError = compiledSpecService.getCompileError(uiSpecificationId);
+  const waitedForSpec = useDelayedFlag(SPEC_WAIT_MS, !uiSpecification);
+
+  // Tier: incompatible — the stored definition is either a placeholder or the
+  // last good design kept so local data is not trapped. With a usable last
+  // good design, render a read-only record list under the banner (create and
+  // edit are blocked via `isNotebookDesignLocked`); otherwise show the
+  // skeleton only.
+  if (schemaCompatibility?.tier === 'incompatible') {
+    const canBrowseLocalRecords =
+      !!uiSpecification &&
+      !compileError &&
+      !isPlaceholderNotebookDefinition(project.uiDefinition);
+    if (!canBrowseLocalRecords) {
+      return (
+        <NotebookSchemaIncompatibleView
+          project={project}
+          compatibility={schemaCompatibility}
+          extraReason={compileError}
+        />
+      );
+    }
     return (
+      <Stack spacing={2}>
+        <NotebookSchemaIncompatibleView
+          project={project}
+          compatibility={schemaCompatibility}
+          variant="header"
+        />
+        <NotebookViewWithSpec
+          project={project}
+          uiSpecification={uiSpecification}
+        />
+      </Stack>
+    );
+  }
+
+  if (!uiSpecification) {
+    // Compilation threw (recorded by the service) — fail soft immediately.
+    if (compileError) {
+      return (
+        <NotebookSchemaIncompatibleView
+          project={project}
+          compatibility={schemaCompatibility}
+          extraReason={`The ${config.notebookName} design could not be compiled: ${compileError}`}
+        />
+      );
+    }
+    // Briefly allow for hydration; then stop spinning forever and explain.
+    if (!waitedForSpec) {
+      return <CircularLoading label="Loading" />;
+    }
+    return (
+      <NotebookSchemaIncompatibleView
+        project={project}
+        compatibility={schemaCompatibility}
+        extraReason={`The ${config.notebookName} design is not available on this device. Refresh the ${config.notebookName} list and try again.`}
+      />
+    );
+  }
+
+  return (
+    <Stack spacing={2}>
+      {schemaCompatibility?.tier === 'degraded' && (
+        <NotebookSchemaDegradedAlert compatibility={schemaCompatibility} />
+      )}
       <NotebookViewWithSpec
         project={project}
         uiSpecification={uiSpecification}
       />
-    );
-  }
+    </Stack>
+  );
+}
+
+/** How long to show the spinner for a missing compiled spec before failing soft. */
+const SPEC_WAIT_MS = 2500;
+
+/** Becomes true `ms` after `active` turns on; resets when `active` is false. */
+function useDelayedFlag(ms: number, active: boolean): boolean {
+  const [flag, setFlag] = useState(false);
+  useEffect(() => {
+    if (!active) {
+      setFlag(false);
+      return;
+    }
+    const handle = setTimeout(() => setFlag(true), ms);
+    return () => clearTimeout(handle);
+  }, [ms, active]);
+  return flag;
 }
 
 /*
@@ -110,7 +198,10 @@ function NotebookViewWithSpec({
     useIsAuthorisedTo({
       action: Action.CREATE_PROJECT_RECORD,
       resourceId: project.projectId,
-    }) && project.status === ProjectStatus.OPEN;
+    }) &&
+    project.status === ProjectStatus.OPEN &&
+    // Never accept new data against a design this build cannot interpret.
+    !isNotebookDesignLocked(project);
 
   // Records on the server may still be downloading into the local database:
   // while true, a record's absence from the lists proves nothing.
