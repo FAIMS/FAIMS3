@@ -374,7 +374,6 @@ export const validateDatabases = async () => {
 
   try {
     logNotebookStartup('begin', {
-      migrateNotebooksOnStartup: config.migrateNotebooksOnStartup,
       targetSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
     });
 
@@ -388,52 +387,44 @@ export const validateDatabases = async () => {
     const projects = await getAllProjectsDirectory();
     logNotebookStartup('projects_loaded', {count: projects.length});
 
-    if (!config.migrateNotebooksOnStartup) {
-      logNotebookStartup('ui_spec_migration_skipped', {
-        reason: 'MIGRATE_NOTEBOOKS_ON_STARTUP=false',
-      });
-    }
-
     for (const project of projects) {
       const projectId = project._id;
       const projectName = project.name;
 
-      if (config.migrateNotebooksOnStartup) {
-        const raw = project.uiSpecification;
-        if (raw == null) {
-          uiSpecCounts.skipped_no_ui_spec++;
-          logNotebookStartup('ui_spec', {
-            outcome: 'skipped_no_ui_spec',
-            projectId,
-            projectName,
-          });
-        } else if (!isUiSpecificationObject(raw)) {
-          uiSpecCounts.skipped_invalid_ui_spec++;
-          logNotebookStartup('ui_spec', {
-            outcome: 'skipped_invalid_ui_spec',
-            projectId,
-            projectName,
-          });
-        } else if (notebookUiSpecificationNeedsMigration(raw)) {
-          const fromSchemaVersion = schemaVersionLabel(raw);
-          await updateProjectUiSpecification(projectId, raw);
-          uiSpecCounts.migrated++;
-          logNotebookStartup('ui_spec', {
-            outcome: 'migrated',
-            projectId,
-            projectName,
-            fromSchemaVersion,
-            toSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
-          });
-        } else {
-          uiSpecCounts.up_to_date++;
-          logNotebookStartup('ui_spec', {
-            outcome: 'up_to_date',
-            projectId,
-            projectName,
-            schemaVersion: schemaVersionLabel(raw),
-          });
-        }
+      const raw = project.uiSpecification;
+      if (raw == null) {
+        uiSpecCounts.skipped_no_ui_spec++;
+        logNotebookStartup('ui_spec', {
+          outcome: 'skipped_no_ui_spec',
+          projectId,
+          projectName,
+        });
+      } else if (!isUiSpecificationObject(raw)) {
+        uiSpecCounts.skipped_invalid_ui_spec++;
+        logNotebookStartup('ui_spec', {
+          outcome: 'skipped_invalid_ui_spec',
+          projectId,
+          projectName,
+        });
+      } else if (notebookUiSpecificationNeedsMigration(raw)) {
+        const fromSchemaVersion = schemaVersionLabel(raw);
+        await updateProjectUiSpecification(projectId, raw);
+        uiSpecCounts.migrated++;
+        logNotebookStartup('ui_spec', {
+          outcome: 'migrated',
+          projectId,
+          projectName,
+          fromSchemaVersion,
+          toSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+        });
+      } else {
+        uiSpecCounts.up_to_date++;
+        logNotebookStartup('ui_spec', {
+          outcome: 'up_to_date',
+          projectId,
+          projectName,
+          schemaVersion: schemaVersionLabel(raw),
+        });
       }
 
       await initialiseDataDb({
@@ -444,7 +435,6 @@ export const validateDatabases = async () => {
 
     logNotebookStartup('complete', {
       projects: projects.length,
-      migrateNotebooksOnStartup: config.migrateNotebooksOnStartup,
       uiSpecMigrated: uiSpecCounts.migrated,
       uiSpecUpToDate: uiSpecCounts.up_to_date,
       uiSpecSkippedNoUiSpec: uiSpecCounts.skipped_no_ui_spec,

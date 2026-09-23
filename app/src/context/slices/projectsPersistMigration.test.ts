@@ -141,6 +141,82 @@ describe('migrateProjectsPersistedState', () => {
       again.servers[serverId]!.projects[projectId]!.uiDefinition.uiSpec
         .schemaVersion
     ).toBe(CURRENT_NOTEBOOK_UI_SCHEMA_VERSION);
+    expect(
+      again.servers[serverId]!.projects[projectId]!.schemaCompatibility?.tier
+    ).toBe('compatible');
+  });
+
+  it('keeps (does not drop) a project whose design this build cannot read', () => {
+    const serverId = 's1';
+    const server = {
+      serverId,
+      serverUrl: 'https://x.test',
+      serverTitle: 'X',
+      shortCodePrefix: 'X',
+      description: '',
+    };
+    const [major] = CURRENT_NOTEBOOK_UI_SCHEMA_VERSION.split('.').map(Number);
+    const state = {
+      isInitialised: true,
+      servers: {
+        [serverId]: {
+          ...server,
+          projects: {
+            // uiDefinition at a newer major than this build understands
+            newer: {
+              projectId: 'newer',
+              serverId,
+              name: 'Newer',
+              isActivated: true,
+              status: ProjectStatus.OPEN,
+              uiSpecificationId: buildCompiledSpecId({
+                projectId: 'newer',
+                serverId,
+              }),
+              uiDefinition: {
+                uiSpec: {
+                  fields: {},
+                  views: {},
+                  viewsets: {},
+                  visible_types: [],
+                  settings: {showQrCodeButton: false},
+                  schemaVersion: `${major + 1}.0.0`,
+                },
+                metadata: {information: {}},
+              },
+            },
+            // legacy fields that fail the collapse migration
+            broken: {
+              projectId: 'broken',
+              serverId,
+              name: 'Broken',
+              isActivated: true,
+              status: ProjectStatus.OPEN,
+              uiSpecificationId: buildCompiledSpecId({
+                projectId: 'broken',
+                serverId,
+              }),
+              metadata: {schema_version: '3.0'},
+              rawUiSpecification: {
+                fields: {bad: 'nope'},
+                views: {},
+                viewsets: {},
+                visible_types: [],
+              },
+            },
+          },
+        },
+      },
+    };
+
+    const migrated = migrateProjectsPersistedState(state);
+    const projects = migrated.servers[serverId]!.projects;
+    expect(Object.keys(projects).sort()).toEqual(['broken', 'newer']);
+    expect(projects.newer!.schemaCompatibility?.tier).toBe('incompatible');
+    expect(projects.newer!.schemaCompatibility?.relation).toBe('newer-major');
+    expect(projects.newer!.isActivated).toBe(true);
+    expect(projects.broken!.schemaCompatibility?.tier).toBe('incompatible');
+    expect(projects.broken!.uiDefinition.uiSpec.fields).toEqual({});
   });
 });
 

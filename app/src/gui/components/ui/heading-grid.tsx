@@ -15,6 +15,7 @@ import {
   NOT_ACTIVATED_LABEL,
   notebookListDataGridSx,
 } from '../workspace/notebooks';
+import {isNotebookActivationBlocked} from '../../../context/slices/helpers/notebookDefinition';
 import {Project} from '../../../context/slices/projectSlice';
 import {sortProjectsByNewest} from '../../../lib/notebookListDisplay';
 
@@ -48,11 +49,13 @@ export default function HeadingProjectGrid({
   const history = useNavigate();
 
   const handleRowClick: GridEventListener<'rowClick'> = ({
-    row: {isActivated, projectId},
+    row,
   }: {
     row: Project;
   }) => {
-    if (isActivated) history(ROUTES.getNotebookRoute({serverId, projectId}));
+    if (row.isActivated || isNotebookActivationBlocked(row)) {
+      history(ROUTES.getNotebookRoute({serverId, projectId: row.projectId}));
+    }
   };
 
   // we need a state variable to track pagination model since we want to use a

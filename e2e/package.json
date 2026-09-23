@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "lint": "oxlint -c ../.oxlintrc.json .",
+    "test": "tsx --test test/helpers/*.test.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit",
     "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt -c ../.oxfmtrc.json .",

@@ -156,7 +156,7 @@ const TemplateActions = () => {
                 ) : (
                   <Button
                     variant="outline"
-                    disabled={isLoading}
+                    disabled={isLoading || !initialNotebook}
                     onClick={() => setEditorOpen(true)}
                   >
                     Open in Editor
