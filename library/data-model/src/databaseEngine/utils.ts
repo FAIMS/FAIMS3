@@ -1,6 +1,7 @@
 import {
   relatedRecordAvpEntries,
   relatedRecordFieldAvpValueSchema,
+  type FormRelationship,
   type FormRelationshipInstance,
   type RelatedRecordFieldAvpEntry,
   type RelatedRecordFieldAvpValue,
@@ -82,3 +83,73 @@ export const withRelatedLink = ({
   link: RelatedRecordFieldAvpEntry;
   isMultiple: boolean;
 }): RelatedRecordFieldAvpValue => (isMultiple ? [...links, link] : link);
+
+/**
+ * Both halves of linking an existing record through a related-record field.
+ *
+ * A link is two writes, not one: the field's own value gains the target, and
+ * the target's revision gains the entry pointing back. Miss the second and the
+ * link reads correctly from the field while the target cannot see what points
+ * at it, which is the direction a roll-up has to travel.
+ *
+ * Pure, so the two callers that persist differently can still agree on what a
+ * link means: a form field writes `fieldValue` through form state, while a
+ * caller outside a form writes it through the engine.
+ */
+export const relatedLinkWrites = ({
+  fieldId,
+  relationType,
+  parentRecordId,
+  targetRecordId,
+  currentFieldValue,
+  targetRelationship,
+  isMultiple,
+}: {
+  /** The related-record field on the parent doing the linking. */
+  fieldId: string;
+  /** The field's `relation_type`; Child hangs the target off `parent`. */
+  relationType: string;
+  /** The record whose field gains the link. */
+  parentRecordId: string;
+  /** The existing record being linked to. */
+  targetRecordId: string;
+  /** What the field holds now, straight off the revision. */
+  currentFieldValue: unknown;
+  /** The target revision's relationship, so existing edges survive. */
+  targetRelationship: FormRelationship | undefined;
+  /** Whether the field takes more than one link. */
+  isMultiple: boolean;
+}): {
+  /** What the parent's field must hold now. */
+  fieldValue: RelatedRecordFieldAvpValue;
+  /** What the target's revision relationship must hold now. */
+  relationship: FormRelationship;
+} => {
+  const relationTypeVocabPair = relationTypeToPair(relationType);
+  const links = readRelatedLinks(currentFieldValue);
+  const link: RelatedRecordFieldAvpEntry = {
+    record_id: targetRecordId,
+    relation_type_vocabPair: relationTypeVocabPair,
+  };
+  const edge: FormRelationshipInstance = {
+    fieldId,
+    recordId: parentRecordId,
+    relationTypeVocabPair,
+  };
+  // Child hangs the target off `parent`, every other relation off `linked`,
+  // matching what the engine does when it creates one rather than links it.
+  const relationship: FormRelationship =
+    relationType === 'faims-core::Child'
+      ? {
+          ...targetRelationship,
+          parent: [...(targetRelationship?.parent ?? []), edge],
+        }
+      : {
+          ...targetRelationship,
+          linked: [...(targetRelationship?.linked ?? []), edge],
+        };
+  return {
+    fieldValue: withRelatedLink({links, link, isMultiple}),
+    relationship,
+  };
+};

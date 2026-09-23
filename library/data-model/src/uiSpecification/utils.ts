@@ -436,6 +436,37 @@ export function visibleFieldSet(
 }
 
 /**
+ * Narrows a visibility map to the sections and fields a caller asked for, for
+ * a screen that hosts part of a form rather than the whole of it.
+ *
+ * The result is the intersection, so a restriction can only ever hide more.
+ * A caller cannot show a section the conditions hid, or a field a condition
+ * removed, which is what keeps a hosted form honest: the notebook's own rules
+ * still decide what may appear, and the host decides only what of that it has
+ * room for.
+ *
+ * A section left out of `restrictTo` is dropped, and so is one whose fields all
+ * fall away, because a heading with nothing under it reads as a section that
+ * failed to load.
+ */
+export function restrictVisibilityMap({
+  visibilityMap,
+  restrictTo,
+}: {
+  visibilityMap: FieldVisibilityMap;
+  restrictTo: FieldVisibilityMap;
+}): FieldVisibilityMap {
+  const restricted: FieldVisibilityMap = {};
+  for (const [section, fields] of Object.entries(visibilityMap)) {
+    const allowed = restrictTo[section];
+    if (allowed === undefined) continue;
+    const kept = fields.filter(field => allowed.includes(field));
+    if (kept.length > 0) restricted[section] = kept;
+  }
+  return restricted;
+}
+
+/**
  * For the given ui spec, viewset and current form values, considers conditional
  * rendering, visibility etc to provide a set of visible views and fields
  * @returns  Record mapping view -> fields (only includes view if visible)

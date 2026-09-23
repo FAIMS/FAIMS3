@@ -2,6 +2,7 @@ import {
   AvpUpdateMode,
   attachmentSaveTrace,
   currentlyVisibleMap,
+  restrictVisibilityMap,
   FormDataEntry,
   getFormLabel,
   getRelatedRecordFields,
@@ -99,6 +100,13 @@ export interface EditableFormManagerProps {
   onReady?: (handle: EditableFormManagerHandle) => void;
   /** Insertable heading slot */
   headingSlot?: React.ReactNode;
+  /**
+   * Show only these sections and fields, for a screen hosting part of a form
+   * rather than the whole of it. Intersected with what the notebook's own
+   * conditions allow, so this can only ever hide more, never reveal. Absent
+   * means the whole form, which is the ordinary record screen.
+   */
+  restrictTo?: FieldVisibilityMap;
   /** Enable debug logging for save operations */
   debugMode?: boolean;
 }
@@ -171,15 +179,29 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   // Visibility Tracking
   // ---------------------------------------------------------------------------
-  const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(
-    currentlyVisibleMap({
-      values: buildConditionValues({
-        values: formDataExtractor({fullData: props.initialData ?? {}}),
-        context: buildContext(),
-      }),
-      uiSpec: dataEngine.uiSpec,
-      viewsetId: props.formId,
-    })
+  // Restricted where it is computed rather than where it is read, so the one
+  // stored map is what renders, what the progress counts and what the finish
+  // guard checks. A host showing one section is not asking to be told about
+  // required fields it is not showing.
+  const restrictIfAsked = useCallback(
+    (visibilityMap: FieldVisibilityMap): FieldVisibilityMap =>
+      props.restrictTo === undefined
+        ? visibilityMap
+        : restrictVisibilityMap({visibilityMap, restrictTo: props.restrictTo}),
+    [props.restrictTo]
+  );
+
+  const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(() =>
+    restrictIfAsked(
+      currentlyVisibleMap({
+        values: buildConditionValues({
+          values: formDataExtractor({fullData: props.initialData ?? {}}),
+          context: buildContext(),
+        }),
+        uiSpec: dataEngine.uiSpec,
+        viewsetId: props.formId,
+      })
+    )
   );
 
   const validationSchema = useRef<CompiledFormSchema>(
@@ -260,16 +282,18 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   const updateVisibility = useCallback(() => {
     setVisibleMap(
-      currentlyVisibleMap({
-        values: buildConditionValues({
-          values: formDataExtractor({fullData: form.state.values}),
-          context: buildContext(),
-        }),
-        uiSpec: dataEngine.uiSpec,
-        viewsetId: props.formId,
-      })
+      restrictIfAsked(
+        currentlyVisibleMap({
+          values: buildConditionValues({
+            values: formDataExtractor({fullData: form.state.values}),
+            context: buildContext(),
+          }),
+          uiSpec: dataEngine.uiSpec,
+          viewsetId: props.formId,
+        })
+      )
     );
-  }, [dataEngine.uiSpec, props.formId, buildContext]);
+  }, [dataEngine.uiSpec, props.formId, buildContext, restrictIfAsked]);
 
   const debouncedUpdateVisibility = useMemo(
     () => debounce(updateVisibility, VISIBILITY_DEBOUNCE_MS),

@@ -4,10 +4,11 @@ import {
   compileUiSpecConditionals,
   currentlyVisibleMap,
   RecordContext,
+  restrictVisibilityMap,
 } from '@faims3/data-model';
 import {useForm} from '@tanstack/react-form';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ComponentProps, useEffect, useMemo, useState} from 'react';
+import {ComponentProps, useCallback, useEffect, useMemo, useState} from 'react';
 import {formDataExtractor} from '../../utils';
 import {FaimsFormData} from '../types';
 import {FieldVisibilityMap} from './types';
@@ -35,14 +36,29 @@ export interface PreviewFormManagerProps extends ComponentProps<any> {
   previewSectionId?: string;
   /** The notebook's custom metadata, so _METADATA.<key> references work in preview */
   metadataValues?: Record<string, string>;
+  /**
+   * Show only these sections and fields, for a screen hosting part of a form
+   * rather than the whole of it. Intersected with what the notebook's own
+   * conditions allow, so this can only ever hide more, never reveal.
+   */
+  restrictTo?: FieldVisibilityMap;
+  /**
+   * Called with the current values whenever they change, for a host that owns
+   * the saving. This manager persists nothing itself, so without it the values
+   * an operator enters go nowhere.
+   */
+  onValuesChange?: (values: FaimsFormData) => void;
 }
 
 /**
- * PreviewFormManager - A simplified form manager for previewing forms.
+ * PreviewFormManager - A simplified form manager that renders a form without
+ * owning its data.
  *
- * Used in contexts like the form designer where we want to show how a form
- * will look and behave, but without backend integration or data persistence.
- * Uses mock/test data for demonstration purposes.
+ * Real fields with real conditions, templated strings and computed values, but
+ * no data engine, no navigation and nothing written. Two callers want that:
+ * the designer, showing how a form will look and behave, and a screen hosting
+ * part of a form, which narrows what renders with `restrictTo` and takes the
+ * values back through `onValuesChange` to save them itself.
  */
 export const PreviewFormManager = (props: PreviewFormManagerProps) => {
   const formValues =
@@ -64,15 +80,26 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
     [props.metadataValues]
   );
 
-  const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(
-    currentlyVisibleMap({
-      values: buildConditionValues({
-        values: formDataExtractor({fullData: formValues}),
-        context: previewContext,
-      }),
-      uiSpec: uiSpec,
-      viewsetId: props.formName,
-    })
+  // Restricted where it is computed, so the one stored map is what renders.
+  const restrictIfAsked = useCallback(
+    (visibilityMap: FieldVisibilityMap): FieldVisibilityMap =>
+      props.restrictTo === undefined
+        ? visibilityMap
+        : restrictVisibilityMap({visibilityMap, restrictTo: props.restrictTo}),
+    [props.restrictTo]
+  );
+
+  const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(() =>
+    restrictIfAsked(
+      currentlyVisibleMap({
+        values: buildConditionValues({
+          values: formDataExtractor({fullData: formValues}),
+          context: previewContext,
+        }),
+        uiSpec: uiSpec,
+        viewsetId: props.formName,
+      })
+    )
   );
 
   // Initialize form with mock data and simple logging
@@ -84,6 +111,7 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
     listeners: {
       onChange: () => {
         logInfo('Form values changed:', form.state.values);
+        props.onValuesChange?.(form.state.values);
         // Recompute computed fields first so templated strings read fresh values
         onChangeComputedFields({
           form,
@@ -104,14 +132,16 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
 
         // Updating visibility
         setVisibleMap(
-          currentlyVisibleMap({
-            values: buildConditionValues({
-              values: formDataExtractor({fullData: form.state.values}),
-              context: previewContext,
-            }),
-            uiSpec: uiSpec,
-            viewsetId: props.formName,
-          })
+          restrictIfAsked(
+            currentlyVisibleMap({
+              values: buildConditionValues({
+                values: formDataExtractor({fullData: form.state.values}),
+                context: previewContext,
+              }),
+              uiSpec: uiSpec,
+              viewsetId: props.formName,
+            })
+          )
         );
       },
     },
@@ -120,16 +150,18 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
   // Whenever the uiSpec, formName or metadata changes, recompute the visible fields
   useEffect(() => {
     setVisibleMap(
-      currentlyVisibleMap({
-        values: buildConditionValues({
-          values: formDataExtractor({fullData: form.state.values}),
-          context: previewContext,
-        }),
-        uiSpec: uiSpec,
-        viewsetId: props.formName,
-      })
+      restrictIfAsked(
+        currentlyVisibleMap({
+          values: buildConditionValues({
+            values: formDataExtractor({fullData: form.state.values}),
+            context: previewContext,
+          }),
+          uiSpec: uiSpec,
+          viewsetId: props.formName,
+        })
+      )
     );
-  }, [props.uiSpec, props.formName, previewContext]);
+  }, [props.uiSpec, props.formName, previewContext, restrictIfAsked]);
 
   // Preview mode config (no backend integration)
   const config: PreviewFormConfig = {

@@ -1,11 +1,9 @@
 import {
   canDeleteProjectRecord,
   canEditProjectRecord,
-  FormRelationship,
-  FormRelationshipInstance,
   HydratedRecord,
+  relatedLinkWrites,
   relatedRecordAvpEntries,
-  relationTypeToPair,
 } from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
@@ -598,33 +596,22 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
   });
 
   const handleLinkExisting = async (record: HydratedRecord) => {
-    // Local field value lists the chosen record; we also patch the target’s
-    // revision so the graph is consistent.
-    props.setFieldData([
-      ...normalizedLinks,
-      {
-        record_id: record.record._id,
-        relation_type_vocabPair: relationTypeToPair(props.relation_type),
-      },
-    ] satisfies RelatedFieldValue);
-
-    // Build the reciprocal relationship entry for the target record
-    const relation: FormRelationshipInstance = {
+    // Both halves come from one place, so a caller outside a form derives the
+    // same link this field does.
+    const {fieldValue, relationship} = relatedLinkWrites({
       fieldId: props.fieldId,
-      recordId: props.config.recordId,
-      relationTypeVocabPair: relationTypeToPair(props.relation_type),
-    };
+      relationType: props.relation_type,
+      parentRecordId: props.config.recordId,
+      targetRecordId: record.record._id,
+      currentFieldValue: normalizedLinks,
+      targetRelationship: record.revision.relationship,
+      // Matches how detaching writes it back: an array while the field takes
+      // many, a bare entry while it takes one.
+      isMultiple: props.multiple,
+    });
 
-    // Merge with existing relationships on the target record
-    // Child relations go in 'parent' (the child points to its parent)
-    // Other relations go in 'linked'
-    const existing = record.revision.relationship;
-    const relationship: FormRelationship =
-      props.relation_type === 'faims-core::Child'
-        ? {...existing, parent: [...(existing?.parent ?? []), relation]}
-        : {...existing, linked: [...(existing?.linked ?? []), relation]};
-
-    // Persist the updated relationship on the target record's revision
+    // The field value is form state; the target's revision is not.
+    props.setFieldData(fieldValue as RelatedFieldValue);
     await props.config.dataEngine().hydrated.updateRevision(
       {
         ...record.revision,
