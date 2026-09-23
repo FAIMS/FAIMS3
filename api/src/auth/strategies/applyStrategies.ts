@@ -7,7 +7,6 @@ import {samlStrategyGenerator} from './samlStrategy';
 import {
   AuthProviderConfig,
   AuthProviderConfigMap,
-  AuthProviderConfigMapSchema,
   AuthProviderSchema,
   BaseAuthProviderConfig,
   GoogleAuthProviderConfig,
@@ -106,15 +105,19 @@ export const readAuthProviderConfigFromEnv =
       }
     });
 
-    const parsed = AuthProviderConfigMapSchema.safeParse(config);
-    if (!parsed.success) {
-      console.error(
-        'Error parsing auth provider config from env: ',
-        JSON.stringify(parsed.error.format(), null, 2)
-      );
-      return null;
-    }
-    return parsed.success ? parsed.data : null;
+    const parsedProviders: AuthProviderConfigMap = {};
+    Object.entries(config).forEach(([providerId, provider]) => {
+      const parsed = AuthProviderSchema.safeParse(provider);
+      if (!parsed.success) {
+        console.error(
+          `Error parsing auth provider config from env for '${providerId}': `,
+          JSON.stringify(parsed.error.format(), null, 2)
+        );
+        return;
+      }
+      parsedProviders[providerId] = parsed.data;
+    });
+    return parsedProviders;
   };
 
 // read once and store the result

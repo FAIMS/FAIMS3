@@ -249,7 +249,7 @@ describe('readAuthProviderConfigFromEnv', () => {
     expect(vg.skipRequestCompression).toBe(true);
   });
 
-  it('should return null and log errors when validation fails', () => {
+  it('should return {} and log errors when a lone provider fails validation', () => {
     // Missing required fields
     process.env.AUTH_TEST_TYPE = 'unknown-type'; // invalid type
     process.env.AUTH_TEST_DISPLAY_NAME = 'Test Provider';
@@ -261,7 +261,68 @@ describe('readAuthProviderConfigFromEnv', () => {
 
     const result = readAuthProviderConfigFromEnv();
 
-    expect(result).toBeNull();
+    expect(result).toEqual({});
+    expect(
+      consoleErrorSpy.mock.calls.some(
+        call =>
+          typeof call[0] === 'string' &&
+          /Error parsing auth provider config from env/.test(call[0])
+      )
+    ).toBe(true);
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('keeps a valid provider when a sibling provider fails validation', () => {
+    process.env.AUTH_GOOGLE_TYPE = 'google';
+    process.env.AUTH_GOOGLE_DISPLAY_NAME = 'Google';
+    process.env.AUTH_GOOGLE_CLIENT_ID = 'google-client-id';
+    process.env.AUTH_GOOGLE_CLIENT_SECRET = 'google-client-secret';
+    process.env.AUTH_GOOGLE_SCOPE = 'profile,email';
+
+    process.env.AUTH_TEST_TYPE = 'unknown-type';
+    process.env.AUTH_TEST_DISPLAY_NAME = 'Test Provider';
+
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+
+    const result = readAuthProviderConfigFromEnv();
+
+    expect(result).not.toBeNull();
+    expect(result).toHaveProperty('google');
+    expect(result).not.toHaveProperty('test');
+    expect(
+      consoleErrorSpy.mock.calls.some(
+        call =>
+          typeof call[0] === 'string' &&
+          /Error parsing auth provider config from env/.test(call[0])
+      )
+    ).toBe(true);
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('does not drop valid providers when leftover AUTH_ATTEMPT_LIMITER_ENABLED is present', () => {
+    process.env.AUTH_GOOGLE_TYPE = 'google';
+    process.env.AUTH_GOOGLE_DISPLAY_NAME = 'Google';
+    process.env.AUTH_GOOGLE_CLIENT_ID = 'google-client-id';
+    process.env.AUTH_GOOGLE_CLIENT_SECRET = 'google-client-secret';
+    process.env.AUTH_GOOGLE_SCOPE = 'profile,email';
+    // Old env name still matches AUTH_{PROVIDER}_{PROPERTY} and would
+    // previously fail the whole map. A leftover local .env must not
+    // wipe configured providers.
+    process.env.AUTH_ATTEMPT_LIMITER_ENABLED = 'false';
+
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+
+    const result = readAuthProviderConfigFromEnv();
+
+    expect(result).not.toBeNull();
+    expect(result).toHaveProperty('google');
+    expect(result).not.toHaveProperty('attempt');
     expect(
       consoleErrorSpy.mock.calls.some(
         call =>
