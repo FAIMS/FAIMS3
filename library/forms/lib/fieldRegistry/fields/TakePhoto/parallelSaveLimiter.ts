@@ -1,17 +1,3 @@
-// Copyright 2026 FAIMS Project
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 /**
  * Max concurrent PouchDB photo writes. Camera and gallery stay available
  * while below this so more shots can be added during "Saving...".
@@ -19,8 +5,10 @@
 export const MAX_PARALLEL_SAVES = 5;
 
 /**
- * Flip to `true` to hold each photo on "Saving..." for 10s before the
- * PouchDB write. Device-only testing aid — leave false in commits.
+ * Set to `true` locally to force a slow-phone save. Each photo stays on
+ * "Saving..." for 10s before the PouchDB write, so you can exercise the
+ * parallel-save UX (camera still usable, cap of 5, section nav blocked)
+ * without a slow device. Keep this `false` in commits.
  */
 export const DEBUG_SLOW_PHOTOS = false;
 const DEBUG_SLOW_PHOTOS_MS = 10_000;

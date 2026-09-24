@@ -1143,6 +1143,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         format,
       });
 
+      // No-op unless DEBUG_SLOW_PHOTOS is on, which stalls here to mimic a slow phone.
       await delayIfSlowPhotosDebug();
 
       let newId: string;
