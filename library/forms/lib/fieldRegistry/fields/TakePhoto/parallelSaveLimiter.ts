@@ -19,6 +19,20 @@
 export const MAX_PARALLEL_SAVES = 5;
 
 /**
+ * Flip to `true` to hold each photo on "Saving..." for 10s before the
+ * PouchDB write. Device-only testing aid — leave false in commits.
+ */
+export const DEBUG_SLOW_PHOTOS = true;
+const DEBUG_SLOW_PHOTOS_MS = 10_000;
+
+export const delayIfSlowPhotosDebug = async (): Promise<void> => {
+  if (!DEBUG_SLOW_PHOTOS) return;
+  await new Promise<void>(resolve => {
+    setTimeout(resolve, DEBUG_SLOW_PHOTOS_MS);
+  });
+};
+
+/**
  * Limits how many async jobs run at once. `acquire()` grants immediately
  * when a slot is free (the increment happens inside the Promise executor,
  * before the caller `await`s), otherwise the caller waits in FIFO order.

@@ -29,6 +29,7 @@ import {
 import {FaimsForm} from '../types';
 import {getFieldId} from '../utils';
 import {FormSection} from './FormSection';
+import {collectDisplayedFieldErrors} from './sectionErrors';
 
 // ============================================================================
 // Constants
@@ -701,6 +702,8 @@ interface TabbedSectionDisplayProps {
  * **Field Validation Behaviour**:
  * - When leaving a section, all fields in that section are marked as touched
  * - This triggers validation display for any incomplete required fields
+ * - Errors for visited sections are kept after unmount so the summary still
+ *   prompts the user to go back (including an untouched required TakePhoto)
  * - Visited sections without errors display with the "completed" colour
  */
 export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
@@ -719,19 +722,22 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
 
   // Subscribe to field metadata to track validation errors and touched state
   const fieldMeta = useStore(form.store, state => state.fieldMeta);
+  const formValues = useStore(form.store, state => state.values);
 
-  // Build errors map from field metadata
-  const errors: Record<string, string[]> = useMemo(() => {
-    const errorMap: Record<string, string[]> = {};
-
-    for (const [fieldName, meta] of Object.entries(fieldMeta)) {
-      if (meta && meta.errors.length > 0) {
-        errorMap[fieldName] = meta.errors as string[];
-      }
-    }
-
-    return errorMap;
-  }, [fieldMeta]);
+  // Live fieldMeta errors plus re-validated errors for unmounted / untouched
+  // required fields in a section the user has already started.
+  const errors: Record<string, string[]> = useMemo(
+    () =>
+      collectDisplayedFieldErrors({
+        fieldMeta,
+        formValues,
+        uiSpec: spec,
+        formId,
+        visibilityMap: fieldVisibilityMap,
+        sections,
+      }),
+    [fieldMeta, formValues, spec, formId, fieldVisibilityMap, sections]
+  );
 
   // Filter sections to only those that are visible based on the visibility map
   let visibleSections = [];
@@ -867,6 +873,13 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
     // Trigger form-wide validation
     form.validate('change');
   }, [form, spec, activeSection, fieldMeta]);
+
+  // Re-run validation after the previous section unmounts. TanStack Form
+  // clears field errors on unmount but keeps isTouched, so this restores
+  // the "go back" summary for required fields left empty in earlier sections.
+  useEffect(() => {
+    form.validate('change');
+  }, [activeSection, form]);
 
   /**
    * Handles navigation to a specific field, potentially in another section.

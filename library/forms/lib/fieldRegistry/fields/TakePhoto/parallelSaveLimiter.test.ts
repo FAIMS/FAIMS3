@@ -15,6 +15,8 @@
 import {describe, expect, it} from 'vitest';
 import {
   createConcurrencyLimiter,
+  DEBUG_SLOW_PHOTOS,
+  delayIfSlowPhotosDebug,
   MAX_PARALLEL_SAVES,
 } from './parallelSaveLimiter';
 
@@ -72,5 +74,17 @@ describe('createConcurrencyLimiter', () => {
     await Promise.all(jobs);
     expect(maxRunning).toBe(MAX_PARALLEL_SAVES);
     expect(limiter.active).toBe(0);
+  });
+});
+
+describe('DEBUG_SLOW_PHOTOS', () => {
+  it('is off by default so device builds are not delayed', () => {
+    expect(DEBUG_SLOW_PHOTOS).toBe(false);
+  });
+
+  it('resolves immediately when the debug flag is off', async () => {
+    const started = Date.now();
+    await delayIfSlowPhotosDebug();
+    expect(Date.now() - started).toBeLessThan(50);
   });
 });

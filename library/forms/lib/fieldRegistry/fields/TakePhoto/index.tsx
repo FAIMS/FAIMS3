@@ -31,6 +31,7 @@ import {
   attachmentSaveTrace,
   BaseFieldParametersSchema,
 } from '@faims3/data-model';
+import {takePhotoIsComplete, takePhotoValueSchema} from './valueSchema';
 import {FormFieldContextProps} from '../../../formModule/types';
 import {
   LoadedPhoto,
@@ -43,6 +44,7 @@ import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {
   createConcurrencyLimiter,
+  delayIfSlowPhotosDebug,
   MAX_PARALLEL_SAVES,
 } from './parallelSaveLimiter';
 import {
@@ -1138,6 +1140,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         format,
       });
 
+      await delayIfSlowPhotosDebug();
+
       let newId: string;
       try {
         newId = await addAttachment({
@@ -1526,17 +1530,8 @@ export const takePhotoFieldSpec: FieldInfo = {
   returns: 'faims-attachment::Files',
   component: TakePhoto,
   fieldPropsSchema: takePhotoPropsSchema,
-  fieldDataSchemaFunction: (props: TakePhotoProps) => {
-    // check there is at least one entry
-    let base: z.ZodType<any> = z.array(z.string());
-    if (props.required) {
-      base = base.refine(val => (val ?? []).length > 0, {
-        message: 'At least one attachment is required',
-      });
-    }
-
-    return base;
-  },
+  fieldDataSchemaFunction: takePhotoValueSchema,
+  isCompleteFunction: takePhotoIsComplete,
   view: {
     component: TakePhotoRender,
     config: {},
