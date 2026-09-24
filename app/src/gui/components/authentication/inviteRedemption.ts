@@ -2,16 +2,41 @@
  * Decide how an invite QR or typed code is redeemed.
  *
  * A signed-in app session is a local JWT. Conductor's register page cannot see
- * it, so when a token exists for the invite's server the app redeems in place.
- * Signed-out users still open /register. A signed-in user with no token for
- * that server opens /login.
+ * it, so when the switched active user is on the invite's server and their
+ * token is still usable, the app redeems in place. Cached logins for anyone
+ * else are ignored. Signed-out users open /register. Anyone else opens /login.
  */
+
+import {
+  PostUseInviteResponse,
+  PostUseInviteResponseSchema,
+} from '@faims3/data-model';
 
 export type InviteHandoff =
   | 'redeem'
   | 'refresh-then-redeem'
   | 'login'
   | 'register';
+
+/**
+ * Username allowed to redeem an invite in the app. Only the switched active
+ * user on this Conductor qualifies. A cached login for another account, or for
+ * this user on a different server, does not.
+ */
+export function activeInviteUsername({
+  activeServerId,
+  activeUsername,
+  inviteServerId,
+}: {
+  activeServerId: string | undefined;
+  activeUsername: string | undefined;
+  inviteServerId: string;
+}): string | undefined {
+  if (activeServerId !== inviteServerId || !activeUsername) {
+    return undefined;
+  }
+  return activeUsername;
+}
 
 export function chooseInviteHandoff({
   tokenValid,
@@ -68,7 +93,7 @@ export async function postUseInvite({
   serverUrl: string;
   inviteId: string;
   token: string;
-}): Promise<{accessToken: string}> {
+}): Promise<PostUseInviteResponse> {
   const response = await fetch(
     `${serverUrl.replace(/\/$/, '')}/api/invites/${encodeURIComponent(inviteId)}/use`,
     {
@@ -88,5 +113,5 @@ export async function postUseInvite({
     }
     throw new Error(message);
   }
-  return (await response.json()) as {accessToken: string};
+  return PostUseInviteResponseSchema.parse(await response.json());
 }

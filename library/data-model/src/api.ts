@@ -972,7 +972,7 @@ export const PostCreateGlobalInviteResponseSchema = InviteDocumentSchema;
 /**
  * POST /api/invites/:inviteId/use response.
  * Global invites have no resource id. `accessToken` is a fresh JWT that
- * includes the role just granted, so clients can list the new survey
+ * includes the role just granted, so clients can list the new notebook
  * without signing in again.
  */
 export const PostUseInviteResponseSchema = z.object({

@@ -23,8 +23,10 @@
  *   Invite document IDs are `{prefix}-{body}`. The prefix identifies which
  *   configured Conductor server to hit; the body is the random code. Length
  *   and alphabet constraints are shared with the API via `@faims3/data-model`.
- *   After redemption, Conductor redirects back to `/auth-return` (web) or the
- *   `{appId}://auth-return` deep link (native).
+ *   When the switched active user is on that server and their token is usable,
+ *   the invite is redeemed in the app. Any other cached login is ignored.
+ *   Otherwise Conductor register/login redirects back to `/auth-return`
+ *   (web) or `{appId}://auth-return` (native).
  */
 
 import {Browser} from '@capacitor/browser';
@@ -62,6 +64,7 @@ import {initialiseProjects, Server} from '../../../context/slices/projectSlice';
 import {store, useAppDispatch, useAppSelector} from '../../../context/store';
 import {parseToken} from '../../../users';
 import {
+  activeInviteUsername,
   chooseInviteHandoff,
   conductorInviteUrl,
   inviteIdFromScannedUrl,
@@ -79,27 +82,14 @@ interface InviteQRScannerProps {
   label?: string;
 }
 
-function connectionForServer(
+function activeUserConnection(
   users: Record<string, TokenInfo> | undefined,
   activeUsername: string | undefined
 ): {username: string; info: TokenInfo} | undefined {
-  if (!users) {
+  if (!activeUsername || !users?.[activeUsername]) {
     return undefined;
   }
-  if (activeUsername && users[activeUsername]) {
-    return {username: activeUsername, info: users[activeUsername]};
-  }
-  const valid = Object.entries(users).find(([, info]) => isTokenValid(info));
-  if (valid) {
-    return {username: valid[0], info: valid[1]};
-  }
-  const refreshable = Object.entries(users).find(
-    ([, info]) => !!info.refreshToken
-  );
-  if (refreshable) {
-    return {username: refreshable[0], info: refreshable[1]};
-  }
-  return undefined;
+  return {username: activeUsername, info: users[activeUsername]};
 }
 
 function authRedirect(): string {
@@ -110,8 +100,9 @@ function authRedirect(): string {
 }
 
 /**
- * Redeems an invite with the current session when possible. Otherwise opens
- * Conductor register (signed out) or login (signed in, no token for this server).
+ * Redeems an invite only for the switched active user on this Conductor, and
+ * only with their own token. Otherwise opens Conductor register (signed out)
+ * or login (signed in on another server, or no usable token here).
  */
 function useInviteHandoff(onRedeemed?: () => void) {
   const dispatch = useAppDispatch();
@@ -136,11 +127,12 @@ function useInviteHandoff(onRedeemed?: () => void) {
   };
 
   const completeInvite = async (server: Server, inviteId: string) => {
-    const activeUsername =
-      auth.activeUser?.serverId === server.serverId
-        ? auth.activeUser.username
-        : undefined;
-    let connection = connectionForServer(
+    const activeUsername = activeInviteUsername({
+      activeServerId: auth.activeUser?.serverId,
+      activeUsername: auth.activeUser?.username,
+      inviteServerId: server.serverId,
+    });
+    let connection = activeUserConnection(
       auth.servers[server.serverId]?.users,
       activeUsername
     );
@@ -173,7 +165,11 @@ function useInviteHandoff(onRedeemed?: () => void) {
       connection = {username: connection.username, info: refreshed};
     }
 
-    if (!connection) {
+    if (
+      !connection ||
+      connection.username !== activeUsername ||
+      !isTokenValid(connection.info)
+    ) {
       await openConductor(
         server,
         inviteId,
@@ -233,19 +229,20 @@ function useInviteHandoff(onRedeemed?: () => void) {
  *
  * Shown only on iOS/Android. Valid payloads look like
  * `{serverUrl}/register?inviteId=PREFIX-…`. The scanned host is checked against
- * {@link InviteQRScannerProps.servers} so arbitrary URLs are not opened. A
- * Capacitor deep-link redirect (`{appId}://auth-return`) is injected so login
- * returns to the app, then the URL is opened in the in-app browser.
+ * {@link InviteQRScannerProps.servers} so arbitrary URLs are not opened. When
+ * the switched active user is on that Conductor and their token is usable, the
+ * invite is redeemed in place. Otherwise Conductor register or login is opened
+ * with an auth-return redirect so sign-in returns to the app.
  */
 export function InviteQRScanner(props: InviteQRScannerProps) {
   const dispatch = useAppDispatch();
   const {completeInvite} = useInviteHandoff(props.onRedeemed);
 
   /**
-   * Validates the scanned URL against configured server hosts. When this app
-   * already has a token for that Conductor, the invite is redeemed in place.
-   * Otherwise the register (signed out) or login (signed in, other server)
-   * page is opened.
+   * Validates the scanned URL against configured server hosts. Redeems in place
+   * only for the switched active user on that Conductor. Otherwise the register
+   * (signed out) or login (signed in elsewhere, or no usable token here) page
+   * is opened.
    */
   const handleRegister = async (url: string) => {
     // valid urls look like:
@@ -386,9 +383,8 @@ export const InviteCodeEntry = (props: InviteCodeEntryProps) => {
   };
 
   /**
-   * Builds `{serverUrl}/register?inviteId={prefix}-{body}` and navigates there.
-   * Web uses a same-window redirect back to `/auth-return`; native opens the
-   * Capacitor browser with the `{appId}://auth-return` deep link.
+   * Submits `{prefix}-{body}` via {@link useInviteHandoff}: in-app redeem when
+   * possible, otherwise Conductor register/login with an auth-return redirect.
    */
   const handleRegister = async () => {
     if (

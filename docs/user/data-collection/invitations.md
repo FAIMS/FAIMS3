@@ -43,9 +43,9 @@ the app and you can activate the {{notebook}} you will be working on.
 
 ## Invite links
 
-An invite **link** opens the same registration screen as a QR code. Share the
-link by email or message; when opened on a device with the app installed, it
-completes the invite flow.
+An invite **link** opens the Conductor registration screen (or sign-in if you
+already have an account). Share the link by email or message; when opened on a
+device with the app installed, it completes the invite flow.
 
 ## Invite codes (advanced)
 

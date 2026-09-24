@@ -34,12 +34,14 @@ import {
   registerClient,
   Resource,
   Role,
+  RoleScope,
   userHasGlobalRole,
   userHasProjectRole,
 } from '@faims3/data-model';
 import {beforeEach, describe, expect, it} from 'vitest';
 import request from 'supertest';
-import {config} from '../src/buildconfig';
+import {generateJwtFromUser} from '../src/auth/keySigning/create';
+import {config, keyService} from '../src/buildconfig';
 import {
   consumeInvite,
   createGlobalInvite,
@@ -60,6 +62,7 @@ import {app} from '../src/expressSetup';
 import {callbackObject} from './mocks';
 import {
   adminToken,
+  adminUserName,
   beforeApiTests,
   localUserName,
   localUserToken,
@@ -1048,6 +1051,8 @@ describe('Registration', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
+      expect(response.body.inviteType).toBe(RoleScope.RESOURCE_SPECIFIC);
+      expect(response.body.resourceType).toBe(Resource.PROJECT);
       expect(response.body.role).toBe(Role.PROJECT_CONTRIBUTOR);
       expect(response.body.resourceId).toBe(projectId);
       expect(typeof response.body.accessToken).toBe('string');
@@ -1073,6 +1078,41 @@ describe('Registration', () => {
         .post(`/api/invites/${invite._id}/use`)
         .set('Authorization', `Bearer ${response.body.accessToken}`)
         .expect(400);
+    });
+
+    it('rejects redeeming an invite while impersonating another user', async () => {
+      const projectId = await createNotebook({
+        projectName: 'impersonation-redeem',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+      const invite = await createResourceInvite({
+        resourceType: Resource.PROJECT,
+        resourceId: projectId!,
+        role: Role.PROJECT_CONTRIBUTOR,
+        name: 'Impersonation Redeem',
+        createdBy: 'admin',
+        expiry: Date.now() + 1000 * 60 * 60,
+        usesOriginal: 1,
+      });
+
+      const user = await getExpressUserFromEmailOrUserId(localUserName);
+      const signingKey = await keyService.getSigningKey();
+      const impersonationToken = await generateJwtFromUser({
+        user: user!,
+        signingKey,
+        impersonatingUserId: adminUserName,
+      });
+
+      const response = await request(app)
+        .post(`/api/invites/${invite._id}/use`)
+        .set('Authorization', `Bearer ${impersonationToken}`)
+        .expect(403);
+      expect(response.body.error.message).toMatch(/impersonat/i);
+
+      const stillThere = await getInvite({inviteId: invite._id});
+      expect(stillThere?.usesConsumed).toBe(0);
     });
   });
 });
