@@ -19,6 +19,7 @@ import {Capacitor} from '@capacitor/core';
 import {CapacitorAudioRecorder} from '@capgo/capacitor-audio-recorder';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {z} from 'zod';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
 import {BaseFieldParametersSchema} from '@faims3/data-model';
 import {FormFieldContextProps} from '../../../formModule/types';
@@ -638,19 +639,19 @@ export const audioRecorderFieldSpec: FieldInfo<AudioRecorderFieldProps> = {
   component: AudioRecorder,
   fieldPropsSchema: audioRecorderPropsSchema,
   fieldDataSchemaFunction: (props: AudioRecorderProps) => {
-    let base: z.ZodType<any> = z.array(z.string());
+    const max = props.maximumNumberOfRecordings ?? 0;
+    let base = z.array(z.string(), {error: 'Add a valid recording'});
     if (props.required) {
-      base = base.refine(val => (val ?? []).length > 0, {
+      base = base.min(1, {
         message: 'At least one audio recording is required.',
       });
     }
-    if (props.maximumNumberOfRecordings > 0) {
-      const max = props.maximumNumberOfRecordings;
-      base = base.refine(val => val.length <= max, {
+    if (max > 0) {
+      base = base.max(max, {
         message: `Maximum ${max} recording${max === 1 ? '' : 's'} allowed.`,
       });
     }
-    return base;
+    return schemaWithAbsent([], base);
   },
   view: {
     component: AudioRecorderRender,

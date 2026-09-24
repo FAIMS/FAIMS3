@@ -25,7 +25,11 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {logError, logInfo, logWarn} from '../../logging';
 import {formDataExtractor} from '../../utils';
 import {completion, getFieldId} from '../utils';
-import {CompiledFormSchema, FormValidation} from '../../validationModule';
+import {
+  collectFieldErrorMessages,
+  CompiledFormSchema,
+  FormValidation,
+} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
 import {LiveFormProgress} from './components/FormProgress';
 import {FormManager} from './FormManager';
@@ -549,14 +553,7 @@ export const EditableFormManager: React.FC<
       const res = schema.safeParse(data);
 
       if (!res.success) {
-        const fieldErrors: Record<string, string> = {};
-        for (const issue of res.error.issues) {
-          const fieldPath = issue.path.join('.');
-          if (!fieldErrors[fieldPath]) {
-            fieldErrors[fieldPath] = issue.message;
-          }
-        }
-        return {fields: fieldErrors};
+        return {fields: collectFieldErrorMessages(res.error.issues)};
       }
     },
     [validationMode, props.formId, dataEngine.uiSpec]

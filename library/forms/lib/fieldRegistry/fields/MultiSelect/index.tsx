@@ -44,6 +44,7 @@ import {
   TextField,
 } from '@mui/material';
 import {z} from 'zod';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
 import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
@@ -602,52 +603,76 @@ const valueSchema = (props: MultiSelectFieldProps) => {
   const boundedItem = z.string().max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH);
 
   if (optionValues.length === 0) {
-    const baseSchema = z.array(boundedItem);
-    return props.required
-      ? baseSchema.min(1, {message: 'Please select at least one option'})
-      : baseSchema;
+    let baseSchema = z.array(boundedItem, {
+      error: 'Please select at least one option',
+    });
+    if (props.required) {
+      baseSchema = baseSchema.min(1, {
+        message: 'Please select at least one option',
+      });
+    }
+    return schemaWithAbsent([], baseSchema);
   }
 
   if (enableOtherOption) {
-    const baseSchema = z.array(boundedItem);
+    const baseSchema = z.array(boundedItem, {
+      error: 'Please select at least one option',
+    });
 
     if (props.required) {
-      return baseSchema
-        .min(1, {message: 'Please select at least one option'})
-        .refine(
-          values => {
-            return values.every(v => {
-              if (optionValues.includes(v)) return true;
-              // accept any "Other: " value, even if empty
-              if (v.startsWith(OTHER_PREFIX)) return true;
-              return false;
-            });
-          },
-          {
-            message: 'Please select valid options',
-          }
-        );
+      return schemaWithAbsent(
+        [],
+        baseSchema
+          .min(1, {message: 'Please select at least one option'})
+          .refine(
+            values => {
+              return values.every(v => {
+                if (optionValues.includes(v)) return true;
+                // accept any "Other: " value, even if empty
+                if (v.startsWith(OTHER_PREFIX)) return true;
+                return false;
+              });
+            },
+            {
+              message: 'Please select valid options',
+            }
+          )
+      );
     }
 
-    return baseSchema.refine(
-      values => {
-        return values.every(v => {
-          if (optionValues.includes(v)) return true;
-          if (v.startsWith(OTHER_PREFIX)) return true;
-          return false;
-        });
-      },
-      {
-        message: 'Please select valid options',
-      }
+    return schemaWithAbsent(
+      [],
+      baseSchema.refine(
+        values => {
+          return values.every(v => {
+            if (optionValues.includes(v)) return true;
+            if (v.startsWith(OTHER_PREFIX)) return true;
+            return false;
+          });
+        },
+        {
+          message: 'Please select valid options',
+        }
+      )
     );
   }
 
-  const baseSchema = z.array(z.enum(optionValues as [string, ...string[]]));
+  let baseSchema = z.array(
+    z.enum(optionValues as [string, ...string[]], {
+      error: 'Please select a valid option',
+    }),
+    {
+      error: 'Please select at least one option',
+    }
+  );
 
-  return props.required
-    ? baseSchema.min(1, {message: 'Please select at least one option'})
-    : baseSchema;
+  if (props.required) {
+    baseSchema = baseSchema.min(1, {
+      message: 'Please select at least one option',
+    });
+  }
+
+  return schemaWithAbsent([], baseSchema);
 };
 
 // ============================================================================
