@@ -20,7 +20,12 @@ code invitations can be shared via email, print outs or directly from your
 **Team Manager**'s device.
 
 To accept the invitation, tap **Scan invite QR code** and scan the QR code with
-your device to open the registration screen.
+your device.
+
+If you are already signed in, the {{notebook}} is added straight away. You do
+not need to register or sign in again.
+
+If you are not signed in, the scan opens the registration screen.
 
 If you don't already have an account on the {{FAIMS}} server, you will be able to
 register for an account at this point. You can either register with your email
@@ -29,9 +34,9 @@ and password, or you can use a Google account.
 At this point, registration just gives you access to this one
 {{notebook}} but you may be given access to others in the future.
 
-If you already have an account on the {{FAIMS}} server, use the button to login
-instead of registering a new account. Once you are logged in you will be given
-access to the {{notebook}}.
+If you already have an account on the {{FAIMS}} server but you are not signed
+in, use **Already have an account? Sign in** at the top of the registration
+screen. Once you are logged in you will be given access to the {{notebook}}.
 
 After registering or logging in, you will be shown the main {{notebook}} list in
 the app and you can activate the {{notebook}} you will be working on.
