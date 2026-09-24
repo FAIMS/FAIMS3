@@ -478,24 +478,12 @@ EOL`,
     // DEBUG CONFIG
     // ============
 
-    // TODO: Handle this through config
-    const debugInstancePermissions = true;
-
-    if (debugInstancePermissions) {
-      // For debugging CouchDB instances - allow inbound traffic for SSM Instance Connect
-      couchSecurityGroup.addIngressRule(
-        ec2.Peer.anyIpv4(),
-        ec2.Port.tcp(443),
-        'Allow SSM Instance Connect'
-      );
-
-      // Add SSM Instance Connect permissions to the instance role
-      this.instance.role.addManagedPolicy(
-        iam.ManagedPolicy.fromAwsManagedPolicyName(
-          'AmazonSSMManagedInstanceCore'
-        )
-      );
-    }
+    // Session Manager (used by scripts/ssmCouchTunnel.sh) needs the SSM agent
+    // IAM policy and outbound HTTPS. It does not need inbound 443: the agent
+    // calls SSM, and CouchDB is only published on 5984 behind the ALB.
+    this.instance.role.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore')
+    );
 
     // IAM PERMISSIONS
     // ==================
