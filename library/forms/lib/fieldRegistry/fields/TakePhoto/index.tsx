@@ -1268,7 +1268,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         releaseSaveSlot();
         saveSlotHeld = false;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (isCancellation(err)) return;
       logError(new Error('Failed to capture photo:'), {error: err});
       setSaveError('Could not save the photo. Please try again.');
@@ -1387,7 +1387,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
           `Could not save ${failures} of ${pending.length} photo${plural}. Please try again.`
         );
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (isCancellation(err)) return;
       if (isPhotosAccessDenied(err)) {
         setNoPhotosPermission('denied');

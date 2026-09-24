@@ -44,22 +44,19 @@ vi.mock('@capacitor-community/exif', () => ({
   Exif: {setCoordinates: vi.fn()},
 }));
 
-vi.mock(
-  '../../fieldRegistry/fields/TakePhoto/webPhotoFallback',
-  async () => {
-    const actual = await vi.importActual<
-      typeof import('../../fieldRegistry/fields/TakePhoto/webPhotoFallback')
-    >('../../fieldRegistry/fields/TakePhoto/webPhotoFallback');
-    return {
-      ...actual,
-      preparePhotoBlobForStorage: vi.fn(async (blob: Blob) => ({
-        photoBlob: blob,
-        format: 'jpeg',
-        resized: false,
-      })),
-    };
-  }
-);
+vi.mock('../../fieldRegistry/fields/TakePhoto/webPhotoFallback', async () => {
+  const actual = await vi.importActual<
+    typeof import('../../fieldRegistry/fields/TakePhoto/webPhotoFallback')
+  >('../../fieldRegistry/fields/TakePhoto/webPhotoFallback');
+  return {
+    ...actual,
+    preparePhotoBlobForStorage: vi.fn(async (blob: Blob) => ({
+      photoBlob: blob,
+      format: 'jpeg',
+      resized: false,
+    })),
+  };
+});
 
 const meta = {
   annotation: {include: false, label: 'annotation'},
@@ -130,11 +127,7 @@ describe('parallel photo saves share one revision', () => {
     const storeReleases: Array<() => void> = [];
     const revisionIds: string[] = [];
     const storeAttachmentFromBlob = vi.fn(
-      async ({
-        metadata,
-      }: {
-        metadata: {recordContext: {revisionId: string}};
-      }) => {
+      async ({metadata}: {metadata: {recordContext: {revisionId: string}}}) => {
         revisionIds.push(metadata.recordContext.revisionId);
         inFlight += 1;
         maxInFlight = Math.max(maxInFlight, inFlight);

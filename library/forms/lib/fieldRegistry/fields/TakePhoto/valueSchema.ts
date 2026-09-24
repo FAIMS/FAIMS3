@@ -30,7 +30,9 @@ export const TAKE_PHOTO_REQUIRED_MESSAGE = 'At least one photo is required';
  * object key as skipped, so an untouched required photo would pass when the
  * form schema is compiled as `z.object(...)`.
  */
-export function takePhotoValueSchema(props: {required?: boolean}) {
+export function takePhotoValueSchema(props: {
+  required?: boolean;
+}): z.ZodTypeAny {
   const ids = z.union([z.array(z.string()), z.null(), z.undefined()]);
   if (props.required) {
     return ids.refine(val => (val ?? []).length > 0, {

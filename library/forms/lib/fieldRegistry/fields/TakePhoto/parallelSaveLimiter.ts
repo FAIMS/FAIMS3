@@ -38,7 +38,13 @@ export const delayIfSlowPhotosDebug = async (): Promise<void> => {
  * when a slot is free (the increment happens inside the Promise executor,
  * before the caller `await`s), otherwise the caller waits in FIFO order.
  */
-export const createConcurrencyLimiter = (limit: number) => {
+export const createConcurrencyLimiter = (
+  limit: number
+): {
+  readonly active: number;
+  acquire(): Promise<void>;
+  release(): void;
+} => {
   let active = 0;
   const waiters: Array<() => void> = [];
 

@@ -32,7 +32,15 @@ import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useMemo, useState} from 'react';
 import {z} from 'zod';
-import {afterEach, beforeAll, beforeEach, describe, expect, it, vi} from 'vitest';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import {
   createConcurrencyLimiter,
   DEBUG_SLOW_PHOTOS,
@@ -77,18 +85,17 @@ vi.mock('@capacitor-community/exif', () => ({
 }));
 
 vi.mock('./webPhotoFallback', async () => {
-  const actual = await vi.importActual<typeof import('./webPhotoFallback')>(
-    './webPhotoFallback'
-  );
+  const actual =
+    await vi.importActual<typeof import('./webPhotoFallback')>(
+      './webPhotoFallback'
+    );
   return {
     ...actual,
-    preparePhotoBlobForStorage: vi.fn(
-      async (blob: Blob, format: string) => ({
-        photoBlob: blob,
-        format,
-        resized: false,
-      })
-    ),
+    preparePhotoBlobForStorage: vi.fn(async (blob: Blob, format: string) => ({
+      photoBlob: blob,
+      format,
+      resized: false,
+    })),
   };
 });
 
@@ -334,7 +341,7 @@ const requiredSchema = () => takePhotoValueSchema({required: true});
 const optionalSchema = () => takePhotoValueSchema({required: false});
 
 describe('takePhotoValueSchema', () => {
-  it('rejects an untouched required field with the attachment minimum message', () => {
+  it('rejects an untouched required field with the photo minimum message', () => {
     for (const value of [undefined, null, []]) {
       const result = requiredSchema().safeParse(value);
       expect(result.success).toBe(false);
@@ -531,9 +538,10 @@ describe('preparePhotoBlobForStorage', () => {
   let preparePhotoBlobForStorage: typeof import('./webPhotoFallback').preparePhotoBlobForStorage;
 
   beforeAll(async () => {
-    ({preparePhotoBlobForStorage} = await vi.importActual<
-      typeof import('./webPhotoFallback')
-    >('./webPhotoFallback'));
+    ({preparePhotoBlobForStorage} =
+      await vi.importActual<typeof import('./webPhotoFallback')>(
+        './webPhotoFallback'
+      ));
   });
 
   afterEach(() => {
