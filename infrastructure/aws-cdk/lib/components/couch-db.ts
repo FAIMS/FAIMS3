@@ -481,6 +481,7 @@ EOL`,
     // Session Manager (used by scripts/ssmCouchTunnel.sh) needs the SSM agent
     // IAM policy and outbound HTTPS. It does not need inbound 443: the agent
     // calls SSM, and CouchDB is only published on 5984 behind the ALB.
+    // The instance security group therefore has no public ingress on 443.
     this.instance.role.addManagedPolicy(
       iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore')
     );
