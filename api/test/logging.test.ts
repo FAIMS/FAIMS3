@@ -37,9 +37,7 @@ function sha256Hex8(value: string): string {
 
 describe('shouldReportErrorToBugsnag', () => {
   it('drops ordinary 401s, including non-exception errors', () => {
-    expect(shouldReportErrorToBugsnag(new UnauthorizedException())).toBe(
-      false
-    );
+    expect(shouldReportErrorToBugsnag(new UnauthorizedException())).toBe(false);
     expect(
       shouldReportErrorToBugsnag(
         Object.assign(new Error('unauthorized'), {status: 401})
