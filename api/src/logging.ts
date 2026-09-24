@@ -20,11 +20,50 @@ import {nowIso} from './time';
  */
 export const logError = (error: unknown) => {
   console.error(error);
-  if (config.bugsnagApiKey) {
+  if (config.bugsnagApiKey && shouldReportErrorToBugsnag(error)) {
     const err = error instanceof Error ? error : new Error(String(error));
     Bugsnag.notify(err);
   }
 };
+
+/**
+ * Whether an error is worth a Bugsnag report.
+ *
+ * Ordinary 401s and the intentional tombstone-miss 404 are expected client
+ * outcomes. Rate limits (429), forbidden access (403), and other failures
+ * still report.
+ */
+export function shouldReportErrorToBugsnag(error: unknown): boolean {
+  if (httpStatus(error) === 401) {
+    return false;
+  }
+  if (isTombstoneNotFound(error)) {
+    return false;
+  }
+  return true;
+}
+
+function httpStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
+  const record = error as {status?: unknown; statusCode?: unknown};
+  if (typeof record.status === 'number') {
+    return record.status;
+  }
+  if (typeof record.statusCode === 'number') {
+    return record.statusCode;
+  }
+  return undefined;
+}
+
+function isTombstoneNotFound(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const name = (error as {name?: unknown}).name;
+  return name === 'TombstoneNotFoundException';
+}
 
 /**
  * When the authenticated user is acting via an impersonation token, writes an
