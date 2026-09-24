@@ -723,6 +723,7 @@ const PhotoGallery: React.FC<{
   disabled: boolean;
   /** True while the camera/gallery picker is open or save slots are full. */
   actionsDisabled?: boolean;
+  /** Tooltip shown on Camera/Gallery when `actionsDisabled` is true. */
   actionsDisabledReason?: string;
   /** True while the camera/gallery picker is open (delete stays available during saves). */
   deleteDisabled?: boolean;
@@ -957,7 +958,9 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
 
   // One form-level lock for this field: held while the picker is open or any
   // save slot is held. Avoids a gap between releasing the picker and starting
-  // the write (which would let the user navigate away and unmount the field).
+  // the write. FormSection remounts on section change (key={activeSection});
+  // without this lock the field can unmount mid-pick/save and the async work
+  // continues on a dead instance.
   const formLockHeldRef = useRef(false);
 
   // Get attachment service (guaranteed to exist in full mode)
@@ -1416,10 +1419,14 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
     (attachmentId: string) => {
       if (pickerInFlightRef.current) return;
       removeAttachment({attachmentId});
-      const currentData = props.state.value?.data as string[] | undefined;
-      props.setFieldData((currentData ?? []).filter(v => v !== attachmentId));
+      // Filter the latest list. A snapshot of props.state.value is stale
+      // while parallel storePhoto calls are appending ids, and writing that
+      // snapshot back drops ids that just finished saving.
+      props.setFieldData((prev: string[] | undefined) =>
+        (prev ?? []).filter(v => v !== attachmentId)
+      );
     },
-    [removeAttachment]
+    [removeAttachment, props.setFieldData]
   );
 
   // Determine if we have any photos to show (either pending or loaded)

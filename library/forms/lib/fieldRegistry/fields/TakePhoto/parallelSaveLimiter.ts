@@ -22,9 +22,10 @@ export const MAX_PARALLEL_SAVES = 5;
  * Flip to `true` to hold each photo on "Saving..." for 10s before the
  * PouchDB write. Device-only testing aid — leave false in commits.
  */
-export const DEBUG_SLOW_PHOTOS = true;
+export const DEBUG_SLOW_PHOTOS = false;
 const DEBUG_SLOW_PHOTOS_MS = 10_000;
 
+/** Resolves after `DEBUG_SLOW_PHOTOS_MS` when `DEBUG_SLOW_PHOTOS` is on; otherwise no-op. */
 export const delayIfSlowPhotosDebug = async (): Promise<void> => {
   if (!DEBUG_SLOW_PHOTOS) return;
   await new Promise<void>(resolve => {

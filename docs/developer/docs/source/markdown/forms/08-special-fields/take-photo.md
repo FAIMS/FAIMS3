@@ -223,15 +223,20 @@ const imageTypes = [
 
 ## Validation
 
+`fieldDataSchemaFunction` is `takePhotoValueSchema` in `valueSchema.ts`.
+
+A bare `z.array()` fails on an untouched field (`undefined` / `null`) with Zod's "expected array" error before the required-length check can run. The schema accepts that empty state first, then refines required fields so the user sees the attachment-minimum message.
+
 ```typescript
-const takePhotoDataSchemaFunction = (props: TakePhotoProps) => {
+export function takePhotoValueSchema(props: {required?: boolean}) {
+  const ids = z.array(z.string()).nullish();
   if (props.required) {
-    return z.array(z.string()).min(1, {
-      message: 'At least one photo is required',
+    return ids.refine(val => (val ?? []).length > 0, {
+      message: 'At least one attachment is required',
     });
   }
-  return z.array(z.string()).optional();
-};
+  return ids;
+}
 ```
 
 ## Example UISpec
