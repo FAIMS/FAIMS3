@@ -20,6 +20,19 @@ export class ItemNotFoundException extends CustomException {
 }
 
 /**
+ * Notebook tombstone lookup miss. GET /api/tombstones/:id returns 404 on purpose
+ * when a notebook was never deleted; clients probe this and a miss is not a bug.
+ */
+export class TombstoneNotFoundException extends ItemNotFoundException {
+  constructor(
+    message = 'No tombstone found for this notebook ID. It may never have been deleted.'
+  ) {
+    super(message);
+    this.name = 'TombstoneNotFoundException';
+  }
+}
+
+/**
  * Use when a request is invalid for some reason such as it being malformed but
  * parseable, or taking an inappropriate action.
  */

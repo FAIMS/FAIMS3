@@ -6,6 +6,15 @@ import {
 import {getTombstoneDB} from '.';
 import * as Exceptions from '../exceptions';
 
+/** Pouch/Couch missing-document errors use status or statusCode 404. */
+function isMissingDocument(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const record = error as {status?: unknown; statusCode?: unknown};
+  return record.status === 404 || record.statusCode === 404;
+}
+
 /**
  * Fetches a survey tombstone by deleted project / survey ID.
  * @param id The deleted project ID (document `_id`)
@@ -18,8 +27,12 @@ export const getTombstoneById = async (
   try {
     return await tombstoneDb.get(id);
   } catch (error) {
-    throw new Exceptions.ItemNotFoundException(
-      'No tombstone found for this survey ID. It may never have been deleted.'
+    if (isMissingDocument(error)) {
+      throw new Exceptions.TombstoneNotFoundException();
+    }
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while looking up a survey tombstone. Exception ' +
+        error
     );
   }
 };
