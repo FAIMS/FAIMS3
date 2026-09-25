@@ -95,9 +95,9 @@ export default function HeadingProjectGrid({
         columns={activatedColumns}
         onRowClick={handleRowClick}
         rowHeight={75}
+        autoHeight
         sx={{
           width: '100%',
-          padding: '8px',
           backgroundColor: theme.palette.background.lightBackground,
           borderRadius: '4px',
           boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
@@ -132,7 +132,6 @@ export default function HeadingProjectGrid({
         columns={notActivatedColumns}
         sx={{
           width: '100%',
-          padding: '8px',
           backgroundColor: theme.palette.background.lightBackground,
           borderRadius: '4px',
           boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
@@ -142,6 +141,7 @@ export default function HeadingProjectGrid({
         onRowClick={handleRowClick}
         getRowId={({projectId}) => projectId}
         rowHeight={75}
+        autoHeight
         hideFooter
         paginationModel={paginationModel}
         onPaginationModelChange={setPaginationModel}

@@ -132,6 +132,7 @@ export default function TabProjectGrid({
               }}
               getRowId={({projectId}) => projectId}
               rowHeight={75}
+              autoHeight
               hideFooter
               paginationModel={paginationModel}
               onPaginationModelChange={setPaginationModel}
