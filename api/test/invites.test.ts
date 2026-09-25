@@ -1118,6 +1118,47 @@ describe('Registration', () => {
       expect(decodeJwt(response.body.accessToken).exp).toBe(expiresAtSeconds);
     });
 
+    it('consumes a global invite and omits resource fields', async () => {
+      const invite = await createGlobalInvite({
+        role: Role.GENERAL_CREATOR,
+        name: 'Global Redeem',
+        createdBy: 'admin',
+        expiry: Date.now() + 1000 * 60 * 60,
+        usesOriginal: 1,
+      });
+
+      const before = await getExpressUserFromEmailOrUserId(localUserName);
+      expect(
+        userHasGlobalRole({
+          user: before!,
+          role: Role.GENERAL_CREATOR,
+        })
+      ).toBe(false);
+
+      const response = await request(app)
+        .post(`/api/invites/${invite._id}/use`)
+        .set('Authorization', `Bearer ${localUserToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.inviteType).toBe(RoleScope.GLOBAL);
+      expect(response.body.resourceType).toBeUndefined();
+      expect(response.body.resourceId).toBeUndefined();
+      expect(response.body.role).toBe(Role.GENERAL_CREATOR);
+      expect(typeof response.body.accessToken).toBe('string');
+
+      const updated = await getExpressUserFromEmailOrUserId(localUserName);
+      expect(
+        userHasGlobalRole({
+          user: updated!,
+          role: Role.GENERAL_CREATOR,
+        })
+      ).toBe(true);
+
+      const consumed = await getInvite({inviteId: invite._id});
+      expect(consumed?.usesConsumed).toBe(1);
+    });
+
     it('rejects redeeming an invite while impersonating another user', async () => {
       const projectId = await createNotebook({
         projectName: 'impersonation-redeem',

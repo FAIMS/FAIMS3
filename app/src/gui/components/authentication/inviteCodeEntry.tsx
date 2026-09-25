@@ -524,6 +524,7 @@ export const InviteCodeEntry = (props: InviteCodeEntryProps) => {
         size="small"
         startIcon={<LoginIcon />}
         disabled={!canSubmit}
+        data-testid="invite-code-submit"
         sx={{
           flexShrink: 0,
           minWidth: {xs: '100%', sm: '96px'},
