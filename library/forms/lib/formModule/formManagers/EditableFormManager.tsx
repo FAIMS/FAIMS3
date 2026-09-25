@@ -135,6 +135,12 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   const [edited, setEdited] = useState(false);
   const [workingRevisionId, setWorkingRevisionId] = useState(props.revisionId);
+  const editedRef = useRef(edited);
+  const workingRevisionIdRef = useRef(workingRevisionId);
+  editedRef.current = edited;
+  workingRevisionIdRef.current = workingRevisionId;
+  /** Shared by overlapping addAttachment calls so parallel photo saves do not create two revisions. */
+  const ensureWorkingRevisionInFlightRef = useRef<Promise<string> | null>(null);
   const autoIncrementInitializedRef = useRef(false);
 
   const validationMode: ValidationMode =
@@ -205,55 +211,65 @@ export const EditableFormManager: React.FC<
   // Revision Management
   // ---------------------------------------------------------------------------
   const ensureWorkingRevision = useCallback(async (): Promise<string> => {
-    attachmentSaveTrace('ensureWorkingRevision:start', {
-      edited,
-      workingRevisionId,
-      mode: props.mode,
-      recordId: props.recordId,
-    });
-    let relevantRevisionId = workingRevisionId;
+    if (ensureWorkingRevisionInFlightRef.current) {
+      return ensureWorkingRevisionInFlightRef.current;
+    }
 
-    if (!edited && props.mode === 'parent') {
-      try {
-        attachmentSaveTrace('ensureWorkingRevision:before-createRevision', {
-          recordId: props.recordId,
-          revisionId: workingRevisionId,
-        });
-        const newRevision = await dataEngine.form.createRevision({
-          recordId: props.recordId,
-          revisionId: workingRevisionId,
-          createdBy: props.activeUser,
-        });
-        setWorkingRevisionId(newRevision._id);
-        relevantRevisionId = newRevision._id;
-        attachmentSaveTrace('ensureWorkingRevision:after-createRevision', {
-          newRevisionId: newRevision._id,
-        });
-      } catch (error) {
-        attachmentSaveTrace('ensureWorkingRevision:createRevision-error', {
-          error: String(error),
-        });
-        logError(new Error('Failed to create revision:'), {error});
-        throw error;
+    const run = (async () => {
+      const wasEdited = editedRef.current;
+      let relevantRevisionId = workingRevisionIdRef.current;
+
+      attachmentSaveTrace('ensureWorkingRevision:start', {
+        edited: wasEdited,
+        workingRevisionId: relevantRevisionId,
+        mode: props.mode,
+        recordId: props.recordId,
+      });
+
+      if (!wasEdited && props.mode === 'parent') {
+        try {
+          attachmentSaveTrace('ensureWorkingRevision:before-createRevision', {
+            recordId: props.recordId,
+            revisionId: relevantRevisionId,
+          });
+          const newRevision = await dataEngine.form.createRevision({
+            recordId: props.recordId,
+            revisionId: relevantRevisionId,
+            createdBy: props.activeUser,
+          });
+          workingRevisionIdRef.current = newRevision._id;
+          setWorkingRevisionId(newRevision._id);
+          relevantRevisionId = newRevision._id;
+          attachmentSaveTrace('ensureWorkingRevision:after-createRevision', {
+            newRevisionId: newRevision._id,
+          });
+        } catch (error) {
+          attachmentSaveTrace('ensureWorkingRevision:createRevision-error', {
+            error: String(error),
+          });
+          logError(new Error('Failed to create revision:'), {error});
+          throw error;
+        }
       }
-    }
 
-    if (!edited) {
-      setEdited(true);
-    }
+      if (!wasEdited) {
+        editedRef.current = true;
+        setEdited(true);
+      }
 
-    attachmentSaveTrace('ensureWorkingRevision:complete', {
-      revisionId: relevantRevisionId,
-    });
-    return relevantRevisionId;
-  }, [
-    edited,
-    workingRevisionId,
-    props.mode,
-    props.recordId,
-    props.activeUser,
-    dataEngine,
-  ]);
+      attachmentSaveTrace('ensureWorkingRevision:complete', {
+        revisionId: relevantRevisionId,
+      });
+      return relevantRevisionId;
+    })();
+
+    ensureWorkingRevisionInFlightRef.current = run;
+    try {
+      return await run;
+    } finally {
+      ensureWorkingRevisionInFlightRef.current = null;
+    }
+  }, [props.mode, props.recordId, props.activeUser, dataEngine]);
 
   // ---------------------------------------------------------------------------
   // Visibility Updates
