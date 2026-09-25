@@ -21,6 +21,7 @@
 
 import {Action, isAuthorized} from '@faims3/data-model';
 import Express from 'express';
+import {decodeJwt} from 'jose';
 import {validateToken} from './auth/keySigning/read';
 import * as Exceptions from './exceptions';
 import {logImpersonatedRequest} from './logging';
@@ -72,6 +73,16 @@ export function extractBearerToken(req: Express.Request): string | undefined {
   return undefined;
 }
 
+/**
+ * `exp` (unix seconds) of a bearer token. Only call this after
+ * {@link validateToken} has accepted the same string: `decodeJwt` does not
+ * check the signature.
+ */
+function verifiedAccessTokenExpiresAt(token: string): number | undefined {
+  const exp = decodeJwt(token).exp;
+  return typeof exp === 'number' && Number.isFinite(exp) ? exp : undefined;
+}
+
 /*
  * Similar but for use in the API, just return an unuthorised repsonse
  * should check for an Authentication header...see passport-http-bearer
@@ -97,6 +108,7 @@ export async function requireAuthenticationAPI(
 
   // insert user into the request
   req.user = user;
+  req.accessTokenExpiresAt = verifiedAccessTokenExpiresAt(token);
   logImpersonatedRequest(req);
   next();
 }
@@ -223,6 +235,7 @@ export async function optionalAuthenticationJWT(
 
     // insert user into the request
     req.user = user;
+    req.accessTokenExpiresAt = verifiedAccessTokenExpiresAt(token);
     logImpersonatedRequest(req);
     next();
   }

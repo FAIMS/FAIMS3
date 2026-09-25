@@ -12,6 +12,7 @@ import {
   PostUseInviteResponseSchema,
 } from '@faims3/data-model';
 
+/** How the app should finish an invite after a QR scan or typed code. */
 export type InviteHandoff =
   | 'redeem'
   | 'refresh-then-redeem'
@@ -38,6 +39,7 @@ export function activeInviteUsername({
   return activeUsername;
 }
 
+/** Pick redeem, refresh-then-redeem, login, or register from token state. */
 export function chooseInviteHandoff({
   tokenValid,
   tokenRefreshable,
@@ -59,6 +61,7 @@ export function chooseInviteHandoff({
   return 'register';
 }
 
+/** Build a Conductor login/register URL that carries inviteId and redirect. */
 export function conductorInviteUrl({
   serverUrl,
   inviteId,
@@ -76,6 +79,7 @@ export function conductorInviteUrl({
   return url.toString();
 }
 
+/** Read `inviteId` from a scanned register URL, or null if absent/invalid. */
 export function inviteIdFromScannedUrl(url: string): string | null {
   try {
     const inviteId = new URL(url).searchParams.get('inviteId');
@@ -85,6 +89,7 @@ export function inviteIdFromScannedUrl(url: string): string | null {
   }
 }
 
+/** POST /api/invites/:inviteId/use and return the parsed grant + access token. */
 export async function postUseInvite({
   serverUrl,
   inviteId,

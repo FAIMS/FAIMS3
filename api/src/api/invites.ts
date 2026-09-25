@@ -510,13 +510,14 @@ api.post(
     }
 
     let updatedUser;
+    let invite;
     try {
-      updatedUser = await validateAndApplyInviteToUser({
+      ({user: updatedUser, invite} = await validateAndApplyInviteToUser({
         inviteCode: inviteId,
         dbUser,
         req,
         action: 'login',
-      });
+      }));
     } catch (e) {
       throw new Exceptions.InvalidRequestException(
         e instanceof Error
@@ -529,14 +530,17 @@ api.post(
     const expressUser = await upgradeCouchUserToExpressUser({
       dbUser: updatedUser,
     });
-    const {token} = await generateUserToken(expressUser, false);
-
-    const invite = await getInvite({inviteId});
-    if (!invite) {
-      throw new Exceptions.InternalSystemError(
-        'Invite disappeared after it was consumed.'
+    // Keep the replacement access token's lifetime equal to the token that
+    // authorised this request. A fresh `accessTokenExpiryMinutes` window
+    // would let repeated redemptions chain into a longer session.
+    if (req.accessTokenExpiresAt === undefined) {
+      throw new Exceptions.UnauthorizedException(
+        'Access token is missing an expiry and cannot be reissued.'
       );
     }
+    const {token} = await generateUserToken(expressUser, false, {
+      expiresAtSeconds: req.accessTokenExpiresAt,
+    });
 
     res.json({
       success: true,

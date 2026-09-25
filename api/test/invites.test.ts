@@ -38,6 +38,7 @@ import {
   userHasGlobalRole,
   userHasProjectRole,
 } from '@faims3/data-model';
+import {decodeJwt} from 'jose';
 import {beforeEach, describe, expect, it} from 'vitest';
 import request from 'supertest';
 import {generateJwtFromUser} from '../src/auth/keySigning/create';
@@ -1078,6 +1079,43 @@ describe('Registration', () => {
         .post(`/api/invites/${invite._id}/use`)
         .set('Authorization', `Bearer ${response.body.accessToken}`)
         .expect(400);
+    });
+
+    it('reissues an access token with the same expiry as the token used to redeem', async () => {
+      const projectId = await createNotebook({
+        projectName: 'redeem-expiry',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+      const invite = await createResourceInvite({
+        resourceType: Resource.PROJECT,
+        resourceId: projectId!,
+        role: Role.PROJECT_CONTRIBUTOR,
+        name: 'Expiry Invite',
+        createdBy: 'admin',
+        expiry: Date.now() + 1000 * 60 * 60,
+        usesOriginal: 1,
+      });
+
+      const user = await getExpressUserFromEmailOrUserId(localUserName);
+      const signingKey = await keyService.getSigningKey();
+      // Much shorter than a freshly minted access token so a reset expiry
+      // would be obvious.
+      const expiresAtSeconds = Math.floor(Date.now() / 1000) + 90;
+      const sourceToken = await generateJwtFromUser({
+        user: user!,
+        signingKey,
+        expiresAtSeconds,
+      });
+
+      const response = await request(app)
+        .post(`/api/invites/${invite._id}/use`)
+        .set('Authorization', `Bearer ${sourceToken}`)
+        .expect(200);
+
+      expect(decodeJwt(sourceToken).exp).toBe(expiresAtSeconds);
+      expect(decodeJwt(response.body.accessToken).exp).toBe(expiresAtSeconds);
     });
 
     it('rejects redeeming an invite while impersonating another user', async () => {

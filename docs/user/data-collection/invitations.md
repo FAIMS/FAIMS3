@@ -50,7 +50,8 @@ device with the app installed, it completes the invite flow.
 ## Invite codes (advanced)
 
 If you cannot use a QR code or link, you can enter the invite code manually
-under **Advanced: enter invite code instead**.
+under **Advanced: enter invite code instead**. If you are already signed in,
+the {{notebook}} is added straight away, the same as with a QR code.
 
 An invite code looks like _FMRK-aB3xY9…_ — a server prefix, a hyphen, then a
 long random code. Prefer pasting the full code when possible. The prefix

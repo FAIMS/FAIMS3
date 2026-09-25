@@ -82,6 +82,11 @@ interface InviteQRScannerProps {
   label?: string;
 }
 
+/**
+ * Stored session for the switched user on one Conductor.
+ * Missing when `activeUsername` is unset (they are signed in on a different
+ * server, or not at all) or when that user has no cached token here.
+ */
 function activeUserConnection(
   users: Record<string, TokenInfo> | undefined,
   activeUsername: string | undefined
@@ -92,6 +97,11 @@ function activeUserConnection(
   return {username: activeUsername, info: users[activeUsername]};
 }
 
+/**
+ * Where Conductor should send the browser after register or login.
+ * Web stays on this origin (`/auth-return`). Native uses the app id as a
+ * custom scheme (`{appId}://auth-return`) so the OS reopens the app.
+ */
 function authRedirect(): string {
   if (IS_WEB_PLATFORM) {
     return `${window.location.protocol}//${window.location.host}/auth-return`;
@@ -100,9 +110,17 @@ function authRedirect(): string {
 }
 
 /**
- * Redeems an invite only for the switched active user on this Conductor, and
- * only with their own token. Otherwise opens Conductor register (signed out)
- * or login (signed in on another server, or no usable token here).
+ * Shared redeem-or-redirect path for the QR scanner and the typed-code form.
+ *
+ * Only the switched active user on this Conductor may redeem, and only with
+ * their own token. {@link chooseInviteHandoff} then picks one of:
+ * - `redeem` — access token still valid; POST the invite in the app.
+ * - `refresh-then-redeem` — access token expired, refresh token present.
+ * - `login` — signed in, but not with a usable token on this server.
+ * - `register` — signed out.
+ *
+ * Cached sessions for anyone else are ignored. `onRedeemed` runs only after
+ * an in-app redeem; a Conductor redirect does not call it.
  */
 function useInviteHandoff(onRedeemed?: () => void) {
   const dispatch = useAppDispatch();
@@ -119,6 +137,8 @@ function useInviteHandoff(onRedeemed?: () => void) {
       page,
       redirectTo: authRedirect(),
     });
+    // Replace the page on web so Conductor's redirect can land on /auth-return.
+    // On device, the in-app browser follows the custom-scheme redirect back.
     if (IS_WEB_PLATFORM) {
       window.location.href = url;
     } else {
@@ -127,6 +147,7 @@ function useInviteHandoff(onRedeemed?: () => void) {
   };
 
   const completeInvite = async (server: Server, inviteId: string) => {
+    // Undefined unless the switched user is already on this Conductor.
     const activeUsername = activeInviteUsername({
       activeServerId: auth.activeUser?.serverId,
       activeUsername: auth.activeUser?.username,
@@ -142,6 +163,7 @@ function useInviteHandoff(onRedeemed?: () => void) {
       signedIn: !!auth.activeUser,
     });
 
+    // No token we can use here. Conductor login/register owns the next step.
     if (handoff === 'login' || handoff === 'register') {
       await openConductor(server, inviteId, handoff);
       return;
@@ -154,6 +176,8 @@ function useInviteHandoff(onRedeemed?: () => void) {
           username: connection.username,
         })
       );
+      // The thunk writes the new token into the store; the local snapshot
+      // is stale until we read it back.
       const refreshed =
         store.getState().auth.servers[server.serverId]?.users[
           connection.username
@@ -165,6 +189,8 @@ function useInviteHandoff(onRedeemed?: () => void) {
       connection = {username: connection.username, info: refreshed};
     }
 
+    // Redeem was chosen, but refuse to POST unless the token still belongs
+    // to the switched user on this server.
     if (
       !connection ||
       connection.username !== activeUsername ||
@@ -179,6 +205,7 @@ function useInviteHandoff(onRedeemed?: () => void) {
     }
 
     try {
+      // Conductor returns a new access token that includes the granted roles.
       const {accessToken} = await postUseInvite({
         serverUrl: server.serverUrl,
         inviteId,
@@ -189,6 +216,7 @@ function useInviteHandoff(onRedeemed?: () => void) {
         setServerConnection({
           parsedToken,
           token: accessToken,
+          // Refresh token is not reissued by invite use; keep the current one.
           refreshToken: connection.info.refreshToken,
           serverId: server.serverId,
           username: parsedToken.username,
@@ -200,6 +228,7 @@ function useInviteHandoff(onRedeemed?: () => void) {
           username: parsedToken.username,
         })
       );
+      // Reload projects so the notebook the invite granted shows up immediately.
       await dispatch(initialiseProjects({serverId: server.serverId}));
       dispatch(
         addAlert({
@@ -245,8 +274,9 @@ export function InviteQRScanner(props: InviteQRScannerProps) {
    * is opened.
    */
   const handleRegister = async (url: string) => {
-    // valid urls look like:
-    // http://host/register?inviteId=PREFIX-…
+    // Accept only a register URL on a configured Conductor, e.g.
+    // https://conductor.example/register?inviteId=FAIMS-ab12cd.
+    // Anything else (login links, other hosts) is rejected before it is opened.
     const valid_hosts = props.servers.map(server => server.serverUrl);
     const valid_re = valid_hosts.join('|') + '/register.*';
 
@@ -260,6 +290,8 @@ export function InviteQRScanner(props: InviteQRScannerProps) {
       return;
     }
 
+    // The regex checks shape. startsWith picks which configured server owns
+    // the URL, so redemption uses that Conductor's API and auth cache.
     const server = props.servers.find(candidate =>
       url.startsWith(candidate.serverUrl)
     );
@@ -336,10 +368,12 @@ export const InviteCodeEntry = (props: InviteCodeEntryProps) => {
    * @returns The cleaned invite-code body without prefix or whitespace
    */
   const processInput = (input: string): string => {
-    // Preserve case for new alphanumeric codes; strip whitespace.
+    // Preserve case for alphanumeric codes; drop spaces from a wrapped paste.
     const cleanInput = input.trim().replace(/\s+/g, '');
 
-    // Check if input starts with any known prefix (including potential dash)
+    // First configured server whose prefix matches wins. `-?` accepts
+    // `PREFIX-body` and `PREFIXbody`. The match is case-insensitive; the
+    // leftover body is returned unchanged.
     for (const prefix of props.servers.map(server => server.shortCodePrefix)) {
       const prefixPattern = new RegExp(`^${prefix}-?`, 'i');
       if (prefixPattern.test(cleanInput)) {
@@ -387,6 +421,8 @@ export const InviteCodeEntry = (props: InviteCodeEntryProps) => {
    * possible, otherwise Conductor register/login with an auth-return redirect.
    */
   const handleRegister = async () => {
+    // Character set was already enforced on each change. Length is checked
+    // again because a too-short body is allowed in the field while typing.
     if (
       inviteCodeBody.length < INVITE_CODE_MIN_LENGTH ||
       inviteCodeBody.length > INVITE_CODE_MAX_LENGTH
@@ -408,8 +444,9 @@ export const InviteCodeEntry = (props: InviteCodeEntryProps) => {
     await completeInvite(serverInfo, inviteCode);
   };
 
-  // only show the prefix selection dropdown if more than one server
+  // One server: its prefix is fixed and shown only as the input adornment.
   const showPrefixSelector = props.servers.length > 1;
+  // Submit stays disabled until the body is long enough to be an invite id.
   const canSubmit =
     inviteCodeBody.length >= INVITE_CODE_MIN_LENGTH &&
     inviteCodeBody.length <= INVITE_CODE_MAX_LENGTH;
