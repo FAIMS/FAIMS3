@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import z from 'zod';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import type {AutosuggestSuggestion} from '../../../addressAutosuggest/types';
 import {
   AddressType,
@@ -611,16 +612,16 @@ const AddressFieldRenderer: DataViewFieldRender = props => {
  * Validation: required = non-empty display text (display_name or manuallyEnteredAddress).
  */
 const valueSchema = (props: AddressFieldProps) => {
+  const present = schemaWithAbsent(null, AddressValueNullableSchema);
   if (props.required) {
-    return AddressValueNullableSchema.refine(
+    return present.refine(
       val =>
         val !== null &&
-        !!(val.display_name?.trim() || val.manuallyEnteredAddress?.trim() || '')
-          .length,
+        !!(val.display_name?.trim() || val.manuallyEnteredAddress?.trim()),
       {message: 'Address is required'}
     );
   }
-  return AddressValueNullableSchema;
+  return present;
 };
 
 export const addressFieldSpec: FieldInfo<AddressFieldFullProps> = {
