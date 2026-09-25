@@ -213,23 +213,21 @@ view: {
 
 ## Validation
 
+Attachment ids are a string array. A missing value is treated as `[]` so the required and maximum checks still run.
+
 ```typescript
 const fileUploaderSchemaFunction = (props: FileUploaderProps) => {
-  let base = z.array(z.string());
-
+  const maxFiles = props.maximum_number_of_files ?? 0;
+  let base = z.array(z.string(), {error: 'Add a valid file'});
   if (props.required) {
-    base = base.refine(val => (val ?? []).length > 0, {
-      message: 'At least one attachment is required',
+    base = base.min(1, {message: 'At least one attachment is required'});
+  }
+  if (maxFiles > 0) {
+    base = base.max(maxFiles, {
+      message: `Maximum ${maxFiles} file${maxFiles === 1 ? '' : 's'} allowed`,
     });
   }
-
-  if (props.maximum_number_of_files > 0) {
-    base = base.refine(val => val.length <= props.maximum_number_of_files, {
-      message: `Maximum ${props.maximum_number_of_files} files allowed`,
-    });
-  }
-
-  return base;
+  return schemaWithAbsent([], base);
 };
 ```
 
