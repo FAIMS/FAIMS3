@@ -3,10 +3,7 @@
  * workspace and see the notebook appear without a Conductor round-trip.
  */
 import {$} from '@wdio/globals';
-import {
-  loginAppPersona,
-  loginWebPersona,
-} from '../../helpers/auth.ts';
+import {loginAppPersona, loginWebPersona} from '../../helpers/auth.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
 import {
   createNotebookFromTemplate,
