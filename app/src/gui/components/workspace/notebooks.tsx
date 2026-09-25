@@ -89,6 +89,12 @@ export const DE_ACTIVATE_VERB = 'De-activate';
 export const DE_ACTIVATE_ACTIVE_VERB = 'De-activating';
 
 export const notebookListDataGridSx = {
+  // The virtual scroller defaults to overflow: scroll and traps wheel and
+  // touch gestures. autoHeight sizes the grid to its rows and sets
+  // overflowY: hidden so the page scrolls to the next surveys.
+  '& .MuiDataGrid-virtualScroller': {
+    overflowY: 'hidden',
+  },
   '& .MuiDataGrid-cell': {
     padding: '8px 16px',
     display: 'flex',
