@@ -24,6 +24,7 @@ import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import GeoJSON from 'ol/format/GeoJSON';
 import {useEffect, useState} from 'react';
 import {z} from 'zod';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {createTileStore} from '../../../components';
 import {defaultMapProjection} from '../../../components/maps/MapComponent';
 import {GeoJSONFeatureCollectionSchema} from '../../../components/maps/types';
@@ -327,16 +328,19 @@ export function MapFormField(props: FieldProps): JSX.Element {
  * contain at least one feature.
  */
 const valueSchemaFunction = (props: FieldProps) => {
-  const baseSchema = GeoJSONFeatureCollectionSchema;
+  const present = schemaWithAbsent(
+    null,
+    GeoJSONFeatureCollectionSchema.nullable()
+  );
 
   if (props.required) {
-    return baseSchema.refine(val => val.features && val.features.length > 0, {
-      message: 'A location selection is required.',
-    });
+    return present.refine(
+      val => !!val && Array.isArray(val.features) && val.features.length > 0,
+      {message: 'A location selection is required.'}
+    );
   }
 
-  // Optional - allow undefined/null or valid schema
-  return baseSchema.optional().nullable();
+  return present;
 };
 
 // ============================================================================

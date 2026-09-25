@@ -39,6 +39,7 @@ import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
 import React from 'react';
 import {z} from 'zod';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {BaseFieldParametersSchema} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
@@ -296,10 +297,11 @@ export const AdvancedSelect = (props: FieldProps) => {
  * The value is a string representing the selected path or child name.
  */
 const valueSchema = (props: AdvancedSelectFieldProps) => {
+  let schema = z.string({error: 'Please select an option'});
   if (props.required) {
-    return z.string().min(1, {message: 'Please select an option'});
+    schema = schema.min(1, {message: 'Please select an option'});
   }
-  return z.string();
+  return schemaWithAbsent('', schema);
 };
 
 // ============================================================================

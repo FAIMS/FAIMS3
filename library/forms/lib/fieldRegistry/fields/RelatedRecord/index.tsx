@@ -1,3 +1,4 @@
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {
   canDeleteProjectRecord,
   canEditProjectRecord,
@@ -987,23 +988,19 @@ const RelatedRecordField = (
 // Validation: required fields need at least one link; optional fields allow
 // empty/absent values.
 const valueSchemaFunction = (props: RelatedRecordFieldProps) => {
+  const present = schemaWithAbsent(null, relatedFieldValueSchema.nullable());
   if (props.required) {
-    return relatedFieldValueSchema.refine(
+    return present.refine(
       val => {
-        // If it is an array, ensure it has at least one item
         if (Array.isArray(val)) {
           return val.length > 0;
         }
-        // If it is a single object (and matches the schema), it is valid
         return !!val;
       },
       {message: 'At least one related record is required.'}
     );
   }
-
-  // If required is false, allow null, undefined, or valid schema (including
-  // empty array)
-  return relatedFieldValueSchema.optional().nullable();
+  return present;
 };
 
 export const relatedRecordFieldSpec: FieldInfo = {
