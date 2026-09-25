@@ -633,27 +633,25 @@ const MapComponentImpl = (props: MapComponentProps) => {
             }
             bottomRight={
               showControls && (
-                <>
+                <MapControlStack>
                   <CompassControl map={map} />
-                  <MapControlStack>
-                    {satelliteLayer && (
-                      <LayerToggleControl
-                        map={map}
-                        vectorLayer={tileLayer}
-                        satelliteLayer={satelliteLayer}
-                        isOnline={isOnline}
-                        vectorZoomRange={vectorZoomRange}
-                        satelliteZoomRange={satelliteZoomRange}
-                        onLayerChange={handleLayerChange}
-                      />
-                    )}
-                    <CenterOnLocationControl
-                      onCenter={centerMap}
-                      locationAvailable={locationAvailable}
+                  {satelliteLayer && (
+                    <LayerToggleControl
+                      map={map}
+                      vectorLayer={tileLayer}
+                      satelliteLayer={satelliteLayer}
+                      isOnline={isOnline}
+                      vectorZoomRange={vectorZoomRange}
+                      satelliteZoomRange={satelliteZoomRange}
+                      onLayerChange={handleLayerChange}
                     />
-                    <ZoomControl map={map} />
-                  </MapControlStack>
-                </>
+                  )}
+                  <CenterOnLocationControl
+                    onCenter={centerMap}
+                    locationAvailable={locationAvailable}
+                  />
+                  <ZoomControl map={map} />
+                </MapControlStack>
               )
             }
           />
