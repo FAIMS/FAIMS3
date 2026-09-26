@@ -87,7 +87,11 @@ export interface EditableFormManagerProps {
   initialData?: FaimsFormData;
   /** The existing record - this helps build contextual infills */
   existingRecord: HydratedRecordDocument;
-  /** The notebook's custom metadata, referenced as _METADATA.<key> */
+  /**
+   * The notebook's custom metadata, referenced as _METADATA.<key>. Must be a
+   * stable reference: visibility recomputes on its identity, so a fresh object
+   * each render never settles.
+   */
   metadataValues?: Record<string, string>;
   /** The initial revision ID to work on */
   revisionId: string;
@@ -103,6 +107,13 @@ export interface EditableFormManagerProps {
   onReady?: (handle: EditableFormManagerHandle) => void;
   /** Insertable heading slot */
   headingSlot?: React.ReactNode;
+  /**
+   * Whether the buttons that leave this record for a parent record may be
+   * shown. Default true. A caller that does its own navigation out of the
+   * record, such as a plan view, sets it false so the operator cannot leave
+   * that flow; the primary Finish then returns to the record list.
+   */
+  shouldShowParentNavigation?: boolean;
   /** Enable debug logging for save operations */
   debugMode?: boolean;
 }
@@ -299,6 +310,14 @@ export const EditableFormManager: React.FC<
   useEffect(() => {
     return () => debouncedUpdateVisibility.cancel();
   }, [debouncedUpdateVisibility]);
+
+  // The condition context can change with no field edit - notebook metadata is
+  // written at runtime to put a form into a mode - so recompute on it directly.
+  // Immediate, not debounced: that debounce coalesces keystrokes, and a
+  // metadata write is one deliberate event whose answer should show at once.
+  useEffect(() => {
+    updateVisibility();
+  }, [updateVisibility]);
 
   // ---------------------------------------------------------------------------
   // Save Implementation
@@ -928,6 +947,7 @@ export const EditableFormManager: React.FC<
     isFormSaving: isSaving,
     impliedParents: navigationData.impliedParents,
     createAnotherChild: navigationData.createAnotherChild,
+    shouldShowParentNavigation: props.shouldShowParentNavigation,
   });
 
   // ---------------------------------------------------------------------------

@@ -28,7 +28,8 @@ export interface FormBreadcrumbsProps {
   config: FullFormConfig;
   /** Navigate to record list */
   navigateToRecordList: {
-    label: string;
+    /** What the root crumb is called; omitted to keep the stock wording. */
+    label?: string;
     navigate: () => void;
   };
 }
@@ -161,7 +162,7 @@ export const FormBreadcrumbs = ({
             },
           }}
         >
-          Records
+          {navigateToRecordList.label ?? 'Records'}
         </Box>
 
         {/* Loading indicator for lineage */}
@@ -247,7 +248,7 @@ export const FormBreadcrumbs = ({
           },
         }}
       >
-        Record list
+        {navigateToRecordList.label ?? 'Record list'}
       </Box>
 
       {/* Loading indicator for lineage */}
