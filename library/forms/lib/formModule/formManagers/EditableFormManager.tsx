@@ -87,7 +87,11 @@ export interface EditableFormManagerProps {
   initialData?: FaimsFormData;
   /** The existing record - this helps build contextual infills */
   existingRecord: HydratedRecordDocument;
-  /** The notebook's custom metadata, referenced as _METADATA.<key> */
+  /**
+   * The notebook's custom metadata, referenced as _METADATA.<key>. Must be a
+   * stable reference: visibility recomputes on its identity, so a fresh object
+   * each render never settles.
+   */
   metadataValues?: Record<string, string>;
   /** The initial revision ID to work on */
   revisionId: string;
@@ -103,6 +107,13 @@ export interface EditableFormManagerProps {
   onReady?: (handle: EditableFormManagerHandle) => void;
   /** Insertable heading slot */
   headingSlot?: React.ReactNode;
+  /**
+   * Whether the buttons that leave this record for a parent record may be
+   * shown. Default true. A caller that does its own navigation out of the
+   * record, such as a plan view, sets it false so the operator cannot leave
+   * that flow; the primary Finish then returns to the record list.
+   */
+  shouldShowParentNavigation?: boolean;
   /** Enable debug logging for save operations */
   debugMode?: boolean;
 }
@@ -117,6 +128,24 @@ export interface EditableFormManagerHandle {
 // ============================================================================
 // Component
 // ============================================================================
+
+/** Whether two visibility maps show the same fields in the same sections. */
+function isSameVisibility(
+  a: FieldVisibilityMap,
+  b: FieldVisibilityMap
+): boolean {
+  const sections = Object.keys(a);
+  if (sections.length !== Object.keys(b).length) return false;
+  return sections.every(section => {
+    const before = a[section];
+    const after = b[section];
+    return (
+      after !== undefined &&
+      before.length === after.length &&
+      before.every((fieldId, index) => fieldId === after[index])
+    );
+  });
+}
 
 export const EditableFormManager: React.FC<
   EditableFormManagerProps
@@ -181,7 +210,7 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   // Visibility Tracking
   // ---------------------------------------------------------------------------
-  const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(
+  const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(() =>
     currentlyVisibleMap({
       values: buildConditionValues({
         values: formDataExtractor({fullData: props.initialData ?? {}}),
@@ -279,15 +308,19 @@ export const EditableFormManager: React.FC<
   // Visibility Updates
   // ---------------------------------------------------------------------------
   const updateVisibility = useCallback(() => {
-    setVisibleMap(
-      currentlyVisibleMap({
-        values: buildConditionValues({
-          values: formDataExtractor({fullData: form.state.values}),
-          context: buildContext(),
-        }),
-        uiSpec: dataEngine.uiSpec,
-        viewsetId: props.formId,
-      })
+    const next = currentlyVisibleMap({
+      values: buildConditionValues({
+        values: formDataExtractor({fullData: form.state.values}),
+        context: buildContext(),
+      }),
+      uiSpec: dataEngine.uiSpec,
+      viewsetId: props.formId,
+    });
+    // Keep the previous map when nothing moved, so recomputing does not re-render
+    // the form. Every recompute builds a new map, and the record is refetched
+    // whenever the app regains focus.
+    setVisibleMap(current =>
+      isSameVisibility(current, next) ? current : next
     );
   }, [dataEngine.uiSpec, props.formId, buildContext]);
 
@@ -299,6 +332,14 @@ export const EditableFormManager: React.FC<
   useEffect(() => {
     return () => debouncedUpdateVisibility.cancel();
   }, [debouncedUpdateVisibility]);
+
+  // The condition context can change with no field edit - notebook metadata is
+  // written at runtime to put a form into a mode - so recompute on it directly.
+  // Immediate, not debounced: that debounce coalesces keystrokes, and a
+  // metadata write is one deliberate event whose answer should show at once.
+  useEffect(() => {
+    updateVisibility();
+  }, [updateVisibility]);
 
   // ---------------------------------------------------------------------------
   // Save Implementation
@@ -928,6 +969,7 @@ export const EditableFormManager: React.FC<
     isFormSaving: isSaving,
     impliedParents: navigationData.impliedParents,
     createAnotherChild: navigationData.createAnotherChild,
+    shouldShowParentNavigation: props.shouldShowParentNavigation,
   });
 
   // ---------------------------------------------------------------------------
@@ -970,8 +1012,11 @@ export const EditableFormManager: React.FC<
         try {
           await flushSave();
         } catch (err) {
+          // Reported and carried past, the way every other navigation out of a
+          // form already treats a refused write: the flush puts its own error
+          // banner up and the retry stays here, so a save that will not
+          // succeed must not be what holds the only way out shut.
           logWarn('[guardFinish] flushSave failed before issue check', {err});
-          return;
         }
 
         const progress = completion({
@@ -1222,7 +1267,6 @@ export const EditableFormManager: React.FC<
             await flushSave();
           } catch (err) {
             logWarn('[Finish anyway] flushSave failed', {err});
-            return;
           }
           if (fn) await fn();
         }}

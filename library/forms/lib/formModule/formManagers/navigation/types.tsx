@@ -166,7 +166,7 @@ export interface NavigationService {
   /** Navigate to the record list */
   navigateToRecordList: {
     navigate: () => void;
-    label: string;
+    label?: string;
   };
   /** Navigate to view mode for a record */
   navigateToViewRecord?: (params: {recordId: string}) => void;
@@ -194,6 +194,13 @@ export interface UseNavigationLogicParams {
   impliedParents?: ImpliedParentNavInfo[];
   /** Configuration for creating another sibling record */
   createAnotherChild?: CreateAnotherChildConfig;
+  /**
+   * Whether the buttons that leave this record for a parent record may be
+   * shown. Default true. A caller that owns the way out of a record, such as a
+   * plan view, sets it false so the operator cannot step outside the plan; the
+   * primary Finish then returns to the record list rather than to the parent.
+   */
+  shouldShowParentNavigation?: boolean;
 }
 
 /**
