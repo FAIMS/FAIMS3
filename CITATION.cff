@@ -1,0 +1,255 @@
+cff-version: 1.2.0
+title: Fieldmark (built on FAIMS)
+message: >-
+  If you use this software, please cite it as below.
+type: software
+abstract: >-
+  Fieldmark is open-source software for offline-capable field data
+  collection. Researchers design a notebook in a browser, collect records
+  on Android, iOS, or the web with no network, and sync when a connection
+  returns. Records carry a full version history, and export includes CSV,
+  GeoJSON, KML, GeoPackage, attachments, and an RO-Crate metadata file.
+  Fieldmark is the current generation of the FAIMS platform, and this
+  repository, FAIMS3, is its source. Work published before 2024 generally
+  names the software FAIMS or FAIMS Mobile.
+authors:
+  - family-names: Ross
+    given-names: Shawn
+    orcid: https://orcid.org/0000-0002-6492-9025
+  - family-names: Ballsun-Stanton
+    given-names: Brian
+    orcid: https://orcid.org/0000-0003-4932-7912
+  - family-names: Cassidy
+    given-names: Steve
+    orcid: https://orcid.org/0000-0003-2357-9652
+  - family-names: Crook
+    given-names: Penny
+    orcid: https://orcid.org/0000-0001-8509-7865
+  - family-names: Sobotkova
+    given-names: Adéla
+    orcid: https://orcid.org/0000-0002-4541-3963
+  - name: The FAIMS Project contributors
+repository-code: https://github.com/FAIMS/FAIMS3
+url: https://fieldmark.au
+license: Apache-2.0
+version: 1.6.3
+date-released: '2026-09-03'
+keywords:
+  - field data collection
+  - offline-first
+  - research data management
+  - FAIR data
+  - archaeology
+  - geoscience
+  - ecology
+references:
+  - type: article
+    title: 'FAIMS Mobile: Flexible, open-source software for field research'
+    authors:
+      - family-names: Ballsun-Stanton
+        given-names: Brian
+        orcid: https://orcid.org/0000-0003-4932-7912
+      - family-names: Ross
+        given-names: Shawn Adrian
+        orcid: https://orcid.org/0000-0002-6492-9025
+      - family-names: Sobotkova
+        given-names: Adéla
+        orcid: https://orcid.org/0000-0002-4541-3963
+      - family-names: Crook
+        given-names: Penny
+        orcid: https://orcid.org/0000-0001-8509-7865
+    journal: SoftwareX
+    volume: 7
+    start: 47
+    end: 52
+    year: 2018
+    doi: 10.1016/j.softx.2017.12.006
+  - type: generic
+    title: >-
+      Measure Twice, Cut Once: Cooperative Deployment of a Generalized,
+      Archaeology-Specific Field Data Collection System
+    authors:
+      - family-names: Sobotkova
+        given-names: Adéla
+        orcid: https://orcid.org/0000-0002-4541-3963
+      - family-names: Ross
+        given-names: Shawn Adrian
+        orcid: https://orcid.org/0000-0002-6492-9025
+      - family-names: Ballsun-Stanton
+        given-names: Brian
+        orcid: https://orcid.org/0000-0003-4932-7912
+      - family-names: Fairbairn
+        given-names: Andrew
+      - family-names: Thompson
+        given-names: Jessica
+      - family-names: VanValkenburgh
+        given-names: Parker
+    editors:
+      - family-names: Averett
+        given-names: Erin Walcek
+      - family-names: Gordon
+        given-names: Jody Michael
+      - family-names: Counts
+        given-names: Derek B.
+    collection-title: >-
+      Mobilizing the Past for a Digital Future: The Potential of Digital
+      Archaeology
+    publisher:
+      name: The Digital Press @ University of North Dakota
+      city: Grand Forks
+      country: US
+    start: 337
+    end: 371
+    year: 2016
+    url: https://dc.uwm.edu/arthist_mobilizingthepast/15
+  - type: article
+    title: >-
+      Deploying an Offline, Multi-User, Mobile System for Digital Recording in
+      the Perachora Peninsula, Greece
+    authors:
+      - family-names: Sobotkova
+        given-names: Adéla
+        orcid: https://orcid.org/0000-0002-4541-3963
+      - family-names: Ross
+        given-names: Shawn Adrian
+        orcid: https://orcid.org/0000-0002-6492-9025
+      - family-names: Hermankova
+        given-names: Petra
+      - family-names: Lupack
+        given-names: Susan
+      - family-names: Nassif-Haynes
+        given-names: Christian
+      - family-names: Ballsun-Stanton
+        given-names: Brian
+        orcid: https://orcid.org/0000-0003-4932-7912
+      - family-names: Kasimi
+        given-names: Panagiota
+    journal: Journal of Field Archaeology
+    volume: 46
+    issue: 8
+    start: 571
+    end: 594
+    year: 2021
+    doi: 10.1080/00934690.2021.1969837
+  - type: report
+    title: Regional Geochemistry of the Coompana Area
+    authors:
+      - family-names: Noble
+        given-names: Ryan
+      - family-names: González-Álvarez
+        given-names: Ignacio
+      - family-names: Reid
+        given-names: Nathan
+      - family-names: Krapf
+        given-names: Carmen
+      - family-names: Pinchand
+        given-names: Tenten
+      - family-names: Cole
+        given-names: Dave
+      - family-names: Lau
+        given-names: Ian
+      - family-names: Fox
+        given-names: David
+      - family-names: Brant
+        given-names: Felicity
+      - family-names: White
+        given-names: Alistair
+      - family-names: Klump
+        given-names: Jens
+        orcid: https://orcid.org/0000-0001-5911-6022
+      - family-names: Petts
+        given-names: Anna
+    institution:
+      name: Department for Energy and Mining, South Australia
+      city: Adelaide
+      country: AU
+    number: Report Book 2018/00036
+    year: 2018
+    doi: 10.25919/5c59cf28d6fd2
+  - type: magazine-article
+    title: >-
+      Testing a rapid sampling and analysis workflow in the remote Nullarbor
+      Plain, Australia
+    authors:
+      - family-names: Noble
+        given-names: Ryan
+      - family-names: Reid
+        given-names: Nathan
+      - family-names: Klump
+        given-names: Jens
+        orcid: https://orcid.org/0000-0001-5911-6022
+      - family-names: Robertson
+        given-names: Jess
+      - family-names: Cole
+        given-names: Dave
+      - family-names: Fox
+        given-names: David
+      - family-names: Pinchand
+        given-names: Tenten
+      - family-names: González-Álvarez
+        given-names: Ignacio
+      - family-names: Krapf
+        given-names: Carmen
+      - family-names: Lau
+        given-names: Ian
+    journal: EXPLORE (Newsletter for the Association of Applied Geochemists)
+    volume: 186
+    start: 5
+    end: 18
+    year: 2020
+    month: 3
+    doi: 10.70499/NRQQ4074
+  - type: article
+    title: >-
+      Creating eresearch Tools For Archaeologists: The Federated Archaeological
+      Information Management Systems Project
+    authors:
+      - family-names: Ross
+        given-names: Shawn Adrian
+        orcid: https://orcid.org/0000-0002-6492-9025
+      - family-names: Sobotkova
+        given-names: Adéla
+        orcid: https://orcid.org/0000-0002-4541-3963
+      - family-names: Ballsun-Stanton
+        given-names: Brian
+        orcid: https://orcid.org/0000-0003-4932-7912
+      - family-names: Crook
+        given-names: Penny
+        orcid: https://orcid.org/0000-0001-8509-7865
+    journal: Australian Archaeology
+    volume: 77
+    issue: 1
+    start: 107
+    end: 119
+    year: 2013
+    doi: 10.1080/03122417.2013.11681983
+  - type: article
+    title: >-
+      FAIRer Data through Digital Recording: The FAIMS Mobile Experience
+    authors:
+      - family-names: Ross
+        given-names: Shawn Adrian
+        orcid: https://orcid.org/0000-0002-6492-9025
+      - family-names: Ballsun-Stanton
+        given-names: Brian
+        orcid: https://orcid.org/0000-0003-4932-7912
+      - family-names: Cassidy
+        given-names: Steve
+        orcid: https://orcid.org/0000-0003-2357-9652
+      - family-names: Crook
+        given-names: Penny
+        orcid: https://orcid.org/0000-0001-8509-7865
+      - family-names: Klump
+        given-names: Jens
+        orcid: https://orcid.org/0000-0001-5911-6022
+      - family-names: Sobotkova
+        given-names: Adéla
+        orcid: https://orcid.org/0000-0002-4541-3963
+    journal: Journal of Computer Applications in Archaeology
+    volume: 5
+    issue: 1
+    start: 271
+    end: 285
+    year: 2022
+    month: 11
+    doi: 10.5334/jcaa.96
