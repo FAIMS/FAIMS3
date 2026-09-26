@@ -607,7 +607,7 @@ export const SecurityConfigSchema = z.object({
   rateLimiterEnabled: z.boolean().default(true),
   /**
    * Per-user email-code / verification-challenge attempt limits
-   * (`AUTH_ATTEMPT_LIMITER_ENABLED`). Default true. Keep enabled in
+   * (`ATTEMPT_LIMITER_ENABLED`). Default true. Keep enabled in
    * production even when HTTP rate limiting is disabled upstream.
    */
   authAttemptLimiterEnabled: z.boolean().default(true),
