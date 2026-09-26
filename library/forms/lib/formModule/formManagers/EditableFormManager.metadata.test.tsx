@@ -203,4 +203,34 @@ describe('EditableFormManager metadata-driven visibility', () => {
     await settle();
     expect(visibilityMaps.length).toBe(rendersAfterMount);
   });
+
+  it('does not re-render when a recompute finds the same fields visible', async () => {
+    // The record is refetched whenever the app regains focus, which hands the
+    // manager a fresh object and recomputes visibility. Nothing moved, so the
+    // form should not render again.
+    const {rerender} = renderManager({mode: 'review'});
+    await settle();
+    const rendersAfterMount = visibilityMaps.length;
+
+    const spec = uiSpec();
+    rerender(
+      <EditableFormManager
+        recordId="rec-1"
+        activeUser="tester"
+        initialData={{}}
+        existingRecord={{...existingRecord}}
+        metadataValues={{mode: 'review'}}
+        revisionId="rev-1"
+        formId="FORM"
+        mode="parent"
+        config={config(spec)}
+        navigationContext={{mode: 'root'}}
+      />
+    );
+    await settle();
+
+    // One render for the new props, and no second one from the recompute they
+    // triggered: the map it built holds the same fields, so it is not adopted.
+    expect(visibilityMaps.length).toBe(rendersAfterMount + 1);
+  });
 });

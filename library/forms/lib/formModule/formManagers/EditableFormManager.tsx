@@ -129,6 +129,24 @@ export interface EditableFormManagerHandle {
 // Component
 // ============================================================================
 
+/** Whether two visibility maps show the same fields in the same sections. */
+function isSameVisibility(
+  a: FieldVisibilityMap,
+  b: FieldVisibilityMap
+): boolean {
+  const sections = Object.keys(a);
+  if (sections.length !== Object.keys(b).length) return false;
+  return sections.every(section => {
+    const before = a[section];
+    const after = b[section];
+    return (
+      after !== undefined &&
+      before.length === after.length &&
+      before.every((fieldId, index) => fieldId === after[index])
+    );
+  });
+}
+
 export const EditableFormManager: React.FC<
   EditableFormManagerProps
 > = props => {
@@ -290,15 +308,19 @@ export const EditableFormManager: React.FC<
   // Visibility Updates
   // ---------------------------------------------------------------------------
   const updateVisibility = useCallback(() => {
-    setVisibleMap(
-      currentlyVisibleMap({
-        values: buildConditionValues({
-          values: formDataExtractor({fullData: form.state.values}),
-          context: buildContext(),
-        }),
-        uiSpec: dataEngine.uiSpec,
-        viewsetId: props.formId,
-      })
+    const next = currentlyVisibleMap({
+      values: buildConditionValues({
+        values: formDataExtractor({fullData: form.state.values}),
+        context: buildContext(),
+      }),
+      uiSpec: dataEngine.uiSpec,
+      viewsetId: props.formId,
+    });
+    // Keep the previous map when nothing moved, so recomputing does not re-render
+    // the form. Every recompute builds a new map, and the record is refetched
+    // whenever the app regains focus.
+    setVisibleMap(current =>
+      isSameVisibility(current, next) ? current : next
     );
   }, [dataEngine.uiSpec, props.formId, buildContext]);
 
