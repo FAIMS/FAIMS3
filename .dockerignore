@@ -3,11 +3,12 @@ docs/
 tests/
 .env
 Dockerfile.build
+Dockerfile.dev
 out
-node_modules
 .git
 *.log
-dist
-build
-coverage
-.turbo
+**/node_modules
+**/dist
+**/build
+**/coverage
+**/.turbo
