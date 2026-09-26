@@ -23,8 +23,10 @@
  *   Invite document IDs are `{prefix}-{body}`. The prefix identifies which
  *   configured Conductor server to hit; the body is the random code. Length
  *   and alphabet constraints are shared with the API via `@faims3/data-model`.
- *   After redemption, Conductor redirects back to `/auth-return` (web) or the
- *   `{appId}://auth-return` deep link (native).
+ *   When the switched active user is on that server and their token is usable,
+ *   the invite is redeemed in the app. Any other cached login is ignored.
+ *   Otherwise Conductor register/login redirects back to `/auth-return`
+ *   (web) or `{appId}://auth-return` (native).
  */
 
 import {Browser} from '@capacitor/browser';
@@ -51,17 +53,204 @@ import React, {useState} from 'react';
 import {config, IS_WEB_PLATFORM} from '../../../buildconfig';
 import {useNotification} from '../../../context/popup';
 import {addAlert} from '../../../context/slices/alertSlice';
-import {Server} from '../../../context/slices/projectSlice';
-import {useAppDispatch} from '../../../context/store';
-import {replaceOrAppendRedirect} from '../../../utils/helpers';
+import {
+  isTokenValid,
+  refreshToken,
+  setActiveUser,
+  setServerConnection,
+  TokenInfo,
+} from '../../../context/slices/authSlice';
+import {initialiseProjects, Server} from '../../../context/slices/projectSlice';
+import {store, useAppDispatch, useAppSelector} from '../../../context/store';
+import {parseToken} from '../../../users';
+import {
+  activeInviteUsername,
+  chooseInviteHandoff,
+  conductorInviteUrl,
+  inviteIdFromScannedUrl,
+  postUseInvite,
+} from './inviteRedemption';
 
 interface InviteQRScannerProps {
   /** Configured Conductor servers; scanned URLs must match one of these hosts. */
   servers: Server[];
   /** Called when scan is initiated (e.g. to close a parent dialog) */
   onScanStart?: () => void;
+  /** Called after an in-app redeem succeeds (e.g. to close the add dialog). */
+  onRedeemed?: () => void;
   /** Button label override */
   label?: string;
+}
+
+/**
+ * Stored session for the switched user on one Conductor.
+ * Missing when `activeUsername` is unset (they are signed in on a different
+ * server, or not at all) or when that user has no cached token here.
+ */
+function activeUserConnection(
+  users: Record<string, TokenInfo> | undefined,
+  activeUsername: string | undefined
+): {username: string; info: TokenInfo} | undefined {
+  if (!activeUsername || !users?.[activeUsername]) {
+    return undefined;
+  }
+  return {username: activeUsername, info: users[activeUsername]};
+}
+
+/**
+ * Where Conductor should send the browser after register or login.
+ * Web stays on this origin (`/auth-return`). Native uses the app id as a
+ * custom scheme (`{appId}://auth-return`) so the OS reopens the app.
+ */
+function authRedirect(): string {
+  if (IS_WEB_PLATFORM) {
+    return `${window.location.protocol}//${window.location.host}/auth-return`;
+  }
+  return `${config.appId}://auth-return`;
+}
+
+/**
+ * Shared redeem-or-redirect path for the QR scanner and the typed-code form.
+ *
+ * Only the switched active user on this Conductor may redeem, and only with
+ * their own token. {@link chooseInviteHandoff} then picks one of:
+ * - `redeem` — access token still valid; POST the invite in the app.
+ * - `refresh-then-redeem` — access token expired, refresh token present.
+ * - `login` — signed in, but not with a usable token on this server.
+ * - `register` — signed out.
+ *
+ * Cached sessions for anyone else are ignored. `onRedeemed` runs only after
+ * an in-app redeem; a Conductor redirect does not call it.
+ */
+function useInviteHandoff(onRedeemed?: () => void) {
+  const dispatch = useAppDispatch();
+  const auth = useAppSelector(state => state.auth);
+
+  const openConductor = async (
+    server: Server,
+    inviteId: string,
+    page: 'login' | 'register'
+  ) => {
+    const url = conductorInviteUrl({
+      serverUrl: server.serverUrl,
+      inviteId,
+      page,
+      redirectTo: authRedirect(),
+    });
+    // Replace the page on web so Conductor's redirect can land on /auth-return.
+    // On device, the in-app browser follows the custom-scheme redirect back.
+    if (IS_WEB_PLATFORM) {
+      window.location.href = url;
+    } else {
+      await Browser.open({url});
+    }
+  };
+
+  const completeInvite = async (server: Server, inviteId: string) => {
+    // Undefined unless the switched user is already on this Conductor.
+    const activeUsername = activeInviteUsername({
+      activeServerId: auth.activeUser?.serverId,
+      activeUsername: auth.activeUser?.username,
+      inviteServerId: server.serverId,
+    });
+    let connection = activeUserConnection(
+      auth.servers[server.serverId]?.users,
+      activeUsername
+    );
+    const handoff = chooseInviteHandoff({
+      tokenValid: isTokenValid(connection?.info),
+      tokenRefreshable: !!connection?.info.refreshToken,
+      signedIn: !!auth.activeUser,
+    });
+
+    // No token we can use here. Conductor login/register owns the next step.
+    if (handoff === 'login' || handoff === 'register') {
+      await openConductor(server, inviteId, handoff);
+      return;
+    }
+
+    if (handoff === 'refresh-then-redeem' && connection) {
+      await dispatch(
+        refreshToken({
+          serverId: server.serverId,
+          username: connection.username,
+        })
+      );
+      // The thunk writes the new token into the store; the local snapshot
+      // is stale until we read it back.
+      const refreshed =
+        store.getState().auth.servers[server.serverId]?.users[
+          connection.username
+        ];
+      if (!refreshed || !isTokenValid(refreshed)) {
+        await openConductor(server, inviteId, 'login');
+        return;
+      }
+      connection = {username: connection.username, info: refreshed};
+    }
+
+    // Redeem was chosen, but refuse to POST unless the token still belongs
+    // to the switched user on this server.
+    if (
+      !connection ||
+      connection.username !== activeUsername ||
+      !isTokenValid(connection.info)
+    ) {
+      await openConductor(
+        server,
+        inviteId,
+        auth.activeUser ? 'login' : 'register'
+      );
+      return;
+    }
+
+    try {
+      // Conductor returns a new access token that includes the granted roles.
+      const {accessToken} = await postUseInvite({
+        serverUrl: server.serverUrl,
+        inviteId,
+        token: connection.info.token,
+      });
+      const parsedToken = parseToken(accessToken);
+      await dispatch(
+        setServerConnection({
+          parsedToken,
+          token: accessToken,
+          // Refresh token is not reissued by invite use; keep the current one.
+          refreshToken: connection.info.refreshToken,
+          serverId: server.serverId,
+          username: parsedToken.username,
+        })
+      );
+      dispatch(
+        setActiveUser({
+          serverId: server.serverId,
+          username: parsedToken.username,
+        })
+      );
+      // Reload projects so the notebook the invite granted shows up immediately.
+      await dispatch(initialiseProjects({serverId: server.serverId}));
+      dispatch(
+        addAlert({
+          message: `You now have access to this ${config.notebookName}.`,
+          severity: 'success',
+        })
+      );
+      onRedeemed?.();
+    } catch (error) {
+      dispatch(
+        addAlert({
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Could not use this invite.',
+          severity: 'error',
+        })
+      );
+    }
+  };
+
+  return {completeInvite};
 }
 
 /**
@@ -69,43 +258,55 @@ interface InviteQRScannerProps {
  *
  * Shown only on iOS/Android. Valid payloads look like
  * `{serverUrl}/register?inviteId=PREFIX-…`. The scanned host is checked against
- * {@link InviteQRScannerProps.servers} so arbitrary URLs are not opened. A
- * Capacitor deep-link redirect (`{appId}://auth-return`) is injected so login
- * returns to the app, then the URL is opened in the in-app browser.
+ * {@link InviteQRScannerProps.servers} so arbitrary URLs are not opened. When
+ * the switched active user is on that Conductor and their token is usable, the
+ * invite is redeemed in place. Otherwise Conductor register or login is opened
+ * with an auth-return redirect so sign-in returns to the app.
  */
 export function InviteQRScanner(props: InviteQRScannerProps) {
   const dispatch = useAppDispatch();
+  const {completeInvite} = useInviteHandoff(props.onRedeemed);
 
   /**
-   * Validates the scanned URL against configured server hosts, injects the
-   * native auth-return redirect, and opens it in the Capacitor browser.
+   * Validates the scanned URL against configured server hosts. Redeems in place
+   * only for the switched active user on that Conductor. Otherwise the register
+   * (signed out) or login (signed in elsewhere, or no usable token here) page
+   * is opened.
    */
   const handleRegister = async (url: string) => {
-    // verify that this URL is one that's going to work
-    // valid urls look like:
-    // http://host/register?inviteId=PREFIX-…
+    // Accept only a register URL on a configured Conductor, e.g.
+    // https://conductor.example/register?inviteId=FAIMS-ab12cd.
+    // Anything else (login links, other hosts) is rejected before it is opened.
     const valid_hosts = props.servers.map(server => server.serverUrl);
     const valid_re = valid_hosts.join('|') + '/register.*';
 
-    if (url.match(valid_re)) {
-      // Force the post-login return into the native app rather than a web tab.
-      const finalUrl = replaceOrAppendRedirect({
-        url,
-        redirectTo: `${config.appId}://auth-return`,
-      });
-
-      // Use the capacitor browser plugin in apps
-      await Browser.open({
-        url: finalUrl,
-      });
-    } else {
+    if (!url.match(valid_re)) {
       dispatch(
         addAlert({
           message: 'Invalid invite QR code scanned',
           severity: 'warning',
         })
       );
+      return;
     }
+
+    // The regex checks shape. startsWith picks which configured server owns
+    // the URL, so redemption uses that Conductor's API and auth cache.
+    const server = props.servers.find(candidate =>
+      url.startsWith(candidate.serverUrl)
+    );
+    const inviteId = inviteIdFromScannedUrl(url);
+    if (!server || !inviteId) {
+      dispatch(
+        addAlert({
+          message: 'Invalid invite QR code scanned',
+          severity: 'warning',
+        })
+      );
+      return;
+    }
+
+    await completeInvite(server, inviteId);
   };
 
   return (
@@ -134,6 +335,8 @@ interface InviteCodeEntryProps {
    * than one is present; otherwise the first server's prefix is used.
    */
   servers: Server[];
+  /** Called after an in-app redeem succeeds (e.g. to close the add dialog). */
+  onRedeemed?: () => void;
 }
 
 /**
@@ -148,6 +351,7 @@ interface InviteCodeEntryProps {
 export const InviteCodeEntry = (props: InviteCodeEntryProps) => {
   const [inviteCodeBody, setInviteCodeBody] = useState('');
   const {showError, showInfo} = useNotification();
+  const {completeInvite} = useInviteHandoff(props.onRedeemed);
   const [selectedPrefix, setSelectedPrefix] = useState(
     props.servers[0]?.shortCodePrefix || ''
   );
@@ -164,10 +368,12 @@ export const InviteCodeEntry = (props: InviteCodeEntryProps) => {
    * @returns The cleaned invite-code body without prefix or whitespace
    */
   const processInput = (input: string): string => {
-    // Preserve case for new alphanumeric codes; strip whitespace.
+    // Preserve case for alphanumeric codes; drop spaces from a wrapped paste.
     const cleanInput = input.trim().replace(/\s+/g, '');
 
-    // Check if input starts with any known prefix (including potential dash)
+    // First configured server whose prefix matches wins. `-?` accepts
+    // `PREFIX-body` and `PREFIXbody`. The match is case-insensitive; the
+    // leftover body is returned unchanged.
     for (const prefix of props.servers.map(server => server.shortCodePrefix)) {
       const prefixPattern = new RegExp(`^${prefix}-?`, 'i');
       if (prefixPattern.test(cleanInput)) {
@@ -211,11 +417,12 @@ export const InviteCodeEntry = (props: InviteCodeEntryProps) => {
   };
 
   /**
-   * Builds `{serverUrl}/register?inviteId={prefix}-{body}` and navigates there.
-   * Web uses a same-window redirect back to `/auth-return`; native opens the
-   * Capacitor browser with the `{appId}://auth-return` deep link.
+   * Submits `{prefix}-{body}` via {@link useInviteHandoff}: in-app redeem when
+   * possible, otherwise Conductor register/login with an auth-return redirect.
    */
   const handleRegister = async () => {
+    // Character set was already enforced on each change. Length is checked
+    // again because a too-short body is allowed in the field while typing.
     if (
       inviteCodeBody.length < INVITE_CODE_MIN_LENGTH ||
       inviteCodeBody.length > INVITE_CODE_MAX_LENGTH
@@ -234,20 +441,12 @@ export const InviteCodeEntry = (props: InviteCodeEntryProps) => {
     }
 
     const inviteCode = `${serverInfo.shortCodePrefix}-${inviteCodeBody}`;
-    const url = `${serverInfo.serverUrl}/register?inviteId=${inviteCode}`;
-
-    if (IS_WEB_PLATFORM) {
-      const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
-      window.location.href = url + '&redirect=' + redirect;
-    } else {
-      await Browser.open({
-        url: `${url}&redirect=${config.appId}://auth-return`,
-      });
-    }
+    await completeInvite(serverInfo, inviteCode);
   };
 
-  // only show the prefix selection dropdown if more than one server
+  // One server: its prefix is fixed and shown only as the input adornment.
   const showPrefixSelector = props.servers.length > 1;
+  // Submit stays disabled until the body is long enough to be an invite id.
   const canSubmit =
     inviteCodeBody.length >= INVITE_CODE_MIN_LENGTH &&
     inviteCodeBody.length <= INVITE_CODE_MAX_LENGTH;
@@ -325,6 +524,7 @@ export const InviteCodeEntry = (props: InviteCodeEntryProps) => {
         size="small"
         startIcon={<LoginIcon />}
         disabled={!canSubmit}
+        data-testid="invite-code-submit"
         sx={{
           flexShrink: 0,
           minWidth: {xs: '100%', sm: '96px'},

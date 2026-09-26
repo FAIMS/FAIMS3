@@ -43,7 +43,10 @@ From here you can login if you already have an account, or refer to your {{noteb
 to **register** an account and get access to that {{Notebook}}.
 
 ```{note}
-If you already have an account on the {{FAIMS}} server, use the button to login instead of registering a new account.  Once you are logged in you will be given access to the {{Notebook}}. For more information, see [Login](login.md).
+If you already have an account on the {{FAIMS}} server, use **Already have an
+account? Sign in** at the top of the registration screen instead of registering
+a new account. Once you are logged in you will be given access to the
+{{Notebook}}. For more information, see [Login](login.md).
 ```
 
 ### a) Invitations

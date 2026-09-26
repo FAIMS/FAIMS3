@@ -132,12 +132,18 @@ export async function generateJwtFromUser({
   user,
   signingKey,
   impersonatingUserId,
+  expiresAtSeconds,
 }: {
   user: Express.User;
   signingKey: SigningKey;
   // When present, this token is an impersonation token issued by the given
   // admin user id. Recorded in the payload for auditing.
   impersonatingUserId?: string;
+  // Absolute JWT `exp` (unix seconds). When set, the new token expires at
+  // this instant instead of `now + accessTokenExpiryMinutes`. Callers that
+  // reissue an access token must pass the verified source token's `exp` so
+  // redemption cannot extend the session.
+  expiresAtSeconds?: number;
 }) {
   // The data model provides this encoding method - it takes the couch user
   // details and determines how to put that into the token
@@ -157,17 +163,28 @@ export async function generateJwtFromUser({
     };
 
     // Then there are other parts we wish to include
-    const jwt = await new SignJWT(completePayload)
+    const jwtBuilder = new SignJWT(completePayload)
       .setProtectedHeader({
         alg: signingKey.alg,
         kid: signingKey.kid,
       })
       .setSubject(user.user_id)
       .setIssuedAt()
-      .setIssuer(signingKey.instanceName)
-      // Expiry in minutes
-      .setExpirationTime(config.accessTokenExpiryMinutes.toString() + 'm')
-      .sign(signingKey.privateKey);
+      .setIssuer(signingKey.instanceName);
+
+    if (expiresAtSeconds !== undefined) {
+      if (!Number.isFinite(expiresAtSeconds)) {
+        throw new Error('Access token expiry must be a finite unix timestamp');
+      }
+      // NumericDate: jose uses a number argument as the `exp` claim directly.
+      jwtBuilder.setExpirationTime(expiresAtSeconds);
+    } else {
+      jwtBuilder.setExpirationTime(
+        config.accessTokenExpiryMinutes.toString() + 'm'
+      );
+    }
+
+    const jwt = await jwtBuilder.sign(signingKey.privateKey);
 
     return jwt;
   } catch (e) {
@@ -193,9 +210,11 @@ export async function generateUserToken(
     // When provided (and refresh === true), controls the lifetime of the
     // generated refresh token. Used to keep impersonation sessions short.
     refreshExpiryMs?: number;
+    // Absolute JWT `exp` (unix seconds) copied from a verified source token.
+    expiresAtSeconds?: number;
   } = {}
 ) {
-  const {impersonatingUserId, refreshExpiryMs} = options;
+  const {impersonatingUserId, refreshExpiryMs, expiresAtSeconds} = options;
   const signingKey = await keyService.getSigningKey();
 
   if (signingKey === null || signingKey === undefined) {
@@ -205,6 +224,7 @@ export async function generateUserToken(
       user,
       signingKey,
       impersonatingUserId,
+      expiresAtSeconds,
     });
 
     return {

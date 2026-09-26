@@ -290,6 +290,48 @@ export async function createTeamInvite(options: {
 }
 
 /**
+ * POST /api/invites/notebook/:notebookId → invite `_id` + Conductor register URL.
+ */
+export async function createNotebookInvite(options: {
+  notebookId: string;
+  name: string;
+  role?: string;
+  uses?: number;
+  expiry?: number;
+  token?: string;
+  redirect?: string;
+}): Promise<InviteSummary> {
+  const result = await apiFetchJson(
+    `/api/invites/notebook/${options.notebookId}`,
+    {
+      method: 'POST',
+      token: options.token,
+      body: {
+        name: options.name,
+        role: options.role ?? 'PROJECT_GUEST',
+        uses: options.uses ?? 1,
+        expiry: options.expiry ?? Date.now() + 24 * 60 * 60 * 1000,
+      },
+    }
+  );
+  if (!result.ok) {
+    throw new Error(
+      `POST /api/invites/notebook failed (${result.status}): ${JSON.stringify(result.body)}`
+    );
+  }
+  const body = result.body as {_id?: string};
+  if (!body._id) {
+    throw new Error(
+      `Unexpected notebook invite response: ${JSON.stringify(result.body)}`
+    );
+  }
+  return {
+    inviteId: body._id,
+    registerUrl: buildRegisterUrl(body._id, options.redirect),
+  };
+}
+
+/**
  * POST /api/invites/global → invite `_id` + Conductor register URL.
  */
 export async function createGlobalInvite(options: {
