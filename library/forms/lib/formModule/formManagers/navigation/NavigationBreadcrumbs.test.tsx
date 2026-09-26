@@ -42,9 +42,10 @@ describe('the root crumb', () => {
   });
 
   it('still leaves the form when clicked', async () => {
+    const user = userEvent.setup();
     const navigate = vi.fn();
     renderCrumbs({label: 'Back to cell A1', navigate});
-    await userEvent.click(screen.getByText('Back to cell A1'));
+    await user.click(screen.getByText('Back to cell A1'));
     expect(navigate).toHaveBeenCalled();
   });
 });
