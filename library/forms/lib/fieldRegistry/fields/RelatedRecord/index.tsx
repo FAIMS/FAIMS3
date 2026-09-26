@@ -598,11 +598,6 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     gcTime: 0,
   });
 
-  // A field taking one link that already holds one has nothing to offer: the
-  // write would be refused, so the control does not appear rather than failing
-  // on the way out.
-  const canLinkExisting = props.allowLinkToExisting;
-
   const [linkError, setLinkError] = useState<string | undefined>(undefined);
 
   const handleLinkExisting = async (record: HydratedRecord) => {
@@ -879,7 +874,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           {isCreating ? 'Creating...' : 'Add new ' + relatedRecordTypeLabel}
         </Button>
 
-        {canLinkExisting && (
+        {props.allowLinkToExisting && (
           <Button
             variant="outlined"
             size="small"
@@ -892,7 +887,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       </div>
 
       {/* Link Existing Dialog */}
-      {canLinkExisting && (
+      {props.allowLinkToExisting && (
         <LinkExistingDialog
           open={linkDialogOpen}
           currentRecordId={props.config.recordId}

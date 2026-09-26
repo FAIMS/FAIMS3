@@ -86,19 +86,6 @@ export const withRelatedLink = ({
 }): RelatedRecordFieldAvpValue => (isMultiple ? [...links, link] : link);
 
 /**
- * Both halves of linking an existing record through a related-record field.
- *
- * A link is two writes, not one: the field's own value gains the target, and
- * the target's revision gains the entry pointing back. Miss the second and the
- * link reads correctly from the field while the target cannot see what points
- * at it, which is the direction a roll-up has to travel.
- *
- * Pure, so the two callers that persist differently can still agree on what a
- * link means: a form field writes `fieldValue` through form state, while a
- * caller outside a form writes it through the engine.
- */
-
-/**
  * What linking and creating a related record both have to work out: the
  * refusal, the vocabulary pair, and the edge the target gains. Shared so that
  * creating a child and linking one cannot disagree about what a link means.
@@ -163,6 +150,18 @@ export const withRelatedEdge = ({
     ? {...relationship, parent: [...(relationship?.parent ?? []), edge]}
     : {...relationship, linked: [...(relationship?.linked ?? []), edge]};
 
+/**
+ * Both halves of linking an existing record through a related-record field.
+ *
+ * A link is two writes, not one: the field's own value gains the target, and
+ * the target's revision gains the entry pointing back. Miss the second and the
+ * link reads correctly from the field while the target cannot see what points
+ * at it, which is the direction a roll-up has to travel.
+ *
+ * Pure, so the two callers that persist differently can still agree on what a
+ * link means: a form field writes `fieldValue` through form state, while a
+ * caller outside a form writes it through the engine.
+ */
 export const relatedLinkWrites = ({
   fieldId,
   relationType,
