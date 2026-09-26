@@ -210,7 +210,7 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   // Visibility Tracking
   // ---------------------------------------------------------------------------
-  const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(
+  const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(() =>
     currentlyVisibleMap({
       values: buildConditionValues({
         values: formDataExtractor({fullData: props.initialData ?? {}}),
@@ -1012,8 +1012,11 @@ export const EditableFormManager: React.FC<
         try {
           await flushSave();
         } catch (err) {
+          // Reported and carried past, the way every other navigation out of a
+          // form already treats a refused write: the flush puts its own error
+          // banner up and the retry stays here, so a save that will not
+          // succeed must not be what holds the only way out shut.
           logWarn('[guardFinish] flushSave failed before issue check', {err});
-          return;
         }
 
         const progress = completion({
@@ -1264,7 +1267,6 @@ export const EditableFormManager: React.FC<
             await flushSave();
           } catch (err) {
             logWarn('[Finish anyway] flushSave failed', {err});
-            return;
           }
           if (fn) await fn();
         }}
