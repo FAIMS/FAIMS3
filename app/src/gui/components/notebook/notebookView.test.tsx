@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import {
+  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   MinimalRecordMetadata,
   NotebookDefinition,
   planReferenceFor,
@@ -8,7 +9,7 @@ import {
   withRelatedLink,
 } from '@faims3/data-model';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {cleanup, render, screen} from '@testing-library/react';
+import {act, cleanup, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as ROUTES from '../../../constants/routes';
@@ -27,6 +28,8 @@ const {
   authorised,
   engine,
   childField,
+  specs,
+  compileErrors,
 } = vi.hoisted(() => ({
   navigate: vi.fn(),
   routeParams: {
@@ -55,6 +58,10 @@ const {
   },
   // The parent field the mock view's button hangs its child off
   childField: {current: 'many-layers'},
+  // Per-id compiled specs / compile errors for fail-soft tests; main tests
+  // register the default spec under 'spec' in beforeEach.
+  specs: new Map<string, unknown>(),
+  compileErrors: new Map<string, string>(),
 }));
 
 vi.mock('@faims3/data-model', async () => {
@@ -137,7 +144,8 @@ vi.mock('./plans', async () => {
     getNotebookView: () => (props: any) =>
       React.createElement(
         'div',
-        null,
+        {'data-testid': 'plan-view'},
+        `create-allowed:${String(props.status.isAllowedToAddRecords)}`,
         React.createElement(
           'button',
           {onClick: () => props.tab.select('all-records')},
@@ -222,7 +230,12 @@ vi.mock('../../../context/slices/authSlice', () => ({
 }));
 vi.mock('../../../context/slices/alertSlice', () => ({addAlert: vi.fn()}));
 vi.mock('../../../context/slices/helpers/compiledSpecService', () => ({
-  compiledSpecService: {getSpec: () => uiSpecification},
+  compiledSpecService: {
+    getSpec: (id: string) => specs.get(id),
+    getCompileError: (id: string) => compileErrors.get(id),
+    compileAndRegisterSpec: vi.fn(),
+    removeSpec: vi.fn(),
+  },
 }));
 vi.mock('../../../utils/customHooks', () => ({
   invalidateProjectHydration: vi.fn(),
@@ -246,7 +259,11 @@ vi.mock('../../../utils/apiHooks/notebooks', () => ({
 }));
 vi.mock('../../../utils/database', () => ({localGetDataDb: () => ({})}));
 vi.mock('./DefaultNotebookView', () => ({
-  default: () => <div>default notebook view</div>,
+  default: (props: {status: {isAllowedToAddRecords: boolean}}) => (
+    <div data-testid="plan-view">
+      create-allowed:{String(props.status.isAllowedToAddRecords)}
+    </div>
+  ),
 }));
 vi.mock('./settings', () => ({default: () => null}));
 vi.mock('./MetadataDisplay', () => ({MetadataDisplayComponent: () => null}));
@@ -322,8 +339,15 @@ beforeEach(() => {
   engine.failLink = false;
   childField.current = 'many-layers';
   projectStatus.current = ProjectStatus.OPEN;
+  specs.clear();
+  compileErrors.clear();
+  specs.set('spec', uiSpecification);
 });
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  specs.clear();
+  compileErrors.clear();
+});
 
 describe('NotebookView navigation', () => {
   it('replaces the notebook entry when a plan is chosen', async () => {
@@ -565,5 +589,189 @@ describe('NotebookView createRelatedRecord', () => {
         message: 'Record was created but could not be linked to its parent',
       })
     );
+  });
+});
+
+const failSoftProject = (): Project => ({
+  projectId: 'test-project',
+  serverId: 'test-server',
+  name: 'Test Name',
+  status: ProjectStatus.OPEN,
+  isActivated: true,
+  uiSpecificationId: 'spec-1',
+  uiDefinition: {
+    uiSpec: {
+      fields: {},
+      views: {},
+      viewsets: {},
+      visible_types: [],
+      settings: {showQrCodeButton: false},
+      schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+    },
+    metadata: {
+      information: {
+        notebookVersion: '',
+        purposeMarkdown: '',
+        projectLeadLabel: '',
+        leadInstitution: '',
+      },
+    },
+  },
+});
+
+const renderFailSoft = (project: Project) => {
+  routeParams.current = {
+    serverId: project.serverId,
+    projectId: project.projectId,
+  };
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <NotebookRouteProvider>
+        <NotebookViewTabProvider>
+          <NotebookView project={project} />
+        </NotebookViewTabProvider>
+      </NotebookRouteProvider>
+    </QueryClientProvider>
+  );
+};
+
+describe('NotebookView fail-soft tiers', () => {
+  it('shows the skeleton + copyable report for an incompatible notebook, not a spinner', () => {
+    const project = failSoftProject();
+    project.schemaCompatibility = {
+      tier: 'incompatible',
+      relation: 'newer-major',
+      appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+      notebookSchemaVersion: '99.0.0',
+      requiresMigration: false,
+      reason: 'Notebook schemaVersion 99.0.0 has a newer major version',
+    };
+
+    renderFailSoft(project);
+
+    expect(
+      screen.getByTestId('notebook-schema-incompatible-view')
+    ).toBeTruthy();
+    expect(screen.queryByText('Loading')).toBeNull();
+    const report =
+      screen.getByTestId('notebook-compatibility-report').textContent ?? '';
+    expect(report).toContain('test-project');
+    expect(report).toContain('schemaVersion: 99.0.0');
+    expect(report).toContain(
+      `App schemaVersion: ${CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}`
+    );
+    expect(report).toContain('Tier: incompatible');
+    expect(
+      screen.getByTestId('notebook-compatibility-copy-report')
+    ).toBeTruthy();
+    expect(
+      screen.getByTestId('notebook-schema-chip-incompatible')
+    ).toBeTruthy();
+  });
+
+  it('incompatible with a last good design: banner + read-only records, create blocked', () => {
+    const project = failSoftProject();
+    // A real (non-placeholder) last good graph is stored locally
+    project.uiDefinition.uiSpec.fields = {
+      title: {
+        'component-namespace': 'faims-custom',
+        'component-name': 'TextField',
+        'type-returned': 'faims-core::String',
+        'component-parameters': {label: 'Title', name: 'title'},
+      },
+    } as any;
+    project.uiDefinition.uiSpec.views = {s1: {fields: ['title'], label: 'S'}};
+    project.uiDefinition.uiSpec.viewsets = {f1: {views: ['s1'], label: 'F'}};
+    project.uiDefinition.uiSpec.visible_types = ['f1'];
+    project.schemaCompatibility = {
+      tier: 'incompatible',
+      relation: 'newer-major',
+      appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+      notebookSchemaVersion: '99.0.0',
+      requiresMigration: false,
+      reason: 'Notebook schemaVersion 99.0.0 has a newer major version',
+    };
+    specs.set('spec-1', {
+      ...project.uiDefinition.uiSpec,
+      conditionFns: {},
+    });
+
+    renderFailSoft(project);
+
+    // Banner + report still present …
+    expect(
+      screen.getByTestId('notebook-schema-incompatible-view')
+    ).toBeTruthy();
+    expect(
+      screen.getByTestId('notebook-compatibility-copy-report')
+    ).toBeTruthy();
+    // … but the record list renders (read-only) instead of "unavailable"
+    expect(screen.queryByText(/record list is unavailable/i)).toBeNull();
+    expect(screen.getByTestId('plan-view').textContent).toContain(
+      'create-allowed:false'
+    );
+  });
+
+  it('shows the degraded banner and a live plan view', () => {
+    const project = failSoftProject();
+    project.schemaCompatibility = {
+      tier: 'degraded',
+      relation: 'newer-minor',
+      appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+      notebookSchemaVersion: '1.1.0',
+      requiresMigration: false,
+      reason: 'Notebook schemaVersion 1.1.0 is newer than this app',
+    };
+    specs.set('spec-1', {
+      ...project.uiDefinition.uiSpec,
+      conditionFns: {},
+    });
+
+    renderFailSoft(project);
+
+    expect(screen.getByTestId('notebook-schema-degraded-alert')).toBeTruthy();
+    expect(screen.getByTestId('plan-view')).toBeTruthy();
+    expect(
+      screen.queryByTestId('notebook-schema-incompatible-view')
+    ).toBeNull();
+  });
+
+  it('shows the skeleton with the compile error when the spec failed to compile', () => {
+    const project = failSoftProject();
+    compileErrors.set('spec-1', 'Unknown operator "frobnicate"');
+
+    renderFailSoft(project);
+
+    expect(
+      screen.getByTestId('notebook-schema-incompatible-view')
+    ).toBeTruthy();
+    expect(screen.queryByText('Loading')).toBeNull();
+    expect(
+      screen.getByTestId('notebook-compatibility-report').textContent
+    ).toContain('frobnicate');
+  });
+
+  it('shows a spinner briefly, then the skeleton, when no compiled spec and no error exist', () => {
+    vi.useFakeTimers();
+    try {
+      const project = failSoftProject();
+      act(() => {
+        renderFailSoft(project);
+      });
+      expect(
+        screen.queryByTestId('notebook-schema-incompatible-view')
+      ).toBeNull();
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      expect(
+        screen.getByTestId('notebook-schema-incompatible-view')
+      ).toBeTruthy();
+      expect(
+        screen.getByTestId('notebook-compatibility-report').textContent
+      ).toContain('not available on this device');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

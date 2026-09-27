@@ -22,7 +22,6 @@ import type {
   NotebookWithHistory,
 } from '../state/initial';
 import {
-  normalizeApiUiSpecification,
   type NormalizeApiUiSpecificationResult,
   tryNormalizeApiUiSpecification,
   DesignerDocumentMode,
@@ -38,7 +37,8 @@ type ApiRecordWithUiSpecification = {
 
 /**
  * Maps a project or template record from the main app into the designer's
- * `NotebookWithHistory` shape (present-only undo stack).
+ * `NotebookWithHistory` shape (present-only undo stack). Returns `undefined`
+ * when the design cannot be parsed — never throws, so the Actions page stays up.
  */
 export const toDesignerNotebookWithHistory = (
   record?: ApiRecordWithUiSpecification,
@@ -48,8 +48,11 @@ export const toDesignerNotebookWithHistory = (
     return undefined;
   }
 
-  const definition = normalizeApiUiSpecification(record.uiSpecification, mode);
-  return notebookDefinitionToDesignerHistory(definition);
+  const result = tryNormalizeApiUiSpecification(record.uiSpecification, mode);
+  if (!result.ok) {
+    return undefined;
+  }
+  return notebookDefinitionToDesignerHistory(result.data);
 };
 
 /** Wrap a normalized definition for Redux (empty undo stacks). */

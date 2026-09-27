@@ -1,5 +1,6 @@
 import {TextField as MuiTextField} from '@mui/material';
 import z from 'zod';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {BaseFieldParametersSchema} from '@faims3/data-model';
 import {FormFieldContextProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
@@ -46,23 +47,29 @@ const ComputedField = (props: ComputedFieldFullProps) => {
 
 // The value is null until every referenced field has a usable value.
 const numberValueSchema = (props: ComputedFieldProps) => {
-  const base = z.number().nullable();
+  const base = schemaWithAbsent(
+    null,
+    z.number({error: 'Enter a valid number'}).nullable()
+  );
   if (props.required) {
     return base.refine(v => v !== null, {
       message: 'This value could not be computed yet.',
     });
   }
-  return base.optional();
+  return base;
 };
 
 const textValueSchema = (props: ComputedFieldProps) => {
-  const base = z.string().nullable();
+  const base = schemaWithAbsent(
+    null,
+    z.string({error: 'Enter valid text'}).nullable()
+  );
   if (props.required) {
     return base.refine(v => v !== null, {
       message: 'This value could not be computed yet.',
     });
   }
-  return base.optional();
+  return base;
 };
 
 export const computedNumberSpec: FieldInfo<ComputedFieldFullProps> = {

@@ -42,6 +42,7 @@ import Button from '@mui/material/Button';
 import {useTheme} from '@mui/material/styles';
 import {useState} from 'react';
 import {z} from 'zod';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
 import {BaseFieldParametersSchema} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
@@ -292,13 +293,18 @@ export const TakePoint = (props: FieldProps) => {
  * The value is a GeoJSON Feature with Point geometry, or null if not captured.
  */
 const valueSchema = (props: TakePointFieldProps) => {
+  const schema = schemaWithAbsent(
+    null,
+    z.union([FAIMSPositionSchema, z.null()], {
+      error: 'A location is required',
+    })
+  );
   if (props.required) {
-    // Required: must have a valid position (FAIMSPositionSchema doesn't allow
-    // null)
-    return FAIMSPositionSchema;
+    return schema.refine(val => val !== null, {
+      message: 'A location is required',
+    });
   }
-  // Optional: allow null for no position captured
-  return z.union([FAIMSPositionSchema, z.null()]);
+  return schema;
 };
 
 // ============================================================================

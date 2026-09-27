@@ -18,8 +18,15 @@
  *   `templateId` to the project root.
  * - Resets `isInitialised` to `false` so the app re-fetches the directory and
  *   recompiles specs against the modern shape (see `initialize()`).
- * - Per-project failures are **dropped** (logged) rather than aborting the whole
- *   migration.
+ * - Designs go through the fail-soft `reassessPersistedNotebookDefinition` /
+ *   `ingestLegacyPersistedProjectForStore`, so a design this build cannot read
+ *   is kept (last good graph, or a placeholder) with an `incompatible`
+ *   `schemaCompatibility` rather than dropped. Only unexpected throws drop a
+ *   project (logged).
+ *
+ * Note: compatibility tiers are also re-evaluated on **every** startup by the
+ * `reassessSchemaCompatibility` reducer (app version skew does not bump the
+ * persist version).
  *
  * **Version 2** — {@link migrateProjectsSyncModeV2}
  * - Maps legacy `database.isSyncing: boolean` to {@link SyncMode} on
@@ -30,8 +37,8 @@
  * @see projectsPersistMigration.test.ts — regression tests for v1 and v2
  */
 import {
-  normalizeNotebookUiSpecification,
   NotebookDefinition,
+  NotebookSchemaCompatibility,
   ProjectStatus,
 } from '@faims3/data-model';
 import {logError, logInfo, logWarn} from '@faims3/forms';
@@ -42,7 +49,10 @@ import type {
   DatabaseConnection,
 } from './projectSlice';
 import {syncModeFromLegacyIsSyncing} from '../../sync/syncMode';
-import {notebookDefinitionFromLegacyPersistedProject} from './helpers/notebookDefinition';
+import {
+  ingestLegacyPersistedProjectForStore,
+  reassessPersistedNotebookDefinition,
+} from './helpers/notebookDefinition';
 
 /** Fallback projects state when persisted data is missing or unusable. */
 const emptyProjectsState: ProjectsState = {
@@ -160,16 +170,24 @@ function migrateOnePersistedProject(
 ): Project | undefined {
   try {
     let uiDefinition: NotebookDefinition;
+    let schemaCompatibility: NotebookSchemaCompatibility;
     let source: 'legacy' | 'uiDefinition';
 
+    // Both paths are fail-soft: a design this build cannot read becomes a
+    // placeholder with an `incompatible` tier rather than a dropped project.
     if (legacy.uiDefinition) {
-      uiDefinition = normalizeNotebookUiSpecification(legacy.uiDefinition);
+      ({uiDefinition, schemaCompatibility} =
+        reassessPersistedNotebookDefinition({
+          uiDefinition: legacy.uiDefinition,
+          schemaCompatibility: undefined,
+        }));
       source = 'uiDefinition';
     } else if (legacy.metadata || legacy.rawUiSpecification) {
-      uiDefinition = notebookDefinitionFromLegacyPersistedProject({
-        metadata: legacy.metadata,
-        rawUiSpecification: legacy.rawUiSpecification,
-      });
+      ({uiDefinition, schemaCompatibility} =
+        ingestLegacyPersistedProjectForStore({
+          metadata: legacy.metadata,
+          rawUiSpecification: legacy.rawUiSpecification,
+        }));
       source = 'legacy';
     } else {
       stats.skippedNoPayload++;
@@ -204,6 +222,7 @@ function migrateOnePersistedProject(
       projectId: legacy.projectId,
       serverId: legacy.serverId,
       source,
+      schemaCompatibility: schemaCompatibility.tier,
     });
 
     return {
@@ -217,6 +236,7 @@ function migrateOnePersistedProject(
       isActivated: legacy.isActivated,
       uiSpecificationId: legacy.uiSpecificationId,
       uiDefinition,
+      schemaCompatibility,
       database: legacy.database,
     };
   } catch (err) {
@@ -246,12 +266,17 @@ function migrateServerProjects(
     const legacy = raw as LegacyPersistedProject;
     if (legacy.uiDefinition && !legacy.metadata && !legacy.rawUiSpecification) {
       try {
+        const ingested = reassessPersistedNotebookDefinition({
+          uiDefinition: legacy.uiDefinition,
+          schemaCompatibility: undefined,
+        });
         next[id] = {
           ...legacy,
-          uiDefinition: normalizeNotebookUiSpecification(legacy.uiDefinition),
+          uiDefinition: ingested.uiDefinition,
+          schemaCompatibility: ingested.schemaCompatibility,
           description:
             legacy.description ??
-            legacy.uiDefinition.metadata.information.purposeMarkdown.slice(
+            legacy.uiDefinition.metadata?.information?.purposeMarkdown?.slice(
               0,
               500
             ),

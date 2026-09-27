@@ -59,6 +59,10 @@ import {
   InviteCodeEntry,
   InviteQRScanner,
 } from '../authentication/inviteCodeEntry';
+import {
+  compatibilityChipProps,
+  NotebookSchemaCompatibilityChip,
+} from '../notebook/NotebookSchemaCompatibility';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
@@ -85,6 +89,12 @@ export const DE_ACTIVATE_VERB = 'De-activate';
 export const DE_ACTIVATE_ACTIVE_VERB = 'De-activating';
 
 export const notebookListDataGridSx = {
+  // The virtual scroller defaults to overflow: scroll and traps wheel and
+  // touch gestures. autoHeight sizes the grid to its rows and sets
+  // overflowY: hidden so the page scrolls to the next surveys.
+  '& .MuiDataGrid-virtualScroller': {
+    overflowY: 'hidden',
+  },
   '& .MuiDataGrid-cell': {
     padding: '8px 16px',
     display: 'flex',
@@ -173,17 +183,44 @@ export default function NoteBooks() {
               display: 'flex',
               flexDirection: 'column',
               gap: 0,
+              // Constrain to the cell so the name can truncate instead of
+              // pushing the chip out of view.
+              minWidth: 0,
+              maxWidth: '100%',
             }}
           >
-            <Typography
-              variant={is_xs ? 'body2' : 'body1'}
+            {/* Chip sits inline with the name: rows have a fixed height, so a
+                stacked chip would push the name out of the visible cell. */}
+            <Box
               sx={{
-                fontWeight: row.isActivated ? 'bold' : 'normal',
-                color: row.isActivated ? 'black' : grey[800],
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                minWidth: 0,
               }}
             >
-              {row.name ?? 'Unknown ' + config.notebookNameCapitalized}
-            </Typography>
+              <Typography
+                variant={is_xs ? 'body2' : 'body1'}
+                sx={{
+                  fontWeight: row.isActivated ? 'bold' : 'normal',
+                  color: row.isActivated ? 'black' : grey[800],
+                  // Let the name give way to the chip on narrow screens
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {row.name ?? 'Unknown ' + config.notebookNameCapitalized}
+              </Typography>
+              {compatibilityChipProps(row.schemaCompatibility) && (
+                <Box sx={{flexShrink: 0, display: 'flex'}}>
+                  <NotebookSchemaCompatibilityChip
+                    compatibility={row.schemaCompatibility}
+                  />
+                </Box>
+              )}
+            </Box>
             {listDescription &&
               (isNotebookListDescriptionTruncated(row.description) ? (
                 <Tooltip title={row.description?.trim() ?? ''}>

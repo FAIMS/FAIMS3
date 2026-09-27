@@ -273,8 +273,6 @@ const EnvSchema = z
       .string()
       .optional()
       .transform(v => (v === undefined ? true : v.toLowerCase() !== 'true')),
-    /** Configure migration of notebooks on startup. */
-    MIGRATE_NOTEBOOKS_ON_STARTUP: configHelpers.equalsTrueBool(true),
     /** Where signing keys are loaded from (`FILE` or `AWS_SM`). */
     KEY_SOURCE: configHelpers.nativeEnumDefault(KeySource, KeySource.FILE),
     /** AWS Secrets Manager ARN for signing keys; required when KEY_SOURCE is AWS_SM. */
@@ -546,7 +544,6 @@ const EnvSchema = z
       exportRateLimiterWindowMs: env.EXPORT_RATE_LIMITER_WINDOW_MS,
       exportRateLimiterPerWindow: env.EXPORT_RATE_LIMITER_PER_WINDOW,
       authAttemptLimiterEnabled: env.AUTH_ATTEMPT_LIMITER_ENABLED,
-      migrateNotebooksOnStartup: env.MIGRATE_NOTEBOOKS_ON_STARTUP,
       keySource: env.KEY_SOURCE,
       maximumLongLivedDurationDays: env.MAXIMUM_LONG_LIVED_DURATION_DAYS,
       bugsnagApiKey: env.BUGSNAG_API_KEY,

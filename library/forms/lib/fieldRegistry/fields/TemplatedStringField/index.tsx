@@ -1,5 +1,6 @@
 import {TextField as MuiTextField} from '@mui/material';
 import z from 'zod';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {
   BaseFieldParameters,
   BaseFieldParametersSchema,
@@ -51,8 +52,10 @@ const TemplatedStringField = (
 };
 
 // generate a zod schema for the value.
+// The value is produced by the template engine, so a missing result must not
+// fail with a type error or block submit before the template has run.
 const valueSchema = () => {
-  return z.string().optional();
+  return schemaWithAbsent('', z.string({error: 'Enter valid text'}));
 };
 
 export const templatedStringFieldSpec: FieldInfo = {

@@ -31,6 +31,7 @@ import {
   attachmentSaveTrace,
   BaseFieldParametersSchema,
 } from '@faims3/data-model';
+import {takePhotoIsComplete, takePhotoValueSchema} from './valueSchema';
 import {FormFieldContextProps} from '../../../formModule/types';
 import {
   LoadedPhoto,
@@ -41,6 +42,11 @@ import {logError, logWarn} from '../../../logging';
 import {TakePhotoRender} from '../../../rendering/fields/view/specialised/TakePhoto';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import {
+  createConcurrencyLimiter,
+  delayIfSlowPhotosDebug,
+  MAX_PARALLEL_SAVES,
+} from './parallelSaveLimiter';
 import {
   IMAGE_QUALITY_0_100,
   MAX_IMAGE_WIDTH,
@@ -287,14 +293,17 @@ const PhotoActions: React.FC<{
   justify?: 'center' | 'flex-start';
   /** Empty state: full-width centered row on narrow viewports. */
   stretchOnNarrow?: boolean;
-  /** True while a capture or gallery save is in flight. */
+  /** True while the camera/gallery picker is open or save slots are full. */
   actionsDisabled?: boolean;
+  /** Tooltip shown on Camera/Gallery when `actionsDisabled` is true. */
+  actionsDisabledReason?: string;
 }> = ({
   onAddPhoto,
   onPickFromGallery,
   justify = 'center',
   stretchOnNarrow = false,
   actionsDisabled = false,
+  actionsDisabledReason,
 }) => {
   const theme = useTheme();
 
@@ -323,7 +332,13 @@ const PhotoActions: React.FC<{
         gap: 1.5,
       }}
     >
-      <Tooltip title="Take a new photo with your camera">
+      <Tooltip
+        title={
+          actionsDisabled && actionsDisabledReason
+            ? actionsDisabledReason
+            : 'Take a new photo with your camera'
+        }
+      >
         <Box component="span" sx={actionSlotSx}>
           <ActionButton
             icon={
@@ -342,7 +357,13 @@ const PhotoActions: React.FC<{
           />
         </Box>
       </Tooltip>
-      <Tooltip title="Select multiple photos at once from your gallery">
+      <Tooltip
+        title={
+          actionsDisabled && actionsDisabledReason
+            ? actionsDisabledReason
+            : 'Select multiple photos at once from your gallery'
+        }
+      >
         <Box component="span" sx={actionSlotSx}>
           <ActionButton
             icon={
@@ -373,7 +394,13 @@ const PhotoActionsTile: React.FC<{
   onAddPhoto: () => void;
   onPickFromGallery: () => void;
   actionsDisabled?: boolean;
-}> = ({onAddPhoto, onPickFromGallery, actionsDisabled = false}) => {
+  actionsDisabledReason?: string;
+}> = ({
+  onAddPhoto,
+  onPickFromGallery,
+  actionsDisabled = false,
+  actionsDisabledReason,
+}) => {
   const theme = useTheme();
 
   return (
@@ -393,6 +420,7 @@ const PhotoActionsTile: React.FC<{
         onAddPhoto={onAddPhoto}
         onPickFromGallery={onPickFromGallery}
         actionsDisabled={actionsDisabled}
+        actionsDisabledReason={actionsDisabledReason}
       />
     </Paper>
   );
@@ -407,7 +435,14 @@ const EmptyState: React.FC<{
   onPickFromGallery: () => void;
   disabled: boolean;
   actionsDisabled?: boolean;
-}> = ({onAddPhoto, onPickFromGallery, disabled, actionsDisabled = false}) => {
+  actionsDisabledReason?: string;
+}> = ({
+  onAddPhoto,
+  onPickFromGallery,
+  disabled,
+  actionsDisabled = false,
+  actionsDisabledReason,
+}) => {
   const theme = useTheme();
 
   if (disabled) {
@@ -444,6 +479,7 @@ const EmptyState: React.FC<{
         justify="flex-start"
         stretchOnNarrow
         actionsDisabled={actionsDisabled}
+        actionsDisabledReason={actionsDisabledReason}
       />
     </Box>
   );
@@ -685,8 +721,12 @@ const PhotoGallery: React.FC<{
   onAddPhoto: () => void;
   onPickFromGallery: () => void;
   disabled: boolean;
-  /** True while a capture or gallery save is in flight. */
+  /** True while the camera/gallery picker is open or save slots are full. */
   actionsDisabled?: boolean;
+  /** Tooltip shown on Camera/Gallery when `actionsDisabled` is true. */
+  actionsDisabledReason?: string;
+  /** True while the camera/gallery picker is open (delete stays available during saves). */
+  deleteDisabled?: boolean;
 }> = ({
   photos,
   pendingPhotos,
@@ -695,6 +735,8 @@ const PhotoGallery: React.FC<{
   onPickFromGallery,
   disabled,
   actionsDisabled = false,
+  actionsDisabledReason,
+  deleteDisabled = false,
 }) => {
   const theme = useTheme();
 
@@ -774,6 +816,7 @@ const PhotoGallery: React.FC<{
               onAddPhoto={onAddPhoto}
               onPickFromGallery={onPickFromGallery}
               actionsDisabled={actionsDisabled}
+              actionsDisabledReason={actionsDisabledReason}
             />
           )}
 
@@ -811,7 +854,7 @@ const PhotoGallery: React.FC<{
                 data={photo.data}
                 onDelete={() => handleDeleteClick(photo.data.id)}
                 onClick={() => setLightboxUrl(photo.data.url)}
-                deleteDisabled={actionsDisabled}
+                deleteDisabled={deleteDisabled}
               />
             );
           })}
@@ -845,7 +888,7 @@ const PhotoGallery: React.FC<{
             onClick={handleDeleteConfirm}
             variant="contained"
             color="error"
-            disabled={actionsDisabled}
+            disabled={deleteDisabled}
             sx={{borderRadius: theme.spacing(1), ml: 2}}
           >
             Delete
@@ -904,11 +947,21 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
 
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // In-flight guard: a second Gallery/Camera tap (or a delete) must not
-  // overlap sequential PouchDB writes. The ref is the source of truth so
-  // two clicks in the same tick cannot race past a state update.
-  const saveInFlightRef = useRef(false);
-  const [saveInFlight, setSaveInFlight] = useState(false);
+  // One native picker at a time. Saves are tracked separately so Camera /
+  // Gallery stay usable while earlier photos show "Saving...".
+  const pickerInFlightRef = useRef(false);
+  const [pickerInFlight, setPickerInFlight] = useState(false);
+
+  const saveLimiterRef = useRef(createConcurrencyLimiter(MAX_PARALLEL_SAVES));
+  const savesInFlightRef = useRef(0);
+  const [savesInFlight, setSavesInFlight] = useState(0);
+
+  // One form-level lock for this field: held while the picker is open or any
+  // save slot is held. Avoids a gap between releasing the picker and starting
+  // the write. FormSection remounts on section change (key={activeSection});
+  // without this lock the field can unmount mid-pick/save and the async work
+  // continues on a dead instance.
+  const formLockHeldRef = useRef(false);
 
   // Get attachment service (guaranteed to exist in full mode)
   const attachmentService = context.attachmentEngine();
@@ -958,6 +1011,54 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       pendingUrlsRef.current.clear();
     };
   }, []);
+
+  const syncFormLock = useCallback(() => {
+    const shouldHold =
+      pickerInFlightRef.current || savesInFlightRef.current > 0;
+    if (shouldHold && !formLockHeldRef.current) {
+      formLockHeldRef.current = true;
+      setAttachmentSaving?.(true);
+    } else if (!shouldHold && formLockHeldRef.current) {
+      formLockHeldRef.current = false;
+      setAttachmentSaving?.(false);
+    }
+  }, [setAttachmentSaving]);
+
+  const beginPicker = useCallback(() => {
+    pickerInFlightRef.current = true;
+    setPickerInFlight(true);
+    syncFormLock();
+  }, [syncFormLock]);
+
+  const endPicker = useCallback(() => {
+    pickerInFlightRef.current = false;
+    setPickerInFlight(false);
+    syncFormLock();
+  }, [syncFormLock]);
+
+  /**
+   * Takes a save slot. When a slot is free, the limiter grants inside the
+   * Promise executor so `savesInFlightRef` is updated before the caller
+   * `await`s — endPicker can then run without dropping the form lock.
+   */
+  const acquireSaveSlot = useCallback(() => {
+    const acquired = saveLimiterRef.current.acquire();
+    savesInFlightRef.current = saveLimiterRef.current.active;
+    setSavesInFlight(saveLimiterRef.current.active);
+    syncFormLock();
+    return acquired.then(() => {
+      savesInFlightRef.current = saveLimiterRef.current.active;
+      setSavesInFlight(saveLimiterRef.current.active);
+      syncFormLock();
+    });
+  }, [syncFormLock]);
+
+  const releaseSaveSlot = useCallback(() => {
+    saveLimiterRef.current.release();
+    savesInFlightRef.current = saveLimiterRef.current.active;
+    setSavesInFlight(saveLimiterRef.current.active);
+    syncFormLock();
+  }, [syncFormLock]);
 
   /**
    * Shows a thumbnail immediately and returns its temporary id. Kept separate
@@ -1042,6 +1143,9 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         format,
       });
 
+      // No-op unless DEBUG_SLOW_PHOTOS is on, which stalls here to mimic a slow phone.
+      await delayIfSlowPhotosDebug();
+
       let newId: string;
       try {
         newId = await addAttachment({
@@ -1087,11 +1191,11 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
    * a single tap. Selecting existing images is a separate control.
    */
   const takePhoto = useCallback(async () => {
-    if (saveInFlightRef.current) return;
-    saveInFlightRef.current = true;
-    setSaveInFlight(true);
+    if (pickerInFlightRef.current) return;
+    if (savesInFlightRef.current >= MAX_PARALLEL_SAVES) return;
 
-    let attachmentLockHeld = false;
+    beginPicker();
+    let saveSlotHeld = false;
     try {
       const isWeb = Capacitor.getPlatform() === 'web';
 
@@ -1113,12 +1217,6 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
           return;
         }
       }
-
-      // Block section navigation for the entire capture flow. Must be set
-      // before getPhoto so the lock is already active when the native camera
-      // closes (blob fetch, EXIF, and PouchDB write all run under this lock).
-      setAttachmentSaving?.(true);
-      attachmentLockHeld = true;
 
       // Capture photo
       const photoResult = await Camera.getPhoto({
@@ -1152,24 +1250,45 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       );
 
       setSaveError(null);
-      await storePhoto({
-        tempId: addPendingPreview(prepared.photoBlob),
-        photoBlob: prepared.photoBlob,
-        format: prepared.format,
-        path: photoResult.path,
-      });
-    } catch (err: any) {
+      const tempId = addPendingPreview(prepared.photoBlob);
+
+      // Take a save slot before releasing the picker so the form lock is
+      // never dropped between capture and the PouchDB write.
+      await acquireSaveSlot();
+      saveSlotHeld = true;
+      endPicker();
+
+      try {
+        await storePhoto({
+          tempId,
+          photoBlob: prepared.photoBlob,
+          format: prepared.format,
+          path: photoResult.path,
+        });
+      } finally {
+        releaseSaveSlot();
+        saveSlotHeld = false;
+      }
+    } catch (err: unknown) {
       if (isCancellation(err)) return;
       logError(new Error('Failed to capture photo:'), {error: err});
       setSaveError('Could not save the photo. Please try again.');
     } finally {
-      saveInFlightRef.current = false;
-      setSaveInFlight(false);
-      if (attachmentLockHeld) {
-        setAttachmentSaving?.(false);
+      if (pickerInFlightRef.current) {
+        endPicker();
+      }
+      if (saveSlotHeld) {
+        releaseSaveSlot();
       }
     }
-  }, [addPendingPreview, storePhoto, setAttachmentSaving]);
+  }, [
+    addPendingPreview,
+    storePhoto,
+    beginPicker,
+    endPicker,
+    acquireSaveSlot,
+    releaseSaveSlot,
+  ]);
 
   /**
    * Adds existing images from the device gallery. Multi-select, so a batch can
@@ -1181,11 +1300,10 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
    * library permission deny.
    */
   const pickFromGallery = useCallback(async () => {
-    if (saveInFlightRef.current) return;
-    saveInFlightRef.current = true;
-    setSaveInFlight(true);
+    if (pickerInFlightRef.current) return;
+    if (savesInFlightRef.current >= MAX_PARALLEL_SAVES) return;
 
-    let attachmentLockHeld = false;
+    beginPicker();
     try {
       const photosAccess = await ensureIosPhotosAccess();
       if (photosAccess) {
@@ -1193,15 +1311,6 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         return;
       }
       setNoPhotosPermission(null);
-
-      // Block section navigation for the entire gallery flow. Must be set
-      // before pickImages so the lock is already active while the picker is
-      // open (fetch, preview, and sequential PouchDB writes all run under
-      // this lock). FormSection remounts on section change
-      // (key={activeSection}); without this lock the field can unmount
-      // mid-pick and the async save continues on a dead instance.
-      setAttachmentSaving?.(true);
-      attachmentLockHeld = true;
 
       // quality/width are honoured on iOS/Android only. The web plugin
       // returns the original File via createObjectURL — see
@@ -1252,29 +1361,34 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         throw err;
       }
 
-      // Sequential writes: concurrent PouchDB attachment writes contend, and
-      // this keeps the saved order the same as the picked order. No `path` is
-      // passed, so native gallery images keep their original EXIF location.
-      // Web re-encoding strips EXIF (see preparePhotoBlobForStorage).
-      // Per-item try/catch so one bad write doesn't strand the remaining
-      // previews on "Saving..." — storePhoto already drops its own preview
-      // on failure, we just tally and continue.
+      // Parallel writes up to MAX_PARALLEL_SAVES, shared with camera saves.
+      // Start every store (they acquire slots) before releasing the picker so
+      // the form lock stays held. No `path` is passed, so native gallery
+      // images keep their original EXIF location. Web re-encoding strips EXIF
+      // (see preparePhotoBlobForStorage). Per-item try/catch so one bad write
+      // doesn't strand the remaining previews on "Saving..." — storePhoto
+      // already drops its own preview on failure, we just tally and continue.
       let failures = 0;
-      for (const item of pending) {
+      const storePromises = pending.map(async item => {
+        await acquireSaveSlot();
         try {
           await storePhoto(item);
         } catch (err) {
           failures++;
           logError(new Error('Failed to save gallery photo:'), {error: err});
+        } finally {
+          releaseSaveSlot();
         }
-      }
+      });
+      endPicker();
+      await Promise.all(storePromises);
       if (failures > 0) {
         const plural = pending.length === 1 ? '' : 's';
         setSaveError(
           `Could not save ${failures} of ${pending.length} photo${plural}. Please try again.`
         );
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (isCancellation(err)) return;
       if (isPhotosAccessDenied(err)) {
         setNoPhotosPermission('denied');
@@ -1283,13 +1397,19 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       logError(new Error('Failed to add photos from gallery:'), {error: err});
       setSaveError('Could not add photos from your gallery. Please try again.');
     } finally {
-      saveInFlightRef.current = false;
-      setSaveInFlight(false);
-      if (attachmentLockHeld) {
-        setAttachmentSaving?.(false);
+      if (pickerInFlightRef.current) {
+        endPicker();
       }
     }
-  }, [addPendingPreview, removePendingPhoto, storePhoto, setAttachmentSaving]);
+  }, [
+    addPendingPreview,
+    removePendingPhoto,
+    storePhoto,
+    beginPicker,
+    endPicker,
+    acquireSaveSlot,
+    releaseSaveSlot,
+  ]);
 
   /**
    * Deletes a photo by attachment id. Index-based delete is unsafe: a
@@ -1298,17 +1418,27 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
    */
   const handleDelete = useCallback(
     (attachmentId: string) => {
-      if (saveInFlightRef.current) return;
+      if (pickerInFlightRef.current) return;
       removeAttachment({attachmentId});
-      const currentData = props.state.value?.data as string[] | undefined;
-      props.setFieldData((currentData ?? []).filter(v => v !== attachmentId));
+      // Filter the latest list. A snapshot of props.state.value is stale
+      // while parallel storePhoto calls are appending ids, and writing that
+      // snapshot back drops ids that just finished saving.
+      props.setFieldData((prev: string[] | undefined) =>
+        (prev ?? []).filter(v => v !== attachmentId)
+      );
     },
-    [removeAttachment]
+    [removeAttachment, props.setFieldData]
   );
 
   // Determine if we have any photos to show (either pending or loaded)
   const hasAnyPhotos =
     (state.value?.attachments?.length ?? 0) > 0 || pendingPhotos.size > 0;
+
+  const atSaveCapacity = savesInFlight >= MAX_PARALLEL_SAVES;
+  const actionsDisabled = pickerInFlight || atSaveCapacity;
+  const actionsDisabledReason = atSaveCapacity
+    ? `Up to ${MAX_PARALLEL_SAVES} photos can save at once — wait for one to finish.`
+    : undefined;
 
   return (
     <FieldWrapper
@@ -1354,7 +1484,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
             onAddPhoto={takePhoto}
             onPickFromGallery={pickFromGallery}
             disabled={disabled}
-            actionsDisabled={saveInFlight}
+            actionsDisabled={actionsDisabled}
+            actionsDisabledReason={actionsDisabledReason}
           />
         ) : (
           <PhotoGallery
@@ -1364,7 +1495,9 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
             onAddPhoto={takePhoto}
             onPickFromGallery={pickFromGallery}
             disabled={disabled}
-            actionsDisabled={saveInFlight}
+            actionsDisabled={actionsDisabled}
+            actionsDisabledReason={actionsDisabledReason}
+            deleteDisabled={pickerInFlight}
           />
         )}
       </Box>
@@ -1405,17 +1538,8 @@ export const takePhotoFieldSpec: FieldInfo = {
   returns: 'faims-attachment::Files',
   component: TakePhoto,
   fieldPropsSchema: takePhotoPropsSchema,
-  fieldDataSchemaFunction: (props: TakePhotoProps) => {
-    // check there is at least one entry
-    let base: z.ZodType<any> = z.array(z.string());
-    if (props.required) {
-      base = base.refine(val => (val ?? []).length > 0, {
-        message: 'At least one attachment is required',
-      });
-    }
-
-    return base;
-  },
+  fieldDataSchemaFunction: takePhotoValueSchema,
+  isCompleteFunction: takePhotoIsComplete,
   view: {
     component: TakePhotoRender,
     config: {},

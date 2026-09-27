@@ -72,6 +72,7 @@ import {api as tombstonesApi} from './api/tombstones';
 import {api as usersApi} from './api/users';
 import {api as utilityApi} from './api/utilities';
 import {api as emailVerifyApi} from './api/verificationChallenges';
+import {shouldReportErrorToBugsnag} from './logging';
 import patch from './utils/patchExpressAsync';
 
 // This must occur before express app is used
@@ -90,6 +91,9 @@ if (bugsnagEnabled) {
     apiKey: config.bugsnagApiKey!,
     plugins: [BugsnagPluginExpress],
     appVersion: config.apiVersion,
+    // Express reports every error passed to next(err). Drop expected 401s and
+    // intentional tombstone 404s; keep 429s and other failures.
+    onError: event => shouldReportErrorToBugsnag(event.originalError),
   });
   console.log('Bugsnag enabled');
 } else {
