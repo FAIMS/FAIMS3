@@ -168,8 +168,6 @@ export interface NavigationService {
     navigate: () => void;
     label?: string;
   };
-  /** Navigate to view mode for a record */
-  navigateToViewRecord?: (params: {recordId: string}) => void;
 }
 
 /**

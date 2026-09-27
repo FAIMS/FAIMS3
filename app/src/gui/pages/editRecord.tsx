@@ -274,16 +274,6 @@ export const EditRecordPage = () => {
             navigate(notebookRoute);
           },
         },
-        // Takes you back to view record (note this is only shown if there are no
-        // parent navigation history)
-        navigateToViewRecord: params => {
-          navigate(
-            getViewRecordRoute({
-              ...notebook,
-              recordId: params.recordId,
-            })
-          );
-        },
         toRecord: ({
           recordId: targetRecordId,
           mode: targetMode,

@@ -962,7 +962,6 @@ export const EditableFormManager: React.FC<
     navigationService: {
       toRecord: props.config.navigation.toRecord,
       navigateToRecordList: props.config.navigation.navigateToRecordList,
-      navigateToViewRecord: props.config.navigation.navigateToViewRecord,
     },
     flushSave,
     hasPendingSave,

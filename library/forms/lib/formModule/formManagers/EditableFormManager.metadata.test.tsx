@@ -130,7 +130,6 @@ const config = (spec: CompiledUiSpecModel) =>
     navigation: {
       toRecord: () => {},
       navigateToRecordList: {navigate: () => {}},
-      navigateToViewRecord: () => {},
     },
   }) as unknown as FullFormConfig;
 

@@ -172,8 +172,6 @@ export interface FullFormConfig extends BaseFormConfig {
       // function which does this
       navigate: () => void;
     };
-    /** Navigate to the view records (if there is no parent context) */
-    navigateToViewRecord: (params: {recordId: string}) => void;
   };
   /** Provides access to auto-incrementer functions */
   incrementerService: AutoIncrementService;
