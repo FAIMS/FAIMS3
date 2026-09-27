@@ -174,6 +174,21 @@ export function buildStatusReportKey({
 }
 
 /**
+ * Query key for a record's history tree, on the hydration prefix so the
+ * project-wide cancel/reset sweeps reach it; freshness comes from the History
+ * tab's refetchOnMount.
+ */
+export function buildRecordHistoryKey({
+  projectId,
+  recordId,
+}: {
+  projectId: string;
+  recordId: string;
+}) {
+  return [HYDRATION_KEY_PREFIX, projectId, recordId, 'recordHistory'];
+}
+
+/**
  * Recursive status reports for every record the plan on screen claims, for a
  * plan view that displays per-record completion. Called by the view that wants
  * them rather than by the notebook, so a view that does not is not walking

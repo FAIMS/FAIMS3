@@ -777,6 +777,29 @@ export const revisionHistoryEntry = z.object({
 export type RevisionHistoryEntry = z.infer<typeof revisionHistoryEntry>;
 
 /**
+ * A record's revision history together with the history of the records
+ * hanging off it, so the whole story of a parent can be read in one place.
+ * Children a reader cannot resolve are dropped rather than failing the tree,
+ * as in the recursive status report.
+ */
+export interface RecursiveRecordHistory {
+  recordId: string;
+  /** The record's own human-readable id, for labelling a child node. */
+  hrid: string;
+  formId: string;
+  /** This record's own revisions, newest handling left to the caller. */
+  entries: RevisionHistoryEntry[];
+  /** One entry per Child-type field that links to at least one live record. */
+  childFields: RecursiveRecordHistoryChildField[];
+}
+
+/** One Child-type field, and the histories of the records it links to. */
+export interface RecursiveRecordHistoryChildField {
+  fieldId: string;
+  children: RecursiveRecordHistory[];
+}
+
+/**
  * Query result for paginated record listing
  */
 export interface RecordQueryResult {

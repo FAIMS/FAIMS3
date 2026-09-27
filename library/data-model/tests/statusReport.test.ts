@@ -1,7 +1,4 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import PouchDB from 'pouchdb';
-import PouchDBFind from 'pouchdb-find';
 import {
   compileUiSpecConditionals,
   CompiledNotebookUiSpec,
@@ -15,25 +12,19 @@ import {
   formDataToValues,
   FormUpdateData,
   getSummaryValues,
-  NotebookDefinition,
   RecordDeletedError,
-  RecordStatusReport,
   UnknownFormTypeError,
 } from '../src';
-
-// Setup PouchDB plugins
-PouchDB.plugin(PouchDBFind);
-PouchDB.plugin(require('pouchdb-adapter-memory'));
-
-const CHILD_PAIR: [string, string] = ['is child of', 'has child'];
-const USER = 'test-user';
-const PROJECT = 'test-project';
-
-/** Forward child link as stored in a RelatedRecordSelector field value. */
-const link = (recordId: string) => ({
-  record_id: recordId,
-  relation_type_vocabPair: CHILD_PAIR,
-});
+import {
+  childField,
+  childTreeUiSpec as uiSpec,
+  createRecord,
+  createTestEngine,
+  link,
+  PROJECT,
+  readRawUiSpec,
+  USER,
+} from './childTreeTestSupport';
 
 describe('Record status report', () => {
   let db: DatabaseInterface<DataDocument>;
@@ -42,37 +33,19 @@ describe('Record status report', () => {
   let engine: DataEngine;
   const databaseName = 'test-status-report-db';
 
-  // Load UI specification from JSON file and compile its conditionals so the
-  // visibility-aware completion behaves as it does in the app/api.
-  const uiSpecPath = path.join(__dirname, 'statusReportUiSpec.json');
-  const uiSpecData = fs.readFileSync(uiSpecPath, 'utf-8');
-  const {uiSpec: rawUiSpec} = JSON.parse(uiSpecData) as NotebookDefinition;
-  compileUiSpecConditionals(rawUiSpec);
-  const uiSpec = rawUiSpec as unknown as CompiledNotebookUiSpec;
-
   beforeEach(() => {
-    rawDb = new PouchDB(databaseName, {adapter: 'memory'});
-    db = rawDb as unknown as DatabaseInterface<DataDocument>;
-    engine = new DataEngine({dataDb: db, uiSpec});
+    ({rawDb, db, engine} = createTestEngine(databaseName));
   });
 
   afterEach(async () => {
     await db.destroy();
   });
 
-  /** Creates a record with initial data, returning its ids. */
-  const create = async (
+  const create = (
     formId: string,
     initial: FormUpdateData = {},
     createdBy = USER
-  ) => {
-    const {record, revision} = await engine.form.createRecord({
-      formId,
-      createdBy,
-      initial,
-    });
-    return {recordId: record._id, revisionId: revision._id};
-  };
+  ) => createRecord(engine, formId, initial, createdBy);
 
   const report = (recordId: string) =>
     computeRecordStatusReport({
@@ -82,13 +55,6 @@ describe('Record status report', () => {
       // Default completion rule for every field type
       isCompleteResolver: () => undefined,
     });
-
-  /** The child-field entry for fieldId; fails the test if absent. */
-  const childField = (node: RecordStatusReport, fieldId: string) => {
-    const field = node.childFields.find(f => f.fieldId === fieldId);
-    expect(field).toBeDefined();
-    return field!;
-  };
 
   describe('leaf records', () => {
     test('form with no required fields is complete', async () => {
@@ -845,7 +811,7 @@ describe('Record status report', () => {
 
     test('a stale section id in the viewset does not fail visibility', () => {
       // A section deleted in the designer can stay listed in its viewset
-      const {uiSpec: staleSpec} = JSON.parse(uiSpecData) as NotebookDefinition;
+      const staleSpec = readRawUiSpec();
       staleSpec.viewsets['Photo'].views.push('Deleted-Section');
       compileUiSpecConditionals(staleSpec);
       const visible = currentlyVisibleMap({
