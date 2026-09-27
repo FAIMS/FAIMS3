@@ -424,6 +424,12 @@ export function Form<
               );
             }
           )}
+          {/* A divider past the last field heads a section with nothing under it */}
+          {dividers
+            ?.filter(divider => divider.index >= fields.length)
+            .map((divider, i) => (
+              <div key={`${divider.index}-${i}`}>{divider.component}</div>
+            ))}
         </div>
         {footer ?? null}
         {warningMessage && (

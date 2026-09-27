@@ -77,11 +77,20 @@ export const usePlanConfigs = ({
     if (!uiSpec) return {fields, dividers};
     for (const {template, definition, prefix} of entries) {
       if (!definition || !('fields' in definition)) continue;
+      const own = definition.fields({template, uiSpec, prefix});
       dividers.push({
         index: fields.length,
-        component: <PlanHeading template={template} />,
+        component: (
+          <PlanHeading
+            template={template}
+            // A heading with no field under it says why
+            note={
+              own.length === 0 ? 'This plan needs no configuration.' : undefined
+            }
+          />
+        ),
       });
-      fields.push(...definition.fields({template, uiSpec, prefix}));
+      fields.push(...own);
     }
     return {fields, dividers};
   }, [entries, uiSpec]);

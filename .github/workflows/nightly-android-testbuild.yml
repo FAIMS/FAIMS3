@@ -87,7 +87,10 @@ jobs:
           encodedString: ${{ secrets.KEYSTORE_FILE }}
       # https://github.com/android-actions/setup-android
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          log-accepted-android-sdk-licenses: false
+          packages: 'platform-tools'
       - name: Building webapp
         run: |
           export platform="github-actions-play"

@@ -9,6 +9,7 @@
  */
 import React from 'react';
 import {z} from 'zod';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {Box, Typography} from '@mui/material';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -173,13 +174,17 @@ const QRCodeFieldRenderer: DataViewFieldRender = props => {
 
 const qrCodeDataSchemaFunction = (props: QRCodeFieldProps) => {
   // Bounded to stop maliciously long scanned payloads
-  let schema = z.string().max(INPUT_LIMITS.LONG_TEXT_MAX_LENGTH);
+  let schema = z
+    .string({error: 'Enter valid text'})
+    .max(INPUT_LIMITS.LONG_TEXT_MAX_LENGTH, {
+      message: `Must be at most ${INPUT_LIMITS.LONG_TEXT_MAX_LENGTH} characters`,
+    });
 
   if (props.required) {
     schema = schema.min(1, {message: 'This field is required'});
   }
 
-  return schema;
+  return schemaWithAbsent('', schema);
 };
 
 // =============================================================================

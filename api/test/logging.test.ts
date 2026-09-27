@@ -20,11 +20,51 @@
 
 import crypto from 'crypto';
 import {describe, expect, it} from 'vitest';
-import {fingerprintInviteIdForAudit} from '../src/logging';
+import {
+  ForbiddenException,
+  TooManyRequestsException,
+  TombstoneNotFoundException,
+  UnauthorizedException,
+} from '../src/exceptions';
+import {
+  fingerprintInviteIdForAudit,
+  shouldReportErrorToBugsnag,
+} from '../src/logging';
 
 function sha256Hex8(value: string): string {
   return crypto.createHash('sha256').update(value).digest('hex').slice(0, 8);
 }
+
+describe('shouldReportErrorToBugsnag', () => {
+  it('drops ordinary 401s, including non-exception errors', () => {
+    expect(shouldReportErrorToBugsnag(new UnauthorizedException())).toBe(false);
+    expect(
+      shouldReportErrorToBugsnag(
+        Object.assign(new Error('unauthorized'), {status: 401})
+      )
+    ).toBe(false);
+    expect(
+      shouldReportErrorToBugsnag({statusCode: 401, message: 'unauthorized'})
+    ).toBe(false);
+  });
+
+  it('drops the intentional tombstone miss', () => {
+    expect(shouldReportErrorToBugsnag(new TombstoneNotFoundException())).toBe(
+      false
+    );
+  });
+
+  it('keeps rate limits, forbidden access, and other failures', () => {
+    expect(shouldReportErrorToBugsnag(new TooManyRequestsException())).toBe(
+      true
+    );
+    expect(shouldReportErrorToBugsnag(new ForbiddenException())).toBe(true);
+    expect(shouldReportErrorToBugsnag(new Error('database down'))).toBe(true);
+    expect(shouldReportErrorToBugsnag({status: 404, name: 'not_found'})).toBe(
+      true
+    );
+  });
+});
 
 describe('fingerprintInviteIdForAudit', () => {
   it('masks the body as PREFIX-a..[hash]..z and is stable', () => {

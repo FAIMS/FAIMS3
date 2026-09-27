@@ -17,6 +17,7 @@ import {
   NOT_ACTIVATED_LABEL,
   notebookListDataGridSx,
 } from '../workspace/notebooks';
+import {isNotebookActivationBlocked} from '../../../context/slices/helpers/notebookDefinition';
 import {Project} from '../../../context/slices/projectSlice';
 import {sortProjectsByNewest} from '../../../lib/notebookListDisplay';
 
@@ -74,7 +75,7 @@ export default function TabProjectGrid({
   }: {
     row: Project;
   }) => {
-    if (row.isActivated)
+    if (row.isActivated || isNotebookActivationBlocked(row))
       history(
         ROUTES.getNotebookRoute({
           serverId: row.serverId,
@@ -131,6 +132,7 @@ export default function TabProjectGrid({
               }}
               getRowId={({projectId}) => projectId}
               rowHeight={75}
+              autoHeight
               hideFooter
               paginationModel={paginationModel}
               onPaginationModelChange={setPaginationModel}

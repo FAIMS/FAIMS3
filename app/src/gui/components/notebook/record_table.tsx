@@ -121,6 +121,12 @@ interface RecordsTableProps {
   recordLabel: string;
   /** Record Sync status data if available */
   recordStatus?: PostRecordStatusResponse;
+  /**
+   * The forms whose records the table lists, which also shape its columns. A
+   * plan passes the form(s) it collects; without one the notebook's visible
+   * forms are used.
+   */
+  formTypes?: string[];
 }
 
 /** Props for the sort control component */
@@ -1096,6 +1102,7 @@ export function RecordsTable(props: RecordsTableProps) {
     loading,
     viewsets,
     recordStatus,
+    formTypes,
     project: {uiSpecificationId: uiSpecId, projectId: project_id},
   } = props;
 
@@ -1106,10 +1113,11 @@ export function RecordsTable(props: RecordsTableProps) {
   // Get UI specification
   const uiSpec = compiledSpecService.getSpec(uiSpecId);
 
-  // Get visible types from UI spec
+  // The forms listed: the caller's, or the notebook's visible forms
   const visibleTypes = useMemo(() => {
+    if (formTypes) return formTypes;
     return uiSpec ? getVisibleTypes(uiSpec) : [];
-  }, [uiSpec]);
+  }, [formTypes, uiSpec]);
 
   // Screen size for responsive columns
   const {currentSize, pageSize} = useScreenSize();

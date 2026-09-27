@@ -1,3 +1,4 @@
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {
   canDeleteProjectRecord,
   canEditProjectRecord,
@@ -5,6 +6,7 @@ import {
   FormRelationshipInstance,
   HydratedRecord,
   relatedRecordAvpEntries,
+  relationTypeToPair,
 } from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
@@ -58,7 +60,6 @@ import {
   RelatedRecordFieldProps,
   relatedRecordPropsSchema,
 } from './types';
-import {relationTypeToPair} from './utils';
 
 /**
  * Related record field: create new records of a related type, link existing ones,
@@ -555,37 +556,18 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     error: createError,
   } = useMutation({
     mutationFn: async () => {
-      // New record carries the edge: Child → `parent` on the new row; Linked →
-      // `linked` on the new row.
-      let relationship: FormRelationship;
-      const relation = {
-        fieldId: props.fieldId,
-        recordId: props.config.recordId,
-        relationTypeVocabPair: relationTypeToPair(props.relation_type),
-      };
-      if (props.relation_type === 'faims-core::Child') {
-        relationship = {
-          parent: [relation],
-        };
-      } else {
-        relationship = {
-          linked: [relation],
-        };
-      }
-
-      const res = await props.config.dataEngine().form.createRecord({
+      // The engine derives the related form, the relation and its vocab pair
+      // from this field, and writes the new row's own edge.
+      const res = await props.config.dataEngine().form.createRelatedRecord({
+        parentRecordId: props.config.recordId,
+        parentFieldId: props.fieldId,
         createdBy: props.config.user,
-        formId: props.related_type,
-        relationship,
+        parentFieldValue: props.state.value?.data,
       });
 
-      props.setFieldData([
-        ...normalizedLinks,
-        {
-          record_id: res.record._id,
-          relation_type_vocabPair: relationTypeToPair(props.relation_type),
-        },
-      ] satisfies RelatedFieldValue);
+      // The parent's side goes through the open form, not a revision: a
+      // revision written under it would be lost to the commit below.
+      props.setFieldData(res.linked as RelatedFieldValue);
 
       // Persist the parent form so the new link is saved before we navigate
       // away.
@@ -1006,23 +988,19 @@ const RelatedRecordField = (
 // Validation: required fields need at least one link; optional fields allow
 // empty/absent values.
 const valueSchemaFunction = (props: RelatedRecordFieldProps) => {
+  const present = schemaWithAbsent(null, relatedFieldValueSchema.nullable());
   if (props.required) {
-    return relatedFieldValueSchema.refine(
+    return present.refine(
       val => {
-        // If it is an array, ensure it has at least one item
         if (Array.isArray(val)) {
           return val.length > 0;
         }
-        // If it is a single object (and matches the schema), it is valid
         return !!val;
       },
       {message: 'At least one related record is required.'}
     );
   }
-
-  // If required is false, allow null, undefined, or valid schema (including
-  // empty array)
-  return relatedFieldValueSchema.optional().nullable();
+  return present;
 };
 
 export const relatedRecordFieldSpec: FieldInfo = {

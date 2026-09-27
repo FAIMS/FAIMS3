@@ -273,6 +273,141 @@ describe('Form Operations', () => {
     });
   });
 
+  describe('createRelatedRecord', () => {
+    /** An engine whose spec carries one Child field and one Linked field. */
+    const relatedEngine = () =>
+      new DataEngine({
+        dataDb: db,
+        uiSpec: {
+          ...(uiSpec as unknown as CompiledNotebookUiSpec),
+          fields: {
+            ...(uiSpec as unknown as CompiledNotebookUiSpec).fields,
+            samples: {
+              'component-namespace': 'faims-custom',
+              'component-name': 'RelatedRecordSelector',
+              'component-parameters': {
+                label: 'Samples',
+                related_type: 'Sample',
+                relation_type: 'faims-core::Child',
+                multiple: true,
+              },
+            },
+            peer: {
+              'component-namespace': 'faims-custom',
+              'component-name': 'RelatedRecordSelector',
+              'component-parameters': {
+                label: 'Peer',
+                related_type: 'Site',
+                relation_type: 'faims-core::Linked',
+                multiple: false,
+              },
+            },
+          },
+        } as unknown as CompiledNotebookUiSpec,
+      });
+
+    it('takes the related form and the relation from the field, not the caller', async () => {
+      const {record, link, linked} =
+        await relatedEngine().form.createRelatedRecord({
+          parentRecordId: 'parent-1',
+          parentFieldId: 'samples',
+          createdBy: 'alice',
+          parentFieldValue: undefined,
+        });
+      expect(record.type).toBe('Sample');
+      expect(link).toEqual({
+        record_id: record._id,
+        relation_type_vocabPair: ['has child', 'is child of'],
+      });
+      expect(linked).toEqual([link]);
+    });
+
+    it('hangs a Child off parent and a Linked off linked', async () => {
+      const engineWithRelations = relatedEngine();
+      const child = await engineWithRelations.form.createRelatedRecord({
+        parentRecordId: 'parent-1',
+        parentFieldId: 'samples',
+        createdBy: 'alice',
+        parentFieldValue: undefined,
+      });
+      expect(child.revision.relationship?.parent).toBeDefined();
+      expect(child.revision.relationship?.linked).toBeUndefined();
+
+      const peer = await engineWithRelations.form.createRelatedRecord({
+        parentRecordId: 'parent-1',
+        parentFieldId: 'peer',
+        createdBy: 'alice',
+        parentFieldValue: undefined,
+      });
+      expect(peer.revision.relationship?.linked).toBeDefined();
+      expect(peer.revision.relationship?.parent).toBeUndefined();
+      expect(peer.link.relation_type_vocabPair).toEqual([
+        'is linked to',
+        'is linked from',
+      ]);
+      // A field taking one holds a bare entry, not a list of one.
+      expect(peer.linked).toEqual(peer.link);
+    });
+
+    it('refuses a field that holds no relation', async () => {
+      await expect(
+        relatedEngine().form.createRelatedRecord({
+          parentRecordId: 'parent-1',
+          parentFieldId: 'First',
+          createdBy: 'alice',
+          parentFieldValue: undefined,
+        })
+      ).rejects.toThrow(/not a related-record field/);
+    });
+
+    it('appends to the links the field already holds', async () => {
+      const existing = {
+        record_id: 'sample-0',
+        relation_type_vocabPair: ['has child', 'is child of'],
+      };
+      const {link, linked} = await relatedEngine().form.createRelatedRecord({
+        parentRecordId: 'parent-1',
+        parentFieldId: 'samples',
+        createdBy: 'alice',
+        parentFieldValue: [existing],
+      });
+      expect(linked).toEqual([existing, link]);
+    });
+
+    it('writes no record when the field already holds the one link it takes', async () => {
+      const engineWithRelations = relatedEngine();
+      const before = (await db.allDocs({})).rows.length;
+      await expect(
+        engineWithRelations.form.createRelatedRecord({
+          parentRecordId: 'parent-1',
+          parentFieldId: 'peer',
+          createdBy: 'alice',
+          parentFieldValue: {
+            record_id: 'site-0',
+            relation_type_vocabPair: ['is linked to', 'is linked from'],
+          },
+        })
+      ).rejects.toThrow(/takes only one/);
+      // The refusal must come before the write, or the new row is an orphan
+      // its parent never lists.
+      expect((await db.allDocs({})).rows.length).toBe(before);
+    });
+
+    it('writes no record when the field holds a value it cannot read', async () => {
+      const engineWithRelations = relatedEngine();
+      const before = (await db.allDocs({})).rows.length;
+      await expect(
+        engineWithRelations.form.createRelatedRecord({
+          parentRecordId: 'parent-1',
+          parentFieldId: 'samples',
+          createdBy: 'alice',
+          parentFieldValue: 'legacy-id',
+        })
+      ).rejects.toThrow(/cannot be read/);
+      expect((await db.allDocs({})).rows.length).toBe(before);
+    });
+  });
+
   describe('createRevision', () => {
     test('should create child revision from parent', async () => {
       // Create initial record and revision

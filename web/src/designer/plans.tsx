@@ -25,9 +25,11 @@ import type {AuthoredPlanTemplate, PlanTemplate} from '@faims3/data-model';
 import {
   assertRegistrablePlanType,
   COUNTED_PLAN_TYPE,
+  LIST_OF_FORMS_PLAN_TYPE,
   LIST_OF_RECORDS_PLAN_TYPE,
 } from '@faims3/data-model';
 import {CountedPlanDialog} from './components/plans/CountedPlanDialog';
+import {ListOfFormsPlanDialog} from './components/plans/ListOfFormsPlanDialog';
 import {ListOfRecordsPlanDialog} from './components/plans/ListOfRecordsPlanDialog';
 
 /**
@@ -105,6 +107,13 @@ const builtInDesignerPlanTypes: DesignerPlanType[] = [
     description:
       'Collect records against a pre-defined list. Choose the form and which of its fields the list pre-fills; the list itself is supplied when a notebook is created.',
     Dialog: ListOfRecordsPlanDialog,
+  },
+  {
+    planType: LIST_OF_FORMS_PLAN_TYPE,
+    label: 'List of Forms',
+    description:
+      'Present a chosen set of forms for creating and browsing records. Nothing further is configured when a notebook is created from this template.',
+    Dialog: ListOfFormsPlanDialog,
   },
 ];
 

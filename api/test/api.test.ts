@@ -54,6 +54,7 @@ import {
   getUserProjectsDetailed,
 } from '../src/couchdb/notebooks';
 import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
+import {buildCorsAllowlist} from '../src/corsAllowlist';
 import {app} from '../src/expressSetup';
 import {callbackObject, databaseList} from './mocks';
 import {
@@ -90,6 +91,37 @@ describe('API tests', () => {
         expect(response.body.conductor_url).toBe(config.conductorPublicUrl);
         expect(response.body.prefix).toBe(config.shortCodePrefix);
       });
+  });
+
+  it('allows Capacitor origins on /info CORS', async () => {
+    const android = await request(app)
+      .get('/api/info')
+      .set('Origin', 'https://localhost')
+      .expect(200);
+    expect(android.headers['access-control-allow-origin']).toBe(
+      'https://localhost'
+    );
+
+    const iosOrigin = buildCorsAllowlist().find(
+      origin =>
+        origin !== 'https://localhost' && origin.endsWith('://localhost')
+    );
+    expect(iosOrigin).toBeDefined();
+    const ios = await request(app)
+      .get('/api/info')
+      .set('Origin', iosOrigin!)
+      .expect(200);
+    expect(ios.headers['access-control-allow-origin']).toBe(iosOrigin);
+
+    const webOrigin = new URL(config.webAppPublicUrl).origin;
+    const web = await request(app)
+      .get('/api/info')
+      .set('Origin', webOrigin)
+      .expect(200);
+    expect(web.headers['access-control-allow-origin']).toBe(webOrigin);
+
+    const noOrigin = await request(app).get('/api/info').expect(200);
+    expect(noOrigin.body.conductor_url).toBe(config.conductorPublicUrl);
   });
 
   it('check is up - not authenticated', async () => {

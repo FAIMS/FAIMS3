@@ -1,5 +1,6 @@
 import {COUNTED_PLAN_TYPE, planReferenceFor} from '@faims3/data-model';
 import {Alert, Box, Tab} from '@mui/material';
+import {useMemo} from 'react';
 import AddRecordButtons from '../add_record_by_type';
 import {planRecordLabel} from './planViewRecords';
 import {RecordsTable} from '../record_table';
@@ -21,6 +22,12 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
   const {project, tab, uiSpecification, records, actions, status} = props;
 
   const currentTab = resolveTab(TABS, tab.current);
+
+  // Before the type guard so hook order holds; stable for the table's memos
+  const formTypes = useMemo(
+    () => (props.plan && 'formType' in props.plan ? [props.plan.formType] : []),
+    [props.plan]
+  );
 
   // The notebook may carry several plans, so the one to render arrives in
   // props rather than being read back off the project.
@@ -126,6 +133,7 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
             rows={records.planRecords}
             loading={status.isLoading}
             viewsets={uiSpecification.viewsets}
+            formTypes={formTypes}
             handleQueryFunction={actions.setQuery}
             handleRefresh={() => {}} // Note this is not used in RecordsTable
             recordLabel={recordLabel}

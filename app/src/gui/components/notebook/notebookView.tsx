@@ -5,6 +5,7 @@
 
 import {
   Action,
+  canEditProjectRecord,
   CompiledNotebookUiSpec,
   DatabaseInterface,
   DataDocument,
@@ -17,6 +18,10 @@ import DefaultNotebookView from './DefaultNotebookView';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
+import {
+  isNotebookDesignLocked,
+  isPlaceholderNotebookDefinition,
+} from '../../../context/slices/helpers/notebookDefinition';
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import * as ROUTES from '../../../constants/routes';
@@ -31,8 +36,13 @@ import CircularLoading from '../ui/circular_loading';
 import {getNotebookView, PlanChooser, resolvePlanViews} from './plans';
 import {recordsClaimedBy} from './plans/planViewRecords';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
-import {useCallback, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {Stack} from '@mui/material';
 import {config} from '../../../buildconfig';
+import {
+  NotebookSchemaDegradedAlert,
+  NotebookSchemaIncompatibleView,
+} from './NotebookSchemaCompatibility';
 import {useQueryClient} from '@tanstack/react-query';
 import {NotebookViewComponentProps} from './types';
 import {localGetDataDb} from '../../../utils/database';
@@ -61,18 +71,97 @@ type NotebookViewProps = {
  *
  */
 export function NotebookView({project}: NotebookViewProps) {
-  const {uiSpecificationId} = project;
+  const {uiSpecificationId, schemaCompatibility} = project;
   const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
-  if (!uiSpecification) {
-    return <CircularLoading label="Loading" />;
-  } else {
+  const compileError = compiledSpecService.getCompileError(uiSpecificationId);
+  const waitedForSpec = useDelayedFlag(SPEC_WAIT_MS, !uiSpecification);
+
+  // Tier: incompatible — the stored definition is either a placeholder or the
+  // last good design kept so local data is not trapped. With a usable last
+  // good design, render a read-only record list under the banner (create and
+  // edit are blocked via `isNotebookDesignLocked`); otherwise show the
+  // skeleton only.
+  if (schemaCompatibility?.tier === 'incompatible') {
+    const canBrowseLocalRecords =
+      !!uiSpecification &&
+      !compileError &&
+      !isPlaceholderNotebookDefinition(project.uiDefinition);
+    if (!canBrowseLocalRecords) {
+      return (
+        <NotebookSchemaIncompatibleView
+          project={project}
+          compatibility={schemaCompatibility}
+          extraReason={compileError}
+        />
+      );
+    }
     return (
+      <Stack spacing={2}>
+        <NotebookSchemaIncompatibleView
+          project={project}
+          compatibility={schemaCompatibility}
+          variant="header"
+        />
+        <NotebookViewWithSpec
+          project={project}
+          uiSpecification={uiSpecification}
+        />
+      </Stack>
+    );
+  }
+
+  if (!uiSpecification) {
+    // Compilation threw (recorded by the service) — fail soft immediately.
+    if (compileError) {
+      return (
+        <NotebookSchemaIncompatibleView
+          project={project}
+          compatibility={schemaCompatibility}
+          extraReason={`The ${config.notebookName} design could not be compiled: ${compileError}`}
+        />
+      );
+    }
+    // Briefly allow for hydration; then stop spinning forever and explain.
+    if (!waitedForSpec) {
+      return <CircularLoading label="Loading" />;
+    }
+    return (
+      <NotebookSchemaIncompatibleView
+        project={project}
+        compatibility={schemaCompatibility}
+        extraReason={`The ${config.notebookName} design is not available on this device. Refresh the ${config.notebookName} list and try again.`}
+      />
+    );
+  }
+
+  return (
+    <Stack spacing={2}>
+      {schemaCompatibility?.tier === 'degraded' && (
+        <NotebookSchemaDegradedAlert compatibility={schemaCompatibility} />
+      )}
       <NotebookViewWithSpec
         project={project}
         uiSpecification={uiSpecification}
       />
-    );
-  }
+    </Stack>
+  );
+}
+
+/** How long to show the spinner for a missing compiled spec before failing soft. */
+const SPEC_WAIT_MS = 2500;
+
+/** Becomes true `ms` after `active` turns on; resets when `active` is false. */
+function useDelayedFlag(ms: number, active: boolean): boolean {
+  const [flag, setFlag] = useState(false);
+  useEffect(() => {
+    if (!active) {
+      setFlag(false);
+      return;
+    }
+    const handle = setTimeout(() => setFlag(true), ms);
+    return () => clearTimeout(handle);
+  }, [ms, active]);
+  return flag;
 }
 
 /*
@@ -90,11 +179,29 @@ function NotebookViewWithSpec({
   const [query, setQuery] = useState<string>('');
   const queryClient = useQueryClient();
 
+  /** Whether the active user may edit this record: the project open, and the
+   * record their own or anyone's. */
+  const canEditRecord = useCallback(
+    (record: MinimalRecordMetadata) =>
+      !!activeUser &&
+      project.status === ProjectStatus.OPEN &&
+      canEditProjectRecord({
+        decodedToken: activeUser.parsedToken,
+        projectId: project.projectId,
+        recordCreatedBy: record.createdBy,
+        actingUserId: activeUser.username,
+      }),
+    [activeUser, project.status, project.projectId]
+  );
+
   const isAllowedToAddRecords =
     useIsAuthorisedTo({
       action: Action.CREATE_PROJECT_RECORD,
       resourceId: project.projectId,
-    }) && project.status === ProjectStatus.OPEN;
+    }) &&
+    project.status === ProjectStatus.OPEN &&
+    // Never accept new data against a design this build cannot interpret.
+    !isNotebookDesignLocked(project);
 
   // Records on the server may still be downloading into the local database:
   // while true, a record's absence from the lists proves nothing.
@@ -231,6 +338,109 @@ function NotebookViewWithSpec({
     ]
   );
 
+  /**
+   * Create a related record and navigate to its edit page, writing both halves
+   * of the link so the parent form reads as it would after an in-form create.
+   */
+  const createRelatedRecord = useCallback(
+    async ({
+      parentRecordId,
+      parentFieldId,
+    }: {
+      parentRecordId: string;
+      parentFieldId: string;
+    }) => {
+      if (!(activeUser && isAllowedToAddRecords)) return;
+
+      // The link is written onto the parent, so editing it must be allowed
+      // too, and a record absent from the list is one this user cannot see.
+      const parentRecord = records.allRecords.find(
+        record => record.recordId === parentRecordId
+      );
+      if (!parentRecord || !canEditRecord(parentRecord)) {
+        dispatch(
+          addAlert({
+            message: 'You do not have permission to add to that record',
+            severity: 'error',
+          })
+        );
+        return;
+      }
+
+      let isChildCreated = false;
+      try {
+        const engine = dataEngine();
+        // Read the head rather than trusting the record list, which the
+        // notebook polls and can be a revision behind.
+        const existing = await engine.form.getExistingFormData({
+          recordId: parentRecordId,
+        });
+        // The engine derives the related form, the relation and its vocab pair
+        // from the field, writes the new row's own edge, and hands back what
+        // this field must hold. No open form here, so that goes in a revision.
+        const {record, linked} = await engine.form.createRelatedRecord({
+          parentRecordId,
+          parentFieldId,
+          createdBy: activeUser.username,
+          parentFieldValue: existing.data?.[parentFieldId]?.data,
+        });
+        isChildCreated = true;
+
+        const revision = await engine.form.createRevision({
+          recordId: parentRecordId,
+          revisionId: existing.revisionId,
+          createdBy: activeUser.username,
+        });
+        // updateRevision replaces the revision's whole field map, so the
+        // parent's other values go back with it rather than being dropped.
+        await engine.form.updateRevision({
+          revisionId: revision._id,
+          recordId: parentRecordId,
+          update: {
+            ...existing.data,
+            [parentFieldId]: {
+              ...existing.data?.[parentFieldId],
+              data: linked,
+            },
+          },
+          mode: 'parent',
+          updatedBy: activeUser.username,
+          bumpRecordUpdatedAt: true,
+        });
+
+        navigate(
+          ROUTES.getEditRecordRoute({
+            ...notebook,
+            recordId: record._id,
+            mode: 'new',
+          })
+        );
+      } catch (err) {
+        // Surface and resolve, like createRecord. The child is written first,
+        // so a later failure leaves a record not listed on its parent.
+        console.error('Failed to create related record', parentFieldId, err);
+        dispatch(
+          addAlert({
+            message: isChildCreated
+              ? 'Record was created but could not be linked to its parent'
+              : 'Record could not be created',
+            severity: 'error',
+          })
+        );
+      }
+    },
+    [
+      activeUser,
+      isAllowedToAddRecords,
+      canEditRecord,
+      records.allRecords,
+      dataEngine,
+      navigate,
+      notebook,
+      dispatch,
+    ]
+  );
+
   // View/Edit an existing record by navigating to the record view page
   const navigateToRecord = useCallback(
     (record: MinimalRecordMetadata) => {
@@ -280,6 +490,52 @@ function NotebookViewWithSpec({
     [records.allRecords, activePlan]
   );
 
+  // Each of these is a component the views render, so React compares them by
+  // reference: rebuild one and the subtree under it unmounts, losing its
+  // state. Held apart from the props memo, which recomputes whenever the
+  // record list polls, and keyed on only what each one actually reads.
+  const NotebookSettingsView = useMemo(
+    () => () => <NotebookSettings uiSpec={uiSpecification} />,
+    [uiSpecification]
+  );
+
+  const MetadataView = useMemo(
+    () => () => (
+      <MetadataDisplayComponent
+        project={project}
+        templateId={project.templateId}
+      />
+    ),
+    [project]
+  );
+
+  // Alone among the three in reading the records, so alone in still being
+  // rebuilt when they change. Capturing them in a ref instead would buy the
+  // map a stable identity by reading a value React had not committed.
+  const OverviewMapView = useMemo(
+    () =>
+      ({records: plotted}: {records?: MinimalRecordMetadata[]}) => (
+        <OverviewMap
+          // The plan's own records unless the view asks for others, so
+          // tapping a pin cannot open a record the list beside it says is
+          // not there.
+          records={{allRecords: plotted ?? planRecords}}
+          project_id={project.projectId}
+          uiSpec={uiSpecification}
+        />
+      ),
+    [planRecords, project.projectId, uiSpecification]
+  );
+
+  const components: NotebookViewComponentProps['components'] = useMemo(
+    () => ({
+      NotebookSettings: NotebookSettingsView,
+      MetadataDisplayComponent: MetadataView,
+      OverviewMap: OverviewMapView,
+    }),
+    [NotebookSettingsView, MetadataView, OverviewMapView]
+  );
+
   const props: NotebookViewComponentProps = useMemo(
     () => ({
       project,
@@ -290,7 +546,9 @@ function NotebookViewWithSpec({
         refreshRecordList,
         setQuery,
         createRecord,
+        createRelatedRecord,
         navigateToRecord,
+        canEditRecord,
       },
       status: {
         // Never-loaded, not merely in-flight: the hook's isLoading stays true
@@ -314,25 +572,7 @@ function NotebookViewWithSpec({
         otherRecords: records.otherRecords,
         syncStatus: recordStatus.data ?? {status: {}, recordHashes: {}},
       },
-      components: {
-        NotebookSettings: () => <NotebookSettings uiSpec={uiSpecification} />,
-        MetadataDisplayComponent: () => (
-          <MetadataDisplayComponent
-            project={project}
-            templateId={project.templateId}
-          />
-        ),
-        OverviewMap: ({records: plotted}) => (
-          <OverviewMap
-            // The plan's own records unless the view asks for others, so
-            // tapping a pin cannot open a record the list beside it says is
-            // not there.
-            records={{allRecords: plotted ?? planRecords}}
-            project_id={project.projectId}
-            uiSpec={uiSpecification}
-          />
-        ),
-      },
+      components,
     }),
     [
       project,
@@ -340,7 +580,9 @@ function NotebookViewWithSpec({
       refreshRecordList,
       setQuery,
       createRecord,
+      createRelatedRecord,
       navigateToRecord,
+      canEditRecord,
       tab,
       isAllowedToAddRecords,
       isDownloadingRecords,
@@ -348,6 +590,7 @@ function NotebookViewWithSpec({
       recordStatus.data,
       planRecords,
       activePlan,
+      components,
     ]
   );
 

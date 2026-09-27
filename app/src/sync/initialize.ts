@@ -26,6 +26,7 @@ import {
   initialiseAllProjects,
   initialiseServers,
   markInitialised,
+  reassessSchemaCompatibility,
   rebuildDbs,
 } from '../context/slices/projectSlice';
 import {store} from '../context/store';
@@ -127,6 +128,11 @@ export async function initialise() {
 
   // Rebuild all of the databases (synchronously)
   await rebuildDbs(store.getState().projects);
+
+  // Persisted compatibility tiers were written by whichever app version last
+  // fetched each notebook; re-evaluate them against this build (offline-safe,
+  // no network) before anything renders or compiles.
+  store.dispatch(reassessSchemaCompatibility());
 
   // Compile all ui specs (synchronously)
   compileSpecs(store.getState().projects);

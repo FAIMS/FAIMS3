@@ -5,7 +5,11 @@
  * built-in installation so external plan modules can register their own.
  */
 
-import {COUNTED_PLAN_TYPE, LIST_OF_RECORDS_PLAN_TYPE} from '@faims3/data-model';
+import {
+  COUNTED_PLAN_TYPE,
+  LIST_OF_FORMS_PLAN_TYPE,
+  LIST_OF_RECORDS_PLAN_TYPE,
+} from '@faims3/data-model';
 import {countedPlanConfig, countedPlanFields} from './countedPlanFields';
 import {ListOfRecordsPlanConfigForm} from './ListOfRecordsPlanConfigForm';
 import type {PlanConfigType} from './types';
@@ -43,6 +47,13 @@ const builtInPlanConfigTypes: PlanConfigType[] = [
     planType: LIST_OF_RECORDS_PLAN_TYPE,
     label: 'List of Records',
     ConfigForm: ListOfRecordsPlanConfigForm,
+  },
+  {
+    planType: LIST_OF_FORMS_PLAN_TYPE,
+    label: 'List of Forms',
+    // The forms are fixed by the template, so there is nothing to ask for
+    fields: () => [],
+    toConfig: () => ({}),
   },
 ];
 

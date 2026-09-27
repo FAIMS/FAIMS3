@@ -170,9 +170,14 @@ export const PlanTemplateManager = () => {
           {planTemplates.map((planTemplate, index) => {
             const definition = getDesignerPlanType(planTemplate.planType);
             const typeLabel = definition?.label ?? planTemplate.planType;
+            // One form or several, depending on the plan type
             const formType = planTemplate.formType as string | undefined;
-            const formLabel = formType ? viewSets[formType]?.label : undefined;
-            const formMissing = Boolean(formType && !formLabel);
+            const formTypes =
+              (planTemplate.formTypes as string[] | undefined) ??
+              (formType ? [formType] : []);
+            const formLabels = formTypes.map(type => viewSets[type]?.label);
+            const formMissing = formLabels.some(label => !label);
+            const formLabel = formLabels.join(', ');
             return (
               <Stack
                 key={planTemplate.planId}
