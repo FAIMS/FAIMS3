@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 export * from './conditionals';
 export * from './utils';
 export * from './types';

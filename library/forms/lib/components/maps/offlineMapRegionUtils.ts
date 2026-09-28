@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Shared helpers for offline map region geometry, naming, and download status.
  *

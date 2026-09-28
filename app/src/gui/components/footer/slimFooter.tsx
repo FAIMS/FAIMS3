@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Container, Link, Stack, Typography, useMediaQuery} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import React from 'react';

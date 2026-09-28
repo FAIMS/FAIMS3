@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {attachmentSaveTrace} from '../logging';
 import {isEqualFAIMS} from '../datamodel';
 import {DatabaseInterface} from '../types';

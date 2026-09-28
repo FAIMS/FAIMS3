@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {DateTimeLocalInput} from '@/components/date-time-local-input';
 import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
 import {Button} from '@/components/ui/button';

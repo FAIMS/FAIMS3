@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import 'ol/ol.css';
 import React from 'react';
 import {MapPreview} from '../../../../components/maps/MapPreview';

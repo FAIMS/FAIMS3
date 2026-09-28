@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Shared right-column layout for designer fuzzy-search dropdown rows.
  */

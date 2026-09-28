@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {config} from '@/constants';
 
 /** Short line for the project actions card (archive list item). */

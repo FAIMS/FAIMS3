@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Types and label helpers shared by plan config forms and the registry.
  * Kept free of component imports so forms can use them without a cycle.

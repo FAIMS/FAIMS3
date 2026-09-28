@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {useState} from 'react';
 import {Check, Clipboard} from 'lucide-react';
 import {Button} from './button';

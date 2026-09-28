@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import type {GetNotebookListResponse} from '@faims3/data-model';
 import {clsx, type ClassValue} from 'clsx';
 import {twMerge} from 'tailwind-merge';

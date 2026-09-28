@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*
  * Test suite for safeWriteDocument function
  * Tests the retry logic for handling PouchDB/CouchDB conflicts (409 errors)

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Global designer search bar — fuzzy search across forms, sections, and fields.
  *

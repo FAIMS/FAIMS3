@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Resource, ResourceRole, Role, RoleScope} from '../../permission';
 import {
   AuthRecordV1ExistingDocumentSchema,

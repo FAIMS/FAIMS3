@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import AudioFileIcon from '@mui/icons-material/AudioFile';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import {Box, Paper, Typography} from '@mui/material';

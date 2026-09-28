@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /* eslint-disable n/no-unsupported-features/node-builtins */
 import {Browser} from '@capacitor/browser';
 import {Button, ButtonProps} from '@mui/material';

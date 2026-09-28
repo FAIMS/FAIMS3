@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import * as fs from 'fs';
 import * as path from 'path';
 import PouchDB from 'pouchdb';

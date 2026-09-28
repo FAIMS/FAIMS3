@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {isUserExpired, useAuth, User} from '@/context/auth-provider';
 import {
   Action,

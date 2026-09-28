@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {textFieldSpec} from './fields/TextFields';
 import {FieldInfo} from './types';
 

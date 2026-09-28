@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file What a designer document's plan templates look like once normalized:
  * they come off the schema that parsed them, so template mode keeps them and
