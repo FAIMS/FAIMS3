@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Stack} from '@mui/material';
 import {
   DataGrid,

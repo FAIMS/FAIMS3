@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * App-side registry mapping a notebook plan's `planType` to the React component
  * that renders that notebook's record view.

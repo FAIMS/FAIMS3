@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /* Provide the NotebookView component that allows different
  * UI components for different kinds of notebook, notably those that
  * have associated plans and those that do not

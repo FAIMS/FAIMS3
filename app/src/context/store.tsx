@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {logError, logInfo, logWarn} from '@faims3/forms';
 import {configureStore} from '@reduxjs/toolkit';
 import React, {useEffect, useRef} from 'react';

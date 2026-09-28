@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {COUNTED_PLAN_TYPE, planReferenceFor} from '@faims3/data-model';
 import {Alert, Box, Tab} from '@mui/material';
 import {useMemo} from 'react';

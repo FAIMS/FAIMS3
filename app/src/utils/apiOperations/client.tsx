@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Server} from '../../context/slices/projectSlice';
 import {store} from '../../context/store';
 

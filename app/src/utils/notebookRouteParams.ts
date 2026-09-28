@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../constants/routes';
 
 /**

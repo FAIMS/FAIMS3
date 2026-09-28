@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * The components a notebook view hands to its plan views have to keep their
  * identity while the notebook re-renders. React compares element types by
