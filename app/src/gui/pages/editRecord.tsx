@@ -269,7 +269,6 @@ export const EditRecordPage = () => {
       mapConfig: getMapConfig,
       navigation: {
         navigateToRecordList: {
-          label: 'Return to record list',
           navigate: () => {
             navigate(notebookRoute);
           },
