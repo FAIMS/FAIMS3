@@ -298,7 +298,7 @@ export default function AboutBuild() {
   };
 
   return (
-    <Box sx={{p: 2}}>
+    <Box sx={{p: 2, mt: 1}}>
       <BuildConfiguration />
       <Box
         component={Paper}
