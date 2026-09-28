@@ -191,7 +191,7 @@ export function logInviteAudit(entry: {
   inviteType?: string;
   resourceType?: string;
   resourceId?: string;
-  /** Set for Quick Share invites so create/lookup/consume can be filtered. */
+  /** Set for Quick Share invites so create, lookup, consume, and revoke can be filtered. */
   kind?: string;
   ip?: string;
   forwardedFor?: string;

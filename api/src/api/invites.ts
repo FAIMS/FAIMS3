@@ -54,6 +54,7 @@ import {
   getInvitesForResource,
   isInviteValid,
 } from '../couchdb/invites';
+import {getProjectById} from '../couchdb/notebooks';
 import {getCouchUserFromEmailOrUserId, saveCouchUser} from '../couchdb/users';
 import {validateAndApplyInviteToUser} from '../auth/helpers';
 import {
@@ -267,6 +268,13 @@ api.post(
     ) {
       throw new Exceptions.UnauthorizedException(
         'You are not authorized to share this survey at that level'
+      );
+    }
+
+    const project = await getProjectById(projectId);
+    if (project.disableQuickShare === true) {
+      throw new Exceptions.ForbiddenException(
+        'Quick share is disabled for this survey'
       );
     }
 

@@ -49,8 +49,9 @@ export const DEFAULT_INVITE_EXPIRY_MS = DEFAULT_INVITE_EXPIRY_DAYS * MS_PER_DAY;
 export const MAX_INVITE_EXPIRY_MS = MAX_INVITE_EXPIRY_DAYS * MS_PER_DAY;
 
 /**
- * Lifetimes the field app offers for a Quick Share code. Shorter than a
- * control-centre invite: the code is meant to be shown to someone nearby.
+ * Quick Share lifetime bounds, shortest to longest. The field app sends the
+ * 1 hour default. Any whole number of milliseconds from the first entry to
+ * the last is a valid lifetime.
  */
 export const QUICK_SHARE_LIFETIME_OPTIONS = [
   {ms: 15 * 60 * 1000, label: '15 minutes'},
@@ -63,8 +64,10 @@ export const QUICK_SHARE_LIFETIME_OPTIONS = [
 export const DEFAULT_QUICK_SHARE_LIFETIME_MS =
   QUICK_SHARE_LIFETIME_OPTIONS[1].ms;
 
+/** Shortest allowed Quick Share lifetime (15 minutes). */
 export const MIN_QUICK_SHARE_LIFETIME_MS = QUICK_SHARE_LIFETIME_OPTIONS[0].ms;
 
+/** Longest allowed Quick Share lifetime (24 hours). */
 export const MAX_QUICK_SHARE_LIFETIME_MS =
   QUICK_SHARE_LIFETIME_OPTIONS[QUICK_SHARE_LIFETIME_OPTIONS.length - 1].ms;
 

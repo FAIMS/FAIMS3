@@ -144,8 +144,8 @@ function fitInside(
  *    so we don't close right after the user lifts their finger).
  *  - Tap the X (visible below the app bar) to close.
  *
- * Used by TakePhoto (edit + view) and the advanced helper image viewer in
- * FieldWrapper.
+ * Used by TakePhoto (edit + view), the advanced helper image viewer in
+ * FieldWrapper, and the Quick Share QR preview.
  */
 export const PhotoLightbox: React.FC<{
   url: string;

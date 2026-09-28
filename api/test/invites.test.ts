@@ -58,7 +58,7 @@ import {
   getInvitesForResource,
   isInviteValid,
 } from '../src/couchdb/invites';
-import {createNotebook} from '../src/couchdb/notebooks';
+import {createNotebook, updateProjectMetadata} from '../src/couchdb/notebooks';
 import {createTeamDocument} from '../src/couchdb/teams';
 import {
   getCouchUserFromEmailOrUserId,
@@ -977,6 +977,76 @@ describe('Invite Tests', () => {
         .expect(200);
       expect(again.body._id).not.toBe(created.body._id);
       expect(again.body.role).toBe(Role.PROJECT_CONTRIBUTOR);
+    });
+
+    it('rejects quick share when the survey has disabled it', async () => {
+      const projectId = await createNotebook({
+        projectName: 'quick-share-disabled',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+      await updateProjectMetadata(projectId!, {disableQuickShare: true});
+
+      await request(app)
+        .post(`/api/invites/notebook/${projectId}/quick-share`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          role: Role.PROJECT_GUEST,
+          lifetimeMs: DEFAULT_QUICK_SHARE_LIFETIME_MS,
+        })
+        .expect(403);
+
+      const managerToken = await tokenForProjectRole(
+        projectId!,
+        Role.PROJECT_MANAGER
+      );
+      await request(app)
+        .post(`/api/invites/notebook/${projectId}/quick-share`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .send({
+          role: Role.PROJECT_GUEST,
+          lifetimeMs: DEFAULT_QUICK_SHARE_LIFETIME_MS,
+        })
+        .expect(403);
+
+      const stored = await getInvitesForResource({
+        resourceType: Resource.PROJECT,
+        resourceId: projectId!,
+      });
+      expect(
+        stored.filter(invite => invite.kind === QUICK_SHARE_KIND)
+      ).toHaveLength(0);
+    });
+
+    it('does not return an existing quick share after it is disabled', async () => {
+      const projectId = await createNotebook({
+        projectName: 'quick-share-disabled-existing',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+      const created = await request(app)
+        .post(`/api/invites/notebook/${projectId}/quick-share`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          role: Role.PROJECT_GUEST,
+          lifetimeMs: DEFAULT_QUICK_SHARE_LIFETIME_MS,
+        })
+        .expect(200);
+
+      await updateProjectMetadata(projectId!, {disableQuickShare: true});
+
+      await request(app)
+        .post(`/api/invites/notebook/${projectId}/quick-share`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          role: Role.PROJECT_GUEST,
+          lifetimeMs: DEFAULT_QUICK_SHARE_LIFETIME_MS,
+        })
+        .expect(403);
+
+      expect(await getInvite({inviteId: created.body._id})).not.toBeNull();
     });
 
     it('rejects a lifetime longer than 24 hours', async () => {

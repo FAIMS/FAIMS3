@@ -150,6 +150,28 @@ describe('NotebookQuickShare', () => {
     expect(screen.queryByTestId('app-quick-share')).toBeNull();
   });
 
+  it('uses a compact settings section and a text link on the settings tab', () => {
+    harness.resourceRoles = [
+      {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
+    ];
+    render(
+      <ThemeProvider theme={createTheme()}>
+        <NotebookQuickShare project={project} layout="settings" />
+      </ThemeProvider>
+    );
+    expect(screen.getByRole('heading', {name: 'Quick share'})).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Share this survey with another user by generating a temporary QR code.'
+      )
+    ).toBeTruthy();
+    const open = screen.getByTestId('app-quick-share-open');
+    expect(open.className).toMatch(/MuiLink-root/);
+    expect(open.textContent).toMatch(/^Share this /);
+    fireEvent.click(open);
+    expect(screen.getByTestId('app-quick-share')).toBeTruthy();
+  });
+
   it('offers only the invite levels a manager can create', () => {
     harness.resourceRoles = [
       {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},

@@ -303,7 +303,7 @@ export function projectInviteToAction({
   action: 'create' | 'delete';
   role: Role;
 }): Action {
-  // Trying to add a role is a specific action for each role level
+  // Creating or deleting an invite is a specific action for each role level
   let actionNeeded = undefined;
   if (role === Role.PROJECT_ADMIN) {
     if (action === 'create') {

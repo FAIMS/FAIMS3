@@ -996,6 +996,7 @@ export const PostCreateQuickShareInputSchema = z.object({
     ),
 });
 
+/** POST /api/invites/notebook/:projectId/quick-share response. */
 export const PostCreateQuickShareResponseSchema = InviteDocumentSchema.extend({
   kind: z.literal(QUICK_SHARE_KIND),
 });

@@ -42,13 +42,13 @@ The most significant form of configuration is the **notebook definition**, store
 
 At a high level:
 
-| Layer                          | Where                                  | Examples                                                                             |
-| ------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------ |
-| Survey / template **resource** | Couch document **root**                | `name`, optional `description` (max 250 chars), `status`, `templateId`, audit fields |
-| **Design bundle**              | `uiSpecification`                      | `uiSpec` (forms/fields) + `metadata` (design prose, custom tags)                     |
-| **Functional toggles**         | `uiSpecification.uiSpec.settings`      | `showQrCodeButton` (QR search on record list)                                        |
-| **Design documentation**       | `uiSpecification.metadata.information` | `purposeMarkdown`, `projectLeadLabel`, `leadInstitution`, `notebookVersion`          |
-| **Org extensions**             | `uiSpecification.metadata.custom`      | Optional arbitrary keys                                                              |
+| Layer                          | Where                                  | Examples                                                                                                  |
+| ------------------------------ | -------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Survey / template **resource** | Couch document **root**                | `name`, optional `description` (max 250 chars), `disableQuickShare`, `status`, `templateId`, audit fields |
+| **Design bundle**              | `uiSpecification`                      | `uiSpec` (forms/fields) + `metadata` (design prose, custom tags)                                          |
+| **Functional toggles**         | `uiSpecification.uiSpec.settings`      | `showQrCodeButton` (QR search on record list)                                                             |
+| **Design documentation**       | `uiSpecification.metadata.information` | `purposeMarkdown`, `projectLeadLabel`, `leadInstitution`, `notebookVersion`                               |
+| **Org extensions**             | `uiSpecification.metadata.custom`      | Optional arbitrary keys                                                                                   |
 
 The form graph uses **`uiSpec.fields`**, **`uiSpec.viewsets`**, and **`uiSpec.views`** (decoded from legacy `fviews` on import). Inner field keys remain legacy-shaped (`component-namespace`, `type-returned`, …).
 

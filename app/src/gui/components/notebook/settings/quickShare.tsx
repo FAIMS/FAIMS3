@@ -1,8 +1,10 @@
 /**
  * Quick Share: one temporary QR code for an activated survey.
  *
- * A Share button opens a dialog. Generate stores the code on the project. The
- * dialog then only shows that code — its role, when it expires, and a
+ * The notebook header uses a Share button. Settings uses the same dialog from
+ * a compact section whose link matches the other settings cards. Generate
+ * stores the code on the project. The dialog then only shows that code — its
+ * role, when it expires, and a
  * tap-to-enlarge QR — until the user generates a new one. That deletes the
  * invite, then the generate form comes back. Every code lasts one hour. An
  * expired code is dropped, and the dialog shows the generate form again.
@@ -22,7 +24,9 @@ import {
   FormControl,
   IconButton,
   InputLabel,
+  Link,
   MenuItem,
+  Paper,
   Select,
   Stack,
   Typography,
@@ -84,9 +88,15 @@ function quickShareErrorMessage(error: unknown): string {
 
 export default function NotebookQuickShare({
   project,
+  layout = 'button',
   sx,
 }: {
   project: Project;
+  /**
+   * `button` is the notebook header control. `settings` is a compact card on
+   * the settings tab, with a text link that opens the same dialog.
+   */
+  layout?: 'button' | 'settings';
   /** Styles for the Share button, so each placement can space itself. */
   sx?: SxProps<Theme>;
 }) {
@@ -266,25 +276,29 @@ export default function NotebookQuickShare({
 
   return (
     <>
-      <Button
-        variant="contained"
-        disableElevation
-        startIcon={<ShareIcon />}
-        onClick={() => setDialogOpen(true)}
-        data-testid="app-quick-share-open"
-        sx={[
-          {textTransform: 'none', flexShrink: 0},
-          ...(Array.isArray(sx) ? sx : [sx]),
-        ]}
-      >
-        Share
-      </Button>
+      {layout === 'settings' ? (
+        <SettingsQuickShareLink onOpen={() => setDialogOpen(true)} />
+      ) : (
+        <Button
+          variant="contained"
+          disableElevation
+          startIcon={<ShareIcon />}
+          onClick={() => setDialogOpen(true)}
+          data-testid="app-quick-share-open"
+          sx={[
+            {textTransform: 'none', flexShrink: 0},
+            ...(Array.isArray(sx) ? sx : [sx]),
+          ]}
+        >
+          Share
+        </Button>
+      )}
 
       <Dialog
         open={dialogOpen}
         onClose={closeDialog}
         fullWidth
-        maxWidth="sm"
+        maxWidth="xs"
         aria-labelledby={titleId}
         data-testid="app-quick-share"
       >
@@ -292,8 +306,8 @@ export default function NotebookQuickShare({
           component="div"
           sx={{
             display: 'flex',
-            alignItems: 'center',
-            flexWrap: 'wrap',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
             gap: 1,
             pr: 6,
           }}
@@ -387,6 +401,46 @@ export default function NotebookQuickShare({
   );
 }
 
+function SettingsQuickShareLink({onOpen}: {onOpen: () => void}) {
+  return (
+    <Box
+      component={Paper}
+      variant="outlined"
+      elevation={0}
+      sx={{p: 2, mb: {xs: 1, sm: 2, md: 3}}}
+      data-testid="app-quick-share-settings"
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          columnGap: 2,
+          rowGap: 0.25,
+          mb: 0.5,
+        }}
+      >
+        <Typography variant="h6">Quick share</Typography>
+        <Link
+          component="button"
+          type="button"
+          variant="body2"
+          onClick={onOpen}
+          data-testid="app-quick-share-open"
+          sx={{flexShrink: 0, fontWeight: 600, verticalAlign: 'baseline'}}
+        >
+          Share this {config.notebookName}
+        </Link>
+      </Box>
+      <Typography variant="body2">
+        Share this {config.notebookName} with another user by generating a
+        temporary QR code.
+      </Typography>
+    </Box>
+  );
+}
+
 function MetadataPair({
   label,
   value,
@@ -433,21 +487,12 @@ function ActiveQuickShare({
         </Alert>
       )}
 
-      <Box
-        sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'flex-start',
-          gap: 1.5,
-        }}
-      >
+      <Stack spacing={1.5}>
         <Box
           sx={{
             p: 1.25,
             borderRadius: 1,
             bgcolor: 'action.hover',
-            flex: '1 1 16rem',
-            minWidth: 0,
           }}
           data-testid="app-quick-share-summary"
         >
@@ -465,10 +510,7 @@ function ActiveQuickShare({
           </Stack>
         </Box>
 
-        <Stack
-          spacing={0.25}
-          sx={{alignItems: 'center', flex: '0 0 auto', mx: 'auto'}}
-        >
+        <Stack spacing={0.25} sx={{alignItems: 'center'}}>
           <Box
             component="button"
             type="button"
@@ -498,7 +540,7 @@ function ActiveQuickShare({
             Tap the code to enlarge it for scanning.
           </Typography>
         </Stack>
-      </Box>
+      </Stack>
 
       {error && <Alert severity="error">{error}</Alert>}
     </Stack>

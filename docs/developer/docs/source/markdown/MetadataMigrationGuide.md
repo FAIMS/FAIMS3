@@ -185,7 +185,7 @@ The current notebook schema version is applied by `migrateNotebook` (often wrapp
 
 **Does not migrate on server:**
 
-- **`PUT /api/notebooks/:id`** — only optional `name` / `description` (root metadata, max 250 chars when set).
+- **`PUT /api/notebooks/:id`** — optional `name` / `description` (root metadata, max 250 chars when set) and `disableQuickShare`; this request does not migrate the notebook schema.
 
 ### Web Control Centre / designer — in browser
 
