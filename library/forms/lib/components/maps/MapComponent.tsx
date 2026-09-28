@@ -54,6 +54,7 @@ import {
 } from 'react';
 import {getCoordinates, useCurrentLocation} from '../../hooks/useLocation';
 import {logWarn} from '../../logging';
+import {headingIndicatorCoordinate} from './headingIndicator';
 import {
   CenterOnLocationControl,
   CompassControl,
@@ -485,9 +486,9 @@ const MapComponentImpl = (props: MapComponentProps) => {
         })
       );
 
-      // draw the heading triangle
-      // convert heading from degrees to radians
-      if (position.coords.heading) {
+      // Heading triangle. 0 is north and is a real bearing, so don't treat it
+      // as missing. A null heading means the device is not reporting direction.
+      if (typeof position.coords.heading === 'number') {
         const headingRadians = (position.coords.heading * Math.PI) / 180;
         triangleFeature.setGeometry(new Point(coords));
         triangleFeature.setStyle(
@@ -495,21 +496,29 @@ const MapComponentImpl = (props: MapComponentProps) => {
             image: new RegularShape({
               points: 3,
               radius: 12,
+              // angle PI draws one point facing down; add PI so heading 0 points north.
               rotation: headingRadians + Math.PI,
+              // Default is screen-fixed, which leaves the marker pointing the
+              // same way after the user rotates the map.
+              rotateWithView: true,
               angle: Math.PI,
               fill: new Fill({color: '#1a73e8'}),
               stroke: new Stroke({color: 'white', width: 2}),
             }),
             geometry: () => {
-              const px = theMap.getPixelFromCoordinate(coords);
-              const offset = 23;
-              const dx = offset * Math.sin(headingRadians);
-              const dy = -offset * Math.cos(headingRadians);
-              const newPx = [px[0] + dx, px[1] + dy];
-              return new Point(theMap.getCoordinateFromPixel(newPx));
+              const resolution = theMap.getView().getResolution() ?? 1;
+              return new Point(
+                headingIndicatorCoordinate(
+                  coords as [number, number],
+                  headingRadians,
+                  resolution
+                )
+              );
             },
           })
         );
+      } else {
+        triangleFeature.setStyle([]);
       }
 
       // set the location of the accuracy circle
