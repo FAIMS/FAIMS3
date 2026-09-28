@@ -3130,32 +3130,44 @@ class QueryOperations {
     let totalAvpMatches = 0;
     let batchCount: number;
 
-    const pattern = caseInsensitive ? new RegExp(regex, 'i') : regex;
+    const pattern = new RegExp(regex, caseInsensitive ? 'i' : undefined);
+
+    // pouchdb can't match a regex case insensitively
+    //  so we perform client-side filtering of the records.
+    const matchesData = (value: unknown): boolean => {
+      if (typeof value === 'string') {
+        return pattern.test(value);
+      }
+      if (Array.isArray(value)) {
+        return value.some(
+          entry => typeof entry === 'string' && pattern.test(entry)
+        );
+      }
+      return false;
+    };
 
     // Query in batches since find requires a limit argument
     do {
       const result = await (
-        this.db as DatabaseInterface<Pick<ExistingAvpDBDocument, 'record_id'>>
+        this.db as DatabaseInterface<
+          Pick<ExistingAvpDBDocument, 'record_id' | 'data'>
+        >
       ).find({
         selector: {
           avp_format_version: 1,
-          // Handle both scalar and array data values
-          $or: [
-            {data: {$regex: pattern}},
-            {data: {$elemMatch: {$regex: pattern}}},
-          ],
         },
-        // Only fetch the field we need
-        fields: ['record_id'],
+        // Fetch both fields so matching can happen client-side.
+        fields: ['record_id', 'data'],
         limit: batchSize,
         skip,
       });
 
       batchCount = result.docs.length;
-      totalAvpMatches += batchCount;
 
       for (const doc of result.docs) {
         const avp = doc;
+        if (!matchesData(avp.data)) continue;
+        totalAvpMatches += 1;
         if (avp.record_id) {
           recordIdSet.add(avp.record_id);
         }
