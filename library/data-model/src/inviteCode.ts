@@ -49,6 +49,43 @@ export const DEFAULT_INVITE_EXPIRY_MS = DEFAULT_INVITE_EXPIRY_DAYS * MS_PER_DAY;
 export const MAX_INVITE_EXPIRY_MS = MAX_INVITE_EXPIRY_DAYS * MS_PER_DAY;
 
 /**
+ * Lifetimes the field app offers for a Quick Share code. Shorter than a
+ * control-centre invite: the code is meant to be shown to someone nearby.
+ */
+export const QUICK_SHARE_LIFETIME_OPTIONS = [
+  {ms: 15 * 60 * 1000, label: '15 minutes'},
+  {ms: 60 * 60 * 1000, label: '1 hour'},
+  {ms: 8 * 60 * 60 * 1000, label: '8 hours'},
+  {ms: 24 * 60 * 60 * 1000, label: '24 hours'},
+] as const;
+
+/** Default Quick Share lifetime (1 hour). */
+export const DEFAULT_QUICK_SHARE_LIFETIME_MS =
+  QUICK_SHARE_LIFETIME_OPTIONS[1].ms;
+
+export const MIN_QUICK_SHARE_LIFETIME_MS = QUICK_SHARE_LIFETIME_OPTIONS[0].ms;
+
+export const MAX_QUICK_SHARE_LIFETIME_MS =
+  QUICK_SHARE_LIFETIME_OPTIONS[QUICK_SHARE_LIFETIME_OPTIONS.length - 1].ms;
+
+/** Display name stored on a Quick Share invite document. */
+export const QUICK_SHARE_NAME = 'Quick share';
+
+/** Invite document discriminator for a field-app Quick Share. */
+export const QUICK_SHARE_KIND = 'quick-share' as const;
+
+export type InviteKind = typeof QUICK_SHARE_KIND;
+
+/** True when a Quick Share duration is an integer inside the allowed window. */
+export function isQuickShareLifetimeValid(lifetimeMs: number): boolean {
+  return (
+    Number.isInteger(lifetimeMs) &&
+    lifetimeMs >= MIN_QUICK_SHARE_LIFETIME_MS &&
+    lifetimeMs <= MAX_QUICK_SHARE_LIFETIME_MS
+  );
+}
+
+/**
  * Client/server clock skew allowed when checking the max lifetime, so a
  * client sending "exactly 90 days from now" is not rejected.
  */

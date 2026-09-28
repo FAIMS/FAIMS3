@@ -338,6 +338,34 @@ export function projectInviteToAction({
   return actionNeeded;
 }
 
+/** Survey roles that can be granted by a project invite, lowest access first. */
+const PROJECT_INVITE_ROLES: Role[] = [
+  Role.PROJECT_GUEST,
+  Role.PROJECT_CONTRIBUTOR,
+  Role.PROJECT_MANAGER,
+  Role.PROJECT_ADMIN,
+];
+
+/**
+ * Survey roles this user is allowed to invite someone into.
+ * Uses the same create-invite actions as the control centre.
+ */
+export function projectRolesUserCanInvite({
+  decodedToken,
+  resourceId,
+}: {
+  decodedToken: DecodedTokenPermissions;
+  resourceId: string;
+}): Role[] {
+  return PROJECT_INVITE_ROLES.filter(role =>
+    isAuthorized({
+      decodedToken,
+      action: projectInviteToAction({action: 'create', role}),
+      resourceId,
+    })
+  ).sort((a, b) => (roleDetails[a].order ?? 0) - (roleDetails[b].order ?? 0));
+}
+
 /**
  * Maps a create/delete invite operation to the corresponding action needed
  * for teams

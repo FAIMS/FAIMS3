@@ -36,13 +36,17 @@ import {
   RoleScope,
   GetGlobalInvitesResponse,
   PostCreateGlobalInviteInputSchema,
+  PostCreateQuickShareInputSchema,
+  PostCreateQuickShareResponse,
   PostUseInviteResponse,
+  QUICK_SHARE_KIND,
 } from '@faims3/data-model';
 import express, {Request, Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
 import {
   createGlobalInvite,
+  createQuickShareInvite,
   createResourceInvite,
   deleteInvite,
   getGlobalInvites,
@@ -81,6 +85,7 @@ function logInviteCreated(
     inviteType: invite.inviteType,
     resourceType: invite.resourceType,
     resourceId: invite.resourceId,
+    kind: invite.kind,
     ...inviteAuditFromRequest(req),
   });
 }
@@ -226,6 +231,78 @@ api.post(
 );
 
 /**
+ * POST a short-lived Quick Share code for one survey.
+ * Permission matches creating an invite for the same role. The document is
+ * stored in the invites database and redeemed by the existing scan/use path.
+ * Requires a live request, so it cannot be created offline.
+ */
+api.post(
+  '/notebook/:projectId/quick-share',
+  requireAuthenticationAPI,
+  validate({
+    params: z.object({projectId: IdInputSchema}),
+    body: PostCreateQuickShareInputSchema,
+  }),
+  async (req, res: Response<PostCreateQuickShareResponse>) => {
+    const {user, body, params} = req;
+    const {projectId} = params;
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    const actionNeeded = projectInviteToAction({
+      action: 'create',
+      role: body.role,
+    });
+
+    if (
+      !isAuthorized({
+        action: actionNeeded,
+        decodedToken: {
+          globalRoles: user.globalRoles,
+          resourceRoles: user.resourceRoles,
+        },
+        resourceId: projectId,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to share this survey at that level'
+      );
+    }
+
+    // One live Quick Share per person per survey. A second generate returns
+    // the current code instead of leaving another one in the database.
+    const existing = (
+      await getInvitesForResource({
+        resourceType: Resource.PROJECT,
+        resourceId: projectId,
+      })
+    )
+      .filter(
+        invite =>
+          invite.kind === QUICK_SHARE_KIND &&
+          invite.createdBy === user.user_id &&
+          isInviteValid({invite}).isValid
+      )
+      .sort((a, b) => b.createdAt - a.createdAt)[0];
+    if (existing) {
+      res.json({...existing, kind: QUICK_SHARE_KIND});
+      return;
+    }
+
+    const invite = await createQuickShareInvite({
+      resourceId: projectId,
+      role: body.role,
+      createdBy: user.user_id,
+      lifetimeMs: body.lifetimeMs,
+    });
+
+    logInviteCreated(req, invite, user.user_id);
+    res.json(invite);
+  }
+);
+
+/**
  * POST create a team invite
  */
 api.post(
@@ -290,7 +367,9 @@ api.delete(
       inviteId: IdInputSchema,
     }),
   }),
-  async ({user, params: {projectId, inviteId}}, res) => {
+  async (req, res) => {
+    const {user, params} = req;
+    const {projectId, inviteId} = params;
     if (!user) {
       throw new Exceptions.UnauthorizedException();
     }
@@ -333,7 +412,22 @@ api.delete(
     }
 
     await deleteInvite({invite});
-    res.status(200).end();
+    if (invite.kind === QUICK_SHARE_KIND) {
+      logInviteAudit({
+        event: 'invite.revoke',
+        outcome: 'success',
+        source: 'api',
+        inviteId: invite._id,
+        userId: user.user_id,
+        role: invite.role,
+        inviteType: invite.inviteType,
+        resourceType: invite.resourceType,
+        resourceId: invite.resourceId,
+        kind: invite.kind,
+        ...inviteAuditFromRequest(req),
+      });
+    }
+    res.status(200).json({success: true});
   }
 );
 
@@ -591,6 +685,7 @@ api.get(
       inviteType: invite.inviteType,
       resourceType: invite.resourceType,
       resourceId: invite.resourceId,
+      kind: invite.kind,
       ...requestMeta,
     });
 

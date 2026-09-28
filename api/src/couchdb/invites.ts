@@ -26,8 +26,13 @@ import {
   InvitesDBDocument,
   InvitesDBFields,
   isInviteExpiryWithinMax,
+  isQuickShareLifetimeValid,
   MAX_INVITE_EXPIRY_DAYS,
+  MAX_QUICK_SHARE_LIFETIME_MS,
+  MIN_QUICK_SHARE_LIFETIME_MS,
   PeopleDBDocument,
+  QUICK_SHARE_KIND,
+  QUICK_SHARE_NAME,
   Resource,
   Role,
   RoleScope,
@@ -109,6 +114,46 @@ export async function createResourceInvite({
     uses: [],
   };
   return await writeNewInvite(invite);
+}
+
+/**
+ * Create a short-lived survey invite from the field app.
+ * The document is a normal invite (so scanning and redemption are unchanged)
+ * with `kind: 'quick-share'` so creation and each use can be told apart.
+ * Uses are unlimited until expiry; every redemption is appended to `uses`.
+ */
+export async function createQuickShareInvite({
+  resourceId,
+  role,
+  createdBy,
+  lifetimeMs,
+}: {
+  resourceId: string;
+  role: Role;
+  createdBy: string;
+  lifetimeMs: number;
+}): Promise<ExistingInvitesDBDocument & {kind: typeof QUICK_SHARE_KIND}> {
+  if (!isQuickShareLifetimeValid(lifetimeMs)) {
+    throw new Exceptions.ValidationException(
+      `Quick share must last between ${MIN_QUICK_SHARE_LIFETIME_MS / 60000} minutes and ${MAX_QUICK_SHARE_LIFETIME_MS / 3600000} hours`
+    );
+  }
+  const now = Date.now();
+  const invite: InvitesDBFields = {
+    resourceType: Resource.PROJECT,
+    resourceId,
+    inviteType: RoleScope.RESOURCE_SPECIFIC,
+    role,
+    name: QUICK_SHARE_NAME,
+    kind: QUICK_SHARE_KIND,
+    createdBy,
+    createdAt: now,
+    expiry: now + lifetimeMs,
+    usesConsumed: 0,
+    uses: [],
+  };
+  const saved = await writeNewInvite(invite);
+  return {...saved, kind: QUICK_SHARE_KIND};
 }
 
 /**

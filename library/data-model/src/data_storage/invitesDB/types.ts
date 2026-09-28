@@ -18,6 +18,7 @@
  *   Data models related to users.
  */
 
+import {InviteKind} from '../../inviteCode';
 import {Resource, Role, RoleScope} from '../../permission';
 import {DatabaseInterface} from '../../types';
 
@@ -115,6 +116,12 @@ export type V4InviteDBFields = {
     // When
     usedAt: number;
   }[];
+
+  /**
+   * Set when the invite was created by Quick Share in the field app.
+   * Absent on invites created in the control centre.
+   */
+  kind?: InviteKind;
 };
 
 export type InvitesDBFields = V4InviteDBFields;

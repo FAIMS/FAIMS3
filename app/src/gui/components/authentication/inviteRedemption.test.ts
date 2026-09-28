@@ -5,6 +5,7 @@ import {
   chooseInviteHandoff,
   conductorInviteUrl,
   inviteIdFromScannedUrl,
+  inviteRegisterUrl,
   postUseInvite,
 } from './inviteRedemption';
 
@@ -89,6 +90,17 @@ describe('invite URLs', () => {
         'https://conductor.example/register?inviteId=FAIMS-abc&redirect=https://app/auth-return'
       )
     ).toBe('FAIMS-abc');
+  });
+
+  it('builds a register QR payload the scanner can redeem', () => {
+    const url = inviteRegisterUrl({
+      serverUrl: 'https://conductor.example/',
+      inviteId: 'FAIMS-abc',
+    });
+    expect(url).toBe('https://conductor.example/register?inviteId=FAIMS-abc');
+    expect(inviteIdFromScannedUrl(url)).toBe('FAIMS-abc');
+    expect(url.startsWith('https://conductor.example')).toBe(true);
+    expect(url.match('https://conductor.example/register.*')).toBeTruthy();
   });
 
   it('builds a login URL that keeps the invite and the app redirect', () => {

@@ -8,6 +8,7 @@ import {
   ProjectListItem,
   ProjectStatus,
   PublicServerInfo,
+  Role,
 } from '@faims3/data-model';
 import {
   createAsyncThunk,
@@ -219,6 +220,22 @@ export interface Project extends ProjectInformation {
   // [Compiled] Key to get the compiled UI Spec from storage - this should not
   // be persisted/serialised as it has live JS functions in it
   uiSpecificationId: string;
+
+  /**
+   * The one Quick Share code this device is showing for the survey.
+   * Kept until the user revokes it, including across reloads.
+   */
+  quickShare?: ProjectQuickShare;
+}
+
+/** One active Quick Share, stored on the project so it can be shown again. */
+export interface ProjectQuickShare {
+  inviteId: string;
+  role: Role;
+  /** Expiry timestamp in milliseconds. */
+  expiry: number;
+  /** Data URL for the register QR code. */
+  qrCode: string;
 }
 
 export interface Server {
@@ -328,6 +345,7 @@ function retainedProjectFields(project: Project) {
     name: project.name,
     recordCount: project.recordCount,
     offlineMapRegion: project.offlineMapRegion,
+    quickShare: project.quickShare,
   };
 }
 
@@ -1183,6 +1201,27 @@ const projectsSlice = createSlice({
           },
         },
       };
+    },
+
+    /** Remember the Quick Share this device is showing for a survey. */
+    setProjectQuickShare: (
+      state,
+      action: PayloadAction<ProjectIdentity & {quickShare: ProjectQuickShare}>
+    ) => {
+      const project = projectByIdentity(state, action.payload);
+      if (!project) {
+        return;
+      }
+      project.quickShare = action.payload.quickShare;
+    },
+
+    /** Drop the stored Quick Share after it has been revoked. */
+    clearProjectQuickShare: (state, action: PayloadAction<ProjectIdentity>) => {
+      const project = projectByIdentity(state, action.payload);
+      if (!project) {
+        return;
+      }
+      delete project.quickShare;
     },
   },
 });
@@ -2499,6 +2538,8 @@ export const {
   updateServerDetails,
   markInitialised,
   deactivateProject,
+  setProjectQuickShare,
+  clearProjectQuickShare,
   reassessSchemaCompatibility,
   setPendingOfflineMapDownloadPrompt,
   clearPendingOfflineMapDownloadPrompt,

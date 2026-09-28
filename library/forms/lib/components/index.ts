@@ -1,4 +1,5 @@
 export * from './ConfirmDialog';
+export * from './PhotoLightbox';
 export * from './maps';
 export * from './ProgressBar';
 export * from './qrCodes';
