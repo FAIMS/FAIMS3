@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import React, {useMemo, useState} from 'react';
 import {ArchiveTemplateDialog} from '@/components/dialogs/archive-template-dialog';
 import {TemplateVisibilityDialog} from '@/components/dialogs/template-visibility-dialog';

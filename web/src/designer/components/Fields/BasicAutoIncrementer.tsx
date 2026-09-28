@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Typography} from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import DebouncedTextField from '../debounced-text-field';

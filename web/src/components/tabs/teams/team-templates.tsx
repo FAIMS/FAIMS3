@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {DataTable} from '@/components/data-table/data-table';
 import type {ColumnDef} from '@tanstack/react-table';
 import {CreateTemplateDialog} from '@/components/dialogs/create-template-dialog';

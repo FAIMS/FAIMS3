@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {SxProps, Theme} from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import {ConditionBooleanOperator} from '../types/condition';

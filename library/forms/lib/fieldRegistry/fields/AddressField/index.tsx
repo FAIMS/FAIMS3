@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import ClearIcon from '@mui/icons-material/Clear';
 import EditIcon from '@mui/icons-material/Edit';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {NotebookDefinitionV1} from './migrateV2';
 
 export const sampleNotebook: NotebookDefinitionV1 = {

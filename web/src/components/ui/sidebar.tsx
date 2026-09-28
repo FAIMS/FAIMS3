@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import * as React from 'react';
 import {Slot} from '@radix-ui/react-slot';
 import {VariantProps, cva} from 'class-variance-authority';

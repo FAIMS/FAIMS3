@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // Base class for custom exceptions
 export class CustomException extends Error {
   status: number;

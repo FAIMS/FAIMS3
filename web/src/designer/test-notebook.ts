@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Large in-repo {@link Notebook} fixture for tests and local designer development.
  */

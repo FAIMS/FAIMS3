@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import type {NotebookDefinition} from '../../../uiSpecification/types';
 import {migrateToV2} from './migrateV2';
 import {migrateToV3} from './migrateV3';

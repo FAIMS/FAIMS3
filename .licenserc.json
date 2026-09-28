@@ -1,0 +1,10 @@
+{
+  "app/src/**/*.ts?(x)": ["// SPDX-License-Identifier: Apache-2.0"],
+  "api/src/**/*.ts?(x)": ["// SPDX-License-Identifier: Apache-2.0"],
+  "web/src/**/*.ts?(x)": ["// SPDX-License-Identifier: Apache-2.0"],
+  "library/data-model/src/**/*.ts?(x)": [
+    "// SPDX-License-Identifier: Apache-2.0"
+  ],
+  "library/forms/lib/**/*.ts?(x)": ["// SPDX-License-Identifier: Apache-2.0"],
+  "ignore": ["app/src/utils/eqTestSupport.ts"]
+}

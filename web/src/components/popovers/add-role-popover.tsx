@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover';
 import {useRequiredUser} from '@/hooks/auth-hooks';
 import {RoleCard} from '@/components/ui/role-card';

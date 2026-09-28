@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Enum representing the possible attachment service implementations.
  */

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION, migrateNotebook} from './index';
 import {migrateToV4} from './migrateV4';
 
