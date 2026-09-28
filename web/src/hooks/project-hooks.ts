@@ -114,21 +114,25 @@ export const createProjectFromFile = async ({
   });
 };
 
-/** PUT /api/notebooks/:projectId — merge name and/or description only. */
+/** PUT /api/notebooks/:projectId — merge name, description, and/or disableQuickShare. */
 export const updateNotebookMetadataRequest = async ({
   user,
   projectId,
   name,
   description,
+  disableQuickShare,
 }: {
   user: User;
   projectId: string;
   name?: string;
   description?: string;
+  disableQuickShare?: boolean;
 }) => {
   const body: PutUpdateNotebookMetadataInput = {};
   if (name !== undefined) body.name = name;
   if (description !== undefined) body.description = description;
+  if (disableQuickShare !== undefined)
+    body.disableQuickShare = disableQuickShare;
 
   return await fetch(
     `${config.apiUrl}/api/notebooks/${encodeURIComponent(projectId)}`,

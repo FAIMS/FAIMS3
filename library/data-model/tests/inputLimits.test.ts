@@ -141,6 +141,22 @@ describe('notebook and template schemas', () => {
     ).toBe(false);
   });
 
+  it('accepts a disableQuickShare metadata update', () => {
+    expect(
+      PutUpdateNotebookMetadataInputSchema.safeParse({
+        disableQuickShare: true,
+      }).success
+    ).toBe(true);
+    expect(
+      PutUpdateNotebookMetadataInputSchema.safeParse({
+        disableQuickShare: false,
+      }).success
+    ).toBe(true);
+    expect(PutUpdateNotebookMetadataInputSchema.safeParse({}).success).toBe(
+      true
+    );
+  });
+
   it('rejects an oversized template name', () => {
     expect(
       PostCreateTemplateInputSchema.safeParse({

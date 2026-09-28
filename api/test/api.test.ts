@@ -260,6 +260,54 @@ describe('API tests', () => {
     );
   });
 
+  it('PUT /notebooks/:id can set disableQuickShare without changing name', async () => {
+    const projectId = await createNotebook({
+      projectName: 'quick-share-flag-test',
+      uiSpecification: EMPTY_UI_SPECIFICATION,
+      description: 'initial',
+      createdBy: 'admin',
+    });
+    if (!projectId) {
+      throw new Error('could not create test notebook');
+    }
+
+    const before = await getProjectById(projectId);
+    expect(before.disableQuickShare).toBeUndefined();
+
+    await request(app)
+      .put(`/api/notebooks/${projectId}`)
+      .send({disableQuickShare: true})
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const disabled = await getProjectById(projectId);
+    expect(disabled.disableQuickShare).toBe(true);
+    expect(disabled.name).toBe(before.name);
+
+    await request(app)
+      .put(`/api/notebooks/${projectId}`)
+      .send({name: 'Renamed flag survey'})
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const renamed = await getProjectById(projectId);
+    expect(renamed.name).toBe('Renamed flag survey');
+    expect(renamed.disableQuickShare).toBe(true);
+
+    await request(app)
+      .put(`/api/notebooks/${projectId}`)
+      .send({disableQuickShare: false})
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const enabled = await getProjectById(projectId);
+    expect(enabled.disableQuickShare).toBe(false);
+    expect(enabled.name).toBe('Renamed flag survey');
+  });
+
   it('PUT /notebooks/:id requires UPDATE_PROJECT_DETAILS, not UISPEC alone', async () => {
     const projectId = await createNotebook({
       projectName: 'metadata-perm-test',

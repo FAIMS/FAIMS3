@@ -397,6 +397,7 @@ export type GetNotebookUsersResponse = z.infer<
 export const PutUpdateNotebookMetadataInputSchema = ProjectDBFieldsSchema.pick({
   name: true,
   description: true,
+  disableQuickShare: true,
 })
   .partial()
   .extend({

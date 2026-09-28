@@ -6,6 +6,7 @@ import {DesignerDialog} from '@/components/dialogs/designer-dialog';
 import {EditProjectDetailsDialog} from '@/components/dialogs/edit-project-details-dialog';
 import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
 import {GenerateTestRecordsDialog} from '@/components/dialogs/generate-test-records-dialog';
+import {ProjectQuickShareSetting} from '@/components/tabs/project/quick-share-setting';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
@@ -149,6 +150,8 @@ const ProjectActions = (): JSX.Element => {
             </List>
           </Card>
         )}
+
+        {canUpdateProjectDetails && <ProjectQuickShareSetting />}
 
         {canEditProject && (
           <Card className="flex-1">

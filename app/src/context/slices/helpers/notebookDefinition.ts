@@ -276,5 +276,6 @@ export function projectInformationFromGetNotebook(
     schemaCompatibility,
     recordCount: notebook.recordCount,
     offlineMapRegion: notebook.offlineMapRegion,
+    disableQuickShare: notebook.disableQuickShare,
   };
 }

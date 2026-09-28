@@ -1,12 +1,16 @@
 /**
  * Quick Share: one temporary QR code for an activated survey.
  *
- * Generate stores the code on the project. The panel then only shows that
- * code — its role, when it expires, and a tap-to-enlarge QR — until the user
- * revokes it. Revoke deletes the invite, then the generate form comes back.
+ * A Share button opens a dialog. Generate stores the code on the project. The
+ * dialog then only shows that code — its role, when it expires, and a
+ * tap-to-enlarge QR — until the user generates a new one. That deletes the
+ * invite, then the generate form comes back. Every code lasts one hour. An
+ * expired code is dropped, and the dialog shows the generate form again.
  */
 
+import CloseIcon from '@mui/icons-material/Close';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
+import ShareIcon from '@mui/icons-material/Share';
 import {
   Alert,
   Box,
@@ -16,25 +20,23 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  IconButton,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
   Stack,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
+import type {SxProps, Theme} from '@mui/material/styles';
 import {
   DEFAULT_QUICK_SHARE_LIFETIME_MS,
-  QUICK_SHARE_LIFETIME_OPTIONS,
   Role,
   projectRolesUserCanInvite,
   roleDetails,
 } from '@faims3/data-model';
 import {PhotoLightbox} from '@faims3/forms';
 import QRCode from 'qrcode';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useId, useMemo, useState} from 'react';
 import {config} from '../../../../buildconfig';
 import {selectActiveUser} from '../../../../context/slices/authSlice';
 import {
@@ -52,6 +54,9 @@ import {
   revokeQuickShare,
 } from '../../../../utils/apiOperations/quickShare';
 import {inviteRegisterUrl} from '../../authentication/inviteRedemption';
+
+/** High enough that a full-width lightbox zoom still stays sharp. */
+const QUICK_SHARE_QR_SIZE_PX = 2048;
 
 function surveyRoleDescription(role: Role): string {
   return roleDetails[role].description
@@ -77,7 +82,14 @@ function quickShareErrorMessage(error: unknown): string {
   return 'Could not update the quick share code. Check your connection and try again.';
 }
 
-export default function NotebookQuickShare({project}: {project: Project}) {
+export default function NotebookQuickShare({
+  project,
+  sx,
+}: {
+  project: Project;
+  /** Styles for the Share button, so each placement can space itself. */
+  sx?: SxProps<Theme>;
+}) {
   const dispatch = useAppDispatch();
   const {isOnline, checkIsOnline} = useIsOnline();
   const activeUser = useAppSelector(selectActiveUser);
@@ -92,13 +104,13 @@ export default function NotebookQuickShare({project}: {project: Project}) {
     });
   }, [activeUser, project.projectId]);
 
+  const titleId = useId();
   const [role, setRole] = useState<Role | ''>('');
-  const [lifetimeMs, setLifetimeMs] = useState(DEFAULT_QUICK_SHARE_LIFETIME_MS);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | undefined>();
-  const [showCode, setShowCode] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -116,10 +128,30 @@ export default function NotebookQuickShare({project}: {project: Project}) {
     }
   }, [allowedRoles, role]);
 
-  const share = project.quickShare;
-  const expired = !!share && share.expiry <= now;
+  const storedShare = project.quickShare;
+  const expired = !!storedShare && storedShare.expiry <= now;
+  // An expired code is not shown. Clearing it puts the dialog back on the
+  // generate form the next time it opens, including after a revisit.
+  const share = expired ? undefined : storedShare;
 
-  if (!project.isActivated || !activeUser || allowedRoles.length === 0) {
+  useEffect(() => {
+    if (!expired) return;
+    setLightboxOpen(false);
+    setConfirmRevoke(false);
+    dispatch(
+      clearProjectQuickShare({
+        projectId: project.projectId,
+        serverId: project.serverId,
+      })
+    );
+  }, [dispatch, expired, project.projectId, project.serverId]);
+
+  if (
+    project.disableQuickShare ||
+    !project.isActivated ||
+    !activeUser ||
+    allowedRoles.length === 0
+  ) {
     return null;
   }
 
@@ -161,13 +193,14 @@ export default function NotebookQuickShare({project}: {project: Project}) {
         username: activeUser.username,
         projectId: project.projectId,
         role,
-        lifetimeMs,
+        lifetimeMs: DEFAULT_QUICK_SHARE_LIFETIME_MS,
       });
       const qrCode = await QRCode.toDataURL(
         inviteRegisterUrl({
           serverUrl: server.serverUrl,
           inviteId: invite._id,
-        })
+        }),
+        {width: QUICK_SHARE_QR_SIZE_PX, margin: 2}
       );
       rememberShare({
         inviteId: invite._id,
@@ -175,7 +208,6 @@ export default function NotebookQuickShare({project}: {project: Project}) {
         expiry: invite.expiry,
         qrCode,
       });
-      setShowCode(false);
     } catch (caught) {
       logError(
         caught instanceof Error ? caught : new Error('Quick share failed')
@@ -192,7 +224,7 @@ export default function NotebookQuickShare({project}: {project: Project}) {
     }
     setError(undefined);
     if (!checkIsOnline()) {
-      setError('Revoking a quick share needs a connection to the server.');
+      setError('Generating a new code needs a connection to the server.');
       return;
     }
     setWorking(true);
@@ -206,7 +238,6 @@ export default function NotebookQuickShare({project}: {project: Project}) {
       forgetShare();
       setConfirmRevoke(false);
       setLightboxOpen(false);
-      setShowCode(false);
     } catch (caught) {
       const message = quickShareErrorMessage(caught);
       // Already gone on the server: drop the local copy so a new one can be made.
@@ -214,7 +245,6 @@ export default function NotebookQuickShare({project}: {project: Project}) {
         forgetShare();
         setConfirmRevoke(false);
         setLightboxOpen(false);
-        setShowCode(false);
       } else {
         logError(
           caught instanceof Error
@@ -228,47 +258,96 @@ export default function NotebookQuickShare({project}: {project: Project}) {
     }
   };
 
+  const closeDialog = () => {
+    if (working) return;
+    setLightboxOpen(false);
+    setDialogOpen(false);
+  };
+
   return (
-    <Box
-      component={Paper}
-      variant="outlined"
-      elevation={0}
-      sx={{p: 2, mb: {xs: 1, sm: 2, md: 3}}}
-      data-testid="app-quick-share"
-    >
-      <Typography variant="h6" sx={{mb: 1}}>
-        Quick share
-      </Typography>
+    <>
+      <Button
+        variant="contained"
+        disableElevation
+        startIcon={<ShareIcon />}
+        onClick={() => setDialogOpen(true)}
+        data-testid="app-quick-share-open"
+        sx={[
+          {textTransform: 'none', flexShrink: 0},
+          ...(Array.isArray(sx) ? sx : [sx]),
+        ]}
+      >
+        Share
+      </Button>
 
-      {share ? (
-        <ActiveQuickShare
-          share={share}
-          expired={expired}
-          isOnline={isOnline}
-          working={working}
-          showCode={showCode}
-          error={error}
-          onToggleCode={() => setShowCode(open => !open)}
-          onOpenLightbox={() => setLightboxOpen(true)}
-          onAskRevoke={() => setConfirmRevoke(true)}
-        />
-      ) : (
-        <GenerateQuickShare
-          role={role}
-          lifetimeMs={lifetimeMs}
-          isOnline={isOnline}
-          working={working}
-          error={error}
-          onRole={setRole}
-          onLifetime={setLifetimeMs}
-          onGenerate={handleGenerate}
-          allowedRoles={allowedRoles}
-        />
-      )}
+      <Dialog
+        open={dialogOpen}
+        onClose={closeDialog}
+        fullWidth
+        maxWidth="sm"
+        aria-labelledby={titleId}
+        data-testid="app-quick-share"
+      >
+        <DialogTitle
+          component="div"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 1,
+            pr: 6,
+          }}
+        >
+          <Typography id={titleId} component="h2" variant="h4">
+            Share this {config.notebookName}
+          </Typography>
+          {share && (
+            <Button
+              size="small"
+              variant="outlined"
+              disabled={!isOnline || working}
+              onClick={() => setConfirmRevoke(true)}
+              data-testid="app-quick-share-revoke"
+              sx={{textTransform: 'none', flexShrink: 0}}
+            >
+              Generate a new code
+            </Button>
+          )}
+          <IconButton
+            aria-label="Close"
+            onClick={closeDialog}
+            disabled={working}
+            sx={{position: 'absolute', right: 8, top: 8}}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          {share ? (
+            <ActiveQuickShare
+              share={share}
+              isOnline={isOnline}
+              error={error}
+              onOpenLightbox={() => setLightboxOpen(true)}
+            />
+          ) : (
+            <GenerateQuickShare
+              role={role}
+              isOnline={isOnline}
+              working={working}
+              error={error}
+              onRole={setRole}
+              onGenerate={handleGenerate}
+              allowedRoles={allowedRoles}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
-      {lightboxOpen && share && !expired && (
+      {lightboxOpen && share && (
         <PhotoLightbox
           url={share.qrCode}
+          fit="width"
           onClose={() => setLightboxOpen(false)}
         />
       )}
@@ -279,7 +358,7 @@ export default function NotebookQuickShare({project}: {project: Project}) {
           if (!working) setConfirmRevoke(false);
         }}
       >
-        <DialogTitle>Revoke this quick share?</DialogTitle>
+        <DialogTitle>Generate a new code?</DialogTitle>
         <DialogContent>
           <Typography variant="body2">
             This code will stop working. You can generate a new one afterwards.
@@ -294,87 +373,102 @@ export default function NotebookQuickShare({project}: {project: Project}) {
             Cancel
           </Button>
           <Button
+            variant="contained"
             color="error"
             onClick={handleRevoke}
             disabled={working || !isOnline}
             data-testid="app-quick-share-revoke-confirm"
           >
-            {working ? 'Revoking…' : 'Revoke'}
+            {working ? 'Working…' : 'Generate a new code'}
           </Button>
         </DialogActions>
       </Dialog>
+    </>
+  );
+}
+
+function MetadataPair({
+  label,
+  value,
+  valueTestId,
+}: {
+  label: string;
+  value: string;
+  valueTestId: string;
+}) {
+  return (
+    <Box>
+      <Typography variant="subtitle2" sx={{fontWeight: 700, lineHeight: 1.3}}>
+        {label}
+      </Typography>
+      <Typography
+        variant="body2"
+        data-testid={valueTestId}
+        sx={{fontSize: '0.8125rem', lineHeight: 1.35}}
+      >
+        {value}
+      </Typography>
     </Box>
   );
 }
 
 function ActiveQuickShare({
   share,
-  expired,
   isOnline,
-  working,
-  showCode,
   error,
-  onToggleCode,
   onOpenLightbox,
-  onAskRevoke,
 }: {
   share: ProjectQuickShare;
-  expired: boolean;
   isOnline: boolean;
-  working: boolean;
-  showCode: boolean;
   error: string | undefined;
-  onToggleCode: () => void;
   onOpenLightbox: () => void;
-  onAskRevoke: () => void;
 }) {
   const roleName = roleDetails[share.role].name;
   return (
-    <Stack spacing={2} data-testid="app-quick-share-result">
-      <Typography variant="body2">
-        {expired
-          ? `This code for ${config.notebookName} access has expired. Revoke it before you generate another.`
-          : `Show this code to give someone ${roleName.toLowerCase()} access. Revoke it before you generate another.`}
-      </Typography>
-
+    <Stack spacing={1} data-testid="app-quick-share-result">
       {!isOnline && (
         <Alert severity="warning" data-testid="app-quick-share-offline">
-          You can keep showing this code. Revoking it needs a connection to the
-          server.
+          You can keep showing this code. Generating a new one needs a
+          connection to the server.
         </Alert>
       )}
 
       <Box
         sx={{
-          p: 1.5,
-          borderRadius: 1,
-          bgcolor: 'action.hover',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'flex-start',
+          gap: 1.5,
         }}
-        data-testid="app-quick-share-summary"
       >
-        <Typography variant="body2" color="text.secondary">
-          Access level
-        </Typography>
-        <Typography
-          variant="subtitle1"
-          data-testid="app-quick-share-role-label"
+        <Box
+          sx={{
+            p: 1.25,
+            borderRadius: 1,
+            bgcolor: 'action.hover',
+            flex: '1 1 16rem',
+            minWidth: 0,
+          }}
+          data-testid="app-quick-share-summary"
         >
-          {roleName}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
-          {expired ? 'Expired' : 'Expires'}
-        </Typography>
-        <Typography
-          variant="subtitle1"
-          color={expired ? 'error' : 'text.primary'}
-          data-testid="app-quick-share-expiry"
-        >
-          {formatExpiry(share.expiry)}
-        </Typography>
-      </Box>
+          <Stack spacing={0.75}>
+            <MetadataPair
+              label="Access level"
+              value={roleName}
+              valueTestId="app-quick-share-role-label"
+            />
+            <MetadataPair
+              label="Expires"
+              value={formatExpiry(share.expiry)}
+              valueTestId="app-quick-share-expiry"
+            />
+          </Stack>
+        </Box>
 
-      {!expired && (
-        <Stack spacing={0.5} sx={{alignItems: 'center'}}>
+        <Stack
+          spacing={0.25}
+          sx={{alignItems: 'center', flex: '0 0 auto', mx: 'auto'}}
+        >
           <Box
             component="button"
             type="button"
@@ -396,73 +490,60 @@ function ActiveQuickShare({
               sx={{width: 220, height: 220}}
             />
           </Box>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{textAlign: 'center', lineHeight: 1.3}}
+          >
             Tap the code to enlarge it for scanning.
           </Typography>
         </Stack>
-      )}
-
-      <Button
-        size="small"
-        onClick={onToggleCode}
-        data-testid="app-quick-share-show-code"
-        sx={{textTransform: 'none', alignSelf: 'flex-start'}}
-      >
-        {showCode ? 'Hide code' : 'Show code'}
-      </Button>
-      {showCode && (
-        <Typography
-          variant="body2"
-          sx={{fontFamily: 'monospace', wordBreak: 'break-all'}}
-          data-testid="app-quick-share-code"
-        >
-          {share.inviteId}
-        </Typography>
-      )}
-
-      <Button
-        variant="outlined"
-        color="error"
-        disabled={!isOnline || working}
-        onClick={onAskRevoke}
-        data-testid="app-quick-share-revoke"
-        sx={{textTransform: 'none', alignSelf: 'flex-start'}}
-      >
-        {expired ? 'Revoke and start again' : 'Revoke'}
-      </Button>
+      </Box>
 
       {error && <Alert severity="error">{error}</Alert>}
     </Stack>
   );
 }
 
+function RoleSelectItem({role}: {role: Role}) {
+  return (
+    <Box sx={{display: 'flex', flexDirection: 'column', minWidth: 0, py: 0.25}}>
+      <Typography variant="body2" sx={{fontWeight: 600, lineHeight: 1.3}}>
+        {roleDetails[role].name}
+      </Typography>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{whiteSpace: 'normal', lineHeight: 1.35}}
+      >
+        {surveyRoleDescription(role)}
+      </Typography>
+    </Box>
+  );
+}
+
 function GenerateQuickShare({
   role,
-  lifetimeMs,
   isOnline,
   working,
   error,
   allowedRoles,
   onRole,
-  onLifetime,
   onGenerate,
 }: {
   role: Role | '';
-  lifetimeMs: number;
   isOnline: boolean;
   working: boolean;
   error: string | undefined;
   allowedRoles: Role[];
   onRole: (role: Role) => void;
-  onLifetime: (lifetimeMs: number) => void;
   onGenerate: () => void;
 }) {
   return (
-    <Stack spacing={2}>
+    <Stack spacing={1.25}>
       <Typography variant="body2">
-        Generate a temporary QR code for this {config.notebookName}. Someone
-        else scans it the same way they scan an invite. If they are already
-        signed in, they get access immediately. Otherwise they can register.
+        Grant another user access to this survey, at the chosen level of access.
+        The code lasts 1 hour.
       </Typography>
 
       {!isOnline && (
@@ -479,38 +560,19 @@ function GenerateQuickShare({
           value={role}
           onChange={event => onRole(event.target.value as Role)}
           data-testid="app-quick-share-role"
+          renderValue={selected => roleDetails[selected].name}
         >
           {allowedRoles.map(allowed => (
-            <MenuItem key={allowed} value={allowed}>
-              {roleDetails[allowed].name}
+            <MenuItem
+              key={allowed}
+              value={allowed}
+              sx={{whiteSpace: 'normal', alignItems: 'flex-start', py: 1}}
+            >
+              <RoleSelectItem role={allowed} />
             </MenuItem>
           ))}
         </Select>
       </FormControl>
-      {role !== '' && (
-        <Typography variant="body2" color="text.secondary">
-          {surveyRoleDescription(role)}
-        </Typography>
-      )}
-
-      <ToggleButtonGroup
-        exclusive
-        size="small"
-        value={String(lifetimeMs)}
-        disabled={!isOnline || working}
-        onChange={(_event, value: string | null) => {
-          if (value) onLifetime(Number(value));
-        }}
-        aria-label="How long the code lasts"
-        data-testid="app-quick-share-lifetime"
-        sx={{flexWrap: 'wrap'}}
-      >
-        {QUICK_SHARE_LIFETIME_OPTIONS.map(option => (
-          <ToggleButton key={option.ms} value={String(option.ms)}>
-            {option.label}
-          </ToggleButton>
-        ))}
-      </ToggleButtonGroup>
 
       <Button
         variant="contained"

@@ -312,7 +312,7 @@ api.get(
   }
 );
 
-// PUT merge inconsequential project metadata (name, description)
+// PUT merge inconsequential project metadata (name, description, disableQuickShare)
 api.put(
   '/:id',
   requireAuthenticationAPI,

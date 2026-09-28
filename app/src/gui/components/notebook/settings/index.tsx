@@ -124,7 +124,10 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
         sx={{mb: {xs: 1, sm: 2, md: 3}}}
       >
         <Grid size={{xs: 12, sm: 12, md: 6, lg: 4}}>
-          <NotebookQuickShare project={project} />
+          <NotebookQuickShare
+            project={project}
+            sx={{mb: {xs: 1, sm: 2, md: 3}}}
+          />
           <Box
             component={Paper}
             variant={'outlined'}

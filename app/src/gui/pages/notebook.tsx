@@ -43,6 +43,7 @@ import * as ROUTES from '../../constants/routes';
 import {isNotebookActivationBlocked} from '../../context/slices/helpers/notebookDefinition';
 import {useAppSelector} from '../../context/store';
 import {removedNotebookUnavailableCopy} from '../../utils/remoteProjectRemoval';
+import NotebookQuickShare from '../components/notebook/settings/quickShare';
 import BackButton from '../components/ui/BackButton';
 import NotFound404 from './404';
 import {NotebookView} from '../components/notebook/notebookView';
@@ -112,10 +113,15 @@ export default function Notebook() {
             fontWeight: 'bold',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            flex: 1,
+            minWidth: 0,
           }}
         >
           {project.name}
         </Typography>
+
+        <NotebookQuickShare project={project} />
       </Stack>
 
       <NotebookView project={project} />
