@@ -28,12 +28,14 @@ authors:
   - family-names: Sobotkova
     given-names: Adéla
     orcid: https://orcid.org/0000-0002-4541-3963
+  - family-names: Baker
+    given-names: Peter
+    affiliation: CSIRO
+    orcid: https://orcid.org/0000-0002-9821-4079
   - name: The FAIMS Project contributors
 repository-code: https://github.com/FAIMS/FAIMS3
 url: https://fieldmark.au
 license: Apache-2.0
-version: 1.6.3
-date-released: '2026-09-03'
 keywords:
   - field data collection
   - offline-first
