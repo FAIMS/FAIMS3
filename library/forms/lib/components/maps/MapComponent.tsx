@@ -281,10 +281,23 @@ const MapComponentImpl = (props: MapComponentProps) => {
       }
     });
 
-    // Watch real GPS position and update cursor when it changes
+    // ~1 Hz live cursor. Capacitor reads these options differently per platform:
+    // - Android (plugin >= 7.1): `timeout` is the fused-location interval, and
+    //   `minimumUpdateInterval` is a hard floor. The plugin default floor is
+    //   5000 ms, which is what made the marker lag. On a watch, `timeout` is
+    //   not a wait deadline (that meaning applies to getCurrentPosition).
+    // - iOS: both interval fields are ignored. CLLocationManager delivers on
+    //   its own cadence, typically ~1 Hz while moving and slower when still.
+    // - Web: `minimumUpdateInterval` is ignored. `timeout` is the browser's
+    //   max wait for a fix, not an interval; the browser chooses the rate.
+    // `coords.heading` is GPS course-over-ground and only changes with a fix.
     Geolocation.watchPosition(
-      // maximum age to avoid using cached position of the user.
-      {enableHighAccuracy: true, timeout: 10000, maximumAge: 0},
+      {
+        enableHighAccuracy: true,
+        timeout: 1000,
+        maximumAge: 0,
+        minimumUpdateInterval: 1000,
+      },
       (position, err) => {
         if (err) {
           logWarn('Geolocation error:', err.message || err);
@@ -448,7 +461,15 @@ const MapComponentImpl = (props: MapComponentProps) => {
     }
 
     const positionSource = new VectorSource();
-    const layer = new VectorLayer({source: positionSource, zIndex: 999});
+    // The heading triangle offset is in map units sized to a fixed pixel gap.
+    // Rebuild during zoom gestures and animations so that gap stays constant
+    // instead of snapping when the gesture ends.
+    const layer = new VectorLayer({
+      source: positionSource,
+      zIndex: 999,
+      updateWhileAnimating: true,
+      updateWhileInteracting: true,
+    });
     theMap.addLayer(layer);
     positionLayerRef.current = layer;
 
