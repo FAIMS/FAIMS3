@@ -337,9 +337,12 @@ export const EditableFormManager: React.FC<
   // written at runtime to put a form into a mode - so recompute on it directly.
   // Immediate, not debounced: that debounce coalesces keystrokes, and a
   // metadata write is one deliberate event whose answer should show at once.
+  // Keyed on the metadata alone; updateVisibility also turns on the record,
+  // which refetches on focus and would recompute for nothing.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     updateVisibility();
-  }, [updateVisibility]);
+  }, [props.metadataValues]);
 
   // ---------------------------------------------------------------------------
   // Save Implementation
