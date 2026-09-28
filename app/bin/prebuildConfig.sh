@@ -51,6 +51,11 @@ pnpm dlx sssf-capacitor-assets generate --assetPath "./public/base-assets/${THEM
   --iconBackgroundColorDark '#001d34' \
   --splashBackgroundColorDark '#001d34'
 
+# Warn if the loading screen icon was not generated
+if ! test -f icons/icon-512.png; then
+  echo "Warning: icon-512.png was not generated, the app loading screen logo may be missing."
+fi
+
 ## capacitor-assets can put the pwa icons in the wrong place sometimes
 if test -f icons/icon-192.png; then
   echo "Moving icons into public"
