@@ -21,6 +21,7 @@ import {z} from 'zod';
 import {BaseFieldParametersSchema} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
@@ -94,8 +95,14 @@ export const Checkbox = (props: FieldProps) => {
  * Generate a zod schema for the value.
  * The value is a boolean representing the checked state.
  */
-const valueSchema = () => {
-  return z.boolean();
+const valueSchema = (props: CheckboxFieldProps) => {
+  let schema = z.boolean({error: 'Please choose yes or no'});
+  if (props.required) {
+    schema = schema.refine(value => value === true, {
+      message: 'This field is required',
+    });
+  }
+  return schemaWithAbsent(false, schema);
 };
 
 // ============================================================================

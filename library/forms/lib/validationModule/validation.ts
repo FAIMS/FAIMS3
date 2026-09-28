@@ -9,6 +9,7 @@ import {
 import {z, ZodObject, ZodRawShape, ZodTypeAny} from 'zod';
 import {FORCE_IGNORED_FIELDS, getFieldInfo} from '../fieldRegistry';
 import {logWarn} from '../logging';
+import {humanizeValidationMessage} from './readableErrors';
 import {
   FieldValidationResult,
   ValidationResult as FormValidationResult,
@@ -398,7 +399,7 @@ export const FormValidation = {
 
     return {
       valid: false,
-      errors: result.error.issues as ValidationError[],
+      errors: humanizeIssues(result.error.issues),
     };
   },
 
@@ -542,7 +543,14 @@ export const FormValidation = {
 
     return {
       valid: false,
-      errors: result.error.issues as ValidationError[],
+      errors: humanizeIssues(result.error.issues),
     };
   },
 } as const;
+
+function humanizeIssues(issues: ValidationError[]): ValidationError[] {
+  return issues.map(issue => ({
+    ...issue,
+    message: humanizeValidationMessage(issue.message),
+  }));
+}

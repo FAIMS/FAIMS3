@@ -78,7 +78,10 @@ vi.mock('../../../context/slices/authSlice', () => ({
 }));
 vi.mock('../../../context/slices/alertSlice', () => ({addAlert: vi.fn()}));
 vi.mock('../../../context/slices/helpers/compiledSpecService', () => ({
-  compiledSpecService: {getSpec: () => uiSpecification},
+  compiledSpecService: {
+    getSpec: () => uiSpecification,
+    getCompileError: () => undefined,
+  },
 }));
 vi.mock('../../../utils/customHooks', () => ({
   invalidateProjectHydration: vi.fn(),

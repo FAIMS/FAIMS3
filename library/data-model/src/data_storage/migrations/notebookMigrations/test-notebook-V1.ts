@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-import {NotebookDefinitionV1} from './migrateV2';
+import type {LegacyNotebookWire} from './steps/legacyToV1';
 
-export const sampleNotebook: NotebookDefinitionV1 = {
+/** Schema `1.0` (pre-semver) fixture used by the collapse and normalize tests. */
+export const sampleNotebook: LegacyNotebookWire = {
   metadata: {
     notebook_version: '1.0',
     schema_version: '1.0',

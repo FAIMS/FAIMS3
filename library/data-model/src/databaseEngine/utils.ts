@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: Apache-2.0
-import type {RelatedType} from '../uiSpecification/types';
 import {
   relatedRecordAvpEntries,
   relatedRecordFieldAvpValueSchema,

@@ -12,7 +12,7 @@ const fields: {[key: string]: FieldType} = {
   // Canonical "Text field" entry — new notebooks emit `faims-custom::TextField`.
   // Existing notebooks that still reference `FAIMSTextField` (or the legacy
   // `formik-material-ui::MultipleTextField`) are migrated to this canonical
-  // name by `migrateToV4`; the runtime keeps a backward-compat alias for
+  // name by `legacyToV1`; the runtime keeps a backward-compat alias for
   // un-migrated notebooks.
   TextField: {
     'component-namespace': 'faims-custom',
@@ -470,7 +470,7 @@ const fields: {[key: string]: FieldType} = {
 
   // Canonical "Number field" entry — new notebooks emit `faims-custom::NumberField`.
   // Existing notebooks that still reference `ControlledNumber` are migrated to
-  // this canonical name by `migrateToV4`; the runtime keeps a backward-compat
+  // this canonical name by `legacyToV1`; the runtime keeps a backward-compat
   // alias for un-migrated notebooks.
   NumberField: {
     'component-namespace': 'faims-custom',

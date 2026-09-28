@@ -16,6 +16,7 @@ import {
   NOT_ACTIVATED_LABEL,
   notebookListDataGridSx,
 } from '../workspace/notebooks';
+import {isNotebookActivationBlocked} from '../../../context/slices/helpers/notebookDefinition';
 import {Project} from '../../../context/slices/projectSlice';
 import {sortProjectsByNewest} from '../../../lib/notebookListDisplay';
 
@@ -49,11 +50,13 @@ export default function HeadingProjectGrid({
   const history = useNavigate();
 
   const handleRowClick: GridEventListener<'rowClick'> = ({
-    row: {isActivated, projectId},
+    row,
   }: {
     row: Project;
   }) => {
-    if (isActivated) history(ROUTES.getNotebookRoute({serverId, projectId}));
+    if (row.isActivated || isNotebookActivationBlocked(row)) {
+      history(ROUTES.getNotebookRoute({serverId, projectId: row.projectId}));
+    }
   };
 
   // we need a state variable to track pagination model since we want to use a
@@ -93,9 +96,9 @@ export default function HeadingProjectGrid({
         columns={activatedColumns}
         onRowClick={handleRowClick}
         rowHeight={75}
+        autoHeight
         sx={{
           width: '100%',
-          padding: '8px',
           backgroundColor: theme.palette.background.lightBackground,
           borderRadius: '4px',
           boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
@@ -130,7 +133,6 @@ export default function HeadingProjectGrid({
         columns={notActivatedColumns}
         sx={{
           width: '100%',
-          padding: '8px',
           backgroundColor: theme.palette.background.lightBackground,
           borderRadius: '4px',
           boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
@@ -140,6 +142,7 @@ export default function HeadingProjectGrid({
         onRowClick={handleRowClick}
         getRowId={({projectId}) => projectId}
         rowHeight={75}
+        autoHeight
         hideFooter
         paginationModel={paginationModel}
         onPaginationModelChange={setPaginationModel}
