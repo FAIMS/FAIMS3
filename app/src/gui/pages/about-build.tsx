@@ -15,7 +15,7 @@
  *
  * Filename: about-build.tsx
  * Description:
- *   TODO
+ *   About-build page: configured app identity, and local maintenance actions.
  */
 
 import React, {useEffect, useRef} from 'react';
@@ -35,6 +35,8 @@ import {
   Checkbox,
   FormControl,
   FormControlLabel,
+  Link,
+  Stack,
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
 import ErrorIcon from '@mui/icons-material/Error';
@@ -44,7 +46,7 @@ import StorageIcon from '@mui/icons-material/Storage';
 import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
 import {progressiveSaveFiles} from '../../sync/data-dump';
-import {config} from '../../buildconfig';
+import {AutosuggestSource, config} from '../../buildconfig';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import BoxTab from '../components/ui/boxTab';
 import DialogActions from '@mui/material/DialogActions';
@@ -52,7 +54,217 @@ import Dialog from '@mui/material/Dialog';
 import {clearReduxAndLocalStorage, wipeAllDatabases} from '../../context/store';
 import {logError} from '../../logging';
 import {databaseService} from '../../context/slices/helpers/databaseService';
-import {Link} from 'react-router-dom';
+import {Link as RouterLink} from 'react-router-dom';
+
+/** Shared wrapping rules so long URLs, hashes, and names stay inside the panel. */
+const wrappingValueSx = {
+  overflowWrap: 'anywhere',
+  wordBreak: 'break-word',
+  minWidth: 0,
+} as const;
+
+type ConfigurationRow = {
+  label: string;
+  value: React.ReactNode;
+};
+
+/**
+ * Friendly label for a configured map or satellite provider id.
+ * Unknown ids are shown as configured so a custom source is still visible.
+ */
+function friendlyProviderName(source: string): string {
+  const known: Record<string, string> = {
+    osm: 'OpenStreetMap',
+    maptiler: 'MapTiler',
+    esri: 'Esri',
+  };
+  const trimmed = source.trim();
+  if (!trimmed) {
+    return 'Not configured';
+  }
+  return known[trimmed.toLowerCase()] ?? trimmed;
+}
+
+/**
+ * Map line for the about panel: tile provider, and satellite imagery when set.
+ * API keys are never included.
+ */
+function describeMaps(): string {
+  const parts = [friendlyProviderName(config.mapSource)];
+  if (config.satelliteSource) {
+    parts.push(`satellite: ${friendlyProviderName(config.satelliteSource)}`);
+  }
+  return parts.join(' · ');
+}
+
+/**
+ * Address-search provider when one is configured. Returns undefined for the
+ * default (no autosuggest) so the row stays off the basic info list.
+ */
+function describeAddressSearch(): string | undefined {
+  switch (config.autosuggestSource) {
+    case AutosuggestSource.MAPBOX:
+      return 'Mapbox';
+    case AutosuggestSource.MAPTILER:
+      return 'MapTiler';
+    default:
+      return undefined;
+  }
+}
+
+/** External URL shown as its own wrapping link. */
+function ExternalValue({href}: {href: string}) {
+  return (
+    <Link
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      underline="hover"
+      variant="body2"
+      sx={wrappingValueSx}
+    >
+      {href}
+    </Link>
+  );
+}
+
+/**
+ * Basic build identity for this installation: configured names, where it
+ * connects, and how to get help. Secrets (map keys, directory passwords)
+ * are omitted.
+ */
+function configurationRows(): ConfigurationRow[] {
+  const serverLabel = config.conductorUrls.length > 1 ? 'Servers' : 'Server';
+  const addressSearch = describeAddressSearch();
+  const rows: ConfigurationRow[] = [
+    {label: 'App', value: config.headingAppName},
+  ];
+
+  if (config.appName !== config.headingAppName) {
+    rows.push({label: 'App name', value: config.appName});
+  }
+
+  rows.push(
+    {label: 'App ID', value: config.appId},
+    {
+      label: serverLabel,
+      value: (
+        <Stack spacing={0.5} sx={{minWidth: 0}}>
+          {config.conductorUrls.map(url => (
+            <Typography key={url} variant="body2" sx={wrappingValueSx}>
+              {url}
+            </Typography>
+          ))}
+        </Stack>
+      ),
+    },
+    {label: 'Version', value: config.appVersion},
+    {label: 'Commit', value: config.commitHash ?? 'Not provided.'},
+    {
+      label: 'Records called',
+      value: `${config.notebookName} (${config.notebookNamePlural})`,
+    },
+    {label: 'Maps', value: describeMaps()},
+    {label: 'Offline maps', value: config.offlineMaps ? 'On' : 'Off'}
+  );
+
+  if (addressSearch) {
+    rows.push({label: 'Address search', value: addressSearch});
+  }
+
+  rows.push(
+    {
+      label: 'Support',
+      value: (
+        <Link
+          href={`mailto:${config.supportEmail}`}
+          underline="hover"
+          variant="body2"
+          sx={wrappingValueSx}
+        >
+          {config.supportEmail}
+        </Link>
+      ),
+    },
+    {
+      label: 'Privacy policy',
+      value: <ExternalValue href={config.privacyPolicyUrl} />,
+    }
+  );
+
+  if (config.contactUrl) {
+    rows.push({
+      label: 'Contact',
+      value: <ExternalValue href={config.contactUrl} />,
+    });
+  }
+
+  if (config.runningUnderTest) {
+    rows.push({label: 'Mode', value: 'Running under test'});
+  }
+
+  return rows;
+}
+
+/** Definition list for the about-build configuration tab. */
+function BuildConfiguration() {
+  const rows = configurationRows();
+
+  return (
+    <Box sx={{mb: 2, minWidth: 0, maxWidth: '100%'}}>
+      <BoxTab
+        title={`${config.headingAppName} configuration`}
+        bgcolor={grey[100]}
+      />
+      <Box
+        data-testid="build-configuration"
+        sx={{
+          bgcolor: grey[100],
+          px: 2,
+          py: 0.5,
+          minWidth: 0,
+          borderBottomLeftRadius: '4px',
+          borderBottomRightRadius: '4px',
+        }}
+      >
+        {rows.map(row => (
+          <Box
+            key={row.label}
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'minmax(9rem, 11rem) minmax(0, 1fr)',
+              },
+              columnGap: 2,
+              rowGap: 0.25,
+              alignItems: 'baseline',
+              py: 1,
+              borderBottom: '1px solid',
+              borderColor: 'grey.300',
+              '&:last-of-type': {borderBottom: 0},
+            }}
+          >
+            <Typography
+              variant="body2"
+              component="div"
+              sx={{fontWeight: 600, color: 'text.secondary'}}
+            >
+              {row.label}
+            </Typography>
+            {typeof row.value === 'string' ? (
+              <Typography variant="body2" component="div" sx={wrappingValueSx}>
+                {row.value}
+              </Typography>
+            ) : (
+              <Box sx={{minWidth: 0}}>{row.value}</Box>
+            )}
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+}
 
 export default function AboutBuild() {
   const breadcrumbs = [
@@ -124,40 +336,7 @@ export default function AboutBuild() {
   return (
     <Box sx={{p: 2}}>
       <Breadcrumbs data={breadcrumbs} />
-      <BoxTab title={'Fieldmark Configuration'} bgcolor={grey[100]} />
-      <Box
-        sx={{
-          bgcolor: grey[100],
-          p: 2,
-          overflowX: 'scroll',
-          mb: 2,
-        }}
-      >
-        <pre>
-          <table>
-            <tbody>
-              <tr>
-                <td>
-                  {config.conductorUrls.length > 1 ? 'Servers' : 'Server'}:
-                </td>
-                <td>{config.conductorUrls.join(', ')}</td>
-              </tr>
-              <tr>
-                <td>Release version:</td>
-                <td>{config.appVersion}</td>
-              </tr>
-              <tr>
-                <td>Version:</td>
-                <td>{config.commitHash ?? 'Not provided.'}</td>
-              </tr>
-              <tr>
-                <td>{config.runningUnderTest ? 'Running under test' : ''}</td>
-                <td></td>
-              </tr>
-            </tbody>
-          </table>
-        </pre>
-      </Box>
+      <BuildConfiguration />
       <Box
         component={Paper}
         sx={{p: 2, my: {xs: 1, sm: 2}}}
@@ -353,7 +532,7 @@ export default function AboutBuild() {
                           disableElevation
                           color={'warning'}
                           startIcon={<StorageIcon />}
-                          component={Link}
+                          component={RouterLink}
                           to={ROUTES.POUCH_EXPLORER}
                         >
                           Open Raw Database Interface

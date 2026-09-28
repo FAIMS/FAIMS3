@@ -13,15 +13,16 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: about-build.tsx
+ * Filename: about-build.test.tsx
  * Description:
- *   TODO
+ *   Renders the about-build page and checks the configuration summary.
  */
 
 import {fireEvent, render, screen} from '@testing-library/react';
 import {BrowserRouter as Router} from 'react-router-dom';
 import AboutBuild from './about-build';
 import {progressiveSaveFiles} from '../../sync/data-dump';
+import {config} from '../../buildconfig';
 import {expect, test, vi} from 'vitest';
 
 vi.mock('../../sync/data-dump', () => ({
@@ -35,7 +36,33 @@ test('Check about-build component', async () => {
       <AboutBuild />
     </Router>
   );
-  expect(screen.getByText('Server:')).toBeTruthy();
+  expect(
+    screen.getByText(`${config.headingAppName} configuration`)
+  ).toBeTruthy();
+
+  const configuration = screen.getByTestId('build-configuration');
+  expect(configuration.querySelector('pre')).toBeNull();
+  expect(configuration.querySelector('table')).toBeNull();
+
+  const serverLabel = config.conductorUrls.length > 1 ? 'Servers' : 'Server';
+  expect(screen.getByText(serverLabel)).toBeTruthy();
+  for (const url of config.conductorUrls) {
+    expect(screen.getByText(url)).toBeTruthy();
+  }
+
+  expect(screen.getByText(config.appVersion)).toBeTruthy();
+  expect(screen.getByText(config.appId)).toBeTruthy();
+  expect(
+    screen.getByText(`${config.notebookName} (${config.notebookNamePlural})`)
+  ).toBeTruthy();
+  expect(screen.getByText(config.supportEmail)).toBeTruthy();
+  expect(screen.getByText(config.privacyPolicyUrl)).toBeTruthy();
+  if (config.contactUrl) {
+    expect(screen.getByText(config.contactUrl)).toBeTruthy();
+  }
+  if (config.runningUnderTest) {
+    expect(screen.getByText('Running under test')).toBeTruthy();
+  }
 
   expect(screen.getByText('Refresh the app')).toBeTruthy();
 

@@ -14,10 +14,12 @@ export default function BoxTab(props: BoxTabProps) {
         borderTopLeftRadius: '4px',
         borderTopRightRadius: '4px',
         width: 'fit-content',
+        maxWidth: '100%',
         fontSize: '10px',
         padding: '5px 8px 5px 8px',
         fontWeight: 'bold',
         textTransform: 'uppercase',
+        overflowWrap: 'anywhere',
       }}
     >
       <code>{props.title}</code>
