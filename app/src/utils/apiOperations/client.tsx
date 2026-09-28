@@ -77,16 +77,13 @@ export class ListingFetch {
   }
 
   /**
-   * Makes an HTTP request to the specified endpoint
-   * @param endpoint - The API endpoint to request
-   * @param options - Request options
-   * @returns Promise resolving to the JSON response
+   * Sends an HTTP request and returns the response when it is OK.
    * @throws HttpError if the response is not OK
    */
-  private async request<T>(
+  private async send(
     endpoint: string,
     options: FetchOptions = {}
-  ): Promise<T> {
+  ): Promise<Response> {
     const url = `${this.server.serverUrl}${endpoint}`;
     const headers = this.getAuthHeaders(options);
 
@@ -109,11 +106,22 @@ export class ListingFetch {
       throw new HttpError(response);
     }
 
-    const text = await response.text();
-    if (!text) {
-      return undefined as T;
-    }
-    return JSON.parse(text) as T;
+    return response;
+  }
+
+  /**
+   * Makes an HTTP request to the specified endpoint
+   * @param endpoint - The API endpoint to request
+   * @param options - Request options
+   * @returns Promise resolving to the JSON response
+   * @throws HttpError if the response is not OK
+   */
+  private async request<T>(
+    endpoint: string,
+    options: FetchOptions = {}
+  ): Promise<T> {
+    const response = await this.send(endpoint, options);
+    return JSON.parse(await response.text()) as T;
   }
 
   /**
@@ -157,15 +165,17 @@ export class ListingFetch {
   }
 
   /**
-   * Performs a DELETE request
+   * Performs a DELETE request. The body is read and discarded so an empty
+   * success response is not parsed as JSON.
    * @param endpoint - The API endpoint
    * @param options - Additional request options
    */
-  async delete<T>(
+  async delete(
     endpoint: string,
     options: Omit<FetchOptions, 'method'> = {}
-  ): Promise<T> {
-    return this.request<T>(endpoint, {...options, method: 'DELETE'});
+  ): Promise<void> {
+    const response = await this.send(endpoint, {...options, method: 'DELETE'});
+    await response.text();
   }
 
   /**
@@ -293,14 +303,14 @@ export class ListingFetchManager {
    * @param endpoint - The API endpoint
    * @param options - Additional request options
    */
-  async delete<T>(
+  async delete(
     listingId: string,
     username: string,
     endpoint: string,
     options?: CustomOptions
-  ): Promise<T> {
+  ): Promise<void> {
     const client = this.getOrCreateClient(listingId, username);
-    return client.delete<T>(endpoint, options);
+    return client.delete(endpoint, options);
   }
 
   /**

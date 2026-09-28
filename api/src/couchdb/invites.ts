@@ -41,6 +41,7 @@ import {
   addTeamRole,
   safeWriteDocument,
   writeNewDocument,
+  type InviteKind,
 } from '@faims3/data-model';
 import {customAlphabet} from 'nanoid';
 import {getInvitesDB} from '.';
@@ -78,8 +79,10 @@ function resolveInviteExpiry(expiry: number | undefined): number {
  * @param {Role} params.role - Role to grant
  * @param {string} params.name - Name/purpose of the invite
  * @param {string} params.createdBy - User ID of the creator
- * @param {number} [params.expiry] - Timestamp when invite expires
+ * @param {number} [params.expiry] - Timestamp when invite expires, passed through {@link resolveInviteExpiry}
+ * @param {number} [params.absoluteExpiry] - Precomputed expiry stored as given. Quick Share sets this after its own lifetime check so control-centre invites still use {@link resolveInviteExpiry}.
  * @param {number} [params.usesOriginal] - Maximum number of times invite can be used (infinite if undefined)
+ * @param {InviteKind} [params.kind] - Set for a field-app Quick Share invite
  * @returns {Promise<ExistingInvitesDBDocument>} The invite document
  */
 export async function createResourceInvite({
@@ -89,7 +92,9 @@ export async function createResourceInvite({
   name,
   createdBy,
   expiry,
+  absoluteExpiry,
   usesOriginal,
+  kind,
 }: {
   resourceType: Resource.TEAM | Resource.PROJECT;
   resourceId: string;
@@ -97,18 +102,20 @@ export async function createResourceInvite({
   name: string;
   createdBy: string;
   expiry?: number;
+  absoluteExpiry?: number;
   usesOriginal?: number;
+  kind?: InviteKind;
 }): Promise<ExistingInvitesDBDocument> {
-  // Create a new invite
   const invite: InvitesDBFields = {
     resourceType,
     resourceId,
     inviteType: RoleScope.RESOURCE_SPECIFIC,
     role,
     name,
+    kind,
     createdBy,
     createdAt: Date.now(),
-    expiry: resolveInviteExpiry(expiry),
+    expiry: absoluteExpiry ?? resolveInviteExpiry(expiry),
     usesOriginal,
     usesConsumed: 0,
     uses: [],
@@ -138,21 +145,15 @@ export async function createQuickShareInvite({
       `Quick share must last between ${MIN_QUICK_SHARE_LIFETIME_MS / 60000} minutes and ${MAX_QUICK_SHARE_LIFETIME_MS / 3600000} hours`
     );
   }
-  const now = Date.now();
-  const invite: InvitesDBFields = {
+  const saved = await createResourceInvite({
     resourceType: Resource.PROJECT,
     resourceId,
-    inviteType: RoleScope.RESOURCE_SPECIFIC,
     role,
     name: QUICK_SHARE_NAME,
-    kind: QUICK_SHARE_KIND,
     createdBy,
-    createdAt: now,
-    expiry: now + lifetimeMs,
-    usesConsumed: 0,
-    uses: [],
-  };
-  const saved = await writeNewInvite(invite);
+    absoluteExpiry: Date.now() + lifetimeMs,
+    kind: QUICK_SHARE_KIND,
+  });
   return {...saved, kind: QUICK_SHARE_KIND};
 }
 
