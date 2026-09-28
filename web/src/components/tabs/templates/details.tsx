@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import type {ReactNode} from 'react';
 import {useMemo} from 'react';
 import {TeamCellComponent} from '@/components/tables/cells/team-cell';

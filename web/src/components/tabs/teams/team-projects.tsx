@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {DataTable} from '@/components/data-table/data-table';
 import {CreateProjectDialog} from '@/components/dialogs/create-project-dialog';
 import {columns} from '@/components/tables/projects';

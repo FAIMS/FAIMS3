@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {ConditionBooleanOperator} from '@/designer/types/condition';
 import {AddBoxOutlined, Info} from '@mui/icons-material';
 import {Box, Stack, Tooltip, Typography} from '@mui/material';

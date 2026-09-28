@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Notification provider which will render a fixed placement Alert snackbar on
  * demand on any page in the app.

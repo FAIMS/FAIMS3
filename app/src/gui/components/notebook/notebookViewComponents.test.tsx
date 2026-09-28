@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * The components a notebook view hands to its plan views have to keep their
  * identity while the notebook re-renders. React compares element types by
@@ -77,7 +78,10 @@ vi.mock('../../../context/slices/authSlice', () => ({
 }));
 vi.mock('../../../context/slices/alertSlice', () => ({addAlert: vi.fn()}));
 vi.mock('../../../context/slices/helpers/compiledSpecService', () => ({
-  compiledSpecService: {getSpec: () => uiSpecification},
+  compiledSpecService: {
+    getSpec: () => uiSpecification,
+    getCompileError: () => undefined,
+  },
 }));
 vi.mock('../../../utils/customHooks', () => ({
   invalidateProjectHydration: vi.fn(),

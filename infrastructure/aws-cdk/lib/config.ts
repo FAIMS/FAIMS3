@@ -436,9 +436,6 @@ const ConductorConfigSchema = z.object({
   /** Allow localhost typical addresses in the redirects for conductor? NOT
    * recommended for production use cases (for security reasons). */
   localhostWhitelist: z.boolean().default(false),
-  /** When true, sets MIGRATE_NOTEBOOKS_ON_STARTUP so the API runs notebook DB
-   * migrations on startup. */
-  migrateNotebooksOnStartup: z.boolean().default(true),
 });
 
 const WebConfigSchema = z.object({
@@ -610,7 +607,7 @@ export const SecurityConfigSchema = z.object({
   rateLimiterEnabled: z.boolean().default(true),
   /**
    * Per-user email-code / verification-challenge attempt limits
-   * (`AUTH_ATTEMPT_LIMITER_ENABLED`). Default true. Keep enabled in
+   * (`ATTEMPT_LIMITER_ENABLED`). Default true. Keep enabled in
    * production even when HTTP rate limiting is disabled upstream.
    */
   authAttemptLimiterEnabled: z.boolean().default(true),

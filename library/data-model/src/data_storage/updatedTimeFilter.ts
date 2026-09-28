@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Exclusive last-updated window for record list and export queries.
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {UpdateTeamDialog} from '@/components/dialogs/teams/update-team-dialog';
 import TeamDetails from '@/components/tabs/teams/team-details';
 import TeamInvites from '@/components/tabs/teams/team-invites';

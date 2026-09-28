@@ -1,6 +1,6 @@
 /**
  * Forgot-password form + admin-generated reset link (no mail catcher).
- * Requires AUTH_ATTEMPT_LIMITER_ENABLED=false (and usually
+ * Requires ATTEMPT_LIMITER_ENABLED=false (and usually
  * RATE_LIMITER_ENABLED=false) in api/.env for repeated local runs.
  */
 import {loginWebPersona, persona} from '../../helpers/auth.ts';

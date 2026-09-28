@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Browser CORS allowlist for Conductor. Requests with no Origin (curl,
  * scripts) are always allowed. Unknown browser origins get no CORS headers.

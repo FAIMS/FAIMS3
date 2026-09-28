@@ -1,9 +1,9 @@
 {
   "name": "faims3",
-  "version": "1.7.0",
+  "version": "1.7.2",
   "description": "",
   "keywords": [],
-  "license": "ISC",
+  "license": "Apache-2.0",
   "author": "",
   "main": "index.js",
   "scripts": {
@@ -37,7 +37,8 @@
     "clean": "turbo clean",
     "build": "turbo build",
     "knip": "knip",
-    "prepare": "husky"
+    "prepare": "husky",
+    "license-check": "pnpx @kt3k/license-checker -q"
   },
   "dependencies": {
     "@capacitor-community/exif": "^7.0.0",
@@ -45,6 +46,7 @@
     "esbuild": "^0.28.1"
   },
   "devDependencies": {
+    "@kt3k/license-checker": "^3.2.2",
     "@types/node": "^24",
     "gts": "^5.3.1",
     "husky": "^9.1.7",

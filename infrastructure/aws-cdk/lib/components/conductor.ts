@@ -288,9 +288,6 @@ export class FaimsConductor extends Construct {
       AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
       NEW_CONDUCTOR_URL: props.webUrl,
       PROVISION_SSO_USERS_POLICY: props.config.provisionSSOUsersPolicy,
-      MIGRATE_NOTEBOOKS_ON_STARTUP: props.config.migrateNotebooksOnStartup
-        ? 'true'
-        : 'false',
 
       // Bugsnag (optional)
       ...(props.bugsnagApiKey ? {BUGSNAG_API_KEY: props.bugsnagApiKey} : {}),
@@ -312,7 +309,7 @@ export class FaimsConductor extends Construct {
         : 'infinite',
       RATE_LIMITER_ENABLED:
         props.rateLimiterEnabled === false ? 'false' : 'true',
-      AUTH_ATTEMPT_LIMITER_ENABLED:
+      ATTEMPT_LIMITER_ENABLED:
         props.authAttemptLimiterEnabled === false ? 'false' : 'true',
       EXPORT_RATE_LIMITER_ENABLED:
         props.exportRateLimiterEnabled === false ? 'false' : 'true',

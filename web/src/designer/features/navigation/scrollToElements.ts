@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Navigate to and scroll to forms, sections, and fields in the designer.
  *

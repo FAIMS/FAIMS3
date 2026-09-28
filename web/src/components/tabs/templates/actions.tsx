@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import React, {useMemo, useState} from 'react';
 import {ArchiveTemplateDialog} from '@/components/dialogs/archive-template-dialog';
 import {TemplateVisibilityDialog} from '@/components/dialogs/template-visibility-dialog';
@@ -156,7 +157,7 @@ const TemplateActions = () => {
                 ) : (
                   <Button
                     variant="outline"
-                    disabled={isLoading}
+                    disabled={isLoading || !initialNotebook}
                     onClick={() => setEditorOpen(true)}
                   >
                     Open in Editor

@@ -1,18 +1,4 @@
-/*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License for for the specific language governing permissions and
- * limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 /**
  * Description:
@@ -25,7 +11,9 @@
  * When the project is absent from Redux (upstream archival/deletion), shows
  * {@link NotebookUnavailable} instead of an infinite loading spinner.
  *
- * Unactivated notebooks cannot use the record UI — deep links redirect home.
+ * Unactivated notebooks cannot use the record UI — deep links redirect home,
+ * except a never-readable (activation-blocked) notebook, which may open so
+ * the compatibility skeleton and diagnostic report are reachable.
  *
  * Dependencies:
  * - React hooks: useState, useEffect
@@ -38,6 +26,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useEffect} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
+import {isNotebookActivationBlocked} from '../../context/slices/helpers/notebookDefinition';
 import {useAppSelector} from '../../context/store';
 import {removedNotebookUnavailableCopy} from '../../utils/remoteProjectRemoval';
 import BackButton from '../components/ui/BackButton';
@@ -73,12 +62,15 @@ export default function Notebook() {
   );
   const largerThanMedium = useMediaQuery(theme.breakpoints.up('md'));
 
-  // Record views require an activated local database — send deep links back home.
+  const canViewWithoutActivation = isNotebookActivationBlocked(project);
+
+  // Record views require an activated local database — send deep links back
+  // home, unless this is a never-readable design we still need to explain.
   useEffect(() => {
-    if (project && !project.isActivated) {
+    if (project && !project.isActivated && !canViewWithoutActivation) {
       navigate(ROUTES.NOTEBOOK_LIST_ROUTE, {replace: true});
     }
-  }, [project, navigate]);
+  }, [project, canViewWithoutActivation, navigate]);
 
   if (!projectId || !serverId) return <NotFound404 />;
 
@@ -87,7 +79,7 @@ export default function Notebook() {
     return <NotebookUnavailable />;
   }
 
-  if (!project.isActivated) {
+  if (!project.isActivated && !canViewWithoutActivation) {
     return null;
   }
 

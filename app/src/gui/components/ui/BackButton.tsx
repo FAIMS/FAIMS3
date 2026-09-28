@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {Box, IconButton, Typography} from '@mui/material';
 import {useNavigate} from 'react-router';

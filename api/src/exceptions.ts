@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // Base class for custom exceptions
 export class CustomException extends Error {
   status: number;
@@ -16,6 +17,19 @@ export class CustomException extends Error {
 export class ItemNotFoundException extends CustomException {
   constructor(message: string) {
     super(message, 404);
+  }
+}
+
+/**
+ * Notebook tombstone lookup miss. GET /api/tombstones/:id returns 404 on purpose
+ * when a notebook was never deleted; clients probe this and a miss is not a bug.
+ */
+export class TombstoneNotFoundException extends ItemNotFoundException {
+  constructor(
+    message = 'No tombstone found for this notebook ID. It may never have been deleted.'
+  ) {
+    super(message);
+    this.name = 'TombstoneNotFoundException';
   }
 }
 

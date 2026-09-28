@@ -1,21 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
 /**
  * MapComponent.tsx
- *
  * This component renders an interactive OpenLayers map with support for:
  * - Real-time GPS tracking (blue dot, accuracy circle, direction triangle)
  * - Offline map support using cached tiles
@@ -633,27 +620,25 @@ const MapComponentImpl = (props: MapComponentProps) => {
             }
             bottomRight={
               showControls && (
-                <>
+                <MapControlStack>
                   <CompassControl map={map} />
-                  <MapControlStack>
-                    {satelliteLayer && (
-                      <LayerToggleControl
-                        map={map}
-                        vectorLayer={tileLayer}
-                        satelliteLayer={satelliteLayer}
-                        isOnline={isOnline}
-                        vectorZoomRange={vectorZoomRange}
-                        satelliteZoomRange={satelliteZoomRange}
-                        onLayerChange={handleLayerChange}
-                      />
-                    )}
-                    <CenterOnLocationControl
-                      onCenter={centerMap}
-                      locationAvailable={locationAvailable}
+                  {satelliteLayer && (
+                    <LayerToggleControl
+                      map={map}
+                      vectorLayer={tileLayer}
+                      satelliteLayer={satelliteLayer}
+                      isOnline={isOnline}
+                      vectorZoomRange={vectorZoomRange}
+                      satelliteZoomRange={satelliteZoomRange}
+                      onLayerChange={handleLayerChange}
                     />
-                    <ZoomControl map={map} />
-                  </MapControlStack>
-                </>
+                  )}
+                  <CenterOnLocationControl
+                    onCenter={centerMap}
+                    locationAvailable={locationAvailable}
+                  />
+                  <ZoomControl map={map} />
+                </MapControlStack>
               )
             }
           />

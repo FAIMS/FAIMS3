@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Skeleton, TextField as MuiTextField} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import z from 'zod';

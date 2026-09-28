@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {describe, expect, test} from 'vitest';
 import type {FieldType} from '../../state/initial';
 import {

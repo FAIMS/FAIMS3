@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import type {UiSpecModel} from '@faims3/data-model';
 import {FORCE_IGNORED_FIELDS} from '../../fieldRegistry';
 import {Field} from '../Field';

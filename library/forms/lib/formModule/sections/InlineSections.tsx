@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {UiSpecModel} from '@faims3/data-model';
 import {FieldVisibilityMap, FormManagerConfig} from '../formManagers/types';
 import {FaimsForm} from '../types';

@@ -2,6 +2,27 @@
 
 FAIMS3 is an open-source tool for offline field data-collection brought to you by the FAIMS Project. The FAIMS Project was funded by the ARDC ([https://dx.doi.org/10.47486/PL110]), Macquarie University, and CSIRO along with our other partners.
 
+## Licence
+
+FAIMS3 is licensed under the Apache License 2.0; the text is in
+[LICENSE](LICENSE). Copyright is held by the organisations listed in
+[AUTHORS](AUTHORS).
+
+Source files carry an SPDX identifier and no copyright notice of their own:
+
+```
+// SPDX-License-Identifier: Apache-2.0
+```
+
+New files should follow that convention. Copyright belongs in `AUTHORS`,
+where it can be kept correct in one place, rather than in a per-file header
+that goes stale as the code is rewritten.
+
+Contributions are made under the Developer Certificate of Origin: sign off
+each commit with `git commit -s`. See [app/DCO](app/DCO).
+
+An automated license check is run via `pnpm license-check` in the CI build-lint script, it will fail if the license line is missing from any new files. To inject the license into new files you can run `pnpm license-check --inject`.
+
 ## Directory Structure
 
 The repository contains the following:

@@ -1,27 +1,13 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  /*
  * Select Component
- *
  * This component renders a dropdown select field using Material-UI.
  * It integrates with Formik for managing form state and includes:
  * - A heading (field label) rendered using FieldWrapper.
  * - A subheading (help text) rendered using FieldWrapper.
  * - A Material-UI dropdown select.
- *
  * Props:
  * - label (string, optional): The field label displayed as a heading.
  * - helperText (string, optional): The field help text displayed below the heading.
@@ -30,6 +16,7 @@
  * - required : To visually show if the field is required if it is.
  * - form (object): Formik form object for managing state and validation.
  */
+
 import {
   FormControl,
   ListItemText,
@@ -42,6 +29,7 @@ import {
 import {useTheme} from '@mui/material/styles';
 import {useState, useEffect, useRef} from 'react';
 import {z} from 'zod';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
 import {ChoiceElementPropsSchema} from '../choiceFieldParams';
@@ -66,60 +54,41 @@ const valueSchema = (props: SelectFieldProps) => {
   const optionValues = props.ElementProps.options.map(option => option.value);
   const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
 
-  // Handle edge case of no options defined
-  if (optionValues.length === 0) {
-    if (props.required) {
-      return z
-        .string()
-        .max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH)
-        .min(1, {message: 'Please select an option'});
-    }
-    return z.string().max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH);
-  }
-
-  if (enableOtherOption) {
-    // Bounded to stop maliciously long "Other" values
-    const baseSchema = z.string().max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH);
-
-    if (props.required) {
-      return baseSchema
-        .min(1, {message: 'Please select or enter an option'})
-        .refine(
-          value => {
-            if (optionValues.includes(value)) return true;
-            if (value.startsWith(OTHER_PREFIX)) return true;
-            return false;
-          },
-          {
-            message: 'Please select an option',
-          }
-        );
-    }
-
-    return baseSchema.refine(
-      value => {
-        if (value === '') return true;
-        if (optionValues.includes(value)) return true;
-        // accept any "Other: " value, even if empty
-        if (value.startsWith(OTHER_PREFIX)) return true;
-        return false;
-      },
-      {
-        message: 'Please select a valid option',
-      }
-    );
-  }
-
-  // Valid option values schema
-  const optionsSchema = z.enum(optionValues as [string, ...string[]]);
+  // Bounded to stop maliciously long "Other" values
+  let schema = z
+    .string({error: 'Please select an option'})
+    .max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH, {
+      message: `Must be at most ${INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH} characters`,
+    });
 
   if (props.required) {
-    // Required: must be one of the valid options (not empty string)
-    return optionsSchema;
+    schema = schema.min(1, {
+      message: enableOtherOption
+        ? 'Please select or enter an option'
+        : 'Please select an option',
+    });
   }
 
-  // Optional: allow empty string for no selection, or a valid option
-  return z.union([optionsSchema, z.literal('')]);
+  if (optionValues.length === 0) {
+    return schemaWithAbsent('', schema);
+  }
+
+  const checked = schema.refine(
+    value => {
+      if (!props.required && value === '') return true;
+      if (optionValues.includes(value)) return true;
+      // accept any "Other: " value, even if empty
+      if (enableOtherOption && value.startsWith(OTHER_PREFIX)) return true;
+      return false;
+    },
+    {
+      message: enableOtherOption
+        ? 'Please select a valid option'
+        : 'Please select an option',
+    }
+  );
+
+  return schemaWithAbsent('', checked);
 };
 
 type FieldProps = SelectFieldProps & FullFieldProps;

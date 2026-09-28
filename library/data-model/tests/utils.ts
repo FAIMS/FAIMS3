@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 const stringifyWithUndefined = (obj: any) => {
   return JSON.stringify(
     obj,

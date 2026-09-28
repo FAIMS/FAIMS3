@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {tombstoneDesignDocuments} from './design';
 import {InitialisationContent} from '../utils';
 import {TombstoneDBSecurityDocument} from './security';

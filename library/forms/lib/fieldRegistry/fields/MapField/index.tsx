@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Description:
  *   Implement MapFormField for entry of data via maps
  */
@@ -24,6 +12,7 @@ import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import GeoJSON from 'ol/format/GeoJSON';
 import {useEffect, useState} from 'react';
 import {z} from 'zod';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {createTileStore} from '../../../components';
 import {defaultMapProjection} from '../../../components/maps/MapComponent';
 import {GeoJSONFeatureCollectionSchema} from '../../../components/maps/types';
@@ -327,16 +316,19 @@ export function MapFormField(props: FieldProps): JSX.Element {
  * contain at least one feature.
  */
 const valueSchemaFunction = (props: FieldProps) => {
-  const baseSchema = GeoJSONFeatureCollectionSchema;
+  const present = schemaWithAbsent(
+    null,
+    GeoJSONFeatureCollectionSchema.nullable()
+  );
 
   if (props.required) {
-    return baseSchema.refine(val => val.features && val.features.length > 0, {
-      message: 'A location selection is required.',
-    });
+    return present.refine(
+      val => !!val && Array.isArray(val.features) && val.features.length > 0,
+      {message: 'A location selection is required.'}
+    );
   }
 
-  // Optional - allow undefined/null or valid schema
-  return baseSchema.optional().nullable();
+  return present;
 };
 
 // ============================================================================

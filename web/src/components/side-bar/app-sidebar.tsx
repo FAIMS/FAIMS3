@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {
   ARCHIVE_TAB_LABELS,
   getVisibleArchiveTabs,

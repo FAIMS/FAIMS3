@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Round-trip tests for notebook adapters: planTemplates survive
  * hydration and export, and null serialises to an absent key.
@@ -5,9 +6,11 @@
 import {describe, expect, it} from 'vitest';
 import type {Notebook} from '../state/initial';
 import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../state/initial';
+import {tryNormalizeApiUiSpecification} from './legacyNotebook';
 import {
   designerHistoryToNotebookDefinition,
   notebookDefinitionToDesignerHistory,
+  toDesignerNotebookWithHistory,
 } from './notebookAdapters';
 
 const createDefinition = (): Notebook => ({
@@ -122,5 +125,28 @@ describe('notebook adapters plan round-trip', () => {
       notebookDefinitionToDesignerHistory(createDefinition())
     );
     expect('plans' in exported).toBe(false);
+  });
+});
+
+describe('designer load is tolerant of a newer schemaVersion', () => {
+  it('opens a newer stamp that still matches the current Zod model', () => {
+    const newer = createDefinition();
+    newer.uiSpec.schemaVersion = '99.0.0';
+    const result = tryNormalizeApiUiSpecification(newer);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.uiSpec.schemaVersion).toBe('99.0.0');
+      expect(result.warning).toMatch(/99\.0\.0/);
+    }
+    expect(
+      toDesignerNotebookWithHistory({uiSpecification: newer})
+    ).toBeDefined();
+  });
+
+  it('does not throw when the design cannot be parsed', () => {
+    expect(tryNormalizeApiUiSpecification({not: 'a notebook'}).ok).toBe(false);
+    expect(
+      toDesignerNotebookWithHistory({uiSpecification: {not: 'a notebook'}})
+    ).toBeUndefined();
   });
 });

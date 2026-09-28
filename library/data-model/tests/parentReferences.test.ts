@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {compileUiSpecConditionals, UiSpecModel} from '@faims3/data-model';
 import {recomputeDerivedFields} from '../src';
 import {recomputeComputedFields} from '../src';

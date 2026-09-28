@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 export * from './ConfirmDialog';
 export * from './maps';
 export * from './ProgressBar';

@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: index.ts
  * Description:
  *   This module provides functions to access notebooks from the database
@@ -374,7 +362,6 @@ export const validateDatabases = async () => {
 
   try {
     logNotebookStartup('begin', {
-      migrateNotebooksOnStartup: config.migrateNotebooksOnStartup,
       targetSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
     });
 
@@ -388,52 +375,44 @@ export const validateDatabases = async () => {
     const projects = await getAllProjectsDirectory();
     logNotebookStartup('projects_loaded', {count: projects.length});
 
-    if (!config.migrateNotebooksOnStartup) {
-      logNotebookStartup('ui_spec_migration_skipped', {
-        reason: 'MIGRATE_NOTEBOOKS_ON_STARTUP=false',
-      });
-    }
-
     for (const project of projects) {
       const projectId = project._id;
       const projectName = project.name;
 
-      if (config.migrateNotebooksOnStartup) {
-        const raw = project.uiSpecification;
-        if (raw == null) {
-          uiSpecCounts.skipped_no_ui_spec++;
-          logNotebookStartup('ui_spec', {
-            outcome: 'skipped_no_ui_spec',
-            projectId,
-            projectName,
-          });
-        } else if (!isUiSpecificationObject(raw)) {
-          uiSpecCounts.skipped_invalid_ui_spec++;
-          logNotebookStartup('ui_spec', {
-            outcome: 'skipped_invalid_ui_spec',
-            projectId,
-            projectName,
-          });
-        } else if (notebookUiSpecificationNeedsMigration(raw)) {
-          const fromSchemaVersion = schemaVersionLabel(raw);
-          await updateProjectUiSpecification(projectId, raw);
-          uiSpecCounts.migrated++;
-          logNotebookStartup('ui_spec', {
-            outcome: 'migrated',
-            projectId,
-            projectName,
-            fromSchemaVersion,
-            toSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
-          });
-        } else {
-          uiSpecCounts.up_to_date++;
-          logNotebookStartup('ui_spec', {
-            outcome: 'up_to_date',
-            projectId,
-            projectName,
-            schemaVersion: schemaVersionLabel(raw),
-          });
-        }
+      const raw = project.uiSpecification;
+      if (raw == null) {
+        uiSpecCounts.skipped_no_ui_spec++;
+        logNotebookStartup('ui_spec', {
+          outcome: 'skipped_no_ui_spec',
+          projectId,
+          projectName,
+        });
+      } else if (!isUiSpecificationObject(raw)) {
+        uiSpecCounts.skipped_invalid_ui_spec++;
+        logNotebookStartup('ui_spec', {
+          outcome: 'skipped_invalid_ui_spec',
+          projectId,
+          projectName,
+        });
+      } else if (notebookUiSpecificationNeedsMigration(raw)) {
+        const fromSchemaVersion = schemaVersionLabel(raw);
+        await updateProjectUiSpecification(projectId, raw);
+        uiSpecCounts.migrated++;
+        logNotebookStartup('ui_spec', {
+          outcome: 'migrated',
+          projectId,
+          projectName,
+          fromSchemaVersion,
+          toSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+        });
+      } else {
+        uiSpecCounts.up_to_date++;
+        logNotebookStartup('ui_spec', {
+          outcome: 'up_to_date',
+          projectId,
+          projectName,
+          schemaVersion: schemaVersionLabel(raw),
+        });
       }
 
       await initialiseDataDb({
@@ -444,7 +423,6 @@ export const validateDatabases = async () => {
 
     logNotebookStartup('complete', {
       projects: projects.length,
-      migrateNotebooksOnStartup: config.migrateNotebooksOnStartup,
       uiSpecMigrated: uiSpecCounts.migrated,
       uiSpecUpToDate: uiSpecCounts.up_to_date,
       uiSpecSkippedNoUiSpec: uiSpecCounts.skipped_no_ui_spec,

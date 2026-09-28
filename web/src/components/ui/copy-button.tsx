@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {useEffect, useState} from 'react';
 import {Button, ButtonProps} from './button';
 import {cn} from '@/lib/utils';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // Define the resources in the system
 export enum Resource {
   // Projects/surveys/notebooks in the system

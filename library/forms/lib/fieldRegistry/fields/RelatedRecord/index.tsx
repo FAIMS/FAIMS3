@@ -1,11 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {
   canDeleteProjectRecord,
   canEditProjectRecord,
-  FormRelationship,
-  FormRelationshipInstance,
   HydratedRecord,
+  relatedLinkWrites,
   relatedRecordAvpEntries,
-  relationTypeToPair,
 } from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
@@ -561,7 +561,9 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         parentRecordId: props.config.recordId,
         parentFieldId: props.fieldId,
         createdBy: props.config.user,
-        parentFieldValue: props.value,
+        // The stored blob, not the parsed `value`: an entry the schema refuses
+        // still occupies a single-link field, and the create must not drop it.
+        parentFieldValue: rawValue,
       });
 
       // The parent's side goes through the open form, not a revision: a
@@ -597,34 +599,28 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     gcTime: 0,
   });
 
+  const [linkError, setLinkError] = useState<string | undefined>(undefined);
+
   const handleLinkExisting = async (record: HydratedRecord) => {
-    // Local field value lists the chosen record; we also patch the target’s
-    // revision so the graph is consistent.
-    props.setFieldData([
-      ...normalizedLinks,
-      {
-        record_id: record.record._id,
-        relation_type_vocabPair: relationTypeToPair(props.relation_type),
-      },
-    ] satisfies RelatedFieldValue);
-
-    // Build the reciprocal relationship entry for the target record
-    const relation: FormRelationshipInstance = {
+    setLinkError(undefined);
+    // Both halves come from one place, so a caller outside a form derives the
+    // same link this field does.
+    const {fieldValue, relationship} = relatedLinkWrites({
       fieldId: props.fieldId,
-      recordId: props.config.recordId,
-      relationTypeVocabPair: relationTypeToPair(props.relation_type),
-    };
+      relationType: props.relation_type,
+      parentRecordId: props.config.recordId,
+      targetRecordId: record.record._id,
+      // The stored blob, not the parsed links, matching the create path above:
+      // a value the schema refuses still occupies a single-link field.
+      currentFieldValue: rawValue,
+      targetRelationship: record.revision.relationship,
+      // Matches how detaching writes it back: an array while the field takes
+      // many, a bare entry while it takes one.
+      isMultiple: props.multiple,
+    });
 
-    // Merge with existing relationships on the target record
-    // Child relations go in 'parent' (the child points to its parent)
-    // Other relations go in 'linked'
-    const existing = record.revision.relationship;
-    const relationship: FormRelationship =
-      props.relation_type === 'faims-core::Child'
-        ? {...existing, parent: [...(existing?.parent ?? []), relation]}
-        : {...existing, linked: [...(existing?.linked ?? []), relation]};
-
-    // Persist the updated relationship on the target record's revision
+    // The field value is form state; the target's revision is not.
+    props.setFieldData(fieldValue);
     await props.config.dataEngine().hydrated.updateRevision(
       {
         ...record.revision,
@@ -632,6 +628,23 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       },
       {bumpRevisionUpdatedAt: true, bumpRecordUpdatedAt: true}
     );
+    // Commit, as creating and detaching both do: the target already points back,
+    // so leaving the parent's half in debounced form state is a half link for as
+    // long as the operator stays on the form.
+    await props.config.trigger.commit();
+  };
+
+  /** Link, reporting a refusal where the operator can read it. */
+  const linkExisting = async (record: HydratedRecord) => {
+    try {
+      await handleLinkExisting(record);
+    } catch (error) {
+      setLinkError(
+        error instanceof Error
+          ? error.message
+          : 'An error occurred linking the record'
+      );
+    }
   };
 
   // One query per linked id (order matches `normalizedLinks`) for list display
@@ -838,6 +851,12 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         </Alert>
       )}
 
+      {linkError !== undefined && (
+        <Alert severity="error" sx={{mb: 2}}>
+          {linkError}
+        </Alert>
+      )}
+
       {/* Action Buttons */}
       <div style={{display: 'flex', gap: 8, marginBottom: 16}}>
         <Button
@@ -874,7 +893,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           open={linkDialogOpen}
           currentRecordId={props.config.recordId}
           onClose={() => setLinkDialogOpen(false)}
-          onSelect={handleLinkExisting}
+          onSelect={linkExisting}
           config={props.config}
           relatedType={props.related_type}
           relationType={props.relation_type}
@@ -987,23 +1006,19 @@ const RelatedRecordField = (
 // Validation: required fields need at least one link; optional fields allow
 // empty/absent values.
 const valueSchemaFunction = (props: RelatedRecordFieldProps) => {
+  const present = schemaWithAbsent(null, relatedFieldValueSchema.nullable());
   if (props.required) {
-    return relatedFieldValueSchema.refine(
+    return present.refine(
       val => {
-        // If it is an array, ensure it has at least one item
         if (Array.isArray(val)) {
           return val.length > 0;
         }
-        // If it is a single object (and matches the schema), it is valid
         return !!val;
       },
       {message: 'At least one related record is required.'}
     );
   }
-
-  // If required is false, allow null, undefined, or valid schema (including
-  // empty array)
-  return relatedFieldValueSchema.optional().nullable();
+  return present;
 };
 
 export const relatedRecordFieldSpec: FieldInfo = {

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {useTheme} from 'next-themes';
 import {Toaster as Sonner} from 'sonner';
 

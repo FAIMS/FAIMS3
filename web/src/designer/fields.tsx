@@ -1,16 +1,4 @@
-// Copyright 2023 FAIMS Project
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 /**
  * @file Canonical default {@link FieldType} templates keyed by internal type name (`component-name`).
@@ -24,7 +12,7 @@ const fields: {[key: string]: FieldType} = {
   // Canonical "Text field" entry — new notebooks emit `faims-custom::TextField`.
   // Existing notebooks that still reference `FAIMSTextField` (or the legacy
   // `formik-material-ui::MultipleTextField`) are migrated to this canonical
-  // name by `migrateToV4`; the runtime keeps a backward-compat alias for
+  // name by `legacyToV1`; the runtime keeps a backward-compat alias for
   // un-migrated notebooks.
   TextField: {
     'component-namespace': 'faims-custom',
@@ -482,7 +470,7 @@ const fields: {[key: string]: FieldType} = {
 
   // Canonical "Number field" entry — new notebooks emit `faims-custom::NumberField`.
   // Existing notebooks that still reference `ControlledNumber` are migrated to
-  // this canonical name by `migrateToV4`; the runtime keeps a backward-compat
+  // this canonical name by `legacyToV1`; the runtime keeps a backward-compat
   // alias for un-migrated notebooks.
   NumberField: {
     'component-namespace': 'faims-custom',

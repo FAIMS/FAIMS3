@@ -1,23 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: buildconfig.ts
  * Description:
  *   This module exports the configuration of the build, including things like
  *   which server to use and whether to include test data.
- *
  *   Configuration is parsed from `process.env` with a single zod schema:
  *     - Each env key is declared once with its coercion / defaulting logic and
  *       is the place to document that setting.
@@ -25,7 +12,6 @@
  *     - A final `.transform()` renames ENV_KEYS into the camelCase `config` shape
  *       (and builds a few cross-field / required values). Do not re-document
  *       env-backed fields in the transform.
- *
  *   Prefer importing `{config}` and reading `config.<field>`. Service singletons
  *   (`keyService`, `emailService`) and lazy key-file path helpers remain as
  *   dedicated exports for DI / test replacement.
@@ -220,7 +206,7 @@ const EnvSchema = z
      * Whether the Express HTTP IP rate limiter is enabled. Blank → on;
      * unrecognised values fail parse (do not silently disable). Does not
      * control CouchDB-backed auth attempt limits — see
-     * AUTH_ATTEMPT_LIMITER_ENABLED.
+     * ATTEMPT_LIMITER_ENABLED.
      */
     RATE_LIMITER_ENABLED: configHelpers.boolWithDefault(true),
     /**
@@ -248,7 +234,7 @@ const EnvSchema = z
      * fail parse (do not silently disable). E2e may set false for repeated
      * auth flows.
      */
-    AUTH_ATTEMPT_LIMITER_ENABLED: configHelpers.boolWithDefault(true),
+    ATTEMPT_LIMITER_ENABLED: configHelpers.boolWithDefault(true),
     /**
      * Canonical public URL of this Conductor (required). Trailing `/` is
      * stripped.
@@ -273,8 +259,6 @@ const EnvSchema = z
       .string()
       .optional()
       .transform(v => (v === undefined ? true : v.toLowerCase() !== 'true')),
-    /** Configure migration of notebooks on startup. */
-    MIGRATE_NOTEBOOKS_ON_STARTUP: configHelpers.equalsTrueBool(true),
     /** Where signing keys are loaded from (`FILE` or `AWS_SM`). */
     KEY_SOURCE: configHelpers.nativeEnumDefault(KeySource, KeySource.FILE),
     /** AWS Secrets Manager ARN for signing keys; required when KEY_SOURCE is AWS_SM. */
@@ -545,8 +529,7 @@ const EnvSchema = z
         : env.EXPORT_RATE_LIMITER_ENABLED,
       exportRateLimiterWindowMs: env.EXPORT_RATE_LIMITER_WINDOW_MS,
       exportRateLimiterPerWindow: env.EXPORT_RATE_LIMITER_PER_WINDOW,
-      authAttemptLimiterEnabled: env.AUTH_ATTEMPT_LIMITER_ENABLED,
-      migrateNotebooksOnStartup: env.MIGRATE_NOTEBOOKS_ON_STARTUP,
+      authAttemptLimiterEnabled: env.ATTEMPT_LIMITER_ENABLED,
       keySource: env.KEY_SOURCE,
       maximumLongLivedDurationDays: env.MAXIMUM_LONG_LIVED_DURATION_DAYS,
       bugsnagApiKey: env.BUGSNAG_API_KEY,

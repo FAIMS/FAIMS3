@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {DataTable} from '@/components/data-table/data-table';
 import {CreateLongLivedTokenDialog} from '@/components/dialogs/long-lived-tokens/create-long-lived-token-dialog';
 import {UpdateLongLivedTokenDialog} from '@/components/dialogs/long-lived-tokens/update-long-lived-token-dialog';

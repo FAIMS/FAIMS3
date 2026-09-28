@@ -1,29 +1,14 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * MultiSelect Component
- *
  * This component renders a multi-selection field using Material-UI.
  * It supports two display modes:
  * - Expanded checklist: displays all options as checkboxes
  * - Dropdown select: displays options in a multi-select dropdown
- *
  * Features:
  * - Exclusive options: certain options can be configured to deselect all others when chosen
  * - Rich text labels: option labels support sanitized HTML content
- *
  * Props:
  * - label (string, optional): The field label displayed as a heading.
  * - helperText (string, optional): The field help text displayed below the heading.
@@ -44,6 +29,7 @@ import {
   TextField,
 } from '@mui/material';
 import {z} from 'zod';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
 import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
@@ -602,52 +588,76 @@ const valueSchema = (props: MultiSelectFieldProps) => {
   const boundedItem = z.string().max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH);
 
   if (optionValues.length === 0) {
-    const baseSchema = z.array(boundedItem);
-    return props.required
-      ? baseSchema.min(1, {message: 'Please select at least one option'})
-      : baseSchema;
+    let baseSchema = z.array(boundedItem, {
+      error: 'Please select at least one option',
+    });
+    if (props.required) {
+      baseSchema = baseSchema.min(1, {
+        message: 'Please select at least one option',
+      });
+    }
+    return schemaWithAbsent([], baseSchema);
   }
 
   if (enableOtherOption) {
-    const baseSchema = z.array(boundedItem);
+    const baseSchema = z.array(boundedItem, {
+      error: 'Please select at least one option',
+    });
 
     if (props.required) {
-      return baseSchema
-        .min(1, {message: 'Please select at least one option'})
-        .refine(
-          values => {
-            return values.every(v => {
-              if (optionValues.includes(v)) return true;
-              // accept any "Other: " value, even if empty
-              if (v.startsWith(OTHER_PREFIX)) return true;
-              return false;
-            });
-          },
-          {
-            message: 'Please select valid options',
-          }
-        );
+      return schemaWithAbsent(
+        [],
+        baseSchema
+          .min(1, {message: 'Please select at least one option'})
+          .refine(
+            values => {
+              return values.every(v => {
+                if (optionValues.includes(v)) return true;
+                // accept any "Other: " value, even if empty
+                if (v.startsWith(OTHER_PREFIX)) return true;
+                return false;
+              });
+            },
+            {
+              message: 'Please select valid options',
+            }
+          )
+      );
     }
 
-    return baseSchema.refine(
-      values => {
-        return values.every(v => {
-          if (optionValues.includes(v)) return true;
-          if (v.startsWith(OTHER_PREFIX)) return true;
-          return false;
-        });
-      },
-      {
-        message: 'Please select valid options',
-      }
+    return schemaWithAbsent(
+      [],
+      baseSchema.refine(
+        values => {
+          return values.every(v => {
+            if (optionValues.includes(v)) return true;
+            if (v.startsWith(OTHER_PREFIX)) return true;
+            return false;
+          });
+        },
+        {
+          message: 'Please select valid options',
+        }
+      )
     );
   }
 
-  const baseSchema = z.array(z.enum(optionValues as [string, ...string[]]));
+  let baseSchema = z.array(
+    z.enum(optionValues as [string, ...string[]], {
+      error: 'Please select a valid option',
+    }),
+    {
+      error: 'Please select at least one option',
+    }
+  );
 
-  return props.required
-    ? baseSchema.min(1, {message: 'Please select at least one option'})
-    : baseSchema;
+  if (props.required) {
+    baseSchema = baseSchema.min(1, {
+      message: 'Please select at least one option',
+    });
+  }
+
+  return schemaWithAbsent([], baseSchema);
 };
 
 // ============================================================================

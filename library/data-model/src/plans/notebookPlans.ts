@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Mints an id for a plan being authored. The plan type alone reads well in a
  * URL; a suffix disambiguates a second plan of the same type. Called once, when
