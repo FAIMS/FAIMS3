@@ -47,8 +47,6 @@ import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
 import {progressiveSaveFiles} from '../../sync/data-dump';
 import {AutosuggestSource, config} from '../../buildconfig';
-import Breadcrumbs from '../components/ui/breadcrumbs';
-import BoxTab from '../components/ui/boxTab';
 import DialogActions from '@mui/material/DialogActions';
 import Dialog from '@mui/material/Dialog';
 import {clearReduxAndLocalStorage, wipeAllDatabases} from '../../context/store';
@@ -67,35 +65,6 @@ type ConfigurationRow = {
   label: string;
   value: React.ReactNode;
 };
-
-/**
- * Friendly label for a configured map or satellite provider id.
- * Unknown ids are shown as configured so a custom source is still visible.
- */
-function friendlyProviderName(source: string): string {
-  const known: Record<string, string> = {
-    osm: 'OpenStreetMap',
-    maptiler: 'MapTiler',
-    esri: 'Esri',
-  };
-  const trimmed = source.trim();
-  if (!trimmed) {
-    return 'Not configured';
-  }
-  return known[trimmed.toLowerCase()] ?? trimmed;
-}
-
-/**
- * Map line for the about panel: tile provider, and satellite imagery when set.
- * API keys are never included.
- */
-function describeMaps(): string {
-  const parts = [friendlyProviderName(config.mapSource)];
-  if (config.satelliteSource) {
-    parts.push(`satellite: ${friendlyProviderName(config.satelliteSource)}`);
-  }
-  return parts.join(' · ');
-}
 
 /**
  * Address-search provider when one is configured. Returns undefined for the
@@ -129,22 +98,14 @@ function ExternalValue({href}: {href: string}) {
 }
 
 /**
- * Basic build identity for this installation: configured names, where it
- * connects, and how to get help. Secrets (map keys, directory passwords)
- * are omitted.
+ * Basic build identity for this installation: the configured app name and
+ * how to get help. Secrets (map keys, directory passwords) are omitted.
  */
 function configurationRows(): ConfigurationRow[] {
   const serverLabel = config.conductorUrls.length > 1 ? 'Servers' : 'Server';
   const addressSearch = describeAddressSearch();
   const rows: ConfigurationRow[] = [
-    {label: 'App', value: config.headingAppName},
-  ];
-
-  if (config.appName !== config.headingAppName) {
-    rows.push({label: 'App name', value: config.appName});
-  }
-
-  rows.push(
+    {label: 'App name', value: config.headingAppName},
     {label: 'App ID', value: config.appId},
     {
       label: serverLabel,
@@ -160,13 +121,7 @@ function configurationRows(): ConfigurationRow[] {
     },
     {label: 'Version', value: config.appVersion},
     {label: 'Commit', value: config.commitHash ?? 'Not provided.'},
-    {
-      label: 'Records called',
-      value: `${config.notebookName} (${config.notebookNamePlural})`,
-    },
-    {label: 'Maps', value: describeMaps()},
-    {label: 'Offline maps', value: config.offlineMaps ? 'On' : 'Off'}
-  );
+  ];
 
   if (addressSearch) {
     rows.push({label: 'Address search', value: addressSearch});
@@ -212,10 +167,24 @@ function BuildConfiguration() {
 
   return (
     <Box sx={{mb: 2, minWidth: 0, maxWidth: '100%'}}>
-      <BoxTab
-        title={`${config.headingAppName} configuration`}
-        bgcolor={grey[100]}
-      />
+      <Typography
+        component="h2"
+        sx={{
+          bgcolor: grey[100],
+          borderTopLeftRadius: '4px',
+          borderTopRightRadius: '4px',
+          width: 'fit-content',
+          maxWidth: '100%',
+          fontSize: '1rem',
+          fontWeight: 700,
+          lineHeight: 1.3,
+          m: 0,
+          px: 1.25,
+          py: 0.75,
+        }}
+      >
+        Configuration
+      </Typography>
       <Box
         data-testid="build-configuration"
         sx={{
@@ -267,11 +236,6 @@ function BuildConfiguration() {
 }
 
 export default function AboutBuild() {
-  const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Home'},
-    {title: 'about-build'},
-  ];
-
   const [wipeDialogOpen, setWipeDialogOpen] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
   const [showingProgress, setShowingProgress] = React.useState(false);
@@ -335,7 +299,6 @@ export default function AboutBuild() {
 
   return (
     <Box sx={{p: 2}}>
-      <Breadcrumbs data={breadcrumbs} />
       <BuildConfiguration />
       <Box
         component={Paper}

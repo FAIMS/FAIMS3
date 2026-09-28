@@ -101,8 +101,13 @@ jobs:
           fi
 
           # Stable commit string for Vite builds in CI.
+          # app/.env.dist leaves VITE_COMMIT_VERSION commented out.
           if grep -q '^VITE_COMMIT_VERSION=' app/.env; then
             sed -i "s|^VITE_COMMIT_VERSION=.*|VITE_COMMIT_VERSION=${GITHUB_SHA}|" app/.env
+          elif grep -q '^#[[:space:]]*VITE_COMMIT_VERSION=' app/.env; then
+            sed -i "s|^#[[:space:]]*VITE_COMMIT_VERSION=.*|VITE_COMMIT_VERSION=${GITHUB_SHA}|" app/.env
+          else
+            echo "VITE_COMMIT_VERSION=${GITHUB_SHA}" >> app/.env
           fi
 
           pnpm run generate-local-keys
