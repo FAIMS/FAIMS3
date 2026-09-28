@@ -64,9 +64,9 @@ import {
 } from './types';
 import {
   normalizeRelationshipInstances,
-  readRelatedLinks,
-  relationTypeToPair,
+  relatedLinkParts,
   toDbRelationshipInstances,
+  withRelatedEdge,
   withRelatedLink,
 } from './utils';
 import {
@@ -1552,26 +1552,20 @@ class FormOperations {
     const {related_type, relation_type, multiple} = params.data;
     // Both checks run before anything is written: a record created and then
     // refused its link is an orphan the parent does not list.
-    const links = readRelatedLinks(parentFieldValue);
-    if (!multiple && links.length > 0) {
-      throw new Error(
-        `Field ${parentFieldId} already holds a record and takes only one`
-      );
-    }
-    const relationTypeVocabPair = relationTypeToPair(relation_type);
-    // Child hangs the new row off `parent`, Linked off `linked`.
-    const edge = {
+    // The same derivation linking an existing record uses, so creating a child
+    // and linking one cannot disagree about what a link means.
+    const {links, relationTypeVocabPair, edge, isChild} = relatedLinkParts({
       fieldId: parentFieldId,
-      recordId: parentRecordId,
-      relationTypeVocabPair,
-    };
+      relationType: relation_type,
+      parentRecordId,
+      currentFieldValue: parentFieldValue,
+      isMultiple: multiple,
+    });
     const {record, revision} = await this.createRecord({
       createdBy,
       formId: related_type,
-      relationship:
-        relation_type === 'faims-core::Child'
-          ? {parent: [edge]}
-          : {linked: [edge]},
+      // No relationship to add to: the edge is this record's first.
+      relationship: withRelatedEdge({relationship: undefined, edge, isChild}),
     });
     const link = {
       record_id: record._id,
