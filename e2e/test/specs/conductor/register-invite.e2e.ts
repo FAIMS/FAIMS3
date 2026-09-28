@@ -6,6 +6,7 @@ import {loginWebPersona, persona} from '../../helpers/auth.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
 import {getConductorUrl, getWebUrl} from '../../helpers/env.ts';
 import {createTeamInvite, findTeamIdByName} from '../../helpers/seed.ts';
+import API_Login from '../../pageobjects/api-login.ts';
 import API_Register from '../../pageobjects/api-register.ts';
 
 describe('Conductor — Register via invite', () => {
@@ -25,6 +26,26 @@ describe('Conductor — Register via invite', () => {
     });
     inviteId = invite.inviteId;
     registerUrl = invite.registerUrl;
+  });
+
+  it('should open Conductor sign-in with the invite still attached', async () => {
+    await browser.reloadSession();
+    await browser.url(registerUrl);
+    await API_Register.waitForPageLoad();
+    await expect(API_Register.loginLink).toBeDisplayed();
+    await expect(API_Register.loginLink).toHaveText(
+      'Already have an account? Sign in'
+    );
+
+    await API_Register.clickLoginLink();
+    await API_Login.waitForPageLoad();
+    const url = await browser.getUrl();
+    expect(url).toContain('/login');
+    expect(url).toContain(`inviteId=${encodeURIComponent(inviteId)}`);
+    await captureStep({
+      surface: 'conductor',
+      label: 'register-sign-in',
+    });
   });
 
   it('should register a new user with a team invite', async () => {

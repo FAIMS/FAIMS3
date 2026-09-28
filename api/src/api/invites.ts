@@ -36,6 +36,7 @@ import {
   RoleScope,
   GetGlobalInvitesResponse,
   PostCreateGlobalInviteInputSchema,
+  PostUseInviteResponse,
 } from '@faims3/data-model';
 import express, {Request, Response} from 'express';
 import {z} from 'zod';
@@ -49,6 +50,12 @@ import {
   getInvitesForResource,
   isInviteValid,
 } from '../couchdb/invites';
+import {getCouchUserFromEmailOrUserId, saveCouchUser} from '../couchdb/users';
+import {validateAndApplyInviteToUser} from '../auth/helpers';
+import {
+  generateUserToken,
+  upgradeCouchUserToExpressUser,
+} from '../auth/keySigning/create';
 import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 import patch from '../utils/patchExpressAsync';
@@ -470,6 +477,79 @@ api.delete(
 
     await deleteInvite({invite});
     res.status(200).end();
+  }
+);
+
+/**
+ * POST /api/invites/:inviteId/use
+ * Consume an invite for the authenticated user and return a new access token
+ * whose roles include the grant. Used when the app is already signed in, so
+ * the user does not have to register or sign in again.
+ */
+api.post(
+  '/:inviteId/use',
+  requireAuthenticationAPI,
+  validate({
+    params: z.object({inviteId: IdInputSchema}),
+  }),
+  async (req, res: Response<PostUseInviteResponse>) => {
+    const {user} = req;
+    const {inviteId} = req.params;
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    if (user.impersonatingUserId) {
+      throw new Exceptions.ForbiddenException(
+        'Cannot redeem an invite while impersonating another user.'
+      );
+    }
+
+    const dbUser = await getCouchUserFromEmailOrUserId(user.user_id);
+    if (!dbUser) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    let updatedUser;
+    let invite;
+    try {
+      ({user: updatedUser, invite} = await validateAndApplyInviteToUser({
+        inviteCode: inviteId,
+        dbUser,
+        req,
+        action: 'login',
+      }));
+    } catch (e) {
+      throw new Exceptions.InvalidRequestException(
+        e instanceof Error
+          ? e.message
+          : 'Invite is not valid. It may be expired or already used.'
+      );
+    }
+    await saveCouchUser(updatedUser);
+
+    const expressUser = await upgradeCouchUserToExpressUser({
+      dbUser: updatedUser,
+    });
+    // Keep the replacement access token's lifetime equal to the token that
+    // authorised this request. A fresh `accessTokenExpiryMinutes` window
+    // would let repeated redemptions chain into a longer session.
+    if (req.accessTokenExpiresAt === undefined) {
+      throw new Exceptions.UnauthorizedException(
+        'Access token is missing an expiry and cannot be reissued.'
+      );
+    }
+    const {token} = await generateUserToken(expressUser, false, {
+      expiresAtSeconds: req.accessTokenExpiresAt,
+    });
+
+    res.json({
+      success: true,
+      inviteType: invite.inviteType,
+      resourceType: invite.resourceType,
+      resourceId: invite.resourceId,
+      role: invite.role,
+      accessToken: token,
+    });
   }
 );
 

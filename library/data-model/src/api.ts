@@ -970,13 +970,18 @@ export const PostCreateTeamInviteResponseSchema = InviteDocumentSchema;
 export const PostCreateGlobalInviteResponseSchema = InviteDocumentSchema;
 
 /**
- * POST /api/invites/:inviteId/use response
+ * POST /api/invites/:inviteId/use response.
+ * Global invites have no resource id. `accessToken` is a fresh JWT that
+ * includes the role just granted, so clients can list the new notebook
+ * without signing in again.
  */
 export const PostUseInviteResponseSchema = z.object({
   success: z.boolean(),
-  resourceType: z.enum([Resource.PROJECT, Resource.TEAM]),
-  resourceId: z.string(),
+  inviteType: z.nativeEnum(RoleScope),
+  resourceType: z.enum([Resource.PROJECT, Resource.TEAM]).optional(),
+  resourceId: z.string().optional(),
   role: z.nativeEnum(Role),
+  accessToken: z.string(),
 });
 
 // inferred types

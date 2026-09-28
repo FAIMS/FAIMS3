@@ -433,6 +433,7 @@ export default function NoteBooks() {
                     <InviteQRScanner
                       servers={servers}
                       onScanStart={() => setAddDialogOpen(false)}
+                      onRedeemed={() => setAddDialogOpen(false)}
                     />
                   </Box>
                 )}
@@ -446,7 +447,10 @@ export default function NoteBooks() {
                       ? 'Advanced: enter invite code instead'
                       : 'Enter invite code'}
                   </Typography>
-                  <InviteCodeEntry servers={servers} />
+                  <InviteCodeEntry
+                    servers={servers}
+                    onRedeemed={() => setAddDialogOpen(false)}
+                  />
                 </Box>
               </Stack>
             )}

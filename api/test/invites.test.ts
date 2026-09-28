@@ -34,12 +34,15 @@ import {
   registerClient,
   Resource,
   Role,
+  RoleScope,
   userHasGlobalRole,
   userHasProjectRole,
 } from '@faims3/data-model';
+import {decodeJwt} from 'jose';
 import {beforeEach, describe, expect, it} from 'vitest';
 import request from 'supertest';
-import {config} from '../src/buildconfig';
+import {generateJwtFromUser} from '../src/auth/keySigning/create';
+import {config, keyService} from '../src/buildconfig';
 import {
   consumeInvite,
   createGlobalInvite,
@@ -60,6 +63,7 @@ import {app} from '../src/expressSetup';
 import {callbackObject} from './mocks';
 import {
   adminToken,
+  adminUserName,
   beforeApiTests,
   localUserName,
   localUserToken,
@@ -1008,5 +1012,186 @@ describe('Registration', () => {
           expect(location.search).toMatch(/exchangeToken/);
         });
     }
+  });
+
+  describe('POST /api/invites/:inviteId/use', () => {
+    it('requires authentication', async () => {
+      await request(app)
+        .post('/api/invites/FAIMS-DOESNOTEXIST000/use')
+        .expect(401);
+    });
+
+    it('rejects an unknown invite', async () => {
+      const response = await request(app)
+        .post('/api/invites/FAIMS-DOESNOTEXIST000/use')
+        .set('Authorization', `Bearer ${localUserToken}`)
+        .expect(400);
+      expect(response.body.error.message).toMatch(/invite/i);
+    });
+
+    it('consumes a project invite and returns an access token that includes the role', async () => {
+      const projectId = await createNotebook({
+        projectName: 'redeem-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+      const invite = await createResourceInvite({
+        resourceType: Resource.PROJECT,
+        resourceId: projectId!,
+        role: Role.PROJECT_CONTRIBUTOR,
+        name: 'Redeem Invite',
+        createdBy: 'admin',
+        expiry: Date.now() + 1000 * 60 * 60,
+        usesOriginal: 1,
+      });
+
+      const response = await request(app)
+        .post(`/api/invites/${invite._id}/use`)
+        .set('Authorization', `Bearer ${localUserToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.inviteType).toBe(RoleScope.RESOURCE_SPECIFIC);
+      expect(response.body.resourceType).toBe(Resource.PROJECT);
+      expect(response.body.role).toBe(Role.PROJECT_CONTRIBUTOR);
+      expect(response.body.resourceId).toBe(projectId);
+      expect(typeof response.body.accessToken).toBe('string');
+
+      const updated = await getExpressUserFromEmailOrUserId(localUserName);
+      expect(
+        userHasProjectRole({
+          user: updated!,
+          role: Role.PROJECT_CONTRIBUTOR,
+          projectId: projectId!,
+        })
+      ).toBe(true);
+
+      const directory = await request(app)
+        .get('/api/directory/')
+        .set('Authorization', `Bearer ${response.body.accessToken}`)
+        .expect(200);
+      expect(directory.body.map((item: {_id: string}) => item._id)).toContain(
+        projectId
+      );
+
+      await request(app)
+        .post(`/api/invites/${invite._id}/use`)
+        .set('Authorization', `Bearer ${response.body.accessToken}`)
+        .expect(400);
+    });
+
+    it('reissues an access token with the same expiry as the token used to redeem', async () => {
+      const projectId = await createNotebook({
+        projectName: 'redeem-expiry',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+      const invite = await createResourceInvite({
+        resourceType: Resource.PROJECT,
+        resourceId: projectId!,
+        role: Role.PROJECT_CONTRIBUTOR,
+        name: 'Expiry Invite',
+        createdBy: 'admin',
+        expiry: Date.now() + 1000 * 60 * 60,
+        usesOriginal: 1,
+      });
+
+      const user = await getExpressUserFromEmailOrUserId(localUserName);
+      const signingKey = await keyService.getSigningKey();
+      // Much shorter than a freshly minted access token so a reset expiry
+      // would be obvious.
+      const expiresAtSeconds = Math.floor(Date.now() / 1000) + 90;
+      const sourceToken = await generateJwtFromUser({
+        user: user!,
+        signingKey,
+        expiresAtSeconds,
+      });
+
+      const response = await request(app)
+        .post(`/api/invites/${invite._id}/use`)
+        .set('Authorization', `Bearer ${sourceToken}`)
+        .expect(200);
+
+      expect(decodeJwt(sourceToken).exp).toBe(expiresAtSeconds);
+      expect(decodeJwt(response.body.accessToken).exp).toBe(expiresAtSeconds);
+    });
+
+    it('consumes a global invite and omits resource fields', async () => {
+      const invite = await createGlobalInvite({
+        role: Role.GENERAL_CREATOR,
+        name: 'Global Redeem',
+        createdBy: 'admin',
+        expiry: Date.now() + 1000 * 60 * 60,
+        usesOriginal: 1,
+      });
+
+      const before = await getExpressUserFromEmailOrUserId(localUserName);
+      expect(
+        userHasGlobalRole({
+          user: before!,
+          role: Role.GENERAL_CREATOR,
+        })
+      ).toBe(false);
+
+      const response = await request(app)
+        .post(`/api/invites/${invite._id}/use`)
+        .set('Authorization', `Bearer ${localUserToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.inviteType).toBe(RoleScope.GLOBAL);
+      expect(response.body.resourceType).toBeUndefined();
+      expect(response.body.resourceId).toBeUndefined();
+      expect(response.body.role).toBe(Role.GENERAL_CREATOR);
+      expect(typeof response.body.accessToken).toBe('string');
+
+      const updated = await getExpressUserFromEmailOrUserId(localUserName);
+      expect(
+        userHasGlobalRole({
+          user: updated!,
+          role: Role.GENERAL_CREATOR,
+        })
+      ).toBe(true);
+
+      const consumed = await getInvite({inviteId: invite._id});
+      expect(consumed?.usesConsumed).toBe(1);
+    });
+
+    it('rejects redeeming an invite while impersonating another user', async () => {
+      const projectId = await createNotebook({
+        projectName: 'impersonation-redeem',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+      const invite = await createResourceInvite({
+        resourceType: Resource.PROJECT,
+        resourceId: projectId!,
+        role: Role.PROJECT_CONTRIBUTOR,
+        name: 'Impersonation Redeem',
+        createdBy: 'admin',
+        expiry: Date.now() + 1000 * 60 * 60,
+        usesOriginal: 1,
+      });
+
+      const user = await getExpressUserFromEmailOrUserId(localUserName);
+      const signingKey = await keyService.getSigningKey();
+      const impersonationToken = await generateJwtFromUser({
+        user: user!,
+        signingKey,
+        impersonatingUserId: adminUserName,
+      });
+
+      const response = await request(app)
+        .post(`/api/invites/${invite._id}/use`)
+        .set('Authorization', `Bearer ${impersonationToken}`)
+        .expect(403);
+      expect(response.body.error.message).toMatch(/impersonat/i);
+
+      const stillThere = await getInvite({inviteId: invite._id});
+      expect(stillThere?.usesConsumed).toBe(0);
+    });
   });
 });

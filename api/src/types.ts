@@ -36,6 +36,11 @@ export interface CustomRequest {
   // extend both without a TS7 incompatible-property merge error. Custom fields
   // live on CookieSessionObject via the augmentation below.
   session?: CookieSessionInterfaces.CookieSessionObject | null;
+
+  // Unix-seconds `exp` of the bearer access token that authenticated this
+  // request. Set only after signature verification. Used so replacement
+  // access tokens cannot outlive the token they were minted from.
+  accessTokenExpiresAt?: number;
 }
 
 declare global {

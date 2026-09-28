@@ -3,6 +3,7 @@ import {
   addGlobalRole,
   addTeamRole,
   AuthContext,
+  ExistingInvitesDBDocument,
   ExistingPeopleDBDocument,
   isPeopleUserAccountDisabled,
   PeopleDBDocument,
@@ -304,7 +305,7 @@ export async function lookupAndValidateInvite({
  * @param inviteCode - The invitation code to process and validate
  *
  * @returns The user document (either existing or newly created) with updated
- * permissions
+ * permissions, and the invite that was consumed
  *
  * @throws {Error} If neither dbUser nor createUser is provided
  * @throws {Error} If the invite code doesn't correspond to a valid invitation
@@ -329,7 +330,7 @@ export async function validateAndApplyInviteToUser({
     get?: (name: string) => string | undefined;
   };
   action?: AuthAction;
-}): Promise<PeopleDBDocument> {
+}): Promise<{user: PeopleDBDocument; invite: ExistingInvitesDBDocument}> {
   if (!(createUser || dbUser)) {
     throw new Error(
       'Must provide either a way to generate a user, or an existing user, to handle an auth invitation.'
@@ -351,8 +352,9 @@ export async function validateAndApplyInviteToUser({
     }
 
     // Consume the invite to add the permission to the user
+    let consumedInvite: ExistingInvitesDBDocument;
     try {
-      await consumeInvite({invite, user: targetDbUser});
+      consumedInvite = await consumeInvite({invite, user: targetDbUser});
     } catch (e) {
       // Failed to consume the invite - do not save the user
       throw new Error(
@@ -373,7 +375,7 @@ export async function validateAndApplyInviteToUser({
       ...requestMeta,
     });
 
-    return targetDbUser;
+    return {user: targetDbUser, invite: consumedInvite};
   } catch (e) {
     logInviteAudit({
       event: 'invite.consume',
@@ -568,7 +570,7 @@ export async function completePostAuth({
   // Apply the invite if one was provided
   if (inviteId) {
     try {
-      const updatedUser = await validateAndApplyInviteToUser({
+      const {user: updatedUser} = await validateAndApplyInviteToUser({
         inviteCode: inviteId,
         dbUser,
         req,
