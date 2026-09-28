@@ -74,7 +74,7 @@ for code work.
   ("Loading sample notebooks and templates") which needs a bearer token, or run
   `cd api && pnpm seed-test-dataset` (idempotent; safe to re-run).
 - For repeated e2e auth (password reset / invites), set
-  `RATE_LIMITER_ENABLED=false` and `AUTH_ATTEMPT_LIMITER_ENABLED=false` in
+  `RATE_LIMITER_ENABLED=false` and `ATTEMPT_LIMITER_ENABLED=false` in
   `api/.env` and restart the API. The former is the Express HTTP IP limiter;
   the latter gates CouchDB-backed email-code / verification-challenge limits.
 

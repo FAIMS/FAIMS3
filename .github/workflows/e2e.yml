@@ -94,10 +94,10 @@ jobs:
           else
             echo 'RATE_LIMITER_ENABLED=false' >> api/.env
           fi
-          if grep -q '^AUTH_ATTEMPT_LIMITER_ENABLED=' api/.env; then
-            sed -i 's/^AUTH_ATTEMPT_LIMITER_ENABLED=.*/AUTH_ATTEMPT_LIMITER_ENABLED=false/' api/.env
+          if grep -q '^ATTEMPT_LIMITER_ENABLED=' api/.env; then
+            sed -i 's/^ATTEMPT_LIMITER_ENABLED=.*/ATTEMPT_LIMITER_ENABLED=false/' api/.env
           else
-            echo 'AUTH_ATTEMPT_LIMITER_ENABLED=false' >> api/.env
+            echo 'ATTEMPT_LIMITER_ENABLED=false' >> api/.env
           fi
 
           # Stable commit string for Vite builds in CI.

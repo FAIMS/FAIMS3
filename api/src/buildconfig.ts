@@ -206,7 +206,7 @@ const EnvSchema = z
      * Whether the Express HTTP IP rate limiter is enabled. Blank → on;
      * unrecognised values fail parse (do not silently disable). Does not
      * control CouchDB-backed auth attempt limits — see
-     * AUTH_ATTEMPT_LIMITER_ENABLED.
+     * ATTEMPT_LIMITER_ENABLED.
      */
     RATE_LIMITER_ENABLED: configHelpers.boolWithDefault(true),
     /**
@@ -234,7 +234,7 @@ const EnvSchema = z
      * fail parse (do not silently disable). E2e may set false for repeated
      * auth flows.
      */
-    AUTH_ATTEMPT_LIMITER_ENABLED: configHelpers.boolWithDefault(true),
+    ATTEMPT_LIMITER_ENABLED: configHelpers.boolWithDefault(true),
     /**
      * Canonical public URL of this Conductor (required). Trailing `/` is
      * stripped.
@@ -529,7 +529,7 @@ const EnvSchema = z
         : env.EXPORT_RATE_LIMITER_ENABLED,
       exportRateLimiterWindowMs: env.EXPORT_RATE_LIMITER_WINDOW_MS,
       exportRateLimiterPerWindow: env.EXPORT_RATE_LIMITER_PER_WINDOW,
-      authAttemptLimiterEnabled: env.AUTH_ATTEMPT_LIMITER_ENABLED,
+      authAttemptLimiterEnabled: env.ATTEMPT_LIMITER_ENABLED,
       keySource: env.KEY_SOURCE,
       maximumLongLivedDurationDays: env.MAXIMUM_LONG_LIVED_DURATION_DAYS,
       bugsnagApiKey: env.BUGSNAG_API_KEY,

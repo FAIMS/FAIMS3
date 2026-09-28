@@ -309,7 +309,7 @@ export class FaimsConductor extends Construct {
         : 'infinite',
       RATE_LIMITER_ENABLED:
         props.rateLimiterEnabled === false ? 'false' : 'true',
-      AUTH_ATTEMPT_LIMITER_ENABLED:
+      ATTEMPT_LIMITER_ENABLED:
         props.authAttemptLimiterEnabled === false ? 'false' : 'true',
       EXPORT_RATE_LIMITER_ENABLED:
         props.exportRateLimiterEnabled === false ? 'false' : 'true',
