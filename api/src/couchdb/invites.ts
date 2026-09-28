@@ -363,6 +363,35 @@ export async function consumeInvite({
 }
 
 /**
+ * pouchdb-find (and CouchDB Mango) default `limit` to 25. Callers that need
+ * every match must page; a short page means there are no further documents.
+ */
+const INVITE_FIND_PAGE_SIZE = 200;
+
+async function findEveryInvite(
+  selector: PouchDB.Find.Selector
+): Promise<ExistingInvitesDBDocument[]> {
+  const inviteDb = getInvitesDB();
+  if (!inviteDb) {
+    throw Error('Unable to connect to invites database');
+  }
+  const docs: ExistingInvitesDBDocument[] = [];
+  let skip = 0;
+  for (;;) {
+    const result = await inviteDb.find({
+      selector,
+      limit: INVITE_FIND_PAGE_SIZE,
+      skip,
+    });
+    docs.push(...(result.docs as ExistingInvitesDBDocument[]));
+    if (result.docs.length < INVITE_FIND_PAGE_SIZE) {
+      return docs;
+    }
+    skip += result.docs.length;
+  }
+}
+
+/**
  * Get all invites for a specific resource.
  *
  * @param {Object} params - The parameters for retrieving invites
@@ -378,18 +407,10 @@ export async function getInvitesForResource({
   resourceType: Resource.TEAM | Resource.PROJECT;
   resourceId: string;
 }): Promise<ExistingInvitesDBDocument[]> {
-  const inviteDb = getInvitesDB();
-  if (inviteDb) {
-    const result = await inviteDb.find({
-      selector: {
-        resourceType: {$eq: resourceType},
-        resourceId: {$eq: resourceId},
-      },
-    });
-    return result.docs as ExistingInvitesDBDocument[];
-  } else {
-    throw Error('Unable to connect to invites database');
-  }
+  return findEveryInvite({
+    resourceType: {$eq: resourceType},
+    resourceId: {$eq: resourceId},
+  });
 }
 
 /**
@@ -414,17 +435,9 @@ export async function deleteAllInvitesForProject(
  * @throws {Error} If unable to connect to the invites database
  */
 export async function getGlobalInvites(): Promise<ExistingInvitesDBDocument[]> {
-  const inviteDb = getInvitesDB();
-  if (inviteDb) {
-    const result = await inviteDb.find({
-      selector: {
-        inviteType: {$eq: RoleScope.GLOBAL},
-      },
-    });
-    return result.docs as ExistingInvitesDBDocument[];
-  } else {
-    throw Error('Unable to connect to invites database');
-  }
+  return findEveryInvite({
+    inviteType: {$eq: RoleScope.GLOBAL},
+  });
 }
 
 /**

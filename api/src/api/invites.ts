@@ -71,6 +71,27 @@ patch();
 
 export const api: express.Router = express.Router();
 
+function userCanProjectInvite({
+  user,
+  projectId,
+  action,
+  role,
+}: {
+  user: NonNullable<Request['user']>;
+  projectId: string;
+  action: 'create' | 'delete';
+  role: ExistingInvitesDBDocument['role'];
+}): boolean {
+  return isAuthorized({
+    action: projectInviteToAction({action, role}),
+    decodedToken: {
+      globalRoles: user.globalRoles,
+      resourceRoles: user.resourceRoles,
+    },
+    resourceId: projectId,
+  });
+}
+
 function logInviteCreated(
   req: Request,
   invite: ExistingInvitesDBDocument,
@@ -78,6 +99,26 @@ function logInviteCreated(
 ): void {
   logInviteAudit({
     event: 'invite.create',
+    outcome: 'success',
+    source: 'api',
+    inviteId: invite._id,
+    userId,
+    role: invite.role,
+    inviteType: invite.inviteType,
+    resourceType: invite.resourceType,
+    resourceId: invite.resourceId,
+    kind: invite.kind,
+    ...inviteAuditFromRequest(req),
+  });
+}
+
+function logInviteRevoked(
+  req: Request,
+  invite: ExistingInvitesDBDocument,
+  userId: string
+): void {
+  logInviteAudit({
+    event: 'invite.revoke',
     outcome: 'success',
     source: 'api',
     inviteId: invite._id,
@@ -251,19 +292,12 @@ api.post(
       throw new Exceptions.UnauthorizedException();
     }
 
-    const actionNeeded = projectInviteToAction({
-      action: 'create',
-      role: body.role,
-    });
-
     if (
-      !isAuthorized({
-        action: actionNeeded,
-        decodedToken: {
-          globalRoles: user.globalRoles,
-          resourceRoles: user.resourceRoles,
-        },
-        resourceId: projectId,
+      !userCanProjectInvite({
+        user,
+        projectId,
+        action: 'create',
+        role: body.role,
       })
     ) {
       throw new Exceptions.UnauthorizedException(
@@ -279,8 +313,10 @@ api.post(
     }
 
     // One live Quick Share per person per survey. A second generate returns
-    // the current code instead of leaving another one in the database.
-    const existing = (
+    // that code only when this person can still create its role. A code above
+    // their current access is not handed back, and no second code is minted
+    // beside it.
+    const live = (
       await getInvitesForResource({
         resourceType: Resource.PROJECT,
         resourceId: projectId,
@@ -292,8 +328,38 @@ api.post(
           invite.createdBy === user.user_id &&
           isInviteValid({invite}).isValid
       )
-      .sort((a, b) => b.createdAt - a.createdAt)[0];
+      .sort((a, b) => b.createdAt - a.createdAt);
+    if (
+      live.some(
+        invite =>
+          !userCanProjectInvite({
+            user,
+            projectId,
+            action: 'create',
+            role: invite.role,
+          })
+      )
+    ) {
+      throw new Exceptions.ForbiddenException(
+        'A quick share above your current access is still active. It must be revoked before a new code can be issued.'
+      );
+    }
+    const [existing, ...older] = live;
     if (existing) {
+      for (const extra of older) {
+        if (
+          !userCanProjectInvite({
+            user,
+            projectId,
+            action: 'delete',
+            role: extra.role,
+          })
+        ) {
+          continue;
+        }
+        await deleteInvite({invite: extra});
+        logInviteRevoked(req, extra, user.user_id);
+      }
       res.json({...existing, kind: QUICK_SHARE_KIND});
       return;
     }
@@ -421,19 +487,31 @@ api.delete(
 
     await deleteInvite({invite});
     if (invite.kind === QUICK_SHARE_KIND) {
-      logInviteAudit({
-        event: 'invite.revoke',
-        outcome: 'success',
-        source: 'api',
-        inviteId: invite._id,
-        userId: user.user_id,
-        role: invite.role,
-        inviteType: invite.inviteType,
-        resourceType: invite.resourceType,
-        resourceId: invite.resourceId,
-        kind: invite.kind,
-        ...inviteAuditFromRequest(req),
-      });
+      logInviteRevoked(req, invite, user.user_id);
+      // A missed lookup can leave a second redeemable code. Revoking the one
+      // stored on the device also removes this person's other live codes for
+      // the survey, when the caller is still allowed to delete that role.
+      const siblings = (
+        await getInvitesForResource({
+          resourceType: Resource.PROJECT,
+          resourceId: projectId,
+        })
+      ).filter(
+        other =>
+          other.kind === QUICK_SHARE_KIND &&
+          other.createdBy === invite.createdBy &&
+          isInviteValid({invite: other}).isValid &&
+          userCanProjectInvite({
+            user,
+            projectId,
+            action: 'delete',
+            role: other.role,
+          })
+      );
+      for (const sibling of siblings) {
+        await deleteInvite({invite: sibling});
+        logInviteRevoked(req, sibling, user.user_id);
+      }
     }
     res.status(200).json({success: true});
   }

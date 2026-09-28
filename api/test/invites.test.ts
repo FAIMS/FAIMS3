@@ -27,6 +27,7 @@ import {
   addGlobalRole,
   addProjectRole,
   addTeamRole,
+  removeProjectRole,
   DEFAULT_INVITE_EXPIRY_MS,
   DEFAULT_QUICK_SHARE_LIFETIME_MS,
   INPUT_LIMITS,
@@ -47,6 +48,7 @@ import {beforeEach, describe, expect, it} from 'vitest';
 import request from 'supertest';
 import {generateJwtFromUser} from '../src/auth/keySigning/create';
 import {config, keyService} from '../src/buildconfig';
+import {getInvitesDB} from '../src/couchdb';
 import {
   consumeInvite,
   createGlobalInvite,
@@ -253,6 +255,30 @@ describe('Invite Tests', () => {
       expect(invites[0].name).not.toBe(invites[1].name);
     });
 
+    it('returns every invite for a resource past the default find page', async () => {
+      const projectId = await createNotebook({
+        projectName: 'many-invites',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+      for (let i = 0; i < 30; i++) {
+        await createResourceInvite({
+          resourceType: Resource.PROJECT,
+          resourceId: projectId!,
+          role: Role.PROJECT_GUEST,
+          name: `Invite ${i}`,
+          createdBy: 'admin',
+        });
+      }
+
+      const invites = await getInvitesForResource({
+        resourceType: Resource.PROJECT,
+        resourceId: projectId!,
+      });
+      expect(invites).toHaveLength(30);
+    });
+
     it('can delete an invite', async () => {
       const projectId = await createNotebook({
         projectName: 'test-notebook',
@@ -425,6 +451,18 @@ describe('Invite Tests', () => {
         ['Admin Invite', 'Another Admin Invite'].includes(v)
       );
       expect(invites[0].name).not.toBe(invites[1].name);
+    });
+
+    it('returns every global invite past the default find page', async () => {
+      for (let i = 0; i < 30; i++) {
+        await createGlobalInvite({
+          role: Role.GENERAL_USER,
+          name: `Global ${i}`,
+          createdBy: 'admin',
+        });
+      }
+      const invites = await getGlobalInvites();
+      expect(invites).toHaveLength(30);
     });
 
     it('can use a global invite and record usage', async () => {
@@ -977,6 +1015,184 @@ describe('Invite Tests', () => {
         .expect(200);
       expect(again.body._id).not.toBe(created.body._id);
       expect(again.body.role).toBe(Role.PROJECT_CONTRIBUTOR);
+    });
+
+    it('returns the existing quick share when older invites fill the default find page', async () => {
+      const projectId = await createNotebook({
+        projectName: 'quick-share-past-page',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+      const created = await request(app)
+        .post(`/api/invites/notebook/${projectId}/quick-share`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          role: Role.PROJECT_GUEST,
+          lifetimeMs: DEFAULT_QUICK_SHARE_LIFETIME_MS,
+        })
+        .expect(200);
+
+      // Ids sort before the DEV-prefixed quick share, so an unpaged find of
+      // 25 documents returns these and misses the live code.
+      const invitesDb = getInvitesDB();
+      for (let i = 0; i < 25; i++) {
+        await invitesDb.put({
+          _id: `000-pad-${String(i).padStart(2, '0')}`,
+          resourceType: Resource.PROJECT,
+          resourceId: projectId!,
+          inviteType: RoleScope.RESOURCE_SPECIFIC,
+          role: Role.PROJECT_GUEST,
+          name: 'pad',
+          createdBy: 'other',
+          createdAt: 1,
+          expiry: Date.now() + 60_000,
+          usesConsumed: 0,
+          uses: [],
+        });
+      }
+
+      const again = await request(app)
+        .post(`/api/invites/notebook/${projectId}/quick-share`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          role: Role.PROJECT_CONTRIBUTOR,
+          lifetimeMs: DEFAULT_QUICK_SHARE_LIFETIME_MS,
+        })
+        .expect(200);
+      expect(again.body._id).toBe(created.body._id);
+      const stored = await getInvitesForResource({
+        resourceType: Resource.PROJECT,
+        resourceId: projectId!,
+      });
+      expect(
+        stored.filter(invite => invite.kind === QUICK_SHARE_KIND)
+      ).toHaveLength(1);
+    });
+
+    it('a second generate keeps the newest quick share and removes older ones', async () => {
+      const projectId = await createNotebook({
+        projectName: 'quick-share-collapse',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+      const older = await createQuickShareInvite({
+        resourceId: projectId!,
+        role: Role.PROJECT_GUEST,
+        createdBy: adminUserName,
+        lifetimeMs: DEFAULT_QUICK_SHARE_LIFETIME_MS,
+      });
+      await new Promise(resolve => setTimeout(resolve, 5));
+      const newer = await createQuickShareInvite({
+        resourceId: projectId!,
+        role: Role.PROJECT_CONTRIBUTOR,
+        createdBy: adminUserName,
+        lifetimeMs: DEFAULT_QUICK_SHARE_LIFETIME_MS,
+      });
+
+      const response = await request(app)
+        .post(`/api/invites/notebook/${projectId}/quick-share`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          role: Role.PROJECT_GUEST,
+          lifetimeMs: DEFAULT_QUICK_SHARE_LIFETIME_MS,
+        })
+        .expect(200);
+      expect(response.body._id).toBe(newer._id);
+      expect(await getInvite({inviteId: older._id})).toBeNull();
+      expect(await getInvite({inviteId: newer._id})).not.toBeNull();
+    });
+
+    it('does not hand back a higher-role quick share after the caller is downgraded', async () => {
+      const projectId = await createNotebook({
+        projectName: 'quick-share-downgrade',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+      const projectAdminToken = await tokenForProjectRole(
+        projectId!,
+        Role.PROJECT_ADMIN
+      );
+      const created = await request(app)
+        .post(`/api/invites/notebook/${projectId}/quick-share`)
+        .set('Authorization', `Bearer ${projectAdminToken}`)
+        .send({
+          role: Role.PROJECT_ADMIN,
+          lifetimeMs: DEFAULT_QUICK_SHARE_LIFETIME_MS,
+        })
+        .expect(200);
+
+      const couchUser = await getCouchUserFromEmailOrUserId(localUserName);
+      if (!couchUser) {
+        throw new Error('Local user not found');
+      }
+      removeProjectRole({
+        user: couchUser,
+        projectId: projectId!,
+        role: Role.PROJECT_ADMIN,
+      });
+      addProjectRole({
+        user: couchUser,
+        projectId: projectId!,
+        role: Role.PROJECT_MANAGER,
+      });
+      await saveCouchUser(couchUser);
+      const managerToken = await tokenForProjectRole(
+        projectId!,
+        Role.PROJECT_MANAGER
+      );
+
+      const denied = await request(app)
+        .post(`/api/invites/notebook/${projectId}/quick-share`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .send({
+          role: Role.PROJECT_GUEST,
+          lifetimeMs: DEFAULT_QUICK_SHARE_LIFETIME_MS,
+        })
+        .expect(403);
+      expect(JSON.stringify(denied.body)).not.toContain(created.body._id);
+
+      const stored = await getInvitesForResource({
+        resourceType: Resource.PROJECT,
+        resourceId: projectId!,
+      });
+      const shares = stored.filter(invite => invite.kind === QUICK_SHARE_KIND);
+      expect(shares).toHaveLength(1);
+      expect(shares[0]._id).toBe(created.body._id);
+      expect(shares[0].role).toBe(Role.PROJECT_ADMIN);
+    });
+
+    it('revoking one quick share removes another live code from the same person', async () => {
+      const projectId = await createNotebook({
+        projectName: 'quick-share-revoke-sibling',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+      const storedOnDevice = await request(app)
+        .post(`/api/invites/notebook/${projectId}/quick-share`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          role: Role.PROJECT_GUEST,
+          lifetimeMs: DEFAULT_QUICK_SHARE_LIFETIME_MS,
+        })
+        .expect(200);
+      const missed = await createQuickShareInvite({
+        resourceId: projectId!,
+        role: Role.PROJECT_CONTRIBUTOR,
+        createdBy: adminUserName,
+        lifetimeMs: DEFAULT_QUICK_SHARE_LIFETIME_MS,
+      });
+
+      await request(app)
+        .delete(`/api/invites/notebook/${projectId}/${storedOnDevice.body._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(await getInvite({inviteId: storedOnDevice.body._id})).toBeNull();
+      expect(await getInvite({inviteId: missed._id})).toBeNull();
     });
 
     it('rejects quick share when the survey has disabled it', async () => {
