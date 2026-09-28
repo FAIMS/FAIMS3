@@ -109,9 +109,9 @@ export interface EditableFormManagerProps {
   headingSlot?: React.ReactNode;
   /**
    * Whether the buttons that leave this record for a parent record may be
-   * shown. Default true. A caller that does its own navigation out of the
-   * record, such as a plan view, sets it false so the operator cannot leave
-   * that flow; the primary Finish then returns to the record list.
+   * shown. Default true. A host that owns the way out of the record sets it
+   * false so the operator cannot leave that flow; the primary Finish then
+   * returns to the record list.
    */
   shouldShowParentNavigation?: boolean;
   /** Enable debug logging for save operations */

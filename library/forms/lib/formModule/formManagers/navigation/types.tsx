@@ -194,9 +194,9 @@ export interface UseNavigationLogicParams {
   createAnotherChild?: CreateAnotherChildConfig;
   /**
    * Whether the buttons that leave this record for a parent record may be
-   * shown. Default true. A caller that owns the way out of a record, such as a
-   * plan view, sets it false so the operator cannot step outside the plan; the
-   * primary Finish then returns to the record list rather than to the parent.
+   * shown. Default true. A host that owns the way out of a record sets it
+   * false so the operator cannot step outside that flow; the primary Finish
+   * then returns to the record list rather than to the parent.
    */
   shouldShowParentNavigation?: boolean;
 }
