@@ -980,6 +980,7 @@ export const EditableFormManager: React.FC<
   // Prevents a double-click from running the guard twice while flushSave is awaiting.
   const guardInFlightRef = useRef(false);
   const [issueCount, setIssueCount] = useState(0);
+  const [saveRefused, setSaveRefused] = useState(false);
 
   const formLabel = useMemo(
     () =>
@@ -1008,13 +1009,14 @@ export const EditableFormManager: React.FC<
       if (guardInFlightRef.current) return;
       guardInFlightRef.current = true;
       try {
+        let isSaveRefused = false;
         try {
           await flushSave();
         } catch (err) {
-          // Reported and carried past, the way every other navigation out of a
-          // form already treats a refused write: the flush puts its own error
-          // banner up and the retry stays here, so a save that will not
-          // succeed must not be what holds the only way out shut.
+          // The operator decides, rather than the refusal deciding for them:
+          // the dialog below says the save failed and still offers the way
+          // out, where the error banner unmounts with the form.
+          isSaveRefused = true;
           logWarn('[guardFinish] flushSave failed before issue check', {err});
         }
 
@@ -1032,13 +1034,14 @@ export const EditableFormManager: React.FC<
           }
         }
 
-        if (problematic.size === 0) {
+        if (problematic.size === 0 && !isSaveRefused) {
           await onClick();
           return;
         }
 
         const [firstField] = problematic;
         setIssueCount(problematic.size);
+        setSaveRefused(isSaveRefused);
         firstIssueFieldRef.current = firstField ?? null;
         pendingFinishRef.current = onClick;
         setConfirmFinishOpen(true);
@@ -1273,22 +1276,30 @@ export const EditableFormManager: React.FC<
         cancelLabel="Go back and review"
         confirmLabel="Finish anyway"
       >
-        <Typography
-          variant="body2"
-          onClick={() => {
-            pendingFinishRef.current = null;
-            setConfirmFinishOpen(false);
-            setTimeout(scrollToFirstIssue, 0);
-          }}
-          sx={{
-            cursor: 'pointer',
-            textDecoration: 'underline',
-            color: 'text.primary',
-          }}
-        >
-          <strong>{issueCount}</strong> field{issueCount === 1 ? '' : 's'} still{' '}
-          {issueCount === 1 ? 'has' : 'have'} errors.
-        </Typography>
+        {saveRefused && (
+          <Typography variant="body2">
+            This record could not be saved. Finishing now leaves those edits
+            behind.
+          </Typography>
+        )}
+        {issueCount > 0 && (
+          <Typography
+            variant="body2"
+            onClick={() => {
+              pendingFinishRef.current = null;
+              setConfirmFinishOpen(false);
+              setTimeout(scrollToFirstIssue, 0);
+            }}
+            sx={{
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              color: 'text.primary',
+            }}
+          >
+            <strong>{issueCount}</strong> field{issueCount === 1 ? '' : 's'}{' '}
+            still {issueCount === 1 ? 'has' : 'have'} errors.
+          </Typography>
+        )}
       </ConfirmDialog>
     </Stack>
   );
