@@ -1005,7 +1005,7 @@ describe('Invite Tests', () => {
         })
         .expect(200);
       await request(app)
-        .delete(`/api/invites/notebook/${projectId}/${created.body._id}`)
+        .delete(`/api/invites/notebook/${projectId}/quick-share`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
       expect(await getInvite({inviteId: created.body._id})).toBeNull();
@@ -1156,37 +1156,9 @@ describe('Invite Tests', () => {
       expect(shares[0].role).toBe(Role.PROJECT_ADMIN);
     });
 
-    it('lets a downgraded user revoke their own higher-role quick share', async () => {
+    it('rejects deleting a quick share by invite id', async () => {
       const projectId = await createNotebook({
-        projectName: 'quick-share-revoke-own',
-        uiSpecification: EMPTY_UI_SPECIFICATION,
-        description: '',
-        createdBy: 'admin',
-      });
-      const projectAdminToken = await tokenForProjectRole(
-        projectId!,
-        Role.PROJECT_ADMIN
-      );
-      const created = await request(app)
-        .post(`/api/invites/notebook/${projectId}/quick-share`)
-        .set('Authorization', `Bearer ${projectAdminToken}`)
-        .send({
-          role: Role.PROJECT_ADMIN,
-        })
-        .expect(200);
-      const managerToken = await downgradeProjectAdminToManager(projectId!);
-
-      await request(app)
-        .delete(`/api/invites/notebook/${projectId}/${created.body._id}`)
-        .set('Authorization', `Bearer ${managerToken}`)
-        .expect(200);
-
-      expect(await getInvite({inviteId: created.body._id})).toBeNull();
-    });
-
-    it('refuses a downgraded user revoking someone else’s quick share', async () => {
-      const projectId = await createNotebook({
-        projectName: 'quick-share-revoke-other',
+        projectName: 'quick-share-reject-by-id',
         uiSpecification: EMPTY_UI_SPECIFICATION,
         description: '',
         createdBy: 'admin',
@@ -1195,19 +1167,39 @@ describe('Invite Tests', () => {
         .post(`/api/invites/notebook/${projectId}/quick-share`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          role: Role.PROJECT_ADMIN,
+          role: Role.PROJECT_GUEST,
         })
         .expect(200);
-      const managerToken = await tokenForProjectRole(
-        projectId!,
-        Role.PROJECT_MANAGER
-      );
 
       const denied = await request(app)
         .delete(`/api/invites/notebook/${projectId}/${created.body._id}`)
-        .set('Authorization', `Bearer ${managerToken}`)
-        .expect(401);
-      expect(denied.body.error.message).toMatch(/not authorized to delete/);
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(400);
+      expect(denied.body.error.message).toMatch(
+        /DELETE \/api\/invites\/notebook\/:projectId\/quick-share/
+      );
+      expect(JSON.stringify(denied.body)).not.toContain(created.body._id);
+
+      const teamDenied = await request(app)
+        .delete(`/api/invites/team/${projectId}/${created.body._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(400);
+      expect(teamDenied.body.error.message).toMatch(/quick-share/);
+
+      const adminUser = await getExpressUserFromEmailOrUserId('admin');
+      if (!adminUser) {
+        throw new Error('Admin user not found');
+      }
+      addGlobalRole({
+        user: adminUser,
+        role: Role.OPERATIONS_ADMIN,
+      });
+      const globalDenied = await request(app)
+        .delete(`/api/invites/global/${created.body._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(400);
+      expect(globalDenied.body.error.message).toMatch(/quick-share/);
+
       expect(await getInvite({inviteId: created.body._id})).not.toBeNull();
     });
 
@@ -1236,7 +1228,7 @@ describe('Invite Tests', () => {
       const managerToken = await downgradeProjectAdminToManager(projectId!);
 
       await request(app)
-        .delete(`/api/invites/notebook/${projectId}/${stored._id}`)
+        .delete(`/api/invites/notebook/${projectId}/quick-share`)
         .set('Authorization', `Bearer ${managerToken}`)
         .expect(200);
 
@@ -1349,7 +1341,7 @@ describe('Invite Tests', () => {
       });
 
       await request(app)
-        .delete(`/api/invites/notebook/${projectId}/${storedOnDevice.body._id}`)
+        .delete(`/api/invites/notebook/${projectId}/quick-share`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 

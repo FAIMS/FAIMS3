@@ -83,6 +83,19 @@ function userCanProjectInvite({
   });
 }
 
+/**
+ * Quick share codes are revoked with DELETE .../notebook/:projectId/quick-share.
+ * The by-id invite routes must not accept them: the id is the redemption secret.
+ */
+function rejectQuickShareDelete(invite: ExistingInvitesDBDocument): void {
+  if (invite.kind !== QUICK_SHARE_KIND) {
+    return;
+  }
+  throw new Exceptions.InvalidRequestException(
+    'Quick share codes cannot be deleted by invite id. Use DELETE /api/invites/notebook/:projectId/quick-share.'
+  );
+}
+
 function logInviteSuccess(
   event: 'invite.create' | 'invite.revoke',
   req: Request,
@@ -304,7 +317,7 @@ api.post(
       )
     ) {
       // The invite id is the redemption secret, so it stays out of this body.
-      // The creator revokes it with DELETE .../quick-share or DELETE by id.
+      // The creator revokes it with DELETE .../quick-share.
       throw new Exceptions.ForbiddenException(
         'A quick share above your current access is still active. It must be revoked before a new code can be issued.'
       );
@@ -450,6 +463,8 @@ api.delete(
       throw new Exceptions.ItemNotFoundException('Invite not found');
     }
 
+    rejectQuickShareDelete(invite);
+
     // Verify this invite belongs to the specified project
     if (
       invite.resourceType !== Resource.PROJECT ||
@@ -460,17 +475,12 @@ api.delete(
       );
     }
 
-    // The creator can always revoke their own quick share, including after a
-    // downgrade. Any other invite still needs delete permission for its role.
-    const ownsQuickShare =
-      invite.kind === QUICK_SHARE_KIND && invite.createdBy === user.user_id;
     const actionNeeded = projectInviteToAction({
       action: 'delete',
       role: invite.role,
     });
 
     if (
-      !ownsQuickShare &&
       !isAuthorized({
         action: actionNeeded,
         decodedToken: {
@@ -486,33 +496,6 @@ api.delete(
     }
 
     await deleteInvite({invite});
-    if (invite.kind === QUICK_SHARE_KIND) {
-      logInviteSuccess('invite.revoke', req, invite, user.user_id);
-      // A missed lookup can leave a second redeemable code. Revoking the one
-      // stored on the device also removes this person's other live codes.
-      // The creator can clear those too. Anyone else still needs delete
-      // permission for that role.
-      const siblings = (
-        await getQuickSharesForProjectAndUser({
-          projectId,
-          userId: invite.createdBy,
-        })
-      ).filter(
-        other =>
-          isInviteValid({invite: other}).isValid &&
-          (ownsQuickShare ||
-            userCanProjectInvite({
-              user,
-              projectId,
-              action: 'delete',
-              role: other.role,
-            }))
-      );
-      for (const sibling of siblings) {
-        await deleteInvite({invite: sibling});
-        logInviteSuccess('invite.revoke', req, sibling, user.user_id);
-      }
-    }
     res.status(200).json({success: true});
   }
 );
@@ -539,6 +522,8 @@ api.delete(
     if (!invite) {
       throw new Exceptions.ItemNotFoundException('Invite not found');
     }
+
+    rejectQuickShareDelete(invite);
 
     // Verify this invite belongs to the specified team
     if (invite.resourceType !== Resource.TEAM || invite.resourceId !== teamId) {
@@ -649,6 +634,8 @@ api.delete(
     if (!invite) {
       throw new Exceptions.ItemNotFoundException('Invite not found');
     }
+
+    rejectQuickShareDelete(invite);
 
     // verify that this invite is a global invite
     if (invite.inviteType !== RoleScope.GLOBAL) {
