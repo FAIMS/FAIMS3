@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {relatedLinkWrites} from '../src/databaseEngine/utils';
 
 const base = {
