@@ -1276,14 +1276,16 @@ export const EditableFormManager: React.FC<
           if (fn) await fn();
         }}
         title={`Are you sure you want to finish ${formLabel}?`}
-        cancelLabel="Go back and review"
+        cancelLabel={
+          issueCount > 0 ? 'Go back and review' : 'Stay on this record'
+        }
         confirmLabel="Finish anyway"
       >
-        {saveRefused && (
-          <Typography variant="body2">
-            This record could not be saved. Finishing now leaves those edits
-            behind.
-          </Typography>
+        {saveRefused && errorMessage !== '' && (
+          // The message the failing write already chose: the two reasons a
+          // flush throws say different things to the operator, and the banner
+          // carrying them unmounts with this form.
+          <Typography variant="body2">{errorMessage}</Typography>
         )}
         {issueCount > 0 && (
           <Typography
