@@ -27,6 +27,7 @@ import {
   toDesignerNotebookWithHistory,
   useDesignerSaveMutation,
 } from '@/designer/integration';
+import {Spinner} from '@/components/ui/spinner';
 
 /**
  * TemplateActions component renders action cards for creating a project from a template,
@@ -108,6 +109,9 @@ const TemplateActions = () => {
 
   const archived = data?.archived === true;
 
+  // Prevent reopening the editor while the latest design is still saving.
+  const isTemplateNotebookSaving = saveTemplateNotebook.isPending;
+
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -157,10 +161,19 @@ const TemplateActions = () => {
                 ) : (
                   <Button
                     variant="outline"
-                    disabled={isLoading || !initialNotebook}
+                    disabled={
+                      isLoading || !initialNotebook || isTemplateNotebookSaving
+                    }
                     onClick={() => setEditorOpen(true)}
                   >
-                    Open in Editor
+                    {isTemplateNotebookSaving ? (
+                      <span className="flex items-center gap-2">
+                        <Spinner className="h-4 w-4 animate-spin" />
+                        Saving...
+                      </span>
+                    ) : (
+                      'Open in Editor'
+                    )}
                   </Button>
                 )}
               </ListItem>

@@ -10,6 +10,7 @@ import {GenerateTestRecordsDialog} from '@/components/dialogs/generate-test-reco
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
+import {Spinner} from '@/components/ui/spinner';
 import {config} from '@/constants';
 import {
   toDesignerNotebookWithHistory,
@@ -108,6 +109,9 @@ const ProjectActions = (): JSX.Element => {
     resourceId: projectId,
   });
 
+  // Prevent reopening the editor while the latest design is still saving.
+  const isProjectNotebookSaving = saveProjectNotebook.isPending;
+
   return (
     <>
       <div className="flex flex-col gap-2 justify-between">
@@ -160,10 +164,19 @@ const ProjectActions = (): JSX.Element => {
               <ListItem>
                 <Button
                   variant="outline"
-                  disabled={isLoading || !initialNotebook}
+                  disabled={
+                    isLoading || !initialNotebook || isProjectNotebookSaving
+                  }
                   onClick={() => setEditorOpen(true)}
                 >
-                  Open in Editor
+                  {isProjectNotebookSaving ? (
+                    <span className="flex items-center gap-2">
+                      <Spinner className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </span>
+                  ) : (
+                    'Open in Editor'
+                  )}
                 </Button>
               </ListItem>
             </List>
