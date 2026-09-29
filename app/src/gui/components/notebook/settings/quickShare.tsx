@@ -4,11 +4,12 @@
  *
  * The notebook header uses a Share button. Settings uses the same dialog from
  * a compact section whose link matches the other settings cards. Generate
- * stores the code on the project. The dialog then only shows that code — its
- * role, when it expires, and a
- * tap-to-enlarge QR — until the user generates a new one. That deletes the
- * invite, then the generate form comes back. Every code lasts one hour. An
- * expired code is dropped, and the dialog shows the generate form again.
+ * stores the code on the project with the username of the person who created
+ * it. The dialog then only shows that code to them — its role, when it
+ * expires, and a tap-to-enlarge QR — until they generate a new one. That
+ * deletes the invite, then the generate form comes back. Every code lasts one
+ * hour. An expired code is dropped, and the dialog shows the generate form
+ * again. Someone else's code stays stored for its creator and is not shown.
  * The person who created a code can always revoke it, including after their
  * access is lowered.
  */
@@ -78,6 +79,20 @@ function formatExpiry(expiry: number): string {
 
 function isNotFound(error: unknown): boolean {
   return error instanceof HttpError && error.response.status === 404;
+}
+
+/** The redemption QR is only shown to the signed-in user who generated it. */
+function quickShareBelongsToUser(
+  share: ProjectQuickShare | undefined,
+  user: {username: string; serverId: string} | undefined,
+  projectServerId: string
+): share is ProjectQuickShare {
+  return (
+    !!share &&
+    !!user &&
+    user.serverId === projectServerId &&
+    share.createdBy === user.username
+  );
 }
 
 type QuickShareFailure = {
@@ -190,9 +205,15 @@ export default function NotebookQuickShare({
 
   const storedShare = project.quickShare;
   const expired = !!storedShare && storedShare.expiry <= now;
-  // An expired code is not shown. Clearing it puts the dialog back on the
-  // generate form the next time it opens, including after a revisit.
-  const share = expired ? undefined : storedShare;
+  // An expired code is not shown. Another person's code is not shown either,
+  // including an admin code this user is not allowed to grant. It stays stored
+  // so its creator still has it after they sign back in. Clearing an expired
+  // code puts the dialog back on the generate form.
+  const share =
+    !expired &&
+    quickShareBelongsToUser(storedShare, activeUser, project.serverId)
+      ? storedShare
+      : undefined;
 
   useEffect(() => {
     if (!expired) return;
@@ -205,6 +226,12 @@ export default function NotebookQuickShare({
       })
     );
   }, [dispatch, expired, project.projectId, project.serverId]);
+
+  useEffect(() => {
+    if (share) return;
+    setLightboxOpen(false);
+    setConfirmRevoke(false);
+  }, [share]);
 
   if (
     project.disableQuickShare ||
@@ -273,6 +300,7 @@ export default function NotebookQuickShare({
         role: invite.role,
         expiry: invite.expiry,
         qrCode,
+        createdBy: activeUser.username,
       });
     } catch (caught) {
       logError(
@@ -420,11 +448,7 @@ export default function NotebookQuickShare({
             aria-label="Close"
             onClick={closeDialog}
             disabled={working}
-            sx={theme => ({
-              position: 'absolute',
-              right: theme.spacing(1),
-              top: theme.spacing(1),
-            })}
+            className="faims-dialogCloseButton"
           >
             <CloseIcon />
           </IconButton>

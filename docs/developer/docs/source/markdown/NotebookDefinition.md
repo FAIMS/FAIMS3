@@ -101,12 +101,11 @@ Templates mirror this: `PUT /api/templates/:id` for optional `name` / `descripti
 
 ## Quick share
 
-`POST /api/invites/notebook/:projectId/quick-share` creates one survey invite from the field app. The caller must be authenticated. The body is `{ role, lifetimeMs }`.
+`POST /api/invites/notebook/:projectId/quick-share` creates one survey invite from the field app. The caller must be authenticated. The body is `{ role }`.
 
 - **`role`** — a survey role. Permission matches creating a notebook invite for that same role.
-- **`lifetimeMs`** — a whole number of milliseconds from **15 minutes** to **24 hours** inclusive (`MIN_QUICK_SHARE_LIFETIME_MS` and `MAX_QUICK_SHARE_LIFETIME_MS` in `library/data-model/src/inviteCode.ts`). Named steps are 15 minutes, 1 hour, 8 hours, and 24 hours; any integer inside that window is valid. The field app sends the 1 hour default.
 
-The document is a normal project invite (`kind: 'quick-share'`, name `Quick share`) with unlimited uses until `expiry`. Scanning and redemption use the existing invite path. The request has to reach the server.
+The code always lasts one hour (`DEFAULT_QUICK_SHARE_LIFETIME_MS` in `library/data-model/src/inviteCode.ts`). The request body cannot choose a duration. The document is a normal project invite (`kind: 'quick-share'`, name `Quick share`) with unlimited uses until `expiry`. Scanning and redemption use the existing invite path. The request has to reach the server.
 
 One live Quick Share per person per survey. A second create returns that code when the caller can still create its role, and does not mint another beside it.
 

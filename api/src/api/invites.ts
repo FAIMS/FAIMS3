@@ -40,6 +40,8 @@ import {
   getGlobalInvites,
   getInvite,
   getInvitesForResource,
+  getProjectInvites,
+  getQuickSharesForProjectAndUser,
   isInviteValid,
 } from '../couchdb/invites';
 import {getProjectById} from '../couchdb/notebooks';
@@ -135,13 +137,10 @@ api.get(
       );
     }
 
-    // Project invites
-    const invites = (
-      await getInvitesForResource({
-        resourceType: Resource.PROJECT,
-        resourceId: projectId,
-      })
-    ).filter(invite => isInviteValid({invite}).isValid);
+    // Project invites. Quick shares come from the quickShares view.
+    const invites = (await getProjectInvites(projectId)).filter(
+      invite => isInviteValid({invite}).isValid
+    );
 
     res.json(invites);
   }
@@ -246,7 +245,6 @@ api.post(
  * POST a Quick Share code for one survey. The code always lasts one hour.
  * Permission matches creating an invite for the same role. The document is
  * stored in the invites database and redeemed by the existing scan/use path.
- * Requires a live request, so it cannot be created offline.
  */
 api.post(
   '/notebook/:projectId/quick-share',
@@ -285,19 +283,14 @@ api.post(
     // One live Quick Share per person per survey. A second generate returns
     // that code only when this person can still create its role. A code above
     // their current access is not handed back, and no second code is minted
-    // beside it.
+    // beside it. The view is already limited to this survey and creator.
     const live = (
-      await getInvitesForResource({
-        resourceType: Resource.PROJECT,
-        resourceId: projectId,
+      await getQuickSharesForProjectAndUser({
+        projectId,
+        userId: user.user_id,
       })
     )
-      .filter(
-        invite =>
-          invite.kind === QUICK_SHARE_KIND &&
-          invite.createdBy === user.user_id &&
-          isInviteValid({invite}).isValid
-      )
+      .filter(invite => isInviteValid({invite}).isValid)
       .sort((a, b) => b.createdAt - a.createdAt);
     if (
       live.some(
@@ -419,16 +412,11 @@ api.delete(
     }
 
     const own = (
-      await getInvitesForResource({
-        resourceType: Resource.PROJECT,
-        resourceId: projectId,
+      await getQuickSharesForProjectAndUser({
+        projectId,
+        userId: user.user_id,
       })
-    ).filter(
-      invite =>
-        invite.kind === QUICK_SHARE_KIND &&
-        invite.createdBy === user.user_id &&
-        isInviteValid({invite}).isValid
-    );
+    ).filter(invite => isInviteValid({invite}).isValid);
     for (const invite of own) {
       await deleteInvite({invite});
       logInviteSuccess('invite.revoke', req, invite, user.user_id);
@@ -505,14 +493,12 @@ api.delete(
       // The creator can clear those too. Anyone else still needs delete
       // permission for that role.
       const siblings = (
-        await getInvitesForResource({
-          resourceType: Resource.PROJECT,
-          resourceId: projectId,
+        await getQuickSharesForProjectAndUser({
+          projectId,
+          userId: invite.createdBy,
         })
       ).filter(
         other =>
-          other.kind === QUICK_SHARE_KIND &&
-          other.createdBy === invite.createdBy &&
           isInviteValid({invite: other}).isValid &&
           (ownsQuickShare ||
             userCanProjectInvite({

@@ -19,6 +19,8 @@ import {
   PeopleDBDocument,
   QUICK_SHARE_KIND,
   QUICK_SHARE_NAME,
+  QUICK_SHARES_BY_PROJECT_AND_USER_INDEX,
+  QUICK_SHARES_INDEX,
   Resource,
   Role,
   RoleScope,
@@ -370,6 +372,70 @@ async function findEveryInvite(
   }
 }
 
+async function queryInviteIndex(
+  index: string,
+  options: {key: string | [string, string]}
+): Promise<ExistingInvitesDBDocument[]> {
+  const inviteDb = getInvitesDB();
+  if (!inviteDb) {
+    throw Error('Unable to connect to invites database');
+  }
+  const result = await inviteDb.query(index, {
+    include_docs: true,
+    ...options,
+  });
+  return result.rows
+    .filter(row => row.doc && !row.id.startsWith('_'))
+    .map(row => row.doc as ExistingInvitesDBDocument);
+}
+
+/**
+ * Every Quick Share invite for a survey.
+ * Uses the `quickShares` view (keyed by survey id).
+ */
+export async function getQuickSharesForProject(
+  projectId: string
+): Promise<ExistingInvitesDBDocument[]> {
+  return queryInviteIndex(QUICK_SHARES_INDEX, {key: projectId});
+}
+
+/**
+ * Quick Share invites created by one user for one survey.
+ * Uses the `quickSharesByProjectAndUser` view. Key is `[projectId, userId]`.
+ */
+export async function getQuickSharesForProjectAndUser({
+  projectId,
+  userId,
+}: {
+  projectId: string;
+  userId: string;
+}): Promise<ExistingInvitesDBDocument[]> {
+  return queryInviteIndex(QUICK_SHARES_BY_PROJECT_AND_USER_INDEX, {
+    key: [projectId, userId],
+  });
+}
+
+/**
+ * Project invites, with Quick Shares taken from the `quickShares` view so a
+ * paged find of the other invites cannot drop them.
+ */
+export async function getProjectInvites(
+  projectId: string
+): Promise<ExistingInvitesDBDocument[]> {
+  const [invites, quickShares] = await Promise.all([
+    getInvitesForResource({
+      resourceType: Resource.PROJECT,
+      resourceId: projectId,
+    }),
+    getQuickSharesForProject(projectId),
+  ]);
+  const quickShareIds = new Set(quickShares.map(invite => invite._id));
+  return [
+    ...invites.filter(invite => !quickShareIds.has(invite._id)),
+    ...quickShares,
+  ];
+}
+
 /**
  * Get all invites for a specific resource.
  *
@@ -398,10 +464,7 @@ export async function getInvitesForResource({
 export async function deleteAllInvitesForProject(
   projectId: string
 ): Promise<void> {
-  const invites = await getInvitesForResource({
-    resourceType: Resource.PROJECT,
-    resourceId: projectId,
-  });
+  const invites = await getProjectInvites(projectId);
   for (const invite of invites) {
     await deleteInvite({invite});
   }

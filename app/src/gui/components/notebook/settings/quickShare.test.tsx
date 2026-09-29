@@ -7,6 +7,7 @@ import type {Project} from '../../../../context/slices/projectSlice';
 
 const harness = vi.hoisted(() => ({
   isOnline: true,
+  username: 'ada',
   resourceRoles: [] as {role: Role; resourceId: string}[],
   create: vi.fn(),
   revoke: vi.fn(),
@@ -29,10 +30,10 @@ vi.mock('../../../../context/store', () => ({
       auth: {
         activeUser: {
           serverId: 'server-1',
-          username: 'ada',
+          username: harness.username,
           token: 'token',
           parsedToken: {
-            username: 'ada',
+            username: harness.username,
             server: 'http://localhost:8080',
             exp: 9_999_999_999,
             globalRoles: [],
@@ -112,6 +113,7 @@ function openShareDialog() {
 describe('NotebookQuickShare', () => {
   beforeEach(() => {
     harness.isOnline = true;
+    harness.username = 'ada';
     harness.resourceRoles = [];
     harness.dispatch.mockReset();
     harness.revoke.mockReset();
@@ -242,6 +244,7 @@ describe('NotebookQuickShare', () => {
     const action = harness.dispatch.mock.calls[0][0];
     expect(action.payload.quickShare.inviteId).toBe('FAIMS-quicksharecode');
     expect(action.payload.quickShare.role).toBe(Role.PROJECT_GUEST);
+    expect(action.payload.quickShare.createdBy).toBe('ada');
     expect(action.payload.quickShare.qrCode).toContain(
       'http://localhost:8080/register?inviteId=FAIMS-quicksharecode'
     );
@@ -272,6 +275,7 @@ describe('NotebookQuickShare', () => {
         role: Role.PROJECT_CONTRIBUTOR,
         expiry,
         qrCode: 'data:image/png;base64,qr',
+        createdBy: 'ada',
       },
     });
     openShareDialog();
@@ -312,6 +316,7 @@ describe('NotebookQuickShare', () => {
         role: Role.PROJECT_GUEST,
         expiry: Date.now() - 1000,
         qrCode: 'data:image/png;base64,qr',
+        createdBy: 'ada',
       },
     });
     openShareDialog();
@@ -336,6 +341,7 @@ describe('NotebookQuickShare', () => {
         role: Role.PROJECT_GUEST,
         expiry: Date.now() + 60 * 60 * 1000,
         qrCode: 'data:image/png;base64,qr',
+        createdBy: 'ada',
       },
     });
     openShareDialog();
@@ -368,6 +374,7 @@ describe('NotebookQuickShare', () => {
         role: Role.PROJECT_GUEST,
         expiry: Date.now() + 60 * 60 * 1000,
         qrCode: 'data:image/png;base64,qr',
+        createdBy: 'ada',
       },
     });
     openShareDialog();
@@ -420,6 +427,7 @@ describe('NotebookQuickShare', () => {
         role: Role.PROJECT_GUEST,
         expiry: Date.now() + 60 * 60 * 1000,
         qrCode: 'data:image/png;base64,qr',
+        createdBy: 'ada',
       },
     });
     openShareDialog();
@@ -565,6 +573,7 @@ describe('NotebookQuickShare', () => {
         role: Role.PROJECT_GUEST,
         expiry: Date.now() + 60 * 60 * 1000,
         qrCode: 'data:image/png;base64,qr',
+        createdBy: 'ada',
       },
     });
     openShareDialog();
@@ -588,12 +597,65 @@ describe('NotebookQuickShare', () => {
         role: Role.PROJECT_ADMIN,
         expiry: Date.now() + 60 * 60 * 1000,
         qrCode: 'data:image/png;base64,qr',
+        createdBy: 'ada',
       },
     });
     openShareDialog();
     expect(
       screen.getByTestId('app-quick-share-above-access').textContent
     ).toMatch(/above your current access/);
-    expect(screen.getByTestId('app-quick-share-revoke')).toBeTruthy();
+    const revoke = screen.getByTestId(
+      'app-quick-share-revoke'
+    ) as HTMLButtonElement;
+    expect(revoke.disabled).toBe(false);
+    expect(screen.getByTestId('app-quick-share-qr')).toBeTruthy();
+  });
+
+  it("hides another user's redemption code after a user switch, including an admin code", () => {
+    harness.resourceRoles = [
+      {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
+    ];
+    const quickShare = {
+      inviteId: 'FAIMS-quicksharecode',
+      role: Role.PROJECT_ADMIN,
+      expiry: Date.now() + 60 * 60 * 1000,
+      qrCode: 'data:image/png;base64,admin-secret',
+      createdBy: 'ada',
+    };
+    const {rerender} = renderShare({...project, quickShare});
+    openShareDialog();
+    expect(screen.getByTestId('app-quick-share-qr')).toBeTruthy();
+    expect(
+      (screen.getByTestId('app-quick-share-revoke') as HTMLButtonElement)
+        .disabled
+    ).toBe(false);
+
+    harness.username = 'bea';
+    rerender(
+      <ThemeProvider theme={createTheme()}>
+        <NotebookQuickShare project={{...project, quickShare}} />
+      </ThemeProvider>
+    );
+
+    expect(screen.queryByTestId('app-quick-share-qr')).toBeNull();
+    expect(
+      document.querySelector('img[src="data:image/png;base64,admin-secret"]')
+    ).toBeNull();
+    expect(screen.queryByTestId('app-quick-share-revoke')).toBeNull();
+    expect(screen.queryByTestId('app-quick-share-above-access')).toBeNull();
+    expect(screen.getByTestId('app-quick-share-generate')).toBeTruthy();
+    expect(harness.dispatch).not.toHaveBeenCalled();
+
+    harness.username = 'ada';
+    rerender(
+      <ThemeProvider theme={createTheme()}>
+        <NotebookQuickShare project={{...project, quickShare}} />
+      </ThemeProvider>
+    );
+    expect(screen.getByTestId('app-quick-share-qr')).toBeTruthy();
+    expect(
+      (screen.getByTestId('app-quick-share-revoke') as HTMLButtonElement)
+        .disabled
+    ).toBe(false);
   });
 });

@@ -45,6 +45,8 @@ import {
   getGlobalInvites,
   getInvite,
   getInvitesForResource,
+  getQuickSharesForProject,
+  getQuickSharesForProjectAndUser,
   isInviteValid,
 } from '../src/couchdb/invites';
 import {createNotebook, updateProjectMetadata} from '../src/couchdb/notebooks';
@@ -978,13 +980,14 @@ describe('Invite Tests', () => {
         .expect(200);
       expect(second.body._id).toBe(first.body._id);
       expect(second.body.role).toBe(Role.PROJECT_GUEST);
-      const stored = await getInvitesForResource({
-        resourceType: Resource.PROJECT,
-        resourceId: projectId!,
-      });
+      const stored = await getQuickSharesForProject(projectId!);
+      expect(stored).toHaveLength(1);
       expect(
-        stored.filter(invite => invite.kind === QUICK_SHARE_KIND)
-      ).toHaveLength(1);
+        await getQuickSharesForProjectAndUser({
+          projectId: projectId!,
+          userId: adminUserName,
+        })
+      ).toEqual(stored);
     });
 
     it('revoke deletes the quick share', async () => {
@@ -1032,8 +1035,8 @@ describe('Invite Tests', () => {
         })
         .expect(200);
 
-      // Ids sort before the DEV-prefixed quick share, so an unpaged find of
-      // 25 documents returns these and misses the live code.
+      // Other invites on the same survey must not hide the live quick share.
+      // Lookup uses the by-project-and-user view, not a paged find of every invite.
       const invitesDb = getInvitesDB();
       for (let i = 0; i < 25; i++) {
         await invitesDb.put({
@@ -1059,13 +1062,12 @@ describe('Invite Tests', () => {
         })
         .expect(200);
       expect(again.body._id).toBe(created.body._id);
-      const stored = await getInvitesForResource({
-        resourceType: Resource.PROJECT,
-        resourceId: projectId!,
+      const stored = await getQuickSharesForProjectAndUser({
+        projectId: projectId!,
+        userId: adminUserName,
       });
-      expect(
-        stored.filter(invite => invite.kind === QUICK_SHARE_KIND)
-      ).toHaveLength(1);
+      expect(stored).toHaveLength(1);
+      expect(stored[0]._id).toBe(created.body._id);
     });
 
     it('a second generate keeps the newest quick share and removes older ones', async () => {
@@ -1148,11 +1150,7 @@ describe('Invite Tests', () => {
       expect(denied.body.error.message).toMatch(/above your current access/);
       expect(JSON.stringify(denied.body)).not.toContain(created.body._id);
 
-      const stored = await getInvitesForResource({
-        resourceType: Resource.PROJECT,
-        resourceId: projectId!,
-      });
-      const shares = stored.filter(invite => invite.kind === QUICK_SHARE_KIND);
+      const shares = await getQuickSharesForProject(projectId!);
       expect(shares).toHaveLength(1);
       expect(shares[0]._id).toBe(created.body._id);
       expect(shares[0].role).toBe(Role.PROJECT_ADMIN);
@@ -1388,13 +1386,7 @@ describe('Invite Tests', () => {
         })
         .expect(403);
 
-      const stored = await getInvitesForResource({
-        resourceType: Resource.PROJECT,
-        resourceId: projectId!,
-      });
-      expect(
-        stored.filter(invite => invite.kind === QUICK_SHARE_KIND)
-      ).toHaveLength(0);
+      expect(await getQuickSharesForProject(projectId!)).toHaveLength(0);
     });
 
     it('does not return an existing quick share after it is disabled', async () => {

@@ -42,6 +42,7 @@ const sampleShare: ProjectQuickShare = {
   role: Role.PROJECT_GUEST,
   expiry: 1_700_000_000_000,
   qrCode: 'data:image/png;base64,qr',
+  createdBy: 'ada',
 };
 
 const replacementShare: ProjectQuickShare = {
@@ -49,6 +50,7 @@ const replacementShare: ProjectQuickShare = {
   role: Role.PROJECT_CONTRIBUTOR,
   expiry: 1_800_000_000_000,
   qrCode: 'data:image/png;base64,next',
+  createdBy: 'ada',
 };
 
 const emptyUiDefinition = {

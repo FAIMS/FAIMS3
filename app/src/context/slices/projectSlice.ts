@@ -228,13 +228,18 @@ export interface Project extends ProjectInformation {
   uiSpecificationId: string;
 
   /**
-   * The one Quick Share code this device is showing for the survey.
-   * Kept until the user revokes it, including across reloads.
+   * The Quick Share code this device is showing for the survey.
+   * Kept until its creator revokes it or it expires, including across reloads
+   * and user switches. Only {@link ProjectQuickShare.createdBy} is shown the QR.
    */
   quickShare?: ProjectQuickShare;
 }
 
-/** One active Quick Share, stored on the project so it can be shown again. */
+/**
+ * One Quick Share stored on the device so its creator can show it again.
+ * The QR is a bearer secret. It stays on this shared survey record, so the
+ * creator has to be recorded and the code must not be shown to anyone else.
+ */
 export interface ProjectQuickShare {
   inviteId: string;
   role: Role;
@@ -242,6 +247,11 @@ export interface ProjectQuickShare {
   expiry: number;
   /** Data URL for the register QR code. */
   qrCode: string;
+  /**
+   * Username of the signed-in user who generated this code.
+   * Only they are shown the QR.
+   */
+  createdBy: string;
 }
 
 export interface Server {
