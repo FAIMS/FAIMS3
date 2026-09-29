@@ -420,6 +420,7 @@ const PhotoActionsTile: React.FC<{
       <PhotoActions
         onAddPhoto={onAddPhoto}
         onPickFromGallery={onPickFromGallery}
+        stretchOnNarrow
         actionsDisabled={actionsDisabled}
         actionsDisabledReason={actionsDisabledReason}
       />
