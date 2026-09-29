@@ -4,7 +4,11 @@ import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTeams, useGetTemplate, useGetTemplates} from '@/hooks/queries';
-import {Action, TemplateListItem} from '@faims3/data-model';
+import {
+  Action,
+  TemplateListItem,
+  validateSetupValues,
+} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useCallback, useState} from 'react';
 import {z} from 'zod';
@@ -18,6 +22,10 @@ import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
 import {designFileSchema, resourceNameSchema} from '@/lib/input-limits';
 import {INPUT_LIMITS, ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 import {usePlanConfigs} from '@/components/plans/usePlanConfigs';
+import {
+  collectSetupValues,
+  setupFieldsToFormFields,
+} from '@/lib/setupFormFields';
 
 // Import the default sample notebook JSON
 import blankNotebook from '../../../notebooks/blank-notebook.json';
@@ -76,6 +84,10 @@ export function CreateProjectForm({
     isError: Boolean(selectedTemplateId) && isError,
   });
 
+  // Setup form fields follow the chosen template the same way plan configs do
+  const setupForm =
+    selectedTemplate?.uiSpecification?.uiSpec?.settings?.setupForm;
+
   const fields: Field[] = [
     {
       name: 'name',
@@ -130,6 +142,10 @@ export function CreateProjectForm({
     dividers.push({index: 4, component: <div className="h-5" />});
   }
 
+  if (setupForm) {
+    fields.push(...setupFieldsToFormFields(setupForm));
+  }
+
   const withPlans = plans.appendTo({fields, dividers});
 
   interface onSubmitProps {
@@ -159,6 +175,9 @@ export function CreateProjectForm({
         template,
         teamId: specifiedTeam ?? team,
         planConfigs: plans.toPlanConfigs(values),
+        setupValues: setupForm
+          ? collectSetupValues(setupForm, values)
+          : undefined,
       });
     } else {
       // No template chosen: either use uploaded file or default blank notebook
@@ -216,7 +235,21 @@ export function CreateProjectForm({
       // pass in team ID default, if provided
       defaultValues={{team: defaultValues?.teamId}}
       footer={plans.footer}
-      disableSubmission={plans.gate}
+      // A plan config that is not ready is a hard block; otherwise the setup
+      // form gates on its own required values.
+      disableSubmission={
+        plans.gate ??
+        (setupForm
+          ? {
+              disabled: data =>
+                validateSetupValues(
+                  setupForm,
+                  collectSetupValues(setupForm, data)
+                ).length > 0,
+              reason: `Complete the required ${config.notebookName} details.`,
+            }
+          : undefined)
+      }
     />
   );
 }

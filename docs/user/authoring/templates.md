@@ -39,3 +39,46 @@ It is possible to make changes to the {{notebook}} that was created from the tem
 **Note** we are working on implementing restrictions on changes to fields within {{notebooks}}
 derived from templates. A template would be able to assert that a field cannot be changed or
 can be hidden but not removed, for example.
+
+## Setup Forms
+
+A template can define a _setup form_: a set of fields that are presented
+when a {{notebook}} is created from the template. This is useful for routine
+details that apply to the whole {{notebook}} and are known at creation time,
+such as the postcode of the survey area, the lead surveyor, or the on-call
+officer. The submitted values are stored in the new
+{{notebook}}'s metadata (under `metadata.setup` in the design JSON) rather
+than as record data, so they describe the {{notebook}} as a whole.
+
+### Authoring the Form
+
+Open the template in the designer application. A **Setup Form** tab appears
+beside **Design** and **Info** (the tab is only shown when editing a template,
+not a {{notebook}}). From there you can add, edit, reorder and remove fields.
+Each field has:
+
+- a **label** shown to the user on the creation form;
+- a **name**, the key the value is stored under in the {{notebook}} metadata
+  (derived automatically from the label, but editable);
+- a **type** — one of _Text_, _Long text_, _Number_, _Date_, _Single select_
+  or _Multi select_. The two select types require a list of **options**, one
+  per line;
+- an optional **required** flag and **helper text**.
+
+Fields are presented in the order listed. Changes are saved with the rest of
+the template design and can be undone and redone like other design edits.
+
+### Filling in the Form
+
+When a {{notebook}} is created from a template with a setup form, whether
+from the template's own page or by choosing the template in the create
+{{notebook}} dialog, the form's fields are shown after the {{notebook}} name
+and description. Required
+fields must be completed before the {{notebook}} can be created; single and
+multi select fields only accept their listed options. The values are validated
+again by the server, so a {{notebook}} cannot be created from such a template
+without valid setup details.
+
+The setup form definition itself is carried through into the created
+{{notebook}}'s design, so a {{notebook}} can later be turned back into a
+template without losing the form.

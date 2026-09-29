@@ -40,6 +40,7 @@ import {NotebookEditor} from './components/notebook-editor';
 import {DesignerEditingProvider} from './state/editing-context';
 import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
+import {SetupFormPanel} from './components/setup-form-panel';
 
 /**
  * @file Full-screen designer shell: hydrate notebook, Redux, memory router, export without internal ids.
@@ -214,6 +215,7 @@ export function DesignerWidget({
         children: [
           {index: true, element: <Navigate to="/design/0" replace />},
           {path: 'info', element: <InfoPanel />},
+          {path: 'setup', element: <SetupFormPanel />},
           {path: 'design/*', element: <DesignPanel />},
         ],
       },
