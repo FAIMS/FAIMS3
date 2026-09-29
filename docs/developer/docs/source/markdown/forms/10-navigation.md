@@ -429,7 +429,9 @@ sequenceDiagram
 
 ## Handling Missing Context
 
-When explicit context is unavailable but relationships exist:
+When explicit context is unavailable but relationships exist. `mode` is the
+`AvpUpdateMode` the hook was given, the same one the record screen is editing
+under:
 
 ```typescript
 const impliedParents = useMemo(() => {
@@ -461,5 +463,5 @@ const impliedParents = useMemo(() => {
   }
 
   return undefined;
-}, [parentNavigationInformation.data]);
+}, [parentNavigationInformation.data, mode, config.navigation]);
 ```
