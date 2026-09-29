@@ -187,12 +187,15 @@ export function useNavigationLogic({
       result.push({
         id: 'create-another-child',
         label: `Finish and create another ${formLabel} in ${relationLabel} ${childParentFormLabel}`,
-        onClick: withSaveFlush(onCreate),
+        // Guarded like the other two: a button saying Finish must not carry
+        // the operator past a refused write without saying so.
+        onClick: onCreate,
         disabled: isSaving,
         loading: isSaving,
         statusText,
         icon: <AddIcon fontSize="small" />,
         variant: 'secondary',
+        requiresFinishGuard: true,
       });
     }
 
