@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Resource, Role, RoleScope} from '@faims3/data-model';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {
