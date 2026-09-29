@@ -42,17 +42,17 @@ The most significant form of configuration is the **notebook definition**, store
 
 At a high level:
 
-| Layer                          | Where                                  | Examples                                                                             |
-| ------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------ |
-| Survey / template **resource** | Couch document **root**                | `name`, optional `description` (max 250 chars), `status`, `templateId`, audit fields |
-| **Design bundle**              | `uiSpecification`                      | `uiSpec` (forms/fields) + `metadata` (design prose, custom tags)                     |
-| **Functional toggles**         | `uiSpecification.uiSpec.settings`      | `showQrCodeButton` (QR search on record list)                                        |
-| **Design documentation**       | `uiSpecification.metadata.information` | `purposeMarkdown`, `projectLeadLabel`, `leadInstitution`, `notebookVersion`          |
-| **Org extensions**             | `uiSpecification.metadata.custom`      | Optional arbitrary keys                                                              |
+| Layer                          | Where                                  | Examples                                                                                                  |
+| ------------------------------ | -------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Survey / template **resource** | Couch document **root**                | `name`, optional `description` (max 250 chars), `disableQuickShare`, `status`, `templateId`, audit fields |
+| **Design bundle**              | `uiSpecification`                      | `uiSpec` (forms/fields) + `metadata` (design prose, custom tags)                                          |
+| **Functional toggles**         | `uiSpecification.uiSpec.settings`      | `showQrCodeButton` (QR search on record list)                                                             |
+| **Design documentation**       | `uiSpecification.metadata.information` | `purposeMarkdown`, `projectLeadLabel`, `leadInstitution`, `notebookVersion`                               |
+| **Org extensions**             | `uiSpecification.metadata.custom`      | Optional arbitrary keys                                                                                   |
 
 The form graph uses **`uiSpec.fields`**, **`uiSpec.viewsets`**, and **`uiSpec.views`** (decoded from legacy `fviews` on import). Inner field keys remain legacy-shaped (`component-namespace`, `type-returned`, …).
 
-**When to use**: Behaviour that applies to one survey/template, is editable in the Designer, and should travel with JSON export/import belongs in **`uiSpecification`**. Survey title and optional short root description are updated via **`PUT /api/notebooks/:id`** (partial body) without replacing the whole design.
+**When to use**: Behaviour that applies to one survey/template, is editable in the Designer, and should travel with JSON export/import belongs in **`uiSpecification`**. Survey title, optional short root description, and `disableQuickShare` are updated via **`PUT /api/notebooks/:id`** (partial body) without replacing the whole design. Quick share creation, the fixed one-hour lifetime, and this flag are described in [Notebook definition](./NotebookDefinition.md#quick-share).
 
 **Backwards compatibility**: Upload and API bodies may still use legacy top-level `{ metadata, 'ui-specification' }` or any pre-semver `schemaVersion`; the server collapses them to the current strict-semver notebook schema version (`MAJOR.MINOR.PATCH`, epoch `1.0.0`) before persistence. Forward compatibility in the app is tiered on `uiSpec.schemaVersion`: same major.minor with a different patch renders silently, a newer minor renders with a warning, a newer major is rejected and shown as a skeleton with a diagnostic report. See [Notebook migrations](./NotebookMigrations.md).
 

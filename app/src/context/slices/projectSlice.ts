@@ -9,6 +9,7 @@ import {
   ProjectListItem,
   ProjectStatus,
   PublicServerInfo,
+  Role,
 } from '@faims3/data-model';
 import {
   createAsyncThunk,
@@ -195,6 +196,11 @@ export interface ProjectInformation {
   recordCount?: number;
   /** Recommended offline map download region (EPSG:4326 polygon). */
   offlineMapRegion?: OfflineMapRegion;
+  /**
+   * When true, Quick Share is hidden on this device. Omitted or false keeps
+   * it available.
+   */
+  disableQuickShare?: boolean;
 }
 
 // A project is a notebook (configurable label via config.notebookName) — it is relevant to a server, can be
@@ -220,6 +226,32 @@ export interface Project extends ProjectInformation {
   // [Compiled] Key to get the compiled UI Spec from storage - this should not
   // be persisted/serialised as it has live JS functions in it
   uiSpecificationId: string;
+
+  /**
+   * The Quick Share code this device is showing for the survey.
+   * Kept until its creator revokes it or it expires, including across reloads
+   * and user switches. Only {@link ProjectQuickShare.createdBy} is shown the QR.
+   */
+  quickShare?: ProjectQuickShare;
+}
+
+/**
+ * One Quick Share stored on the device so its creator can show it again.
+ * The QR is a bearer secret. It stays on this shared survey record, so the
+ * creator has to be recorded and the code must not be shown to anyone else.
+ */
+export interface ProjectQuickShare {
+  inviteId: string;
+  role: Role;
+  /** Expiry timestamp in milliseconds. */
+  expiry: number;
+  /** Data URL for the register QR code. */
+  qrCode: string;
+  /**
+   * Username of the signed-in user who generated this code.
+   * Only they are shown the QR.
+   */
+  createdBy: string;
 }
 
 export interface Server {
@@ -329,6 +361,8 @@ function retainedProjectFields(project: Project) {
     name: project.name,
     recordCount: project.recordCount,
     offlineMapRegion: project.offlineMapRegion,
+    disableQuickShare: project.disableQuickShare,
+    quickShare: project.quickShare,
   };
 }
 
@@ -508,6 +542,7 @@ const projectsSlice = createSlice({
         status: payload.status,
         recordCount: payload.recordCount,
         offlineMapRegion: payload.offlineMapRegion,
+        disableQuickShare: payload.disableQuickShare,
       };
     },
 
@@ -699,6 +734,7 @@ const projectsSlice = createSlice({
         // Successful GET /api/notebooks/:id (200) may omit cleared regions entirely;
         // treat a missing payload field the same as explicit undefined.
         offlineMapRegion: payload.offlineMapRegion,
+        disableQuickShare: payload.disableQuickShare,
       };
     },
 
@@ -1184,6 +1220,27 @@ const projectsSlice = createSlice({
           },
         },
       };
+    },
+
+    /** Remember the Quick Share this device is showing for a survey. */
+    setProjectQuickShare: (
+      state,
+      action: PayloadAction<ProjectIdentity & {quickShare: ProjectQuickShare}>
+    ) => {
+      const project = projectByIdentity(state, action.payload);
+      if (!project) {
+        return;
+      }
+      project.quickShare = action.payload.quickShare;
+    },
+
+    /** Drop the stored Quick Share after it has been revoked or has expired. */
+    clearProjectQuickShare: (state, action: PayloadAction<ProjectIdentity>) => {
+      const project = projectByIdentity(state, action.payload);
+      if (!project) {
+        return;
+      }
+      delete project.quickShare;
     },
   },
 });
@@ -1987,6 +2044,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
               couchDbUrl: details.dataDb.base_url!,
               status: meta.status,
               offlineMapRegion: meta.offlineMapRegion,
+              disableQuickShare: meta.disableQuickShare,
             })
           );
         } else {
@@ -2040,6 +2098,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
                 existingProject.recordCount
               ),
               offlineMapRegion: nextOfflineMapRegion,
+              disableQuickShare: meta.disableQuickShare,
             })
           );
         }
@@ -2500,6 +2559,8 @@ export const {
   updateServerDetails,
   markInitialised,
   deactivateProject,
+  setProjectQuickShare,
+  clearProjectQuickShare,
   reassessSchemaCompatibility,
   setPendingOfflineMapDownloadPrompt,
   clearPendingOfflineMapDownloadPrompt,

@@ -46,9 +46,9 @@ export async function initialiseJWTKey(): Promise<void> {
       );
     }
 
-    console.log('JWT public key configured in CouchDB');
+    console.log('[db-initialisation] JWT public key configured in CouchDB');
   } catch (error) {
-    console.error('JWT key configuration error:', error);
+    console.error('[db-initialisation] JWT key configuration error:', error);
     throw new Error('Failed to configure JWT public key in CouchDB');
   }
 }

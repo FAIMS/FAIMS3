@@ -501,7 +501,8 @@ export const createNotebook = async ({
 };
 
 /**
- * Merges inconsequential root fields on an existing project (name, description).
+ * Merges inconsequential root fields on an existing project
+ * (name, description, disableQuickShare).
  */
 export const updateProjectMetadata = async (
   projectId: string,
@@ -517,6 +518,9 @@ export const updateProjectMetadata = async (
         : project.description,
     updatedAt: nowIso(),
   };
+  if (payload.disableQuickShare !== undefined) {
+    updated.disableQuickShare = payload.disableQuickShare;
+  }
   await putProjectDoc(updated);
   return getProjectById(projectId);
 };

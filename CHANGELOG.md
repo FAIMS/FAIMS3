@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] - 2026-09-29
+
+### Changes
+
+- fix: revert 443 inbound connectivity issue ([#2375](https://github.com/FAIMS/FAIMS3/pull/2375))
+
+## [1.8.0] - 2026-09-29
+
+### Changes
+
+- feat: disable-editor-while-saving ([#2373](https://github.com/FAIMS/FAIMS3/pull/2373))
+- feat: quick share ([#2372](https://github.com/FAIMS/FAIMS3/pull/2372))
+- chore: licenses ([#2370](https://github.com/FAIMS/FAIMS3/pull/2370))
+- fix: app-splash-logo ([#2364](https://github.com/FAIMS/FAIMS3/pull/2364))
+- fix: keep bearing updated with map rotation view ([#2363](https://github.com/FAIMS/FAIMS3/pull/2363))
+- feat: improved about build info display ([#2362](https://github.com/FAIMS/FAIMS3/pull/2362))
+- fix: photo-buttons-spacing ([#2361](https://github.com/FAIMS/FAIMS3/pull/2361))
+- refactor: derive related-record link writes in the data model ([#2358](https://github.com/FAIMS/FAIMS3/pull/2358))
+- fix: survey list mobile swipe scroll capture ([#2354](https://github.com/FAIMS/FAIMS3/pull/2354))
+- feat: redeem invites in the app when already signed in ([#2353](https://github.com/FAIMS/FAIMS3/pull/2353))
+- fix: stack the map compass above the other controls ([#2352](https://github.com/FAIMS/FAIMS3/pull/2352))
+- fix: field error audit ([#2349](https://github.com/FAIMS/FAIMS3/pull/2349))
+- Close unused inbound 443 on the CouchDB instance ([#2348](https://github.com/FAIMS/FAIMS3/pull/2348))
+- chore: prevent 401 and normal tombstone reaching bugsnag ([#2347](https://github.com/FAIMS/FAIMS3/pull/2347))
+- fix: improved take photo field ([#2346](https://github.com/FAIMS/FAIMS3/pull/2346))
+- fix: auth\_\* overlapping env variable causes loss of auth configuration ([#2345](https://github.com/FAIMS/FAIMS3/pull/2345))
+- fix/force refresh auth token before notebook refresh ([#2337](https://github.com/FAIMS/FAIMS3/pull/2337))
+- chore: share one runtime stage across the dev api, app and web images ([#2329](https://github.com/FAIMS/FAIMS3/pull/2329))
+- docs: replace per-file copyright headers with an SPDX identifier ([#2328](https://github.com/FAIMS/FAIMS3/pull/2328))
+- docs: add AUTHORS and drop per-file copyright headers ([#2327](https://github.com/FAIMS/FAIMS3/pull/2327))
+- docs: add a root LICENSE and correct the manifest ([#2322](https://github.com/FAIMS/FAIMS3/pull/2322))
+- docs: add CITATION.cff ([#2321](https://github.com/FAIMS/FAIMS3/pull/2321))
+- feat: notebook sem versioning ([#2317](https://github.com/FAIMS/FAIMS3/pull/2317))
+- Bump vitest from 4.1.8 to 4.1.11 ([#2307](https://github.com/FAIMS/FAIMS3/pull/2307))
+- Bump nodemailer from 9.0.1 to 9.1.1 ([#2306](https://github.com/FAIMS/FAIMS3/pull/2306))
+- build(deps): bump multer from 2.2.0 to 2.3.0 ([#2300](https://github.com/FAIMS/FAIMS3/pull/2300))
+
 ## [1.7.2] - 2026-09-22
 
 ### Changes

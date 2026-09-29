@@ -159,11 +159,12 @@ export function inviteAuditFromRequest(req: {
   };
 }
 
-/** What happened: create, public lookup, consume on login/register, or register with no code. */
+/** What happened: create, public lookup, consume on login/register, revoke, or register with no code. */
 export type InviteAuditEvent =
   | 'invite.create'
   | 'invite.lookup'
   | 'invite.consume'
+  | 'invite.revoke'
   | 'invite.register_missing';
 
 /** Result of that event. Create/consume use success/failure; lookups use valid/invalid/not_found. */
@@ -191,6 +192,8 @@ export function logInviteAudit(entry: {
   inviteType?: string;
   resourceType?: string;
   resourceId?: string;
+  /** Set for Quick Share invites so create, lookup, consume, and revoke can be filtered. */
+  kind?: string;
   ip?: string;
   forwardedFor?: string;
   userAgent?: string;
