@@ -53,22 +53,3 @@ export async function revokeOwnQuickShares({
     `/api/invites/notebook/${projectId}/quick-share`
   );
 }
-
-/** Delete the stored Quick Share so it can no longer be redeemed. */
-export async function revokeQuickShare({
-  serverId,
-  username,
-  projectId,
-  inviteId,
-}: {
-  serverId: string;
-  username: string;
-  projectId: ProjectID;
-  inviteId: string;
-}): Promise<void> {
-  await FetchManager.delete(
-    serverId,
-    username,
-    `/api/invites/notebook/${projectId}/${encodeURIComponent(inviteId)}`
-  );
-}

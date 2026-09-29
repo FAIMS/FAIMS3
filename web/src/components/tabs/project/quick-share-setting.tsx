@@ -71,10 +71,9 @@ export function ProjectQuickShareSetting() {
         </ListItem>
         <ListItem>
           <ListDescription>
-            When enabled, people who already have this {notebookName} on their
-            device can generate a temporary QR code that grants another person
-            access at a chosen level (subject to their permissions). Disable
-            this if you only want people invited from Control Centre.
+            When enabled, users are able to easily share this {notebookName}{' '}
+            from within the mobile app. Only users with the correct permissions
+            will be able to use this feature.
           </ListDescription>
         </ListItem>
         <ListItem className="flex items-center gap-3">

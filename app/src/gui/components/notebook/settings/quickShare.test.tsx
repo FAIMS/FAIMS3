@@ -10,7 +10,6 @@ const harness = vi.hoisted(() => ({
   username: 'ada',
   resourceRoles: [] as {role: Role; resourceId: string}[],
   create: vi.fn(),
-  revoke: vi.fn(),
   revokeOwn: vi.fn(),
   dispatch: vi.fn(),
 }));
@@ -55,7 +54,6 @@ vi.mock('../../../../context/store', () => ({
 
 vi.mock('../../../../utils/apiOperations/quickShare', () => ({
   createQuickShare: (...args: unknown[]) => harness.create(...args),
-  revokeQuickShare: (...args: unknown[]) => harness.revoke(...args),
   revokeOwnQuickShares: (...args: unknown[]) => harness.revokeOwn(...args),
 }));
 
@@ -116,8 +114,6 @@ describe('NotebookQuickShare', () => {
     harness.username = 'ada';
     harness.resourceRoles = [];
     harness.dispatch.mockReset();
-    harness.revoke.mockReset();
-    harness.revoke.mockResolvedValue(undefined);
     harness.revokeOwn.mockReset();
     harness.revokeOwn.mockResolvedValue(undefined);
     harness.create.mockReset();
@@ -165,7 +161,7 @@ describe('NotebookQuickShare', () => {
     expect(screen.queryByTestId('app-quick-share')).toBeNull();
   });
 
-  it('uses a compact settings section and a text link on the settings tab', () => {
+  it('uses a heading, description, and primary button on the settings tab', () => {
     harness.resourceRoles = [
       {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
     ];
@@ -180,9 +176,10 @@ describe('NotebookQuickShare', () => {
         'Share this survey with another user by generating a temporary QR code.'
       )
     ).toBeTruthy();
-    const open = screen.getByTestId('app-quick-share-open');
-    expect(open.className).toMatch(/MuiLink-root/);
-    expect(open.textContent).toMatch(/^Share this /);
+    const open = screen.getByRole('button', {name: /^Share this /});
+    expect(open).toBe(screen.getByTestId('app-quick-share-open'));
+    expect(open.className).toMatch(/MuiButton-outlined/);
+    expect(open.className).toMatch(/MuiButton-colorPrimary/);
     fireEvent.click(open);
     expect(screen.getByTestId('app-quick-share')).toBeTruthy();
   });
@@ -212,9 +209,7 @@ describe('NotebookQuickShare', () => {
     openShareDialog();
     expect(screen.getByTestId('app-quick-share')).toBeTruthy();
     expect(
-      screen.getByText(
-        'Grant another user access to this survey, at the chosen level of access. The code lasts 1 hour.'
-      )
+      screen.getByText('The user will be granted the role selected below.')
     ).toBeTruthy();
     expect(screen.queryByTestId('app-quick-share-revoke')).toBeNull();
   });
@@ -281,16 +276,14 @@ describe('NotebookQuickShare', () => {
     openShareDialog();
     expect(screen.queryByTestId('app-quick-share-generate')).toBeNull();
     expect(
-      screen.queryByText(
-        'Grant another user access to this survey, at the chosen level of access. The code lasts 1 hour.'
-      )
+      screen.queryByText('The user will be granted the role selected below.')
     ).toBeNull();
     expect(screen.queryByText(/Show this code/)).toBeNull();
     expect(screen.queryByTestId('app-quick-share-show-code')).toBeNull();
     expect(screen.queryByTestId('app-quick-share-code')).toBeNull();
     expect(screen.getByRole('heading', {name: /^Share this /})).toBeTruthy();
     const newCode = screen.getByTestId('app-quick-share-revoke');
-    expect(newCode.textContent).toBe('Generate a new code');
+    expect(newCode.textContent).toBe('Start again');
     expect(newCode.className).toMatch(/MuiButton-outlined/);
     expect(screen.getByTestId('app-quick-share-role-label').textContent).toBe(
       'Contributor'
@@ -380,13 +373,14 @@ describe('NotebookQuickShare', () => {
     openShareDialog();
     fireEvent.click(screen.getByTestId('app-quick-share-revoke'));
     fireEvent.click(screen.getByTestId('app-quick-share-revoke-confirm'));
-    await vi.waitFor(() => expect(harness.revoke).toHaveBeenCalled());
-    expect(harness.revoke).toHaveBeenCalledWith(
+    await vi.waitFor(() => expect(harness.revokeOwn).toHaveBeenCalled());
+    expect(harness.revokeOwn).toHaveBeenCalledWith(
       expect.objectContaining({
         projectId: 'survey-1',
-        inviteId: 'FAIMS-quicksharecode',
+        username: 'ada',
       })
     );
+    expect(harness.revokeOwn.mock.calls[0]?.[0]).not.toHaveProperty('inviteId');
     expect(harness.dispatch).toHaveBeenCalled();
     rerender(
       <ThemeProvider theme={createTheme()}>
@@ -417,7 +411,7 @@ describe('NotebookQuickShare', () => {
     harness.resourceRoles = [
       {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
     ];
-    harness.revoke.mockRejectedValue(
+    harness.revokeOwn.mockRejectedValue(
       new HttpError(new Response(null, {status: 404, statusText: 'Not Found'}))
     );
     renderShare({
@@ -448,9 +442,7 @@ describe('NotebookQuickShare', () => {
       )
     ).toBeNull();
     await vi.waitFor(() => {
-      expect(
-        screen.queryByRole('heading', {name: 'Generate a new code?'})
-      ).toBeNull();
+      expect(screen.queryByRole('heading', {name: 'Start again?'})).toBeNull();
     });
   });
 
@@ -559,7 +551,7 @@ describe('NotebookQuickShare', () => {
     harness.resourceRoles = [
       {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
     ];
-    harness.revoke.mockRejectedValue(
+    harness.revokeOwn.mockRejectedValue(
       conductorError(
         401,
         'Unauthorized',

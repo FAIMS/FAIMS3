@@ -2,8 +2,10 @@
 /**
  * Quick Share: one temporary QR code for an activated survey.
  *
- * The notebook header uses a Share button. Settings uses the same dialog from
- * a compact section whose link matches the other settings cards. Generate
+ * The notebook header uses the labelled Share button on wide screens and a
+ * compact share icon on narrow ones. Settings uses the same dialog from a
+ * card laid out like deactivation: heading, description, then an action
+ * button. Generate
  * stores the code on the project with the username of the person who created
  * it. The dialog then only shows that code to them — its role, when it
  * expires, and a tap-to-enlarge QR — until they generate a new one. That
@@ -28,14 +30,15 @@ import {
   FormControl,
   IconButton,
   InputLabel,
-  Link,
   MenuItem,
   Paper,
   Select,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
-import type {SxProps, Theme} from '@mui/material/styles';
+import {useTheme, type SxProps, type Theme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import {Role, projectRolesUserCanInvite, roleDetails} from '@faims3/data-model';
 import {PhotoLightbox} from '@faims3/forms';
 import QRCode from 'qrcode';
@@ -57,7 +60,6 @@ import {HttpError} from '../../../../utils/apiOperations/client';
 import {
   createQuickShare,
   revokeOwnQuickShares,
-  revokeQuickShare,
 } from '../../../../utils/apiOperations/quickShare';
 import {inviteRegisterUrl} from '../../authentication/inviteRedemption';
 
@@ -160,14 +162,17 @@ export default function NotebookQuickShare({
 }: {
   project: Project;
   /**
-   * `button` is the notebook header control. `settings` is a compact card on
-   * the settings tab, with a text link that opens the same dialog.
+   * `button` is the notebook header control. `settings` is a card on the
+   * settings tab: heading, description, then a button that opens the same
+   * dialog.
    */
   layout?: 'button' | 'settings';
-  /** Styles for the Share button, so each placement can space itself. */
+  /** Styles for the header share control, so each placement can space itself. */
   sx?: SxProps<Theme>;
 }) {
   const dispatch = useAppDispatch();
+  const theme = useTheme();
+  const wideHeader = useMediaQuery(theme.breakpoints.up('md'));
   const {isOnline, checkIsOnline} = useIsOnline();
   const activeUser = useAppSelector(selectActiveUser);
   const server = useAppSelector(state =>
@@ -356,17 +361,16 @@ export default function NotebookQuickShare({
     }
     setWorking(true);
     try {
-      await revokeQuickShare({
+      await revokeOwnQuickShares({
         serverId: project.serverId,
         username: activeUser.username,
         projectId: project.projectId,
-        inviteId: share.inviteId,
       });
       forgetShare();
       setConfirmRevoke(false);
       setLightboxOpen(false);
     } catch (caught) {
-      // The invite is already gone. Drop the local copy so a new code can be made.
+      // Nothing left to revoke. Drop the local copy so a new code can be made.
       if (isNotFound(caught)) {
         forgetShare();
         setConfirmRevoke(false);
@@ -390,24 +394,46 @@ export default function NotebookQuickShare({
     setDialogOpen(false);
   };
 
+  const headerSx = [{flexShrink: 0}, ...(Array.isArray(sx) ? sx : [sx])];
+  const openShare = () => setDialogOpen(true);
+  const headerControl = wideHeader ? (
+    <Button
+      variant="contained"
+      disableElevation
+      startIcon={<ShareIcon />}
+      onClick={openShare}
+      data-testid="app-quick-share-open"
+      sx={[{textTransform: 'none'}, ...headerSx]}
+    >
+      Share
+    </Button>
+  ) : (
+    <Tooltip title="Share">
+      <IconButton
+        aria-label="Share"
+        size="small"
+        onClick={openShare}
+        data-testid="app-quick-share-open"
+        sx={[
+          {
+            bgcolor: 'grey.300',
+            color: 'text.primary',
+            '&:hover': {bgcolor: 'grey.400'},
+          },
+          ...headerSx,
+        ]}
+      >
+        <ShareIcon fontSize="small" />
+      </IconButton>
+    </Tooltip>
+  );
+
   return (
     <>
       {layout === 'settings' ? (
-        <SettingsQuickShareLink onOpen={() => setDialogOpen(true)} />
+        <SettingsQuickShare onOpen={openShare} />
       ) : (
-        <Button
-          variant="contained"
-          disableElevation
-          startIcon={<ShareIcon />}
-          onClick={() => setDialogOpen(true)}
-          data-testid="app-quick-share-open"
-          sx={[
-            {textTransform: 'none', flexShrink: 0},
-            ...(Array.isArray(sx) ? sx : [sx]),
-          ]}
-        >
-          Share
-        </Button>
+        headerControl
       )}
 
       <Dialog
@@ -441,7 +467,7 @@ export default function NotebookQuickShare({
               data-testid="app-quick-share-revoke"
               sx={{textTransform: 'none', flexShrink: 0}}
             >
-              Generate a new code
+              Start again
             </Button>
           )}
           <IconButton
@@ -492,10 +518,11 @@ export default function NotebookQuickShare({
           if (!working) setConfirmRevoke(false);
         }}
       >
-        <DialogTitle>Generate a new code?</DialogTitle>
+        <DialogTitle>Start again?</DialogTitle>
         <DialogContent>
           <Typography variant="body2">
-            This code will stop working. You can generate a new one afterwards.
+            The current code will no longer grant access for new users. You can
+            generate a new one afterwards.
           </Typography>
           {error && (
             <Alert severity="error" sx={{mt: 2}}>
@@ -525,13 +552,13 @@ export default function NotebookQuickShare({
           </Button>
           <Button
             variant="contained"
-            color="error"
+            color="warning"
             onClick={handleRevoke}
             disabled={working || !isOnline}
             data-testid="app-quick-share-revoke-confirm"
             sx={{textTransform: 'none'}}
           >
-            {working ? 'Working…' : 'Generate a new code'}
+            {working ? 'Working…' : 'Confirm'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -539,7 +566,7 @@ export default function NotebookQuickShare({
   );
 }
 
-function SettingsQuickShareLink({onOpen}: {onOpen: () => void}) {
+function SettingsQuickShare({onOpen}: {onOpen: () => void}) {
   return (
     <Box
       component={Paper}
@@ -548,33 +575,23 @@ function SettingsQuickShareLink({onOpen}: {onOpen: () => void}) {
       sx={{p: 2, mb: {xs: 1, sm: 2, md: 3}}}
       data-testid="app-quick-share-settings"
     >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'baseline',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          columnGap: 2,
-          rowGap: 0.25,
-          mb: 0.5,
-        }}
-      >
-        <Typography variant="h6">Quick share</Typography>
-        <Link
-          component="button"
-          type="button"
-          variant="body2"
+      <Typography variant="h6" sx={{mb: 2}}>
+        Quick share
+      </Typography>
+      <Box>
+        <Typography variant="body2" sx={{mb: 2}}>
+          Share this {config.notebookName} with another user by generating a
+          temporary QR code.
+        </Typography>
+        <Button
+          variant="outlined"
+          color="primary"
           onClick={onOpen}
           data-testid="app-quick-share-open"
-          sx={{flexShrink: 0, fontWeight: 600, verticalAlign: 'baseline'}}
         >
           Share this {config.notebookName}
-        </Link>
+        </Button>
       </Box>
-      <Typography variant="body2">
-        Share this {config.notebookName} with another user by generating a
-        temporary QR code.
-      </Typography>
     </Box>
   );
 }
@@ -663,6 +680,10 @@ function ActiveQuickShare({
         </Box>
 
         <Stack spacing={1.5} sx={{alignItems: 'center'}}>
+          <Typography id={'instructions'} component="p" variant="body2">
+            Ask the user to scan the QR code below, using the app, to grant them
+            access to this {config.notebookName}.
+          </Typography>
           <Box
             component="button"
             type="button"
@@ -749,21 +770,20 @@ function GenerateQuickShare({
   return (
     <Stack spacing={2.5}>
       <Typography variant="body2">
-        Grant another user access to this survey, at the chosen level of access.
-        The code lasts 1 hour.
+        The user will be granted the role selected below.
       </Typography>
 
       {!isOnline && (
         <Alert severity="warning" data-testid="app-quick-share-offline">
-          Quick share needs a connection to the server.
+          You cannot generate invites without an internet connection.
         </Alert>
       )}
 
       <FormControl fullWidth size="small" disabled={!isOnline || working}>
-        <InputLabel id="quick-share-role-label">Access level</InputLabel>
+        <InputLabel id="quick-share-role-label">Access role</InputLabel>
         <Select
           labelId="quick-share-role-label"
-          label="Access level"
+          label="Access role"
           value={role}
           onChange={event => onRole(event.target.value as Role)}
           data-testid="app-quick-share-role"
