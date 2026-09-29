@@ -50,27 +50,10 @@ export const DEFAULT_INVITE_EXPIRY_MS = DEFAULT_INVITE_EXPIRY_DAYS * MS_PER_DAY;
 export const MAX_INVITE_EXPIRY_MS = MAX_INVITE_EXPIRY_DAYS * MS_PER_DAY;
 
 /**
- * Quick Share lifetime bounds, shortest to longest. The field app sends the
- * 1 hour default. Any whole number of milliseconds from the first entry to
- * the last is a valid lifetime.
+ * Quick Share lifetime. The create endpoint always uses this; the request
+ * body cannot choose a duration.
  */
-export const QUICK_SHARE_LIFETIME_OPTIONS = [
-  {ms: 15 * 60 * 1000, label: '15 minutes'},
-  {ms: 60 * 60 * 1000, label: '1 hour'},
-  {ms: 8 * 60 * 60 * 1000, label: '8 hours'},
-  {ms: 24 * 60 * 60 * 1000, label: '24 hours'},
-] as const;
-
-/** Default Quick Share lifetime (1 hour). */
-export const DEFAULT_QUICK_SHARE_LIFETIME_MS =
-  QUICK_SHARE_LIFETIME_OPTIONS[1].ms;
-
-/** Shortest allowed Quick Share lifetime (15 minutes). */
-export const MIN_QUICK_SHARE_LIFETIME_MS = QUICK_SHARE_LIFETIME_OPTIONS[0].ms;
-
-/** Longest allowed Quick Share lifetime (24 hours). */
-export const MAX_QUICK_SHARE_LIFETIME_MS =
-  QUICK_SHARE_LIFETIME_OPTIONS[QUICK_SHARE_LIFETIME_OPTIONS.length - 1].ms;
+export const DEFAULT_QUICK_SHARE_LIFETIME_MS = 60 * 60 * 1000;
 
 /** Display name stored on a Quick Share invite document. */
 export const QUICK_SHARE_NAME = 'Quick share';
@@ -78,16 +61,8 @@ export const QUICK_SHARE_NAME = 'Quick share';
 /** Invite document discriminator for a field-app Quick Share. */
 export const QUICK_SHARE_KIND = 'quick-share' as const;
 
+/** Stored invite `kind`; only Quick Share sets this. */
 export type InviteKind = typeof QUICK_SHARE_KIND;
-
-/** True when a Quick Share duration is an integer inside the allowed window. */
-export function isQuickShareLifetimeValid(lifetimeMs: number): boolean {
-  return (
-    Number.isInteger(lifetimeMs) &&
-    lifetimeMs >= MIN_QUICK_SHARE_LIFETIME_MS &&
-    lifetimeMs <= MAX_QUICK_SHARE_LIFETIME_MS
-  );
-}
 
 /**
  * Client/server clock skew allowed when checking the max lifetime, so a

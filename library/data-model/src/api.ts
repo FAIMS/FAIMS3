@@ -38,13 +38,11 @@ import {
   NotebookUiSpecificationInputSchema,
   TemplateDefinition,
 } from './uiSpecification';
+import {projectInviteRoles} from './permission/functions';
 import {Resource, Role, roleDetails, RoleScope} from './permission/model';
 import {
   isInviteExpiryValidForCreate,
-  isQuickShareLifetimeValid,
   MAX_INVITE_EXPIRY_DAYS,
-  MAX_QUICK_SHARE_LIFETIME_MS,
-  MIN_QUICK_SHARE_LIFETIME_MS,
   QUICK_SHARE_KIND,
 } from './inviteCode';
 
@@ -978,22 +976,14 @@ export const PostCreateGlobalInviteResponseSchema = InviteDocumentSchema;
 
 /**
  * POST /api/invites/notebook/:projectId/quick-share
- * A short-lived survey invite created from the field app.
+ * A survey invite created from the field app. The code always lasts one hour.
  */
 export const PostCreateQuickShareInputSchema = z.object({
-  role: z.nativeEnum(Role).refine(role => {
-    const roleDetail = roleDetails[role];
-    return (
-      roleDetail.scope === RoleScope.RESOURCE_SPECIFIC &&
-      roleDetail.resource === Resource.PROJECT
-    );
-  }, 'Role must be a survey role'),
-  lifetimeMs: z
-    .number()
-    .int()
+  role: z
+    .nativeEnum(Role)
     .refine(
-      isQuickShareLifetimeValid,
-      `Quick share must last between ${MIN_QUICK_SHARE_LIFETIME_MS / 60000} minutes and ${MAX_QUICK_SHARE_LIFETIME_MS / 3600000} hours`
+      role => projectInviteRoles().includes(role),
+      'Role must be a survey role'
     ),
 });
 

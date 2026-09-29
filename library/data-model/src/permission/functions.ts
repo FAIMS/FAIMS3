@@ -344,7 +344,7 @@ export function projectInviteToAction({
  * Taken from {@link roleDetails} so a new project role shows up here when it
  * has a resource of {@link Resource.PROJECT}.
  */
-function projectInviteRoles(): Role[] {
+export function projectInviteRoles(): Role[] {
   return (Object.keys(roleDetails) as Role[])
     .filter(role => {
       const details = roleDetails[role];

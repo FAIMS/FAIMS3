@@ -50,7 +50,11 @@ import {
   upgradeCouchUserToExpressUser,
 } from '../auth/keySigning/create';
 import * as Exceptions from '../exceptions';
-import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
+import {
+  isAllowedToMiddleware,
+  requireAuthenticationAPI,
+  userCanDo,
+} from '../middleware';
 import patch from '../utils/patchExpressAsync';
 import {inviteAuditFromRequest, logInviteAudit} from '../logging';
 
@@ -70,43 +74,21 @@ function userCanProjectInvite({
   action: 'create' | 'delete';
   role: ExistingInvitesDBDocument['role'];
 }): boolean {
-  return isAuthorized({
+  return userCanDo({
+    user,
     action: projectInviteToAction({action, role}),
-    decodedToken: {
-      globalRoles: user.globalRoles,
-      resourceRoles: user.resourceRoles,
-    },
     resourceId: projectId,
   });
 }
 
-function logInviteCreated(
+function logInviteSuccess(
+  event: 'invite.create' | 'invite.revoke',
   req: Request,
   invite: ExistingInvitesDBDocument,
   userId: string
 ): void {
   logInviteAudit({
-    event: 'invite.create',
-    outcome: 'success',
-    source: 'api',
-    inviteId: invite._id,
-    userId,
-    role: invite.role,
-    inviteType: invite.inviteType,
-    resourceType: invite.resourceType,
-    resourceId: invite.resourceId,
-    kind: invite.kind,
-    ...inviteAuditFromRequest(req),
-  });
-}
-
-function logInviteRevoked(
-  req: Request,
-  invite: ExistingInvitesDBDocument,
-  userId: string
-): void {
-  logInviteAudit({
-    event: 'invite.revoke',
+    event,
     outcome: 'success',
     source: 'api',
     inviteId: invite._id,
@@ -255,13 +237,13 @@ api.post(
       usesOriginal: body.uses,
     });
 
-    logInviteCreated(req, invite, user.user_id);
+    logInviteSuccess('invite.create', req, invite, user.user_id);
     res.json(invite);
   }
 );
 
 /**
- * POST a short-lived Quick Share code for one survey.
+ * POST a Quick Share code for one survey. The code always lasts one hour.
  * Permission matches creating an invite for the same role. The document is
  * stored in the invites database and redeemed by the existing scan/use path.
  * Requires a live request, so it cannot be created offline.
@@ -328,6 +310,8 @@ api.post(
           })
       )
     ) {
+      // The invite id is the redemption secret, so it stays out of this body.
+      // The creator revokes it with DELETE .../quick-share or DELETE by id.
       throw new Exceptions.ForbiddenException(
         'A quick share above your current access is still active. It must be revoked before a new code can be issued.'
       );
@@ -346,7 +330,7 @@ api.post(
           continue;
         }
         await deleteInvite({invite: extra});
-        logInviteRevoked(req, extra, user.user_id);
+        logInviteSuccess('invite.revoke', req, extra, user.user_id);
       }
       res.json({...existing, kind: QUICK_SHARE_KIND});
       return;
@@ -356,10 +340,9 @@ api.post(
       resourceId: projectId,
       role: body.role,
       createdBy: user.user_id,
-      lifetimeMs: body.lifetimeMs,
     });
 
-    logInviteCreated(req, invite, user.user_id);
+    logInviteSuccess('invite.create', req, invite, user.user_id);
     res.json(invite);
   }
 );
@@ -412,8 +395,45 @@ api.post(
       usesOriginal: body.uses,
     });
 
-    logInviteCreated(req, invite, user.user_id);
+    logInviteSuccess('invite.create', req, invite, user.user_id);
     res.json(invite);
+  }
+);
+
+/**
+ * DELETE every live Quick Share the caller created for this survey.
+ * Registered before `/:inviteId` so "quick-share" is not treated as an id.
+ * The response does not include invite ids.
+ */
+api.delete(
+  '/notebook/:projectId/quick-share',
+  requireAuthenticationAPI,
+  validate({
+    params: z.object({projectId: IdInputSchema}),
+  }),
+  async (req, res) => {
+    const {user, params} = req;
+    const {projectId} = params;
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    const own = (
+      await getInvitesForResource({
+        resourceType: Resource.PROJECT,
+        resourceId: projectId,
+      })
+    ).filter(
+      invite =>
+        invite.kind === QUICK_SHARE_KIND &&
+        invite.createdBy === user.user_id &&
+        isInviteValid({invite}).isValid
+    );
+    for (const invite of own) {
+      await deleteInvite({invite});
+      logInviteSuccess('invite.revoke', req, invite, user.user_id);
+    }
+    res.status(200).json({success: true});
   }
 );
 
@@ -452,13 +472,17 @@ api.delete(
       );
     }
 
-    // Get the action needed
+    // The creator can always revoke their own quick share, including after a
+    // downgrade. Any other invite still needs delete permission for its role.
+    const ownsQuickShare =
+      invite.kind === QUICK_SHARE_KIND && invite.createdBy === user.user_id;
     const actionNeeded = projectInviteToAction({
       action: 'delete',
       role: invite.role,
     });
 
     if (
+      !ownsQuickShare &&
       !isAuthorized({
         action: actionNeeded,
         decodedToken: {
@@ -475,10 +499,11 @@ api.delete(
 
     await deleteInvite({invite});
     if (invite.kind === QUICK_SHARE_KIND) {
-      logInviteRevoked(req, invite, user.user_id);
+      logInviteSuccess('invite.revoke', req, invite, user.user_id);
       // A missed lookup can leave a second redeemable code. Revoking the one
-      // stored on the device also removes this person's other live codes for
-      // the survey, when the caller is still allowed to delete that role.
+      // stored on the device also removes this person's other live codes.
+      // The creator can clear those too. Anyone else still needs delete
+      // permission for that role.
       const siblings = (
         await getInvitesForResource({
           resourceType: Resource.PROJECT,
@@ -489,16 +514,17 @@ api.delete(
           other.kind === QUICK_SHARE_KIND &&
           other.createdBy === invite.createdBy &&
           isInviteValid({invite: other}).isValid &&
-          userCanProjectInvite({
-            user,
-            projectId,
-            action: 'delete',
-            role: other.role,
-          })
+          (ownsQuickShare ||
+            userCanProjectInvite({
+              user,
+              projectId,
+              action: 'delete',
+              role: other.role,
+            }))
       );
       for (const sibling of siblings) {
         await deleteInvite({invite: sibling});
-        logInviteRevoked(req, sibling, user.user_id);
+        logInviteSuccess('invite.revoke', req, sibling, user.user_id);
       }
     }
     res.status(200).json({success: true});
@@ -610,7 +636,7 @@ api.post(
       usesOriginal: body.uses,
     });
 
-    logInviteCreated(req, invite, user.user_id);
+    logInviteSuccess('invite.create', req, invite, user.user_id);
     res.json(invite);
   }
 );

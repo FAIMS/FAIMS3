@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Card} from '@/components/ui/card';
 import {Label} from '@/components/ui/label';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
@@ -72,8 +73,8 @@ export function ProjectQuickShareSetting() {
           <ListDescription>
             When enabled, people who already have this {notebookName} on their
             device can generate a temporary QR code that grants another person
-            access at a chosen role. Disable this if you only want people
-            invited from Control Centre.
+            access at a chosen level (subject to their permissions). Disable
+            this if you only want people invited from Control Centre.
           </ListDescription>
         </ListItem>
         <ListItem className="flex items-center gap-3">

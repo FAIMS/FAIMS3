@@ -65,7 +65,9 @@ export function chooseInviteHandoff({
 /**
  * Register URL encoded in an invite or Quick Share QR code.
  * The app scanner accepts `{serverUrl}/register?inviteId=…` and redeems it
- * in place when the user is already signed in.
+ * in place when the user is already signed in. `serverUrl` is concatenated
+ * as stored, including a trailing slash, because the scanner matches that
+ * string literally.
  */
 export function inviteRegisterUrl({
   serverUrl,
@@ -74,7 +76,7 @@ export function inviteRegisterUrl({
   serverUrl: string;
   inviteId: string;
 }): string {
-  const url = new URL(`${serverUrl.replace(/\/$/, '')}/register`);
+  const url = new URL(`${serverUrl}/register`);
   url.searchParams.set('inviteId', inviteId);
   return url.toString();
 }

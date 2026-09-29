@@ -12,15 +12,24 @@ interface FetchOptions extends CustomOptions {
 }
 
 /** Custom error class for HTTP errors */
-class HttpError extends Error {
+export class HttpError extends Error {
+  readonly response: Response;
+  /**
+   * Raw response body. Empty when the server sent none. Kept separately from
+   * `message`, which stays `Status: <code> <text>` for existing callers.
+   */
+  readonly bodyText: string;
+
   /**
    * @param response - The Response object from the failed fetch
-   * @param message - Optional error message
+   * @param bodyText - Body already read from that response
    */
-  constructor(public response: Response) {
+  constructor(response: Response, bodyText = '') {
     const message = `Status: ${response.status} ${response.statusText}`;
     super(message);
     this.name = 'HttpError';
+    this.response = response;
+    this.bodyText = bodyText;
   }
 
   /**
@@ -29,6 +38,32 @@ class HttpError extends Error {
    */
   toString(): string {
     return `Status: ${this.response.status} ${this.response.statusText}`;
+  }
+
+  /**
+   * Conductor sends `{error: {message}}`. Authentication sends `{error: string}`.
+   */
+  serverMessage(): string | undefined {
+    if (!this.bodyText) return undefined;
+    try {
+      const parsed = JSON.parse(this.bodyText) as {
+        error?: {message?: unknown} | string;
+      };
+      if (typeof parsed.error === 'string' && parsed.error.length > 0) {
+        return parsed.error;
+      }
+      if (
+        parsed.error &&
+        typeof parsed.error === 'object' &&
+        typeof parsed.error.message === 'string' &&
+        parsed.error.message.length > 0
+      ) {
+        return parsed.error.message;
+      }
+    } catch {
+      return undefined;
+    }
+    return undefined;
   }
 }
 
@@ -104,7 +139,7 @@ export class ListingFetch {
       console.log('HTTP Error occurred.');
       console.log(`Status: ${response.status}`);
       console.log(`Text: ${errorText}`);
-      throw new HttpError(response);
+      throw new HttpError(response, errorText);
     }
 
     return response;

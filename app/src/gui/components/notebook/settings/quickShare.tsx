@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Quick Share: one temporary QR code for an activated survey.
  *
@@ -8,6 +9,8 @@
  * tap-to-enlarge QR — until the user generates a new one. That deletes the
  * invite, then the generate form comes back. Every code lasts one hour. An
  * expired code is dropped, and the dialog shows the generate form again.
+ * The person who created a code can always revoke it, including after their
+ * access is lowered.
  */
 
 import CloseIcon from '@mui/icons-material/Close';
@@ -32,12 +35,7 @@ import {
   Typography,
 } from '@mui/material';
 import type {SxProps, Theme} from '@mui/material/styles';
-import {
-  DEFAULT_QUICK_SHARE_LIFETIME_MS,
-  Role,
-  projectRolesUserCanInvite,
-  roleDetails,
-} from '@faims3/data-model';
+import {Role, projectRolesUserCanInvite, roleDetails} from '@faims3/data-model';
 import {PhotoLightbox} from '@faims3/forms';
 import QRCode from 'qrcode';
 import {useEffect, useId, useMemo, useState} from 'react';
@@ -53,8 +51,11 @@ import {
 import {useAppDispatch, useAppSelector} from '../../../../context/store';
 import {logError} from '../../../../logging';
 import {useIsOnline} from '../../../../utils/customHooks';
+import {useInterval} from '../../../../utils/useInterval';
+import {HttpError} from '../../../../utils/apiOperations/client';
 import {
   createQuickShare,
+  revokeOwnQuickShares,
   revokeQuickShare,
 } from '../../../../utils/apiOperations/quickShare';
 import {inviteRegisterUrl} from '../../authentication/inviteRedemption';
@@ -75,15 +76,66 @@ function formatExpiry(expiry: number): string {
   });
 }
 
-function quickShareErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : '';
-  if (/401|403|not authorized|not allowed/i.test(message)) {
-    return 'You are not allowed to share this survey at that level.';
+function isNotFound(error: unknown): boolean {
+  return error instanceof HttpError && error.response.status === 404;
+}
+
+type QuickShareFailure = {
+  kind:
+    | 'not-found'
+    | 'level'
+    | 'disabled'
+    | 'higher-role'
+    | 'revoke-denied'
+    | 'generic';
+  message: string;
+};
+
+/**
+ * The status line alone cannot tell these apart. Conductor puts the reason
+ * in the JSON body, which {@link HttpError} keeps on `bodyText`.
+ */
+function classifyQuickShareError(error: unknown): QuickShareFailure {
+  if (isNotFound(error)) {
+    return {
+      kind: 'not-found',
+      message: 'This survey is no longer on the server.',
+    };
   }
-  if (/\b404\b/.test(message)) {
-    return '';
+  const server = error instanceof HttpError ? error.serverMessage() : undefined;
+  if (server && /disabled for this survey/i.test(server)) {
+    return {
+      kind: 'disabled',
+      message: 'Quick share is disabled for this survey.',
+    };
   }
-  return 'Could not update the quick share code. Check your connection and try again.';
+  if (server && /above your current access/i.test(server)) {
+    return {
+      kind: 'higher-role',
+      message:
+        'A code above your current access is still active. Revoke it before generating a new one.',
+    };
+  }
+  if (server && /not authorized to delete this invite/i.test(server)) {
+    return {
+      kind: 'revoke-denied',
+      message: 'You are not allowed to revoke this code.',
+    };
+  }
+  if (
+    server &&
+    /not authorized to share this survey at that level/i.test(server)
+  ) {
+    return {
+      kind: 'level',
+      message: 'You are not allowed to share this survey at that level.',
+    };
+  }
+  return {
+    kind: 'generic',
+    message:
+      'Could not update the quick share code. Check your connection and try again.',
+  };
 }
 
 export default function NotebookQuickShare({
@@ -118,15 +170,13 @@ export default function NotebookQuickShare({
   const [role, setRole] = useState<Role | ''>('');
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const [offerRevokeOwn, setOfferRevokeOwn] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 30_000);
-    return () => window.clearInterval(id);
-  }, []);
+  useInterval(() => setNow(Date.now()), 30_000);
 
   useEffect(() => {
     if (allowedRoles.length === 0) {
@@ -184,8 +234,15 @@ export default function NotebookQuickShare({
     );
   };
 
+  const reportFailure = (caught: unknown) => {
+    const failure = classifyQuickShareError(caught);
+    setOfferRevokeOwn(failure.kind === 'higher-role');
+    setError(failure.message);
+  };
+
   const handleGenerate = async () => {
     setError(undefined);
+    setOfferRevokeOwn(false);
     if (share) {
       return;
     }
@@ -203,7 +260,6 @@ export default function NotebookQuickShare({
         username: activeUser.username,
         projectId: project.projectId,
         role,
-        lifetimeMs: DEFAULT_QUICK_SHARE_LIFETIME_MS,
       });
       const qrCode = await QRCode.toDataURL(
         inviteRegisterUrl({
@@ -222,7 +278,39 @@ export default function NotebookQuickShare({
       logError(
         caught instanceof Error ? caught : new Error('Quick share failed')
       );
-      setError(quickShareErrorMessage(caught));
+      reportFailure(caught);
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  const handleRevokeOwn = async () => {
+    setError(undefined);
+    if (!checkIsOnline()) {
+      setError('Revoking your code needs a connection to the server.');
+      return;
+    }
+    setWorking(true);
+    try {
+      await revokeOwnQuickShares({
+        serverId: project.serverId,
+        username: activeUser.username,
+        projectId: project.projectId,
+      });
+      forgetShare();
+      setOfferRevokeOwn(false);
+    } catch (caught) {
+      if (isNotFound(caught)) {
+        forgetShare();
+        setOfferRevokeOwn(false);
+      } else {
+        logError(
+          caught instanceof Error
+            ? caught
+            : new Error('Quick share revoke failed')
+        );
+        reportFailure(caught);
+      }
     } finally {
       setWorking(false);
     }
@@ -233,6 +321,7 @@ export default function NotebookQuickShare({
       return;
     }
     setError(undefined);
+    setOfferRevokeOwn(false);
     if (!checkIsOnline()) {
       setError('Generating a new code needs a connection to the server.');
       return;
@@ -249,9 +338,8 @@ export default function NotebookQuickShare({
       setConfirmRevoke(false);
       setLightboxOpen(false);
     } catch (caught) {
-      const message = quickShareErrorMessage(caught);
-      // Already gone on the server: drop the local copy so a new one can be made.
-      if (!message) {
+      // The invite is already gone. Drop the local copy so a new code can be made.
+      if (isNotFound(caught)) {
         forgetShare();
         setConfirmRevoke(false);
         setLightboxOpen(false);
@@ -261,7 +349,7 @@ export default function NotebookQuickShare({
             ? caught
             : new Error('Quick share revoke failed')
         );
-        setError(message);
+        reportFailure(caught);
       }
     } finally {
       setWorking(false);
@@ -308,8 +396,9 @@ export default function NotebookQuickShare({
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'flex-start',
-            gap: 1,
+            gap: 2,
             pr: 6,
+            pb: 1.5,
           }}
         >
           <Typography id={titleId} component="h2" variant="h4">
@@ -331,17 +420,22 @@ export default function NotebookQuickShare({
             aria-label="Close"
             onClick={closeDialog}
             disabled={working}
-            sx={{position: 'absolute', right: 8, top: 8}}
+            sx={theme => ({
+              position: 'absolute',
+              right: theme.spacing(1),
+              top: theme.spacing(1),
+            })}
           >
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{pt: 1.5, pb: 3}}>
           {share ? (
             <ActiveQuickShare
               share={share}
               isOnline={isOnline}
               error={error}
+              aboveAccess={!allowedRoles.includes(share.role)}
               onOpenLightbox={() => setLightboxOpen(true)}
             />
           ) : (
@@ -350,8 +444,10 @@ export default function NotebookQuickShare({
               isOnline={isOnline}
               working={working}
               error={error}
+              offerRevokeOwn={offerRevokeOwn}
               onRole={setRole}
               onGenerate={handleGenerate}
+              onRevokeOwn={handleRevokeOwn}
               allowedRoles={allowedRoles}
             />
           )}
@@ -377,12 +473,29 @@ export default function NotebookQuickShare({
           <Typography variant="body2">
             This code will stop working. You can generate a new one afterwards.
           </Typography>
+          {error && (
+            <Alert severity="error" sx={{mt: 2}}>
+              {error}
+            </Alert>
+          )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions
+          disableSpacing
+          sx={theme => ({
+            flexWrap: 'wrap',
+            justifyContent: 'flex-end',
+            gap: 1,
+            [theme.breakpoints.down('sm')]: {
+              flexDirection: 'column-reverse',
+              alignItems: 'stretch',
+            },
+          })}
+        >
           <Button
             onClick={() => setConfirmRevoke(false)}
             disabled={working}
             data-testid="app-quick-share-revoke-cancel"
+            sx={{textTransform: 'none'}}
           >
             Cancel
           </Button>
@@ -392,6 +505,7 @@ export default function NotebookQuickShare({
             onClick={handleRevoke}
             disabled={working || !isOnline}
             data-testid="app-quick-share-revoke-confirm"
+            sx={{textTransform: 'none'}}
           >
             {working ? 'Working…' : 'Generate a new code'}
           </Button>
@@ -452,7 +566,13 @@ function MetadataPair({
 }) {
   return (
     <Box>
-      <Typography variant="subtitle2" sx={{fontWeight: 700, lineHeight: 1.3}}>
+      <Typography
+        variant="subtitle2"
+        sx={theme => ({
+          fontWeight: theme.typography.fontWeightBold,
+          lineHeight: 1.3,
+        })}
+      >
         {label}
       </Typography>
       <Typography
@@ -470,33 +590,41 @@ function ActiveQuickShare({
   share,
   isOnline,
   error,
+  aboveAccess,
   onOpenLightbox,
 }: {
   share: ProjectQuickShare;
   isOnline: boolean;
   error: string | undefined;
+  aboveAccess: boolean;
   onOpenLightbox: () => void;
 }) {
   const roleName = roleDetails[share.role].name;
   return (
-    <Stack spacing={1} data-testid="app-quick-share-result">
+    <Stack spacing={2.5} data-testid="app-quick-share-result">
       {!isOnline && (
         <Alert severity="warning" data-testid="app-quick-share-offline">
           You can keep showing this code. Generating a new one needs a
           connection to the server.
         </Alert>
       )}
+      {aboveAccess && (
+        <Alert severity="warning" data-testid="app-quick-share-above-access">
+          This code is above your current access. Generating a new code will
+          revoke it.
+        </Alert>
+      )}
 
-      <Stack spacing={1.5}>
+      <Stack spacing={3}>
         <Box
           sx={{
-            p: 1.25,
+            p: 2,
             borderRadius: 1,
             bgcolor: 'action.hover',
           }}
           data-testid="app-quick-share-summary"
         >
-          <Stack spacing={0.75}>
+          <Stack spacing={2}>
             <MetadataPair
               label="Access level"
               value={roleName}
@@ -510,7 +638,7 @@ function ActiveQuickShare({
           </Stack>
         </Box>
 
-        <Stack spacing={0.25} sx={{alignItems: 'center'}}>
+        <Stack spacing={1.5} sx={{alignItems: 'center'}}>
           <Box
             component="button"
             type="button"
@@ -518,6 +646,9 @@ function ActiveQuickShare({
             aria-label="Enlarge QR code"
             data-testid="app-quick-share-qr"
             sx={{
+              display: 'block',
+              width: '100%',
+              maxWidth: 220,
               border: 0,
               p: 0,
               bgcolor: 'background.paper',
@@ -529,7 +660,13 @@ function ActiveQuickShare({
               component="img"
               src={share.qrCode}
               alt={`Quick share QR code for ${roleName} access`}
-              sx={{width: 220, height: 220}}
+              sx={{
+                display: 'block',
+                width: '100%',
+                height: 'auto',
+                maxWidth: '100%',
+                aspectRatio: '1',
+              }}
             />
           </Box>
           <Typography
@@ -569,20 +706,24 @@ function GenerateQuickShare({
   isOnline,
   working,
   error,
+  offerRevokeOwn,
   allowedRoles,
   onRole,
   onGenerate,
+  onRevokeOwn,
 }: {
   role: Role | '';
   isOnline: boolean;
   working: boolean;
   error: string | undefined;
+  offerRevokeOwn: boolean;
   allowedRoles: Role[];
   onRole: (role: Role) => void;
   onGenerate: () => void;
+  onRevokeOwn: () => void;
 }) {
   return (
-    <Stack spacing={1.25}>
+    <Stack spacing={2.5}>
       <Typography variant="body2">
         Grant another user access to this survey, at the chosen level of access.
         The code lasts 1 hour.
@@ -626,6 +767,19 @@ function GenerateQuickShare({
       >
         {working ? 'Creating…' : 'Generate QR code'}
       </Button>
+
+      {offerRevokeOwn && (
+        <Button
+          variant="outlined"
+          color="error"
+          disabled={!isOnline || working}
+          onClick={onRevokeOwn}
+          data-testid="app-quick-share-revoke-own"
+          sx={{textTransform: 'none', alignSelf: 'flex-start'}}
+        >
+          Revoke your code
+        </Button>
+      )}
 
       {error && <Alert severity="error">{error}</Alert>}
     </Stack>

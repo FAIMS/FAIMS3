@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Role} from '@faims3/data-model';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
@@ -9,6 +10,7 @@ const harness = vi.hoisted(() => ({
   resourceRoles: [] as {role: Role; resourceId: string}[],
   create: vi.fn(),
   revoke: vi.fn(),
+  revokeOwn: vi.fn(),
   dispatch: vi.fn(),
 }));
 
@@ -53,6 +55,7 @@ vi.mock('../../../../context/store', () => ({
 vi.mock('../../../../utils/apiOperations/quickShare', () => ({
   createQuickShare: (...args: unknown[]) => harness.create(...args),
   revokeQuickShare: (...args: unknown[]) => harness.revoke(...args),
+  revokeOwnQuickShares: (...args: unknown[]) => harness.revokeOwn(...args),
 }));
 
 vi.mock('@faims3/forms', async importOriginal => {
@@ -77,7 +80,15 @@ vi.mock('qrcode', () => ({
 }));
 
 import QRCode from 'qrcode';
+import {HttpError} from '../../../../utils/apiOperations/client';
 import NotebookQuickShare from './quickShare';
+
+function conductorError(status: number, statusText: string, message: string) {
+  return new HttpError(
+    new Response(null, {status, statusText}),
+    JSON.stringify({error: {message, status}})
+  );
+}
 
 const project = {
   projectId: 'survey-1',
@@ -105,6 +116,8 @@ describe('NotebookQuickShare', () => {
     harness.dispatch.mockReset();
     harness.revoke.mockReset();
     harness.revoke.mockResolvedValue(undefined);
+    harness.revokeOwn.mockReset();
+    harness.revokeOwn.mockResolvedValue(undefined);
     harness.create.mockReset();
     harness.create.mockResolvedValue({
       _id: 'FAIMS-quicksharecode',
@@ -243,7 +256,6 @@ describe('NotebookQuickShare', () => {
         projectId: 'survey-1',
         username: 'ada',
         role: Role.PROJECT_GUEST,
-        lifetimeMs: 60 * 60 * 1000,
       })
     );
   });
@@ -313,6 +325,38 @@ describe('NotebookQuickShare', () => {
     );
   });
 
+  it('fits the new-code confirmation on a narrow phone', () => {
+    harness.resourceRoles = [
+      {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
+    ];
+    renderShare({
+      ...project,
+      quickShare: {
+        inviteId: 'FAIMS-quicksharecode',
+        role: Role.PROJECT_GUEST,
+        expiry: Date.now() + 60 * 60 * 1000,
+        qrCode: 'data:image/png;base64,qr',
+      },
+    });
+    openShareDialog();
+    fireEvent.click(screen.getByTestId('app-quick-share-revoke'));
+
+    const cancel = screen.getByTestId('app-quick-share-revoke-cancel');
+    const confirm = screen.getByTestId('app-quick-share-revoke-confirm');
+    const actions = cancel.parentElement;
+    expect(actions).toBeTruthy();
+    expect(actions?.className).toMatch(/MuiDialogActions-root/);
+    expect(getComputedStyle(cancel).textTransform).toBe('none');
+    expect(getComputedStyle(confirm).textTransform).toBe('none');
+    expect(getComputedStyle(actions!).flexWrap).toBe('wrap');
+
+    const stacked = Array.from(document.querySelectorAll('style'))
+      .map(style => style.textContent ?? '')
+      .join('\n');
+    expect(stacked).toMatch(/flex-direction:\s*column-reverse/);
+    expect(stacked).toMatch(/max-width:\s*599\.95px/);
+  });
+
   it('revokes the stored code before another one can be generated', async () => {
     harness.resourceRoles = [
       {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
@@ -343,5 +387,213 @@ describe('NotebookQuickShare', () => {
       </ThemeProvider>
     );
     expect(screen.getByTestId('app-quick-share-generate')).toBeTruthy();
+  });
+
+  it('tells the user when the survey is gone instead of failing silently', async () => {
+    harness.resourceRoles = [
+      {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
+    ];
+    harness.create.mockRejectedValue(
+      new HttpError(new Response(null, {status: 404, statusText: 'Not Found'}))
+    );
+    renderShare();
+    openShareDialog();
+    fireEvent.click(screen.getByTestId('app-quick-share-generate'));
+    expect(
+      await screen.findByText('This survey is no longer on the server.')
+    ).toBeTruthy();
+    expect(harness.dispatch).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('app-quick-share-result')).toBeNull();
+  });
+
+  it('drops the stored code when the invite is already gone', async () => {
+    harness.resourceRoles = [
+      {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
+    ];
+    harness.revoke.mockRejectedValue(
+      new HttpError(new Response(null, {status: 404, statusText: 'Not Found'}))
+    );
+    renderShare({
+      ...project,
+      quickShare: {
+        inviteId: 'FAIMS-quicksharecode',
+        role: Role.PROJECT_GUEST,
+        expiry: Date.now() + 60 * 60 * 1000,
+        qrCode: 'data:image/png;base64,qr',
+      },
+    });
+    openShareDialog();
+    fireEvent.click(screen.getByTestId('app-quick-share-revoke'));
+    fireEvent.click(screen.getByTestId('app-quick-share-revoke-confirm'));
+    await vi.waitFor(() => expect(harness.dispatch).toHaveBeenCalled());
+    expect(harness.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: {projectId: 'survey-1', serverId: 'server-1'},
+      })
+    );
+    expect(
+      screen.queryByText('This survey is no longer on the server.')
+    ).toBeNull();
+    expect(
+      screen.queryByText(
+        'Could not update the quick share code. Check your connection and try again.'
+      )
+    ).toBeNull();
+    await vi.waitFor(() => {
+      expect(
+        screen.queryByRole('heading', {name: 'Generate a new code?'})
+      ).toBeNull();
+    });
+  });
+
+  it('shows the role denial only when the server says the level is not allowed', async () => {
+    harness.resourceRoles = [
+      {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
+    ];
+    harness.create.mockRejectedValue(
+      conductorError(
+        401,
+        'Unauthorized',
+        'You are not authorized to share this survey at that level'
+      )
+    );
+    renderShare();
+    openShareDialog();
+    fireEvent.click(screen.getByTestId('app-quick-share-generate'));
+    expect(
+      await screen.findByText(
+        'You are not allowed to share this survey at that level.'
+      )
+    ).toBeTruthy();
+    expect(screen.queryByTestId('app-quick-share-revoke-own')).toBeNull();
+  });
+
+  it('says when quick share is disabled instead of blaming the access level', async () => {
+    harness.resourceRoles = [
+      {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
+    ];
+    harness.create.mockRejectedValue(
+      conductorError(
+        403,
+        'Forbidden',
+        'Quick share is disabled for this survey'
+      )
+    );
+    renderShare();
+    openShareDialog();
+    fireEvent.click(screen.getByTestId('app-quick-share-generate'));
+    expect(
+      await screen.findByText('Quick share is disabled for this survey.')
+    ).toBeTruthy();
+    expect(
+      screen.queryByText(
+        'You are not allowed to share this survey at that level.'
+      )
+    ).toBeNull();
+    expect(screen.queryByTestId('app-quick-share-revoke-own')).toBeNull();
+  });
+
+  it('offers to revoke the caller’s own code when a higher-role code is still active', async () => {
+    harness.resourceRoles = [
+      {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
+    ];
+    harness.create.mockRejectedValue(
+      conductorError(
+        403,
+        'Forbidden',
+        'A quick share above your current access is still active. It must be revoked before a new code can be issued.'
+      )
+    );
+    renderShare();
+    openShareDialog();
+    fireEvent.click(screen.getByTestId('app-quick-share-generate'));
+    expect(
+      await screen.findByText(
+        'A code above your current access is still active. Revoke it before generating a new one.'
+      )
+    ).toBeTruthy();
+    fireEvent.click(screen.getByTestId('app-quick-share-revoke-own'));
+    await vi.waitFor(() => expect(harness.revokeOwn).toHaveBeenCalled());
+    expect(harness.revokeOwn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId: 'survey-1',
+        username: 'ada',
+      })
+    );
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId('app-quick-share-revoke-own')).toBeNull()
+    );
+  });
+
+  it('does not treat a status-only 403 as a level denial', async () => {
+    harness.resourceRoles = [
+      {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
+    ];
+    harness.create.mockRejectedValue(
+      new HttpError(new Response(null, {status: 403, statusText: 'Forbidden'}))
+    );
+    renderShare();
+    openShareDialog();
+    fireEvent.click(screen.getByTestId('app-quick-share-generate'));
+    expect(
+      await screen.findByText(
+        'Could not update the quick share code. Check your connection and try again.'
+      )
+    ).toBeTruthy();
+    expect(
+      screen.queryByText(
+        'You are not allowed to share this survey at that level.'
+      )
+    ).toBeNull();
+  });
+
+  it('keeps the stored code when revoke is refused and explains why', async () => {
+    harness.resourceRoles = [
+      {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
+    ];
+    harness.revoke.mockRejectedValue(
+      conductorError(
+        401,
+        'Unauthorized',
+        'You are not authorized to delete this invite'
+      )
+    );
+    renderShare({
+      ...project,
+      quickShare: {
+        inviteId: 'FAIMS-quicksharecode',
+        role: Role.PROJECT_GUEST,
+        expiry: Date.now() + 60 * 60 * 1000,
+        qrCode: 'data:image/png;base64,qr',
+      },
+    });
+    openShareDialog();
+    fireEvent.click(screen.getByTestId('app-quick-share-revoke'));
+    fireEvent.click(screen.getByTestId('app-quick-share-revoke-confirm'));
+    expect(
+      await screen.findAllByText('You are not allowed to revoke this code.')
+    ).toHaveLength(2);
+    expect(harness.dispatch).not.toHaveBeenCalled();
+    expect(screen.getByTestId('app-quick-share-qr')).toBeTruthy();
+  });
+
+  it('tells the user a stored code is above their current access', () => {
+    harness.resourceRoles = [
+      {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
+    ];
+    renderShare({
+      ...project,
+      quickShare: {
+        inviteId: 'FAIMS-quicksharecode',
+        role: Role.PROJECT_ADMIN,
+        expiry: Date.now() + 60 * 60 * 1000,
+        qrCode: 'data:image/png;base64,qr',
+      },
+    });
+    openShareDialog();
+    expect(
+      screen.getByTestId('app-quick-share-above-access').textContent
+    ).toMatch(/above your current access/);
+    expect(screen.getByTestId('app-quick-share-revoke')).toBeTruthy();
   });
 });
