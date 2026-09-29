@@ -9,6 +9,12 @@ export default defineConfig({
     tanstackRouter({
       target: 'react',
       autoCodeSplitting: true,
+      routeTreeFileHeader: [
+        '// SPDX-License-Identifier: Apache-2.0',
+        '/* eslint-disable */',
+        '// @ts-nocheck',
+        '// noinspection JSUnusedGlobalSymbols',
+      ],
     }),
     react(),
   ],
