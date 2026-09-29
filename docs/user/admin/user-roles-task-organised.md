@@ -427,6 +427,8 @@ Once created, the invite appears in the Invites tab:
 :width: 100%
 ```
 
+**Quick share** is a separate, temporary QR code created in the app (**Share** on an activated {{notebook}}). It lasts one hour. The code appears on this Invites tab as **Quick share**, and you can remove it there. Turn **Quick share** off on the **Actions** tab to hide **Share** in the app and stop new codes. A code that already exists keeps working until it expires or you remove it.
+
 **Managing pending invites:**
 
 - View pending invites in the **Invites** tab

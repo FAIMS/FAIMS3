@@ -56,3 +56,24 @@ the {{notebook}} is added straight away, the same as with a QR code.
 An invite code looks like _FMRK-aB3xY9…_ — a server prefix, a hyphen, then a
 long random code. Prefer pasting the full code when possible. The prefix
 identifies the server and should match the prefix shown in your app.
+
+## Quick share
+
+Quick share is a temporary QR code created in the app for one activated
+{{notebook}}. It is separate from an invitation created in the {{dashboard}}.
+
+If you are allowed to invite someone, open the {{notebook}} and tap **Share**.
+The same dialog is under **Settings**, labelled **Quick share**. Choose an
+access level you are allowed to grant, then **Generate QR code**. The other
+person scans it the same way as any other invite. You can keep showing a code
+you already have while offline. Creating a code, or replacing one, needs a
+connection to the server.
+
+The code lasts one hour. You have one live code for that {{notebook}}.
+**Generate a new code** stops the current one. After it expires, generate
+another.
+
+A {{notebook}} manager or administrator can turn Quick share off on the
+**Actions** tab in the {{dashboard}}. When it is off, **Share** is hidden and
+a new code cannot be created. A code that already exists keeps working until
+it expires, or until it is removed from the {{notebook}} **Invites** tab.

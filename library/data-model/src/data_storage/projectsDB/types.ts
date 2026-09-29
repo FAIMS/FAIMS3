@@ -110,7 +110,7 @@ export type ProjectV3Document = z.infer<typeof ProjectV3DocumentSchema>;
  * Update alongside {@link projectsV3toV4Migration}.
  */
 export const ProjectV4FieldsSchema = z.object({
-  // User metadata about projects - update with PUT /:id { ...name, ...description }
+  // User metadata — update with PUT /:id { name, description, disableQuickShare }
   name: z.string(),
   description: PersistedRootDescriptionSchema,
 
@@ -125,6 +125,13 @@ export const ProjectV4FieldsSchema = z.object({
 
   // Project lifecycle
   status: z.nativeEnum(ProjectStatus),
+
+  /**
+   * When true, the field app hides Quick Share so users cannot generate a
+   * temporary QR invite. Omitted or false keeps Quick Share available.
+   * Optional — no migration; missing documents default to false.
+   */
+  disableQuickShare: z.boolean().optional(),
 
   // Project connection information
   dataDb: PossibleConnectionInfoSchema,

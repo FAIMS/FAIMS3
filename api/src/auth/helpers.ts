@@ -373,6 +373,7 @@ export async function validateAndApplyInviteToUser({
       inviteType: invite.inviteType,
       resourceType: invite.resourceType,
       resourceId: invite.resourceId,
+      kind: invite.kind,
       ...requestMeta,
     });
 

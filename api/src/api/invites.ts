@@ -24,20 +24,27 @@ import {
   RoleScope,
   GetGlobalInvitesResponse,
   PostCreateGlobalInviteInputSchema,
+  PostCreateQuickShareInputSchema,
+  PostCreateQuickShareResponse,
   PostUseInviteResponse,
+  QUICK_SHARE_KIND,
 } from '@faims3/data-model';
 import express, {Request, Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
 import {
   createGlobalInvite,
+  createQuickShareInvite,
   createResourceInvite,
   deleteInvite,
   getGlobalInvites,
   getInvite,
   getInvitesForResource,
+  getProjectInvites,
+  getQuickSharesForProjectAndUser,
   isInviteValid,
 } from '../couchdb/invites';
+import {getProjectById} from '../couchdb/notebooks';
 import {getCouchUserFromEmailOrUserId, saveCouchUser} from '../couchdb/users';
 import {validateAndApplyInviteToUser} from '../auth/helpers';
 import {
@@ -45,7 +52,11 @@ import {
   upgradeCouchUserToExpressUser,
 } from '../auth/keySigning/create';
 import * as Exceptions from '../exceptions';
-import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
+import {
+  isAllowedToMiddleware,
+  requireAuthenticationAPI,
+  userCanDo,
+} from '../middleware';
 import patch from '../utils/patchExpressAsync';
 import {inviteAuditFromRequest, logInviteAudit} from '../logging';
 
@@ -54,13 +65,45 @@ patch();
 
 export const api: express.Router = express.Router();
 
-function logInviteCreated(
+function userCanProjectInvite({
+  user,
+  projectId,
+  action,
+  role,
+}: {
+  user: NonNullable<Request['user']>;
+  projectId: string;
+  action: 'create' | 'delete';
+  role: ExistingInvitesDBDocument['role'];
+}): boolean {
+  return userCanDo({
+    user,
+    action: projectInviteToAction({action, role}),
+    resourceId: projectId,
+  });
+}
+
+/**
+ * Quick share codes are revoked with DELETE .../notebook/:projectId/quick-share.
+ * The by-id invite routes must not accept them: the id is the redemption secret.
+ */
+function rejectQuickShareDelete(invite: ExistingInvitesDBDocument): void {
+  if (invite.kind !== QUICK_SHARE_KIND) {
+    return;
+  }
+  throw new Exceptions.InvalidRequestException(
+    'Quick share codes cannot be deleted by invite id. Use DELETE /api/invites/notebook/:projectId/quick-share.'
+  );
+}
+
+function logInviteSuccess(
+  event: 'invite.create' | 'invite.revoke',
   req: Request,
   invite: ExistingInvitesDBDocument,
   userId: string
 ): void {
   logInviteAudit({
-    event: 'invite.create',
+    event,
     outcome: 'success',
     source: 'api',
     inviteId: invite._id,
@@ -69,6 +112,7 @@ function logInviteCreated(
     inviteType: invite.inviteType,
     resourceType: invite.resourceType,
     resourceId: invite.resourceId,
+    kind: invite.kind,
     ...inviteAuditFromRequest(req),
   });
 }
@@ -106,13 +150,10 @@ api.get(
       );
     }
 
-    // Project invites
-    const invites = (
-      await getInvitesForResource({
-        resourceType: Resource.PROJECT,
-        resourceId: projectId,
-      })
-    ).filter(invite => isInviteValid({invite}).isValid);
+    // Project invites. Quick shares come from the quickShares view.
+    const invites = (await getProjectInvites(projectId)).filter(
+      invite => isInviteValid({invite}).isValid
+    );
 
     res.json(invites);
   }
@@ -208,7 +249,106 @@ api.post(
       usesOriginal: body.uses,
     });
 
-    logInviteCreated(req, invite, user.user_id);
+    logInviteSuccess('invite.create', req, invite, user.user_id);
+    res.json(invite);
+  }
+);
+
+/**
+ * POST a Quick Share code for one survey. The code always lasts one hour.
+ * Permission matches creating an invite for the same role. The document is
+ * stored in the invites database and redeemed by the existing scan/use path.
+ */
+api.post(
+  '/notebook/:projectId/quick-share',
+  requireAuthenticationAPI,
+  validate({
+    params: z.object({projectId: IdInputSchema}),
+    body: PostCreateQuickShareInputSchema,
+  }),
+  async (req, res: Response<PostCreateQuickShareResponse>) => {
+    const {user, body, params} = req;
+    const {projectId} = params;
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    if (
+      !userCanProjectInvite({
+        user,
+        projectId,
+        action: 'create',
+        role: body.role,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to share this survey at that level'
+      );
+    }
+
+    const project = await getProjectById(projectId);
+    if (project.disableQuickShare === true) {
+      throw new Exceptions.ForbiddenException(
+        'Quick share is disabled for this survey'
+      );
+    }
+
+    // One live Quick Share per person per survey. A second generate returns
+    // that code only when this person can still create its role. A code above
+    // their current access is not handed back, and no second code is minted
+    // beside it. The view is already limited to this survey and creator.
+    const live = (
+      await getQuickSharesForProjectAndUser({
+        projectId,
+        userId: user.user_id,
+      })
+    )
+      .filter(invite => isInviteValid({invite}).isValid)
+      .sort((a, b) => b.createdAt - a.createdAt);
+    if (
+      live.some(
+        invite =>
+          !userCanProjectInvite({
+            user,
+            projectId,
+            action: 'create',
+            role: invite.role,
+          })
+      )
+    ) {
+      // The invite id is the redemption secret, so it stays out of this body.
+      // The creator revokes it with DELETE .../quick-share.
+      throw new Exceptions.ForbiddenException(
+        'A quick share above your current access is still active. It must be revoked before a new code can be issued.'
+      );
+    }
+    const [existing, ...older] = live;
+    if (existing) {
+      for (const extra of older) {
+        if (
+          !userCanProjectInvite({
+            user,
+            projectId,
+            action: 'delete',
+            role: extra.role,
+          })
+        ) {
+          continue;
+        }
+        await deleteInvite({invite: extra});
+        logInviteSuccess('invite.revoke', req, extra, user.user_id);
+      }
+      res.json({...existing, kind: QUICK_SHARE_KIND});
+      return;
+    }
+
+    const invite = await createQuickShareInvite({
+      resourceId: projectId,
+      role: body.role,
+      createdBy: user.user_id,
+    });
+
+    logInviteSuccess('invite.create', req, invite, user.user_id);
     res.json(invite);
   }
 );
@@ -261,8 +401,40 @@ api.post(
       usesOriginal: body.uses,
     });
 
-    logInviteCreated(req, invite, user.user_id);
+    logInviteSuccess('invite.create', req, invite, user.user_id);
     res.json(invite);
+  }
+);
+
+/**
+ * DELETE every live Quick Share the caller created for this survey.
+ * Registered before `/:inviteId` so "quick-share" is not treated as an id.
+ * The response does not include invite ids.
+ */
+api.delete(
+  '/notebook/:projectId/quick-share',
+  requireAuthenticationAPI,
+  validate({
+    params: z.object({projectId: IdInputSchema}),
+  }),
+  async (req, res) => {
+    const {user, params} = req;
+    const {projectId} = params;
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    const own = (
+      await getQuickSharesForProjectAndUser({
+        projectId,
+        userId: user.user_id,
+      })
+    ).filter(invite => isInviteValid({invite}).isValid);
+    for (const invite of own) {
+      await deleteInvite({invite});
+      logInviteSuccess('invite.revoke', req, invite, user.user_id);
+    }
+    res.status(200).json({success: true});
   }
 );
 
@@ -278,7 +450,9 @@ api.delete(
       inviteId: IdInputSchema,
     }),
   }),
-  async ({user, params: {projectId, inviteId}}, res) => {
+  async (req, res) => {
+    const {user, params} = req;
+    const {projectId, inviteId} = params;
     if (!user) {
       throw new Exceptions.UnauthorizedException();
     }
@@ -288,6 +462,8 @@ api.delete(
     if (!invite) {
       throw new Exceptions.ItemNotFoundException('Invite not found');
     }
+
+    rejectQuickShareDelete(invite);
 
     // Verify this invite belongs to the specified project
     if (
@@ -299,7 +475,6 @@ api.delete(
       );
     }
 
-    // Get the action needed
     const actionNeeded = projectInviteToAction({
       action: 'delete',
       role: invite.role,
@@ -321,7 +496,7 @@ api.delete(
     }
 
     await deleteInvite({invite});
-    res.status(200).end();
+    res.status(200).json({success: true});
   }
 );
 
@@ -347,6 +522,8 @@ api.delete(
     if (!invite) {
       throw new Exceptions.ItemNotFoundException('Invite not found');
     }
+
+    rejectQuickShareDelete(invite);
 
     // Verify this invite belongs to the specified team
     if (invite.resourceType !== Resource.TEAM || invite.resourceId !== teamId) {
@@ -430,7 +607,7 @@ api.post(
       usesOriginal: body.uses,
     });
 
-    logInviteCreated(req, invite, user.user_id);
+    logInviteSuccess('invite.create', req, invite, user.user_id);
     res.json(invite);
   }
 );
@@ -457,6 +634,8 @@ api.delete(
     if (!invite) {
       throw new Exceptions.ItemNotFoundException('Invite not found');
     }
+
+    rejectQuickShareDelete(invite);
 
     // verify that this invite is a global invite
     if (invite.inviteType !== RoleScope.GLOBAL) {
@@ -579,6 +758,7 @@ api.get(
       inviteType: invite.inviteType,
       resourceType: invite.resourceType,
       resourceId: invite.resourceId,
+      kind: invite.kind,
       ...requestMeta,
     });
 

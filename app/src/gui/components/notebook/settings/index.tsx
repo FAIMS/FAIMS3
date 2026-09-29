@@ -47,6 +47,7 @@ import {
 } from '../../../../sync/syncMode';
 import AutoIncrementerSettingsList from './auto_incrementers';
 import NotebookOfflineMapSettings from './offlineMapSettings';
+import NotebookQuickShare from './quickShare';
 import NotebookSyncSwitch from './sync_switch';
 import SyncModeHelpDialog from './syncModeHelpDialog';
 
@@ -111,6 +112,7 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
         sx={{mb: {xs: 1, sm: 2, md: 3}}}
       >
         <Grid size={{xs: 12, sm: 12, md: 6, lg: 4}}>
+          <NotebookQuickShare project={project} layout="settings" />
           <Box
             component={Paper}
             variant={'outlined'}

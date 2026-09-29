@@ -51,7 +51,7 @@ a new account. Once you are logged in you will be given access to the
 
 ### a) Invitations
 
-Prefer scanning the **QR code** or opening the **invite link** shared with you. Tap **Scan invite QR code** on the login screen to open the registration flow.
+Prefer scanning the **QR code** or opening the **invite link** shared with you. Tap **Scan invite QR code**. If you are already signed in, the {{notebook}} is added straight away; if not, the scan opens the registration screen.
 
 ```{screenshot} getting-started/access-code-mobile.png
 :alt: Invite screen
