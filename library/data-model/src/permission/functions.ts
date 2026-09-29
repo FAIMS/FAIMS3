@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {COUCH_ADMIN_ROLE_NAME} from '../constants';
 import {roleGrantsAction} from './helpers';
 import {

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
 import {it, expect, describe} from 'vitest';

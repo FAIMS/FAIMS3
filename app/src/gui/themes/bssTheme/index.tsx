@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {colors, createTheme} from '@mui/material';
 import {bssBrand, mapControlBrand} from '@faims3/data-model';
 import typography from '../fieldmark/typography';

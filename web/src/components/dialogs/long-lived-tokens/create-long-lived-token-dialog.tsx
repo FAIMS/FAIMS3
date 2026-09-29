@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {CreateLongLivedTokenForm} from '@/components/forms/long-lived-tokens/create-long-lived-token-form';
 import {
   Dialog,

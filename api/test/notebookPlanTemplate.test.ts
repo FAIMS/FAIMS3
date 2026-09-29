@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(require('pouchdb-adapter-memory'));

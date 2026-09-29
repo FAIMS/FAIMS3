@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import '@testing-library/jest-dom/vitest';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {render, screen, waitFor} from '@testing-library/react';

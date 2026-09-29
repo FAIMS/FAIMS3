@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {TextField as MuiTextField} from '@mui/material';
 import React from 'react';
 import z from 'zod';

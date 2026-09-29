@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import type {UiSpecModel} from '@faims3/data-model';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {act, render, screen, waitFor} from '@testing-library/react';

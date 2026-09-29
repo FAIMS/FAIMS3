@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*
  * Shared utilities for "Other" option functionality across
  * RadioGroup, Select, and MultiSelect fields.

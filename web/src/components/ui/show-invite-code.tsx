@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {useState} from 'react';
 import {AlertTriangle, CheckCircle, Copy, KeyRound} from 'lucide-react';
 import {

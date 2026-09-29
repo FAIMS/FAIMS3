@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {
   COUNTED_PLAN_TYPE,
   LIST_OF_FORMS_PLAN_TYPE,

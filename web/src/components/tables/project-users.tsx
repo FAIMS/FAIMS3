@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {config} from '@/constants';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import InfoIcon from '@mui/icons-material/Info';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {Alert, Box, Button, Tooltip, Typography} from '@mui/material';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Flattens forms, sections, and fields into a single searchable index.
  */

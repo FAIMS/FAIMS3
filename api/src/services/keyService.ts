@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import fs from 'fs/promises';
 import {importPKCS8, importSPKI, KeyLike} from 'jose';
 import {config, privateKeyPath, publicKeyPath} from '../buildconfig';

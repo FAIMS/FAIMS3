@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {LIST_OF_FORMS_PLAN_TYPE, planReferenceFor} from '@faims3/data-model';
 import {Alert} from '@mui/material';
 import {useMemo} from 'react';

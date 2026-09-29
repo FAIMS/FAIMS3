@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {describe, expect, it} from 'vitest';
 import {validateRedirect} from '../src/auth/helpers';
 import {config} from '../src/buildconfig';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {
   assessNotebookSchemaCompatibility,
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,

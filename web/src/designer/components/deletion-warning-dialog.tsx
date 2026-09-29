@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Modal listing condition references that block delete until the user fixes them.
  */

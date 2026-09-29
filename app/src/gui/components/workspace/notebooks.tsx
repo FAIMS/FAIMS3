@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: project-list.tsx
  * Description:
  *   TODO
@@ -39,10 +27,13 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {GridColDef} from '@mui/x-data-grid';
 import {useMutation} from '@tanstack/react-query';
-import {useState} from 'react';
+import {useLayoutEffect, useRef, useState} from 'react';
 import {config, CAPACITOR_PLATFORM} from '../../../buildconfig';
 import {useNotification} from '../../../context/popup';
-import {selectActiveUser} from '../../../context/slices/authSlice';
+import {
+  refreshToken,
+  selectActiveUser,
+} from '../../../context/slices/authSlice';
 import {
   initialiseProjects,
   Project,
@@ -88,6 +79,64 @@ export const ACTIVATE_ACTIVE_VERB_LABEL = 'Activating';
 export const DE_ACTIVATE_VERB = 'De-activate';
 export const DE_ACTIVATE_ACTIVE_VERB = 'De-activating';
 
+/** Width of an element as if its label stayed on one line. */
+function maxContentWidth(element: HTMLElement): number {
+  const previousWidth = element.style.width;
+  const previousFlex = element.style.flex;
+  element.style.width = 'max-content';
+  element.style.flex = '0 0 auto';
+  const width = element.getBoundingClientRect().width;
+  element.style.width = previousWidth;
+  element.style.flex = previousFlex;
+  return width;
+}
+
+/**
+ * Stack a flex toolbar only when its children no longer fit on one row.
+ * Partial wraps (some children stacked, others still beside them) are avoided.
+ */
+function useStackWhenContentOverflows(relayoutKey: unknown, enabled: boolean) {
+  const ref = useRef<HTMLDivElement>(null);
+  const stackedRef = useRef(false);
+  const [stacked, setStacked] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || !enabled) return;
+
+    const measure = () => {
+      const children = Array.from(el.children) as HTMLElement[];
+      if (children.length === 0) return;
+      const gap = Number.parseFloat(getComputedStyle(el).columnGap || '0') || 0;
+      const needed =
+        children.reduce((sum, child) => sum + maxContentWidth(child), 0) +
+        gap * Math.max(0, children.length - 1);
+      const next = needed > el.clientWidth + 1;
+      if (stackedRef.current === next) return;
+      stackedRef.current = next;
+      // Apply before paint so a resize doesn't flash a half-wrapped row.
+      el.style.flexDirection = next ? 'column' : 'row';
+      el.style.alignItems = next ? 'stretch' : 'center';
+      setStacked(next);
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [relayoutKey, enabled]);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // Let the rendered flex props own layout once React has committed them.
+    el.style.flexDirection = '';
+    el.style.alignItems = '';
+  }, [stacked]);
+
+  return {ref, stacked};
+}
+
 export const notebookListDataGridSx = {
   // The virtual scroller defaults to overflow: scroll and traps wheel and
   // touch gestures. autoHeight sizes the grid to its rows and sets
@@ -127,6 +176,14 @@ export default function NoteBooks() {
   const doRefresh = useMutation({
     mutationFn: async () => {
       if (!activeUser) return;
+      // ensure refresh token is up to date to catch any new permissions
+      await dispatch(
+        refreshToken({
+          serverId: activeUser.serverId,
+          username: activeUser.username,
+        })
+      );
+
       await dispatch(initialiseProjects({serverId: activeUser.serverId}));
     },
     onSuccess: () => {
@@ -143,7 +200,10 @@ export default function NoteBooks() {
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const theme = useTheme();
   const is_xs = !useMediaQuery(theme.breakpoints.up('sm'));
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const {ref: toolbarRef, stacked: stackToolbar} = useStackWhenContentOverflows(
+    doRefresh.isPending,
+    Boolean(activeUser)
+  );
   const servers = useAppSelector(selectServers);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
@@ -308,21 +368,38 @@ export default function NoteBooks() {
       elevation={0}
       sx={{p: 2, width: '100%', minWidth: 0}}
     >
-      <Stack
-        direction={isMobile ? 'column' : 'row'}
-        spacing={2}
+      <Box
+        ref={toolbarRef}
         sx={{
+          display: 'flex',
+          flexDirection: stackToolbar ? 'column' : 'row',
+          alignItems: stackToolbar ? 'stretch' : 'center',
+          gap: 1,
           mt: 1,
           mb: 2,
-          alignItems: isMobile ? 'stretch' : 'center',
-          justifyContent: isMobile ? 'space-evenly' : 'space-between',
         }}
       >
-        <Stack direction="row" spacing={1} sx={{flex: 1, alignItems: 'center'}}>
+        <Box
+          sx={{
+            display: 'flex',
+            // Grow from the label width, but don't shrink below it. Otherwise
+            // Refresh and Add split leftover space evenly and Add can clip
+            // while the info button is still on the same row.
+            flex: stackToolbar ? undefined : '1 0 auto',
+            alignItems: 'center',
+            gap: 1,
+            width: stackToolbar ? '100%' : undefined,
+            minWidth: stackToolbar ? 0 : 'max-content',
+          }}
+        >
           <Button
             variant="contained"
             disabled={!showRefreshButton || doRefresh.isPending}
-            sx={{backgroundColor: theme.palette.primary.main, flex: 1}}
+            sx={{
+              backgroundColor: theme.palette.primary.main,
+              flex: 1,
+              whiteSpace: 'nowrap',
+            }}
             startIcon={<RefreshOutlined />}
             data-testid="app-notebooks-refresh-button"
             onClick={() => {
@@ -331,34 +408,43 @@ export default function NoteBooks() {
           >
             Refresh
           </Button>
-          <Button
-            variant="contained"
-            sx={{backgroundColor: theme.palette.primary.main, flex: 1}}
-            startIcon={<AddOutlined />}
-            data-testid="app-notebooks-add-button"
-            onClick={() => {
-              setAddDialogOpen(true);
-            }}
-          >
-            Add {config.notebookName}
-          </Button>
-          {doRefresh.isPending && <CircularProgress size={24} />}
-        </Stack>
+          {doRefresh.isPending && (
+            <CircularProgress size={24} sx={{flexShrink: 0}} />
+          )}
+        </Box>
+        <Button
+          variant="contained"
+          fullWidth={stackToolbar}
+          sx={{
+            backgroundColor: theme.palette.primary.main,
+            flex: stackToolbar ? undefined : '1 0 auto',
+            whiteSpace: 'nowrap',
+            minWidth: stackToolbar ? 0 : 'max-content',
+          }}
+          startIcon={<AddOutlined />}
+          data-testid="app-notebooks-add-button"
+          onClick={() => {
+            setAddDialogOpen(true);
+          }}
+        >
+          Add {config.notebookName}
+        </Button>
         <Button
           variant="outlined"
           size="small"
-          fullWidth={isMobile}
+          fullWidth={stackToolbar}
           startIcon={<InfoOutlinedIcon fontSize="small" />}
           onClick={() => setInfoDialogOpen(true)}
           sx={{
             textTransform: 'none',
             fontSize: 'body2.fontSize',
+            flexShrink: 0,
+            whiteSpace: stackToolbar ? 'normal' : 'nowrap',
           }}
         >
-          Learn about {ACTIVATE_ACTIVE_VERB_LABEL.toLowerCase()}/
-          {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()} {config.notebookNamePlural}
+          Learn more about activating {config.notebookNamePlural}
         </Button>
-      </Stack>
+      </Box>
       {config.notebookListType === 'tabs' ? (
         <Tabs
           projects={projects}
@@ -433,6 +519,7 @@ export default function NoteBooks() {
                     <InviteQRScanner
                       servers={servers}
                       onScanStart={() => setAddDialogOpen(false)}
+                      onRedeemed={() => setAddDialogOpen(false)}
                     />
                   </Box>
                 )}
@@ -446,7 +533,10 @@ export default function NoteBooks() {
                       ? 'Advanced: enter invite code instead'
                       : 'Enter invite code'}
                   </Typography>
-                  <InviteCodeEntry servers={servers} />
+                  <InviteCodeEntry
+                    servers={servers}
+                    onRedeemed={() => setAddDialogOpen(false)}
+                  />
                 </Box>
               </Stack>
             )}

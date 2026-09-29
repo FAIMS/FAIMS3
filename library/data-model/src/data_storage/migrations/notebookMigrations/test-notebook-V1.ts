@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import type {LegacyNotebookWire} from './steps/legacyToV1';
 
 /** Schema `1.0` (pre-semver) fixture used by the collapse and normalize tests. */

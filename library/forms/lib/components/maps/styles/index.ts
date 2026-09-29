@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // https://github.com/openmaptiles/maptiler-basic-gl-style
 import basicStyle from './basic-style.json';
 import openstreetmapStyle from './openstreetmap-style.json';

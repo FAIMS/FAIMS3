@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import {Box, Paper, Typography} from '@mui/material';
 import {useMemo, useState} from 'react';
