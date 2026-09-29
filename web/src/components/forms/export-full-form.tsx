@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Checkbox} from '@/components/ui/checkbox';
 import {Label} from '@/components/ui/label';
 import {useRequiredUser} from '@/hooks/auth-hooks';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {AddUserToTeamForm} from '@/components/forms/teams/add-user-to-team-form';
 import {
   Dialog,

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {ProjectDataObject} from '@faims3/data-model';
 import {databaseService} from '../context/slices/helpers/databaseService';
 import {PouchDBWrapper} from '../context/slices/helpers/pouchDBWrapper';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {HRID_STRING} from '../datamodel';
 import {FAIMSTypeName} from '../types';
 import {slugify} from '../utils';

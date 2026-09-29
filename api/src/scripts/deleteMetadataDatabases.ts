@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /* eslint-disable n/no-process-exit */
 /**
  * Permanently deletes per-project metadata CouchDB databases after uiSpecification

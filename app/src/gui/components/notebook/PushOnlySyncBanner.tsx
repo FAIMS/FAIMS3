@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Alert, AlertTitle, Box, Button, Typography} from '@mui/material';
 import {useState} from 'react';
 import {config} from '../../../buildconfig';

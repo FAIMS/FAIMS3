@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {useId} from 'react';

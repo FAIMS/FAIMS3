@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Decide how an invite QR or typed code is redeemed.
  *

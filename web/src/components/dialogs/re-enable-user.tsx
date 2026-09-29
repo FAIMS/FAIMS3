@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useEnableUserAccount} from '@/hooks/user-hooks';
 import {

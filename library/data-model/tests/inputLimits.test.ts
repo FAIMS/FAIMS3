@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Tests for the shared input limits: central constants, bounded zod helpers
  * and the .max() caps applied across the API request schemas.

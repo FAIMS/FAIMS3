@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {RegisteredPlan} from '@faims3/data-model';
 
 /** One of a notebook's plans together with the view registered to render it. */

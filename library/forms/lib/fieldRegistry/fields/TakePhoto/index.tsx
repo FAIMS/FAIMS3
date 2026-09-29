@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Exif} from '@capacitor-community/exif';
 import {Camera, CameraResultType, CameraSource, Photo} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
@@ -419,6 +420,7 @@ const PhotoActionsTile: React.FC<{
       <PhotoActions
         onAddPhoto={onAddPhoto}
         onPickFromGallery={onPickFromGallery}
+        stretchOnNarrow
         actionsDisabled={actionsDisabled}
         actionsDisabledReason={actionsDisabledReason}
       />

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {config, buildRegisterUrl} from '@/constants';
 import {User} from '@/context/auth-provider';
 import {sortNotebookListNewestFirst} from '@/lib/utils';

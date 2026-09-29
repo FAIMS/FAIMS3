@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Shared extraction of a notebook's record geometry: each record's GIS field
  * values (Map / TakePoint components) read via the data engine and returned as

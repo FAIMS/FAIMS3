@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import {PaletteOptions, TypeBackground} from '@mui/material/styles';
 import {StepperColors} from '.';
