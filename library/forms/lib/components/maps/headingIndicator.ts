@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /** Gap between the GPS dot and the heading triangle, in screen pixels. */
 export const HEADING_INDICATOR_PIXEL_OFFSET = 23;
 
