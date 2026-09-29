@@ -64,3 +64,8 @@ if test -f ./public/assets/icons/icon-192.png; then
   mkdir -p ../web/public/assets/
   cp -r ./public/assets/icons ../web/public/assets/icons
 fi
+
+# Warn if the loading screen icon was not generated
+if ! test -f ./public/assets/icons/icon-512.png; then
+  echo "Warning: icon-512.png was not generated, the app loading screen logo may be missing."
+fi

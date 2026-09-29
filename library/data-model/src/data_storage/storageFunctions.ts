@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * The Data Storage module provides an API for accessing data from the GUI.
  * @module data_storage

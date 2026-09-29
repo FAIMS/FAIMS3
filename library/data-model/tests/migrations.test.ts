@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import PouchDB from 'pouchdb';
 import PouchDBMemoryAdapter from 'pouchdb-adapter-memory';
 import {DatabaseInterface, Resource, Role} from '../src';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * ViewRecordPage - Read-only view of a FAIMS record with tabbed navigation.
  *

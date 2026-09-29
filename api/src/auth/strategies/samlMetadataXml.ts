@@ -1,9 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License, Version 2.0 (the, "License");
- * you may not use this file except in compliance with the License.
- *
  * Description:
  *   Pure SAML metadata XML transforms (no buildconfig), for tests and signing.
  */

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {z, ZodType} from 'zod';
 
 /** Shown when a required field has no value. */

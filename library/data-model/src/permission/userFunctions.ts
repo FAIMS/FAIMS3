@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Set of helper functions to check/interact with the user object
  * (PeopleDBDocument) in relation to roles and actions.

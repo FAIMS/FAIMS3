@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {RecordContext} from '../gui/components/record/types';
 import {formatTimestamp, Record} from '@faims3/data-model';
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {AddProjectToTeamDialog} from '@/components/dialogs/add-project-to-team-dialog';
 import {ArchiveProjectDialog} from '@/components/dialogs/archive-project-dialog';
 import {ProjectStatusDialog} from '@/components/dialogs/change-project-status-dialog';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Email Code Management Module
  *
@@ -83,7 +84,7 @@ export const checkCanCreateEmailCode = async ({
   nextAttemptAllowedAt?: number;
 }> => {
   // Independent of the HTTP IP limiter (RATE_LIMITER_ENABLED). Local/e2e
-  // may set AUTH_ATTEMPT_LIMITER_ENABLED=false for repeated auth flows.
+  // may set ATTEMPT_LIMITER_ENABLED=false for repeated auth flows.
   if (!config.authAttemptLimiterEnabled) {
     return {canCreate: true};
   }

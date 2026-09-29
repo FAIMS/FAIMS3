@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Box} from '@mui/material';
 import React from 'react';
 import {grey} from '@mui/material/colors';

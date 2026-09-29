@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {INPUT_LIMITS} from '@faims3/data-model';
 import zxcvbn from 'zxcvbn';
 

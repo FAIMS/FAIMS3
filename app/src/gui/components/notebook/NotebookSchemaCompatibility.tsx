@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Notebook schema compatibility UI: list chip, degraded banner, and the
  * fail-soft skeleton shown when a notebook's design cannot be interpreted by

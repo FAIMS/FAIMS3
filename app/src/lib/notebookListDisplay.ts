@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {NOTEBOOK_LIST_DESCRIPTION_MAX_LENGTH} from '../buildconfig';
 import type {Project} from '../context/slices/projectSlice';
 

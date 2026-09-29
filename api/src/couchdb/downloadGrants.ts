@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Single-use export download grants stored in the auth CouchDB.
  *

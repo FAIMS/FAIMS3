@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file FieldWrapper.tsx
  * @description A reusable wrapper component for form fields.

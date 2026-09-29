@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file The tab a notebook view is on. Held on the notebook route, above the
  * record screens nested under it, so opening a record and coming back returns

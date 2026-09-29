@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Shared submit-gating for plan configuration: loading, fetch failure,
  * an unregistered plan type, or a component-based plan without a config all

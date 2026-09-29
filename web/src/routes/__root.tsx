@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {AuthContext} from '@/context/auth-provider';
 import {Outlet, createRootRouteWithContext} from '@tanstack/react-router';
 import {Button} from '@/components/ui/button';

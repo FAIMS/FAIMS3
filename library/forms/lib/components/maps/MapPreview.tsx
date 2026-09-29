@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Map from 'ol/Map';
 import View from 'ol/View';
 import GeoJSON from 'ol/format/GeoJSON';

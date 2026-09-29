@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: invites.ts
  * Description:
  *   This module contains invite related API routes at /api/invites
@@ -36,6 +24,7 @@ import {
   RoleScope,
   GetGlobalInvitesResponse,
   PostCreateGlobalInviteInputSchema,
+  PostUseInviteResponse,
 } from '@faims3/data-model';
 import express, {Request, Response} from 'express';
 import {z} from 'zod';
@@ -49,6 +38,12 @@ import {
   getInvitesForResource,
   isInviteValid,
 } from '../couchdb/invites';
+import {getCouchUserFromEmailOrUserId, saveCouchUser} from '../couchdb/users';
+import {validateAndApplyInviteToUser} from '../auth/helpers';
+import {
+  generateUserToken,
+  upgradeCouchUserToExpressUser,
+} from '../auth/keySigning/create';
 import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 import patch from '../utils/patchExpressAsync';
@@ -470,6 +465,79 @@ api.delete(
 
     await deleteInvite({invite});
     res.status(200).end();
+  }
+);
+
+/**
+ * POST /api/invites/:inviteId/use
+ * Consume an invite for the authenticated user and return a new access token
+ * whose roles include the grant. Used when the app is already signed in, so
+ * the user does not have to register or sign in again.
+ */
+api.post(
+  '/:inviteId/use',
+  requireAuthenticationAPI,
+  validate({
+    params: z.object({inviteId: IdInputSchema}),
+  }),
+  async (req, res: Response<PostUseInviteResponse>) => {
+    const {user} = req;
+    const {inviteId} = req.params;
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    if (user.impersonatingUserId) {
+      throw new Exceptions.ForbiddenException(
+        'Cannot redeem an invite while impersonating another user.'
+      );
+    }
+
+    const dbUser = await getCouchUserFromEmailOrUserId(user.user_id);
+    if (!dbUser) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    let updatedUser;
+    let invite;
+    try {
+      ({user: updatedUser, invite} = await validateAndApplyInviteToUser({
+        inviteCode: inviteId,
+        dbUser,
+        req,
+        action: 'login',
+      }));
+    } catch (e) {
+      throw new Exceptions.InvalidRequestException(
+        e instanceof Error
+          ? e.message
+          : 'Invite is not valid. It may be expired or already used.'
+      );
+    }
+    await saveCouchUser(updatedUser);
+
+    const expressUser = await upgradeCouchUserToExpressUser({
+      dbUser: updatedUser,
+    });
+    // Keep the replacement access token's lifetime equal to the token that
+    // authorised this request. A fresh `accessTokenExpiryMinutes` window
+    // would let repeated redemptions chain into a longer session.
+    if (req.accessTokenExpiresAt === undefined) {
+      throw new Exceptions.UnauthorizedException(
+        'Access token is missing an expiry and cannot be reissued.'
+      );
+    }
+    const {token} = await generateUserToken(expressUser, false, {
+      expiresAtSeconds: req.accessTokenExpiresAt,
+    });
+
+    res.json({
+      success: true,
+      inviteType: invite.inviteType,
+      resourceType: invite.resourceType,
+      resourceId: invite.resourceId,
+      role: invite.role,
+      accessToken: token,
+    });
   }
 );
 

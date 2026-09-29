@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {useAuth} from '@/context/auth-provider';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
