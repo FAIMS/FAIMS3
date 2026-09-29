@@ -162,7 +162,9 @@ export const FormBreadcrumbs = ({
             },
           }}
         >
-          {navigateToRecordList.label ?? 'Records'}
+          {/* The caller's label goes on the desktop crumb alone: this one is
+              cut to a word on purpose and a sentence wraps the trail. */}
+          Records
         </Box>
 
         {/* Loading indicator for lineage */}

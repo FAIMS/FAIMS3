@@ -36,16 +36,16 @@ describe('the root crumb', () => {
   });
 
   it('reads as the wording the caller gives it', () => {
-    renderCrumbs({label: 'Back to cell A1', navigate: vi.fn()});
-    expect(screen.getByText('Back to cell A1')).toBeInTheDocument();
+    renderCrumbs({label: 'Back to the survey', navigate: vi.fn()});
+    expect(screen.getByText('Back to the survey')).toBeInTheDocument();
     expect(screen.queryByText('Record list')).not.toBeInTheDocument();
   });
 
   it('still leaves the form when clicked', async () => {
     const user = userEvent.setup();
     const navigate = vi.fn();
-    renderCrumbs({label: 'Back to cell A1', navigate});
-    await user.click(screen.getByText('Back to cell A1'));
+    renderCrumbs({label: 'Back to the survey', navigate});
+    await user.click(screen.getByText('Back to the survey'));
     expect(navigate).toHaveBeenCalled();
   });
 });
