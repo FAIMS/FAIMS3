@@ -116,8 +116,7 @@ function useStackWhenContentOverflows(relayoutKey: unknown, enabled: boolean) {
     const measure = () => {
       const children = Array.from(el.children) as HTMLElement[];
       if (children.length === 0) return;
-      const gap =
-        Number.parseFloat(getComputedStyle(el).columnGap || '0') || 0;
+      const gap = Number.parseFloat(getComputedStyle(el).columnGap || '0') || 0;
       const needed =
         children.reduce((sum, child) => sum + maxContentWidth(child), 0) +
         gap * Math.max(0, children.length - 1);
