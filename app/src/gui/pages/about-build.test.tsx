@@ -75,9 +75,13 @@ test('Check about-build component', async () => {
 
   expect(screen.getByText('Backup from this device')).toBeTruthy();
 
-  expect(screen.getByText('Wipe and reset everything')).toBeTruthy();
+  if (config.showWipe) {
+    expect(screen.getByText('Wipe and reset everything')).toBeTruthy();
+  }
 
-  expect(screen.getByText('Open Raw Database Interface')).toBeTruthy();
+  if (config.showPouchdbBrowser) {
+    expect(screen.getByText('Open Raw Database Interface')).toBeTruthy();
+  }
 
   fireEvent.click(screen.getByText('Share local database contents'));
 
