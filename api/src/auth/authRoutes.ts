@@ -504,7 +504,7 @@ export function addAuthRoutes(
           let createdDbUser: PeopleDBDocument;
           try {
             // consume the invite and pass the user creation callback
-            createdDbUser = await validateAndApplyInviteToUser({
+            ({user: createdDbUser} = await validateAndApplyInviteToUser({
               // We don't have this yet
               dbUser: undefined,
               // instead we generate it once invite is OK
@@ -513,7 +513,7 @@ export function addAuthRoutes(
               inviteCode: inviteId,
               req,
               action: 'register',
-            });
+            }));
             await saveCouchUser(createdDbUser);
           } catch (e) {
             res.status(400);
