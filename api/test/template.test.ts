@@ -13,6 +13,7 @@ PouchDB.plugin(PouchDBFind);
 
 import {
   CreateNotebookFromTemplate,
+  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   GetListTemplatesResponse,
   GetListTemplatesResponseSchema,
   GetTemplateByIdResponse,
@@ -32,10 +33,14 @@ import {
 import {beforeEach, describe, expect, it} from 'vitest';
 import {Express} from 'express';
 import request from 'supertest';
+import {getTemplatesDb} from '../src/couchdb';
 import {getProjectById} from '../src/couchdb/notebooks';
+import {getTemplate} from '../src/couchdb/templates';
+import {migrateTemplateUiSpecificationsOnStartup} from '../src/couchdb/validateDatabases';
 import {getCouchUserFromEmailOrUserId} from '../src/couchdb/users';
 import {app} from '../src/expressSetup';
 import {
+  readLegacyNotebookFile,
   sampleCreateTemplatePayload,
   testNotebookDescription,
 } from './sampleNotebook';
@@ -322,6 +327,51 @@ describe('template API tests', () => {
 
     await setTemplateArchived(app, template._id, true);
     await deleteATemplate(app, template._id);
+  });
+
+  it('startup migrates stale template uiSpecs and rebuilds uiSpecProperties', async () => {
+    const {template: current} = await createSampleTemplate(app, {
+      name: 'already-current-template',
+    });
+    const {template: stale} = await createSampleTemplate(app, {
+      name: 'stale-template',
+    });
+
+    const templatesDb = getTemplatesDb();
+    const currentBefore = await templatesDb.get(current._id);
+    const staleBefore = await templatesDb.get(stale._id);
+    const currentHash = currentBefore.uiSpecProperties.hash;
+    const unknownHash = '0'.repeat(64);
+
+    // Pre-semver wire is not a typed TemplateDefinition; write it raw so
+    // startup must migrate and rebuild uiSpecProperties.
+    await templatesDb.put({
+      ...staleBefore,
+      uiSpecification: readLegacyNotebookFile(),
+      uiSpecProperties: {
+        schemaVersion: '7.0',
+        hash: unknownHash,
+      },
+    } as unknown as typeof staleBefore);
+
+    const result = await migrateTemplateUiSpecificationsOnStartup();
+    expect(result.outcomes.migrated).toBe(1);
+    expect(result.outcomes.up_to_date).toBeGreaterThanOrEqual(1);
+
+    const currentAfter = await templatesDb.get(current._id);
+    expect(currentAfter.uiSpecProperties.hash).toBe(currentHash);
+    expect(currentAfter.version).toBe(currentBefore.version);
+
+    const staleAfter = await getTemplate(stale._id);
+    expect(staleAfter.uiSpecification.uiSpec.schemaVersion).toBe(
+      CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+    );
+    expect(staleAfter.uiSpecProperties.schemaVersion).toBe(
+      CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+    );
+    expect(staleAfter.uiSpecProperties.hash).toHaveLength(64);
+    expect(staleAfter.uiSpecProperties.hash).not.toBe(unknownHash);
+    expect(staleAfter.version).toBe(staleBefore.version + 1);
   });
 
   it('excludes archived templates by default; includeArchived lists archived only', async () => {

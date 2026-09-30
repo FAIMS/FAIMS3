@@ -15,7 +15,7 @@ PouchDB.plugin(require('pouchdb-security-helper'));
 import {registerClient} from '@faims3/data-model';
 import {config} from './buildconfig';
 import {getDataDb} from './couchdb';
-import {validateDatabases} from './couchdb/notebooks';
+import {validateDatabases} from './couchdb/validateDatabases';
 import {app} from './expressSetup';
 
 // set up the database module @faims3/data-model with our callbacks to get databases

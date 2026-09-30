@@ -150,7 +150,7 @@ Legacy exports with top-level `metadata` + `ui-specification` (kebab-case, `fvie
 3. **Templates DB** — analogous template v4 → v5 migration.
 4. **Listing digest** (`projectsV4toV5Migration` / `templatesV5toV6Migration`): adds mandatory `uiSpecProperties` so listings can omit `uiSpecification`.
 
-API startup always runs notebook migrations when validating databases.
+API startup always runs notebook migrations when validating databases (projects and templates).
 
 After all projects are on v4 with inlined specs, operators can remove orphaned Couch databases:
 
