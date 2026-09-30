@@ -487,6 +487,21 @@ export const createNotebook = async ({
   } satisfies ProjectDocument;
 
   try {
+    await registerDataDbAtCurrentVersion({
+      project: projectDoc,
+      launchedBy: createdBy,
+    });
+  } catch (error) {
+    console.error(
+      `Failed to register data DB migration for new survey ${projectId}:`,
+      error
+    );
+    throw new Exceptions.InternalSystemError(
+      `Failed to register data DB migration for new survey ${projectId}.`
+    );
+  }
+
+  try {
     // first add an entry to the projects db about this project
     const projectsDB = localGetProjectsDb();
     await projectsDB.put(projectDoc);
@@ -498,11 +513,6 @@ export const createNotebook = async ({
   await initialiseDataDb({
     projectId,
     force: true,
-  });
-
-  await registerDataDbAtCurrentVersion({
-    project: projectDoc,
-    launchedBy: createdBy,
   });
 
   return projectId;
