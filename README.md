@@ -23,6 +23,30 @@ each commit with `git commit -s`. See [app/DCO](app/DCO).
 
 An automated license check is run via `pnpm license-check` in the CI build-lint script, it will fail if the license line is missing from any new files. To inject the license into new files you can run `pnpm license-check --inject`.
 
+## Contributors
+
+FAIMS3 is developed by people at CSIRO, Electronic Field Notebooks, Macquarie
+University, and elsewhere. People are named here if they wrote at least 1% of
+the lines in the current code, or made 100 or more commits in the last three
+years, or if the maintainers name them for sustained contributions to the
+project's design and direction. The list is checked whenever it is updated.
+Everyone else who has contributed is in the commit history, and the
+organisations that hold copyright are in [AUTHORS](AUTHORS).
+
+- Jayen Ashar, contractor to Electronic Field Notebooks
+- Peter Baker, CSIRO
+- Brian Ballsun-Stanton, Macquarie University
+- Tom Bevan, Electronic Field Notebooks
+- Steve Cassidy, Electronic Field Notebooks (previously Macquarie University)
+- Ranisa Gupta, CSIRO
+- Xinyu Hou, CSIRO
+- Ryan Kontos, Electronic Field Notebooks (intern, 2024 to 2025)
+- Luke McFarlane, contractor to CSIRO
+- Shawn Ross, Electronic Field Notebooks
+
+Peter Baker designed and built the Amazon Web Services deployment in
+`infrastructure/aws-cdk`, which CSIRO contributed to the open-source project.
+
 ## Directory Structure
 
 The repository contains the following:
