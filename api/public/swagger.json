@@ -2337,7 +2337,25 @@
         "createdBy": {"type": "string"},
         "createdAt": {"type": "string", "format": "date-time"},
         "updatedAt": {"type": "string", "format": "date-time"},
-        "dataDb": {"$ref": "#/definitions/PossibleConnectionInfo"}
+        "dataDb": {"$ref": "#/definitions/PossibleConnectionInfo"},
+        "uiSpecProperties": {
+          "type": "object",
+          "description": "Closed digest of the stored `uiSpecification`. Listing views emit this instead of the form payload.",
+          "properties": {
+            "schemaVersion": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Notebook UI schema version persisted with the design."
+            },
+            "hash": {
+              "type": "string",
+              "minLength": 64,
+              "maxLength": 64,
+              "description": "SHA-256 digest of the stored uiSpecification, lowercase hex."
+            }
+          },
+          "required": ["schemaVersion", "hash"]
+        }
       },
       "required": [
         "_id",
@@ -2346,7 +2364,8 @@
         "createdBy",
         "createdAt",
         "updatedAt",
-        "dataDb"
+        "dataDb",
+        "uiSpecProperties"
       ]
     },
     "ProjectDocument": {
