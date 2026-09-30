@@ -8,6 +8,7 @@ import type {Project} from '../../../../context/slices/projectSlice';
 const harness = vi.hoisted(() => ({
   isOnline: true,
   username: 'ada',
+  serverUrl: 'http://localhost:8080',
   resourceRoles: [] as {role: Role; resourceId: string}[],
   create: vi.fn(),
   revokeOwn: vi.fn(),
@@ -33,7 +34,7 @@ vi.mock('../../../../context/store', () => ({
           token: 'token',
           parsedToken: {
             username: harness.username,
-            server: 'http://localhost:8080',
+            server: harness.serverUrl,
             exp: 9_999_999_999,
             globalRoles: [],
             resourceRoles: harness.resourceRoles,
@@ -44,7 +45,7 @@ vi.mock('../../../../context/store', () => ({
         servers: {
           'server-1': {
             serverId: 'server-1',
-            serverUrl: 'http://localhost:8080',
+            serverUrl: harness.serverUrl,
             serverTitle: 'Local',
           },
         },
@@ -112,9 +113,11 @@ describe('NotebookQuickShare', () => {
   beforeEach(() => {
     harness.isOnline = true;
     harness.username = 'ada';
+    harness.serverUrl = 'http://localhost:8080';
     harness.resourceRoles = [];
     harness.dispatch.mockReset();
     harness.revokeOwn.mockReset();
+    vi.mocked(QRCode.toDataURL).mockClear();
     harness.revokeOwn.mockResolvedValue(undefined);
     harness.create.mockReset();
     harness.create.mockResolvedValue({
@@ -256,6 +259,28 @@ describe('NotebookQuickShare', () => {
         role: Role.PROJECT_GUEST,
       })
     );
+  });
+
+  it('encodes the stored conductor URL including a default HTTPS port', async () => {
+    harness.serverUrl = 'https://conductor.bss.nbic.cloud:443';
+    harness.resourceRoles = [
+      {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
+    ];
+    renderShare();
+    openShareDialog();
+    fireEvent.click(screen.getByTestId('app-quick-share-generate'));
+    await vi.waitFor(() => expect(harness.dispatch).toHaveBeenCalled());
+    const encoded =
+      'https://conductor.bss.nbic.cloud:443/register?inviteId=FAIMS-quicksharecode';
+    const action = harness.dispatch.mock.calls[0][0];
+    expect(action.payload.quickShare.qrCode).toContain(encoded);
+    expect(QRCode.toDataURL).toHaveBeenCalledWith(
+      encoded,
+      expect.objectContaining({width: 2048})
+    );
+    // InviteQRScanner rejects a URL() payload that dropped :443.
+    expect(encoded.startsWith(harness.serverUrl)).toBe(true);
+    expect(encoded.match(`${harness.serverUrl}/register.*`)).toBeTruthy();
   });
 
   it('shows the stored code, its role and expiry, and opens the lightbox', () => {
