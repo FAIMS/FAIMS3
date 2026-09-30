@@ -59,12 +59,12 @@ for code work.
 
 - Shared libraries must be built before the API/migrate can resolve
   `@faims3/data-model` / `@faims3/forms` (their package `main` points at build
-  output). `pnpm run dev` builds them automatically via the turbo `dev` ->
-  `^build` dependency; if you run `pnpm run migrate-with-keys` on a fresh tree
-  first, run `pnpm build` (or `npx turbo build`) once beforehand.
-- Do not put `--parallel` back on the `dev` script. It strips the cross-package
-  build edges, so app and web compile against `library/data-model/build` while
-  the data-model watcher is rewriting it, and both miss the turbo cache.
+  output). `pnpm run dev` builds them automatically: the app, web and api dev
+  tasks wait on their dependencies' builds (`dev` -> `^build`), and
+  `@faims3/data-model`'s own `dev` waits on its `build`, so the watcher never
+  starts beside the build that writes the same directory. If you run
+  `pnpm run migrate-with-keys` on a fresh tree first, run `pnpm build` (or
+  `npx turbo build`) once beforehand.
 - Local admin credentials: username `admin`, password
   `aSecretPasswordThatCantBeGuessed` (the `COUCHDB_PASSWORD` in `api/.env`).
   The Control Centre (`:3001`) redirects to the Conductor login at

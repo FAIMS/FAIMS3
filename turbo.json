@@ -25,6 +25,12 @@
       "cache": false,
       "outputs": [],
       "persistent": true
+    },
+    "@faims3/data-model#dev": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": [],
+      "persistent": true
     }
   }
 }
