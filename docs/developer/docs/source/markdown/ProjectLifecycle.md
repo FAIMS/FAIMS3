@@ -80,6 +80,13 @@ Swagger: `api/public/swagger.json` under `/tombstones/{id}`.
 
 ## App safety model
 
+`GET /api/directory` is a **lean** listing: each row includes `uiSpecProperties`
+(`schemaVersion` + SHA-256 of the stored design) and omits `uiSpecification`.
+It shares the same lister as `GET /api/notebooks` and never computes `byteCount`
+(that is opt-in on `/api/notebooks?includeByteCount=true` for Control Centre
+storage). The full design is `GET /api/notebooks/:id`, used on first activation
+and when an activated notebook's directory hash changes.
+
 When the app refreshes the project list (`initialiseProjects` / workspace
 Refresh):
 

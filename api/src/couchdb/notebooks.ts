@@ -22,6 +22,7 @@ import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   getNotebookSchemaVersion,
   notebookUiSpecificationNeedsMigration,
+  notebookSchemaVersionNeedsMigration,
   NotebookDefinition,
   NotebookUiSpecificationInput,
   ProjectDBFields,
@@ -37,17 +38,16 @@ import {
   PutUpdateNotebookUiSpecificationInput,
   Resource,
   resourceRoles,
-  Role,
   setAttachmentDumperForType,
   setAttachmentLoaderForType,
   slugify,
-  userHasProjectRole,
   NotebookUiSpec,
   normalizeNotebookUiSpecification,
   normalizeRootDescriptionForStore,
   notebookUiSpecificationValidationMessage,
   CompiledNotebookUiSpec,
   compileUiSpecConditionals,
+  buildUiSpecProperties,
 } from '@faims3/data-model';
 import {
   getNanoDataDb,
@@ -144,21 +144,10 @@ export const putProjectDoc = async (doc: ProjectDocument) => {
 export const getProjectIdsReferencingTemplate = async (
   templateId: string
 ): Promise<string[]> => {
-  const projectsDb = localGetProjectsDb();
-  const res = await projectsDb.allDocs<ProjectDocument>({
-    include_docs: true,
-  });
-  const ids: string[] = [];
-  for (const row of res.rows) {
-    const doc = row.doc;
-    if (!doc || row.id.startsWith('_')) {
-      continue;
-    }
-    if (doc.templateId === templateId) {
-      ids.push(doc._id);
-    }
-  }
-  return ids;
+  const projects = await getAllProjectsListing();
+  return projects
+    .filter(project => project.templateId === templateId)
+    .map(project => project._id);
 };
 
 /**
@@ -182,53 +171,43 @@ export const clearTemplateIdFromProjectsReferencingTemplate = async (
   }
 };
 
+/** Stamp the public Couch URL so listing clients can open the data DB. */
+export function stampListingCouchUrl<T extends ProjectListItem>(project: T): T {
+  if (!project.dataDb) {
+    return project;
+  }
+  return {
+    ...project,
+    dataDb: {
+      ...project.dataDb,
+      base_url: config.couchdbPublicUrl,
+    },
+  };
+}
+
 /**
- * getAllProjects - get the internal project documents that reference
- * the project databases that the front end will connnect to
+ * Lists every project via the listing view (no `uiSpecification`).
+ * Stamps `dataDb.base_url` so field-app directory clients can open Couch.
  */
-export const getAllProjectsDirectory = async (): Promise<ProjectDocument[]> => {
+export const getAllProjectsListing = async (): Promise<ProjectListItem[]> => {
   const projectsDb = localGetProjectsDb();
-  const projects: ProjectDocument[] = [];
-  const res = await projectsDb.allDocs<ProjectDocument>({
-    include_docs: true,
-  });
-  res.rows.forEach(e => {
-    if (e.doc !== undefined && !e.id.startsWith('_')) {
-      const doc = e.doc;
-      const project = {...doc, _rev: undefined};
-      // delete rev so that we don't include in the result
-      delete project._rev;
-      // add database connection details
-      if (project.dataDb) project.dataDb.base_url = config.couchdbPublicUrl;
-      projects.push(project);
-    }
-  });
-  return projects;
+  try {
+    const resultList = await projectsDb.query<ProjectListItem>(
+      PROJECTS_LISTING_BY_PROJECT_ID,
+      {include_docs: false}
+    );
+    return resultList.rows
+      .filter(row => row.value != null && row.id && !row.id.startsWith('_'))
+      .map(row => stampListingCouchUrl({...row.value!}));
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading the project listing from the Project DB.'
+    );
+  }
 };
 
 /**
- * getUserProjects - get the internal project documents that reference
- * the project databases that the front end will connnect to
- * @param user - only return projects visible to this user
- */
-export const getUserProjectsDirectory = async (
-  user: Express.User,
-  includeArchived = false
-): Promise<ProjectDocument[]> => {
-  return (await getAllProjectsDirectory()).filter(p => {
-    if (!includeArchived && p.status === ProjectStatus.ARCHIVED) {
-      return false;
-    }
-    return userCanDo({
-      user,
-      action: Action.READ_PROJECT_METADATA,
-      resourceId: p._id,
-    });
-  });
-};
-
-/**
- * How many projects {@link getUserProjectsDetailed} resolves per batch when
+ * How many projects {@link getUserProjectsListing} resolves per batch when
  * computing each project's `byteCount`. Each `byteCount` costs one CouchDB
  * `info()` call, so this caps the concurrent `info()` round-trips and stops a
  * user/team with many notebooks from opening one connection per project at once
@@ -236,20 +215,23 @@ export const getUserProjectsDirectory = async (
  */
 const BYTE_COUNT_BATCH_SIZE = 10;
 
+export type GetUserProjectsListingOptions = {
+  teamId?: string;
+  includeArchived?: boolean;
+  includeByteCount?: boolean;
+};
+
 /**
- * Lists notebooks using CouchDB views whose map `value` is the project doc
- * without `uiSpecification`. Uses `include_docs: false` on purpose: with
- * `include_docs: true`, CouchDB would also attach the full stored document for
- * each row (including `uiSpecification`), which would defeat the lean list.
- *
- * @param user - only return notebooks that this user can see
- * @returns notebook list rows (from each row's `value`) plus `is_admin` and `byteCount`
+ * Lean listing of notebooks the user can read. Shared by `GET /api/notebooks`
+ * and `GET /api/directory`. Uses listing views (`include_docs: false`) so the
+ * form payload is never loaded. `byteCount` is opt-in — it costs one Couch
+ * `info()` per project.
  */
-export const getUserProjectsDetailed = async (
+export const getUserProjectsListing = async (
   user: Express.User,
-  teamId: string | undefined = undefined,
-  includeArchived = false
+  options: GetUserProjectsListingOptions = {}
 ): Promise<APINotebookList[]> => {
+  const {teamId, includeArchived = false, includeByteCount = false} = options;
   const projectsDb = localGetProjectsDb();
 
   let resultList;
@@ -273,7 +255,7 @@ export const getUserProjectsDetailed = async (
 
   const userProjects = resultList.rows
     .filter(row => row.value != null && row.id && !row.id.startsWith('_'))
-    .map(row => row.value!)
+    .map(row => stampListingCouchUrl({...row.value!}))
     .filter(project => {
       if (!includeArchived && project.status === ProjectStatus.ARCHIVED) {
         return false;
@@ -285,23 +267,19 @@ export const getUserProjectsDetailed = async (
       });
     });
 
+  if (!includeByteCount) {
+    return userProjects;
+  }
+
   const detailed: APINotebookList[] = [];
   for (let p = 0; p < userProjects.length; p += BYTE_COUNT_BATCH_SIZE) {
     const batch = userProjects.slice(p, p + BYTE_COUNT_BATCH_SIZE);
     detailed.push(
       ...(await Promise.all(
-        batch.map(async project => {
-          const projectId = project._id;
-          return {
-            ...project,
-            is_admin: userHasProjectRole({
-              user,
-              projectId,
-              role: Role.PROJECT_ADMIN,
-            }),
-            byteCount: await getByteCount(projectId),
-          };
-        })
+        batch.map(async project => ({
+          ...project,
+          byteCount: await getByteCount(project._id),
+        }))
       ))
     );
   }
@@ -372,47 +350,62 @@ export const validateDatabases = async () => {
       return report;
     }
 
-    const projects = await getAllProjectsDirectory();
+    const projects = await getAllProjectsListing();
     logNotebookStartup('projects_loaded', {count: projects.length});
 
     for (const project of projects) {
       const projectId = project._id;
       const projectName = project.name;
+      const listedVersion = project.uiSpecProperties?.schemaVersion;
 
-      const raw = project.uiSpecification;
-      if (raw == null) {
-        uiSpecCounts.skipped_no_ui_spec++;
-        logNotebookStartup('ui_spec', {
-          outcome: 'skipped_no_ui_spec',
-          projectId,
-          projectName,
-        });
-      } else if (!isUiSpecificationObject(raw)) {
-        uiSpecCounts.skipped_invalid_ui_spec++;
-        logNotebookStartup('ui_spec', {
-          outcome: 'skipped_invalid_ui_spec',
-          projectId,
-          projectName,
-        });
-      } else if (notebookUiSpecificationNeedsMigration(raw)) {
-        const fromSchemaVersion = schemaVersionLabel(raw);
-        await updateProjectUiSpecification(projectId, raw);
-        uiSpecCounts.migrated++;
-        logNotebookStartup('ui_spec', {
-          outcome: 'migrated',
-          projectId,
-          projectName,
-          fromSchemaVersion,
-          toSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
-        });
-      } else {
+      if (
+        listedVersion &&
+        !notebookSchemaVersionNeedsMigration(listedVersion)
+      ) {
         uiSpecCounts.up_to_date++;
         logNotebookStartup('ui_spec', {
           outcome: 'up_to_date',
           projectId,
           projectName,
-          schemaVersion: schemaVersionLabel(raw),
+          schemaVersion: listedVersion,
         });
+      } else {
+        const full = await getProjectById(projectId);
+        const raw = full.uiSpecification;
+        if (raw == null) {
+          uiSpecCounts.skipped_no_ui_spec++;
+          logNotebookStartup('ui_spec', {
+            outcome: 'skipped_no_ui_spec',
+            projectId,
+            projectName,
+          });
+        } else if (!isUiSpecificationObject(raw)) {
+          uiSpecCounts.skipped_invalid_ui_spec++;
+          logNotebookStartup('ui_spec', {
+            outcome: 'skipped_invalid_ui_spec',
+            projectId,
+            projectName,
+          });
+        } else if (notebookUiSpecificationNeedsMigration(raw)) {
+          const fromSchemaVersion = schemaVersionLabel(raw);
+          await updateProjectUiSpecification(projectId, raw);
+          uiSpecCounts.migrated++;
+          logNotebookStartup('ui_spec', {
+            outcome: 'migrated',
+            projectId,
+            projectName,
+            fromSchemaVersion,
+            toSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+          });
+        } else {
+          uiSpecCounts.up_to_date++;
+          logNotebookStartup('ui_spec', {
+            outcome: 'up_to_date',
+            projectId,
+            projectName,
+            schemaVersion: schemaVersionLabel(raw),
+          });
+        }
       }
 
       await initialiseDataDb({
@@ -481,6 +474,7 @@ export const createNotebook = async ({
     createdAt: now,
     updatedAt: now,
     uiSpecification: normalizedUiSpecification,
+    uiSpecProperties: await buildUiSpecProperties(normalizedUiSpecification),
   } satisfies ProjectDocument;
 
   try {
@@ -540,6 +534,7 @@ export const updateProjectUiSpecification = async (
   const updated: ProjectDocument = {
     ...project,
     uiSpecification: normalizedUiSpecification,
+    uiSpecProperties: await buildUiSpecProperties(normalizedUiSpecification),
     updatedAt: nowIso(),
   };
   await putProjectDoc(updated);

@@ -7,10 +7,16 @@ import {
   migrateNotebook,
   NotebookDefinition,
   NotebookSchemaCompatibility,
+  ProjectListItem,
   UiSpecModel,
+  UiSpecProperties,
 } from '@faims3/data-model';
 import {config} from '../../../buildconfig';
-import type {Project, ProjectInformation} from '../projectSlice';
+import type {
+  ListedProject,
+  Project,
+  ProjectListingInformation,
+} from '../projectSlice';
 
 /** Legacy redux fields persisted before `uiDefinition` existed. */
 type LegacyPersistedNotebookFields = {
@@ -94,18 +100,17 @@ export function isNotebookDesignLocked(
 }
 
 /**
- * Block first activation when this build cannot interpret the design and
- * there is no last-good graph on the device (newer major or failed parse).
- * Already-activated notebooks keep their sync controls. A last-good graph
- * may be re-activated so local data is not trapped.
+ * Block first activation when this build cannot interpret the design.
+ * Listed notebooks have no form graph; an incompatible schemaVersion is
+ * enough. Already-activated notebooks keep their sync controls.
  */
 export function isNotebookActivationBlocked(
-  project: Pick<Project, 'schemaCompatibility' | 'uiDefinition'> | undefined
+  project: Pick<Project, 'schemaCompatibility' | 'isActivated'> | undefined
 ): boolean {
-  return (
-    isNotebookDesignLocked(project) &&
-    isPlaceholderNotebookDefinition(project?.uiDefinition)
-  );
+  if (!project || project.isActivated) {
+    return false;
+  }
+  return isNotebookDesignLocked(project);
 }
 
 /**
@@ -125,9 +130,10 @@ export function isNotebookActivationBlocked(
  *   `degraded`; a newer major (app downgrade) becomes `incompatible` while the
  *   stored graph is kept for read-only access, mirroring `initialiseProjects`.
  */
-export function reassessPersistedNotebookDefinition(
-  project: Pick<Project, 'uiDefinition' | 'schemaCompatibility'>
-): {
+export function reassessPersistedNotebookDefinition(project: {
+  uiDefinition: NotebookDefinition;
+  schemaCompatibility?: NotebookSchemaCompatibility;
+}): {
   uiDefinition: NotebookDefinition;
   schemaCompatibility: NotebookSchemaCompatibility;
   changed: boolean;
@@ -260,10 +266,12 @@ export function ingestNotebookDefinitionForStore(raw: unknown): {
   };
 }
 
-/** Map GET /api/notebooks/:id to store-ready {@link ProjectInformation}. */
+/** Map GET /api/notebooks/:id to store-ready listing fields plus the design. */
 export function projectInformationFromGetNotebook(
   notebook: GetNotebookResponse
-): ProjectInformation {
+): ProjectListingInformation & {
+  uiDefinition: NotebookDefinition;
+} {
   const {uiDefinition, schemaCompatibility} = ingestNotebookDefinitionForStore(
     notebook.uiSpecification
   );
@@ -278,5 +286,43 @@ export function projectInformationFromGetNotebook(
     recordCount: notebook.recordCount,
     offlineMapRegion: notebook.offlineMapRegion,
     disableQuickShare: notebook.disableQuickShare,
+    uiSpecProperties: notebook.uiSpecProperties,
   };
 }
+
+/** Map a lean directory / list row to store listing fields (no form graph). */
+export function listingInformationFromDirectoryItem(
+  item: ProjectListItem
+): ProjectListingInformation {
+  return {
+    name: item.name,
+    description: item.description,
+    templateId: item.templateId,
+    status: item.status,
+    updatedAt: item.updatedAt,
+    offlineMapRegion: item.offlineMapRegion,
+    disableQuickShare: item.disableQuickShare,
+    uiSpecProperties: item.uiSpecProperties,
+    schemaCompatibility: assessNotebookSchemaCompatibility(
+      item.uiSpecProperties.schemaVersion
+    ),
+  };
+}
+
+export function listedProjectFromDirectoryItem({
+  item,
+  serverId,
+}: {
+  item: ProjectListItem;
+  serverId: string;
+}): ListedProject {
+  return {
+    ...listingInformationFromDirectoryItem(item),
+    projectId: item._id,
+    serverId,
+    isActivated: false,
+  };
+}
+
+/** Re-export for persist / compile callers. */
+export type {UiSpecProperties};

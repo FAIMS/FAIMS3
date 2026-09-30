@@ -14,8 +14,11 @@ import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   ProjectStatus,
 } from '@faims3/data-model';
-import {migrateProjectsPersistedState} from './projectsPersistMigration';
-import {migrateProjectsSyncModeV2} from './projectsPersistMigration';
+import {
+  migrateProjectsActivationSplitV3,
+  migrateProjectsPersistedState,
+  migrateProjectsSyncModeV2,
+} from './projectsPersistMigration';
 
 const buildCompiledSpecId = ({
   projectId,
@@ -312,5 +315,115 @@ describe('migrateProjectsSyncModeV2', () => {
     expect(migrated.servers['server-a']!.projects.on!.database!.syncMode).toBe(
       'both'
     );
+  });
+});
+
+describe('migrateProjectsActivationSplitV3', () => {
+  const listedDefinition = {
+    uiSpec: {
+      fields: {title: {label: 'Title'}},
+      views: {},
+      viewsets: {},
+      visible_types: [],
+      settings: {showQrCodeButton: false},
+      schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+    },
+    metadata: {
+      information: {
+        notebookVersion: '1.0',
+        purposeMarkdown: 'Listed purpose',
+        projectLeadLabel: '',
+        leadInstitution: '',
+      },
+    },
+  };
+  const activatedDefinition = {
+    uiSpec: {
+      fields: {title: {label: 'Active'}},
+      views: {},
+      viewsets: {},
+      visible_types: [],
+      settings: {showQrCodeButton: false},
+      schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+    },
+    metadata: {
+      information: {
+        notebookVersion: '1.0',
+        purposeMarkdown: 'Activated purpose',
+        projectLeadLabel: '',
+        leadInstitution: '',
+      },
+    },
+  };
+
+  it('splits maps, keeps activated graphs, and immediately strips listed specs', async () => {
+    const migrated = await migrateProjectsActivationSplitV3({
+      isInitialised: true,
+      servers: {
+        'server-a': {
+          serverId: 'server-a',
+          serverUrl: 'https://example.test',
+          serverTitle: 'Test',
+          shortCodePrefix: 'T',
+          description: '',
+          projects: {
+            listed: {
+              projectId: 'listed',
+              serverId: 'server-a',
+              name: 'Listed',
+              isActivated: false,
+              status: ProjectStatus.OPEN,
+              uiSpecificationId: 'listed-spec',
+              uiDefinition: listedDefinition,
+            },
+            active: {
+              projectId: 'active',
+              serverId: 'server-a',
+              name: 'Active',
+              isActivated: true,
+              status: ProjectStatus.OPEN,
+              uiSpecificationId: 'active-spec',
+              uiDefinition: activatedDefinition,
+              database: {
+                localDbId: 'local',
+                syncMode: 'both',
+                isSyncingAttachments: false,
+                remote: {
+                  remoteDbId: 'remote',
+                  syncId: 'sync',
+                  connectionConfiguration: {
+                    jwtToken: 't',
+                    couchUrl: 'https://couch',
+                    databaseName: 'data-active',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const server = migrated.servers['server-a']!;
+    expect(server).not.toHaveProperty('projects');
+    expect(migrated.isInitialised).toBe(true);
+
+    const listed = server.listed.listed;
+    expect(listed).toBeDefined();
+    expect(listed.isActivated).toBe(false);
+    expect(listed).not.toHaveProperty('uiDefinition');
+    expect(listed).not.toHaveProperty('uiSpecificationId');
+    expect(listed.uiSpecProperties.schemaVersion).toBe(
+      CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+    );
+    expect(listed.uiSpecProperties.hash).toHaveLength(64);
+
+    const active = server.activated.active;
+    expect(active).toBeDefined();
+    expect(active.isActivated).toBe(true);
+    expect(active.uiDefinition).toEqual(activatedDefinition);
+    expect(active.uiSpecificationId).toBe('active-spec');
+    expect(active.uiSpecProperties.hash).toHaveLength(64);
+    expect(active.uiSpecProperties.hash).not.toBe(listed.uiSpecProperties.hash);
   });
 });

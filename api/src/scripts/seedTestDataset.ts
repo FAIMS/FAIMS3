@@ -56,6 +56,7 @@ import {
   normalizeRootDescriptionForStore,
   safeWriteDocument,
   TemplateDocument,
+  buildUiSpecProperties,
 } from '@faims3/data-model';
 import {readFileSync} from 'fs';
 import {addLocalPasswordForUser} from '../auth/helpers';
@@ -453,6 +454,7 @@ async function upsertSeedTemplate({
       name,
       description,
       uiSpecification: normalizedUiSpecification,
+      uiSpecProperties: await buildUiSpecProperties(normalizedUiSpecification),
       ownedByTeamId: teamId,
       createdBy: SEED_CREATED_BY,
       archived: false,
@@ -473,6 +475,7 @@ async function upsertSeedTemplate({
       archived: false,
       isPublic: false,
       uiSpecification: normalizedUiSpecification,
+      uiSpecProperties: await buildUiSpecProperties(normalizedUiSpecification),
       ownedByTeamId: teamId,
       name,
       description,
@@ -537,6 +540,7 @@ async function upsertSeedNotebook({
       createdBy: SEED_CREATED_BY,
       status: ProjectStatus.OPEN,
       uiSpecification: normalizedUiSpecification,
+      uiSpecProperties: await buildUiSpecProperties(normalizedUiSpecification),
       updatedAt: now,
       dataDb: existing.dataDb ?? {db_name: dataDBName},
     };
@@ -565,6 +569,7 @@ async function upsertSeedNotebook({
     createdAt: now,
     updatedAt: now,
     uiSpecification: normalizedUiSpecification,
+    uiSpecProperties: await buildUiSpecProperties(normalizedUiSpecification),
   };
   await projectsDb.put(projectDoc);
   await initialiseDataDb({projectId: id, force: true});

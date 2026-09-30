@@ -600,6 +600,24 @@ const failSoftProject = (): Project => ({
   status: ProjectStatus.OPEN,
   isActivated: true,
   uiSpecificationId: 'spec-1',
+  uiSpecProperties: {
+    schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+    hash: 'a'.repeat(64),
+  },
+  database: {
+    syncMode: 'none',
+    isSyncingAttachments: false,
+    localDbId: 'local-1',
+    remote: {
+      remoteDbId: 'remote-1',
+      syncId: undefined,
+      connectionConfiguration: {
+        jwtToken: 't',
+        couchUrl: 'https://couch.example',
+        databaseName: 'data-test',
+      },
+    },
+  },
   uiDefinition: {
     uiSpec: {
       fields: {},

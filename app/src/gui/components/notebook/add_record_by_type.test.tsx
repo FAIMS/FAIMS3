@@ -61,7 +61,12 @@ const renderButtons = ({
       <NotebookRouteProvider>
         <AddRecordButtons
           project={
-            {projectId: 'p', serverId: 's', uiSpecificationId: 'u'} as Project
+            {
+              projectId: 'p',
+              serverId: 's',
+              isActivated: true,
+              uiSpecificationId: 'u',
+            } as Project
           }
           refreshList={vi.fn()}
           formTypes={formTypes}

@@ -29,7 +29,7 @@ import {
   getUiSpecModel,
   getProjectById,
   getRolesForNotebook,
-  getUserProjectsDetailed,
+  getUserProjectsListing,
   updateProjectMetadata,
   updateProjectUiSpecification,
   validateNotebookID,
@@ -247,7 +247,7 @@ describe('notebook api', () => {
       // Update permissions
       bobalooba = await upgradeCouchUserToExpressUser({dbUser: bobalooba});
 
-      const notebooks = await getUserProjectsDetailed(bobalooba);
+      const notebooks = await getUserProjectsListing(bobalooba);
       expect(notebooks.length).toBe(2);
       for (const notebook of notebooks) {
         expect(notebook).not.toHaveProperty('uiSpecification');
@@ -269,7 +269,7 @@ describe('notebook api', () => {
     if (projectID && user) {
       expect(projectID.substring(13)).toBe('-test-notebook');
 
-      const notebooks = await getUserProjectsDetailed(user);
+      const notebooks = await getUserProjectsListing(user);
       expect(notebooks.length).toBe(1);
     }
   });
@@ -408,7 +408,7 @@ describe('notebook api', () => {
 
       expect(projectID.substring(13)).toBe('-test-notebook');
 
-      const notebooks = await getUserProjectsDetailed(user);
+      const notebooks = await getUserProjectsListing(user);
       expect(notebooks.length).toBe(1);
       const newUISpec = await getUiSpecModel(projectID);
       if (newUISpec) {

@@ -46,6 +46,7 @@ import {useEffect, useId, useMemo, useState} from 'react';
 import {config} from '../../../../buildconfig';
 import {selectActiveUser} from '../../../../context/slices/authSlice';
 import {
+  isActivatedProject,
   Project,
   ProjectQuickShare,
   clearProjectQuickShare,
@@ -208,7 +209,9 @@ export default function NotebookQuickShare({
     }
   }, [allowedRoles, role]);
 
-  const storedShare = project.quickShare;
+  const storedShare = isActivatedProject(project)
+    ? project.quickShare
+    : undefined;
   const expired = !!storedShare && storedShare.expiry <= now;
   // An expired code is not shown. Another person's code is not shown either,
   // including an admin code this user is not allowed to grant. It stays stored

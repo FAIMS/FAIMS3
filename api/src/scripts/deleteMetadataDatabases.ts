@@ -9,14 +9,14 @@
  *   pnpm run delete-metadata-databases --dry-run
  */
 import * as readline from 'readline';
-import {ProjectDocument} from '@faims3/data-model';
+import {ProjectListItem} from '@faims3/data-model';
 import {config} from '../buildconfig';
 import {
   destroyCouchDatabase,
   listCouchDatabaseNames,
   verifyCouchDBConnection,
 } from '../couchdb';
-import {getAllProjectsDirectory} from '../couchdb/notebooks';
+import {getAllProjectsListing} from '../couchdb/notebooks';
 
 /** Default Couch metadata database name prefix (`metadata-{projectId}`). */
 const METADATA_DATABASE_NAME_PREFIX = 'metadata-';
@@ -50,7 +50,7 @@ const metadataDbNameFromProjectId = (projectId: string): string =>
   METADATA_DATABASE_NAME_PREFIX + projectId;
 
 const metadataDbNameFromProject = (
-  project: ProjectDocument
+  project: ProjectListItem
 ): string | undefined => {
   const projectId = project._id?.trim();
   return projectId ? metadataDbNameFromProjectId(projectId) : undefined;
@@ -62,8 +62,8 @@ type LegacyProjectMetadataDbRef = {
 };
 
 /** Whether the project doc still stores the deprecated metadataDb / metadata_db reference. */
-const projectStillHasMetadataDbRef = (project: ProjectDocument): boolean => {
-  const legacy = project as ProjectDocument & LegacyProjectMetadataDbRef;
+const projectStillHasMetadataDbRef = (project: ProjectListItem): boolean => {
+  const legacy = project as ProjectListItem & LegacyProjectMetadataDbRef;
   return Boolean(legacy.metadataDb?.db_name ?? legacy.metadata_db?.db_name);
 };
 
@@ -85,9 +85,9 @@ export const discoverMetadataDatabases = async (): Promise<
     });
   }
 
-  let projects: ProjectDocument[] = [];
+  let projects: ProjectListItem[] = [];
   try {
-    projects = await getAllProjectsDirectory();
+    projects = await getAllProjectsListing();
   } catch {
     console.warn(
       'Warning: could not read the projects database; listing Couch metadata-* names only.'
@@ -103,9 +103,7 @@ export const discoverMetadataDatabases = async (): Promise<
     }
     const existing = byName.get(dbName);
     const projectId = project._id;
-    const hasInlinedUiSpecification = Boolean(
-      (project as {uiSpecification?: unknown}).uiSpecification
-    );
+    const hasInlinedUiSpecification = Boolean(project.uiSpecProperties);
     if (existing) {
       existing.projectId = existing.projectId ?? projectId;
       existing.projectName = project.name;
@@ -129,9 +127,7 @@ export const discoverMetadataDatabases = async (): Promise<
         candidate.projectName = project.name;
         candidate.stillReferencedOnProject =
           projectStillHasMetadataDbRef(project);
-        candidate.hasInlinedUiSpecification = Boolean(
-          (project as {uiSpecification?: unknown}).uiSpecification
-        );
+        candidate.hasInlinedUiSpecification = Boolean(project.uiSpecProperties);
       }
     }
   }

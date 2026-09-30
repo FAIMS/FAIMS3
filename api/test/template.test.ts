@@ -273,6 +273,8 @@ describe('template API tests', () => {
     const summary = listed.templates.find(t => t._id === template._id);
     expect(summary).toBeTruthy();
     expect(summary!).not.toHaveProperty('uiSpecification');
+    expect(summary!.uiSpecProperties.hash).toHaveLength(64);
+    expect(summary!.uiSpecProperties.schemaVersion).toBeTruthy();
 
     const detail = await getATemplate(app, template._id);
     expect(detail.uiSpecification).toBeTruthy();
@@ -280,6 +282,43 @@ describe('template API tests', () => {
     // zod schemas can reorder object keys (modelled keys first, then
     // passthrough), but the content must be identical.
     expect(detail.uiSpecification).toEqual(nb.uiSpecification);
+
+    await setTemplateArchived(app, template._id, true);
+    await deleteATemplate(app, template._id);
+  });
+
+  it('writes uiSpecProperties on create/update uiSpec and not on metadata PUT', async () => {
+    const {template} = await createSampleTemplate(app, {
+      name: 'hash-template',
+    });
+    const created = await getATemplate(app, template._id);
+    expect(created.uiSpecProperties.hash).toHaveLength(64);
+    const originalHash = created.uiSpecProperties.hash;
+
+    const afterMetadata = await updateATemplate(app, template._id, {
+      name: 'renamed-hash-template',
+    });
+    expect(afterMetadata.uiSpecProperties.hash).toBe(originalHash);
+
+    const nextSpec = {
+      ...created.uiSpecification,
+      uiSpec: {
+        ...created.uiSpecification.uiSpec,
+        visible_types: [
+          ...created.uiSpecification.uiSpec.visible_types,
+          'extra-form',
+        ],
+      },
+    };
+    const afterSpec = await requestAuthAndType(
+      request(app)
+        .put(`${TEMPLATE_API_BASE}/${template._id}/uiSpecification`)
+        .send(nextSpec)
+    )
+      .expect(200)
+      .then(res => PutUpdateTemplateResponseSchema.parse(res.body));
+    expect(afterSpec.uiSpecProperties.hash).not.toBe(originalHash);
+    expect(afterSpec.uiSpecProperties.hash).toHaveLength(64);
 
     await setTemplateArchived(app, template._id, true);
     await deleteATemplate(app, template._id);
@@ -385,6 +424,8 @@ describe('template API tests', () => {
 
       // List endpoint returns summaries only (no ui-specification field).
       expect(entry).not.toHaveProperty('uiSpecification');
+      expect(entry.uiSpecProperties.hash).toHaveLength(64);
+      expect(entry.uiSpecProperties.schemaVersion).toBeTruthy();
 
       // TODO This is no longer true because the metadata is injected with the template ID, see BSS-343
       // expect(JSON.stringify(entry['ui-specification'])).toBe(

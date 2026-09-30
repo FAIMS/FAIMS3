@@ -15,6 +15,7 @@ import {
   PostRefreshTokenInputSchema,
   PostRefreshTokenResponse,
   PublicServerInfo,
+  GetDirectoryResponse,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import multer from 'multer';
@@ -27,7 +28,7 @@ import {
 import {config, emailService} from '../buildconfig';
 import {initialiseDbAndKeys} from '../couchdb';
 import {restoreFromBackup} from '../couchdb/backupRestore';
-import {getUserProjectsDirectory} from '../couchdb/notebooks';
+import {getUserProjectsListing} from '../couchdb/notebooks';
 import {
   consumeExchangeTokenForRefreshToken,
   validateRefreshToken,
@@ -100,6 +101,11 @@ api.get('/info', async (req, res) => {
   res.json(response);
 });
 
+/**
+ * Cheap listing alias of `GET /api/notebooks` (no `teamId`, no `byteCount`).
+ * Field-app Refresh treats absence from this URL as the lifecycle signal.
+ * Do not add stats here — that would make every device refresh pay Couch `info()`.
+ */
 api.get(
   '/directory/',
   requireAuthenticationAPI,
@@ -110,12 +116,12 @@ api.get(
       includeArchived: z.enum(['true', 'false']).optional(),
     }),
   }),
-  async (req, res) => {
+  async (req, res: Response<GetDirectoryResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
     const includeArchived = req.query.includeArchived === 'true';
-    const projects = await getUserProjectsDirectory(req.user, includeArchived);
+    const projects = await getUserProjectsListing(req.user, {includeArchived});
     res.json(projects);
   }
 );

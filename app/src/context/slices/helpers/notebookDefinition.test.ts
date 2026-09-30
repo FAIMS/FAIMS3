@@ -195,7 +195,7 @@ describe('isPlaceholderNotebookDefinition / isNotebookDesignLocked', () => {
     ).toBe(true);
   });
 
-  it('blocks first activation only when incompatible and there is no last-good graph', () => {
+  it('blocks first activation when listed and incompatible', () => {
     const locked = {
       schemaCompatibility: {
         tier: 'incompatible' as const,
@@ -208,17 +208,18 @@ describe('isPlaceholderNotebookDefinition / isNotebookDesignLocked', () => {
     expect(
       isNotebookActivationBlocked({
         ...locked,
-        uiDefinition: placeholderNotebookDefinition(),
+        isActivated: false,
       })
     ).toBe(true);
     expect(
       isNotebookActivationBlocked({
         ...locked,
-        uiDefinition: realLegacyDefinition(),
+        isActivated: true,
       })
     ).toBe(false);
     expect(
       isNotebookActivationBlocked({
+        isActivated: false,
         schemaCompatibility: {
           tier: 'degraded',
           relation: 'newer-minor',
@@ -226,7 +227,6 @@ describe('isPlaceholderNotebookDefinition / isNotebookDesignLocked', () => {
           requiresMigration: false,
           reason: '',
         },
-        uiDefinition: placeholderNotebookDefinition(),
       })
     ).toBe(false);
   });

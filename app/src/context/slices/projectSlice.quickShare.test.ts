@@ -82,6 +82,10 @@ function buildProject(overrides: Partial<Project> = {}): Project {
     status: ProjectStatus.OPEN,
     isActivated: true,
     uiSpecificationId,
+    uiSpecProperties: {
+      schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+      hash: 'a'.repeat(64),
+    },
     uiDefinition: emptyUiDefinition,
     disableQuickShare: true,
     quickShare: sampleShare,
@@ -114,14 +118,23 @@ function stateWithProjects(projects: Record<string, Project>): ProjectsState {
         shortCodePrefix: 'T',
         description: '',
         couchDbUrl: 'https://couch.example',
-        projects,
+        listed: {},
+        activated: Object.fromEntries(
+          Object.entries(projects).map(([id, project]) => [
+            id,
+            project as Extract<Project, {isActivated: true}>,
+          ])
+        ),
       },
     },
   };
 }
 
 function projectAt(state: ProjectsState, id = projectId): Project {
-  return state.servers[serverId]!.projects[id]!;
+  return (
+    state.servers[serverId]!.activated[id] ??
+    state.servers[serverId]!.listed[id]!
+  );
 }
 
 describe('projectSlice quick share', () => {
@@ -216,6 +229,7 @@ describe('projectSlice quick share', () => {
         description: '',
         status: ProjectStatus.OPEN,
         uiDefinition: emptyUiDefinition,
+        uiSpecProperties: projectAt(before).uiSpecProperties,
         couchDbUrl: 'https://couch.example',
         disableQuickShare: false,
       })
@@ -234,6 +248,7 @@ describe('projectSlice quick share', () => {
         description: '',
         status: ProjectStatus.OPEN,
         uiDefinition: emptyUiDefinition,
+        uiSpecProperties: projectAt(enabled).uiSpecProperties,
         couchDbUrl: 'https://couch.example',
       })
     );

@@ -27,9 +27,11 @@ export function useProjectRouteGuard(): void {
     if (!routeParams) {
       return undefined;
     }
-    return state.projects.servers[routeParams.serverId]?.projects[
-      routeParams.projectId
-    ];
+    const server = state.projects.servers[routeParams.serverId];
+    return (
+      server?.activated[routeParams.projectId] ??
+      server?.listed[routeParams.projectId]
+    );
   });
 
   const serverExists = useAppSelector(state => {

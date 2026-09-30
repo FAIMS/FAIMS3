@@ -58,7 +58,8 @@ export default function Notebook() {
   }>();
   const project = useAppSelector(state =>
     serverId && projectId
-      ? state.projects.servers[serverId]?.projects[projectId]
+      ? (state.projects.servers[serverId]?.activated[projectId] ??
+        state.projects.servers[serverId]?.listed[projectId])
       : undefined
   );
   const largerThanMedium = useMediaQuery(theme.breakpoints.up('md'));

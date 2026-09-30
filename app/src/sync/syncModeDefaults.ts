@@ -33,6 +33,8 @@ import {fetchNotebookDetails} from '../context/slices/helpers/databaseHelpers';
 import type {OfflineMapRegion} from '@faims3/data-model';
 import type {SyncMode} from './syncMode';
 
+type NotebookDetails = Awaited<ReturnType<typeof fetchNotebookDetails>>;
+
 /** Result of {@link resolveActivationSyncMode} for `activateProject`. */
 export interface ActivationSyncModeResult {
   /** Initial replication mode to register with PouchDB. */
@@ -51,6 +53,8 @@ export interface ActivationSyncModeResult {
    * Used to show the post-activation "Sync mode changed" snackbar.
    */
   usedPushOnlyDefault: boolean;
+  /** Full GET /api/notebooks/:id payload when the fetch succeeded. */
+  details?: NotebookDetails;
 }
 
 /**
@@ -92,6 +96,7 @@ export async function resolveActivationSyncMode({
       return {
         syncMode: 'both',
         usedPushOnlyDefault: false,
+        details,
         ...offlineMapFromServer,
       };
     }
@@ -100,6 +105,7 @@ export async function resolveActivationSyncMode({
         syncMode: 'push',
         recordCount,
         usedPushOnlyDefault: true,
+        details,
         ...offlineMapFromServer,
       };
     }
@@ -107,6 +113,7 @@ export async function resolveActivationSyncMode({
       syncMode: 'both',
       recordCount,
       usedPushOnlyDefault: false,
+      details,
       ...offlineMapFromServer,
     };
   } catch {
