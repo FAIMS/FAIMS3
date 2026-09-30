@@ -283,9 +283,6 @@ export function projectDatabase(
   return project && isActivatedProject(project) ? project.database : undefined;
 }
 
-/** @deprecated Use {@link ProjectListingInformation} */
-export type ProjectInformation = ProjectListingInformation;
-
 export interface Server {
   // What is the URL for the server?
   serverUrl: string;
