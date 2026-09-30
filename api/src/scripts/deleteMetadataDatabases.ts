@@ -28,7 +28,7 @@ export type MetadataDatabaseCandidate = {
   projectName?: string;
   /** Project doc still has `metadataDb` / `metadata_db` (pre-cutover or not migrated). */
   stillReferencedOnProject: boolean;
-  /** Project doc has inlined `uiSpecification` (projects DB v4+). */
+  /** Listing has `uiSpecProperties` (projects DB v5+; implies inlined uiSpecification). */
   hasInlinedUiSpecification: boolean;
 };
 

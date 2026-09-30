@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   ProjectListItemSchema,
+  ProjectStatus,
   TemplateListItemSchema,
 } from '../src/data_storage';
 import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../src/uiSpecification/normalize';
@@ -80,19 +81,62 @@ describe('uiSpecProperties', () => {
     expect('uiSpecification' in ProjectListItemSchema.shape).toBe(false);
     expect('uiSpecProperties' in TemplateListItemSchema.shape).toBe(true);
     expect('uiSpecification' in TemplateListItemSchema.shape).toBe(false);
-    expect(
-      ProjectListItemSchema.safeParse({
-        _id: 'p',
-        _rev: '1-x',
-        name: 'n',
-      }).success
-    ).toBe(false);
-    expect(
-      TemplateListItemSchema.safeParse({
-        _id: 't',
-        _rev: '1-x',
-        name: 'n',
-      }).success
-    ).toBe(false);
+
+    const uiSpecProperties = {
+      schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+      hash: 'a'.repeat(64),
+    };
+    const projectListItem = {
+      _id: 'p',
+      _rev: '1-x',
+      name: 'n',
+      createdBy: 'admin',
+      createdAt: '2020-01-01T00:00:00.000Z',
+      updatedAt: '2020-01-01T00:00:00.000Z',
+      status: ProjectStatus.OPEN,
+      dataDb: {db_name: 'data-p'},
+      uiSpecProperties,
+    };
+    const templateListItem = {
+      _id: 't',
+      _rev: '1-x',
+      name: 'n',
+      version: 1,
+      createdBy: 'admin',
+      createdAt: '2020-01-01T00:00:00.000Z',
+      updatedAt: '2020-01-01T00:00:00.000Z',
+      uiSpecProperties,
+    };
+
+    expect(ProjectListItemSchema.safeParse(projectListItem).success).toBe(true);
+    expect(TemplateListItemSchema.safeParse(templateListItem).success).toBe(
+      true
+    );
+
+    const projectWithoutDigest = ProjectListItemSchema.safeParse({
+      ...projectListItem,
+      uiSpecProperties: undefined,
+    });
+    expect(projectWithoutDigest.success).toBe(false);
+    if (!projectWithoutDigest.success) {
+      expect(
+        projectWithoutDigest.error.issues.some(issue =>
+          issue.path.includes('uiSpecProperties')
+        )
+      ).toBe(true);
+    }
+
+    const templateWithoutDigest = TemplateListItemSchema.safeParse({
+      ...templateListItem,
+      uiSpecProperties: undefined,
+    });
+    expect(templateWithoutDigest.success).toBe(false);
+    if (!templateWithoutDigest.success) {
+      expect(
+        templateWithoutDigest.error.issues.some(issue =>
+          issue.path.includes('uiSpecProperties')
+        )
+      ).toBe(true);
+    }
   });
 });

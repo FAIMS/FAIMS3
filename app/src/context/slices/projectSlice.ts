@@ -208,52 +208,6 @@ interface ProjectIdentityFields {
   name: string;
 }
 
-/** Directory-only notebook: no form graph, never compiled. */
-export interface ListedProject
-  extends ProjectListingInformation, ProjectIdentityFields {
-  isActivated: false;
-}
-
-/** Activated notebook: required design graph, compiled spec, and database. */
-export interface ActivatedProject
-  extends ProjectListingInformation, ProjectIdentityFields {
-  isActivated: true;
-  uiDefinition: NotebookDefinition;
-  uiSpecificationId: string;
-  database: DatabaseConnection;
-  /**
-   * The Quick Share code this device is showing for the survey.
-   * Kept until its creator revokes it or it expires, including across reloads
-   * and user switches. Only {@link ProjectQuickShare.createdBy} is shown the QR.
-   */
-  quickShare?: ProjectQuickShare;
-}
-
-export type Project = ListedProject | ActivatedProject;
-
-export function isActivatedProject(
-  project: Project
-): project is ActivatedProject {
-  return project.isActivated;
-}
-
-export function projectUiDefinition(
-  project: Project | undefined
-): NotebookDefinition | undefined {
-  return project && isActivatedProject(project)
-    ? project.uiDefinition
-    : undefined;
-}
-
-export function projectDatabase(
-  project: Project | undefined
-): DatabaseConnection | undefined {
-  return project && isActivatedProject(project) ? project.database : undefined;
-}
-
-/** @deprecated Use {@link ProjectListingInformation} */
-export type ProjectInformation = ProjectListingInformation;
-
 /**
  * One Quick Share stored on the device so its creator can show it again.
  * The QR is a bearer secret. It stays on this shared survey record, so the
@@ -272,6 +226,65 @@ export interface ProjectQuickShare {
    */
   createdBy: string;
 }
+
+/**
+ * The Quick Share code this device is showing for the survey.
+ * Kept on listed and activated rows until its creator revokes it or it
+ * expires, including across deactivation, reloads, and user switches.
+ * Only {@link ProjectQuickShare.createdBy} is shown the QR.
+ */
+interface ProjectQuickShareFields {
+  quickShare?: ProjectQuickShare;
+}
+
+/** Directory-only notebook: no form graph, never compiled. */
+export interface ListedProject
+  extends
+    ProjectListingInformation,
+    ProjectIdentityFields,
+    ProjectQuickShareFields {
+  isActivated: false;
+}
+
+/** Activated notebook: required design graph, compiled spec, and database. */
+export interface ActivatedProject
+  extends
+    ProjectListingInformation,
+    ProjectIdentityFields,
+    ProjectQuickShareFields {
+  isActivated: true;
+  uiDefinition: NotebookDefinition;
+  uiSpecificationId: string;
+  database: DatabaseConnection;
+}
+
+export type Project = ListedProject | ActivatedProject;
+
+/** Type guard: project is activated and has a form graph plus database. */
+export function isActivatedProject(
+  project: Project
+): project is ActivatedProject {
+  return project.isActivated;
+}
+
+/** Form graph when the project is activated; otherwise undefined. */
+export function projectUiDefinition(
+  project: Project | undefined
+): NotebookDefinition | undefined {
+  return project && isActivatedProject(project)
+    ? project.uiDefinition
+    : undefined;
+}
+
+/** Database connection when the project is activated; otherwise undefined. */
+export function projectDatabase(
+  project: Project | undefined
+): DatabaseConnection | undefined {
+  return project && isActivatedProject(project) ? project.database : undefined;
+}
+
+/** @deprecated Use {@link ProjectListingInformation} */
+export type ProjectInformation = ProjectListingInformation;
 
 export interface Server {
   // What is the URL for the server?
@@ -299,6 +312,7 @@ export interface Server {
   activated: Record<string, ActivatedProject>;
 }
 
+/** Union of a server's activated and listed notebooks. */
 export function allProjectsOnServer(server: Server): Project[] {
   return [...Object.values(server.activated), ...Object.values(server.listed)];
 }
@@ -937,6 +951,7 @@ const projectsSlice = createSlice({
         disableQuickShare: project.disableQuickShare,
         uiSpecProperties: project.uiSpecProperties,
         isActivated: false,
+        ...(project.quickShare ? {quickShare: project.quickShare} : {}),
       };
     },
 
@@ -1266,7 +1281,7 @@ const projectsSlice = createSlice({
       action: PayloadAction<ProjectIdentity & {quickShare: ProjectQuickShare}>
     ) => {
       const project = projectByIdentity(state, action.payload);
-      if (!project || !isActivatedProject(project)) {
+      if (!project) {
         return;
       }
       project.quickShare = action.payload.quickShare;
@@ -1275,7 +1290,7 @@ const projectsSlice = createSlice({
     /** Drop the stored Quick Share after it has been revoked or has expired. */
     clearProjectQuickShare: (state, action: PayloadAction<ProjectIdentity>) => {
       const project = projectByIdentity(state, action.payload);
-      if (!project || !isActivatedProject(project)) {
+      if (!project) {
         return;
       }
       delete project.quickShare;
@@ -1778,6 +1793,7 @@ export const activateProject = createAsyncThunk<
     uiSpecificationId: compiledSpecId,
     uiSpecProperties: details.uiSpecProperties,
     schemaCompatibility: details.schemaCompatibility,
+    ...(project.quickShare ? {quickShare: project.quickShare} : {}),
     database: {
       syncMode: initialSyncMode,
       isSyncingAttachments: false,
@@ -1919,6 +1935,35 @@ export const initialiseServers = createAsyncThunk<void>(
 );
 
 /**
+ * Whether {@link initialiseProjects} must GET `/api/notebooks/:id` for an
+ * already-activated notebook. Hash change is the usual trigger. Also refetch
+ * when the stored tier is `incompatible` but this build now reads the listed
+ * `schemaVersion` — otherwise an app upgrade would never download the graph
+ * (`reassessPersistedNotebookDefinition` stays incompatible until ingest).
+ */
+function activatedProjectNeedsSpecFetch({
+  existing,
+  directoryProperties,
+}: {
+  existing: Project | undefined;
+  directoryProperties: UiSpecProperties;
+}): boolean {
+  if (!existing || !isActivatedProject(existing)) {
+    return false;
+  }
+  if (existing.uiSpecProperties?.hash !== directoryProperties.hash) {
+    return true;
+  }
+  if (existing.schemaCompatibility?.tier !== 'incompatible') {
+    return false;
+  }
+  return (
+    assessNotebookSchemaCompatibility(directoryProperties.schemaVersion)
+      .tier !== 'incompatible'
+  );
+}
+
+/**
  * Initialises projects for the specified server. Merges superficial details for
  * existing projects, creates new ones for new.
  *
@@ -1928,6 +1973,11 @@ export const initialiseServers = createAsyncThunk<void>(
  *
  * Also updates the couchDBUrl - warning if there is a difference between
  * discovered project couchDB urls.
+ *
+ * Activated notebooks download the design only when
+ * {@link activatedProjectNeedsSpecFetch} is true. A failed or skipped GET
+ * must not stamp the directory hash or version-only compatibility — that
+ * would skip the next retry and can unlock a last-good / placeholder graph.
  *
  * When a local notebook is absent from the active directory listing, the app probes
  * GET `/api/notebooks/:id`: archived → immediate removal; missing → confirm via
@@ -1990,14 +2040,13 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         if (!details.dataDb?.base_url || !details.uiSpecProperties) {
           return false;
         }
-        const existing = projectByIdentity(stateBeforeSync.projects, {
-          projectId: details._id,
-          serverId,
+        return activatedProjectNeedsSpecFetch({
+          existing: projectByIdentity(stateBeforeSync.projects, {
+            projectId: details._id,
+            serverId,
+          }),
+          directoryProperties: details.uiSpecProperties,
         });
-        return (
-          existing?.isActivated === true &&
-          existing.uiSpecProperties.hash !== details.uiSpecProperties.hash
-        );
       });
 
       const specByProjectId = new Map(
@@ -2054,7 +2103,10 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           serverId,
         });
 
-        if (listing.schemaCompatibility) {
+        const reportListingCompatibility = () => {
+          if (!listing.schemaCompatibility) {
+            return;
+          }
           reportNotebookSchemaCompatibility({
             compatibility: listing.schemaCompatibility,
             projectId,
@@ -2063,9 +2115,10 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             notebookName: listing.name,
             source: 'app-ingest',
           });
-        }
+        };
 
         if (!existingProject) {
+          reportListingCompatibility();
           actions.push(
             addProject({
               ...listedProjectFromDirectoryItem({item: details, serverId}),
@@ -2092,6 +2145,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         }
 
         if (!existingProject.isActivated) {
+          reportListingCompatibility();
           actions.push(
             updateProjectDetails({
               ...listing,
@@ -2108,6 +2162,8 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           actions.push(
             updateProjectDetails({
               ...listing,
+              uiSpecProperties: existingProject.uiSpecProperties,
+              schemaCompatibility: existingProject.schemaCompatibility,
               projectId,
               serverId,
               couchDbUrl: details.dataDb.base_url,

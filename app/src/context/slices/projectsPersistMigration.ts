@@ -38,11 +38,13 @@
  * - Splits each server's `projects` map into `listed` / `activated`.
  * - Activated rows keep `uiDefinition` and gain `uiSpecProperties`.
  * - Listed rows drop `uiDefinition` / `uiSpecificationId` immediately.
+ * - `quickShare` stays on both maps so a stored QR survives deactivation.
  *
  * @see store.tsx — `projectsPersistConfig.version` and migrate map
  * @see projectsPersistMigration.test.ts — regression tests for v1–v3
  */
 import {
+  buildUiSpecProperties,
   NotebookDefinition,
   NotebookSchemaCompatibility,
   ProjectStatus,
@@ -56,7 +58,6 @@ import type {
   ProjectIdToProjectMap,
   DatabaseConnection,
 } from './projectSlice';
-import {buildUiSpecProperties} from '@faims3/data-model';
 import {syncModeFromLegacyIsSyncing} from '../../sync/syncMode';
 import {
   ingestLegacyPersistedProjectForStore,
@@ -569,6 +570,11 @@ export async function migrateProjectsActivationSplitV3(
 
     for (const [projectId, project] of Object.entries(server.projects ?? {})) {
       if (!project) continue;
+      const fallbackUiSpecProperties = {
+        schemaVersion:
+          project.schemaCompatibility?.notebookSchemaVersion ?? 'unknown',
+        hash: UNKNOWN_UI_SPEC_HASH,
+      };
       if (
         project.isActivated &&
         'uiDefinition' in project &&
@@ -577,12 +583,9 @@ export async function migrateProjectsActivationSplitV3(
         const uiSpecProperties =
           'uiSpecProperties' in project && project.uiSpecProperties
             ? project.uiSpecProperties
-            : await buildUiSpecProperties(project.uiDefinition).catch(() => ({
-                schemaVersion:
-                  project.schemaCompatibility?.notebookSchemaVersion ??
-                  'unknown',
-                hash: UNKNOWN_UI_SPEC_HASH,
-              }));
+            : await buildUiSpecProperties(project.uiDefinition).catch(
+                () => fallbackUiSpecProperties
+              );
         activated[projectId] = {
           ...(project as ActivatedProject),
           isActivated: true,
@@ -595,29 +598,19 @@ export async function migrateProjectsActivationSplitV3(
           'uiSpecProperties' in project && project.uiSpecProperties
             ? project.uiSpecProperties
             : uiDefinition
-              ? await buildUiSpecProperties(uiDefinition).catch(() => ({
-                  schemaVersion:
-                    project.schemaCompatibility?.notebookSchemaVersion ??
-                    'unknown',
-                  hash: UNKNOWN_UI_SPEC_HASH,
-                }))
-              : {
-                  schemaVersion:
-                    project.schemaCompatibility?.notebookSchemaVersion ??
-                    'unknown',
-                  hash: UNKNOWN_UI_SPEC_HASH,
-                };
+              ? await buildUiSpecProperties(uiDefinition).catch(
+                  () => fallbackUiSpecProperties
+                )
+              : fallbackUiSpecProperties;
         const {
           uiDefinition: _dropDef,
           uiSpecificationId: _dropId,
           database: _dropDb,
-          quickShare: _dropShare,
           ...rest
         } = project as Project & {
           uiDefinition?: unknown;
           uiSpecificationId?: unknown;
           database?: unknown;
-          quickShare?: unknown;
         };
         listed[projectId] = {
           ...(rest as ListedProject),

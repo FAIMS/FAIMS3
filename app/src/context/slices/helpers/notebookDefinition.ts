@@ -9,7 +9,6 @@ import {
   NotebookSchemaCompatibility,
   ProjectListItem,
   UiSpecModel,
-  UiSpecProperties,
 } from '@faims3/data-model';
 import {config} from '../../../buildconfig';
 import type {
@@ -309,6 +308,7 @@ export function listingInformationFromDirectoryItem(
   };
 }
 
+/** Build a listed (not activated) project from a directory / list row. */
 export function listedProjectFromDirectoryItem({
   item,
   serverId,
@@ -323,6 +323,3 @@ export function listedProjectFromDirectoryItem({
     isActivated: false,
   };
 }
-
-/** Re-export for persist / compile callers. */
-export type {UiSpecProperties};

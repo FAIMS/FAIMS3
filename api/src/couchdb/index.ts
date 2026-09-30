@@ -534,8 +534,7 @@ export const initialiseDbAndKeys = async ({
     }
   }
 
-  // For each project, ensure the metadata and data DBs are also
-  // initialised/synced
+  // For each project, ensure the data DBs are also initialised/synced
   const projects = await getAllProjectsListing();
   console.log(
     `${DB_INIT_LOG} Found ${projects.length} project(s); initialising data DBs`

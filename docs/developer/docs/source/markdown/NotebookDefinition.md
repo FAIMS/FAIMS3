@@ -21,9 +21,10 @@ Each **project** or **template** document has two layers:
 
 Types live in `@faims3/data-model`:
 
-- `library/data-model/src/data_storage/projectsDB/types.ts` — projects DB v4
-- `library/data-model/src/data_storage/templatesDB/types.ts` — templates DB v5
+- `library/data-model/src/data_storage/projectsDB/types.ts` — projects DB v5
+- `library/data-model/src/data_storage/templatesDB/types.ts` — templates DB v6
 - `library/data-model/src/uiSpecification/types.ts` — `NotebookDefinition`, `NotebookUiSpec`, partitions
+- `library/data-model/src/uiSpecification/uiSpecProperties.ts` — listing digest (`schemaVersion` + hash)
 
 ### Project (survey) root fields
 
@@ -40,6 +41,7 @@ Types live in `@faims3/data-model`:
 | `createdAt`, `updatedAt` | ISO-8601 audit timestamps                                                                                                                                |
 | `disableQuickShare`      | Optional. When `true`, the field app hides Quick Share and creation is refused. Omitted or `false` leaves it available. See [Quick share](#quick-share). |
 | `uiSpecification`        | Full design bundle (see below)                                                                                                                           |
+| `uiSpecProperties`       | Digest of the stored design (`schemaVersion` + SHA-256 hash) so listings can omit `uiSpecification`                                                      |
 
 **Removed from the project document:** `metadataDb` (projects DB v4 migration inlines the former metadata database).
 
@@ -146,6 +148,7 @@ Legacy exports with top-level `metadata` + `ui-specification` (kebab-case, `fvie
 1. **Notebook JSON** (`migrateNotebook` in `notebookMigrations/runner.ts`): a typed harness (registry + path finder + per-step migrate/validate) that brings any document up to **`CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`**. All pre-semver shapes collapse in one `legacy → 1.0.0` step. See [Notebook migrations](./NotebookMigrations.md).
 2. **Projects DB** (`projectsV3toV4Migration`): reads legacy metadata DB + project doc, builds `uiSpecification`, adds root `description` (when derivable from legacy metadata) / audit fields, removes `metadataDb`.
 3. **Templates DB** — analogous template v4 → v5 migration.
+4. **Listing digest** (`projectsV4toV5Migration` / `templatesV5toV6Migration`): adds mandatory `uiSpecProperties` so listings can omit `uiSpecification`.
 
 API startup always runs notebook migrations when validating databases.
 
@@ -160,7 +163,7 @@ See `api/src/scripts/deleteMetadataDatabases.ts`.
 ## Designer and mobile app
 
 - **Designer** (`web/src/designer`): Redux state is a `NotebookDefinition`; save goes through `PUT …/uiSpecification`. Info panel edits `metadata.information` and `uiSpec.settings`.
-- **Mobile app**: loads `uiSpecification` from the synced project document; local Redux persist may run `projectsPersistMigration` for cached legacy shapes.
+- **Mobile app**: listing uses `uiSpecProperties` from `GET /api/directory`; the full `uiSpecification` is fetched on activation or when the directory hash changes. Local Redux persist may run `projectsPersistMigration` for cached legacy shapes.
 
 ## Related docs
 

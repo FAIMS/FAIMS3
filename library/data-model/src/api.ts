@@ -317,6 +317,7 @@ export type GetNotebookListResponse = z.infer<
   typeof GetNotebookListResponseSchema
 >;
 
+/** GET /api/notebooks?includeByteCount=true — list rows with required `byteCount`. */
 export const GetNotebookListWithStatsResponseSchema = z.array(
   APINotebookListWithStatsSchema
 );

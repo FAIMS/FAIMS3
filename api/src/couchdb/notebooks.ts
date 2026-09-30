@@ -23,6 +23,7 @@ import {
   getNotebookSchemaVersion,
   notebookUiSpecificationNeedsMigration,
   notebookSchemaVersionNeedsMigration,
+  type NotebookWithSchemaVersion,
   NotebookDefinition,
   NotebookUiSpecificationInput,
   ProjectDBFields,
@@ -215,6 +216,7 @@ export const getAllProjectsListing = async (): Promise<ProjectListItem[]> => {
  */
 const BYTE_COUNT_BATCH_SIZE = 10;
 
+/** Filters for {@link getUserProjectsListing}. `byteCount` is off by default. */
 export type GetUserProjectsListingOptions = {
   teamId?: string;
   includeArchived?: boolean;
@@ -323,7 +325,7 @@ function isUiSpecificationObject(raw: unknown): raw is Record<string, unknown> {
 }
 
 function schemaVersionLabel(raw: Record<string, unknown>): string {
-  return getNotebookSchemaVersion(raw) ?? 'none';
+  return getNotebookSchemaVersion(raw as NotebookWithSchemaVersion) ?? 'none';
 }
 
 /**

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
+import {selectProjectByIdentity} from '../context/slices/projectSlice';
 import {useAppSelector} from '../context/store';
 import {NOTEBOOK_LIST_ROUTE} from './remoteProjectRemoval';
 import {parseNotebookRouteParams} from './notebookRouteParams';
@@ -23,16 +24,9 @@ export function useProjectRouteGuard(): void {
   const isInitialised = useAppSelector(state => state.projects.isInitialised);
   const routeParams = parseNotebookRouteParams(location.pathname);
 
-  const project = useAppSelector(state => {
-    if (!routeParams) {
-      return undefined;
-    }
-    const server = state.projects.servers[routeParams.serverId];
-    return (
-      server?.activated[routeParams.projectId] ??
-      server?.listed[routeParams.projectId]
-    );
-  });
+  const project = useAppSelector(state =>
+    routeParams ? selectProjectByIdentity(state, routeParams) : undefined
+  );
 
   const serverExists = useAppSelector(state => {
     if (!routeParams) {

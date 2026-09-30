@@ -6,12 +6,15 @@ import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   ProjectStatus,
   type GetNotebookResponse,
+  type ProjectListItem,
 } from '@faims3/data-model';
 import {
   ingestLegacyPersistedProjectForStore,
   isNotebookActivationBlocked,
   isNotebookDesignLocked,
   isPlaceholderNotebookDefinition,
+  listedProjectFromDirectoryItem,
+  listingInformationFromDirectoryItem,
   notebookDefinitionFromLegacyPersistedProject,
   placeholderNotebookDefinition,
   projectInformationFromGetNotebook,
@@ -76,11 +79,41 @@ describe('notebookDefinitionFromLegacyPersistedProject', () => {
   });
 });
 
+const HASH_A = 'a'.repeat(64);
+
+function directoryListItem(
+  overrides: Partial<ProjectListItem> = {}
+): ProjectListItem {
+  return {
+    _id: 'nb-1',
+    _rev: '1-x',
+    name: 'Listed NB',
+    description: 'from directory',
+    templateId: 'tmpl-1',
+    status: ProjectStatus.OPEN,
+    createdBy: 'admin',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-02-01T00:00:00.000Z',
+    dataDb: {db_name: 'data-nb-1'},
+    disableQuickShare: true,
+    uiSpecProperties: {
+      schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+      hash: HASH_A,
+    },
+    ...overrides,
+  };
+}
+
 describe('projectInformationFromGetNotebook (fail-soft ingest)', () => {
+  const uiSpecProperties = {
+    schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+    hash: HASH_A,
+  };
   const base = {
     _id: 'nb',
     name: 'NB',
     status: ProjectStatus.OPEN,
+    uiSpecProperties,
   } as unknown as GetNotebookResponse;
 
   it('migrates a legacy uiSpecification and records compatible', () => {
@@ -95,6 +128,7 @@ describe('projectInformationFromGetNotebook (fail-soft ingest)', () => {
       tier: 'compatible',
       relation: 'legacy',
     });
+    expect(info.uiSpecProperties).toEqual(uiSpecProperties);
   });
 
   it('never throws for a newer major; returns placeholder + incompatible', () => {
@@ -114,6 +148,7 @@ describe('projectInformationFromGetNotebook (fail-soft ingest)', () => {
     expect(info.uiDefinition.metadata.information.purposeMarkdown).toBe(
       migrated.metadata.information.purposeMarkdown
     );
+    expect(info.uiSpecProperties).toEqual(uiSpecProperties);
   });
 
   it('returns placeholder + incompatible when uiSpecification is missing', () => {
@@ -125,6 +160,54 @@ describe('projectInformationFromGetNotebook (fail-soft ingest)', () => {
     expect(info.uiDefinition.uiSpec.schemaVersion).toBe(
       CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
     );
+    expect(info.uiSpecProperties).toEqual(uiSpecProperties);
+  });
+});
+
+describe('listingInformationFromDirectoryItem / listedProjectFromDirectoryItem', () => {
+  it('maps listing fields and assesses compatibility from uiSpecProperties', () => {
+    const item = directoryListItem();
+    const info = listingInformationFromDirectoryItem(item);
+    expect(info.name).toBe('Listed NB');
+    expect(info.description).toBe('from directory');
+    expect(info.templateId).toBe('tmpl-1');
+    expect(info.status).toBe(ProjectStatus.OPEN);
+    expect(info.updatedAt).toBe('2024-02-01T00:00:00.000Z');
+    expect(info.disableQuickShare).toBe(true);
+    expect(info.uiSpecProperties).toEqual(item.uiSpecProperties);
+    expect(info.schemaCompatibility).toMatchObject({
+      tier: 'compatible',
+      notebookSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+    });
+    expect(info).not.toHaveProperty('uiDefinition');
+  });
+
+  it('marks a newer-major list row incompatible without a form graph', () => {
+    const item = directoryListItem({
+      uiSpecProperties: {schemaVersion: '99.0.0', hash: HASH_A},
+    });
+    const info = listingInformationFromDirectoryItem(item);
+    expect(info.schemaCompatibility).toMatchObject({
+      tier: 'incompatible',
+      relation: 'newer-major',
+      notebookSchemaVersion: '99.0.0',
+    });
+    expect(info).not.toHaveProperty('uiDefinition');
+  });
+
+  it('builds a listed project with ids and no uiDefinition', () => {
+    const item = directoryListItem();
+    const listed = listedProjectFromDirectoryItem({
+      item,
+      serverId: 'server-a',
+    });
+    expect(listed.isActivated).toBe(false);
+    expect(listed.projectId).toBe('nb-1');
+    expect(listed.serverId).toBe('server-a');
+    expect(listed.uiSpecProperties).toEqual(item.uiSpecProperties);
+    expect(listed).not.toHaveProperty('uiDefinition');
+    expect(listed).not.toHaveProperty('uiSpecificationId');
+    expect(listed).not.toHaveProperty('database');
   });
 });
 

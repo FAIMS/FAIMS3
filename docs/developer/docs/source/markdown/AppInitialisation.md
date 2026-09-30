@@ -6,7 +6,7 @@ Application state is stored in a redux store that is persisted in local storage.
 four 'slices' for different parts of the state:
 
 - `auth` for authenticated user details
-- `projects` for activated projects (notebooks or surveys)
+- `projects` for listed and activated projects (notebooks or surveys)
 - `alerts` for alerts to be shown to the user next time
 - `records` for the state of the currently visible record
 

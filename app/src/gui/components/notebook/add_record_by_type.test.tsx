@@ -32,7 +32,10 @@ vi.mock('../../../context/slices/authSlice', () => ({
   selectActiveUser: vi.fn(),
 }));
 vi.mock('../../../utils/database', () => ({localGetDataDb: () => ({})}));
-vi.mock('@faims3/forms', () => ({QRCodeButton: () => null}));
+vi.mock('@faims3/forms', async () => ({
+  ...(await vi.importActual<object>('@faims3/forms')),
+  QRCodeButton: () => null,
+}));
 
 const uiSpecification = {
   // A plan may name a form the notebook does not list among its visible ones
@@ -52,21 +55,24 @@ vi.mock('../../../context/slices/helpers/compiledSpecService', () => ({
 const renderButtons = ({
   formTypes,
   planReference,
+  project,
 }: {
   formTypes: string[];
   planReference?: string;
+  project?: Project;
 }) =>
   render(
     <ThemeProvider theme={theme}>
       <NotebookRouteProvider>
         <AddRecordButtons
           project={
-            {
+            project ??
+            ({
               projectId: 'p',
               serverId: 's',
               isActivated: true,
               uiSpecificationId: 'u',
-            } as Project
+            } as Project)
           }
           refreshList={vi.fn()}
           formTypes={formTypes}
@@ -135,5 +141,26 @@ describe('AddRecordButtons on a plan that shares its notebook', () => {
     expect(createRecord).toHaveBeenCalledWith(
       expect.objectContaining({formId: 'Site', planReference: undefined})
     );
+  });
+});
+
+describe('AddRecordButtons on a listed notebook', () => {
+  it('shows a spinner and no create buttons when there is no compiled spec', () => {
+    renderButtons({
+      formTypes: ['Site'],
+      project: {
+        projectId: 'p',
+        serverId: 's',
+        name: 'Listed',
+        status: 'OPEN',
+        isActivated: false,
+        uiSpecProperties: {
+          schemaVersion: '1.0.0',
+          hash: 'a'.repeat(64),
+        },
+      } as Project,
+    });
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.queryByTestId('Site-app-record-add-button')).toBeNull();
   });
 });

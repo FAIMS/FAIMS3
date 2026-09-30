@@ -11,7 +11,7 @@ For the target data model, see [Notebook definition](./NotebookDefinition.md). F
 | **From** | Any deployment on **v1.5.2 or earlier** — i.e. projects DB **≤ v3** and templates DB **≤ v4**.      |
 | **To**   | The first release containing the metadata overhaul (the **metadata-overhaul** release; **v1.6.0**). |
 
-If your deployment is already on a release whose projects DB is at **v4** and templates DB is at **v5**, this migration has already run and you can skip it. You can confirm the schema versions in the per-DB migration documents (see [Couch migrations](./CouchMigrations.md)) or in `DB_TARGET_VERSIONS` in `library/data-model/src/data_storage/migrations/migrations.ts`.
+If your deployment is already on a release whose projects DB is at **v4 or later** and templates DB is at **v5 or later**, this migration has already run and you can skip it. Confirm those versions from the per-DB migration documents (see [Couch migrations](./CouchMigrations.md)); do not use current `DB_TARGET_VERSIONS` (now projects v5 / templates v6) as the skip check.
 
 ## Background — the model this replaces
 

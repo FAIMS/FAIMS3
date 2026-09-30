@@ -13,6 +13,7 @@ vi.mock('../store', () => ({
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   ProjectStatus,
+  Role,
 } from '@faims3/data-model';
 import {
   migrateProjectsActivationSplitV3,
@@ -375,6 +376,13 @@ describe('migrateProjectsActivationSplitV3', () => {
               status: ProjectStatus.OPEN,
               uiSpecificationId: 'listed-spec',
               uiDefinition: listedDefinition,
+              quickShare: {
+                inviteId: 'FAIMS-listed-share',
+                role: Role.PROJECT_GUEST,
+                expiry: 1_700_000_000_000,
+                qrCode: 'data:image/png;base64,listed',
+                createdBy: 'ada',
+              },
             },
             active: {
               projectId: 'active',
@@ -413,6 +421,13 @@ describe('migrateProjectsActivationSplitV3', () => {
     expect(listed.isActivated).toBe(false);
     expect(listed).not.toHaveProperty('uiDefinition');
     expect(listed).not.toHaveProperty('uiSpecificationId');
+    expect(listed.quickShare).toEqual({
+      inviteId: 'FAIMS-listed-share',
+      role: Role.PROJECT_GUEST,
+      expiry: 1_700_000_000_000,
+      qrCode: 'data:image/png;base64,listed',
+      createdBy: 'ada',
+    });
     expect(listed.uiSpecProperties.schemaVersion).toBe(
       CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
     );

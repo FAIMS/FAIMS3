@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import {z} from 'zod';
 import {createHash} from '../data_storage/utils';
-import {getNotebookSchemaVersion} from '../data_storage/migrations/notebookMigrations/version';
+import {
+  getNotebookSchemaVersion,
+  type NotebookWithSchemaVersion,
+} from '../data_storage/migrations/notebookMigrations/version';
 
 /** SHA-256 digest encoded as lowercase hex. */
 export const UI_SPECIFICATION_HASH_HEX_LENGTH = 64;
@@ -55,7 +58,7 @@ export async function buildUiSpecProperties(
   definition: unknown
 ): Promise<UiSpecProperties> {
   const schemaVersion = getNotebookSchemaVersion(
-    (definition ?? {}) as {uiSpec?: {schemaVersion?: string | null}}
+    (definition ?? {}) as NotebookWithSchemaVersion
   );
   if (!schemaVersion) {
     throw new Error(

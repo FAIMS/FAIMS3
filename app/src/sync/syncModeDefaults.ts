@@ -60,9 +60,11 @@ export interface ActivationSyncModeResult {
 /**
  * Resolve initial sync mode when a notebook is activated.
  *
- * Fetches notebook details when online and compares `recordCount` to
- * {@link config.syncPushOnlyRecordThreshold}. Never throws — any failure or
- * ambiguous count falls back to two-way sync (`both`).
+ * Always attempts `GET /api/notebooks/:id` — do not gate on `navigator.onLine`,
+ * which is often wrong on mobile, and activation needs the design payload.
+ * Compares `recordCount` to {@link config.syncPushOnlyRecordThreshold}. Never
+ * throws — any failure or ambiguous count falls back to two-way sync (`both`)
+ * without `details`.
  *
  * @param serverUrl Base URL for the listing server
  * @param projectId Notebook id to activate
@@ -77,10 +79,6 @@ export async function resolveActivationSyncMode({
   projectId: string;
   token: string;
 }): Promise<ActivationSyncModeResult> {
-  if (!navigator.onLine) {
-    return {syncMode: 'both', usedPushOnlyDefault: false};
-  }
-
   try {
     const details = await fetchNotebookDetails({
       serverUrl,

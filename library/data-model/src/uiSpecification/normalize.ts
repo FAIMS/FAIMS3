@@ -49,6 +49,7 @@ export function notebookSchemaVersionNeedsMigration(
   );
 }
 
+/** Same as {@link notebookSchemaVersionNeedsMigration} for a raw ui-specification object. */
 export function notebookUiSpecificationNeedsMigration(
   raw: Record<string, unknown>
 ): boolean {
