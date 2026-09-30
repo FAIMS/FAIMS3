@@ -50,9 +50,12 @@ import {
   compileUiSpecConditionals,
 } from '@faims3/data-model';
 import {
+  getDataDb,
   getNanoDataDb,
   initialiseDataDb,
   localGetProjectsDb,
+  registerDataDbAtCurrentVersion,
+  unregisterDataDbMigration,
   verifyCouchDBConnection,
 } from '.';
 import {config} from '../buildconfig';
@@ -497,6 +500,11 @@ export const createNotebook = async ({
     force: true,
   });
 
+  await registerDataDbAtCurrentVersion({
+    project: projectDoc,
+    launchedBy: createdBy,
+  });
+
   return projectId;
 };
 
@@ -641,11 +649,20 @@ export const deleteNotebook = async (project_id: string) => {
     );
   }
 
-  const dataDB = await getDataDB(project_id);
+  const dataDB = await getDataDb(project_id);
   await dataDB.destroy();
 
   // remove the project from the projectsDB
   await projectsDB.remove(projectDoc);
+
+  try {
+    await unregisterDataDbMigration({project: projectDoc});
+  } catch (error) {
+    console.error(
+      `Failed to remove migration document for deleted survey ${project_id}:`,
+      error
+    );
+  }
 };
 
 /**
