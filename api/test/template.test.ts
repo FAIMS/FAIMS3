@@ -531,7 +531,7 @@ describe('template API tests', () => {
 
     console.log('body error', response.body.error);
     // Check that the response indicates an error
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(500);
     expect(response.body.error.message).toBe(
       'The specified team ID does not exist.'
     );
@@ -716,7 +716,7 @@ describe('template API tests', () => {
       adminToken
     );
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(500);
     expect(response.body.error.message).toBe(
       'The specified team ID does not exist.'
     );

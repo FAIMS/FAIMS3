@@ -30,7 +30,11 @@ import {
   InvitesDB,
   GetDbById,
   collectProjectDataDbs,
+  dataDbNameForProject,
   migrateDbs,
+  ProjectDataDbRef,
+  registerDbAtCurrentVersion,
+  unregisterDbMigrationDoc,
   MigrationsDB,
   PeopleDB,
   PeopleDBFields,
@@ -425,6 +429,45 @@ export const initialiseDataDb = async ({
 
   return dataDb;
 };
+
+const dataDbNameForProjectRef = (project: ProjectDataDbRef): string =>
+  dataDbNameForProject({
+    project,
+    fallbackName: `data-${project._id}`,
+  });
+
+/**
+ * Records a newly created project data DB as already at the current schema
+ * version. Must only be called on true create paths — not restore or startup
+ * re-init, which may load legacy documents afterwards.
+ */
+export const registerDataDbAtCurrentVersion = async ({
+  project,
+  launchedBy = 'system',
+}: {
+  project: ProjectDataDbRef;
+  launchedBy?: string;
+}) =>
+  registerDbAtCurrentVersion({
+    dbType: DatabaseType.DATA,
+    dbName: dataDbNameForProjectRef(project),
+    migrationDb: getMigrationDb(),
+    launchedBy,
+  });
+
+/**
+ * Drops the migration document for a project data DB that has been deleted.
+ */
+export const unregisterDataDbMigration = async ({
+  project,
+}: {
+  project: ProjectDataDbRef;
+}) =>
+  unregisterDbMigrationDoc({
+    dbType: DatabaseType.DATA,
+    dbName: dataDbNameForProjectRef(project),
+    migrationDb: getMigrationDb(),
+  });
 
 /**
  * Critical method which initialises all databases, including remotely on the

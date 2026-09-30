@@ -51,9 +51,12 @@ import {
   buildUiSpecProperties,
 } from '@faims3/data-model';
 import {
+  getDataDb,
   getNanoDataDb,
   initialiseDataDb,
   localGetProjectsDb,
+  registerDataDbAtCurrentVersion,
+  unregisterDataDbMigration,
   verifyCouchDBConnection,
 } from '.';
 import {config} from '../buildconfig';
@@ -480,6 +483,21 @@ export const createNotebook = async ({
   } satisfies ProjectDocument;
 
   try {
+    await registerDataDbAtCurrentVersion({
+      project: projectDoc,
+      launchedBy: createdBy,
+    });
+  } catch (error) {
+    console.error(
+      `Failed to register data DB migration for new survey ${projectId}:`,
+      error
+    );
+    throw new Exceptions.InternalSystemError(
+      `Failed to register data DB migration for new survey ${projectId}.`
+    );
+  }
+
+  try {
     // first add an entry to the projects db about this project
     const projectsDB = localGetProjectsDb();
     await projectsDB.put(projectDoc);
@@ -638,11 +656,20 @@ export const deleteNotebook = async (project_id: string) => {
     );
   }
 
-  const dataDB = await getDataDB(project_id);
+  const dataDB = await getDataDb(project_id);
   await dataDB.destroy();
 
   // remove the project from the projectsDB
   await projectsDB.remove(projectDoc);
+
+  try {
+    await unregisterDataDbMigration({project: projectDoc});
+  } catch (error) {
+    console.error(
+      `Failed to remove migration document for deleted survey ${project_id}:`,
+      error
+    );
+  }
 };
 
 /**

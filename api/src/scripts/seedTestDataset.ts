@@ -66,6 +66,7 @@ import {
   initialiseAndMigrateDBs,
   initialiseDataDb,
   localGetProjectsDb,
+  registerDataDbAtCurrentVersion,
 } from '../couchdb';
 import {
   getProjectById,
@@ -551,6 +552,10 @@ async function upsertSeedNotebook({
     }
     await safeWriteDocument({db: projectsDb, data: updated});
     await initialiseDataDb({projectId: id, force: true});
+    await registerDataDbAtCurrentVersion({
+      project: updated,
+      launchedBy: SEED_CREATED_BY,
+    });
     console.log(`  ✓ Updated notebook ${projectName} : ${id}`);
     return id;
   }
@@ -573,6 +578,10 @@ async function upsertSeedNotebook({
   };
   await projectsDb.put(projectDoc);
   await initialiseDataDb({projectId: id, force: true});
+  await registerDataDbAtCurrentVersion({
+    project: projectDoc,
+    launchedBy: SEED_CREATED_BY,
+  });
   console.log(`  ✓ Created notebook ${projectName} : ${id}`);
   return id;
 }
