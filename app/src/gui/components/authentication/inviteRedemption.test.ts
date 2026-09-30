@@ -84,6 +84,18 @@ describe('chooseInviteHandoff', () => {
   });
 });
 
+/** Same host checks as InviteQRScanner / InviteQRRegistration. */
+function scannerAccepts(url: string, serverUrl: string): boolean {
+  return url.startsWith(serverUrl) && !!url.match(`${serverUrl}/register.*`);
+}
+
+/** What the Share dialog used to encode: URL() drops :443 / :80. */
+function urlConstructorPayload(serverUrl: string, inviteId: string): string {
+  const url = new URL(`${serverUrl}/register`);
+  url.searchParams.set('inviteId', inviteId);
+  return url.toString();
+}
+
 describe('invite URLs', () => {
   it('reads inviteId from a register QR payload', () => {
     expect(
@@ -103,6 +115,18 @@ describe('invite URLs', () => {
         serverUrl: 'https://conductor.example',
         qr: 'https://conductor.example/register?inviteId=FAIMS-abc',
       },
+      {
+        serverUrl: 'https://conductor.example:443',
+        qr: 'https://conductor.example:443/register?inviteId=FAIMS-abc',
+      },
+      {
+        serverUrl: 'https://conductor.example:443/',
+        qr: 'https://conductor.example:443//register?inviteId=FAIMS-abc',
+      },
+      {
+        serverUrl: 'http://conductor.example:80',
+        qr: 'http://conductor.example:80/register?inviteId=FAIMS-abc',
+      },
     ];
     for (const {serverUrl, qr} of cases) {
       const url = inviteRegisterUrl({
@@ -111,10 +135,31 @@ describe('invite URLs', () => {
       });
       expect(url).toBe(qr);
       expect(inviteIdFromScannedUrl(url)).toBe('FAIMS-abc');
-      // Same checks as InviteQRScanner: `{serverUrl}/register` and startsWith.
-      expect(url.startsWith(serverUrl)).toBe(true);
-      expect(url.match(`${serverUrl}/register.*`)).toBeTruthy();
+      expect(scannerAccepts(url, serverUrl)).toBe(true);
     }
+  });
+
+  it('keeps a default HTTPS port so a CDK conductor_url still scans', () => {
+    const serverUrl = 'https://conductor.bss.nbic.cloud:443';
+    const inviteId = 'FAIMS-abc';
+    const encoded = inviteRegisterUrl({serverUrl, inviteId});
+    const stripped = urlConstructorPayload(serverUrl, inviteId);
+
+    expect(encoded).toBe(
+      'https://conductor.bss.nbic.cloud:443/register?inviteId=FAIMS-abc'
+    );
+    expect(stripped).toBe(
+      'https://conductor.bss.nbic.cloud/register?inviteId=FAIMS-abc'
+    );
+    expect(scannerAccepts(encoded, serverUrl)).toBe(true);
+    expect(scannerAccepts(stripped, serverUrl)).toBe(false);
+  });
+
+  it('still accepts a Conductor invite QR that includes a redirect param', () => {
+    const serverUrl = 'https://conductor.example:443';
+    const conductorQr = `${serverUrl}/register?redirect=https://web.example&inviteId=FAIMS-abc`;
+    expect(scannerAccepts(conductorQr, serverUrl)).toBe(true);
+    expect(inviteIdFromScannedUrl(conductorQr)).toBe('FAIMS-abc');
   });
 
   it('builds a login URL that keeps the invite and the app redirect', () => {
