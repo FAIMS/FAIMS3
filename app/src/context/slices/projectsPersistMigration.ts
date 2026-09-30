@@ -7,7 +7,7 @@
  * Wired from `projectsPersistConfig` in `store.tsx` via `createMigrate`. When a
  * user upgrades the app, redux-persist rehydrates IndexedDB state and runs each
  * migration step from the stored `_persist.version` up to the configured
- * version (currently **2**).
+ * version (currently **3**).
  *
  * These functions must be **pure transforms** of persisted JSON: no network I/O,
  * no PouchDB handles, and no Redux dispatches. Structured logging
@@ -34,16 +34,25 @@
  *   `database.syncMode` (`true` → `'both'`, `false` → `'none'`).
  * - Preserves all other project fields; does not reset `isInitialised`.
  *
+ * **Version 3** — {@link migrateProjectsActivationSplitV3}
+ * - Splits each server's `projects` map into `listed` / `activated`.
+ * - Activated rows keep `uiDefinition` and gain `uiSpecProperties`.
+ * - Listed rows drop `uiDefinition` / `uiSpecificationId` immediately.
+ * - `quickShare` stays on both maps so a stored QR survives deactivation.
+ *
  * @see store.tsx — `projectsPersistConfig.version` and migrate map
- * @see projectsPersistMigration.test.ts — regression tests for v1 and v2
+ * @see projectsPersistMigration.test.ts — regression tests for v1–v3
  */
 import {
+  buildUiSpecProperties,
   NotebookDefinition,
   NotebookSchemaCompatibility,
   ProjectStatus,
 } from '@faims3/data-model';
 import {logError, logInfo, logWarn} from '@faims3/forms';
 import type {
+  ActivatedProject,
+  ListedProject,
   Project,
   ProjectsState,
   ProjectIdToProjectMap,
@@ -60,6 +69,8 @@ const emptyProjectsState: ProjectsState = {
   servers: {},
   isInitialised: false,
 };
+
+const UNKNOWN_UI_SPEC_HASH = '0'.repeat(64);
 
 /** Log prefix shared with `store.tsx` migrate wrappers for grep-friendly traces. */
 const PERSIST_MIGRATION_LOG = '[redux-persist-migration]';
@@ -111,11 +122,9 @@ type LegacyPersistedProject = {
   isActivated: boolean;
   status: ProjectStatus;
   uiSpecificationId: string;
-  database?: Project['database'];
+  database?: DatabaseConnection;
   metadata?: Record<string, unknown>;
-  rawUiSpecification?: Project['uiDefinition'] extends infer _U
-    ? import('@faims3/data-model').UiSpecModel
-    : never;
+  rawUiSpecification?: import('@faims3/data-model').UiSpecModel;
   uiDefinition?: NotebookDefinition;
   description?: string;
   templateId?: string;
@@ -127,13 +136,22 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function legacyProjectsMap(
+  server: unknown
+): Record<string, LegacyPersistedProject & Project> {
+  return (
+    (server as {projects?: Record<string, LegacyPersistedProject & Project>})
+      ?.projects ?? {}
+  );
+}
+
 /** Total project count across all servers (for before/after migration logs). */
-function countProjects(servers: ProjectsState['servers'] | undefined): number {
+function countProjects(servers: object | undefined): number {
   if (!servers) {
     return 0;
   }
   return Object.values(servers).reduce(
-    (total, server) => total + Object.keys(server?.projects ?? {}).length,
+    (total, server) => total + Object.keys(legacyProjectsMap(server)).length,
     0
   );
 }
@@ -239,7 +257,11 @@ function migrateOnePersistedProject(
       uiDefinition,
       schemaCompatibility,
       database: legacy.database,
-    };
+      uiSpecProperties: {
+        schemaVersion: schemaCompatibility.notebookSchemaVersion ?? 'unknown',
+        hash: UNKNOWN_UI_SPEC_HASH,
+      },
+    } as Project;
   } catch (err) {
     stats.skippedError++;
     logProjectMigrationError(legacy.projectId, legacy.serverId, err);
@@ -363,14 +385,13 @@ export function migrateProjectsPersistedState(state: unknown): ProjectsState {
       });
       continue;
     }
-    const inboundServerProjectCount = Object.keys(server.projects ?? {}).length;
+    const inboundProjects = legacyProjectsMap(server);
+    const inboundServerProjectCount = Object.keys(inboundProjects).length;
     migratedServers[serverId] = {
       ...server,
-      projects: migrateServerProjects(serverId, server.projects, stats),
-    };
-    const outboundServerProjectCount = Object.keys(
-      migratedServers[serverId]!.projects
-    ).length;
+      projects: migrateServerProjects(serverId, inboundProjects, stats),
+    } as ProjectsState['servers'][string];
+    const outboundServerProjectCount = Object.keys(inboundProjects).length;
     logMigrationInfo('server_complete', {
       serverId,
       inboundProjectCount: inboundServerProjectCount,
@@ -446,14 +467,18 @@ function migrateDatabaseConnection(
 
 /** Apply {@link migrateDatabaseConnection} when a project has an active database. */
 function migrateProjectSyncMode(project: Project): Project {
-  if (!project.database) {
+  if (!('database' in project) || !project.database) {
+    return project;
+  }
+  const nextDatabase = migrateDatabaseConnection(
+    project.database as LegacyDatabaseConnection
+  );
+  if (!nextDatabase) {
     return project;
   }
   return {
     ...project,
-    database: migrateDatabaseConnection(
-      project.database as LegacyDatabaseConnection
-    ),
+    database: nextDatabase,
   };
 }
 
@@ -486,14 +511,124 @@ export function migrateProjectsSyncModeV2(state: unknown): ProjectsState {
     if (!server) {
       continue;
     }
+    const inboundProjects = (
+      server as unknown as {projects?: Record<string, Project>}
+    ).projects;
     const projects: ProjectIdToProjectMap = {};
-    for (const [projectId, project] of Object.entries(server.projects ?? {})) {
+    for (const [projectId, project] of Object.entries(inboundProjects ?? {})) {
       projects[projectId] = migrateProjectSyncMode(project);
     }
-    migratedServers[serverId] = {...server, projects};
+    migratedServers[serverId] = {
+      ...server,
+      projects,
+    } as ProjectsState['servers'][string];
   }
 
   logMigrationInfo('complete', {persistVersion: 2});
+
+  return {
+    ...inbound,
+    servers: migratedServers,
+  };
+}
+
+type LegacyUnifiedServer = {
+  listed?: Record<string, ListedProject>;
+  activated?: Record<string, ActivatedProject>;
+  projects?: Record<string, Project & {isActivated?: boolean}>;
+};
+
+/**
+ * redux-persist **migration 3**: split `projects` into listed / activated
+ * maps and strip the form graph from listed notebooks.
+ */
+export async function migrateProjectsActivationSplitV3(
+  state: unknown
+): Promise<ProjectsState> {
+  logMigrationInfo('begin', {persistVersion: 3});
+
+  if (!isPlainObject(state)) {
+    return emptyProjectsState;
+  }
+
+  const inbound = state as unknown as ProjectsState & {
+    servers: Record<string, LegacyUnifiedServer>;
+  };
+  const servers = inbound.servers ?? {};
+  const migratedServers: ProjectsState['servers'] = {};
+
+  for (const [serverId, server] of Object.entries(servers)) {
+    if (!server) {
+      continue;
+    }
+    const listed: Record<string, ListedProject> = {
+      ...(server.listed ?? {}),
+    };
+    const activated: Record<string, ActivatedProject> = {
+      ...(server.activated ?? {}),
+    };
+
+    for (const [projectId, project] of Object.entries(server.projects ?? {})) {
+      if (!project) continue;
+      const fallbackUiSpecProperties = {
+        schemaVersion:
+          project.schemaCompatibility?.notebookSchemaVersion ?? 'unknown',
+        hash: UNKNOWN_UI_SPEC_HASH,
+      };
+      if (
+        project.isActivated &&
+        'uiDefinition' in project &&
+        project.uiDefinition
+      ) {
+        const uiSpecProperties =
+          'uiSpecProperties' in project && project.uiSpecProperties
+            ? project.uiSpecProperties
+            : await buildUiSpecProperties(project.uiDefinition).catch(
+                () => fallbackUiSpecProperties
+              );
+        activated[projectId] = {
+          ...(project as ActivatedProject),
+          isActivated: true,
+          uiSpecProperties,
+        };
+      } else {
+        const uiDefinition =
+          'uiDefinition' in project ? project.uiDefinition : undefined;
+        const uiSpecProperties =
+          'uiSpecProperties' in project && project.uiSpecProperties
+            ? project.uiSpecProperties
+            : uiDefinition
+              ? await buildUiSpecProperties(uiDefinition).catch(
+                  () => fallbackUiSpecProperties
+                )
+              : fallbackUiSpecProperties;
+        const {
+          uiDefinition: _dropDef,
+          uiSpecificationId: _dropId,
+          database: _dropDb,
+          ...rest
+        } = project as Project & {
+          uiDefinition?: unknown;
+          uiSpecificationId?: unknown;
+          database?: unknown;
+        };
+        listed[projectId] = {
+          ...(rest as ListedProject),
+          isActivated: false,
+          uiSpecProperties,
+        };
+      }
+    }
+
+    const {projects: _dropped, ...serverRest} = server;
+    migratedServers[serverId] = {
+      ...(serverRest as ProjectsState['servers'][string]),
+      listed,
+      activated,
+    };
+  }
+
+  logMigrationInfo('complete', {persistVersion: 3});
 
   return {
     ...inbound,

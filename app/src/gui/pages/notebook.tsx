@@ -27,6 +27,7 @@ import {useEffect} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {isNotebookActivationBlocked} from '../../context/slices/helpers/notebookDefinition';
+import {selectProjectByIdentity} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {removedNotebookUnavailableCopy} from '../../utils/remoteProjectRemoval';
 import NotebookQuickShare from '../components/notebook/settings/quickShare';
@@ -58,7 +59,7 @@ export default function Notebook() {
   }>();
   const project = useAppSelector(state =>
     serverId && projectId
-      ? state.projects.servers[serverId]?.projects[projectId]
+      ? selectProjectByIdentity(state, {serverId, projectId})
       : undefined
   );
   const largerThanMedium = useMediaQuery(theme.breakpoints.up('md'));

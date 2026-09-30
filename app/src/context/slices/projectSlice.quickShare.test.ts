@@ -23,10 +23,12 @@ vi.mock('./helpers/compiledSpecService', () => ({
 
 import projectsReducer, {
   clearProjectQuickShare,
+  deactivateProject,
   initialProjectState,
   setProjectQuickShare,
   updateDatabaseAuthSuccess,
   updateProjectDetails,
+  type ListedProject,
   type Project,
   type ProjectQuickShare,
   type ProjectsState,
@@ -82,6 +84,10 @@ function buildProject(overrides: Partial<Project> = {}): Project {
     status: ProjectStatus.OPEN,
     isActivated: true,
     uiSpecificationId,
+    uiSpecProperties: {
+      schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+      hash: 'a'.repeat(64),
+    },
     uiDefinition: emptyUiDefinition,
     disableQuickShare: true,
     quickShare: sampleShare,
@@ -114,14 +120,23 @@ function stateWithProjects(projects: Record<string, Project>): ProjectsState {
         shortCodePrefix: 'T',
         description: '',
         couchDbUrl: 'https://couch.example',
-        projects,
+        listed: {},
+        activated: Object.fromEntries(
+          Object.entries(projects).map(([id, project]) => [
+            id,
+            project as Extract<Project, {isActivated: true}>,
+          ])
+        ),
       },
     },
   };
 }
 
 function projectAt(state: ProjectsState, id = projectId): Project {
-  return state.servers[serverId]!.projects[id]!;
+  return (
+    state.servers[serverId]!.activated[id] ??
+    state.servers[serverId]!.listed[id]!
+  );
 }
 
 describe('projectSlice quick share', () => {
@@ -216,6 +231,7 @@ describe('projectSlice quick share', () => {
         description: '',
         status: ProjectStatus.OPEN,
         uiDefinition: emptyUiDefinition,
+        uiSpecProperties: projectAt(before).uiSpecProperties,
         couchDbUrl: 'https://couch.example',
         disableQuickShare: false,
       })
@@ -234,6 +250,7 @@ describe('projectSlice quick share', () => {
         description: '',
         status: ProjectStatus.OPEN,
         uiDefinition: emptyUiDefinition,
+        uiSpecProperties: projectAt(enabled).uiSpecProperties,
         couchDbUrl: 'https://couch.example',
       })
     );
@@ -259,6 +276,71 @@ describe('projectSlice quick share', () => {
 
     expect(projectAt(after).disableQuickShare).toBe(true);
     expect(projectAt(after).quickShare).toEqual(sampleShare);
+  });
+
+  it('keeps quickShare on a listed notebook through set/clear', () => {
+    const listed = {
+      projectId,
+      serverId,
+      name: 'Listed notebook',
+      description: '',
+      status: ProjectStatus.OPEN,
+      isActivated: false as const,
+      uiSpecProperties: {
+        schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+        hash: 'a'.repeat(64),
+      },
+    } satisfies ListedProject;
+    const before: ProjectsState = {
+      ...initialProjectState,
+      servers: {
+        [serverId]: {
+          serverId,
+          serverUrl: 'https://example.test',
+          serverTitle: 'Test',
+          shortCodePrefix: 'T',
+          description: '',
+          couchDbUrl: 'https://couch.example',
+          listed: {[projectId]: listed},
+          activated: {},
+        },
+      },
+    };
+
+    const stored = projectsReducer(
+      before,
+      setProjectQuickShare({
+        projectId,
+        serverId,
+        quickShare: sampleShare,
+      })
+    );
+    expect(projectAt(stored).isActivated).toBe(false);
+    expect(projectAt(stored).quickShare).toEqual(sampleShare);
+
+    const cleared = projectsReducer(
+      stored,
+      clearProjectQuickShare({projectId, serverId})
+    );
+    expect(projectAt(cleared).quickShare).toBeUndefined();
+    expect(projectAt(cleared).name).toBe('Listed notebook');
+  });
+
+  it('moves quickShare onto the listed row on deactivate', () => {
+    const before = stateWithProjects({[projectId]: buildProject()});
+
+    const after = projectsReducer(
+      before,
+      deactivateProject({projectId, serverId})
+    );
+
+    expect(after.servers[serverId]!.activated[projectId]).toBeUndefined();
+    const listed = after.servers[serverId]!.listed[projectId];
+    expect(listed).toBeDefined();
+    expect(listed.isActivated).toBe(false);
+    expect(listed.quickShare).toEqual(sampleShare);
+    expect(listed).not.toHaveProperty('uiDefinition');
+    expect(listed).not.toHaveProperty('database');
   });
 
   it('updateDatabaseAuthSuccess retains quickShare and disableQuickShare', () => {

@@ -50,7 +50,7 @@ import Nano from 'nano';
 import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
 import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
-import {getAllProjectsDirectory} from './notebooks';
+import {getAllProjectsListing} from './notebooks';
 import {registerAdminUser} from './users';
 
 const DIRECTORY_DB_NAME = 'directory';
@@ -577,9 +577,8 @@ export const initialiseDbAndKeys = async ({
     }
   }
 
-  // For each project, ensure the metadata and data DBs are also
-  // initialised/synced
-  const projects = await getAllProjectsDirectory();
+  // For each project, ensure the data DBs are also initialised/synced
+  const projects = await getAllProjectsListing();
   console.log(
     `${DB_INIT_LOG} Found ${projects.length} project(s); initialising data DBs`
   );
@@ -615,7 +614,7 @@ export const initialiseDbAndKeys = async ({
  * documents may predate data v2 `updatedAt`).
  */
 export const migrateAllProjectDataDbs = async () => {
-  const projects = await getAllProjectsDirectory();
+  const projects = await getAllProjectsListing();
   console.log(
     `[migrate] Found ${projects.length} project(s); opening data DBs`
   );

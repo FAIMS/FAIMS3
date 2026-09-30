@@ -26,7 +26,10 @@ import {
 } from '@mui/material';
 import {useCallback, useMemo, useState} from 'react';
 import {config} from '../../../buildconfig';
-import {type Project} from '../../../context/slices/projectSlice';
+import {
+  projectUiDefinition,
+  type Project,
+} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {MetadataDisplayComponent} from './MetadataDisplay';
 
@@ -91,10 +94,9 @@ export function buildNotebookCompatibilityReport({
   compatibility,
   extraReason,
 }: {
-  project: Pick<
-    Project,
-    'projectId' | 'serverId' | 'name' | 'uiSpecificationId' | 'status'
-  >;
+  project: Pick<Project, 'projectId' | 'serverId' | 'name' | 'status'> & {
+    uiSpecificationId?: string;
+  };
   serverVersion?: string;
   compatibility?: NotebookSchemaCompatibility;
   /** Additional failure detail (e.g. compile error) when the tier alone is not the cause. */
@@ -122,7 +124,7 @@ export function buildNotebookCompatibilityReport({
   if (extraReason && compatibility?.reason !== extraReason) {
     lines.push(`Detail: ${extraReason}`);
   }
-  lines.push(`Compiled spec id: ${project.uiSpecificationId}`);
+  lines.push(`Compiled spec id: ${project.uiSpecificationId ?? 'none'}`);
   return lines.join('\n');
 }
 
@@ -264,9 +266,10 @@ export function NotebookSchemaIncompatibleView({
   );
 
   const isNewerMajor = compatibility?.relation === 'newer-major';
+  const information = projectUiDefinition(project)?.metadata?.information;
   const hasMetadata =
-    !!project.uiDefinition?.metadata?.information &&
-    Object.values(project.uiDefinition.metadata.information).some(
+    !!information &&
+    Object.values(information).some(
       v => typeof v === 'string' && v.trim() !== ''
     );
 

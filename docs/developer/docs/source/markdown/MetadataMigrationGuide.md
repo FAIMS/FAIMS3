@@ -11,7 +11,7 @@ For the target data model, see [Notebook definition](./NotebookDefinition.md). F
 | **From** | Any deployment on **v1.5.2 or earlier** — i.e. projects DB **≤ v3** and templates DB **≤ v4**.      |
 | **To**   | The first release containing the metadata overhaul (the **metadata-overhaul** release; **v1.6.0**). |
 
-If your deployment is already on a release whose projects DB is at **v4** and templates DB is at **v5**, this migration has already run and you can skip it. You can confirm the schema versions in the per-DB migration documents (see [Couch migrations](./CouchMigrations.md)) or in `DB_TARGET_VERSIONS` in `library/data-model/src/data_storage/migrations/migrations.ts`.
+If your deployment is already on a release whose projects DB is at **v4 or later** and templates DB is at **v5 or later**, this migration has already run and you can skip it. Confirm those versions from the per-DB migration documents (see [Couch migrations](./CouchMigrations.md)); do not use current `DB_TARGET_VERSIONS` (now projects v5 / templates v6) as the skip check.
 
 ## Background — the model this replaces
 
@@ -64,7 +64,7 @@ The app behaviour is likely to be unstable or completely broken when the app is 
 
 1. **Deploy Conductor (API)** and **Control Centre (web)** together. The web designer and JSON upload paths expect the new API routes (`PUT …/uiSpecification`, partial `PUT …/:id` for name/description).
 2. **Release mobile app builds** that include this branch (or newer).
-3. Each API startup runs `validateDatabases`, which migrates any project whose inlined `uiSpecification` is still below the current notebook schema version (see §5 below).
+3. Each API startup runs `validateDatabases`, which migrates any project or template whose inlined `uiSpecification` is still below the current notebook schema version (see §5 below).
 4. **Do not delete `metadata-*` Couch databases** until Couch document migration has completed and you have validated samples (see §3).
 
 ---
@@ -172,16 +172,16 @@ The current notebook schema version is applied by `migrateNotebook` (often wrapp
 
 ### Server — persists to Couch
 
-| Trigger                                      | Location                                           | Notes                                                                                                                                                                                                  |
-| -------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **POST** create survey (from scratch)        | `createNotebook` in `api/src/couchdb/notebooks.ts` | Body `name`, optional `description` (max 250), `uiSpecification`; legacy wire accepted                                                                                                                 |
-| **POST** create survey (from template)       | Copies `template.uiSpecification` only             | Optional `description` on POST is **not** taken from the template                                                                                                                                      |
-| **PUT** `/api/notebooks/:id/uiSpecification` | `updateProjectUiSpecification`                     | Designer save, full JSON replace                                                                                                                                                                       |
-| **PUT** `/api/templates/:id/uiSpecification` | Template equivalent                                |                                                                                                                                                                                                        |
-| **POST** create template                     | `createTemplate`                                   | Body `name`, optional `description` (max 250), `uiSpecification`                                                                                                                                       |
-| **Projects DB v3 → v4**                      | `projectsV3toV4Migration`                          | Reads metadata DB + `migrateNotebook`                                                                                                                                                                  |
-| **Templates DB v4 → v5**                     | `templatesV4toV5Migration`                         | Same pattern for templates                                                                                                                                                                             |
-| **API startup**                              | `validateDatabases`                                | Re-writes projects whose inlined spec version is still behind the current schema version (including every pre-semver `N.0` design). Designs **newer** than the API build are logged and left untouched |
+| Trigger                                      | Location                                           | Notes                                                                                                                                                                                                                    |
+| -------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **POST** create survey (from scratch)        | `createNotebook` in `api/src/couchdb/notebooks.ts` | Body `name`, optional `description` (max 250), `uiSpecification`; legacy wire accepted                                                                                                                                   |
+| **POST** create survey (from template)       | Copies `template.uiSpecification` only             | Optional `description` on POST is **not** taken from the template                                                                                                                                                        |
+| **PUT** `/api/notebooks/:id/uiSpecification` | `updateProjectUiSpecification`                     | Designer save, full JSON replace                                                                                                                                                                                         |
+| **PUT** `/api/templates/:id/uiSpecification` | Template equivalent                                |                                                                                                                                                                                                                          |
+| **POST** create template                     | `createTemplate`                                   | Body `name`, optional `description` (max 250), `uiSpecification`                                                                                                                                                         |
+| **Projects DB v3 → v4**                      | `projectsV3toV4Migration`                          | Reads metadata DB + `migrateNotebook`                                                                                                                                                                                    |
+| **Templates DB v4 → v5**                     | `templatesV4toV5Migration`                         | Same pattern for templates                                                                                                                                                                                               |
+| **API startup**                              | `validateDatabases`                                | Re-writes projects **and templates** whose inlined spec version is still behind the current schema version (including every pre-semver `N.0` design). Designs **newer** than the API build are logged and left untouched |
 
 **Does not migrate on server:**
 

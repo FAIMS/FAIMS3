@@ -4,6 +4,7 @@ import {DatabaseInterface} from '../../types';
 import {PersistedRootDescriptionSchema} from '../rootMetadata';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
 import {TemplateDefinitionSchema} from '../../uiSpecification/types';
+import {UiSpecPropertiesSchema} from '../../uiSpecification/uiSpecProperties';
 
 // =============
 // Legacy encoded UI spec (template v1–v4, metadata DB `ui-specification`)
@@ -102,7 +103,7 @@ export type TemplateV4Document = z.infer<typeof TemplateV4DocumentSchema>;
 // =============
 
 /**
- * Templates DB v5 — extend this schema when adding new persisted template fields.
+ * Templates DB v5 — inlined uiSpecification. Frozen; see {@link TemplateV6FieldsSchema}.
  * Update alongside {@link templatesV4toV5Migration}.
  */
 export const TemplateV5FieldsSchema = z.object({
@@ -139,13 +140,32 @@ export const TemplateV5DocumentSchema = CouchDocumentSchema.extend(
 export type TemplateV5Document = z.infer<typeof TemplateV5DocumentSchema>;
 
 // =============
+// V6 Definition
+// =============
+
+/**
+ * Templates DB v6 — mandatory {@link UiSpecPropertiesSchema} digest of
+ * `uiSpecification` so listings can skip the form payload.
+ * Update alongside {@link templatesV5toV6Migration}.
+ */
+export const TemplateV6FieldsSchema = TemplateV5FieldsSchema.extend({
+  uiSpecProperties: UiSpecPropertiesSchema,
+});
+export type TemplateV6Fields = z.infer<typeof TemplateV6FieldsSchema>;
+
+export const TemplateV6DocumentSchema = CouchDocumentSchema.extend(
+  TemplateV6FieldsSchema.shape
+);
+export type TemplateV6Document = z.infer<typeof TemplateV6DocumentSchema>;
+
+// =============
 // Current exports
 // =============
 
-export const TemplateDBFieldsSchema = TemplateV5FieldsSchema;
+export const TemplateDBFieldsSchema = TemplateV6FieldsSchema;
 export type TemplateDBFields = z.infer<typeof TemplateDBFieldsSchema>;
 
-export const TemplateDocumentSchema = TemplateV5DocumentSchema;
+export const TemplateDocumentSchema = TemplateV6DocumentSchema;
 export type TemplateDocument = z.infer<typeof TemplateDocumentSchema>;
 
 export const ExistingTemplateDocumentSchema =

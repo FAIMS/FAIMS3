@@ -161,6 +161,16 @@ describe('Request validation (express-zod-safe)', () => {
       expect(response.body).toHaveLength(1);
     });
 
+    it('rejects invalid includeByteCount values on notebook list', async () => {
+      const response = await requestAuthAndType(
+        request(app).get('/api/notebooks').query({includeByteCount: 'yes'}),
+        adminToken
+      ).expect(400);
+
+      expectValidationError(response.body, 'Query');
+      expect(response.body).toHaveLength(1);
+    });
+
     it('rejects invalid includeArchived values on template list', async () => {
       const response = await requestAuthAndType(
         request(app).get('/api/templates').query({includeArchived: '1'}),

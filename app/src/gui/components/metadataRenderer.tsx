@@ -8,7 +8,10 @@
 
 import {ProjectID} from '@faims3/data-model';
 import {Chip} from '@mui/material';
-import {selectProjectById} from '../../context/slices/projectSlice';
+import {
+  projectUiDefinition,
+  selectProjectById,
+} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {RichTextContent} from '@faims3/forms';
 
@@ -40,7 +43,7 @@ export default function MetadataRenderer(props: MetadataProps) {
   const project = useAppSelector(state => selectProjectById(state, project_id));
   const fromInformation =
     informationField && project
-      ? project.uiDefinition.metadata.information[informationField]
+      ? projectUiDefinition(project)?.metadata.information[informationField]
       : undefined;
   const possibleValue = explicitValue ?? fromInformation ?? '';
   const value = possibleValue ? String(possibleValue) : '';

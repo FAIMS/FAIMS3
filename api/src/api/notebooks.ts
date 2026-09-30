@@ -54,7 +54,7 @@ import {
   getByteCount,
   getProjectById,
   getRolesForNotebook,
-  getUserProjectsDetailed,
+  getUserProjectsListing,
   updateProjectMetadata,
   updateProjectOfflineMapRegion,
   updateProjectUiSpecification,
@@ -130,6 +130,8 @@ api.get(
       teamId: z.string().min(1).optional(),
       /** When `"true"`, lists archived surveys (`ARCHIVED`). Default excludes them. */
       includeArchived: z.enum(['true', 'false']).optional(),
+      /** When `"true"`, attach per-project `byteCount` (Couch `info()` per notebook). */
+      includeByteCount: z.enum(['true', 'false']).optional(),
     }),
   }),
   async (req, res: Response<GetNotebookListResponse>) => {
@@ -137,11 +139,12 @@ api.get(
       throw new Exceptions.UnauthorizedException();
     }
     const includeArchived = req.query.includeArchived === 'true';
-    const notebooks = await getUserProjectsDetailed(
-      req.user,
-      req.query.teamId,
-      includeArchived
-    );
+    const includeByteCount = req.query.includeByteCount === 'true';
+    const notebooks = await getUserProjectsListing(req.user, {
+      teamId: req.query.teamId,
+      includeArchived,
+      includeByteCount,
+    });
     res.json(notebooks);
   }
 );

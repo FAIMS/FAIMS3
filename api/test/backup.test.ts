@@ -18,10 +18,7 @@ import {
 } from '@faims3/data-model';
 import {describe, expect, it} from 'vitest';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
-import {
-  getUserProjectsDetailed,
-  getUiSpecModel,
-} from '../src/couchdb/notebooks';
+import {getUserProjectsListing, getUiSpecModel} from '../src/couchdb/notebooks';
 import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
 import {mockTokenContentsForUser} from '../src/utils';
 import {
@@ -47,7 +44,7 @@ describe('Backup and restore', () => {
     const user = await getExpressUserFromEmailOrUserId('admin');
     expect(user).not.toBeUndefined();
     if (user) {
-      const notebooks = await getUserProjectsDetailed(user);
+      const notebooks = await getUserProjectsListing(user);
       expect(notebooks.length).toBe(2);
       expect(notebooks[0].name).toBe('Campus Survey Demo');
 
