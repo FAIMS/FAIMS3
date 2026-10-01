@@ -287,12 +287,19 @@ export type PostImpersonateUserResponse = z.infer<
 // NOTEBOOKS CRUD
 // ==================
 
-/** GET /api/notebooks list row (project summary + access flags; no uiSpecification). */
+/** GET /api/notebooks and GET /api/directory row. Lean project; no uiSpecification. */
 export const APINotebookListSchema = ProjectListItemSchema.extend({
-  is_admin: z.boolean(),
-  byteCount: z.number(),
+  byteCount: z.number().optional(),
 });
 export type APINotebookList = z.infer<typeof APINotebookListSchema>;
+
+/** GET /api/notebooks?includeByteCount=true */
+export const APINotebookListWithStatsSchema = ProjectListItemSchema.extend({
+  byteCount: z.number(),
+});
+export type APINotebookListWithStats = z.infer<
+  typeof APINotebookListWithStatsSchema
+>;
 
 /** GET /api/notebooks/:id — full project document plus optional record count. */
 export const GetNotebookResponseSchema = ExistingProjectDocumentSchema.extend({
@@ -310,6 +317,18 @@ export const GetNotebookListResponseSchema = z.array(APINotebookListSchema);
 export type GetNotebookListResponse = z.infer<
   typeof GetNotebookListResponseSchema
 >;
+
+/** GET /api/notebooks?includeByteCount=true — list rows with required `byteCount`. */
+export const GetNotebookListWithStatsResponseSchema = z.array(
+  APINotebookListWithStatsSchema
+);
+export type GetNotebookListWithStatsResponse = z.infer<
+  typeof GetNotebookListWithStatsResponseSchema
+>;
+
+/** @deprecated Same as GetNotebookListResponse. Directory is the cheap alias. */
+export const GetDirectoryResponseSchema = GetNotebookListResponseSchema;
+export type GetDirectoryResponse = GetNotebookListResponse;
 
 export const CreateNotebookFromTemplateSchema = z.object({
   name: resourceNameString('Name'),

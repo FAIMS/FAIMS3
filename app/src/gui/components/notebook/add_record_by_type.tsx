@@ -17,7 +17,10 @@ import {useNotebookRoute} from '../../../context/notebookRoute';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
-import {Project} from '../../../context/slices/projectSlice';
+import {
+  isActivatedProject,
+  Project,
+} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {localGetDataDb} from '../../../utils/database';
 import {QRCodeButton} from '@faims3/forms';
@@ -36,11 +39,15 @@ type AddRecordButtonsProps = {
 };
 
 export default function AddRecordButtons({
-  project: {projectId, uiSpecificationId},
+  project,
   refreshList,
   formTypes,
   planReference,
 }: AddRecordButtonsProps) {
+  const {projectId} = project;
+  const uiSpecificationId = isActivatedProject(project)
+    ? project.uiSpecificationId
+    : undefined;
   const theme = useTheme();
   // This page cannot load if no active user
   const activeUser = useAppSelector(selectActiveUser)!;
@@ -51,7 +58,9 @@ export default function AddRecordButtons({
   >(undefined);
   const navigate = useNavigate();
   const {notebook} = useNotebookRoute();
-  const uiSpec = compiledSpecService.getSpec(uiSpecificationId);
+  const uiSpec = uiSpecificationId
+    ? compiledSpecService.getSpec(uiSpecificationId)
+    : undefined;
 
   if (uiSpec === undefined) {
     return <CircularProgress thickness={2} size={12} />;

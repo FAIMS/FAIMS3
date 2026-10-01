@@ -14,7 +14,7 @@ sys.path.append(str(Path('_ext').resolve()))
 project = os.getenv("VITE_APP_NAME", "FAIMS")
 copyright = "2023, Electronic Field Notebooks Pty Ltd"
 author = "Electronic Field Notebooks Pty Ltd"
-release = "1.8.1"
+release = "1.9.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

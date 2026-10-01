@@ -600,6 +600,24 @@ const failSoftProject = (): Project => ({
   status: ProjectStatus.OPEN,
   isActivated: true,
   uiSpecificationId: 'spec-1',
+  uiSpecProperties: {
+    schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+    hash: 'a'.repeat(64),
+  },
+  database: {
+    syncMode: 'none',
+    isSyncingAttachments: false,
+    localDbId: 'local-1',
+    remote: {
+      remoteDbId: 'remote-1',
+      syncId: undefined,
+      connectionConfiguration: {
+        jwtToken: 't',
+        couchUrl: 'https://couch.example',
+        databaseName: 'data-test',
+      },
+    },
+  },
   uiDefinition: {
     uiSpec: {
       fields: {},
@@ -617,6 +635,19 @@ const failSoftProject = (): Project => ({
         leadInstitution: '',
       },
     },
+  },
+});
+
+const listedProject = (): Project => ({
+  projectId: 'listed-project',
+  serverId: 'test-server',
+  name: 'Listed Name',
+  description: 'Listed description',
+  status: ProjectStatus.OPEN,
+  isActivated: false,
+  uiSpecProperties: {
+    schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+    hash: 'a'.repeat(64),
   },
 });
 
@@ -762,6 +793,57 @@ describe('NotebookView fail-soft tiers', () => {
       expect(
         screen.queryByTestId('notebook-schema-incompatible-view')
       ).toBeNull();
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      expect(
+        screen.getByTestId('notebook-schema-incompatible-view')
+      ).toBeTruthy();
+      expect(
+        screen.getByTestId('notebook-compatibility-report').textContent
+      ).toContain('not available on this device');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('NotebookView listed notebook (no uiDefinition)', () => {
+  it('shows the incompatible skeleton for a listed notebook this build cannot read', () => {
+    const project = listedProject();
+    project.schemaCompatibility = {
+      tier: 'incompatible',
+      relation: 'newer-major',
+      appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+      notebookSchemaVersion: '99.0.0',
+      requiresMigration: false,
+      reason: 'Notebook schemaVersion 99.0.0 has a newer major version',
+    };
+
+    renderFailSoft(project);
+
+    expect(project).not.toHaveProperty('uiDefinition');
+    expect(
+      screen.getByTestId('notebook-schema-incompatible-view')
+    ).toBeTruthy();
+    expect(screen.queryByText('Loading')).toBeNull();
+    expect(
+      screen.getByTestId('notebook-compatibility-report').textContent
+    ).toContain('listed-project');
+    expect(screen.queryByTestId('plan-view')).toBeNull();
+  });
+
+  it('shows a spinner, then the skeleton, when a listed notebook has no compiled spec', () => {
+    vi.useFakeTimers();
+    try {
+      const project = listedProject();
+      act(() => {
+        renderFailSoft(project);
+      });
+      expect(
+        screen.queryByTestId('notebook-schema-incompatible-view')
+      ).toBeNull();
+      expect(screen.getByText('Loading')).toBeTruthy();
       act(() => {
         vi.advanceTimersByTime(3000);
       });

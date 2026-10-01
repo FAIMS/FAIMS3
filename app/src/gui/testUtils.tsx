@@ -31,16 +31,23 @@ const testProject = {
   listing_id: 'default',
   name: 'Test Name',
   project_id: 'test-project',
+  projectId: 'test-project',
+  serverId: 'test-server',
   status: 'published',
   metadata: {name: 'Test Name'},
+  uiSpecificationId: 'spec',
+  uiSpecProperties: {
+    schemaVersion: '1.0.0',
+    hash: 'a'.repeat(64),
+  },
 };
 
-//    state => state.projects.servers[serverId]?.projects[projectId]
 const mockState = {
   projects: {
     servers: {
       'test-server': {
-        projects: {
+        listed: {},
+        activated: {
           'test-project': testProject,
         },
       },
