@@ -2,44 +2,67 @@
 /**
  * Couch-mediated exclusive lock for clustered API startup migrations.
  *
- * One instance (the "doer") runs the work. Other instances wait until the lock
- * is `complete` or `failed`, then continue booting — the same error-tolerant
- * path as today's startup (a reported failure does not block attaching the full API).
+ * Stored as one well-known document ({@link STARTUP_MIGRATION_LOCK_ID}) in the
+ * migrations DB. Callers pass a {@link StartupMigrationLockStore} (Pouch/Couch
+ * `get`/`put` is enough). Production entry point is
+ * {@link withStartupMigrationLock} via `runStartupMigrations`.
  *
- * Transient Couch errors (waiter polls, claim get/put) are retried with
- * exponential backoff. Only a streak of {@link STARTUP_MIGRATION_LOCK_IO_RETRIES}
- * consecutive I/O failures gives up and throws — `runStartupMigrations` then
- * fail-opens so the full API can attach.
+ * ## Roles
  *
- * If the doer vanishes without writing a result, waiters steal the lock after
- * {@link STARTUP_MIGRATION_LOCK_TIMEOUT_MS}. The steal is a revisioned put, so
- * only one waiter wins a given race and becomes the next doer.
+ * - **doer** — wins the claim, runs the callback, then writes `complete` or
+ *   `failed` onto the lock. The callback runs on this instance only.
+ * - **waiter** — sees a live `running` lock (or loses the same claim race) and
+ *   polls until that attempt settles. Does not run the callback.
  *
- * A later startup wave that finds `complete`/`failed` will claim and run again
- * (migrations are idempotent). Waiters who already observed a live doer do not
- * re-run; they just proceed once it settles.
+ * A reported `failed` is still a settlement: waiters proceed and the caller
+ * (`runStartupMigrations`) still attaches the full API. That matches the
+ * pre-lock error-tolerant boot.
  *
- * This is an edge-case guard, not a distributed consensus system. The
- * underlying migrate path is already error-tolerant; the crashed-doer case
- * should be rare.
+ * ## Claim, settle, steal
+ *
+ * `tryClaim` becomes the doer when the document is missing, already
+ * `complete`/`failed`, or `running` past {@link StartupMigrationLockOptions.timeoutMs}
+ * (age is `now - startedAtMs`, not `updatedAtMs`). A later process start that
+ * finds a settled lock therefore re-claims and runs again — migrations are
+ * idempotent. Waiters who already joined a live attempt do not re-run; they
+ * proceed once it settles.
+ *
+ * If the doer vanishes without writing a result, waiters return to `tryClaim`
+ * after the timeout. The steal is a revisioned put, so only one waiter wins a
+ * given race. A doer that was stolen mid-run must not overwrite the thief
+ * (`settleLock` no-ops unless this instance still holds `running`).
+ *
+ * This is an edge-case guard, not a consensus protocol. The migrate path is
+ * already error-tolerant; a silent crashed doer should be rare.
+ *
+ * ## I/O
+ *
+ * Transient Couch errors on claim get/put and waiter polls retry with
+ * exponential backoff. A streak of {@link STARTUP_MIGRATION_LOCK_IO_RETRIES}
+ * consecutive failures throws. `runStartupMigrations` catches that and
+ * fail-opens so the full API can still attach. A successful read resets the
+ * streak. 409 on claim is not I/O failure — it means another instance won.
  */
 import {randomUUID} from 'node:crypto';
 import {hostname} from 'node:os';
 import {logKeyValue, type LogKeyValueFields} from '../utils/logKeyValue';
 
-/** Well-known document in the migrations DB. */
+/** `_id` of the single lock document in the migrations DB. */
 export const STARTUP_MIGRATION_LOCK_ID = 'startup-migration-lock';
 
 /**
- * Default steal timeout (30 minutes). Production boot uses
+ * Default steal timeout (30 minutes). Production boot overrides this with
  * `config.startupMigrationLockTimeoutMs` (`STARTUP_MIGRATION_LOCK_TIMEOUT_MS`).
  */
 export const STARTUP_MIGRATION_LOCK_TIMEOUT_MS = 30 * 60 * 1000;
 
-/** How often a waiter re-reads the lock. */
+/** How often a waiter re-reads the lock while a doer is still live. */
 export const STARTUP_MIGRATION_LOCK_POLL_MS = 5_000;
 
-/** Consecutive lock I/O failures before claim/wait gives up. */
+/**
+ * Consecutive lock I/O failures (claim get/put or waiter poll) before
+ * {@link withStartupMigrationLock} throws. A successful read resets the streak.
+ */
 export const STARTUP_MIGRATION_LOCK_IO_RETRIES = 5;
 
 /** First backoff after a lock I/O error; doubles each consecutive failure. */
@@ -48,66 +71,103 @@ export const STARTUP_MIGRATION_LOCK_IO_BACKOFF_MS = 1_000;
 /** Cap for the I/O error backoff. */
 export const STARTUP_MIGRATION_LOCK_IO_BACKOFF_MAX_MS = 16_000;
 
-/** Keep a short audit trail on the lock document itself. */
+/** Keep at most this many {@link StartupMigrationLockDoc.history} rows (drop oldest). */
 const MAX_LOCK_HISTORY = 10;
 
-/** Log every Nth wait poll after the first (5s * 6 = 30s). */
+/** After the first wait log, emit `still_waiting` every N polls (5s * 6 = 30s). */
 const WAIT_LOG_EVERY_POLLS = 6;
 
 /** Prefix for structured `console.log` lines from clustered startup migrations. */
 export const STARTUP_MIGRATION_LOG = '[startup-migration]';
 
+/**
+ * Current lock document status.
+ *
+ * - `running` — a doer holds the lock and has not settled.
+ * - `complete` / `failed` — the last attempt wrote a result. A new
+ *   {@link withStartupMigrationLock} call will re-claim and run again.
+ */
 export type StartupMigrationLockStatus = 'running' | 'complete' | 'failed';
 
+/** One archived attempt on {@link StartupMigrationLockDoc.history}. */
 export type StartupMigrationLockAttempt = {
   holderId: string;
   startedAtMs: number;
   finishedAtMs?: number;
+  /** `timed_out` is written when a later claim steals a still-`running` lock. */
   status: 'complete' | 'failed' | 'timed_out';
   error?: string;
 };
 
+/** Shape of the well-known lock document. */
 export type StartupMigrationLockDoc = {
   _id: string;
   _rev?: string;
   kind: 'startup-migration-lock';
   status: StartupMigrationLockStatus;
+  /** Instance that last claimed (`hostname:pid:uuid8`). */
   holderId: string;
+  /** Claim time; steal timeout is measured from this, not `updatedAtMs`. */
   startedAtMs: number;
   updatedAtMs: number;
+  /** Monotonic claim count across this document's life. */
   attempt: number;
+  /** Set when the current attempt settled as `failed`. */
   error?: string;
   history: StartupMigrationLockAttempt[];
 };
 
+/**
+ * Persistence used by the lock. Production passes the migrations Pouch
+ * database; tests may substitute an in-memory store.
+ *
+ * `get` should reject with a Pouch-style 404 / `not_found` when missing, and
+ * `put` with 409 / `conflict` on a stale `_rev`. Other rejections are treated
+ * as transient I/O.
+ */
 export type StartupMigrationLockStore = {
   get: (id: string) => Promise<StartupMigrationLockDoc>;
   put: (doc: StartupMigrationLockDoc) => Promise<unknown>;
 };
 
+/** Outcome of one {@link withStartupMigrationLock} call. */
 export type StartupMigrationResult = {
+  /** Whether this instance ran the callback or only waited. */
   role: 'doer' | 'waiter';
+  /** Settlement written (doer) or observed (waiter). */
   status: 'complete' | 'failed';
   error?: string;
 };
 
+/** Arguments to {@link withStartupMigrationLock}. Time/sleep hooks are for tests. */
 export type StartupMigrationLockOptions = {
   db: StartupMigrationLockStore;
+  /** Stable for this process; see {@link createStartupInstanceId}. */
   instanceId: string;
+  /** Migration work. Invoked only after this instance claims the lock. */
   run: () => Promise<void>;
-  /** Defaults to {@link STARTUP_MIGRATION_LOCK_TIMEOUT_MS}. */
+  /**
+   * Age of a `running` lock after which waiters steal. Defaults to
+   * {@link STARTUP_MIGRATION_LOCK_TIMEOUT_MS}.
+   */
   timeoutMs?: number;
   /** Defaults to {@link STARTUP_MIGRATION_LOCK_POLL_MS}. */
   pollIntervalMs?: number;
   /** Consecutive lock I/O errors before giving up. Defaults to {@link STARTUP_MIGRATION_LOCK_IO_RETRIES}. */
   maxIoErrors?: number;
-  /** Backoff after the nth consecutive I/O error. */
+  /** Backoff after the nth consecutive I/O error. `n` is 1-based. */
   ioBackoffMs?: (consecutiveErrors: number) => number;
+  /** Clock for claim/timeout. Injected in tests; defaults to `Date.now`. */
   now?: () => number;
+  /** Delay used for poll and I/O backoff. Injected in tests. */
   sleep?: (ms: number) => Promise<void>;
 };
 
-/** Hostname, pid, and a short UUID so clustered replicas can identify themselves. */
+/**
+ * Identity written as {@link StartupMigrationLockDoc.holderId}.
+ * Format: `hostname:pid:<8 hex chars>` so clustered replicas can tell who
+ * claimed or is waiting.
+ */
 export function createStartupInstanceId(): string {
   return `${hostname()}:${process.pid}:${randomUUID().slice(0, 8)}`;
 }
@@ -126,7 +186,11 @@ function sleepMs(ms: number): Promise<void> {
   });
 }
 
-/** 1s, 2s, 4s, … up to {@link STARTUP_MIGRATION_LOCK_IO_BACKOFF_MAX_MS}. */
+/**
+ * Default I/O backoff: 1s, 2s, 4s, … up to
+ * {@link STARTUP_MIGRATION_LOCK_IO_BACKOFF_MAX_MS}. `consecutiveErrors` is
+ * 1-based (first failure → `baseMs`).
+ */
 export function startupMigrationIoBackoffMs(
   consecutiveErrors: number,
   baseMs = STARTUP_MIGRATION_LOCK_IO_BACKOFF_MS,
@@ -136,10 +200,12 @@ export function startupMigrationIoBackoffMs(
   return Math.min(maxMs, baseMs * 2 ** exp);
 }
 
+/** Pouch/Couch 409 — another replica wrote the lock first. */
 function isConflict(error: unknown): boolean {
   return pouchStatus(error) === 409 || pouchName(error) === 'conflict';
 }
 
+/** Pouch/Couch 404 — lock document has never been created. */
 function isNotFound(error: unknown): boolean {
   return pouchStatus(error) === 404 || pouchName(error) === 'not_found';
 }
@@ -167,7 +233,10 @@ function errorMessage(error: unknown): string {
   return String(error);
 }
 
-/** Log a transient lock I/O error. Throws once the consecutive streak is exhausted. */
+/**
+ * Log a transient lock I/O error. Re-throws `error` once
+ * `consecutiveErrors >= maxIoErrors` so the caller can fail-open.
+ */
 function throwIfIoBudgetExceeded(options: {
   event: string;
   instanceId: string;
@@ -187,6 +256,7 @@ function throwIfIoBudgetExceeded(options: {
   }
 }
 
+/** True when a `running` lock is old enough to steal (`nowMs - startedAtMs`). */
 function isExpired(
   doc: StartupMigrationLockDoc,
   nowMs: number,
@@ -195,6 +265,11 @@ function isExpired(
   return nowMs - doc.startedAtMs >= timeoutMs;
 }
 
+/**
+ * When stealing a still-`running` lock, append a `timed_out` history row and
+ * drop entries beyond {@link MAX_LOCK_HISTORY}. Settled docs keep their
+ * existing history (the previous attempt already archived itself).
+ */
 function archiveRunningAttempt(
   doc: StartupMigrationLockDoc,
   finishedAtMs: number
@@ -211,6 +286,7 @@ function archiveRunningAttempt(
   return [...doc.history, timedOut].slice(-MAX_LOCK_HISTORY);
 }
 
+/** Latest lock document, or `null` if it has never been created (404). */
 async function readLock(
   db: StartupMigrationLockStore
 ): Promise<StartupMigrationLockDoc | null> {
@@ -225,8 +301,12 @@ async function readLock(
 }
 
 /**
- * Try to become the doer. Returns `wait` when another instance holds a live
- * lock (or just won the same claim race).
+ * Try to become the doer.
+ *
+ * Returns `claimed` after a successful put of `status: 'running'`. Returns
+ * `wait` when another instance holds a non-expired `running` lock, or when
+ * the put loses a 409 race. Missing, settled, and expired documents are
+ * claimable. Non-409 put/get errors propagate as I/O.
  */
 async function tryClaim(options: {
   db: StartupMigrationLockStore;
@@ -289,6 +369,14 @@ async function tryClaim(options: {
   return 'claimed';
 }
 
+/**
+ * Write `complete` or `failed` for the current attempt.
+ *
+ * No-ops (and logs `lost_lock_before_settle`) if the document is gone, held
+ * by someone else, or no longer `running` — a stolen lock must not be
+ * overwritten. Settle I/O errors are logged (`settle_failed`) and swallowed
+ * so a doer that already finished work can still return.
+ */
 async function settleLock(options: {
   db: StartupMigrationLockStore;
   instanceId: string;
@@ -343,6 +431,10 @@ async function settleLock(options: {
   }
 }
 
+/**
+ * Run the callback then settle. A thrown `run` is recorded as `failed` and
+ * returned — it does not reject {@link withStartupMigrationLock}.
+ */
 async function runAsDoer(
   options: StartupMigrationLockOptions,
   now: () => number
@@ -374,8 +466,14 @@ async function runAsDoer(
 }
 
 /**
- * Poll until the current doer settles, or the lock expires and we should try
- * to steal it.
+ * Poll until the current doer settles, or we should try to become the doer.
+ *
+ * - `proceed` — observed `complete` or `failed`; caller returns as a waiter.
+ * - `retry` — document vanished or the `running` lock expired; caller loops
+ *   back to {@link tryClaim} (steal / first-create).
+ *
+ * Poll I/O uses the same `maxIoErrors` threshold as claim, with its own
+ * consecutive-error streak. A missing document is `retry`, not I/O failure.
  */
 async function waitForDoer(options: {
   db: StartupMigrationLockStore;
@@ -468,9 +566,15 @@ async function waitForDoer(options: {
 }
 
 /**
- * Claim the startup-migration lock or wait for the current holder. The
- * callback runs only on the doer. Reported failures are written to the lock
- * so waiters can proceed; a silent crash is recovered by timeout + steal.
+ * Claim the startup-migration lock or wait for the current holder.
+ *
+ * Loops `tryClaim` → (`runAsDoer` | `waitForDoer`) until this instance either
+ * runs and settles, or observes a settlement. The callback runs only on the
+ * doer. A thrown `run` becomes `{role: 'doer', status: 'failed'}`; only a
+ * consecutive lock-I/O streak rejects (caller fail-opens). A silent doer
+ * crash is recovered by timeout + steal.
+ *
+ * @returns Who ran and how the attempt settled. Waiters never invoke `run`.
  */
 export async function withStartupMigrationLock(
   options: StartupMigrationLockOptions
