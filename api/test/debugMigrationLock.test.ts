@@ -429,6 +429,10 @@ describe('debug-migration-lock mutations', () => {
     expect(EXPECTED_GLOBAL_DBS.some(item => item.dbName === 'people')).toBe(
       true
     );
+    expect(EXPECTED_GLOBAL_DBS).toContainEqual({
+      dbType: DatabaseType.TEAMS,
+      dbName: 'teams',
+    });
   });
 
   it('force-settles a running lock and no-ops a settled one', async () => {

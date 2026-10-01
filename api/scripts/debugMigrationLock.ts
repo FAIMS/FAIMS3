@@ -53,10 +53,7 @@ const MAX_LOCK_HISTORY = 10;
 /** `launchedBy` / lock `holderId` prefix so history is obviously admin. */
 export const ADMIN_ACTOR_PREFIX = 'debug-migration-lock';
 
-/**
- * Global DBs `initialiseAndMigrateDBs` walks. `TEAMS` has a target version
- * but is not on that path, so a missing teams doc is not treated as a gap.
- */
+/** Global DBs `initialiseAndMigrateDBs` walks; a missing version doc is a gap. */
 export const EXPECTED_GLOBAL_DBS: ReadonlyArray<{
   dbType: DATABASE_TYPE;
   dbName: string;
@@ -67,6 +64,7 @@ export const EXPECTED_GLOBAL_DBS: ReadonlyArray<{
   {dbType: DatabaseType.PEOPLE, dbName: 'people'},
   {dbType: DatabaseType.PROJECTS, dbName: 'projects'},
   {dbType: DatabaseType.TEMPLATES, dbName: 'templates'},
+  {dbType: DatabaseType.TEAMS, dbName: 'teams'},
   {dbType: DatabaseType.TOMBSTONE, dbName: 'tombstone'},
 ];
 

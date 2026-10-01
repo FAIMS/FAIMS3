@@ -26,12 +26,13 @@ const adminPassword = config.localCouchdbAuth
 it('check is up', async () => {
   const result = await request(app).get('/up');
   expect(result.statusCode).toBe(200);
+  expect(result.body).toEqual({status: 'ok'});
 });
 
-it('liveness /health is 200', async () => {
-  const result = await request(app).get('/health');
+it('readiness /ready is 200 after the full API attaches', async () => {
+  const result = await request(app).get('/ready');
   expect(result.statusCode).toBe(200);
-  expect(result.body).toEqual({status: 'ok'});
+  expect(result.body).toEqual({ready: true});
 });
 
 describe('Auth', () => {

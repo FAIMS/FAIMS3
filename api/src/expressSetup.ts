@@ -60,7 +60,7 @@ import {api as tombstonesApi} from './api/tombstones';
 import {api as usersApi} from './api/users';
 import {api as utilityApi} from './api/utilities';
 import {api as emailVerifyApi} from './api/verificationChallenges';
-import {createHealthApp, releaseDeprecatedRootHealth} from './healthApp';
+import {createHealthApp, READY_PATH} from './healthApp';
 import {shouldReportErrorToBugsnag} from './logging';
 import patch from './utils/patchExpressAsync';
 
@@ -152,13 +152,10 @@ const errorHandler: ErrorRequestHandler = (
 };
 
 /**
- * Mount the full API on an already-listening health app. `/health` stays first
- * in the stack so the ALB probe is never wrapped by the rate limiter. Deprecated
- * `GET /` liveness is released so the home/login route can attach.
+ * Mount the full API on an already-listening health app. `/up` stays first
+ * in the stack so the ALB probe is never wrapped by the rate limiter.
  */
 export function attachFullApi(app: express.Express): void {
-  releaseDeprecatedRootHealth(app);
-
   if (bugsnagMiddleware) {
     app.use(bugsnagMiddleware.requestHandler);
   }
@@ -255,9 +252,9 @@ export function attachFullApi(app: express.Express): void {
   );
   app.use('/apidoc/', express.static(pathToSwaggerUi));
 
-  // Legacy liveness alias; ALB prefers GET /health from createHealthApp.
-  app.get('/up/', (req, res) => {
-    res.status(200).json({up: 'true'});
+  // Process is serving the full API (liveness is GET /up from createHealthApp).
+  app.get(READY_PATH, (req, res) => {
+    res.status(200).json({ready: true});
   });
 
   // AUTH

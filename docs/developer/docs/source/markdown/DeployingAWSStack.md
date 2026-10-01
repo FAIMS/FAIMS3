@@ -390,7 +390,7 @@ AWS ECS is a cluster: when migrate-on-startup is still on, CDK **hard-enables** 
 
 `startupMigrationLockTimeoutMs` is optional (default 1800000 / 30 minutes). It is passed through as `STARTUP_MIGRATION_LOCK_TIMEOUT_MS` and controls how long clustered API waiters wait before stealing a silent startup-migration lock. Only used when the lock is enabled.
 
-Conductor binds liveness `GET /health` (200, no Couch) before startup migrations, then attaches the rest of the API on the same listener. Deprecated `GET /` returns the same 200 until that attach (then it is the login redirect again) so an older target group still probing `/` stays healthy on new tasks. The ALB target group probes `/health`. ECS `healthCheckGracePeriod` is 120s to cover Node import through that first bind — not the migrate itself.
+Conductor binds liveness `GET /up` (200, no Couch) before startup migrations, then attaches the rest of the API on the same listener. Old Conductor images already served `/up`, so the ALB target group can probe `/up` across the image cutover. `GET /ready` is mounted only after the full API attaches. ECS `healthCheckGracePeriod` is 120s to cover Node import through that first bind — not the migrate itself.
 
 You need to update the following
 

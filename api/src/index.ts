@@ -3,7 +3,7 @@
 /*
  * Filename: index.ts
  * Description:
- *   Staged API boot: validate local config, bind /health, migrate, then attach
+ *   Staged API boot: validate local config, bind /up, migrate, then attach
  *   the full Express API on the same listener so ALB can probe during migrate.
  */
 
@@ -35,7 +35,7 @@ function listenHealth(app: Express): Promise<void> {
   return new Promise((resolve, reject) => {
     const server = app.listen(config.conductorInternalPort, '0.0.0.0', () => {
       console.log(
-        `Conductor health is listening on port http://0.0.0.0:${config.conductorInternalPort}/health`
+        `Conductor health is listening on port http://0.0.0.0:${config.conductorInternalPort}/up`
       );
       resolve();
     });
@@ -43,7 +43,7 @@ function listenHealth(app: Express): Promise<void> {
   });
 }
 
-// a) local config  b) /health only  c) migrate  d) attach full API (same server)
+// a) local config  b) /up only  c) migrate  d) attach full API (same server)
 const startup = async () => {
   assertLocalStartupConfig();
 

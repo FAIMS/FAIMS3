@@ -439,7 +439,7 @@ export class FaimsConductor extends Construct {
       // With maxHealthyPercent defaulting to 200, ECS starts replacement
       // tasks before draining old ones.
       minHealthyPercent: 100,
-      // Cover Node import → /health bind only. Migrate happens after listen.
+      // Cover Node import → /up bind only. Migrate happens after listen.
       healthCheckGracePeriod: Duration.seconds(120),
       // Fail (and roll back) quickly when new tasks cannot start healthy.
       circuitBreaker: {
@@ -458,16 +458,14 @@ export class FaimsConductor extends Construct {
       targetType: elb.TargetType.IP,
       healthCheck: {
         enabled: true,
-        // Prefer GET /health (bound before Couch migrate). New tasks also
-        // answer deprecated GET / with 200 until the full API attaches (then
-        // `/` is the login redirect). Do not use a readiness 503 — ECS
-        // treats ALB fail as death.
+        // GET /up is bound before Couch migrate (old images already served
+        // this path). Do not probe readiness — ECS treats ALB fail as death.
         healthyHttpCodes: '200',
         protocol: elb.Protocol.HTTP,
         interval: Duration.seconds(30),
         timeout: Duration.seconds(5),
         port: this.internalPort.toString(),
-        path: '/health',
+        path: '/up',
       },
       vpc: props.vpc,
     });

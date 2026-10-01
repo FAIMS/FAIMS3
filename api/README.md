@@ -109,7 +109,7 @@ applies for the commands below.
 
 ### Startup migrations (API boot)
 
-After `GET /health` is bound, the API calls `runStartupMigrations` before
+After `GET /up` is bound, the API calls `runStartupMigrations` before
 attaching the rest of the routes. That is the same work as
 `pnpm run migrate --keys`: initialise + migrate every Couch DB, then walk
 notebook / template uiSpecs. Failures are logged; the process still attaches
