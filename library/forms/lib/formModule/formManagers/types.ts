@@ -168,13 +168,11 @@ export interface FullFormConfig extends BaseFormConfig {
     navigateToLink: (to: string) => void;
     /** Return to the previous context e.g. the record list */
     navigateToRecordList: {
-      // e.g. return to record list
-      label: string;
+      // what the link is called; omitted to keep the stock wording
+      label?: string;
       // function which does this
       navigate: () => void;
     };
-    /** Navigate to the view records (if there is no parent context) */
-    navigateToViewRecord: (params: {recordId: string}) => void;
   };
   /** Provides access to auto-incrementer functions */
   incrementerService: AutoIncrementService;
