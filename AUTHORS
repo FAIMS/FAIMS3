@@ -18,8 +18,4 @@ CSIRO contributions are CSIRO's own. They are contributed under the
 Developer Certificate of Origin (see app/DCO), which certifies the right
 to contribute under the project licence and does not transfer copyright.
 
-Individual contributors are recorded in the commit history. Peter Baker
-(CSIRO) designed and built the Amazon Web Services deployment
-(infrastructure/aws-cdk) and is the largest individual contributor.
-Other significant contributors are listed in README.md, under
-"Contributors".
+Individual contributors are recorded in the commit history.
