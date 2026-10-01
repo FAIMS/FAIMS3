@@ -302,6 +302,122 @@ export type CompiledUiSpecModel = z.infer<typeof CompiledUiSpecModelSchema>;
 // not need a new block.
 // ============================================================================
 
+/** A single field in a template's setup form (#2216). */
+export const SetupFieldSchema = z
+  .object({
+    /** Key the value is stored under in the notebook's metadata.setup. */
+    name: z.string().min(1),
+    /** Label shown on the creation form. */
+    label: z.string().min(1),
+    type: z.enum([
+      'string',
+      'number',
+      'date',
+      'longtext',
+      'select',
+      'multiselect',
+    ]),
+    /** When omitted, the field is optional (not required). */
+    required: z.boolean().optional(),
+    helperText: z.string().optional(),
+    /** Choices for select/multiselect fields. */
+    options: z.array(z.string().min(1)).optional(),
+  })
+  .refine(
+    field =>
+      field.type === 'select' || field.type === 'multiselect'
+        ? (field.options?.length ?? 0) > 0
+        : true,
+    {message: 'Select and multiselect fields must define at least one option.'}
+  );
+export type SetupField = z.infer<typeof SetupFieldSchema>;
+
+/**
+ * Form definition presented when instantiating a notebook from a template.
+ * Submitted values are written to the new notebook's metadata.setup.
+ * Lives in settings so it is carried through to the notebook JSON.
+ */
+export const SetupFormSchema = z.object({
+  fields: z.array(SetupFieldSchema).min(1),
+});
+export type SetupForm = z.infer<typeof SetupFormSchema>;
+
+/** Values submitted against a SetupForm at notebook creation. */
+export const SetupValuesSchema = z.record(
+  z.string(),
+  z.union([z.string(), z.number(), z.array(z.string())])
+);
+export type SetupValues = z.infer<typeof SetupValuesSchema>;
+
+/**
+ * Validates submitted setup values against a form definition.
+ * Shared by the API (reject invalid creation requests) and the
+ * dashboard (client-side validation before submit).
+ *
+ * @returns Empty array when valid, otherwise one message per problem.
+ */
+export const validateSetupValues = (
+  form: SetupForm,
+  values: SetupValues
+): string[] => {
+  const errors: string[] = [];
+  const known = new Set(form.fields.map(f => f.name));
+
+  for (const field of form.fields) {
+    const value = values[field.name];
+    // empty string and empty array count as missing
+    const missing =
+      value === undefined ||
+      value === '' ||
+      (Array.isArray(value) && value.length === 0);
+    if (missing) {
+      if (field.required) errors.push(`'${field.label}' is required.`);
+      continue;
+    }
+    switch (field.type) {
+      case 'number':
+        if (typeof value !== 'number') {
+          errors.push(`'${field.label}' must be a number.`);
+        }
+        break;
+      case 'string':
+        if (typeof value !== 'string') {
+          errors.push(`'${field.label}' must be text.`);
+        }
+        break;
+      case 'select':
+        if (typeof value !== 'string' || !field.options?.includes(value)) {
+          errors.push(`'${field.label}' must be one of its listed options.`);
+        }
+        break;
+      case 'multiselect':
+        if (
+          !Array.isArray(value) ||
+          !value.every(v => field.options?.includes(v))
+        ) {
+          errors.push(`'${field.label}' must be a list of its listed options.`);
+        }
+        break;
+      case 'longtext':
+        if (typeof value !== 'string') {
+          errors.push(`'${field.label}' must be text.`);
+        }
+        break;
+      case 'date':
+        if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+          errors.push(`'${field.label}' must be a date (YYYY-MM-DD).`);
+        }
+        break;
+    }
+  }
+
+  for (const key of Object.keys(values)) {
+    if (!known.has(key)) errors.push(`Unexpected field '${key}'.`);
+  }
+
+  return errors;
+};
+
 // =============
 // V1 Definition (schemaVersion epoch 1.0.0)
 // =============
@@ -310,6 +426,8 @@ export type CompiledUiSpecModel = z.infer<typeof CompiledUiSpecModelSchema>;
 export const NotebookSettingsV1Schema = z.object({
   /** When true, show “search by QR” on the record list for this survey. */
   showQrCodeButton: z.boolean(),
+  /** Optional form presented when creating a notebook from this template (#2216). */
+  setupForm: SetupFormSchema.optional(),
   /**
    * Markdown headed over the plan buttons, where a notebook offers a choice of
    * plan. Absent, the chooser heads itself.
@@ -343,6 +461,8 @@ export type NotebookInformationV1 = z.infer<typeof NotebookInformationV1Schema>;
 export const NotebookMetadataV1Schema = z.object({
   /** Non-functional information about the notebook. */
   information: NotebookInformationV1Schema,
+  /** Values captured by the template's setup form at creation (#2216). */
+  setup: SetupValuesSchema.optional(),
   /** Optional key/value bag for org-specific tagging; not for settings or user ids. */
   custom: z.record(z.string(), z.any()).optional(),
 });

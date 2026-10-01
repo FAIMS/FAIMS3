@@ -5,11 +5,19 @@ import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTeams, useGetTemplate} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
-import {Action, PostCreateNotebookInput} from '@faims3/data-model';
+import {
+  Action,
+  PostCreateNotebookInput,
+  validateSetupValues,
+} from '@faims3/data-model';
 import {
   optionalRootDescriptionField,
   rootDescriptionForApi,
 } from '@/lib/rootDescriptionField';
+import {
+  collectSetupValues,
+  setupFieldsToFormFields,
+} from '@/lib/setupFormFields';
 import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useMemo} from 'react';
@@ -37,6 +45,9 @@ interface CreateProjectFromTemplateFormProps {
  * the template has `ownedByTeamId` and the user may create projects in that
  * team, the dropdown defaults to that team; global creators can clear it to
  * create outside any team.
+ *
+ * When the template defines a setup form (#2216), its fields are appended
+ * to the form and the submitted values are sent as `setupValues`.
  *
  * @param {CreateProjectFromTemplateFormProps} props - The props for the form.
  * @returns {JSX.Element} The rendered form.
@@ -73,6 +84,7 @@ export function CreateProjectFromTemplateForm({
     possibleTeams,
   });
 
+  const setupForm = template?.uiSpecification?.uiSpec?.settings?.setupForm;
   // Every plan template needs its own config, keyed by plan id, sent as planConfigs
   const plans = usePlanConfigs({
     planTemplates: template?.uiSpecification?.planTemplates ?? [],
@@ -114,9 +126,14 @@ export function CreateProjectFromTemplateForm({
       );
     }
 
+    if (setupForm) {
+      result.push(...setupFieldsToFormFields(setupForm));
+    }
+
     return plans.appendTo({fields: result});
   }, [
     canCreateGlobally,
+    setupForm,
     plans,
     possibleTeams,
     showTeamDropdown,
@@ -130,7 +147,8 @@ export function CreateProjectFromTemplateForm({
       unknown
     >
   ) => {
-    const {name, description, team} = values;
+    // `rest` is every other field: the setup form's own values live there.
+    const {name, description, team, ...rest} = values;
     const planConfigs = plans.toPlanConfigs(values);
     const chosenTeamId = resolveTeamId({
       canCreateGlobally,
@@ -149,6 +167,9 @@ export function CreateProjectFromTemplateForm({
         name,
         ...rootDescriptionForApi(description),
         ...(chosenTeamId ? {teamId: chosenTeamId} : {}),
+        ...(setupForm
+          ? {setupValues: collectSetupValues(setupForm, rest)}
+          : {}),
         ...(planConfigs ? {planConfigs} : {}),
       } satisfies PostCreateNotebookInput),
     });
@@ -199,7 +220,21 @@ export function CreateProjectFromTemplateForm({
         submitButtonText={`Create ${config.notebookNameCapitalized}`}
         defaultValues={defaultTeamId ? {team: defaultTeamId} : undefined}
         footer={plans.footer}
-        disableSubmission={plans.gate}
+        // A plan config that is not ready is a hard block; otherwise the setup
+        // form gates on its own required values.
+        disableSubmission={
+          plans.gate ??
+          (setupForm
+            ? {
+                disabled: data =>
+                  validateSetupValues(
+                    setupForm,
+                    collectSetupValues(setupForm, data)
+                  ).length > 0,
+                reason: `Complete the required ${config.notebookName} details.`,
+              }
+            : undefined)
+        }
       />
     </div>
   );
