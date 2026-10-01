@@ -377,9 +377,14 @@ The following section configures the API.
       "scaleInCooldown": 300,
       "scaleOutCooldown": 60
     },
-    "localhostWhitelist": false
+    "localhostWhitelist": false,
+    "startupMigrationLockTimeoutMs": 1800000
   },
 ```
+
+`startupMigrationLockTimeoutMs` is optional (default 1800000 / 30 minutes). It is passed through as `STARTUP_MIGRATION_LOCK_TIMEOUT_MS` and controls how long clustered API waiters wait before stealing a silent startup-migration lock.
+
+Conductor binds liveness `GET /health` (200, no Couch) before startup migrations, then attaches the rest of the API on the same listener. Deprecated `GET /` returns the same 200 until that attach (then it is the login redirect again) so an older target group still probing `/` stays healthy on new tasks. The ALB target group probes `/health`. ECS `healthCheckGracePeriod` is 120s to cover Node import through that first bind — not the migrate itself.
 
 You need to update the following
 

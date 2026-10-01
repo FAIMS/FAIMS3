@@ -31,6 +31,7 @@ import {
   ConductorConfig,
   DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW,
   DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS,
+  DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
 } from '../config';
 
 const DEFAULT_SMTP_CACHE_EXPIRY = 300;
@@ -320,6 +321,10 @@ export class FaimsConductor extends Construct {
         props.exportRateLimiterPerWindow ??
         DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW
       }`,
+      STARTUP_MIGRATION_LOCK_TIMEOUT_MS: `${
+        props.config.startupMigrationLockTimeoutMs ??
+        DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS
+      }`,
 
       // Email Service Configuration
       EMAIL_SERVICE_TYPE: props.smtpConfig.emailServiceType,
@@ -423,6 +428,8 @@ export class FaimsConductor extends Construct {
       // With maxHealthyPercent defaulting to 200, ECS starts replacement
       // tasks before draining old ones.
       minHealthyPercent: 100,
+      // Cover Node import → /health bind only. Migrate happens after listen.
+      healthCheckGracePeriod: Duration.seconds(120),
       // Fail (and roll back) quickly when new tasks cannot start healthy.
       circuitBreaker: {
         enable: true,
@@ -440,12 +447,16 @@ export class FaimsConductor extends Construct {
       targetType: elb.TargetType.IP,
       healthCheck: {
         enabled: true,
-        healthyHttpCodes: '200,302',
+        // Prefer GET /health (bound before Couch migrate). New tasks also
+        // answer deprecated GET / with 200 until the full API attaches (then
+        // `/` is the login redirect). Do not use a readiness 503 — ECS
+        // treats ALB fail as death.
+        healthyHttpCodes: '200',
         protocol: elb.Protocol.HTTP,
         interval: Duration.seconds(30),
         timeout: Duration.seconds(5),
         port: this.internalPort.toString(),
-        path: '/',
+        path: '/health',
       },
       vpc: props.vpc,
     });

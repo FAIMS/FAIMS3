@@ -4,8 +4,10 @@
  */
 import {ZodError} from 'zod';
 import {
+  ConductorConfigSchema,
   DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW,
   DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS,
+  DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
   SecurityConfigSchema,
   UiConfiguration,
 } from '../lib/config';
@@ -158,5 +160,41 @@ describe('SecurityConfigSchema export rate limiter', () => {
     expect(parsed.exportRateLimiterEnabled).toBe(false);
     expect(parsed.exportRateLimiterWindowMs).toBe(3_600_000);
     expect(parsed.exportRateLimiterPerWindow).toBe(50);
+  });
+});
+
+function minimalConductorConfig(overrides: Record<string, unknown> = {}) {
+  return {
+    name: 'Test',
+    description: 'Test conductor',
+    conductorDockerImage: 'ghcr.io/faims/faims3-api',
+    cpu: 256,
+    memory: 512,
+    autoScaling: {
+      desiredCapacity: 1,
+      minCapacity: 1,
+      maxCapacity: 2,
+      targetCpuUtilization: 70,
+      targetMemoryUtilization: 70,
+      scaleInCooldown: 30,
+      scaleOutCooldown: 30,
+    },
+    ...overrides,
+  };
+}
+
+describe('ConductorConfigSchema startup migration lock timeout', () => {
+  it('defaults to 30 minutes when omitted', () => {
+    const parsed = ConductorConfigSchema.parse(minimalConductorConfig());
+    expect(parsed.startupMigrationLockTimeoutMs).toBe(
+      DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS
+    );
+  });
+
+  it('accepts an explicit override', () => {
+    const parsed = ConductorConfigSchema.parse(
+      minimalConductorConfig({startupMigrationLockTimeoutMs: 600_000})
+    );
+    expect(parsed.startupMigrationLockTimeoutMs).toBe(600_000);
   });
 });

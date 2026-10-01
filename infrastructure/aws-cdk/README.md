@@ -402,6 +402,7 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `cpu`: The number of CPU units for the Fargate task
   - `memory`: The amount of memory (in MiB) for the Fargate task
   - `localhostWhitelist`: (default false) Allow localhost-style redirects; not recommended for production
+  - `startupMigrationLockTimeoutMs`: (default `1800000`) How long clustered API waiters wait before stealing a silent startup-migration lock (`STARTUP_MIGRATION_LOCK_TIMEOUT_MS`, 30 minutes). The Conductor ALB health check is `GET /health` (bound before migrate); deprecated `GET /` also returns 200 until the full API attaches. ECS `healthCheckGracePeriod` is 120s for process start through that bind.
   - `autoScaling`: Auto scaling configuration for the Conductor service
     - `desiredCapacity`: The desired number of tasks to run
     - `minCapacity`: The minimum number of tasks to run

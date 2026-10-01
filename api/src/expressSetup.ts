@@ -60,6 +60,7 @@ import {api as tombstonesApi} from './api/tombstones';
 import {api as usersApi} from './api/users';
 import {api as utilityApi} from './api/utilities';
 import {api as emailVerifyApi} from './api/verificationChallenges';
+import {createHealthApp, releaseDeprecatedRootHealth} from './healthApp';
 import {shouldReportErrorToBugsnag} from './logging';
 import patch from './utils/patchExpressAsync';
 
@@ -88,10 +89,8 @@ if (bugsnagEnabled) {
   console.log('Bugsnag not enabled (no API key set)');
 }
 
-export const app: express.Express = express();
-
 // Bugsnag comes first - passes through
-let bugsnagMiddleware = undefined;
+let bugsnagMiddleware: ReturnType<typeof Bugsnag.getPlugin> | undefined;
 if (bugsnagEnabled) {
   bugsnagMiddleware = Bugsnag.getPlugin('express');
   if (!bugsnagMiddleware) {
@@ -99,7 +98,6 @@ if (bugsnagEnabled) {
       'Bugsnag middleware could not be retrieved! Despite it being started.'
     );
   }
-  app.use(bugsnagMiddleware.requestHandler);
 }
 
 // Setup rate limiter (first - as we want to limit all requests)
@@ -111,57 +109,6 @@ export const RATE_LIMITER = RateLimit({
   standardHeaders: true,
   // Disable the `X-RateLimit-*` headers
   legacyHeaders: true,
-});
-
-if (!IS_TEST && config.rateLimiterEnabled) {
-  console.log('Activating rate limiter');
-  app.use(RATE_LIMITER);
-} else {
-  if (IS_TEST) {
-    console.log('Not enabling rate limiting due to being in test mode.');
-  } else {
-    console.log(
-      'Not enabling rate limiting due to it being explicitly disabled.'
-    );
-  }
-}
-
-if (!IS_TEST && config.exportRateLimiterEnabled) {
-  console.log(
-    `Activating export rate limiter (${config.exportRateLimiterPerWindow} req / ${config.exportRateLimiterWindowMs} ms)`
-  );
-} else if (!IS_TEST) {
-  console.log('Not enabling export rate limiter (explicitly disabled).');
-}
-
-app.use(morgan('combined'));
-
-// Only parse query parameters into strings, not objects
-app.set('query parser', 'simple');
-app.use(
-  cookieSession({
-    name: 'session',
-    secret: config.cookieSecret,
-    // cookie is used for login flow, only short lifetime needed
-    // and reduces risk of stale sessions lingering around
-    maxAge: 24 * 60 * 60 * 1000, // 1 day
-  })
-);
-
-app.use((request, response, next) => {
-  if (request.session && !request.session.regenerate) {
-    request.session.regenerate = (cb: any) => {
-      if (cb) cb('');
-      return request.session;
-    };
-  }
-  if (request.session && !request.session.save) {
-    request.session.save = (cb: any) => {
-      if (cb) cb('');
-      return request.session;
-    };
-  }
-  next();
 });
 
 const handlebarsConfig = {
@@ -181,106 +128,7 @@ const handlebarsConfig = {
 
 const hbs = new ExpressHandlebars(handlebarsConfig);
 
-// Bound request body sizes (configurable via URLENCODED_BODY_LIMIT /
-// JSON_BODY_LIMIT env vars) to protect against oversized malicious payloads
-app.use(
-  express.urlencoded({extended: true, limit: config.urlencodedBodyLimit})
-);
-app.use(express.json({limit: config.jsonBodyLimit}));
-// Restrict browser CORS to the Conductor / Control Centre / app allowlist and
-// allow credentials so the export download-grant cookie can be set.
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      callback(null, isCorsOriginAllowed(origin));
-    },
-    credentials: true,
-  })
-);
-
-app.use(passport.initialize());
-
-app.use(flash());
-
-app.engine('handlebars', hbs.engine);
-app.set('view engine', 'handlebars');
-app.use(express.static('public'));
-app.use('/api/notebooks', notebookApi);
-app.use('/api/templates', templatesApi);
-app.use('/api/teams', teamsApi);
-app.use('/api/tombstones', tombstonesApi);
-app.use('/api/users', usersApi);
-app.use('/api/verify', emailVerifyApi);
-app.use('/api/reset', resetPasswordApi);
-app.use('/api/long-lived-tokens', longLivedApi);
-app.use('/api/invites', invitesApi);
-app.use('/api', utilityApi);
-
-// Swagger-UI Routes
-app.get('/apidoc/swagger-initializer.js', (req, res) => res.send(indexContent));
-app.use('/apidoc/', express.static(pathToSwaggerUi));
-
-// Health check
-app.get('/up/', (req, res) => {
-  res.status(200).json({up: 'true'});
-});
-
-// AUTH
-// ====
 const socialProviders = registerAuthProviders();
-
-// This adds the views/pages related to auth (/login, /register)
-addAuthPages(app, socialProviders);
-
-// This adds the endpoints for auth (/auth/local, [/auth/<handler>])
-addAuthRoutes(app, socialProviders);
-
-// HANDLEBARS ROUTES
-// =================
-
-/**
- * Home Page (-> /login)
- */
-app.get('/', async (req, res) => {
-  if (databaseValidityReport.valid) {
-    res.redirect('/login');
-  } else {
-    res.render('fallback', {
-      report: databaseValidityReport,
-      couchdb_url: config.couchdbInternalUrl,
-      layout: 'fallback',
-    });
-  }
-});
-
-/**
- * POST to /fallback-initialise does initialisation on the databases
- * - this does not have any auth requirement because it should be used
- *   to set up the users database and create the admin user
- *   if databases exist, this is a no-op
- *   Extra guard, if the db report says everything is ok we don't
- *   even call initialiseDatabases, just redirect home
- */
-app.post('/fallback-initialise', async (req, res) => {
-  if (!databaseValidityReport.valid) {
-    console.log('running initialise');
-    await initialiseDbAndKeys({});
-    const vv = await verifyCouchDBConnection();
-    console.log('updated valid', databaseValidityReport, vv);
-  }
-  res.redirect('/');
-});
-
-// Add the bugsnag error middleware (first - prior to other error middleware)
-if (bugsnagEnabled) {
-  if (bugsnagMiddleware) {
-    app.use(bugsnagMiddleware.errorHandler);
-  } else {
-    console.error(
-      'Bugsnag middleware not applied - express plugin could not be retrieved!'
-    );
-  }
-}
 
 // Custom error handler which returns a JSON description of error
 // TODO specify this interface in data models
@@ -303,5 +151,176 @@ const errorHandler: ErrorRequestHandler = (
   });
 };
 
-// Use custom error handler which intercepts with JSON
-app.use(errorHandler);
+/**
+ * Mount the full API on an already-listening health app. `/health` stays first
+ * in the stack so the ALB probe is never wrapped by the rate limiter. Deprecated
+ * `GET /` liveness is released so the home/login route can attach.
+ */
+export function attachFullApi(app: express.Express): void {
+  releaseDeprecatedRootHealth(app);
+
+  if (bugsnagMiddleware) {
+    app.use(bugsnagMiddleware.requestHandler);
+  }
+
+  if (!IS_TEST && config.rateLimiterEnabled) {
+    console.log('Activating rate limiter');
+    app.use(RATE_LIMITER);
+  } else {
+    if (IS_TEST) {
+      console.log('Not enabling rate limiting due to being in test mode.');
+    } else {
+      console.log(
+        'Not enabling rate limiting due to it being explicitly disabled.'
+      );
+    }
+  }
+
+  if (!IS_TEST && config.exportRateLimiterEnabled) {
+    console.log(
+      `Activating export rate limiter (${config.exportRateLimiterPerWindow} req / ${config.exportRateLimiterWindowMs} ms)`
+    );
+  } else if (!IS_TEST) {
+    console.log('Not enabling export rate limiter (explicitly disabled).');
+  }
+
+  app.use(morgan('combined'));
+
+  // Only parse query parameters into strings, not objects
+  app.set('query parser', 'simple');
+  app.use(
+    cookieSession({
+      name: 'session',
+      secret: config.cookieSecret,
+      // cookie is used for login flow, only short lifetime needed
+      // and reduces risk of stale sessions lingering around
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    })
+  );
+
+  app.use((request, response, next) => {
+    if (request.session && !request.session.regenerate) {
+      request.session.regenerate = (cb: any) => {
+        if (cb) cb('');
+        return request.session;
+      };
+    }
+    if (request.session && !request.session.save) {
+      request.session.save = (cb: any) => {
+        if (cb) cb('');
+        return request.session;
+      };
+    }
+    next();
+  });
+
+  // Bound request body sizes (configurable via URLENCODED_BODY_LIMIT /
+  // JSON_BODY_LIMIT env vars) to protect against oversized malicious payloads
+  app.use(
+    express.urlencoded({extended: true, limit: config.urlencodedBodyLimit})
+  );
+  app.use(express.json({limit: config.jsonBodyLimit}));
+  // Restrict browser CORS to the Conductor / Control Centre / app allowlist and
+  // allow credentials so the export download-grant cookie can be set.
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        callback(null, isCorsOriginAllowed(origin));
+      },
+      credentials: true,
+    })
+  );
+
+  app.use(passport.initialize());
+
+  app.use(flash());
+
+  app.engine('handlebars', hbs.engine);
+  app.set('view engine', 'handlebars');
+  app.use(express.static('public'));
+  app.use('/api/notebooks', notebookApi);
+  app.use('/api/templates', templatesApi);
+  app.use('/api/teams', teamsApi);
+  app.use('/api/tombstones', tombstonesApi);
+  app.use('/api/users', usersApi);
+  app.use('/api/verify', emailVerifyApi);
+  app.use('/api/reset', resetPasswordApi);
+  app.use('/api/long-lived-tokens', longLivedApi);
+  app.use('/api/invites', invitesApi);
+  app.use('/api', utilityApi);
+
+  // Swagger-UI Routes
+  app.get('/apidoc/swagger-initializer.js', (req, res) =>
+    res.send(indexContent)
+  );
+  app.use('/apidoc/', express.static(pathToSwaggerUi));
+
+  // Legacy liveness alias; ALB prefers GET /health from createHealthApp.
+  app.get('/up/', (req, res) => {
+    res.status(200).json({up: 'true'});
+  });
+
+  // AUTH
+  // ====
+  // This adds the views/pages related to auth (/login, /register)
+  addAuthPages(app, socialProviders);
+
+  // This adds the endpoints for auth (/auth/local, [/auth/<handler>])
+  addAuthRoutes(app, socialProviders);
+
+  // HANDLEBARS ROUTES
+  // =================
+
+  /**
+   * Home Page (-> /login)
+   */
+  app.get('/', async (req, res) => {
+    if (databaseValidityReport.valid) {
+      res.redirect('/login');
+    } else {
+      res.render('fallback', {
+        report: databaseValidityReport,
+        couchdb_url: config.couchdbInternalUrl,
+        layout: 'fallback',
+      });
+    }
+  });
+
+  /**
+   * POST to /fallback-initialise does initialisation on the databases
+   * - this does not have any auth requirement because it should be used
+   *   to set up the users database and create the admin user
+   *   if databases exist, this is a no-op
+   *   Extra guard, if the db report says everything is ok we don't
+   *   even call initialiseDatabases, just redirect home
+   */
+  app.post('/fallback-initialise', async (req, res) => {
+    if (!databaseValidityReport.valid) {
+      console.log('running initialise');
+      await initialiseDbAndKeys({});
+      const vv = await verifyCouchDBConnection();
+      console.log('updated valid', databaseValidityReport, vv);
+    }
+    res.redirect('/');
+  });
+
+  // Add the bugsnag error middleware (first - prior to other error middleware)
+  if (bugsnagEnabled) {
+    if (bugsnagMiddleware) {
+      app.use(bugsnagMiddleware.errorHandler);
+    } else {
+      console.error(
+        'Bugsnag middleware not applied - express plugin could not be retrieved!'
+      );
+    }
+  }
+
+  // Use custom error handler which intercepts with JSON
+  app.use(errorHandler);
+}
+
+/** Tests import this already-wired. Production attaches after migrate. */
+export const app: express.Express = createHealthApp();
+if (process.env.NODE_ENV === 'test') {
+  attachFullApi(app);
+}

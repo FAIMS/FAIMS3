@@ -659,7 +659,10 @@ export const migrateAllProjectDataDbs = async () => {
 };
 
 /**
- * Initialises and then migrates all databases!
+ * Initialises and then migrates all databases.
+ *
+ * Used by `pnpm migrate-with-keys` and by clustered API startup (the latter
+ * serialises this call behind the startup migration lock).
  */
 export const initialiseAndMigrateDBs = async ({
   force = false,

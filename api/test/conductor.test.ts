@@ -28,6 +28,12 @@ it('check is up', async () => {
   expect(result.statusCode).toBe(200);
 });
 
+it('liveness /health is 200', async () => {
+  const result = await request(app).get('/health');
+  expect(result.statusCode).toBe(200);
+  expect(result.body).toEqual({status: 'ok'});
+});
+
 describe('Auth', () => {
   beforeEach(beforeApiTests);
 

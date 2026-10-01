@@ -36,10 +36,10 @@ This consolidation is what the two migration layers below carry out.
 
 There are **two migration layers** — run both in order:
 
-| Layer              | What moves                                                     | How                                                                                  |
-| ------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| **Couch document** | Project/template rows: inline former metadata, adds new fields | `pnpm run migrate` in `api/` (`projectsV3toV4Migration`, `templatesV4toV5Migration`) |
-| **Notebook JSON**  | Design bundle → current schema (`uiSpec` + typed `metadata`)   | `migrateNotebook` via API normalisation, optional startup pass, clients on load      |
+| Layer              | What moves                                                     | How                                                                                                                                           |
+| ------------------ | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Couch document** | Project/template rows: inline former metadata, adds new fields | API boot `runStartupMigrations` or `pnpm run migrate` / `migrate-with-keys` in `api/` (`projectsV3toV4Migration`, `templatesV4toV5Migration`) |
+| **Notebook JSON**  | Design bundle → current schema (`uiSpec` + typed `metadata`)   | `migrateNotebook` via API normalisation, optional startup pass, clients on load                                                               |
 
 ---
 
@@ -64,14 +64,16 @@ The app behaviour is likely to be unstable or completely broken when the app is 
 
 1. **Deploy Conductor (API)** and **Control Centre (web)** together. The web designer and JSON upload paths expect the new API routes (`PUT …/uiSpecification`, partial `PUT …/:id` for name/description).
 2. **Release mobile app builds** that include this branch (or newer).
-3. Each API startup runs `validateDatabases`, which migrates any project or template whose inlined `uiSpecification` is still below the current notebook schema version (see §5 below).
+3. Each API process binds `GET /health`, then calls `runStartupMigrations` before attaching the full API. Under a Couch-mediated lock (so clustered replicas do not race), the winner runs `initialiseAndMigrateDBs({force: true, pushKeys: true})` — the same path as `pnpm migrate-with-keys` — then `validateDatabases` (notebook JSON walks; see §5). Waiters proceed once the lock settles. A lock or migrate failure is logged; the process still attaches the full API.
 4. **Do not delete `metadata-*` Couch databases** until Couch document migration has completed and you have validated samples (see §3).
 
 ---
 
 ## 2. Run Couch database migration
 
-Couch migrations for **projects** and **templates** are **not** applied automatically when the API process starts listening. Run the migration script explicitly against the target Couch instance.
+Clustered API boot now applies Couch **projects** and **templates** migrations automatically. After `GET /health` is bound, `runStartupMigrations` (`api/src/couchdb/startupMigrations.ts`) claims a document lock in the migrations DB. The winner calls `initialiseAndMigrateDBs({force: true, pushKeys: true})` — the same function as `pnpm migrate-with-keys` — then `validateDatabases`. Other replicas wait until the lock is `complete` or `failed` (or steal it after `STARTUP_MIGRATION_LOCK_TIMEOUT_MS`, default 30 minutes, if the doer vanishes). A later startup wave re-claims a settled lock and runs again; the migrate path is idempotent.
+
+`pnpm run migrate` / `migrate-with-keys` is that same `initialiseAndMigrateDBs` call, useful when you want a **controlled** run (API stopped, or before replicas listen), to push JWT keys without waiting for boot, or to re-run after a failure. The CLI does **not** take the startup lock — do not run it against a live cluster that is also booting. Stop or scale down the API first, or rely on boot alone.
 
 From the repository root (with env pointing at the deployment CouchDB):
 
@@ -79,11 +81,11 @@ From the repository root (with env pointing at the deployment CouchDB):
 cd api
 # Ensure your .env file is accurately targetting your DB
 pnpm run migrate          # structure + migrations; no JWT key push
-# or, when keys must be (re)written:
+# or, when keys must be (re)written (same flags as API boot):
 pnpm run migrate-with-keys
 ```
 
-This calls `initialiseAndMigrateDBs` (`api/src/couchdb/index.ts`), which:
+`initialiseAndMigrateDBs` (`api/src/couchdb/index.ts`):
 
 - Ensures global DBs exist (directory, people, projects, templates, …).
 - Runs `migrateDbs` until **projects** reach version **4** and **templates** version **5**.
@@ -172,16 +174,16 @@ The current notebook schema version is applied by `migrateNotebook` (often wrapp
 
 ### Server — persists to Couch
 
-| Trigger                                      | Location                                           | Notes                                                                                                                                                                                                                    |
-| -------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **POST** create survey (from scratch)        | `createNotebook` in `api/src/couchdb/notebooks.ts` | Body `name`, optional `description` (max 250), `uiSpecification`; legacy wire accepted                                                                                                                                   |
-| **POST** create survey (from template)       | Copies `template.uiSpecification` only             | Optional `description` on POST is **not** taken from the template                                                                                                                                                        |
-| **PUT** `/api/notebooks/:id/uiSpecification` | `updateProjectUiSpecification`                     | Designer save, full JSON replace                                                                                                                                                                                         |
-| **PUT** `/api/templates/:id/uiSpecification` | Template equivalent                                |                                                                                                                                                                                                                          |
-| **POST** create template                     | `createTemplate`                                   | Body `name`, optional `description` (max 250), `uiSpecification`                                                                                                                                                         |
-| **Projects DB v3 → v4**                      | `projectsV3toV4Migration`                          | Reads metadata DB + `migrateNotebook`                                                                                                                                                                                    |
-| **Templates DB v4 → v5**                     | `templatesV4toV5Migration`                         | Same pattern for templates                                                                                                                                                                                               |
-| **API startup**                              | `validateDatabases`                                | Re-writes projects **and templates** whose inlined spec version is still behind the current schema version (including every pre-semver `N.0` design). Designs **newer** than the API build are logged and left untouched |
+| Trigger                                      | Location                                           | Notes                                                                                                                                                                                                                                                                        |
+| -------------------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **POST** create survey (from scratch)        | `createNotebook` in `api/src/couchdb/notebooks.ts` | Body `name`, optional `description` (max 250), `uiSpecification`; legacy wire accepted                                                                                                                                                                                       |
+| **POST** create survey (from template)       | Copies `template.uiSpecification` only             | Optional `description` on POST is **not** taken from the template                                                                                                                                                                                                            |
+| **PUT** `/api/notebooks/:id/uiSpecification` | `updateProjectUiSpecification`                     | Designer save, full JSON replace                                                                                                                                                                                                                                             |
+| **PUT** `/api/templates/:id/uiSpecification` | Template equivalent                                |                                                                                                                                                                                                                                                                              |
+| **POST** create template                     | `createTemplate`                                   | Body `name`, optional `description` (max 250), `uiSpecification`                                                                                                                                                                                                             |
+| **Projects DB v3 → v4**                      | `projectsV3toV4Migration`                          | Reads metadata DB + `migrateNotebook`                                                                                                                                                                                                                                        |
+| **Templates DB v4 → v5**                     | `templatesV4toV5Migration`                         | Same pattern for templates                                                                                                                                                                                                                                                   |
+| **API startup**                              | `runStartupMigrations` → `validateDatabases`       | After Couch DB init/migrate under the cluster lock, re-writes projects **and templates** whose inlined spec version is still behind the current schema version (including every pre-semver `N.0` design). Designs **newer** than the API build are logged and left untouched |
 
 **Does not migrate on server:**
 
@@ -213,7 +215,7 @@ After server migration, apps **refresh** when users sync/open surveys; persisted
 
 ```mermaid
 flowchart TD
-  A[Deploy API + web + ship mobile app] --> B[pnpm run migrate in api]
+  A[Deploy API + web + ship mobile app] --> B[Couch migrate: API boot lock or pnpm migrate-with-keys]
   B --> C[Validate sample projects + API + app]
   C --> D{All OK?}
   D -->|No| E[Fix / re-run migrate; do not delete metadata DBs]

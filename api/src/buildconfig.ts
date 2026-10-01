@@ -37,6 +37,7 @@ import {getKeyService, IKeyService, KeySource} from './services/keyService';
 // Get the package version directly from package.json
 import {version as packageVersion} from '../package.json';
 import {ProvisionSSOUsersPolicy} from './auth/types';
+import {STARTUP_MIGRATION_LOCK_TIMEOUT_MS as DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS} from './couchdb/startupMigrationLock';
 
 console.log(`Using API version from package.json: ${packageVersion}`);
 
@@ -191,6 +192,14 @@ const EnvSchema = z
     EMAIL_CODE_EXPIRY_MINUTES: configHelpers.intDefault(
       DEFAULT_EMAIL_CODE_EXPIRY_MINUTES,
       'EMAIL_CODE_EXPIRY_MINUTES'
+    ),
+    /**
+     * How long clustered API waiters treat a silent startup-migration doer as
+     * dead before stealing the lock (milliseconds). Default 30 minutes.
+     */
+    STARTUP_MIGRATION_LOCK_TIMEOUT_MS: configHelpers.intDefault(
+      DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
+      'STARTUP_MIGRATION_LOCK_TIMEOUT_MS'
     ),
     /** Rate-limiter window duration in milliseconds. */
     RATE_LIMITER_WINDOW_MS: configHelpers.intDefault(
@@ -519,6 +528,7 @@ const EnvSchema = z
       impersonationSessionExpiryMinutes:
         env.IMPERSONATION_SESSION_EXPIRY_MINUTES,
       emailCodeExpiryMinutes: env.EMAIL_CODE_EXPIRY_MINUTES,
+      startupMigrationLockTimeoutMs: env.STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
       rateLimiterWindowMs: env.RATE_LIMITER_WINDOW_MS,
       rateLimiterPerWindow: env.RATE_LIMITER_PER_WINDOW,
       rateLimiterEnabled: env.RATE_LIMITER_ENABLED,
@@ -693,6 +703,27 @@ export function publicKeyPath(): string {
   throw new Error(
     `Public key file ${keyfile} does not exist. Please run makeInstanceKeys.sh to generate keys.`
   );
+}
+
+/**
+ * Fail-fast local checks before the health listener binds. No Couch.
+ * FILE keys are also validated when {@link keyService} is constructed.
+ */
+export function assertLocalStartupConfig(): void {
+  if (config.keySource === KeySource.FILE) {
+    privateKeyPath();
+    publicKeyPath();
+    return;
+  }
+  if (config.keySource === KeySource.ENV) {
+    const privateKey = process.env.PRIVATE_SIGNING_KEY?.trim();
+    const publicKey = process.env.PUBLIC_SIGNING_KEY?.trim();
+    if (!privateKey || !publicKey) {
+      throw new Error(
+        'PRIVATE_SIGNING_KEY or PUBLIC_SIGNING_KEY environment variable not set but KEY_SOURCE is ENV'
+      );
+    }
+  }
 }
 
 /** Signing-key singleton. */

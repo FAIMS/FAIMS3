@@ -2,8 +2,9 @@
 /**
  * @file API-boot orchestration for notebook JSON migrations.
  *
- * Called from `api/src/index.ts` before the server listens. Walks every
- * project and every template (including archived) and, when the listing
+ * Called from `runStartupMigrations` after Couch DB init/migrate (under the
+ * clustered startup lock). Walks every project and every template (including
+ * archived) and, when the listing
  * digest is behind `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`, rewrites the stored
  * `uiSpecification` through the normal write helpers so `uiSpecProperties`
  * (`schemaVersion` + hash) is rebuilt in the same document update.
@@ -14,8 +15,8 @@
  * `migrateStoredUiSpecificationIfNeeded` in `uiSpecificationStartup.ts`.
  *
  * This is not a Couch DB version bump. Newer-than-current designs are left
- * untouched. A failed walk logs and returns `{valid: false}` so listen still
- * proceeds; a bad Couch connection aborts the walks entirely.
+ * untouched. A failed walk logs and returns `{valid: false}` so the full API
+ * can still attach; a bad Couch connection aborts the walks entirely.
  */
 import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '@faims3/data-model';
 import {initialiseDataDb, verifyCouchDBConnection} from '.';
@@ -98,9 +99,10 @@ export async function migrateTemplateUiSpecificationsOnStartup(): Promise<{
 }
 
 /**
- * Entry point for API boot: verify Couch, then migrate project and template
- * uiSpecs. Logs `[notebook-startup] begin` / `complete` (or `aborted` /
- * `failed`). Returns the Couch validity report; on walk errors, `{valid: false}`.
+ * Notebook half of API boot (after DB init/migrate under the startup lock):
+ * verify Couch, then migrate project and template uiSpecs. Logs
+ * `[notebook-startup] begin` / `complete` (or `aborted` / `failed`). Returns
+ * the Couch validity report; on walk errors, `{valid: false}`.
  */
 export const validateDatabases = async () => {
   try {

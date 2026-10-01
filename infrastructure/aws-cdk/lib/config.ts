@@ -395,7 +395,10 @@ const DomainsConfigSchema = z.object({
   docs: z.string().default('docs'),
 });
 
-const ConductorConfigSchema = z.object({
+/** How long clustered API waiters wait before stealing a silent migration lock. */
+export const DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS = 1_800_000;
+
+export const ConductorConfigSchema = z.object({
   /** The title for this conductor instance, shown on listings page */
   name: z.string(),
   /** Enable enhanced cluster observability? See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#container-insights-setting-enhanced */
@@ -436,6 +439,16 @@ const ConductorConfigSchema = z.object({
   /** Allow localhost typical addresses in the redirects for conductor? NOT
    * recommended for production use cases (for security reasons). */
   localhostWhitelist: z.boolean().default(false),
+  /**
+   * How long clustered API waiters treat a silent startup-migration doer as
+   * dead before stealing the lock (`STARTUP_MIGRATION_LOCK_TIMEOUT_MS`).
+   * Default 1800000 (30 minutes).
+   */
+  startupMigrationLockTimeoutMs: z
+    .number()
+    .int()
+    .min(1000)
+    .default(DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS),
 });
 
 const WebConfigSchema = z.object({
