@@ -1,6 +1,6 @@
 {
   "name": "@faims3/api",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "private": true,
   "main": "build/src/index.js",
   "scripts": {
@@ -28,7 +28,8 @@
     "restore-backup": "env-cmd node --expose-gc --max-old-space-size=8000 --import tsx src/scripts/restoreBackup.ts",
     "migrate-test-backups": "tsx src/scripts/migrateBackupJsonl.ts test/backup-short.jsonl test/backup.jsonl",
     "migrate-notebook-json": "tsx src/scripts/migrateNotebookJson.ts",
-    "seed-test-dataset": "env-cmd tsx src/scripts/seedTestDataset.ts"
+    "seed-test-dataset": "env-cmd tsx src/scripts/seedTestDataset.ts",
+    "debug-migration-lock": "env-cmd tsx scripts/debugMigrationLock.ts"
   },
   "dependencies": {
     "@bugsnag/js": "^7.20.2",

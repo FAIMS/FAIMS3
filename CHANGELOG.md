@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.1] - 2026-10-01
+
+### Changes
+
+- feat: migrate databases on startup while being tolerant of cluster race conditions and health checks ([#2393](https://github.com/FAIMS/FAIMS3/pull/2393))
+- fix: adding 'blob:' to CSP policy in app ([#2392](https://github.com/FAIMS/FAIMS3/pull/2392))
+- Release v1.9.0 ([#2390](https://github.com/FAIMS/FAIMS3/pull/2390))
+
 ## [1.9.0] - 2026-10-01
 
 ### Changes
