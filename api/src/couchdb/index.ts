@@ -661,8 +661,9 @@ export const migrateAllProjectDataDbs = async () => {
 /**
  * Initialises and then migrates all databases.
  *
- * Used by `pnpm migrate-with-keys` and by clustered API startup (the latter
- * serialises this call behind the startup migration lock).
+ * Used by `pnpm migrate-with-keys` and by API startup (the latter
+ * serialises this call behind the startup migration lock when
+ * `STARTUP_MIGRATION_LOCK_ENABLED` is on).
  */
 export const initialiseAndMigrateDBs = async ({
   force = false,
@@ -696,6 +697,11 @@ export const initialiseAndMigrateDBs = async ({
       db: getTemplatesDb(),
       dbType: DatabaseType.TEMPLATES,
       dbName: TEMPLATES_DB_NAME,
+    },
+    {
+      db: getTeamsDB(),
+      dbType: DatabaseType.TEAMS,
+      dbName: TEAMS_DB_NAME,
     },
     {
       db: getTombstoneDB(),

@@ -2,8 +2,9 @@
 /**
  * @file API-boot orchestration for notebook JSON migrations.
  *
- * Called from `runStartupMigrations` after Couch DB init/migrate (under the
- * clustered startup lock). Walks every project and every template (including
+ * Called from `runStartupMigrations` after Couch DB init/migrate (under
+ * the clustered startup lock when `STARTUP_MIGRATION_LOCK_ENABLED` is
+ * on). Walks every project and every template (including
  * archived) and, when the listing
  * digest is behind `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`, rewrites the stored
  * `uiSpecification` through the normal write helpers so `uiSpecProperties`

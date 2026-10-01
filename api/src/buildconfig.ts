@@ -194,8 +194,30 @@ const EnvSchema = z
       'EMAIL_CODE_EXPIRY_MINUTES'
     ),
     /**
+     * Skip API-boot Couch migrate and notebook uiSpec walks entirely
+     * (`DISABLE_MIGRATE_ON_STARTUP`). Blank → off (migrate still runs).
+     * When true, `runStartupMigrations` returns immediately and the
+     * lock is never claimed. Use for local/debug boots against an
+     * already-migrated DB, or when migrate is run out of band
+     * (`pnpm migrate-with-keys`). Accepts true/1/on/yes or
+     * false/0/off/no; unrecognised values fail parse.
+     */
+    DISABLE_MIGRATE_ON_STARTUP: configHelpers.boolWithDefault(false),
+    /**
+     * Couch-mediated claim/wait/steal around API-boot migrations
+     * (`STARTUP_MIGRATION_LOCK_ENABLED`). Blank → off. Clustered /
+     * multi-replica production MUST enable this so replicas do not race
+     * migrate. Default off so local `pnpm run dev` reloads do not wait
+     * on a `running` lock left by a killed process (steal timeout is
+     * 30 minutes). Ignored when DISABLE_MIGRATE_ON_STARTUP is on.
+     * Accepts true/1/on/yes or false/0/off/no; unrecognised values
+     * fail parse.
+     */
+    STARTUP_MIGRATION_LOCK_ENABLED: configHelpers.boolWithDefault(false),
+    /**
      * How long clustered API waiters treat a silent startup-migration doer as
      * dead before stealing the lock (milliseconds). Default 30 minutes.
+     * Only used when STARTUP_MIGRATION_LOCK_ENABLED is on.
      */
     STARTUP_MIGRATION_LOCK_TIMEOUT_MS: configHelpers.intDefault(
       DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
@@ -528,6 +550,8 @@ const EnvSchema = z
       impersonationSessionExpiryMinutes:
         env.IMPERSONATION_SESSION_EXPIRY_MINUTES,
       emailCodeExpiryMinutes: env.EMAIL_CODE_EXPIRY_MINUTES,
+      disableMigrateOnStartup: env.DISABLE_MIGRATE_ON_STARTUP,
+      startupMigrationLockEnabled: env.STARTUP_MIGRATION_LOCK_ENABLED,
       startupMigrationLockTimeoutMs: env.STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
       rateLimiterWindowMs: env.RATE_LIMITER_WINDOW_MS,
       rateLimiterPerWindow: env.RATE_LIMITER_PER_WINDOW,

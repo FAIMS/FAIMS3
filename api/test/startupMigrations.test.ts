@@ -7,6 +7,8 @@ const initialiseAndMigrateDBs = vi.hoisted(() => vi.fn());
 const validateDatabases = vi.hoisted(() => vi.fn());
 const withStartupMigrationLock = vi.hoisted(() => vi.fn());
 const configMock = vi.hoisted(() => ({
+  disableMigrateOnStartup: false,
+  startupMigrationLockEnabled: true,
   startupMigrationLockTimeoutMs: 12_345,
 }));
 
@@ -52,6 +54,8 @@ describe('runStartupMigrations', () => {
     getMigrationDb.mockReturnValue(lockDb);
     initialiseAndMigrateDBs.mockResolvedValue(undefined);
     validateDatabases.mockResolvedValue({valid: true});
+    configMock.disableMigrateOnStartup = false;
+    configMock.startupMigrationLockEnabled = true;
     configMock.startupMigrationLockTimeoutMs = 12_345;
   });
 
@@ -92,6 +96,44 @@ describe('runStartupMigrations', () => {
 
     await expect(runStartupMigrations()).resolves.toBeUndefined();
     expect(initialiseAndMigrateDBs).not.toHaveBeenCalled();
+    expect(validateDatabases).not.toHaveBeenCalled();
+  });
+
+  it('skips the lock and still migrates when the lock is disabled', async () => {
+    configMock.startupMigrationLockEnabled = false;
+
+    await expect(runStartupMigrations()).resolves.toBeUndefined();
+
+    expect(withStartupMigrationLock).not.toHaveBeenCalled();
+    expect(getMigrationDb).not.toHaveBeenCalled();
+    expect(initialiseAndMigrateDBs).toHaveBeenCalledOnce();
+    expect(initialiseAndMigrateDBs).toHaveBeenCalledWith({
+      force: true,
+      pushKeys: true,
+    });
+    expect(validateDatabases).toHaveBeenCalledOnce();
+  });
+
+  it('skips migrate and the lock when DISABLE_MIGRATE_ON_STARTUP is set', async () => {
+    configMock.disableMigrateOnStartup = true;
+
+    await expect(runStartupMigrations()).resolves.toBeUndefined();
+
+    expect(withStartupMigrationLock).not.toHaveBeenCalled();
+    expect(getMigrationDb).not.toHaveBeenCalled();
+    expect(initialiseAndMigrateDBs).not.toHaveBeenCalled();
+    expect(validateDatabases).not.toHaveBeenCalled();
+  });
+
+  it('still resolves when the lock is disabled and migrate throws', async () => {
+    configMock.startupMigrationLockEnabled = false;
+    initialiseAndMigrateDBs.mockRejectedValueOnce(
+      new Error('migrate exploded')
+    );
+
+    await expect(runStartupMigrations()).resolves.toBeUndefined();
+    expect(withStartupMigrationLock).not.toHaveBeenCalled();
+    expect(initialiseAndMigrateDBs).toHaveBeenCalledOnce();
     expect(validateDatabases).not.toHaveBeenCalled();
   });
 });

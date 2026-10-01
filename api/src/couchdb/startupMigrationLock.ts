@@ -5,7 +5,11 @@
  * Stored as one well-known document ({@link STARTUP_MIGRATION_LOCK_ID}) in the
  * migrations DB. Callers pass a {@link StartupMigrationLockStore} (Pouch/Couch
  * `get`/`put` is enough). Production entry point is
- * {@link withStartupMigrationLock} via `runStartupMigrations`.
+ * {@link withStartupMigrationLock} via `runStartupMigrations` when
+ * `config.startupMigrationLockEnabled` (`STARTUP_MIGRATION_LOCK_ENABLED`)
+ * is on and `DISABLE_MIGRATE_ON_STARTUP` is off. The lock flag
+ * defaults off for local reload safety; clustered deployments that
+ * still migrate on boot must enable it (AWS CDK hard-enables it).
  *
  * ## Roles
  *
@@ -52,7 +56,8 @@ export const STARTUP_MIGRATION_LOCK_ID = 'startup-migration-lock';
 
 /**
  * Default steal timeout (30 minutes). Production boot overrides this with
- * `config.startupMigrationLockTimeoutMs` (`STARTUP_MIGRATION_LOCK_TIMEOUT_MS`).
+ * `config.startupMigrationLockTimeoutMs` (`STARTUP_MIGRATION_LOCK_TIMEOUT_MS`)
+ * when the lock is enabled.
  */
 export const STARTUP_MIGRATION_LOCK_TIMEOUT_MS = 30 * 60 * 1000;
 

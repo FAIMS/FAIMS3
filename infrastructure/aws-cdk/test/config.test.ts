@@ -183,18 +183,57 @@ function minimalConductorConfig(overrides: Record<string, unknown> = {}) {
   };
 }
 
-describe('ConductorConfigSchema startup migration lock timeout', () => {
-  it('defaults to 30 minutes when omitted', () => {
+describe('ConductorConfigSchema startup migration lock', () => {
+  it('defaults to migrate-on, lock enabled, and a 30 minute steal timeout', () => {
     const parsed = ConductorConfigSchema.parse(minimalConductorConfig());
+    expect(parsed.disableMigrateOnStartup).toBe(false);
+    expect(parsed.disableStartupMigrationLock).toBe(false);
     expect(parsed.startupMigrationLockTimeoutMs).toBe(
       DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS
     );
   });
 
-  it('accepts an explicit override', () => {
+  it('accepts an explicit timeout override', () => {
     const parsed = ConductorConfigSchema.parse(
       minimalConductorConfig({startupMigrationLockTimeoutMs: 600_000})
     );
     expect(parsed.startupMigrationLockTimeoutMs).toBe(600_000);
+  });
+
+  it('accepts disableStartupMigrationLock', () => {
+    const parsed = ConductorConfigSchema.parse(
+      minimalConductorConfig({disableStartupMigrationLock: true})
+    );
+    expect(parsed.disableStartupMigrationLock).toBe(true);
+  });
+
+  it('accepts disableMigrateOnStartup and treats the lock as unused', () => {
+    const parsed = ConductorConfigSchema.parse(
+      minimalConductorConfig({disableMigrateOnStartup: true})
+    );
+    expect(parsed.disableMigrateOnStartup).toBe(true);
+    expect(parsed.disableStartupMigrationLock).toBe(true);
+  });
+
+  it('accepts skip-migrate together with an explicit lock disable', () => {
+    const parsed = ConductorConfigSchema.parse(
+      minimalConductorConfig({
+        disableMigrateOnStartup: true,
+        disableStartupMigrationLock: true,
+      })
+    );
+    expect(parsed.disableMigrateOnStartup).toBe(true);
+    expect(parsed.disableStartupMigrationLock).toBe(true);
+  });
+
+  it('rejects skip-migrate together with an explicit lock enable', () => {
+    expect(() =>
+      ConductorConfigSchema.parse(
+        minimalConductorConfig({
+          disableMigrateOnStartup: true,
+          disableStartupMigrationLock: false,
+        })
+      )
+    ).toThrow(/disableStartupMigrationLock cannot be false/);
   });
 });
