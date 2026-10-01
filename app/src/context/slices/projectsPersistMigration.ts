@@ -7,7 +7,7 @@
  * Wired from `projectsPersistConfig` in `store.tsx` via `createMigrate`. When a
  * user upgrades the app, redux-persist rehydrates IndexedDB state and runs each
  * migration step from the stored `_persist.version` up to the configured
- * version (currently **3**).
+ * version (currently **4**).
  *
  * These functions must be **pure transforms** of persisted JSON: no network I/O,
  * no PouchDB handles, and no Redux dispatches. Structured logging
@@ -38,10 +38,14 @@
  * - Splits each server's `projects` map into `listed` / `activated`.
  * - Activated rows keep `uiDefinition` and gain `uiSpecProperties`.
  * - Listed rows drop `uiDefinition` / `uiSpecificationId` immediately.
- * - `quickShare` stays on both maps so a stored QR survives deactivation.
+ * - `quickShare` stays on both maps so invite metadata survives deactivation.
+ *
+ * **Version 4** — {@link migrateProjectsQuickShareQrV4}
+ * - Drops `quickShare.qrCode` (2048px PNG data URL) from listed and activated
+ *   rows. Invite metadata stays; the QR is rebuilt when the share dialog opens.
  *
  * @see store.tsx — `projectsPersistConfig.version` and migrate map
- * @see projectsPersistMigration.test.ts — regression tests for v1–v3
+ * @see projectsPersistMigration.test.ts — regression tests for v1–v4
  */
 import {
   buildUiSpecProperties,
@@ -54,6 +58,7 @@ import type {
   ActivatedProject,
   ListedProject,
   Project,
+  ProjectQuickShare,
   ProjectsState,
   ProjectIdToProjectMap,
   DatabaseConnection,
@@ -629,6 +634,75 @@ export async function migrateProjectsActivationSplitV3(
   }
 
   logMigrationInfo('complete', {persistVersion: 3});
+
+  return {
+    ...inbound,
+    servers: migratedServers,
+  };
+}
+
+type PersistedQuickShare = ProjectQuickShare & {qrCode?: string};
+
+function stripQuickShareQrCode<T extends ListedProject | ActivatedProject>(
+  project: T
+): T {
+  const share = project.quickShare as PersistedQuickShare | undefined;
+  if (!share || !('qrCode' in share)) {
+    return project;
+  }
+  const {qrCode: _qrCode, ...quickShare} = share;
+  return {...project, quickShare};
+}
+
+function stripQuickShareQrFromMap<T extends ListedProject | ActivatedProject>(
+  projects: Record<string, T> | undefined
+): Record<string, T> {
+  if (!projects) {
+    return {};
+  }
+  const next: Record<string, T> = {};
+  for (const [id, project] of Object.entries(projects)) {
+    if (!project) {
+      continue;
+    }
+    next[id] = stripQuickShareQrCode(project);
+  }
+  return next;
+}
+
+/**
+ * redux-persist **migration 4**: drop persisted Quick Share PNG data URLs.
+ *
+ * Older builds stored `quickShare.qrCode` as a 2048px PNG data URL. That image
+ * is rebuilt when the share dialog opens, so only invite metadata is kept.
+ * Safe on corrupt inbound state (returns {@link emptyProjectsState}).
+ *
+ * @param state Output of migration 3
+ * @returns Projects state with `qrCode` removed from every `quickShare`
+ */
+export function migrateProjectsQuickShareQrV4(state: unknown): ProjectsState {
+  logMigrationInfo('begin', {persistVersion: 4});
+
+  if (!isPlainObject(state)) {
+    return emptyProjectsState;
+  }
+
+  const inbound = state as unknown as ProjectsState;
+  const servers = inbound.servers ?? {};
+  const migratedServers: ProjectsState['servers'] = {};
+
+  for (const [serverId, server] of Object.entries(servers)) {
+    if (!server) {
+      continue;
+    }
+    migratedServers[serverId] = {
+      ...server,
+      listed: stripQuickShareQrFromMap(server.listed),
+      activated: stripQuickShareQrFromMap(server.activated),
+    };
+  }
+
+  logMigrationInfo('complete', {persistVersion: 4});
 
   return {
     ...inbound,

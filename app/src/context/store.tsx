@@ -36,6 +36,7 @@ import projectsReducer from './slices/projectSlice';
 import {
   migrateProjectsActivationSplitV3,
   migrateProjectsPersistedState,
+  migrateProjectsQuickShareQrV4,
   migrateProjectsSyncModeV2,
 } from './slices/projectsPersistMigration';
 
@@ -55,7 +56,7 @@ const PERSIST_MIGRATION_LOG = '[redux-persist-migration]';
 // Configure persistence for the projects slice
 const projectsPersistConfig = {
   key: 'projects',
-  version: 3,
+  version: 4,
   storage: storage('faims-projects-db'),
   blacklist: ['isInitialised'],
   migrate: createMigrate(
@@ -138,6 +139,29 @@ const projectsPersistConfig = {
           logWarn(`${PERSIST_MIGRATION_LOG} version_migrate_failed`, {
             fromVersion,
             toVersion: 3,
+            slice: 'projects',
+            message: err instanceof Error ? err.message : String(err),
+          });
+          throw err;
+        }
+      },
+      4: (state: PersistedState) => {
+        const fromVersion = state?._persist?.version ?? 'unknown';
+        logInfo(`${PERSIST_MIGRATION_LOG} version_migrate`, {
+          fromVersion,
+          toVersion: 4,
+          slice: 'projects',
+        });
+        if (!state) {
+          return state;
+        }
+        try {
+          const migrated = migrateProjectsQuickShareQrV4(state);
+          return {...migrated, _persist: state._persist};
+        } catch (err) {
+          logWarn(`${PERSIST_MIGRATION_LOG} version_migrate_failed`, {
+            fromVersion,
+            toVersion: 4,
             slice: 'projects',
             message: err instanceof Error ? err.message : String(err),
           });

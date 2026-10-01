@@ -18,6 +18,7 @@ import {
 import {
   migrateProjectsActivationSplitV3,
   migrateProjectsPersistedState,
+  migrateProjectsQuickShareQrV4,
   migrateProjectsSyncModeV2,
 } from './projectsPersistMigration';
 
@@ -440,5 +441,118 @@ describe('migrateProjectsActivationSplitV3', () => {
     expect(active.uiSpecificationId).toBe('active-spec');
     expect(active.uiSpecProperties.hash).toHaveLength(64);
     expect(active.uiSpecProperties.hash).not.toBe(listed.uiSpecProperties.hash);
+  });
+});
+
+describe('migrateProjectsQuickShareQrV4', () => {
+  it('strips persisted QR images and keeps invite metadata', () => {
+    const migrated = migrateProjectsQuickShareQrV4({
+      isInitialised: true,
+      servers: {
+        'server-a': {
+          serverId: 'server-a',
+          serverUrl: 'https://example.test',
+          serverTitle: 'Test',
+          shortCodePrefix: 'T',
+          description: '',
+          listed: {
+            listed: {
+              projectId: 'listed',
+              serverId: 'server-a',
+              name: 'Listed',
+              isActivated: false,
+              status: ProjectStatus.OPEN,
+              uiSpecProperties: {
+                schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+                hash: 'a'.repeat(64),
+              },
+              quickShare: {
+                inviteId: 'FAIMS-listed-share',
+                role: Role.PROJECT_GUEST,
+                expiry: 1_700_000_000_000,
+                qrCode: 'data:image/png;base64,listed',
+                createdBy: 'ada',
+              },
+            },
+          },
+          activated: {
+            active: {
+              projectId: 'active',
+              serverId: 'server-a',
+              name: 'Active',
+              isActivated: true,
+              status: ProjectStatus.OPEN,
+              uiSpecificationId: 'active-spec',
+              uiDefinition: {
+                uiSpec: {
+                  fields: {},
+                  views: {},
+                  viewsets: {},
+                  visible_types: [],
+                  settings: {showQrCodeButton: false},
+                  schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+                },
+                metadata: {
+                  information: {
+                    notebookVersion: '1.0',
+                    purposeMarkdown: 'Active purpose',
+                    projectLeadLabel: '',
+                    leadInstitution: '',
+                  },
+                },
+              },
+              uiSpecProperties: {
+                schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+                hash: 'b'.repeat(64),
+              },
+              quickShare: {
+                inviteId: 'FAIMS-active-share',
+                role: Role.PROJECT_CONTRIBUTOR,
+                expiry: 1_800_000_000_000,
+                createdBy: 'ada',
+              },
+              database: {
+                localDbId: 'local',
+                syncMode: 'both',
+                isSyncingAttachments: false,
+                remote: {
+                  remoteDbId: 'remote',
+                  syncId: 'sync',
+                  connectionConfiguration: {
+                    jwtToken: 't',
+                    couchUrl: 'https://couch',
+                    databaseName: 'data-active',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(migrated.isInitialised).toBe(true);
+    expect(migrated.servers['server-a']!.listed.listed.quickShare).toEqual({
+      inviteId: 'FAIMS-listed-share',
+      role: Role.PROJECT_GUEST,
+      expiry: 1_700_000_000_000,
+      createdBy: 'ada',
+    });
+    expect(
+      migrated.servers['server-a']!.listed.listed.quickShare
+    ).not.toHaveProperty('qrCode');
+    expect(migrated.servers['server-a']!.activated.active.quickShare).toEqual({
+      inviteId: 'FAIMS-active-share',
+      role: Role.PROJECT_CONTRIBUTOR,
+      expiry: 1_800_000_000_000,
+      createdBy: 'ada',
+    });
+  });
+
+  it('returns empty state when persisted data is not an object', () => {
+    expect(migrateProjectsQuickShareQrV4(null)).toEqual({
+      servers: {},
+      isInitialised: false,
+    });
   });
 });

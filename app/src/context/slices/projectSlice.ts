@@ -210,16 +210,16 @@ interface ProjectIdentityFields {
 
 /**
  * One Quick Share stored on the device so its creator can show it again.
- * The QR is a bearer secret. It stays on this shared survey record, so the
+ * The invite is a bearer secret. It stays on this shared survey record, so the
  * creator has to be recorded and the code must not be shown to anyone else.
+ * The QR PNG is rebuilt when the share dialog opens; only this metadata is
+ * persisted.
  */
 export interface ProjectQuickShare {
   inviteId: string;
   role: Role;
   /** Expiry timestamp in milliseconds. */
   expiry: number;
-  /** Data URL for the register QR code. */
-  qrCode: string;
   /**
    * Username of the signed-in user who generated this code.
    * Only they are shown the QR.
