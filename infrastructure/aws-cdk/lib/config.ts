@@ -395,7 +395,7 @@ const DomainsConfigSchema = z.object({
   docs: z.string().default('docs'),
 });
 
-/** How long clustered API waiters wait before stealing a silent migration lock. */
+/** Age of a still-running lock after which a waiter steals it and runs migrate. */
 export const DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS = 1_800_000;
 
 export const ConductorConfigSchema = z
@@ -459,9 +459,11 @@ export const ConductorConfigSchema = z
      */
     disableStartupMigrationLock: z.boolean().optional(),
     /**
-     * How long clustered API waiters treat a silent startup-migration doer as
-     * dead before stealing the lock (`STARTUP_MIGRATION_LOCK_TIMEOUT_MS`).
-     * Default 1800000 (30 minutes). Only used when the lock is enabled.
+     * Age of a still-`running` lock after which clustered waiters steal
+     * it and run migrate themselves (`STARTUP_MIGRATION_LOCK_TIMEOUT_MS`).
+     * Timeout is not "skip migrate and attach". Age is `now - startedAtMs`
+     * (no heartbeat); the original doer is not cancelled. Default 1800000
+     * (30 minutes). Only used when the lock is enabled.
      */
     startupMigrationLockTimeoutMs: z
       .number()

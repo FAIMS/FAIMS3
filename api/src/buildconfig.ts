@@ -215,9 +215,11 @@ const EnvSchema = z
      */
     STARTUP_MIGRATION_LOCK_ENABLED: configHelpers.boolWithDefault(false),
     /**
-     * How long clustered API waiters treat a silent startup-migration doer as
-     * dead before stealing the lock (milliseconds). Default 30 minutes.
-     * Only used when STARTUP_MIGRATION_LOCK_ENABLED is on.
+     * Age of a still-`running` lock after which a waiter steals it and
+     * runs migrate itself (milliseconds). Timeout is not "skip migrate
+     * and attach". Age is `now - startedAtMs` (no heartbeat); the
+     * original doer is not cancelled. Default 30 minutes. Only used
+     * when STARTUP_MIGRATION_LOCK_ENABLED is on.
      */
     STARTUP_MIGRATION_LOCK_TIMEOUT_MS: configHelpers.intDefault(
       DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS,

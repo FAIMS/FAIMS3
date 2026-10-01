@@ -657,7 +657,7 @@ export function classifyLock(
     expired,
     stealable: expired,
     interpretation: expired
-      ? `Running lock is older than the steal timeout (age ${formatDuration(ageMs)}, timeout ${formatDuration(timeoutMs)}). The next boot can steal from ${doc.holderId}.`
+      ? `Running lock is older than the steal timeout (age ${formatDuration(ageMs)}, timeout ${formatDuration(timeoutMs)}). A waiter or later boot can steal from ${doc.holderId} and run migrate again; the original doer is not cancelled.`
       : `Live running lock held by ${doc.holderId} (age ${formatDuration(ageMs)}, steal in ${formatDuration(remainingMs)}). Waiters will poll; unlock if the holder is dead.`,
   };
 }

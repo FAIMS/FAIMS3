@@ -28,16 +28,20 @@
  * `complete`/`failed`, or `running` past {@link StartupMigrationLockOptions.timeoutMs}
  * (age is `now - startedAtMs`, not `updatedAtMs`). A later process start that
  * finds a settled lock therefore re-claims and runs again — migrations are
- * idempotent. Waiters who already joined a live attempt do not re-run; they
- * proceed once it settles.
+ * idempotent. Waiters who already joined a live attempt do not re-run while
+ * that attempt is still young; they proceed once it writes `complete`/`failed`.
  *
- * If the doer vanishes without writing a result, waiters return to `tryClaim`
- * after the timeout. The steal is a revisioned put, so only one waiter wins a
- * given race. A doer that was stolen mid-run must not overwrite the thief
- * (`settleLock` no-ops unless this instance still holds `running`).
+ * Timeout is not "give up and attach". After
+ * {@link StartupMigrationLockOptions.timeoutMs} a waiter returns to
+ * `tryClaim`, overwrites the expired `running` lock, and becomes the doer.
+ * The steal is a revisioned put, so only one waiter wins a given race. The
+ * original doer is not cancelled — if it is still in `run()`, both instances
+ * migrate until it finishes. `settleLock` no-ops unless this instance still
+ * holds `running`, so a stolen doer cannot write `complete`/`failed`.
  *
  * This is an edge-case guard, not a consensus protocol. The migrate path is
- * already error-tolerant; a silent crashed doer should be rare.
+ * already error-tolerant. There is no heartbeat, so a slow-but-alive doer
+ * is stealable the same as a crashed one.
  *
  * ## I/O
  *
@@ -152,7 +156,8 @@ export type StartupMigrationLockOptions = {
   /** Migration work. Invoked only after this instance claims the lock. */
   run: () => Promise<void>;
   /**
-   * Age of a `running` lock after which waiters steal. Defaults to
+   * Age of a `running` lock after which waiters steal and become the
+   * doer (the original `run()` is not cancelled). Defaults to
    * {@link STARTUP_MIGRATION_LOCK_TIMEOUT_MS}.
    */
   timeoutMs?: number;
@@ -576,8 +581,9 @@ async function waitForDoer(options: {
  * Loops `tryClaim` → (`runAsDoer` | `waitForDoer`) until this instance either
  * runs and settles, or observes a settlement. The callback runs only on the
  * doer. A thrown `run` becomes `{role: 'doer', status: 'failed'}`; only a
- * consecutive lock-I/O streak rejects (caller fail-opens). A silent doer
- * crash is recovered by timeout + steal.
+ * consecutive lock-I/O streak rejects (caller fail-opens). A still-`running`
+ * lock past `timeoutMs` is recovered by timeout + steal + re-run (the
+ * original doer is not cancelled).
  *
  * @returns Who ran and how the attempt settled. Waiters never invoke `run`.
  */

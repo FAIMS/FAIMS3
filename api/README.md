@@ -117,10 +117,10 @@ the full API.
 
 Two flags control that path (see `.env.dist`):
 
-| Variable                         | Default                  | Effect                                                                                                                                                                                                                  |
-| -------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DISABLE_MIGRATE_ON_STARTUP`     | `false` (migrate **on**) | When `true`, skip boot migrate entirely — no Couch migrate, no lock, no uiSpec migrations. Use only when you run `pnpm run migrate` / `migrate-with-keys` out of band.                                                  |
-| `STARTUP_MIGRATION_LOCK_ENABLED` | `false` (lock **off**)   | When `true`, replicas claim a Couch document lock so only one instance migrates and the others wait (or steal after `STARTUP_MIGRATION_LOCK_TIMEOUT_MS`, default 30 minutes). Unused if migrate-on-startup is disabled. |
+| Variable                         | Default                  | Effect                                                                                                                                                                                                                                                                        |
+| -------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DISABLE_MIGRATE_ON_STARTUP`     | `false` (migrate **on**) | When `true`, skip boot migrate entirely — no Couch migrate, no lock, no uiSpec migrations. Use only when you run `pnpm run migrate` / `migrate-with-keys` out of band.                                                                                                        |
+| `STARTUP_MIGRATION_LOCK_ENABLED` | `false` (lock **off**)   | When `true`, replicas claim a Couch document lock so only one instance migrates and the others wait. After `STARTUP_MIGRATION_LOCK_TIMEOUT_MS` (default 30 minutes) a waiter steals a still-`running` lock and runs migrate itself. Unused if migrate-on-startup is disabled. |
 
 **Recommended setups**
 
@@ -137,6 +137,12 @@ Two flags control that path (see `.env.dist`):
   `disableMigrateOnStartup: true` together with an explicit lock-on. Do not
   skip boot migrate in production unless you have a controlled out-of-band
   migrate and have scaled the API down while it runs.
+
+Timeout is a steal, not a skip. Age is `now - startedAtMs` (no heartbeat),
+so a slow-but-alive doer is stealable the same as a crashed one. A steal
+does not cancel the original `run()`: if that process is still migrating,
+both instances run until it finishes, and it cannot write `complete` /
+`failed` onto the stolen lock.
 
 The CLI (`pnpm run migrate` / `migrate-with-keys`) does **not** take the
 startup lock. Do not run it against a live cluster that is also booting;
