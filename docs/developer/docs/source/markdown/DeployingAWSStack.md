@@ -377,9 +377,20 @@ The following section configures the API.
       "scaleInCooldown": 300,
       "scaleOutCooldown": 60
     },
-    "localhostWhitelist": false
+    "localhostWhitelist": false,
+    "disableMigrateOnStartup": false,
+    "disableStartupMigrationLock": false,
+    "startupMigrationLockTimeoutMs": 1800000
   },
 ```
+
+`disableMigrateOnStartup` is optional (default `false`). When `true`, CDK sets `DISABLE_MIGRATE_ON_STARTUP=true` and API boot skips Couch migrate and notebook walks — use only when migrate is handled out of band (`pnpm migrate-with-keys`) or for a debug stack against an already-migrated DB. The lock is then unused: omit `disableStartupMigrationLock` or set it `true`. Setting `disableStartupMigrationLock: false` together with `disableMigrateOnStartup: true` fails config validation (nothing to lock).
+
+AWS ECS is a cluster: when migrate-on-startup is still on, CDK **hard-enables** the Couch-mediated startup-migration lock (`STARTUP_MIGRATION_LOCK_ENABLED=true`) so replicas claim/wait instead of racing `initialiseAndMigrateDBs`. `disableStartupMigrationLock` is optional (treated as `false` unless skip-migrate forced it off). Set it `true` only for a single-task / debug stack — the same reason local `pnpm run dev` defaults the env flag **off** (a killed reload can leave a `running` lock that strands the next boot until the steal timeout). Clustered production deployments **must leave the lock enabled** if they still migrate on boot.
+
+`startupMigrationLockTimeoutMs` is optional (default 1800000 / 30 minutes). It is passed through as `STARTUP_MIGRATION_LOCK_TIMEOUT_MS`. Clustered waiters poll until the lock is `complete` or `failed`; if it is still `running` after this age (`now - startedAtMs`, no heartbeat) they steal the lock and run migrate themselves — they do not skip migrate and attach. A steal does not cancel the original doer, so a slow-but-alive holder can overlap with the thief. Only used when the lock is enabled.
+
+Conductor binds liveness `GET /up` (200, no Couch) before startup migrations, then attaches the rest of the API on the same listener. Old Conductor images already served `/up`, so the ALB target group can probe `/up` across the image cutover. `GET /ready` is mounted only after the full API attaches. ECS `healthCheckGracePeriod` is 120s to cover Node import through that first bind — not the migrate itself.
 
 You need to update the following
 

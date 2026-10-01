@@ -23,6 +23,7 @@ import {
   notebookUiSpecificationNeedsMigration,
   type NotebookWithSchemaVersion,
 } from '@faims3/data-model';
+import {logKeyValue, type LogKeyValueFields} from '../utils/logKeyValue';
 
 /** Prefix for structured `console.log` lines from API-boot uiSpec walks. */
 export const NOTEBOOK_STARTUP_LOG = '[notebook-startup]';
@@ -61,17 +62,9 @@ export function emptyNotebookStartupUiSpecCounts(): NotebookStartupUiSpecCounts 
 /** One line: `[notebook-startup] <event> key=value ...` (undefined fields omitted). */
 export function logNotebookStartup(
   event: string,
-  fields: Record<string, string | number | boolean | undefined>
+  fields: LogKeyValueFields
 ): void {
-  const detail = Object.entries(fields)
-    .filter(([, value]) => value !== undefined)
-    .map(([key, value]) => `${key}=${String(value)}`)
-    .join(' ');
-  console.log(
-    detail.length > 0
-      ? `${NOTEBOOK_STARTUP_LOG} ${event} ${detail}`
-      : `${NOTEBOOK_STARTUP_LOG} ${event}`
-  );
+  logKeyValue(NOTEBOOK_STARTUP_LOG, event, fields);
 }
 
 function isUiSpecificationObject(raw: unknown): raw is Record<string, unknown> {
