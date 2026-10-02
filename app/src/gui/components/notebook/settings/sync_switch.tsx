@@ -23,6 +23,7 @@ import {
 import {useState} from 'react';
 import {config} from '../../../../buildconfig';
 import {
+  isActivatedProject,
   Project,
   setSyncMode,
   SyncMode,
@@ -53,7 +54,9 @@ export default function NotebookSyncSwitch({
   const [pendingMode, setPendingMode] = useState<SyncMode | null>(null);
   const dispatch = useAppDispatch();
 
-  const currentMode = project.database?.syncMode ?? 'none';
+  const currentMode = isActivatedProject(project)
+    ? project.database.syncMode
+    : 'none';
 
   const handleModeSelect = (event: SelectChangeEvent<SyncMode>) => {
     const next = event.target.value as SyncMode;

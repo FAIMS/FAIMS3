@@ -50,7 +50,7 @@ import Nano from 'nano';
 import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
 import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
-import {getAllProjectsDirectory} from './notebooks';
+import {getAllProjectsListing} from './notebooks';
 import {registerAdminUser} from './users';
 
 const DIRECTORY_DB_NAME = 'directory';
@@ -577,9 +577,8 @@ export const initialiseDbAndKeys = async ({
     }
   }
 
-  // For each project, ensure the metadata and data DBs are also
-  // initialised/synced
-  const projects = await getAllProjectsDirectory();
+  // For each project, ensure the data DBs are also initialised/synced
+  const projects = await getAllProjectsListing();
   console.log(
     `${DB_INIT_LOG} Found ${projects.length} project(s); initialising data DBs`
   );
@@ -615,7 +614,7 @@ export const initialiseDbAndKeys = async ({
  * documents may predate data v2 `updatedAt`).
  */
 export const migrateAllProjectDataDbs = async () => {
-  const projects = await getAllProjectsDirectory();
+  const projects = await getAllProjectsListing();
   console.log(
     `[migrate] Found ${projects.length} project(s); opening data DBs`
   );
@@ -660,7 +659,11 @@ export const migrateAllProjectDataDbs = async () => {
 };
 
 /**
- * Initialises and then migrates all databases!
+ * Initialises and then migrates all databases.
+ *
+ * Used by `pnpm migrate-with-keys` and by API startup (the latter
+ * serialises this call behind the startup migration lock when
+ * `STARTUP_MIGRATION_LOCK_ENABLED` is on).
  */
 export const initialiseAndMigrateDBs = async ({
   force = false,
@@ -694,6 +697,11 @@ export const initialiseAndMigrateDBs = async ({
       db: getTemplatesDb(),
       dbType: DatabaseType.TEMPLATES,
       dbName: TEMPLATES_DB_NAME,
+    },
+    {
+      db: getTeamsDB(),
+      dbType: DatabaseType.TEAMS,
+      dbName: TEAMS_DB_NAME,
     },
     {
       db: getTombstoneDB(),

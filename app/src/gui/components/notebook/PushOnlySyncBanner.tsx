@@ -6,7 +6,10 @@ import {
   dismissPushOnlyBanner,
   isPushOnlyBannerDismissed,
 } from '../../../utils/pushOnlyBannerDismissal';
-import type {Project} from '../../../context/slices/projectSlice';
+import {
+  projectDatabase,
+  type Project,
+} from '../../../context/slices/projectSlice';
 
 type PushOnlySyncBannerProps = {
   project: Project;
@@ -24,7 +27,7 @@ export default function PushOnlySyncBanner({
     })
   );
 
-  const syncMode = project.database?.syncMode;
+  const syncMode = projectDatabase(project)?.syncMode;
   const recordCount = project.recordCount;
 
   if (

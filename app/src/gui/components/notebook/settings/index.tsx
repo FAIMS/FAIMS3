@@ -29,6 +29,7 @@ import {NOTEBOOK_LIST_ROUTE} from '../../../../constants/routes';
 import {addAlert} from '../../../../context/slices/alertSlice';
 import {
   deactivateProject,
+  isActivatedProject,
   selectProjectById,
   startSyncingAttachments,
   stopSyncingAttachments,
@@ -64,8 +65,12 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
 
   if (!projectId || !project) return <></>;
 
-  const isSyncingAttachments = project.database?.isSyncingAttachments ?? false;
-  const syncMode = project.database?.syncMode ?? 'none';
+  const isSyncingAttachments = isActivatedProject(project)
+    ? project.database.isSyncingAttachments
+    : false;
+  const syncMode = isActivatedProject(project)
+    ? project.database.syncMode
+    : 'none';
   const pullSyncEnabled = syncModeIncludesPull(syncMode);
   const pushSyncEnabled = syncModeIncludesPush(syncMode);
 

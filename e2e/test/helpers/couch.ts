@@ -9,6 +9,7 @@
  * Defaults match local-dev (`http://localhost:5984`, `admin` /
  * `aSecretPasswordThatCantBeGuessed`).
  */
+import {randomBytes} from 'node:crypto';
 import {loadE2eEnv, parseCouchEnv, parseCouchTargetUrl} from './env.ts';
 
 function couchConfig(): {baseUrl: string; user: string; password: string} {
@@ -58,8 +59,35 @@ type ProjectDoc = {
     uiSpec?: {schemaVersion?: string; [key: string]: unknown};
     [key: string]: unknown;
   };
+  uiSpecProperties?: {schemaVersion: string; hash: string};
   [key: string]: unknown;
 };
+
+/**
+ * Stamp `uiSpec.schemaVersion` and bump `uiSpecProperties` so the lean
+ * directory listing advertises the change. The app only refetches an
+ * activated notebook when the listing hash changes; the hash itself does
+ * not need to match the stored bundle.
+ */
+export function applyNotebookSchemaVersionStamp(
+  doc: ProjectDoc,
+  schemaVersion: string
+): string {
+  const uiSpec = doc.uiSpecification?.uiSpec;
+  if (!uiSpec) {
+    throw new Error(
+      `Project ${doc._id} has no uiSpecification.uiSpec to stamp`
+    );
+  }
+  const previous =
+    typeof uiSpec.schemaVersion === 'string' ? uiSpec.schemaVersion : '';
+  uiSpec.schemaVersion = schemaVersion;
+  doc.uiSpecProperties = {
+    schemaVersion,
+    hash: randomBytes(32).toString('hex'),
+  };
+  return previous;
+}
 
 /** Seeded current-schema notebook used by the last-good e2e path. */
 export const SEED_LAST_GOOD_NOTEBOOK_ID = 'notebook_seed_last_good';
@@ -90,23 +118,15 @@ export async function readNotebookSchemaVersion(
 }
 
 /**
- * Overwrite `uiSpec.schemaVersion` on a project document in the `projects`
- * database. Returns the previous stamp.
+ * Overwrite `uiSpec.schemaVersion` and `uiSpecProperties` on a project
+ * document in the `projects` database. Returns the previous stamp.
  */
 export async function stampNotebookSchemaVersion(
   notebookId: string,
   schemaVersion: string
 ): Promise<string> {
   const doc = await getProjectDoc(notebookId);
-  const uiSpec = doc.uiSpecification?.uiSpec;
-  if (!uiSpec) {
-    throw new Error(
-      `Project ${notebookId} has no uiSpecification.uiSpec to stamp`
-    );
-  }
-  const previous =
-    typeof uiSpec.schemaVersion === 'string' ? uiSpec.schemaVersion : '';
-  uiSpec.schemaVersion = schemaVersion;
+  const previous = applyNotebookSchemaVersionStamp(doc, schemaVersion);
   const put = await couchJson(`/projects/${encodeURIComponent(notebookId)}`, {
     method: 'PUT',
     body: JSON.stringify(doc),
