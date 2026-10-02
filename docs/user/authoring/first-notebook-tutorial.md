@@ -1,6 +1,6 @@
 # Your First {{Notebook}} in 25-30 Minutes 🚀
 
-*Welcome to {{FAIMS}}! In the next 25-30 minutes, you'll create your first data collection {{notebook}} and enter your first record. No experience needed - just follow along!*
+*Welcome to {{FAIMS}}®! In the next 25-30 minutes, you'll create your first data collection {{notebook}} and enter your first record. No experience needed - just follow along!*
 
 ## What You'll Achieve
 
@@ -170,8 +170,12 @@ Offline Map, and Actions.
 1. Click the **Actions** tab
 2. Click **Open in Editor**
 
+The Actions tab also has a **Quick share** panel, set to **Enabled** by
+default. It lets users with the right permissions share the {{notebook}} from
+within the data collection app. You can leave it as it is for this tutorial.
+
 ```{screenshot} quickstart/qs-006-actions-tab-desktop.png
-:alt: Actions tab on the {{notebook}} page, with panels for Edit {{Notebook}} details, Edit {{Notebook}} containing the Open in Editor button, Assign {{notebook}} to a Team, Download JSON, Replace {{Notebook}} JSON File, Create Template from this {{Notebook}}, {{Notebook}} Status showing Open, and Archive {{Notebook}}
+:alt: Actions tab on the {{notebook}} page, with panels for Edit {{Notebook}} details, Quick share with a switch labelled Enabled, Edit {{Notebook}} containing the Open in Editor button, Assign {{notebook}} to a Team, Download JSON, Replace {{Notebook}} JSON File, Create Template from this {{Notebook}}, {{Notebook}} Status showing Open with a Close {{Notebook}} button, and Archive {{Notebook}} with its button unavailable until the {{notebook}} is closed
 :align: right
 :width: 100%
 ```
@@ -187,7 +191,8 @@ the main interface elements:
 - **Toolbar**: **Save** (blue), **Cancel**, **Undo**, and **Redo** buttons on
   the left, with a **Preview** toggle beside them
 - **Search design...**: A search box at the top right for finding fields in
-  large {{notebooks}} (press `/` to jump to it)
+  large {{notebooks}} (once your {{notebook}} has some content, press `/` to jump
+  to it)
 - **The Forms panel** with its blue **+ New Form** button. Two more panels,
   **Sections** and **Fields**, appear below it once you create your first
   form; each has its own blue "+ New ..." button
@@ -359,12 +364,12 @@ editor.
 >
 > 💡 **More in the field editor**: You'll also see Short answer / Long answer
 > options, a Default Text setting, a Voice-to-text toggle (on by default for
-> text fields), and an **Advanced controls** group: Display in child
-> records, Copy value to new records, Annotation, and Uncertainty. We'll use
-> Annotation and Uncertainty on the next field.
+> text fields), and an **Advanced controls** group: Copy value to new
+> records, Annotation, and Uncertainty. We'll use Annotation and Uncertainty
+> on the next field.
 
 ```{screenshot} quickstart/qs-012-site-name-editor-desktop.png
-:alt: Expanded Site Name field in the field editor: Label reads Site Name, Field ID reads Site-Name, Helper Text reads Enter the official site designation or name, Short answer is selected, Required is ticked, and the Advanced controls group shows unticked Display in child records, Copy value to new records, Annotation, and Uncertainty boxes above a Voice-to-text section
+:alt: Expanded Site Name field in the field editor, with Text field and Required badges under its header: Label reads Site Name, Field ID reads Site-Name, Helper Text reads Enter the official site designation or name, Short answer is selected above an empty Default Text box, Required is ticked, and the Advanced controls group shows unticked Copy value to new records, Annotation, and Uncertainty boxes above a Voice-to-text section with Enable voice-to-text input for this field ticked
 :align: right
 :width: 100%
 ```
@@ -430,7 +435,7 @@ Now let's add a choice field where users select one option from a list.
    - **Uncertainty**: Toggle ON ☑ (allows flagging uncertain observations)
 
 ```{screenshot} quickstart/qs-015-site-type-editor-desktop.png
-:alt: Expanded Site Type field showing the options table with Habitation, Mortuary, Ceremonial, Workshop/Industrial, Defensive, Agricultural, and Other in order, each row carrying a drag handle, up and down arrows, and edit and delete icons; below sit the Add option box with its Add button, an Add Other Option button, the Select-one display mode choice with Expanded checklist selected, and ticked Required, Annotation, and Uncertainty boxes with Annotation Label reading annotation and Uncertainty Label reading uncertainty
+:alt: Expanded Site Type field showing the options table with Habitation, Mortuary, Ceremonial, Workshop/Industrial, Defensive, Agricultural, and Other in order, each row carrying a drag handle, up and down arrows, and edit and delete icons; below sit the Add option box with its Add button, an Add Other Option button, the Select-one display mode choice with Expanded checklist selected, Required ticked, and an Advanced controls group with Copy value to new records unticked and Annotation and Uncertainty ticked, above Annotation Label and Uncertainty Label boxes reading annotation and uncertainty
 :align: right
 :width: 100%
 ```
@@ -450,7 +455,7 @@ Now let's add a choice field where users select one option from a list.
 >
 > 💡 **Pro Tip**: You can use markdown in option text - try `**Important Option**` to make text bold!
 
-**Quick Save**: Click the **SAVE** button at the left of the toolbar to save your progress.
+**Quick Save**: Click the **Save** button at the left of the toolbar to save your progress.
 
 #### Field 3: Site Photo (Camera)
 
@@ -478,7 +483,7 @@ Let's add the ability to capture photos - essential for field documentation!
    - **Annotation Label**: Change from "annotation" to **"Photo notes"**
 
 ```{screenshot} quickstart/qs-017-site-photo-editor-desktop.png
-:alt: Site Photo field expanded in the field editor beneath the collapsed Site Name and Site Type fields: Label reads Site Photo, Field ID reads Site-Photo, Helper Text reads Photograph the site for documentation, Required is unticked, and Annotation is ticked with the Annotation Label changed to Photo notes
+:alt: Site Photo field expanded in the field editor beneath the collapsed Site Name and Site Type fields, with a TakePhoto badge under its header: Label reads Site Photo, Field ID reads Site-Photo, Helper Text reads Photograph the site for documentation, Required is unticked, and in the Advanced controls group Copy value to new records and Uncertainty are unticked whilst Annotation is ticked, with the Annotation Label changed to Photo notes
 :align: right
 :width: 100%
 ```
@@ -536,7 +541,7 @@ Now let's configure how the form behaves when collecting data.
 3. **Configure the settings**:
    - **Layout Style**: Leave as **"Tabs"** (sections display as tabs for organised navigation)
    - **Summary Fields**: Click the dropdown and select both **"Site Name"** and **"Site Type"** (these will show in the record list table)
-   - **Human-Readable ID Field**: Select **"Site Name"** (provides meaningful record labels instead of opaque, computer-generated identifiers (UUIDs)). Only **required fields that hold text** are offered in this dropdown (Site Type qualifies too), which is why we made Site Name required
+   - **Human-Readable ID Field**: Select **"Site Name"** (provides meaningful record labels instead of opaque, computer-generated identifiers (UUIDs)). Only **required fields that hold text** are offered in this dropdown, which is why we made Site Name required. A required single-choice field such as Site Type also qualifies, so you will see it listed too
    - **Overview Map**: Leave as **"Show spatial features"** (controls whether
      spatial data from this form, such as points, lines, and polygons,
      appears on the {{notebook}}'s overview map)
@@ -585,7 +590,7 @@ Now let's configure how the form behaves when collecting data.
    **"Open in Editor"** again
 
 ```{screenshot} quickstart/qs-022-designer-saved-desktop.png
-:alt: {{Notebook}} page on the Actions tab immediately after saving, with a green message in the bottom corner reading Designer saved successfully
+:alt: {{Notebook}} page on the Actions tab immediately after saving, showing the Edit {{Notebook}} details, Quick share, Edit {{Notebook}}, Assign {{notebook}} to a Team, Download JSON, and Replace {{Notebook}} JSON File panels, with a green message in the bottom-right corner reading Designer saved successfully
 :align: right
 :width: 100%
 ```
@@ -610,7 +615,7 @@ Your {{notebook}} has been saved in the Editor. Now let's activate it for data c
 2. **Log in** with the same credentials you used to access the Editor
 
 ```{screenshot} quickstart/qs-023-app-active-zero-desktop.png
-:alt: {{FAIMS}} app My {{Notebooks}} screen: server name {{FAIMS}}, green REFRESH and ADD NOTEBOOK buttons, a Learn about activating and de-activating {{notebooks}} link, the ACTIVE tab selected with a count of 0 and an empty table reading No rows, a NOT ACTIVE tab with a count, and text beneath the table explaining that {{notebooks}} need to be activated before they can be used
+:alt: {{FAIMS}} app My {{Notebooks}} screen: server name {{FAIMS}}, green REFRESH and ADD NOTEBOOK buttons, a Learn more about activating {{notebooks}} link, the ACTIVE tab selected with a count of 0 and an empty table reading No rows, a NOT ACTIVE tab with a count of 12, and text beneath the table explaining that {{notebooks}} in the NOT ACTIVE tab need to be activated before they can be used
 :align: right
 :width: 100%
 ```
@@ -618,12 +623,12 @@ Your {{notebook}} has been saved in the Editor. Now let's activate it for data c
 ### Activate Your {{Notebook}}
 
 When the app opens, you'll see the "My {{Notebooks}}" screen, with **REFRESH**
-and **ADD NOTEBOOK** buttons, a "Learn about activating/de-activating
-{{notebooks}}" link, and two tabs: **ACTIVE** and **NOT ACTIVE** (the number in
+and **ADD NOTEBOOK** buttons, a "Learn more about activating {{notebooks}}"
+link, and two tabs: **ACTIVE** and **NOT ACTIVE** (the number in
 parentheses on each tab is a count of {{notebooks}}):
 
 ```{screenshot} quickstart/qs-024-not-active-tab-desktop.png
-:alt: NOT ACTIVE tab listing {{notebooks}} by name, each row with a green ACTIVATE button; My First Survey sits at the top, above other {{notebooks}} that carry short descriptions
+:alt: NOT ACTIVE tab selected with a count of 12, listing {{notebooks}} by name, each row with a green-outlined ACTIVATE button; My First Survey sits at the top, above other {{notebooks}} that carry short descriptions
 :align: right
 :width: 100%
 ```
@@ -650,12 +655,12 @@ parentheses on each tab is a count of {{notebooks}}):
 3. **You'll be automatically taken to the "ACTIVE" tab** - your {{notebook}} now appears in the Active list
 
 > 💡 {{Notebooks}} can also be **de-activated** later from the {{notebook}}'s
-> Settings tab (see [{{Notebook}} Settings](#notebook-settings) below). The app's
-> header has a "Learn about activating/de-activating {{notebooks}}" link if you
+> Settings tab (see [{{Notebook}} Settings](#notebook-settings) below). The My
+> {{Notebooks}} screen has a "Learn more about activating {{notebooks}}" link if you
 > want the details.
 
 ```{screenshot} quickstart/qs-026-active-one-desktop.png
-:alt: ACTIVE tab with a count of 1, listing My First Survey under the Name column header
+:alt: ACTIVE tab selected with a count of 1, listing My First Survey under the Name column header, beside a NOT ACTIVE tab now counting 11
 :align: right
 :width: 100%
 ```
@@ -686,6 +691,9 @@ Now let's open your {{notebook}} to start collecting data:
 
 You'll see the record list interface:
 
+- **Share** button (green, top right): opens a dialogue that generates a
+  temporary QR code for sharing the {{notebook}} with another user. It does the
+  same job as the Quick share panel on the SETTINGS tab
 - **ADD NEW SITE DETAILS** button - for creating new records
 - **REFRESH RECORDS** button - refreshes the displayed list from the local
   database (useful to see records synced in the background)
@@ -700,7 +708,7 @@ You'll see the record list interface:
 - Because this is a brand new {{notebook}}, the table is empty
 
 ```{screenshot} quickstart/qs-027-record-list-empty-desktop.png
-:alt: Empty record list for My First Survey: an orange ADD NEW SITE DETAILS button, a REFRESH RECORDS button, tabs MY SITE DETAILSS (0), MAP, DETAILS, and SETTINGS, a Search record data box with a Sort By dropdown reading Recently Updated, and an empty table with Sync, Site Name, Site Type, Created, Created By, Last Updated, and Last Updated By columns reading No rows, with pagination reading Rows per page 25 and 0 to 0 of 0
+:alt: Empty record list for My First Survey: a Back link beside the {{notebook}} name and a green Share button at the top right, above an orange ADD NEW SITE DETAILS button, a REFRESH RECORDS button, tabs MY SITE DETAILSS (0), MAP, DETAILS, and SETTINGS, a Search record data box with a Sort By dropdown reading Recently Updated, and an empty table with Sync, Site Name, Site Type, Created, Created By, Last Updated, and Last Updated By columns reading No rows, with pagination reading Rows per page 25 and 0 to 0 of 0
 :align: right
 :width: 100%
 ```
@@ -743,17 +751,19 @@ You'll see the data entry form with:
    - This is a powerful feature for capturing data quality context!
 
    ```{screenshot} quickstart/qs-029-annotation-interface-desktop.png
-   :alt: Site Type options with the annotation area open below them: the annotation text box contains Surface scatter suggests domestic occupation, but no structures visible, and the uncertainty checkbox beneath it is ticked; further down, the Site Photo section shows No Photos Yet with a green TAKE FIRST PHOTO button
+   :alt: Lower Site Type options with the annotation area open below them: the annotation text box contains Surface scatter suggests domestic occupation, but no structures visible, and the uncertainty checkbox beneath it is ticked; further down, the Site Photo section reads No photos selected yet above two green icon buttons labelled Camera and Gallery
    :align: right
    :width: 100%
    ```
 
 4. **Add a Site Photo**:
    - Scroll to the Site Photo section
-   - You'll see "No Photos Yet" with a **"TAKE FIRST PHOTO"** button
-   - Click the green photo button
-   - Allow camera permissions if asked
-   - Take any photo (even of your desk - this is just practice!)
+   - You'll see "No photos selected yet" with two buttons: **Camera** and
+     **Gallery**
+   - Click **Camera** to take a new photo, or **Gallery** to choose photos
+     already on your device (you can select several at once)
+   - Allow camera or photo access if your device or browser asks
+   - Take or choose any photo (even of your desk - this is just practice!)
    - Note: Site Photo also has a blue dog ear icon for "Photo notes" annotation
 
 ```{screenshot} quickstart/qs-031-record-form-complete-desktop.png
@@ -794,7 +804,7 @@ Congratulations! 🎉 You've just created your first {{FAIMS}} record!
 You're automatically returned to the record list view. Here's what you'll see:
 
 ```{screenshot} quickstart/qs-032-record-list-unsynced-desktop.png
-:alt: Record list with the MY SITE DETAILSS tab counting 1: the single row shows an orange three-dot icon in the Sync column, Test Location Alpha under Site Name, Habitation under Site Type, and matching Created and Last Updated timestamps, with pagination reading 1 to 1 of 1
+:alt: Record list with the MY SITE DETAILSS tab counting 1: the single row shows an orange three-dot icon in the Sync column, Test Location Alpha under Site Name, Habitation under Site Type, Created and Last Updated timestamps a few seconds apart, and the capture user's email under Created By and Last Updated By, with pagination reading 1 to 1 of 1. The green Share button sits at the top right
 :align: right
 :width: 100%
 ```
@@ -807,7 +817,7 @@ You're automatically returned to the record list view. Here's what you'll see:
   - **Site Type**: "Habitation" (Summary Field #2)
   - **Created**: Timestamp like "8/3/2026, 1:05:02 AM"
   - **Created By**: Your username (e.g., "alex.taylor@fieldmark.test")
-  - **Last Updated**: Same as Created for a new record
+  - **Last Updated**: Close to Created for a new record
   - **Last Updated By**: Your username
 - **Pagination** at bottom shows "1-1 of 1"
 
@@ -816,7 +826,7 @@ You're automatically returned to the record list view. Here's what you'll see:
 > If multiple team members edit the same record while offline, {{FAIMS}} has a conflict resolution interface in the data collection app to help you merge changes.
 
 ```{screenshot} quickstart/qs-033-record-list-synced-desktop.png
-:alt: The same record list row with the Sync column now showing a green cloud icon with a tick, indicating the record has synced to the server
+:alt: The same record list row with the Sync column now showing a green cloud icon with a tick, indicating the record has synced to the server. The other values are unchanged
 :align: right
 :width: 100%
 ```
@@ -829,7 +839,7 @@ You can click on any record in the list to view its details:
 2. **The Record View opens** showing all your captured data
 
 ```{screenshot} quickstart/qs-034-record-view-desktop.png
-:alt: Record view headed Viewing Site Details with Test Location Alpha beneath it, RECORD, INFO, and HISTORY tabs, a full progress bar, an EDIT RECORD button, and a Basic Information panel listing Site Name Test Location Alpha, Site Type Habitation, and Site Photo with no images to display
+:alt: Record view headed Viewing Site Details with Test Location Alpha beneath it, RECORD, INFO, HISTORY, and STATUS tabs, a full progress bar reading Completed 100 percent, 2 of 2 required fields, an EDIT RECORD button, and a Basic Information panel listing Site Name Test Location Alpha, Site Type Habitation, and Site Photo with no images to display
 :align: right
 :width: 100%
 ```
@@ -839,7 +849,8 @@ From here you can:
 - **Review all field values** in a read-only format
 - **Click EDIT RECORD** to make changes
 - **Switch to INFO tab** to see metadata (creation time, last update, etc.),
-  or the **HISTORY tab** to see the record's edit history
+  the **HISTORY tab** to see the record's edit history, or the **STATUS
+  tab** to see how complete the record is
 - **Click Back** to return to the record list
 
 (notebook-settings)=
@@ -850,12 +861,18 @@ Before we finish, let's explore the SETTINGS tab to understand sync and data man
 1. **Click on the SETTINGS tab** (next to the MY SITE DETAILSS, MAP, and DETAILS tabs)
 
 ```{screenshot} quickstart/qs-035-settings-tab-desktop.png
-:alt: SETTINGS tab with three panels: Sync Mode showing Upload and download above the helper text Choose how this {{notebook}} syncs record data with the server; Get attachments from other devices with its toggle Off and an explanation of the trade-offs; and De-activate {{Notebook}} with warning text and a red DE-ACTIVATE NOTEBOOK button
+:alt: SETTINGS tab with four panels: Quick share, reading Share this {{notebook}} with another user by generating a temporary QR code, with a SHARE THIS NOTEBOOK button; Sync Mode showing Upload and download above the helper text Choose how this {{notebook}} syncs record data with the server; Get attachments from other devices with its toggle Off and an explanation of the trade-offs; and De-activate {{Notebook}} with warning text and a red DE-ACTIVATE NOTEBOOK button
 :align: right
 :width: 100%
 ```
 
 You'll see several important controls:
+
+**Quick share**
+
+- **SHARE THIS NOTEBOOK** generates a temporary QR code for sharing the
+  {{notebook}} with another user. The green **Share** button above the tabs
+  opens the same dialogue
 
 **Sync Mode**
 
@@ -871,7 +888,7 @@ You'll see several important controls:
   sync mode never deletes anything
 
 ```{screenshot} quickstart/qs-036-sync-mode-open-desktop.png
-:alt: Sync Mode select open, listing three options: Sync off (local device only), Upload only, and Upload and download, with Upload and download selected
+:alt: SETTINGS tab with the Sync Mode select open below the Quick share panel, listing three options: Sync off (local device only), Upload only, and Upload and download, with Upload and download highlighted as the current choice
 :align: right
 :width: 100%
 ```
