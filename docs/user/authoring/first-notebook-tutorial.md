@@ -450,7 +450,7 @@ Now let's add a choice field where users select one option from a list.
 >
 > 💡 **Pro Tip**: You can use markdown in option text - try `**Important Option**` to make text bold!
 
-**Quick Save**: Click the **SAVE** button in the top-right to save your progress.
+**Quick Save**: Click the **SAVE** button at the left of the toolbar to save your progress.
 
 #### Field 3: Site Photo (Camera)
 
@@ -536,7 +536,7 @@ Now let's configure how the form behaves when collecting data.
 3. **Configure the settings**:
    - **Layout Style**: Leave as **"Tabs"** (sections display as tabs for organised navigation)
    - **Summary Fields**: Click the dropdown and select both **"Site Name"** and **"Site Type"** (these will show in the record list table)
-   - **Human-Readable ID Field**: Select **"Site Name"** (provides meaningful record labels instead of opaque, computer-generated identifiers (UUIDs)). Only **required text fields** are offered in this dropdown, which is why we made Site Name required
+   - **Human-Readable ID Field**: Select **"Site Name"** (provides meaningful record labels instead of opaque, computer-generated identifiers (UUIDs)). Only **required fields that hold text** are offered in this dropdown (Site Type qualifies too), which is why we made Site Name required
    - **Overview Map**: Leave as **"Show spatial features"** (controls whether
      spatial data from this form, such as points, lines, and polygons,
      appears on the {{notebook}}'s overview map)
