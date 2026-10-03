@@ -43,6 +43,7 @@ import {
   markCodeAsUsed,
   validateEmailCode,
 } from '../couchdb/emailReset';
+import {revokeUnusedGrantsForUser} from '../couchdb/downloadGrants';
 import {getTokenByToken, invalidateToken} from '../couchdb/refreshTokens';
 import {
   getCouchUserFromEmailOrUserId,
@@ -683,6 +684,9 @@ export function addAuthRoutes(
       if (!user) {
         throw new UnauthorizedException();
       }
+
+      // Logout invalidates unused export grants so a leftover cookie cannot redeem
+      await revokeUnusedGrantsForUser(user.user_id);
 
       // token
       const refresh = await getTokenByToken(refreshToken);

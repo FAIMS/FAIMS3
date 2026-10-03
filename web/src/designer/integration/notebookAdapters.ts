@@ -22,7 +22,6 @@ import type {
   NotebookWithHistory,
 } from '../state/initial';
 import {
-  normalizeApiUiSpecification,
   type NormalizeApiUiSpecificationResult,
   tryNormalizeApiUiSpecification,
   DesignerDocumentMode,
@@ -38,7 +37,8 @@ type ApiRecordWithUiSpecification = {
 
 /**
  * Maps a project or template record from the main app into the designer's
- * `NotebookWithHistory` shape (present-only undo stack).
+ * `NotebookWithHistory` shape (present-only undo stack). Returns `undefined`
+ * when the design cannot be parsed — never throws, so the Actions page stays up.
  */
 export const toDesignerNotebookWithHistory = (
   record?: ApiRecordWithUiSpecification,
@@ -48,8 +48,11 @@ export const toDesignerNotebookWithHistory = (
     return undefined;
   }
 
-  const definition = normalizeApiUiSpecification(record.uiSpecification, mode);
-  return notebookDefinitionToDesignerHistory(definition);
+  const result = tryNormalizeApiUiSpecification(record.uiSpecification, mode);
+  if (!result.ok) {
+    return undefined;
+  }
+  return notebookDefinitionToDesignerHistory(result.data);
 };
 
 /** Wrap a normalized definition for Redux (empty undo stacks). */
@@ -62,8 +65,8 @@ export const notebookDefinitionToDesignerHistory = (
     past: [],
     future: [],
   },
-  planTemplate: definition.planTemplate ?? null,
-  plan: definition.plan ?? null,
+  planTemplates: definition.planTemplates ?? [],
+  plans: definition.plans ?? [],
 });
 
 /** Flat definition for API PUT / export (present UI spec only). */
@@ -72,9 +75,11 @@ export const designerHistoryToNotebookDefinition = (
 ): Notebook => ({
   metadata: notebook.metadata,
   uiSpec: notebook.uiSpec.present,
-  // null becomes an absent key so saved JSON stays clean
-  ...(notebook.planTemplate ? {planTemplate: notebook.planTemplate} : {}),
-  // Carried through untouched: the designer does not author an instantiated
-  // plan, and dropping it here would strip it from the saved notebook
-  ...(notebook.plan ? {plan: notebook.plan} : {}),
+  // empty becomes an absent key so saved JSON stays clean
+  ...(notebook.planTemplates.length
+    ? {planTemplates: notebook.planTemplates}
+    : {}),
+  // Carried through untouched: the designer does not author instantiated
+  // plans, and dropping them here would strip them from the saved notebook
+  ...(notebook.plans.length ? {plans: notebook.plans} : {}),
 });

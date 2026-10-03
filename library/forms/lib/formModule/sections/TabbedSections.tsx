@@ -864,8 +864,13 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
       }));
     }
 
-    // Trigger form-wide validation
+    // Already-touched fields validate immediately (existing section-exit
+    // behaviour). A follow-up pass waits for the new isTouched flags so
+    // never-focused fields such as TakePhoto are included in ONLY_TOUCHED.
     form.validate('change');
+    queueMicrotask(() => {
+      form.validate('change');
+    });
   }, [form, spec, activeSection, fieldMeta]);
 
   /**

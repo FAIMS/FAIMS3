@@ -28,7 +28,7 @@ import {buildStatusReportKey} from '../../../utils/customHooks';
 import {getDisplayDataFromRecordMetadata} from '../../../utils/formUtilities';
 
 interface RecordStatusProps {
-  /** The notebook tab this page sits under, which the child links stay on. */
+  /** The notebook this page sits under, which the child links stay on. */
   notebook: RecordRouteNotebook;
   recordId: RecordID;
   projectId: ProjectID;

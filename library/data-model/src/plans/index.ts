@@ -3,4 +3,6 @@ export * from './types';
 export * from './builtins';
 export * from './countedPlan';
 export * from './listOfRecordsPlan';
+export * from './listOfFormsPlan';
 export * from './planTypeMap';
+export * from './notebookPlans';

@@ -71,6 +71,9 @@ const DEFAULT_EMAIL_CODE_EXPIRY_MINUTES = 30;
 // 10 minutes / 1000 requests per window
 const DEFAULT_RATE_LIMITER_WINDOW_MS = 10 * 60 * 1000;
 const DEFAULT_RATE_LIMITER_PER_WINDOW = 1000;
+// Export mint/redeem: same window, much tighter cap (ZIP / GDAL / Couch scans).
+export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS = 10 * 60 * 1000;
+export const DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW = 20;
 // Long-lived token configuration
 const DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS = 90;
 // Request body / upload size limits (protect against oversized payloads)
@@ -101,8 +104,6 @@ const EnvSchema = z
     ANDROID_APP_PUBLIC_URL: configHelpers.stringDefault(''),
     /** Public URL / store link for the iOS app build (optional). */
     IOS_APP_PUBLIC_URL: configHelpers.stringDefault(''),
-    /** Public URL of the designer / Control Centre when separate from WEB_APP. */
-    DESIGNER_URL: configHelpers.stringDefault(''),
     /** Internal (cluster/localhost) CouchDB URL used by the API process. */
     COUCHDB_INTERNAL_URL: configHelpers.urlNoTrailingSlash(
       DEFAULT_COUCHDB_URL,
@@ -223,6 +224,23 @@ const EnvSchema = z
      */
     RATE_LIMITER_ENABLED: configHelpers.boolWithDefault(true),
     /**
+     * Dedicated limiter for notebook export mint/redeem routes. Independent
+     * of RATE_LIMITER_ENABLED so ZIP/GDAL work stays capped when the global
+     * IP limiter is off (upstream WAF). Blank → on; unrecognised values fail
+     * parse. Tests force this off at transform time unless a test opts in.
+     */
+    EXPORT_RATE_LIMITER_ENABLED: configHelpers.boolWithDefault(true),
+    /** Export-limiter window duration in milliseconds. */
+    EXPORT_RATE_LIMITER_WINDOW_MS: configHelpers.intDefault(
+      DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS,
+      'EXPORT_RATE_LIMITER_WINDOW_MS'
+    ),
+    /** Export mint/redeem requests allowed per export-limiter window. */
+    EXPORT_RATE_LIMITER_PER_WINDOW: configHelpers.intDefault(
+      DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW,
+      'EXPORT_RATE_LIMITER_PER_WINDOW'
+    ),
+    /**
      * Whether per-user email-code / verification-challenge attempt limits
      * are enabled. Independent of the HTTP IP limiter so deployments that
      * disable RATE_LIMITER_ENABLED upstream still keep password-reset and
@@ -255,8 +273,6 @@ const EnvSchema = z
       .string()
       .optional()
       .transform(v => (v === undefined ? true : v.toLowerCase() !== 'true')),
-    /** Configure migration of notebooks on startup. */
-    MIGRATE_NOTEBOOKS_ON_STARTUP: configHelpers.equalsTrueBool(true),
     /** Where signing keys are loaded from (`FILE` or `AWS_SM`). */
     KEY_SOURCE: configHelpers.nativeEnumDefault(KeySource, KeySource.FILE),
     /** AWS Secrets Manager ARN for signing keys; required when KEY_SOURCE is AWS_SM. */
@@ -401,6 +417,18 @@ const EnvSchema = z
         return parsed;
       }),
     /**
+     * SameSite for the export download-grant cookie. `lax` (default) is
+     * enough when Control Centre and Conductor share an eTLD+1 (effective
+     * top-level domain plus one label — the registrable domain browsers
+     * treat as one cookie site, e.g. `example.com` for `app.example.com`
+     * and `api.example.com`). Use `none` (always Secure) when they sit on
+     * different registrable domains.
+     */
+    DOWNLOAD_COOKIE_SAMESITE: configHelpers.enumDefault(
+      ['lax', 'none'] as const,
+      'lax'
+    ),
+    /**
      * Max records per GET …/records/hydrated page. Default 150; clamped to
      * 1–500. Hydrated pages carry full field payloads (e.g. MapFormField
      * polygons), so this stays well below the metadata list cap of 500.
@@ -490,7 +518,6 @@ const EnvSchema = z
       webAppPublicUrl: env.WEB_APP_PUBLIC_URL,
       androidAppUrl: env.ANDROID_APP_PUBLIC_URL,
       iosAppUrl: env.IOS_APP_PUBLIC_URL,
-      designerUrl: env.DESIGNER_URL,
       couchdbInternalUrl: env.COUCHDB_INTERNAL_URL,
       couchdbPublicUrl: env.COUCHDB_PUBLIC_URL,
       conductorKeyId,
@@ -509,8 +536,14 @@ const EnvSchema = z
       rateLimiterWindowMs: env.RATE_LIMITER_WINDOW_MS,
       rateLimiterPerWindow: env.RATE_LIMITER_PER_WINDOW,
       rateLimiterEnabled: env.RATE_LIMITER_ENABLED,
+      // Vitest / Jest share one in-memory limiter store across files.
+      // Default off under test; individual tests may opt in via mutation.
+      exportRateLimiterEnabled: runningUnderTest
+        ? false
+        : env.EXPORT_RATE_LIMITER_ENABLED,
+      exportRateLimiterWindowMs: env.EXPORT_RATE_LIMITER_WINDOW_MS,
+      exportRateLimiterPerWindow: env.EXPORT_RATE_LIMITER_PER_WINDOW,
       authAttemptLimiterEnabled: env.AUTH_ATTEMPT_LIMITER_ENABLED,
-      migrateNotebooksOnStartup: env.MIGRATE_NOTEBOOKS_ON_STARTUP,
       keySource: env.KEY_SOURCE,
       maximumLongLivedDurationDays: env.MAXIMUM_LONG_LIVED_DURATION_DAYS,
       bugsnagApiKey: env.BUGSNAG_API_KEY,
@@ -524,6 +557,7 @@ const EnvSchema = z
       runningUnderTest,
       newConductorUrl: env.NEW_CONDUCTOR_URL,
       redirectWhitelist: env.REDIRECT_WHITELIST,
+      downloadCookieSameSite: env.DOWNLOAD_COOKIE_SAMESITE,
       awsSecretKeyArn,
       // Internal: peeled off before exporting `config`.
       _email: {

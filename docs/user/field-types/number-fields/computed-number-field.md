@@ -67,7 +67,7 @@ The expression is typed and checked when the {{notebook}} is designed —
 mixing types is reported as an error in the Editor. The overall
 expression must produce a **number**. The operators are:
 
-- **Arithmetic** (`+ - * / %`) — numbers only, with parentheses and a
+- **Arithmetic** (`+ - * / % ^`, where `^` is exponentiation) — numbers only, with parentheses and a
   leading minus.
 - **Concatenation** (`&`) — text only (useful inside conditions).
 - **Comparisons** (`< > <= >=`) — two numbers or two texts, producing
@@ -135,6 +135,21 @@ of this record's last save.
 
 The same reference can be used in
 [field and section conditions](../../authoring/conditions.md).
+
+### Referencing Notebook Metadata Values
+
+The expression can read a value from the {{notebook}}'s custom metadata
+(the custom fields on the Info panel in the {{Notebook}} Editor) using
+the `_METADATA.` prefix: `{_METADATA.Field-Name}`. An **Insert notebook
+metadata** picker below the expression lists the available fields.
+
+Every metadata value is text, so a metadata reference is typed as text:
+it can be compared and used in conditionals (for example
+`{_METADATA.units} == 'imperial' ? {Depth-in} * 25.4 : {Depth-mm}`), but
+not used directly in arithmetic. If the {{notebook}} has no custom field
+with that name, the editor reports an error; at run time a missing value
+leaves the result blank. A custom field that an expression references
+cannot be removed from the Info panel until the expression is changed.
 
 ### Shared Field Options
 

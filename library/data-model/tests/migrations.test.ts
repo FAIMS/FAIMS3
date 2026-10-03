@@ -43,7 +43,7 @@ import {
   TemplateV5Fields,
 } from '../src/data_storage/templatesDB/types';
 import {areDocsEqual} from './utils';
-import {NotebookDefinitionV1} from '../src/data_storage/migrations/notebookMigrations/migrateV2';
+import type {LegacyNotebookWire as NotebookDefinitionV1} from '../src/data_storage/migrations/notebookMigrations/steps/legacyToV1';
 import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../src/uiSpecification/normalize';
 
 // Register memory adapter
@@ -571,7 +571,14 @@ const TEMPLATE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       archived: false,
       isPublic: true,
       'ui-specification': {
-        fields: {f1: {'component-name': 'FAIMSTextField'}},
+        fields: {
+          f1: {
+            'component-namespace': 'faims-custom',
+            'component-name': 'FAIMSTextField',
+            'type-returned': 'faims-core::String',
+            'component-parameters': {label: 'F1', name: 'f1'},
+          },
+        },
         fviews: {},
         viewsets: {},
         visible_types: [],
@@ -598,6 +605,8 @@ const TEMPLATE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
               f1: {
                 'component-namespace': 'faims-custom',
                 'component-name': 'TextField',
+                'type-returned': 'faims-core::String',
+                'component-parameters': {label: 'F1', name: 'f1'},
               },
             },
             views: {},
@@ -616,11 +625,9 @@ const TEMPLATE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
             custom: {org_tag: 'field-school'},
           },
         },
-        // Cast: this fixture intentionally carries a minimal migrated field
-        // (`component-name`/`-namespace` only). The v3→v4 field rename does not
-        // synthesise `component-parameters`/`type-returned`, so the migrated
-        // output legitimately omits them and would not satisfy the (now typed)
-        // FieldDefinition shape.
+        // Cast: the legacy → 1.0.0 collapse validates its output with the V1
+        // Zod schema, so the fixture field carries the minimum FieldDefinition
+        // shape; the surrounding template document is still loosely typed.
       } as unknown as PouchDB.Core.ExistingDocument<TemplateV5Fields>,
     },
     equalityFunction: (actual, expected) => {
@@ -2249,7 +2256,14 @@ describe('Migration Specific Tests', () => {
       });
       await metaDb.put({
         _id: UI_SPECIFICATION_NAME,
-        fields: {field_a: {'component-name': 'FAIMSTextField'}},
+        fields: {
+          field_a: {
+            'component-namespace': 'faims-custom',
+            'component-name': 'FAIMSTextField',
+            'type-returned': 'faims-core::String',
+            'component-parameters': {label: 'Field A', name: 'field_a'},
+          },
+        },
         fviews: {},
         viewsets: {},
         visible_types: ['main'],

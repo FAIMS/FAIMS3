@@ -40,6 +40,12 @@ import {
   relatedRecordSelectorComponentParamsSchema,
   UiSpecModel,
 } from './types';
+import {
+  decodeMetadataRef,
+  isMetadataRef,
+  METADATA_EXPR_TYPE,
+  METADATA_REFERENCE_PREFIX,
+} from './metadataReferences';
 
 /** Prefix marking a reference to a field on the parent record. Reserved. */
 export const PARENT_REFERENCE_PREFIX = '_PARENT.';
@@ -194,11 +200,13 @@ export const compileComputedExpressionForForm = ({
 }): CompiledExpression => {
   const fieldTypes = new Map<string, ExprType>();
   for (const [id, f] of Object.entries(uiSpecification.fields)) {
-    if (id.startsWith(PARENT_REFERENCE_PREFIX)) {
-      // Reserved prefix - a real field with this ID would be shadowed.
-      throw new ExpressionError(
-        `Field ID "${id}" uses the reserved prefix "${PARENT_REFERENCE_PREFIX}"`
-      );
+    for (const prefix of [PARENT_REFERENCE_PREFIX, METADATA_REFERENCE_PREFIX]) {
+      if (id.startsWith(prefix)) {
+        // Reserved prefix - a real field with this ID would be shadowed.
+        throw new ExpressionError(
+          `Field ID "${id}" uses the reserved prefix "${prefix}"`
+        );
+      }
     }
     const t = FAIMS_TYPE_TO_EXPR_TYPE[f['type-returned'] ?? ''];
     if (t) fieldTypes.set(id, t);
@@ -237,6 +245,19 @@ export const compileComputedExpressionForForm = ({
   }
 
   for (const [k, v] of parentTypes) fieldTypes.set(k, v);
+
+  // Metadata references: _METADATA.<key> reads the notebook's custom metadata.
+  // Keys are not known to the uiSpec, so any key types as string; a key the
+  // notebook does not define reads as blank at runtime.
+  for (const ref of extractExpressionReferences(source)) {
+    if (!isMetadataRef(ref)) continue;
+    if (decodeMetadataRef(ref) === null) {
+      throw new ExpressionError(
+        `{${ref}}: a metadata reference needs a key after "${METADATA_REFERENCE_PREFIX}"`
+      );
+    }
+    fieldTypes.set(ref, METADATA_EXPR_TYPE);
+  }
 
   // Related record references: <Rel-Field-ID>.<Field-ID> reads a field on the
   // record linked through a single-link Linked Related Records field on this

@@ -143,6 +143,8 @@ import {ThemeProvider} from '@mui/material/styles';
 import testTheme from './themes/fieldmark';
 import {ActiveUser} from '../context/slices/authSlice';
 import {Router} from 'react-router-dom';
+import {NotebookRouteProvider} from '../context/notebookRoute';
+import {NotebookViewTabProvider} from '../context/notebookViewTab';
 import {FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER} from 'redux-persist';
 
 // Mock notification context
@@ -189,7 +191,11 @@ export const TestWrapper: React.FC<{children: React.ReactNode}> = ({
       <NotificationContext.Provider value={mockNotificationContext}>
         <QueryClientProvider client={queryClient}>
           <Provider store={testStore}>
-            <ThemeProvider theme={testTheme}>{children}</ThemeProvider>
+            <ThemeProvider theme={testTheme}>
+              <NotebookRouteProvider>
+                <NotebookViewTabProvider>{children}</NotebookViewTabProvider>
+              </NotebookRouteProvider>
+            </ThemeProvider>
           </Provider>
         </QueryClientProvider>
       </NotificationContext.Provider>

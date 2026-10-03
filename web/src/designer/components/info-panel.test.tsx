@@ -58,6 +58,7 @@ describe('Info Panel', () => {
     // }
     // check some content
     screen.getByText('Enable QR code search of records');
+    screen.getByText('Plan chooser text');
     // TODO: fix this test
     // // try adding some metadata
     // act(() => {

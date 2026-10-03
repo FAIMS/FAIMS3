@@ -88,10 +88,18 @@ When a time window is active, `nextStartKey` is a JSON cursor `[updatedMs, recor
 
 **Legacy dump** **GET** `/api/notebooks/:id/records/` remains the unpaginated export-shaped dump and requires `EXPORT_PROJECT_DATA`. It accepts the same `updatedAfter` / `updatedBefore` exclusive-ms query parameters and returns only records in that window. Use `/records/metadata` for the lightweight listing and `/records/hydrated` for paged field values.
 
-**Export** **GET** `/api/notebooks/:id/records/export` accepts the same bounds (plus `format`, `viewID`, and full-export include flags). They are stored on the download JWT and applied when **GET** `/api/notebooks/download/:downloadToken` streams CSV, ZIP, GeoJSON, KML, GeoPackage, or a full ZIP.
+**Export** **GET** `/api/notebooks/:id/records/export` accepts the same bounds (plus `format`, `viewID`, and full-export include flags). They are stored on a single-use download grant and applied when **GET** `/api/notebooks/download/:grantId` streams CSV, ZIP, GeoJSON, KML, GeoPackage, or a full ZIP.
+
+The returned `{ url }` is just an identifier for the export. Headless and API clients must send the same `Authorization: Bearer <access_token>` on both mint and download (no cookie). Control Centre redeems via an HttpOnly cookie set on the mint response so the browser can `window.open` the URL.
+
+Mint (`GET …/records/export` and the deprecated `/:viewID.:format` path) and redeem (`GET …/download/:grantId`) share a dedicated export rate limiter, independent of the global IP limiter. Default is **20 requests per 10 minutes** (per authenticated user on mint, per IP on unauthenticated download probes). Exceeding it returns **429**. Operators can raise `EXPORT_RATE_LIMITER_PER_WINDOW` / `EXPORT_RATE_LIMITER_WINDOW_MS` (CDK: `security.exportRateLimiterPerWindow` / `exportRateLimiterWindowMs`).
 
 ```
 GET /api/notebooks/:id/records/export?format=csv&viewID=FORM2&updatedAfter=1700000000000&updatedBefore=1710000000000
+Authorization: Bearer <access_token>
+
+GET /api/notebooks/download/<grantId>
+Authorization: Bearer <access_token>
 ```
 
 **Response** (200 OK):

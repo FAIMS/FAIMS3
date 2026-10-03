@@ -10,7 +10,7 @@ How the API turns notebook map fields into GeoJSON, KML, and GeoPackage (`.gpkg`
 | KML        | `application/vnd.google-earth.kml+xml`, `.kml` | Google Earth              |
 | GeoPackage | `application/geopackage+sqlite3`, `.gpkg`      | QGIS, ArcGIS, desktop GIS |
 
-**HTTP (signed download token)** — `GET /api/notebooks/:id/records/export?format=…`
+**HTTP (single-use download grant)** — `GET /api/notebooks/:id/records/export?format=…` with `Authorization: Bearer`. Redeem `GET /api/notebooks/download/:grantId` with the same Bearer (headless/API) or the HttpOnly cookie set on mint (Control Centre). The URL id is not a capability.
 
 - `geojson`, `kml`, `geopackage` — one format, streamed to the client
 - `full` — ZIP archive; spatial formats controlled by `includeGeoJSON`, `includeKML`, `includeGeoPackage` (all default `true`)

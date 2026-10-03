@@ -1,0 +1,168 @@
+{
+  "name": "Two Plans",
+  "description": "Two plans on one notebook, offered as a choice when it is opened. One plan counts records of a form; the other lists records to collect.",
+  "uiSpecification": {
+    "uiSpec": {
+      "fields": {
+        "hridSite": {
+          "component-namespace": "faims-custom",
+          "component-name": "TemplatedStringField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "name": "hridSite",
+            "label": "Site",
+            "fullWidth": true,
+            "required": true,
+            "template": "{{Site-Name}}",
+            "InputLabelProps": {
+              "label": "Site"
+            }
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Site-Name": {
+          "component-namespace": "faims-custom",
+          "component-name": "TextField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "name": "Site-Name",
+            "label": "Site name",
+            "fullWidth": true,
+            "required": true
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "hridFeature": {
+          "component-namespace": "faims-custom",
+          "component-name": "TemplatedStringField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "name": "hridFeature",
+            "label": "Feature",
+            "fullWidth": true,
+            "required": true,
+            "template": "{{Feature-Name}}",
+            "InputLabelProps": {
+              "label": "Feature"
+            }
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Feature-Name": {
+          "component-namespace": "faims-custom",
+          "component-name": "TextField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "name": "Feature-Name",
+            "label": "Feature name",
+            "fullWidth": true,
+            "required": true
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        }
+      },
+      "views": {
+        "Site-Section": {
+          "label": "Site",
+          "fields": ["hridSite", "Site-Name"]
+        },
+        "Feature-Section": {
+          "label": "Feature",
+          "fields": ["hridFeature", "Feature-Name"]
+        }
+      },
+      "viewsets": {
+        "Site": {
+          "label": "Site",
+          "views": ["Site-Section"],
+          "hridField": "hridSite"
+        },
+        "Feature": {
+          "label": "Feature",
+          "views": ["Feature-Section"],
+          "hridField": "hridFeature"
+        }
+      },
+      "visible_types": ["Site", "Feature"],
+      "settings": {
+        "showQrCodeButton": false,
+        "planChooserMarkdown": "## Start a visit\n\nPick the plan you are working to today."
+      },
+      "schemaVersion": "7.0"
+    },
+    "plans": [
+      {
+        "planId": "site-survey",
+        "planType": "Counted",
+        "label": "Survey",
+        "description": "Walk the survey area and record each site you find.",
+        "formType": "Site",
+        "numberRequired": 4,
+        "allowExtraRecords": false
+      },
+      {
+        "planId": "feature-list",
+        "planType": "ListOfRecords",
+        "label": "Features",
+        "formType": "Feature",
+        "records": {
+          "f-1": {
+            "Feature-Name": "Hearth"
+          },
+          "f-2": {
+            "Feature-Name": "Posthole"
+          }
+        },
+        "allowExtraRecords": true
+      }
+    ],
+    "metadata": {
+      "information": {
+        "notebookVersion": "1.0.0",
+        "purposeMarkdown": "Multi-plan seam spike",
+        "projectLeadLabel": "",
+        "leadInstitution": ""
+      }
+    }
+  }
+}

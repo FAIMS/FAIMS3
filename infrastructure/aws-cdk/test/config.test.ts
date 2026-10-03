@@ -3,7 +3,12 @@
  * key rules (MapTiler key required in one of two places when source is MAPTILER).
  */
 import {ZodError} from 'zod';
-import {UiConfiguration} from '../lib/config';
+import {
+  DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW,
+  DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS,
+  SecurityConfigSchema,
+  UiConfiguration,
+} from '../lib/config';
 
 function minimalOfflineMaps(
   overrides: {
@@ -129,5 +134,29 @@ describe('UiConfiguration enablePlansInDesigner', () => {
       minimalUiConfig({enablePlansInDesigner: false})
     );
     expect(parsed.enablePlansInDesigner).toBe(false);
+  });
+});
+
+describe('SecurityConfigSchema export rate limiter', () => {
+  it('applies export limiter defaults when omitted', () => {
+    const parsed = SecurityConfigSchema.parse({});
+    expect(parsed.exportRateLimiterEnabled).toBe(true);
+    expect(parsed.exportRateLimiterWindowMs).toBe(
+      DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS
+    );
+    expect(parsed.exportRateLimiterPerWindow).toBe(
+      DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW
+    );
+  });
+
+  it('accepts an explicit override', () => {
+    const parsed = SecurityConfigSchema.parse({
+      exportRateLimiterEnabled: false,
+      exportRateLimiterWindowMs: 3_600_000,
+      exportRateLimiterPerWindow: 50,
+    });
+    expect(parsed.exportRateLimiterEnabled).toBe(false);
+    expect(parsed.exportRateLimiterWindowMs).toBe(3_600_000);
+    expect(parsed.exportRateLimiterPerWindow).toBe(50);
   });
 });

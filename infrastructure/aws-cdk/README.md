@@ -349,6 +349,7 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `deleteOnDeactivation`: (Optional) When `true`, manual notebook deactivation wipes local Pouch data in the mobile app (`VITE_DELETE_ON_DEACTIVATION`). Defaults to `false` when omitted.
   - `excludedTeamRoles`: (Optional) Array of team role enum values to hide from Control Centre team-role dropdowns (e.g. `["TEAM_MEMBER_CREATOR"]`). Passed to the web build as `VITE_EXCLUDED_TEAM_ROLES`. Valid values: `TEAM_MEMBER`, `TEAM_MEMBER_CREATOR`, `TEAM_MANAGER`, `TEAM_ADMIN`. When omitted, all team roles are shown.
   - `enablePlansInDesigner`: (Optional) When `true` (default), the designer can add a plan to templates that do not already have one. When `false`, Add Plan is hidden; templates that already have a plan can still be reconfigured. Passed to the web build as `VITE_ENABLE_PLANS_IN_DESIGNER`.
+  - `showStatusTab`: (Optional) When `true` (default), the record view shows a "Status" tab. When `false`, the tab is hidden. Passed to the app build as `VITE_SHOW_STATUS_TAB`.
   - `offlineMaps`: Map and tile configuration for the app.
     - `mapSource`: Map tile provider: `osm` or `maptiler`
     - `mapSourceKey`: (Optional) API key for the map tile service (e.g. MapTiler)
@@ -423,8 +424,11 @@ Note that this validation is at a schema level, it might not catch improperly fo
 - `docs`: Placeholder configuration for the documentation site - currently use `{}`
 - `security`: (Optional) Security-related Conductor API settings. Defaults applied when omitted.
   - `maximumLongLivedTokenDurationDays`: (Optional) Max lifetime in days for long-lived tokens (default 90). Omit or leave unset for infinite when wiring through the stack prop as undefined.
-  - `rateLimiterEnabled`: (default `true`) Express HTTP IP rate limiter (`RATE_LIMITER_ENABLED`). Set `false` when per-IP limiting is handled upstream (e.g. ALB/WAF). Does **not** control CouchDB-backed auth attempt limits.
+  - `rateLimiterEnabled`: (default `true`) Express HTTP IP rate limiter (`RATE_LIMITER_ENABLED`). Set `false` when per-IP limiting is handled upstream (e.g. ALB/WAF). Does **not** control CouchDB-backed auth attempt limits or the export limiter.
   - `authAttemptLimiterEnabled`: (default `true`) Per-user email-code / verification-challenge attempt limits (`AUTH_ATTEMPT_LIMITER_ENABLED`). Keep `true` in production even when HTTP rate limiting is disabled upstream.
+  - `exportRateLimiterEnabled`: (default `true`) Dedicated limiter for notebook export mint/redeem (`EXPORT_RATE_LIMITER_ENABLED`). Independent of `rateLimiterEnabled` so ZIP/GDAL work stays capped when the global IP limiter is off.
+  - `exportRateLimiterWindowMs`: (default `600000`) Export-limiter window in milliseconds (`EXPORT_RATE_LIMITER_WINDOW_MS`).
+  - `exportRateLimiterPerWindow`: (default `20`) Export mint/redeem requests allowed per window (`EXPORT_RATE_LIMITER_PER_WINDOW`). Raise for bulk scripted dumps.
 
 To use a specific configuration when deploying or synthesizing your CDK stack:
 

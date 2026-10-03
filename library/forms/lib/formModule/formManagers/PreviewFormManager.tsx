@@ -1,7 +1,9 @@
 import {
+  buildConditionValues,
   CompiledUiSpecModel,
   compileUiSpecConditionals,
   currentlyVisibleMap,
+  RecordContext,
 } from '@faims3/data-model';
 import {useForm} from '@tanstack/react-form';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -31,6 +33,8 @@ export interface PreviewFormManagerProps extends ComponentProps<any> {
   mapConfig: () => MapConfig;
   /** Optional section id to focus in tabbed preview mode. */
   previewSectionId?: string;
+  /** The notebook's custom metadata, so _METADATA.<key> references work in preview */
+  metadataValues?: Record<string, string>;
 }
 
 /**
@@ -49,10 +53,22 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
     return spec as CompiledUiSpecModel;
   }, [props.uiSpec]);
 
+  // Fake record context plus real notebook metadata, so metadata references
+  // in conditions, templates and expressions behave in preview.
+  const previewContext: RecordContext = useMemo(
+    () => ({
+      createdBy: 'Preview Author',
+      createdTime: 1764136061,
+      metadataValues: props.metadataValues,
+    }),
+    [props.metadataValues]
+  );
+
   const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(
     currentlyVisibleMap({
-      values: formDataExtractor({
-        fullData: formValues,
+      values: buildConditionValues({
+        values: formDataExtractor({fullData: formValues}),
+        context: previewContext,
       }),
       uiSpec: uiSpec,
       viewsetId: props.formName,
@@ -74,6 +90,7 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
           uiSpec: props.uiSpec,
           formId: props.formName,
           runListeners: false,
+          context: previewContext,
         });
         // Then fire any updates to the templated fields
         onChangeTemplatedFields({
@@ -82,14 +99,16 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
           formId: props.formName,
           // Don't fire listeners again redundantly
           runListeners: false,
-          // Fake context
-          context: {createdBy: 'Preview Author', createdTime: 1764136061},
+          context: previewContext,
         });
 
         // Updating visibility
         setVisibleMap(
           currentlyVisibleMap({
-            values: formDataExtractor({fullData: form.state.values}),
+            values: buildConditionValues({
+              values: formDataExtractor({fullData: form.state.values}),
+              context: previewContext,
+            }),
             uiSpec: uiSpec,
             viewsetId: props.formName,
           })
@@ -98,16 +117,19 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
     },
   });
 
-  // Whenever the uiSpec or formName changes, recompute the visible fields
+  // Whenever the uiSpec, formName or metadata changes, recompute the visible fields
   useEffect(() => {
     setVisibleMap(
       currentlyVisibleMap({
-        values: formDataExtractor({fullData: form.state.values}),
+        values: buildConditionValues({
+          values: formDataExtractor({fullData: form.state.values}),
+          context: previewContext,
+        }),
         uiSpec: uiSpec,
         viewsetId: props.formName,
       })
     );
-  }, [props.uiSpec, props.formName]);
+  }, [props.uiSpec, props.formName, previewContext]);
 
   // Preview mode config (no backend integration)
   const config: PreviewFormConfig = {

@@ -15,11 +15,13 @@ import {createResourceInvite} from '../src/couchdb/invites';
 import {createNewLongLivedToken} from '../src/couchdb/longLivedTokens';
 import {createNewRefreshToken} from '../src/couchdb/refreshTokens';
 import {
+  DEFAULT_DOWNLOAD_GRANT_GRACE_MS,
   DEFAULT_LONG_LIVED_AUDIT_RETENTION_MS,
   DEFAULT_RATE_LIMIT_GRACE_MS,
   DEFAULT_REFRESH_GRACE_MS,
   emailCodeRetentionMs,
   runTtlCleanup,
+  shouldDeleteDownloadGrant,
   shouldDeleteEmailCode,
   shouldDeleteInvite,
   shouldDeleteLongLivedToken,
@@ -365,6 +367,64 @@ describe('TTL cleanup retention predicates', () => {
           now
         )
       ).toBe(false);
+    });
+  });
+
+  describe('shouldDeleteDownloadGrant', () => {
+    it('keeps unused unexpired grants', () => {
+      expect(
+        shouldDeleteDownloadGrant(
+          {
+            _id: `${AUTH_RECORD_ID_PREFIXES.downloadgrant}a`,
+            documentType: 'downloadgrant',
+            used: false,
+            expiryTimestampMs: now + HOUR_MS,
+          },
+          now
+        )
+      ).toBe(false);
+    });
+
+    it('keeps expired grants inside grace', () => {
+      expect(
+        shouldDeleteDownloadGrant(
+          {
+            _id: `${AUTH_RECORD_ID_PREFIXES.downloadgrant}a`,
+            documentType: 'downloadgrant',
+            used: false,
+            expiryTimestampMs: now - DEFAULT_DOWNLOAD_GRANT_GRACE_MS + HOUR_MS,
+          },
+          now
+        )
+      ).toBe(false);
+    });
+
+    it('deletes expired grants past grace', () => {
+      expect(
+        shouldDeleteDownloadGrant(
+          {
+            _id: `${AUTH_RECORD_ID_PREFIXES.downloadgrant}a`,
+            documentType: 'downloadgrant',
+            used: false,
+            expiryTimestampMs: now - DEFAULT_DOWNLOAD_GRANT_GRACE_MS - 1,
+          },
+          now
+        )
+      ).toBe(true);
+    });
+
+    it('deletes used grants after expiry plus grace', () => {
+      expect(
+        shouldDeleteDownloadGrant(
+          {
+            _id: `${AUTH_RECORD_ID_PREFIXES.downloadgrant}a`,
+            documentType: 'downloadgrant',
+            used: true,
+            expiryTimestampMs: now - DEFAULT_DOWNLOAD_GRANT_GRACE_MS - 1,
+          },
+          now
+        )
+      ).toBe(true);
     });
   });
 });

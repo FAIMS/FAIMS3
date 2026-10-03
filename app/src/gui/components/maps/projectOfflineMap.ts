@@ -3,27 +3,31 @@
  *
  * App-level orchestration for project-associated offline map downloads.
  *
- * Wraps {@link VectorTileStore} with a shared instance, stable `@project/:id`
+ * Wraps {@link VectorTileStore} with a shared instance, project-associated
  * tile-set names, download/cancel lifecycle, and plan-region reconciliation
  * used during activation and server metadata refresh.
  */
 
 import type {OfflineMapRegion} from '@faims3/data-model';
+import type {MapConfig} from '@faims3/forms';
 import {
+  VectorTileStore,
+  createOfflineMapId,
   deriveTileSetDownloadStatus,
   isOfflineMapDownloadCancelledError,
   offlineMapRegionToExtent3857,
   offlineMapRegionsEqual,
-  projectOfflineMapSetName,
   type TileSetDownloadStatus,
-  VectorTileStore,
 } from '@faims3/forms';
-import type {MapConfig} from '@faims3/forms';
 import {getMapConfig} from '../../../buildconfig';
 
 let sharedTileStore: VectorTileStore | undefined;
-/** In-flight download promises keyed by project id (for cancel coordination). */
-const activeProjectDownloads = new Map<string, Promise<void>>();
+/** In-flight project downloads keyed by project id for cancel coordination. */
+type ActiveProjectDownload = {
+  offlineMapId: string;
+  promise: Promise<void>;
+};
+const activeProjectDownloads = new Map<string, ActiveProjectDownload>();
 
 /** Lazily create the singleton tile store used for all project offline maps. */
 function getSharedTileStore(
@@ -65,7 +69,7 @@ export async function downloadProjectOfflineMap({
   region,
   config = getMapConfig(),
 }: {
-  /** Notebook id — used for tile-set naming and deactivation cleanup. */
+  /** Notebook id — associates the tile set with the project for lookup and cleanup. */
   projectId: string;
   /** Notebook display name — used in the tile set label in the download list UI. */
   projectName: string;
@@ -77,16 +81,29 @@ export async function downloadProjectOfflineMap({
   await tileStore.tileStore.initDB();
 
   const extent3857 = offlineMapRegionToExtent3857(region);
-  const setName = projectOfflineMapSetName(projectId);
 
-  await tileStore.createTileSet(extent3857, setName, undefined, undefined, {
-    projectId,
-    label: `${projectName} default offline map`,
-    replaceIfExists: true,
-    offlineMapRegion: region,
+  // map id is unique, so before creating the new one,
+  // remove any existing set belonging to current project
+  await tileStore.removeTileSetsForProject(projectId);
+
+  const offlineMapId = createOfflineMapId();
+
+  await tileStore.createTileSet(
+    extent3857,
+    offlineMapId,
+    undefined,
+    undefined,
+    {
+      projectId,
+      label: `${projectName} default offline map`,
+      offlineMapRegion: region,
+    }
+  );
+  const downloadPromise = tileStore.downloadTileSet(offlineMapId);
+  activeProjectDownloads.set(projectId, {
+    offlineMapId,
+    promise: downloadPromise,
   });
-  const downloadPromise = tileStore.downloadTileSet(setName);
-  activeProjectDownloads.set(projectId, downloadPromise);
   try {
     await downloadPromise;
     notifyOfflineMapDownloadStatusChanged(projectId);
@@ -101,13 +118,12 @@ export async function cancelProjectOfflineMapDownload(
 ): Promise<void> {
   const tileStore = getSharedTileStore();
   await tileStore.tileStore.initDB();
-  const setName = projectOfflineMapSetName(projectId);
 
   const pendingDownload = activeProjectDownloads.get(projectId);
   if (pendingDownload) {
-    tileStore.requestCancelDownloadTileSet(setName);
+    tileStore.requestCancelDownloadTileSet(pendingDownload.offlineMapId);
     try {
-      await pendingDownload;
+      await pendingDownload.promise;
     } catch (error) {
       if (!isOfflineMapDownloadCancelledError(error)) {
         throw error;
@@ -119,8 +135,8 @@ export async function cancelProjectOfflineMapDownload(
     return;
   }
 
-  const status = await getProjectOfflineMapStatus(projectId);
-  if (status.state !== 'not_downloaded') {
+  const tileSet = await tileStore.getTileSetForProject(projectId);
+  if (tileSet) {
     await removeProjectOfflineMaps(projectId);
   }
 }
@@ -135,7 +151,7 @@ export async function estimateProjectOfflineMapSize(
   return tileStore.estimateSizeForRegion(extent3857);
 }
 
-/** Download lifecycle for the `@project/:id` tile set on this device. */
+/** Download lifecycle for a project-associated offline map on this device. */
 export type ProjectOfflineMapStatus = TileSetDownloadStatus;
 
 /** Read download status for a project-associated offline map tile set. */
@@ -146,8 +162,7 @@ export async function getProjectOfflineMapStatus(
   const tileStore = getSharedTileStore(config);
   await tileStore.tileStore.initDB();
 
-  const setName = projectOfflineMapSetName(projectId);
-  const tileSet = await tileStore.tileStore.tileSetDB.get([setName]);
+  const tileSet = await tileStore.getTileSetForProject(projectId);
   return deriveTileSetDownloadStatus(tileSet);
 }
 
@@ -159,9 +174,23 @@ export async function getDownloadedOfflineMapRegion(
   const tileStore = getSharedTileStore(config);
   await tileStore.tileStore.initDB();
 
-  const setName = projectOfflineMapSetName(projectId);
-  const tileSet = await tileStore.tileStore.tileSetDB.get([setName]);
+  const tileSet = await tileStore.getTileSetForProject(projectId);
   return tileSet?.offlineMapRegion;
+}
+
+/**
+ * Read the internal offline map id for a completed or in-progress project download.
+ */
+export async function getDownloadedOfflineMapId(
+  projectId: string,
+  config: MapConfig = getMapConfig()
+): Promise<string | undefined> {
+  const tileStore = getSharedTileStore(config);
+  await tileStore.tileStore.initDB();
+
+  const tileSet = await tileStore.getTileSetForProject(projectId);
+  // setName is used as the internal offline map id.
+  return tileSet?.setName;
 }
 
 export {offlineMapRegionsEqual};

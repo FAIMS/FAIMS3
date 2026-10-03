@@ -17,17 +17,19 @@
  * Description:
  *   TODO
  */
+import {initialiseMaps} from '@faims3/forms';
 import PouchDB from 'pouchdb-browser';
+import pouchdbDebug from 'pouchdb-debug';
 import {config} from '../buildconfig';
-import {store} from '../context/store';
 import {
   compileSpecs,
   initialiseAllProjects,
   initialiseServers,
   markInitialised,
+  reassessSchemaCompatibility,
   rebuildDbs,
 } from '../context/slices/projectSlice';
-import pouchdbDebug from 'pouchdb-debug';
+import {store} from '../context/store';
 import {logError} from '../logging';
 PouchDB.plugin(pouchdbDebug);
 
@@ -93,6 +95,20 @@ const migrateOldDatabases = async () => {
   }
 };
 
+// Initialise the offline-map database without blocking app startup.
+// Returns true if the database was reset after a failed migration.
+async function initialiseOfflineMaps(): Promise<boolean> {
+  try {
+    const {databaseReset} = await initialiseMaps();
+    return databaseReset;
+  } catch (error) {
+    // Log the error and allow the rest of the app to continue initialising.
+    console.error('Could not initialise offline maps:', error);
+    logError('Could not initialise offline maps');
+    return false;
+  }
+}
+
 /**
  *
  * @returns creates all project PouchDB objects and metadata
@@ -105,10 +121,18 @@ export async function initialise() {
   // first migrate old databases if configured to do so
   if (config.migrateOldDatabases) await migrateOldDatabases();
 
+  // Initialise the offline-map IndexedDB and record whether it was reset.
+  const offlineMapsDBReset = await initialiseOfflineMaps();
+
   // Get current state/dispatch const state = store.getState();
 
   // Rebuild all of the databases (synchronously)
   await rebuildDbs(store.getState().projects);
+
+  // Persisted compatibility tiers were written by whichever app version last
+  // fetched each notebook; re-evaluate them against this build (offline-safe,
+  // no network) before anything renders or compiles.
+  store.dispatch(reassessSchemaCompatibility());
 
   // Compile all ui specs (synchronously)
   compileSpecs(store.getState().projects);
@@ -125,4 +149,8 @@ export async function initialise() {
 
   // TODO bring this back?
   // register_basic_automerge_resolver(events);
+
+  return {
+    offlineMapsDBReset,
+  };
 }

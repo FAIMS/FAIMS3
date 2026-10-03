@@ -8,6 +8,7 @@ import {
 import {FormFieldContextProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {BaseMuiTextField} from '../wrappers/BaseMuiTextField';
 
 /**
@@ -80,13 +81,15 @@ const TextField: React.FC<TextFieldProps & FormFieldContextProps> = ({
  * Adds minimum length constraint when field is required.
  */
 const textFieldValueSchema = (props: BaseFieldParameters) => {
-  const maxLength = z.string().max(INPUT_LIMITS.LONG_TEXT_MAX_LENGTH, {
-    message: `Must be at most ${INPUT_LIMITS.LONG_TEXT_MAX_LENGTH} characters`,
-  });
+  let schema = z
+    .string({error: 'Enter valid text'})
+    .max(INPUT_LIMITS.LONG_TEXT_MAX_LENGTH, {
+      message: `Must be at most ${INPUT_LIMITS.LONG_TEXT_MAX_LENGTH} characters`,
+    });
   if (props.required) {
-    return maxLength.min(1, {message: 'This field is required'});
+    schema = schema.min(1, {message: 'This field is required'});
   }
-  return maxLength;
+  return schemaWithAbsent('', schema);
 };
 
 /**
@@ -137,16 +140,17 @@ const EmailField: React.FC<TextFieldProps & FormFieldContextProps> = ({
  * Includes email format validation and optional required constraint.
  */
 const emailValueSchema = (props: BaseFieldParameters) => {
-  const boundedEmail = z
-    .string()
-    .max(INPUT_LIMITS.EMAIL_MAX_LENGTH, {message: 'Email address is too long'})
-    .email({message: 'Enter a valid email address'});
-  // If not required, allow empty string
-  if (!props.required) {
-    // Use a union to allow either valid email or empty string
-    return z.union([z.literal(''), boundedEmail]);
+  let schema = z
+    .string({error: 'Enter a valid email address'})
+    .max(INPUT_LIMITS.EMAIL_MAX_LENGTH, {message: 'Email address is too long'});
+  if (props.required) {
+    schema = schema.min(1, {message: 'This field is required'});
   }
-  return boundedEmail.min(1, {message: 'This field is required'});
+  const formatted = schema.refine(
+    value => value === '' || z.string().email().safeParse(value).success,
+    {message: 'Enter a valid email address'}
+  );
+  return schemaWithAbsent('', formatted);
 };
 
 /**

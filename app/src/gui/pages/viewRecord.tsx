@@ -15,7 +15,7 @@
  * - Supports revision viewing via ?revisionId parameter
  *
  * ROUTE:
- * /<notebook-plural>/:serverId/:projectId/:tab?/view-record/:recordId?tab=view|info|history|status&revisionId=:revisionId
+ * /<notebook-plural>/:serverId/:projectId/:planId?/view-record/:recordId?tab=view|info|history|status&revisionId=:revisionId
  */
 import {
   DatabaseInterface,
@@ -59,17 +59,19 @@ import {config, getMapConfig} from '../../buildconfig';
 import {
   getEditRecordRoute,
   getViewRecordRoute,
-  NOTEBOOK_FROM_RECORD_ROUTE,
   RecordRouteNotebook,
 } from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
+import {isNotebookDesignLocked} from '../../context/slices/helpers/notebookDefinition';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
+import {useNotebookRoute} from '../../context/notebookRoute';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
 import {tryLocalGetDataDb} from '../../utils/database';
 import {NOTEBOOK_LIST_ROUTE} from '../../utils/remoteProjectRemoval';
 import RecordDelete from '../components/notebook/delete';
+import {NotebookDesignLockedAlert} from '../components/notebook/NotebookSchemaCompatibility';
 import RecordMeta from '../components/record/meta';
 import {RecordStatus} from '../components/record/status';
 import UGCReport from '../components/record/UGCReport';
@@ -77,8 +79,8 @@ import BackButton from '../components/ui/BackButton';
 import {theme} from '../themes';
 
 /**
- * Tabs of the record view page, in its own `?tab=` query param rather than the
- * notebook's `:tab` path segment.
+ * Tabs of the record view page, in its own `?tab=` query param rather than in
+ * the context a notebook view's tab is held in.
  */
 const RECORD_TABS = {
   VIEW: 'view',
@@ -146,6 +148,7 @@ interface InfoTabContentProps {
   dataEngine: DataEngine;
   isDeleted: boolean;
   recordCreatedBy: string;
+  designLocked: boolean;
 }
 
 /**
@@ -159,6 +162,7 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
   hrid,
   isDeleted,
   recordCreatedBy,
+  designLocked,
 }) => {
   return (
     <Stack spacing={3}>
@@ -167,7 +171,7 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
         record_id={recordId}
         revision_id={revisionId}
       />
-      {!isDeleted && (
+      {!isDeleted && !designLocked && (
         <Box>
           <RecordDelete
             projectId={projectId}
@@ -220,7 +224,7 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
  * Props for the ViewTabContent component
  */
 interface ViewTabContentProps {
-  /** The notebook tab this page sits under, which its record links stay on. */
+  /** The notebook and plan this page sits under, which its record links stay on. */
   notebook: RecordRouteNotebook;
   recordId: RecordID;
   formData: NonNullable<
@@ -232,6 +236,10 @@ interface ViewTabContentProps {
   getAttachmentService: () => ReturnType<typeof createProjectAttachmentService>;
   onEditRecord: () => void;
   isDeleted: boolean;
+  /** False when the record may be viewed but not edited (deleted, or design locked). */
+  canEdit: boolean;
+  /** The notebook's custom metadata, referenced as _METADATA.<key> */
+  metadataValues?: Record<string, string>;
 }
 
 /**
@@ -245,8 +253,9 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
   impliedRelationships,
   getDataEngine,
   getAttachmentService,
-  isDeleted,
+  canEdit,
   recordId,
+  metadataValues,
 }) => {
   const nav = useNavigate();
 
@@ -254,7 +263,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
   // referencing them evaluate correctly. Until resolved, conditions see
   // missing values, matching previous behaviour.
   const {data: recordContext} = useQuery({
-    queryKey: ['recordContext', recordId, formData.formId],
+    queryKey: ['recordContext', recordId, formData.formId, metadataValues],
     queryFn: async (): Promise<RecordContext> => {
       const engine = getDataEngine();
       const parentValues = await resolveParentValues({
@@ -271,12 +280,13 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
         ...getRecordContextFromRecord({record: formData.context.record}),
         parentValues: parentValues ?? undefined,
         relatedValues,
+        metadataValues,
       };
     },
     networkMode: 'always',
   });
 
-  const nestedEditButton: React.FC<{recordId: string}> = isDeleted
+  const nestedEditButton: React.FC<{recordId: string}> = !canEdit
     ? () => null
     : props => (
         <Button
@@ -368,7 +378,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
       {
         // Edit button below progress bar
       }
-      {!isDeleted && (
+      {canEdit && (
         <Button
           variant="outlined"
           startIcon={<EditIcon />}
@@ -513,12 +523,10 @@ const HistoryTabContent: React.FC<{
  * `enabled: canLoadRecord`; a `useEffect` redirects when the project disappears.
  */
 export const ViewRecordPage: React.FC = () => {
-  const {serverId, projectId, tab, recordId} = useParams<{
-    serverId: string;
-    projectId: ProjectID;
-    tab?: string;
-    recordId: RecordID;
-  }>();
+  const {recordId} = useParams<{recordId: RecordID}>();
+  // The notebook this record sits in, and the way back out of it.
+  const {notebook, notebookRoute} = useNotebookRoute();
+  const {serverId, projectId} = notebook;
 
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
@@ -673,9 +681,10 @@ export const ViewRecordPage: React.FC = () => {
   const formLabel = uiSpec.viewsets[formData.formId]?.label ?? formData.formId;
 
   const isDeleted = Boolean(formData.context.revision.deleted);
-
-  // The tab the record was opened from, which its own links keep
-  const notebook: RecordRouteNotebook = {serverId, projectId, tab};
+  // Incompatible design: the record renders via the last good design but must
+  // not be edited against it.
+  const designLocked = isNotebookDesignLocked(project);
+  const canEdit = !isDeleted && !designLocked;
 
   return (
     <Stack spacing={2}>
@@ -683,7 +692,7 @@ export const ViewRecordPage: React.FC = () => {
       <Stack spacing={2}>
         <Stack direction="row" spacing={2} sx={{alignItems: 'center'}}>
           {/* Back to record link */}
-          <BackButton link={NOTEBOOK_FROM_RECORD_ROUTE} />
+          <BackButton link={notebookRoute} />
           <Typography variant="h3" color={theme.palette.text.primary}>
             Viewing: {formLabel}
           </Typography>
@@ -702,6 +711,11 @@ export const ViewRecordPage: React.FC = () => {
           This record has been deleted. You can still review its saved contents
           below, but it cannot be edited.
         </Alert>
+      )}
+      {designLocked && !isDeleted && (
+        <NotebookDesignLockedAlert
+          compatibility={project.schemaCompatibility}
+        />
       )}
 
       {/* Tab Navigation */}
@@ -730,6 +744,8 @@ export const ViewRecordPage: React.FC = () => {
             getDataEngine={getDataEngine}
             getAttachmentService={getAttachmentService}
             isDeleted={isDeleted}
+            canEdit={canEdit}
+            metadataValues={project?.uiDefinition.metadata.custom}
           />
         </TabPanel>
 
@@ -743,6 +759,7 @@ export const ViewRecordPage: React.FC = () => {
               revisionId={revisionId}
               isDeleted={isDeleted}
               recordCreatedBy={formData.context.record.createdBy}
+              designLocked={designLocked}
             />
           ) : (
             <CircularProgress />

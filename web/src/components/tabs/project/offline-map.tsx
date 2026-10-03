@@ -436,6 +436,7 @@ export default function ProjectOfflineMap({
             drawingActive={drawingActive}
             onDrawingActiveChange={setDrawingActive}
             drawingInstruction=""
+            mapComponentProps={{autoFlyToCurrentLocation: false}}
           />
         )}
 

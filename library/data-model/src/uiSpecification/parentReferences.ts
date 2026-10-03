@@ -22,9 +22,15 @@
 
 import {PARENT_REFERENCE_PREFIX} from './parentForms';
 import {splitRelatedReference} from './relatedForms';
+import {isMetadataRef} from './metadataReferences';
 
 /** Classification of a reference used in expressions and templates. */
-export type RefType = 'SYSTEM' | 'FIELD' | 'PARENT_FIELD' | 'RELATED_FIELD';
+export type RefType =
+  | 'SYSTEM'
+  | 'FIELD'
+  | 'PARENT_FIELD'
+  | 'RELATED_FIELD'
+  | 'METADATA';
 
 /** System variable: the record creator's name, injectable into templates. */
 export const CREATOR_NAME_ID = '_CREATOR_NAME';
@@ -61,15 +67,20 @@ export function isParentRef(ref: string): boolean {
 
 /** Whether a reference addresses a field on a linked record
  * (<Rel-Field-ID>.<Field-ID>). Field IDs cannot contain dots, so any dotted
- * reference that is not a parent reference is a related reference. */
+ * reference that is neither a parent nor a metadata reference is related. */
 export function isRelatedRef(ref: string): boolean {
-  return !isParentRef(ref) && splitRelatedReference(ref) !== null;
+  return (
+    !isParentRef(ref) &&
+    !isMetadataRef(ref) &&
+    splitRelatedReference(ref) !== null
+  );
 }
 
 /**
  * Classifies a reference: SYSTEM for injected system values, PARENT_FIELD for
- * parent-record references, RELATED_FIELD for linked-record references, FIELD
- * for anything else (a local field ID).
+ * parent-record references, METADATA for notebook metadata references,
+ * RELATED_FIELD for linked-record references, FIELD for anything else (a local
+ * field ID).
  */
 export function resolveRefType(ref: string): RefType {
   if (isParentRef(ref)) {
@@ -77,6 +88,9 @@ export function resolveRefType(ref: string): RefType {
   }
   if (SYSTEM_REFERENCE_IDS.has(ref)) {
     return 'SYSTEM';
+  }
+  if (isMetadataRef(ref)) {
+    return 'METADATA';
   }
   if (isRelatedRef(ref)) {
     return 'RELATED_FIELD';

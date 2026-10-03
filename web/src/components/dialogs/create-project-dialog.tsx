@@ -56,7 +56,10 @@ export const CreateProjectDialog = ({
           Create {config.notebookNameCapitalized}
         </Button>
       </DialogTrigger>
-      <DialogContent data-testid="web-projects-create-dialog">
+      <DialogContent
+        className="max-h-[90vh] overflow-y-auto"
+        data-testid="web-projects-create-dialog"
+      >
         <DialogHeader>
           <DialogTitle>
             Create {config.notebookNameCapitalized}

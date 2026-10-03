@@ -25,8 +25,8 @@ import {
   initialState as blankState,
 } from './state/initial';
 import metadataReducer from './state/metadata-reducer';
-import planReducer from './state/plan-reducer';
-import planTemplateReducer from './state/planTemplate-reducer';
+import plansReducer from './state/plans-reducer';
+import planTemplatesReducer from './state/planTemplates-reducer';
 import modifiedStatusReducer from './state/modifiedStatus-reducer';
 import modeReducer from './state/mode-reducer';
 import {uiSpecificationReducer} from './store/slices/uiSpec';
@@ -54,8 +54,8 @@ export function createDesignerStore(
       notebook: combineReducers<NotebookWithHistory>({
         metadata: metadataReducer,
         uiSpec: undoable(uiSpecificationReducer.reducer, uiSpecUndoConfig),
-        planTemplate: planTemplateReducer,
-        plan: planReducer,
+        planTemplates: planTemplatesReducer,
+        plans: plansReducer,
       }),
       modified: modifiedStatusReducer,
       mode: modeReducer,

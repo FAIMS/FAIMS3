@@ -13,8 +13,8 @@
 // limitations under the License.
 
 /**
- * @file Authoring dialog for a List of Records plan template: pick the target
- * form and the subset of its fields the record list pre-fills.
+ * @file Authoring dialog for a List of Records plan template: name it, then
+ * pick the target form and the subset of its fields the record list pre-fills.
  */
 
 import {useEffect, useMemo, useState} from 'react';
@@ -34,9 +34,12 @@ import {
   useTheme,
 } from '@mui/material';
 import {
+  authoredSchema,
+  isListPlanSupportedFieldType,
   LIST_OF_RECORDS_PLAN_TYPE,
   listPlanTemplateSchema,
 } from '@faims3/data-model';
+import {PlanFields, usePlanFields} from './PlanFields';
 import {
   designerCancelButtonSx,
   designerDialogActionsSx,
@@ -47,11 +50,15 @@ import {SimpleFieldWrapper} from '../Fields/SimpleFieldWrapper';
 import {FieldSearchAutocomplete} from '../field-selector';
 import type {PlanDialogProps} from '../../plans';
 
+// The same value every save, so it is built once rather than per save
+const authoredListPlanTemplateSchema = authoredSchema(listPlanTemplateSchema);
+
 /** Pick the form and pre-filled fields for a List of Records plan. */
 export const ListOfRecordsPlanDialog = ({
   open,
   uiSpec,
   initialTemplate,
+  takenLabels,
   onClose,
   onSave,
 }: PlanDialogProps) => {
@@ -60,6 +67,7 @@ export const ListOfRecordsPlanDialog = ({
 
   const viewSets = uiSpec.viewsets;
 
+  const planFields = usePlanFields({open, initialTemplate, takenLabels});
   const [formType, setFormType] = useState('');
   const [recordFields, setRecordFields] = useState<string[]>([]);
   const [alertMessage, setAlertMessage] = useState('');
@@ -71,6 +79,19 @@ export const ListOfRecordsPlanDialog = ({
       viewId => uiSpec.views[viewId]?.fields ?? []
     );
   }, [formType, uiSpec]);
+
+  // Fields the list cannot pre-fill with a simple value are not offered
+  const unsupportedFields = useMemo(
+    () =>
+      formFields.filter(
+        fieldName =>
+          !isListPlanSupportedFieldType(
+            uiSpec.fields[fieldName]?.['type-returned']
+          )
+      ),
+    [formFields, uiSpec]
+  );
+  const offerableCount = formFields.length - unsupportedFields.length;
 
   // Re-derive local state each time the dialog opens
   useEffect(() => {
@@ -92,8 +113,8 @@ export const ListOfRecordsPlanDialog = ({
   }, [open, initialTemplate, viewSets]);
 
   const fieldLabel = (fieldName: string): string => {
-    const label = uiSpec.fields[fieldName]?.['component-parameters']?.label;
-    return typeof label === 'string' && label ? label : fieldName;
+    const authored = uiSpec.fields[fieldName]?.['component-parameters']?.label;
+    return typeof authored === 'string' && authored ? authored : fieldName;
   };
 
   const addField = (fieldName: string) => {
@@ -114,8 +135,9 @@ export const ListOfRecordsPlanDialog = ({
   };
 
   const handleSave = () => {
-    const result = listPlanTemplateSchema.safeParse({
+    const result = authoredListPlanTemplateSchema.safeParse({
       planType: LIST_OF_RECORDS_PLAN_TYPE,
+      ...planFields.authored,
       formType,
       recordFields,
     });
@@ -141,41 +163,47 @@ export const ListOfRecordsPlanDialog = ({
       </DialogTitle>
       <DialogContent sx={{...designerDialogContentSx, pt: 4}}>
         <Box sx={{maxWidth: 740, width: '100%', mx: 'auto'}}>
-          <SimpleFieldWrapper
-            heading="Form"
-            helperText={
-              alertMessage ||
-              'Records of this form are created from the planned list. The list itself is supplied when a notebook is created from this template.'
-            }
-          >
-            <TextField
-              select
-              fullWidth
-              value={formType}
-              error={Boolean(alertMessage)}
-              onChange={event => handleFormChange(event.target.value)}
-              sx={{mt: 0.85}}
+          <PlanFields state={planFields} />
+
+          <Box sx={{mt: 3}}>
+            <SimpleFieldWrapper
+              heading="Form"
+              helperText={
+                alertMessage ||
+                'Records of this form are created from the planned list. The list itself is supplied when a notebook is created from this template.'
+              }
             >
-              {Object.entries(viewSets).map(([id, viewSet]) =>
-                viewSet ? (
-                  <MenuItem key={id} value={id}>
-                    {viewSet.label}
-                  </MenuItem>
-                ) : null
-              )}
-            </TextField>
-          </SimpleFieldWrapper>
+              <TextField
+                select
+                fullWidth
+                value={formType}
+                error={Boolean(alertMessage)}
+                onChange={event => handleFormChange(event.target.value)}
+                sx={{mt: 0.85}}
+              >
+                {Object.entries(viewSets).map(([id, viewSet]) =>
+                  viewSet ? (
+                    <MenuItem key={id} value={id}>
+                      {viewSet.label}
+                    </MenuItem>
+                  ) : null
+                )}
+              </TextField>
+            </SimpleFieldWrapper>
+          </Box>
 
           {formType && (
             <Box sx={{mt: 3}}>
               <SimpleFieldWrapper
                 heading="Pre-filled fields"
-                helperText="Fields of the form that each planned record supplies values for."
+                helperText="Fields of the form that each planned record supplies values for. Text, number and yes/no fields can be pre-filled."
               >
                 <Box sx={{mt: 0.85}}>
-                  {formFields.length === 0 ? (
+                  {offerableCount === 0 ? (
                     <Typography variant="body2" color="text.secondary">
-                      This form has no fields yet.
+                      {formFields.length === 0
+                        ? 'This form has no fields yet.'
+                        : 'This form has no fields the list can pre-fill.'}
                     </Typography>
                   ) : (
                     /* Picker reads the designer store, the same uiSpec the dialog is given */
@@ -185,7 +213,12 @@ export const ListOfRecordsPlanDialog = ({
                         if (fieldName) addField(fieldName);
                       }}
                       scope={{kind: 'viewset', viewsetId: formType}}
-                      filters={{excludeFieldIds: recordFields}}
+                      filters={{
+                        excludeFieldIds: [
+                          ...recordFields,
+                          ...unsupportedFields,
+                        ],
+                      }}
                       // Every field of the form stays reachable by browsing, not only the first page
                       limit={formFields.length}
                       label="Add field"
@@ -202,20 +235,24 @@ export const ListOfRecordsPlanDialog = ({
                     {recordFields.map(fieldName => {
                       // A field can be deleted from the form after the plan chose it
                       const onForm = formFields.includes(fieldName);
+                      const supported = !unsupportedFields.includes(fieldName);
                       const chip = (
                         <Chip
                           key={fieldName}
                           label={fieldLabel(fieldName)}
-                          color={onForm ? 'default' : 'warning'}
+                          color={onForm && supported ? 'default' : 'warning'}
                           onDelete={() => removeField(fieldName)}
                         />
                       );
-                      return onForm ? (
-                        chip
-                      ) : (
+                      if (onForm && supported) return chip;
+                      return (
                         <Tooltip
                           key={fieldName}
-                          title="This field is no longer on the form"
+                          title={
+                            onForm
+                              ? "This field's type cannot be pre-filled by the list"
+                              : 'This field is no longer on the form'
+                          }
                         >
                           <span>{chip}</span>
                         </Tooltip>
@@ -237,7 +274,11 @@ export const ListOfRecordsPlanDialog = ({
         <Button onClick={onClose} sx={designerCancelButtonSx}>
           Cancel
         </Button>
-        <Button variant="contained" disabled={!formType} onClick={handleSave}>
+        <Button
+          variant="contained"
+          disabled={!formType || !planFields.canSave}
+          onClick={handleSave}
+        >
           Save Plan
         </Button>
       </DialogActions>

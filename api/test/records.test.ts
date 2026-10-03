@@ -708,7 +708,7 @@ describe('Records CRUD API', () => {
   });
 
   describe('export time range', () => {
-    it('puts exclusive bounds on the download JWT and streams a tight CSV window', async () => {
+    it('puts exclusive bounds on the download grant and streams a tight CSV window', async () => {
       await withRecordsBackup(async projectId => {
         const listed = await requestAuthAndType(
           request(app)
@@ -741,24 +741,15 @@ describe('Records CRUD API', () => {
         ).expect(200);
 
         const downloadUrl = (issued.body as {url: string}).url;
-        const token = downloadUrl.split('/').pop()!;
-        const payload = JSON.parse(
-          Buffer.from(token.split('.')[1], 'base64url').toString()
-        ) as {
-          updatedAfter?: number;
-          updatedBefore?: number;
-          format: string;
-          viewID?: string;
-        };
-        expect(payload.updatedAfter).toBe(targetMs - 1);
-        expect(payload.updatedBefore).toBe(targetMs + 1);
-        expect(payload.format).toBe('csv');
-        expect(payload.viewID).toBe(BACKUP_FORM_IDS.FORM2);
+        const grantId = downloadUrl.split('/').pop()!;
+        expect(grantId).not.toContain('.');
 
         const urlPath = downloadUrl.startsWith('http')
           ? new URL(downloadUrl).pathname
           : downloadUrl;
-        const csv = await request(app).get(urlPath).expect(200);
+        const csv = await requestAuthAndType(request(app).get(urlPath)).expect(
+          200
+        );
         expect(csv.text).toContain(target.recordId);
         expect(csv.text).not.toContain(outsider!.recordId);
       });

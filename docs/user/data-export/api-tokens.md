@@ -24,3 +24,22 @@ The token can be revoked, but does grant full access to your account via the sys
 - immediately revoke the token using the management panel in the web interface
 - immediately update your password
 - immediately contact a system administrator to notify them of the suspected breach
+
+## Exporting data with an API token
+
+Export is two authenticated requests. Exchange your long-lived token for an access token first, then:
+
+1. `GET /api/notebooks/{projectId}/records/export?format=csv&viewID=FORM` with `Authorization: Bearer <access_token>`
+2. `GET` the `url` from the JSON response with the **same** `Authorization` header, and write the body to a file
+
+The download URL is only an identifier. It does not work without your Bearer token (or, in the Control Centre, a short-lived cookie the browser sets automatically). Do not share the URL as if it were a password.
+
+Mint and download share a dedicated export rate limit (default **20 requests per 10 minutes** per user or IP). A `429` means wait for the window to reset, or ask an administrator to raise `EXPORT_RATE_LIMITER_PER_WINDOW` for bulk dumps.
+
+```
+curl -sS -H "Authorization: Bearer $TOKEN" \
+  "$API/api/notebooks/$PROJECT/records/export?format=csv&viewID=FORM" \
+  | jq -r .url > /tmp/dl.url
+
+curl -sS -H "Authorization: Bearer $TOKEN" -o export.csv "$(cat /tmp/dl.url)"
+```

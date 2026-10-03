@@ -1,13 +1,15 @@
 /**
- * @file Round-trip tests for notebook adapters: planTemplate survives
+ * @file Round-trip tests for notebook adapters: planTemplates survive
  * hydration and export, and null serialises to an absent key.
  */
 import {describe, expect, it} from 'vitest';
 import type {Notebook} from '../state/initial';
 import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../state/initial';
+import {tryNormalizeApiUiSpecification} from './legacyNotebook';
 import {
   designerHistoryToNotebookDefinition,
   notebookDefinitionToDesignerHistory,
+  toDesignerNotebookWithHistory,
 } from './notebookAdapters';
 
 const createDefinition = (): Notebook => ({
@@ -29,45 +31,58 @@ const createDefinition = (): Notebook => ({
   },
 });
 
-const countedTemplate = {planType: 'Counted', formType: 'FORM1'};
+const countedTemplate = {
+  planId: 'Counted',
+  planType: 'Counted',
+  label: 'Field cells',
+  formType: 'FORM1',
+};
 
 const countedPlan = {
+  planId: 'Counted',
   planType: 'Counted' as const,
+  label: 'Field cells',
   formType: 'FORM1',
   numberRequired: 3,
   allowExtraRecords: false,
 };
 
-describe('notebook adapters planTemplate round-trip', () => {
-  it('hydrates a definition with planTemplate into designer state', () => {
-    const definition = {...createDefinition(), planTemplate: countedTemplate};
+describe('notebook adapters planTemplates round-trip', () => {
+  it('hydrates a definition with planTemplates into designer state', () => {
+    const definition = {
+      ...createDefinition(),
+      planTemplates: [countedTemplate],
+    };
     const history = notebookDefinitionToDesignerHistory(definition);
-    expect(history.planTemplate).toEqual(countedTemplate);
+    expect(history.planTemplates).toEqual([countedTemplate]);
   });
 
-  it('hydrates a definition without planTemplate as null', () => {
+  it('hydrates a definition without planTemplates as empty', () => {
     const history = notebookDefinitionToDesignerHistory(createDefinition());
-    expect(history.planTemplate).toBeNull();
+    expect(history.planTemplates).toEqual([]);
   });
 
-  it('exports planTemplate when present', () => {
+  it('exports planTemplates when present', () => {
     const history = notebookDefinitionToDesignerHistory({
       ...createDefinition(),
-      planTemplate: countedTemplate,
+      planTemplates: [countedTemplate],
     });
     const exported = designerHistoryToNotebookDefinition(history);
-    expect(exported.planTemplate).toEqual(countedTemplate);
+    expect(exported.planTemplates).toEqual([countedTemplate]);
   });
 
-  it('omits the planTemplate key entirely when null', () => {
+  it('omits the planTemplates key entirely when there are none', () => {
     const history = notebookDefinitionToDesignerHistory(createDefinition());
     const exported = designerHistoryToNotebookDefinition(history);
-    // Absent key, not "planTemplate": null, so saved JSON stays clean
-    expect('planTemplate' in exported).toBe(false);
+    // Absent key, not "planTemplates": [], so saved JSON stays clean
+    expect('planTemplates' in exported).toBe(false);
   });
 
   it('round-trips a full definition unchanged', () => {
-    const definition = {...createDefinition(), planTemplate: countedTemplate};
+    const definition = {
+      ...createDefinition(),
+      planTemplates: [countedTemplate],
+    };
     const exported = designerHistoryToNotebookDefinition(
       notebookDefinitionToDesignerHistory(definition)
     );
@@ -76,38 +91,61 @@ describe('notebook adapters planTemplate round-trip', () => {
 });
 
 describe('notebook adapters plan round-trip', () => {
-  it('hydrates a definition with a plan into designer state', () => {
+  it('hydrates a definition with plans into designer state', () => {
     const history = notebookDefinitionToDesignerHistory({
       ...createDefinition(),
-      plan: countedPlan,
+      plans: [countedPlan],
     });
-    expect(history.plan).toEqual(countedPlan);
+    expect(history.plans).toEqual([countedPlan]);
   });
 
-  it('hydrates a definition without a plan as null', () => {
+  it('hydrates a definition without plans as empty', () => {
     const history = notebookDefinitionToDesignerHistory(createDefinition());
-    expect(history.plan).toBeNull();
+    expect(history.plans).toEqual([]);
   });
 
-  it('keeps the plan through an edit and export', () => {
-    // Saving a design must not strip the plan the notebook was created with
+  it('keeps the plans through an edit and export', () => {
+    // Saving a design must not strip the plans the notebook was created with
     const history = notebookDefinitionToDesignerHistory({
       ...createDefinition(),
-      plan: countedPlan,
+      plans: [countedPlan],
     });
     const edited = {
       ...history,
       uiSpec: {...history.uiSpec, present: {...history.uiSpec.present}},
     };
-    expect(designerHistoryToNotebookDefinition(edited).plan).toEqual(
-      countedPlan
-    );
+    expect(designerHistoryToNotebookDefinition(edited).plans).toEqual([
+      countedPlan,
+    ]);
   });
 
-  it('omits the plan key entirely when null', () => {
+  it('omits the plans key entirely when there are none', () => {
     const exported = designerHistoryToNotebookDefinition(
       notebookDefinitionToDesignerHistory(createDefinition())
     );
-    expect('plan' in exported).toBe(false);
+    expect('plans' in exported).toBe(false);
+  });
+});
+
+describe('designer load is tolerant of a newer schemaVersion', () => {
+  it('opens a newer stamp that still matches the current Zod model', () => {
+    const newer = createDefinition();
+    newer.uiSpec.schemaVersion = '99.0.0';
+    const result = tryNormalizeApiUiSpecification(newer);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.uiSpec.schemaVersion).toBe('99.0.0');
+      expect(result.warning).toMatch(/99\.0\.0/);
+    }
+    expect(
+      toDesignerNotebookWithHistory({uiSpecification: newer})
+    ).toBeDefined();
+  });
+
+  it('does not throw when the design cannot be parsed', () => {
+    expect(tryNormalizeApiUiSpecification({not: 'a notebook'}).ok).toBe(false);
+    expect(
+      toDesignerNotebookWithHistory({uiSpecification: {not: 'a notebook'}})
+    ).toBeUndefined();
   });
 });

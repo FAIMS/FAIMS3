@@ -95,6 +95,7 @@ import {
   viewSetDeleted,
   viewSetRenamed,
 } from '../store/slices/uiSpec';
+import {selectCustomMetadata} from '../store/selectors';
 
 // Default MUI theme for the live form preview (no custom palette).
 const defaultTheme = createTheme();
@@ -166,6 +167,7 @@ export const FormEditor = ({
 
   const views = useAppSelector(state => state.notebook.uiSpec.present.views);
   const fields = useAppSelector(state => state.notebook.uiSpec.present.fields);
+  const custom = useAppSelector(selectCustomMetadata);
   const dispatch = useAppDispatch();
 
   const [activeStep, setActiveStep] = useState(0);
@@ -1261,6 +1263,7 @@ export const FormEditor = ({
                     queryClient={queryClient}
                     mapConfig={getMapConfig}
                     previewSectionId={sections[activeStep]}
+                    metadataValues={custom}
                   />
                 </ThemeProvider>
               </Box>

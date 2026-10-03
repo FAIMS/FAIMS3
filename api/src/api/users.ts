@@ -40,6 +40,7 @@ import {
   upgradeCouchUserToExpressUser,
 } from '../auth/keySigning/create';
 import {config} from '../buildconfig';
+import {revokeUnusedGrantsForUser} from '../couchdb/downloadGrants';
 import {
   filterPeopleUsersForList,
   getCouchUserFromEmailOrUserId,
@@ -213,6 +214,8 @@ api.post(
 
     target.disabled = true;
     await saveCouchUser(target);
+    // Outstanding unused export grants must not survive account disable
+    await revokeUnusedGrantsForUser(target.user_id);
     res.status(200).send();
   }
 );
@@ -342,8 +345,11 @@ api.delete(
         'You are not allowed to remove cluster admins.'
       );
 
+    // Outstanding unused export grants must not survive account deletion
+    await revokeUnusedGrantsForUser(userToRemove.user_id);
+
     try {
-      removeUser(userToRemove);
+      await removeUser(userToRemove);
     } catch (e) {
       throw new Exceptions.InternalSystemError('Error removing user');
     }

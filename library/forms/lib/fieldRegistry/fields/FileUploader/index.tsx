@@ -30,6 +30,7 @@ import {
 import React, {useCallback, useMemo, useRef, useState} from 'react';
 import Dropzone, {FileRejection} from 'react-dropzone';
 import {z} from 'zod';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
 import {BaseFieldParametersSchema} from '@faims3/data-model';
 import {FormFieldContextProps} from '../../../formModule/types';
@@ -843,23 +844,17 @@ export const fileUploaderFieldSpec: FieldInfo<FileUploaderFieldProps> = {
   component: FileUploader,
   fieldPropsSchema: fileUploaderPropsSchema,
   fieldDataSchemaFunction: (props: FileUploaderProps) => {
-    // check there is at least one entry
-    let base: z.ZodType<any> = z.array(z.string());
+    const maxFiles = props.maximum_number_of_files ?? 0;
+    let base = z.array(z.string(), {error: 'Add a valid file'});
     if (props.required) {
-      base = base.refine(val => (val ?? []).length > 0, {
-        message: 'At least one attachment is required',
+      base = base.min(1, {message: 'At least one attachment is required'});
+    }
+    if (maxFiles > 0) {
+      base = base.max(maxFiles, {
+        message: `Maximum ${maxFiles} file${maxFiles === 1 ? '' : 's'} allowed`,
       });
     }
-
-    if (props.maximum_number_of_files > 0) {
-      base = base.refine(val => val.length <= props.maximum_number_of_files, {
-        message: `Maximum ${props.maximum_number_of_files} file${
-          props.maximum_number_of_files === 1 ? '' : 's'
-        } allowed`,
-      });
-    }
-
-    return base;
+    return schemaWithAbsent([], base);
   },
   view: {
     component: FileUploaderRender,

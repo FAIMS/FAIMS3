@@ -11,6 +11,10 @@ FAIMS3 Developer Documentation
    markdown/CouchMigrations.md
    markdown/Mobile-Deployment-Setup-Guide.md
    markdown/PermissionModel.md
+   markdown/NotebookDefinition.md
+   markdown/Data-Collection-Plans.md
+   markdown/AppInitialisation.md
+   markdown/MetadataMigrationGuide.md
    markdown/NotebookMigrations.md
    markdown/CouchVersionUpgradeGuideAWS.md
    markdown/Knip.md

@@ -2,6 +2,7 @@ import {
   couchInitialiser,
   initDataDB,
   NotebookDefinition,
+  NotebookSchemaCompatibility,
   OfflineMapRegion,
   ProjectDataObject,
   ProjectListItem,
@@ -18,6 +19,10 @@ import {config} from '../../buildconfig';
 import {AppDispatch, RootState} from '../store';
 import {AuthState, isTokenValid, selectActiveServerId} from './authSlice';
 import {compiledSpecService} from './helpers/compiledSpecService';
+import {
+  isPlaceholderNotebookDefinition,
+  reassessPersistedNotebookDefinition,
+} from './helpers/notebookDefinition';
 import {
   buildCompiledSpecId,
   buildPouchIdentifier,
@@ -45,6 +50,7 @@ import {offlineMapRegionsEqual} from '@faims3/forms';
 import type {SyncMode} from '../../sync/syncMode';
 import {isReplicating, syncModeIncludesPull} from '../../sync/syncMode';
 import {clearPushOnlyBannerDismissal} from '../../utils/pushOnlyBannerDismissal';
+import {reportNotebookSchemaCompatibility} from '../../logging';
 import {
   cancelProjectQueries,
   handleRemoteProjectRemoved,
@@ -167,8 +173,19 @@ export interface ProjectInformation {
   description?: string;
   /** Source template when created from a template. */
   templateId?: string;
-  /** Inlined uiSpecification from GET /api/notebooks/:id (current notebook schema). */
+  /**
+   * Inlined uiSpecification from GET /api/notebooks/:id (current notebook
+   * schema). When {@link schemaCompatibility} is `incompatible` this is either
+   * the last good definition or an empty placeholder — check the tier before
+   * rendering a form.
+   */
   uiDefinition: NotebookDefinition;
+  /**
+   * How the server's notebook schema version relates to this build
+   * (`compatible` / `degraded` / `incompatible`) with a human readable reason.
+   * Absent on state persisted before compatibility tracking; treat as compatible.
+   */
+  schemaCompatibility?: NotebookSchemaCompatibility;
   /** Survey lifecycle. */
   status: ProjectStatus;
   /** Last update from the server, when known. */
@@ -301,6 +318,7 @@ function retainedProjectFields(project: Project) {
   return {
     projectId: project.projectId,
     uiDefinition: project.uiDefinition,
+    schemaCompatibility: project.schemaCompatibility,
     uiSpecificationId: project.uiSpecificationId,
     description: project.description,
     templateId: project.templateId,
@@ -454,8 +472,8 @@ const projectsSlice = createSlice({
       }
 
       const compiledSpecId = buildCompiledSpecId({
-        projectId: payload.projectId,
-        serverId: server.serverId,
+        id: {projectId: payload.projectId, serverId: server.serverId},
+        uiSpec: payload.uiDefinition.uiSpec,
       });
       compiledSpecService.compileAndRegisterSpec(
         compiledSpecId,
@@ -479,6 +497,7 @@ const projectsSlice = createSlice({
         templateId: payload.templateId,
         updatedAt: payload.updatedAt,
         uiDefinition: payload.uiDefinition,
+        schemaCompatibility: payload.schemaCompatibility,
 
         uiSpecificationId: compiledSpecId,
 
@@ -637,18 +656,26 @@ const projectsSlice = createSlice({
         );
       }
 
+      const existingProject = server.projects[payload.projectId];
+
       const compiledSpecId = buildCompiledSpecId({
-        projectId: payload.projectId,
-        serverId: server.serverId,
+        id: {projectId: payload.projectId, serverId: server.serverId},
+        uiSpec: payload.uiDefinition.uiSpec,
       });
+      // Spec changed: drop the old compilation so entries don't accumulate.
+      // Covers legacy non-hashed IDs from persisted state too.
+      if (
+        existingProject.uiSpecificationId &&
+        existingProject.uiSpecificationId !== compiledSpecId
+      ) {
+        compiledSpecService.removeSpec(existingProject.uiSpecificationId);
+      }
       compiledSpecService.compileAndRegisterSpec(
         compiledSpecId,
         payload.uiDefinition.uiSpec
       );
 
       server.couchDbUrl = payload.couchDbUrl;
-
-      const existingProject = server.projects[payload.projectId];
 
       // Now we can update it
       server.projects[payload.projectId] = {
@@ -661,6 +688,7 @@ const projectsSlice = createSlice({
         templateId: payload.templateId,
         updatedAt: payload.updatedAt,
         uiDefinition: payload.uiDefinition,
+        schemaCompatibility: payload.schemaCompatibility,
         uiSpecificationId: compiledSpecId,
         status: payload.status,
         recordCount: mergeRecordCount(
@@ -671,6 +699,42 @@ const projectsSlice = createSlice({
         // treat a missing payload field the same as explicit undefined.
         offlineMapRegion: payload.offlineMapRegion,
       };
+    },
+
+    /**
+     * Re-evaluate every persisted project's `schemaCompatibility` against this
+     * build's `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`.
+     *
+     * The stored tier was computed by whichever app version last fetched the
+     * notebook; after an upgrade or downgrade (especially offline) it may be
+     * stale. Run on startup before `compileSpecs`. See
+     * {@link reassessPersistedNotebookDefinition} for the rules.
+     */
+    reassessSchemaCompatibility: state => {
+      for (const server of Object.values(state.servers)) {
+        for (const project of Object.values(server.projects)) {
+          const next = reassessPersistedNotebookDefinition(project);
+          if (!next.changed) continue;
+          project.schemaCompatibility = next.schemaCompatibility;
+          if (next.uiDefinition !== project.uiDefinition) {
+            project.uiDefinition = next.uiDefinition;
+            project.uiSpecificationId = buildCompiledSpecId({
+              id: {projectId: project.projectId, serverId: server.serverId},
+              uiSpec: next.uiDefinition.uiSpec,
+            });
+          }
+          if (next.schemaCompatibility.tier !== 'compatible') {
+            reportNotebookSchemaCompatibility({
+              compatibility: next.schemaCompatibility,
+              projectId: project.projectId,
+              serverId: server.serverId,
+              serverVersion: server.serverVersion,
+              notebookName: project.name,
+              source: 'persisted-reassess',
+            });
+          }
+        }
+      }
     },
 
     /**
@@ -1895,7 +1959,20 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           serverId,
         });
 
+        if (meta.schemaCompatibility) {
+          reportNotebookSchemaCompatibility({
+            compatibility: meta.schemaCompatibility,
+            projectId,
+            serverId,
+            serverVersion: server.serverVersion,
+            notebookName: meta.name,
+            source: 'app-ingest',
+          });
+        }
+
         if (!existingProject) {
+          // An ingest failure still lists the notebook: the placeholder
+          // definition and the `incompatible` tier drive the skeleton UI.
           actions.push(
             addProject({
               name: meta.name,
@@ -1903,6 +1980,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
               templateId: meta.templateId,
               updatedAt: meta.updatedAt,
               uiDefinition: meta.uiDefinition,
+              schemaCompatibility: meta.schemaCompatibility,
               projectId,
               serverId,
               couchDbUrl: details.dataDb.base_url!,
@@ -1911,6 +1989,22 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             })
           );
         } else {
+          // When the server's design cannot be interpreted, keep any real
+          // local form graph (so existing records stay readable) and surface
+          // the new compatibility state instead of replacing it with the
+          // placeholder. Key off the stored graph, not the stored tier:
+          // after the first incompatible fetch the tier is already
+          // `incompatible`, and a later refresh / restart would otherwise
+          // wipe the last-good design.
+          const incomingIncompatible =
+            meta.schemaCompatibility?.tier === 'incompatible';
+          const existingHasUsableGraph = !isPlaceholderNotebookDefinition(
+            existingProject.uiDefinition
+          );
+          const nextUiDefinition =
+            incomingIncompatible && existingHasUsableGraph
+              ? existingProject.uiDefinition
+              : meta.uiDefinition;
           const nextOfflineMapRegion = meta.offlineMapRegion;
           if (
             config.offlineMaps &&
@@ -1934,7 +2028,8 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
               description: meta.description ?? existingProject.description,
               templateId: meta.templateId ?? existingProject.templateId,
               updatedAt: meta.updatedAt ?? existingProject.updatedAt,
-              uiDefinition: meta.uiDefinition,
+              uiDefinition: nextUiDefinition,
+              schemaCompatibility: meta.schemaCompatibility,
               projectId,
               serverId,
               couchDbUrl: details.dataDb.base_url!,
@@ -2404,6 +2499,7 @@ export const {
   updateServerDetails,
   markInitialised,
   deactivateProject,
+  reassessSchemaCompatibility,
   setPendingOfflineMapDownloadPrompt,
   clearPendingOfflineMapDownloadPrompt,
 } = projectsSlice.actions;

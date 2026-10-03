@@ -1,4 +1,8 @@
-import {GetNotebookResponse, ProjectStatus} from '@faims3/data-model';
+import {
+  GetNotebookResponse,
+  NotebookUiSpec,
+  ProjectStatus,
+} from '@faims3/data-model';
 import {projectInformationFromGetNotebook} from './notebookDefinition';
 import PouchDB from 'pouchdb-browser';
 import {config} from '../../../buildconfig';
@@ -46,12 +50,52 @@ export const buildSyncId = ({
 };
 
 /**
- * Builds an identifier for the compiled spec service
- * @param id A project identity which includes the server + project
- * @returns A suitable identifier which uniquely identifies a compiled spec
+ * Stable stringify: sorts object keys so logically identical specs
+ * serialise identically regardless of key order.
  */
-export const buildCompiledSpecId = (id: ProjectIdentity): string => {
-  return `${id.serverId}-${id.projectId}`;
+const stableStringify = (value: unknown): string => {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(',')}]`;
+  }
+  return `{${Object.keys(value as Record<string, unknown>)
+    .sort()
+    .map(
+      k =>
+        `${JSON.stringify(k)}:${stableStringify((value as Record<string, unknown>)[k])}`
+    )
+    .join(',')}}`;
+};
+
+/** FNV-1a 32-bit hash, hex encoded. Not cryptographic - identity only. */
+const fnv1a = (input: string): string => {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, '0');
+};
+
+/**
+ * Builds an identifier for the compiled spec service. Includes a content hash
+ * of the uiSpec so that when a refresh delivers a changed spec the ID changes,
+ * and every consumer selecting uiSpecificationId re-renders and looks up the
+ * new compilation. Identical specs produce identical IDs, so a no-op refresh
+ * triggers nothing.
+ * @param id A project identity which includes the server + project
+ * @param uiSpec The (uncompiled) uiSpec the ID identifies
+ */
+export const buildCompiledSpecId = ({
+  id,
+  uiSpec,
+}: {
+  id: ProjectIdentity;
+  uiSpec: NotebookUiSpec;
+}): string => {
+  return `${id.serverId}-${id.projectId}-${fnv1a(stableStringify(uiSpec))}`;
 };
 
 /**

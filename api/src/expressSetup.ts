@@ -37,6 +37,7 @@ import {addAuthPages} from './auth/authPages';
 import {addAuthRoutes} from './auth/authRoutes';
 import {registerAuthProviders} from './auth/strategies/applyStrategies';
 import {config} from './buildconfig';
+import {isCorsOriginAllowed} from './corsAllowlist';
 import {
   databaseValidityReport,
   initialiseDbAndKeys,
@@ -71,6 +72,7 @@ import {api as tombstonesApi} from './api/tombstones';
 import {api as usersApi} from './api/users';
 import {api as utilityApi} from './api/utilities';
 import {api as emailVerifyApi} from './api/verificationChallenges';
+import {shouldReportErrorToBugsnag} from './logging';
 import patch from './utils/patchExpressAsync';
 
 // This must occur before express app is used
@@ -89,6 +91,9 @@ if (bugsnagEnabled) {
     apiKey: config.bugsnagApiKey!,
     plugins: [BugsnagPluginExpress],
     appVersion: config.apiVersion,
+    // Express reports every error passed to next(err). Drop expected 401s and
+    // intentional tombstone 404s; keep 429s and other failures.
+    onError: event => shouldReportErrorToBugsnag(event.originalError),
   });
   console.log('Bugsnag enabled');
 } else {
@@ -131,6 +136,14 @@ if (!IS_TEST && config.rateLimiterEnabled) {
       'Not enabling rate limiting due to it being explicitly disabled.'
     );
   }
+}
+
+if (!IS_TEST && config.exportRateLimiterEnabled) {
+  console.log(
+    `Activating export rate limiter (${config.exportRateLimiterPerWindow} req / ${config.exportRateLimiterWindowMs} ms)`
+  );
+} else if (!IS_TEST) {
+  console.log('Not enabling export rate limiter (explicitly disabled).');
 }
 
 app.use(morgan('combined'));
@@ -186,7 +199,16 @@ app.use(
   express.urlencoded({extended: true, limit: config.urlencodedBodyLimit})
 );
 app.use(express.json({limit: config.jsonBodyLimit}));
-app.use(cors());
+// Restrict browser CORS to the Conductor / Control Centre / app allowlist and
+// allow credentials so the export download-grant cookie can be set.
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      callback(null, isCorsOriginAllowed(origin));
+    },
+    credentials: true,
+  })
+);
 
 app.use(passport.initialize());
 

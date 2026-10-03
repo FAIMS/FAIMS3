@@ -1,6 +1,5 @@
 import {
   AvpUpdateMode,
-  FormRelationship,
   getFieldLabel,
   getFormLabel,
   getViewsetForField,
@@ -9,11 +8,9 @@ import {
 import {useQuery, UseQueryResult} from '@tanstack/react-query';
 import {useMemo} from 'react';
 import {
-  RelatedFieldValue,
   relatedFieldValueSchema,
   relatedRecordPropsSchema,
 } from '../../../fieldRegistry/fields/RelatedRecord/types';
-import {relationTypeToPair} from '../../../fieldRegistry/fields/RelatedRecord/utils';
 import {getImpliedNavigationRelationships} from '../../utils';
 import {FormNavigationContext, FullFormConfig} from '../types';
 import {
@@ -289,46 +286,19 @@ export function useNavigationDataPreparation({
           return;
         }
 
-        // Build the relationship for the new child
-        const relationType =
-          head.relationType === 'parent'
-            ? 'faims-core::Child'
-            : 'faims-core::Linked';
-
-        const relation = {
-          fieldId: head.fieldId,
-          recordId: head.recordId,
-          relationTypeVocabPair: relationTypeToPair(relationType),
-        };
-
-        let relationship: FormRelationship;
-        if (head.relationType === 'parent') {
-          relationship = {parent: [relation]};
-        } else {
-          relationship = {linked: [relation]};
-        }
-
-        // Create the new sibling record
-        const res = await dataEngine.form.createRecord({
+        // The engine derives the related form, the relation and its vocab
+        // pair from the field, writes the new row's own edge, and hands back
+        // what the parent's field must hold.
+        const res = await dataEngine.form.createRelatedRecord({
+          parentRecordId: head.recordId,
+          parentFieldId: head.fieldId,
           createdBy: config.user,
-          formId: formId,
-          relationship,
+          parentFieldValue: relevantFieldValue,
         });
 
-        // Update parent's field value to include new child
-        const normalizedRelationships = !relevantFieldValue
-          ? []
-          : Array.isArray(relevantFieldValue)
-            ? relevantFieldValue
-            : [relevantFieldValue];
-
-        parentFormData.data[head.fieldId].data = [
-          ...normalizedRelationships,
-          {
-            record_id: res.record._id,
-            relation_type_vocabPair: relationTypeToPair(relationType),
-          },
-        ] satisfies RelatedFieldValue;
+        // The AVP blob, not the field's stricter form value: a link already
+        // stored with the legacy empty vocab pair comes back through here.
+        parentFormData.data[head.fieldId].data = res.linked;
 
         // Update parent revision
         await dataEngine.form.updateRevision({
