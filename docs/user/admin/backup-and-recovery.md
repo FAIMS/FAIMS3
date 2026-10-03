@@ -59,10 +59,10 @@ retention is stated in the agreement covering it.
 
 In summary:
 
-| | Can be restored | Gone by |
-| --- | --- | --- |
-| Your workspace after a contract ends | 30 days, by export | 30 days |
-| Backups | Daily for 7 days, weekly for 4 weeks, monthly for 12 months | 12 months after deletion |
+|                                      | Can be restored                                             | Gone by                  |
+| ------------------------------------ | ----------------------------------------------------------- | ------------------------ |
+| Your workspace after a contract ends | 30 days, by export                                          | 30 days                  |
+| Backups                              | Daily for 7 days, weekly for 4 weeks, monthly for 12 months | 12 months after deletion |
 
 ## How recovery works
 
