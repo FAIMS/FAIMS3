@@ -148,7 +148,10 @@ jobs:
           encodedString: ${{ env.KEYSTORE_FILE }}
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          log-accepted-android-sdk-licenses: false
+          packages: 'platform-tools'
 
       - name: Building webapp
         shell: bash
