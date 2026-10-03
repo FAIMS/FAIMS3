@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import PouchDB from 'pouchdb';
 import PouchDBMemoryAdapter from 'pouchdb-adapter-memory';
 import {DatabaseInterface, Resource, Role} from '../src';
@@ -25,6 +26,7 @@ import {
   ProjectV1Fields,
   ProjectV2Fields,
   ProjectV3Fields,
+  ProjectV4Fields,
   RefreshRecordV1ExistingDocument,
   RefreshRecordV2ExistingDocument,
   RefreshRecordV3ExistingDocument,
@@ -42,6 +44,10 @@ import {
   TemplateV4Fields,
   TemplateV5Fields,
 } from '../src/data_storage/templatesDB/types';
+import {
+  projectsV4toV5Migration,
+  templatesV5toV6Migration,
+} from '../src/data_storage/migrations/migrations';
 import {areDocsEqual} from './utils';
 import type {LegacyNotebookWire as NotebookDefinitionV1} from '../src/data_storage/migrations/notebookMigrations/steps/legacyToV1';
 import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../src/uiSpecification/normalize';
@@ -2421,6 +2427,113 @@ describe('Migration Specific Tests', () => {
       }
 
       await dataDb.destroy();
+    });
+
+    it('projectsV4toV5Migration writes uiSpecProperties from the stored definition', async () => {
+      const uiSpecification = {
+        uiSpec: {
+          fields: {title: {label: 'Title'}},
+          views: {},
+          viewsets: {},
+          visible_types: ['f1'],
+          settings: {showQrCodeButton: false},
+          schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+        },
+        metadata: {
+          information: {
+            notebookVersion: '1.0',
+            purposeMarkdown: 'Purpose',
+            projectLeadLabel: 'Lead',
+            leadInstitution: 'Inst',
+          },
+        },
+      };
+      const inputDoc = {
+        _id: 'proj-v4',
+        _rev: '1-x',
+        name: 'Survey',
+        description: 'desc',
+        createdBy: 'admin',
+        createdAt: '2020-01-01T00:00:00.000Z',
+        updatedAt: '2020-01-01T00:00:00.000Z',
+        status: ProjectStatus.OPEN,
+        dataDb: {db_name: 'data-proj-v4'},
+        uiSpecification,
+      } as unknown as PouchDB.Core.ExistingDocument<ProjectV4Fields>;
+
+      const result = await projectsV4toV5Migration(inputDoc);
+      expect(result.action).toBe('update');
+      if (result.action !== 'update') return;
+      expect(result.updatedRecord.uiSpecification).toEqual(uiSpecification);
+      expect(result.updatedRecord.uiSpecProperties.schemaVersion).toBe(
+        CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+      );
+      expect(result.updatedRecord.uiSpecProperties.hash).toHaveLength(64);
+    });
+
+    it('projectsV4toV5Migration throws when uiSpecification is missing', async () => {
+      await expect(
+        projectsV4toV5Migration({
+          _id: 'proj-no-spec',
+          _rev: '1-x',
+          name: 'Survey',
+          status: ProjectStatus.OPEN,
+          dataDb: {db_name: 'data-x'},
+        })
+      ).rejects.toThrow(/has no uiSpecification/);
+    });
+
+    it('templatesV5toV6Migration writes uiSpecProperties from the stored definition', async () => {
+      const uiSpecification = {
+        uiSpec: {
+          fields: {title: {label: 'Title'}},
+          views: {},
+          viewsets: {},
+          visible_types: ['f1'],
+          settings: {showQrCodeButton: false},
+          schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+        },
+        metadata: {
+          information: {
+            notebookVersion: '1.0',
+            purposeMarkdown: 'Purpose',
+            projectLeadLabel: 'Lead',
+            leadInstitution: 'Inst',
+          },
+        },
+      };
+      const inputDoc = {
+        _id: 'tpl-v5',
+        _rev: '1-x',
+        name: 'Template',
+        description: 'desc',
+        version: 1,
+        createdBy: 'admin',
+        createdAt: '2020-01-01T00:00:00.000Z',
+        updatedAt: '2020-01-01T00:00:00.000Z',
+        archived: false,
+        isPublic: false,
+        uiSpecification,
+      } as unknown as PouchDB.Core.ExistingDocument<TemplateV5Fields>;
+
+      const result = await templatesV5toV6Migration(inputDoc);
+      expect(result.action).toBe('update');
+      if (result.action !== 'update') return;
+      expect(result.updatedRecord.uiSpecification).toEqual(uiSpecification);
+      expect(result.updatedRecord.uiSpecProperties.schemaVersion).toBe(
+        CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+      );
+      expect(result.updatedRecord.uiSpecProperties.hash).toHaveLength(64);
+    });
+
+    it('templatesV5toV6Migration throws when uiSpecification is missing', async () => {
+      await expect(
+        templatesV5toV6Migration({
+          _id: 'tpl-no-spec',
+          _rev: '1-x',
+          name: 'Template',
+        })
+      ).rejects.toThrow(/has no uiSpecification/);
     });
   });
 });

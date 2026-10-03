@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import MicIcon from '@mui/icons-material/Mic';
 import MicNoneIcon from '@mui/icons-material/MicNone';

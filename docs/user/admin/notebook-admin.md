@@ -8,6 +8,7 @@ From the `Actions` tab of the {{Notebook}} [{{dashboard}}](../admin/web.md), you
 4. Replace the JSON file for the {{Notebook}}
 5. Create a Template from this {{Notebook}}
 6. Check the {{Notebook}} status
+7. Turn Quick share on or off
 
 ```{screenshot} dashboard/dashboard-actions.png
 :alt: {{Notebook}} {{dashboard}} showing the Actions tab
@@ -60,3 +61,9 @@ The status of your {{Notebook}} appears at the bottom of the `Actions` tab of th
 :align: right
 :width: 100%
 ```
+
+## Quick share
+
+**Quick share** lets someone who already has this {{notebook}} on their device generate a temporary QR code from the app. The code lasts one hour and grants the access level they choose.
+
+The switch is on when Quick share is allowed. Turn it off to hide **Share** in the app and refuse new codes. A code that already exists keeps working until it expires, or until you remove it from the **Invites** tab.

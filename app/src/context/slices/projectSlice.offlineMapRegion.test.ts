@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   ProjectStatus,
@@ -77,6 +78,10 @@ function buildActivatedProject(overrides: Partial<Project> = {}): Project {
     status: ProjectStatus.OPEN,
     isActivated: true,
     uiSpecificationId,
+    uiSpecProperties: {
+      schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+      hash: 'a'.repeat(64),
+    },
     uiDefinition: emptyUiDefinition,
     offlineMapRegion: sampleRegion,
     database: {
@@ -108,16 +113,23 @@ function stateWithProject(project: Project): ProjectsState {
         shortCodePrefix: 'T',
         description: '',
         couchDbUrl: 'https://couch.example',
-        projects: {[projectId]: project},
+        listed: {},
+        activated: {
+          [projectId]: project as Extract<Project, {isActivated: true}>,
+        },
       },
     },
   };
 }
 
+function projectAt(state: ProjectsState) {
+  return state.servers[serverId]!.activated[projectId]!;
+}
+
 describe('projectSlice offlineMapRegion retention', () => {
   it('updateDatabaseAuthSuccess retains offlineMapRegion', () => {
     const before = stateWithProject(buildActivatedProject());
-    const project = before.servers[serverId]!.projects[projectId]!;
+    const project = projectAt(before);
 
     const after = projectsReducer(
       before,
@@ -137,13 +149,12 @@ describe('projectSlice offlineMapRegion retention', () => {
       })
     );
 
-    expect(
-      after.servers[serverId]!.projects[projectId]!.offlineMapRegion
-    ).toEqual(sampleRegion);
+    expect(projectAt(after).offlineMapRegion).toEqual(sampleRegion);
   });
 
   it('updateProjectDetails clears offlineMapRegion when payload omits it (200 OK sync)', () => {
     const before = stateWithProject(buildActivatedProject());
+    const existing = projectAt(before);
 
     const after = projectsReducer(
       before,
@@ -154,18 +165,17 @@ describe('projectSlice offlineMapRegion retention', () => {
         description: '',
         status: ProjectStatus.OPEN,
         uiDefinition: emptyUiDefinition,
+        uiSpecProperties: existing.uiSpecProperties,
         couchDbUrl: 'https://couch.example',
       })
     );
 
-    expect(
-      after.servers[serverId]!.projects[projectId]!.offlineMapRegion
-    ).toBeUndefined();
+    expect(projectAt(after).offlineMapRegion).toBeUndefined();
   });
 
   it('updateProjectDetails retains offlineMapRegion on partial non-metadata updates', () => {
     const before = stateWithProject(buildActivatedProject());
-    const existingProject = before.servers[serverId]!.projects[projectId]!;
+    const existingProject = projectAt(before);
 
     const after = projectsReducer(
       before,
@@ -178,13 +188,12 @@ describe('projectSlice offlineMapRegion retention', () => {
       })
     );
 
-    expect(
-      after.servers[serverId]!.projects[projectId]!.offlineMapRegion
-    ).toEqual(sampleRegion);
+    expect(projectAt(after).offlineMapRegion).toEqual(sampleRegion);
   });
 
   it('updateProjectDetails clears offlineMapRegion when payload explicitly sets undefined', () => {
     const before = stateWithProject(buildActivatedProject());
+    const existing = projectAt(before);
 
     const after = projectsReducer(
       before,
@@ -195,14 +204,13 @@ describe('projectSlice offlineMapRegion retention', () => {
         description: '',
         status: ProjectStatus.OPEN,
         uiDefinition: emptyUiDefinition,
+        uiSpecProperties: existing.uiSpecProperties,
         couchDbUrl: 'https://couch.example',
         offlineMapRegion: undefined,
       })
     );
 
-    expect(
-      after.servers[serverId]!.projects[projectId]!.offlineMapRegion
-    ).toBeUndefined();
+    expect(projectAt(after).offlineMapRegion).toBeUndefined();
   });
 });
 

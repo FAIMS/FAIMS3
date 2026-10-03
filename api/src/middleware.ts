@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: src/middleware.ts
  * Description:
  *   This module exports the configuration of the build, including things like
@@ -21,6 +9,7 @@
 
 import {Action, isAuthorized} from '@faims3/data-model';
 import Express from 'express';
+import {decodeJwt} from 'jose';
 import {validateToken} from './auth/keySigning/read';
 import * as Exceptions from './exceptions';
 import {logImpersonatedRequest} from './logging';
@@ -72,6 +61,16 @@ export function extractBearerToken(req: Express.Request): string | undefined {
   return undefined;
 }
 
+/**
+ * `exp` (unix seconds) of a bearer token. Only call this after
+ * {@link validateToken} has accepted the same string: `decodeJwt` does not
+ * check the signature.
+ */
+function verifiedAccessTokenExpiresAt(token: string): number | undefined {
+  const exp = decodeJwt(token).exp;
+  return typeof exp === 'number' && Number.isFinite(exp) ? exp : undefined;
+}
+
 /*
  * Similar but for use in the API, just return an unuthorised repsonse
  * should check for an Authentication header...see passport-http-bearer
@@ -97,6 +96,7 @@ export async function requireAuthenticationAPI(
 
   // insert user into the request
   req.user = user;
+  req.accessTokenExpiresAt = verifiedAccessTokenExpiresAt(token);
   logImpersonatedRequest(req);
   next();
 }
@@ -223,6 +223,7 @@ export async function optionalAuthenticationJWT(
 
     // insert user into the request
     req.user = user;
+    req.accessTokenExpiresAt = verifiedAccessTokenExpiresAt(token);
     logImpersonatedRequest(req);
     next();
   }

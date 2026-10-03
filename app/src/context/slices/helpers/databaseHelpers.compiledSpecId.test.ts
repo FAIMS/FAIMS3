@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {buildCompiledSpecId} from './databaseHelpers';
 
 // Minimal spec-shaped objects; the builder hashes whatever it's given.

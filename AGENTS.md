@@ -74,9 +74,15 @@ for code work.
   ("Loading sample notebooks and templates") which needs a bearer token, or run
   `cd api && pnpm seed-test-dataset` (idempotent; safe to re-run).
 - For repeated e2e auth (password reset / invites), set
-  `RATE_LIMITER_ENABLED=false` and `AUTH_ATTEMPT_LIMITER_ENABLED=false` in
+  `RATE_LIMITER_ENABLED=false` and `ATTEMPT_LIMITER_ENABLED=false` in
   `api/.env` and restart the API. The former is the Express HTTP IP limiter;
   the latter gates CouchDB-backed email-code / verification-challenge limits.
+- Startup migration lock (`STARTUP_MIGRATION_LOCK_ENABLED`) defaults **off**.
+  That avoids a 30-minute wait after a killed `pnpm run dev` reload left a
+  `running` lock. Clustered / multi-replica production MUST set it `true`
+  (AWS CDK hard-enables it unless JSON `disableStartupMigrationLock` is
+  set). `DISABLE_MIGRATE_ON_STARTUP` (default off) skips boot migrate
+  entirely — no lock, no Couch migrate — and attaches the API immediately.
 
 ### Lint / test / build (standard commands, see `package.json`)
 

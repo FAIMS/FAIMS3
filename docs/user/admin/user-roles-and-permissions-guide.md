@@ -542,6 +542,16 @@ The Invites tab shows:
 
 > **Tip:** Use multi-use invites with QR codes for field team onboarding sessions. Each team member can scan the same QR code to join with the appropriate role.
 
+### Quick share
+
+Quick share is a temporary QR code created in the app, not from **+ Create Invite**.
+
+On an activated {{notebook}}, someone who can invite opens **Share** (or **Quick share** in Settings), chooses an access level, and generates a QR code. The other person scans it the same way as any other invite. The code lasts one hour. Each person has one live code for that {{notebook}}; generating a new one stops the current code. Creating or replacing a code needs a connection to the server.
+
+The code is listed on this **Invites** tab as **Quick share**. Remove it here if it should stop working before it expires.
+
+To stop people creating these codes, open the **Actions** tab and turn **Quick share** off. **Share** is then hidden in the app, and a new code cannot be created. A code that already exists keeps working until it expires or you remove it.
+
 ### Removing a User from a {{Notebook}}
 
 1. Navigate to the {{notebook}} → **Users** tab

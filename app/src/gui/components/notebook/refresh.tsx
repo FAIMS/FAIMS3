@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {Box, Button, Typography} from '@mui/material';
 import moment from 'moment/moment';

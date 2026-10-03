@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Shared Vitest setup for API unit tests (runs before every test file).
  *

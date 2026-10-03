@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {DataTable} from '@/components/data-table/data-table';
 import {CreateTeamInvite} from '@/components/dialogs/teams/create-team-invite';
 import {useGetTeamInviteColumns} from '@/components/tables/team-invites';

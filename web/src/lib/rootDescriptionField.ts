@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import type {Field} from '@/components/form';
 import {
   ROOT_DESCRIPTION_MAX_LENGTH,

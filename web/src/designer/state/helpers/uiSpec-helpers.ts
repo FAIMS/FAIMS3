@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Pure helpers for UI-spec ids, viewset membership, summary fields, and condition rewrites.
  */

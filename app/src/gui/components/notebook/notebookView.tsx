@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /* Provide the NotebookView component that allows different
  * UI components for different kinds of notebook, notably those that
  * have associated plans and those that do not
@@ -22,7 +23,11 @@ import {
   isNotebookDesignLocked,
   isPlaceholderNotebookDefinition,
 } from '../../../context/slices/helpers/notebookDefinition';
-import {Project} from '../../../context/slices/projectSlice';
+import {
+  isActivatedProject,
+  Project,
+  projectUiDefinition,
+} from '../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import * as ROUTES from '../../../constants/routes';
 import {
@@ -71,9 +76,16 @@ type NotebookViewProps = {
  *
  */
 export function NotebookView({project}: NotebookViewProps) {
-  const {uiSpecificationId, schemaCompatibility} = project;
-  const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
-  const compileError = compiledSpecService.getCompileError(uiSpecificationId);
+  const {schemaCompatibility} = project;
+  const uiSpecificationId = isActivatedProject(project)
+    ? project.uiSpecificationId
+    : undefined;
+  const uiSpecification = uiSpecificationId
+    ? compiledSpecService.getSpec(uiSpecificationId)
+    : undefined;
+  const compileError = uiSpecificationId
+    ? compiledSpecService.getCompileError(uiSpecificationId)
+    : undefined;
   const waitedForSpec = useDelayedFlag(SPEC_WAIT_MS, !uiSpecification);
 
   // Tier: incompatible — the stored definition is either a placeholder or the
@@ -85,7 +97,7 @@ export function NotebookView({project}: NotebookViewProps) {
     const canBrowseLocalRecords =
       !!uiSpecification &&
       !compileError &&
-      !isPlaceholderNotebookDefinition(project.uiDefinition);
+      !isPlaceholderNotebookDefinition(projectUiDefinition(project));
     if (!canBrowseLocalRecords) {
       return (
         <NotebookSchemaIncompatibleView
@@ -208,7 +220,9 @@ function NotebookViewWithSpec({
   const isDownloadingRecords = useIsRecordDownloadUnderway({
     serverId: project.serverId,
     projectId: project.projectId,
-    syncMode: project.database?.syncMode ?? 'none',
+    syncMode: isActivatedProject(project)
+      ? (project.database?.syncMode ?? 'none')
+      : 'none',
   });
 
   // get the sync status of records in this project
@@ -463,11 +477,11 @@ function NotebookViewWithSpec({
   } = useMemo(
     () =>
       resolvePlanViews({
-        uiDefinition: project.uiDefinition,
+        uiDefinition: projectUiDefinition(project),
         planId,
         getView: getNotebookView,
       }),
-    [project.uiDefinition, planId]
+    [project, planId]
   );
 
   // A plan's tab is its own, so a plan free to model screens or regions rather

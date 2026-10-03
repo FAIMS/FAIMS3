@@ -24,6 +24,9 @@ importers:
         specifier: ^0.28.1
         version: 0.28.1
     devDependencies:
+      '@kt3k/license-checker':
+        specifier: ^3.2.2
+        version: 3.2.2
       '@types/node':
         specifier: ^24
         version: 24.13.1
@@ -406,6 +409,9 @@ importers:
       '@types/node':
         specifier: ^24
         version: 24.13.1
+      '@types/qrcode':
+        specifier: ^1.5.6
+        version: 1.5.6
       '@types/react':
         specifier: 18.3.12
         version: 18.3.12
@@ -475,6 +481,9 @@ importers:
       pouchdb-find:
         specifier: ^9.0.0
         version: 9.0.0(encoding@0.1.13)
+      qrcode:
+        specifier: ^1.5.4
+        version: 1.5.4
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -1613,6 +1622,9 @@ packages:
   '@dabh/diagnostics@2.0.8':
     resolution: {integrity: sha512-R4MSXTVnuMzGD7bzHdW2ZhhdPC/igELENcq5IjEverBvq5hn1SXCWcsi6eSsdWP0/Ur+SItRRjAktmdoX/8R/Q==}
 
+  '@deno/shim-deno@0.1.2':
+    resolution: {integrity: sha512-qoNVXCK5ATX6k6Oq0qWVTQpSwT2XE+KPymNTV1CTQhL3KRqR4KGlCWM2M/xW8U+KwGv8KjWR4S2lOKcspRUg9A==}
+
   '@dependents/detective-less@5.0.3':
     resolution: {integrity: sha512-v6oD9Ukp+N7V4n6p5I/+mM5fIohSfkrDSGlFm5w/pYmchvbk+sMIHsLxrFJ5Lnujewj1BzWL0K84d88lwZAMQA==}
     engines: {node: '>=18'}
@@ -2642,6 +2654,10 @@ packages:
     engines: {node: '>= 10.16.0'}
     peerDependencies:
       jsep: ^0.4.0||^1.0.0
+
+  '@kt3k/license-checker@3.2.2':
+    resolution: {integrity: sha512-FZoO7wx8JRjFKc3ssjuHCSmpfYADTnL5FAmzGzN6a9qy9SnaEvYKI+eLWie3f4R7jPm/vD6Hay2bQlStQbfALA==}
+    hasBin: true
 
   '@lexical/clipboard@0.12.6':
     resolution: {integrity: sha512-rJFp7tXzawCrMWWRsjCR80dZoIkLJ/EPgPmTk3xqpc+9ntlwbkm3LUOdFmgN+pshnhiZTQBwbFqg/QbsA1Pw9g==}
@@ -12132,6 +12148,10 @@ packages:
   undici-types@7.18.2:
     resolution: {integrity: sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==}
 
+  undici@4.16.0:
+    resolution: {integrity: sha512-tkZSECUYi+/T1i4u+4+lwZmQgLXd4BLGlrc7KZPcLIW7Jpq99+Xpc30ONv7nS6F5UNOxp/HBZSSL9MafUrvJbw==}
+    engines: {node: '>=12.18'}
+
   undici@6.26.0:
     resolution: {integrity: sha512-4yqz8a3n5HmGTlsbADNtr/dJlhkh/55Rq798G6ibiULcXbDtaLpTl1pvdqcbFfeoj3iSi52lePFM7h9H21cw/A==}
     engines: {node: '>=18.17'}
@@ -13544,6 +13564,10 @@ snapshots:
       enabled: 2.0.0
       kuler: 2.0.0
 
+  '@deno/shim-deno@0.1.2':
+    dependencies:
+      which: 2.0.2
+
   '@dependents/detective-less@5.0.3':
     dependencies:
       gonzales-pe: 4.3.0
@@ -14615,6 +14639,11 @@ snapshots:
   '@jsep-plugin/ternary@1.1.4(jsep@1.4.0)':
     dependencies:
       jsep: 1.4.0
+
+  '@kt3k/license-checker@3.2.2':
+    dependencies:
+      '@deno/shim-deno': 0.1.2
+      undici: 4.16.0
 
   '@lexical/clipboard@0.12.6(lexical@0.12.6)':
     dependencies:
@@ -25720,6 +25749,8 @@ snapshots:
   undici-types@6.21.0: {}
 
   undici-types@7.18.2: {}
+
+  undici@4.16.0: {}
 
   undici@6.26.0: {}
 

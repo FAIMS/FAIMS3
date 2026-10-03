@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: meta.tsx
  * Description:
  *   TODO
@@ -35,7 +23,10 @@ import {
   RevisionID,
 } from '@faims3/data-model';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
-import {selectAllProjects} from '../../../context/slices/projectSlice';
+import {
+  isActivatedProject,
+  selectAllProjects,
+} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {localGetDataDb} from '../../../utils/database';
 
@@ -48,9 +39,13 @@ type RecordMetaProps = {
 export default function RecordMeta(props: RecordMetaProps) {
   const {project_id, record_id, revision_id} = props;
   const [meta, setMeta] = React.useState<{[key: string]: any}>({});
-  const uiSpecId = useAppSelector(selectAllProjects).find(
+  const project = useAppSelector(selectAllProjects).find(
     p => p.projectId === project_id
-  )?.uiSpecificationId;
+  );
+  const uiSpecId =
+    project && isActivatedProject(project)
+      ? project.uiSpecificationId
+      : undefined;
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   useEffect(() => {

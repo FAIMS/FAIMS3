@@ -1,22 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: couchdb.tests.ts
  * Description:
  *   Tests for the interface to couchDB
  */
+
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
@@ -29,10 +18,7 @@ import {
 } from '@faims3/data-model';
 import {describe, expect, it} from 'vitest';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
-import {
-  getUserProjectsDetailed,
-  getUiSpecModel,
-} from '../src/couchdb/notebooks';
+import {getUserProjectsListing, getUiSpecModel} from '../src/couchdb/notebooks';
 import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
 import {mockTokenContentsForUser} from '../src/utils';
 import {
@@ -58,7 +44,7 @@ describe('Backup and restore', () => {
     const user = await getExpressUserFromEmailOrUserId('admin');
     expect(user).not.toBeUndefined();
     if (user) {
-      const notebooks = await getUserProjectsDetailed(user);
+      const notebooks = await getUserProjectsListing(user);
       expect(notebooks.length).toBe(2);
       expect(notebooks[0].name).toBe('Campus Survey Demo');
 

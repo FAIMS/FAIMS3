@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /* eslint-disable n/no-process-exit */
 /**
  * seedTestDataset.ts
@@ -55,6 +56,7 @@ import {
   normalizeRootDescriptionForStore,
   safeWriteDocument,
   TemplateDocument,
+  buildUiSpecProperties,
 } from '@faims3/data-model';
 import {readFileSync} from 'fs';
 import {addLocalPasswordForUser} from '../auth/helpers';
@@ -64,6 +66,7 @@ import {
   initialiseAndMigrateDBs,
   initialiseDataDb,
   localGetProjectsDb,
+  registerDataDbAtCurrentVersion,
 } from '../couchdb';
 import {
   getProjectById,
@@ -452,6 +455,7 @@ async function upsertSeedTemplate({
       name,
       description,
       uiSpecification: normalizedUiSpecification,
+      uiSpecProperties: await buildUiSpecProperties(normalizedUiSpecification),
       ownedByTeamId: teamId,
       createdBy: SEED_CREATED_BY,
       archived: false,
@@ -472,6 +476,7 @@ async function upsertSeedTemplate({
       archived: false,
       isPublic: false,
       uiSpecification: normalizedUiSpecification,
+      uiSpecProperties: await buildUiSpecProperties(normalizedUiSpecification),
       ownedByTeamId: teamId,
       name,
       description,
@@ -536,6 +541,7 @@ async function upsertSeedNotebook({
       createdBy: SEED_CREATED_BY,
       status: ProjectStatus.OPEN,
       uiSpecification: normalizedUiSpecification,
+      uiSpecProperties: await buildUiSpecProperties(normalizedUiSpecification),
       updatedAt: now,
       dataDb: existing.dataDb ?? {db_name: dataDBName},
     };
@@ -546,6 +552,10 @@ async function upsertSeedNotebook({
     }
     await safeWriteDocument({db: projectsDb, data: updated});
     await initialiseDataDb({projectId: id, force: true});
+    await registerDataDbAtCurrentVersion({
+      project: updated,
+      launchedBy: SEED_CREATED_BY,
+    });
     console.log(`  ✓ Updated notebook ${projectName} : ${id}`);
     return id;
   }
@@ -564,9 +574,14 @@ async function upsertSeedNotebook({
     createdAt: now,
     updatedAt: now,
     uiSpecification: normalizedUiSpecification,
+    uiSpecProperties: await buildUiSpecProperties(normalizedUiSpecification),
   };
   await projectsDb.put(projectDoc);
   await initialiseDataDb({projectId: id, force: true});
+  await registerDataDbAtCurrentVersion({
+    project: projectDoc,
+    launchedBy: SEED_CREATED_BY,
+  });
   console.log(`  ✓ Created notebook ${projectName} : ${id}`);
   return id;
 }

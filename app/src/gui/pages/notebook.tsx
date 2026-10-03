@@ -1,18 +1,4 @@
-/*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License for for the specific language governing permissions and
- * limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 /**
  * Description:
@@ -41,8 +27,10 @@ import {useEffect} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {isNotebookActivationBlocked} from '../../context/slices/helpers/notebookDefinition';
+import {selectProjectByIdentity} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {removedNotebookUnavailableCopy} from '../../utils/remoteProjectRemoval';
+import NotebookQuickShare from '../components/notebook/settings/quickShare';
 import BackButton from '../components/ui/BackButton';
 import NotFound404 from './404';
 import {NotebookView} from '../components/notebook/notebookView';
@@ -71,7 +59,7 @@ export default function Notebook() {
   }>();
   const project = useAppSelector(state =>
     serverId && projectId
-      ? state.projects.servers[serverId]?.projects[projectId]
+      ? selectProjectByIdentity(state, {serverId, projectId})
       : undefined
   );
   const largerThanMedium = useMediaQuery(theme.breakpoints.up('md'));
@@ -112,10 +100,15 @@ export default function Notebook() {
             fontWeight: 'bold',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            flex: 1,
+            minWidth: 0,
           }}
         >
           {project.name}
         </Typography>
+
+        <NotebookQuickShare project={project} />
       </Stack>
 
       <NotebookView project={project} />

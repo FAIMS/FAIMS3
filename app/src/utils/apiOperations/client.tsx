@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Server} from '../../context/slices/projectSlice';
 import {store} from '../../context/store';
 
@@ -11,15 +12,24 @@ interface FetchOptions extends CustomOptions {
 }
 
 /** Custom error class for HTTP errors */
-class HttpError extends Error {
+export class HttpError extends Error {
+  readonly response: Response;
+  /**
+   * Raw response body. Empty when the server sent none. Kept separately from
+   * `message`, which stays `Status: <code> <text>` for existing callers.
+   */
+  readonly bodyText: string;
+
   /**
    * @param response - The Response object from the failed fetch
-   * @param message - Optional error message
+   * @param bodyText - Body already read from that response
    */
-  constructor(public response: Response) {
+  constructor(response: Response, bodyText = '') {
     const message = `Status: ${response.status} ${response.statusText}`;
     super(message);
     this.name = 'HttpError';
+    this.response = response;
+    this.bodyText = bodyText;
   }
 
   /**
@@ -28,6 +38,32 @@ class HttpError extends Error {
    */
   toString(): string {
     return `Status: ${this.response.status} ${this.response.statusText}`;
+  }
+
+  /**
+   * Conductor sends `{error: {message}}`. Authentication sends `{error: string}`.
+   */
+  serverMessage(): string | undefined {
+    if (!this.bodyText) return undefined;
+    try {
+      const parsed = JSON.parse(this.bodyText) as {
+        error?: {message?: unknown} | string;
+      };
+      if (typeof parsed.error === 'string' && parsed.error.length > 0) {
+        return parsed.error;
+      }
+      if (
+        parsed.error &&
+        typeof parsed.error === 'object' &&
+        typeof parsed.error.message === 'string' &&
+        parsed.error.message.length > 0
+      ) {
+        return parsed.error.message;
+      }
+    } catch {
+      return undefined;
+    }
+    return undefined;
   }
 }
 
@@ -77,16 +113,13 @@ export class ListingFetch {
   }
 
   /**
-   * Makes an HTTP request to the specified endpoint
-   * @param endpoint - The API endpoint to request
-   * @param options - Request options
-   * @returns Promise resolving to the JSON response
+   * Sends an HTTP request and returns the response when it is OK.
    * @throws HttpError if the response is not OK
    */
-  private async request<T>(
+  private async send(
     endpoint: string,
     options: FetchOptions = {}
-  ): Promise<T> {
+  ): Promise<Response> {
     const url = `${this.server.serverUrl}${endpoint}`;
     const headers = this.getAuthHeaders(options);
 
@@ -106,10 +139,25 @@ export class ListingFetch {
       console.log('HTTP Error occurred.');
       console.log(`Status: ${response.status}`);
       console.log(`Text: ${errorText}`);
-      throw new HttpError(response);
+      throw new HttpError(response, errorText);
     }
 
-    return await response.json();
+    return response;
+  }
+
+  /**
+   * Makes an HTTP request to the specified endpoint
+   * @param endpoint - The API endpoint to request
+   * @param options - Request options
+   * @returns Promise resolving to the JSON response
+   * @throws HttpError if the response is not OK
+   */
+  private async request<T>(
+    endpoint: string,
+    options: FetchOptions = {}
+  ): Promise<T> {
+    const response = await this.send(endpoint, options);
+    return JSON.parse(await response.text()) as T;
   }
 
   /**
@@ -153,15 +201,17 @@ export class ListingFetch {
   }
 
   /**
-   * Performs a DELETE request
+   * Performs a DELETE request. The body is read and discarded so an empty
+   * success response is not parsed as JSON.
    * @param endpoint - The API endpoint
    * @param options - Additional request options
    */
-  async delete<T>(
+  async delete(
     endpoint: string,
     options: Omit<FetchOptions, 'method'> = {}
-  ): Promise<T> {
-    return this.request<T>(endpoint, {...options, method: 'DELETE'});
+  ): Promise<void> {
+    const response = await this.send(endpoint, {...options, method: 'DELETE'});
+    await response.text();
   }
 
   /**
@@ -289,14 +339,14 @@ export class ListingFetchManager {
    * @param endpoint - The API endpoint
    * @param options - Additional request options
    */
-  async delete<T>(
+  async delete(
     listingId: string,
     username: string,
     endpoint: string,
     options?: CustomOptions
-  ): Promise<T> {
+  ): Promise<void> {
     const client = this.getOrCreateClient(listingId, username);
-    return client.delete<T>(endpoint, options);
+    return client.delete(endpoint, options);
   }
 
   /**

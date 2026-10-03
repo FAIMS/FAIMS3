@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Description:
  *   Asserts express-zod-safe request validation across body, query, and
  *   params, including the capitalised error envelope and missing-schema
@@ -166,6 +154,16 @@ describe('Request validation (express-zod-safe)', () => {
     it('rejects invalid includeArchived values on notebook list', async () => {
       const response = await requestAuthAndType(
         request(app).get('/api/notebooks').query({includeArchived: 'yes'}),
+        adminToken
+      ).expect(400);
+
+      expectValidationError(response.body, 'Query');
+      expect(response.body).toHaveLength(1);
+    });
+
+    it('rejects invalid includeByteCount values on notebook list', async () => {
+      const response = await requestAuthAndType(
+        request(app).get('/api/notebooks').query({includeByteCount: 'yes'}),
         adminToken
       ).expect(400);
 

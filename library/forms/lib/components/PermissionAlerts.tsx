@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Contains instructions for how to rectify permission issues reused throughout the app.
  */

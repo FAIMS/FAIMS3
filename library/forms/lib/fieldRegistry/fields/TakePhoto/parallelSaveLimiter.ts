@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Max concurrent PouchDB photo writes. Camera and gallery stay available
  * while below this so more shots can be added during "Saving...".

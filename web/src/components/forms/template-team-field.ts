@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Shared team-selection helpers for create flows (templates, projects from
  * templates, etc.).

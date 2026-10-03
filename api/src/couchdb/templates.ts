@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
@@ -29,6 +30,7 @@ import {
   normalizeNotebookTemplateUiSpecification,
   normalizeRootDescriptionForStore,
   notebookUiSpecificationValidationMessage,
+  buildUiSpecProperties,
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
@@ -266,6 +268,7 @@ export const createTemplate = async ({
     createdBy,
     createdAt: now,
     updatedAt: now,
+    uiSpecProperties: await buildUiSpecProperties(uiSpecification),
   };
 
   // Try putting the new document
@@ -432,6 +435,7 @@ export const updateTemplateUiSpecification = async (
     _id: templateId,
     _rev: existingTemplate._rev,
     uiSpecification: normalizedUiSpecification,
+    uiSpecProperties: await buildUiSpecProperties(normalizedUiSpecification),
     // Increment version by 1 when updated
     version: existingTemplate.version + 1,
     updatedAt: nowIso(),

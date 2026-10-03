@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Config form for a List of Records plan: an editable table with one
  * column per pre-filled field and one row per planned record.

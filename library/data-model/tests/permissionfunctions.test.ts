@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
 import {
   extendTokenWithVirtualRoles,
   generateVirtualResourceRoles,
   getUserResourcesForAction,
   isTokenAuthorized,
   necessaryActionToCouchRoleList,
+  projectRolesUserCanInvite,
   ResourceAssociation,
 } from '../src/permission/functions';
 import {
@@ -1113,5 +1115,70 @@ describe('IMPERSONATE_USER permission', () => {
     expect(details).toBeDefined();
     expect(details.resource).toBe(Resource.USER);
     expect(details.resourceSpecific).toBe(true);
+  });
+});
+
+describe('projectRolesUserCanInvite', () => {
+  const projectId = 'survey-1';
+
+  it('lets a survey manager invite up to manager, and not administrator', () => {
+    expect(
+      projectRolesUserCanInvite({
+        decodedToken: {
+          globalRoles: [],
+          resourceRoles: [{resourceId: projectId, role: Role.PROJECT_MANAGER}],
+        },
+        resourceId: projectId,
+      })
+    ).toEqual([
+      Role.PROJECT_GUEST,
+      Role.PROJECT_CONTRIBUTOR,
+      Role.PROJECT_MANAGER,
+    ]);
+  });
+
+  it('lets a survey administrator invite every survey role', () => {
+    expect(
+      projectRolesUserCanInvite({
+        decodedToken: {
+          globalRoles: [],
+          resourceRoles: [{resourceId: projectId, role: Role.PROJECT_ADMIN}],
+        },
+        resourceId: projectId,
+      })
+    ).toEqual([
+      Role.PROJECT_GUEST,
+      Role.PROJECT_CONTRIBUTOR,
+      Role.PROJECT_MANAGER,
+      Role.PROJECT_ADMIN,
+    ]);
+  });
+
+  it('lets a contributor invite nobody', () => {
+    expect(
+      projectRolesUserCanInvite({
+        decodedToken: {
+          globalRoles: [],
+          resourceRoles: [
+            {resourceId: projectId, role: Role.PROJECT_CONTRIBUTOR},
+          ],
+        },
+        resourceId: projectId,
+      })
+    ).toEqual([]);
+  });
+
+  it('does not apply a manager role from a different survey', () => {
+    expect(
+      projectRolesUserCanInvite({
+        decodedToken: {
+          globalRoles: [],
+          resourceRoles: [
+            {resourceId: 'other-survey', role: Role.PROJECT_MANAGER},
+          ],
+        },
+        resourceId: projectId,
+      })
+    ).toEqual([]);
   });
 });
