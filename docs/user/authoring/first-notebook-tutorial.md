@@ -1,6 +1,6 @@
 # Your First {{Notebook}} in 25-30 Minutes 🚀
 
-*Welcome to {{FAIMS}}®! In the next 25-30 minutes, you'll create your first data collection {{notebook}} and enter your first record. No experience needed - just follow along!*
+_Welcome to {{FAIMS}}®! In the next 25-30 minutes, you'll create your first data collection {{notebook}} and enter your first record. No experience needed - just follow along!_
 
 ## What You'll Achieve
 
@@ -359,7 +359,7 @@ editor.
 > ⚠️ **Name fields now, before collecting data.** Records store their values
 > under the Field ID, which follows the label for newly added fields. If you
 > rename a field after records already exist, those records' values stop
-> appearing in lists (they show "-" instead). Renaming *before* any data is
+> appearing in lists (they show "-" instead). Renaming _before_ any data is
 > collected (as we're doing here) is completely safe.
 >
 > 💡 **More in the field editor**: You'll also see Short answer / Long answer
@@ -733,7 +733,7 @@ You'll see the data entry form with:
 - **Progress bar**: Shows completion percentage (starts at 0%, counting
   required fields)
 - **"Saved" indicator**: Appears in the top-right as changes are auto-saved
-- **Required fields**: Marked with a red asterisk (*)
+- **Required fields**: Marked with a red asterisk (\*)
 
 1. **Fill in Site Name**:
    - Type **"Test Location Alpha"** in the Site Name field
@@ -811,7 +811,6 @@ You're automatically returned to the record list view. Here's what you'll see:
 
 - **MY SITE DETAILSS (1)** tab now shows 1 record (changed from "(0)")
 - Your record appears in the table with the following columns:
-
   - **Sync**: Orange icon with three dots (indicates not yet synced to server)
   - **Site Name**: "Test Location Alpha" (Summary Field #1)
   - **Site Type**: "Habitation" (Summary Field #2)
@@ -819,6 +818,7 @@ You're automatically returned to the record list view. Here's what you'll see:
   - **Created By**: Your username (e.g., "alex.taylor@fieldmark.test")
   - **Last Updated**: Close to Created for a new record
   - **Last Updated By**: Your username
+
 - **Pagination** at bottom shows "1-1 of 1"
 
 > 💡 **About Sync**: {{FAIMS}} automatically syncs records when you're online. The orange icon with three dots means the record hasn't synced to the server yet. Once synced, it will turn into a green cloud icon with a checkmark. If other team members have added records, click the **REFRESH RECORDS** button to update your view with records that synced in the background.
@@ -854,6 +854,7 @@ From here you can:
 - **Click Back** to return to the record list
 
 (notebook-settings)=
+
 ### {{Notebook}} Settings
 
 Before we finish, let's explore the SETTINGS tab to understand sync and data management options.
