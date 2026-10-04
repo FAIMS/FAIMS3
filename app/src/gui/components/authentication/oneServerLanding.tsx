@@ -5,13 +5,13 @@
  * allows the user to select which server they want to authenticate with.
  */
 
-import {Browser} from '@capacitor/browser';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import {Box, Button, Paper, Stack, Typography, useTheme} from '@mui/material';
 import {useState} from 'react';
-import {config, IS_WEB_PLATFORM} from '../../../buildconfig';
+import {config} from '../../../buildconfig';
 import {getSelectedServer, Server} from '../../../context/slices/projectSlice';
 import {useIsOnline} from '../../../utils/customHooks';
+import {openConductorLogin} from './conductorLoginUrl';
 import {InviteCodeEntry, InviteQRScanner} from './inviteCodeEntry';
 import {MultiServerSelector} from './multiServerSelector';
 import {useAppSelector} from '../../../context/store';
@@ -117,17 +117,9 @@ const OnboardingComponent = ({
               startIcon={
                 <LoginOutlinedIcon sx={{color: theme.palette.primary.main}} />
               }
-              onClick={async () => {
-                if (IS_WEB_PLATFORM) {
-                  const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
-                  window.location.href =
-                    selectedServer.serverUrl + '/login?redirect=' + redirect;
-                } else {
-                  await Browser.open({
-                    url: `${selectedServer.serverUrl}/login?redirect=${config.appId}://auth-return`,
-                  });
-                }
-              }}
+              onClick={() =>
+                openConductorLogin({conductorUrl: selectedServer.serverUrl})
+              }
               sx={{
                 borderRadius: '12px',
                 padding: '12px 20px',

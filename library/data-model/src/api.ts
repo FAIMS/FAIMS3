@@ -115,12 +115,26 @@ export type PostResetPasswordInput = z.infer<
   typeof PostResetPasswordInputSchema
 >;
 
+/**
+ * True only when `hasLocalProfile` is explicitly true. Absent or false means
+ * no local password login — do not prefill login email. The field is optional
+ * this release so older payloads still parse; flip the schema to required once
+ * stored sessions without it are gone.
+ */
+export function hasLocalLoginProfile(
+  hasLocalProfile: boolean | undefined
+): boolean {
+  return hasLocalProfile === true;
+}
+
 // Get current user
 export const GetCurrentUserResponseSchema = z.object({
   id: z.string(),
   name: z.string(),
   email: z.string(),
   isVerified: z.boolean(),
+  // Optional this release (absent → false). Flip to required later.
+  hasLocalProfile: z.boolean().optional(),
 });
 
 export type GetCurrentUserResponse = z.infer<

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import {config} from '@/constants';
+import {signinPathForExpiredSession} from '@/lib/signin';
 import {Loader2} from 'lucide-react';
 import {useEffect} from 'react';
 
@@ -10,7 +10,7 @@ import {useEffect} from 'react';
  */
 export const SessionExpiredOverlay = () => {
   const handleLogin = () => {
-    window.location.href = config.signinPath;
+    window.location.href = signinPathForExpiredSession(null);
   };
 
   useEffect(() => {

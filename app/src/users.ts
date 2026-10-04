@@ -15,6 +15,7 @@ import {decodeJwt} from 'jose';
 import {
   Action,
   decodeAndValidateToken,
+  hasLocalLoginProfile,
   isAuthorized,
   MinimalRecordMetadata,
   RecordMetadata,
@@ -71,6 +72,9 @@ export function parseToken(token: string): TokenContents {
     name: name,
     server: server,
     exp,
+    hasLocalProfile: hasLocalLoginProfile(
+      payload['hasLocalProfile'] as boolean | undefined
+    ),
     ...decodedRoles,
   };
 }

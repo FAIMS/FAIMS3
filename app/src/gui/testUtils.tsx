@@ -15,6 +15,7 @@ const testUser: ActiveUser = {
   token: 'foo',
   parsedToken: {
     username: 'testUser',
+    name: 'Ada Lovelace',
     server: 'test-server',
     exp: 0,
     resourceRoles: [{role: Role.PROJECT_GUEST, resourceId: 'test-id'}],

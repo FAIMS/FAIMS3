@@ -39,6 +39,7 @@
         autocapitalize='off'
         autocorrect='off'
         spellcheck='false'
+        value='{{prefilledEmail}}'
         required
       />
       {{#if messages.error.email}}
@@ -55,6 +56,7 @@
         id='InputPassword'
         data-testid="password-input"
         autocomplete='current-password'
+        {{#if prefilledEmail}}autofocus{{/if}}
         required
       />
       {{#if messages.error.password}}
@@ -94,3 +96,17 @@
 <p class="auth-helper-text">You must have an existing account to sign in to this server. If not,
   please contact your adminstrator to ask about registration.
 </p>
+{{#if prefilledEmail}}
+<script>
+  (function () {
+    try {
+      var url = new URL(window.location.href);
+      if (!url.searchParams.has('email')) return;
+      url.searchParams.delete('email');
+      var search = url.searchParams.toString();
+      var next = url.pathname + (search ? '?' + search : '') + url.hash;
+      window.history.replaceState(null, '', next);
+    } catch (e) {}
+  })();
+</script>
+{{/if}}
