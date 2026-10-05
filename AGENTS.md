@@ -62,6 +62,9 @@ for code work.
   output). `pnpm run dev` builds them automatically via the turbo `dev` ->
   `build` dependency; if you run `pnpm run migrate-with-keys` on a fresh tree
   first, run `pnpm build` (or `npx turbo build`) once beforehand.
+- The library `watch` scripts pick up their sub-scripts with a regex
+  (`pnpm run /^watch:/`). Never add `--parallel` to that: the flag is
+  recursive, so it starts every workspace package's `watch:*` scripts.
 - Local admin credentials: username `admin`, password
   `aSecretPasswordThatCantBeGuessed` (the `COUCHDB_PASSWORD` in `api/.env`).
   The Control Centre (`:3001`) redirects to the Conductor login at
