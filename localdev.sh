@@ -312,21 +312,9 @@ EOF
   echo "Press Ctrl-C to stop watching; containers keep running."
   trap 'kill 0' EXIT
   pnpm --filter=@faims3/data-model run watch &
-  data_model_watch=$!
   pnpm --filter=@faims3/forms run watch &
-  forms_watch=$!
   # A bare `wait` returns only once both watches are gone, so a watch that dies
   # leaves its library silently stale. Return on the first exit and say so.
-  watch_status=0
-  wait -n || watch_status=$?
-  # `wait -n` reports one status but not whose, and whatever kills one tsc
-  # usually kills both, so name every watch that is actually gone.
-  exited=""
-  kill -0 "$data_model_watch" 2>/dev/null || exited="data-model"
-  kill -0 "$forms_watch" 2>/dev/null || exited="${exited:+$exited and }forms"
-  if [ -n "$exited" ]; then
-    echo "Watch exited: ${exited} (status ${watch_status}). Run ./localdev.sh to restart the watchers."
-  else
-    echo "Waiting on the watchers failed (status ${watch_status}). Run ./localdev.sh to restart them."
-  fi
+  wait -n || true
+  echo "A library watch exited; run ./localdev.sh to restart the watchers."
 fi
