@@ -83,11 +83,12 @@ for code work.
   (AWS CDK hard-enables it unless JSON `disableStartupMigrationLock` is
   set). `DISABLE_MIGRATE_ON_STARTUP` (default off) skips boot migrate
   entirely — no lock, no Couch migrate — and attaches the API immediately.
-- A `tsc --incremental` build (the `api` dev loop) caches its diagnostics in a
-  `tsbuildinfo` inside the package's `outDir`, so a stale cache can replay
-  errors that are no longer in the source. Each package's `clean` script deletes
-  `outDir` and the `tsbuildinfo` with it, so `pnpm --filter=<package> run clean`
-  followed by a rebuild is the reset.
+- A `tsc --incremental` build caches its diagnostics in a `tsbuildinfo` under
+  `outDir`, so a stale cache can replay errors already gone from the source.
+  The native `api` dev loop is the one that compiles this way, and
+  `pnpm --filter=@faims3/api run clean` plus a rebuild is the reset. The Docker
+  api container seeds its cache from the image, not the host, so there the reset
+  is rebuilding the container (`Dockerfile.dev`).
 
 ### Lint / test / build (standard commands, see `package.json`)
 
