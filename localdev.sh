@@ -304,6 +304,16 @@ EOF
   echo "Press Ctrl-C to stop watching; containers keep running."
   trap 'kill 0' EXIT
   pnpm --filter=@faims3/data-model run watch &
+  data_model_watch=$!
   pnpm --filter=@faims3/forms run watch &
-  wait
+  # A bare `wait` returns only once both watches are gone, so a watch that dies
+  # leaves its library silently stale. Return on the first exit and say so.
+  watch_status=0
+  wait -n || watch_status=$?
+  if kill -0 "$data_model_watch" 2>/dev/null; then
+    echo "The forms watch exited (status ${watch_status})."
+  else
+    echo "The data-model watch exited (status ${watch_status})."
+  fi
+  echo "Shared-library watchers stopped; containers keep running."
 fi
