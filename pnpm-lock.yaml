@@ -355,6 +355,9 @@ importers:
       '@capgo/capacitor-audio-recorder':
         specifier: '7'
         version: 7.1.10(@capacitor/core@7.6.6)
+      '@capgo/capacitor-compass':
+        specifier: ^7.1.1
+        version: 7.1.1(@capacitor/core@7.6.6)
       '@capgo/capacitor-speech-recognition':
         specifier: ^8.0.4
         version: 8.1.3(@capacitor/core@7.6.6)
@@ -796,6 +799,9 @@ importers:
       '@capgo/capacitor-audio-recorder':
         specifier: '7'
         version: 7.1.10(@capacitor/core@7.6.6)
+      '@capgo/capacitor-compass':
+        specifier: ^7.1.1
+        version: 7.1.1(@capacitor/core@7.6.6)
       '@capgo/capacitor-speech-recognition':
         specifier: ^8.0.4
         version: 8.1.3(@capacitor/core@7.6.6)
@@ -1536,6 +1542,11 @@ packages:
 
   '@capgo/capacitor-audio-recorder@7.1.10':
     resolution: {integrity: sha512-N0LjusnYyI222lxbULxoBIagT6E/4V0CY0ARfleavKA2TWgQ215SOYIN7FIK1pv5zbH7Vl/2Q26WCSMDy7pVdw==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
+
+  '@capgo/capacitor-compass@7.1.1':
+    resolution: {integrity: sha512-li2hF96NRrhLsHctOa6ebXAv3eP8E5Ul6GP/mbmlSNrwsXvteiu2e3Hr1wKZLzN6bu6ad9MCm9WToqzR818FAg==}
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
 
@@ -13395,6 +13406,10 @@ snapshots:
   '@capacitor/synapse@1.0.4': {}
 
   '@capgo/capacitor-audio-recorder@7.1.10(@capacitor/core@7.6.6)':
+    dependencies:
+      '@capacitor/core': 7.6.6
+
+  '@capgo/capacitor-compass@7.1.1(@capacitor/core@7.6.6)':
     dependencies:
       '@capacitor/core': 7.6.6
 

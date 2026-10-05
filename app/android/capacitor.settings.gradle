@@ -38,5 +38,8 @@ project(':capacitor-status-bar').projectDir = new File('../../node_modules/.pnpm
 include ':capgo-capacitor-audio-recorder'
 project(':capgo-capacitor-audio-recorder').projectDir = new File('../../node_modules/.pnpm/@capgo+capacitor-audio-recorder@7.1.10_@capacitor+core@7.6.6/node_modules/@capgo/capacitor-audio-recorder/android')
 
+include ':capgo-capacitor-compass'
+project(':capgo-capacitor-compass').projectDir = new File('../../node_modules/.pnpm/@capgo+capacitor-compass@7.1.1_@capacitor+core@7.6.6/node_modules/@capgo/capacitor-compass/android')
+
 include ':capgo-capacitor-speech-recognition'
 project(':capgo-capacitor-speech-recognition').projectDir = new File('../../node_modules/.pnpm/@capgo+capacitor-speech-recognition@8.1.3_@capacitor+core@7.6.6/node_modules/@capgo/capacitor-speech-recognition/android')
