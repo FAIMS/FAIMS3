@@ -58,7 +58,7 @@ const projectsPersistConfig = {
   key: 'projects',
   version: 4,
   storage: storage('faims-projects-db'),
-  blacklist: ['isInitialised'],
+  blacklist: ['isInitialised', 'activatingProjects'],
   migrate: createMigrate(
     {
       0: (state: PersistedState) => state,

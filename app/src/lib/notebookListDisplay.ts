@@ -26,3 +26,39 @@ export function sortProjectsByNewest(projects: Project[]): Project[] {
     (b.updatedAt ?? '').localeCompare(a.updatedAt ?? '')
   );
 }
+
+/** True while this notebook is listed in the transient activating set. */
+export function isProjectActivating(
+  project: Pick<Project, 'serverId' | 'projectId'>,
+  activatingProjectKeys: readonly string[]
+): boolean {
+  return activatingProjectKeys.includes(
+    `${project.serverId}:${project.projectId}`
+  );
+}
+
+/**
+ * Split the workspace list so in-flight activations appear with Active
+ * notebooks (disabled loading row) instead of staying in Not Active.
+ */
+export function partitionNotebookListProjects(
+  projects: Project[],
+  activatingProjectKeys: readonly string[]
+): {activatedProjects: Project[]; availableProjects: Project[]} {
+  return {
+    activatedProjects: sortProjectsByNewest(
+      projects.filter(
+        project =>
+          project.isActivated ||
+          isProjectActivating(project, activatingProjectKeys)
+      )
+    ),
+    availableProjects: sortProjectsByNewest(
+      projects.filter(
+        project =>
+          !project.isActivated &&
+          !isProjectActivating(project, activatingProjectKeys)
+      )
+    ),
+  };
+}

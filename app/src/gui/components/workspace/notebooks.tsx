@@ -39,6 +39,7 @@ import {
 import {
   initialiseProjects,
   Project,
+  selectActivatingProjects,
   selectProjectsByServerId,
   selectServers,
 } from '../../../context/slices/projectSlice';
@@ -46,6 +47,8 @@ import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {
   formatNotebookListDescription,
   isNotebookListDescriptionTruncated,
+  isProjectActivating,
+  partitionNotebookListProjects,
 } from '../../../lib/notebookListDisplay';
 import {useIsOnline} from '../../../utils/customHooks';
 import {
@@ -154,6 +157,10 @@ export const notebookListDataGridSx = {
   '& .MuiDataGrid-row': {
     minHeight: '75px !important',
   },
+  '& .notebook-row-activating': {
+    opacity: 0.6,
+    pointerEvents: 'none',
+  },
 };
 
 export default function NoteBooks() {
@@ -207,6 +214,7 @@ export default function NoteBooks() {
     Boolean(activeUser)
   );
   const servers = useAppSelector(selectServers);
+  const activatingProjectKeys = useAppSelector(selectActivatingProjects);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   if (!activeUser) {
@@ -215,8 +223,10 @@ export default function NoteBooks() {
   }
 
   const showRefreshButton = isOnline.isOnline;
-  const activatedProjects = projects.filter(nb => nb.isActivated);
-  const availableProjects = projects.filter(nb => !nb.isActivated);
+  const {activatedProjects, availableProjects} = partitionNotebookListProjects(
+    projects,
+    activatingProjectKeys
+  );
 
   const baseColumns: GridColDef<Project>[] = [
     {
@@ -297,7 +307,25 @@ export default function NoteBooks() {
       },
     },
   ];
-  const activatedColumns = baseColumns;
+  const activatedColumns = baseColumns.concat([
+    {
+      field: 'actions',
+      type: 'actions',
+      width: 140,
+      renderCell: ({row}) =>
+        isProjectActivating(row, activatingProjectKeys) ? (
+          <Box
+            sx={{display: 'flex', alignItems: 'center', gap: 1}}
+            data-testid="app-notebook-activating-indicator"
+          >
+            <CircularProgress size={20} />
+            <Typography variant="caption">
+              {ACTIVATE_ACTIVE_VERB_LABEL}
+            </Typography>
+          </Box>
+        ) : null,
+    },
+  ]);
   const notActivatedColumns = baseColumns.concat([
     {
       field: 'actions',
@@ -494,6 +522,7 @@ export default function NoteBooks() {
           handleChange={setTabID}
           activatedColumns={activatedColumns}
           notActivatedColumns={notActivatedColumns}
+          activatingProjectKeys={activatingProjectKeys}
         />
       ) : (
         <HeadingProjectGrid
@@ -501,6 +530,7 @@ export default function NoteBooks() {
           serverId={activeServerId}
           activatedColumns={activatedColumns}
           notActivatedColumns={notActivatedColumns}
+          activatingProjectKeys={activatingProjectKeys}
         />
       )}
 
