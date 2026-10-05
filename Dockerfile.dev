@@ -26,7 +26,8 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 # Source stage. Compose bind-mounts the workspace libraries over this image, so the
 # data-model and forms output built here is masked at runtime (localdev.sh builds
 # them on the host). The api output is not: only api/src and its sibling directories
-# are mounted, so api/build seeds the first `tsc --incremental` in the container.
+# are mounted, so api/build survives from the image. It holds compiled JS only, so
+# the container's own `tsc --incremental` writes the first tsbuildinfo there.
 FROM base AS source
 
 # Copy source code
