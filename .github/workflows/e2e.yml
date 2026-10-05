@@ -166,18 +166,6 @@ jobs:
           start app pnpm --filter=@faims3/app run serve
           start web pnpm --filter=@faims3/web run serve
 
-          # Names any service that has died, so a crash reports in seconds
-          # rather than after the whole readiness timeout.
-          exited() {
-            for pidfile in /tmp/faims-*.pid; do
-              if ! kill -0 "$(cat "$pidfile")" 2>/dev/null; then
-                label="${pidfile#/tmp/faims-}"
-                echo "${label%.pid}"
-              fi
-            done
-          }
-
-          ready=0
           for i in $(seq 1 90); do
             api_ok=0
             app_ok=0
@@ -186,21 +174,11 @@ jobs:
             curl -sf http://localhost:3000 >/dev/null && app_ok=1 || true
             curl -sf http://localhost:3001 >/dev/null && web_ok=1 || true
             if [ "$api_ok" = 1 ] && [ "$app_ok" = 1 ] && [ "$web_ok" = 1 ]; then
-              ready=1
-              break
-            fi
-            gone="$(exited | paste -sd' ')"
-            if [ -n "$gone" ]; then
-              echo "Exited before the stack was ready: ${gone}"
-              break
+              echo "Stack ready (api/app/web)"
+              exit 0
             fi
             sleep 2
           done
-
-          if [ "$ready" = 1 ]; then
-            echo "Stack ready (api/app/web)"
-            exit 0
-          fi
 
           echo "Stack did not become ready"
           echo "==== still running ===="
