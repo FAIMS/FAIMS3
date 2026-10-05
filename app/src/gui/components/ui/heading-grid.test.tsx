@@ -7,7 +7,7 @@ import {MemoryRouter} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import type {Project} from '../../../context/slices/projectSlice';
 import {isProjectActivating} from '../../../lib/notebookListDisplay';
-import TabProjectGrid from './tab-grid';
+import HeadingProjectGrid from './heading-grid';
 
 const navigate = vi.fn();
 
@@ -25,8 +25,8 @@ vi.mock('../workspace/notebooks', () => ({
   notebookListDataGridSx: {},
 }));
 
-vi.mock('react-router-dom', async importOriginal => {
-  const actual = await importOriginal<typeof import('react-router-dom')>();
+vi.mock('react-router', async importOriginal => {
+  const actual = await importOriginal<typeof import('react-router')>();
   return {
     ...actual,
     useNavigate: () => navigate,
@@ -75,20 +75,17 @@ function columns(
 function renderGrid({
   projects,
   activatingProjectKeys = [],
-  tabID = '1',
 }: {
   projects: Project[];
   activatingProjectKeys?: readonly string[];
-  tabID?: string;
 }) {
   const cols = columns(activatingProjectKeys);
   return render(
     <MemoryRouter>
       <ThemeProvider theme={createTheme()}>
-        <TabProjectGrid
+        <HeadingProjectGrid
           projects={projects}
-          tabID={tabID}
-          handleChange={vi.fn()}
+          serverId="server-1"
           activatedColumns={cols}
           notActivatedColumns={cols}
           activatingProjectKeys={activatingProjectKeys}
@@ -98,28 +95,25 @@ function renderGrid({
   );
 }
 
-describe('TabProjectGrid activating rows', () => {
+describe('HeadingProjectGrid activating rows', () => {
   beforeEach(() => {
     navigate.mockReset();
     vi.stubGlobal('ResizeObserver', ResizeObserverStub);
   });
 
-  it('shows an activating listed notebook on the Active tab with a loading indicator', () => {
+  it('shows an activating listed notebook in the Active section with a loading indicator', () => {
     const keys = [`${listed.serverId}:${listed.projectId}`];
     renderGrid({
       projects: [listed],
       activatingProjectKeys: keys,
     });
 
-    const activeTab = screen.getByTestId(
-      'app-notebooks-tab-active'
-    ) as HTMLButtonElement;
-    expect(activeTab.disabled).toBe(false);
-    expect(activeTab.textContent).toContain('(1)');
+    expect(screen.getByText('Active')).toBeTruthy();
     expect(screen.getByText('Creek survey')).toBeTruthy();
     expect(
       screen.getByTestId('app-notebook-activating-indicator')
     ).toBeTruthy();
+    expect(document.querySelector('.notebook-row-activating')).toBeTruthy();
   });
 
   it('does not navigate when an activating row is clicked', () => {

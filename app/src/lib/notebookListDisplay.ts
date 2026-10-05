@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import {NOTEBOOK_LIST_DESCRIPTION_MAX_LENGTH} from '../buildconfig';
-import type {Project} from '../context/slices/projectSlice';
+import {projectIdentityKey, type Project} from '../context/slices/projectSlice';
 
 /** Text for the notebook listing grid, or null when absent. */
 export function formatNotebookListDescription(
@@ -32,9 +32,7 @@ export function isProjectActivating(
   project: Pick<Project, 'serverId' | 'projectId'>,
   activatingProjectKeys: readonly string[]
 ): boolean {
-  return activatingProjectKeys.includes(
-    `${project.serverId}:${project.projectId}`
-  );
+  return activatingProjectKeys.includes(projectIdentityKey(project));
 }
 
 /**

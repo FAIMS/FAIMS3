@@ -1,5 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
+
+vi.mock('../context/store', () => ({
+  store: {
+    getState: vi.fn(),
+    dispatch: vi.fn(),
+    subscribe: vi.fn(() => vi.fn()),
+  },
+}));
+
 import type {Project} from '../context/slices/projectSlice';
 import {
   formatNotebookListDescription,

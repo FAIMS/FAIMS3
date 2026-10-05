@@ -1342,13 +1342,13 @@ const projectsSlice = createSlice({
     builder.addCase('projects/activateProject/pending', (state, action) => {
       addActivatingProject(
         state,
-        (action as {meta: {arg: ProjectIdentity}}).meta.arg
+        (action as unknown as {meta: {arg: ProjectIdentity}}).meta.arg
       );
     });
     builder.addCase('projects/activateProject/rejected', (state, action) => {
       removeActivatingProject(
         state,
-        (action as {meta: {arg: ProjectIdentity}}).meta.arg
+        (action as unknown as {meta: {arg: ProjectIdentity}}).meta.arg
       );
     });
   },
@@ -1747,7 +1747,7 @@ export const activateProject = createAsyncThunk<
   ProjectIdentity & DatabaseAuth
 >('projects/activateProject', async (payload, {dispatch, getState}) => {
   try {
-    await runActivateProject(payload, dispatch, getState);
+    await runActivateProject(payload, dispatch as AppDispatch, getState);
   } catch (err) {
     const project = projectByIdentity(
       (getState() as RootState).projects,
