@@ -1,4 +1,5 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+set -e
 # Takes down any running docker compose in this project, optionally prunes volumes,
 # and starts again
 # Usage: ./script.sh [--all] [--build] [--clear-db]
@@ -306,14 +307,19 @@ EOF
   pnpm --filter=@faims3/data-model run watch &
   data_model_watch=$!
   pnpm --filter=@faims3/forms run watch &
+  forms_watch=$!
   # A bare `wait` returns only once both watches are gone, so a watch that dies
   # leaves its library silently stale. Return on the first exit and say so.
   watch_status=0
   wait -n || watch_status=$?
-  if kill -0 "$data_model_watch" 2>/dev/null; then
-    echo "The forms watch exited (status ${watch_status})."
+  # `wait -n` reports one status but not whose, and whatever kills one tsc
+  # usually kills both, so name every watch that is actually gone.
+  exited=""
+  kill -0 "$data_model_watch" 2>/dev/null || exited="data-model"
+  kill -0 "$forms_watch" 2>/dev/null || exited="${exited:+$exited and }forms"
+  if [ -n "$exited" ]; then
+    echo "Watch exited: ${exited} (status ${watch_status}). Run ./localdev.sh to restart the watchers."
   else
-    echo "The data-model watch exited (status ${watch_status})."
+    echo "Waiting on the watchers failed (status ${watch_status}). Run ./localdev.sh to restart them."
   fi
-  echo "Shared-library watchers stopped; containers keep running."
 fi
