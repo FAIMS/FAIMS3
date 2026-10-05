@@ -147,24 +147,38 @@ jobs:
       - name: Start API, app, and Control Centre
         run: |
           set -euo pipefail
-          : > /tmp/faims-dev.log
-          : > /tmp/faims-dev.pid
+          rm -f /tmp/faims-*.log /tmp/faims-*.pid
 
+          # One log per service, so the uploaded artifact and the failure dump
+          # name the emitter instead of interleaving three unprefixed writers.
           start() {
-            nohup "$@" >> /tmp/faims-dev.log 2>&1 &
-            echo $! >> /tmp/faims-dev.pid
-            echo "Started: $* (pid $!)"
+            label="$1"
+            shift
+            nohup "$@" > "/tmp/faims-${label}.log" 2>&1 &
+            echo "$!" > "/tmp/faims-${label}.pid"
+            echo "Started ${label}: $* (pid $!)"
           }
 
           # Serve the artefacts the build step produced, so the suite exercises
           # the shipped bundles and nothing compiles while the stack comes up.
-          # api/.env reaches start:prod only through env-cmd, and `vite preview`
-          # is called directly because app's preserve hook would rebuild.
-          # app takes its preview port from its vite config; web has none set.
-          start pnpm --filter=@faims3/api exec env-cmd pnpm run start:prod
-          start pnpm --filter=@faims3/app exec vite preview --strictPort
-          start pnpm --filter=@faims3/web exec vite preview --port 3001 --strictPort
+          # api/.env reaches start:prod only through env-cmd; in production the
+          # Docker image supplies that environment instead.
+          start api pnpm --filter=@faims3/api exec env-cmd pnpm run start:prod
+          start app pnpm --filter=@faims3/app run serve
+          start web pnpm --filter=@faims3/web run serve
 
+          # Names any service that has died, so a crash reports in seconds
+          # rather than after the whole readiness timeout.
+          exited() {
+            for pidfile in /tmp/faims-*.pid; do
+              if ! kill -0 "$(cat "$pidfile")" 2>/dev/null; then
+                label="${pidfile#/tmp/faims-}"
+                echo "${label%.pid}"
+              fi
+            done
+          }
+
+          ready=0
           for i in $(seq 1 90); do
             api_ok=0
             app_ok=0
@@ -173,17 +187,27 @@ jobs:
             curl -sf http://localhost:3000 >/dev/null && app_ok=1 || true
             curl -sf http://localhost:3001 >/dev/null && web_ok=1 || true
             if [ "$api_ok" = 1 ] && [ "$app_ok" = 1 ] && [ "$web_ok" = 1 ]; then
-              echo "Stack ready (api/app/web)"
-              exit 0
+              ready=1
+              break
+            fi
+            gone="$(exited | paste -sd' ')"
+            if [ -n "$gone" ]; then
+              echo "Exited before the stack was ready: ${gone}"
+              break
             fi
             sleep 2
           done
 
+          if [ "$ready" = 1 ]; then
+            echo "Stack ready (api/app/web)"
+            exit 0
+          fi
+
           echo "Stack did not become ready"
           echo "==== still running ===="
-          ps -o pid,stat,args -p "$(paste -sd, /tmp/faims-dev.pid)" || true
-          echo "==== /tmp/faims-dev.log (tail) ===="
-          tail -n 200 /tmp/faims-dev.log || true
+          ps -o pid,stat,args -p "$(cat /tmp/faims-*.pid | paste -sd,)" || true
+          echo "==== service logs (tail) ===="
+          tail -n 200 /tmp/faims-*.log || true
           exit 1
 
       - name: Run e2e (smoke + web + app)
@@ -219,8 +243,9 @@ jobs:
             echo "Failures are listed first (screenshot + error + page.html)."
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # Stage under one directory so the zip root is artifacts/, screenshots/,
-      # faims-dev.log — not home/runner/work/... (LCA of mixed repo + /tmp paths).
+      # Stage under one directory so the zip root is artifacts/, screenshots/
+      # and the faims-*.log files, rather than home/runner/work/... (the LCA of
+      # mixed repo and /tmp paths).
       - name: Stage e2e artifacts for upload
         if: always()
         run: |
@@ -234,9 +259,11 @@ jobs:
           if [ -d e2e/screenshots ]; then
             cp -a e2e/screenshots "$STAGE/screenshots"
           fi
-          if [ -f /tmp/faims-dev.log ]; then
-            cp /tmp/faims-dev.log "$STAGE/faims-dev.log"
-          fi
+          for log in /tmp/faims-*.log; do
+            if [ -f "$log" ]; then
+              cp "$log" "$STAGE/"
+            fi
+          done
           echo "Staged:"
           find "$STAGE" -maxdepth 2 -print | sort
 
@@ -327,5 +354,5 @@ jobs:
         run: |
           echo "==== docker couchdb ===="
           sudo docker compose logs --tail=200 couchdb || true
-          echo "==== faims-dev.log ===="
-          tail -n 400 /tmp/faims-dev.log || true
+          echo "==== service logs ===="
+          tail -n 400 /tmp/faims-*.log || true
