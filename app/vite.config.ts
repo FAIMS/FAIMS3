@@ -24,6 +24,8 @@ const config: any = {
   preview: {
     port: 3000,
     host: true,
+    // Fail rather than move to a free port, where web could land on 3000.
+    strictPort: true,
   },
   resolve: {
     alias: {

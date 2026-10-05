@@ -27,6 +27,12 @@ export default defineConfig({
     host: true,
     fs: {allow: ['..']},
   },
+  // Same port when serving the build, so CI and the dev stack agree.
+  preview: {
+    port: 3001,
+    host: true,
+    strictPort: true,
+  },
   optimizeDeps: {
     include: [
       '@mui/material',
