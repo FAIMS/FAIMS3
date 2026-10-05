@@ -357,8 +357,8 @@ are:
 
 - `pnpm run build-app`: builds the webapp (not the Android/iOS apps)
 - `pnpm run test-app`: runs the main test suite
-- `pnpm run serve-app`: serves the built webapp in a browser, so it runs the
-  same bundle the phone apps do. Run `build-app` first; this no longer builds.
+- `pnpm run serve-app`: builds the webapp and serves it in a browser, so it runs
+  the same bundle the phone apps do.
 - `pnpm run start-app`: runs the webapp in a browser (unoptimized dev build).
 
 You should also be aware of the
