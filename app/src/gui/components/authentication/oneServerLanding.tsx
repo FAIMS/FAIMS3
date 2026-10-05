@@ -35,7 +35,9 @@ const OnboardingComponent = ({
       : undefined
   );
   const storedOnServer =
-    (activeUser?.serverId === selectedServer?.serverId
+    (activeUser &&
+    selectedServer &&
+    activeUser.serverId === selectedServer.serverId
       ? storedUsers?.[activeUser.username]
       : undefined) ?? Object.values(storedUsers ?? {})[0];
   const reauthEmail = localReauthIdentifier({
