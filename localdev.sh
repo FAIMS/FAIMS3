@@ -4,6 +4,13 @@ set -e
 # and starts again
 # Usage: ./script.sh [--all] [--build] [--clear-db]
 
+# `wait -n` on the library watchers below needs bash 4.3+; macOS ships 3.2.
+if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 3))); then
+  echo "localdev.sh needs bash 4.3+ (found $BASH_VERSION)." >&2
+  echo "On macOS: brew install bash" >&2
+  exit 1
+fi
+
 ALL_SERVICES=false
 BUILD_FLAG=""
 CLEAR_DB=false
