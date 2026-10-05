@@ -147,9 +147,23 @@ jobs:
       - name: Start API, app, and Control Centre
         run: |
           set -euo pipefail
-          nohup pnpm run dev > /tmp/faims-dev.log 2>&1 &
-          echo $! > /tmp/faims-dev.pid
-          echo "Started pnpm run dev (pid $(cat /tmp/faims-dev.pid))"
+          : > /tmp/faims-dev.log
+          : > /tmp/faims-dev.pid
+
+          start() {
+            nohup "$@" >> /tmp/faims-dev.log 2>&1 &
+            echo $! >> /tmp/faims-dev.pid
+            echo "Started: $* (pid $!)"
+          }
+
+          # Serve the artefacts the build step produced, so the suite exercises
+          # the shipped bundles and nothing compiles while the stack comes up.
+          # api/.env reaches start:prod only through env-cmd, and `vite preview`
+          # is called directly because app's preserve hook would rebuild.
+          # app takes its preview port from its vite config; web has none set.
+          start pnpm --filter=@faims3/api exec env-cmd pnpm run start:prod
+          start pnpm --filter=@faims3/app exec vite preview --strictPort
+          start pnpm --filter=@faims3/web exec vite preview --port 3001 --strictPort
 
           for i in $(seq 1 90); do
             api_ok=0
@@ -159,13 +173,15 @@ jobs:
             curl -sf http://localhost:3000 >/dev/null && app_ok=1 || true
             curl -sf http://localhost:3001 >/dev/null && web_ok=1 || true
             if [ "$api_ok" = 1 ] && [ "$app_ok" = 1 ] && [ "$web_ok" = 1 ]; then
-              echo "Dev stack ready (api/app/web)"
+              echo "Stack ready (api/app/web)"
               exit 0
             fi
             sleep 2
           done
 
-          echo "Dev stack did not become ready"
+          echo "Stack did not become ready"
+          echo "==== still running ===="
+          ps -o pid,stat,args -p "$(paste -sd, /tmp/faims-dev.pid)" || true
           echo "==== /tmp/faims-dev.log (tail) ===="
           tail -n 200 /tmp/faims-dev.log || true
           exit 1
