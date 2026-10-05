@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import {describe, expect, it} from 'vitest';
-import {authReturnRedirect, conductorLoginUrl} from './conductorLoginUrl';
+import {
+  authReturnRedirect,
+  conductorLoginUrl,
+  localReauthIdentifier,
+} from './conductorLoginUrl';
 
 describe('conductorLoginUrl', () => {
   it('builds a login URL with redirect only', () => {
@@ -43,6 +47,17 @@ describe('conductorLoginUrl', () => {
     ).toBe('org.example://auth-return');
   });
 
+  it('includes a local username that is not an email address', () => {
+    const url = new URL(
+      conductorLoginUrl({
+        conductorUrl: 'https://conductor.example',
+        redirect: 'https://app.example/auth-return',
+        email: 'admin',
+      })
+    );
+    expect(url.searchParams.get('email')).toBe('admin');
+  });
+
   it('omits a blank email so SSO re-login stays identifier-free', () => {
     const url = new URL(
       conductorLoginUrl({
@@ -52,5 +67,13 @@ describe('conductorLoginUrl', () => {
       })
     );
     expect(url.searchParams.has('email')).toBe(false);
+  });
+});
+
+describe('localReauthIdentifier', () => {
+  it('prefills a local username that is not an email address', () => {
+    expect(
+      localReauthIdentifier({username: 'admin', hasLocalProfile: true})
+    ).toBe('admin');
   });
 });

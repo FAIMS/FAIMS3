@@ -9,12 +9,13 @@ import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import {Box, Button, Paper, Stack, Typography, useTheme} from '@mui/material';
 import {useState} from 'react';
 import {config} from '../../../buildconfig';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 import {getSelectedServer, Server} from '../../../context/slices/projectSlice';
+import {useAppSelector} from '../../../context/store';
 import {useIsOnline} from '../../../utils/customHooks';
-import {openConductorLogin} from './conductorLoginUrl';
+import {localReauthIdentifier, openConductorLogin} from './conductorLoginUrl';
 import {InviteCodeEntry, InviteQRScanner} from './inviteCodeEntry';
 import {MultiServerSelector} from './multiServerSelector';
-import {useAppSelector} from '../../../context/store';
 
 const OnboardingComponent = ({
   scanQr,
@@ -27,6 +28,21 @@ const OnboardingComponent = ({
   const [showCodeInput, setShowCodeInput] = useState(false);
   const theme = useTheme();
   const selectedServer = useAppSelector(getSelectedServer);
+  const activeUser = useAppSelector(selectActiveUser);
+  const storedUsers = useAppSelector(state =>
+    selectedServer
+      ? state.auth.servers[selectedServer.serverId]?.users
+      : undefined
+  );
+  const storedOnServer =
+    (activeUser?.serverId === selectedServer?.serverId
+      ? storedUsers?.[activeUser.username]
+      : undefined) ?? Object.values(storedUsers ?? {})[0];
+  const reauthEmail = localReauthIdentifier({
+    username:
+      storedOnServer?.parsedToken.username ?? activeUser?.parsedToken.username,
+    hasLocalProfile: storedOnServer?.parsedToken.hasLocalProfile,
+  });
 
   if (!isOnline) {
     return <>{fallback}</>;
@@ -118,7 +134,10 @@ const OnboardingComponent = ({
                 <LoginOutlinedIcon sx={{color: theme.palette.primary.main}} />
               }
               onClick={() =>
-                openConductorLogin({conductorUrl: selectedServer.serverUrl})
+                openConductorLogin({
+                  conductorUrl: selectedServer.serverUrl,
+                  email: reauthEmail,
+                })
               }
               sx={{
                 borderRadius: '12px',

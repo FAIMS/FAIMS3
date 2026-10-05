@@ -33,7 +33,6 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import {hasLocalLoginProfile} from '@faims3/data-model';
 import {useState} from 'react';
 import {IS_WEB_PLATFORM} from '../../../buildconfig';
 import {
@@ -45,7 +44,7 @@ import {
 } from '../../../context/slices/authSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import MainCard from '../ui/main-card';
-import {openConductorLogin} from './conductorLoginUrl';
+import {localReauthIdentifier, openConductorLogin} from './conductorLoginUrl';
 import {LoginButton} from './login_form';
 
 const ADD_NEW_USER_FOR_LOGGED_IN_SERVER_ENABLED = true;
@@ -331,13 +330,11 @@ export default function ClusterCard(props: ClusterCardProps) {
                           key={props.serverId}
                           conductor_url={props.conductor_url}
                           is_refresh={true}
-                          email={
-                            hasLocalLoginProfile(
-                              tokenInfo?.parsedToken.hasLocalProfile
-                            )
-                              ? username
-                              : undefined
-                          }
+                          email={localReauthIdentifier({
+                            username,
+                            hasLocalProfile:
+                              tokenInfo?.parsedToken.hasLocalProfile,
+                          })}
                           label="Renew"
                           size="small"
                           variant="contained"

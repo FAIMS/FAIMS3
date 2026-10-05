@@ -1,7 +1,25 @@
 // SPDX-License-Identifier: Apache-2.0
 /* eslint-disable n/no-unsupported-features/node-builtins */
+import {hasLocalLoginProfile} from '@faims3/data-model';
 import {Browser} from '@capacitor/browser';
 import {config, IS_WEB_PLATFORM} from '../../../buildconfig';
+
+/**
+ * Username/email to put on Conductor `/login` after a local session expires.
+ * `admin` and other non-email local identifiers are valid. SSO-only accounts
+ * return undefined so the login form is not prefilled.
+ */
+export function localReauthIdentifier({
+  username,
+  hasLocalProfile,
+}: {
+  username?: string;
+  hasLocalProfile?: boolean;
+}): string | undefined {
+  if (!hasLocalLoginProfile(hasLocalProfile)) return undefined;
+  const identifier = username?.trim();
+  return identifier || undefined;
+}
 
 /** Where Conductor should send the browser after login. */
 export function authReturnRedirect({
