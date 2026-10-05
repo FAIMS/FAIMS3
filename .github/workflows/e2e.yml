@@ -161,8 +161,7 @@ jobs:
 
           # Serve the artefacts the build step produced, so the suite exercises
           # the shipped bundles and nothing compiles while the stack comes up.
-          # api/.env reaches start:prod only through env-cmd; in production the
-          # Docker image supplies that environment instead.
+          # api/.env reaches start:prod only through env-cmd.
           start api pnpm --filter=@faims3/api exec env-cmd pnpm run start:prod
           start app pnpm --filter=@faims3/app run serve
           start web pnpm --filter=@faims3/web run serve
