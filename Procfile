@@ -1,3 +1,6 @@
+# Overmind cannot order processes, so run `pnpm build` before `overmind start`:
+# the library watch builds below start alongside the services that consume them.
+
 # CouchDB runs in Docker, not normally enabled here as it
 # generally doesn't need to restart. Uncomment the following line to start CouchDB in Docker.
 #couchdb: docker compose up couchdb
