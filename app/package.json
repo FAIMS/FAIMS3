@@ -53,7 +53,7 @@
     "@capacitor/device": "^7.0.1",
     "@capacitor/filesystem": "^7.0.1",
     "@capacitor/geolocation": "^7.1.1",
-    "@capacitor/ios": "^7.2.0",
+    "@capacitor/ios": "^7.6.9",
     "@capacitor/share": "^7.0.1",
     "@capacitor/status-bar": "^7.0.1",
     "@capgo/capacitor-audio-recorder": "7",
