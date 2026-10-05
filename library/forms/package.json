@@ -18,7 +18,7 @@
     "dev": "vite",
     "build": "tsc --p ./tsconfig-build.json && vite build",
     "typecheck": "tsc --noEmit",
-    "watch": "pnpm run watch:types & pnpm run watch:build",
+    "watch": "pnpm run /^watch:/",
     "watch:types": "tsc --p ./tsconfig-build.json --watch",
     "watch:build": "vite build --watch",
     "circular-dep-check": "madge -c --extensions ts lib/",
