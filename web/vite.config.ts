@@ -32,7 +32,6 @@ export default defineConfig({
   // Same port when serving the build, so CI and the dev stack agree.
   preview: {
     port: 3001,
-    strictPort: true,
   },
   optimizeDeps: {
     include: [
