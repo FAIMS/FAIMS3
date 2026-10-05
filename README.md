@@ -160,17 +160,15 @@ to run them together. The advantage over `pnpm run dev` is that you can
 run them in the background, restart individual services easily and attach/detach
 the output from the servers in the terminal.
 
-Run `pnpm build` before `overmind start`. Overmind has no way to order
-processes, so the `data-model` and `forms` watch builds start alongside `api`,
-`web` and `app`, and a service that compiles against a library mid-write will
-fail. The `api` does not recover on its own: its nodemon watches `api` sources
-only, so it never sees the library emit. `pnpm run dev` takes this ordering
-from turbo instead.
+Run `pnpm build` before `overmind start`, because Overmind starts every process
+at once, so a service can compile against a library whose watch build is still
+writing. The build narrows that window rather than closing it, since the library
+watch builds re-emit their output on startup.
 
 Example commands:
 
 ```bash
-# Build the libraries, then run all services and detach
+# Build first, then run all services and detach
 pnpm build
 overmind start -d
 
