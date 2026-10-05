@@ -316,5 +316,5 @@ EOF
   # A bare `wait` returns only once both watches are gone, so a watch that dies
   # leaves its library silently stale. Return on the first exit and say so.
   wait -n || true
-  echo "A library watch exited; run ./localdev.sh to restart the watchers."
+  echo "A library watch exited; run ./localdev.sh --all to restart the watchers."
 fi
