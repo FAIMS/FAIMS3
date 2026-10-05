@@ -70,12 +70,12 @@ export function lerpHeading(from: number, to: number, t: number): number {
 
 /**
  * Low-pass filter so magnetometer jitter does not chatter the triangle.
- * `alpha` is the fraction moved toward `next` (0.45 ≈ one-and-a-bit samples).
+ * `alpha` is the fraction moved toward `next` (0.2 ≈ five-sample settle).
  */
 export function smoothHeading(
   previous: number | null,
   next: number,
-  alpha = 0.45
+  alpha = 0.2
 ): number {
   if (previous == null) {
     return normalizeHeading(next);
