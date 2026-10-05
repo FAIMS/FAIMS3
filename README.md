@@ -164,7 +164,8 @@ Run `pnpm build` before `overmind start`, because Overmind starts every process
 at once, so a service can compile against a library whose watch build is still
 writing. With valid output already on disk, a service that compiles immediately
 resolves the library, leaving only the watch builds' re-emit as a short race.
-Restart `api` with `overmind restart api` if it dies in that window.
+Restart `api` with `overmind restart api` if it logs a compile error and waits
+for file changes in that window.
 
 Example commands:
 
