@@ -27,7 +27,10 @@ week for **4 weeks**, and one backup a month for **12 months**. Data can be
 restored as it stood on any day in the past week, at weekly points over the past
 month, and at monthly points over the past year.
 
-A record created and deleted between two retained backups is in none of them.
+Deleting a record in {{FAIMS}} marks it as deleted but keeps it, with its
+history, in the {{notebook}}, so it is still in later backups. Data leaves the
+service when its {{notebook}} is deleted, or when the workspace is removed at the
+end of a contract.
 
 Each backup run reports its result to the operations team automatically, so a
 failed backup is seen the day it happens.
@@ -39,9 +42,9 @@ points above. When a contract ends, the workspace itself remains available for a
 further 30 days so that the institution can export before anything is removed.
 
 **How long data could still exist** is a privacy promise. **No copy of
-institutional data is kept beyond 12 months after deletion.** That period runs
-from deletion, not from the end of a contract, so the outside limit at the end
-of a contract is about 13 months. No backups or snapshots are taken outside the
+institutional data is kept beyond 12 months after it leaves the service.** That
+period runs from when the {{notebook}} or workspace is deleted, not from the end of
+a contract, so the outside limit at the end of a contract is about 13 months. No backups or snapshots are taken outside the
 automated schedule. If one is ever needed, for example before an upgrade, it is
 deleted within 30 days.
 
@@ -59,10 +62,10 @@ retention is stated in the agreement covering it.
 
 In summary:
 
-|                                      | Can be restored                                             | Gone by                  |
-| ------------------------------------ | ----------------------------------------------------------- | ------------------------ |
-| Your workspace after a contract ends | 30 days, by export                                          | 30 days                  |
-| Backups                              | Daily for 7 days, weekly for 4 weeks, monthly for 12 months | 12 months after deletion |
+|                                      | Can be restored                                             | Gone by                                                  |
+| ------------------------------------ | ----------------------------------------------------------- | -------------------------------------------------------- |
+| Your workspace after a contract ends | 30 days, by export                                          | 30 days                                                  |
+| Backups                              | Daily for 7 days, weekly for 4 weeks, monthly for 12 months | 12 months after the {{notebook}} or workspace is deleted |
 
 ## How recovery works
 
