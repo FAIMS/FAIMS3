@@ -83,6 +83,11 @@ for code work.
   (AWS CDK hard-enables it unless JSON `disableStartupMigrationLock` is
   set). `DISABLE_MIGRATE_ON_STARTUP` (default off) skips boot migrate
   entirely — no lock, no Couch migrate — and attaches the API immediately.
+- Both `api` dev loops run the same `tsc --incremental`, whose `tsbuildinfo`
+  diagnostics cache under `outDir` can replay errors already gone from the
+  source. Reset it with `pnpm --filter=@faims3/api run clean`, or, in the
+  container, `docker compose exec api sh -c "cd api && pnpm run clean"`. Then
+  save any `.ts` file: nodemon ignores the delete, so nothing recompiles.
 
 ### Lint / test / build (standard commands, see `package.json`)
 
