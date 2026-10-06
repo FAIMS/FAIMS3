@@ -175,6 +175,7 @@ const FieldDialog = ({
           value={type}
           onChange={e => setType(e.target.value as SetupField['type'])}
           fullWidth
+          helperText="How the value is entered on the creation form"
         >
           {FIELD_TYPES.map(t => (
             <MenuItem key={t.value} value={t.value}>
@@ -200,6 +201,7 @@ const FieldDialog = ({
           value={helperText}
           onChange={e => setHelperText(e.target.value)}
           fullWidth
+          helperText="Shown under the field on the creation form to explain what to enter"
         />
         <FormControlLabel
           control={
@@ -210,6 +212,13 @@ const FieldDialog = ({
           }
           label="Required"
         />
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{display: 'block', mt: -1.5, ml: 4}}
+        >
+          The notebook cannot be created until this field is filled in
+        </Typography>
       </DialogContent>
       <DialogActions sx={designerDialogActionsSx}>
         <Button onClick={onClose} sx={designerCancelButtonSx}>

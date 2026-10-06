@@ -7,29 +7,27 @@ import type {Field} from '@/components/form';
 const PREFIX = 'setup__';
 const MULTI_SEPARATOR = '__opt__';
 
-/** Zod schema for a single setup field's form input. */
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Zod schema for a single setup field's form input. Required fields carry
+ * their own message so the error lands on the field at submit.
+ */
 const schemaFor = (field: SetupField): z.ZodSchema => {
+  const required = {message: `${field.label} is required.`};
+  const date = {message: `${field.label} must be a date.`};
   switch (field.type) {
     case 'number':
+      return field.required ? z.number(required) : z.number().optional();
+    case 'date':
+      // min(1) first so an empty value reads as missing, not malformed
       return field.required
-        ? z.number({message: `${field.label} must be a number.`})
-        : z.number().optional();
-    case 'date': {
-      const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
-        message: `${field.label} must be a date.`,
-      });
-      return field.required
-        ? date.min(1, {message: `${field.label} is required.`})
-        : date.optional().or(z.literal(''));
-    }
-    case 'select':
-      return field.required
-        ? z.string().min(1, {message: `${field.label} is required.`})
-        : z.string().optional();
+        ? z.string(required).min(1, required).regex(DATE_PATTERN, date)
+        : z.string().regex(DATE_PATTERN, date).optional().or(z.literal(''));
     default:
-      // string and longtext
+      // string, longtext and select
       return field.required
-        ? z.string().min(1, {message: `${field.label} is required.`})
+        ? z.string(required).min(1, required)
         : z.string().optional();
   }
 };
@@ -48,6 +46,7 @@ export const setupFieldsToFormFields = (form: SetupForm): Field[] =>
           // label the group once, on its first checkbox
           label: index === 0 ? field.label : undefined,
           description: index === 0 ? field.helperText : undefined,
+          required: index === 0 ? field.required : undefined,
           type: 'checkbox',
           checkboxLabel: option,
           schema: z.boolean().optional(),
@@ -59,6 +58,7 @@ export const setupFieldsToFormFields = (form: SetupForm): Field[] =>
         name: `${PREFIX}${field.name}`,
         label: field.label,
         description: field.helperText,
+        required: field.required,
         schema: schemaFor(field),
         ...(field.type === 'number' ? {type: 'number'} : {}),
         ...(field.type === 'date' ? {type: 'date'} : {}),
@@ -95,4 +95,32 @@ export const collectSetupValues = (
     values[field.name] = raw as string | number;
   }
   return values;
+};
+
+/**
+ * Submit gate for required multiselects only. They expand to optional
+ * checkboxes, so there is no single field to carry a validation error;
+ * every other required field reports through its own schema on submit.
+ *
+ * Callers wrap `isBlocked` in Form's `disableSubmission` themselves; handing
+ * Form a ready-made function here would feed its schema inference.
+ *
+ * @returns Undefined when the form has no required multiselect.
+ */
+export const setupSubmissionGate = (
+  form: SetupForm
+):
+  | {isBlocked: (data: Record<string, unknown>) => boolean; reason: string}
+  | undefined => {
+  const required = form.fields.filter(
+    f => f.type === 'multiselect' && f.required
+  );
+  if (required.length === 0) return undefined;
+  return {
+    isBlocked: data => {
+      const values = collectSetupValues(form, data);
+      return required.some(f => values[f.name] === undefined);
+    },
+    reason: `Select at least one option for: ${required.map(f => f.label).join(', ')}.`,
+  };
 };

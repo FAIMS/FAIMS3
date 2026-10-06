@@ -4,11 +4,7 @@ import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTeams, useGetTemplate, useGetTemplates} from '@/hooks/queries';
-import {
-  Action,
-  TemplateListItem,
-  validateSetupValues,
-} from '@faims3/data-model';
+import {Action, TemplateListItem} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useCallback, useState} from 'react';
 import {z} from 'zod';
@@ -25,7 +21,9 @@ import {usePlanConfigs} from '@/components/plans/usePlanConfigs';
 import {
   collectSetupValues,
   setupFieldsToFormFields,
+  setupSubmissionGate,
 } from '@/lib/setupFormFields';
+import {SetupFormHeading} from './setup-form-heading';
 
 // Import the default sample notebook JSON
 import blankNotebook from '../../../notebooks/blank-notebook.json';
@@ -87,6 +85,7 @@ export function CreateProjectForm({
   // Setup form fields follow the chosen template the same way plan configs do
   const setupForm =
     selectedTemplate?.uiSpecification?.uiSpec?.settings?.setupForm;
+  const setupGate = setupForm ? setupSubmissionGate(setupForm) : undefined;
 
   const fields: Field[] = [
     {
@@ -143,6 +142,7 @@ export function CreateProjectForm({
   }
 
   if (setupForm) {
+    dividers.push({index: fields.length, component: <SetupFormHeading />});
     fields.push(...setupFieldsToFormFields(setupForm));
   }
 
@@ -235,18 +235,14 @@ export function CreateProjectForm({
       // pass in team ID default, if provided
       defaultValues={{team: defaultValues?.teamId}}
       footer={plans.footer}
-      // A plan config that is not ready is a hard block; otherwise the setup
-      // form gates on its own required values.
+      // A plan config that is not ready is a hard block. Required setup
+      // fields validate on submit; only multiselects gate here.
       disableSubmission={
         plans.gate ??
-        (setupForm
+        (setupGate
           ? {
-              disabled: data =>
-                validateSetupValues(
-                  setupForm,
-                  collectSetupValues(setupForm, data)
-                ).length > 0,
-              reason: `Complete the required ${config.notebookName} details.`,
+              disabled: data => setupGate.isBlocked(data),
+              reason: setupGate.reason,
             }
           : undefined)
       }

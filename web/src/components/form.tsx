@@ -39,6 +39,8 @@ export interface Field {
   name: string;
   label?: string;
   description?: string;
+  /** Draws a required marker after the label. Validation is still the schema's job. */
+  required?: boolean;
   schema: z.ZodSchema;
   type?: string;
   options?: {label: string; value: string; description?: string}[];
@@ -243,6 +245,7 @@ export function Form<
                 name,
                 label,
                 description,
+                required,
                 type,
                 options,
                 excludedBy,
@@ -282,7 +285,20 @@ export function Form<
                     render={({field}) =>
                       type === 'checkbox' ? (
                         <FormItem>
-                          {label && <FormLabel>{label}</FormLabel>}
+                          {label && (
+                            <FormLabel>
+                              {label}
+                              {required && (
+                                <span
+                                  aria-hidden="true"
+                                  className="text-destructive"
+                                >
+                                  {' '}
+                                  *
+                                </span>
+                              )}
+                            </FormLabel>
+                          )}
                           {description && (
                             <FormDescription>{description}</FormDescription>
                           )}
@@ -301,7 +317,20 @@ export function Form<
                         </FormItem>
                       ) : (
                         <FormItem>
-                          {label && <FormLabel>{label}</FormLabel>}
+                          {label && (
+                            <FormLabel>
+                              {label}
+                              {required && (
+                                <span
+                                  aria-hidden="true"
+                                  className="text-destructive"
+                                >
+                                  {' '}
+                                  *
+                                </span>
+                              )}
+                            </FormLabel>
+                          )}
                           {description && (
                             <FormDescription>{description}</FormDescription>
                           )}

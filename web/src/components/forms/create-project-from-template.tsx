@@ -5,11 +5,7 @@ import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTeams, useGetTemplate} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
-import {
-  Action,
-  PostCreateNotebookInput,
-  validateSetupValues,
-} from '@faims3/data-model';
+import {Action, PostCreateNotebookInput} from '@faims3/data-model';
 import {
   optionalRootDescriptionField,
   rootDescriptionForApi,
@@ -17,7 +13,9 @@ import {
 import {
   collectSetupValues,
   setupFieldsToFormFields,
+  setupSubmissionGate,
 } from '@/lib/setupFormFields';
+import {SetupFormHeading} from './setup-form-heading';
 import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useMemo} from 'react';
@@ -85,6 +83,7 @@ export function CreateProjectFromTemplateForm({
   });
 
   const setupForm = template?.uiSpecification?.uiSpec?.settings?.setupForm;
+  const setupGate = setupForm ? setupSubmissionGate(setupForm) : undefined;
   // Every plan template needs its own config, keyed by plan id, sent as planConfigs
   const plans = usePlanConfigs({
     planTemplates: template?.uiSpecification?.planTemplates ?? [],
@@ -126,11 +125,13 @@ export function CreateProjectFromTemplateForm({
       );
     }
 
+    const dividers: {index: number; component: React.ReactNode}[] = [];
     if (setupForm) {
+      dividers.push({index: result.length, component: <SetupFormHeading />});
       result.push(...setupFieldsToFormFields(setupForm));
     }
 
-    return plans.appendTo({fields: result});
+    return plans.appendTo({fields: result, dividers});
   }, [
     canCreateGlobally,
     setupForm,
@@ -220,18 +221,14 @@ export function CreateProjectFromTemplateForm({
         submitButtonText={`Create ${config.notebookNameCapitalized}`}
         defaultValues={defaultTeamId ? {team: defaultTeamId} : undefined}
         footer={plans.footer}
-        // A plan config that is not ready is a hard block; otherwise the setup
-        // form gates on its own required values.
+        // A plan config that is not ready is a hard block. Required setup
+        // fields validate on submit; only multiselects gate here.
         disableSubmission={
           plans.gate ??
-          (setupForm
+          (setupGate
             ? {
-                disabled: data =>
-                  validateSetupValues(
-                    setupForm,
-                    collectSetupValues(setupForm, data)
-                  ).length > 0,
-                reason: `Complete the required ${config.notebookName} details.`,
+                disabled: data => setupGate.isBlocked(data),
+                reason: setupGate.reason,
               }
             : undefined)
         }
