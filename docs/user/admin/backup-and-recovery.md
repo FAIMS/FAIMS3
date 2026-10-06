@@ -6,8 +6,8 @@ kept, and how the service is recovered. It is not a developer guide.
 
 It describes the standard hosted service, which is what a Team or Individual
 subscription receives. A custom enterprise deployment can differ in its backup
-schedule, retention, location and encryption. Where it does, the agreement
-covering that deployment states what applies.
+schedule, retention, and location. Where it does, the agreement covering that
+deployment states what applies.
 
 ## What is backed up
 
@@ -94,12 +94,6 @@ requires them, and are scoped in the agreement rather than assumed.
 ## What is not in place
 
 Stated plainly, because a reviewer will ask.
-
-**The live database is not encrypted at rest.** Data in transit is protected
-with Transport Layer Security, but the working database volume is not. Backups
-are encrypted before they leave the server. On a custom enterprise deployment,
-encryption at rest depends on how that deployment is configured. This is
-disclosed during security review, and it is on the engineering roadmap.
 
 **There is no independent audit of the backup process.** {{FAIMS}} holds no
 security certification. The hosting providers hold their own, and their reports
