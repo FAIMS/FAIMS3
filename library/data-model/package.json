@@ -35,7 +35,7 @@
     "build:esm": "tsc -p tsconfig.esm.json",
     "clean": "gts clean && rm -rf build",
     "dev": "pnpm run watch",
-    "watch": "pnpm run watch:cjs & pnpm run watch:esm",
+    "watch": "pnpm run /^watch:/",
     "watch:cjs": "tsc -p tsconfig.json --watch",
     "watch:esm": "tsc -p tsconfig.esm.json --watch",
     "test": "NODE_ENV=test jest",
