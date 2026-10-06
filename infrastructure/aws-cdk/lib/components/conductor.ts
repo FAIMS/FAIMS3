@@ -31,6 +31,7 @@ import {
   ConductorConfig,
   DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW,
   DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS,
+  DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
 } from '../config';
 
 const DEFAULT_SMTP_CACHE_EXPIRY = 300;
@@ -320,6 +321,21 @@ export class FaimsConductor extends Construct {
         props.exportRateLimiterPerWindow ??
         DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW
       }`,
+      // Skip-migrate takes precedence; lock is unused in that case.
+      DISABLE_MIGRATE_ON_STARTUP: props.config.disableMigrateOnStartup
+        ? 'true'
+        : 'false',
+      // Clustered ECS: lock is on unless JSON `disableStartupMigrationLock`
+      // (or migrate-on-startup is skipped — schema forces the lock off).
+      STARTUP_MIGRATION_LOCK_ENABLED:
+        props.config.disableMigrateOnStartup ||
+        props.config.disableStartupMigrationLock
+          ? 'false'
+          : 'true',
+      STARTUP_MIGRATION_LOCK_TIMEOUT_MS: `${
+        props.config.startupMigrationLockTimeoutMs ??
+        DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS
+      }`,
 
       // Email Service Configuration
       EMAIL_SERVICE_TYPE: props.smtpConfig.emailServiceType,
@@ -423,6 +439,8 @@ export class FaimsConductor extends Construct {
       // With maxHealthyPercent defaulting to 200, ECS starts replacement
       // tasks before draining old ones.
       minHealthyPercent: 100,
+      // Cover Node import → /up bind only. Migrate happens after listen.
+      healthCheckGracePeriod: Duration.seconds(120),
       // Fail (and roll back) quickly when new tasks cannot start healthy.
       circuitBreaker: {
         enable: true,
@@ -440,12 +458,14 @@ export class FaimsConductor extends Construct {
       targetType: elb.TargetType.IP,
       healthCheck: {
         enabled: true,
-        healthyHttpCodes: '200,302',
+        // GET /up is bound before Couch migrate (old images already served
+        // this path). Do not probe readiness — ECS treats ALB fail as death.
+        healthyHttpCodes: '200',
         protocol: elb.Protocol.HTTP,
         interval: Duration.seconds(30),
         timeout: Duration.seconds(5),
         port: this.internalPort.toString(),
-        path: '/',
+        path: '/up',
       },
       vpc: props.vpc,
     });

@@ -45,7 +45,10 @@ import {useNotebookRoute} from '../../../context/notebookRoute';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
-import {Project} from '../../../context/slices/projectSlice';
+import {
+  isActivatedProject,
+  Project,
+} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {buildHydrateKeys} from '../../../utils/customHooks';
 import {localGetDataDb} from '../../../utils/database';
@@ -1097,22 +1100,19 @@ const useRowHydration = (
  * @param props - Component props
  */
 export function RecordsTable(props: RecordsTableProps) {
-  const {
-    maxRows,
-    rows,
-    loading,
-    viewsets,
-    recordStatus,
-    formTypes,
-    project: {uiSpecificationId: uiSpecId, projectId: project_id},
-  } = props;
+  const {maxRows, rows, loading, viewsets, recordStatus, formTypes, project} =
+    props;
+  const project_id = project.projectId;
+  const uiSpecId = isActivatedProject(project)
+    ? project.uiSpecificationId
+    : undefined;
 
   const history = useNavigate();
   const {notebook} = useNotebookRoute();
   const styles = useDataGridStyles();
 
   // Get UI specification
-  const uiSpec = compiledSpecService.getSpec(uiSpecId);
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   // The forms listed: the caller's, or the notebook's visible forms
   const visibleTypes = useMemo(() => {

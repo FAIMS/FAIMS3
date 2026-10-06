@@ -33,6 +33,8 @@ import {fetchNotebookDetails} from '../context/slices/helpers/databaseHelpers';
 import type {OfflineMapRegion} from '@faims3/data-model';
 import type {SyncMode} from './syncMode';
 
+type NotebookDetails = Awaited<ReturnType<typeof fetchNotebookDetails>>;
+
 /** Result of {@link resolveActivationSyncMode} for `activateProject`. */
 export interface ActivationSyncModeResult {
   /** Initial replication mode to register with PouchDB. */
@@ -51,14 +53,18 @@ export interface ActivationSyncModeResult {
    * Used to show the post-activation "Sync mode changed" snackbar.
    */
   usedPushOnlyDefault: boolean;
+  /** Full GET /api/notebooks/:id payload when the fetch succeeded. */
+  details?: NotebookDetails;
 }
 
 /**
  * Resolve initial sync mode when a notebook is activated.
  *
- * Fetches notebook details when online and compares `recordCount` to
- * {@link config.syncPushOnlyRecordThreshold}. Never throws — any failure or
- * ambiguous count falls back to two-way sync (`both`).
+ * Always attempts `GET /api/notebooks/:id` — do not gate on `navigator.onLine`,
+ * which is often wrong on mobile, and activation needs the design payload.
+ * Compares `recordCount` to {@link config.syncPushOnlyRecordThreshold}. Never
+ * throws — any failure or ambiguous count falls back to two-way sync (`both`)
+ * without `details`.
  *
  * @param serverUrl Base URL for the listing server
  * @param projectId Notebook id to activate
@@ -73,10 +79,6 @@ export async function resolveActivationSyncMode({
   projectId: string;
   token: string;
 }): Promise<ActivationSyncModeResult> {
-  if (!navigator.onLine) {
-    return {syncMode: 'both', usedPushOnlyDefault: false};
-  }
-
   try {
     const details = await fetchNotebookDetails({
       serverUrl,
@@ -92,6 +94,7 @@ export async function resolveActivationSyncMode({
       return {
         syncMode: 'both',
         usedPushOnlyDefault: false,
+        details,
         ...offlineMapFromServer,
       };
     }
@@ -100,6 +103,7 @@ export async function resolveActivationSyncMode({
         syncMode: 'push',
         recordCount,
         usedPushOnlyDefault: true,
+        details,
         ...offlineMapFromServer,
       };
     }
@@ -107,6 +111,7 @@ export async function resolveActivationSyncMode({
       syncMode: 'both',
       recordCount,
       usedPushOnlyDefault: false,
+      details,
       ...offlineMapFromServer,
     };
   } catch {

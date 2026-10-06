@@ -18,6 +18,7 @@ import {
   PURGE,
   REGISTER,
   REHYDRATE,
+  type PersistedState,
 } from 'redux-persist';
 import {PersistGate} from 'redux-persist/integration/react';
 import {config} from '../buildconfig';
@@ -33,7 +34,9 @@ import authReducer, {
 import {databaseService} from './slices/helpers/databaseService';
 import projectsReducer from './slices/projectSlice';
 import {
+  migrateProjectsActivationSplitV3,
   migrateProjectsPersistedState,
+  migrateProjectsQuickShareQrV4,
   migrateProjectsSyncModeV2,
 } from './slices/projectsPersistMigration';
 
@@ -53,13 +56,13 @@ const PERSIST_MIGRATION_LOG = '[redux-persist-migration]';
 // Configure persistence for the projects slice
 const projectsPersistConfig = {
   key: 'projects',
-  version: 2,
+  version: 4,
   storage: storage('faims-projects-db'),
   blacklist: ['isInitialised'],
   migrate: createMigrate(
     {
-      0: state => state,
-      1: state => {
+      0: (state: PersistedState) => state,
+      1: (state: PersistedState) => {
         const fromVersion = state?._persist?.version ?? 'unknown';
         logInfo(`${PERSIST_MIGRATION_LOG} version_migrate`, {
           fromVersion,
@@ -96,7 +99,7 @@ const projectsPersistConfig = {
           throw err;
         }
       },
-      2: state => {
+      2: (state: PersistedState) => {
         const fromVersion = state?._persist?.version ?? 'unknown';
         logInfo(`${PERSIST_MIGRATION_LOG} version_migrate`, {
           fromVersion,
@@ -119,7 +122,53 @@ const projectsPersistConfig = {
           throw err;
         }
       },
-    },
+      3: async (state: PersistedState) => {
+        const fromVersion = state?._persist?.version ?? 'unknown';
+        logInfo(`${PERSIST_MIGRATION_LOG} version_migrate`, {
+          fromVersion,
+          toVersion: 3,
+          slice: 'projects',
+        });
+        if (!state) {
+          return state;
+        }
+        try {
+          const migrated = await migrateProjectsActivationSplitV3(state);
+          return {...migrated, _persist: state._persist};
+        } catch (err) {
+          logWarn(`${PERSIST_MIGRATION_LOG} version_migrate_failed`, {
+            fromVersion,
+            toVersion: 3,
+            slice: 'projects',
+            message: err instanceof Error ? err.message : String(err),
+          });
+          throw err;
+        }
+      },
+      4: (state: PersistedState) => {
+        const fromVersion = state?._persist?.version ?? 'unknown';
+        logInfo(`${PERSIST_MIGRATION_LOG} version_migrate`, {
+          fromVersion,
+          toVersion: 4,
+          slice: 'projects',
+        });
+        if (!state) {
+          return state;
+        }
+        try {
+          const migrated = migrateProjectsQuickShareQrV4(state);
+          return {...migrated, _persist: state._persist};
+        } catch (err) {
+          logWarn(`${PERSIST_MIGRATION_LOG} version_migrate_failed`, {
+            fromVersion,
+            toVersion: 4,
+            slice: 'projects',
+            message: err instanceof Error ? err.message : String(err),
+          });
+          throw err;
+        }
+      },
+    } as unknown as Parameters<typeof createMigrate>[0],
     {debug: false}
   ),
 };
@@ -336,8 +385,8 @@ export const wipeAllDatabases = async () => {
   // cast and get state
   const state = store.getState() as RootState;
   for (const server of Object.values(state.projects.servers)) {
-    for (const project of Object.values(server.projects)) {
-      if (project.isActivated && project.database) {
+    for (const project of Object.values(server.activated)) {
+      if (project.database) {
         // Local DB should be wiped
         const localDb = databaseService.getLocalDatabase(
           project.database.localDbId

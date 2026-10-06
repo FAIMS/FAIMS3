@@ -11,6 +11,7 @@ import {
   Project,
 } from '../../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../../context/store';
+import {useIsOnline} from '../../../../utils/customHooks';
 import FaimsDialog from '../../ui/Faims_Dialog';
 import {
   ACTIVATE_ACTIVE_VERB_LABEL,
@@ -31,8 +32,10 @@ export default function NotebookActivationSwitch({
   const [open, setOpen] = React.useState(false);
   const activeUser = useAppSelector(selectActiveUser);
   const dispatch = useAppDispatch();
+  const {isOnline, checkIsOnline} = useIsOnline();
   const activationBlocked = isNotebookActivationBlocked(project);
   const activationWarned = project.schemaCompatibility?.tier === 'degraded';
+  const cannotActivate = activationBlocked || !isOnline;
 
   const handleOpen = () => {
     if (activationBlocked) return;
@@ -40,6 +43,7 @@ export default function NotebookActivationSwitch({
   };
   const handleClose = () => setOpen(false);
   const handleActivationClick = () => {
+    if (!checkIsOnline()) return;
     if (activeUser) {
       dispatch(
         activateProject({
@@ -62,19 +66,23 @@ export default function NotebookActivationSwitch({
       size="small"
       variant="outlined"
       disableElevation
-      disabled={activationBlocked}
+      disabled={cannotActivate}
       data-testid="app-notebook-activate-button"
     >
       {ACTIVATE_VERB_LABEL}
     </Button>
   );
 
+  const disableReason = activationBlocked
+    ? `This ${config.notebookName} cannot be activated with this version of the app. Update the app, then try again.`
+    : !isOnline
+      ? `Connect to the internet to activate this ${config.notebookName}. Activation prepares the ${config.notebookName} for offline use.`
+      : undefined;
+
   return (
     <Box sx={{display: 'flex', alignItems: 'center', height: '100%'}}>
-      {activationBlocked ? (
-        <Tooltip
-          title={`This ${config.notebookName} cannot be activated with this version of the app. Update the app, then try again.`}
-        >
+      {disableReason ? (
+        <Tooltip title={disableReason}>
           <span>{activateButton}</span>
         </Tooltip>
       ) : (
@@ -88,6 +96,7 @@ export default function NotebookActivationSwitch({
         onPrimaryAction={handleActivationClick}
         primaryActionText={ACTIVATE_VERB_LABEL}
         primaryActionLoading={isWorking}
+        primaryActionDisabled={!isOnline}
         primaryActionColor="primary"
         primaryActionVariant="contained"
         cancelButtonText="Cancel"
@@ -95,6 +104,17 @@ export default function NotebookActivationSwitch({
         cancelTestId="app-notebook-activate-cancel"
       >
         <Box sx={{mb: 2}}>
+          {!isOnline && (
+            <Alert
+              severity="warning"
+              icon={<WarningAmberIcon fontSize="inherit" />}
+              sx={{mb: 2}}
+              data-testid="app-notebook-activate-offline-warning"
+            >
+              Connect to the internet to activate this {config.notebookName}.
+              Activation prepares the {config.notebookName} for offline use.
+            </Alert>
+          )}
           {activationWarned && (
             <Alert
               severity="warning"
