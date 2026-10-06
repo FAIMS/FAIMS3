@@ -91,18 +91,6 @@ the Australian Privacy Principles in mind.
 Other locations are possible for a custom enterprise deployment where a project
 requires them, and are scoped in the agreement rather than assumed.
 
-## What is not in place
-
-Stated plainly, because a reviewer will ask.
-
-**There is no independent audit of the backup process.** {{FAIMS}} holds no
-security certification. The hosting providers hold their own, and their reports
-are obtainable from them.
-
-**Restoration is not exercised on a published schedule.** The recovery path is
-used and the database restore has been performed, but there is no routine
-disaster-recovery drill with published results.
-
 ## Getting your own copy
 
 You do not need to rely on any of the above to hold your own copy. Export is
