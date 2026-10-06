@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Normalize API/upload `uiSpecification` JSON for the designer: detect schema version
  * (`uiSpec.schemaVersion`, else legacy `metadata.schema_version`), migrate when needed, then

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {config, buildRegisterUrl} from '@/constants';
 import {User} from '@/context/auth-provider';
 import {sortNotebookListNewestFirst} from '@/lib/utils';
@@ -5,7 +6,7 @@ import type {
   GetCurrentUserResponse,
   GetListAllUsersResponse,
   GetLongLivedTokensResponse,
-  GetNotebookListResponse,
+  GetNotebookListWithStatsResponse,
   GetTemplateByIdResponse,
   PostCreateLongLivedTokenRequest,
   PostCreateLongLivedTokenResponse,
@@ -132,12 +133,12 @@ export const useGetProjects = ({
   includeArchived?: boolean;
 }) =>
   useQuery({
-    queryKey: ['projects', user?.token, includeArchived],
+    queryKey: ['projects', user?.token, includeArchived, 'stats'],
     queryFn: () =>
-      get<GetNotebookListResponse>(
+      get<GetNotebookListWithStatsResponse>(
         includeArchived
-          ? '/api/notebooks/?includeArchived=true'
-          : '/api/notebooks/',
+          ? '/api/notebooks/?includeByteCount=true&includeArchived=true'
+          : '/api/notebooks/?includeByteCount=true',
         user
       ),
     select: sortNotebookListNewestFirst,
@@ -206,10 +207,10 @@ export const useGetProjectsForTeam = ({
   includeArchived?: boolean;
 }) =>
   useQuery({
-    queryKey: ['projectsbyteam', user?.token, teamId, includeArchived],
+    queryKey: ['projectsbyteam', user?.token, teamId, includeArchived, 'stats'],
     queryFn: () =>
-      get<GetNotebookListResponse>(
-        `/api/notebooks?teamId=${teamId}${includeArchived ? '&includeArchived=true' : ''}`,
+      get<GetNotebookListWithStatsResponse>(
+        `/api/notebooks?teamId=${teamId}&includeByteCount=true${includeArchived ? '&includeArchived=true' : ''}`,
         user
       ),
     select: sortNotebookListNewestFirst,

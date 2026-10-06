@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*
  * Config helper namespace: Zod schema factories for env / runtime parsing.
  * Helpers return schemas (e.g. `intDefault(10)`); they do not read env vars.

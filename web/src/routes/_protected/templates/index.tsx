@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {createFileRoute, useNavigate} from '@tanstack/react-router';
 import type {ColumnDef} from '@tanstack/react-table';
 import {DataTable} from '@/components/data-table/data-table';

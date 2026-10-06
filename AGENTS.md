@@ -74,9 +74,20 @@ for code work.
   ("Loading sample notebooks and templates") which needs a bearer token, or run
   `cd api && pnpm seed-test-dataset` (idempotent; safe to re-run).
 - For repeated e2e auth (password reset / invites), set
-  `RATE_LIMITER_ENABLED=false` and `AUTH_ATTEMPT_LIMITER_ENABLED=false` in
+  `RATE_LIMITER_ENABLED=false` and `ATTEMPT_LIMITER_ENABLED=false` in
   `api/.env` and restart the API. The former is the Express HTTP IP limiter;
   the latter gates CouchDB-backed email-code / verification-challenge limits.
+- Startup migration lock (`STARTUP_MIGRATION_LOCK_ENABLED`) defaults **off**.
+  That avoids a 30-minute wait after a killed `pnpm run dev` reload left a
+  `running` lock. Clustered / multi-replica production MUST set it `true`
+  (AWS CDK hard-enables it unless JSON `disableStartupMigrationLock` is
+  set). `DISABLE_MIGRATE_ON_STARTUP` (default off) skips boot migrate
+  entirely — no lock, no Couch migrate — and attaches the API immediately.
+- Both `api` dev loops run the same `tsc --incremental`, whose `tsbuildinfo`
+  diagnostics cache under `outDir` can replay errors already gone from the
+  source. Reset it with `pnpm --filter=@faims3/api run clean`, or, in the
+  container, `docker compose exec api sh -c "cd api && pnpm run clean"`. Then
+  save any `.ts` file: nodemon ignores the delete, so nothing recompiles.
 
 ### Lint / test / build (standard commands, see `package.json`)
 

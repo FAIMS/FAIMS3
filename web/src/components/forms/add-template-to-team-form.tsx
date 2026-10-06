@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Field, Form} from '@/components/form';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTeams} from '@/hooks/queries';

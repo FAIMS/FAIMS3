@@ -43,8 +43,12 @@ Per-project **`metadata-{id}`** Couch databases are **not** migrated by this fra
 
 Each database type has:
 
-- A **default version**: The assumed starting point for new databases
+- A **default version**: The assumed starting point for **unknown / legacy** databases discovered at migrate time
 - A **target version**: The latest version that databases should be migrated to
+
+`initDataDB` plus the current write path already emit the target schema. New per-project **data** databases are therefore registered at `targetVersion` when a survey is created (`registerDbAtCurrentVersion`), so a later migrate does not replay historical DATA steps against current-schema documents. `initialiseDataDb` itself does **not** register: restore and startup re-init reuse that helper and may load older documents afterwards.
+
+Deleting a survey removes its migrations document (`unregisterDbMigrationDoc`) so the migrations DB does not keep entries for destroyed data DBs.
 
 ### Migration Path
 
@@ -437,7 +441,7 @@ export const dataV2toV3Migration: MigrationFunc = doc => {
 
 ## Migration Process Workflow
 
-1. **Initialisation**: The system checks if migration documents exist for each database, creating them if needed
+1. **Initialisation**: The system checks if migration documents exist for each database, creating them if needed (unknown DBs start at `defaultVersion`; new survey data DBs are pre-registered at `targetVersion` on create)
 2. **Version Check**: Each database's current version is compared to its target version
 3. **Migration Planning**: Required migration steps are identified in sequence
 4. **Execution**: Migrations are applied one at a time, with detailed logging

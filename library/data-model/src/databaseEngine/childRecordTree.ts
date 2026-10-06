@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * The walk down a record's Child-type links, and the links themselves.
  *

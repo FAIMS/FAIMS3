@@ -21,6 +21,8 @@ that goes stale as the code is rewritten.
 Contributions are made under the Developer Certificate of Origin: sign off
 each commit with `git commit -s`. See [app/DCO](app/DCO).
 
+An automated license check is run via `pnpm license-check` in the CI build-lint script, it will fail if the license line is missing from any new files. To inject the license into new files you can run `pnpm license-check --inject`.
+
 ## Directory Structure
 
 The repository contains the following:

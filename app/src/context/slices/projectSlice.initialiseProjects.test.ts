@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   ProjectStatus,
@@ -30,15 +31,21 @@ vi.mock('../../logging', () => ({
 }));
 
 import {reportNotebookSchemaCompatibility} from '../../logging';
+import {compiledSpecService} from './helpers/compiledSpecService';
 import projectsReducer, {
+  compileSpecs,
   initialiseProjects,
   initialProjectState,
   reassessSchemaCompatibility,
+  type ActivatedProject,
+  type ListedProject,
   type ProjectsState,
 } from './projectSlice';
 
 const serverId = 'server-a';
 const serverUrl = 'https://conductor.example';
+const HASH_A = 'a'.repeat(64);
+const HASH_B = 'b'.repeat(64);
 
 const currentDefinition = () => ({
   uiSpec: {
@@ -67,9 +74,86 @@ const currentDefinition = () => ({
   },
 });
 
-function makeStore(
-  projects: ProjectsState['servers'][string]['projects'] = {}
+function uiSpecProperties(
+  schemaVersion = CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+  hash = HASH_A
 ) {
+  return {schemaVersion, hash};
+}
+
+function directoryItem(
+  overrides: Record<string, unknown> = {}
+): Record<string, unknown> {
+  return {
+    _id: 'nb-1',
+    name: 'Notebook One',
+    description: 'desc',
+    status: ProjectStatus.OPEN,
+    dataDb: {base_url: 'https://couch.example/data-nb-1'},
+    uiSpecProperties: uiSpecProperties(),
+    ...overrides,
+  };
+}
+
+function listedFixture(overrides: Partial<ListedProject> = {}): ListedProject {
+  return {
+    projectId: 'nb-1',
+    serverId,
+    name: 'Old name',
+    description: 'desc',
+    status: ProjectStatus.OPEN,
+    isActivated: false,
+    uiSpecProperties: uiSpecProperties(),
+    ...overrides,
+  };
+}
+
+function activatedFixture(
+  overrides: Partial<ActivatedProject> = {}
+): ActivatedProject {
+  return {
+    projectId: 'nb-1',
+    serverId,
+    name: 'Notebook One',
+    description: 'desc',
+    status: ProjectStatus.OPEN,
+    isActivated: true,
+    uiDefinition: currentDefinition() as ActivatedProject['uiDefinition'],
+    uiSpecificationId: 'old-spec',
+    uiSpecProperties: uiSpecProperties(),
+    database: {
+      syncMode: 'none',
+      isSyncingAttachments: false,
+      localDbId: 'local-1',
+      remote: {
+        remoteDbId: 'remote-1',
+        syncId: undefined,
+        connectionConfiguration: {
+          jwtToken: 't',
+          couchUrl: 'https://couch.example',
+          databaseName: 'data-nb-1',
+        },
+      },
+    },
+    schemaCompatibility: {
+      tier: 'compatible',
+      relation: 'current',
+      appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+      notebookSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+      requiresMigration: false,
+      reason: 'ok',
+    },
+    ...overrides,
+  };
+}
+
+function makeStore({
+  listed = {},
+  activated = {},
+}: {
+  listed?: Record<string, ListedProject>;
+  activated?: Record<string, ActivatedProject>;
+} = {}) {
   const projectsState: ProjectsState = {
     ...initialProjectState,
     servers: {
@@ -80,7 +164,8 @@ function makeStore(
         serverVersion: '9.9.9',
         shortCodePrefix: 'T',
         description: '',
-        projects,
+        listed,
+        activated,
       },
     },
   };
@@ -105,54 +190,72 @@ function makeStore(
   });
 }
 
-function stubFetch(notebookUiSpecification: unknown) {
-  const directory = [
-    {
-      _id: 'nb-1',
-      name: 'Notebook One',
-      description: 'desc',
-      status: ProjectStatus.OPEN,
-      dataDb: {base_url: 'https://couch.example/data-nb-1'},
-    },
-  ];
+function stubFetch({
+  directory = [directoryItem()],
+  notebookUiSpecification = currentDefinition(),
+  notebookUiSpecProperties = uiSpecProperties(),
+  notebookOk = true,
+}: {
+  directory?: Record<string, unknown>[];
+  notebookUiSpecification?: unknown;
+  notebookUiSpecProperties?: {schemaVersion: string; hash: string};
+  notebookOk?: boolean;
+} = {}) {
   const notebook = {
     _id: 'nb-1',
     name: 'Notebook One',
     description: 'desc',
     status: ProjectStatus.OPEN,
     uiSpecification: notebookUiSpecification,
+    uiSpecProperties: notebookUiSpecProperties,
     recordCount: 3,
   };
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string) => {
-      if (url.endsWith('/api/directory')) {
-        return {ok: true, json: async () => directory};
+  const fetchMock = vi.fn(async (url: string) => {
+    if (url.endsWith('/api/directory')) {
+      return {ok: true, json: async () => directory};
+    }
+    if (url.endsWith('/api/notebooks/nb-1')) {
+      if (!notebookOk) {
+        return {ok: false, status: 500, json: async () => ({})};
       }
-      if (url.endsWith('/api/notebooks/nb-1')) {
-        return {ok: true, json: async () => notebook};
-      }
-      return {ok: false, status: 404, json: async () => ({})};
-    })
-  );
+      return {ok: true, json: async () => notebook};
+    }
+    return {ok: false, status: 404, json: async () => ({})};
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
 }
 
-describe('initialiseProjects notebook schema fail-soft', () => {
+function listedOf(store: ReturnType<typeof makeStore>, id = 'nb-1') {
+  return store.getState().projects.servers[serverId].listed[id];
+}
+
+function activatedOf(store: ReturnType<typeof makeStore>, id = 'nb-1') {
+  return store.getState().projects.servers[serverId].activated[id];
+}
+
+describe('initialiseProjects lean directory + hash refresh', () => {
   beforeEach(() => {
     vi.mocked(reportNotebookSchemaCompatibility).mockClear();
+    vi.mocked(compiledSpecService.compileAndRegisterSpec).mockClear();
   });
 
-  it('adds a compatible notebook with schemaCompatibility recorded', async () => {
-    stubFetch(currentDefinition());
+  it('lists a new notebook without fetching GET /:id', async () => {
+    const fetchMock = stubFetch();
     const store = makeStore();
 
     await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
 
-    const project =
-      store.getState().projects.servers[serverId].projects['nb-1'];
+    const project = listedOf(store);
     expect(project).toBeDefined();
+    expect(activatedOf(store)).toBeUndefined();
     expect(project.schemaCompatibility?.tier).toBe('compatible');
-    expect(project.uiDefinition.uiSpec.fields).toHaveProperty('title');
+    expect(project).not.toHaveProperty('uiDefinition');
+    expect(
+      fetchMock.mock.calls.some(([url]) =>
+        String(url).endsWith('/api/notebooks/nb-1')
+      )
+    ).toBe(false);
     expect(reportNotebookSchemaCompatibility).toHaveBeenCalledWith(
       expect.objectContaining({
         projectId: 'nb-1',
@@ -164,15 +267,18 @@ describe('initialiseProjects notebook schema fail-soft', () => {
   });
 
   it('still lists a NEW notebook whose schema is a newer major (incompatible)', async () => {
-    const def = currentDefinition();
-    def.uiSpec.schemaVersion = '99.0.0';
-    stubFetch(def);
+    stubFetch({
+      directory: [
+        directoryItem({
+          uiSpecProperties: uiSpecProperties('99.0.0'),
+        }),
+      ],
+    });
     const store = makeStore();
 
     await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
 
-    const project =
-      store.getState().projects.servers[serverId].projects['nb-1'];
+    const project = listedOf(store);
     expect(project).toBeDefined();
     expect(project.name).toBe('Notebook One');
     expect(project.schemaCompatibility).toMatchObject({
@@ -180,152 +286,335 @@ describe('initialiseProjects notebook schema fail-soft', () => {
       relation: 'newer-major',
       notebookSchemaVersion: '99.0.0',
     });
-    // Placeholder graph, salvaged metadata for the skeleton view.
-    expect(project.uiDefinition.uiSpec.fields).toEqual({});
-    expect(project.uiDefinition.metadata.information.purposeMarkdown).toBe(
-      'Purpose'
-    );
+    expect(project).not.toHaveProperty('uiDefinition');
+    expect(activatedOf(store)).toBeUndefined();
   });
 
-  it('keeps the last good definition for an EXISTING notebook that becomes incompatible', async () => {
-    const good = currentDefinition();
-    const store = makeStore({
-      'nb-1': {
-        projectId: 'nb-1',
-        serverId,
-        name: 'Old name',
-        status: ProjectStatus.OPEN,
-        isActivated: false,
-        uiDefinition: good as any,
-        uiSpecificationId: 'old-spec',
-        schemaCompatibility: {
-          tier: 'compatible',
-          relation: 'current',
-          appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
-          notebookSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
-          requiresMigration: false,
-          reason: 'ok',
-        },
-      },
-    });
-
-    const def = currentDefinition();
-    def.uiSpec.schemaVersion = '99.0.0';
-    def.uiSpec.fields = {}; // would otherwise be the placeholder anyway
-    stubFetch(def);
-
-    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
-
-    const project =
-      store.getState().projects.servers[serverId].projects['nb-1'];
-    expect(project.name).toBe('Notebook One');
-    expect(project.schemaCompatibility?.tier).toBe('incompatible');
-    // Last good form graph retained so local records remain readable.
-    expect(project.uiDefinition.uiSpec.fields).toHaveProperty('title');
-  });
-
-  it('keeps the last good definition across a second sync while already incompatible', async () => {
-    const good = currentDefinition();
-    const store = makeStore({
-      'nb-1': {
-        projectId: 'nb-1',
-        serverId,
-        name: 'Notebook One',
-        status: ProjectStatus.OPEN,
-        isActivated: true,
-        uiDefinition: good as any,
-        uiSpecificationId: 'old-spec',
-        schemaCompatibility: {
-          tier: 'incompatible',
-          relation: 'newer-major',
-          appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
-          notebookSchemaVersion: '99.0.0',
-          requiresMigration: false,
-          reason: 'already flagged',
-        },
-      },
-    });
-
-    const def = currentDefinition();
-    def.uiSpec.schemaVersion = '99.0.0';
-    def.uiSpec.fields = {};
-    stubFetch(def);
-
-    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
-
-    const project =
-      store.getState().projects.servers[serverId].projects['nb-1'];
-    expect(project.schemaCompatibility?.tier).toBe('incompatible');
-    expect(project.uiDefinition.uiSpec.fields).toHaveProperty('title');
-  });
-
-  it('does not invent a graph when the existing definition is already a placeholder', async () => {
-    const store = makeStore({
-      'nb-1': {
-        projectId: 'nb-1',
-        serverId,
-        name: 'Notebook One',
-        status: ProjectStatus.OPEN,
-        isActivated: false,
-        uiDefinition: {
-          uiSpec: {
-            fields: {},
-            views: {},
-            viewsets: {},
-            visible_types: [],
-            settings: {showQrCodeButton: false},
-            schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
-          },
-          metadata: {
-            information: {
-              notebookVersion: '',
-              purposeMarkdown: 'Old purpose',
-              projectLeadLabel: '',
-              leadInstitution: '',
-            },
-          },
-        } as any,
-        uiSpecificationId: 'placeholder-spec',
-        schemaCompatibility: {
-          tier: 'incompatible',
-          relation: 'newer-major',
-          appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
-          notebookSchemaVersion: '99.0.0',
-          requiresMigration: false,
-          reason: 'already flagged',
-        },
-      },
-    });
-
-    const def = currentDefinition();
-    def.uiSpec.schemaVersion = '99.0.0';
-    stubFetch(def);
-
-    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
-
-    const project =
-      store.getState().projects.servers[serverId].projects['nb-1'];
-    expect(project.schemaCompatibility?.tier).toBe('incompatible');
-    expect(project.uiDefinition.uiSpec.fields).toEqual({});
-    // Incoming placeholder salvages metadata from the server's design.
-    expect(project.uiDefinition.metadata.information.purposeMarkdown).toBe(
-      'Purpose'
-    );
-  });
-
-  it('marks a newer minor as degraded but stores the best-effort definition', async () => {
-    const def = currentDefinition();
+  it('marks a newer minor as degraded without fetching the spec', async () => {
     const [major, minor, patch] = CURRENT_NOTEBOOK_UI_SCHEMA_VERSION.split('.');
-    def.uiSpec.schemaVersion = `${major}.${Number(minor) + 1}.${patch}`;
-    stubFetch(def);
+    const newerMinor = `${major}.${Number(minor) + 1}.${patch}`;
+    const fetchMock = stubFetch({
+      directory: [
+        directoryItem({
+          uiSpecProperties: uiSpecProperties(newerMinor),
+        }),
+      ],
+    });
     const store = makeStore();
 
     await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
 
-    const project =
-      store.getState().projects.servers[serverId].projects['nb-1'];
+    const project = listedOf(store);
     expect(project.schemaCompatibility?.tier).toBe('degraded');
+    expect(project).not.toHaveProperty('uiDefinition');
+    expect(
+      fetchMock.mock.calls.some(([url]) =>
+        String(url).endsWith('/api/notebooks/nb-1')
+      )
+    ).toBe(false);
+  });
+
+  it('patches an existing listed notebook without fetching GET /:id even when the hash changes', async () => {
+    const fetchMock = stubFetch({
+      directory: [
+        directoryItem({
+          name: 'Notebook One',
+          uiSpecProperties: uiSpecProperties(
+            CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+            HASH_B
+          ),
+        }),
+      ],
+    });
+    const store = makeStore({
+      listed: {
+        'nb-1': listedFixture({
+          name: 'Old name',
+          uiSpecProperties: uiSpecProperties(),
+        }),
+      },
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    const project = listedOf(store);
+    expect(project.name).toBe('Notebook One');
+    expect(project.uiSpecProperties.hash).toBe(HASH_B);
+    expect(project).not.toHaveProperty('uiDefinition');
+    expect(
+      fetchMock.mock.calls.some(([url]) =>
+        String(url).endsWith('/api/notebooks/nb-1')
+      )
+    ).toBe(false);
+  });
+
+  it('does not fetch GET /:id for an activated notebook whose hash matches', async () => {
+    const fetchMock = stubFetch();
+    const store = makeStore({
+      activated: {
+        'nb-1': activatedFixture(),
+      },
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    const project = activatedOf(store);
     expect(project.uiDefinition.uiSpec.fields).toHaveProperty('title');
+    expect(project.uiSpecificationId).toBe('old-spec');
+    expect(
+      fetchMock.mock.calls.some(([url]) =>
+        String(url).endsWith('/api/notebooks/nb-1')
+      )
+    ).toBe(false);
+  });
+
+  it('fetches GET /:id for an activated notebook when the directory hash changes', async () => {
+    const fetchMock = stubFetch({
+      directory: [
+        directoryItem({
+          uiSpecProperties: uiSpecProperties(
+            CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+            HASH_B
+          ),
+        }),
+      ],
+      notebookUiSpecProperties: uiSpecProperties(
+        CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+        HASH_B
+      ),
+    });
+    const store = makeStore({
+      activated: {
+        'nb-1': activatedFixture(),
+      },
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    const project = activatedOf(store);
+    expect(project.uiDefinition.uiSpec.fields).toHaveProperty('title');
+    expect(project.uiSpecProperties.hash).toBe(HASH_B);
+    expect(
+      fetchMock.mock.calls.some(([url]) =>
+        String(url).endsWith('/api/notebooks/nb-1')
+      )
+    ).toBe(true);
+  });
+
+  it('keeps the last good definition when an activated hash-change ingest is incompatible', async () => {
+    const def = currentDefinition();
+    def.uiSpec.schemaVersion = '99.0.0';
+    def.uiSpec.fields = {};
+    stubFetch({
+      directory: [
+        directoryItem({
+          uiSpecProperties: uiSpecProperties('99.0.0', HASH_B),
+        }),
+      ],
+      notebookUiSpecification: def,
+      notebookUiSpecProperties: uiSpecProperties('99.0.0', HASH_B),
+    });
+    const store = makeStore({
+      activated: {
+        'nb-1': activatedFixture(),
+      },
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    const project = activatedOf(store);
+    expect(project.name).toBe('Notebook One');
+    expect(project.schemaCompatibility?.tier).toBe('incompatible');
+    expect(project.uiDefinition.uiSpec.fields).toHaveProperty('title');
+  });
+
+  it('keeps the last good definition across a second hash-change sync while already incompatible', async () => {
+    const def = currentDefinition();
+    def.uiSpec.schemaVersion = '99.0.0';
+    def.uiSpec.fields = {};
+    stubFetch({
+      directory: [
+        directoryItem({
+          uiSpecProperties: uiSpecProperties('99.0.0', HASH_B),
+        }),
+      ],
+      notebookUiSpecification: def,
+      notebookUiSpecProperties: uiSpecProperties('99.0.0', HASH_B),
+    });
+    const store = makeStore({
+      activated: {
+        'nb-1': activatedFixture({
+          schemaCompatibility: {
+            tier: 'incompatible',
+            relation: 'newer-major',
+            appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+            notebookSchemaVersion: '99.0.0',
+            requiresMigration: false,
+            reason: 'already flagged',
+          },
+        }),
+      },
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    const project = activatedOf(store);
+    expect(project.schemaCompatibility?.tier).toBe('incompatible');
+    expect(project.uiDefinition.uiSpec.fields).toHaveProperty('title');
+  });
+
+  it('does not stamp the directory hash when GET /:id fails after a hash change', async () => {
+    const fetchMock = stubFetch({
+      directory: [
+        directoryItem({
+          name: 'Renamed',
+          uiSpecProperties: uiSpecProperties(
+            CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+            HASH_B
+          ),
+        }),
+      ],
+      notebookOk: false,
+    });
+    const store = makeStore({
+      activated: {
+        'nb-1': activatedFixture({name: 'Old name'}),
+      },
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    const project = activatedOf(store);
+    expect(project.name).toBe('Renamed');
+    expect(project.uiSpecProperties.hash).toBe(HASH_A);
+    expect(project.schemaCompatibility?.tier).toBe('compatible');
+    expect(project.uiDefinition.uiSpec.fields).toHaveProperty('title');
+    expect(
+      fetchMock.mock.calls.filter(([url]) =>
+        String(url).endsWith('/api/notebooks/nb-1')
+      )
+    ).toHaveLength(1);
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+    expect(activatedOf(store).uiSpecProperties.hash).toBe(HASH_A);
+    expect(
+      fetchMock.mock.calls.filter(([url]) =>
+        String(url).endsWith('/api/notebooks/nb-1')
+      )
+    ).toHaveLength(2);
+  });
+
+  it('does not promote an incompatible activated notebook from listing version alone', async () => {
+    const fetchMock = stubFetch({
+      directory: [
+        directoryItem({
+          uiSpecProperties: uiSpecProperties(
+            CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+            HASH_A
+          ),
+        }),
+      ],
+      notebookOk: false,
+    });
+    const store = makeStore({
+      activated: {
+        'nb-1': activatedFixture({
+          schemaCompatibility: {
+            tier: 'incompatible',
+            relation: 'newer-major',
+            appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+            notebookSchemaVersion: '99.0.0',
+            requiresMigration: false,
+            reason: 'last-good; download failed',
+          },
+        }),
+      },
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    const project = activatedOf(store);
+    expect(project.schemaCompatibility?.tier).toBe('incompatible');
+    expect(project.uiSpecProperties.hash).toBe(HASH_A);
+    expect(project.uiDefinition.uiSpec.fields).toHaveProperty('title');
+    expect(
+      fetchMock.mock.calls.some(([url]) =>
+        String(url).endsWith('/api/notebooks/nb-1')
+      )
+    ).toBe(true);
+  });
+
+  it('refetches an incompatible activated notebook when this build can now read the listed version', async () => {
+    const fetchMock = stubFetch({
+      directory: [
+        directoryItem({
+          uiSpecProperties: uiSpecProperties(
+            CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+            HASH_A
+          ),
+        }),
+      ],
+    });
+    const store = makeStore({
+      activated: {
+        'nb-1': activatedFixture({
+          schemaCompatibility: {
+            tier: 'incompatible',
+            relation: 'newer-major',
+            appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+            notebookSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+            requiresMigration: false,
+            reason: 'refresh to download',
+          },
+        }),
+      },
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    const project = activatedOf(store);
+    expect(project.schemaCompatibility?.tier).toBe('compatible');
+    expect(project.uiDefinition.uiSpec.fields).toHaveProperty('title');
+    expect(
+      fetchMock.mock.calls.some(([url]) =>
+        String(url).endsWith('/api/notebooks/nb-1')
+      )
+    ).toBe(true);
+  });
+
+  it('does not refetch an incompatible activated notebook whose listed version is still unreadable', async () => {
+    const fetchMock = stubFetch({
+      directory: [
+        directoryItem({
+          uiSpecProperties: uiSpecProperties('99.0.0', HASH_A),
+        }),
+      ],
+    });
+    const store = makeStore({
+      activated: {
+        'nb-1': activatedFixture({
+          schemaCompatibility: {
+            tier: 'incompatible',
+            relation: 'newer-major',
+            appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+            notebookSchemaVersion: '99.0.0',
+            requiresMigration: false,
+            reason: 'already flagged',
+          },
+        }),
+      },
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    const project = activatedOf(store);
+    expect(project.schemaCompatibility?.tier).toBe('incompatible');
+    expect(project.uiDefinition.uiSpec.fields).toHaveProperty('title');
+    expect(
+      fetchMock.mock.calls.some(([url]) =>
+        String(url).endsWith('/api/notebooks/nb-1')
+      )
+    ).toBe(false);
   });
 });
 
@@ -339,80 +628,93 @@ describe('reassessSchemaCompatibility (startup, offline-safe)', () => {
     const newer = currentDefinition();
     newer.uiSpec.schemaVersion = `${Number(major) + 1}.0.0`;
     const store = makeStore({
-      'nb-1': {
-        projectId: 'nb-1',
-        serverId,
-        name: 'Newer',
-        status: ProjectStatus.OPEN,
-        isActivated: true,
-        uiDefinition: newer as any,
-        uiSpecificationId: 'old-spec',
-        schemaCompatibility: {
-          tier: 'compatible',
-          relation: 'current',
-          appSchemaVersion: `${Number(major) + 1}.0.0`,
-          notebookSchemaVersion: `${Number(major) + 1}.0.0`,
-          requiresMigration: false,
-          reason: 'ok',
-        },
-      },
-      'nb-2': {
-        projectId: 'nb-2',
-        serverId,
-        name: 'Fine',
-        status: ProjectStatus.OPEN,
-        isActivated: true,
-        uiDefinition: currentDefinition() as any,
-        uiSpecificationId: 'spec-2',
-        schemaCompatibility: {
-          tier: 'compatible',
-          relation: 'current',
-          appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
-          notebookSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
-          requiresMigration: false,
-          reason: 'ok',
-        },
+      activated: {
+        'nb-1': activatedFixture({
+          name: 'Newer',
+          uiDefinition: newer as ActivatedProject['uiDefinition'],
+          schemaCompatibility: {
+            tier: 'compatible',
+            relation: 'current',
+            appSchemaVersion: `${Number(major) + 1}.0.0`,
+            notebookSchemaVersion: `${Number(major) + 1}.0.0`,
+            requiresMigration: false,
+            reason: 'ok',
+          },
+        }),
+        'nb-2': activatedFixture({
+          projectId: 'nb-2',
+          name: 'Fine',
+          uiSpecificationId: 'spec-2',
+        }),
       },
     });
 
     store.dispatch(reassessSchemaCompatibility());
 
-    const projects = store.getState().projects.servers[serverId].projects;
-    expect(projects['nb-1'].schemaCompatibility?.tier).toBe('incompatible');
-    expect(projects['nb-1'].schemaCompatibility?.appSchemaVersion).toBe(
+    const newerProject = activatedOf(store, 'nb-1');
+    const fineProject = activatedOf(store, 'nb-2');
+    expect(newerProject.schemaCompatibility?.tier).toBe('incompatible');
+    expect(newerProject.schemaCompatibility?.appSchemaVersion).toBe(
       CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
     );
-    expect(projects['nb-1'].uiDefinition.uiSpec.fields).toHaveProperty('title');
-    expect(projects['nb-1'].isActivated).toBe(true);
-    // Already assessed by this build: untouched, not re-reported.
-    expect(projects['nb-2'].schemaCompatibility?.tier).toBe('compatible');
+    expect(newerProject.uiDefinition.uiSpec.fields).toHaveProperty('title');
+    expect(newerProject.isActivated).toBe(true);
+    expect(fineProject.schemaCompatibility?.tier).toBe('compatible');
     expect(reportNotebookSchemaCompatibility).toHaveBeenCalledTimes(1);
     expect(reportNotebookSchemaCompatibility).toHaveBeenCalledWith(
       expect.objectContaining({projectId: 'nb-1', source: 'persisted-reassess'})
     );
   });
 
-  it('assesses projects persisted before compatibility tracking existed', () => {
+  it('assesses listed projects from schemaVersion only', () => {
     const store = makeStore({
-      'nb-1': {
-        projectId: 'nb-1',
-        serverId,
-        name: 'Untracked',
-        status: ProjectStatus.OPEN,
-        isActivated: false,
-        uiDefinition: currentDefinition() as any,
-        uiSpecificationId: 'spec-1',
+      listed: {
+        'nb-1': listedFixture({
+          name: 'Untracked',
+        }),
       },
     });
 
     store.dispatch(reassessSchemaCompatibility());
 
-    const project =
-      store.getState().projects.servers[serverId].projects['nb-1'];
+    const project = listedOf(store);
     expect(project.schemaCompatibility).toMatchObject({
       tier: 'compatible',
       appSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
     });
     expect(reportNotebookSchemaCompatibility).not.toHaveBeenCalled();
+  });
+});
+
+describe('compileSpecs', () => {
+  beforeEach(() => {
+    vi.mocked(compiledSpecService.compileAndRegisterSpec).mockClear();
+  });
+
+  it('compiles every activated notebook and skips listed ones', () => {
+    const store = makeStore({
+      listed: {
+        'nb-listed': listedFixture({projectId: 'nb-listed', name: 'Listed'}),
+      },
+      activated: {
+        'nb-1': activatedFixture(),
+        'nb-2': activatedFixture({
+          projectId: 'nb-2',
+          uiSpecificationId: 'spec-2',
+        }),
+      },
+    });
+
+    compileSpecs(store.getState().projects);
+
+    expect(compiledSpecService.compileAndRegisterSpec).toHaveBeenCalledTimes(2);
+    expect(compiledSpecService.compileAndRegisterSpec).toHaveBeenCalledWith(
+      'old-spec',
+      expect.objectContaining({fields: expect.any(Object)})
+    );
+    expect(compiledSpecService.compileAndRegisterSpec).toHaveBeenCalledWith(
+      'spec-2',
+      expect.objectContaining({fields: expect.any(Object)})
+    );
   });
 });

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {AttachmentServiceType, IAttachmentService} from './types';
 import {CouchAttachmentService, CouchAttachmentServiceConfig} from './couch';
 

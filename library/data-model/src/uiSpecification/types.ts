@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {z} from 'zod';
 import {PlanTemplateSchema} from '../plans/types';
 // Barrel import (not '../plans/planTypeMap') so the per-plan PlanTypeMap

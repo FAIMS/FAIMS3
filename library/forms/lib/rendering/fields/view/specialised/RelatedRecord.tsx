@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import type {FC} from 'react';

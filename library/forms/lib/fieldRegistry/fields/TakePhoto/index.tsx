@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Exif} from '@capacitor-community/exif';
 import {Camera, CameraResultType, CameraSource, Photo} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
@@ -419,6 +420,7 @@ const PhotoActionsTile: React.FC<{
       <PhotoActions
         onAddPhoto={onAddPhoto}
         onPickFromGallery={onPickFromGallery}
+        stretchOnNarrow
         actionsDisabled={actionsDisabled}
         actionsDisabledReason={actionsDisabledReason}
       />
@@ -1315,6 +1317,11 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       // quality/width are honoured on iOS/Android only. The web plugin
       // returns the original File via createObjectURL — see
       // preparePhotoBlobForStorage, which re-encodes after fetch.
+      //
+      // fetch(webPath) is a connect-src request. On web, webPath is a blob:
+      // object URL, so CloudFront must list blob: on connect-src
+      // (infrastructure/aws-cdk/lib/components/front-end.ts). 'self' does
+      // not match blob:.
       const {photos} = await Camera.pickImages({
         quality: IMAGE_QUALITY_0_100,
         width: MAX_IMAGE_WIDTH,

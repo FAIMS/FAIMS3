@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Recursive revision history for a record and the records hanging off it.
  *

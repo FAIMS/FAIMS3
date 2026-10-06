@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: settings.tsx
  * Description:
  *   The settings component for a notebook presents user changeable options
@@ -41,6 +29,7 @@ import {NOTEBOOK_LIST_ROUTE} from '../../../../constants/routes';
 import {addAlert} from '../../../../context/slices/alertSlice';
 import {
   deactivateProject,
+  isActivatedProject,
   selectProjectById,
   startSyncingAttachments,
   stopSyncingAttachments,
@@ -59,6 +48,7 @@ import {
 } from '../../../../sync/syncMode';
 import AutoIncrementerSettingsList from './auto_incrementers';
 import NotebookOfflineMapSettings from './offlineMapSettings';
+import NotebookQuickShare from './quickShare';
 import NotebookSyncSwitch from './sync_switch';
 import SyncModeHelpDialog from './syncModeHelpDialog';
 
@@ -75,8 +65,12 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
 
   if (!projectId || !project) return <></>;
 
-  const isSyncingAttachments = project.database?.isSyncingAttachments ?? false;
-  const syncMode = project.database?.syncMode ?? 'none';
+  const isSyncingAttachments = isActivatedProject(project)
+    ? project.database.isSyncingAttachments
+    : false;
+  const syncMode = isActivatedProject(project)
+    ? project.database.syncMode
+    : 'none';
   const pullSyncEnabled = syncModeIncludesPull(syncMode);
   const pushSyncEnabled = syncModeIncludesPush(syncMode);
 
@@ -123,6 +117,7 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
         sx={{mb: {xs: 1, sm: 2, md: 3}}}
       >
         <Grid size={{xs: 12, sm: 12, md: 6, lg: 4}}>
+          <NotebookQuickShare project={project} layout="settings" />
           <Box
             component={Paper}
             variant={'outlined'}

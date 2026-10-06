@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import fs from 'fs';
 import path from 'path';
 import {sampleNotebook} from '../src/data_storage/migrations/notebookMigrations/test-notebook-V1';

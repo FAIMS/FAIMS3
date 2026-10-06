@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {
   couchInitialiser,
   initDataDB,
@@ -8,6 +9,9 @@ import {
   ProjectListItem,
   ProjectStatus,
   PublicServerInfo,
+  Role,
+  UiSpecProperties,
+  assessNotebookSchemaCompatibility,
 } from '@faims3/data-model';
 import {
   createAsyncThunk,
@@ -21,6 +25,8 @@ import {AuthState, isTokenValid, selectActiveServerId} from './authSlice';
 import {compiledSpecService} from './helpers/compiledSpecService';
 import {
   isPlaceholderNotebookDefinition,
+  listingInformationFromDirectoryItem,
+  listedProjectFromDirectoryItem,
   reassessPersistedNotebookDefinition,
 } from './helpers/notebookDefinition';
 import {
@@ -162,24 +168,17 @@ export interface DatabaseConnection {
   remote: RemoteCouchConnection;
 }
 
-// Maps a project ID -> project
+// Maps a project ID -> project (either map on {@link Server})
 export type ProjectIdToProjectMap = {[projectId: string]: Project};
 
-/** Superficial notebook details synced from the API (design bundle is typed). */
-export interface ProjectInformation {
+/** Superficial notebook details synced from the lean directory / list. */
+export interface ProjectListingInformation {
   /** Display title (project document root). */
   name: string;
   /** Operational description (project document root). */
   description?: string;
   /** Source template when created from a template. */
   templateId?: string;
-  /**
-   * Inlined uiSpecification from GET /api/notebooks/:id (current notebook
-   * schema). When {@link schemaCompatibility} is `incompatible` this is either
-   * the last good definition or an empty placeholder — check the tier before
-   * rendering a form.
-   */
-  uiDefinition: NotebookDefinition;
   /**
    * How the server's notebook schema version relates to this build
    * (`compatible` / `degraded` / `incompatible`) with a human readable reason.
@@ -194,31 +193,94 @@ export interface ProjectInformation {
   recordCount?: number;
   /** Recommended offline map download region (EPSG:4326 polygon). */
   offlineMapRegion?: OfflineMapRegion;
+  /**
+   * When true, Quick Share is hidden on this device. Omitted or false keeps
+   * it available.
+   */
+  disableQuickShare?: boolean;
+  /** Digest of the server's uiSpecification (hash + schemaVersion). */
+  uiSpecProperties: UiSpecProperties;
 }
 
-// A project is a notebook (configurable label via config.notebookName) — it is relevant to a server, can be
-// inactive or active, and was activated by someone. This extends with
-// non-trivial or side-effecting elements like database connections and
-// activated status
-export interface Project extends ProjectInformation {
-  // the unique project ID (unique within the server)
+interface ProjectIdentityFields {
   projectId: string;
-
-  // the non-unique name of the project
-  name: string;
-
-  // Which server is this in? (including here too since it's helpful)
   serverId: string;
+  name: string;
+}
 
-  // Is the project activated? (Use active/deactive to change)
-  isActivated: boolean;
+/**
+ * One Quick Share stored on the device so its creator can show it again.
+ * The invite is a bearer secret. It stays on this shared survey record, so the
+ * creator has to be recorded and the code must not be shown to anyone else.
+ * The QR PNG is rebuilt when the share dialog opens; only this metadata is
+ * persisted.
+ */
+export interface ProjectQuickShare {
+  inviteId: string;
+  role: Role;
+  /** Expiry timestamp in milliseconds. */
+  expiry: number;
+  /**
+   * Username of the signed-in user who generated this code.
+   * Only they are shown the QR.
+   */
+  createdBy: string;
+}
 
-  // Data database (if activated is false -> this is undefined)
-  database?: DatabaseConnection;
+/**
+ * The Quick Share code this device is showing for the survey.
+ * Kept on listed and activated rows until its creator revokes it or it
+ * expires, including across deactivation, reloads, and user switches.
+ * Only {@link ProjectQuickShare.createdBy} is shown the QR.
+ */
+interface ProjectQuickShareFields {
+  quickShare?: ProjectQuickShare;
+}
 
-  // [Compiled] Key to get the compiled UI Spec from storage - this should not
-  // be persisted/serialised as it has live JS functions in it
+/** Directory-only notebook: no form graph, never compiled. */
+export interface ListedProject
+  extends
+    ProjectListingInformation,
+    ProjectIdentityFields,
+    ProjectQuickShareFields {
+  isActivated: false;
+}
+
+/** Activated notebook: required design graph, compiled spec, and database. */
+export interface ActivatedProject
+  extends
+    ProjectListingInformation,
+    ProjectIdentityFields,
+    ProjectQuickShareFields {
+  isActivated: true;
+  uiDefinition: NotebookDefinition;
   uiSpecificationId: string;
+  database: DatabaseConnection;
+}
+
+export type Project = ListedProject | ActivatedProject;
+
+/** Type guard: project is activated and has a form graph plus database. */
+export function isActivatedProject(
+  project: Project
+): project is ActivatedProject {
+  return project.isActivated;
+}
+
+/** Form graph when the project is activated; otherwise undefined. */
+export function projectUiDefinition(
+  project: Project | undefined
+): NotebookDefinition | undefined {
+  return project && isActivatedProject(project)
+    ? project.uiDefinition
+    : undefined;
+}
+
+/** Database connection when the project is activated; otherwise undefined. */
+export function projectDatabase(
+  project: Project | undefined
+): DatabaseConnection | undefined {
+  return project && isActivatedProject(project) ? project.database : undefined;
 }
 
 export interface Server {
@@ -243,8 +305,13 @@ export interface Server {
   // server description
   description: string;
 
-  // Map from project ID -> Project details
-  projects: ProjectIdToProjectMap;
+  listed: Record<string, ListedProject>;
+  activated: Record<string, ActivatedProject>;
+}
+
+/** Union of a server's activated and listed notebooks. */
+export function allProjectsOnServer(server: Server): Project[] {
+  return [...Object.values(server.activated), ...Object.values(server.listed)];
 }
 
 // The unique key for a project
@@ -314,12 +381,13 @@ function mergeRecordCount(
 }
 
 /** Superficial project fields that must survive database/sync-only updates. */
-function retainedProjectFields(project: Project) {
+function retainedActivatedFields(project: ActivatedProject) {
   return {
     projectId: project.projectId,
     uiDefinition: project.uiDefinition,
     schemaCompatibility: project.schemaCompatibility,
     uiSpecificationId: project.uiSpecificationId,
+    uiSpecProperties: project.uiSpecProperties,
     description: project.description,
     templateId: project.templateId,
     updatedAt: project.updatedAt,
@@ -328,6 +396,8 @@ function retainedProjectFields(project: Project) {
     name: project.name,
     recordCount: project.recordCount,
     offlineMapRegion: project.offlineMapRegion,
+    disableQuickShare: project.disableQuickShare,
+    quickShare: project.quickShare,
   };
 }
 
@@ -383,7 +453,8 @@ const projectsSlice = createSlice({
       } = action.payload;
       // Create a new server with no projects
       state.servers[serverId] = {
-        projects: {},
+        listed: {},
+        activated: {},
         serverVersion,
         couchDbUrl,
         serverId,
@@ -426,8 +497,8 @@ const projectsSlice = createSlice({
 
       // Create a new server with no projects
       state.servers[serverId] = {
-        // don't update projects
-        projects: state.servers[serverId].projects,
+        listed: state.servers[serverId].listed,
+        activated: state.servers[serverId].activated,
 
         // We don't update the couch DB url as this would require re-creating local connections
         // TODO do we want to enable this kind of update?
@@ -444,18 +515,13 @@ const projectsSlice = createSlice({
     },
 
     /**
-     * Add a new project for an existing server - you must specify the couchDB
-     * URL to be used for all databases within this project at this point
+     * Add a listed (not activated) project. Does not compile a uiSpec.
      */
     addProject: (
       state,
-      action: PayloadAction<
-        ProjectInformation & ProjectIdentity & {couchDbUrl: string}
-      >
+      action: PayloadAction<ListedProject & {couchDbUrl: string}>
     ) => {
       const payload = action.payload;
-
-      // Identify the server
       const server = serverById(state, payload.serverId);
 
       if (!server) {
@@ -464,49 +530,20 @@ const projectsSlice = createSlice({
         );
       }
 
-      // Check if already have project with this ID
-      if (server.projects[payload.projectId]) {
+      if (
+        server.listed[payload.projectId] ||
+        server.activated[payload.projectId]
+      ) {
         throw new Error(
           `Cannot add project since this server already has project with ID ${payload.projectId}.`
         );
       }
 
-      const compiledSpecId = buildCompiledSpecId({
-        id: {projectId: payload.projectId, serverId: server.serverId},
-        uiSpec: payload.uiDefinition.uiSpec,
-      });
-      compiledSpecService.compileAndRegisterSpec(
-        compiledSpecId,
-        payload.uiDefinition.uiSpec
-      );
-
-      // Update the couch DB URL (since we presume this to be an
-      // update/accurate)
-      // TODO handle couch DB URLs on a per project basis
       server.couchDbUrl = payload.couchDbUrl;
-
-      // Now we can add one
-      server.projects[payload.projectId] = {
-        // Project ID and server ID
-        projectId: payload.projectId,
-        serverId: payload.serverId,
-
-        // Superficial details
-        name: payload.name,
-        description: payload.description,
-        templateId: payload.templateId,
-        updatedAt: payload.updatedAt,
-        uiDefinition: payload.uiDefinition,
-        schemaCompatibility: payload.schemaCompatibility,
-
-        uiSpecificationId: compiledSpecId,
-
-        // Default not activated with no database
+      const {couchDbUrl: _couchDbUrl, ...listed} = payload;
+      server.listed[payload.projectId] = {
+        ...listed,
         isActivated: false,
-        database: undefined,
-        status: payload.status,
-        recordCount: payload.recordCount,
-        offlineMapRegion: payload.offlineMapRegion,
       };
     },
 
@@ -566,15 +603,15 @@ const projectsSlice = createSlice({
         }
       }
 
-      if (project.uiSpecificationId) {
+      if (isActivatedProject(project)) {
         compiledSpecService.removeSpec(project.uiSpecificationId);
       }
 
       // Cleanup sync state
       syncStateService.removeSyncState(payload.serverId, payload.projectId);
 
-      // Remove the project from the server's projects map
-      delete server.projects[payload.projectId];
+      delete server.listed[payload.projectId];
+      delete server.activated[payload.projectId];
     },
 
     /**
@@ -619,28 +656,30 @@ const projectsSlice = createSlice({
         }
       }
 
-      if (project.uiSpecificationId) {
+      if (isActivatedProject(project)) {
         compiledSpecService.removeSpec(project.uiSpecificationId);
       }
 
       syncStateService.removeSyncState(payload.serverId, payload.projectId);
-      delete server.projects[payload.projectId];
+      delete server.listed[payload.projectId];
+      delete server.activated[payload.projectId];
     },
 
     /**
-     * Update superficial details of a project (e.g. name, description etc)
-     *
-     * Will recompile uiSpec
+     * Update listing fields. Listed rows stay listed (no compile). Activated
+     * rows keep their graph unless `uiDefinition` is provided (hash change).
      */
     updateProjectDetails: (
       state,
       action: PayloadAction<
-        ProjectInformation & ProjectIdentity & {couchDbUrl: string}
+        ProjectListingInformation &
+          ProjectIdentity & {
+            couchDbUrl: string;
+            uiDefinition?: NotebookDefinition;
+          }
       >
     ) => {
       const payload = action.payload;
-
-      // Identify the server
       const server = serverById(state, payload.serverId);
 
       if (!server) {
@@ -649,55 +688,67 @@ const projectsSlice = createSlice({
         );
       }
 
-      // Check if already have project with this ID
-      if (!server.projects[payload.projectId]) {
+      const existingActivated = server.activated[payload.projectId];
+      const existingListed = server.listed[payload.projectId];
+      if (!existingActivated && !existingListed) {
         throw new Error(
           `Cannot update project since it does not exist! Server ID ${payload.serverId}, project ID ${payload.projectId}.`
         );
       }
 
-      const existingProject = server.projects[payload.projectId];
-
-      const compiledSpecId = buildCompiledSpecId({
-        id: {projectId: payload.projectId, serverId: server.serverId},
-        uiSpec: payload.uiDefinition.uiSpec,
-      });
-      // Spec changed: drop the old compilation so entries don't accumulate.
-      // Covers legacy non-hashed IDs from persisted state too.
-      if (
-        existingProject.uiSpecificationId &&
-        existingProject.uiSpecificationId !== compiledSpecId
-      ) {
-        compiledSpecService.removeSpec(existingProject.uiSpecificationId);
-      }
-      compiledSpecService.compileAndRegisterSpec(
-        compiledSpecId,
-        payload.uiDefinition.uiSpec
-      );
-
       server.couchDbUrl = payload.couchDbUrl;
 
-      // Now we can update it
-      server.projects[payload.projectId] = {
-        ...existingProject,
-
-        // Superficial details updated only! You cannot change activated/sync
-        // status here - these are controlled actions
+      const listing: ProjectListingInformation = {
         name: payload.name,
         description: payload.description,
         templateId: payload.templateId,
         updatedAt: payload.updatedAt,
-        uiDefinition: payload.uiDefinition,
         schemaCompatibility: payload.schemaCompatibility,
-        uiSpecificationId: compiledSpecId,
         status: payload.status,
         recordCount: mergeRecordCount(
           payload.recordCount,
-          existingProject.recordCount
+          (existingActivated ?? existingListed)!.recordCount
         ),
-        // Successful GET /api/notebooks/:id (200) may omit cleared regions entirely;
-        // treat a missing payload field the same as explicit undefined.
         offlineMapRegion: payload.offlineMapRegion,
+        disableQuickShare: payload.disableQuickShare,
+        uiSpecProperties: payload.uiSpecProperties,
+      };
+
+      if (existingActivated) {
+        let uiDefinition = existingActivated.uiDefinition;
+        let uiSpecificationId = existingActivated.uiSpecificationId;
+        if (payload.uiDefinition) {
+          uiDefinition = payload.uiDefinition;
+          const compiledSpecId = buildCompiledSpecId({
+            id: {projectId: payload.projectId, serverId: server.serverId},
+            uiSpec: payload.uiDefinition.uiSpec,
+          });
+          if (
+            existingActivated.uiSpecificationId &&
+            existingActivated.uiSpecificationId !== compiledSpecId
+          ) {
+            compiledSpecService.removeSpec(existingActivated.uiSpecificationId);
+          }
+          compiledSpecService.compileAndRegisterSpec(
+            compiledSpecId,
+            payload.uiDefinition.uiSpec
+          );
+          uiSpecificationId = compiledSpecId;
+        }
+        server.activated[payload.projectId] = {
+          ...existingActivated,
+          ...listing,
+          isActivated: true,
+          uiDefinition,
+          uiSpecificationId,
+        };
+        return;
+      }
+
+      server.listed[payload.projectId] = {
+        ...existingListed!,
+        ...listing,
+        isActivated: false,
       };
     },
 
@@ -712,7 +763,30 @@ const projectsSlice = createSlice({
      */
     reassessSchemaCompatibility: state => {
       for (const server of Object.values(state.servers)) {
-        for (const project of Object.values(server.projects)) {
+        for (const project of Object.values(server.listed)) {
+          const next = assessNotebookSchemaCompatibility(
+            project.uiSpecProperties.schemaVersion
+          );
+          if (
+            project.schemaCompatibility?.appSchemaVersion ===
+              next.appSchemaVersion &&
+            project.schemaCompatibility.tier === next.tier
+          ) {
+            continue;
+          }
+          project.schemaCompatibility = next;
+          if (next.tier !== 'compatible') {
+            reportNotebookSchemaCompatibility({
+              compatibility: next,
+              projectId: project.projectId,
+              serverId: server.serverId,
+              serverVersion: server.serverVersion,
+              notebookName: project.name,
+              source: 'persisted-reassess',
+            });
+          }
+        }
+        for (const project of Object.values(server.activated)) {
           const next = reassessPersistedNotebookDefinition(project);
           if (!next.changed) continue;
           project.schemaCompatibility = next.schemaCompatibility;
@@ -764,9 +838,10 @@ const projectsSlice = createSlice({
           ? action.payload.offlineMapRegion
           : project.offlineMapRegion;
 
-      // updates the state with all of this new information
-      state.servers[serverId].projects[project.projectId] = {
-        ...retainedProjectFields(project),
+      const server = state.servers[serverId];
+      delete server.listed[project.projectId];
+      server.activated[project.projectId] = {
+        ...retainedActivatedFields(project),
         offlineMapRegion: mergedOfflineMapRegion,
         isActivated: true,
         database: {
@@ -857,11 +932,23 @@ const projectsSlice = createSlice({
       syncStateService.removeSyncState(payload.serverId, payload.projectId);
       clearPushOnlyBannerDismissal(payload);
 
-      // updates the state with all of this new information
-      state.servers[payload.serverId].projects[payload.projectId] = {
-        ...retainedProjectFields(project),
+      compiledSpecService.removeSpec(project.uiSpecificationId);
+      delete server.activated[payload.projectId];
+      server.listed[payload.projectId] = {
+        projectId: project.projectId,
+        serverId: project.serverId,
+        name: project.name,
+        description: project.description,
+        templateId: project.templateId,
+        updatedAt: project.updatedAt,
+        schemaCompatibility: project.schemaCompatibility,
+        status: project.status,
+        recordCount: project.recordCount,
+        offlineMapRegion: project.offlineMapRegion,
+        disableQuickShare: project.disableQuickShare,
+        uiSpecProperties: project.uiSpecProperties,
         isActivated: false,
-        database: undefined,
+        ...(project.quickShare ? {quickShare: project.quickShare} : {}),
       };
     },
 
@@ -922,14 +1009,14 @@ const projectsSlice = createSlice({
       } = action.payload;
 
       const project = projectByIdentity(state, {projectId, serverId});
-      if (!project) {
+      if (!project || !isActivatedProject(project)) {
         console.error(`Project not found: ${projectId} on server ${serverId}`);
         return;
       }
 
       // updates the state with all of this new information
-      state.servers[serverId].projects[projectId] = {
-        ...retainedProjectFields(project),
+      state.servers[serverId].activated[projectId] = {
+        ...retainedActivatedFields(project),
         isActivated: true,
         database: {
           syncMode,
@@ -944,13 +1031,13 @@ const projectsSlice = createSlice({
       };
     },
 
-    setSyncModeSuccess: (state, action: PayloadAction<Project>) => {
+    setSyncModeSuccess: (state, action: PayloadAction<ActivatedProject>) => {
       const project = action.payload;
       if (!project.database) {
         throw new Error('Project database not properly initialised');
       }
-      state.servers[project.serverId].projects[project.projectId] = {
-        ...retainedProjectFields(project),
+      state.servers[project.serverId].activated[project.projectId] = {
+        ...retainedActivatedFields(project),
         isActivated: true,
         database: {
           syncMode: project.database.syncMode,
@@ -1055,8 +1142,8 @@ const projectsSlice = createSlice({
       }
 
       // updates the state with all of this new information
-      state.servers[payload.serverId].projects[payload.projectId] = {
-        ...retainedProjectFields(project),
+      state.servers[payload.serverId].activated[payload.projectId] = {
+        ...retainedActivatedFields(project),
         isActivated: true,
         database: {
           syncMode: project.database.syncMode,
@@ -1168,8 +1255,8 @@ const projectsSlice = createSlice({
       }
 
       // updates the state with all of this new information
-      state.servers[payload.serverId].projects[payload.projectId] = {
-        ...retainedProjectFields(project),
+      state.servers[payload.serverId].activated[payload.projectId] = {
+        ...retainedActivatedFields(project),
         isActivated: true,
         database: {
           syncMode: project.database.syncMode,
@@ -1183,6 +1270,27 @@ const projectsSlice = createSlice({
           },
         },
       };
+    },
+
+    /** Remember the Quick Share this device is showing for a survey. */
+    setProjectQuickShare: (
+      state,
+      action: PayloadAction<ProjectIdentity & {quickShare: ProjectQuickShare}>
+    ) => {
+      const project = projectByIdentity(state, action.payload);
+      if (!project) {
+        return;
+      }
+      project.quickShare = action.payload.quickShare;
+    },
+
+    /** Drop the stored Quick Share after it has been revoked or has expired. */
+    clearProjectQuickShare: (state, action: PayloadAction<ProjectIdentity>) => {
+      const project = projectByIdentity(state, action.payload);
+      if (!project) {
+        return;
+      }
+      delete project.quickShare;
     },
   },
 });
@@ -1210,8 +1318,15 @@ export const serverById = (
 export const projectByIdentity = (
   state: ProjectsState,
   identity: ProjectIdentity
-): Project | undefined =>
-  state.servers[identity.serverId]?.projects[identity.projectId] ?? undefined;
+): Project | undefined => {
+  const server = state.servers[identity.serverId];
+  if (!server) return undefined;
+  return (
+    server.activated[identity.projectId] ??
+    server.listed[identity.projectId] ??
+    undefined
+  );
+};
 
 /**
  * Gets all active data DBs
@@ -1221,8 +1336,8 @@ export function getAllDataDbs(
 ): PouchDBWrapper<ProjectDataObject>[] {
   const databases: PouchDBWrapper<ProjectDataObject>[] = [];
   for (const server of Object.values(state.projects.servers)) {
-    for (const project of Object.values(server.projects)) {
-      if (project.isActivated && project.database?.localDbId) {
+    for (const project of Object.values(server.activated)) {
+      if (project.database?.localDbId) {
         const db = databaseService.getLocalDatabase(project.database.localDbId);
         if (db) {
           databases.push(db);
@@ -1253,7 +1368,7 @@ export const selectAllProjects = createSelector(
   servers => {
     let allProjects: Project[] = [];
     for (const server of Object.values(servers)) {
-      allProjects = allProjects.concat(Object.values(server.projects));
+      allProjects = allProjects.concat(allProjectsOnServer(server));
     }
     return allProjects;
   }
@@ -1324,7 +1439,7 @@ export const selectProjectById = createSelector(
     // Loop through all servers
     for (const server of Object.values(servers)) {
       // Check if this server has the project
-      const project = server.projects[projectId];
+      const project = server.activated[projectId] ?? server.listed[projectId];
       if (project) {
         return project;
       }
@@ -1359,7 +1474,8 @@ export const selectProjectByIdentity = createSelector(
     (_: RootState, identity: ProjectIdentity) => identity,
   ],
   (servers, identity): Project | undefined =>
-    servers[identity.serverId]?.projects[identity.projectId]
+    servers[identity.serverId]?.activated[identity.projectId] ??
+    servers[identity.serverId]?.listed[identity.projectId]
 );
 
 /**
@@ -1380,7 +1496,7 @@ export const selectProjectsByServerId = createSelector(
     if (!server) {
       return [];
     }
-    return Object.values(server.projects);
+    return allProjectsOnServer(server);
   }
 );
 
@@ -1397,7 +1513,7 @@ export const selectActiveServerProjects = createSelector(
     if (!activeServerId || !servers[activeServerId]) {
       return [];
     }
-    return Object.values(servers[activeServerId].projects);
+    return allProjectsOnServer(servers[activeServerId]);
   }
 );
 
@@ -1430,8 +1546,8 @@ export const updateDatabaseCredentials = createAsyncThunk<
   }
 
   // For each project in this server, if it is active, update it's token
-  for (const project of Object.values(server.projects)) {
-    if (project.isActivated && project.database) {
+  for (const project of Object.values(server.activated)) {
+    if (project.database) {
       try {
         // Check the couch DB url has been populated
         if (!server.couchDbUrl) {
@@ -1601,6 +1717,26 @@ export const activateProject = createAsyncThunk<
     );
   }
 
+  const activationSync = await resolveActivationSyncMode({
+    serverUrl: server.serverUrl,
+    projectId: payload.projectId,
+    token: payload.jwtToken,
+  });
+  if (!activationSync.details) {
+    throw new Error(
+      `Cannot activate this ${config.notebookName} without downloading its design. Go online and try again.`
+    );
+  }
+  const details = activationSync.details;
+  const compiledSpecId = buildCompiledSpecId({
+    id: {projectId: payload.projectId, serverId: payload.serverId},
+    uiSpec: details.uiDefinition.uiSpec,
+  });
+  compiledSpecService.compileAndRegisterSpec(
+    compiledSpecId,
+    details.uiDefinition.uiSpec
+  );
+
   // build the connection info
   const connectionConfiguration: DatabaseConnectionConfig = {
     // push in the specified jwt
@@ -1628,11 +1764,6 @@ export const activateProject = createAsyncThunk<
     );
   await databaseService.registerRemoteDatabase(remoteDbId, remoteDb);
 
-  const activationSync = await resolveActivationSyncMode({
-    serverUrl: server.serverUrl,
-    projectId: payload.projectId,
-    token: payload.jwtToken,
-  });
   const initialSyncMode = activationSync.syncMode;
   const handlers = createSyncStateHandlers(payload.projectId, payload.serverId);
   let syncId: string | undefined;
@@ -1651,9 +1782,30 @@ export const activateProject = createAsyncThunk<
     await databaseService.registerSync(syncId, replication);
   }
 
+  const activating: ActivatedProject = {
+    ...project,
+    ...details,
+    isActivated: true,
+    uiDefinition: details.uiDefinition,
+    uiSpecificationId: compiledSpecId,
+    uiSpecProperties: details.uiSpecProperties,
+    schemaCompatibility: details.schemaCompatibility,
+    ...(project.quickShare ? {quickShare: project.quickShare} : {}),
+    database: {
+      syncMode: initialSyncMode,
+      isSyncingAttachments: false,
+      localDbId: localDatabaseId,
+      remote: {
+        connectionConfiguration,
+        remoteDbId,
+        syncId: undefined,
+      },
+    },
+  };
+
   dispatch(
     activateProjectSuccess({
-      project,
+      project: activating,
       serverId: server.serverId,
       localDatabaseId,
       connectionConfiguration,
@@ -1706,7 +1858,7 @@ export const activateProject = createAsyncThunk<
 });
 
 interface ActivateProjectSuccessPayload {
-  project: Project;
+  project: ActivatedProject;
   serverId: string;
   localDatabaseId: string;
   connectionConfiguration: DatabaseConnectionConfig;
@@ -1780,6 +1932,35 @@ export const initialiseServers = createAsyncThunk<void>(
 );
 
 /**
+ * Whether {@link initialiseProjects} must GET `/api/notebooks/:id` for an
+ * already-activated notebook. Hash change is the usual trigger. Also refetch
+ * when the stored tier is `incompatible` but this build now reads the listed
+ * `schemaVersion` — otherwise an app upgrade would never download the graph
+ * (`reassessPersistedNotebookDefinition` stays incompatible until ingest).
+ */
+function activatedProjectNeedsSpecFetch({
+  existing,
+  directoryProperties,
+}: {
+  existing: Project | undefined;
+  directoryProperties: UiSpecProperties;
+}): boolean {
+  if (!existing || !isActivatedProject(existing)) {
+    return false;
+  }
+  if (existing.uiSpecProperties?.hash !== directoryProperties.hash) {
+    return true;
+  }
+  if (existing.schemaCompatibility?.tier !== 'incompatible') {
+    return false;
+  }
+  return (
+    assessNotebookSchemaCompatibility(directoryProperties.schemaVersion)
+      .tier !== 'incompatible'
+  );
+}
+
+/**
  * Initialises projects for the specified server. Merges superficial details for
  * existing projects, creates new ones for new.
  *
@@ -1789,6 +1970,11 @@ export const initialiseServers = createAsyncThunk<void>(
  *
  * Also updates the couchDBUrl - warning if there is a difference between
  * discovered project couchDB urls.
+ *
+ * Activated notebooks download the design only when
+ * {@link activatedProjectNeedsSpecFetch} is true. A failed or skipped GET
+ * must not stamp the directory hash or version-only compatibility — that
+ * would skip the next retry and can unlock a last-good / placeholder graph.
  *
  * When a local notebook is absent from the active directory listing, the app probes
  * GET `/api/notebooks/:id`: archived → immediate removal; missing → confirm via
@@ -1841,58 +2027,49 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       const directoryResults = (await response.json()) as ProjectListItem[];
 
       const stateBeforeSync = getState() as RootState;
-      // Snapshot local ids now — used later to decide whether removal warrants a user alert.
-      const localProjectIdsAtStart = new Set(
-        Object.keys(stateBeforeSync.projects.servers[serverId]?.projects ?? {})
+      const serverBefore = stateBeforeSync.projects.servers[serverId];
+      const localProjectIdsAtStart = new Set([
+        ...Object.keys(serverBefore?.listed ?? {}),
+        ...Object.keys(serverBefore?.activated ?? {}),
+      ]);
+
+      const specFetchesNeeded = directoryResults.filter(details => {
+        if (!details.dataDb?.base_url || !details.uiSpecProperties) {
+          return false;
+        }
+        return activatedProjectNeedsSpecFetch({
+          existing: projectByIdentity(stateBeforeSync.projects, {
+            projectId: details._id,
+            serverId,
+          }),
+          directoryProperties: details.uiSpecProperties,
+        });
+      });
+
+      const specByProjectId = new Map(
+        await Promise.all(
+          specFetchesNeeded.map(async details => {
+            try {
+              const meta = await fetchNotebookDetails({
+                projectId: details._id,
+                serverUrl: server.serverUrl,
+                token,
+              });
+              return [details._id, meta] as const;
+            } catch (e) {
+              console.warn(
+                `Failed to get metadata from API for project ${details._id}.`
+              );
+              console.error(e);
+              return [details._id, undefined] as const;
+            }
+          })
+        )
       );
 
-      // Fetch all project metadata in parallel
-      const metadataResults = await Promise.allSettled(
-        directoryResults.map(async details => {
-          const projectId = details._id;
-
-          if (!details.dataDb?.base_url) {
-            return {
-              status: 'error' as const,
-              projectId,
-              error: 'Missing dataDb.base_url',
-            };
-          }
-
-          try {
-            const meta = await fetchNotebookDetails({
-              projectId,
-              serverUrl: server.serverUrl,
-              token,
-            });
-
-            return {
-              status: 'success' as const,
-              projectId,
-              details,
-              meta,
-            };
-          } catch (e) {
-            console.warn(
-              `Failed to get metadata from API for project ${projectId}.`
-            );
-            console.error(e);
-            return {
-              status: 'error' as const,
-              projectId,
-              details,
-              error: e,
-            };
-          }
-        })
-      );
-
-      // Re-read state before building add/update actions — metadata fetch is async and
-      // other thunks may have modified the store during that window.
       const freshState = getState() as RootState;
       const freshProjectState = freshState.projects;
 
-      // Collect all actions to dispatch
       const actions: Array<
         ReturnType<typeof addProject | typeof updateProjectDetails>
       > = [];
@@ -1902,62 +2079,96 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         nextRegion: OfflineMapRegion | undefined;
       }> = [];
 
-      for (const result of metadataResults) {
-        if (result.status === 'rejected') {
-          // Promise itself rejected (shouldn't happen with our structure, but safety first)
+      for (const details of directoryResults) {
+        const projectId = details._id;
+        if (!details.dataDb?.base_url) {
+          console.warn(
+            `Skipping project ${projectId}: Missing dataDb.base_url`
+          );
+          continue;
+        }
+        if (!details.uiSpecProperties) {
+          console.warn(
+            `Skipping project ${projectId}: Missing uiSpecProperties`
+          );
           continue;
         }
 
-        const value = result.value;
-
-        if (value.status === 'error') {
-          // Check if this is a missing base_url error (no details available)
-          if (!value.details) {
-            console.warn(`Skipping project ${value.projectId}: ${value.error}`);
-            continue;
-          }
-
-          // We have details but no metadata - check if project exists
-          const existingProject = projectByIdentity(freshProjectState, {
-            projectId: value.projectId,
-            serverId,
-          });
-
-          if (!existingProject) {
-            // Can't create without metadata
-            console.warn(
-              `Failed to get metadata from API for project ${value.projectId} which doesn't exist yet - minimum sufficient information not known so we won't show this record.`
-            );
-            continue;
-          }
-
-          // Update existing with just the couchDbUrl if we have details
-          if (value.details?.dataDb?.base_url) {
-            actions.push(
-              updateProjectDetails({
-                ...existingProject,
-                projectId: value.projectId,
-                serverId,
-                couchDbUrl: value.details.dataDb.base_url,
-                status: value.details.status ?? existingProject.status,
-                name: value.details.name ?? existingProject.name,
-                description:
-                  value.details.description ?? existingProject.description,
-                templateId:
-                  value.details.templateId ?? existingProject.templateId,
-                updatedAt: value.details.updatedAt ?? existingProject.updatedAt,
-              })
-            );
-          }
-          continue;
-        }
-
-        // Success case
-        const {projectId, details, meta} = value;
+        const listing = listingInformationFromDirectoryItem(details);
         const existingProject = projectByIdentity(freshProjectState, {
           projectId,
           serverId,
         });
+
+        const reportListingCompatibility = () => {
+          if (!listing.schemaCompatibility) {
+            return;
+          }
+          reportNotebookSchemaCompatibility({
+            compatibility: listing.schemaCompatibility,
+            projectId,
+            serverId,
+            serverVersion: server.serverVersion,
+            notebookName: listing.name,
+            source: 'app-ingest',
+          });
+        };
+
+        if (!existingProject) {
+          reportListingCompatibility();
+          actions.push(
+            addProject({
+              ...listedProjectFromDirectoryItem({item: details, serverId}),
+              couchDbUrl: details.dataDb.base_url,
+            })
+          );
+          continue;
+        }
+
+        const nextOfflineMapRegion = listing.offlineMapRegion;
+        if (
+          config.offlineMaps &&
+          existingProject.isActivated &&
+          !offlineMapRegionsEqual(
+            existingProject.offlineMapRegion,
+            nextOfflineMapRegion
+          )
+        ) {
+          offlineMapRegionUpdates.push({
+            projectId,
+            previousRegion: existingProject.offlineMapRegion,
+            nextRegion: nextOfflineMapRegion,
+          });
+        }
+
+        if (!existingProject.isActivated) {
+          reportListingCompatibility();
+          actions.push(
+            updateProjectDetails({
+              ...listing,
+              projectId,
+              serverId,
+              couchDbUrl: details.dataDb.base_url,
+            })
+          );
+          continue;
+        }
+
+        const meta = specByProjectId.get(projectId);
+        if (!meta) {
+          actions.push(
+            updateProjectDetails({
+              ...listing,
+              uiSpecProperties: existingProject.uiSpecProperties,
+              schemaCompatibility: existingProject.schemaCompatibility,
+              projectId,
+              serverId,
+              couchDbUrl: details.dataDb.base_url,
+              recordCount: existingProject.recordCount,
+            })
+          );
+          continue;
+        }
 
         if (meta.schemaCompatibility) {
           reportNotebookSchemaCompatibility({
@@ -1970,78 +2181,37 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           });
         }
 
-        if (!existingProject) {
-          // An ingest failure still lists the notebook: the placeholder
-          // definition and the `incompatible` tier drive the skeleton UI.
-          actions.push(
-            addProject({
-              name: meta.name,
-              description: meta.description,
-              templateId: meta.templateId,
-              updatedAt: meta.updatedAt,
-              uiDefinition: meta.uiDefinition,
-              schemaCompatibility: meta.schemaCompatibility,
-              projectId,
-              serverId,
-              couchDbUrl: details.dataDb.base_url!,
-              status: meta.status,
-              offlineMapRegion: meta.offlineMapRegion,
-            })
-          );
-        } else {
-          // When the server's design cannot be interpreted, keep any real
-          // local form graph (so existing records stay readable) and surface
-          // the new compatibility state instead of replacing it with the
-          // placeholder. Key off the stored graph, not the stored tier:
-          // after the first incompatible fetch the tier is already
-          // `incompatible`, and a later refresh / restart would otherwise
-          // wipe the last-good design.
-          const incomingIncompatible =
-            meta.schemaCompatibility?.tier === 'incompatible';
-          const existingHasUsableGraph = !isPlaceholderNotebookDefinition(
-            existingProject.uiDefinition
-          );
-          const nextUiDefinition =
-            incomingIncompatible && existingHasUsableGraph
-              ? existingProject.uiDefinition
-              : meta.uiDefinition;
-          const nextOfflineMapRegion = meta.offlineMapRegion;
-          if (
-            config.offlineMaps &&
-            existingProject.isActivated &&
-            !offlineMapRegionsEqual(
-              existingProject.offlineMapRegion,
-              nextOfflineMapRegion
-            )
-          ) {
-            // Defer side effects until after redux updates so reconciliation
-            // reads the new plan region from the store.
-            offlineMapRegionUpdates.push({
-              projectId,
-              previousRegion: existingProject.offlineMapRegion,
-              nextRegion: nextOfflineMapRegion,
-            });
-          }
-          actions.push(
-            updateProjectDetails({
-              name: meta.name ?? existingProject.name,
-              description: meta.description ?? existingProject.description,
-              templateId: meta.templateId ?? existingProject.templateId,
-              updatedAt: meta.updatedAt ?? existingProject.updatedAt,
-              uiDefinition: nextUiDefinition,
-              schemaCompatibility: meta.schemaCompatibility,
-              projectId,
-              serverId,
-              couchDbUrl: details.dataDb.base_url!,
-              status: meta.status ?? existingProject.status,
-              recordCount: mergeRecordCount(
-                meta.recordCount,
-                existingProject.recordCount
-              ),
-              offlineMapRegion: nextOfflineMapRegion,
-            })
-          );
-        }
+        const incomingIncompatible =
+          meta.schemaCompatibility?.tier === 'incompatible';
+        const existingHasUsableGraph = !isPlaceholderNotebookDefinition(
+          existingProject.uiDefinition
+        );
+        const nextUiDefinition =
+          incomingIncompatible && existingHasUsableGraph
+            ? existingProject.uiDefinition
+            : meta.uiDefinition;
+
+        actions.push(
+          updateProjectDetails({
+            name: meta.name ?? existingProject.name,
+            description: meta.description ?? existingProject.description,
+            templateId: meta.templateId ?? existingProject.templateId,
+            updatedAt: meta.updatedAt ?? existingProject.updatedAt,
+            uiDefinition: nextUiDefinition,
+            schemaCompatibility: meta.schemaCompatibility,
+            uiSpecProperties: meta.uiSpecProperties,
+            projectId,
+            serverId,
+            couchDbUrl: details.dataDb.base_url,
+            status: meta.status ?? existingProject.status,
+            recordCount: mergeRecordCount(
+              meta.recordCount,
+              existingProject.recordCount
+            ),
+            offlineMapRegion: meta.offlineMapRegion,
+            disableQuickShare: meta.disableQuickShare,
+          })
+        );
       }
 
       // Dispatch all actions
@@ -2088,9 +2258,11 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       const directoryByProjectId = new Map(
         directoryResults.map(d => [d._id, d])
       );
-      const localProjectIds = Object.keys(
-        stateAfterDirectory.projects.servers[serverId]?.projects ?? {}
-      );
+      const serverAfter = stateAfterDirectory.projects.servers[serverId];
+      const localProjectIds = [
+        ...Object.keys(serverAfter?.listed ?? {}),
+        ...Object.keys(serverAfter?.activated ?? {}),
+      ];
 
       const missingFromActiveDirectory = localProjectIds.filter(
         projectId => !directoryByProjectId.has(projectId)
@@ -2328,7 +2500,7 @@ export const setSyncMode = createAsyncThunk<
     newSyncId = result.syncId;
   }
 
-  const updatedProject: Project = {
+  const updatedProject: ActivatedProject = {
     ...project,
     database: {
       ...project.database,
@@ -2354,66 +2526,64 @@ export const rebuildDbs = async (
 ): Promise<void> => {
   // For all DBs in the project, create local, sync and remote as configured
   for (const server of Object.values(state.servers)) {
-    for (const project of Object.values(server.projects)) {
+    for (const project of Object.values(server.activated)) {
       // We have a server/project
       // Now determine what we need to build
-      if (project.isActivated) {
-        if (project.database) {
-          // here we already have stuff ready to go (config etc)
-          const dbInfo = project.database;
+      if (project.database) {
+        // here we already have stuff ready to go (config etc)
+        const dbInfo = project.database;
 
-          // First - build the local DB
-          const localDb = createLocalPouchDatabase<ProjectDataObject>({
-            id: dbInfo.localDbId,
-          });
-          // Setup design documents and permissions for local data DB
-          await couchInitialiser({
-            content: initDataDB({projectId: project.projectId}),
-            db: localDb,
-            config: {applyPermissions: false, forceWrite: true},
-          });
-          databaseService.registerLocalDatabase(dbInfo.localDbId, localDb, {
+        // First - build the local DB
+        const localDb = createLocalPouchDatabase<ProjectDataObject>({
+          id: dbInfo.localDbId,
+        });
+        // Setup design documents and permissions for local data DB
+        await couchInitialiser({
+          content: initDataDB({projectId: project.projectId}),
+          db: localDb,
+          config: {applyPermissions: false, forceWrite: true},
+        });
+        databaseService.registerLocalDatabase(dbInfo.localDbId, localDb, {
+          tolerant: true,
+        });
+
+        // Next - setup the remote if we need it
+        if (dbInfo.remote) {
+          // creates the remote database (pouch remote)
+          const {db: remoteDb, id: remoteDbId} =
+            createRemotePouchDbFromConnectionInfo<ProjectDataObject>(
+              dbInfo.remote.connectionConfiguration
+            );
+          databaseService.registerRemoteDatabase(remoteDbId, remoteDb, {
             tolerant: true,
           });
 
-          // Next - setup the remote if we need it
-          if (dbInfo.remote) {
-            // creates the remote database (pouch remote)
-            const {db: remoteDb, id: remoteDbId} =
-              createRemotePouchDbFromConnectionInfo<ProjectDataObject>(
-                dbInfo.remote.connectionConfiguration
-              );
-            databaseService.registerRemoteDatabase(remoteDbId, remoteDb, {
-              tolerant: true,
+          // and the sync (if needed)
+          if (isReplicating(dbInfo.syncMode) && dbInfo.remote.syncId) {
+            const handlers = createSyncStateHandlers(
+              project.projectId,
+              project.serverId
+            );
+            const replication = createPouchDbReplication({
+              syncMode: dbInfo.syncMode,
+              attachmentDownload: dbInfo.isSyncingAttachments,
+              localDb,
+              remoteDb,
+              eventHandlers: handlers,
             });
-
-            // and the sync (if needed)
-            if (isReplicating(dbInfo.syncMode) && dbInfo.remote.syncId) {
-              const handlers = createSyncStateHandlers(
-                project.projectId,
-                project.serverId
-              );
-              const replication = createPouchDbReplication({
-                syncMode: dbInfo.syncMode,
-                attachmentDownload: dbInfo.isSyncingAttachments,
-                localDb,
-                remoteDb,
-                eventHandlers: handlers,
-              });
-              await databaseService.registerSync(
-                dbInfo.remote.syncId,
-                replication,
-                {
-                  tolerant: true,
-                }
-              );
-            }
+            await databaseService.registerSync(
+              dbInfo.remote.syncId,
+              replication,
+              {
+                tolerant: true,
+              }
+            );
           }
-          // otherwise we are all good - just local db needed
-        } else {
-          // This is weird - we have an activated notebook but the database
-          // object is missing TODO determine behaviour
         }
+        // otherwise we are all good - just local db needed
+      } else {
+        // This is weird - we have an activated notebook but the database
+        // object is missing TODO determine behaviour
       }
     }
   }
@@ -2428,7 +2598,7 @@ export const rebuildDbs = async (
 export const compileSpecs = (state: Readonly<ProjectsState>): void => {
   // For all specs in the project - compile and store
   for (const server of Object.values(state.servers)) {
-    for (const project of Object.values(server.projects)) {
+    for (const project of Object.values(server.activated)) {
       compiledSpecService.compileAndRegisterSpec(
         project.uiSpecificationId,
         project.uiDefinition.uiSpec
@@ -2499,6 +2669,8 @@ export const {
   updateServerDetails,
   markInitialised,
   deactivateProject,
+  setProjectQuickShare,
+  clearProjectQuickShare,
   reassessSchemaCompatibility,
   setPendingOfflineMapDownloadPrompt,
   clearPendingOfflineMapDownloadPrompt,

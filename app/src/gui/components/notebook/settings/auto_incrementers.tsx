@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {UiSpecModel} from '@faims3/data-model';
 import {Box, Button, Grid, Paper, Typography} from '@mui/material';
 import {useEffect, useState} from 'react';

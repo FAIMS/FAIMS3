@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(require('pouchdb-adapter-memory'));
@@ -481,7 +482,7 @@ describe('notebook creation from template with planTemplates', () => {
             [COUNTED_PLAN_TYPE]: {numberRequired: 2, allowExtraRecords: true},
           },
         } satisfies CreateNotebookFromTemplate)
-    ).expect(403);
+    ).expect(500);
 
     expect(response.body.error.message).toContain(
       'plan template "Counted" of type Counted is invalid'

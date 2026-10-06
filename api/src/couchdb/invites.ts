@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: invites.ts
  * Description:
  *   Provide an interface for manipulating invites to the system
@@ -25,9 +13,14 @@ import {
   INVITE_CODE_LENGTH,
   InvitesDBDocument,
   InvitesDBFields,
+  DEFAULT_QUICK_SHARE_LIFETIME_MS,
   isInviteExpiryWithinMax,
   MAX_INVITE_EXPIRY_DAYS,
   PeopleDBDocument,
+  QUICK_SHARE_KIND,
+  QUICK_SHARE_NAME,
+  QUICK_SHARES_BY_PROJECT_AND_USER_INDEX,
+  QUICK_SHARES_INDEX,
   Resource,
   Role,
   RoleScope,
@@ -36,6 +29,7 @@ import {
   addTeamRole,
   safeWriteDocument,
   writeNewDocument,
+  type InviteKind,
 } from '@faims3/data-model';
 import {customAlphabet} from 'nanoid';
 import {getInvitesDB} from '.';
@@ -73,8 +67,10 @@ function resolveInviteExpiry(expiry: number | undefined): number {
  * @param {Role} params.role - Role to grant
  * @param {string} params.name - Name/purpose of the invite
  * @param {string} params.createdBy - User ID of the creator
- * @param {number} [params.expiry] - Timestamp when invite expires
+ * @param {number} [params.expiry] - Timestamp when invite expires, passed through {@link resolveInviteExpiry}
+ * @param {number} [params.absoluteExpiry] - Precomputed expiry stored as given. Quick Share sets this after its own lifetime check so control-centre invites still use {@link resolveInviteExpiry}.
  * @param {number} [params.usesOriginal] - Maximum number of times invite can be used (infinite if undefined)
+ * @param {InviteKind} [params.kind] - Set for a field-app Quick Share invite
  * @returns {Promise<ExistingInvitesDBDocument>} The invite document
  */
 export async function createResourceInvite({
@@ -84,7 +80,9 @@ export async function createResourceInvite({
   name,
   createdBy,
   expiry,
+  absoluteExpiry,
   usesOriginal,
+  kind,
 }: {
   resourceType: Resource.TEAM | Resource.PROJECT;
   resourceId: string;
@@ -92,23 +90,52 @@ export async function createResourceInvite({
   name: string;
   createdBy: string;
   expiry?: number;
+  absoluteExpiry?: number;
   usesOriginal?: number;
+  kind?: InviteKind;
 }): Promise<ExistingInvitesDBDocument> {
-  // Create a new invite
   const invite: InvitesDBFields = {
     resourceType,
     resourceId,
     inviteType: RoleScope.RESOURCE_SPECIFIC,
     role,
     name,
+    kind,
     createdBy,
     createdAt: Date.now(),
-    expiry: resolveInviteExpiry(expiry),
+    expiry: absoluteExpiry ?? resolveInviteExpiry(expiry),
     usesOriginal,
     usesConsumed: 0,
     uses: [],
   };
   return await writeNewInvite(invite);
+}
+
+/**
+ * Create a one-hour survey invite from the field app.
+ * The document is a normal invite (so scanning and redemption are unchanged)
+ * with `kind: 'quick-share'` so creation and each use can be told apart.
+ * Uses are unlimited until expiry; every redemption is appended to `uses`.
+ */
+export async function createQuickShareInvite({
+  resourceId,
+  role,
+  createdBy,
+}: {
+  resourceId: string;
+  role: Role;
+  createdBy: string;
+}): Promise<ExistingInvitesDBDocument & {kind: typeof QUICK_SHARE_KIND}> {
+  const saved = await createResourceInvite({
+    resourceType: Resource.PROJECT,
+    resourceId,
+    role,
+    name: QUICK_SHARE_NAME,
+    createdBy,
+    absoluteExpiry: Date.now() + DEFAULT_QUICK_SHARE_LIFETIME_MS,
+    kind: QUICK_SHARE_KIND,
+  });
+  return {...saved, kind: QUICK_SHARE_KIND};
 }
 
 /**
@@ -317,6 +344,99 @@ export async function consumeInvite({
 }
 
 /**
+ * pouchdb-find (and CouchDB Mango) default `limit` to 25. Callers that need
+ * every match must page; a short page means there are no further documents.
+ */
+const INVITE_FIND_PAGE_SIZE = 200;
+
+async function findEveryInvite(
+  selector: PouchDB.Find.Selector
+): Promise<ExistingInvitesDBDocument[]> {
+  const inviteDb = getInvitesDB();
+  if (!inviteDb) {
+    throw Error('Unable to connect to invites database');
+  }
+  const docs: ExistingInvitesDBDocument[] = [];
+  let skip = 0;
+  for (;;) {
+    const result = await inviteDb.find({
+      selector,
+      limit: INVITE_FIND_PAGE_SIZE,
+      skip,
+    });
+    docs.push(...(result.docs as ExistingInvitesDBDocument[]));
+    if (result.docs.length < INVITE_FIND_PAGE_SIZE) {
+      return docs;
+    }
+    skip += result.docs.length;
+  }
+}
+
+async function queryInviteIndex(
+  index: string,
+  options: {key: string | [string, string]}
+): Promise<ExistingInvitesDBDocument[]> {
+  const inviteDb = getInvitesDB();
+  if (!inviteDb) {
+    throw Error('Unable to connect to invites database');
+  }
+  const result = await inviteDb.query(index, {
+    include_docs: true,
+    ...options,
+  });
+  return result.rows
+    .filter(row => row.doc && !row.id.startsWith('_'))
+    .map(row => row.doc as ExistingInvitesDBDocument);
+}
+
+/**
+ * Every Quick Share invite for a survey.
+ * Uses the `quickShares` view (keyed by survey id).
+ */
+export async function getQuickSharesForProject(
+  projectId: string
+): Promise<ExistingInvitesDBDocument[]> {
+  return queryInviteIndex(QUICK_SHARES_INDEX, {key: projectId});
+}
+
+/**
+ * Quick Share invites created by one user for one survey.
+ * Uses the `quickSharesByProjectAndUser` view. Key is `[projectId, userId]`.
+ */
+export async function getQuickSharesForProjectAndUser({
+  projectId,
+  userId,
+}: {
+  projectId: string;
+  userId: string;
+}): Promise<ExistingInvitesDBDocument[]> {
+  return queryInviteIndex(QUICK_SHARES_BY_PROJECT_AND_USER_INDEX, {
+    key: [projectId, userId],
+  });
+}
+
+/**
+ * Project invites, with Quick Shares taken from the `quickShares` view so a
+ * paged find of the other invites cannot drop them.
+ */
+export async function getProjectInvites(
+  projectId: string
+): Promise<ExistingInvitesDBDocument[]> {
+  const [invites, quickShares] = await Promise.all([
+    getInvitesForResource({
+      resourceType: Resource.PROJECT,
+      resourceId: projectId,
+    }),
+    getQuickSharesForProject(projectId),
+  ]);
+  const quickShareIds = new Set(quickShares.map(invite => invite._id));
+  return [
+    ...invites.filter(invite => !quickShareIds.has(invite._id)),
+    ...quickShares,
+  ];
+}
+
+/**
  * Get all invites for a specific resource.
  *
  * @param {Object} params - The parameters for retrieving invites
@@ -332,18 +452,10 @@ export async function getInvitesForResource({
   resourceType: Resource.TEAM | Resource.PROJECT;
   resourceId: string;
 }): Promise<ExistingInvitesDBDocument[]> {
-  const inviteDb = getInvitesDB();
-  if (inviteDb) {
-    const result = await inviteDb.find({
-      selector: {
-        resourceType: {$eq: resourceType},
-        resourceId: {$eq: resourceId},
-      },
-    });
-    return result.docs as ExistingInvitesDBDocument[];
-  } else {
-    throw Error('Unable to connect to invites database');
-  }
+  return findEveryInvite({
+    resourceType: {$eq: resourceType},
+    resourceId: {$eq: resourceId},
+  });
 }
 
 /**
@@ -352,10 +464,7 @@ export async function getInvitesForResource({
 export async function deleteAllInvitesForProject(
   projectId: string
 ): Promise<void> {
-  const invites = await getInvitesForResource({
-    resourceType: Resource.PROJECT,
-    resourceId: projectId,
-  });
+  const invites = await getProjectInvites(projectId);
   for (const invite of invites) {
     await deleteInvite({invite});
   }
@@ -368,17 +477,9 @@ export async function deleteAllInvitesForProject(
  * @throws {Error} If unable to connect to the invites database
  */
 export async function getGlobalInvites(): Promise<ExistingInvitesDBDocument[]> {
-  const inviteDb = getInvitesDB();
-  if (inviteDb) {
-    const result = await inviteDb.find({
-      selector: {
-        inviteType: {$eq: RoleScope.GLOBAL},
-      },
-    });
-    return result.docs as ExistingInvitesDBDocument[];
-  } else {
-    throw Error('Unable to connect to invites database');
-  }
+  return findEveryInvite({
+    inviteType: {$eq: RoleScope.GLOBAL},
+  });
 }
 
 /**

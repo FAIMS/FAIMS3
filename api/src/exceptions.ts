@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // Base class for custom exceptions
 export class CustomException extends Error {
   status: number;
@@ -84,7 +85,7 @@ export class ForbiddenException extends CustomException {
  */
 export class InternalSystemError extends CustomException {
   constructor(message: string) {
-    super(message, 403);
+    super(message, 500);
   }
 }
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {useAuth, type User} from '@/context/auth-provider';
 import {PostImpersonateUserResponseSchema} from '@faims3/data-model';
 import {useMutation, useQueryClient} from '@tanstack/react-query';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import type {OfflineMapRegion} from '@faims3/data-model';
 import {describe, expect, it, vi, beforeEach, afterEach} from 'vitest';
 
@@ -33,8 +34,12 @@ describe('resolveActivationSyncMode', () => {
     vi.unstubAllGlobals();
   });
 
-  it('defaults to both when offline without calling the API', async () => {
+  it('still fetches details when navigator.onLine is false', async () => {
     vi.stubGlobal('navigator', {onLine: false});
+    const details = {
+      recordCount: 10,
+    } as Awaited<ReturnType<typeof fetchNotebookDetails>>;
+    mockFetchNotebookDetails.mockResolvedValue(details);
 
     const result = await resolveActivationSyncMode({
       serverUrl: 'https://example.com',
@@ -42,8 +47,13 @@ describe('resolveActivationSyncMode', () => {
       token: 'token',
     });
 
+    expect(mockFetchNotebookDetails).toHaveBeenCalledWith({
+      serverUrl: 'https://example.com',
+      projectId: 'p1',
+      token: 'token',
+    });
+    expect(result.details).toBe(details);
     expect(result.syncMode).toBe('both');
-    expect(mockFetchNotebookDetails).not.toHaveBeenCalled();
   });
 
   it('defaults to both when the API throws', async () => {
@@ -57,12 +67,14 @@ describe('resolveActivationSyncMode', () => {
 
     expect(result.syncMode).toBe('both');
     expect(result.usedPushOnlyDefault).toBe(false);
+    expect(result.details).toBeUndefined();
   });
 
   it('uses push when record count exceeds threshold', async () => {
-    mockFetchNotebookDetails.mockResolvedValue({
+    const details = {
       recordCount: 999999,
-    } as Awaited<ReturnType<typeof fetchNotebookDetails>>);
+    } as Awaited<ReturnType<typeof fetchNotebookDetails>>;
+    mockFetchNotebookDetails.mockResolvedValue(details);
 
     const result = await resolveActivationSyncMode({
       serverUrl: 'https://example.com',
@@ -73,12 +85,14 @@ describe('resolveActivationSyncMode', () => {
     expect(result.syncMode).toBe('push');
     expect(result.usedPushOnlyDefault).toBe(true);
     expect(result.recordCount).toBe(999999);
+    expect(result.details).toBe(details);
   });
 
   it('uses both when record count is below threshold', async () => {
-    mockFetchNotebookDetails.mockResolvedValue({
+    const details = {
       recordCount: 10,
-    } as Awaited<ReturnType<typeof fetchNotebookDetails>>);
+    } as Awaited<ReturnType<typeof fetchNotebookDetails>>;
+    mockFetchNotebookDetails.mockResolvedValue(details);
 
     const result = await resolveActivationSyncMode({
       serverUrl: 'https://example.com',
@@ -88,6 +102,28 @@ describe('resolveActivationSyncMode', () => {
 
     expect(result.syncMode).toBe('both');
     expect(result.usedPushOnlyDefault).toBe(false);
+    expect(result.details).toBe(details);
+  });
+
+  it('passes through the full GET details payload on success', async () => {
+    const details = {
+      name: 'Survey One',
+      recordCount: 3,
+      uiDefinition: {uiSpec: {fields: {}}},
+      uiSpecProperties: {schemaVersion: '1.0.0', hash: 'a'.repeat(64)},
+      schemaCompatibility: {tier: 'compatible'},
+    } as Awaited<ReturnType<typeof fetchNotebookDetails>>;
+    mockFetchNotebookDetails.mockResolvedValue(details);
+
+    const result = await resolveActivationSyncMode({
+      serverUrl: 'https://example.com',
+      projectId: 'p1',
+      token: 'token',
+    });
+
+    expect(result.details).toBe(details);
+    expect(result.details?.uiDefinition).toEqual(details.uiDefinition);
+    expect(result.details?.uiSpecProperties).toEqual(details.uiSpecProperties);
   });
 
   it.each([
@@ -110,6 +146,10 @@ describe('resolveActivationSyncMode', () => {
       expect(result.syncMode).toBe('both');
       expect(result.usedPushOnlyDefault).toBe(false);
       expect(result.recordCount).toBeUndefined();
+      expect(result.details).toEqual({
+        recordCount,
+        offlineMapRegion: sampleOfflineMapRegion,
+      });
       expect(result.offlineMapRegion).toEqual(sampleOfflineMapRegion);
       expect(result.offlineMapRegionSynced).toBe(true);
     }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {logError} from '@faims3/data-model';
 import CancelIcon from '@mui/icons-material/Cancel';
 import DeleteIcon from '@mui/icons-material/Delete';

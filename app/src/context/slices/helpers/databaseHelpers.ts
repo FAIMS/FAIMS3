@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import {
   GetNotebookResponse,
   NotebookUiSpec,
   ProjectStatus,
+  stableStringify,
 } from '@faims3/data-model';
 import {projectInformationFromGetNotebook} from './notebookDefinition';
 import PouchDB from 'pouchdb-browser';
@@ -47,26 +49,6 @@ export const buildSyncId = ({
   remoteId: string;
 }): string => {
   return `${localId}-${remoteId}`;
-};
-
-/**
- * Stable stringify: sorts object keys so logically identical specs
- * serialise identically regardless of key order.
- */
-const stableStringify = (value: unknown): string => {
-  if (value === null || typeof value !== 'object') {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map(stableStringify).join(',')}]`;
-  }
-  return `{${Object.keys(value as Record<string, unknown>)
-    .sort()
-    .map(
-      k =>
-        `${JSON.stringify(k)}:${stableStringify((value as Record<string, unknown>)[k])}`
-    )
-    .join(',')}}`;
 };
 
 /** FNV-1a 32-bit hash, hex encoded. Not cryptographic - identity only. */

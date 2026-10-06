@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {COUCH_ADMIN_ROLE_NAME} from '../constants';
 import {roleGrantsAction} from './helpers';
 import {
@@ -303,7 +304,7 @@ export function projectInviteToAction({
   action: 'create' | 'delete';
   role: Role;
 }): Action {
-  // Trying to add a role is a specific action for each role level
+  // Creating or deleting an invite is a specific action for each role level
   let actionNeeded = undefined;
   if (role === Role.PROJECT_ADMIN) {
     if (action === 'create') {
@@ -336,6 +337,43 @@ export function projectInviteToAction({
   }
 
   return actionNeeded;
+}
+
+/**
+ * Survey roles that can be granted by a project invite, lowest access first.
+ * Taken from {@link roleDetails} so a new project role shows up here when it
+ * has a resource of {@link Resource.PROJECT}.
+ */
+export function projectInviteRoles(): Role[] {
+  return (Object.keys(roleDetails) as Role[])
+    .filter(role => {
+      const details = roleDetails[role];
+      return (
+        details.scope === RoleScope.RESOURCE_SPECIFIC &&
+        details.resource === Resource.PROJECT
+      );
+    })
+    .sort((a, b) => (roleDetails[a].order ?? 0) - (roleDetails[b].order ?? 0));
+}
+
+/**
+ * Survey roles this user is allowed to invite someone into.
+ * Uses the same create-invite actions as the control centre.
+ */
+export function projectRolesUserCanInvite({
+  decodedToken,
+  resourceId,
+}: {
+  decodedToken: DecodedTokenPermissions;
+  resourceId: string;
+}): Role[] {
+  return projectInviteRoles().filter(role =>
+    isAuthorized({
+      decodedToken,
+      action: projectInviteToAction({action: 'create', role}),
+      resourceId,
+    })
+  );
 }
 
 /**

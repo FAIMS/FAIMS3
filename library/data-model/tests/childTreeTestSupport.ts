@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Shared fixtures for the two walks over a record's Child-type links: the
  * status report and the recursive revision history. Both run against the one

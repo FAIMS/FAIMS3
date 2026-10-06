@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Record} from '@faims3/data-model';
 import {describe, expect, it} from 'vitest';
 import {getRecordContextFromRecord} from './formUtilities';

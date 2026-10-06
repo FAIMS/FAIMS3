@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CloseIcon from '@mui/icons-material/Close';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {

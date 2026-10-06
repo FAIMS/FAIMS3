@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import InfoIcon from '@mui/icons-material/Info';
 import {Tooltip, Typography} from '@mui/material';
 import Box from '@mui/material/Box';

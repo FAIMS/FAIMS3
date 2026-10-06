@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: conductor.test.ts
  * Description:
  *   Tests of the main routes in conductor
@@ -38,6 +26,13 @@ const adminPassword = config.localCouchdbAuth
 it('check is up', async () => {
   const result = await request(app).get('/up');
   expect(result.statusCode).toBe(200);
+  expect(result.body).toEqual({status: 'ok'});
+});
+
+it('readiness /ready is 200 after the full API attaches', async () => {
+  const result = await request(app).get('/ready');
+  expect(result.statusCode).toBe(200);
+  expect(result.body).toEqual({ready: true});
 });
 
 describe('Auth', () => {

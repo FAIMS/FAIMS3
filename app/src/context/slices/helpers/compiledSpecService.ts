@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * The compiledSpecService is a singleton class service which allows access to
  * compiled UI Specifications by their identifier in the projects store. This

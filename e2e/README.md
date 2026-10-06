@@ -21,11 +21,11 @@ For repeated local password-reset / invite e2e, set in `api/.env`:
 
 ```bash
 RATE_LIMITER_ENABLED=false
-AUTH_ATTEMPT_LIMITER_ENABLED=false
+ATTEMPT_LIMITER_ENABLED=false
 ```
 
 `RATE_LIMITER_ENABLED` is the Express HTTP IP limiter;
-`AUTH_ATTEMPT_LIMITER_ENABLED` is the CouchDB-backed email-code /
+`ATTEMPT_LIMITER_ENABLED` is the CouchDB-backed email-code /
 verification-challenge attempt limits (see `api/.env.dist`). Export mint/redeem
 has a separate limiter (`EXPORT_RATE_LIMITER_ENABLED`, default 20 req / 10 min)
 that stays on when the global IP limiter is off. Restart the API after changing
@@ -143,7 +143,7 @@ lockfile/workflow files change (`workflow_dispatch` always available). The job:
 
 1. Installs deps (Node 24 / pnpm, same as Build & Lint)
 2. Copies `.env.dist` → `.env`, sets `FAIMS_COOKIE_SECRET`,
-   `RATE_LIMITER_ENABLED=false`, and `AUTH_ATTEMPT_LIMITER_ENABLED=false`
+   `RATE_LIMITER_ENABLED=false`, and `ATTEMPT_LIMITER_ENABLED=false`
 3. Generates signing keys + CouchDB `local.ini`, starts CouchDB via Compose
 4. `pnpm build`, `migrate-with-keys`, `seed-test-dataset`
 5. Starts `pnpm run dev` (api `:8080`, app `:3000`, web `:3001`)
@@ -170,13 +170,13 @@ cd e2e && pnpm exec wdio run wdio.headless.web.conf.ts --mochaOpts.grep 'Users a
 
 ## Troubleshooting
 
-| Symptom                  | Action                                                                                               |
-| ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| Stuck on `/login`        | Re-seed; check `api/.env` local auth                                                                 |
-| Stuck on `exchangeToken` | API down / exchange failed                                                                           |
-| Element not found        | Add/wait for `data-testid`                                                                           |
-| Empty lists              | Wrong persona or seed incomplete                                                                     |
-| Users search no results  | Email column must be a string (Users tab maps `emails[0].email`)                                     |
-| HTTP 429 / flaky auth    | Set `RATE_LIMITER_ENABLED=false` and `AUTH_ATTEMPT_LIMITER_ENABLED=false` in `api/.env`; restart API |
-| Non-local CouchDB target | e2e reads only `e2e/.env` and refuses remote `COUCHDB_*_URL` unless `E2E_ALLOW_REMOTE_COUCH=true`    |
-| CI Chrome session fails  | Check Actions artifact `e2e-artifacts-*` + pinned Chrome setup                                       |
+| Symptom                  | Action                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------- |
+| Stuck on `/login`        | Re-seed; check `api/.env` local auth                                                              |
+| Stuck on `exchangeToken` | API down / exchange failed                                                                        |
+| Element not found        | Add/wait for `data-testid`                                                                        |
+| Empty lists              | Wrong persona or seed incomplete                                                                  |
+| Users search no results  | Email column must be a string (Users tab maps `emails[0].email`)                                  |
+| HTTP 429 / flaky auth    | Set `RATE_LIMITER_ENABLED=false` and `ATTEMPT_LIMITER_ENABLED=false` in `api/.env`; restart API   |
+| Non-local CouchDB target | e2e reads only `e2e/.env` and refuses remote `COUCHDB_*_URL` unless `E2E_ALLOW_REMOTE_COUCH=true` |
+| CI Chrome session fails  | Check Actions artifact `e2e-artifacts-*` + pinned Chrome setup                                    |

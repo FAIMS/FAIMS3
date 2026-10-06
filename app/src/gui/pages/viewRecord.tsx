@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * ViewRecordPage - Read-only view of a FAIMS record with tabbed navigation.
  *
@@ -73,7 +74,11 @@ import {
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {isNotebookDesignLocked} from '../../context/slices/helpers/notebookDefinition';
-import {selectProjectById} from '../../context/slices/projectSlice';
+import {
+  isActivatedProject,
+  projectUiDefinition,
+  selectProjectById,
+} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {useNotebookRoute} from '../../context/notebookRoute';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
@@ -626,9 +631,10 @@ export const ViewRecordPage: React.FC = () => {
     projectId ? selectProjectById(state, projectId) : undefined
   );
 
-  const uiSpec = project?.uiSpecificationId
-    ? compiledSpecService.getSpec(project.uiSpecificationId)
-    : undefined;
+  const uiSpec =
+    project && isActivatedProject(project)
+      ? compiledSpecService.getSpec(project.uiSpecificationId)
+      : undefined;
   const dataDb =
     projectId && project ? tryLocalGetDataDb(projectId) : undefined;
 
@@ -832,7 +838,7 @@ export const ViewRecordPage: React.FC = () => {
             getAttachmentService={getAttachmentService}
             isDeleted={isDeleted}
             canEdit={canEdit}
-            metadataValues={project?.uiDefinition.metadata.custom}
+            metadataValues={projectUiDefinition(project)?.metadata.custom}
           />
         </TabPanel>
 

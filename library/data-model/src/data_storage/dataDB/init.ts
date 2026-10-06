@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {InitialisationContent} from '../utils';
 import {DataDBSecurityDocument} from './security';
 import {dataDbDesignDocuments} from './design';

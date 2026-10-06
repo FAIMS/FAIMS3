@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {MinimalRecordMetadata, ProjectStatus} from '@faims3/data-model';
 import {Alert, AlertTitle, Box, Paper, Tab, Tabs} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
