@@ -242,13 +242,7 @@ function HistoryEventItem({
     item => item.revisionId === entry.revisionId
   );
   const isOtherRecord = Boolean(rootRecordId && recordId !== rootRecordId);
-  const subtitle = getHistoryEventSubtitle({
-    entry,
-    uiSpec,
-    formId,
-    kind,
-    isChild: isOtherRecord,
-  });
+  const subtitle = getHistoryEventSubtitle({uiSpec, formId});
 
   const formatRevisionMetadata = (target?: RevisionHistoryEntry) =>
     target
@@ -340,21 +334,13 @@ function HistoryEventItem({
             <Box sx={{minWidth: 0, flex: '1 1 0'}}>
               <Typography
                 sx={{
-                  //fontFamily: HISTORY_MONO_FONT,
                   fontSize: '0.875rem',
                   fontWeight: 600,
                   letterSpacing: '-0.015em',
-                  lineHeight: 1.4,
+                  lineHeight: 1.3,
                   color: 'text.primary',
                   overflowWrap: 'anywhere',
                 }}
-              >
-                {getHistoryEventActor(entry)}
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{mt: 0.8, fontSize: '0.8125rem', lineHeight: 1.3}}
               >
                 {getHistoryEventAction(kind)}
                 {isOtherRecord && (
@@ -364,9 +350,10 @@ function HistoryEventItem({
                       component="span"
                       sx={{
                         fontFamily: HISTORY_MONO_FONT,
-                        fontWeight: theme.typography.fontWeightBold,
+                        // fontWeight: theme.typography.fontWeightBold,
+                        fontWeight: theme.typography.fontWeightLight,
                         fontSize: 'inherit',
-                        color: 'text.secondary',
+                        color: 'text.primary',
                       }}
                     >
                       Child
@@ -374,6 +361,20 @@ function HistoryEventItem({
                   </>
                 )}{' '}
                 {subtitle}
+              </Typography>
+              <Typography
+                sx={{
+                  mt: 0.75,
+                  fontFamily: HISTORY_MONO_FONT,
+                  fontSize: '0.75rem',
+                  fontWeight: theme.typography.fontWeightMedium,
+                  letterSpacing: '-0.015em',
+                  lineHeight: 1.3,
+                  color: 'text.secondary',
+                  overflowWrap: 'anywhere',
+                }}
+              >
+                {getHistoryEventActor(entry)}
               </Typography>
             </Box>
             <IconButton

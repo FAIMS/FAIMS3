@@ -131,32 +131,10 @@ describe('historyUtils', () => {
     expect(getChangedFieldIds(updated)).toEqual(['site_name', 'contact_email']);
   });
 
-  it('uses the form label for create events and the dominant section for updates', () => {
-    const created = entry({
-      revisionId: 'r1',
-      created: '2025-10-06T10:00:00.000Z',
-      changedFields: {root: ['site_name', 'contact_email']},
-    });
-    expect(
-      getHistoryEventSubtitle({entry: created, uiSpec, formId: 'Site'})
-    ).toBe('Site record');
-
-    const updated = entry({
-      revisionId: 'r2',
-      created: '2025-10-06T11:00:00.000Z',
-      changedFields: {r1: ['contact_email', 'child_sites']},
-    });
-    expect(
-      getHistoryEventSubtitle({entry: updated, uiSpec, formId: 'Site'})
-    ).toBe('Email address');
-    expect(
-      getHistoryEventSubtitle({
-        entry: updated,
-        uiSpec,
-        formId: 'Site',
-        isChild: true,
-      })
-    ).toBe('Site record');
+  it('uses the form label for create and update events', () => {
+    expect(getHistoryEventSubtitle({uiSpec, formId: 'Site'})).toBe(
+      'Site record'
+    );
   });
 
   it('formats dates, times, and relative group headings', () => {
@@ -280,7 +258,7 @@ describe('RecordHistoryTimeline', () => {
 
     expect(screen.getAllByText('Peter Baker')).toHaveLength(2);
     expect(screen.getByText(/Created\s+Site record/)).toBeTruthy();
-    expect(screen.getByText(/Updated\s+Email address/)).toBeTruthy();
+    expect(screen.getByText(/Updated\s+Site record/)).toBeTruthy();
     expect(screen.getByTestId('record-history-icon-created')).toBeTruthy();
     expect(screen.getByTestId('record-history-icon-updated')).toBeTruthy();
     expect(screen.queryByText('2 fields')).toBeNull();

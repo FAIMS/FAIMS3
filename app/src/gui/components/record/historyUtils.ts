@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
  * Pure helpers for the record History tab: classify revisions, group them by
- * local calendar day, and resolve display labels / field-type icons from the
- * notebook UI spec.
+ * local calendar day, and resolve form labels from the notebook UI spec.
  */
 import {
   getFieldLabel,
@@ -83,57 +82,17 @@ export function getHistoryEventTitle(
   return `${getHistoryEventActor(entry)} ${getHistoryEventAction(kind)}`;
 }
 
-/**
- * Prefer the section that contains the most changed fields; fall back to the
- * form label (and for create/delete, always use the form — every field is new).
- */
+/** Form label only — the row does not try to name the changed section. */
 export function getHistoryEventSubtitle({
-  entry,
   uiSpec,
   formId,
-  kind = getHistoryEventKind(entry),
-  isChild = false,
 }: {
-  entry: RevisionHistoryEntry;
   uiSpec: UiSpecModel;
   formId?: string;
-  kind?: HistoryEventKind;
-  isChild?: boolean;
 }): string {
-  const formLabel = formId
+  return formId
     ? getFormLabel({uiSpec, formId})
     : (Object.values(uiSpec.viewsets)[0]?.label ?? 'Record');
-
-  if (isChild || kind === 'created' || kind === 'deleted') {
-    return formLabel;
-  }
-
-  const fieldIds = new Set(getChangedFieldIds(entry));
-  if (fieldIds.size === 0) {
-    return formLabel;
-  }
-
-  const sectionScores: Array<{label: string; count: number}> = [];
-  for (const [viewId, view] of Object.entries(uiSpec.views ?? {})) {
-    const count = (view.fields ?? []).filter(fieldId =>
-      fieldIds.has(fieldId)
-    ).length;
-    if (count > 0) {
-      sectionScores.push({label: view.label ?? viewId, count});
-    }
-  }
-
-  if (sectionScores.length === 0) {
-    return formLabel;
-  }
-
-  const topCount = Math.max(...sectionScores.map(section => section.count));
-  const leaders = sectionScores.filter(section => section.count === topCount);
-  if (leaders.length === 1 && leaders[0]) {
-    return leaders[0].label;
-  }
-
-  return formLabel;
 }
 
 export function formatHistoryEventDate(
