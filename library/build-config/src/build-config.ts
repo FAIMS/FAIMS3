@@ -1,4 +1,14 @@
 import {z} from 'zod';
+import {
+  AuthProviderConfigMap,
+  AuthProviderConfigMapSchema,
+} from './auth-provider-config.js';
+export {
+  AuthProviderSchema,
+  AuthProviderConfigMapSchema,
+  readAuthProviderConfigFromEnv,
+  buildAuthProviderEnvMap,
+} from './auth-provider-config.js';
 
 const TrueFalseSchema = z
   .enum(['true', 'false'])
@@ -270,6 +280,7 @@ export const ApiBuildConfigSchema = z
       .default('lax')
       .optional(),
     recordsHydratedPageLimit: z.number().int().positive().default(150).optional(),
+    authProviders: AuthProviderConfigMapSchema.default({}).optional(),
     extraEnv: z
       .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
       .default({})
@@ -453,6 +464,7 @@ export const RuntimeConfigSchema = z
         restoreUploadMaxBytes: z.number().int().positive(),
         downloadCookieSameSite: z.enum(['lax', 'strict', 'none']),
         recordsHydratedPageLimit: z.number().int().positive(),
+        authProviders: AuthProviderConfigMapSchema,
         extraEnv: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
       })
       .strict(),
@@ -705,6 +717,7 @@ export function toRuntimeConfig(parsed: SharedBuildConfig): RuntimeConfig {
       restoreUploadMaxBytes: apiConfig.restoreUploadMaxBytes ?? 1073741824,
       downloadCookieSameSite: apiConfig.downloadCookieSameSite ?? 'lax',
       recordsHydratedPageLimit: apiConfig.recordsHydratedPageLimit ?? 150,
+      authProviders: (apiConfig.authProviders ?? {}) as AuthProviderConfigMap,
       extraEnv: apiConfig.extraEnv ?? {},
     },
   });

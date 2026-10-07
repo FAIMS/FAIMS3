@@ -2,8 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generateEnv, parseArgs} from '../src/generate-build-config.js';
 import {
+  buildAuthProviderEnvMap,
   parseBuildConfig,
   parseGeneratedEnv,
+  readAuthProviderConfigFromEnv,
   SharedBuildConfig,
 } from '../src/build-config.js';
 import {validateGeneratedEnv} from '../src/validate-generated-env.js';
@@ -94,6 +96,16 @@ test('generator supports api platform export selection', () => {
       smtpPassword: 'smtp-password',
       testEmailAddress: 'test@example.com',
       provisionSsoUsersPolicy: 'reject',
+      authProviders: {
+        google: {
+          id: 'google',
+          type: 'google',
+          displayName: 'Google',
+          scope: ['profile', 'email'],
+          clientID: 'google-client-id',
+          clientSecret: 'google-client-secret',
+        },
+      },
     },
   };
 
@@ -102,7 +114,31 @@ test('generator supports api platform export selection', () => {
   assert.match(output, /PROFILE_NAME=dev-profile/);
   assert.match(output, /COUCHDB_USER=admin/);
   assert.match(output, /EMAIL_SERVICE_TYPE=MOCK/);
+  assert.match(output, /AUTH_GOOGLE_TYPE=google/);
+  assert.match(output, /AUTH_GOOGLE_CLIENT_ID=google-client-id/);
   assert.doesNotMatch(output, /VITE_APP_NAME=/);
+});
+
+test('auth provider env helpers roundtrip config for google provider', () => {
+  const source = {
+    google: {
+      id: 'google',
+      type: 'google' as const,
+      displayName: 'Google',
+      scope: ['profile', 'email'],
+      callbackMethods: ['GET' as const],
+      clientID: 'google-client-id',
+      clientSecret: 'google-client-secret',
+    },
+  };
+
+  const env = buildAuthProviderEnvMap(source);
+  const parsed = readAuthProviderConfigFromEnv(env);
+
+  assert.equal(parsed.google?.type, 'google');
+  assert.equal(parsed.google?.displayName, 'Google');
+  assert.deepEqual(parsed.google?.scope, ['profile', 'email']);
+  assert.equal((parsed.google as any)?.clientID, 'google-client-id');
 });
 
 test('generator emits Android base64 secrets when provided', () => {

@@ -1,4 +1,5 @@
 import {RuntimeConfig} from './build-config.js';
+import {buildAuthProviderEnvMap} from './auth-provider-config.js';
 
 type SupportedPlatform = 'all' | 'android' | 'ios' | 'web' | 'api';
 
@@ -220,6 +221,11 @@ export function buildEnvMapFromRuntime(
 
   if (platform === 'api') {
     applyContract(apiContract, runtime, map);
+    for (const [key, value] of Object.entries(
+      buildAuthProviderEnvMap(runtime.api.authProviders)
+    )) {
+      map[key] = value;
+    }
     for (const [key, value] of Object.entries(runtime.api.extraEnv)) {
       map[key] = value;
     }
