@@ -15,7 +15,8 @@
 // limitations under the License.
 
 /**
- * @file Top-level designer chrome: Design vs Info routing tabs.
+ * @file Top-level designer chrome: Design / Info routing tabs, plus a
+ * Setup Form tab in template mode (#2216).
  */
 
 import {TabContext, TabList} from '@mui/lab';
@@ -35,6 +36,8 @@ import {useCallback, useEffect, useState} from 'react';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import {useDesignerUndoRedo} from '../state/use-designer-undo-redo';
+import {useAppSelector} from '../state/hooks';
+import {selectDesignerMode} from '../store/selectors';
 import {
   designerCancelButtonSx,
   designerResponsiveFrameSx,
@@ -59,6 +62,9 @@ export const NotebookEditor = ({
   const {pathname} = useLocation();
   const isDesignRoute = pathname.startsWith('/design/');
   const [previewForm, setPreviewForm] = useState(false);
+
+  // Setup form authoring is template-only
+  const mode = useAppSelector(selectDesignerMode);
 
   const tabIndex = pathname.startsWith('/design/')
     ? pathname.split('/')[2]
@@ -164,6 +170,14 @@ export const NotebookEditor = ({
                 value={`/design/${tabIndex}`}
               />
               <Tab label="Info" component={Link} to="/info" value="/info" />
+              {mode === 'template' && (
+                <Tab
+                  label="Setup Form"
+                  component={Link}
+                  to="/setup"
+                  value="/setup"
+                />
+              )}
             </TabList>
           </Box>
           <Box sx={toolbarSx}>

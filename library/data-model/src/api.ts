@@ -36,6 +36,7 @@ import {
 import {
   NotebookDefinitionSchema,
   NotebookUiSpecificationInputSchema,
+  SetupValuesSchema,
   TemplateDefinition,
 } from './uiSpecification';
 import {projectInviteRoles} from './permission/functions';
@@ -341,6 +342,7 @@ export const CreateNotebookFromTemplateSchema = z.object({
   planConfigs: z
     .record(z.string(), z.record(z.string(), z.unknown()))
     .optional(),
+  setupValues: SetupValuesSchema.optional(),
 });
 export type CreateNotebookFromTemplate = z.infer<
   typeof CreateNotebookFromTemplateSchema
