@@ -88,7 +88,7 @@ const baseTheme = createTheme({
     history: {
       marker: bssBrand.infoMain,
       markerCreated: bssBrand.successMain,
-      markerUpdated: bssBrand.infoMain,
+      markerUpdated: colors.blue[400],
       markerDeleted: bssBrand.errorMain,
       connector: '#E0E0E0',
       iconBackground: '#f3f3f3',

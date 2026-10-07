@@ -92,7 +92,7 @@ const baseTheme = createTheme({
     history: {
       marker: fieldmarkBrand.infoMain,
       markerCreated: fieldmarkBrand.successMain,
-      markerUpdated: fieldmarkBrand.infoMain,
+      markerUpdated: colors.blue[400],
       markerDeleted: fieldmarkBrand.errorMain,
       connector: '#D7DCD0',
       iconBackground: '#edeeeb',

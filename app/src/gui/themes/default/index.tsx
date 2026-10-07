@@ -92,7 +92,7 @@ const baseTheme = createTheme({
     history: {
       marker: defaultBrand.infoMain,
       markerCreated: defaultBrand.successMain,
-      markerUpdated: defaultBrand.infoMain,
+      markerUpdated: colors.blue[400],
       markerDeleted: defaultBrand.errorMain,
       connector: '#D5D9E4',
       iconBackground: '#E8EAF0',

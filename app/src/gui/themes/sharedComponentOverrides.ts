@@ -236,7 +236,7 @@ export const buildSharedComponentOverrides = (theme: Theme) => ({
               display: 'none',
             },
           },
-          '& .MuiTimelineItem-root:not(:last-child):not(.faims-recordHistory-date) .MuiTimelineContent-root':
+          '& .MuiTimelineItem-root:not(:last-child):not(.faims-recordHistory-date):not(:has(+ .faims-recordHistory-date)) .MuiTimelineContent-root':
             {
               position: 'relative',
               paddingBottom: theme.spacing(1.5),
@@ -262,6 +262,22 @@ export const buildSharedComponentOverrides = (theme: Theme) => ({
           '& .faims-recordHistory-date .MuiTimelineContent-root': {
             padding: theme.spacing(0, 0, 1, 0),
           },
+          '& .faims-recordHistory-date:not(:first-child) .MuiTimelineContent-root':
+            {
+              position: 'relative',
+              paddingTop: theme.spacing(2.5),
+              marginTop: theme.spacing(2.5),
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                left: 0,
+                right: theme.spacing(1),
+                top: 0,
+                height: 2,
+                pointerEvents: 'none',
+                background: `linear-gradient(90deg, transparent, ${alpha(theme.palette.text.primary, 0.28)} 6%, ${alpha(theme.palette.text.primary, 0.28)} 94%, transparent)`,
+              },
+            },
         },
       },
     },
