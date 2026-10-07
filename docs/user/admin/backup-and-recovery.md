@@ -30,7 +30,9 @@ month, and at monthly points over the past year.
 Deleting a record in {{FAIMS}} marks it as deleted but keeps it, with its
 history, in the {{notebook}}, so it is still in later backups. Data leaves the
 service when its {{notebook}} is deleted, or when the workspace is removed at the
-end of a contract.
+end of a contract. If a record must be removed for good sooner, Electronic Field
+Notebooks can delete it directly from the database on request; users cannot do
+this in the app.
 
 Each backup run reports its result to the operations team automatically, so a
 failed backup is seen the day it happens.
