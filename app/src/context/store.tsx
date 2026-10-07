@@ -33,6 +33,7 @@ import authReducer, {
 } from './slices/authSlice';
 import {databaseService} from './slices/helpers/databaseService';
 import projectsReducer from './slices/projectSlice';
+import {PROJECTS_PERSIST_BLACKLIST} from './projectsPersistConfig';
 import {
   migrateProjectsActivationSplitV3,
   migrateProjectsPersistedState,
@@ -58,7 +59,7 @@ const projectsPersistConfig = {
   key: 'projects',
   version: 4,
   storage: storage('faims-projects-db'),
-  blacklist: ['isInitialised'],
+  blacklist: [...PROJECTS_PERSIST_BLACKLIST],
   migrate: createMigrate(
     {
       0: (state: PersistedState) => state,
