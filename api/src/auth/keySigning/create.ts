@@ -147,6 +147,7 @@ export async function generateJwtFromUser({
       name: user.name,
       server: config.conductorPublicUrl,
       username: user.user_id,
+      hasLocalProfile: !!user.profiles?.local,
       ...(impersonatingUserId ? {impersonatingUserId} : {}),
     };
 

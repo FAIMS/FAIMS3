@@ -8,13 +8,18 @@ import {
   TokenContents,
   TokenPayload,
 } from '@faims3/data-model';
+import {
+  clearReloginEmail,
+  loginIdentifierFromUser,
+  stashReloginEmail,
+} from '@/lib/signin';
 import {nowMs} from '@/lib/time';
 import {jwtDecode} from 'jwt-decode';
 import {createContext, useContext, useEffect, useState} from 'react';
 
 /**
  * Authenticated session: JWT plus the user payload from GET /api/users/current
- * ({@link GetCurrentUserResponse} — no `profiles`; admin list rows use {@link GetListAllUsersItem}).
+ * ({@link GetCurrentUserResponse} — no raw `profiles`; admin list rows use {@link GetListAllUsersItem}).
  */
 export interface User {
   user: GetCurrentUserResponse;
@@ -300,6 +305,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
       setStoredUser(updatedUser);
       setUser(updatedUser);
+      clearReloginEmail();
 
       return {status: 'success', message: ''};
     } catch (e) {
@@ -334,6 +340,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         };
       }
 
+      stashReloginEmail(loginIdentifierFromUser(user.user));
       setStoredUser(null);
       setUser(null);
 

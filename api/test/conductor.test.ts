@@ -63,6 +63,29 @@ describe('Auth', () => {
     expect(response.text).toContain('Sign in');
   });
 
+  it('prefills a local-login email from the query string', async () => {
+    if (!config.localLoginEnabled) {
+      return;
+    }
+    const response = await request(app)
+      .get('/login')
+      .query({email: 'local@example.com'})
+      .expect(200);
+    expect(response.text).toMatch(/value=['"]local@example.com['"]/);
+    expect(response.text).toContain("searchParams.delete('email')");
+  });
+
+  it('still renders login when the email query is not a valid address', async () => {
+    if (!config.localLoginEnabled) {
+      return;
+    }
+    const response = await request(app)
+      .get('/login')
+      .query({email: 'admin'})
+      .expect(200);
+    expect(response.text).toMatch(/value=['"]admin['"]/);
+  });
+
   it('shows the configured login button(s)', async () => {
     const providers = getAuthProviderConfig();
     const response = await request(app).get('/login').expect(200);
@@ -90,5 +113,23 @@ describe('Auth', () => {
     const location = new URL(response.header.location);
     expect(location.hostname).toBe('localhost');
     expect(location.search).toMatch(/exchangeToken/);
+  });
+
+  it('puts email back on /login after a failed local login', async () => {
+    if (!config.localLoginEnabled) {
+      return;
+    }
+    const response = await request(app)
+      .post('/auth/local')
+      .send({
+        email: 'admin',
+        password: 'not-the-admin-password',
+        action: 'login',
+        redirect: 'http://localhost:8080/',
+      } satisfies PostLoginInput)
+      .expect(302);
+    const location = new URL(response.header.location, 'http://localhost');
+    expect(location.pathname).toBe('/login');
+    expect(location.searchParams.get('email')).toBe('admin');
   });
 });

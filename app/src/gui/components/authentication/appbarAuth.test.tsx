@@ -27,7 +27,7 @@ describe('Check appbarAuth', () => {
         <AppBarAuth />
       </TestWrapper>
     );
-    // look for first initial of our Test User
-    expect(screen.getByText('T')).toBeTruthy();
+    // look for first initial of the user's name (not their email/username)
+    expect(screen.getByText('A')).toBeTruthy();
   });
 });

@@ -116,7 +116,7 @@ api.get(
         throw new Exceptions.UnauthorizedException('Not authenticated.');
       }
 
-      const {_id: id, name, emails, user_id} = req.user;
+      const {_id: id, name, emails, user_id, profiles} = req.user;
 
       return res.json({
         id,
@@ -124,6 +124,7 @@ api.get(
         // email should always be defined but for admin is not
         email: emails[0]?.email ?? user_id,
         isVerified: emails[0]?.verified ?? false,
+        hasLocalProfile: !!profiles?.local,
       });
     } catch (e) {
       console.error(e);
