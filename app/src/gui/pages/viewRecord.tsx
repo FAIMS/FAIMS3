@@ -7,6 +7,8 @@
  *   parent/linked records and an edit button.
  * - Info: Shows record metadata (creation/modification details) and provides
  *   delete functionality.
+ * - History: Date-grouped timeline of who created, updated, or deleted the
+ *   record, with expandable changed-field details.
  * - Status: Completion of the record rolled up over its child-record tree.
  *
  * Features:
@@ -19,17 +21,11 @@
  * /<notebook-plural>/:serverId/:projectId/:planId?/view-record/:recordId?tab=view|info|history|status&revisionId=:revisionId
  */
 import {
-  computeRecursiveRecordHistory,
   DatabaseInterface,
   DataDocument,
   DataEngine,
-  getFieldLabel,
-  getFormLabel,
   ProjectID,
   RecordID,
-  RecursiveRecordHistory,
-  RevisionHistoryEntry,
-  formatTimestamp,
   getRecordContextFromRecord,
   RecordContext,
   resolveParentValues,
@@ -52,19 +48,13 @@ import {
   Box,
   Button,
   CircularProgress,
-  Link,
   Stack,
   Tab,
   Typography,
 } from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import React, {useCallback, useEffect} from 'react';
-import {
-  Link as RouterLink,
-  useNavigate,
-  useParams,
-  useSearchParams,
-} from 'react-router-dom';
+import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {config, getMapConfig} from '../../buildconfig';
 import {
   getEditRecordRoute,
@@ -82,11 +72,11 @@ import {
 import {useAppSelector} from '../../context/store';
 import {useNotebookRoute} from '../../context/notebookRoute';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
-import {buildRecordHistoryKey} from '../../utils/customHooks';
 import {tryLocalGetDataDb} from '../../utils/database';
 import {NOTEBOOK_LIST_ROUTE} from '../../utils/remoteProjectRemoval';
 import RecordDelete from '../components/notebook/delete';
 import {NotebookDesignLockedAlert} from '../components/notebook/NotebookSchemaCompatibility';
+import {HistoryTabContent} from '../components/record/history';
 import RecordMeta from '../components/record/meta';
 import {RecordStatus} from '../components/record/status';
 import UGCReport from '../components/record/UGCReport';
@@ -412,202 +402,6 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
 };
 
 /**
- * One record's own revisions, newest first. Extracted from the History tab so
- * every record in the tree renders its trail the same way.
- */
-const RevisionList: React.FC<{
-  entries: RevisionHistoryEntry[];
-  /** Anchors are scoped to the record: one record can appear under two of a
-   * parent's fields, and a bare revision id would then be in the page twice. */
-  recordId: RecordID;
-  uiSpec: NonNullable<ReturnType<typeof compiledSpecService.getSpec>>;
-}> = ({entries, recordId, uiSpec}) => {
-  const anchor = (revisionId: string) => `${recordId}-${revisionId}`;
-
-  const revisionIdsRevision = new Map<string, RevisionHistoryEntry>(
-    entries.map(entry => [entry.revisionId, entry])
-  );
-
-  const formatRevisionMetadata = (entry?: RevisionHistoryEntry) => {
-    return entry
-      ? `${entry.createdBy} at ${formatTimestamp(new Date(entry.created).getTime())}`
-      : 'unknown';
-  };
-
-  return (
-    <Stack spacing={4}>
-      {entries
-        .slice()
-        .sort((a, b) => b.created.localeCompare(a.created))
-        .map((entry, e, newestFirst) => {
-          const parentFields = Object.entries(entry.changedFields);
-          return (
-            <Stack key={entry.revisionId} spacing={2}>
-              <Typography variant="body1" id={anchor(entry.revisionId)}>
-                {entry.deleted ? 'Record deleted by ' : 'Revision created by '}
-                <span style={{textDecoration: 'underline'}}>
-                  {formatRevisionMetadata(entry)}
-                </span>
-              </Typography>
-              <Stack sx={{pl: 2}}>
-                {parentFields.map(([parentId, fields]) => (
-                  <Typography variant="body1" key={parentId}>
-                    Fields changed
-                    {revisionIdsRevision.has(parentId) &&
-                    (parentFields.length > 1 ||
-                      parentId !== newestFirst[e + 1]?.revisionId) ? (
-                      <>
-                        {' '}
-                        compared to{' '}
-                        <Link href={`#${anchor(parentId)}`}>
-                          {formatRevisionMetadata(
-                            revisionIdsRevision.get(parentId)
-                          )}
-                        </Link>
-                      </>
-                    ) : (
-                      ''
-                    )}
-                    :{' '}
-                    {fields
-                      .map(
-                        fieldId =>
-                          uiSpec.fields[fieldId]?.['component-parameters']
-                            ?.label ?? fieldId
-                      )
-                      .join(', ') || 'None'}
-                  </Typography>
-                ))}
-              </Stack>
-            </Stack>
-          );
-        })}
-    </Stack>
-  );
-};
-
-/**
- * One record of the history tree: its own revisions, then each child field with
- * its records nested underneath. The viewed record is the root and needs no
- * link to where the user already is; every other node links to its own page.
- */
-const HistoryNode: React.FC<{
-  history: RecursiveRecordHistory;
-  uiSpec: NonNullable<ReturnType<typeof compiledSpecService.getSpec>>;
-  notebook: RecordRouteNotebook;
-  isRoot?: boolean;
-}> = ({history, uiSpec, notebook, isRoot}) => (
-  <Stack spacing={2}>
-    <Stack
-      direction="row"
-      spacing={1}
-      sx={{alignItems: 'baseline', flexWrap: 'wrap'}}
-    >
-      <Typography variant={isRoot ? 'h5' : 'subtitle1'}>
-        {isRoot
-          ? 'Revision History'
-          : getFormLabel({uiSpec, formId: history.formId})}
-      </Typography>
-      {!isRoot && (
-        <Link
-          component={RouterLink}
-          to={getViewRecordRoute({...notebook, recordId: history.recordId})}
-          variant="body2"
-        >
-          {history.hrid}
-        </Link>
-      )}
-    </Stack>
-
-    <RevisionList
-      entries={history.entries}
-      recordId={history.recordId}
-      uiSpec={uiSpec}
-    />
-
-    {history.childFields.map(field => (
-      <Box
-        key={field.fieldId}
-        sx={{pl: 2, borderLeft: 1, borderColor: 'divider'}}
-      >
-        <Typography variant="body2" color="textSecondary">
-          {getFieldLabel(uiSpec, field.fieldId)}
-        </Typography>
-        <Stack spacing={3} sx={{pt: 1}}>
-          {field.children.map(child => (
-            <HistoryNode
-              key={child.recordId}
-              history={child}
-              uiSpec={uiSpec}
-              notebook={notebook}
-            />
-          ))}
-        </Stack>
-      </Box>
-    ))}
-  </Stack>
-);
-
-/**
- * Content for the History tab: the viewed record's revisions and, beneath each
- * child field, the same for the records hanging off it. A child's own page is
- * not always reachable from here, so its trail has to be readable in place.
- */
-const HistoryTabContent: React.FC<{
-  recordId: RecordID;
-  projectId: ProjectID;
-  dataEngine: DataEngine;
-  uiSpec: NonNullable<ReturnType<typeof compiledSpecService.getSpec>>;
-  notebook: RecordRouteNotebook;
-}> = ({recordId, projectId, dataEngine, uiSpec, notebook}) => {
-  const {data, isError, isPending, error} = useQuery({
-    queryKey: buildRecordHistoryKey({projectId, recordId}),
-    queryFn: () =>
-      computeRecursiveRecordHistory({
-        engine: dataEngine,
-        recordId,
-        projectId,
-      }),
-    networkMode: 'always',
-    // Refetch on every mount so the trail is fresh, but keep the cached data
-    // available during the background refetch so revisiting the tab does not
-    // blank the list behind a spinner.
-    refetchOnMount: 'always',
-  });
-
-  if (isPending) {
-    return (
-      <Box sx={{display: 'flex', justifyContent: 'center', p: 4}}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (isError) {
-    return (
-      <Box sx={{p: 2}}>
-        <Typography color="error">
-          An error occurred while fetching record history. Error:{' '}
-          {error?.message ?? 'unknown'}.
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (!data) {
-    return (
-      <Box sx={{p: 2}}>
-        <Typography color="error">Record data not found.</Typography>
-      </Box>
-    );
-  }
-
-  return (
-    <HistoryNode history={data} uiSpec={uiSpec} notebook={notebook} isRoot />
-  );
-};
-
-/**
  * Main ViewRecordPage component with tab navigation.
  *
  * Hooks are declared unconditionally so upstream notebook removal (which drops
@@ -859,7 +653,7 @@ export const ViewRecordPage: React.FC = () => {
           )}
         </TabPanel>
 
-        <TabPanel value={RECORD_TABS.HISTORY} sx={{p: 0, pt: 2}}>
+        <TabPanel value={RECORD_TABS.HISTORY} sx={{p: 0, pt: 1}}>
           <HistoryTabContent
             recordId={recordId}
             projectId={projectId}

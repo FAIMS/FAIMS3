@@ -89,6 +89,15 @@ const baseTheme = createTheme({
       buttonActiveBackgroundHover: mapControlBrand.activeHover,
       buttonForeground: '#FFFFFF',
     },
+    history: {
+      marker: defaultBrand.infoMain,
+      markerCreated: defaultBrand.successMain,
+      markerUpdated: defaultBrand.infoMain,
+      markerDeleted: defaultBrand.errorMain,
+      connector: '#D5D9E4',
+      iconBackground: '#E8EAF0',
+      iconForeground: colors.blueGrey[600],
+    },
   },
   typography,
 });
