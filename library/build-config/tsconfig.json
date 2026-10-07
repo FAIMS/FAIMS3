@@ -17,7 +17,7 @@
     "isolatedModules": true,
     "noEmit": false,
     "declaration": true,
-    "types": ["node", "jest"]
+    "types": ["node"]
   },
   "include": ["./src", "./test"]
 }

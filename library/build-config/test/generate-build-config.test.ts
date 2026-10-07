@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generateEnv, parseArgs} from '../src/generate-build-config.js';
-import {SharedBuildConfig} from '../src/build-config.js';
+import {
+  parseBuildConfig,
+  parseGeneratedEnv,
+  SharedBuildConfig,
+} from '../src/build-config.js';
 import {validateGeneratedEnv} from '../src/validate-generated-env.js';
 
 const sampleConfig: SharedBuildConfig = {
@@ -12,6 +16,7 @@ const sampleConfig: SharedBuildConfig = {
     android: {},
     ios: {},
   },
+  api: {},
   secrets: {},
 };
 
@@ -64,6 +69,40 @@ test('generator supports platform-specific export selection', () => {
   assert.match(output, /VITE_APP_STORE_CONNECT_TEAM_ID=/);
   assert.match(output, /FASTLANE_APPLE_ID=/);
   assert.doesNotMatch(output, /ANDROID_RELEASE_STATUS=/);
+});
+
+test('generator supports api platform export selection', () => {
+  const config = {
+    ...sampleConfig,
+    api: {
+      profileName: 'dev-profile',
+      keyFilePath: '.',
+      conductorInstanceName: 'Development FAIMS Server',
+      conductorDescription: 'Development server on localhost',
+      conductorShortCodePrefix: 'DEV',
+      couchdbUser: 'admin',
+      couchdbPassword: 'secret',
+      keySource: 'FILE',
+      emailServiceType: 'MOCK',
+      emailFromAddress: 'notifications@example.com',
+      emailFromName: 'FAIMS Notification',
+      emailReplyTo: 'support@example.com',
+      smtpHost: 'smtp.example.com',
+      smtpPort: 587,
+      smtpSecure: true,
+      smtpUser: 'smtp-user',
+      smtpPassword: 'smtp-password',
+      testEmailAddress: 'test@example.com',
+      provisionSsoUsersPolicy: 'reject',
+    },
+  };
+
+  const output = generateEnv({config, platform: 'api'});
+
+  assert.match(output, /PROFILE_NAME=dev-profile/);
+  assert.match(output, /COUCHDB_USER=admin/);
+  assert.match(output, /EMAIL_SERVICE_TYPE=MOCK/);
+  assert.doesNotMatch(output, /VITE_APP_NAME=/);
 });
 
 test('generator emits Android base64 secrets when provided', () => {
@@ -138,4 +177,89 @@ test('validateBuildConfigCoverage catches missing env coverage', () => {
   assert.ok(result.missing.includes('VITE_API_URL'));
   assert.ok(result.missing.includes('VITE_APP_URL'));
   assert.ok(result.missing.length > 0);
+});
+
+test('schema rejects unknown top-level keys', () => {
+  assert.throws(
+    () =>
+      parseBuildConfig({
+        ...sampleConfig,
+        extraKey: true,
+      }),
+    /unrecognized key/i
+  );
+});
+
+test('generated env parser rejects invalid boolean strings', () => {
+  assert.throws(
+    () =>
+      parseGeneratedEnv({
+        VITE_APP_NAME: 'Fieldmark',
+        VITE_DEBUG_APP: 'yes',
+      }),
+    /Invalid option/i
+  );
+});
+
+test('generated env parser converts typed values into runtime config', () => {
+  const parsed = parseGeneratedEnv({
+    VITE_APP_NAME: 'Fieldmark',
+    VITE_APP_SHORT_NAME: 'FM',
+    VITE_HEADING_APP_NAME: 'Fieldmark Mobile',
+    VITE_APP_ID: 'org.fedarch.faims3',
+    VITE_WEB_URL: 'https://web.example.org',
+    VITE_API_URL: 'https://api.example.org',
+    VITE_APP_URL: 'https://app.example.org',
+    VITE_WEBSITE_TITLE: 'Control Centre',
+    VITE_NOTEBOOK_NAME: 'notebook',
+    VITE_NOTEBOOK_LIST_TYPE: 'tabs',
+    VITE_SUPPORT_EMAIL: 'support@example.org',
+    VITE_APP_PRIVACY_POLICY_URL: 'https://example.org/privacy',
+    VITE_APP_CONTACT_URL: 'https://example.org/contact',
+    VITE_MAP_SOURCE: 'maptiler',
+    VITE_MAP_SOURCE_KEY: 'abc123',
+    VITE_MAP_STYLE: 'basic',
+    VITE_SATELLITE_SOURCE: 'esri',
+    VITE_OFFLINE_MAPS: 'true',
+    VITE_BUGSNAG_KEY: 'bugsnag-key',
+    VITE_COMMIT_VERSION: 'abcdef1',
+    VITE_FORCE_REMOTE_DELETION: 'never',
+    VITE_DELETE_ON_DEACTIVATION: 'false',
+    VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD: '500',
+    VITE_TOKEN_REFRESH_INTERVAL_MS: '15000',
+    VITE_TOKEN_REFRESH_WINDOW_MS: '60000',
+    VITE_LOGIN_BANNER_GRACE_MS: '10000',
+    VITE_IGNORE_TOKEN_EXP: 'false',
+    VITE_NAVIGATION: 'none',
+    VITE_SHOW_RECORD_LINKS: 'false',
+    VITE_ATTACHMENT_SERVICE_TYPE: 'COUCH',
+    VITE_ATTACHMENT_DOCUMENT_ID_PREFIX: '',
+    VITE_MIGRATE_OLD_DATABASES: 'false',
+    VITE_SHOW_WIPE: 'true',
+    VITE_SHOW_POUCHDB_BROWSER: 'true',
+    VITE_SHOW_NEW_NOTEBOOK: 'true',
+    VITE_SHOW_STATUS_TAB: 'true',
+    VITE_DEBUG_APP: 'false',
+    VITE_DEBUG_POUCHDB: 'false',
+    VITE_POUCH_BATCH_SIZE: '10',
+    VITE_POUCH_BATCHES_LIMIT: '10',
+    VITE_AUTOSUGGEST_SOURCE: 'NONE',
+    VITE_AUTOSUGGEST_MAPBOX_KEY: '',
+    VITE_AUTOSUGGEST_MAPTILER_KEY: '',
+    VITE_MAPBOX_ADDRESS_COUNTRY: 'AU',
+    VITE_MAPTILER_ADDRESS_COUNTRY: 'AU',
+    VITE_DOCS_URL: '',
+    VITE_MAX_DESIGN_FILE_SIZE_MB: '10',
+    VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: '90',
+    VITE_LONG_LIVED_TOKEN_DURATION_HINTS: '1,5,10',
+    VITE_EXCLUDED_TEAM_ROLES: 'TEAM_MEMBER_CREATOR,TEAM_ADMIN',
+  });
+
+  assert.equal(parsed.shared.branding.appName, 'Fieldmark');
+  assert.equal(parsed.shared.maps.offlineMaps, true);
+  assert.deepEqual(parsed.web.longLivedTokenDurationHints, [1, 5, 10]);
+  assert.deepEqual(parsed.web.excludedTeamRoles, [
+    'TEAM_MEMBER_CREATOR',
+    'TEAM_ADMIN',
+  ]);
 });
