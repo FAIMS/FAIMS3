@@ -72,14 +72,15 @@ In summary:
 Recovery is a rebuild and a restore, not the restoration of a disk image.
 
 The servers, their operating system, the application and its configuration are
-described in code. Recovery redeploys that code to produce a clean environment,
-then restores the database backup into it. The result is a known-good system
+described in code. Recovery redeploys that code to produce a fresh environment,
+then restores the database backup into it. The result is a newly built system
 carrying your data.
 
 This is a deliberate choice and worth understanding if you are assessing the
 service. Restoring a disk image also restores whatever was wrong with the
 machine at the moment it was captured, including a misconfiguration or an
-intruder's foothold. A rebuild cannot carry either forward.
+intruder's foothold. A rebuild starts from the code instead, so changes made on
+the old machine itself are left behind.
 
 It also means the answer to "do your backups contain everything needed for
 recovery" is yes, whilst the backups themselves contain only data. Both halves,
@@ -98,7 +99,7 @@ requires them, and are scoped in the agreement rather than assumed.
 
 You do not need to rely on any of the above to hold your own copy. Export is
 available throughout the life of a {{notebook}}, in the formats {{FAIMS}} supports,
-and it does not require Electronic Field {{Notebooks}} to be involved. Exporting
+and it does not require Electronic Field Notebooks to be involved. Exporting
 regularly into your institution's own systems is the expected workflow, and it
 is the most reliable protection available to you.
 
