@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
- * Pure helpers for the record History tab: classify revisions, group them by
- * local calendar day, and resolve form labels from the notebook UI spec.
+ * Pure helpers for the record History tab: flatten the child-record tree,
+ * classify revisions, group them by local calendar day, and resolve form
+ * labels from the notebook UI spec.
  */
 import {
   getFieldLabel,
@@ -152,8 +153,15 @@ export function flattenRecordHistory(
   tree: RecursiveRecordHistory
 ): FlattenedHistoryEvent[] {
   const events: FlattenedHistoryEvent[] = [];
+  // A child linked from two fields is still one record; emit it once so
+  // ${recordId}-${revisionId} keys and DOM ids stay unique.
+  const seenRecordIds = new Set<string>();
 
   const walk = (node: RecursiveRecordHistory) => {
+    if (seenRecordIds.has(node.recordId)) {
+      return;
+    }
+    seenRecordIds.add(node.recordId);
     for (const entry of node.entries) {
       events.push({
         created: entry.created,

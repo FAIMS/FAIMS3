@@ -16,7 +16,7 @@ vi.mock('../../../utils/customHooks', () => ({
   }: {
     projectId: string;
     recordId: string;
-  }) => ['hydrate', projectId, recordId, 'recordHistory'],
+  }) => ['recordhydration', projectId, recordId, 'recordHistory'],
 }));
 
 import testTheme from '../../themes/fieldmark';
@@ -186,7 +186,7 @@ describe('historyUtils', () => {
     expect(groups[1]?.label).toBe('YESTERDAY, 5 OCTOBER');
   });
 
-  it('flattens a parent and child tree into one chronological list', () => {
+  it('flattens a parent and child tree into one list, parent entries then children', () => {
     const tree: RecursiveRecordHistory = {
       recordId: 'parent-1',
       hrid: 'Site-1',
@@ -229,6 +229,109 @@ describe('historyUtils', () => {
       flattenRecordHistory(tree).map(event => event.entry.revisionId)
     ).toEqual(['p-update', 'p-create', 'c-create']);
   });
+
+  it('emits a child linked from two fields once', () => {
+    const child: RecursiveRecordHistory = {
+      recordId: 'child-1',
+      hrid: 'Widget C1',
+      formId: 'Site',
+      entries: [
+        entry({
+          revisionId: 'c-create',
+          created: '2025-10-06T10:00:00.000Z',
+          changedFields: {root: ['contact_email']},
+        }),
+      ],
+      childFields: [],
+    };
+    const tree: RecursiveRecordHistory = {
+      recordId: 'parent-1',
+      hrid: 'Site-1',
+      formId: 'Site',
+      entries: [
+        entry({
+          revisionId: 'p-create',
+          created: '2025-10-05T09:00:00.000Z',
+          changedFields: {root: ['site_name']},
+        }),
+      ],
+      childFields: [
+        {fieldId: 'photos', children: [child]},
+        {fieldId: 'features', children: [child]},
+      ],
+    };
+
+    const events = flattenRecordHistory(tree);
+    expect(events.map(event => event.entry.revisionId)).toEqual([
+      'p-create',
+      'c-create',
+    ]);
+    expect(
+      events.map(event => `${event.recordId}-${event.entry.revisionId}`)
+    ).toEqual(['parent-1-p-create', 'child-1-c-create']);
+  });
+
+  it('emits a grandchild reached by two paths once', () => {
+    const grandchild: RecursiveRecordHistory = {
+      recordId: 'grandchild-1',
+      hrid: 'Widget G1',
+      formId: 'Site',
+      entries: [
+        entry({
+          revisionId: 'g-create',
+          created: '2025-10-06T11:00:00.000Z',
+          changedFields: {root: ['contact_email']},
+        }),
+      ],
+      childFields: [],
+    };
+    const left: RecursiveRecordHistory = {
+      recordId: 'child-left',
+      hrid: 'Widget L',
+      formId: 'Site',
+      entries: [
+        entry({
+          revisionId: 'l-create',
+          created: '2025-10-06T10:00:00.000Z',
+          changedFields: {root: ['site_name']},
+        }),
+      ],
+      childFields: [{fieldId: 'child_sites', children: [grandchild]}],
+    };
+    const right: RecursiveRecordHistory = {
+      recordId: 'child-right',
+      hrid: 'Widget R',
+      formId: 'Site',
+      entries: [
+        entry({
+          revisionId: 'r-create',
+          created: '2025-10-06T10:30:00.000Z',
+          changedFields: {root: ['site_name']},
+        }),
+      ],
+      childFields: [{fieldId: 'child_sites', children: [grandchild]}],
+    };
+    const tree: RecursiveRecordHistory = {
+      recordId: 'parent-1',
+      hrid: 'Site-1',
+      formId: 'Site',
+      entries: [
+        entry({
+          revisionId: 'p-create',
+          created: '2025-10-05T09:00:00.000Z',
+          changedFields: {root: ['site_name']},
+        }),
+      ],
+      childFields: [{fieldId: 'child_sites', children: [left, right]}],
+    };
+
+    expect(flattenRecordHistory(tree).map(event => event.recordId)).toEqual([
+      'parent-1',
+      'child-left',
+      'grandchild-1',
+      'child-right',
+    ]);
+  });
 });
 
 describe('RecordHistoryTimeline', () => {
@@ -267,7 +370,7 @@ describe('RecordHistoryTimeline', () => {
   });
 
   it('opens event details for time and changed fields', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({pointerEventsCheck: 0});
     render(
       <ThemeProvider theme={testTheme}>
         <RecordHistoryTimeline
@@ -282,6 +385,55 @@ describe('RecordHistoryTimeline', () => {
     await user.click(screen.getAllByLabelText('Event details')[0]!);
     expect(screen.getByText('Contact email')).toBeTruthy();
     expect(screen.getByText(/8:05/)).toBeTruthy();
+  });
+
+  it('renders a delete of the viewed record and of a child', () => {
+    const deletedChild: FlattenedHistoryEvent = {
+      created: new Date(2025, 9, 6, 21, 0, 0).toISOString(),
+      recordId: 'child-1',
+      formId: 'Site',
+      hrid: 'Widget C1',
+      entry: entry({
+        revisionId: 'rev-child-delete',
+        created: new Date(2025, 9, 6, 21, 0, 0).toISOString(),
+        changedFields: {['rev-create']: []},
+        deleted: true,
+      }),
+    };
+    const deletedRoot: FlattenedHistoryEvent = {
+      created: new Date(2025, 9, 6, 21, 30, 0).toISOString(),
+      recordId: 'parent-1',
+      formId: 'Site',
+      hrid: 'Site-1',
+      entry: entry({
+        revisionId: 'rev-delete',
+        created: new Date(2025, 9, 6, 21, 30, 0).toISOString(),
+        changedFields: {['rev-update']: []},
+        deleted: true,
+      }),
+    };
+
+    render(
+      <ThemeProvider theme={testTheme}>
+        <RecordHistoryTimeline
+          events={[...flatten(history), deletedChild, deletedRoot]}
+          uiSpec={uiSpec}
+          rootRecordId="parent-1"
+        />
+      </ThemeProvider>
+    );
+
+    const deletedEvents = screen
+      .getAllByTestId('record-history-event')
+      .filter(el => el.getAttribute('data-kind') === 'deleted');
+    expect(deletedEvents.map(el => el.id)).toEqual([
+      'parent-1-rev-delete',
+      'child-1-rev-child-delete',
+    ]);
+    expect(screen.getByText('Child')).toBeTruthy();
+    expect(screen.getAllByTestId('record-history-icon-deleted')).toHaveLength(
+      2
+    );
   });
 
   it('shows an empty message when there is no history', () => {

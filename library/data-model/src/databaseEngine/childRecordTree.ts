@@ -3,9 +3,9 @@
  * The walk down a record's Child-type links, and the links themselves.
  *
  * The status report and the recursive revision history both need this walk and
- * differ only in what they compute per node, so it lives here: the two cannot
- * disagree about what counts as a child, which records drop out, or how often
- * one is fetched.
+ * differ only in what they compute per node and whether deleted records stay
+ * in the tree (history includes them; status drops them). What counts as a
+ * child and how often a record is fetched stay shared.
  */
 import {fieldIdsForViewset} from '../uiSpecification/formScan';
 import {getChildRelationParams} from '../uiSpecification/parentForms';
@@ -47,6 +47,7 @@ export function absorbSkippableChildError(err: unknown): null {
   throw err;
 }
 
+/** A Child-type RelatedRecordSelector field in the ui-spec. */
 export interface ChildFieldSpec {
   relatedFormId: string;
   required: boolean;
@@ -136,11 +137,20 @@ export function collectChildRecordLinks({
   return links;
 }
 
+/**
+ * Whether a deleted record stays in the tree. Status leaves this unset
+ * (`'none'`): a deleted node, root or child, drops out. History passes
+ * `'all'` so delete revisions appear in the trail.
+ */
+export type ChildTreeIncludeDeleted = 'none' | 'all';
+
+/** Engine, project and Child-type fields shared by one tree walk. */
 export interface ChildTreeWalkContext {
   engine: DataEngine;
   projectId: string;
   /** Child-type fields resolved once per walk; the ui-spec never changes mid-walk. */
   childFieldSpecs: Map<string, ChildFieldSpec>;
+  includeDeleted?: ChildTreeIncludeDeleted;
 }
 
 /**
@@ -156,7 +166,8 @@ export interface ChildTreeWalkContext {
  *   children are walked so the two overlap
  * @param buildNode - Composes the node from its own work and its children's
  *   outcomes
- * @returns null when the record is deleted or would close a cycle (results
+ * @returns null when the record would close a cycle, or when it is deleted
+ *   and {@link ChildTreeWalkContext.includeDeleted} is not `'all'` (results
  *   under a cut are best-effort and can vary with link order)
  * @throws UnknownFormTypeError if the record's form is not in the ui-spec
  */
@@ -191,7 +202,7 @@ export async function walkChildRecordTree<TNode, TOwn>({
   // Default conflict resolution (pickFirst), like the record page's own reads,
   // so a conflicted record is walked as the head the form shows
   const node = await engine.form.getExistingFormData({recordId});
-  if (node.context.revision.deleted) {
+  if (node.context.revision.deleted && ctx.includeDeleted !== 'all') {
     return null;
   }
   // hasOwnProperty, since `in` also matches prototype keys ('constructor')

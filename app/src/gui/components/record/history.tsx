@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
  * Record History tab: a date-grouped timeline of who created, updated, or
- * deleted a record, with expandable changed-field details.
+ * deleted a record and its child records, with expandable changed-field details.
  */
 import {
   computeRecursiveRecordHistory,
@@ -333,8 +333,8 @@ function HistoryEventItem({
             </Box>
             <Box sx={{minWidth: 0, flex: '1 1 0'}}>
               <Typography
+                variant="body2"
                 sx={{
-                  fontSize: '0.875rem',
                   fontWeight: 600,
                   letterSpacing: '-0.015em',
                   lineHeight: 1.3,
@@ -350,7 +350,6 @@ function HistoryEventItem({
                       component="span"
                       sx={{
                         fontFamily: HISTORY_MONO_FONT,
-                        // fontWeight: theme.typography.fontWeightBold,
                         fontWeight: theme.typography.fontWeightLight,
                         fontSize: 'inherit',
                         color: 'text.primary',
@@ -363,10 +362,10 @@ function HistoryEventItem({
                 {subtitle}
               </Typography>
               <Typography
+                variant="subtitle2"
                 sx={{
                   mt: 0.75,
                   fontFamily: HISTORY_MONO_FONT,
-                  fontSize: '0.75rem',
                   fontWeight: theme.typography.fontWeightMedium,
                   letterSpacing: '-0.015em',
                   lineHeight: 1.3,

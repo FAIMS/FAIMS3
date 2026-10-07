@@ -5,7 +5,6 @@ import {
   DataDocument,
   DataEngine,
   FormUpdateData,
-  RecordDeletedError,
   UnknownFormTypeError,
 } from '../src';
 import {
@@ -175,7 +174,7 @@ describe('Recursive record history', () => {
     ).toBeUndefined();
   });
 
-  test('a deleted child drops out rather than failing the tree', async () => {
+  test('a deleted child stays in the tree with its delete revision', async () => {
     const child = await create('Sample', {'sample-type': {data: 'core'}});
     const {recordId: parentId} = await create('Sample', {
       'sample-type': {data: 'soil'},
@@ -188,9 +187,10 @@ describe('Recursive record history', () => {
     });
 
     const result = await history(parentId);
-    expect(
-      result.childFields.find(f => f.fieldId === 'sub-samples')
-    ).toBeUndefined();
+    const node = childField(result, 'sub-samples').children[0];
+    expect(node.recordId).toBe(child.recordId);
+    expect(node.entries).toHaveLength(2);
+    expect(node.entries.some(entry => entry.deleted === true)).toBe(true);
     expect(result.entries).toHaveLength(1);
   });
 
@@ -219,14 +219,36 @@ describe('Recursive record history', () => {
     ).toBeUndefined();
   });
 
-  test('a deleted root is an error, as it is for the status report', async () => {
+  test('a deleted root reports its revisions including the delete', async () => {
     const photo = await create('Photo');
     await engine.form.deleteRecord({
       recordId: photo.recordId,
       baseRevisionId: photo.revisionId,
       userId: USER,
     });
-    await expect(history(photo.recordId)).rejects.toThrow(RecordDeletedError);
+    const result = await history(photo.recordId);
+    expect(result.recordId).toBe(photo.recordId);
+    expect(result.entries).toHaveLength(2);
+    expect(result.entries.some(entry => entry.deleted === true)).toBe(true);
+  });
+
+  test('a deleted parent still reports a live child', async () => {
+    const child = await create('Sample', {'sample-type': {data: 'core'}});
+    const parent = await create('Sample', {
+      'sample-type': {data: 'soil'},
+      'sub-samples': {data: [link(child.recordId)]},
+    });
+    await engine.form.deleteRecord({
+      recordId: parent.recordId,
+      baseRevisionId: parent.revisionId,
+      userId: USER,
+    });
+
+    const result = await history(parent.recordId);
+    expect(result.entries.some(entry => entry.deleted === true)).toBe(true);
+    const node = childField(result, 'sub-samples').children[0];
+    expect(node.recordId).toBe(child.recordId);
+    expect(node.entries.some(entry => entry.deleted === true)).toBe(false);
   });
 
   test('a record linked from two fields is walked once, not once per field', async () => {

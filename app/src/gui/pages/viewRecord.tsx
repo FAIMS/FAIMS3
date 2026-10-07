@@ -8,7 +8,7 @@
  * - Info: Shows record metadata (creation/modification details) and provides
  *   delete functionality.
  * - History: Date-grouped timeline of who created, updated, or deleted the
- *   record, with expandable changed-field details.
+ *   record and its child records, with expandable changed-field details.
  * - Status: Completion of the record rolled up over its child-record tree.
  *
  * Features:
