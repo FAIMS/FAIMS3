@@ -15,10 +15,7 @@ interface DesignerDialogProps {
   exportBaseName?: string;
   /**
    * Records already collected for the survey. Omit for templates.
-   *
-   * Forwarded into the designer context only. No warning reads it since
-   * export-name edits stopped moving storage ids. Keep passing it so a later
-   * destructive-edit warning can use the same prop.
+   * Forwarded into the designer so field delete can warn about stored data.
    */
   existingRecordCount?: number;
   onClose: (file?: File) => void;

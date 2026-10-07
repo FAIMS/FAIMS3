@@ -44,23 +44,27 @@ export const sanitizeUserLabel = (label: string): string =>
     .join('')
     .trim();
 
+/** Used when a label slugifies to empty (e.g. `!!!`) so export names stay non-empty. */
+const EMPTY_SLUG_FALLBACK = 'field';
+
 /**
  * Picks a slug that does not collide with existing names (field keys or export names).
  *
  * @param preferredName - User-facing label or desired base id.
  * @param existingFieldNames - Names that must remain unique.
- * @returns Unique slug (may append numeric suffix).
+ * @returns Unique non-empty slug (may append numeric suffix).
  */
 export const buildUniqueFieldName = (
   preferredName: string,
   existingFieldNames: string[]
 ): string => {
   const taken = new Set(existingFieldNames);
-  let candidate = slugify(preferredName);
+  const base = slugify(preferredName) || EMPTY_SLUG_FALLBACK;
+  let candidate = base;
   let attempt = 1;
 
   while (taken.has(candidate)) {
-    candidate = slugify(`${preferredName} ${attempt}`);
+    candidate = `${base}-${attempt}`;
     attempt += 1;
   }
 

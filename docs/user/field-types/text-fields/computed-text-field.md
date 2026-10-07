@@ -36,12 +36,13 @@ button in the lower right.
 
 Click the field's **grey header bar** to expand it and see its settings.
 For an overview of the settings shared by all fields — including Label,
-Helper Text, Field ID, and the field toolbar — see
+Helper Text, Export name, and the field toolbar — see
 [Field Identity](../shared-settings/field-identity.md) and
 [Field Toolbar](../shared-settings/field-toolbar.md).
 
-Give the field a meaningful Label, review the auto-populated
-Field ID, and add any desired Helper Text.
+Give the field a meaningful Label (the title collectors see), review
+the auto-populated Export name (the CSV/GIS column header), and add any
+desired Helper Text.
 
 ```{screenshot} field-types-design/computed-text-02-configured.png
 :alt: Computed Text configuration in the {{Notebook}} Editor
@@ -52,12 +53,11 @@ Field ID, and add any desired Helper Text.
 ### Computed Text-Specific Settings
 
 The Computed Text's key feature is the **Expression** text area, which
-defines the generated text. Each referenced field is written by wrapping
-its Field ID in braces, and text is joined with the `&` operator, e.g.
-`{Site-Code} & '-' & {Plot}`. Below the expression,
-a searchable field picker lists the referenceable
-fields in the form; selecting one inserts that field's reference, which
-avoids typing the Field ID by hand.
+defines the generated text. Each referenced field is written as a
+braced reference, and text is joined with the `&` operator, e.g.
+`{Site-Code} & '-' & {Plot}`. Below the expression, a searchable field
+picker lists fields by their Label; selecting one inserts that field's
+reference so you do not have to type it by hand.
 
 | Setting          | What It Does                                                                                                                                                 |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -92,9 +92,10 @@ String in the same form. For record identifiers (HRIDs), use a
 
 When the form is a child of another form (linked through a
 Child-relation Related Records field), the expression can reference
-fields on the record's parent by prefixing the Field ID with `_PARENT.`,
-e.g. `{_PARENT.Site-Code} & '-' & {Plot}`. An **Insert parent field**
-picker below the expression lists the available parent fields.
+fields on the record's parent by prefixing the field's reference with
+`_PARENT.`, e.g. `{_PARENT.Site-Code} & '-' & {Plot}`. An **Insert
+parent field** picker below the expression lists the available parent
+fields by Label.
 
 Parent references are type checked like any other reference, and —
 unlike same-form references — may point at the parent's computed fields
@@ -115,9 +116,9 @@ The same reference can be used in
 When the form holds a
 [Related Records](../relationship-fields/related-records.md) field with
 a **Linked** relation that allows only a single link, the expression
-can reference fields on the linked record by joining the two Field IDs
-with a dot: `{Link-Field-ID.Field-ID}`. For example, with a Related
-Records field `Core-Calibration` linking one Calibration record,
+can reference fields on the linked record by joining the two field
+references with a dot: `{Link-Field.Target-Field}`. For example, with a
+Related Records field `Core-Calibration` linking one Calibration record,
 `{Core-Calibration.Cutter-ID} & '-' & {Sample-Code}` includes the
 linked record's cutter ID. An **Insert linked record field** picker below
 the expression lists the available fields.
@@ -170,9 +171,9 @@ records — see
 
 ## Tips
 
-- **Use the field picker to build expressions** rather than typing Field
-  IDs by hand. Selecting a field inserts the exact braced reference, so
-  you avoid typos and do not need to remember a field's ID.
+- **Use the field picker to build expressions** rather than typing
+  references by hand. Selecting a field by its Label inserts the exact
+  braced reference, so you avoid typos.
 - **Nest ternaries for classifications** — thresholds like
   Low/Medium/High are a natural fit, as in the example above.
 - **The result stays blank until all referenced fields have values.**

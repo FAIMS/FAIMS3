@@ -26,6 +26,12 @@ describe('buildUniqueExportName', () => {
       buildUniqueExportName('New Field', ['New-Field', 'Text-Field'])
     ).toBe('New-Field-1');
   });
+
+  it('falls back when the preferred name slugifies to empty', () => {
+    expect(buildUniqueExportName('!!!', [])).toBe('field');
+    expect(buildUniqueExportName('!!!', ['field'])).toBe('field-1');
+    expect(buildUniqueExportName('   ', ['field', 'field-1'])).toBe('field-2');
+  });
 });
 
 describe('sanitizeUserLabel', () => {

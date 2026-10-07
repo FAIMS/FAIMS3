@@ -15,11 +15,8 @@ import {
 export interface DesignerEditingContextValue {
   /**
    * Records already collected for the survey. Omitted for templates.
-   *
-   * Not read by any editor today. Previously gated the field-ID rename
-   * warning; that warning went away when rename started writing `exportName`
-   * only. Left in context so a future destructive-edit warning can subscribe
-   * without rewiring the host.
+   * Field delete uses this with {@link originalFieldIdentifiers} to warn
+   * before dropping stored values from existing records.
    */
   existingRecordCount?: number;
   /** `designerIdentifier`s of the fields present when the session began. */
@@ -87,6 +84,38 @@ export const useIsFieldNewInSession = (
   }
   if (!designerIdentifier) return false;
   return !originalFieldIdentifiers.has(designerIdentifier);
+};
+
+/**
+ * True when destroying this field would drop values from records that already
+ * exist. Fields added this session cannot have collected data; templates and
+ * empty notebooks have no records. Missing session facts never warn.
+ */
+export const shouldWarnOnExistingRecordData = ({
+  existingRecordCount,
+  originalFieldIdentifiers,
+  designerIdentifier,
+}: {
+  existingRecordCount?: number;
+  originalFieldIdentifiers?: ReadonlySet<string>;
+  designerIdentifier?: string;
+}): boolean => {
+  if (!designerIdentifier || !originalFieldIdentifiers) return false;
+  if ((existingRecordCount ?? 0) <= 0) return false;
+  return originalFieldIdentifiers.has(designerIdentifier);
+};
+
+/** Subscribe to the host-supplied record-count + session-field facts. */
+export const useShouldWarnOnExistingRecordData = (
+  designerIdentifier?: string
+): boolean => {
+  const {existingRecordCount, originalFieldIdentifiers} =
+    useDesignerEditingContext();
+  return shouldWarnOnExistingRecordData({
+    existingRecordCount,
+    originalFieldIdentifiers,
+    designerIdentifier,
+  });
 };
 
 /**

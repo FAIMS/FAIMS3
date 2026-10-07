@@ -55,10 +55,7 @@ export interface DesignerWidgetProps {
   exportBaseName?: string;
   /**
    * Records already collected. Omit for templates.
-   *
-   * Unused in the UI now: export-name edits no longer move the storage id, so
-   * the field-ID data-loss warning was removed. Kept on the host contract in
-   * case a later change (delete, type change, …) needs the same signal.
+   * Field delete warns when this is greater than 0 and the field existed at open.
    */
   existingRecordCount?: number;
   /** Called with exported JSON `File` on Done, or undefined on cancel. */

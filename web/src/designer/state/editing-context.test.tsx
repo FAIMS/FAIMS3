@@ -4,8 +4,10 @@ import type {ReactNode} from 'react';
 import {describe, expect, it} from 'vitest';
 import {
   DesignerEditingProvider,
+  shouldWarnOnExistingRecordData,
   useExportNameAutoSync,
   useIsFieldNewInSession,
+  useShouldWarnOnExistingRecordData,
 } from './editing-context';
 
 describe('useIsFieldNewInSession', () => {
@@ -42,6 +44,73 @@ describe('useIsFieldNewInSession', () => {
   it('is false when the host did not supply session identifiers', () => {
     const {result} = renderHook(() => useIsFieldNewInSession('any-id'));
     expect(result.current).toBe(false);
+  });
+});
+
+describe('shouldWarnOnExistingRecordData', () => {
+  it('is true for a field that existed at open when records exist', () => {
+    expect(
+      shouldWarnOnExistingRecordData({
+        existingRecordCount: 3,
+        originalFieldIdentifiers: new Set(['existing-id']),
+        designerIdentifier: 'existing-id',
+      })
+    ).toBe(true);
+  });
+
+  it('is false for a field added this session', () => {
+    expect(
+      shouldWarnOnExistingRecordData({
+        existingRecordCount: 3,
+        originalFieldIdentifiers: new Set(['existing-id']),
+        designerIdentifier: 'new-id',
+      })
+    ).toBe(false);
+  });
+
+  it('is false when there are no existing records', () => {
+    expect(
+      shouldWarnOnExistingRecordData({
+        existingRecordCount: 0,
+        originalFieldIdentifiers: new Set(['existing-id']),
+        designerIdentifier: 'existing-id',
+      })
+    ).toBe(false);
+  });
+
+  it('is false when the host omitted session facts', () => {
+    expect(
+      shouldWarnOnExistingRecordData({
+        existingRecordCount: 4,
+        designerIdentifier: 'any-id',
+      })
+    ).toBe(false);
+  });
+});
+
+describe('useShouldWarnOnExistingRecordData', () => {
+  it('reads record count and original identifiers from context', () => {
+    const wrapper = ({children}: {children: ReactNode}) => (
+      <DesignerEditingProvider
+        value={{
+          existingRecordCount: 2,
+          originalFieldIdentifiers: new Set(['existing-id']),
+        }}
+      >
+        {children}
+      </DesignerEditingProvider>
+    );
+
+    const {result: existing} = renderHook(
+      () => useShouldWarnOnExistingRecordData('existing-id'),
+      {wrapper}
+    );
+    const {result: added} = renderHook(
+      () => useShouldWarnOnExistingRecordData('new-id'),
+      {wrapper}
+    );
+    expect(existing.current).toBe(true);
+    expect(added.current).toBe(false);
   });
 });
 

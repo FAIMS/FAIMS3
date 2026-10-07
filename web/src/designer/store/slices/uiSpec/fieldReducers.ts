@@ -12,6 +12,7 @@ import {
 import {
   buildUniqueExportName,
   mintFieldStorageId,
+  slugify,
 } from '../../../domain/notebook/ids';
 import {cloneField} from '../../../domain/notebook/fieldFactory';
 
@@ -171,6 +172,11 @@ export const fieldReducers = {
     }
 
     const field = state.fields[fieldName];
+    // Punctuation-only names slugify to "" and fail z.string().min(1) on save.
+    if (!slugify(newExportName)) {
+      return;
+    }
+
     const otherExportNames = Object.entries(state.fields)
       .filter(([id]) => id !== fieldName)
       .map(([, f]) => f.exportName);

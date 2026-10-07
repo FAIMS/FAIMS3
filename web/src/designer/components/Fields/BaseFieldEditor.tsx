@@ -24,7 +24,7 @@ import {
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import {debounce} from 'lodash';
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {config} from '../../buildconfig';
 import {designerHtmlInput, INPUT_LIMITS} from '../../lib/input-limits';
 import {getViewIDForField} from '../../state/helpers/uiSpec-helpers';
@@ -125,28 +125,43 @@ export const BaseFieldEditor = ({
   /** Latest label that scheduled an auto-sync (blur must not use stale Redux). */
   const pendingSyncLabelRef = useRef<string | null>(null);
   const [localExportName, setLocalExportName] = useState(field.exportName);
+  // Keep debounce identity stable: uiSpec / exportName change after every
+  // commit, and recreating the lodash debounce cancels pending keystrokes.
+  const uiSpecRef = useRef(uiSpec);
+  uiSpecRef.current = uiSpec;
+  const exportNameRef = useRef(field.exportName);
+  exportNameRef.current = field.exportName;
+  const lastRequestedExportNameRef = useRef(field.exportName);
 
-  const debouncedRename = useCallback(
-    debounce((newExportName: string) => {
-      const viewId = getViewIDForField(uiSpec, fieldName);
-      const desired = newExportName.trim();
-      if (viewId && desired && desired !== field.exportName) {
-        dispatch(
-          fieldRenamed({
-            viewId,
-            fieldName,
-            newExportName: desired,
-          })
-        );
-      }
-    }, 500),
-    [dispatch, uiSpec, fieldName, field.exportName]
+  const debouncedRename = useMemo(
+    () =>
+      debounce((newExportName: string) => {
+        const viewId = getViewIDForField(uiSpecRef.current, fieldName);
+        const desired = newExportName.trim();
+        if (
+          viewId &&
+          desired &&
+          slugify(desired) &&
+          desired !== exportNameRef.current
+        ) {
+          lastRequestedExportNameRef.current = desired;
+          dispatch(
+            fieldRenamed({
+              viewId,
+              fieldName,
+              newExportName: desired,
+            })
+          );
+        }
+      }, 500),
+    [dispatch, fieldName]
   );
 
   const commitExportName = (newExportName: string) => {
     const desired = newExportName.trim();
     const viewId = getViewIDForField(uiSpec, fieldName);
-    if (viewId && desired && desired !== field.exportName) {
+    if (viewId && desired && slugify(desired) && desired !== field.exportName) {
+      lastRequestedExportNameRef.current = desired;
       setLocalExportName(desired);
       dispatch(fieldRenamed({viewId, fieldName, newExportName: desired}));
     }
@@ -169,7 +184,7 @@ export const BaseFieldEditor = ({
 
   const handleIdBlur = () => {
     const desired = localExportName.trim();
-    if (!desired) {
+    if (!desired || !slugify(desired)) {
       setLocalExportName(field.exportName);
       return;
     }
@@ -231,6 +246,7 @@ export const BaseFieldEditor = ({
   };
 
   useEffect(() => {
+    lastRequestedExportNameRef.current = field.exportName;
     setLocalExportName(field.exportName);
 
     if (isMounted.current) {
@@ -243,6 +259,15 @@ export const BaseFieldEditor = ({
   }, [fieldName]);
 
   useEffect(() => {
+    // Own rename echoing back through the store. Do not reset the input —
+    // the user may already have typed past this committed prefix.
+    if (
+      field.exportName === lastRequestedExportNameRef.current ||
+      field.exportName === slugify(lastRequestedExportNameRef.current)
+    ) {
+      return;
+    }
+    lastRequestedExportNameRef.current = field.exportName;
     setLocalExportName(field.exportName);
   }, [field.exportName]);
 
