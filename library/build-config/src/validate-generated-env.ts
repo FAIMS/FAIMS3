@@ -17,8 +17,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-import {parseBuildConfig} from './build-config.js';
-import {generateEnv, parseArgs} from './generate-build-config.js';
+import {parseBuildConfig} from './build-config';
+import {generateEnv, parseArgs} from './generate-build-config';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

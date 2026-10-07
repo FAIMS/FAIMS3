@@ -2,13 +2,13 @@ import {z} from 'zod';
 import {
   AuthProviderConfigMap,
   AuthProviderConfigMapSchema,
-} from './auth-provider-config.js';
+} from './auth-provider-config';
 export {
   AuthProviderSchema,
   AuthProviderConfigMapSchema,
   readAuthProviderConfigFromEnv,
   buildAuthProviderEnvMap,
-} from './auth-provider-config.js';
+} from './auth-provider-config';
 
 const TrueFalseSchema = z
   .enum(['true', 'false'])

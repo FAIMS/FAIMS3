@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {generateEnv, parseArgs} from '../src/generate-build-config.js';
+import {generateEnv, parseArgs} from '../src/generate-build-config';
 import {
   buildAuthProviderEnvMap,
   parseBuildConfig,
   parseGeneratedEnv,
   readAuthProviderConfigFromEnv,
   SharedBuildConfig,
-} from '../src/build-config.js';
-import {validateGeneratedEnv} from '../src/validate-generated-env.js';
+} from '../src/build-config';
+import {validateGeneratedEnv} from '../src/validate-generated-env';
 
 const sampleConfig: SharedBuildConfig = {
   urls: {},
@@ -74,8 +74,15 @@ test('generator supports platform-specific export selection', () => {
 });
 
 test('generator supports api platform export selection', () => {
-  const config = {
-    ...sampleConfig,
+  const rawConfig = {
+    urls: {},
+    app: {},
+    web: {},
+    mobile: {
+      android: {},
+      ios: {},
+    },
+    secrets: {},
     api: {
       profileName: 'dev-profile',
       keyFilePath: '.',
@@ -84,7 +91,7 @@ test('generator supports api platform export selection', () => {
       conductorShortCodePrefix: 'DEV',
       couchdbUser: 'admin',
       couchdbPassword: 'secret',
-      keySource: 'FILE',
+      keySource: 'FILE' as const,
       emailServiceType: 'MOCK',
       emailFromAddress: 'notifications@example.com',
       emailFromName: 'FAIMS Notification',
@@ -107,7 +114,9 @@ test('generator supports api platform export selection', () => {
         },
       },
     },
-  };
+  } as const;
+
+  const config = parseBuildConfig(rawConfig);
 
   const output = generateEnv({config, platform: 'api'});
 
