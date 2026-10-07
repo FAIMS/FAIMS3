@@ -160,10 +160,18 @@ to run them together. The advantage over `pnpm run dev` is that you can
 run them in the background, restart individual services easily and attach/detach
 the output from the servers in the terminal.
 
+Run `pnpm build` before `overmind start`, because Overmind starts every process
+at once, so a service can compile against a library whose watch build is still
+writing. With valid output already on disk, a service that compiles immediately
+resolves the library, leaving only the watch builds' re-emit as a short race.
+Restart `api` with `overmind restart api` if it logs a compile error and waits
+for file changes in that window.
+
 Example commands:
 
 ```bash
-# Run all services and detach
+# Build first, then run all services and detach
+pnpm build
 overmind start -d
 
 # Echo output to the terminal
