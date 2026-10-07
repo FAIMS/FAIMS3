@@ -7,30 +7,12 @@ import {describe, expect, it} from 'vitest';
 import {
   buildUniqueExportName,
   mintFieldStorageId,
-  resolveAddedFieldKey,
   sanitizeUserLabel,
 } from './ids';
 
-describe('resolveAddedFieldKey', () => {
-  it('mints an opaque storage id', () => {
-    expect(resolveAddedFieldKey('New Field', [])).toMatch(/^f_[0-9a-f]{12}$/);
-  });
-
-  it('does not collide with existing keys', () => {
-    const existing = ['f_aaaaaaaaaaaa'];
-    const id = resolveAddedFieldKey('New Field', existing);
-    expect(existing).not.toContain(id);
-    expect(id).toMatch(/^f_[0-9a-f]{12}$/);
-  });
-
-  it('ignores the label when choosing the storage key', () => {
-    expect(resolveAddedFieldKey('New Field', [])).not.toBe('New-Field');
-  });
-});
-
 describe('mintFieldStorageId', () => {
   it('always starts with f_', () => {
-    expect(mintFieldStorageId([])).toMatch(/^f_[0-9a-f]{12}$/);
+    expect(mintFieldStorageId([])).toMatch(/^f_[0-9a-f]{6}$/);
   });
 });
 

@@ -28,7 +28,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {config} from '../../buildconfig';
 import {designerHtmlInput, INPUT_LIMITS} from '../../lib/input-limits';
 import {getViewIDForField} from '../../state/helpers/uiSpec-helpers';
-import {useIsFieldNewInSession} from '../../state/editing-context';
+import {useExportNameAutoSync} from '../../state/editing-context';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {
@@ -115,11 +115,15 @@ export const BaseFieldEditor = ({
   const idInputRef = useRef<HTMLInputElement>(null);
   const labelInputRef = useRef<HTMLInputElement>(null);
   const isMounted = useRef(false);
-  // Enable one-time auto-sync (Label -> export name) for newly added fields only.
-  const isFieldNewInSession = useIsFieldNewInSession(field.designerIdentifier);
-  const autoSyncExportNameEnabled = useRef(isFieldNewInSession);
-  const initialAutoSyncDone = useRef(!isFieldNewInSession);
+  // One-shot Label → export name for fields added this session. Consumed
+  // state lives on the editing context so remounting (collapse, section
+  // change) cannot re-arm sync and overwrite a custom export name.
+  const {pending: autoSyncPending, consume: consumeExportNameAutoSync} =
+    useExportNameAutoSync(field.designerIdentifier);
+  const autoSyncExportNameEnabled = useRef(autoSyncPending);
   const labelSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Latest label that scheduled an auto-sync (blur must not use stale Redux). */
+  const pendingSyncLabelRef = useRef<string | null>(null);
   const [localExportName, setLocalExportName] = useState(field.exportName);
 
   const debouncedRename = useCallback(
@@ -152,9 +156,13 @@ export const BaseFieldEditor = ({
     commitExportName(slugify(label || ''));
   };
 
-  const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const disableAutoSync = () => {
     autoSyncExportNameEnabled.current = false;
-    initialAutoSyncDone.current = true;
+    consumeExportNameAutoSync();
+  };
+
+  const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    disableAutoSync();
     setLocalExportName(e.target.value);
     debouncedRename(e.target.value);
   };
@@ -171,12 +179,11 @@ export const BaseFieldEditor = ({
   const syncFieldID = () => {
     const desired = slugify(state.label || '');
     if (!desired || desired === field.exportName) return;
-    autoSyncExportNameEnabled.current = false;
-    initialAutoSyncDone.current = true;
+    disableAutoSync();
     commitExportName(desired);
   };
 
-  // Stops the sync button stealing blur, which would open the dialog twice.
+  // Keep focus on the export-name input so the sync button does not steal it.
   const keepFocusOnMouseDown = (e: React.MouseEvent) => e.preventDefault();
 
   const handleLabelChange = (newLabel: string) => {
@@ -185,14 +192,15 @@ export const BaseFieldEditor = ({
     // - do one automatic Label -> Export name sync for fresh fields
     // - only after the user pauses typing
     // - never keep re-syncing forever while they continue editing label text
-    if (autoSyncExportNameEnabled.current && !initialAutoSyncDone.current) {
+    if (autoSyncExportNameEnabled.current) {
       if (labelSyncTimerRef.current) {
         clearTimeout(labelSyncTimerRef.current);
       }
+      pendingSyncLabelRef.current = newLabel;
       labelSyncTimerRef.current = setTimeout(() => {
         syncExportNameToLabel(newLabel);
-        initialAutoSyncDone.current = true;
-        autoSyncExportNameEnabled.current = false;
+        disableAutoSync();
+        pendingSyncLabelRef.current = null;
         labelSyncTimerRef.current = null;
       }, FIRST_AUTO_SYNC_DELAY_MS);
     }
@@ -207,20 +215,22 @@ export const BaseFieldEditor = ({
       clearTimeout(labelSyncTimerRef.current);
       labelSyncTimerRef.current = null;
     }
-    if (
-      hadPendingSync &&
-      autoSyncExportNameEnabled.current &&
-      !initialAutoSyncDone.current
-    ) {
-      syncExportNameToLabel(state.label || '');
-      initialAutoSyncDone.current = true;
-      autoSyncExportNameEnabled.current = false;
+    if (hadPendingSync && autoSyncExportNameEnabled.current) {
+      // DebouncedTextField flushes onChange immediately before this blur. The
+      // Redux label is still the previous render; use the value that scheduled
+      // the timer (or the input) so tab-away syncs what the user typed.
+      const typedLabel =
+        pendingSyncLabelRef.current ??
+        labelInputRef.current?.value ??
+        state.label ??
+        '';
+      pendingSyncLabelRef.current = null;
+      syncExportNameToLabel(typedLabel);
+      disableAutoSync();
     }
   };
 
   useEffect(() => {
-    autoSyncExportNameEnabled.current = isFieldNewInSession;
-    initialAutoSyncDone.current = !isFieldNewInSession;
     setLocalExportName(field.exportName);
 
     if (isMounted.current) {
@@ -230,7 +240,7 @@ export const BaseFieldEditor = ({
     } else {
       isMounted.current = true;
     }
-  }, [fieldName, isFieldNewInSession]);
+  }, [fieldName]);
 
   useEffect(() => {
     setLocalExportName(field.exportName);

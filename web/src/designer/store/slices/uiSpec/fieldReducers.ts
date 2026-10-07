@@ -12,7 +12,6 @@ import {
 import {
   buildUniqueExportName,
   mintFieldStorageId,
-  resolveAddedFieldKey,
 } from '../../../domain/notebook/ids';
 import {cloneField} from '../../../domain/notebook/fieldFactory';
 
@@ -179,7 +178,8 @@ export const fieldReducers = {
     field.exportName = buildUniqueExportName(newExportName, otherExportNames);
   },
   /**
-   * Clones default spec from `getFieldSpec`, assigns unique slug, inserts after `addAfter` in section.
+   * Clones default spec from `getFieldSpec`, mints a storage id and unique
+   * `exportName`, and inserts after `addAfter` in the section.
    * Applies type-specific defaults (related record, autoincrement `form_id`).
    */
   fieldAdded: (
@@ -191,6 +191,11 @@ export const fieldReducers = {
       viewId: string;
       viewSetId: string;
       addAfter: string;
+      /**
+       * Optional pre-minted `uiSpec.fields` key so the add-field UI can expand
+       * and focus the new accordion without a second random mint.
+       */
+      storageId?: string;
     }>
   ) => {
     const {fieldName, fieldType, viewId, viewSetId, addAfter} = action.payload;
@@ -221,10 +226,11 @@ export const fieldReducers = {
     };
     newField['component-parameters'].label = fieldName;
 
-    const storageId = resolveAddedFieldKey(
-      fieldName,
-      Object.keys(state.fields)
-    );
+    const requestedStorageId = action.payload.storageId;
+    const storageId =
+      requestedStorageId && !(requestedStorageId in state.fields)
+        ? requestedStorageId
+        : mintFieldStorageId(Object.keys(state.fields));
     const exportName = buildUniqueExportName(
       fieldName,
       Object.values(state.fields).map(f => f.exportName)

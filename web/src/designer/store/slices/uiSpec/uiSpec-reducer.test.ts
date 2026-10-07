@@ -54,7 +54,7 @@ const createBaseUiSpec = (): NotebookUISpec => ({
 });
 
 describe('uiSpecificationReducer', () => {
-  it('adds fields with slugged key and designer identifier', () => {
+  it('adds fields with minted storage id, export name, and designer identifier', () => {
     const initial = createBaseUiSpec();
 
     const next = uiSpecificationReducer.reducer(
@@ -69,14 +69,14 @@ describe('uiSpecificationReducer', () => {
     );
 
     const [storageId] = Object.keys(next.fields);
-    expect(storageId).toMatch(/^f_[0-9a-f]{12}$/);
+    expect(storageId).toMatch(/^f_[0-9a-f]{6}$/);
     expect(next.fields[storageId].designerIdentifier).toBeTypeOf('string');
     expect(next.fields[storageId].exportName).toBe('Text-Field');
     expect(next.fields[storageId]['component-parameters'].name).toBe(storageId);
     expect(next.views.sectionA.fields).toEqual([storageId]);
   });
 
-  it('adds templated string fields with a slugged key', () => {
+  it('adds templated string fields with a minted storage id and slugged export name', () => {
     const initial = createBaseUiSpec();
 
     const next = uiSpecificationReducer.reducer(
@@ -91,7 +91,7 @@ describe('uiSpecificationReducer', () => {
     );
 
     const [storageId] = Object.keys(next.fields);
-    expect(storageId).toMatch(/^f_[0-9a-f]{12}$/);
+    expect(storageId).toMatch(/^f_[0-9a-f]{6}$/);
     expect(next.views.sectionA.fields).toEqual([storageId]);
     expect(next.fields[storageId].exportName).toBe('New-Field');
     expect(next.fields[storageId]['component-parameters'].hidden).toBe(true);
@@ -193,6 +193,7 @@ describe('uiSpecificationReducer', () => {
     const sourceField = getFieldSpec('TextField');
     sourceField['component-parameters'].name = 'field-a';
     sourceField['component-parameters'].label = 'Field A';
+    sourceField.exportName = 'field-a';
     initial.fields['field-a'] = sourceField;
     initial.views.sectionA.fields = ['field-a'];
 
@@ -213,10 +214,13 @@ describe('uiSpecificationReducer', () => {
 
     const duplicatedFieldName = duplicatedSection.fields[0];
     expect(duplicatedFieldName).not.toBe('field-a');
+    expect(duplicatedFieldName).toMatch(/^f_[0-9a-f]{6}$/);
     expect(duplicated.fields[duplicatedFieldName]).toBeDefined();
     expect(
       duplicated.fields[duplicatedFieldName].designerIdentifier
     ).toBeTypeOf('string');
+    expect(duplicated.fields[duplicatedFieldName].exportName).toBe('field-a-1');
+    expect(duplicated.fields['field-a'].exportName).toBe('field-a');
 
     const moved = uiSpecificationReducer.reducer(
       duplicated,
@@ -235,6 +239,56 @@ describe('uiSpecificationReducer', () => {
     expect(deleted.views[duplicatedSectionId]).toBeUndefined();
     expect(deleted.fields[duplicatedFieldName]).toBeUndefined();
     expect(deleted.viewsets.formB.views).toEqual(['sectionB']);
+  });
+
+  it('uniquifies exportName when duplicating a section in the same form', () => {
+    const initial = createBaseUiSpec();
+    const sourceField = getFieldSpec('TextField');
+    sourceField['component-parameters'].name = 'field-a';
+    sourceField['component-parameters'].label = 'Site Name';
+    sourceField.exportName = 'Site-Name';
+    initial.fields['field-a'] = sourceField;
+    initial.views.sectionA.fields = ['field-a'];
+
+    const duplicated = uiSpecificationReducer.reducer(
+      initial,
+      sectionDuplicated({
+        sourceViewId: 'sectionA',
+        newSectionLabel: 'Section A Copy',
+      })
+    );
+
+    const clonedSection = duplicated.views['formA-Section-A-Copy'];
+    expect(clonedSection).toBeDefined();
+    const clonedFieldName = clonedSection.fields[0];
+    expect(clonedFieldName).toMatch(/^f_[0-9a-f]{6}$/);
+    expect(duplicated.fields[clonedFieldName].exportName).toBe('Site-Name-1');
+    expect(duplicated.fields['field-a'].exportName).toBe('Site-Name');
+    expect(duplicated.viewsets.formA.views).toEqual([
+      'sectionA',
+      'formA-Section-A-Copy',
+    ]);
+  });
+
+  it('uses a caller-supplied storage id when adding a field', () => {
+    const initial = createBaseUiSpec();
+    const storageId = 'f_0123456789ab';
+
+    const next = uiSpecificationReducer.reducer(
+      initial,
+      fieldAdded({
+        fieldName: 'New Field',
+        fieldType: 'TextField',
+        viewId: 'sectionA',
+        viewSetId: 'formA',
+        addAfter: '',
+        storageId,
+      })
+    );
+
+    expect(next.fields[storageId]).toBeDefined();
+    expect(next.views.sectionA.fields).toEqual([storageId]);
+    expect(next.fields[storageId].exportName).toBe('New-Field');
   });
 
   it('updates viewset visibility and display settings', () => {

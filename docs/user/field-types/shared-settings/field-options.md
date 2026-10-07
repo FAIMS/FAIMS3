@@ -6,7 +6,7 @@ _Shared options available on every field type in the Notebook Editor._
 
 ## Overview
 
-Below the field identity inputs (Label, Field ID), Helper text, and any
+Below the field identity inputs (Label, Export name), Helper text, and any
 field-specific settings, every field has a shared options panel. These
 options control validation, annotations, visibility logic, and data
 persistence.

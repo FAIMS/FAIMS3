@@ -311,7 +311,7 @@ export const getNotebookFieldTypes = ({
   const fields: FieldSummary[] = [];
 
   views.forEach((view: string) => {
-    uiSpecification.views[view].fields.forEach((field: any) => {
+    uiSpecification.views[view].fields.forEach((field: string) => {
       const fieldInfo = uiSpecification.fields[field];
       fields.push({
         name: field,

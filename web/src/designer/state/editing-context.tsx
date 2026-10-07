@@ -1,5 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
-import {createContext, useContext} from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
 
 /**
  * Survey facts the designer cannot derive from the ui-specification. Supplied by
@@ -17,11 +24,49 @@ export interface DesignerEditingContextValue {
   existingRecordCount?: number;
   /** `designerIdentifier`s of the fields present when the session began. */
   originalFieldIdentifiers?: ReadonlySet<string>;
+  /**
+   * Fields that have already used (or opted out of) the one-shot
+   * Label→export-name auto-sync. Owned by the provider so collapsing a field,
+   * changing section, or otherwise remounting the editor cannot re-arm sync
+   * and overwrite a custom export name.
+   */
+  consumedExportNameAutoSyncIds: Set<string>;
 }
 
-const DesignerEditingContext = createContext<DesignerEditingContextValue>({});
+/** Host-supplied facts; the provider fills in session-local auto-sync state. */
+export type DesignerEditingProviderValue = Omit<
+  DesignerEditingContextValue,
+  'consumedExportNameAutoSyncIds'
+> & {
+  consumedExportNameAutoSyncIds?: Set<string>;
+};
 
-export const DesignerEditingProvider = DesignerEditingContext.Provider;
+const DesignerEditingContext = createContext<DesignerEditingContextValue>({
+  consumedExportNameAutoSyncIds: new Set(),
+});
+
+export const DesignerEditingProvider = ({
+  value,
+  children,
+}: {
+  value: DesignerEditingProviderValue;
+  children?: ReactNode;
+}) => {
+  const fallbackConsumedIds = useRef(new Set<string>()).current;
+  const merged = useMemo<DesignerEditingContextValue>(
+    () => ({
+      ...value,
+      consumedExportNameAutoSyncIds:
+        value.consumedExportNameAutoSyncIds ?? fallbackConsumedIds,
+    }),
+    [value, fallbackConsumedIds]
+  );
+  return (
+    <DesignerEditingContext.Provider value={merged}>
+      {children}
+    </DesignerEditingContext.Provider>
+  );
+};
 
 export const useDesignerEditingContext = () =>
   useContext(DesignerEditingContext);
@@ -35,9 +80,35 @@ export const useIsFieldNewInSession = (
   designerIdentifier?: string
 ): boolean => {
   const {originalFieldIdentifiers} = useDesignerEditingContext();
-  if (!originalFieldIdentifiers || originalFieldIdentifiers.size === 0) {
+  // Missing set = host did not supply session facts (standalone / tests).
+  // Empty set = the notebook had no fields at load; every added field is new.
+  if (!originalFieldIdentifiers) {
     return false;
   }
   if (!designerIdentifier) return false;
   return !originalFieldIdentifiers.has(designerIdentifier);
+};
+
+/**
+ * One-shot Label→export-name auto-sync for fields added this session.
+ * `consume` is recorded on the editing context so remounting the field
+ * editor cannot re-arm sync.
+ */
+export const useExportNameAutoSync = (designerIdentifier?: string) => {
+  const isFieldNewInSession = useIsFieldNewInSession(designerIdentifier);
+  const {consumedExportNameAutoSyncIds} = useDesignerEditingContext();
+  const consumed =
+    !!designerIdentifier &&
+    consumedExportNameAutoSyncIds.has(designerIdentifier);
+
+  const consume = useCallback(() => {
+    if (designerIdentifier) {
+      consumedExportNameAutoSyncIds.add(designerIdentifier);
+    }
+  }, [consumedExportNameAutoSyncIds, designerIdentifier]);
+
+  return {
+    pending: isFieldNewInSession && !consumed,
+    consume,
+  };
 };

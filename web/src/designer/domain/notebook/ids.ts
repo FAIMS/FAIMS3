@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * @file Slug helpers for stable field and section ids inside a notebook.
+ * @file Slug helpers plus minted storage ids and unique export names.
  */
 
 /**
@@ -45,10 +45,10 @@ export const sanitizeUserLabel = (label: string): string =>
     .trim();
 
 /**
- * Picks a slugified field id that does not collide with existing keys.
+ * Picks a slug that does not collide with existing names (field keys or export names).
  *
  * @param preferredName - User-facing label or desired base id.
- * @param existingFieldNames - Current keys in `ui-specification.fields`.
+ * @param existingFieldNames - Names that must remain unique.
  * @returns Unique slug (may append numeric suffix).
  */
 export const buildUniqueFieldName = (
@@ -67,7 +67,7 @@ export const buildUniqueFieldName = (
   return candidate;
 };
 
-/** Hex chars after `f_` in a minted storage id (48 bits). */
+/** Hex chars after `f_` in a minted storage id (24 bits). */
 const STORAGE_ID_HEX_LENGTH = 6;
 
 /**
@@ -82,18 +82,6 @@ export const mintFieldStorageId = (existingFieldNames: string[]): string => {
   } while (taken.has(candidate));
   return candidate;
 };
-
-/**
- * Resolves the storage key for a field about to be added via `fieldAdded`.
- * Mirrors reducer logic so UI can expand/focus the new field after dispatch.
- *
- * @param _fieldName - Unused; the label is stored as `exportName`, not the key.
- * @param existingFieldNames - All field keys in the notebook spec.
- */
-export const resolveAddedFieldKey = (
-  _fieldName: string,
-  existingFieldNames: string[]
-): string => mintFieldStorageId(existingFieldNames);
 
 /**
  * Unique export / column name among existing export names (slug + suffix).

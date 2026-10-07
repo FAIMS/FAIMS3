@@ -19,7 +19,7 @@ conditions.md
 - **[Adding a Field](adding-a-field.md)** — How to open the Add a
   Field dialog and add a new field to your form.
 - **[Field Identity](field-identity.md)** — The Label, Helper Text,
-  and Field ID that every field shares.
+  and Export name that every field shares.
 - **[Field Toolbar](field-toolbar.md)** — The icon toolbar in each
   field's header bar.
 - **[Field Options](field-options.md)** — Shared options available on
