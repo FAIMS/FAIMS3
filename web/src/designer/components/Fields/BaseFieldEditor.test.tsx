@@ -11,6 +11,7 @@ import {Provider} from 'react-redux';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createDesignerStore} from '../../createDesignerStore';
 import {getFieldSpec} from '../../fields';
+import {DesignerEditingProvider} from '../../state/editing-context';
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   type AppState,
@@ -24,16 +25,25 @@ vi.mock('../mdx-editor', () => ({
 }));
 
 const STORAGE_ID = 'f_abc123';
+const DESIGNER_ID = 'designer-id-1';
+/** DebouncedTextField (200ms) + first-edit export-name sync (700ms). */
+const LABEL_AUTO_SYNC_MS = 900;
 
 const WithProviders = ({
   children,
   store,
+  originalFieldIdentifiers,
 }: {
   children: ReactNode;
   store: ToolkitStore<AppState>;
+  originalFieldIdentifiers?: ReadonlySet<string>;
 }) => (
   <ThemeProvider theme={globalTheme}>
-    <Provider store={store}>{children}</Provider>
+    <Provider store={store}>
+      <DesignerEditingProvider value={{originalFieldIdentifiers}}>
+        {children}
+      </DesignerEditingProvider>
+    </Provider>
   </ThemeProvider>
 );
 
@@ -43,7 +53,7 @@ function storeWithTextField() {
   field['component-parameters'].name = STORAGE_ID;
   field['component-parameters'].label = 'Site Name';
   field.exportName = 'Site-Name';
-  field.designerIdentifier = 'designer-id-1';
+  field.designerIdentifier = DESIGNER_ID;
 
   store.dispatch(
     loaded({
@@ -142,5 +152,124 @@ describe('BaseFieldEditor export name', () => {
     expect(
       store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
     ).toBe('Observation-Notes');
+  });
+});
+
+describe('BaseFieldEditor first-edit export-name auto-sync', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function renderNewFieldEditor() {
+    const store = storeWithTextField();
+    render(
+      <WithProviders store={store} originalFieldIdentifiers={new Set<string>()}>
+        <BaseFieldEditor fieldName={STORAGE_ID} showHelperText={false} />
+      </WithProviders>
+    );
+    return store;
+  }
+
+  it('syncs export name from the label after the first typing pause', () => {
+    vi.useFakeTimers();
+    const store = renderNewFieldEditor();
+
+    fireEvent.change(screen.getByPlaceholderText('Enter field label'), {
+      target: {value: 'Observation Notes'},
+    });
+    act(() => {
+      vi.advanceTimersByTime(LABEL_AUTO_SYNC_MS);
+    });
+
+    expect(
+      store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
+    ).toBe('Observation-Notes');
+  });
+
+  it('keeps syncing on later debounce pauses until the label loses focus', () => {
+    vi.useFakeTimers();
+    const store = renderNewFieldEditor();
+    const labelInput = screen.getByPlaceholderText('Enter field label');
+
+    fireEvent.change(labelInput, {target: {value: 'Site'}});
+    act(() => {
+      vi.advanceTimersByTime(LABEL_AUTO_SYNC_MS);
+    });
+    expect(
+      store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
+    ).toBe('Site');
+
+    fireEvent.change(labelInput, {target: {value: 'Site Name'}});
+    act(() => {
+      vi.advanceTimersByTime(LABEL_AUTO_SYNC_MS);
+    });
+    expect(
+      store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
+    ).toBe('Site-Name');
+  });
+
+  it('syncs the latest typed label when tabbing or clicking away', () => {
+    vi.useFakeTimers();
+    const store = renderNewFieldEditor();
+    const labelInput = screen.getByPlaceholderText('Enter field label');
+
+    fireEvent.change(labelInput, {target: {value: 'Observation'}});
+    act(() => {
+      vi.advanceTimersByTime(LABEL_AUTO_SYNC_MS);
+    });
+
+    fireEvent.change(labelInput, {target: {value: 'Observation Notes'}});
+    fireEvent.blur(labelInput);
+
+    expect(
+      store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
+    ).toBe('Observation-Notes');
+  });
+
+  it('does not keep auto-syncing after the label loses focus', () => {
+    vi.useFakeTimers();
+    const store = renderNewFieldEditor();
+    const labelInput = screen.getByPlaceholderText('Enter field label');
+
+    fireEvent.change(labelInput, {target: {value: 'Site'}});
+    fireEvent.blur(labelInput);
+    expect(
+      store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
+    ).toBe('Site');
+
+    fireEvent.change(labelInput, {target: {value: 'Site Name Changed'}});
+    act(() => {
+      vi.advanceTimersByTime(LABEL_AUTO_SYNC_MS);
+    });
+    fireEvent.blur(labelInput);
+
+    expect(
+      store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
+    ).toBe('Site');
+  });
+
+  it('does not auto-sync a field that already existed at session start', () => {
+    vi.useFakeTimers();
+    const store = storeWithTextField();
+    render(
+      <WithProviders
+        store={store}
+        originalFieldIdentifiers={new Set([DESIGNER_ID])}
+      >
+        <BaseFieldEditor fieldName={STORAGE_ID} showHelperText={false} />
+      </WithProviders>
+    );
+
+    fireEvent.change(screen.getByPlaceholderText('Enter field label'), {
+      target: {value: 'Observation Notes'},
+    });
+    act(() => {
+      vi.advanceTimersByTime(LABEL_AUTO_SYNC_MS);
+    });
+    fireEvent.blur(screen.getByPlaceholderText('Enter field label'));
+
+    expect(
+      store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
+    ).toBe('Site-Name');
   });
 });

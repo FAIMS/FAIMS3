@@ -119,11 +119,14 @@ export const useShouldWarnOnExistingRecordData = (
 };
 
 /**
- * One-shot Label→export-name auto-sync for fields added this session.
+ * First-edit Label→export-name auto-sync for fields added this session.
+ * Stays pending until `consume` (label blur or a manual export-name edit).
  * `consume` is recorded on the editing context so remounting the field
  * editor cannot re-arm sync.
  */
-export const useExportNameAutoSync = (designerIdentifier?: string) => {
+export const useExportNameAutoSync = (
+  designerIdentifier?: string
+): {pending: boolean; consume: () => void} => {
   const isFieldNewInSession = useIsFieldNewInSession(designerIdentifier);
   const {consumedExportNameAutoSyncIds} = useDesignerEditingContext();
   const consumed =

@@ -198,6 +198,7 @@ export const CompiledFieldDefinitionV1_0_1Schema = z
 export type CompiledFieldDefinitionV1_0_1 = z.infer<
   z.ZodObject<typeof compiledFieldDefinitionV1_0_1Shape>
 >;
+
 /**
  * A field definition with its conditional logic compiled into a callable
  * function. Same shape as {@link FieldDefinition} but carries the

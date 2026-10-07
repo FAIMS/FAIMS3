@@ -83,7 +83,6 @@ type StateType = {
   allowHiding: boolean;
 };
 
-/** sx applied to every Checkbox — green tick when checked, grey when unchecked. */
 /**
  * Default property sheet: label, persistence, meta flags, visibility condition, template protection.
  * Type-specific panels pass extra controls as `children`.
@@ -204,33 +203,33 @@ export const BaseFieldEditor = ({
   const handleLabelChange = (newLabel: string) => {
     updateProperty('label', newLabel);
 
-    // - do one automatic Label -> Export name sync for fresh fields
-    // - only after the user pauses typing
-    // - never keep re-syncing forever while they continue editing label text
+    // First-edit session for fields added this session: keep Label → export
+    // name in sync after each typing pause. Do not consume here — later
+    // keystrokes (and the eventual tab/click-away) must still sync.
     if (autoSyncExportNameEnabled.current) {
       if (labelSyncTimerRef.current) {
         clearTimeout(labelSyncTimerRef.current);
       }
       pendingSyncLabelRef.current = newLabel;
       labelSyncTimerRef.current = setTimeout(() => {
-        syncExportNameToLabel(newLabel);
-        disableAutoSync();
-        pendingSyncLabelRef.current = null;
+        syncExportNameToLabel(pendingSyncLabelRef.current ?? newLabel);
         labelSyncTimerRef.current = null;
       }, FIRST_AUTO_SYNC_DELAY_MS);
     }
   };
 
   const handleLabelBlur = () => {
-    // Only flush a sync the user's typing scheduled. Blurring an untouched fresh
-    // field (focus moving to a newly added field) must not rename it, or several
-    // default "New Field" fields chase the same slug in a rename loop.
-    const hadPendingSync = labelSyncTimerRef.current !== null;
     if (labelSyncTimerRef.current) {
       clearTimeout(labelSyncTimerRef.current);
       labelSyncTimerRef.current = null;
     }
-    if (hadPendingSync && autoSyncExportNameEnabled.current) {
+    // Only flush if the user typed during this first-edit session. Blurring an
+    // untouched fresh field (focus moving to a newly added field) must not
+    // rename it, or several default "New Field" fields chase the same slug.
+    if (
+      autoSyncExportNameEnabled.current &&
+      pendingSyncLabelRef.current !== null
+    ) {
       // DebouncedTextField flushes onChange immediately before this blur. The
       // Redux label is still the previous render; use the value that scheduled
       // the timer (or the input) so tab-away syncs what the user typed.
@@ -444,7 +443,7 @@ export const BaseFieldEditor = ({
                               state.label &&
                               slugify(state.label) !== localExportName ? (
                                 <InputAdornment position="end">
-                                  <Tooltip title="Sync with field name">
+                                  <Tooltip title="Sync with Label">
                                     <IconButton
                                       size="small"
                                       onClick={syncFieldID}
@@ -498,7 +497,7 @@ export const BaseFieldEditor = ({
                                   state.label &&
                                   slugify(state.label) !== localExportName ? (
                                     <InputAdornment position="end">
-                                      <Tooltip title="Sync with field name">
+                                      <Tooltip title="Sync with Label">
                                         <IconButton
                                           size="small"
                                           onClick={syncFieldID}
@@ -544,7 +543,7 @@ export const BaseFieldEditor = ({
                                 state.label &&
                                 slugify(state.label) !== localExportName ? (
                                   <InputAdornment position="end">
-                                    <Tooltip title="Sync with field name">
+                                    <Tooltip title="Sync with Label">
                                       <IconButton
                                         size="small"
                                         onClick={syncFieldID}

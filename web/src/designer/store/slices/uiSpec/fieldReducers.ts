@@ -14,7 +14,7 @@ import {
   mintFieldStorageId,
   slugify,
 } from '../../../domain/notebook/ids';
-import {cloneField} from '../../../domain/notebook/fieldFactory';
+import {cloneFieldWithDesignerIdentifier} from '../../../domain/notebook/fieldFactory';
 
 /** Field-level RTK reducers merged into `uiSpecificationReducer`. */
 export const fieldReducers = {
@@ -301,8 +301,7 @@ export const fieldReducers = {
     }
 
     const originalField = state.fields[originalFieldName];
-    const newField = cloneField(originalField);
-    newField.designerIdentifier = crypto.randomUUID();
+    const newField = cloneFieldWithDesignerIdentifier(originalField);
 
     const storageId = mintFieldStorageId(Object.keys(state.fields));
     const exportName = buildUniqueExportName(

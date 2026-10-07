@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {PayloadAction} from '@reduxjs/toolkit';
-import {cloneField} from '../../../domain/notebook/fieldFactory';
+import {cloneFieldWithDesignerIdentifier} from '../../../domain/notebook/fieldFactory';
 import {
   buildUniqueExportName,
   mintFieldStorageId,
@@ -103,11 +103,10 @@ export const sectionReducers = {
         originalField.exportName || newFieldLabel,
         Object.values(state.fields).map(f => f.exportName)
       );
-      const newField = cloneField(originalField);
+      const newField = cloneFieldWithDesignerIdentifier(originalField);
       newField['component-parameters'].label = newFieldLabel;
       newField['component-parameters'].name = storageId;
       newField.exportName = exportName;
-      newField.designerIdentifier = crypto.randomUUID();
 
       state.fields[storageId] = newField;
       newSection.fields.push(storageId);
