@@ -716,6 +716,26 @@ const FieldEditorComponent = ({
                     }}
                   />
                 )}
+                {field.condition && (
+                  <Chip
+                    label="Conditional"
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      fontWeight: 650,
+                      fontSize: '0.68rem',
+                      height: 23,
+                      '& .MuiChip-label': {
+                        px: 1,
+                      },
+                      borderColor: theme =>
+                        alpha(theme.palette.warning.main, 0.82),
+                      color: 'warning.main',
+                      backgroundColor: theme =>
+                        alpha(theme.palette.warning.main, 0.06),
+                    }}
+                  />
+                )}
               </Stack>
             </Stack>
           </Grid>
