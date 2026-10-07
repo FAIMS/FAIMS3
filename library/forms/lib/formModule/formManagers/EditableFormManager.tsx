@@ -88,7 +88,11 @@ export interface EditableFormManagerProps {
   initialData?: FaimsFormData;
   /** The existing record - this helps build contextual infills */
   existingRecord: HydratedRecordDocument;
-  /** The notebook's custom metadata, referenced as _METADATA.<key> */
+  /**
+   * The notebook's custom metadata, referenced as _METADATA.<key>. Must be a
+   * stable reference: visibility recomputes on its identity, so a fresh object
+   * each render never settles.
+   */
   metadataValues?: Record<string, string>;
   /** The initial revision ID to work on */
   revisionId: string;
@@ -104,6 +108,13 @@ export interface EditableFormManagerProps {
   onReady?: (handle: EditableFormManagerHandle) => void;
   /** Insertable heading slot */
   headingSlot?: React.ReactNode;
+  /**
+   * Whether the buttons that leave this record for a parent record may be
+   * shown. Default true. A host that owns the way out of the record sets it
+   * false so the operator cannot leave that flow; the primary Finish then
+   * returns to the record list.
+   */
+  shouldShowParentNavigation?: boolean;
   /** Enable debug logging for save operations */
   debugMode?: boolean;
 }
@@ -118,6 +129,24 @@ export interface EditableFormManagerHandle {
 // ============================================================================
 // Component
 // ============================================================================
+
+/** Whether two visibility maps show the same fields in the same sections. */
+function isSameVisibility(
+  a: FieldVisibilityMap,
+  b: FieldVisibilityMap
+): boolean {
+  const sections = Object.keys(a);
+  if (sections.length !== Object.keys(b).length) return false;
+  return sections.every(section => {
+    const before = a[section];
+    const after = b[section];
+    return (
+      after !== undefined &&
+      before.length === after.length &&
+      before.every((fieldId, index) => fieldId === after[index])
+    );
+  });
+}
 
 export const EditableFormManager: React.FC<
   EditableFormManagerProps
@@ -182,7 +211,7 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   // Visibility Tracking
   // ---------------------------------------------------------------------------
-  const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(
+  const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(() =>
     currentlyVisibleMap({
       values: buildConditionValues({
         values: formDataExtractor({fullData: props.initialData ?? {}}),
@@ -280,15 +309,19 @@ export const EditableFormManager: React.FC<
   // Visibility Updates
   // ---------------------------------------------------------------------------
   const updateVisibility = useCallback(() => {
-    setVisibleMap(
-      currentlyVisibleMap({
-        values: buildConditionValues({
-          values: formDataExtractor({fullData: form.state.values}),
-          context: buildContext(),
-        }),
-        uiSpec: dataEngine.uiSpec,
-        viewsetId: props.formId,
-      })
+    const next = currentlyVisibleMap({
+      values: buildConditionValues({
+        values: formDataExtractor({fullData: form.state.values}),
+        context: buildContext(),
+      }),
+      uiSpec: dataEngine.uiSpec,
+      viewsetId: props.formId,
+    });
+    // Keep the previous map when nothing moved, so recomputing does not re-render
+    // the form. Every recompute builds a new map, and the record is refetched
+    // whenever the app regains focus.
+    setVisibleMap(current =>
+      isSameVisibility(current, next) ? current : next
     );
   }, [dataEngine.uiSpec, props.formId, buildContext]);
 
@@ -300,6 +333,17 @@ export const EditableFormManager: React.FC<
   useEffect(() => {
     return () => debouncedUpdateVisibility.cancel();
   }, [debouncedUpdateVisibility]);
+
+  // The condition context can change with no field edit - notebook metadata is
+  // written at runtime to put a form into a mode - so recompute on it directly.
+  // Immediate, not debounced: that debounce coalesces keystrokes, and a
+  // metadata write is one deliberate event whose answer should show at once.
+  // Keyed on the metadata alone; updateVisibility also turns on the record,
+  // which refetches on focus and would recompute for nothing.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    updateVisibility();
+  }, [props.metadataValues]);
 
   // ---------------------------------------------------------------------------
   // Save Implementation
@@ -922,13 +966,13 @@ export const EditableFormManager: React.FC<
     navigationService: {
       toRecord: props.config.navigation.toRecord,
       navigateToRecordList: props.config.navigation.navigateToRecordList,
-      navigateToViewRecord: props.config.navigation.navigateToViewRecord,
     },
     flushSave,
     hasPendingSave,
     isFormSaving: isSaving,
     impliedParents: navigationData.impliedParents,
     createAnotherChild: navigationData.createAnotherChild,
+    shouldShowParentNavigation: props.shouldShowParentNavigation,
   });
 
   // ---------------------------------------------------------------------------
@@ -940,6 +984,7 @@ export const EditableFormManager: React.FC<
   // Prevents a double-click from running the guard twice while flushSave is awaiting.
   const guardInFlightRef = useRef(false);
   const [issueCount, setIssueCount] = useState(0);
+  const [saveRefused, setSaveRefused] = useState(false);
 
   const formLabel = useMemo(
     () =>
@@ -968,11 +1013,15 @@ export const EditableFormManager: React.FC<
       if (guardInFlightRef.current) return;
       guardInFlightRef.current = true;
       try {
+        let isSaveRefused = false;
         try {
           await flushSave();
         } catch (err) {
+          // The operator decides, rather than the refusal deciding for them:
+          // the dialog below says the save failed and still offers the way
+          // out, where the error banner unmounts with the form.
+          isSaveRefused = true;
           logWarn('[guardFinish] flushSave failed before issue check', {err});
-          return;
         }
 
         const progress = completion({
@@ -989,13 +1038,14 @@ export const EditableFormManager: React.FC<
           }
         }
 
-        if (problematic.size === 0) {
+        if (problematic.size === 0 && !isSaveRefused) {
           await onClick();
           return;
         }
 
         const [firstField] = problematic;
         setIssueCount(problematic.size);
+        setSaveRefused(isSaveRefused);
         firstIssueFieldRef.current = firstField ?? null;
         pendingFinishRef.current = onClick;
         setConfirmFinishOpen(true);
@@ -1223,30 +1273,39 @@ export const EditableFormManager: React.FC<
             await flushSave();
           } catch (err) {
             logWarn('[Finish anyway] flushSave failed', {err});
-            return;
           }
           if (fn) await fn();
         }}
         title={`Are you sure you want to finish ${formLabel}?`}
-        cancelLabel="Go back and review"
+        cancelLabel={
+          issueCount > 0 ? 'Go back and review' : 'Stay on this record'
+        }
         confirmLabel="Finish anyway"
       >
-        <Typography
-          variant="body2"
-          onClick={() => {
-            pendingFinishRef.current = null;
-            setConfirmFinishOpen(false);
-            setTimeout(scrollToFirstIssue, 0);
-          }}
-          sx={{
-            cursor: 'pointer',
-            textDecoration: 'underline',
-            color: 'text.primary',
-          }}
-        >
-          <strong>{issueCount}</strong> field{issueCount === 1 ? '' : 's'} still{' '}
-          {issueCount === 1 ? 'has' : 'have'} errors.
-        </Typography>
+        {saveRefused && errorMessage !== '' && (
+          // The message the failing write already chose: the two reasons a
+          // flush throws say different things to the operator, and the banner
+          // carrying them unmounts with this form.
+          <Typography variant="body2">{errorMessage}</Typography>
+        )}
+        {issueCount > 0 && (
+          <Typography
+            variant="body2"
+            onClick={() => {
+              pendingFinishRef.current = null;
+              setConfirmFinishOpen(false);
+              setTimeout(scrollToFirstIssue, 0);
+            }}
+            sx={{
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              color: 'text.primary',
+            }}
+          >
+            <strong>{issueCount}</strong> field{issueCount === 1 ? '' : 's'}{' '}
+            still {issueCount === 1 ? 'has' : 'have'} errors.
+          </Typography>
+        )}
       </ConfirmDialog>
     </Stack>
   );

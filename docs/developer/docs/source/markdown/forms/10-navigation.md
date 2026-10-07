@@ -258,11 +258,9 @@ interface NavigationConfig {
   navigateToLink: (to: string) => void;
 
   navigateToRecordList: {
-    label: string;
+    label?: string;
     navigate: () => void;
   };
-
-  navigateToViewRecord: (params: {recordId: string}) => void;
 }
 ```
 
@@ -431,7 +429,9 @@ sequenceDiagram
 
 ## Handling Missing Context
 
-When explicit context is unavailable but relationships exist:
+When explicit context is unavailable but relationships exist. `mode` is the
+`AvpUpdateMode` the hook was given, the same one the record screen is editing
+under:
 
 ```typescript
 const impliedParents = useMemo(() => {
@@ -451,8 +451,9 @@ const impliedParents = useMemo(() => {
       label: `View ${entry.hrid}`,
       recordId: entry.recordId,
       onNavigate() {
-        config.navigation.navigateToViewRecord({
+        config.navigation.toRecord({
           recordId: entry.recordId,
+          mode,
         });
       },
       formId: entry.formId,
@@ -462,5 +463,5 @@ const impliedParents = useMemo(() => {
   }
 
   return undefined;
-}, [parentNavigationInformation.data]);
+}, [parentNavigationInformation.data, mode, config.navigation]);
 ```

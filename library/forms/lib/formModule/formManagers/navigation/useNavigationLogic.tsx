@@ -26,6 +26,10 @@ import {logError} from '../../../logging';
  * 3. **Create another child**: Shown when user created (not linked) a child record
  * 4. **Implied parents**: Shown when no explicit history but relationships exist
  *
+ * A caller that owns the way out of a record passes
+ * `shouldShowParentNavigation: false`, which drops 1 and 4 so the record has no
+ * link out to a parent, and 2 becomes the primary action for every record.
+ *
  * ## Save Handling:
  * All navigation actions are wrapped with flush logic to ensure pending form
  * changes are saved before navigation occurs. This prevents data loss.
@@ -40,6 +44,7 @@ export function useNavigationLogic({
   isFormSaving,
   impliedParents = [],
   createAnotherChild,
+  shouldShowParentNavigation = true,
 }: UseNavigationLogicParams): UseNavigationLogicResult {
   const [isSaving, setIsSaving] = useState(false);
 
@@ -80,10 +85,12 @@ export function useNavigationLogic({
 
   /**
    * Navigate back to the explicit parent record.
-   * Used when the user has a clear navigation history.
+   * Used when the user has a clear navigation history. Null when the caller
+   * suppressed parent navigation, which sends the primary action to the record
+   * list instead.
    */
   const handleNavigateToParent = useMemo(() => {
-    if (!explicitParentInfo) return null;
+    if (!shouldShowParentNavigation || !explicitParentInfo) return null;
     return withSaveFlush(() => {
       navigationService.toRecord({
         mode: explicitParentInfo.mode,
@@ -92,7 +99,12 @@ export function useNavigationLogic({
         scrollTarget: {fieldId: explicitParentInfo.fieldId},
       });
     });
-  }, [explicitParentInfo, navigationService, withSaveFlush]);
+  }, [
+    shouldShowParentNavigation,
+    explicitParentInfo,
+    navigationService,
+    withSaveFlush,
+  ]);
 
   /**
    * Navigate to the record list (for parent/root records).
@@ -100,18 +112,6 @@ export function useNavigationLogic({
   const handleNavigateToRecordList = useMemo(() => {
     return withSaveFlush(navigationService.navigateToRecordList.navigate);
   }, [navigationService.navigateToRecordList.navigate, withSaveFlush]);
-
-  /**
-   * Navigate to view mode for the current record.
-   */
-
-  // const handleNavigateToViewRecord = useMemo(() => {
-  //   if (!navigationService.navigateToViewRecord) return null;
-
-  //   return withSaveFlush(() => {
-  //     navigationService.navigateToViewRecord!({recordId: ''}); // recordId injected at call site
-  //   });
-  // }, [navigationService.navigateToViewRecord, withSaveFlush]);
 
   /**
    * Creates a navigation handler for an implied parent.
@@ -188,12 +188,15 @@ export function useNavigationLogic({
       result.push({
         id: 'create-another-child',
         label: `Finish and create another ${formLabel} in ${relationLabel} ${childParentFormLabel}`,
-        onClick: withSaveFlush(onCreate),
+        // Guarded like the other two: a button saying Finish must not carry
+        // the operator past a refused write without saying so.
+        onClick: onCreate,
         disabled: isSaving,
         loading: isSaving,
         statusText,
         icon: <AddIcon fontSize="small" />,
         variant: 'secondary',
+        requiresFinishGuard: true,
       });
     }
 
@@ -202,7 +205,7 @@ export function useNavigationLogic({
     // -------------------------------------------------------------------------
     // Only show implied parents when there's no explicit navigation history
     // This prevents confusing duplicate navigation options
-    if (impliedParents.length > 0) {
+    if (shouldShowParentNavigation && impliedParents.length > 0) {
       for (const impliedParent of impliedParents) {
         const relationLabel =
           impliedParent.type === 'linked' ? 'related' : 'parent';
@@ -232,6 +235,7 @@ export function useNavigationLogic({
     withSaveFlush,
     impliedParents,
     createImpliedParentHandler,
+    shouldShowParentNavigation,
   ]);
 
   // ===========================================================================
