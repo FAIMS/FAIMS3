@@ -13,7 +13,13 @@ interface DesignerDialogProps {
   designerMode?: DesignerDocumentMode;
   /** Survey/template display name for the exported JSON filename. */
   exportBaseName?: string;
-  /** Records already collected for the survey. Omit for templates. */
+  /**
+   * Records already collected for the survey. Omit for templates.
+   *
+   * Forwarded into the designer context only. No warning reads it since
+   * export-name edits stopped moving storage ids. Keep passing it so a later
+   * destructive-edit warning can use the same prop.
+   */
   existingRecordCount?: number;
   onClose: (file?: File) => void;
   animationDuration?: number;

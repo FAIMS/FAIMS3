@@ -292,6 +292,7 @@ describe('API tests', () => {
       'component-namespace': 'faims-custom',
       'component-name': 'BasicAutoIncrementer',
       'type-returned': 'faims-core::String',
+      exportName: 'newincrementor',
       'component-parameters': {
         name: 'newincrementor',
         id: 'newincrementor',

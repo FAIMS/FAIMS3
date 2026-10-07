@@ -53,8 +53,12 @@ const MAP_COMPONENT = 'mapping-plugin::MapFormField';
 const RELATIONSHIP_COMPONENT = 'faims-custom::RelatedRecordSelector';
 
 /**
- * generate a suitable value for the CSV export from a field value.  Serialise
- * filenames, gps coordinates, etc.
+ * Serialise one field value into a map of export column names → values.
+ *
+ * Column keys always come from {@link exportName} (the editable CSV / GIS
+ * header). Attachment ZIP path segments come from {@link storageId} so they
+ * match `record.data` keys used by {@link generateFilenameForAttachment} in
+ * the ZIP exporter. Do not pass one string for both.
  *
  * Serialization is determined by the field's component (namespace + name), not
  * by the return type.
@@ -66,18 +70,20 @@ const RELATIONSHIP_COMPONENT = 'faims-custom::RelatedRecordSelector';
  * @param params
  *   - componentNamespace: The component namespace from the UI spec.
  *   - componentName: The component name from the UI spec.
- *   - fieldName: The column/field name.
- *   - value: The raw value to serialize.
+ *   - exportName: Editable column header (`FieldSummary.exportName`).
+ *   - storageId: Immutable `uiSpec.fields` key (`FieldSummary.name`).
+ *   - value: The raw value to serialize (looked up by storage id).
  *   - hrid: Human-readable ID (for attachment filenames, etc).
  *   - filenames: List to which CSV attachment filenames are appended.
  *   - viewsetId: The current view set ID for this export context.
  *
- * @returns Object mapping column names to their serialized values.
+ * @returns Object mapping export column names to their serialized values.
  */
 export const csvFormatValue = ({
   componentNamespace,
   componentName,
-  fieldName,
+  exportName,
+  storageId,
   value,
   hrid,
   filenames,
@@ -85,7 +91,8 @@ export const csvFormatValue = ({
 }: {
   componentNamespace: string;
   componentName: string;
-  fieldName: string;
+  exportName: string;
+  storageId: string;
   value: any;
   hrid: string;
   filenames: string[];
@@ -98,16 +105,16 @@ export const csvFormatValue = ({
   if (ATTACHMENT_COMPONENTS.has(componentKey)) {
     if (Array.isArray(value)) {
       if (value.length === 0) {
-        result[fieldName] = '';
+        result[exportName] = '';
         return result;
       }
       // Only serialize valid files with a file_type.
       const valueList = value
         .filter((f: FAIMSAttachmentReference) => !!f.file_type)
         .map((fInfo: FAIMSAttachmentReference) => {
-          // Generate a CSV-safe filename for this attachment and track it.
+          // ZIP paths are keyed by storage id; the CSV cell still uses exportName.
           const filename = generateFilenameForAttachment({
-            fieldId: fieldName,
+            fieldId: storageId,
             hrid,
             viewID: viewsetId,
             fileMimeType: fInfo.file_type,
@@ -116,10 +123,10 @@ export const csvFormatValue = ({
           filenames.push(filename);
           return filename;
         });
-      result[fieldName] = valueList.join(';');
+      result[exportName] = valueList.join(';');
     } else {
       // If somehow not an array, just emit whatever is there.
-      result[fieldName] = value;
+      result[exportName] = value;
     }
     return result;
   }
@@ -133,20 +140,20 @@ export const csvFormatValue = ({
       value.geometry.coordinates.length === 2
     ) {
       // Emit lat/long (GeoJSON is lng,lat order).
-      result[fieldName] = value;
-      result[`${fieldName}_latitude`] = value.geometry.coordinates[1];
-      result[`${fieldName}_longitude`] = value.geometry.coordinates[0];
+      result[exportName] = value;
+      result[`${exportName}_latitude`] = value.geometry.coordinates[1];
+      result[`${exportName}_longitude`] = value.geometry.coordinates[0];
       // Accuracy, if available.
-      result[`${fieldName}_accuracy`] =
+      result[`${exportName}_accuracy`] =
         value.properties && value.properties.accuracy
           ? value.properties.accuracy
           : '';
     } else {
       // Default to blank on error/malformed shape.
-      result[fieldName] = value;
-      result[`${fieldName}_latitude`] = '';
-      result[`${fieldName}_longitude`] = '';
-      result[`${fieldName}_accuracy`] = '';
+      result[exportName] = value;
+      result[`${exportName}_latitude`] = '';
+      result[`${exportName}_longitude`] = '';
+      result[`${exportName}_accuracy`] = '';
     }
     return result;
   }
@@ -161,21 +168,21 @@ export const csvFormatValue = ({
           value.manuallyEnteredAddress) ||
         '';
 
-      result[fieldName] = display;
+      result[exportName] = display;
 
       // Always emit every address piece, even if empty.
       const addr = value.address || {};
-      result[`${fieldName}_house_number`] = addr.house_number ?? '';
-      result[`${fieldName}_road`] = addr.road ?? '';
-      result[`${fieldName}_suburb`] = addr.suburb ?? '';
-      result[`${fieldName}_town`] = addr.town ?? '';
-      result[`${fieldName}_state`] = addr.state ?? '';
-      result[`${fieldName}_postcode`] = addr.postcode ?? '';
-      result[`${fieldName}_country`] = addr.country ?? '';
-      result[`${fieldName}_country_code`] = addr.country_code ?? '';
+      result[`${exportName}_house_number`] = addr.house_number ?? '';
+      result[`${exportName}_road`] = addr.road ?? '';
+      result[`${exportName}_suburb`] = addr.suburb ?? '';
+      result[`${exportName}_town`] = addr.town ?? '';
+      result[`${exportName}_state`] = addr.state ?? '';
+      result[`${exportName}_postcode`] = addr.postcode ?? '';
+      result[`${exportName}_country`] = addr.country ?? '';
+      result[`${exportName}_country_code`] = addr.country_code ?? '';
 
       // Emit the manually entered address verbatim if present.
-      result[`${fieldName}_manual`] =
+      result[`${exportName}_manual`] =
         typeof value.manuallyEnteredAddress === 'string'
           ? value.manuallyEnteredAddress
           : '';
@@ -194,16 +201,16 @@ export const csvFormatValue = ({
       Array.isArray(value.features[0].geometry.coordinates) &&
       value.features[0].geometry.coordinates.length === 2
     ) {
-      result[fieldName] = value;
-      result[`${fieldName}_latitude`] =
+      result[exportName] = value;
+      result[`${exportName}_latitude`] =
         value.features[0].geometry.coordinates[1];
-      result[`${fieldName}_longitude`] =
+      result[`${exportName}_longitude`] =
         value.features[0].geometry.coordinates[0];
       return result;
     } else {
-      result[fieldName] = value;
-      result[`${fieldName}_latitude`] = '';
-      result[`${fieldName}_longitude`] = '';
+      result[exportName] = value;
+      result[`${exportName}_latitude`] = '';
+      result[`${exportName}_longitude`] = '';
     }
     return result;
   }
@@ -211,7 +218,7 @@ export const csvFormatValue = ({
   // Handle relationship fields (array of relations, as "type/id" joined with ;)
   if (componentKey === RELATIONSHIP_COMPONENT) {
     if (Array.isArray(value)) {
-      result[fieldName] = value
+      result[exportName] = value
         .map((v: any) => {
           const relation_name = Array.isArray(v.relation_type_vocabPair)
             ? v.relation_type_vocabPair[0]
@@ -220,13 +227,13 @@ export const csvFormatValue = ({
         })
         .join(';');
     } else {
-      result[fieldName] = value;
+      result[exportName] = value;
     }
     return result;
   }
 
   // Default: emit value verbatim.
-  result[fieldName] = value;
+  result[exportName] = value;
   return result;
 };
 
@@ -239,18 +246,21 @@ export const csvFormatAnnotation = (
 ) => {
   const result: {[key: string]: any} = {};
   if (field.annotation !== '')
-    result[field.name + '_' + field.annotation] = annotation;
+    result[field.exportName + '_' + field.annotation] = annotation;
   if (field.uncertainty !== '')
-    result[field.name + '_' + field.uncertainty] = uncertainty
+    result[field.exportName + '_' + field.uncertainty] = uncertainty
       ? 'true'
       : 'false';
   return result;
 };
 
 /**
- * Format the data for a single record for CSV export
+ * Format the data for a single record for CSV / GIS export.
  *
- * @returns a map of column headings to values
+ * Looks up values and annotations by {@link FieldSummary.name} (storage id).
+ * Emits columns keyed by {@link FieldSummary.exportName}.
+ *
+ * @returns a map of export column headings to values
  */
 export const convertDataForOutput = (
   fields: FieldSummary[],
@@ -261,12 +271,13 @@ export const convertDataForOutput = (
   viewsetId: string
 ) => {
   let result: {[key: string]: any} = {};
-  fields.forEach((field: any) => {
+  fields.forEach((field: FieldSummary) => {
     if (field.name in data) {
       const formattedValue = csvFormatValue({
         componentNamespace: field.componentNamespace,
         componentName: field.componentName,
-        fieldName: field.name,
+        exportName: field.exportName,
+        storageId: field.name,
         value: data[field.name],
         hrid,
         filenames,

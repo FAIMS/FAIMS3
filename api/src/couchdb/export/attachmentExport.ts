@@ -395,8 +395,8 @@ function processRecordAttachments({
 /**
  * Generates a unique filename for an attachment within the ZIP archive.
  *
- * Filename structure: `{viewID}/{fieldId}/{hrid}.{extension}`
- * Example: `survey1/photo/REC001.jpg`
+ * Filename structure: `{viewID}/{storageId}/{hrid}.{extension}`
+ * Example: `survey1/f_a1b2c3d4e5f6/REC001.jpg` (storage id, not export name)
  *
  * Each path component is truncated to a safe length if necessary, using a
  * deterministic hash suffix to preserve uniqueness. This ensures the total
@@ -407,7 +407,8 @@ function processRecordAttachments({
  *
  * @param file - Optional File object (for browser contexts)
  * @param fileMimeType - MIME type of the file
- * @param fieldId - Field identifier (used in filename and directory)
+ * @param fieldId - Immutable storage id (`uiSpec.fields` key / `record.data` key).
+ *   Used as the ZIP path segment. Not the export / column name.
  * @param hrid - Human-readable record ID
  * @param viewID - View identifier (used in folder structure)
  * @param filenames - Array of existing filenames to check for collisions

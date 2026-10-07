@@ -6,7 +6,14 @@ import {createContext, useContext} from 'react';
  * the host app; empty by default so the designer still works standalone.
  */
 export interface DesignerEditingContextValue {
-  /** Records already collected for the survey. Omitted for templates. */
+  /**
+   * Records already collected for the survey. Omitted for templates.
+   *
+   * Not read by any editor today. Previously gated the field-ID rename
+   * warning; that warning went away when rename started writing `exportName`
+   * only. Left in context so a future destructive-edit warning can subscribe
+   * without rewiring the host.
+   */
   existingRecordCount?: number;
   /** `designerIdentifier`s of the fields present when the session began. */
   originalFieldIdentifiers?: ReadonlySet<string>;
@@ -20,9 +27,9 @@ export const useDesignerEditingContext = () =>
   useContext(DesignerEditingContext);
 
 /**
- * True when the field was added during this session, so it cannot hold data and
- * its Field ID is safe to change. Identifiers survive renames. Defaults to
- * `false` when the set is unknown, so a real warning is never suppressed.
+ * True when the field was added during this session. Used to auto-sync
+ * export name from Label once. Identifiers survive export-name edits. Defaults
+ * to `false` when the set is unknown.
  */
 export const useIsFieldNewInSession = (
   designerIdentifier?: string

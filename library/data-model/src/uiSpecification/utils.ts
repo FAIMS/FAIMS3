@@ -269,7 +269,10 @@ export const getFieldToIdsMap = (
 export const SPATIAL_FIELDS = ['MapFormField', 'TakePoint'];
 
 export type FieldSummary = {
+  /** Immutable storage id (`uiSpec.fields` key). */
   name: string;
+  /** Editable CSV / GIS column name. */
+  exportName: string;
   type: string;
   /** Component namespace from the UI spec (e.g. "faims-custom", "mapping-plugin"). */
   componentNamespace: string;
@@ -312,6 +315,7 @@ export const getNotebookFieldTypes = ({
       const fieldInfo = uiSpecification.fields[field];
       fields.push({
         name: field,
+        exportName: fieldInfo.exportName,
         componentNamespace: fieldInfo['component-namespace'] ?? '',
         componentName: fieldInfo['component-name'],
         type: fieldInfo['type-returned'],

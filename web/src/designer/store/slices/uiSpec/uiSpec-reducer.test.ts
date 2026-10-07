@@ -68,9 +68,12 @@ describe('uiSpecificationReducer', () => {
       })
     );
 
-    expect(Object.keys(next.fields)).toEqual(['Text-Field']);
-    expect(next.fields['Text-Field'].designerIdentifier).toBeTypeOf('string');
-    expect(next.views.sectionA.fields).toEqual(['Text-Field']);
+    const [storageId] = Object.keys(next.fields);
+    expect(storageId).toMatch(/^f_[0-9a-f]{12}$/);
+    expect(next.fields[storageId].designerIdentifier).toBeTypeOf('string');
+    expect(next.fields[storageId].exportName).toBe('Text-Field');
+    expect(next.fields[storageId]['component-parameters'].name).toBe(storageId);
+    expect(next.views.sectionA.fields).toEqual([storageId]);
   });
 
   it('adds templated string fields with a slugged key', () => {
@@ -87,16 +90,19 @@ describe('uiSpecificationReducer', () => {
       })
     );
 
-    expect(Object.keys(next.fields)).toEqual(['New-Field']);
-    expect(next.views.sectionA.fields).toEqual(['New-Field']);
-    expect(next.fields['New-Field']['component-parameters'].hidden).toBe(true);
+    const [storageId] = Object.keys(next.fields);
+    expect(storageId).toMatch(/^f_[0-9a-f]{12}$/);
+    expect(next.views.sectionA.fields).toEqual([storageId]);
+    expect(next.fields[storageId].exportName).toBe('New-Field');
+    expect(next.fields[storageId]['component-parameters'].hidden).toBe(true);
   });
 
-  it('renames field and updates summary/hrid references', () => {
+  it('renames exportName without moving the storage key or references', () => {
     const initial = createBaseUiSpec();
     const existingField = getFieldSpec('TextField');
     existingField['component-parameters'].name = 'old-field';
     existingField['component-parameters'].label = 'Old Field';
+    existingField.exportName = 'old-field';
 
     initial.fields['old-field'] = existingField;
     initial.views.sectionA.fields = ['old-field'];
@@ -108,15 +114,19 @@ describe('uiSpecificationReducer', () => {
       fieldRenamed({
         viewId: 'sectionA',
         fieldName: 'old-field',
-        newFieldName: 'New Field',
+        newExportName: 'New Field',
       })
     );
 
-    expect(next.fields['New-Field']).toBeDefined();
-    expect(next.fields['old-field']).toBeUndefined();
-    expect(next.views.sectionA.fields).toEqual(['New-Field']);
-    expect(next.viewsets.formA.summary_fields).toEqual(['New-Field']);
-    expect(next.viewsets.formA.hridField).toBe('New-Field');
+    expect(next.fields['old-field']).toBeDefined();
+    expect(next.fields['New-Field']).toBeUndefined();
+    expect(next.fields['old-field'].exportName).toBe('New-Field');
+    expect(next.fields['old-field']['component-parameters'].name).toBe(
+      'old-field'
+    );
+    expect(next.views.sectionA.fields).toEqual(['old-field']);
+    expect(next.viewsets.formA.summary_fields).toEqual(['old-field']);
+    expect(next.viewsets.formA.hridField).toBe('old-field');
   });
 
   it('moves then deletes fields and removes summary references', () => {

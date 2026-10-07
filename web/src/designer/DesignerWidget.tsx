@@ -53,7 +53,13 @@ export interface DesignerWidgetProps {
   designerMode?: DesignerDocumentMode;
   /** Used for the exported JSON filename (survey/template display name). */
   exportBaseName?: string;
-  /** Records already collected. Drives the field-ID warning; omit for templates. */
+  /**
+   * Records already collected. Omit for templates.
+   *
+   * Unused in the UI now: export-name edits no longer move the storage id, so
+   * the field-ID data-loss warning was removed. Kept on the host contract in
+   * case a later change (delete, type change, …) needs the same signal.
+   */
   existingRecordCount?: number;
   /** Called with exported JSON `File` on Done, or undefined on cancel. */
   onClose: (notebookJsonFile: File | undefined) => void;

@@ -8,7 +8,8 @@
 import {CategoryKey} from './field-categories';
 import {FieldType} from './state/initial';
 
-const fields: {[key: string]: FieldType} = {
+// Omit the export name as designer builds and adds in dynamically
+const fields: {[key: string]: Omit<FieldType, 'exportName'>} = {
   // Canonical "Text field" entry — new notebooks emit `faims-custom::TextField`.
   // Existing notebooks that still reference `FAIMSTextField` (or the legacy
   // `formik-material-ui::MultipleTextField`) are migrated to this canonical
@@ -613,6 +614,13 @@ export const getFieldNames = () => {
  * @param fieldType - Key in the `fields` map (e.g. `FAIMSTextField`).
  * @returns Clone of the template; invalid keys produce a clone of `undefined` (callers should validate).
  */
-export const getFieldSpec = (fieldType: string) => {
-  return JSON.parse(JSON.stringify(fields[fieldType])) as FieldType;
+export const getFieldSpec = (fieldType: string): FieldType => {
+  const spec = JSON.parse(JSON.stringify(fields[fieldType])) as Omit<
+    FieldType,
+    'exportName'
+  >;
+  return {
+    ...spec,
+    exportName: spec['component-parameters'].name,
+  };
 };

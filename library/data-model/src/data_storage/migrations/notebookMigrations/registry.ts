@@ -18,8 +18,8 @@
  * `DB_MIGRATIONS` / `DB_TARGET_VERSIONS` for Couch databases.
  *
  * To add a format change:
- * 1. Add (or alias) a `V<n>` Zod block in `uiSpecification/types.ts` and
- *    re-point the current aliases.
+ * 1. Add (or alias) a `V<semver>` Zod block in `uiSpecification/types.ts`
+ *    (`V1` = `1.0.0`, `V1_0_1` = `1.0.1`, …) and re-point the current aliases.
  * 2. Add `steps/<from>To<to>.ts` exporting a pure `migrationFunction` and a
  *    `validateFunction` that parses with the new version's schema.
  * 3. Append `{from, to, description, migrationFunction, validateFunction}`
@@ -34,6 +34,7 @@
 
 import type {NotebookSchemaSemver} from '../../../uiSpecification/schemaVersion';
 import {migrateLegacyToV1, validateV1} from './steps/legacyToV1';
+import {migrateV1_0_0ToV1_0_1, validateV1_0_1} from './steps/v1_0_0ToV1_0_1';
 import {
   NOTEBOOK_SCHEMA_LEGACY,
   type NotebookSchemaMigrationDetails,
@@ -44,7 +45,7 @@ import {
  * Strict `MAJOR.MINOR.PATCH`; the epoch started at `1.0.0` when the deprecated
  * two-part `1.0`…`7.0` ladder was collapsed.
  */
-export const CURRENT_NOTEBOOK_UI_SCHEMA_VERSION: NotebookSchemaSemver = '1.0.0';
+export const CURRENT_NOTEBOOK_UI_SCHEMA_VERSION: NotebookSchemaSemver = '1.0.1';
 
 /** Alias of {@link CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} in harness terminology. */
 export const NOTEBOOK_UI_SCHEMA_TARGET_VERSION =
@@ -59,5 +60,13 @@ export const NOTEBOOK_UI_SCHEMA_MIGRATIONS: NotebookSchemaMigrationDetails[] = [
       'Collapse pre-semver notebook JSON (missing version or deprecated 1.0–7.0) to epoch 1.0.0',
     migrationFunction: migrateLegacyToV1,
     validateFunction: validateV1,
+  },
+  {
+    from: '1.0.0',
+    to: '1.0.1',
+    description:
+      'Require exportName on every field (stamped from the fields key when missing)',
+    migrationFunction: migrateV1_0_0ToV1_0_1,
+    validateFunction: validateV1_0_1,
   },
 ];

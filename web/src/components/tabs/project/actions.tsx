@@ -289,6 +289,9 @@ const ProjectActions = (): JSX.Element => {
         open={editorOpen}
         notebook={initialNotebook}
         exportBaseName={data?.name}
+        // Still supplied; the designer no longer shows a field-ID data-loss
+        // warning (export name does not move stored values). Keep the count
+        // wired for a possible future destructive-edit warning.
         existingRecordCount={data?.recordCount}
         onClose={handleEditorClose}
       />

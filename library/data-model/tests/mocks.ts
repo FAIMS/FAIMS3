@@ -73,6 +73,7 @@ export const sampleUiSpecForViewId = ({
   return {
     fields: {
       name: {
+        exportName: 'name',
         'component-namespace': 'formik-material-ui',
         'component-name': 'TextField',
         'type-returned': 'faims-core::String',
@@ -103,6 +104,7 @@ export const sampleUiSpecForViewId = ({
         persistent: false,
       },
       age: {
+        exportName: 'age',
         'component-namespace': 'formik-material-ui',
         'component-name': 'TextField',
         'type-returned': 'faims-core::Integer',

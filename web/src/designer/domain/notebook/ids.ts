@@ -67,25 +67,38 @@ export const buildUniqueFieldName = (
   return candidate;
 };
 
+/** Hex chars after `f_` in a minted storage id (48 bits). */
+const STORAGE_ID_HEX_LENGTH = 6;
+
+/**
+ * Mint an opaque, immutable storage id (`f_` + random hex) that does not
+ * collide with existing `uiSpec.fields` keys.
+ */
+export const mintFieldStorageId = (existingFieldNames: string[]): string => {
+  const taken = new Set(existingFieldNames);
+  let candidate: string;
+  do {
+    candidate = `f_${crypto.randomUUID().replace(/-/g, '').slice(0, STORAGE_ID_HEX_LENGTH)}`;
+  } while (taken.has(candidate));
+  return candidate;
+};
+
 /**
  * Resolves the storage key for a field about to be added via `fieldAdded`.
  * Mirrors reducer logic so UI can expand/focus the new field after dispatch.
  *
- * @param fieldName - Default label passed to `fieldAdded` (e.g. "New Field").
+ * @param _fieldName - Unused; the label is stored as `exportName`, not the key.
  * @param existingFieldNames - All field keys in the notebook spec.
  */
 export const resolveAddedFieldKey = (
-  fieldName: string,
+  _fieldName: string,
   existingFieldNames: string[]
-): string => {
-  let fieldLabel = slugify(fieldName);
+): string => mintFieldStorageId(existingFieldNames);
 
-  const taken = new Set(existingFieldNames);
-  let suffix = 1;
-  while (taken.has(fieldLabel)) {
-    fieldLabel = slugify(`${fieldName} ${suffix}`);
-    suffix += 1;
-  }
-
-  return fieldLabel;
-};
+/**
+ * Unique export / column name among existing export names (slug + suffix).
+ */
+export const buildUniqueExportName = (
+  preferredName: string,
+  existingExportNames: string[]
+): string => buildUniqueFieldName(preferredName, existingExportNames);

@@ -4,23 +4,45 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {resolveAddedFieldKey, sanitizeUserLabel} from './ids';
+import {
+  buildUniqueExportName,
+  mintFieldStorageId,
+  resolveAddedFieldKey,
+  sanitizeUserLabel,
+} from './ids';
 
 describe('resolveAddedFieldKey', () => {
-  it('slugifies templated string fields like any other field', () => {
-    expect(resolveAddedFieldKey('New Field', [])).toBe('New-Field');
+  it('mints an opaque storage id', () => {
+    expect(resolveAddedFieldKey('New Field', [])).toMatch(/^f_[0-9a-f]{12}$/);
   });
 
-  it('deduplicates when the slug is already taken', () => {
-    expect(resolveAddedFieldKey('New Field', ['New-Field', 'Text-Field'])).toBe(
-      'New-Field-1'
-    );
+  it('does not collide with existing keys', () => {
+    const existing = ['f_aaaaaaaaaaaa'];
+    const id = resolveAddedFieldKey('New Field', existing);
+    expect(existing).not.toContain(id);
+    expect(id).toMatch(/^f_[0-9a-f]{12}$/);
   });
 
-  it('matches fieldAdded reducer key for standard fields', () => {
-    expect(resolveAddedFieldKey('New Field', ['Existing-Field'])).toBe(
-      'New-Field'
-    );
+  it('ignores the label when choosing the storage key', () => {
+    expect(resolveAddedFieldKey('New Field', [])).not.toBe('New-Field');
+  });
+});
+
+describe('mintFieldStorageId', () => {
+  it('always starts with f_', () => {
+    expect(mintFieldStorageId([])).toMatch(/^f_[0-9a-f]{12}$/);
+  });
+});
+
+describe('buildUniqueExportName', () => {
+  it('slugifies the preferred name', () => {
+    expect(buildUniqueExportName('New Field', [])).toBe('New-Field');
+  });
+
+  it('deduplicates against existing export names', () => {
+    expect(
+      buildUniqueExportName('New Field', ['New-Field', 'Text-Field'])
+    ).toBe('New-Field-1');
   });
 });
 

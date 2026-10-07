@@ -56,15 +56,16 @@ Path finding rules match the Couch harness: `from === to` → no steps; `from > 
 
 ### Registered steps
 
-| From     | To      | Step                  | Effect                                                                                   |
-| -------- | ------- | --------------------- | ---------------------------------------------------------------------------------------- |
-| `legacy` | `1.0.0` | `steps/legacyToV1.ts` | Collapse any pre-semver shape (missing / `1.0`…`7.0`) to the epoch layout; stamp `1.0.0` |
+| From     | To      | Step                      | Effect                                                                                   |
+| -------- | ------- | ------------------------- | ---------------------------------------------------------------------------------------- |
+| `legacy` | `1.0.0` | `steps/legacyToV1.ts`     | Collapse any pre-semver shape (missing / `1.0`…`7.0`) to the epoch layout; stamp `1.0.0` |
+| `1.0.0`  | `1.0.1` | `steps/v1_0_0ToV1_0_1.ts` | Require `exportName` on every field (stamped from the `uiSpec.fields` key when missing)  |
 
 `legacyToV1.ts` is intentionally dense. The historical v2–v7 transforms (label normalisation, `project_status` removal, canonical field renames, wire → `{uiSpec, metadata}` restructure with `fviews` → `views`, `ComputedField` → `ComputedNumber`, `displayParent` removal) live inside it as **commented stages** on a fall-through cascade, so a notebook at any historical point ends at `1.0.0`. They are not a living pipeline and are not exported.
 
 ## Zod models
 
-`uiSpecification/types.ts` holds the notebook JSON Zod schemas in versioned blocks with paired inferred types (`NotebookDefinitionV1Schema` / `NotebookDefinitionV1`, `NotebookUiSpecV1Schema`, `TemplateDefinitionV1Schema`, compiled variants, …), following `projectsDB/types.ts` and `templatesDB/types.ts`. The unversioned names (`NotebookDefinitionSchema`, `NotebookUiSpec`, `TemplateDefinition`, …) are **aliases of the latest block**. `schemaVersion` is validated by `NotebookSchemaSemverSchema` (`uiSpecification/schemaVersion.ts`).
+`uiSpecification/types.ts` holds the notebook JSON Zod schemas in versioned blocks named after `uiSpec.schemaVersion` (`V1` = `1.0.0`, `V1_0_1` = `1.0.1`, …) with paired inferred types (`NotebookDefinitionV1Schema` / `NotebookDefinitionV1`, `NotebookDefinitionV1_0_1Schema`, …). Unchanged envelopes (settings, metadata) are aliased forward. The unversioned names (`NotebookDefinitionSchema`, `NotebookUiSpec`, `TemplateDefinition`, …) are **aliases of the latest block**. `schemaVersion` is validated by `NotebookSchemaSemverSchema` (`uiSpecification/schemaVersion.ts`). Migration steps type their input/output against those versioned models.
 
 ## When migrations run
 
