@@ -130,11 +130,6 @@ export function DesignerWidget({
     [processedNotebook]
   );
 
-  const editingContextValue = useMemo(
-    () => ({existingRecordCount, originalFieldIdentifiers}),
-    [existingRecordCount, originalFieldIdentifiers]
-  );
-
   // 2. Keep one Redux store for a notebook identity; do not reset on same-notebook refetch.
   const [store, setStore] = useState(() =>
     createDesignerStore(processedNotebook, debug, designerMode)
@@ -251,7 +246,11 @@ export function DesignerWidget({
 
   return (
     <ReduxProvider store={store}>
-      <DesignerEditingProvider value={editingContextValue}>
+      <DesignerEditingProvider
+        existingRecordCount={existingRecordCount}
+        originalFieldIdentifiers={originalFieldIdentifiers}
+        sessionKey={notebookIdentity}
+      >
         <ThemeProvider theme={mergedTheme}>
           <ScopedCssBaseline />
           <Box

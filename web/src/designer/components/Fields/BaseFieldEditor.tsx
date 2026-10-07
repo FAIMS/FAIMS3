@@ -39,6 +39,7 @@ import {
   useDesignerEditingContext,
   useIsFieldNewInSession,
 } from '../../state/editing-context';
+import {shouldEnableFieldIdAutoSync} from '../../state/field-id-auto-sync';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {
@@ -131,9 +132,6 @@ export const BaseFieldEditor = ({
   const idInputRef = useRef<HTMLInputElement>(null);
   const labelInputRef = useRef<HTMLInputElement>(null);
   const isMounted = useRef(false);
-  // Enable one-time auto-sync (Label -> Field ID) for newly added fields only.
-  const autoSyncFieldIdEnabled = useRef(true);
-  const initialAutoSyncDone = useRef(false);
   // A rename changes the field's key, so this component re-renders with a new
   // `fieldName` — indistinguishable from the user selecting another field. Set
   // before dispatching so the `fieldName` effect can tell the two apart and skip
@@ -145,9 +143,27 @@ export const BaseFieldEditor = ({
     from: string;
     to: string;
   } | null>(null);
-  const {existingRecordCount} = useDesignerEditingContext();
+  const {
+    existingRecordCount,
+    originalFieldIdentifiers,
+    hasConsumedFieldIdAutoSync,
+    consumeFieldIdAutoSync,
+  } = useDesignerEditingContext();
   const hasExistingRecords = (existingRecordCount ?? 0) > 0;
-  const isFieldNewInSession = useIsFieldNewInSession(field.designerIdentifier);
+  const isFieldNewInSession = useIsFieldNewInSession(field?.designerIdentifier);
+  const designerIdentifier = field?.designerIdentifier;
+  const allowFirstCommitAutoSync = shouldEnableFieldIdAutoSync({
+    existingRecordCount,
+    designerIdentifier,
+    originalFieldIdentifiers,
+    alreadyConsumed: designerIdentifier
+      ? hasConsumedFieldIdAutoSync(designerIdentifier)
+      : true,
+  });
+  // First-commit of a new-in-session field only. Never start enabled just
+  // because the id looks like New-Field*.
+  const autoSyncFieldIdEnabled = useRef(allowFirstCommitAutoSync);
+  const initialAutoSyncDone = useRef(!allowFirstCommitAutoSync);
   // Only an existing field in a survey that already holds records can orphan
   // data. Gates the confirm-before-rename flow below.
   const changingIdMayOrphanData = hasExistingRecords && !isFieldNewInSession;
@@ -184,10 +200,27 @@ export const BaseFieldEditor = ({
     commitFieldID(slugify(label || ''));
   };
 
-  const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // User is explicitly controlling Field ID, so pause auto-sync from label.
+  const markAutoSyncConsumed = () => {
     autoSyncFieldIdEnabled.current = false;
     initialAutoSyncDone.current = true;
+    if (designerIdentifier) consumeFieldIdAutoSync(designerIdentifier);
+  };
+
+  const canAutoSyncFromLabel = () =>
+    autoSyncFieldIdEnabled.current &&
+    !initialAutoSyncDone.current &&
+    shouldEnableFieldIdAutoSync({
+      existingRecordCount,
+      designerIdentifier,
+      originalFieldIdentifiers,
+      alreadyConsumed: designerIdentifier
+        ? hasConsumedFieldIdAutoSync(designerIdentifier)
+        : true,
+    });
+
+  const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // User is explicitly controlling Field ID, so pause auto-sync from label.
+    markAutoSyncConsumed();
     setLocalFieldName(e.target.value);
     // Renames that could orphan data are deferred to blur, so the user confirms
     // before anything is written.
@@ -208,8 +241,7 @@ export const BaseFieldEditor = ({
 
   const applyFieldIDSync = (desired: string) => {
     // Manual sync is one-shot and should not re-enable continuous auto-sync.
-    autoSyncFieldIdEnabled.current = false;
-    initialAutoSyncDone.current = true;
+    markAutoSyncConsumed();
     commitFieldID(desired);
   };
 
@@ -244,15 +276,15 @@ export const BaseFieldEditor = ({
     // - do one automatic Label -> Field ID sync for fresh fields
     // - only after the user pauses typing
     // - never keep re-syncing forever while they continue editing label text
-    if (autoSyncFieldIdEnabled.current && !initialAutoSyncDone.current) {
+    if (canAutoSyncFromLabel()) {
       if (labelSyncTimerRef.current) {
         clearTimeout(labelSyncTimerRef.current);
       }
       labelSyncTimerRef.current = setTimeout(() => {
-        syncFieldIDToLabel(newLabel);
-        initialAutoSyncDone.current = true;
-        autoSyncFieldIdEnabled.current = false;
         labelSyncTimerRef.current = null;
+        if (!canAutoSyncFromLabel()) return;
+        syncFieldIDToLabel(newLabel);
+        markAutoSyncConsumed();
       }, FIRST_AUTO_SYNC_DELAY_MS);
     }
   };
@@ -266,14 +298,9 @@ export const BaseFieldEditor = ({
       clearTimeout(labelSyncTimerRef.current);
       labelSyncTimerRef.current = null;
     }
-    if (
-      hadPendingSync &&
-      autoSyncFieldIdEnabled.current &&
-      !initialAutoSyncDone.current
-    ) {
+    if (hadPendingSync && canAutoSyncFromLabel()) {
       syncFieldIDToLabel(state.label || '');
-      initialAutoSyncDone.current = true;
-      autoSyncFieldIdEnabled.current = false;
+      markAutoSyncConsumed();
     }
   };
 
@@ -281,14 +308,11 @@ export const BaseFieldEditor = ({
     const wasInternalRename = internalRenameInFlight.current;
     internalRenameInFlight.current = false;
 
-    // "New-Field*" means this field was just created by designer scaffolding.
-    // We allow first-time auto-sync only for this new-field state.
-    const isFreshGeneratedFieldId = /^New-Field(?:-\d+)?$/i.test(fieldName);
-    // Don't re-arm after our own rename, or a synced "New-Field-N" id re-enables
-    // sync and the rename repeats.
+    // Never re-arm just because the id still matches New-Field*. Auto-sync is
+    // first-commit of a new-in-session field only, and never when records exist.
     if (!wasInternalRename) {
-      autoSyncFieldIdEnabled.current = isFreshGeneratedFieldId;
-      initialAutoSyncDone.current = !isFreshGeneratedFieldId;
+      autoSyncFieldIdEnabled.current = allowFirstCommitAutoSync;
+      initialAutoSyncDone.current = !allowFirstCommitAutoSync;
     }
 
     setLocalFieldName(fieldName);
