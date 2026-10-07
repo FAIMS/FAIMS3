@@ -14,5 +14,6 @@ notebook-admin.md
 user-roles-and-permissions-guide.md
 user-roles-task-organised.md
 ../core/permissions.md
+backup-and-recovery.md
 
 ```
