@@ -261,10 +261,10 @@ describe('Recursive record history', () => {
     });
 
     const visits: string[] = [];
-    const real = engine.form.getExistingFormData.bind(engine.form);
-    engine.form.getExistingFormData = (args: {recordId: string}) => {
-      visits.push(args.recordId);
-      return real(args);
+    const real = engine.hydrated.hydrateRecordsByIds.bind(engine.hydrated);
+    engine.hydrated.hydrateRecordsByIds = (ids: string[]) => {
+      visits.push(...ids);
+      return real(ids);
     };
 
     const result = await history(siteId);
@@ -276,6 +276,33 @@ describe('Recursive record history', () => {
     expect(childField(result, 'features').children[0].recordId).toBe(
       shared.recordId
     );
+  });
+
+  test('siblings in one generation hydrate in a single wave', async () => {
+    const first = await create('Sample', {'sample-type': {data: 'core'}});
+    const second = await create('Sample', {'sample-type': {data: 'fines'}});
+    const {recordId: rootId} = await create('Sample', {
+      'sample-type': {data: 'soil'},
+      'sub-samples': {data: [link(first.recordId), link(second.recordId)]},
+    });
+
+    const waves: string[][] = [];
+    const real = engine.hydrated.hydrateRecordsByIds.bind(engine.hydrated);
+    engine.hydrated.hydrateRecordsByIds = (ids: string[]) => {
+      waves.push([...ids]);
+      return real(ids);
+    };
+
+    await history(rootId);
+    const siblingWave = waves.find(
+      wave => wave.includes(first.recordId) && wave.includes(second.recordId)
+    );
+    expect(siblingWave).toBeDefined();
+    expect(
+      waves.filter(wave =>
+        wave.some(id => id === first.recordId || id === second.recordId)
+      )
+    ).toHaveLength(1);
   });
 
   test('a Linked relation is not a child and is not walked', async () => {

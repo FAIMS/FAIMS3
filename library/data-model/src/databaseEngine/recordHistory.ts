@@ -59,7 +59,11 @@ export async function computeRecursiveRecordHistory({
     ctx,
     recordId,
     path: new Set(),
-    startOwnWork: ({recordId}) => engine.form.getHistoryData({recordId}),
+    startOwnWork: ({recordId, node}) =>
+      engine.form.getHistoryData({
+        recordId,
+        record: node.context.record,
+      }),
     buildNode: ({recordId, node, own: entries, links, outcomes}) => ({
       recordId,
       hrid: node.context.hrid,

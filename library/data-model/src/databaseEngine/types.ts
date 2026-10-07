@@ -790,7 +790,7 @@ export interface RecursiveRecordHistory {
   formId: string;
   /** This record's own revisions, newest handling left to the caller. */
   entries: RevisionHistoryEntry[];
-  /** One entry per Child-type field that links to at least one live record. */
+  /** One entry per Child-type field that links to at least one included child. */
   childFields: RecursiveRecordHistoryChildField[];
 }
 

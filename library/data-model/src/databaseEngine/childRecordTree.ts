@@ -5,7 +5,8 @@
  * The status report and the recursive revision history both need this walk and
  * differ only in what they compute per node and whether deleted records stay
  * in the tree (history includes them; status drops them). What counts as a
- * child and how often a record is fetched stay shared.
+ * child and how often a record is fetched stay shared: each generation is
+ * one bulk hydrate wave, not one GET per child.
  */
 import {fieldIdsForViewset} from '../uiSpecification/formScan';
 import {getChildRelationParams} from '../uiSpecification/parentForms';
@@ -153,17 +154,90 @@ export interface ChildTreeWalkContext {
   includeDeleted?: ChildTreeIncludeDeleted;
 }
 
+/** True when `formId` is a viewset key, not a prototype property. */
+function isKnownForm(engine: DataEngine, formId: string): boolean {
+  return Object.prototype.hasOwnProperty.call(engine.uiSpec.viewsets, formId);
+}
+
+/** Records reached from a root, plus per-id load failures. */
+interface HydratedChildTree {
+  loaded: Map<string, InitialFormData>;
+  errors: Map<string, unknown>;
+}
+
+/**
+ * Hydrate a record and the records its Child-type fields link to, one
+ * generation per `hydrateRecordsByIds` wave. A record linked from many
+ * fields or parents is fetched once.
+ */
+async function hydrateChildRecordTree({
+  ctx,
+  recordId,
+  path,
+}: {
+  ctx: ChildTreeWalkContext;
+  recordId: string;
+  path: ReadonlySet<string>;
+}): Promise<HydratedChildTree> {
+  const loaded = new Map<string, InitialFormData>();
+  const errors = new Map<string, unknown>();
+  const queued = new Set(path);
+  queued.add(recordId);
+  let generation = [recordId];
+
+  while (generation.length > 0) {
+    const results = await ctx.engine.hydrated.hydrateRecordsByIds(generation);
+    const next: string[] = [];
+
+    for (const result of results) {
+      if (!result.ok) {
+        errors.set(result.recordId, result.error);
+        continue;
+      }
+      const node = result.formData;
+      if (node.context.revision.deleted && ctx.includeDeleted !== 'all') {
+        continue;
+      }
+      if (!isKnownForm(ctx.engine, node.formId)) {
+        errors.set(
+          result.recordId,
+          new UnknownFormTypeError(result.recordId, node.formId)
+        );
+        continue;
+      }
+      loaded.set(result.recordId, node);
+      const links = collectChildRecordLinks({
+        uiSpec: ctx.engine.uiSpec,
+        childFieldSpecs: ctx.childFieldSpecs,
+        projectId: ctx.projectId,
+        formId: node.formId,
+        data: node.data,
+      });
+      for (const childId of new Set(links.flatMap(link => link.childIds))) {
+        if (!queued.has(childId)) {
+          queued.add(childId);
+          next.push(childId);
+        }
+      }
+    }
+    generation = next;
+  }
+
+  return {loaded, errors};
+}
+
 /**
  * Walks a record and, recursively, the records its Child-type fields link to,
- * fetching each record once however many fields link it. A single hydration
- * per node fetches the record, head revision and AVPs together.
+ * fetching each record once however many fields or parents link it. Each
+ * generation is one `hydrateRecordsByIds` wave (records, then head revisions,
+ * then AVPs) instead of one `getExistingFormData` per child.
  *
  * @param ctx - Engine, project and the ui-spec's Child-type fields
  * @param recordId - Record this node reports on
  * @param path - Records on the path from the root; cuts the cycles corrupt
  *   data can hold. Pass an empty set at the root
  * @param startOwnWork - The node's own reads or scoring, started before its
- *   children are walked so the two overlap
+ *   children are composed so the two overlap
  * @param buildNode - Composes the node from its own work and its children's
  *   outcomes
  * @returns null when the record would close a cycle, or when it is deleted
@@ -197,56 +271,55 @@ export async function walkChildRecordTree<TNode, TOwn>({
   if (path.has(recordId)) {
     return null;
   }
-  const {engine} = ctx;
 
-  // Default conflict resolution (pickFirst), like the record page's own reads,
-  // so a conflicted record is walked as the head the form shows
-  const node = await engine.form.getExistingFormData({recordId});
-  if (node.context.revision.deleted && ctx.includeDeleted !== 'all') {
-    return null;
-  }
-  // hasOwnProperty, since `in` also matches prototype keys ('constructor')
-  if (
-    !Object.prototype.hasOwnProperty.call(engine.uiSpec.viewsets, node.formId)
-  ) {
-    throw new UnknownFormTypeError(recordId, node.formId);
-  }
+  const {loaded, errors} = await hydrateChildRecordTree({ctx, recordId, path});
 
-  const links = collectChildRecordLinks({
-    uiSpec: engine.uiSpec,
-    childFieldSpecs: ctx.childFieldSpecs,
-    projectId: ctx.projectId,
-    formId: node.formId,
-    data: node.data,
-  });
+  const compose = async (
+    id: string,
+    ancestorPath: ReadonlySet<string>
+  ): Promise<TNode | null> => {
+    if (ancestorPath.has(id)) {
+      return null;
+    }
+    const loadError = errors.get(id);
+    if (loadError !== undefined) {
+      throw loadError;
+    }
+    const node = loaded.get(id);
+    if (!node) {
+      return null;
+    }
 
-  // Branches are independent (each carries its own path copy), so they walk
-  // concurrently, and alongside this node's own work: awaiting them together
-  // keeps a rejection from either side handled
-  const childPath = new Set(path).add(recordId);
-  const outcomes = new Map<string, TNode | null>();
-  let own!: TOwn;
-  await Promise.all([
-    (async () => {
-      own = await startOwnWork({recordId, node});
-    })(),
-    ...[...new Set(links.flatMap(link => link.childIds))].map(async childId => {
-      try {
-        outcomes.set(
-          childId,
-          await walkChildRecordTree({
-            ctx,
-            recordId: childId,
-            path: childPath,
-            startOwnWork,
-            buildNode,
-          })
-        );
-      } catch (err) {
-        outcomes.set(childId, absorbSkippableChildError(err));
-      }
-    }),
-  ]);
+    const links = collectChildRecordLinks({
+      uiSpec: ctx.engine.uiSpec,
+      childFieldSpecs: ctx.childFieldSpecs,
+      projectId: ctx.projectId,
+      formId: node.formId,
+      data: node.data,
+    });
 
-  return buildNode({recordId, node, own, links, outcomes});
+    // Branches are independent (each carries its own path copy), so they
+    // compose concurrently, and alongside this node's own work
+    const childPath = new Set(ancestorPath).add(id);
+    const outcomes = new Map<string, TNode | null>();
+    let own!: TOwn;
+    await Promise.all([
+      (async () => {
+        own = await startOwnWork({recordId: id, node});
+      })(),
+      ...[...new Set(links.flatMap(link => link.childIds))].map(
+        async childId => {
+          try {
+            outcomes.set(childId, await compose(childId, childPath));
+          } catch (err) {
+            outcomes.set(childId, absorbSkippableChildError(err));
+          }
+        }
+      ),
+    ]);
+
+    return buildNode({recordId: id, node, own, links, outcomes});
+  };
+
+  return compose(recordId, path);
 }

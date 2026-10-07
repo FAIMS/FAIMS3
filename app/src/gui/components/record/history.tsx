@@ -31,7 +31,13 @@ import {
 } from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import {useQuery} from '@tanstack/react-query';
-import {Fragment, useMemo, useState, type ReactElement} from 'react';
+import {
+  Fragment,
+  useMemo,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {
   getViewRecordRoute,
@@ -70,6 +76,36 @@ const HISTORY_MARKER: Record<
   updated: 'markerUpdated',
   deleted: 'markerDeleted',
 };
+
+function HistoryRail({children}: {children: ReactNode}) {
+  return (
+    <Box
+      aria-hidden
+      sx={{
+        width: 10,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+function HistoryRailConnector({minHeight}: {minHeight?: number}) {
+  const theme = useTheme();
+  return (
+    <Box
+      sx={{
+        width: 2,
+        flex: 1,
+        ...(minHeight !== undefined ? {minHeight} : {}),
+        backgroundColor: theme.palette.history.connector,
+      }}
+    />
+  );
+}
 
 /**
  * Presentational timeline. Kept separate from the query wrapper so tests can
@@ -150,33 +186,10 @@ export function RecordHistoryTimeline({
                       gap: 2,
                     }}
                   >
-                    <Box
-                      aria-hidden
-                      sx={{
-                        width: 10,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                      }}
-                    >
-                      {index > 0 && (
-                        <Box
-                          sx={{
-                            width: 2,
-                            flex: 1,
-                            backgroundColor: theme.palette.history.connector,
-                          }}
-                        />
-                      )}
-                      <Box
-                        sx={{
-                          width: 2,
-                          flex: 1,
-                          minHeight: 20,
-                          backgroundColor: theme.palette.history.connector,
-                        }}
-                      />
-                    </Box>
+                    <HistoryRail>
+                      {index > 0 && <HistoryRailConnector />}
+                      <HistoryRailConnector minHeight={20} />
+                    </HistoryRail>
                     <Typography
                       variant="overline"
                       sx={{
@@ -266,15 +279,7 @@ function HistoryEventItem({
             minWidth: 0,
           }}
         >
-          <Box
-            aria-hidden
-            sx={{
-              width: 10,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
-          >
+          <HistoryRail>
             <Box
               sx={{
                 height: 40,
@@ -293,17 +298,8 @@ function HistoryEventItem({
                 }}
               />
             </Box>
-            {showConnector && (
-              <Box
-                sx={{
-                  width: 2,
-                  flex: 1,
-                  minHeight: 8,
-                  backgroundColor: theme.palette.history.connector,
-                }}
-              />
-            )}
-          </Box>
+            {showConnector && <HistoryRailConnector minHeight={8} />}
+          </HistoryRail>
           <Stack
             direction="row"
             spacing={1.5}
@@ -385,6 +381,8 @@ function HistoryEventItem({
               sx={{
                 ml: 'auto',
                 flexShrink: 0,
+                width: 40,
+                minWidth: 40,
                 height: 40,
                 color: 'text.secondary',
                 alignSelf: 'flex-start',
