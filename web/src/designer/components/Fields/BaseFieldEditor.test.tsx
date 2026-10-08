@@ -153,6 +153,65 @@ describe('BaseFieldEditor export name', () => {
       store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
     ).toBe('Observation-Notes');
   });
+
+  it('does not reset the input when a colliding export name is uniquified mid-typing', () => {
+    vi.useFakeTimers();
+    const store = createDesignerStore();
+    const taken = getFieldSpec('TextField');
+    taken['component-parameters'].name = 'f_taken';
+    taken['component-parameters'].label = 'Width';
+    taken.exportName = 'width';
+    taken.designerIdentifier = 'designer-taken';
+
+    const field = getFieldSpec('TextField');
+    field['component-parameters'].name = STORAGE_ID;
+    field['component-parameters'].label = 'Site Name';
+    field.exportName = 'Site-Name';
+    field.designerIdentifier = DESIGNER_ID;
+
+    store.dispatch(
+      loaded({
+        fields: {f_taken: taken, [STORAGE_ID]: field},
+        views: {
+          sectionA: {label: 'Section A', fields: ['f_taken', STORAGE_ID]},
+        },
+        viewsets: {
+          formA: {label: 'Form A', views: ['sectionA'], summary_fields: []},
+        },
+        visible_types: ['formA'],
+        settings: {showQrCodeButton: false},
+        schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+      })
+    );
+
+    render(
+      <WithProviders store={store}>
+        <BaseFieldEditor fieldName={STORAGE_ID} showHelperText={false} />
+      </WithProviders>
+    );
+
+    const exportInput = screen.getByPlaceholderText('Enter export name');
+    fireEvent.change(exportInput, {target: {value: 'width'}});
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+      fireEvent.change(exportInput, {target: {value: 'width-cm'}});
+    });
+
+    expect(
+      store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
+    ).toBe('width-1');
+    expect((exportInput as HTMLInputElement).value).toBe('width-cm');
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+
+    expect((exportInput as HTMLInputElement).value).toBe('width-cm');
+    expect(
+      store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
+    ).toBe('width-cm');
+  });
 });
 
 describe('BaseFieldEditor first-edit export-name auto-sync', () => {
@@ -246,6 +305,32 @@ describe('BaseFieldEditor first-edit export-name auto-sync', () => {
     expect(
       store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
     ).toBe('Site');
+  });
+
+  it('does not overwrite a custom export name when the label later changes', () => {
+    vi.useFakeTimers();
+    const store = renderNewFieldEditor();
+
+    fireEvent.change(screen.getByPlaceholderText('Enter export name'), {
+      target: {value: 'Custom-Export'},
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(
+      store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
+    ).toBe('Custom-Export');
+
+    fireEvent.change(screen.getByPlaceholderText('Enter field label'), {
+      target: {value: 'Observation Notes'},
+    });
+    act(() => {
+      vi.advanceTimersByTime(LABEL_AUTO_SYNC_MS);
+    });
+
+    expect(
+      store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
+    ).toBe('Custom-Export');
   });
 
   it('does not auto-sync a field that already existed at session start', () => {

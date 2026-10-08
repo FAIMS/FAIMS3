@@ -43,7 +43,7 @@ import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 import {getSpeechSettings, updateSpeechSettings} from './SpeechSettingsEditor';
-import {slugify} from '../../domain/notebook/ids';
+import {isOwnExportNameEcho, slugify} from '../../domain/notebook/ids';
 import {
   designerCheckboxSx,
   designerInfoCalloutSx,
@@ -258,11 +258,11 @@ export const BaseFieldEditor = ({
   }, [fieldName]);
 
   useEffect(() => {
-    // Own rename echoing back through the store. Do not reset the input —
-    // the user may already have typed past this committed prefix.
+    // Own rename echoing back through the store, including a uniquified
+    // suffix (`width` → `width-1`). Do not reset the input — the user may
+    // already have typed past this committed prefix.
     if (
-      field.exportName === lastRequestedExportNameRef.current ||
-      field.exportName === slugify(lastRequestedExportNameRef.current)
+      isOwnExportNameEcho(lastRequestedExportNameRef.current, field.exportName)
     ) {
       return;
     }

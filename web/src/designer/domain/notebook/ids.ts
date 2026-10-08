@@ -94,3 +94,23 @@ export const buildUniqueExportName = (
   preferredName: string,
   existingExportNames: string[]
 ): string => buildUniqueFieldName(preferredName, existingExportNames);
+
+/**
+ * Whether `actual` is what {@link buildUniqueExportName} would store for
+ * `requested`: the raw string, its slug, or that slug plus a numeric
+ * uniquify suffix (`width` → `width-1`).
+ *
+ * The export-name input uses this so a colliding commit does not clobber
+ * keystrokes the user has already typed past that prefix.
+ */
+export const isOwnExportNameEcho = (
+  requested: string,
+  actual: string
+): boolean => {
+  if (actual === requested) return true;
+  const base = slugify(requested);
+  if (!base) return false;
+  if (actual === base) return true;
+  const prefix = `${base}-`;
+  return actual.startsWith(prefix) && /^\d+$/.test(actual.slice(prefix.length));
+};

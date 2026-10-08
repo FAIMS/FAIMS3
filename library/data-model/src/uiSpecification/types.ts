@@ -527,6 +527,7 @@ export type NotebookDefinitionV1 = z.infer<typeof NotebookDefinitionV1Schema>;
 export const CompiledNotebookDefinitionV1Schema = z.object({
   uiSpec: CompiledNotebookUiSpecV1Schema,
   metadata: NotebookMetadataV1Schema,
+  /** The notebook's plans, each addressed by its own `planId`. */
   plans: z.array(RegisteredPlanSchema).optional(),
 });
 export type CompiledNotebookDefinitionV1 = z.infer<
@@ -583,6 +584,7 @@ export type CompiledNotebookUiSpecV1_0_1 = z.infer<
 export const TemplateDefinitionV1_0_1Schema = z.object({
   uiSpec: NotebookUiSpecV1_0_1Schema,
   metadata: NotebookMetadataV1_0_1Schema,
+  /** One per plan the template offers, each with its own `planId`. */
   planTemplates: z.array(PlanTemplateSchema).optional(),
 });
 export type TemplateDefinitionV1_0_1 = z.infer<
@@ -593,6 +595,7 @@ export type TemplateDefinitionV1_0_1 = z.infer<
 export const NotebookDefinitionV1_0_1Schema = z.object({
   uiSpec: NotebookUiSpecV1_0_1Schema,
   metadata: NotebookMetadataV1_0_1Schema,
+  /** The notebook's plans, each addressed by its own `planId`. */
   plans: z.array(RegisteredPlanSchema).optional(),
 });
 export type NotebookDefinitionV1_0_1 = z.infer<
@@ -606,6 +609,7 @@ export type NotebookDefinitionV1_0_1 = z.infer<
 export const CompiledNotebookDefinitionV1_0_1Schema = z.object({
   uiSpec: CompiledNotebookUiSpecV1_0_1Schema,
   metadata: NotebookMetadataV1_0_1Schema,
+  /** The notebook's plans, each addressed by its own `planId`. */
   plans: z.array(RegisteredPlanSchema).optional(),
 });
 export type CompiledNotebookDefinitionV1_0_1 = z.infer<

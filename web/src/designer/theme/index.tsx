@@ -231,39 +231,39 @@ export const createDesignerTheme = (
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            // Predominantly white surface with a faint blueGrey wash that
+            // Predominantly white surface with a faint theme wash that
             // only surfaces in the bottom-right corner — keeps the input
             // legible and conventional while preserving a subtle accent.
-            background: `linear-gradient(135deg, #fff 0%, #fff 85%, ${alpha(
-              colors.blueGrey[100],
+            background: `linear-gradient(135deg, ${tokens.outlinedInputSurface} 0%, ${tokens.outlinedInputSurface} 85%, ${alpha(
+              tokens.outlinedInputWash,
               0.18
             )} 100%)`,
             transition:
               'box-shadow 160ms ease, background 160ms ease, border-color 160ms ease',
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: alpha(colors.blueGrey[800], 0.38),
+              borderColor: alpha(tokens.outlinedInputBorder, 0.38),
               borderWidth: 1,
             },
             '&:hover': {
-              background: `linear-gradient(135deg, #fff 0%, #fff 80%, ${alpha(
-                colors.blueGrey[100],
+              background: `linear-gradient(135deg, ${tokens.outlinedInputSurface} 0%, ${tokens.outlinedInputSurface} 80%, ${alpha(
+                tokens.outlinedInputWash,
                 0.22
               )} 100%)`,
               '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: alpha(colors.blueGrey[900], 0.6),
+                borderColor: alpha(tokens.outlinedInputHoverBorder, 0.6),
               },
             },
             '&.Mui-focused': {
-              background: `linear-gradient(135deg, #fff 0%, #fff 90%, ${alpha(
-                colors.blueGrey[100],
+              background: `linear-gradient(135deg, ${tokens.outlinedInputSurface} 0%, ${tokens.outlinedInputSurface} 90%, ${alpha(
+                tokens.outlinedInputWash,
                 0.14
               )} 100%)`,
               boxShadow: `0 0 0 3px ${alpha(
-                colors.blueGrey[900],
+                tokens.outlinedInputFocusRing,
                 0.12
               )}, 0 2px 6px ${alpha(colors.common.black, 0.08)}`,
               '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: colors.grey[900],
+                borderColor: tokens.outlinedInputFocusBorder,
                 borderWidth: 2,
               },
             },

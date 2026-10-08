@@ -49,7 +49,7 @@ import {useEffect, useMemo, useRef, useState} from 'react';
 import {shallowEqual} from 'react-redux';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
-import {findFormExternalUsage} from '@/lib/conditionUtils';
+import {findFormExternalUsage, getFieldLabel} from '@/lib/conditionUtils';
 import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
 import {FormSettingsContent} from './form-settings';
@@ -341,17 +341,18 @@ export const FormEditor = ({
     );
 
     const relatedRefs: string[] = [];
-    const fieldValues = Object.values(fields);
 
-    fieldValues.forEach(fieldValue => {
+    for (const [storageId, fieldValue] of Object.entries(fields)) {
       if (fieldValue['component-parameters'].related_type === viewSetId) {
-        const relatedFieldName = fieldValue['component-parameters'].name;
-        const sectionRef = findRelatedFieldLocation(relatedFieldName);
-        relatedRefs.push(
-          `Field '${relatedFieldName}' is linked in ${sectionRef}`
-        );
+        const sectionRef = findRelatedFieldLocation(storageId);
+        const label = getFieldLabel(fieldValue);
+        const displayName =
+          (typeof label === 'string' && label.trim() !== ''
+            ? label
+            : fieldValue.exportName) || storageId;
+        relatedRefs.push(`Field '${displayName}' is linked in ${sectionRef}`);
       }
-    });
+    }
 
     const allReferences = [...conditionRefs, ...relatedRefs];
 

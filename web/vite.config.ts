@@ -19,8 +19,26 @@ export default defineConfig({
     react(),
   ],
   resolve: {
-    alias: {'@': path.resolve(__dirname, './src')},
-    dedupe: ['@mui/material', '@emotion/react', '@emotion/styled'],
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      // One physical copy so Facet/Compartment instances match EditorState.
+      '@codemirror/state': path.resolve(
+        __dirname,
+        'node_modules/@codemirror/state'
+      ),
+      '@codemirror/view': path.resolve(
+        __dirname,
+        'node_modules/@codemirror/view'
+      ),
+    },
+    dedupe: [
+      '@mui/material',
+      '@emotion/react',
+      '@emotion/styled',
+      '@codemirror/state',
+      '@codemirror/view',
+      '@codemirror/commands',
+    ],
   },
   server: {
     port: 3001,
@@ -35,8 +53,18 @@ export default defineConfig({
       '@emotion/react',
       '@emotion/styled',
       '@emotion/react/jsx-runtime',
+      '@codemirror/state',
+      '@codemirror/view',
+      '@codemirror/commands',
     ],
     exclude: [],
+  },
+  ssr: {
+    noExternal: [
+      '@codemirror/commands',
+      '@codemirror/state',
+      '@codemirror/view',
+    ],
   },
   // Polyfill global in case of weird importing going on!
   define: {

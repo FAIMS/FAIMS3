@@ -52,17 +52,18 @@ desired Helper Text.
 
 ### Computed Text-Specific Settings
 
-The Computed Text's key feature is the **Expression** text area, which
-defines the generated text. Each referenced field is written as a
-braced reference, and text is joined with the `&` operator, e.g.
-`{Site-Code} & '-' & {Plot}`. Below the expression, a searchable field
-picker lists fields by their Label; selecting one inserts that field's
-reference so you do not have to type it by hand.
+The Computed Text's key feature is the **Expression** editor, which
+defines the generated text. Field references are stored as braces
+around the field's storage id, and text is joined with the `&`
+operator. The editor shows each complete reference as a **chip** with
+that field's Label. Hover a chip for the field's type, export name, and
+storage id. Below the expression, a searchable field picker lists
+fields by their Label; selecting one inserts a chip at the caret.
 
-| Setting          | What It Does                                                                                                                                                 |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Expression**   | A text area where you define the generated text using literals, operators, and field references in single-brace syntax (e.g., `{Site-Code} & '-' & {Plot}`). |
-| **Insert field** | A searchable picker of the referenceable fields in the form. Selecting one inserts its braced reference into the expression.                                 |
+| Setting          | What It Does                                                                                                                                    |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Expression**   | The generated text: literals, operators, and field chips. The stored form uses single-brace storage ids (e.g. `{f_a1b2c3} & '-' & {f_c4d5e6}`). |
+| **Insert field** | A searchable picker of the referenceable fields in the form. Selecting one inserts a labelled chip at the caret.                                |
 
 The expression is typed and checked when the {{notebook}} is designed —
 mixing types is reported as an error in the Editor. The overall

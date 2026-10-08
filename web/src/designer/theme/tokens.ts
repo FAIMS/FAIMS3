@@ -54,4 +54,22 @@ export type DesignerThemeTokens = {
   darkGrey: string;
   midGrey: string;
   lightGrey: string;
+
+  // ── Outlined input chrome ───────────────────────────────────────────────
+  /** Predominantly-white outlined field surface */
+  outlinedInputSurface: string;
+  /** Corner wash in the outlined-input gradient (consumers apply alpha) */
+  outlinedInputWash: string;
+  /** Resting outlined border (consumers apply alpha) */
+  outlinedInputBorder: string;
+  /** Hover outlined border (consumers apply alpha) */
+  outlinedInputHoverBorder: string;
+  /** Focus outlined border */
+  outlinedInputFocusBorder: string;
+  /** Focus ring colour (consumers apply alpha) */
+  outlinedInputFocusRing: string;
+
+  // ── Expression chips ────────────────────────────────────────────────────
+  /** Neutral wash for constant / system expression chips */
+  chipWashNeutral: string;
 };

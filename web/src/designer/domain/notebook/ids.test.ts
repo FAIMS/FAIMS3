@@ -6,6 +6,7 @@
 import {describe, expect, it} from 'vitest';
 import {
   buildUniqueExportName,
+  isOwnExportNameEcho,
   mintFieldStorageId,
   sanitizeUserLabel,
 } from './ids';
@@ -31,6 +32,24 @@ describe('buildUniqueExportName', () => {
     expect(buildUniqueExportName('!!!', [])).toBe('field');
     expect(buildUniqueExportName('!!!', ['field'])).toBe('field-1');
     expect(buildUniqueExportName('   ', ['field', 'field-1'])).toBe('field-2');
+  });
+});
+
+describe('isOwnExportNameEcho', () => {
+  it('matches the requested string and its slug', () => {
+    expect(isOwnExportNameEcho('width', 'width')).toBe(true);
+    expect(isOwnExportNameEcho('My Field', 'My-Field')).toBe(true);
+  });
+
+  it('matches a numeric uniquify suffix from buildUniqueExportName', () => {
+    expect(isOwnExportNameEcho('width', 'width-1')).toBe(true);
+    expect(isOwnExportNameEcho('width', 'width-12')).toBe(true);
+    expect(isOwnExportNameEcho('My Field', 'My-Field-1')).toBe(true);
+  });
+
+  it('does not treat a longer typed suffix as an echo', () => {
+    expect(isOwnExportNameEcho('width', 'width-cm')).toBe(false);
+    expect(isOwnExportNameEcho('width', 'Site-Name')).toBe(false);
   });
 });
 
