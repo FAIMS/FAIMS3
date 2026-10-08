@@ -47,7 +47,7 @@ export const faimsTokens: DesignerThemeTokens = {
   midGrey: colors.blueGrey[500],
   lightGrey: colors.blueGrey[100],
 
-  // ── Outlined input chrome ───────────────────────────────────────────────
+  // ── Outlined input appearance ───────────────────────────────────────────
   outlinedInputSurface: '#FFFFFF',
   outlinedInputWash: colors.lightGreen[100],
   outlinedInputBorder: colors.blueGrey[700],
@@ -57,4 +57,5 @@ export const faimsTokens: DesignerThemeTokens = {
 
   // ── Expression chips ────────────────────────────────────────────────────
   chipWashNeutral: colors.blueGrey[600],
+  chipWashParent: colors.blueGrey[800],
 };

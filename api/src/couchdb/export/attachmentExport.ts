@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
+  getNotebookFieldTypes,
   HydratedDataRecord,
   ProjectID,
   notebookRecordIterator,
+  sanitizeExportColumnName,
   UpdatedTimeFilter,
 } from '@faims3/data-model';
 import archiver from 'archiver';
@@ -69,9 +71,28 @@ export const appendAttachmentsToArchive = async ({
     perViewCounts: new Map(),
   };
 
-  // Get UI spec to know all valid view IDs
+  // Get UI spec to know all valid view IDs and sanitised export names
   const uiSpec = await getUiSpecModel(projectId);
   const allViewIds = Object.keys(uiSpec.viewsets);
+  const exportNameByStorageIdByView = new Map<string, Map<string, string>>();
+  for (const viewId of allViewIds) {
+    try {
+      const fields = getNotebookFieldTypes({
+        uiSpecification: uiSpec,
+        viewID: viewId,
+      });
+      exportNameByStorageIdByView.set(
+        viewId,
+        new Map(fields.map(field => [field.name, field.exportName]))
+      );
+    } catch (e) {
+      console.error(
+        `[ZIP] Failed to resolve export names for view ${viewId}:`,
+        e
+      );
+      exportNameByStorageIdByView.set(viewId, new Map());
+    }
+  }
 
   // Initialize per-view counts
   for (const viewId of allViewIds) {
@@ -122,6 +143,8 @@ export const appendAttachmentsToArchive = async ({
           archive,
           filenames,
           pathPrefix,
+          exportNameByStorageId:
+            exportNameByStorageIdByView.get(viewID) ?? new Map(),
         });
 
         // Add to active pool and set up cleanup handlers
@@ -185,7 +208,7 @@ export const appendAttachmentsToArchive = async ({
  * - Attachment data is excluded from record hydration
  *
  * File Structure:
- * `viewId/storageId/hrid.ext` (e.g., `survey1/f_a1b2c3d4e5f6/REC001.jpg`)
+ * `viewId/exportName/hrid.ext` (e.g., `survey1/site-photos/REC001.jpg`)
  *
  * @param projectId - The ID of the project containing the notebook
  * @param targetViewID - The ID of the view to export (if omitted, exports all views)
@@ -303,6 +326,7 @@ function processRecordAttachments({
   filenames,
   viewID,
   pathPrefix,
+  exportNameByStorageId,
 }: {
   record: HydratedDataRecord;
   nanoDb: any;
@@ -310,6 +334,7 @@ function processRecordAttachments({
   filenames: string[];
   viewID: string;
   pathPrefix: string;
+  exportNameByStorageId: ReadonlyMap<string, string>;
 }): Promise<void>[] {
   const promises: Promise<void>[] = [];
 
@@ -348,7 +373,7 @@ function processRecordAttachments({
         filenames,
         fileMimeType: file_type,
         hrid: record.hrid ?? record.record_id,
-        fieldId,
+        exportName: exportNameByStorageId.get(fieldId) ?? fieldId,
         viewID,
       });
 
@@ -395,20 +420,22 @@ function processRecordAttachments({
 /**
  * Generates a unique filename for an attachment within the ZIP archive.
  *
- * Filename structure: `{viewID}/{storageId}/{hrid}.{extension}`
- * Example: `survey1/f_a1b2c3d4e5f6/REC001.jpg` (storage id, not export name)
+ * Filename structure: `{viewID}/{exportName}/{hrid}.{extension}`
+ * Example: `survey1/site-photos/REC001.jpg` (sanitised export name, not
+ * the opaque storage id)
  *
- * Each path component is truncated to a safe length if necessary, using a
+ * Each path component is sanitised then truncated to a safe length, using a
  * deterministic hash suffix to preserve uniqueness. This ensures the total
- * path length stays within filesystem and ZIP limits.
+ * path length stays within filesystem and ZIP limits. `exportName` is never
+ * interpolated raw — uploaded notebooks may skip designer slugify.
  *
  * If a filename collision is detected, a numeric suffix is appended:
- * `survey1/f_a1b2c3d4e5f6/REC001_1.jpg`, `survey1/f_a1b2c3d4e5f6/REC001_2.jpg`, etc.
+ * `survey1/site-photos/REC001_1.jpg`, `survey1/site-photos/REC001_2.jpg`, etc.
  *
  * @param file - Optional File object (for browser contexts)
  * @param fileMimeType - MIME type of the file
- * @param fieldId - Immutable storage id (`uiSpec.fields` key / `record.data` key).
- *   Used as the ZIP path segment. Not the export / column name.
+ * @param exportName - Editable CSV / GIS column name. Sanitised before it
+ *   becomes a ZIP path segment.
  * @param hrid - Human-readable record ID
  * @param viewID - View identifier (used in folder structure)
  * @param filenames - Array of existing filenames to check for collisions
@@ -417,14 +444,14 @@ function processRecordAttachments({
 export const generateFilenameForAttachment = ({
   file,
   fileMimeType,
-  fieldId,
+  exportName,
   hrid,
   viewID,
   filenames,
 }: {
   file?: File;
   fileMimeType?: string;
-  fieldId: string;
+  exportName: string;
   hrid: string;
   viewID: string;
   filenames: string[];
@@ -455,16 +482,22 @@ export const generateFilenameForAttachment = ({
   // Slugify each component first (before length limiting)
   // This ensures the hash is computed on the slugified version
   const slugifiedViewID = slugify(viewID);
-  const slugifiedFieldId = slugify(fieldId);
+  // Column sanitise first (controls / quotes / path seps / formula prefixes),
+  // then filename slugify, then length-limit with a stable hash suffix.
+  const slugifiedExportName =
+    slugify(sanitizeExportColumnName(exportName)) || 'field';
   const slugifiedHrid = slugify(hrid);
 
   // Apply length limits with deterministic truncation
   const safeViewID = truncateWithHash(slugifiedViewID, MAX_VIEW_ID_LENGTH);
-  const safeFieldId = truncateWithHash(slugifiedFieldId, MAX_FIELD_ID_LENGTH);
+  const safeExportName = truncateWithHash(
+    slugifiedExportName,
+    MAX_FIELD_ID_LENGTH
+  );
   const safeHrid = truncateWithHash(slugifiedHrid, MAX_HRID_LENGTH);
 
   // Build the base filename with safe components
-  const baseFilename = `${safeViewID}/${safeFieldId}/${safeHrid}`;
+  const baseFilename = `${safeViewID}/${safeExportName}/${safeHrid}`;
 
   // Handle collisions by appending numeric suffix
   let postfix = 1;

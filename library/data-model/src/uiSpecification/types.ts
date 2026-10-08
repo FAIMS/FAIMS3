@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import {z} from 'zod';
+import {INPUT_LIMITS} from '../inputLimits';
 import {PlanTemplateSchema} from '../plans/types';
 // Barrel import (not '../plans/planTypeMap') so the per-plan PlanTypeMap
 // augmentations are in scope here, making a stored plan a narrowable union.
@@ -119,10 +120,14 @@ const fieldDefinitionV1Shape = fieldDefinitionBaseShape;
  *
  * `exportName` is the editable CSV / GIS column. Distinct from the
  * `uiSpec.fields` object key, which is the immutable storage id.
+ *
+ * Character-set checks happen at export time (`sanitizeExportColumnName`):
+ * notebooks are not always authored in designer, so a stored value may
+ * contain quotes, path separators, or control characters.
  */
 const fieldDefinitionV1_0_1Shape = {
   ...fieldDefinitionV1Shape,
-  exportName: z.string().min(1),
+  exportName: z.string().min(1).max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
 };
 
 const compiledFieldExtras = {

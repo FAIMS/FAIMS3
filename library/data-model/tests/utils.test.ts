@@ -1,5 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
-import {formatFileSize, formatTimestamp} from '../src/utils';
+import {
+  EMPTY_EXPORT_COLUMN_FALLBACK,
+  formatFileSize,
+  formatTimestamp,
+  MAX_EXPORT_COLUMN_NAME_LENGTH,
+  sanitizeExportColumnName,
+  uniqueExportColumnName,
+} from '../src/utils';
 
 describe('formatFileSize', () => {
   const KB = 1024;
@@ -120,5 +127,73 @@ describe('formatFileSize', () => {
       const result = formatTimestamp(timestamp);
       expect(result).toMatch(/^\d{2}-\d{2}-\d{2} \d{1,2}:\d{2}(am|pm)$/);
     });
+  });
+});
+
+describe('sanitizeExportColumnName', () => {
+  it('leaves designer-produced names unchanged', () => {
+    expect(sanitizeExportColumnName('Site-Name')).toBe('Site-Name');
+    expect(sanitizeExportColumnName('Feature-description')).toBe(
+      'Feature-description'
+    );
+    expect(sanitizeExportColumnName('safety_hazard')).toBe('safety_hazard');
+    expect(sanitizeExportColumnName('Length-mm')).toBe('Length-mm');
+  });
+
+  it('strips CR/LF so extra CSV rows or headers cannot be injected', () => {
+    expect(sanitizeExportColumnName('Form\r\nX-Injected: yes')).toBe(
+      'FormX-Injected_yes'
+    );
+    expect(sanitizeExportColumnName('Form\u0000Name')).toBe('FormName');
+  });
+
+  it('strips quotes used to break CSV / KML attributes', () => {
+    expect(sanitizeExportColumnName('Form"; filename="evil.html')).toBe(
+      'Form_filename_evil.html'
+    );
+  });
+
+  it('collapses path separators so the name cannot be treated as a path', () => {
+    expect(sanitizeExportColumnName('../../../etc/passwd')).toBe('etc_passwd');
+    expect(sanitizeExportColumnName('foo\\bar')).toBe('foo_bar');
+  });
+
+  it('neutralises Excel formula prefixes', () => {
+    expect(sanitizeExportColumnName('=cmd|calc')).toBe('cmd_calc');
+    expect(sanitizeExportColumnName('+1+2')).toBe('1_2');
+    expect(sanitizeExportColumnName('@SUM(A1)')).toBe('SUM_A1');
+    expect(sanitizeExportColumnName('-hidden')).toBe('hidden');
+  });
+
+  it('falls back when the value is only unsafe characters', () => {
+    expect(sanitizeExportColumnName('"""')).toBe(EMPTY_EXPORT_COLUMN_FALLBACK);
+    expect(sanitizeExportColumnName('=+-@')).toBe(EMPTY_EXPORT_COLUMN_FALLBACK);
+    expect(sanitizeExportColumnName('"""', 'column')).toBe('column');
+  });
+
+  it('is idempotent', () => {
+    const once = sanitizeExportColumnName('Site/Name\r\n');
+    expect(sanitizeExportColumnName(once)).toBe(once);
+  });
+
+  it('truncates names longer than the column-name limit', () => {
+    const long = `Site-${'A'.repeat(200)}`;
+    const sanitised = sanitizeExportColumnName(long);
+    expect(sanitised.length).toBeLessThanOrEqual(MAX_EXPORT_COLUMN_NAME_LENGTH);
+    expect(sanitised.startsWith('Site-')).toBe(true);
+  });
+});
+
+describe('uniqueExportColumnName', () => {
+  it('returns the sanitised name when it is free', () => {
+    const used = new Set<string>();
+    expect(uniqueExportColumnName('Site-Name', used)).toBe('Site-Name');
+    expect(used.has('Site-Name')).toBe(true);
+  });
+
+  it('appends a suffix when two raw names sanitise to the same column', () => {
+    const used = new Set<string>();
+    expect(uniqueExportColumnName('foo/bar', used)).toBe('foo_bar');
+    expect(uniqueExportColumnName('foo_bar', used)).toBe('foo_bar_1');
   });
 });

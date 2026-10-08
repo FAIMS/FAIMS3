@@ -15,7 +15,7 @@
 // limitations under the License.
 
 /**
- * @file Top-level designer chrome: Design vs Info routing tabs.
+ * @file Top-level designer layout: Design vs Info routing tabs.
  */
 
 import {TabContext, TabList} from '@mui/lab';

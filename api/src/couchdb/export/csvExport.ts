@@ -9,6 +9,7 @@ import {
   ProjectID,
   UpdatedTimeFilter,
   slugify,
+  uniqueExportColumnName,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stringifier, stringify} from 'csv-stringify';
@@ -127,8 +128,9 @@ function getHeaderGeneratorForComponent(
 /**
  * Generate CSV headers from UI specification fields. Uses the registered
  * component header generators (by namespace + name) to produce the additional
- * headers for each field type. Column names come from `field.exportName`,
- * never the storage id.
+ * headers for each field type. Column names come from a sanitised
+ * `field.exportName`, never the storage id and never the raw stored value
+ * (notebooks may skip designer).
  */
 export function getHeaderInfoFromUiSpecification({
   fields,
@@ -136,25 +138,32 @@ export function getHeaderInfoFromUiSpecification({
   fields: FieldSummary[];
 }): string[] {
   const additionalHeaders: string[] = [];
+  const usedExportNames = new Set<string>();
 
   for (const field of fields) {
+    const exportName = uniqueExportColumnName(
+      field.exportName || field.name,
+      usedExportNames
+    );
     const generator = getHeaderGeneratorForComponent(
       field.componentNamespace,
       field.componentName
     );
-    const fieldHeaders = generator(field.exportName);
+    const fieldHeaders = generator(exportName);
     additionalHeaders.push(...fieldHeaders);
 
     // Add annotation and uncertainty columns if present
-    if (field.annotation !== '') {
-      additionalHeaders.push(`${field.exportName}_${field.annotation}`);
+    if (field.annotation) {
+      additionalHeaders.push(`${exportName}_${field.annotation}`);
     }
-    if (field.uncertainty !== '') {
-      additionalHeaders.push(`${field.exportName}_${field.uncertainty}`);
+    if (field.uncertainty) {
+      additionalHeaders.push(`${exportName}_${field.uncertainty}`);
     }
   }
 
-  return additionalHeaders;
+  return additionalHeaders.filter(
+    (header): header is string => typeof header === 'string' && header !== ''
+  );
 }
 
 /**

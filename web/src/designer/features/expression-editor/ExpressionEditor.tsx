@@ -8,7 +8,7 @@ import {defaultKeymap, history, historyKeymap} from '@codemirror/commands';
 import {Compartment, EditorState, Prec, Transaction} from '@codemirror/state';
 import {EditorView, keymap} from '@codemirror/view';
 import {Box, Paper, Popper} from '@mui/material';
-import {alpha, useTheme} from '@mui/material/styles';
+import {useTheme} from '@mui/material/styles';
 import debounce from 'lodash/debounce';
 import {
   forwardRef,
@@ -22,6 +22,7 @@ import {
   type MouseEvent,
 } from 'react';
 import {INPUT_LIMITS} from '../../lib/input-limits';
+import {outlinedFieldHostSx} from '../../theme/outlinedFieldStyles';
 import {fallbackChipModel, type ChipCatalog, type ChipModel} from './chipModel';
 import {expressionEditorTheme} from './expressionEditorTheme';
 import {ExprChipTooltip} from './ExprChipTooltip';
@@ -45,7 +46,7 @@ export type ExpressionEditorProps = {
   onChange: (value: string) => void;
   /** Label / kind lookup; swapped via a CM compartment when fields change. */
   catalog: ChipCatalog;
-  /** Outlined error chrome; compile messages stay outside this component. */
+  /** Outlined error appearance; compile messages stay outside this component. */
   error?: boolean;
   /** When true, the editor is not editable and chips stay visible. */
   disabled?: boolean;
@@ -80,7 +81,7 @@ const insertTokenAtCursor = (view: EditorView, id: string) => {
 };
 
 /**
- * Designer chrome listens for Mod-z / Mod-y on `window`. CodeMirror's
+ * The designer UI listens for Mod-z / Mod-y on `window`. CodeMirror's
  * {@link historyKeymap} only `preventDefault`s, so the event still bubbles and
  * both stacks undo. Always consume so an empty CM history still does not
  * trigger Redux undo.
@@ -320,14 +321,6 @@ export const ExpressionEditor = forwardRef<
     ? (catalog.get(hover.ref) ?? fallbackChipModel(hover.ref))
     : null;
 
-  const tokens = theme.designerMeta.tokens;
-  const borderColor = error
-    ? theme.palette.error.main
-    : alpha(tokens.outlinedInputBorder, 0.38);
-  const hoverBorder = error
-    ? theme.palette.error.main
-    : alpha(tokens.outlinedInputHoverBorder, 0.6);
-
   return (
     <>
       <Box
@@ -355,37 +348,7 @@ export const ExpressionEditor = forwardRef<
         onClick={() => {
           if (!disabled) viewRef.current?.focus();
         }}
-        sx={{
-          border: '1px solid',
-          borderColor,
-          borderRadius: theme.shape.borderRadius,
-          background: `linear-gradient(135deg, ${tokens.outlinedInputSurface} 0%, ${tokens.outlinedInputSurface} 85%, ${alpha(
-            tokens.outlinedInputWash,
-            0.18
-          )} 100%)`,
-          transition:
-            'box-shadow 160ms ease, background 160ms ease, border-color 160ms ease',
-          cursor: disabled ? 'default' : 'text',
-          opacity: disabled ? 0.65 : 1,
-          '&:hover': {
-            borderColor: hoverBorder,
-          },
-          '&:focus-within': {
-            borderColor: error
-              ? theme.palette.error.main
-              : tokens.outlinedInputFocusBorder,
-            borderWidth: 2,
-            boxShadow: error
-              ? `0 0 0 3px ${alpha(theme.palette.error.main, 0.16)}, 0 2px 6px ${alpha(
-                  theme.palette.common.black,
-                  0.08
-                )}`
-              : `0 0 0 3px ${alpha(tokens.outlinedInputFocusRing, 0.12)}, 0 2px 6px ${alpha(
-                  theme.palette.common.black,
-                  0.08
-                )}`,
-          },
-        }}
+        sx={outlinedFieldHostSx(theme, {error, disabled})}
       >
         <Box
           ref={parentRef}

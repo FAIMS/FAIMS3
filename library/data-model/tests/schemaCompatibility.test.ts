@@ -150,7 +150,7 @@ describe('notebookUiSpecificationNeedsMigration', () => {
       })
     ).toBe(false);
     expect(
-      notebookUiSpecificationNeedsMigration({uiSpec: {schemaVersion: '1.0.1'}})
+      notebookUiSpecificationNeedsMigration({uiSpec: {schemaVersion: '1.0.2'}})
     ).toBe(false);
     expect(
       notebookUiSpecificationNeedsMigration({uiSpec: {schemaVersion: '99.0.0'}})

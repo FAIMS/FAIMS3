@@ -55,7 +55,7 @@ export type DesignerThemeTokens = {
   midGrey: string;
   lightGrey: string;
 
-  // ── Outlined input chrome ───────────────────────────────────────────────
+  // ── Outlined input appearance ───────────────────────────────────────────
   /** Predominantly-white outlined field surface */
   outlinedInputSurface: string;
   /** Corner wash in the outlined-input gradient (consumers apply alpha) */
@@ -72,4 +72,6 @@ export type DesignerThemeTokens = {
   // ── Expression chips ────────────────────────────────────────────────────
   /** Neutral wash for constant / system expression chips */
   chipWashNeutral: string;
+  /** Slate wash for parent-record expression chips */
+  chipWashParent: string;
 };

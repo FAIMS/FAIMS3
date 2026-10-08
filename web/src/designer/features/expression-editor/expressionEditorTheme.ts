@@ -5,7 +5,6 @@
 
 import {EditorView} from '@codemirror/view';
 import {alpha, type Theme} from '@mui/material/styles';
-import {colors} from '@mui/material';
 import {EXPR_CHIP_CLASS} from './refChipExtension';
 
 /**
@@ -23,9 +22,9 @@ const chipKindStyles = (theme: Theme) => {
 
   return {
     [`.${EXPR_CHIP_CLASS}--field`]: wash(theme.palette.primary.dark),
-    // Slate, not `palette.secondary` — that accent is maroon/red in some
-    // designer themes and reads as the error chip.
-    [`.${EXPR_CHIP_CLASS}--parent`]: wash(colors.blueGrey[800]),
+    [`.${EXPR_CHIP_CLASS}--parent`]: wash(
+      theme.designerMeta.tokens.chipWashParent
+    ),
     [`.${EXPR_CHIP_CLASS}--related`]: wash(theme.palette.conditionOr.main),
     [`.${EXPR_CHIP_CLASS}--metadata`]: wash(theme.palette.success.dark),
     [`.${EXPR_CHIP_CLASS}--constant`]: wash(
@@ -43,7 +42,7 @@ const chipKindStyles = (theme: Theme) => {
 };
 
 /**
- * Inner CM chrome: designer body font, MUI outlined padding, compact chips.
+ * Inner CodeMirror styling: designer body font, MUI outlined padding, compact chips.
  * Focus ring lives on the React wrapper, so `.cm-focused` has no outline.
  *
  * @param theme - MUI theme used for font, colour, and chip washes.
@@ -75,7 +74,7 @@ export const expressionEditorTheme = (theme: Theme) =>
       display: 'inline-flex',
       alignItems: 'center',
       height: '20px',
-      padding: '0 6px',
+      padding: `0 ${theme.spacing(0.75)}`,
       margin: '0 1px',
       borderRadius: '10px',
       border: '1px solid',

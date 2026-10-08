@@ -19,12 +19,19 @@ import type {DesignerThemeTokens} from './tokens';
 import {faimsTokens} from './faims-tokens';
 import {bssTokens} from './bss-tokens';
 import {defaultTokens} from './default-tokens';
+import {
+  OUTLINED_FIELD_TRANSITION,
+  outlinedFieldBackgrounds,
+  outlinedFieldBorderColors,
+  outlinedFieldFocusShadow,
+} from './outlinedFieldStyles';
 
 // ── Re-export token types so consumers don't need a deep import ────────────
 export type {DesignerThemeTokens} from './tokens';
 export {faimsTokens} from './faims-tokens';
 export {bssTokens} from './bss-tokens';
 export {defaultTokens} from './default-tokens';
+export {outlinedFieldHostSx} from './outlinedFieldStyles';
 
 // ── MUI theme augmentation ────────────────────────────────────────────────
 declare module '@mui/material/styles' {
@@ -70,6 +77,17 @@ export const createDesignerTheme = (
   themeName: DesignerThemeName = 'default'
 ) => {
   const {tokens, isDass} = resolveTokens(themeName);
+  const outlinedBackgrounds = outlinedFieldBackgrounds(tokens);
+  const outlinedBorders = outlinedFieldBorderColors(tokens);
+  const outlinedShadow = outlinedFieldFocusShadow(tokens, {
+    errorRing: tokens.errorMain,
+    black: colors.common.black,
+  });
+  const outlinedErrorShadow = outlinedFieldFocusShadow(tokens, {
+    error: true,
+    errorRing: tokens.errorMain,
+    black: colors.common.black,
+  });
 
   return createTheme({
     // Custom metadata readable via `useTheme().designerMeta`
@@ -234,49 +252,33 @@ export const createDesignerTheme = (
             // Predominantly white surface with a faint theme wash that
             // only surfaces in the bottom-right corner — keeps the input
             // legible and conventional while preserving a subtle accent.
-            background: `linear-gradient(135deg, ${tokens.outlinedInputSurface} 0%, ${tokens.outlinedInputSurface} 85%, ${alpha(
-              tokens.outlinedInputWash,
-              0.18
-            )} 100%)`,
-            transition:
-              'box-shadow 160ms ease, background 160ms ease, border-color 160ms ease',
+            background: outlinedBackgrounds.rest,
+            transition: OUTLINED_FIELD_TRANSITION,
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: alpha(tokens.outlinedInputBorder, 0.38),
+              borderColor: outlinedBorders.rest,
               borderWidth: 1,
             },
             '&:hover': {
-              background: `linear-gradient(135deg, ${tokens.outlinedInputSurface} 0%, ${tokens.outlinedInputSurface} 80%, ${alpha(
-                tokens.outlinedInputWash,
-                0.22
-              )} 100%)`,
+              background: outlinedBackgrounds.hover,
               '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: alpha(tokens.outlinedInputHoverBorder, 0.6),
+                borderColor: outlinedBorders.hover,
               },
             },
             '&.Mui-focused': {
-              background: `linear-gradient(135deg, ${tokens.outlinedInputSurface} 0%, ${tokens.outlinedInputSurface} 90%, ${alpha(
-                tokens.outlinedInputWash,
-                0.14
-              )} 100%)`,
-              boxShadow: `0 0 0 3px ${alpha(
-                tokens.outlinedInputFocusRing,
-                0.12
-              )}, 0 2px 6px ${alpha(colors.common.black, 0.08)}`,
+              background: outlinedBackgrounds.focused,
+              boxShadow: outlinedShadow,
               '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: tokens.outlinedInputFocusBorder,
+                borderColor: outlinedBorders.focused,
                 borderWidth: 2,
               },
             },
             '&.Mui-disabled': {
-              background: alpha(colors.blueGrey[50], 0.45),
+              background: outlinedBackgrounds.disabled,
               boxShadow: 'none',
             },
             '&.Mui-error': {
               '&.Mui-focused': {
-                boxShadow: `0 0 0 3px ${alpha(
-                  colors.red[700],
-                  0.16
-                )}, 0 2px 6px ${alpha(colors.common.black, 0.08)}`,
+                boxShadow: outlinedErrorShadow,
               },
             },
           },
@@ -357,6 +359,6 @@ export const createDesignerTheme = (
   });
 };
 
-/** MUI theme for the embedded designer (palette aligned with main FAIMS chrome). */
+/** MUI theme for the embedded designer (palette aligned with the main FAIMS UI). */
 const defaultTheme = createDesignerTheme('default');
 export default defaultTheme;

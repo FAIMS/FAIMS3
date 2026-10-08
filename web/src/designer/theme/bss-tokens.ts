@@ -49,7 +49,7 @@ export const bssTokens: DesignerThemeTokens = {
   midGrey: colors.blueGrey[500],
   lightGrey: colors.blueGrey[100],
 
-  // ── Outlined input chrome ───────────────────────────────────────────────
+  // ── Outlined input appearance ───────────────────────────────────────────
   outlinedInputSurface: '#FFFFFF',
   outlinedInputWash: colors.grey[100],
   outlinedInputBorder: colors.grey[800],
@@ -59,4 +59,5 @@ export const bssTokens: DesignerThemeTokens = {
 
   // ── Expression chips ────────────────────────────────────────────────────
   chipWashNeutral: colors.grey[700],
+  chipWashParent: colors.blueGrey[800],
 };
