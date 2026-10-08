@@ -13,6 +13,10 @@ import {
 
 const PHOTO_STORAGE_ID = 'f_a1b2c3';
 const PHOTO_EXPORT_NAME = 'Site-Photos';
+const TEXT_STORAGE_ID = 'f_d4e5f6';
+const TEXT_EXPORT_NAME = 'Feature-description';
+const ANNOTATION_LABEL = 'Notes';
+const UNCERTAINTY_LABEL = 'Uncertain';
 
 function photoFieldSummary(): FieldSummary {
   return {
@@ -25,6 +29,20 @@ function photoFieldSummary(): FieldSummary {
     viewsetId: 'Survey',
     annotation: '',
     uncertainty: '',
+  };
+}
+
+function annotatedTextFieldSummary(): FieldSummary {
+  return {
+    name: TEXT_STORAGE_ID,
+    exportName: TEXT_EXPORT_NAME,
+    type: 'faims-core::String',
+    componentNamespace: 'faims-custom',
+    componentName: 'FAIMSTextField',
+    viewId: 'sectionA',
+    viewsetId: 'Survey',
+    annotation: ANNOTATION_LABEL,
+    uncertainty: UNCERTAINTY_LABEL,
   };
 }
 
@@ -78,5 +96,38 @@ describe('export identity split', () => {
     expect(row[PHOTO_EXPORT_NAME]).toContain(PHOTO_STORAGE_ID);
     expect(filenames[0]).toContain(`${PHOTO_STORAGE_ID}/`);
     expect(filenames[0]).not.toContain(PHOTO_EXPORT_NAME);
+  });
+
+  it('annotation and uncertainty CSV columns use exportName, not the storage id', () => {
+    const fields = [annotatedTextFieldSummary()];
+    const annotationHeader = `${TEXT_EXPORT_NAME}_${ANNOTATION_LABEL}`;
+    const uncertaintyHeader = `${TEXT_EXPORT_NAME}_${UNCERTAINTY_LABEL}`;
+
+    expect(getHeaderInfoFromUiSpecification({fields})).toEqual([
+      TEXT_EXPORT_NAME,
+      annotationHeader,
+      uncertaintyHeader,
+    ]);
+
+    const row = convertDataForOutput(
+      fields,
+      {[TEXT_STORAGE_ID]: 'flint flake'},
+      {
+        [TEXT_STORAGE_ID]: {
+          annotation: 'possibly reused',
+          uncertainty: true,
+        },
+      },
+      'REC-1',
+      [],
+      'Survey'
+    );
+
+    expect(row[TEXT_EXPORT_NAME]).toBe('flint flake');
+    expect(row[annotationHeader]).toBe('possibly reused');
+    expect(row[uncertaintyHeader]).toBe('true');
+    expect(row[TEXT_STORAGE_ID]).toBeUndefined();
+    expect(row[`${TEXT_STORAGE_ID}_${ANNOTATION_LABEL}`]).toBeUndefined();
+    expect(row[`${TEXT_STORAGE_ID}_${UNCERTAINTY_LABEL}`]).toBeUndefined();
   });
 });

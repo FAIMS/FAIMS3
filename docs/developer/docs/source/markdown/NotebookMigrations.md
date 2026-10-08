@@ -83,7 +83,7 @@ Do not run `delete-metadata-databases` until projects are migrated and verified.
 ## Adding a future notebook schema version
 
 1. Decide the bump (patch / minor / major) using the tier guidance above. Every bump, including patch, needs a registry step so the path finder can reach the new target (a patch step may be an identity transform that restamps the version).
-2. If the shape changes, add a `V<n+1>` block in `uiSpecification/types.ts` (extend / omit from `V<n>`) and re-point the current aliases. Patch bumps that do not change the model can keep the existing block.
+2. If the shape changes, add a `V<semver>` block in `uiSpecification/types.ts` (extend / omit / alias from the previous, e.g. `V1_0_1` after `V1`) and re-point the current aliases. Patch bumps that do not change the model can keep the existing block.
 3. Add `steps/<from>To<to>.ts` exporting a pure `migrationFunction(input)` (deep-clone, never mutate) and a `validateFunction(output)` that parses with the new version's Zod schema and checks the stamp.
 4. Append `{from, to, description, migrationFunction, validateFunction}` to `NOTEBOOK_UI_SCHEMA_MIGRATIONS` and bump `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`.
 5. Add table-driven cases to `steps/<step>.test.ts` via `findNotebookSchemaMigration` + `runNotebookSchemaMigrationForTest`; `harness.test.ts` checks completeness (unique path from `legacy` and from every registered `from`) automatically.

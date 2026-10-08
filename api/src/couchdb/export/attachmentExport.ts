@@ -185,7 +185,7 @@ export const appendAttachmentsToArchive = async ({
  * - Attachment data is excluded from record hydration
  *
  * File Structure:
- * `viewId/fieldId/hrid.ext` (e.g., `survey1/photo/REC001.jpg`)
+ * `viewId/storageId/hrid.ext` (e.g., `survey1/f_a1b2c3d4e5f6/REC001.jpg`)
  *
  * @param projectId - The ID of the project containing the notebook
  * @param targetViewID - The ID of the view to export (if omitted, exports all views)
@@ -403,7 +403,7 @@ function processRecordAttachments({
  * path length stays within filesystem and ZIP limits.
  *
  * If a filename collision is detected, a numeric suffix is appended:
- * `survey1/photo/REC001_1.jpg`, `survey1/photo/REC001_2.jpg`, etc.
+ * `survey1/f_a1b2c3d4e5f6/REC001_1.jpg`, `survey1/f_a1b2c3d4e5f6/REC001_2.jpg`, etc.
  *
  * @param file - Optional File object (for browser contexts)
  * @param fileMimeType - MIME type of the file
