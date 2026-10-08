@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {parseBuildConfig, toRuntimeConfig} from './build-config';
 import {buildEnvMapFromRuntime} from './env-contract';
 
-const HELP_TEXT = `Usage: pnpm --filter=@faims3/build-config run generate -- [--config path/to/config.json] [--platform all|android|ios|web|api] [--out path/to/.env]
+const HELP_TEXT = `Usage: pnpm --filter=@faims3/build-config run generate -- [--config path/to/config.json] [--platform apps|api] [--out path/to/.env]
 
 Generates a build environment file from the shared config JSON used by the app and web builds.
 `;
@@ -18,7 +18,7 @@ type Value =
   | null
   | Array<string | number | boolean>;
 
-export type SupportedPlatform = 'all' | 'android' | 'ios' | 'web' | 'api';
+export type SupportedPlatform = 'apps' | 'api';
 
 export interface GenerateBuildConfigArgs {
   help?: boolean;
@@ -47,12 +47,12 @@ function readConfigJson(configArg: string, cwd = process.cwd()): unknown {
 
 function readConfigForGeneration(configArg: string, cwd = process.cwd()) {
   const parsed = parseBuildConfig(readConfigJson(configArg, cwd));
-  const commitVersion = resolveGitCommitVersion(parsed.app.commitVersion);
+  const commitVersion = resolveGitCommitVersion(parsed.observability.commitVersion);
 
   return parseBuildConfig({
     ...parsed,
-    app: {
-      ...parsed.app,
+    observability: {
+      ...parsed.observability,
       commitVersion,
     },
   });
@@ -156,15 +156,9 @@ export function generateBuildConfig(
   }
 
   const rawPlatform = String(
-    args.platform ?? args.target ?? 'all'
+    args.platform ?? args.target ?? 'apps'
   ).toLowerCase();
-  const validPlatforms = new Set<SupportedPlatform>([
-    'all',
-    'android',
-    'ios',
-    'web',
-    'api',
-  ]);
+  const validPlatforms = new Set<SupportedPlatform>(['apps', 'api']);
 
   if (!validPlatforms.has(rawPlatform as SupportedPlatform)) {
     throw new Error(

@@ -59,6 +59,37 @@ The runtime config exported by this module is namespaced for semantic consistenc
 
 See definitions in [src/build-config.ts](src/build-config.ts).
 
+## Input Shape (Grouped)
+
+Build config JSON now uses thematic top-level groups instead of per-application buckets.
+
+Top-level groups include:
+
+- `endpoints`
+- `branding`
+- `support`
+- `notebookAndRecordUX`
+- `maps`
+- `sync`
+- `attachments`
+- `migration`
+- `auth`
+- `authProviders`
+- `authTokens`
+- `limits`
+- `email`
+- `observability`
+- `teamAndRolePolicy`
+- `webDesignerLimits`
+- `android`
+- `ios`
+- `couchdb`
+- `dev`
+- `pouchdb`
+- `secrets`
+
+Some previously duplicated values are now merged under one canonical setting and derived where needed (for example URL aliases and shared long-lived token duration policy).
+
 ## Strict Validation Rules
 
 Validation is intentionally strict:
@@ -80,23 +111,23 @@ Use this sequence every time.
 - Decide required vs optional and default behavior.
 - If the option is shared across targets, place it under shared semantics.
 
-2. Add field to runtime model
+1. Add field to runtime model
 
 - Extend RuntimeConfigSchema in [src/build-config.ts](src/build-config.ts).
 - Update toRuntimeConfig mapping in [src/build-config.ts](src/build-config.ts) so JSON resolves into typed runtime value.
 
-3. Add env transport mapping (if required)
+1. Add env transport mapping (if required)
 
 - Add key mapping in [src/env-contract.ts](src/env-contract.ts).
 - Map from runtime config to the generated environment key.
 - Keep compatibility aliases only when needed; avoid duplicate semantic sources.
 
-4. Add env parser support (if roundtrip parsing is needed)
+1. Add env parser support (if roundtrip parsing is needed)
 
 - Add/extend GeneratedEnvSchema in [src/build-config.ts](src/build-config.ts).
 - Update parseGeneratedEnv in [src/build-config.ts](src/build-config.ts) to map env value back to canonical model.
 
-5. Add tests
+1. Add tests
 
 - Add positive and negative tests in [test/generate-build-config.test.ts](test/generate-build-config.test.ts):
   - valid config produces expected env
@@ -104,7 +135,7 @@ Use this sequence every time.
   - strict unknown-key rejection works
   - roundtrip behavior is preserved
 
-6. Run checks
+1. Run checks
 
 - Run package tests:
   - pnpm --filter=@faims3/build-config test
@@ -122,12 +153,12 @@ Current practical usage pattern:
 - Generate env from JSON with [src/generate-build-config.ts](src/generate-build-config.ts).
 - Feed generated env into platform/web build processes.
 
-2. Runtime parsing
+1. Runtime parsing
 
 - Use parseGeneratedEnv in [src/build-config.ts](src/build-config.ts) for typed env-to-runtime parsing in module-level tests and tooling.
 - App/web/api migration can progressively replace local duplicated parser logic with this package.
 
-3. App-specific consumption
+1. App-specific consumption
 
 - App, web, and api should read their target-relevant sections from the namespaced runtime object.
 - Shared behavior should always be read from shared namespace to avoid drift.
@@ -152,6 +183,7 @@ Useful reference files in the main repo:
 From this package:
 
 - generate: emits env from config JSON
+- generate target values: `apps` or `api`
 - validate-coverage: checks generated keys against app/web schema usage
 - test: runs package tests
 

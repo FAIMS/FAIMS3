@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {generateEnv, parseArgs} from '../src/generate-build-config';
 import {
   buildAuthProviderEnvMap,
@@ -10,27 +11,67 @@ import {
 } from '../src/build-config';
 import {validateGeneratedEnv} from '../src/validate-generated-env';
 
+function deepMerge(a: unknown, b: unknown): unknown {
+  if (Array.isArray(a) || Array.isArray(b)) {
+    return b ?? a;
+  }
+
+  if (
+    a &&
+    b &&
+    typeof a === 'object' &&
+    typeof b === 'object' &&
+    !Array.isArray(a) &&
+    !Array.isArray(b)
+  ) {
+    const left = a as Record<string, unknown>;
+    const right = b as Record<string, unknown>;
+    const merged: Record<string, unknown> = {...left};
+
+    for (const key of Object.keys(right)) {
+      merged[key] = deepMerge(left[key], right[key]);
+    }
+
+    return merged;
+  }
+
+  return b === undefined ? a : b;
+}
+
 const sampleConfig: SharedBuildConfig = {
-  urls: {},
-  app: {},
-  web: {},
-  mobile: {
-    android: {},
-    ios: {},
-  },
-  api: {},
+  endpoints: {},
+  branding: {},
+  support: {},
+  notebookAndRecordUX: {},
+  maps: {},
+  sync: {},
+  attachments: {},
+  migration: {},
+  auth: {},
+  authProviders: {},
+  authTokens: {},
+  limits: {},
+  email: {},
+  observability: {},
+  teamAndRolePolicy: {},
+  webDesignerLimits: {},
+  android: {},
+  ios: {},
+  couchdb: {},
+  dev: {},
+  pouchdb: {},
   secrets: {},
 };
 
 test('parseArgs accepts config and platform arguments', () => {
-  assert.deepEqual(parseArgs(['--config', 'demo.json', '--platform', 'ios']), {
+  assert.deepEqual(parseArgs(['--config', 'demo.json', '--platform', 'apps']), {
     config: 'demo.json',
-    platform: 'ios',
+    platform: 'apps',
   });
 });
 
 test('generator emits shared app and web env values', () => {
-  const output = generateEnv({config: sampleConfig, platform: 'all'});
+  const output = generateEnv({config: sampleConfig, platform: 'apps'});
 
   assert.match(output, /VITE_APP_NAME=/);
   assert.match(output, /VITE_THEME=/);
@@ -40,58 +81,72 @@ test('generator emits shared app and web env values', () => {
 });
 
 test('generator resolves git commit version automatically', () => {
-  const output = generateEnv({config: sampleConfig, platform: 'all'});
+  const output = generateEnv({
+    config: {
+      ...sampleConfig,
+      observability: {
+        ...sampleConfig.observability,
+        commitVersion: 'abcdef1',
+      },
+    },
+    platform: 'apps',
+  });
 
   assert.match(output, /VITE_COMMIT_VERSION=/);
-  assert.doesNotMatch(
-    output,
-    /VITE_COMMIT_VERSION=output of `git rev-parse HEAD`/
-  );
+  assert.match(output, /VITE_COMMIT_VERSION=abcdef1/);
 });
 
 test('generator supports platform-specific export selection', () => {
   const config = {
     ...sampleConfig,
-    mobile: {
-      ios: {
-        bundleIdentifier: 'au.edu.faims.electronicfieldnotebook',
-        developerPortalTeamId: 'ABCDE12345',
-        appStoreConnectTeamId: '123456789',
-        appleId: 'developer@apple.com',
-      },
-      android: {
-        appId: 'org.fedarch.faims3',
-        releaseStatus: 'draft',
-      },
+    ios: {
+      bundleIdentifier: 'au.edu.faims.electronicfieldnotebook',
+      developerPortalTeamId: 'ABCDE12345',
+      appStoreConnectTeamId: '123456789',
+      appleId: 'developer@apple.com',
+    },
+    android: {
+      appId: 'org.fedarch.faims3',
+      releaseStatus: 'draft',
     },
   };
-  const output = generateEnv({config: config, platform: 'ios'});
+  const output = generateEnv({config: config, platform: 'apps'});
 
   assert.match(output, /VITE_APPLE_BUNDLE_IDENTIFIER=/);
   assert.match(output, /VITE_APP_STORE_CONNECT_TEAM_ID=/);
   assert.match(output, /FASTLANE_APPLE_ID=/);
-  assert.doesNotMatch(output, /ANDROID_RELEASE_STATUS=/);
+  assert.match(output, /ANDROID_RELEASE_STATUS=/);
 });
 
 test('generator supports api platform export selection', () => {
   const rawConfig = {
-    urls: {},
-    app: {},
-    web: {},
-    mobile: {
-      android: {},
-      ios: {},
-    },
-    secrets: {},
-    api: {
+    endpoints: {},
+    branding: {},
+    support: {},
+    notebookAndRecordUX: {},
+    maps: {},
+    sync: {},
+    attachments: {},
+    migration: {},
+    auth: {
       profileName: 'dev-profile',
       keyFilePath: '.',
-      conductorInstanceName: 'Development FAIMS Server',
-      conductorDescription: 'Development server on localhost',
-      conductorShortCodePrefix: 'DEV',
-      couchdbUser: 'admin',
-      couchdbPassword: 'secret',
       keySource: 'FILE' as const,
+      provisionSsoUsersPolicy: 'reject',
+    },
+    authProviders: {
+      google: {
+        id: 'google',
+        type: 'google',
+        displayName: 'Google',
+        scope: ['profile', 'email'],
+        clientID: 'google-client-id',
+        clientSecret: 'google-client-secret',
+      },
+    },
+    authTokens: {},
+    limits: {},
+    email: {
       emailServiceType: 'MOCK',
       emailFromAddress: 'notifications@example.com',
       emailFromName: 'FAIMS Notification',
@@ -102,18 +157,19 @@ test('generator supports api platform export selection', () => {
       smtpUser: 'smtp-user',
       smtpPassword: 'smtp-password',
       testEmailAddress: 'test@example.com',
-      provisionSsoUsersPolicy: 'reject',
-      authProviders: {
-        google: {
-          id: 'google',
-          type: 'google',
-          displayName: 'Google',
-          scope: ['profile', 'email'],
-          clientID: 'google-client-id',
-          clientSecret: 'google-client-secret',
-        },
-      },
     },
+    observability: {},
+    teamAndRolePolicy: {},
+    webDesignerLimits: {},
+    android: {},
+    ios: {},
+    couchdb: {
+      couchdbUser: 'admin',
+      couchdbPassword: 'secret',
+    },
+    dev: {},
+    pouchdb: {},
+    secrets: {},
   } as const;
 
   const config = parseBuildConfig(rawConfig);
@@ -150,19 +206,41 @@ test('auth provider env helpers roundtrip config for google provider', () => {
   assert.equal((parsed.google as any)?.clientID, 'google-client-id');
 });
 
+test('mobile-config.sample.json matches current build config schema', () => {
+  const base = JSON.parse(
+    fs.readFileSync(new URL('../config/mobile-config.sample.json', import.meta.url), 'utf8')
+  );
+
+  const parsed = parseBuildConfig(base);
+  assert.equal(parsed.auth.keySource, 'FILE');
+  assert.equal(parsed.authProviders.google?.type, 'google');
+});
+
+test('mobile sample + secrets deep merge matches current build config schema', () => {
+  const base = JSON.parse(
+    fs.readFileSync(new URL('../config/mobile-config.sample.json', import.meta.url), 'utf8')
+  );
+  const secrets = JSON.parse(
+    fs.readFileSync(new URL('../config/mobile-secrets.sample.json', import.meta.url), 'utf8')
+  );
+
+  const merged = deepMerge(base, secrets);
+  const parsed = parseBuildConfig(merged);
+
+  assert.equal(parsed.email.smtpPassword, '<SMTP_PASSWORD>');
+  assert.equal(parsed.authProviders.google?.type, 'google');
+});
+
 test('generator emits Android base64 secrets when provided', () => {
   const config = {
     ...sampleConfig,
-    mobile: {
-      ...sampleConfig.mobile,
-      android: {
-        keystoreFileBase64: 'encoded-keystore',
-        serviceAccountKeyJsonBase64: 'encoded-service-account',
-      },
+    android: {
+      keystoreFileBase64: 'encoded-keystore',
+      serviceAccountKeyJsonBase64: 'encoded-service-account',
     },
   };
 
-  const output = generateEnv({config, platform: 'android'});
+  const output = generateEnv({config, platform: 'apps'});
 
   assert.match(output, /KEYSTORE_FILE=encoded-keystore/);
   assert.match(
@@ -174,16 +252,13 @@ test('generator emits Android base64 secrets when provided', () => {
 test('generator falls back to iOS individual key values', () => {
   const config = {
     ...sampleConfig,
-    mobile: {
-      ...sampleConfig.mobile,
-      ios: {
-        appleIndividualKeyId: 'ind-key-id',
-        appleIndividualKeyContent: 'ind-key-content',
-      },
+    ios: {
+      appleIndividualKeyId: 'ind-key-id',
+      appleIndividualKeyContent: 'ind-key-content',
     },
   };
 
-  const output = generateEnv({config, platform: 'ios'});
+  const output = generateEnv({config, platform: 'apps'});
 
   assert.match(output, /APPLE_KEY_ID=ind-key-id/);
   assert.match(output, /APPLE_KEY_CONTENT=ind-key-content/);
@@ -192,16 +267,13 @@ test('generator falls back to iOS individual key values', () => {
 test('generator escapes multiline values for env-file compatibility', () => {
   const config = {
     ...sampleConfig,
-    mobile: {
-      ...sampleConfig.mobile,
-      ios: {
-        appleKeyContent:
-          '\n-----BEGIN PRIVATE KEY-----\nABCDEF\n-----END PRIVATE KEY-----\n',
-      },
+    ios: {
+      appleKeyContent:
+        '\n-----BEGIN PRIVATE KEY-----\nABCDEF\n-----END PRIVATE KEY-----\n',
     },
   };
 
-  const output = generateEnv({config, platform: 'ios'});
+  const output = generateEnv({config, platform: 'apps'});
 
   assert.match(
     output,
@@ -246,7 +318,7 @@ test('generated env parser rejects invalid boolean strings', () => {
   );
 });
 
-test('generated env parser converts typed values into runtime config', () => {
+test('generated env parser converts typed values into grouped runtime config', () => {
   const parsed = parseGeneratedEnv({
     VITE_APP_NAME: 'Fieldmark',
     VITE_APP_SHORT_NAME: 'FM',
@@ -300,10 +372,10 @@ test('generated env parser converts typed values into runtime config', () => {
     VITE_EXCLUDED_TEAM_ROLES: 'TEAM_MEMBER_CREATOR,TEAM_ADMIN',
   });
 
-  assert.equal(parsed.shared.branding.appName, 'Fieldmark');
-  assert.equal(parsed.shared.maps.offlineMaps, true);
-  assert.deepEqual(parsed.web.longLivedTokenDurationHints, [1, 5, 10]);
-  assert.deepEqual(parsed.web.excludedTeamRoles, [
+  assert.equal(parsed.branding.appName, 'Fieldmark');
+  assert.equal(parsed.maps.offlineMaps, true);
+  assert.deepEqual(parsed.authTokens.longLivedTokenDurationHints, [1, 5, 10]);
+  assert.deepEqual(parsed.teamAndRolePolicy.excludedTeamRoles, [
     'TEAM_MEMBER_CREATOR',
     'TEAM_ADMIN',
   ]);

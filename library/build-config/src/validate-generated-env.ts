@@ -267,11 +267,27 @@ export function main(
   let parsed: ReturnType<typeof parseBuildConfig> | undefined = undefined;
   if (!args.config) {
     parsed = parseBuildConfig({
-      app: {},
-      web: {},
-      mobile: {android: {}, ios: {}},
-      urls: {},
-      secrets: {},
+      endpoints: {},
+      branding: {},
+      support: {},
+      notebookAndRecordUX: {},
+      maps: {},
+      sync: {},
+      attachments: {},
+      migration: {},
+      auth: {},
+      authProviders: {},
+      authTokens: {},
+      limits: {},
+      email: {},
+      observability: {},
+      teamAndRolePolicy: {},
+      webDesignerLimits: {},
+      android: {},
+      ios: {},
+      couchdb: {},
+      dev: {},
+      pouchdb: {},
     });
   } else {
     const configPath = path.resolve(cwd, String(args.config));
@@ -283,7 +299,7 @@ export function main(
   }
   const envText = generateEnv({
     config: parsed,
-    platform: 'all',
+    platform: 'apps',
     includeEmpty: true,
   });
 
