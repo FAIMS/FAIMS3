@@ -1,0 +1,176 @@
+{
+  "endpoints": {
+    "webUrl": "http://localhost:3001",
+    "apiUrl": "http://localhost:8080",
+    "appUrl": "http://localhost:3000",
+    "couchdbInternalUrl": "http://couchdb:5984",
+    "couchdbPublicUrl": "http://localhost:5984",
+    "androidAppPublicUrl": "https://play.google.com/store/apps/details?id=org.fedarch.faims3",
+    "iosAppPublicUrl": "https://apps.apple.com/app/id0000000000",
+    "redirectWhitelist": []
+  },
+  "branding": {
+    "appName": "Fieldmark",
+    "appShortName": "FAIMS",
+    "headingAppName": "Fieldmark",
+    "theme": "default",
+    "websiteTitle": "Control Centre",
+    "conductorInstanceName": "Local FAIMS Conductor",
+    "conductorDescription": "Local development Conductor instance",
+    "conductorShortCodePrefix": "LOC"
+  },
+  "support": {
+    "supportEmail": "support@fieldmark.au",
+    "privacyPolicyUrl": "https://fieldnote.au/privacy",
+    "appContactUrl": "https://fieldnote.au/contact",
+    "docsUrl": "https://docs.fieldmark.app"
+  },
+  "notebookAndRecordUX": {
+    "notebookName": "survey",
+    "notebookListType": "tabs",
+    "navigation": "breadcrumbs",
+    "showRecordLinks": false,
+    "showStatusTab": true,
+    "showNewNotebook": true
+  },
+  "maps": {
+    "mapSource": "maptiler",
+    "mapSourceKey": "<your api key>",
+    "satelliteSource": "maptiler",
+    "mapStyle": "basic",
+    "offlineMaps": true,
+    "autosuggestSource": "NONE",
+    "autosuggestMapboxKey": "",
+    "autosuggestMapTilerKey": "",
+    "mapboxAddressCountry": "AU",
+    "maptilerAddressCountry": "AU"
+  },
+  "sync": {
+    "syncPushOnlyRecordThreshold": 500,
+    "forceRemoteDeletion": "never",
+    "deleteOnDeactivation": false
+  },
+  "attachments": {
+    "attachmentServiceType": "COUCH",
+    "attachmentDocumentIdPrefix": "fieldmark"
+  },
+  "migration": {
+    "migrateOldDatabases": false,
+    "disableMigrateOnStartup": false,
+    "startupMigrationLockEnabled": false,
+    "startupMigrationLockTimeoutMs": 1800000
+  },
+  "auth": {
+    "clusterAdminGroupName": "cluster-admin",
+    "directoryUsername": "",
+    "directoryPassword": "",
+    "profileName": "local",
+    "keyFilePath": "./keys/local-dev_rsa_2048_private_key.pem",
+    "keySource": "FILE",
+    "cookieSecret": "replace-this-with-a-long-random-secret",
+    "disableLocalLogin": false,
+    "provisionSsoUsersPolicy": "reject"
+  },
+  "authProviders": {
+    "google": {
+      "id": "google",
+      "type": "google",
+      "displayName": "Google",
+      "helperText": "Use your Google account",
+      "scope": ["profile", "email"],
+      "callbackMethods": ["GET"],
+      "clientID": "google-client-id",
+      "clientSecret": "google-client-secret"
+    }
+  },
+  "authTokens": {
+    "tokenRefreshIntervalMs": 15000,
+    "tokenRefreshWindowMs": 60000,
+    "loginBannerGraceMs": 10000,
+    "ignoreTokenExp": false,
+    "longLivedTokenDurationHints": [1, 5, 10, 30, 90, 365],
+    "refreshTokenExpiryMinutes": 1440,
+    "accessTokenExpiryMinutes": 60,
+    "impersonationSessionExpiryMinutes": 30,
+    "emailCodeExpiryMinutes": 10,
+    "maximumLongLivedDurationDays": 90
+  },
+  "limits": {
+    "rateLimiterWindowMs": 60000,
+    "rateLimiterPerWindow": 500,
+    "rateLimiterEnabled": true,
+    "exportRateLimiterEnabled": true,
+    "exportRateLimiterWindowMs": 60000,
+    "exportRateLimiterPerWindow": 100,
+    "attemptLimiterEnabled": true,
+    "jsonBodyLimit": "25mb",
+    "urlencodedBodyLimit": "1mb",
+    "restoreUploadMaxBytes": 1073741824,
+    "downloadCookieSameSite": "lax",
+    "recordsHydratedPageLimit": 150
+  },
+  "email": {
+    "emailServiceType": "MOCK",
+    "emailFromAddress": "notifications@example.com",
+    "emailFromName": "FAIMS Notification",
+    "emailReplyTo": "support@example.com",
+    "smtpHost": "smtp.example.com",
+    "smtpPort": 587,
+    "smtpSecure": true,
+    "smtpUser": "smtp-user",
+    "smtpPassword": "smtp-password",
+    "smtpCacheExpirySeconds": 300,
+    "testEmailAddress": "test@example.com"
+  },
+  "observability": {
+    "bugsnagApiKey": "<secret>",
+    "commitVersion": "output of `git rev-parse HEAD`"
+  },
+  "teamAndRolePolicy": {
+    "excludedTeamRoles": []
+  },
+  "webDesignerLimits": {
+    "maxDesignFileSizeMb": 10
+  },
+  "android": {
+    "appId": "org.fedarch.faims3",
+    "releaseStatus": "draft",
+    "keystorePath": "",
+    "keystorePassword": "",
+    "keyAlias": "",
+    "keyPassword": "",
+    "serviceAccountJsonPath": ""
+  },
+  "ios": {
+    "bundleIdentifier": "org.fedarch.faims3",
+    "appStoreConnectTeamId": "XXXXXXXXX",
+    "developerPortalTeamId": "XXXXXXXXX",
+    "appleId": "YYYYYYYY",
+    "appleApplicationSpecificPassword": "<secret>",
+    "matchPassword": "<secret>",
+    "matchGitUrl": "https://github.com/username/repo.git",
+    "gitAuthorization": "<secret>",
+    "provisioningProfileSpecifier": "",
+    "appleKeyId": "",
+    "appleIssuerId": "",
+    "appleKeyContent": "<secret>"
+  },
+  "couchdb": {
+    "couchdbUser": "admin",
+    "couchdbPassword": "aSecretPasswordThatCantBeGuessed",
+    "couchdbExternalPort": 5984,
+    "conductorExternalPort": 8080,
+    "conductorInternalPort": 8080
+  },
+  "dev": {
+    "developerMode": false,
+    "debugApp": true,
+    "debugPouchDb": false,
+    "showWipe": true,
+    "showPouchDbBrowser": true
+  },
+  "pouchdb": {
+    "pouchBatchSize": 10,
+    "pouchBatchesLimit": 10
+  }
+}

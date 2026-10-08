@@ -6,6 +6,7 @@ import fieldmarkAppBarStyling from './fieldmark/appBar';
 import faimsProjectListLayout from './default/noteBook';
 import fieldmarkProjectListLayout from './fieldmark/noteBook';
 import bssTheme from './bssTheme';
+import {config} from '../../buildconfig';
 export interface StepperColors {
   current: string;
   visited: string;
@@ -15,7 +16,7 @@ export interface StepperColors {
 }
 
 const exportTheme = () => {
-  switch (import.meta.env.VITE_THEME) {
+  switch (config.theme) {
     case 'bssTheme':
       return bssTheme;
     case 'fieldmark':
@@ -26,7 +27,7 @@ const exportTheme = () => {
 };
 
 const exportAppBarStyling = () => {
-  switch (import.meta.env.VITE_THEME) {
+  switch (config.theme) {
     case 'bssTheme':
       return faimsAppBarStyling;
     case 'fieldmark':
@@ -37,7 +38,7 @@ const exportAppBarStyling = () => {
 };
 
 const exportProjectListLayout = () => {
-  switch (import.meta.env.VITE_THEME) {
+  switch (config.theme) {
     case 'bssTheme':
       return faimsProjectListLayout;
     case 'fieldmark':
@@ -48,7 +49,7 @@ const exportProjectListLayout = () => {
 };
 
 const exportProjectListVerbose = () => {
-  switch (import.meta.env.VITE_THEME) {
+  switch (config.theme) {
     case 'bssTheme':
       return true;
     case 'fieldmark':
@@ -59,7 +60,7 @@ const exportProjectListVerbose = () => {
 };
 
 const exportAppBarHeading = () => {
-  switch (import.meta.env.VITE_THEME) {
+  switch (config.theme) {
     case 'bssTheme':
       return 'bssTheme';
     case 'fieldmark':

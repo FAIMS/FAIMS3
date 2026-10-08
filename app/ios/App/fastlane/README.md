@@ -23,14 +23,6 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 
 
-### ios closed_beta_browserstack
-
-```sh
-[bundle exec] fastlane ios closed_beta_browserstack
-```
-
-
-
 ### ios closed_beta_testflight
 
 ```sh

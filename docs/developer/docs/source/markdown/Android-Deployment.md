@@ -3,6 +3,8 @@
 Here we document the process of deployment of the Android app on the Play Store.
 Based on the example given in [this Runway blog post](https://www.runway.team/blog/ci-cd-pipeline-android-app-fastlane-github-actions).
 
+See [Mobile-Deployment-Setup-Guide.md](Mobile-Deployment-Setup-Guide.md) for the step-by-step process to create the local config files, choose an environment slug, and sync the encrypted bundle into the private config repo.
+
 ## Pre-requisites
 
 ### Create Google Play App
@@ -53,17 +55,24 @@ If working from WSL, you must open the generated `android` folder using Android 
 Inside Android Studio, create a production build. To do this you'll need to generate
 an _upload key and keystore_, there are instructions
 [on android.com](https://developer.android.com/studio/publish/app-signing#sign-apk).
-Basically you select "Generate Signed Bundle or API" from the Build menu and follow the
-prompts. This will get you to generate a new keystore file, key name and password.  
-Make a note of these, we'll create repository secrets for them on Github:
+Basically you select "Generate Signed Bundle or API" from the Build menu and
+follow the prompts. This will get you to generate a new keystore file, key name
+and password. Make a note of these, we'll create repository secrets for them on
+Github:
 
-- `secrets.KEYSTORE_FILE` - java key store file, base64 encoded
-- `secrets.JAVA_KEY_PASSWORD` - password for the Java keystore
-- `secrets.JAVA_KEY` - key alias for the Java Keystore
+- `mobile.android.keystoreFileBase64` in `build-secrets.enc.json` - java key
+  store file, base64 encoded
+- `mobile.android.keystorePassword` in `build-secrets.enc.json` - password for
+  the Java keystore
+- `mobile.android.keyAlias` in `build-secrets.enc.json` - key alias for the
+  Java keystore
+- `mobile.android.keyPassword` in `build-secrets.enc.json` - key password for
+  the Java keystore
 
 Complete the build and you should have an `app-release.aab` file that you can
 upload to the Google Play console.
-You will later upload the `.aab` signed with this key and store this info as secrets in GitHub.
+You will later upload the `.aab` signed with this key and store this info as
+secrets in GitHub.
 
 ## Generate Signed AAB (First Manual Upload)
 
@@ -76,7 +85,7 @@ In Android Studio:
 
 Find your `.aab` file at:
 
-```
+```text
 app/android/app/release/app-release.aab
 ```
 
@@ -92,11 +101,13 @@ to [the official Google documentation](https://developers.google.com/android-pub
 
 Fastlane is written in Ruby and so running it requires Ruby and that you install
 a bunch of 'Gems'. If you want to do this locally to test then one option is
-to use [rvm](https://rvm.io/) to manage Ruby versions and Gem installs, another is
-just to install Ruby globally. I found that installing Ruby globally with
+to use [rvm](https://rvm.io/) to manage Ruby versions and Gem installs, another
+is just to install Ruby globally. I found that installing Ruby globally with
 `brew` (MacOS) was easiest and then used a config setting to get gems installed
-into my home directory rather than globally (`bundle config set --local path /Users/Steve/.gem/ruby/3.3.0`). You would then run `bundle install` from inside the `app/android`
-directory to get fastlane etc installed.
+into my home directory rather than globally
+(`bundle config set --local path /Users/Steve/.gem/ruby/3.3.0`). You would then
+run `bundle install` from inside the `app/android` directory to get fastlane etc
+installed.
 
 ### Install Fastlane Locally (if needed for testing):
 
@@ -121,16 +132,18 @@ bundle install
 ## Google Cloud Project Setup
 
 The workflow needs to be able to access the Google Play API and to do this we need
-to set up a project on [Google Cloud](https://console.cloud.google.com/) and give it
-permission to access the API. There are instructions on creating a Service Account Key on
-the [Runway Documentation](https://docs.runway.team/integrations/app-stores/google-play-console#service-account-api-key-setup) page.
+to set up a project on [Google Cloud](https://console.cloud.google.com/) and give
+it permission to access the API. There are instructions on creating a Service
+Account Key on the [Runway Documentation](https://docs.runway.team/integrations/app-stores/google-play-console#service-account-api-key-setup)
+page.
 
 - You are creating a 'service account' which is effectively a proxy account that can
   access the API.
 - You will give that account email permission to access the project
   on Google Play.
 - When you create the service account you will download a file containing
-  the private key for that account (eg. `fieldmark-app-deployment-c243ef36afb3.json`) / ('bushfiresurveyorsystemdeploy-63a8de61b6fb.json').
+  the private key for that account (eg. `fieldmark-app-deployment-c243ef36afb3.json`)
+  / ('bushfiresurveyorsystemdeploy-63a8de61b6fb.json').
 - We will use that below to configure the pipeline for app upload.
 
 More details:
@@ -148,7 +161,16 @@ More details:
 
 ## Encode and Store Secrets
 
-To use secrets in GitHub Actions:
+Mobile deployment now reads settings from a private configuration repository:
+
+- `mobile/<environment>/build-config.json` (non-secret)
+- `mobile/<environment>/build-secrets.enc.json` (SOPS-encrypted)
+
+The workflow checks out that repository, decrypts the secrets file in CI using
+`SOPS_AGE_KEY`, merges both JSON files, and generates environment variables
+with `pnpm generate-build-config`.
+
+To prepare Android secrets:
 
 ```bash
 base64 my-release-key.keystore > keystore.txt
@@ -157,36 +179,45 @@ or
 base64 bushfiresurveyorsystemdeploy-63a8de61b6fb.json > gplay_key.txt
 ```
 
-Copy and paste content of these `.txt` files into GitHub Secrets.
+Copy the encoded values into `mobile.android.keystoreFileBase64` and
+`mobile.android.serviceAccountKeyJsonBase64` in `build-secrets.enc.json`.
 
-### Required GitHub Secrets:
+For the complete JSON field-to-env mapping used by the generator, see [Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md).
 
-- `KEYSTORE_FILE` - base64 of `.keystore` file
-- `JAVA_KEY_PASSWORD` - keystore password
-- `JAVA_KEY` - key alias
-- `GPLAY_SERVICE_ACCOUNT_KEY_JSON` - base64 of service account json
-- `TURBO_TOKEN`, `BUGSNAG_KEY`, `MAP_SOURCE_KEY` (as applicable)
+### Required GitHub Secrets and Variables:
+
+- `secrets.GIT_AUTHORIZATION` - token with read access to the private config repository
+- `secrets.SOPS_AGE_KEY` - age private key used by `sops --decrypt` in workflow
+- `vars.APP_CONFIG_REPO_SLUG` - config repository slug in the form `owner/repo`
+- `vars.MOBILE_CONFIG_BRANCH` - config repository branch (defaults to `main`)
+- `vars.MOBILE_CONFIG_ENVIRONMENT` - environment folder under `mobile/` (for
+  example `production`, `nightly`)
 
 ## Please Note: This is Important :-)
 
-You will create these when you do your first app bundle build via Android Studio and save it to a relevant
-folder which you can access easily when required, you will need these details later for finalising the deployment.
+You will create these when you do your first app bundle build via Android Studio
+and save it to a relevant folder which you can access easily when required, you
+will need these details later for finalising the deployment.
 
 ## Workflow
 
-Workflow `nightly-android-testbuild.yml` does a nightly build and deploy to the app store test stream.
+Workflow `nightly-android-testbuild.yml` does a nightly build and deploy to the
+app store test stream.
 
 Here are the initial setup steps, others are described in more detail below.
 
 - **Checkout**: Checkout the latest version of the code.
-- **Cache Node Modules**: Sets up and/or restores a cache of node modules to speed up pnpm install
+- **Cache Node Modules**: Sets up and/or restores a cache of node modules to speed
+  up pnpm install
 - **Configure Turborepo Remote Cache**
   Configures a turborepo build cache so that previous builds can be used if there
   are no changes.
 - **Install `jq`**: A command line JSON processor
-- **Declare Some Variables**: Set up `sha_short`, a short hash of the latest git commit and `app_version` which pulls the app version string from `app/package.json` using `jq`.
-- **Create Version String**: Make a version string for the app based on the two variables from the last step
-  Version is eg. `1.0.0-android-#AAAFFFEEE`
+- **Declare Some Variables**: Set up `sha_short`, a short hash of the latest git
+  commit and `app_version` which pulls the app version string from
+  `app/package.json` using `jq`.
+- **Create Version String**: Make a version string for the app based on the two
+  variables from the last step. Version is eg. `1.0.0-android-#AAAFFFEEE`
 - **Cache Gradle Packages**:
   Set up and/or restore a cache of gradle packages for the app build
 - **Use Node.js $version**
@@ -197,10 +228,11 @@ Here are the initial setup steps, others are described in more detail below.
   Ruby is used for running `fastlane` to automate the upload to the app store.
 - **Decode Service Account Key JSON File**:
   Decode the `GPLAY_SERVICE_ACCOUNT_KEY_JSON` secret that contains a base64 encoded
-  version of the Google Cloud Service Account key which you created earlier. Resulting file will be used by `fastlane` later as `ANDROID_JSON_KEY_FILE`.
+  version of the Google Cloud Service Account key which you created earlier.
+  Resulting file will be used by `fastlane` later as `ANDROID_JSON_KEY_FILE`.
 - **Decode Keystore File**:
-  Decode the `KEYSTORE_FILE` secret that contains the base64 encoded content of the
-  key store. (How do we make this?)
+  Decode the `KEYSTORE_FILE` secret that contains the base64 encoded content of
+  the key store. (How do we make this?)
 - **Setup Android SDK**:
   Runs the action to make the SDK available to the build.
 
@@ -275,32 +307,35 @@ that I've removed for now since the result was not used.
 
 ## Variables and Secrets for deployment
 
-The following variables and secrets are set in the the Github repository
-where these workflows will run.
+The mobile workflows now use configuration JSON files (plus encrypted secrets)
+as the source of truth, not per-field GitHub secrets for Android signing values.
 
-- `vars.NIGHTLY_CONDUCTOR_URL` - URL setting for test build
-- `vars.PRODUCTION_CONDUCTOR_URL` - URL setting for production build
-- `vars.TURBO_TEAM` - Turbo cache team name for authentication
-- `vars.TURBO_API_URL` - Turbo cache URL
-- `vars.APP_ID` - the id of the app on the app store, eg. 'au.edu.faims.fieldmark', needs to be unique per deployment
-- `vars.APP_NAME` - the app name that appears in various places
-- `vars.ANDROID_RELEASE_STATUS` - the release status, normally 'completed' but for a draft (not yet reviewed) app this could be 'draft'
-- `vars.HEADING_APP_NAME` - The app name displayed in the app main page, defaults to APP_NAME
-- `vars.MAP_SOURCE` - source for map tiles, 'maptiler' or 'osm'
-- `vars.APP_PRIVACY_POLICY_URL` - URL for the app privacy policy link in the app footer
-- `vars.SUPPORT_EMAIL` - Support email address displayed in the app
-- `vars.APP_CONTACT_URL` - URL for the 'Contact' link in the app footer
-- `vars.POUCH_BATCH_SIZE` - batch size for pouchdb replication, defaults to 10 to ensure reliable sync of large files
+### Bootstrap variables/secrets in GitHub
 
-Secrets will not be visible once added so we need to keep copies somewhere safe.
+- `vars.APP_CONFIG_REPO_SLUG`
+- `vars.MOBILE_CONFIG_BRANCH` (optional, defaults to `main`)
+- `vars.MOBILE_CONFIG_ENVIRONMENT`
+- `secrets.GIT_AUTHORIZATION`
+- `secrets.SOPS_AGE_KEY`
 
-- `secrets.TURBO_TOKEN` - authentication token for the turbo cache
-- `secrets.GPLAY_SERVICE_ACCOUNT_KEY_JSON` - bases64 encoded version of service account key, the workflow decodes this and sets `ANDROID_JSON_KEY_FILE` to point to it
-- `secrets.BUGSNAG_KEY`
-- `secrets.KEYSTORE_FILE` - java key store file, base64 encoded
-- `secrets.JAVA_KEY_PASSWORD` - password for the Java keystore
-- `secrets.JAVA_KEY` - key alias for the Java Keystore
-- `secrets.MAP_SOURCE_KEY` - API key for map tiles
+### Build settings and secrets in JSON config files
+
+Android build values such as:
+
+- app and runtime `VITE_*` values
+- `ANDROID_RELEASE_STATUS` and `ANDROID_DEPLOY_TRACK`
+- keystore and Play service-account data
+
+are defined in `build-config.json` and `build-secrets.enc.json`, then mapped to
+env vars by `pnpm generate-build-config`.
+
+See [Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md)
+for the complete field mapping.
+
+Because this repository is also used by Fastlane Match for iOS signing assets,
+follow the shared-repo safety guidance in
+[Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md)
+before changing anything outside `mobile/<environment>/`.
 
 ---
 

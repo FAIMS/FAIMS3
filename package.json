@@ -29,6 +29,7 @@
     "load-templates": "pnpm --filter=api run load-templates",
     "generate-local-keys": "./api/keymanagement/makeInstanceKeys.sh",
     "build-web": "turbo build --filter @faims3/web",
+    "generate-build-config": "pnpm --filter=@faims3/build-config run generate",
     "dev": "turbo dev --filter=@faims3/app --filter=@faims3/web --filter=@faims3/api --filter=@faims3/data-model --parallel",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",

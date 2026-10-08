@@ -703,6 +703,19 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
 
+  library/build-config:
+    dependencies:
+      zod:
+        specifier: ^4.1.12
+        version: 4.4.3
+    devDependencies:
+      tsx:
+        specifier: ^4.22.4
+        version: 4.22.4
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
   library/data-model:
     dependencies:
       '@jsep-plugin/ternary':
@@ -941,6 +954,9 @@ importers:
       '@emotion/styled':
         specifier: ^11.14.1
         version: 11.14.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@types/react@18.3.12)(react@18.3.1)
+      '@faims3/build-config':
+        specifier: workspace:*
+        version: link:../library/build-config
       '@faims3/data-model':
         specifier: workspace:*
         version: link:../library/data-model
