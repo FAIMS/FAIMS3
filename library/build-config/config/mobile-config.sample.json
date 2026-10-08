@@ -123,7 +123,7 @@
     "testEmailAddress": "test@example.com"
   },
   "observability": {
-    "bugsnagApiKey": "",
+    "bugsnagApiKey": "<secret>",
     "commitVersion": "output of `git rev-parse HEAD`"
   },
   "teamAndRolePolicy": {
@@ -145,15 +145,15 @@
     "bundleIdentifier": "org.fedarch.faims3",
     "appStoreConnectTeamId": "XXXXXXXXX",
     "developerPortalTeamId": "XXXXXXXXX",
-    "appleId": "",
-    "appleApplicationSpecificPassword": "",
-    "matchPassword": "",
-    "matchGitUrl": "",
-    "gitAuthorization": "",
+    "appleId": "YYYYYYYY",
+    "appleApplicationSpecificPassword": "<secret>",
+    "matchPassword": "<secret>",
+    "matchGitUrl": "https://github.com/username/repo.git",
+    "gitAuthorization": "<secret>",
     "provisioningProfileSpecifier": "",
     "appleKeyId": "",
     "appleIssuerId": "",
-    "appleKeyContent": ""
+    "appleKeyContent": "<secret>"
   },
   "couchdb": {
     "couchdbUser": "admin",
