@@ -525,6 +525,11 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
   const queryClient = useQueryClient();
 
+  // Route changes are blocked while a photo/file is still writing to PouchDB.
+  // Creating a related record would persist the child but never navigate, so
+  // refuse the action until the attachment save finishes.
+  const isAttachmentSaving = props.config.attachmentSaving?.isSaving() === true;
+
   // Field value may be a single link object or an array when `multiple` is
   // true; normalize for mapping.
   const rawValue = props.state.value?.data || undefined;
@@ -555,6 +560,12 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     error: createError,
   } = useMutation({
     mutationFn: async () => {
+      if (props.config.attachmentSaving?.isSaving()) {
+        throw new Error(
+          'Wait for photos to finish saving before creating a new record.'
+        );
+      }
+
       // The engine derives the related form, the relation and its vocab pair
       // from this field, and writes the new row's own edge.
       const res = await props.config.dataEngine().form.createRelatedRecord({
@@ -859,21 +870,31 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
       {/* Action Buttons */}
       <div style={{display: 'flex', gap: 8, marginBottom: 16}}>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => createNewRecord()}
-          disabled={isCreating}
-          startIcon={
-            isCreating ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : (
-              <AddIcon />
-            )
+        <Tooltip
+          title={
+            isAttachmentSaving
+              ? 'Wait for photos to finish saving before creating a new record.'
+              : ''
           }
         >
-          {isCreating ? 'Creating...' : 'Add new ' + relatedRecordTypeLabel}
-        </Button>
+          <span>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => createNewRecord()}
+              disabled={isCreating || isAttachmentSaving}
+              startIcon={
+                isCreating ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  <AddIcon />
+                )
+              }
+            >
+              {isCreating ? 'Creating...' : 'Add new ' + relatedRecordTypeLabel}
+            </Button>
+          </span>
+        </Tooltip>
 
         {props.allowLinkToExisting && (
           <Button
