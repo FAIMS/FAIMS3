@@ -1434,6 +1434,46 @@ describe('Form Operations', () => {
         'First-1'
       );
     });
+
+    test('reuses a loaded record and batch-fetches its revisions', async () => {
+      const created = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+        initial: {'First-1': {data: 'first'}},
+      });
+      const next = await engine.form.createRevision({
+        recordId: created.record._id,
+        revisionId: created.revision._id,
+        createdBy: 'user-2',
+      });
+      await engine.form.updateRevision({
+        revisionId: next._id,
+        recordId: created.record._id,
+        update: {'First-1': {data: 'second'}},
+        mode: 'parent',
+        updatedBy: 'user-2',
+      });
+
+      const record = await engine.core.getRecord(created.record._id);
+      const getRecord = jest.spyOn(engine.core, 'getRecord');
+      const getRevision = jest.spyOn(engine.core, 'getRevision');
+      const getDocumentsByIds = jest.spyOn(engine.core, 'getDocumentsByIds');
+
+      const history = await engine.form.getHistoryData({
+        recordId: created.record._id,
+        record,
+      });
+
+      expect(getRecord).not.toHaveBeenCalled();
+      expect(getRevision).not.toHaveBeenCalled();
+      expect(getDocumentsByIds).toHaveBeenCalled();
+      expect(history).toHaveLength(2);
+      expect(history.map(entry => entry.createdBy)).toEqual(
+        expect.arrayContaining(['user-1', 'user-2'])
+      );
+      const update = history.find(entry => entry.revisionId === next._id);
+      expect(update?.changedFields[created.revision._id]).toContain('First-1');
+    });
   });
 
   describe('updatedAt bump flags', () => {
