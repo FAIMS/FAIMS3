@@ -24,6 +24,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@faims3/build-config": "workspace:*",
     "@faims3/data-model": "workspace:*",
     "@faims3/forms": "workspace:*",
     "@hookform/resolvers": "^5.2.1",

@@ -68,16 +68,21 @@ function parseEnvText(text: string): Map<string, string> {
  * @param sourceText The text of the TypeScript source file
  * @returns The text of the object literal that defines the environment variable schema
  */
-function extractEnvObjectLiteral(sourceText: string): string {
-  const marker = 'const EnvSchema = z';
-  const markerIndex = sourceText.indexOf(marker);
-  if (markerIndex === -1) {
-    throw new Error('Unable to find EnvSchema declaration in source.');
+function extractEnvObjectLiteral(
+  sourceText: string,
+  markers = ['const EnvSchema = z', 'const GeneratedEnvSchema = z']
+): string {
+  const marker = markers.find(candidate => sourceText.includes(candidate));
+  if (!marker) {
+    throw new Error(
+      'Unable to find EnvSchema or GeneratedEnvSchema declaration in source.'
+    );
   }
 
+  const markerIndex = sourceText.indexOf(marker);
   const objectOpenIndex = sourceText.indexOf('{', markerIndex);
   if (objectOpenIndex === -1) {
-    throw new Error('Unable to find opening brace for EnvSchema object.');
+    throw new Error('Unable to find opening brace for schema object.');
   }
 
   let depth = 0;
@@ -147,16 +152,20 @@ function extractEnvObjectLiteral(sourceText: string): string {
  * @returns A set of keys defined in the EnvSchema object literal
  */
 function extractEnvSchemaKeys(filePath: string): Set<string> {
-  const sourceText = fs.readFileSync(filePath, 'utf8');
-  const envObjectText = extractEnvObjectLiteral(sourceText);
-  const keys = new Set<string>();
+  try {
+    const sourceText = fs.readFileSync(filePath, 'utf8');
+    const envObjectText = extractEnvObjectLiteral(sourceText);
+    const keys = new Set<string>();
 
-  const matches = envObjectText.matchAll(/\b(VITE_[A-Z0-9_]+)\s*:/g);
-  for (const match of matches) {
-    keys.add(match[1]);
+    const matches = envObjectText.matchAll(/\b(VITE_[A-Z0-9_]+)\s*:/g);
+    for (const match of matches) {
+      keys.add(match[1]);
+    }
+
+    return keys;
+  } catch {
+    return new Set();
   }
-
-  return keys;
 }
 
 /**
@@ -221,9 +230,12 @@ function fastlaneEnvKeys(): Set<string> {
 export function getExpectedKeys(): Set<string> {
   const appKeys = extractEnvSchemaKeys(APP_SCHEMA_PATH);
   const webKeys = extractEnvSchemaKeys(WEB_SCHEMA_PATH);
+  const buildConfigKeys = extractEnvSchemaKeys(
+    path.resolve(repoRoot, 'library/build-config/src/build-config.ts')
+  );
   const fastlaneKeys = fastlaneEnvKeys();
 
-  return new Set([...appKeys, ...webKeys, ...fastlaneKeys]);
+  return new Set([...appKeys, ...webKeys, ...buildConfigKeys, ...fastlaneKeys]);
 }
 
 /**

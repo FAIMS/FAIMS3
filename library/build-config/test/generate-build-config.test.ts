@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {generateEnv, parseArgs} from '../src/generate-build-config';
+import {BuildConfigSchema} from '../src/build-config';
 import {
   buildAuthProviderEnvMap,
   parseBuildConfig,
@@ -38,30 +39,7 @@ function deepMerge(a: unknown, b: unknown): unknown {
   return b === undefined ? a : b;
 }
 
-const sampleConfig: SharedBuildConfig = {
-  endpoints: {},
-  branding: {},
-  support: {},
-  notebookAndRecordUX: {},
-  maps: {},
-  sync: {},
-  attachments: {},
-  migration: {},
-  auth: {},
-  authProviders: {},
-  authTokens: {},
-  limits: {},
-  email: {},
-  observability: {},
-  teamAndRolePolicy: {},
-  webDesignerLimits: {},
-  android: {},
-  ios: {},
-  couchdb: {},
-  dev: {},
-  pouchdb: {},
-  secrets: {},
-};
+const sampleConfig: SharedBuildConfig = BuildConfigSchema.parse({});
 
 test('parseArgs accepts config and platform arguments', () => {
   assert.deepEqual(parseArgs(['--config', 'demo.json', '--platform', 'apps']), {
@@ -379,4 +357,25 @@ test('generated env parser converts typed values into grouped runtime config', (
     'TEAM_MEMBER_CREATOR',
     'TEAM_ADMIN',
   ]);
+});
+
+test('optional env values are normalized to undefined when blank', () => {
+  const parsed = parseGeneratedEnv({
+    VITE_APP_NAME: 'Fieldmark',
+    VITE_WEB_URL: 'https://web.example.org',
+    VITE_API_URL: 'https://api.example.org',
+    VITE_APP_URL: 'https://app.example.org',
+    VITE_BUGSNAG_KEY: '',
+    VITE_BUGSNAG_API_KEY: '',
+    VITE_APP_CONTACT_URL: '',
+    VITE_DOCS_URL: '',
+    VITE_DIRECTORY_USERNAME: '',
+    VITE_DIRECTORY_PASSWORD: '',
+  });
+
+  assert.equal(parsed.observability.bugsnagApiKey, undefined);
+  assert.equal(parsed.support.appContactUrl, undefined);
+  assert.equal(parsed.support.docsUrl, undefined);
+  assert.equal(parsed.auth.directoryUsername, undefined);
+  assert.equal(parsed.auth.directoryPassword, undefined);
 });
