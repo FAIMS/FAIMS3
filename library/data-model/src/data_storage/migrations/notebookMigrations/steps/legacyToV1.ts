@@ -32,13 +32,16 @@
  * ## Frozen contract
  *
  * This module does **not** import the live application model for its
- * intermediate shapes; it works on loose records and only uses the live V1 Zod
- * schema in {@link validateV1} to assert the *output*. Refactors to the current
- * `NotebookDefinition` must not force edits to the historical stages.
+ * intermediate shapes; it works on loose records. {@link validateV1} parses
+ * the output as {@link NotebookDefinitionV1} (`1.0.0`, no required
+ * `exportName`). The next hop stamps that field.
  */
 
 import {z} from 'zod';
-import {NotebookDefinitionV1Schema} from '../../../../uiSpecification/types';
+import {
+  NotebookDefinitionV1Schema,
+  type NotebookDefinitionV1,
+} from '../../../../uiSpecification/types';
 import {NOTEBOOK_SCHEMA_LEGACY, NotebookSchemaMigrationError} from '../types';
 import {getNotebookSchemaVersion} from '../version';
 
@@ -88,7 +91,7 @@ const LegacyEncodedUiSpecSchema = z
  * @returns a new notebook at `1.0.0` (`{uiSpec, metadata}` with `views`)
  * @throws {NotebookSchemaMigrationError} on an unrecognised legacy version
  */
-export function migrateLegacyToV1(input: unknown): unknown {
+export function migrateLegacyToV1(input: unknown): NotebookDefinitionV1 {
   // Deep clone so no stage mutates the caller's object.
   const nb: any = JSON.parse(JSON.stringify(input ?? {}));
   nb.metadata ??= {};
@@ -259,7 +262,7 @@ export function migrateLegacyToV1(input: unknown): unknown {
     if (current.metadata && 'schema_version' in current.metadata) {
       delete current.metadata.schema_version;
     }
-    return current;
+    return current as NotebookDefinitionV1;
   }
 
   throw new NotebookSchemaMigrationError(
@@ -269,8 +272,7 @@ export function migrateLegacyToV1(input: unknown): unknown {
 }
 
 /**
- * Validate the output of {@link migrateLegacyToV1} against the live V1 schema
- * and confirm the version stamp.
+ * Validate the output of {@link migrateLegacyToV1} as {@link NotebookDefinitionV1}.
  */
 export function validateV1(output: unknown): void {
   const parsed = NotebookDefinitionV1Schema.parse(output);

@@ -56,15 +56,16 @@ Path finding rules match the Couch harness: `from === to` → no steps; `from > 
 
 ### Registered steps
 
-| From     | To      | Step                  | Effect                                                                                   |
-| -------- | ------- | --------------------- | ---------------------------------------------------------------------------------------- |
-| `legacy` | `1.0.0` | `steps/legacyToV1.ts` | Collapse any pre-semver shape (missing / `1.0`…`7.0`) to the epoch layout; stamp `1.0.0` |
+| From     | To      | Step                      | Effect                                                                                   |
+| -------- | ------- | ------------------------- | ---------------------------------------------------------------------------------------- |
+| `legacy` | `1.0.0` | `steps/legacyToV1.ts`     | Collapse any pre-semver shape (missing / `1.0`…`7.0`) to the epoch layout; stamp `1.0.0` |
+| `1.0.0`  | `1.0.1` | `steps/v1_0_0ToV1_0_1.ts` | Require `exportName` on every field (stamped from the `uiSpec.fields` key when missing)  |
 
 `legacyToV1.ts` is intentionally dense. The historical v2–v7 transforms (label normalisation, `project_status` removal, canonical field renames, wire → `{uiSpec, metadata}` restructure with `fviews` → `views`, `ComputedField` → `ComputedNumber`, `displayParent` removal) live inside it as **commented stages** on a fall-through cascade, so a notebook at any historical point ends at `1.0.0`. They are not a living pipeline and are not exported.
 
 ## Zod models
 
-`uiSpecification/types.ts` holds the notebook JSON Zod schemas in versioned blocks with paired inferred types (`NotebookDefinitionV1Schema` / `NotebookDefinitionV1`, `NotebookUiSpecV1Schema`, `TemplateDefinitionV1Schema`, compiled variants, …), following `projectsDB/types.ts` and `templatesDB/types.ts`. The unversioned names (`NotebookDefinitionSchema`, `NotebookUiSpec`, `TemplateDefinition`, …) are **aliases of the latest block**. `schemaVersion` is validated by `NotebookSchemaSemverSchema` (`uiSpecification/schemaVersion.ts`).
+`uiSpecification/types.ts` holds the notebook JSON Zod schemas in versioned blocks named after `uiSpec.schemaVersion` (`V1` = `1.0.0`, `V1_0_1` = `1.0.1`, …) with paired inferred types (`NotebookDefinitionV1Schema` / `NotebookDefinitionV1`, `NotebookDefinitionV1_0_1Schema`, …). Unchanged envelopes (settings, metadata) are aliased forward. The unversioned names (`NotebookDefinitionSchema`, `NotebookUiSpec`, `TemplateDefinition`, …) are **aliases of the latest block**. `schemaVersion` is validated by `NotebookSchemaSemverSchema` (`uiSpecification/schemaVersion.ts`). Migration steps type their input/output against those versioned models.
 
 ## When migrations run
 
@@ -82,7 +83,7 @@ Do not run `delete-metadata-databases` until projects are migrated and verified.
 ## Adding a future notebook schema version
 
 1. Decide the bump (patch / minor / major) using the tier guidance above. Every bump, including patch, needs a registry step so the path finder can reach the new target (a patch step may be an identity transform that restamps the version).
-2. If the shape changes, add a `V<n+1>` block in `uiSpecification/types.ts` (extend / omit from `V<n>`) and re-point the current aliases. Patch bumps that do not change the model can keep the existing block.
+2. If the shape changes, add a `V<semver>` block in `uiSpecification/types.ts` (extend / omit / alias from the previous, e.g. `V1_0_1` after `V1`) and re-point the current aliases. Patch bumps that do not change the model can keep the existing block.
 3. Add `steps/<from>To<to>.ts` exporting a pure `migrationFunction(input)` (deep-clone, never mutate) and a `validateFunction(output)` that parses with the new version's Zod schema and checks the stamp.
 4. Append `{from, to, description, migrationFunction, validateFunction}` to `NOTEBOOK_UI_SCHEMA_MIGRATIONS` and bump `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`.
 5. Add table-driven cases to `steps/<step>.test.ts` via `findNotebookSchemaMigration` + `runNotebookSchemaMigrationForTest`; `harness.test.ts` checks completeness (unique path from `legacy` and from every registered `from`) automatically.

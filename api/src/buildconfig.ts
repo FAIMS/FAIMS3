@@ -201,6 +201,8 @@ const EnvSchema = z
      * already-migrated DB, or when migrate is run out of band
      * (`pnpm migrate-with-keys`). Accepts true/1/on/yes or
      * false/0/off/no; unrecognised values fail parse.
+     * Forced on under Vitest / Jest (`runningUnderTest`) so API unit
+     * tests never walk Couch or notebook JSON on import.
      */
     DISABLE_MIGRATE_ON_STARTUP: configHelpers.boolWithDefault(false),
     /**
@@ -552,7 +554,13 @@ const EnvSchema = z
       impersonationSessionExpiryMinutes:
         env.IMPERSONATION_SESSION_EXPIRY_MINUTES,
       emailCodeExpiryMinutes: env.EMAIL_CODE_EXPIRY_MINUTES,
-      disableMigrateOnStartup: env.DISABLE_MIGRATE_ON_STARTUP,
+      // API unit tests import the Express app without the production boot
+      // path, but still share this singleton. Force-skip Couch + notebook
+      // startup migrate so fixture restores keep their on-disk schema and
+      // tests that need a walk call it explicitly.
+      disableMigrateOnStartup: runningUnderTest
+        ? true
+        : env.DISABLE_MIGRATE_ON_STARTUP,
       startupMigrationLockEnabled: env.STARTUP_MIGRATION_LOCK_ENABLED,
       startupMigrationLockTimeoutMs: env.STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
       rateLimiterWindowMs: env.RATE_LIMITER_WINDOW_MS,

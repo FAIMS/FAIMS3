@@ -613,6 +613,7 @@ const TEMPLATE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
                 'component-name': 'TextField',
                 'type-returned': 'faims-core::String',
                 'component-parameters': {label: 'F1', name: 'f1'},
+                exportName: 'f1',
               },
             },
             views: {},

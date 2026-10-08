@@ -47,4 +47,16 @@ export const defaultTokens: DesignerThemeTokens = {
   darkGrey: colors.blueGrey[800],
   midGrey: colors.blueGrey[500],
   lightGrey: colors.blueGrey[100],
+
+  // ── Outlined input appearance ───────────────────────────────────────────
+  outlinedInputSurface: '#FFFFFF',
+  outlinedInputWash: colors.blueGrey[100],
+  outlinedInputBorder: colors.blueGrey[800],
+  outlinedInputHoverBorder: colors.blueGrey[900],
+  outlinedInputFocusBorder: colors.grey[900],
+  outlinedInputFocusRing: colors.blueGrey[900],
+
+  // ── Expression chips ────────────────────────────────────────────────────
+  chipWashNeutral: colors.blueGrey[700],
+  chipWashParent: colors.blueGrey[800],
 };

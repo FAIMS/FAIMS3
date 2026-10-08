@@ -53,7 +53,10 @@ export interface DesignerWidgetProps {
   designerMode?: DesignerDocumentMode;
   /** Used for the exported JSON filename (survey/template display name). */
   exportBaseName?: string;
-  /** Records already collected. Drives the field-ID warning; omit for templates. */
+  /**
+   * Records already collected. Omit for templates.
+   * Field delete warns when this is greater than 0 and the field existed at open.
+   */
   existingRecordCount?: number;
   /** Called with exported JSON `File` on Done, or undefined on cancel. */
   onClose: (notebookJsonFile: File | undefined) => void;

@@ -48,4 +48,16 @@ export const bssTokens: DesignerThemeTokens = {
   darkGrey: colors.blueGrey[800],
   midGrey: colors.blueGrey[500],
   lightGrey: colors.blueGrey[100],
+
+  // ── Outlined input appearance ───────────────────────────────────────────
+  outlinedInputSurface: '#FFFFFF',
+  outlinedInputWash: colors.grey[100],
+  outlinedInputBorder: colors.grey[800],
+  outlinedInputHoverBorder: colors.grey[900],
+  outlinedInputFocusBorder: '#111111',
+  outlinedInputFocusRing: colors.grey[900],
+
+  // ── Expression chips ────────────────────────────────────────────────────
+  chipWashNeutral: colors.grey[700],
+  chipWashParent: colors.blueGrey[800],
 };

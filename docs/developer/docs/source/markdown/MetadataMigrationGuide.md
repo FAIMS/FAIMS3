@@ -125,7 +125,7 @@ Inside `uiSpecification`:
 
 | Path                                         | Expected                                                                                                                 |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `uiSpec.schemaVersion`                       | Matches **`CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`** (`1.0.0`). Pre-semver values (`1.0`…`7.0`) are rewritten on API startup |
+| `uiSpec.schemaVersion`                       | Matches **`CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`** (`1.0.1`). Pre-semver values (`1.0`…`7.0`) are rewritten on API startup |
 | `uiSpec.views`                               | Object (decoded from legacy `fviews`; not `fviews` on persisted doc)                                                     |
 | `uiSpec.settings.showQrCodeButton`           | **boolean**                                                                                                              |
 | `metadata.information`                       | Object with `notebookVersion`, `purposeMarkdown`, `projectLeadLabel`, `leadInstitution` (camelCase keys)                 |

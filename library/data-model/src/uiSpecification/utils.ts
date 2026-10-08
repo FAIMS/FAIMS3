@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {HRID_STRING} from '../datamodel';
 import {FAIMSTypeName} from '../types';
-import {slugify} from '../utils';
+import {slugify, uniqueExportColumnName} from '../utils';
 import {compileExpression} from './conditionals';
 import {ExprType, FAIMS_TYPE_TO_EXPR_TYPE} from './expressions';
 import {
@@ -269,7 +269,14 @@ export const getFieldToIdsMap = (
 export const SPATIAL_FIELDS = ['MapFormField', 'TakePoint'];
 
 export type FieldSummary = {
+  /** Immutable storage id (`uiSpec.fields` key). */
   name: string;
+  /**
+   * CSV / GIS column name. When built by {@link getNotebookFieldTypes} this
+   * is sanitised (`sanitizeExportColumnName`) and uniquified — do not treat
+   * it as the raw stored `exportName` from an uploaded notebook.
+   */
+  exportName: string;
   type: string;
   /** Component namespace from the UI spec (e.g. "faims-custom", "mapping-plugin"). */
   componentNamespace: string;
@@ -284,8 +291,12 @@ export type FieldSummary = {
 
 /**
  * Get a list of fields for a notebook with relevant information
- * on each for the export
-
+ * on each for the export.
+ *
+ * `exportName` is sanitised here: uploaded notebooks may skip designer
+ * slugify, so column names must not carry CR/LF, quotes, or path
+ * separators into CSV / GIS / KML output.
+ *
  * @param uiSpecification UI Specification (decoded)
  * @param viewID View ID
  * @returns an array of FieldSummary objects
@@ -306,12 +317,17 @@ export const getNotebookFieldTypes = ({
   }
   const views = uiSpecification.viewsets[viewID].views;
   const fields: FieldSummary[] = [];
+  const usedExportNames = new Set<string>();
 
   views.forEach((view: string) => {
-    uiSpecification.views[view].fields.forEach((field: any) => {
+    uiSpecification.views[view].fields.forEach((field: string) => {
       const fieldInfo = uiSpecification.fields[field];
       fields.push({
         name: field,
+        exportName: uniqueExportColumnName(
+          fieldInfo.exportName || field,
+          usedExportNames
+        ),
         componentNamespace: fieldInfo['component-namespace'] ?? '',
         componentName: fieldInfo['component-name'],
         type: fieldInfo['type-returned'],

@@ -46,4 +46,16 @@ export const faimsTokens: DesignerThemeTokens = {
   darkGrey: colors.blueGrey[700],
   midGrey: colors.blueGrey[500],
   lightGrey: colors.blueGrey[100],
+
+  // ── Outlined input appearance ───────────────────────────────────────────
+  outlinedInputSurface: '#FFFFFF',
+  outlinedInputWash: colors.lightGreen[100],
+  outlinedInputBorder: colors.blueGrey[700],
+  outlinedInputHoverBorder: colors.blueGrey[800],
+  outlinedInputFocusBorder: fieldmarkBrand.primaryDark,
+  outlinedInputFocusRing: colors.blueGrey[800],
+
+  // ── Expression chips ────────────────────────────────────────────────────
+  chipWashNeutral: colors.blueGrey[600],
+  chipWashParent: colors.blueGrey[800],
 };

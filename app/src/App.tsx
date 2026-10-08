@@ -92,7 +92,7 @@ const RootLayout = () => {
       {/** Display app version warning if mismatched */}
       <VersionWarning />
 
-      {/* Main application chrome (header, sidebar, etc.) */}
+      {/* Main application layout (header, sidebar, etc.) */}
       <MainLayout>
         <NotebookOfflineMapPrompt />
         {/* Nested route content renders here */}

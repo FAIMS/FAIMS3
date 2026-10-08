@@ -14,6 +14,7 @@ export const sampleNotebook: Notebook = {
         'component-namespace': 'faims-custom',
         'component-name': 'TextField',
         'type-returned': 'faims-core::String',
+        exportName: 'New-Text-Field',
         'component-parameters': {
           label: 'Location Description',
           name: 'New-Text-Field',
@@ -30,6 +31,7 @@ export const sampleNotebook: Notebook = {
         'component-namespace': 'faims-custom',
         'component-name': 'BasicAutoIncrementer',
         'type-returned': 'faims-core::String',
+        exportName: 'Field-ID',
         'component-parameters': {
           name: 'Field-ID',
           id: 'basic-autoincrementer-field',
@@ -49,6 +51,7 @@ export const sampleNotebook: Notebook = {
         'component-namespace': 'faims-custom',
         'component-name': 'TemplatedStringField',
         'type-returned': 'faims-core::String',
+        exportName: 'Identifier',
         'component-parameters': {
           fullWidth: true,
           name: 'Identifier',
@@ -70,6 +73,7 @@ export const sampleNotebook: Notebook = {
         'component-namespace': 'qrcode',
         'component-name': 'QRCodeFormField',
         'type-returned': 'faims-core::String',
+        exportName: 'IGSN-QR-Code',
         'component-parameters': {
           name: 'IGSN-QR-Code',
           id: 'qr-code-field',
@@ -88,6 +92,7 @@ export const sampleNotebook: Notebook = {
         'component-namespace': 'faims-custom',
         'component-name': 'TakePoint',
         'type-returned': 'faims-pos::Location',
+        exportName: 'Sample-Location',
         'component-parameters': {
           fullWidth: true,
           name: 'Sample-Location',
@@ -106,6 +111,7 @@ export const sampleNotebook: Notebook = {
         'component-namespace': 'faims-custom',
         'component-name': 'TakePhoto',
         'type-returned': 'faims-attachment::Files',
+        exportName: 'Sample-Photograph',
         'component-parameters': {
           fullWidth: true,
           name: 'Sample-Photograph',
@@ -124,6 +130,7 @@ export const sampleNotebook: Notebook = {
         'component-namespace': 'faims-custom',
         'component-name': 'NumberField',
         'type-returned': 'faims-core::Number',
+        exportName: 'Length-mm',
         'component-parameters': {
           fullWidth: true,
           helperText: 'Longest dimension of sample in mm.',
@@ -144,6 +151,7 @@ export const sampleNotebook: Notebook = {
         'component-namespace': 'faims-custom',
         'component-name': 'TextField',
         'type-returned': 'faims-core::String',
+        exportName: 'survey-note',
         'component-parameters': {
           fullWidth: true,
           helperText: 'Note comments about survey area here',
@@ -167,6 +175,7 @@ export const sampleNotebook: Notebook = {
         'component-namespace': 'faims-custom',
         'component-name': 'RadioGroup',
         'type-returned': 'faims-core::String',
+        exportName: 'Type',
         'component-parameters': {
           fullWidth: true,
           helperText: 'Choose a field from the dropdown',
@@ -195,6 +204,7 @@ export const sampleNotebook: Notebook = {
         'component-namespace': 'faims-custom',
         'component-name': 'RadioGroup',
         'type-returned': 'faims-core::String',
+        exportName: 'safety_hazard',
         'component-parameters': {
           name: 'safety_hazard',
           id: 'safety_hazard',

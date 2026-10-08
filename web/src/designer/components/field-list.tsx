@@ -33,7 +33,7 @@ import {
   designerPrimaryActionButtonSx,
 } from './designer-style';
 import {HeadingWithInfo} from './heading-with-info';
-import {resolveAddedFieldKey} from '../domain/notebook/ids';
+import {mintFieldStorageId} from '../domain/notebook/ids';
 
 type Props = {
   viewSetId: string;
@@ -95,11 +95,8 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   const handleDialogConfirm = useCallback(
     (fieldType: string) => {
       const defaultFieldName = 'New Field';
-      // Pre-compute the slug fieldAdded will assign so we can expand the accordion immediately.
-      const newFieldKey = resolveAddedFieldKey(
-        defaultFieldName,
-        Object.keys(fields)
-      );
+      // Mint once and pass to fieldAdded so autoFocusFieldKey matches the created field.
+      const newFieldStorageId = mintFieldStorageId(Object.keys(fields));
 
       dispatch(
         fieldAdded({
@@ -108,9 +105,10 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
           viewId,
           viewSetId,
           addAfter: addAfterField,
+          storageId: newFieldStorageId,
         })
       );
-      setAutoFocusFieldKey(newFieldKey);
+      setAutoFocusFieldKey(newFieldStorageId);
       setDialogOpen(false);
     },
     [addAfterField, dispatch, fields, viewId, viewSetId]
