@@ -884,7 +884,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
               onClick={() => createNewRecord()}
               disabled={isCreating || isAttachmentSaving}
               startIcon={
-                isCreating ? (
+                isCreating || isAttachmentSaving ? (
                   <CircularProgress size={20} color="inherit" />
                 ) : (
                   <AddIcon />
