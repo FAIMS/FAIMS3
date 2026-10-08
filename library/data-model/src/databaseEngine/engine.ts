@@ -621,7 +621,7 @@ export class CoreOperations {
    * @returns Map of id → validated document for rows that succeeded
    */
   async getDocumentsByIds<T>(
-    ids: string[],
+    ids: readonly string[],
     validator: (doc: unknown) => T
   ): Promise<Map<string, T>> {
     const unique = [...new Set(ids.filter(id => id.length > 0))];
