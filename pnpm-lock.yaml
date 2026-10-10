@@ -317,8 +317,8 @@ importers:
         specifier: ^7.2.1
         version: 7.5.0(@capacitor/core@7.6.6)
       '@capacitor/android':
-        specifier: ^7.2.0
-        version: 7.6.6(@capacitor/core@7.6.6)
+        specifier: ^7.6.9
+        version: 7.6.9(@capacitor/core@7.6.6)
       '@capacitor/app':
         specifier: ^7.0.1
         version: 7.1.2(@capacitor/core@7.6.6)
@@ -1458,8 +1458,8 @@ packages:
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
 
-  '@capacitor/android@7.6.6':
-    resolution: {integrity: sha512-PnO8NFjpJJmMINjQQicPwS+hTMWFReIYJcfj8dzb/rRPgElxj+PBJi+6p9X4LUHd2yin8O5FGuqjNOT5BrvWvw==}
+  '@capacitor/android@7.6.9':
+    resolution: {integrity: sha512-jvfU42aOuj92/KJqRscfDm+5612WzJainFL09xjJgD9oI3OMXN4PBfccn8Ig9i8x7bkVqZv/XNwFshiIRqmggg==}
     peerDependencies:
       '@capacitor/core': ^7.6.0
 
@@ -13276,7 +13276,7 @@ snapshots:
     dependencies:
       '@capacitor/core': 7.6.6
 
-  '@capacitor/android@7.6.6(@capacitor/core@7.6.6)':
+  '@capacitor/android@7.6.9(@capacitor/core@7.6.6)':
     dependencies:
       '@capacitor/core': 7.6.6
 

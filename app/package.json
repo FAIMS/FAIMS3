@@ -44,7 +44,7 @@
     "@bugsnag/source-maps": "^2.3.3",
     "@capacitor-community/exif": "^7.0.0",
     "@capacitor-mlkit/barcode-scanning": "^7.2.1",
-    "@capacitor/android": "^7.2.0",
+    "@capacitor/android": "^7.6.9",
     "@capacitor/app": "^7.0.1",
     "@capacitor/app-launcher": "^7.0.1",
     "@capacitor/browser": "^7.0.1",
