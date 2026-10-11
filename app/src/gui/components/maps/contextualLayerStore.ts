@@ -1,0 +1,613 @@
+// SPDX-License-Identifier: Apache-2.0
+/**
+ * On-device copies of normalized map layers, plus local paint preferences.
+ * File bytes live in Capacitor Filesystem or the Origin Private File System.
+ * The index and style edits live in the local_state database.
+ */
+
+import {Capacitor} from '@capacitor/core';
+import {Directory, Filesystem} from '@capacitor/filesystem';
+import type {ContextualLayerListing, MapAssetStyle} from '@faims3/data-model';
+import type {ContextualMapLayer} from '@faims3/forms';
+import {safeWriteDocument} from '@faims3/data-model';
+import {databaseService} from '../../../context/slices/helpers/databaseService';
+import {
+  assignDownloadedLayer,
+  filenamesToDelete,
+  releaseProjectLayers,
+  retainListedLayers,
+} from './contextualLayerIndex';
+
+const INDEX_ID = 'contextual-layer-index';
+
+type StoredFile = {
+  assetId: string;
+  contentHash: string;
+  kind: ContextualLayerListing['kind'];
+  name: string;
+  byteSize: number;
+  extent4326: ContextualLayerListing['extent'];
+  extent3857?: ContextualLayerListing['extent3857'];
+  defaultStyle: MapAssetStyle;
+  filename: string;
+  /** Active surveys that downloaded this file. */
+  projectIds: string[];
+};
+
+type LayerPrefs = {
+  visible: boolean;
+  opacity: number;
+  zIndex: number;
+  stroke: string;
+  fill: string;
+  lineWidth: number;
+  pointSize: number;
+  labelField?: string;
+};
+
+type LayerIndex = {
+  _id: typeof INDEX_ID;
+  _rev?: string;
+  files: Record<string, StoredFile>;
+  prefs: Record<string, LayerPrefs>;
+  seenHashByProject: Record<string, string>;
+};
+
+const emptyIndex = (): LayerIndex => ({
+  _id: INDEX_ID,
+  files: {},
+  prefs: {},
+  seenHashByProject: {},
+});
+
+async function readIndex(): Promise<LayerIndex> {
+  const db = databaseService.getLocalStateDatabase();
+  try {
+    const doc = (await db.get(INDEX_ID)) as LayerIndex;
+    return {
+      ...emptyIndex(),
+      ...doc,
+      files: doc.files ?? {},
+      prefs: doc.prefs ?? {},
+      seenHashByProject: doc.seenHashByProject ?? {},
+    };
+  } catch (error) {
+    const status = (error as {status?: number}).status;
+    if (status === 404) {
+      return emptyIndex();
+    }
+    throw error;
+  }
+}
+
+async function writeIndex(index: LayerIndex): Promise<void> {
+  const db = databaseService.getLocalStateDatabase();
+  await safeWriteDocument({
+    db,
+    data: index,
+    writeOnClash: true,
+  });
+}
+
+async function listDeviceFilenames(): Promise<string[]> {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const listing = await Filesystem.readdir({
+        path: 'map-assets',
+        directory: Directory.Data,
+      });
+      return listing.files.map(file => file.name);
+    } catch {
+      return [];
+    }
+  }
+  try {
+    const root = await navigator.storage.getDirectory();
+    const dir = await root.getDirectoryHandle('map-assets');
+    const names: string[] = [];
+    for await (const name of dir.keys()) {
+      names.push(name);
+    }
+    return names;
+  } catch {
+    return [];
+  }
+}
+
+/** Delete bytes that the index no longer names, including a replaced hash. */
+async function deleteUnreferencedFiles(index: LayerIndex): Promise<void> {
+  const referenced = new Set(
+    Object.values(index.files).map(file => file.filename)
+  );
+  const onDisk = await listDeviceFilenames();
+  await Promise.all(
+    onDisk
+      .filter(filename => !referenced.has(filename))
+      .map(filename => removeDeviceFile(filename))
+  );
+}
+
+function dropUnusedPrefs(index: LayerIndex): void {
+  for (const assetId of Object.keys(index.prefs)) {
+    if (!index.files[assetId]) {
+      delete index.prefs[assetId];
+    }
+  }
+}
+
+function filenameFor(layer: ContextualLayerListing): string {
+  const ext = layer.kind === 'geojson' ? 'geojson' : 'png';
+  return `${layer.id}-${layer.contentHash}.${ext}`;
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+async function writeDeviceFile(
+  filename: string,
+  bytes: Uint8Array
+): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    await Filesystem.writeFile({
+      path: `map-assets/${filename}`,
+      directory: Directory.Data,
+      data: bytesToBase64(bytes),
+      recursive: true,
+    });
+    return;
+  }
+  const root = await navigator.storage.getDirectory();
+  const dir = await root.getDirectoryHandle('map-assets', {create: true});
+  const handle = await dir.getFileHandle(filename, {create: true});
+  const writable = await handle.createWritable();
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  await writable.write(new Blob([copy]));
+  await writable.close();
+}
+
+const browserObjectUrls = new Map<string, string>();
+
+async function removeDeviceFile(filename: string): Promise<void> {
+  const objectUrl = browserObjectUrls.get(filename);
+  if (objectUrl) {
+    URL.revokeObjectURL(objectUrl);
+    browserObjectUrls.delete(filename);
+  }
+  if (Capacitor.isNativePlatform()) {
+    await Filesystem.deleteFile({
+      path: `map-assets/${filename}`,
+      directory: Directory.Data,
+    }).catch(() => undefined);
+    return;
+  }
+  const root = await navigator.storage.getDirectory();
+  const dir = await root.getDirectoryHandle('map-assets', {create: true});
+  await dir.removeEntry(filename).catch(() => undefined);
+}
+
+async function urlForFile(filename: string): Promise<string> {
+  if (Capacitor.isNativePlatform()) {
+    const {uri} = await Filesystem.getUri({
+      path: `map-assets/${filename}`,
+      directory: Directory.Data,
+    });
+    return Capacitor.convertFileSrc(uri);
+  }
+  const cached = browserObjectUrls.get(filename);
+  if (cached) {
+    return cached;
+  }
+  const root = await navigator.storage.getDirectory();
+  const dir = await root.getDirectoryHandle('map-assets', {create: true});
+  const handle = await dir.getFileHandle(filename);
+  const file = await handle.getFile();
+  const url = URL.createObjectURL(file);
+  browserObjectUrls.set(filename, url);
+  return url;
+}
+
+function prefsFor(
+  file: StoredFile,
+  prefs: LayerPrefs | undefined,
+  order: number
+): LayerPrefs {
+  return (
+    prefs ?? {
+      visible: true,
+      opacity: file.defaultStyle.opacity,
+      zIndex: 10 + order,
+      stroke: file.defaultStyle.stroke,
+      fill: file.defaultStyle.fill,
+      lineWidth: file.defaultStyle.lineWidth,
+      pointSize: file.defaultStyle.pointSize,
+      labelField: file.defaultStyle.labelField,
+    }
+  );
+}
+
+export async function getSeenContextualLayersHash(
+  projectId: string
+): Promise<string | undefined> {
+  const index = await readIndex();
+  return index.seenHashByProject[projectId];
+}
+
+export async function markContextualLayersSeen(
+  projectId: string,
+  hash: string
+): Promise<void> {
+  const index = await readIndex();
+  index.seenHashByProject[projectId] = hash;
+  await writeIndex(index);
+}
+
+/** Layers downloaded for this survey, in stack order. */
+export async function contextualLayersForMap(
+  projectId: string
+): Promise<ContextualMapLayer[]> {
+  const index = await readIndex();
+  const files = Object.values(index.files).filter(file =>
+    file.projectIds.includes(projectId)
+  );
+  files.sort((a, b) => a.assetId.localeCompare(b.assetId));
+  const layers: ContextualMapLayer[] = [];
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const prefs = prefsFor(file, index.prefs[file.assetId], i);
+    layers.push({
+      id: file.assetId,
+      name: file.name,
+      kind: file.kind,
+      url: await urlForFile(file.filename),
+      visible: prefs.visible,
+      opacity: prefs.opacity,
+      zIndex: prefs.zIndex,
+      stroke: prefs.stroke,
+      fill: prefs.fill,
+      lineWidth: prefs.lineWidth,
+      pointSize: prefs.pointSize,
+      labelField: prefs.labelField,
+      extent4326: file.extent4326,
+      extent3857: file.extent3857,
+    });
+  }
+  return layers.sort((a, b) => a.zIndex - b.zIndex);
+}
+
+/** One stored layer, including its file URL, for a static preview. */
+export async function loadStoredContextualLayer(
+  assetId: string
+): Promise<ContextualMapLayer | undefined> {
+  const index = await readIndex();
+  const file = index.files[assetId];
+  if (!file) {
+    return undefined;
+  }
+  const prefs = prefsFor(file, index.prefs[file.assetId], 0);
+  return {
+    id: file.assetId,
+    name: file.name,
+    kind: file.kind,
+    url: await urlForFile(file.filename),
+    visible: true,
+    opacity: prefs.opacity,
+    zIndex: prefs.zIndex,
+    stroke: prefs.stroke,
+    fill: prefs.fill,
+    lineWidth: prefs.lineWidth,
+    pointSize: prefs.pointSize,
+    labelField: prefs.labelField,
+    extent4326: file.extent4326,
+    extent3857: file.extent3857,
+  };
+}
+
+export async function updateContextualLayerPrefs(
+  assetId: string,
+  patch: Partial<LayerPrefs>
+): Promise<void> {
+  const index = await readIndex();
+  const file = index.files[assetId];
+  if (!file) {
+    return;
+  }
+  const current = prefsFor(file, index.prefs[assetId], 0);
+  index.prefs[assetId] = {...current, ...patch};
+  if (!index.prefs[assetId].labelField) {
+    delete index.prefs[assetId].labelField;
+  }
+  await writeIndex(index);
+}
+
+export async function moveContextualLayer(
+  projectId: string,
+  assetId: string,
+  direction: 'up' | 'down'
+): Promise<void> {
+  const layers = await contextualLayersForMap(projectId);
+  const ordered = [...layers].sort((a, b) => a.zIndex - b.zIndex);
+  const index = ordered.findIndex(layer => layer.id === assetId);
+  const swapWith = direction === 'up' ? index + 1 : index - 1;
+  if (index < 0 || swapWith < 0 || swapWith >= ordered.length) {
+    return;
+  }
+  const current = ordered[index];
+  const other = ordered[swapWith];
+  await updateContextualLayerPrefs(current.id, {zIndex: other.zIndex});
+  await updateContextualLayerPrefs(other.id, {zIndex: current.zIndex});
+}
+
+export type ContextualLayerDownloadProgress = {
+  /** 0–1 across every layer in this download. */
+  completion: number;
+  assetId?: string;
+};
+
+/**
+ * Read a response body in chunks so the caller can show download progress.
+ * Falls back to the full buffer when the body stream is unavailable.
+ */
+async function readResponseBytes(
+  response: Response,
+  expectedBytes: number,
+  onReceived: (received: number, total: number) => void
+): Promise<Uint8Array> {
+  const headerLength = Number(response.headers.get('Content-Length'));
+  const total =
+    Number.isFinite(headerLength) && headerLength > 0
+      ? headerLength
+      : expectedBytes;
+  const reader = response.body?.getReader();
+  if (!reader) {
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    onReceived(bytes.byteLength, Math.max(total, bytes.byteLength));
+    return bytes;
+  }
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  while (true) {
+    const {done, value} = await reader.read();
+    if (done) {
+      break;
+    }
+    if (!value) {
+      continue;
+    }
+    chunks.push(value);
+    received += value.byteLength;
+    onReceived(received, Math.max(total, received));
+  }
+  const bytes = new Uint8Array(received);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
+
+export async function downloadContextualLayers({
+  serverUrl,
+  token,
+  projectId,
+  layers,
+  onProgress,
+}: {
+  serverUrl: string;
+  token: string;
+  projectId: string;
+  layers: ContextualLayerListing[];
+  onProgress?: (progress: ContextualLayerDownloadProgress) => void;
+}): Promise<void> {
+  const index = await readIndex();
+  const previous = index.files;
+  const batchBytes = layers.reduce((sum, layer) => sum + layer.byteSize, 0);
+  let completedBytes = 0;
+  let lastPercent = -1;
+  const report = (
+    assetId: string | undefined,
+    currentReceived: number,
+    currentTotal: number
+  ) => {
+    const current =
+      currentTotal > 0 ? Math.min(currentTotal, currentReceived) : 0;
+    const completion =
+      batchBytes > 0
+        ? Math.min(1, (completedBytes + current) / batchBytes)
+        : currentReceived > 0
+          ? 1
+          : 0;
+    const percent = Math.round(completion * 100);
+    if (percent === lastPercent) {
+      return;
+    }
+    lastPercent = percent;
+    onProgress?.({completion, assetId});
+  };
+  report(undefined, 0, 0);
+  for (const layer of layers) {
+    const existing = index.files[layer.id];
+    const filename =
+      existing && existing.contentHash === layer.contentHash
+        ? existing.filename
+        : filenameFor(layer);
+    if (!existing || existing.contentHash !== layer.contentHash) {
+      const response = await fetch(
+        `${serverUrl}/api/map-assets/${layer.id}/normalized`,
+        {headers: {Authorization: `Bearer ${token}`}}
+      );
+      if (!response.ok) {
+        throw new Error(`Could not download ${layer.name}.`);
+      }
+      const bytes = await readResponseBytes(
+        response,
+        layer.byteSize,
+        (received, total) => report(layer.id, received, total)
+      );
+      await writeDeviceFile(filename, bytes);
+    }
+    completedBytes += layer.byteSize;
+    report(layer.id, 0, 0);
+    index.files = assignDownloadedLayer<StoredFile>(index.files, projectId, {
+      assetId: layer.id,
+      contentHash: layer.contentHash,
+      kind: layer.kind,
+      name: layer.name,
+      byteSize: layer.byteSize,
+      extent4326: layer.extent,
+      extent3857: layer.extent3857,
+      defaultStyle: layer.defaultStyle,
+      filename,
+      projectIds: [projectId],
+    });
+    if (!index.prefs[layer.id]) {
+      const order = Object.keys(index.prefs).length;
+      index.prefs[layer.id] = prefsFor(index.files[layer.id], undefined, order);
+    }
+  }
+  await commitFiles(index, previous);
+  const touched = new Set<string>([projectId]);
+  for (const file of Object.values(index.files)) {
+    const before = previous[file.assetId];
+    if (!before || before.filename !== file.filename) {
+      for (const id of file.projectIds) {
+        touched.add(id);
+      }
+    }
+  }
+  for (const id of touched) {
+    notifyContextualLayersChanged(id);
+  }
+}
+
+async function commitFiles(
+  index: LayerIndex,
+  previous: LayerIndex['files']
+): Promise<void> {
+  dropUnusedPrefs(index);
+  await writeIndex(index);
+  await Promise.all(
+    filenamesToDelete(previous, index.files).map(filename =>
+      removeDeviceFile(filename)
+    )
+  );
+  await deleteUnreferencedFiles(index);
+}
+
+/**
+ * Drop this survey from assets it no longer links.
+ * A file shared with another active survey stays on disk.
+ * Returns whether any file reference changed.
+ */
+function layerRefsChanged(
+  previous: LayerIndex['files'],
+  next: LayerIndex['files']
+): boolean {
+  const previousIds = Object.keys(previous);
+  const nextIds = Object.keys(next);
+  if (previousIds.length !== nextIds.length) {
+    return true;
+  }
+  return nextIds.some(assetId => {
+    const before = previous[assetId];
+    const after = next[assetId];
+    return (
+      !before ||
+      before.filename !== after.filename ||
+      before.projectIds.join('\0') !== after.projectIds.join('\0')
+    );
+  });
+}
+
+export async function retainListedContextualLayers(
+  projectId: string,
+  listedAssetIds: string[]
+): Promise<boolean> {
+  const index = await readIndex();
+  const previous = index.files;
+  index.files = retainListedLayers(previous, projectId, listedAssetIds);
+  if (!layerRefsChanged(previous, index.files)) {
+    await deleteUnreferencedFiles(index);
+    return false;
+  }
+  await commitFiles(index, previous);
+  return true;
+}
+
+/** Remove this survey from layers the user did not keep. */
+export async function forgetUnselectedContextualLayers(
+  projectId: string,
+  keepIds: string[]
+): Promise<void> {
+  await retainListedContextualLayers(projectId, keepIds);
+}
+
+/** Drop this survey's reference. Delete the file when no survey still uses it. */
+export async function releaseContextualLayersForProject(
+  projectId: string
+): Promise<void> {
+  const index = await readIndex();
+  const previous = index.files;
+  index.files = releaseProjectLayers(previous, projectId);
+  delete index.seenHashByProject[projectId];
+  await commitFiles(index, previous);
+}
+
+export type StoredContextualLayerSummary = {
+  assetId: string;
+  name: string;
+  kind: ContextualLayerListing['kind'];
+  byteSize: number;
+  contentHash: string;
+  projectIds: string[];
+};
+
+/** Every contextual layer file currently stored on this device. */
+export async function listStoredContextualLayers(): Promise<
+  StoredContextualLayerSummary[]
+> {
+  const index = await readIndex();
+  return Object.values(index.files)
+    .map(file => ({
+      assetId: file.assetId,
+      name: file.name,
+      kind: file.kind,
+      byteSize: file.byteSize,
+      contentHash: file.contentHash,
+      projectIds: [...file.projectIds],
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Delete one layer file even when several surveys reference it. */
+export async function removeContextualLayerFromDevice(
+  assetId: string
+): Promise<void> {
+  const index = await readIndex();
+  const previous = index.files;
+  const file = previous[assetId];
+  if (!file) {
+    return;
+  }
+  const {[assetId]: _removed, ...rest} = previous;
+  index.files = rest;
+  await commitFiles(index, previous);
+  for (const projectId of file.projectIds) {
+    notifyContextualLayersChanged(projectId);
+  }
+}
+
+export const CONTEXTUAL_LAYERS_CHANGED_EVENT = 'contextual-layers-changed';
+
+export function notifyContextualLayersChanged(projectId: string): void {
+  dispatchEvent(
+    new CustomEvent(CONTEXTUAL_LAYERS_CHANGED_EVENT, {detail: {projectId}})
+  );
+}

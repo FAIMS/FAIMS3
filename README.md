@@ -51,16 +51,18 @@ nvm use 24
 
 You will also need Docker and Docker Compose installed.
 
-GeoPackage export requires [GDAL](https://gdal.org/) (`ogr2ogr` on PATH). This is
-included in the API Docker image and devcontainer. For native development, `./dev.sh`
-warns if GDAL is missing; install locally when you need `.gpkg` export:
+GeoPackage export and map-layer ingest require [GDAL](https://gdal.org/)
+(`ogr2ogr`, `gdalinfo`, `gdalwarp`, `gdal_translate` on PATH). Georeferenced PDF
+uploads also need GDAL's PDF driver (Poppler). This is included in the API Docker
+image and devcontainer. For native development, `./dev.sh` warns if GDAL or the
+PDF driver is missing:
 
 ```bash
 # Ubuntu / Debian
-sudo apt-get install gdal-bin
+sudo apt-get install gdal-bin poppler-utils
 
 # macOS (Homebrew)
-brew install gdal
+brew install gdal poppler
 ```
 
 ### Starting all services

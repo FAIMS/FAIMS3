@@ -90,6 +90,38 @@ export const userCanCreateTemplate = (user: User | null): boolean => {
  * Hook wrapper for {@link userCanCreateTemplate}. Re-renders when the auth
  * token changes.
  */
+/**
+ * True when the user may upload a map layer either globally
+ * (`CREATE_PROJECT`) or in at least one team (`CREATE_PROJECT_IN_TEAM`).
+ */
+export const userCanUploadMapLayer = (user: User | null): boolean => {
+  if (!user?.decodedToken) {
+    return false;
+  }
+  return (
+    isAuthorized({
+      decodedToken: user.decodedToken,
+      action: Action.CREATE_PROJECT,
+    }) ||
+    getUserResourcesForAction({
+      decodedToken: user.decodedToken,
+      action: Action.CREATE_PROJECT_IN_TEAM,
+    }).length > 0
+  );
+};
+
+/** Hook wrapper for {@link userCanUploadMapLayer}. */
+export const useCanUploadMapLayer = (): boolean => {
+  const {user, isExpired} = useAuth();
+
+  return useMemo(() => {
+    if (!user || isExpired()) {
+      return false;
+    }
+    return userCanUploadMapLayer(user);
+  }, [user, user?.token, isExpired()]);
+};
+
 export const useCanCreateTemplate = (): boolean => {
   const {user, isExpired} = useAuth();
 

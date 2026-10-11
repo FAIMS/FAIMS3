@@ -150,7 +150,7 @@ export function EditOfflineMap() {
     setMessage('');
     try {
       await tileStore.removeTileSet(offlineMapId);
-      navigate(ROUTES.OFFLINE_MAPS);
+      navigate(ROUTES.OFFLINE_MAP_REGIONS);
     } catch (deleteError) {
       setMessage(
         deleteError instanceof Error
@@ -175,7 +175,7 @@ export function EditOfflineMap() {
     return (
       <Box sx={{mx: 'auto', width: '100%', px: 2, py: 3}}>
         <Stack spacing={2}>
-          <BackButton link={ROUTES.OFFLINE_MAPS} />
+          <BackButton link={ROUTES.OFFLINE_MAP_REGIONS} />
           <Alert severity="error">{message || 'Offline map not found'}</Alert>
         </Stack>
       </Box>
@@ -203,7 +203,7 @@ export function EditOfflineMap() {
           spacing={1}
           sx={{justifyContent: 'space-between', alignItems: 'center'}}
         >
-          <BackButton link={ROUTES.OFFLINE_MAPS} />
+          <BackButton link={ROUTES.OFFLINE_MAP_REGIONS} />
           <Typography
             variant="h4"
             sx={{flex: 1, minWidth: 0, textAlign: 'center'}}

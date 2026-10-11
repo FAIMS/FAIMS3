@@ -15,6 +15,95 @@
 import {spawn} from 'child_process';
 import {logError} from '../../logging';
 
+/** How long a single GDAL/OGR process may run before it is killed. */
+const GDAL_COMMAND_TIMEOUT_MS = 5 * 60 * 1000;
+
+/** Thrown when a GDAL/OGR command exits non-zero. */
+export class GdalCommandError extends Error {
+  constructor(
+    readonly command: string,
+    readonly args: string[],
+    readonly stderr: string,
+    readonly exitCode: number | null
+  ) {
+    super(
+      `${command} failed (exit ${exitCode ?? 'signal'}): ${stderr.trim() || 'no error output'}`
+    );
+    this.name = 'GdalCommandError';
+  }
+}
+
+/**
+ * Runs a GDAL/OGR binary and returns stdout. Rejects with {@link GdalCommandError}
+ * when the process fails or times out.
+ */
+export const runGdalCommand = ({
+  command,
+  args,
+}: {
+  command: string;
+  args: string[];
+}): Promise<{stdout: string; stderr: string}> =>
+  new Promise((resolve, reject) => {
+    const proc = spawn(command, args);
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const finish = (handler: () => void) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      clearTimeout(timer);
+      handler();
+    };
+    timer = setTimeout(() => {
+      proc.kill('SIGKILL');
+      finish(() =>
+        reject(
+          new GdalCommandError(
+            command,
+            args,
+            `timed out after ${GDAL_COMMAND_TIMEOUT_MS}ms`,
+            null
+          )
+        )
+      );
+    }, GDAL_COMMAND_TIMEOUT_MS);
+
+    proc.stdout.on('data', chunk => {
+      stdout += chunk.toString();
+    });
+    proc.stderr.on('data', chunk => {
+      stderr += chunk.toString();
+    });
+    proc.on('error', error => {
+      finish(() => reject(error));
+    });
+    proc.on('close', code => {
+      finish(() => {
+        if (code === 0) {
+          resolve({stdout, stderr});
+          return;
+        }
+        reject(new GdalCommandError(command, args, stderr, code));
+      });
+    });
+  });
+
+/** Parses `gdalinfo -json` or `ogrinfo -json` output. */
+export const readGdalJson = async ({
+  command,
+  args,
+}: {
+  command: string;
+  args: string[];
+}): Promise<unknown> => {
+  const {stdout} = await runGdalCommand({command, args});
+  return JSON.parse(stdout) as unknown;
+};
+
 /** Fallback layer name when converting a single undifferentiated GeoJSON file. */
 const DEFAULT_LAYER_NAME = 'faims_export';
 

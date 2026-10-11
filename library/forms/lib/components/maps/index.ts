@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
+export * from './ContextualLayersControl';
+export * from './StaticMapLayerPreview';
+export * from './contextualMapLayers';
 export * from './MapComponent';
 export * from './migrations';
 export * from './OfflineMapRegionEditor';

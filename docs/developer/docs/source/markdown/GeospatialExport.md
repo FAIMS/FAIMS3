@@ -73,7 +73,28 @@ GeoPackage is **not** streamed end-to-end:
 3. After iteration, **`convertLayeredGeoJsonToGeoPackage`** (`gdal.ts`) runs `ogr2ogr` once per layer (first creates the `.gpkg`, rest append).
 4. The finished `.gpkg` is read from disk and appended to the archive or HTTP response.
 
-**Requirement:** GDAL on PATH (`ogr2ogr`). Included in API Docker image and devcontainer; optional on native dev (`gdal-bin` / Homebrew `gdal`). `./dev.sh` warns if missing.
+**Requirement:** GDAL on PATH (`ogr2ogr`). Included in API Docker image and devcontainer; optional on native dev (`gdal-bin` plus `poppler-utils`, or Homebrew `gdal` and `poppler`). `./dev.sh` warns if `ogr2ogr` or the PDF driver is missing.
+
+## Map-layer ingest
+
+Control Centre uploads are stored in the `mapassets` Couch database and normalized before a device downloads them. Accepted uploads:
+
+- GeoJSON (`.geojson`, `.json`)
+- GeoPackage (`.gpkg`)
+- Zipped shapefile, including `.shp`, `.shx`, `.dbf`, and `.prj`
+- KML (`.kml`)
+- GeoTIFF (`.tif`, `.tiff`)
+- Georeferenced PDF (`.pdf`)
+- PNG or JPEG with a world file and a `.prj`
+
+GDAL must report a CRS. Uploads with no CRS are marked `failed` and no normalized attachment is stored. The failure text is the GDAL message.
+
+Every accepted file becomes one of two device payloads:
+
+- Vectors become a GeoJSON FeatureCollection in `EPSG:4326` (`ogr2ogr -t_srs EPSG:4326`). Files larger than 5 MB are simplified.
+- Rasters, including georeferenced PDFs, are warped to `EPSG:3857` and written as a PNG whose long edge is at most 4096 px. The asset document stores that placement extent.
+
+Implementation: `api/src/couchdb/mapAssets/normalize.ts`, using the command helpers in `api/src/couchdb/export/gdal.ts`. Docker images install `gdal-bin` / `gdal-tools` and `poppler-utils`, and the image build fails unless `gdalinfo --formats` lists PDF.
 
 ## Full export behaviour
 

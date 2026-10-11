@@ -56,6 +56,10 @@ export interface Field {
   maxLength?: number;
   /** Optional stable selector for e2e tests. */
   testId?: string;
+  /** When `type` is `file`, allow choosing more than one file. The value is `File[]`. */
+  multiple?: boolean;
+  /** When `type` is `file`, the input `accept` attribute. */
+  accept?: string;
   /** Inline label beside the control when `type` is `checkbox` (defaults to `label`) */
   checkboxLabel?: string;
   /** When true, optional select fields show a clear button to reset the value. */
@@ -255,6 +259,8 @@ export function Form<
                 checkboxLabel,
                 clearable,
                 testId,
+                multiple,
+                accept,
               },
               index
             ) => {
@@ -361,6 +367,8 @@ export function Form<
                             ) : type === 'file' ? (
                               <Input
                                 type="file"
+                                multiple={multiple}
+                                accept={accept}
                                 min={min}
                                 max={max}
                                 step={step}
@@ -368,10 +376,16 @@ export function Form<
                                 className="cursor-pointer"
                                 placeholder={placeholder}
                                 data-testid={testId}
-                                onChange={event =>
-                                  event.target.files &&
-                                  field.onChange(event.target.files[0])
-                                }
+                                onChange={event => {
+                                  const chosen = event.target.files;
+                                  if (!chosen || chosen.length === 0) {
+                                    field.onChange(multiple ? [] : undefined);
+                                    return;
+                                  }
+                                  field.onChange(
+                                    multiple ? Array.from(chosen) : chosen[0]
+                                  );
+                                }}
                               />
                             ) : (
                               <Input

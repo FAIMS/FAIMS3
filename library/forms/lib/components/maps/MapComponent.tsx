@@ -52,6 +52,8 @@ import {
 import {MapControlsOverlay, MapControlStack} from './controls/primitives';
 import {MapControlThemeProvider} from './mapTheme';
 import {MapConfig} from './types';
+import {ContextualLayersControl} from './ContextualLayersControl';
+import {useContextualMapLayers} from './useContextualMapLayers';
 import {createTileStore} from './tileDB/TileStore';
 
 export const defaultMapProjection = 'EPSG:3857';
@@ -155,6 +157,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
   const autoFlyToCurrentLocation = props.autoFlyToCurrentLocation ?? true;
 
   const [map, setMap] = useState<Map | undefined>(undefined);
+  useContextualMapLayers(map);
   const [zoomLevel, setZoomLevel] = useState(props.zoom || MIN_ZOOM); // Default zoom level
   const [attribution, setAttribution] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
@@ -638,7 +641,12 @@ const MapComponentImpl = (props: MapComponentProps) => {
         />
         {map && (showControls || props.topOverlay) && (
           <MapControlsOverlay
-            topContent={props.topOverlay}
+            topContent={
+              <>
+                {props.topOverlay}
+                <ContextualLayersControl map={map} />
+              </>
+            }
             topRight={
               showControls &&
               setSelectionAsCurrentLocation && (

@@ -5,6 +5,7 @@ import {
   GetNotebookResponse,
   ingestNotebookUiSpecification,
   migrateNotebook,
+  APINotebookList,
   NotebookDefinition,
   NotebookSchemaCompatibility,
   ProjectListItem,
@@ -291,7 +292,8 @@ export function projectInformationFromGetNotebook(
 
 /** Map a lean directory / list row to store listing fields (no form graph). */
 export function listingInformationFromDirectoryItem(
-  item: ProjectListItem
+  item: ProjectListItem &
+    Pick<APINotebookList, 'contextualLayers' | 'contextualLayersHash'>
 ): ProjectListingInformation {
   return {
     name: item.name,
@@ -301,6 +303,8 @@ export function listingInformationFromDirectoryItem(
     updatedAt: item.updatedAt,
     offlineMapRegion: item.offlineMapRegion,
     disableQuickShare: item.disableQuickShare,
+    contextualLayers: item.contextualLayers,
+    contextualLayersHash: item.contextualLayersHash,
     uiSpecProperties: item.uiSpecProperties,
     schemaCompatibility: assessNotebookSchemaCompatibility(
       item.uiSpecProperties.schemaVersion

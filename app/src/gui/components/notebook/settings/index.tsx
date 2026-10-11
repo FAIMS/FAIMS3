@@ -36,6 +36,7 @@ import {
 } from '../../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../../context/store';
 import {logError} from '../../../../logging';
+import {releaseContextualLayersForProject} from '../../maps/contextualLayerStore';
 import {removeProjectOfflineMaps} from '../../maps/projectOfflineMap';
 import {theme} from '../../../themes';
 import {
@@ -91,6 +92,15 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
           )
         );
       }
+    }
+    try {
+      await releaseContextualLayersForProject(projectId);
+    } catch (e) {
+      logError(
+        new Error('Failed to remove contextual map layers on deactivation', {
+          cause: e,
+        })
+      );
     }
     dispatch(
       deactivateProject({

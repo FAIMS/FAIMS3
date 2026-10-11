@@ -801,6 +801,7 @@ export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 5},
   [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 6},
   [DatabaseType.TEAMS]: {defaultVersion: 1, targetVersion: 1},
+  [DatabaseType.MAP_ASSETS]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.TOMBSTONE]: {defaultVersion: 1, targetVersion: 1},
 };
 

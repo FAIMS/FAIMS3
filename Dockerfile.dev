@@ -39,10 +39,11 @@ RUN pnpm turbo build --filter=@faims3/api --filter=@faims3/app --filter=@faims3/
 # service, so one stage serves all three.
 FROM node:24-slim AS runtime
 
-# ogr2ogr for GeoPackage export (see api/src/couchdb/export/gdal.ts), and curl for
-# the api healthcheck.
+# GDAL for GeoPackage export and map-layer ingest (GeoPDF needs Poppler), and
+# curl for the api healthcheck.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends gdal-bin curl \
+  && apt-get install -y --no-install-recommends gdal-bin poppler-utils curl \
+  && gdalinfo --formats | grep -qi pdf \
   && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm

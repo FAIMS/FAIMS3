@@ -20,6 +20,7 @@ import {Link, useLocation} from '@tanstack/react-router';
 import {
   ArchiveRestore,
   House,
+  Layers,
   LayoutTemplate,
   LetterText,
   Users,
@@ -100,6 +101,14 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       testId: 'web-nav-users',
     });
   }
+
+  bottomSectionNavItems.push({
+    title: 'Map layers',
+    url: '/map-layers',
+    icon: Layers,
+    testId: 'web-nav-map-layers',
+    isActive: pathname.startsWith('/map-layers'),
+  });
 
   if (canSeeTeams) {
     bottomSectionNavItems.push({

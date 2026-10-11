@@ -6,6 +6,7 @@
  * instead of gaining another segment.
  */
 
+import {NotebookContextualLayers} from '../gui/components/maps/NotebookContextualLayers';
 import {createContext, ReactNode, useContext, useMemo} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import * as ROUTES from '../constants/routes';
@@ -73,7 +74,9 @@ export const NotebookRouteProvider = ({children}: {children: ReactNode}) => {
 
   return (
     <NotebookRouteContext.Provider value={value}>
-      {children}
+      <NotebookContextualLayers projectId={value.notebook.projectId}>
+        {children}
+      </NotebookContextualLayers>
     </NotebookRouteContext.Provider>
   );
 };

@@ -24,6 +24,7 @@ import {
   initMigrationsDB,
   initPeopleDB,
   initProjectsDB,
+  initMapAssetsDB,
   initTeamsDB,
   initTemplatesDB,
   initTombstoneDB,
@@ -42,6 +43,7 @@ import {
   ProjectDataObject,
   ProjectDocument,
   ProjectID,
+  MapAssetsDB,
   TeamsDB,
   TemplateDB,
   TombstoneDB,
@@ -61,6 +63,7 @@ const PEOPLE_DB_NAME = 'people';
 const MIGRATIONS_DB_NAME = 'migrations';
 const INVITE_DB_NAME = 'invites';
 const TEAMS_DB_NAME = 'teams';
+const MAP_ASSETS_DB_NAME = 'mapassets';
 const TOMBSTONE_DB_NAME = 'tombstone';
 
 let _directoryDB: DatabaseInterface | undefined;
@@ -70,6 +73,7 @@ let _authDB: AuthDatabase | undefined;
 let _usersDB: PeopleDB | undefined;
 let _invitesDB: InvitesDB | undefined;
 let _teamsDB: TeamsDB | undefined;
+let _mapAssetsDB: MapAssetsDB | undefined;
 let _tombstoneDB: TombstoneDB | undefined;
 let _migrationsDB: MigrationsDB | undefined;
 
@@ -275,6 +279,21 @@ export const getTeamsDB = (): TeamsDB => {
   return _teamsDB;
 };
 
+export const getMapAssetsDB = (): MapAssetsDB => {
+  if (!_mapAssetsDB) {
+    const pouch_options = pouchOptions();
+    const dbName = config.couchdbInternalUrl + '/' + MAP_ASSETS_DB_NAME;
+    try {
+      _mapAssetsDB = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting map assets database.'
+      );
+    }
+  }
+  return _mapAssetsDB;
+};
+
 export const getTombstoneDB = (): TombstoneDB => {
   if (!_tombstoneDB) {
     const pouch_options = pouchOptions();
@@ -377,6 +396,8 @@ export const getDbById: GetDbById = async ({dbType, id}) => {
       return getTemplatesDb();
     case DatabaseType.TEAMS:
       return getTeamsDB();
+    case DatabaseType.MAP_ASSETS:
+      return getMapAssetsDB();
     case DatabaseType.TOMBSTONE:
       return getTombstoneDB();
     default: {
@@ -535,6 +556,11 @@ export const initialiseDbAndKeys = async ({
     {dbName: PEOPLE_DB_NAME, db: getUsersDB(), content: initPeopleDB({})},
     {dbName: INVITE_DB_NAME, db: getInvitesDB(), content: initInvitesDB({})},
     {dbName: TEAMS_DB_NAME, db: getTeamsDB(), content: initTeamsDB({})},
+    {
+      dbName: MAP_ASSETS_DB_NAME,
+      db: getMapAssetsDB(),
+      content: initMapAssetsDB({}),
+    },
     {
       dbName: TOMBSTONE_DB_NAME,
       db: getTombstoneDB(),
@@ -702,6 +728,11 @@ export const initialiseAndMigrateDBs = async ({
       db: getTeamsDB(),
       dbType: DatabaseType.TEAMS,
       dbName: TEAMS_DB_NAME,
+    },
+    {
+      db: getMapAssetsDB(),
+      dbType: DatabaseType.MAP_ASSETS,
+      dbName: MAP_ASSETS_DB_NAME,
     },
     {
       db: getTombstoneDB(),

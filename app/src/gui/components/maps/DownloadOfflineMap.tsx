@@ -195,7 +195,7 @@ export function DownloadOfflineMap() {
       });
 
       allowNavigationRef.current = true;
-      navigate(ROUTES.OFFLINE_MAPS);
+      navigate(ROUTES.OFFLINE_MAP_REGIONS);
     } catch (saveError) {
       setError(
         saveError instanceof Error ? saveError.message : 'Could not save map'
@@ -244,7 +244,7 @@ export function DownloadOfflineMap() {
             alignItems: 'center',
           }}
         >
-          <BackButton link={ROUTES.OFFLINE_MAPS} />
+          <BackButton link={ROUTES.OFFLINE_MAP_REGIONS} />
           <Typography
             variant="h4"
             sx={{flex: 1, minWidth: 0, textAlign: 'center'}}

@@ -29,6 +29,7 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
+import BackButton from '../ui/BackButton';
 
 /**
  * Offline map management screen.
@@ -117,15 +118,23 @@ export const OfflineMapManager = () => {
       }}
     >
       <Stack direction="column" spacing={3}>
-        <Stack spacing={1}>
-          <Typography variant="h4" sx={{flex: 1, minWidth: 0}}>
-            Manage Offline maps
-          </Typography>
-
-          <Typography variant="body2" color="text.secondary">
-            All maps you have downloaded for offline use will appear here.
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{justifyContent: 'space-between', alignItems: 'center'}}
+        >
+          <BackButton link={ROUTES.OFFLINE_MAPS} />
+          <Typography
+            variant="h4"
+            sx={{flex: 1, minWidth: 0, textAlign: 'center'}}
+          >
+            Map regions
           </Typography>
         </Stack>
+
+        <Typography variant="body2" color="text.secondary">
+          All maps you have downloaded for offline use will appear here.
+        </Typography>
 
         {/* Show loading error. */}
         {message && <Alert severity="error">{message}</Alert>}

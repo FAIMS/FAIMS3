@@ -53,6 +53,7 @@ import markdownit from 'markdown-it';
 import {api as resetPasswordApi} from './api/emailReset';
 import {api as invitesApi} from './api/invites';
 import {api as longLivedApi} from './api/longLivedTokens';
+import {api as mapAssetsApi} from './api/mapAssets';
 import {api as notebookApi} from './api/notebooks';
 import {api as teamsApi} from './api/teams';
 import {api as templatesApi} from './api/templates';
@@ -236,6 +237,7 @@ export function attachFullApi(app: express.Express): void {
   app.set('view engine', 'handlebars');
   app.use(express.static('public'));
   app.use('/api/notebooks', notebookApi);
+  app.use('/api/map-assets', mapAssetsApi);
   app.use('/api/templates', templatesApi);
   app.use('/api/teams', teamsApi);
   app.use('/api/tombstones', tombstonesApi);
