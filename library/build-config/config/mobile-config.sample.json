@@ -43,8 +43,8 @@
     "autosuggestSource": "NONE",
     "autosuggestMapboxKey": "",
     "autosuggestMapTilerKey": "",
-    "mapboxAddressCountry": "AU",
-    "maptilerAddressCountry": "AU"
+    "mapboxAddressCountry": ["AU"],
+    "maptilerAddressCountry": ["AU"]
   },
   "sync": {
     "syncPushOnlyRecordThreshold": 500,

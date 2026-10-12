@@ -9,29 +9,27 @@ export {
   readAuthProviderConfigFromEnv,
   buildAuthProviderEnvMap,
 } from './auth-provider-config';
-
-const TrueFalseSchema = z
-  .enum(['true', 'false'])
-  .transform(value => value === 'true');
-
-const PositiveIntStringSchema = z
-  .string()
-  .regex(/^\d+$/)
-  .transform(value => Number.parseInt(value, 10))
-  .pipe(z.number().int().positive());
-
-const OptionalCsvSchema = z
-  .string()
-  .optional()
-  .transform(value => {
-    if (!value || value.trim() === '') {
-      return [] as string[];
-    }
-    return value
-      .split(',')
-      .map(entry => entry.trim())
-      .filter(Boolean);
-  });
+import {readAuthProviderConfigFromEnv} from './auth-provider-config';
+export {
+  BoolEnvSchema,
+  PositiveIntStringSchema,
+  OptionalCsvSchema,
+  UpperCsvSchema,
+  parseMaxLongLivedDays,
+  sanitizeCommitVersion,
+  parseBugsnagKey,
+  NO_MAXIMUM_WORDS,
+} from './env-coercion';
+import {
+  BoolEnvSchema,
+  PositiveIntStringSchema,
+  OptionalCsvSchema,
+  UpperCsvSchema,
+  parseMaxLongLivedDays,
+  sanitizeCommitVersion,
+  parseBugsnagKey,
+  stripTrailingSlash,
+} from './env-coercion';
 
 const EndpointsBuildConfigSchema = z
   .object({
@@ -110,8 +108,10 @@ const MapsBuildConfigSchema = z
       .optional(),
     autosuggestMapboxKey: z.string().default('').optional(),
     autosuggestMapTilerKey: z.string().default('').optional(),
-    mapboxAddressCountry: z.string().default('AU').optional(),
-    maptilerAddressCountry: z.string().default('AU').optional(),
+    /** ISO 3166-1 alpha-2 codes (CSV in env). Defaults to Australia. */
+    mapboxAddressCountry: z.array(z.string()).default(['AU']).optional(),
+    /** ISO 3166-1 alpha-2 codes (CSV in env). Defaults to Australia. */
+    maptilerAddressCountry: z.array(z.string()).default(['AU']).optional(),
   })
   .strict();
 
@@ -303,6 +303,61 @@ const PouchdbBuildConfigSchema = z
   })
   .strict();
 
+/**
+ * The canonical config as produced by the schema (after defaults + invariants
+ * are applied). Defined independently of the schema so that the top-level
+ * `.transform()` does not create a circular type (zod 4 + tsc).
+ */
+export type SharedBuildConfig = {
+  endpoints: z.infer<typeof EndpointsBuildConfigSchema>;
+  branding: z.infer<typeof BrandingBuildConfigSchema>;
+  support: z.infer<typeof SupportBuildConfigSchema>;
+  notebookAndRecordUX: z.infer<typeof NotebookAndRecordUxBuildConfigSchema>;
+  maps: z.infer<typeof MapsBuildConfigSchema>;
+  sync: z.infer<typeof SyncBuildConfigSchema>;
+  attachments: z.infer<typeof AttachmentsBuildConfigSchema>;
+  migration: z.infer<typeof MigrationBuildConfigSchema>;
+  auth: z.infer<typeof AuthBuildConfigSchema>;
+  authProviders: z.infer<typeof AuthProviderConfigMapSchema>;
+  authTokens: z.infer<typeof AuthTokensBuildConfigSchema>;
+  limits: z.infer<typeof LimitsBuildConfigSchema>;
+  email: z.infer<typeof EmailBuildConfigSchema>;
+  observability: z.infer<typeof ObservabilityBuildConfigSchema>;
+  teamAndRolePolicy: z.infer<typeof TeamAndRolePolicyBuildConfigSchema>;
+  webDesignerLimits: z.infer<typeof WebDesignerLimitsBuildConfigSchema>;
+  android: z.infer<typeof AndroidBuildConfigSchema>;
+  ios: z.infer<typeof IosBuildConfigSchema>;
+  couchdb: z.infer<typeof CouchdbBuildConfigSchema>;
+  dev: z.infer<typeof DevBuildConfigSchema>;
+  pouchdb: z.infer<typeof PouchdbBuildConfigSchema>;
+};
+
+/**
+ * Applies the shared cross-field invariants (ADR-0001 D4) so that every
+ * entry point (JSON, generated app env, generated api env) yields the same
+ * canonical semantics:
+ *  - short / heading names fall back to the app name
+ *  - offline maps are forced off for OSM (no bulk download)
+ *  - long-lived token hints are clamped to the max duration, deduped, sorted
+ */
+function applySharedInvariants(c: SharedBuildConfig): SharedBuildConfig {
+  if (!c.branding.appShortName) c.branding.appShortName = c.branding.appName;
+  if (!c.branding.headingAppName) c.branding.headingAppName = c.branding.appName;
+  if (c.maps.mapSource === 'osm') c.maps.offlineMaps = false;
+  const maxDays = c.authTokens.maximumLongLivedDurationDays;
+  // 'unlimited' means no cap, so the hints are left unclamped.
+  if (typeof maxDays === 'number') {
+    let hints = (c.authTokens.longLivedTokenDurationHints ?? []).filter(
+      (hint: number) => hint <= maxDays
+    );
+    if (hints.length === 0) hints = [maxDays];
+    c.authTokens.longLivedTokenDurationHints = [...new Set(hints)].sort(
+      (a: number, b: number) => a - b
+    );
+  }
+  return c;
+}
+
 export const BuildConfigSchema = z
   .object({
     endpoints: EndpointsBuildConfigSchema.default({}),
@@ -327,9 +382,8 @@ export const BuildConfigSchema = z
     dev: DevBuildConfigSchema.default({}),
     pouchdb: PouchdbBuildConfigSchema.default({}),
   })
-  .strict();
-
-export type SharedBuildConfig = z.infer<typeof BuildConfigSchema>;
+  .strict()
+  .transform(applySharedInvariants);
 
 /**
  * Same shape as SharedBuildConfig. Kept as an alias so generator, contract
@@ -337,7 +391,16 @@ export type SharedBuildConfig = z.infer<typeof BuildConfigSchema>;
  */
 export const RuntimeConfigSchema = BuildConfigSchema;
 
-export type RuntimeConfig = z.infer<typeof RuntimeConfigSchema>;
+export type RuntimeConfig = SharedBuildConfig;
+
+/**
+ * A config where each top-level group and its scalar fields may be absent.
+ * Produced incrementally by parseAppsEnv / parseApiEnv and consumed by
+ * toRuntimeConfig (whose schema fills the remaining defaults).
+ */
+export type PartialBuildConfig = {
+  [K in keyof SharedBuildConfig]?: Partial<SharedBuildConfig[K]>;
+};
 
 export const GeneratedEnvSchema = z
   .object({
@@ -351,6 +414,8 @@ export const GeneratedEnvSchema = z
     VITE_WEB_URL: z.string().default('http://localhost:3001'),
     VITE_API_URL: z.string().default('http://localhost:8080'),
     VITE_APP_URL: z.string().default('http://localhost:3000'),
+    /** CSV of one or more Conductor URLs (each becomes a login option). */
+    VITE_CONDUCTOR_URL: z.string().default(''),
     VITE_WEBSITE_TITLE: z.string().default('Control Centre'),
     VITE_NOTEBOOK_NAME: z.string().default('project'),
     VITE_NOTEBOOK_LIST_TYPE: z.enum(['tabs', 'headings']).default('tabs'),
@@ -367,31 +432,31 @@ export const GeneratedEnvSchema = z
       .enum(['basic', 'openstreetmap', 'osm-bright', 'toner'])
       .default('basic'),
     VITE_SATELLITE_SOURCE: z.enum(['', 'esri', 'maptiler']).default(''),
-    VITE_OFFLINE_MAPS: TrueFalseSchema.default(false),
+    VITE_OFFLINE_MAPS: BoolEnvSchema.default(false),
     VITE_BUGSNAG_KEY: z.string().default('').optional(),
     VITE_BUGSNAG_API_KEY: z.string().default('').optional(),
     VITE_COMMIT_VERSION: z.string().default('local-build'),
     VITE_FORCE_REMOTE_DELETION: z.enum(['allow', 'never']).default('never'),
-    VITE_DELETE_ON_DEACTIVATION: TrueFalseSchema.default(false),
+    VITE_DELETE_ON_DEACTIVATION: BoolEnvSchema.default(false),
     VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD: PositiveIntStringSchema.default(500),
     VITE_TOKEN_REFRESH_INTERVAL_MS: PositiveIntStringSchema.default(15000),
     VITE_TOKEN_REFRESH_WINDOW_MS: PositiveIntStringSchema.default(60000),
     VITE_LOGIN_BANNER_GRACE_MS: PositiveIntStringSchema.default(10000),
-    VITE_IGNORE_TOKEN_EXP: TrueFalseSchema.default(false),
+    VITE_IGNORE_TOKEN_EXP: BoolEnvSchema.default(false),
     VITE_NAVIGATION: z.enum(['none', 'breadcrumbs']).default('none'),
-    VITE_SHOW_RECORD_LINKS: TrueFalseSchema.default(false),
+    VITE_SHOW_RECORD_LINKS: BoolEnvSchema.default(false),
     VITE_ATTACHMENT_SERVICE_TYPE: z.string().default('COUCH'),
     VITE_ATTACHMENT_DOCUMENT_ID_PREFIX: z.string().default(''),
-    VITE_MIGRATE_OLD_DATABASES: TrueFalseSchema.default(false),
-    VITE_SHOW_WIPE: TrueFalseSchema.default(true),
-    VITE_SHOW_POUCHDB_BROWSER: TrueFalseSchema.default(true),
-    VITE_SHOW_NEW_NOTEBOOK: TrueFalseSchema.default(true),
-    VITE_SHOW_STATUS_TAB: TrueFalseSchema.default(true),
-    VITE_DEBUG_APP: TrueFalseSchema.default(false),
-    VITE_DEBUG_POUCHDB: TrueFalseSchema.default(false),
+    VITE_MIGRATE_OLD_DATABASES: BoolEnvSchema.default(false),
+    VITE_SHOW_WIPE: BoolEnvSchema.default(true),
+    VITE_SHOW_POUCHDB_BROWSER: BoolEnvSchema.default(true),
+    VITE_SHOW_NEW_NOTEBOOK: BoolEnvSchema.default(true),
+    VITE_SHOW_STATUS_TAB: BoolEnvSchema.default(true),
+    VITE_DEBUG_APP: BoolEnvSchema.default(false),
+    VITE_DEBUG_POUCHDB: BoolEnvSchema.default(false),
     VITE_POUCH_BATCH_SIZE: PositiveIntStringSchema.default(10),
     VITE_POUCH_BATCHES_LIMIT: PositiveIntStringSchema.default(10),
-    VITE_DEVELOPER_MODE: TrueFalseSchema.default(false),
+    VITE_DEVELOPER_MODE: BoolEnvSchema.default(false),
     VITE_AUTOSUGGEST_SOURCE: z
       .enum(['NONE', 'MAPBOX', 'MAPTILER'])
       .default('NONE'),
@@ -414,32 +479,199 @@ export const GeneratedEnvSchema = z
 
 export type GeneratedEnv = z.infer<typeof GeneratedEnvSchema>;
 
-export function parseBuildConfig(raw: unknown): SharedBuildConfig {
-  return BuildConfigSchema.parse(raw);
+// ---------------------------------------------------------------------------
+// API env: the server-side half of the generated env (no VITE_ prefix).
+// Parsed with the same strict coercion helpers as the apps env so the two
+// halves agree. Every field is optional so a partial (e.g. apps-only) env
+// still parses; the canonical defaults in BuildConfigSchema fill the rest.
+// ---------------------------------------------------------------------------
+
+const ApiEnvSchema = z
+  .object({
+    CONDUCTOR_PUBLIC_URL: z.string().optional(),
+    WEB_APP_PUBLIC_URL: z.string().optional(),
+    ANDROID_APP_PUBLIC_URL: z.string().optional(),
+    IOS_APP_PUBLIC_URL: z.string().optional(),
+    COUCHDB_INTERNAL_URL: z.string().optional(),
+    COUCHDB_PUBLIC_URL: z.string().optional(),
+    COUCHDB_USER: z.string().optional(),
+    COUCHDB_PASSWORD: z.string().optional(),
+    COUCHDB_EXTERNAL_PORT: PositiveIntStringSchema.optional(),
+    CONDUCTOR_EXTERNAL_PORT: PositiveIntStringSchema.optional(),
+    CONDUCTOR_INTERNAL_PORT: PositiveIntStringSchema.optional(),
+    NEW_CONDUCTOR_URL: z.string().optional(),
+    REDIRECT_WHITELIST: z.string().optional(),
+    PROFILE_NAME: z.string().optional(),
+    KEY_FILE_PATH: z.string().optional(),
+    CONDUCTOR_INSTANCE_NAME: z.string().optional(),
+    CONDUCTOR_DESCRIPTION: z.string().optional(),
+    CONDUCTOR_SHORT_CODE_PREFIX: z.string().optional(),
+    FAIMS_COOKIE_SECRET: z.string().optional(),
+    KEY_SOURCE: z.enum(['FILE', 'ENV', 'AWS_SM']).optional(),
+    AWS_SECRET_KEY_ARN: z.string().optional(),
+    DISABLE_LOCAL_LOGIN: BoolEnvSchema.optional(),
+    PROVISION_SSO_USERS_POLICY: z
+      .enum(['own-team', 'general-user', 'reject'])
+      .optional(),
+    ACCESS_TOKEN_EXPIRY_MINUTES: PositiveIntStringSchema.optional(),
+    REFRESH_TOKEN_EXPIRY_MINUTES: PositiveIntStringSchema.optional(),
+    IMPERSONATION_SESSION_EXPIRY_MINUTES: PositiveIntStringSchema.optional(),
+    EMAIL_CODE_EXPIRY_MINUTES: PositiveIntStringSchema.optional(),
+    MAXIMUM_LONG_LIVED_DURATION_DAYS: z.string().optional(),
+    DISABLE_MIGRATE_ON_STARTUP: BoolEnvSchema.optional(),
+    STARTUP_MIGRATION_LOCK_ENABLED: BoolEnvSchema.optional(),
+    STARTUP_MIGRATION_LOCK_TIMEOUT_MS: PositiveIntStringSchema.optional(),
+    DEVELOPER_MODE: BoolEnvSchema.optional(),
+    RATE_LIMITER_ENABLED: BoolEnvSchema.optional(),
+    RATE_LIMITER_WINDOW_MS: PositiveIntStringSchema.optional(),
+    RATE_LIMITER_PER_WINDOW: PositiveIntStringSchema.optional(),
+    EXPORT_RATE_LIMITER_ENABLED: BoolEnvSchema.optional(),
+    EXPORT_RATE_LIMITER_WINDOW_MS: PositiveIntStringSchema.optional(),
+    EXPORT_RATE_LIMITER_PER_WINDOW: PositiveIntStringSchema.optional(),
+    ATTEMPT_LIMITER_ENABLED: BoolEnvSchema.optional(),
+    EMAIL_SERVICE_TYPE: z.enum(['SMTP', 'MOCK']).optional(),
+    EMAIL_FROM_ADDRESS: z.string().optional(),
+    EMAIL_FROM_NAME: z.string().optional(),
+    EMAIL_REPLY_TO: z.string().optional(),
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: PositiveIntStringSchema.optional(),
+    SMTP_SECURE: BoolEnvSchema.optional(),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASSWORD: z.string().optional(),
+    SMTP_CACHE_EXPIRY_SECONDS: PositiveIntStringSchema.optional(),
+    TEST_EMAIL_ADDRESS: z.string().optional(),
+    BUGSNAG_API_KEY: z.string().optional(),
+    JSON_BODY_LIMIT: z.string().optional(),
+    URLENCODED_BODY_LIMIT: z.string().optional(),
+    RESTORE_UPLOAD_MAX_BYTES: PositiveIntStringSchema.optional(),
+    DOWNLOAD_COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).optional(),
+    RECORDS_HYDRATED_PAGE_LIMIT: PositiveIntStringSchema.optional(),
+  })
+  .passthrough();
+
+export type ApiEnv = z.infer<typeof ApiEnvSchema>;
+
+/**
+ * Parse the API half of a generated env into a partial canonical config.
+ * `AUTH_*` auth-provider keys are handled by the caller via
+ * readAuthProviderConfigFromEnv.
+ */
+export function parseApiEnv(raw: Record<string, unknown>): PartialBuildConfig {
+  const api = ApiEnvSchema.parse(raw);
+  const maxDays =
+    api.MAXIMUM_LONG_LIVED_DURATION_DAYS !== undefined
+      ? parseMaxLongLivedDays(api.MAXIMUM_LONG_LIVED_DURATION_DAYS)
+      : undefined;
+  return {
+    endpoints: {
+      webUrl: api.NEW_CONDUCTOR_URL
+        ? stripTrailingSlash(api.NEW_CONDUCTOR_URL)
+        : api.CONDUCTOR_PUBLIC_URL,
+      apiUrl: api.CONDUCTOR_PUBLIC_URL,
+      appUrl: api.WEB_APP_PUBLIC_URL,
+      androidAppPublicUrl: api.ANDROID_APP_PUBLIC_URL,
+      iosAppPublicUrl: api.IOS_APP_PUBLIC_URL,
+      couchdbInternalUrl: api.COUCHDB_INTERNAL_URL
+        ? stripTrailingSlash(api.COUCHDB_INTERNAL_URL)
+        : undefined,
+      couchdbPublicUrl: api.COUCHDB_PUBLIC_URL
+        ? stripTrailingSlash(api.COUCHDB_PUBLIC_URL)
+        : undefined,
+      redirectWhitelist: api.REDIRECT_WHITELIST
+        ? OptionalCsvSchema.parse(api.REDIRECT_WHITELIST)
+        : undefined,
+    },
+    branding: {
+      conductorInstanceName: api.CONDUCTOR_INSTANCE_NAME,
+      conductorDescription: api.CONDUCTOR_DESCRIPTION,
+      conductorShortCodePrefix: api.CONDUCTOR_SHORT_CODE_PREFIX,
+    },
+    auth: {
+      profileName: api.PROFILE_NAME,
+      keyFilePath: api.KEY_FILE_PATH,
+      keySource: api.KEY_SOURCE,
+      awsSecretKeyArn: api.AWS_SECRET_KEY_ARN,
+      cookieSecret: api.FAIMS_COOKIE_SECRET,
+      disableLocalLogin: api.DISABLE_LOCAL_LOGIN,
+      provisionSsoUsersPolicy: api.PROVISION_SSO_USERS_POLICY,
+    },
+    authTokens: {
+      accessTokenExpiryMinutes: api.ACCESS_TOKEN_EXPIRY_MINUTES,
+      refreshTokenExpiryMinutes: api.REFRESH_TOKEN_EXPIRY_MINUTES,
+      impersonationSessionExpiryMinutes: api.IMPERSONATION_SESSION_EXPIRY_MINUTES,
+      emailCodeExpiryMinutes: api.EMAIL_CODE_EXPIRY_MINUTES,
+      maximumLongLivedDurationDays: maxDays,
+    },
+    migration: {
+      disableMigrateOnStartup: api.DISABLE_MIGRATE_ON_STARTUP,
+      startupMigrationLockEnabled: api.STARTUP_MIGRATION_LOCK_ENABLED,
+      startupMigrationLockTimeoutMs: api.STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
+    },
+    limits: {
+      rateLimiterEnabled: api.RATE_LIMITER_ENABLED,
+      rateLimiterWindowMs: api.RATE_LIMITER_WINDOW_MS,
+      rateLimiterPerWindow: api.RATE_LIMITER_PER_WINDOW,
+      exportRateLimiterEnabled: api.EXPORT_RATE_LIMITER_ENABLED,
+      exportRateLimiterWindowMs: api.EXPORT_RATE_LIMITER_WINDOW_MS,
+      exportRateLimiterPerWindow: api.EXPORT_RATE_LIMITER_PER_WINDOW,
+      attemptLimiterEnabled: api.ATTEMPT_LIMITER_ENABLED,
+      jsonBodyLimit: api.JSON_BODY_LIMIT,
+      urlencodedBodyLimit: api.URLENCODED_BODY_LIMIT,
+      restoreUploadMaxBytes: api.RESTORE_UPLOAD_MAX_BYTES,
+      downloadCookieSameSite: api.DOWNLOAD_COOKIE_SAMESITE,
+      recordsHydratedPageLimit: api.RECORDS_HYDRATED_PAGE_LIMIT,
+    },
+    email: {
+      emailServiceType: api.EMAIL_SERVICE_TYPE,
+      emailFromAddress: api.EMAIL_FROM_ADDRESS,
+      emailFromName: api.EMAIL_FROM_NAME,
+      emailReplyTo: api.EMAIL_REPLY_TO,
+      smtpHost: api.SMTP_HOST,
+      smtpPort: api.SMTP_PORT,
+      smtpSecure: api.SMTP_SECURE,
+      smtpUser: api.SMTP_USER,
+      smtpPassword: api.SMTP_PASSWORD,
+      smtpCacheExpirySeconds: api.SMTP_CACHE_EXPIRY_SECONDS,
+      testEmailAddress: api.TEST_EMAIL_ADDRESS,
+    },
+    observability: {
+      bugsnagApiKey: parseBugsnagKey(api.BUGSNAG_API_KEY),
+    },
+    couchdb: {
+      couchdbUser: api.COUCHDB_USER,
+      couchdbPassword: api.COUCHDB_PASSWORD,
+      couchdbExternalPort: api.COUCHDB_EXTERNAL_PORT,
+      conductorExternalPort: api.CONDUCTOR_EXTERNAL_PORT,
+      conductorInternalPort: api.CONDUCTOR_INTERNAL_PORT,
+    },
+    dev: {
+      developerMode: api.DEVELOPER_MODE,
+    },
+  };
 }
 
-export function toRuntimeConfig(parsed: SharedBuildConfig): RuntimeConfig {
-  return RuntimeConfigSchema.parse(parsed);
-}
-
-export function parseGeneratedEnv(raw: unknown): RuntimeConfig {
-  const rawEnv = (raw ?? {}) as Record<string, unknown>;
-  const env = GeneratedEnvSchema.parse(rawEnv);
-  const buildConfig = parseBuildConfig({
+/**
+ * Parse an apps (VITE_*) env into a partial canonical config. Kept as a
+ * building block of parseGeneratedEnv.
+ */
+export function parseAppsEnv(env: GeneratedEnv): PartialBuildConfig {
+  return {
     endpoints: {
       webUrl: env.VITE_WEB_URL,
       apiUrl: env.VITE_API_URL,
       appUrl: env.VITE_APP_URL,
       conductorUrls: OptionalCsvSchema.parse(env.VITE_CONDUCTOR_URL),
     },
-    // Empty strings round-trip back to undefined so the appName fallbacks
-    // (ADR-0001 D4) apply uniformly in JSON, generated env and parse output.
     branding: {
       appName: env.VITE_APP_NAME,
+      // Empty strings round-trip back to undefined so the appName fallbacks
+      // (ADR-0001 D4) apply uniformly in JSON, generated env and parse output.
       appShortName: env.VITE_APP_SHORT_NAME || undefined,
       headingAppName: env.VITE_HEADING_APP_NAME || undefined,
       websiteTitle: env.VITE_WEBSITE_TITLE,
-      theme: env.VITE_THEME,
+      // The generator emits both; VITE_APP_THEME is preferred (web reads it
+      // first), VITE_THEME is the mobile alias.
+      theme: env.VITE_APP_THEME || env.VITE_THEME,
     },
     support: {
       supportEmail: env.VITE_SUPPORT_EMAIL,
@@ -467,8 +699,10 @@ export function parseGeneratedEnv(raw: unknown): RuntimeConfig {
       autosuggestSource: env.VITE_AUTOSUGGEST_SOURCE,
       autosuggestMapboxKey: env.VITE_AUTOSUGGEST_MAPBOX_KEY,
       autosuggestMapTilerKey: env.VITE_AUTOSUGGEST_MAPTILER_KEY,
-      mapboxAddressCountry: env.VITE_MAPBOX_ADDRESS_COUNTRY,
-      maptilerAddressCountry: env.VITE_MAPTILER_ADDRESS_COUNTRY,
+      mapboxAddressCountry: UpperCsvSchema.parse(env.VITE_MAPBOX_ADDRESS_COUNTRY),
+      maptilerAddressCountry: UpperCsvSchema.parse(
+        env.VITE_MAPTILER_ADDRESS_COUNTRY
+      ),
     },
     sync: {
       forceRemoteDeletion: env.VITE_FORCE_REMOTE_DELETION,
@@ -485,10 +719,9 @@ export function parseGeneratedEnv(raw: unknown): RuntimeConfig {
       tokenRefreshWindowMs: env.VITE_TOKEN_REFRESH_WINDOW_MS,
       loginBannerGraceMs: env.VITE_LOGIN_BANNER_GRACE_MS,
       ignoreTokenExp: env.VITE_IGNORE_TOKEN_EXP,
-      maximumLongLivedDurationDays:
-        env.VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS === 'unlimited'
-          ? 'unlimited'
-          : Number.parseInt(env.VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS, 10),
+      maximumLongLivedDurationDays: parseMaxLongLivedDays(
+        env.VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS
+      ),
       longLivedTokenDurationHints: OptionalCsvSchema.parse(
         env.VITE_LONG_LIVED_TOKEN_DURATION_HINTS
       )
@@ -510,8 +743,12 @@ export function parseGeneratedEnv(raw: unknown): RuntimeConfig {
       pouchBatchesLimit: env.VITE_POUCH_BATCHES_LIMIT,
     },
     observability: {
-      commitVersion: env.VITE_COMMIT_VERSION,
-      bugsnagApiKey: env.VITE_BUGSNAG_KEY || env.VITE_BUGSNAG_API_KEY,
+      // Reject the same garbage the app hides (commit hash / release stamp
+      // only); placeholder text resolves to the generator's default.
+      commitVersion: sanitizeCommitVersion(env.VITE_COMMIT_VERSION) ?? 'local-build',
+      bugsnagApiKey: parseBugsnagKey(
+        env.VITE_BUGSNAG_KEY || env.VITE_BUGSNAG_API_KEY
+      ),
     },
     teamAndRolePolicy: {
       excludedTeamRoles: OptionalCsvSchema.parse(env.VITE_EXCLUDED_TEAM_ROLES),
@@ -531,7 +768,90 @@ export function parseGeneratedEnv(raw: unknown): RuntimeConfig {
       directoryPassword: env.VITE_DIRECTORY_PASSWORD || undefined,
       clusterAdminGroupName: env.VITE_CLUSTER_ADMIN_GROUP_NAME,
     },
-  });
+  };
+}
 
-  return toRuntimeConfig(buildConfig);
+export function parseBuildConfig(raw: unknown): SharedBuildConfig {
+  return BuildConfigSchema.parse(raw);
+}
+
+export function toRuntimeConfig(parsed: PartialBuildConfig): RuntimeConfig {
+  return RuntimeConfigSchema.parse(parsed);
+}
+
+export function parseGeneratedEnv(raw: unknown): RuntimeConfig {
+  const rawEnv = (raw ?? {}) as Record<string, unknown>;
+
+  const hasAppsKey = Object.keys(rawEnv).some(key => key.startsWith('VITE_'));
+  // Any non-VITE_ / non-AUTH_ key is part of the api half (the generator only
+  // emits VITE_*, AUTH_* and the bare api keys). We do not need to enumerate
+  // them to decide whether to run the api parser.
+  const hasApiKey = Object.keys(rawEnv).some(
+    key => !key.startsWith('VITE_') && !key.startsWith('AUTH_')
+  );
+
+  // Merge the apps and api halves (either or both). The api half wins on
+  // shared keys because it is the deployment-specific value.
+  let partial: PartialBuildConfig = {};
+  if (hasAppsKey) {
+    const env = GeneratedEnvSchema.parse(rawEnv);
+    partial = {
+      ...partial,
+      ...parseAppsEnv(env),
+    };
+  }
+  if (hasApiKey || Object.keys(rawEnv).some(k => k.startsWith('AUTH_'))) {
+    const apiPartial = parseApiEnv(rawEnv);
+    partial = mergePartial(partial, apiPartial);
+  }
+
+  const authProviders = readAuthProviderConfigFromEnv(rawEnv as Record<string, string | undefined>);
+  partial = {
+    ...partial,
+    ...(authProviders && Object.keys(authProviders).length ? {authProviders} : {}),
+  };
+
+  return toRuntimeConfig(partial);
+}
+
+/** Drop undefined values so they do not clobber a present sibling on merge. */
+function definedOnly(value: unknown): Record<string, unknown> {
+  if (value === null || typeof value !== 'object') return {};
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (v !== undefined) out[k] = v;
+  }
+  return out;
+}
+
+/**
+ * Deep-merge two partial configs one level deep (groups -> scalars): for each
+ * group, a defined right-side field wins over a left-side field; undefined
+ * right-side fields are ignored so an absent api value does not clobber a
+ * present apps value (and vice versa).
+ */
+function mergePartial(
+  left: PartialBuildConfig,
+  right: PartialBuildConfig
+): PartialBuildConfig {
+  const out: Record<string, unknown> = {};
+  const groups = new Set([
+    ...Object.keys(left),
+    ...Object.keys(right),
+  ] as (keyof SharedBuildConfig)[]);
+  for (const group of groups) {
+    const leftVal = (left as Record<string, unknown>)[group];
+    const rightVal = (right as Record<string, unknown>)[group];
+    if (leftVal && typeof leftVal === 'object' && rightVal && typeof rightVal === 'object') {
+      out[group] = {
+        ...definedOnly(leftVal),
+        ...definedOnly(rightVal),
+      };
+    } else if (rightVal !== undefined) {
+      out[group] = rightVal;
+    } else {
+      out[group] = leftVal;
+    }
+  }
+  return out as Partial<SharedBuildConfig>;
 }
