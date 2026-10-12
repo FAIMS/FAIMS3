@@ -175,6 +175,10 @@ async function convertVector(
       'EPSG:4326',
       '-lco',
       'RFC7946=YES',
+      // GeoJSON holds one layer. -nln appends every source layer (KML
+      // folders, multi-layer GeoPackages) into that layer.
+      '-nln',
+      'features',
     ];
     if (simplify !== undefined && simplify > 0) {
       args.push('-simplify', String(simplify));
