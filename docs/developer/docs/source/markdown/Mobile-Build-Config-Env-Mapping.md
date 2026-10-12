@@ -68,25 +68,25 @@ can be read/decrypted.
 
 ## Shared app fields (both Android and iOS)
 
-| JSON field             | Generated env var        |
-| ---------------------- | ------------------------ |
-| `branding.appName`     | `VITE_APP_NAME`          |
-| `branding.appShortName`| `VITE_APP_SHORT_NAME`    |
-| `android.appId`        | `VITE_APP_ID`            |
-| `branding.headingAppName`| `VITE_HEADING_APP_NAME` |
-| `support.privacyPolicyUrl`| `VITE_APP_PRIVACY_POLICY_URL` |
-| `support.supportEmail` | `VITE_SUPPORT_EMAIL`     |
-| `support.appContactUrl`| `VITE_APP_CONTACT_URL`   |
-| `maps.mapSource`       | `VITE_MAP_SOURCE`        |
-| `maps.mapSourceKey`    | `VITE_MAP_SOURCE_KEY`    |
-| `pouchdb.pouchBatchSize` | `VITE_POUCH_BATCH_SIZE` |
-| `pouchdb.pouchBatchesLimit`| `VITE_POUCH_BATCHES_LIMIT` |
-| `dev.showPouchDbBrowser` | `VITE_SHOW_POUCHDB_BROWSER` |
-| `observability.bugsnagApiKey` | `VITE_BUGSNAG_KEY`  |
-| `endpoints.conductorUrls` | `VITE_CONDUCTOR_URL`   |
-| `endpoints.apiUrl`     | `VITE_API_URL`           |
-| `endpoints.webUrl`     | `VITE_WEB_URL`           |
-| `endpoints.appUrl`     | `VITE_APP_URL`           |
+| JSON field                    | Generated env var             |
+| ----------------------------- | ----------------------------- |
+| `branding.appName`            | `VITE_APP_NAME`               |
+| `branding.appShortName`       | `VITE_APP_SHORT_NAME`         |
+| `android.appId`               | `VITE_APP_ID`                 |
+| `branding.headingAppName`     | `VITE_HEADING_APP_NAME`       |
+| `support.privacyPolicyUrl`    | `VITE_APP_PRIVACY_POLICY_URL` |
+| `support.supportEmail`        | `VITE_SUPPORT_EMAIL`          |
+| `support.appContactUrl`       | `VITE_APP_CONTACT_URL`        |
+| `maps.mapSource`              | `VITE_MAP_SOURCE`             |
+| `maps.mapSourceKey`           | `VITE_MAP_SOURCE_KEY`         |
+| `pouchdb.pouchBatchSize`      | `VITE_POUCH_BATCH_SIZE`       |
+| `pouchdb.pouchBatchesLimit`   | `VITE_POUCH_BATCHES_LIMIT`    |
+| `dev.showPouchDbBrowser`      | `VITE_SHOW_POUCHDB_BROWSER`   |
+| `observability.bugsnagApiKey` | `VITE_BUGSNAG_KEY`            |
+| `endpoints.conductorUrls`     | `VITE_CONDUCTOR_URL`          |
+| `endpoints.apiUrl`            | `VITE_API_URL`                |
+| `endpoints.webUrl`            | `VITE_WEB_URL`                |
+| `endpoints.appUrl`            | `VITE_APP_URL`                |
 
 ## Android mapping
 
@@ -109,19 +109,19 @@ Notes:
 
 ## iOS mapping
 
-| JSON field                                                            | Generated env var                              | Typical file                              |
-| --------------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------- |
-| `ios.bundleIdentifier`                                                | `VITE_APPLE_BUNDLE_IDENTIFIER`                 | `build-config.json`                       |
-| `ios.appStoreConnectTeamId`                                           | `VITE_APP_STORE_CONNECT_TEAM_ID`               | `build-config.json`                       |
-| `ios.appleId`                                                         | `FASTLANE_APPLE_ID`                            | `build-secrets.enc.json`                  |
-| `ios.appleApplicationSpecificPassword`                                | `FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD` | `build-secrets.enc.json`                  |
-| `ios.matchPassword`                                                   | `MATCH_PASSWORD`                               | `build-secrets.enc.json`                  |
-| `ios.matchGitUrl`                                                     | `MATCH_GIT_URL`                                | `build-config.json` or CI                 |
-| `ios.gitAuthorization`                                                | `GIT_AUTHORIZATION`                            | optional in JSON                          |
-| `ios.provisioningProfileSpecifier`                                    | `PROVISIONING_PROFILE_SPECIFIER`               | `build-config.json` or secrets            |
-| `ios.appleKeyId` (fallback `ios.appleIndividualKeyId`)                | `APPLE_KEY_ID`                                 | `build-secrets.enc.json`                  |
-| `ios.appleIssuerId`                                                   | `APPLE_ISSUER_ID`                              | `build-secrets.enc.json` (team-key flows) |
-| `ios.appleKeyContent` (fallback `ios.appleIndividualKeyContent`)      | `APPLE_KEY_CONTENT`                            | `build-secrets.enc.json`                  |
+| JSON field                                                       | Generated env var                              | Typical file                              |
+| ---------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------- |
+| `ios.bundleIdentifier`                                           | `VITE_APPLE_BUNDLE_IDENTIFIER`                 | `build-config.json`                       |
+| `ios.appStoreConnectTeamId`                                      | `VITE_APP_STORE_CONNECT_TEAM_ID`               | `build-config.json`                       |
+| `ios.appleId`                                                    | `FASTLANE_APPLE_ID`                            | `build-secrets.enc.json`                  |
+| `ios.appleApplicationSpecificPassword`                           | `FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD` | `build-secrets.enc.json`                  |
+| `ios.matchPassword`                                              | `MATCH_PASSWORD`                               | `build-secrets.enc.json`                  |
+| `ios.matchGitUrl`                                                | `MATCH_GIT_URL`                                | `build-config.json` or CI                 |
+| `ios.gitAuthorization`                                           | `GIT_AUTHORIZATION`                            | optional in JSON                          |
+| `ios.provisioningProfileSpecifier`                               | `PROVISIONING_PROFILE_SPECIFIER`               | `build-config.json` or secrets            |
+| `ios.appleKeyId` (fallback `ios.appleIndividualKeyId`)           | `APPLE_KEY_ID`                                 | `build-secrets.enc.json`                  |
+| `ios.appleIssuerId`                                              | `APPLE_ISSUER_ID`                              | `build-secrets.enc.json` (team-key flows) |
+| `ios.appleKeyContent` (fallback `ios.appleIndividualKeyContent`) | `APPLE_KEY_CONTENT`                            | `build-secrets.enc.json`                  |
 
 Notes:
 

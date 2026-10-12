@@ -2,7 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {parseBuildConfig, toRuntimeConfig, type PartialBuildConfig} from './build-config.js';
+import {
+  parseBuildConfig,
+  toRuntimeConfig,
+  type PartialBuildConfig,
+} from './build-config.js';
 import {buildEnvMapFromRuntime} from './env-contract.js';
 
 const HELP_TEXT = `Usage: pnpm --filter=@faims3/build-config run generate -- [--config path/to/config.json] [--platform apps|api] [--out path/to/.env]
@@ -49,7 +53,9 @@ function readConfigJson(configArg: string, cwd = process.cwd()): unknown {
 
 function readConfigForGeneration(configArg: string, cwd = process.cwd()) {
   const parsed = parseBuildConfig(readConfigJson(configArg, cwd));
-  const commitVersion = resolveGitCommitVersion(parsed.observability.commitVersion);
+  const commitVersion = resolveGitCommitVersion(
+    parsed.observability.commitVersion
+  );
 
   return parseBuildConfig({
     ...parsed,
@@ -157,7 +163,9 @@ export function generateBuildConfig(
     return `${HELP_TEXT}\n`;
   }
 
-  const rawPlatform = String(args.platform ?? args.target ?? 'apps').toLowerCase();
+  const rawPlatform = String(
+    args.platform ?? args.target ?? 'apps'
+  ).toLowerCase();
   // The mobile CI workflows pass 'android' / 'ios'; both produce the same
   // shared app/web env (the platform-specific values are additive).
   const platformAliases: Record<string, SupportedPlatform> = {

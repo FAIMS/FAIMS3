@@ -165,9 +165,9 @@ is the **mobile** spelling in both cases, which is non-breaking because the not
 yet migrated app already reads exactly those names and only the web read the
 other spelling (and the web was migrated in the same change):
 
-| Concept | Dropped key | Kept key |
-| --- | --- | --- |
-| Theme | `VITE_APP_THEME` | `VITE_THEME` |
+| Concept     | Dropped key            | Kept key           |
+| ----------- | ---------------------- | ------------------ |
+| Theme       | `VITE_APP_THEME`       | `VITE_THEME`       |
 | Bugsnag key | `VITE_BUGSNAG_API_KEY` | `VITE_BUGSNAG_KEY` |
 
 Additionally, the api's `NEW_CONDUCTOR_URL` (a legacy key carrying the Control

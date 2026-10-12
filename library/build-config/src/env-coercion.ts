@@ -23,21 +23,19 @@ const FALSEY = new Set<string>(FALSEY_STRINGS);
  * error. The generator emits `true`/`false`, so this is a strict superset of
  * what this module ever produces.
  */
-export const BoolEnvSchema = z
-  .string()
-  .transform((value, ctx) => {
-    const lower = value.trim().toLowerCase();
-    if (TRUTHY.has(lower)) return true;
-    if (FALSEY.has(lower)) return false;
-    ctx.addIssue({
-      code: 'custom',
-      message: `Invalid boolean "${value}". Expected one of: ${[
-        ...TRUTHY_STRINGS,
-        ...FALSEY_STRINGS,
-      ].join(', ')}.`,
-    });
-    return z.NEVER;
+export const BoolEnvSchema = z.string().transform((value, ctx) => {
+  const lower = value.trim().toLowerCase();
+  if (TRUTHY.has(lower)) return true;
+  if (FALSEY.has(lower)) return false;
+  ctx.addIssue({
+    code: 'custom',
+    message: `Invalid boolean "${value}". Expected one of: ${[
+      ...TRUTHY_STRINGS,
+      ...FALSEY_STRINGS,
+    ].join(', ')}.`,
   });
+  return z.NEVER;
+});
 
 /** Positive integer from a decimal string. Strict: non-numeric is an error. */
 export const PositiveIntStringSchema = z
@@ -50,24 +48,20 @@ export const PositiveIntStringSchema = z
  * Comma-separated list of strings. Blank/whitespace-only → empty array.
  * Trims entries and drops empties.
  */
-export const OptionalCsvSchema = z
-  .string()
-  .transform(value =>
-    (value ?? '')
-      .split(',')
-      .map(entry => entry.trim())
-      .filter(entry => entry.length > 0)
-  );
+export const OptionalCsvSchema = z.string().transform(value =>
+  (value ?? '')
+    .split(',')
+    .map(entry => entry.trim())
+    .filter(entry => entry.length > 0)
+);
 
 /** Like OptionalCsvSchema but uppercases each entry (ISO country codes). */
-export const UpperCsvSchema = z
-  .string()
-  .transform(value =>
-    (value ?? '')
-      .split(',')
-      .map(entry => entry.trim().toUpperCase())
-      .filter(entry => entry.length > 0)
-  );
+export const UpperCsvSchema = z.string().transform(value =>
+  (value ?? '')
+    .split(',')
+    .map(entry => entry.trim().toUpperCase())
+    .filter(entry => entry.length > 0)
+);
 
 /** Strip a single trailing slash from a URL string (blank stays blank). */
 export const stripTrailingSlash = (value: string): string =>
@@ -133,7 +127,8 @@ export function sanitizeCommitVersion(
 ): string | undefined {
   if (value === undefined) return undefined;
   const trimmed = value.trim();
-  if (trimmed === '' || COMMIT_FALSEY.has(trimmed.toLowerCase())) return undefined;
+  if (trimmed === '' || COMMIT_FALSEY.has(trimmed.toLowerCase()))
+    return undefined;
   if (GIT_COMMIT_HASH.test(trimmed) || RELEASE_COMMIT_STAMP.test(trimmed)) {
     return trimmed;
   }

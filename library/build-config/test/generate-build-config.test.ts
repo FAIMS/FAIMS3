@@ -210,7 +210,10 @@ test('auth provider env helpers roundtrip config for google provider', () => {
 
 test('mobile-config.sample.json matches current build config schema', () => {
   const base = JSON.parse(
-    fs.readFileSync(new URL('../config/mobile-config.sample.json', import.meta.url), 'utf8')
+    fs.readFileSync(
+      new URL('../config/mobile-config.sample.json', import.meta.url),
+      'utf8'
+    )
   );
 
   const parsed = parseBuildConfig(base);
@@ -220,10 +223,16 @@ test('mobile-config.sample.json matches current build config schema', () => {
 
 test('mobile sample + secrets deep merge matches current build config schema', () => {
   const base = JSON.parse(
-    fs.readFileSync(new URL('../config/mobile-config.sample.json', import.meta.url), 'utf8')
+    fs.readFileSync(
+      new URL('../config/mobile-config.sample.json', import.meta.url),
+      'utf8'
+    )
   );
   const secrets = JSON.parse(
-    fs.readFileSync(new URL('../config/mobile-secrets.sample.json', import.meta.url), 'utf8')
+    fs.readFileSync(
+      new URL('../config/mobile-secrets.sample.json', import.meta.url),
+      'utf8'
+    )
   );
 
   const merged = deepMerge(base, secrets);
@@ -327,7 +336,10 @@ test('parseGeneratedEnv(buildEnvMapFromRuntime(config)) reproduces canonical val
     auth: {clusterAdminGroupName: 'admins'},
     // disableLocalLogin is api-only (DISABLE_LOCAL_LOGIN) and is not part of
     // the apps env round trip.
-    authTokens: {longLivedTokenDurationHints: [1, 30], maximumLongLivedDurationDays: 90},
+    authTokens: {
+      longLivedTokenDurationHints: [1, 30],
+      maximumLongLivedDurationDays: 90,
+    },
     teamAndRolePolicy: {excludedTeamRoles: ['TEAM_ADMIN']},
     android: {appId: 'org.example.app'},
     ios: {
@@ -411,7 +423,11 @@ test('parseGeneratedEnv round-trips API platform values', () => {
     authTokens: {refreshTokenExpiryMinutes: 1440, accessTokenExpiryMinutes: 60},
     limits: {rateLimiterEnabled: false, jsonBodyLimit: '50mb'},
     email: {emailServiceType: 'MOCK'},
-    couchdb: {couchdbUser: 'admin', couchdbPassword: 'pw', conductorInternalPort: 8080},
+    couchdb: {
+      couchdbUser: 'admin',
+      couchdbPassword: 'pw',
+      conductorInternalPort: 8080,
+    },
   };
 
   const env = generateEnv({config, platform: 'api', includeEmpty: true});
@@ -446,9 +462,18 @@ test('generateBuildConfig accepts android and ios platform aliases', () => {
   fs.writeFileSync(configJson, JSON.stringify(sampleConfig), 'utf8');
 
   try {
-    const android = generateBuildConfig({config: configJson, platform: 'android'}, process.cwd());
-    const ios = generateBuildConfig({config: configJson, platform: 'ios'}, process.cwd());
-    const apps = generateBuildConfig({config: configJson, platform: 'apps'}, process.cwd());
+    const android = generateBuildConfig(
+      {config: configJson, platform: 'android'},
+      process.cwd()
+    );
+    const ios = generateBuildConfig(
+      {config: configJson, platform: 'ios'},
+      process.cwd()
+    );
+    const apps = generateBuildConfig(
+      {config: configJson, platform: 'apps'},
+      process.cwd()
+    );
 
     assert.match(android, /VITE_APP_NAME=/);
     assert.match(android, /ANDROID_RELEASE_STATUS/);
@@ -457,8 +482,12 @@ test('generateBuildConfig accepts android and ios platform aliases', () => {
     assert.equal(ios, apps);
 
     assert.throws(
-      () => generateBuildConfig({config: configJson, platform: 'web'}, process.cwd()),
-      /Unsupported platform: web/,
+      () =>
+        generateBuildConfig(
+          {config: configJson, platform: 'web'},
+          process.cwd()
+        ),
+      /Unsupported platform: web/
     );
   } finally {
     fs.rmSync(configPath, {recursive: true, force: true});
@@ -573,10 +602,14 @@ test('D4: short/heading names fall back to app name', () => {
 });
 
 test('D4: offline maps are forced off for OSM', () => {
-  const parsed = parseBuildConfig({maps: {mapSource: 'osm', offlineMaps: true}});
+  const parsed = parseBuildConfig({
+    maps: {mapSource: 'osm', offlineMaps: true},
+  });
   assert.equal(parsed.maps.offlineMaps, false);
 
-  const parsedMaptiler = parseBuildConfig({maps: {mapSource: 'maptiler', offlineMaps: true}});
+  const parsedMaptiler = parseBuildConfig({
+    maps: {mapSource: 'maptiler', offlineMaps: true},
+  });
   assert.equal(parsedMaptiler.maps.offlineMaps, true);
 });
 
@@ -627,7 +660,8 @@ test('D5-ish: address country codes round trip as arrays', () => {
 // Commit version is sanitised: only hashes / release stamps survive.
 test('commit version is sanitised (garbage becomes undefined)', () => {
   assert.equal(
-    parseGeneratedEnv({VITE_COMMIT_VERSION: 'abcdef1'}).observability.commitVersion,
+    parseGeneratedEnv({VITE_COMMIT_VERSION: 'abcdef1'}).observability
+      .commitVersion,
     'abcdef1'
   );
   assert.equal(
@@ -646,8 +680,14 @@ test('commit version is sanitised (garbage becomes undefined)', () => {
 
 // Bugsnag: blank or the literal 'false' means off.
 test('bugsnag key: blank and literal false resolve to undefined', () => {
-  assert.equal(parseGeneratedEnv({VITE_BUGSNAG_KEY: 'false'}).observability.bugsnagApiKey, undefined);
-  assert.equal(parseGeneratedEnv({VITE_BUGSNAG_KEY: ''}).observability.bugsnagApiKey, undefined);
+  assert.equal(
+    parseGeneratedEnv({VITE_BUGSNAG_KEY: 'false'}).observability.bugsnagApiKey,
+    undefined
+  );
+  assert.equal(
+    parseGeneratedEnv({VITE_BUGSNAG_KEY: ''}).observability.bugsnagApiKey,
+    undefined
+  );
   assert.equal(
     parseGeneratedEnv({VITE_BUGSNAG_KEY: 'abc'}).observability.bugsnagApiKey,
     'abc'
@@ -752,7 +792,10 @@ test('D1: non-numeric integer env value is a parse error', () => {
 test('designer-only web keys emit and parse round trip', () => {
   const config: PartialBuildConfig = {
     ...sampleConfig,
-    webDesignerLimits: {templateProtections: true, enablePlansInDesigner: false},
+    webDesignerLimits: {
+      templateProtections: true,
+      enablePlansInDesigner: false,
+    },
   };
   const env = generateEnv({config, platform: 'apps'});
   assert.match(env, /VITE_TEMPLATE_PROTECTIONS=true/);
@@ -780,7 +823,10 @@ test('sanitizeCommitVersion keeps hashes and release stamps, drops the rest', ()
     sanitizeCommitVersion('v1.7.2-ios-#abc1234'),
     'v1.7.2-ios-#abc1234'
   );
-  assert.equal(sanitizeCommitVersion('output of `git rev-parse HEAD`'), undefined);
+  assert.equal(
+    sanitizeCommitVersion('output of `git rev-parse HEAD`'),
+    undefined
+  );
   assert.equal(sanitizeCommitVersion('not a hash'), undefined);
   assert.equal(sanitizeCommitVersion('HEAD'), undefined);
   assert.equal(sanitizeCommitVersion(''), undefined);

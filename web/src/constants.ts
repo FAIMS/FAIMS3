@@ -106,7 +106,8 @@ export const config = {
   maxDesignFileSizeMb: canonical.webDesignerLimits.maxDesignFileSizeMb,
   maxDesignFileSizeBytes:
     canonical.webDesignerLimits.maxDesignFileSizeMb * 1024 * 1024,
-  longLivedTokenDurationHints: canonical.authTokens.longLivedTokenDurationHints ?? [],
+  longLivedTokenDurationHints:
+    canonical.authTokens.longLivedTokenDurationHints ?? [],
 
   // Derived / cross-field (no dedicated env key).
   /** Control Centre home (`webUrl` with trailing slash; `/` → `/teams`). */

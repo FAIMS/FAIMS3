@@ -115,9 +115,7 @@ const localLoginEnabled = !canonical.auth.disableLocalLogin;
 let awsSecretKeyArn: string | undefined;
 if (canonical.auth.keySource === 'AWS_SM') {
   if (!canonical.auth.awsSecretKeyArn) {
-    throw new Error(
-      'AWS_SECRET_KEY_ARN is not set but KEY_SOURCE is AWS_SM'
-    );
+    throw new Error('AWS_SECRET_KEY_ARN is not set but KEY_SOURCE is AWS_SM');
   }
   awsSecretKeyArn = canonical.auth.awsSecretKeyArn;
 }
@@ -172,7 +170,9 @@ function resolveEmailServiceType(): EmailServiceType {
   const raw = process.env.EMAIL_SERVICE_TYPE;
   if (raw === undefined) return EmailServiceType.SMTP;
   if (raw === 'SMTP' || raw === 'MOCK') return raw as EmailServiceType;
-  throw new Error(`Invalid EMAIL_SERVICE_TYPE: "${raw}". Expected SMTP or MOCK.`);
+  throw new Error(
+    `Invalid EMAIL_SERVICE_TYPE: "${raw}". Expected SMTP or MOCK.`
+  );
 }
 
 /** Builds from/name/reply-to from email env, with defaults when incomplete. */
@@ -267,8 +267,8 @@ export const config = {
   // Auth.
   keySource: canonical.auth.keySource as KeySource,
   awsSecretKeyArn,
-  provisionSSOUsersPolicy:
-    canonical.auth.provisionSsoUsersPolicy as ProvisionSSOUsersPolicy,
+  provisionSSOUsersPolicy: canonical.auth
+    .provisionSsoUsersPolicy as ProvisionSSOUsersPolicy,
   localLoginEnabled,
   cookieSecret,
 

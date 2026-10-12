@@ -31,4 +31,7 @@ export type {
   ApiEnv,
   PartialBuildConfig,
 } from './build-config.js';
-export type {AuthProviderConfig, AuthProviderConfigMap} from './auth-provider-config.js';
+export type {
+  AuthProviderConfig,
+  AuthProviderConfigMap,
+} from './auth-provider-config.js';

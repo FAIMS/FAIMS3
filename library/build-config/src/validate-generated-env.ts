@@ -368,7 +368,9 @@ export function main(
       `(app/src/buildconfig.ts, Fastlane files).`
   );
 
-  console.error(`Consumer keys not covered by the generated env (${result.missing.length}):`);
+  console.error(
+    `Consumer keys not covered by the generated env (${result.missing.length}):`
+  );
   for (const key of result.missing) {
     console.error(`  - ${key}`);
   }

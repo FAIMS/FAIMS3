@@ -32,42 +32,44 @@ export const OIDCAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
   }
 );
 
-export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
-  type: z.literal('saml'),
-  entryPoint: z.string(),
-  issuer: z.string(),
-  callbackURL: z.string().optional(),
-  path: z.string().optional(),
-  authnRequestBinding: z.enum(['HTTP-Redirect', 'HTTP-POST']).optional(),
-  skipRequestCompression: z.boolean().optional(),
-  signMetadata: z.boolean().optional(),
-  privateKey: z.string().optional(),
-  publicKey: z.string().optional(),
-  idpPublicKey: z.string(),
-  enableDecryptionPvk: z.boolean().optional(),
-  signatureAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
-  digestAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
-  wantAssertionsSigned: z.boolean().optional(),
-  identifierFormat: z.string().optional(),
-  authnContext: z.union([z.string(), z.array(z.string())]).optional(),
-  disableRequestedAuthnContext: z.boolean().optional(),
-  forceAuthn: z.boolean().optional(),
-  acceptedClockSkewMs: z.number().optional(),
-  maxAssertionAgeMs: z.number().optional(),
-  validateInResponseTo: z.boolean().optional(),
-  requestIdExpirationPeriodMs: z.number().optional(),
-  logoutURL: z.string().optional(),
-  logoutCallbackURL: z.string().optional(),
-  idpIssuer: z.string().optional(),
-  audience: z.string().optional(),
-  metadataErrorURL: z.string().optional(),
-  ssoErrorPageTitle: z.string().optional(),
-  ssoErrorPageHeading: z.string().optional(),
-  ssoErrorPageLead: z.string().optional(),
-  ssoErrorPageDetailMarkdown: z.string().optional(),
-  ssoErrorPageReturnURL: z.string().optional(),
-  ssoErrorPageReturnLabel: z.string().optional(),
-});
+export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
+  {
+    type: z.literal('saml'),
+    entryPoint: z.string(),
+    issuer: z.string(),
+    callbackURL: z.string().optional(),
+    path: z.string().optional(),
+    authnRequestBinding: z.enum(['HTTP-Redirect', 'HTTP-POST']).optional(),
+    skipRequestCompression: z.boolean().optional(),
+    signMetadata: z.boolean().optional(),
+    privateKey: z.string().optional(),
+    publicKey: z.string().optional(),
+    idpPublicKey: z.string(),
+    enableDecryptionPvk: z.boolean().optional(),
+    signatureAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
+    digestAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
+    wantAssertionsSigned: z.boolean().optional(),
+    identifierFormat: z.string().optional(),
+    authnContext: z.union([z.string(), z.array(z.string())]).optional(),
+    disableRequestedAuthnContext: z.boolean().optional(),
+    forceAuthn: z.boolean().optional(),
+    acceptedClockSkewMs: z.number().optional(),
+    maxAssertionAgeMs: z.number().optional(),
+    validateInResponseTo: z.boolean().optional(),
+    requestIdExpirationPeriodMs: z.number().optional(),
+    logoutURL: z.string().optional(),
+    logoutCallbackURL: z.string().optional(),
+    idpIssuer: z.string().optional(),
+    audience: z.string().optional(),
+    metadataErrorURL: z.string().optional(),
+    ssoErrorPageTitle: z.string().optional(),
+    ssoErrorPageHeading: z.string().optional(),
+    ssoErrorPageLead: z.string().optional(),
+    ssoErrorPageDetailMarkdown: z.string().optional(),
+    ssoErrorPageReturnURL: z.string().optional(),
+    ssoErrorPageReturnLabel: z.string().optional(),
+  }
+);
 
 export const AuthProviderSchema = z.discriminatedUnion('type', [
   GoogleAuthProviderConfigSchema,
@@ -110,7 +112,9 @@ const camelToSnake = (str: string): string => {
     .toUpperCase();
 };
 
-function getPropertyType(property: string): 'array' | 'boolean' | 'number' | 'string' {
+function getPropertyType(
+  property: string
+): 'array' | 'boolean' | 'number' | 'string' {
   let isArray = false;
   let isBoolean = false;
   let isNumber = false;
@@ -120,7 +124,9 @@ function getPropertyType(property: string): 'array' | 'boolean' | 'number' | 'st
     if (property in shape) {
       const fieldSchema = shape[property];
       const unwrapped =
-        fieldSchema instanceof z.ZodOptional ? fieldSchema.unwrap() : fieldSchema;
+        fieldSchema instanceof z.ZodOptional
+          ? fieldSchema.unwrap()
+          : fieldSchema;
 
       isArray = unwrapped instanceof z.ZodArray;
       isBoolean = unwrapped instanceof z.ZodBoolean;
@@ -139,7 +145,9 @@ function getPropertyType(property: string): 'array' | 'boolean' | 'number' | 'st
 export function readAuthProviderConfigFromEnv(
   env: Record<string, string | undefined>
 ): AuthProviderConfigMap {
-  const envVars = Object.entries(env).filter(([key]) => key.startsWith(AUTH_PREFIX));
+  const envVars = Object.entries(env).filter(([key]) =>
+    key.startsWith(AUTH_PREFIX)
+  );
   const parsedConfig: Record<string, Record<string, unknown>> = {};
 
   for (const [key, value] of envVars) {
@@ -205,7 +213,7 @@ export function readAuthProviderConfigFromEnv(
       // Do not silently drop a misconfigured provider — surface it.
       console.warn(
         `Warning: dropping auth provider '${providerId}': invalid configuration.`,
-        parsed.error.issues,
+        parsed.error.issues
       );
       continue;
     }

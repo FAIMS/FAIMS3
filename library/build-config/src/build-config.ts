@@ -57,12 +57,8 @@ const BrandingBuildConfigSchema = z
     headingAppName: z.string().optional(),
     theme: z.string().default('default'),
     websiteTitle: z.string().default('Control Centre'),
-    conductorInstanceName: z
-      .string()
-      .default('Development FAIMS Server'),
-    conductorDescription: z
-      .string()
-      .default('FAIMS Conductor Server'),
+    conductorInstanceName: z.string().default('Development FAIMS Server'),
+    conductorDescription: z.string().default('FAIMS Conductor Server'),
     conductorShortCodePrefix: z.string().default('FAIMS'),
   })
   .strict();
@@ -70,9 +66,7 @@ const BrandingBuildConfigSchema = z
 const SupportBuildConfigSchema = z
   .object({
     supportEmail: z.string().default('support@fieldmark.au'),
-    privacyPolicyUrl: z
-      .string()
-      .default('https://fieldnote.au/privacy'),
+    privacyPolicyUrl: z.string().default('https://fieldnote.au/privacy'),
     appContactUrl: z.string().default(''),
     docsUrl: z.string().default(''),
   })
@@ -98,9 +92,7 @@ const MapsBuildConfigSchema = z
       .enum(['basic', 'openstreetmap', 'osm-bright', 'toner'])
       .default('basic'),
     offlineMaps: z.boolean().default(true),
-    autosuggestSource: z
-      .enum(['NONE', 'MAPBOX', 'MAPTILER'])
-      .default('NONE'),
+    autosuggestSource: z.enum(['NONE', 'MAPBOX', 'MAPTILER']).default('NONE'),
     autosuggestMapboxKey: z.string().default(''),
     autosuggestMapTilerKey: z.string().default(''),
     /** ISO 3166-1 alpha-2 codes (CSV in env). Defaults to Australia. */
@@ -130,11 +122,7 @@ const MigrationBuildConfigSchema = z
     migrateOldDatabases: z.boolean().default(false),
     disableMigrateOnStartup: z.boolean().default(false),
     startupMigrationLockEnabled: z.boolean().default(false),
-    startupMigrationLockTimeoutMs: z
-      .number()
-      .int()
-      .positive()
-      .default(1800000),
+    startupMigrationLockTimeoutMs: z.number().int().positive().default(1800000),
   })
   .strict();
 
@@ -161,14 +149,12 @@ const AuthTokensBuildConfigSchema = z
     tokenRefreshWindowMs: z.number().int().positive().default(60000),
     loginBannerGraceMs: z.number().int().positive().default(10000),
     ignoreTokenExp: z.boolean().default(false),
-    longLivedTokenDurationHints: z.array(z.number().int().positive()).optional(),
+    longLivedTokenDurationHints: z
+      .array(z.number().int().positive())
+      .optional(),
     refreshTokenExpiryMinutes: z.number().int().positive().default(2880),
     accessTokenExpiryMinutes: z.number().int().positive().default(5),
-    impersonationSessionExpiryMinutes: z
-      .number()
-      .int()
-      .positive()
-      .default(60),
+    impersonationSessionExpiryMinutes: z.number().int().positive().default(60),
     emailCodeExpiryMinutes: z.number().int().positive().default(30),
     maximumLongLivedDurationDays: z
       .union([z.number().int().positive(), z.literal('unlimited')])
@@ -276,9 +262,7 @@ const IosBuildConfigSchema = z
 const CouchdbBuildConfigSchema = z
   .object({
     couchdbUser: z.string().default('admin'),
-    couchdbPassword: z
-      .string()
-      .default('aSecretPasswordThatCantBeGuessed'),
+    couchdbPassword: z.string().default('aSecretPasswordThatCantBeGuessed'),
     couchdbExternalPort: z.number().int().positive().default(5984),
     conductorExternalPort: z.number().int().positive().default(8080),
     conductorInternalPort: z.number().int().positive().default(8080),
@@ -341,7 +325,8 @@ export type SharedBuildConfig = {
  */
 function applySharedInvariants(c: SharedBuildConfig): SharedBuildConfig {
   if (!c.branding.appShortName) c.branding.appShortName = c.branding.appName;
-  if (!c.branding.headingAppName) c.branding.headingAppName = c.branding.appName;
+  if (!c.branding.headingAppName)
+    c.branding.headingAppName = c.branding.appName;
   if (c.maps.mapSource === 'osm') c.maps.offlineMaps = false;
   const maxDays = c.authTokens.maximumLongLivedDurationDays;
   // 'unlimited' means no cap, so the hints are left unclamped.
@@ -359,27 +344,59 @@ function applySharedInvariants(c: SharedBuildConfig): SharedBuildConfig {
 
 export const BuildConfigSchema = z
   .object({
-    endpoints: EndpointsBuildConfigSchema.default(() => EndpointsBuildConfigSchema.parse({})),
-    branding: BrandingBuildConfigSchema.default(() => BrandingBuildConfigSchema.parse({})),
-    support: SupportBuildConfigSchema.default(() => SupportBuildConfigSchema.parse({})),
-    notebookAndRecordUX: NotebookAndRecordUxBuildConfigSchema.default(() => NotebookAndRecordUxBuildConfigSchema.parse({})),
+    endpoints: EndpointsBuildConfigSchema.default(() =>
+      EndpointsBuildConfigSchema.parse({})
+    ),
+    branding: BrandingBuildConfigSchema.default(() =>
+      BrandingBuildConfigSchema.parse({})
+    ),
+    support: SupportBuildConfigSchema.default(() =>
+      SupportBuildConfigSchema.parse({})
+    ),
+    notebookAndRecordUX: NotebookAndRecordUxBuildConfigSchema.default(() =>
+      NotebookAndRecordUxBuildConfigSchema.parse({})
+    ),
     maps: MapsBuildConfigSchema.default(() => MapsBuildConfigSchema.parse({})),
     sync: SyncBuildConfigSchema.default(() => SyncBuildConfigSchema.parse({})),
-    attachments: AttachmentsBuildConfigSchema.default(() => AttachmentsBuildConfigSchema.parse({})),
-    migration: MigrationBuildConfigSchema.default(() => MigrationBuildConfigSchema.parse({})),
+    attachments: AttachmentsBuildConfigSchema.default(() =>
+      AttachmentsBuildConfigSchema.parse({})
+    ),
+    migration: MigrationBuildConfigSchema.default(() =>
+      MigrationBuildConfigSchema.parse({})
+    ),
     auth: AuthBuildConfigSchema.default(() => AuthBuildConfigSchema.parse({})),
-    authProviders: AuthProviderConfigMapSchema.default(() => AuthProviderConfigMapSchema.parse({})),
-    authTokens: AuthTokensBuildConfigSchema.default(() => AuthTokensBuildConfigSchema.parse({})),
-    limits: LimitsBuildConfigSchema.default(() => LimitsBuildConfigSchema.parse({})),
-    email: EmailBuildConfigSchema.default(() => EmailBuildConfigSchema.parse({})),
-    observability: ObservabilityBuildConfigSchema.default(() => ObservabilityBuildConfigSchema.parse({})),
-    teamAndRolePolicy: TeamAndRolePolicyBuildConfigSchema.default(() => TeamAndRolePolicyBuildConfigSchema.parse({})),
-    webDesignerLimits: WebDesignerLimitsBuildConfigSchema.default(() => WebDesignerLimitsBuildConfigSchema.parse({})),
-    android: AndroidBuildConfigSchema.default(() => AndroidBuildConfigSchema.parse({})),
+    authProviders: AuthProviderConfigMapSchema.default(() =>
+      AuthProviderConfigMapSchema.parse({})
+    ),
+    authTokens: AuthTokensBuildConfigSchema.default(() =>
+      AuthTokensBuildConfigSchema.parse({})
+    ),
+    limits: LimitsBuildConfigSchema.default(() =>
+      LimitsBuildConfigSchema.parse({})
+    ),
+    email: EmailBuildConfigSchema.default(() =>
+      EmailBuildConfigSchema.parse({})
+    ),
+    observability: ObservabilityBuildConfigSchema.default(() =>
+      ObservabilityBuildConfigSchema.parse({})
+    ),
+    teamAndRolePolicy: TeamAndRolePolicyBuildConfigSchema.default(() =>
+      TeamAndRolePolicyBuildConfigSchema.parse({})
+    ),
+    webDesignerLimits: WebDesignerLimitsBuildConfigSchema.default(() =>
+      WebDesignerLimitsBuildConfigSchema.parse({})
+    ),
+    android: AndroidBuildConfigSchema.default(() =>
+      AndroidBuildConfigSchema.parse({})
+    ),
     ios: IosBuildConfigSchema.default(() => IosBuildConfigSchema.parse({})),
-    couchdb: CouchdbBuildConfigSchema.default(() => CouchdbBuildConfigSchema.parse({})),
+    couchdb: CouchdbBuildConfigSchema.default(() =>
+      CouchdbBuildConfigSchema.parse({})
+    ),
     dev: DevBuildConfigSchema.default(() => DevBuildConfigSchema.parse({})),
-    pouchdb: PouchdbBuildConfigSchema.default(() => PouchdbBuildConfigSchema.parse({})),
+    pouchdb: PouchdbBuildConfigSchema.default(() =>
+      PouchdbBuildConfigSchema.parse({})
+    ),
   })
   .strict()
   .transform(applySharedInvariants);
@@ -471,7 +488,9 @@ export const GeneratedEnvSchema = z
     VITE_TEMPLATE_PROTECTIONS: BoolEnvSchema.default(false),
     VITE_ENABLE_PLANS_IN_DESIGNER: BoolEnvSchema.default(true),
     VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: z.string().default('90'),
-    VITE_LONG_LIVED_TOKEN_DURATION_HINTS: z.string().default('1,5,10,30,90,365'),
+    VITE_LONG_LIVED_TOKEN_DURATION_HINTS: z
+      .string()
+      .default('1,5,10,30,90,365'),
     VITE_EXCLUDED_TEAM_ROLES: z.string().default(''),
   })
   .passthrough();
@@ -595,7 +614,8 @@ export function parseApiEnv(raw: Record<string, unknown>): PartialBuildConfig {
     authTokens: {
       accessTokenExpiryMinutes: api.ACCESS_TOKEN_EXPIRY_MINUTES,
       refreshTokenExpiryMinutes: api.REFRESH_TOKEN_EXPIRY_MINUTES,
-      impersonationSessionExpiryMinutes: api.IMPERSONATION_SESSION_EXPIRY_MINUTES,
+      impersonationSessionExpiryMinutes:
+        api.IMPERSONATION_SESSION_EXPIRY_MINUTES,
       emailCodeExpiryMinutes: api.EMAIL_CODE_EXPIRY_MINUTES,
       maximumLongLivedDurationDays: maxDays,
     },
@@ -694,7 +714,9 @@ export function parseAppsEnv(env: GeneratedEnv): PartialBuildConfig {
       autosuggestSource: env.VITE_AUTOSUGGEST_SOURCE,
       autosuggestMapboxKey: env.VITE_AUTOSUGGEST_MAPBOX_KEY,
       autosuggestMapTilerKey: env.VITE_AUTOSUGGEST_MAPTILER_KEY,
-      mapboxAddressCountry: UpperCsvSchema.parse(env.VITE_MAPBOX_ADDRESS_COUNTRY),
+      mapboxAddressCountry: UpperCsvSchema.parse(
+        env.VITE_MAPBOX_ADDRESS_COUNTRY
+      ),
       maptilerAddressCountry: UpperCsvSchema.parse(
         env.VITE_MAPTILER_ADDRESS_COUNTRY
       ),
@@ -743,9 +765,7 @@ export function parseAppsEnv(env: GeneratedEnv): PartialBuildConfig {
       // Sanitised: only a commit hash / release stamp survives; anything else
       // (blank, placeholder, prose) is `undefined`.
       commitVersion: sanitizeCommitVersion(env.VITE_COMMIT_VERSION),
-      bugsnagApiKey: parseBugsnagKey(
-        env.VITE_BUGSNAG_KEY
-      ),
+      bugsnagApiKey: parseBugsnagKey(env.VITE_BUGSNAG_KEY),
     },
     teamAndRolePolicy: {
       excludedTeamRoles: OptionalCsvSchema.parse(env.VITE_EXCLUDED_TEAM_ROLES),
@@ -804,10 +824,14 @@ export function parseGeneratedEnv(raw: unknown): RuntimeConfig {
     partial = mergePartial(partial, apiPartial);
   }
 
-  const authProviders = readAuthProviderConfigFromEnv(rawEnv as Record<string, string | undefined>);
+  const authProviders = readAuthProviderConfigFromEnv(
+    rawEnv as Record<string, string | undefined>
+  );
   partial = {
     ...partial,
-    ...(authProviders && Object.keys(authProviders).length ? {authProviders} : {}),
+    ...(authProviders && Object.keys(authProviders).length
+      ? {authProviders}
+      : {}),
   };
 
   return toRuntimeConfig(partial);
@@ -841,7 +865,12 @@ function mergePartial(
   for (const group of groups) {
     const leftVal = (left as Record<string, unknown>)[group];
     const rightVal = (right as Record<string, unknown>)[group];
-    if (leftVal && typeof leftVal === 'object' && rightVal && typeof rightVal === 'object') {
+    if (
+      leftVal &&
+      typeof leftVal === 'object' &&
+      rightVal &&
+      typeof rightVal === 'object'
+    ) {
       out[group] = {
         ...definedOnly(leftVal),
         ...definedOnly(rightVal),
