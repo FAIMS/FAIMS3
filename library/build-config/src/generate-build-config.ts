@@ -8,6 +8,8 @@ import {buildEnvMapFromRuntime} from './env-contract';
 const HELP_TEXT = `Usage: pnpm --filter=@faims3/build-config run generate -- [--config path/to/config.json] [--platform apps|api] [--out path/to/.env]
 
 Generates a build environment file from the shared config JSON used by the app and web builds.
+Platforms: 'apps' (VITE_ vars for the mobile app and Control Centre builds,
+also accepts 'android' / 'ios' aliases), 'api' (server env vars).
 `;
 
 type Value =
@@ -155,18 +157,22 @@ export function generateBuildConfig(
     return `${HELP_TEXT}\n`;
   }
 
-  const rawPlatform = String(
-    args.platform ?? args.target ?? 'apps'
-  ).toLowerCase();
-  const validPlatforms = new Set<SupportedPlatform>(['apps', 'api']);
+  const rawPlatform = String(args.platform ?? args.target ?? 'apps').toLowerCase();
+  // The mobile CI workflows pass 'android' / 'ios'; both produce the same
+  // shared app/web env (the platform-specific values are additive).
+  const platformAliases: Record<string, SupportedPlatform> = {
+    apps: 'apps',
+    android: 'apps',
+    ios: 'apps',
+    api: 'api',
+  };
 
-  if (!validPlatforms.has(rawPlatform as SupportedPlatform)) {
+  const platform = platformAliases[rawPlatform];
+  if (!platform) {
     throw new Error(
-      `Unsupported platform: ${rawPlatform}. Expected one of ${[...validPlatforms].join(', ')}`
+      `Unsupported platform: ${rawPlatform}. Expected one of ${Object.keys(platformAliases).join(', ')}`
     );
   }
-
-  const platform = rawPlatform as SupportedPlatform;
 
   if (!args.config) {
     throw new Error(
