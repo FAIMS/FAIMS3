@@ -11,6 +11,11 @@
  * checks that the generated .env contains exactly that set — no more, no
  * less — so a new variable introduced in the apps or Fastlane is caught
  * before it silently breaks a build.
+ *
+ * A consumer that has been migrated to parse via this module no longer has a
+ * local `EnvSchema`; it is simply skipped (its keys are now guaranteed by
+ * construction to be generated). Only legacy, not-yet-migrated consumers are
+ * scanned.
  */
 
 import fs from 'node:fs';
@@ -94,13 +99,14 @@ function parseEnvText(text: string): Map<string, string> {
  * Read a TypeScript source file and extract the object literal
  * that defines the environment variable schema.
  * @param sourceText The text of the TypeScript source file
- * @returns The text of the object literal that defines the environment variable schema
+ * @returns The text of the object literal, or null if no EnvSchema is present
+ *          (i.e. the consumer has been migrated to parse via this module).
  */
-function extractEnvObjectLiteral(sourceText: string): string {
+function extractEnvObjectLiteral(sourceText: string): string | null {
   const marker = 'const EnvSchema = z';
   const markerIndex = sourceText.indexOf(marker);
   if (markerIndex === -1) {
-    throw new Error('Unable to find EnvSchema declaration in source.');
+    return null;
   }
 
   const objectOpenIndex = sourceText.indexOf('{', markerIndex);
@@ -179,6 +185,11 @@ function extractEnvSchemaKeys(filePath: string): Set<string> {
   const envObjectText = extractEnvObjectLiteral(sourceText);
   const keys = new Set<string>();
 
+  if (envObjectText === null) {
+    // Migrated consumer: no local EnvSchema, so nothing to scan here.
+    return keys;
+  }
+
   const matches = envObjectText.matchAll(/\b(VITE_[A-Z0-9_]+)\s*:/g);
   for (const match of matches) {
     keys.add(match[1]);
@@ -240,8 +251,11 @@ function fastlaneEnvKeys(): Set<string> {
 }
 
 /**
- * Find all the expected environment variable keys from the app and web source
- * files and the Fastlane files.
+ * Find all the environment variable keys that the not-yet-migrated consumers
+ * (the mobile app and Fastlane) expect, plus any still-present in a legacy web
+ * `EnvSchema` (web has been migrated, so it contributes nothing today).
+ * Migrated consumers read their keys via this module and are therefore
+ * covered by construction, so they are intentionally not scanned here.
  * @returns A set of all expected keys
  */
 export function getExpectedKeys(): Set<string> {
@@ -253,8 +267,11 @@ export function getExpectedKeys(): Set<string> {
 }
 
 /**
- * Given the text of a generated .env file, validate that it
- * contains all expected keys and no unexpected keys.
+ * Given the text of a generated .env file, check that it covers every key the
+ * not-yet-migrated consumers expect. `missing` is the gate (a consumer needs a
+ * key we do not generate); `unexpected` (generated keys no scanned consumer
+ * reads) is informational, since migrated consumers read keys that are not
+ * scannable here.
  */
 export function validateGeneratedEnv({envText}: {envText: string}) {
   const generatedKeys = new Set(parseEnvText(envText).keys());
@@ -270,7 +287,7 @@ export function validateGeneratedEnv({envText}: {envText: string}) {
     .sort();
 
   return {
-    ok: missing.length === 0 && unexpected.length === 0,
+    ok: missing.length === 0,
     expected: [...expectedKeys].sort(),
     generated: [...generatedKeys].sort(),
     missing,
@@ -336,32 +353,36 @@ export function main(
   });
 
   if (result.ok) {
-    console.log(`Generated env covers all consumer env keys.`);
+    if (result.unexpected.length > 0) {
+      console.log(
+        `Generated env covers all consumer env keys ` +
+          `(${result.unexpected.length} extra key(s) read by migrated consumers, informational).`
+      );
+    } else {
+      console.log(`Generated env covers all consumer env keys.`);
+    }
     return 0;
   }
   console.error(
-    `Found a mismatch between the generated env and the consumer schemas\n` +
-      `(app/src/buildconfig.ts, web/src/constants.ts, Fastlane files).`
+    `Consumer env keys are not covered by the generated env ` +
+      `(app/src/buildconfig.ts, Fastlane files).`
   );
 
-  if (result.missing.length > 0) {
-    console.error(`Consumer keys not covered by the generated env (${result.missing.length}):`);
-    for (const key of result.missing) {
-      console.error(`  - ${key}`);
-    }
-    console.error(
-      `\nIf these are new consumer variables, add a field + env-contract mapping to @faims3/build-config.`
-    );
+  console.error(`Consumer keys not covered by the generated env (${result.missing.length}):`);
+  for (const key of result.missing) {
+    console.error(`  - ${key}`);
   }
+  console.error(
+    `\nIf these are new consumer variables, add a field + env-contract mapping to @faims3/build-config.`
+  );
 
   if (result.unexpected.length > 0) {
-    console.error(`Generated keys no consumer expects (${result.unexpected.length}):`);
-    for (const key of result.unexpected) {
-      console.error(`  - ${key}`);
-    }
-    console.error(
-      `\nEither the consumer needs to read these (or they are CI/platform-provided and belong in the exclusion lists), or they should be removed from the env contract.`
+    console.log(
+      `\n(Informational) ${result.unexpected.length} generated key(s) are not read by any scanned (not-yet-migrated) consumer — typically consumed by migrated consumers:`
     );
+    for (const key of result.unexpected) {
+      console.log(`  - ${key}`);
+    }
   }
 
   return 1;

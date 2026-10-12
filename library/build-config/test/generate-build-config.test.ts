@@ -283,17 +283,16 @@ test('generator escapes multiline values for env-file compatibility', () => {
 });
 
 test('validateBuildConfigCoverage catches missing env coverage', () => {
-  const output = [
-    'VITE_APP_NAME=Example',
-    'VITE_WEB_URL=http://localhost:3001',
-  ].join('\n');
+  // The mobile app (not yet migrated) still expects these keys; a generated
+  // env that omits them must be flagged as missing.
+  const output = ['VITE_APP_NAME=Example'].join('\n');
 
   const result = validateGeneratedEnv({
     envText: output,
   });
 
-  assert.ok(result.missing.includes('VITE_API_URL'));
-  assert.ok(result.missing.includes('VITE_APP_URL'));
+  assert.ok(result.missing.includes('VITE_CONDUCTOR_URL'));
+  assert.ok(result.missing.includes('VITE_POUCH_BATCH_SIZE'));
   assert.ok(result.missing.length > 0);
 });
 

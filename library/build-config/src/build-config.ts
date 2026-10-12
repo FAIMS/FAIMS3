@@ -495,7 +495,7 @@ export type GeneratedEnv = z.infer<typeof GeneratedEnvSchema>;
 // still parses; the canonical defaults in BuildConfigSchema fill the rest.
 // ---------------------------------------------------------------------------
 
-const ApiEnvSchema = z
+export const ApiEnvSchema = z
   .object({
     CONDUCTOR_PUBLIC_URL: z.string().optional(),
     WEB_APP_PUBLIC_URL: z.string().optional(),
