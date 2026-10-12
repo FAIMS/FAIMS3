@@ -13,6 +13,7 @@ import {
   ContextualMapLayer,
   ContextualMapLayersContext,
 } from './contextualMapLayers';
+import {contextualLayerZIndex} from './layerStack';
 
 const MAP_PROJECTION = 'EPSG:3857';
 
@@ -49,7 +50,8 @@ function vectorStyle(spec: ContextualMapLayer) {
 function applyCommon(layer: ManagedLayer, spec: ContextualMapLayer) {
   layer.setVisible(spec.visible);
   layer.setOpacity(spec.opacity);
-  layer.setZIndex(spec.zIndex);
+  // Stored order can grow without a ceiling. Keep reference data under pins.
+  layer.setZIndex(contextualLayerZIndex(spec.zIndex));
 }
 
 async function createLayer(spec: ContextualMapLayer): Promise<ManagedLayer> {

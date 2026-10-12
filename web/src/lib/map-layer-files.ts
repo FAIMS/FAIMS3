@@ -35,6 +35,43 @@ const MAX_UPLOAD_BYTES = 512 * 1024 * 1024;
 
 export const MAP_LAYER_FILE_ACCEPT = [...ALLOWED_EXTENSIONS].join(',');
 
+export function primaryMapLayerFile(files: File[]): File | undefined {
+  return files.find(file => PRIMARY_EXTENSIONS.has(extensionOf(file.name)));
+}
+
+export async function mapLayerEstimateSource(
+  files: File[]
+): Promise<
+  | {filename: string; byteSize: number; widthPx?: number; heightPx?: number}
+  | undefined
+> {
+  const primary = primaryMapLayerFile(files);
+  if (!primary) {
+    return undefined;
+  }
+  const source: {
+    filename: string;
+    byteSize: number;
+    widthPx?: number;
+    heightPx?: number;
+  } = {
+    filename: primary.name,
+    byteSize: primary.size,
+  };
+  const ext = extensionOf(primary.name);
+  if (ext === '.png' || ext === '.jpg' || ext === '.jpeg') {
+    try {
+      const bitmap = await createImageBitmap(primary);
+      source.widthPx = bitmap.width;
+      source.heightPx = bitmap.height;
+      bitmap.close();
+    } catch {
+      // Geo-placement still works; the estimate just lacks pixel size.
+    }
+  }
+  return source;
+}
+
 function extensionOf(filename: string): string {
   const dot = filename.lastIndexOf('.');
   return dot === -1 ? '' : filename.slice(dot).toLowerCase();

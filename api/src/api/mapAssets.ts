@@ -5,10 +5,17 @@
 
 import {
   Action,
+  estimateNormalizedMapAsset,
   GetMapAssetListResponse,
   GetMapAssetResponse,
+  MapAssetNormalizeOptionsInput,
+  MapAssetNormalizeOptionsInputSchema,
+  MapAssetQualitySchema,
+  PostMapAssetEstimateInputSchema,
+  PostMapAssetEstimateResponse,
   PostMapAssetLinkInputSchema,
   resourceNameString,
+  resolveMapAssetNormalizeOptions,
   RootDescriptionInputSchema,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
@@ -141,6 +148,64 @@ function parseDetails(
   return parsed.data;
 }
 
+function parseNormalizeChoice(body: {
+  quality?: unknown;
+  normalizeOptions?: unknown;
+}): {
+  quality: number;
+  options: ReturnType<typeof resolveMapAssetNormalizeOptions>['options'];
+} {
+  let quality: number | undefined;
+  if (typeof body.quality === 'string' && body.quality.length > 0) {
+    quality = Number(body.quality);
+  } else if (typeof body.quality === 'number') {
+    quality = body.quality;
+  }
+  if (
+    quality !== undefined &&
+    !MapAssetQualitySchema.safeParse(quality).success
+  ) {
+    throw new Exceptions.InvalidRequestException(
+      'Quality must be a number from 0 to 100.'
+    );
+  }
+  let options: MapAssetNormalizeOptionsInput | undefined;
+  if (
+    typeof body.normalizeOptions === 'string' &&
+    body.normalizeOptions.length > 0
+  ) {
+    try {
+      options = MapAssetNormalizeOptionsInputSchema.parse(
+        JSON.parse(body.normalizeOptions)
+      );
+    } catch {
+      throw new Exceptions.InvalidRequestException(
+        'normalizeOptions must be valid JSON matching the normalize option fields.'
+      );
+    }
+  } else if (
+    body.normalizeOptions &&
+    typeof body.normalizeOptions === 'object'
+  ) {
+    const parsed = MapAssetNormalizeOptionsInputSchema.safeParse(
+      body.normalizeOptions
+    );
+    if (!parsed.success) {
+      throw new Exceptions.InvalidRequestException(
+        'normalizeOptions fields are not valid.'
+      );
+    }
+    options = parsed.data;
+  }
+  try {
+    return resolveMapAssetNormalizeOptions({quality, options});
+  } catch {
+    throw new Exceptions.InvalidRequestException(
+      'Map layer quality settings are not valid.'
+    );
+  }
+}
+
 function filesFromRequest(req: express.Request): UploadedMapFile[] {
   const uploaded = req.files;
   const list = Array.isArray(uploaded) ? uploaded : [];
@@ -237,6 +302,24 @@ api.get(
 );
 
 api.post(
+  '/estimate',
+  requireAuthenticationAPI,
+  validate({body: PostMapAssetEstimateInputSchema}),
+  async (req, res: Response<PostMapAssetEstimateResponse>) => {
+    requireUser(req);
+    try {
+      res.json(estimateNormalizedMapAsset(req.body));
+    } catch (error) {
+      throw new Exceptions.InvalidRequestException(
+        error instanceof Error
+          ? error.message
+          : 'Could not estimate the device file size.'
+      );
+    }
+  }
+);
+
+api.post(
   '/',
   requireAuthenticationAPI,
   upload.array('files', 8),
@@ -257,6 +340,7 @@ api.post(
     }
     const files = assertFiles(filesFromRequest(req));
     const primary = primaryUploadFile(files);
+    const normalize = parseNormalizeChoice(req.body ?? {});
     const asset = await createMapAsset({
       name: details.name,
       description: details.description,
@@ -264,6 +348,8 @@ api.post(
       createdBy: user.user_id,
       files,
       primaryFilename: primary.filename,
+      quality: normalize.quality,
+      normalizeOptions: normalize.options,
     });
     enqueueMapAssetProcessing(asset._id);
     res.status(201).json(asset);
@@ -341,10 +427,13 @@ api.put(
     }
     const files = assertFiles(filesFromRequest(req));
     const primary = primaryUploadFile(files);
+    const normalize = parseNormalizeChoice(req.body ?? {});
     const replaced = await replaceMapAssetFiles({
       assetId: asset._id,
       files,
       primaryFilename: primary.filename,
+      quality: normalize.quality,
+      normalizeOptions: normalize.options,
     });
     enqueueMapAssetProcessing(replaced._id);
     res.json(replaced);
@@ -363,6 +452,21 @@ api.delete(
     }
     await deleteMapAsset(asset._id);
     res.status(204).send();
+  }
+);
+
+api.get(
+  '/:id/links',
+  requireAuthenticationAPI,
+  validate({params: z.object({id: z.string()})}),
+  async (req, res) => {
+    const user = requireUser(req);
+    const asset = await getMapAsset(req.params.id);
+    if (!(await canReadAsset(user, asset))) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const projectIds = await listLinkProjectIds(asset._id);
+    res.json({projectIds});
   }
 );
 

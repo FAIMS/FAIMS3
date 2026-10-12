@@ -5,6 +5,9 @@ import type {
   ExistingMapAsset,
   GetMapAssetListResponse,
   GetMapAssetResponse,
+  MapAssetNormalizeOptionsInput,
+  PostMapAssetEstimateInput,
+  PostMapAssetEstimateResponse,
 } from '@faims3/data-model';
 import {
   useMutation,
@@ -19,27 +22,72 @@ export const mapAssetQueryKey = (user: User | null, projectId?: string) => [
   projectId ?? 'library',
 ];
 
+function messageFromBody(body: unknown, statusText: string): string {
+  if (body && typeof body === 'object' && 'error' in body) {
+    const message = (body as {error?: {message?: string}}).error?.message;
+    if (message) {
+      return message;
+    }
+  }
+  if (Array.isArray(body)) {
+    const issue = (
+      body[0] as {errors?: {issues?: {message?: string}[]}} | undefined
+    )?.errors?.issues?.[0]?.message;
+    if (issue) {
+      return issue;
+    }
+  }
+  return statusText;
+}
+
 async function errorMessage(response: Response): Promise<string> {
   try {
-    const body: unknown = await response.json();
-    if (body && typeof body === 'object' && 'error' in body) {
-      const message = (body as {error?: {message?: string}}).error?.message;
-      if (message) {
-        return message;
-      }
-    }
-    if (Array.isArray(body)) {
-      const issue = (
-        body[0] as {errors?: {issues?: {message?: string}[]}} | undefined
-      )?.errors?.issues?.[0]?.message;
-      if (issue) {
-        return issue;
-      }
-    }
-    return response.statusText;
+    return messageFromBody(await response.json(), response.statusText);
   } catch {
     return response.statusText;
   }
+}
+
+function sendFormData({
+  url,
+  method,
+  token,
+  body,
+  onProgress,
+}: {
+  url: string;
+  method: 'POST' | 'PUT';
+  token: string;
+  body: FormData;
+  onProgress?: (completion: number) => void;
+}): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, url);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.upload.onprogress = event => {
+      if (!onProgress || !event.lengthComputable || event.total <= 0) {
+        return;
+      }
+      onProgress(Math.min(1, event.loaded / event.total));
+    };
+    xhr.onload = () => {
+      let json: unknown;
+      try {
+        json = xhr.responseText ? JSON.parse(xhr.responseText) : undefined;
+      } catch {
+        json = undefined;
+      }
+      if (xhr.status < 200 || xhr.status >= 300) {
+        reject(new Error(messageFromBody(json, xhr.statusText)));
+        return;
+      }
+      onProgress?.(1);
+      resolve(json);
+    };
+    xhr.onerror = () => reject(new Error('Upload failed.'));
+    xhr.send(body);
+  });
 }
 
 export async function fetchMapAssets({
@@ -144,28 +192,60 @@ export async function updateMapAssetDetails({
   return (await response.json()) as GetMapAssetResponse;
 }
 
-export async function replaceMapAssetFiles({
+export async function estimateMapAsset({
   user,
-  assetId,
-  files,
+  input,
 }: {
   user: User;
-  assetId: string;
-  files: File[];
-}): Promise<GetMapAssetResponse> {
-  const body = new FormData();
-  for (const file of files) {
-    body.append('files', file);
-  }
-  const response = await fetch(`${config.apiUrl}/api/map-assets/${assetId}`, {
-    method: 'PUT',
-    headers: {Authorization: `Bearer ${user.token}`},
-    body,
+  input: PostMapAssetEstimateInput;
+}): Promise<PostMapAssetEstimateResponse> {
+  const response = await fetch(`${config.apiUrl}/api/map-assets/estimate`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${user.token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
   });
   if (!response.ok) {
     throw new Error(await errorMessage(response));
   }
-  return (await response.json()) as GetMapAssetResponse;
+  return (await response.json()) as PostMapAssetEstimateResponse;
+}
+
+export async function replaceMapAssetFiles({
+  user,
+  assetId,
+  files,
+  quality,
+  normalizeOptions,
+  onProgress,
+}: {
+  user: User;
+  assetId: string;
+  files: File[];
+  quality?: number;
+  normalizeOptions?: MapAssetNormalizeOptionsInput;
+  onProgress?: (completion: number) => void;
+}): Promise<GetMapAssetResponse> {
+  const body = new FormData();
+  if (quality !== undefined) {
+    body.set('quality', String(quality));
+  }
+  if (normalizeOptions) {
+    body.set('normalizeOptions', JSON.stringify(normalizeOptions));
+  }
+  for (const file of files) {
+    body.append('files', file);
+  }
+  const json = await sendFormData({
+    url: `${config.apiUrl}/api/map-assets/${assetId}`,
+    method: 'PUT',
+    token: user.token,
+    body,
+    onProgress,
+  });
+  return json as GetMapAssetResponse;
 }
 
 export function invalidateMapAssets(
@@ -181,18 +261,58 @@ export function invalidateMapAssets(
   }
 }
 
+export async function fetchMapAssetLinks({
+  user,
+  assetId,
+}: {
+  user: User;
+  assetId: string;
+}): Promise<string[]> {
+  const response = await fetch(
+    `${config.apiUrl}/api/map-assets/${assetId}/links`,
+    {headers: {Authorization: `Bearer ${user.token}`}}
+  );
+  if (!response.ok) {
+    throw new Error(await errorMessage(response));
+  }
+  const body = (await response.json()) as {projectIds?: string[]};
+  return body.projectIds ?? [];
+}
+
+export function useMapAssetLinks({
+  user,
+  assetId,
+  enabled = true,
+}: {
+  user: User | null;
+  assetId: string;
+  enabled?: boolean;
+}) {
+  return useQuery({
+    queryKey: ['map-assets', user?.token, 'links', assetId],
+    enabled: !!user && assetId.length > 0 && enabled,
+    queryFn: () => fetchMapAssetLinks({user: user as User, assetId}),
+  });
+}
+
 export async function uploadMapAsset({
   user,
   name,
   description,
   teamId,
   files,
+  quality,
+  normalizeOptions,
+  onProgress,
 }: {
   user: User;
   name: string;
   description: string;
   teamId?: string;
   files: File[];
+  quality?: number;
+  normalizeOptions?: MapAssetNormalizeOptionsInput;
+  onProgress?: (completion: number) => void;
 }): Promise<GetMapAssetResponse> {
   const body = new FormData();
   body.set('name', name);
@@ -200,18 +320,23 @@ export async function uploadMapAsset({
   if (teamId) {
     body.set('teamId', teamId);
   }
+  if (quality !== undefined) {
+    body.set('quality', String(quality));
+  }
+  if (normalizeOptions) {
+    body.set('normalizeOptions', JSON.stringify(normalizeOptions));
+  }
   for (const file of files) {
     body.append('files', file);
   }
-  const response = await fetch(`${config.apiUrl}/api/map-assets`, {
+  const json = await sendFormData({
+    url: `${config.apiUrl}/api/map-assets`,
     method: 'POST',
-    headers: {Authorization: `Bearer ${user.token}`},
+    token: user.token,
     body,
+    onProgress,
   });
-  if (!response.ok) {
-    throw new Error(await errorMessage(response));
-  }
-  return (await response.json()) as GetMapAssetResponse;
+  return json as GetMapAssetResponse;
 }
 
 export async function deleteMapAsset({

@@ -71,8 +71,13 @@ const teamColumn: ColumnDef<ExistingMapAsset> = {
     row.original.ownedByTeamId ? (
       <TeamCellComponent teamId={row.original.ownedByTeamId} />
     ) : (
-      'Owned by me'
+      '-'
     ),
+};
+
+const ownerColumn: ColumnDef<ExistingMapAsset> = {
+  accessorKey: 'createdBy',
+  header: ({column}) => <DataTableColumnHeader column={column} title="Owner" />,
 };
 
 const updatedColumn: ColumnDef<ExistingMapAsset> = {
@@ -106,6 +111,7 @@ export function getMapLayerTableColumns(): ColumnDef<ExistingMapAsset>[] {
     typeColumn,
     sizeColumn,
     teamColumn,
+    ownerColumn,
     updatedColumn,
     descriptionColumn,
   ];

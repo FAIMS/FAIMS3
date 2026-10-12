@@ -18,10 +18,13 @@ import {
   MAP_ASSET_NORMALIZED_ATTACHMENT,
   MAP_ASSET_ORIGINAL_ATTACHMENT,
   MAP_ASSETS_BY_CREATOR,
+  MAP_ASSETS_BY_STATUS,
   MAP_ASSETS_BY_TEAM,
   MapAssetFields,
   MapAssetLinkFields,
+  MapAssetNormalizeOptions,
   MapAssetStyle,
+  resolveMapAssetNormalizeOptions,
 } from '@faims3/data-model';
 import {randomUUID} from 'crypto';
 import {getMapAssetsDB} from '..';
@@ -190,6 +193,8 @@ export async function createMapAsset({
   files,
   primaryFilename,
   style,
+  quality,
+  normalizeOptions,
 }: {
   name: string;
   description: string;
@@ -198,6 +203,8 @@ export async function createMapAsset({
   files: UploadedMapFile[];
   primaryFilename: string;
   style?: MapAssetStyle;
+  quality?: number;
+  normalizeOptions?: Partial<MapAssetNormalizeOptions>;
 }): Promise<ExistingMapAsset> {
   const db = getMapAssetsDB();
   const now = Date.now();
@@ -205,6 +212,10 @@ export async function createMapAsset({
   const companions = files
     .map(file => file.filename)
     .filter(filename => filename !== primaryFilename);
+  const resolved = resolveMapAssetNormalizeOptions({
+    quality,
+    options: normalizeOptions,
+  });
   const fields: MapAssetFields = {
     docType: MAP_ASSET_DOC_TYPE,
     name,
@@ -216,6 +227,8 @@ export async function createMapAsset({
     byteSize: 0,
     status: 'processing',
     defaultStyle: style ?? DEFAULT_MAP_ASSET_STYLE,
+    quality: resolved.quality,
+    normalizeOptions: resolved.options,
     createdAt: now,
     updatedAt: now,
   };
@@ -252,10 +265,14 @@ export async function replaceMapAssetFiles({
   assetId,
   files,
   primaryFilename,
+  quality,
+  normalizeOptions,
 }: {
   assetId: string;
   files: UploadedMapFile[];
   primaryFilename: string;
+  quality?: number;
+  normalizeOptions?: Partial<MapAssetNormalizeOptions>;
 }): Promise<ExistingMapAsset> {
   const current = await getMapAsset(assetId);
   if (current.status === 'processing') {
@@ -266,19 +283,29 @@ export async function replaceMapAssetFiles({
   const companions = files
     .map(file => file.filename)
     .filter(filename => filename !== primaryFilename);
-  const updated = await getMapAssetsDB().put({
-    ...current,
-    originalFilename: primaryFilename,
-    companionFilenames: companions.length > 0 ? companions : undefined,
-    status: 'processing',
-    failureReason: undefined,
-    contentHash: undefined,
-    kind: undefined,
-    extent4326: undefined,
-    extent3857: undefined,
-    byteSize: 0,
-    updatedAt: Date.now(),
+  const resolved = resolveMapAssetNormalizeOptions({
+    quality,
+    options: normalizeOptions,
   });
+  const updated = await getMapAssetsDB().put(
+    omitUndefinedFields({
+      ...current,
+      originalFilename: primaryFilename,
+      companionFilenames: companions.length > 0 ? companions : undefined,
+      status: 'processing',
+      failureReason: undefined,
+      contentHash: undefined,
+      kind: undefined,
+      extent4326: undefined,
+      extent3857: undefined,
+      byteSize: 0,
+      processingStartedAt: undefined,
+      processingAttempts: undefined,
+      quality: resolved.quality,
+      normalizeOptions: resolved.options,
+      updatedAt: Date.now(),
+    })
+  );
   await putOriginalFiles({
     assetId,
     rev: updated.rev,
@@ -309,53 +336,271 @@ async function readUploadFiles(
   return files;
 }
 
-/** Runs GDAL and stores the normalized attachment. Safe to call from the job queue. */
-export async function processMapAsset(assetId: string): Promise<void> {
+/** A claim older than this may be taken by another API process. */
+export const MAP_ASSET_PROCESSING_CLAIM_TIMEOUT_MS = 30 * 60 * 1000;
+/**
+ * Claims started for one upload, including the first. A crash after this
+ * many claims is marked failed. A GDAL error fails on the current claim.
+ */
+export const MAP_ASSET_PROCESSING_MAX_ATTEMPTS = 3;
+export const MAP_ASSET_PROCESSING_SWEEP_INTERVAL_MS = 60 * 1000;
+export const MAP_ASSET_PROCESSING_EXHAUSTED_REASON =
+  'Map layer processing was interrupted too many times.';
+
+const PROCESSING_CLAIM_RETRIES = 5;
+
+export type MapAssetProcessingRuntime = {
+  now?: () => number;
+  claimTimeoutMs?: number;
+  maxAttempts?: number;
+  normalize?: typeof normalizeMapUpload;
+};
+
+function processingNow(runtime?: MapAssetProcessingRuntime): number {
+  return runtime?.now?.() ?? Date.now();
+}
+
+function claimTimeoutMs(runtime?: MapAssetProcessingRuntime): number {
+  return runtime?.claimTimeoutMs ?? MAP_ASSET_PROCESSING_CLAIM_TIMEOUT_MS;
+}
+
+function maxProcessingAttempts(runtime?: MapAssetProcessingRuntime): number {
+  return runtime?.maxAttempts ?? MAP_ASSET_PROCESSING_MAX_ATTEMPTS;
+}
+
+function isConflict(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    (error as {status?: number}).status === 409
+  );
+}
+
+function omitUndefinedFields<T extends object>(doc: T): T {
+  const next = {...doc};
+  for (const key of Object.keys(next) as (keyof T)[]) {
+    if (next[key] === undefined) {
+      delete next[key];
+    }
+  }
+  return next;
+}
+
+/**
+ * True when `status` is `processing` and no live claim is held.
+ * A missing timestamp is stale: the process died before it claimed the job.
+ */
+export function mapAssetProcessingClaimIsStale(
+  asset: {status: string; processingStartedAt?: number},
+  now: number,
+  timeoutMs: number = MAP_ASSET_PROCESSING_CLAIM_TIMEOUT_MS
+): boolean {
+  if (asset.status !== 'processing') {
+    return false;
+  }
+  const startedAt = asset.processingStartedAt;
+  if (startedAt === undefined || !Number.isFinite(startedAt)) {
+    return true;
+  }
+  return now - startedAt >= timeoutMs;
+}
+
+/**
+ * Compare-and-swap the claim. Returns the claimed document, or undefined
+ * when another process holds a fresh claim, the asset is already finished,
+ * or this upload has used its attempts.
+ */
+async function claimMapAssetProcessing(
+  assetId: string,
+  runtime?: MapAssetProcessingRuntime
+): Promise<ExistingMapAsset | undefined> {
   const db = getMapAssetsDB();
-  const asset = await getMapAsset(assetId);
-  try {
-    const files = await readUploadFiles(asset);
-    const normalized = await normalizeMapUpload(files);
+  const now = processingNow(runtime);
+  const timeoutMs = claimTimeoutMs(runtime);
+  const maxAttempts = maxProcessingAttempts(runtime);
+
+  for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
+    const asset = await getMapAsset(assetId);
+    if (!mapAssetProcessingClaimIsStale(asset, now, timeoutMs)) {
+      return undefined;
+    }
+    const attempts = asset.processingAttempts ?? 0;
+    if (attempts >= maxAttempts) {
+      try {
+        await db.put(
+          omitUndefinedFields({
+            ...asset,
+            status: 'failed' as const,
+            failureReason: MAP_ASSET_PROCESSING_EXHAUSTED_REASON,
+            processingStartedAt: undefined,
+            updatedAt: now,
+          })
+        );
+        return undefined;
+      } catch (error) {
+        if (isConflict(error)) {
+          continue;
+        }
+        throw error;
+      }
+    }
+    try {
+      await db.put({
+        ...asset,
+        processingStartedAt: now,
+        processingAttempts: attempts + 1,
+        updatedAt: now,
+      });
+      return getMapAsset(assetId);
+    } catch (error) {
+      if (isConflict(error)) {
+        continue;
+      }
+      throw error;
+    }
+  }
+  console.error(`[map-assets] could not claim ${assetId}`);
+  return undefined;
+}
+
+/**
+ * Write the terminal status only while this claim still owns the asset.
+ * A concurrent run that already reached `ready` or `failed` is left as-is.
+ */
+async function commitProcessingResult(
+  assetId: string,
+  claimStartedAt: number,
+  build: (asset: ExistingMapAsset) => ExistingMapAsset
+): Promise<void> {
+  const db = getMapAssetsDB();
+  for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
     const latest = await getMapAsset(assetId);
-    const attached = await db.putAttachment(
-      assetId,
-      MAP_ASSET_NORMALIZED_ATTACHMENT,
-      latest._rev,
-      normalized.bytes,
-      normalized.mediaType
-    );
-    const afterAttach = await getMapAsset(assetId);
-    await db.put({
-      ...afterAttach,
-      _rev: attached.rev,
-      status: 'ready',
-      kind: normalized.kind,
-      contentHash: sha256(normalized.bytes),
-      byteSize: normalized.bytes.length,
-      extent4326: normalized.extent4326,
-      extent3857: normalized.extent3857,
-      failureReason: undefined,
-      updatedAt: Date.now(),
+    if (
+      latest.status !== 'processing' ||
+      latest.processingStartedAt !== claimStartedAt
+    ) {
+      return;
+    }
+    try {
+      await db.put(omitUndefinedFields(build(latest)));
+      return;
+    } catch (error) {
+      if (!isConflict(error)) {
+        throw error;
+      }
+    }
+  }
+  throw new Error(`Could not save map layer processing result for ${assetId}.`);
+}
+
+/**
+ * Store the normalized bytes while this claim still owns the asset.
+ * Returns false when another process has taken over or already finished.
+ */
+async function putNormalizedAttachment({
+  assetId,
+  claimStartedAt,
+  bytes,
+  mediaType,
+}: {
+  assetId: string;
+  claimStartedAt: number;
+  bytes: Buffer;
+  mediaType: string;
+}): Promise<boolean> {
+  const db = getMapAssetsDB();
+  for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
+    const latest = await getMapAsset(assetId);
+    if (
+      latest.status !== 'processing' ||
+      latest.processingStartedAt !== claimStartedAt
+    ) {
+      return false;
+    }
+    try {
+      await db.putAttachment(
+        assetId,
+        MAP_ASSET_NORMALIZED_ATTACHMENT,
+        latest._rev,
+        bytes,
+        mediaType
+      );
+      return true;
+    } catch (error) {
+      if (!isConflict(error)) {
+        throw error;
+      }
+    }
+  }
+  throw new Error(`Could not store the normalized map layer for ${assetId}.`);
+}
+
+/** Runs GDAL and stores the normalized attachment. Safe to call from the job queue. */
+export async function processMapAsset(
+  assetId: string,
+  runtime?: MapAssetProcessingRuntime
+): Promise<void> {
+  const claimed = await claimMapAssetProcessing(assetId, runtime);
+  const claimStartedAt = claimed?.processingStartedAt;
+  if (!claimed || claimStartedAt === undefined) {
+    return;
+  }
+  try {
+    const files = await readUploadFiles(claimed);
+    const {options} = resolveMapAssetNormalizeOptions({
+      quality: claimed.quality,
+      options: claimed.normalizeOptions,
     });
+    const normalize = runtime?.normalize ?? normalizeMapUpload;
+    const normalized = await normalize(files, options);
+    const stored = await putNormalizedAttachment({
+      assetId,
+      claimStartedAt,
+      bytes: normalized.bytes,
+      mediaType: normalized.mediaType,
+    });
+    if (!stored) {
+      return;
+    }
+    await commitProcessingResult(assetId, claimStartedAt, latest =>
+      omitUndefinedFields({
+        ...latest,
+        status: 'ready' as const,
+        kind: normalized.kind,
+        contentHash: sha256(normalized.bytes),
+        byteSize: normalized.bytes.length,
+        extent4326: normalized.extent4326,
+        extent3857: normalized.extent3857,
+        failureReason: undefined,
+        processingStartedAt: undefined,
+        updatedAt: processingNow(runtime),
+      })
+    );
   } catch (error) {
-    const latest = await getMapAsset(assetId).catch(() => asset);
     const message =
       error instanceof Error ? error.message : 'Map layer processing failed.';
-    await db.put({
-      ...latest,
-      status: 'failed',
-      failureReason: message,
-      updatedAt: Date.now(),
-    });
+    await commitProcessingResult(assetId, claimStartedAt, latest =>
+      omitUndefinedFields({
+        ...latest,
+        status: 'failed' as const,
+        failureReason: message,
+        processingStartedAt: undefined,
+        updatedAt: processingNow(runtime),
+      })
+    );
   }
 }
 
 let processingQueue: Promise<void> = Promise.resolve();
 
 /** Serialise GDAL work so one large raster does not overlap the next. */
-export function enqueueMapAssetProcessing(assetId: string): void {
+export function enqueueMapAssetProcessing(
+  assetId: string,
+  runtime?: MapAssetProcessingRuntime
+): void {
   processingQueue = processingQueue
-    .then(() => processMapAsset(assetId))
+    .then(() => processMapAsset(assetId, runtime))
     .catch(error => {
       console.error(`[map-assets] processing failed for ${assetId}`, error);
     });
@@ -364,6 +609,64 @@ export function enqueueMapAssetProcessing(assetId: string): void {
 /** Test helper: wait until queued processing has finished. */
 export function waitForMapAssetProcessing(): Promise<void> {
   return processingQueue;
+}
+
+/**
+ * Re-queue processing assets whose claim is missing or expired.
+ * Each API process runs this on startup and on a timer so a crashed
+ * container's job is picked up by the next sweep.
+ */
+export async function sweepStaleMapAssetProcessing(
+  runtime?: MapAssetProcessingRuntime
+): Promise<string[]> {
+  const now = processingNow(runtime);
+  const timeoutMs = claimTimeoutMs(runtime);
+  const result = await getMapAssetsDB().query<number>(MAP_ASSETS_BY_STATUS, {
+    key: 'processing',
+    include_docs: false,
+  });
+  const enqueued: string[] = [];
+  for (const row of result.rows) {
+    if (!row.id) {
+      continue;
+    }
+    try {
+      const asset = await getMapAsset(row.id);
+      if (!mapAssetProcessingClaimIsStale(asset, now, timeoutMs)) {
+        continue;
+      }
+      enqueued.push(row.id);
+      enqueueMapAssetProcessing(row.id, runtime);
+    } catch (error) {
+      if (!(error instanceof Exceptions.ItemNotFoundException)) {
+        throw error;
+      }
+    }
+  }
+  return enqueued;
+}
+
+let processingSweepTimer: ReturnType<typeof setInterval> | undefined;
+
+/** Start the in-process sweep. Idempotent. The timer does not hold the process open. */
+export function startMapAssetProcessingSweeper(): void {
+  if (processingSweepTimer) {
+    return;
+  }
+  const run = () => {
+    sweepStaleMapAssetProcessing().catch(error => {
+      console.error('[map-assets] processing sweep failed', error);
+    });
+  };
+  run();
+  processingSweepTimer = setInterval(
+    run,
+    MAP_ASSET_PROCESSING_SWEEP_INTERVAL_MS
+  );
+  processingSweepTimer.unref();
+  console.log(
+    `[map-assets] processing sweep every ${MAP_ASSET_PROCESSING_SWEEP_INTERVAL_MS}ms`
+  );
 }
 
 export async function readNormalizedAttachment(

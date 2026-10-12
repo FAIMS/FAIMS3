@@ -91,10 +91,14 @@ GDAL must report a CRS. Uploads with no CRS are marked `failed` and no normalize
 
 Every accepted file becomes one of two device payloads:
 
-- Vectors become a GeoJSON FeatureCollection in `EPSG:4326` (`ogr2ogr -t_srs EPSG:4326`). Files larger than 5 MB are simplified.
-- Rasters, including georeferenced PDFs, are warped to `EPSG:3857` and written as a PNG whose long edge is at most 4096 px. The asset document stores that placement extent.
+- Vectors become a GeoJSON FeatureCollection in `EPSG:4326` (`ogr2ogr -t_srs EPSG:4326`). Files larger than the chosen simplify budget (5 MB at the default quality of 50) are simplified.
+- Rasters, including georeferenced PDFs, are warped to `EPSG:3857` and written as a PNG whose long edge is capped by the upload quality setting (4096 px at quality 50). The asset document stores that placement extent.
 
-Implementation: `api/src/couchdb/mapAssets/normalize.ts`, using the command helpers in `api/src/couchdb/export/gdal.ts`. Docker images install `gdal-bin` / `gdal-tools` and `poppler-utils`, and the image build fails unless `gdalinfo --formats` lists PDF.
+`POST /api/map-assets` and `PUT /api/map-assets/:id` accept optional `quality` (0–100) and `normalizeOptions`. `POST /api/map-assets/estimate` returns the resolved settings and an estimated device file size for the Control Centre slider.
+
+Processing runs inside the API process that accepted the upload, one asset at a time. The asset stores `processingStartedAt` (the claim) and `processingAttempts`. On startup, and about once a minute after that, every API process re-queues assets still `processing` whose claim is missing or older than 30 minutes, so a crashed process is retried when another container sweeps. A fresh claim is left alone. After three claims the asset is marked `failed`. A GDAL error fails the asset immediately and is not retried. Replacing the file clears the claim and the attempt count.
+
+Implementation: `api/src/couchdb/mapAssets/normalize.ts` and `api/src/couchdb/mapAssets/store.ts`, using the command helpers in `api/src/couchdb/export/gdal.ts`. Docker images install `gdal-bin` / `gdal-tools` and `poppler-utils`, and the image build fails unless `gdalinfo --formats` lists PDF.
 
 ## Full export behaviour
 

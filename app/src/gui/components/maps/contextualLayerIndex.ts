@@ -79,3 +79,21 @@ export function releaseProjectLayers<T extends StoredLayerRef>(
 ): LayerFileIndex<T> {
   return retainListedLayers(files, projectId, []);
 }
+
+/** How a listed layer compares with the copy stored on this device, if any. */
+export type LayerDeviceStatus = 'on-device' | 'update' | 'not-downloaded';
+
+/**
+ * Whether this listed layer is already stored, needs a newer file, or is
+ * missing from the device.
+ */
+export function layerDeviceStatus(
+  layer: {id: string; contentHash: string},
+  storedById: ReadonlyMap<string, {contentHash: string}>
+): LayerDeviceStatus {
+  const file = storedById.get(layer.id);
+  if (!file) {
+    return 'not-downloaded';
+  }
+  return file.contentHash === layer.contentHash ? 'on-device' : 'update';
+}

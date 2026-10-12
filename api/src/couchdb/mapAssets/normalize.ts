@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
  * Turns an uploaded map file set into one device-ready payload:
- * GeoJSON in EPSG:4326, or a PNG in EPSG:3857 no longer than 4096 px.
+ * GeoJSON in EPSG:4326, or a PNG in EPSG:3857 no longer than
+ * `options.maxRasterEdgePx` (4096 by default).
  */
 
 import {mkdtemp, readFile, rm, writeFile} from 'fs/promises';
 import {tmpdir} from 'os';
 import path from 'path';
-import type {MapAssetKind, MapExtent} from '@faims3/data-model';
+import type {
+  MapAssetKind,
+  MapAssetNormalizeOptions,
+  MapExtent,
+} from '@faims3/data-model';
+import {DEFAULT_MAP_ASSET_NORMALIZE_OPTIONS} from '@faims3/data-model';
 import {GdalCommandError, readGdalJson, runGdalCommand} from '../export/gdal';
 import {
   assertUploadCompanions,
@@ -26,10 +32,8 @@ export {
 } from './uploadRules';
 
 /** Longest edge of a normalized raster, in pixels. */
-export const MAX_RASTER_EDGE_PX = 4096;
-
-/** Re-export vectors above this size through ogr2ogr -simplify. */
-const VECTOR_SIMPLIFY_BYTES = 5 * 1024 * 1024;
+export const MAX_RASTER_EDGE_PX =
+  DEFAULT_MAP_ASSET_NORMALIZE_OPTIONS.maxRasterEdgePx;
 
 export type NormalizedMapAsset = {
   kind: MapAssetKind;
@@ -159,7 +163,8 @@ function extentFromGeoJson(parsed: {
 
 async function convertVector(
   sourcePath: string,
-  workDir: string
+  workDir: string,
+  options: MapAssetNormalizeOptions
 ): Promise<NormalizedMapAsset> {
   const outPath = path.join(workDir, 'normalized.geojson');
   const write = async (simplify?: number) => {
@@ -171,7 +176,7 @@ async function convertVector(
       '-lco',
       'RFC7946=YES',
     ];
-    if (simplify !== undefined) {
+    if (simplify !== undefined && simplify > 0) {
       args.push('-simplify', String(simplify));
     }
     args.push(outPath, gdalSourcePath(sourcePath));
@@ -180,12 +185,12 @@ async function convertVector(
 
   await write();
   let bytes = await readFile(outPath);
-  if (bytes.length > VECTOR_SIMPLIFY_BYTES) {
-    await write(0.00005);
+  if (bytes.length > options.vectorSimplifyBytes) {
+    await write(options.vectorSimplifyTolerances[0]);
     bytes = await readFile(outPath);
   }
-  if (bytes.length > VECTOR_SIMPLIFY_BYTES) {
-    await write(0.0002);
+  if (bytes.length > options.vectorSimplifyBytes) {
+    await write(options.vectorSimplifyTolerances[1]);
     bytes = await readFile(outPath);
   }
 
@@ -212,7 +217,8 @@ type GdalInfo = {
 
 async function convertRaster(
   sourcePath: string,
-  workDir: string
+  workDir: string,
+  options: MapAssetNormalizeOptions
 ): Promise<NormalizedMapAsset> {
   const warped = path.join(workDir, 'warped.tif');
   const png = path.join(workDir, 'normalized.png');
@@ -238,11 +244,11 @@ async function convertRaster(
   const height = info.size?.[1] ?? 0;
   const translateArgs = ['-of', 'PNG'];
   const longEdge = Math.max(width, height);
-  if (longEdge > MAX_RASTER_EDGE_PX && width > 0 && height > 0) {
+  if (longEdge > options.maxRasterEdgePx && width > 0 && height > 0) {
     if (width >= height) {
-      translateArgs.push('-outsize', String(MAX_RASTER_EDGE_PX), '0');
+      translateArgs.push('-outsize', String(options.maxRasterEdgePx), '0');
     } else {
-      translateArgs.push('-outsize', '0', String(MAX_RASTER_EDGE_PX));
+      translateArgs.push('-outsize', '0', String(options.maxRasterEdgePx));
     }
   }
   translateArgs.push(warped, png);
@@ -274,7 +280,8 @@ async function convertRaster(
  * the normalized bytes. The temp directory is removed before this resolves.
  */
 export async function normalizeMapUpload(
-  files: UploadedMapFile[]
+  files: UploadedMapFile[],
+  options: MapAssetNormalizeOptions = DEFAULT_MAP_ASSET_NORMALIZE_OPTIONS
 ): Promise<NormalizedMapAsset> {
   assertUploadCompanions(files);
   const primary = primaryUploadFile(files);
@@ -288,8 +295,8 @@ export async function normalizeMapUpload(
     const vector = isVectorUpload(primary.filename);
     await inspectCrs(sourcePath, vector);
     return vector
-      ? await convertVector(sourcePath, workDir)
-      : await convertRaster(sourcePath, workDir);
+      ? await convertVector(sourcePath, workDir, options)
+      : await convertRaster(sourcePath, workDir, options);
   } finally {
     await rm(workDir, {recursive: true, force: true});
   }

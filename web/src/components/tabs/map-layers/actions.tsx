@@ -23,15 +23,6 @@ export function MapLayerActions({assetId}: {assetId: string}) {
   const canManage = canManageMapAsset(user, data);
   const canReplace = canReplaceMapAsset(user, data);
 
-  if (!canManage && !canReplace) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        You can view this layer. Changing it needs permission on the owning
-        team, or you need to be the person who uploaded it.
-      </p>
-    );
-  }
-
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {canManage ? (

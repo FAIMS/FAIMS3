@@ -2,15 +2,20 @@
 /**
  * On-device copies of normalized map layers, plus local paint preferences.
  * File bytes live in Capacitor Filesystem or the Origin Private File System.
- * The index and style edits live in the local_state database.
+ * The file index, style edits, and seen-listing hashes live in persisted Redux.
  */
 
 import {Capacitor} from '@capacitor/core';
 import {Directory, Filesystem} from '@capacitor/filesystem';
-import type {ContextualLayerListing, MapAssetStyle} from '@faims3/data-model';
+import type {ContextualLayerListing} from '@faims3/data-model';
 import type {ContextualMapLayer} from '@faims3/forms';
-import {safeWriteDocument} from '@faims3/data-model';
-import {databaseService} from '../../../context/slices/helpers/databaseService';
+import {
+  readContextualLayersState,
+  writeContextualLayersState,
+  type ContextualLayerFile,
+  type ContextualLayerPrefs,
+  type ContextualLayersState,
+} from '../../../context/slices/contextualLayersSlice';
 import {
   assignDownloadedLayer,
   filenamesToDelete,
@@ -18,75 +23,16 @@ import {
   retainListedLayers,
 } from './contextualLayerIndex';
 
-const INDEX_ID = 'contextual-layer-index';
+type StoredFile = ContextualLayerFile;
+type LayerPrefs = ContextualLayerPrefs;
+type LayerIndex = ContextualLayersState;
 
-type StoredFile = {
-  assetId: string;
-  contentHash: string;
-  kind: ContextualLayerListing['kind'];
-  name: string;
-  byteSize: number;
-  extent4326: ContextualLayerListing['extent'];
-  extent3857?: ContextualLayerListing['extent3857'];
-  defaultStyle: MapAssetStyle;
-  filename: string;
-  /** Active surveys that downloaded this file. */
-  projectIds: string[];
-};
-
-type LayerPrefs = {
-  visible: boolean;
-  opacity: number;
-  zIndex: number;
-  stroke: string;
-  fill: string;
-  lineWidth: number;
-  pointSize: number;
-  labelField?: string;
-};
-
-type LayerIndex = {
-  _id: typeof INDEX_ID;
-  _rev?: string;
-  files: Record<string, StoredFile>;
-  prefs: Record<string, LayerPrefs>;
-  seenHashByProject: Record<string, string>;
-};
-
-const emptyIndex = (): LayerIndex => ({
-  _id: INDEX_ID,
-  files: {},
-  prefs: {},
-  seenHashByProject: {},
-});
-
-async function readIndex(): Promise<LayerIndex> {
-  const db = databaseService.getLocalStateDatabase();
-  try {
-    const doc = (await db.get(INDEX_ID)) as LayerIndex;
-    return {
-      ...emptyIndex(),
-      ...doc,
-      files: doc.files ?? {},
-      prefs: doc.prefs ?? {},
-      seenHashByProject: doc.seenHashByProject ?? {},
-    };
-  } catch (error) {
-    const status = (error as {status?: number}).status;
-    if (status === 404) {
-      return emptyIndex();
-    }
-    throw error;
-  }
+function readIndex(): LayerIndex {
+  return readContextualLayersState();
 }
 
-async function writeIndex(index: LayerIndex): Promise<void> {
-  const db = databaseService.getLocalStateDatabase();
-  await safeWriteDocument({
-    db,
-    data: index,
-    writeOnClash: true,
-  });
+function writeIndex(index: LayerIndex): void {
+  writeContextualLayersState(index);
 }
 
 async function listDeviceFilenames(): Promise<string[]> {
@@ -235,24 +181,23 @@ function prefsFor(
 export async function getSeenContextualLayersHash(
   projectId: string
 ): Promise<string | undefined> {
-  const index = await readIndex();
-  return index.seenHashByProject[projectId];
+  return readIndex().seenHashByProject[projectId];
 }
 
 export async function markContextualLayersSeen(
   projectId: string,
   hash: string
 ): Promise<void> {
-  const index = await readIndex();
+  const index = readIndex();
   index.seenHashByProject[projectId] = hash;
-  await writeIndex(index);
+  writeIndex(index);
 }
 
 /** Layers downloaded for this survey, in stack order. */
 export async function contextualLayersForMap(
   projectId: string
 ): Promise<ContextualMapLayer[]> {
-  const index = await readIndex();
+  const index = readIndex();
   const files = Object.values(index.files).filter(file =>
     file.projectIds.includes(projectId)
   );
@@ -285,7 +230,7 @@ export async function contextualLayersForMap(
 export async function loadStoredContextualLayer(
   assetId: string
 ): Promise<ContextualMapLayer | undefined> {
-  const index = await readIndex();
+  const index = readIndex();
   const file = index.files[assetId];
   if (!file) {
     return undefined;
@@ -313,7 +258,7 @@ export async function updateContextualLayerPrefs(
   assetId: string,
   patch: Partial<LayerPrefs>
 ): Promise<void> {
-  const index = await readIndex();
+  const index = readIndex();
   const file = index.files[assetId];
   if (!file) {
     return;
@@ -323,7 +268,7 @@ export async function updateContextualLayerPrefs(
   if (!index.prefs[assetId].labelField) {
     delete index.prefs[assetId].labelField;
   }
-  await writeIndex(index);
+  writeIndex(index);
 }
 
 export async function moveContextualLayer(
@@ -406,7 +351,7 @@ export async function downloadContextualLayers({
   layers: ContextualLayerListing[];
   onProgress?: (progress: ContextualLayerDownloadProgress) => void;
 }): Promise<void> {
-  const index = await readIndex();
+  const index = readIndex();
   const previous = index.files;
   const batchBytes = layers.reduce((sum, layer) => sum + layer.byteSize, 0);
   let completedBytes = 0;
@@ -488,17 +433,25 @@ export async function downloadContextualLayers({
 }
 
 async function commitFiles(
-  index: LayerIndex,
+  snapshot: LayerIndex,
   previous: LayerIndex['files']
 ): Promise<void> {
-  dropUnusedPrefs(index);
-  await writeIndex(index);
+  const latest = readIndex();
+  latest.files = snapshot.files;
+  // Keep style edits saved while this snapshot was being prepared.
+  for (const [assetId, prefs] of Object.entries(snapshot.prefs)) {
+    if (latest.files[assetId] && !latest.prefs[assetId]) {
+      latest.prefs[assetId] = prefs;
+    }
+  }
+  dropUnusedPrefs(latest);
+  writeIndex(latest);
   await Promise.all(
-    filenamesToDelete(previous, index.files).map(filename =>
+    filenamesToDelete(previous, snapshot.files).map(filename =>
       removeDeviceFile(filename)
     )
   );
-  await deleteUnreferencedFiles(index);
+  await deleteUnreferencedFiles(readIndex());
 }
 
 /**
@@ -530,7 +483,7 @@ export async function retainListedContextualLayers(
   projectId: string,
   listedAssetIds: string[]
 ): Promise<boolean> {
-  const index = await readIndex();
+  const index = readIndex();
   const previous = index.files;
   index.files = retainListedLayers(previous, projectId, listedAssetIds);
   if (!layerRefsChanged(previous, index.files)) {
@@ -553,11 +506,19 @@ export async function forgetUnselectedContextualLayers(
 export async function releaseContextualLayersForProject(
   projectId: string
 ): Promise<void> {
-  const index = await readIndex();
+  const index = readIndex();
   const previous = index.files;
-  index.files = releaseProjectLayers(previous, projectId);
+  const next = releaseProjectLayers(index.files, projectId);
+  index.files = next;
   delete index.seenHashByProject[projectId];
-  await commitFiles(index, previous);
+  dropUnusedPrefs(index);
+  writeIndex(index);
+  await Promise.all(
+    filenamesToDelete(previous, next).map(filename =>
+      removeDeviceFile(filename)
+    )
+  );
+  await deleteUnreferencedFiles(readIndex());
 }
 
 export type StoredContextualLayerSummary = {
@@ -573,7 +534,7 @@ export type StoredContextualLayerSummary = {
 export async function listStoredContextualLayers(): Promise<
   StoredContextualLayerSummary[]
 > {
-  const index = await readIndex();
+  const index = readIndex();
   return Object.values(index.files)
     .map(file => ({
       assetId: file.assetId,
@@ -590,7 +551,7 @@ export async function listStoredContextualLayers(): Promise<
 export async function removeContextualLayerFromDevice(
   assetId: string
 ): Promise<void> {
-  const index = await readIndex();
+  const index = readIndex();
   const previous = index.files;
   const file = previous[assetId];
   if (!file) {

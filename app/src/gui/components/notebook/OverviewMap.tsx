@@ -15,7 +15,7 @@ import {
   ProjectID,
   formatTimestamp,
 } from '@faims3/data-model';
-import {MapComponent} from '@faims3/forms';
+import {MapComponent, USER_FEATURE_LAYER_Z_INDEX} from '@faims3/forms';
 import {
   Alert,
   Box,
@@ -319,6 +319,8 @@ export const OverviewMap = (props: OverviewMapProps) => {
 
       const layer = new VectorLayer({
         source: source,
+        // Record markers stay above downloaded contextual layers.
+        zIndex: USER_FEATURE_LAYER_Z_INDEX,
         style: (olFeature: FeatureLike) => {
           const formId = (olFeature.get('form_id') as string) ?? '';
           const color = formIdToColor[formId] ?? FORM_TYPE_COLORS[0];

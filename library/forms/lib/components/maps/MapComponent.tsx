@@ -53,6 +53,7 @@ import {MapControlsOverlay, MapControlStack} from './controls/primitives';
 import {MapControlThemeProvider} from './mapTheme';
 import {MapConfig} from './types';
 import {ContextualLayersControl} from './ContextualLayersControl';
+import {GPS_CURSOR_LAYER_Z_INDEX} from './layerStack';
 import {useContextualMapLayers} from './useContextualMapLayers';
 import {createTileStore} from './tileDB/TileStore';
 
@@ -456,7 +457,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
     // instead of snapping when the gesture ends.
     const layer = new VectorLayer({
       source: positionSource,
-      zIndex: 999,
+      zIndex: GPS_CURSOR_LAYER_Z_INDEX,
       updateWhileAnimating: true,
       updateWhileInteracting: true,
     });

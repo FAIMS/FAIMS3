@@ -3,6 +3,7 @@ import {describe, expect, it} from 'vitest';
 import {
   assignDownloadedLayer,
   filenamesToDelete,
+  layerDeviceStatus,
   releaseProjectLayers,
   retainListedLayers,
   type StoredLayerRef,
@@ -92,5 +93,30 @@ describe('contextual layer device index', () => {
     expect(filenamesToDelete(current, next)).toEqual([
       'asset-2-hash-c.geojson',
     ]);
+  });
+});
+
+describe('layerDeviceStatus', () => {
+  const stored = new Map([
+    ['asset-1', {contentHash: 'hash-a'}],
+    ['asset-2', {contentHash: 'hash-old'}],
+  ]);
+
+  it('marks a matching stored file as already on the device', () => {
+    expect(
+      layerDeviceStatus({id: 'asset-1', contentHash: 'hash-a'}, stored)
+    ).toBe('on-device');
+  });
+
+  it('marks a stored file with a different hash as an update', () => {
+    expect(
+      layerDeviceStatus({id: 'asset-2', contentHash: 'hash-new'}, stored)
+    ).toBe('update');
+  });
+
+  it('marks a missing file as not downloaded', () => {
+    expect(
+      layerDeviceStatus({id: 'asset-3', contentHash: 'hash-a'}, stored)
+    ).toBe('not-downloaded');
   });
 });

@@ -8,6 +8,7 @@ import {
   resolveTeamId,
 } from '@/components/forms/template-team-field';
 import {useRequiredUser, useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {MapLayerQualitySlider} from '@/components/forms/map-layer-quality-slider';
 import {uploadMapAsset} from '@/hooks/map-asset-hooks';
 import {useGetTeams} from '@/hooks/queries';
 import {
@@ -16,8 +17,13 @@ import {
 } from '@/lib/map-layer-files';
 import {resourceNameSchema} from '@/lib/input-limits';
 import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
-import {Action, INPUT_LIMITS} from '@faims3/data-model';
+import {
+  Action,
+  DEFAULT_MAP_ASSET_QUALITY,
+  INPUT_LIMITS,
+} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
+import {useState} from 'react';
 
 export function CreateMapLayerForm({
   setDialogOpen,
@@ -26,6 +32,9 @@ export function CreateMapLayerForm({
 }) {
   const user = useRequiredUser();
   const queryClient = useQueryClient();
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [quality, setQuality] = useState(DEFAULT_MAP_ASSET_QUALITY);
+  const [files, setFiles] = useState<File[]>([]);
   const {data: teams} = useGetTeams({user});
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
   const possibleTeams = getPossibleTeamsForAction({
@@ -86,6 +95,7 @@ export function CreateMapLayerForm({
       possibleTeams,
       team: values.team,
     });
+    setUploadProgress(0);
     try {
       await uploadMapAsset({
         user,
@@ -93,12 +103,16 @@ export function CreateMapLayerForm({
         description: values.description?.trim() ?? '',
         teamId,
         files: values.files,
+        quality,
+        onProgress: setUploadProgress,
       });
     } catch (error) {
       return {
         type: 'submit' as const,
         message: error instanceof Error ? error.message : 'Upload failed.',
       };
+    } finally {
+      setUploadProgress(null);
     }
     await queryClient.invalidateQueries({queryKey: ['map-assets', user.token]});
     setDialogOpen(false);
@@ -117,7 +131,18 @@ export function CreateMapLayerForm({
         onSubmit={onSubmit}
         submitButtonText="Add map layer"
         submitButtonTestId="web-map-layers-create-submit"
+        submitProgress={uploadProgress}
         defaultValues={{name: '', description: '', files: []}}
+        watch={{
+          files: value => setFiles(Array.isArray(value) ? value : []),
+        }}
+        footer={
+          <MapLayerQualitySlider
+            quality={quality}
+            onQualityChange={setQuality}
+            files={files}
+          />
+        }
       />
     </div>
   );

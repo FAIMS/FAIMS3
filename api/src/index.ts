@@ -54,6 +54,9 @@ const startup = async () => {
 
   const {attachFullApi} = await import('./expressSetup.js');
   attachFullApi(app);
+  const {startMapAssetProcessingSweeper} =
+    await import('./couchdb/mapAssets/store.js');
+  startMapAssetProcessingSweeper();
   console.log('COUCHDB_INTERNAL_URL', config.couchdbInternalUrl);
   console.log('CONDUCTOR_PUBLIC_URL', config.conductorPublicUrl);
   console.log(

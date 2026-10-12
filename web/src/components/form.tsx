@@ -136,6 +136,7 @@ export function Form<
   footer = undefined,
   disableSubmission,
   watch,
+  submitProgress,
 }: {
   fields: TFields;
   dividers?: Divider[];
@@ -152,6 +153,11 @@ export function Form<
   };
   /** Per-field watchers; merged with each field's `onChange`. */
   watch?: Partial<Record<string, (value: unknown) => void>>;
+  /**
+   * 0–1 while `onSubmit` is uploading a file. Shows a bar and percent on the
+   * submit button. Omit for requests that have no byte progress.
+   */
+  submitProgress?: number | null;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -459,6 +465,24 @@ export function Form<
             {disableSubmission.reason}
           </p>
         )}
+        {isSubmitting &&
+        submitProgress !== undefined &&
+        submitProgress !== null ? (
+          <div className="flex flex-col gap-1.5">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full bg-primary transition-[width]"
+                style={{
+                  width: `${Math.round(Math.min(1, Math.max(0, submitProgress)) * 100)}%`,
+                }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {Math.round(Math.min(1, Math.max(0, submitProgress)) * 100)}%
+              complete
+            </p>
+          </div>
+        ) : null}
         <Button
           type="submit"
           variant={submitButtonVariant}
@@ -466,7 +490,13 @@ export function Form<
           disabled={isSubmitDisabled}
           data-testid={submitButtonTestId}
         >
-          {submitButtonText}
+          {isSubmitting &&
+          submitProgress !== undefined &&
+          submitProgress !== null
+            ? submitProgress > 0
+              ? `Uploading… ${Math.round(submitProgress * 100)}%`
+              : 'Preparing upload…'
+            : submitButtonText}
         </Button>
       </form>
     </FormProvider>

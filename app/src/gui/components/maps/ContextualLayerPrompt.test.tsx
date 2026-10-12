@@ -1,0 +1,154 @@
+// SPDX-License-Identifier: Apache-2.0
+import '@testing-library/jest-dom';
+import type {ContextualLayerListing} from '@faims3/data-model';
+import {DEFAULT_MAP_ASSET_STYLE} from '@faims3/data-model';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {render, screen, waitFor} from '@testing-library/react';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {config} from '../../../buildconfig';
+import type {StoredContextualLayerSummary} from './contextualLayerStore';
+
+const harness = vi.hoisted(() => ({
+  dispatch: vi.fn(),
+  prompt: {projectId: 'survey-1', serverId: 'server-1'},
+  stored: [] as StoredContextualLayerSummary[],
+  layers: [] as ContextualLayerListing[],
+}));
+
+vi.mock('../../../context/store', () => ({
+  useAppDispatch: () => harness.dispatch,
+  useAppSelector: (selector: (state: unknown) => unknown) =>
+    selector({projects: {}}),
+}));
+
+vi.mock('../../../context/slices/authSlice', () => ({
+  selectActiveUser: () => ({
+    serverId: 'server-1',
+    token: 'token',
+  }),
+}));
+
+vi.mock('../../../context/slices/projectSlice', () => ({
+  selectPendingContextualLayerPrompt: () => harness.prompt,
+  selectProjectByIdentity: () => ({
+    projectId: 'survey-1',
+    name: 'Creek survey',
+    contextualLayersHash: 'hash-manifest',
+    contextualLayers: harness.layers,
+  }),
+  serverById: () => ({
+    serverId: 'server-1',
+    serverUrl: 'http://localhost:8080',
+  }),
+  clearPendingContextualLayerPrompt: () => ({type: 'clear-prompt'}),
+}));
+
+vi.mock('./contextualLayerStore', () => ({
+  listStoredContextualLayers: () => Promise.resolve(harness.stored),
+  downloadContextualLayers: vi.fn(),
+  forgetUnselectedContextualLayers: vi.fn(),
+  markContextualLayersSeen: vi.fn(),
+  notifyContextualLayersChanged: vi.fn(),
+}));
+
+import {ContextualLayerPrompt} from './ContextualLayerPrompt';
+
+function layer(
+  id: string,
+  name: string,
+  contentHash: string
+): ContextualLayerListing {
+  return {
+    id,
+    name,
+    kind: 'geojson',
+    byteSize: 2048,
+    contentHash,
+    extent: [0, 0, 1, 1],
+    defaultStyle: DEFAULT_MAP_ASSET_STYLE,
+  };
+}
+
+function stored(
+  assetId: string,
+  contentHash: string
+): StoredContextualLayerSummary {
+  return {
+    assetId,
+    name: assetId,
+    kind: 'geojson',
+    byteSize: 2048,
+    contentHash,
+    projectIds: ['survey-1'],
+  };
+}
+
+function renderPrompt() {
+  return render(
+    <ThemeProvider theme={createTheme()}>
+      <ContextualLayerPrompt />
+    </ThemeProvider>
+  );
+}
+
+describe('ContextualLayerPrompt', () => {
+  beforeEach(() => {
+    harness.dispatch.mockReset();
+    harness.prompt = {projectId: 'survey-1', serverId: 'server-1'};
+    harness.layers = [
+      layer('asset-ready', 'Site boundaries', 'hash-a'),
+      layer('asset-new', 'Vegetation', 'hash-b'),
+      layer('asset-stale', 'Tracks', 'hash-new'),
+    ];
+    harness.stored = [
+      stored('asset-ready', 'hash-a'),
+      stored('asset-stale', 'hash-old'),
+    ];
+  });
+
+  it('groups already-downloaded layers apart from layers that still need a download', async () => {
+    renderPrompt();
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId('map-layer-group-on-device')
+      ).toBeInTheDocument();
+    });
+
+    const onDevice = screen.getByTestId('map-layer-group-on-device');
+    const toDownload = screen.getByTestId('map-layer-group-to-download');
+
+    expect(onDevice).toHaveTextContent('Already on this device (1)');
+    expect(onDevice).toHaveTextContent('Site boundaries');
+    expect(
+      screen.getByTestId('map-layer-status-asset-ready')
+    ).toHaveTextContent('On this device');
+
+    expect(toDownload).toHaveTextContent('Need to download (2)');
+    expect(toDownload).toHaveTextContent('Vegetation');
+    expect(toDownload).toHaveTextContent('Tracks');
+    expect(screen.getByTestId('map-layer-status-asset-new')).toHaveTextContent(
+      'Needs download'
+    );
+    expect(
+      screen.getByTestId('map-layer-status-asset-stale')
+    ).toHaveTextContent('Update available');
+    expect(
+      screen.getByText(
+        `This ${config.notebookName}: 'Creek survey', has contextual layers for offline maps. Ticked layers already on this device stay as they are. Ticked layers that are not downloaded will be saved now.`
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('labels the selected action as keep when every ticked layer is already on the device', async () => {
+    harness.layers = [layer('asset-ready', 'Site boundaries', 'hash-a')];
+    harness.stored = [stored('asset-ready', 'hash-a')];
+    renderPrompt();
+
+    await waitFor(() => {
+      expect(screen.getByText('Keep selected')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Keep all')).toBeInTheDocument();
+    expect(screen.queryByText('Need to download')).not.toBeInTheDocument();
+  });
+});

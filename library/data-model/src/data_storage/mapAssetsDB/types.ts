@@ -2,6 +2,10 @@
 import {z} from 'zod';
 import {DatabaseInterface} from '../../types';
 import {CouchExistingDocumentSchema} from '../utils';
+import {
+  MapAssetNormalizeOptionsSchema,
+  MapAssetQualitySchema,
+} from './normalizeOptions';
 
 /** Couch attachment holding the bytes the user uploaded (or a zip of them). */
 export const MAP_ASSET_ORIGINAL_ATTACHMENT = 'original';
@@ -67,12 +71,26 @@ export const MapAssetFieldsSchema = z.object({
   contentHash: z.string().min(1).optional(),
   status: MapAssetStatusSchema,
   failureReason: z.string().optional(),
+  /**
+   * Epoch ms when an API process claimed this `processing` asset.
+   * Missing, or older than the claim timeout, means another process may retry.
+   */
+  processingStartedAt: z.number().optional(),
+  /**
+   * How many times a process has claimed this upload. Counts crashes, not
+   * GDAL errors (those set `failed` immediately). Reset when the file is replaced.
+   */
+  processingAttempts: z.number().int().nonnegative().optional(),
   kind: MapAssetKindSchema.optional(),
   /** Bounding box of the normalized data in EPSG:4326. */
   extent4326: MapExtentSchema.optional(),
   /** Image placement extent in EPSG:3857. Present when `kind` is `image`. */
   extent3857: MapExtentSchema.optional(),
   defaultStyle: MapAssetStyleSchema,
+  /** Slider value used when this upload was processed. */
+  quality: MapAssetQualitySchema.optional(),
+  /** Resolved GDAL settings used when this upload was processed. */
+  normalizeOptions: MapAssetNormalizeOptionsSchema.optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });
