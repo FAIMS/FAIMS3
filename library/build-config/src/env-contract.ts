@@ -30,7 +30,6 @@ const baseContract: Record<string, EnvResolver> = {
   VITE_WEB_URL: runtime => runtime.endpoints.webUrl ?? '',
   VITE_APP_URL: runtime => runtime.endpoints.appUrl ?? '',
   VITE_WEBSITE_TITLE: runtime => runtime.branding.websiteTitle ?? 'Control Centre',
-  VITE_APP_THEME: runtime => runtime.branding.theme ?? 'default',
   VITE_THEME: runtime => runtime.branding.theme ?? 'default',
   VITE_NOTEBOOK_NAME: runtime => runtime.notebookAndRecordUX.notebookName ?? 'notebook',
   VITE_NOTEBOOK_LIST_TYPE: runtime => runtime.notebookAndRecordUX.notebookListType ?? 'tabs',
@@ -86,8 +85,6 @@ const baseContract: Record<string, EnvResolver> = {
   VITE_POUCH_BATCHES_LIMIT: runtime => runtime.pouchdb.pouchBatchesLimit ?? 10,
   VITE_DEVELOPER_MODE: runtime => runtime.dev.developerMode ?? false,
   VITE_DOCS_URL: runtime => runtime.support.docsUrl ?? '',
-  VITE_BUGSNAG_API_KEY: runtime =>
-    runtime.observability.bugsnagApiKey ?? '',
   VITE_MAX_DESIGN_FILE_SIZE_MB: runtime => runtime.webDesignerLimits.maxDesignFileSizeMb ?? 10,
   VITE_TEMPLATE_PROTECTIONS: runtime =>
     runtime.webDesignerLimits.templateProtections ?? false,

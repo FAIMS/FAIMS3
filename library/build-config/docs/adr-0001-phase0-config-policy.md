@@ -157,6 +157,23 @@ Rule of thumb: cross-field _clamping/fallback_ invariants move to the shared
 - Any future divergence between a consumer's coercion and this ADR is a
   defect, not a judgement call.
 
+### D7 — Deduplicate the redundant env keys
+
+The module is the single source of truth for which env keys are generated, so
+the two duplicated key spellings are collapsed to one each. The surviving name
+is the **mobile** spelling in both cases, which is non-breaking because the not
+yet migrated app already reads exactly those names and only the web read the
+other spelling (and the web was migrated in the same change):
+
+| Concept | Dropped key | Kept key |
+| --- | --- | --- |
+| Theme | `VITE_APP_THEME` | `VITE_THEME` |
+| Bugsnag key | `VITE_BUGSNAG_API_KEY` | `VITE_BUGSNAG_KEY` |
+
+(There is deliberately no rename of `NEW_CONDUCTOR_URL` at this stage — it is an
+api-platform key whose value is the web URL, and renaming it is deferred to the
+api cutover.)
+
 ## Open / deferred
 
 - (fill in if any D was changed or deferred during review)

@@ -417,7 +417,6 @@ export const GeneratedEnvSchema = z
     VITE_APP_ID: z.string().default('org.fedarch.faims3'),
     VITE_CLUSTER_ADMIN_GROUP_NAME: z.string().default('cluster-admin'),
     VITE_THEME: z.string().default('default'),
-    VITE_APP_THEME: z.string().default('default'),
     VITE_WEB_URL: z.string().default('http://localhost:3001'),
     VITE_API_URL: z.string().default('http://localhost:8080'),
     VITE_APP_URL: z.string().default('http://localhost:3000'),
@@ -441,7 +440,6 @@ export const GeneratedEnvSchema = z
     VITE_SATELLITE_SOURCE: z.enum(['', 'esri', 'maptiler']).default(''),
     VITE_OFFLINE_MAPS: BoolEnvSchema.default(false),
     VITE_BUGSNAG_KEY: z.string().default('').optional(),
-    VITE_BUGSNAG_API_KEY: z.string().default('').optional(),
     VITE_COMMIT_VERSION: z.string().default('local-build'),
     VITE_FORCE_REMOTE_DELETION: z.enum(['allow', 'never']).default('never'),
     VITE_DELETE_ON_DEACTIVATION: BoolEnvSchema.default(false),
@@ -678,9 +676,7 @@ export function parseAppsEnv(env: GeneratedEnv): PartialBuildConfig {
       appShortName: env.VITE_APP_SHORT_NAME || undefined,
       headingAppName: env.VITE_HEADING_APP_NAME || undefined,
       websiteTitle: env.VITE_WEBSITE_TITLE,
-      // The generator emits both; VITE_APP_THEME is preferred (web reads it
-      // first), VITE_THEME is the mobile alias.
-      theme: env.VITE_APP_THEME || env.VITE_THEME,
+      theme: env.VITE_THEME,
     },
     support: {
       supportEmail: env.VITE_SUPPORT_EMAIL,
@@ -756,7 +752,7 @@ export function parseAppsEnv(env: GeneratedEnv): PartialBuildConfig {
       // only); placeholder text resolves to the generator's default.
       commitVersion: sanitizeCommitVersion(env.VITE_COMMIT_VERSION) ?? 'local-build',
       bugsnagApiKey: parseBugsnagKey(
-        env.VITE_BUGSNAG_KEY || env.VITE_BUGSNAG_API_KEY
+        env.VITE_BUGSNAG_KEY
       ),
     },
     teamAndRolePolicy: {
