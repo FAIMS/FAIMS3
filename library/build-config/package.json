@@ -15,7 +15,8 @@
   "scripts": {
     "generate": "tsx src/generate-build-config.ts",
     "validate-coverage": "tsx src/validate-generated-env.ts",
-    "test": "tsx --test test/generate-build-config.test.ts"
+    "test": "tsx --test test/generate-build-config.test.ts",
+    "lint": "oxlint --config ../../.oxlintrc.json ."
   },
   "dependencies": {
     "zod": "^4.1.12"

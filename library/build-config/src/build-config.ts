@@ -1,8 +1,5 @@
 import {z} from 'zod';
-import {
-  AuthProviderConfigMap,
-  AuthProviderConfigMapSchema,
-} from './auth-provider-config.js';
+import {AuthProviderConfigMapSchema} from './auth-provider-config.js';
 export {
   AuthProviderSchema,
   AuthProviderConfigMapSchema,
