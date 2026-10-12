@@ -60,6 +60,7 @@
     "@capgo/capacitor-speech-recognition": "^8.0.4",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
+    "@faims3/build-config": "workspace:*",
     "@faims3/data-model": "workspace:*",
     "@faims3/forms": "workspace:*",
     "@fast-check/vitest": "^0.0.7",
