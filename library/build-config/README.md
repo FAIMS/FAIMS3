@@ -86,19 +86,22 @@ Top-level groups include:
 - `couchdb`
 - `dev`
 - `pouchdb`
-- `secrets`
 
 Some previously duplicated values are now merged under one canonical setting and derived where needed (for example URL aliases and shared long-lived token duration policy).
 
+There is deliberately **no** untyped `secrets` passthrough. Platform-level secrets (`PRIVATE_SIGNING_KEY`, `PUBLIC_SIGNING_KEY`, `SOPS_AGE_KEY`, `AWS_DEFAULT_REGION`, `GIT_AUTHORIZATION`) stay injected by the deployment platform / CI, not by the generated env. If a secret needs to flow through the JSON it gets an explicit named field with an env-contract mapping (see [ADR-0001](docs/adr-0001-phase0-config-policy.md)).
+
 ## Strict Validation Rules
 
-Validation is intentionally strict:
+Validation is intentionally strict (see [ADR-0001](docs/adr-0001-phase0-config-policy.md) for the ratified policy):
 
 - Source JSON objects are strict and reject unknown keys.
-- Environment parsing rejects invalid booleans, integers, and enums.
+- Environment parsing rejects invalid booleans, integers, and enums (fail, do not warn-and-default).
 - Required values must be present or defaults must be declared.
 
-This catches typo and drift early during CI/build.
+This catches typo and drift early during CI/build. The apps keep their own lenient
+`configHelpers` schemas for hand-edited local `.env` until cutover; the strict
+shared parsers are exercised only on generator-produced env.
 
 ## How To Add A New Configuration Option
 
@@ -183,8 +186,10 @@ Useful reference files in the main repo:
 From this package:
 
 - generate: emits env from config JSON
-- generate target values: `apps` or `api`
-- validate-coverage: checks generated keys against app/web schema usage
+- generate platform values: `apps` (also accepts `android` / `ios` aliases, which
+  the mobile CI workflows use) or `api`
+- validate-coverage: checks the generated env covers exactly the env keys the
+  consumers read (app/web `EnvSchema` + Fastlane), excluding CI/platform-provided keys
 - test: runs package tests
 
 See [package.json](package.json).
