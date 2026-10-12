@@ -35,6 +35,8 @@ import {
   METADATA_REFERENCE_PREFIX,
 } from './metadataReferences';
 
+import {CONSTANT_REFERENCE_PREFIX, isConstantRef} from './expressionConstants';
+
 /** Prefix marking a reference to a field on the parent record. Reserved. */
 export const PARENT_REFERENCE_PREFIX = '_PARENT.';
 
@@ -188,7 +190,11 @@ export const compileComputedExpressionForForm = ({
 }): CompiledExpression => {
   const fieldTypes = new Map<string, ExprType>();
   for (const [id, f] of Object.entries(uiSpecification.fields)) {
-    for (const prefix of [PARENT_REFERENCE_PREFIX, METADATA_REFERENCE_PREFIX]) {
+    for (const prefix of [
+      PARENT_REFERENCE_PREFIX,
+      METADATA_REFERENCE_PREFIX,
+      CONSTANT_REFERENCE_PREFIX,
+    ]) {
       if (id.startsWith(prefix)) {
         // Reserved prefix - a real field with this ID would be shadowed.
         throw new ExpressionError(
@@ -255,7 +261,7 @@ export const compileComputedExpressionForForm = ({
     formId,
   });
   for (const ref of extractExpressionReferences(source)) {
-    if (ref.startsWith(PARENT_REFERENCE_PREFIX)) continue;
+    if (ref.startsWith(PARENT_REFERENCE_PREFIX) || isConstantRef(ref)) continue;
     if (fieldTypes.has(ref) || relatedTypes.has(ref)) continue;
     const parts = splitRelatedReference(ref);
     if (!parts) continue; // plain unknown local ref: compiler reports it
