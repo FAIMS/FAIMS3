@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {FALSEY_STRINGS, TRUTHY_STRINGS} from './env-coercion';
 
 const callbackMethodSchema = z.enum(['GET', 'POST']);
 
@@ -85,6 +86,8 @@ export type AuthProviderConfigMap = z.infer<typeof AuthProviderConfigMapSchema>;
 
 const AUTH_PREFIX = 'AUTH_';
 const AUTH_ENV_PATTERN = /^AUTH_([A-Z0-9]+)_([A-Z0-9_]+)?$/;
+const TRUTHY_SET = new Set<string>(TRUTHY_STRINGS);
+const FALSEY_SET = new Set<string>(FALSEY_STRINGS);
 
 const snakeToCamel = (str: string): string => {
   const exceptions = ['ID', 'URL'];
@@ -162,13 +165,25 @@ export function readAuthProviderConfigFromEnv(
     }
 
     if (propertyType === 'boolean') {
-      parsedConfig[provider][property] =
-        (value ?? '').toLowerCase() === 'true' || value === '1';
+      // D3 boolean vocabulary (see env-coercion). Strict: an unrecognised
+      // value is dropped so the provider-level schema reports it, rather than
+      // being silently coerced to false.
+      const lower = (value ?? '').trim().toLowerCase();
+      if (TRUTHY_SET.has(lower)) {
+        parsedConfig[provider][property] = true;
+      } else if (FALSEY_SET.has(lower)) {
+        parsedConfig[provider][property] = false;
+      }
       continue;
     }
 
     if (propertyType === 'number') {
-      parsedConfig[provider][property] = Number.parseInt(value ?? '0', 10);
+      // Strict: only set a finite integer. A blank / non-numeric value is
+      // omitted so the schema surfaces it, instead of silently becoming 0.
+      const n = Number.parseInt(value ?? '', 10);
+      if (Number.isFinite(n)) {
+        parsedConfig[provider][property] = n;
+      }
       continue;
     }
 
@@ -187,6 +202,11 @@ export function readAuthProviderConfigFromEnv(
   for (const [providerId, provider] of Object.entries(parsedConfig)) {
     const parsed = AuthProviderSchema.safeParse(provider);
     if (!parsed.success) {
+      // Do not silently drop a misconfigured provider — surface it.
+      console.warn(
+        `Warning: dropping auth provider '${providerId}': invalid configuration.`,
+        parsed.error.issues,
+      );
       continue;
     }
     typed[providerId] = parsed.data;
