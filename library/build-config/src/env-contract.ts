@@ -1,5 +1,5 @@
-import {RuntimeConfig} from './build-config';
-import {buildAuthProviderEnvMap} from './auth-provider-config';
+import {RuntimeConfig} from './build-config.js';
+import {buildAuthProviderEnvMap} from './auth-provider-config.js';
 
 type SupportedPlatform = 'apps' | 'api';
 

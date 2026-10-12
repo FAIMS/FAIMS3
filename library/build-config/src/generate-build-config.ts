@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {parseBuildConfig, toRuntimeConfig, type PartialBuildConfig} from './build-config';
-import {buildEnvMapFromRuntime} from './env-contract';
+import {parseBuildConfig, toRuntimeConfig, type PartialBuildConfig} from './build-config.js';
+import {buildEnvMapFromRuntime} from './env-contract.js';
 
 const HELP_TEXT = `Usage: pnpm --filter=@faims3/build-config run generate -- [--config path/to/config.json] [--platform apps|api] [--out path/to/.env]
 

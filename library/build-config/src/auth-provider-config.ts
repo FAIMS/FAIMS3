@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {FALSEY_STRINGS, TRUTHY_STRINGS} from './env-coercion';
+import {FALSEY_STRINGS, TRUTHY_STRINGS} from './env-coercion.js';
 
 const callbackMethodSchema = z.enum(['GET', 'POST']);
 

@@ -23,12 +23,12 @@ export {
   buildAuthProviderEnvMap,
   AuthProviderSchema,
   AuthProviderConfigMapSchema,
-} from './build-config';
+} from './build-config.js';
 export type {
   SharedBuildConfig,
   RuntimeConfig,
   GeneratedEnv,
   ApiEnv,
   PartialBuildConfig,
-} from './build-config';
-export type {AuthProviderConfig, AuthProviderConfigMap} from './auth-provider-config';
+} from './build-config.js';
+export type {AuthProviderConfig, AuthProviderConfigMap} from './auth-provider-config.js';

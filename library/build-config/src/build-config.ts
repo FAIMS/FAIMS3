@@ -2,14 +2,14 @@ import {z} from 'zod';
 import {
   AuthProviderConfigMap,
   AuthProviderConfigMapSchema,
-} from './auth-provider-config';
+} from './auth-provider-config.js';
 export {
   AuthProviderSchema,
   AuthProviderConfigMapSchema,
   readAuthProviderConfigFromEnv,
   buildAuthProviderEnvMap,
-} from './auth-provider-config';
-import {readAuthProviderConfigFromEnv} from './auth-provider-config';
+} from './auth-provider-config.js';
+import {readAuthProviderConfigFromEnv} from './auth-provider-config.js';
 export {
   BoolEnvSchema,
   PositiveIntStringSchema,
@@ -19,7 +19,7 @@ export {
   sanitizeCommitVersion,
   parseBugsnagKey,
   NO_MAXIMUM_WORDS,
-} from './env-coercion';
+} from './env-coercion.js';
 import {
   BoolEnvSchema,
   PositiveIntStringSchema,
@@ -29,7 +29,7 @@ import {
   sanitizeCommitVersion,
   parseBugsnagKey,
   stripTrailingSlash,
-} from './env-coercion';
+} from './env-coercion.js';
 
 const EndpointsBuildConfigSchema = z
   .object({
