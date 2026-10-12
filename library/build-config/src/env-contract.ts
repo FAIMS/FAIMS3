@@ -15,11 +15,17 @@ type EnvResolver = (runtime: RuntimeConfig) => EnvValue;
 
 const baseContract: Record<string, EnvResolver> = {
   VITE_APP_NAME: runtime => runtime.branding.appName ?? '',
-  VITE_APP_SHORT_NAME: runtime => runtime.branding.appShortName ?? '',
+  // Falls back to the app name (ADR-0001 D4) so an unset short name still
+  // emits a usable value and round-trips losslessly.
+  VITE_APP_SHORT_NAME: runtime =>
+    runtime.branding.appShortName ?? runtime.branding.appName ?? '',
   VITE_CLUSTER_ADMIN_GROUP_NAME: runtime =>
     runtime.auth.clusterAdminGroupName ?? 'cluster-admin',
   VITE_COMMIT_VERSION: runtime => runtime.observability.commitVersion ?? 'local-build',
-  VITE_CONDUCTOR_URL: runtime => runtime.endpoints.apiUrl ?? '',
+  VITE_CONDUCTOR_URL: runtime =>
+    runtime.endpoints.conductorUrls?.length
+      ? runtime.endpoints.conductorUrls.join(',')
+      : runtime.endpoints.apiUrl ?? 'http://localhost:8080',
   VITE_API_URL: runtime => runtime.endpoints.apiUrl ?? '',
   VITE_WEB_URL: runtime => runtime.endpoints.webUrl ?? '',
   VITE_APP_URL: runtime => runtime.endpoints.appUrl ?? '',
@@ -29,7 +35,9 @@ const baseContract: Record<string, EnvResolver> = {
   VITE_NOTEBOOK_NAME: runtime => runtime.notebookAndRecordUX.notebookName ?? 'notebook',
   VITE_NOTEBOOK_LIST_TYPE: runtime => runtime.notebookAndRecordUX.notebookListType ?? 'tabs',
   VITE_APP_ID: runtime => runtime.android.appId ?? 'org.fedarch.faims3',
-  VITE_HEADING_APP_NAME: runtime => runtime.branding.headingAppName ?? runtime.branding.appName ?? '',
+  // Heading falls back to the app name (ADR-0001 D4).
+  VITE_HEADING_APP_NAME: runtime =>
+    runtime.branding.headingAppName ?? runtime.branding.appName ?? '',
   VITE_APP_PRIVACY_POLICY_URL: runtime => runtime.support.privacyPolicyUrl ?? '',
   VITE_SUPPORT_EMAIL: runtime => runtime.support.supportEmail ?? '',
   VITE_APP_CONTACT_URL: runtime => runtime.support.appContactUrl ?? '',
@@ -113,6 +121,7 @@ const iosContract: Record<string, EnvResolver> = {
   FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: runtime =>
     runtime.ios.appleApplicationSpecificPassword ?? '',
   MATCH_PASSWORD: runtime => runtime.ios.matchPassword ?? '',
+  MATCH_GIT_URL: runtime => runtime.ios.matchGitUrl ?? '',
   GIT_AUTHORIZATION: runtime => runtime.ios.gitAuthorization ?? '',
   PROVISIONING_PROFILE_SPECIFIER: runtime =>
     runtime.ios.provisioningProfileSpecifier ?? '',
@@ -139,7 +148,8 @@ const apiContract: Record<string, EnvResolver> = {
   CONDUCTOR_EXTERNAL_PORT: runtime => runtime.couchdb.conductorExternalPort ?? 8080,
   CONDUCTOR_INTERNAL_PORT: runtime => runtime.couchdb.conductorInternalPort ?? 8080,
   CONDUCTOR_PUBLIC_URL: runtime => runtime.endpoints.apiUrl ?? 'http://localhost:8080',
-  WEB_APP_PUBLIC_URL: runtime => runtime.endpoints.webUrl ?? 'http://localhost:3001',
+  WEB_APP_PUBLIC_URL: runtime =>
+    runtime.endpoints.appUrl ?? 'http://localhost:3000',
   ANDROID_APP_PUBLIC_URL: runtime => runtime.endpoints.androidAppPublicUrl ?? '',
   IOS_APP_PUBLIC_URL: runtime => runtime.endpoints.iosAppPublicUrl ?? '',
   FAIMS_COOKIE_SECRET: runtime => runtime.auth.cookieSecret ?? '',
