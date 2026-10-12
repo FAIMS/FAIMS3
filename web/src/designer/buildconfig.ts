@@ -13,19 +13,14 @@ import {parseGeneratedEnv} from '@faims3/build-config';
 
 const canonical = parseGeneratedEnv(import.meta.env);
 
-// Both flags have defaults in the shared schema, so they are always populated.
-const defined = <T,>(value: T | undefined): T => value as T;
-
 /**
  * The singleton designer configuration object. Prefer reading values from here.
  */
 export const config = {
   /** Whether template protections are enabled. */
-  templateProtections: defined(canonical.webDesignerLimits.templateProtections),
+  templateProtections: canonical.webDesignerLimits.templateProtections,
   /** Whether the designer can add a plan to templates without one. */
-  enablePlansInDesigner: defined(
-    canonical.webDesignerLimits.enablePlansInDesigner
-  ),
+  enablePlansInDesigner: canonical.webDesignerLimits.enablePlansInDesigner,
 };
 
 export type DesignerConfig = typeof config;

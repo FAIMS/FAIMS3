@@ -9,7 +9,7 @@ import {
   parseBuildConfig,
   parseGeneratedEnv,
   readAuthProviderConfigFromEnv,
-  SharedBuildConfig,
+  type PartialBuildConfig,
 } from '../src/build-config';
 import {generateBuildConfig} from '../src/generate-build-config';
 import {validateGeneratedEnv} from '../src/validate-generated-env';
@@ -41,7 +41,7 @@ function deepMerge(a: unknown, b: unknown): unknown {
   return b === undefined ? a : b;
 }
 
-const sampleConfig: SharedBuildConfig = {
+const sampleConfig: PartialBuildConfig = {
   endpoints: {},
   branding: {},
   support: {},
@@ -307,7 +307,7 @@ test('short/heading names fall back to the app name in generated env', () => {
 // Golden round trip: a config's generated env must parse back to the same
 // canonical values. This is the guarantee the typed chain relies on.
 test('parseGeneratedEnv(buildEnvMapFromRuntime(config)) reproduces canonical values', () => {
-  const config: SharedBuildConfig = {
+  const config: PartialBuildConfig = {
     ...sampleConfig,
     endpoints: {
       webUrl: 'https://web.example.org',
@@ -377,7 +377,7 @@ test('parseGeneratedEnv(buildEnvMapFromRuntime(config)) reproduces canonical val
 
 // Same golden test for the API platform (api contract + auth provider env).
 test('parseGeneratedEnv round-trips API platform values', () => {
-  const config: SharedBuildConfig = {
+  const config: PartialBuildConfig = {
     ...sampleConfig,
     endpoints: {
       apiUrl: 'https://api.example.org',
@@ -749,7 +749,7 @@ test('D1: non-numeric integer env value is a parse error', () => {
 });
 
 test('designer-only web keys emit and parse round trip', () => {
-  const config: SharedBuildConfig = {
+  const config: PartialBuildConfig = {
     ...sampleConfig,
     webDesignerLimits: {templateProtections: true, enablePlansInDesigner: false},
   };

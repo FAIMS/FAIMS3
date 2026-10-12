@@ -62,13 +62,7 @@ function filterValidTeamRoles(roles: string[]): string[] {
 /** The canonical config, parsed from the generated env by the shared module. */
 const canonical = parseGeneratedEnv(import.meta.env);
 
-// Every env-backed field has a default in the shared schema, so it is always
-// populated at runtime. The module's inferred type is intentionally loose
-// (`T | undefined`) to also describe partial inputs, so this helper narrows a
-// guaranteed-present value to its concrete type for the Control Centre config.
-const defined = <T,>(value: T | undefined): T => value as T;
-
-const notebookName = defined(canonical.notebookAndRecordUX.notebookName);
+const notebookName = canonical.notebookAndRecordUX.notebookName;
 const notebookNamePlural = pluralize(notebookName);
 
 // Build-time version inject via Vite `define` (__APP_VERSION__ from
@@ -84,55 +78,51 @@ if (__APP_VERSION__) {
 export const config = {
   // Env-backed values, sourced from the shared canonical config.
   notebookName,
-  websiteTitle: defined(canonical.branding.websiteTitle),
-  docsUrl: defined(canonical.support.docsUrl),
-  theme: defined(canonical.branding.theme),
-  developerMode: defined(canonical.dev.developerMode),
-  forceRemoteDeletion: defined(canonical.sync.forceRemoteDeletion),
-  deleteOnDeactivation: defined(canonical.sync.deleteOnDeactivation),
+  websiteTitle: canonical.branding.websiteTitle,
+  docsUrl: canonical.support.docsUrl,
+  theme: canonical.branding.theme,
+  developerMode: canonical.dev.developerMode,
+  forceRemoteDeletion: canonical.sync.forceRemoteDeletion,
+  deleteOnDeactivation: canonical.sync.deleteOnDeactivation,
   // The shared model uses the 'unlimited' sentinel for no cap; the Control
   // Centre expects `undefined` to mean "no maximum".
   maximumLongLivedDurationDays:
     canonical.authTokens.maximumLongLivedDurationDays === 'unlimited'
       ? undefined
       : canonical.authTokens.maximumLongLivedDurationDays,
-  mapSource: defined(canonical.maps.mapSource),
-  mapSourceKey: defined(canonical.maps.mapSourceKey),
-  mapStyle: defined(canonical.maps.mapStyle),
+  mapSource: canonical.maps.mapSource,
+  mapSourceKey: canonical.maps.mapSourceKey,
+  mapStyle: canonical.maps.mapStyle,
   satelliteSource: canonical.maps.satelliteSource,
   bugsnagApiKey: canonical.observability.bugsnagApiKey,
-  appName: defined(canonical.branding.appName),
-  appShortName: defined(
-    canonical.branding.appShortName ?? canonical.branding.appName
-  ),
-  webUrl: defined(canonical.endpoints.webUrl),
-  apiUrl: defined(canonical.endpoints.apiUrl),
-  appUrl: defined(canonical.endpoints.appUrl),
+  appName: canonical.branding.appName,
+  appShortName: canonical.branding.appShortName ?? canonical.branding.appName,
+  webUrl: canonical.endpoints.webUrl,
+  apiUrl: canonical.endpoints.apiUrl,
+  appUrl: canonical.endpoints.appUrl,
   excludedTeamRoles: new Set(
-    filterValidTeamRoles(defined(canonical.teamAndRolePolicy.excludedTeamRoles))
+    filterValidTeamRoles(canonical.teamAndRolePolicy.excludedTeamRoles)
   ),
-  maxDesignFileSizeMb: defined(canonical.webDesignerLimits.maxDesignFileSizeMb),
+  maxDesignFileSizeMb: canonical.webDesignerLimits.maxDesignFileSizeMb,
   maxDesignFileSizeBytes:
-    defined(canonical.webDesignerLimits.maxDesignFileSizeMb) * 1024 * 1024,
-  longLivedTokenDurationHints: defined(
-    canonical.authTokens.longLivedTokenDurationHints
-  ),
+    canonical.webDesignerLimits.maxDesignFileSizeMb * 1024 * 1024,
+  longLivedTokenDurationHints: canonical.authTokens.longLivedTokenDurationHints ?? [],
 
   // Derived / cross-field (no dedicated env key).
   /** Control Centre home (`webUrl` with trailing slash; `/` → `/teams`). */
-  webHomeUrl: `${defined(canonical.endpoints.webUrl).replace(/\/$/, '')}/`,
+  webHomeUrl: `${canonical.endpoints.webUrl.replace(/\/$/, '')}/`,
   notebookNameCapitalized: capitalize(notebookName),
   notebookNamePlural,
   notebookNamePluralCapitalized: capitalize(notebookNamePlural),
   /** Conductor login URL that redirects back to this Control Centre. */
-  signinPath: `${defined(canonical.endpoints.apiUrl)}/login?redirect=${defined(canonical.endpoints.webUrl)}`,
+  signinPath: `${canonical.endpoints.apiUrl}/login?redirect=${canonical.endpoints.webUrl}`,
   /** Fieldmark auth-return URL that accepts a `?token` query string. */
-  appTokenReturnPath: `${defined(canonical.endpoints.appUrl)}/auth-return`,
+  appTokenReturnPath: `${canonical.endpoints.appUrl}/auth-return`,
   /** Aggregated map settings for map UI / form preview components. */
   mapConfig: {
-    mapSource: defined(canonical.maps.mapSource),
-    mapSourceKey: defined(canonical.maps.mapSourceKey),
-    mapStyle: defined(canonical.maps.mapStyle),
+    mapSource: canonical.maps.mapSource,
+    mapSourceKey: canonical.maps.mapSourceKey,
+    mapStyle: canonical.maps.mapStyle,
     satelliteSource: canonical.maps.satelliteSource,
   },
 
