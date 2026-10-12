@@ -39,9 +39,9 @@ const EndpointsBuildConfigSchema = z
     /**
      * One or more Conductor URLs the mobile app can authenticate against
      * (CSV in the generated env; each entry becomes a login option).
-     * Falls back to `apiUrl` when empty.
+     * Always non-empty: the shared invariant falls back to `apiUrl`.
      */
-    conductorUrls: z.array(z.string()).optional(),
+    conductorUrls: z.array(z.string()).default([]),
     couchdbInternalUrl: z.string().default('http://localhost:5984'),
     couchdbPublicUrl: z.string().default('http://localhost:5984'),
     androidAppPublicUrl: z.string().default(''),
@@ -211,9 +211,12 @@ const EmailBuildConfigSchema = z
 
 const ObservabilityBuildConfigSchema = z
   .object({
-    commitVersion: z
-      .string()
-      .default('output of `git rev-parse HEAD`'),
+    /**
+     * Sanitised commit hash / release stamp. `undefined` means "no valid
+     * commit" (blank, placeholder or garbage). The generator resolves the
+     * `git rev-parse HEAD` placeholder at emit time.
+     */
+    commitVersion: z.string().optional(),
     bugsnagApiKey: z.string().optional(),
   })
   .strict();
@@ -739,7 +742,9 @@ export function parseAppsEnv(env: GeneratedEnv): PartialBuildConfig {
     observability: {
       // Reject the same garbage the app hides (commit hash / release stamp
       // only); placeholder text resolves to the generator's default.
-      commitVersion: sanitizeCommitVersion(env.VITE_COMMIT_VERSION) ?? 'local-build',
+      // Sanitised: only a commit hash / release stamp survives; anything else
+      // (blank, placeholder, prose) is `undefined`.
+      commitVersion: sanitizeCommitVersion(env.VITE_COMMIT_VERSION),
       bugsnagApiKey: parseBugsnagKey(
         env.VITE_BUGSNAG_KEY
       ),

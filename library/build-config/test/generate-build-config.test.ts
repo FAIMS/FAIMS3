@@ -9,6 +9,7 @@ import {
   parseBuildConfig,
   parseGeneratedEnv,
   readAuthProviderConfigFromEnv,
+  sanitizeCommitVersion,
   type PartialBuildConfig,
 } from '../src/build-config';
 import {generateBuildConfig} from '../src/generate-build-config';
@@ -283,16 +284,17 @@ test('generator escapes multiline values for env-file compatibility', () => {
 });
 
 test('validateBuildConfigCoverage catches missing env coverage', () => {
-  // The mobile app (not yet migrated) still expects these keys; a generated
-  // env that omits them must be flagged as missing.
+  // With the app and web migrated to parse via this module, the only scanned
+  // (not-yet-migrated) consumer is Fastlane; a generated env that omits a
+  // Fastlane key must be flagged as missing.
   const output = ['VITE_APP_NAME=Example'].join('\n');
 
   const result = validateGeneratedEnv({
     envText: output,
   });
 
-  assert.ok(result.missing.includes('VITE_CONDUCTOR_URL'));
-  assert.ok(result.missing.includes('VITE_POUCH_BATCH_SIZE'));
+  assert.ok(result.missing.includes('JAVA_KEYSTORE'));
+  assert.ok(result.missing.includes('ANDROID_JSON_KEY_FILE'));
   assert.ok(result.missing.length > 0);
 });
 
@@ -624,7 +626,7 @@ test('D5-ish: address country codes round trip as arrays', () => {
 });
 
 // Commit version is sanitised: only hashes / release stamps survive.
-test('commit version is sanitised (garbage becomes the default)', () => {
+test('commit version is sanitised (garbage becomes undefined)', () => {
   assert.equal(
     parseGeneratedEnv({VITE_COMMIT_VERSION: 'abcdef1'}).observability.commitVersion,
     'abcdef1'
@@ -635,11 +637,11 @@ test('commit version is sanitised (garbage becomes the default)', () => {
     }).observability.commitVersion,
     'v1.2.3-ios-#abc1234'
   );
-  // Prose / placeholders fall back to the default.
+  // Prose / placeholders resolve to "no commit" (undefined).
   assert.equal(
     parseGeneratedEnv({VITE_COMMIT_VERSION: 'output of git rev-parse HEAD'})
       .observability.commitVersion,
-    'local-build'
+    undefined
   );
 });
 
@@ -763,4 +765,25 @@ test('designer-only web keys emit and parse round trip', () => {
   });
   assert.equal(parsed.webDesignerLimits.templateProtections, true);
   assert.equal(parsed.webDesignerLimits.enablePlansInDesigner, false);
+});
+
+test('sanitizeCommitVersion keeps hashes and release stamps, drops the rest', () => {
+  assert.equal(
+    sanitizeCommitVersion('a1b2c3d4e5f6789012345678901234567890abcd'),
+    'a1b2c3d4e5f6789012345678901234567890abcd'
+  );
+  assert.equal(sanitizeCommitVersion('abc1234'), 'abc1234');
+  assert.equal(
+    sanitizeCommitVersion('v1.7.2-android-#abc1234'),
+    'v1.7.2-android-#abc1234'
+  );
+  assert.equal(
+    sanitizeCommitVersion('v1.7.2-ios-#abc1234'),
+    'v1.7.2-ios-#abc1234'
+  );
+  assert.equal(sanitizeCommitVersion('output of `git rev-parse HEAD`'), undefined);
+  assert.equal(sanitizeCommitVersion('not a hash'), undefined);
+  assert.equal(sanitizeCommitVersion('HEAD'), undefined);
+  assert.equal(sanitizeCommitVersion(''), undefined);
+  assert.equal(sanitizeCommitVersion(undefined), undefined);
 });
