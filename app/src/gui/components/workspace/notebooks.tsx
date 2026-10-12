@@ -9,7 +9,9 @@
 import {ProjectStatus} from '@faims3/data-model';
 import {AddOutlined, RefreshOutlined} from '@mui/icons-material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import SignalWifiConnectedNoInternet4Icon from '@mui/icons-material/SignalWifiConnectedNoInternet4';
 import {
+  Alert,
   Box,
   Button,
   CircularProgress,
@@ -214,6 +216,7 @@ export default function NoteBooks() {
 
   const showRefreshButton = isOnline.isOnline;
   const activatedProjects = projects.filter(nb => nb.isActivated);
+  const availableProjects = projects.filter(nb => !nb.isActivated);
 
   const baseColumns: GridColDef<Project>[] = [
     {
@@ -361,6 +364,33 @@ export default function NoteBooks() {
 
   const platform = CAPACITOR_PLATFORM;
   const allowQr = platform === 'ios' || platform === 'android';
+  const canAddNotebook = isOnline.isOnline;
+  const addNotebookButton = (
+    <Button
+      variant="contained"
+      fullWidth={stackToolbar || !canAddNotebook}
+      disabled={!canAddNotebook}
+      sx={{
+        backgroundColor: theme.palette.primary.main,
+        flex: stackToolbar || !canAddNotebook ? undefined : '1 0 auto',
+        whiteSpace: 'nowrap',
+        minWidth: stackToolbar ? 0 : 'max-content',
+      }}
+      startIcon={
+        canAddNotebook ? (
+          <AddOutlined />
+        ) : (
+          <SignalWifiConnectedNoInternet4Icon data-testid="app-notebooks-add-offline-icon" />
+        )
+      }
+      data-testid="app-notebooks-add-button"
+      onClick={() => {
+        setAddDialogOpen(true);
+      }}
+    >
+      Add {config.notebookName}
+    </Button>
+  );
 
   return (
     <Box
@@ -412,23 +442,25 @@ export default function NoteBooks() {
             <CircularProgress size={24} sx={{flexShrink: 0}} />
           )}
         </Box>
-        <Button
-          variant="contained"
-          fullWidth={stackToolbar}
-          sx={{
-            backgroundColor: theme.palette.primary.main,
-            flex: stackToolbar ? undefined : '1 0 auto',
-            whiteSpace: 'nowrap',
-            minWidth: stackToolbar ? 0 : 'max-content',
-          }}
-          startIcon={<AddOutlined />}
-          data-testid="app-notebooks-add-button"
-          onClick={() => {
-            setAddDialogOpen(true);
-          }}
-        >
-          Add {config.notebookName}
-        </Button>
+        {canAddNotebook ? (
+          addNotebookButton
+        ) : (
+          <Tooltip
+            title={`You must be online to accept a ${config.notebookName} invitation.`}
+          >
+            <Box
+              component="span"
+              sx={{
+                display: 'inline-flex',
+                flex: stackToolbar ? undefined : '1 0 auto',
+                width: stackToolbar ? '100%' : undefined,
+                minWidth: stackToolbar ? 0 : 'max-content',
+              }}
+            >
+              {addNotebookButton}
+            </Box>
+          </Tooltip>
+        )}
         <Button
           variant="outlined"
           size="small"
@@ -445,6 +477,16 @@ export default function NoteBooks() {
           Learn more about activating {config.notebookNamePlural}
         </Button>
       </Box>
+      {!isOnline.isOnline && availableProjects.length > 0 && (
+        <Alert
+          severity="warning"
+          sx={{mb: 2}}
+          data-testid="app-notebooks-offline-activate-warning"
+        >
+          Connect to the internet to activate this {config.notebookName}.
+          Activation prepares the {config.notebookName} for offline use.
+        </Alert>
+      )}
       {config.notebookListType === 'tabs' ? (
         <Tabs
           projects={projects}
@@ -485,6 +527,8 @@ export default function NoteBooks() {
         }}
         onClick={() => setAddDialogOpen(false)}
         role="presentation"
+        aria-hidden={!addDialogOpen}
+        data-testid="app-notebooks-add-dialog"
       >
         <Paper
           elevation={8}

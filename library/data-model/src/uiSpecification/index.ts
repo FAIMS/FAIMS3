@@ -11,3 +11,5 @@ export * from './relatedForms';
 export * from './formScan';
 export * from './parentReferences';
 export * from './metadataReferences';
+export * from './expressionConstants';
+export * from './uiSpecProperties';

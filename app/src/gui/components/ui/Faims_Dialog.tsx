@@ -29,6 +29,8 @@ type FaimsDialogProps = {
   onPrimaryAction: () => void;
   primaryActionText: string;
   primaryActionLoading?: boolean;
+  /** When true, the primary action is disabled even if it is not loading. */
+  primaryActionDisabled?: boolean;
   primaryActionColor?: 'primary' | 'secondary' | 'error';
   primaryActionVariant?: 'contained' | 'outlined';
   cancelButtonText?: string;
@@ -49,6 +51,7 @@ type FaimsDialogProps = {
  * @param {Function} onPrimaryAction - Callback function for the primary action button.
  * @param {string} primaryActionText - The text displayed on the primary action button.
  * @param {boolean} [primaryActionLoading=false] - Controls the loading state of the primary action button.
+ * @param {boolean} [primaryActionDisabled=false] - Disables the primary action independently of loading.
  * @param {'primary' | 'secondary' | 'error'} [primaryActionColor='primary'] - Color of the primary action button.
  * @param {'contained' | 'outlined'} [primaryActionVariant='contained'] - Variant of the primary action button.
  * @param {string} [cancelButtonText='Cancel'] - The text displayed on the cancel button.
@@ -63,6 +66,7 @@ export default function FaimsDialog({
   onPrimaryAction,
   primaryActionText,
   primaryActionLoading = false,
+  primaryActionDisabled = false,
   primaryActionColor = 'primary',
   primaryActionVariant = 'contained',
   cancelButtonText = 'Cancel',
@@ -96,7 +100,7 @@ export default function FaimsDialog({
           variant={primaryActionVariant}
           color={primaryActionColor}
           onClick={onPrimaryAction}
-          disabled={primaryActionLoading}
+          disabled={primaryActionLoading || primaryActionDisabled}
           data-testid={primaryActionTestId}
         >
           {primaryActionText}

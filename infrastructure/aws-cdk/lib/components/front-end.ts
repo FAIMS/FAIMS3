@@ -180,10 +180,11 @@ export class FaimsFrontEnd extends Construct {
   }
 
   setupFaimsDistribution(props: FaimsFrontEndProps) {
-    // this allows connections to various map services supported as well as the
-    // API and couch domains
+    // connect-src covers fetch/XHR. `blob:` is a scheme source (CSP cannot
+    // origin-scope it; 'self' does not match blob:). Required so TakePhoto
+    // gallery-add can fetch Capacitor's URL.createObjectURL(file) on web.
     const csp =
-      `connect-src 'self' https://${props.couchDbDomainOnly} ${props.conductorUrl} *.bugsnag.com ` +
+      `connect-src 'self' blob: https://${props.couchDbDomainOnly} ${props.conductorUrl} *.bugsnag.com ` +
       MAP_ORIGINS_SHARED.join(' ');
 
     const website = new StaticWebsite(this, 'faims-website', {

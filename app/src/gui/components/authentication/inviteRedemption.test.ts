@@ -140,16 +140,16 @@ describe('invite URLs', () => {
   });
 
   it('keeps a default HTTPS port so a CDK conductor_url still scans', () => {
-    const serverUrl = 'https://conductor.bss.nbic.cloud:443';
+    const serverUrl = 'https://conductor.example.com:443';
     const inviteId = 'FAIMS-abc';
     const encoded = inviteRegisterUrl({serverUrl, inviteId});
     const stripped = urlConstructorPayload(serverUrl, inviteId);
 
     expect(encoded).toBe(
-      'https://conductor.bss.nbic.cloud:443/register?inviteId=FAIMS-abc'
+      'https://conductor.example.com:443/register?inviteId=FAIMS-abc'
     );
     expect(stripped).toBe(
-      'https://conductor.bss.nbic.cloud/register?inviteId=FAIMS-abc'
+      'https://conductor.example.com/register?inviteId=FAIMS-abc'
     );
     expect(scannerAccepts(encoded, serverUrl)).toBe(true);
     expect(scannerAccepts(stripped, serverUrl)).toBe(false);

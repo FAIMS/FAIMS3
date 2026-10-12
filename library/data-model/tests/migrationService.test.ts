@@ -14,6 +14,7 @@ import {
   MigrationsDBDocument,
   MigrationsDBFields,
   PeopleV1Fields,
+  buildCurrentVersionMigrationDoc,
   buildDefaultMigrationDoc,
   collectProjectDataDbs,
   couchInitialiser,
@@ -24,6 +25,9 @@ import {
   isDbUpToDate,
   migrateDbs,
   performMigration,
+  registerDbAtCurrentVersion,
+  REGISTERED_AT_CREATION_NOTES,
+  unregisterDbMigrationDoc,
 } from '../src/data_storage';
 import {DatabaseInterface} from '../src';
 
@@ -106,6 +110,168 @@ describe('Migration System Tests', () => {
           expect(migrationDoc.migrationLog[0].launchedBy).toBe('system');
         }
       });
+    });
+  });
+
+  describe('registerDbAtCurrentVersion / unregisterDbMigrationDoc', () => {
+    let testMigrationDb: DatabaseInterface;
+
+    beforeEach(async () => {
+      testMigrationDb = new PouchDB('test-register-migrations-db', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+      await couchInitialiser({
+        db: testMigrationDb,
+        content: initMigrationsDB({}),
+        config: {applyPermissions: false, forceWrite: true},
+      });
+    });
+
+    afterEach(async () => {
+      await testMigrationDb.destroy();
+    });
+
+    it('buildCurrentVersionMigrationDoc stamps targetVersion', () => {
+      const doc = buildCurrentVersionMigrationDoc({
+        dbType: DatabaseType.DATA,
+        dbName: 'data-new-survey',
+        launchedBy: 'alice',
+      });
+      expect(doc.version).toBe(
+        DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion
+      );
+      expect(doc.status).toBe('healthy');
+      expect(doc.migrationLog[0].from).toBe(0);
+      expect(doc.migrationLog[0].to).toBe(doc.version);
+      expect(doc.migrationLog[0].launchedBy).toBe('alice');
+      expect(doc.migrationLog[0].notes).toBe(REGISTERED_AT_CREATION_NOTES);
+    });
+
+    it('registers a new data DB at the current target version', async () => {
+      const result = await registerDbAtCurrentVersion({
+        dbType: DatabaseType.DATA,
+        dbName: 'data-new-survey',
+        migrationDb: testMigrationDb as unknown as MigrationsDB,
+        launchedBy: 'alice',
+      });
+
+      expect(result.created).toBe(true);
+      expect(result.migrationDoc.version).toBe(
+        DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion
+      );
+      expect(result.migrationDoc.status).toBe('healthy');
+      expect(isDbUpToDate({migrationDoc: result.migrationDoc})).toBe(true);
+    });
+
+    it('does not overwrite an existing migration document', async () => {
+      const first = await registerDbAtCurrentVersion({
+        dbType: DatabaseType.DATA,
+        dbName: 'data-existing',
+        migrationDb: testMigrationDb as unknown as MigrationsDB,
+      });
+      expect(first.created).toBe(true);
+
+      const older = {
+        ...first.migrationDoc,
+        version: DB_TARGET_VERSIONS[DatabaseType.DATA].defaultVersion,
+      };
+      await testMigrationDb.put(older);
+
+      const second = await registerDbAtCurrentVersion({
+        dbType: DatabaseType.DATA,
+        dbName: 'data-existing',
+        migrationDb: testMigrationDb as unknown as MigrationsDB,
+        launchedBy: 'should-not-write',
+      });
+
+      expect(second.created).toBe(false);
+      expect(second.migrationDoc.version).toBe(
+        DB_TARGET_VERSIONS[DatabaseType.DATA].defaultVersion
+      );
+      expect(second.migrationDoc.migrationLog).toHaveLength(1);
+    });
+
+    it('lets migrateDbs skip a DB registered at current version', async () => {
+      const dataDb = new PouchDB('data-registered-skip', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+      const getDbById: GetDbById = async () => dataDb;
+      try {
+        await registerDbAtCurrentVersion({
+          dbType: DatabaseType.DATA,
+          dbName: 'data-registered-skip',
+          migrationDb: testMigrationDb as unknown as MigrationsDB,
+        });
+
+        await dataDb.put({
+          _id: 'rec-1',
+          record_format_version: 1,
+          heads: ['frev-head'],
+          updatedAt: '2024-01-01T00:00:00.000Z',
+        });
+
+        await migrateDbs({
+          dbs: [
+            {
+              dbType: DatabaseType.DATA,
+              dbName: 'data-registered-skip',
+              db: dataDb,
+            },
+          ],
+          migrationDb: testMigrationDb as unknown as MigrationsDB,
+          getDbById,
+        });
+
+        const docs = await testMigrationDb.query(
+          MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+          {
+            key: [DatabaseType.DATA, 'data-registered-skip'],
+            include_docs: true,
+          }
+        );
+        expect(docs.rows).toHaveLength(1);
+        const migrationDoc = docs.rows[0].doc as MigrationsDBDocument;
+        expect(migrationDoc.version).toBe(
+          DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion
+        );
+        expect(migrationDoc.migrationLog).toHaveLength(1);
+
+        const record = await dataDb.get<{updatedAt?: string}>('rec-1');
+        expect(record.updatedAt).toBe('2024-01-01T00:00:00.000Z');
+      } finally {
+        await dataDb.destroy();
+      }
+    });
+
+    it('unregisters a migration document and is a no-op if missing', async () => {
+      await registerDbAtCurrentVersion({
+        dbType: DatabaseType.DATA,
+        dbName: 'data-to-delete',
+        migrationDb: testMigrationDb as unknown as MigrationsDB,
+      });
+
+      const removed = await unregisterDbMigrationDoc({
+        dbType: DatabaseType.DATA,
+        dbName: 'data-to-delete',
+        migrationDb: testMigrationDb as unknown as MigrationsDB,
+      });
+      expect(removed.removed).toBe(true);
+
+      const afterRemove = await testMigrationDb.query(
+        MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+        {
+          key: [DatabaseType.DATA, 'data-to-delete'],
+          include_docs: true,
+        }
+      );
+      expect(afterRemove.rows).toHaveLength(0);
+
+      const again = await unregisterDbMigrationDoc({
+        dbType: DatabaseType.DATA,
+        dbName: 'data-to-delete',
+        migrationDb: testMigrationDb as unknown as MigrationsDB,
+      });
+      expect(again.removed).toBe(false);
     });
   });
 

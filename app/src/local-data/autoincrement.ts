@@ -13,7 +13,10 @@ import {
   safeWriteDocument,
 } from '@faims3/data-model';
 import {compiledSpecService} from '../context/slices/helpers/compiledSpecService';
-import {selectProjectById} from '../context/slices/projectSlice';
+import {
+  isActivatedProject,
+  selectProjectById,
+} from '../context/slices/projectSlice';
 import {store} from '../context/store';
 import {logError} from '../logging';
 import {
@@ -257,10 +260,11 @@ export class AutoIncrementer {
 export async function getAutoincrementReferencesForProject(
   project_id: ProjectID
 ): Promise<AutoIncrementReference[]> {
-  const uiSpecId = selectProjectById(
-    store.getState(),
-    project_id
-  )?.uiSpecificationId;
+  const project = selectProjectById(store.getState(), project_id);
+  const uiSpecId =
+    project && isActivatedProject(project)
+      ? project.uiSpecificationId
+      : undefined;
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
   if (!uiSpec) {
     console.error(

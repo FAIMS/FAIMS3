@@ -5,9 +5,10 @@
  * The notebook header uses the labelled Share button on wide screens and a
  * compact share icon on narrow ones. Settings uses the same dialog from a
  * card laid out like deactivation: heading, description, then an action
- * button. Generate
- * stores the code on the project with the username of the person who created
- * it. The dialog then only shows that code to them — its role, when it
+ * button. Generate stores invite metadata on the project with the username of
+ * the person who created it. Opening the dialog builds the QR from that
+ * metadata and caches the PNG in memory (TanStack Query). The dialog then
+ * only shows that code to them — its role, when it
  * expires, and a tap-to-enlarge QR — until they generate a new one. That
  * deletes the invite, then the generate form comes back. Every code lasts one
  * hour. An expired code is dropped, and the dialog shows the generate form
@@ -23,6 +24,7 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -41,6 +43,7 @@ import {useTheme, type SxProps, type Theme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {Role, projectRolesUserCanInvite, roleDetails} from '@faims3/data-model';
 import {PhotoLightbox} from '@faims3/forms';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
 import QRCode from 'qrcode';
 import {useEffect, useId, useMemo, useState} from 'react';
 import {config} from '../../../../buildconfig';
@@ -65,6 +68,55 @@ import {inviteRegisterUrl} from '../../authentication/inviteRedemption';
 
 /** High enough that a full-width lightbox zoom still stays sharp. */
 const QUICK_SHARE_QR_SIZE_PX = 2048;
+const QUICK_SHARE_QR_QUERY_KEY = 'quickShareQr';
+const QR_RENDER_ERROR = 'Could not create the QR code. Close and try again.';
+
+function quickShareQrQueryKey(registerUrl: string) {
+  return [
+    QUICK_SHARE_QR_QUERY_KEY,
+    registerUrl,
+    QUICK_SHARE_QR_SIZE_PX,
+  ] as const;
+}
+
+/** Build the register QR in memory. Same URL always yields the same PNG. */
+function useQuickShareQr({
+  registerUrl,
+  enabled,
+}: {
+  registerUrl: string | undefined;
+  enabled: boolean;
+}) {
+  return useQuery({
+    queryKey: quickShareQrQueryKey(registerUrl ?? ''),
+    queryFn: async () => {
+      if (!registerUrl) {
+        throw new Error('Missing Quick Share register URL');
+      }
+      try {
+        return await QRCode.toDataURL(registerUrl, {
+          width: QUICK_SHARE_QR_SIZE_PX,
+          margin: 2,
+        });
+      } catch (caught) {
+        logError(
+          caught instanceof Error
+            ? caught
+            : new Error('Quick share QR render failed')
+        );
+        throw caught;
+      }
+    },
+    enabled: enabled && !!registerUrl,
+    staleTime: Infinity,
+    gcTime: Infinity,
+    networkMode: 'always',
+    retry: 0,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+  });
+}
 
 function surveyRoleDescription(role: Role): string {
   return roleDetails[role].description
@@ -171,6 +223,7 @@ export default function NotebookQuickShare({
   sx?: SxProps<Theme>;
 }) {
   const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
   const theme = useTheme();
   const wideHeader = useMediaQuery(theme.breakpoints.up('md'));
   const {isOnline, checkIsOnline} = useIsOnline();
@@ -224,19 +277,56 @@ export default function NotebookQuickShare({
     if (!expired) return;
     setLightboxOpen(false);
     setConfirmRevoke(false);
+    if (storedShare && server) {
+      queryClient.removeQueries({
+        queryKey: quickShareQrQueryKey(
+          inviteRegisterUrl({
+            serverUrl: server.serverUrl,
+            inviteId: storedShare.inviteId,
+          })
+        ),
+      });
+    }
     dispatch(
       clearProjectQuickShare({
         projectId: project.projectId,
         serverId: project.serverId,
       })
     );
-  }, [dispatch, expired, project.projectId, project.serverId]);
+  }, [
+    dispatch,
+    expired,
+    project.projectId,
+    project.serverId,
+    queryClient,
+    server,
+    storedShare,
+  ]);
 
   useEffect(() => {
     if (share) return;
     setLightboxOpen(false);
     setConfirmRevoke(false);
   }, [share]);
+
+  const registerUrl =
+    share && server
+      ? inviteRegisterUrl({
+          serverUrl: server.serverUrl,
+          inviteId: share.inviteId,
+        })
+      : undefined;
+  const qrQuery = useQuickShareQr({
+    registerUrl,
+    enabled: dialogOpen && !!share,
+  });
+  const qrCode = qrQuery.data;
+  const qrError =
+    dialogOpen && share && !registerUrl
+      ? QR_RENDER_ERROR
+      : qrQuery.isError
+        ? QR_RENDER_ERROR
+        : undefined;
 
   if (
     project.disableQuickShare ||
@@ -258,6 +348,11 @@ export default function NotebookQuickShare({
   };
 
   const forgetShare = () => {
+    if (registerUrl) {
+      queryClient.removeQueries({
+        queryKey: quickShareQrQueryKey(registerUrl),
+      });
+    }
     dispatch(
       clearProjectQuickShare({
         projectId: project.projectId,
@@ -293,18 +388,10 @@ export default function NotebookQuickShare({
         projectId: project.projectId,
         role,
       });
-      const qrCode = await QRCode.toDataURL(
-        inviteRegisterUrl({
-          serverUrl: server.serverUrl,
-          inviteId: invite._id,
-        }),
-        {width: QUICK_SHARE_QR_SIZE_PX, margin: 2}
-      );
       rememberShare({
         inviteId: invite._id,
         role: invite.role,
         expiry: invite.expiry,
-        qrCode,
         createdBy: activeUser.username,
       });
     } catch (caught) {
@@ -483,6 +570,8 @@ export default function NotebookQuickShare({
           {share ? (
             <ActiveQuickShare
               share={share}
+              qrCode={qrCode}
+              qrError={qrError}
               isOnline={isOnline}
               error={error}
               aboveAccess={!allowedRoles.includes(share.role)}
@@ -504,9 +593,9 @@ export default function NotebookQuickShare({
         </DialogContent>
       </Dialog>
 
-      {lightboxOpen && share && (
+      {lightboxOpen && share && qrCode && (
         <PhotoLightbox
-          url={share.qrCode}
+          url={qrCode}
           fit="width"
           onClose={() => setLightboxOpen(false)}
         />
@@ -629,12 +718,16 @@ function MetadataPair({
 
 function ActiveQuickShare({
   share,
+  qrCode,
+  qrError,
   isOnline,
   error,
   aboveAccess,
   onOpenLightbox,
 }: {
   share: ProjectQuickShare;
+  qrCode: string | undefined;
+  qrError: string | undefined;
   isOnline: boolean;
   error: string | undefined;
   aboveAccess: boolean;
@@ -684,36 +777,57 @@ function ActiveQuickShare({
             Ask the user to scan the QR code below, using the app, to grant them
             access to this {config.notebookName}.
           </Typography>
-          <Box
-            component="button"
-            type="button"
-            onClick={onOpenLightbox}
-            aria-label="Enlarge QR code"
-            data-testid="app-quick-share-qr"
-            sx={{
-              display: 'block',
-              width: '100%',
-              maxWidth: 220,
-              border: 0,
-              p: 0,
-              bgcolor: 'background.paper',
-              cursor: 'pointer',
-              lineHeight: 0,
-            }}
-          >
+          {qrError ? (
+            <Alert severity="error" data-testid="app-quick-share-qr-error">
+              {qrError}
+            </Alert>
+          ) : qrCode ? (
             <Box
-              component="img"
-              src={share.qrCode}
-              alt={`Quick share QR code for ${roleName} access`}
+              component="button"
+              type="button"
+              onClick={onOpenLightbox}
+              aria-label="Enlarge QR code"
+              data-testid="app-quick-share-qr"
               sx={{
                 display: 'block',
                 width: '100%',
-                height: 'auto',
-                maxWidth: '100%',
-                aspectRatio: '1',
+                maxWidth: 220,
+                border: 0,
+                p: 0,
+                bgcolor: 'background.paper',
+                cursor: 'pointer',
+                lineHeight: 0,
               }}
-            />
-          </Box>
+            >
+              <Box
+                component="img"
+                src={qrCode}
+                alt={`Quick share QR code for ${roleName} access`}
+                sx={{
+                  display: 'block',
+                  width: '100%',
+                  height: 'auto',
+                  maxWidth: '100%',
+                  aspectRatio: '1',
+                }}
+              />
+            </Box>
+          ) : (
+            <Box
+              data-testid="app-quick-share-qr-loading"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+                maxWidth: 220,
+                aspectRatio: '1',
+                bgcolor: 'background.paper',
+              }}
+            >
+              <CircularProgress size={32} />
+            </Box>
+          )}
           <Typography
             variant="caption"
             color="text.secondary"

@@ -27,7 +27,10 @@ import {
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
-import {FieldSearchAutocomplete} from '../field-selector';
+import {
+  ConstantSearchAutocomplete,
+  FieldSearchAutocomplete,
+} from '../field-selector';
 import {applyFieldFilters} from '../../features/field-search';
 import {
   fieldIdsForViewset,
@@ -266,6 +269,10 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
                   from the record linked through a single-link Related Records
                   field
                 </li>
+                <li>
+                  Constants: {'{_CONSTANT.PI}'} - also E, SQRT2, SQRT1_2, LN2,
+                  LN10, LOG2E, LOG10E
+                </li>
               </ul>
               The result must be {isText ? 'text' : 'a number'}.
             </Typography>
@@ -361,6 +368,12 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
                 </FormControl>
               </Box>
             )}
+            <Box sx={{mt: 1, maxWidth: 400}}>
+              <ConstantSearchAutocomplete
+                onSelect={insertFieldRef}
+                data-testid="computed-constant-insert"
+              />
+            </Box>
           </>
         ) : (
           <Alert severity="info" sx={{mt: 2}}>

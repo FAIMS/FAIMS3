@@ -30,7 +30,11 @@ import {
   InvitesDB,
   GetDbById,
   collectProjectDataDbs,
+  dataDbNameForProject,
   migrateDbs,
+  ProjectDataDbRef,
+  registerDbAtCurrentVersion,
+  unregisterDbMigrationDoc,
   MigrationsDB,
   PeopleDB,
   PeopleDBFields,
@@ -46,7 +50,7 @@ import Nano from 'nano';
 import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
 import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
-import {getAllProjectsDirectory} from './notebooks';
+import {getAllProjectsListing} from './notebooks';
 import {registerAdminUser} from './users';
 
 const DIRECTORY_DB_NAME = 'directory';
@@ -426,6 +430,45 @@ export const initialiseDataDb = async ({
   return dataDb;
 };
 
+const dataDbNameForProjectRef = (project: ProjectDataDbRef): string =>
+  dataDbNameForProject({
+    project,
+    fallbackName: `data-${project._id}`,
+  });
+
+/**
+ * Records a newly created project data DB as already at the current schema
+ * version. Must only be called on true create paths — not restore or startup
+ * re-init, which may load legacy documents afterwards.
+ */
+export const registerDataDbAtCurrentVersion = async ({
+  project,
+  launchedBy = 'system',
+}: {
+  project: ProjectDataDbRef;
+  launchedBy?: string;
+}) =>
+  registerDbAtCurrentVersion({
+    dbType: DatabaseType.DATA,
+    dbName: dataDbNameForProjectRef(project),
+    migrationDb: getMigrationDb(),
+    launchedBy,
+  });
+
+/**
+ * Drops the migration document for a project data DB that has been deleted.
+ */
+export const unregisterDataDbMigration = async ({
+  project,
+}: {
+  project: ProjectDataDbRef;
+}) =>
+  unregisterDbMigrationDoc({
+    dbType: DatabaseType.DATA,
+    dbName: dataDbNameForProjectRef(project),
+    migrationDb: getMigrationDb(),
+  });
+
 /**
  * Critical method which initialises all databases, including remotely on the
  * configured couch instance.
@@ -534,9 +577,8 @@ export const initialiseDbAndKeys = async ({
     }
   }
 
-  // For each project, ensure the metadata and data DBs are also
-  // initialised/synced
-  const projects = await getAllProjectsDirectory();
+  // For each project, ensure the data DBs are also initialised/synced
+  const projects = await getAllProjectsListing();
   console.log(
     `${DB_INIT_LOG} Found ${projects.length} project(s); initialising data DBs`
   );
@@ -572,7 +614,7 @@ export const initialiseDbAndKeys = async ({
  * documents may predate data v2 `updatedAt`).
  */
 export const migrateAllProjectDataDbs = async () => {
-  const projects = await getAllProjectsDirectory();
+  const projects = await getAllProjectsListing();
   console.log(
     `[migrate] Found ${projects.length} project(s); opening data DBs`
   );
@@ -617,7 +659,11 @@ export const migrateAllProjectDataDbs = async () => {
 };
 
 /**
- * Initialises and then migrates all databases!
+ * Initialises and then migrates all databases.
+ *
+ * Used by `pnpm migrate-with-keys` and by API startup (the latter
+ * serialises this call behind the startup migration lock when
+ * `STARTUP_MIGRATION_LOCK_ENABLED` is on).
  */
 export const initialiseAndMigrateDBs = async ({
   force = false,
@@ -651,6 +697,11 @@ export const initialiseAndMigrateDBs = async ({
       db: getTemplatesDb(),
       dbType: DatabaseType.TEMPLATES,
       dbName: TEMPLATES_DB_NAME,
+    },
+    {
+      db: getTeamsDB(),
+      dbType: DatabaseType.TEAMS,
+      dbName: TEAMS_DB_NAME,
     },
     {
       db: getTombstoneDB(),

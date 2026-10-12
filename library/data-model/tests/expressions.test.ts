@@ -283,6 +283,48 @@ describe('compileComputedExpression', () => {
     });
   });
 
+  describe('named constants', () => {
+    it('folds constants into the expression', () => {
+      const compiled = compileComputedExpression(
+        '{_CONSTANT.PI} * {a} ^ 2',
+        fieldTypes
+      );
+      expect(compiled.evaluate(scope({a: 2}))).toBeCloseTo(Math.PI * 4);
+    });
+
+    it('does not report constants as references', () => {
+      const compiled = compileComputedExpression(
+        '{_CONSTANT.E} + {a}',
+        fieldTypes
+      );
+      expect(compiled.references).toEqual(['a']);
+    });
+
+    it('needs no field types to compile', () => {
+      const compiled = compileComputedExpression(
+        '{_CONSTANT.SQRT2}',
+        new Map()
+      );
+      expect(compiled.returnType).toBe('number');
+      expect(compiled.evaluate(new Map())).toBeCloseTo(Math.SQRT2);
+    });
+
+    it('types constants as numbers', () => {
+      expect(() =>
+        compileComputedExpression("{_CONSTANT.PI} & 'x'", fieldTypes)
+      ).toThrow(ExpressionError);
+    });
+
+    it('rejects unknown and bare constant references', () => {
+      expect(() =>
+        compileComputedExpression('{_CONSTANT.pi}', fieldTypes)
+      ).toThrow(/unknown constant/);
+      expect(() =>
+        compileComputedExpression('{_CONSTANT.}', fieldTypes)
+      ).toThrow(/unknown constant/);
+    });
+  });
+
   describe('syntax validation', () => {
     it('rejects unbraced field references', () => {
       expect(() =>
@@ -324,9 +366,6 @@ describe('compileComputedExpression', () => {
     });
   });
 });
-
-// Add to library/data-model/tests/expressions.test.ts as a new describe block
-// (import extractExpressionReferences alongside the existing imports):
 
 describe('extractExpressionReferences', () => {
   it('extracts unique braced references', () => {

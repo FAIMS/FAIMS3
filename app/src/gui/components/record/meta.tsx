@@ -23,7 +23,10 @@ import {
   RevisionID,
 } from '@faims3/data-model';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
-import {selectAllProjects} from '../../../context/slices/projectSlice';
+import {
+  isActivatedProject,
+  selectAllProjects,
+} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {localGetDataDb} from '../../../utils/database';
 
@@ -36,9 +39,13 @@ type RecordMetaProps = {
 export default function RecordMeta(props: RecordMetaProps) {
   const {project_id, record_id, revision_id} = props;
   const [meta, setMeta] = React.useState<{[key: string]: any}>({});
-  const uiSpecId = useAppSelector(selectAllProjects).find(
+  const project = useAppSelector(selectAllProjects).find(
     p => p.projectId === project_id
-  )?.uiSpecificationId;
+  );
+  const uiSpecId =
+    project && isActivatedProject(project)
+      ? project.uiSpecificationId
+      : undefined;
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   useEffect(() => {

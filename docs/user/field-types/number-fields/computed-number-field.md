@@ -151,6 +151,27 @@ with that name, the editor reports an error; at run time a missing value
 leaves the result blank. A custom field that an expression references
 cannot be removed from the Info panel until the expression is changed.
 
+### Using Constants
+
+Mathematical constants can be used in the expression with the
+`_CONSTANT.` prefix, e.g. `{_CONSTANT.PI} * {Radius} ^ 2`. An **Insert
+constant** picker below the expression lists them. The available
+constants mirror JavaScript's `Math` constants:
+
+| Constant            | Value           |
+| ------------------- | --------------- |
+| `_CONSTANT.PI`      | π ≈ 3.14159     |
+| `_CONSTANT.E`       | e ≈ 2.71828     |
+| `_CONSTANT.SQRT2`   | √2 ≈ 1.41421    |
+| `_CONSTANT.SQRT1_2` | 1/√2 ≈ 0.707107 |
+| `_CONSTANT.LN2`     | ln 2            |
+| `_CONSTANT.LN10`    | ln 10           |
+| `_CONSTANT.LOG2E`   | log₂ e          |
+| `_CONSTANT.LOG10E`  | log₁₀ e         |
+
+Constants are numbers and names are case-sensitive; an unknown name is
+reported as an error in the Editor.
+
 ### Shared Field Options
 
 Configure any of the shared field options as needed.

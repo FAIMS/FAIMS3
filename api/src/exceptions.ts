@@ -85,7 +85,7 @@ export class ForbiddenException extends CustomException {
  */
 export class InternalSystemError extends CustomException {
   constructor(message: string) {
-    super(message, 403);
+    super(message, 500);
   }
 }
 

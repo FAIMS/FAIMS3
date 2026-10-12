@@ -96,7 +96,7 @@
     "/directory/": {
       "get": {
         "summary": "List notebooks visible to the caller (directory)",
-        "description": "Returns project (notebook) documents from the directory that the authenticated user may read metadata for (`LIST_PROJECTS`). By default, notebooks with status `ARCHIVED` are omitted; pass `includeArchived=true` to include them.",
+        "description": "Cheap listing alias of `GET /notebooks/` (same lean rows, no `byteCount`, no `teamId`). Requires `LIST_PROJECTS`. By default, notebooks with status `ARCHIVED` are omitted; pass `includeArchived=true` to include them. Field-app Refresh treats absence from this list as the lifecycle signal.",
         "tags": ["Utilities"],
         "produces": ["application/json"],
         "security": [
@@ -124,7 +124,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/definitions/ProjectDirectoryEntry"
+                    "$ref": "#/definitions/ProjectListItem"
                   }
                 }
               }
@@ -139,7 +139,7 @@
     "/notebooks/": {
       "get": {
         "summary": "Get a list of notebooks",
-        "description": "Returns notebooks (projects) the caller can access. Optional `teamId` filters by team. By default, notebooks with status `ARCHIVED` are omitted; pass `includeArchived=true` to include archived notebooks alongside others.",
+        "description": "Returns notebooks (projects) the caller can access. Optional `teamId` filters by team. By default this is a lean listing: no `uiSpecification`, no `byteCount`, and no Couch `info()` calls. Pass `includeByteCount=true` to attach per-project storage sizes. By default, notebooks with status `ARCHIVED` are omitted; pass `includeArchived=true` to include archived notebooks alongside others.",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
         "security": [
@@ -167,6 +167,16 @@
               "enum": ["true", "false"]
             },
             "description": "When `true`, includes notebooks with status `ARCHIVED`. Default excludes them."
+          },
+          {
+            "name": "includeByteCount",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When `true`, attach `byteCount` on each row (one Couch `info()` per notebook). Default omits `byteCount` and does not call `info()`."
           }
         ],
         "responses": {
@@ -2293,7 +2303,7 @@
     },
     "NotebookMeta": {
       "type": "object",
-      "description": "Notebook list row (see GET /notebooks/). Project document without `uiSpecification`, plus `is_admin`.",
+      "description": "Notebook list row (see GET /notebooks/). Project document without `uiSpecification`. `byteCount` is present only when `includeByteCount=true`.",
       "allOf": [
         {
           "$ref": "#/definitions/ProjectListItem"
@@ -2301,17 +2311,11 @@
         {
           "type": "object",
           "properties": {
-            "is_admin": {
-              "type": "boolean",
-              "description": "True when the caller has project admin on this notebook"
-            },
             "byteCount": {
               "type": "integer",
-              "minimum": 0,
-              "description": "Size of the notebook’s data in bytes (projects DB v4+)"
+              "description": "Size of the notebook’s data in bytes. Present only when `includeByteCount=true`; `-1` if Couch `info()` failed."
             }
-          },
-          "required": ["is_admin"]
+          }
         }
       ]
     },
@@ -2333,7 +2337,25 @@
         "createdBy": {"type": "string"},
         "createdAt": {"type": "string", "format": "date-time"},
         "updatedAt": {"type": "string", "format": "date-time"},
-        "dataDb": {"$ref": "#/definitions/PossibleConnectionInfo"}
+        "dataDb": {"$ref": "#/definitions/PossibleConnectionInfo"},
+        "uiSpecProperties": {
+          "type": "object",
+          "description": "Closed digest of the stored `uiSpecification`. Listing views emit this instead of the form payload.",
+          "properties": {
+            "schemaVersion": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Notebook UI schema version persisted with the design."
+            },
+            "hash": {
+              "type": "string",
+              "minLength": 64,
+              "maxLength": 64,
+              "description": "SHA-256 digest of the stored uiSpecification, lowercase hex."
+            }
+          },
+          "required": ["schemaVersion", "hash"]
+        }
       },
       "required": [
         "_id",
@@ -2342,7 +2364,8 @@
         "createdBy",
         "createdAt",
         "updatedAt",
-        "dataDb"
+        "dataDb",
+        "uiSpecProperties"
       ]
     },
     "ProjectDocument": {
@@ -2527,11 +2550,6 @@
         }
       },
       "required": ["status"]
-    },
-    "ProjectDirectoryEntry": {
-      "type": "object",
-      "description": "Project (notebook) document as stored in the projects database; fields vary by version.",
-      "additionalProperties": true
     },
     "PeopleUserListItem": {
       "type": "object",

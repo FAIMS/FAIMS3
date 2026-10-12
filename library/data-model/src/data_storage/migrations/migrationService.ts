@@ -118,7 +118,8 @@ export async function collectProjectDataDbs({
 
 /**
  * Builds a default migration document for a given database type and name.
- * This is used when initializing a database for the first time.
+ * Used when migrate discovers an unknown/legacy database with no migration document
+ * (create-time registration uses {@link buildCurrentVersionMigrationDoc} instead).
  *
  * @param {Object} params - The parameters object.
  * @param {DATABASE_TYPE} params.dbType - The type of database to create a migration document for.
@@ -151,6 +152,137 @@ export function buildDefaultMigrationDoc({
       },
     ],
   };
+}
+
+/** Log note written when a new database is registered at the current schema. */
+export const REGISTERED_AT_CREATION_NOTES =
+  'Registered at creation. Database is assumed to already match the current schema. No migration was performed.';
+
+/**
+ * Looks up the migration document for a database, if one exists.
+ */
+export async function findMigrationDoc({
+  dbType,
+  dbName,
+  migrationDb,
+}: {
+  dbType: DATABASE_TYPE;
+  dbName: string;
+  migrationDb: MigrationsDB;
+}): Promise<MigrationsDBDocument | undefined> {
+  const migrationDocs = await migrationDb.query<MigrationsDBFields>(
+    MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+    {
+      key: [dbType, dbName],
+      include_docs: true,
+    }
+  );
+  if (migrationDocs.rows.length === 0) {
+    return undefined;
+  }
+  return migrationDocs.rows[0].doc;
+}
+
+/**
+ * Builds a migration document that records a newly created database as already
+ * at the current target version. Used at create time so later migrate runs do
+ * not replay historical steps against current-schema documents.
+ */
+export function buildCurrentVersionMigrationDoc({
+  dbType,
+  dbName,
+  launchedBy = 'system',
+}: {
+  dbType: DATABASE_TYPE;
+  dbName: string;
+  launchedBy?: string;
+}): MigrationsDBFields {
+  const version = DB_TARGET_VERSIONS[dbType].targetVersion;
+  const now = Date.now();
+  return {
+    dbType,
+    dbName,
+    version,
+    status: 'healthy',
+    migrationLog: [
+      {
+        from: 0,
+        to: version,
+        startedAtTimestampMs: now,
+        completedAtTimestampMs: now,
+        launchedBy,
+        status: 'success',
+        notes: REGISTERED_AT_CREATION_NOTES,
+      },
+    ],
+  };
+}
+
+/**
+ * Registers a database as already at the current target version.
+ *
+ * Idempotent: if a migration document already exists it is left unchanged
+ * (including documents at an older version). Missing documents only — that is
+ * the create-time path. Discovery of unknown/legacy DBs still goes through
+ * {@link buildDefaultMigrationDoc} inside {@link migrateDbs}.
+ */
+export async function registerDbAtCurrentVersion({
+  dbType,
+  dbName,
+  migrationDb,
+  launchedBy = 'system',
+}: {
+  dbType: DATABASE_TYPE;
+  dbName: string;
+  migrationDb: MigrationsDB;
+  launchedBy?: string;
+}): Promise<{
+  created: boolean;
+  migrationDoc: MigrationsDBDocument;
+}> {
+  const existing = await findMigrationDoc({dbType, dbName, migrationDb});
+  if (existing) {
+    return {created: false, migrationDoc: existing};
+  }
+
+  const fields = buildCurrentVersionMigrationDoc({
+    dbType,
+    dbName,
+    launchedBy,
+  });
+
+  try {
+    const response = await migrationDb.post(fields);
+    const migrationDoc = await migrationDb.get(response.id);
+    return {created: true, migrationDoc};
+  } catch (error) {
+    const raced = await findMigrationDoc({dbType, dbName, migrationDb});
+    if (raced) {
+      return {created: false, migrationDoc: raced};
+    }
+    throw error;
+  }
+}
+
+/**
+ * Removes the migration document for a database that has been deleted.
+ * No-op if none exists (surveys created before create-time registration).
+ */
+export async function unregisterDbMigrationDoc({
+  dbType,
+  dbName,
+  migrationDb,
+}: {
+  dbType: DATABASE_TYPE;
+  dbName: string;
+  migrationDb: MigrationsDB;
+}): Promise<{removed: boolean}> {
+  const existing = await findMigrationDoc({dbType, dbName, migrationDb});
+  if (!existing) {
+    return {removed: false};
+  }
+  await migrationDb.remove(existing);
+  return {removed: true};
 }
 
 /**
@@ -421,18 +553,13 @@ export async function migrateDbs({
 
     try {
       // Try to find an existing migration document for this database
-      const migrationDocs = await migrationDb.query<MigrationsDBFields>(
-        MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
-        {
-          key: [dbType, dbName],
-          include_docs: true,
-        }
-      );
+      let migrationDoc = await findMigrationDoc({
+        dbType,
+        dbName,
+        migrationDb,
+      });
 
-      // Determine if we have an existing migration document or need to create one
-      let migrationDoc: MigrationsDBDocument;
-
-      if (migrationDocs.rows.length === 0) {
+      if (!migrationDoc) {
         // No existing migration document found, create a new one
         const defaultMigrationFields = buildDefaultMigrationDoc({
           dbType,
@@ -452,8 +579,6 @@ export async function migrateDbs({
         // Retrieve the created document with its _id and _rev
         migrationDoc = await migrationDb.get(response.id);
       } else {
-        // Use the existing migration document
-        migrationDoc = migrationDocs.rows[0].doc!;
         migrateAudit('Found existing migration document', {
           dbType,
           dbName,
@@ -604,18 +729,13 @@ export async function migrateDbs({
 
       // Try to update the migration document to reflect the failure if possible
       try {
-        // Try to find the migration document
-        const migrationDocs = await migrationDb.query<MigrationsDBFields>(
-          MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
-          {
-            key: [dbType, dbName],
-            include_docs: true,
-          }
-        );
+        const migrationDoc = await findMigrationDoc({
+          dbType,
+          dbName,
+          migrationDb,
+        });
 
-        if (migrationDocs.rows.length > 0) {
-          const migrationDoc = migrationDocs.rows[0].doc!;
-
+        if (migrationDoc) {
           // Create a failure log entry
           const failureLogEntry: MigrationLog = {
             from: migrationDoc.version,

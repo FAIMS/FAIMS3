@@ -37,6 +37,7 @@ import {getKeyService, IKeyService, KeySource} from './services/keyService';
 // Get the package version directly from package.json
 import {version as packageVersion} from '../package.json';
 import {ProvisionSSOUsersPolicy} from './auth/types';
+import {STARTUP_MIGRATION_LOCK_TIMEOUT_MS as DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS} from './couchdb/startupMigrationLock';
 
 console.log(`Using API version from package.json: ${packageVersion}`);
 
@@ -191,6 +192,38 @@ const EnvSchema = z
     EMAIL_CODE_EXPIRY_MINUTES: configHelpers.intDefault(
       DEFAULT_EMAIL_CODE_EXPIRY_MINUTES,
       'EMAIL_CODE_EXPIRY_MINUTES'
+    ),
+    /**
+     * Skip API-boot Couch migrate and notebook uiSpec walks entirely
+     * (`DISABLE_MIGRATE_ON_STARTUP`). Blank → off (migrate still runs).
+     * When true, `runStartupMigrations` returns immediately and the
+     * lock is never claimed. Use for local/debug boots against an
+     * already-migrated DB, or when migrate is run out of band
+     * (`pnpm migrate-with-keys`). Accepts true/1/on/yes or
+     * false/0/off/no; unrecognised values fail parse.
+     */
+    DISABLE_MIGRATE_ON_STARTUP: configHelpers.boolWithDefault(false),
+    /**
+     * Couch-mediated claim/wait/steal around API-boot migrations
+     * (`STARTUP_MIGRATION_LOCK_ENABLED`). Blank → off. Clustered /
+     * multi-replica production MUST enable this so replicas do not race
+     * migrate. Default off so local `pnpm run dev` reloads do not wait
+     * on a `running` lock left by a killed process (steal timeout is
+     * 30 minutes). Ignored when DISABLE_MIGRATE_ON_STARTUP is on.
+     * Accepts true/1/on/yes or false/0/off/no; unrecognised values
+     * fail parse.
+     */
+    STARTUP_MIGRATION_LOCK_ENABLED: configHelpers.boolWithDefault(false),
+    /**
+     * Age of a still-`running` lock after which a waiter steals it and
+     * runs migrate itself (milliseconds). Timeout is not "skip migrate
+     * and attach". Age is `now - startedAtMs` (no heartbeat); the
+     * original doer is not cancelled. Default 30 minutes. Only used
+     * when STARTUP_MIGRATION_LOCK_ENABLED is on.
+     */
+    STARTUP_MIGRATION_LOCK_TIMEOUT_MS: configHelpers.intDefault(
+      DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
+      'STARTUP_MIGRATION_LOCK_TIMEOUT_MS'
     ),
     /** Rate-limiter window duration in milliseconds. */
     RATE_LIMITER_WINDOW_MS: configHelpers.intDefault(
@@ -519,6 +552,9 @@ const EnvSchema = z
       impersonationSessionExpiryMinutes:
         env.IMPERSONATION_SESSION_EXPIRY_MINUTES,
       emailCodeExpiryMinutes: env.EMAIL_CODE_EXPIRY_MINUTES,
+      disableMigrateOnStartup: env.DISABLE_MIGRATE_ON_STARTUP,
+      startupMigrationLockEnabled: env.STARTUP_MIGRATION_LOCK_ENABLED,
+      startupMigrationLockTimeoutMs: env.STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
       rateLimiterWindowMs: env.RATE_LIMITER_WINDOW_MS,
       rateLimiterPerWindow: env.RATE_LIMITER_PER_WINDOW,
       rateLimiterEnabled: env.RATE_LIMITER_ENABLED,
@@ -693,6 +729,27 @@ export function publicKeyPath(): string {
   throw new Error(
     `Public key file ${keyfile} does not exist. Please run makeInstanceKeys.sh to generate keys.`
   );
+}
+
+/**
+ * Fail-fast local checks before the health listener binds. No Couch.
+ * FILE keys are also validated when {@link keyService} is constructed.
+ */
+export function assertLocalStartupConfig(): void {
+  if (config.keySource === KeySource.FILE) {
+    privateKeyPath();
+    publicKeyPath();
+    return;
+  }
+  if (config.keySource === KeySource.ENV) {
+    const privateKey = process.env.PRIVATE_SIGNING_KEY?.trim();
+    const publicKey = process.env.PUBLIC_SIGNING_KEY?.trim();
+    if (!privateKey || !publicKey) {
+      throw new Error(
+        'PRIVATE_SIGNING_KEY or PUBLIC_SIGNING_KEY environment variable not set but KEY_SOURCE is ENV'
+      );
+    }
+  }
 }
 
 /** Signing-key singleton. */

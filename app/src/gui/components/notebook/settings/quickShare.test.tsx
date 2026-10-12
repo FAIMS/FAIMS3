@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import {Role} from '@faims3/data-model';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
@@ -97,16 +98,61 @@ const project = {
   name: 'Creek survey',
 } as Project;
 
-function renderShare(next: Project = project) {
-  return render(
-    <ThemeProvider theme={createTheme()}>
-      <NotebookQuickShare project={next} />
-    </ThemeProvider>
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {retry: false, gcTime: Infinity},
+    },
+  });
+}
+
+function shareTree(
+  next: Project,
+  {
+    layout = 'button',
+    client,
+  }: {layout?: 'button' | 'settings'; client: QueryClient}
+) {
+  return (
+    <QueryClientProvider client={client}>
+      <ThemeProvider theme={createTheme()}>
+        <NotebookQuickShare project={next} layout={layout} />
+      </ThemeProvider>
+    </QueryClientProvider>
   );
+}
+
+function renderShare(
+  next: Project = project,
+  options: {layout?: 'button' | 'settings'; client?: QueryClient} = {}
+) {
+  const client = options.client ?? createTestQueryClient();
+  return {
+    ...render(shareTree(next, {layout: options.layout, client})),
+    client,
+  };
 }
 
 function openShareDialog() {
   fireEvent.click(screen.getByTestId('app-quick-share-open'));
+}
+
+function storedShare(
+  overrides: Partial<NonNullable<Project['quickShare']>> = {}
+): NonNullable<Project['quickShare']> {
+  return {
+    inviteId: 'FAIMS-quicksharecode',
+    role: Role.PROJECT_GUEST,
+    expiry: Date.now() + 60 * 60 * 1000,
+    createdBy: 'ada',
+    ...overrides,
+  };
+}
+
+async function waitForQr() {
+  await vi.waitFor(() =>
+    expect(screen.getByTestId('app-quick-share-qr')).toBeTruthy()
+  );
 }
 
 describe('NotebookQuickShare', () => {
@@ -168,11 +214,7 @@ describe('NotebookQuickShare', () => {
     harness.resourceRoles = [
       {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
     ];
-    render(
-      <ThemeProvider theme={createTheme()}>
-        <NotebookQuickShare project={project} layout="settings" />
-      </ThemeProvider>
-    );
+    renderShare(project, {layout: 'settings'});
     expect(screen.getByRole('heading', {name: 'Quick share'})).toBeTruthy();
     expect(
       screen.getByText(
@@ -231,7 +273,7 @@ describe('NotebookQuickShare', () => {
     ).toBe(true);
   });
 
-  it('stores the new code on the project instead of leaving it only on screen', async () => {
+  it('stores invite metadata on the project without a QR image', async () => {
     harness.resourceRoles = [
       {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
     ];
@@ -243,15 +285,8 @@ describe('NotebookQuickShare', () => {
     expect(action.payload.quickShare.inviteId).toBe('FAIMS-quicksharecode');
     expect(action.payload.quickShare.role).toBe(Role.PROJECT_GUEST);
     expect(action.payload.quickShare.createdBy).toBe('ada');
-    expect(action.payload.quickShare.qrCode).toContain(
-      'http://localhost:8080/register?inviteId=FAIMS-quicksharecode'
-    );
-    expect(QRCode.toDataURL).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'http://localhost:8080/register?inviteId=FAIMS-quicksharecode'
-      ),
-      expect.objectContaining({width: 2048})
-    );
+    expect(action.payload.quickShare).not.toHaveProperty('qrCode');
+    expect(QRCode.toDataURL).not.toHaveBeenCalled();
     expect(harness.create).toHaveBeenCalledWith(
       expect.objectContaining({
         projectId: 'survey-1',
@@ -261,19 +296,19 @@ describe('NotebookQuickShare', () => {
     );
   });
 
-  it('encodes the stored conductor URL including a default HTTPS port', async () => {
-    harness.serverUrl = 'https://conductor.bss.nbic.cloud:443';
+  it('rebuilds the QR from invite metadata including a default HTTPS port', async () => {
+    harness.serverUrl = 'https://conductor.example.com:443';
     harness.resourceRoles = [
       {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
     ];
-    renderShare();
+    renderShare({
+      ...project,
+      quickShare: storedShare(),
+    });
     openShareDialog();
-    fireEvent.click(screen.getByTestId('app-quick-share-generate'));
-    await vi.waitFor(() => expect(harness.dispatch).toHaveBeenCalled());
     const encoded =
-      'https://conductor.bss.nbic.cloud:443/register?inviteId=FAIMS-quicksharecode';
-    const action = harness.dispatch.mock.calls[0][0];
-    expect(action.payload.quickShare.qrCode).toContain(encoded);
+      'https://conductor.example.com:443/register?inviteId=FAIMS-quicksharecode';
+    await waitForQr();
     expect(QRCode.toDataURL).toHaveBeenCalledWith(
       encoded,
       expect.objectContaining({width: 2048})
@@ -283,20 +318,17 @@ describe('NotebookQuickShare', () => {
     expect(encoded.match(`${harness.serverUrl}/register.*`)).toBeTruthy();
   });
 
-  it('shows the stored code, its role and expiry, and opens the lightbox', () => {
+  it('shows the stored code, its role and expiry, and opens the lightbox', async () => {
     harness.resourceRoles = [
       {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
     ];
     const expiry = Date.now() + 60 * 60 * 1000;
     renderShare({
       ...project,
-      quickShare: {
-        inviteId: 'FAIMS-quicksharecode',
+      quickShare: storedShare({
         role: Role.PROJECT_CONTRIBUTOR,
         expiry,
-        qrCode: 'data:image/png;base64,qr',
-        createdBy: 'ada',
-      },
+      }),
     });
     openShareDialog();
     expect(screen.queryByTestId('app-quick-share-generate')).toBeNull();
@@ -317,10 +349,44 @@ describe('NotebookQuickShare', () => {
     expect(
       screen.getByTestId('app-quick-share-expiry').textContent?.length
     ).toBeGreaterThan(0);
+    await waitForQr();
+    expect(QRCode.toDataURL).toHaveBeenCalledWith(
+      'http://localhost:8080/register?inviteId=FAIMS-quicksharecode',
+      expect.objectContaining({width: 2048})
+    );
     fireEvent.click(screen.getByTestId('app-quick-share-qr'));
     expect(screen.getByAltText('Full size preview').getAttribute('src')).toBe(
-      'data:image/png;base64,qr'
+      'data:image/png;base64,http://localhost:8080/register?inviteId=FAIMS-quicksharecode'
     );
+  });
+
+  it('reuses the in-memory QR cache when the dialog is opened again', async () => {
+    harness.resourceRoles = [
+      {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
+    ];
+    const client = createTestQueryClient();
+    const first = renderShare(
+      {
+        ...project,
+        quickShare: storedShare(),
+      },
+      {client}
+    );
+    openShareDialog();
+    await waitForQr();
+    expect(QRCode.toDataURL).toHaveBeenCalledTimes(1);
+    first.unmount();
+
+    renderShare(
+      {
+        ...project,
+        quickShare: storedShare(),
+      },
+      {client}
+    );
+    openShareDialog();
+    await waitForQr();
+    expect(QRCode.toDataURL).toHaveBeenCalledTimes(1);
   });
 
   it('returns to generating a code when the stored one has expired', () => {
@@ -329,13 +395,7 @@ describe('NotebookQuickShare', () => {
     ];
     renderShare({
       ...project,
-      quickShare: {
-        inviteId: 'FAIMS-quicksharecode',
-        role: Role.PROJECT_GUEST,
-        expiry: Date.now() - 1000,
-        qrCode: 'data:image/png;base64,qr',
-        createdBy: 'ada',
-      },
+      quickShare: storedShare({expiry: Date.now() - 1000}),
     });
     openShareDialog();
     expect(screen.getByTestId('app-quick-share-generate')).toBeTruthy();
@@ -354,13 +414,7 @@ describe('NotebookQuickShare', () => {
     ];
     renderShare({
       ...project,
-      quickShare: {
-        inviteId: 'FAIMS-quicksharecode',
-        role: Role.PROJECT_GUEST,
-        expiry: Date.now() + 60 * 60 * 1000,
-        qrCode: 'data:image/png;base64,qr',
-        createdBy: 'ada',
-      },
+      quickShare: storedShare(),
     });
     openShareDialog();
     fireEvent.click(screen.getByTestId('app-quick-share-revoke'));
@@ -385,15 +439,9 @@ describe('NotebookQuickShare', () => {
     harness.resourceRoles = [
       {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
     ];
-    const {rerender} = renderShare({
+    const {rerender, client} = renderShare({
       ...project,
-      quickShare: {
-        inviteId: 'FAIMS-quicksharecode',
-        role: Role.PROJECT_GUEST,
-        expiry: Date.now() + 60 * 60 * 1000,
-        qrCode: 'data:image/png;base64,qr',
-        createdBy: 'ada',
-      },
+      quickShare: storedShare(),
     });
     openShareDialog();
     fireEvent.click(screen.getByTestId('app-quick-share-revoke'));
@@ -407,11 +455,7 @@ describe('NotebookQuickShare', () => {
     );
     expect(harness.revokeOwn.mock.calls[0]?.[0]).not.toHaveProperty('inviteId');
     expect(harness.dispatch).toHaveBeenCalled();
-    rerender(
-      <ThemeProvider theme={createTheme()}>
-        <NotebookQuickShare project={project} />
-      </ThemeProvider>
-    );
+    rerender(shareTree(project, {client}));
     expect(screen.getByTestId('app-quick-share-generate')).toBeTruthy();
   });
 
@@ -441,13 +485,7 @@ describe('NotebookQuickShare', () => {
     );
     renderShare({
       ...project,
-      quickShare: {
-        inviteId: 'FAIMS-quicksharecode',
-        role: Role.PROJECT_GUEST,
-        expiry: Date.now() + 60 * 60 * 1000,
-        qrCode: 'data:image/png;base64,qr',
-        createdBy: 'ada',
-      },
+      quickShare: storedShare(),
     });
     openShareDialog();
     fireEvent.click(screen.getByTestId('app-quick-share-revoke'));
@@ -585,13 +623,7 @@ describe('NotebookQuickShare', () => {
     );
     renderShare({
       ...project,
-      quickShare: {
-        inviteId: 'FAIMS-quicksharecode',
-        role: Role.PROJECT_GUEST,
-        expiry: Date.now() + 60 * 60 * 1000,
-        qrCode: 'data:image/png;base64,qr',
-        createdBy: 'ada',
-      },
+      quickShare: storedShare(),
     });
     openShareDialog();
     fireEvent.click(screen.getByTestId('app-quick-share-revoke'));
@@ -600,22 +632,16 @@ describe('NotebookQuickShare', () => {
       await screen.findAllByText('You are not allowed to revoke this code.')
     ).toHaveLength(2);
     expect(harness.dispatch).not.toHaveBeenCalled();
-    expect(screen.getByTestId('app-quick-share-qr')).toBeTruthy();
+    await waitForQr();
   });
 
-  it('tells the user a stored code is above their current access', () => {
+  it('tells the user a stored code is above their current access', async () => {
     harness.resourceRoles = [
       {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
     ];
     renderShare({
       ...project,
-      quickShare: {
-        inviteId: 'FAIMS-quicksharecode',
-        role: Role.PROJECT_ADMIN,
-        expiry: Date.now() + 60 * 60 * 1000,
-        qrCode: 'data:image/png;base64,qr',
-        createdBy: 'ada',
-      },
+      quickShare: storedShare({role: Role.PROJECT_ADMIN}),
     });
     openShareDialog();
     expect(
@@ -625,51 +651,35 @@ describe('NotebookQuickShare', () => {
       'app-quick-share-revoke'
     ) as HTMLButtonElement;
     expect(revoke.disabled).toBe(false);
-    expect(screen.getByTestId('app-quick-share-qr')).toBeTruthy();
+    await waitForQr();
   });
 
-  it("hides another user's redemption code after a user switch, including an admin code", () => {
+  it("hides another user's redemption code after a user switch, including an admin code", async () => {
     harness.resourceRoles = [
       {role: Role.PROJECT_MANAGER, resourceId: 'survey-1'},
     ];
-    const quickShare = {
-      inviteId: 'FAIMS-quicksharecode',
-      role: Role.PROJECT_ADMIN,
-      expiry: Date.now() + 60 * 60 * 1000,
-      qrCode: 'data:image/png;base64,admin-secret',
-      createdBy: 'ada',
-    };
-    const {rerender} = renderShare({...project, quickShare});
+    const quickShare = storedShare({role: Role.PROJECT_ADMIN});
+    const {rerender, client} = renderShare({...project, quickShare});
     openShareDialog();
-    expect(screen.getByTestId('app-quick-share-qr')).toBeTruthy();
+    await waitForQr();
     expect(
       (screen.getByTestId('app-quick-share-revoke') as HTMLButtonElement)
         .disabled
     ).toBe(false);
 
     harness.username = 'bea';
-    rerender(
-      <ThemeProvider theme={createTheme()}>
-        <NotebookQuickShare project={{...project, quickShare}} />
-      </ThemeProvider>
-    );
+    rerender(shareTree({...project, quickShare}, {client}));
 
     expect(screen.queryByTestId('app-quick-share-qr')).toBeNull();
-    expect(
-      document.querySelector('img[src="data:image/png;base64,admin-secret"]')
-    ).toBeNull();
+    expect(screen.queryByAltText(/Quick share QR/)).toBeNull();
     expect(screen.queryByTestId('app-quick-share-revoke')).toBeNull();
     expect(screen.queryByTestId('app-quick-share-above-access')).toBeNull();
     expect(screen.getByTestId('app-quick-share-generate')).toBeTruthy();
     expect(harness.dispatch).not.toHaveBeenCalled();
 
     harness.username = 'ada';
-    rerender(
-      <ThemeProvider theme={createTheme()}>
-        <NotebookQuickShare project={{...project, quickShare}} />
-      </ThemeProvider>
-    );
-    expect(screen.getByTestId('app-quick-share-qr')).toBeTruthy();
+    rerender(shareTree({...project, quickShare}, {client}));
+    await waitForQr();
     expect(
       (screen.getByTestId('app-quick-share-revoke') as HTMLButtonElement)
         .disabled

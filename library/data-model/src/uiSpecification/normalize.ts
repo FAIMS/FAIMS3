@@ -37,17 +37,24 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * **newer** than current never needs migration — forward compatibility is
  * decided by `assessNotebookSchemaCompatibility`, not by migrating.
  */
-export function notebookUiSpecificationNeedsMigration(
-  raw: Record<string, unknown>
+export function notebookSchemaVersionNeedsMigration(
+  schemaVersion: string | undefined
 ): boolean {
-  const start = resolveNotebookSchemaMigrationStart(
-    getNotebookSchemaVersion(raw as NotebookWithSchemaVersion)
-  );
+  const start = resolveNotebookSchemaMigrationStart(schemaVersion);
   if (start === NOTEBOOK_SCHEMA_LEGACY) {
     return true;
   }
   return (
     compareNotebookSchemaSemver(start, CURRENT_NOTEBOOK_UI_SCHEMA_VERSION) < 0
+  );
+}
+
+/** Same as {@link notebookSchemaVersionNeedsMigration} for a raw ui-specification object. */
+export function notebookUiSpecificationNeedsMigration(
+  raw: Record<string, unknown>
+): boolean {
+  return notebookSchemaVersionNeedsMigration(
+    getNotebookSchemaVersion(raw as NotebookWithSchemaVersion)
   );
 }
 

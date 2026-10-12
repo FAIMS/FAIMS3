@@ -6,7 +6,7 @@ Application state is stored in a redux store that is persisted in local storage.
 four 'slices' for different parts of the state:
 
 - `auth` for authenticated user details
-- `projects` for activated projects (notebooks or surveys)
+- `projects` for listed and activated projects (notebooks or surveys)
 - `alerts` for alerts to be shown to the user next time
 - `records` for the state of the currently visible record
 
@@ -15,20 +15,21 @@ central here since it helps to manage the PouchDB databases underlying the app.
 
 The project slice state consists mainly of a collection of servers. Each server
 represents an instance of our API server which will have an associated CouchDB
-instance. The URLs of these are stored in the server record. The record also
-contains a collection of _projects_ which will hold the actual data once collected.
+instance. The URLs of these are stored in the server record. Each server holds
+two project maps: **listed** (directory metadata plus `uiSpecProperties` only)
+and **activated** (those plus the compiled-from `uiDefinition` and Pouch
+connection). Listed notebooks never carry the form graph.
 
 At any one time, the app may have a number of connections to servers in place but only
 one will be presented to the user at a time.
 
-A `Project` is a record of a project on a given server. In the state record we store
-the compiled uiSpec (schema) for the project, whether it is activated (available for use)
-and the database connection if so. The `DatabaseConnection` record contains references to
-the local and remote Dbs (both PouchDB instances) and flags for whether we are
-syncing documents and attachments. This is our main entry point to the PouchDB databases.
+A listed `Project` is directory metadata for a survey on a given server. An
+activated project also stores the `uiDefinition` (form graph), a compiled-spec
+id, and the `DatabaseConnection` (local and remote PouchDB handles plus sync
+flags). Compiled conditionals live in `compiledSpecService`, not in Redux.
 
-The `addProject` action on the project slice creates a new project, at this point, no
-databases are created.
+The `addProject` action on the project slice creates a **listed** project; no
+spec is fetched or compiled, and no databases are created.
 
 The `activateProjectSync` action does the work of setting up databases for a project.
 From the comments on that action, this involves:
@@ -76,12 +77,15 @@ As the first action in `initialize`, `rebuildDbs` is passed the current projects
 For every active project, it will re-create the database connections, doing the same
 work as activateProjects does when the project is first activated.
 
-Following this, the uiSpec for each project is re-compiled.
+Following this, the uiSpec for every **activated** project is re-compiled from
+the persisted `uiDefinition`. Listed notebooks are never compiled.
 
-The intialisation then calls `initialiseServers` which sends a request to each
+The initialisation then calls `initialiseServers` which sends a request to each
 configured server for its details. It then calls `initialiseProjects` to
-get up to date details of all projects - this will compile the uiSpec if it
-is updated.
+refresh the lean directory. New surveys are listed only. Activated surveys
+fetch `GET /api/notebooks/:id` only when `uiSpecProperties.hash` changed;
+startup still compiles every activated `uiDefinition` because compiled
+conditionals are not persisted.
 
 ## Remote survey cleanup during `initialiseProjects`
 
