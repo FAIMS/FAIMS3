@@ -63,6 +63,9 @@ importers:
       '@bugsnag/plugin-express':
         specifier: ^7.0.0
         version: 7.25.0(@bugsnag/core@7.25.0)
+      '@faims3/build-config':
+        specifier: workspace:*
+        version: link:../library/build-config
       '@faims3/data-model':
         specifier: workspace:*
         version: link:../library/data-model
