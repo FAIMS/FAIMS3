@@ -37,6 +37,12 @@ describe('mapAssetNormalizeOptionsFromQuality', () => {
       DEFAULT_MAP_ASSET_NORMALIZE_OPTIONS.vectorSimplifyBytes
     );
   });
+
+  it('keeps quality 100 at the original-resolution ceiling', () => {
+    expect(mapAssetNormalizeOptionsFromQuality(100).maxRasterEdgePx).toBe(
+      32768
+    );
+  });
 });
 
 describe('resolveMapAssetNormalizeOptions', () => {
@@ -83,6 +89,32 @@ describe('estimateNormalizedMapAsset', () => {
     expect(low.options.maxRasterEdgePx).toBeLessThan(
       high.options.maxRasterEdgePx
     );
+  });
+
+  it('keeps a raster 1:1 at quality 100 when it fits under the ceiling', () => {
+    const high = estimateNormalizedMapAsset({
+      quality: 100,
+      source: {
+        filename: 'scene.tif',
+        byteSize: 80 * 1024 * 1024,
+        widthPx: 12000,
+        heightPx: 8000,
+      },
+    });
+    expect(high.estimatedByteSize).toBe(Math.round(12000 * 8000 * 1.6));
+    expect(high.summary).toContain('Original resolution 12000 x 8000 px');
+  });
+
+  it('treats an unsized upload as 1:1 at quality 100', () => {
+    const high = estimateNormalizedMapAsset({
+      quality: 100,
+      source: {
+        filename: 'map.pdf',
+        byteSize: 3 * 1024 * 1024,
+      },
+    });
+    expect(high.estimatedByteSize).toBe(3 * 1024 * 1024);
+    expect(high.summary).toContain('original resolution');
   });
 
   it('simplifies a large GeoJSON more aggressively at low quality', () => {

@@ -100,9 +100,9 @@ describe('ContextualLayersControl', () => {
     expect(mapClick).not.toHaveBeenCalled();
   });
 
-  it('frames a layer when it is shown and can raise it in the stack', async () => {
+  it('toggles visibility without framing, and pans only from the action button', async () => {
     const user = userEvent.setup();
-    const {fit, moveLayer} = renderControl([
+    const {fit, updateLayer, moveLayer} = renderControl([
       layer({id: 'lower', name: 'Tracks', zIndex: 1, visible: false}),
       layer({id: 'upper', name: 'Boundary', zIndex: 2}),
     ]);
@@ -111,9 +111,38 @@ describe('ContextualLayersControl', () => {
       screen.getByRole('button', {name: /map layers, 1 of 2 shown/i})
     );
     await user.click(screen.getByRole('button', {name: 'Show Tracks'}));
+    expect(updateLayer).toHaveBeenCalledWith('lower', {visible: true});
+    expect(fit).not.toHaveBeenCalled();
+
+    await user.click(
+      screen.getByRole('button', {name: 'Pan Tracks into view'})
+    );
     expect(fit).toHaveBeenCalledOnce();
 
     await user.click(screen.getByRole('button', {name: 'Raise Tracks'}));
     expect(moveLayer).toHaveBeenCalledWith('lower', 'up');
+  });
+
+  it('shows or hides every layer from the panel header', async () => {
+    const user = userEvent.setup();
+    const {updateLayer, fit} = renderControl([
+      layer({id: 'lower', name: 'Tracks', zIndex: 1, visible: false}),
+      layer({id: 'upper', name: 'Boundary', zIndex: 2, visible: true}),
+    ]);
+
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 1 of 2 shown/i})
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Show all'}));
+    expect(updateLayer).toHaveBeenCalledTimes(1);
+    expect(updateLayer).toHaveBeenCalledWith('lower', {visible: true});
+    expect(fit).not.toHaveBeenCalled();
+
+    updateLayer.mockClear();
+    await user.click(screen.getByRole('button', {name: 'Hide all'}));
+    expect(updateLayer).toHaveBeenCalledTimes(1);
+    expect(updateLayer).toHaveBeenCalledWith('upper', {visible: false});
+    expect(fit).not.toHaveBeenCalled();
   });
 });

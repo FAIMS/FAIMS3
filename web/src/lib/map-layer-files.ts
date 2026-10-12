@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
+import {
+  readGeoreferencedPdfRaster,
+  type PdfRasterSize,
+} from '@faims3/data-model';
 import {z} from 'zod';
 
 const PRIMARY_EXTENSIONS = new Set([
@@ -39,6 +43,21 @@ export function primaryMapLayerFile(files: File[]): File | undefined {
   return files.find(file => PRIMARY_EXTENSIONS.has(extensionOf(file.name)));
 }
 
+const pdfRasterCache = new WeakMap<File, Promise<PdfRasterSize | undefined>>();
+
+function pdfRasterSize(file: File): Promise<PdfRasterSize | undefined> {
+  const cached = pdfRasterCache.get(file);
+  if (cached) {
+    return cached;
+  }
+  const pending = file
+    .arrayBuffer()
+    .then(buffer => readGeoreferencedPdfRaster(new Uint8Array(buffer)))
+    .catch(() => undefined);
+  pdfRasterCache.set(file, pending);
+  return pending;
+}
+
 export async function mapLayerEstimateSource(
   files: File[]
 ): Promise<
@@ -59,7 +78,13 @@ export async function mapLayerEstimateSource(
     byteSize: primary.size,
   };
   const ext = extensionOf(primary.name);
-  if (ext === '.png' || ext === '.jpg' || ext === '.jpeg') {
+  if (ext === '.pdf') {
+    const raster = await pdfRasterSize(primary);
+    if (raster) {
+      source.widthPx = raster.widthPx;
+      source.heightPx = raster.heightPx;
+    }
+  } else if (ext === '.png' || ext === '.jpg' || ext === '.jpeg') {
     try {
       const bitmap = await createImageBitmap(primary);
       source.widthPx = bitmap.width;

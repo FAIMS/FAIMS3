@@ -10,6 +10,13 @@ import {
 } from '@faims3/data-model';
 import {useEffect, useState} from 'react';
 
+function imageLimitPhrase(quality: number, edgePx: number): string {
+  if (quality >= MAP_ASSET_QUALITY_MAX) {
+    return 'Original resolution';
+  }
+  return `Images up to ${edgePx} px`;
+}
+
 function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) {
     return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -90,8 +97,9 @@ export function MapLayerQualitySlider({
         <span className="text-xs text-muted-foreground">{quality}</span>
       </div>
       <p className="text-sm text-muted-foreground">
-        Higher detail keeps more pixels and vertices on the phone. Lower values
-        finish faster and use less storage.
+        Higher detail keeps more pixels and vertices on the phone. The top
+        setting keeps the original image resolution. Lower values finish faster
+        and use less storage.
       </p>
       <input
         id="map-layer-quality"
@@ -112,15 +120,16 @@ export function MapLayerQualitySlider({
         {estimate
           ? estimate.summary
           : files.length === 0
-            ? `Images up to ${options.maxRasterEdgePx} px · vectors simplified above ${simplifyMb} MB`
+            ? `${imageLimitPhrase(quality, options.maxRasterEdgePx)} · vectors simplified above ${simplifyMb} MB`
             : estimateError
               ? estimateError
-              : `Estimating… · images up to ${options.maxRasterEdgePx} px · vectors simplified above ${simplifyMb} MB`}
+              : `Estimating… · ${imageLimitPhrase(quality, options.maxRasterEdgePx)} · vectors simplified above ${simplifyMb} MB`}
       </p>
       {estimate ? (
         <p className="text-xs text-muted-foreground">
-          Original upload {formatBytes(estimate.originalByteSize)} → about{' '}
-          {formatBytes(estimate.estimatedByteSize)} after processing.
+          {estimate.summary.startsWith('Original resolution')
+            ? `Keeps the original pixels. About ${formatBytes(estimate.estimatedByteSize)} on devices, from a ${formatBytes(estimate.originalByteSize)} upload.`
+            : `Original upload ${formatBytes(estimate.originalByteSize)} → about ${formatBytes(estimate.estimatedByteSize)} after processing.`}
         </p>
       ) : null}
     </div>

@@ -2,7 +2,9 @@
 /**
  * Turns an uploaded map file set into one device-ready payload:
  * GeoJSON in EPSG:4326, or a PNG in EPSG:3857 no longer than
- * `options.maxRasterEdgePx` (4096 by default).
+ * `options.maxRasterEdgePx` (4096 by default). A georeferenced PDF is
+ * opened at 150 DPI from its page size, and quality 100 does not shrink
+ * that raster.
  */
 
 import {mkdtemp, readFile, rm, writeFile} from 'fs/promises';
@@ -13,7 +15,11 @@ import type {
   MapAssetNormalizeOptions,
   MapExtent,
 } from '@faims3/data-model';
-import {DEFAULT_MAP_ASSET_NORMALIZE_OPTIONS} from '@faims3/data-model';
+import {
+  DEFAULT_MAP_ASSET_NORMALIZE_OPTIONS,
+  pdfRenderDpi,
+  readGeoreferencedPdfRaster,
+} from '@faims3/data-model';
 import {GdalCommandError, readGdalJson, runGdalCommand} from '../export/gdal';
 import {
   assertUploadCompanions,
@@ -219,6 +225,33 @@ type GdalInfo = {
   wgs84Extent?: {coordinates?: number[][][]};
 };
 
+/**
+ * GDAL's PDF driver rasterizes at 150 DPI from the page size. Ask it for the
+ * DPI that lands on the quality cap without enlarging the page past that.
+ */
+async function pdfDpiOpenOptions(
+  sourcePath: string,
+  maxRasterEdgePx: number
+): Promise<string[]> {
+  if (extensionOf(sourcePath) !== '.pdf') {
+    return [];
+  }
+  try {
+    const bytes = new Uint8Array(await readFile(sourcePath));
+    const full = readGeoreferencedPdfRaster(bytes);
+    if (!full) {
+      return [];
+    }
+    const dpi = pdfRenderDpi(full, maxRasterEdgePx);
+    if (!Number.isFinite(dpi) || dpi <= 0) {
+      return [];
+    }
+    return ['-oo', `DPI=${dpi.toFixed(2)}`];
+  } catch {
+    return [];
+  }
+}
+
 async function convertRaster(
   sourcePath: string,
   workDir: string,
@@ -226,9 +259,14 @@ async function convertRaster(
 ): Promise<NormalizedMapAsset> {
   const warped = path.join(workDir, 'warped.tif');
   const png = path.join(workDir, 'normalized.png');
+  const dpiOptions = await pdfDpiOpenOptions(
+    sourcePath,
+    options.maxRasterEdgePx
+  );
   await runGdalCommand({
     command: 'gdalwarp',
     args: [
+      ...dpiOptions,
       '-t_srs',
       'EPSG:3857',
       '-r',

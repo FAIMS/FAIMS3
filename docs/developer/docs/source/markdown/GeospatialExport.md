@@ -92,7 +92,7 @@ GDAL must report a CRS. Uploads with no CRS are marked `failed` and no normalize
 Every accepted file becomes one of two device payloads:
 
 - Vectors become a GeoJSON FeatureCollection in `EPSG:4326` (`ogr2ogr -t_srs EPSG:4326 -nln features`). Every source layer is written into that one layer, so a multi-folder KML or a multi-layer GeoPackage becomes a single overlay. Files larger than the chosen simplify budget (5 MB at the default quality of 50) are simplified.
-- Rasters, including georeferenced PDFs, are warped to `EPSG:3857` and written as a PNG whose long edge is capped by the upload quality setting (4096 px at quality 50). The asset document stores that placement extent.
+- Rasters, including georeferenced PDFs, are warped to `EPSG:3857` and written as a PNG. The long edge follows the upload quality setting (4096 px at quality 50). Quality 100 keeps the source resolution, up to 32768 px. A PDF is rasterized at 150 DPI from its page size and is not shrunk below that. The asset document stores the placement extent.
 
 `POST /api/map-assets` and `PUT /api/map-assets/:id` accept optional `quality` (0–100) and `normalizeOptions`. `POST /api/map-assets/estimate` returns the resolved settings and an estimated device file size for the Control Centre slider.
 

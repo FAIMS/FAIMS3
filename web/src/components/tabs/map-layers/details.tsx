@@ -64,7 +64,7 @@ export function MapLayerDetails({assetId}: {assetId: string}) {
           ? '—'
           : `${asset.quality} · ${
               asset.normalizeOptions
-                ? `${asset.normalizeOptions.maxRasterEdgePx} px`
+                ? `up to ${asset.normalizeOptions.maxRasterEdgePx} px`
                 : 'default'
             }`,
     },

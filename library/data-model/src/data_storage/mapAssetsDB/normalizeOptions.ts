@@ -3,8 +3,9 @@
  * Device-payload settings for a map-layer upload.
  *
  * Quality 50 is the historic default (4096 px rasters, simplify vectors
- * above 5 MB). The Control Centre slider sends `quality`; callers may
- * also pass explicit `options` to override individual fields.
+ * above 5 MB). Quality 100 keeps the source image 1:1, up to
+ * {@link MAP_ASSET_QUALITY_HIGH_EDGE_PX}. The Control Centre slider sends
+ * `quality`; callers may also pass explicit `options` to override fields.
  */
 
 import {z} from 'zod';
@@ -23,9 +24,19 @@ export const MapAssetQualitySchema = z
   .max(MAP_ASSET_QUALITY_MAX);
 export type MapAssetQuality = z.infer<typeof MapAssetQualitySchema>;
 
+/**
+ * Longest edge kept at quality 100. A smaller source is not enlarged.
+ * Above this, even the top setting downsamples.
+ */
+export const MAP_ASSET_QUALITY_HIGH_EDGE_PX = 32768;
+
 export const MapAssetNormalizeOptionsSchema = z.object({
   /** Longest edge of the device PNG, in pixels. */
-  maxRasterEdgePx: z.number().int().min(256).max(16384),
+  maxRasterEdgePx: z
+    .number()
+    .int()
+    .min(256)
+    .max(MAP_ASSET_QUALITY_HIGH_EDGE_PX),
   /** GeoJSON larger than this is re-exported with ogr2ogr -simplify. */
   vectorSimplifyBytes: z.number().int().nonnegative(),
   /**
@@ -61,7 +72,7 @@ const QUALITY_LOW: MapAssetNormalizeOptions = {
 };
 
 const QUALITY_HIGH: MapAssetNormalizeOptions = {
-  maxRasterEdgePx: 8192,
+  maxRasterEdgePx: MAP_ASSET_QUALITY_HIGH_EDGE_PX,
   vectorSimplifyBytes: 50 * 1024 * 1024,
   vectorSimplifyTolerances: [0.00001, 0.00004],
 };
@@ -246,23 +257,73 @@ function estimateVectorBytes(
   );
 }
 
+const RASTER_PNG_BYTES_PER_PIXEL = 1.6;
+
 function estimateRasterBytes(
   source: MapAssetEstimateSource,
-  options: MapAssetNormalizeOptions
+  options: MapAssetNormalizeOptions,
+  quality: number
 ): number {
-  const pngBytesPerPixel = 1.6;
   if (source.widthPx && source.heightPx) {
-    const longEdge = Math.max(source.widthPx, source.heightPx);
-    const scale = Math.min(1, options.maxRasterEdgePx / longEdge);
+    const scale = rasterScale(source.widthPx, source.heightPx, options);
     const outW = Math.max(1, Math.round(source.widthPx * scale));
     const outH = Math.max(1, Math.round(source.heightPx * scale));
-    return Math.round(outW * outH * pngBytesPerPixel);
+    return Math.round(outW * outH * RASTER_PNG_BYTES_PER_PIXEL);
   }
-  const capped =
-    options.maxRasterEdgePx * options.maxRasterEdgePx * pngBytesPerPixel;
-  return Math.round(
-    Math.min(capped, Math.max(source.byteSize * 0.25, 64 * 1024))
-  );
+  // No pixel size yet. Quality 100 keeps the upload (1:1). Quality 50
+  // keeps the historic quarter-size guess, and lower settings shrink
+  // with the square of the edge cap.
+  const keep =
+    quality >= MAP_ASSET_QUALITY_MAX
+      ? 1
+      : quality <= DEFAULT_MAP_ASSET_QUALITY
+        ? 0.25 *
+          (options.maxRasterEdgePx /
+            DEFAULT_MAP_ASSET_NORMALIZE_OPTIONS.maxRasterEdgePx) **
+            2
+        : 0.25 +
+          (1 - 0.25) *
+            ((quality - DEFAULT_MAP_ASSET_QUALITY) /
+              (MAP_ASSET_QUALITY_MAX - DEFAULT_MAP_ASSET_QUALITY));
+  const fromFile = Math.max(source.byteSize * keep, 64 * 1024);
+  const pixelCap =
+    options.maxRasterEdgePx *
+    options.maxRasterEdgePx *
+    RASTER_PNG_BYTES_PER_PIXEL;
+  return Math.round(Math.min(pixelCap, fromFile));
+}
+
+function rasterScale(
+  widthPx: number,
+  heightPx: number,
+  options: MapAssetNormalizeOptions
+): number {
+  const longEdge = Math.max(widthPx, heightPx);
+  return Math.min(1, options.maxRasterEdgePx / longEdge);
+}
+
+function imageSummary(
+  source: MapAssetEstimateSource,
+  options: MapAssetNormalizeOptions,
+  estimatedByteSize: number
+): string {
+  const size = formatBytes(estimatedByteSize);
+  if (source.widthPx && source.heightPx) {
+    const longEdge = Math.max(source.widthPx, source.heightPx);
+    const scale = rasterScale(source.widthPx, source.heightPx, options);
+    if (scale > 0.999) {
+      return `Original resolution ${source.widthPx} x ${source.heightPx} px · about ${size} on devices`;
+    }
+    const outLong = Math.max(1, Math.round(longEdge * scale));
+    return `About ${size} on devices · ${outLong} px from the original ${longEdge} px`;
+  }
+  if (
+    options.maxRasterEdgePx >=
+    mapAssetNormalizeOptionsFromQuality(MAP_ASSET_QUALITY_MAX).maxRasterEdgePx
+  ) {
+    return `About ${size} on devices · original resolution`;
+  }
+  return `About ${size} on devices · images up to ${options.maxRasterEdgePx} px`;
 }
 
 function formatBytes(bytes: number): string {
@@ -295,7 +356,7 @@ export function estimateNormalizedMapAsset(
   });
   const estimatedByteSize =
     kind === 'image'
-      ? estimateRasterBytes(source, options)
+      ? estimateRasterBytes(source, options, quality)
       : estimateVectorBytes(source, options);
   const simplifyMb = Math.max(
     1,
@@ -303,7 +364,7 @@ export function estimateNormalizedMapAsset(
   );
   const summary =
     kind === 'image'
-      ? `About ${formatBytes(estimatedByteSize)} on devices · images up to ${options.maxRasterEdgePx} px`
+      ? imageSummary(source, options, estimatedByteSize)
       : `About ${formatBytes(estimatedByteSize)} on devices · vectors simplified above ${simplifyMb} MB`;
   return {
     kind,

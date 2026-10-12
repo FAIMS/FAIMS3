@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import CenterFocusStrongIcon from '@mui/icons-material/CenterFocusStrong';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -9,6 +10,7 @@ import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import {
   Box,
+  Button,
   ButtonBase,
   Collapse,
   IconButton,
@@ -35,7 +37,7 @@ import {
 } from './contextualMapLayers';
 
 /**
- * Layers sheet: visibility, stack order, and paint.
+ * Layers sheet: visibility, stack order, paint, and pan-into-view.
  * Rendered over the map when the notebook has downloaded contextual layers.
  *
  * While the sheet is open a scrim covers the map. A press on that scrim closes
@@ -97,11 +99,15 @@ export function ContextualLayersControl({map}: {map: Map}) {
   const ordered = [...layers].sort((a, b) => b.zIndex - a.zIndex);
   const visibleCount = layers.filter(layer => layer.visible).length;
 
-  const showLayer = (layer: ContextualMapLayer, visible: boolean) => {
-    updateLayer(layer.id, {visible});
-    if (!visible) {
-      return;
+  const setAllVisible = (visible: boolean) => {
+    for (const layer of layers) {
+      if (layer.visible !== visible) {
+        updateLayer(layer.id, {visible});
+      }
     }
+  };
+
+  const panLayerIntoView = (layer: ContextualMapLayer) => {
     const extent = layer.extent3857
       ? layer.extent3857
       : transformExtent(layer.extent4326, 'EPSG:4326', 'EPSG:3857');
@@ -249,6 +255,40 @@ export function ContextualLayersControl({map}: {map: Map}) {
                   <CloseIcon fontSize="small" />
                 </IconButton>
               </Stack>
+              <Stack
+                direction="row"
+                spacing={0.75}
+                sx={{
+                  px: 1.5,
+                  py: 0.75,
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                  flexShrink: 0,
+                }}
+              >
+                <Button
+                  type="button"
+                  size="small"
+                  variant="outlined"
+                  disabled={visibleCount === layers.length}
+                  startIcon={<VisibilityOutlinedIcon />}
+                  onClick={() => setAllVisible(true)}
+                  sx={{flex: 1, textTransform: 'none', minHeight: 32}}
+                >
+                  Show all
+                </Button>
+                <Button
+                  type="button"
+                  size="small"
+                  variant="outlined"
+                  disabled={visibleCount === 0}
+                  startIcon={<VisibilityOffOutlinedIcon />}
+                  onClick={() => setAllVisible(false)}
+                  sx={{flex: 1, textTransform: 'none', minHeight: 32}}
+                >
+                  Hide all
+                </Button>
+              </Stack>
               <Box
                 sx={{
                   overflow: 'auto',
@@ -269,7 +309,10 @@ export function ContextualLayersControl({map}: {map: Map}) {
                         current === layer.id ? null : layer.id
                       )
                     }
-                    onToggleVisible={() => showLayer(layer, !layer.visible)}
+                    onToggleVisible={() =>
+                      updateLayer(layer.id, {visible: !layer.visible})
+                    }
+                    onPanIntoView={() => panLayerIntoView(layer)}
                     onMove={direction => moveLayer(layer.id, direction)}
                     onPatch={patch => updateLayer(layer.id, patch)}
                   />
@@ -291,6 +334,7 @@ function LayerRow({
   lowerDisabled,
   onToggleExpanded,
   onToggleVisible,
+  onPanIntoView,
   onMove,
   onPatch,
 }: {
@@ -301,6 +345,7 @@ function LayerRow({
   lowerDisabled: boolean;
   onToggleExpanded: () => void;
   onToggleVisible: () => void;
+  onPanIntoView: () => void;
   onMove: (direction: 'up' | 'down') => void;
   onPatch: (patch: ContextualMapLayerPatch) => void;
 }) {
@@ -383,6 +428,15 @@ function LayerRow({
             {layer.kind === 'image' ? 'Image' : 'Vector'}
           </Typography>
         </Box>
+        <IconButton
+          type="button"
+          size="small"
+          aria-label={`Pan ${layer.name} into view`}
+          onClick={onPanIntoView}
+          sx={{width: 36, height: 36}}
+        >
+          <CenterFocusStrongIcon sx={{fontSize: 20}} />
+        </IconButton>
         <IconButton
           type="button"
           size="small"
