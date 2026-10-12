@@ -1,16 +1,16 @@
 /**
- * Script to validate that the generated .env file matches
- * the expected schema in app/ and web/.
- * Useful to check that we have not introduced any new configuration
- * variables that are not included in the JSON configuration file.
+ * Script to validate that the generated .env file covers all environment
+ * variables the consumers (mobile app, Control Centre, Fastlane) expect.
  *
- * The script works by first parsing the application configuration code
- * and the Fastlane files used to build the mobile apps to discover
- * the environment variables that are expected to be present.
+ * The producer side (which keys get generated) is fully controlled by the
+ * typed env contract in this package. What we cannot control is the
+ * consumers: they still parse their own env schemas (app/src/buildconfig.ts,
+ * web/src/constants.ts) and the Fastlane files read ENV[] keys directly.
  *
- * These are then checked against the generated .env file to ensure that
- * all expected variables are present and that no unexpected variables
- * are present.
+ * This script therefore extracts the env keys from those consumer sources and
+ * checks that the generated .env contains exactly that set — no more, no
+ * less — so a new variable introduced in the apps or Fastlane is caught
+ * before it silently breaks a build.
  */
 
 import fs from 'node:fs';
@@ -25,12 +25,40 @@ const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '../../..');
 
 /**
- * The location of source files that use environment variables
+ * The location of consumer source files that use environment variables
  */
 const APP_SCHEMA_PATH = path.resolve(repoRoot, 'app/src/buildconfig.ts');
 const WEB_SCHEMA_PATH = path.resolve(repoRoot, 'web/src/constants.ts');
 const FASTLANE_ANDROID_DIR = path.resolve(repoRoot, 'app/android/fastlane');
 const FASTLANE_IOS_DIR = path.resolve(repoRoot, 'app/ios/App/fastlane');
+
+/**
+ * Env keys that are set by the CI pipeline (workflow inputs / version
+ * stamping) rather than by the generated config. They are consumed by
+ * Fastlane but must not appear in the generated env.
+ */
+const CI_PROVIDED_KEYS = new Set(['VERSION_NAME', 'ANDROID_DEPLOY_TRACK']);
+
+/**
+ * Env keys that Fastlane consumes but whose values are injected by the
+ * deployment platform / CI (GitHub secrets) rather than the generated
+ * config. The generator still emits them (mobile secrets JSON carries the
+ * values for local builds), so a generated env containing them is expected.
+ */
+const PLATFORM_PROVIDED_KEYS = new Set([
+  'FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD',
+  'MATCH_PASSWORD',
+]);
+
+/**
+ * Env keys consumed by the CI workflows themselves (not by Fastlane or the
+ * apps), e.g. base64 secrets decoded into files before Fastlane runs
+ * (see .github/workflows/common-android-build.yml).
+ */
+const CI_WORKFLOW_CONSUMED_KEYS = new Set([
+  'KEYSTORE_FILE',
+  'GPLAY_SERVICE_ACCOUNT_KEY_JSON',
+]);
 
 /**
  * Parse environment variable names from a .env file text.  Ignores comments and blank lines.
@@ -143,7 +171,7 @@ function extractEnvObjectLiteral(sourceText: string): string {
 
 /**
  * Given a TypeScript source file, extract the keys of the EnvSchema object literal.
- * @param filePath The path to the TypeScript source file
+ * @param filePath The path of the TypeScript source file
  * @returns A set of keys defined in the EnvSchema object literal
  */
 function extractEnvSchemaKeys(filePath: string): Set<string> {
@@ -162,7 +190,7 @@ function extractEnvSchemaKeys(filePath: string): Set<string> {
 /**
  * Given a Fastlane file, extract the keys of the environment variables used in it.
  * @param filePath
- * @returns A set of keys of the environment variables used in the Fastlane file
+ * @returns A set of keys of environment variables used in the file
  */
 function extractFastlaneEnvKeys(filePath: string): Set<string> {
   const sourceText = fs.readFileSync(filePath, 'utf8');
@@ -178,8 +206,9 @@ function extractFastlaneEnvKeys(filePath: string): Set<string> {
 }
 
 /**
- * Gather ENV keys that are used in the Fastlane files for IOS and Android builds
- * @returns A set of ENV keys used in the Fastlane files for IOS and Android builds
+ * Gather ENV keys that are used in the Fastlane files for IOS and Android builds,
+ * excluding keys provided by the CI pipeline or the deployment platform.
+ * @returns A set of ENV keys used in the Fastlane files that the config must supply
  */
 function fastlaneEnvKeys(): Set<string> {
   const candidates: string[] = [];
@@ -194,18 +223,15 @@ function fastlaneEnvKeys(): Set<string> {
     path.join(FASTLANE_IOS_DIR, 'Fastfile')
   );
 
-  // Initialise with two special keys that don't appear explicitly but are
-  // required for Fastlane to work properly.
-  const keys = new Set([
-    'FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD',
-    'MATCH_PASSWORD',
-  ]);
+  const keys = new Set<string>();
 
   for (const candidate of candidates) {
     if (!fs.existsSync(candidate)) {
       continue;
     }
     for (const key of extractFastlaneEnvKeys(candidate)) {
+      if (CI_PROVIDED_KEYS.has(key)) continue;
+      if (PLATFORM_PROVIDED_KEYS.has(key)) continue;
       keys.add(key);
     }
   }
@@ -214,9 +240,9 @@ function fastlaneEnvKeys(): Set<string> {
 }
 
 /**
- * Find all of the expected environment variable keys from
- * the app and web source files and the Fastlane files.
- * @returns A set of all expected environment variable keys
+ * Find all the expected environment variable keys from the app and web source
+ * files and the Fastlane files.
+ * @returns A set of all expected keys
  */
 export function getExpectedKeys(): Set<string> {
   const appKeys = extractEnvSchemaKeys(APP_SCHEMA_PATH);
@@ -239,6 +265,8 @@ export function validateGeneratedEnv({envText}: {envText: string}) {
     .sort();
   const unexpected = [...generatedKeys]
     .filter(key => !expectedKeys.has(key))
+    .filter(key => !PLATFORM_PROVIDED_KEYS.has(key))
+    .filter(key => !CI_WORKFLOW_CONSUMED_KEYS.has(key))
     .sort();
 
   return {
@@ -258,7 +286,7 @@ export function main(
 
   if (args.help) {
     console.log(
-      `Usage: pnpm --filter=@faims3/build-config run validate [--config path/to/config.json]`
+      `Usage: pnpm --filter=@faims3/build-config run validate-coverage [--config path/to/config.json]`
     );
     return 0;
   }
@@ -308,28 +336,32 @@ export function main(
   });
 
   if (result.ok) {
-    console.log(`Generated env matches the app/web schema.`);
+    console.log(`Generated env covers all consumer env keys.`);
     return 0;
   }
   console.error(
-    `Found a mismatch between the configuration generated 
-    by the build-config utility and the required schema in app/ or web/.  
-    Check the output below for details.  If this is a new configuration variable,
-    it will need to be added to the schema in library/build-config.`
+    `Found a mismatch between the generated env and the consumer schemas\n` +
+      `(app/src/buildconfig.ts, web/src/constants.ts, Fastlane files).`
   );
 
   if (result.missing.length > 0) {
-    console.error(`Missing expected keys (${result.missing.length}):`);
+    console.error(`Consumer keys not covered by the generated env (${result.missing.length}):`);
     for (const key of result.missing) {
       console.error(`  - ${key}`);
     }
+    console.error(
+      `\nIf these are new consumer variables, add a field + env-contract mapping to @faims3/build-config.`
+    );
   }
 
   if (result.unexpected.length > 0) {
-    console.error(`Unexpected generated keys (${result.unexpected.length}):`);
+    console.error(`Generated keys no consumer expects (${result.unexpected.length}):`);
     for (const key of result.unexpected) {
       console.error(`  - ${key}`);
     }
+    console.error(
+      `\nEither the consumer needs to read these (or they are CI/platform-provided and belong in the exclusion lists), or they should be removed from the env contract.`
+    );
   }
 
   return 1;
