@@ -2,10 +2,10 @@
   "name": "@faims3/build-config",
   "version": "1.6.2",
   "private": true,
-  "type": "module",
   "files": [
     "build"
   ],
+  "type": "module",
   "main": "./build/src/index.js",
   "types": "./build/src/index.d.ts",
   "exports": {
