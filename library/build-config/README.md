@@ -196,6 +196,9 @@ Each consumer preserves its public `config` shape, so only `buildconfig.ts` /
 
 From this package:
 
+- build: compiles the module to `build/` (consumers import the built output —
+  run this, or rely on turbo's `^build`, before using the module from `api`,
+  `web` or `app`). `dev` watches it.
 - generate: emits env from config JSON
 - generate platform values: `apps` (also accepts `android` / `ios` aliases, which
   the mobile CI workflows use) or `api`
