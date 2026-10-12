@@ -258,7 +258,6 @@ export const config = {
   iosAppUrl: canonical.endpoints.iosAppPublicUrl,
   couchdbInternalUrl: canonical.endpoints.couchdbInternalUrl,
   couchdbPublicUrl: canonical.endpoints.couchdbPublicUrl,
-  newConductorUrl: canonical.endpoints.webUrl,
   conductorInternalPort: canonical.couchdb.conductorInternalPort,
 
   // Branding (server-facing).

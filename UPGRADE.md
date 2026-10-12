@@ -2,6 +2,13 @@
 
 This document will describe the necessary steps to migrate existing deployments through versions of FAIMS.
 
+## Config consolidation: `NEW_CONDUCTOR_URL` removed
+
+The `NEW_CONDUCTOR_URL` environment variable is no longer used by the Conductor/api. It carried the Control Centre (web) URL, which is already provided to the server via `REDIRECT_WHITELIST` (used for both auth redirects and the browser CORS allowlist).
+
+- Remove `NEW_CONDUCTOR_URL` from any conductor/api build configuration.
+- Ensure the Control Centre URL is present in `REDIRECT_WHITELIST` (the aws-cdk IaC already includes it).
+
 ## [feat: admin forgot password reset workflow](https://github.com/FAIMS/FAIMS3/pull/1334)
 
 ### CouchDB migration

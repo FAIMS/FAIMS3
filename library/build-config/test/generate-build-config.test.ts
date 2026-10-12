@@ -426,7 +426,6 @@ test('parseGeneratedEnv round-trips API platform values', () => {
   // the app/web VITE_ chain); assert the emitted contract values instead.
   assert.equal(raw.CONDUCTOR_PUBLIC_URL, 'https://api.example.org');
   assert.equal(raw.WEB_APP_PUBLIC_URL, 'https://app.example.org');
-  assert.equal(raw.NEW_CONDUCTOR_URL, 'https://web.example.org');
   assert.equal(raw.PROFILE_NAME, 'prod');
   assert.equal(raw.DISABLE_LOCAL_LOGIN, 'true');
   assert.equal(raw.PROVISION_SSO_USERS_POLICY, 'own-team');
@@ -663,7 +662,6 @@ test('parseGeneratedEnv parses the api half into the canonical model', () => {
   const parsed = parseGeneratedEnv({
     CONDUCTOR_PUBLIC_URL: 'https://api.example.org',
     WEB_APP_PUBLIC_URL: 'https://app.example.org',
-    NEW_CONDUCTOR_URL: 'https://web.example.org/',
     PROFILE_NAME: 'prod',
     KEY_SOURCE: 'FILE',
     DISABLE_LOCAL_LOGIN: 'true',
@@ -681,8 +679,9 @@ test('parseGeneratedEnv parses the api half into the canonical model', () => {
 
   assert.equal(parsed.endpoints.apiUrl, 'https://api.example.org');
   assert.equal(parsed.endpoints.appUrl, 'https://app.example.org');
-  // NEW_CONDUCTOR_URL maps to webUrl, trailing slash stripped.
-  assert.equal(parsed.endpoints.webUrl, 'https://web.example.org');
+  // The Control Centre / web URL is carried via the redirect whitelist (there
+  // is no dedicated api env value for it); webUrl stays at its default.
+  assert.equal(parsed.endpoints.webUrl, 'http://localhost:3001');
   assert.deepEqual(parsed.endpoints.redirectWhitelist, [
     'https://web.example.org',
     'https://app.example.org',

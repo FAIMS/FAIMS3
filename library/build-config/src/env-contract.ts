@@ -176,7 +176,6 @@ const apiContract: Record<string, EnvResolver> = {
   EXPORT_RATE_LIMITER_WINDOW_MS: runtime => runtime.limits.exportRateLimiterWindowMs ?? 600000,
   EXPORT_RATE_LIMITER_PER_WINDOW: runtime => runtime.limits.exportRateLimiterPerWindow ?? 20,
   ATTEMPT_LIMITER_ENABLED: runtime => runtime.limits.attemptLimiterEnabled ?? true,
-  NEW_CONDUCTOR_URL: runtime => runtime.endpoints.webUrl ?? 'http://localhost:3001',
   REDIRECT_WHITELIST: runtime => runtime.endpoints.redirectWhitelist ?? [],
   EMAIL_SERVICE_TYPE: runtime => runtime.email.emailServiceType ?? 'MOCK',
   EMAIL_FROM_ADDRESS: runtime => runtime.email.emailFromAddress ?? 'notifications@example.com',

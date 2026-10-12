@@ -287,7 +287,6 @@ export class FaimsConductor extends Construct {
       IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
       KEY_SOURCE: 'AWS_SM',
       AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
-      NEW_CONDUCTOR_URL: props.webUrl,
       PROVISION_SSO_USERS_POLICY: props.config.provisionSSOUsersPolicy,
 
       // Bugsnag (optional)

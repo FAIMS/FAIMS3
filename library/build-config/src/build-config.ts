@@ -498,7 +498,6 @@ export const ApiEnvSchema = z
     COUCHDB_EXTERNAL_PORT: PositiveIntStringSchema.optional(),
     CONDUCTOR_EXTERNAL_PORT: PositiveIntStringSchema.optional(),
     CONDUCTOR_INTERNAL_PORT: PositiveIntStringSchema.optional(),
-    NEW_CONDUCTOR_URL: z.string().optional(),
     REDIRECT_WHITELIST: z.string().optional(),
     PROFILE_NAME: z.string().optional(),
     KEY_FILE_PATH: z.string().optional(),
@@ -563,9 +562,8 @@ export function parseApiEnv(raw: Record<string, unknown>): PartialBuildConfig {
       : undefined;
   return {
     endpoints: {
-      webUrl: api.NEW_CONDUCTOR_URL
-        ? stripTrailingSlash(api.NEW_CONDUCTOR_URL)
-        : api.CONDUCTOR_PUBLIC_URL,
+      // The Control Centre / web URL is not a first-class api env value; the
+      // server reaches it via the redirect whitelist (CORS + auth redirects).
       apiUrl: api.CONDUCTOR_PUBLIC_URL,
       appUrl: api.WEB_APP_PUBLIC_URL,
       androidAppPublicUrl: api.ANDROID_APP_PUBLIC_URL,
