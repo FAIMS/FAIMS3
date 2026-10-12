@@ -748,3 +748,20 @@ test('D1: non-numeric integer env value is a parse error', () => {
     /MAXIMUM_LONG_LIVED_DURATION_DAYS/
   );
 });
+
+test('designer-only web keys emit and parse round trip', () => {
+  const config: SharedBuildConfig = {
+    ...sampleConfig,
+    webDesignerLimits: {templateProtections: true, enablePlansInDesigner: false},
+  };
+  const env = generateEnv({config, platform: 'apps'});
+  assert.match(env, /VITE_TEMPLATE_PROTECTIONS=true/);
+  assert.match(env, /VITE_ENABLE_PLANS_IN_DESIGNER=false/);
+
+  const parsed = parseGeneratedEnv({
+    VITE_TEMPLATE_PROTECTIONS: 'true',
+    VITE_ENABLE_PLANS_IN_DESIGNER: 'false',
+  });
+  assert.equal(parsed.webDesignerLimits.templateProtections, true);
+  assert.equal(parsed.webDesignerLimits.enablePlansInDesigner, false);
+});

@@ -237,6 +237,13 @@ const TeamAndRolePolicyBuildConfigSchema = z
 const WebDesignerLimitsBuildConfigSchema = z
   .object({
     maxDesignFileSizeMb: z.number().int().positive().default(10).optional(),
+    /** Enables template edit protections in the designer. */
+    templateProtections: z.boolean().default(false).optional(),
+    /**
+     * Enables adding a plan in the designer for templates that do not already
+     * have one. When false, existing plans can still be reconfigured.
+     */
+    enablePlansInDesigner: z.boolean().default(true).optional(),
   })
   .strict();
 
@@ -471,6 +478,8 @@ export const GeneratedEnvSchema = z
 
     VITE_DOCS_URL: z.string().default(''),
     VITE_MAX_DESIGN_FILE_SIZE_MB: PositiveIntStringSchema.default(10),
+    VITE_TEMPLATE_PROTECTIONS: BoolEnvSchema.default(false),
+    VITE_ENABLE_PLANS_IN_DESIGNER: BoolEnvSchema.default(true),
     VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: z.string().default('90'),
     VITE_LONG_LIVED_TOKEN_DURATION_HINTS: z.string().default('1,5,10,30,90,365'),
     VITE_EXCLUDED_TEAM_ROLES: z.string().default(''),
@@ -755,6 +764,8 @@ export function parseAppsEnv(env: GeneratedEnv): PartialBuildConfig {
     },
     webDesignerLimits: {
       maxDesignFileSizeMb: env.VITE_MAX_DESIGN_FILE_SIZE_MB,
+      templateProtections: env.VITE_TEMPLATE_PROTECTIONS,
+      enablePlansInDesigner: env.VITE_ENABLE_PLANS_IN_DESIGNER,
     },
     android: {
       appId: env.VITE_APP_ID,

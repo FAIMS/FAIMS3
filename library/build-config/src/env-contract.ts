@@ -89,6 +89,10 @@ const baseContract: Record<string, EnvResolver> = {
   VITE_BUGSNAG_API_KEY: runtime =>
     runtime.observability.bugsnagApiKey ?? '',
   VITE_MAX_DESIGN_FILE_SIZE_MB: runtime => runtime.webDesignerLimits.maxDesignFileSizeMb ?? 10,
+  VITE_TEMPLATE_PROTECTIONS: runtime =>
+    runtime.webDesignerLimits.templateProtections ?? false,
+  VITE_ENABLE_PLANS_IN_DESIGNER: runtime =>
+    runtime.webDesignerLimits.enablePlansInDesigner ?? true,
   VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: runtime =>
     runtime.authTokens.maximumLongLivedDurationDays ?? 90,
   VITE_LONG_LIVED_TOKEN_DURATION_HINTS: runtime =>
