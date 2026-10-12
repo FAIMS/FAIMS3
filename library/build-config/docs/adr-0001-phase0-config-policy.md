@@ -94,8 +94,9 @@ Rule of thumb: cross-field _clamping/fallback_ invariants move to the shared
   (Also fixes the round-trip loss where an empty `VITE_APP_SHORT_NAME` came
   back as `''` instead of triggering the fallback.)
 - `authTokens.maximumLongLivedDurationDays` accepts
-  `unlimited` / `infinite` / `none` (case-insensitive) → `undefined` in all
-  parsers.
+  `unlimited` / `infinite` / `none` (case-insensitive), normalised to the
+  canonical no-cap sentinel `'unlimited'` in all parsers (any number means a
+  finite cap).
 - Bugsnag key: literal `'false'` and blank → `undefined` (app currently treats
   the string `'false'` as "off").
 

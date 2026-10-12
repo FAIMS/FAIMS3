@@ -476,14 +476,25 @@ test('schema rejects unknown top-level keys', () => {
   );
 });
 
+test('generated env parser accepts the D3 boolean vocabulary', () => {
+  for (const truthy of ['true', '1', 'on', 'yes']) {
+    const parsed = parseGeneratedEnv({VITE_DEBUG_APP: truthy});
+    assert.equal(parsed.dev.debugApp, true, `expected ${truthy} -> true`);
+  }
+  for (const falsy of ['false', '0', 'off', 'no']) {
+    const parsed = parseGeneratedEnv({VITE_DEBUG_APP: falsy});
+    assert.equal(parsed.dev.debugApp, false, `expected ${falsy} -> false`);
+  }
+});
+
 test('generated env parser rejects invalid boolean strings', () => {
   assert.throws(
     () =>
       parseGeneratedEnv({
         VITE_APP_NAME: 'Fieldmark',
-        VITE_DEBUG_APP: 'yes',
+        VITE_DEBUG_APP: 'banana',
       }),
-    /Invalid option/i
+    /Invalid boolean/i
   );
 });
 
@@ -548,4 +559,192 @@ test('generated env parser converts typed values into grouped runtime config', (
     'TEAM_MEMBER_CREATOR',
     'TEAM_ADMIN',
   ]);
+});
+
+// ---------------------------------------------------------------------------
+// Phase 2: shared invariants (ADR-0001 D4) apply in the schema transform, so
+// they hold for JSON, apps env and api env alike.
+// ---------------------------------------------------------------------------
+
+test('D4: short/heading names fall back to app name', () => {
+  const parsed = parseBuildConfig({branding: {appName: 'Fieldmark'}});
+  assert.equal(parsed.branding.appShortName, 'Fieldmark');
+  assert.equal(parsed.branding.headingAppName, 'Fieldmark');
+});
+
+test('D4: offline maps are forced off for OSM', () => {
+  const parsed = parseBuildConfig({maps: {mapSource: 'osm', offlineMaps: true}});
+  assert.equal(parsed.maps.offlineMaps, false);
+
+  const parsedMaptiler = parseBuildConfig({maps: {mapSource: 'maptiler', offlineMaps: true}});
+  assert.equal(parsedMaptiler.maps.offlineMaps, true);
+});
+
+test('D4: long-lived token hints are clamped, deduped and sorted', () => {
+  const parsed = parseBuildConfig({
+    authTokens: {
+      maximumLongLivedDurationDays: 30,
+      longLivedTokenDurationHints: [90, 10, 30, 10, 5],
+    },
+  });
+  // 90 is dropped (above max 30); 10 deduped; sorted ascending.
+  assert.deepEqual(parsed.authTokens.longLivedTokenDurationHints, [5, 10, 30]);
+
+  // If all hints exceed the max, the max becomes the sole hint.
+  const allExceed = parseBuildConfig({
+    authTokens: {
+      maximumLongLivedDurationDays: 7,
+      longLivedTokenDurationHints: [30, 90],
+    },
+  });
+  assert.deepEqual(allExceed.authTokens.longLivedTokenDurationHints, [7]);
+});
+
+test('D4: maximumLongLivedDurationDays accepts unlimited/infinite/none', () => {
+  assert.equal(
+    parseBuildConfig({authTokens: {maximumLongLivedDurationDays: 'unlimited'}})
+      .authTokens.maximumLongLivedDurationDays,
+    'unlimited'
+  );
+  // In the env parse path the no-cap words normalise to the 'unlimited'
+  // sentinel.
+  const env = parseGeneratedEnv({
+    VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: 'infinite',
+  });
+  assert.equal(env.authTokens.maximumLongLivedDurationDays, 'unlimited');
+});
+
+// Country codes are arrays in the canonical model, CSV in env.
+test('D5-ish: address country codes round trip as arrays', () => {
+  const parsed = parseGeneratedEnv({
+    VITE_MAPBOX_ADDRESS_COUNTRY: 'au,nz',
+    VITE_MAPTILER_ADDRESS_COUNTRY: 'AU',
+  });
+  assert.deepEqual(parsed.maps.mapboxAddressCountry, ['AU', 'NZ']);
+  assert.deepEqual(parsed.maps.maptilerAddressCountry, ['AU']);
+});
+
+// Commit version is sanitised: only hashes / release stamps survive.
+test('commit version is sanitised (garbage becomes the default)', () => {
+  assert.equal(
+    parseGeneratedEnv({VITE_COMMIT_VERSION: 'abcdef1'}).observability.commitVersion,
+    'abcdef1'
+  );
+  assert.equal(
+    parseGeneratedEnv({
+      VITE_COMMIT_VERSION: 'v1.2.3-ios-#abc1234',
+    }).observability.commitVersion,
+    'v1.2.3-ios-#abc1234'
+  );
+  // Prose / placeholders fall back to the default.
+  assert.equal(
+    parseGeneratedEnv({VITE_COMMIT_VERSION: 'output of git rev-parse HEAD'})
+      .observability.commitVersion,
+    'local-build'
+  );
+});
+
+// Bugsnag: blank or the literal 'false' means off.
+test('bugsnag key: blank and literal false resolve to undefined', () => {
+  assert.equal(parseGeneratedEnv({VITE_BUGSNAG_KEY: 'false'}).observability.bugsnagApiKey, undefined);
+  assert.equal(parseGeneratedEnv({VITE_BUGSNAG_KEY: ''}).observability.bugsnagApiKey, undefined);
+  assert.equal(
+    parseGeneratedEnv({VITE_BUGSNAG_KEY: 'abc'}).observability.bugsnagApiKey,
+    'abc'
+  );
+});
+
+// ---------------------------------------------------------------------------
+// API env: the server half of a generated env parses into the same model.
+// ---------------------------------------------------------------------------
+
+test('parseGeneratedEnv parses the api half into the canonical model', () => {
+  const parsed = parseGeneratedEnv({
+    CONDUCTOR_PUBLIC_URL: 'https://api.example.org',
+    WEB_APP_PUBLIC_URL: 'https://app.example.org',
+    NEW_CONDUCTOR_URL: 'https://web.example.org/',
+    PROFILE_NAME: 'prod',
+    KEY_SOURCE: 'FILE',
+    DISABLE_LOCAL_LOGIN: 'true',
+    PROVISION_SSO_USERS_POLICY: 'own-team',
+    ACCESS_TOKEN_EXPIRY_MINUTES: '60',
+    REFRESH_TOKEN_EXPIRY_MINUTES: '1440',
+    EMAIL_SERVICE_TYPE: 'MOCK',
+    CONDUCTOR_INTERNAL_PORT: '8080',
+    CONDUCTOR_SHORT_CODE_PREFIX: 'EXM',
+    CONDUCTOR_INSTANCE_NAME: 'Example',
+    REDIRECT_WHITELIST: 'https://web.example.org,https://app.example.org',
+    RATE_LIMITER_ENABLED: 'no',
+    JSON_BODY_LIMIT: '50mb',
+  });
+
+  assert.equal(parsed.endpoints.apiUrl, 'https://api.example.org');
+  assert.equal(parsed.endpoints.appUrl, 'https://app.example.org');
+  // NEW_CONDUCTOR_URL maps to webUrl, trailing slash stripped.
+  assert.equal(parsed.endpoints.webUrl, 'https://web.example.org');
+  assert.deepEqual(parsed.endpoints.redirectWhitelist, [
+    'https://web.example.org',
+    'https://app.example.org',
+  ]);
+  assert.equal(parsed.auth.profileName, 'prod');
+  assert.equal(parsed.auth.disableLocalLogin, true);
+  assert.equal(parsed.auth.provisionSsoUsersPolicy, 'own-team');
+  assert.equal(parsed.authTokens.accessTokenExpiryMinutes, 60);
+  assert.equal(parsed.authTokens.refreshTokenExpiryMinutes, 1440);
+  assert.equal(parsed.email.emailServiceType, 'MOCK');
+  assert.equal(parsed.couchdb.conductorInternalPort, 8080);
+  assert.equal(parsed.branding.conductorShortCodePrefix, 'EXM');
+  assert.equal(parsed.branding.conductorInstanceName, 'Example');
+  assert.equal(parsed.limits.rateLimiterEnabled, false);
+  assert.equal(parsed.limits.jsonBodyLimit, '50mb');
+});
+
+test('parseGeneratedEnv merges apps and api halves (api wins on shared keys)', () => {
+  const parsed = parseGeneratedEnv({
+    VITE_APP_NAME: 'Fieldmark',
+    VITE_API_URL: 'https://api.apps.example.org',
+    CONDUCTOR_PUBLIC_URL: 'https://api.deploy.example.org',
+    RATE_LIMITER_ENABLED: 'false',
+  });
+
+  // app/web-specific value survives
+  assert.equal(parsed.branding.appName, 'Fieldmark');
+  // api half overrides the shared apiUrl
+  assert.equal(parsed.endpoints.apiUrl, 'https://api.deploy.example.org');
+  // api-only value present
+  assert.equal(parsed.limits.rateLimiterEnabled, false);
+});
+
+test('auth provider env: invalid provider is dropped with a warning (not silently)', () => {
+  // A google provider missing its required clientID is invalid.
+  const env = {
+    AUTH_GOOGLE_TYPE: 'google',
+    AUTH_GOOGLE_DISPLAY_NAME: 'Google',
+    AUTH_GOOGLE_SCOPE: 'profile,email',
+  };
+  const before = console.warn;
+  let warned = false;
+  console.warn = (..._args) => {
+    warned = true;
+  };
+  let result;
+  try {
+    result = readAuthProviderConfigFromEnv(env);
+  } finally {
+    console.warn = before;
+  }
+  assert.equal(warned, true);
+  assert.deepEqual(result, {});
+});
+
+// D1: strict numeric coercion — non-numeric is an error, not a silent default.
+test('D1: non-numeric integer env value is a parse error', () => {
+  assert.throws(
+    () => parseGeneratedEnv({VITE_POUCH_BATCH_SIZE: 'ten'}),
+    /positive integer/i
+  );
+  assert.throws(
+    () => parseGeneratedEnv({VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: 'abc'}),
+    /MAXIMUM_LONG_LIVED_DURATION_DAYS/
+  );
 });

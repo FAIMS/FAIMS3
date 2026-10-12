@@ -37,9 +37,17 @@ flowchart LR
   D --> E[generateEnv output]
   E --> F[platform build env]
 
-  E --> G[parseGeneratedEnv]
+  E -->|apps / VITE_ env| G[parseGeneratedEnv]
+  E -->|api / AUTH_ env| G
   G --> H[typed RuntimeConfig]
 ```
+
+`parseGeneratedEnv` parses the **string** env (the `.env` file format) and accepts
+the apps half, the api half, or both (the api half wins on shared keys), so a
+deployment can produce a single typed `RuntimeConfig` from whatever it generates.
+The shared invariants (ADR-0001 D4 — name fallbacks, OSM offline-map clamp,
+hints clamping, no-cap normalisation) are applied in the schema transform, so
+they hold for JSON, apps env and api env alike.
 
 Key design idea:
 
