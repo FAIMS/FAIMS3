@@ -38,6 +38,12 @@ const EndpointsBuildConfigSchema = z
     webUrl: z.string().default('http://localhost:3001').optional(),
     apiUrl: z.string().default('http://localhost:8080').optional(),
     appUrl: z.string().default('http://localhost:3000').optional(),
+    /**
+     * One or more Conductor URLs the mobile app can authenticate against
+     * (CSV in the generated env; each entry becomes a login option).
+     * Falls back to `apiUrl` when empty.
+     */
+    conductorUrls: z.array(z.string()).optional(),
     couchdbInternalUrl: z.string().default('http://localhost:5984').optional(),
     couchdbPublicUrl: z.string().default('http://localhost:5984').optional(),
     androidAppPublicUrl: z.string().default('').optional(),
@@ -59,9 +65,9 @@ const BrandingBuildConfigSchema = z
       .optional(),
     conductorDescription: z
       .string()
-      .default('Development server on localhost')
+      .default('FAIMS Conductor Server')
       .optional(),
-    conductorShortCodePrefix: z.string().default('DEV').optional(),
+    conductorShortCodePrefix: z.string().default('FAIMS').optional(),
   })
   .strict();
 
@@ -79,7 +85,7 @@ const SupportBuildConfigSchema = z
 
 const NotebookAndRecordUxBuildConfigSchema = z
   .object({
-    notebookName: z.string().default('notebook').optional(),
+    notebookName: z.string().default('project').optional(),
     notebookListType: z.enum(['tabs', 'headings']).default('tabs').optional(),
     navigation: z.enum(['none', 'breadcrumbs']).default('none').optional(),
     showRecordLinks: z.boolean().default(false).optional(),
@@ -90,7 +96,7 @@ const NotebookAndRecordUxBuildConfigSchema = z
 
 const MapsBuildConfigSchema = z
   .object({
-    mapSource: z.enum(['osm', 'maptiler', '']).default('maptiler').optional(),
+    mapSource: z.enum(['osm', 'maptiler', '']).default('osm').optional(),
     mapSourceKey: z.string().default('').optional(),
     satelliteSource: z.enum(['esri', 'maptiler']).optional(),
     mapStyle: z
@@ -267,14 +273,6 @@ const IosBuildConfigSchema = z
   })
   .strict();
 
-const MobileBuildConfigSchema = z
-  .object({
-    appId: z.string().default('org.fedarch.faims3').optional(),
-    android: AndroidBuildConfigSchema.default({}),
-    ios: IosBuildConfigSchema.default({}),
-  })
-  .strict();
-
 const CouchdbBuildConfigSchema = z
   .object({
     couchdbUser: z.string().default('admin').optional(),
@@ -328,12 +326,15 @@ export const BuildConfigSchema = z
     couchdb: CouchdbBuildConfigSchema.default({}),
     dev: DevBuildConfigSchema.default({}),
     pouchdb: PouchdbBuildConfigSchema.default({}),
-    secrets: z.record(z.string(), z.unknown()).default({}),
   })
   .strict();
 
 export type SharedBuildConfig = z.infer<typeof BuildConfigSchema>;
 
+/**
+ * Same shape as SharedBuildConfig. Kept as an alias so generator, contract
+ * and parser share one canonical type name going forward.
+ */
 export const RuntimeConfigSchema = BuildConfigSchema;
 
 export type RuntimeConfig = z.infer<typeof RuntimeConfigSchema>;
@@ -351,7 +352,7 @@ export const GeneratedEnvSchema = z
     VITE_API_URL: z.string().default('http://localhost:8080'),
     VITE_APP_URL: z.string().default('http://localhost:3000'),
     VITE_WEBSITE_TITLE: z.string().default('Control Centre'),
-    VITE_NOTEBOOK_NAME: z.string().default('notebook'),
+    VITE_NOTEBOOK_NAME: z.string().default('project'),
     VITE_NOTEBOOK_LIST_TYPE: z.enum(['tabs', 'headings']).default('tabs'),
     VITE_SUPPORT_EMAIL: z.string().default('support@fieldmark.au'),
     VITE_DIRECTORY_USERNAME: z.string().default(''),
@@ -360,7 +361,7 @@ export const GeneratedEnvSchema = z
       .string()
       .default('https://fieldnote.au/privacy'),
     VITE_APP_CONTACT_URL: z.string().default(''),
-    VITE_MAP_SOURCE: z.enum(['osm', 'maptiler', '']).default('maptiler'),
+    VITE_MAP_SOURCE: z.enum(['osm', 'maptiler', '']).default('osm'),
     VITE_MAP_SOURCE_KEY: z.string().default(''),
     VITE_MAP_STYLE: z
       .enum(['basic', 'openstreetmap', 'osm-bright', 'toner'])
@@ -398,13 +399,18 @@ export const GeneratedEnvSchema = z
     VITE_AUTOSUGGEST_MAPTILER_KEY: z.string().default(''),
     VITE_MAPBOX_ADDRESS_COUNTRY: z.string().default('AU'),
     VITE_MAPTILER_ADDRESS_COUNTRY: z.string().default('AU'),
+
+    // iOS build/signing keys consumed by Fastlane (see env-contract.ts).
+    VITE_APPLE_BUNDLE_IDENTIFIER: z.string().default(''),
+    VITE_APP_STORE_CONNECT_TEAM_ID: z.string().default(''),
+
     VITE_DOCS_URL: z.string().default(''),
     VITE_MAX_DESIGN_FILE_SIZE_MB: PositiveIntStringSchema.default(10),
     VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: z.string().default('90'),
     VITE_LONG_LIVED_TOKEN_DURATION_HINTS: z.string().default('1,5,10,30,90,365'),
     VITE_EXCLUDED_TEAM_ROLES: z.string().default(''),
   })
-  .strict();
+  .passthrough();
 
 export type GeneratedEnv = z.infer<typeof GeneratedEnvSchema>;
 
@@ -417,17 +423,21 @@ export function toRuntimeConfig(parsed: SharedBuildConfig): RuntimeConfig {
 }
 
 export function parseGeneratedEnv(raw: unknown): RuntimeConfig {
-  const env = GeneratedEnvSchema.parse(raw);
+  const rawEnv = (raw ?? {}) as Record<string, unknown>;
+  const env = GeneratedEnvSchema.parse(rawEnv);
   const buildConfig = parseBuildConfig({
     endpoints: {
       webUrl: env.VITE_WEB_URL,
       apiUrl: env.VITE_API_URL,
       appUrl: env.VITE_APP_URL,
+      conductorUrls: OptionalCsvSchema.parse(env.VITE_CONDUCTOR_URL),
     },
+    // Empty strings round-trip back to undefined so the appName fallbacks
+    // (ADR-0001 D4) apply uniformly in JSON, generated env and parse output.
     branding: {
       appName: env.VITE_APP_NAME,
-      appShortName: env.VITE_APP_SHORT_NAME,
-      headingAppName: env.VITE_HEADING_APP_NAME,
+      appShortName: env.VITE_APP_SHORT_NAME || undefined,
+      headingAppName: env.VITE_HEADING_APP_NAME || undefined,
       websiteTitle: env.VITE_WEBSITE_TITLE,
       theme: env.VITE_THEME,
     },
@@ -513,7 +523,8 @@ export function parseGeneratedEnv(raw: unknown): RuntimeConfig {
       appId: env.VITE_APP_ID,
     },
     ios: {
-      bundleIdentifier: env.VITE_APP_ID,
+      bundleIdentifier: env.VITE_APPLE_BUNDLE_IDENTIFIER || env.VITE_APP_ID,
+      appStoreConnectTeamId: env.VITE_APP_STORE_CONNECT_TEAM_ID || undefined,
     },
     auth: {
       directoryUsername: env.VITE_DIRECTORY_USERNAME || undefined,
