@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {generateEnv, parseArgs} from '../src/generate-build-config';
 import {
   buildAuthProviderEnvMap,
@@ -9,6 +11,7 @@ import {
   readAuthProviderConfigFromEnv,
   SharedBuildConfig,
 } from '../src/build-config';
+import {generateBuildConfig} from '../src/generate-build-config';
 import {validateGeneratedEnv} from '../src/validate-generated-env';
 
 function deepMerge(a: unknown, b: unknown): unknown {
@@ -60,7 +63,6 @@ const sampleConfig: SharedBuildConfig = {
   couchdb: {},
   dev: {},
   pouchdb: {},
-  secrets: {},
 };
 
 test('parseArgs accepts config and platform arguments', () => {
@@ -169,7 +171,6 @@ test('generator supports api platform export selection', () => {
     },
     dev: {},
     pouchdb: {},
-    secrets: {},
   } as const;
 
   const config = parseBuildConfig(rawConfig);
@@ -294,6 +295,174 @@ test('validateBuildConfigCoverage catches missing env coverage', () => {
   assert.ok(result.missing.includes('VITE_API_URL'));
   assert.ok(result.missing.includes('VITE_APP_URL'));
   assert.ok(result.missing.length > 0);
+});
+
+test('short/heading names fall back to the app name in generated env', () => {
+  const output = generateEnv({config: sampleConfig, platform: 'apps'});
+
+  assert.match(output, /VITE_APP_NAME=FAIMS/);
+  assert.match(output, /VITE_APP_SHORT_NAME=FAIMS/);
+  assert.match(output, /VITE_HEADING_APP_NAME=FAIMS/);
+});
+
+// Golden round trip: a config's generated env must parse back to the same
+// canonical values. This is the guarantee the typed chain relies on.
+test('parseGeneratedEnv(buildEnvMapFromRuntime(config)) reproduces canonical values', () => {
+  const config: SharedBuildConfig = {
+    ...sampleConfig,
+    endpoints: {
+      webUrl: 'https://web.example.org',
+      apiUrl: 'https://api.example.org',
+      appUrl: 'https://app.example.org',
+      conductorUrls: ['https://api.example.org', 'https://api2.example.org'],
+      redirectWhitelist: ['https://web.example.org'],
+    },
+    branding: {appName: 'Fieldmark', theme: 'fieldmark'},
+    support: {appContactUrl: 'https://example.org/contact'},
+    notebookAndRecordUX: {navigation: 'breadcrumbs', showNewNotebook: false},
+    maps: {mapSource: 'maptiler', satelliteSource: 'esri', offlineMaps: false},
+    sync: {forceRemoteDeletion: 'allow', deleteOnDeactivation: true},
+    attachments: {attachmentDocumentIdPrefix: 'fieldmark'},
+    auth: {clusterAdminGroupName: 'admins'},
+    // disableLocalLogin is api-only (DISABLE_LOCAL_LOGIN) and is not part of
+    // the apps env round trip.
+    authTokens: {longLivedTokenDurationHints: [1, 30], maximumLongLivedDurationDays: 90},
+    teamAndRolePolicy: {excludedTeamRoles: ['TEAM_ADMIN']},
+    android: {appId: 'org.example.app'},
+    ios: {
+      bundleIdentifier: 'org.example.app.ios',
+      appStoreConnectTeamId: 'TEAM123',
+      matchGitUrl: 'https://github.com/example/match.git',
+    },
+  };
+
+  const env = generateEnv({config, platform: 'apps', includeEmpty: true});
+  const lines = env
+    .split('\n')
+    .filter(line => line.includes('='))
+    .map(line => line.split('='));
+  const raw: Record<string, unknown> = {};
+  for (const [key, value] of lines) raw[key] = value;
+
+  const parsed = parseGeneratedEnv(raw);
+
+  assert.equal(parsed.branding.appName, 'Fieldmark');
+  // Unset short/heading names are emitted with the appName fallback (ADR-0001
+  // D4), so the round trip recovers the fallback, not the blank.
+  assert.equal(parsed.branding.appShortName, 'Fieldmark');
+  assert.equal(parsed.branding.headingAppName, 'Fieldmark');
+  assert.equal(parsed.branding.theme, 'fieldmark');
+  assert.deepEqual(parsed.endpoints.conductorUrls, [
+    'https://api.example.org',
+    'https://api2.example.org',
+  ]);
+  // REDIRECT_WHITELIST is only emitted on the api platform (no app/web
+  // consumer), so it is absent from the apps env and parses as undefined.
+  assert.equal(parsed.support.appContactUrl, 'https://example.org/contact');
+  assert.equal(parsed.notebookAndRecordUX.navigation, 'breadcrumbs');
+  assert.equal(parsed.notebookAndRecordUX.showNewNotebook, false);
+  assert.equal(parsed.maps.mapSource, 'maptiler');
+  assert.equal(parsed.maps.satelliteSource, 'esri');
+  assert.equal(parsed.maps.offlineMaps, false);
+  assert.equal(parsed.sync.forceRemoteDeletion, 'allow');
+  assert.equal(parsed.sync.deleteOnDeactivation, true);
+  assert.equal(parsed.attachments.attachmentDocumentIdPrefix, 'fieldmark');
+  assert.equal(parsed.auth.clusterAdminGroupName, 'admins');
+  assert.deepEqual(parsed.authTokens.longLivedTokenDurationHints, [1, 30]);
+  assert.equal(parsed.authTokens.maximumLongLivedDurationDays, 90);
+  assert.deepEqual(parsed.teamAndRolePolicy.excludedTeamRoles, ['TEAM_ADMIN']);
+  assert.equal(parsed.android.appId, 'org.example.app');
+  assert.equal(parsed.ios.bundleIdentifier, 'org.example.app.ios');
+  assert.equal(parsed.ios.appStoreConnectTeamId, 'TEAM123');
+});
+
+// Same golden test for the API platform (api contract + auth provider env).
+test('parseGeneratedEnv round-trips API platform values', () => {
+  const config: SharedBuildConfig = {
+    ...sampleConfig,
+    endpoints: {
+      apiUrl: 'https://api.example.org',
+      webUrl: 'https://web.example.org',
+      appUrl: 'https://app.example.org',
+    },
+    branding: {
+      appName: 'Fieldmark',
+      conductorInstanceName: 'Example Conductor',
+      conductorDescription: 'An example',
+      conductorShortCodePrefix: 'EXM',
+    },
+    auth: {
+      profileName: 'prod',
+      keySource: 'FILE',
+      disableLocalLogin: true,
+      provisionSsoUsersPolicy: 'own-team',
+    },
+    authProviders: {
+      google: {
+        id: 'google',
+        type: 'google',
+        displayName: 'Google',
+        scope: ['profile', 'email'],
+        clientID: 'cid',
+        clientSecret: 'cs',
+      },
+    },
+    authTokens: {refreshTokenExpiryMinutes: 1440, accessTokenExpiryMinutes: 60},
+    limits: {rateLimiterEnabled: false, jsonBodyLimit: '50mb'},
+    email: {emailServiceType: 'MOCK'},
+    couchdb: {couchdbUser: 'admin', couchdbPassword: 'pw', conductorInternalPort: 8080},
+  };
+
+  const env = generateEnv({config, platform: 'api', includeEmpty: true});
+  const raw: Record<string, unknown> = {};
+  for (const line of env.split('\n')) {
+    if (!line.includes('=')) continue;
+    const idx = line.indexOf('=');
+    raw[line.slice(0, idx)] = line.slice(idx + 1);
+  }
+
+  // API env is not currently parsed back through parseGeneratedEnv (it targets
+  // the app/web VITE_ chain); assert the emitted contract values instead.
+  assert.equal(raw.CONDUCTOR_PUBLIC_URL, 'https://api.example.org');
+  assert.equal(raw.WEB_APP_PUBLIC_URL, 'https://app.example.org');
+  assert.equal(raw.NEW_CONDUCTOR_URL, 'https://web.example.org');
+  assert.equal(raw.PROFILE_NAME, 'prod');
+  assert.equal(raw.DISABLE_LOCAL_LOGIN, 'true');
+  assert.equal(raw.PROVISION_SSO_USERS_POLICY, 'own-team');
+  assert.equal(raw.AUTH_GOOGLE_CLIENT_ID, 'cid');
+  assert.equal(raw.REFRESH_TOKEN_EXPIRY_MINUTES, '1440');
+  assert.equal(raw.ACCESS_TOKEN_EXPIRY_MINUTES, '60');
+  assert.equal(raw.RATE_LIMITER_ENABLED, 'false');
+  assert.equal(raw.JSON_BODY_LIMIT, '50mb');
+  assert.equal(raw.EMAIL_SERVICE_TYPE, 'MOCK');
+  assert.equal(raw.CONDUCTOR_INTERNAL_PORT, '8080');
+  assert.equal(raw.CONDUCTOR_SHORT_CODE_PREFIX, 'EXM');
+});
+
+// The mobile CI workflows pass --platform android / --platform ios.
+test('generateBuildConfig accepts android and ios platform aliases', () => {
+  const configPath = fs.mkdtempSync(path.join(os.tmpdir(), 'build-config-'));
+  const configJson = path.join(configPath, 'config.json');
+  fs.writeFileSync(configJson, JSON.stringify(sampleConfig), 'utf8');
+
+  try {
+    const android = generateBuildConfig({config: configJson, platform: 'android'}, process.cwd());
+    const ios = generateBuildConfig({config: configJson, platform: 'ios'}, process.cwd());
+    const apps = generateBuildConfig({config: configJson, platform: 'apps'}, process.cwd());
+
+    assert.match(android, /VITE_APP_NAME=/);
+    assert.match(android, /ANDROID_RELEASE_STATUS/);
+    assert.match(ios, /VITE_APPLE_BUNDLE_IDENTIFIER=/);
+    assert.equal(android, apps);
+    assert.equal(ios, apps);
+
+    assert.throws(
+      () => generateBuildConfig({config: configJson, platform: 'web'}, process.cwd()),
+      /Unsupported platform: web/,
+    );
+  } finally {
+    fs.rmSync(configPath, {recursive: true, force: true});
+  }
 });
 
 test('schema rejects unknown top-level keys', () => {
