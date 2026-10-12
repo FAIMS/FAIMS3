@@ -57,13 +57,15 @@ Key design idea:
 
 ## Runtime Shape
 
-The runtime config exported by this module is namespaced for semantic consistency:
+The runtime config (`RuntimeConfig`) is a single, fully-populated object
+namespaced into the same thematic top-level groups as the input JSON
+(see [Input Shape](#input-shape-grouped)). Every field that has a default is
+always present in the parsed result; genuinely-optional fields (e.g.
+`bugsnagApiKey`, `satelliteSource`, `appShortName`) are `| undefined`.
 
-- shared: cross-application semantics (urls, branding, maps, support, observability, deletion policy)
-- app: mobile app specific behavior
-- web: control centre specific behavior
-- mobile: platform build metadata (android/ios)
-- api: reserved server-target section (currently minimal in this package)
+All three consumers (`app`, `web`, `api`) read their values from this one object
+via `parseGeneratedEnv`, and each keeps only its own runtime-specific derivation
+local (see [Migration status](#migration-status)).
 
 See definitions in [src/build-config.ts](src/build-config.ts).
 
@@ -107,9 +109,9 @@ Validation is intentionally strict (see [ADR-0001](docs/adr-0001-phase0-config-p
 - Environment parsing rejects invalid booleans, integers, and enums (fail, do not warn-and-default).
 - Required values must be present or defaults must be declared.
 
-This catches typo and drift early during CI/build. The apps keep their own lenient
-`configHelpers` schemas for hand-edited local `.env` until cutover; the strict
-shared parsers are exercised only on generator-produced env.
+This catches typo and drift early during CI/build. All three consumers now parse
+their env through this module's strict parsers; the apps no longer keep their
+own lenient `configHelpers` schemas.
 
 ## How To Add A New Configuration Option
 
@@ -155,39 +157,40 @@ Use this sequence every time.
 
 ## Using This Config In Different Apps
 
-This package is intended to provide one typed source that each target consumes.
-
-Current practical usage pattern:
+This package is the single typed source that every target consumes.
 
 1. Build pipeline / CI
 
 - Generate env from JSON with [src/generate-build-config.ts](src/generate-build-config.ts).
-- Feed generated env into platform/web build processes.
+- Feed generated env into the platform/web/api build processes.
 
 1. Runtime parsing
 
-- Use parseGeneratedEnv in [src/build-config.ts](src/build-config.ts) for typed env-to-runtime parsing in module-level tests and tooling.
-- App/web/api migration can progressively replace local duplicated parser logic with this package.
+- `app` and `web` call `parseGeneratedEnv(import.meta.env)`;
+  `api` calls `parseGeneratedEnv(process.env)`. Each then reads the
+  target-relevant sections of the resulting `RuntimeConfig`.
 
-1. App-specific consumption
+## Migration status
 
-- App, web, and api should read their target-relevant sections from the namespaced runtime object.
-- Shared behavior should always be read from shared namespace to avoid drift.
+All three consumers have been migrated off their local `EnvSchema` parsers and
+now source their config from this module:
 
-## Migration Guidance
+- `app` — [app/src/buildconfig.ts](../../app/src/buildconfig.ts) keeps app-only
+  derivation local (paired directory credentials, the MapTiler key fallback,
+  the aggregated `mapConfig`, pluralised notebook names, `runningUnderTest`,
+  the `__APP_VERSION__` inject).
+- `web` — [web/src/constants.ts](../../web/src/constants.ts) and
+  [web/src/designer/buildconfig.ts](../../web/src/designer/buildconfig.ts) keep
+  web-only derivation local (pluralised notebook names, derived URLs, the
+  aggregated `mapConfig`, team-role filtering).
+- `api` — [api/src/buildconfig.ts](../../api/src/buildconfig.ts) keeps
+  server-only runtime values local (signing-key identity, key-file existence
+  check, cookie-secret generation, local CouchDB auth, the AWS-SM ARN check,
+  the URL-validated redirect whitelist, `runningUnderTest` overrides, and the
+  SMTP/email resolution).
 
-When migrating an app to use this module directly:
-
-1. Preserve existing env key compatibility first.
-2. Replace local defaults with canonical defaults from this package.
-3. Move app code to consume namespaced runtime sections.
-4. Delete duplicated local schema logic only after parity tests pass.
-
-Useful reference files in the main repo:
-
-- App local parser today: [../../app/src/buildconfig.ts](../../app/src/buildconfig.ts)
-- Web local parser today: [../../web/src/constants.ts](../../web/src/constants.ts)
-- API local parser today: [../../api/src/buildconfig.ts](../../api/src/buildconfig.ts)
+Each consumer preserves its public `config` shape, so only `buildconfig.ts` /
+`constants.ts` changed; no consumer components were touched.
 
 ## Scripts
 

@@ -174,6 +174,13 @@ other spelling (and the web was migrated in the same change):
 api-platform key whose value is the web URL, and renaming it is deferred to the
 api cutover.)
 
-## Open / deferred
+## Status / deferred
 
-- (fill in if any D was changed or deferred during review)
+- The D1–D7 policies are implemented, and all three consumers (`app`, `web`,
+  `api`) have been migrated to parse their env via this module (see the module
+  README "Migration status").
+- Deferred: renaming `NEW_CONDUCTOR_URL` (it is an api key whose value is the web
+  URL). The `VITE_*` env key names are otherwise preserved for compatibility;
+  further dedup (e.g. the `VITE_BUGSNAG_KEY`/`VITE_BUGSNAG_API_KEY` and
+  `VITE_THEME`/`VITE_APP_THEME` pairs were already collapsed in D7) can be done
+  post-migration now that the module owns both ends.

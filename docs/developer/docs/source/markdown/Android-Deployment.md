@@ -60,13 +60,13 @@ follow the prompts. This will get you to generate a new keystore file, key name
 and password. Make a note of these, we'll create repository secrets for them on
 Github:
 
-- `mobile.android.keystoreFileBase64` in `build-secrets.enc.json` - java key
+- `android.keystoreFileBase64` in `build-secrets.enc.json` - java key
   store file, base64 encoded
-- `mobile.android.keystorePassword` in `build-secrets.enc.json` - password for
+- `android.keystorePassword` in `build-secrets.enc.json` - password for
   the Java keystore
-- `mobile.android.keyAlias` in `build-secrets.enc.json` - key alias for the
+- `android.keyAlias` in `build-secrets.enc.json` - key alias for the
   Java keystore
-- `mobile.android.keyPassword` in `build-secrets.enc.json` - key password for
+- `android.keyPassword` in `build-secrets.enc.json` - key password for
   the Java keystore
 
 Complete the build and you should have an `app-release.aab` file that you can
@@ -179,8 +179,8 @@ or
 base64 bushfiresurveyorsystemdeploy-63a8de61b6fb.json > gplay_key.txt
 ```
 
-Copy the encoded values into `mobile.android.keystoreFileBase64` and
-`mobile.android.serviceAccountKeyJsonBase64` in `build-secrets.enc.json`.
+Copy the encoded values into `android.keystoreFileBase64` and
+`android.serviceAccountKeyJsonBase64` in `build-secrets.enc.json`.
 
 For the complete JSON field-to-env mapping used by the generator, see [Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md).
 
