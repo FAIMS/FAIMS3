@@ -15,7 +15,7 @@
     "build-aws": "pnpm --filter=aws-cdk run build",
     "package-aws": "pnpm --filter=aws-cdk run package",
     "test-app": "pnpm --filter=app test",
-    "serve-app": "pnpm --filter=app run serve",
+    "serve-app": "pnpm run build-app && pnpm --filter=app run serve",
     "start": "pnpm --filter=api --filter=app start",
     "start-api": "pnpm --filter=api start",
     "start-app": "pnpm --filter=app start",
