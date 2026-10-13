@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import {Theme} from '@mui/material/styles';
+import {alpha, Theme} from '@mui/material/styles';
 
 export const buildSharedComponentOverrides = (theme: Theme) => ({
   MuiDataGrid: {
@@ -221,6 +221,64 @@ export const buildSharedComponentOverrides = (theme: Theme) => ({
     styleOverrides: {
       displayedRows: {
         fontWeight: 600,
+      },
+    },
+  },
+  MuiTimeline: {
+    styleOverrides: {
+      root: {
+        '&.faims-recordHistory-timeline': {
+          padding: 0,
+          margin: 0,
+          '& .MuiTimelineItem-root': {
+            minHeight: 0,
+            '&::before': {
+              display: 'none',
+            },
+          },
+          '& .MuiTimelineItem-root:not(:last-child):not(.faims-recordHistory-date):not(:has(+ .faims-recordHistory-date)) .MuiTimelineContent-root':
+            {
+              position: 'relative',
+              paddingBottom: theme.spacing(1.5),
+              marginBottom: theme.spacing(1.5),
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                // Start under the title, not the rail (10px) / gap / icon well.
+                left: `calc(10px + ${theme.spacing(2)} + 40px + ${theme.spacing(1.5)})`,
+                right: theme.spacing(8),
+                bottom: 0,
+                height: 1,
+                pointerEvents: 'none',
+                background: `linear-gradient(90deg, transparent, ${alpha(theme.palette.text.primary, 0.1)} 16%, ${alpha(theme.palette.text.primary, 0.1)} 84%, transparent)`,
+              },
+            },
+          '& .MuiTimelineContent-root': {
+            padding: 0,
+            flex: 1,
+            minWidth: 0,
+            width: '100%',
+          },
+          '& .faims-recordHistory-date .MuiTimelineContent-root': {
+            padding: theme.spacing(0, 0, 1, 0),
+          },
+          '& .faims-recordHistory-date:not(:first-child) .MuiTimelineContent-root':
+            {
+              position: 'relative',
+              paddingTop: theme.spacing(2.5),
+              marginTop: theme.spacing(2.5),
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                left: 0,
+                right: theme.spacing(1),
+                top: 0,
+                height: 2,
+                pointerEvents: 'none',
+                background: `linear-gradient(90deg, transparent, ${alpha(theme.palette.text.primary, 0.28)} 6%, ${alpha(theme.palette.text.primary, 0.28)} 94%, transparent)`,
+              },
+            },
+        },
       },
     },
   },
