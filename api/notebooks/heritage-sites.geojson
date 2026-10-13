@@ -1,0 +1,93 @@
+{
+  "type": "FeatureCollection",
+  "name": "heritage-sites",
+  "description": "Point register for the heritage-site-inspection.json MapCollection plan (spatial field: Site-Location). Property keys match uiSpec field IDs; unknown keys (surveyor, register_url) are ignored by the importer. HS-007 is a MultiPoint and is exploded into two planned records.",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "Site-Code": "HS-001",
+        "Site-Name": "Lane Cove weir scatter",
+        "Site-Type": "Artefact scatter",
+        "Priority": 1,
+        "surveyor": "Register import 2026"
+      },
+      "geometry": {"type": "Point", "coordinates": [151.1512, -33.7861]}
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Site-Code": "HS-002",
+        "Site-Name": "Fairyland shelter",
+        "Site-Type": "Rock shelter",
+        "Priority": 2
+      },
+      "geometry": {"type": "Point", "coordinates": [151.1443, -33.7935]}
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Site-Code": "HS-003",
+        "Site-Name": "Whale Rock engraving",
+        "Site-Type": "Stone arrangement",
+        "Priority": "3",
+        "register_url": "https://example.org/register/HS-003"
+      },
+      "geometry": {"type": "Point", "coordinates": [151.1367, -33.7799]}
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Site-Code": "HS-004",
+        "Site-Type": "Scarred tree",
+        "Priority": 4
+      },
+      "geometry": {"type": "Point", "coordinates": [151.1291, -33.7724]}
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Site-Code": "HS-005",
+        "Site-Name": "Riverview Road ruin",
+        "Site-Type": "Historic structure",
+        "Priority": 2
+      },
+      "geometry": {"type": "Point", "coordinates": [151.1584, -33.7998]}
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Site-Code": "HS-006",
+        "Site-Name": "Buffalo Creek midden",
+        "Site-Type": "Artefact scatter",
+        "Priority": 5
+      },
+      "geometry": {"type": "Point", "coordinates": [151.1235, -33.8032]}
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Site-Code": "HS-007",
+        "Site-Name": "Tunks Park grinding grooves",
+        "Site-Type": "Stone arrangement",
+        "Priority": 3
+      },
+      "geometry": {
+        "type": "MultiPoint",
+        "coordinates": [
+          [151.1729, -33.8121],
+          [151.1741, -33.8115]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Site-Code": "HS-008",
+        "Site-Name": "Magdala Park shelter",
+        "Site-Type": "Rock shelter"
+      },
+      "geometry": {"type": "Point", "coordinates": [151.1188, -33.7883]}
+    }
+  ]
+}

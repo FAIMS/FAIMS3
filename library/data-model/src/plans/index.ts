@@ -5,5 +5,8 @@ export * from './builtins';
 export * from './countedPlan';
 export * from './listOfRecordsPlan';
 export * from './listOfFormsPlan';
+export * from './planGeoJson';
+export * from './mapCollectionPlan';
+export * from './spatialImport';
 export * from './planTypeMap';
 export * from './notebookPlans';

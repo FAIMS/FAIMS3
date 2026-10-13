@@ -1,0 +1,46 @@
+{
+  "type": "FeatureCollection",
+  "name": "heritage-sites-invalid",
+  "description": "Deliberately broken register for exercising MapCollection import errors against heritage-site-inspection.json (spatial field Site-Location, Site-Code required). Feature 0 is valid; 1 lacks the required Site-Code; 2 has a LineString where a Point is required; 3 has a non-numeric Priority; 4 has a null geometry.",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "Site-Code": "HS-201",
+        "Site-Name": "Valid control point",
+        "Priority": 1
+      },
+      "geometry": {"type": "Point", "coordinates": [151.15, -33.79]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"Site-Name": "Missing site code", "Priority": 2},
+      "geometry": {"type": "Point", "coordinates": [151.151, -33.791]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"Site-Code": "HS-203", "Site-Name": "Wrong geometry type"},
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [151.152, -33.792],
+          [151.153, -33.793]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "Site-Code": "HS-204",
+        "Site-Name": "Bad priority",
+        "Priority": "high"
+      },
+      "geometry": {"type": "Point", "coordinates": [151.154, -33.794]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"Site-Code": "HS-205", "Site-Name": "No geometry"},
+      "geometry": null
+    }
+  ]
+}

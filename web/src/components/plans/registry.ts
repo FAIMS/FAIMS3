@@ -10,9 +10,11 @@ import {
   COUNTED_PLAN_TYPE,
   LIST_OF_FORMS_PLAN_TYPE,
   LIST_OF_RECORDS_PLAN_TYPE,
+  MAP_COLLECTION_PLAN_TYPE,
 } from '@faims3/data-model';
 import {countedPlanConfig, countedPlanFields} from './countedPlanFields';
 import {ListOfRecordsPlanConfigForm} from './ListOfRecordsPlanConfigForm';
+import {MapCollectionPlanConfigForm} from './MapCollectionPlanConfigForm';
 import type {PlanConfigType} from './types';
 
 export * from './types';
@@ -55,6 +57,11 @@ const builtInPlanConfigTypes: PlanConfigType[] = [
     // The forms are fixed by the template, so there is nothing to ask for
     fields: () => [],
     toConfig: () => ({}),
+  },
+  {
+    planType: MAP_COLLECTION_PLAN_TYPE,
+    label: 'Map Collection',
+    ConfigForm: MapCollectionPlanConfigForm,
   },
 ];
 
