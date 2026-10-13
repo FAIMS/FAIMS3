@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {FieldMeta, FormAnnotation, INPUT_LIMITS} from '@faims3/data-model';
 import NoteIcon from '@mui/icons-material/Note';
 import {

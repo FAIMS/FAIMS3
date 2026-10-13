@@ -9,6 +9,12 @@ export default defineConfig({
     tanstackRouter({
       target: 'react',
       autoCodeSplitting: true,
+      routeTreeFileHeader: [
+        '// SPDX-License-Identifier: Apache-2.0',
+        '/* eslint-disable */',
+        '// @ts-nocheck',
+        '// noinspection JSUnusedGlobalSymbols',
+      ],
     }),
     react(),
   ],
@@ -19,7 +25,13 @@ export default defineConfig({
   server: {
     port: 3001,
     host: true,
+    // Fail rather than drift to 3002, which the env files' 3001 URLs would miss.
+    strictPort: true,
     fs: {allow: ['..']},
+  },
+  // Same port when serving the build, so CI and the dev stack agree.
+  preview: {
+    port: 3001,
   },
   optimizeDeps: {
     include: [

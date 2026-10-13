@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {useRequiredUser} from '@/hooks/auth-hooks';
 import {
   GetListAllUsersItem,

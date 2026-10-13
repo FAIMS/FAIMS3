@@ -21,24 +21,27 @@ Each **project** or **template** document has two layers:
 
 Types live in `@faims3/data-model`:
 
-- `library/data-model/src/data_storage/projectsDB/types.ts` — projects DB v4
-- `library/data-model/src/data_storage/templatesDB/types.ts` — templates DB v5
+- `library/data-model/src/data_storage/projectsDB/types.ts` — projects DB v5
+- `library/data-model/src/data_storage/templatesDB/types.ts` — templates DB v6
 - `library/data-model/src/uiSpecification/types.ts` — `NotebookDefinition`, `NotebookUiSpec`, partitions
+- `library/data-model/src/uiSpecification/uiSpecProperties.ts` — listing digest (`schemaVersion` + hash)
 
 ### Project (survey) root fields
 
-| Field                    | Purpose                                                                                                                                 |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `_id`                    | Stable survey id (also used as `data-{id}` suffix)                                                                                      |
-| `name`                   | Display title                                                                                                                           |
-| `description` (optional) | Short operational blurb (listings, Control Centre), max **250** characters when set — **not** the long design prose (`purposeMarkdown`) |
-| `status`                 | `OPEN` \| `CLOSED` \| `ARCHIVED`                                                                                                        |
-| `dataDb`                 | Connection to `data-{id}`                                                                                                               |
-| `templateId`             | Source template when created from a template                                                                                            |
-| `ownedByTeamId`          | Owning team                                                                                                                             |
-| `createdBy`              | People DB user id of whoever created the survey                                                                                         |
-| `createdAt`, `updatedAt` | ISO-8601 audit timestamps                                                                                                               |
-| `uiSpecification`        | Full design bundle (see below)                                                                                                          |
+| Field                    | Purpose                                                                                                                                                  |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `_id`                    | Stable survey id (also used as `data-{id}` suffix)                                                                                                       |
+| `name`                   | Display title                                                                                                                                            |
+| `description` (optional) | Short operational blurb (listings, Control Centre), max **250** characters when set — **not** the long design prose (`purposeMarkdown`)                  |
+| `status`                 | `OPEN` \| `CLOSED` \| `ARCHIVED`                                                                                                                         |
+| `dataDb`                 | Connection to `data-{id}`                                                                                                                                |
+| `templateId`             | Source template when created from a template                                                                                                             |
+| `ownedByTeamId`          | Owning team                                                                                                                                              |
+| `createdBy`              | People DB user id of whoever created the survey                                                                                                          |
+| `createdAt`, `updatedAt` | ISO-8601 audit timestamps                                                                                                                                |
+| `disableQuickShare`      | Optional. When `true`, the field app hides Quick Share and creation is refused. Omitted or `false` leaves it available. See [Quick share](#quick-share). |
+| `uiSpecification`        | Full design bundle (see below)                                                                                                                           |
+| `uiSpecProperties`       | Digest of the stored design (`schemaVersion` + SHA-256 hash) so listings can omit `uiSpecification`                                                      |
 
 **Removed from the project document:** `metadataDb` (projects DB v4 migration inlines the former metadata database).
 
@@ -81,14 +84,15 @@ Step-by-step rollout (Couch migrate, validation, deleting `metadata-*` DBs, when
 
 ## API surfaces
 
-| Operation            | Route                                    | Body                                                                                   |
-| -------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------- |
-| Get full survey      | `GET /api/notebooks/:id`                 | Full `ProjectDocument` (+ optional `recordCount`)                                      |
-| List surveys         | `GET /api/notebooks`                     | `ProjectListItem` (no `uiSpecification`)                                               |
-| Update title / blurb | `PUT /api/notebooks/:id`                 | `{ name?, description? }` partial; `UPDATE_PROJECT_DETAILS`                            |
-| Replace design       | `PUT /api/notebooks/:id/uiSpecification` | Loose JSON; server runs `migrateNotebook` + strict validation; `UPDATE_PROJECT_UISPEC` |
-| Create from scratch  | `POST /api/notebooks`                    | `{ name, description?, uiSpecification, teamId? }`                                     |
-| Create from template | `POST /api/notebooks`                    | `{ name, description?, template_id, teamId? }`                                         |
+| Operation            | Route                                    | Body                                                                                           |
+| -------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Get full survey      | `GET /api/notebooks/:id`                 | Full `ProjectDocument` (+ optional `recordCount`)                                              |
+| List surveys         | `GET /api/notebooks`                     | Lean `ProjectListItem` (no `uiSpecification`). Pass `includeByteCount=true` for storage sizes. |
+| Device directory     | `GET /api/directory`                     | Cheap alias of the notebooks list (no `byteCount`)                                             |
+| Update title / blurb | `PUT /api/notebooks/:id`                 | `{ name?, description?, disableQuickShare? }` partial; `UPDATE_PROJECT_DETAILS`                |
+| Replace design       | `PUT /api/notebooks/:id/uiSpecification` | Loose JSON; server runs `migrateNotebook` + strict validation; `UPDATE_PROJECT_UISPEC`         |
+| Create from scratch  | `POST /api/notebooks`                    | `{ name, description?, uiSpecification, teamId? }`                                             |
+| Create from template | `POST /api/notebooks`                    | `{ name, description?, template_id, teamId? }`                                                 |
 
 Templates mirror this: `PUT /api/templates/:id` for optional `name` / `description`, `PUT /api/templates/:id/uiSpecification` for the design bundle. **Create:** `POST /api/templates` with `{ name, description?, uiSpecification, teamId?, isPublic? }`.
 
@@ -97,6 +101,18 @@ Templates mirror this: `PUT /api/templates/:id` for optional `name` / `descripti
 - **Optional** on create and in persisted documents (`ProjectDBFieldsSchema` / `TemplateDBFieldsSchema` via `PersistedRootDescriptionSchema` in `library/data-model/src/data_storage/rootMetadata.ts`).
 - When provided: trimmed, max **250** characters (`ROOT_DESCRIPTION_MAX_LENGTH`).
 - Omitted or whitespace-only on create → field is not stored (not copied from a template, source survey, or a root `description` key in an uploaded design JSON file).
+
+## Quick share
+
+`POST /api/invites/notebook/:projectId/quick-share` creates one survey invite from the field app. The caller must be authenticated. The body is `{ role }`.
+
+- **`role`** — a survey role. Permission matches creating a notebook invite for that same role.
+
+The code always lasts one hour (`DEFAULT_QUICK_SHARE_LIFETIME_MS` in `library/data-model/src/inviteCode.ts`). The request body cannot choose a duration. The document is a normal project invite (`kind: 'quick-share'`, name `Quick share`) with unlimited uses until `expiry`. Scanning and redemption use the existing invite path. The request has to reach the server.
+
+One live Quick Share per person per survey. A second create returns that code when the caller can still create its role, and does not mint another beside it.
+
+**`disableQuickShare`** is the admin switch. It is an optional boolean on the project root, not part of `uiSpecification`, so it does not travel with a design JSON upload. Set it with `PUT /api/notebooks/:id` and `{ "disableQuickShare": true }` (`UPDATE_PROJECT_DETAILS`). That request does not migrate the notebook schema. `true` makes this POST return 403 and the field app hides Share. Omitted or `false` leaves Quick Share available. Turning the flag on does not delete a code that already exists. Remove one with `DELETE /api/invites/notebook/:projectId/:inviteId`.
 
 ### JSON file upload / export
 
@@ -132,8 +148,9 @@ Legacy exports with top-level `metadata` + `ui-specification` (kebab-case, `fvie
 1. **Notebook JSON** (`migrateNotebook` in `notebookMigrations/runner.ts`): a typed harness (registry + path finder + per-step migrate/validate) that brings any document up to **`CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`**. All pre-semver shapes collapse in one `legacy → 1.0.0` step. See [Notebook migrations](./NotebookMigrations.md).
 2. **Projects DB** (`projectsV3toV4Migration`): reads legacy metadata DB + project doc, builds `uiSpecification`, adds root `description` (when derivable from legacy metadata) / audit fields, removes `metadataDb`.
 3. **Templates DB** — analogous template v4 → v5 migration.
+4. **Listing digest** (`projectsV4toV5Migration` / `templatesV5toV6Migration`): adds mandatory `uiSpecProperties` so listings can omit `uiSpecification`.
 
-API startup always runs notebook migrations when validating databases.
+API startup always runs notebook migrations when validating databases (projects and templates).
 
 After all projects are on v4 with inlined specs, operators can remove orphaned Couch databases:
 
@@ -146,7 +163,7 @@ See `api/src/scripts/deleteMetadataDatabases.ts`.
 ## Designer and mobile app
 
 - **Designer** (`web/src/designer`): Redux state is a `NotebookDefinition`; save goes through `PUT …/uiSpecification`. Info panel edits `metadata.information` and `uiSpec.settings`.
-- **Mobile app**: loads `uiSpecification` from the synced project document; local Redux persist may run `projectsPersistMigration` for cached legacy shapes.
+- **Mobile app**: listing uses `uiSpecProperties` from `GET /api/directory`; the full `uiSpecification` is fetched on activation or when the directory hash changes. Local Redux persist may run `projectsPersistMigration` for cached legacy shapes.
 
 ## Related docs
 

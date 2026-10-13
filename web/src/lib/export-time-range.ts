@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /** Shared inclusive datetime-local → exclusive export query bounds. */
 
 export type ExportTimeRangeState = {

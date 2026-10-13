@@ -1,16 +1,15 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Field, Form} from '@/components/form';
-import {userCanDo, useRequiredUser} from '@/hooks/auth-hooks';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {
   INPUT_LIMITS,
   MAX_INVITE_EXPIRY_DAYS,
   DEFAULT_INVITE_EXPIRY_DAYS,
   PostCreateInviteInput,
-  projectInviteToAction,
-  Resource,
+  projectRolesUserCanInvite,
   Role,
   roleDetails,
-  RoleScope,
 } from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useMemo, useState} from 'react';
@@ -40,31 +39,21 @@ export function CreateProjectInviteForm({
   );
 
   const roleOptions = useMemo(() => {
-    return Object.entries(roleDetails)
-      .filter(
-        ([role, {scope, resource}]) =>
-          scope === RoleScope.RESOURCE_SPECIFIC &&
-          resource === Resource.PROJECT &&
-          userCanDo({
-            user,
-            resourceId: projectId,
-            action: projectInviteToAction({
-              action: 'create',
-              role: role as Role,
-            }),
-          })
-      )
-      .sort(
-        ([a], [b]) =>
-          (roleDetails[a as Role].order ?? 0) -
-          (roleDetails[b as Role].order ?? 0)
-      )
-      .map(([value, {name: label, description}]) => ({
+    if (!user.decodedToken) {
+      return [];
+    }
+    return projectRolesUserCanInvite({
+      decodedToken: user.decodedToken,
+      resourceId: projectId,
+    }).map(role => {
+      const {name: label, description} = roleDetails[role];
+      return {
         label,
-        value,
+        value: role,
         description: brandNotebook(description),
-      }));
-  }, [user, projectId]);
+      };
+    });
+  }, [user.decodedToken, projectId]);
 
   const fields: Field[] = [
     {

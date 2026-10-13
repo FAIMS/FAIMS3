@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {AddProjectToTeamDialog} from '@/components/dialogs/add-project-to-team-dialog';
 import {ArchiveProjectDialog} from '@/components/dialogs/archive-project-dialog';
 import {ProjectStatusDialog} from '@/components/dialogs/change-project-status-dialog';
@@ -6,9 +7,11 @@ import {DesignerDialog} from '@/components/dialogs/designer-dialog';
 import {EditProjectDetailsDialog} from '@/components/dialogs/edit-project-details-dialog';
 import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
 import {GenerateTestRecordsDialog} from '@/components/dialogs/generate-test-records-dialog';
+import {ProjectQuickShareSetting} from '@/components/tabs/project/quick-share-setting';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
+import {Spinner} from '@/components/ui/spinner';
 import {config} from '@/constants';
 import {
   toDesignerNotebookWithHistory,
@@ -107,6 +110,9 @@ const ProjectActions = (): JSX.Element => {
     resourceId: projectId,
   });
 
+  // Prevent reopening the editor while the latest design is still saving.
+  const isProjectNotebookSaving = saveProjectNotebook.isPending;
+
   return (
     <>
       <div className="flex flex-col gap-2 justify-between">
@@ -150,6 +156,8 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
+        {canUpdateProjectDetails && <ProjectQuickShareSetting />}
+
         {canEditProject && (
           <Card className="flex-1">
             <List className="flex flex-col gap-2 space-y-0">
@@ -159,10 +167,19 @@ const ProjectActions = (): JSX.Element => {
               <ListItem>
                 <Button
                   variant="outline"
-                  disabled={isLoading || !initialNotebook}
+                  disabled={
+                    isLoading || !initialNotebook || isProjectNotebookSaving
+                  }
                   onClick={() => setEditorOpen(true)}
                 >
-                  Open in Editor
+                  {isProjectNotebookSaving ? (
+                    <span className="flex items-center gap-2">
+                      <Spinner className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </span>
+                  ) : (
+                    'Open in Editor'
+                  )}
                 </Button>
               </ListItem>
             </List>

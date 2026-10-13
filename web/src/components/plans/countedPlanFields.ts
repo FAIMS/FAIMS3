@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Counted plan config as form fields: how many records of the plan's
  * form are required, and whether extra records may be added.

@@ -1,22 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: couchdb.tests.ts
  * Description:
  *   Tests for the interface to couchDB
  */
+
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
@@ -25,7 +14,11 @@ PouchDB.plugin(PouchDBFind);
 import {
   Action,
   addProjectRole,
+  DatabaseType,
+  DB_TARGET_VERSIONS,
   FieldDefinition,
+  MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+  MigrationsDBDocument,
   removeProjectRole,
   resourceRoles,
   Role,
@@ -34,13 +27,18 @@ import {
 import {beforeEach, describe, expect, it} from 'vitest';
 import {upgradeCouchUserToExpressUser} from '../src/auth/keySigning/create';
 import {config} from '../src/buildconfig';
-import {getDirectoryDB, initialiseDbAndKeys} from '../src/couchdb';
+import {
+  getDirectoryDB,
+  getMigrationDb,
+  initialiseDbAndKeys,
+} from '../src/couchdb';
 import {
   createNotebook,
+  deleteNotebook,
   getUiSpecModel,
   getProjectById,
   getRolesForNotebook,
-  getUserProjectsDetailed,
+  getUserProjectsListing,
   updateProjectMetadata,
   updateProjectUiSpecification,
   validateNotebookID,
@@ -258,7 +256,7 @@ describe('notebook api', () => {
       // Update permissions
       bobalooba = await upgradeCouchUserToExpressUser({dbUser: bobalooba});
 
-      const notebooks = await getUserProjectsDetailed(bobalooba);
+      const notebooks = await getUserProjectsListing(bobalooba);
       expect(notebooks.length).toBe(2);
       for (const notebook of notebooks) {
         expect(notebook).not.toHaveProperty('uiSpecification');
@@ -280,7 +278,7 @@ describe('notebook api', () => {
     if (projectID && user) {
       expect(projectID.substring(13)).toBe('-test-notebook');
 
-      const notebooks = await getUserProjectsDetailed(user);
+      const notebooks = await getUserProjectsListing(user);
       expect(notebooks.length).toBe(1);
     }
   });
@@ -419,7 +417,7 @@ describe('notebook api', () => {
 
       expect(projectID.substring(13)).toBe('-test-notebook');
 
-      const notebooks = await getUserProjectsDetailed(user);
+      const notebooks = await getUserProjectsListing(user);
       expect(notebooks.length).toBe(1);
       const newUISpec = await getUiSpecModel(projectID);
       if (newUISpec) {
@@ -431,5 +429,62 @@ describe('notebook api', () => {
         project.uiSpecification.metadata.information.projectLeadLabel
       ).toBe('Bob Bobalooba');
     }
+  });
+
+  it('registers a new survey data DB at the current migration version', async () => {
+    const projectID = await createNotebook({
+      projectName: 'Migration Registered',
+      uiSpecification: EMPTY_UI_SPECIFICATION,
+      description: '',
+      createdBy: 'admin',
+    });
+    expect(projectID).toBeDefined();
+    if (!projectID) {
+      return;
+    }
+
+    const project = await getProjectById(projectID);
+    const dbName = project.dataDb?.db_name ?? `data-${projectID}`;
+    const migrationDocs = await getMigrationDb().query(
+      MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+      {
+        key: [DatabaseType.DATA, dbName],
+        include_docs: true,
+      }
+    );
+
+    expect(migrationDocs.rows).toHaveLength(1);
+    const migrationDoc = migrationDocs.rows[0].doc as MigrationsDBDocument;
+    expect(migrationDoc.version).toBe(
+      DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion
+    );
+    expect(migrationDoc.status).toBe('healthy');
+  });
+
+  it('removes the migration document when a survey is deleted', async () => {
+    const projectID = await createNotebook({
+      projectName: 'Migration Unregister',
+      uiSpecification: EMPTY_UI_SPECIFICATION,
+      description: '',
+      createdBy: 'admin',
+    });
+    expect(projectID).toBeDefined();
+    if (!projectID) {
+      return;
+    }
+
+    const project = await getProjectById(projectID);
+    const dbName = project.dataDb?.db_name ?? `data-${projectID}`;
+
+    await deleteNotebook(projectID);
+
+    const migrationDocs = await getMigrationDb().query(
+      MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+      {
+        key: [DatabaseType.DATA, dbName],
+        include_docs: true,
+      }
+    );
+    expect(migrationDocs.rows).toHaveLength(0);
   });
 });

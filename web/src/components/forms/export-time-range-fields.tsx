@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {DateTimeLocalInput} from '@/components/date-time-local-input';
 import {Checkbox} from '@/components/ui/checkbox';
 import {Label} from '@/components/ui/label';

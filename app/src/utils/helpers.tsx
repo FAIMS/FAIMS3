@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Input parameter checker to ensure all values are defined
  * @param vals Values to check

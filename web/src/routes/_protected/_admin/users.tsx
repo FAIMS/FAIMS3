@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import GlobalInvites from '@/components/tabs/admin/global-invites';
 import {UsersTab} from '@/components/tabs/admin/users';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';

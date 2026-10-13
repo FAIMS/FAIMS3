@@ -1,22 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: FaimsDialog.tsx
  * Description: FaimsDialog is a customizable dialog component that provides
  * a consistent layout for dialogs/popus across the application.
  */
+
 import React from 'react';
 import {
   Dialog,
@@ -40,6 +29,8 @@ type FaimsDialogProps = {
   onPrimaryAction: () => void;
   primaryActionText: string;
   primaryActionLoading?: boolean;
+  /** When true, the primary action is disabled even if it is not loading. */
+  primaryActionDisabled?: boolean;
   primaryActionColor?: 'primary' | 'secondary' | 'error';
   primaryActionVariant?: 'contained' | 'outlined';
   cancelButtonText?: string;
@@ -60,6 +51,7 @@ type FaimsDialogProps = {
  * @param {Function} onPrimaryAction - Callback function for the primary action button.
  * @param {string} primaryActionText - The text displayed on the primary action button.
  * @param {boolean} [primaryActionLoading=false] - Controls the loading state of the primary action button.
+ * @param {boolean} [primaryActionDisabled=false] - Disables the primary action independently of loading.
  * @param {'primary' | 'secondary' | 'error'} [primaryActionColor='primary'] - Color of the primary action button.
  * @param {'contained' | 'outlined'} [primaryActionVariant='contained'] - Variant of the primary action button.
  * @param {string} [cancelButtonText='Cancel'] - The text displayed on the cancel button.
@@ -74,6 +66,7 @@ export default function FaimsDialog({
   onPrimaryAction,
   primaryActionText,
   primaryActionLoading = false,
+  primaryActionDisabled = false,
   primaryActionColor = 'primary',
   primaryActionVariant = 'contained',
   cancelButtonText = 'Cancel',
@@ -107,7 +100,7 @@ export default function FaimsDialog({
           variant={primaryActionVariant}
           color={primaryActionColor}
           onClick={onPrimaryAction}
-          disabled={primaryActionLoading}
+          disabled={primaryActionLoading || primaryActionDisabled}
           data-testid={primaryActionTestId}
         >
           {primaryActionText}

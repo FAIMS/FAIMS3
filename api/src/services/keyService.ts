@@ -1,8 +1,17 @@
+// SPDX-License-Identifier: Apache-2.0
 import fs from 'fs/promises';
+import path from 'node:path';
 import {importPKCS8, importSPKI, KeyLike} from 'jose';
 import {config, privateKeyPath, publicKeyPath} from '../buildconfig';
 import {SecretsManager} from 'aws-sdk';
 import NodeCache from 'node-cache';
+
+/** How many times to re-read PEMs if parse fails (torn write while keys regenerate). */
+const FILE_KEY_READ_ATTEMPTS = 3;
+
+function pemHeader(pem: string): string {
+  return pem.split(/\r?\n/).find(line => line.startsWith('-----')) ?? '(empty)';
+}
 
 /** The number of seconds to cache AWS Secrets Manager responses */
 const AWS_SM_CACHE_TIMEOUT_S = 300;
@@ -96,6 +105,7 @@ interface FileKeyServiceConfig {
  */
 class FileKeyService extends BaseKeyService {
   private fileConfig: FileKeyServiceConfig;
+  private signingKey?: SigningKey;
 
   /**
    * Creates an instance of FileKeyService.
@@ -108,11 +118,33 @@ class FileKeyService extends BaseKeyService {
   }
 
   /**
-   * Retrieves the signing key from files.
-   * @returns A Promise resolving to the SigningKey.
-   * @throws Error if unable to read key files.
+   * Retrieves the signing key from files. Cached after the first successful
+   * parse so a later rewrite of the PEM (e.g. `makeInstanceKeys.sh`) cannot
+   * tear a mid-request read.
    */
   async getSigningKey(): Promise<SigningKey> {
+    if (!this.signingKey) {
+      this.signingKey = await this.loadSigningKeyFromFiles();
+    }
+    return this.signingKey;
+  }
+
+  private async loadSigningKeyFromFiles(): Promise<SigningKey> {
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= FILE_KEY_READ_ATTEMPTS; attempt++) {
+      try {
+        return await this.parseKeyFiles();
+      } catch (error) {
+        lastError = error;
+        if (attempt < FILE_KEY_READ_ATTEMPTS) {
+          await new Promise(resolve => setTimeout(resolve, 25 * attempt));
+        }
+      }
+    }
+    throw lastError;
+  }
+
+  private async parseKeyFiles(): Promise<SigningKey> {
     let privateKeyString: string;
     let publicKeyString: string;
 
@@ -129,23 +161,30 @@ class FileKeyService extends BaseKeyService {
       throw new Error(`Failed to read key files: ${err}`);
     }
 
-    const private_key = await importPKCS8(
-      privateKeyString,
-      this.config.signingAlgorithm
-    );
-    const public_key = await importSPKI(
-      publicKeyString,
-      this.config.signingAlgorithm
-    );
+    try {
+      const private_key = await importPKCS8(
+        privateKeyString,
+        this.config.signingAlgorithm
+      );
+      const public_key = await importSPKI(
+        publicKeyString,
+        this.config.signingAlgorithm
+      );
 
-    return {
-      privateKey: private_key,
-      publicKey: public_key,
-      publicKeyString: publicKeyString,
-      instanceName: this.config.instanceName,
-      alg: this.config.signingAlgorithm,
-      kid: this.config.keyId,
-    };
+      return {
+        privateKey: private_key,
+        publicKey: public_key,
+        publicKeyString: publicKeyString,
+        instanceName: this.config.instanceName,
+        alg: this.config.signingAlgorithm,
+        kid: this.config.keyId,
+      };
+    } catch (error) {
+      throw new Error(
+        `Failed to parse signing keys from ${this.fileConfig.privateKeyFile} ` +
+          `(private PEM header: ${pemHeader(privateKeyString)}): ${error}`
+      );
+    }
   }
 }
 
@@ -344,8 +383,8 @@ function createKeyService(keySource: KeySource = KeySource.FILE): IKeyService {
     case KeySource.FILE:
       return new FileKeyService(keyConfig, {
         // This will error if the configuration is not setup properly
-        publicKeyFile: publicKeyPath(),
-        privateKeyFile: privateKeyPath(),
+        publicKeyFile: path.resolve(publicKeyPath()),
+        privateKeyFile: path.resolve(privateKeyPath()),
       });
     case KeySource.ENV:
       return new EnvKeyService(keyConfig);

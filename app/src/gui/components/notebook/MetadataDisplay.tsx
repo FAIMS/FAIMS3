@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {
   Box,
   Grid,
@@ -10,7 +11,10 @@ import {
   Typography,
 } from '@mui/material';
 import {config} from '../../../buildconfig';
-import {Project} from '../../../context/slices/projectSlice';
+import {
+  Project,
+  projectUiDefinition,
+} from '../../../context/slices/projectSlice';
 import MetadataRenderer from '../metadataRenderer';
 
 interface MetadataDisplayComponentProps {
@@ -24,7 +28,7 @@ export const MetadataDisplayComponent = (
     Component: MetadataDisplayComponent
 
     */
-  const {information} = props.project.uiDefinition.metadata;
+  const information = projectUiDefinition(props.project)?.metadata.information;
   const lastUpdated = props.project.updatedAt ?? '';
 
   return (
@@ -158,7 +162,7 @@ export const MetadataDisplayComponent = (
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2">
-                      {information.notebookVersion || '—'}
+                      {information?.notebookVersion || '—'}
                     </Typography>
                   </TableCell>
                 </TableRow>

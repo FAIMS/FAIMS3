@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import InfoIcon from '@mui/icons-material/Info';
 import MicIcon from '@mui/icons-material/Mic';
 import {

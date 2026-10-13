@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: invites.ts
  * Description:
  *   This module contains invite related API routes at /api/invites
@@ -36,21 +24,39 @@ import {
   RoleScope,
   GetGlobalInvitesResponse,
   PostCreateGlobalInviteInputSchema,
+  PostCreateQuickShareInputSchema,
+  PostCreateQuickShareResponse,
+  PostUseInviteResponse,
+  QUICK_SHARE_KIND,
 } from '@faims3/data-model';
 import express, {Request, Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
 import {
   createGlobalInvite,
+  createQuickShareInvite,
   createResourceInvite,
   deleteInvite,
   getGlobalInvites,
   getInvite,
   getInvitesForResource,
+  getProjectInvites,
+  getQuickSharesForProjectAndUser,
   isInviteValid,
 } from '../couchdb/invites';
+import {getProjectById} from '../couchdb/notebooks';
+import {getCouchUserFromEmailOrUserId, saveCouchUser} from '../couchdb/users';
+import {validateAndApplyInviteToUser} from '../auth/helpers';
+import {
+  generateUserToken,
+  upgradeCouchUserToExpressUser,
+} from '../auth/keySigning/create';
 import * as Exceptions from '../exceptions';
-import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
+import {
+  isAllowedToMiddleware,
+  requireAuthenticationAPI,
+  userCanDo,
+} from '../middleware';
 import patch from '../utils/patchExpressAsync';
 import {inviteAuditFromRequest, logInviteAudit} from '../logging';
 
@@ -59,13 +65,45 @@ patch();
 
 export const api: express.Router = express.Router();
 
-function logInviteCreated(
+function userCanProjectInvite({
+  user,
+  projectId,
+  action,
+  role,
+}: {
+  user: NonNullable<Request['user']>;
+  projectId: string;
+  action: 'create' | 'delete';
+  role: ExistingInvitesDBDocument['role'];
+}): boolean {
+  return userCanDo({
+    user,
+    action: projectInviteToAction({action, role}),
+    resourceId: projectId,
+  });
+}
+
+/**
+ * Quick share codes are revoked with DELETE .../notebook/:projectId/quick-share.
+ * The by-id invite routes must not accept them: the id is the redemption secret.
+ */
+function rejectQuickShareDelete(invite: ExistingInvitesDBDocument): void {
+  if (invite.kind !== QUICK_SHARE_KIND) {
+    return;
+  }
+  throw new Exceptions.InvalidRequestException(
+    'Quick share codes cannot be deleted by invite id. Use DELETE /api/invites/notebook/:projectId/quick-share.'
+  );
+}
+
+function logInviteSuccess(
+  event: 'invite.create' | 'invite.revoke',
   req: Request,
   invite: ExistingInvitesDBDocument,
   userId: string
 ): void {
   logInviteAudit({
-    event: 'invite.create',
+    event,
     outcome: 'success',
     source: 'api',
     inviteId: invite._id,
@@ -74,6 +112,7 @@ function logInviteCreated(
     inviteType: invite.inviteType,
     resourceType: invite.resourceType,
     resourceId: invite.resourceId,
+    kind: invite.kind,
     ...inviteAuditFromRequest(req),
   });
 }
@@ -111,13 +150,10 @@ api.get(
       );
     }
 
-    // Project invites
-    const invites = (
-      await getInvitesForResource({
-        resourceType: Resource.PROJECT,
-        resourceId: projectId,
-      })
-    ).filter(invite => isInviteValid({invite}).isValid);
+    // Project invites. Quick shares come from the quickShares view.
+    const invites = (await getProjectInvites(projectId)).filter(
+      invite => isInviteValid({invite}).isValid
+    );
 
     res.json(invites);
   }
@@ -213,7 +249,106 @@ api.post(
       usesOriginal: body.uses,
     });
 
-    logInviteCreated(req, invite, user.user_id);
+    logInviteSuccess('invite.create', req, invite, user.user_id);
+    res.json(invite);
+  }
+);
+
+/**
+ * POST a Quick Share code for one survey. The code always lasts one hour.
+ * Permission matches creating an invite for the same role. The document is
+ * stored in the invites database and redeemed by the existing scan/use path.
+ */
+api.post(
+  '/notebook/:projectId/quick-share',
+  requireAuthenticationAPI,
+  validate({
+    params: z.object({projectId: IdInputSchema}),
+    body: PostCreateQuickShareInputSchema,
+  }),
+  async (req, res: Response<PostCreateQuickShareResponse>) => {
+    const {user, body, params} = req;
+    const {projectId} = params;
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    if (
+      !userCanProjectInvite({
+        user,
+        projectId,
+        action: 'create',
+        role: body.role,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to share this survey at that level'
+      );
+    }
+
+    const project = await getProjectById(projectId);
+    if (project.disableQuickShare === true) {
+      throw new Exceptions.ForbiddenException(
+        'Quick share is disabled for this survey'
+      );
+    }
+
+    // One live Quick Share per person per survey. A second generate returns
+    // that code only when this person can still create its role. A code above
+    // their current access is not handed back, and no second code is minted
+    // beside it. The view is already limited to this survey and creator.
+    const live = (
+      await getQuickSharesForProjectAndUser({
+        projectId,
+        userId: user.user_id,
+      })
+    )
+      .filter(invite => isInviteValid({invite}).isValid)
+      .sort((a, b) => b.createdAt - a.createdAt);
+    if (
+      live.some(
+        invite =>
+          !userCanProjectInvite({
+            user,
+            projectId,
+            action: 'create',
+            role: invite.role,
+          })
+      )
+    ) {
+      // The invite id is the redemption secret, so it stays out of this body.
+      // The creator revokes it with DELETE .../quick-share.
+      throw new Exceptions.ForbiddenException(
+        'A quick share above your current access is still active. It must be revoked before a new code can be issued.'
+      );
+    }
+    const [existing, ...older] = live;
+    if (existing) {
+      for (const extra of older) {
+        if (
+          !userCanProjectInvite({
+            user,
+            projectId,
+            action: 'delete',
+            role: extra.role,
+          })
+        ) {
+          continue;
+        }
+        await deleteInvite({invite: extra});
+        logInviteSuccess('invite.revoke', req, extra, user.user_id);
+      }
+      res.json({...existing, kind: QUICK_SHARE_KIND});
+      return;
+    }
+
+    const invite = await createQuickShareInvite({
+      resourceId: projectId,
+      role: body.role,
+      createdBy: user.user_id,
+    });
+
+    logInviteSuccess('invite.create', req, invite, user.user_id);
     res.json(invite);
   }
 );
@@ -266,8 +401,40 @@ api.post(
       usesOriginal: body.uses,
     });
 
-    logInviteCreated(req, invite, user.user_id);
+    logInviteSuccess('invite.create', req, invite, user.user_id);
     res.json(invite);
+  }
+);
+
+/**
+ * DELETE every live Quick Share the caller created for this survey.
+ * Registered before `/:inviteId` so "quick-share" is not treated as an id.
+ * The response does not include invite ids.
+ */
+api.delete(
+  '/notebook/:projectId/quick-share',
+  requireAuthenticationAPI,
+  validate({
+    params: z.object({projectId: IdInputSchema}),
+  }),
+  async (req, res) => {
+    const {user, params} = req;
+    const {projectId} = params;
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    const own = (
+      await getQuickSharesForProjectAndUser({
+        projectId,
+        userId: user.user_id,
+      })
+    ).filter(invite => isInviteValid({invite}).isValid);
+    for (const invite of own) {
+      await deleteInvite({invite});
+      logInviteSuccess('invite.revoke', req, invite, user.user_id);
+    }
+    res.status(200).json({success: true});
   }
 );
 
@@ -283,7 +450,9 @@ api.delete(
       inviteId: IdInputSchema,
     }),
   }),
-  async ({user, params: {projectId, inviteId}}, res) => {
+  async (req, res) => {
+    const {user, params} = req;
+    const {projectId, inviteId} = params;
     if (!user) {
       throw new Exceptions.UnauthorizedException();
     }
@@ -293,6 +462,8 @@ api.delete(
     if (!invite) {
       throw new Exceptions.ItemNotFoundException('Invite not found');
     }
+
+    rejectQuickShareDelete(invite);
 
     // Verify this invite belongs to the specified project
     if (
@@ -304,7 +475,6 @@ api.delete(
       );
     }
 
-    // Get the action needed
     const actionNeeded = projectInviteToAction({
       action: 'delete',
       role: invite.role,
@@ -326,7 +496,7 @@ api.delete(
     }
 
     await deleteInvite({invite});
-    res.status(200).end();
+    res.status(200).json({success: true});
   }
 );
 
@@ -352,6 +522,8 @@ api.delete(
     if (!invite) {
       throw new Exceptions.ItemNotFoundException('Invite not found');
     }
+
+    rejectQuickShareDelete(invite);
 
     // Verify this invite belongs to the specified team
     if (invite.resourceType !== Resource.TEAM || invite.resourceId !== teamId) {
@@ -435,7 +607,7 @@ api.post(
       usesOriginal: body.uses,
     });
 
-    logInviteCreated(req, invite, user.user_id);
+    logInviteSuccess('invite.create', req, invite, user.user_id);
     res.json(invite);
   }
 );
@@ -463,6 +635,8 @@ api.delete(
       throw new Exceptions.ItemNotFoundException('Invite not found');
     }
 
+    rejectQuickShareDelete(invite);
+
     // verify that this invite is a global invite
     if (invite.inviteType !== RoleScope.GLOBAL) {
       throw new Exceptions.ValidationException('Invite is not a global invite');
@@ -470,6 +644,79 @@ api.delete(
 
     await deleteInvite({invite});
     res.status(200).end();
+  }
+);
+
+/**
+ * POST /api/invites/:inviteId/use
+ * Consume an invite for the authenticated user and return a new access token
+ * whose roles include the grant. Used when the app is already signed in, so
+ * the user does not have to register or sign in again.
+ */
+api.post(
+  '/:inviteId/use',
+  requireAuthenticationAPI,
+  validate({
+    params: z.object({inviteId: IdInputSchema}),
+  }),
+  async (req, res: Response<PostUseInviteResponse>) => {
+    const {user} = req;
+    const {inviteId} = req.params;
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    if (user.impersonatingUserId) {
+      throw new Exceptions.ForbiddenException(
+        'Cannot redeem an invite while impersonating another user.'
+      );
+    }
+
+    const dbUser = await getCouchUserFromEmailOrUserId(user.user_id);
+    if (!dbUser) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    let updatedUser;
+    let invite;
+    try {
+      ({user: updatedUser, invite} = await validateAndApplyInviteToUser({
+        inviteCode: inviteId,
+        dbUser,
+        req,
+        action: 'login',
+      }));
+    } catch (e) {
+      throw new Exceptions.InvalidRequestException(
+        e instanceof Error
+          ? e.message
+          : 'Invite is not valid. It may be expired or already used.'
+      );
+    }
+    await saveCouchUser(updatedUser);
+
+    const expressUser = await upgradeCouchUserToExpressUser({
+      dbUser: updatedUser,
+    });
+    // Keep the replacement access token's lifetime equal to the token that
+    // authorised this request. A fresh `accessTokenExpiryMinutes` window
+    // would let repeated redemptions chain into a longer session.
+    if (req.accessTokenExpiresAt === undefined) {
+      throw new Exceptions.UnauthorizedException(
+        'Access token is missing an expiry and cannot be reissued.'
+      );
+    }
+    const {token} = await generateUserToken(expressUser, false, {
+      expiresAtSeconds: req.accessTokenExpiresAt,
+    });
+
+    res.json({
+      success: true,
+      inviteType: invite.inviteType,
+      resourceType: invite.resourceType,
+      resourceId: invite.resourceId,
+      role: invite.role,
+      accessToken: token,
+    });
   }
 );
 
@@ -511,6 +758,7 @@ api.get(
       inviteType: invite.inviteType,
       resourceType: invite.resourceType,
       resourceId: invite.resourceId,
+      kind: invite.kind,
       ...requestMeta,
     });
 

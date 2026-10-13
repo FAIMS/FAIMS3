@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 export const ENCODING_SEPARATOR = '||';
 export const COUCH_ADMIN_ROLE_NAME = '_admin';
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /* eslint-disable n/no-process-exit */
 /**
  * One-off: migrate test JSONL backups from legacy layout (per-project metadata DB +

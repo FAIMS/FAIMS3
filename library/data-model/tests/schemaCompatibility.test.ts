@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {sampleNotebook} from '../src/data_storage/migrations/notebookMigrations/test-notebook-V1';
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,

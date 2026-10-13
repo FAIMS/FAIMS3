@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {ExpirySelector} from '@/components/expiry-selector';
 import {Field, Form} from '@/components/form';
 import {config, brandNotebook} from '@/constants';

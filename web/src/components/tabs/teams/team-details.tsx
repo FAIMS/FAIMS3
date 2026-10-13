@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {useAuth} from '@/context/auth-provider';
 import {ListItem, ListLabel, ListDescription} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';

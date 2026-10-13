@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {
   configHelpers,
   INVITE_EXPIRY_HINT_DAYS,

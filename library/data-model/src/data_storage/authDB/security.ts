@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * This module exports the security document to be used for the auth database.
  */

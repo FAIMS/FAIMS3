@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Autocomplete field picker with scoped fuzzy search for condition editors and computed fields.
  */

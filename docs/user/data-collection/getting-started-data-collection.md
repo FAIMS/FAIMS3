@@ -43,12 +43,15 @@ From here you can login if you already have an account, or refer to your {{noteb
 to **register** an account and get access to that {{Notebook}}.
 
 ```{note}
-If you already have an account on the {{FAIMS}} server, use the button to login instead of registering a new account.  Once you are logged in you will be given access to the {{Notebook}}. For more information, see [Login](login.md).
+If you already have an account on the {{FAIMS}} server, use **Already have an
+account? Sign in** at the top of the registration screen instead of registering
+a new account. Once you are logged in you will be given access to the
+{{Notebook}}. For more information, see [Login](login.md).
 ```
 
 ### a) Invitations
 
-Prefer scanning the **QR code** or opening the **invite link** shared with you. Tap **Scan invite QR code** on the login screen to open the registration flow.
+Prefer scanning the **QR code** or opening the **invite link** shared with you. Tap **Scan invite QR code**. If you are already signed in, the {{notebook}} is added straight away; if not, the scan opens the registration screen.
 
 ```{screenshot} getting-started/access-code-mobile.png
 :alt: Invite screen

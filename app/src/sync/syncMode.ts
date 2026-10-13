@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /** Record replication direction for an activated notebook. */
 export type SyncMode = 'none' | 'push' | 'pull' | 'both';
 

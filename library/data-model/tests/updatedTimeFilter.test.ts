@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {getDataDB, registerClient} from '../src';
 import {notebookRecordIterator} from '../src/data_storage';
 import {

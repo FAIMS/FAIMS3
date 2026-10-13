@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Status tree for a record and its child records: the recursive completion
  * roll-up from computeRecordStatusReport, rendered as nested nodes.

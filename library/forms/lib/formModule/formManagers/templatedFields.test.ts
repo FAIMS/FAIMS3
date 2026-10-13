@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import type {UiSpecModel} from '@faims3/data-model';
 import {describe, expect, it} from 'vitest';
 import {recomputeDerivedFields} from './templatedFields';

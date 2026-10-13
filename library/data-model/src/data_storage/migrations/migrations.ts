@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Resource, ResourceRole, Role, RoleScope} from '../../permission';
 import {
   AuthRecordV1ExistingDocumentSchema,
@@ -27,6 +28,7 @@ import {
   ProjectV2Fields,
   ProjectV3Fields,
   ProjectV4Fields,
+  ProjectV5Fields,
 } from '../projectsDB';
 import {
   TemplateV1Fields,
@@ -34,7 +36,9 @@ import {
   TemplateV3Fields,
   TemplateV4Fields,
   TemplateV5Fields,
+  TemplateV6Fields,
 } from '../templatesDB/types';
+import {buildUiSpecProperties} from '../../uiSpecification/uiSpecProperties';
 import {
   DBTargetVersions,
   DatabaseType,
@@ -401,6 +405,30 @@ export const projectsV3toV4Migration: MigrationFunc = async (doc, context) => {
   return {action: 'update', updatedRecord: outputDoc};
 };
 
+/**
+ * Projects DB v5 — adds mandatory {@link ProjectV5Fields.uiSpecProperties}
+ * (schema version + SHA-256 of the stored uiSpecification).
+ */
+export const projectsV4toV5Migration: MigrationFunc = async doc => {
+  const input =
+    doc as unknown as PouchDB.Core.ExistingDocument<ProjectV4Fields>;
+
+  if (input.uiSpecification == null) {
+    throw new Error(
+      `Project ${input._id} has no uiSpecification; cannot migrate to projects DB v5.`
+    );
+  }
+
+  const uiSpecProperties = await buildUiSpecProperties(input.uiSpecification);
+
+  const outputDoc: PouchDB.Core.ExistingDocument<ProjectV5Fields> = {
+    ...input,
+    uiSpecProperties,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
 export const invitesV2toV3Migration: MigrationFunc = doc => {
   // Cast input document to V2 type
   const inputDoc =
@@ -587,6 +615,32 @@ export const templatesV4toV5Migration: MigrationFunc = (doc, context) => {
 };
 
 /**
+ * Templates DB v6 — adds mandatory {@link TemplateV6Fields.uiSpecProperties}
+ * (schema version + SHA-256 of the stored uiSpecification).
+ */
+export const templatesV5toV6Migration: MigrationFunc = async doc => {
+  const inputDoc =
+    doc as unknown as PouchDB.Core.ExistingDocument<TemplateV5Fields>;
+
+  if (inputDoc.uiSpecification == null) {
+    throw new Error(
+      `Template ${inputDoc._id} has no uiSpecification; cannot migrate to templates DB v6.`
+    );
+  }
+
+  const uiSpecProperties = await buildUiSpecProperties(
+    inputDoc.uiSpecification
+  );
+
+  const outputDoc: PouchDB.Core.ExistingDocument<TemplateV6Fields> = {
+    ...inputDoc,
+    uiSpecProperties,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+/**
  * Adds the exchange token (fatuous) to mimic new format
  */
 export const authV1toV2Migration: MigrationFunc = doc => {
@@ -744,8 +798,8 @@ export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 4},
   [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 5},
-  [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 4},
-  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 5},
+  [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 5},
+  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 6},
   [DatabaseType.TEAMS]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.TOMBSTONE]: {defaultVersion: 1, targetVersion: 1},
 };
@@ -814,6 +868,14 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     migrationFunction: projectsV3toV4Migration,
   },
   {
+    dbType: DatabaseType.PROJECTS,
+    from: 4,
+    to: 5,
+    description:
+      'Adds mandatory uiSpecProperties (schemaVersion + SHA-256 hash) so listings can omit uiSpecification.',
+    migrationFunction: projectsV4toV5Migration,
+  },
+  {
     dbType: DatabaseType.INVITES,
     from: 2,
     to: 3,
@@ -852,6 +914,14 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       'Inlines template metadata + ui-specification into Template.uiSpecification; adds description and audit fields.',
     migrationFunction: templatesV4toV5Migration,
+  },
+  {
+    dbType: DatabaseType.TEMPLATES,
+    from: 5,
+    to: 6,
+    description:
+      'Adds mandatory uiSpecProperties (schemaVersion + SHA-256 hash) so listings can omit uiSpecification.',
+    migrationFunction: templatesV5toV6Migration,
   },
   {
     dbType: DatabaseType.AUTH,

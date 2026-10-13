@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Alert, Typography} from '@mui/material';
 import {getParentFormFieldIds} from '@faims3/data-model';
 import {getFieldInfo} from '@faims3/forms';

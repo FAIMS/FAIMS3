@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {UiSpecModel} from '../uiSpecification/types';
 import {FieldVisibilityMap, getViewsForViewSet} from '../uiSpecification/utils';
 import {FormDataEntry, FormUpdateData} from './types';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Conductor stdout logging helpers.
  *
@@ -20,11 +21,50 @@ import {nowIso} from './time';
  */
 export const logError = (error: unknown) => {
   console.error(error);
-  if (config.bugsnagApiKey) {
+  if (config.bugsnagApiKey && shouldReportErrorToBugsnag(error)) {
     const err = error instanceof Error ? error : new Error(String(error));
     Bugsnag.notify(err);
   }
 };
+
+/**
+ * Whether an error is worth a Bugsnag report.
+ *
+ * Ordinary 401s and the intentional tombstone-miss 404 are expected client
+ * outcomes. Rate limits (429), forbidden access (403), and other failures
+ * still report.
+ */
+export function shouldReportErrorToBugsnag(error: unknown): boolean {
+  if (httpStatus(error) === 401) {
+    return false;
+  }
+  if (isTombstoneNotFound(error)) {
+    return false;
+  }
+  return true;
+}
+
+function httpStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
+  const record = error as {status?: unknown; statusCode?: unknown};
+  if (typeof record.status === 'number') {
+    return record.status;
+  }
+  if (typeof record.statusCode === 'number') {
+    return record.statusCode;
+  }
+  return undefined;
+}
+
+function isTombstoneNotFound(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const name = (error as {name?: unknown}).name;
+  return name === 'TombstoneNotFoundException';
+}
 
 /**
  * When the authenticated user is acting via an impersonation token, writes an
@@ -119,11 +159,12 @@ export function inviteAuditFromRequest(req: {
   };
 }
 
-/** What happened: create, public lookup, consume on login/register, or register with no code. */
+/** What happened: create, public lookup, consume on login/register, revoke, or register with no code. */
 export type InviteAuditEvent =
   | 'invite.create'
   | 'invite.lookup'
   | 'invite.consume'
+  | 'invite.revoke'
   | 'invite.register_missing';
 
 /** Result of that event. Create/consume use success/failure; lookups use valid/invalid/not_found. */
@@ -151,6 +192,8 @@ export function logInviteAudit(entry: {
   inviteType?: string;
   resourceType?: string;
   resourceId?: string;
+  /** Set for Quick Share invites so create, lookup, consume, and revoke can be filtered. */
+  kind?: string;
   ip?: string;
   forwardedFor?: string;
   userAgent?: string;

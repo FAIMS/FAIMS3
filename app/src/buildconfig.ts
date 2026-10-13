@@ -1,23 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: buildconfig.ts
  * Description:
  *   This module exports the configuration of the build, including things like
  *   which server to use and whether to include test data.
- *
  *   Configuration is parsed from Vite's `import.meta.env` with a single zod
  *   schema:
  *     - Each env key is declared once with its coercion / defaulting logic and
@@ -27,7 +14,6 @@
  *     - A final `.transform()` renames ENV_KEYS into the camelCase `config`
  *       shape (and builds cross-field values). Do not re-document env-backed
  *       fields in the transform.
- *
  *   Prefer importing `{config}` and reading `config.<field>`. Advanced surfaces
  *   that need a factory (map config for form managers, address autosuggest)
  *   keep thin functional wrappers sourced from `config`.
@@ -91,6 +77,42 @@ const MAP_STYLESHEET_NAMES = [
   'osm-bright',
   'toner',
 ] as const satisfies readonly MapStylesheetNameType[];
+
+/**
+ * Full or abbreviated git object id (SHA-1 or SHA-256). Short hashes from
+ * `git rev-parse --short` are at least 7 hex characters.
+ */
+const GIT_COMMIT_HASH = /^[0-9a-f]{7,64}$/i;
+
+/**
+ * Store and nightly builds stamp the commit as
+ * `v<version>-ios-#<short>` or `v<version>-android-#<short>`.
+ */
+const RELEASE_COMMIT_STAMP =
+  /^v\d+\.\d+\.\d+-(?:ios|android)-#[0-9a-f]{7,40}$/i;
+
+/**
+ * Accept a git commit hash or a release stamp. Placeholders (shell snippets,
+ * prose, anything with spaces) are treated as unset.
+ */
+export function sanitizeCommitVersion(
+  value: string | undefined
+): string | undefined {
+  if (
+    value === undefined ||
+    configHelpers.isBlank(value) ||
+    (configHelpers.FALSEY_STRINGS as readonly string[]).includes(
+      value.trim().toLowerCase()
+    )
+  ) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (GIT_COMMIT_HASH.test(trimmed) || RELEASE_COMMIT_STAMP.test(trimmed)) {
+    return trimmed;
+  }
+  return undefined;
+}
 
 /**
  * Splits the input, trimming for whitespace and filtering empty strings.
@@ -164,24 +186,20 @@ const EnvSchema = z
         configHelpers.isBlank(v) || v === 'false' ? undefined : v
       ),
     /**
-     * Optional git commit hash / build identifier shown in About / support
-     * email. Blank or falsey strings are treated as unset.
+     * Optional git commit hash shown in About / support email. Blank values
+     * and anything that is not a commit hash or release stamp are unset.
      */
     VITE_COMMIT_VERSION: z
       .string()
       .optional()
       .transform((v): string | undefined => {
-        if (
-          configHelpers.isBlank(v) ||
-          (configHelpers.FALSEY_STRINGS as readonly string[]).includes(
-            v.toLowerCase()
-          )
-        ) {
+        const commit = sanitizeCommitVersion(v);
+        if (commit === undefined) {
           console.info('VITE_COMMIT_VERSION not provided');
           return undefined;
         }
-        console.info(`Using VITE_COMMIT_VERSION: ${v}`);
-        return v;
+        console.info(`Using VITE_COMMIT_VERSION: ${commit}`);
+        return commit;
       }),
     /**
      * Comma-separated Conductor URLs the app can authenticate against.

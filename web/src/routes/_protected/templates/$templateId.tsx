@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {createFileRoute, Link, useRouter} from '@tanstack/react-router';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';

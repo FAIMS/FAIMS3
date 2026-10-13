@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Singleton service to manage sync state for projects.
  * Keeps sync status in-memory without Redux overhead.

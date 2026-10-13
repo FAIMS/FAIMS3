@@ -70,7 +70,8 @@ apply to the Fieldmark app path above. Appium (`test:e2e:android` /
 | ---------------------------------------- | ------------------------------------------------------------------------- |
 | `web/team-invites.e2e.ts`                | Team Invites tab, create team invite                                      |
 | `web/project-invites.e2e.ts`             | Project Invites tab, create project invite                                |
-| `conductor/register-invite.e2e.ts`       | Register via team invite (new account + existing seed-user)               |
+| `conductor/register-invite.e2e.ts`       | Register via team invite; sign-in link keeps the invite                   |
+| `app/invite-redeem.e2e.ts`               | Signed-in Fieldmark user redeems a project invite code in the app         |
 | `web/project-status-archive.e2e.ts`      | Close/reopen project, archive control, archive nav                        |
 | `web/project-delete-tombstone.e2e.ts`    | Permanent delete writes tombstone; GET `/api/tombstones/:id`              |
 | `web/template-visibility-archive.e2e.ts` | Template visibility dialog, archive template, archive nav                 |

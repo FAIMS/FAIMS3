@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {contentToSanitizedHtml} from '../fieldRegistry/fields/RichText/DomPurifier';
 
 export const RichTextContent: React.FC<{content: string}> = ({content}) => {

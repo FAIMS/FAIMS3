@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Tests for the shared input limits: central constants, bounded zod helpers
  * and the .max() caps applied across the API request schemas.
@@ -139,6 +140,22 @@ describe('notebook and template schemas', () => {
         name: longString(INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH + 1),
       }).success
     ).toBe(false);
+  });
+
+  it('accepts a disableQuickShare metadata update', () => {
+    expect(
+      PutUpdateNotebookMetadataInputSchema.safeParse({
+        disableQuickShare: true,
+      }).success
+    ).toBe(true);
+    expect(
+      PutUpdateNotebookMetadataInputSchema.safeParse({
+        disableQuickShare: false,
+      }).success
+    ).toBe(true);
+    expect(PutUpdateNotebookMetadataInputSchema.safeParse({}).success).toBe(
+      true
+    );
   });
 
   it('rejects an oversized template name', () => {

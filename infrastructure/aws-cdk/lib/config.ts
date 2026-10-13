@@ -395,48 +395,101 @@ const DomainsConfigSchema = z.object({
   docs: z.string().default('docs'),
 });
 
-const ConductorConfigSchema = z.object({
-  /** The title for this conductor instance, shown on listings page */
-  name: z.string(),
-  /** Enable enhanced cluster observability? See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#container-insights-setting-enhanced */
-  enhancedObservability: z.boolean().optional(),
-  /** The description shown underneath as a sub heading */
-  description: z.string(),
-  /** Conductor docker image e.g. org/faims3-api */
-  conductorDockerImage: z.string(),
-  /** Conductor docker image e.g. latest, sha-123456 */
-  conductorDockerImageTag: z.string().default('latest'),
-  /** Prefix for generated invite codes (e.g. `FAIMS` → `FAIMS-…`). */
-  shortCodePrefix: z.string().default('FAIMS'),
-  /** Provision SSO users policy - do we create a new user for an unknown SSO sign-in? Default 'reject' */
-  provisionSSOUsersPolicy: z
-    .enum(['own-team', 'general-user', 'reject'])
-    .default('reject'),
-  /** The number of CPU units for the Fargate task */
-  cpu: z.number().int().positive(),
-  /** The amount of memory (in MiB) for the Fargate task */
-  memory: z.number().int().positive(),
-  /** Auto scaling configuration for the Conductor service */
-  autoScaling: z.object({
-    /** The desired number of tasks to run (general stable target) */
-    desiredCapacity: z.number().int().positive(),
-    /** The minimum number of tasks to run */
-    minCapacity: z.number().int().positive(),
-    /** The maximum number of tasks that can be run */
-    maxCapacity: z.number().int().positive(),
-    /** The target CPU utilization percentage for scaling */
-    targetCpuUtilization: z.number().min(0).max(100),
-    /** The target memory utilization percentage for scaling */
-    targetMemoryUtilization: z.number().min(0).max(100),
-    /** The cooldown period (in seconds) before allowing another scale in action */
-    scaleInCooldown: z.number().int().nonnegative(),
-    /** The cooldown period (in seconds) before allowing another scale out action */
-    scaleOutCooldown: z.number().int().nonnegative(),
-  }),
-  /** Allow localhost typical addresses in the redirects for conductor? NOT
-   * recommended for production use cases (for security reasons). */
-  localhostWhitelist: z.boolean().default(false),
-});
+/** Age of a still-running lock after which a waiter steals it and runs migrate. */
+export const DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS = 1_800_000;
+
+export const ConductorConfigSchema = z
+  .object({
+    /** The title for this conductor instance, shown on listings page */
+    name: z.string(),
+    /** Enable enhanced cluster observability? See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#container-insights-setting-enhanced */
+    enhancedObservability: z.boolean().optional(),
+    /** The description shown underneath as a sub heading */
+    description: z.string(),
+    /** Conductor docker image e.g. org/faims3-api */
+    conductorDockerImage: z.string(),
+    /** Conductor docker image e.g. latest, sha-123456 */
+    conductorDockerImageTag: z.string().default('latest'),
+    /** Prefix for generated invite codes (e.g. `FAIMS` → `FAIMS-…`). */
+    shortCodePrefix: z.string().default('FAIMS'),
+    /** Provision SSO users policy - do we create a new user for an unknown SSO sign-in? Default 'reject' */
+    provisionSSOUsersPolicy: z
+      .enum(['own-team', 'general-user', 'reject'])
+      .default('reject'),
+    /** The number of CPU units for the Fargate task */
+    cpu: z.number().int().positive(),
+    /** The amount of memory (in MiB) for the Fargate task */
+    memory: z.number().int().positive(),
+    /** Auto scaling configuration for the Conductor service */
+    autoScaling: z.object({
+      /** The desired number of tasks to run (general stable target) */
+      desiredCapacity: z.number().int().positive(),
+      /** The minimum number of tasks to run */
+      minCapacity: z.number().int().positive(),
+      /** The maximum number of tasks that can be run */
+      maxCapacity: z.number().int().positive(),
+      /** The target CPU utilization percentage for scaling */
+      targetCpuUtilization: z.number().min(0).max(100),
+      /** The target memory utilization percentage for scaling */
+      targetMemoryUtilization: z.number().min(0).max(100),
+      /** The cooldown period (in seconds) before allowing another scale in action */
+      scaleInCooldown: z.number().int().nonnegative(),
+      /** The cooldown period (in seconds) before allowing another scale out action */
+      scaleOutCooldown: z.number().int().nonnegative(),
+    }),
+    /** Allow localhost typical addresses in the redirects for conductor? NOT
+     * recommended for production use cases (for security reasons). */
+    localhostWhitelist: z.boolean().default(false),
+    /**
+     * When true, Conductor env sets `DISABLE_MIGRATE_ON_STARTUP=true` and
+     * API boot skips Couch migrate / notebook walks. Default false —
+     * migrate still runs. Use only when migrate is handled out of band
+     * (`pnpm migrate-with-keys`) or for a debug stack against an
+     * already-migrated DB.
+     */
+    disableMigrateOnStartup: z.boolean().default(false),
+    /**
+     * When true, Conductor env sets `STARTUP_MIGRATION_LOCK_ENABLED=false`.
+     * Omit or false — AWS ECS is clustered, so the lock is hard-enabled
+     * whenever migrate-on-startup is still on. Only set true for a
+     * single-task / debug stack where the wait/steal path would be a
+     * problem (the same reason local `pnpm run dev` defaults the env
+     * flag off). Optional so we can reject an explicit `false` when
+     * `disableMigrateOnStartup` is true (nothing to lock).
+     */
+    disableStartupMigrationLock: z.boolean().optional(),
+    /**
+     * Age of a still-`running` lock after which clustered waiters steal
+     * it and run migrate themselves (`STARTUP_MIGRATION_LOCK_TIMEOUT_MS`).
+     * Timeout is not "skip migrate and attach". Age is `now - startedAtMs`
+     * (no heartbeat); the original doer is not cancelled. Default 1800000
+     * (30 minutes). Only used when the lock is enabled.
+     */
+    startupMigrationLockTimeoutMs: z
+      .number()
+      .int()
+      .min(1000)
+      .default(DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.disableMigrateOnStartup &&
+      data.disableStartupMigrationLock === false
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['disableStartupMigrationLock'],
+        message:
+          'disableStartupMigrationLock cannot be false when disableMigrateOnStartup is true. There is nothing to lock if API boot skips migrate. Omit disableStartupMigrationLock or set it true.',
+      });
+    }
+  })
+  .transform(data => ({
+    ...data,
+    // Skip-migrate makes the lock unused; treat omitted as disabled.
+    disableStartupMigrationLock:
+      data.disableMigrateOnStartup || data.disableStartupMigrationLock === true,
+  }));
 
 const WebConfigSchema = z.object({
   title: z.string().default('Control Centre'),
@@ -607,7 +660,7 @@ export const SecurityConfigSchema = z.object({
   rateLimiterEnabled: z.boolean().default(true),
   /**
    * Per-user email-code / verification-challenge attempt limits
-   * (`AUTH_ATTEMPT_LIMITER_ENABLED`). Default true. Keep enabled in
+   * (`ATTEMPT_LIMITER_ENABLED`). Default true. Keep enabled in
    * production even when HTTP rate limiting is disabled upstream.
    */
   authAttemptLimiterEnabled: z.boolean().default(true),

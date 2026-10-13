@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {DataViewFieldRenderProps} from '../types';
 import {logError} from '../../logging';
 

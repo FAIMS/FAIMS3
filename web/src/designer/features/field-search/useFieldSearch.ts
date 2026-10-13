@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file React hook for debounced, scoped field search backed by the designer store.
  */

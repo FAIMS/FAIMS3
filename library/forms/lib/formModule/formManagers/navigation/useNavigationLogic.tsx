@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import AddIcon from '@mui/icons-material/Add';
 import NorthWestIcon from '@mui/icons-material/NorthWest';
 import OutlinedFlagIcon from '@mui/icons-material/OutlinedFlag';

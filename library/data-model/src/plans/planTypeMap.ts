@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import type z from 'zod';
 import {PlanSchema, type PlanRegistry} from './types';
 import {getPlanTypeDefinition} from './registry';

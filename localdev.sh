@@ -1,7 +1,15 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+set -e
 # Takes down any running docker compose in this project, optionally prunes volumes,
 # and starts again
 # Usage: ./script.sh [--all] [--build] [--clear-db]
+
+# `wait -n` on the library watchers below needs bash 4.3+; macOS ships 3.2.
+if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 3))); then
+  echo "localdev.sh needs bash 4.3+ (found $BASH_VERSION)." >&2
+  echo "On macOS: brew install bash" >&2
+  exit 1
+fi
 
 ALL_SERVICES=false
 BUILD_FLAG=""
@@ -305,5 +313,8 @@ EOF
   trap 'kill 0' EXIT
   pnpm --filter=@faims3/data-model run watch &
   pnpm --filter=@faims3/forms run watch &
-  wait
+  # A bare `wait` returns only once both watches are gone, so a watch that dies
+  # leaves its library silently stale. Return on the first exit and say so.
+  wait -n || true
+  echo "A library watch exited; run ./localdev.sh --all to restart the watchers."
 fi

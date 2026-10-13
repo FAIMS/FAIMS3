@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Tests for record-feature hydration over a mixed notebook: a spatial form
  * (with a Map field) and a non-spatial form.

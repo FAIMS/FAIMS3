@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Box} from '@mui/material';
 import {config} from '../buildconfig';
 import type {SyncMode} from './syncMode';

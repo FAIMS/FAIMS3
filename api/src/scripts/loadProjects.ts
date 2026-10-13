@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /* eslint-disable n/no-process-exit */
 import {createNotebook} from '../couchdb/notebooks';
 import {readFileSync} from 'fs';

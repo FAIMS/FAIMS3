@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Registry of plan configuration forms shown when a notebook is created
  * from a template with plan templates. Mirrors the designer's plan registry

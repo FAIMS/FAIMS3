@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file The notebook a screen sits in, and the moves within it. Everything
  * under the notebook route reads the plan from here rather than from the

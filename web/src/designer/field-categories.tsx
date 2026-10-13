@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Field chooser categories: enum keys, display labels, icons, and sort order.
  */

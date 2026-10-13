@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import type {ProjectIdentity} from '../context/slices/projectSlice';
 
 const STORAGE_PREFIX = 'faims.pushOnlyBannerDismissed';

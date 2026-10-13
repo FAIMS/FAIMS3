@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CloudIcon from '@mui/icons-material/Cloud';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import CloudQueueIcon from '@mui/icons-material/CloudQueue';

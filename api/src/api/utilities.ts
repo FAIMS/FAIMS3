@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Description:
  *   This module contains utility routes at /api
  */
@@ -27,6 +15,7 @@ import {
   PostRefreshTokenInputSchema,
   PostRefreshTokenResponse,
   PublicServerInfo,
+  GetDirectoryResponse,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import multer from 'multer';
@@ -39,7 +28,7 @@ import {
 import {config, emailService} from '../buildconfig';
 import {initialiseDbAndKeys} from '../couchdb';
 import {restoreFromBackup} from '../couchdb/backupRestore';
-import {getUserProjectsDirectory} from '../couchdb/notebooks';
+import {getUserProjectsListing} from '../couchdb/notebooks';
 import {
   consumeExchangeTokenForRefreshToken,
   validateRefreshToken,
@@ -112,6 +101,11 @@ api.get('/info', async (req, res) => {
   res.json(response);
 });
 
+/**
+ * Cheap listing alias of `GET /api/notebooks` (no `teamId`, no `byteCount`).
+ * Field-app Refresh treats absence from this URL as the lifecycle signal.
+ * Do not add stats here — that would make every device refresh pay Couch `info()`.
+ */
 api.get(
   '/directory/',
   requireAuthenticationAPI,
@@ -122,12 +116,12 @@ api.get(
       includeArchived: z.enum(['true', 'false']).optional(),
     }),
   }),
-  async (req, res) => {
+  async (req, res: Response<GetDirectoryResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
     const includeArchived = req.query.includeArchived === 'true';
-    const projects = await getUserProjectsDirectory(req.user, includeArchived);
+    const projects = await getUserProjectsListing(req.user, {includeArchived});
     res.json(projects);
   }
 );

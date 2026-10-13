@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 export {
   computeWeightedScore,
   LABEL_ID_HELPER_ADVANCED_WEIGHTS,

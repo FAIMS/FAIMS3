@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import {Box, IconButton, Tooltip} from '@mui/material';
 import type {MouseEventHandler, PointerEventHandler} from 'react';

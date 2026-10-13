@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import type {GetListAllUsersItem} from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';

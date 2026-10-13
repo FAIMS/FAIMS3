@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Shared weighted fuzzy search used by field picker and global design search.
  */

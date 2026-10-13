@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {DataExportDialog} from '@/components/dialogs/data-export-dialog';
 import {PhotoExportDialog} from '@/components/dialogs/photo-export-dialog';
 import {FullExportDialog} from '@/components/dialogs/full-export-dialog';

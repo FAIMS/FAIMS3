@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Renders fuzzysort per-key match highlighting for designer search dropdowns.
  */

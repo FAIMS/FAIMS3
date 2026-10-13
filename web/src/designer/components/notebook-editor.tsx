@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /* eslint-disable n/no-extraneous-import */
 // Copyright 2023 FAIMS Project
 //

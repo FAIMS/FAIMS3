@@ -1,20 +1,7 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * RadioGroup Component
- *
  * This component renders a group of radio buttons using Material-UI.
  * It integrates with the form system for managing state and includes:
  * - A heading (field label) rendered using FieldWrapper.
@@ -22,7 +9,6 @@
  * - Toggle behavior: clicking a selected radio deselects it.
  * - Rich text labels: option labels support sanitized HTML content.
  * - "Other" option: allows users to enter custom text beyond predefined choices.
- *
  * Props:
  * - label (string, optional): The field label displayed as a heading.
  * - helperText (string, optional): The field help text displayed below the heading.
@@ -45,6 +31,7 @@ import MuiRadio from '@mui/material/Radio';
 import MuiRadioGroup from '@mui/material/RadioGroup';
 import {alpha} from '@mui/material/styles';
 import {z} from 'zod';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
 import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
@@ -358,64 +345,33 @@ const valueSchema = (props: RadioGroupFieldProps) => {
   const optionValues = props.ElementProps.options.map(option => option.value);
   const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
 
-  // Handle edge case of no options defined
-  if (optionValues.length === 0) {
-    if (props.required) {
-      return z
-        .string()
-        .max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH)
-        .min(1, {message: 'Please select an option'});
-    }
-    return z.union([
-      z.string().max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
-      z.null(),
-    ]);
-  }
-
-  const optionsSchema = z.enum(optionValues as [string, ...string[]]);
-
-  if (enableOtherOption) {
-    // Bounded to stop maliciously long "Other" values
-    const baseSchema = z.string().max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH);
-
-    if (props.required) {
-      return baseSchema.min(1, {message: 'Please select an option'}).refine(
-        value => {
-          if (optionValues.includes(value)) return true;
-          // accept any "Other: " value, even if empty
-          if (value.startsWith(OTHER_PREFIX)) return true;
-          return false;
-        },
-        {
-          message: 'Please select an option',
-        }
-      );
-    }
-
-    return baseSchema.refine(
-      value => {
-        if (value === '') return true;
-        if (optionValues.includes(value)) return true;
-        // a ccept any "Other: " value, even if empty
-        if (value.startsWith(OTHER_PREFIX)) return true;
-        return false;
-      },
-      {
-        message: 'Please select a valid option',
-      }
-    );
-  }
+  // Bounded to stop maliciously long "Other" values
+  let schema = z
+    .string({error: 'Please select an option'})
+    .max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH, {
+      message: `Must be at most ${INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH} characters`,
+    });
 
   if (props.required) {
-    return z
-      .string()
-      .min(1, {message: 'Please select an option'})
-      .refine(value => optionValues.includes(value), {
-        message: 'Please select an option',
-      });
+    schema = schema.min(1, {message: 'Please select an option'});
   }
 
-  return z.union([optionsSchema, z.null(), z.literal('')]);
+  if (optionValues.length === 0) {
+    return schemaWithAbsent('', schema);
+  }
+
+  const checked = schema.refine(
+    value => {
+      if (!props.required && value === '') return true;
+      if (optionValues.includes(value)) return true;
+      // accept any "Other: " value, even if empty
+      if (enableOtherOption && value.startsWith(OTHER_PREFIX)) return true;
+      return false;
+    },
+    {message: 'Please select an option'}
+  );
+
+  return schemaWithAbsent('', checked);
 };
 
 // ============================================================================

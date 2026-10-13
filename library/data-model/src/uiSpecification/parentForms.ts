@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2026 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: parentForms.ts
  * Description:
  *   Determines which forms can parent a given form, and types the
@@ -46,6 +34,8 @@ import {
   METADATA_EXPR_TYPE,
   METADATA_REFERENCE_PREFIX,
 } from './metadataReferences';
+
+import {CONSTANT_REFERENCE_PREFIX, isConstantRef} from './expressionConstants';
 
 /** Prefix marking a reference to a field on the parent record. Reserved. */
 export const PARENT_REFERENCE_PREFIX = '_PARENT.';
@@ -200,7 +190,11 @@ export const compileComputedExpressionForForm = ({
 }): CompiledExpression => {
   const fieldTypes = new Map<string, ExprType>();
   for (const [id, f] of Object.entries(uiSpecification.fields)) {
-    for (const prefix of [PARENT_REFERENCE_PREFIX, METADATA_REFERENCE_PREFIX]) {
+    for (const prefix of [
+      PARENT_REFERENCE_PREFIX,
+      METADATA_REFERENCE_PREFIX,
+      CONSTANT_REFERENCE_PREFIX,
+    ]) {
       if (id.startsWith(prefix)) {
         // Reserved prefix - a real field with this ID would be shadowed.
         throw new ExpressionError(
@@ -267,7 +261,7 @@ export const compileComputedExpressionForForm = ({
     formId,
   });
   for (const ref of extractExpressionReferences(source)) {
-    if (ref.startsWith(PARENT_REFERENCE_PREFIX)) continue;
+    if (ref.startsWith(PARENT_REFERENCE_PREFIX) || isConstantRef(ref)) continue;
     if (fieldTypes.has(ref) || relatedTypes.has(ref)) continue;
     const parts = splitRelatedReference(ref);
     if (!parts) continue; // plain unknown local ref: compiler reports it

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Export pipelines must omit related-record links that point at deleted records
  * (CSV, GeoJSON/KML feature properties, and shared strip helper).

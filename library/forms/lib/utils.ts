@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {formDataToValues} from '@faims3/data-model';
 import {FaimsFormData} from './formModule/types';
 

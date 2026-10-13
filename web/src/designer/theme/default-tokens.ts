@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {colors} from '@mui/material';
 import {defaultBrand} from '@faims3/data-model';
 import type {DesignerThemeTokens} from './tokens';

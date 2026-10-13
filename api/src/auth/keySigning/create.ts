@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: src/authkeys/create.ts
  * Description:
  *   This module exports the configuration of the build, including things like
@@ -132,12 +120,18 @@ export async function generateJwtFromUser({
   user,
   signingKey,
   impersonatingUserId,
+  expiresAtSeconds,
 }: {
   user: Express.User;
   signingKey: SigningKey;
   // When present, this token is an impersonation token issued by the given
   // admin user id. Recorded in the payload for auditing.
   impersonatingUserId?: string;
+  // Absolute JWT `exp` (unix seconds). When set, the new token expires at
+  // this instant instead of `now + accessTokenExpiryMinutes`. Callers that
+  // reissue an access token must pass the verified source token's `exp` so
+  // redemption cannot extend the session.
+  expiresAtSeconds?: number;
 }) {
   // The data model provides this encoding method - it takes the couch user
   // details and determines how to put that into the token
@@ -157,17 +151,28 @@ export async function generateJwtFromUser({
     };
 
     // Then there are other parts we wish to include
-    const jwt = await new SignJWT(completePayload)
+    const jwtBuilder = new SignJWT(completePayload)
       .setProtectedHeader({
         alg: signingKey.alg,
         kid: signingKey.kid,
       })
       .setSubject(user.user_id)
       .setIssuedAt()
-      .setIssuer(signingKey.instanceName)
-      // Expiry in minutes
-      .setExpirationTime(config.accessTokenExpiryMinutes.toString() + 'm')
-      .sign(signingKey.privateKey);
+      .setIssuer(signingKey.instanceName);
+
+    if (expiresAtSeconds !== undefined) {
+      if (!Number.isFinite(expiresAtSeconds)) {
+        throw new Error('Access token expiry must be a finite unix timestamp');
+      }
+      // NumericDate: jose uses a number argument as the `exp` claim directly.
+      jwtBuilder.setExpirationTime(expiresAtSeconds);
+    } else {
+      jwtBuilder.setExpirationTime(
+        config.accessTokenExpiryMinutes.toString() + 'm'
+      );
+    }
+
+    const jwt = await jwtBuilder.sign(signingKey.privateKey);
 
     return jwt;
   } catch (e) {
@@ -193,9 +198,11 @@ export async function generateUserToken(
     // When provided (and refresh === true), controls the lifetime of the
     // generated refresh token. Used to keep impersonation sessions short.
     refreshExpiryMs?: number;
+    // Absolute JWT `exp` (unix seconds) copied from a verified source token.
+    expiresAtSeconds?: number;
   } = {}
 ) {
-  const {impersonatingUserId, refreshExpiryMs} = options;
+  const {impersonatingUserId, refreshExpiryMs, expiresAtSeconds} = options;
   const signingKey = await keyService.getSigningKey();
 
   if (signingKey === null || signingKey === undefined) {
@@ -205,6 +212,7 @@ export async function generateUserToken(
       user,
       signingKey,
       impersonatingUserId,
+      expiresAtSeconds,
     });
 
     return {

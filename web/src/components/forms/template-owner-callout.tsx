@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Read-only team hint shown when the user has no team choice (must create in
  * the sole team they can access). For optional team selection use the dropdown

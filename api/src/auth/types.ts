@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // Types related to authentication and user provisioning.
 
 import z from 'zod';

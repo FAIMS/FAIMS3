@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Graceful handling when a notebook disappears upstream (archived or deleted).
  *

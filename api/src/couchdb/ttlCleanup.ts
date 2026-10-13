@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * TTL cleanup for ephemeral auth / invite CouchDB documents.
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Web re-exports for offline map size helpers and the large-area warning threshold.
  *

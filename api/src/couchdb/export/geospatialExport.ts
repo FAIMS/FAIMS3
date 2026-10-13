@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Export geospatial data from FAIMS notebooks in GeoJSON, KML, and GeoPackage.
  *

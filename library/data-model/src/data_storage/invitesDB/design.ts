@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 import {convertToCouchDBString} from '../utils';
@@ -88,8 +89,48 @@ const designDoc = {
         }
       }),
     },
+
+    // All Quick Share invites, keyed by survey id. An unfiltered query returns
+    // every quick share; `key` = resourceId returns every one for that survey.
+    // The kind literal must match QUICK_SHARE_KIND. Map source is stored as
+    // text, so it cannot close over that constant.
+    quickShares: {
+      map: convertToCouchDBString(doc => {
+        if (
+          doc.kind === 'quick-share' &&
+          doc.resourceType === 'PROJECT' &&
+          doc.resourceId
+        ) {
+          emit(doc.resourceId, 1);
+        }
+      }),
+    },
+
+    // Quick Share invites for one survey and the user who created them.
+    quickSharesByProjectAndUser: {
+      map: convertToCouchDBString(doc => {
+        if (
+          doc.kind === 'quick-share' &&
+          doc.resourceType === 'PROJECT' &&
+          doc.resourceId &&
+          doc.createdBy
+        ) {
+          emit([doc.resourceId, doc.createdBy], 1);
+        }
+      }),
+    },
   },
 };
+
+/** `db.query` name for the {@link designDoc} `quickShares` view. */
+export const QUICK_SHARES_INDEX = 'indexes/quickShares';
+
+/**
+ * `db.query` name for the {@link designDoc} `quickSharesByProjectAndUser` view.
+ * Key is `[projectId, userId]`.
+ */
+export const QUICK_SHARES_BY_PROJECT_AND_USER_INDEX =
+  'indexes/quickSharesByProjectAndUser';
 
 /**
  * Exports all design documents for the invites database

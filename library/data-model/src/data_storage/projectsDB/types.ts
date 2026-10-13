@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
 import {z} from 'zod';
 import {DatabaseInterface, PossibleConnectionInfo} from '../../types';
 import {PersistedRootDescriptionSchema} from '../rootMetadata';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
 import {
   NotebookDefinitionSchema,
+  UiSpecPropertiesSchema,
   type NotebookDefinition,
 } from '../../uiSpecification';
 import {OfflineMapRegionSchema} from './offlineMapRegion';
@@ -105,11 +107,11 @@ export type ProjectV3Document = z.infer<typeof ProjectV3DocumentSchema>;
 // =============
 
 /**
- * Projects DB v4 — extend this schema when adding new persisted project fields.
+ * Projects DB v4 — inlined uiSpecification. Frozen; see {@link ProjectV5FieldsSchema}.
  * Update alongside {@link projectsV3toV4Migration}.
  */
 export const ProjectV4FieldsSchema = z.object({
-  // User metadata about projects - update with PUT /:id { ...name, ...description }
+  // User metadata — update with PUT /:id { name, description, disableQuickShare }
   name: z.string(),
   description: PersistedRootDescriptionSchema,
 
@@ -124,6 +126,13 @@ export const ProjectV4FieldsSchema = z.object({
 
   // Project lifecycle
   status: z.nativeEnum(ProjectStatus),
+
+  /**
+   * When true, the field app hides Quick Share so users cannot generate a
+   * temporary QR invite. Omitted or false keeps Quick Share available.
+   * Optional — no migration; missing documents default to false.
+   */
+  disableQuickShare: z.boolean().optional(),
 
   // Project connection information
   dataDb: PossibleConnectionInfoSchema,
@@ -146,13 +155,32 @@ export const ProjectV4DocumentSchema = CouchDocumentSchema.extend(
 export type ProjectV4Document = z.infer<typeof ProjectV4DocumentSchema>;
 
 // =============
+// V5 Definition
+// =============
+
+/**
+ * Projects DB v5 — mandatory {@link UiSpecPropertiesSchema} digest of
+ * `uiSpecification` so listings can skip the form payload.
+ * Update alongside {@link projectsV4toV5Migration}.
+ */
+export const ProjectV5FieldsSchema = ProjectV4FieldsSchema.extend({
+  uiSpecProperties: UiSpecPropertiesSchema,
+});
+export type ProjectV5Fields = z.infer<typeof ProjectV5FieldsSchema>;
+
+export const ProjectV5DocumentSchema = CouchDocumentSchema.extend(
+  ProjectV5FieldsSchema.shape
+);
+export type ProjectV5Document = z.infer<typeof ProjectV5DocumentSchema>;
+
+// =============
 // Current exports
 // =============
 
-export const ProjectDBFieldsSchema = ProjectV4FieldsSchema;
+export const ProjectDBFieldsSchema = ProjectV5FieldsSchema;
 export type ProjectDBFields = z.infer<typeof ProjectDBFieldsSchema>;
 
-export const ProjectDocumentSchema = ProjectV4DocumentSchema;
+export const ProjectDocumentSchema = ProjectV5DocumentSchema;
 export type ProjectDocument = z.infer<typeof ProjectDocumentSchema>;
 
 export const ExistingProjectDocumentSchema = CouchExistingDocumentSchema.extend(

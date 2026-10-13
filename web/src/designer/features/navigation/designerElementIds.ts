@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file DOM attribute names and CSS selectors for designer scroll targets.
  *

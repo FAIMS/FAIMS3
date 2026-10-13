@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Skeleton, Typography} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {resolveParentFieldValue} from '@faims3/data-model';

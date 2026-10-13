@@ -1,16 +1,4 @@
-// Copyright 2023 FAIMS Project
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 /**
  * @file Per-field accordion in the section list: actions, conflicts, and type-specific editor.
@@ -708,6 +696,26 @@ const FieldEditorComponent = ({
                       color: 'error.main',
                       backgroundColor: theme =>
                         alpha(theme.palette.error.main, 0.06),
+                    }}
+                  />
+                )}
+                {field.condition && (
+                  <Chip
+                    label="Conditional"
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      fontWeight: 650,
+                      fontSize: '0.68rem',
+                      height: 23,
+                      '& .MuiChip-label': {
+                        px: 1,
+                      },
+                      borderColor: theme =>
+                        alpha(theme.palette.warning.main, 0.82),
+                      color: 'warning.main',
+                      backgroundColor: theme =>
+                        alpha(theme.palette.warning.main, 0.06),
                     }}
                   />
                 )}

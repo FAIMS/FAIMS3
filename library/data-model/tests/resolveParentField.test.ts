@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import type {DataEngine, UiSpecModel} from '@faims3/data-model';
 import {formatFieldValue, resolveParentFieldValue} from '../src';
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import faimsTheme from './default';
 import fieldmarkTheme from './fieldmark';
 import faimsAppBarStyling from './default/appBar';

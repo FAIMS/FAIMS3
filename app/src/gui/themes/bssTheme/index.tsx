@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {colors, createTheme} from '@mui/material';
 import {bssBrand, mapControlBrand} from '@faims3/data-model';
 import typography from '../fieldmark/typography';
@@ -83,6 +84,15 @@ const baseTheme = createTheme({
       buttonActiveBackground: mapControlBrand.activeMain,
       buttonActiveBackgroundHover: mapControlBrand.activeHover,
       buttonForeground: '#FFFFFF',
+    },
+    history: {
+      marker: bssBrand.infoMain,
+      markerCreated: bssBrand.successMain,
+      markerUpdated: colors.blue[400],
+      markerDeleted: bssBrand.errorMain,
+      connector: '#E0E0E0',
+      iconBackground: '#f3f3f3',
+      iconForeground: colors.blueGrey[600],
     },
   },
   typography,

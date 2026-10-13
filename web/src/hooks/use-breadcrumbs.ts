@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {useBreadcrumb} from '@/context/breadcrumb-provider';
 import {useEffect} from 'react';
 

@@ -21,7 +21,7 @@ class API_Register extends Page {
   }
 
   get loginLink() {
-    return $('[data-testid="login-link"], .auth-link');
+    return $('[data-testid="register-sign-in-link"]');
   }
 
   get registerForm() {
@@ -87,7 +87,9 @@ class API_Register extends Page {
   }
 
   get ssoProviders() {
-    return $$('[data-testid*="sso-provider-"], .auth-button-outline');
+    // Prefer data-testid only: the register "Sign in" control also uses
+    // .auth-button-outline and must not be counted as an SSO provider.
+    return $$('[data-testid*="sso-provider-"]');
   }
 
   // Hidden form fields

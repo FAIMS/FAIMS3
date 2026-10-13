@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {config} from '@/constants';
 import {Loader2} from 'lucide-react';
 import {useEffect} from 'react';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {LIST_OF_RECORDS_PLAN_TYPE, planReferenceFor} from '@faims3/data-model';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';

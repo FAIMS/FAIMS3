@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Onboarding component presents the login options for the
  * selected server and if multiple servers are configured,

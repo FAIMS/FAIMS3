@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Shared invite-code format constants.
  *
@@ -47,6 +48,21 @@ export const INVITE_EXPIRY_HINT_DAYS = [1, 5, 10, 30, 90] as const;
 export const DEFAULT_INVITE_EXPIRY_MS = DEFAULT_INVITE_EXPIRY_DAYS * MS_PER_DAY;
 
 export const MAX_INVITE_EXPIRY_MS = MAX_INVITE_EXPIRY_DAYS * MS_PER_DAY;
+
+/**
+ * Quick Share lifetime. The create endpoint always uses this; the request
+ * body cannot choose a duration.
+ */
+export const DEFAULT_QUICK_SHARE_LIFETIME_MS = 60 * 60 * 1000;
+
+/** Display name stored on a Quick Share invite document. */
+export const QUICK_SHARE_NAME = 'Quick share';
+
+/** Invite document discriminator for a field-app Quick Share. */
+export const QUICK_SHARE_KIND = 'quick-share' as const;
+
+/** Stored invite `kind`; only Quick Share sets this. */
+export type InviteKind = typeof QUICK_SHARE_KIND;
 
 /**
  * Client/server clock skew allowed when checking the max lifetime, so a

@@ -152,6 +152,13 @@ error; at run time a missing value leaves the result blank. A custom
 field that an expression references cannot be removed from the Info
 panel until the expression is changed.
 
+### Using Constants
+
+Mathematical constants such as `{_CONSTANT.PI}` can be used in any
+arithmetic inside the expression (for example within a conditional). See
+[Using Constants](../number-fields/computed-number-field.md#using-constants)
+in the Computed Number documentation for the full list.
+
 ### Shared Field Options
 
 Configure any of the shared field options as needed.

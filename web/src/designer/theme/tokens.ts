@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Canonical design-token contract shared by every designer theme variant.
  * Each theme file (faims-tokens.ts, bss-tokens.ts) must satisfy this type.

@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: index.ts
  * Description:
  *    Core functions to access the various databases used by the application
@@ -42,7 +30,11 @@ import {
   InvitesDB,
   GetDbById,
   collectProjectDataDbs,
+  dataDbNameForProject,
   migrateDbs,
+  ProjectDataDbRef,
+  registerDbAtCurrentVersion,
+  unregisterDbMigrationDoc,
   MigrationsDB,
   PeopleDB,
   PeopleDBFields,
@@ -58,7 +50,7 @@ import Nano from 'nano';
 import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
 import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
-import {getAllProjectsDirectory} from './notebooks';
+import {getAllProjectsListing} from './notebooks';
 import {registerAdminUser} from './users';
 
 const DIRECTORY_DB_NAME = 'directory';
@@ -396,6 +388,8 @@ export const getDbById: GetDbById = async ({dbType, id}) => {
   }
 };
 
+const DB_INIT_LOG = '[db-initialisation]';
+
 /**
  * Initialises the database level configuration for a project's data DB. Can
  * create the DB if it doesn't already exist.
@@ -410,6 +404,10 @@ export const initialiseDataDb = async ({
   // Are we in a testing environment?
   const isTesting = process.env.NODE_ENV === 'test';
 
+  console.log(
+    `${DB_INIT_LOG} Initialising data DB for project ${projectId} (force=${force})`
+  );
+
   // Get the metadata DB
   const dataDb = await getDataDb(projectId);
 
@@ -420,6 +418,10 @@ export const initialiseDataDb = async ({
       config: {applyPermissions: !isTesting, forceWrite: force},
     });
   } catch (e) {
+    console.error(
+      `${DB_INIT_LOG} Failed to initialise data DB for project ${projectId}`,
+      e
+    );
     throw new Exceptions.InternalSystemError(
       `An error occurred while initialising the data DB for project ${projectId}!... ${e}`
     );
@@ -427,6 +429,45 @@ export const initialiseDataDb = async ({
 
   return dataDb;
 };
+
+const dataDbNameForProjectRef = (project: ProjectDataDbRef): string =>
+  dataDbNameForProject({
+    project,
+    fallbackName: `data-${project._id}`,
+  });
+
+/**
+ * Records a newly created project data DB as already at the current schema
+ * version. Must only be called on true create paths — not restore or startup
+ * re-init, which may load legacy documents afterwards.
+ */
+export const registerDataDbAtCurrentVersion = async ({
+  project,
+  launchedBy = 'system',
+}: {
+  project: ProjectDataDbRef;
+  launchedBy?: string;
+}) =>
+  registerDbAtCurrentVersion({
+    dbType: DatabaseType.DATA,
+    dbName: dataDbNameForProjectRef(project),
+    migrationDb: getMigrationDb(),
+    launchedBy,
+  });
+
+/**
+ * Drops the migration document for a project data DB that has been deleted.
+ */
+export const unregisterDataDbMigration = async ({
+  project,
+}: {
+  project: ProjectDataDbRef;
+}) =>
+  unregisterDbMigrationDoc({
+    dbType: DatabaseType.DATA,
+    dbName: dataDbNameForProjectRef(project),
+    migrationDb: getMigrationDb(),
+  });
 
 /**
  * Critical method which initialises all databases, including remotely on the
@@ -458,54 +499,19 @@ export const initialiseDbAndKeys = async ({
   // Are we in a testing environment?
   const isTesting = process.env.NODE_ENV === 'test';
 
-  // Establish databases (this either fetches or creates)
-  // Auth
-  const authDB = getAuthDB();
+  console.log(`${DB_INIT_LOG} Starting (force=${force}, pushKeys=${pushKeys})`);
 
-  // Directory
-  const directoryDB = getDirectoryDB();
-
-  // Projects
-  const projectsDB = localGetProjectsDb();
-
-  // Invites
-  const invitesDB = getInvitesDB();
-
-  // Teams
-  const teamsDB = getTeamsDB();
-
-  // Tombstone
-  const tombstoneDB = getTombstoneDB();
-
-  // Templates
-  const templatesDb = getTemplatesDb();
-
-  // Users
-  const peopleDb = getUsersDB();
-
-  // Migrations DB
-  const migrationsDb = getMigrationDb();
-
-  // Now for each, generate their initialisation documents and apply
-
-  // Auth DB
-  try {
-    await couchInitialiser({
-      db: authDB,
-      content: initAuthDB({}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
-    });
-  } catch (e) {
-    throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the auth database!...' + e
-    );
-  }
-
-  // Directory DB (include default document which establishes identity of this
-  // conductor)
-  try {
-    await couchInitialiser({
-      db: directoryDB,
+  // Directory DB includes a default document which establishes identity of
+  // this conductor
+  const globalDbs: {
+    dbName: string;
+    db: DatabaseInterface;
+    content: ReturnType<typeof initAuthDB>;
+  }[] = [
+    {dbName: AUTH_DB_NAME, db: getAuthDB(), content: initAuthDB({})},
+    {
+      dbName: DIRECTORY_DB_NAME,
+      db: getDirectoryDB(),
       content: initDirectoryDB({
         defaultConfig: {
           conductorInstanceName: config.conductorInstanceName,
@@ -515,131 +521,90 @@ export const initialiseDbAndKeys = async ({
           projectsDbName: PROJECTS_DB_NAME,
         },
       }),
-      config: {applyPermissions: !isTesting, forceWrite: force},
-    });
-  } catch (e) {
-    throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the directory database!...' + e
-    );
-  }
-
-  // Projects DB
-  try {
-    await couchInitialiser({
-      db: projectsDB,
+    },
+    {
+      dbName: PROJECTS_DB_NAME,
+      db: localGetProjectsDb(),
       content: initProjectsDB({}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
-    });
-  } catch (e) {
-    throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the projects database!...' + e
-    );
-  }
-
-  // Templates DB
-  try {
-    await couchInitialiser({
-      db: templatesDb,
+    },
+    {
+      dbName: TEMPLATES_DB_NAME,
+      db: getTemplatesDb(),
       content: initTemplatesDB({}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
-    });
-  } catch (e) {
-    throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the templates database!...' + e
-    );
-  }
-
-  // People DB
-  try {
-    await couchInitialiser({
-      db: peopleDb,
-      content: initPeopleDB({}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
-    });
-  } catch (e) {
-    throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the people database!...' + e
-    );
-  }
-
-  // Invites DB
-  try {
-    await couchInitialiser({
-      db: invitesDB,
-      content: initInvitesDB({}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
-    });
-  } catch (e) {
-    throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the invites database!...' + e
-    );
-  }
-
-  // Teams DB
-  try {
-    await couchInitialiser({
-      db: teamsDB,
-      content: initTeamsDB({}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
-    });
-  } catch (e) {
-    throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the teams database!...' + e
-    );
-  }
-
-  // Tombstone DB
-  try {
-    await couchInitialiser({
-      db: tombstoneDB,
+    },
+    {dbName: PEOPLE_DB_NAME, db: getUsersDB(), content: initPeopleDB({})},
+    {dbName: INVITE_DB_NAME, db: getInvitesDB(), content: initInvitesDB({})},
+    {dbName: TEAMS_DB_NAME, db: getTeamsDB(), content: initTeamsDB({})},
+    {
+      dbName: TOMBSTONE_DB_NAME,
+      db: getTombstoneDB(),
       content: initTombstoneDB({}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
-    });
-  } catch (e) {
-    throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the tombstone database!...' + e
-    );
-  }
-
-  // Migrations DB
-  try {
-    await couchInitialiser({
-      db: migrationsDb,
+    },
+    {
+      dbName: MIGRATIONS_DB_NAME,
+      db: getMigrationDb(),
       content: initMigrationsDB({}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
-    });
-  } catch (e) {
-    throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the migrations database!...' + e
+    },
+  ];
+
+  console.log(
+    `${DB_INIT_LOG} Initialising ${globalDbs.length} global DB(s): ${globalDbs
+      .map(d => d.dbName)
+      .join(', ')}`
+  );
+
+  for (const {dbName, db, content} of globalDbs) {
+    const designIds = content.designDocuments.map(doc => doc._id).join(', ');
+    console.log(
+      `${DB_INIT_LOG} Initialising global DB ${dbName} (${content.designDocuments.length} design doc(s)${
+        designIds ? `: ${designIds}` : ''
+      }${content.defaultDocument ? ', default document' : ''}, force=${force})`
     );
+    try {
+      await couchInitialiser({
+        db,
+        content,
+        config: {applyPermissions: !isTesting, forceWrite: force},
+      });
+    } catch (e) {
+      console.error(
+        `${DB_INIT_LOG} Failed to initialise global DB ${dbName}`,
+        e
+      );
+      throw new Exceptions.InternalSystemError(
+        `An error occurred while initialising the ${dbName} database!...` + e
+      );
+    }
   }
 
-  // For each project, ensure the metadata and data DBs are also
-  // initialised/synced
-  const projects = await getAllProjectsDirectory();
+  // For each project, ensure the data DBs are also initialised/synced
+  const projects = await getAllProjectsListing();
+  console.log(
+    `${DB_INIT_LOG} Found ${projects.length} project(s); initialising data DBs`
+  );
 
   for (const project of projects) {
-    // Project ID
-    const projectId = project._id;
-
-    // Now initialise the DBs (potentially updating security documents etc)
-    await initialiseDataDb({projectId, force});
+    await initialiseDataDb({projectId: project._id, force});
   }
 
   if (pushKeys) {
-    // Setup keys
+    console.log(`${DB_INIT_LOG} Pushing JWT key configuration`);
     try {
       await initialiseJWTKey();
     } catch (error) {
-      console.log(
-        'something wrong PUTing jwt_keys into the db configuration...',
+      console.error(
+        `${DB_INIT_LOG} Failed to push JWT key configuration`,
         error
       );
       throw error;
     }
   } else {
-    console.log('Not pushing key configuration.');
+    console.log(
+      `${DB_INIT_LOG} Skipping JWT key configuration (pushKeys=false)`
+    );
   }
+
+  console.log(`${DB_INIT_LOG} Completed`);
 };
 
 /**
@@ -649,7 +614,7 @@ export const initialiseDbAndKeys = async ({
  * documents may predate data v2 `updatedAt`).
  */
 export const migrateAllProjectDataDbs = async () => {
-  const projects = await getAllProjectsDirectory();
+  const projects = await getAllProjectsListing();
   console.log(
     `[migrate] Found ${projects.length} project(s); opening data DBs`
   );
@@ -694,7 +659,11 @@ export const migrateAllProjectDataDbs = async () => {
 };
 
 /**
- * Initialises and then migrates all databases!
+ * Initialises and then migrates all databases.
+ *
+ * Used by `pnpm migrate-with-keys` and by API startup (the latter
+ * serialises this call behind the startup migration lock when
+ * `STARTUP_MIGRATION_LOCK_ENABLED` is on).
  */
 export const initialiseAndMigrateDBs = async ({
   force = false,
@@ -728,6 +697,11 @@ export const initialiseAndMigrateDBs = async ({
       db: getTemplatesDb(),
       dbType: DatabaseType.TEMPLATES,
       dbName: TEMPLATES_DB_NAME,
+    },
+    {
+      db: getTeamsDB(),
+      dbType: DatabaseType.TEAMS,
+      dbName: TEAMS_DB_NAME,
     },
     {
       db: getTombstoneDB(),

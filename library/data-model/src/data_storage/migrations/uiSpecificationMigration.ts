@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {
   PROJECT_METADATA_PREFIX,
   UI_SPECIFICATION_NAME,

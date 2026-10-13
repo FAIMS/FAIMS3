@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import fs from 'fs';
 import path from 'path';
 import {describe, expect, it, vi} from 'vitest';
@@ -12,9 +13,14 @@ vi.mock('../store', () => ({
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   ProjectStatus,
+  Role,
 } from '@faims3/data-model';
-import {migrateProjectsPersistedState} from './projectsPersistMigration';
-import {migrateProjectsSyncModeV2} from './projectsPersistMigration';
+import {
+  migrateProjectsActivationSplitV3,
+  migrateProjectsPersistedState,
+  migrateProjectsQuickShareQrV4,
+  migrateProjectsSyncModeV2,
+} from './projectsPersistMigration';
 
 const buildCompiledSpecId = ({
   projectId,
@@ -311,5 +317,242 @@ describe('migrateProjectsSyncModeV2', () => {
     expect(migrated.servers['server-a']!.projects.on!.database!.syncMode).toBe(
       'both'
     );
+  });
+});
+
+describe('migrateProjectsActivationSplitV3', () => {
+  const listedDefinition = {
+    uiSpec: {
+      fields: {title: {label: 'Title'}},
+      views: {},
+      viewsets: {},
+      visible_types: [],
+      settings: {showQrCodeButton: false},
+      schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+    },
+    metadata: {
+      information: {
+        notebookVersion: '1.0',
+        purposeMarkdown: 'Listed purpose',
+        projectLeadLabel: '',
+        leadInstitution: '',
+      },
+    },
+  };
+  const activatedDefinition = {
+    uiSpec: {
+      fields: {title: {label: 'Active'}},
+      views: {},
+      viewsets: {},
+      visible_types: [],
+      settings: {showQrCodeButton: false},
+      schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+    },
+    metadata: {
+      information: {
+        notebookVersion: '1.0',
+        purposeMarkdown: 'Activated purpose',
+        projectLeadLabel: '',
+        leadInstitution: '',
+      },
+    },
+  };
+
+  it('splits maps, keeps activated graphs, and immediately strips listed specs', async () => {
+    const migrated = await migrateProjectsActivationSplitV3({
+      isInitialised: true,
+      servers: {
+        'server-a': {
+          serverId: 'server-a',
+          serverUrl: 'https://example.test',
+          serverTitle: 'Test',
+          shortCodePrefix: 'T',
+          description: '',
+          projects: {
+            listed: {
+              projectId: 'listed',
+              serverId: 'server-a',
+              name: 'Listed',
+              isActivated: false,
+              status: ProjectStatus.OPEN,
+              uiSpecificationId: 'listed-spec',
+              uiDefinition: listedDefinition,
+              quickShare: {
+                inviteId: 'FAIMS-listed-share',
+                role: Role.PROJECT_GUEST,
+                expiry: 1_700_000_000_000,
+                qrCode: 'data:image/png;base64,listed',
+                createdBy: 'ada',
+              },
+            },
+            active: {
+              projectId: 'active',
+              serverId: 'server-a',
+              name: 'Active',
+              isActivated: true,
+              status: ProjectStatus.OPEN,
+              uiSpecificationId: 'active-spec',
+              uiDefinition: activatedDefinition,
+              database: {
+                localDbId: 'local',
+                syncMode: 'both',
+                isSyncingAttachments: false,
+                remote: {
+                  remoteDbId: 'remote',
+                  syncId: 'sync',
+                  connectionConfiguration: {
+                    jwtToken: 't',
+                    couchUrl: 'https://couch',
+                    databaseName: 'data-active',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const server = migrated.servers['server-a']!;
+    expect(server).not.toHaveProperty('projects');
+    expect(migrated.isInitialised).toBe(true);
+
+    const listed = server.listed.listed;
+    expect(listed).toBeDefined();
+    expect(listed.isActivated).toBe(false);
+    expect(listed).not.toHaveProperty('uiDefinition');
+    expect(listed).not.toHaveProperty('uiSpecificationId');
+    expect(listed.quickShare).toEqual({
+      inviteId: 'FAIMS-listed-share',
+      role: Role.PROJECT_GUEST,
+      expiry: 1_700_000_000_000,
+      qrCode: 'data:image/png;base64,listed',
+      createdBy: 'ada',
+    });
+    expect(listed.uiSpecProperties.schemaVersion).toBe(
+      CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+    );
+    expect(listed.uiSpecProperties.hash).toHaveLength(64);
+
+    const active = server.activated.active;
+    expect(active).toBeDefined();
+    expect(active.isActivated).toBe(true);
+    expect(active.uiDefinition).toEqual(activatedDefinition);
+    expect(active.uiSpecificationId).toBe('active-spec');
+    expect(active.uiSpecProperties.hash).toHaveLength(64);
+    expect(active.uiSpecProperties.hash).not.toBe(listed.uiSpecProperties.hash);
+  });
+});
+
+describe('migrateProjectsQuickShareQrV4', () => {
+  it('strips persisted QR images and keeps invite metadata', () => {
+    const migrated = migrateProjectsQuickShareQrV4({
+      isInitialised: true,
+      servers: {
+        'server-a': {
+          serverId: 'server-a',
+          serverUrl: 'https://example.test',
+          serverTitle: 'Test',
+          shortCodePrefix: 'T',
+          description: '',
+          listed: {
+            listed: {
+              projectId: 'listed',
+              serverId: 'server-a',
+              name: 'Listed',
+              isActivated: false,
+              status: ProjectStatus.OPEN,
+              uiSpecProperties: {
+                schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+                hash: 'a'.repeat(64),
+              },
+              quickShare: {
+                inviteId: 'FAIMS-listed-share',
+                role: Role.PROJECT_GUEST,
+                expiry: 1_700_000_000_000,
+                qrCode: 'data:image/png;base64,listed',
+                createdBy: 'ada',
+              },
+            },
+          },
+          activated: {
+            active: {
+              projectId: 'active',
+              serverId: 'server-a',
+              name: 'Active',
+              isActivated: true,
+              status: ProjectStatus.OPEN,
+              uiSpecificationId: 'active-spec',
+              uiDefinition: {
+                uiSpec: {
+                  fields: {},
+                  views: {},
+                  viewsets: {},
+                  visible_types: [],
+                  settings: {showQrCodeButton: false},
+                  schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+                },
+                metadata: {
+                  information: {
+                    notebookVersion: '1.0',
+                    purposeMarkdown: 'Active purpose',
+                    projectLeadLabel: '',
+                    leadInstitution: '',
+                  },
+                },
+              },
+              uiSpecProperties: {
+                schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+                hash: 'b'.repeat(64),
+              },
+              quickShare: {
+                inviteId: 'FAIMS-active-share',
+                role: Role.PROJECT_CONTRIBUTOR,
+                expiry: 1_800_000_000_000,
+                createdBy: 'ada',
+              },
+              database: {
+                localDbId: 'local',
+                syncMode: 'both',
+                isSyncingAttachments: false,
+                remote: {
+                  remoteDbId: 'remote',
+                  syncId: 'sync',
+                  connectionConfiguration: {
+                    jwtToken: 't',
+                    couchUrl: 'https://couch',
+                    databaseName: 'data-active',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(migrated.isInitialised).toBe(true);
+    expect(migrated.servers['server-a']!.listed.listed.quickShare).toEqual({
+      inviteId: 'FAIMS-listed-share',
+      role: Role.PROJECT_GUEST,
+      expiry: 1_700_000_000_000,
+      createdBy: 'ada',
+    });
+    expect(
+      migrated.servers['server-a']!.listed.listed.quickShare
+    ).not.toHaveProperty('qrCode');
+    expect(migrated.servers['server-a']!.activated.active.quickShare).toEqual({
+      inviteId: 'FAIMS-active-share',
+      role: Role.PROJECT_CONTRIBUTOR,
+      expiry: 1_800_000_000_000,
+      createdBy: 'ada',
+    });
+  });
+
+  it('returns empty state when persisted data is not an object', () => {
+    expect(migrateProjectsQuickShareQrV4(null)).toEqual({
+      servers: {},
+      isInitialised: false,
+    });
   });
 });

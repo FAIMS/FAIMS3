@@ -1,26 +1,12 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * AdvancedSelect Component
- *
  * A hierarchical tree-based select field for navigating nested vocabulary structures.
  * Displays options in an expandable tree view with support for:
  * - Nested hierarchical options
  * - Image type nodes with attachment previews
  * - Full path or child-only value modes
- *
  * Props:
  * - label (string, optional): The field label displayed as a heading.
  * - helperText (string, optional): The field help text displayed below the heading.
@@ -39,6 +25,7 @@ import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
 import React from 'react';
 import {z} from 'zod';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {BaseFieldParametersSchema} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
@@ -296,10 +283,11 @@ export const AdvancedSelect = (props: FieldProps) => {
  * The value is a string representing the selected path or child name.
  */
 const valueSchema = (props: AdvancedSelectFieldProps) => {
+  let schema = z.string({error: 'Please select an option'});
   if (props.required) {
-    return z.string().min(1, {message: 'Please select an option'});
+    schema = schema.min(1, {message: 'Please select an option'});
   }
-  return z.string();
+  return schemaWithAbsent('', schema);
 };
 
 // ============================================================================

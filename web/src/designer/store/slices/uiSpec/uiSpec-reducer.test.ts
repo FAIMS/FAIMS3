@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Integration-style tests for UI-spec reducers (fields, sections, viewsets).
  */

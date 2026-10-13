@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {FullFieldProps} from '../formModule/types';
 import {addressFieldSpec} from './fields/AddressField';
 import {advancedSelectFieldSpec} from './fields/AdvancedSelect';

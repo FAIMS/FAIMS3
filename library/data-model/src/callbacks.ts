@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {logError} from './logging';
 import {TokenContents} from './permission/types';
 import {RecordMetadata, ProjectID} from './types';

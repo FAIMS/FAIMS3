@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /** RFC 4122 v4 UUID via the Web Crypto API (Node and browsers). */
 export function randomUuid(): string {
   return crypto.randomUUID();

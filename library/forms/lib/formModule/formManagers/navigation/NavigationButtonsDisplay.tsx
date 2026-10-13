@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {Box, Button, CircularProgress} from '@mui/material';
 import React, {ReactNode} from 'react';

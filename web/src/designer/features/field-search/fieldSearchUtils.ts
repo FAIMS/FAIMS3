@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Builds searchable field entries and resolves which fields are in scope for pickers.
  */

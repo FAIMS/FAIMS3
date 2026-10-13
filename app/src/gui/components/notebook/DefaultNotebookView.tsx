@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {getVisibleTypes} from '@faims3/data-model';
 import {useMemo} from 'react';
 import {ListOfFormsView} from './ListOfFormsView';

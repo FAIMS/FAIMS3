@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import nodemailer from 'nodemailer';
 import {Transporter, SendMailOptions, SentMessageInfo} from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';

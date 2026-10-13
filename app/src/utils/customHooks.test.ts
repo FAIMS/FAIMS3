@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import type {MinimalRecordMetadata} from '@faims3/data-model';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {act, renderHook} from '@testing-library/react';

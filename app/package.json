@@ -1,6 +1,6 @@
 {
   "name": "@faims3/app",
-  "version": "1.7.2",
+  "version": "1.9.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -21,7 +21,6 @@
     "preintegration": "pnpm run compile",
     "integration": "NODE_ENV=test react-scripts test --env=node --forceExit --runInBand --detectOpenHandles src/integration_tests --transformIgnorePatterns \"node_modules/(?!ol)/\"",
     "postintegration": "pnpm run lint",
-    "preserve": "pnpm run build",
     "serve": "vite preview",
     "prewebapp-build": "pnpm run build",
     "webapp-build": "cap copy",
@@ -75,6 +74,7 @@
     "@types/lodash": "^4.14.194",
     "@types/markdown-it": "^14.1.1",
     "@types/node": "^24",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@types/react-router": "5.1.20",
@@ -98,6 +98,7 @@
     "pouchdb-browser": "^9.0.0",
     "pouchdb-debug": "^7.2.1",
     "pouchdb-find": "^9.0.0",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-jss": "^10.10.0",

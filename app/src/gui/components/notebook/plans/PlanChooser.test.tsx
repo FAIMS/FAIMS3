@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import '@testing-library/jest-dom';
 import {
   COUNTED_PLAN_TYPE,

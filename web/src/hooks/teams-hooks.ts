@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {User} from '@/context/auth-provider';
 import {Role, TeamMembershipInput} from '@faims3/data-model';
 import {config} from '@/constants';

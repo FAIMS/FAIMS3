@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {
   Action,
   claimsPlan,
@@ -171,6 +172,21 @@ export function buildStatusReportKey({
   recordId: string;
 }) {
   return [HYDRATION_KEY_PREFIX, projectId, recordId, 'statusReport'];
+}
+
+/**
+ * Query key for a record's history tree, on the hydration prefix so the
+ * project-wide cancel/reset sweeps reach it; freshness comes from the History
+ * tab's refetchOnMount.
+ */
+export function buildRecordHistoryKey({
+  projectId,
+  recordId,
+}: {
+  projectId: string;
+  recordId: string;
+}) {
+  return [HYDRATION_KEY_PREFIX, projectId, recordId, 'recordHistory'];
 }
 
 /**

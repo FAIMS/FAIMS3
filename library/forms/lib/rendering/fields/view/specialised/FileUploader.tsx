@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import ImageIcon from '@mui/icons-material/Image';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {useAuth} from '@/context/auth-provider';
 import {columns} from '@/components/tables/projects';
 import {DataTable} from '@/components/data-table/data-table';

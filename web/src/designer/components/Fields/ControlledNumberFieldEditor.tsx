@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Box, FormHelperText, TextField} from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {withUpdatedField} from '../../features/fields/shared/updateField';

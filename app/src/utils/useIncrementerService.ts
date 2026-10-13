@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {useCallback, useMemo} from 'react';
 import {ProjectID} from '@faims3/data-model';
 import {

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * DateTime Fields
  *
@@ -21,6 +22,7 @@ import {
 } from '@mui/material';
 import React, {HTMLInputTypeAttribute, useEffect} from 'react';
 import {z} from 'zod';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {BaseFieldParametersSchema} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
 import {
@@ -289,13 +291,13 @@ const MonthPickerRenderer: DataViewFieldRender = props => {
 // =============================================================================
 
 const dateTimeDataSchemaFunction = (props: DateTimeFieldProps) => {
-  let schema = z.string();
+  let schema = z.string({error: 'Enter a valid date'});
 
   if (props.required) {
     schema = schema.min(1, {message: 'This field is required'});
   }
 
-  return schema;
+  return schemaWithAbsent('', schema);
 };
 
 // =============================================================================

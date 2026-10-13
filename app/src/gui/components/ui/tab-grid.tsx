@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
@@ -132,6 +133,7 @@ export default function TabProjectGrid({
               }}
               getRowId={({projectId}) => projectId}
               rowHeight={75}
+              autoHeight
               hideFooter
               paginationModel={paginationModel}
               onPaginationModelChange={setPaginationModel}

@@ -1,23 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: buildconfig.ts
  * Description:
  *   This module exports the configuration of the build, including things like
  *   which server to use and whether to include test data.
- *
  *   Configuration is parsed from `process.env` with a single zod schema:
  *     - Each env key is declared once with its coercion / defaulting logic and
  *       is the place to document that setting.
@@ -25,7 +12,6 @@
  *     - A final `.transform()` renames ENV_KEYS into the camelCase `config` shape
  *       (and builds a few cross-field / required values). Do not re-document
  *       env-backed fields in the transform.
- *
  *   Prefer importing `{config}` and reading `config.<field>`. Service singletons
  *   (`keyService`, `emailService`) and lazy key-file path helpers remain as
  *   dedicated exports for DI / test replacement.
@@ -51,6 +37,7 @@ import {getKeyService, IKeyService, KeySource} from './services/keyService';
 // Get the package version directly from package.json
 import {version as packageVersion} from '../package.json';
 import {ProvisionSSOUsersPolicy} from './auth/types';
+import {STARTUP_MIGRATION_LOCK_TIMEOUT_MS as DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS} from './couchdb/startupMigrationLock';
 
 console.log(`Using API version from package.json: ${packageVersion}`);
 
@@ -206,6 +193,38 @@ const EnvSchema = z
       DEFAULT_EMAIL_CODE_EXPIRY_MINUTES,
       'EMAIL_CODE_EXPIRY_MINUTES'
     ),
+    /**
+     * Skip API-boot Couch migrate and notebook uiSpec walks entirely
+     * (`DISABLE_MIGRATE_ON_STARTUP`). Blank → off (migrate still runs).
+     * When true, `runStartupMigrations` returns immediately and the
+     * lock is never claimed. Use for local/debug boots against an
+     * already-migrated DB, or when migrate is run out of band
+     * (`pnpm migrate-with-keys`). Accepts true/1/on/yes or
+     * false/0/off/no; unrecognised values fail parse.
+     */
+    DISABLE_MIGRATE_ON_STARTUP: configHelpers.boolWithDefault(false),
+    /**
+     * Couch-mediated claim/wait/steal around API-boot migrations
+     * (`STARTUP_MIGRATION_LOCK_ENABLED`). Blank → off. Clustered /
+     * multi-replica production MUST enable this so replicas do not race
+     * migrate. Default off so local `pnpm run dev` reloads do not wait
+     * on a `running` lock left by a killed process (steal timeout is
+     * 30 minutes). Ignored when DISABLE_MIGRATE_ON_STARTUP is on.
+     * Accepts true/1/on/yes or false/0/off/no; unrecognised values
+     * fail parse.
+     */
+    STARTUP_MIGRATION_LOCK_ENABLED: configHelpers.boolWithDefault(false),
+    /**
+     * Age of a still-`running` lock after which a waiter steals it and
+     * runs migrate itself (milliseconds). Timeout is not "skip migrate
+     * and attach". Age is `now - startedAtMs` (no heartbeat); the
+     * original doer is not cancelled. Default 30 minutes. Only used
+     * when STARTUP_MIGRATION_LOCK_ENABLED is on.
+     */
+    STARTUP_MIGRATION_LOCK_TIMEOUT_MS: configHelpers.intDefault(
+      DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
+      'STARTUP_MIGRATION_LOCK_TIMEOUT_MS'
+    ),
     /** Rate-limiter window duration in milliseconds. */
     RATE_LIMITER_WINDOW_MS: configHelpers.intDefault(
       DEFAULT_RATE_LIMITER_WINDOW_MS,
@@ -220,7 +239,7 @@ const EnvSchema = z
      * Whether the Express HTTP IP rate limiter is enabled. Blank → on;
      * unrecognised values fail parse (do not silently disable). Does not
      * control CouchDB-backed auth attempt limits — see
-     * AUTH_ATTEMPT_LIMITER_ENABLED.
+     * ATTEMPT_LIMITER_ENABLED.
      */
     RATE_LIMITER_ENABLED: configHelpers.boolWithDefault(true),
     /**
@@ -248,7 +267,7 @@ const EnvSchema = z
      * fail parse (do not silently disable). E2e may set false for repeated
      * auth flows.
      */
-    AUTH_ATTEMPT_LIMITER_ENABLED: configHelpers.boolWithDefault(true),
+    ATTEMPT_LIMITER_ENABLED: configHelpers.boolWithDefault(true),
     /**
      * Canonical public URL of this Conductor (required). Trailing `/` is
      * stripped.
@@ -533,6 +552,9 @@ const EnvSchema = z
       impersonationSessionExpiryMinutes:
         env.IMPERSONATION_SESSION_EXPIRY_MINUTES,
       emailCodeExpiryMinutes: env.EMAIL_CODE_EXPIRY_MINUTES,
+      disableMigrateOnStartup: env.DISABLE_MIGRATE_ON_STARTUP,
+      startupMigrationLockEnabled: env.STARTUP_MIGRATION_LOCK_ENABLED,
+      startupMigrationLockTimeoutMs: env.STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
       rateLimiterWindowMs: env.RATE_LIMITER_WINDOW_MS,
       rateLimiterPerWindow: env.RATE_LIMITER_PER_WINDOW,
       rateLimiterEnabled: env.RATE_LIMITER_ENABLED,
@@ -543,7 +565,7 @@ const EnvSchema = z
         : env.EXPORT_RATE_LIMITER_ENABLED,
       exportRateLimiterWindowMs: env.EXPORT_RATE_LIMITER_WINDOW_MS,
       exportRateLimiterPerWindow: env.EXPORT_RATE_LIMITER_PER_WINDOW,
-      authAttemptLimiterEnabled: env.AUTH_ATTEMPT_LIMITER_ENABLED,
+      authAttemptLimiterEnabled: env.ATTEMPT_LIMITER_ENABLED,
       keySource: env.KEY_SOURCE,
       maximumLongLivedDurationDays: env.MAXIMUM_LONG_LIVED_DURATION_DAYS,
       bugsnagApiKey: env.BUGSNAG_API_KEY,
@@ -707,6 +729,27 @@ export function publicKeyPath(): string {
   throw new Error(
     `Public key file ${keyfile} does not exist. Please run makeInstanceKeys.sh to generate keys.`
   );
+}
+
+/**
+ * Fail-fast local checks before the health listener binds. No Couch.
+ * FILE keys are also validated when {@link keyService} is constructed.
+ */
+export function assertLocalStartupConfig(): void {
+  if (config.keySource === KeySource.FILE) {
+    privateKeyPath();
+    publicKeyPath();
+    return;
+  }
+  if (config.keySource === KeySource.ENV) {
+    const privateKey = process.env.PRIVATE_SIGNING_KEY?.trim();
+    const publicKey = process.env.PUBLIC_SIGNING_KEY?.trim();
+    if (!privateKey || !publicKey) {
+      throw new Error(
+        'PRIVATE_SIGNING_KEY or PUBLIC_SIGNING_KEY environment variable not set but KEY_SOURCE is ENV'
+      );
+    }
+  }
 }
 
 /** Signing-key singleton. */

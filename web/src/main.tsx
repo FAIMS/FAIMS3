@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Toaster} from '@/components/ui/sonner';
 import {ThemeProvider} from '@/context/theme-provider';
 import Bugsnag from '@bugsnag/js';

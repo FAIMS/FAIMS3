@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {render, screen} from '@testing-library/react';
 import RecordRouteDisplay from './record_link';
 import {BrowserRouter} from 'react-router-dom';

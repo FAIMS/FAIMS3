@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {modifyMemberForTeam} from '@/hooks/teams-hooks';
 import {
   Action,

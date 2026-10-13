@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Alert, AlertDescription, AlertTitle} from '../ui/alert';
 import {Button} from '../ui/button';
 

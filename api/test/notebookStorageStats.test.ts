@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -13,11 +14,11 @@
  *
  * Filename: notebookStorageStats.test.ts
  * Description:
- *   Tests for getUserProjectsDetailed's per-project byteCount, the team storage
- *   total it feeds, the N+1 info() fan-out over a team's notebooks, and the
- *   byteCount required-vs-optional schema contract.
+ *   Tests for getUserProjectsListing's opt-in per-project byteCount, the team
+ *   storage total it feeds, the N+1 info() fan-out over a team's notebooks,
+ *   and the cheap default that skips Couch info().
  */
-import {APINotebookListSchema} from '@faims3/data-model';
+import {APINotebookListWithStatsSchema} from '@faims3/data-model';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 const getNanoDataDb = vi.hoisted(() => vi.fn());
@@ -30,10 +31,7 @@ vi.mock('../src/couchdb', async importOriginal => {
   };
 });
 
-import {
-  createNotebook,
-  getUserProjectsDetailed,
-} from '../src/couchdb/notebooks';
+import {createNotebook, getUserProjectsListing} from '../src/couchdb/notebooks';
 import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
 import {resetDatabases} from './mocks';
 import {EMPTY_UI_SPECIFICATION} from './sampleNotebook';
@@ -105,7 +103,10 @@ describe('notebook storage stats', () => {
     const betaId = await createTeamNotebook('Beta', teamId, sizes.beta);
     const gammaId = await createTeamNotebook('Gamma', teamId, sizes.gamma);
 
-    const notebooks = await getUserProjectsDetailed(admin, teamId);
+    const notebooks = await getUserProjectsListing(admin, {
+      teamId,
+      includeByteCount: true,
+    });
     expect(notebooks).toHaveLength(3);
 
     const byteCountById = new Map(notebooks.map(n => [n._id, n.byteCount]));
@@ -118,7 +119,7 @@ describe('notebook storage stats', () => {
       );
     }
 
-    const teamTotal = notebooks.reduce((sum, n) => sum + n.byteCount, 0);
+    const teamTotal = notebooks.reduce((sum, n) => sum + (n.byteCount ?? 0), 0);
     expect(teamTotal).toBe(sizes.alpha + sizes.beta + sizes.gamma);
   });
 
@@ -140,16 +141,35 @@ describe('notebook storage stats', () => {
     }
 
     infoCallCount = 0;
-    const notebooks = await getUserProjectsDetailed(admin, teamId);
+    const notebooks = await getUserProjectsListing(admin, {
+      teamId,
+      includeByteCount: true,
+    });
 
     expect(notebooks).toHaveLength(projectCount);
     expect(infoCallCount).toBe(projectCount);
     expect(notebooks.every(n => typeof n.byteCount === 'number')).toBe(true);
-    const teamTotal = notebooks.reduce((sum, n) => sum + n.byteCount, 0);
+    const teamTotal = notebooks.reduce((sum, n) => sum + (n.byteCount ?? 0), 0);
     expect(teamTotal).toBe(expectedTotal);
   });
 
-  it('always populates byteCount as APINotebookListSchema requires, even when the size lookup fails', async () => {
+  it('does not call info() or attach byteCount when includeByteCount is off', async () => {
+    const admin = await getExpressUserFromEmailOrUserId('admin');
+    if (!admin) {
+      throw new Error('admin user missing');
+    }
+
+    const teamId = 'team-cheap-list';
+    await createTeamNotebook('Cheap', teamId, 512);
+
+    infoCallCount = 0;
+    const notebooks = await getUserProjectsListing(admin, {teamId});
+    expect(notebooks).toHaveLength(1);
+    expect(infoCallCount).toBe(0);
+    expect(notebooks[0]).not.toHaveProperty('byteCount');
+  });
+
+  it('APINotebookListWithStatsSchema requires byteCount even when the size lookup fails', async () => {
     const admin = await getExpressUserFromEmailOrUserId('admin');
     if (!admin) {
       throw new Error('admin user missing');
@@ -160,13 +180,18 @@ describe('notebook storage stats', () => {
     const brokenId = await createTeamNotebook('Broken', teamId, 999);
     erroringProjects.add(brokenId);
 
-    const notebooks = await getUserProjectsDetailed(admin, teamId);
+    const notebooks = await getUserProjectsListing(admin, {
+      teamId,
+      includeByteCount: true,
+    });
     expect(notebooks).toHaveLength(2);
 
     for (const notebook of notebooks) {
       expect(notebook).toHaveProperty('byteCount');
       expect(notebook.byteCount).toBeTypeOf('number');
-      expect(() => APINotebookListSchema.parse(notebook)).not.toThrow();
+      expect(() =>
+        APINotebookListWithStatsSchema.parse(notebook)
+      ).not.toThrow();
     }
 
     const byteCountById = new Map(notebooks.map(n => [n._id, n.byteCount]));

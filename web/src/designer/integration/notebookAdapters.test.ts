@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Round-trip tests for notebook adapters: planTemplates survive
  * hydration and export, and null serialises to an absent key.

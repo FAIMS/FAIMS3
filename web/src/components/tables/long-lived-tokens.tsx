@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {displayDateTime, nowMs} from '@/lib/time';
 import {Action, GetLongLivedTokensResponse} from '@faims3/data-model';

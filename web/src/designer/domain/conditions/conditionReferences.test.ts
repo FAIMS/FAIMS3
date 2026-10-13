@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Unit tests for condition traversal and option/field reference rewrites.
  */

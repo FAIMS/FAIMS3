@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: api.test.ts
  * Description:
  *   Tests for the API
@@ -51,7 +39,7 @@ import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {
   createNotebook,
   getProjectById,
-  getUserProjectsDetailed,
+  getUserProjectsListing,
 } from '../src/couchdb/notebooks';
 import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
 import {buildCorsAllowlist} from '../src/corsAllowlist';
@@ -145,7 +133,94 @@ describe('API tests', () => {
       .expect(200)
       .expect(response => {
         expect(response.body).toHaveLength(1);
+        expect(response.body[0]).not.toHaveProperty('uiSpecification');
+        expect(response.body[0]).not.toHaveProperty('byteCount');
+        expect(response.body[0]).not.toHaveProperty('is_admin');
+        expect(response.body[0].uiSpecProperties.hash).toHaveLength(64);
+        expect(response.body[0].uiSpecProperties.schemaVersion).toBeTruthy();
       });
+  });
+
+  it('GET /api/notebooks?includeByteCount=true attaches numeric byteCount', async () => {
+    await createNotebookFromSampleFile('stats-notebook');
+
+    const response = await request(app)
+      .get('/api/notebooks')
+      .query({includeByteCount: 'true'})
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    expect(response.body).toHaveLength(1);
+    expect(response.body[0].byteCount).toBeTypeOf('number');
+    expect(response.body[0]).not.toHaveProperty('is_admin');
+  });
+
+  it('GET /api/directory requires authentication', async () => {
+    await request(app).get('/api/directory').expect(401);
+  });
+
+  it('GET /api/directory is lean and includes uiSpecProperties', async () => {
+    const projectId = await createNotebookFromSampleFile('directory-notebook');
+
+    const response = await request(app)
+      .get('/api/directory')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    const item = response.body.find(
+      (row: {_id: string}) => row._id === projectId
+    );
+    expect(item).toBeDefined();
+    expect(item).not.toHaveProperty('uiSpecification');
+    expect(item).not.toHaveProperty('byteCount');
+    expect(item).not.toHaveProperty('is_admin');
+    expect(item.uiSpecProperties.hash).toHaveLength(64);
+    expect(item.uiSpecProperties.schemaVersion).toBeTruthy();
+  });
+
+  it('writes uiSpecProperties on create/update uiSpec and not on metadata PUT', async () => {
+    const createRes = await request(app)
+      .post('/api/notebooks')
+      .send(sampleCreateNotebookPayload('hash notebook'))
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const projectId = createRes.body.notebook as string;
+    const created = await getProjectById(projectId);
+    expect(created.uiSpecProperties.hash).toHaveLength(64);
+    const originalHash = created.uiSpecProperties.hash;
+
+    await request(app)
+      .put(`/api/notebooks/${projectId}`)
+      .send({name: 'Renamed hash notebook'})
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const afterMetadata = await getProjectById(projectId);
+    expect(afterMetadata.uiSpecProperties.hash).toBe(originalHash);
+
+    const nextSpec = {
+      ...created.uiSpecification,
+      uiSpec: {
+        ...created.uiSpecification.uiSpec,
+        visible_types: [
+          ...created.uiSpecification.uiSpec.visible_types,
+          'extra-form',
+        ],
+      },
+    };
+    await request(app)
+      .put(`/api/notebooks/${projectId}/uiSpecification`)
+      .send(nextSpec)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const afterSpec = await getProjectById(projectId);
+    expect(afterSpec.uiSpecProperties.hash).not.toBe(originalHash);
+    expect(afterSpec.uiSpecProperties.hash).toHaveLength(64);
   });
 
   it('can create a notebook', () => {
@@ -258,6 +333,54 @@ describe('API tests', () => {
     expect(project.uiSpecification.metadata.information.projectLeadLabel).toBe(
       'Bob Bobalooba'
     );
+  });
+
+  it('PUT /notebooks/:id can set disableQuickShare without changing name', async () => {
+    const projectId = await createNotebook({
+      projectName: 'quick-share-flag-test',
+      uiSpecification: EMPTY_UI_SPECIFICATION,
+      description: 'initial',
+      createdBy: 'admin',
+    });
+    if (!projectId) {
+      throw new Error('could not create test notebook');
+    }
+
+    const before = await getProjectById(projectId);
+    expect(before.disableQuickShare).toBeUndefined();
+
+    await request(app)
+      .put(`/api/notebooks/${projectId}`)
+      .send({disableQuickShare: true})
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const disabled = await getProjectById(projectId);
+    expect(disabled.disableQuickShare).toBe(true);
+    expect(disabled.name).toBe(before.name);
+
+    await request(app)
+      .put(`/api/notebooks/${projectId}`)
+      .send({name: 'Renamed flag survey'})
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const renamed = await getProjectById(projectId);
+    expect(renamed.name).toBe('Renamed flag survey');
+    expect(renamed.disableQuickShare).toBe(true);
+
+    await request(app)
+      .put(`/api/notebooks/${projectId}`)
+      .send({disableQuickShare: false})
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const enabled = await getProjectById(projectId);
+    expect(enabled.disableQuickShare).toBe(false);
+    expect(enabled.name).toBe('Renamed flag survey');
   });
 
   it('PUT /notebooks/:id requires UPDATE_PROJECT_DETAILS, not UISPEC alone', async () => {
@@ -573,7 +696,7 @@ describe('API tests', () => {
     });
 
     const project_id = await createNotebookFromSampleFile('test-notebook');
-    let notebooks = await getUserProjectsDetailed(adminUser);
+    let notebooks = await getUserProjectsListing(adminUser);
     const dataDb = await getDataDB(project_id!);
     expect(notebooks).toHaveLength(1);
     expect(project_id).not.toBeUndefined();
@@ -583,7 +706,7 @@ describe('API tests', () => {
       .set('Content-Type', 'application/json')
       .send({confirmName: 'test-notebook'})
       .expect(200);
-    notebooks = await getUserProjectsDetailed(adminUser);
+    notebooks = await getUserProjectsListing(adminUser);
     expect(notebooks).toHaveLength(0);
 
     // Because of how mocks work with db list, we need to manually remove the
@@ -846,7 +969,7 @@ describe('API tests', () => {
       throw new Error('Admin gone missing');
     }
 
-    const notebooks = await getUserProjectsDetailed(admin);
+    const notebooks = await getUserProjectsListing(admin);
     expect(notebooks).toHaveLength(2);
 
     await request(app)
@@ -877,7 +1000,7 @@ describe('API tests', () => {
     for (const testCase of testCases) {
       const adminUser = await getExpressUserFromEmailOrUserId('admin');
       if (adminUser) {
-        const notebooks = await getUserProjectsDetailed(adminUser);
+        const notebooks = await getUserProjectsListing(adminUser);
         expect(notebooks).toHaveLength(2);
 
         let redirectURL = '';

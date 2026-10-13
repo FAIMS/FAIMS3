@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {CreateGlobalInviteForm} from '@/components/forms/create-global-invite-form';
 import {
   Dialog,

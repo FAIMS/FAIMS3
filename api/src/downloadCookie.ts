@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Browser-only download-grant cookie. The secret never appears in the URL.
  * Headless clients ignore this cookie and use Authorization: Bearer instead.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Table} from '@tanstack/react-table';
 import {
   ChevronLeft,

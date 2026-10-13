@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Condition AST types shared by reducers, the condition builder UI, and domain helpers.
  */

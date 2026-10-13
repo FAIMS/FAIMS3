@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {AvpUpdateMode} from '@faims3/data-model';
 import {ReactNode} from 'react';
 

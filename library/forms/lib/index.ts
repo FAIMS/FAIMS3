@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 export * from './addressAutosuggest/types';
 export * from './addressAutosuggest/mapbox';
 export * from './addressAutosuggest/maptiler';

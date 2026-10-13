@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Skeleton} from '@/components/ui/skeleton';
 import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTeam} from '@/hooks/queries';

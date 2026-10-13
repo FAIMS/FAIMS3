@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Gathers configuration for every plan template a notebook template
  * carries. Field-based plan types contribute fields to the create form,

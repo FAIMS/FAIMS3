@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {config} from '@/constants';
 
 /** Central strings for the archived-template delete dialog — edit here only. */

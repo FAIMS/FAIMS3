@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 export * from './computedFields';
 export * from './conditionValues';
 export * from './parentFieldScan';

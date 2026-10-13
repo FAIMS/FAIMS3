@@ -13,8 +13,10 @@
 
 <div class="auth-header">
     <h2>Create Account</h2>
-    <p>Already have an account? <a href="{{loginURL}}" class="auth-link">Sign in</a></p>
 </div>
+<a href="{{loginURL}}" class="auth-button-outline auth-signin-instead" data-testid="register-sign-in-link">
+    Already have an account? Sign in
+</a>
 
 {{#if localAuth}}
 <form method="post" action="{{postUrl}}" data-testid="register-form">

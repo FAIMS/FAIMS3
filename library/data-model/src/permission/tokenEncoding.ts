@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {COUCHDB_ROLES_PATH, ENCODING_SEPARATOR} from '../constants';
 import {drillRoles} from './helpers';
 import {

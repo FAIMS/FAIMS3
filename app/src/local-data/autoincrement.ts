@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: autoincrement.ts
  * Description:
  *   Manage autoincrementer state for a project
@@ -25,7 +13,10 @@ import {
   safeWriteDocument,
 } from '@faims3/data-model';
 import {compiledSpecService} from '../context/slices/helpers/compiledSpecService';
-import {selectProjectById} from '../context/slices/projectSlice';
+import {
+  isActivatedProject,
+  selectProjectById,
+} from '../context/slices/projectSlice';
 import {store} from '../context/store';
 import {logError} from '../logging';
 import {
@@ -269,10 +260,11 @@ export class AutoIncrementer {
 export async function getAutoincrementReferencesForProject(
   project_id: ProjectID
 ): Promise<AutoIncrementReference[]> {
-  const uiSpecId = selectProjectById(
-    store.getState(),
-    project_id
-  )?.uiSpecificationId;
+  const project = selectProjectById(store.getState(), project_id);
+  const uiSpecId =
+    project && isActivatedProject(project)
+      ? project.uiSpecificationId
+      : undefined;
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
   if (!uiSpec) {
     console.error(

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Heading for a plan's fields inside the create form, placed through
  * Form's dividers so field-based plan types read as a section.

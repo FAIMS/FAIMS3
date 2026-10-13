@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 export {
   DESIGNER_FIELD_ATTR,
   DESIGNER_FORM_ATTR,

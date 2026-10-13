@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {Box, Divider, Grid, Typography} from '@mui/material';
 import Link from '@mui/material/Link';
 import {useTheme} from '@mui/material/styles';

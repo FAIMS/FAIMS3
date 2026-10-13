@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {z} from 'zod';
 import {ExportFormatSchema, FullExportConfigSchema} from '../../exportTypes';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';

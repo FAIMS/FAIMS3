@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 export * from './conditionals';
 export * from './utils';
 export * from './types';
@@ -10,3 +11,5 @@ export * from './relatedForms';
 export * from './formScan';
 export * from './parentReferences';
 export * from './metadataReferences';
+export * from './expressionConstants';
+export * from './uiSpecProperties';

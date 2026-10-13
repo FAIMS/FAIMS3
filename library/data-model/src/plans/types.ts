@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import z from 'zod';
 
 // Base schema for plan and plan template. These use passthrough to allow

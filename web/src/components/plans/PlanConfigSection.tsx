@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Plan configuration block for component-based plan types: resolves a
  * plan template's type to its config form, or explains when none exists.

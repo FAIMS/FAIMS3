@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {useAuth} from '@/context/auth-provider';
 import {Field, Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {RegisteredPlan} from '@faims3/data-model';
 import {RichTextContent} from '@faims3/forms';
 import {Box, Button, Stack, Typography} from '@mui/material';

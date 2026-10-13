@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 export interface FormLogger {
   /** Log an error with optional context */
   error: (error: Error, context?: Record<string, unknown>) => void;

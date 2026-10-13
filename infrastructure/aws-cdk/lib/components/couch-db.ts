@@ -482,6 +482,9 @@ EOL`,
     const debugInstancePermissions = true;
 
     if (debugInstancePermissions) {
+      // TODO: Closing inbound 443 blocked connectivity from the API. SSM
+      // Session Manager should only need outbound HTTPS, so find why the API
+      // depends on this rule before removing it again.
       // For debugging CouchDB instances - allow inbound traffic for SSM Instance Connect
       couchSecurityGroup.addIngressRule(
         ec2.Peer.anyIpv4(),

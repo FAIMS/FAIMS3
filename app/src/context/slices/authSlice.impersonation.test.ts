@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {configureStore} from '@reduxjs/toolkit';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import React from 'react';
 import ArticleIcon from '@mui/icons-material/Article';
 import {Typography, Link} from '@mui/material';

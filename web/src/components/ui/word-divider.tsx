@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Divider component renders a divider with a word.
  * It provides a way to display a divider with a word.

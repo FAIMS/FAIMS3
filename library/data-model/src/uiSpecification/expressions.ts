@@ -1,30 +1,19 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2024 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: expressions.ts
  * Description:
  *   Compiles typed arithmetic/string/boolean expressions used by the computed
  *   fields (ComputedNumber, ComputedText) into a callable evaluator, mirroring
  *   how conditionals.ts compiles conditions. An expression is parsed and type
  *   checked once at notebook load; evaluation is then a plain function call.
- *
  *   Field references are written in braces, e.g. {Width} * {Height}. The braces
  *   delimit the exact field ID, so an ID containing characters that would
  *   otherwise be operators (e.g. the hyphens in {Wet-Soil-Mass-g}) is treated
  *   as a single reference rather than parsed as arithmetic.
- *
+ *   Named constants use the same syntax with the _CONSTANT. prefix, e.g.
+ *   {_CONSTANT.PI}, and compile to number literals (see
+ *   expressionConstants.ts).
  *   Typing is strict - there is no implicit coercion, and mismatches are
  *   rejected at compile time so the designer can surface them:
  *   - + - * / % ^ numbers only (^ is exponentiation, right-associative)
@@ -37,6 +26,12 @@
 
 import jsep from 'jsep';
 import ternary from '@jsep-plugin/ternary';
+import {
+  decodeConstantRef,
+  EXPRESSION_CONSTANT_NAMES,
+  EXPRESSION_CONSTANTS,
+  isConstantRef,
+} from './expressionConstants';
 
 // Enable the ternary operator (x ? y : z). Comparison, logical and the '&'
 // operator (used here for concatenation) are built into jsep already.
@@ -213,6 +208,19 @@ function compileNode(
         throw new ExpressionError(
           `Field references must be wrapped in braces, e.g. {${raw}}`
         );
+      }
+      // Named constants fold to number literals and are not references.
+      if (isConstantRef(fieldId)) {
+        const name = decodeConstantRef(fieldId);
+        const value =
+          name === null ? undefined : EXPRESSION_CONSTANTS.get(name);
+        if (value === undefined) {
+          throw new ExpressionError(
+            `{${fieldId}}: unknown constant - available constants are ` +
+              `${EXPRESSION_CONSTANT_NAMES.join(', ')} (case-sensitive)`
+          );
+        }
+        return {type: 'number', ev: () => value};
       }
       const fieldType = fieldTypes.get(fieldId);
       if (fieldType === undefined) {

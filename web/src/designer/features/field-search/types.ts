@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Type definitions for scoped field search in pickers and condition editors.
  */

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * @file Field-specific wrapper around {@link weightedFuzzySearch}.
  */

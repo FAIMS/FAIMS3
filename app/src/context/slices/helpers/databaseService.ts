@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * This is a singleton static class database service which manages a mapping of
  * IDs -> databases and sync objects. These cannot be serialised in the Redux

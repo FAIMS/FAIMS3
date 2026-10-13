@@ -78,23 +78,21 @@ interface FieldInfo {
 
 The responsibility of this function is, given the uiSpec props for a field of that type, to return a Zod schema which validates a value for that field.
 
+Missing values are coerced with `schemaWithAbsent` (see below) so a required check can run on an empty string, empty array, or `null` instead of failing as a type mismatch.
+
 ### Example: TextField
 
 ```typescript
-const textFieldDataSchemaFunction = (props: TextFieldProps) => {
-  let schema = z.string();
-
+const textFieldValueSchema = (props: BaseFieldParameters) => {
+  let schema = z
+    .string({error: 'Enter valid text'})
+    .max(INPUT_LIMITS.LONG_TEXT_MAX_LENGTH, {
+      message: `Must be at most ${INPUT_LIMITS.LONG_TEXT_MAX_LENGTH} characters`,
+    });
   if (props.required) {
     schema = schema.min(1, {message: 'This field is required'});
   }
-
-  if (props.maxLength) {
-    schema = schema.max(props.maxLength, {
-      message: `Maximum ${props.maxLength} characters allowed`,
-    });
-  }
-
-  return schema;
+  return schemaWithAbsent('', schema);
 };
 ```
 
@@ -102,13 +100,14 @@ const textFieldDataSchemaFunction = (props: TextFieldProps) => {
 
 ```typescript
 const valueSchemaFunction = (props: RelatedRecordFieldProps) => {
+  const present = schemaWithAbsent(null, relatedFieldValueSchema.nullable());
   if (props.required) {
-    return fieldValueSchema.refine(
+    return present.refine(
       val => (Array.isArray(val) ? val.length > 0 : !!val),
       {message: 'At least one related record is required.'}
     );
   }
-  return fieldValueSchema.optional().nullable();
+  return present;
 };
 ```
 
@@ -116,23 +115,25 @@ const valueSchemaFunction = (props: RelatedRecordFieldProps) => {
 
 ```typescript
 const fileUploaderSchemaFunction = (props: FileUploaderProps) => {
-  let base = z.array(z.string());
-
+  const maxFiles = props.maximum_number_of_files ?? 0;
+  let base = z.array(z.string(), {error: 'Add a valid file'});
   if (props.required) {
-    base = base.refine(val => (val ?? []).length > 0, {
-      message: 'At least one attachment is required',
+    base = base.min(1, {message: 'At least one attachment is required'});
+  }
+  if (maxFiles > 0) {
+    base = base.max(maxFiles, {
+      message: `Maximum ${maxFiles} file${maxFiles === 1 ? '' : 's'} allowed`,
     });
   }
-
-  if (props.maximum_number_of_files > 0) {
-    base = base.refine(val => val.length <= props.maximum_number_of_files, {
-      message: `Maximum ${props.maximum_number_of_files} files allowed`,
-    });
-  }
-
-  return base;
+  return schemaWithAbsent([], base);
 };
 ```
+
+## Absent values and readable messages
+
+`schemaWithAbsent(empty, schema)` in `readableErrors.ts` turns `null` and `undefined` into `empty` before the field schema runs. Text uses `''`, attachment ids use `[]`, and related records use `null`. A bare `z.string()` or `z.array()` would otherwise report "expected … received undefined" and never reach `.min()` or `.refine()`. Other wrong types are left unchanged.
+
+`humanizeValidationMessage` rewrites leftover Zod type text into a sentence a respondent can act on. Messages a field already set are kept. `FormValidation` applies this to issue messages. The form manager uses `collectFieldErrorMessages` to store the first humanized message against each field id. Nested paths such as `photos.0` are reported on the field itself.
 
 ## Validation Modes
 

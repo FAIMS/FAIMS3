@@ -1,18 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+
 /*
- * Copyright 2024 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
  * Filename: expressions.test.ts
  * Description:
  *   Tests for the typed computed-field expression compiler. Field references
@@ -295,6 +283,48 @@ describe('compileComputedExpression', () => {
     });
   });
 
+  describe('named constants', () => {
+    it('folds constants into the expression', () => {
+      const compiled = compileComputedExpression(
+        '{_CONSTANT.PI} * {a} ^ 2',
+        fieldTypes
+      );
+      expect(compiled.evaluate(scope({a: 2}))).toBeCloseTo(Math.PI * 4);
+    });
+
+    it('does not report constants as references', () => {
+      const compiled = compileComputedExpression(
+        '{_CONSTANT.E} + {a}',
+        fieldTypes
+      );
+      expect(compiled.references).toEqual(['a']);
+    });
+
+    it('needs no field types to compile', () => {
+      const compiled = compileComputedExpression(
+        '{_CONSTANT.SQRT2}',
+        new Map()
+      );
+      expect(compiled.returnType).toBe('number');
+      expect(compiled.evaluate(new Map())).toBeCloseTo(Math.SQRT2);
+    });
+
+    it('types constants as numbers', () => {
+      expect(() =>
+        compileComputedExpression("{_CONSTANT.PI} & 'x'", fieldTypes)
+      ).toThrow(ExpressionError);
+    });
+
+    it('rejects unknown and bare constant references', () => {
+      expect(() =>
+        compileComputedExpression('{_CONSTANT.pi}', fieldTypes)
+      ).toThrow(/unknown constant/);
+      expect(() =>
+        compileComputedExpression('{_CONSTANT.}', fieldTypes)
+      ).toThrow(/unknown constant/);
+    });
+  });
+
   describe('syntax validation', () => {
     it('rejects unbraced field references', () => {
       expect(() =>
@@ -336,9 +366,6 @@ describe('compileComputedExpression', () => {
     });
   });
 });
-
-// Add to library/data-model/tests/expressions.test.ts as a new describe block
-// (import extractExpressionReferences alongside the existing imports):
 
 describe('extractExpressionReferences', () => {
   it('extracts unique braced references', () => {

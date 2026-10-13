@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /* eslint-disable n/no-process-exit */
 /**
  * Dump user email addresses from the people DB for maintenance notices.
