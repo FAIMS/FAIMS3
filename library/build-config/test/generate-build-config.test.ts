@@ -609,6 +609,42 @@ test('D4: offline maps are forced off for OSM', () => {
   assert.equal(parsedMaptiler.maps.offlineMaps, true);
 });
 
+// ADR-0002: the migrate/lock invariant lives in the shared schema.
+test('migration: lock cannot be enabled when migrate-on-startup is disabled', () => {
+  assert.throws(() =>
+    parseBuildConfig({
+      migration: {disableMigrateOnStartup: true, startupMigrationLockEnabled: true},
+    })
+  );
+  // Omitted lock is fine; skip-migrate forces the lock off.
+  const parsed = parseBuildConfig({migration: {disableMigrateOnStartup: true}});
+  assert.equal(parsed.migration.startupMigrationLockEnabled, false);
+});
+
+// ADR-0002: the autosuggest key rules live in the shared schema.
+test('maps: mapbox autosuggest requires a mapbox key', () => {
+  assert.throws(() =>
+    parseBuildConfig({maps: {autosuggestSource: 'mapbox'}})
+  );
+  assert.doesNotThrow(() =>
+    parseBuildConfig({maps: {autosuggestSource: 'mapbox', autosuggestMapboxKey: 'pk'}})
+  );
+});
+
+test('maps: maptiler autosuggest needs a tiler key or a maptiler map key', () => {
+  assert.throws(() => parseBuildConfig({maps: {autosuggestSource: 'maptiler'}}));
+  assert.doesNotThrow(() =>
+    parseBuildConfig({
+      maps: {autosuggestSource: 'maptiler', autosuggestMapTilerKey: 'k'},
+    })
+  );
+  assert.doesNotThrow(() =>
+    parseBuildConfig({
+      maps: {mapSource: 'maptiler', mapSourceKey: 'k', autosuggestSource: 'maptiler'},
+    })
+  );
+});
+
 test('D4: long-lived token hints are clamped, deduped and sorted', () => {
   const parsed = parseBuildConfig({
     authTokens: {

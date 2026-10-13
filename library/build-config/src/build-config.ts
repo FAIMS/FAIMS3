@@ -140,7 +140,32 @@ const MapsBuildConfigSchema = z
     /** ISO 3166-1 alpha-2 codes (CSV in env). Defaults to Australia. */
     maptilerAddressCountry: z.array(z.string()).default(['AU']),
   })
-  .strict();
+  .strict()
+  .superRefine((data, ctx) => {
+    // Address-autosuggest key requirements (moved here from the aws-cdk
+    // AddressAutosuggest + UiConfiguration refines, ADR-0002), so every
+    // consumer validates the same rules.
+    if (data.autosuggestSource === 'mapbox' && !data.autosuggestMapboxKey.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['autosuggestMapboxKey'],
+        message: 'When autosuggestSource is mapbox, autosuggestMapboxKey is required.',
+      });
+    }
+    if (data.autosuggestSource === 'maptiler') {
+      const hasTilerKey = !!data.autosuggestMapTilerKey.trim();
+      const fallsBackToMapKey =
+        data.mapSource === 'maptiler' && !!data.mapSourceKey.trim();
+      if (!hasTilerKey && !fallsBackToMapKey) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['autosuggestMapTilerKey'],
+          message:
+            'When autosuggestSource is maptiler, either autosuggestMapTilerKey must be set or mapSource must be "maptiler" with mapSourceKey set (the map tile key will be used for autosuggest).',
+        });
+      }
+    }
+  });
 
 const SyncBuildConfigSchema = z
   .object({
@@ -164,7 +189,27 @@ const MigrationBuildConfigSchema = z
     startupMigrationLockEnabled: z.boolean().default(false),
     startupMigrationLockTimeoutMs: z.number().int().positive().default(1800000),
   })
-  .strict();
+  .strict()
+  .superRefine((data, ctx) => {
+    // A skip-migrate startup has nothing to lock: the clustered lock must not
+    // be enabled when migrate-on-startup is disabled. (Moved here from the
+    // aws-cdk ConductorConfig so every consumer validates the same invariant,
+    // ADR-0002.)
+    if (data.disableMigrateOnStartup && data.startupMigrationLockEnabled) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['startupMigrationLockEnabled'],
+        message:
+          'startupMigrationLockEnabled cannot be true when disableMigrateOnStartup is true. There is nothing to lock if API boot skips migrate. Omit startupMigrationLockEnabled or set it false.',
+      });
+    }
+  })
+  .transform(data => ({
+    ...data,
+    // Skip-migrate makes the lock unused; treat it as disabled.
+    startupMigrationLockEnabled:
+      !data.disableMigrateOnStartup && data.startupMigrationLockEnabled,
+  }));
 
 const AuthBuildConfigSchema = z
   .object({
