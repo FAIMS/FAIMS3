@@ -388,8 +388,27 @@ const SecretsBuildConfigSchema = z
     auth: z
       .object({
         cookieSecret: z.string().optional(),
-        /** Per-provider secrets, keyed by provider id (google, microsoft, …). */
-        authProviders: z.record(z.string(), z.string()).optional(),
+        /**
+         * Per-provider secrets, keyed by provider id (google, someOidc, …).
+         * The fields match the optional secret fields on the provider config
+         * (clientID/clientSecret for google+oidc; privateKey/publicKey/idpPublicKey
+         * for saml). Empty in the committed core; filled per platform (SOPS for
+         * mobile/local, AWS Secrets Manager for the CDK). See ADR-0002 §6.
+         */
+        authProviders: z
+          .record(
+            z.string(),
+            z
+              .object({
+                clientID: z.string().optional(),
+                clientSecret: z.string().optional(),
+                privateKey: z.string().optional(),
+                publicKey: z.string().optional(),
+                idpPublicKey: z.string().optional(),
+              })
+              .strict()
+          )
+          .optional(),
       })
       .strict()
       .optional(),

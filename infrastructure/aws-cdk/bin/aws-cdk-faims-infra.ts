@@ -18,7 +18,7 @@ const config = loadConfig(configFilePath);
 const app = new cdk.App();
 
 // Create the stack
-new FaimsInfraStack(app, config.stackName, {
+new FaimsInfraStack(app, config.aws.stackName, {
   env: {
     account: config.aws.account,
     region: config.aws.region,

@@ -16,8 +16,11 @@ export const BaseAuthProviderConfigSchema = z.object({
 export const GoogleAuthProviderConfigSchema =
   BaseAuthProviderConfigSchema.extend({
     type: z.literal('google'),
-    clientID: z.string(),
-    clientSecret: z.string(),
+    // Optional: in the shared core these are typically empty (secrets live in
+    // core.secrets.auth.authProviders.<id>, resolved per platform - SOPS for
+    // mobile/local, AWS Secrets Manager for the CDK). See ADR-0002 §6.
+    clientID: z.string().optional(),
+    clientSecret: z.string().optional(),
   });
 
 export const OIDCAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
@@ -27,8 +30,9 @@ export const OIDCAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     authorizationURL: z.string(),
     tokenURL: z.string(),
     userInfoURL: z.string(),
-    clientID: z.string(),
-    clientSecret: z.string(),
+    // Optional: secrets live in core.secrets.auth.authProviders.<id> (ADR-0002 §6).
+    clientID: z.string().optional(),
+    clientSecret: z.string().optional(),
   }
 );
 
@@ -44,7 +48,8 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     signMetadata: z.boolean().optional(),
     privateKey: z.string().optional(),
     publicKey: z.string().optional(),
-    idpPublicKey: z.string(),
+    // Optional: secret, resolved per platform (core.secrets / SM). ADR-0002 §6.
+    idpPublicKey: z.string().optional(),
     enableDecryptionPvk: z.boolean().optional(),
     signatureAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
     digestAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),

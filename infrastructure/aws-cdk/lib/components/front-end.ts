@@ -16,7 +16,10 @@ import {IHostedZone} from 'aws-cdk-lib/aws-route53';
 import {ICertificate} from 'aws-cdk-lib/aws-certificatemanager';
 import * as path from 'path';
 import {getPathHash, getPathToRoot} from '../util/mono';
-import {OfflineMapsConfig, AddressAutosuggestConfig} from '../config';
+import type {RuntimeConfig} from '@faims3/build-config';
+
+/** The shared maps config group (core.maps) - offline maps + autosuggest. */
+type MapsConfig = RuntimeConfig['maps'];
 
 const MAP_ORIGINS_SHARED = [
   'openmaptiles.github.io',
@@ -36,7 +39,7 @@ export interface FaimsFrontEndProps {
   faimsDomainNames: Array<string>;
 
   // customisation
-  uiTheme: 'bubble' | 'default' | 'bssTheme' | 'fieldmark';
+  uiTheme: string;
   notebookListType: 'tabs' | 'headings';
   notebookName: string;
   // App display name
@@ -74,14 +77,11 @@ export interface FaimsFrontEndProps {
   // Enable debugging settings @default false
   debugMode?: boolean;
 
-  // Offline maps settings -> env variables in faims
-  offlineMaps: OfflineMapsConfig;
-
-  /** Address autosuggest settings (none/mapbox/maptiler). Optional; when omitted or source none, autosuggest is disabled. */
-  addressAutosuggest?: AddressAutosuggestConfig;
+  /** Shared maps config (offline maps + address autosuggest) -> VITE_* env. */
+  maps: MapsConfig;
 
   /** Maximum long-lived token duration in days (undefined = infinite) */
-  maximumLongLivedDurationDays?: number;
+  maximumLongLivedDurationDays?: number | 'unlimited';
 
   /** Bugsnag key - enables app monitoring if desired */
   bugsnagKey?: string;
@@ -268,49 +268,46 @@ export class FaimsFrontEnd extends Construct {
         props.deleteOnDeactivation === true ? 'true' : 'false',
 
       // offline maps configuration
-      VITE_MAP_SOURCE: props.offlineMaps.mapSource,
-      VITE_OFFLINE_MAPS: props.offlineMaps.offlineMaps ? 'true' : 'false',
-      VITE_MAP_STYLE: props.offlineMaps.mapStyle,
-      ...(props.offlineMaps.mapSourceKey
-        ? {VITE_MAP_SOURCE_KEY: props.offlineMaps.mapSourceKey}
+      VITE_MAP_SOURCE: props.maps.mapSource,
+      VITE_OFFLINE_MAPS: props.maps.offlineMaps ? 'true' : 'false',
+      VITE_MAP_STYLE: props.maps.mapStyle,
+      ...(props.maps.mapSourceKey
+        ? {VITE_MAP_SOURCE_KEY: props.maps.mapSourceKey}
         : {}),
-      ...(props.offlineMaps.satelliteSource
-        ? {VITE_SATELLITE_SOURCE: props.offlineMaps.satelliteSource}
+      ...(props.maps.satelliteSource
+        ? {VITE_SATELLITE_SOURCE: props.maps.satelliteSource}
         : {}),
 
       // Address autosuggest configuration
-      ...(props.addressAutosuggest?.source &&
-      props.addressAutosuggest.source !== 'none'
+      ...(props.maps.autosuggestSource &&
+      props.maps.autosuggestSource !== 'none'
         ? {
-            VITE_AUTOSUGGEST_SOURCE: props.addressAutosuggest.source,
-            ...(props.addressAutosuggest.mapboxKey
-              ? {
-                  VITE_AUTOSUGGEST_MAPBOX_KEY:
-                    props.addressAutosuggest.mapboxKey,
-                }
+            VITE_AUTOSUGGEST_SOURCE: props.maps.autosuggestSource,
+            ...(props.maps.autosuggestMapboxKey
+              ? {VITE_AUTOSUGGEST_MAPBOX_KEY: props.maps.autosuggestMapboxKey}
               : {}),
-            ...(props.addressAutosuggest.mapboxAddressCountry
+            ...(props.maps.mapboxAddressCountry.length > 0
               ? {
                   VITE_MAPBOX_ADDRESS_COUNTRY:
-                    props.addressAutosuggest.mapboxAddressCountry,
+                    props.maps.mapboxAddressCountry.join(','),
                 }
               : {}),
-            // MapTiler: use maptilerKey if set, else fall back to map source
-            // key when mapSource is maptiler
-            ...(props.addressAutosuggest.source === 'maptiler'
+            // MapTiler: use autosuggestMapTilerKey if set, else fall back to
+            // the map source key when mapSource is maptiler
+            ...(props.maps.autosuggestSource === 'maptiler'
               ? {
                   VITE_AUTOSUGGEST_MAPTILER_KEY:
-                    props.addressAutosuggest.maptilerKey?.trim() ||
-                    (props.offlineMaps.mapSource === 'maptiler' &&
-                    props.offlineMaps.mapSourceKey?.trim()
-                      ? props.offlineMaps.mapSourceKey
+                    props.maps.autosuggestMapTilerKey.trim() ||
+                    (props.maps.mapSource === 'maptiler' &&
+                    props.maps.mapSourceKey.trim()
+                      ? props.maps.mapSourceKey
                       : ''),
                 }
               : {}),
-            ...(props.addressAutosuggest.maptilerAddressCountry
+            ...(props.maps.maptilerAddressCountry.length > 0
               ? {
                   VITE_MAPTILER_ADDRESS_COUNTRY:
-                    props.addressAutosuggest.maptilerAddressCountry,
+                    props.maps.maptilerAddressCountry.join(','),
                 }
               : {}),
           }
@@ -462,16 +459,19 @@ export class FaimsFrontEnd extends Construct {
       VITE_WEBSITE_TITLE: props.managementWebsiteTitle ?? 'Control Centre',
       VITE_DOCS_URL: props.docsUrl || '',
       // Maps setup for web
-      VITE_MAP_SOURCE: props.offlineMaps.mapSource,
-      VITE_MAP_STYLE: props.offlineMaps.mapStyle,
-      ...(props.offlineMaps.mapSourceKey
-        ? {VITE_MAP_SOURCE_KEY: props.offlineMaps.mapSourceKey}
+      VITE_MAP_SOURCE: props.maps.mapSource,
+      VITE_MAP_STYLE: props.maps.mapStyle,
+      ...(props.maps.mapSourceKey
+        ? {VITE_MAP_SOURCE_KEY: props.maps.mapSourceKey}
         : {}),
-      ...(props.offlineMaps.satelliteSource
-        ? {VITE_SATELLITE_SOURCE: props.offlineMaps.satelliteSource}
+      ...(props.maps.satelliteSource
+        ? {VITE_SATELLITE_SOURCE: props.maps.satelliteSource}
         : {}),
       VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS:
-        props.maximumLongLivedDurationDays?.toString() ?? 'infinite',
+        props.maximumLongLivedDurationDays !== undefined &&
+        props.maximumLongLivedDurationDays !== 'unlimited'
+          ? `${props.maximumLongLivedDurationDays}`
+          : 'unlimited',
       VITE_FORCE_REMOTE_DELETION: props.forceRemoteDeletion ?? 'never',
       VITE_DELETE_ON_DEACTIVATION:
         props.deleteOnDeactivation === true ? 'true' : 'false',

@@ -26,12 +26,12 @@ import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import {Construct} from 'constructs';
 import {getPathToRoot} from '../util/mono';
 import {SharedBalancer} from './networking';
+import type {RuntimeConfig} from '@faims3/build-config';
 import {
   AuthProvidersConfig,
   ConductorConfig,
   DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW,
   DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS,
-  DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
 } from '../config';
 
 const DEFAULT_SMTP_CACHE_EXPIRY = 300;
@@ -97,8 +97,13 @@ export interface FaimsConductorProps {
   iosAppPublicUrl: string;
   /** iOS/Android APP_ID */
   appId: string;
-  /** The configuration object for the Conductor service */
+  /** The configuration object for the Conductor service (AWS-only: docker/
+   * CPU/memory/autoscaling). */
   config: ConductorConfig;
+  /** The shared core config (branding/auth/migration) - Conductor's instance
+   * name/description, short-code prefix, SSO provision policy and the
+   * migrate/lock flags all come from here (ADR-0002 §1). */
+  coreConfig: RuntimeConfig;
   /** FAIMS_COOKIE_SECRET */
   cookieSecret: sm.Secret;
   /** SMTP credentials secret ARN */
@@ -112,8 +117,8 @@ export interface FaimsConductorProps {
   /** If true, adds typical localhost addresses to the allowable redirect
    * whitelist (DEV ONLY) */
   localhostWhitelist: boolean;
-  /** Maximum long-lived token duration in days (undefined = infinite) */
-  maximumLongLivedDurationDays?: number;
+  /** Maximum long-lived token duration in days (`"unlimited"` = no cap) */
+  maximumLongLivedDurationDays?: number | 'unlimited';
   /**
    * Express HTTP IP rate limiter. Default true. Set false when per-IP
    * limiting is handled upstream. Independent of authAttemptLimiterEnabled.
@@ -221,8 +226,37 @@ export class FaimsConductor extends Construct {
         'AuthSecret',
         props.authProviders.secretArn
       );
+      // The secret field names per provider type - resolved from AWS Secrets
+      // Manager at runtime. These must be present in the final deployment.
+      const SECRET_FIELDS: Record<string, string[]> = {
+        saml: ['privateKey', 'publicKey'],
+        google: ['clientID', 'clientSecret'],
+        oidc: ['clientID', 'clientSecret'],
+      };
       props.authProviders.providers.forEach(provider => {
-        const config = props.authProviders!.config[provider];
+        // The provider definitions live in core.authProviders (build-config).
+        const rawConfig = props.coreConfig.authProviders[provider];
+        // Merge any secret values present in core.secrets.auth.authProviders
+        // (typically empty for the CDK - they resolve from the SM via the
+        // authSecrets references below; present for SOPS/local deployments).
+        const mergedSecrets = props.coreConfig.secrets?.auth?.authProviders?.[
+          provider
+        ];
+        const config = {...rawConfig, ...mergedSecrets};
+
+        // Guard: ensure every secret the API needs is wired up. For the CDK
+        // these come from the SM (authSecrets), so require either an explicit
+        // value in the config or a generated SM reference for each field.
+        const required = SECRET_FIELDS[config.type] ?? [];
+        const missing = required.filter(field => {
+          const hasValue =
+            typeof config[field as keyof typeof config] === 'string' &&
+            (config[field as keyof typeof config] as string).trim() !== '';
+          const hasSmRef = Object.keys(authSecrets).some(
+            k => k.endsWith(camelToSnakeCase(field))
+          );
+          return !hasValue && !hasSmRef;
+        });
 
         // Handle secrets based on provider type
         if (config.type === 'saml') {
@@ -242,12 +276,25 @@ export class FaimsConductor extends Construct {
             );
         }
 
-        // For each key in config, convert to an env variable
-        // (AUTH_ + provider + _ + key in uppercase) and add to the environment
+        if (missing.length > 0) {
+          throw new Error(
+            `Auth provider '${provider}' (${config.type}) is missing required secret field(s): ${missing.join(', ')}. Provide them in core.secrets.auth.authProviders.${provider} or wire them to the AWS Secrets Manager secret.`
+          );
+        }
 
+        // For each key in config, convert to an env variable
+        // (AUTH_ + provider + _ + key in uppercase) and add to the environment.
+        // Secret fields are excluded here - they are delivered via the SM
+        // references above, not baked into the container env.
+        const secretFieldSet = new Set(
+          [...Object.values(SECRET_FIELDS), 'id']
+        );
         for (const [key, value] of Object.entries(config)) {
-          // Skip undefined/null values
+          // Skip undefined/null values and secret fields
           if (value === undefined || value === null) {
+            continue;
+          }
+          if (secretFieldSet.has(key)) {
             continue;
           }
 
@@ -273,12 +320,12 @@ export class FaimsConductor extends Construct {
     // the same Couch + KEY_SOURCE bootstrapping without duplicating the block.
     this.environment = {
       PROFILE_NAME: 'default',
-      CONDUCTOR_INSTANCE_NAME: props.config.name,
-      CONDUCTOR_DESCRIPTION: props.config.description,
+      CONDUCTOR_INSTANCE_NAME: props.coreConfig.branding.conductorInstanceName,
+      CONDUCTOR_DESCRIPTION: props.coreConfig.branding.conductorDescription,
       COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
       COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
       COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
-      CONDUCTOR_SHORT_CODE_PREFIX: props.config.shortCodePrefix,
+      CONDUCTOR_SHORT_CODE_PREFIX: props.coreConfig.branding.conductorShortCodePrefix,
       // Conductor API URLs
       CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
       CONDUCTOR_URL: this.conductorEndpoint,
@@ -287,7 +334,7 @@ export class FaimsConductor extends Construct {
       IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
       KEY_SOURCE: 'AWS_SM',
       AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
-      PROVISION_SSO_USERS_POLICY: props.config.provisionSSOUsersPolicy,
+      PROVISION_SSO_USERS_POLICY: props.coreConfig.auth.provisionSsoUsersPolicy,
 
       // Bugsnag (optional)
       ...(props.bugsnagApiKey ? {BUGSNAG_API_KEY: props.bugsnagApiKey} : {}),
@@ -297,16 +344,16 @@ export class FaimsConductor extends Construct {
 
       // disable local login if specified in config (for SSO only deployments)
       // defaults to false if not provided in config
-      DISABLE_LOCAL_LOGIN: props.authProviders
-        ? props.authProviders.disableLocalLogin
-          ? 'true'
-          : 'false'
+      DISABLE_LOCAL_LOGIN: props.coreConfig.auth.disableLocalLogin
+        ? 'true'
         : 'false',
 
       // Security configurations
-      MAXIMUM_LONG_LIVED_DURATION_DAYS: props.maximumLongLivedDurationDays
-        ? props.maximumLongLivedDurationDays.toString()
-        : 'infinite',
+      MAXIMUM_LONG_LIVED_DURATION_DAYS:
+        props.maximumLongLivedDurationDays !== undefined &&
+        props.maximumLongLivedDurationDays !== 'unlimited'
+          ? `${props.maximumLongLivedDurationDays}`
+          : 'unlimited',
       RATE_LIMITER_ENABLED:
         props.rateLimiterEnabled === false ? 'false' : 'true',
       ATTEMPT_LIMITER_ENABLED:
@@ -321,21 +368,16 @@ export class FaimsConductor extends Construct {
         DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW
       }`,
       // Skip-migrate takes precedence; lock is unused in that case.
-      DISABLE_MIGRATE_ON_STARTUP: props.config.disableMigrateOnStartup
+      DISABLE_MIGRATE_ON_STARTUP: props.coreConfig.migration.disableMigrateOnStartup
         ? 'true'
         : 'false',
-      // Clustered ECS: lock is on unless JSON `disableStartupMigrationLock`
-      // (or migrate-on-startup is skipped — schema forces the lock off).
-      STARTUP_MIGRATION_LOCK_ENABLED:
-        props.config.disableMigrateOnStartup ||
-        props.config.disableStartupMigrationLock
-          ? 'false'
-          : 'true',
-      STARTUP_MIGRATION_LOCK_TIMEOUT_MS: `${
-        props.config.startupMigrationLockTimeoutMs ??
-        DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS
-      }`,
-
+      // Clustered ECS: the core schema already forces the lock off when
+      // migrate-on-startup is skipped (startupMigrationLockEnabled).
+      STARTUP_MIGRATION_LOCK_ENABLED: props.coreConfig.migration
+        .startupMigrationLockEnabled
+        ? 'true'
+        : 'false',
+      STARTUP_MIGRATION_LOCK_TIMEOUT_MS: `${props.coreConfig.migration.startupMigrationLockTimeoutMs}`,
       // Email Service Configuration
       EMAIL_SERVICE_TYPE: props.smtpConfig.emailServiceType,
       EMAIL_FROM_ADDRESS: props.smtpConfig.fromEmail,

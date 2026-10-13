@@ -33,27 +33,27 @@ export class FaimsInfraStack extends cdk.Stack {
 
     // Setup the hosted zone for domain definitions
     const hz = route53.HostedZone.fromHostedZoneAttributes(this, 'hz', {
-      hostedZoneId: config.hostedZone.id,
-      zoneName: config.hostedZone.name,
+      hostedZoneId: config.aws.hostedZone.id,
+      zoneName: config.aws.hostedZone.name,
     });
 
     // Domain configurations
     const domains = {
-      couch: `${config.domains.couch}.${config.domains.baseDomain}`,
-      conductor: `${config.domains.conductor}.${config.domains.baseDomain}`,
-      faims: `${config.domains.faims}.${config.domains.baseDomain}`,
-      web: `${config.domains.web}.${config.domains.baseDomain}`,
-      docs: `${config.domains.docs}.${config.domains.baseDomain}`,
+      couch: `${config.aws.domains.couch}.${config.aws.domains.baseDomain}`,
+      conductor: `${config.aws.domains.conductor}.${config.aws.domains.baseDomain}`,
+      faims: `${config.aws.domains.faims}.${config.aws.domains.baseDomain}`,
+      web: `${config.aws.domains.web}.${config.aws.domains.baseDomain}`,
+      docs: `${config.aws.domains.docs}.${config.aws.domains.baseDomain}`,
     };
 
     // BACKUPS SETUP
     // =============
-    if (!(config.backup.vaultArn || config.backup.vaultName)) {
+    if (!(config.aws.backup.vaultArn || config.aws.backup.vaultName)) {
       throw Error(
         'Must provide either an existing Backup vault ARN or a vault name to create.'
       );
     }
-    const backups = new BackupConstruct(this, 'backup', config.backup);
+    const backups = new BackupConstruct(this, 'backup', config.aws.backup);
 
     // CERTIFICATES
     // ============
@@ -62,14 +62,14 @@ export class FaimsInfraStack extends cdk.Stack {
     const primaryCert = acm.Certificate.fromCertificateArn(
       this,
       'primary-cert',
-      config.certificates.primary
+      config.aws.certificates.primary
     );
 
     // CloudFront certificate
     const cfnCert = acm.Certificate.fromCertificateArn(
       this,
       'cfn-cert',
-      config.certificates.cloudfront
+      config.aws.certificates.cloudfront
     );
 
     // NETWORKING
@@ -100,15 +100,15 @@ export class FaimsInfraStack extends cdk.Stack {
     // Create a single EC2 cluster which runs CouchDB
     const couchDb = new EC2CouchDB(this, 'couch-db', {
       vpc: networking.vpc,
-      instanceType: config.couch.instanceType,
+      instanceType: config.aws.couch.instanceType,
       certificate: primaryCert,
       domainName: domains.couch,
       hz: hz,
       sharedBalancer: networking.sharedBalancer,
-      dataVolumeSize: config.couch.volumeSize,
-      dataVolumeSnapshotId: config.couch.ebsRecoverySnapshotId,
-      monitoring: config.couch.monitoring,
-      couchVersionTag: config.couch.couchVersionTag,
+      dataVolumeSize: config.aws.couch.volumeSize,
+      dataVolumeSnapshotId: config.aws.couch.ebsRecoverySnapshotId,
+      monitoring: config.aws.couch.monitoring,
+      couchVersionTag: config.aws.couch.couchVersionTag,
       cookieSecret: cookieSecret,
     });
 
@@ -120,45 +120,46 @@ export class FaimsInfraStack extends cdk.Stack {
       vpc: networking.vpc,
       certificate: primaryCert,
       domainName: domains.conductor,
-      privateKeySecretArn: config.secrets.privateKey,
+      privateKeySecretArn: config.aws.secrets.privateKey,
       hz: hz,
       maximumLongLivedDurationDays:
-        config.security.maximumLongLivedTokenDurationDays,
-      rateLimiterEnabled: config.security.rateLimiterEnabled,
-      authAttemptLimiterEnabled: config.security.authAttemptLimiterEnabled,
-      exportRateLimiterEnabled: config.security.exportRateLimiterEnabled,
-      exportRateLimiterWindowMs: config.security.exportRateLimiterWindowMs,
-      exportRateLimiterPerWindow: config.security.exportRateLimiterPerWindow,
+        config.core.authTokens.maximumLongLivedDurationDays,
+      rateLimiterEnabled: config.core.limits.rateLimiterEnabled,
+      authAttemptLimiterEnabled: config.core.limits.attemptLimiterEnabled,
+      exportRateLimiterEnabled: config.core.limits.exportRateLimiterEnabled,
+      exportRateLimiterWindowMs: config.core.limits.exportRateLimiterWindowMs,
+      exportRateLimiterPerWindow: config.core.limits.exportRateLimiterPerWindow,
       couchDbAdminSecret: couchDb.passwordSecret,
       couchDBEndpoint: couchDb.couchEndpoint,
       couchDBPort: couchDb.exposedPort,
       webAppPublicUrl: `https://${domains.faims}`,
-      androidAppPublicUrl: config.mobileApps.androidAppPublicUrl,
-      iosAppPublicUrl: config.mobileApps.iosAppPublicUrl,
-      appId: config.uiConfiguration.appId,
+      androidAppPublicUrl: config.core.endpoints.androidAppPublicUrl,
+      iosAppPublicUrl: config.core.endpoints.iosAppPublicUrl,
+      appId: config.core.android.appId,
       sharedBalancer: networking.sharedBalancer,
-      config: config.conductor,
+      config: config.aws.conductor,
+      coreConfig: config.core,
       cookieSecret: cookieSecret,
       webUrl: `https://${domains.web}`,
       // Add SMTP configuration
-      smtpCredsArn: config.smtp.credentialsSecretArn,
+      smtpCredsArn: config.aws.smtpCredentialsSecretArn,
       smtpConfig: {
-        emailServiceType: config.smtp.emailServiceType,
-        fromEmail: config.smtp.fromEmail,
-        fromName: config.smtp.fromName,
-        replyTo: config.smtp.replyTo,
-        testEmailAddress: config.smtp.testEmailAddress,
-        cacheExpirySeconds: config.smtp.cacheExpirySeconds,
+        emailServiceType: config.core.email.emailServiceType,
+        fromEmail: config.core.email.emailFromAddress,
+        fromName: config.core.email.emailFromName,
+        replyTo: config.core.email.emailReplyTo,
+        testEmailAddress: config.core.email.testEmailAddress,
+        cacheExpirySeconds: config.core.email.smtpCacheExpirySeconds,
       },
-      authProviders: config.authProviders,
-      localhostWhitelist: config.conductor.localhostWhitelist,
-      bugsnagApiKey: config.bugMonitoring.bugsnagKey,
+      authProviders: config.aws.authProviders,
+      localhostWhitelist: config.aws.conductor.localhostWhitelist,
+      bugsnagApiKey: config.core.observability.bugsnagApiKey,
     });
 
     // TTL CLEANUP (scheduled one-shot; not in-process cron)
     // =====================================================
     // Deploy API image with ttlCleanup before enabling in an environment.
-    if (config.ttlCleanup.enabled) {
+    if (config.aws.ttlCleanup.enabled) {
       new FaimsTtlCleanup(this, 'ttl-cleanup', {
         vpc: networking.vpc,
         cluster: conductor.cluster,
@@ -166,8 +167,8 @@ export class FaimsInfraStack extends cdk.Stack {
         containerImage: conductor.containerImage,
         environment: conductor.environment,
         secrets: conductor.secrets,
-        privateKeySecretArn: config.secrets.privateKey,
-        config: config.ttlCleanup,
+        privateKeySecretArn: config.aws.secrets.privateKey,
+        config: config.aws.ttlCleanup,
         // Same ops SNS/email as CouchDB monitoring alarms.
         alarmTopic: couchDb.alarmSNSTopic,
       });
@@ -185,32 +186,30 @@ export class FaimsInfraStack extends cdk.Stack {
       faimsHz: hz,
       faimsUsEast1Certificate: cfnCert,
       conductorUrl: conductor.conductorEndpoint,
-      uiTheme: config.uiConfiguration.uiTheme,
-      notebookListType: config.uiConfiguration.notebookListType,
-      notebookName: config.uiConfiguration.notebookName,
-      appName: config.uiConfiguration.appName,
-      appId: config.uiConfiguration.appId,
-      headingAppName: config.uiConfiguration.headingAppName,
+      uiTheme: config.core.branding.theme,
+      notebookListType: config.core.notebookAndRecordUX.notebookListType,
+      notebookName: config.core.notebookAndRecordUX.notebookName,
+      appName: config.core.branding.appName,
+      appId: config.core.android.appId,
+      headingAppName: config.core.branding.headingAppName,
       webDomainName: domains.web,
       docsDomainName: domains.docs,
-      managementWebsiteTitle: config.web.title,
-      androidAppPublicUrl: config.mobileApps.androidAppPublicUrl,
-      iosAppPublicUrl: config.mobileApps.iosAppPublicUrl,
-      offlineMaps: config.uiConfiguration.offlineMaps,
-      addressAutosuggest: config.uiConfiguration.addressAutosuggest,
-      supportEmail: config.supportLinks.supportEmail,
-      privacyPolicyUrl: config.supportLinks.privacyPolicyUrl,
-      contactUrl: config.supportLinks.contactUrl,
-      docsUrl: config.supportLinks.docsUrl,
+      managementWebsiteTitle: config.core.branding.websiteTitle,
+      androidAppPublicUrl: config.core.endpoints.androidAppPublicUrl,
+      iosAppPublicUrl: config.core.endpoints.iosAppPublicUrl,
+      maps: config.core.maps,
+      supportEmail: config.core.support.supportEmail,
+      privacyPolicyUrl: config.core.support.privacyPolicyUrl,
+      contactUrl: config.core.support.appContactUrl,
+      docsUrl: config.core.support.docsUrl,
       maximumLongLivedDurationDays:
-        config.security.maximumLongLivedTokenDurationDays,
-      bugsnagKey: config.bugMonitoring.bugsnagKey,
-      forceRemoteDeletion:
-        config.uiConfiguration.forceRemoteDeletion ?? 'never',
-      deleteOnDeactivation: config.uiConfiguration.deleteOnDeactivation,
-      excludedTeamRoles: config.uiConfiguration.excludedTeamRoles,
-      enablePlansInDesigner: config.uiConfiguration.enablePlansInDesigner,
-      showStatusTab: config.uiConfiguration.showStatusTab,
+        config.core.authTokens.maximumLongLivedDurationDays,
+      bugsnagKey: config.core.observability.bugsnagApiKey,
+      forceRemoteDeletion: config.core.sync.forceRemoteDeletion,
+      deleteOnDeactivation: config.core.sync.deleteOnDeactivation,
+      excludedTeamRoles: config.core.teamAndRolePolicy.excludedTeamRoles,
+      enablePlansInDesigner: config.core.webDesignerLimits.enablePlansInDesigner,
+      showStatusTab: config.core.notebookAndRecordUX.showStatusTab,
     });
 
     // Backup setup

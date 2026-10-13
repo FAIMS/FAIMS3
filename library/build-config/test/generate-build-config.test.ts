@@ -838,9 +838,9 @@ test('parseGeneratedEnv merges apps and api halves (api wins on shared keys)', (
 });
 
 test('auth provider env: invalid provider is dropped with a warning (not silently)', () => {
-  // A google provider missing its required clientID is invalid.
+  // A provider with a type that matches no known provider is invalid.
   const env = {
-    AUTH_GOOGLE_TYPE: 'google',
+    AUTH_GOOGLE_TYPE: 'not-a-real-type',
     AUTH_GOOGLE_DISPLAY_NAME: 'Google',
     AUTH_GOOGLE_SCOPE: 'profile,email',
   };

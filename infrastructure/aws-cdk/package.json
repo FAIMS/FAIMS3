@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@cloudcomponents/cdk-static-website": "^2.0.0",
+    "@faims3/build-config": "workspace:*",
     "aws-cdk-lib": "^2.260.0",
     "constructs": "^10.0.0",
     "source-map-support": "^0.5.21",

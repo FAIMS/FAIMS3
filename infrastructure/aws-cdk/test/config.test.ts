@@ -1,172 +1,31 @@
 /**
- * Tests for config schema validation, especially addressAutosuggest + map source
- * key rules (MapTiler key required in one of two places when source is maptiler).
+ * Tests for the CDK config schema. The shared deployment config is validated
+ * by @faims3/build-config (core slot); here we test the AWS-specific extension
+ * (AwsConfigSchema) and the cross-slot provider rule in loadConfig. The
+ * shared refines (maps/autosuggest keys, migrate/lock invariant) are covered
+ * by the build-config test suite.
  */
 import {ZodError} from 'zod';
 import {
+  AwsConfigSchema,
   ConductorConfigSchema,
-  DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW,
-  DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS,
-  DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
-  SecurityConfigSchema,
-  UiConfiguration,
+  ConfigSchema,
 } from '../lib/config';
 
-function minimalOfflineMaps(
-  overrides: {
-    mapSource?: 'osm' | 'maptiler';
-    mapSourceKey?: string;
-  } = {}
-) {
-  return {
-    mapSource: 'maptiler' as const,
-    mapSourceKey: 'map-key',
-    offlineMaps: false,
-    mapStyle: 'basic' as const,
-    ...overrides,
-  };
-}
-
-function minimalUiConfig(overrides: Record<string, unknown> = {}) {
-  return {
-    uiTheme: 'default' as const,
-    notebookListType: 'tabs' as const,
-    notebookName: 'survey',
-    appName: 'Test App',
-    appId: 'FAIMS',
-    offlineMaps: minimalOfflineMaps(),
-    addressAutosuggest: {source: 'none' as const},
-    ...overrides,
-  };
-}
-
-describe('UiConfiguration addressAutosuggest + MapTiler key validation', () => {
-  it('accepts maptiler when maptilerKey is set', () => {
-    const config = minimalUiConfig({
-      addressAutosuggest: {
-        source: 'maptiler',
-        maptilerKey: 'autosuggest-key',
-      },
-    });
-    expect(() => UiConfiguration.parse(config)).not.toThrow();
-  });
-
-  it('accepts maptiler when mapSource is maptiler and mapSourceKey is set (no maptilerKey)', () => {
-    const config = minimalUiConfig({
-      offlineMaps: minimalOfflineMaps({
-        mapSource: 'maptiler',
-        mapSourceKey: 'map-key',
-      }),
-      addressAutosuggest: {source: 'maptiler'},
-    });
-    expect(() => UiConfiguration.parse(config)).not.toThrow();
-  });
-
-  it('rejects maptiler when neither maptilerKey nor map source key is provided (mapSource is osm)', () => {
-    const config = minimalUiConfig({
-      offlineMaps: minimalOfflineMaps({
-        mapSource: 'osm',
-        mapSourceKey: undefined,
-      }),
-      addressAutosuggest: {source: 'maptiler'},
-    });
-    expect(() => UiConfiguration.parse(config)).toThrow(ZodError);
-    try {
-      UiConfiguration.parse(config);
-    } catch (e) {
-      const err = e as ZodError;
-      expect(err.message).toContain('maptiler');
-      expect(err.message).toMatch(/maptilerKey|mapSource|mapSourceKey/);
-    }
-  });
-
-  it('rejects maptiler when mapSource is maptiler but mapSourceKey is missing', () => {
-    const config = minimalUiConfig({
-      offlineMaps: minimalOfflineMaps({
-        mapSource: 'maptiler',
-        mapSourceKey: undefined,
-      }),
-      addressAutosuggest: {source: 'maptiler'},
-    });
-    expect(() => UiConfiguration.parse(config)).toThrow(ZodError);
-  });
-
-  it('rejects maptiler when mapSource is maptiler but mapSourceKey is empty string', () => {
-    const config = minimalUiConfig({
-      offlineMaps: minimalOfflineMaps({
-        mapSource: 'maptiler',
-        mapSourceKey: '',
-      }),
-      addressAutosuggest: {source: 'maptiler'},
-    });
-    expect(() => UiConfiguration.parse(config)).toThrow(ZodError);
-  });
-
-  it('rejects maptiler when maptilerKey is empty string and mapSourceKey is not set', () => {
-    const config = minimalUiConfig({
-      offlineMaps: minimalOfflineMaps({
-        mapSource: 'osm',
-        mapSourceKey: undefined,
-      }),
-      addressAutosuggest: {source: 'maptiler', maptilerKey: ''},
-    });
-    expect(() => UiConfiguration.parse(config)).toThrow(ZodError);
-  });
-
-  it('uses map source key when maptilerKey is whitespace-only and mapSource has key', () => {
-    const config = minimalUiConfig({
-      offlineMaps: minimalOfflineMaps({
-        mapSource: 'maptiler',
-        mapSourceKey: 'map-key',
-      }),
-      addressAutosuggest: {source: 'maptiler', maptilerKey: '   '},
-    });
-    expect(() => UiConfiguration.parse(config)).not.toThrow();
-  });
-});
-
-describe('UiConfiguration enablePlansInDesigner', () => {
-  it('defaults to true when omitted', () => {
-    const parsed = UiConfiguration.parse(minimalUiConfig());
-    expect(parsed.enablePlansInDesigner).toBe(true);
-  });
-
-  it('accepts an explicit false', () => {
-    const parsed = UiConfiguration.parse(
-      minimalUiConfig({enablePlansInDesigner: false})
-    );
-    expect(parsed.enablePlansInDesigner).toBe(false);
-  });
-});
-
-describe('SecurityConfigSchema export rate limiter', () => {
-  it('applies export limiter defaults when omitted', () => {
-    const parsed = SecurityConfigSchema.parse({});
-    expect(parsed.exportRateLimiterEnabled).toBe(true);
-    expect(parsed.exportRateLimiterWindowMs).toBe(
-      DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS
-    );
-    expect(parsed.exportRateLimiterPerWindow).toBe(
-      DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW
-    );
-  });
-
-  it('accepts an explicit override', () => {
-    const parsed = SecurityConfigSchema.parse({
-      exportRateLimiterEnabled: false,
-      exportRateLimiterWindowMs: 3_600_000,
-      exportRateLimiterPerWindow: 50,
-    });
-    expect(parsed.exportRateLimiterEnabled).toBe(false);
-    expect(parsed.exportRateLimiterWindowMs).toBe(3_600_000);
-    expect(parsed.exportRateLimiterPerWindow).toBe(50);
-  });
-});
-
-function minimalConductorConfig(overrides: Record<string, unknown> = {}) {
-  return {
-    name: 'Test',
-    description: 'Test conductor',
+const minimalAws = (overrides: Record<string, unknown> = {}) => ({
+  stackName: 'faims-test',
+  hostedZone: {id: 'Z123', name: 'example.com'},
+  certificates: {primary: 'arn:cert:p', cloudfront: 'arn:cert:c'},
+  account: '123456789012',
+  region: 'ap-southeast-2',
+  secrets: {privateKey: 'arn:sm:pk', publicKey: 'arn:sm:pubk'},
+  smtpCredentialsSecretArn: 'arn:sm:smtp',
+  couch: {
+    volumeSize: 100,
+    instanceType: 'm5.large',
+  },
+  backup: {vaultName: 'faims-backup'},
+  conductor: {
     conductorDockerImage: 'ghcr.io/faims/faims3-api',
     cpu: 256,
     memory: 512,
@@ -179,61 +38,71 @@ function minimalConductorConfig(overrides: Record<string, unknown> = {}) {
       scaleInCooldown: 30,
       scaleOutCooldown: 30,
     },
-    ...overrides,
-  };
-}
+  },
+  domains: {baseDomain: 'example.com'},
+  ...overrides,
+});
 
-describe('ConductorConfigSchema startup migration lock', () => {
-  it('defaults to migrate-on, lock enabled, and a 30 minute steal timeout', () => {
-    const parsed = ConductorConfigSchema.parse(minimalConductorConfig());
-    expect(parsed.disableMigrateOnStartup).toBe(false);
-    expect(parsed.disableStartupMigrationLock).toBe(false);
-    expect(parsed.startupMigrationLockTimeoutMs).toBe(
-      DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS
-    );
+describe('AwsConfigSchema', () => {
+  it('parses a minimal aws config with defaults applied', () => {
+    const parsed = AwsConfigSchema.parse(minimalAws());
+    expect(parsed.stackName).toBe('faims-test');
+    // ttlCleanup defaults to disabled
+    expect(parsed.ttlCleanup?.enabled).toBe(false);
+    // conductor defaults
+    expect(parsed.conductor.conductorDockerImageTag).toBe('latest');
+    expect(parsed.conductor.localhostWhitelist).toBe(false);
   });
 
-  it('accepts an explicit timeout override', () => {
-    const parsed = ConductorConfigSchema.parse(
-      minimalConductorConfig({startupMigrationLockTimeoutMs: 600_000})
-    );
-    expect(parsed.startupMigrationLockTimeoutMs).toBe(600_000);
+  it('defaults region to ap-southeast-2 when omitted', () => {
+    const {region: _ignored, ...rest} = minimalAws();
+    expect(AwsConfigSchema.parse(rest).region).toBe('ap-southeast-2');
   });
 
-  it('accepts disableStartupMigrationLock', () => {
-    const parsed = ConductorConfigSchema.parse(
-      minimalConductorConfig({disableStartupMigrationLock: true})
-    );
-    expect(parsed.disableStartupMigrationLock).toBe(true);
-  });
-
-  it('accepts disableMigrateOnStartup and treats the lock as unused', () => {
-    const parsed = ConductorConfigSchema.parse(
-      minimalConductorConfig({disableMigrateOnStartup: true})
-    );
-    expect(parsed.disableMigrateOnStartup).toBe(true);
-    expect(parsed.disableStartupMigrationLock).toBe(true);
-  });
-
-  it('accepts skip-migrate together with an explicit lock disable', () => {
-    const parsed = ConductorConfigSchema.parse(
-      minimalConductorConfig({
-        disableMigrateOnStartup: true,
-        disableStartupMigrationLock: true,
+  it('accepts an explicit authProviders (enabled list + secret ARN)', () => {
+    const parsed = AwsConfigSchema.parse(
+      minimalAws({
+        authProviders: {providers: ['google'], secretArn: 'arn:sm:auth'},
       })
     );
-    expect(parsed.disableMigrateOnStartup).toBe(true);
-    expect(parsed.disableStartupMigrationLock).toBe(true);
+    expect(parsed.authProviders?.providers).toEqual(['google']);
+    expect(parsed.authProviders?.secretArn).toBe('arn:sm:auth');
+  });
+});
+
+describe('ConductorConfigSchema is AWS-only', () => {
+  it('rejects shared fields that moved to core', () => {
+    // `name` is no longer on the conductor config; it lives in core.branding.
+    expect(() =>
+      ConductorConfigSchema.parse({
+        conductorDockerImage: 'x',
+        cpu: 256,
+        memory: 512,
+        autoScaling: {
+          desiredCapacity: 1,
+          minCapacity: 1,
+          maxCapacity: 2,
+          targetCpuUtilization: 70,
+          targetMemoryUtilization: 70,
+          scaleInCooldown: 30,
+          scaleOutCooldown: 30,
+        },
+        name: 'should not be here',
+      })
+    ).toThrow(ZodError);
+  });
+});
+
+describe('ConfigSchema is { core, aws }', () => {
+  it('requires both slots', () => {
+    expect(() => ConfigSchema.parse({aws: minimalAws()})).toThrow(ZodError);
+    expect(() => ConfigSchema.parse({core: {}})).toThrow(ZodError);
   });
 
-  it('rejects skip-migrate together with an explicit lock enable', () => {
-    expect(() =>
-      ConductorConfigSchema.parse(
-        minimalConductorConfig({
-          disableMigrateOnStartup: true,
-          disableStartupMigrationLock: false,
-        })
-      )
-    ).toThrow(/disableStartupMigrationLock cannot be false/);
+  it('accepts an empty core (all groups default) plus aws', () => {
+    const parsed = ConfigSchema.parse({core: {}, aws: minimalAws()});
+    // core defaults apply
+    expect(parsed.core.branding.theme).toBe('default');
+    expect(parsed.aws.stackName).toBe('faims-test');
   });
 });
