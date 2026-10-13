@@ -1,9 +1,9 @@
 import {RuntimeConfig} from './build-config.js';
 import {buildAuthProviderEnvMap} from './auth-provider-config.js';
 
-type SupportedPlatform = 'apps' | 'api';
+export type SupportedPlatform = 'apps' | 'api';
 
-type EnvValue =
+export type EnvValue =
   | string
   | number
   | boolean
