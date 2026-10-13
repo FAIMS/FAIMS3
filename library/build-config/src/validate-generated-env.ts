@@ -333,6 +333,7 @@ export function main(
       couchdb: {},
       dev: {},
       pouchdb: {},
+      secrets: {},
     });
   } else {
     const configPath = path.resolve(cwd, String(args.config));

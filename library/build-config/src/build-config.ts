@@ -277,6 +277,98 @@ const PouchdbBuildConfigSchema = z
   .strict();
 
 /**
+ * The dedicated, optional `secrets` section (ADR-0002 §6, "option 2").
+ *
+ * These are the SENSITIVE slots that do not sit next to their config groups in
+ * the committed core: the committed `core.json` declares them EMPTY, and the
+ * real values are filled per platform — by a SOPS-encrypted `secrets.enc.json`
+ * (mobile CI / Terraform / local dev) or resolved from AWS Secrets Manager
+ * (the source of truth, which overrides) on AWS. Keeping them in one section
+ * (rather than co-located with auth/email/maps/etc.) means the config
+ * validator can enforce the invariant "no non-empty value in any declared
+ * secret slot" in the committed core, and AWS can resolve them centrally.
+ *
+ * All slots are optional/empty: a config that omits `secrets` (or a slot) is
+ * valid. When a slot is non-empty (local dev / SOPS-merged) it is used; on AWS
+ * the Secrets Manager value wins.
+ */
+const SecretsBuildConfigSchema = z
+  .object({
+    /** Server-side auth secrets. */
+    auth: z
+      .object({
+        cookieSecret: z.string().optional(),
+        /** Per-provider secrets, keyed by provider id (google, microsoft, …). */
+        authProviders: z.record(z.string(), z.string()).optional(),
+      })
+      .strict()
+      .optional(),
+    /** SMTP credentials. */
+    email: z
+      .object({
+        smtpUser: z.string().optional(),
+        smtpPassword: z.string().optional(),
+      })
+      .strict()
+      .optional(),
+    /** Bugsnag API key (mobile builds). */
+    observability: z
+      .object({
+        bugsnagApiKey: z.string().optional(),
+      })
+      .strict()
+      .optional(),
+    /** CouchDB admin password. */
+    couchdb: z
+      .object({
+        couchdbPassword: z.string().optional(),
+      })
+      .strict()
+      .optional(),
+    /** Map / address-autosuggest provider keys (mobile builds). */
+    maps: z
+      .object({
+        mapSourceKey: z.string().optional(),
+        autosuggestMapboxKey: z.string().optional(),
+        autosuggestMapTilerKey: z.string().optional(),
+      })
+      .strict()
+      .optional(),
+    /** Mobile platform secrets (keystore / match / Apple keys). */
+    mobile: z
+      .object({
+        android: z
+          .object({
+            keystoreFileBase64: z.string().optional(),
+            serviceAccountKeyJsonBase64: z.string().optional(),
+            keystorePassword: z.string().optional(),
+            keyAlias: z.string().optional(),
+            keyPassword: z.string().optional(),
+          })
+          .strict()
+          .optional(),
+        ios: z
+          .object({
+            appleApplicationSpecificPassword: z.string().optional(),
+            matchPassword: z.string().optional(),
+            matchGitUrl: z.string().optional(),
+            gitAuthorization: z.string().optional(),
+            appleKeyId: z.string().optional(),
+            appleIssuerId: z.string().optional(),
+            appleKeyContent: z.string().optional(),
+            appleIndividualKeyId: z.string().optional(),
+            appleIndividualKeyContent: z.string().optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict()
+  .default({});
+
+/**
  * The canonical config as produced by the schema (after defaults + invariants
  * are applied). Defined independently of the schema so that the top-level
  * `.transform()` does not create a circular type (zod 4 + tsc).
@@ -303,6 +395,8 @@ export type SharedBuildConfig = {
   couchdb: z.infer<typeof CouchdbBuildConfigSchema>;
   dev: z.infer<typeof DevBuildConfigSchema>;
   pouchdb: z.infer<typeof PouchdbBuildConfigSchema>;
+  /** Dedicated, optional secret slots (ADR-0002 §6); empty in committed core. */
+  secrets: z.infer<typeof SecretsBuildConfigSchema>;
 };
 
 /**
@@ -393,6 +487,7 @@ export const BuildConfigCoreObjectSchema = z
     pouchdb: PouchdbBuildConfigSchema.default(() =>
       PouchdbBuildConfigSchema.parse({})
     ),
+    secrets: SecretsBuildConfigSchema,
   })
   .strict();
 
