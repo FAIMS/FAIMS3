@@ -23,6 +23,29 @@ each commit with `git commit -s`. See [app/DCO](app/DCO).
 
 An automated license check is run via `pnpm license-check` in the CI build-lint script, it will fail if the license line is missing from any new files. To inject the license into new files you can run `pnpm license-check --inject`.
 
+## Contributors
+
+FAIMS3 is developed by people at CSIRO's
+[National Bushfire Intelligence Capability](https://research.csiro.au/nbic/)
+(NBIC), Electronic Field Notebooks, Macquarie University, and elsewhere.
+People are named here if they wrote at least 1% of the lines in the current
+code, or made 100 or more commits in the last three years, or if the
+maintainers name them for sustained contributions to the project's design and
+direction. The list is checked whenever it is updated.
+Everyone else who has contributed is in the commit history, and the
+organisations that hold copyright are in [AUTHORS](AUTHORS).
+
+- Jayen Ashar, contractor to Electronic Field Notebooks
+- Peter Baker, NBIC (CSIRO)
+- Brian Ballsun-Stanton, Macquarie University
+- Tom Bevan, Electronic Field Notebooks
+- Steve Cassidy, Electronic Field Notebooks (previously Macquarie University)
+- Ranisa Gupta, NBIC (CSIRO)
+- Xinyu Hou, NBIC (CSIRO)
+- Ryan Kontos, Electronic Field Notebooks (intern, 2024 to 2025)
+- Luke McFarlane, contractor to NBIC (CSIRO)
+- Shawn Ross, Electronic Field Notebooks
+
 ## Directory Structure
 
 The repository contains the following:
@@ -162,10 +185,18 @@ to run them together. The advantage over `pnpm run dev` is that you can
 run them in the background, restart individual services easily and attach/detach
 the output from the servers in the terminal.
 
+Run `pnpm build` before `overmind start`, because Overmind starts every process
+at once, so a service can compile against a library whose watch build is still
+writing. With valid output already on disk, a service that compiles immediately
+resolves the library, leaving only the watch builds' re-emit as a short race.
+Restart `api` with `overmind restart api` if it logs a compile error and waits
+for file changes in that window.
+
 Example commands:
 
 ```bash
-# Run all services and detach
+# Build first, then run all services and detach
+pnpm build
 overmind start -d
 
 # Echo output to the terminal
@@ -359,9 +390,8 @@ are:
 
 - `pnpm run build-app`: builds the webapp (not the Android/iOS apps)
 - `pnpm run test-app`: runs the main test suite
-- `pnpm run serve-app`: runs the webapp in a browser (currently via capacitor's
-  system, to ensure that the webapp and the phone apps are as similar as
-  possible).
+- `pnpm run serve-app`: builds the webapp and serves it in a browser, so it runs
+  the same bundle the phone apps do.
 - `pnpm run start-app`: runs the webapp in a browser (unoptimized dev build).
 
 You should also be aware of the
