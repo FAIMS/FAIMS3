@@ -47,6 +47,51 @@ const EndpointsBuildConfigSchema = z
   })
   .strict();
 
+/**
+ * The deployment's domain structure (ADR-0002 §2). Instead of storing concrete
+ * endpoint URLs, the core names a base domain + per-service subdomains, and the
+ * concrete `endpoints` are DERIVED from it (in the shared invariants transform).
+ * A `localOverride` (optional) sets literal `host:port` hosts for one or more
+ * services - its presence is the "local/dev" switch (protocol defaults to
+ * http), so a production env omits it and a local/dev env sets it.
+ *
+ * This is optional so existing configs that still store concrete `endpoints`
+ * keep working; when present it overrides the derived endpoints, and the app
+ * build, web build and CDK all derive the same URLs from it (so they cannot
+ * drift). The service-name set (conductor/couch/web/app/docs) is confirmed
+ * against real deployments before the model is frozen (ADR-0002 follow-up).
+ */
+export const DomainServiceName = z.enum([
+  'conductor',
+  'couch',
+  'web',
+  'app',
+  'docs',
+]);
+
+const DomainHostMap = z
+  .object({
+    conductor: z.string().min(1).optional(),
+    couch: z.string().min(1).optional(),
+    web: z.string().min(1).optional(),
+    app: z.string().min(1).optional(),
+    docs: z.string().min(1).optional(),
+  })
+  .strict();
+
+export const DomainsBuildConfigSchema = z
+  .object({
+    /** The base domain, e.g. `faims.example.com` (no protocol, no host:port). */
+    base: z.string().min(1),
+    protocol: z.enum(['http', 'https']).default('https'),
+    /** Subdomain per service (e.g. conductor = `api` -> `api.faims.example.com`). */
+    services: DomainHostMap,
+    /** Optional literal `host:port` overrides for local/dev (protocol -> http). */
+    localOverride: DomainHostMap.optional(),
+  })
+  .strict()
+  .optional();
+
 const BrandingBuildConfigSchema = z
   .object({
     appName: z.string().default('FAIMS'),
@@ -375,6 +420,8 @@ const SecretsBuildConfigSchema = z
  */
 export type SharedBuildConfig = {
   endpoints: z.infer<typeof EndpointsBuildConfigSchema>;
+  /** Optional domain structure; when set, `endpoints` are derived from it. */
+  domains?: z.infer<typeof DomainsBuildConfigSchema>;
   branding: z.infer<typeof BrandingBuildConfigSchema>;
   support: z.infer<typeof SupportBuildConfigSchema>;
   notebookAndRecordUX: z.infer<typeof NotebookAndRecordUxBuildConfigSchema>;
@@ -400,14 +447,55 @@ export type SharedBuildConfig = {
 };
 
 /**
+ * Derive the concrete endpoint URLs from the domain structure (ADR-0002 §2).
+ * A `localOverride` host is used verbatim with http; otherwise each service is
+ * `${protocol}://${services[service]}.${base}`. Only the fields the model names
+ * are set; the rest of `endpoints` (couchdbInternalUrl, the app public URLs,
+ * redirectWhitelist) keep their own defaults / input.
+ */
+function deriveEndpointsFromDomains(
+  domains: NonNullable<z.infer<typeof DomainsBuildConfigSchema>>
+): Partial<z.infer<typeof EndpointsBuildConfigSchema>> {
+  const {base, protocol, services, localOverride} = domains;
+  const resolve = (service: z.infer<typeof DomainServiceName>): string => {
+    const override = localOverride?.[service];
+    if (override) return `http://${override}`;
+    const subdomain = services[service];
+    if (!subdomain) return '';
+    return `${protocol}://${subdomain}.${base}`;
+  };
+  const conductorUrl = resolve('conductor');
+  const derived: Partial<z.infer<typeof EndpointsBuildConfigSchema>> = {};
+  if (conductorUrl) {
+    derived.apiUrl = conductorUrl;
+    derived.conductorUrls = [conductorUrl];
+  }
+  if (services.web) derived.webUrl = resolve('web');
+  if (services.app) derived.appUrl = resolve('app');
+  if (services.couch) derived.couchdbPublicUrl = resolve('couch');
+  return derived;
+}
+
+/**
  * Applies the shared cross-field invariants (ADR-0001 D4) so that every
  * entry point (JSON, generated app env, generated api env) yields the same
  * canonical semantics:
+ *  - endpoints are derived from the domain structure when `domains` is set
  *  - short / heading names fall back to the app name
  *  - offline maps are forced off for OSM (no bulk download)
  *  - long-lived token hints are clamped to the max duration, deduped, sorted
  */
 function applySharedInvariants(c: SharedBuildConfig): SharedBuildConfig {
+  // Derive the concrete endpoints from the domain structure (when present),
+  // overriding the endpoint defaults. Shared by the app build, web build and
+  // the CDK so the same core.domains cannot yield drifting URLs.
+  if (c.domains) {
+    const derived = deriveEndpointsFromDomains(c.domains);
+    const ep = c.endpoints as Record<string, unknown>;
+    for (const [key, value] of Object.entries(derived)) {
+      if (value !== undefined) ep[key] = value;
+    }
+  }
   if (!c.branding.appShortName) c.branding.appShortName = c.branding.appName;
   if (!c.branding.headingAppName)
     c.branding.headingAppName = c.branding.appName;
@@ -437,6 +525,7 @@ export const BuildConfigCoreObjectSchema = z
     endpoints: EndpointsBuildConfigSchema.default(() =>
       EndpointsBuildConfigSchema.parse({})
     ),
+    domains: DomainsBuildConfigSchema,
     branding: BrandingBuildConfigSchema.default(() =>
       BrandingBuildConfigSchema.parse({})
     ),

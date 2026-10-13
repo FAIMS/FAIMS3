@@ -653,6 +653,56 @@ test('D5-ish: address country codes round trip as arrays', () => {
   assert.deepEqual(parsed.maps.maptilerAddressCountry, ['AU']);
 });
 
+// ADR-0002 §2: the domain structure derives the concrete endpoints.
+test('domains: production base+services derive concrete endpoints', () => {
+  const parsed = parseBuildConfig({
+    domains: {
+      base: 'faims.example.com',
+      services: {conductor: 'api', couch: 'couchdb', web: 'dashboard', app: 'app'},
+    },
+  });
+  assert.equal(parsed.endpoints.apiUrl, 'https://api.faims.example.com');
+  assert.equal(parsed.endpoints.webUrl, 'https://dashboard.faims.example.com');
+  assert.equal(parsed.endpoints.appUrl, 'https://app.faims.example.com');
+  assert.equal(parsed.endpoints.couchdbPublicUrl, 'https://couchdb.faims.example.com');
+  assert.deepEqual(parsed.endpoints.conductorUrls, [
+    'https://api.faims.example.com',
+  ]);
+});
+
+test('domains: localOverride hosts are used verbatim with http', () => {
+  const parsed = parseBuildConfig({
+    domains: {
+      base: 'faims.example.com',
+      services: {conductor: 'api', couch: 'couchdb', web: 'dashboard', app: 'app'},
+      localOverride: {conductor: 'localhost:8080', web: 'localhost:3001'},
+    },
+  });
+  assert.equal(parsed.endpoints.apiUrl, 'http://localhost:8080');
+  assert.equal(parsed.endpoints.webUrl, 'http://localhost:3001');
+  // A non-overridden service keeps its derived (https) URL.
+  assert.equal(parsed.endpoints.appUrl, 'https://app.faims.example.com');
+});
+
+test('domains: absent domains keeps concrete endpoints (backward compatible)', () => {
+  const parsed = parseBuildConfig({
+    endpoints: {apiUrl: 'https://api.legacy.com'},
+  });
+  assert.equal(parsed.domains, undefined);
+  assert.equal(parsed.endpoints.apiUrl, 'https://api.legacy.com');
+});
+
+test('domains: rejects unknown service names', () => {
+  assert.throws(() =>
+    parseBuildConfig({
+      domains: {
+        base: 'faims.example.com',
+        services: {conductor: 'api', couch: 'couchdb', web: 'dashboard', app: 'app', bogus: 'x'},
+      },
+    })
+  );
+});
+
 // Commit version is sanitised: only hashes / release stamps survive.
 test('commit version is sanitised (garbage becomes undefined)', () => {
   assert.equal(

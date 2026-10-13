@@ -12,6 +12,8 @@
 export {
   BuildConfigCoreObjectSchema,
   BuildConfigSchema,
+  DomainsBuildConfigSchema,
+  DomainServiceName,
   RuntimeConfigSchema,
   GeneratedEnvSchema,
   ApiEnvSchema,
