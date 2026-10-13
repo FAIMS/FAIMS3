@@ -90,17 +90,15 @@ can be read/decrypted.
 
 ## Android mapping
 
-| JSON field                            | Generated env var                | Typical file                   |
-| ------------------------------------- | -------------------------------- | ------------------------------ |
-| `android.releaseStatus`               | `ANDROID_RELEASE_STATUS`         | `build-config.json`            |
-| `android.appId`                       | `APP_ID`                         | `build-config.json`            |
-| `android.keystoreFileBase64`          | `KEYSTORE_FILE`                  | `build-secrets.enc.json`       |
-| `android.serviceAccountKeyJsonBase64` | `GPLAY_SERVICE_ACCOUNT_KEY_JSON` | `build-secrets.enc.json`       |
-| `android.keystorePath`                | `JAVA_KEYSTORE`                  | `build-config.json` (optional) |
-| `android.keystorePassword`            | `JAVA_KEYSTORE_PASSWORD`         | `build-secrets.enc.json`       |
-| `android.keyAlias`                    | `JAVA_KEY`                       | `build-secrets.enc.json`       |
-| `android.keyPassword`                 | `JAVA_KEY_PASSWORD`              | `build-secrets.enc.json`       |
-| `android.serviceAccountJsonPath`      | `ANDROID_JSON_KEY_FILE`          | `build-config.json` (optional) |
+| JSON field                            | Generated env var                | Typical file             |
+| ------------------------------------- | -------------------------------- | ------------------------ |
+| `android.releaseStatus`               | `ANDROID_RELEASE_STATUS`         | `build-config.json`      |
+| `android.appId`                       | `APP_ID`                         | `build-config.json`      |
+| `android.keystoreFileBase64`          | `KEYSTORE_FILE`                  | `build-secrets.enc.json` |
+| `android.serviceAccountKeyJsonBase64` | `GPLAY_SERVICE_ACCOUNT_KEY_JSON` | `build-secrets.enc.json` |
+| `android.keystorePassword`            | `JAVA_KEYSTORE_PASSWORD`         | `build-secrets.enc.json` |
+| `android.keyAlias`                    | `JAVA_KEY`                       | `build-secrets.enc.json` |
+| `android.keyPassword`                 | `JAVA_KEY_PASSWORD`              | `build-secrets.enc.json` |
 
 Notes:
 

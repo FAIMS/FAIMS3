@@ -114,12 +114,9 @@ const androidContract: Record<string, EnvResolver> = {
   KEYSTORE_FILE: runtime => runtime.android.keystoreFileBase64 ?? '',
   GPLAY_SERVICE_ACCOUNT_KEY_JSON: runtime =>
     runtime.android.serviceAccountKeyJsonBase64 ?? '',
-  JAVA_KEYSTORE: runtime => runtime.android.keystorePath ?? '',
   JAVA_KEYSTORE_PASSWORD: runtime => runtime.android.keystorePassword ?? '',
   JAVA_KEY: runtime => runtime.android.keyAlias ?? '',
   JAVA_KEY_PASSWORD: runtime => runtime.android.keyPassword ?? '',
-  ANDROID_JSON_KEY_FILE: runtime =>
-    runtime.android.serviceAccountJsonPath ?? '',
 };
 
 const iosContract: Record<string, EnvResolver> = {

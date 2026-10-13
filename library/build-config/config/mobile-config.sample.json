@@ -131,11 +131,9 @@
   "android": {
     "appId": "org.fedarch.faims3",
     "releaseStatus": "draft",
-    "keystorePath": "",
     "keystorePassword": "",
     "keyAlias": "",
-    "keyPassword": "",
-    "serviceAccountJsonPath": ""
+    "keyPassword": ""
   },
   "ios": {
     "bundleIdentifier": "org.fedarch.faims3",

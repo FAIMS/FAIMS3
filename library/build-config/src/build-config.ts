@@ -224,11 +224,9 @@ const AndroidBuildConfigSchema = z
     releaseStatus: z.string().default('draft'),
     keystoreFileBase64: z.string().optional(),
     serviceAccountKeyJsonBase64: z.string().optional(),
-    keystorePath: z.string().optional(),
     keystorePassword: z.string().optional(),
     keyAlias: z.string().optional(),
     keyPassword: z.string().optional(),
-    serviceAccountJsonPath: z.string().optional(),
   })
   .strict();
 
