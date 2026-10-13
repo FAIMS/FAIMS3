@@ -332,7 +332,13 @@ function applySharedInvariants(c: SharedBuildConfig): SharedBuildConfig {
   return c;
 }
 
-export const BuildConfigSchema = z
+/**
+ * The core shared config object: every top-level group, each defaulted and
+ * `.strict()`, but WITHOUT the shared invariants transform. Exported so
+ * deployment tooling (e.g. the aws-cdk `config.core` slot, ADR-0002) can
+ * compose it into a nested schema without re-declaring the groups.
+ */
+export const BuildConfigCoreObjectSchema = z
   .object({
     endpoints: EndpointsBuildConfigSchema.default(() =>
       EndpointsBuildConfigSchema.parse({})
@@ -388,8 +394,17 @@ export const BuildConfigSchema = z
       PouchdbBuildConfigSchema.parse({})
     ),
   })
-  .strict()
-  .transform(applySharedInvariants);
+  .strict();
+
+/**
+ * The full shared config: the core object + the shared invariants transform
+ * (ADR-0001 D4). This is the schema the app/web/api consumers parse their env
+ * through, and what the mobile config JSON is validated against. The invariants
+ * guarantee identical canonical semantics from every entry point (JSON, app
+ * env, api env).
+ */
+export const BuildConfigSchema =
+  BuildConfigCoreObjectSchema.transform(applySharedInvariants);
 
 /**
  * Same shape as SharedBuildConfig. Kept as an alias so generator, contract

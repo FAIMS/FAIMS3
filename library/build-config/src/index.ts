@@ -10,6 +10,7 @@
  */
 
 export {
+  BuildConfigCoreObjectSchema,
   BuildConfigSchema,
   RuntimeConfigSchema,
   GeneratedEnvSchema,
