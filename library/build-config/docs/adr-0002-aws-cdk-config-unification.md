@@ -42,8 +42,12 @@ The CDK's top-level config becomes:
 
 ```jsonc
 {
-  "core": { /* validated verbatim by @faims3/build-config BuildConfigSchema */ },
-  "aws":  { /* AWS-specific extension, validated by a CDK-local schema */ }
+  "core": {
+    /* validated verbatim by @faims3/build-config BuildConfigSchema */
+  },
+  "aws": {
+    /* AWS-specific extension, validated by a CDK-local schema */
+  },
 }
 ```
 
@@ -98,10 +102,10 @@ and the CDK all share it):
 This replaces the current concrete-URL `endpoints` group with a derived one.
 Consequence: the `app`-build conductor URL and the CDK's deployed conductor URL
 are derived from the same `core.domains`, so they cannot drift. The CDK's
-`aws.domains` (Route53 subdomain prefixes) set up DNS/CDN to *match* the derived
+`aws.domains` (Route53 subdomain prefixes) set up DNS/CDN to _match_ the derived
 URLs.
 
-Landed **backward-compatible**: `domains` is an *optional* group, so existing
+Landed **backward-compatible**: `domains` is an _optional_ group, so existing
 configs that still store concrete `endpoints` keep working unchanged. When
 `domains` is present it overrides the derived endpoint fields (`apiUrl`,
 `webUrl`, `appUrl`, `couchdbPublicUrl`, `conductorUrls`); the non-domain
@@ -142,7 +146,7 @@ The CDK stops hand-generating env. Instead:
    in the CDK: `PROFILE_NAME`, `KEY_SOURCE=AWS_SM` + `AWS_SECRET_KEY_ARN`,
    docker image/tag, Fargate sizing, and the secret-slot → SM-ARN resolution (§6).
 
-The CDK keeps a thin AWS-specific overlay; everything that is *shared* config →
+The CDK keeps a thin AWS-specific overlay; everything that is _shared_ config →
 env comes from the shared env-contract, so the deployed env is guaranteed to
 parse through the same `parseGeneratedEnv` the apps use.
 
@@ -183,7 +187,7 @@ prevents a locally-convenient real secret from leaking into the AWS path (where
 SM is the source of truth). The validator knows which fields are "secret slots"
 from the schema's `core.secrets` shape.
 
-Rationale: a mobile *client* does not need server-side secrets (e.g. auth
+Rationale: a mobile _client_ does not need server-side secrets (e.g. auth
 `clientSecret`), so those were only in the mobile SOPS file for local-dev
 convenience; keeping them as optional core slots (SOPS-filled) keeps local dev
 easy while AWS resolves them from SM.

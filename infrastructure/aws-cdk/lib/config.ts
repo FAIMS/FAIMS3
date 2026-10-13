@@ -174,13 +174,12 @@ export const ConductorConfigSchema = z
  * Here we keep only the AWS bits: which providers are enabled for this stack
  * and the Secrets Manager ARN holding their client secrets / private keys.
  */
-export const AuthProvidersAwsConfigSchema = z
-  .object({
-    /** Provider ids (keys of core.authProviders) enabled for this stack. */
-    providers: z.array(z.string()),
-    /** ARN of the secret containing the provider client secrets / private keys. */
-    secretArn: z.string(),
-  });
+export const AuthProvidersAwsConfigSchema = z.object({
+  /** Provider ids (keys of core.authProviders) enabled for this stack. */
+  providers: z.array(z.string()),
+  /** ARN of the secret containing the provider client secrets / private keys. */
+  secretArn: z.string(),
+});
 
 // The shared provider *definitions* are now core.authProviders (build-config).
 export type AuthProviderConfigMap = z.infer<

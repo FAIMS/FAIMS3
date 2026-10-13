@@ -42,10 +42,7 @@ function envValueToString(value: EnvValue): string | undefined {
   if (Array.isArray(value)) return value.join(',');
   return String(value);
 }
-import {
-  AuthProvidersConfig,
-  ConductorConfig,
-} from '../config';
+import {AuthProvidersConfig, ConductorConfig} from '../config';
 
 /**
  * Properties for the FaimsConductor construct
@@ -186,9 +183,8 @@ export class FaimsConductor extends Construct {
         // Merge any secret values present in core.secrets.auth.authProviders
         // (typically empty for the CDK - they resolve from the SM via the
         // authSecrets references below; present for SOPS/local deployments).
-        const mergedSecrets = props.coreConfig.secrets?.auth?.authProviders?.[
-          provider
-        ];
+        const mergedSecrets =
+          props.coreConfig.secrets?.auth?.authProviders?.[provider];
         const config = {...rawConfig, ...mergedSecrets};
 
         // Guard: ensure every secret the API needs is wired up. For the CDK
@@ -199,8 +195,8 @@ export class FaimsConductor extends Construct {
           const hasValue =
             typeof config[field as keyof typeof config] === 'string' &&
             (config[field as keyof typeof config] as string).trim() !== '';
-          const hasSmRef = Object.keys(authSecrets).some(
-            k => k.endsWith(camelToSnakeCase(field))
+          const hasSmRef = Object.keys(authSecrets).some(k =>
+            k.endsWith(camelToSnakeCase(field))
           );
           return !hasValue && !hasSmRef;
         });
@@ -233,9 +229,7 @@ export class FaimsConductor extends Construct {
         // (AUTH_ + provider + _ + key in uppercase) and add to the environment.
         // Secret fields are excluded here - they are delivered via the SM
         // references above, not baked into the container env.
-        const secretFieldSet = new Set(
-          [...Object.values(SECRET_FIELDS), 'id']
-        );
+        const secretFieldSet = new Set([...Object.values(SECRET_FIELDS), 'id']);
         for (const [key, value] of Object.entries(config)) {
           // Skip undefined/null values and secret fields
           if (value === undefined || value === null) {

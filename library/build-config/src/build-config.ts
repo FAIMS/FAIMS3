@@ -145,11 +145,15 @@ const MapsBuildConfigSchema = z
     // Address-autosuggest key requirements (moved here from the aws-cdk
     // AddressAutosuggest + UiConfiguration refines, ADR-0002), so every
     // consumer validates the same rules.
-    if (data.autosuggestSource === 'mapbox' && !data.autosuggestMapboxKey.trim()) {
+    if (
+      data.autosuggestSource === 'mapbox' &&
+      !data.autosuggestMapboxKey.trim()
+    ) {
       ctx.addIssue({
         code: 'custom',
         path: ['autosuggestMapboxKey'],
-        message: 'When autosuggestSource is mapbox, autosuggestMapboxKey is required.',
+        message:
+          'When autosuggestSource is mapbox, autosuggestMapboxKey is required.',
       });
     }
     if (data.autosuggestSource === 'maptiler') {
@@ -651,8 +655,9 @@ export const BuildConfigCoreObjectSchema = z
  * guarantee identical canonical semantics from every entry point (JSON, app
  * env, api env).
  */
-export const BuildConfigSchema =
-  BuildConfigCoreObjectSchema.transform(applySharedInvariants);
+export const BuildConfigSchema = BuildConfigCoreObjectSchema.transform(
+  applySharedInvariants
+);
 
 /**
  * Same shape as SharedBuildConfig. Kept as an alias so generator, contract

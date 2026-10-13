@@ -613,7 +613,10 @@ test('D4: offline maps are forced off for OSM', () => {
 test('migration: lock cannot be enabled when migrate-on-startup is disabled', () => {
   assert.throws(() =>
     parseBuildConfig({
-      migration: {disableMigrateOnStartup: true, startupMigrationLockEnabled: true},
+      migration: {
+        disableMigrateOnStartup: true,
+        startupMigrationLockEnabled: true,
+      },
     })
   );
   // Omitted lock is fine; skip-migrate forces the lock off.
@@ -623,16 +626,18 @@ test('migration: lock cannot be enabled when migrate-on-startup is disabled', ()
 
 // ADR-0002: the autosuggest key rules live in the shared schema.
 test('maps: mapbox autosuggest requires a mapbox key', () => {
-  assert.throws(() =>
-    parseBuildConfig({maps: {autosuggestSource: 'mapbox'}})
-  );
+  assert.throws(() => parseBuildConfig({maps: {autosuggestSource: 'mapbox'}}));
   assert.doesNotThrow(() =>
-    parseBuildConfig({maps: {autosuggestSource: 'mapbox', autosuggestMapboxKey: 'pk'}})
+    parseBuildConfig({
+      maps: {autosuggestSource: 'mapbox', autosuggestMapboxKey: 'pk'},
+    })
   );
 });
 
 test('maps: maptiler autosuggest needs a tiler key or a maptiler map key', () => {
-  assert.throws(() => parseBuildConfig({maps: {autosuggestSource: 'maptiler'}}));
+  assert.throws(() =>
+    parseBuildConfig({maps: {autosuggestSource: 'maptiler'}})
+  );
   assert.doesNotThrow(() =>
     parseBuildConfig({
       maps: {autosuggestSource: 'maptiler', autosuggestMapTilerKey: 'k'},
@@ -640,7 +645,11 @@ test('maps: maptiler autosuggest needs a tiler key or a maptiler map key', () =>
   );
   assert.doesNotThrow(() =>
     parseBuildConfig({
-      maps: {mapSource: 'maptiler', mapSourceKey: 'k', autosuggestSource: 'maptiler'},
+      maps: {
+        mapSource: 'maptiler',
+        mapSourceKey: 'k',
+        autosuggestSource: 'maptiler',
+      },
     })
   );
 });
@@ -694,13 +703,21 @@ test('domains: production base+services derive concrete endpoints', () => {
   const parsed = parseBuildConfig({
     domains: {
       base: 'faims.example.com',
-      services: {conductor: 'api', couch: 'couchdb', web: 'dashboard', app: 'app'},
+      services: {
+        conductor: 'api',
+        couch: 'couchdb',
+        web: 'dashboard',
+        app: 'app',
+      },
     },
   });
   assert.equal(parsed.endpoints.apiUrl, 'https://api.faims.example.com');
   assert.equal(parsed.endpoints.webUrl, 'https://dashboard.faims.example.com');
   assert.equal(parsed.endpoints.appUrl, 'https://app.faims.example.com');
-  assert.equal(parsed.endpoints.couchdbPublicUrl, 'https://couchdb.faims.example.com');
+  assert.equal(
+    parsed.endpoints.couchdbPublicUrl,
+    'https://couchdb.faims.example.com'
+  );
   assert.deepEqual(parsed.endpoints.conductorUrls, [
     'https://api.faims.example.com',
   ]);
@@ -710,7 +727,12 @@ test('domains: localOverride hosts are used verbatim with http', () => {
   const parsed = parseBuildConfig({
     domains: {
       base: 'faims.example.com',
-      services: {conductor: 'api', couch: 'couchdb', web: 'dashboard', app: 'app'},
+      services: {
+        conductor: 'api',
+        couch: 'couchdb',
+        web: 'dashboard',
+        app: 'app',
+      },
       localOverride: {conductor: 'localhost:8080', web: 'localhost:3001'},
     },
   });
@@ -733,7 +755,13 @@ test('domains: rejects unknown service names', () => {
     parseBuildConfig({
       domains: {
         base: 'faims.example.com',
-        services: {conductor: 'api', couch: 'couchdb', web: 'dashboard', app: 'app', bogus: 'x'},
+        services: {
+          conductor: 'api',
+          couch: 'couchdb',
+          web: 'dashboard',
+          app: 'app',
+          bogus: 'x',
+        },
       },
     })
   );

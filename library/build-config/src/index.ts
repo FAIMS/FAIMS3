@@ -38,10 +38,5 @@ export type {
   AuthProviderConfig,
   AuthProviderConfigMap,
 } from './auth-provider-config.js';
-export {
-  buildEnvMapFromRuntime,
-} from './env-contract.js';
-export type {
-  SupportedPlatform,
-  EnvValue,
-} from './env-contract.js';
+export {buildEnvMapFromRuntime} from './env-contract.js';
+export type {SupportedPlatform, EnvValue} from './env-contract.js';
