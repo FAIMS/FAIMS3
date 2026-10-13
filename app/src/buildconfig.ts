@@ -150,7 +150,6 @@ export const config = {
   mapStyle: canonical.maps.mapStyle,
   satelliteSource: canonical.maps.satelliteSource,
   navigationStyle: canonical.notebookAndRecordUX.navigation,
-  showRecordLinks: canonical.notebookAndRecordUX.showRecordLinks,
   migrateOldDatabases: canonical.migration.migrateOldDatabases,
   forceRemoteDeletion: canonical.sync.forceRemoteDeletion,
   deleteOnDeactivation: canonical.sync.deleteOnDeactivation,

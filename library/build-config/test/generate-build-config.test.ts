@@ -557,7 +557,6 @@ test('generated env parser converts typed values into grouped runtime config', (
     VITE_LOGIN_BANNER_GRACE_MS: '10000',
     VITE_IGNORE_TOKEN_EXP: 'false',
     VITE_NAVIGATION: 'none',
-    VITE_SHOW_RECORD_LINKS: 'false',
     VITE_ATTACHMENT_SERVICE_TYPE: 'COUCH',
     VITE_ATTACHMENT_DOCUMENT_ID_PREFIX: '',
     VITE_MIGRATE_OLD_DATABASES: 'false',

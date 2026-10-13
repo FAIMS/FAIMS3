@@ -323,7 +323,6 @@ mkdir -p "$OUTPUT_PARENT"
   emit_env_line VITE_LOGIN_BANNER_GRACE_MS 10000
   emit_env_line VITE_IGNORE_TOKEN_EXP false
   emit_env_line VITE_NAVIGATION none
-  emit_env_line VITE_SHOW_RECORD_LINKS false
   emit_env_line VITE_MIGRATE_OLD_DATABASES false
   emit_env_line VITE_ATTACHMENT_SERVICE_TYPE COUCH
   echo ""

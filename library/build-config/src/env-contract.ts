@@ -57,8 +57,6 @@ const baseContract: Record<string, EnvResolver> = {
     runtime.authTokens.loginBannerGraceMs ?? 10000,
   VITE_IGNORE_TOKEN_EXP: runtime => runtime.authTokens.ignoreTokenExp ?? false,
   VITE_NAVIGATION: runtime => runtime.notebookAndRecordUX.navigation ?? 'none',
-  VITE_SHOW_RECORD_LINKS: runtime =>
-    runtime.notebookAndRecordUX.showRecordLinks ?? false,
   VITE_ATTACHMENT_SERVICE_TYPE: runtime =>
     runtime.attachments.attachmentServiceType ?? 'COUCH',
   VITE_ATTACHMENT_DOCUMENT_ID_PREFIX: runtime =>

@@ -74,7 +74,6 @@ const NotebookAndRecordUxBuildConfigSchema = z
     notebookName: z.string().default('project'),
     notebookListType: z.enum(['tabs', 'headings']).default('tabs'),
     navigation: z.enum(['none', 'breadcrumbs']).default('none'),
-    showRecordLinks: z.boolean().default(false),
     showStatusTab: z.boolean().default(true),
     showNewNotebook: z.boolean().default(true),
   })
@@ -455,7 +454,6 @@ export const GeneratedEnvSchema = z
     VITE_LOGIN_BANNER_GRACE_MS: PositiveIntStringSchema.default(10000),
     VITE_IGNORE_TOKEN_EXP: BoolEnvSchema.default(false),
     VITE_NAVIGATION: z.enum(['none', 'breadcrumbs']).default('none'),
-    VITE_SHOW_RECORD_LINKS: BoolEnvSchema.default(false),
     VITE_ATTACHMENT_SERVICE_TYPE: z.string().default('COUCH'),
     VITE_ATTACHMENT_DOCUMENT_ID_PREFIX: z.string().default(''),
     VITE_MIGRATE_OLD_DATABASES: BoolEnvSchema.default(false),
@@ -695,7 +693,6 @@ export function parseAppsEnv(env: GeneratedEnv): PartialBuildConfig {
       notebookName: env.VITE_NOTEBOOK_NAME,
       notebookListType: env.VITE_NOTEBOOK_LIST_TYPE,
       navigation: env.VITE_NAVIGATION,
-      showRecordLinks: env.VITE_SHOW_RECORD_LINKS,
       showStatusTab: env.VITE_SHOW_STATUS_TAB,
       showNewNotebook: env.VITE_SHOW_NEW_NOTEBOOK,
     },

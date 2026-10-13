@@ -63,8 +63,6 @@ All boolean-typed env values accept:
 This is the superset of every consumer's current behaviour, so no
 currently-working value breaks. Specific consequences ratified:
 
-- `VITE_SHOW_RECORD_LINKS`: app currently requires exact `'true'`
-  (case-sensitive) → now truthy-vocabulary.
 - `VITE_OFFLINE_MAPS`: currently a string compared against `'true'` → real
   boolean (the OSM clamp is a separate shared invariant, see D4).
 - `VITE_IGNORE_TOKEN_EXP`: currently `'TRUE'` (case-insensitive exact) →
