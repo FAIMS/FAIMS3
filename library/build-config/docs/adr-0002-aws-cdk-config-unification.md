@@ -101,6 +101,15 @@ are derived from the same `core.domains`, so they cannot drift. The CDK's
 `aws.domains` (Route53 subdomain prefixes) set up DNS/CDN to *match* the derived
 URLs.
 
+Landed **backward-compatible**: `domains` is an *optional* group, so existing
+configs that still store concrete `endpoints` keep working unchanged. When
+`domains` is present it overrides the derived endpoint fields (`apiUrl`,
+`webUrl`, `appUrl`, `couchdbPublicUrl`, `conductorUrls`); the non-domain
+endpoint fields (`couchdbInternalUrl`, the app public URLs, `redirectWhitelist`)
+keep their own defaults/input. The committed configs' migration from concrete
+`endpoints` to `domains` (and the eventual removal of the concrete group) lands
+with the config migration below.
+
 A production env omits `localOverride`; a local/dev env sets it. (An explicit
 `environment` switch was considered and rejected — the `localOverride` presence
 is the switch, and it avoids a second axis of "mode".)
