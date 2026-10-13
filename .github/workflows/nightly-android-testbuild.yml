@@ -31,4 +31,5 @@ jobs:
     with:
       android_deploy_track: internal
       config_environment: nightly
+      serverprefix: testing
     secrets: inherit
