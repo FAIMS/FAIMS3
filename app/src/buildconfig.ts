@@ -72,16 +72,6 @@ const canonical = parseGeneratedEnv(import.meta.env);
 const notebookName = canonical.notebookAndRecordUX.notebookName;
 const notebookNamePlural = pluralize(notebookName);
 
-// Directory credentials are only meaningful as a pair; the shared model stores
-// them independently, so pair them here (both-or-undefined).
-const directoryAuth =
-  canonical.auth.directoryUsername && canonical.auth.directoryPassword
-    ? {
-        username: canonical.auth.directoryUsername,
-        password: canonical.auth.directoryPassword,
-      }
-    : undefined;
-
 // MapTiler API key: a dedicated key, else reuse the map-source key when the map
 // source is maptiler so one key serves both tiles and geocoding.
 const dedicatedMapTilerKey = canonical.maps.autosuggestMapTilerKey;
@@ -162,7 +152,6 @@ export const config = {
   conductorUrls: canonical.endpoints.conductorUrls,
 
   // App-specific derivation (see module header).
-  directoryAuth,
   runningUnderTest,
   maptilerApiKey,
   // OSM does not allow bulk downloads; the shared model already forces

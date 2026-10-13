@@ -61,8 +61,6 @@
   },
   "auth": {
     "clusterAdminGroupName": "cluster-admin",
-    "directoryUsername": "",
-    "directoryPassword": "",
     "profileName": "local",
     "keyFilePath": ".",
     "keySource": "FILE",

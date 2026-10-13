@@ -45,8 +45,6 @@ const baseContract: Record<string, EnvResolver> = {
     runtime.support.privacyPolicyUrl ?? '',
   VITE_SUPPORT_EMAIL: runtime => runtime.support.supportEmail ?? '',
   VITE_APP_CONTACT_URL: runtime => runtime.support.appContactUrl ?? '',
-  VITE_DIRECTORY_USERNAME: runtime => runtime.auth.directoryUsername ?? '',
-  VITE_DIRECTORY_PASSWORD: runtime => runtime.auth.directoryPassword ?? '',
   VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD: runtime =>
     runtime.sync.syncPushOnlyRecordThreshold ?? 500,
   VITE_TOKEN_REFRESH_INTERVAL_MS: runtime =>

@@ -124,8 +124,6 @@ const MigrationBuildConfigSchema = z
 const AuthBuildConfigSchema = z
   .object({
     clusterAdminGroupName: z.string().default('cluster-admin'),
-    directoryUsername: z.string().optional(),
-    directoryPassword: z.string().optional(),
     profileName: z.string().default('local-dev'),
     keyFilePath: z.string().default('.'),
     keySource: z.enum(['FILE', 'ENV', 'AWS_SM']).default('FILE'),
@@ -775,8 +773,6 @@ export function parseAppsEnv(env: GeneratedEnv): PartialBuildConfig {
       appStoreConnectTeamId: env.VITE_APP_STORE_CONNECT_TEAM_ID || undefined,
     },
     auth: {
-      directoryUsername: env.VITE_DIRECTORY_USERNAME || undefined,
-      directoryPassword: env.VITE_DIRECTORY_PASSWORD || undefined,
       clusterAdminGroupName: env.VITE_CLUSTER_ADMIN_GROUP_NAME,
     },
   };
