@@ -202,8 +202,12 @@ mirror_repo_to_local() {
   # Mirror build-secrets.enc.json and decrypt it
   if [[ -f "$repo_env_dir/build-secrets.enc.json" ]]; then
     cp "$repo_env_dir/build-secrets.enc.json" "$local_root/$environment/build-secrets.enc.json"
+    echo "Decrypting build-secrets.enc.json for environment $environment"
     if sops --decrypt "$local_root/$environment/build-secrets.enc.json" >/dev/null 2>&1; then
       sops --decrypt "$local_root/$environment/build-secrets.enc.json" > "$local_root/$environment/build-secrets.json"
+    else
+      echo "Error: Failed to decrypt build-secrets.enc.json for environment $environment, is SOPS installed and configured correctly?" >&2
+      exit 1
     fi
   fi
 }
