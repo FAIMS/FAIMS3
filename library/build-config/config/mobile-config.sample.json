@@ -3,21 +3,21 @@
     "webUrl": "http://localhost:3001",
     "apiUrl": "http://localhost:8080",
     "appUrl": "http://localhost:3000",
-    "couchdbInternalUrl": "http://couchdb:5984",
+    "couchdbInternalUrl": "http://localhost:5984",
     "couchdbPublicUrl": "http://localhost:5984",
     "androidAppPublicUrl": "https://play.google.com/store/apps/details?id=org.fedarch.faims3",
     "iosAppPublicUrl": "https://apps.apple.com/app/id0000000000",
     "conductorUrls": ["http://localhost:8080"],
-    "redirectWhitelist": []
+    "redirectWhitelist": ["http://localhost:3000", "http://localhost:3001"]
   },
   "branding": {
-    "appName": "Fieldmark",
+    "appName": "FAIMS",
     "appShortName": "FAIMS",
-    "headingAppName": "Fieldmark",
+    "headingAppName": "FAIMS",
     "theme": "default",
     "websiteTitle": "Control Centre",
-    "conductorInstanceName": "Local FAIMS Conductor",
-    "conductorDescription": "Local development Conductor instance",
+    "conductorInstanceName": "Local FAIMS Server",
+    "conductorDescription": "Local development server instance",
     "conductorShortCodePrefix": "LOC"
   },
   "support": {
@@ -30,7 +30,6 @@
     "notebookName": "survey",
     "notebookListType": "tabs",
     "navigation": "breadcrumbs",
-    "showRecordLinks": false,
     "showStatusTab": true,
     "showNewNotebook": true
   },
@@ -66,7 +65,7 @@
     "directoryUsername": "",
     "directoryPassword": "",
     "profileName": "local",
-    "keyFilePath": "./keys/local-dev_rsa_2048_private_key.pem",
+    "keyFilePath": ".",
     "keySource": "FILE",
     "cookieSecret": "replace-this-with-a-long-random-secret",
     "disableLocalLogin": false,
@@ -124,7 +123,7 @@
     "testEmailAddress": "test@example.com"
   },
   "observability": {
-    "bugsnagApiKey": "<secret>",
+    "bugsnagApiKey": "",
     "commitVersion": "output of `git rev-parse HEAD`"
   },
   "teamAndRolePolicy": {
