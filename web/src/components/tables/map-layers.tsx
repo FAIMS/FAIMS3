@@ -2,9 +2,75 @@
 import {DataTableColumnHeader} from '@/components/data-table/column-header';
 import {TeamCellComponent} from '@/components/tables/cells/team-cell';
 import {Badge} from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {cn} from '@/lib/utils';
 import {displayDateTime} from '@/lib/time';
 import type {ExistingMapAsset} from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
+import {useLayoutEffect, useRef, useState} from 'react';
+
+/**
+ * Single-line ellipsis. Names are narrower than descriptions; both use the
+ * same truncation so the ellipsis shows in the same way.
+ */
+function TruncatedListingText({
+  text,
+  widthClass,
+}: {
+  text: string | undefined;
+  widthClass: string;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [overflowing, setOverflowing] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) {
+      return;
+    }
+    const measure = () => {
+      setOverflowing(el.scrollWidth > el.clientWidth + 1);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [text, widthClass]);
+
+  if (!text) {
+    return null;
+  }
+
+  const className = cn(
+    'block truncate',
+    widthClass,
+    overflowing && 'cursor-help'
+  );
+  const content = (
+    <span ref={ref} className={className}>
+      {text}
+    </span>
+  );
+  if (!overflowing) {
+    return content;
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{content}</TooltipTrigger>
+        <TooltipContent className="max-w-sm">
+          <p className="break-words">{text}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 function formatBytes(bytes: number): string {
   if (bytes <= 0) {
@@ -29,6 +95,13 @@ function statusLabel(asset: ExistingMapAsset): string {
 const nameColumn: ColumnDef<ExistingMapAsset> = {
   accessorKey: 'name',
   header: ({column}) => <DataTableColumnHeader column={column} title="Name" />,
+  meta: {cellClassName: 'w-72 max-w-72 pr-8', headerClassName: 'w-72'},
+  cell: ({getValue}) => (
+    <TruncatedListingText
+      text={getValue<string | undefined>()}
+      widthClass="w-full"
+    />
+  ),
 };
 
 const statusColumn: ColumnDef<ExistingMapAsset> = {
@@ -93,15 +166,13 @@ const descriptionColumn: ColumnDef<ExistingMapAsset> = {
   header: ({column}) => (
     <DataTableColumnHeader column={column} title="Description" />
   ),
-  cell: ({getValue}) => {
-    const description = getValue<string>();
-    if (!description) {
-      return null;
-    }
-    return description.length > 80
-      ? `${description.slice(0, 80)}…`
-      : description;
-  },
+  meta: {cellClassName: 'w-72 max-w-72', headerClassName: 'w-72'},
+  cell: ({getValue}) => (
+    <TruncatedListingText
+      text={getValue<string | undefined>()}
+      widthClass="w-72"
+    />
+  ),
 };
 
 export function getMapLayerTableColumns(): ColumnDef<ExistingMapAsset>[] {

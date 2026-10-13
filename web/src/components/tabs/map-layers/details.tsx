@@ -1,13 +1,77 @@
 // SPDX-License-Identifier: Apache-2.0
 import {TeamCellComponent} from '@/components/tables/cells/team-cell';
+import {Badge} from '@/components/ui/badge';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
 import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useMapAsset} from '@/hooks/map-asset-hooks';
 import {displayDateTime} from '@/lib/time';
-import type {ExistingMapAsset} from '@faims3/data-model';
+import {cn} from '@/lib/utils';
+import type {ExistingMapAsset, MapAssetStatus} from '@faims3/data-model';
+import {AlertCircle, CheckCircle2, LoaderCircle} from 'lucide-react';
 import type {ReactNode} from 'react';
+
+const statusIndication: Record<
+  MapAssetStatus,
+  {label: string; className: string; iconClassName: string}
+> = {
+  ready: {
+    label: 'Ready',
+    className:
+      'border-green-800/40 bg-green-800/[0.08] text-green-800 dark:border-emerald-400/40 dark:bg-emerald-400/10 dark:text-emerald-300',
+    iconClassName: 'text-green-800 dark:text-emerald-300',
+  },
+  processing: {
+    label: 'Processing',
+    className: 'border-info/40 bg-info/10 text-info',
+    iconClassName: 'text-info',
+  },
+  failed: {
+    label: 'Failed',
+    className: 'border-destructive/40 bg-destructive/10 text-destructive',
+    iconClassName: 'text-destructive',
+  },
+};
+
+function MapLayerStatusIndication({asset}: {asset: ExistingMapAsset}) {
+  const indication = statusIndication[asset.status];
+  const Icon =
+    asset.status === 'ready'
+      ? CheckCircle2
+      : asset.status === 'failed'
+        ? AlertCircle
+        : LoaderCircle;
+
+  return (
+    <div className="space-y-1.5" data-testid="web-map-layer-status">
+      <Badge
+        variant="outline"
+        className={cn('gap-1.5 font-medium', indication.className)}
+      >
+        <Icon
+          className={cn(
+            'h-3.5 w-3.5',
+            indication.iconClassName,
+            asset.status === 'processing' && 'animate-spin'
+          )}
+          aria-hidden
+        />
+        {indication.label}
+      </Badge>
+      {asset.status === 'failed' ? (
+        <p className="text-sm text-destructive">
+          {asset.failureReason ?? 'This layer failed to process.'}
+        </p>
+      ) : null}
+      {asset.status === 'processing' ? (
+        <p className="text-sm text-muted-foreground">
+          This layer is being prepared for devices.
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 function formatBytes(bytes: number): string {
   if (bytes <= 0) {
@@ -17,16 +81,6 @@ function formatBytes(bytes: number): string {
     return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   }
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function statusText(asset: ExistingMapAsset): string {
-  if (asset.status === 'processing') {
-    return 'Processing';
-  }
-  if (asset.status === 'failed') {
-    return asset.failureReason ?? 'Failed';
-  }
-  return 'Ready';
 }
 
 export function MapLayerDetails({assetId}: {assetId: string}) {
@@ -44,7 +98,11 @@ export function MapLayerDetails({assetId}: {assetId: string}) {
       label: 'Description',
       value: asset => asset.description || '—',
     },
-    {key: 'status', label: 'Status', value: statusText},
+    {
+      key: 'status',
+      label: 'Status',
+      value: asset => <MapLayerStatusIndication asset={asset} />,
+    },
     {
       key: 'kind',
       label: 'Type',
@@ -104,6 +162,8 @@ export function MapLayerDetails({assetId}: {assetId: string}) {
             <ListLabel>{row.label}</ListLabel>
             {isPending || !data ? (
               <Skeleton />
+            ) : row.key === 'status' ? (
+              row.value(data)
             ) : (
               <ListDescription>{row.value(data)}</ListDescription>
             )}

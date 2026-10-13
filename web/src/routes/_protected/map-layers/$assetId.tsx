@@ -4,6 +4,7 @@ import {MapLayerDetails} from '@/components/tabs/map-layers/details';
 import {MapLayerLinkedSurveys} from '@/components/tabs/map-layers/linked-surveys';
 import {MapLayerPreviewTab} from '@/components/tabs/map-layers/preview';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
+import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useMapAsset} from '@/hooks/map-asset-hooks';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
@@ -13,7 +14,10 @@ import {useMemo} from 'react';
 const tabs = [
   {name: 'Details', Component: MapLayerDetails},
   {name: 'Preview', Component: MapLayerPreviewTab},
-  {name: 'Linked Surveys', Component: MapLayerLinkedSurveys},
+  {
+    name: `Linked ${config.notebookNamePluralCapitalized}`,
+    Component: MapLayerLinkedSurveys,
+  },
   {name: 'Actions', Component: MapLayerActions},
 ];
 

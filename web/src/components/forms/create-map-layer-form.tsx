@@ -21,6 +21,7 @@ import {
   Action,
   DEFAULT_MAP_ASSET_QUALITY,
   INPUT_LIMITS,
+  mapAssetUploadMaxLabel,
 } from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useState} from 'react';
@@ -61,8 +62,7 @@ export function CreateMapLayerForm({
     {
       name: 'files',
       label: 'Files',
-      description:
-        'GeoJSON, GeoPackage, zipped shapefile, KML, GeoTIFF, georeferenced PDF, or a PNG/JPEG with a world file and a .prj. The file must have a coordinate reference system.',
+      description: `Must include a coordinate reference system. Up to ${mapAssetUploadMaxLabel()}.`,
       type: 'file',
       multiple: true,
       accept: MAP_LAYER_FILE_ACCEPT,

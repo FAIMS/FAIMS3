@@ -9,11 +9,17 @@ import {
   CreateNotebookFromTemplateSchema,
   estimateJsonBytes,
   INPUT_LIMITS,
+  mapAssetUploadMaxLabel,
+  mapAssetUploadTooLargeMessage,
+  ROOT_DESCRIPTION_MAX_LENGTH,
   PostChangePasswordInputSchema,
   PostCreateGlobalInviteInputSchema,
   PostCreateResourceInviteInputSchema,
+  MapAssetDetailsSchema,
   PostCreateTeamInputSchema,
   PostCreateTemplateInputSchema,
+  PostMapAssetEstimateInputSchema,
+  PostMapAssetLinkInputSchema,
   PostLoginInputSchema,
   PostRecordStatusInputSchema,
   PostRegisterInputSchema,
@@ -31,6 +37,12 @@ describe('input limit constants', () => {
     expect(INPUT_LIMITS.EMAIL_MAX_LENGTH).toBe(254);
     expect(INPUT_LIMITS.PASSWORD_MAX_LENGTH).toBeGreaterThanOrEqual(64);
     expect(INPUT_LIMITS.UI_SPEC_MAX_BYTES).toBeGreaterThan(1024 * 1024);
+    expect(INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_BYTES).toBe(
+      2 * 1024 * 1024 * 1024
+    );
+    expect(INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_FILES).toBe(8);
+    expect(mapAssetUploadMaxLabel()).toBe('2 GB');
+    expect(mapAssetUploadTooLargeMessage()).toBe('Files must be at most 2 GB.');
   });
 });
 
@@ -226,6 +238,55 @@ describe('team schemas', () => {
         description: longString(INPUT_LIMITS.TEAM_DESCRIPTION_MAX_LENGTH + 1),
       }).success
     ).toBe(false);
+  });
+});
+
+describe('map layer schemas', () => {
+  it('rejects oversized layer name and description', () => {
+    expect(
+      MapAssetDetailsSchema.safeParse({
+        name: longString(INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH + 1),
+        description: '',
+      }).success
+    ).toBe(false);
+    expect(
+      MapAssetDetailsSchema.safeParse({
+        name: 'Site boundary',
+        description: longString(ROOT_DESCRIPTION_MAX_LENGTH + 1),
+      }).success
+    ).toBe(false);
+    expect(
+      MapAssetDetailsSchema.safeParse({
+        name: 'Site boundary',
+        description: 'Optional layer notes',
+      }).success
+    ).toBe(true);
+  });
+
+  it('rejects an oversized estimate filename and link project id', () => {
+    expect(
+      PostMapAssetEstimateInputSchema.safeParse({
+        source: {
+          filename: longString(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH + 1),
+          byteSize: 1024,
+        },
+      }).success
+    ).toBe(false);
+    expect(
+      PostMapAssetEstimateInputSchema.safeParse({
+        source: {filename: 'sites.geojson', byteSize: 1024},
+      }).success
+    ).toBe(true);
+    expect(
+      PostMapAssetLinkInputSchema.safeParse({
+        projectId: longString(INPUT_LIMITS.ID_MAX_LENGTH + 1),
+      }).success
+    ).toBe(false);
+    expect(
+      PostMapAssetLinkInputSchema.safeParse({
+        projectId: 'notebook-1',
+      }).success
+    ).toBe(true);
   });
 });
 

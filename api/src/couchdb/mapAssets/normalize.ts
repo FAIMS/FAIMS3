@@ -7,7 +7,15 @@
  * that raster.
  */
 
-import {mkdtemp, readFile, rm, writeFile} from 'fs/promises';
+import {
+  copyFile,
+  mkdtemp,
+  open,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from 'fs/promises';
 import {tmpdir} from 'os';
 import path from 'path';
 import type {
@@ -43,10 +51,16 @@ export const MAX_RASTER_EDGE_PX =
 
 export type NormalizedMapAsset = {
   kind: MapAssetKind;
-  bytes: Buffer;
   mediaType: string;
   extent4326: MapExtent;
   extent3857?: MapExtent;
+  /** On-disk normalized payload. Prefer this over `bytes`. */
+  filePath?: string;
+  byteSize?: number;
+  /** Small fixtures and tests. */
+  bytes?: Buffer;
+  /** Temp directory the caller must delete after streaming `filePath`. */
+  cleanupDir?: string;
 };
 
 function wktFromInfo(info: unknown): string {
@@ -194,26 +208,46 @@ async function convertVector(
   };
 
   await write();
-  let bytes = await readFile(outPath);
-  if (bytes.length > options.vectorSimplifyBytes) {
+  let byteSize = (await stat(outPath)).size;
+  if (byteSize > options.vectorSimplifyBytes) {
     await write(options.vectorSimplifyTolerances[0]);
-    bytes = await readFile(outPath);
+    byteSize = (await stat(outPath)).size;
   }
-  if (bytes.length > options.vectorSimplifyBytes) {
+  if (byteSize > options.vectorSimplifyBytes) {
     await write(options.vectorSimplifyTolerances[1]);
-    bytes = await readFile(outPath);
+    byteSize = (await stat(outPath)).size;
   }
 
+  return {
+    kind: 'geojson',
+    mediaType: 'application/geo+json',
+    filePath: outPath,
+    byteSize,
+    extent4326: await extentFromOgrInfo(outPath),
+  };
+}
+
+async function extentFromOgrInfo(filePath: string): Promise<MapExtent> {
+  const info = (await readGdalJson({
+    command: 'ogrinfo',
+    args: ['-json', '-so', '-al', filePath],
+  })) as {
+    layers?: {geometryFields?: {extent?: number[]}[]}[];
+  };
+  const extent = info.layers?.[0]?.geometryFields?.[0]?.extent;
+  if (
+    extent &&
+    extent.length >= 4 &&
+    extent.every(value => typeof value === 'number')
+  ) {
+    return [extent[0], extent[1], extent[2], extent[3]];
+  }
+  const bytes = await readFile(filePath);
   const parsed = JSON.parse(bytes.toString('utf8')) as {
     bbox?: number[];
     features?: {geometry?: {coordinates?: unknown}; bbox?: number[]}[];
   };
-  return {
-    kind: 'geojson',
-    bytes,
-    mediaType: 'application/geo+json',
-    extent4326: extentFromGeoJson(parsed),
-  };
+  return extentFromGeoJson(parsed);
 }
 
 type GdalInfo = {
@@ -237,7 +271,7 @@ async function pdfDpiOpenOptions(
     return [];
   }
   try {
-    const bytes = new Uint8Array(await readFile(sourcePath));
+    const bytes = new Uint8Array(await readPdfHeadAndTail(sourcePath));
     const full = readGeoreferencedPdfRaster(bytes);
     if (!full) {
       return [];
@@ -310,16 +344,38 @@ async function convertRaster(
   const ring = info.wgs84Extent?.coordinates?.[0] ?? [];
   return {
     kind: 'image',
-    bytes: await readFile(png),
     mediaType: 'image/png',
+    filePath: png,
+    byteSize: (await stat(png)).size,
     extent4326: extentFromRing(ring),
     extent3857,
   };
 }
 
+const PDF_MEDIA_BOX_SLICE_BYTES = 2 * 1024 * 1024;
+
+/** MediaBox is usually in the header or trailer — do not load a huge PDF. */
+async function readPdfHeadAndTail(filePath: string): Promise<Buffer> {
+  const size = (await stat(filePath)).size;
+  if (size <= PDF_MEDIA_BOX_SLICE_BYTES * 2) {
+    return readFile(filePath);
+  }
+  const handle = await open(filePath, 'r');
+  try {
+    const head = new Uint8Array(PDF_MEDIA_BOX_SLICE_BYTES);
+    const tail = new Uint8Array(PDF_MEDIA_BOX_SLICE_BYTES);
+    await handle.read(head, 0, head.length, 0);
+    await handle.read(tail, 0, tail.length, size - tail.length);
+    return Buffer.concat([head, tail]);
+  } finally {
+    await handle.close();
+  }
+}
+
 /**
- * Writes the upload set into a temp directory, requires a CRS, and returns
- * the normalized bytes. The temp directory is removed before this resolves.
+ * Requires a CRS and writes a normalized file beside the upload (or in a
+ * fresh temp dir). The caller deletes `workDir` after it has streamed the
+ * output. Source files are copied only when they are not already on disk.
  */
 export async function normalizeMapUpload(
   files: UploadedMapFile[],
@@ -327,19 +383,47 @@ export async function normalizeMapUpload(
 ): Promise<NormalizedMapAsset> {
   assertUploadCompanions(files);
   const primary = primaryUploadFile(files);
-  const workDir = await mkdtemp(path.join(tmpdir(), 'faims-map-asset-'));
+  const existingDir = sharedDiskDirectory(files);
+  const workDir =
+    existingDir ?? (await mkdtemp(path.join(tmpdir(), 'faims-map-asset-')));
+  const ownsWorkDir = existingDir === undefined;
   try {
-    for (const file of files) {
-      const filename = safeUploadFilename(file.filename);
-      await writeFile(path.join(workDir, filename), new Uint8Array(file.bytes));
+    if (ownsWorkDir) {
+      for (const file of files) {
+        const filename = safeUploadFilename(file.filename);
+        const dest = path.join(workDir, filename);
+        if (file.diskPath) {
+          await copyFile(file.diskPath, dest);
+        } else if (file.bytes) {
+          await writeFile(dest, new Uint8Array(file.bytes));
+        } else {
+          throw new Error(`Upload is missing data for ${filename}.`);
+        }
+      }
     }
-    const sourcePath = path.join(workDir, primary.filename);
+    const sourcePath = path.join(workDir, safeUploadFilename(primary.filename));
     const vector = isVectorUpload(primary.filename);
     await inspectCrs(sourcePath, vector);
-    return vector
+    const result = vector
       ? await convertVector(sourcePath, workDir, options)
       : await convertRaster(sourcePath, workDir, options);
-  } finally {
-    await rm(workDir, {recursive: true, force: true});
+    return ownsWorkDir ? {...result, cleanupDir: workDir} : result;
+  } catch (error) {
+    if (ownsWorkDir) {
+      await rm(workDir, {recursive: true, force: true});
+    }
+    throw error;
   }
+}
+
+function sharedDiskDirectory(files: UploadedMapFile[]): string | undefined {
+  const dirs = new Set(
+    files
+      .map(file => (file.diskPath ? path.dirname(file.diskPath) : undefined))
+      .filter((dir): dir is string => Boolean(dir))
+  );
+  if (dirs.size !== 1 || files.some(file => !file.diskPath)) {
+    return undefined;
+  }
+  return [...dirs][0];
 }

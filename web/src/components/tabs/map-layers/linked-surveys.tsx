@@ -8,6 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {config} from '@/constants';
 import {useRequiredUser, userCanDo} from '@/hooks/auth-hooks';
 import {
   linkMapAsset,
@@ -45,10 +46,13 @@ function SurveyLinkAction({
     action: Action.UPDATE_PROJECT_DETAILS,
     resourceId: project._id,
   });
-  const label = mode === 'link' ? 'Link to this survey' : 'Unlink this survey';
+  const label =
+    mode === 'link'
+      ? `Link to this ${config.notebookName}`
+      : `Unlink this ${config.notebookName}`;
   const tooltip = canEdit
     ? label
-    : 'You do not have permission to change this survey.';
+    : `You do not have permission to change this ${config.notebookName}.`;
 
   const onClick = async (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -72,8 +76,8 @@ function SurveyLinkAction({
         error instanceof Error
           ? error.message
           : mode === 'link'
-            ? 'Could not link this survey.'
-            : 'Could not unlink this survey.'
+            ? `Could not link this ${config.notebookName}.`
+            : `Could not unlink this ${config.notebookName}.`
       );
     } finally {
       setPending(false);
@@ -131,7 +135,9 @@ function surveyColumns({
       },
       header: () => (
         <span className="sr-only">
-          {mode === 'link' ? 'Link to this survey' : 'Unlink this survey'}
+          {mode === 'link'
+            ? `Link to this ${config.notebookName}`
+            : `Unlink this ${config.notebookName}`}
         </span>
       ),
       cell: ({row}) => (
@@ -182,7 +188,11 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
   };
 
   if (projects.isError || links.isError) {
-    return <p className="text-sm text-destructive">Could not load surveys.</p>;
+    return (
+      <p className="text-sm text-destructive">
+        Could not load {config.notebookNamePlural}.
+      </p>
+    );
   }
 
   const loading = projects.isPending || links.isPending;
@@ -191,9 +201,12 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-3">
         <div>
-          <h2 className="text-lg font-semibold">Currently linked surveys</h2>
+          <h2 className="text-lg font-semibold">
+            Linked {config.notebookNamePluralCapitalized}
+          </h2>
           <p className="text-sm text-muted-foreground">
-            People who activate these surveys can choose to download this layer.
+            Users who activate these {config.notebookNamePlural} can choose to
+            download this layer.
           </p>
         </div>
         <DataTable
@@ -202,13 +215,18 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
           loading={loading}
           initialSorting={[{id: 'createdAt', desc: true}]}
           onRowClick={openSurvey}
+          emptyMessage={`No linked ${config.notebookNamePlural}.`}
         />
       </section>
       <section className="flex flex-col gap-3">
         <div>
-          <h2 className="text-lg font-semibold">Available surveys</h2>
+          <h2 className="text-lg font-semibold">
+            Available {config.notebookNamePluralCapitalized}
+          </h2>
           <p className="text-sm text-muted-foreground">
-            Surveys you can edit that are not already linked to this layer.
+            Users can only download this map layer if they activate a linked{' '}
+            {config.notebookName}. The {config.notebookNamePlural} below are
+            available for linking.
           </p>
         </div>
         <DataTable
@@ -217,6 +235,7 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
           loading={loading}
           initialSorting={[{id: 'createdAt', desc: true}]}
           onRowClick={openSurvey}
+          emptyMessage={`No available ${config.notebookNamePlural}.`}
         />
       </section>
     </div>

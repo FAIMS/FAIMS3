@@ -5,6 +5,7 @@ import {fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type Map from 'ol/Map';
 import {describe, expect, it, vi} from 'vitest';
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {ContextualLayersControl} from './ContextualLayersControl';
 import {
   ContextualMapLayersContext,
@@ -76,6 +77,10 @@ describe('ContextualLayersControl', () => {
     expect(
       screen.getByRole('slider', {name: 'Site boundary line width'})
     ).toBeInTheDocument();
+    expect(screen.getByLabelText('Site boundary label field')).toHaveAttribute(
+      'maxLength',
+      String(INPUT_LIMITS.ID_MAX_LENGTH)
+    );
   });
 
   it('closes on a press outside the sheet and swallows the following click', async () => {

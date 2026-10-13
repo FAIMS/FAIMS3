@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import {useRequiredUser} from '@/hooks/auth-hooks';
 import {estimateMapAsset} from '@/hooks/map-asset-hooks';
-import {mapLayerEstimateSource} from '@/lib/map-layer-files';
+import {
+  mapLayerEstimateSource,
+  primaryMapLayerFile,
+} from '@/lib/map-layer-files';
 import {
   MAP_ASSET_QUALITY_MAX,
   MAP_ASSET_QUALITY_MIN,
@@ -97,9 +100,8 @@ export function MapLayerQualitySlider({
         <span className="text-xs text-muted-foreground">{quality}</span>
       </div>
       <p className="text-sm text-muted-foreground">
-        Higher detail keeps more pixels and vertices on the phone. The top
-        setting keeps the original image resolution. Lower values finish faster
-        and use less storage.
+        Lower quality settings require less storage space on devices, and may
+        reduce the device load.
       </p>
       <input
         id="map-layer-quality"
@@ -119,7 +121,7 @@ export function MapLayerQualitySlider({
       <p className="text-sm" data-testid="web-map-layers-quality-preview">
         {estimate
           ? estimate.summary
-          : files.length === 0
+          : !primaryMapLayerFile(files)
             ? `${imageLimitPhrase(quality, options.maxRasterEdgePx)} · vectors simplified above ${simplifyMb} MB`
             : estimateError
               ? estimateError

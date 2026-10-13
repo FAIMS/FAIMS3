@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {describe, expect, it} from 'vitest';
 import {
   assertUploadCompanions,
@@ -30,5 +31,16 @@ describe('map asset upload rules', () => {
     expect(() => primaryUploadFile([{filename: 'notes.txt', bytes}])).toThrow(
       /GeoJSON/
     );
+  });
+
+  it('rejects an oversized filename', () => {
+    expect(() =>
+      primaryUploadFile([
+        {
+          filename: `${'a'.repeat(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH + 1)}.geojson`,
+          bytes,
+        },
+      ])
+    ).toThrow(/at most/);
   });
 });

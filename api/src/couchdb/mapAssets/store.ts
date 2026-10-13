@@ -3,7 +3,6 @@
  * mapAssets documents, links, and the survey listing manifest.
  */
 
-import {createHash} from 'crypto';
 import {
   buildContextualLayersHash,
   companionAttachmentName,
@@ -27,9 +26,25 @@ import {
   resolveMapAssetNormalizeOptions,
 } from '@faims3/data-model';
 import {randomUUID} from 'crypto';
+import {rm} from 'fs/promises';
 import {getMapAssetsDB} from '..';
 import * as Exceptions from '../../exceptions';
+import {
+  assetHasAttachment,
+  downloadAttachmentToFile,
+  putFileAttachment,
+  sha256,
+  sha256File,
+} from './attachments';
 import {normalizeMapUpload, UploadedMapFile} from './normalize';
+import {
+  cleanupStaging,
+  ensureStagingPaths,
+  readStagedFiles,
+  stageUploadFiles,
+} from './staging';
+
+export {sha256} from './attachments';
 
 type AttachmentDb = {
   getAttachment(docId: string, attachmentId: string): Promise<Buffer | Blob>;
@@ -44,10 +59,6 @@ async function asBuffer(data: Buffer | Blob): Promise<Buffer> {
     return data;
   }
   return Buffer.from(await data.arrayBuffer());
-}
-
-export function sha256(bytes: Buffer): string {
-  return createHash('sha256').update(new Uint8Array(bytes)).digest('hex');
 }
 
 function isAsset(doc: {
@@ -149,7 +160,7 @@ export function linkDocumentId(assetId: string, projectId: string): string {
   return `link-${assetId}-${projectId}`;
 }
 
-async function putOriginalFiles({
+async function putOriginalFilesFromDisk({
   assetId,
   rev,
   files,
@@ -160,29 +171,34 @@ async function putOriginalFiles({
   files: UploadedMapFile[];
   primaryFilename: string;
 }): Promise<string> {
-  const db = getMapAssetsDB();
   const primary =
     files.find(file => file.filename === primaryFilename) ?? files[0];
-  let response = await db.putAttachment(
+  if (!primary.diskPath) {
+    throw new Error(`Upload is missing data for ${primary.filename}.`);
+  }
+  let nextRev = await putFileAttachment({
     assetId,
-    MAP_ASSET_ORIGINAL_ATTACHMENT,
     rev,
-    primary.bytes,
-    'application/octet-stream'
-  );
+    attachmentId: MAP_ASSET_ORIGINAL_ATTACHMENT,
+    filePath: primary.diskPath,
+    contentType: 'application/octet-stream',
+  });
   for (const file of files) {
     if (file.filename === primary.filename) {
       continue;
     }
-    response = await db.putAttachment(
+    if (!file.diskPath) {
+      throw new Error(`Upload is missing data for ${file.filename}.`);
+    }
+    nextRev = await putFileAttachment({
       assetId,
-      companionAttachmentName(file.filename),
-      response.rev,
-      file.bytes,
-      'application/octet-stream'
-    );
+      rev: nextRev,
+      attachmentId: companionAttachmentName(file.filename),
+      filePath: file.diskPath,
+      contentType: 'application/octet-stream',
+    });
   }
-  return response.rev;
+  return nextRev;
 }
 
 export async function createMapAsset({
@@ -233,12 +249,17 @@ export async function createMapAsset({
     updatedAt: now,
   };
   const created = await db.put({_id: assetId, ...fields});
-  await putOriginalFiles({
-    assetId,
-    rev: created.rev,
-    files,
-    primaryFilename,
-  });
+  try {
+    await stageUploadFiles(assetId, files);
+  } catch (error) {
+    await cleanupStaging(assetId);
+    try {
+      await db.remove(assetId, created.rev);
+    } catch {
+      // Staging failed; drop the empty asset if we still can.
+    }
+    throw error;
+  }
   return getMapAsset(assetId);
 }
 
@@ -287,7 +308,7 @@ export async function replaceMapAssetFiles({
     quality,
     options: normalizeOptions,
   });
-  const updated = await getMapAssetsDB().put(
+  await getMapAssetsDB().put(
     omitUndefinedFields({
       ...current,
       originalFilename: primaryFilename,
@@ -306,38 +327,75 @@ export async function replaceMapAssetFiles({
       updatedAt: Date.now(),
     })
   );
-  await putOriginalFiles({
-    assetId,
-    rev: updated.rev,
-    files,
-    primaryFilename,
-  });
+  await cleanupStaging(assetId);
+  await stageUploadFiles(assetId, files);
   return getMapAsset(assetId);
 }
 
-async function readUploadFiles(
+function uploadFilenames(asset: ExistingMapAsset): string[] {
+  return [asset.originalFilename, ...(asset.companionFilenames ?? [])];
+}
+
+async function downloadOriginalsToStaging(
   asset: ExistingMapAsset
-): Promise<UploadedMapFile[]> {
-  const original = await asBuffer(
-    await attachmentDb().getAttachment(asset._id, MAP_ASSET_ORIGINAL_ATTACHMENT)
-  );
-  const files: UploadedMapFile[] = [
-    {filename: asset.originalFilename, bytes: original},
-  ];
-  for (const filename of asset.companionFilenames ?? []) {
-    const bytes = await asBuffer(
-      await attachmentDb().getAttachment(
-        asset._id,
-        companionAttachmentName(filename)
-      )
-    );
-    files.push({filename, bytes});
+): Promise<UploadedMapFile[] | undefined> {
+  if (!assetHasAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
+    return undefined;
   }
-  return files;
+  const staged = await ensureStagingPaths(asset._id, uploadFilenames(asset));
+  try {
+    const primary = staged.find(
+      file => file.filename === asset.originalFilename
+    );
+    if (!primary?.diskPath) {
+      return undefined;
+    }
+    await downloadAttachmentToFile({
+      assetId: asset._id,
+      attachmentId: MAP_ASSET_ORIGINAL_ATTACHMENT,
+      destPath: primary.diskPath,
+    });
+    for (const filename of asset.companionFilenames ?? []) {
+      const file = staged.find(item => item.filename === filename);
+      if (!file?.diskPath) {
+        continue;
+      }
+      await downloadAttachmentToFile({
+        assetId: asset._id,
+        attachmentId: companionAttachmentName(filename),
+        destPath: file.diskPath,
+      });
+    }
+  } catch (error) {
+    const status =
+      (error as {status?: number; statusCode?: number}).status ??
+      (error as {statusCode?: number}).statusCode;
+    if (status === 404) {
+      await cleanupStaging(asset._id);
+      return undefined;
+    }
+    throw error;
+  }
+  return readStagedFiles(asset._id, uploadFilenames(asset));
+}
+
+async function resolveUploadFiles(asset: ExistingMapAsset): Promise<{
+  files: UploadedMapFile[];
+  fromStaging: boolean;
+}> {
+  const staged = await readStagedFiles(asset._id, uploadFilenames(asset));
+  if (staged) {
+    return {files: staged, fromStaging: true};
+  }
+  const downloaded = await downloadOriginalsToStaging(asset);
+  if (downloaded) {
+    return {files: downloaded, fromStaging: false};
+  }
+  throw new Error('The uploaded map files are no longer available.');
 }
 
 /** A claim older than this may be taken by another API process. */
-export const MAP_ASSET_PROCESSING_CLAIM_TIMEOUT_MS = 30 * 60 * 1000;
+export const MAP_ASSET_PROCESSING_CLAIM_TIMEOUT_MS = 2 * 60 * 60 * 1000;
 /**
  * Claims started for one upload, including the first. A crash after this
  * many claims is marked failed. A GDAL error fails on the current claim.
@@ -437,6 +495,7 @@ async function claimMapAssetProcessing(
             updatedAt: now,
           })
         );
+        await cleanupStaging(assetId);
         return undefined;
       } catch (error) {
         if (isConflict(error)) {
@@ -495,21 +554,22 @@ async function commitProcessingResult(
 }
 
 /**
- * Store the normalized bytes while this claim still owns the asset.
+ * Store the normalized file while this claim still owns the asset.
  * Returns false when another process has taken over or already finished.
  */
 async function putNormalizedAttachment({
   assetId,
   claimStartedAt,
+  filePath,
   bytes,
   mediaType,
 }: {
   assetId: string;
   claimStartedAt: number;
-  bytes: Buffer;
+  filePath?: string;
+  bytes?: Buffer;
   mediaType: string;
 }): Promise<boolean> {
-  const db = getMapAssetsDB();
   for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
     const latest = await getMapAsset(assetId);
     if (
@@ -519,7 +579,20 @@ async function putNormalizedAttachment({
       return false;
     }
     try {
-      await db.putAttachment(
+      if (filePath) {
+        await putFileAttachment({
+          assetId,
+          rev: latest._rev,
+          attachmentId: MAP_ASSET_NORMALIZED_ATTACHMENT,
+          filePath,
+          contentType: mediaType,
+        });
+        return true;
+      }
+      if (!bytes) {
+        throw new Error('Normalized map layer is missing data.');
+      }
+      await getMapAssetsDB().putAttachment(
         assetId,
         MAP_ASSET_NORMALIZED_ATTACHMENT,
         latest._rev,
@@ -546,30 +619,45 @@ export async function processMapAsset(
   if (!claimed || claimStartedAt === undefined) {
     return;
   }
+  let cleanupDir: string | undefined;
   try {
-    const files = await readUploadFiles(claimed);
+    const {files, fromStaging} = await resolveUploadFiles(claimed);
+    if (fromStaging) {
+      await putOriginalFilesFromDisk({
+        assetId,
+        rev: (await getMapAsset(assetId))._rev,
+        files,
+        primaryFilename: claimed.originalFilename,
+      });
+    }
     const {options} = resolveMapAssetNormalizeOptions({
       quality: claimed.quality,
       options: claimed.normalizeOptions,
     });
     const normalize = runtime?.normalize ?? normalizeMapUpload;
     const normalized = await normalize(files, options);
+    cleanupDir = normalized.cleanupDir;
     const stored = await putNormalizedAttachment({
       assetId,
       claimStartedAt,
+      filePath: normalized.filePath,
       bytes: normalized.bytes,
       mediaType: normalized.mediaType,
     });
     if (!stored) {
       return;
     }
+    const contentHash = normalized.filePath
+      ? await sha256File(normalized.filePath)
+      : sha256(normalized.bytes ?? Buffer.alloc(0));
+    const byteSize = normalized.byteSize ?? normalized.bytes?.length ?? 0;
     await commitProcessingResult(assetId, claimStartedAt, latest =>
       omitUndefinedFields({
         ...latest,
         status: 'ready' as const,
         kind: normalized.kind,
-        contentHash: sha256(normalized.bytes),
-        byteSize: normalized.bytes.length,
+        contentHash,
+        byteSize,
         extent4326: normalized.extent4326,
         extent3857: normalized.extent3857,
         failureReason: undefined,
@@ -589,6 +677,13 @@ export async function processMapAsset(
         updatedAt: processingNow(runtime),
       })
     );
+  } finally {
+    if (cleanupDir) {
+      await rm(cleanupDir, {recursive: true, force: true}).catch(
+        () => undefined
+      );
+    }
+    await cleanupStaging(assetId);
   }
 }
 
@@ -614,7 +709,8 @@ export function waitForMapAssetProcessing(): Promise<void> {
 /**
  * Re-queue processing assets whose claim is missing or expired.
  * Each API process runs this on startup and on a timer so a crashed
- * container's job is picked up by the next sweep.
+ * container's job is picked up by the next sweep. Staging files on this
+ * host are reused; otherwise originals are streamed back from CouchDB.
  */
 export async function sweepStaleMapAssetProcessing(
   runtime?: MapAssetProcessingRuntime
@@ -762,6 +858,7 @@ export async function deleteMapAsset(assetId: string): Promise<void> {
   }
   const latest = await getMapAsset(asset._id);
   await db.remove(latest);
+  await cleanupStaging(assetId);
 }
 
 function toListing(

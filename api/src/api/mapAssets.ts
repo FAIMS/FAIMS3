@@ -8,18 +8,24 @@ import {
   estimateNormalizedMapAsset,
   GetMapAssetListResponse,
   GetMapAssetResponse,
+  IdInputSchema,
+  INPUT_LIMITS,
+  mapAssetUploadTooLargeMessage,
+  MapAssetDetailsSchema,
   MapAssetNormalizeOptionsInput,
   MapAssetNormalizeOptionsInputSchema,
   MapAssetQualitySchema,
   PostMapAssetEstimateInputSchema,
   PostMapAssetEstimateResponse,
   PostMapAssetLinkInputSchema,
-  resourceNameString,
   resolveMapAssetNormalizeOptions,
-  RootDescriptionInputSchema,
 } from '@faims3/data-model';
-import express, {Response} from 'express';
+import {randomUUID} from 'crypto';
+import express, {NextFunction, Request, Response} from 'express';
+import {mkdir, rm} from 'fs/promises';
 import multer from 'multer';
+import {tmpdir} from 'os';
+import path from 'path';
 import {z} from 'zod';
 import {
   createMapAsset,
@@ -50,18 +56,83 @@ import patch from '../utils/patchExpressAsync';
 
 patch();
 
-/** Largest accepted upload. GDAL downsamples rasters before they reach a device. */
-const MAP_ASSET_UPLOAD_MAX_BYTES = 512 * 1024 * 1024;
+type MapUploadRequest = Request & {mapUploadDir?: string};
 
-const MapAssetDetailsSchema = z.object({
-  name: resourceNameString('Layer name'),
-  description: RootDescriptionInputSchema,
-});
+function requestUploadDir(req: Request): string | undefined {
+  return (req as MapUploadRequest).mapUploadDir;
+}
+
+async function cleanupRequestUpload(req: Request): Promise<void> {
+  const dir = requestUploadDir(req);
+  if (!dir) {
+    return;
+  }
+  await rm(dir, {recursive: true, force: true}).catch(() => undefined);
+}
 
 const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {fileSize: MAP_ASSET_UPLOAD_MAX_BYTES, files: 8},
+  storage: multer.diskStorage({
+    destination: (req, _file, callback) => {
+      const existing = requestUploadDir(req);
+      if (existing) {
+        callback(null, existing);
+        return;
+      }
+      const dir = path.join(
+        tmpdir(),
+        'faims-map-uploads',
+        `req-${randomUUID()}`
+      );
+      mkdir(dir, {recursive: true})
+        .then(() => {
+          (req as MapUploadRequest).mapUploadDir = dir;
+          callback(null, dir);
+        })
+        .catch(error => callback(error, dir));
+    },
+    filename: (_req, file, callback) => {
+      try {
+        callback(null, safeUploadFilename(file.originalname));
+      } catch (error) {
+        callback(error as Error, '');
+      }
+    },
+  }),
+  limits: {
+    fileSize: INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_BYTES,
+    files: INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_FILES,
+  },
 });
+
+function acceptMapAssetFiles(req: Request, res: Response, next: NextFunction) {
+  upload.array('files', INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_FILES)(
+    req,
+    res,
+    (error: unknown) => {
+      if (error instanceof multer.MulterError) {
+        if (error.code === 'LIMIT_FILE_SIZE') {
+          next(
+            new Exceptions.InvalidRequestException(
+              mapAssetUploadTooLargeMessage()
+            )
+          );
+          return;
+        }
+        if (error.code === 'LIMIT_FILE_COUNT') {
+          next(
+            new Exceptions.InvalidRequestException(
+              `Choose at most ${INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_FILES} files.`
+            )
+          );
+          return;
+        }
+        next(new Exceptions.InvalidRequestException(error.message));
+        return;
+      }
+      next(error as Error);
+    }
+  );
+}
 
 export const api: express.Router = express.Router();
 
@@ -214,10 +285,28 @@ function filesFromRequest(req: express.Request): UploadedMapFile[] {
       'Choose a map file to upload.'
     );
   }
-  return list.map(file => ({
-    filename: safeUploadFilename(file.originalname),
-    bytes: file.buffer,
-  }));
+  if (list.length > INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_FILES) {
+    throw new Exceptions.InvalidRequestException(
+      `Choose at most ${INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_FILES} files.`
+    );
+  }
+  const total = list.reduce((sum, file) => sum + file.size, 0);
+  if (total > INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_BYTES) {
+    throw new Exceptions.InvalidRequestException(
+      mapAssetUploadTooLargeMessage()
+    );
+  }
+  try {
+    return list.map(file => ({
+      filename: safeUploadFilename(file.originalname),
+      diskPath: file.path,
+      size: file.size,
+    }));
+  } catch (error) {
+    throw new Exceptions.InvalidRequestException(
+      error instanceof Error ? error.message : 'Upload was not accepted.'
+    );
+  }
 }
 
 function assertFiles(files: UploadedMapFile[]): UploadedMapFile[] {
@@ -237,8 +326,8 @@ api.get(
   requireAuthenticationAPI,
   validate({
     query: z.object({
-      teamId: z.string().min(1).optional(),
-      projectId: z.string().min(1).optional(),
+      teamId: IdInputSchema.min(1).optional(),
+      projectId: IdInputSchema.min(1).optional(),
     }),
   }),
   async (req, res: Response<GetMapAssetListResponse>) => {
@@ -322,37 +411,51 @@ api.post(
 api.post(
   '/',
   requireAuthenticationAPI,
-  upload.array('files', 8),
+  acceptMapAssetFiles,
   async (req, res: Response<GetMapAssetResponse>) => {
-    const user = requireUser(req);
-    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
-    const description =
-      typeof req.body?.description === 'string' ? req.body.description : '';
-    const teamId =
-      typeof req.body?.teamId === 'string' && req.body.teamId.length > 0
-        ? req.body.teamId
-        : undefined;
-    const details = parseDetails(name, description);
-    if (!canUpload(user, teamId)) {
-      throw new Exceptions.UnauthorizedException(
-        'You do not have permission to upload a map layer here.'
-      );
+    try {
+      const user = requireUser(req);
+      const name =
+        typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+      const description =
+        typeof req.body?.description === 'string' ? req.body.description : '';
+      const teamIdRaw =
+        typeof req.body?.teamId === 'string' &&
+        req.body.teamId.trim().length > 0
+          ? req.body.teamId.trim()
+          : undefined;
+      if (
+        teamIdRaw !== undefined &&
+        teamIdRaw.length > INPUT_LIMITS.ID_MAX_LENGTH
+      ) {
+        throw new Exceptions.InvalidRequestException('Team is not valid.');
+      }
+      const teamId = teamIdRaw;
+      const details = parseDetails(name, description);
+      if (!canUpload(user, teamId)) {
+        throw new Exceptions.UnauthorizedException(
+          'You do not have permission to upload a map layer here.'
+        );
+      }
+      const files = assertFiles(filesFromRequest(req));
+      const primary = primaryUploadFile(files);
+      const normalize = parseNormalizeChoice(req.body ?? {});
+      const asset = await createMapAsset({
+        name: details.name,
+        description: details.description,
+        ownedByTeamId: teamId,
+        createdBy: user.user_id,
+        files,
+        primaryFilename: primary.filename,
+        quality: normalize.quality,
+        normalizeOptions: normalize.options,
+      });
+      enqueueMapAssetProcessing(asset._id);
+      res.status(201).json(asset);
+    } catch (error) {
+      await cleanupRequestUpload(req);
+      throw error;
     }
-    const files = assertFiles(filesFromRequest(req));
-    const primary = primaryUploadFile(files);
-    const normalize = parseNormalizeChoice(req.body ?? {});
-    const asset = await createMapAsset({
-      name: details.name,
-      description: details.description,
-      ownedByTeamId: teamId,
-      createdBy: user.user_id,
-      files,
-      primaryFilename: primary.filename,
-      quality: normalize.quality,
-      normalizeOptions: normalize.options,
-    });
-    enqueueMapAssetProcessing(asset._id);
-    res.status(201).json(asset);
   }
 );
 
@@ -415,28 +518,33 @@ api.patch(
 api.put(
   '/:id',
   requireAuthenticationAPI,
-  upload.array('files', 8),
+  acceptMapAssetFiles,
   async (req, res: Response<GetMapAssetResponse>) => {
-    const user = requireUser(req);
-    const asset = await getMapAsset(req.params.id);
-    if (
-      !(await canReadAsset(user, asset)) ||
-      !canUpload(user, asset.ownedByTeamId)
-    ) {
-      throw new Exceptions.UnauthorizedException();
+    try {
+      const user = requireUser(req);
+      const asset = await getMapAsset(req.params.id);
+      if (
+        !(await canReadAsset(user, asset)) ||
+        !canUpload(user, asset.ownedByTeamId)
+      ) {
+        throw new Exceptions.UnauthorizedException();
+      }
+      const files = assertFiles(filesFromRequest(req));
+      const primary = primaryUploadFile(files);
+      const normalize = parseNormalizeChoice(req.body ?? {});
+      const replaced = await replaceMapAssetFiles({
+        assetId: asset._id,
+        files,
+        primaryFilename: primary.filename,
+        quality: normalize.quality,
+        normalizeOptions: normalize.options,
+      });
+      enqueueMapAssetProcessing(replaced._id);
+      res.json(replaced);
+    } catch (error) {
+      await cleanupRequestUpload(req);
+      throw error;
     }
-    const files = assertFiles(filesFromRequest(req));
-    const primary = primaryUploadFile(files);
-    const normalize = parseNormalizeChoice(req.body ?? {});
-    const replaced = await replaceMapAssetFiles({
-      assetId: asset._id,
-      files,
-      primaryFilename: primary.filename,
-      quality: normalize.quality,
-      normalizeOptions: normalize.options,
-    });
-    enqueueMapAssetProcessing(replaced._id);
-    res.json(replaced);
   }
 );
 

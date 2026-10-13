@@ -31,6 +31,9 @@ process.on('unhandledRejection', error => {
   // don't re-throw the error since we don't want to crash the server
 });
 
+/** Node 18+ defaults `requestTimeout` to 5 minutes and would abort a 2 GB upload. */
+const MAP_ASSET_HTTP_REQUEST_TIMEOUT_MS = 60 * 60 * 1000;
+
 function listenHealth(app: Express): Promise<void> {
   return new Promise((resolve, reject) => {
     const server = app.listen(config.conductorInternalPort, '0.0.0.0', () => {
@@ -39,6 +42,9 @@ function listenHealth(app: Express): Promise<void> {
       );
       resolve();
     });
+    server.requestTimeout = MAP_ASSET_HTTP_REQUEST_TIMEOUT_MS;
+    // headersTimeout must stay above requestTimeout or Node closes the socket.
+    server.headersTimeout = MAP_ASSET_HTTP_REQUEST_TIMEOUT_MS + 5 * 1000;
     server.once('error', reject);
   });
 }

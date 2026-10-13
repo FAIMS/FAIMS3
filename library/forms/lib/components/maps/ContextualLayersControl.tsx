@@ -30,6 +30,7 @@ import {
   useState,
   type ChangeEvent,
 } from 'react';
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {
   ContextualMapLayersContext,
   type ContextualMapLayer,
@@ -562,7 +563,10 @@ function LayerRow({
                   onPatch({labelField: event.target.value || undefined})
                 }
                 slotProps={{
-                  htmlInput: {'aria-label': `${layer.name} label field`},
+                  htmlInput: {
+                    'aria-label': `${layer.name} label field`,
+                    maxLength: INPUT_LIMITS.ID_MAX_LENGTH,
+                  },
                 }}
               />
             </>

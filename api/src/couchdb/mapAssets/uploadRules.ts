@@ -3,6 +3,7 @@
  * Filename and companion checks for a map-layer upload, before GDAL runs.
  */
 
+import {INPUT_LIMITS} from '@faims3/data-model';
 import path from 'path';
 
 const VECTOR_EXTENSIONS = new Set([
@@ -31,14 +32,30 @@ const WORLD_FILE_EXTENSIONS = new Set([
 
 export type UploadedMapFile = {
   filename: string;
-  bytes: Buffer;
+  /** Present for tests and tiny fixtures. Prefer `diskPath` for real uploads. */
+  bytes?: Buffer;
+  /** On-disk path of a streamed upload. */
+  diskPath?: string;
+  size?: number;
 };
+
+export function uploadedFileSize(file: UploadedMapFile): number {
+  if (typeof file.size === 'number') {
+    return file.size;
+  }
+  return file.bytes?.length ?? 0;
+}
 
 /** Basename safe to write into a temp directory. */
 export function safeUploadFilename(filename: string): string {
   const base = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_');
   if (!base || base === '.' || base === '..') {
     throw new Error('Upload is missing a filename.');
+  }
+  if (base.length > INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH) {
+    throw new Error(
+      `Filename must be at most ${INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH} characters.`
+    );
   }
   return base;
 }

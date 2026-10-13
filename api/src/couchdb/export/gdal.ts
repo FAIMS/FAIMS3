@@ -16,7 +16,7 @@ import {spawn} from 'child_process';
 import {logError} from '../../logging';
 
 /** How long a single GDAL/OGR process may run before it is killed. */
-const GDAL_COMMAND_TIMEOUT_MS = 5 * 60 * 1000;
+const GDAL_COMMAND_TIMEOUT_MS = 60 * 60 * 1000;
 
 /** Thrown when a GDAL/OGR command exits non-zero. */
 export class GdalCommandError extends Error {

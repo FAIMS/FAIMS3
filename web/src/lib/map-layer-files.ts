@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
+  INPUT_LIMITS,
+  mapAssetUploadTooLargeMessage,
   readGeoreferencedPdfRaster,
   type PdfRasterSize,
 } from '@faims3/data-model';
@@ -33,9 +35,6 @@ const ALLOWED_EXTENSIONS = new Set([
   ...WORLD_FILE_EXTENSIONS,
   '.prj',
 ]);
-
-/** Matches the API upload limit. */
-const MAX_UPLOAD_BYTES = 512 * 1024 * 1024;
 
 export const MAP_LAYER_FILE_ACCEPT = [...ALLOWED_EXTENSIONS].join(',');
 
@@ -115,6 +114,13 @@ export function mapLayerFilesSchema() {
       });
       return;
     }
+    if (files.length > INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_FILES) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `Choose at most ${INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_FILES} files.`,
+      });
+      return;
+    }
     const extensions = files.map(file => extensionOf(file.name));
     const unsupported = extensions.find(ext => !ALLOWED_EXTENSIONS.has(ext));
     if (unsupported) {
@@ -143,10 +149,10 @@ export function mapLayerFilesSchema() {
       }
     }
     const total = files.reduce((sum, file) => sum + file.size, 0);
-    if (total > MAX_UPLOAD_BYTES) {
+    if (total > INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_BYTES) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Files must be at most 512 MB.',
+        message: mapAssetUploadTooLargeMessage(),
       });
     }
   });

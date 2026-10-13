@@ -786,6 +786,14 @@ const getNanoInstance = async (): Promise<Nano.ServerScope> => {
   return _nanoInstance;
 };
 
+/** Nano document scope for streaming map-layer attachments. */
+export const getMapAssetsNano = async (): Promise<
+  Nano.DocumentScope<unknown>
+> => {
+  const nano = await getNanoInstance();
+  return nano.use(MAP_ASSETS_DB_NAME);
+};
+
 /** Lists all database names on the configured CouchDB server. */
 export const listCouchDatabaseNames = async (): Promise<string[]> => {
   const nano = await getNanoInstance();

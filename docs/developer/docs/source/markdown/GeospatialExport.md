@@ -77,7 +77,13 @@ GeoPackage is **not** streamed end-to-end:
 
 ## Map-layer ingest
 
-Control Centre uploads are stored in the `mapassets` Couch database and normalized before a device downloads them. Accepted uploads:
+Control Centre uploads are stored in the `mapassets` Couch database and normalized before a device downloads them. The combined upload may be at most 2 GB (8 files). CouchDB 3.5 defaults attachments to 1 GiB, so `local.ini` sets `max_attachment_size` and `max_http_request_size` to 4 GiB.
+
+The HTTP request writes files to disk (`multer` disk storage) and returns `201` while the asset is `processing`. The in-process queue then streams originals to CouchDB, runs GDAL from those files, and streams the normalized attachment. Nothing on that path buffers the whole original in RAM. If the API process restarts, the sweep reuses leftover staging files on the same host or streams originals back out of CouchDB.
+
+Node 18+ defaults `server.requestTimeout` to 5 minutes, which would abort a slow 2 GB upload. Conductor sets `requestTimeout` to 1 hour (`headersTimeout` slightly higher). That is a process-wide HTTP server setting, not per-route. An AWS ALB idle timeout is still typically 60 seconds: a continuously sending upload stays alive; a paused upload can still be cut. DigitalOcean nginx in this repo sets `client_max_body_size 0` but inherits the default 60s `proxy_read_timeout` unless you raise it.
+
+Accepted uploads:
 
 - GeoJSON (`.geojson`, `.json`)
 - GeoPackage (`.gpkg`)
@@ -96,7 +102,7 @@ Every accepted file becomes one of two device payloads:
 
 `POST /api/map-assets` and `PUT /api/map-assets/:id` accept optional `quality` (0–100) and `normalizeOptions`. `POST /api/map-assets/estimate` returns the resolved settings and an estimated device file size for the Control Centre slider.
 
-Processing runs inside the API process that accepted the upload, one asset at a time. The asset stores `processingStartedAt` (the claim) and `processingAttempts`. On startup, and about once a minute after that, every API process re-queues assets still `processing` whose claim is missing or older than 30 minutes, so a crashed process is retried when another container sweeps. A fresh claim is left alone. After three claims the asset is marked `failed`. A GDAL error fails the asset immediately and is not retried. Replacing the file clears the claim and the attempt count.
+Processing runs inside the API process that accepted the upload, one asset at a time. The asset stores `processingStartedAt` (the claim) and `processingAttempts`. On startup, and about once a minute after that, every API process re-queues assets still `processing` whose claim is missing or older than 2 hours, so a crashed process is retried when another container sweeps. The claim window is longer than the 60-minute GDAL command timeout. A fresh claim is left alone. After three claims the asset is marked `failed`. A GDAL error fails the asset immediately and is not retried. Replacing the file clears the claim and the attempt count.
 
 Implementation: `api/src/couchdb/mapAssets/normalize.ts` and `api/src/couchdb/mapAssets/store.ts`, using the command helpers in `api/src/couchdb/export/gdal.ts`. Docker images install `gdal-bin` / `gdal-tools` and `poppler-utils`, and the image build fails unless `gdalinfo --formats` lists PDF.
 

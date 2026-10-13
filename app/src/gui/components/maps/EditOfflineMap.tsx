@@ -5,6 +5,7 @@
  *   Preview, rename, and delete a downloaded offline map.
  */
 
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {
   extent3857ToOfflineMapRegion,
   formatOfflineMapSizeBytes,
@@ -305,6 +306,9 @@ export function EditOfflineMap() {
             label="New map name"
             value={renameValue}
             onChange={event => setRenameValue(event.target.value)}
+            slotProps={{
+              htmlInput: {maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH},
+            }}
           />
         </DialogContent>
         <DialogActions>

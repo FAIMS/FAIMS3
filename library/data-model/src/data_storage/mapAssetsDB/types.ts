@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import {z} from 'zod';
+import {
+  IdInputSchema,
+  INPUT_LIMITS,
+  resourceNameString,
+} from '../../inputLimits';
 import {DatabaseInterface} from '../../types';
+import {RootDescriptionInputSchema} from '../rootMetadata';
 import {CouchExistingDocumentSchema} from '../utils';
 import {
   MapAssetNormalizeOptionsSchema,
@@ -39,7 +45,7 @@ export const MapAssetStyleSchema = z.object({
   fill: z.string().min(1),
   lineWidth: z.number().positive(),
   pointSize: z.number().positive(),
-  labelField: z.string().min(1).optional(),
+  labelField: z.string().min(1).max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
   opacity: z.number().min(0).max(1),
 });
 export type MapAssetStyle = z.infer<typeof MapAssetStyleSchema>;
@@ -52,19 +58,27 @@ export const DEFAULT_MAP_ASSET_STYLE: MapAssetStyle = {
   opacity: 0.85,
 };
 
+export const MapAssetDetailsSchema = z.object({
+  name: resourceNameString('Layer name'),
+  description: RootDescriptionInputSchema,
+});
+export type MapAssetDetails = z.infer<typeof MapAssetDetailsSchema>;
+
 export const MapAssetFieldsSchema = z.object({
   docType: z.literal(MAP_ASSET_DOC_TYPE),
-  name: z.string().min(1),
-  description: z.string(),
+  name: resourceNameString('Layer name'),
+  description: RootDescriptionInputSchema,
   /** Absent when the uploading user owns the asset individually. */
-  ownedByTeamId: z.string().min(1).optional(),
-  createdBy: z.string().min(1),
-  originalFilename: z.string().min(1),
+  ownedByTeamId: IdInputSchema.min(1).optional(),
+  createdBy: IdInputSchema.min(1),
+  originalFilename: z.string().min(1).max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
   /**
    * Extra upload files (world file, `.prj`) stored as
    * `companion-<filename>` attachments beside `original`.
    */
-  companionFilenames: z.array(z.string().min(1)).optional(),
+  companionFilenames: z
+    .array(z.string().min(1).max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH))
+    .optional(),
   /** Byte size of the normalized attachment once `status` is `ready`. */
   byteSize: z.number().nonnegative(),
   /** SHA-256 hex of the normalized bytes. Set when `status` is `ready`. */
@@ -103,9 +117,9 @@ export type ExistingMapAsset = z.infer<typeof ExistingMapAssetSchema>;
 
 export const MapAssetLinkFieldsSchema = z.object({
   docType: z.literal(MAP_ASSET_LINK_DOC_TYPE),
-  assetId: z.string().min(1),
-  projectId: z.string().min(1),
-  linkedBy: z.string().min(1),
+  assetId: IdInputSchema.min(1),
+  projectId: IdInputSchema.min(1),
+  linkedBy: IdInputSchema.min(1),
   createdAt: z.number(),
 });
 export type MapAssetLinkFields = z.infer<typeof MapAssetLinkFieldsSchema>;
@@ -120,8 +134,8 @@ export type MapAssetsDB = DatabaseInterface<MapAssetsDBFields>;
 
 /** One ready layer as it appears on a survey listing. */
 export const ContextualLayerListingSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
+  id: IdInputSchema.min(1),
+  name: resourceNameString('Layer name'),
   kind: MapAssetKindSchema,
   byteSize: z.number().nonnegative(),
   contentHash: z.string().min(1),
@@ -144,7 +158,7 @@ export type GetMapAssetListResponse = z.infer<
 >;
 
 export const PostMapAssetLinkInputSchema = z.object({
-  projectId: z.string().min(1),
+  projectId: IdInputSchema.min(1),
 });
 export type PostMapAssetLinkInput = z.infer<typeof PostMapAssetLinkInputSchema>;
 

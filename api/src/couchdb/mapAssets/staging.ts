@@ -1,0 +1,99 @@
+// SPDX-License-Identifier: Apache-2.0
+/**
+ * On-disk staging for a map-layer upload. HTTP writes here, then the
+ * processing queue streams to CouchDB and runs GDAL from these files.
+ */
+
+import {
+  copyFile,
+  mkdir,
+  rename,
+  rm,
+  stat,
+  unlink,
+  writeFile,
+} from 'fs/promises';
+import {tmpdir} from 'os';
+import path from 'path';
+import {safeUploadFilename, type UploadedMapFile} from './uploadRules';
+
+export function mapAssetStagingDir(assetId: string): string {
+  return path.join(tmpdir(), 'faims-map-uploads', assetId);
+}
+
+export async function stageUploadFiles(
+  assetId: string,
+  files: UploadedMapFile[]
+): Promise<UploadedMapFile[]> {
+  const dest = mapAssetStagingDir(assetId);
+  await mkdir(dest, {recursive: true});
+  const leftoverDirs = new Set<string>();
+  const staged: UploadedMapFile[] = [];
+  for (const file of files) {
+    const filename = safeUploadFilename(file.filename);
+    const destPath = path.join(dest, filename);
+    if (file.diskPath) {
+      leftoverDirs.add(path.dirname(file.diskPath));
+      await moveOrCopy(file.diskPath, destPath);
+    } else if (file.bytes) {
+      await writeFile(destPath, new Uint8Array(file.bytes));
+    } else {
+      throw new Error(`Upload is missing data for ${filename}.`);
+    }
+    const size = file.size ?? (await stat(destPath)).size;
+    staged.push({filename, diskPath: destPath, size});
+  }
+  for (const dir of leftoverDirs) {
+    if (path.resolve(dir) !== path.resolve(dest)) {
+      await rm(dir, {recursive: true, force: true}).catch(() => undefined);
+    }
+  }
+  return staged;
+}
+
+export async function ensureStagingPaths(
+  assetId: string,
+  filenames: string[]
+): Promise<UploadedMapFile[]> {
+  const dest = mapAssetStagingDir(assetId);
+  await mkdir(dest, {recursive: true});
+  return filenames.map(filename => {
+    const safe = safeUploadFilename(filename);
+    return {filename: safe, diskPath: path.join(dest, safe)};
+  });
+}
+
+export async function readStagedFiles(
+  assetId: string,
+  filenames: string[]
+): Promise<UploadedMapFile[] | undefined> {
+  const dir = mapAssetStagingDir(assetId);
+  const files: UploadedMapFile[] = [];
+  for (const filename of filenames) {
+    const safe = safeUploadFilename(filename);
+    const diskPath = path.join(dir, safe);
+    try {
+      const info = await stat(diskPath);
+      files.push({filename: safe, diskPath, size: info.size});
+    } catch {
+      return undefined;
+    }
+  }
+  return files.length > 0 ? files : undefined;
+}
+
+export async function cleanupStaging(assetId: string): Promise<void> {
+  await rm(mapAssetStagingDir(assetId), {recursive: true, force: true});
+}
+
+async function moveOrCopy(from: string, to: string): Promise<void> {
+  if (path.resolve(from) === path.resolve(to)) {
+    return;
+  }
+  try {
+    await rename(from, to);
+  } catch {
+    await copyFile(from, to);
+    await unlink(from);
+  }
+}

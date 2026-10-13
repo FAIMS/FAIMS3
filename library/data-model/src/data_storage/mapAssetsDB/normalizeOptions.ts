@@ -9,6 +9,7 @@
  */
 
 import {z} from 'zod';
+import {INPUT_LIMITS} from '../../inputLimits';
 import type {MapAssetKind} from './types';
 
 const KindSchema = z.enum(['geojson', 'image']);
@@ -187,7 +188,7 @@ export function mapAssetKindFromFilename(
 }
 
 export const MapAssetEstimateSourceSchema = z.object({
-  filename: z.string().min(1),
+  filename: z.string().min(1).max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
   byteSize: z.number().nonnegative(),
   kind: KindSchema.optional(),
   widthPx: z.number().int().positive().optional(),
