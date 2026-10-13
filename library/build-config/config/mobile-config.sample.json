@@ -38,7 +38,7 @@
     "satelliteSource": "maptiler",
     "mapStyle": "basic",
     "offlineMaps": true,
-    "autosuggestSource": "NONE",
+    "autosuggestSource": "none",
     "autosuggestMapboxKey": "",
     "autosuggestMapTilerKey": "",
     "mapboxAddressCountry": ["AU"],

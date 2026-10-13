@@ -30,7 +30,7 @@
       "mapStyle": "basic"
     },
     "addressAutosuggest": {
-      "source": "NONE"
+      "source": "none"
     },
     "forceRemoteDeletion": "never",
     "deleteOnDeactivation": false,

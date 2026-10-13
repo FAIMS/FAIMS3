@@ -26,24 +26,24 @@ const OfflineMapsConfigSchema = z.object({
     .default('basic'),
 });
 
-/** Address autosuggest source. NONE disables autocomplete; MAPBOX/MAPTILER
+/** Address autosuggest source. none disables autocomplete; mapbox/maptiler
  * require the corresponding API key. */
-const AddressAutosuggestSourceSchema = z.enum(['NONE', 'MAPBOX', 'MAPTILER']);
+const AddressAutosuggestSourceSchema = z.enum(['none', 'mapbox', 'maptiler']);
 
 /** Configuration for address autosuggest in the app (KEY_SOURCE-style
  * dispatch). */
 const AddressAutosuggestConfigSchema = z
   .object({
     /** Source for address autosuggest. NONE disables; MAPBOX requires
-     * mapboxKey; MAPTILER requires maptilerKey or map source key (when
+     * mapboxKey; maptiler requires maptilerKey or map source key (when
      * mapSource is maptiler). */
-    source: AddressAutosuggestSourceSchema.default('NONE'),
-    /** Mapbox access token (required when source is MAPBOX). */
+    source: AddressAutosuggestSourceSchema.default('none'),
+    /** Mapbox access token (required when source is mapbox). */
     mapboxKey: z.string().min(1).optional(),
     /** Mapbox address search country filter: comma-separated ISO 3166-1 alpha-2
      * (e.g. AU or AU,NZ). Defaults to AU. */
     mapboxAddressCountry: z.string().optional(),
-    /** MapTiler API key for Geocoding API. Optional when source is MAPTILER if
+    /** MapTiler API key for Geocoding API. Optional when source is maptiler if
      * mapSource is maptiler and mapSourceKey is set—then that key is used.
      * Provide this when you want a separate key for autosuggest than for map
      * tiles. */
@@ -54,11 +54,11 @@ const AddressAutosuggestConfigSchema = z
   })
   .refine(
     data => {
-      if (data.source === 'MAPBOX') return !!data.mapboxKey;
+      if (data.source === 'mapbox') return !!data.mapboxKey;
       return true;
     },
     {
-      message: 'When source is MAPBOX, mapboxKey is required.',
+      message: 'When source is mapbox, mapboxKey is required.',
     }
   );
 
@@ -589,9 +589,9 @@ export const UiConfiguration = z
     headingAppName: z.string().optional(),
     /** Offline maps settings */
     offlineMaps: OfflineMapsConfigSchema,
-    /** Address autosuggest settings (NONE/MAPBOX/MAPTILER). Optional; defaults to NONE when omitted. */
+    /** Address autosuggest settings (none/mapbox/maptiler). Optional; defaults to none when omitted. */
     addressAutosuggest: AddressAutosuggestConfigSchema.optional().default({
-      source: 'NONE',
+      source: 'none',
     }),
     /**
      * Mobile app directory cleanup when a survey is archived (`allow` = wipe local DB after sync;
@@ -632,7 +632,7 @@ export const UiConfiguration = z
   })
   .refine(
     data => {
-      if (data.addressAutosuggest?.source !== 'MAPTILER') return true;
+      if (data.addressAutosuggest?.source !== 'maptiler') return true;
       if (data.addressAutosuggest.maptilerKey?.trim()) return true;
       return (
         data.offlineMaps.mapSource === 'maptiler' &&
@@ -641,7 +641,7 @@ export const UiConfiguration = z
     },
     {
       message:
-        'When addressAutosuggest.source is MAPTILER, either maptilerKey must be set or mapSource must be "maptiler" with mapSourceKey set (the map tile key will be used for autosuggest).',
+        'When addressAutosuggest.source is maptiler, either maptilerKey must be set or mapSource must be "maptiler" with mapSourceKey set (the map tile key will be used for autosuggest).',
     }
   );
 

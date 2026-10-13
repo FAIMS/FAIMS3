@@ -1,6 +1,6 @@
 /**
  * Tests for config schema validation, especially addressAutosuggest + map source
- * key rules (MapTiler key required in one of two places when source is MAPTILER).
+ * key rules (MapTiler key required in one of two places when source is maptiler).
  */
 import {ZodError} from 'zod';
 import {
@@ -35,80 +35,80 @@ function minimalUiConfig(overrides: Record<string, unknown> = {}) {
     appName: 'Test App',
     appId: 'FAIMS',
     offlineMaps: minimalOfflineMaps(),
-    addressAutosuggest: {source: 'NONE' as const},
+    addressAutosuggest: {source: 'none' as const},
     ...overrides,
   };
 }
 
 describe('UiConfiguration addressAutosuggest + MapTiler key validation', () => {
-  it('accepts MAPTILER when maptilerKey is set', () => {
+  it('accepts maptiler when maptilerKey is set', () => {
     const config = minimalUiConfig({
       addressAutosuggest: {
-        source: 'MAPTILER',
+        source: 'maptiler',
         maptilerKey: 'autosuggest-key',
       },
     });
     expect(() => UiConfiguration.parse(config)).not.toThrow();
   });
 
-  it('accepts MAPTILER when mapSource is maptiler and mapSourceKey is set (no maptilerKey)', () => {
+  it('accepts maptiler when mapSource is maptiler and mapSourceKey is set (no maptilerKey)', () => {
     const config = minimalUiConfig({
       offlineMaps: minimalOfflineMaps({
         mapSource: 'maptiler',
         mapSourceKey: 'map-key',
       }),
-      addressAutosuggest: {source: 'MAPTILER'},
+      addressAutosuggest: {source: 'maptiler'},
     });
     expect(() => UiConfiguration.parse(config)).not.toThrow();
   });
 
-  it('rejects MAPTILER when neither maptilerKey nor map source key is provided (mapSource is osm)', () => {
+  it('rejects maptiler when neither maptilerKey nor map source key is provided (mapSource is osm)', () => {
     const config = minimalUiConfig({
       offlineMaps: minimalOfflineMaps({
         mapSource: 'osm',
         mapSourceKey: undefined,
       }),
-      addressAutosuggest: {source: 'MAPTILER'},
+      addressAutosuggest: {source: 'maptiler'},
     });
     expect(() => UiConfiguration.parse(config)).toThrow(ZodError);
     try {
       UiConfiguration.parse(config);
     } catch (e) {
       const err = e as ZodError;
-      expect(err.message).toContain('MAPTILER');
+      expect(err.message).toContain('maptiler');
       expect(err.message).toMatch(/maptilerKey|mapSource|mapSourceKey/);
     }
   });
 
-  it('rejects MAPTILER when mapSource is maptiler but mapSourceKey is missing', () => {
+  it('rejects maptiler when mapSource is maptiler but mapSourceKey is missing', () => {
     const config = minimalUiConfig({
       offlineMaps: minimalOfflineMaps({
         mapSource: 'maptiler',
         mapSourceKey: undefined,
       }),
-      addressAutosuggest: {source: 'MAPTILER'},
+      addressAutosuggest: {source: 'maptiler'},
     });
     expect(() => UiConfiguration.parse(config)).toThrow(ZodError);
   });
 
-  it('rejects MAPTILER when mapSource is maptiler but mapSourceKey is empty string', () => {
+  it('rejects maptiler when mapSource is maptiler but mapSourceKey is empty string', () => {
     const config = minimalUiConfig({
       offlineMaps: minimalOfflineMaps({
         mapSource: 'maptiler',
         mapSourceKey: '',
       }),
-      addressAutosuggest: {source: 'MAPTILER'},
+      addressAutosuggest: {source: 'maptiler'},
     });
     expect(() => UiConfiguration.parse(config)).toThrow(ZodError);
   });
 
-  it('rejects MAPTILER when maptilerKey is empty string and mapSourceKey is not set', () => {
+  it('rejects maptiler when maptilerKey is empty string and mapSourceKey is not set', () => {
     const config = minimalUiConfig({
       offlineMaps: minimalOfflineMaps({
         mapSource: 'osm',
         mapSourceKey: undefined,
       }),
-      addressAutosuggest: {source: 'MAPTILER', maptilerKey: ''},
+      addressAutosuggest: {source: 'maptiler', maptilerKey: ''},
     });
     expect(() => UiConfiguration.parse(config)).toThrow(ZodError);
   });
@@ -119,7 +119,7 @@ describe('UiConfiguration addressAutosuggest + MapTiler key validation', () => {
         mapSource: 'maptiler',
         mapSourceKey: 'map-key',
       }),
-      addressAutosuggest: {source: 'MAPTILER', maptilerKey: '   '},
+      addressAutosuggest: {source: 'maptiler', maptilerKey: '   '},
     });
     expect(() => UiConfiguration.parse(config)).not.toThrow();
   });

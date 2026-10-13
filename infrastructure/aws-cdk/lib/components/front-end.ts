@@ -77,7 +77,7 @@ export interface FaimsFrontEndProps {
   // Offline maps settings -> env variables in faims
   offlineMaps: OfflineMapsConfig;
 
-  /** Address autosuggest settings (NONE/MAPBOX/MAPTILER). Optional; when omitted or source NONE, autosuggest is disabled. */
+  /** Address autosuggest settings (none/mapbox/maptiler). Optional; when omitted or source none, autosuggest is disabled. */
   addressAutosuggest?: AddressAutosuggestConfig;
 
   /** Maximum long-lived token duration in days (undefined = infinite) */
@@ -280,7 +280,7 @@ export class FaimsFrontEnd extends Construct {
 
       // Address autosuggest configuration
       ...(props.addressAutosuggest?.source &&
-      props.addressAutosuggest.source !== 'NONE'
+      props.addressAutosuggest.source !== 'none'
         ? {
             VITE_AUTOSUGGEST_SOURCE: props.addressAutosuggest.source,
             ...(props.addressAutosuggest.mapboxKey
@@ -297,7 +297,7 @@ export class FaimsFrontEnd extends Construct {
               : {}),
             // MapTiler: use maptilerKey if set, else fall back to map source
             // key when mapSource is maptiler
-            ...(props.addressAutosuggest.source === 'MAPTILER'
+            ...(props.addressAutosuggest.source === 'maptiler'
               ? {
                   VITE_AUTOSUGGEST_MAPTILER_KEY:
                     props.addressAutosuggest.maptilerKey?.trim() ||

@@ -39,11 +39,11 @@ const logError = (err: any) => console.error(err);
  */
 export enum AutosuggestSource {
   /** No address autosuggest; AddressField uses manual entry only. */
-  NONE = 'NONE',
+  NONE = 'none',
   /** Mapbox Search Box API (suggest + retrieve). */
-  MAPBOX = 'MAPBOX',
+  MAPBOX = 'mapbox',
   /** MapTiler Search and Geocoding API (forward + by-id). */
-  MAPTILER = 'MAPTILER',
+  MAPTILER = 'maptiler',
 }
 
 export type NavigationStyleOption = 'none' | 'breadcrumbs';
@@ -215,7 +215,7 @@ function createAddressAutosuggestServiceInstance(): IAutosuggestAddressService |
     const apiKey = config.maptilerApiKey;
     if (!apiKey) {
       logError(
-        'VITE_AUTOSUGGEST_SOURCE is MAPTILER but no MapTiler API key available (set VITE_AUTOSUGGEST_MAPTILER_KEY or, when using MapTiler for maps, VITE_MAP_SOURCE_KEY); address autosuggest disabled.'
+        "VITE_AUTOSUGGEST_SOURCE is 'maptiler' but no MapTiler API key available (set VITE_AUTOSUGGEST_MAPTILER_KEY or, when using MapTiler for maps, VITE_MAP_SOURCE_KEY); address autosuggest disabled."
       );
       return null;
     }

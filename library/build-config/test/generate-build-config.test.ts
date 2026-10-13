@@ -567,7 +567,7 @@ test('generated env parser converts typed values into grouped runtime config', (
     VITE_DEBUG_POUCHDB: 'false',
     VITE_POUCH_BATCH_SIZE: '10',
     VITE_POUCH_BATCHES_LIMIT: '10',
-    VITE_AUTOSUGGEST_SOURCE: 'NONE',
+    VITE_AUTOSUGGEST_SOURCE: 'none',
     VITE_AUTOSUGGEST_MAPBOX_KEY: '',
     VITE_AUTOSUGGEST_MAPTILER_KEY: '',
     VITE_MAPBOX_ADDRESS_COUNTRY: 'AU',

@@ -87,7 +87,7 @@ const MapsBuildConfigSchema = z
       .enum(['basic', 'openstreetmap', 'osm-bright', 'toner'])
       .default('basic'),
     offlineMaps: z.boolean().default(true),
-    autosuggestSource: z.enum(['NONE', 'MAPBOX', 'MAPTILER']).default('NONE'),
+    autosuggestSource: z.enum(['none', 'mapbox', 'maptiler']).default('none'),
     autosuggestMapboxKey: z.string().default(''),
     autosuggestMapTilerKey: z.string().default(''),
     /** ISO 3166-1 alpha-2 codes (CSV in env). Defaults to Australia. */
@@ -466,8 +466,8 @@ export const GeneratedEnvSchema = z
     VITE_POUCH_BATCHES_LIMIT: PositiveIntStringSchema.default(10),
     VITE_DEVELOPER_MODE: BoolEnvSchema.default(false),
     VITE_AUTOSUGGEST_SOURCE: z
-      .enum(['NONE', 'MAPBOX', 'MAPTILER'])
-      .default('NONE'),
+      .enum(['none', 'mapbox', 'maptiler'])
+      .default('none'),
     VITE_AUTOSUGGEST_MAPBOX_KEY: z.string().default(''),
     VITE_AUTOSUGGEST_MAPTILER_KEY: z.string().default(''),
     VITE_MAPBOX_ADDRESS_COUNTRY: z.string().default('AU'),

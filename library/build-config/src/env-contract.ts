@@ -72,7 +72,7 @@ const baseContract: Record<string, EnvResolver> = {
   VITE_SATELLITE_SOURCE: runtime => runtime.maps.satelliteSource ?? '',
   VITE_MAP_STYLE: runtime => runtime.maps.mapStyle ?? 'basic',
   VITE_OFFLINE_MAPS: runtime => runtime.maps.offlineMaps ?? true,
-  VITE_AUTOSUGGEST_SOURCE: runtime => runtime.maps.autosuggestSource ?? 'NONE',
+  VITE_AUTOSUGGEST_SOURCE: runtime => runtime.maps.autosuggestSource ?? 'none',
   VITE_AUTOSUGGEST_MAPBOX_KEY: runtime =>
     runtime.maps.autosuggestMapboxKey ?? '',
   VITE_AUTOSUGGEST_MAPTILER_KEY: runtime =>
