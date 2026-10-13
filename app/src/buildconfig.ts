@@ -115,7 +115,6 @@ export const config = {
   pouchBatchSize: canonical.pouchdb.pouchBatchSize,
   pouchBatchesLimit: canonical.pouchdb.pouchBatchesLimit,
   syncPushOnlyRecordThreshold: canonical.sync.syncPushOnlyRecordThreshold,
-  clusterAdminGroupName: canonical.auth.clusterAdminGroupName,
   notebookListType: canonical.notebookAndRecordUX.notebookListType,
   notebookName,
   notebookNameCapitalized:

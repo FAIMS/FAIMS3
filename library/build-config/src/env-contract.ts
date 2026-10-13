@@ -19,8 +19,6 @@ const baseContract: Record<string, EnvResolver> = {
   // emits a usable value and round-trips losslessly.
   VITE_APP_SHORT_NAME: runtime =>
     runtime.branding.appShortName ?? runtime.branding.appName ?? '',
-  VITE_CLUSTER_ADMIN_GROUP_NAME: runtime =>
-    runtime.auth.clusterAdminGroupName ?? 'cluster-admin',
   VITE_COMMIT_VERSION: runtime =>
     runtime.observability.commitVersion ?? 'local-build',
   VITE_CONDUCTOR_URL: runtime =>

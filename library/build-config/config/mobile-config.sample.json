@@ -60,7 +60,6 @@
     "startupMigrationLockTimeoutMs": 1800000
   },
   "auth": {
-    "clusterAdminGroupName": "cluster-admin",
     "profileName": "local",
     "keyFilePath": ".",
     "keySource": "FILE",

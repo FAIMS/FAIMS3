@@ -333,7 +333,6 @@ test('parseGeneratedEnv(buildEnvMapFromRuntime(config)) reproduces canonical val
     maps: {mapSource: 'maptiler', satelliteSource: 'esri', offlineMaps: false},
     sync: {forceRemoteDeletion: 'allow', deleteOnDeactivation: true},
     attachments: {attachmentDocumentIdPrefix: 'fieldmark'},
-    auth: {clusterAdminGroupName: 'admins'},
     // disableLocalLogin is api-only (DISABLE_LOCAL_LOGIN) and is not part of
     // the apps env round trip.
     authTokens: {
@@ -379,7 +378,6 @@ test('parseGeneratedEnv(buildEnvMapFromRuntime(config)) reproduces canonical val
   assert.equal(parsed.sync.forceRemoteDeletion, 'allow');
   assert.equal(parsed.sync.deleteOnDeactivation, true);
   assert.equal(parsed.attachments.attachmentDocumentIdPrefix, 'fieldmark');
-  assert.equal(parsed.auth.clusterAdminGroupName, 'admins');
   assert.deepEqual(parsed.authTokens.longLivedTokenDurationHints, [1, 30]);
   assert.equal(parsed.authTokens.maximumLongLivedDurationDays, 90);
   assert.deepEqual(parsed.teamAndRolePolicy.excludedTeamRoles, ['TEAM_ADMIN']);
