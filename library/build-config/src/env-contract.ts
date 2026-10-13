@@ -90,8 +90,6 @@ const baseContract: Record<string, EnvResolver> = {
   VITE_BUGSNAG_KEY: runtime => runtime.observability.bugsnagApiKey ?? '',
   VITE_SHOW_WIPE: runtime => runtime.dev.showWipe ?? true,
   VITE_SHOW_POUCHDB_BROWSER: runtime => runtime.dev.showPouchDbBrowser ?? true,
-  VITE_SHOW_NEW_NOTEBOOK: runtime =>
-    runtime.notebookAndRecordUX.showNewNotebook ?? true,
   VITE_SHOW_STATUS_TAB: runtime =>
     runtime.notebookAndRecordUX.showStatusTab ?? true,
   VITE_DEBUG_APP: runtime => runtime.dev.debugApp ?? false,

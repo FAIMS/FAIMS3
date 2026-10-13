@@ -75,7 +75,6 @@ const NotebookAndRecordUxBuildConfigSchema = z
     notebookListType: z.enum(['tabs', 'headings']).default('tabs'),
     navigation: z.enum(['none', 'breadcrumbs']).default('none'),
     showStatusTab: z.boolean().default(true),
-    showNewNotebook: z.boolean().default(true),
   })
   .strict();
 
@@ -694,7 +693,6 @@ export function parseAppsEnv(env: GeneratedEnv): PartialBuildConfig {
       notebookListType: env.VITE_NOTEBOOK_LIST_TYPE,
       navigation: env.VITE_NAVIGATION,
       showStatusTab: env.VITE_SHOW_STATUS_TAB,
-      showNewNotebook: env.VITE_SHOW_NEW_NOTEBOOK,
     },
     maps: {
       mapSource: env.VITE_MAP_SOURCE,

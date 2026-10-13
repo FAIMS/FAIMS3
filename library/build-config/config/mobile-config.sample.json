@@ -30,8 +30,7 @@
     "notebookName": "survey",
     "notebookListType": "tabs",
     "navigation": "breadcrumbs",
-    "showStatusTab": true,
-    "showNewNotebook": true
+    "showStatusTab": true
   },
   "maps": {
     "mapSource": "maptiler",

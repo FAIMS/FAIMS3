@@ -329,7 +329,7 @@ test('parseGeneratedEnv(buildEnvMapFromRuntime(config)) reproduces canonical val
     },
     branding: {appName: 'Fieldmark', theme: 'fieldmark'},
     support: {appContactUrl: 'https://example.org/contact'},
-    notebookAndRecordUX: {navigation: 'breadcrumbs', showNewNotebook: false},
+    notebookAndRecordUX: {navigation: 'breadcrumbs'},
     maps: {mapSource: 'maptiler', satelliteSource: 'esri', offlineMaps: false},
     sync: {forceRemoteDeletion: 'allow', deleteOnDeactivation: true},
     attachments: {attachmentDocumentIdPrefix: 'fieldmark'},
@@ -373,7 +373,6 @@ test('parseGeneratedEnv(buildEnvMapFromRuntime(config)) reproduces canonical val
   // consumer), so it is absent from the apps env and parses as undefined.
   assert.equal(parsed.support.appContactUrl, 'https://example.org/contact');
   assert.equal(parsed.notebookAndRecordUX.navigation, 'breadcrumbs');
-  assert.equal(parsed.notebookAndRecordUX.showNewNotebook, false);
   assert.equal(parsed.maps.mapSource, 'maptiler');
   assert.equal(parsed.maps.satelliteSource, 'esri');
   assert.equal(parsed.maps.offlineMaps, false);

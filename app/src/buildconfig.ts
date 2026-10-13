@@ -121,7 +121,6 @@ export const config = {
   debugApp: canonical.dev.debugApp,
   showPouchdbBrowser: canonical.dev.showPouchDbBrowser,
   showWipe: canonical.dev.showWipe,
-  showNewNotebook: canonical.notebookAndRecordUX.showNewNotebook,
   showStatusTab: canonical.notebookAndRecordUX.showStatusTab,
   pouchBatchSize: canonical.pouchdb.pouchBatchSize,
   pouchBatchesLimit: canonical.pouchdb.pouchBatchesLimit,
