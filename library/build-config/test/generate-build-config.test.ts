@@ -208,10 +208,10 @@ test('auth provider env helpers roundtrip config for google provider', () => {
   assert.equal((parsed.google as any)?.clientID, 'google-client-id');
 });
 
-test('mobile-config.sample.json matches current build config schema', () => {
+test('core.sample.json matches current build config schema', () => {
   const base = JSON.parse(
     fs.readFileSync(
-      new URL('../config/mobile-config.sample.json', import.meta.url),
+      new URL('../config/core.sample.json', import.meta.url),
       'utf8'
     )
   );
@@ -224,13 +224,13 @@ test('mobile-config.sample.json matches current build config schema', () => {
 test('mobile sample + secrets deep merge matches current build config schema', () => {
   const base = JSON.parse(
     fs.readFileSync(
-      new URL('../config/mobile-config.sample.json', import.meta.url),
+      new URL('../config/core.sample.json', import.meta.url),
       'utf8'
     )
   );
   const secrets = JSON.parse(
     fs.readFileSync(
-      new URL('../config/mobile-secrets.sample.json', import.meta.url),
+      new URL('../config/secrets.sample.json', import.meta.url),
       'utf8'
     )
   );

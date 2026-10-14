@@ -235,7 +235,7 @@ single shared config file (`config/dev/core.json`) using the same schema every o
 platform (mobile CI, AWS CDK) uses:
 
 ```bash
-cp library/build-config/config/mobile-config.sample.json config/dev/core.json
+cp library/build-config/config/core.sample.json config/dev/core.json
 scripts/generateDevEnv.sh   # -> api/.env, app/.env, web/.env, docs/.env
 ```
 

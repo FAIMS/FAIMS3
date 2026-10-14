@@ -97,7 +97,7 @@ environment.
 This is the non-secret config for that environment.
 
 Use the shared schema defined by `library/build-config/src/build-config.ts` and
-the sample structure in `library/build-config/config/mobile-config.sample.json`
+the sample structure in `library/build-config/config/core.sample.json`
 as your starting point. The [Build Configuration](Build-Configuration.md) page
 documents every field.
 

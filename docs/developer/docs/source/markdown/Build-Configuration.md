@@ -33,9 +33,9 @@ flowchart LR
 - **Env mapping** (the transport contract):
   [`library/build-config/src/env-contract.ts`](../../library/build-config/src/env-contract.ts)
 - **Concrete examples**:
-  [`mobile-config.sample.json`](../../library/build-config/config/mobile-config.sample.json)
+  [`core.sample.json`](../../library/build-config/config/core.sample.json)
   and
-  [`mobile-secrets.sample.json`](../../library/build-config/config/mobile-secrets.sample.json)
+  [`secrets.sample.json`](../../library/build-config/config/secrets.sample.json)
 
 The shared invariants (name fallbacks, offline-map clamping for OSM, long-lived-token
 hint clamping, "no cap" normalisation — see
