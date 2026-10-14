@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import type {ContextualLayerListing} from '@faims3/data-model';
-import {ProgressBar} from '@faims3/forms';
+import {
+  LayerLocationHint,
+  ProgressBar,
+  useOccasionalDeviceLocation,
+} from '@faims3/forms';
 import {
   Button,
   Checkbox,
@@ -51,12 +55,14 @@ function LayerChoice({
   status,
   checked,
   disabled,
+  location,
   onToggle,
 }: {
   layer: ContextualLayerListing;
   status: LayerDeviceStatus;
   checked: boolean;
   disabled: boolean;
+  location?: [number, number];
   onToggle: (checked: boolean) => void;
 }) {
   return (
@@ -117,9 +123,12 @@ function LayerChoice({
             <Typography sx={{fontWeight: 600, overflowWrap: 'anywhere'}}>
               {layer.name}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {kindLabel(layer.kind)}
-            </Typography>
+            <Stack direction="row" sx={{alignItems: 'center', minWidth: 0}}>
+              <Typography variant="body2" color="text.secondary">
+                {kindLabel(layer.kind)}
+              </Typography>
+              <LayerLocationHint extent={layer.extent} location={location} />
+            </Stack>
           </Stack>
           <Typography
             data-testid={`map-layer-size-${layer.id}`}
@@ -140,6 +149,7 @@ function LayerGroup({
   statusById,
   chosen,
   disabled,
+  location,
   onToggle,
 }: {
   title: string;
@@ -148,6 +158,7 @@ function LayerGroup({
   statusById: Map<string, LayerDeviceStatus>;
   chosen: string[];
   disabled: boolean;
+  location?: [number, number];
   onToggle: (layerId: string, checked: boolean) => void;
 }) {
   if (layers.length === 0) {
@@ -165,6 +176,7 @@ function LayerGroup({
           status={statusById.get(layer.id) ?? 'not-downloaded'}
           checked={chosen.includes(layer.id)}
           disabled={disabled}
+          location={location}
           onToggle={checked => onToggle(layer.id, checked)}
         />
       ))}
@@ -205,6 +217,7 @@ export function ContextualLayerPrompt() {
   >(null);
   const [error, setError] = useState<string | undefined>();
   const promptKey = prompt ? `${prompt.serverId}:${prompt.projectId}` : '';
+  const location = useOccasionalDeviceLocation(Boolean(prompt));
 
   useEffect(() => {
     setSelected(null);
@@ -359,6 +372,7 @@ export function ContextualLayerPrompt() {
               statusById={statusById}
               chosen={chosen}
               disabled={working}
+              location={location}
               onToggle={toggleLayer}
             />
             <LayerGroup
@@ -368,6 +382,7 @@ export function ContextualLayerPrompt() {
               statusById={statusById}
               chosen={chosen}
               disabled={working}
+              location={location}
               onToggle={toggleLayer}
             />
           </Stack>

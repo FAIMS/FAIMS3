@@ -12,6 +12,7 @@ const native = vi.hoisted(() => ({
   downloadFile: vi.fn(),
   addListener: vi.fn(),
   deleteFile: vi.fn(),
+  mkdir: vi.fn(),
   readdir: vi.fn(),
 }));
 
@@ -28,6 +29,7 @@ vi.mock('@capacitor/filesystem', () => ({
     downloadFile: (...args: unknown[]) => native.downloadFile(...args),
     addListener: (...args: unknown[]) => native.addListener(...args),
     deleteFile: (...args: unknown[]) => native.deleteFile(...args),
+    mkdir: (...args: unknown[]) => native.mkdir(...args),
     readdir: (...args: unknown[]) => native.readdir(...args),
     writeFile: vi.fn(),
     getUri: vi.fn(),
@@ -116,6 +118,7 @@ describe('downloadContextualLayers on native', () => {
     native.downloadFile.mockReset().mockResolvedValue({path: 'map-assets'});
     native.addListener.mockReset().mockResolvedValue({remove: vi.fn()});
     native.deleteFile.mockReset().mockResolvedValue(undefined);
+    native.mkdir.mockReset().mockResolvedValue(undefined);
     native.readdir.mockReset().mockResolvedValue({files: []});
     store = configureStore({
       reducer: {contextualLayers: contextualLayersReducer},
@@ -169,6 +172,11 @@ describe('downloadContextualLayers on native', () => {
     expect(String(fetchMock.mock.calls[0][0])).toContain(
       '/api/map-assets/asset-1/download-url'
     );
+    expect(native.mkdir).toHaveBeenCalledWith({
+      path: 'map-assets',
+      directory: 'DATA',
+      recursive: true,
+    });
     expect(native.downloadFile).toHaveBeenCalledWith({
       url: presigned,
       path: 'map-assets/asset-1-hash-1.geojson',
@@ -179,6 +187,29 @@ describe('downloadContextualLayers on native', () => {
     expect(store.getState().contextualLayers.files['asset-1']?.filename).toBe(
       'asset-1-hash-1.geojson'
     );
+  });
+
+  it('still downloads when the map-assets folder already exists', async () => {
+    native.mkdir.mockRejectedValue(new Error('Directory exists'));
+
+    await downloadContextualLayers({
+      serverUrl: 'http://localhost:8080',
+      token: 'token',
+      projectId: 'survey',
+      layers: [
+        {
+          id: 'asset-1',
+          name: 'Digital atlas',
+          kind: 'geojson',
+          byteSize: 100,
+          contentHash: 'hash-1',
+          extent: [0, 0, 1, 1],
+          defaultStyle: DEFAULT_MAP_ASSET_STYLE,
+        },
+      ],
+    });
+
+    expect(native.downloadFile).toHaveBeenCalled();
   });
 
   it('reports native download progress against the batch size', async () => {

@@ -114,7 +114,7 @@ export interface MapControlButtonProps {
   title: string;
   onClick: () => void;
   disabled?: boolean;
-  /** Highlights the button (e.g. satellite layer active) */
+  /** Highlights the button when that control is the active mode */
   active?: boolean;
   children: ReactNode;
 }

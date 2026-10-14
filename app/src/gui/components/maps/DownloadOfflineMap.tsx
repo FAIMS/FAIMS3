@@ -67,7 +67,7 @@ export function DownloadOfflineMap() {
   // Temporarily bypass the navigation blocker after a successful save.
   const allowNavigationRef = useRef(false);
 
-  // Offline downloads are vector-only — omit satellite so the layer toggle is hidden
+  // Offline downloads are vector-only — omit satellite from the layers panel
   const mapConfig = useMemo(() => {
     const {satelliteSource: _satellite, ...vectorOnly} = getMapConfig();
     return vectorOnly;

@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
+export * from './baseMapLayers';
 export * from './ContextualLayersControl';
+export * from './LayerLocationHint';
+export * from './layerLocationProximity';
 export * from './StaticMapLayerPreview';
 export * from './contextualMapLayers';
+export * from './useOccasionalDeviceLocation';
 export * from './layerStack';
 export * from './MapComponent';
 export * from './migrations';

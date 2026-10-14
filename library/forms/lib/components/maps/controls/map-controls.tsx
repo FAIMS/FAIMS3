@@ -3,7 +3,7 @@
 /*
  * Filename: map-controls.tsx
  * Description:
- *   React map control buttons (zoom, compass, centre on GPS, layer toggle,
+ *   React map control buttons (zoom, compass, centre on GPS,
  *   use-current-location). These operate directly on the OpenLayers map/view
  *   and are laid out by MapControlsOverlay - no `ol/control` involved.
  */
@@ -13,10 +13,7 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import {Box} from '@mui/material';
 import Map from 'ol/Map';
 import {unByKey} from 'ol/Observable';
-import TileLayer from 'ol/layer/Tile';
-import VectorTileLayer from 'ol/layer/VectorTile';
 import {useEffect, useState} from 'react';
-import layersIconSrc from '../icons/layers.svg';
 import pinIconSrc from '../icons/pin.svg';
 import targetIconSrc from '../icons/target.svg';
 import {MapControlButton, MapControlGroup, MapControlIcon} from './primitives';
@@ -26,9 +23,6 @@ const ANIMATION_DURATION = 250;
 
 /** Rotation below this (radians) is treated as north-up; compass hidden. */
 const ROTATION_NEAR_ZERO_THRESHOLD = 1e-6;
-
-/** localStorage key for persisting the user's layer preference */
-const LAYER_PREFERENCE_KEY = 'map-layer-preference';
 
 /**
  * Zoom in/out buttons. Zoom limits are enforced by the view's own
@@ -143,114 +137,3 @@ export const UseCurrentLocationControl = ({
     </MapControlButton>
   </MapControlGroup>
 );
-
-export interface ZoomRange {
-  minZoom: number;
-  maxZoom: number;
-}
-
-const getSavedLayerPreference = (): boolean => {
-  try {
-    return localStorage.getItem(LAYER_PREFERENCE_KEY) === 'satellite';
-  } catch {
-    return false;
-  }
-};
-
-const saveLayerPreference = (isSatellite: boolean): void => {
-  try {
-    localStorage.setItem(
-      LAYER_PREFERENCE_KEY,
-      isSatellite ? 'satellite' : 'vector'
-    );
-  } catch {
-    // localStorage unavailable (e.g. private browsing), silently ignore
-  }
-};
-
-export interface LayerToggleControlProps {
-  map: Map;
-  /** The vector/raster base layer */
-  vectorLayer: VectorTileLayer | TileLayer;
-  /** The satellite imagery layer */
-  satelliteLayer: TileLayer;
-  /** Whether the application is currently online (satellite needs network) */
-  isOnline: boolean;
-  /** Valid zoom range for the vector layer */
-  vectorZoomRange: ZoomRange;
-  /** Valid zoom range for the satellite layer */
-  satelliteZoomRange: ZoomRange;
-  /** Callback fired when the active layer changes */
-  onLayerChange?: (isSatellite: boolean) => void;
-}
-
-/**
- * Toggles between the vector base map and satellite imagery.
- *
- * - Persists the user's preference to localStorage
- * - Automatically falls back to vector while offline (without overwriting
- *   the saved preference, so satellite is restored when back online)
- * - Animates the zoom into the valid range for the newly active layer
- */
-export const LayerToggleControl = ({
-  map,
-  vectorLayer,
-  satelliteLayer,
-  isOnline,
-  vectorZoomRange,
-  satelliteZoomRange,
-  onLayerChange,
-}: LayerToggleControlProps) => {
-  const [prefersSatellite, setPrefersSatellite] = useState(() =>
-    getSavedLayerPreference()
-  );
-  // Offline forces vector view regardless of preference
-  const isSatellite = prefersSatellite && isOnline;
-
-  useEffect(() => {
-    vectorLayer.setVisible(!isSatellite);
-    satelliteLayer.setVisible(isSatellite);
-    onLayerChange?.(isSatellite);
-
-    // Snap the zoom into the active layer's supported range
-    const range = isSatellite ? satelliteZoomRange : vectorZoomRange;
-    const view = map.getView();
-    const currentZoom = view.getZoom();
-    if (currentZoom !== undefined) {
-      const clampedZoom = Math.max(
-        range.minZoom,
-        Math.min(range.maxZoom, currentZoom)
-      );
-      if (clampedZoom !== currentZoom) {
-        view.animate({zoom: clampedZoom, duration: ANIMATION_DURATION});
-      }
-    }
-  }, [
-    isSatellite,
-    map,
-    vectorLayer,
-    satelliteLayer,
-    onLayerChange,
-    vectorZoomRange.minZoom,
-    vectorZoomRange.maxZoom,
-    satelliteZoomRange.minZoom,
-    satelliteZoomRange.maxZoom,
-  ]);
-
-  return (
-    <MapControlGroup>
-      <MapControlButton
-        title="Toggle satellite view"
-        active={isSatellite}
-        disabled={!isOnline}
-        onClick={() => {
-          const next = !prefersSatellite;
-          setPrefersSatellite(next);
-          saveLayerPreference(next);
-        }}
-      >
-        <MapControlIcon src={layersIconSrc} alt="Toggle satellite view" />
-      </MapControlButton>
-    </MapControlGroup>
-  );
-};

@@ -329,12 +329,27 @@ async function readResponseBytes(
  * JSON-parses the whole body on the Android main thread. A large GeoJSON
  * then OOMs the 256MB Java heap inside MessageHandler.postMessage.
  */
+async function ensureNativeMapAssetsDir(): Promise<void> {
+  try {
+    await Filesystem.mkdir({
+      path: 'map-assets',
+      directory: Directory.Data,
+      recursive: true,
+    });
+  } catch {
+    // Already exists, or a later downloadFile will surface a real error.
+  }
+}
+
 async function downloadNativeLayerFile(
   url: string,
   filename: string,
   expectedBytes: number,
   onReceived: (received: number, total: number) => void
 ): Promise<void> {
+  // Android's legacy downloadFile opens the destination without mkdir,
+  // so recursive:true on downloadFile is not enough for a missing folder.
+  await ensureNativeMapAssetsDir();
   const handle = await Filesystem.addListener('progress', status => {
     if (status.url !== url) {
       return;
@@ -571,6 +586,7 @@ export type StoredContextualLayerSummary = {
   byteSize: number;
   contentHash: string;
   projectIds: string[];
+  extent4326: ContextualLayerListing['extent'];
 };
 
 /** Every contextual layer file currently stored on this device. */
@@ -586,6 +602,7 @@ export async function listStoredContextualLayers(): Promise<
       byteSize: file.byteSize,
       contentHash: file.contentHash,
       projectIds: [...file.projectIds],
+      extent4326: file.extent4326,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }

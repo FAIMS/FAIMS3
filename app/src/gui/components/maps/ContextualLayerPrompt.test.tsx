@@ -4,8 +4,14 @@ import type {ContextualLayerListing} from '@faims3/data-model';
 import {DEFAULT_MAP_ASSET_STYLE} from '@faims3/data-model';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {render, screen, waitFor} from '@testing-library/react';
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type {StoredContextualLayerSummary} from './contextualLayerStore';
+
+vi.mock('@capacitor/geolocation', () => ({
+  Geolocation: {
+    getCurrentPosition: vi.fn().mockRejectedValue(new Error('no gps')),
+  },
+}));
 
 const harness = vi.hoisted(() => ({
   dispatch: vi.fn(),
@@ -79,6 +85,7 @@ function stored(
     byteSize: 2048,
     contentHash,
     projectIds: ['survey-1'],
+    extent4326: [0, 0, 1, 1],
   };
 }
 
@@ -91,6 +98,10 @@ function renderPrompt() {
 }
 
 describe('ContextualLayerPrompt', () => {
+  afterEach(() => {
+    localStorage.clear();
+  });
+
   beforeEach(() => {
     harness.dispatch.mockReset();
     harness.prompt = {projectId: 'survey-1', serverId: 'server-1'};
@@ -149,5 +160,19 @@ describe('ContextualLayerPrompt', () => {
     });
     expect(screen.getByText('Keep all')).toBeInTheDocument();
     expect(screen.queryByText('Not yet downloaded')).not.toBeInTheDocument();
+  });
+
+  it('shows a current-location dot when the device is on a layer', async () => {
+    harness.layers = [layer('asset-ready', 'Site boundaries', 'hash-a')];
+    harness.stored = [stored('asset-ready', 'hash-a')];
+    localStorage.setItem('last_map_center', JSON.stringify([0.5, 0.5]));
+    renderPrompt();
+
+    await waitFor(() => {
+      expect(screen.getByText('On map')).toBeInTheDocument();
+      expect(
+        screen.getByRole('img', {name: 'Current location is on this layer'})
+      ).toBeInTheDocument();
+    });
   });
 });

@@ -32,27 +32,63 @@ import {
 } from 'react';
 import {INPUT_LIMITS} from '@faims3/data-model';
 import {
+  BASE_MAP_SATELLITE_NAME,
+  type BaseMapLayerPatch,
+  type BaseMapPanelLayer,
+} from './baseMapLayers';
+import {
   ContextualMapLayersContext,
   type ContextualMapLayer,
   type ContextualMapLayerPatch,
 } from './contextualMapLayers';
+import {LayerLocationHint} from './LayerLocationHint';
+import {useOccasionalDeviceLocation} from './useOccasionalDeviceLocation';
+
+type PanelLayerKind = ContextualMapLayer['kind'] | 'basemap';
+
+type PanelLayer = {
+  id: string;
+  name: string;
+  kind: PanelLayerKind;
+  source: 'contextual' | 'basemap';
+  visible: boolean;
+  opacity: number;
+  zIndex: number;
+  stroke: string;
+  fill: string;
+  lineWidth: number;
+  pointSize: number;
+  labelField?: string;
+  extent4326?: ContextualMapLayer['extent4326'];
+  extent3857?: ContextualMapLayer['extent3857'];
+  canPan: boolean;
+  available: boolean;
+  unavailableHint?: string;
+};
 
 /**
  * Layers sheet: visibility, stack order, paint, and pan-into-view.
- * Rendered over the map when the notebook has downloaded contextual layers.
+ * Lists the streets/satellite base maps together with downloaded overlays.
  *
  * While the sheet is open a scrim covers the map. A press on that scrim closes
  * the sheet and is swallowed, so the same gesture does not pan or click the map.
  */
-export function ContextualLayersControl({map}: {map: Map}) {
-  const {layers, updateLayer, moveLayer} = useContext(
-    ContextualMapLayersContext
-  );
+export function ContextualLayersControl({
+  map,
+  baseLayers = [],
+  onUpdateBaseLayer,
+}: {
+  map: Map;
+  baseLayers?: BaseMapPanelLayer[];
+  onUpdateBaseLayer?: (id: string, patch: BaseMapLayerPatch) => void;
+}) {
+  const {layers, updateLayer} = useContext(ContextualMapLayersContext);
   const [open, setOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [panelMaxHeight, setPanelMaxHeight] = useState(320);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelId = useId();
+  const location = useOccasionalDeviceLocation(open);
 
   useEffect(() => {
     if (!open) {
@@ -91,27 +127,60 @@ export function ContextualLayersControl({map}: {map: Map}) {
       observer.disconnect();
       window.removeEventListener('resize', update);
     };
-  }, [map, open, layers.length]);
+  }, [map, open, layers.length, baseLayers.length]);
 
-  if (layers.length === 0) {
+  const panelLayers = toPanelLayers(layers, baseLayers);
+  if (panelLayers.length === 0) {
     return null;
   }
 
-  const ordered = [...layers].sort((a, b) => b.zIndex - a.zIndex);
-  const visibleCount = layers.filter(layer => layer.visible).length;
+  const ordered = [...panelLayers].sort((a, b) => b.zIndex - a.zIndex);
+  const visibleCount = panelLayers.filter(layer => layer.visible).length;
+
+  const patchLayer = (layer: PanelLayer, patch: ContextualMapLayerPatch) => {
+    if (layer.source === 'basemap') {
+      onUpdateBaseLayer?.(layer.id, patch);
+      return;
+    }
+    updateLayer(layer.id, patch);
+  };
 
   const setAllVisible = (visible: boolean) => {
-    for (const layer of layers) {
+    for (const layer of panelLayers) {
+      if (!layer.available && visible) {
+        continue;
+      }
       if (layer.visible !== visible) {
-        updateLayer(layer.id, {visible});
+        patchLayer(layer, {visible});
       }
     }
   };
 
-  const panLayerIntoView = (layer: ContextualMapLayer) => {
+  const movePanelLayer = (layer: PanelLayer, direction: 'up' | 'down') => {
+    const stack = [...panelLayers].sort((a, b) => a.zIndex - b.zIndex);
+    const index = stack.findIndex(item => item.id === layer.id);
+    const swapWith = direction === 'up' ? index + 1 : index - 1;
+    if (index < 0 || swapWith < 0 || swapWith >= stack.length) {
+      return;
+    }
+    const currentZ = stack[index].zIndex;
+    const otherZ = stack[swapWith].zIndex;
+    patchLayer(stack[index], {zIndex: otherZ});
+    patchLayer(stack[swapWith], {zIndex: currentZ});
+  };
+
+  const panLayerIntoView = (layer: PanelLayer) => {
+    if (!layer.canPan) {
+      return;
+    }
     const extent = layer.extent3857
       ? layer.extent3857
-      : transformExtent(layer.extent4326, 'EPSG:4326', 'EPSG:3857');
+      : layer.extent4326
+        ? transformExtent(layer.extent4326, 'EPSG:4326', 'EPSG:3857')
+        : undefined;
+    if (!extent) {
+      return;
+    }
     map.getView().fit(extent, {
       padding: [24, 24, 24, 24],
       duration: 400,
@@ -162,7 +231,7 @@ export function ContextualLayersControl({map}: {map: Map}) {
           type="button"
           aria-expanded={open}
           aria-controls={panelId}
-          aria-label={`Map layers, ${visibleCount} of ${layers.length} shown`}
+          aria-label={`Map layers, ${visibleCount} of ${panelLayers.length} shown`}
           onClick={() => setOpen(value => !value)}
           sx={{
             pointerEvents: 'auto',
@@ -200,7 +269,7 @@ export function ContextualLayersControl({map}: {map: Map}) {
               justifyContent: 'center',
             }}
           >
-            {visibleCount}/{layers.length}
+            {visibleCount}/{panelLayers.length}
           </Box>
         </ButtonBase>
         {open && (
@@ -271,7 +340,10 @@ export function ContextualLayersControl({map}: {map: Map}) {
                   type="button"
                   size="small"
                   variant="outlined"
-                  disabled={visibleCount === layers.length}
+                  disabled={
+                    visibleCount ===
+                    panelLayers.filter(layer => layer.available).length
+                  }
                   startIcon={<VisibilityOutlinedIcon />}
                   onClick={() => setAllVisible(true)}
                   sx={{flex: 1, textTransform: 'none', minHeight: 32}}
@@ -301,6 +373,7 @@ export function ContextualLayersControl({map}: {map: Map}) {
                   <LayerRow
                     key={layer.id}
                     layer={layer}
+                    location={location}
                     divided={index > 0}
                     expanded={expandedId === layer.id}
                     raiseDisabled={index === 0}
@@ -311,11 +384,11 @@ export function ContextualLayersControl({map}: {map: Map}) {
                       )
                     }
                     onToggleVisible={() =>
-                      updateLayer(layer.id, {visible: !layer.visible})
+                      patchLayer(layer, {visible: !layer.visible})
                     }
                     onPanIntoView={() => panLayerIntoView(layer)}
-                    onMove={direction => moveLayer(layer.id, direction)}
-                    onPatch={patch => updateLayer(layer.id, patch)}
+                    onMove={direction => movePanelLayer(layer, direction)}
+                    onPatch={patch => patchLayer(layer, patch)}
                   />
                 ))}
               </Box>
@@ -327,8 +400,49 @@ export function ContextualLayersControl({map}: {map: Map}) {
   );
 }
 
+function toPanelLayers(
+  layers: ContextualMapLayer[],
+  baseLayers: BaseMapPanelLayer[]
+): PanelLayer[] {
+  return [
+    ...baseLayers.map(layer => ({
+      id: layer.id,
+      name: layer.name,
+      kind: 'basemap' as const,
+      source: 'basemap' as const,
+      visible: layer.visible,
+      opacity: layer.opacity,
+      zIndex: layer.zIndex,
+      stroke: '#4a7cbf',
+      fill: '#4a7cbf80',
+      lineWidth: 2,
+      pointSize: 6,
+      canPan: false,
+      available: layer.available ?? true,
+      unavailableHint: layer.unavailableHint,
+    })),
+    ...layers.map(layer => ({
+      ...layer,
+      source: 'contextual' as const,
+      canPan: true,
+      available: true,
+    })),
+  ];
+}
+
+function layerKindLabel(layer: PanelLayer): string {
+  if (layer.kind === 'image') {
+    return 'Image';
+  }
+  if (layer.kind === 'basemap') {
+    return layer.available ? 'Base map' : (layer.unavailableHint ?? 'Base map');
+  }
+  return 'Vector';
+}
+
 function LayerRow({
   layer,
+  location,
   divided,
   expanded,
   raiseDisabled,
@@ -339,7 +453,8 @@ function LayerRow({
   onMove,
   onPatch,
 }: {
-  layer: ContextualMapLayer;
+  layer: PanelLayer;
+  location?: [number, number];
   divided: boolean;
   expanded: boolean;
   raiseDisabled: boolean;
@@ -374,9 +489,14 @@ function LayerRow({
         <IconButton
           type="button"
           aria-label={
-            layer.visible ? `Hide ${layer.name}` : `Show ${layer.name}`
+            !layer.available
+              ? `${layer.name} unavailable`
+              : layer.visible
+                ? `Hide ${layer.name}`
+                : `Show ${layer.name}`
           }
           aria-pressed={layer.visible}
+          disabled={!layer.available}
           onClick={onToggleVisible}
           sx={{
             width: 40,
@@ -400,11 +520,15 @@ function LayerRow({
             width: 10,
             height: 10,
             flexShrink: 0,
-            borderRadius: layer.kind === 'image' ? '2px' : '50%',
+            borderRadius: layer.kind === 'geojson' ? '50%' : '2px',
             bgcolor:
               layer.kind === 'geojson'
                 ? toColorInput(layer.stroke)
-                : 'text.disabled',
+                : layer.kind === 'basemap'
+                  ? layer.name === BASE_MAP_SATELLITE_NAME
+                    ? '#6b8f4e'
+                    : '#4a7cbf'
+                  : 'text.disabled',
             border: '1px solid',
             borderColor: 'divider',
           }}
@@ -421,23 +545,41 @@ function LayerRow({
           >
             {layer.name}
           </Typography>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{lineHeight: 1.2}}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              minWidth: 0,
+              lineHeight: 1.2,
+            }}
           >
-            {layer.kind === 'image' ? 'Image' : 'Vector'}
-          </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              noWrap
+              sx={{lineHeight: 1.2}}
+            >
+              {layerKindLabel(layer)}
+            </Typography>
+            {layer.source === 'contextual' ? (
+              <LayerLocationHint
+                extent={layer.extent4326}
+                location={location}
+              />
+            ) : null}
+          </Box>
         </Box>
-        <IconButton
-          type="button"
-          size="small"
-          aria-label={`Pan ${layer.name} into view`}
-          onClick={onPanIntoView}
-          sx={{width: 36, height: 36}}
-        >
-          <CenterFocusStrongIcon sx={{fontSize: 20}} />
-        </IconButton>
+        {layer.canPan && (
+          <IconButton
+            type="button"
+            size="small"
+            aria-label={`Pan ${layer.name} into view`}
+            onClick={onPanIntoView}
+            sx={{width: 36, height: 36}}
+          >
+            <CenterFocusStrongIcon sx={{fontSize: 20}} />
+          </IconButton>
+        )}
         <IconButton
           type="button"
           size="small"

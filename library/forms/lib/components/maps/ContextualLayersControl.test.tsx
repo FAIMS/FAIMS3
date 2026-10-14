@@ -4,8 +4,21 @@ import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type Map from 'ol/Map';
-import {describe, expect, it, vi} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
+import {saveLastLocation} from './lastKnownLocation';
+
+vi.mock('@capacitor/geolocation', () => ({
+  Geolocation: {
+    getCurrentPosition: vi.fn().mockRejectedValue(new Error('no gps')),
+  },
+}));
 import {INPUT_LIMITS} from '@faims3/data-model';
+import {
+  BASE_MAP_SATELLITE_ID,
+  BASE_MAP_VECTOR_ID,
+  type BaseMapLayerPatch,
+  type BaseMapPanelLayer,
+} from './baseMapLayers';
 import {ContextualLayersControl} from './ContextualLayersControl';
 import {
   ContextualMapLayersContext,
@@ -35,7 +48,14 @@ function layer(
 function renderControl(
   layers: ContextualMapLayer[],
   updateLayer = vi.fn(),
-  moveLayer = vi.fn()
+  moveLayer = vi.fn(),
+  {
+    baseLayers = [],
+    onUpdateBaseLayer = vi.fn<(id: string, patch: BaseMapLayerPatch) => void>(),
+  }: {
+    baseLayers?: BaseMapPanelLayer[];
+    onUpdateBaseLayer?: (id: string, patch: BaseMapLayerPatch) => void;
+  } = {}
 ) {
   const fit = vi.fn();
   const map = {
@@ -47,14 +67,22 @@ function renderControl(
       <ContextualMapLayersContext.Provider
         value={{layers, updateLayer, moveLayer}}
       >
-        <ContextualLayersControl map={map} />
+        <ContextualLayersControl
+          map={map}
+          baseLayers={baseLayers}
+          onUpdateBaseLayer={onUpdateBaseLayer}
+        />
       </ContextualMapLayersContext.Provider>
     </ThemeProvider>
   );
-  return {fit, updateLayer, moveLayer};
+  return {fit, updateLayer, moveLayer, onUpdateBaseLayer};
 }
 
 describe('ContextualLayersControl', () => {
+  afterEach(() => {
+    localStorage.clear();
+  });
+
   it('keeps style controls collapsed until the section is opened', async () => {
     const user = userEvent.setup();
     renderControl([layer({id: 'boundary', name: 'Site boundary'})]);
@@ -107,7 +135,7 @@ describe('ContextualLayersControl', () => {
 
   it('toggles visibility without framing, and pans only from the action button', async () => {
     const user = userEvent.setup();
-    const {fit, updateLayer, moveLayer} = renderControl([
+    const {fit, updateLayer} = renderControl([
       layer({id: 'lower', name: 'Tracks', zIndex: 1, visible: false}),
       layer({id: 'upper', name: 'Boundary', zIndex: 2}),
     ]);
@@ -125,7 +153,8 @@ describe('ContextualLayersControl', () => {
     expect(fit).toHaveBeenCalledOnce();
 
     await user.click(screen.getByRole('button', {name: 'Raise Tracks'}));
-    expect(moveLayer).toHaveBeenCalledWith('lower', 'up');
+    expect(updateLayer).toHaveBeenCalledWith('lower', {zIndex: 2});
+    expect(updateLayer).toHaveBeenCalledWith('upper', {zIndex: 1});
   });
 
   it('shows or hides every layer from the panel header', async () => {
@@ -149,5 +178,154 @@ describe('ContextualLayersControl', () => {
     expect(updateLayer).toHaveBeenCalledTimes(1);
     expect(updateLayer).toHaveBeenCalledWith('upper', {visible: false});
     expect(fit).not.toHaveBeenCalled();
+  });
+
+  it('lists streets and satellite as ordinary layers', async () => {
+    const user = userEvent.setup();
+    const {onUpdateBaseLayer, updateLayer} = renderControl(
+      [],
+      vi.fn(),
+      vi.fn(),
+      {
+        baseLayers: [
+          {
+            id: BASE_MAP_VECTOR_ID,
+            name: 'Streets',
+            visible: true,
+            opacity: 1,
+            zIndex: 0,
+          },
+          {
+            id: BASE_MAP_SATELLITE_ID,
+            name: 'Satellite',
+            visible: false,
+            opacity: 0.8,
+            zIndex: 1,
+          },
+        ],
+      }
+    );
+
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 1 of 2 shown/i})
+    );
+    expect(screen.getByText('Streets')).toBeInTheDocument();
+    expect(screen.getByText('Satellite')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Pan Streets into view'})
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Show Satellite'}));
+    expect(onUpdateBaseLayer).toHaveBeenCalledWith(BASE_MAP_SATELLITE_ID, {
+      visible: true,
+    });
+    expect(updateLayer).not.toHaveBeenCalled();
+
+    await user.click(
+      screen.getByRole('button', {name: 'Show style for Streets'})
+    );
+    expect(
+      screen.getByRole('slider', {name: 'Streets opacity'})
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('slider', {name: 'Streets line width'})
+    ).not.toBeInTheDocument();
+  });
+
+  it('reorders a base map against an overlay', async () => {
+    const user = userEvent.setup();
+    const {onUpdateBaseLayer, updateLayer} = renderControl(
+      [layer({id: 'boundary', name: 'Site boundary', zIndex: 10})],
+      vi.fn(),
+      vi.fn(),
+      {
+        baseLayers: [
+          {
+            id: BASE_MAP_VECTOR_ID,
+            name: 'Streets',
+            visible: true,
+            opacity: 1,
+            zIndex: 0,
+          },
+        ],
+      }
+    );
+
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 2 of 2 shown/i})
+    );
+    await user.click(screen.getByRole('button', {name: 'Raise Streets'}));
+    expect(onUpdateBaseLayer).toHaveBeenCalledWith(BASE_MAP_VECTOR_ID, {
+      zIndex: 10,
+    });
+    expect(updateLayer).toHaveBeenCalledWith('boundary', {zIndex: 0});
+  });
+
+  it('does not show an unavailable satellite layer from Show all', async () => {
+    const user = userEvent.setup();
+    const {onUpdateBaseLayer} = renderControl([], vi.fn(), vi.fn(), {
+      baseLayers: [
+        {
+          id: BASE_MAP_VECTOR_ID,
+          name: 'Streets',
+          visible: false,
+          opacity: 1,
+          zIndex: 0,
+        },
+        {
+          id: BASE_MAP_SATELLITE_ID,
+          name: 'Satellite',
+          visible: false,
+          opacity: 1,
+          zIndex: 1,
+          available: false,
+          unavailableHint: 'Needs a network connection',
+        },
+      ],
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 0 of 2 shown/i})
+    );
+    expect(
+      screen.getByRole('button', {name: 'Satellite unavailable'})
+    ).toBeDisabled();
+    expect(screen.getByText('Needs a network connection')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Show all'}));
+    expect(onUpdateBaseLayer).toHaveBeenCalledTimes(1);
+    expect(onUpdateBaseLayer).toHaveBeenCalledWith(BASE_MAP_VECTOR_ID, {
+      visible: true,
+    });
+  });
+
+  it('shows a blue location dot when the device is on the layer', async () => {
+    const user = userEvent.setup();
+    saveLastLocation([0.5, 0.5]);
+    renderControl([layer({id: 'boundary', name: 'Site boundary'})]);
+
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 1 of 1 shown/i})
+    );
+
+    expect(
+      screen.getByRole('img', {name: 'Current location is on this layer'})
+    ).toBeInTheDocument();
+    expect(screen.getByText('On map')).toBeInTheDocument();
+  });
+
+  it('shows a bearing arrow and coarse distance when the device is outside the layer', async () => {
+    const user = userEvent.setup();
+    saveLastLocation([10, 10]);
+    renderControl([layer({id: 'boundary', name: 'Site boundary'})]);
+
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 1 of 1 shown/i})
+    );
+
+    expect(
+      screen.getByRole('img', {name: /of this layer/i})
+    ).toBeInTheDocument();
+    expect(screen.queryByText('On map')).not.toBeInTheDocument();
   });
 });

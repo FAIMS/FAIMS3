@@ -4,7 +4,11 @@
  */
 
 import type {ContextualLayerListing} from '@faims3/data-model';
-import {ProgressBar} from '@faims3/forms';
+import {
+  LayerLocationHint,
+  ProgressBar,
+  useOccasionalDeviceLocation,
+} from '@faims3/forms';
 import {ArrowForwardIos} from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
@@ -71,6 +75,7 @@ export function ContextualLayerManager() {
   const [pendingDelete, setPendingDelete] = useState<
     StoredContextualLayerSummary | undefined
   >();
+  const location = useOccasionalDeviceLocation();
 
   const refresh = useCallback(async () => {
     try {
@@ -298,10 +303,19 @@ export function ContextualLayerManager() {
                           >
                             {file.name}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {kindLabel(file.kind)} ·{' '}
-                            {formatBytes(file.byteSize)}
-                          </Typography>
+                          <Stack
+                            direction="row"
+                            sx={{alignItems: 'center', minWidth: 0}}
+                          >
+                            <Typography variant="body2" color="text.secondary">
+                              {kindLabel(file.kind)} ·{' '}
+                              {formatBytes(file.byteSize)}
+                            </Typography>
+                            <LayerLocationHint
+                              extent={file.extent4326}
+                              location={location}
+                            />
+                          </Stack>
                           <Typography variant="body2" color="text.secondary">
                             {surveyNames.length > 0
                               ? `Used by ${surveyNames.join(', ')}`
@@ -417,11 +431,25 @@ export function ContextualLayerManager() {
                             >
                               {row.layer.name}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {kindLabel(row.layer.kind)} ·{' '}
-                              {formatBytes(row.layer.byteSize)}
-                              {alreadyStored ? ' · Already on this device' : ''}
-                            </Typography>
+                            <Stack
+                              direction="row"
+                              sx={{alignItems: 'center', flexWrap: 'wrap'}}
+                            >
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {kindLabel(row.layer.kind)} ·{' '}
+                                {formatBytes(row.layer.byteSize)}
+                                {alreadyStored
+                                  ? ' · Already on this device'
+                                  : ''}
+                              </Typography>
+                              <LayerLocationHint
+                                extent={row.layer.extent}
+                                location={location}
+                              />
+                            </Stack>
                             {busyKey === key ? (
                               <Box sx={{mt: 1}}>
                                 <ProgressBar
