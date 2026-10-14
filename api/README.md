@@ -52,18 +52,22 @@ To run the Conductor server you first need to install dependencies:
 pnpm install
 ```
 
-### GDAL (GeoPackage export and map-layer ingest)
+### GDAL, tippecanoe, and pmtiles (GeoPackage export and map-layer ingest)
 
 GeoPackage (`.gpkg`) export uses `ogr2ogr`. Map-layer ingest uses `ogrinfo`,
-`gdalinfo`, `gdalwarp`, and `gdal_translate`. Vector zips may be a shapefile or
-an ESRI File Geodatabase (`OpenFileGDB`). Georeferenced PDFs need the PDF
-driver (Poppler). Both are included in the API Docker image and devcontainer. For
-native Node development, install them on the host:
+`gdalinfo`, `gdalwarp`, `gdal_translate`, `gdaladdo`, `tippecanoe`, and
+`pmtiles`. Every layer is stored as one PMTiles archive. Vector zips may be a
+shapefile or an ESRI File Geodatabase (`OpenFileGDB`). Georeferenced PDFs need
+the PDF driver (Poppler). Raster tiles need the MBTiles and WEBP drivers.
+These are included in the API Docker image and devcontainer. For native Node
+development, install them on the host:
 
 ```bash
 # Ubuntu / Debian
-sudo apt-get install gdal-bin poppler-utils
+sudo apt-get install gdal-bin poppler-utils tippecanoe
 ```
+
+Install the `pmtiles` CLI from the [go-pmtiles releases](https://github.com/protomaps/go-pmtiles/releases) (v1.28.1). `go install github.com/protomaps/go-pmtiles@v1.28.1` produces `go-pmtiles`, which ingest also accepts. `PMTILES_BIN` and `TIPPECANOE_BIN` override the executable names.
 
 Pipeline and module layout: [Geospatial export pipeline](../docs/developer/docs/source/markdown/GeospatialExport.md).
 

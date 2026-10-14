@@ -55,7 +55,7 @@
     "TEST_EMAIL_ADDRESS": "test@example.com"
   },
   // GDAL (ogr2ogr) for GeoPackage export during API development
-  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y --no-install-recommends gdal-bin poppler-utils",
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y --no-install-recommends gdal-bin poppler-utils tippecanoe curl ca-certificates && sudo bash -c 'arch=$(uname -m); case \"$arch\" in x86_64) pm_arch=x86_64 ;; aarch64) pm_arch=arm64 ;; *) echo \"unsupported architecture $arch\" && exit 1 ;; esac; curl -fsSL -o /tmp/pmtiles.tar.gz https://github.com/protomaps/go-pmtiles/releases/download/v1.28.1/go-pmtiles_1.28.1_Linux_${pm_arch}.tar.gz && tar -C /usr/local/bin -xzf /tmp/pmtiles.tar.gz pmtiles && chmod 755 /usr/local/bin/pmtiles && rm /tmp/pmtiles.tar.gz'",
   "forwardPorts": [3000, 3001, 5010, 8080, 9000, 9001],
   "portsAttributes": {
     "3000": {

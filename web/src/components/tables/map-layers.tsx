@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/tooltip';
 import {cn} from '@/lib/utils';
 import {displayDateTime} from '@/lib/time';
-import type {ExistingMapAsset} from '@faims3/data-model';
+import {mapAssetKindLabel, type ExistingMapAsset} from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
 import {useLayoutEffect, useRef, useState} from 'react';
 
@@ -124,8 +124,7 @@ const statusColumn: ColumnDef<ExistingMapAsset> = {
 
 const typeColumn: ColumnDef<ExistingMapAsset> = {
   id: 'kind',
-  accessorFn: asset =>
-    asset.kind === 'image' ? 'Image' : asset.kind === 'geojson' ? 'Vector' : '',
+  accessorFn: asset => mapAssetKindLabel(asset.kind),
   header: ({column}) => <DataTableColumnHeader column={column} title="Type" />,
   cell: ({getValue}) => getValue<string>() || '—',
 };

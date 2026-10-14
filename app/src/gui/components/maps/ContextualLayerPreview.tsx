@@ -4,19 +4,13 @@
  */
 
 import type {ContextualMapLayer} from '@faims3/forms';
-import {VectorTileStore} from '@faims3/forms';
+import {createContextualMapLayer, VectorTileStore} from '@faims3/forms';
 import {Alert, Box, Stack, Typography} from '@mui/material';
 import {Extent} from 'ol/extent';
-import {FeatureLike} from 'ol/Feature';
-import GeoJSON from 'ol/format/GeoJSON';
-import ImageLayer from 'ol/layer/Image';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import 'ol/ol.css';
 import {transformExtent} from 'ol/proj';
-import ImageStatic from 'ol/source/ImageStatic';
-import VectorSource from 'ol/source/Vector';
-import {Circle as CircleStyle, Fill, Stroke, Style, Text} from 'ol/style';
 import View from 'ol/View';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {useParams} from 'react-router-dom';
@@ -36,34 +30,6 @@ function bufferExtent(extent: Extent): Extent {
   const padX = Math.max(width * 0.15, (minSpan - width) / 2);
   const padY = Math.max(height * 0.15, (minSpan - height) / 2);
   return [minX - padX, minY - padY, maxX + padX, maxY + padY];
-}
-
-function vectorStyle(spec: ContextualMapLayer) {
-  return (feature: FeatureLike) => {
-    const labelValue = spec.labelField
-      ? feature.get(spec.labelField)
-      : undefined;
-    const label =
-      labelValue === undefined || labelValue === null ? '' : String(labelValue);
-    return new Style({
-      stroke: new Stroke({color: spec.stroke, width: spec.lineWidth}),
-      fill: new Fill({color: spec.fill}),
-      image: new CircleStyle({
-        radius: spec.pointSize,
-        fill: new Fill({color: spec.stroke}),
-        stroke: new Stroke({color: '#ffffff', width: 1}),
-      }),
-      text: label
-        ? new Text({
-            text: label,
-            font: '12px sans-serif',
-            fill: new Fill({color: spec.stroke}),
-            stroke: new Stroke({color: '#ffffff', width: 3}),
-            offsetY: -14,
-          })
-        : undefined,
-    });
-  };
 }
 
 function LayerPreviewMap({layer}: {layer: ContextualMapLayer}) {
@@ -90,41 +56,19 @@ function LayerPreviewMap({layer}: {layer: ContextualMapLayer}) {
     });
 
     const show = async () => {
-      let extent: Extent | undefined;
-      if (layer.kind === 'image' && layer.extent3857) {
-        const image = new ImageLayer({
-          opacity: layer.opacity,
-          source: new ImageStatic({
-            url: layer.url,
-            projection: MAP_PROJECTION,
-            imageExtent: layer.extent3857,
-          }),
-        });
-        map.addLayer(image);
-        extent = layer.extent3857;
-      } else {
-        const response = await fetch(layer.url);
-        if (!response.ok) {
-          throw new Error(`Could not read ${layer.name}.`);
+      const overlay = await createContextualMapLayer(layer);
+      map.addLayer(overlay);
+      let extent: Extent | undefined = layer.extent3857
+        ? [...layer.extent3857]
+        : transformExtent(layer.extent4326, 'EPSG:4326', MAP_PROJECTION);
+      if (overlay instanceof VectorLayer) {
+        const featureExtent = overlay.getSource()?.getExtent();
+        if (
+          featureExtent &&
+          featureExtent.every((value: number) => Number.isFinite(value))
+        ) {
+          extent = featureExtent;
         }
-        const geojson = await response.json();
-        const features = new GeoJSON().readFeatures(geojson, {
-          dataProjection: 'EPSG:4326',
-          featureProjection: MAP_PROJECTION,
-        });
-        const source = new VectorSource({features});
-        map.addLayer(
-          new VectorLayer({
-            source,
-            opacity: layer.opacity,
-            style: vectorStyle(layer),
-          })
-        );
-        const featureExtent = source.getExtent();
-        extent =
-          featureExtent && featureExtent.every(value => Number.isFinite(value))
-            ? featureExtent
-            : transformExtent(layer.extent4326, 'EPSG:4326', MAP_PROJECTION);
       }
       if (cancelled || !extent) {
         return;

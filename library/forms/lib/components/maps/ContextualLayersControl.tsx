@@ -37,6 +37,7 @@ import {
   type BaseMapPanelLayer,
 } from './baseMapLayers';
 import {
+  CONTEXTUAL_VISIBLE_LAYER_HINT,
   ContextualMapLayersContext,
   type ContextualMapLayer,
   type ContextualMapLayerPatch,
@@ -129,6 +130,7 @@ export function ContextualLayersControl({
     };
   }, [map, open, layers.length, baseLayers.length]);
 
+  const visibleContextual = layers.filter(layer => layer.visible).length;
   const panelLayers = toPanelLayers(layers, baseLayers);
   if (panelLayers.length === 0) {
     return null;
@@ -314,6 +316,11 @@ export function ContextualLayersControl({
                   <Typography variant="caption" color="text.secondary">
                     Upper layers draw on top
                   </Typography>
+                  {visibleContextual > CONTEXTUAL_VISIBLE_LAYER_HINT ? (
+                    <Typography variant="caption" color="text.secondary">
+                      Many layers are visible. Hide some if the map feels slow.
+                    </Typography>
+                  ) : null}
                 </Box>
                 <IconButton
                   type="button"
@@ -431,13 +438,13 @@ function toPanelLayers(
 }
 
 function layerKindLabel(layer: PanelLayer): string {
-  if (layer.kind === 'image') {
-    return 'Image';
+  if (layer.kind === 'raster-tiles') {
+    return 'Image tiles';
   }
-  if (layer.kind === 'basemap') {
-    return layer.available ? 'Base map' : (layer.unavailableHint ?? 'Base map');
+  if (layer.kind === 'vector-tiles') {
+    return 'Vector tiles';
   }
-  return 'Vector';
+  return layer.available ? 'Base map' : (layer.unavailableHint ?? 'Base map');
 }
 
 function LayerRow({
@@ -466,6 +473,7 @@ function LayerRow({
   onPatch: (patch: ContextualMapLayerPatch) => void;
 }) {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const vectorPaint = layer.kind === 'vector-tiles';
   const revealSection = () => {
     const node = sectionRef.current;
     if (node && typeof node.scrollIntoView === 'function') {
@@ -520,15 +528,14 @@ function LayerRow({
             width: 10,
             height: 10,
             flexShrink: 0,
-            borderRadius: layer.kind === 'geojson' ? '50%' : '2px',
-            bgcolor:
-              layer.kind === 'geojson'
-                ? toColorInput(layer.stroke)
-                : layer.kind === 'basemap'
-                  ? layer.name === BASE_MAP_SATELLITE_NAME
-                    ? '#6b8f4e'
-                    : '#4a7cbf'
-                  : 'text.disabled',
+            borderRadius: vectorPaint ? '50%' : '2px',
+            bgcolor: vectorPaint
+              ? toColorInput(layer.stroke)
+              : layer.kind === 'basemap'
+                ? layer.name === BASE_MAP_SATELLITE_NAME
+                  ? '#6b8f4e'
+                  : '#4a7cbf'
+                : 'text.disabled',
             border: '1px solid',
             borderColor: 'divider',
           }}
@@ -654,7 +661,7 @@ function LayerRow({
             display={`${Math.round(layer.opacity * 100)}%`}
             onChange={opacity => onPatch({opacity})}
           />
-          {layer.kind === 'geojson' && (
+          {vectorPaint && (
             <>
               <Stack
                 direction="row"

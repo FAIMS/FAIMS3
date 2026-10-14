@@ -10,9 +10,8 @@
 
 import {z} from 'zod';
 import {INPUT_LIMITS} from '../../inputLimits';
-import type {MapAssetKind} from './types';
 
-const KindSchema = z.enum(['geojson', 'image']);
+const KindSchema = z.enum(['raster-tiles', 'vector-tiles']);
 
 export const MAP_ASSET_QUALITY_MIN = 0;
 export const MAP_ASSET_QUALITY_MAX = 100;
@@ -32,17 +31,21 @@ export type MapAssetQuality = z.infer<typeof MapAssetQualitySchema>;
 export const MAP_ASSET_QUALITY_HIGH_EDGE_PX = 32768;
 
 export const MapAssetNormalizeOptionsSchema = z.object({
-  /** Longest edge of the device PNG, in pixels. */
+  /** Longest edge of the raster before it is tiled, in pixels. */
   maxRasterEdgePx: z
     .number()
     .int()
     .min(256)
     .max(MAP_ASSET_QUALITY_HIGH_EDGE_PX),
-  /** GeoJSON larger than this is re-exported with ogr2ogr -simplify. */
+  /**
+   * Size budget used to estimate a vector archive. Lower quality
+   * estimates a smaller file. tippecanoe drops features to fit tiles;
+   * this is not an ogr2ogr simplify tolerance.
+   */
   vectorSimplifyBytes: z.number().int().nonnegative(),
   /**
-   * Two increasing tolerances in degrees. Used only when the GeoJSON
-   * is still over `vectorSimplifyBytes` after the previous pass.
+   * Kept so existing quality documents still parse. Vector tiling does
+   * not apply these tolerances.
    */
   vectorSimplifyTolerances: z.tuple([
     z.number().nonnegative(),
@@ -183,13 +186,13 @@ export const MAP_ASSET_PRIMARY_FORMATS =
 /** Device kind the uploader will produce, or undefined if the file is not a primary. */
 export function mapAssetKindFromFilename(
   filename: string
-): MapAssetKind | undefined {
+): 'raster-tiles' | 'vector-tiles' | undefined {
   const ext = extensionOf(filename);
   if (VECTOR_EXTENSIONS.has(ext)) {
-    return 'geojson';
+    return 'vector-tiles';
   }
   if (RASTER_EXTENSIONS.has(ext)) {
-    return 'image';
+    return 'raster-tiles';
   }
   return undefined;
 }
@@ -362,17 +365,13 @@ export function estimateNormalizedMapAsset(
     options: input.options,
   });
   const estimatedByteSize =
-    kind === 'image'
+    kind === 'raster-tiles'
       ? estimateRasterBytes(source, options, quality)
       : estimateVectorBytes(source, options);
-  const simplifyMb = Math.max(
-    1,
-    Math.round(options.vectorSimplifyBytes / (1024 * 1024))
-  );
   const summary =
-    kind === 'image'
+    kind === 'raster-tiles'
       ? imageSummary(source, options, estimatedByteSize)
-      : `About ${formatBytes(estimatedByteSize)} on devices · vectors simplified above ${simplifyMb} MB`;
+      : `About ${formatBytes(estimatedByteSize)} on devices · vector tiles`;
   return {
     kind,
     quality,

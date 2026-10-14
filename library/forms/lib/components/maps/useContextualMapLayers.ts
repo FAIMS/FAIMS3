@@ -1,95 +1,59 @@
 // SPDX-License-Identifier: Apache-2.0
 import BaseLayer from 'ol/layer/Base';
-import ImageLayer from 'ol/layer/Image';
-import VectorLayer from 'ol/layer/Vector';
+import VectorTileLayer from 'ol/layer/VectorTile';
 import OlMap from 'ol/Map';
-import {FeatureLike} from 'ol/Feature';
-import GeoJSON from 'ol/format/GeoJSON';
-import ImageStatic from 'ol/source/ImageStatic';
-import VectorSource from 'ol/source/Vector';
-import {Circle as CircleStyle, Fill, Stroke, Style, Text} from 'ol/style';
 import {useContext, useEffect, useRef} from 'react';
 import {
-  ContextualMapLayer,
+  createRasterTileLayer,
+  createVectorTileLayer,
+} from './contextualTileLayers';
+import {contextualVectorStyle} from './contextualVectorStyle';
+import {
   ContextualMapLayersContext,
+  type ContextualMapLayer,
 } from './contextualMapLayers';
 import {contextualLayerZIndex} from './layerStack';
 
-const MAP_PROJECTION = 'EPSG:3857';
-
 type ManagedLayer = BaseLayer;
 
-function vectorStyle(spec: ContextualMapLayer) {
-  return (feature: FeatureLike) => {
-    const labelValue = spec.labelField
-      ? feature.get(spec.labelField)
-      : undefined;
-    const label =
-      labelValue === undefined || labelValue === null ? '' : String(labelValue);
-    return new Style({
-      stroke: new Stroke({color: spec.stroke, width: spec.lineWidth}),
-      fill: new Fill({color: spec.fill}),
-      image: new CircleStyle({
-        radius: spec.pointSize,
-        fill: new Fill({color: spec.stroke}),
-        stroke: new Stroke({color: '#ffffff', width: 1}),
-      }),
-      text: label
-        ? new Text({
-            text: label,
-            font: '12px sans-serif',
-            fill: new Fill({color: spec.stroke}),
-            stroke: new Stroke({color: '#ffffff', width: 3}),
-            offsetY: -14,
-          })
-        : undefined,
-    });
-  };
-}
-
 function applyCommon(layer: ManagedLayer, spec: ContextualMapLayer) {
-  layer.setVisible(spec.visible);
+  layer.setVisible(true);
   layer.setOpacity(spec.opacity);
   // Stored order can grow without a ceiling. Keep reference data under pins.
   layer.setZIndex(contextualLayerZIndex(spec.zIndex));
 }
 
-async function createLayer(spec: ContextualMapLayer): Promise<ManagedLayer> {
-  if (spec.kind === 'image') {
-    if (!spec.extent3857) {
-      throw new Error(`Image layer ${spec.id} is missing an extent.`);
-    }
-    const layer = new ImageLayer({
-      source: new ImageStatic({
-        url: spec.url,
-        projection: MAP_PROJECTION,
-        imageExtent: spec.extent3857,
-      }),
-    });
+function paintVector(layer: ManagedLayer, spec: ContextualMapLayer) {
+  if (layer instanceof VectorTileLayer) {
+    layer.setStyle(contextualVectorStyle(spec));
+  }
+}
+
+function dropLayer(map: OlMap, layer: ManagedLayer) {
+  map.removeLayer(layer);
+  layer.dispose();
+}
+
+/** One contextual overlay. Tile archives are read by range, not as one file. */
+export async function createContextualMapLayer(
+  spec: ContextualMapLayer
+): Promise<ManagedLayer> {
+  if (spec.kind === 'raster-tiles') {
+    const layer = await createRasterTileLayer(spec);
     layer.set('sourceUrl', spec.url);
     applyCommon(layer, spec);
     return layer;
   }
-
-  const response = await fetch(spec.url);
-  if (!response.ok) {
-    throw new Error(`Could not read layer ${spec.name}.`);
-  }
-  const geojson = await response.json();
-  const features = new GeoJSON().readFeatures(geojson, {
-    dataProjection: 'EPSG:4326',
-    featureProjection: MAP_PROJECTION,
-  });
-  const layer = new VectorLayer({
-    source: new VectorSource({features}),
-    style: vectorStyle(spec),
-  });
+  const layer = await createVectorTileLayer(spec);
   layer.set('sourceUrl', spec.url);
   applyCommon(layer, spec);
   return layer;
 }
 
-/** Adds, updates, and removes contextual OpenLayers layers for the current notebook. */
+/**
+ * Adds, updates, and removes contextual OpenLayers layers for the current
+ * notebook. A hidden overlay leaves the map so its tile cache can drop.
+ */
 export function useContextualMapLayers(map: OlMap | undefined) {
   const {layers} = useContext(ContextualMapLayersContext);
   const managed = useRef(new globalThis.Map<string, ManagedLayer>());
@@ -102,32 +66,38 @@ export function useContextualMapLayers(map: OlMap | undefined) {
     const nextIds = new Set(layers.map(layer => layer.id));
     for (const [id, layer] of managed.current) {
       if (!nextIds.has(id)) {
-        map.removeLayer(layer);
+        dropLayer(map, layer);
         managed.current.delete(id);
       }
     }
 
     for (const spec of layers) {
       const existing = managed.current.get(spec.id);
-      if (existing && existing.get('sourceUrl') === spec.url) {
-        applyCommon(existing, spec);
-        if (existing instanceof VectorLayer) {
-          existing.setStyle(vectorStyle(spec));
+      if (!spec.visible) {
+        if (existing) {
+          dropLayer(map, existing);
+          managed.current.delete(spec.id);
         }
         continue;
       }
+      if (existing && existing.get('sourceUrl') === spec.url) {
+        applyCommon(existing, spec);
+        paintVector(existing, spec);
+        continue;
+      }
       if (existing) {
-        map.removeLayer(existing);
+        dropLayer(map, existing);
         managed.current.delete(spec.id);
       }
-      void createLayer(spec)
+      void createContextualMapLayer(spec)
         .then(layer => {
           if (cancelled) {
+            layer.dispose();
             return;
           }
           const previous = managed.current.get(spec.id);
           if (previous) {
-            map.removeLayer(previous);
+            dropLayer(map, previous);
           }
           managed.current.set(spec.id, layer);
           map.addLayer(layer);
@@ -148,7 +118,7 @@ export function useContextualMapLayers(map: OlMap | undefined) {
         return;
       }
       for (const layer of managed.current.values()) {
-        map.removeLayer(layer);
+        dropLayer(map, layer);
       }
       managed.current.clear();
     };

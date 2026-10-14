@@ -3,6 +3,7 @@ import {config} from '@/constants';
 import {User} from '@/context/auth-provider';
 import {
   MAP_ASSET_UPLOAD_BUSY_MESSAGE,
+  mapAssetKindLabel,
   type ExistingMapAsset,
   type GetMapAssetListResponse,
   type GetMapAssetResponse,
@@ -427,5 +428,5 @@ export function formatAssetStatus(asset: ExistingMapAsset): string {
   if (asset.status === 'processing') {
     return 'Processing';
   }
-  return asset.kind === 'image' ? 'Image' : 'Vector';
+  return mapAssetKindLabel(asset.kind) || 'Vector';
 }

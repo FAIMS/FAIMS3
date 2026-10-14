@@ -17,7 +17,7 @@ function file(
   return {
     assetId,
     contentHash,
-    filename: `${assetId}-${contentHash}.geojson`,
+    filename: `${assetId}-${contentHash}.pmtiles`,
     projectIds,
   };
 }
@@ -52,10 +52,10 @@ describe('contextual layer device index', () => {
 
     expect(Object.keys(next)).toEqual(['asset-1']);
     expect(next['asset-1'].contentHash).toBe('hash-b');
-    expect(next['asset-1'].filename).toBe('asset-1-hash-b.geojson');
+    expect(next['asset-1'].filename).toBe('asset-1-hash-b.pmtiles');
     expect(next['asset-1'].projectIds).toEqual(['survey-a', 'survey-b']);
     expect(filenamesToDelete(current, next)).toEqual([
-      'asset-1-hash-a.geojson',
+      'asset-1-hash-a.pmtiles',
     ]);
   });
 
@@ -77,7 +77,7 @@ describe('contextual layer device index', () => {
 
     expect(next['asset-1']).toBeUndefined();
     expect(filenamesToDelete(current, next)).toEqual([
-      'asset-1-hash-a.geojson',
+      'asset-1-hash-a.pmtiles',
     ]);
   });
 
@@ -91,7 +91,7 @@ describe('contextual layer device index', () => {
     expect(next['asset-1'].projectIds).toEqual(['survey-a', 'survey-b']);
     expect(next['asset-2']).toBeUndefined();
     expect(filenamesToDelete(current, next)).toEqual([
-      'asset-2-hash-c.geojson',
+      'asset-2-hash-c.pmtiles',
     ]);
   });
 });

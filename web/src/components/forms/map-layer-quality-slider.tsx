@@ -17,7 +17,7 @@ function imageLimitPhrase(quality: number, edgePx: number): string {
   if (quality >= MAP_ASSET_QUALITY_MAX) {
     return 'Original resolution';
   }
-  return `Images up to ${edgePx} px`;
+  return `Image tiles up to ${edgePx} px`;
 }
 
 function formatBytes(bytes: number): string {
@@ -83,10 +83,6 @@ export function MapLayerQualitySlider({
   }, [files, quality, user]);
 
   const options = estimate?.options ?? fallback;
-  const simplifyMb = Math.max(
-    1,
-    Math.round(options.vectorSimplifyBytes / (1024 * 1024))
-  );
 
   return (
     <div className="flex flex-col gap-2 rounded-md border p-3">
@@ -122,10 +118,10 @@ export function MapLayerQualitySlider({
         {estimate
           ? estimate.summary
           : !primaryMapLayerFile(files)
-            ? `${imageLimitPhrase(quality, options.maxRasterEdgePx)} · vectors simplified above ${simplifyMb} MB`
+            ? `${imageLimitPhrase(quality, options.maxRasterEdgePx)} · vector tiles`
             : estimateError
               ? estimateError
-              : `Estimating… · ${imageLimitPhrase(quality, options.maxRasterEdgePx)} · vectors simplified above ${simplifyMb} MB`}
+              : `Estimating… · ${imageLimitPhrase(quality, options.maxRasterEdgePx)} · vector tiles`}
       </p>
       {estimate ? (
         <p className="text-xs text-muted-foreground">

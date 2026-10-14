@@ -8,7 +8,11 @@ import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useMapAsset} from '@/hooks/map-asset-hooks';
 import {displayDateTime} from '@/lib/time';
 import {cn} from '@/lib/utils';
-import type {ExistingMapAsset, MapAssetStatus} from '@faims3/data-model';
+import {
+  mapAssetKindLabel,
+  type ExistingMapAsset,
+  type MapAssetStatus,
+} from '@faims3/data-model';
 import {AlertCircle, CheckCircle2, LoaderCircle} from 'lucide-react';
 import type {ReactNode} from 'react';
 
@@ -106,12 +110,7 @@ export function MapLayerDetails({assetId}: {assetId: string}) {
     {
       key: 'kind',
       label: 'Type',
-      value: asset =>
-        asset.kind === 'image'
-          ? 'Image'
-          : asset.kind === 'geojson'
-            ? 'Vector'
-            : '—',
+      value: asset => mapAssetKindLabel(asset.kind) || '—',
     },
     {key: 'size', label: 'Size', value: asset => formatBytes(asset.byteSize)},
     {

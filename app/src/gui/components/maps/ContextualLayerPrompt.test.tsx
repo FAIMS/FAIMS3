@@ -66,7 +66,7 @@ function layer(
   return {
     id,
     name,
-    kind: 'geojson',
+    kind: 'vector-tiles',
     byteSize: 2048,
     contentHash,
     extent: [0, 0, 1, 1],
@@ -81,7 +81,7 @@ function stored(
   return {
     assetId,
     name: assetId,
-    kind: 'geojson',
+    kind: 'vector-tiles',
     byteSize: 2048,
     contentHash,
     projectIds: ['survey-1'],
@@ -130,7 +130,7 @@ describe('ContextualLayerPrompt', () => {
 
     expect(onDevice).toHaveTextContent('Already on the device (1)');
     expect(onDevice).toHaveTextContent('Site boundaries');
-    expect(onDevice).toHaveTextContent('Vector');
+    expect(onDevice).toHaveTextContent('Vector tiles');
     expect(screen.getByTestId('map-layer-size-asset-ready')).toHaveTextContent(
       '2 KB'
     );

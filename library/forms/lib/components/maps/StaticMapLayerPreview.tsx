@@ -5,25 +5,22 @@
  */
 
 import {Extent} from 'ol/extent';
-import {FeatureLike} from 'ol/Feature';
-import GeoJSON from 'ol/format/GeoJSON';
-import ImageLayer from 'ol/layer/Image';
-import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
+import TileLayer from 'ol/layer/Tile';
 import Map from 'ol/Map';
 import 'ol/ol.css';
 import {transformExtent} from 'ol/proj';
-import ImageStatic from 'ol/source/ImageStatic';
 import XYZ from 'ol/source/XYZ';
-import VectorSource from 'ol/source/Vector';
-import {Circle as CircleStyle, Fill, Stroke, Style, Text} from 'ol/style';
 import View from 'ol/View';
 import {useEffect, useRef, useState} from 'react';
+import type {ContextualMapLayerKind} from './contextualMapLayers';
+import type {TileByteRead} from './pmtilesRange';
 import {MapConfig} from './types';
+import {createContextualMapLayer} from './useContextualMapLayers';
 
 const MAP_PROJECTION = 'EPSG:3857';
 
-export type StaticMapLayerKind = 'geojson' | 'image';
+export type StaticMapLayerKind = ContextualMapLayerKind;
 
 export type StaticMapLayerStyle = {
   stroke: string;
@@ -40,6 +37,10 @@ export type StaticMapLayerPreviewProps = {
   extent4326?: [number, number, number, number];
   extent3857?: [number, number, number, number];
   style: StaticMapLayerStyle;
+  /** Range read for a PMTiles archive. Whole-file kinds use `url` only. */
+  readTileBytes?: TileByteRead;
+  minZoom?: number;
+  maxZoom?: number;
   mapConfig: MapConfig;
   className?: string;
 };
@@ -79,34 +80,6 @@ function basemapLayer(mapConfig: MapConfig) {
   });
 }
 
-function vectorStyle(paint: StaticMapLayerStyle) {
-  return (feature: FeatureLike) => {
-    const labelValue = paint.labelField
-      ? feature.get(paint.labelField)
-      : undefined;
-    const label =
-      labelValue === undefined || labelValue === null ? '' : String(labelValue);
-    return new Style({
-      stroke: new Stroke({color: paint.stroke, width: paint.lineWidth}),
-      fill: new Fill({color: paint.fill}),
-      image: new CircleStyle({
-        radius: paint.pointSize,
-        fill: new Fill({color: paint.stroke}),
-        stroke: new Stroke({color: '#ffffff', width: 1}),
-      }),
-      text: label
-        ? new Text({
-            text: label,
-            font: '12px sans-serif',
-            fill: new Fill({color: paint.stroke}),
-            stroke: new Stroke({color: '#ffffff', width: 3}),
-            offsetY: -14,
-          })
-        : undefined,
-    });
-  };
-}
-
 function placementExtent(
   extent4326?: [number, number, number, number],
   extent3857?: [number, number, number, number]
@@ -126,6 +99,9 @@ export function StaticMapLayerPreview({
   extent4326,
   extent3857,
   style,
+  readTileBytes,
+  minZoom,
+  maxZoom,
   mapConfig,
   className,
 }: StaticMapLayerPreviewProps) {
@@ -147,45 +123,35 @@ export function StaticMapLayerPreview({
     });
 
     const show = async () => {
-      let extent: Extent | undefined;
-      if (kind === 'image') {
-        extent = placementExtent(extent4326, extent3857);
-        if (!extent) {
-          throw new Error('This image has no placement extent.');
+      const overlay = await createContextualMapLayer({
+        id: 'preview',
+        name: 'preview',
+        kind,
+        url,
+        readTileBytes,
+        visible: true,
+        opacity: style.opacity,
+        zIndex: 1,
+        stroke: style.stroke,
+        fill: style.fill,
+        lineWidth: style.lineWidth,
+        pointSize: style.pointSize,
+        labelField: style.labelField,
+        extent4326: extent4326 ?? [0, 0, 0, 0],
+        extent3857,
+        minZoom,
+        maxZoom,
+      });
+      map.addLayer(overlay);
+      let extent = placementExtent(extent4326, extent3857);
+      if (overlay instanceof VectorLayer) {
+        const featureExtent = overlay.getSource()?.getExtent();
+        if (
+          featureExtent &&
+          featureExtent.every((value: number) => Number.isFinite(value))
+        ) {
+          extent = featureExtent;
         }
-        map.addLayer(
-          new ImageLayer({
-            opacity: style.opacity,
-            source: new ImageStatic({
-              url,
-              projection: MAP_PROJECTION,
-              imageExtent: extent,
-            }),
-          })
-        );
-      } else {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error('Could not read the layer.');
-        }
-        const geojson = await response.json();
-        const features = new GeoJSON().readFeatures(geojson, {
-          dataProjection: 'EPSG:4326',
-          featureProjection: MAP_PROJECTION,
-        });
-        const source = new VectorSource({features});
-        map.addLayer(
-          new VectorLayer({
-            source,
-            opacity: style.opacity,
-            style: vectorStyle(style),
-          })
-        );
-        const featureExtent = source.getExtent();
-        extent =
-          featureExtent && featureExtent.every(value => Number.isFinite(value))
-            ? featureExtent
-            : placementExtent(extent4326, extent3857);
       }
       if (cancelled) {
         return;
@@ -215,7 +181,17 @@ export function StaticMapLayerPreview({
       cancelled = true;
       map.setTarget(undefined);
     };
-  }, [url, kind, extent4326, extent3857, style, mapConfig]);
+  }, [
+    url,
+    kind,
+    extent4326,
+    extent3857,
+    style,
+    readTileBytes,
+    minZoom,
+    maxZoom,
+    mapConfig,
+  ]);
 
   return (
     <div>

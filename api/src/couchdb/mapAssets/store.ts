@@ -16,6 +16,8 @@ import {
   MAP_ASSET_LINKS_BY_PROJECT,
   MAP_ASSET_NORMALIZED_ATTACHMENT,
   MAP_ASSET_ORIGINAL_ATTACHMENT,
+  normalizedMapAssetExtension,
+  normalizedMapAssetMediaType,
   MAP_ASSETS_BY_CREATOR,
   MAP_ASSETS_BY_STATUS,
   MAP_ASSETS_BY_TEAM,
@@ -866,6 +868,9 @@ export async function processMapAsset(
         storedAttachments: nextStored,
         extent4326: normalized.extent4326,
         extent3857: normalized.extent3857,
+        minZoom: normalized.minZoom,
+        maxZoom: normalized.maxZoom,
+        tileSize: normalized.tileSize,
         failureReason: undefined,
         processingStartedAt: undefined,
         updatedAt: processingNow(runtime),
@@ -1076,11 +1081,10 @@ function normalizedDownloadMeta(asset: ExistingMapAsset): {
       'This map layer is not ready to download.'
     );
   }
-  const extension = asset.kind === 'geojson' ? 'geojson' : 'png';
   return {
     location,
-    mediaType: asset.kind === 'geojson' ? 'application/geo+json' : 'image/png',
-    filename: `${asset.name}.${extension}`,
+    mediaType: normalizedMapAssetMediaType(asset.kind),
+    filename: `${asset.name}.${normalizedMapAssetExtension(asset.kind)}`,
   };
 }
 
@@ -1238,6 +1242,9 @@ function toListing(
     contentHash: asset.contentHash,
     extent: asset.extent4326,
     ...(asset.extent3857 ? {extent3857: asset.extent3857} : {}),
+    ...(asset.minZoom !== undefined ? {minZoom: asset.minZoom} : {}),
+    ...(asset.maxZoom !== undefined ? {maxZoom: asset.maxZoom} : {}),
+    ...(asset.tileSize !== undefined ? {tileSize: asset.tileSize} : {}),
     defaultStyle: asset.defaultStyle,
   };
 }

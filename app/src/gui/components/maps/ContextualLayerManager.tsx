@@ -3,7 +3,10 @@
  * On-device manager for contextual map layers linked to activated surveys.
  */
 
-import type {ContextualLayerListing} from '@faims3/data-model';
+import {
+  mapAssetKindLabel,
+  type ContextualLayerListing,
+} from '@faims3/data-model';
 import {
   LayerLocationHint,
   ProgressBar,
@@ -58,7 +61,7 @@ function formatBytes(bytes: number): string {
 }
 
 function kindLabel(kind: ContextualLayerListing['kind']): string {
-  return kind === 'image' ? 'Image' : 'Vector';
+  return mapAssetKindLabel(kind);
 }
 
 export function ContextualLayerManager() {

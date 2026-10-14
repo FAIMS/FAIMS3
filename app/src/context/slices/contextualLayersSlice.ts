@@ -21,6 +21,9 @@ export type ContextualLayerFile = {
   byteSize: number;
   extent4326: ContextualLayerListing['extent'];
   extent3857?: ContextualLayerListing['extent3857'];
+  minZoom?: ContextualLayerListing['minZoom'];
+  maxZoom?: ContextualLayerListing['maxZoom'];
+  tileSize?: ContextualLayerListing['tileSize'];
   defaultStyle: MapAssetStyle;
   filename: string;
   /** Active surveys that downloaded this file. */

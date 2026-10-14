@@ -85,7 +85,7 @@ describe('estimateNormalizedMapAsset', () => {
         heightPx: 8000,
       },
     });
-    expect(high.kind).toBe('image');
+    expect(high.kind).toBe('raster-tiles');
     expect(low.estimatedByteSize).toBeLessThan(high.estimatedByteSize);
     expect(low.options.maxRasterEdgePx).toBeLessThan(
       high.options.maxRasterEdgePx
@@ -125,14 +125,14 @@ describe('estimateNormalizedMapAsset', () => {
     };
     const high = estimateNormalizedMapAsset({quality: 100, source});
     const low = estimateNormalizedMapAsset({quality: 0, source});
-    expect(high.kind).toBe('geojson');
+    expect(high.kind).toBe('vector-tiles');
     expect(low.estimatedByteSize).toBeLessThan(high.estimatedByteSize);
   });
 
   it('infers kind from the filename', () => {
-    expect(mapAssetKindFromFilename('area.gpkg')).toBe('geojson');
-    expect(mapAssetKindFromFilename('bores.gdb.zip')).toBe('geojson');
-    expect(mapAssetKindFromFilename('scan.PDF')).toBe('image');
+    expect(mapAssetKindFromFilename('area.gpkg')).toBe('vector-tiles');
+    expect(mapAssetKindFromFilename('bores.gdb.zip')).toBe('vector-tiles');
+    expect(mapAssetKindFromFilename('scan.PDF')).toBe('raster-tiles');
   });
 
   it('names File Geodatabase zips in the unknown-format error', () => {

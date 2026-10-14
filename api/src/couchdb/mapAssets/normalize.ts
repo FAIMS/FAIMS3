@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
- * Turns an uploaded map file set into one device-ready payload:
- * GeoJSON in EPSG:4326 (geometry only), or a PNG in EPSG:3857 no longer
- * than `options.maxRasterEdgePx` (4096 by default). A georeferenced PDF is
- * opened at 150 DPI from its page size, and quality 100 does not shrink
- * that raster.
+ * Turns an uploaded map file set into one PMTiles archive.
+ * Vectors are reprojected to EPSG:4326 (geometry only) and tiled with
+ * tippecanoe. Rasters, including a georeferenced PDF opened at 150 DPI,
+ * are warped to EPSG:3857, capped at `options.maxRasterEdgePx`, and
+ * written as WebP tiles. Quality 100 does not shrink a raster that
+ * already fits under the ceiling.
  */
 
 import {
@@ -61,6 +62,9 @@ export type NormalizedMapAsset = {
   mediaType: string;
   extent4326: MapExtent;
   extent3857?: MapExtent;
+  minZoom: number;
+  maxZoom: number;
+  tileSize: number;
   /** On-disk normalized payload. Prefer this over `bytes`. */
   filePath?: string;
   byteSize?: number;
@@ -155,83 +159,105 @@ async function inspectCrs(
   }
 }
 
-const POINT_ONLY_OGR_TYPES = new Set([
-  'point',
-  'multipoint',
-  '3dpoint',
-  'measuredpoint',
-  '3dmeasuredpoint',
-  '3dmultipoint',
-  'measuredmultipoint',
-  '3dmeasuredmultipoint',
-  'pointz',
-  'pointm',
-  'pointzm',
-  'multipointz',
-  'multipointm',
-  'multipointzm',
-  'point25d',
-  'multipoint25d',
-]);
-
-function normalizeOgrGeometryType(type: string): string {
-  return type.toLowerCase().replace(/[\s_]/g, '');
-}
+const PMTILES_TILE_SIZE = 256;
+const RASTER_WEBP_QUALITY = 75;
+const PMTILES_MEDIA_TYPE = 'application/vnd.pmtiles';
 
 /**
- * True when every ogrinfo layer is Point / MultiPoint (including Z/M).
- * Mixed or unknown types (`Geometry`) stay eligible for simplify.
+ * Runs a tiling binary. `PMTILES_BIN` and `TIPPECANOE_BIN` override the
+ * executable name. `pmtiles` falls back to `go-pmtiles`.
  */
-export function isPointOnlyOgrInfo(info: unknown): boolean {
-  if (!info || typeof info !== 'object') {
-    return false;
-  }
-  const layers = (info as {layers?: unknown}).layers;
-  if (!Array.isArray(layers) || layers.length === 0) {
-    return false;
-  }
-  for (const layer of layers) {
-    if (!layer || typeof layer !== 'object') {
-      return false;
-    }
-    const fields = (layer as {geometryFields?: {type?: unknown}[]})
-      .geometryFields;
-    if (!Array.isArray(fields) || fields.length === 0) {
-      return false;
-    }
-    for (const field of fields) {
-      const type = typeof field?.type === 'string' ? field.type.trim() : '';
-      if (!POINT_ONLY_OGR_TYPES.has(normalizeOgrGeometryType(type))) {
-        return false;
+async function runMapTool(
+  command: string,
+  args: string[],
+  fallbacks: string[],
+  missing: string
+): Promise<void> {
+  const names = [command, ...fallbacks];
+  for (const name of names) {
+    try {
+      await runGdalCommand({command: name, args});
+      return;
+    } catch (error) {
+      const absent =
+        error instanceof Error &&
+        'code' in error &&
+        (error as NodeJS.ErrnoException).code === 'ENOENT';
+      if (!absent) {
+        throw error;
       }
     }
   }
-  return true;
+  throw new Error(missing);
 }
 
-/** 1% drop, or 1 KB on tiny files, before another simplify pass is worth it. */
-export const VECTOR_SIMPLIFY_IMPROVEMENT_RATIO = 0.01;
-const VECTOR_SIMPLIFY_IMPROVEMENT_MIN_BYTES = 1024;
-
-/** True when `afterBytes` is enough smaller than `beforeBytes` to try again. */
-export function simplificationReducedSize(
-  beforeBytes: number,
-  afterBytes: number
-): boolean {
-  if (
-    !Number.isFinite(beforeBytes) ||
-    !Number.isFinite(afterBytes) ||
-    beforeBytes <= 0 ||
-    afterBytes >= beforeBytes
-  ) {
-    return false;
-  }
-  const saved = beforeBytes - afterBytes;
-  const needed = Math.max(
-    VECTOR_SIMPLIFY_IMPROVEMENT_MIN_BYTES,
-    Math.ceil(beforeBytes * VECTOR_SIMPLIFY_IMPROVEMENT_RATIO)
+async function runTippecanoe(args: string[]): Promise<void> {
+  await runMapTool(
+    process.env.TIPPECANOE_BIN || 'tippecanoe',
+    args,
+    [],
+    'tippecanoe is not installed or not on PATH. Map-layer ingest requires it.'
   );
-  return saved >= needed;
+}
+
+async function runPmtiles(args: string[]): Promise<void> {
+  const preferred = process.env.PMTILES_BIN;
+  await runMapTool(
+    preferred || 'pmtiles',
+    args,
+    preferred ? [] : ['go-pmtiles'],
+    'pmtiles is not installed or not on PATH. Map-layer ingest requires the go-pmtiles CLI.'
+  );
+}
+
+/** PMTiles v3 header: min zoom at byte 100, max zoom at byte 101. */
+async function readPmtilesZoom(
+  filePath: string
+): Promise<{minZoom: number; maxZoom: number}> {
+  const handle = await open(filePath, 'r');
+  try {
+    const header = new Uint8Array(127);
+    const {bytesRead} = await handle.read(header, 0, header.length, 0);
+    const magic = Buffer.from(header.subarray(0, 7)).toString('utf8');
+    if (bytesRead < 102 || magic !== 'PMTiles') {
+      throw new Error('Normalized file is not a PMTiles archive.');
+    }
+    if (header[7] !== 3) {
+      throw new Error('Normalized file is not a PMTiles v3 archive.');
+    }
+    return {minZoom: header[100], maxZoom: header[101]};
+  } finally {
+    await handle.close();
+  }
+}
+
+/** Power-of-two overview factors from the MBTiles base zoom down to zoom 0. */
+function overviewFactors(maxZoom: number): string[] {
+  const factors: string[] = [];
+  let factor = 2;
+  while (maxZoom - Math.log2(factor) >= 0) {
+    factors.push(String(factor));
+    factor *= 2;
+  }
+  return factors;
+}
+
+function maxZoomFromMbtilesInfo(info: unknown): number {
+  if (!info || typeof info !== 'object') {
+    return 0;
+  }
+  const metadata = (info as {metadata?: Record<string, {maxzoom?: unknown}>})
+    .metadata;
+  if (!metadata) {
+    return 0;
+  }
+  for (const domain of Object.values(metadata)) {
+    const zoom = Number(domain?.maxzoom);
+    if (Number.isInteger(zoom) && zoom >= 0 && zoom <= 30) {
+      return zoom;
+    }
+  }
+  return 0;
 }
 
 function extentFromRing(ring: number[][]): MapExtent {
@@ -293,97 +319,76 @@ function extentFromGeoJson(parsed: {
 async function convertVector(
   sourcePath: string,
   workDir: string,
-  options: MapAssetNormalizeOptions,
-  logContext?: MapAssetNormalizeLogContext,
-  sourceInfo?: unknown
+  logContext?: MapAssetNormalizeLogContext
 ): Promise<NormalizedMapAsset> {
-  const outPath = path.join(workDir, 'normalized.geojson');
+  const geojsonPath = path.join(workDir, 'normalized.geojson');
+  const pmtilesPath = path.join(workDir, 'normalized.pmtiles');
   const filename = path.basename(sourcePath);
-  const pointOnly = isPointOnlyOgrInfo(sourceInfo);
   const gdalSource = await resolveVectorGdalSource(sourcePath);
-  const write = async (simplify?: number) => {
-    const args = [
-      '-f',
-      'GeoJSON',
-      '-t_srs',
-      'EPSG:4326',
-      '-lco',
-      'RFC7946=YES',
-      // GeoJSON holds one layer. -nln appends every source layer (KML
-      // folders, multi-layer GeoPackages) into that layer.
-      '-nln',
-      'features',
-      // Devices only draw geometry today (style is on the asset, not
-      // feature properties). Drop attributes on every pass — later
-      // simplify writes re-read the original and would restore them.
-      // Keep a chosen subset here later if labels or identify need it.
-      '-select',
-      '',
-    ];
-    if (simplify !== undefined && simplify > 0) {
-      args.push('-simplify', String(simplify));
-    }
-    args.push(outPath, gdalSource);
-    await withMapAssetProcessingWait(
-      {
-        event: 'gdal.command',
-        assetId: logContext?.assetId,
-        command: 'ogr2ogr',
-        filename,
-        detail:
-          simplify !== undefined && simplify > 0
-            ? `GeoJSON EPSG:4326 simplify=${simplify}`
-            : 'GeoJSON EPSG:4326',
-      },
-      () => runGdalCommand({command: 'ogr2ogr', args})
-    );
-  };
-
-  await write();
-  let byteSize = (await stat(outPath)).size;
-  const overBudget = () => byteSize > options.vectorSimplifyBytes;
-  if (overBudget() && pointOnly) {
-    logMapAssetProcessing({
+  await withMapAssetProcessingWait(
+    {
       event: 'gdal.command',
-      outcome: 'skipped',
       assetId: logContext?.assetId,
       command: 'ogr2ogr',
       filename,
-      byteSize,
-      detail: 'skip simplify: point geometries only',
-    });
-  } else if (overBudget()) {
-    let previousSize = byteSize;
-    for (const tolerance of options.vectorSimplifyTolerances) {
-      if (!overBudget()) {
-        break;
-      }
-      await write(tolerance);
-      const nextSize = (await stat(outPath)).size;
-      const improved = simplificationReducedSize(previousSize, nextSize);
-      byteSize = nextSize;
-      if (!improved) {
-        logMapAssetProcessing({
-          event: 'gdal.command',
-          outcome: 'skipped',
-          assetId: logContext?.assetId,
-          command: 'ogr2ogr',
-          filename,
-          byteSize,
-          detail: `skip further simplify: ${previousSize} -> ${nextSize} bytes`,
-        });
-        break;
-      }
-      previousSize = nextSize;
-    }
-  }
-
+      detail: 'GeoJSON EPSG:4326',
+    },
+    () =>
+      runGdalCommand({
+        command: 'ogr2ogr',
+        args: [
+          '-f',
+          'GeoJSON',
+          '-t_srs',
+          'EPSG:4326',
+          '-lco',
+          'RFC7946=YES',
+          // GeoJSON holds one layer. -nln appends every source layer
+          // (KML folders, multi-layer GeoPackages) into that layer.
+          '-nln',
+          'features',
+          // Devices draw geometry. Style lives on the asset.
+          '-select',
+          '',
+          geojsonPath,
+          gdalSource,
+        ],
+      })
+  );
+  const extent4326 = await extentFromOgrInfo(geojsonPath, logContext);
+  await withMapAssetProcessingWait(
+    {
+      event: 'gdal.command',
+      assetId: logContext?.assetId,
+      command: 'tippecanoe',
+      filename,
+      detail: 'vector PMTiles',
+    },
+    () =>
+      runTippecanoe([
+        '-o',
+        pmtilesPath,
+        '-zg',
+        '--drop-densest-as-needed',
+        '--extend-zooms-if-still-dropping',
+        '--force',
+        '--read-parallel',
+        '-l',
+        'features',
+        geojsonPath,
+      ])
+  );
+  await rm(geojsonPath, {force: true});
+  const zoom = await readPmtilesZoom(pmtilesPath);
   return {
-    kind: 'geojson',
-    mediaType: 'application/geo+json',
-    filePath: outPath,
-    byteSize,
-    extent4326: await extentFromOgrInfo(outPath, logContext),
+    kind: 'vector-tiles',
+    mediaType: PMTILES_MEDIA_TYPE,
+    filePath: pmtilesPath,
+    byteSize: (await stat(pmtilesPath)).size,
+    extent4326,
+    minZoom: zoom.minZoom,
+    maxZoom: zoom.maxZoom,
+    tileSize: PMTILES_TILE_SIZE,
   };
 }
 
@@ -495,7 +500,9 @@ async function convertRaster(
   logContext?: MapAssetNormalizeLogContext
 ): Promise<NormalizedMapAsset> {
   const warped = path.join(workDir, 'warped.tif');
-  const png = path.join(workDir, 'normalized.png');
+  const sized = path.join(workDir, 'sized.tif');
+  const mbtiles = path.join(workDir, 'normalized.mbtiles');
+  const pmtilesPath = path.join(workDir, 'normalized.pmtiles');
   const filename = path.basename(sourcePath);
   const dpiOptions = await pdfDpiOpenOptions(
     sourcePath,
@@ -543,29 +550,6 @@ async function convertRaster(
   )) as GdalInfo;
   const width = info.size?.[0] ?? 0;
   const height = info.size?.[1] ?? 0;
-  const translateArgs = ['-of', 'PNG'];
-  const longEdge = Math.max(width, height);
-  let resizeDetail = 'PNG no resize';
-  if (longEdge > options.maxRasterEdgePx && width > 0 && height > 0) {
-    if (width >= height) {
-      translateArgs.push('-outsize', String(options.maxRasterEdgePx), '0');
-    } else {
-      translateArgs.push('-outsize', '0', String(options.maxRasterEdgePx));
-    }
-    resizeDetail = `PNG long-edge ${options.maxRasterEdgePx}px`;
-  }
-  translateArgs.push(warped, png);
-  await withMapAssetProcessingWait(
-    {
-      event: 'gdal.command',
-      assetId: logContext?.assetId,
-      command: 'gdal_translate',
-      filename,
-      detail: resizeDetail,
-    },
-    () => runGdalCommand({command: 'gdal_translate', args: translateArgs})
-  );
-
   const upperLeft = info.cornerCoordinates?.upperLeft;
   const lowerRight = info.cornerCoordinates?.lowerRight;
   if (!upperLeft || !lowerRight) {
@@ -577,14 +561,99 @@ async function convertRaster(
     lowerRight[0],
     upperLeft[1],
   ];
+  const longEdge = Math.max(width, height);
+  let tileSource = warped;
+  if (longEdge > options.maxRasterEdgePx && width > 0 && height > 0) {
+    const translateArgs = ['-of', 'GTiff'];
+    if (width >= height) {
+      translateArgs.push('-outsize', String(options.maxRasterEdgePx), '0');
+    } else {
+      translateArgs.push('-outsize', '0', String(options.maxRasterEdgePx));
+    }
+    translateArgs.push(warped, sized);
+    await withMapAssetProcessingWait(
+      {
+        event: 'gdal.command',
+        assetId: logContext?.assetId,
+        command: 'gdal_translate',
+        filename,
+        detail: `long-edge ${options.maxRasterEdgePx}px`,
+      },
+      () => runGdalCommand({command: 'gdal_translate', args: translateArgs})
+    );
+    tileSource = sized;
+  }
+  await withMapAssetProcessingWait(
+    {
+      event: 'gdal.command',
+      assetId: logContext?.assetId,
+      command: 'gdal_translate',
+      filename,
+      detail: 'MBTiles WebP',
+    },
+    () =>
+      runGdalCommand({
+        command: 'gdal_translate',
+        args: [
+          '-of',
+          'MBTiles',
+          '-co',
+          'TILE_FORMAT=WEBP',
+          '-co',
+          `QUALITY=${RASTER_WEBP_QUALITY}`,
+          '-co',
+          'NAME=layer',
+          tileSource,
+          mbtiles,
+        ],
+      })
+  );
+  const mbtilesInfo = await readGdalJson({
+    command: 'gdalinfo',
+    args: ['-json', mbtiles],
+  });
+  const factors = overviewFactors(maxZoomFromMbtilesInfo(mbtilesInfo));
+  if (factors.length > 0) {
+    await withMapAssetProcessingWait(
+      {
+        event: 'gdal.command',
+        assetId: logContext?.assetId,
+        command: 'gdaladdo',
+        filename,
+        detail: `overviews ${factors.join(',')}`,
+      },
+      () =>
+        runGdalCommand({
+          command: 'gdaladdo',
+          args: ['-r', 'average', mbtiles, ...factors],
+        })
+    );
+  }
+  await withMapAssetProcessingWait(
+    {
+      event: 'gdal.command',
+      assetId: logContext?.assetId,
+      command: 'pmtiles',
+      filename,
+      detail: 'convert MBTiles',
+    },
+    () => runPmtiles(['convert', mbtiles, pmtilesPath])
+  );
+  await rm(mbtiles, {force: true});
+  await rm(warped, {force: true});
+  await rm(sized, {force: true});
+  const zoom = await readPmtilesZoom(pmtilesPath);
   const ring = info.wgs84Extent?.coordinates?.[0] ?? [];
   return {
-    kind: 'image',
-    mediaType: 'image/png',
-    filePath: png,
-    byteSize: (await stat(png)).size,
+    kind: 'raster-tiles',
+    mediaType: PMTILES_MEDIA_TYPE,
+    filePath: pmtilesPath,
+    byteSize: (await stat(pmtilesPath)).size,
     extent4326: extentFromRing(ring),
     extent3857,
+    minZoom: zoom.minZoom,
+    maxZoom: zoom.maxZoom,
+    tileSize: PMTILES_TILE_SIZE,
   };
 }
 
@@ -640,15 +709,9 @@ export async function normalizeMapUpload(
     }
     const sourcePath = path.join(workDir, safeUploadFilename(primary.filename));
     const vector = isVectorUpload(primary.filename);
-    const sourceInfo = await inspectCrs(sourcePath, vector, logContext);
+    await inspectCrs(sourcePath, vector, logContext);
     const result = vector
-      ? await convertVector(
-          sourcePath,
-          workDir,
-          options,
-          logContext,
-          sourceInfo
-        )
+      ? await convertVector(sourcePath, workDir, logContext)
       : await convertRaster(sourcePath, workDir, options, logContext);
     return ownsWorkDir ? {...result, cleanupDir: workDir} : result;
   } catch (error) {

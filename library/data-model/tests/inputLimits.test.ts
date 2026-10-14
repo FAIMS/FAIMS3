@@ -283,7 +283,7 @@ describe('map layer schemas', () => {
         originalFilename: 'layer.geojson',
         byteSize: 12,
         status: 'ready',
-        kind: 'geojson',
+        kind: 'vector-tiles',
         defaultStyle: {
           stroke: '#1565c0',
           fill: '#1565c040',
@@ -306,7 +306,7 @@ describe('map layer schemas', () => {
             provider: 's3',
             resourceUri:
               's3://us-east-1/faims-map-assets/map-assets/asset-1/normalized',
-            contentType: 'application/geo+json',
+            contentType: 'application/vnd.pmtiles',
             byteSize: 12,
           },
         },
@@ -318,8 +318,8 @@ describe('map layer schemas', () => {
     expect(
       GetMapAssetDownloadUrlResponseSchema.safeParse({
         url: 'https://s3.example/object?X-Amz-Signature=abc',
-        mediaType: 'application/geo+json',
-        filename: 'Site boundary.geojson',
+        mediaType: 'application/vnd.pmtiles',
+        filename: 'Site boundary.pmtiles',
         byteSize: 12,
         expiresInSeconds: 3600,
       }).success

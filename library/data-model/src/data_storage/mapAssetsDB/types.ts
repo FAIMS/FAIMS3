@@ -15,7 +15,7 @@ import {
 
 /** Object-store key for the bytes the user uploaded (or a zip of them). */
 export const MAP_ASSET_ORIGINAL_ATTACHMENT = 'original';
-/** Object-store key for the device-ready GeoJSON or PNG. */
+/** Object-store key for the device-ready file (GeoJSON, PNG, or PMTiles). */
 export const MAP_ASSET_NORMALIZED_ATTACHMENT = 'normalized';
 
 /**
@@ -44,8 +44,32 @@ export type StoredAttachmentLocation = z.infer<
 export const MAP_ASSET_DOC_TYPE = 'asset' as const;
 export const MAP_ASSET_LINK_DOC_TYPE = 'link' as const;
 
-export const MapAssetKindSchema = z.enum(['geojson', 'image']);
+export const MapAssetKindSchema = z.enum(['raster-tiles', 'vector-tiles']);
 export type MapAssetKind = z.infer<typeof MapAssetKindSchema>;
+
+/** One PMTiles archive of image tiles or Mapbox vector tiles. */
+export function isTiledMapAssetKind(kind: MapAssetKind): boolean {
+  return kind === 'raster-tiles' || kind === 'vector-tiles';
+}
+
+export function normalizedMapAssetExtension(_kind: MapAssetKind): 'pmtiles' {
+  return 'pmtiles';
+}
+
+export function normalizedMapAssetMediaType(_kind: MapAssetKind): string {
+  return 'application/vnd.pmtiles';
+}
+
+export function mapAssetKindLabel(kind: MapAssetKind | undefined): string {
+  switch (kind) {
+    case 'raster-tiles':
+      return 'Image tiles';
+    case 'vector-tiles':
+      return 'Vector tiles';
+    default:
+      return '';
+  }
+}
 
 export const MapAssetStatusSchema = z.enum(['processing', 'ready', 'failed']);
 export type MapAssetStatus = z.infer<typeof MapAssetStatusSchema>;
@@ -130,8 +154,17 @@ export const MapAssetFieldsSchema = z.object({
   kind: MapAssetKindSchema.optional(),
   /** Bounding box of the normalized data in EPSG:4326. */
   extent4326: MapExtentSchema.optional(),
-  /** Image placement extent in EPSG:3857. Present when `kind` is `image`. */
+  /** Raster placement extent in EPSG:3857. Present for image tiles. */
   extent3857: MapExtentSchema.optional(),
+  /**
+   * XYZ zoom range of a PMTiles archive. The archive header is the source
+   * of truth when the file is opened; these fields let a listing describe
+   * the pyramid before that read.
+   */
+  minZoom: z.number().int().nonnegative().max(30).optional(),
+  maxZoom: z.number().int().nonnegative().max(30).optional(),
+  /** Tile edge in pixels. PMTiles image tiles are 256. */
+  tileSize: z.number().int().min(64).max(512).optional(),
   defaultStyle: MapAssetStyleSchema,
   /** Slider value used when this upload was processed. */
   quality: MapAssetQualitySchema.optional(),
@@ -173,6 +206,9 @@ export const ContextualLayerListingSchema = z.object({
   contentHash: z.string().min(1),
   extent: MapExtentSchema,
   extent3857: MapExtentSchema.optional(),
+  minZoom: z.number().int().nonnegative().max(30).optional(),
+  maxZoom: z.number().int().nonnegative().max(30).optional(),
+  tileSize: z.number().int().min(64).max(512).optional(),
   defaultStyle: MapAssetStyleSchema,
 });
 export type ContextualLayerListing = z.infer<

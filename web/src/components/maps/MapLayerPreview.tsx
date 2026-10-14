@@ -6,11 +6,16 @@
 import {Alert, AlertDescription} from '@/components/ui/alert';
 import {config} from '@/constants';
 import type {User} from '@/context/auth-provider';
-import type {
-  ExistingMapAsset,
-  GetMapAssetDownloadUrlResponse,
+import {
+  isTiledMapAssetKind,
+  type ExistingMapAsset,
+  type GetMapAssetDownloadUrlResponse,
 } from '@faims3/data-model';
-import {StaticMapLayerPreview} from '@faims3/forms';
+import {
+  readBlobRange,
+  StaticMapLayerPreview,
+  type TileByteRead,
+} from '@faims3/forms';
 import {useEffect, useState} from 'react';
 
 export function MapLayerPreview({
@@ -21,6 +26,9 @@ export function MapLayerPreview({
   user: User;
 }) {
   const [url, setUrl] = useState<string | undefined>();
+  const [readTileBytes, setReadTileBytes] = useState<
+    TileByteRead | undefined
+  >();
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -47,8 +55,21 @@ export function MapLayerPreview({
         if (!response.ok) {
           throw new Error('Could not download the layer for preview.');
         }
-        objectUrl = URL.createObjectURL(await response.blob());
+        const blob = await response.blob();
+        if (asset.kind && isTiledMapAssetKind(asset.kind)) {
+          if (active) {
+            setReadTileBytes(
+              () => (offset: number, length: number) =>
+                readBlobRange(blob, offset, length)
+            );
+            setUrl(`pmtiles:${asset._id}`);
+            setError('');
+          }
+          return;
+        }
+        objectUrl = URL.createObjectURL(blob);
         if (active) {
+          setReadTileBytes(undefined);
           setUrl(objectUrl);
           setError('');
         }
@@ -104,6 +125,9 @@ export function MapLayerPreview({
         kind={asset.kind}
         extent4326={asset.extent4326}
         extent3857={asset.extent3857}
+        readTileBytes={readTileBytes}
+        minZoom={asset.minZoom}
+        maxZoom={asset.maxZoom}
         style={asset.defaultStyle}
         mapConfig={config.mapConfig}
       />

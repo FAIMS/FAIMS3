@@ -28,9 +28,12 @@ const CLAIM_TIMEOUT_MS = 1_000;
 
 function normalizedFixture() {
   return {
-    kind: 'geojson' as const,
-    bytes: Buffer.from('{"type":"FeatureCollection","features":[]}'),
-    mediaType: 'application/geo+json',
+    kind: 'vector-tiles' as const,
+    bytes: Buffer.from('pmtiles'),
+    mediaType: 'application/vnd.pmtiles',
+    minZoom: 0,
+    maxZoom: 1,
+    tileSize: 256,
     extent4326: [0, 0, 1, 1] as [number, number, number, number],
   };
 }
@@ -246,7 +249,7 @@ describe('map asset processing sweep', () => {
       await getMapAssetsDB().put({
         ...latest,
         status: 'ready',
-        kind: 'geojson',
+        kind: 'vector-tiles',
         contentHash: 'kept',
         byteSize: 4,
         extent4326: [0, 0, 1, 1],

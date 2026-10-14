@@ -23,7 +23,7 @@ vi.mock('./contextualLayerStore', () => ({
 const storedLayer: ContextualMapLayer = {
   id: 'boundary',
   name: 'Site boundary',
-  kind: 'geojson',
+  kind: 'vector-tiles',
   url: 'blob:boundary',
   visible: true,
   opacity: 1,

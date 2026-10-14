@@ -31,7 +31,7 @@ function layer(
   patch: Partial<ContextualMapLayer> & Pick<ContextualMapLayer, 'id' | 'name'>
 ): ContextualMapLayer {
   return {
-    kind: 'geojson',
+    kind: 'vector-tiles',
     url: 'blob:layer',
     visible: true,
     opacity: 0.8,
@@ -327,5 +327,36 @@ describe('ContextualLayersControl', () => {
       screen.getByRole('img', {name: /of this layer/i})
     ).toBeInTheDocument();
     expect(screen.queryByText('On map')).not.toBeInTheDocument();
+  });
+
+  it('says when many overlays are visible at once', async () => {
+    const user = userEvent.setup();
+    const layers = Array.from({length: 13}, (_, index) =>
+      layer({id: `layer-${index}`, name: `Layer ${index}`})
+    );
+    renderControl(layers);
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 13 of 13 shown/i})
+    );
+    expect(
+      screen.getByText(
+        'Many layers are visible. Hide some if the map feels slow.'
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('keeps stroke controls for vector tiles', async () => {
+    const user = userEvent.setup();
+    renderControl([layer({id: 'tiles', name: 'Tracks', kind: 'vector-tiles'})]);
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 1 of 1 shown/i})
+    );
+    expect(screen.getByText('Vector tiles')).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', {name: 'Show style for Tracks'})
+    );
+    expect(
+      screen.getByRole('slider', {name: 'Tracks line width'})
+    ).toBeInTheDocument();
   });
 });

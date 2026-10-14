@@ -39,12 +39,34 @@ RUN pnpm turbo build --filter=@faims3/api --filter=@faims3/app --filter=@faims3/
 # service, so one stage serves all three.
 FROM node:24-slim AS runtime
 
-# GDAL for GeoPackage export and map-layer ingest (GeoPDF needs Poppler), and
-# curl for the api healthcheck.
+# GDAL for GeoPackage export and map-layer ingest (GeoPDF needs Poppler),
+# tippecanoe and pmtiles for PMTiles archives, and curl for the api healthcheck.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends gdal-bin poppler-utils curl \
+  && apt-get install -y --no-install-recommends \
+    gdal-bin poppler-utils curl ca-certificates \
+    build-essential libsqlite3-dev zlib1g-dev git \
   && gdalinfo --formats | grep -qi pdf \
-  && rm -rf /var/lib/apt/lists/*
+  && gdalinfo --formats | grep -qi MBTiles \
+  && gdalinfo --formats | grep -qi WEBP \
+  && git clone --depth 1 --branch 2.79.0 https://github.com/felt/tippecanoe.git /tmp/tippecanoe \
+  && make -C /tmp/tippecanoe -j"$(nproc)" \
+  && make -C /tmp/tippecanoe install \
+  && rm -rf /tmp/tippecanoe \
+  && arch="$(uname -m)" \
+  && case "$arch" in \
+       x86_64) pm_arch=x86_64 ;; \
+       aarch64) pm_arch=arm64 ;; \
+       *) echo "unsupported architecture $arch" && exit 1 ;; \
+     esac \
+  && curl -fsSL -o /tmp/pmtiles.tar.gz "https://github.com/protomaps/go-pmtiles/releases/download/v1.28.1/go-pmtiles_1.28.1_Linux_${pm_arch}.tar.gz" \
+  && tar -C /usr/local/bin -xzf /tmp/pmtiles.tar.gz pmtiles \
+  && chmod 755 /usr/local/bin/pmtiles \
+  && rm /tmp/pmtiles.tar.gz \
+  && apt-get purge -y build-essential git \
+  && apt-get autoremove -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && command -v tippecanoe \
+  && command -v pmtiles
 
 # Install pnpm
 ENV PNPM_HOME="/pnpm"

@@ -108,7 +108,7 @@ Accepted uploads:
 - GeoJSON (`.geojson`, `.json`)
 - GeoPackage (`.gpkg`)
 - Zipped shapefile, including `.shp`, `.shx`, `.dbf`, and `.prj`
-- Zipped ESRI File Geodatabase (`.gdb.zip`, or a `.zip` with one `.gdb` folder). GDAL OpenFileGDB reads it; ArcGIS / Pro "Export File Geodatabase" zips work. A zip with more than one `.gdb` is rejected. Feature classes are merged into one GeoJSON layer. Domains, subtypes, relationships, and attachments are dropped.
+- Zipped ESRI File Geodatabase (`.gdb.zip`, or a `.zip` with one `.gdb` folder). GDAL OpenFileGDB reads it; ArcGIS / Pro "Export File Geodatabase" zips work. A zip with more than one `.gdb` is rejected. Feature classes are merged into one layer. Domains, subtypes, relationships, and attachments are dropped.
 - KML (`.kml`)
 - GeoTIFF (`.tif`, `.tiff`)
 - Georeferenced PDF (`.pdf`)
@@ -116,16 +116,16 @@ Accepted uploads:
 
 GDAL must report a CRS. Uploads with no CRS are marked `failed` and no normalized attachment is stored. The failure text is the GDAL message.
 
-Every accepted file becomes one of two device payloads:
+Every accepted file becomes one PMTiles archive (`application/vnd.pmtiles`):
 
-- Vectors become a GeoJSON FeatureCollection in `EPSG:4326` (`ogr2ogr -t_srs EPSG:4326 -nln features -select ""`). Every source layer is written into that one layer, so a multi-folder KML, multi-layer GeoPackage, or File Geodatabase becomes a single overlay. Feature attributes are dropped — the app only draws geometry. Files larger than the chosen simplify budget (5 MB at the default quality of 50) are simplified, except point-only layers (Douglas-Peucker cannot shrink them). A later simplify pass is skipped if the previous one did not reduce size by at least 1% (or 1 KB).
-- Rasters, including georeferenced PDFs, are warped to `EPSG:3857` and written as a PNG. The long edge follows the upload quality setting (4096 px at quality 50). Quality 100 keeps the source resolution, up to 32768 px. A PDF is rasterized at 150 DPI from its page size and is not shrunk below that. The asset document stores the placement extent.
+- Vectors are reprojected to a geometry-only GeoJSON FeatureCollection in `EPSG:4326` (`ogr2ogr -t_srs EPSG:4326 -nln features -select ""`), then tiled with `tippecanoe -zg --drop-densest-as-needed --extend-zooms-if-still-dropping -l features`. Every source layer is written into that one layer, so a multi-folder KML, multi-layer GeoPackage, or File Geodatabase becomes a single overlay. Feature attributes are dropped — the app only draws geometry. The intermediate GeoJSON is deleted after tiling.
+- Rasters, including georeferenced PDFs, are warped to `EPSG:3857`. The long edge follows the upload quality setting (4096 px at quality 50). Quality 100 keeps the source resolution, up to 32768 px. A PDF is rasterized at 150 DPI from its page size and is not shrunk below that. GDAL writes WebP MBTiles at the native zoom, `gdaladdo` fills the lower zooms, and `pmtiles convert` writes the archive. The MBTiles file is deleted after conversion. The asset document stores the placement extent plus `minZoom`, `maxZoom`, and `tileSize` (256) from the archive header.
 
 `POST /api/map-assets` and `PUT /api/map-assets/:id` accept optional `quality` (0–100) and `normalizeOptions`. `POST /api/map-assets/estimate` returns the resolved settings and an estimated device file size for the Control Centre slider.
 
 Processing runs inside the API process that accepted the upload, one asset at a time. The asset stores `processingStartedAt` (the claim) and `processingAttempts`. On startup, and about once a minute after that, every API process re-queues assets still `processing` whose claim is missing or older than 2 hours, so a crashed process is retried when another container sweeps. The claim window is longer than the 60-minute GDAL command timeout. A fresh claim is left alone. After three claims the asset is marked `failed`. A GDAL error fails the asset immediately and is not retried. Replacing the file clears the claim and the attempt count.
 
-Implementation: `api/src/couchdb/mapAssets/normalize.ts` and `api/src/couchdb/mapAssets/store.ts`, using the command helpers in `api/src/couchdb/export/gdal.ts`. Docker images install `gdal-bin` / `gdal-tools` and `poppler-utils`, and the image build fails unless `gdalinfo --formats` lists PDF.
+Implementation: `api/src/couchdb/mapAssets/normalize.ts` and `api/src/couchdb/mapAssets/store.ts`, using the command helpers in `api/src/couchdb/export/gdal.ts`. Docker images install GDAL, Poppler, tippecanoe 2.79.0, and the go-pmtiles 1.28.1 CLI (`pmtiles`). The image build fails unless `gdalinfo --formats` lists PDF, MBTiles, and WEBP. `PMTILES_BIN` and `TIPPECANOE_BIN` override the executable names; `pmtiles` falls back to `go-pmtiles`.
 
 ## Full export behaviour
 

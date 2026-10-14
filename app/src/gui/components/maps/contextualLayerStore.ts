@@ -11,7 +11,12 @@ import type {
   ContextualLayerListing,
   GetMapAssetDownloadUrlResponse,
 } from '@faims3/data-model';
-import type {ContextualMapLayer} from '@faims3/forms';
+import {
+  isTiledMapAssetKind,
+  normalizedMapAssetExtension,
+} from '@faims3/data-model';
+import type {ContextualMapLayer, TileByteRead} from '@faims3/forms';
+import {fetchByteRange, readBlobRange} from '@faims3/forms';
 import {
   readContextualLayersState,
   writeContextualLayersState,
@@ -25,6 +30,7 @@ import {
   releaseProjectLayers,
   retainListedLayers,
 } from './contextualLayerIndex';
+import {readAndroidFileRange} from './mapFileRange';
 
 type StoredFile = ContextualLayerFile;
 type LayerPrefs = ContextualLayerPrefs;
@@ -85,8 +91,28 @@ function dropUnusedPrefs(index: LayerIndex): void {
 }
 
 function filenameFor(layer: ContextualLayerListing): string {
-  const ext = layer.kind === 'geojson' ? 'geojson' : 'png';
-  return `${layer.id}-${layer.contentHash}.${ext}`;
+  return `${layer.id}-${layer.contentHash}.${normalizedMapAssetExtension(layer.kind)}`;
+}
+
+/**
+ * Range reader for one stored archive. The browser slices the OPFS file.
+ * iOS fetches a Range from convertFileSrc. Android uses a native seek
+ * because the WebView file server does not.
+ */
+async function bindStoredLayerReader(filename: string): Promise<TileByteRead> {
+  if (Capacitor.getPlatform() === 'android') {
+    return (offset, length) =>
+      readAndroidFileRange(`map-assets/${filename}`, offset, length);
+  }
+  if (Capacitor.isNativePlatform()) {
+    const url = await urlForFile(filename);
+    return (offset, length) => fetchByteRange(url, offset, length);
+  }
+  const root = await navigator.storage.getDirectory();
+  const dir = await root.getDirectoryHandle('map-assets');
+  const handle = await dir.getFileHandle(filename);
+  const file = await handle.getFile();
+  return (offset, length) => readBlobRange(file, offset, length);
 }
 
 async function writeBrowserFile(
@@ -191,22 +217,7 @@ export async function contextualLayersForMap(
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     const prefs = prefsFor(file, index.prefs[file.assetId], i);
-    layers.push({
-      id: file.assetId,
-      name: file.name,
-      kind: file.kind,
-      url: await urlForFile(file.filename),
-      visible: prefs.visible,
-      opacity: prefs.opacity,
-      zIndex: prefs.zIndex,
-      stroke: prefs.stroke,
-      fill: prefs.fill,
-      lineWidth: prefs.lineWidth,
-      pointSize: prefs.pointSize,
-      labelField: prefs.labelField,
-      extent4326: file.extent4326,
-      extent3857: file.extent3857,
-    });
+    layers.push(await layerFromFile(file, prefs, prefs.visible));
   }
   return layers.sort((a, b) => a.zIndex - b.zIndex);
 }
@@ -221,12 +232,23 @@ export async function loadStoredContextualLayer(
     return undefined;
   }
   const prefs = prefsFor(file, index.prefs[file.assetId], 0);
+  return layerFromFile(file, prefs, true);
+}
+
+async function layerFromFile(
+  file: StoredFile,
+  prefs: LayerPrefs,
+  visible: boolean
+): Promise<ContextualMapLayer> {
   return {
     id: file.assetId,
     name: file.name,
     kind: file.kind,
     url: await urlForFile(file.filename),
-    visible: true,
+    readTileBytes: isTiledMapAssetKind(file.kind)
+      ? await bindStoredLayerReader(file.filename)
+      : undefined,
+    visible,
     opacity: prefs.opacity,
     zIndex: prefs.zIndex,
     stroke: prefs.stroke,
@@ -236,6 +258,9 @@ export async function loadStoredContextualLayer(
     labelField: prefs.labelField,
     extent4326: file.extent4326,
     extent3857: file.extent3857,
+    minZoom: file.minZoom,
+    maxZoom: file.maxZoom,
+    tileSize: file.tileSize,
   };
 }
 
@@ -466,6 +491,9 @@ export async function downloadContextualLayers({
       byteSize: layer.byteSize,
       extent4326: layer.extent,
       extent3857: layer.extent3857,
+      minZoom: layer.minZoom,
+      maxZoom: layer.maxZoom,
+      tileSize: layer.tileSize,
       defaultStyle: layer.defaultStyle,
       filename,
       projectIds: [projectId],

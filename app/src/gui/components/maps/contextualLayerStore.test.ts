@@ -19,8 +19,10 @@ const native = vi.hoisted(() => ({
 vi.mock('@capacitor/core', () => ({
   Capacitor: {
     isNativePlatform: () => native.isNative,
+    getPlatform: () => (native.isNative ? 'android' : 'web'),
     convertFileSrc: (uri: string) => uri,
   },
+  registerPlugin: () => ({read: vi.fn()}),
 }));
 
 vi.mock('@capacitor/filesystem', () => ({
@@ -46,7 +48,7 @@ const seeded = (): ContextualLayersState => ({
     layer: {
       assetId: 'layer',
       contentHash: 'hash',
-      kind: 'geojson',
+      kind: 'vector-tiles',
       name: 'Boundary',
       byteSize: 10,
       extent4326: [0, 0, 1, 1],
@@ -57,7 +59,7 @@ const seeded = (): ContextualLayersState => ({
         lineWidth: 2,
         pointSize: 6,
       },
-      filename: 'layer-hash.geojson',
+      filename: 'layer-hash.pmtiles',
       projectIds: ['survey'],
     },
   },
@@ -133,8 +135,8 @@ describe('downloadContextualLayers on native', () => {
         return new Response(
           JSON.stringify({
             url: presigned,
-            mediaType: 'application/geo+json',
-            filename: 'digital atlas.geojson',
+            mediaType: 'application/vnd.pmtiles',
+            filename: 'digital atlas.pmtiles',
             byteSize: 100,
             expiresInSeconds: 3600,
           }),
@@ -159,7 +161,7 @@ describe('downloadContextualLayers on native', () => {
         {
           id: 'asset-1',
           name: 'Digital atlas',
-          kind: 'geojson',
+          kind: 'vector-tiles',
           byteSize: 100,
           contentHash: 'hash-1',
           extent: [0, 0, 1, 1],
@@ -179,13 +181,13 @@ describe('downloadContextualLayers on native', () => {
     });
     expect(native.downloadFile).toHaveBeenCalledWith({
       url: presigned,
-      path: 'map-assets/asset-1-hash-1.geojson',
+      path: 'map-assets/asset-1-hash-1.pmtiles',
       directory: 'DATA',
       recursive: true,
       progress: true,
     });
     expect(store.getState().contextualLayers.files['asset-1']?.filename).toBe(
-      'asset-1-hash-1.geojson'
+      'asset-1-hash-1.pmtiles'
     );
   });
 
@@ -200,7 +202,7 @@ describe('downloadContextualLayers on native', () => {
         {
           id: 'asset-1',
           name: 'Digital atlas',
-          kind: 'geojson',
+          kind: 'vector-tiles',
           byteSize: 100,
           contentHash: 'hash-1',
           extent: [0, 0, 1, 1],
@@ -230,7 +232,7 @@ describe('downloadContextualLayers on native', () => {
         {
           id: 'asset-1',
           name: 'Digital atlas',
-          kind: 'geojson',
+          kind: 'vector-tiles',
           byteSize: 100,
           contentHash: 'hash-1',
           extent: [0, 0, 1, 1],
@@ -258,7 +260,7 @@ describe('downloadContextualLayers on native', () => {
           {
             id: 'asset-1',
             name: 'Digital atlas',
-            kind: 'geojson',
+            kind: 'vector-tiles',
             byteSize: 100,
             contentHash: 'hash-1',
             extent: [0, 0, 1, 1],
@@ -269,7 +271,7 @@ describe('downloadContextualLayers on native', () => {
     ).rejects.toThrow('Could not download Digital atlas.');
 
     expect(native.deleteFile).toHaveBeenCalledWith({
-      path: 'map-assets/asset-1-hash-1.geojson',
+      path: 'map-assets/asset-1-hash-1.pmtiles',
       directory: 'DATA',
     });
     expect(store.getState().contextualLayers.files).toEqual({});

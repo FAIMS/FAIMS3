@@ -75,18 +75,25 @@ nvm use 24
 You will also need Docker and Docker Compose installed.
 
 GeoPackage export and map-layer ingest require [GDAL](https://gdal.org/)
-(`ogr2ogr`, `gdalinfo`, `gdalwarp`, `gdal_translate` on PATH). Georeferenced PDF
-uploads also need GDAL's PDF driver (Poppler). This is included in the API Docker
-image and devcontainer. For native development, `./dev.sh` warns if GDAL or the
-PDF driver is missing:
+(`ogr2ogr`, `gdalinfo`, `gdalwarp`, `gdal_translate`, `gdaladdo` on PATH),
+[tippecanoe](https://github.com/felt/tippecanoe), and the
+[pmtiles](https://github.com/protomaps/go-pmtiles) CLI. Georeferenced PDF
+uploads also need GDAL's PDF driver (Poppler), and raster tiles need the
+MBTiles and WEBP drivers. This is included in the API Docker image and
+devcontainer. For native development, `./dev.sh` warns if any of them are
+missing:
 
 ```bash
 # Ubuntu / Debian
-sudo apt-get install gdal-bin poppler-utils
+sudo apt-get install gdal-bin poppler-utils tippecanoe
 
 # macOS (Homebrew)
-brew install gdal poppler
+brew install gdal poppler tippecanoe
 ```
+
+Install the `pmtiles` binary from the go-pmtiles releases (or `go install
+github.com/protomaps/go-pmtiles@v1.28.1`, which produces `go-pmtiles`). Set
+`PMTILES_BIN` if the executable has another name.
 
 ### Starting all services
 

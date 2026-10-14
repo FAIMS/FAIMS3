@@ -5,6 +5,8 @@ export * from './LayerLocationHint';
 export * from './layerLocationProximity';
 export * from './StaticMapLayerPreview';
 export * from './contextualMapLayers';
+export * from './pmtilesRange';
+export {createContextualMapLayer} from './useContextualMapLayers';
 export * from './useOccasionalDeviceLocation';
 export * from './layerStack';
 export * from './MapComponent';

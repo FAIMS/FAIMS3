@@ -1,13 +1,33 @@
 // SPDX-License-Identifier: Apache-2.0
 import {createContext} from 'react';
 
+import type {TileByteRead} from './pmtilesRange';
+
+/** One PMTiles archive of image tiles or Mapbox vector tiles. */
+export type ContextualMapLayerKind = 'raster-tiles' | 'vector-tiles';
+
+/**
+ * Visible overlays above this still draw, but frame time adds up on a
+ * field phone. The layers panel says so.
+ */
+export const CONTEXTUAL_VISIBLE_LAYER_HINT = 12;
+
+export function isVectorContextualKind(kind: ContextualMapLayerKind): boolean {
+  return kind === 'vector-tiles';
+}
+
 /** One downloaded contextual layer, ready for OpenLayers. */
 export type ContextualMapLayer = {
   id: string;
   name: string;
-  kind: 'geojson' | 'image';
-  /** Blob or Capacitor URL of the normalized file. */
+  kind: ContextualMapLayerKind;
+  /** Blob or Capacitor URL of the normalized file. Identity for the layer. */
   url: string;
+  /**
+   * Range read for the PMTiles archive.
+   * Implementations must not return more bytes than requested.
+   */
+  readTileBytes?: TileByteRead;
   visible: boolean;
   opacity: number;
   zIndex: number;
@@ -20,6 +40,10 @@ export type ContextualMapLayer = {
   extent4326: [number, number, number, number];
   /** EPSG:3857 placement extent for images. */
   extent3857?: [number, number, number, number];
+  /** Hint from the listing. The archive header wins when the file is opened. */
+  minZoom?: number;
+  maxZoom?: number;
+  tileSize?: number;
 };
 
 export type ContextualMapLayerPatch = Partial<
