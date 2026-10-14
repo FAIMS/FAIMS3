@@ -16,7 +16,7 @@ check_gdal() {
     echo "Install examples:"
     echo "  Ubuntu/Debian:  sudo apt-get install gdal-bin poppler-utils tippecanoe"
     echo "  macOS (Homebrew): brew install gdal poppler tippecanoe"
-    echo "  Alpine:         apk add gdal-tools poppler-utils"
+    echo "  Alpine:         apk add gdal-tools gdal-driver-pdf gdal-driver-webp gdal-driver-png gdal-driver-jpeg poppler-utils"
     echo ""
   else
     echo "✓ GDAL available: $(ogr2ogr --version | head -1)"
