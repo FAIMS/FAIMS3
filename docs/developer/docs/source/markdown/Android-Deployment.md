@@ -60,13 +60,13 @@ follow the prompts. This will get you to generate a new keystore file, key name
 and password. Make a note of these, we'll create repository secrets for them on
 Github:
 
-- `android.keystoreFileBase64` in `build-secrets.enc.json` - java key
+- `android.keystoreFileBase64` in `secrets.enc.json` - java key
   store file, base64 encoded
-- `android.keystorePassword` in `build-secrets.enc.json` - password for
+- `android.keystorePassword` in `secrets.enc.json` - password for
   the Java keystore
-- `android.keyAlias` in `build-secrets.enc.json` - key alias for the
+- `android.keyAlias` in `secrets.enc.json` - key alias for the
   Java keystore
-- `android.keyPassword` in `build-secrets.enc.json` - key password for
+- `android.keyPassword` in `secrets.enc.json` - key password for
   the Java keystore
 
 Complete the build and you should have an `app-release.aab` file that you can
@@ -163,8 +163,8 @@ More details:
 
 Mobile deployment now reads settings from a private configuration repository:
 
-- `mobile/<environment>/build-config.json` (non-secret)
-- `mobile/<environment>/build-secrets.enc.json` (SOPS-encrypted)
+- `mobile/<environment>/core.json` (non-secret)
+- `mobile/<environment>/secrets.enc.json` (SOPS-encrypted)
 
 The workflow checks out that repository, decrypts the secrets file in CI using
 `SOPS_AGE_KEY`, merges both JSON files, and generates environment variables
@@ -180,9 +180,9 @@ base64 bushfiresurveyorsystemdeploy-63a8de61b6fb.json > gplay_key.txt
 ```
 
 Copy the encoded values into `android.keystoreFileBase64` and
-`android.serviceAccountKeyJsonBase64` in `build-secrets.enc.json`.
+`android.serviceAccountKeyJsonBase64` in `secrets.enc.json`.
 
-For the complete JSON field-to-env mapping used by the generator, see [Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md).
+For the JSON structure and the meaning of each field, see [Build Configuration](Build-Configuration.md).
 
 ### Required GitHub Secrets and Variables:
 
@@ -326,15 +326,15 @@ Android build values such as:
 - `ANDROID_RELEASE_STATUS` and `ANDROID_DEPLOY_TRACK`
 - keystore and Play service-account data
 
-are defined in `build-config.json` and `build-secrets.enc.json`, then mapped to
+are defined in `core.json` and `secrets.enc.json`, then mapped to
 env vars by `pnpm generate-build-config`.
 
-See [Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md)
-for the complete field mapping.
+See [Build Configuration](Build-Configuration.md)
+for the JSON structure and the meaning of each field.
 
 Because this repository is also used by Fastlane Match for iOS signing assets,
 follow the shared-repo safety guidance in
-[Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md)
+[Build Configuration](Build-Configuration.md#protecting-the-shared-config--match-repository)
 before changing anything outside `mobile/<environment>/`.
 
 ---

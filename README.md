@@ -228,6 +228,24 @@ code ./api/.env &&
 code ./app/.env
 ```
 
+### Generating the local config from `core.json`
+
+Instead of hand-editing the `.env` files, you can generate **all** of them from a
+single shared config file (`config/dev/core.json`) using the same schema every other
+platform (mobile CI, AWS CDK) uses:
+
+```bash
+cp library/build-config/config/mobile-config.sample.json config/dev/core.json
+scripts/generateDevEnv.sh   # -> api/.env, app/.env, web/.env, docs/.env
+```
+
+`config/dev/` is git-ignored. Set its `domains.localOverride` (or concrete
+`endpoints`) to the `localhost` hosts so the generated env points at the local
+services. The JSON is the source of truth — the generated env var names are derived
+by the shared contract. See the
+[Build Configuration](docs/developer/docs/source/markdown/Build-Configuration.md)
+page for the JSON structure.
+
 ### API Setup
 
 #### Key Generation

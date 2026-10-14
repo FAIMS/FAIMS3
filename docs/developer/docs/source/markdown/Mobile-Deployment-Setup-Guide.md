@@ -12,6 +12,8 @@ The model we are using is:
 
 This guide covers the first-time setup and the workflow you can repeat for additional environments.
 
+The config files are **shared**: the same `core.json` also drives the [AWS CDK deployment](DeployingAWSStack.md) and [local development](Build-Configuration.md#local-development). See the [Build Configuration](Build-Configuration.md) page for the JSON structure every platform consumes; this guide focuses on the mobile CI deployment workflow.
+
 ## 1. Set up SOPS for secret encryption
 
 SOPS is used to manage encrypted secrets within the JSON configuration file. We
@@ -49,11 +51,11 @@ Recommended pattern:
 ```text
 config/
   production/
-    build-config.json
-    build-secrets.json
+    core.json
+    secrets.json
   nightly/
-    build-config.json
-    build-secrets.json
+    core.json
+    secrets.json
 ```
 
 Why this is a good place:
@@ -76,18 +78,23 @@ build config files.
 The config folder has been added to `.gitignore` to prevent accidental commits
 of secrets to the app repository:
 
+```text
+/config
+```
+
 ## 3. Configure the build
 
-You need to create versions of build-config.json and build-secrets.json for each
+You need to create versions of core.json and secrets.json for each
 environment.
 
-### build-config.json
+### core.json
 
 This is the non-secret config for that environment.
 
 Use the shared schema defined by `library/build-config/src/build-config.ts` and
-the sample structure in `library/build-config/config/mobile-secrets.sample.json`
-as your starting point.
+the sample structure in `library/build-config/config/mobile-config.sample.json`
+as your starting point. The [Build Configuration](Build-Configuration.md) page
+documents every field.
 
 Typical values include:
 
@@ -97,7 +104,7 @@ Typical values include:
 - app metadata and map settings
 - any non-secret build variables required by the build pipeline
 
-### build-secrets.json
+### secrets.json
 
 This is the local working copy of the encrypted secret bundle. It will be merged
 into the private repo and then SOPS-encrypted.
@@ -115,8 +122,10 @@ prepare and sync it to the private config repo.
 
 ## 4. Fill in the values
 
-Use the field map in [Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md)
-as the authoritative reference for which JSON fields become which generated environment variables.
+Use the [Build Configuration](Build-Configuration.md) page as the reference for the
+JSON structure and the meaning of each field. The JSON is the source of truth; the
+generated env var names are derived by the shared contract and do not need to be
+managed by hand.
 
 A good first pass is:
 
@@ -129,8 +138,8 @@ A good first pass is:
 
 You need a private repo that stores:
 
-- `mobile/<environment>/build-config.json`
-- `mobile/<environment>/build-secrets.enc.json`
+- `mobile/<environment>/core.json`
+- `mobile/<environment>/secrets.enc.json`
 - optionally any Match files / certs / profiles created by Fastlane Match
 
 This repo is the same repo used for Fastlane Match signing assets. That means the repository has two jobs:
@@ -157,7 +166,7 @@ This is the value used in the workflow, not the full HTTPS URL.
 
 ## 6. Sync the local config files into the private repo
 
-The helper script is designed to manage both `build-config.json` and `build-secrets.json` files:
+The helper script is designed to manage both `core.json` and `secrets.json` files:
 
 ```bash
 ./scripts/sync-deployment-config.sh push <environment> [options]
@@ -181,14 +190,14 @@ Or, if the repo is already cloned locally:
 
 ### What the script does
 
-1. Validates both local `build-config.json` and `build-secrets.json` exist and are valid JSON
+1. Validates both local `core.json` and `secrets.json` exist and are valid JSON
 2. Connects to the private repo and fetches the latest version
 3. Compares your local files with the remote versions
 4. If files have changed:
-   - Encrypts `build-secrets.json` with SOPS
-   - Copies `build-config.json` to the remote repo
+   - Encrypts `secrets.json` with SOPS
+   - Copies `core.json` to the remote repo
    - Commits and pushes both files together
-5. Updates the local cache copies (`build-secrets.enc.json`)
+5. Updates the local cache copies (`secrets.enc.json`)
 
 ### Usage options
 
@@ -201,8 +210,8 @@ Or, if the repo is already cloned locally:
 
 ```bash
 # Edit your local files
-vim config/production/build-config.json
-vim config/production/build-secrets.json
+vim config/production/core.json
+vim config/production/secrets.json
 
 # Sync changes to the private repo (with confirmation prompt)
 ./scripts/sync-deployment-config.sh push production \
@@ -216,7 +225,7 @@ vim config/production/build-secrets.json
 
 ### Important notes
 
-- The script requires both `build-config.json` and `build-secrets.json` to exist in `config/<environment>/`
+- The script requires both `core.json` and `secrets.json` to exist in `config/<environment>/`
 - The repo must be available to `sops` via the expected key mechanism (`SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, or local age config)
 - The script only pushes if at least one file has actually changed
 - Both files are committed together in a single commit
@@ -233,7 +242,7 @@ To pull the latest configuration from the private repo back into your local `con
 This will:
 
 1. Clone or update the private repo
-2. Decrypt `build-secrets.enc.json` to `build-secrets.json`
+2. Decrypt `secrets.enc.json` to `secrets.json`
 3. Mirror both files into your local `config/production/` directory
 
 Use this command when you need to sync remote changes (for example, if another team member has pushed config updates).
@@ -266,8 +275,8 @@ MOBILE_CONFIG_BRANCH = main
 The workflow will then read:
 
 ```text
-config_repo/mobile/<environment>build-config.json
-config_repo/mobile/<environment>/build-secrets.enc.json
+config_repo/mobile/<environment>/core.json
+config_repo/mobile/<environment>/secrets.enc.json
 ```
 
 and use these to generate the build environment.
@@ -276,11 +285,11 @@ and use these to generate the build environment.
 
 Before using a production config in a real release workflow, run through a minimal validation:
 
-1. Ensure both `config/production/build-config.json` and `config/production/build-secrets.json` exist locally.
+1. Ensure both `config/production/core.json` and `config/production/secrets.json` exist locally.
 2. Verify both JSON files are valid by running: `jq empty config/production/*.json`
 3. Ensure the private repo is decryptable locally with your SOPS setup.
 4. Run the sync script to publish both files: `./scripts/sync-deployment-config.sh push production --config_repo <url>`
-5. Verify files exist in the private repo at `mobile/production/build-config.json` and `mobile/production/build-secrets.enc.json`
+5. Verify files exist in the private repo at `mobile/production/core.json` and `mobile/production/secrets.enc.json`
 6. Confirm the workflow can read the files.
 7. Trigger the non-production workflow first if there is a test/nightly build path.
 

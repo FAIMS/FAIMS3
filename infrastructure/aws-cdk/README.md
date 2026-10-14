@@ -143,6 +143,11 @@ This project uses a JSON-based configuration system to manage different deployme
 3. Copy this file and rename it according to your environment (e.g., `dev.json`, `prod.json`).
 4. Open your new configuration file and replace the placeholder values with your actual settings.
 
+The config is a single JSON object with two top-level sections: `core` (the shared
+deployment config, identical in shape to `core.json` on every other platform — see
+[Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md))
+and `aws` (the AWS-specific extension).
+
 **For an example JSON structure, see `configs/sample.json`.**
 
 ## Using an existing configuration from conforming config repo
@@ -175,7 +180,7 @@ Your configuration repository should follow this structure:
 ```
 
 - The `infrastructure` directory contains subdirectories for each environment (e.g., `dev`, `staging`, `prod`).
-- Each environment directory should contain a `configs` folder with a JSON file named after the environment (e.g., `dev.json`).
+- Each environment directory should contain a `configs` folder with a JSON file named after the environment (e.g., `dev.json`), in the `{ core, aws }` shape described above.
 - You can include other environment-specific files in each environment directory as needed.
 
 ### Using the Config Script
@@ -310,6 +315,23 @@ Note that this validation is at a schema level, it might not catch improperly fo
 
 ## Configuration documentation
 
+The CDK loads a **single JSON object with two top-level sections**:
+
+- **`core`** — the shared deployment config (branding, endpoints/domains, maps,
+  sync, auth, authProviders, authTokens, limits, email, observability, android,
+  ios, couchdb, dev, pouchdb). This is the same `core.json` every platform uses;
+  the complete field reference is in the
+  [Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md)
+  page. The CDK consumes it directly via `@faims3/build-config`.
+- **`aws`** — the AWS-specific extension: account/region, hosted zone,
+  certificates, Fargate sizing, backup, TTL cleanup, and the secret-slot →
+  Secrets-Manager-ARN map.
+
+`configs/sample.json` shows the full `{ core, aws }` shape. The **`aws`** fields
+are documented below.
+
+### `aws`
+
 - `stackName`: The name of the stack to deploy to cloudformation. Note that changing this will completely redeploy your application.
 - `hostedZone`: Used for deploying Route 53 routes in AWS.
   - `id`: The ID of your Route 53 hosted zone
@@ -338,8 +360,8 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `deleteExhaustedInvites`: Pass `--delete-exhausted-invites` for non-expired invites with exhausted uses (default: `false`; keep off so uses can be raised later)
   - `cpu` / `memory`: Fargate size for the one-shot task (defaults: `256` / `512`)
   - Failure alerts use the CouchDB monitoring SNS topic (`couch.monitoring.alarmTopic.emailAddress`)
-- `uiConfiguration`: UI and app build-time settings for the main FAIMS frontend.
-  - `uiTheme`: The UI theme: `bubble`, `default`, `fieldmark` or `bssTheme`
+- `uiConfiguration` (**now in `core`**): UI and app build-time settings for the main FAIMS frontend — see the [Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md) reference for the shared fields.
+  - `uiTheme`: The UI theme: `default`, `fieldmark` or `bssTheme` (`bubble` is retired)
   - `notebookListType`: Notebook list display mode: `tabs` or `headings`
   - `notebookName`: Display name for notebooks, e.g. `survey` or `notebook`
   - `appName`: App name used in app store and headings (e.g. "FAIMS Mobile")
@@ -366,7 +388,7 @@ Note that this validation is at a schema level, it might not catch improperly fo
 
   **API keys and public exposure:** Any API keys you put in `uiConfiguration` (e.g. `mapSourceKey`, `mapboxKey`, `maptilerKey`) are baked into the front-end app at build time and can therefore be exposed in the client—for example in bundled source or network requests. You should only use keys that are suitable for public consumption. Both Mapbox and MapTiler support public/client keys for front-end use; this is a standard pattern and is generally safe. Be aware that if someone obtains and abuses these keys, there can be cost implications (e.g. usage beyond your quotas). Use provider dashboards to set usage limits and monitor usage where possible.
 
-- `supportLinks`: Links shown in the app (support, privacy, contact, docs).
+- `supportLinks` (**now in `core.support`**): Links shown in the app (support, privacy, contact, docs).
   - `supportEmail`: Support email address (default: support@fieldmark.au)
   - `privacyPolicyUrl`: Privacy policy URL (default: https://fieldnote.au/privacy)
   - `contactUrl`: Contact page URL; empty string hides the contact link
@@ -391,8 +413,8 @@ Note that this validation is at a schema level, it might not catch improperly fo
     - `http5xx`: (Optional) HTTP 5xx errors alarm settings (same structure as cpu, but threshold is count of errors)
     - `alarmTopic`: (Optional) SNS topic settings for alarms
       - `emailAddress`: Email address to send alarm notifications
-- `conductor`: Configuration for the Conductor API service.
-  - `name`: Title for this conductor instance (e.g. shown on listings page)
+- `conductor`: AWS-specific configuration for the Conductor API service (Fargate image/sizing, autoscaling, `localhostWhitelist`, `enhancedObservability`). The shared instance identity (`name`, `description`, `shortCodePrefix`, `provisionSSOUsersPolicy`) and the migration flags now live in **`core`** — see [Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md).
+  - `name`: Title for this conductor instance (e.g. shown on listings page) — now in `core`
   - `description`: Subheading or description for the instance
   - `conductorDockerImage`: Conductor docker image name from public registry (e.g. ghcr.io/faims/faims3-api or org/faims3-api)
   - `conductorDockerImageTag`: (default "latest") Image tag; composed with `conductorDockerImage` as `image`:`tag`.
@@ -413,19 +435,19 @@ Note that this validation is at a schema level, it might not catch improperly fo
     - `targetMemoryUtilization`: The target memory utilization percentage for scaling
     - `scaleInCooldown`: The cooldown period (in seconds) before allowing another scale in action
     - `scaleOutCooldown`: The cooldown period (in seconds) before allowing another scale out action
-- `domains`: Domain configuration for all services. Note: Apex domains are not currently supported.
+- `domains`: Route 53 subdomain prefixes that set up DNS/CDN. These are configured to **match** the URLs derived from `core.domains` (see [Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md)). Note: Apex domains are not currently supported.
   - `baseDomain`: The base domain for all services
   - `conductor`: The subdomain prefix for the conductor service
   - `couch`: The subdomain prefix for the CouchDB service
   - `faims`: The subdomain prefix for the main FAIMS web application
   - `web`: The subdomain prefix for the new-conductor web application
   - `docs`: The subdomain prefix for the documentation site (default: `docs`)
-- `mobileApps`: Configuration for mobile app URLs.
+- `mobileApps` (**now in `core.endpoints`**): Configuration for mobile app URLs.
   - `androidAppPublicUrl`: The public URL for the Android application in the Google Play Store
   - `iosAppPublicUrl`: The public URL for the iOS application in the Apple App Store
 - `web`: Placeholder configuration for further web/new-conductor config - currently use {}
 - `docs`: Placeholder configuration for the documentation site - currently use `{}`
-- `security`: (Optional) Security-related Conductor API settings. Defaults applied when omitted.
+- `security` (**now in `core`** — `authTokens` + `limits`): (Optional) Security-related Conductor API settings. Defaults applied when omitted.
   - `maximumLongLivedTokenDurationDays`: (Optional) Max lifetime in days for long-lived tokens (default 90). Omit or leave unset for infinite when wiring through the stack prop as undefined.
   - `rateLimiterEnabled`: (default `true`) Express HTTP IP rate limiter (`RATE_LIMITER_ENABLED`). Set `false` when per-IP limiting is handled upstream (e.g. ALB/WAF). Does **not** control CouchDB-backed auth attempt limits or the export limiter.
   - `authAttemptLimiterEnabled`: (default `true`) Per-user email-code / verification-challenge attempt limits (`ATTEMPT_LIMITER_ENABLED`). Keep `true` in production even when HTTP rate limiting is disabled upstream.

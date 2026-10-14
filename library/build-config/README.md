@@ -157,7 +157,14 @@ Use this sequence every time.
 
 ## Using This Config In Different Apps
 
-This package is the single typed source that every target consumes.
+This package is the single typed source that every target consumes. The shared
+file layout is **`core.json`** (the non-secret config, all secret slots empty),
+**`secrets.enc.json`** (the SOPS-encrypted secret values) and **`aws.json`** (the
+AWS-only extension). SOPS platforms decrypt and merge `secrets.enc.json` over
+`core.json`; the AWS CDK loads `{ core, aws }` and resolves secrets from Secrets
+Manager. The JSON→env mapping is transport — see the developer-facing
+[Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md)
+page for the full JSON structure.
 
 1. Build pipeline / CI
 

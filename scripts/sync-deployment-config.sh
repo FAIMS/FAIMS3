@@ -20,22 +20,22 @@ Options:
   --help                  Show this help text
 
 Behaviour:
-  - push: Treats config/<environment>/ as source of truth. Compares local build-config.json
-          and build-secrets.json with remote repo versions. If either has changed, encrypts
+  - push: Treats config/<environment>/ as source of truth. Compares local core.json
+          and secrets.json with remote repo versions. If either has changed, encrypts
           secrets and pushes both files to the remote repo at mobile/<environment>/.
-  - pull: Clones or reuses the private repo, decrypts build-secrets.enc.json, and mirrors
+  - pull: Clones or reuses the private repo, decrypts secrets.enc.json, and mirrors
           config files locally to config/<environment>/.
   - The script keeps a local copy of the repo contents under config/<environment>/ so the
           app workspace can work with a checked-out mirror.
 
 Local config structure:
-  config/<environment>/build-config.json      (source, plaintext)
-  config/<environment>/build-secrets.json     (source, plaintext - git-ignored)
-  config/<environment>/build-secrets.enc.json (cache, encrypted)
+  config/<environment>/core.json      (source, plaintext)
+  config/<environment>/secrets.json     (source, plaintext - git-ignored)
+  config/<environment>/secrets.enc.json (cache, encrypted)
 
 Remote repo structure:
-  mobile/<environment>/build-config.json      (plaintext)
-  mobile/<environment>/build-secrets.enc.json (encrypted)
+  mobile/<environment>/core.json      (plaintext)
+  mobile/<environment>/secrets.enc.json (encrypted)
 
 Notes:
   - Requires: git, jq, sops
@@ -194,19 +194,19 @@ mirror_repo_to_local() {
     exit 1
   fi
 
-  # Mirror build-config.json (plaintext)
-  if [[ -f "$repo_env_dir/build-config.json" ]]; then
-    cp "$repo_env_dir/build-config.json" "$local_root/$environment/build-config.json"
+  # Mirror core.json (plaintext)
+  if [[ -f "$repo_env_dir/core.json" ]]; then
+    cp "$repo_env_dir/core.json" "$local_root/$environment/core.json"
   fi
 
-  # Mirror build-secrets.enc.json and decrypt it
-  if [[ -f "$repo_env_dir/build-secrets.enc.json" ]]; then
-    cp "$repo_env_dir/build-secrets.enc.json" "$local_root/$environment/build-secrets.enc.json"
-    echo "Decrypting build-secrets.enc.json for environment $environment"
-    if sops --decrypt "$local_root/$environment/build-secrets.enc.json" >/dev/null 2>&1; then
-      sops --decrypt "$local_root/$environment/build-secrets.enc.json" > "$local_root/$environment/build-secrets.json"
+  # Mirror secrets.enc.json and decrypt it
+  if [[ -f "$repo_env_dir/secrets.enc.json" ]]; then
+    cp "$repo_env_dir/secrets.enc.json" "$local_root/$environment/secrets.enc.json"
+    echo "Decrypting secrets.enc.json for environment $environment"
+    if sops --decrypt "$local_root/$environment/secrets.enc.json" >/dev/null 2>&1; then
+      sops --decrypt "$local_root/$environment/secrets.enc.json" > "$local_root/$environment/secrets.json"
     else
-      echo "Error: Failed to decrypt build-secrets.enc.json for environment $environment, is SOPS installed and configured correctly?" >&2
+      echo "Error: Failed to decrypt secrets.enc.json for environment $environment, is SOPS installed and configured correctly?" >&2
       exit 1
     fi
   fi
@@ -222,13 +222,13 @@ write_mirror_after_push() {
   
   # Mirror plaintext config (already local, but ensure it's there)
   if [[ -f "$config_file" ]]; then
-    cp "$config_file" "$local_root/$environment/build-config.json"
+    cp "$config_file" "$local_root/$environment/core.json"
   fi
   
   # Mirror encrypted secrets and decrypt it
-  cp "$secrets_file" "$local_root/$environment/build-secrets.enc.json"
+  cp "$secrets_file" "$local_root/$environment/secrets.enc.json"
   if sops --decrypt "$secrets_file" >/dev/null 2>&1; then
-    sops --decrypt "$secrets_file" > "$local_root/$environment/build-secrets.json"
+    sops --decrypt "$secrets_file" > "$local_root/$environment/secrets.json"
   fi
 }
 
@@ -245,19 +245,19 @@ push_config() {
   require_tool jq
   require_tool sops
 
-  local local_config_file="${local_root}/${environment}/build-config.json"
-  local local_secrets_file="${local_root}/${environment}/build-secrets.json"
+  local local_config_file="${local_root}/${environment}/core.json"
+  local local_secrets_file="${local_root}/${environment}/secrets.json"
 
   # Validate local files exist and are valid JSON
   if [[ ! -f "$local_config_file" ]]; then
-    echo "Error: local build-config.json not found at ${local_config_file}" >&2
-    echo "Please create config/${environment}/build-config.json in your local workspace." >&2
+    echo "Error: local core.json not found at ${local_config_file}" >&2
+    echo "Please create config/${environment}/core.json in your local workspace." >&2
     exit 1
   fi
 
   if [[ ! -f "$local_secrets_file" ]]; then
-    echo "Error: local build-secrets.json not found at ${local_secrets_file}" >&2
-    echo "Please create config/${environment}/build-secrets.json in your local workspace." >&2
+    echo "Error: local secrets.json not found at ${local_secrets_file}" >&2
+    echo "Please create config/${environment}/secrets.json in your local workspace." >&2
     exit 1
   fi
 
@@ -266,8 +266,8 @@ push_config() {
 
   prepare_repository "$branch" "$repo_path" "$repo_url"
 
-  local repo_config_path="mobile/${environment}/build-config.json"
-  local repo_secrets_path="mobile/${environment}/build-secrets.enc.json"
+  local repo_config_path="mobile/${environment}/core.json"
+  local repo_secrets_path="mobile/${environment}/secrets.enc.json"
   local repo_config_file="${WORK_REPO_PATH}/${repo_config_path}"
   local repo_secrets_file="${WORK_REPO_PATH}/${repo_secrets_path}"
   local repo_env_dir="${WORK_REPO_PATH}/mobile/${environment}"
@@ -284,7 +284,7 @@ push_config() {
   tmp_merged_secrets="$(mktemp)"
   trap 'rm -f "${tmp_existing_secrets:-}" "${tmp_merged_secrets:-}"; cleanup' EXIT
 
-  # Check if build-config.json has changed
+  # Check if core.json has changed
   if [[ -f "$repo_config_file" ]]; then
     if ! diff -q "$local_config_file" "$repo_config_file" >/dev/null 2>&1; then
       config_changed=true
@@ -293,7 +293,7 @@ push_config() {
     config_changed=true
   fi
 
-  # Check if build-secrets.json has changed (decrypt existing encrypted version if present)
+  # Check if secrets.json has changed (decrypt existing encrypted version if present)
   if [[ -f "$repo_secrets_file" ]]; then
     if ! sops --decrypt "$repo_secrets_file" > "$tmp_existing_secrets" 2>&1; then
       echo "Error: cannot decrypt existing remote secrets file: ${repo_secrets_file}" >&2
@@ -309,25 +309,25 @@ push_config() {
 
   # If nothing has changed, exit early
   if [[ "$config_changed" == false && "$secrets_changed" == false ]]; then
-    echo "No changes detected in build-config.json or build-secrets.json for ${environment}."
+    echo "No changes detected in core.json or secrets.json for ${environment}."
     exit 0
   fi
 
   # Ask for confirmation if not forcing
   if [[ "$force" != true ]]; then
     echo "Changes detected:"
-    [[ "$config_changed" == true ]] && echo "  - build-config.json"
-    [[ "$secrets_changed" == true ]] && echo "  - build-secrets.json"
+    [[ "$config_changed" == true ]] && echo "  - core.json"
+    [[ "$secrets_changed" == true ]] && echo "  - secrets.json"
     if ! confirm_action "Push these changes to ${repo_config_path} and ${repo_secrets_path}"; then
       echo "Cancelled."
       exit 0
     fi
   fi
 
-  # Update build-config.json
+  # Update core.json
   cp "$local_config_file" "$repo_config_file"
 
-  # Encrypt and update build-secrets.json
+  # Encrypt and update secrets.json
   sops --encrypt --input-type json --output-type json --output "$repo_secrets_file" "$local_secrets_file"
 
   pushd "$WORK_REPO_PATH" >/dev/null

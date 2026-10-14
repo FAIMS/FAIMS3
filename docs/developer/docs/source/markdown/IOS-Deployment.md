@@ -183,7 +183,7 @@ All four workflows follow the same config pattern:
 
 1. Checkout this repository.
 2. Checkout the private config repository from `vars.APP_CONFIG_REPO_SLUG`.
-3. Read `build-config.json` and decrypt `build-secrets.enc.json`.
+3. Read `core.json` and decrypt `secrets.enc.json`.
 4. Generate env vars with `pnpm generate-build-config --platform ios`.
 5. Run the relevant Fastlane lane.
 
@@ -197,15 +197,15 @@ Each workflow does the following:
 1. Checkout the config repository using `vars.APP_CONFIG_REPO_SLUG`.
 2. Read environment-specific files:
 
-- `mobile/<environment>/build-config.json`
-- `mobile/<environment>/build-secrets.enc.json`
+- `mobile/<environment>/core.json`
+- `mobile/<environment>/secrets.enc.json`
 
-3. Decrypt `build-secrets.enc.json` in CI with `secrets.SOPS_AGE_KEY`.
+3. Decrypt `secrets.enc.json` in CI with `secrets.SOPS_AGE_KEY`.
 4. Merge both JSON files and run `pnpm generate-build-config --platform ios`.
 5. Export generated env vars to `GITHUB_ENV` for Fastlane.
 
-For the full field mapping between JSON keys and generated env vars, see
-[Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md).
+For the JSON structure and the meaning of each field, see
+[Build Configuration](Build-Configuration.md).
 
 ### Bootstrap variables/secrets in GitHub
 
@@ -215,7 +215,7 @@ Only a small bootstrap set is required in GitHub Actions:
 - `vars.MOBILE_CONFIG_BRANCH` - config branch (defaults to `main`)
 - `vars.MOBILE_CONFIG_ENVIRONMENT` - environment folder under `mobile/`
 - `secrets.GIT_AUTHORIZATION` - token with read access to the config repo
-- `secrets.SOPS_AGE_KEY` - age private key for decrypting `build-secrets.enc.json`
+- `secrets.SOPS_AGE_KEY` - age private key for decrypting `secrets.enc.json`
 
 The workflows derive:
 
@@ -225,7 +225,7 @@ This keeps one canonical repo setting for both config checkout and Fastlane Matc
 
 Because the same repository is also used for Fastlane Match certificates/profiles,
 follow the shared-repo safety guidance in
-[Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md)
+[Build Configuration](Build-Configuration.md#protecting-the-shared-config--match-repository)
 before changing anything outside `mobile/<environment>/`.
 
 ## Appfile & Fastfile Logic
