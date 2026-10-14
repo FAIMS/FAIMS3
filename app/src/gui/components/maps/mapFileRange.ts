@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
- * Android range read for a PMTiles file in Directory.Data.
+ * Native range read for a PMTiles file in Directory.Data.
  *
- * iOS uses fetchByteRange on convertFileSrc: WebViewAssetHandler seeks.
- * Android's WebViewLocalServer does not, so this plugin seeks instead.
+ * Android's WebView file server does not seek. iOS can drop the Range
+ * header, and a custom-scheme fetch fails while the device is offline.
+ * Both platforms seek through the MapFileRange plugin instead.
  */
 
 import {registerPlugin} from '@capacitor/core';
@@ -33,8 +34,8 @@ export function decodeBase64Tile(data: string): Uint8Array {
   return bytes;
 }
 
-/** Path is relative to the app files directory, for example map-assets/a.pmtiles. */
-export async function readAndroidFileRange(
+/** Path is relative to Directory.Data, for example map-assets/a.pmtiles. */
+export async function readNativeFileRange(
   path: string,
   offset: number,
   length: number

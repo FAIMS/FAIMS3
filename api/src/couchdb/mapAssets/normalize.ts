@@ -210,22 +210,45 @@ async function runPmtiles(args: string[]): Promise<void> {
   );
 }
 
-/** PMTiles v3 header: min zoom at byte 100, max zoom at byte 101. */
-async function readPmtilesZoom(
-  filePath: string
-): Promise<{minZoom: number; maxZoom: number}> {
+/**
+ * PMTiles v3 header. Zoom is bytes 100–101. Bounds are int32 degrees × 1e7
+ * starting at byte 102. Reading the header avoids scanning the GeoJSON.
+ */
+async function readPmtilesHeader(filePath: string): Promise<{
+  minZoom: number;
+  maxZoom: number;
+  extent4326: MapExtent;
+}> {
   const handle = await open(filePath, 'r');
   try {
     const header = new Uint8Array(127);
     const {bytesRead} = await handle.read(header, 0, header.length, 0);
     const magic = Buffer.from(header.subarray(0, 7)).toString('utf8');
-    if (bytesRead < 102 || magic !== 'PMTiles') {
+    if (bytesRead < 118 || magic !== 'PMTiles') {
       throw new Error('Normalized file is not a PMTiles archive.');
     }
     if (header[7] !== 3) {
       throw new Error('Normalized file is not a PMTiles v3 archive.');
     }
-    return {minZoom: header[100], maxZoom: header[101]};
+    const view = new DataView(
+      header.buffer,
+      header.byteOffset,
+      header.byteLength
+    );
+    const extent4326: MapExtent = [
+      view.getInt32(102, true) / 1e7,
+      view.getInt32(106, true) / 1e7,
+      view.getInt32(110, true) / 1e7,
+      view.getInt32(114, true) / 1e7,
+    ];
+    if (
+      !extent4326.every(Number.isFinite) ||
+      !(extent4326[2] > extent4326[0]) ||
+      !(extent4326[3] > extent4326[1])
+    ) {
+      throw new Error('PMTiles archive has no geographic extent.');
+    }
+    return {minZoom: header[100], maxZoom: header[101], extent4326};
   } finally {
     await handle.close();
   }
@@ -282,40 +305,6 @@ function extentFromRing(ring: number[][]): MapExtent {
   return [minX, minY, maxX, maxY];
 }
 
-function extentFromGeoJson(parsed: {
-  bbox?: number[];
-  features?: {geometry?: {coordinates?: unknown}; bbox?: number[]}[];
-}): MapExtent {
-  if (
-    parsed.bbox &&
-    parsed.bbox.length >= 4 &&
-    parsed.bbox.every(value => typeof value === 'number')
-  ) {
-    return [parsed.bbox[0], parsed.bbox[1], parsed.bbox[2], parsed.bbox[3]];
-  }
-  const points: number[][] = [];
-  const walk = (value: unknown) => {
-    if (!Array.isArray(value)) {
-      return;
-    }
-    if (
-      value.length >= 2 &&
-      typeof value[0] === 'number' &&
-      typeof value[1] === 'number'
-    ) {
-      points.push([value[0], value[1]]);
-      return;
-    }
-    for (const child of value) {
-      walk(child);
-    }
-  };
-  for (const feature of parsed.features ?? []) {
-    walk(feature.geometry?.coordinates);
-  }
-  return extentFromRing(points);
-}
-
 async function convertVector(
   sourcePath: string,
   workDir: string,
@@ -355,7 +344,6 @@ async function convertVector(
         ],
       })
   );
-  const extent4326 = await extentFromOgrInfo(geojsonPath, logContext);
   await withMapAssetProcessingWait(
     {
       event: 'gdal.command',
@@ -379,53 +367,17 @@ async function convertVector(
       ])
   );
   await rm(geojsonPath, {force: true});
-  const zoom = await readPmtilesZoom(pmtilesPath);
+  const header = await readPmtilesHeader(pmtilesPath);
   return {
     kind: 'vector-tiles',
     mediaType: PMTILES_MEDIA_TYPE,
     filePath: pmtilesPath,
     byteSize: (await stat(pmtilesPath)).size,
-    extent4326,
-    minZoom: zoom.minZoom,
-    maxZoom: zoom.maxZoom,
+    extent4326: header.extent4326,
+    minZoom: header.minZoom,
+    maxZoom: header.maxZoom,
     tileSize: PMTILES_TILE_SIZE,
   };
-}
-
-async function extentFromOgrInfo(
-  filePath: string,
-  logContext?: MapAssetNormalizeLogContext
-): Promise<MapExtent> {
-  const info = (await withMapAssetProcessingWait(
-    {
-      event: 'gdal.command',
-      assetId: logContext?.assetId,
-      command: 'ogrinfo',
-      filename: path.basename(filePath),
-      detail: 'read normalized extent',
-    },
-    () =>
-      readGdalJson({
-        command: 'ogrinfo',
-        args: ['-json', '-so', '-al', filePath],
-      })
-  )) as {
-    layers?: {geometryFields?: {extent?: number[]}[]}[];
-  };
-  const extent = info.layers?.[0]?.geometryFields?.[0]?.extent;
-  if (
-    extent &&
-    extent.length >= 4 &&
-    extent.every(value => typeof value === 'number')
-  ) {
-    return [extent[0], extent[1], extent[2], extent[3]];
-  }
-  const bytes = await readFile(filePath);
-  const parsed = JSON.parse(bytes.toString('utf8')) as {
-    bbox?: number[];
-    features?: {geometry?: {coordinates?: unknown}; bbox?: number[]}[];
-  };
-  return extentFromGeoJson(parsed);
 }
 
 type GdalInfo = {
@@ -642,7 +594,7 @@ async function convertRaster(
   await rm(mbtiles, {force: true});
   await rm(warped, {force: true});
   await rm(sized, {force: true});
-  const zoom = await readPmtilesZoom(pmtilesPath);
+  const zoom = await readPmtilesHeader(pmtilesPath);
   const ring = info.wgs84Extent?.coordinates?.[0] ?? [];
   return {
     kind: 'raster-tiles',

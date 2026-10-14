@@ -3,12 +3,10 @@
  * Byte-range reads for a local PMTiles archive.
  *
  * A tile load must not pull the whole file into the WebView. Callers reject
- * any response larger than the requested length, which is what Capacitor's
- * Android local file server does: WebViewLocalServer sets HTTP 206 but
- * returns the stream from byte 0 (InputStream.available is not a seek).
- * iOS WebViewAssetHandler seeks and returns only the requested slice, so
- * fetch with a Range header is a real range read there. Browsers read with
- * Blob.slice / Origin Private File System File.slice.
+ * any response larger than the requested length. Capacitor's Android local
+ * file server sets HTTP 206 but returns the stream from byte 0, and iOS can
+ * drop Range or fail a custom-scheme fetch while offline. Native apps seek
+ * with the MapFileRange plugin. Browsers read with Blob.slice.
  */
 
 /** One tile or directory read. Larger than this is a whole-archive read. */

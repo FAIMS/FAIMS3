@@ -16,7 +16,7 @@ import {
   normalizedMapAssetExtension,
 } from '@faims3/data-model';
 import type {ContextualMapLayer, TileByteRead} from '@faims3/forms';
-import {fetchByteRange, readBlobRange} from '@faims3/forms';
+import {readBlobRange} from '@faims3/forms';
 import {
   readContextualLayersState,
   writeContextualLayersState,
@@ -30,7 +30,7 @@ import {
   releaseProjectLayers,
   retainListedLayers,
 } from './contextualLayerIndex';
-import {readAndroidFileRange} from './mapFileRange';
+import {readNativeFileRange} from './mapFileRange';
 
 type StoredFile = ContextualLayerFile;
 type LayerPrefs = ContextualLayerPrefs;
@@ -96,17 +96,12 @@ function filenameFor(layer: ContextualLayerListing): string {
 
 /**
  * Range reader for one stored archive. The browser slices the OPFS file.
- * iOS fetches a Range from convertFileSrc. Android uses a native seek
- * because the WebView file server does not.
+ * Android and iOS seek through MapFileRange.
  */
 async function bindStoredLayerReader(filename: string): Promise<TileByteRead> {
-  if (Capacitor.getPlatform() === 'android') {
-    return (offset, length) =>
-      readAndroidFileRange(`map-assets/${filename}`, offset, length);
-  }
   if (Capacitor.isNativePlatform()) {
-    const url = await urlForFile(filename);
-    return (offset, length) => fetchByteRange(url, offset, length);
+    return (offset, length) =>
+      readNativeFileRange(`map-assets/${filename}`, offset, length);
   }
   const root = await navigator.storage.getDirectory();
   const dir = await root.getDirectoryHandle('map-assets');
