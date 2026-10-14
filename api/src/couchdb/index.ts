@@ -786,7 +786,7 @@ const getNanoInstance = async (): Promise<Nano.ServerScope> => {
   return _nanoInstance;
 };
 
-/** Nano document scope for streaming map-layer attachments. */
+/** Nano document scope for the mapassets database (metadata only). */
 export const getMapAssetsNano = async (): Promise<
   Nano.DocumentScope<unknown>
 > => {

@@ -5,6 +5,9 @@ services:
     environment:
       # Override this so that the API refers to the internal DNS name
       - COUCHDB_INTERNAL_URL=http://couchdb:5984
+      - ATTACHMENT_S3_ENDPOINT=http://rustfs:9000
+      # Browsers cannot resolve `rustfs`; sign download URLs for localhost.
+      - ATTACHMENT_S3_PUBLIC_ENDPOINT=http://localhost:9000
     build:
       context: .
       dockerfile: Dockerfile.dev
@@ -26,6 +29,7 @@ services:
     command: pnpm run watch-api
     depends_on:
       - couchdb
+      - rustfs
     healthcheck:
       test:
         ['CMD', 'curl', '-f', 'http://localhost:${CONDUCTOR_INTERNAL_PORT}/']
@@ -86,5 +90,25 @@ services:
     ports:
       - '0.0.0.0:${COUCHDB_EXTERNAL_PORT}:5984'
 
+  # S3-compatible object store for map-layer files. The API talks to it
+  # with the same S3 client used against AWS in production.
+  rustfs:
+    image: rustfs/rustfs:latest
+    ports:
+      - '0.0.0.0:${RUSTFS_EXTERNAL_PORT:-9000}:9000'
+      - '0.0.0.0:${RUSTFS_CONSOLE_PORT:-9001}:9001'
+    environment:
+      RUSTFS_ACCESS_KEY: faimsdev
+      RUSTFS_SECRET_KEY: faimsdevsecret1
+      RUSTFS_ADDRESS: ':9000'
+      RUSTFS_CONSOLE_ADDRESS: ':9001'
+      RUSTFS_CONSOLE_ENABLE: 'true'
+    volumes:
+      - type: volume
+        source: rustfs_data
+        target: /data
+    command: /data
+
 volumes:
   couchdb_data:
+  rustfs_data:

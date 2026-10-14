@@ -55,7 +55,8 @@ pnpm install
 ### GDAL (GeoPackage export and map-layer ingest)
 
 GeoPackage (`.gpkg`) export uses `ogr2ogr`. Map-layer ingest uses `ogrinfo`,
-`gdalinfo`, `gdalwarp`, and `gdal_translate`, and georeferenced PDFs need the PDF
+`gdalinfo`, `gdalwarp`, and `gdal_translate`. Vector zips may be a shapefile or
+an ESRI File Geodatabase (`OpenFileGDB`). Georeferenced PDFs need the PDF
 driver (Poppler). Both are included in the API Docker image and devcontainer. For
 native Node development, install them on the host:
 

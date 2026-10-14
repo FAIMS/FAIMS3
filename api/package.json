@@ -32,6 +32,9 @@
     "debug-migration-lock": "env-cmd tsx scripts/debugMigrationLock.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1147.0",
+    "@aws-sdk/lib-storage": "^3.1147.0",
+    "@aws-sdk/s3-request-presigner": "^3.1147.0",
     "@bugsnag/js": "^7.20.2",
     "@bugsnag/plugin-express": "^7.0.0",
     "@faims3/data-model": "workspace:*",

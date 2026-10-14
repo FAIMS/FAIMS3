@@ -13,10 +13,33 @@ import {
   MapAssetQualitySchema,
 } from './normalizeOptions';
 
-/** Couch attachment holding the bytes the user uploaded (or a zip of them). */
+/** Object-store key for the bytes the user uploaded (or a zip of them). */
 export const MAP_ASSET_ORIGINAL_ATTACHMENT = 'original';
-/** Couch attachment holding the device-ready GeoJSON or PNG. */
+/** Object-store key for the device-ready GeoJSON or PNG. */
 export const MAP_ASSET_NORMALIZED_ATTACHMENT = 'normalized';
+
+/**
+ * Object-store location persisted on the Couch map-asset document.
+ * Bytes live in the attachment store; Couch holds only this metadata.
+ *
+ * `resourceUri` is opaque at this layer — the `provider` decides how to
+ * interpret it. For `provider: 's3'` the URI is
+ * `s3://{region}/{bucket}/{key}` (the key may contain slashes).
+ *
+ * `endpoint` is S3-only: a custom host for RustFS or another S3-compatible
+ * store. Omit it when talking to AWS S3.
+ */
+export const StoredAttachmentLocationSchema = z.object({
+  provider: z.literal('s3'),
+  resourceUri: z.string().min(1),
+  contentType: z.string().min(1),
+  byteSize: z.number().nonnegative(),
+  /** S3-compatible custom endpoint (e.g. local RustFS). Ignored for AWS S3. */
+  endpoint: z.string().min(1).optional(),
+});
+export type StoredAttachmentLocation = z.infer<
+  typeof StoredAttachmentLocationSchema
+>;
 
 export const MAP_ASSET_DOC_TYPE = 'asset' as const;
 export const MAP_ASSET_LINK_DOC_TYPE = 'link' as const;
@@ -73,13 +96,22 @@ export const MapAssetFieldsSchema = z.object({
   createdBy: IdInputSchema.min(1),
   originalFilename: z.string().min(1).max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
   /**
-   * Extra upload files (world file, `.prj`) stored as
-   * `companion-<filename>` attachments beside `original`.
+   * Extra upload files (world file, `.prj`) stored beside `original`
+   * under `companion-<filename>` object keys.
    */
   companionFilenames: z
     .array(z.string().min(1).max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH))
     .optional(),
-  /** Byte size of the normalized attachment once `status` is `ready`. */
+  /**
+   * Object-store locations keyed by attachment id (`original`,
+   * `companion-<filename>`, `normalized`). Each value is a provider
+   * plus a `resourceUri` the provider understands. Couch holds only
+   * these pointers; the bytes are not Couch attachments.
+   */
+  storedAttachments: z
+    .record(z.string(), StoredAttachmentLocationSchema)
+    .optional(),
+  /** Byte size of the normalized file once `status` is `ready`. */
   byteSize: z.number().nonnegative(),
   /** SHA-256 hex of the normalized bytes. Set when `status` is `ready`. */
   contentHash: z.string().min(1).optional(),
@@ -155,6 +187,21 @@ export const GetMapAssetListResponseSchema = z.object({
 });
 export type GetMapAssetListResponse = z.infer<
   typeof GetMapAssetListResponseSchema
+>;
+
+/**
+ * Presigned download for the device-ready file. Clients fetch `url`
+ * directly from object storage — Conductor does not stream the bytes.
+ */
+export const GetMapAssetDownloadUrlResponseSchema = z.object({
+  url: z.string().min(1),
+  mediaType: z.string().min(1),
+  filename: z.string().min(1),
+  byteSize: z.number().nonnegative(),
+  expiresInSeconds: z.number().int().positive(),
+});
+export type GetMapAssetDownloadUrlResponse = z.infer<
+  typeof GetMapAssetDownloadUrlResponseSchema
 >;
 
 export const PostMapAssetLinkInputSchema = z.object({

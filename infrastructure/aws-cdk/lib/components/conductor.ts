@@ -14,7 +14,7 @@
  * 25-07-2024 | Peter Baker | use the same LB as the couch DB network to save $$$.
  */
 
-import {Duration} from 'aws-cdk-lib';
+import {Duration, Stack} from 'aws-cdk-lib';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
@@ -22,6 +22,7 @@ import * as elb from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as r53 from 'aws-cdk-lib/aws-route53';
 import * as r53Targets from 'aws-cdk-lib/aws-route53-targets';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import {Construct} from 'constructs';
 import {getPathToRoot} from '../util/mono';
@@ -105,6 +106,10 @@ export interface FaimsConductorProps {
   smtpCredsArn: string;
   /** SMTP general configuration */
   smtpConfig: SMTPGeneralConfig;
+  /** Private bucket for map-layer originals and normalized files. */
+  mapAssetBucket: s3.IBucket;
+  /** Key prefix inside {@link mapAssetBucket}. */
+  mapAssetPrefix: string;
   /** Social providers info (if enabled) */
   authProviders?: AuthProvidersConfig;
   /** Provision SSO users policy - do we create a new user for an unknown SSO sign-in? Default 'reject' */
@@ -197,11 +202,12 @@ export class FaimsConductor extends Construct {
       this,
       'conductor-task-dfn',
       {
-        ephemeralStorageGiB: 21, // 20GB ephemeral storage (minimum)
+        ephemeralStorageGiB: props.config.ephemeralStorageGiB,
         cpu: props.config.cpu,
         memoryLimitMiB: props.config.memory,
       }
     );
+    props.mapAssetBucket.grantReadWrite(conductorTaskDfn.taskRole);
 
     // Add container to the task definition
     const smtpSecret = sm.Secret.fromSecretCompleteArn(
@@ -344,6 +350,12 @@ export class FaimsConductor extends Construct {
       EMAIL_REPLY_TO: props.smtpConfig.replyTo || props.smtpConfig.fromEmail,
       TEST_EMAIL_ADDRESS: props.smtpConfig.testEmailAddress,
       SMTP_CACHE_EXPIRY_SECONDS: `${props.smtpConfig.cacheExpirySeconds || DEFAULT_SMTP_CACHE_EXPIRY}`,
+
+      // Map-layer object storage. Credentials come from the task role.
+      ATTACHMENT_STORAGE_TYPE: 'S3',
+      ATTACHMENT_S3_BUCKET: props.mapAssetBucket.bucketName,
+      ATTACHMENT_S3_PREFIX: props.mapAssetPrefix,
+      ATTACHMENT_S3_REGION: Stack.of(this).region,
 
       // Whitelisting for redirects - should include API, APP, WEB and APP_ID://
       REDIRECT_WHITELIST: [

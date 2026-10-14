@@ -77,9 +77,29 @@ GeoPackage is **not** streamed end-to-end:
 
 ## Map-layer ingest
 
-Control Centre uploads are stored in the `mapassets` Couch database and normalized before a device downloads them. The combined upload may be at most 2 GB (8 files). CouchDB 3.5 defaults attachments to 1 GiB, so `local.ini` sets `max_attachment_size` and `max_http_request_size` to 4 GiB.
+Control Centre uploads are stored as Couch metadata in the `mapassets` database. File bytes go to object storage (AWS S3 in production, local RustFS in `./dev.sh`). Each asset document records the exact location in `storedAttachments` (`provider`, `resourceUri`, content type, byte size, optional S3 `endpoint`) for `original`, companion files, and `normalized`. For S3 the URI is `s3://{region}/{bucket}/{key}`. The combined upload may be at most 2 GB (8 files).
 
-The HTTP request writes files to disk (`multer` disk storage) and returns `201` while the asset is `processing`. The in-process queue then streams originals to CouchDB, runs GDAL from those files, and streams the normalized attachment. Nothing on that path buffers the whole original in RAM. If the API process restarts, the sweep reuses leftover staging files on the same host or streams originals back out of CouchDB.
+The HTTP request writes files to disk (`multer` disk storage) and returns `201` while the asset is `processing`. The in-process queue then streams originals to object storage, runs GDAL from those files, and streams the normalized file to object storage. Nothing on that path buffers the whole original in RAM. If the API process restarts, the sweep reuses leftover staging files on the same host or streams originals back out of object storage.
+
+The field app and Control Centre download the device-ready file directly from object storage. `GET /api/map-assets/:id/download-url` (Bearer) returns a JSON grant (`url`, `mediaType`, `filename`, `byteSize`, `expiresInSeconds`). The client then `GET`s `url` — Conductor does not stream the bytes. Grants last one hour. When the API reaches RustFS on an internal hostname, set `ATTACHMENT_S3_PUBLIC_ENDPOINT` (e.g. `http://localhost:9000`) so the signed host is reachable from the browser. Docker `--all` and the compose API service set that automatically. The bucket allows CORS `GET`/`HEAD` (CDK in AWS; Conductor applies it on local RustFS).
+
+### Local object storage (RustFS)
+
+`./dev.sh` / `./localdev.sh` start a RustFS container beside CouchDB (`docker compose up -d couchdb rustfs`).
+
+| Service | URL                                |
+| ------- | ---------------------------------- |
+| S3 API  | http://localhost:9000              |
+| Console | http://localhost:9001              |
+| Health  | `GET http://localhost:9000/health` |
+
+`api/.env.dist` points Conductor at that endpoint with static local keys (`faimsdev` / `faimsdevsecret1`). `./localdev.sh --all` overrides `ATTACHMENT_S3_ENDPOINT` to `http://rustfs:9000` so the API container uses Docker DNS, and `ATTACHMENT_S3_PUBLIC_ENDPOINT` to `http://localhost:9000` so presigned downloads work from the host browser. On AWS ECS, omit the keys and endpoint — the task role authenticates, and CDK creates the bucket with CORS for client GETs.
+
+Admin smoke test (operations / general admin): `POST /api/admin/test-attachment-storage`. It uploads, heads, downloads, presigns, and deletes a tiny probe object.
+
+The storage backend is selected like email: `ATTACHMENT_STORAGE_TYPE=S3` or `MOCK` (forced under test). Implementation: `api/src/services/attachmentStorageService.ts`.
+
+A rejected or aborted upload deletes its `req-*` staging directory: multer size/count errors and a client disconnect both clean up. Before the stream starts, the API checks free space on `os.tmpdir()`. If less than three times the 2 GB cap remains (room for the original, a warped copy, and GDAL scratch), it returns **503** with `MAP_ASSET_UPLOAD_BUSY_MESSAGE`. The Control Centre shows that text rather than a generic failure. AWS Conductor Fargate ephemeral storage defaults to **80 GiB** (`conductor.ephemeralStorageGiB`, range 21–200).
 
 Node 18+ defaults `server.requestTimeout` to 5 minutes, which would abort a slow 2 GB upload. Conductor sets `requestTimeout` to 1 hour (`headersTimeout` slightly higher). That is a process-wide HTTP server setting, not per-route. An AWS ALB idle timeout is still typically 60 seconds: a continuously sending upload stays alive; a paused upload can still be cut. DigitalOcean nginx in this repo sets `client_max_body_size 0` but inherits the default 60s `proxy_read_timeout` unless you raise it.
 
@@ -88,6 +108,7 @@ Accepted uploads:
 - GeoJSON (`.geojson`, `.json`)
 - GeoPackage (`.gpkg`)
 - Zipped shapefile, including `.shp`, `.shx`, `.dbf`, and `.prj`
+- Zipped ESRI File Geodatabase (`.gdb.zip`, or a `.zip` with one `.gdb` folder). GDAL OpenFileGDB reads it; ArcGIS / Pro "Export File Geodatabase" zips work. A zip with more than one `.gdb` is rejected. Feature classes are merged into one GeoJSON layer. Domains, subtypes, relationships, and attachments are dropped.
 - KML (`.kml`)
 - GeoTIFF (`.tif`, `.tiff`)
 - Georeferenced PDF (`.pdf`)
@@ -97,7 +118,7 @@ GDAL must report a CRS. Uploads with no CRS are marked `failed` and no normalize
 
 Every accepted file becomes one of two device payloads:
 
-- Vectors become a GeoJSON FeatureCollection in `EPSG:4326` (`ogr2ogr -t_srs EPSG:4326 -nln features`). Every source layer is written into that one layer, so a multi-folder KML or a multi-layer GeoPackage becomes a single overlay. Files larger than the chosen simplify budget (5 MB at the default quality of 50) are simplified.
+- Vectors become a GeoJSON FeatureCollection in `EPSG:4326` (`ogr2ogr -t_srs EPSG:4326 -nln features -select ""`). Every source layer is written into that one layer, so a multi-folder KML, multi-layer GeoPackage, or File Geodatabase becomes a single overlay. Feature attributes are dropped — the app only draws geometry. Files larger than the chosen simplify budget (5 MB at the default quality of 50) are simplified, except point-only layers (Douglas-Peucker cannot shrink them). A later simplify pass is skipped if the previous one did not reduce size by at least 1% (or 1 KB).
 - Rasters, including georeferenced PDFs, are warped to `EPSG:3857` and written as a PNG. The long edge follows the upload quality setting (4096 px at quality 50). Quality 100 keeps the source resolution, up to 32768 px. A PDF is rasterized at 150 DPI from its page size and is not shrunk below that. The asset document stores the placement extent.
 
 `POST /api/map-assets` and `PUT /api/map-assets/:id` accept optional `quality` (0–100) and `normalizeOptions`. `POST /api/map-assets/estimate` returns the resolved settings and an estimated device file size for the Control Centre slider.

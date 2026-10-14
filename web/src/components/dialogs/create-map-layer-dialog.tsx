@@ -66,7 +66,9 @@ export function CreateMapLayerDialog() {
                   <ul className="list-disc space-y-0.5 pl-4">
                     <li>GeoJSON (.geojson, .json)</li>
                     <li>GeoPackage (.gpkg)</li>
-                    <li>Zipped shapefile (.zip)</li>
+                    <li>
+                      Zipped shapefile or File Geodatabase (.zip, .gdb.zip)
+                    </li>
                     <li>KML (.kml)</li>
                   </ul>
                 </div>

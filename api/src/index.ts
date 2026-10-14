@@ -53,6 +53,11 @@ function listenHealth(app: Express): Promise<void> {
 const startup = async () => {
   assertLocalStartupConfig();
 
+  if (config.memoryMonitorEnabled) {
+    const {startMemoryMonitor} = await import('./memoryMonitor.js');
+    startMemoryMonitor();
+  }
+
   const app = createHealthApp();
   await listenHealth(app);
 

@@ -117,6 +117,11 @@ describe('map asset processing sweep', () => {
     expect(finished.status).toBe('ready');
     expect(finished.processingAttempts).toBe(1);
     expect(finished.processingStartedAt).toBeUndefined();
+    expect(finished.storedAttachments?.original?.provider).toBe('s3');
+    expect(finished.storedAttachments?.original?.resourceUri).toContain(
+      asset._id
+    );
+    expect(finished.storedAttachments?.normalized?.provider).toBe('s3');
     expect(normalizeMapUpload).toHaveBeenCalledOnce();
   });
 

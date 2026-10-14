@@ -273,6 +273,17 @@ const AuthProvidersConfigSchema = z
 
 export type AuthProvidersConfig = z.infer<typeof AuthProvidersConfigSchema>;
 
+export const AttachmentStorageConfigSchema = z.object({
+  /** Object-store backend. CDK production is S3 only. */
+  serviceType: z.enum(['S3']).default('S3'),
+  /**
+   * Key prefix inside the map-asset bucket (no leading/trailing slash).
+   * Couch documents store an S3 resource URI (`s3://region/bucket/key`)
+   * for each file.
+   */
+  prefix: z.string().min(1).default('map-assets'),
+});
+
 const SMTPConfigSchema = z.object({
   /** Email service type (SMTP or MOCK) */
   emailServiceType: z.enum(['SMTP']),
@@ -420,6 +431,12 @@ export const ConductorConfigSchema = z
     cpu: z.number().int().positive(),
     /** The amount of memory (in MiB) for the Fargate task */
     memory: z.number().int().positive(),
+    /**
+     * Fargate ephemeral storage (GiB) for map-layer staging and GDAL.
+     * AWS allows 21–200. Default 80 so a few 2 GB uploads plus warp
+     * scratch fit on one task.
+     */
+    ephemeralStorageGiB: z.number().int().min(21).max(200).default(80),
     /** Auto scaling configuration for the Conductor service */
     autoScaling: z.object({
       /** The desired number of tasks to run (general stable target) */
@@ -758,6 +775,14 @@ export const ConfigSchema = z.object({
   docs: DocsConfigSchema.optional().default({}),
   /** Email service configuration */
   smtp: SMTPConfigSchema,
+  /**
+   * Map-layer object storage. CDK always creates a private S3 bucket and
+   * grants the Conductor task role; static AWS keys are not set.
+   */
+  attachmentStorage: AttachmentStorageConfigSchema.optional().default({
+    serviceType: 'S3',
+    prefix: 'map-assets',
+  }),
   /** Social sign in providers */
   authProviders: AuthProvidersConfigSchema.optional(),
   /** Security parameters */
@@ -785,6 +810,9 @@ export type ConductorConfig = z.infer<typeof ConductorConfigSchema>;
 export type TtlCleanupConfig = z.infer<typeof TtlCleanupConfigSchema>;
 export type DomainsConfig = z.infer<typeof DomainsConfigSchema>;
 export type SMTPConfig = z.infer<typeof SMTPConfigSchema>;
+export type AttachmentStorageConfig = z.infer<
+  typeof AttachmentStorageConfigSchema
+>;
 export type OfflineMapsConfig = z.infer<typeof OfflineMapsConfigSchema>;
 export type AddressAutosuggestConfig = z.infer<
   typeof AddressAutosuggestConfigSchema

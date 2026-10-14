@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
  * Turns an uploaded map file set into one device-ready payload:
- * GeoJSON in EPSG:4326, or a PNG in EPSG:3857 no longer than
- * `options.maxRasterEdgePx` (4096 by default). A georeferenced PDF is
+ * GeoJSON in EPSG:4326 (geometry only), or a PNG in EPSG:3857 no longer
+ * than `options.maxRasterEdgePx` (4096 by default). A georeferenced PDF is
  * opened at 150 DPI from its page size, and quality 100 does not shrink
  * that raster.
  */
@@ -29,6 +29,7 @@ import {
   readGeoreferencedPdfRaster,
 } from '@faims3/data-model';
 import {GdalCommandError, readGdalJson, runGdalCommand} from '../export/gdal';
+import {logMapAssetProcessing, withMapAssetProcessingWait} from '../../logging';
 import {
   assertUploadCompanions,
   extensionOf,
@@ -37,6 +38,12 @@ import {
   safeUploadFilename,
   type UploadedMapFile,
 } from './uploadRules';
+import {resolveVectorGdalSource} from './zipSources';
+
+/** Optional ids so GDAL wait lines can be correlated with the asset. */
+export type MapAssetNormalizeLogContext = {
+  assetId?: string;
+};
 
 export {
   assertUploadCompanions,
@@ -102,27 +109,129 @@ function gdalSourcePath(filePath: string): string {
   return extensionOf(filePath) === '.zip' ? `/vsizip/${filePath}` : filePath;
 }
 
-async function inspectCrs(filePath: string, vector: boolean): Promise<void> {
-  const source = gdalSourcePath(filePath);
+async function inspectCrs(
+  filePath: string,
+  vector: boolean,
+  logContext?: MapAssetNormalizeLogContext
+): Promise<unknown> {
+  const source = vector
+    ? await resolveVectorGdalSource(filePath)
+    : gdalSourcePath(filePath);
+  const command = vector ? 'ogrinfo' : 'gdalinfo';
+  const filename = path.basename(filePath);
+  const gdbZip =
+    vector &&
+    (/\.gdb(?:\/|$)/i.test(source) ||
+      filename.toLowerCase().endsWith('.gdb.zip'));
   try {
-    const info = vector
-      ? await readGdalJson({
-          command: 'ogrinfo',
-          args: ['-json', '-so', '-al', source],
-        })
-      : await readGdalJson({
-          command: 'gdalinfo',
-          args: ['-json', source],
-        });
-    assertHasCrs(info, path.basename(filePath));
+    const info = await withMapAssetProcessingWait(
+      {
+        event: 'gdal.command',
+        assetId: logContext?.assetId,
+        command,
+        filename,
+        detail: gdbZip ? 'inspect CRS (File Geodatabase zip)' : 'inspect CRS',
+      },
+      () =>
+        vector
+          ? readGdalJson({
+              command: 'ogrinfo',
+              args: ['-json', '-so', '-al', source],
+            })
+          : readGdalJson({
+              command: 'gdalinfo',
+              args: ['-json', source],
+            })
+    );
+    assertHasCrs(info, filename);
+    return info;
   } catch (error) {
     if (error instanceof GdalCommandError) {
       throw new Error(
-        `GDAL could not read ${path.basename(filePath)}: ${error.stderr.trim() || error.message}`
+        `GDAL could not read ${filename}: ${error.stderr.trim() || error.message}`
       );
     }
     throw error;
   }
+}
+
+const POINT_ONLY_OGR_TYPES = new Set([
+  'point',
+  'multipoint',
+  '3dpoint',
+  'measuredpoint',
+  '3dmeasuredpoint',
+  '3dmultipoint',
+  'measuredmultipoint',
+  '3dmeasuredmultipoint',
+  'pointz',
+  'pointm',
+  'pointzm',
+  'multipointz',
+  'multipointm',
+  'multipointzm',
+  'point25d',
+  'multipoint25d',
+]);
+
+function normalizeOgrGeometryType(type: string): string {
+  return type.toLowerCase().replace(/[\s_]/g, '');
+}
+
+/**
+ * True when every ogrinfo layer is Point / MultiPoint (including Z/M).
+ * Mixed or unknown types (`Geometry`) stay eligible for simplify.
+ */
+export function isPointOnlyOgrInfo(info: unknown): boolean {
+  if (!info || typeof info !== 'object') {
+    return false;
+  }
+  const layers = (info as {layers?: unknown}).layers;
+  if (!Array.isArray(layers) || layers.length === 0) {
+    return false;
+  }
+  for (const layer of layers) {
+    if (!layer || typeof layer !== 'object') {
+      return false;
+    }
+    const fields = (layer as {geometryFields?: {type?: unknown}[]})
+      .geometryFields;
+    if (!Array.isArray(fields) || fields.length === 0) {
+      return false;
+    }
+    for (const field of fields) {
+      const type = typeof field?.type === 'string' ? field.type.trim() : '';
+      if (!POINT_ONLY_OGR_TYPES.has(normalizeOgrGeometryType(type))) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+/** 1% drop, or 1 KB on tiny files, before another simplify pass is worth it. */
+export const VECTOR_SIMPLIFY_IMPROVEMENT_RATIO = 0.01;
+const VECTOR_SIMPLIFY_IMPROVEMENT_MIN_BYTES = 1024;
+
+/** True when `afterBytes` is enough smaller than `beforeBytes` to try again. */
+export function simplificationReducedSize(
+  beforeBytes: number,
+  afterBytes: number
+): boolean {
+  if (
+    !Number.isFinite(beforeBytes) ||
+    !Number.isFinite(afterBytes) ||
+    beforeBytes <= 0 ||
+    afterBytes >= beforeBytes
+  ) {
+    return false;
+  }
+  const saved = beforeBytes - afterBytes;
+  const needed = Math.max(
+    VECTOR_SIMPLIFY_IMPROVEMENT_MIN_BYTES,
+    Math.ceil(beforeBytes * VECTOR_SIMPLIFY_IMPROVEMENT_RATIO)
+  );
+  return saved >= needed;
 }
 
 function extentFromRing(ring: number[][]): MapExtent {
@@ -184,9 +293,14 @@ function extentFromGeoJson(parsed: {
 async function convertVector(
   sourcePath: string,
   workDir: string,
-  options: MapAssetNormalizeOptions
+  options: MapAssetNormalizeOptions,
+  logContext?: MapAssetNormalizeLogContext,
+  sourceInfo?: unknown
 ): Promise<NormalizedMapAsset> {
   const outPath = path.join(workDir, 'normalized.geojson');
+  const filename = path.basename(sourcePath);
+  const pointOnly = isPointOnlyOgrInfo(sourceInfo);
+  const gdalSource = await resolveVectorGdalSource(sourcePath);
   const write = async (simplify?: number) => {
     const args = [
       '-f',
@@ -199,23 +313,69 @@ async function convertVector(
       // folders, multi-layer GeoPackages) into that layer.
       '-nln',
       'features',
+      // Devices only draw geometry today (style is on the asset, not
+      // feature properties). Drop attributes on every pass — later
+      // simplify writes re-read the original and would restore them.
+      // Keep a chosen subset here later if labels or identify need it.
+      '-select',
+      '',
     ];
     if (simplify !== undefined && simplify > 0) {
       args.push('-simplify', String(simplify));
     }
-    args.push(outPath, gdalSourcePath(sourcePath));
-    await runGdalCommand({command: 'ogr2ogr', args});
+    args.push(outPath, gdalSource);
+    await withMapAssetProcessingWait(
+      {
+        event: 'gdal.command',
+        assetId: logContext?.assetId,
+        command: 'ogr2ogr',
+        filename,
+        detail:
+          simplify !== undefined && simplify > 0
+            ? `GeoJSON EPSG:4326 simplify=${simplify}`
+            : 'GeoJSON EPSG:4326',
+      },
+      () => runGdalCommand({command: 'ogr2ogr', args})
+    );
   };
 
   await write();
   let byteSize = (await stat(outPath)).size;
-  if (byteSize > options.vectorSimplifyBytes) {
-    await write(options.vectorSimplifyTolerances[0]);
-    byteSize = (await stat(outPath)).size;
-  }
-  if (byteSize > options.vectorSimplifyBytes) {
-    await write(options.vectorSimplifyTolerances[1]);
-    byteSize = (await stat(outPath)).size;
+  const overBudget = () => byteSize > options.vectorSimplifyBytes;
+  if (overBudget() && pointOnly) {
+    logMapAssetProcessing({
+      event: 'gdal.command',
+      outcome: 'skipped',
+      assetId: logContext?.assetId,
+      command: 'ogr2ogr',
+      filename,
+      byteSize,
+      detail: 'skip simplify: point geometries only',
+    });
+  } else if (overBudget()) {
+    let previousSize = byteSize;
+    for (const tolerance of options.vectorSimplifyTolerances) {
+      if (!overBudget()) {
+        break;
+      }
+      await write(tolerance);
+      const nextSize = (await stat(outPath)).size;
+      const improved = simplificationReducedSize(previousSize, nextSize);
+      byteSize = nextSize;
+      if (!improved) {
+        logMapAssetProcessing({
+          event: 'gdal.command',
+          outcome: 'skipped',
+          assetId: logContext?.assetId,
+          command: 'ogr2ogr',
+          filename,
+          byteSize,
+          detail: `skip further simplify: ${previousSize} -> ${nextSize} bytes`,
+        });
+        break;
+      }
+      previousSize = nextSize;
+    }
   }
 
   return {
@@ -223,15 +383,28 @@ async function convertVector(
     mediaType: 'application/geo+json',
     filePath: outPath,
     byteSize,
-    extent4326: await extentFromOgrInfo(outPath),
+    extent4326: await extentFromOgrInfo(outPath, logContext),
   };
 }
 
-async function extentFromOgrInfo(filePath: string): Promise<MapExtent> {
-  const info = (await readGdalJson({
-    command: 'ogrinfo',
-    args: ['-json', '-so', '-al', filePath],
-  })) as {
+async function extentFromOgrInfo(
+  filePath: string,
+  logContext?: MapAssetNormalizeLogContext
+): Promise<MapExtent> {
+  const info = (await withMapAssetProcessingWait(
+    {
+      event: 'gdal.command',
+      assetId: logContext?.assetId,
+      command: 'ogrinfo',
+      filename: path.basename(filePath),
+      detail: 'read normalized extent',
+    },
+    () =>
+      readGdalJson({
+        command: 'ogrinfo',
+        args: ['-json', '-so', '-al', filePath],
+      })
+  )) as {
     layers?: {geometryFields?: {extent?: number[]}[]}[];
   };
   const extent = info.layers?.[0]?.geometryFields?.[0]?.extent;
@@ -265,7 +438,8 @@ type GdalInfo = {
  */
 async function pdfDpiOpenOptions(
   sourcePath: string,
-  maxRasterEdgePx: number
+  maxRasterEdgePx: number,
+  logContext?: MapAssetNormalizeLogContext
 ): Promise<string[]> {
   if (extensionOf(sourcePath) !== '.pdf') {
     return [];
@@ -274,14 +448,42 @@ async function pdfDpiOpenOptions(
     const bytes = new Uint8Array(await readPdfHeadAndTail(sourcePath));
     const full = readGeoreferencedPdfRaster(bytes);
     if (!full) {
+      logMapAssetProcessing({
+        event: 'normalize.raster.pdf_dpi',
+        outcome: 'skipped',
+        assetId: logContext?.assetId,
+        filename: path.basename(sourcePath),
+        reason: 'PDF is not a georeferenced raster',
+      });
       return [];
     }
     const dpi = pdfRenderDpi(full, maxRasterEdgePx);
     if (!Number.isFinite(dpi) || dpi <= 0) {
+      logMapAssetProcessing({
+        event: 'normalize.raster.pdf_dpi',
+        outcome: 'skipped',
+        assetId: logContext?.assetId,
+        filename: path.basename(sourcePath),
+        reason: 'could not derive a render DPI',
+      });
       return [];
     }
+    logMapAssetProcessing({
+      event: 'normalize.raster.pdf_dpi',
+      outcome: 'success',
+      assetId: logContext?.assetId,
+      filename: path.basename(sourcePath),
+      detail: `DPI=${dpi.toFixed(2)}`,
+    });
     return ['-oo', `DPI=${dpi.toFixed(2)}`];
-  } catch {
+  } catch (error) {
+    logMapAssetProcessing({
+      event: 'normalize.raster.pdf_dpi',
+      outcome: 'skipped',
+      assetId: logContext?.assetId,
+      filename: path.basename(sourcePath),
+      reason: error instanceof Error ? error.message : String(error),
+    });
     return [];
   }
 }
@@ -289,46 +491,80 @@ async function pdfDpiOpenOptions(
 async function convertRaster(
   sourcePath: string,
   workDir: string,
-  options: MapAssetNormalizeOptions
+  options: MapAssetNormalizeOptions,
+  logContext?: MapAssetNormalizeLogContext
 ): Promise<NormalizedMapAsset> {
   const warped = path.join(workDir, 'warped.tif');
   const png = path.join(workDir, 'normalized.png');
+  const filename = path.basename(sourcePath);
   const dpiOptions = await pdfDpiOpenOptions(
     sourcePath,
-    options.maxRasterEdgePx
+    options.maxRasterEdgePx,
+    logContext
   );
-  await runGdalCommand({
-    command: 'gdalwarp',
-    args: [
-      ...dpiOptions,
-      '-t_srs',
-      'EPSG:3857',
-      '-r',
-      'bilinear',
-      '-of',
-      'GTiff',
-      gdalSourcePath(sourcePath),
-      warped,
-    ],
-  });
+  await withMapAssetProcessingWait(
+    {
+      event: 'gdal.command',
+      assetId: logContext?.assetId,
+      command: 'gdalwarp',
+      filename,
+      detail: 'EPSG:3857 bilinear GeoTIFF',
+    },
+    () =>
+      runGdalCommand({
+        command: 'gdalwarp',
+        args: [
+          ...dpiOptions,
+          '-t_srs',
+          'EPSG:3857',
+          '-r',
+          'bilinear',
+          '-of',
+          'GTiff',
+          gdalSourcePath(sourcePath),
+          warped,
+        ],
+      })
+  );
 
-  const info = (await readGdalJson({
-    command: 'gdalinfo',
-    args: ['-json', warped],
-  })) as GdalInfo;
+  const info = (await withMapAssetProcessingWait(
+    {
+      event: 'gdal.command',
+      assetId: logContext?.assetId,
+      command: 'gdalinfo',
+      filename: 'warped.tif',
+      detail: 'read warped raster size',
+    },
+    () =>
+      readGdalJson({
+        command: 'gdalinfo',
+        args: ['-json', warped],
+      })
+  )) as GdalInfo;
   const width = info.size?.[0] ?? 0;
   const height = info.size?.[1] ?? 0;
   const translateArgs = ['-of', 'PNG'];
   const longEdge = Math.max(width, height);
+  let resizeDetail = 'PNG no resize';
   if (longEdge > options.maxRasterEdgePx && width > 0 && height > 0) {
     if (width >= height) {
       translateArgs.push('-outsize', String(options.maxRasterEdgePx), '0');
     } else {
       translateArgs.push('-outsize', '0', String(options.maxRasterEdgePx));
     }
+    resizeDetail = `PNG long-edge ${options.maxRasterEdgePx}px`;
   }
   translateArgs.push(warped, png);
-  await runGdalCommand({command: 'gdal_translate', args: translateArgs});
+  await withMapAssetProcessingWait(
+    {
+      event: 'gdal.command',
+      assetId: logContext?.assetId,
+      command: 'gdal_translate',
+      filename,
+      detail: resizeDetail,
+    },
+    () => runGdalCommand({command: 'gdal_translate', args: translateArgs})
+  );
 
   const upperLeft = info.cornerCoordinates?.upperLeft;
   const lowerRight = info.cornerCoordinates?.lowerRight;
@@ -379,7 +615,8 @@ async function readPdfHeadAndTail(filePath: string): Promise<Buffer> {
  */
 export async function normalizeMapUpload(
   files: UploadedMapFile[],
-  options: MapAssetNormalizeOptions = DEFAULT_MAP_ASSET_NORMALIZE_OPTIONS
+  options: MapAssetNormalizeOptions = DEFAULT_MAP_ASSET_NORMALIZE_OPTIONS,
+  logContext?: MapAssetNormalizeLogContext
 ): Promise<NormalizedMapAsset> {
   assertUploadCompanions(files);
   const primary = primaryUploadFile(files);
@@ -403,10 +640,16 @@ export async function normalizeMapUpload(
     }
     const sourcePath = path.join(workDir, safeUploadFilename(primary.filename));
     const vector = isVectorUpload(primary.filename);
-    await inspectCrs(sourcePath, vector);
+    const sourceInfo = await inspectCrs(sourcePath, vector, logContext);
     const result = vector
-      ? await convertVector(sourcePath, workDir, options)
-      : await convertRaster(sourcePath, workDir, options);
+      ? await convertVector(
+          sourcePath,
+          workDir,
+          options,
+          logContext,
+          sourceInfo
+        )
+      : await convertRaster(sourcePath, workDir, options, logContext);
     return ownsWorkDir ? {...result, cleanupDir: workDir} : result;
   } catch (error) {
     if (ownsWorkDir) {

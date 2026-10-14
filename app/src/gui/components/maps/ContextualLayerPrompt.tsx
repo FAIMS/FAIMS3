@@ -1,13 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import type {ContextualLayerListing} from '@faims3/data-model';
 import {ProgressBar} from '@faims3/forms';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
-import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
 import {
   Button,
   Checkbox,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -18,7 +14,6 @@ import {
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import {useEffect, useMemo, useState} from 'react';
-import {config} from '../../../buildconfig';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {
   clearPendingContextualLayerPrompt,
@@ -47,38 +42,9 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function formatExtent(extent: ContextualLayerListing['extent']): string {
-  return extent.map(value => value.toFixed(3)).join(', ');
-}
-
 function kindLabel(kind: ContextualLayerListing['kind']): string {
   return kind === 'image' ? 'Image' : 'Vector';
 }
-
-const STATUS_CHIP: Record<
-  LayerDeviceStatus,
-  {
-    label: string;
-    color: 'success' | 'warning' | 'default';
-    icon: typeof CheckCircleIcon;
-  }
-> = {
-  'on-device': {
-    label: 'On this device',
-    color: 'success',
-    icon: CheckCircleIcon,
-  },
-  update: {
-    label: 'Update available',
-    color: 'warning',
-    icon: SystemUpdateAltIcon,
-  },
-  'not-downloaded': {
-    label: 'Needs download',
-    color: 'default',
-    icon: CloudDownloadIcon,
-  },
-};
 
 function LayerChoice({
   layer,
@@ -93,8 +59,6 @@ function LayerChoice({
   disabled: boolean;
   onToggle: (checked: boolean) => void;
 }) {
-  const chip = STATUS_CHIP[status];
-  const ChipIcon = chip.icon;
   return (
     <FormControlLabel
       disabled={disabled}
@@ -103,9 +67,11 @@ function LayerChoice({
       sx={theme => ({
         alignItems: 'flex-start',
         mx: 0,
+        width: '100%',
         py: 1,
         px: 1,
         borderRadius: 1,
+        '& .MuiFormControlLabel-label': {flex: 1, minWidth: 0},
         border: '1px solid',
         borderColor: checked
           ? status === 'on-device'
@@ -136,27 +102,30 @@ function LayerChoice({
         />
       }
       label={
-        <Stack spacing={0.5} sx={{pt: 0.75, minWidth: 0}}>
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{alignItems: 'center', flexWrap: 'wrap'}}
-          >
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            pt: 0.75,
+            minWidth: 0,
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            width: '100%',
+          }}
+        >
+          <Stack spacing={0.25} sx={{minWidth: 0}}>
             <Typography sx={{fontWeight: 600, overflowWrap: 'anywhere'}}>
               {layer.name}
             </Typography>
-            <Chip
-              size="small"
-              color={chip.color}
-              variant={status === 'not-downloaded' ? 'outlined' : 'filled'}
-              icon={<ChipIcon />}
-              label={chip.label}
-              data-testid={`map-layer-status-${layer.id}`}
-            />
+            <Typography variant="body2" color="text.secondary">
+              {kindLabel(layer.kind)}
+            </Typography>
           </Stack>
-          <Typography variant="body2" color="text.secondary">
-            {kindLabel(layer.kind)} · {formatBytes(layer.byteSize)} ·{' '}
-            {formatExtent(layer.extent)}
+          <Typography
+            data-testid={`map-layer-size-${layer.id}`}
+            sx={{fontWeight: 700, whiteSpace: 'nowrap'}}
+          >
+            {formatBytes(layer.byteSize)}
           </Typography>
         </Stack>
       }
@@ -374,9 +343,8 @@ export function ContextualLayerPrompt() {
       <DialogTitle>Download map layers</DialogTitle>
       <DialogContent>
         <Typography variant="body2" sx={{mb: 2}}>
-          This {config.notebookName}: '{project.name}', has contextual layers
-          for offline maps. Ticked layers already on this device stay as they
-          are. Ticked layers that are not downloaded will be saved now.
+          This survey has contextual layers available for download. In order to
+          view these layers in the map, you must download them to the device.
         </Typography>
         {stored === null ? (
           <Typography variant="body2" color="text.secondary">
@@ -385,7 +353,7 @@ export function ContextualLayerPrompt() {
         ) : (
           <Stack spacing={2}>
             <LayerGroup
-              title="Already on this device"
+              title="Already on the device"
               testId="map-layer-group-on-device"
               layers={onDeviceLayers}
               statusById={statusById}
@@ -394,7 +362,7 @@ export function ContextualLayerPrompt() {
               onToggle={toggleLayer}
             />
             <LayerGroup
-              title="Need to download"
+              title="Not yet downloaded"
               testId="map-layer-group-to-download"
               layers={toDownloadLayers}
               statusById={statusById}

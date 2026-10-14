@@ -261,6 +261,7 @@ export enum Action {
   VALIDATE_DBS = 'VALIDATE_DBS',
   RESTORE_FROM_BACKUP = 'RESTORE_FROM_BACKUP',
   SEND_TEST_EMAIL = 'SEND_TEST_EMAIL',
+  TEST_ATTACHMENT_STORAGE = 'TEST_ATTACHMENT_STORAGE',
   VERIFY_EMAIL = 'VERIFY_EMAIL',
 }
 
@@ -891,6 +892,13 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: false,
     resource: Resource.SYSTEM,
   },
+  [Action.TEST_ATTACHMENT_STORAGE]: {
+    name: 'Test attachment storage',
+    description:
+      'Run the attachment storage smoke test (upload, download, presign, delete)',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
   [Action.VERIFY_EMAIL]: {
     name: 'Verify an email address',
     description: 'Allows the user to generate a verification challenge email.',
@@ -1282,6 +1290,7 @@ export const roleActions: Record<
       Action.RESTORE_FROM_BACKUP,
       Action.VALIDATE_DBS,
       Action.SEND_TEST_EMAIL,
+      Action.TEST_ATTACHMENT_STORAGE,
 
       // Teams
       Action.CREATE_TEAM,

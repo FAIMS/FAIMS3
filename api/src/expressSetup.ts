@@ -182,7 +182,11 @@ export function attachFullApi(app: express.Express): void {
     console.log('Not enabling export rate limiter (explicitly disabled).');
   }
 
-  app.use(morgan('combined'));
+  if (config.requestLoggingEnabled) {
+    app.use(morgan('combined'));
+  } else if (!IS_TEST) {
+    console.log('Not enabling morgan request logging (explicitly disabled).');
+  }
 
   // Only parse query parameters into strings, not objects
   app.set('query parser', 'simple');

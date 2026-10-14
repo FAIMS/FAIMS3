@@ -401,6 +401,7 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `enhancedObservability`: (Optional) Enable ECS enhanced observability (container insights)
   - `cpu`: The number of CPU units for the Fargate task
   - `memory`: The amount of memory (in MiB) for the Fargate task
+  - `ephemeralStorageGiB`: (default `80`, range 21–200) Fargate ephemeral disk for map-layer staging and GDAL scratch
   - `localhostWhitelist`: (default false) Allow localhost-style redirects; not recommended for production
   - `disableMigrateOnStartup`: (default `false`) Skip API-boot Couch migrate and notebook walks (`DISABLE_MIGRATE_ON_STARTUP`). Leave false so boot still runs `initialiseAndMigrateDBs` + `validateDatabases`. Set true only when migrate is handled out of band (`pnpm migrate-with-keys`) or for a debug stack against an already-migrated DB. When true, the lock is unused: omit `disableStartupMigrationLock` (it is forced off) or set it `true`. An explicit `disableStartupMigrationLock: false` with this flag is a config error.
   - `disableStartupMigrationLock`: (optional, default treated as `false` when migrate-on-startup is still on) Opt out of the Couch-mediated startup-migration lock. AWS ECS is clustered, so CDK **hard-enables** `STARTUP_MIGRATION_LOCK_ENABLED` unless this is `true` or `disableMigrateOnStartup` is `true`. Leave unset/false in production so replicas claim/wait instead of racing migrate. Only set true for a single-task / debug stack (the same reason local `pnpm run dev` defaults the env flag off — a killed reload can leave a `running` lock that strands the next boot until the steal timeout).
@@ -658,3 +659,23 @@ This will:
 1. Send a test email to the configured test address
 2. Return detailed diagnostics about the process
 3. Help identify any configuration issues
+
+# Map-layer object storage
+
+CDK creates a private S3 bucket for map-layer originals and normalized files, with CORS `GET`/`HEAD` so the app and Control Centre can download via a Conductor-issued presigned URL. CouchDB stores only metadata, including an S3 resource URI (`s3://region/bucket/key`). The Conductor task role is granted read/write; static AWS access keys are not set.
+
+Optional JSON (defaults shown):
+
+```json
+"attachmentStorage": {
+  "serviceType": "S3",
+  "prefix": "map-assets"
+}
+```
+
+Conductor receives `ATTACHMENT_STORAGE_TYPE`, `ATTACHMENT_S3_BUCKET`, `ATTACHMENT_S3_PREFIX`, and `ATTACHMENT_S3_REGION`. After deploy, an operations admin can smoke-test auth with:
+
+```bash
+curl -X POST https://your-conductor-endpoint.com/api/admin/test-attachment-storage \
+  -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN"
+```

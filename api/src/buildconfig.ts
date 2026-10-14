@@ -26,6 +26,12 @@ import {
 import {existsSync} from 'fs';
 import {z} from 'zod';
 import {
+  AttachmentStorageConfig,
+  AttachmentStorageType,
+  createAttachmentStorageService,
+  IAttachmentStorageService,
+} from './services/attachmentStorageService';
+import {
   createEmailService,
   EmailConfig,
   EmailServiceType,
@@ -269,6 +275,20 @@ const EnvSchema = z
      */
     ATTEMPT_LIMITER_ENABLED: configHelpers.boolWithDefault(true),
     /**
+     * When true, start a 1 Hz stdout memory sampler with leak-oriented
+     * diagnostics (heap/RSS deltas, moving averages, peaks, detached
+     * contexts, event-loop lag). Blank → off. Unrecognised values fail
+     * parse. Intended for local/debug leak hunts — noisy at 1 Hz.
+     */
+    MEMORY_MONITOR_ENABLED: configHelpers.boolWithDefault(false),
+    /**
+     * Whether morgan writes a combined-format access line for every HTTP
+     * request. Blank → on; unrecognised values fail parse. Set false to
+     * quiet stdout when structured audit logs (map-asset processing,
+     * invites, downloads) are enough. Does not affect those audit lines.
+     */
+    REQUEST_LOGGING_ENABLED: configHelpers.boolWithDefault(true),
+    /**
      * Canonical public URL of this Conductor (required). Trailing `/` is
      * stripped.
      */
@@ -324,6 +344,53 @@ const EnvSchema = z
      * validated when the endpoint is used. Forced to a fake address under test.
      */
     TEST_EMAIL_ADDRESS: z.string().optional(),
+    /**
+     * Object-store backend for map-layer files (`S3` or `MOCK`). Blank → S3.
+     * Forced to MOCK under test. S3 also talks to RustFS when
+     * ATTACHMENT_S3_ENDPOINT is set.
+     */
+    ATTACHMENT_STORAGE_TYPE: configHelpers.nativeEnumDefault(
+      AttachmentStorageType,
+      AttachmentStorageType.S3
+    ),
+    /** Bucket that holds map-layer objects (required when type is S3). */
+    ATTACHMENT_S3_BUCKET: z.string().optional(),
+    /**
+     * Key prefix inside the bucket, e.g. `map-assets` (required when type
+     * is S3). Leading/trailing slashes are stripped.
+     */
+    ATTACHMENT_S3_PREFIX: z.string().optional(),
+    /**
+     * AWS region, or a dummy region for RustFS (required when type is S3).
+     */
+    ATTACHMENT_S3_REGION: z.string().optional(),
+    /**
+     * Custom S3 endpoint (RustFS, MinIO). Omit for AWS S3. Native local
+     * dev uses `http://localhost:9000`; Docker `--all` uses
+     * `http://rustfs:9000`.
+     */
+    ATTACHMENT_S3_ENDPOINT: z.string().optional(),
+    /**
+     * Host-visible S3 endpoint used when signing download URLs. Needed
+     * when the API talks to RustFS as `http://rustfs:9000` but browsers
+     * fetch `http://localhost:9000`. Omit when the signing host is
+     * already reachable (native `./dev.sh`, AWS S3).
+     */
+    ATTACHMENT_S3_PUBLIC_ENDPOINT: z.string().optional(),
+    /**
+     * Path-style S3 URLs (`true` / other). Default true when an endpoint
+     * is set (required for RustFS).
+     */
+    ATTACHMENT_S3_FORCE_PATH_STYLE: z.string().optional(),
+    /**
+     * Optional static access key. Omit on ECS so the task role is used.
+     * Required for local RustFS.
+     */
+    ATTACHMENT_S3_ACCESS_KEY_ID: z.string().optional(),
+    /**
+     * Optional static secret key. Omit on ECS so the task role is used.
+     */
+    ATTACHMENT_S3_SECRET_ACCESS_KEY: z.string().optional(),
     /**
      * Comma-separated list of domains to which auth-flow redirects are
      * allowed. Required; each entry must be a valid URL.
@@ -566,6 +633,8 @@ const EnvSchema = z
       exportRateLimiterWindowMs: env.EXPORT_RATE_LIMITER_WINDOW_MS,
       exportRateLimiterPerWindow: env.EXPORT_RATE_LIMITER_PER_WINDOW,
       authAttemptLimiterEnabled: env.ATTEMPT_LIMITER_ENABLED,
+      memoryMonitorEnabled: env.MEMORY_MONITOR_ENABLED,
+      requestLoggingEnabled: env.REQUEST_LOGGING_ENABLED,
       keySource: env.KEY_SOURCE,
       maximumLongLivedDurationDays: env.MAXIMUM_LONG_LIVED_DURATION_DAYS,
       bugsnagApiKey: env.BUGSNAG_API_KEY,
@@ -595,13 +664,24 @@ const EnvSchema = z
         smtpCacheExpirySeconds: env.SMTP_CACHE_EXPIRY_SECONDS,
         testEmailAddress: env.TEST_EMAIL_ADDRESS,
       },
+      _attachment: {
+        serviceType: env.ATTACHMENT_STORAGE_TYPE,
+        bucket: env.ATTACHMENT_S3_BUCKET,
+        prefix: env.ATTACHMENT_S3_PREFIX,
+        region: env.ATTACHMENT_S3_REGION,
+        endpoint: env.ATTACHMENT_S3_ENDPOINT,
+        publicEndpoint: env.ATTACHMENT_S3_PUBLIC_ENDPOINT,
+        forcePathStyle: env.ATTACHMENT_S3_FORCE_PATH_STYLE,
+        accessKeyId: env.ATTACHMENT_S3_ACCESS_KEY_ID,
+        secretAccessKey: env.ATTACHMENT_S3_SECRET_ACCESS_KEY,
+      },
       _keyFileHost: keyFileHost,
     };
   });
 
 const parsed = EnvSchema.parse(process.env);
 
-const {_email, _keyFileHost, ...configFields} = parsed;
+const {_email, _attachment, _keyFileHost, ...configFields} = parsed;
 
 // ---------------------------------------------------------------------------
 // Email scalars resolved once and hung on `config`.
@@ -684,6 +764,89 @@ const testEmailAddress = configFields.runningUnderTest
     ? undefined
     : _email.testEmailAddress;
 
+function resolveAttachmentStorageType(): AttachmentStorageType {
+  if (configFields.runningUnderTest) {
+    console.log('Since we are testing, using mock attachment storage.');
+    return AttachmentStorageType.MOCK;
+  }
+  return _attachment.serviceType;
+}
+
+const TEST_ATTACHMENT_STORAGE_CONFIG: AttachmentStorageConfig = {
+  bucket: 'test-map-assets',
+  prefix: 'map-assets',
+  region: 'us-east-1',
+};
+
+/** Validates S3 env and throws with a detailed missing-field report if incomplete. */
+function resolveAttachmentStorageConfig(): AttachmentStorageConfig {
+  const bucket = _attachment.bucket;
+  const prefix = _attachment.prefix;
+  const region = _attachment.region;
+  const endpoint = configHelpers.isBlank(_attachment.endpoint)
+    ? undefined
+    : _attachment.endpoint;
+  const publicEndpoint = configHelpers.isBlank(_attachment.publicEndpoint)
+    ? undefined
+    : _attachment.publicEndpoint;
+  const accessKeyId = configHelpers.isBlank(_attachment.accessKeyId)
+    ? undefined
+    : _attachment.accessKeyId;
+  const secretAccessKey = configHelpers.isBlank(_attachment.secretAccessKey)
+    ? undefined
+    : _attachment.secretAccessKey;
+  const forcePathStyleExplicit = _attachment.forcePathStyle;
+  const forcePathStyle =
+    forcePathStyleExplicit === undefined
+      ? endpoint !== undefined
+      : forcePathStyleExplicit.toLowerCase() === 'true';
+
+  const missingConfig = [];
+  if (configHelpers.isBlank(bucket)) missingConfig.push('ATTACHMENT_S3_BUCKET');
+  if (configHelpers.isBlank(prefix)) missingConfig.push('ATTACHMENT_S3_PREFIX');
+  if (configHelpers.isBlank(region)) missingConfig.push('ATTACHMENT_S3_REGION');
+
+  if (missingConfig.length > 0) {
+    const providedConfig = {
+      ATTACHMENT_S3_BUCKET: bucket || '[missing]',
+      ATTACHMENT_S3_PREFIX: prefix || '[missing]',
+      ATTACHMENT_S3_REGION: region || '[missing]',
+      ATTACHMENT_S3_ENDPOINT: endpoint || '[not set — AWS S3]',
+      ATTACHMENT_S3_PUBLIC_ENDPOINT:
+        publicEndpoint || '[not set — same as endpoint]',
+      ATTACHMENT_S3_FORCE_PATH_STYLE: forcePathStyleExplicit || '[default]',
+      ATTACHMENT_S3_ACCESS_KEY_ID: accessKeyId
+        ? '[provided]'
+        : '[not set — default credential chain]',
+      ATTACHMENT_S3_SECRET_ACCESS_KEY: secretAccessKey
+        ? '[provided]'
+        : '[not set — default credential chain]',
+    };
+
+    throw new Error(
+      `Attachment storage configuration is incomplete. Missing required values: ${missingConfig.join(', ')}.\n` +
+        `Provided configuration: ${JSON.stringify(providedConfig, null, 2)}`
+    );
+  }
+
+  return {
+    bucket: bucket!,
+    prefix: prefix!,
+    region: region!,
+    endpoint,
+    publicEndpoint,
+    forcePathStyle,
+    accessKeyId,
+    secretAccessKey,
+  };
+}
+
+const attachmentStorageType = resolveAttachmentStorageType();
+const attachmentStorage =
+  attachmentStorageType === AttachmentStorageType.S3
+    ? resolveAttachmentStorageConfig()
+    : TEST_ATTACHMENT_STORAGE_CONFIG;
+
 /**
  * The singleton configuration object. Prefer reading values from here.
  *
@@ -698,6 +861,8 @@ export const config = {
   email,
   /** Present for the admin email-test endpoint; optional at startup. */
   testEmailAddress,
+  attachmentStorageType,
+  attachmentStorage,
 };
 
 export type Config = typeof config;
@@ -764,3 +929,10 @@ export const emailService: IEmailService = createEmailService({
       ? resolveSmtpConfig()
       : undefined,
 });
+
+/** Attachment-storage singleton. Tests may stub methods on this instance. */
+export const attachmentStorageService: IAttachmentStorageService =
+  createAttachmentStorageService({
+    serviceType: attachmentStorageType,
+    config: attachmentStorage,
+  });

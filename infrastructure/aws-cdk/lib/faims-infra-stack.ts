@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import {BackupConstruct} from './components/backups';
 import {Construct} from 'constructs';
@@ -112,6 +113,32 @@ export class FaimsInfraStack extends cdk.Stack {
       cookieSecret: cookieSecret,
     });
 
+    // MAP-LAYER OBJECT STORAGE
+    // ========================
+    // Private bucket for original and normalized map-layer files. Couch
+    // stores only metadata (including an S3 resource URI). The
+    // Conductor task role is granted read/write; no static AWS keys.
+    const mapAssetBucket = new s3.Bucket(this, 'map-asset-attachments', {
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      enforceSSL: true,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      // App and Control Centre GET presigned objects from the bucket.
+      cors: [
+        {
+          allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.HEAD],
+          allowedOrigins: ['*'],
+          allowedHeaders: ['*'],
+          exposedHeaders: [
+            'Content-Length',
+            'Content-Type',
+            'Content-Disposition',
+          ],
+          maxAge: 3600,
+        },
+      ],
+    });
+
     // CONDUCTOR
     // =========
 
@@ -150,6 +177,8 @@ export class FaimsInfraStack extends cdk.Stack {
         testEmailAddress: config.smtp.testEmailAddress,
         cacheExpirySeconds: config.smtp.cacheExpirySeconds,
       },
+      mapAssetBucket,
+      mapAssetPrefix: config.attachmentStorage.prefix,
       authProviders: config.authProviders,
       localhostWhitelist: config.conductor.localhostWhitelist,
       bugsnagApiKey: config.bugMonitoring.bugsnagKey,

@@ -7,7 +7,10 @@
 
 import {Capacitor} from '@capacitor/core';
 import {Directory, Filesystem} from '@capacitor/filesystem';
-import type {ContextualLayerListing} from '@faims3/data-model';
+import type {
+  ContextualLayerListing,
+  GetMapAssetDownloadUrlResponse,
+} from '@faims3/data-model';
 import type {ContextualMapLayer} from '@faims3/forms';
 import {
   readContextualLayersState,
@@ -86,28 +89,10 @@ function filenameFor(layer: ContextualLayerListing): string {
   return `${layer.id}-${layer.contentHash}.${ext}`;
 }
 
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return btoa(binary);
-}
-
-async function writeDeviceFile(
+async function writeBrowserFile(
   filename: string,
   bytes: Uint8Array
 ): Promise<void> {
-  if (Capacitor.isNativePlatform()) {
-    await Filesystem.writeFile({
-      path: `map-assets/${filename}`,
-      directory: Directory.Data,
-      data: bytesToBase64(bytes),
-      recursive: true,
-    });
-    return;
-  }
   const root = await navigator.storage.getDirectory();
   const dir = await root.getDirectoryHandle('map-assets', {create: true});
   const handle = await dir.getFileHandle(filename, {create: true});
@@ -338,6 +323,39 @@ async function readResponseBytes(
   return bytes;
 }
 
+/**
+ * Stream the presigned object straight to disk.
+ * ADB live-reload enables CapacitorHttp, which intercepts `fetch` and
+ * JSON-parses the whole body on the Android main thread. A large GeoJSON
+ * then OOMs the 256MB Java heap inside MessageHandler.postMessage.
+ */
+async function downloadNativeLayerFile(
+  url: string,
+  filename: string,
+  expectedBytes: number,
+  onReceived: (received: number, total: number) => void
+): Promise<void> {
+  const handle = await Filesystem.addListener('progress', status => {
+    if (status.url !== url) {
+      return;
+    }
+    const total =
+      status.contentLength > 0 ? status.contentLength : expectedBytes;
+    onReceived(status.bytes, Math.max(total, status.bytes));
+  });
+  try {
+    await Filesystem.downloadFile({
+      url,
+      path: `map-assets/${filename}`,
+      directory: Directory.Data,
+      recursive: true,
+      progress: true,
+    });
+  } finally {
+    await handle.remove();
+  }
+}
+
 export async function downloadContextualLayers({
   serverUrl,
   token,
@@ -384,19 +402,44 @@ export async function downloadContextualLayers({
         ? existing.filename
         : filenameFor(layer);
     if (!existing || existing.contentHash !== layer.contentHash) {
-      const response = await fetch(
-        `${serverUrl}/api/map-assets/${layer.id}/normalized`,
+      const grant = await fetch(
+        `${serverUrl}/api/map-assets/${layer.id}/download-url`,
         {headers: {Authorization: `Bearer ${token}`}}
       );
-      if (!response.ok) {
+      if (!grant.ok) {
         throw new Error(`Could not download ${layer.name}.`);
       }
-      const bytes = await readResponseBytes(
-        response,
-        layer.byteSize,
-        (received, total) => report(layer.id, received, total)
-      );
-      await writeDeviceFile(filename, bytes);
+      const {url} = (await grant.json()) as GetMapAssetDownloadUrlResponse;
+      if (!url) {
+        throw new Error(`Could not download ${layer.name}.`);
+      }
+      try {
+        if (Capacitor.isNativePlatform()) {
+          await downloadNativeLayerFile(
+            url,
+            filename,
+            layer.byteSize,
+            (received, total) => report(layer.id, received, total)
+          );
+        } else {
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(`Could not download ${layer.name}.`);
+          }
+          const bytes = await readResponseBytes(
+            response,
+            layer.byteSize,
+            (received, total) => report(layer.id, received, total)
+          );
+          await writeBrowserFile(filename, bytes);
+        }
+      } catch (error) {
+        await removeDeviceFile(filename);
+        if (error instanceof Error && error.message.startsWith('Could not')) {
+          throw error;
+        }
+        throw new Error(`Could not download ${layer.name}.`);
+      }
     }
     completedBytes += layer.byteSize;
     report(layer.id, 0, 0);

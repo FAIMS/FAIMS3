@@ -6,7 +6,10 @@
 import {Alert, AlertDescription} from '@/components/ui/alert';
 import {config} from '@/constants';
 import type {User} from '@/context/auth-provider';
-import type {ExistingMapAsset} from '@faims3/data-model';
+import type {
+  ExistingMapAsset,
+  GetMapAssetDownloadUrlResponse,
+} from '@faims3/data-model';
 import {StaticMapLayerPreview} from '@faims3/forms';
 import {useEffect, useState} from 'react';
 
@@ -28,10 +31,19 @@ export function MapLayerPreview({
     let objectUrl: string | undefined;
     const load = async () => {
       try {
-        const response = await fetch(
-          `${config.apiUrl}/api/map-assets/${asset._id}/normalized`,
+        const grant = await fetch(
+          `${config.apiUrl}/api/map-assets/${asset._id}/download-url`,
           {headers: {Authorization: `Bearer ${user.token}`}}
         );
+        if (!grant.ok) {
+          throw new Error('Could not download the layer for preview.');
+        }
+        const {url: downloadUrl} =
+          (await grant.json()) as GetMapAssetDownloadUrlResponse;
+        if (!downloadUrl) {
+          throw new Error('Could not download the layer for preview.');
+        }
+        const response = await fetch(downloadUrl);
         if (!response.ok) {
           throw new Error('Could not download the layer for preview.');
         }

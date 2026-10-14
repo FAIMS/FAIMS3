@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
  * Filename and companion checks for a map-layer upload, before GDAL runs.
+ * `.zip` covers a shapefile set or an ESRI File Geodatabase (`.gdb.zip`).
  */
 
-import {INPUT_LIMITS} from '@faims3/data-model';
+import {INPUT_LIMITS, MAP_ASSET_PRIMARY_FORMATS} from '@faims3/data-model';
 import path from 'path';
 
 const VECTOR_EXTENSIONS = new Set([
@@ -69,8 +70,9 @@ export function isVectorUpload(filename: string): boolean {
 }
 
 /**
- * The file GDAL should open. A zipped shapefile and a world-file image both
- * count; companion `.prj` / world files are not primaries.
+ * The file GDAL should open. A zipped shapefile, zipped File Geodatabase,
+ * and a world-file image all count; companion `.prj` / world files are not
+ * primaries.
  */
 export function primaryUploadFile(files: UploadedMapFile[]): UploadedMapFile {
   const named = files.map(file => ({
@@ -82,9 +84,7 @@ export function primaryUploadFile(files: UploadedMapFile[]): UploadedMapFile {
     return VECTOR_EXTENSIONS.has(ext) || RASTER_EXTENSIONS.has(ext);
   });
   if (!primary) {
-    throw new Error(
-      'Upload needs a GeoJSON, GeoPackage, zipped shapefile, KML, GeoTIFF, georeferenced PDF, or a PNG/JPEG.'
-    );
+    throw new Error(`Upload needs ${MAP_ASSET_PRIMARY_FORMATS}.`);
   }
   return primary;
 }

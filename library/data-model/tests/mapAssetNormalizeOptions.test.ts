@@ -3,6 +3,7 @@ import {
   DEFAULT_MAP_ASSET_NORMALIZE_OPTIONS,
   DEFAULT_MAP_ASSET_QUALITY,
   estimateNormalizedMapAsset,
+  MAP_ASSET_PRIMARY_FORMATS,
   mapAssetKindFromFilename,
   mapAssetNormalizeOptionsFromQuality,
   resolveMapAssetNormalizeOptions,
@@ -130,6 +131,15 @@ describe('estimateNormalizedMapAsset', () => {
 
   it('infers kind from the filename', () => {
     expect(mapAssetKindFromFilename('area.gpkg')).toBe('geojson');
+    expect(mapAssetKindFromFilename('bores.gdb.zip')).toBe('geojson');
     expect(mapAssetKindFromFilename('scan.PDF')).toBe('image');
+  });
+
+  it('names File Geodatabase zips in the unknown-format error', () => {
+    expect(() =>
+      estimateNormalizedMapAsset({
+        source: {filename: 'notes.txt', byteSize: 1},
+      })
+    ).toThrow(MAP_ASSET_PRIMARY_FORMATS);
   });
 });

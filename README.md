@@ -96,12 +96,13 @@ Run the script to get all services running locally:
 ./localdev.sh --all
 ```
 
-This spins up four services:
+This spins up five services:
 
 - Conductor API (`/api`) live reloading on http://localhost:8080
 - FAIMS3 app (`/app`) live reloading on http://localhost:3000
 - Web app (`/web`) live reloading on http://localhost:3001
 - CouchDB on http://localhost:5984/\_utils
+- RustFS (S3-compatible object store) on http://localhost:9000 (console http://localhost:9001)
 
 On the **first run** this also installs all monorepo dependencies
 (`pnpm install`) and builds the shared libraries (`turbo build`) before the
@@ -142,15 +143,15 @@ notebooks and templates:
 
 ## CouchDB-only local development (recommended for live-reloading)
 
-If you prefer to run the application services natively and only use Docker for CouchDB:
+If you prefer to run the application services natively and only use Docker for CouchDB and RustFS:
 
-1. Start CouchDB only (default behaviour without `--all` flag):
+1. Start CouchDB and RustFS (default behaviour without `--all` flag):
 
 ```bash
 ./localdev.sh
 ```
 
-This starts CouchDB on http://localhost:5984/\_utils
+This starts CouchDB on http://localhost:5984/\_utils and RustFS on http://localhost:9000 (console http://localhost:9001). Map-layer files are stored in RustFS; CouchDB holds only the metadata (including an S3 resource URI). If your existing `api/.env` predates these settings, copy the `ATTACHMENT_*` block from `api/.env.dist`.
 
 2. Migrate the CouchDB:
 

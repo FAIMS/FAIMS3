@@ -68,6 +68,21 @@ export function mapAssetUploadTooLargeMessage(): string {
   return `Files must be at most ${mapAssetUploadMaxLabel()}.`;
 }
 
+/**
+ * Shown when the API rejects a map-layer upload because this node does not
+ * have enough free disk for the file plus GDAL scratch.
+ */
+export const MAP_ASSET_UPLOAD_BUSY_MESSAGE =
+  'The server is busy right now, please try again later. If this continues, please seek support via your system administrator.';
+
+/**
+ * Free bytes that must remain on the upload filesystem before a stream is
+ * accepted. Three times the upload cap covers the original, a warped copy,
+ * and GDAL scratch.
+ */
+export const MAP_ASSET_UPLOAD_FREE_DISK_BYTES =
+  INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_BYTES * 3;
+
 /** Bounded trimmed string builder for zod request schemas. */
 export const boundedString = (max: number, label = 'Value') =>
   z.string().trim().max(max, `${label} must be at most ${max} characters`);

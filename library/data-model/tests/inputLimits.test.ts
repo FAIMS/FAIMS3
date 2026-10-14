@@ -9,6 +9,8 @@ import {
   CreateNotebookFromTemplateSchema,
   estimateJsonBytes,
   INPUT_LIMITS,
+  MAP_ASSET_UPLOAD_BUSY_MESSAGE,
+  MAP_ASSET_UPLOAD_FREE_DISK_BYTES,
   mapAssetUploadMaxLabel,
   mapAssetUploadTooLargeMessage,
   ROOT_DESCRIPTION_MAX_LENGTH,
@@ -16,6 +18,8 @@ import {
   PostCreateGlobalInviteInputSchema,
   PostCreateResourceInviteInputSchema,
   MapAssetDetailsSchema,
+  ExistingMapAssetSchema,
+  GetMapAssetDownloadUrlResponseSchema,
   PostCreateTeamInputSchema,
   PostCreateTemplateInputSchema,
   PostMapAssetEstimateInputSchema,
@@ -43,6 +47,10 @@ describe('input limit constants', () => {
     expect(INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_FILES).toBe(8);
     expect(mapAssetUploadMaxLabel()).toBe('2 GB');
     expect(mapAssetUploadTooLargeMessage()).toBe('Files must be at most 2 GB.');
+    expect(MAP_ASSET_UPLOAD_FREE_DISK_BYTES).toBe(
+      3 * INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_BYTES
+    );
+    expect(MAP_ASSET_UPLOAD_BUSY_MESSAGE).toMatch(/server is busy/i);
   });
 });
 
@@ -259,6 +267,61 @@ describe('map layer schemas', () => {
       MapAssetDetailsSchema.safeParse({
         name: 'Site boundary',
         description: 'Optional layer notes',
+      }).success
+    ).toBe(true);
+  });
+
+  it('accepts storedAttachments object-store metadata on an existing asset', () => {
+    expect(
+      ExistingMapAssetSchema.safeParse({
+        _id: 'asset-1',
+        _rev: '1-abc',
+        docType: 'asset',
+        name: 'Site boundary',
+        description: '',
+        createdBy: 'user-1',
+        originalFilename: 'layer.geojson',
+        byteSize: 12,
+        status: 'ready',
+        kind: 'geojson',
+        defaultStyle: {
+          stroke: '#1565c0',
+          fill: '#1565c040',
+          lineWidth: 2,
+          pointSize: 6,
+          opacity: 0.85,
+        },
+        createdAt: 1,
+        updatedAt: 1,
+        storedAttachments: {
+          original: {
+            provider: 's3',
+            resourceUri:
+              's3://us-east-1/faims-map-assets/map-assets/asset-1/original',
+            contentType: 'application/octet-stream',
+            byteSize: 2,
+            endpoint: 'http://localhost:9000',
+          },
+          normalized: {
+            provider: 's3',
+            resourceUri:
+              's3://us-east-1/faims-map-assets/map-assets/asset-1/normalized',
+            contentType: 'application/geo+json',
+            byteSize: 12,
+          },
+        },
+      }).success
+    ).toBe(true);
+  });
+
+  it('accepts a map-layer download-url grant', () => {
+    expect(
+      GetMapAssetDownloadUrlResponseSchema.safeParse({
+        url: 'https://s3.example/object?X-Amz-Signature=abc',
+        mediaType: 'application/geo+json',
+        filename: 'Site boundary.geojson',
+        byteSize: 12,
+        expiresInSeconds: 3600,
       }).success
     ).toBe(true);
   });

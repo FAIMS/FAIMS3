@@ -29,6 +29,16 @@
     "ANDROID_APP_PUBLIC_URL": "https://play.google.com/store/apps/details?id=org.fedarch.faims3",
     "IOS_APP_PUBLIC_URL": "https://apps.apple.com/au/app/fieldmark/id1592632372",
 
+    "ATTACHMENT_STORAGE_TYPE": "S3",
+    "ATTACHMENT_S3_BUCKET": "faims-map-assets",
+    "ATTACHMENT_S3_PREFIX": "map-assets",
+    "ATTACHMENT_S3_REGION": "us-east-1",
+    "ATTACHMENT_S3_ENDPOINT": "http://rustfs:9000",
+    "ATTACHMENT_S3_PUBLIC_ENDPOINT": "http://localhost:9000",
+    "ATTACHMENT_S3_FORCE_PATH_STYLE": "true",
+    "ATTACHMENT_S3_ACCESS_KEY_ID": "faimsdev",
+    "ATTACHMENT_S3_SECRET_ACCESS_KEY": "faimsdevsecret1",
+
     "EMAIL_SERVICE_TYPE": "MOCK",
     "EMAIL_FROM_ADDRESS": "notifications@example.com",
     "EMAIL_FROM_NAME": "FAIMS Notification",
@@ -46,7 +56,7 @@
   },
   // GDAL (ogr2ogr) for GeoPackage export during API development
   "postCreateCommand": "sudo apt-get update && sudo apt-get install -y --no-install-recommends gdal-bin poppler-utils",
-  "forwardPorts": [3000, 3001, 5010, 8080],
+  "forwardPorts": [3000, 3001, 5010, 8080, 9000, 9001],
   "portsAttributes": {
     "3000": {
       "label": "App"
@@ -59,6 +69,12 @@
     },
     "5010": {
       "label": "Designer"
+    },
+    "9000": {
+      "label": "RustFS S3"
+    },
+    "9001": {
+      "label": "RustFS Console"
     }
   }
 }

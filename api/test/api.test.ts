@@ -33,7 +33,12 @@ import {
   generateJwtFromUser,
   upgradeCouchUserToExpressUser,
 } from '../src/auth/keySigning/create';
-import {config, emailService, keyService} from '../src/buildconfig';
+import {
+  attachmentStorageService,
+  config,
+  emailService,
+  keyService,
+} from '../src/buildconfig';
 import {getDataDb} from '../src/couchdb';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {
@@ -1099,6 +1104,74 @@ describe('API tests', () => {
       expect(result.body.timings).toHaveProperty('total');
     } finally {
       sendEmailSpy.mockRestore();
+    }
+  });
+
+  it('test attachment storage route - not authenticated', async () => {
+    const result = await request(app).post(
+      '/api/admin/test-attachment-storage'
+    );
+    expect(result.statusCode).toBe(401);
+  });
+
+  it('test attachment storage route - not admin', async () => {
+    const result = await request(app)
+      .post('/api/admin/test-attachment-storage')
+      .set('Authorization', `Bearer ${localUserToken}`);
+    expect(result.statusCode).toBe(401);
+  });
+
+  it('test attachment storage route - admin user', async () => {
+    const uploadSpy = vi.spyOn(attachmentStorageService, 'upload');
+    const existsSpy = vi.spyOn(attachmentStorageService, 'exists');
+    const downloadSpy = vi.spyOn(attachmentStorageService, 'download');
+    const deleteSpy = vi.spyOn(attachmentStorageService, 'delete');
+
+    try {
+      const result = await request(app)
+        .post('/api/admin/test-attachment-storage')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(result.statusCode).toBe(200);
+      expect(result.body.success).toBe(true);
+      expect(result.body.status).toBe('ok');
+      expect(result.body.details.attachmentStorageType).toBe('MOCK');
+      expect(result.body.timings).toHaveProperty('total');
+      expect(uploadSpy).toHaveBeenCalled();
+      expect(existsSpy).toHaveBeenCalled();
+      expect(downloadSpy).toHaveBeenCalled();
+      expect(deleteSpy).toHaveBeenCalled();
+    } finally {
+      uploadSpy.mockRestore();
+      existsSpy.mockRestore();
+      downloadSpy.mockRestore();
+      deleteSpy.mockRestore();
+    }
+  });
+
+  it('test attachment storage route - handles errors', async () => {
+    const uploadSpy = vi
+      .spyOn(attachmentStorageService, 'upload')
+      .mockRejectedValue(new Error('S3 connection failed'));
+
+    try {
+      const result = await request(app)
+        .post('/api/admin/test-attachment-storage')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(result.statusCode).toBe(200);
+      expect(result.body.success).toBe(false);
+      expect(result.body.status).toBe('error');
+      expect(result.body.message).toContain(
+        'Attachment storage smoke test failed'
+      );
+      expect(result.body.details.error).toHaveProperty(
+        'message',
+        'S3 connection failed'
+      );
+      expect(result.body.details.error).toHaveProperty('suggestion');
+    } finally {
+      uploadSpy.mockRestore();
     }
   });
 

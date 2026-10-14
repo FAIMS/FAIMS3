@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import {config} from '@/constants';
 import {User} from '@/context/auth-provider';
-import type {
-  ExistingMapAsset,
-  GetMapAssetListResponse,
-  GetMapAssetResponse,
-  MapAssetNormalizeOptionsInput,
-  PostMapAssetEstimateInput,
-  PostMapAssetEstimateResponse,
+import {
+  MAP_ASSET_UPLOAD_BUSY_MESSAGE,
+  type ExistingMapAsset,
+  type GetMapAssetListResponse,
+  type GetMapAssetResponse,
+  type MapAssetNormalizeOptionsInput,
+  type PostMapAssetEstimateInput,
+  type PostMapAssetEstimateResponse,
 } from '@faims3/data-model';
 import {
   useMutation,
@@ -79,7 +80,13 @@ function sendFormData({
         json = undefined;
       }
       if (xhr.status < 200 || xhr.status >= 300) {
-        reject(new Error(messageFromBody(json, xhr.statusText)));
+        reject(
+          new Error(
+            xhr.status === 503
+              ? MAP_ASSET_UPLOAD_BUSY_MESSAGE
+              : messageFromBody(json, xhr.statusText)
+          )
+        );
         return;
       }
       onProgress?.(1);

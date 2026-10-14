@@ -120,7 +120,7 @@ manage_docker_volumes() {
     # Let compose remove its own volumes: couchdb_data is this project's only
     # named volume, and removing by volume label instead matched every
     # project's couchdb_data on the host (other checkouts and worktrees).
-    echo "Pruning volume containing the couchdb database..."
+    echo "Pruning volumes containing the couchdb database and rustfs objects..."
     ${docker_prefix} down --volumes
   else
     ${docker_prefix} down
@@ -131,7 +131,7 @@ manage_docker_volumes() {
   if [ "$ALL_SERVICES" = true ]; then
     ${docker_prefix} up ${BUILD_FLAG} -d
   else
-    ${docker_prefix} up ${BUILD_FLAG} -d couchdb
+    ${docker_prefix} up ${BUILD_FLAG} -d couchdb rustfs
   fi
 }
 
@@ -155,6 +155,35 @@ wait_for_service() {
       fi
     fi
     echo "Service not yet available. Retrying in 2 seconds..."
+    sleep 2
+  done
+}
+
+wait_for_rustfs() {
+  local start_time
+  local end_time
+  local current_time
+  local response
+  start_time=$(date +%s)
+  end_time=$((start_time + 30))
+
+  RUSTFS_PORT=9000
+
+  echo "Waiting for RustFS on port ${RUSTFS_PORT}..."
+
+  while true; do
+    current_time=$(date +%s)
+    if [ $current_time -ge $end_time ]; then
+      echo "Global timeout reached. RustFS did not become available within 30 seconds."
+      return 1
+    fi
+    if response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://localhost:${RUSTFS_PORT}/health); then
+      if [ "$response" -eq 200 ]; then
+        echo "RustFS is now available!"
+        return 0
+      fi
+    fi
+    echo "RustFS not yet available. Retrying in 2 seconds..."
     sleep 2
   done
 }
@@ -243,6 +272,8 @@ if [ "$ALL_SERVICES" = true ]; then
   echo "# Docker environment overrides" >>./api/.env
   echo "CONDUCTOR_INTERNAL_PORT=8000" >>./api/.env
   echo "COUCHDB_INTERNAL_URL=http://couchdb:5984" >>./api/.env
+  echo "ATTACHMENT_S3_ENDPOINT=http://rustfs:9000" >>./api/.env
+  echo "ATTACHMENT_S3_PUBLIC_ENDPOINT=http://localhost:9000" >>./api/.env
 fi
 
 # create local keys
@@ -257,16 +288,26 @@ if [ "$ALL_SERVICES" = false ]; then
   echo "Waiting for CouchDB to become available..."
   if wait_for_couchdb; then
     echo "CouchDB is ready!"
+  else
+    echo "Failed to connect to CouchDB. Exiting."
+    exit 1
+  fi
+  echo "Waiting for RustFS to become available..."
+  if wait_for_rustfs; then
+    echo "RustFS is ready!"
     COUCHDB_PORT=5984
+    RUSTFS_PORT=9000
     echo ""
     echo "=========================================="
     echo "CouchDB is running:"
     echo "CouchDB Admin UI: http://localhost:${COUCHDB_PORT}/_utils"
+    echo "RustFS S3 API: http://localhost:${RUSTFS_PORT}"
+    echo "RustFS Console: http://localhost:9001"
     echo "=========================================="
     echo ""
-    echo "Note: Only CouchDB is running. To start all services, run with --all flag."
+    echo "Note: Only CouchDB and RustFS are running. To start all services, run with --all flag."
   else
-    echo "Failed to connect to CouchDB. Exiting."
+    echo "Failed to connect to RustFS. Exiting."
     exit 1
   fi
 else
@@ -306,6 +347,8 @@ EOF
   echo "App (live reloading /app): http://localhost:3000"
   echo "Web (live reloading /web): http://localhost:3001"
   echo "CouchDB: http://localhost:5984/_utils"
+  echo "RustFS S3 API: http://localhost:9000"
+  echo "RustFS Console: http://localhost:9001"
 
   echo ""
   echo "Starting shared-library watchers (data-model + forms)..."

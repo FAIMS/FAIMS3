@@ -5,7 +5,6 @@ import {DEFAULT_MAP_ASSET_STYLE} from '@faims3/data-model';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {render, screen, waitFor} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {config} from '../../../buildconfig';
 import type {StoredContextualLayerSummary} from './contextualLayerStore';
 
 const harness = vi.hoisted(() => ({
@@ -118,24 +117,24 @@ describe('ContextualLayerPrompt', () => {
     const onDevice = screen.getByTestId('map-layer-group-on-device');
     const toDownload = screen.getByTestId('map-layer-group-to-download');
 
-    expect(onDevice).toHaveTextContent('Already on this device (1)');
+    expect(onDevice).toHaveTextContent('Already on the device (1)');
     expect(onDevice).toHaveTextContent('Site boundaries');
+    expect(onDevice).toHaveTextContent('Vector');
+    expect(screen.getByTestId('map-layer-size-asset-ready')).toHaveTextContent(
+      '2 KB'
+    );
+    expect(screen.queryByText('On this device')).not.toBeInTheDocument();
+    expect(screen.queryByText('Needs download')).not.toBeInTheDocument();
     expect(
-      screen.getByTestId('map-layer-status-asset-ready')
-    ).toHaveTextContent('On this device');
+      screen.queryByText('0.000, 0.000, 1.000, 1.000')
+    ).not.toBeInTheDocument();
 
-    expect(toDownload).toHaveTextContent('Need to download (2)');
+    expect(toDownload).toHaveTextContent('Not yet downloaded (2)');
     expect(toDownload).toHaveTextContent('Vegetation');
     expect(toDownload).toHaveTextContent('Tracks');
-    expect(screen.getByTestId('map-layer-status-asset-new')).toHaveTextContent(
-      'Needs download'
-    );
-    expect(
-      screen.getByTestId('map-layer-status-asset-stale')
-    ).toHaveTextContent('Update available');
     expect(
       screen.getByText(
-        `This ${config.notebookName}: 'Creek survey', has contextual layers for offline maps. Ticked layers already on this device stay as they are. Ticked layers that are not downloaded will be saved now.`
+        'This survey has contextual layers available for download. In order to view these layers in the map, you must download them to the device.'
       )
     ).toBeInTheDocument();
   });
@@ -149,6 +148,6 @@ describe('ContextualLayerPrompt', () => {
       expect(screen.getByText('Keep selected')).toBeInTheDocument();
     });
     expect(screen.getByText('Keep all')).toBeInTheDocument();
-    expect(screen.queryByText('Need to download')).not.toBeInTheDocument();
+    expect(screen.queryByText('Not yet downloaded')).not.toBeInTheDocument();
   });
 });

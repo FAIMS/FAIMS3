@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   INPUT_LIMITS,
+  MAP_ASSET_PRIMARY_FORMATS,
   mapAssetUploadTooLargeMessage,
   readGeoreferencedPdfRaster,
   type PdfRasterSize,
@@ -134,8 +135,7 @@ export function mapLayerFilesSchema() {
     if (!primary) {
       ctx.addIssue({
         code: 'custom',
-        message:
-          'Include a GeoJSON, GeoPackage, zipped shapefile, KML, GeoTIFF, georeferenced PDF, or a PNG/JPEG.',
+        message: `Include ${MAP_ASSET_PRIMARY_FORMATS}.`,
       });
       return;
     }

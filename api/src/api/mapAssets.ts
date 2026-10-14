@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
- * Map layer library: upload, processing status, survey links, and download.
+ * Map layer library: upload, processing status, survey links, and
+ * presigned download-url grants.
  */
 
 import {
   Action,
   estimateNormalizedMapAsset,
+  GetMapAssetDownloadUrlResponse,
   GetMapAssetListResponse,
   GetMapAssetResponse,
   IdInputSchema,
@@ -37,11 +39,12 @@ import {
   listAssetsByTeam,
   listLinkAssetIds,
   listLinkProjectIds,
-  readNormalizedAttachment,
+  presignNormalizedAttachment,
   replaceMapAssetFiles,
   unlinkMapAsset,
   updateMapAssetDetails,
 } from '../couchdb/mapAssets/store';
+import {assertMapUploadDiskAvailable} from '../couchdb/mapAssets/diskSpace';
 import {
   assertUploadCompanions,
   primaryUploadFile,
@@ -50,16 +53,28 @@ import {
 } from '../couchdb/mapAssets/normalize';
 import {getAllTeams} from '../couchdb/teams';
 import * as Exceptions from '../exceptions';
+import {
+  inviteAuditFromRequest,
+  logMapAssetProcessing,
+  withMapAssetProcessingWait,
+} from '../logging';
 import {requireAuthenticationAPI, userCanDo} from '../middleware';
 import validate from '../middleware/validate';
 import patch from '../utils/patchExpressAsync';
 
 patch();
 
-type MapUploadRequest = Request & {mapUploadDir?: string};
+type MapUploadRequest = Request & {
+  mapUploadDir?: string;
+  mapUploadId?: string;
+};
 
 function requestUploadDir(req: Request): string | undefined {
   return (req as MapUploadRequest).mapUploadDir;
+}
+
+function requestUploadId(req: Request): string | undefined {
+  return (req as MapUploadRequest).mapUploadId;
 }
 
 async function cleanupRequestUpload(req: Request): Promise<void> {
@@ -78,11 +93,8 @@ const upload = multer({
         callback(null, existing);
         return;
       }
-      const dir = path.join(
-        tmpdir(),
-        'faims-map-uploads',
-        `req-${randomUUID()}`
-      );
+      const uploadId = requestUploadId(req) ?? `req-${randomUUID()}`;
+      const dir = path.join(tmpdir(), 'faims-map-uploads', uploadId);
       mkdir(dir, {recursive: true})
         .then(() => {
           (req as MapUploadRequest).mapUploadDir = dir;
@@ -104,34 +116,85 @@ const upload = multer({
   },
 });
 
+function multerUploadError(error: unknown): Error {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return new Exceptions.InvalidRequestException(
+        mapAssetUploadTooLargeMessage()
+      );
+    }
+    if (error.code === 'LIMIT_FILE_COUNT') {
+      return new Exceptions.InvalidRequestException(
+        `Choose at most ${INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_FILES} files.`
+      );
+    }
+    return new Exceptions.InvalidRequestException(error.message);
+  }
+  return error instanceof Error ? error : new Error('Upload was not accepted.');
+}
+
 function acceptMapAssetFiles(req: Request, res: Response, next: NextFunction) {
-  upload.array('files', INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_FILES)(
-    req,
-    res,
-    (error: unknown) => {
-      if (error instanceof multer.MulterError) {
-        if (error.code === 'LIMIT_FILE_SIZE') {
-          next(
-            new Exceptions.InvalidRequestException(
-              mapAssetUploadTooLargeMessage()
-            )
-          );
-          return;
-        }
-        if (error.code === 'LIMIT_FILE_COUNT') {
-          next(
-            new Exceptions.InvalidRequestException(
-              `Choose at most ${INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_FILES} files.`
-            )
-          );
-          return;
-        }
-        next(new Exceptions.InvalidRequestException(error.message));
-        return;
-      }
+  const uploadId = `req-${randomUUID()}`;
+  (req as MapUploadRequest).mapUploadId = uploadId;
+  req.once('aborted', () => {
+    logMapAssetProcessing({
+      event: 'upload.receive',
+      outcome: 'failure',
+      uploadId,
+      userId: req.user?.user_id,
+      reason: 'client aborted the upload',
+      ...inviteAuditFromRequest(req),
+    });
+    void cleanupRequestUpload(req);
+  });
+  void (async () => {
+    try {
+      await assertMapUploadDiskAvailable();
+      await withMapAssetProcessingWait(
+        {
+          event: 'upload.receive',
+          uploadId,
+          userId: req.user?.user_id,
+          ...inviteAuditFromRequest(req),
+        },
+        () =>
+          new Promise<void>((resolve, reject) => {
+            upload.array('files', INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_FILES)(
+              req,
+              res,
+              (error: unknown) => {
+                if (error) {
+                  reject(multerUploadError(error));
+                  return;
+                }
+                resolve();
+              }
+            );
+          })
+      );
+      next();
+    } catch (error) {
+      await cleanupRequestUpload(req);
       next(error as Error);
     }
-  );
+  })();
+}
+
+function uploadedFileSummary(files: UploadedMapFile[]): {
+  fileCount: number;
+  filenames: string[];
+  byteSize: number;
+  filename: string;
+} {
+  return {
+    fileCount: files.length,
+    filenames: files.map(file => file.filename),
+    byteSize: files.reduce(
+      (sum, file) => sum + (file.size ?? file.bytes?.length ?? 0),
+      0
+    ),
+    filename: files[0]?.filename ?? '',
+  };
 }
 
 export const api: express.Router = express.Router();
@@ -440,6 +503,21 @@ api.post(
       const files = assertFiles(filesFromRequest(req));
       const primary = primaryUploadFile(files);
       const normalize = parseNormalizeChoice(req.body ?? {});
+      const summary = uploadedFileSummary(files);
+      logMapAssetProcessing({
+        event: 'upload.accept',
+        outcome: 'started',
+        uploadId: requestUploadId(req),
+        userId: user.user_id,
+        teamId,
+        method: 'POST',
+        filename: primary.filename,
+        fileCount: summary.fileCount,
+        filenames: summary.filenames,
+        byteSize: summary.byteSize,
+        quality: normalize.quality,
+        ...inviteAuditFromRequest(req),
+      });
       const asset = await createMapAsset({
         name: details.name,
         description: details.description,
@@ -451,8 +529,31 @@ api.post(
         normalizeOptions: normalize.options,
       });
       enqueueMapAssetProcessing(asset._id);
+      logMapAssetProcessing({
+        event: 'upload.accept',
+        outcome: 'success',
+        assetId: asset._id,
+        uploadId: requestUploadId(req),
+        userId: user.user_id,
+        teamId,
+        method: 'POST',
+        filename: primary.filename,
+        fileCount: summary.fileCount,
+        byteSize: summary.byteSize,
+        quality: normalize.quality,
+        ...inviteAuditFromRequest(req),
+      });
       res.status(201).json(asset);
     } catch (error) {
+      logMapAssetProcessing({
+        event: 'upload.accept',
+        outcome: 'failure',
+        uploadId: requestUploadId(req),
+        userId: req.user?.user_id,
+        method: 'POST',
+        reason: error instanceof Error ? error.message : String(error),
+        ...inviteAuditFromRequest(req),
+      });
       await cleanupRequestUpload(req);
       throw error;
     }
@@ -460,22 +561,16 @@ api.post(
 );
 
 api.get(
-  '/:id/normalized',
+  '/:id/download-url',
   requireAuthenticationAPI,
   validate({params: z.object({id: z.string()})}),
-  async (req, res) => {
+  async (req, res: Response<GetMapAssetDownloadUrlResponse>) => {
     const user = requireUser(req);
     const asset = await getMapAsset(req.params.id);
     if (!(await canReadAsset(user, asset))) {
       throw new Exceptions.UnauthorizedException();
     }
-    const file = await readNormalizedAttachment(asset._id);
-    res.setHeader('Content-Type', file.mediaType);
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${encodeURIComponent(file.filename)}"`
-    );
-    res.send(file.bytes);
+    res.json(await presignNormalizedAttachment(asset._id));
   }
 );
 
@@ -532,6 +627,22 @@ api.put(
       const files = assertFiles(filesFromRequest(req));
       const primary = primaryUploadFile(files);
       const normalize = parseNormalizeChoice(req.body ?? {});
+      const summary = uploadedFileSummary(files);
+      logMapAssetProcessing({
+        event: 'upload.accept',
+        outcome: 'started',
+        assetId: asset._id,
+        uploadId: requestUploadId(req),
+        userId: user.user_id,
+        teamId: asset.ownedByTeamId,
+        method: 'PUT',
+        filename: primary.filename,
+        fileCount: summary.fileCount,
+        filenames: summary.filenames,
+        byteSize: summary.byteSize,
+        quality: normalize.quality,
+        ...inviteAuditFromRequest(req),
+      });
       const replaced = await replaceMapAssetFiles({
         assetId: asset._id,
         files,
@@ -540,8 +651,32 @@ api.put(
         normalizeOptions: normalize.options,
       });
       enqueueMapAssetProcessing(replaced._id);
+      logMapAssetProcessing({
+        event: 'upload.accept',
+        outcome: 'success',
+        assetId: replaced._id,
+        uploadId: requestUploadId(req),
+        userId: user.user_id,
+        teamId: asset.ownedByTeamId,
+        method: 'PUT',
+        filename: primary.filename,
+        fileCount: summary.fileCount,
+        byteSize: summary.byteSize,
+        quality: normalize.quality,
+        ...inviteAuditFromRequest(req),
+      });
       res.json(replaced);
     } catch (error) {
+      logMapAssetProcessing({
+        event: 'upload.accept',
+        outcome: 'failure',
+        assetId: req.params.id,
+        uploadId: requestUploadId(req),
+        userId: req.user?.user_id,
+        method: 'PUT',
+        reason: error instanceof Error ? error.message : String(error),
+        ...inviteAuditFromRequest(req),
+      });
       await cleanupRequestUpload(req);
       throw error;
     }

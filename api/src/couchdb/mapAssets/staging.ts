@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
  * On-disk staging for a map-layer upload. HTTP writes here, then the
- * processing queue streams to CouchDB and runs GDAL from these files.
+ * processing queue streams to object storage and runs GDAL from these files.
  */
 
 import {
@@ -15,6 +15,7 @@ import {
 } from 'fs/promises';
 import {tmpdir} from 'os';
 import path from 'path';
+import {withMapAssetProcessingWait} from '../../logging';
 import {safeUploadFilename, type UploadedMapFile} from './uploadRules';
 
 export function mapAssetStagingDir(assetId: string): string {
@@ -25,30 +26,44 @@ export async function stageUploadFiles(
   assetId: string,
   files: UploadedMapFile[]
 ): Promise<UploadedMapFile[]> {
-  const dest = mapAssetStagingDir(assetId);
-  await mkdir(dest, {recursive: true});
-  const leftoverDirs = new Set<string>();
-  const staged: UploadedMapFile[] = [];
-  for (const file of files) {
-    const filename = safeUploadFilename(file.filename);
-    const destPath = path.join(dest, filename);
-    if (file.diskPath) {
-      leftoverDirs.add(path.dirname(file.diskPath));
-      await moveOrCopy(file.diskPath, destPath);
-    } else if (file.bytes) {
-      await writeFile(destPath, new Uint8Array(file.bytes));
-    } else {
-      throw new Error(`Upload is missing data for ${filename}.`);
+  return withMapAssetProcessingWait(
+    {
+      event: 'asset.stage',
+      assetId,
+      fileCount: files.length,
+      filenames: files.map(file => file.filename),
+      byteSize: files.reduce(
+        (sum, file) => sum + (file.size ?? file.bytes?.length ?? 0),
+        0
+      ),
+    },
+    async () => {
+      const dest = mapAssetStagingDir(assetId);
+      await mkdir(dest, {recursive: true});
+      const leftoverDirs = new Set<string>();
+      const staged: UploadedMapFile[] = [];
+      for (const file of files) {
+        const filename = safeUploadFilename(file.filename);
+        const destPath = path.join(dest, filename);
+        if (file.diskPath) {
+          leftoverDirs.add(path.dirname(file.diskPath));
+          await moveOrCopy(file.diskPath, destPath);
+        } else if (file.bytes) {
+          await writeFile(destPath, new Uint8Array(file.bytes));
+        } else {
+          throw new Error(`Upload is missing data for ${filename}.`);
+        }
+        const size = file.size ?? (await stat(destPath)).size;
+        staged.push({filename, diskPath: destPath, size});
+      }
+      for (const dir of leftoverDirs) {
+        if (path.resolve(dir) !== path.resolve(dest)) {
+          await rm(dir, {recursive: true, force: true}).catch(() => undefined);
+        }
+      }
+      return staged;
     }
-    const size = file.size ?? (await stat(destPath)).size;
-    staged.push({filename, diskPath: destPath, size});
-  }
-  for (const dir of leftoverDirs) {
-    if (path.resolve(dir) !== path.resolve(dest)) {
-      await rm(dir, {recursive: true, force: true}).catch(() => undefined);
-    }
-  }
-  return staged;
+  );
 }
 
 export async function ensureStagingPaths(

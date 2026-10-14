@@ -12,6 +12,24 @@ services:
       - COUCHDB_PASSWORD=aSecretPasswordThatCantBeGuessed
     networks:
       - conductor-local-dev
+  rustfs:
+    image: rustfs/rustfs:latest
+    ports:
+      - '0.0.0.0:9000:9000'
+      - '0.0.0.0:9001:9001'
+    environment:
+      RUSTFS_ACCESS_KEY: faimsdev
+      RUSTFS_SECRET_KEY: faimsdevsecret1
+      RUSTFS_ADDRESS: ':9000'
+      RUSTFS_CONSOLE_ADDRESS: ':9001'
+      RUSTFS_CONSOLE_ENABLE: 'true'
+    volumes:
+      - type: volume
+        source: rustfs-data
+        target: /data
+    command: /data
+    networks:
+      - conductor-local-dev
   devcontainer:
     image: mcr.microsoft.com/devcontainers/typescript-node:1-24-bookworm
     networks:
@@ -23,3 +41,4 @@ networks:
   conductor-local-dev: {}
 volumes:
   couchdb-data:
+  rustfs-data:

@@ -22,19 +22,32 @@ import {
   MapAssetFields,
   MapAssetLinkFields,
   MapAssetNormalizeOptions,
+  GetMapAssetDownloadUrlResponse,
   MapAssetStyle,
   resolveMapAssetNormalizeOptions,
+  StoredAttachmentLocation,
 } from '@faims3/data-model';
 import {randomUUID} from 'crypto';
 import {rm} from 'fs/promises';
 import {getMapAssetsDB} from '..';
 import * as Exceptions from '../../exceptions';
 import {
-  assetHasAttachment,
+  logMapAssetProcessing,
+  MAP_ASSET_PROCESSING_LOG,
+  withMapAssetProcessingWait,
+} from '../../logging';
+import {
+  assetHasStoredAttachment,
+  collectStream,
+  deleteStoredAttachment,
+  downloadAttachmentStream,
+  presignAttachmentDownload,
   downloadAttachmentToFile,
+  putBytesAttachment,
   putFileAttachment,
   sha256,
   sha256File,
+  storedAttachmentLocation,
 } from './attachments';
 import {normalizeMapUpload, UploadedMapFile} from './normalize';
 import {
@@ -45,21 +58,6 @@ import {
 } from './staging';
 
 export {sha256} from './attachments';
-
-type AttachmentDb = {
-  getAttachment(docId: string, attachmentId: string): Promise<Buffer | Blob>;
-};
-
-function attachmentDb() {
-  return getMapAssetsDB() as unknown as AttachmentDb;
-}
-
-async function asBuffer(data: Buffer | Blob): Promise<Buffer> {
-  if (Buffer.isBuffer(data)) {
-    return data;
-  }
-  return Buffer.from(await data.arrayBuffer());
-}
 
 function isAsset(doc: {
   _id?: string;
@@ -162,43 +160,108 @@ export function linkDocumentId(assetId: string, projectId: string): string {
 
 async function putOriginalFilesFromDisk({
   assetId,
-  rev,
   files,
   primaryFilename,
 }: {
   assetId: string;
-  rev: string;
   files: UploadedMapFile[];
   primaryFilename: string;
-}): Promise<string> {
-  const primary =
-    files.find(file => file.filename === primaryFilename) ?? files[0];
-  if (!primary.diskPath) {
-    throw new Error(`Upload is missing data for ${primary.filename}.`);
+}): Promise<Record<string, StoredAttachmentLocation>> {
+  return withMapAssetProcessingWait(
+    {
+      event: 'processing.originals.store',
+      assetId,
+      filename: primaryFilename,
+      fileCount: files.length,
+      filenames: files.map(file => file.filename),
+      byteSize: files.reduce(
+        (sum, file) => sum + (file.size ?? file.bytes?.length ?? 0),
+        0
+      ),
+    },
+    async () => {
+      const locations: Record<string, StoredAttachmentLocation> = {};
+      const primary =
+        files.find(file => file.filename === primaryFilename) ?? files[0];
+      if (!primary.diskPath) {
+        throw new Error(`Upload is missing data for ${primary.filename}.`);
+      }
+      locations[MAP_ASSET_ORIGINAL_ATTACHMENT] = await putFileAttachment({
+        assetId,
+        attachmentId: MAP_ASSET_ORIGINAL_ATTACHMENT,
+        filePath: primary.diskPath,
+        contentType: 'application/octet-stream',
+      });
+      for (const file of files) {
+        if (file.filename === primary.filename) {
+          continue;
+        }
+        if (!file.diskPath) {
+          throw new Error(`Upload is missing data for ${file.filename}.`);
+        }
+        const attachmentId = companionAttachmentName(file.filename);
+        locations[attachmentId] = await putFileAttachment({
+          assetId,
+          attachmentId,
+          filePath: file.diskPath,
+          contentType: 'application/octet-stream',
+        });
+      }
+      return locations;
+    }
+  );
+}
+
+async function mergeStoredAttachments(
+  assetId: string,
+  locations: Record<string, StoredAttachmentLocation>,
+  claimStartedAt?: number
+): Promise<void> {
+  const db = getMapAssetsDB();
+  for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
+    const latest = await getMapAsset(assetId);
+    if (
+      claimStartedAt !== undefined &&
+      (latest.status !== 'processing' ||
+        latest.processingStartedAt !== claimStartedAt)
+    ) {
+      return;
+    }
+    try {
+      await db.put(
+        omitUndefinedFields({
+          ...latest,
+          storedAttachments: {
+            ...(latest.storedAttachments ?? {}),
+            ...locations,
+          },
+          updatedAt: Date.now(),
+        })
+      );
+      return;
+    } catch (error) {
+      if (!isConflict(error)) {
+        throw error;
+      }
+    }
   }
-  let nextRev = await putFileAttachment({
-    assetId,
-    rev,
-    attachmentId: MAP_ASSET_ORIGINAL_ATTACHMENT,
-    filePath: primary.diskPath,
-    contentType: 'application/octet-stream',
-  });
-  for (const file of files) {
-    if (file.filename === primary.filename) {
+  throw new Error(`Could not save map layer storage metadata for ${assetId}.`);
+}
+
+async function deleteUnreferencedAttachments(
+  previous: Record<string, StoredAttachmentLocation> | undefined,
+  next: Record<string, StoredAttachmentLocation>
+): Promise<void> {
+  if (!previous) {
+    return;
+  }
+  for (const [attachmentId, location] of Object.entries(previous)) {
+    const replacement = next[attachmentId];
+    if (replacement && replacement.resourceUri === location.resourceUri) {
       continue;
     }
-    if (!file.diskPath) {
-      throw new Error(`Upload is missing data for ${file.filename}.`);
-    }
-    nextRev = await putFileAttachment({
-      assetId,
-      rev: nextRev,
-      attachmentId: companionAttachmentName(file.filename),
-      filePath: file.diskPath,
-      contentType: 'application/octet-stream',
-    });
+    await deleteStoredAttachment(location).catch(() => undefined);
   }
-  return nextRev;
 }
 
 export async function createMapAsset({
@@ -339,7 +402,7 @@ function uploadFilenames(asset: ExistingMapAsset): string[] {
 async function downloadOriginalsToStaging(
   asset: ExistingMapAsset
 ): Promise<UploadedMapFile[] | undefined> {
-  if (!assetHasAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
+  if (!assetHasStoredAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
     return undefined;
   }
   const staged = await ensureStagingPaths(asset._id, uploadFilenames(asset));
@@ -350,26 +413,44 @@ async function downloadOriginalsToStaging(
     if (!primary?.diskPath) {
       return undefined;
     }
+    const original = storedAttachmentLocation(
+      asset,
+      MAP_ASSET_ORIGINAL_ATTACHMENT
+    );
+    if (!original) {
+      return undefined;
+    }
     await downloadAttachmentToFile({
+      location: original,
+      destPath: primary.diskPath,
       assetId: asset._id,
       attachmentId: MAP_ASSET_ORIGINAL_ATTACHMENT,
-      destPath: primary.diskPath,
     });
     for (const filename of asset.companionFilenames ?? []) {
       const file = staged.find(item => item.filename === filename);
       if (!file?.diskPath) {
         continue;
       }
+      const companion = storedAttachmentLocation(
+        asset,
+        companionAttachmentName(filename)
+      );
+      if (!companion) {
+        continue;
+      }
       await downloadAttachmentToFile({
+        location: companion,
+        destPath: file.diskPath,
         assetId: asset._id,
         attachmentId: companionAttachmentName(filename),
-        destPath: file.diskPath,
       });
     }
   } catch (error) {
     const status =
-      (error as {status?: number; statusCode?: number}).status ??
-      (error as {statusCode?: number}).statusCode;
+      (error as {status?: number}).status ??
+      (error as {statusCode?: number}).statusCode ??
+      (error as {$metadata?: {httpStatusCode?: number}}).$metadata
+        ?.httpStatusCode;
     if (status === 404) {
       await cleanupStaging(asset._id);
       return undefined;
@@ -383,14 +464,55 @@ async function resolveUploadFiles(asset: ExistingMapAsset): Promise<{
   files: UploadedMapFile[];
   fromStaging: boolean;
 }> {
+  logMapAssetProcessing({
+    event: 'processing.files',
+    outcome: 'started',
+    assetId: asset._id,
+    filename: asset.originalFilename,
+    fileCount: uploadFilenames(asset).length,
+  });
   const staged = await readStagedFiles(asset._id, uploadFilenames(asset));
   if (staged) {
+    logMapAssetProcessing({
+      event: 'processing.files',
+      outcome: 'success',
+      assetId: asset._id,
+      filename: asset.originalFilename,
+      fileCount: staged.length,
+      fromStaging: true,
+      source: 'staging',
+    });
     return {files: staged, fromStaging: true};
   }
+  logMapAssetProcessing({
+    event: 'processing.files',
+    outcome: 'waiting',
+    assetId: asset._id,
+    filename: asset.originalFilename,
+    detail: 'staging missing; downloading originals from object storage',
+    fromStaging: false,
+    source: 'object-storage',
+  });
   const downloaded = await downloadOriginalsToStaging(asset);
   if (downloaded) {
+    logMapAssetProcessing({
+      event: 'processing.files',
+      outcome: 'success',
+      assetId: asset._id,
+      filename: asset.originalFilename,
+      fileCount: downloaded.length,
+      fromStaging: false,
+      source: 'object-storage',
+    });
     return {files: downloaded, fromStaging: false};
   }
+  logMapAssetProcessing({
+    event: 'processing.files',
+    outcome: 'failure',
+    assetId: asset._id,
+    filename: asset.originalFilename,
+    reason: 'The uploaded map files are no longer available.',
+  });
   throw new Error('The uploaded map files are no longer available.');
 }
 
@@ -481,6 +603,17 @@ async function claimMapAssetProcessing(
   for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
     const asset = await getMapAsset(assetId);
     if (!mapAssetProcessingClaimIsStale(asset, now, timeoutMs)) {
+      logMapAssetProcessing({
+        event: 'processing.claim',
+        outcome: 'skipped',
+        assetId,
+        filename: asset.originalFilename,
+        attempt: asset.processingAttempts,
+        reason:
+          asset.status !== 'processing'
+            ? `status is ${asset.status}`
+            : 'a fresh claim is already held',
+      });
       return undefined;
     }
     const attempts = asset.processingAttempts ?? 0;
@@ -496,6 +629,15 @@ async function claimMapAssetProcessing(
           })
         );
         await cleanupStaging(assetId);
+        logMapAssetProcessing({
+          event: 'processing.claim',
+          outcome: 'failure',
+          assetId,
+          filename: asset.originalFilename,
+          attempt: attempts,
+          maxAttempts,
+          reason: MAP_ASSET_PROCESSING_EXHAUSTED_REASON,
+        });
         return undefined;
       } catch (error) {
         if (isConflict(error)) {
@@ -511,6 +653,14 @@ async function claimMapAssetProcessing(
         processingAttempts: attempts + 1,
         updatedAt: now,
       });
+      logMapAssetProcessing({
+        event: 'processing.claim',
+        outcome: 'success',
+        assetId,
+        filename: asset.originalFilename,
+        attempt: attempts + 1,
+        maxAttempts,
+      });
       return getMapAsset(assetId);
     } catch (error) {
       if (isConflict(error)) {
@@ -519,7 +669,13 @@ async function claimMapAssetProcessing(
       throw error;
     }
   }
-  console.error(`[map-assets] could not claim ${assetId}`);
+  logMapAssetProcessing({
+    event: 'processing.claim',
+    outcome: 'failure',
+    assetId,
+    reason: 'could not claim after retries',
+  });
+  console.error(`${MAP_ASSET_PROCESSING_LOG} could not claim ${assetId}`);
   return undefined;
 }
 
@@ -554,8 +710,9 @@ async function commitProcessingResult(
 }
 
 /**
- * Store the normalized file while this claim still owns the asset.
- * Returns false when another process has taken over or already finished.
+ * Store the normalized file in object storage while this claim still owns
+ * the asset. Returns the location, or undefined when another process has
+ * taken over or already finished.
  */
 async function putNormalizedAttachment({
   assetId,
@@ -569,44 +726,37 @@ async function putNormalizedAttachment({
   filePath?: string;
   bytes?: Buffer;
   mediaType: string;
-}): Promise<boolean> {
-  for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
-    const latest = await getMapAsset(assetId);
-    if (
-      latest.status !== 'processing' ||
-      latest.processingStartedAt !== claimStartedAt
-    ) {
-      return false;
-    }
-    try {
-      if (filePath) {
-        await putFileAttachment({
-          assetId,
-          rev: latest._rev,
-          attachmentId: MAP_ASSET_NORMALIZED_ATTACHMENT,
-          filePath,
-          contentType: mediaType,
-        });
-        return true;
-      }
-      if (!bytes) {
-        throw new Error('Normalized map layer is missing data.');
-      }
-      await getMapAssetsDB().putAttachment(
-        assetId,
-        MAP_ASSET_NORMALIZED_ATTACHMENT,
-        latest._rev,
-        bytes,
-        mediaType
-      );
-      return true;
-    } catch (error) {
-      if (!isConflict(error)) {
-        throw error;
-      }
-    }
+}): Promise<StoredAttachmentLocation | undefined> {
+  const latest = await getMapAsset(assetId);
+  if (
+    latest.status !== 'processing' ||
+    latest.processingStartedAt !== claimStartedAt
+  ) {
+    logMapAssetProcessing({
+      event: 'processing.normalized.store',
+      outcome: 'skipped',
+      assetId,
+      reason: 'lost the processing claim before storing the normalized file',
+    });
+    return undefined;
   }
-  throw new Error(`Could not store the normalized map layer for ${assetId}.`);
+  if (filePath) {
+    return putFileAttachment({
+      assetId,
+      attachmentId: MAP_ASSET_NORMALIZED_ATTACHMENT,
+      filePath,
+      contentType: mediaType,
+    });
+  }
+  if (!bytes) {
+    throw new Error('Normalized map layer is missing data.');
+  }
+  return putBytesAttachment({
+    assetId,
+    attachmentId: MAP_ASSET_NORMALIZED_ATTACHMENT,
+    bytes,
+    contentType: mediaType,
+  });
 }
 
 /** Runs GDAL and stores the normalized attachment. Safe to call from the job queue. */
@@ -619,34 +769,89 @@ export async function processMapAsset(
   if (!claimed || claimStartedAt === undefined) {
     return;
   }
+  const runStarted = Date.now();
+  logMapAssetProcessing({
+    event: 'processing.run',
+    outcome: 'started',
+    assetId,
+    filename: claimed.originalFilename,
+    quality: claimed.quality,
+    attempt: claimed.processingAttempts,
+    userId: claimed.createdBy,
+    teamId: claimed.ownedByTeamId,
+  });
   let cleanupDir: string | undefined;
+  const previousStored = claimed.storedAttachments;
   try {
     const {files, fromStaging} = await resolveUploadFiles(claimed);
+    const nextStored: Record<string, StoredAttachmentLocation> = {};
     if (fromStaging) {
-      await putOriginalFilesFromDisk({
-        assetId,
-        rev: (await getMapAsset(assetId))._rev,
-        files,
-        primaryFilename: claimed.originalFilename,
-      });
+      Object.assign(
+        nextStored,
+        await putOriginalFilesFromDisk({
+          assetId,
+          files,
+          primaryFilename: claimed.originalFilename,
+        })
+      );
+      await mergeStoredAttachments(assetId, nextStored, claimStartedAt);
+    } else {
+      for (const filename of uploadFilenames(claimed)) {
+        const attachmentId =
+          filename === claimed.originalFilename
+            ? MAP_ASSET_ORIGINAL_ATTACHMENT
+            : companionAttachmentName(filename);
+        const location = storedAttachmentLocation(claimed, attachmentId);
+        if (location) {
+          nextStored[attachmentId] = location;
+        }
+      }
     }
     const {options} = resolveMapAssetNormalizeOptions({
       quality: claimed.quality,
       options: claimed.normalizeOptions,
     });
     const normalize = runtime?.normalize ?? normalizeMapUpload;
-    const normalized = await normalize(files, options);
+    const normalized = await withMapAssetProcessingWait(
+      {
+        event: 'processing.normalize',
+        assetId,
+        filename: claimed.originalFilename,
+        quality: claimed.quality,
+        detail: 'GDAL inspect + convert',
+      },
+      () => normalize(files, options, {assetId})
+    );
     cleanupDir = normalized.cleanupDir;
-    const stored = await putNormalizedAttachment({
-      assetId,
-      claimStartedAt,
-      filePath: normalized.filePath,
-      bytes: normalized.bytes,
-      mediaType: normalized.mediaType,
-    });
+    const stored = await withMapAssetProcessingWait(
+      {
+        event: 'processing.normalized.store',
+        assetId,
+        filename: claimed.originalFilename,
+        kind: normalized.kind,
+        byteSize: normalized.byteSize ?? normalized.bytes?.length,
+      },
+      () =>
+        putNormalizedAttachment({
+          assetId,
+          claimStartedAt,
+          filePath: normalized.filePath,
+          bytes: normalized.bytes,
+          mediaType: normalized.mediaType,
+        })
+    );
     if (!stored) {
+      logMapAssetProcessing({
+        event: 'processing.run',
+        outcome: 'skipped',
+        assetId,
+        filename: claimed.originalFilename,
+        elapsedMs: Date.now() - runStarted,
+        reason: 'lost the processing claim',
+      });
       return;
     }
+    nextStored[MAP_ASSET_NORMALIZED_ATTACHMENT] = stored;
     const contentHash = normalized.filePath
       ? await sha256File(normalized.filePath)
       : sha256(normalized.bytes ?? Buffer.alloc(0));
@@ -658,6 +863,7 @@ export async function processMapAsset(
         kind: normalized.kind,
         contentHash,
         byteSize,
+        storedAttachments: nextStored,
         extent4326: normalized.extent4326,
         extent3857: normalized.extent3857,
         failureReason: undefined,
@@ -665,6 +871,24 @@ export async function processMapAsset(
         updatedAt: processingNow(runtime),
       })
     );
+    await deleteUnreferencedAttachments(previousStored, nextStored);
+    logMapAssetProcessing({
+      event: 'processing.commit',
+      outcome: 'success',
+      assetId,
+      filename: claimed.originalFilename,
+      kind: normalized.kind,
+      byteSize,
+    });
+    logMapAssetProcessing({
+      event: 'processing.run',
+      outcome: 'success',
+      assetId,
+      filename: claimed.originalFilename,
+      kind: normalized.kind,
+      byteSize,
+      elapsedMs: Date.now() - runStarted,
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Map layer processing failed.';
@@ -677,6 +901,21 @@ export async function processMapAsset(
         updatedAt: processingNow(runtime),
       })
     );
+    logMapAssetProcessing({
+      event: 'processing.commit',
+      outcome: 'failure',
+      assetId,
+      filename: claimed.originalFilename,
+      reason: message,
+    });
+    logMapAssetProcessing({
+      event: 'processing.run',
+      outcome: 'failure',
+      assetId,
+      filename: claimed.originalFilename,
+      elapsedMs: Date.now() - runStarted,
+      reason: message,
+    });
   } finally {
     if (cleanupDir) {
       await rm(cleanupDir, {recursive: true, force: true}).catch(
@@ -692,12 +931,29 @@ let processingQueue: Promise<void> = Promise.resolve();
 /** Serialise GDAL work so one large raster does not overlap the next. */
 export function enqueueMapAssetProcessing(
   assetId: string,
-  runtime?: MapAssetProcessingRuntime
+  runtime?: MapAssetProcessingRuntime,
+  source: string = 'upload'
 ): void {
+  logMapAssetProcessing({
+    event: 'processing.enqueue',
+    outcome: 'started',
+    assetId,
+    detail: 'waiting for the in-process GDAL queue',
+    source,
+  });
   processingQueue = processingQueue
     .then(() => processMapAsset(assetId, runtime))
     .catch(error => {
-      console.error(`[map-assets] processing failed for ${assetId}`, error);
+      logMapAssetProcessing({
+        event: 'processing.run',
+        outcome: 'failure',
+        assetId,
+        reason: error instanceof Error ? error.message : String(error),
+      });
+      console.error(
+        `${MAP_ASSET_PROCESSING_LOG} processing failed for ${assetId}`,
+        error
+      );
     });
 }
 
@@ -710,13 +966,18 @@ export function waitForMapAssetProcessing(): Promise<void> {
  * Re-queue processing assets whose claim is missing or expired.
  * Each API process runs this on startup and on a timer so a crashed
  * container's job is picked up by the next sweep. Staging files on this
- * host are reused; otherwise originals are streamed back from CouchDB.
+ * host are reused; otherwise originals are streamed back from object storage.
  */
 export async function sweepStaleMapAssetProcessing(
   runtime?: MapAssetProcessingRuntime
 ): Promise<string[]> {
   const now = processingNow(runtime);
   const timeoutMs = claimTimeoutMs(runtime);
+  logMapAssetProcessing({
+    event: 'processing.sweep',
+    outcome: 'started',
+    detail: `claim timeout ${timeoutMs}ms`,
+  });
   const result = await getMapAssetsDB().query<number>(MAP_ASSETS_BY_STATUS, {
     key: 'processing',
     include_docs: false,
@@ -731,14 +992,31 @@ export async function sweepStaleMapAssetProcessing(
       if (!mapAssetProcessingClaimIsStale(asset, now, timeoutMs)) {
         continue;
       }
+      logMapAssetProcessing({
+        event: 'processing.sweep',
+        outcome: 'waiting',
+        assetId: row.id,
+        filename: asset.originalFilename,
+        attempt: asset.processingAttempts,
+        detail: 're-queueing a stale or unclaimed processing asset',
+      });
       enqueued.push(row.id);
-      enqueueMapAssetProcessing(row.id, runtime);
+      enqueueMapAssetProcessing(row.id, runtime, 'sweep');
     } catch (error) {
       if (!(error instanceof Exceptions.ItemNotFoundException)) {
         throw error;
       }
     }
   }
+  logMapAssetProcessing({
+    event: 'processing.sweep',
+    outcome: 'success',
+    fileCount: enqueued.length,
+    detail:
+      enqueued.length === 0
+        ? 'no stale processing assets'
+        : `enqueued ${enqueued.length} stale asset(s)`,
+  });
   return enqueued;
 }
 
@@ -751,7 +1029,15 @@ export function startMapAssetProcessingSweeper(): void {
   }
   const run = () => {
     sweepStaleMapAssetProcessing().catch(error => {
-      console.error('[map-assets] processing sweep failed', error);
+      logMapAssetProcessing({
+        event: 'processing.sweep',
+        outcome: 'failure',
+        reason: error instanceof Error ? error.message : String(error),
+      });
+      console.error(
+        `${MAP_ASSET_PROCESSING_LOG} processing sweep failed`,
+        error
+      );
     });
   };
   run();
@@ -760,28 +1046,94 @@ export function startMapAssetProcessingSweeper(): void {
     MAP_ASSET_PROCESSING_SWEEP_INTERVAL_MS
   );
   processingSweepTimer.unref();
-  console.log(
-    `[map-assets] processing sweep every ${MAP_ASSET_PROCESSING_SWEEP_INTERVAL_MS}ms`
-  );
+  logMapAssetProcessing({
+    event: 'processing.sweep',
+    outcome: 'started',
+    detail: `every ${MAP_ASSET_PROCESSING_SWEEP_INTERVAL_MS}ms`,
+    source: 'sweeper',
+  });
 }
 
-export async function readNormalizedAttachment(
-  assetId: string
-): Promise<{bytes: Buffer; mediaType: string; filename: string}> {
-  const asset = await getMapAsset(assetId);
+/** How long a client-direct download grant stays valid. */
+export const MAP_ASSET_DOWNLOAD_URL_EXPIRY_SECONDS = 60 * 60;
+
+function normalizedDownloadMeta(asset: ExistingMapAsset): {
+  location: StoredAttachmentLocation;
+  mediaType: string;
+  filename: string;
+} {
   if (asset.status !== 'ready' || !asset.kind) {
     throw new Exceptions.InvalidRequestException(
       'This map layer is not ready to download.'
     );
   }
-  const bytes = await asBuffer(
-    await attachmentDb().getAttachment(assetId, MAP_ASSET_NORMALIZED_ATTACHMENT)
+  const location = storedAttachmentLocation(
+    asset,
+    MAP_ASSET_NORMALIZED_ATTACHMENT
   );
+  if (!location) {
+    throw new Exceptions.InvalidRequestException(
+      'This map layer is not ready to download.'
+    );
+  }
   const extension = asset.kind === 'geojson' ? 'geojson' : 'png';
   return {
-    bytes,
+    location,
     mediaType: asset.kind === 'geojson' ? 'application/geo+json' : 'image/png',
     filename: `${asset.name}.${extension}`,
+  };
+}
+
+/**
+ * Mint a host-reachable presigned GET for the device-ready file.
+ * Clients download the bytes from object storage, not through Conductor.
+ */
+export async function presignNormalizedAttachment(
+  assetId: string
+): Promise<GetMapAssetDownloadUrlResponse> {
+  const {location, mediaType, filename} = normalizedDownloadMeta(
+    await getMapAsset(assetId)
+  );
+  const expiresInSeconds = MAP_ASSET_DOWNLOAD_URL_EXPIRY_SECONDS;
+  return {
+    url: await presignAttachmentDownload({
+      location,
+      expiresInSeconds,
+      contentType: mediaType,
+      filename,
+    }),
+    mediaType,
+    filename,
+    byteSize: location.byteSize,
+    expiresInSeconds,
+  };
+}
+
+export async function openNormalizedAttachment(assetId: string): Promise<{
+  body: Awaited<ReturnType<typeof downloadAttachmentStream>>;
+  mediaType: string;
+  filename: string;
+  byteSize?: number;
+}> {
+  const {location, mediaType, filename} = normalizedDownloadMeta(
+    await getMapAsset(assetId)
+  );
+  return {
+    body: await downloadAttachmentStream(location),
+    mediaType,
+    filename,
+    byteSize: location.byteSize,
+  };
+}
+
+export async function readNormalizedAttachment(
+  assetId: string
+): Promise<{bytes: Buffer; mediaType: string; filename: string}> {
+  const file = await openNormalizedAttachment(assetId);
+  return {
+    bytes: await collectStream(file.body),
+    mediaType: file.mediaType,
+    filename: file.filename,
   };
 }
 
@@ -857,8 +1209,14 @@ export async function deleteMapAsset(assetId: string): Promise<void> {
     }
   }
   const latest = await getMapAsset(asset._id);
+  const stored = latest.storedAttachments ?? {};
   await db.remove(latest);
   await cleanupStaging(assetId);
+  await Promise.all(
+    Object.values(stored).map(location =>
+      deleteStoredAttachment(location).catch(() => undefined)
+    )
+  );
 }
 
 function toListing(

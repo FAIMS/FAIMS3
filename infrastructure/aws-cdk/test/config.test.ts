@@ -4,6 +4,7 @@
  */
 import {ZodError} from 'zod';
 import {
+  AttachmentStorageConfigSchema,
   ConductorConfigSchema,
   DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW,
   DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS,
@@ -163,6 +164,22 @@ describe('SecurityConfigSchema export rate limiter', () => {
   });
 });
 
+describe('AttachmentStorageConfigSchema', () => {
+  it('defaults to S3 and the map-assets prefix', () => {
+    const parsed = AttachmentStorageConfigSchema.parse({});
+    expect(parsed.serviceType).toBe('S3');
+    expect(parsed.prefix).toBe('map-assets');
+  });
+
+  it('accepts a custom prefix', () => {
+    const parsed = AttachmentStorageConfigSchema.parse({
+      serviceType: 'S3',
+      prefix: 'layers',
+    });
+    expect(parsed.prefix).toBe('layers');
+  });
+});
+
 function minimalConductorConfig(overrides: Record<string, unknown> = {}) {
   return {
     name: 'Test',
@@ -186,11 +203,30 @@ function minimalConductorConfig(overrides: Record<string, unknown> = {}) {
 describe('ConductorConfigSchema startup migration lock', () => {
   it('defaults to migrate-on, lock enabled, and a 30 minute steal timeout', () => {
     const parsed = ConductorConfigSchema.parse(minimalConductorConfig());
+    expect(parsed.ephemeralStorageGiB).toBe(80);
     expect(parsed.disableMigrateOnStartup).toBe(false);
     expect(parsed.disableStartupMigrationLock).toBe(false);
     expect(parsed.startupMigrationLockTimeoutMs).toBe(
       DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS
     );
+  });
+
+  it('accepts an ephemeral storage override and rejects out of range', () => {
+    expect(
+      ConductorConfigSchema.parse(
+        minimalConductorConfig({ephemeralStorageGiB: 100})
+      ).ephemeralStorageGiB
+    ).toBe(100);
+    expect(() =>
+      ConductorConfigSchema.parse(
+        minimalConductorConfig({ephemeralStorageGiB: 20})
+      )
+    ).toThrow();
+    expect(() =>
+      ConductorConfigSchema.parse(
+        minimalConductorConfig({ephemeralStorageGiB: 201})
+      )
+    ).toThrow();
   });
 
   it('accepts an explicit timeout override', () => {

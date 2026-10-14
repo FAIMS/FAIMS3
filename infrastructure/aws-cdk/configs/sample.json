@@ -114,6 +114,7 @@
     "provisionSSOUsersPolicy": "reject",
     "cpu": 1024,
     "memory": 2048,
+    "ephemeralStorageGiB": 80,
     "autoScaling": {
       "desiredCapacity": 2,
       "minCapacity": 1,
@@ -183,6 +184,10 @@
     "title": "Control Centre"
   },
   "docs": {},
+  "attachmentStorage": {
+    "serviceType": "S3",
+    "prefix": "map-assets"
+  },
   "smtp": {
     "emailServiceType": "SMTP",
     "fromEmail": "notifications@your-domain.com",

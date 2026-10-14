@@ -173,6 +173,13 @@ function extensionOf(filename: string): string {
   return dot === -1 ? '' : base.slice(dot).toLowerCase();
 }
 
+/**
+ * Formats accepted as a map-layer primary. Keep UI copy and API errors
+ * aligned with this phrase.
+ */
+export const MAP_ASSET_PRIMARY_FORMATS =
+  'a GeoJSON, GeoPackage, zipped shapefile or File Geodatabase, KML, GeoTIFF, georeferenced PDF, or a PNG/JPEG';
+
 /** Device kind the uploader will produce, or undefined if the file is not a primary. */
 export function mapAssetKindFromFilename(
   filename: string
@@ -224,7 +231,8 @@ function geojsonFactor(filename: string): number {
     case '.gpkg':
       return 2.2;
     case '.zip':
-      return 2.8;
+      // File GDB is already binary; shapefile zip expands more as GeoJSON.
+      return filename.toLowerCase().endsWith('.gdb.zip') ? 2.2 : 2.8;
     case '.kml':
       return 0.75;
     default:
@@ -347,9 +355,7 @@ export function estimateNormalizedMapAsset(
   const source = MapAssetEstimateSourceSchema.parse(input.source);
   const kind = source.kind ?? mapAssetKindFromFilename(source.filename);
   if (!kind) {
-    throw new Error(
-      'Estimate needs a GeoJSON, GeoPackage, zipped shapefile, KML, GeoTIFF, georeferenced PDF, or a PNG/JPEG.'
-    );
+    throw new Error(`Estimate needs ${MAP_ASSET_PRIMARY_FORMATS}.`);
   }
   const {quality, options} = resolveMapAssetNormalizeOptions({
     quality: input.quality,
