@@ -9,6 +9,8 @@
  */
 
 import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import RemoveIcon from '@mui/icons-material/Remove';
 import {Box} from '@mui/material';
 import Map from 'ol/Map';
@@ -112,6 +114,27 @@ export const CenterOnLocationControl = ({
       disabled={!locationAvailable}
     >
       <MapControlIcon src={targetIconSrc} alt="Centre on current location" />
+    </MapControlButton>
+  </MapControlGroup>
+);
+
+/**
+ * Top-right control that expands the map into a lightbox-style full-screen
+ * view. Shows a close icon while that view is open.
+ */
+export const FullscreenControl = ({
+  isFullscreen,
+  onToggle,
+}: {
+  isFullscreen: boolean;
+  onToggle: () => void;
+}) => (
+  <MapControlGroup>
+    <MapControlButton
+      title={isFullscreen ? 'Close full screen map' : 'Open full screen map'}
+      onClick={onToggle}
+    >
+      {isFullscreen ? <CloseIcon /> : <FullscreenIcon />}
     </MapControlButton>
   </MapControlGroup>
 );

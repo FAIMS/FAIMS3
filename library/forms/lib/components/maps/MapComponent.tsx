@@ -46,10 +46,12 @@ import {loadLastLocation, saveLastLocation} from './lastKnownLocation';
 import {
   CenterOnLocationControl,
   CompassControl,
+  FullscreenControl,
   UseCurrentLocationControl,
   ZoomControl,
 } from './controls/map-controls';
 import {MapControlsOverlay, MapControlStack} from './controls/primitives';
+import {useMapFullscreen} from './useMapFullscreen';
 import {MapControlThemeProvider} from './mapTheme';
 import {MapConfig} from './types';
 import {
@@ -101,6 +103,13 @@ export interface MapComponentProps {
   /** When false, hides zoom, compass, layers, and location controls. */
   showControls?: boolean;
 
+  /**
+   * When true, shows a top-right control that expands this map into a
+   * lightbox-style full-screen view. Opt-in so hosts that are already
+   * full-screen (the map field dialog) do not nest another overlay.
+   */
+  enableFullscreen?: boolean;
+
   /** Whether to auto-fly to the first valid current location. Defaults to true. */
   autoFlyToCurrentLocation?: boolean;
 
@@ -130,7 +139,9 @@ export const MapComponent = (props: MapComponentProps) => (
 const MapComponentImpl = (props: MapComponentProps) => {
   // Defaults
   const showControls = props.showControls ?? true;
+  const enableFullscreen = props.enableFullscreen ?? false;
   const autoFlyToCurrentLocation = props.autoFlyToCurrentLocation ?? true;
+  const {isFullscreen, toggleFullscreen} = useMapFullscreen(enableFullscreen);
 
   const [map, setMap] = useState<Map | undefined>(undefined);
   useContextualMapLayers(map);
@@ -591,15 +602,20 @@ const MapComponentImpl = (props: MapComponentProps) => {
   );
 
   // Keep the OpenLayers canvas in sync with its container size (OL doesn't
-  // observe container resizes itself)
+  // observe container resizes itself). Also refresh after entering or leaving
+  // full-screen so tiles fill the new viewport immediately.
   useEffect(() => {
     if (!map) return;
     const target = map.getTargetElement();
     if (!target) return;
     const observer = new ResizeObserver(() => map.updateSize());
     observer.observe(target);
-    return () => observer.disconnect();
-  }, [map]);
+    const frame = requestAnimationFrame(() => map.updateSize());
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [map, isFullscreen]);
 
   // Handler for the "use current location" control (map picker only)
   const setSelectionAsCurrentLocation =
@@ -618,16 +634,31 @@ const MapComponentImpl = (props: MapComponentProps) => {
     }
   };
 
+  const showOverlay = showControls || props.topOverlay || enableFullscreen;
+  const showTopRight =
+    enableFullscreen || (showControls && !!setSelectionAsCurrentLocation);
+
   return (
     <Box
-      sx={{
+      role={isFullscreen ? 'dialog' : undefined}
+      aria-modal={isFullscreen || undefined}
+      aria-label={isFullscreen ? 'Full screen map' : undefined}
+      sx={theme => ({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
         width: '100%',
         minHeight: 0,
         minWidth: 0,
-      }}
+        ...(isFullscreen && {
+          position: 'fixed',
+          inset: 0,
+          zIndex: theme.zIndex.modal,
+          backgroundColor: theme.palette.background.paper,
+          overflow: 'hidden',
+          pb: 'env(safe-area-inset-bottom, 0px)',
+        }),
+      })}
     >
       <Box sx={{position: 'relative', flex: 1, minHeight: 0, width: '100%'}}>
         <Box
@@ -637,8 +668,9 @@ const MapComponentImpl = (props: MapComponentProps) => {
             width: '100%',
           }}
         />
-        {map && (showControls || props.topOverlay) && (
+        {map && showOverlay && (
           <MapControlsOverlay
+            insetSafeArea={isFullscreen}
             topContent={
               <>
                 {props.topOverlay}
@@ -652,12 +684,21 @@ const MapComponentImpl = (props: MapComponentProps) => {
               </>
             }
             topRight={
-              showControls &&
-              setSelectionAsCurrentLocation && (
-                <UseCurrentLocationControl
-                  onSetPoint={handleUseCurrentLocation}
-                  locationAvailable={locationAvailable}
-                />
+              showTopRight && (
+                <>
+                  {enableFullscreen && (
+                    <FullscreenControl
+                      isFullscreen={isFullscreen}
+                      onToggle={toggleFullscreen}
+                    />
+                  )}
+                  {showControls && setSelectionAsCurrentLocation && (
+                    <UseCurrentLocationControl
+                      onSetPoint={handleUseCurrentLocation}
+                      locationAvailable={locationAvailable}
+                    />
+                  )}
+                </>
               )
             }
             bottomRight={

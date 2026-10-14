@@ -561,6 +561,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
         extent={featuresExtent}
         config={mapConfig}
         autoFlyToCurrentLocation={false}
+        enableFullscreen
       />
       <Popover
         open={!!selectedFeature && !!popoverAnchorPosition}

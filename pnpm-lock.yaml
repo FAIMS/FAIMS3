@@ -774,7 +774,7 @@ importers:
         version: 29.7.0(@types/node@24.13.1)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@24.13.1)(typescript@7.0.2))
       madge:
         specifier: ^8.0.0
-        version: 8.0.0(supports-color@8.1.1)(typescript@7.0.2)
+        version: 8.0.0(typescript@7.0.2)
       pouchdb-adapter-memory:
         specifier: ^9.0.0
         version: 9.0.0(encoding@0.1.13)
@@ -850,6 +850,9 @@ importers:
       mustache:
         specifier: ^4.2.0
         version: 4.2.0
+      pmtiles:
+        specifier: ^4.5.0
+        version: 4.5.0
       proj4:
         specifier: ^2.9.0
         version: 2.20.8
@@ -10526,6 +10529,9 @@ packages:
   pluralize@8.0.0:
     resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
     engines: {node: '>=4'}
+
+  pmtiles@4.5.0:
+    resolution: {integrity: sha512-CBeD4SoUluFziGdy/8k7FOjQxQy486n+929W/tWophauvMICpkZ26vGBWhDt/6b1FZQWNaf4jFdT/5+q0Wii5w==}
 
   pngjs@5.0.0:
     resolution: {integrity: sha512-40QW5YalBNfQo5yRYmiw7Yz6TKKVr3h6970B2YE+3fQpsWcrbj1PzJgxeJ19DRQjhMbKPIuMY8rFaXc8moolVw==}
@@ -22661,25 +22667,6 @@ snapshots:
 
   lz-string@1.5.0: {}
 
-  madge@8.0.0(supports-color@8.1.1)(typescript@7.0.2):
-    dependencies:
-      chalk: 4.1.2
-      commander: 7.2.0
-      commondir: 1.0.1
-      debug: 4.4.3(supports-color@8.1.1)
-      dependency-tree: 11.5.0
-      ora: 5.4.1
-      pluralize: 8.0.0
-      pretty-ms: 7.0.1
-      rc: 1.2.8
-      stream-to-array: 2.3.0
-      ts-graphviz: 2.1.6
-      walkdir: 0.4.1
-    optionalDependencies:
-      typescript: 7.0.2
-    transitivePeerDependencies:
-      - supports-color
-
   madge@8.0.0(typescript@7.0.2):
     dependencies:
       chalk: 4.1.2
@@ -24115,6 +24102,10 @@ snapshots:
       xmlbuilder: 15.1.1
 
   pluralize@8.0.0: {}
+
+  pmtiles@4.5.0:
+    dependencies:
+      fflate: 0.8.3
 
   pngjs@5.0.0: {}
 

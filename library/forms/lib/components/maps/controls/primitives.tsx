@@ -10,10 +10,32 @@
  */
 
 import {Box, ButtonBase} from '@mui/material';
+import {Theme} from '@mui/material/styles';
 import {ReactNode} from 'react';
 
 /** Spacing between control groups / overlay edge padding (theme spacing units) */
 const OVERLAY_GAP = {xs: 1, sm: 1.5};
+
+/** Per-side overlay padding, optionally grown to clear device safe areas. */
+function overlayEdgePadding(theme: Theme, insetSafeArea: boolean | undefined) {
+  if (!insetSafeArea) {
+    return {p: OVERLAY_GAP};
+  }
+  const xs = theme.spacing(OVERLAY_GAP.xs);
+  const sm = theme.spacing(OVERLAY_GAP.sm);
+  const side = (inset: string) => ({
+    xs: `max(${xs}, env(${inset}, 0px))`,
+    sm: `max(${sm}, env(${inset}, 0px))`,
+  });
+  return {
+    pt: side('safe-area-inset-top'),
+    pr: side('safe-area-inset-right'),
+    // Bottom stays at the regular gap: the map attribution strip below
+    // the canvas owns the home-indicator inset.
+    pb: OVERLAY_GAP,
+    pl: side('safe-area-inset-left'),
+  };
+}
 
 /**
  * Full-bleed overlay rendered above the map canvas. Lays out control slots
@@ -32,13 +54,16 @@ export const MapControlsOverlay = ({
   topContent,
   topRight,
   bottomRight,
+  insetSafeArea,
 }: {
   topContent?: ReactNode;
   topRight?: ReactNode;
   bottomRight?: ReactNode;
+  /** Grow edge padding to clear notches / home indicators (full-screen map). */
+  insetSafeArea?: boolean;
 }) => (
   <Box
-    sx={{
+    sx={theme => ({
       position: 'absolute',
       inset: 0,
       zIndex: 1,
@@ -46,9 +71,9 @@ export const MapControlsOverlay = ({
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
-      p: OVERLAY_GAP,
+      ...overlayEdgePadding(theme, insetSafeArea),
       gap: OVERLAY_GAP,
-    }}
+    })}
   >
     <Box
       sx={{
