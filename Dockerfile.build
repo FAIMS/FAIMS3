@@ -76,7 +76,8 @@ FROM alpine AS runner
 # GeoPackage export and map-layer ingest. Alpine ships optional GDAL
 # drivers as separate community packages — gdal-tools alone has no PDF
 # or WEBP, so the format checks below fail in CI. MBTiles is in core
-# libgdal. tippecanoe 2.79.0 and go-pmtiles 1.28.1 build the archives.
+# libgdal. tippecanoe 2.79.0 (Makefile requires bash) and go-pmtiles
+# 1.28.1 build the archives.
 RUN apk add --no-cache \
       gdal-tools \
       gdal-driver-pdf \
@@ -87,7 +88,8 @@ RUN apk add --no-cache \
       sqlite-libs \
       zlib \
       curl \
-  && apk add --no-cache --virtual .mapbuild git g++ make sqlite-dev zlib-dev \
+  && apk add --no-cache --virtual .mapbuild \
+      git g++ make bash sqlite-dev zlib-dev \
   && gdalinfo --formats | grep -qi pdf \
   && gdalinfo --formats | grep -qi MBTiles \
   && gdalinfo --formats | grep -qi WEBP \
