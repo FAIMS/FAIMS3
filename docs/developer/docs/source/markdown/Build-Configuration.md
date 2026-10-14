@@ -45,11 +45,11 @@ the parsed env.
 
 ## Where the files live
 
-| File               | Contents                                                                                                           | Encrypted   | Used by                         |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------ | ----------- | ------------------------------- |
-| `core.json`        | The shared non-secret config. All secret **slots are empty** in a committed core.                                   | No          | All platforms                   |
-| `secrets.enc.json` | The SOPS-encrypted secret values (one value per secret slot).                                                       | Yes (age)   | Mobile CI, Terraform, local dev |
-| `aws.json`         | The AWS extension: account/region, hosted zone, certificates, Fargate, and the secret-slot → Secrets-Manager-ARN map. | No          | AWS CDK                         |
+| File               | Contents                                                                                                              | Encrypted | Used by                         |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------- |
+| `core.json`        | The shared non-secret config. All secret **slots are empty** in a committed core.                                     | No        | All platforms                   |
+| `secrets.enc.json` | The SOPS-encrypted secret values (one value per secret slot).                                                         | Yes (age) | Mobile CI, Terraform, local dev |
+| `aws.json`         | The AWS extension: account/region, hosted zone, certificates, Fargate, and the secret-slot → Secrets-Manager-ARN map. | No        | AWS CDK                         |
 
 How each platform gets its values:
 
@@ -116,15 +116,15 @@ certificate rotations and keep routine config edits separate from signing change
 These values stay in GitHub Actions because they are needed before config files can be
 read/decrypted (they are _not_ part of `core.json`):
 
-| GitHub setting                   | Type     | Purpose                                                                              |
-| -------------------------------- | -------- | ------------------------------------------------------------------------------------ |
-| `vars.APP_CONFIG_REPO_SLUG`      | Variable | Config repository slug (`owner/repo`) for `core.json` + `secrets.enc.json`           |
-| `vars.APP_CONFIG_REPO_PATH`      | Variable | Base path within the config repo where env folders live (default `mobile`)           |
-| `vars.FASTLANE_REPO_SLUG`        | Variable | Fastlane/Match repository slug (`owner/repo`); unset = same repo as config           |
-| `vars.MOBILE_CONFIG_BRANCH`      | Variable | Branch in config repository (default `main`)                                         |
-| `vars.MOBILE_CONFIG_ENVIRONMENT` | Variable | Environment folder name (under the config path, e.g. `mobile/production`)           |
-| `secrets.GIT_AUTHORIZATION`      | Secret   | Token used for private config-repo checkout and Fastlane git auth                    |
-| `secrets.SOPS_AGE_KEY`           | Secret   | Age private key used by `sops --decrypt`                                             |
+| GitHub setting                   | Type     | Purpose                                                                    |
+| -------------------------------- | -------- | -------------------------------------------------------------------------- |
+| `vars.APP_CONFIG_REPO_SLUG`      | Variable | Config repository slug (`owner/repo`) for `core.json` + `secrets.enc.json` |
+| `vars.APP_CONFIG_REPO_PATH`      | Variable | Base path within the config repo where env folders live (default `mobile`) |
+| `vars.FASTLANE_REPO_SLUG`        | Variable | Fastlane/Match repository slug (`owner/repo`); unset = same repo as config |
+| `vars.MOBILE_CONFIG_BRANCH`      | Variable | Branch in config repository (default `main`)                               |
+| `vars.MOBILE_CONFIG_ENVIRONMENT` | Variable | Environment folder name (under the config path, e.g. `mobile/production`)  |
+| `secrets.GIT_AUTHORIZATION`      | Secret   | Token used for private config-repo checkout and Fastlane git auth          |
+| `secrets.SOPS_AGE_KEY`           | Secret   | Age private key used by `sops --decrypt`                                   |
 
 ## The JSON structure
 
@@ -139,17 +139,17 @@ fully-populated local-dev config. The authoritative field types and defaults are
 Concrete URLs. If you also set `domains` (below), the derived endpoint fields
 (`apiUrl`, `webUrl`, `appUrl`, `couchdbPublicUrl`, `conductorUrls`) override these.
 
-| Field                   | Type            | Notes                                              |
-| ----------------------- | --------------- | -------------------------------------------------- |
-| `apiUrl`                | string          | Conductor API base URL.                             |
-| `webUrl`                | string          | Control Centre (web) base URL.                      |
-| `appUrl`                | string          | Mobile app (PWA) base URL.                          |
-| `couchdbInternalUrl`    | string          | CouchDB URL reachable from the API.                 |
-| `couchdbPublicUrl`      | string          | CouchDB URL the app syncs to.                       |
-| `androidAppPublicUrl`   | string          | Google Play store listing URL.                      |
-| `iosAppPublicUrl`       | string          | Apple App Store listing URL.                        |
-| `conductorUrls`         | string[]        | Conductor URLs the app may contact (CSV in env).    |
-| `redirectWhitelist`     | string[]        | Allowed redirect origins (the app adds `appId://`). |
+| Field                 | Type     | Notes                                               |
+| --------------------- | -------- | --------------------------------------------------- |
+| `apiUrl`              | string   | Conductor API base URL.                             |
+| `webUrl`              | string   | Control Centre (web) base URL.                      |
+| `appUrl`              | string   | Mobile app (PWA) base URL.                          |
+| `couchdbInternalUrl`  | string   | CouchDB URL reachable from the API.                 |
+| `couchdbPublicUrl`    | string   | CouchDB URL the app syncs to.                       |
+| `androidAppPublicUrl` | string   | Google Play store listing URL.                      |
+| `iosAppPublicUrl`     | string   | Apple App Store listing URL.                        |
+| `conductorUrls`       | string[] | Conductor URLs the app may contact (CSV in env).    |
+| `redirectWhitelist`   | string[] | Allowed redirect origins (the app adds `appId://`). |
 
 ### `domains` — derived endpoints (optional)
 
@@ -157,12 +157,12 @@ Instead of storing concrete URLs, model the deployment's domain structure and **
 the endpoints. When present, it overrides the `endpoints` fields above, so the app
 build and the CDK can never disagree about a URL.
 
-| Field           | Type          | Notes                                                              |
-| --------------- | ------------- | ------------------------------------------------------------------ |
-| `base`          | string        | Base domain, e.g. `faims.example.com`.                             |
-| `protocol`      | string        | `https` (default) or `http`.                                       |
-| `services`      | object        | Per-service subdomain names: `conductor`, `couch`, `web`, `app`, `docs`. |
-| `localOverride` | object        | **Optional.** Literal `host:port` overrides for local/dev; when a key is present the host is used verbatim with `http`. |
+| Field           | Type   | Notes                                                                                                                   |
+| --------------- | ------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `base`          | string | Base domain, e.g. `faims.example.com`.                                                                                  |
+| `protocol`      | string | `https` (default) or `http`.                                                                                            |
+| `services`      | object | Per-service subdomain names: `conductor`, `couch`, `web`, `app`, `docs`.                                                |
+| `localOverride` | object | **Optional.** Literal `host:port` overrides for local/dev; when a key is present the host is used verbatim with `http`. |
 
 A production config omits `localOverride`; a local/dev config sets it (this presence is
 the "local mode" switch — there is no separate `environment` flag). Example:
@@ -178,89 +178,89 @@ the "local mode" switch — there is no separate `environment` flag). Example:
 
 ### `branding` — naming and identity
 
-| Field                      | Type   | Default              | Notes                                       |
-| -------------------------- | ------ | -------------------- | ------------------------------------------- |
-| `appName`                  | string | `FAIMS`             | App name (store listings, headings).        |
-| `appShortName`             | string | falls back to `appName` | Short name; falls back to `appName`.     |
-| `headingAppName`           | string | falls back to `appName` | Banner heading; falls back to `appName`. |
-| `theme`                    | string | `default`           | `default` \| `fieldmark` \| `bssTheme`.     |
-| `websiteTitle`             | string | `Control Centre`    | Control Centre document title.              |
-| `conductorInstanceName`    | string | `Development FAIMS Server` | Shown on the login/conductor listing. |
-| `conductorDescription`     | string | `Development server on localhost` |                                 |
-| `conductorShortCodePrefix` | string | `FAIMS`             | Invite-code prefix (`{prefix}-{code}`).     |
+| Field                      | Type   | Default                           | Notes                                    |
+| -------------------------- | ------ | --------------------------------- | ---------------------------------------- |
+| `appName`                  | string | `FAIMS`                           | App name (store listings, headings).     |
+| `appShortName`             | string | falls back to `appName`           | Short name; falls back to `appName`.     |
+| `headingAppName`           | string | falls back to `appName`           | Banner heading; falls back to `appName`. |
+| `theme`                    | string | `default`                         | `default` \| `fieldmark` \| `bssTheme`.  |
+| `websiteTitle`             | string | `Control Centre`                  | Control Centre document title.           |
+| `conductorInstanceName`    | string | `Development FAIMS Server`        | Shown on the login/conductor listing.    |
+| `conductorDescription`     | string | `Development server on localhost` |                                          |
+| `conductorShortCodePrefix` | string | `FAIMS`                           | Invite-code prefix (`{prefix}-{code}`).  |
 
 ### `support` — contacts and links
 
-| Field            | Type   | Notes                              |
-| ---------------- | ------ | ---------------------------------- |
-| `supportEmail`   | string | Support contact.                   |
-| `privacyPolicyUrl` | string | Privacy policy link.             |
-| `appContactUrl`  | string | Contact page; empty hides the link. |
-| `docsUrl`        | string | Documentation site URL (optional). |
+| Field              | Type   | Notes                               |
+| ------------------ | ------ | ----------------------------------- |
+| `supportEmail`     | string | Support contact.                    |
+| `privacyPolicyUrl` | string | Privacy policy link.                |
+| `appContactUrl`    | string | Contact page; empty hides the link. |
+| `docsUrl`          | string | Documentation site URL (optional).  |
 
 ### `notebookAndRecordUX` — notebook/record presentation
 
-| Field             | Type   | Default | Notes                                    |
-| ----------------- | ------ | ------- | ---------------------------------------- |
-| `notebookName`    | string | `project` | Display name for a notebook.          |
-| `notebookListType`| string | `tabs`  | `tabs` \| `headings`.                  |
-| `navigation`      | string | `none`  | `none` \| `breadcrumbs` \| …            |
-| `showStatusTab`   | boolean| `true`  | Show the record "Status" tab.           |
+| Field              | Type    | Default   | Notes                         |
+| ------------------ | ------- | --------- | ----------------------------- |
+| `notebookName`     | string  | `project` | Display name for a notebook.  |
+| `notebookListType` | string  | `tabs`    | `tabs` \| `headings`.         |
+| `navigation`       | string  | `none`    | `none` \| `breadcrumbs` \| …  |
+| `showStatusTab`    | boolean | `true`    | Show the record "Status" tab. |
 
 ### `maps` — tiles and address autosuggest
 
-| Field                   | Type      | Default   | Notes                                             |
-| ----------------------- | --------- | --------- | ------------------------------------------------- |
-| `mapSource`             | string    | `osm`     | `osm` \| `maptiler` \| `''` (blank). |
-| `mapSourceKey`          | string    | —         | API key for the tile provider. **Public/client key.** |
-| `satelliteSource`       | string    | —         | Optional satellite layer source.                  |
-| `mapStyle`              | string    | `basic`   | Tile style.                                       |
-| `offlineMaps`           | boolean   | `true`    | Enable offline map downloads (clamped off for OSM). |
-| `autosuggestSource`     | string    | `none`    | `none` \| `mapbox` \| `maptiler`.                |
-| `autosuggestMapboxKey`  | string    | —         | Required when `autosuggestSource` is `mapbox`.    |
-| `autosuggestMapTilerKey`| string    | —         | Optional when `autosuggestSource` is `maptiler`. |
-| `mapboxAddressCountry`  | string[]  | `["AU"]`  | ISO 3166-1 alpha-2 codes (CSV in env).           |
-| `maptilerAddressCountry`| string[]  | `["AU"]`  | ISO 3166-1 alpha-2 codes (CSV in env).           |
+| Field                    | Type     | Default  | Notes                                                 |
+| ------------------------ | -------- | -------- | ----------------------------------------------------- |
+| `mapSource`              | string   | `osm`    | `osm` \| `maptiler` \| `''` (blank).                  |
+| `mapSourceKey`           | string   | —        | API key for the tile provider. **Public/client key.** |
+| `satelliteSource`        | string   | —        | Optional satellite layer source.                      |
+| `mapStyle`               | string   | `basic`  | Tile style.                                           |
+| `offlineMaps`            | boolean  | `true`   | Enable offline map downloads (clamped off for OSM).   |
+| `autosuggestSource`      | string   | `none`   | `none` \| `mapbox` \| `maptiler`.                     |
+| `autosuggestMapboxKey`   | string   | —        | Required when `autosuggestSource` is `mapbox`.        |
+| `autosuggestMapTilerKey` | string   | —        | Optional when `autosuggestSource` is `maptiler`.      |
+| `mapboxAddressCountry`   | string[] | `["AU"]` | ISO 3166-1 alpha-2 codes (CSV in env).                |
+| `maptilerAddressCountry` | string[] | `["AU"]` | ISO 3166-1 alpha-2 codes (CSV in env).                |
 
 Any key in `maps` is a **public/client** key — it is baked into the front-end bundle,
 so only use keys suitable for public consumption.
 
 ### `sync` — offline sync behaviour
 
-| Field                      | Type    | Default | Notes                                              |
-| -------------------------- | ------- | ------- | -------------------------------------------------- |
-| `syncPushOnlyRecordThreshold` | number | `500`   | Records above which a sync is push-only.          |
-| `forceRemoteDeletion`      | string  | `never` | `never` \| `allow` — wipe local data on sync.      |
-| `deleteOnDeactivation`     | boolean | `false` | Wipe local Pouch data on manual deactivation.      |
+| Field                         | Type    | Default | Notes                                         |
+| ----------------------------- | ------- | ------- | --------------------------------------------- |
+| `syncPushOnlyRecordThreshold` | number  | `500`   | Records above which a sync is push-only.      |
+| `forceRemoteDeletion`         | string  | `never` | `never` \| `allow` — wipe local data on sync. |
+| `deleteOnDeactivation`        | boolean | `false` | Wipe local Pouch data on manual deactivation. |
 
 ### `attachments`
 
-| Field                       | Type   | Default | Notes                                   |
-| --------------------------- | ------ | ------- | --------------------------------------- |
-| `attachmentServiceType`     | string | `COUCH` | Where attachments are stored.           |
-| `attachmentDocumentIdPrefix`| string | `''`    | Prefix for attachment document IDs.     |
+| Field                        | Type   | Default | Notes                               |
+| ---------------------------- | ------ | ------- | ----------------------------------- |
+| `attachmentServiceType`      | string | `COUCH` | Where attachments are stored.       |
+| `attachmentDocumentIdPrefix` | string | `''`    | Prefix for attachment document IDs. |
 
 ### `migration`
 
-| Field                          | Type    | Default     | Notes                                              |
-| ------------------------------ | ------- | ----------- | -------------------------------------------------- |
-| `migrateOldDatabases`          | boolean | `false`     | Migrate legacy databases.                          |
-| `disableMigrateOnStartup`      | boolean | `false`     | Skip API-boot migrate.                             |
-| `startupMigrationLockEnabled`  | boolean | `false`     | Couch-mediated startup-migration lock.             |
-| `startupMigrationLockTimeoutMs`| number  | `1800000`   | Age before a stuck `running` lock is stolen.       |
+| Field                           | Type    | Default   | Notes                                        |
+| ------------------------------- | ------- | --------- | -------------------------------------------- |
+| `migrateOldDatabases`           | boolean | `false`   | Migrate legacy databases.                    |
+| `disableMigrateOnStartup`       | boolean | `false`   | Skip API-boot migrate.                       |
+| `startupMigrationLockEnabled`   | boolean | `false`   | Couch-mediated startup-migration lock.       |
+| `startupMigrationLockTimeoutMs` | number  | `1800000` | Age before a stuck `running` lock is stolen. |
 
 Invariant: the lock cannot be enabled while `disableMigrateOnStartup` is `true`.
 
 ### `auth`
 
-| Field                  | Type   | Default              | Notes                                     |
-| ---------------------- | ------ | -------------------- | ----------------------------------------- |
-| `profileName`          | string | `local-dev`         | Auth profile.                             |
-| `keyFilePath`          | string | `.`                 | Path to the local signing keypair.        |
-| `keySource`            | string | `FILE`              | `FILE` \| `AWS_SM`.                       |
-| `cookieSecret`         | string | —                   | **Secret slot** (empty in committed core).|
-| `disableLocalLogin`    | boolean| `false`             | Disable the local (non-SSO) login.        |
-| `provisionSsoUsersPolicy` | string | `reject`          | What to do with an unknown SSO user.      |
+| Field                     | Type    | Default     | Notes                                      |
+| ------------------------- | ------- | ----------- | ------------------------------------------ |
+| `profileName`             | string  | `local-dev` | Auth profile.                              |
+| `keyFilePath`             | string  | `.`         | Path to the local signing keypair.         |
+| `keySource`               | string  | `FILE`      | `FILE` \| `AWS_SM`.                        |
+| `cookieSecret`            | string  | —           | **Secret slot** (empty in committed core). |
+| `disableLocalLogin`       | boolean | `false`     | Disable the local (non-SSO) login.         |
+| `provisionSsoUsersPolicy` | string  | `reject`    | What to do with an unknown SSO user.       |
 
 ### `authProviders`
 
@@ -273,100 +273,100 @@ resolved from Secrets Manager on AWS. Non-secret fields (`displayName`, `helperT
 
 ### `authTokens`
 
-| Field                            | Type     | Default | Notes                                   |
-| -------------------------------- | -------- | ------- | --------------------------------------- |
-| `tokenRefreshIntervalMs`         | number   | `15000` | Token refresh interval.                 |
-| `tokenRefreshWindowMs`           | number   | `60000` | Refresh window.                         |
-| `loginBannerGraceMs`             | number   | `10000` | Grace period before the login banner.   |
-| `ignoreTokenExp`                 | boolean  | `false` | Ignore token expiry (dev/testing).      |
-| `longLivedTokenDurationHints`    | number[] | `[1,5,10,30,90,365]` | Offered long-lived token durations (clamped to ≤ `maximumLongLivedDurationDays`). |
-| `refreshTokenExpiryMinutes`      | number   | `2880`  | Refresh-token lifetime.                 |
-| `accessTokenExpiryMinutes`       | number   | `5`     | Access-token lifetime.                  |
-| `impersonationSessionExpiryMinutes` | number | `60`   | Impersonation session lifetime.         |
-| `emailCodeExpiryMinutes`         | number   | `30`    | Email verification code lifetime.       |
-| `maximumLongLivedDurationDays`   | number   | `90`    | Max long-lived token duration.          |
+| Field                               | Type     | Default              | Notes                                                                             |
+| ----------------------------------- | -------- | -------------------- | --------------------------------------------------------------------------------- |
+| `tokenRefreshIntervalMs`            | number   | `15000`              | Token refresh interval.                                                           |
+| `tokenRefreshWindowMs`              | number   | `60000`              | Refresh window.                                                                   |
+| `loginBannerGraceMs`                | number   | `10000`              | Grace period before the login banner.                                             |
+| `ignoreTokenExp`                    | boolean  | `false`              | Ignore token expiry (dev/testing).                                                |
+| `longLivedTokenDurationHints`       | number[] | `[1,5,10,30,90,365]` | Offered long-lived token durations (clamped to ≤ `maximumLongLivedDurationDays`). |
+| `refreshTokenExpiryMinutes`         | number   | `2880`               | Refresh-token lifetime.                                                           |
+| `accessTokenExpiryMinutes`          | number   | `5`                  | Access-token lifetime.                                                            |
+| `impersonationSessionExpiryMinutes` | number   | `60`                 | Impersonation session lifetime.                                                   |
+| `emailCodeExpiryMinutes`            | number   | `30`                 | Email verification code lifetime.                                                 |
+| `maximumLongLivedDurationDays`      | number   | `90`                 | Max long-lived token duration.                                                    |
 
 ### `limits`
 
-| Field                      | Type    | Default        | Notes                                   |
-| -------------------------- | ------- | -------------- | --------------------------------------- |
-| `rateLimiterWindowMs`      | number  | `600000`       | Express HTTP IP-limiter window.         |
-| `rateLimiterPerWindow`     | number  | `1000`         | Requests allowed per window.            |
-| `rateLimiterEnabled`       | boolean | `true`         | Enable the HTTP IP limiter.             |
-| `exportRateLimiterEnabled` | boolean | `true`         | Dedicated notebook-export limiter.      |
-| `exportRateLimiterWindowMs`| number  | `600000`       | Export-limiter window.                  |
-| `exportRateLimiterPerWindow`| number | `20`          | Export requests allowed per window.     |
-| `attemptLimiterEnabled`    | boolean | `true`         | Email-code/verification attempt limit.  |
-| `jsonBodyLimit`            | string  | `25mb`         | JSON request body limit.                |
-| `urlencodedBodyLimit`      | string  | `1mb`          | URL-encoded request body limit.         |
-| `restoreUploadMaxBytes`    | number  | `1073741824`   | Max restore-upload size.                |
-| `downloadCookieSameSite`   | string  | `lax`          | Download-cookie SameSite.               |
-| `recordsHydratedPageLimit` | number  | `150`          | Hydrated-record page limit.             |
+| Field                        | Type    | Default      | Notes                                  |
+| ---------------------------- | ------- | ------------ | -------------------------------------- |
+| `rateLimiterWindowMs`        | number  | `600000`     | Express HTTP IP-limiter window.        |
+| `rateLimiterPerWindow`       | number  | `1000`       | Requests allowed per window.           |
+| `rateLimiterEnabled`         | boolean | `true`       | Enable the HTTP IP limiter.            |
+| `exportRateLimiterEnabled`   | boolean | `true`       | Dedicated notebook-export limiter.     |
+| `exportRateLimiterWindowMs`  | number  | `600000`     | Export-limiter window.                 |
+| `exportRateLimiterPerWindow` | number  | `20`         | Export requests allowed per window.    |
+| `attemptLimiterEnabled`      | boolean | `true`       | Email-code/verification attempt limit. |
+| `jsonBodyLimit`              | string  | `25mb`       | JSON request body limit.               |
+| `urlencodedBodyLimit`        | string  | `1mb`        | URL-encoded request body limit.        |
+| `restoreUploadMaxBytes`      | number  | `1073741824` | Max restore-upload size.               |
+| `downloadCookieSameSite`     | string  | `lax`        | Download-cookie SameSite.              |
+| `recordsHydratedPageLimit`   | number  | `150`        | Hydrated-record page limit.            |
 
 ### `email`
 
-| Field                  | Type    | Default                 | Notes                                   |
-| ---------------------- | ------- | ----------------------- | --------------------------------------- |
-| `emailServiceType`     | string  | `MOCK`                 | `MOCK` \| `SMTP`.                       |
-| `emailFromAddress`     | string  | `notifications@example.com` |                                  |
-| `emailFromName`        | string  | `FAIMS Notification`   |                                         |
-| `emailReplyTo`         | string  | `support@example.com`  |                                         |
-| `smtpHost`             | string  | `smtp.example.com`     | **Secret-adjacent** (host).             |
-| `smtpPort`             | number  | `587`                  |                                         |
-| `smtpSecure`           | boolean | `true`                 | TLS.                                    |
-| `smtpUser`             | string  | —                      | **Secret slot.**                        |
-| `smtpPassword`         | string  | —                      | **Secret slot.**                        |
-| `smtpCacheExpirySeconds`| number  | `300`                  | SMTP connection-cache TTL.              |
-| `testEmailAddress`     | string  | —                      | Destination for test emails.            |
+| Field                    | Type    | Default                     | Notes                        |
+| ------------------------ | ------- | --------------------------- | ---------------------------- |
+| `emailServiceType`       | string  | `MOCK`                      | `MOCK` \| `SMTP`.            |
+| `emailFromAddress`       | string  | `notifications@example.com` |                              |
+| `emailFromName`          | string  | `FAIMS Notification`        |                              |
+| `emailReplyTo`           | string  | `support@example.com`       |                              |
+| `smtpHost`               | string  | `smtp.example.com`          | **Secret-adjacent** (host).  |
+| `smtpPort`               | number  | `587`                       |                              |
+| `smtpSecure`             | boolean | `true`                      | TLS.                         |
+| `smtpUser`               | string  | —                           | **Secret slot.**             |
+| `smtpPassword`           | string  | —                           | **Secret slot.**             |
+| `smtpCacheExpirySeconds` | number  | `300`                       | SMTP connection-cache TTL.   |
+| `testEmailAddress`       | string  | —                           | Destination for test emails. |
 
 ### `observability`
 
-| Field            | Type   | Default | Notes                                   |
-| ---------------- | ------ | ------- | --------------------------------------- |
-| `bugsnagApiKey`  | string | `''`    | **Secret slot.** Client key.            |
-| `commitVersion`  | string | —       | Build commit; `output of \`git rev-parse HEAD\`` is resolved at generate time. |
+| Field           | Type   | Default | Notes                                                                          |
+| --------------- | ------ | ------- | ------------------------------------------------------------------------------ |
+| `bugsnagApiKey` | string | `''`    | **Secret slot.** Client key.                                                   |
+| `commitVersion` | string | —       | Build commit; `output of \`git rev-parse HEAD\`` is resolved at generate time. |
 
 ### `teamAndRolePolicy`
 
-| Field               | Type     | Default | Notes                                   |
-| ------------------- | -------- | ------- | --------------------------------------- |
+| Field               | Type     | Default | Notes                                      |
+| ------------------- | -------- | ------- | ------------------------------------------ |
 | `excludedTeamRoles` | string[] | `[]`    | Team roles hidden from the Control Centre. |
 
 ### `webDesignerLimits`
 
-| Field                  | Type    | Default | Notes                                   |
-| ---------------------- | ------- | ------- | --------------------------------------- |
-| `maxDesignFileSizeMb`  | number  | `10`    | Max design-file upload size.            |
-| `templateProtections`  | boolean | `false` | Enforce template protections.           |
-| `enablePlansInDesigner`| boolean | `true`  | Allow adding plans in the designer.     |
+| Field                   | Type    | Default | Notes                               |
+| ----------------------- | ------- | ------- | ----------------------------------- |
+| `maxDesignFileSizeMb`   | number  | `10`    | Max design-file upload size.        |
+| `templateProtections`   | boolean | `false` | Enforce template protections.       |
+| `enablePlansInDesigner` | boolean | `true`  | Allow adding plans in the designer. |
 
 ### `android` — Android build
 
-| Field                        | Type   | Notes                                   |
-| ---------------------------- | ------ | --------------------------------------- |
-| `appId`                      | string | Package id / app id.                    |
-| `releaseStatus`              | string | `draft` \| `production` (Fastlane track). |
-| `keystoreFileBase64`         | string | **Secret slot** — keystore, base64.     |
-| `serviceAccountKeyJsonBase64`| string | **Secret slot** — Play service-account JSON, base64. |
-| `keystorePassword`           | string | **Secret slot.**                        |
-| `keyAlias`                   | string | **Secret slot.**                        |
-| `keyPassword`                | string | **Secret slot.**                        |
+| Field                         | Type   | Notes                                                |
+| ----------------------------- | ------ | ---------------------------------------------------- |
+| `appId`                       | string | Package id / app id.                                 |
+| `releaseStatus`               | string | `draft` \| `production` (Fastlane track).            |
+| `keystoreFileBase64`          | string | **Secret slot** — keystore, base64.                  |
+| `serviceAccountKeyJsonBase64` | string | **Secret slot** — Play service-account JSON, base64. |
+| `keystorePassword`            | string | **Secret slot.**                                     |
+| `keyAlias`                    | string | **Secret slot.**                                     |
+| `keyPassword`                 | string | **Secret slot.**                                     |
 
 ### `ios` — iOS build
 
-| Field                              | Type   | Notes                                   |
-| ---------------------------------- | ------ | --------------------------------------- |
-| `bundleIdentifier`                 | string | Falls back to `android.appId`.          |
-| `appStoreConnectTeamId`            | string | ASC team id.                            |
-| `developerPortalTeamId`            | string | Developer-portal team id.               |
-| `appleId`                          | string | **Secret slot.**                        |
-| `appleApplicationSpecificPassword` | string | **Secret slot.**                        |
-| `matchPassword`                    | string | **Secret slot.**                        |
-| `matchGitUrl`                      | string | Match repo URL (or set in CI).          |
-| `gitAuthorization`                 | string | **Secret slot** (optional in JSON).     |
-| `provisioningProfileSpecifier`     | string | Provisioning profile (or in secrets).   |
-| `appleKeyId` / `appleIndividualKeyId` | string | **Secret slot.** Individual-key fallback. |
-| `appleIssuerId`                    | string | **Secret slot** (team-key flows).       |
+| Field                                           | Type   | Notes                                     |
+| ----------------------------------------------- | ------ | ----------------------------------------- |
+| `bundleIdentifier`                              | string | Falls back to `android.appId`.            |
+| `appStoreConnectTeamId`                         | string | ASC team id.                              |
+| `developerPortalTeamId`                         | string | Developer-portal team id.                 |
+| `appleId`                                       | string | **Secret slot.**                          |
+| `appleApplicationSpecificPassword`              | string | **Secret slot.**                          |
+| `matchPassword`                                 | string | **Secret slot.**                          |
+| `matchGitUrl`                                   | string | Match repo URL (or set in CI).            |
+| `gitAuthorization`                              | string | **Secret slot** (optional in JSON).       |
+| `provisioningProfileSpecifier`                  | string | Provisioning profile (or in secrets).     |
+| `appleKeyId` / `appleIndividualKeyId`           | string | **Secret slot.** Individual-key fallback. |
+| `appleIssuerId`                                 | string | **Secret slot** (team-key flows).         |
 | `appleKeyContent` / `appleIndividualKeyContent` | string | **Secret slot.** Individual-key fallback. |
 
 Team-key flows use `appleKeyId` + `appleIssuerId` + `appleKeyContent`; individual-key
@@ -374,25 +374,25 @@ flows use `appleKeyId` + `appleKeyContent` only.
 
 ### `couchdb`
 
-| Field                  | Type   | Default | Notes                                    |
-| ---------------------- | ------ | ------- | ---------------------------------------- |
-| `couchdbUser`          | string | `admin` |                                          |
-| `couchdbPassword`      | string | `aSecretPasswordThatCantBeGuessed` | **Secret slot.** |
-| `couchdbExternalPort`  | number | `5984`  |                                          |
-| `conductorExternalPort`| number | `8080`  |                                          |
-| `conductorInternalPort`| number | `8080`  |                                          |
+| Field                   | Type   | Default                            | Notes            |
+| ----------------------- | ------ | ---------------------------------- | ---------------- |
+| `couchdbUser`           | string | `admin`                            |                  |
+| `couchdbPassword`       | string | `aSecretPasswordThatCantBeGuessed` | **Secret slot.** |
+| `couchdbExternalPort`   | number | `5984`                             |                  |
+| `conductorExternalPort` | number | `8080`                             |                  |
+| `conductorInternalPort` | number | `8080`                             |                  |
 
 ### `dev` and `pouchdb` — development / PouchDB tuning
 
-| Field                | Type    | Default | Notes                                |
-| --------------------- | ------- | ------- | ------------------------------------ |
-| `developerMode`      | boolean | `false` | Developer mode.                      |
-| `debugApp`           | boolean | `false` | App debug build.                     |
-| `debugPouchDb`       | boolean | `false` | PouchDB debug build.                 |
-| `showWipe`           | boolean | `true`  | Show the "wipe data" option.         |
-| `showPouchDbBrowser` | boolean | `true`  | Show the PouchDB browser.            |
-| `pouchBatchSize`     | number  | `10`    | PouchDB batch size.                  |
-| `pouchBatchesLimit`  | number  | `10`    | PouchDB batches limit.               |
+| Field                | Type    | Default | Notes                        |
+| -------------------- | ------- | ------- | ---------------------------- |
+| `developerMode`      | boolean | `false` | Developer mode.              |
+| `debugApp`           | boolean | `false` | App debug build.             |
+| `debugPouchDb`       | boolean | `false` | PouchDB debug build.         |
+| `showWipe`           | boolean | `true`  | Show the "wipe data" option. |
+| `showPouchDbBrowser` | boolean | `true`  | Show the PouchDB browser.    |
+| `pouchBatchSize`     | number  | `10`    | PouchDB batch size.          |
+| `pouchBatchesLimit`  | number  | `10`    | PouchDB batches limit.       |
 
 ## Secret slots
 
