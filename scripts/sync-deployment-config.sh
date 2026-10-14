@@ -16,13 +16,14 @@ Options:
   --branch <name>         Branch to update (default: main)
   --message <text>        Commit message (default: update mobile config for <environment>)
   --local-root <path>     Local mirror root for the private config repo (default: ${DEFAULT_LOCAL_CONFIG_ROOT})
+  --config-path <path>    Base path within the config repo where env folders live (default: mobile)
   --force                 Skip confirmation prompts
   --help                  Show this help text
 
 Behaviour:
   - push: Treats config/<environment>/ as source of truth. Compares local core.json
           and secrets.json with remote repo versions. If either has changed, encrypts
-          secrets and pushes both files to the remote repo at mobile/<environment>/.
+          secrets and pushes both files to the remote repo at <config-path>/<environment>/.
   - pull: Clones or reuses the private repo, decrypts secrets.enc.json, and mirrors
           config files locally to config/<environment>/.
   - The script keeps a local copy of the repo contents under config/<environment>/ so the
@@ -34,8 +35,8 @@ Local config structure:
   config/<environment>/secrets.enc.json (cache, encrypted)
 
 Remote repo structure:
-  mobile/<environment>/core.json      (plaintext)
-  mobile/<environment>/secrets.enc.json (encrypted)
+  <config-path>/<environment>/core.json      (plaintext)
+  <config-path>/<environment>/secrets.enc.json (encrypted)
 
 Notes:
   - Requires: git, jq, sops
@@ -185,7 +186,7 @@ mirror_repo_to_local() {
   local repo_root="$1"
   local environment="$2"
   local local_root="$3"
-  local repo_env_dir="$repo_root/mobile/$environment"
+  local repo_env_dir="$repo_root/${CONFIG_PATH}/$environment"
 
   mkdir -p "$local_root/$environment"
 
@@ -266,11 +267,11 @@ push_config() {
 
   prepare_repository "$branch" "$repo_path" "$repo_url"
 
-  local repo_config_path="mobile/${environment}/core.json"
-  local repo_secrets_path="mobile/${environment}/secrets.enc.json"
+  local repo_config_path="${CONFIG_PATH}/${environment}/core.json"
+  local repo_secrets_path="${CONFIG_PATH}/${environment}/secrets.enc.json"
   local repo_config_file="${WORK_REPO_PATH}/${repo_config_path}"
   local repo_secrets_file="${WORK_REPO_PATH}/${repo_secrets_path}"
-  local repo_env_dir="${WORK_REPO_PATH}/mobile/${environment}"
+  local repo_env_dir="${WORK_REPO_PATH}/${CONFIG_PATH}/${environment}"
 
   preflight_sops "$WORK_REPO_PATH" "$repo_secrets_file"
   mkdir -p "$repo_env_dir"
@@ -370,7 +371,7 @@ pull_config() {
   prepare_repository "$branch" "$repo_path" "$repo_url"
   trap cleanup EXIT
 
-  local repo_env_dir="${WORK_REPO_PATH}/mobile/${environment}"
+  local repo_env_dir="${WORK_REPO_PATH}/${CONFIG_PATH}/${environment}"
   if [[ ! -d "$repo_env_dir" ]]; then
     echo "Error: environment directory not found in repo: $repo_env_dir" >&2
     exit 1
@@ -386,6 +387,7 @@ COMMAND="push"
 LOCAL_ROOT="$DEFAULT_LOCAL_CONFIG_ROOT"
 REPO_PATH=""
 CONFIG_REPO=""
+CONFIG_PATH="mobile"
 BRANCH="main"
 COMMIT_MESSAGE=""
 FORCE=false
@@ -418,6 +420,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --local-root)
       LOCAL_ROOT="$2"
+      shift 2
+      ;;
+    --config-path)
+      CONFIG_PATH="$2"
       shift 2
       ;;
     --force)

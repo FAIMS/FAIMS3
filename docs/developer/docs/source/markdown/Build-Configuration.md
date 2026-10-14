@@ -65,22 +65,30 @@ Manager is the source of truth.
 
 Per-platform layout:
 
-- Mobile CI / Terraform: `mobile/<environment>/core.json` + `mobile/<environment>/secrets.enc.json`
-  (in the private config repository — see
-  [Mobile Deployment Setup Guide](Mobile-Deployment-Setup-Guide.md)).
+- Mobile CI / Terraform: `<config-path>/<environment>/core.json` +
+  `<config-path>/<environment>/secrets.enc.json` in the private **config** repository
+  (`<config-path>` defaults to `mobile`, configurable via `APP_CONFIG_REPO_PATH`). The
+  **Fastlane/Match** repository is separate (or the same) — see
+  [Mobile Deployment Setup Guide](Mobile-Deployment-Setup-Guide.md).
 - Local development: `config/dev/core.json` (see [Local development](#local-development)).
 - AWS: a single JSON the CDK loads, `{ "core": …, "aws": … }` (see
   [Deploying the AWS stack](DeployingAWSStack.md)).
 
-## Protecting the shared config + Match repository
+## Protecting the config + Match repositories
 
-The same private repository is used for:
+The deployment config and the Fastlane Match signing artifacts can live in the
+**same** repository or in **separate** ones:
 
-- deployment config (`mobile/<environment>/core.json`)
-- encrypted secrets (`mobile/<environment>/secrets.enc.json`)
-- Fastlane Match artifacts (certificates and provisioning profiles)
+- deployment config + encrypted secrets: `<config-path>/<environment>/core.json` and
+  `secrets.enc.json` in the **config** repository (`APP_CONFIG_REPO_SLUG`, path
+  `APP_CONFIG_REPO_PATH`, default `mobile`)
+- Fastlane Match artifacts (certificates and provisioning profiles): the **Match**
+  repository (`FASTLANE_REPO_SLUG`, which falls back to the config repo when unset)
 
-To reduce risk of breaking iOS signing, use these guardrails:
+Keeping them separate isolates Match's git activity (it tags and commits cert/profile
+state) from config edits, so routine config changes can't accidentally damage signing
+state — and vice versa. The guardrails below apply to either arrangement (they matter
+most when both share one repo):
 
 1. **Keep strict path ownership** — edit only `mobile/<environment>/...` for config
    updates; treat Match-managed paths (`certs/`, `profiles/`, and Match metadata files)
@@ -110,9 +118,11 @@ read/decrypted (they are _not_ part of `core.json`):
 
 | GitHub setting                   | Type     | Purpose                                                                              |
 | -------------------------------- | -------- | ------------------------------------------------------------------------------------ |
-| `vars.APP_CONFIG_REPO_SLUG`      | Variable | Config repository slug (`owner/repo`) used by checkout and to derive `MATCH_GIT_URL` |
+| `vars.APP_CONFIG_REPO_SLUG`      | Variable | Config repository slug (`owner/repo`) for `core.json` + `secrets.enc.json`           |
+| `vars.APP_CONFIG_REPO_PATH`      | Variable | Base path within the config repo where env folders live (default `mobile`)           |
+| `vars.FASTLANE_REPO_SLUG`        | Variable | Fastlane/Match repository slug (`owner/repo`); unset = same repo as config           |
 | `vars.MOBILE_CONFIG_BRANCH`      | Variable | Branch in config repository (default `main`)                                         |
-| `vars.MOBILE_CONFIG_ENVIRONMENT` | Variable | Folder name under `mobile/`                                                          |
+| `vars.MOBILE_CONFIG_ENVIRONMENT` | Variable | Environment folder name (under the config path, e.g. `mobile/production`)           |
 | `secrets.GIT_AUTHORIZATION`      | Secret   | Token used for private config-repo checkout and Fastlane git auth                    |
 | `secrets.SOPS_AGE_KEY`           | Secret   | Age private key used by `sops --decrypt`                                             |
 

@@ -103,8 +103,12 @@ jobs:
         run: |
           set -euo pipefail
           CONFIG_ENV="${{ inputs.config_environment }}"
-          BASE_CONFIG="config_repo/mobile/${CONFIG_ENV}/build-config.json"
-          SECRETS_CONFIG="config_repo/mobile/${CONFIG_ENV}/build-secrets.enc.json"
+          # Base path within the config repo (defaults to 'mobile'; a leading
+          # slash is tolerated and stripped).
+          CONFIG_REPO_PATH="${{ vars.APP_CONFIG_REPO_PATH || 'mobile' }}"
+          CONFIG_REPO_PATH="${CONFIG_REPO_PATH#/}"
+          BASE_CONFIG="config_repo/${CONFIG_REPO_PATH}/${CONFIG_ENV}/core.json"
+          SECRETS_CONFIG="config_repo/${CONFIG_REPO_PATH}/${CONFIG_ENV}/secrets.enc.json"
 
           if [[ ! -f "$BASE_CONFIG" ]]; then
             echo "Missing base config: $BASE_CONFIG" >&2

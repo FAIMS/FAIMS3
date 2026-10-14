@@ -334,7 +334,7 @@ for the JSON structure and the meaning of each field.
 
 Because this repository is also used by Fastlane Match for iOS signing assets,
 follow the shared-repo safety guidance in
-[Build Configuration](Build-Configuration.md#protecting-the-shared-config--match-repository)
+[Build Configuration](Build-Configuration.md#protecting-the-config--match-repositories)
 before changing anything outside `mobile/<environment>/`.
 
 ---

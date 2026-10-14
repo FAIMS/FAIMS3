@@ -211,21 +211,22 @@ For the JSON structure and the meaning of each field, see
 
 Only a small bootstrap set is required in GitHub Actions:
 
-- `vars.APP_CONFIG_REPO_SLUG` - config repository slug in the form `owner/repo`
+- `vars.APP_CONFIG_REPO_SLUG` - the config repo slug in the form `owner/repo`
+- `vars.APP_CONFIG_REPO_PATH` - base path within the config repo (default `mobile`)
+- `vars.FASTLANE_REPO_SLUG` - the Match repo slug (unset = same repo as config)
 - `vars.MOBILE_CONFIG_BRANCH` - config branch (defaults to `main`)
-- `vars.MOBILE_CONFIG_ENVIRONMENT` - environment folder under `mobile/`
+- `vars.MOBILE_CONFIG_ENVIRONMENT` - environment folder under the config path
 - `secrets.GIT_AUTHORIZATION` - token with read access to the config repo
 - `secrets.SOPS_AGE_KEY` - age private key for decrypting `secrets.enc.json`
 
-The workflows derive:
-
-- `MATCH_GIT_URL` from `APP_CONFIG_REPO_SLUG` as `https://github.com/<slug>.git`
-
-This keeps one canonical repo setting for both config checkout and Fastlane Match.
+The workflow derives `MATCH_GIT_URL` as
+`https://github.com/<FASTLANE_REPO_SLUG or APP_CONFIG_REPO_SLUG>.git` — the Match repo
+when `FASTLANE_REPO_SLUG` is set, otherwise the config repo. Keeping them separate
+isolates Match's git activity from config edits.
 
 Because the same repository is also used for Fastlane Match certificates/profiles,
 follow the shared-repo safety guidance in
-[Build Configuration](Build-Configuration.md#protecting-the-shared-config--match-repository)
+[Build Configuration](Build-Configuration.md#protecting-the-config--match-repositories)
 before changing anything outside `mobile/<environment>/`.
 
 ## Appfile & Fastfile Logic

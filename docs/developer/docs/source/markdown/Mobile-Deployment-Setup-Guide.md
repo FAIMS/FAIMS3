@@ -5,9 +5,14 @@ This is the practical workflow for setting up the first mobile deployment using 
 The model we are using is:
 
 - The app code repository owns the build logic and workflow definitions.
-- A separate private repository stores the mobile deployment config and Fastlane Match assets.
-- Each deployment environment is represented by a folder under `mobile/<environment>/` in that private repo.
-- The repo is checked out by the workflow using `vars.APP_CONFIG_REPO_SLUG`.
+- A private **config** repository stores the deployment config. Each environment is a
+  folder under `<config-path>/<environment>/` (path defaults to `mobile/`).
+- The **Fastlane Match** signing assets live in their own repository — or in the same
+  repo as the config if you prefer. Keep them separate so routine config edits can't
+  disturb signing state.
+- The config repo is checked out by the workflow using `vars.APP_CONFIG_REPO_SLUG`
+  (path `vars.APP_CONFIG_REPO_PATH`, default `mobile`). The Match repo is
+  `vars.FASTLANE_REPO_SLUG` (unset = same repo as the config).
 - Secrets are decrypted at runtime with `secrets.SOPS_AGE_KEY` and then merged into the generated env.
 
 This guide covers the first-time setup and the workflow you can repeat for additional environments.
@@ -134,27 +139,31 @@ A good first pass is:
 - verify that the generated env matches what the workflow expects
 - then duplicate the pattern for `nightly` or other environments
 
-## 5. Create or clone the private config repository
+## 5. Create or clone the config (and Match) repositories
 
-You need a private repo that stores:
+You need a private **config** repository that stores:
 
-- `mobile/<environment>/core.json`
-- `mobile/<environment>/secrets.enc.json`
-- optionally any Match files / certs / profiles created by Fastlane Match
+- `<config-path>/<environment>/core.json`
+- `<config-path>/<environment>/secrets.enc.json`
 
-This repo is the same repo used for Fastlane Match signing assets. That means the repository has two jobs:
+where `<config-path>` defaults to `mobile/`.
 
-- store the app deployment config
-- store the app signing material used by Fastlane Match
+Optionally you also need a separate private **Match** repository for the Fastlane
+Match signing assets (certificates and provisioning profiles). You can keep the Match
+assets in the config repo too — but keeping them separate means routine config edits
+can't accidentally disturb the signing state (and vice versa).
 
-This is why it is important to keep config edits separated from signing-management changes and why `APP_CONFIG_REPO_SLUG` is the canonical repo pointer.
+- If the config and Match repos are the same, set only `APP_CONFIG_REPO_SLUG` (Match
+  falls back to it).
+- If they are separate, also set `FASTLANE_REPO_SLUG` to the Match repo.
 
-If you do not have the repo yet:
+If you do not have the config repo yet:
 
 1. Create a new private GitHub repository.
-2. Add the `mobile/` directory structure.
+2. Add the `<config-path>/` directory structure (e.g. `mobile/`).
 3. Configure SOPS / age so the repo can decrypt and encrypt JSON files.
-4. Add the repo slug to GitHub Actions as `vars.APP_CONFIG_REPO_SLUG`.
+4. Add the repo slug to GitHub Actions as `vars.APP_CONFIG_REPO_SLUG` (and
+   `vars.APP_CONFIG_REPO_PATH` if the path is not `mobile`).
 
 Example slug:
 
@@ -254,9 +263,11 @@ generated earlier).
 
 Set the following repository variables for the workflow to discover the environment:
 
-- `APP_CONFIG_REPO_SLUG`
-- `MOBILE_CONFIG_ENVIRONMENT`
+- `APP_CONFIG_REPO_SLUG` — the config repo
+- `MOBILE_CONFIG_ENVIRONMENT` — the environment folder name
+- optionally `APP_CONFIG_REPO_PATH` — the base path within the config repo (default `mobile`)
 - optionally `MOBILE_CONFIG_BRANCH` if you are not using `main`
+- optionally `FASTLANE_REPO_SLUG` — the Match repo, if it is different from the config repo
 
 Example:
 
@@ -265,21 +276,21 @@ APP_CONFIG_REPO_SLUG = my-org/mobile-config
 MOBILE_CONFIG_BRANCH = main
 ```
 
-For nightly builds:
+For a separate Match repo, add:
 
 ```text
-APP_CONFIG_REPO_SLUG = my-org/mobile-config
-MOBILE_CONFIG_BRANCH = main
+FASTLANE_REPO_SLUG = my-org/mobile-match
 ```
 
 The workflow will then read:
 
 ```text
-config_repo/mobile/<environment>/core.json
-config_repo/mobile/<environment>/secrets.enc.json
+config_repo/<config-path>/<environment>/core.json
+config_repo/<config-path>/<environment>/secrets.enc.json
 ```
 
-and use these to generate the build environment.
+and use these to generate the build environment (and, for iOS, point Match at
+`https://github.com/<FASTLANE_REPO_SLUG or APP_CONFIG_REPO_SLUG>.git`).
 
 ## 9. Validate the first environment before full release
 
