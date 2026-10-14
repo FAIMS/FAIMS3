@@ -104,8 +104,6 @@ export class EC2CouchDB extends Construct {
 database_dir = ${this.couchDataPath}
 view_index_dir = ${this.couchDataPath}
 max_document_size = 4294967296 ; bytes
-; CouchDB 3.5 defaults this to 1 GiB; map-layer originals can be 2 GiB.
-max_attachment_size = 4294967296 ; bytes
 os_process_timeout = 5000 ; 5 sec
 uuid = adf990d5dd21b735f65d4140ad1f10c2
 single_node=true
@@ -113,7 +111,6 @@ single_node=true
 [chttpd]
 port = 5984
 bind_address = 0.0.0.0
-max_http_request_size = 4294967296 ; 4 GiB
 authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {chttpd_auth, jwt_authentication_handler}, {chttpd_auth, default_authentication_handler}
 
 [httpd]

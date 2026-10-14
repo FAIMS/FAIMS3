@@ -47,8 +47,7 @@ export const INPUT_LIMITS = {
   UI_SPEC_MAX_BYTES: 10 * 1024 * 1024, // 10 MiB
   /**
    * Combined size of a map-layer upload (primary file plus companions).
-   * CouchDB 3.5 defaults `max_attachment_size` to 1 GiB; local.ini must raise
-   * that (and `max_http_request_size`) to at least this cap.
+   * Bytes go to object storage, not CouchDB attachments.
    */
   MAP_ASSET_UPLOAD_MAX_BYTES: 2 * 1024 * 1024 * 1024, // 2 GiB
   /** Maximum files in one map-layer upload (primary plus companions). */
