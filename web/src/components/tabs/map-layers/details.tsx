@@ -114,18 +114,6 @@ export function MapLayerDetails({assetId}: {assetId: string}) {
     },
     {key: 'size', label: 'Size', value: asset => formatBytes(asset.byteSize)},
     {
-      key: 'quality',
-      label: 'Device quality',
-      value: asset =>
-        asset.quality === undefined
-          ? '—'
-          : `${asset.quality} · ${
-              asset.normalizeOptions
-                ? `up to ${asset.normalizeOptions.maxRasterEdgePx} px`
-                : 'default'
-            }`,
-    },
-    {
       key: 'file',
       label: 'Original file',
       value: asset => asset.originalFilename,

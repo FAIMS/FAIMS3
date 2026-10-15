@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {Form} from '@/components/form';
-import {MapLayerQualitySlider} from '@/components/forms/map-layer-quality-slider';
 import {useRequiredUser} from '@/hooks/auth-hooks';
 import {replaceMapAssetFiles} from '@/hooks/map-asset-hooks';
-import {DEFAULT_MAP_ASSET_QUALITY} from '@faims3/data-model';
 import {
   MAP_LAYER_FILE_ACCEPT,
   mapLayerFilesSchema,
@@ -21,8 +19,6 @@ export function ReplaceMapLayerForm({
   const user = useRequiredUser();
   const queryClient = useQueryClient();
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [quality, setQuality] = useState(DEFAULT_MAP_ASSET_QUALITY);
-  const [files, setFiles] = useState<File[]>([]);
 
   const onSubmit = async ({files}: {files: File[]}) => {
     setUploadProgress(0);
@@ -31,7 +27,6 @@ export function ReplaceMapLayerForm({
         user,
         assetId,
         files,
-        quality,
         onProgress: setUploadProgress,
       });
     } catch (error) {
@@ -64,16 +59,6 @@ export function ReplaceMapLayerForm({
       onSubmit={onSubmit}
       submitButtonText="Upload replacement"
       submitProgress={uploadProgress}
-      watch={{
-        files: value => setFiles(Array.isArray(value) ? value : []),
-      }}
-      footer={
-        <MapLayerQualitySlider
-          quality={quality}
-          onQualityChange={setQuality}
-          files={files}
-        />
-      }
     />
   );
 }

@@ -282,7 +282,6 @@ export type MapAssetProcessingEvent =
   | 'processing.files'
   | 'processing.originals.store'
   | 'processing.normalize'
-  | 'normalize.raster.pdf_dpi'
   | 'gdal.command'
   | 'processing.normalized.store'
   | 'processing.commit'
@@ -317,7 +316,6 @@ export type MapAssetProcessingEntry = {
   fileCount?: number;
   byteSize?: number;
   kind?: string;
-  quality?: number;
   command?: string;
   detail?: string;
   elapsedMs?: number;

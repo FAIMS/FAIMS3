@@ -22,7 +22,6 @@ import {
   GetMapAssetDownloadUrlResponseSchema,
   PostCreateTeamInputSchema,
   PostCreateTemplateInputSchema,
-  PostMapAssetEstimateInputSchema,
   PostMapAssetLinkInputSchema,
   PostLoginInputSchema,
   PostRecordStatusInputSchema,
@@ -326,20 +325,7 @@ describe('map layer schemas', () => {
     ).toBe(true);
   });
 
-  it('rejects an oversized estimate filename and link project id', () => {
-    expect(
-      PostMapAssetEstimateInputSchema.safeParse({
-        source: {
-          filename: longString(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH + 1),
-          byteSize: 1024,
-        },
-      }).success
-    ).toBe(false);
-    expect(
-      PostMapAssetEstimateInputSchema.safeParse({
-        source: {filename: 'sites.geojson', byteSize: 1024},
-      }).success
-    ).toBe(true);
+  it('rejects an oversized link project id', () => {
     expect(
       PostMapAssetLinkInputSchema.safeParse({
         projectId: longString(INPUT_LIMITS.ID_MAX_LENGTH + 1),

@@ -19,6 +19,7 @@ import ImageTileSource from 'ol/source/ImageTile';
 import OSM, {ATTRIBUTION} from 'ol/source/OSM';
 import VectorTileSource from 'ol/source/VectorTile';
 import Tile from 'ol/Tile';
+import TileState from 'ol/TileState';
 import {TileCoord} from 'ol/tilecoord';
 import VectorTile from 'ol/VectorTile';
 import {IDBObjectStore} from '../IDBObjectStore';
@@ -934,35 +935,36 @@ export class VectorTileStore extends TileStoreBase {
   }
 
   /**
-   * @param {tile} a VectorTile
-   * @param {url} the URL of the target tile
-   * @return {}
+   * Load one streets tile from the cache or the network.
+   * OpenLayers holds the shared tile queue until this tile leaves LOADING.
+   * A miss or a bad decode has to set ERROR, or later tiles — including
+   * contextual layers — never start.
    */
-  async tileLoader(tile: Tile) {
-    // a little dance for Typescript...
+  tileLoader(tile: Tile) {
     const vTile = tile as VectorTile<FeatureLike>;
-    vTile.setLoader(async (extent, resolution, projection) => {
-      const tileCoords = tile.getTileCoord();
+    vTile.setLoader(async (extent, _resolution, projection) => {
+      const tileCoords = vTile.getTileCoord();
       const tileUrl = this.getURLForTile({
         z: tileCoords[0],
         x: tileCoords[1],
         y: tileCoords[2],
       });
-      this.getTileBlob(tileUrl).then(blob => {
-        if (blob) {
-          blob.arrayBuffer().then(data => {
-            const format = vTile.getFormat(); // ol/format/MVT configured as source format
-            const features = format.readFeatures(data, {
-              extent: extent,
-              featureProjection: projection,
-            });
-            vTile.setFeatures(features);
-          });
+      try {
+        const blob = await this.getTileBlob(tileUrl);
+        if (!blob) {
+          vTile.setState(TileState.ERROR);
+          return [];
         }
-      });
-      // the function signature requires that we return
-      // an array of features although we are setting the features
-      // directly above, just return an empty array here to satisfy the signature
+        const features = vTile
+          .getFormat()
+          .readFeatures(await blob.arrayBuffer(), {
+            extent,
+            featureProjection: projection,
+          });
+        vTile.setFeatures(features);
+      } catch {
+        vTile.setState(TileState.ERROR);
+      }
       return [];
     });
   }

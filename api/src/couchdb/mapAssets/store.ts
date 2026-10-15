@@ -23,10 +23,8 @@ import {
   MAP_ASSETS_BY_TEAM,
   MapAssetFields,
   MapAssetLinkFields,
-  MapAssetNormalizeOptions,
   GetMapAssetDownloadUrlResponse,
   MapAssetStyle,
-  resolveMapAssetNormalizeOptions,
   StoredAttachmentLocation,
 } from '@faims3/data-model';
 import {randomUUID} from 'crypto';
@@ -274,8 +272,6 @@ export async function createMapAsset({
   files,
   primaryFilename,
   style,
-  quality,
-  normalizeOptions,
 }: {
   name: string;
   description: string;
@@ -284,8 +280,6 @@ export async function createMapAsset({
   files: UploadedMapFile[];
   primaryFilename: string;
   style?: MapAssetStyle;
-  quality?: number;
-  normalizeOptions?: Partial<MapAssetNormalizeOptions>;
 }): Promise<ExistingMapAsset> {
   const db = getMapAssetsDB();
   const now = Date.now();
@@ -293,10 +287,6 @@ export async function createMapAsset({
   const companions = files
     .map(file => file.filename)
     .filter(filename => filename !== primaryFilename);
-  const resolved = resolveMapAssetNormalizeOptions({
-    quality,
-    options: normalizeOptions,
-  });
   const fields: MapAssetFields = {
     docType: MAP_ASSET_DOC_TYPE,
     name,
@@ -308,8 +298,6 @@ export async function createMapAsset({
     byteSize: 0,
     status: 'processing',
     defaultStyle: style ?? DEFAULT_MAP_ASSET_STYLE,
-    quality: resolved.quality,
-    normalizeOptions: resolved.options,
     createdAt: now,
     updatedAt: now,
   };
@@ -351,14 +339,10 @@ export async function replaceMapAssetFiles({
   assetId,
   files,
   primaryFilename,
-  quality,
-  normalizeOptions,
 }: {
   assetId: string;
   files: UploadedMapFile[];
   primaryFilename: string;
-  quality?: number;
-  normalizeOptions?: Partial<MapAssetNormalizeOptions>;
 }): Promise<ExistingMapAsset> {
   const current = await getMapAsset(assetId);
   if (current.status === 'processing') {
@@ -369,10 +353,6 @@ export async function replaceMapAssetFiles({
   const companions = files
     .map(file => file.filename)
     .filter(filename => filename !== primaryFilename);
-  const resolved = resolveMapAssetNormalizeOptions({
-    quality,
-    options: normalizeOptions,
-  });
   await getMapAssetsDB().put(
     omitUndefinedFields({
       ...current,
@@ -387,8 +367,6 @@ export async function replaceMapAssetFiles({
       byteSize: 0,
       processingStartedAt: undefined,
       processingAttempts: undefined,
-      quality: resolved.quality,
-      normalizeOptions: resolved.options,
       updatedAt: Date.now(),
     })
   );
@@ -777,7 +755,6 @@ export async function processMapAsset(
     outcome: 'started',
     assetId,
     filename: claimed.originalFilename,
-    quality: claimed.quality,
     attempt: claimed.processingAttempts,
     userId: claimed.createdBy,
     teamId: claimed.ownedByTeamId,
@@ -809,20 +786,15 @@ export async function processMapAsset(
         }
       }
     }
-    const {options} = resolveMapAssetNormalizeOptions({
-      quality: claimed.quality,
-      options: claimed.normalizeOptions,
-    });
     const normalize = runtime?.normalize ?? normalizeMapUpload;
     const normalized = await withMapAssetProcessingWait(
       {
         event: 'processing.normalize',
         assetId,
         filename: claimed.originalFilename,
-        quality: claimed.quality,
         detail: 'GDAL inspect + convert',
       },
-      () => normalize(files, options, {assetId})
+      () => normalize(files, {assetId})
     );
     cleanupDir = normalized.cleanupDir;
     const stored = await withMapAssetProcessingWait(

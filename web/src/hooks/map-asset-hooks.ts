@@ -7,9 +7,6 @@ import {
   type ExistingMapAsset,
   type GetMapAssetListResponse,
   type GetMapAssetResponse,
-  type MapAssetNormalizeOptionsInput,
-  type PostMapAssetEstimateInput,
-  type PostMapAssetEstimateResponse,
 } from '@faims3/data-model';
 import {
   useMutation,
@@ -200,49 +197,18 @@ export async function updateMapAssetDetails({
   return (await response.json()) as GetMapAssetResponse;
 }
 
-export async function estimateMapAsset({
-  user,
-  input,
-}: {
-  user: User;
-  input: PostMapAssetEstimateInput;
-}): Promise<PostMapAssetEstimateResponse> {
-  const response = await fetch(`${config.apiUrl}/api/map-assets/estimate`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${user.token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(input),
-  });
-  if (!response.ok) {
-    throw new Error(await errorMessage(response));
-  }
-  return (await response.json()) as PostMapAssetEstimateResponse;
-}
-
 export async function replaceMapAssetFiles({
   user,
   assetId,
   files,
-  quality,
-  normalizeOptions,
   onProgress,
 }: {
   user: User;
   assetId: string;
   files: File[];
-  quality?: number;
-  normalizeOptions?: MapAssetNormalizeOptionsInput;
   onProgress?: (completion: number) => void;
 }): Promise<GetMapAssetResponse> {
   const body = new FormData();
-  if (quality !== undefined) {
-    body.set('quality', String(quality));
-  }
-  if (normalizeOptions) {
-    body.set('normalizeOptions', JSON.stringify(normalizeOptions));
-  }
   for (const file of files) {
     body.append('files', file);
   }
@@ -309,8 +275,6 @@ export async function uploadMapAsset({
   description,
   teamId,
   files,
-  quality,
-  normalizeOptions,
   onProgress,
 }: {
   user: User;
@@ -318,8 +282,6 @@ export async function uploadMapAsset({
   description: string;
   teamId?: string;
   files: File[];
-  quality?: number;
-  normalizeOptions?: MapAssetNormalizeOptionsInput;
   onProgress?: (completion: number) => void;
 }): Promise<GetMapAssetResponse> {
   const body = new FormData();
@@ -327,12 +289,6 @@ export async function uploadMapAsset({
   body.set('description', description);
   if (teamId) {
     body.set('teamId', teamId);
-  }
-  if (quality !== undefined) {
-    body.set('quality', String(quality));
-  }
-  if (normalizeOptions) {
-    body.set('normalizeOptions', JSON.stringify(normalizeOptions));
   }
   for (const file of files) {
     body.append('files', file);

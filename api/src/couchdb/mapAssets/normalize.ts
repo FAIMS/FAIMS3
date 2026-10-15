@@ -2,35 +2,17 @@
 /**
  * Turns an uploaded map file set into one PMTiles archive.
  * Vectors are reprojected to EPSG:4326 (geometry only) and tiled with
- * tippecanoe. Rasters, including a georeferenced PDF opened at 150 DPI,
- * are warped to EPSG:3857, capped at `options.maxRasterEdgePx`, and
- * written as WebP tiles. Quality 100 does not shrink a raster that
- * already fits under the ceiling.
+ * tippecanoe. Rasters, including a georeferenced PDF at GDAL's default
+ * 150 DPI, are warped to EPSG:3857 and written as WebP tiles. Zoom
+ * overviews and feature dropping happen in that tiling step.
  */
 
-import {
-  copyFile,
-  mkdtemp,
-  open,
-  readFile,
-  rm,
-  stat,
-  writeFile,
-} from 'fs/promises';
+import {copyFile, mkdtemp, open, rm, stat, writeFile} from 'fs/promises';
 import {tmpdir} from 'os';
 import path from 'path';
-import type {
-  MapAssetKind,
-  MapAssetNormalizeOptions,
-  MapExtent,
-} from '@faims3/data-model';
-import {
-  DEFAULT_MAP_ASSET_NORMALIZE_OPTIONS,
-  pdfRenderDpi,
-  readGeoreferencedPdfRaster,
-} from '@faims3/data-model';
+import type {MapAssetKind, MapExtent} from '@faims3/data-model';
 import {GdalCommandError, readGdalJson, runGdalCommand} from '../export/gdal';
-import {logMapAssetProcessing, withMapAssetProcessingWait} from '../../logging';
+import {withMapAssetProcessingWait} from '../../logging';
 import {
   assertUploadCompanions,
   extensionOf,
@@ -52,10 +34,6 @@ export {
   safeUploadFilename,
   type UploadedMapFile,
 } from './uploadRules';
-
-/** Longest edge of a normalized raster, in pixels. */
-export const MAX_RASTER_EDGE_PX =
-  DEFAULT_MAP_ASSET_NORMALIZE_OPTIONS.maxRasterEdgePx;
 
 export type NormalizedMapAsset = {
   kind: MapAssetKind;
@@ -381,7 +359,6 @@ async function convertVector(
 }
 
 type GdalInfo = {
-  size?: [number, number];
   cornerCoordinates?: {
     upperLeft?: [number, number];
     lowerRight?: [number, number];
@@ -389,78 +366,15 @@ type GdalInfo = {
   wgs84Extent?: {coordinates?: number[][][]};
 };
 
-/**
- * GDAL's PDF driver rasterizes at 150 DPI from the page size. Ask it for the
- * DPI that lands on the quality cap without enlarging the page past that.
- */
-async function pdfDpiOpenOptions(
-  sourcePath: string,
-  maxRasterEdgePx: number,
-  logContext?: MapAssetNormalizeLogContext
-): Promise<string[]> {
-  if (extensionOf(sourcePath) !== '.pdf') {
-    return [];
-  }
-  try {
-    const bytes = new Uint8Array(await readPdfHeadAndTail(sourcePath));
-    const full = readGeoreferencedPdfRaster(bytes);
-    if (!full) {
-      logMapAssetProcessing({
-        event: 'normalize.raster.pdf_dpi',
-        outcome: 'skipped',
-        assetId: logContext?.assetId,
-        filename: path.basename(sourcePath),
-        reason: 'PDF is not a georeferenced raster',
-      });
-      return [];
-    }
-    const dpi = pdfRenderDpi(full, maxRasterEdgePx);
-    if (!Number.isFinite(dpi) || dpi <= 0) {
-      logMapAssetProcessing({
-        event: 'normalize.raster.pdf_dpi',
-        outcome: 'skipped',
-        assetId: logContext?.assetId,
-        filename: path.basename(sourcePath),
-        reason: 'could not derive a render DPI',
-      });
-      return [];
-    }
-    logMapAssetProcessing({
-      event: 'normalize.raster.pdf_dpi',
-      outcome: 'success',
-      assetId: logContext?.assetId,
-      filename: path.basename(sourcePath),
-      detail: `DPI=${dpi.toFixed(2)}`,
-    });
-    return ['-oo', `DPI=${dpi.toFixed(2)}`];
-  } catch (error) {
-    logMapAssetProcessing({
-      event: 'normalize.raster.pdf_dpi',
-      outcome: 'skipped',
-      assetId: logContext?.assetId,
-      filename: path.basename(sourcePath),
-      reason: error instanceof Error ? error.message : String(error),
-    });
-    return [];
-  }
-}
-
 async function convertRaster(
   sourcePath: string,
   workDir: string,
-  options: MapAssetNormalizeOptions,
   logContext?: MapAssetNormalizeLogContext
 ): Promise<NormalizedMapAsset> {
   const warped = path.join(workDir, 'warped.tif');
-  const sized = path.join(workDir, 'sized.tif');
   const mbtiles = path.join(workDir, 'normalized.mbtiles');
   const pmtilesPath = path.join(workDir, 'normalized.pmtiles');
   const filename = path.basename(sourcePath);
-  const dpiOptions = await pdfDpiOpenOptions(
-    sourcePath,
-    options.maxRasterEdgePx,
-    logContext
-  );
   await withMapAssetProcessingWait(
     {
       event: 'gdal.command',
@@ -473,7 +387,6 @@ async function convertRaster(
       runGdalCommand({
         command: 'gdalwarp',
         args: [
-          ...dpiOptions,
           '-t_srs',
           'EPSG:3857',
           '-r',
@@ -492,7 +405,7 @@ async function convertRaster(
       assetId: logContext?.assetId,
       command: 'gdalinfo',
       filename: 'warped.tif',
-      detail: 'read warped raster size',
+      detail: 'read warped raster extent',
     },
     () =>
       readGdalJson({
@@ -500,8 +413,6 @@ async function convertRaster(
         args: ['-json', warped],
       })
   )) as GdalInfo;
-  const width = info.size?.[0] ?? 0;
-  const height = info.size?.[1] ?? 0;
   const upperLeft = info.cornerCoordinates?.upperLeft;
   const lowerRight = info.cornerCoordinates?.lowerRight;
   if (!upperLeft || !lowerRight) {
@@ -513,28 +424,6 @@ async function convertRaster(
     lowerRight[0],
     upperLeft[1],
   ];
-  const longEdge = Math.max(width, height);
-  let tileSource = warped;
-  if (longEdge > options.maxRasterEdgePx && width > 0 && height > 0) {
-    const translateArgs = ['-of', 'GTiff'];
-    if (width >= height) {
-      translateArgs.push('-outsize', String(options.maxRasterEdgePx), '0');
-    } else {
-      translateArgs.push('-outsize', '0', String(options.maxRasterEdgePx));
-    }
-    translateArgs.push(warped, sized);
-    await withMapAssetProcessingWait(
-      {
-        event: 'gdal.command',
-        assetId: logContext?.assetId,
-        command: 'gdal_translate',
-        filename,
-        detail: `long-edge ${options.maxRasterEdgePx}px`,
-      },
-      () => runGdalCommand({command: 'gdal_translate', args: translateArgs})
-    );
-    tileSource = sized;
-  }
   await withMapAssetProcessingWait(
     {
       event: 'gdal.command',
@@ -555,7 +444,7 @@ async function convertRaster(
           `QUALITY=${RASTER_WEBP_QUALITY}`,
           '-co',
           'NAME=layer',
-          tileSource,
+          warped,
           mbtiles,
         ],
       })
@@ -593,7 +482,6 @@ async function convertRaster(
   );
   await rm(mbtiles, {force: true});
   await rm(warped, {force: true});
-  await rm(sized, {force: true});
   const zoom = await readPmtilesHeader(pmtilesPath);
   const ring = info.wgs84Extent?.coordinates?.[0] ?? [];
   return {
@@ -609,26 +497,6 @@ async function convertRaster(
   };
 }
 
-const PDF_MEDIA_BOX_SLICE_BYTES = 2 * 1024 * 1024;
-
-/** MediaBox is usually in the header or trailer — do not load a huge PDF. */
-async function readPdfHeadAndTail(filePath: string): Promise<Buffer> {
-  const size = (await stat(filePath)).size;
-  if (size <= PDF_MEDIA_BOX_SLICE_BYTES * 2) {
-    return readFile(filePath);
-  }
-  const handle = await open(filePath, 'r');
-  try {
-    const head = new Uint8Array(PDF_MEDIA_BOX_SLICE_BYTES);
-    const tail = new Uint8Array(PDF_MEDIA_BOX_SLICE_BYTES);
-    await handle.read(head, 0, head.length, 0);
-    await handle.read(tail, 0, tail.length, size - tail.length);
-    return Buffer.concat([head, tail]);
-  } finally {
-    await handle.close();
-  }
-}
-
 /**
  * Requires a CRS and writes a normalized file beside the upload (or in a
  * fresh temp dir). The caller deletes `workDir` after it has streamed the
@@ -636,7 +504,6 @@ async function readPdfHeadAndTail(filePath: string): Promise<Buffer> {
  */
 export async function normalizeMapUpload(
   files: UploadedMapFile[],
-  options: MapAssetNormalizeOptions = DEFAULT_MAP_ASSET_NORMALIZE_OPTIONS,
   logContext?: MapAssetNormalizeLogContext
 ): Promise<NormalizedMapAsset> {
   assertUploadCompanions(files);
@@ -664,7 +531,7 @@ export async function normalizeMapUpload(
     await inspectCrs(sourcePath, vector, logContext);
     const result = vector
       ? await convertVector(sourcePath, workDir, logContext)
-      : await convertRaster(sourcePath, workDir, options, logContext);
+      : await convertRaster(sourcePath, workDir, logContext);
     return ownsWorkDir ? {...result, cleanupDir: workDir} : result;
   } catch (error) {
     if (ownsWorkDir) {

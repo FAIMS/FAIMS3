@@ -8,10 +8,13 @@ import {
 import {DatabaseInterface} from '../../types';
 import {RootDescriptionInputSchema} from '../rootMetadata';
 import {CouchExistingDocumentSchema} from '../utils';
-import {
-  MapAssetNormalizeOptionsSchema,
-  MapAssetQualitySchema,
-} from './normalizeOptions';
+
+/**
+ * Formats accepted as a map-layer primary. Keep UI copy and API errors
+ * aligned with this phrase.
+ */
+export const MAP_ASSET_PRIMARY_FORMATS =
+  'a GeoJSON, GeoPackage, zipped shapefile or File Geodatabase, KML, GeoTIFF, georeferenced PDF, or a PNG/JPEG';
 
 /** Object-store key for the bytes the user uploaded (or a zip of them). */
 export const MAP_ASSET_ORIGINAL_ATTACHMENT = 'original';
@@ -166,10 +169,6 @@ export const MapAssetFieldsSchema = z.object({
   /** Tile edge in pixels. PMTiles image tiles are 256. */
   tileSize: z.number().int().min(64).max(512).optional(),
   defaultStyle: MapAssetStyleSchema,
-  /** Slider value used when this upload was processed. */
-  quality: MapAssetQualitySchema.optional(),
-  /** Resolved GDAL settings used when this upload was processed. */
-  normalizeOptions: MapAssetNormalizeOptionsSchema.optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });

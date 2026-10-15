@@ -3,8 +3,6 @@ import {
   INPUT_LIMITS,
   MAP_ASSET_PRIMARY_FORMATS,
   mapAssetUploadTooLargeMessage,
-  readGeoreferencedPdfRaster,
-  type PdfRasterSize,
 } from '@faims3/data-model';
 import {z} from 'zod';
 
@@ -38,64 +36,6 @@ const ALLOWED_EXTENSIONS = new Set([
 ]);
 
 export const MAP_LAYER_FILE_ACCEPT = [...ALLOWED_EXTENSIONS].join(',');
-
-export function primaryMapLayerFile(files: File[]): File | undefined {
-  return files.find(file => PRIMARY_EXTENSIONS.has(extensionOf(file.name)));
-}
-
-const pdfRasterCache = new WeakMap<File, Promise<PdfRasterSize | undefined>>();
-
-function pdfRasterSize(file: File): Promise<PdfRasterSize | undefined> {
-  const cached = pdfRasterCache.get(file);
-  if (cached) {
-    return cached;
-  }
-  const pending = file
-    .arrayBuffer()
-    .then(buffer => readGeoreferencedPdfRaster(new Uint8Array(buffer)))
-    .catch(() => undefined);
-  pdfRasterCache.set(file, pending);
-  return pending;
-}
-
-export async function mapLayerEstimateSource(
-  files: File[]
-): Promise<
-  | {filename: string; byteSize: number; widthPx?: number; heightPx?: number}
-  | undefined
-> {
-  const primary = primaryMapLayerFile(files);
-  if (!primary) {
-    return undefined;
-  }
-  const source: {
-    filename: string;
-    byteSize: number;
-    widthPx?: number;
-    heightPx?: number;
-  } = {
-    filename: primary.name,
-    byteSize: primary.size,
-  };
-  const ext = extensionOf(primary.name);
-  if (ext === '.pdf') {
-    const raster = await pdfRasterSize(primary);
-    if (raster) {
-      source.widthPx = raster.widthPx;
-      source.heightPx = raster.heightPx;
-    }
-  } else if (ext === '.png' || ext === '.jpg' || ext === '.jpeg') {
-    try {
-      const bitmap = await createImageBitmap(primary);
-      source.widthPx = bitmap.width;
-      source.heightPx = bitmap.height;
-      bitmap.close();
-    } catch {
-      // Geo-placement still works; the estimate just lacks pixel size.
-    }
-  }
-  return source;
-}
 
 function extensionOf(filename: string): string {
   const dot = filename.lastIndexOf('.');
