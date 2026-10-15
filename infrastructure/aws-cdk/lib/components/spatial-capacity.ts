@@ -35,6 +35,27 @@ export const buildCapacityManagerCommand = (): string[] => [
   'scripts/capacityManager.js',
 ];
 
+/**
+ * Worker-only env for GDAL / tippecanoe. The manager does not run those
+ * binaries. Integer megabytes are passed as `GDAL_CACHEMAX` (GDAL treats
+ * values below 100000 as MB).
+ */
+export const spatialWorkerPerformanceEnv = (
+  config: SpatialCapacityConfig
+): Record<string, string> => {
+  const env: Record<string, string> = {
+    GDAL_NUM_THREADS: String(config.gdalNumThreads),
+    GDAL_CACHEMAX: String(config.gdalCacheMaxMb),
+    GDAL_WARP_MEMORY_MB: String(config.gdalWarpMemoryMb),
+    GDAL_WARP_MULTI: config.gdalWarpMulti ? 'true' : 'false',
+    TIPPECANOE_READ_PARALLEL: config.tippecanoeReadParallel ? 'true' : 'false',
+  };
+  if (config.tippecanoeMaxThreads !== undefined) {
+    env.TIPPECANOE_MAX_THREADS = String(config.tippecanoeMaxThreads);
+  }
+  return env;
+};
+
 export interface FaimsSpatialCapacityProps {
   /** VPC used by Conductor. Workers run in its public subnets. */
   vpc: ec2.IVpc;
@@ -92,6 +113,7 @@ export class FaimsSpatialCapacity extends Construct {
       environment: {
         ...props.environment,
         SPATIAL_WORKER_IDLE_EXIT_MS: `${props.config.idleExitMs}`,
+        ...spatialWorkerPerformanceEnv(props.config),
       },
       secrets: props.secrets,
       logging: ecs.LogDriver.awsLogs({
@@ -141,6 +163,7 @@ export class FaimsSpatialCapacity extends Construct {
         ...props.environment,
         CAPACITY_PROVIDER: 'ECS',
         CAPACITY_MAX: `${props.config.maxCapacity}`,
+        CAPACITY_SCALE_THRESHOLDS: props.config.scaleThresholds.join(','),
         CAPACITY_RECONCILE_MS: `${props.config.reconcileMs}`,
         CAPACITY_ECS_CLUSTER: props.cluster.clusterArn,
         CAPACITY_ECS_WORKER_TASK_DEFINITION:

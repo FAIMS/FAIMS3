@@ -11,6 +11,7 @@ import {
   buildSpatialWorkerCommand,
   CAPACITY_MANAGER_CONTAINER_NAME,
   FaimsSpatialCapacity,
+  spatialWorkerPerformanceEnv,
   SPATIAL_WORKER_CONTAINER_NAME,
 } from '../lib/components/spatial-capacity';
 
@@ -53,6 +54,7 @@ describe('FaimsSpatialCapacity synth', () => {
       mapAssetBucket: bucket,
       config: {
         maxCapacity: 4,
+        scaleThresholds: [3, 8, 16, 32],
         reconcileMs: 15_000,
         idleExitMs: 60_000,
         cpu: 1024,
@@ -60,6 +62,11 @@ describe('FaimsSpatialCapacity synth', () => {
         ephemeralStorageGiB: 80,
         managerCpu: 256,
         managerMemory: 512,
+        gdalNumThreads: 'ALL_CPUS',
+        gdalCacheMaxMb: 256,
+        gdalWarpMemoryMb: 256,
+        gdalWarpMulti: true,
+        tippecanoeReadParallel: true,
       },
     });
 
@@ -84,6 +91,17 @@ describe('FaimsSpatialCapacity synth', () => {
               Name: 'SPATIAL_WORKER_IDLE_EXIT_MS',
               Value: '60000',
             }),
+            Match.objectLike({
+              Name: 'GDAL_NUM_THREADS',
+              Value: 'ALL_CPUS',
+            }),
+            Match.objectLike({Name: 'GDAL_CACHEMAX', Value: '256'}),
+            Match.objectLike({Name: 'GDAL_WARP_MEMORY_MB', Value: '256'}),
+            Match.objectLike({Name: 'GDAL_WARP_MULTI', Value: 'true'}),
+            Match.objectLike({
+              Name: 'TIPPECANOE_READ_PARALLEL',
+              Value: 'true',
+            }),
           ]),
         }),
       ]),
@@ -99,6 +117,10 @@ describe('FaimsSpatialCapacity synth', () => {
           Environment: Match.arrayWith([
             Match.objectLike({Name: 'CAPACITY_PROVIDER', Value: 'ECS'}),
             Match.objectLike({Name: 'CAPACITY_MAX', Value: '4'}),
+            Match.objectLike({
+              Name: 'CAPACITY_SCALE_THRESHOLDS',
+              Value: '3,8,16,32',
+            }),
           ]),
         }),
       ]),
@@ -122,5 +144,41 @@ describe('FaimsSpatialCapacity synth', () => {
 
     const services = template.findResources('AWS::ECS::Service');
     expect(Object.keys(services)).toHaveLength(1);
+  });
+});
+
+describe('spatialWorkerPerformanceEnv', () => {
+  const base = {
+    maxCapacity: 4,
+    scaleThresholds: [3, 8, 16, 32],
+    reconcileMs: 15_000,
+    idleExitMs: 60_000,
+    cpu: 8192,
+    memory: 32768,
+    ephemeralStorageGiB: 80,
+    managerCpu: 256,
+    managerMemory: 512,
+    gdalNumThreads: 'ALL_CPUS' as const,
+    gdalCacheMaxMb: 2048,
+    gdalWarpMemoryMb: 1024,
+    gdalWarpMulti: true,
+    tippecanoeReadParallel: true,
+  };
+
+  it('omits TIPPECANOE_MAX_THREADS unless set', () => {
+    expect(spatialWorkerPerformanceEnv(base)).not.toHaveProperty(
+      'TIPPECANOE_MAX_THREADS'
+    );
+  });
+
+  it('passes a thread cap when configured', () => {
+    expect(
+      spatialWorkerPerformanceEnv({...base, tippecanoeMaxThreads: 8})
+    ).toMatchObject({
+      GDAL_NUM_THREADS: 'ALL_CPUS',
+      GDAL_CACHEMAX: '2048',
+      GDAL_WARP_MEMORY_MB: '1024',
+      TIPPECANOE_MAX_THREADS: '8',
+    });
   });
 });

@@ -11,8 +11,18 @@ import {copyFile, mkdtemp, open, rm, stat, writeFile} from 'fs/promises';
 import {tmpdir} from 'os';
 import path from 'path';
 import type {MapAssetKind, MapExtent} from '@faims3/data-model';
-import {GdalCommandError, readGdalJson, runGdalCommand} from '../export/gdal';
+import {config} from '../../buildconfig';
 import {withMapAssetProcessingWait} from '../../logging';
+import {
+  gdalConfigArgs,
+  gdalWarpPerformanceArgs,
+  ogr2ogrGeometryArgs,
+  spatialToolProcessEnv,
+  tippecanoePerformanceArgs,
+  vectorIntermediateFilename,
+  type SpatialToolPerformance,
+} from '../../spatial/gdalPerformance';
+import {GdalCommandError, readGdalJson, runGdalCommand} from '../export/gdal';
 import {
   assertUploadCompanions,
   extensionOf,
@@ -119,10 +129,12 @@ async function inspectCrs(
           ? readGdalJson({
               command: 'ogrinfo',
               args: ['-json', '-so', '-al', source],
+              env: spatialCommandEnv(),
             })
           : readGdalJson({
               command: 'gdalinfo',
               args: ['-json', source],
+              env: spatialCommandEnv(),
             })
     );
     assertHasCrs(info, filename);
@@ -145,6 +157,21 @@ const PMTILES_MEDIA_TYPE = 'application/vnd.pmtiles';
  * Runs a tiling binary. `PMTILES_BIN` and `TIPPECANOE_BIN` override the
  * executable name. `pmtiles` falls back to `go-pmtiles`.
  */
+function spatialToolPerformance(): SpatialToolPerformance {
+  return {
+    gdalNumThreads: config.gdalNumThreads,
+    gdalCacheMaxMb: config.gdalCacheMaxMb,
+    gdalWarpMemoryMb: config.gdalWarpMemoryMb,
+    gdalWarpMulti: config.gdalWarpMulti,
+    tippecanoeMaxThreads: config.tippecanoeMaxThreads,
+    tippecanoeReadParallel: config.tippecanoeReadParallel,
+  };
+}
+
+function spatialCommandEnv(): NodeJS.ProcessEnv {
+  return spatialToolProcessEnv(spatialToolPerformance());
+}
+
 async function runMapTool(
   command: string,
   args: string[],
@@ -152,9 +179,10 @@ async function runMapTool(
   missing: string
 ): Promise<void> {
   const names = [command, ...fallbacks];
+  const env = spatialCommandEnv();
   for (const name of names) {
     try {
-      await runGdalCommand({command: name, args});
+      await runGdalCommand({command: name, args, env});
       return;
     } catch (error) {
       const absent =
@@ -288,7 +316,9 @@ async function convertVector(
   workDir: string,
   logContext?: MapAssetNormalizeLogContext
 ): Promise<NormalizedMapAsset> {
-  const geojsonPath = path.join(workDir, 'normalized.geojson');
+  const perf = spatialToolPerformance();
+  const env = spatialToolProcessEnv(perf);
+  const geojsonPath = path.join(workDir, vectorIntermediateFilename(perf));
   const pmtilesPath = path.join(workDir, 'normalized.pmtiles');
   const filename = path.basename(sourcePath);
   const gdalSource = await resolveVectorGdalSource(sourcePath);
@@ -298,28 +328,15 @@ async function convertVector(
       assetId: logContext?.assetId,
       command: 'ogr2ogr',
       filename,
-      detail: 'GeoJSON EPSG:4326',
+      detail: perf.tippecanoeReadParallel
+        ? 'GeoJSONSeq EPSG:4326'
+        : 'GeoJSON EPSG:4326',
     },
     () =>
       runGdalCommand({
         command: 'ogr2ogr',
-        args: [
-          '-f',
-          'GeoJSON',
-          '-t_srs',
-          'EPSG:4326',
-          '-lco',
-          'RFC7946=YES',
-          // GeoJSON holds one layer. -nln appends every source layer
-          // (KML folders, multi-layer GeoPackages) into that layer.
-          '-nln',
-          'features',
-          // Devices draw geometry. Style lives on the asset.
-          '-select',
-          '',
-          geojsonPath,
-          gdalSource,
-        ],
+        args: ogr2ogrGeometryArgs(perf, geojsonPath, gdalSource),
+        env,
       })
   );
   await withMapAssetProcessingWait(
@@ -338,7 +355,7 @@ async function convertVector(
         '--drop-densest-as-needed',
         '--extend-zooms-if-still-dropping',
         '--force',
-        '--read-parallel',
+        ...tippecanoePerformanceArgs(perf),
         '-l',
         'features',
         geojsonPath,
@@ -375,6 +392,8 @@ async function convertRaster(
   const mbtiles = path.join(workDir, 'normalized.mbtiles');
   const pmtilesPath = path.join(workDir, 'normalized.pmtiles');
   const filename = path.basename(sourcePath);
+  const perf = spatialToolPerformance();
+  const env = spatialToolProcessEnv(perf);
   await withMapAssetProcessingWait(
     {
       event: 'gdal.command',
@@ -387,6 +406,7 @@ async function convertRaster(
       runGdalCommand({
         command: 'gdalwarp',
         args: [
+          ...gdalWarpPerformanceArgs(perf),
           '-t_srs',
           'EPSG:3857',
           '-r',
@@ -396,6 +416,7 @@ async function convertRaster(
           gdalSourcePath(sourcePath),
           warped,
         ],
+        env,
       })
   );
 
@@ -411,6 +432,7 @@ async function convertRaster(
       readGdalJson({
         command: 'gdalinfo',
         args: ['-json', warped],
+        env,
       })
   )) as GdalInfo;
   const upperLeft = info.cornerCoordinates?.upperLeft;
@@ -436,6 +458,7 @@ async function convertRaster(
       runGdalCommand({
         command: 'gdal_translate',
         args: [
+          ...gdalConfigArgs(perf),
           '-of',
           'MBTiles',
           '-co',
@@ -447,11 +470,13 @@ async function convertRaster(
           warped,
           mbtiles,
         ],
+        env,
       })
   );
   const mbtilesInfo = await readGdalJson({
     command: 'gdalinfo',
     args: ['-json', mbtiles],
+    env,
   });
   const factors = overviewFactors(maxZoomFromMbtilesInfo(mbtilesInfo));
   if (factors.length > 0) {
@@ -466,7 +491,8 @@ async function convertRaster(
       () =>
         runGdalCommand({
           command: 'gdaladdo',
-          args: ['-r', 'average', mbtiles, ...factors],
+          args: [...gdalConfigArgs(perf), '-r', 'average', mbtiles, ...factors],
+          env,
         })
     );
   }

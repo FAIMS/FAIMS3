@@ -40,12 +40,15 @@ export class GdalCommandError extends Error {
 export const runGdalCommand = ({
   command,
   args,
+  env,
 }: {
   command: string;
   args: string[];
+  /** Extra / override env. When omitted, the child inherits `process.env`. */
+  env?: NodeJS.ProcessEnv;
 }): Promise<{stdout: string; stderr: string}> =>
   new Promise((resolve, reject) => {
-    const proc = spawn(command, args);
+    const proc = spawn(command, args, env ? {env} : undefined);
     let stdout = '';
     let stderr = '';
     let settled = false;
@@ -96,11 +99,13 @@ export const runGdalCommand = ({
 export const readGdalJson = async ({
   command,
   args,
+  env,
 }: {
   command: string;
   args: string[];
+  env?: NodeJS.ProcessEnv;
 }): Promise<unknown> => {
-  const {stdout} = await runGdalCommand({command, args});
+  const {stdout} = await runGdalCommand({command, args, env});
   return JSON.parse(stdout) as unknown;
 };
 

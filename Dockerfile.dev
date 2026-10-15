@@ -1,43 +1,8 @@
-# Base including pnpm setup
-FROM node:24 AS base
+# syntax=docker/dockerfile:1
 
-# Install pnpm
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-
-WORKDIR /usr/src
-
-# Copy pnpm workspace configuration
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
-
-# Copy monorepo package.json files
-COPY api/package.json ./api/
-COPY app/package.json ./app/
-COPY web/package.json ./web/
-COPY library/data-model/package.json ./library/data-model/
-COPY library/forms/package.json ./library/forms/
-
-# Install dependencies with cache mount
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-  pnpm install --frozen-lockfile
-
-
-# Source stage. Compose bind-mounts the workspace libraries over this image, so the
-# data-model and forms output built here is masked at runtime (localdev.sh builds
-# them on the host). The api output is not: only api/src and its sibling directories
-# are mounted, so api/build survives from the image.
-FROM base AS source
-
-# Copy source code
-COPY . .
-
-# Build the app and api
-RUN pnpm turbo build --filter=@faims3/api --filter=@faims3/app --filter=@faims3/web
-
-# Shared runtime for the three dev services. Compose sets command and ports per
-# service, so one stage serves all three.
-FROM node:24-slim AS runtime
+# GDAL, tippecanoe, and pmtiles. Shared by the full dev runtime and the
+# lighter worker image so the compile happens once per machine.
+FROM node:24-slim AS spatial-tools
 
 # GDAL for GeoPackage export and map-layer ingest (GeoPDF needs Poppler),
 # tippecanoe and pmtiles for PMTiles archives, and curl for the api healthcheck.
@@ -68,12 +33,51 @@ RUN apt-get update \
   && command -v tippecanoe \
   && command -v pmtiles
 
-# Install pnpm
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
 WORKDIR /usr/src
 
-# Copy installed dependencies and source
+# Dependency install only. No application source, so this layer stays valid
+# until a package manifest or the lockfile changes.
+FROM node:24 AS base
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+WORKDIR /usr/src
+
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+
+COPY api/package.json ./api/
+COPY app/package.json ./app/
+COPY web/package.json ./web/
+COPY library/data-model/package.json ./library/data-model/
+COPY library/forms/package.json ./library/forms/
+
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+  pnpm install --frozen-lockfile
+
+# Source stage. Compose bind-mounts the workspace libraries over this image, so the
+# data-model and forms output built here is masked at runtime (localdev.sh builds
+# them on the host). The api output is not: only api/src and its sibling directories
+# are mounted, so api/build survives from the image.
+FROM base AS source
+
+COPY . .
+
+RUN pnpm turbo build --filter=@faims3/api --filter=@faims3/app --filter=@faims3/web
+
+# Full dev image for api, web, and app (`./localdev.sh --all`).
+FROM spatial-tools AS runtime
+
 COPY --from=source /usr/src .
+
+# Map-layer worker image. Compose bind-mounts api/src and data-model, and the
+# process runs tsx against that source, so this target does not copy the repo
+# or run turbo. A TypeScript edit does not invalidate the image.
+FROM spatial-tools AS worker
+
+COPY --from=base /usr/src .

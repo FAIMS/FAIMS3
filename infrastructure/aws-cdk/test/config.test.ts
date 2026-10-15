@@ -10,6 +10,7 @@ import {
   DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS,
   DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
   SecurityConfigSchema,
+  SpatialCapacityConfigSchema,
   UiConfiguration,
 } from '../lib/config';
 
@@ -271,5 +272,38 @@ describe('ConductorConfigSchema startup migration lock', () => {
         })
       )
     ).toThrow(/disableStartupMigrationLock cannot be false/);
+  });
+});
+
+describe('SpatialCapacityConfigSchema GDAL / tippecanoe knobs', () => {
+  it('fills conservative performance defaults', () => {
+    const parsed = SpatialCapacityConfigSchema.parse({
+      cpu: 8192,
+      memory: 32768,
+    });
+    expect(parsed.gdalNumThreads).toBe('ALL_CPUS');
+    expect(parsed.gdalCacheMaxMb).toBe(256);
+    expect(parsed.gdalWarpMemoryMb).toBe(256);
+    expect(parsed.gdalWarpMulti).toBe(true);
+    expect(parsed.tippecanoeMaxThreads).toBeUndefined();
+    expect(parsed.tippecanoeReadParallel).toBe(true);
+  });
+
+  it('accepts an explicit thread cap and larger warp buffer', () => {
+    const parsed = SpatialCapacityConfigSchema.parse({
+      gdalNumThreads: 8,
+      gdalCacheMaxMb: 2048,
+      gdalWarpMemoryMb: 1024,
+      tippecanoeMaxThreads: 8,
+    });
+    expect(parsed.gdalNumThreads).toBe(8);
+    expect(parsed.gdalCacheMaxMb).toBe(2048);
+    expect(parsed.tippecanoeMaxThreads).toBe(8);
+  });
+
+  it('rejects a zero warp buffer', () => {
+    expect(() =>
+      SpatialCapacityConfigSchema.parse({gdalWarpMemoryMb: 0})
+    ).toThrow(ZodError);
   });
 });

@@ -36,6 +36,17 @@ import {
   EcsCapacityProviderConfig,
 } from './services/capacityProvider';
 import {
+  DEFAULT_GDAL_CACHE_MAX_MB,
+  DEFAULT_GDAL_NUM_THREADS,
+  DEFAULT_GDAL_WARP_MEMORY_MB,
+  DEFAULT_GDAL_WARP_MULTI,
+  DEFAULT_TIPPECANOE_READ_PARALLEL,
+} from './spatial/gdalPerformance';
+import {
+  DEFAULT_CAPACITY_SCALE_THRESHOLDS_CSV,
+  parseCapacityScaleThresholds,
+} from './spatial/reconcileCapacity';
+import {
   createEmailService,
   EmailConfig,
   EmailServiceType,
@@ -406,6 +417,28 @@ const EnvSchema = z
     ),
     /** Max workers the capacity manager will ask for at once. */
     CAPACITY_MAX: configHelpers.intDefault(4, 'CAPACITY_MAX'),
+    /**
+     * Queue depths at which worker count increases from 1.
+     * `3,8,16,32` means 1→2 at 3 jobs, 2→3 at 8, 3→4 at 16, 4→5 at 32.
+     * Always capped by CAPACITY_MAX.
+     */
+    CAPACITY_SCALE_THRESHOLDS: z
+      .string()
+      .optional()
+      .transform((v, ctx) => {
+        const raw = configHelpers.isBlank(v)
+          ? DEFAULT_CAPACITY_SCALE_THRESHOLDS_CSV
+          : v;
+        try {
+          return parseCapacityScaleThresholds(raw);
+        } catch (error) {
+          ctx.addIssue({
+            code: 'custom',
+            message: error instanceof Error ? error.message : String(error),
+          });
+          return z.NEVER;
+        }
+      }),
     /** How often the capacity manager reconciles queue depth (ms). */
     CAPACITY_RECONCILE_MS: configHelpers.intDefault(
       15_000,
@@ -442,6 +475,80 @@ const EnvSchema = z
     SPATIAL_WORKER_POLL_MS: configHelpers.intDefault(
       5_000,
       'SPATIAL_WORKER_POLL_MS'
+    ),
+    /**
+     * GDAL worker threads for warp / overviews / compression.
+     * `ALL_CPUS` (default) or a positive integer. Scales with task vCPU.
+     */
+    GDAL_NUM_THREADS: z
+      .string()
+      .optional()
+      .transform((v, ctx) => {
+        if (configHelpers.isBlank(v)) {
+          return DEFAULT_GDAL_NUM_THREADS;
+        }
+        const upper = v.trim().toUpperCase();
+        if (upper === 'ALL_CPUS') {
+          return 'ALL_CPUS';
+        }
+        const parsed = parseInt(v, 10);
+        if (!Number.isInteger(parsed) || parsed < 1) {
+          ctx.addIssue({
+            code: 'custom',
+            message: 'GDAL_NUM_THREADS must be ALL_CPUS or a positive integer',
+          });
+          return z.NEVER;
+        }
+        return String(parsed);
+      }),
+    /**
+     * Raster block cache in megabytes (`GDAL_CACHEMAX`). Values below
+     * 100000 are MB. Default 256 fits a 2 GiB worker; raise on large tasks.
+     */
+    GDAL_CACHEMAX: configHelpers
+      .intDefault(DEFAULT_GDAL_CACHE_MAX_MB, 'GDAL_CACHEMAX')
+      .refine(n => n > 0, {
+        message: 'GDAL_CACHEMAX must be a positive integer',
+      }),
+    /**
+     * `gdalwarp -wm` working buffer in megabytes. Shared across warp
+     * threads — raise this when GDAL_NUM_THREADS > 1. Default 256.
+     */
+    GDAL_WARP_MEMORY_MB: configHelpers
+      .intDefault(DEFAULT_GDAL_WARP_MEMORY_MB, 'GDAL_WARP_MEMORY_MB')
+      .refine(n => n > 0, {
+        message: 'GDAL_WARP_MEMORY_MB must be a positive integer',
+      }),
+    /**
+     * `gdalwarp -multi`: overlap I/O with compute (two threads). Default on.
+     */
+    GDAL_WARP_MULTI: configHelpers.boolWithDefault(DEFAULT_GDAL_WARP_MULTI),
+    /**
+     * Cap tippecanoe threads. Blank = all CPUs (tippecanoe's default).
+     */
+    TIPPECANOE_MAX_THREADS: z
+      .string()
+      .optional()
+      .transform((v, ctx) => {
+        if (configHelpers.isBlank(v)) {
+          return undefined;
+        }
+        const parsed = parseInt(v, 10);
+        if (!Number.isInteger(parsed) || parsed < 1) {
+          ctx.addIssue({
+            code: 'custom',
+            message: 'TIPPECANOE_MAX_THREADS must be a positive integer',
+          });
+          return z.NEVER;
+        }
+        return parsed;
+      }),
+    /**
+     * `tippecanoe --read-parallel`. Default on. Writes GeoJSONSeq so
+     * parallel parse is valid (FeatureCollection is not).
+     */
+    TIPPECANOE_READ_PARALLEL: configHelpers.boolWithDefault(
+      DEFAULT_TIPPECANOE_READ_PARALLEL
     ),
     /**
      * Comma-separated list of domains to which auth-flow redirects are
@@ -730,6 +837,7 @@ const EnvSchema = z
       _capacity: {
         serviceType: env.CAPACITY_PROVIDER,
         max: env.CAPACITY_MAX,
+        scaleThresholds: env.CAPACITY_SCALE_THRESHOLDS,
         reconcileMs: env.CAPACITY_RECONCILE_MS,
         fixedReplicas: env.CAPACITY_FIXED_REPLICAS,
         cluster: env.CAPACITY_ECS_CLUSTER,
@@ -741,6 +849,12 @@ const EnvSchema = z
         assignPublicIp: env.CAPACITY_ECS_ASSIGN_PUBLIC_IP,
         idleExitMs: env.SPATIAL_WORKER_IDLE_EXIT_MS,
         pollMs: env.SPATIAL_WORKER_POLL_MS,
+        gdalNumThreads: env.GDAL_NUM_THREADS,
+        gdalCacheMaxMb: env.GDAL_CACHEMAX,
+        gdalWarpMemoryMb: env.GDAL_WARP_MEMORY_MB,
+        gdalWarpMulti: env.GDAL_WARP_MULTI,
+        tippecanoeMaxThreads: env.TIPPECANOE_MAX_THREADS,
+        tippecanoeReadParallel: env.TIPPECANOE_READ_PARALLEL,
       },
       _keyFileHost: keyFileHost,
     };
@@ -1002,10 +1116,17 @@ export const config = {
   /** Present when {@link capacityProviderType} is ECS. */
   capacityEcs,
   capacityMax: _capacity.max,
+  capacityScaleThresholds: _capacity.scaleThresholds,
   capacityReconcileMs: _capacity.reconcileMs,
   capacityFixedReplicas: _capacity.fixedReplicas,
   spatialWorkerIdleExitMs: _capacity.idleExitMs,
   spatialWorkerPollMs: _capacity.pollMs,
+  gdalNumThreads: _capacity.gdalNumThreads,
+  gdalCacheMaxMb: _capacity.gdalCacheMaxMb,
+  gdalWarpMemoryMb: _capacity.gdalWarpMemoryMb,
+  gdalWarpMulti: _capacity.gdalWarpMulti,
+  tippecanoeMaxThreads: _capacity.tippecanoeMaxThreads,
+  tippecanoeReadParallel: _capacity.tippecanoeReadParallel,
 };
 
 export type Config = typeof config;

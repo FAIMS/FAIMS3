@@ -38,6 +38,7 @@ async function tick(): Promise<void> {
     inFlight: backlog.inFlight,
     unclaimed: backlog.unclaimed,
     max: config.capacityMax,
+    scaleThresholds: config.capacityScaleThresholds,
   });
   console.log(
     `[capacity] inFlight=${backlog.inFlight} unclaimed=${backlog.unclaimed} needed=${result.needed} ensured=${result.ensured}`
@@ -46,7 +47,7 @@ async function tick(): Promise<void> {
 
 const main = async () => {
   console.log(
-    `[capacity] provider=${config.capacityProviderType} max=${config.capacityMax} reconcileMs=${config.capacityReconcileMs}`
+    `[capacity] provider=${config.capacityProviderType} max=${config.capacityMax} scale=${config.capacityScaleThresholds.join(',')} reconcileMs=${config.capacityReconcileMs}`
   );
   console.log(`Couch server: ${config.couchdbInternalUrl}`);
   const connection = await verifyCouchDBConnection();

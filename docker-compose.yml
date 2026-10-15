@@ -1,5 +1,23 @@
+# api, web, and app share one build of Dockerfile.dev target runtime.
+x-dev-image: &dev-image
+  image: faims-dev:local
+  build:
+    context: .
+    dockerfile: Dockerfile.dev
+    target: runtime
+
+# capacity-manager and spatial-worker share the lighter worker target.
+# It installs dependencies and GDAL, and does not copy application source.
+x-worker-image: &worker-image
+  image: faims-dev-worker:local
+  build:
+    context: .
+    dockerfile: Dockerfile.dev
+    target: worker
+
 services:
   api:
+    <<: *dev-image
     env_file:
       - ./api/.env
     environment:
@@ -8,10 +26,6 @@ services:
       - ATTACHMENT_S3_ENDPOINT=http://rustfs:9000
       # Browsers cannot resolve `rustfs`; sign download URLs for localhost.
       - ATTACHMENT_S3_PUBLIC_ENDPOINT=http://localhost:9000
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-      target: runtime
     ports:
       - '0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}'
     volumes:
@@ -38,12 +52,9 @@ services:
       retries: 3
       start_period: 40s
   web:
+    <<: *dev-image
     env_file:
       - ./web/.env
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-      target: runtime
     ports:
       - '0.0.0.0:3001:3001'
     volumes:
@@ -54,12 +65,9 @@ services:
     command: pnpm run web-dev
 
   app:
+    <<: *dev-image
     env_file:
       - ./app/.env
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-      target: runtime
     ports:
       - '3000:3000'
     volumes:
@@ -80,6 +88,7 @@ services:
   # Watches the Couch map-asset queue and asks the capacity provider for
   # workers. FIXED does not start tasks; the compose worker is always on.
   capacity-manager:
+    <<: *worker-image
     env_file:
       - ./api/.env
     environment:
@@ -88,10 +97,6 @@ services:
       - ATTACHMENT_S3_PUBLIC_ENDPOINT=http://localhost:9000
       - CAPACITY_PROVIDER=FIXED
       - CAPACITY_FIXED_REPLICAS=1
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-      target: runtime
     volumes:
       - ./library/data-model:/usr/src/library/data-model
       - ./api/src:/usr/src/api/src
@@ -107,6 +112,7 @@ services:
   # GDAL / tippecanoe worker. Idle exit is off so compose does not restart-loop.
   # Scratch is its own volume — not shared with the API container.
   spatial-worker:
+    <<: *worker-image
     env_file:
       - ./api/.env
     environment:
@@ -114,10 +120,6 @@ services:
       - ATTACHMENT_S3_ENDPOINT=http://rustfs:9000
       - ATTACHMENT_S3_PUBLIC_ENDPOINT=http://localhost:9000
       - SPATIAL_WORKER_IDLE_EXIT_MS=0
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-      target: runtime
     volumes:
       - ./library/data-model:/usr/src/library/data-model
       - ./api/src:/usr/src/api/src

@@ -31,6 +31,12 @@ Poll the Couch map-asset queue and process jobs until idle.
 
 SPATIAL_WORKER_IDLE_EXIT_MS  Exit after this many ms with no job (0 = never)
 SPATIAL_WORKER_POLL_MS       Delay between empty polls
+GDAL_NUM_THREADS             ALL_CPUS (default) or a positive integer
+GDAL_CACHEMAX                Raster block cache, megabytes (default 256)
+GDAL_WARP_MEMORY_MB          gdalwarp -wm megabytes (default 256)
+GDAL_WARP_MULTI              gdalwarp -multi (default true)
+TIPPECANOE_MAX_THREADS       Cap tippecanoe threads (default: all CPUs)
+TIPPECANOE_READ_PARALLEL     tippecanoe --read-parallel (default true)
 `);
 };
 
@@ -52,7 +58,7 @@ const main = async () => {
   }
 
   console.log(
-    `[spatial-worker] idleExitMs=${config.spatialWorkerIdleExitMs} pollMs=${config.spatialWorkerPollMs}`
+    `[spatial-worker] idleExitMs=${config.spatialWorkerIdleExitMs} pollMs=${config.spatialWorkerPollMs} gdalNumThreads=${config.gdalNumThreads} gdalCacheMaxMb=${config.gdalCacheMaxMb} gdalWarpMemoryMb=${config.gdalWarpMemoryMb} gdalWarpMulti=${config.gdalWarpMulti} tippecanoeMaxThreads=${config.tippecanoeMaxThreads ?? 'all'} tippecanoeReadParallel=${config.tippecanoeReadParallel}`
   );
   console.log(`Couch server: ${config.couchdbInternalUrl}`);
   const connection = await verifyCouchDBConnection();

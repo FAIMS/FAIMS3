@@ -131,13 +131,19 @@
   },
   "spatialCapacity": {
     "maxCapacity": 4,
+    "scaleThresholds": [3, 8, 16, 32],
     "reconcileMs": 15000,
     "idleExitMs": 60000,
     "cpu": 1024,
     "memory": 2048,
     "ephemeralStorageGiB": 80,
     "managerCpu": 256,
-    "managerMemory": 512
+    "managerMemory": 512,
+    "gdalNumThreads": "ALL_CPUS",
+    "gdalCacheMaxMb": 256,
+    "gdalWarpMemoryMb": 256,
+    "gdalWarpMulti": true,
+    "tippecanoeReadParallel": true
   },
   "authProviders": {
     "disableLocalLogin": false,

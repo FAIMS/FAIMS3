@@ -584,9 +584,28 @@ const TtlCleanupConfigSchema = z.object({
  * definition. The manager starts workers with RunTask; workers exit when
  * idle, so there is no worker ECS service to replace them.
  */
-const SpatialCapacityConfigSchema = z.object({
+export const SpatialCapacityConfigSchema = z.object({
   /** Max drain workers the manager may start at once. */
   maxCapacity: z.number().int().positive().default(4),
+  /**
+   * Queue depths at which worker count increases from 1.
+   * `[3, 8, 16, 32]` means 1→2 at 3 jobs, 2→3 at 8, 3→4 at 16, 4→5 at 32.
+   * Always capped by maxCapacity. Passed to the manager as CSV.
+   */
+  scaleThresholds: z
+    .array(z.number().int().positive())
+    .default([3, 8, 16, 32])
+    .superRefine((values, ctx) => {
+      for (let i = 1; i < values.length; i++) {
+        if (values[i] <= values[i - 1]) {
+          ctx.addIssue({
+            code: 'custom',
+            message: 'scaleThresholds must be strictly increasing',
+          });
+          return;
+        }
+      }
+    }),
   /** How often the manager reads the Couch queue (ms). */
   reconcileMs: z.number().int().positive().default(15_000),
   /**
@@ -607,6 +626,35 @@ const SpatialCapacityConfigSchema = z.object({
   managerCpu: z.number().int().positive().default(256),
   /** Fargate memory (MiB) for the capacity manager. */
   managerMemory: z.number().int().positive().default(512),
+  /**
+   * GDAL worker threads (`GDAL_NUM_THREADS`). `ALL_CPUS` uses the task
+   * vCPU count. A positive integer caps it. Default `ALL_CPUS`.
+   */
+  gdalNumThreads: z
+    .union([z.literal('ALL_CPUS'), z.number().int().positive().max(256)])
+    .default('ALL_CPUS'),
+  /**
+   * Raster block cache in megabytes (`GDAL_CACHEMAX`). Default 256 fits
+   * the 2 GiB worker. Raise toward 1024–2048 on 16–32 GiB tasks.
+   */
+  gdalCacheMaxMb: z.number().int().positive().max(65536).default(256),
+  /**
+   * `gdalwarp -wm` working buffer in megabytes. Shared across warp
+   * threads — raise with `gdalNumThreads`. Default 256.
+   */
+  gdalWarpMemoryMb: z.number().int().positive().max(65536).default(256),
+  /** `gdalwarp -multi`: overlap I/O with compute. Default true. */
+  gdalWarpMulti: z.boolean().default(true),
+  /**
+   * Cap tippecanoe threads (`TIPPECANOE_MAX_THREADS`). Omit to use all
+   * CPUs (tippecanoe's default).
+   */
+  tippecanoeMaxThreads: z.number().int().positive().max(256).optional(),
+  /**
+   * `tippecanoe --read-parallel`. Default true. The worker writes
+   * GeoJSONSeq so parallel parse is valid.
+   */
+  tippecanoeReadParallel: z.boolean().default(true),
 });
 
 const AppSupportLinksSchema = z.object({
@@ -796,6 +844,7 @@ export const ConfigSchema = z.object({
    */
   spatialCapacity: SpatialCapacityConfigSchema.optional().default({
     maxCapacity: 4,
+    scaleThresholds: [3, 8, 16, 32],
     reconcileMs: 15_000,
     idleExitMs: 60_000,
     cpu: 1024,
@@ -803,6 +852,11 @@ export const ConfigSchema = z.object({
     ephemeralStorageGiB: 80,
     managerCpu: 256,
     managerMemory: 512,
+    gdalNumThreads: 'ALL_CPUS',
+    gdalCacheMaxMb: 256,
+    gdalWarpMemoryMb: 256,
+    gdalWarpMulti: true,
+    tippecanoeReadParallel: true,
   }),
   /** Domain configuration for all services */
   domains: DomainsConfigSchema,

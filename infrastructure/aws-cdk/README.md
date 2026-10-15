@@ -666,20 +666,39 @@ CDK creates a private S3 bucket for map-layer originals and normalized files, wi
 
 The capacity manager is a Fargate service with desired count 1 (min and max 1). It reads the Couch `processing` queue and calls `ecs:RunTask` on the spatial-worker **task definition** (there is no worker service). Each worker polls and processes jobs until `spatialCapacity.idleExitMs` (default 60s) with nothing to claim, then exits. Idle tasks are not replaced. The manager role can `RunTask`, `ListTasks`, and `DescribeTasks`; it cannot `StopTask` or `UpdateService`.
 
-Optional JSON (defaults shown):
+Worker count is a threshold map of total queue depth (`inFlight` + `unclaimed`), not one task per job. `scaleThresholds` are the depths at which count increases from 1: `[3, 8, 16, 32]` means 1 worker below 3 jobs, 2 below 8, 3 below 16, 4 below 32, and 5 at 32+, always capped by `maxCapacity`.
+
+Optional JSON (defaults shown). Performance knobs are conservative for the
+default 1 vCPU / 2 GiB worker. `gdalNumThreads: "ALL_CPUS"` already uses the
+task vCPU count; raise `gdalCacheMaxMb` and `gdalWarpMemoryMb` on larger
+tasks (for example 2048 / 1024 on an 8 vCPU / 32 GiB worker). Omit
+`tippecanoeMaxThreads` to let tippecanoe use all CPUs.
 
 ```json
 "spatialCapacity": {
   "maxCapacity": 4,
+  "scaleThresholds": [3, 8, 16, 32],
   "reconcileMs": 15000,
   "idleExitMs": 60000,
   "cpu": 1024,
   "memory": 2048,
   "ephemeralStorageGiB": 80,
   "managerCpu": 256,
-  "managerMemory": 512
+  "managerMemory": 512,
+  "gdalNumThreads": "ALL_CPUS",
+  "gdalCacheMaxMb": 256,
+  "gdalWarpMemoryMb": 256,
+  "gdalWarpMulti": true,
+  "tippecanoeReadParallel": true
 }
 ```
+
+Those fields become worker-task env (`GDAL_NUM_THREADS`, `GDAL_CACHEMAX`,
+`GDAL_WARP_MEMORY_MB`, `GDAL_WARP_MULTI`, `TIPPECANOE_READ_PARALLEL`, and
+optional `TIPPECANOE_MAX_THREADS`). The capacity manager does not receive
+them. `gdalwarp` also gets `-multi`, `-wm`, `-wo NUM_THREADS=…`, and
+`-co TILED=YES`. When `tippecanoeReadParallel` is true, vectors are written
+as GeoJSONSeq so `--read-parallel` is valid.
 
 Attachment storage JSON (defaults shown):
 
