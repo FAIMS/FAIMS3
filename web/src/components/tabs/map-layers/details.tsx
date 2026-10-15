@@ -13,7 +13,7 @@ import {
   type ExistingMapAsset,
   type MapAssetStatus,
 } from '@faims3/data-model';
-import {AlertCircle, CheckCircle2, LoaderCircle} from 'lucide-react';
+import {AlertCircle, CheckCircle2, Clock, LoaderCircle} from 'lucide-react';
 import type {ReactNode} from 'react';
 
 const statusIndication: Record<
@@ -25,6 +25,11 @@ const statusIndication: Record<
     className:
       'border-green-800/40 bg-green-800/[0.08] text-green-800 dark:border-emerald-400/40 dark:bg-emerald-400/10 dark:text-emerald-300',
     iconClassName: 'text-green-800 dark:text-emerald-300',
+  },
+  pending: {
+    label: 'Pending',
+    className: 'border-muted-foreground/40 bg-muted text-muted-foreground',
+    iconClassName: 'text-muted-foreground',
   },
   processing: {
     label: 'Processing',
@@ -38,14 +43,16 @@ const statusIndication: Record<
   },
 };
 
+const statusIcon = {
+  ready: CheckCircle2,
+  pending: Clock,
+  processing: LoaderCircle,
+  failed: AlertCircle,
+} as const satisfies Record<MapAssetStatus, typeof CheckCircle2>;
+
 function MapLayerStatusIndication({asset}: {asset: ExistingMapAsset}) {
   const indication = statusIndication[asset.status];
-  const Icon =
-    asset.status === 'ready'
-      ? CheckCircle2
-      : asset.status === 'failed'
-        ? AlertCircle
-        : LoaderCircle;
+  const Icon = statusIcon[asset.status];
 
   return (
     <div className="space-y-1.5" data-testid="web-map-layer-status">
@@ -66,6 +73,11 @@ function MapLayerStatusIndication({asset}: {asset: ExistingMapAsset}) {
       {asset.status === 'failed' ? (
         <p className="text-sm text-destructive">
           {asset.failureReason ?? 'This layer failed to process.'}
+        </p>
+      ) : null}
+      {asset.status === 'pending' ? (
+        <p className="text-sm text-muted-foreground">
+          Waiting for a worker to prepare this layer for devices.
         </p>
       ) : null}
       {asset.status === 'processing' ? (

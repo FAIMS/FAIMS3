@@ -2,9 +2,9 @@
 import type {ICapacityProvider} from '../services/capacityProvider';
 
 export type SpatialBacklog = {
-  /** Processing jobs with originals and a fresh claim. */
+  /** `processing` jobs with originals and a fresh worker claim. */
   inFlight: number;
-  /** Processing jobs with originals and no fresh claim. */
+  /** `pending` jobs (or stale `processing`) with originals and no live claim. */
   unclaimed: number;
 };
 

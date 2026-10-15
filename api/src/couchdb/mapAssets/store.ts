@@ -24,6 +24,8 @@ import {
   MapAssetFields,
   MapAssetLinkFields,
   GetMapAssetDownloadUrlResponse,
+  isMapAssetInProgress,
+  MapAssetStatus,
   MapAssetStyle,
   StoredAttachmentLocation,
 } from '@faims3/data-model';
@@ -296,7 +298,7 @@ export async function createMapAsset({
     originalFilename: primaryFilename,
     ...(companions.length > 0 ? {companionFilenames: companions} : {}),
     byteSize: 0,
-    status: 'processing',
+    status: 'pending',
     defaultStyle: style ?? DEFAULT_MAP_ASSET_STYLE,
     createdAt: now,
     updatedAt: now,
@@ -345,9 +347,9 @@ export async function replaceMapAssetFiles({
   primaryFilename: string;
 }): Promise<ExistingMapAsset> {
   const current = await getMapAsset(assetId);
-  if (current.status === 'processing') {
+  if (isMapAssetInProgress(current.status)) {
     throw new Exceptions.InvalidRequestException(
-      'This map layer is still processing.'
+      'This map layer is still being prepared.'
     );
   }
   const companions = files
@@ -360,7 +362,7 @@ export async function replaceMapAssetFiles({
       originalFilename: primaryFilename,
       companionFilenames: companions.length > 0 ? companions : undefined,
       storedAttachments: undefined,
-      status: 'processing',
+      status: 'pending',
       failureReason: undefined,
       contentHash: undefined,
       kind: undefined,
@@ -466,7 +468,7 @@ export const MAP_ASSET_PROCESSING_CLAIM_TIMEOUT_MS = 2 * 60 * 60 * 1000;
 export const MAP_ASSET_PROCESSING_MAX_ATTEMPTS = 3;
 export const MAP_ASSET_PROCESSING_SWEEP_INTERVAL_MS = 60 * 1000;
 /**
- * How long a processing asset may sit with no staging files and no
+ * How long a pending asset may sit with no staging files and no
  * originals before the API marks it failed. Staging still on disk is
  * retried instead.
  */
@@ -484,7 +486,7 @@ export type MapAssetProcessingRuntime = {
   maxAttempts?: number;
   /** `0` disables the claim heartbeat. Default is 60s. */
   claimHeartbeatMs?: number;
-  /** Age before a processing asset with no files is failed. */
+  /** Age before a pending asset with no files is failed. */
   originalUploadGraceMs?: number;
   normalize?: typeof normalizeMapUpload;
 };
@@ -547,14 +549,17 @@ function omitUndefinedFields<T extends object>(doc: T): T {
 }
 
 /**
- * True when `status` is `processing` and no live claim is held.
- * A missing timestamp is stale: the process died before it claimed the job.
+ * True when a worker may claim this asset: it is `pending`, or `processing`
+ * with no live claim (the previous worker died, or a legacy unclaimed job).
  */
-export function mapAssetProcessingClaimIsStale(
+export function mapAssetIsClaimable(
   asset: {status: string; processingStartedAt?: number},
   now: number,
   timeoutMs: number = MAP_ASSET_PROCESSING_CLAIM_TIMEOUT_MS
 ): boolean {
+  if (asset.status === 'pending') {
+    return true;
+  }
   if (asset.status !== 'processing') {
     return false;
   }
@@ -581,17 +586,16 @@ async function claimMapAssetProcessing(
 
   for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
     const asset = await getMapAsset(assetId);
-    if (!mapAssetProcessingClaimIsStale(asset, now, timeoutMs)) {
+    if (!mapAssetIsClaimable(asset, now, timeoutMs)) {
       logMapAssetProcessing({
         event: 'processing.claim',
         outcome: 'skipped',
         assetId,
         filename: asset.originalFilename,
         attempt: asset.processingAttempts,
-        reason:
-          asset.status !== 'processing'
-            ? `status is ${asset.status}`
-            : 'a fresh claim is already held',
+        reason: isMapAssetInProgress(asset.status)
+          ? 'a fresh claim is already held'
+          : `status is ${asset.status}`,
       });
       return undefined;
     }
@@ -628,6 +632,7 @@ async function claimMapAssetProcessing(
     try {
       await db.put({
         ...asset,
+        status: 'processing',
         processingStartedAt: now,
         processingAttempts: attempts + 1,
         updatedAt: now,
@@ -747,7 +752,7 @@ export async function storeOriginalsFromStaging(
   assetId: string
 ): Promise<boolean> {
   const asset = await getMapAsset(assetId);
-  if (asset.status !== 'processing') {
+  if (!isMapAssetInProgress(asset.status)) {
     return false;
   }
   if (assetHasStoredAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
@@ -869,16 +874,17 @@ async function loadOriginalFiles(
 }
 
 /**
- * Claim one asset that already has originals, run GDAL, and store the
- * PMTiles. Does not upload originals and does not claim a job that lacks
- * them. Another worker's fresh claim is left alone.
+ * Claim one pending (or stale processing) asset that already has originals,
+ * run GDAL, and store the PMTiles. Sets `status` to `processing` for the
+ * duration of the claim. Does not upload originals and does not claim a
+ * job that lacks them. Another worker's fresh claim is left alone.
  */
 export async function processMapAsset(
   assetId: string,
   runtime?: MapAssetProcessingRuntime
 ): Promise<void> {
   const existing = await getMapAsset(assetId);
-  if (existing.status !== 'processing') {
+  if (!isMapAssetInProgress(existing.status)) {
     return;
   }
   if (!assetHasStoredAttachment(existing, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
@@ -1060,29 +1066,42 @@ export async function processMapAsset(
   }
 }
 
+const IN_PROGRESS_STATUS_KEYS = [
+  'pending',
+  'processing',
+] as const satisfies readonly MapAssetStatus[];
+
+async function listInProgressMapAssetIds(): Promise<string[]> {
+  const result = await getMapAssetsDB().query<number>(MAP_ASSETS_BY_STATUS, {
+    keys: [...IN_PROGRESS_STATUS_KEYS],
+    include_docs: false,
+  });
+  const ids: string[] = [];
+  for (const row of result.rows) {
+    if (row.id) {
+      ids.push(row.id);
+    }
+  }
+  return ids;
+}
+
 /**
- * One unclaimed processing asset whose originals are already in object
- * storage, or undefined when a worker should keep polling.
+ * One unclaimed `pending` (or stale `processing`) asset whose originals
+ * are already in object storage, or undefined when a worker should keep
+ * polling.
  */
 export async function findUnclaimedSpatialJob(
   runtime?: MapAssetProcessingRuntime
 ): Promise<string | undefined> {
   const now = processingNow(runtime);
   const timeoutMs = claimTimeoutMs(runtime);
-  const result = await getMapAssetsDB().query<number>(MAP_ASSETS_BY_STATUS, {
-    key: 'processing',
-    include_docs: false,
-  });
-  for (const row of result.rows) {
-    if (!row.id) {
-      continue;
-    }
+  for (const assetId of await listInProgressMapAssetIds()) {
     try {
-      const asset = await getMapAsset(row.id);
+      const asset = await getMapAsset(assetId);
       if (!assetHasStoredAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
         continue;
       }
-      if (!mapAssetProcessingClaimIsStale(asset, now, timeoutMs)) {
+      if (!mapAssetIsClaimable(asset, now, timeoutMs)) {
         continue;
       }
       return asset._id;
@@ -1101,22 +1120,15 @@ export async function summarizeSpatialBacklog(
 ): Promise<{inFlight: number; unclaimed: number}> {
   const now = processingNow(runtime);
   const timeoutMs = claimTimeoutMs(runtime);
-  const result = await getMapAssetsDB().query<number>(MAP_ASSETS_BY_STATUS, {
-    key: 'processing',
-    include_docs: false,
-  });
   let inFlight = 0;
   let unclaimed = 0;
-  for (const row of result.rows) {
-    if (!row.id) {
-      continue;
-    }
+  for (const assetId of await listInProgressMapAssetIds()) {
     try {
-      const asset = await getMapAsset(row.id);
+      const asset = await getMapAsset(assetId);
       if (!assetHasStoredAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
         continue;
       }
-      if (mapAssetProcessingClaimIsStale(asset, now, timeoutMs)) {
+      if (mapAssetIsClaimable(asset, now, timeoutMs)) {
         unclaimed += 1;
       } else {
         inFlight += 1;
@@ -1131,7 +1143,7 @@ export async function summarizeSpatialBacklog(
 }
 
 /**
- * Retry original uploads from leftover staging, and fail processing assets
+ * Retry original uploads from leftover staging, and fail pending assets
  * whose files are gone. Does not run GDAL.
  */
 export async function sweepPendingOriginalUploads(
@@ -1144,17 +1156,10 @@ export async function sweepPendingOriginalUploads(
     outcome: 'started',
     detail: 'original upload sweep',
   });
-  const result = await getMapAssetsDB().query<number>(MAP_ASSETS_BY_STATUS, {
-    key: 'processing',
-    include_docs: false,
-  });
   const touched: string[] = [];
-  for (const row of result.rows) {
-    if (!row.id) {
-      continue;
-    }
+  for (const assetId of await listInProgressMapAssetIds()) {
     try {
-      const asset = await getMapAsset(row.id);
+      const asset = await getMapAsset(assetId);
       if (assetHasStoredAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
         await cleanupStaging(asset._id);
         continue;
@@ -1183,7 +1188,7 @@ export async function sweepPendingOriginalUploads(
     detail:
       touched.length === 0
         ? 'no pending original uploads'
-        : `updated ${touched.length} processing asset(s)`,
+        : `updated ${touched.length} in-progress asset(s)`,
   });
   return touched;
 }
@@ -1195,7 +1200,7 @@ async function commitMissingOriginals(
   const db = getMapAssetsDB();
   for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
     const latest = await getMapAsset(assetId);
-    if (latest.status !== 'processing') {
+    if (!isMapAssetInProgress(latest.status)) {
       return;
     }
     if (assetHasStoredAttachment(latest, MAP_ASSET_ORIGINAL_ATTACHMENT)) {

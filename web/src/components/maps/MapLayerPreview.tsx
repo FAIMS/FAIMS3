@@ -92,6 +92,14 @@ export function MapLayerPreview({
     };
   }, [asset._id, asset.kind, asset.status, user.token]);
 
+  if (asset.status === 'pending') {
+    return (
+      <p className="text-sm text-muted-foreground">
+        This layer is waiting for a worker. The preview appears when it is
+        ready.
+      </p>
+    );
+  }
   if (asset.status === 'processing') {
     return (
       <p className="text-sm text-muted-foreground">

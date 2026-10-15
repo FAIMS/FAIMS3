@@ -3,6 +3,7 @@ import {config} from '@/constants';
 import {User} from '@/context/auth-provider';
 import {
   MAP_ASSET_UPLOAD_BUSY_MESSAGE,
+  isMapAssetInProgress,
   mapAssetKindLabel,
   type ExistingMapAsset,
   type GetMapAssetListResponse,
@@ -135,7 +136,9 @@ export function useMapAssets({
     queryFn: () => fetchMapAssets({user: user as User, projectId}),
     refetchInterval: query => {
       const assets = query.state.data?.assets ?? [];
-      return assets.some(asset => asset.status === 'processing') ? 2000 : false;
+      return assets.some(asset => isMapAssetInProgress(asset.status))
+        ? 2000
+        : false;
     },
   });
 }
@@ -168,7 +171,9 @@ export function useMapAsset({
     enabled: !!user && assetId.length > 0,
     queryFn: () => fetchMapAsset({user: user as User, assetId}),
     refetchInterval: query =>
-      query.state.data?.status === 'processing' ? 2000 : false,
+      query.state.data && isMapAssetInProgress(query.state.data.status)
+        ? 2000
+        : false,
   });
 }
 
@@ -380,6 +385,9 @@ export function useUploadMapAsset(user: User) {
 export function formatAssetStatus(asset: ExistingMapAsset): string {
   if (asset.status === 'failed') {
     return asset.failureReason ?? 'Failed';
+  }
+  if (asset.status === 'pending') {
+    return 'Pending';
   }
   if (asset.status === 'processing') {
     return 'Processing';

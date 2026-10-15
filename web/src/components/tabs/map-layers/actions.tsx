@@ -11,6 +11,7 @@ import {
   canManageMapAsset,
   canReplaceMapAsset,
 } from '@/lib/map-layer-permissions';
+import {isMapAssetInProgress} from '@faims3/data-model';
 
 export function MapLayerActions({assetId}: {assetId: string}) {
   const user = useRequiredUser();
@@ -46,15 +47,15 @@ export function MapLayerActions({assetId}: {assetId: string}) {
             <ListItem>
               <ListLabel>Replace file</ListLabel>
               <ListDescription>
-                {data.status === 'processing'
-                  ? 'Wait until processing finishes before uploading a replacement.'
+                {isMapAssetInProgress(data.status)
+                  ? 'Wait until this layer is ready before uploading a replacement.'
                   : 'Upload a new georeferenced file for this layer.'}
               </ListDescription>
             </ListItem>
             <ListItem>
               <ReplaceMapLayerDialog
                 assetId={assetId}
-                disabled={data.status === 'processing'}
+                disabled={isMapAssetInProgress(data.status)}
               />
             </ListItem>
           </List>

@@ -83,13 +83,16 @@ function formatBytes(bytes: number): string {
 }
 
 function statusLabel(asset: ExistingMapAsset): string {
-  if (asset.status === 'processing') {
-    return 'Processing';
+  switch (asset.status) {
+    case 'pending':
+      return 'Pending';
+    case 'processing':
+      return 'Processing';
+    case 'failed':
+      return 'Failed';
+    case 'ready':
+      return 'Ready';
   }
-  if (asset.status === 'failed') {
-    return 'Failed';
-  }
-  return 'Ready';
 }
 
 const nameColumn: ColumnDef<ExistingMapAsset> = {

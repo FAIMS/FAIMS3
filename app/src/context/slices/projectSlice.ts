@@ -8,7 +8,6 @@ import {
   OfflineMapRegion,
   ProjectDataObject,
   APINotebookList,
-  ProjectListItem,
   ProjectStatus,
   PublicServerInfo,
   Role,

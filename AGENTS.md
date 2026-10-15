@@ -53,7 +53,7 @@ session:
    TypeScript edit does not need a rebuild: the worker bind-mounts `api/src`.
    Map-layer GDAL runs in `spatial-worker` (idle exit disabled).
    `capacity-manager` uses the FIXED provider and does not start extra tasks.
-   Without the worker, uploads stay `processing`.
+   Without the worker, uploads stay `pending`.
 4. Initialise the database (creates the `admin` user): `pnpm run migrate-with-keys`.
 5. Run all dev services with live reload: `pnpm run dev` (turbo builds the
    shared libraries first, then runs api, app, web and the data-model watcher

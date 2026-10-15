@@ -18,8 +18,10 @@ import {
   PostCreateGlobalInviteInputSchema,
   PostCreateResourceInviteInputSchema,
   MapAssetDetailsSchema,
+  MapAssetStatusSchema,
   ExistingMapAssetSchema,
   GetMapAssetDownloadUrlResponseSchema,
+  isMapAssetInProgress,
   PostCreateTeamInputSchema,
   PostCreateTemplateInputSchema,
   PostMapAssetLinkInputSchema,
@@ -268,6 +270,15 @@ describe('map layer schemas', () => {
         description: 'Optional layer notes',
       }).success
     ).toBe(true);
+  });
+
+  it('accepts pending and processing statuses as in-progress', () => {
+    expect(MapAssetStatusSchema.safeParse('pending').success).toBe(true);
+    expect(MapAssetStatusSchema.safeParse('processing').success).toBe(true);
+    expect(isMapAssetInProgress('pending')).toBe(true);
+    expect(isMapAssetInProgress('processing')).toBe(true);
+    expect(isMapAssetInProgress('ready')).toBe(false);
+    expect(isMapAssetInProgress('failed')).toBe(false);
   });
 
   it('accepts storedAttachments object-store metadata on an existing asset', () => {

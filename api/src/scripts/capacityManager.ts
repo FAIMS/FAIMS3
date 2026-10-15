@@ -3,7 +3,7 @@
 /**
  * Bridge between the Couch map-asset queue and worker capacity.
  *
- * Reads processing jobs that already have originals and asks the configured
+ * Reads pending and processing jobs that already have originals and asks the configured
  * capacity provider to start workers when there are not enough. Never stops
  * a worker — idle workers exit on their own.
  *

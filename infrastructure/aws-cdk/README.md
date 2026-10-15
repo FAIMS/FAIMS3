@@ -664,7 +664,7 @@ This will:
 
 CDK creates a private S3 bucket for map-layer originals and normalized files, with CORS `GET`/`HEAD` so the app and Control Centre can download via a Conductor-issued presigned URL. CouchDB stores only metadata, including an S3 resource URI (`s3://region/bucket/key`). The Conductor task role and the spatial-worker task role are granted read/write; the capacity manager is not. Static AWS access keys are not set.
 
-The capacity manager is a Fargate service with desired count 1 (min and max 1). It reads the Couch `processing` queue and calls `ecs:RunTask` on the spatial-worker **task definition** (there is no worker service). Each worker polls and processes jobs until `spatialCapacity.idleExitMs` (default 60s) with nothing to claim, then exits. Idle tasks are not replaced. The manager role can `RunTask`, `ListTasks`, and `DescribeTasks`; it cannot `StopTask` or `UpdateService`.
+The capacity manager is a Fargate service with desired count 1 (min and max 1). It reads the Couch `pending` / `processing` queue and calls `ecs:RunTask` on the spatial-worker **task definition** (there is no worker service). Each worker polls and processes jobs until `spatialCapacity.idleExitMs` (default 60s) with nothing to claim, then exits. Idle tasks are not replaced. The manager role can `RunTask`, `ListTasks`, and `DescribeTasks`; it cannot `StopTask` or `UpdateService`.
 
 Worker count is a threshold map of total queue depth (`inFlight` + `unclaimed`), not one task per job. `scaleThresholds` are the depths at which count increases from 1: `[3, 8, 16, 32]` means 1 worker below 3 jobs, 2 below 8, 3 below 16, 4 below 32, and 5 at 32+, always capped by `maxCapacity`.
 

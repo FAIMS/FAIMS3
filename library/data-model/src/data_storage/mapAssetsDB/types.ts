@@ -74,8 +74,27 @@ export function mapAssetKindLabel(kind: MapAssetKind | undefined): string {
   }
 }
 
-export const MapAssetStatusSchema = z.enum(['processing', 'ready', 'failed']);
+/**
+ * Lifecycle of a map-layer ingest job.
+ *
+ * - `pending`: originals are on the way or already stored; no worker has claimed the job
+ * - `processing`: a spatial worker holds the claim and is running GDAL
+ * - `ready` / `failed`: terminal
+ */
+export const MapAssetStatusSchema = z.enum([
+  'pending',
+  'processing',
+  'ready',
+  'failed',
+]);
 export type MapAssetStatus = z.infer<typeof MapAssetStatusSchema>;
+
+/** True while the layer is waiting for or held by a spatial worker. */
+export function isMapAssetInProgress(
+  status: MapAssetStatus | string
+): status is 'pending' | 'processing' {
+  return status === 'pending' || status === 'processing';
+}
 
 /** [minX, minY, maxX, maxY] */
 export const MapExtentSchema = z.tuple([
@@ -145,8 +164,9 @@ export const MapAssetFieldsSchema = z.object({
   status: MapAssetStatusSchema,
   failureReason: z.string().optional(),
   /**
-   * Epoch ms when an API process claimed this `processing` asset.
-   * Missing, or older than the claim timeout, means another process may retry.
+   * Epoch ms when a spatial worker claimed this asset (`status` is then
+   * `processing`). Absent on `pending`. Missing, or older than the claim
+   * timeout, means another worker may retry.
    */
   processingStartedAt: z.number().optional(),
   /**
