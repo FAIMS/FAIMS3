@@ -45,6 +45,31 @@ export type RecordFeatureCollection = {
   features: RecordGeoJSONFeature[];
 };
 
+/** Split a notebook FeatureCollection into one collection per form type. */
+export function groupRecordFeaturesByForm(
+  collection: RecordFeatureCollection
+): Map<string, RecordFeatureCollection> {
+  const grouped = new Map<string, RecordGeoJSONFeature[]>();
+  for (const feature of collection.features) {
+    const formId = feature.properties.form_id;
+    if (!formId) {
+      continue;
+    }
+    const list = grouped.get(formId);
+    if (list) {
+      list.push(feature);
+    } else {
+      grouped.set(formId, [feature]);
+    }
+  }
+  return new Map(
+    [...grouped.entries()].map(([formId, features]) => [
+      formId,
+      {type: 'FeatureCollection', features},
+    ])
+  );
+}
+
 /**
  * Get the names of all GIS fields in a UI Specification: the fields whose AVP
  * values hold record geometry.

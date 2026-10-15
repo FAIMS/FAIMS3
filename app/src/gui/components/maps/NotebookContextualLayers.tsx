@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   ContextualMapLayersContext,
+  moveStackedLayer,
   type ContextualMapLayer,
   type ContextualMapLayerPatch,
 } from '@faims3/forms';
@@ -37,9 +38,17 @@ export function NotebookContextualLayers({
     undefined
   );
   const flushing = useRef(false);
+  // Drop listings that started before a local edit. On Android, resolving
+  // file URIs is slow enough that an older reload can finish after a raise
+  // and put the row back where it was.
+  const loadGeneration = useRef(0);
 
   const reload = useCallback(async () => {
+    const generation = ++loadGeneration.current;
     const stored = await contextualLayersForMap(projectId);
+    if (generation !== loadGeneration.current) {
+      return;
+    }
     const pending = pendingPatches.current;
     setLayers(
       stored.map(layer =>
@@ -75,6 +84,9 @@ export function NotebookContextualLayers({
       }
     } finally {
       flushing.current = false;
+    }
+    if (!failed && pendingPatches.current.size > 0) {
+      void flushPatches();
     }
   }, [projectId]);
 
@@ -125,13 +137,15 @@ export function NotebookContextualLayers({
     () => ({
       layers,
       updateLayer: (id: string, patch: ContextualMapLayerPatch) => {
+        loadGeneration.current += 1;
         setLayers(current =>
           current.map(layer => (layer.id === id ? {...layer, ...patch} : layer))
         );
         queuePatch(id, patch);
       },
       moveLayer: (id: string, direction: 'up' | 'down') => {
-        setLayers(current => reorderLayers(current, id, direction));
+        loadGeneration.current += 1;
+        setLayers(current => moveStackedLayer(current, id, direction));
         void moveContextualLayer(projectId, id, direction).then(() => {
           notifyContextualLayersChanged(projectId);
         });
@@ -145,23 +159,4 @@ export function NotebookContextualLayers({
       {children}
     </ContextualMapLayersContext.Provider>
   );
-}
-
-/** Match `moveContextualLayer`: higher zIndex draws above and sorts later. */
-function reorderLayers(
-  layers: ContextualMapLayer[],
-  id: string,
-  direction: 'up' | 'down'
-): ContextualMapLayer[] {
-  const ordered = [...layers].sort((a, b) => a.zIndex - b.zIndex);
-  const index = ordered.findIndex(layer => layer.id === id);
-  const swapWith = direction === 'up' ? index + 1 : index - 1;
-  if (index < 0 || swapWith < 0 || swapWith >= ordered.length) {
-    return layers;
-  }
-  const next = ordered.map(layer => ({...layer}));
-  const currentZ = next[index].zIndex;
-  next[index].zIndex = next[swapWith].zIndex;
-  next[swapWith].zIndex = currentZ;
-  return next;
 }

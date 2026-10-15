@@ -62,6 +62,7 @@ import {
 } from './baseMapLayers';
 import {ContextualLayersControl} from './ContextualLayersControl';
 import {GPS_CURSOR_LAYER_Z_INDEX} from './layerStack';
+import type {RecordFormLayer, RecordFormLayerPatch} from './recordFormLayers';
 import {useBaseMapLayers} from './useBaseMapLayers';
 import {useContextualMapLayers} from './useContextualMapLayers';
 import {createTileStore} from './tileDB/TileStore';
@@ -115,6 +116,13 @@ export interface MapComponentProps {
 
   /** When true, disables user map navigation such as pan, zoom, and rotation. */
   lockNavigation?: boolean;
+
+  /**
+   * Per-form record geometry on the overview map. Listed in the Layers panel
+   * with the same visibility and vector paint controls as downloaded overlays.
+   */
+  recordLayers?: RecordFormLayer[];
+  onUpdateRecordLayer?: (id: string, patch: RecordFormLayerPatch) => void;
 }
 
 /**
@@ -679,6 +687,8 @@ const MapComponentImpl = (props: MapComponentProps) => {
                     map={map}
                     baseLayers={baseLayers}
                     onUpdateBaseLayer={updateBaseLayer}
+                    recordLayers={props.recordLayers}
+                    onUpdateRecordLayer={props.onUpdateRecordLayer}
                   />
                 )}
               </>

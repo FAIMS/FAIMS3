@@ -10,7 +10,11 @@
 import {copyFile, mkdtemp, open, rm, stat, writeFile} from 'fs/promises';
 import {tmpdir} from 'os';
 import path from 'path';
-import type {MapAssetKind, MapExtent} from '@faims3/data-model';
+import type {
+  MapAssetKind,
+  MapAssetProcessingStage,
+  MapExtent,
+} from '@faims3/data-model';
 import {config} from '../../buildconfig';
 import {withMapAssetProcessingWait} from '../../logging';
 import {
@@ -36,7 +40,16 @@ import {resolveVectorGdalSource} from './zipSources';
 /** Optional ids so GDAL wait lines can be correlated with the asset. */
 export type MapAssetNormalizeLogContext = {
   assetId?: string;
+  /** Persist the current pipeline step onto the map-asset document. */
+  onStage?: (stage: MapAssetProcessingStage) => void | Promise<void>;
 };
+
+async function emitStage(
+  logContext: MapAssetNormalizeLogContext | undefined,
+  stage: MapAssetProcessingStage
+): Promise<void> {
+  await logContext?.onStage?.(stage);
+}
 
 export {
   assertUploadCompanions,
@@ -322,6 +335,7 @@ async function convertVector(
   const pmtilesPath = path.join(workDir, 'normalized.pmtiles');
   const filename = path.basename(sourcePath);
   const gdalSource = await resolveVectorGdalSource(sourcePath);
+  await emitStage(logContext, 'converting-geometries');
   await withMapAssetProcessingWait(
     {
       event: 'gdal.command',
@@ -339,6 +353,7 @@ async function convertVector(
         env,
       })
   );
+  await emitStage(logContext, 'tiling-vectors');
   await withMapAssetProcessingWait(
     {
       event: 'gdal.command',
@@ -394,6 +409,7 @@ async function convertRaster(
   const filename = path.basename(sourcePath);
   const perf = spatialToolPerformance();
   const env = spatialToolProcessEnv(perf);
+  await emitStage(logContext, 'warping-raster');
   await withMapAssetProcessingWait(
     {
       event: 'gdal.command',
@@ -446,6 +462,7 @@ async function convertRaster(
     lowerRight[0],
     upperLeft[1],
   ];
+  await emitStage(logContext, 'building-tiles');
   await withMapAssetProcessingWait(
     {
       event: 'gdal.command',
@@ -480,6 +497,7 @@ async function convertRaster(
   });
   const factors = overviewFactors(maxZoomFromMbtilesInfo(mbtilesInfo));
   if (factors.length > 0) {
+    await emitStage(logContext, 'building-overviews');
     await withMapAssetProcessingWait(
       {
         event: 'gdal.command',
@@ -496,6 +514,7 @@ async function convertRaster(
         })
     );
   }
+  await emitStage(logContext, 'converting-tiles');
   await withMapAssetProcessingWait(
     {
       event: 'gdal.command',
@@ -554,6 +573,7 @@ export async function normalizeMapUpload(
     }
     const sourcePath = path.join(workDir, safeUploadFilename(primary.filename));
     const vector = isVectorUpload(primary.filename);
+    await emitStage(logContext, 'interpreting-crs');
     await inspectCrs(sourcePath, vector, logContext);
     const result = vector
       ? await convertVector(sourcePath, workDir, logContext)

@@ -4,17 +4,19 @@ import {ContextualMapLayersContext} from '@faims3/forms';
 import {act, render, screen} from '@testing-library/react';
 import {useContext} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {CONTEXTUAL_LAYERS_CHANGED_EVENT} from './contextualLayerStore';
 import {NotebookContextualLayers} from './NotebookContextualLayers';
 
 const harness = vi.hoisted(() => ({
   updateContextualLayerPrefs: vi.fn(async () => undefined),
   notifyContextualLayersChanged: vi.fn(),
   moveContextualLayer: vi.fn(async () => undefined),
+  contextualLayersForMap: vi.fn(),
 }));
 
 vi.mock('./contextualLayerStore', () => ({
   CONTEXTUAL_LAYERS_CHANGED_EVENT: 'contextual-layers-changed',
-  contextualLayersForMap: vi.fn(async () => [storedLayer]),
+  contextualLayersForMap: harness.contextualLayersForMap,
   updateContextualLayerPrefs: harness.updateContextualLayerPrefs,
   notifyContextualLayersChanged: harness.notifyContextualLayersChanged,
   moveContextualLayer: harness.moveContextualLayer,
@@ -54,10 +56,29 @@ function DragOpacity() {
   );
 }
 
+function StackSlot() {
+  const {updateLayer, layers} = useContext(ContextualMapLayersContext);
+  return (
+    <>
+      <span data-testid="z">
+        {layers.find(layer => layer.id === 'boundary')?.zIndex}
+      </span>
+      <button
+        type="button"
+        onClick={() => updateLayer('boundary', {zIndex: 5})}
+      >
+        Raise
+      </button>
+    </>
+  );
+}
+
 describe('NotebookContextualLayers', () => {
   beforeEach(() => {
     harness.updateContextualLayerPrefs.mockClear();
     harness.notifyContextualLayersChanged.mockClear();
+    harness.contextualLayersForMap.mockReset();
+    harness.contextualLayersForMap.mockResolvedValue([{...storedLayer}]);
     vi.useFakeTimers();
   });
 
@@ -93,5 +114,44 @@ describe('NotebookContextualLayers', () => {
         opacity: 0.8,
       }
     );
+  });
+
+  it('does not let a listing started before a raise overwrite the panel', async () => {
+    const pendingLoads: Array<(layers: ContextualMapLayer[]) => void> = [];
+    harness.contextualLayersForMap.mockImplementation(
+      () =>
+        new Promise<ContextualMapLayer[]>(resolve => {
+          pendingLoads.push(resolve);
+        })
+    );
+
+    render(
+      <NotebookContextualLayers projectId="survey">
+        <StackSlot />
+      </NotebookContextualLayers>
+    );
+
+    await act(async () => {
+      pendingLoads[0]!([{...storedLayer, zIndex: 1}]);
+    });
+    expect(screen.getByTestId('z').textContent).toBe('1');
+
+    await act(async () => {
+      dispatchEvent(
+        new CustomEvent(CONTEXTUAL_LAYERS_CHANGED_EVENT, {
+          detail: {projectId: 'survey'},
+        })
+      );
+    });
+
+    await act(async () => {
+      screen.getByRole('button', {name: 'Raise'}).click();
+    });
+    expect(screen.getByTestId('z').textContent).toBe('5');
+
+    await act(async () => {
+      pendingLoads[1]!([{...storedLayer, zIndex: 1}]);
+    });
+    expect(screen.getByTestId('z').textContent).toBe('5');
   });
 });

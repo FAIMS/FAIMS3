@@ -24,6 +24,11 @@ import {
   ContextualMapLayersContext,
   type ContextualMapLayer,
 } from './contextualMapLayers';
+import {
+  RECORD_FORM_LAYER_KIND,
+  type RecordFormLayer,
+  type RecordFormLayerPatch,
+} from './recordFormLayers';
 
 const theme = createTheme();
 
@@ -45,6 +50,24 @@ function layer(
   };
 }
 
+function recordLayer(
+  patch: Partial<RecordFormLayer> &
+    Pick<RecordFormLayer, 'id' | 'formId' | 'name'>
+): RecordFormLayer {
+  return {
+    kind: RECORD_FORM_LAYER_KIND,
+    visible: true,
+    opacity: 1,
+    zIndex: 980,
+    stroke: '#2171b5',
+    fill: '#2171b580',
+    lineWidth: 4,
+    pointSize: 7,
+    extent4326: [0, 0, 1, 1],
+    ...patch,
+  };
+}
+
 function renderControl(
   layers: ContextualMapLayer[],
   updateLayer = vi.fn(),
@@ -52,9 +75,15 @@ function renderControl(
   {
     baseLayers = [],
     onUpdateBaseLayer = vi.fn<(id: string, patch: BaseMapLayerPatch) => void>(),
+    recordLayers = [],
+    onUpdateRecordLayer = vi.fn<
+      (id: string, patch: RecordFormLayerPatch) => void
+    >(),
   }: {
     baseLayers?: BaseMapPanelLayer[];
     onUpdateBaseLayer?: (id: string, patch: BaseMapLayerPatch) => void;
+    recordLayers?: RecordFormLayer[];
+    onUpdateRecordLayer?: (id: string, patch: RecordFormLayerPatch) => void;
   } = {}
 ) {
   const fit = vi.fn();
@@ -71,11 +100,19 @@ function renderControl(
           map={map}
           baseLayers={baseLayers}
           onUpdateBaseLayer={onUpdateBaseLayer}
+          recordLayers={recordLayers}
+          onUpdateRecordLayer={onUpdateRecordLayer}
         />
       </ContextualMapLayersContext.Provider>
     </ThemeProvider>
   );
-  return {fit, updateLayer, moveLayer, onUpdateBaseLayer};
+  return {
+    fit,
+    updateLayer,
+    moveLayer,
+    onUpdateBaseLayer,
+    onUpdateRecordLayer,
+  };
 }
 
 describe('ContextualLayersControl', () => {
@@ -232,6 +269,40 @@ describe('ContextualLayersControl', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('raises a layer that shares a stack slot with the row above it', async () => {
+    const user = userEvent.setup();
+    const {updateLayer} = renderControl(
+      [
+        layer({id: 'tracks', name: 'Tracks', zIndex: 10}),
+        layer({id: 'boundary', name: 'Boundary', zIndex: 10}),
+      ],
+      vi.fn(),
+      vi.fn(),
+      {
+        baseLayers: [
+          {
+            id: BASE_MAP_VECTOR_ID,
+            name: 'Streets',
+            visible: true,
+            opacity: 1,
+            zIndex: 0,
+          },
+        ],
+      }
+    );
+
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 3 of 3 shown/i})
+    );
+    await user.click(screen.getByRole('button', {name: 'Raise Boundary'}));
+
+    const zIndexFor = (id: string) =>
+      updateLayer.mock.calls.find(call => call[0] === id)?.[1]?.zIndex;
+    expect(zIndexFor('boundary')).toBeGreaterThan(
+      zIndexFor('tracks') as number
+    );
+  });
+
   it('reorders a base map against an overlay', async () => {
     const user = userEvent.setup();
     const {onUpdateBaseLayer, updateLayer} = renderControl(
@@ -358,5 +429,81 @@ describe('ContextualLayersControl', () => {
     expect(
       screen.getByRole('slider', {name: 'Tracks line width'})
     ).toBeInTheDocument();
+  });
+
+  it('lists record form layers with the same vector paint controls', async () => {
+    const user = userEvent.setup();
+    const {onUpdateRecordLayer, updateLayer, fit} = renderControl(
+      [],
+      vi.fn(),
+      vi.fn(),
+      {
+        recordLayers: [
+          recordLayer({
+            id: 'record-form:Site',
+            formId: 'Site',
+            name: 'Sites',
+            visible: false,
+            zIndex: 980,
+          }),
+        ],
+      }
+    );
+
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 0 of 1 shown/i})
+    );
+    expect(screen.getByText('Sites')).toBeInTheDocument();
+    expect(screen.getByText('Records')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Show Sites'}));
+    expect(onUpdateRecordLayer).toHaveBeenCalledWith('record-form:Site', {
+      visible: true,
+    });
+    expect(updateLayer).not.toHaveBeenCalled();
+
+    await user.click(
+      screen.getByRole('button', {name: 'Show style for Sites'})
+    );
+    expect(
+      screen.getByRole('slider', {name: 'Sites opacity'})
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('slider', {name: 'Sites line width'})
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('slider', {name: 'Sites point size'})
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Pan Sites into view'}));
+    expect(fit).toHaveBeenCalledOnce();
+  });
+
+  it('reorders a record form layer against an overlay', async () => {
+    const user = userEvent.setup();
+    const {onUpdateRecordLayer, updateLayer} = renderControl(
+      [layer({id: 'boundary', name: 'Site boundary', zIndex: 10})],
+      vi.fn(),
+      vi.fn(),
+      {
+        recordLayers: [
+          recordLayer({
+            id: 'record-form:Site',
+            formId: 'Site',
+            name: 'Sites',
+            zIndex: 980,
+          }),
+        ],
+      }
+    );
+
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 2 of 2 shown/i})
+    );
+    await user.click(screen.getByRole('button', {name: 'Lower Sites'}));
+    expect(onUpdateRecordLayer).toHaveBeenCalledWith('record-form:Site', {
+      zIndex: 10,
+    });
+    expect(updateLayer).toHaveBeenCalledWith('boundary', {zIndex: 980});
   });
 });

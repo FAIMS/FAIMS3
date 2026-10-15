@@ -27,6 +27,13 @@ export const GPS_CURSOR_LAYER_Z_INDEX = 999;
 export const CONTEXTUAL_LAYER_Z_INDEX_MAX = OFFLINE_REGION_LAYER_Z_INDEX - 1;
 
 /**
+ * Default stack start for per-form record layers on the overview map.
+ * High enough that they sit above typical downloaded overlays, still inside
+ * the reference band so they cannot cover the GPS cursor.
+ */
+export const RECORD_FORM_LAYER_Z_INDEX_BASE = 980;
+
+/**
  * Map a stored contextual-layer stack value onto the reference band.
  * Relative order is kept for values inside the band. Anything above the band
  * is clamped so it cannot cover user geometry.

@@ -10,7 +10,12 @@ import {
 } from '@/components/ui/tooltip';
 import {cn} from '@/lib/utils';
 import {displayDateTime} from '@/lib/time';
-import {mapAssetKindLabel, type ExistingMapAsset} from '@faims3/data-model';
+import {
+  isMapAssetInProgress,
+  mapAssetKindLabel,
+  mapAssetProcessingStageLabel,
+  type ExistingMapAsset,
+} from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
 import {useLayoutEffect, useRef, useState} from 'react';
 
@@ -114,14 +119,27 @@ const statusColumn: ColumnDef<ExistingMapAsset> = {
     <DataTableColumnHeader column={column} title="Status" />
   ),
   cell: ({row}) => {
-    const label = statusLabel(row.original);
+    const asset = row.original;
+    const label = statusLabel(asset);
+    const progress = isMapAssetInProgress(asset.status)
+      ? mapAssetProcessingStageLabel(asset.processingStage)
+      : undefined;
     const variant =
-      row.original.status === 'failed'
+      asset.status === 'failed'
         ? 'destructive'
-        : row.original.status === 'ready'
+        : asset.status === 'ready'
           ? 'secondary'
           : 'outline';
-    return <Badge variant={variant}>{label}</Badge>;
+    return (
+      <div className="flex flex-col gap-0.5">
+        <Badge variant={variant} className="w-fit">
+          {label}
+        </Badge>
+        {progress ? (
+          <span className="text-xs text-muted-foreground">{progress}</span>
+        ) : null}
+      </div>
+    );
   },
 };
 

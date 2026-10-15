@@ -19,9 +19,11 @@ import {
   PostCreateResourceInviteInputSchema,
   MapAssetDetailsSchema,
   MapAssetStatusSchema,
+  MapAssetProcessingStageSchema,
   ExistingMapAssetSchema,
   GetMapAssetDownloadUrlResponseSchema,
   isMapAssetInProgress,
+  mapAssetProcessingStageLabel,
   PostCreateTeamInputSchema,
   PostCreateTemplateInputSchema,
   PostMapAssetLinkInputSchema,
@@ -279,6 +281,22 @@ describe('map layer schemas', () => {
     expect(isMapAssetInProgress('processing')).toBe(true);
     expect(isMapAssetInProgress('ready')).toBe(false);
     expect(isMapAssetInProgress('failed')).toBe(false);
+  });
+
+  it('maps processing stages to user-facing messages', () => {
+    expect(MapAssetProcessingStageSchema.safeParse('downloading').success).toBe(
+      true
+    );
+    expect(mapAssetProcessingStageLabel('downloading')).toBe(
+      'Downloading data'
+    );
+    expect(mapAssetProcessingStageLabel('interpreting-crs')).toBe(
+      'Interpreting CRS'
+    );
+    expect(mapAssetProcessingStageLabel('converting-geometries')).toBe(
+      'Converting geometries'
+    );
+    expect(mapAssetProcessingStageLabel(undefined)).toBeUndefined();
   });
 
   it('accepts storedAttachments object-store metadata on an existing asset', () => {

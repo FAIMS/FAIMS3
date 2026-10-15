@@ -5,6 +5,7 @@ import {
   MAP_ASSET_UPLOAD_BUSY_MESSAGE,
   isMapAssetInProgress,
   mapAssetKindLabel,
+  mapAssetProcessingStageLabel,
   type ExistingMapAsset,
   type GetMapAssetListResponse,
   type GetMapAssetResponse,
@@ -386,11 +387,11 @@ export function formatAssetStatus(asset: ExistingMapAsset): string {
   if (asset.status === 'failed') {
     return asset.failureReason ?? 'Failed';
   }
-  if (asset.status === 'pending') {
-    return 'Pending';
-  }
-  if (asset.status === 'processing') {
-    return 'Processing';
+  if (isMapAssetInProgress(asset.status)) {
+    return (
+      mapAssetProcessingStageLabel(asset.processingStage) ??
+      (asset.status === 'pending' ? 'Pending' : 'Processing')
+    );
   }
   return mapAssetKindLabel(asset.kind) || 'Vector';
 }

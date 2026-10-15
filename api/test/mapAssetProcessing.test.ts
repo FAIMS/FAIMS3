@@ -128,6 +128,7 @@ describe('map asset original upload', () => {
     expect(stored).toEqual([asset._id]);
     const finished = await getMapAsset(asset._id);
     expect(finished.status).toBe('pending');
+    expect(finished.processingStage).toBe('queued');
     expect(finished.processingAttempts).toBeUndefined();
     expect(finished.storedAttachments?.original?.provider).toBe('s3');
     expect(finished.storedAttachments?.original?.resourceUri).toContain(
@@ -146,6 +147,7 @@ describe('map asset original upload', () => {
     });
     const current = await getMapAsset(asset._id);
     expect(current.status).toBe('pending');
+    expect(current.processingStage).toBe('uploading');
     expect(current.processingAttempts).toBeUndefined();
     expect(current.processingStartedAt).toBeUndefined();
     expect(normalizeMapUpload).not.toHaveBeenCalled();
@@ -236,6 +238,7 @@ describe('map asset worker processing', () => {
     expect(finished.status).toBe('ready');
     expect(finished.processingAttempts).toBe(1);
     expect(finished.processingStartedAt).toBeUndefined();
+    expect(finished.processingStage).toBeUndefined();
     expect(finished.storedAttachments?.original?.provider).toBe('s3');
     expect(finished.storedAttachments?.normalized?.provider).toBe('s3');
     expect(normalizeMapUpload).toHaveBeenCalledOnce();
@@ -376,6 +379,7 @@ describe('map asset worker processing', () => {
       primaryFilename: 'layer.geojson',
     });
     expect(replaced.status).toBe('pending');
+    expect(replaced.processingStage).toBe('uploading');
     expect(replaced.processingAttempts).toBeUndefined();
     expect(replaced.processingStartedAt).toBeUndefined();
     expect(replaced.failureReason).toBeUndefined();
@@ -392,6 +396,31 @@ describe('map asset worker processing', () => {
     expect(finished.processingAttempts).toBe(1);
   });
 
+  it('writes pipeline stages onto the asset while the worker runs', async () => {
+    const asset = await createStoredAsset();
+    expect(asset.processingStage).toBe('queued');
+    const seen: Array<string | undefined> = [];
+    normalizeMapUpload.mockImplementation(async (_files, context) => {
+      seen.push((await getMapAsset(asset._id)).processingStage);
+      await context?.onStage?.('interpreting-crs');
+      seen.push((await getMapAsset(asset._id)).processingStage);
+      await context?.onStage?.('converting-geometries');
+      seen.push((await getMapAsset(asset._id)).processingStage);
+      return normalizedFixture();
+    });
+    await processMapAsset(asset._id, {
+      now: () => T0,
+      claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      claimHeartbeatMs: 0,
+    });
+    expect(seen).toEqual([
+      'downloading',
+      'interpreting-crs',
+      'converting-geometries',
+    ]);
+    expect((await getMapAsset(asset._id)).processingStage).toBeUndefined();
+  });
+
   it('counts pending stored jobs as unclaimed and claimed jobs as in flight', async () => {
     await createStoredAsset();
     const claimed = await createStoredAsset();
@@ -403,6 +432,7 @@ describe('map asset worker processing', () => {
     });
     const staged = await createPendingAsset();
     expect(staged.status).toBe('pending');
+    expect(staged.processingStage).toBe('uploading');
     expect(
       await summarizeSpatialBacklog({
         now: () => T0,

@@ -43,15 +43,21 @@ import {
   type ContextualMapLayerPatch,
 } from './contextualMapLayers';
 import {LayerLocationHint} from './LayerLocationHint';
+import {moveStackedLayer, sortLayersTopFirst} from './layerOrder';
+import {
+  RECORD_FORM_LAYER_KIND,
+  type RecordFormLayer,
+  type RecordFormLayerPatch,
+} from './recordFormLayers';
 import {useOccasionalDeviceLocation} from './useOccasionalDeviceLocation';
 
-type PanelLayerKind = ContextualMapLayer['kind'] | 'basemap';
+type PanelLayerKind = ContextualMapLayer['kind'] | 'basemap' | 'record-form';
 
 type PanelLayer = {
   id: string;
   name: string;
   kind: PanelLayerKind;
-  source: 'contextual' | 'basemap';
+  source: 'contextual' | 'basemap' | 'record';
   visible: boolean;
   opacity: number;
   zIndex: number;
@@ -69,7 +75,7 @@ type PanelLayer = {
 
 /**
  * Layers sheet: visibility, stack order, paint, and pan-into-view.
- * Lists the streets/satellite base maps together with downloaded overlays.
+ * Lists streets/satellite, downloaded overlays, and per-form record geometry.
  *
  * While the sheet is open a scrim covers the map. A press on that scrim closes
  * the sheet and is swallowed, so the same gesture does not pan or click the map.
@@ -78,10 +84,14 @@ export function ContextualLayersControl({
   map,
   baseLayers = [],
   onUpdateBaseLayer,
+  recordLayers = [],
+  onUpdateRecordLayer,
 }: {
   map: Map;
   baseLayers?: BaseMapPanelLayer[];
   onUpdateBaseLayer?: (id: string, patch: BaseMapLayerPatch) => void;
+  recordLayers?: RecordFormLayer[];
+  onUpdateRecordLayer?: (id: string, patch: RecordFormLayerPatch) => void;
 }) {
   const {layers, updateLayer} = useContext(ContextualMapLayersContext);
   const [open, setOpen] = useState(false);
@@ -128,20 +138,24 @@ export function ContextualLayersControl({
       observer.disconnect();
       window.removeEventListener('resize', update);
     };
-  }, [map, open, layers.length, baseLayers.length]);
+  }, [map, open, layers.length, baseLayers.length, recordLayers.length]);
 
   const visibleContextual = layers.filter(layer => layer.visible).length;
-  const panelLayers = toPanelLayers(layers, baseLayers);
+  const panelLayers = toPanelLayers(layers, baseLayers, recordLayers);
   if (panelLayers.length === 0) {
     return null;
   }
 
-  const ordered = [...panelLayers].sort((a, b) => b.zIndex - a.zIndex);
+  const ordered = sortLayersTopFirst(panelLayers);
   const visibleCount = panelLayers.filter(layer => layer.visible).length;
 
   const patchLayer = (layer: PanelLayer, patch: ContextualMapLayerPatch) => {
     if (layer.source === 'basemap') {
       onUpdateBaseLayer?.(layer.id, patch);
+      return;
+    }
+    if (layer.source === 'record') {
+      onUpdateRecordLayer?.(layer.id, patch);
       return;
     }
     updateLayer(layer.id, patch);
@@ -159,16 +173,16 @@ export function ContextualLayersControl({
   };
 
   const movePanelLayer = (layer: PanelLayer, direction: 'up' | 'down') => {
-    const stack = [...panelLayers].sort((a, b) => a.zIndex - b.zIndex);
-    const index = stack.findIndex(item => item.id === layer.id);
-    const swapWith = direction === 'up' ? index + 1 : index - 1;
-    if (index < 0 || swapWith < 0 || swapWith >= stack.length) {
+    const next = moveStackedLayer(panelLayers, layer.id, direction);
+    if (next === panelLayers) {
       return;
     }
-    const currentZ = stack[index].zIndex;
-    const otherZ = stack[swapWith].zIndex;
-    patchLayer(stack[index], {zIndex: otherZ});
-    patchLayer(stack[swapWith], {zIndex: currentZ});
+    for (const item of next) {
+      const previous = panelLayers.find(entry => entry.id === item.id);
+      if (previous && previous.zIndex !== item.zIndex) {
+        patchLayer(item, {zIndex: item.zIndex});
+      }
+    }
   };
 
   const panLayerIntoView = (layer: PanelLayer) => {
@@ -409,7 +423,8 @@ export function ContextualLayersControl({
 
 function toPanelLayers(
   layers: ContextualMapLayer[],
-  baseLayers: BaseMapPanelLayer[]
+  baseLayers: BaseMapPanelLayer[],
+  recordLayers: RecordFormLayer[]
 ): PanelLayer[] {
   return [
     ...baseLayers.map(layer => ({
@@ -434,6 +449,12 @@ function toPanelLayers(
       canPan: true,
       available: true,
     })),
+    ...recordLayers.map(layer => ({
+      ...layer,
+      source: 'record' as const,
+      canPan: Boolean(layer.extent4326),
+      available: true,
+    })),
   ];
 }
 
@@ -443,6 +464,9 @@ function layerKindLabel(layer: PanelLayer): string {
   }
   if (layer.kind === 'vector-tiles') {
     return 'Vector tiles';
+  }
+  if (layer.kind === RECORD_FORM_LAYER_KIND) {
+    return 'Records';
   }
   return layer.available ? 'Base map' : (layer.unavailableHint ?? 'Base map');
 }
@@ -473,7 +497,8 @@ function LayerRow({
   onPatch: (patch: ContextualMapLayerPatch) => void;
 }) {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const vectorPaint = layer.kind === 'vector-tiles';
+  const vectorPaint =
+    layer.kind === 'vector-tiles' || layer.kind === RECORD_FORM_LAYER_KIND;
   const revealSection = () => {
     const node = sectionRef.current;
     if (node && typeof node.scrollIntoView === 'function') {
@@ -568,7 +593,7 @@ function LayerRow({
             >
               {layerKindLabel(layer)}
             </Typography>
-            {layer.source === 'contextual' ? (
+            {layer.source === 'contextual' || layer.source === 'record' ? (
               <LayerLocationHint
                 extent={layer.extent4326}
                 location={location}

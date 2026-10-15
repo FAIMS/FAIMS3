@@ -25,6 +25,7 @@ import {
   MapAssetLinkFields,
   GetMapAssetDownloadUrlResponse,
   isMapAssetInProgress,
+  MapAssetProcessingStage,
   MapAssetStatus,
   MapAssetStyle,
   StoredAttachmentLocation,
@@ -237,6 +238,9 @@ async function mergeStoredAttachments(
             ...(latest.storedAttachments ?? {}),
             ...locations,
           },
+          ...(latest.status === 'pending'
+            ? {processingStage: 'queued' as const}
+            : {}),
           updatedAt: Date.now(),
         })
       );
@@ -299,6 +303,7 @@ export async function createMapAsset({
     ...(companions.length > 0 ? {companionFilenames: companions} : {}),
     byteSize: 0,
     status: 'pending',
+    processingStage: 'uploading',
     defaultStyle: style ?? DEFAULT_MAP_ASSET_STYLE,
     createdAt: now,
     updatedAt: now,
@@ -374,6 +379,7 @@ export async function replaceMapAssetFiles({
       byteSize: 0,
       processingStartedAt: undefined,
       processingAttempts: undefined,
+      processingStage: 'uploading',
       updatedAt: Date.now(),
     })
   );
@@ -608,6 +614,7 @@ async function claimMapAssetProcessing(
             status: 'failed' as const,
             failureReason: MAP_ASSET_PROCESSING_EXHAUSTED_REASON,
             processingStartedAt: undefined,
+            processingStage: undefined,
             updatedAt: now,
           })
         );
@@ -635,6 +642,7 @@ async function claimMapAssetProcessing(
         status: 'processing',
         processingStartedAt: now,
         processingAttempts: attempts + 1,
+        processingStage: 'downloading',
         updatedAt: now,
       });
       logMapAssetProcessing({
@@ -847,6 +855,61 @@ function startClaimHeartbeat(
   return () => clearInterval(timer);
 }
 
+/**
+ * Write the current pipeline step onto the asset so the Control Centre can
+ * poll it. Serialized with the claim heartbeat. A lost claim is a no-op.
+ */
+async function reportProcessingStage(
+  assetId: string,
+  stage: MapAssetProcessingStage,
+  token?: ClaimToken,
+  runtime?: MapAssetProcessingRuntime
+): Promise<void> {
+  const write = async () => {
+    const db = getMapAssetsDB();
+    for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
+      const latest = await getMapAsset(assetId);
+      if (token) {
+        if (
+          latest.status !== 'processing' ||
+          latest.processingStartedAt !== token.current
+        ) {
+          return;
+        }
+      } else if (!isMapAssetInProgress(latest.status)) {
+        return;
+      }
+      if (latest.processingStage === stage) {
+        return;
+      }
+      try {
+        await db.put({
+          ...latest,
+          processingStage: stage,
+          updatedAt: processingNow(runtime),
+        });
+        return;
+      } catch (error) {
+        if (!isConflict(error)) {
+          throw error;
+        }
+      }
+    }
+  };
+  try {
+    if (token) {
+      await withClaimToken(token, write);
+    } else {
+      await write();
+    }
+  } catch (error) {
+    console.error(
+      `${MAP_ASSET_PROCESSING_LOG} could not record stage ${stage} for ${assetId}`,
+      error
+    );
+  }
+}
+
 async function loadOriginalFiles(
   asset: ExistingMapAsset
 ): Promise<UploadedMapFile[]> {
@@ -931,6 +994,7 @@ export async function processMapAsset(
     }
   }
   try {
+    await reportProcessingStage(assetId, 'downloading', token, runtime);
     const files = await loadOriginalFiles(claimed);
     const normalize = runtime?.normalize ?? normalizeMapUpload;
     const normalized = await withMapAssetProcessingWait(
@@ -940,7 +1004,12 @@ export async function processMapAsset(
         filename: claimed.originalFilename,
         detail: 'GDAL inspect + convert',
       },
-      () => normalize(files, {assetId})
+      () =>
+        normalize(files, {
+          assetId,
+          onStage: stage =>
+            reportProcessingStage(assetId, stage, token, runtime),
+        })
     );
     cleanupDir = normalized.cleanupDir;
     stopHeartbeat();
@@ -957,6 +1026,7 @@ export async function processMapAsset(
       });
       return;
     }
+    await reportProcessingStage(assetId, 'storing', token, runtime);
     const stored = await withMapAssetProcessingWait(
       {
         event: 'processing.normalized.store',
@@ -1005,6 +1075,7 @@ export async function processMapAsset(
         tileSize: normalized.tileSize,
         failureReason: undefined,
         processingStartedAt: undefined,
+        processingStage: undefined,
         updatedAt: processingNow(runtime),
       })
     );
@@ -1037,6 +1108,7 @@ export async function processMapAsset(
         status: 'failed' as const,
         failureReason: message,
         processingStartedAt: undefined,
+        processingStage: undefined,
         updatedAt: processingNow(runtime),
       })
     );
@@ -1213,6 +1285,7 @@ async function commitMissingOriginals(
           status: 'failed' as const,
           failureReason: MAP_ASSET_ORIGINALS_MISSING_REASON,
           processingStartedAt: undefined,
+          processingStage: undefined,
           updatedAt: now,
         })
       );

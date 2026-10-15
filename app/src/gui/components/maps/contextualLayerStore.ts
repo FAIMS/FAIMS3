@@ -16,7 +16,7 @@ import {
   normalizedMapAssetExtension,
 } from '@faims3/data-model';
 import type {ContextualMapLayer, TileByteRead} from '@faims3/forms';
-import {readBlobRange} from '@faims3/forms';
+import {moveStackedLayer, readBlobRange} from '@faims3/forms';
 import {
   readContextualLayersState,
   writeContextualLayersState,
@@ -170,18 +170,51 @@ function prefsFor(
   prefs: LayerPrefs | undefined,
   order: number
 ): LayerPrefs {
-  return (
-    prefs ?? {
-      visible: true,
-      opacity: file.defaultStyle.opacity,
-      zIndex: 10 + order,
-      stroke: file.defaultStyle.stroke,
-      fill: file.defaultStyle.fill,
-      lineWidth: file.defaultStyle.lineWidth,
-      pointSize: file.defaultStyle.pointSize,
-      labelField: file.defaultStyle.labelField,
+  const fallback: LayerPrefs = {
+    visible: true,
+    opacity: file.defaultStyle.opacity,
+    zIndex: 10 + order,
+    stroke: file.defaultStyle.stroke,
+    fill: file.defaultStyle.fill,
+    lineWidth: file.defaultStyle.lineWidth,
+    pointSize: file.defaultStyle.pointSize,
+    labelField: file.defaultStyle.labelField,
+  };
+  if (!prefs) {
+    return fallback;
+  }
+  return {
+    ...prefs,
+    zIndex: Number.isFinite(prefs.zIndex) ? prefs.zIndex : fallback.zIndex,
+  };
+}
+
+/** First unused stack slot. `10 + prefsCount` can reuse a deleted layer's z. */
+function nextUnusedZIndex(prefs: Record<string, LayerPrefs>): number {
+  let max = 9;
+  for (const pref of Object.values(prefs)) {
+    if (Number.isFinite(pref.zIndex) && pref.zIndex > max) {
+      max = pref.zIndex;
     }
-  );
+  }
+  return max + 1;
+}
+
+function applyStoredPrefs(
+  layer: ContextualMapLayer,
+  prefs: LayerPrefs
+): ContextualMapLayer {
+  return {
+    ...layer,
+    visible: prefs.visible,
+    opacity: prefs.opacity,
+    zIndex: prefs.zIndex,
+    stroke: prefs.stroke,
+    fill: prefs.fill,
+    lineWidth: prefs.lineWidth,
+    pointSize: prefs.pointSize,
+    labelField: prefs.labelField,
+  };
 }
 
 export async function getSeenContextualLayersHash(
@@ -214,7 +247,15 @@ export async function contextualLayersForMap(
     const prefs = prefsFor(file, index.prefs[file.assetId], i);
     layers.push(await layerFromFile(file, prefs, prefs.visible));
   }
-  return layers.sort((a, b) => a.zIndex - b.zIndex);
+  // URI work above is slow on Android. Re-read paint so a raise that
+  // landed while we waited is not returned as the old stack.
+  const latestPrefs = readIndex().prefs;
+  return layers
+    .map(layer => {
+      const prefs = latestPrefs[layer.id];
+      return prefs ? applyStoredPrefs(layer, prefs) : layer;
+    })
+    .sort((a, b) => a.zIndex - b.zIndex);
 }
 
 /** One stored layer, including its file URL, for a static preview. */
@@ -282,16 +323,16 @@ export async function moveContextualLayer(
   direction: 'up' | 'down'
 ): Promise<void> {
   const layers = await contextualLayersForMap(projectId);
-  const ordered = [...layers].sort((a, b) => a.zIndex - b.zIndex);
-  const index = ordered.findIndex(layer => layer.id === assetId);
-  const swapWith = direction === 'up' ? index + 1 : index - 1;
-  if (index < 0 || swapWith < 0 || swapWith >= ordered.length) {
+  const next = moveStackedLayer(layers, assetId, direction);
+  if (next === layers) {
     return;
   }
-  const current = ordered[index];
-  const other = ordered[swapWith];
-  await updateContextualLayerPrefs(current.id, {zIndex: other.zIndex});
-  await updateContextualLayerPrefs(other.id, {zIndex: current.zIndex});
+  for (const layer of next) {
+    const previous = layers.find(item => item.id === layer.id);
+    if (previous && previous.zIndex !== layer.zIndex) {
+      await updateContextualLayerPrefs(layer.id, {zIndex: layer.zIndex});
+    }
+  }
 }
 
 export type ContextualLayerDownloadProgress = {
@@ -494,8 +535,10 @@ export async function downloadContextualLayers({
       projectIds: [projectId],
     });
     if (!index.prefs[layer.id]) {
-      const order = Object.keys(index.prefs).length;
-      index.prefs[layer.id] = prefsFor(index.files[layer.id], undefined, order);
+      index.prefs[layer.id] = {
+        ...prefsFor(index.files[layer.id], undefined, 0),
+        zIndex: nextUnusedZIndex(index.prefs),
+      };
     }
   }
   await commitFiles(index, previous);

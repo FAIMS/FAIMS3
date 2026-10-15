@@ -18,7 +18,13 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {renderHook, waitFor} from '@testing-library/react';
 import React, {ReactNode} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {getGISFields, useRecordFeatures} from './recordFeatures';
+import {
+  getGISFields,
+  groupRecordFeaturesByForm,
+  useRecordFeatures,
+  type RecordFeatureCollection,
+  type RecordGeoJSONFeature,
+} from './recordFeatures';
 
 const {getFieldValues} = vi.hoisted(() => ({getFieldValues: vi.fn()}));
 
@@ -258,5 +264,34 @@ describe('useRecordFeatures', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.data).toBeUndefined();
     expect(getFieldValues).not.toHaveBeenCalled();
+  });
+});
+
+describe('groupRecordFeaturesByForm', () => {
+  const feature = (formId: string, recordId: string): RecordGeoJSONFeature => ({
+    type: 'Feature',
+    geometry: {type: 'Point', coordinates: [151.2, -33.9]},
+    properties: {
+      name: recordId,
+      record_id: recordId,
+      revision_id: `${recordId}-rev`,
+      form_id: formId,
+    },
+  });
+
+  it('splits a mixed collection into one FeatureCollection per form', () => {
+    const collection: RecordFeatureCollection = {
+      type: 'FeatureCollection',
+      features: [
+        feature('Site', 'a'),
+        feature('Observation', 'b'),
+        feature('Site', 'c'),
+      ],
+    };
+
+    const grouped = groupRecordFeaturesByForm(collection);
+    expect([...grouped.keys()]).toEqual(['Site', 'Observation']);
+    expect(grouped.get('Site')?.features).toHaveLength(2);
+    expect(grouped.get('Observation')?.features).toHaveLength(1);
   });
 });

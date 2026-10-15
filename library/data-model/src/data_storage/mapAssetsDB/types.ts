@@ -96,6 +96,50 @@ export function isMapAssetInProgress(
   return status === 'pending' || status === 'processing';
 }
 
+/**
+ * Steps a spatial job writes back to the asset while it is in progress.
+ * The Control Centre maps these to short user-facing messages.
+ */
+export const MapAssetProcessingStageSchema = z.enum([
+  'uploading',
+  'queued',
+  'downloading',
+  'interpreting-crs',
+  'converting-geometries',
+  'tiling-vectors',
+  'warping-raster',
+  'building-tiles',
+  'building-overviews',
+  'converting-tiles',
+  'storing',
+]);
+export type MapAssetProcessingStage = z.infer<
+  typeof MapAssetProcessingStageSchema
+>;
+
+export const MAP_ASSET_PROCESSING_STAGE_LABELS = {
+  uploading: 'Uploading original files',
+  queued: 'Waiting for a worker',
+  downloading: 'Downloading data',
+  'interpreting-crs': 'Interpreting CRS',
+  'converting-geometries': 'Converting geometries',
+  'tiling-vectors': 'Building vector tiles',
+  'warping-raster': 'Warping raster',
+  'building-tiles': 'Building image tiles',
+  'building-overviews': 'Building zoom overviews',
+  'converting-tiles': 'Packaging tiles',
+  storing: 'Saving prepared layer',
+} as const satisfies Record<MapAssetProcessingStage, string>;
+
+export function mapAssetProcessingStageLabel(
+  stage: MapAssetProcessingStage | undefined
+): string | undefined {
+  if (!stage) {
+    return undefined;
+  }
+  return MAP_ASSET_PROCESSING_STAGE_LABELS[stage];
+}
+
 /** [minX, minY, maxX, maxY] */
 export const MapExtentSchema = z.tuple([
   z.number(),
@@ -174,6 +218,11 @@ export const MapAssetFieldsSchema = z.object({
    * GDAL errors (those set `failed` immediately). Reset when the file is replaced.
    */
   processingAttempts: z.number().int().nonnegative().optional(),
+  /**
+   * Current step while `status` is `pending` or `processing`. Cleared when
+   * the job reaches `ready` or `failed`.
+   */
+  processingStage: MapAssetProcessingStageSchema.optional(),
   kind: MapAssetKindSchema.optional(),
   /** Bounding box of the normalized data in EPSG:4326. */
   extent4326: MapExtentSchema.optional(),
