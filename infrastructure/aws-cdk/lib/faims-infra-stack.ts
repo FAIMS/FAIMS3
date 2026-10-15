@@ -9,6 +9,7 @@ import {FaimsConductor} from './components/conductor';
 import {FaimsFrontEnd} from './components/front-end';
 import {FaimsNetworking} from './components/networking';
 import {EC2CouchDB} from './components/couch-db';
+import {FaimsSpatialCapacity} from './components/spatial-capacity';
 import {FaimsTtlCleanup} from './components/ttl-cleanup';
 import {Config} from './config';
 
@@ -182,6 +183,22 @@ export class FaimsInfraStack extends cdk.Stack {
       authProviders: config.authProviders,
       localhostWhitelist: config.conductor.localhostWhitelist,
       bugsnagApiKey: config.bugMonitoring.bugsnagKey,
+    });
+
+    // SPATIAL WORKERS
+    // ===============
+    // Tiny capacity manager (desired 1) plus a worker task definition.
+    // The manager RunTasks workers; they exit when idle. Not a worker service.
+    new FaimsSpatialCapacity(this, 'spatial-capacity', {
+      vpc: networking.vpc,
+      cluster: conductor.cluster,
+      securityGroups: [conductor.serviceSecurityGroup],
+      containerImage: conductor.containerImage,
+      environment: conductor.environment,
+      secrets: conductor.secrets,
+      privateKeySecretArn: config.secrets.privateKey,
+      mapAssetBucket,
+      config: config.spatialCapacity,
     });
 
     // TTL CLEANUP (scheduled one-shot; not in-process cron)

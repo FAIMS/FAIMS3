@@ -32,6 +32,10 @@ import {
   IAttachmentStorageService,
 } from './services/attachmentStorageService';
 import {
+  CapacityProviderType,
+  EcsCapacityProviderConfig,
+} from './services/capacityProvider';
+import {
   createEmailService,
   EmailConfig,
   EmailServiceType,
@@ -392,6 +396,54 @@ const EnvSchema = z
      */
     ATTACHMENT_S3_SECRET_ACCESS_KEY: z.string().optional(),
     /**
+     * Who turns the Couch map-asset queue into workers.
+     * `FIXED` (default) — always-on pool; the manager does not start tasks.
+     * `ECS` — capacity manager calls RunTask. `MOCK` is forced under test.
+     */
+    CAPACITY_PROVIDER: configHelpers.nativeEnumDefault(
+      CapacityProviderType,
+      CapacityProviderType.FIXED
+    ),
+    /** Max workers the capacity manager will ask for at once. */
+    CAPACITY_MAX: configHelpers.intDefault(4, 'CAPACITY_MAX'),
+    /** How often the capacity manager reconciles queue depth (ms). */
+    CAPACITY_RECONCILE_MS: configHelpers.intDefault(
+      15_000,
+      'CAPACITY_RECONCILE_MS'
+    ),
+    /** Replica count reported by the FIXED provider. It does not start tasks. */
+    CAPACITY_FIXED_REPLICAS: configHelpers.intDefault(
+      1,
+      'CAPACITY_FIXED_REPLICAS'
+    ),
+    /** ECS cluster name or ARN. Required when CAPACITY_PROVIDER is ECS. */
+    CAPACITY_ECS_CLUSTER: z.string().optional(),
+    /** Worker task definition ARN passed to RunTask. */
+    CAPACITY_ECS_WORKER_TASK_DEFINITION: z.string().optional(),
+    /** Worker task definition family used to list running and pending tasks. */
+    CAPACITY_ECS_WORKER_TASK_FAMILY: z.string().optional(),
+    /** Container name inside the worker task definition. */
+    CAPACITY_ECS_WORKER_CONTAINER: z.string().optional(),
+    /** Comma-separated subnet ids for RunTask awsvpc networking. */
+    CAPACITY_ECS_SUBNETS: z.string().optional(),
+    /** Comma-separated security group ids for RunTask. */
+    CAPACITY_ECS_SECURITY_GROUPS: z.string().optional(),
+    /** `ENABLED` or `DISABLED`. Default ENABLED (public subnets, no NAT). */
+    CAPACITY_ECS_ASSIGN_PUBLIC_IP: z.string().optional(),
+    /**
+     * Spatial worker exits after this many ms with no job. `0` never exits
+     * (compose / on-prem). AWS default is 60s so Fargate returns to zero.
+     */
+    SPATIAL_WORKER_IDLE_EXIT_MS: configHelpers.intDefault(
+      60_000,
+      'SPATIAL_WORKER_IDLE_EXIT_MS'
+    ),
+    /** Delay between empty spatial-worker polls. */
+    SPATIAL_WORKER_POLL_MS: configHelpers.intDefault(
+      5_000,
+      'SPATIAL_WORKER_POLL_MS'
+    ),
+    /**
      * Comma-separated list of domains to which auth-flow redirects are
      * allowed. Required; each entry must be a valid URL.
      */
@@ -675,13 +727,28 @@ const EnvSchema = z
         accessKeyId: env.ATTACHMENT_S3_ACCESS_KEY_ID,
         secretAccessKey: env.ATTACHMENT_S3_SECRET_ACCESS_KEY,
       },
+      _capacity: {
+        serviceType: env.CAPACITY_PROVIDER,
+        max: env.CAPACITY_MAX,
+        reconcileMs: env.CAPACITY_RECONCILE_MS,
+        fixedReplicas: env.CAPACITY_FIXED_REPLICAS,
+        cluster: env.CAPACITY_ECS_CLUSTER,
+        taskDefinition: env.CAPACITY_ECS_WORKER_TASK_DEFINITION,
+        taskFamily: env.CAPACITY_ECS_WORKER_TASK_FAMILY,
+        containerName: env.CAPACITY_ECS_WORKER_CONTAINER,
+        subnets: env.CAPACITY_ECS_SUBNETS,
+        securityGroups: env.CAPACITY_ECS_SECURITY_GROUPS,
+        assignPublicIp: env.CAPACITY_ECS_ASSIGN_PUBLIC_IP,
+        idleExitMs: env.SPATIAL_WORKER_IDLE_EXIT_MS,
+        pollMs: env.SPATIAL_WORKER_POLL_MS,
+      },
       _keyFileHost: keyFileHost,
     };
   });
 
 const parsed = EnvSchema.parse(process.env);
 
-const {_email, _attachment, _keyFileHost, ...configFields} = parsed;
+const {_email, _attachment, _capacity, _keyFileHost, ...configFields} = parsed;
 
 // ---------------------------------------------------------------------------
 // Email scalars resolved once and hung on `config`.
@@ -847,6 +914,74 @@ const attachmentStorage =
     ? resolveAttachmentStorageConfig()
     : TEST_ATTACHMENT_STORAGE_CONFIG;
 
+function splitCsv(value: string | undefined): string[] {
+  if (configHelpers.isBlank(value)) {
+    return [];
+  }
+  return value
+    .split(',')
+    .map(part => part.trim())
+    .filter(part => part.length > 0);
+}
+
+function resolveCapacityProviderType(): CapacityProviderType {
+  if (configFields.runningUnderTest) {
+    return CapacityProviderType.MOCK;
+  }
+  return _capacity.serviceType;
+}
+
+/** Validates ECS RunTask env. Only called when the provider type is ECS. */
+function resolveEcsCapacityConfig(): EcsCapacityProviderConfig {
+  const cluster = _capacity.cluster;
+  const taskDefinition = _capacity.taskDefinition;
+  const taskFamily = _capacity.taskFamily;
+  const containerName = _capacity.containerName;
+  const subnets = splitCsv(_capacity.subnets);
+  const securityGroups = splitCsv(_capacity.securityGroups);
+  const assignRaw = configHelpers.isBlank(_capacity.assignPublicIp)
+    ? 'ENABLED'
+    : _capacity.assignPublicIp.toUpperCase();
+
+  const missing: string[] = [];
+  if (configHelpers.isBlank(cluster)) missing.push('CAPACITY_ECS_CLUSTER');
+  if (configHelpers.isBlank(taskDefinition)) {
+    missing.push('CAPACITY_ECS_WORKER_TASK_DEFINITION');
+  }
+  if (configHelpers.isBlank(taskFamily)) {
+    missing.push('CAPACITY_ECS_WORKER_TASK_FAMILY');
+  }
+  if (configHelpers.isBlank(containerName)) {
+    missing.push('CAPACITY_ECS_WORKER_CONTAINER');
+  }
+  if (subnets.length === 0) missing.push('CAPACITY_ECS_SUBNETS');
+  if (securityGroups.length === 0) missing.push('CAPACITY_ECS_SECURITY_GROUPS');
+  if (assignRaw !== 'ENABLED' && assignRaw !== 'DISABLED') {
+    missing.push('CAPACITY_ECS_ASSIGN_PUBLIC_IP (ENABLED or DISABLED)');
+  }
+  if (missing.length > 0) {
+    throw new Error(
+      `ECS capacity configuration is incomplete. Missing required values: ${missing.join(', ')}.`
+    );
+  }
+
+  return {
+    cluster: cluster!,
+    taskDefinition: taskDefinition!,
+    taskFamily: taskFamily!,
+    containerName: containerName!,
+    subnets,
+    securityGroups,
+    assignPublicIp: assignRaw as 'ENABLED' | 'DISABLED',
+  };
+}
+
+const capacityProviderType = resolveCapacityProviderType();
+const capacityEcs =
+  capacityProviderType === CapacityProviderType.ECS
+    ? resolveEcsCapacityConfig()
+    : undefined;
+
 /**
  * The singleton configuration object. Prefer reading values from here.
  *
@@ -863,6 +998,14 @@ export const config = {
   testEmailAddress,
   attachmentStorageType,
   attachmentStorage,
+  capacityProviderType,
+  /** Present when {@link capacityProviderType} is ECS. */
+  capacityEcs,
+  capacityMax: _capacity.max,
+  capacityReconcileMs: _capacity.reconcileMs,
+  capacityFixedReplicas: _capacity.fixedReplicas,
+  spatialWorkerIdleExitMs: _capacity.idleExitMs,
+  spatialWorkerPollMs: _capacity.pollMs,
 };
 
 export type Config = typeof config;

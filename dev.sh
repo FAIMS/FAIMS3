@@ -1,7 +1,8 @@
 #!/bin/bash -e
 
 # Local development entrypoint. Warns if GDAL, tippecanoe, or pmtiles is
-# missing (GeoPackage export and map-layer ingest) or if the PDF driver is absent.
+# missing. GeoPackage export runs on the API host. Map-layer ingest runs in
+# the spatial-worker container (docker compose), which has its own GDAL.
 
 check_gdal() {
   echo "=========================================="
@@ -11,7 +12,8 @@ check_gdal() {
   if ! command -v ogr2ogr &>/dev/null || ! command -v gdalinfo &>/dev/null; then
     echo ""
     echo "WARNING: GDAL is not installed or not on PATH."
-    echo "GeoPackage export and map-layer ingest will fail until GDAL is installed."
+    echo "GeoPackage export will fail until GDAL is installed."
+    echo "Map-layer ingest runs in the spatial-worker container, not on the host."
     echo ""
     echo "Install examples:"
     echo "  Ubuntu/Debian:  sudo apt-get install gdal-bin poppler-utils tippecanoe"
@@ -42,7 +44,8 @@ check_gdal() {
   fi
 
   if ! command -v pmtiles &>/dev/null && ! command -v go-pmtiles &>/dev/null; then
-    echo "WARNING: pmtiles is not on PATH. Map-layer ingest will fail."
+    echo "WARNING: pmtiles is not on PATH. Host GeoPackage export does not need it;"
+    echo "map-layer ingest uses pmtiles inside the spatial-worker image."
     echo "Install go-pmtiles v1.28.1 and put the pmtiles (or go-pmtiles) binary on PATH."
   else
     echo "✓ pmtiles CLI available"

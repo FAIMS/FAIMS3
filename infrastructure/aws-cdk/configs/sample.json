@@ -114,7 +114,7 @@
     "provisionSSOUsersPolicy": "reject",
     "cpu": 1024,
     "memory": 2048,
-    "ephemeralStorageGiB": 80,
+    "ephemeralStorageGiB": 21,
     "autoScaling": {
       "desiredCapacity": 2,
       "minCapacity": 1,
@@ -128,6 +128,16 @@
     "disableMigrateOnStartup": false,
     "disableStartupMigrationLock": false,
     "startupMigrationLockTimeoutMs": 1800000
+  },
+  "spatialCapacity": {
+    "maxCapacity": 4,
+    "reconcileMs": 15000,
+    "idleExitMs": 60000,
+    "cpu": 1024,
+    "memory": 2048,
+    "ephemeralStorageGiB": 80,
+    "managerCpu": 256,
+    "managerMemory": 512
   },
   "authProviders": {
     "disableLocalLogin": false,

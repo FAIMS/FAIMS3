@@ -353,17 +353,22 @@ export async function replaceMapAssetFiles({
   const companions = files
     .map(file => file.filename)
     .filter(filename => filename !== primaryFilename);
+  const previousStored = current.storedAttachments;
   await getMapAssetsDB().put(
     omitUndefinedFields({
       ...current,
       originalFilename: primaryFilename,
       companionFilenames: companions.length > 0 ? companions : undefined,
+      storedAttachments: undefined,
       status: 'processing',
       failureReason: undefined,
       contentHash: undefined,
       kind: undefined,
       extent4326: undefined,
       extent3857: undefined,
+      minZoom: undefined,
+      maxZoom: undefined,
+      tileSize: undefined,
       byteSize: 0,
       processingStartedAt: undefined,
       processingAttempts: undefined,
@@ -372,6 +377,13 @@ export async function replaceMapAssetFiles({
   );
   await cleanupStaging(assetId);
   await stageUploadFiles(assetId, files);
+  if (previousStored) {
+    await Promise.all(
+      Object.values(previousStored).map(location =>
+        deleteStoredAttachment(location).catch(() => undefined)
+      )
+    );
+  }
   return getMapAsset(assetId);
 }
 
@@ -440,63 +452,12 @@ async function downloadOriginalsToStaging(
   return readStagedFiles(asset._id, uploadFilenames(asset));
 }
 
-async function resolveUploadFiles(asset: ExistingMapAsset): Promise<{
-  files: UploadedMapFile[];
-  fromStaging: boolean;
-}> {
-  logMapAssetProcessing({
-    event: 'processing.files',
-    outcome: 'started',
-    assetId: asset._id,
-    filename: asset.originalFilename,
-    fileCount: uploadFilenames(asset).length,
-  });
-  const staged = await readStagedFiles(asset._id, uploadFilenames(asset));
-  if (staged) {
-    logMapAssetProcessing({
-      event: 'processing.files',
-      outcome: 'success',
-      assetId: asset._id,
-      filename: asset.originalFilename,
-      fileCount: staged.length,
-      fromStaging: true,
-      source: 'staging',
-    });
-    return {files: staged, fromStaging: true};
-  }
-  logMapAssetProcessing({
-    event: 'processing.files',
-    outcome: 'waiting',
-    assetId: asset._id,
-    filename: asset.originalFilename,
-    detail: 'staging missing; downloading originals from object storage',
-    fromStaging: false,
-    source: 'object-storage',
-  });
-  const downloaded = await downloadOriginalsToStaging(asset);
-  if (downloaded) {
-    logMapAssetProcessing({
-      event: 'processing.files',
-      outcome: 'success',
-      assetId: asset._id,
-      filename: asset.originalFilename,
-      fileCount: downloaded.length,
-      fromStaging: false,
-      source: 'object-storage',
-    });
-    return {files: downloaded, fromStaging: false};
-  }
-  logMapAssetProcessing({
-    event: 'processing.files',
-    outcome: 'failure',
-    assetId: asset._id,
-    filename: asset.originalFilename,
-    reason: 'The uploaded map files are no longer available.',
-  });
-  throw new Error('The uploaded map files are no longer available.');
-}
-
-/** A claim older than this may be taken by another API process. */
+/**
+ * Refresh the claim this often while GDAL runs so a long raster is not
+ * treated as abandoned. The worker updates its local claim token to match.
+ */
+export const MAP_ASSET_PROCESSING_CLAIM_HEARTBEAT_MS = 60 * 1000;
+/** A claim older than this may be taken by another worker. */
 export const MAP_ASSET_PROCESSING_CLAIM_TIMEOUT_MS = 2 * 60 * 60 * 1000;
 /**
  * Claims started for one upload, including the first. A crash after this
@@ -504,6 +465,14 @@ export const MAP_ASSET_PROCESSING_CLAIM_TIMEOUT_MS = 2 * 60 * 60 * 1000;
  */
 export const MAP_ASSET_PROCESSING_MAX_ATTEMPTS = 3;
 export const MAP_ASSET_PROCESSING_SWEEP_INTERVAL_MS = 60 * 1000;
+/**
+ * How long a processing asset may sit with no staging files and no
+ * originals before the API marks it failed. Staging still on disk is
+ * retried instead.
+ */
+export const MAP_ASSET_ORIGINAL_UPLOAD_GRACE_MS = 2 * 60 * 1000;
+export const MAP_ASSET_ORIGINALS_MISSING_REASON =
+  'The uploaded map files are no longer available.';
 export const MAP_ASSET_PROCESSING_EXHAUSTED_REASON =
   'Map layer processing was interrupted too many times.';
 
@@ -513,6 +482,10 @@ export type MapAssetProcessingRuntime = {
   now?: () => number;
   claimTimeoutMs?: number;
   maxAttempts?: number;
+  /** `0` disables the claim heartbeat. Default is 60s. */
+  claimHeartbeatMs?: number;
+  /** Age before a processing asset with no files is failed. */
+  originalUploadGraceMs?: number;
   normalize?: typeof normalizeMapUpload;
 };
 
@@ -526,6 +499,32 @@ function claimTimeoutMs(runtime?: MapAssetProcessingRuntime): number {
 
 function maxProcessingAttempts(runtime?: MapAssetProcessingRuntime): number {
   return runtime?.maxAttempts ?? MAP_ASSET_PROCESSING_MAX_ATTEMPTS;
+}
+
+function originalUploadGraceMs(runtime?: MapAssetProcessingRuntime): number {
+  return runtime?.originalUploadGraceMs ?? MAP_ASSET_ORIGINAL_UPLOAD_GRACE_MS;
+}
+
+function claimHeartbeatMs(runtime?: MapAssetProcessingRuntime): number {
+  return runtime?.claimHeartbeatMs ?? MAP_ASSET_PROCESSING_CLAIM_HEARTBEAT_MS;
+}
+
+/** Latest claim timestamp. Heartbeat and commit share `chain` so they don't race. */
+type ClaimToken = {
+  current: number;
+  chain: Promise<void>;
+};
+
+function withClaimToken<T>(
+  token: ClaimToken,
+  fn: () => Promise<T>
+): Promise<T> {
+  const run = token.chain.then(fn, fn);
+  token.chain = run.then(
+    () => undefined,
+    () => undefined
+  );
+  return run;
 }
 
 function isConflict(error: unknown): boolean {
@@ -739,16 +738,169 @@ async function putNormalizedAttachment({
   });
 }
 
-/** Runs GDAL and stores the normalized attachment. Safe to call from the job queue. */
+/**
+ * Upload staged originals to object storage and drop the local copies.
+ * Safe to call more than once. Returns false when there is nothing on disk
+ * and originals are not already stored.
+ */
+export async function storeOriginalsFromStaging(
+  assetId: string
+): Promise<boolean> {
+  const asset = await getMapAsset(assetId);
+  if (asset.status !== 'processing') {
+    return false;
+  }
+  if (assetHasStoredAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
+    await cleanupStaging(assetId);
+    return true;
+  }
+  const staged = await readStagedFiles(assetId, uploadFilenames(asset));
+  if (!staged) {
+    return false;
+  }
+  const locations = await putOriginalFilesFromDisk({
+    assetId,
+    files: staged,
+    primaryFilename: asset.originalFilename,
+  });
+  await mergeStoredAttachments(assetId, locations);
+  await cleanupStaging(assetId);
+  return true;
+}
+
+/** Fire-and-forget original upload after the HTTP handler has responded. */
+export function scheduleStoreOriginals(assetId: string): void {
+  void storeOriginalsFromStaging(assetId).catch(error => {
+    logMapAssetProcessing({
+      event: 'processing.originals.store',
+      outcome: 'failure',
+      assetId,
+      reason: error instanceof Error ? error.message : String(error),
+    });
+    console.error(
+      `${MAP_ASSET_PROCESSING_LOG} original upload failed for ${assetId}`,
+      error
+    );
+  });
+}
+
+async function refreshClaimToken(
+  assetId: string,
+  token: ClaimToken,
+  runtime?: MapAssetProcessingRuntime
+): Promise<boolean> {
+  return withClaimToken(token, async () => {
+    const latest = await getMapAsset(assetId);
+    if (
+      latest.status !== 'processing' ||
+      latest.processingStartedAt !== token.current
+    ) {
+      return false;
+    }
+    const now = processingNow(runtime);
+    try {
+      await getMapAssetsDB().put({
+        ...latest,
+        processingStartedAt: now,
+        updatedAt: now,
+      });
+    } catch (error) {
+      if (isConflict(error)) {
+        return false;
+      }
+      throw error;
+    }
+    token.current = now;
+    logMapAssetProcessing({
+      event: 'processing.claim',
+      outcome: 'waiting',
+      assetId,
+      detail: 'refreshed processing claim',
+    });
+    return true;
+  });
+}
+
+function startClaimHeartbeat(
+  assetId: string,
+  token: ClaimToken,
+  runtime?: MapAssetProcessingRuntime
+): () => void {
+  const intervalMs = claimHeartbeatMs(runtime);
+  if (intervalMs <= 0) {
+    return () => undefined;
+  }
+  const timer = setInterval(() => {
+    void refreshClaimToken(assetId, token, runtime).catch(error => {
+      console.error(
+        `${MAP_ASSET_PROCESSING_LOG} claim heartbeat failed for ${assetId}`,
+        error
+      );
+    });
+  }, intervalMs);
+  timer.unref();
+  return () => clearInterval(timer);
+}
+
+async function loadOriginalFiles(
+  asset: ExistingMapAsset
+): Promise<UploadedMapFile[]> {
+  logMapAssetProcessing({
+    event: 'processing.files',
+    outcome: 'started',
+    assetId: asset._id,
+    filename: asset.originalFilename,
+    detail: 'downloading originals from object storage',
+    source: 'object-storage',
+  });
+  const downloaded = await downloadOriginalsToStaging(asset);
+  if (!downloaded) {
+    throw new Error(MAP_ASSET_ORIGINALS_MISSING_REASON);
+  }
+  logMapAssetProcessing({
+    event: 'processing.files',
+    outcome: 'success',
+    assetId: asset._id,
+    filename: asset.originalFilename,
+    fileCount: downloaded.length,
+    source: 'object-storage',
+  });
+  return downloaded;
+}
+
+/**
+ * Claim one asset that already has originals, run GDAL, and store the
+ * PMTiles. Does not upload originals and does not claim a job that lacks
+ * them. Another worker's fresh claim is left alone.
+ */
 export async function processMapAsset(
   assetId: string,
   runtime?: MapAssetProcessingRuntime
 ): Promise<void> {
+  const existing = await getMapAsset(assetId);
+  if (existing.status !== 'processing') {
+    return;
+  }
+  if (!assetHasStoredAttachment(existing, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
+    logMapAssetProcessing({
+      event: 'processing.run',
+      outcome: 'skipped',
+      assetId,
+      filename: existing.originalFilename,
+      reason: 'originals are not in object storage yet',
+    });
+    return;
+  }
   const claimed = await claimMapAssetProcessing(assetId, runtime);
   const claimStartedAt = claimed?.processingStartedAt;
   if (!claimed || claimStartedAt === undefined) {
     return;
   }
+  const token: ClaimToken = {
+    current: claimStartedAt,
+    chain: Promise.resolve(),
+  };
+  const stopHeartbeat = startClaimHeartbeat(assetId, token, runtime);
   const runStarted = Date.now();
   logMapAssetProcessing({
     event: 'processing.run',
@@ -761,31 +913,19 @@ export async function processMapAsset(
   });
   let cleanupDir: string | undefined;
   const previousStored = claimed.storedAttachments;
-  try {
-    const {files, fromStaging} = await resolveUploadFiles(claimed);
-    const nextStored: Record<string, StoredAttachmentLocation> = {};
-    if (fromStaging) {
-      Object.assign(
-        nextStored,
-        await putOriginalFilesFromDisk({
-          assetId,
-          files,
-          primaryFilename: claimed.originalFilename,
-        })
-      );
-      await mergeStoredAttachments(assetId, nextStored, claimStartedAt);
-    } else {
-      for (const filename of uploadFilenames(claimed)) {
-        const attachmentId =
-          filename === claimed.originalFilename
-            ? MAP_ASSET_ORIGINAL_ATTACHMENT
-            : companionAttachmentName(filename);
-        const location = storedAttachmentLocation(claimed, attachmentId);
-        if (location) {
-          nextStored[attachmentId] = location;
-        }
-      }
+  const nextStored: Record<string, StoredAttachmentLocation> = {};
+  for (const filename of uploadFilenames(claimed)) {
+    const attachmentId =
+      filename === claimed.originalFilename
+        ? MAP_ASSET_ORIGINAL_ATTACHMENT
+        : companionAttachmentName(filename);
+    const location = storedAttachmentLocation(claimed, attachmentId);
+    if (location) {
+      nextStored[attachmentId] = location;
     }
+  }
+  try {
+    const files = await loadOriginalFiles(claimed);
     const normalize = runtime?.normalize ?? normalizeMapUpload;
     const normalized = await withMapAssetProcessingWait(
       {
@@ -797,6 +937,20 @@ export async function processMapAsset(
       () => normalize(files, {assetId})
     );
     cleanupDir = normalized.cleanupDir;
+    stopHeartbeat();
+    await token.chain;
+    const stillOwned = await refreshClaimToken(assetId, token, runtime);
+    if (!stillOwned) {
+      logMapAssetProcessing({
+        event: 'processing.run',
+        outcome: 'skipped',
+        assetId,
+        filename: claimed.originalFilename,
+        elapsedMs: Date.now() - runStarted,
+        reason: 'lost the processing claim',
+      });
+      return;
+    }
     const stored = await withMapAssetProcessingWait(
       {
         event: 'processing.normalized.store',
@@ -808,7 +962,7 @@ export async function processMapAsset(
       () =>
         putNormalizedAttachment({
           assetId,
-          claimStartedAt,
+          claimStartedAt: token.current,
           filePath: normalized.filePath,
           bytes: normalized.bytes,
           mediaType: normalized.mediaType,
@@ -830,7 +984,7 @@ export async function processMapAsset(
       ? await sha256File(normalized.filePath)
       : sha256(normalized.bytes ?? Buffer.alloc(0));
     const byteSize = normalized.byteSize ?? normalized.bytes?.length ?? 0;
-    await commitProcessingResult(assetId, claimStartedAt, latest =>
+    await commitProcessingResult(assetId, token.current, latest =>
       omitUndefinedFields({
         ...latest,
         status: 'ready' as const,
@@ -867,9 +1021,11 @@ export async function processMapAsset(
       elapsedMs: Date.now() - runStarted,
     });
   } catch (error) {
+    stopHeartbeat();
+    await token.chain;
     const message =
       error instanceof Error ? error.message : 'Map layer processing failed.';
-    await commitProcessingResult(assetId, claimStartedAt, latest =>
+    await commitProcessingResult(assetId, token.current, latest =>
       omitUndefinedFields({
         ...latest,
         status: 'failed' as const,
@@ -894,6 +1050,7 @@ export async function processMapAsset(
       reason: message,
     });
   } finally {
+    stopHeartbeat();
     if (cleanupDir) {
       await rm(cleanupDir, {recursive: true, force: true}).catch(
         () => undefined
@@ -903,82 +1060,116 @@ export async function processMapAsset(
   }
 }
 
-let processingQueue: Promise<void> = Promise.resolve();
-
-/** Serialise GDAL work so one large raster does not overlap the next. */
-export function enqueueMapAssetProcessing(
-  assetId: string,
-  runtime?: MapAssetProcessingRuntime,
-  source: string = 'upload'
-): void {
-  logMapAssetProcessing({
-    event: 'processing.enqueue',
-    outcome: 'started',
-    assetId,
-    detail: 'waiting for the in-process GDAL queue',
-    source,
-  });
-  processingQueue = processingQueue
-    .then(() => processMapAsset(assetId, runtime))
-    .catch(error => {
-      logMapAssetProcessing({
-        event: 'processing.run',
-        outcome: 'failure',
-        assetId,
-        reason: error instanceof Error ? error.message : String(error),
-      });
-      console.error(
-        `${MAP_ASSET_PROCESSING_LOG} processing failed for ${assetId}`,
-        error
-      );
-    });
-}
-
-/** Test helper: wait until queued processing has finished. */
-export function waitForMapAssetProcessing(): Promise<void> {
-  return processingQueue;
-}
-
 /**
- * Re-queue processing assets whose claim is missing or expired.
- * Each API process runs this on startup and on a timer so a crashed
- * container's job is picked up by the next sweep. Staging files on this
- * host are reused; otherwise originals are streamed back from object storage.
+ * One unclaimed processing asset whose originals are already in object
+ * storage, or undefined when a worker should keep polling.
  */
-export async function sweepStaleMapAssetProcessing(
+export async function findUnclaimedSpatialJob(
   runtime?: MapAssetProcessingRuntime
-): Promise<string[]> {
+): Promise<string | undefined> {
   const now = processingNow(runtime);
   const timeoutMs = claimTimeoutMs(runtime);
-  logMapAssetProcessing({
-    event: 'processing.sweep',
-    outcome: 'started',
-    detail: `claim timeout ${timeoutMs}ms`,
-  });
   const result = await getMapAssetsDB().query<number>(MAP_ASSETS_BY_STATUS, {
     key: 'processing',
     include_docs: false,
   });
-  const enqueued: string[] = [];
   for (const row of result.rows) {
     if (!row.id) {
       continue;
     }
     try {
       const asset = await getMapAsset(row.id);
+      if (!assetHasStoredAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
+        continue;
+      }
       if (!mapAssetProcessingClaimIsStale(asset, now, timeoutMs)) {
         continue;
       }
-      logMapAssetProcessing({
-        event: 'processing.sweep',
-        outcome: 'waiting',
-        assetId: row.id,
-        filename: asset.originalFilename,
-        attempt: asset.processingAttempts,
-        detail: 're-queueing a stale or unclaimed processing asset',
-      });
-      enqueued.push(row.id);
-      enqueueMapAssetProcessing(row.id, runtime, 'sweep');
+      return asset._id;
+    } catch (error) {
+      if (!(error instanceof Exceptions.ItemNotFoundException)) {
+        throw error;
+      }
+    }
+  }
+  return undefined;
+}
+
+/** Queue depth the capacity manager turns into worker tasks. */
+export async function summarizeSpatialBacklog(
+  runtime?: MapAssetProcessingRuntime
+): Promise<{inFlight: number; unclaimed: number}> {
+  const now = processingNow(runtime);
+  const timeoutMs = claimTimeoutMs(runtime);
+  const result = await getMapAssetsDB().query<number>(MAP_ASSETS_BY_STATUS, {
+    key: 'processing',
+    include_docs: false,
+  });
+  let inFlight = 0;
+  let unclaimed = 0;
+  for (const row of result.rows) {
+    if (!row.id) {
+      continue;
+    }
+    try {
+      const asset = await getMapAsset(row.id);
+      if (!assetHasStoredAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
+        continue;
+      }
+      if (mapAssetProcessingClaimIsStale(asset, now, timeoutMs)) {
+        unclaimed += 1;
+      } else {
+        inFlight += 1;
+      }
+    } catch (error) {
+      if (!(error instanceof Exceptions.ItemNotFoundException)) {
+        throw error;
+      }
+    }
+  }
+  return {inFlight, unclaimed};
+}
+
+/**
+ * Retry original uploads from leftover staging, and fail processing assets
+ * whose files are gone. Does not run GDAL.
+ */
+export async function sweepPendingOriginalUploads(
+  runtime?: MapAssetProcessingRuntime
+): Promise<string[]> {
+  const now = processingNow(runtime);
+  const graceMs = originalUploadGraceMs(runtime);
+  logMapAssetProcessing({
+    event: 'processing.sweep',
+    outcome: 'started',
+    detail: 'original upload sweep',
+  });
+  const result = await getMapAssetsDB().query<number>(MAP_ASSETS_BY_STATUS, {
+    key: 'processing',
+    include_docs: false,
+  });
+  const touched: string[] = [];
+  for (const row of result.rows) {
+    if (!row.id) {
+      continue;
+    }
+    try {
+      const asset = await getMapAsset(row.id);
+      if (assetHasStoredAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
+        await cleanupStaging(asset._id);
+        continue;
+      }
+      const staged = await readStagedFiles(asset._id, uploadFilenames(asset));
+      if (staged) {
+        await storeOriginalsFromStaging(asset._id);
+        touched.push(asset._id);
+        continue;
+      }
+      if (now - asset.updatedAt < graceMs) {
+        continue;
+      }
+      await commitMissingOriginals(asset._id, now);
+      touched.push(asset._id);
     } catch (error) {
       if (!(error instanceof Exceptions.ItemNotFoundException)) {
         throw error;
@@ -988,45 +1179,80 @@ export async function sweepStaleMapAssetProcessing(
   logMapAssetProcessing({
     event: 'processing.sweep',
     outcome: 'success',
-    fileCount: enqueued.length,
+    fileCount: touched.length,
     detail:
-      enqueued.length === 0
-        ? 'no stale processing assets'
-        : `enqueued ${enqueued.length} stale asset(s)`,
+      touched.length === 0
+        ? 'no pending original uploads'
+        : `updated ${touched.length} processing asset(s)`,
   });
-  return enqueued;
+  return touched;
 }
 
-let processingSweepTimer: ReturnType<typeof setInterval> | undefined;
+async function commitMissingOriginals(
+  assetId: string,
+  now: number
+): Promise<void> {
+  const db = getMapAssetsDB();
+  for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
+    const latest = await getMapAsset(assetId);
+    if (latest.status !== 'processing') {
+      return;
+    }
+    if (assetHasStoredAttachment(latest, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
+      return;
+    }
+    try {
+      await db.put(
+        omitUndefinedFields({
+          ...latest,
+          status: 'failed' as const,
+          failureReason: MAP_ASSET_ORIGINALS_MISSING_REASON,
+          processingStartedAt: undefined,
+          updatedAt: now,
+        })
+      );
+      return;
+    } catch (error) {
+      if (!isConflict(error)) {
+        throw error;
+      }
+    }
+  }
+}
 
-/** Start the in-process sweep. Idempotent. The timer does not hold the process open. */
-export function startMapAssetProcessingSweeper(): void {
-  if (processingSweepTimer) {
+let originalUploadSweepTimer: ReturnType<typeof setInterval> | undefined;
+
+/**
+ * Start the API-side original-upload sweep. Idempotent. The timer does not
+ * hold the process open. GDAL runs in the spatial worker, not here.
+ */
+export function startMapAssetOriginalUploadSweeper(): void {
+  if (originalUploadSweepTimer) {
     return;
   }
   const run = () => {
-    sweepStaleMapAssetProcessing().catch(error => {
+    sweepPendingOriginalUploads().catch(error => {
       logMapAssetProcessing({
         event: 'processing.sweep',
         outcome: 'failure',
         reason: error instanceof Error ? error.message : String(error),
       });
       console.error(
-        `${MAP_ASSET_PROCESSING_LOG} processing sweep failed`,
+        `${MAP_ASSET_PROCESSING_LOG} original upload sweep failed`,
         error
       );
     });
   };
   run();
-  processingSweepTimer = setInterval(
+  originalUploadSweepTimer = setInterval(
     run,
     MAP_ASSET_PROCESSING_SWEEP_INTERVAL_MS
   );
-  processingSweepTimer.unref();
+  originalUploadSweepTimer.unref();
   logMapAssetProcessing({
     event: 'processing.sweep',
     outcome: 'started',
-    detail: `every ${MAP_ASSET_PROCESSING_SWEEP_INTERVAL_MS}ms`,
+    detail: `original uploads every ${MAP_ASSET_PROCESSING_SWEEP_INTERVAL_MS}ms`,
     source: 'sweeper',
   });
 }

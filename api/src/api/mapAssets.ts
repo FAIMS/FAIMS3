@@ -25,7 +25,6 @@ import {z} from 'zod';
 import {
   createMapAsset,
   deleteMapAsset,
-  enqueueMapAssetProcessing,
   getMapAsset,
   linkMapAsset,
   listAssetsByCreator,
@@ -34,6 +33,7 @@ import {
   listLinkProjectIds,
   presignNormalizedAttachment,
   replaceMapAssetFiles,
+  scheduleStoreOriginals,
   unlinkMapAsset,
   updateMapAssetDetails,
 } from '../couchdb/mapAssets/store';
@@ -441,7 +441,6 @@ api.post(
         files,
         primaryFilename: primary.filename,
       });
-      enqueueMapAssetProcessing(asset._id);
       logMapAssetProcessing({
         event: 'upload.accept',
         outcome: 'success',
@@ -456,6 +455,7 @@ api.post(
         ...inviteAuditFromRequest(req),
       });
       res.status(201).json(asset);
+      scheduleStoreOriginals(asset._id);
     } catch (error) {
       logMapAssetProcessing({
         event: 'upload.accept',
@@ -558,7 +558,6 @@ api.put(
         files,
         primaryFilename: primary.filename,
       });
-      enqueueMapAssetProcessing(replaced._id);
       logMapAssetProcessing({
         event: 'upload.accept',
         outcome: 'success',
@@ -573,6 +572,7 @@ api.put(
         ...inviteAuditFromRequest(req),
       });
       res.json(replaced);
+      scheduleStoreOriginals(replaced._id);
     } catch (error) {
       logMapAssetProcessing({
         event: 'upload.accept',

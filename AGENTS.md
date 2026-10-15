@@ -44,9 +44,13 @@ session:
    `.env` files are gitignored so they may be missing on a fresh VM):
    `pnpm run generate-local-keys`. Then create env files if missing:
    `cp ./.env.dist ./.env; for d in api web app e2e; do [ -f ./$d/.env ] || cp ./$d/.env.dist ./$d/.env; done`
-3. Start CouchDB and RustFS: `sudo docker compose up -d --build couchdb rustfs`,
+3. Start CouchDB, RustFS, and the spatial worker pool:
+   `sudo docker compose up -d --build couchdb rustfs capacity-manager spatial-worker`,
    then wait for `curl http://localhost:5984/_up` and
-   `curl http://localhost:9000/health` to return 200.
+   `curl http://localhost:9000/health` to return 200. Map-layer GDAL runs in
+   `spatial-worker` (idle exit disabled). `capacity-manager` uses the FIXED
+   provider and does not start extra tasks. Without the worker, uploads stay
+   `processing`.
 4. Initialise the database (creates the `admin` user): `pnpm run migrate-with-keys`.
 5. Run all dev services with live reload: `pnpm run dev` (turbo builds the
    shared libraries first, then runs api, app, web and the data-model watcher

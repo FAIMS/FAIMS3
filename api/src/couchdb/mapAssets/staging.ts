@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
- * On-disk staging for a map-layer upload. HTTP writes here, then the
- * processing queue streams to object storage and runs GDAL from these files.
+ * On-disk staging for a map-layer upload. The API streams these files to
+ * object storage after the HTTP response. The spatial worker downloads
+ * them again and runs GDAL; this directory is not shared with the worker.
  */
 
 import {

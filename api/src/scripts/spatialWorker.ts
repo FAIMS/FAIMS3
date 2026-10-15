@@ -1,0 +1,78 @@
+// SPDX-License-Identifier: Apache-2.0
+/* eslint-disable n/no-process-exit */
+/**
+ * Spatial worker. Polls the Couch map-asset queue, runs GDAL on one asset
+ * at a time, and exits after SPATIAL_WORKER_IDLE_EXIT_MS with no claim.
+ * `0` keeps the process running (compose / on-prem).
+ *
+ * Usage:
+ *   pnpm --filter=@faims3/api spatial-worker
+ *   node scripts/spatialWorker.js --poll
+ *
+ * Production image (WORKDIR /app/api/build/src):
+ *   node scripts/spatialWorker.js --poll
+ */
+
+import {config} from '../buildconfig';
+import {verifyCouchDBConnection} from '../couchdb';
+import {
+  findUnclaimedSpatialJob,
+  processMapAsset,
+} from '../couchdb/mapAssets/store';
+import {runSpatialWorkerLoop} from '../spatial/workerLoop';
+
+const showHelp = () => {
+  console.log(`Usage: node scripts/spatialWorker.js --poll
+
+Poll the Couch map-asset queue and process jobs until idle.
+
+  --poll     Run the drain loop (required)
+  -h, --help Show this help
+
+SPATIAL_WORKER_IDLE_EXIT_MS  Exit after this many ms with no job (0 = never)
+SPATIAL_WORKER_POLL_MS       Delay between empty polls
+`);
+};
+
+const main = async () => {
+  const args = process.argv.slice(2);
+  if (args.includes('-h') || args.includes('--help')) {
+    showHelp();
+    process.exit(0);
+  }
+  if (args.some(arg => arg !== '--poll')) {
+    console.error(`Unknown argument: ${args.find(arg => arg !== '--poll')}`);
+    showHelp();
+    process.exit(1);
+  }
+  if (!args.includes('--poll')) {
+    console.error('Pass --poll to start the drain loop.');
+    showHelp();
+    process.exit(1);
+  }
+
+  console.log(
+    `[spatial-worker] idleExitMs=${config.spatialWorkerIdleExitMs} pollMs=${config.spatialWorkerPollMs}`
+  );
+  console.log(`Couch server: ${config.couchdbInternalUrl}`);
+  const connection = await verifyCouchDBConnection();
+  if (!connection.valid) {
+    console.error('Cannot reach CouchDB. Aborting.');
+    console.error(connection.validate_error || connection.server_msg);
+    process.exit(1);
+  }
+
+  const outcome = await runSpatialWorkerLoop({
+    idleExitMs: config.spatialWorkerIdleExitMs,
+    pollIntervalMs: config.spatialWorkerPollMs,
+    findJob: () => findUnclaimedSpatialJob(),
+    processJob: assetId => processMapAsset(assetId),
+  });
+  console.log(`[spatial-worker] exiting (${outcome})`);
+  process.exit(0);
+};
+
+main().catch(error => {
+  console.error('spatialWorker failed:', error);
+  process.exit(1);
+});

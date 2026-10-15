@@ -131,7 +131,7 @@ manage_docker_volumes() {
   if [ "$ALL_SERVICES" = true ]; then
     ${docker_prefix} up ${BUILD_FLAG} -d
   else
-    ${docker_prefix} up ${BUILD_FLAG} -d couchdb rustfs
+    ${docker_prefix} up ${BUILD_FLAG} -d couchdb rustfs capacity-manager spatial-worker
   fi
 }
 

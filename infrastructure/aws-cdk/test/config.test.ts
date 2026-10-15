@@ -203,7 +203,7 @@ function minimalConductorConfig(overrides: Record<string, unknown> = {}) {
 describe('ConductorConfigSchema startup migration lock', () => {
   it('defaults to migrate-on, lock enabled, and a 30 minute steal timeout', () => {
     const parsed = ConductorConfigSchema.parse(minimalConductorConfig());
-    expect(parsed.ephemeralStorageGiB).toBe(80);
+    expect(parsed.ephemeralStorageGiB).toBe(21);
     expect(parsed.disableMigrateOnStartup).toBe(false);
     expect(parsed.disableStartupMigrationLock).toBe(false);
     expect(parsed.startupMigrationLockTimeoutMs).toBe(

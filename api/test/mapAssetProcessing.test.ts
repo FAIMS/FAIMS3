@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 import {beforeAll, beforeEach, describe, expect, it, vi} from 'vitest';
 import {getMapAssetsDB} from '../src/couchdb';
+import {cleanupStaging} from '../src/couchdb/mapAssets/staging';
 import {
+  MAP_ASSET_ORIGINALS_MISSING_REASON,
   MAP_ASSET_PROCESSING_EXHAUSTED_REASON,
   MAP_ASSET_PROCESSING_MAX_ATTEMPTS,
   createMapAsset,
+  findUnclaimedSpatialJob,
   getMapAsset,
   mapAssetProcessingClaimIsStale,
   processMapAsset,
   replaceMapAssetFiles,
-  sweepStaleMapAssetProcessing,
-  waitForMapAssetProcessing,
+  storeOriginalsFromStaging,
+  sweepPendingOriginalUploads,
 } from '../src/couchdb/mapAssets/store';
 import {resetDatabases} from './mocks';
 
@@ -46,6 +49,13 @@ async function createProcessingAsset() {
     files: [{filename: 'layer.geojson', bytes: Buffer.from('{}')}],
     primaryFilename: 'layer.geojson',
   });
+}
+
+/** Stage via create, then put originals in object storage the way the API does. */
+async function createStoredAsset() {
+  const asset = await createProcessingAsset();
+  await storeOriginalsFromStaging(asset._id);
+  return getMapAsset(asset._id);
 }
 
 async function clearMapAssetDocs() {
@@ -95,87 +105,140 @@ describe('map asset processing claim', () => {
   });
 });
 
-describe('map asset processing sweep', () => {
+describe('map asset original upload', () => {
   beforeAll(async () => {
     await resetDatabases();
   });
 
   beforeEach(async () => {
-    await waitForMapAssetProcessing();
     await clearMapAssetDocs();
     normalizeMapUpload.mockReset();
     normalizeMapUpload.mockResolvedValue(normalizedFixture());
   });
 
-  it('retries an unclaimed processing asset from a sweep', async () => {
+  it('stores originals from staging and does not run GDAL', async () => {
     const asset = await createProcessingAsset();
-    const enqueued = await sweepStaleMapAssetProcessing({
+    const stored = await sweepPendingOriginalUploads({
+      now: () => T0,
+      originalUploadGraceMs: CLAIM_TIMEOUT_MS,
+    });
+    expect(stored).toEqual([asset._id]);
+    const finished = await getMapAsset(asset._id);
+    expect(finished.status).toBe('processing');
+    expect(finished.processingAttempts).toBeUndefined();
+    expect(finished.storedAttachments?.original?.provider).toBe('s3');
+    expect(finished.storedAttachments?.original?.resourceUri).toContain(
+      asset._id
+    );
+    expect(finished.storedAttachments?.normalized).toBeUndefined();
+    expect(normalizeMapUpload).not.toHaveBeenCalled();
+    expect(await findUnclaimedSpatialJob({now: () => T0})).toBe(asset._id);
+  });
+
+  it('does not claim or normalize a job that has no originals', async () => {
+    const asset = await createProcessingAsset();
+    await processMapAsset(asset._id, {
       now: () => T0,
       claimTimeoutMs: CLAIM_TIMEOUT_MS,
     });
-    expect(enqueued).toEqual([asset._id]);
-    await waitForMapAssetProcessing();
+    const current = await getMapAsset(asset._id);
+    expect(current.status).toBe('processing');
+    expect(current.processingAttempts).toBeUndefined();
+    expect(current.processingStartedAt).toBeUndefined();
+    expect(normalizeMapUpload).not.toHaveBeenCalled();
+    expect(
+      await findUnclaimedSpatialJob({
+        now: () => T0,
+        claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      })
+    ).toBeUndefined();
+  });
 
+  it('leaves a fresh claim alone and does not run GDAL from the sweep', async () => {
+    const asset = await createStoredAsset();
+    await getMapAssetsDB().put({
+      ...asset,
+      processingStartedAt: T0,
+      processingAttempts: 1,
+    });
+    const touched = await sweepPendingOriginalUploads({
+      now: () => T0,
+      claimTimeoutMs: CLAIM_TIMEOUT_MS,
+    });
+    expect(touched).toEqual([]);
+    const held = await getMapAsset(asset._id);
+    expect(held.status).toBe('processing');
+    expect(held.processingAttempts).toBe(1);
+    expect(held.processingStartedAt).toBe(T0);
+    expect(normalizeMapUpload).not.toHaveBeenCalled();
+    expect(
+      await findUnclaimedSpatialJob({
+        now: () => T0,
+        claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      })
+    ).toBeUndefined();
+  });
+
+  it('fails a processing asset whose files are gone after the grace period', async () => {
+    const asset = await createProcessingAsset();
+    await cleanupStaging(asset._id);
+    const current = await getMapAsset(asset._id);
+    await getMapAssetsDB().put({
+      ...current,
+      updatedAt: T0 - CLAIM_TIMEOUT_MS,
+    });
+    const touched = await sweepPendingOriginalUploads({
+      now: () => T0,
+      originalUploadGraceMs: CLAIM_TIMEOUT_MS,
+    });
+    expect(touched).toEqual([asset._id]);
+    const failed = await getMapAsset(asset._id);
+    expect(failed.status).toBe('failed');
+    expect(failed.failureReason).toBe(MAP_ASSET_ORIGINALS_MISSING_REASON);
+    expect(normalizeMapUpload).not.toHaveBeenCalled();
+  });
+});
+
+describe('map asset worker processing', () => {
+  beforeAll(async () => {
+    await resetDatabases();
+  });
+
+  beforeEach(async () => {
+    await clearMapAssetDocs();
+    normalizeMapUpload.mockReset();
+    normalizeMapUpload.mockResolvedValue(normalizedFixture());
+  });
+
+  it('downloads originals, normalizes, and commits', async () => {
+    const asset = await createStoredAsset();
+    await processMapAsset(asset._id, {
+      now: () => T0,
+      claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      claimHeartbeatMs: 0,
+    });
     const finished = await getMapAsset(asset._id);
     expect(finished.status).toBe('ready');
     expect(finished.processingAttempts).toBe(1);
     expect(finished.processingStartedAt).toBeUndefined();
     expect(finished.storedAttachments?.original?.provider).toBe('s3');
-    expect(finished.storedAttachments?.original?.resourceUri).toContain(
-      asset._id
-    );
     expect(finished.storedAttachments?.normalized?.provider).toBe('s3');
     expect(normalizeMapUpload).toHaveBeenCalledOnce();
   });
 
-  it('retries a stale claim and leaves a fresh claim alone', async () => {
-    const stale = await createProcessingAsset();
-    const fresh = await createProcessingAsset();
-    const db = getMapAssetsDB();
-    const staleDoc = await getMapAsset(stale._id);
-    const freshDoc = await getMapAsset(fresh._id);
-    await db.put({
-      ...staleDoc,
-      processingStartedAt: T0 - CLAIM_TIMEOUT_MS,
-      processingAttempts: 1,
-    });
-    await db.put({
-      ...freshDoc,
-      processingStartedAt: T0,
-      processingAttempts: 1,
-    });
-
-    const enqueued = await sweepStaleMapAssetProcessing({
-      now: () => T0,
-      claimTimeoutMs: CLAIM_TIMEOUT_MS,
-    });
-    expect(enqueued).toEqual([stale._id]);
-    await waitForMapAssetProcessing();
-
-    const retried = await getMapAsset(stale._id);
-    expect(retried.status).toBe('ready');
-    expect(retried.processingAttempts).toBe(2);
-    const held = await getMapAsset(fresh._id);
-    expect(held.status).toBe('processing');
-    expect(held.processingAttempts).toBe(1);
-    expect(held.processingStartedAt).toBe(T0);
-  });
-
   it('marks the asset failed after the attempt cap without running GDAL again', async () => {
-    const asset = await createProcessingAsset();
-    const current = await getMapAsset(asset._id);
+    const asset = await createStoredAsset();
     await getMapAssetsDB().put({
-      ...current,
+      ...asset,
       processingStartedAt: T0 - CLAIM_TIMEOUT_MS,
       processingAttempts: MAP_ASSET_PROCESSING_MAX_ATTEMPTS,
     });
 
-    const enqueued = await sweepStaleMapAssetProcessing({
+    await processMapAsset(asset._id, {
       now: () => T0,
       claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      claimHeartbeatMs: 0,
     });
-    expect(enqueued).toEqual([asset._id]);
-    await waitForMapAssetProcessing();
 
     const failed = await getMapAsset(asset._id);
     expect(failed.status).toBe('failed');
@@ -184,28 +247,29 @@ describe('map asset processing sweep', () => {
     expect(normalizeMapUpload).not.toHaveBeenCalled();
   });
 
-  it('fails a GDAL error immediately and does not sweep it again', async () => {
+  it('fails a GDAL error immediately and does not offer the job again', async () => {
     normalizeMapUpload.mockRejectedValue(new Error('no crs'));
-    const asset = await createProcessingAsset();
+    const asset = await createStoredAsset();
     await processMapAsset(asset._id, {
       now: () => T0,
       claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      claimHeartbeatMs: 0,
     });
 
     const failed = await getMapAsset(asset._id);
     expect(failed.status).toBe('failed');
     expect(failed.failureReason).toBe('no crs');
     expect(failed.processingAttempts).toBe(1);
-
-    const enqueued = await sweepStaleMapAssetProcessing({
-      now: () => T0 + CLAIM_TIMEOUT_MS,
-      claimTimeoutMs: CLAIM_TIMEOUT_MS,
-    });
-    expect(enqueued).toEqual([]);
+    expect(
+      await findUnclaimedSpatialJob({
+        now: () => T0 + CLAIM_TIMEOUT_MS,
+        claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      })
+    ).toBeUndefined();
   });
 
   it('does not let a second claim run GDAL while the first claim is fresh', async () => {
-    const asset = await createProcessingAsset();
+    const asset = await createStoredAsset();
     let release: () => void = () => undefined;
     const gate = new Promise<void>(resolve => {
       release = resolve;
@@ -218,6 +282,7 @@ describe('map asset processing sweep', () => {
     const first = processMapAsset(asset._id, {
       now: () => T0,
       claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      claimHeartbeatMs: 0,
     });
     try {
       const started = Date.now();
@@ -233,6 +298,7 @@ describe('map asset processing sweep', () => {
       await processMapAsset(asset._id, {
         now: () => T0,
         claimTimeoutMs: CLAIM_TIMEOUT_MS,
+        claimHeartbeatMs: 0,
       });
       expect(normalizeMapUpload).toHaveBeenCalledOnce();
     } finally {
@@ -243,7 +309,7 @@ describe('map asset processing sweep', () => {
   });
 
   it('leaves a ready asset in place when this run loses the claim', async () => {
-    const asset = await createProcessingAsset();
+    const asset = await createStoredAsset();
     normalizeMapUpload.mockImplementation(async () => {
       const latest = await getMapAsset(asset._id);
       await getMapAssetsDB().put({
@@ -261,6 +327,7 @@ describe('map asset processing sweep', () => {
     await processMapAsset(asset._id, {
       now: () => T0,
       claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      claimHeartbeatMs: 0,
     });
 
     const finished = await getMapAsset(asset._id);
@@ -270,7 +337,7 @@ describe('map asset processing sweep', () => {
   });
 
   it('clears the claim when the uploaded file is replaced', async () => {
-    const asset = await createProcessingAsset();
+    const asset = await createStoredAsset();
     const current = await getMapAsset(asset._id);
     await getMapAssetsDB().put({
       ...current,
@@ -294,10 +361,13 @@ describe('map asset processing sweep', () => {
     expect(replaced.processingAttempts).toBeUndefined();
     expect(replaced.processingStartedAt).toBeUndefined();
     expect(replaced.failureReason).toBeUndefined();
+    expect(replaced.storedAttachments).toBeUndefined();
 
+    await storeOriginalsFromStaging(replaced._id);
     await processMapAsset(replaced._id, {
       now: () => T0,
       claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      claimHeartbeatMs: 0,
     });
     const finished = await getMapAsset(replaced._id);
     expect(finished.status).toBe('ready');
