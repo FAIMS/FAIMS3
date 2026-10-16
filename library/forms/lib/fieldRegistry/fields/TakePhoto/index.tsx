@@ -3,6 +3,10 @@ import {Exif} from '@capacitor-community/exif';
 import {Camera, CameraResultType, CameraSource, Photo} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
 import {Geolocation} from '@capacitor/geolocation';
+import {
+  attachmentSaveTrace,
+  BaseFieldParametersSchema,
+} from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
@@ -28,11 +32,6 @@ import {
 } from '../../../components/PermissionAlerts';
 import {PhotoLightbox} from '../../../components/PhotoLightbox';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
-import {
-  attachmentSaveTrace,
-  BaseFieldParametersSchema,
-} from '@faims3/data-model';
-import {takePhotoIsComplete, takePhotoValueSchema} from './valueSchema';
 import {FormFieldContextProps} from '../../../formModule/types';
 import {
   LoadedPhoto,
@@ -42,12 +41,17 @@ import {
 import {logError, logWarn} from '../../../logging';
 import {TakePhotoRender} from '../../../rendering/fields/view/specialised/TakePhoto';
 import {FieldInfo} from '../../types';
+import {
+  getItemCountHint,
+  getRemainingItemCount,
+} from '../../utils/itemCountHelpers';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {
   createConcurrencyLimiter,
   delayIfSlowPhotosDebug,
   MAX_PARALLEL_SAVES,
 } from './parallelSaveLimiter';
+import {takePhotoIsComplete, takePhotoValueSchema} from './valueSchema';
 import {
   IMAGE_QUALITY_0_100,
   MAX_IMAGE_WIDTH,
@@ -92,7 +96,16 @@ const ensureIosPhotosAccess = async (): Promise<PhotosAccessIssue | null> => {
 // Types & Schema
 // ============================================================================
 
-const takePhotoPropsSchema = BaseFieldParametersSchema.extend({});
+/**
+ * Configuration parameters for TakePhoto.
+ *
+ * null means that the designer has not configured an additional
+ * minimum or maximum number of photos.
+ */
+const takePhotoPropsSchema = BaseFieldParametersSchema.extend({
+  minItems: z.number().int().positive().nullable().optional(),
+  maxItems: z.number().int().positive().nullable().optional(),
+});
 type TakePhotoProps = z.infer<typeof takePhotoPropsSchema>;
 type TakePhotoFieldProps = TakePhotoProps & FormFieldContextProps;
 
@@ -132,6 +145,31 @@ async function base64ImageToBlob(image: Photo): Promise<Blob> {
   return new Blob([content], {
     type: `image/${image.format}`,
   });
+}
+
+/**
+ * Count saved, pending, and reserved photos without double-counting.
+ */
+function getOccupiedPhotoCount({
+  storedIds,
+  pendingIds,
+  reservedCount,
+}: {
+  storedIds: string[];
+  // Map<tempId, attachmentId>
+  pendingIds: Map<string, string | null>;
+  reservedCount: number;
+}): number {
+  const saved = new Set(storedIds);
+
+  // Count pending photos not yet included in saved IDs.
+  let pendingUnstored = 0;
+  for (const id of pendingIds.values()) {
+    if (id === null || !saved.has(id)) pendingUnstored++;
+  }
+
+  // Include saved photos, unsaved pending photos, and reserved slots.
+  return saved.size + pendingUnstored + reservedCount;
 }
 
 // ============================================================================
@@ -926,6 +964,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
     required,
     advancedHelperText,
     disabled = false,
+    maxItems = null,
     state,
     addAttachment,
     removeAttachment,
@@ -947,8 +986,45 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   // Track URLs that need cleanup on unmount
   const pendingUrlsRef = useRef<Set<string>>(new Set());
 
-  const [saveError, setSaveError] = useState<string | null>(null);
+  // Count optimistic photos synchronously, even before React rerenders.
+  // Map<tempId, attachmentId>
+  const pendingCountRef = useRef<Map<string, string | null>>(new Map());
+  // Reserve capacity during async picking/preparation to prevent overfilling.
+  const reservedCountRef = useRef(0);
 
+  // Latest saved ids; callbacks use this to avoid stale React closures.
+  const storedIdsRef = useRef<string[]>([]);
+  storedIdsRef.current = (state.value?.data as string[] | undefined) ?? [];
+
+  // Count saved, pending, and reserved photos without double-counting.
+  // Returns null when no maximum is configured.
+  const getRemainingCapacity = useCallback((): number | null => {
+    if (maxItems == null) return null;
+
+    // Include saved photos, unsaved pending photos, and reserved slots.
+    const currentCount = getOccupiedPhotoCount({
+      storedIds: storedIdsRef.current,
+      pendingIds: pendingCountRef.current,
+      reservedCount: reservedCountRef.current,
+    });
+
+    return getRemainingItemCount({maxItems, currentCount});
+  }, [maxItems]);
+
+  // Reserve slots before async operations to prevent exceeding the maximum.
+  const reserveCapacity = useCallback(
+    (count: number): boolean => {
+      const remaining = getRemainingCapacity();
+      // Not enough capacity for the requested photos.
+      if (remaining !== null && count > remaining) return false;
+
+      reservedCountRef.current += count;
+      return true;
+    },
+    [getRemainingCapacity]
+  );
+
+  const [saveError, setSaveError] = useState<string | null>(null);
   // One native picker at a time. Saves are tracked separately so Camera /
   // Gallery stay usable while earlier photos show "Saving...".
   const pickerInFlightRef = useRef(false);
@@ -995,6 +1071,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
           // Clean up the object URL
           URL.revokeObjectURL(pending.url);
           pendingUrlsRef.current.delete(pending.url);
+          pendingCountRef.current.delete(tempId);
           updated.delete(tempId);
           changed = true;
         }
@@ -1072,6 +1149,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
 
     const optimisticUrl = URL.createObjectURL(photoBlob);
     pendingUrlsRef.current.add(optimisticUrl);
+    // Register before React processes state updates.
+    pendingCountRef.current.set(tempId, null);
     setPendingPhotos(current => {
       const updated = new Map(current);
       updated.set(tempId, {
@@ -1090,6 +1169,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
    * batch aborted). Idempotent — safe to call after storage already succeeded.
    */
   const removePendingPhoto = useCallback((tempId: string) => {
+    // Release the pending slot immediately.
+    pendingCountRef.current.delete(tempId);
     setPendingPhotos(current => {
       const pending = current.get(tempId);
       if (!pending) return current;
@@ -1166,6 +1247,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
 
       // Mark storage complete; keep optimistic preview until useAttachments loads.
       // The Saving overlay hides once attachmentId is set (see PendingPhotoItem).
+      pendingCountRef.current.set(tempId, newId);
       setPendingPhotos(current => {
         const updated = new Map(current);
         const pending = updated.get(tempId);
@@ -1195,6 +1277,15 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   const takePhoto = useCallback(async () => {
     if (pickerInFlightRef.current) return;
     if (savesInFlightRef.current >= MAX_PARALLEL_SAVES) return;
+    // Reserve one photo slot before launching the asynchronous camera picker.
+    // A pending preview takes over this slot once the capture is prepared.
+    if (!reserveCapacity(1)) {
+      setSaveError(`Maximum ${maxItems} photos allowed`);
+      return;
+    }
+
+    // Track whether the camera's reserved slot still needs releasing.
+    let captureReservationHeld = true;
 
     beginPicker();
     let saveSlotHeld = false;
@@ -1253,6 +1344,9 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
 
       setSaveError(null);
       const tempId = addPendingPreview(prepared.photoBlob);
+      // The pending preview now occupies the slot, replacing the reservation.
+      reservedCountRef.current -= 1;
+      captureReservationHeld = false;
 
       // Take a save slot before releasing the picker so the form lock is
       // never dropped between capture and the PouchDB write.
@@ -1282,6 +1376,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       if (saveSlotHeld) {
         releaseSaveSlot();
       }
+      // A cancelled/failed capture must not keep a slot reserved.
+      if (captureReservationHeld) reservedCountRef.current -= 1;
     }
   }, [
     addPendingPreview,
@@ -1290,6 +1386,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
     endPicker,
     acquireSaveSlot,
     releaseSaveSlot,
+    reserveCapacity,
   ]);
 
   /**
@@ -1304,6 +1401,9 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   const pickFromGallery = useCallback(async () => {
     if (pickerInFlightRef.current) return;
     if (savesInFlightRef.current >= MAX_PARALLEL_SAVES) return;
+
+    // Slots reserved for picked photos not yet represented by previews.
+    let galleryReservations = 0;
 
     beginPicker();
     try {
@@ -1322,23 +1422,49 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       // object URL, so CloudFront must list blob: on connect-src
       // (infrastructure/aws-cdk/lib/components/front-end.ts). 'self' does
       // not match blob:.
+
+      const pickerLimit = Math.min(
+        MAX_GALLERY_BATCH,
+        getRemainingCapacity() ?? MAX_GALLERY_BATCH
+      );
+      // Maximum reached, the component already displays an alert.
+      if (pickerLimit === 0) return;
+
       const {photos} = await Camera.pickImages({
         quality: IMAGE_QUALITY_0_100,
         width: MAX_IMAGE_WIDTH,
         correctOrientation: true,
-        limit: MAX_GALLERY_BATCH,
+        limit: pickerLimit,
       });
 
       if (photos.length === 0) return;
 
       // Defensive cap: some platforms/versions ignore `limit`. Trim here so
       // we never process more than MAX_GALLERY_BATCH regardless of platform.
-      const overLimit = photos.length > MAX_GALLERY_BATCH;
-      const selected = overLimit ? photos.slice(0, MAX_GALLERY_BATCH) : photos;
 
+      // Recheck after awaiting the native picker, then reserve the whole batch.
+      const allowed = Math.min(
+        pickerLimit,
+        getRemainingCapacity() ?? pickerLimit
+      );
+
+      const overLimit = photos.length > allowed;
+      const selected = photos.slice(0, allowed);
+      if (selected.length === 0) {
+        setSaveError(`Maximum of ${maxItems} photos reached.`);
+        return;
+      }
+      // just keep this as a defensive check
+      if (!reserveCapacity(selected.length)) return;
+
+      galleryReservations = selected.length;
+
+      // Warn about extra photos, but continue adding those within the limit.
       setSaveError(
         overLimit
-          ? `You can add up to ${MAX_GALLERY_BATCH} photos at once — only the first ${MAX_GALLERY_BATCH} will be added.`
+          ? allowed < MAX_GALLERY_BATCH
+            ? `Only ${allowed} more photo${allowed === 1 ? '' : 's'} can be added. Extra photos were not added.`
+            : `You can add up to ${MAX_GALLERY_BATCH} photos at once — only the first ${MAX_GALLERY_BATCH} will be added.`
           : null
       );
 
@@ -1355,8 +1481,12 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
             photoBlob,
             photo.format
           );
+          const tempId = addPendingPreview(prepared.photoBlob);
+          // Transfer the reserved slot to a pending photo.
+          reservedCountRef.current -= 1;
+          galleryReservations -= 1;
           pending.push({
-            tempId: addPendingPreview(prepared.photoBlob),
+            tempId,
             photoBlob: prepared.photoBlob,
             format: prepared.format,
           });
@@ -1404,6 +1534,9 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       logError(new Error('Failed to add photos from gallery:'), {error: err});
       setSaveError('Could not add photos from your gallery. Please try again.');
     } finally {
+      // cleanup
+      if (galleryReservations > 0)
+        reservedCountRef.current -= galleryReservations;
       if (pickerInFlightRef.current) {
         endPicker();
       }
@@ -1416,6 +1549,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
     endPicker,
     acquireSaveSlot,
     releaseSaveSlot,
+    reserveCapacity,
+    getRemainingCapacity,
   ]);
 
   /**
@@ -1442,10 +1577,41 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
     (state.value?.attachments?.length ?? 0) > 0 || pendingPhotos.size > 0;
 
   const atSaveCapacity = savesInFlight >= MAX_PARALLEL_SAVES;
-  const actionsDisabled = pickerInFlight || atSaveCapacity;
-  const actionsDisabledReason = atSaveCapacity
-    ? `Up to ${MAX_PARALLEL_SAVES} photos can save at once — wait for one to finish.`
-    : undefined;
+
+  const currentCount = getOccupiedPhotoCount({
+    storedIds: storedIdsRef.current,
+    pendingIds: pendingCountRef.current,
+    reservedCount: reservedCountRef.current,
+  });
+
+  const remainingCapacity = getRemainingItemCount({maxItems, currentCount});
+  const atPhotoMaximum = remainingCapacity === 0;
+  const exceedsPhotoMaximum = maxItems != null && currentCount > maxItems;
+
+  const actionsDisabled = pickerInFlight || atSaveCapacity || atPhotoMaximum;
+  const actionsDisabledReason = atPhotoMaximum
+    ? `Maximum of ${maxItems} photos reached.`
+    : atSaveCapacity
+      ? `Up to ${MAX_PARALLEL_SAVES} photos can save at once — wait for one to finish.`
+      : undefined;
+
+  // Limit the gallery hint to the available photo capacity.
+  const gallerySelectionLimit = Math.min(
+    MAX_GALLERY_BATCH,
+    remainingCapacity ?? MAX_GALLERY_BATCH
+  );
+  const photoInputHint =
+    gallerySelectionLimit > 0
+      ? `Take a photo or add up to ${gallerySelectionLimit} at once from the gallery.`
+      : null;
+
+  // Show the configured minimum/maximum before form validation.
+  const photoCountHint = getItemCountHint({
+    required,
+    minItems: props.minItems,
+    maxItems,
+    itemName: 'photo',
+  });
 
   return (
     <FieldWrapper
@@ -1456,6 +1622,36 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       errors={props.state.meta.errors as unknown as string[]}
     >
       <Box sx={{width: '100%'}}>
+        {/* Show photo count requirements and available input options. */}
+        {(photoCountHint || photoInputHint) && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{display: 'block', mb: 1}}
+          >
+            {[photoCountHint, photoInputHint].filter(Boolean).join(' ')}
+          </Typography>
+        )}
+
+        {/* Photo Count Info */}
+        {maxItems != null && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{display: 'block', mt: 1}}
+          >
+            {currentCount} / {maxItems} photo{maxItems === 1 ? '' : 's'}
+          </Typography>
+        )}
+
+        {/* Warn when the photo count exceeds the configured maximum. */}
+        {exceedsPhotoMaximum && !disabled && (
+          <Alert severity="info" sx={{mb: 2}}>
+            Maximum of {maxItems} photo{maxItems === 1 ? '' : 's'} allowed.
+            Remove extra photos to meet the limit.
+          </Alert>
+        )}
+
         {/* Attachment Download Warning */}
         {loadedPhotos.some(q => q.isError) && (
           <Alert severity="warning" sx={{mb: 2}}>
