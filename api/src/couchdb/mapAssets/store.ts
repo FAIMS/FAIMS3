@@ -464,11 +464,9 @@ async function downloadOriginalsToStaging(
 }
 
 /**
- * Refresh the claim this often while GDAL runs so a long raster is not
- * treated as abandoned. The worker updates its local claim token to match.
+ * A processing job with no stage or progress write for this long may be
+ * claimed again. Measured from `updatedAt`, not claim start.
  */
-export const MAP_ASSET_PROCESSING_CLAIM_HEARTBEAT_MS = 60 * 1000;
-/** A claim older than this may be taken by another worker. */
 export const MAP_ASSET_PROCESSING_CLAIM_TIMEOUT_MS = 2 * 60 * 60 * 1000;
 /**
  * Claims started for one upload, including the first. A crash after this
@@ -493,8 +491,6 @@ export type MapAssetProcessingRuntime = {
   now?: () => number;
   claimTimeoutMs?: number;
   maxAttempts?: number;
-  /** `0` disables the claim heartbeat. Default is 60s. */
-  claimHeartbeatMs?: number;
   /** Age before a pending asset with no files is failed. */
   originalUploadGraceMs?: number;
   normalize?: typeof normalizeMapUpload;
@@ -516,11 +512,7 @@ function originalUploadGraceMs(runtime?: MapAssetProcessingRuntime): number {
   return runtime?.originalUploadGraceMs ?? MAP_ASSET_ORIGINAL_UPLOAD_GRACE_MS;
 }
 
-function claimHeartbeatMs(runtime?: MapAssetProcessingRuntime): number {
-  return runtime?.claimHeartbeatMs ?? MAP_ASSET_PROCESSING_CLAIM_HEARTBEAT_MS;
-}
-
-/** Latest claim timestamp. Heartbeat and commit share `chain` so they don't race. */
+/** Claim timestamp. Stage, progress, and commit share `chain` so they don't race. */
 type ClaimToken = {
   current: number;
   chain: Promise<void>;
@@ -557,12 +549,34 @@ function omitUndefinedFields<T extends object>(doc: T): T {
   return next;
 }
 
+function lastProcessingStateChangeAt(asset: {
+  updatedAt?: number;
+  processingStartedAt?: number;
+}): number | undefined {
+  if (asset.updatedAt !== undefined && Number.isFinite(asset.updatedAt)) {
+    return asset.updatedAt;
+  }
+  if (
+    asset.processingStartedAt !== undefined &&
+    Number.isFinite(asset.processingStartedAt)
+  ) {
+    return asset.processingStartedAt;
+  }
+  return undefined;
+}
+
 /**
  * True when a worker may claim this asset: it is `pending`, or `processing`
  * with no live claim (the previous worker died, or a legacy unclaimed job).
+ * A live claim is stale once `updatedAt` (last stage/progress write) is
+ * older than `timeoutMs`.
  */
 export function mapAssetIsClaimable(
-  asset: {status: string; processingStartedAt?: number},
+  asset: {
+    status: string;
+    updatedAt?: number;
+    processingStartedAt?: number;
+  },
   now: number,
   timeoutMs: number = MAP_ASSET_PROCESSING_CLAIM_TIMEOUT_MS
 ): boolean {
@@ -572,11 +586,11 @@ export function mapAssetIsClaimable(
   if (asset.status !== 'processing') {
     return false;
   }
-  const startedAt = asset.processingStartedAt;
-  if (startedAt === undefined || !Number.isFinite(startedAt)) {
+  const lastChange = lastProcessingStateChangeAt(asset);
+  if (lastChange === undefined) {
     return true;
   }
-  return now - startedAt >= timeoutMs;
+  return now - lastChange >= timeoutMs;
 }
 
 /**
@@ -802,67 +816,22 @@ export function scheduleStoreOriginals(assetId: string): void {
   });
 }
 
-async function refreshClaimToken(
+async function claimStillOwned(
   assetId: string,
-  token: ClaimToken,
-  runtime?: MapAssetProcessingRuntime
+  token: ClaimToken
 ): Promise<boolean> {
   return withClaimToken(token, async () => {
     const latest = await getMapAsset(assetId);
-    if (
-      latest.status !== 'processing' ||
-      latest.processingStartedAt !== token.current
-    ) {
-      return false;
-    }
-    const now = processingNow(runtime);
-    try {
-      await getMapAssetsDB().put({
-        ...latest,
-        processingStartedAt: now,
-        updatedAt: now,
-      });
-    } catch (error) {
-      if (isConflict(error)) {
-        return false;
-      }
-      throw error;
-    }
-    token.current = now;
-    logMapAssetProcessing({
-      event: 'processing.claim',
-      outcome: 'waiting',
-      assetId,
-      detail: 'refreshed processing claim',
-    });
-    return true;
+    return (
+      latest.status === 'processing' &&
+      latest.processingStartedAt === token.current
+    );
   });
-}
-
-function startClaimHeartbeat(
-  assetId: string,
-  token: ClaimToken,
-  runtime?: MapAssetProcessingRuntime
-): () => void {
-  const intervalMs = claimHeartbeatMs(runtime);
-  if (intervalMs <= 0) {
-    return () => undefined;
-  }
-  const timer = setInterval(() => {
-    void refreshClaimToken(assetId, token, runtime).catch(error => {
-      console.error(
-        `${MAP_ASSET_PROCESSING_LOG} claim heartbeat failed for ${assetId}`,
-        error
-      );
-    });
-  }, intervalMs);
-  timer.unref();
-  return () => clearInterval(timer);
 }
 
 /**
  * Write the current pipeline step onto the asset so the Control Centre can
- * poll it. Serialized with the claim heartbeat. A lost claim is a no-op.
+ * poll it. Serialized with other claim writes. A lost claim is a no-op.
  */
 async function reportProcessingStage(
   assetId: string,
@@ -930,7 +899,7 @@ function progressUnchanged(
 
 /**
  * Write tippecanoe / GDAL phase + percent so the Control Centre can poll
- * it. Serialized with the claim heartbeat. A lost claim is a no-op.
+ * it. Serialized with other claim writes. A lost claim is a no-op.
  */
 async function reportProcessingProgress(
   assetId: string,
@@ -1052,7 +1021,6 @@ export async function processMapAsset(
     current: claimStartedAt,
     chain: Promise.resolve(),
   };
-  const stopHeartbeat = startClaimHeartbeat(assetId, token, runtime);
   const runStarted = Date.now();
   logMapAssetProcessing({
     event: 'processing.run',
@@ -1097,9 +1065,8 @@ export async function processMapAsset(
         })
     );
     cleanupDir = normalized.cleanupDir;
-    stopHeartbeat();
     await token.chain;
-    const stillOwned = await refreshClaimToken(assetId, token, runtime);
+    const stillOwned = await claimStillOwned(assetId, token);
     if (!stillOwned) {
       logMapAssetProcessing({
         event: 'processing.run',
@@ -1184,7 +1151,6 @@ export async function processMapAsset(
       elapsedMs: Date.now() - runStarted,
     });
   } catch (error) {
-    stopHeartbeat();
     await token.chain;
     const message =
       error instanceof Error ? error.message : 'Map layer processing failed.';
@@ -1215,7 +1181,6 @@ export async function processMapAsset(
       reason: message,
     });
   } finally {
-    stopHeartbeat();
     if (cleanupDir) {
       await rm(cleanupDir, {recursive: true, force: true}).catch(
         () => undefined

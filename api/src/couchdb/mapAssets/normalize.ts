@@ -11,7 +11,6 @@ import {copyFile, mkdtemp, open, rm, stat, writeFile} from 'fs/promises';
 import {tmpdir} from 'os';
 import path from 'path';
 import {
-  formatMapAssetProcessingProgress,
   type MapAssetKind,
   type MapAssetProcessingProgress,
   type MapAssetProcessingStage,
@@ -362,13 +361,11 @@ async function convertVector(
   }
   await emitStage(logContext, 'tiling-vectors');
   let leftover = '';
-  let lastProgress: MapAssetProcessingProgress | undefined;
   let progressWait = Promise.resolve();
   const onStderr = (chunk: string) => {
     const consumed = consumeTippecanoeProgress(leftover + chunk);
     leftover = consumed.leftover;
     for (const update of consumed.updates) {
-      lastProgress = update;
       const reported = update;
       progressWait = progressWait.then(() =>
         Promise.resolve(logContext?.onProgress?.(reported))
@@ -388,21 +385,11 @@ async function convertVector(
     );
     const flushed = consumeTippecanoeProgress(`${leftover}\n`);
     for (const update of flushed.updates) {
-      lastProgress = update;
       await logContext?.onProgress?.(update);
     }
     await progressWait;
   } catch (error) {
     await progressWait.catch(() => undefined);
-    if (
-      error instanceof GdalCommandError &&
-      /timed out after/.test(error.stderr)
-    ) {
-      const suffix = lastProgress
-        ? ` (${formatMapAssetProcessingProgress(lastProgress)})`
-        : '';
-      throw new Error(`${error.stderr}${suffix}`);
-    }
     throw error;
   }
   await rm(fgbPath, {force: true});

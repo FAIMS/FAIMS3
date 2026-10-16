@@ -244,8 +244,9 @@ export const MapAssetFieldsSchema = z.object({
   failureReason: z.string().optional(),
   /**
    * Epoch ms when a spatial worker claimed this asset (`status` is then
-   * `processing`). Absent on `pending`. Missing, or older than the claim
-   * timeout, means another worker may retry.
+   * `processing`). Absent on `pending`. This is the claim token. Another
+   * worker may retry when `updatedAt` (last stage/progress write) is older
+   * than the claim timeout.
    */
   processingStartedAt: z.number().optional(),
   /**

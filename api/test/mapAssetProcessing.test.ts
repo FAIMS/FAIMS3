@@ -80,7 +80,7 @@ describe('map asset processing claim', () => {
     ).toBe(true);
     expect(
       mapAssetIsClaimable(
-        {status: 'processing', processingStartedAt: T0 - CLAIM_TIMEOUT_MS},
+        {status: 'processing', updatedAt: T0 - CLAIM_TIMEOUT_MS},
         T0,
         CLAIM_TIMEOUT_MS
       )
@@ -89,7 +89,7 @@ describe('map asset processing claim', () => {
       mapAssetIsClaimable(
         {
           status: 'processing',
-          processingStartedAt: T0 - CLAIM_TIMEOUT_MS + 1,
+          updatedAt: T0 - CLAIM_TIMEOUT_MS + 1,
         },
         T0,
         CLAIM_TIMEOUT_MS
@@ -97,7 +97,29 @@ describe('map asset processing claim', () => {
     ).toBe(false);
     expect(
       mapAssetIsClaimable(
-        {status: 'ready', processingStartedAt: T0 - CLAIM_TIMEOUT_MS},
+        {
+          status: 'processing',
+          processingStartedAt: T0 - CLAIM_TIMEOUT_MS,
+          updatedAt: T0,
+        },
+        T0,
+        CLAIM_TIMEOUT_MS
+      )
+    ).toBe(false);
+    expect(
+      mapAssetIsClaimable(
+        {
+          status: 'processing',
+          processingStartedAt: T0,
+          updatedAt: T0 - CLAIM_TIMEOUT_MS,
+        },
+        T0,
+        CLAIM_TIMEOUT_MS
+      )
+    ).toBe(true);
+    expect(
+      mapAssetIsClaimable(
+        {status: 'ready', updatedAt: T0 - CLAIM_TIMEOUT_MS},
         T0,
         CLAIM_TIMEOUT_MS
       )
@@ -166,6 +188,7 @@ describe('map asset original upload', () => {
       status: 'processing',
       processingStartedAt: T0,
       processingAttempts: 1,
+      updatedAt: T0,
     });
     const touched = await sweepPendingOriginalUploads({
       now: () => T0,
@@ -232,7 +255,6 @@ describe('map asset worker processing', () => {
     await processMapAsset(asset._id, {
       now: () => T0,
       claimTimeoutMs: CLAIM_TIMEOUT_MS,
-      claimHeartbeatMs: 0,
     });
     const finished = await getMapAsset(asset._id);
     expect(finished.status).toBe('ready');
@@ -251,12 +273,12 @@ describe('map asset worker processing', () => {
       status: 'processing',
       processingStartedAt: T0 - CLAIM_TIMEOUT_MS,
       processingAttempts: MAP_ASSET_PROCESSING_MAX_ATTEMPTS,
+      updatedAt: T0 - CLAIM_TIMEOUT_MS,
     });
 
     await processMapAsset(asset._id, {
       now: () => T0,
       claimTimeoutMs: CLAIM_TIMEOUT_MS,
-      claimHeartbeatMs: 0,
     });
 
     const failed = await getMapAsset(asset._id);
@@ -272,7 +294,6 @@ describe('map asset worker processing', () => {
     await processMapAsset(asset._id, {
       now: () => T0,
       claimTimeoutMs: CLAIM_TIMEOUT_MS,
-      claimHeartbeatMs: 0,
     });
 
     const failed = await getMapAsset(asset._id);
@@ -301,7 +322,6 @@ describe('map asset worker processing', () => {
     const first = processMapAsset(asset._id, {
       now: () => T0,
       claimTimeoutMs: CLAIM_TIMEOUT_MS,
-      claimHeartbeatMs: 0,
     });
     try {
       const started = Date.now();
@@ -319,7 +339,6 @@ describe('map asset worker processing', () => {
       await processMapAsset(asset._id, {
         now: () => T0,
         claimTimeoutMs: CLAIM_TIMEOUT_MS,
-        claimHeartbeatMs: 0,
       });
       expect(normalizeMapUpload).toHaveBeenCalledOnce();
     } finally {
@@ -348,7 +367,6 @@ describe('map asset worker processing', () => {
     await processMapAsset(asset._id, {
       now: () => T0,
       claimTimeoutMs: CLAIM_TIMEOUT_MS,
-      claimHeartbeatMs: 0,
     });
 
     const finished = await getMapAsset(asset._id);
@@ -389,7 +407,6 @@ describe('map asset worker processing', () => {
     await processMapAsset(replaced._id, {
       now: () => T0,
       claimTimeoutMs: CLAIM_TIMEOUT_MS,
-      claimHeartbeatMs: 0,
     });
     const finished = await getMapAsset(replaced._id);
     expect(finished.status).toBe('ready');
@@ -411,7 +428,6 @@ describe('map asset worker processing', () => {
     await processMapAsset(asset._id, {
       now: () => T0,
       claimTimeoutMs: CLAIM_TIMEOUT_MS,
-      claimHeartbeatMs: 0,
     });
     expect(seen).toEqual([
       'downloading',
@@ -447,7 +463,6 @@ describe('map asset worker processing', () => {
     await processMapAsset(asset._id, {
       now: () => T0,
       claimTimeoutMs: CLAIM_TIMEOUT_MS,
-      claimHeartbeatMs: 0,
     });
     const finished = await getMapAsset(asset._id);
     expect(finished.status).toBe('ready');
@@ -463,6 +478,7 @@ describe('map asset worker processing', () => {
       status: 'processing',
       processingStartedAt: T0,
       processingAttempts: 1,
+      updatedAt: T0,
     });
     const staged = await createPendingAsset();
     expect(staged.status).toBe('pending');
@@ -473,5 +489,23 @@ describe('map asset worker processing', () => {
         claimTimeoutMs: CLAIM_TIMEOUT_MS,
       })
     ).toEqual({inFlight: 1, unclaimed: 1});
+  });
+
+  it('treats a processing job as unclaimed after the last state change ages out', async () => {
+    const asset = await createStoredAsset();
+    await getMapAssetsDB().put({
+      ...asset,
+      status: 'processing',
+      processingStartedAt: T0,
+      processingAttempts: 1,
+      processingStage: 'tiling-vectors',
+      updatedAt: T0 - CLAIM_TIMEOUT_MS,
+    });
+    expect(
+      await findUnclaimedSpatialJob({
+        now: () => T0,
+        claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      })
+    ).toBe(asset._id);
   });
 });

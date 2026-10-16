@@ -15,9 +15,6 @@
 import {spawn} from 'child_process';
 import {logError} from '../../logging';
 
-/** How long a single GDAL/OGR process may run before it is killed. */
-const GDAL_COMMAND_TIMEOUT_MS = 60 * 60 * 1000;
-
 /** Thrown when a GDAL/OGR command exits non-zero. */
 export class GdalCommandError extends Error {
   constructor(
@@ -35,7 +32,7 @@ export class GdalCommandError extends Error {
 
 /**
  * Runs a GDAL/OGR binary and returns stdout. Rejects with {@link GdalCommandError}
- * when the process fails or times out.
+ * when the process fails.
  */
 export const runGdalCommand = ({
   command,
@@ -55,28 +52,13 @@ export const runGdalCommand = ({
     let stdout = '';
     let stderr = '';
     let settled = false;
-    let timer: ReturnType<typeof setTimeout>;
     const finish = (handler: () => void) => {
       if (settled) {
         return;
       }
       settled = true;
-      clearTimeout(timer);
       handler();
     };
-    timer = setTimeout(() => {
-      proc.kill('SIGKILL');
-      finish(() =>
-        reject(
-          new GdalCommandError(
-            command,
-            args,
-            `timed out after ${GDAL_COMMAND_TIMEOUT_MS}ms`,
-            null
-          )
-        )
-      );
-    }, GDAL_COMMAND_TIMEOUT_MS);
 
     proc.stdout.on('data', chunk => {
       stdout += chunk.toString();
