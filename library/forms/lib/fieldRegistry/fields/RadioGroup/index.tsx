@@ -158,7 +158,6 @@ export const RadioGroup = (props: FieldProps) => {
         {expandedChecklist && (
           <RadioGroupWidget
             displayValue={displayValue}
-            rawValue={rawValue}
             options={ElementProps.options}
             enableOtherOption={enableOtherOption}
             otherOptionPosition={otherOptionPosition}
@@ -174,7 +173,6 @@ export const RadioGroup = (props: FieldProps) => {
         {!expandedChecklist && (
           <DropDownWidget
             displayValue={displayValue}
-            rawValue={rawValue}
             options={ElementProps.options}
             enableOtherOption={enableOtherOption}
             otherOptionPosition={otherOptionPosition}
@@ -251,7 +249,6 @@ export const RadioGroup = (props: FieldProps) => {
 
 interface WidgetProps {
   displayValue: string;
-  rawValue: string;
   options: {value: string; label: string}[];
   enableOtherOption: boolean;
   otherOptionPosition: number;
@@ -269,7 +266,6 @@ interface WidgetProps {
  */
 const RadioGroupWidget = ({
   displayValue,
-  rawValue,
   options,
   enableOtherOption,
   otherOptionPosition,
@@ -427,7 +423,6 @@ const RadioGroupWidget = ({
  */
 const DropDownWidget = ({
   displayValue,
-  rawValue,
   options,
   enableOtherOption,
   otherOptionPosition,
