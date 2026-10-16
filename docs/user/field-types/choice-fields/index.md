@@ -17,8 +17,6 @@ radio-group.md
 
 ```
 
-- **[Select Field](select.md)** — Deprecated for new forms; existing Select
-  fields remain supported. Prefer "Select one option" for new templates.
 - **[Checkbox](checkbox.md)** — Deprecated for new forms; existing Checkbox
   fields remain supported. Prefer "Select one option" for new templates.
 - **[Select Multiple](multi-select.md)** — Lets users pick multiple options
@@ -26,5 +24,5 @@ radio-group.md
   display.
 - **[Select Field (Hierarchical)](hierarchical-select.md)** — Navigates a
   nested vocabulary tree to select a value. Beta feature.
-- **[Select one option](radio-group.md)** — Displays all options as a
+- **[Select single](radio-group.md)** — Displays all options as a
   visible list for single selection; suited to short lists of 2–10 items.
