@@ -2,65 +2,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {z} from 'zod';
 
-/** Monitoring configuration */
-const BugMonitoringConfigurationSchema = z.object({
-  /** To enable BugSnag - include API key here */
-  bugsnagKey: z.string().min(1).optional(),
-});
+import {BuildConfigCoreObjectSchema} from '@faims3/build-config';
 
-/** Configuration for the maps/offline maps */
-const OfflineMapsConfigSchema = z.object({
-  /** Map source provider ('osm', 'maptiler', or empty string) */
-  mapSource: z.enum(['osm', 'maptiler']).default('maptiler'),
-  /** API key for the map tile service (e.g., maptiler) */
-  mapSourceKey: z.string().optional(),
-  /** The source of satellite layers (if enabled) */
-  satelliteSource: z.enum(['esri', 'maptiler']).optional(),
-  /** Enable offline map downloads. Note that some services, notably OSM, don't
-   * allow map tile downloads */
-  offlineMaps: z.boolean(),
-  /** Map style to use. Can be 'basic' (default), 'osm-bright', 'openstreetmap',
-   * 'toner' */
-  mapStyle: z
-    .enum(['basic', 'osm-bright', 'openstreetmap', 'toner'])
-    .default('basic'),
-});
-
-/** Address autosuggest source. NONE disables autocomplete; MAPBOX/MAPTILER
- * require the corresponding API key. */
-const AddressAutosuggestSourceSchema = z.enum(['NONE', 'MAPBOX', 'MAPTILER']);
-
-/** Configuration for address autosuggest in the app (KEY_SOURCE-style
- * dispatch). */
-const AddressAutosuggestConfigSchema = z
-  .object({
-    /** Source for address autosuggest. NONE disables; MAPBOX requires
-     * mapboxKey; MAPTILER requires maptilerKey or map source key (when
-     * mapSource is maptiler). */
-    source: AddressAutosuggestSourceSchema.default('NONE'),
-    /** Mapbox access token (required when source is MAPBOX). */
-    mapboxKey: z.string().min(1).optional(),
-    /** Mapbox address search country filter: comma-separated ISO 3166-1 alpha-2
-     * (e.g. AU or AU,NZ). Defaults to AU. */
-    mapboxAddressCountry: z.string().optional(),
-    /** MapTiler API key for Geocoding API. Optional when source is MAPTILER if
-     * mapSource is maptiler and mapSourceKey is set—then that key is used.
-     * Provide this when you want a separate key for autosuggest than for map
-     * tiles. */
-    maptilerKey: z.string().min(1).optional(),
-    /** MapTiler address search country filter: comma-separated ISO 3166-1 alpha-2
-     * (e.g. AU or AU,NZ). Defaults to AU. */
-    maptilerAddressCountry: z.string().optional(),
-  })
-  .refine(
-    data => {
-      if (data.source === 'MAPBOX') return !!data.mapboxKey;
-      return true;
-    },
-    {
-      message: 'When source is MAPBOX, mapboxKey is required.',
-    }
-  );
+// The shared deployment config (bugsnag key, maps/offline maps, address
+// autosuggest, theme/notebook branding, support links, security, SMTP, auth
+// provider definitions, conductor instance name/description/migrate flags) is
+// validated verbatim by @faims3/build-config's BuildConfigCoreObjectSchema in
+// the `core` slot (ADR-0002 §1). Only the AWS-specific config remains below.
 
 // For each provider we should have these secrets in the secrets manager
 // const AuthProviderSecretSchema = z.object({
@@ -68,227 +16,14 @@ const AddressAutosuggestConfigSchema = z
 //   clientSecret: z.string(),
 // });
 
-const BaseAuthProviderConfigSchema = z.object({
-  index: z.number().optional(), // order for display in UI
-  type: z.string(),
-  displayName: z.string(),
-  helperText: z.string().optional(),
-  scope: z.string(),
-  /** HTTP methods accepted for the auth callback. Default: ['GET'] */
-  callbackMethods: z
-    .array(z.enum(['GET', 'POST']))
-    .optional()
-    .default(['GET'])
-    .describe('HTTP methods accepted for the auth return callback'),
-});
+// The auth provider *definitions* (google/oidc/saml config objects) are now
+// validated by @faims3/build-config's AuthProviderConfigMap in core.authProviders
+// (ADR-0002 §1). The AWS-specific parts (which providers are enabled + the
+// Secrets Manager ARN) are in AuthProvidersAwsConfigSchema above.
 
-const GoogleAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
-  type: z.literal('google'),
-});
-
-const OIDCAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
-  type: z.literal('oidc'),
-  issuer: z.string(),
-  authorizationURL: z.string(),
-  tokenURL: z.string(),
-  userInfoURL: z.string(),
-});
-
-/**
- * This is in-depth configuration for SAML
- *
- * Note these will be passed through almost 1:1 to the passport-saml
- * configuration.
- *
- * NOTE:
- *
- * This excludes your SP keypair (Service Provider signing keys).
- *
- * privateKey: include this in your secrets as provider-privateKey
- * publicKey: include this in your secrets as provider-publicKey
- *
- * The idpPublicKey (Identity Provider's certificate) can be included here
- * or in secrets as provider-idpPublicKey.
- *
- * See https://www.passportjs.org/packages/passport-saml/ for details.
- */
-const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
-  // Discrimination field
-  type: z.literal('saml'),
-  // Override default callback method to just POST
-  callbackMethods: z
-    .array(z.enum(['GET', 'POST']))
-    .optional()
-    .default(['POST'])
-    .describe('HTTP methods accepted for the auth return callback'),
-  // Required fields
-  entryPoint: z
-    .string()
-    .describe('IdP SSO URL - where to send authentication requests'),
-  issuer: z
-    .string()
-    .describe(
-      'Service Provider entity ID - identifies your application to the IdP'
-    ),
-  // Callback configuration (at least one needed)
-  callbackURL: z
-    .string()
-    .optional()
-    .describe(
-      'Full callback URL (overrides path/protocol/host if provided) - RECOMMEND using the default callback generated by the auth routes. This allows overriding it.'
-    ),
-  path: z
-    .string()
-    .optional()
-    .default('/saml/callback')
-    .describe('Callback path if callbackURL not specified'),
-  authnRequestBinding: z
-    .enum(['HTTP-Redirect', 'HTTP-POST'])
-    .optional()
-    .default('HTTP-POST')
-    .describe(
-      'Outbound AuthnRequest binding for passport-saml: HTTP-POST (default) or HTTP-Redirect'
-    ),
-  skipRequestCompression: z
-    .boolean()
-    .optional()
-    .describe(
-      'If true, do not DEFLATE outbound SAMLRequest (passport-saml); e.g. VANguard FAS'
-    ),
-  // If you want the metadata document signed using your PK
-  signMetadata: z.boolean().optional().default(false),
-  // IdP certificate for verifying signatures (can also be in secrets)
-  idpPublicKey: z
-    .string()
-    .optional()
-    .describe('IdP public certificate for verifying signatures (PEM format)'),
-  // SP signing/decryption behavior
-  enableDecryptionPvk: z
-    .boolean()
-    .optional()
-    .default(true)
-    .describe(
-      'Use the SP private key to decrypt IdP assertions. Default True.'
-    ),
-  // Signature configuration
-  signatureAlgorithm: z
-    .enum(['sha1', 'sha256', 'sha512'])
-    .optional()
-    .default('sha256'),
-  digestAlgorithm: z
-    .enum(['sha1', 'sha256', 'sha512'])
-    .optional()
-    .default('sha256')
-    .describe(
-      'XML digest for signed SAML requests (passport-saml; default sha256). Use sha1 only if your IdP requires it.'
-    ),
-  wantAssertionsSigned: z.boolean().optional().default(true),
-  // SAML behavior options
-  identifierFormat: z
-    .string()
-    .optional()
-    .describe('NameID format to request from IdP'),
-  authnContext: z
-    .union([z.string(), z.array(z.string())])
-    .optional()
-    .describe('Authentication context class(es) to request'),
-  disableRequestedAuthnContext: z
-    .boolean()
-    .optional()
-    .describe('Set true for ADFS compatibility'),
-  forceAuthn: z
-    .boolean()
-    .optional()
-    .describe('Force re-authentication even with valid session'),
-  // Validation options
-  acceptedClockSkewMs: z
-    .number()
-    .optional()
-    .default(0)
-    .describe(
-      'Allowed clock skew in ms for NotBefore/NotOnOrAfter (-1 to disable)'
-    ),
-  maxAssertionAgeMs: z
-    .number()
-    .optional()
-    .describe('Max age of assertions in ms'),
-  validateInResponseTo: z
-    .boolean()
-    .optional()
-    .describe('Validate InResponseTo to prevent replay attacks'),
-  requestIdExpirationPeriodMs: z
-    .number()
-    .optional()
-    .default(28800000)
-    .describe('How long request IDs are valid (default 8 hours)'),
-  // Logout
-  logoutURL: z
-    .string()
-    .optional()
-    .describe('IdP logout URL (defaults to entryPoint)'),
-  logoutCallbackURL: z.string().optional().describe('SP logout callback URL'),
-  // IdP validation
-  idpIssuer: z
-    .string()
-    .optional()
-    .describe('Expected IdP issuer for logout validation'),
-  audience: z.string().optional().describe('Expected SAML response Audience'),
-  metadataErrorURL: z
-    .string()
-    .optional()
-    .describe(
-      'Optional absolute URL for SPSSODescriptor errorURL in SAML metadata (default: Conductor /auth/{provider}/sso-error)'
-    ),
-  ssoErrorPageTitle: z.string().optional(),
-  ssoErrorPageHeading: z.string().optional(),
-  ssoErrorPageLead: z.string().optional(),
-  ssoErrorPageDetailMarkdown: z.string().optional(),
-  ssoErrorPageReturnURL: z.string().optional(),
-  ssoErrorPageReturnLabel: z.string().optional(),
-});
-
-const AuthProvidersConfigSchema = z
-  .object({
-    disableLocalLogin: z.boolean().optional().default(false),
-    providers: z.array(z.string()),
-    secretArn: z.string(),
-    config: z.record(
-      z.string(),
-      z.discriminatedUnion('type', [
-        GoogleAuthProviderConfigSchema,
-        OIDCAuthProviderConfigSchema,
-        SAMLAuthProviderConfigSchema,
-      ])
-    ),
-  })
-  .refine(
-    data => {
-      // Ensure all providers listed in 'providers' have a corresponding config
-      return data.providers.every(provider => provider in data.config);
-    },
-    {
-      message: 'All providers must have a corresponding configuration entry',
-    }
-  );
-
-export type AuthProvidersConfig = z.infer<typeof AuthProvidersConfigSchema>;
-
-const SMTPConfigSchema = z.object({
-  /** Email service type (SMTP or MOCK) */
-  emailServiceType: z.enum(['SMTP']),
-  /** From email address */
-  fromEmail: z.string().email(),
-  /** From name */
-  fromName: z.string(),
-  /** Reply-to email address (optional) */
-  replyTo: z.string().email().optional(),
-  /** Test email address for admin verification */
-  testEmailAddress: z.string().email(),
-  /** Cache expiry in seconds (optional) */
-  cacheExpirySeconds: z.number().int().positive().optional(),
-  /** ARN of the secret containing SMTP credentials */
-  credentialsSecretArn: z.string(),
-});
+// SMTP general config (emailServiceType, from/reply-to, etc.) is now
+// core.email (build-config). The AWS-only SMTP credentials secret ARN is in
+// the aws slot below (aws.smtpCredentialsSecretArn).
 
 const MonitoringConfigSchema = z.object({
   cpu: z
@@ -400,22 +135,10 @@ export const DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS = 1_800_000;
 
 export const ConductorConfigSchema = z
   .object({
-    /** The title for this conductor instance, shown on listings page */
-    name: z.string(),
-    /** Enable enhanced cluster observability? See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#container-insights-setting-enhanced */
-    enhancedObservability: z.boolean().optional(),
-    /** The description shown underneath as a sub heading */
-    description: z.string(),
     /** Conductor docker image e.g. org/faims3-api */
     conductorDockerImage: z.string(),
     /** Conductor docker image e.g. latest, sha-123456 */
     conductorDockerImageTag: z.string().default('latest'),
-    /** Prefix for generated invite codes (e.g. `FAIMS` → `FAIMS-…`). */
-    shortCodePrefix: z.string().default('FAIMS'),
-    /** Provision SSO users policy - do we create a new user for an unknown SSO sign-in? Default 'reject' */
-    provisionSSOUsersPolicy: z
-      .enum(['own-team', 'general-user', 'reject'])
-      .default('reject'),
     /** The number of CPU units for the Fargate task */
     cpu: z.number().int().positive(),
     /** The amount of memory (in MiB) for the Fargate task */
@@ -440,63 +163,31 @@ export const ConductorConfigSchema = z
     /** Allow localhost typical addresses in the redirects for conductor? NOT
      * recommended for production use cases (for security reasons). */
     localhostWhitelist: z.boolean().default(false),
-    /**
-     * When true, Conductor env sets `DISABLE_MIGRATE_ON_STARTUP=true` and
-     * API boot skips Couch migrate / notebook walks. Default false —
-     * migrate still runs. Use only when migrate is handled out of band
-     * (`pnpm migrate-with-keys`) or for a debug stack against an
-     * already-migrated DB.
-     */
-    disableMigrateOnStartup: z.boolean().default(false),
-    /**
-     * When true, Conductor env sets `STARTUP_MIGRATION_LOCK_ENABLED=false`.
-     * Omit or false — AWS ECS is clustered, so the lock is hard-enabled
-     * whenever migrate-on-startup is still on. Only set true for a
-     * single-task / debug stack where the wait/steal path would be a
-     * problem (the same reason local `pnpm run dev` defaults the env
-     * flag off). Optional so we can reject an explicit `false` when
-     * `disableMigrateOnStartup` is true (nothing to lock).
-     */
-    disableStartupMigrationLock: z.boolean().optional(),
-    /**
-     * Age of a still-`running` lock after which clustered waiters steal
-     * it and run migrate themselves (`STARTUP_MIGRATION_LOCK_TIMEOUT_MS`).
-     * Timeout is not "skip migrate and attach". Age is `now - startedAtMs`
-     * (no heartbeat); the original doer is not cancelled. Default 1800000
-     * (30 minutes). Only used when the lock is enabled.
-     */
-    startupMigrationLockTimeoutMs: z
-      .number()
-      .int()
-      .min(1000)
-      .default(DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS),
+    /** Enable enhanced cluster observability? See the ECS container-insights docs. */
+    enhancedObservability: z.boolean().optional(),
   })
-  .superRefine((data, ctx) => {
-    if (
-      data.disableMigrateOnStartup &&
-      data.disableStartupMigrationLock === false
-    ) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['disableStartupMigrationLock'],
-        message:
-          'disableStartupMigrationLock cannot be false when disableMigrateOnStartup is true. There is nothing to lock if API boot skips migrate. Omit disableStartupMigrationLock or set it true.',
-      });
-    }
-  })
-  .transform(data => ({
-    ...data,
-    // Skip-migrate makes the lock unused; treat omitted as disabled.
-    disableStartupMigrationLock:
-      data.disableMigrateOnStartup || data.disableStartupMigrationLock === true,
-  }));
+  .strict();
 
-const WebConfigSchema = z.object({
-  title: z.string().default('Control Centre'),
+/**
+ * AWS-specific social-sign-in provider config (ADR-0002 §1). The provider
+ * definitions live in `core.authProviders` (build-config's AuthProviderConfigMap).
+ * Here we keep only the AWS bits: which providers are enabled for this stack
+ * and the Secrets Manager ARN holding their client secrets / private keys.
+ */
+export const AuthProvidersAwsConfigSchema = z.object({
+  /** Provider ids (keys of core.authProviders) enabled for this stack. */
+  providers: z.array(z.string()),
+  /** ARN of the secret containing the provider client secrets / private keys. */
+  secretArn: z.string(),
 });
 
-/** Documentation site (Sphinx user docs) configuration */
-const DocsConfigSchema = z.object({});
+// The shared provider *definitions* are now core.authProviders (build-config).
+export type AuthProviderConfigMap = z.infer<
+  typeof BuildConfigCoreObjectSchema
+>['authProviders'];
+
+// web.title (management website title) is now core.branding.websiteTitle; the
+// docs site has no config (core has no docs group).
 
 // Define the schema for the backup configuration
 const BackupConfigSchema = z
@@ -562,136 +253,32 @@ const TtlCleanupConfigSchema = z.object({
   memory: z.number().int().positive().default(512),
 });
 
-const AppSupportLinksSchema = z.object({
-  /** The support email address */
-  supportEmail: z.string().default('support@fieldmark.au'),
-  /** The URL for the privacy policy */
-  privacyPolicyUrl: z.string().url().default('https://fieldnote.au/privacy'),
-  /** The URL for the contact page */
-  contactUrl: z.string().url().default(''),
-  /** Documentation website URL */
-  docsUrl: z.string().url().optional(),
-});
-
-export const UiConfiguration = z
-  .object({
-    /** The UI Theme for the app */
-    uiTheme: z.enum(['bubble', 'default', 'bssTheme', 'fieldmark']),
-    /** The notebook list type for the app */
-    notebookListType: z.enum(['tabs', 'headings']),
-    /** The display name for notebooks e.g. survey, notebook */
-    notebookName: z.string(),
-    /** The name of the App in app store etc - heading by default */
-    appName: z.string(),
-    /** The ID of the App in app store - should be simple acronym/short e.g. FAIMS */
-    appId: z.string(),
-    /** Override the heading text in banner */
-    headingAppName: z.string().optional(),
-    /** Offline maps settings */
-    offlineMaps: OfflineMapsConfigSchema,
-    /** Address autosuggest settings (NONE/MAPBOX/MAPTILER). Optional; defaults to NONE when omitted. */
-    addressAutosuggest: AddressAutosuggestConfigSchema.optional().default({
-      source: 'NONE',
-    }),
-    /**
-     * Mobile app directory cleanup when a survey is archived (`allow` = wipe local DB after sync;
-     * `never` = keep closed). Baked into web and app builds; must match for accurate Control Centre copy.
-     */
-    forceRemoteDeletion: z.enum(['allow', 'never']).optional(),
-    /**
-     * When true, manual notebook deactivation destroys the local Pouch/IndexedDB database.
-     * When false or omitted, deactivation only closes sync and DB handles (data may remain on disk).
-     */
-    deleteOnDeactivation: z.boolean().optional(),
-    /**
-     * Team roles to hide from Control Centre team-role dropdowns.
-     * Passed to the web build as VITE_EXCLUDED_TEAM_ROLES (comma-separated).
-     */
-    excludedTeamRoles: z
-      .array(
-        z.enum([
-          'TEAM_MEMBER',
-          'TEAM_MEMBER_CREATOR',
-          'TEAM_MANAGER',
-          'TEAM_ADMIN',
-        ])
-      )
-      .optional(),
-    /**
-     * When true (default), the designer can add a plan to templates that do
-     * not already have one. When false, Add Plan is hidden; templates that
-     * already have a plan can still be reconfigured. Passed to the web build
-     * as VITE_ENABLE_PLANS_IN_DESIGNER.
-     */
-    enablePlansInDesigner: z.boolean().default(true),
-    /**
-     * When true (default), the record view shows a "Status" tab. When false,
-     * the tab is hidden. Passed to the app build as VITE_SHOW_STATUS_TAB.
-     */
-    showStatusTab: z.boolean().default(true),
-  })
-  .refine(
-    data => {
-      if (data.addressAutosuggest?.source !== 'MAPTILER') return true;
-      if (data.addressAutosuggest.maptilerKey?.trim()) return true;
-      return (
-        data.offlineMaps.mapSource === 'maptiler' &&
-        !!data.offlineMaps.mapSourceKey?.trim()
-      );
-    },
-    {
-      message:
-        'When addressAutosuggest.source is MAPTILER, either maptilerKey must be set or mapSource must be "maptiler" with mapSourceKey set (the map tile key will be used for autosuggest).',
-    }
-  );
+// support links (supportEmail/privacyPolicy/contactUrl/docsUrl) are now
+// core.support, and the theme/notebook/app/branding + offline-maps + autosuggest
+// + force-remote-deletion / delete-on-deactivation / excluded-team-roles /
+// enable-plans / status-tab UI settings are now in core (build-config's
+// branding / notebookAndRecordUX / maps / sync / teamAndRolePolicy /
+// webDesignerLimits groups). The bubble theme is retired (ADR-0002 §4).
 
 /** Defaults shared with Conductor env wiring (`EXPORT_RATE_LIMITER_*`). */
 export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS = 600_000;
 export const DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW = 20;
 
-export const SecurityConfigSchema = z.object({
-  /** Maximum number of days for long lived tokens */
-  maximumLongLivedTokenDurationDays: z.number().int().min(1).optional(),
-  /**
-   * Express HTTP IP rate limiter (`RATE_LIMITER_ENABLED`). Default true.
-   * Set false when per-IP limiting is handled upstream (e.g. ALB/WAF).
-   * Does not control CouchDB-backed auth attempt limits.
-   */
-  rateLimiterEnabled: z.boolean().default(true),
-  /**
-   * Per-user email-code / verification-challenge attempt limits
-   * (`ATTEMPT_LIMITER_ENABLED`). Default true. Keep enabled in
-   * production even when HTTP rate limiting is disabled upstream.
-   */
-  authAttemptLimiterEnabled: z.boolean().default(true),
-  /**
-   * Dedicated export mint/redeem limiter (`EXPORT_RATE_LIMITER_ENABLED`).
-   * Default true. Independent of `rateLimiterEnabled` so ZIP/GDAL work
-   * stays capped when the global IP limiter is off (upstream WAF).
-   */
-  exportRateLimiterEnabled: z.boolean().default(true),
-  /**
-   * Export-limiter window in milliseconds (`EXPORT_RATE_LIMITER_WINDOW_MS`).
-   * Default 600000 (10 minutes).
-   */
-  exportRateLimiterWindowMs: z
-    .number()
-    .int()
-    .min(1000)
-    .default(DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS),
-  /**
-   * Export mint/redeem requests allowed per window
-   * (`EXPORT_RATE_LIMITER_PER_WINDOW`). Default 20.
-   */
-  exportRateLimiterPerWindow: z
-    .number()
-    .int()
-    .min(1)
-    .default(DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW),
-});
+// Security parameters (max long-lived token duration, HTTP rate limiter,
+// attempt limiter, export rate limiter) are now core (build-config's limits
+// + authTokens groups).
 
-// Define the schema
-export const ConfigSchema = z.object({
+/**
+ * The AWS-specific extension of the shared core config (ADR-0002 §1).
+ * Everything genuinely about deploying to AWS: the CloudFormation stack
+ * identity, the hosted zone / certificates, account/region, the Secrets
+ * Manager key + SMTP-credentials ARNs, the CouchDB EC2/EBS sizing, backups,
+ * TTL cleanup, the Conductor Fargate task (docker image, CPU/memory,
+ * autoscaling, localhost whitelist), the Route53 subdomain prefixes, and the
+ * AWS bits of auth providers (enabled list + secret ARN). The shared
+ * deployment config lives in `core`, validated by @faims3/build-config.
+ */
+export const AwsConfigSchema = z.object({
   /** The name of the stack to deploy to cloudformation. Note that changing
    * this will completely redeploy your application. */
   stackName: z.string(),
@@ -706,23 +293,19 @@ export const ConfigSchema = z.object({
     /** ARN of the CloudFront SSL/TLS certificate */
     cloudfront: z.string(),
   }),
-  aws: z.object({
-    // AWS Account ID
-    account: z.string(),
-    // AWS Region
-    region: z.string().default('ap-southeast-2'),
-  }),
+  // AWS Account ID
+  account: z.string(),
+  // AWS Region
+  region: z.string().default('ap-southeast-2'),
   secrets: z.object({
     /** ARN of the private key secret */
     privateKey: z.string(),
     /** ARN of the public key secret */
     publicKey: z.string(),
   }),
-  /** UI Configuration values */
-  uiConfiguration: UiConfiguration,
-  /** The support links for the app */
-  supportLinks: AppSupportLinksSchema,
-  /** CouchDB configuration */
+  /** ARN of the secret containing SMTP credentials (host/port/user/pass). */
+  smtpCredentialsSecretArn: z.string(),
+  /** CouchDB configuration (EC2/EBS sizing) */
   couch: CouchConfigSchema,
   /** Backup configuration */
   backup: BackupConfigSchema,
@@ -741,36 +324,23 @@ export const ConfigSchema = z.object({
     cpu: 256,
     memory: 512,
   }),
-  /** Conductor service configuration */
+  /** Conductor service configuration (Fargate/docker/autoscaling) */
   conductor: ConductorConfigSchema,
-  /** Domain configuration for all services */
+  /** Domain configuration for all services (Route53 subdomain prefixes) */
   domains: DomainsConfigSchema,
-  /** Mobile app URLs */
-  mobileApps: z.object({
-    /** The public URL for the Android application */
-    androidAppPublicUrl: z.string(),
-    /** The public URL for the iOS application */
-    iosAppPublicUrl: z.string(),
-  }),
-  /** The new-conductor / web config */
-  web: WebConfigSchema,
-  /** Documentation site config (Sphinx user docs) */
-  docs: DocsConfigSchema.optional().default({}),
-  /** Email service configuration */
-  smtp: SMTPConfigSchema,
-  /** Social sign in providers */
-  authProviders: AuthProvidersConfigSchema.optional(),
-  /** Security parameters */
-  security: SecurityConfigSchema.optional().default({
-    maximumLongLivedTokenDurationDays: 90,
-    rateLimiterEnabled: true,
-    authAttemptLimiterEnabled: true,
-    exportRateLimiterEnabled: true,
-    exportRateLimiterWindowMs: DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS,
-    exportRateLimiterPerWindow: DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW,
-  }),
-  /** Bugsnag/monitoring */
-  bugMonitoring: BugMonitoringConfigurationSchema,
+  /** Social sign-in providers: which are enabled + the secret ARN. */
+  authProviders: AuthProvidersAwsConfigSchema.optional(),
+});
+
+/**
+ * The top-level CDK config: `{ core, aws }` (ADR-0002 §1). `core` is validated
+ * verbatim by @faims3/build-config (the same schema the app/web/api and the
+ * mobile build use), so the shared config is guaranteed identical across all
+ * consumers; `aws` is the AWS-specific extension above.
+ */
+export const ConfigSchema = z.object({
+  core: BuildConfigCoreObjectSchema,
+  aws: AwsConfigSchema,
 });
 
 // Infer the types from the schemas
@@ -778,17 +348,10 @@ export type Config = z.infer<typeof ConfigSchema>;
 export type CouchConfig = z.infer<typeof CouchConfigSchema>;
 export type BackupConfig = z.infer<typeof BackupConfigSchema>;
 export type MonitoringConfig = z.infer<typeof MonitoringConfigSchema>;
-export type BugMonitoringConfiguration = z.infer<
-  typeof BugMonitoringConfigurationSchema
->;
 export type ConductorConfig = z.infer<typeof ConductorConfigSchema>;
 export type TtlCleanupConfig = z.infer<typeof TtlCleanupConfigSchema>;
 export type DomainsConfig = z.infer<typeof DomainsConfigSchema>;
-export type SMTPConfig = z.infer<typeof SMTPConfigSchema>;
-export type OfflineMapsConfig = z.infer<typeof OfflineMapsConfigSchema>;
-export type AddressAutosuggestConfig = z.infer<
-  typeof AddressAutosuggestConfigSchema
->;
+export type AuthProvidersConfig = z.infer<typeof AuthProvidersAwsConfigSchema>;
 
 export const loadConfig = (filePath: string): Config => {
   // Parse and validate the config
@@ -796,7 +359,17 @@ export const loadConfig = (filePath: string): Config => {
     const absolutePath = path.resolve(process.cwd(), filePath);
     const fileContents = fs.readFileSync(absolutePath, 'utf-8');
     const jsonData = JSON.parse(fileContents);
-    return ConfigSchema.parse(jsonData);
+    const config = ConfigSchema.parse(jsonData);
+    // Cross-slot rule (ADR-0002 §1): every provider enabled in aws.authProviders
+    // must have a definition in core.authProviders.
+    const enabled = config.aws.authProviders?.providers ?? [];
+    const missing = enabled.filter(id => !(id in config.core.authProviders));
+    if (missing.length > 0) {
+      throw new Error(
+        `authProviders.providers lists provider(s) with no core.authProviders entry: ${missing.join(', ')}`
+      );
+    }
+    return config;
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error('Configuration validation failed:');

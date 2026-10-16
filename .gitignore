@@ -12,4 +12,7 @@ app/public/manifest.json
 __pycache__/
 *.py[cod]
 .cursor
+# Ignore config files that might include secrets
+/config
+.sops.yaml
 .jest-cache
