@@ -8,7 +8,7 @@ import {BuildConfigCoreObjectSchema} from '@faims3/build-config';
 // autosuggest, theme/notebook branding, support links, security, SMTP, auth
 // provider definitions, conductor instance name/description/migrate flags) is
 // validated verbatim by @faims3/build-config's BuildConfigCoreObjectSchema in
-// the `core` slot (ADR-0002 §1). Only the AWS-specific config remains below.
+// the `core` slot. Only the AWS-specific config remains below.
 
 // For each provider we should have these secrets in the secrets manager
 // const AuthProviderSecretSchema = z.object({
@@ -17,8 +17,8 @@ import {BuildConfigCoreObjectSchema} from '@faims3/build-config';
 // });
 
 // The auth provider *definitions* (google/oidc/saml config objects) are now
-// validated by @faims3/build-config's AuthProviderConfigMap in core.authProviders
-// (ADR-0002 §1). The AWS-specific parts (which providers are enabled + the
+// validated by @faims3/build-config's AuthProviderConfigMap in core.authProviders.
+// The AWS-specific parts (which providers are enabled + the
 // Secrets Manager ARN) are in AuthProvidersAwsConfigSchema above.
 
 // SMTP general config (emailServiceType, from/reply-to, etc.) is now
@@ -169,7 +169,7 @@ export const ConductorConfigSchema = z
   .strict();
 
 /**
- * AWS-specific social-sign-in provider config (ADR-0002 §1). The provider
+ * AWS-specific social-sign-in provider config. The provider
  * definitions live in `core.authProviders` (build-config's AuthProviderConfigMap).
  * Here we keep only the AWS bits: which providers are enabled for this stack
  * and the Secrets Manager ARN holding their client secrets / private keys.
@@ -258,7 +258,7 @@ const TtlCleanupConfigSchema = z.object({
 // + force-remote-deletion / delete-on-deactivation / excluded-team-roles /
 // enable-plans / status-tab UI settings are now in core (build-config's
 // branding / notebookAndRecordUX / maps / sync / teamAndRolePolicy /
-// webDesignerLimits groups). The bubble theme is retired (ADR-0002 §4).
+// webDesignerLimits groups). The bubble theme is retired.
 
 /** Defaults shared with Conductor env wiring (`EXPORT_RATE_LIMITER_*`). */
 export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS = 600_000;
@@ -269,7 +269,7 @@ export const DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW = 20;
 // + authTokens groups).
 
 /**
- * The AWS-specific extension of the shared core config (ADR-0002 §1).
+ * The AWS-specific extension of the shared core config.
  * Everything genuinely about deploying to AWS: the CloudFormation stack
  * identity, the hosted zone / certificates, account/region, the Secrets
  * Manager key + SMTP-credentials ARNs, the CouchDB EC2/EBS sizing, backups,
@@ -333,7 +333,7 @@ export const AwsConfigSchema = z.object({
 });
 
 /**
- * The top-level CDK config: `{ core, aws }` (ADR-0002 §1). `core` is validated
+ * The top-level CDK config: `{ core, aws }`. `core` is validated
  * verbatim by @faims3/build-config (the same schema the app/web/api and the
  * mobile build use), so the shared config is guaranteed identical across all
  * consumers; `aws` is the AWS-specific extension above.
@@ -360,7 +360,7 @@ export const loadConfig = (filePath: string): Config => {
     const fileContents = fs.readFileSync(absolutePath, 'utf-8');
     const jsonData = JSON.parse(fileContents);
     const config = ConfigSchema.parse(jsonData);
-    // Cross-slot rule (ADR-0002 §1): every provider enabled in aws.authProviders
+    // Cross-slot rule: every provider enabled in aws.authProviders
     // must have a definition in core.authProviders.
     const enabled = config.aws.authProviders?.providers ?? [];
     const missing = enabled.filter(id => !(id in config.core.authProviders));

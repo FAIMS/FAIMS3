@@ -18,7 +18,7 @@ export const GoogleAuthProviderConfigSchema =
     type: z.literal('google'),
     // Optional: in the shared core these are typically empty (secrets live in
     // core.secrets.auth.authProviders.<id>, resolved per platform - SOPS for
-    // mobile/local, AWS Secrets Manager for the CDK). See ADR-0002 §6.
+    // mobile/local, AWS Secrets Manager for the CDK).
     clientID: z.string().optional(),
     clientSecret: z.string().optional(),
   });
@@ -30,7 +30,7 @@ export const OIDCAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     authorizationURL: z.string(),
     tokenURL: z.string(),
     userInfoURL: z.string(),
-    // Optional: secrets live in core.secrets.auth.authProviders.<id> (ADR-0002 §6).
+    // Optional: secrets live in core.secrets.auth.authProviders.<id>.
     clientID: z.string().optional(),
     clientSecret: z.string().optional(),
   }
@@ -48,7 +48,7 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     signMetadata: z.boolean().optional(),
     privateKey: z.string().optional(),
     publicKey: z.string().optional(),
-    // Optional: secret, resolved per platform (core.secrets / SM). ADR-0002 §6.
+    // Optional: secret, resolved per platform (core.secrets / SM).
     idpPublicKey: z.string().optional(),
     enableDecryptionPvk: z.boolean().optional(),
     signatureAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),

@@ -52,7 +52,7 @@ export interface FaimsFrontEndProps {
 
   /** The shared core config - the shared VITE_* env (branding, maps, autosuggest,
    * support, sync, token settings, etc.) is generated from here via
-   * buildEnvMapFromRuntime(core, 'apps') (ADR-0002 §5). */
+   * buildEnvMapFromRuntime(core, 'apps'). */
   coreConfig: RuntimeConfig;
 
   // e.g. db.domain.com
@@ -194,7 +194,7 @@ export class FaimsFrontEnd extends Construct {
     // The shared VITE_* env (branding, maps, autosuggest, sync, token
     // settings, etc.) comes from build-config's contract via
     // buildEnvMapFromRuntime(core, 'apps') - the same contract the app/web use
-    // to parse their env (ADR-0002 §5). Only the resolved URLs, build flags
+    // to parse their env. Only the resolved URLs, build flags
     // and debug mode are overlaid here (AWS-specific).
     const environment: {[key: string]: string} = {};
     for (const [key, value] of Object.entries(
@@ -345,7 +345,7 @@ export class FaimsFrontEnd extends Construct {
     const outputPath = 'dist';
 
     // Shared VITE_* env from build-config's contract; overlay the resolved
-    // URLs (web/app/api) which are AWS-specific (ADR-0002 §5).
+    // URLs (web/app/api) which are AWS-specific.
     const environment: {[key: string]: string} = {};
     for (const [key, value] of Object.entries(
       buildEnvMapFromRuntime(props.coreConfig, 'apps')

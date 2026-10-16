@@ -359,8 +359,8 @@ test('parseGeneratedEnv(buildEnvMapFromRuntime(config)) reproduces canonical val
   const parsed = parseGeneratedEnv(raw);
 
   assert.equal(parsed.branding.appName, 'Fieldmark');
-  // Unset short/heading names are emitted with the appName fallback (ADR-0001
-  // D4), so the round trip recovers the fallback, not the blank.
+  // Unset short/heading names are emitted with the appName fallback,
+  // so the round trip recovers the fallback, not the blank.
   assert.equal(parsed.branding.appShortName, 'Fieldmark');
   assert.equal(parsed.branding.headingAppName, 'Fieldmark');
   assert.equal(parsed.branding.theme, 'fieldmark');
@@ -587,7 +587,7 @@ test('generated env parser converts typed values into grouped runtime config', (
 });
 
 // ---------------------------------------------------------------------------
-// Phase 2: shared invariants (ADR-0001 D4) apply in the schema transform, so
+// Phase 2: shared invariants apply in the schema transform, so
 // they hold for JSON, apps env and api env alike.
 // ---------------------------------------------------------------------------
 
@@ -609,7 +609,7 @@ test('D4: offline maps are forced off for OSM', () => {
   assert.equal(parsedMaptiler.maps.offlineMaps, true);
 });
 
-// ADR-0002: the migrate/lock invariant lives in the shared schema.
+// the migrate/lock invariant lives in the shared schema.
 test('migration: lock cannot be enabled when migrate-on-startup is disabled', () => {
   assert.throws(() =>
     parseBuildConfig({
@@ -624,7 +624,7 @@ test('migration: lock cannot be enabled when migrate-on-startup is disabled', ()
   assert.equal(parsed.migration.startupMigrationLockEnabled, false);
 });
 
-// ADR-0002: the autosuggest key rules live in the shared schema.
+// the autosuggest key rules live in the shared schema.
 test('maps: mapbox autosuggest requires a mapbox key', () => {
   assert.throws(() => parseBuildConfig({maps: {autosuggestSource: 'mapbox'}}));
   assert.doesNotThrow(() =>
@@ -698,7 +698,7 @@ test('D5-ish: address country codes round trip as arrays', () => {
   assert.deepEqual(parsed.maps.maptilerAddressCountry, ['AU']);
 });
 
-// ADR-0002 §2: the domain structure derives the concrete endpoints.
+// the domain structure derives the concrete endpoints.
 test('domains: production base+services derive concrete endpoints', () => {
   const parsed = parseBuildConfig({
     domains: {

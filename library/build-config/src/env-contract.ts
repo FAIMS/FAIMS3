@@ -15,7 +15,7 @@ type EnvResolver = (runtime: RuntimeConfig) => EnvValue;
 
 const baseContract: Record<string, EnvResolver> = {
   VITE_APP_NAME: runtime => runtime.branding.appName ?? '',
-  // Falls back to the app name (ADR-0001 D4) so an unset short name still
+  // Falls back to the app name so an unset short name still
   // emits a usable value and round-trips losslessly.
   VITE_APP_SHORT_NAME: runtime =>
     runtime.branding.appShortName ?? runtime.branding.appName ?? '',
@@ -36,7 +36,7 @@ const baseContract: Record<string, EnvResolver> = {
   VITE_NOTEBOOK_LIST_TYPE: runtime =>
     runtime.notebookAndRecordUX.notebookListType ?? 'tabs',
   VITE_APP_ID: runtime => runtime.android.appId ?? 'org.fedarch.faims3',
-  // Heading falls back to the app name (ADR-0001 D4).
+  // Heading falls back to the app name.
   VITE_HEADING_APP_NAME: runtime =>
     runtime.branding.headingAppName ?? runtime.branding.appName ?? '',
   VITE_APP_PRIVACY_POLICY_URL: runtime =>

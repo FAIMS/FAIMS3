@@ -77,7 +77,7 @@ export interface FaimsConductorProps {
   config: ConductorConfig;
   /** The shared core config - the shared API env (branding, limits, migration,
    * email, token expiries, etc.) is generated from here via
-   * buildEnvMapFromRuntime(core, 'api') (ADR-0002 §5). */
+   * buildEnvMapFromRuntime(core, 'api'). */
   coreConfig: RuntimeConfig;
   /** FAIMS_COOKIE_SECRET */
   cookieSecret: sm.Secret;

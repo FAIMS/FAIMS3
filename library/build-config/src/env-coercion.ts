@@ -3,9 +3,9 @@ import {z} from 'zod';
 /**
  * Shared env-string coercion helpers.
  *
- * These implement the ratified Phase 0 policy (ADR-0001):
- *  - D1: strict — an invalid value is a parse error, never a silent default.
- *  - D3: one boolean vocabulary for every boolean-typed env value.
+ * These implement:
+ *  - strict — an invalid value is a parse error, never a silent default.
+ *  - one boolean vocabulary for every boolean-typed env value.
  *
  * Env values are always strings here: the generator stringifies every value,
  * and hand-written `.env` files are strings. Coercion to the typed value

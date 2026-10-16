@@ -48,7 +48,7 @@ const EndpointsBuildConfigSchema = z
   .strict();
 
 /**
- * The deployment's domain structure (ADR-0002 §2). Instead of storing concrete
+ * The deployment's domain structure. Instead of storing concrete
  * endpoint URLs, the core names a base domain + per-service subdomains, and the
  * concrete `endpoints` are DERIVED from it (in the shared invariants transform).
  * A `localOverride` (optional) sets literal `host:port` hosts for one or more
@@ -59,7 +59,7 @@ const EndpointsBuildConfigSchema = z
  * keep working; when present it overrides the derived endpoints, and the app
  * build, web build and CDK all derive the same URLs from it (so they cannot
  * drift). The service-name set (conductor/couch/web/app/docs) is confirmed
- * against real deployments before the model is frozen (ADR-0002 follow-up).
+ * against real deployments before the model is frozen.
  */
 export const DomainServiceName = z.enum([
   'conductor',
@@ -143,7 +143,7 @@ const MapsBuildConfigSchema = z
   .strict()
   .superRefine((data, ctx) => {
     // Address-autosuggest key requirements (moved here from the aws-cdk
-    // AddressAutosuggest + UiConfiguration refines, ADR-0002), so every
+    // AddressAutosuggest + UiConfiguration refines), so every
     // consumer validates the same rules.
     if (
       data.autosuggestSource === 'mapbox' &&
@@ -197,8 +197,7 @@ const MigrationBuildConfigSchema = z
   .superRefine((data, ctx) => {
     // A skip-migrate startup has nothing to lock: the clustered lock must not
     // be enabled when migrate-on-startup is disabled. (Moved here from the
-    // aws-cdk ConductorConfig so every consumer validates the same invariant,
-    // ADR-0002.)
+    // aws-cdk ConductorConfig so every consumer validates the same invariant.)
     if (data.disableMigrateOnStartup && data.startupMigrationLockEnabled) {
       ctx.addIssue({
         code: 'custom',
@@ -371,7 +370,7 @@ const PouchdbBuildConfigSchema = z
   .strict();
 
 /**
- * The dedicated, optional `secrets` section (ADR-0002 §6, "option 2").
+ * The dedicated, optional `secrets` section.
  *
  * These are the SENSITIVE slots that do not sit next to their config groups in
  * the committed core: the committed `core.json` declares them EMPTY, and the
@@ -397,7 +396,7 @@ const SecretsBuildConfigSchema = z
          * The fields match the optional secret fields on the provider config
          * (clientID/clientSecret for google+oidc; privateKey/publicKey/idpPublicKey
          * for saml). Empty in the committed core; filled per platform (SOPS for
-         * mobile/local, AWS Secrets Manager for the CDK). See ADR-0002 §6.
+         * mobile/local, AWS Secrets Manager for the CDK).
          */
         authProviders: z
           .record(
@@ -510,12 +509,12 @@ export type SharedBuildConfig = {
   couchdb: z.infer<typeof CouchdbBuildConfigSchema>;
   dev: z.infer<typeof DevBuildConfigSchema>;
   pouchdb: z.infer<typeof PouchdbBuildConfigSchema>;
-  /** Dedicated, optional secret slots (ADR-0002 §6); empty in committed core. */
+  /** Dedicated, optional secret slots; empty in committed core. */
   secrets: z.infer<typeof SecretsBuildConfigSchema>;
 };
 
 /**
- * Derive the concrete endpoint URLs from the domain structure (ADR-0002 §2).
+ * Derive the concrete endpoint URLs from the domain structure.
  * A `localOverride` host is used verbatim with http; otherwise each service is
  * `${protocol}://${services[service]}.${base}`. Only the fields the model names
  * are set; the rest of `endpoints` (couchdbInternalUrl, the app public URLs,
@@ -545,7 +544,7 @@ function deriveEndpointsFromDomains(
 }
 
 /**
- * Applies the shared cross-field invariants (ADR-0001 D4) so that every
+ * Applies the shared cross-field invariants so that every
  * entry point (JSON, generated app env, generated api env) yields the same
  * canonical semantics:
  *  - endpoints are derived from the domain structure when `domains` is set
@@ -585,7 +584,7 @@ function applySharedInvariants(c: SharedBuildConfig): SharedBuildConfig {
 /**
  * The core shared config object: every top-level group, each defaulted and
  * `.strict()`, but WITHOUT the shared invariants transform. Exported so
- * deployment tooling (e.g. the aws-cdk `config.core` slot, ADR-0002) can
+ * deployment tooling (e.g. the aws-cdk `config.core` slot) can
  * compose it into a nested schema without re-declaring the groups.
  */
 export const BuildConfigCoreObjectSchema = z
@@ -649,8 +648,8 @@ export const BuildConfigCoreObjectSchema = z
   .strict();
 
 /**
- * The full shared config: the core object + the shared invariants transform
- * (ADR-0001 D4). This is the schema the app/web/api consumers parse their env
+ * The full shared config: the core object + the shared invariants transform.
+ * This is the schema the app/web/api consumers parse their env
  * through, and what the mobile config JSON is validated against. The invariants
  * guarantee identical canonical semantics from every entry point (JSON, app
  * env, api env).
@@ -939,7 +938,7 @@ export function parseAppsEnv(env: GeneratedEnv): PartialBuildConfig {
     branding: {
       appName: env.VITE_APP_NAME,
       // Empty strings round-trip back to undefined so the appName fallbacks
-      // (ADR-0001 D4) apply uniformly in JSON, generated env and parse output.
+      // apply uniformly in JSON, generated env and parse output.
       appShortName: env.VITE_APP_SHORT_NAME || undefined,
       headingAppName: env.VITE_HEADING_APP_NAME || undefined,
       websiteTitle: env.VITE_WEBSITE_TITLE,

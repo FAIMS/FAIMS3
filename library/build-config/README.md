@@ -45,7 +45,7 @@ flowchart LR
 `parseGeneratedEnv` parses the **string** env (the `.env` file format) and accepts
 the apps half, the api half, or both (the api half wins on shared keys), so a
 deployment can produce a single typed `RuntimeConfig` from whatever it generates.
-The shared invariants (ADR-0001 D4 — name fallbacks, OSM offline-map clamp,
+The shared invariants (name fallbacks, OSM offline-map clamp,
 hints clamping, no-cap normalisation) are applied in the schema transform, so
 they hold for JSON, apps env and api env alike.
 
@@ -99,11 +99,11 @@ Top-level groups include:
 
 Some previously duplicated values are now merged under one canonical setting and derived where needed (for example URL aliases and shared long-lived token duration policy).
 
-There is deliberately **no** untyped `secrets` passthrough. Platform-level secrets (`PRIVATE_SIGNING_KEY`, `PUBLIC_SIGNING_KEY`, `SOPS_AGE_KEY`, `AWS_DEFAULT_REGION`, `GIT_AUTHORIZATION`) stay injected by the deployment platform / CI, not by the generated env. If a secret needs to flow through the JSON it gets an explicit named field with an env-contract mapping (see [ADR-0001](docs/adr-0001-phase0-config-policy.md)).
+There is deliberately **no** untyped `secrets` passthrough. Platform-level secrets (`PRIVATE_SIGNING_KEY`, `PUBLIC_SIGNING_KEY`, `SOPS_AGE_KEY`, `AWS_DEFAULT_REGION`, `GIT_AUTHORIZATION`) stay injected by the deployment platform / CI, not by the generated env. If a secret needs to flow through the JSON it gets an explicit named field with an env-contract mapping.
 
 ## Strict Validation Rules
 
-Validation is intentionally strict (see [ADR-0001](docs/adr-0001-phase0-config-policy.md) for the ratified policy):
+Validation is intentionally strict:
 
 - Source JSON objects are strict and reject unknown keys.
 - Environment parsing rejects invalid booleans, integers, and enums (fail, do not warn-and-default).

@@ -38,8 +38,7 @@ flowchart LR
   [`secrets.sample.json`](../../library/build-config/config/secrets.sample.json)
 
 The shared invariants (name fallbacks, offline-map clamping for OSM, long-lived-token
-hint clamping, "no cap" normalisation — see
-[ADR-0001](../../library/build-config/docs/adr-0001-phase0-config-policy.md)) are applied
+hint clamping, "no cap" normalisation) are applied
 in the schema transform, so they hold identically for the JSON, the generated env and
 the parsed env.
 
@@ -400,8 +399,6 @@ There is **no** untyped secrets passthrough. A secret is an explicit named field
 as a **secret slot** (the empty slots in a committed `core.json`). Platform-level
 secrets that are never in the JSON — `PRIVATE_SIGNING_KEY`, `PUBLIC_SIGNING_KEY`,
 `SOPS_AGE_KEY`, `GIT_AUTHORIZATION` — stay injected by the deployment platform / CI.
-See [ADR-0001](../../library/build-config/docs/adr-0001-phase0-config-policy.md) (D6) and
-[ADR-0002](../../library/build-config/docs/adr-0002-aws-cdk-config-unification.md) §6.
 
 ## Generating env from the JSON
 

@@ -8,7 +8,7 @@
  *   The shared, env-backed scalars are parsed from `process.env` via the
  *   @faims3/build-config module (`parseGeneratedEnv`), the single source of
  *   truth for the config chain. This module then layers on the server-specific
- *   runtime values that are deliberately not shared (see ADR-0001 D4):
+ *   runtime values that are deliberately not shared:
  *     - signing-key identity: conductorKeyId / keyFileHost / conductorInstanceName
  *       (all fall back from PROFILE_NAME) and conductorServerId (slugified)
  *     - key-file path existence check, cookie-secret generation when unset
@@ -64,7 +64,7 @@ const stripTrailingSlash = (value: string): string =>
 const canonical = parseGeneratedEnv(process.env);
 
 // ---------------------------------------------------------------------------
-// Server-specific runtime derivations (ADR-0001 D4 — intentionally local).
+// Server-specific runtime derivations (intentionally local).
 // ---------------------------------------------------------------------------
 
 /** Present under Jest / when NODE_ENV=test. */
