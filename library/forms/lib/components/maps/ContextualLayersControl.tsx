@@ -19,7 +19,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import {alpha} from '@mui/material/styles';
+import {alpha, type Theme} from '@mui/material/styles';
 import {transformExtent} from 'ol/proj';
 import Map from 'ol/Map';
 import {
@@ -595,7 +595,7 @@ function LayerRow({
             onClick={onToggleVisible}
             sx={layerActionSx({
               color: layer.visible ? 'primary.main' : 'text.disabled',
-              bgcolor: theme =>
+              bgcolor: (theme: Theme) =>
                 layer.visible
                   ? alpha(theme.palette.primary.main, 0.12)
                   : 'transparent',
@@ -693,14 +693,14 @@ function LayerRow({
                 gridRow: 'auto',
               },
               color: expanded ? 'primary.main' : 'text.secondary',
-              bgcolor: theme =>
+              bgcolor: (theme: Theme) =>
                 expanded
                   ? alpha(theme.palette.primary.main, 0.16)
                   : 'transparent',
               border: '1px solid',
               borderColor: expanded ? 'primary.main' : 'transparent',
               '&:hover': {
-                bgcolor: theme =>
+                bgcolor: (theme: Theme) =>
                   alpha(theme.palette.primary.main, expanded ? 0.22 : 0.08),
               },
             })}
