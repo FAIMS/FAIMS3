@@ -24,6 +24,6 @@ export const TakePhotoFieldEditor = ({fieldName}: {fieldName: string}) => (
     fieldName={fieldName}
     onRequiredChange={updateRequiredMinimum}
   >
-    <ItemCountEditor fieldName={fieldName} itemLabel="photos" />
+    <ItemCountEditor fieldName={fieldName} itemLabel="Photos" />
   </BaseFieldEditor>
 );

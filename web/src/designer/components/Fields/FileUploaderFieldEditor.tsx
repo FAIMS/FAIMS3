@@ -24,6 +24,6 @@ export const FileUploaderFieldEditor = ({fieldName}: {fieldName: string}) => (
     fieldName={fieldName}
     onRequiredChange={updateRequiredMinimum}
   >
-    <ItemCountEditor fieldName={fieldName} itemLabel="files" />
+    <ItemCountEditor fieldName={fieldName} itemLabel="Files" />
   </BaseFieldEditor>
 );
