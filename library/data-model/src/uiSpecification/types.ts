@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import {z} from 'zod';
+import {INPUT_LIMITS} from '../inputLimits';
 import {PlanTemplateSchema} from '../plans/types';
 // Barrel import (not '../plans/planTypeMap') so the per-plan PlanTypeMap
 // augmentations are in scope here, making a stored plan a narrowable union.
@@ -34,7 +35,7 @@ export type RecordValues = z.infer<typeof RecordValuesSchema>;
 // UI specification model
 //
 // UISpec: fields, the sections that group them, and the forms that group
-// sections. Object schemas use `.passthrough()` so that validating a stored
+// sections. Object schemas use `.loose()` so that validating a stored
 // spec never silently drops unmodelled properties. Note: Viewsets === Forms ->
 // We will eventually rename this to Form
 // ============================================================================
@@ -92,18 +93,18 @@ export const BaseFieldParametersSchema = z.object({
 export type BaseFieldParameters = z.infer<typeof BaseFieldParametersSchema>;
 
 /**
- * The modelled shape of a single field definition.
+ * Shared field properties (every schema version).
  *
  * `component-parameters` carries the {@link BaseFieldParameters} common to all
  * fields and passes any further per-field-type parameters through unmodelled
  * (validated precisely in the forms layer via each field's `fieldPropsSchema`,
  * which depends on this package and so cannot be referenced from it).
  */
-const fieldDefinitionShape = {
+const fieldDefinitionBaseShape = {
   'component-namespace': z.string(),
   'component-name': z.string(),
   'type-returned': z.string(),
-  'component-parameters': BaseFieldParametersSchema.passthrough(),
+  'component-parameters': BaseFieldParametersSchema.loose(),
   initialValue: z.any().optional(),
   persistent: z.boolean().optional(),
   meta: FieldMetaSchema.optional(),
@@ -111,37 +112,25 @@ const fieldDefinitionShape = {
   condition: ConditionalExpressionSchema.nullable().optional(),
 };
 
-/**
- * A single field definition, keyed by field name in {@link UiSpecFieldsSchema}.
- * This is the canonical runtime (serializable) shape of a field; the designer
- * extends it with its own authoring/chooser metadata rather than redefining it.
- *
- * `.passthrough()` keeps any unmodelled properties (including the designer's
- * authoring metadata) intact across a validate/serialize round-trip.
- */
-export const FieldDefinitionSchema = z
-  .object(fieldDefinitionShape)
-  .passthrough();
+/** Field shape at notebook schema `1.0.0` — no `exportName`. */
+const fieldDefinitionV1Shape = fieldDefinitionBaseShape;
 
 /**
- * Canonical field-definition type.
+ * Field shape at notebook schema `1.0.1`.
  *
- * Derived from the strict (non-passthrough) shape so it carries the named
- * properties without a `[k: string]: unknown` index signature. That keeps the
- * type composable with `Omit`/intersection in downstream packages (e.g. the
- * designer overriding `component-parameters`), while the schema above still
- * passes unmodelled keys through at runtime.
+ * `exportName` is the editable CSV / GIS column. Distinct from the
+ * `uiSpec.fields` object key, which is the immutable storage id.
+ *
+ * Character-set checks happen at export time (`sanitizeExportColumnName`):
+ * notebooks are not always authored in designer, so a stored value may
+ * contain quotes, path separators, or control characters.
  */
-export type FieldDefinition = z.infer<z.ZodObject<typeof fieldDefinitionShape>>;
+const fieldDefinitionV1_0_1Shape = {
+  ...fieldDefinitionV1Shape,
+  exportName: z.string().min(1).max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
+};
 
-/**
- * A field definition with its conditional logic compiled into a callable
- * function. Same shape as {@link FieldDefinition} but carries the
- * non-serializable `conditionFn`, mirroring the {@link UiSpecSection} ↔
- * {@link CompiledUiSpecSection} relationship.
- */
-const compiledFieldDefinitionShape = {
-  ...fieldDefinitionShape,
+const compiledFieldExtras = {
   /**
    * Compiled form of {@link FieldDefinition.condition}; attached at runtime by
    * `compileUiSpecConditionals`. Non-serializable, so it is only validated as
@@ -158,23 +147,112 @@ const compiledFieldDefinitionShape = {
   /** Field IDs referenced by the expression; used to build the eval scope. */
   expressionRefs: z.custom<string[]>().optional(),
 };
-export const CompiledFieldDefinitionSchema = z
-  .object(compiledFieldDefinitionShape)
-  .passthrough();
-export type CompiledFieldDefinition = z.infer<
-  z.ZodObject<typeof compiledFieldDefinitionShape>
+
+const compiledFieldDefinitionV1Shape = {
+  ...fieldDefinitionV1Shape,
+  ...compiledFieldExtras,
+};
+const compiledFieldDefinitionV1_0_1Shape = {
+  ...fieldDefinitionV1_0_1Shape,
+  ...compiledFieldExtras,
+};
+
+/**
+ * A single field definition at schema `1.0.0`.
+ *
+ * `.loose()` keeps any unmodelled properties (including the designer's
+ * authoring metadata) intact across a validate/serialize round-trip.
+ */
+export const FieldDefinitionV1Schema = z.object(fieldDefinitionV1Shape).loose();
+export type FieldDefinitionV1 = z.infer<
+  z.ZodObject<typeof fieldDefinitionV1Shape>
 >;
 
+/** A single field definition at schema `1.0.1` (required `exportName`). */
+export const FieldDefinitionV1_0_1Schema = z
+  .object(fieldDefinitionV1_0_1Shape)
+  .loose();
+export type FieldDefinitionV1_0_1 = z.infer<
+  z.ZodObject<typeof fieldDefinitionV1_0_1Shape>
+>;
+
+/**
+ * Canonical runtime field definition (latest).
+ *
+ * Derived from the strict (non-loose) shape so it carries the named
+ * properties without a `[k: string]: unknown` index signature. That keeps the
+ * type composable with `Omit`/intersection in downstream packages (e.g. the
+ * designer overriding `component-parameters`), while the schema above still
+ * passes unmodelled keys through at runtime.
+ */
+export const FieldDefinitionSchema = FieldDefinitionV1_0_1Schema;
+export type FieldDefinition = FieldDefinitionV1_0_1;
+
+/** Compiled field definition at schema `1.0.0` — no `exportName`. */
+export const CompiledFieldDefinitionV1Schema = z
+  .object(compiledFieldDefinitionV1Shape)
+  .loose();
+export type CompiledFieldDefinitionV1 = z.infer<
+  z.ZodObject<typeof compiledFieldDefinitionV1Shape>
+>;
+
+/** Compiled field definition at schema `1.0.1` (required `exportName`). */
+export const CompiledFieldDefinitionV1_0_1Schema = z
+  .object(compiledFieldDefinitionV1_0_1Shape)
+  .loose();
+export type CompiledFieldDefinitionV1_0_1 = z.infer<
+  z.ZodObject<typeof compiledFieldDefinitionV1_0_1Shape>
+>;
+
+/**
+ * A field definition with its conditional logic compiled into a callable
+ * function. Same shape as {@link FieldDefinition} but carries the
+ * non-serializable `conditionFn`, mirroring the {@link UiSpecSection} ↔
+ * {@link CompiledUiSpecSection} relationship.
+ */
+export const CompiledFieldDefinitionSchema =
+  CompiledFieldDefinitionV1_0_1Schema;
+export type CompiledFieldDefinition = CompiledFieldDefinitionV1_0_1;
+
+/** Field definitions keyed by field name (schema `1.0.0`). */
+export const UiSpecFieldsV1Schema = z.record(
+  z.string(),
+  FieldDefinitionV1Schema
+);
+export type UiSpecFieldsV1 = z.infer<typeof UiSpecFieldsV1Schema>;
+
+/** Field definitions keyed by field name (schema `1.0.1`). */
+export const UiSpecFieldsV1_0_1Schema = z.record(
+  z.string(),
+  FieldDefinitionV1_0_1Schema
+);
+export type UiSpecFieldsV1_0_1 = z.infer<typeof UiSpecFieldsV1_0_1Schema>;
+
 /** Field definitions keyed by field name. */
-export const UiSpecFieldsSchema = z.record(z.string(), FieldDefinitionSchema);
-export type UiSpecFields = z.infer<typeof UiSpecFieldsSchema>;
+export const UiSpecFieldsSchema = UiSpecFieldsV1_0_1Schema;
+export type UiSpecFields = UiSpecFieldsV1_0_1;
+
+/** Compiled field definitions keyed by field name (schema `1.0.0`). */
+export const CompiledUiSpecFieldsV1Schema = z.record(
+  z.string(),
+  CompiledFieldDefinitionV1Schema
+);
+export type CompiledUiSpecFieldsV1 = z.infer<
+  typeof CompiledUiSpecFieldsV1Schema
+>;
+
+/** Compiled field definitions keyed by field name (schema `1.0.1`). */
+export const CompiledUiSpecFieldsV1_0_1Schema = z.record(
+  z.string(),
+  CompiledFieldDefinitionV1_0_1Schema
+);
+export type CompiledUiSpecFieldsV1_0_1 = z.infer<
+  typeof CompiledUiSpecFieldsV1_0_1Schema
+>;
 
 /** Compiled field definitions keyed by field name. */
-export const CompiledUiSpecFieldsSchema = z.record(
-  z.string(),
-  CompiledFieldDefinitionSchema
-);
-export type CompiledUiSpecFields = z.infer<typeof CompiledUiSpecFieldsSchema>;
+export const CompiledUiSpecFieldsSchema = CompiledUiSpecFieldsV1_0_1Schema;
+export type CompiledUiSpecFields = CompiledUiSpecFieldsV1_0_1;
 
 /** Relation kind for RelatedRecordSelector `component-parameters.relation_type`. */
 export const relatedTypeSchema = z.enum([
@@ -201,7 +279,7 @@ export const relatedRecordSelectorComponentParamsSchema = z
     allowLinkToExisting: z.boolean().optional().default(false),
     hideCreateAnotherButton: z.boolean().optional().default(false),
   })
-  .passthrough();
+  .loose();
 
 /** A form: a named form type composed of one or more sections. */
 export const UiSpecFormSchema = z
@@ -218,7 +296,7 @@ export const UiSpecFormSchema = z
     /** Whether records of this form type appear on the notebook overview map. */
     displayInOverviewMap: z.boolean().optional(),
   })
-  .passthrough();
+  .loose();
 export type UiSpecForm = z.infer<typeof UiSpecFormSchema>;
 
 /** Forms keyed by type. */
@@ -234,7 +312,7 @@ export const UiSpecSectionSchema = z
     condition: ConditionalExpressionSchema.optional(),
     description: z.string().optional(),
   })
-  .passthrough();
+  .loose();
 export type UiSpecSection = z.infer<typeof UiSpecSectionSchema>;
 
 /**
@@ -259,28 +337,63 @@ export type CompiledUiSpecSections = z.infer<
   typeof CompiledUiSpecSectionsSchema
 >;
 
-/** The full UI specification model. */
-export const UiSpecModelSchema = z
+const uiSpecModelBaseShape = {
+  // TODO Rename to sections
+  views: UiSpecSectionsSchema,
+  // TODO Rename to forms
+  viewsets: UiSpecFormsSchema,
+  visible_types: z.array(z.string()),
+};
+
+/** UI spec body at schema `1.0.0` (fields have no `exportName`). */
+export const UiSpecModelV1Schema = z
   .object({
-    fields: UiSpecFieldsSchema,
-    // TODO Rename to sections
-    views: UiSpecSectionsSchema,
-    // TODO Rename to forms
-    viewsets: UiSpecFormsSchema,
-    visible_types: z.array(z.string()),
+    fields: UiSpecFieldsV1Schema,
+    ...uiSpecModelBaseShape,
   })
-  .passthrough();
-export type UiSpecModel = z.infer<typeof UiSpecModelSchema>;
+  .loose();
+export type UiSpecModelV1 = z.infer<typeof UiSpecModelV1Schema>;
+
+/** UI spec body at schema `1.0.1` (fields require `exportName`). */
+export const UiSpecModelV1_0_1Schema = z
+  .object({
+    fields: UiSpecFieldsV1_0_1Schema,
+    ...uiSpecModelBaseShape,
+  })
+  .loose();
+export type UiSpecModelV1_0_1 = z.infer<typeof UiSpecModelV1_0_1Schema>;
+
+/** The full UI specification model. */
+export const UiSpecModelSchema = UiSpecModelV1_0_1Schema;
+export type UiSpecModel = UiSpecModelV1_0_1;
+
+/** Compiled UI spec body at schema `1.0.0`. */
+export const CompiledUiSpecModelV1Schema = z
+  .object({
+    fields: CompiledUiSpecFieldsV1Schema,
+    ...uiSpecModelBaseShape,
+    views: CompiledUiSpecSectionsSchema,
+  })
+  .loose();
+export type CompiledUiSpecModelV1 = z.infer<typeof CompiledUiSpecModelV1Schema>;
+
+/** Compiled UI spec body at schema `1.0.1`. */
+export const CompiledUiSpecModelV1_0_1Schema = z
+  .object({
+    fields: CompiledUiSpecFieldsV1_0_1Schema,
+    ...uiSpecModelBaseShape,
+    views: CompiledUiSpecSectionsSchema,
+  })
+  .loose();
+export type CompiledUiSpecModelV1_0_1 = z.infer<
+  typeof CompiledUiSpecModelV1_0_1Schema
+>;
 
 /**
  * A {@link UiSpecModel} with views compiled (conditions turned into functions).
  */
-export const CompiledUiSpecModelSchema = UiSpecModelSchema.extend({
-  fields: CompiledUiSpecFieldsSchema,
-  // TODO Rename to sections
-  views: CompiledUiSpecSectionsSchema,
-});
-export type CompiledUiSpecModel = z.infer<typeof CompiledUiSpecModelSchema>;
+export const CompiledUiSpecModelSchema = CompiledUiSpecModelV1_0_1Schema;
+export type CompiledUiSpecModel = CompiledUiSpecModelV1_0_1;
 
 // ============================================================================
 // Notebook schemas (zod)
@@ -289,21 +402,20 @@ export type CompiledUiSpecModel = z.infer<typeof CompiledUiSpecModelSchema>;
 // the UI spec, its functional settings, and non-functional design metadata.
 //
 // Versioning convention (same as `projectsDB/types.ts` / `templatesDB/types.ts`):
-// each notebook JSON schema *shape* gets a numbered `V<n>` block with paired
-// `<Name>V<n>Schema` + `z.infer` type, and the unversioned names at the bottom
-// ("Current exports") alias the latest block. `uiSpec.schemaVersion` is a
-// strict `MAJOR.MINOR.PATCH` string (see `schemaVersion.ts`); V1 is epoch
-// `1.0.0`. The deprecated two-part `1.0`…`7.0` ladder has no Zod blocks here —
-// it is collapsed by `notebookMigrations/steps/legacyToV1.ts`.
+// each notebook JSON schema *shape* gets a block named after
+// `uiSpec.schemaVersion` (`V1` = `1.0.0`, `V1_0_1` = `1.0.1`, …) with paired
+// `<Name>V…Schema` + `z.infer` type. Unversioned names at the bottom
+// ("Current exports") alias the latest block. The deprecated two-part
+// `1.0`…`7.0` ladder has no Zod blocks here — it is collapsed by
+// `notebookMigrations/steps/legacyToV1.ts`.
 //
-// Adding a shape change: add a `V<n+1>` block (extend/omit from `V<n>`), add a
-// harness step `<prev> → <next>` in `notebookMigrations/registry.ts`, then
-// re-point the current aliases. Patch bumps that do not change the model do
-// not need a new block.
+// Adding a shape change: add a `V<semver>` block (extend/omit/alias from the
+// previous), add a harness step `<prev> → <next>` in
+// `notebookMigrations/registry.ts`, then re-point the current aliases.
 // ============================================================================
 
 // =============
-// V1 Definition (schemaVersion epoch 1.0.0)
+// V1 Definition (schemaVersion 1.0.0)
 // =============
 
 /** UI behaviour toggles (V1). */
@@ -349,18 +461,20 @@ export const NotebookMetadataV1Schema = z.object({
 export type NotebookMetadataV1 = z.infer<typeof NotebookMetadataV1Schema>;
 
 /**
- * Inlined merge of the former notebook JSON and metadata DB (V1). `uiSpec` =
- * decoded **`UiSpecModel`** (`fields`, `views (sections)`, `viewsets (forms)`,
- * `visible_types`) plus **`settings`** and a strict-semver **`schemaVersion`**.
+ * Inlined merge of the former notebook JSON and metadata DB (V1 / `1.0.0`).
+ * Fields do not yet require `exportName`.
+ *
+ * Built as one object (not `.and()`) so Zod does not infer a circular
+ * intersection type that collapses to `any`.
  */
-export const NotebookUiSpecV1Schema = UiSpecModelSchema.and(
-  z.object({
-    /** UI functional settings. */
+export const NotebookUiSpecV1Schema = z
+  .object({
+    fields: UiSpecFieldsV1Schema,
+    ...uiSpecModelBaseShape,
     settings: NotebookSettingsV1Schema,
-    /** Platform format version; drives migration and app compatibility. */
     schemaVersion: NotebookSchemaSemverSchema,
   })
-);
+  .loose();
 export type NotebookUiSpecV1 = z.infer<typeof NotebookUiSpecV1Schema>;
 
 /**
@@ -368,14 +482,15 @@ export type NotebookUiSpecV1 = z.infer<typeof NotebookUiSpecV1Schema>;
  * compiled (conditions turned into `conditionFn`s), as per
  * {@link CompiledUiSpecModelSchema}.
  */
-export const CompiledNotebookUiSpecV1Schema = CompiledUiSpecModelSchema.and(
-  z.object({
-    /** UI functional settings. */
+export const CompiledNotebookUiSpecV1Schema = z
+  .object({
+    fields: CompiledUiSpecFieldsV1Schema,
+    ...uiSpecModelBaseShape,
+    views: CompiledUiSpecSectionsSchema,
     settings: NotebookSettingsV1Schema,
-    /** Platform format version; drives migration and app compatibility. */
     schemaVersion: NotebookSchemaSemverSchema,
   })
-);
+  .loose();
 export type CompiledNotebookUiSpecV1 = z.infer<
   typeof CompiledNotebookUiSpecV1Schema
 >;
@@ -425,40 +540,117 @@ export type CompiledNotebookDefinitionV1 = z.infer<
 >;
 
 // =============
+// V1_0_1 Definition (schemaVersion 1.0.1 — required exportName)
+// =============
+//
+// Unchanged envelopes alias V1. Only field-bearing models are new.
+
+/** Alias of {@link NotebookSettingsV1Schema} (unchanged in `1.0.1`). */
+export const NotebookSettingsV1_0_1Schema = NotebookSettingsV1Schema;
+export type NotebookSettingsV1_0_1 = NotebookSettingsV1;
+
+/** Alias of {@link NotebookInformationV1Schema} (unchanged in `1.0.1`). */
+export const NotebookInformationV1_0_1Schema = NotebookInformationV1Schema;
+export type NotebookInformationV1_0_1 = NotebookInformationV1;
+
+/** Alias of {@link NotebookMetadataV1Schema} (unchanged in `1.0.1`). */
+export const NotebookMetadataV1_0_1Schema = NotebookMetadataV1Schema;
+export type NotebookMetadataV1_0_1 = NotebookMetadataV1;
+
+/** Notebook UI spec at schema `1.0.1` — fields require `exportName`. */
+export const NotebookUiSpecV1_0_1Schema = z
+  .object({
+    fields: UiSpecFieldsV1_0_1Schema,
+    ...uiSpecModelBaseShape,
+    settings: NotebookSettingsV1_0_1Schema,
+    schemaVersion: NotebookSchemaSemverSchema,
+  })
+  .loose();
+export type NotebookUiSpecV1_0_1 = z.infer<typeof NotebookUiSpecV1_0_1Schema>;
+
+/**
+ * Compiled counterpart of {@link NotebookUiSpecV1_0_1}: same shape but with
+ * sections compiled (conditions turned into `conditionFn`s).
+ */
+export const CompiledNotebookUiSpecV1_0_1Schema = z
+  .object({
+    fields: CompiledUiSpecFieldsV1_0_1Schema,
+    ...uiSpecModelBaseShape,
+    views: CompiledUiSpecSectionsSchema,
+    settings: NotebookSettingsV1_0_1Schema,
+    schemaVersion: NotebookSchemaSemverSchema,
+  })
+  .loose();
+export type CompiledNotebookUiSpecV1_0_1 = z.infer<
+  typeof CompiledNotebookUiSpecV1_0_1Schema
+>;
+
+/** Template definition at schema `1.0.1` (required field `exportName`). */
+export const TemplateDefinitionV1_0_1Schema = z.object({
+  uiSpec: NotebookUiSpecV1_0_1Schema,
+  metadata: NotebookMetadataV1_0_1Schema,
+  /** One per plan the template offers, each with its own `planId`. */
+  planTemplates: z.array(PlanTemplateSchema).optional(),
+});
+export type TemplateDefinitionV1_0_1 = z.infer<
+  typeof TemplateDefinitionV1_0_1Schema
+>;
+
+/** Notebook definition at schema `1.0.1` (required field `exportName`). */
+export const NotebookDefinitionV1_0_1Schema = z.object({
+  uiSpec: NotebookUiSpecV1_0_1Schema,
+  metadata: NotebookMetadataV1_0_1Schema,
+  /** The notebook's plans, each addressed by its own `planId`. */
+  plans: z.array(RegisteredPlanSchema).optional(),
+});
+export type NotebookDefinitionV1_0_1 = z.infer<
+  typeof NotebookDefinitionV1_0_1Schema
+>;
+
+/**
+ * Compiled counterpart of {@link NotebookDefinitionV1_0_1}: identical shape but
+ * with a compiled {@link CompiledNotebookUiSpecV1_0_1} in place of the plain `uiSpec`.
+ */
+export const CompiledNotebookDefinitionV1_0_1Schema = z.object({
+  uiSpec: CompiledNotebookUiSpecV1_0_1Schema,
+  metadata: NotebookMetadataV1_0_1Schema,
+  /** The notebook's plans, each addressed by its own `planId`. */
+  plans: z.array(RegisteredPlanSchema).optional(),
+});
+export type CompiledNotebookDefinitionV1_0_1 = z.infer<
+  typeof CompiledNotebookDefinitionV1_0_1Schema
+>;
+
+// =============
 // Current exports
 // =============
 //
-// Unversioned names alias the latest V-block so existing imports stay stable.
-// Re-point these when a new V-block is added.
+// Unversioned names alias the latest block (`V1_0_1` / schema `1.0.1`).
 
-export const NotebookSettingsSchema = NotebookSettingsV1Schema;
-export type NotebookSettings = z.infer<typeof NotebookSettingsSchema>;
+export const NotebookSettingsSchema = NotebookSettingsV1_0_1Schema;
+export type NotebookSettings = NotebookSettingsV1_0_1;
 
-export const NotebookInformationSchema = NotebookInformationV1Schema;
-export type NotebookInformation = z.infer<typeof NotebookInformationSchema>;
+export const NotebookInformationSchema = NotebookInformationV1_0_1Schema;
+export type NotebookInformation = NotebookInformationV1_0_1;
 
-export const NotebookMetadataSchema = NotebookMetadataV1Schema;
-export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;
+export const NotebookMetadataSchema = NotebookMetadataV1_0_1Schema;
+export type NotebookMetadata = NotebookMetadataV1_0_1;
 
-export const NotebookUiSpecSchema = NotebookUiSpecV1Schema;
-export type NotebookUiSpec = z.infer<typeof NotebookUiSpecSchema>;
+export const NotebookUiSpecSchema = NotebookUiSpecV1_0_1Schema;
+export type NotebookUiSpec = NotebookUiSpecV1_0_1;
 
-export const CompiledNotebookUiSpecSchema = CompiledNotebookUiSpecV1Schema;
-export type CompiledNotebookUiSpec = z.infer<
-  typeof CompiledNotebookUiSpecSchema
->;
+export const CompiledNotebookUiSpecSchema = CompiledNotebookUiSpecV1_0_1Schema;
+export type CompiledNotebookUiSpec = CompiledNotebookUiSpecV1_0_1;
 
-export const TemplateDefinitionSchema = TemplateDefinitionV1Schema;
-export type TemplateDefinition = z.infer<typeof TemplateDefinitionSchema>;
+export const TemplateDefinitionSchema = TemplateDefinitionV1_0_1Schema;
+export type TemplateDefinition = TemplateDefinitionV1_0_1;
 
-export const NotebookDefinitionSchema = NotebookDefinitionV1Schema;
-export type NotebookDefinition = z.infer<typeof NotebookDefinitionSchema>;
+export const NotebookDefinitionSchema = NotebookDefinitionV1_0_1Schema;
+export type NotebookDefinition = NotebookDefinitionV1_0_1;
 
 export const CompiledNotebookDefinitionSchema =
-  CompiledNotebookDefinitionV1Schema;
-export type CompiledNotebookDefinition = z.infer<
-  typeof CompiledNotebookDefinitionSchema
->;
+  CompiledNotebookDefinitionV1_0_1Schema;
+export type CompiledNotebookDefinition = CompiledNotebookDefinitionV1_0_1;
 
 const isPlainObjectRecord = (
   value: unknown

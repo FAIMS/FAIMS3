@@ -35,12 +35,13 @@ button in the lower right.
 
 Click the field's **grey header bar** to expand it and see its settings.
 For an overview of the settings shared by all fields — including Label,
-Helper Text, Field ID, and the field toolbar — see
+Helper Text, Export name, and the field toolbar — see
 [Field Identity](../shared-settings/field-identity.md) and
 [Field Toolbar](../shared-settings/field-toolbar.md).
 
-Give the field a meaningful Label, review the auto-populated
-Field ID, and add any desired Helper Text.
+Give the field a meaningful Label (the title collectors see), review
+the auto-populated Export name (the CSV/GIS column header), and add any
+desired Helper Text.
 
 ```{screenshot} field-types-design/computed-number-02-configured.png
 :alt: Computed Number configuration in the {{Notebook}} Editor
@@ -50,18 +51,18 @@ Field ID, and add any desired Helper Text.
 
 ### Computed Number-Specific Settings
 
-The Computed Number's key feature is the **Expression** text area, which
-defines the calculated value. Each referenced field is written by
-wrapping its Field ID in braces, e.g.
-`{Wet-Soil-Mass-g} * {Number-of-Samples}`. Below the expression,
-a searchable field picker lists the referenceable
-fields in the form; selecting one inserts that field's reference, which
-avoids typing the Field ID by hand.
+The Computed Number's key feature is the **Expression** editor, which
+defines the calculated value. Field references are stored as braces
+around the field's storage id (for example `{f_a1b2c3}`), but the
+editor shows each complete reference as a **chip** with that field's
+Label. Hover a chip for the field's type, export name, and storage id.
+Below the expression, a searchable field picker lists fields by their
+Label; selecting one inserts a chip at the caret.
 
-| Setting          | What It Does                                                                                                                                      |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Expression**   | A text area where you define the calculation using literals, operators, and field references in single-brace syntax (e.g., `{Width} * {Height}`). |
-| **Insert field** | A searchable picker of the referenceable fields in the form. Selecting one inserts its braced reference into the expression.                      |
+| Setting          | What It Does                                                                                                                           |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Expression**   | The calculation: literals, operators, and field chips. The stored form uses single-brace storage ids (e.g. `{f_a1b2c3} * {f_c4d5e6}`). |
+| **Insert field** | A searchable picker of the referenceable fields in the form. Selecting one inserts a labelled chip at the caret.                       |
 
 The expression is typed and checked when the {{notebook}} is designed —
 mixing types is reported as an error in the Editor. The overall
@@ -90,9 +91,10 @@ String in the same form.
 
 When the form is a child of another form (linked through a
 Child-relation Related Records field), the expression can reference
-fields on the record's parent by prefixing the Field ID with `_PARENT.`,
-e.g. `{_PARENT.Calibration-Factor} * {Reading}`. An **Insert parent
-field** picker below the expression lists the available parent fields.
+fields on the record's parent by prefixing the field's reference with
+`_PARENT.`, e.g. `{_PARENT.Calibration-Factor} * {Reading}`. An
+**Insert parent field** picker below the expression lists the available
+parent fields by Label.
 
 Parent references are type checked like any other reference, and —
 unlike same-form references — may point at the parent's computed fields
@@ -113,9 +115,9 @@ The same reference can be used in
 When the form holds a
 [Related Records](../relationship-fields/related-records.md) field with
 a **Linked** relation that allows only a single link, the expression
-can reference fields on the linked record by joining the two Field IDs
-with a dot: `{Link-Field-ID.Field-ID}`. For example, with a Related
-Records field `Core-Calibration` linking one Calibration record,
+can reference fields on the linked record by joining the two field
+references with a dot: `{Link-Field.Target-Field}`. For example, with a
+Related Records field `Core-Calibration` linking one Calibration record,
 `{Wet-Mass-g} - {Core-Calibration.Cutter-Mass-g}` subtracts the linked
 record's cutter mass. An **Insert linked record field** picker below
 the expression lists the available fields.
@@ -183,9 +185,9 @@ records — see
 
 ## Tips
 
-- **Use the field picker to build expressions** rather than typing Field
-  IDs by hand. Selecting a field inserts the exact braced reference, so
-  you avoid typos and do not need to remember a field's ID.
+- **Use the field picker to build expressions** rather than typing
+  references by hand. Selecting a field by its Label inserts the exact
+  braced reference, so you avoid typos.
 - **The result stays blank until all referenced fields have values.**
   This is intentional — a partially complete record shows no value rather
   than a misleading partial calculation.

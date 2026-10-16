@@ -238,7 +238,7 @@ const EnvSchema = z
       'https://fieldnote.au/privacy'
     ),
     /**
-     * Contact URL shown in the app chrome. Falsy / empty hides the contact
+     * Contact URL shown in the app header. Falsy / empty hides the contact
      * link.
      */
     VITE_APP_CONTACT_URL: configHelpers.stringDefault(''),
@@ -285,7 +285,7 @@ const EnvSchema = z
      * download not allowed).
      */
     VITE_OFFLINE_MAPS: z.string().optional(),
-    /** In-app navigation chrome: `'none'` or `'breadcrumbs'`. */
+    /** In-app navigation style: `'none'` or `'breadcrumbs'`. */
     VITE_NAVIGATION: configHelpers.enumDefault(
       [
         'none',

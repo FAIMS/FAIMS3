@@ -28,18 +28,25 @@ import {
   METADATA_EXPR_TYPE,
 } from '../uiSpecification';
 
-// Computed field components and the value type each produces.
-const COMPUTED_FIELD_NAMES = ['ComputedNumber', 'ComputedText'];
+/** Computed field component names (ComputedNumber / ComputedText). */
+export const COMPUTED_FIELD_NAMES = ['ComputedNumber', 'ComputedText'];
 
-// Component names whose values are themselves derived. These are excluded as
-// inputs to a computed expression in this version to avoid evaluation ordering
-// problems; referencing one yields a blank (incomplete) result. Note this
-// applies to local fields only - parent derived fields are usable, since
-// their stored values carry no ordering problem (see resolveParentRef).
-const DERIVED_FIELD_NAMES = [
+/**
+ * Component names whose values are themselves derived. These are excluded as
+ * local inputs to a computed expression to avoid evaluation ordering
+ * problems; referencing one yields a blank (incomplete) result. Parent and
+ * linked derived fields are still usable — their stored values carry no
+ * ordering problem (see resolveParentRef).
+ */
+export const DERIVED_FIELD_NAMES = [
   ...COMPUTED_FIELD_NAMES,
   TEMPLATED_STRING_FIELD_NAME,
 ];
+
+/** Whether `componentName` is a derived field (computed or templated). */
+export function isDerivedFieldName(componentName: string): boolean {
+  return DERIVED_FIELD_NAMES.includes(componentName);
+}
 
 /**
  * Recomputes all computed field (ComputedNumber/ComputedText) values in the
@@ -99,7 +106,7 @@ export function recomputeComputedFields({
     }
     const componentName = fieldDetails['component-name'];
 
-    if (DERIVED_FIELD_NAMES.includes(componentName)) {
+    if (isDerivedFieldName(componentName)) {
       derivedFields.add(fieldName);
     }
     if (COMPUTED_FIELD_NAMES.includes(componentName)) {
