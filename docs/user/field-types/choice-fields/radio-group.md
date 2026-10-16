@@ -92,11 +92,9 @@ Annotation, Uncertainty, Conditions, and Copy value to new records — see
 
 ## Tips
 
-- **Best for short lists of ca. 2–8 options** where seeing
-  every choice at once speeds selection. For longer lists,
-  use [Select Field](select.md) (dropdown) to conserve
-  screen space.
-- **On small screens, err towards Select Field.**
+- **Expanded Checklist is best for short lists of ca. 2–8 options** where seeing
+  every choice at once speeds selection.
+- **On small screens, err towards dropdown lists.**
   Radio buttons take more vertical space than a dropdown;
   on mobile devices with small screens a long radio list
   requires scrolling, offsetting their speed advantage.

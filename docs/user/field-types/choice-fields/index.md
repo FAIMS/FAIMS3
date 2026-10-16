@@ -9,7 +9,6 @@ caption: Choice Fields
 hidden: true
 ---
 
-select.md
 checkbox.md
 multi-select.md
 hierarchical-select.md

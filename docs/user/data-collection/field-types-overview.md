@@ -17,9 +17,8 @@
 
 **CHOICE** field types are for controlled vocabulary input, from simple checkboxes to hierarchical selection lists.
 
-- **[Select Field](../field-types/choice-fields/select.md)** — Lets users pick one option from a dropdown
-  list, suitable for site types, artefact categories, condition assessments,
-  and similar single-selection questions.
+- **[Select single](../field-types/choice-fields/radio-group.md)** — User chooses one option
+  from a list or 'other'. Displayed as a dropdown list or an expanded checklist.
 - **[Checkbox](../field-types/choice-fields/checkbox.md)** — A toggle that stores a boolean value (checked
   or unchecked) for presence/absence indicators, consent acknowledgements, and
   data quality flags.
@@ -27,8 +26,6 @@
   from a predefined list, with dropdown or expanded checklist display.
 - **[Select Field (Hierarchical)](../field-types/choice-fields/hierarchical-select.md)** — Navigates a
   nested vocabulary tree to select a value. Beta feature.
-- **[Select one option](../field-types/choice-fields/radio-group.md)** — Displays all options as a
-  visible list for single selection; suited to short lists of 2–10 items.
 
 ## Number Fields
 
