@@ -24,7 +24,9 @@ import {
   MapAssetFields,
   MapAssetLinkFields,
   GetMapAssetDownloadUrlResponse,
+  formatMapAssetProcessingProgress,
   isMapAssetInProgress,
+  MapAssetProcessingProgress,
   MapAssetProcessingStage,
   MapAssetStatus,
   MapAssetStyle,
@@ -380,6 +382,7 @@ export async function replaceMapAssetFiles({
       processingStartedAt: undefined,
       processingAttempts: undefined,
       processingStage: 'uploading',
+      processingProgress: undefined,
       updatedAt: Date.now(),
     })
   );
@@ -615,6 +618,7 @@ async function claimMapAssetProcessing(
             failureReason: MAP_ASSET_PROCESSING_EXHAUSTED_REASON,
             processingStartedAt: undefined,
             processingStage: undefined,
+            processingProgress: undefined,
             updatedAt: now,
           })
         );
@@ -643,6 +647,7 @@ async function claimMapAssetProcessing(
         processingStartedAt: now,
         processingAttempts: attempts + 1,
         processingStage: 'downloading',
+        processingProgress: undefined,
         updatedAt: now,
       });
       logMapAssetProcessing({
@@ -879,15 +884,18 @@ async function reportProcessingStage(
       } else if (!isMapAssetInProgress(latest.status)) {
         return;
       }
-      if (latest.processingStage === stage) {
+      if (latest.processingStage === stage && !latest.processingProgress) {
         return;
       }
       try {
-        await db.put({
-          ...latest,
-          processingStage: stage,
-          updatedAt: processingNow(runtime),
-        });
+        await db.put(
+          omitUndefinedFields({
+            ...latest,
+            processingStage: stage,
+            processingProgress: undefined,
+            updatedAt: processingNow(runtime),
+          })
+        );
         return;
       } catch (error) {
         if (!isConflict(error)) {
@@ -905,6 +913,81 @@ async function reportProcessingStage(
   } catch (error) {
     console.error(
       `${MAP_ASSET_PROCESSING_LOG} could not record stage ${stage} for ${assetId}`,
+      error
+    );
+  }
+}
+
+function progressUnchanged(
+  latest: ExistingMapAsset,
+  progress: MapAssetProcessingProgress
+): boolean {
+  const current = latest.processingProgress;
+  return (
+    current?.phase === progress.phase && current?.percent === progress.percent
+  );
+}
+
+/**
+ * Write tippecanoe / GDAL phase + percent so the Control Centre can poll
+ * it. Serialized with the claim heartbeat. A lost claim is a no-op.
+ */
+async function reportProcessingProgress(
+  assetId: string,
+  progress: MapAssetProcessingProgress,
+  token?: ClaimToken,
+  runtime?: MapAssetProcessingRuntime
+): Promise<void> {
+  const write = async () => {
+    const db = getMapAssetsDB();
+    for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
+      const latest = await getMapAsset(assetId);
+      if (token) {
+        if (
+          latest.status !== 'processing' ||
+          latest.processingStartedAt !== token.current
+        ) {
+          return;
+        }
+      } else if (!isMapAssetInProgress(latest.status)) {
+        return;
+      }
+      if (progressUnchanged(latest, progress)) {
+        return;
+      }
+      try {
+        await db.put({
+          ...latest,
+          processingProgress: progress,
+          updatedAt: processingNow(runtime),
+        });
+        logMapAssetProcessing({
+          event: 'gdal.command',
+          outcome: 'waiting',
+          assetId,
+          filename: latest.originalFilename,
+          command: 'tippecanoe',
+          detail: formatMapAssetProcessingProgress(progress),
+          phase: progress.phase,
+          percent: progress.percent,
+        });
+        return;
+      } catch (error) {
+        if (!isConflict(error)) {
+          throw error;
+        }
+      }
+    }
+  };
+  try {
+    if (token) {
+      await withClaimToken(token, write);
+    } else {
+      await write();
+    }
+  } catch (error) {
+    console.error(
+      `${MAP_ASSET_PROCESSING_LOG} could not record progress for ${assetId}`,
       error
     );
   }
@@ -1009,6 +1092,8 @@ export async function processMapAsset(
           assetId,
           onStage: stage =>
             reportProcessingStage(assetId, stage, token, runtime),
+          onProgress: progress =>
+            reportProcessingProgress(assetId, progress, token, runtime),
         })
     );
     cleanupDir = normalized.cleanupDir;
@@ -1076,6 +1161,7 @@ export async function processMapAsset(
         failureReason: undefined,
         processingStartedAt: undefined,
         processingStage: undefined,
+        processingProgress: undefined,
         updatedAt: processingNow(runtime),
       })
     );
@@ -1109,6 +1195,7 @@ export async function processMapAsset(
         failureReason: message,
         processingStartedAt: undefined,
         processingStage: undefined,
+        processingProgress: undefined,
         updatedAt: processingNow(runtime),
       })
     );
@@ -1286,6 +1373,7 @@ async function commitMissingOriginals(
           failureReason: MAP_ASSET_ORIGINALS_MISSING_REASON,
           processingStartedAt: undefined,
           processingStage: undefined,
+          processingProgress: undefined,
           updatedAt: now,
         })
       );

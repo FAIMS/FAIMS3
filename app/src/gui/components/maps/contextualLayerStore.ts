@@ -189,6 +189,37 @@ function prefsFor(
   };
 }
 
+function storeLayerPrefs(prefs: LayerPrefs): LayerPrefs {
+  if (!prefs.labelField) {
+    const {labelField: _labelField, ...rest} = prefs;
+    return rest;
+  }
+  return prefs;
+}
+
+/**
+ * Restore this survey's downloaded overlays to file defaults and the
+ * original asset-id stack. Returns the prefs applied so the panel can
+ * update before the listing reloads.
+ */
+export function resetContextualLayerPrefs(
+  projectId: string
+): Record<string, LayerPrefs> {
+  const index = readIndex();
+  const files = Object.values(index.files)
+    .filter(file => file.projectIds.includes(projectId))
+    .sort((a, b) => a.assetId.localeCompare(b.assetId));
+  const nextPrefs: Record<string, LayerPrefs> = {};
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const prefs = storeLayerPrefs(prefsFor(file, undefined, i));
+    index.prefs[file.assetId] = prefs;
+    nextPrefs[file.assetId] = prefs;
+  }
+  writeIndex(index);
+  return nextPrefs;
+}
+
 /** First unused stack slot. `10 + prefsCount` can reuse a deleted layer's z. */
 function nextUnusedZIndex(prefs: Record<string, LayerPrefs>): number {
   let max = 9;

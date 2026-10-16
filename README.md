@@ -85,7 +85,7 @@ missing:
 
 ```bash
 # Ubuntu / Debian
-sudo apt-get install gdal-bin poppler-utils tippecanoe
+sudo apt-get install gdal-bin poppler-utils unzip tippecanoe
 
 # macOS (Homebrew)
 brew install gdal poppler tippecanoe

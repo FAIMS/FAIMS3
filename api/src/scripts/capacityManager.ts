@@ -15,7 +15,7 @@
  */
 
 import {config} from '../buildconfig';
-import {verifyCouchDBConnection} from '../couchdb';
+import {waitForCouchDBConnection} from '../couchdb';
 import {summarizeSpatialBacklog} from '../couchdb/mapAssets/store';
 import {createCapacityProvider} from '../services/capacityProvider';
 import {reconcileCapacity} from '../spatial/reconcileCapacity';
@@ -50,10 +50,15 @@ const main = async () => {
     `[capacity] provider=${config.capacityProviderType} max=${config.capacityMax} scale=${config.capacityScaleThresholds.join(',')} reconcileMs=${config.capacityReconcileMs}`
   );
   console.log(`Couch server: ${config.couchdbInternalUrl}`);
-  const connection = await verifyCouchDBConnection();
+  const connection = await waitForCouchDBConnection();
   if (!connection.valid) {
     console.error('Cannot reach CouchDB. Aborting.');
     console.error(connection.validate_error || connection.server_msg);
+    if (connection.database_errors?.length) {
+      for (const e of connection.database_errors) {
+        console.error(`  ${e}`);
+      }
+    }
     process.exit(1);
   }
 

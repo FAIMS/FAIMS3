@@ -66,7 +66,6 @@ describe('FaimsSpatialCapacity synth', () => {
         gdalCacheMaxMb: 256,
         gdalWarpMemoryMb: 256,
         gdalWarpMulti: true,
-        tippecanoeReadParallel: true,
       },
     });
 
@@ -98,10 +97,6 @@ describe('FaimsSpatialCapacity synth', () => {
             Match.objectLike({Name: 'GDAL_CACHEMAX', Value: '256'}),
             Match.objectLike({Name: 'GDAL_WARP_MEMORY_MB', Value: '256'}),
             Match.objectLike({Name: 'GDAL_WARP_MULTI', Value: 'true'}),
-            Match.objectLike({
-              Name: 'TIPPECANOE_READ_PARALLEL',
-              Value: 'true',
-            }),
           ]),
         }),
       ]),
@@ -162,7 +157,6 @@ describe('spatialWorkerPerformanceEnv', () => {
     gdalCacheMaxMb: 2048,
     gdalWarpMemoryMb: 1024,
     gdalWarpMulti: true,
-    tippecanoeReadParallel: true,
   };
 
   it('omits TIPPECANOE_MAX_THREADS unless set', () => {

@@ -6,7 +6,7 @@
 
 check_gdal() {
   echo "=========================================="
-  echo "Checking GDAL, tippecanoe, and pmtiles..."
+  echo "Checking GDAL, tippecanoe, unzip, and pmtiles..."
   echo "=========================================="
 
   if ! command -v ogr2ogr &>/dev/null || ! command -v gdalinfo &>/dev/null; then
@@ -41,6 +41,14 @@ check_gdal() {
     echo "  macOS (Homebrew): brew install tippecanoe"
   else
     echo "✓ tippecanoe available"
+  fi
+
+  if ! command -v unzip &>/dev/null; then
+    echo "WARNING: unzip is not on PATH. Zipped File Geodatabase layers will fail."
+    echo "  Ubuntu/Debian: sudo apt-get install unzip"
+    echo "  macOS (Homebrew): unzip is usually already installed"
+  else
+    echo "✓ unzip available"
   fi
 
   if ! command -v pmtiles &>/dev/null && ! command -v go-pmtiles &>/dev/null; then

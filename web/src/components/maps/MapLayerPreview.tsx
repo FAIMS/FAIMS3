@@ -8,7 +8,7 @@ import {config} from '@/constants';
 import type {User} from '@/context/auth-provider';
 import {
   isTiledMapAssetKind,
-  mapAssetProcessingStageLabel,
+  mapAssetProcessingStatusText,
   type ExistingMapAsset,
   type GetMapAssetDownloadUrlResponse,
 } from '@faims3/data-model';
@@ -95,7 +95,7 @@ export function MapLayerPreview({
 
   if (asset.status === 'pending' || asset.status === 'processing') {
     const progress =
-      mapAssetProcessingStageLabel(asset.processingStage) ??
+      mapAssetProcessingStatusText(asset) ??
       (asset.status === 'pending'
         ? 'This layer is waiting for a worker'
         : 'This layer is still processing');

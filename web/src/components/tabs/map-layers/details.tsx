@@ -10,7 +10,7 @@ import {displayDateTime} from '@/lib/time';
 import {cn} from '@/lib/utils';
 import {
   mapAssetKindLabel,
-  mapAssetProcessingStageLabel,
+  mapAssetProcessingStatusText,
   type ExistingMapAsset,
   type MapAssetStatus,
 } from '@faims3/data-model';
@@ -78,7 +78,7 @@ function MapLayerStatusIndication({asset}: {asset: ExistingMapAsset}) {
       ) : null}
       {asset.status === 'pending' || asset.status === 'processing' ? (
         <p className="text-sm text-muted-foreground">
-          {mapAssetProcessingStageLabel(asset.processingStage) ??
+          {mapAssetProcessingStatusText(asset) ??
             (asset.status === 'pending'
               ? 'Waiting for a worker to prepare this layer for devices.'
               : 'This layer is being prepared for devices.')}

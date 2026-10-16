@@ -25,6 +25,28 @@ const MAP_ORIGINS_SHARED = [
   '*.openstreetmap.org',
 ];
 
+/** Virtual-hosted presigned GETs use the regional S3 hostname. */
+function mapAssetConnectSrc(bucket: aws_s3.IBucket): string {
+  return `https://${bucket.bucketRegionalDomainName}`;
+}
+
+/** CloudFront connect-src for the data-collection app and Control Centre. */
+export function frontendConnectSrc(options: {
+  includeBlob: boolean;
+  extraOrigins: string[];
+  mapAssetBucket: aws_s3.IBucket;
+}): string {
+  const origins = [
+    "'self'",
+    ...(options.includeBlob ? ['blob:'] : []),
+    ...options.extraOrigins,
+    mapAssetConnectSrc(options.mapAssetBucket),
+    '*.bugsnag.com',
+    ...MAP_ORIGINS_SHARED,
+  ];
+  return `connect-src ${origins.join(' ')}`;
+}
+
 export interface FaimsFrontEndProps {
   // FAIMS main website
 
@@ -59,6 +81,12 @@ export interface FaimsFrontEndProps {
 
   // conductor e.g. https://api.com
   conductorUrl: string;
+
+  /**
+   * Private map-layer object bucket. Control Centre previews and the app
+   * download presigned objects from this host, so it must be on connect-src.
+   */
+  mapAssetBucket: aws_s3.IBucket;
 
   // web config
   webDomainName: string;
@@ -183,9 +211,11 @@ export class FaimsFrontEnd extends Construct {
     // connect-src covers fetch/XHR. `blob:` is a scheme source (CSP cannot
     // origin-scope it; 'self' does not match blob:). Required so TakePhoto
     // gallery-add can fetch Capacitor's URL.createObjectURL(file) on web.
-    const csp =
-      `connect-src 'self' blob: https://${props.couchDbDomainOnly} ${props.conductorUrl} *.bugsnag.com ` +
-      MAP_ORIGINS_SHARED.join(' ');
+    const csp = frontendConnectSrc({
+      includeBlob: true,
+      extraOrigins: [`https://${props.couchDbDomainOnly}`, props.conductorUrl],
+      mapAssetBucket: props.mapAssetBucket,
+    });
 
     const website = new StaticWebsite(this, 'faims-website', {
       hostedZone: props.faimsHz,
@@ -410,9 +440,13 @@ export class FaimsFrontEnd extends Construct {
   }
 
   setupWebDistribution(props: FaimsFrontEndProps) {
-    const csp =
-      `connect-src 'self' ${props.conductorUrl} *.bugsnag.com ` +
-      MAP_ORIGINS_SHARED.join(' ');
+    // blob: is required so vector-layer preview can fetch object URLs.
+    // The map-asset bucket host is the presigned GetObject endpoint.
+    const csp = frontendConnectSrc({
+      includeBlob: true,
+      extraOrigins: [props.conductorUrl],
+      mapAssetBucket: props.mapAssetBucket,
+    });
 
     const website = new StaticWebsite(this, 'web-website', {
       hostedZone: props.faimsHz,

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import {spawn} from 'child_process';
 import {mkdtemp, readdir, readFile, rm, writeFile} from 'fs/promises';
 import {tmpdir} from 'os';
 import path from 'path';
@@ -11,6 +12,7 @@ import {
 import {
   fileGdbFoldersInZip,
   listZipEntryNames,
+  prepareVectorGdalSource,
   resolveVectorGdalSource,
 } from '../src/couchdb/mapAssets/zipSources';
 
@@ -163,6 +165,53 @@ describe('resolveVectorGdalSource', () => {
       await expect(resolveVectorGdalSource(zipPath)).rejects.toThrow(
         /2 File Geodatabases/
       );
+    } finally {
+      await rm(dir, {recursive: true, force: true});
+    }
+  });
+});
+
+function unzipAvailable(): Promise<boolean> {
+  return new Promise(resolve => {
+    const proc = spawn('unzip', [], {stdio: 'ignore'});
+    proc.on('error', () => resolve(false));
+    proc.on('close', () => resolve(true));
+  });
+}
+
+describe('prepareVectorGdalSource', () => {
+  it('extracts a File Geodatabase zip to a real folder', async () => {
+    if (!(await unzipAvailable())) {
+      return;
+    }
+    const dir = await mkdtemp(path.join(tmpdir(), 'faims-gdb-extract-'));
+    try {
+      const zipPath = await writeZip(dir, 'Sites.gdb.zip', [
+        {name: 'Sites.gdb/'},
+        {name: 'Sites.gdb/a00000001.gdbtable', data: new Uint8Array([0x78])},
+      ]);
+      const extractDir = path.join(dir, 'extracted');
+      const prepared = await prepareVectorGdalSource(zipPath, extractDir);
+      expect(prepared.source).toBe(path.join(extractDir, 'Sites.gdb'));
+      expect(prepared.extractedGdbDir).toBe(path.join(extractDir, 'Sites.gdb'));
+      expect(await readdir(prepared.source)).toContain('a00000001.gdbtable');
+    } finally {
+      await rm(dir, {recursive: true, force: true});
+    }
+  });
+
+  it('leaves a shapefile zip on /vsizip', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'faims-shp-prepare-'));
+    try {
+      const zipPath = await writeZip(dir, 'plots.zip', [
+        {name: 'plots.shp', data: new Uint8Array([0x78])},
+      ]);
+      const prepared = await prepareVectorGdalSource(
+        zipPath,
+        path.join(dir, 'extracted')
+      );
+      expect(prepared.source).toBe(`/vsizip/${zipPath}`);
+      expect(prepared.extractedGdbDir).toBeUndefined();
     } finally {
       await rm(dir, {recursive: true, force: true});
     }

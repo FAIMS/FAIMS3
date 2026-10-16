@@ -40,7 +40,6 @@ import {
   DEFAULT_GDAL_NUM_THREADS,
   DEFAULT_GDAL_WARP_MEMORY_MB,
   DEFAULT_GDAL_WARP_MULTI,
-  DEFAULT_TIPPECANOE_READ_PARALLEL,
 } from './spatial/gdalPerformance';
 import {
   DEFAULT_CAPACITY_SCALE_THRESHOLDS_CSV,
@@ -544,13 +543,6 @@ const EnvSchema = z
         return parsed;
       }),
     /**
-     * `tippecanoe --read-parallel`. Default on. Writes GeoJSONSeq so
-     * parallel parse is valid (FeatureCollection is not).
-     */
-    TIPPECANOE_READ_PARALLEL: configHelpers.boolWithDefault(
-      DEFAULT_TIPPECANOE_READ_PARALLEL
-    ),
-    /**
      * Comma-separated list of domains to which auth-flow redirects are
      * allowed. Required; each entry must be a valid URL.
      */
@@ -854,7 +846,6 @@ const EnvSchema = z
         gdalWarpMemoryMb: env.GDAL_WARP_MEMORY_MB,
         gdalWarpMulti: env.GDAL_WARP_MULTI,
         tippecanoeMaxThreads: env.TIPPECANOE_MAX_THREADS,
-        tippecanoeReadParallel: env.TIPPECANOE_READ_PARALLEL,
       },
       _keyFileHost: keyFileHost,
     };
@@ -1126,7 +1117,6 @@ export const config = {
   gdalWarpMemoryMb: _capacity.gdalWarpMemoryMb,
   gdalWarpMulti: _capacity.gdalWarpMulti,
   tippecanoeMaxThreads: _capacity.tippecanoeMaxThreads,
-  tippecanoeReadParallel: _capacity.tippecanoeReadParallel,
 };
 
 export type Config = typeof config;

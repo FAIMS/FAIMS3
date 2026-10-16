@@ -39,6 +39,7 @@ export function LayerLocationHint({
       sx={{
         display: 'inline-flex',
         alignItems: 'center',
+        flexShrink: 0,
         gap: 0.5,
         ml: 0.5,
         minWidth: 0,

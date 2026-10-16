@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import CenterFocusStrongIcon from '@mui/icons-material/CenterFocusStrong';
 import CloseIcon from '@mui/icons-material/Close';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import {
@@ -37,7 +37,6 @@ import {
   type BaseMapPanelLayer,
 } from './baseMapLayers';
 import {
-  CONTEXTUAL_VISIBLE_LAYER_HINT,
   ContextualMapLayersContext,
   type ContextualMapLayer,
   type ContextualMapLayerPatch,
@@ -84,16 +83,22 @@ export function ContextualLayersControl({
   map,
   baseLayers = [],
   onUpdateBaseLayer,
+  onResetBaseLayers,
   recordLayers = [],
   onUpdateRecordLayer,
+  onResetRecordLayers,
 }: {
   map: Map;
   baseLayers?: BaseMapPanelLayer[];
   onUpdateBaseLayer?: (id: string, patch: BaseMapLayerPatch) => void;
+  onResetBaseLayers?: () => void;
   recordLayers?: RecordFormLayer[];
   onUpdateRecordLayer?: (id: string, patch: RecordFormLayerPatch) => void;
+  onResetRecordLayers?: () => void;
 }) {
-  const {layers, updateLayer} = useContext(ContextualMapLayersContext);
+  const {layers, updateLayer, resetLayers} = useContext(
+    ContextualMapLayersContext
+  );
   const [open, setOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [panelMaxHeight, setPanelMaxHeight] = useState(320);
@@ -140,7 +145,6 @@ export function ContextualLayersControl({
     };
   }, [map, open, layers.length, baseLayers.length, recordLayers.length]);
 
-  const visibleContextual = layers.filter(layer => layer.visible).length;
   const panelLayers = toPanelLayers(layers, baseLayers, recordLayers);
   if (panelLayers.length === 0) {
     return null;
@@ -170,6 +174,12 @@ export function ContextualLayersControl({
         patchLayer(layer, {visible});
       }
     }
+  };
+
+  const resetToDefaults = () => {
+    resetLayers();
+    onResetBaseLayers?.();
+    onResetRecordLayers?.();
   };
 
   const movePanelLayer = (layer: PanelLayer, direction: 'up' | 'down') => {
@@ -312,76 +322,85 @@ export function ContextualLayersControl({
                 direction="row"
                 sx={{
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 1,
-                  px: 1.5,
-                  py: 1,
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                  flexShrink: 0,
-                }}
-              >
-                <Box sx={{minWidth: 0}}>
-                  <Typography
-                    sx={{fontWeight: 700, fontSize: 15, lineHeight: 1.25}}
-                  >
-                    Map layers
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Upper layers draw on top
-                  </Typography>
-                  {visibleContextual > CONTEXTUAL_VISIBLE_LAYER_HINT ? (
-                    <Typography variant="caption" color="text.secondary">
-                      Many layers are visible. Hide some if the map feels slow.
-                    </Typography>
-                  ) : null}
-                </Box>
-                <IconButton
-                  type="button"
-                  size="small"
-                  aria-label="Close map layers"
-                  onClick={() => setOpen(false)}
-                  sx={{flexShrink: 0}}
-                >
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-              </Stack>
-              <Stack
-                direction="row"
-                spacing={0.75}
-                sx={{
-                  px: 1.5,
+                  gap: 0.75,
+                  pl: 1,
+                  pr: 0.5,
                   py: 0.75,
                   borderBottom: '1px solid',
                   borderColor: 'divider',
                   flexShrink: 0,
                 }}
               >
-                <Button
+                <Stack spacing={0.75} sx={{flex: '1 1 auto', minWidth: 0}}>
+                  <Button
+                    type="button"
+                    size="small"
+                    variant="outlined"
+                    startIcon={<RestartAltIcon />}
+                    onClick={resetToDefaults}
+                    sx={{
+                      textTransform: 'none',
+                      minHeight: 32,
+                      whiteSpace: 'nowrap',
+                      width: '100%',
+                    }}
+                  >
+                    Reset to defaults
+                  </Button>
+                  <Stack
+                    direction="row"
+                    spacing={0.75}
+                    useFlexGap
+                    sx={{flexWrap: 'wrap'}}
+                  >
+                    <Button
+                      type="button"
+                      size="small"
+                      variant="outlined"
+                      disabled={
+                        visibleCount ===
+                        panelLayers.filter(layer => layer.available).length
+                      }
+                      startIcon={<VisibilityOutlinedIcon />}
+                      onClick={() => setAllVisible(true)}
+                      sx={{
+                        flex: '1 1 88px',
+                        minWidth: 0,
+                        textTransform: 'none',
+                        minHeight: 32,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Show all
+                    </Button>
+                    <Button
+                      type="button"
+                      size="small"
+                      variant="outlined"
+                      disabled={visibleCount === 0}
+                      startIcon={<VisibilityOffOutlinedIcon />}
+                      onClick={() => setAllVisible(false)}
+                      sx={{
+                        flex: '1 1 88px',
+                        minWidth: 0,
+                        textTransform: 'none',
+                        minHeight: 32,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Hide all
+                    </Button>
+                  </Stack>
+                </Stack>
+                <IconButton
                   type="button"
                   size="small"
-                  variant="outlined"
-                  disabled={
-                    visibleCount ===
-                    panelLayers.filter(layer => layer.available).length
-                  }
-                  startIcon={<VisibilityOutlinedIcon />}
-                  onClick={() => setAllVisible(true)}
-                  sx={{flex: 1, textTransform: 'none', minHeight: 32}}
+                  aria-label="Close map layers"
+                  onClick={() => setOpen(false)}
+                  sx={{flexShrink: 0, alignSelf: 'center'}}
                 >
-                  Show all
-                </Button>
-                <Button
-                  type="button"
-                  size="small"
-                  variant="outlined"
-                  disabled={visibleCount === 0}
-                  startIcon={<VisibilityOffOutlinedIcon />}
-                  onClick={() => setAllVisible(false)}
-                  sx={{flex: 1, textTransform: 'none', minHeight: 32}}
-                >
-                  Hide all
-                </Button>
+                  <CloseIcon fontSize="small" />
+                </IconButton>
               </Stack>
               <Box
                 sx={{
@@ -458,6 +477,27 @@ function toPanelLayers(
   ];
 }
 
+/** Phone layouts keep a 2×2; tablet and up spread the controls in one row. */
+const LAYER_CONTROLS_WIDE = '@media (min-width: 600px)';
+
+function layerActionSx(extra: Record<string, unknown> = {}) {
+  const wideExtra = extra[LAYER_CONTROLS_WIDE];
+  const rest = {...extra};
+  delete rest[LAYER_CONTROLS_WIDE];
+  return {
+    width: 40,
+    height: 40,
+    p: 0,
+    flexShrink: 0,
+    ...rest,
+    [LAYER_CONTROLS_WIDE]: {
+      width: 36,
+      height: 36,
+      ...(wideExtra && typeof wideExtra === 'object' ? wideExtra : {}),
+    },
+  };
+}
+
 function layerKindLabel(layer: PanelLayer): string {
   if (layer.kind === 'raster-tiles') {
     return 'Image tiles';
@@ -512,155 +552,224 @@ function LayerRow({
       sx={{
         borderTop: divided ? '1px solid' : 'none',
         borderColor: 'divider',
+        minWidth: 0,
       }}
     >
-      <Stack
-        direction="row"
-        spacing={0.25}
-        sx={{alignItems: 'center', pl: 0.5, pr: 0.75, py: 0.5}}
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'nowrap',
+          alignItems: 'center',
+          columnGap: 0.5,
+          pl: 0.5,
+          pr: 0.5,
+          py: 0.75,
+          minWidth: 0,
+          bgcolor: theme =>
+            expanded ? alpha(theme.palette.primary.main, 0.06) : 'transparent',
+          [LAYER_CONTROLS_WIDE]: {
+            py: 0.5,
+          },
+        }}
       >
-        <IconButton
-          type="button"
-          aria-label={
-            !layer.available
-              ? `${layer.name} unavailable`
-              : layer.visible
-                ? `Hide ${layer.name}`
-                : `Show ${layer.name}`
-          }
-          aria-pressed={layer.visible}
-          disabled={!layer.available}
-          onClick={onToggleVisible}
+        <Stack
+          direction="row"
+          spacing={0.25}
           sx={{
-            width: 40,
-            height: 40,
-            color: layer.visible ? 'primary.main' : 'text.disabled',
-            bgcolor: theme =>
-              layer.visible
-                ? alpha(theme.palette.primary.main, 0.12)
-                : 'transparent',
+            alignItems: 'center',
+            flex: '1 1 auto',
+            minWidth: 0,
           }}
         >
-          {layer.visible ? (
-            <VisibilityOutlinedIcon sx={{fontSize: 20}} />
-          ) : (
-            <VisibilityOffOutlinedIcon sx={{fontSize: 20}} />
-          )}
-        </IconButton>
-        <Box
-          aria-hidden
-          sx={{
-            width: 10,
-            height: 10,
-            flexShrink: 0,
-            borderRadius: vectorPaint ? '50%' : '2px',
-            bgcolor: vectorPaint
-              ? toColorInput(layer.stroke)
-              : layer.kind === 'basemap'
-                ? layer.name === BASE_MAP_SATELLITE_NAME
-                  ? '#6b8f4e'
-                  : '#4a7cbf'
-                : 'text.disabled',
-            border: '1px solid',
-            borderColor: 'divider',
-          }}
-        />
-        <Box sx={{flex: 1, minWidth: 0, px: 0.5}}>
-          <Typography
-            noWrap
-            sx={{
-              fontWeight: 600,
-              fontSize: 14,
-              lineHeight: 1.3,
-              color: layer.visible ? 'text.primary' : 'text.secondary',
-            }}
+          <IconButton
+            type="button"
+            aria-label={
+              !layer.available
+                ? `${layer.name} unavailable`
+                : layer.visible
+                  ? `Hide ${layer.name}`
+                  : `Show ${layer.name}`
+            }
+            aria-pressed={layer.visible}
+            disabled={!layer.available}
+            onClick={onToggleVisible}
+            sx={layerActionSx({
+              color: layer.visible ? 'primary.main' : 'text.disabled',
+              bgcolor: theme =>
+                layer.visible
+                  ? alpha(theme.palette.primary.main, 0.12)
+                  : 'transparent',
+            })}
           >
-            {layer.name}
-          </Typography>
+            {layer.visible ? (
+              <VisibilityOutlinedIcon sx={{fontSize: 20}} />
+            ) : (
+              <VisibilityOffOutlinedIcon sx={{fontSize: 20}} />
+            )}
+          </IconButton>
           <Box
+            aria-hidden
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              minWidth: 0,
-              lineHeight: 1.2,
+              width: 10,
+              height: 10,
+              flexShrink: 0,
+              borderRadius: vectorPaint ? '50%' : '2px',
+              bgcolor: vectorPaint
+                ? toColorInput(layer.stroke)
+                : layer.kind === 'basemap'
+                  ? layer.name === BASE_MAP_SATELLITE_NAME
+                    ? '#6b8f4e'
+                    : '#4a7cbf'
+                  : 'text.disabled',
+              border: '1px solid',
+              borderColor: 'divider',
             }}
-          >
+          />
+          <Box sx={{flex: 1, minWidth: 0, px: 0.5, overflow: 'hidden'}}>
             <Typography
-              variant="caption"
-              color="text.secondary"
               noWrap
-              sx={{lineHeight: 1.2}}
+              sx={{
+                fontWeight: 600,
+                fontSize: 14,
+                lineHeight: 1.3,
+                color: layer.visible ? 'text.primary' : 'text.secondary',
+              }}
             >
-              {layerKindLabel(layer)}
+              {layer.name}
             </Typography>
-            {layer.source === 'contextual' || layer.source === 'record' ? (
-              <LayerLocationHint
-                extent={layer.extent4326}
-                location={location}
-              />
-            ) : null}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                minWidth: 0,
+                overflow: 'hidden',
+                lineHeight: 1.2,
+              }}
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                noWrap
+                sx={{lineHeight: 1.2}}
+              >
+                {layerKindLabel(layer)}
+              </Typography>
+              {layer.source === 'contextual' || layer.source === 'record' ? (
+                <LayerLocationHint
+                  extent={layer.extent4326}
+                  location={location}
+                />
+              ) : null}
+            </Box>
           </Box>
-        </Box>
-        {layer.canPan && (
+        </Stack>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 40px)',
+            gridTemplateRows: 'repeat(2, 40px)',
+            flex: '0 0 auto',
+            [LAYER_CONTROLS_WIDE]: {
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 0.5,
+              gridTemplateColumns: 'unset',
+              gridTemplateRows: 'unset',
+            },
+          }}
+        >
           <IconButton
             type="button"
             size="small"
-            aria-label={`Pan ${layer.name} into view`}
-            onClick={onPanIntoView}
-            sx={{width: 36, height: 36}}
+            aria-expanded={expanded}
+            aria-label={`${expanded ? 'Hide' : 'Show'} style for ${layer.name}`}
+            onClick={onToggleExpanded}
+            sx={layerActionSx({
+              gridColumn: 1,
+              gridRow: 1,
+              [LAYER_CONTROLS_WIDE]: {
+                gridColumn: 'auto',
+                gridRow: 'auto',
+              },
+              color: expanded ? 'primary.main' : 'text.secondary',
+              bgcolor: theme =>
+                expanded
+                  ? alpha(theme.palette.primary.main, 0.16)
+                  : 'transparent',
+              border: '1px solid',
+              borderColor: expanded ? 'primary.main' : 'transparent',
+              '&:hover': {
+                bgcolor: theme =>
+                  alpha(theme.palette.primary.main, expanded ? 0.22 : 0.08),
+              },
+            })}
           >
-            <CenterFocusStrongIcon sx={{fontSize: 20}} />
+            <SettingsOutlinedIcon sx={{fontSize: 18}} />
           </IconButton>
-        )}
-        <IconButton
-          type="button"
-          size="small"
-          disabled={raiseDisabled}
-          aria-label={`Raise ${layer.name}`}
-          onClick={() => onMove('up')}
-          sx={{width: 36, height: 36}}
-        >
-          <KeyboardArrowUpIcon />
-        </IconButton>
-        <IconButton
-          type="button"
-          size="small"
-          disabled={lowerDisabled}
-          aria-label={`Lower ${layer.name}`}
-          onClick={() => onMove('down')}
-          sx={{width: 36, height: 36}}
-        >
-          <KeyboardArrowDownIcon />
-        </IconButton>
-      </Stack>
-      <ButtonBase
-        type="button"
-        aria-expanded={expanded}
-        aria-label={`${expanded ? 'Hide' : 'Show'} style for ${layer.name}`}
-        onClick={onToggleExpanded}
-        sx={{
-          width: '100%',
-          minHeight: 40,
-          px: 1.5,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          color: expanded ? 'primary.main' : 'text.secondary',
-          borderTop: '1px solid',
-          borderColor: 'divider',
-          bgcolor: theme =>
-            expanded ? alpha(theme.palette.primary.main, 0.06) : 'transparent',
-        }}
-      >
-        <Typography variant="caption" sx={{fontWeight: 700}}>
-          Style
-        </Typography>
-        {expanded ? (
-          <ExpandLessIcon sx={{fontSize: 18}} />
-        ) : (
-          <ExpandMoreIcon sx={{fontSize: 18}} />
-        )}
-      </ButtonBase>
+          {layer.canPan ? (
+            <IconButton
+              type="button"
+              size="small"
+              aria-label={`Pan ${layer.name} into view`}
+              onClick={onPanIntoView}
+              sx={layerActionSx({
+                gridColumn: 2,
+                gridRow: 1,
+                [LAYER_CONTROLS_WIDE]: {
+                  gridColumn: 'auto',
+                  gridRow: 'auto',
+                },
+              })}
+            >
+              <CenterFocusStrongIcon sx={{fontSize: 18}} />
+            </IconButton>
+          ) : (
+            <Box
+              aria-hidden
+              sx={{
+                gridColumn: 2,
+                gridRow: 1,
+                [LAYER_CONTROLS_WIDE]: {display: 'none'},
+              }}
+            />
+          )}
+          <IconButton
+            type="button"
+            size="small"
+            disabled={raiseDisabled}
+            aria-label={`Raise ${layer.name}`}
+            onClick={() => onMove('up')}
+            sx={layerActionSx({
+              gridColumn: 1,
+              gridRow: 2,
+              [LAYER_CONTROLS_WIDE]: {
+                gridColumn: 'auto',
+                gridRow: 'auto',
+              },
+            })}
+          >
+            <ArrowUpwardIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            type="button"
+            size="small"
+            disabled={lowerDisabled}
+            aria-label={`Lower ${layer.name}`}
+            onClick={() => onMove('down')}
+            sx={layerActionSx({
+              gridColumn: 2,
+              gridRow: 2,
+              [LAYER_CONTROLS_WIDE]: {
+                gridColumn: 'auto',
+                gridRow: 'auto',
+              },
+            })}
+          >
+            <ArrowDownwardIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      </Box>
       <Collapse
         in={expanded}
         timeout="auto"
@@ -673,7 +782,7 @@ function LayerRow({
             px: 1.5,
             pt: 1.25,
             pb: 1.5,
-            bgcolor: theme => alpha(theme.palette.text.primary, 0.04),
+            bgcolor: theme => alpha(theme.palette.primary.main, 0.04),
           }}
         >
           <LabeledSlider

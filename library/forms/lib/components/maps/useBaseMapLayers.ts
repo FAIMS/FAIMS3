@@ -9,6 +9,7 @@ import {
   BASE_MAP_SATELLITE_NAME,
   BASE_MAP_VECTOR_ID,
   BASE_MAP_VECTOR_NAME,
+  defaultBaseMapLayersState,
   readBaseMapLayersState,
   writeBaseMapLayersState,
   type BaseMapLayerPatch,
@@ -38,6 +39,12 @@ export function useBaseMapLayers(
     },
     []
   );
+
+  const resetBaseLayers = useCallback(() => {
+    const next = defaultBaseMapLayersState();
+    writeBaseMapLayersState(next);
+    setPrefs(next);
+  }, []);
 
   const vectorVisible = prefs.vector.visible;
   const satelliteVisible = Boolean(
@@ -76,5 +83,11 @@ export function useBaseMapLayers(
     return layers;
   }, [prefs, satelliteLayer, isOnline, satelliteVisible]);
 
-  return {baseLayers, updateBaseLayer, vectorVisible, satelliteVisible};
+  return {
+    baseLayers,
+    updateBaseLayer,
+    resetBaseLayers,
+    vectorVisible,
+    satelliteVisible,
+  };
 }

@@ -688,17 +688,16 @@ tasks (for example 2048 / 1024 on an 8 vCPU / 32 GiB worker). Omit
   "gdalNumThreads": "ALL_CPUS",
   "gdalCacheMaxMb": 256,
   "gdalWarpMemoryMb": 256,
-  "gdalWarpMulti": true,
-  "tippecanoeReadParallel": true
+  "gdalWarpMulti": true
 }
 ```
 
 Those fields become worker-task env (`GDAL_NUM_THREADS`, `GDAL_CACHEMAX`,
-`GDAL_WARP_MEMORY_MB`, `GDAL_WARP_MULTI`, `TIPPECANOE_READ_PARALLEL`, and
-optional `TIPPECANOE_MAX_THREADS`). The capacity manager does not receive
-them. `gdalwarp` also gets `-multi`, `-wm`, `-wo NUM_THREADS=…`, and
-`-co TILED=YES`. When `tippecanoeReadParallel` is true, vectors are written
-as GeoJSONSeq so `--read-parallel` is valid.
+`GDAL_WARP_MEMORY_MB`, `GDAL_WARP_MULTI`, and optional
+`TIPPECANOE_MAX_THREADS`). The capacity manager does not receive them.
+`gdalwarp` also gets `-multi`, `-wm`, `-wo NUM_THREADS=…`, and
+`-co TILED=YES`. Vectors are written as FlatGeobuf and tiled with
+`tippecanoe -z 14`.
 
 Attachment storage JSON (defaults shown):
 

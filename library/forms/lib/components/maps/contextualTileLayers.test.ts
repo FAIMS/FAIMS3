@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
  * Fixtures were built from GDAL MBTiles (WebP) plus `pmtiles convert`, and
- * from tippecanoe `-zg --drop-densest-as-needed --extend-zooms-if-still-dropping`
+ * from tippecanoe `-z 14 --drop-densest-as-needed` (older fixtures used `-zg`)
  * on a 4,000-point GeoJSON. The low zoom tile is far smaller than that file.
  */
 import {readFileSync} from 'node:fs';

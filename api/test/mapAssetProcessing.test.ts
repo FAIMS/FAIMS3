@@ -419,6 +419,40 @@ describe('map asset worker processing', () => {
       'converting-geometries',
     ]);
     expect((await getMapAsset(asset._id)).processingStage).toBeUndefined();
+    expect((await getMapAsset(asset._id)).processingProgress).toBeUndefined();
+  });
+
+  it('writes processingProgress while tiling and clears it when ready', async () => {
+    const asset = await createStoredAsset();
+    normalizeMapUpload.mockImplementation(async (_files, context) => {
+      await context?.onStage?.('tiling-vectors');
+      await context?.onProgress?.({
+        phase: 'Reordering geometry',
+        percent: 45,
+      });
+      const during = await getMapAsset(asset._id);
+      expect(during.processingStage).toBe('tiling-vectors');
+      expect(during.processingProgress).toEqual({
+        phase: 'Reordering geometry',
+        percent: 45,
+      });
+      const rev = during._rev;
+      await context?.onProgress?.({
+        phase: 'Reordering geometry',
+        percent: 45,
+      });
+      expect((await getMapAsset(asset._id))._rev).toBe(rev);
+      return normalizedFixture();
+    });
+    await processMapAsset(asset._id, {
+      now: () => T0,
+      claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      claimHeartbeatMs: 0,
+    });
+    const finished = await getMapAsset(asset._id);
+    expect(finished.status).toBe('ready');
+    expect(finished.processingStage).toBeUndefined();
+    expect(finished.processingProgress).toBeUndefined();
   });
 
   it('counts pending stored jobs as unclaimed and claimed jobs as in flight', async () => {

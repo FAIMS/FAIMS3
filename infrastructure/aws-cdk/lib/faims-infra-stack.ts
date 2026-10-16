@@ -231,6 +231,7 @@ export class FaimsInfraStack extends cdk.Stack {
       faimsHz: hz,
       faimsUsEast1Certificate: cfnCert,
       conductorUrl: conductor.conductorEndpoint,
+      mapAssetBucket,
       uiTheme: config.uiConfiguration.uiTheme,
       notebookListType: config.uiConfiguration.notebookListType,
       notebookName: config.uiConfiguration.notebookName,

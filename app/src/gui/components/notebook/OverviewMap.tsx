@@ -54,6 +54,7 @@ import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {
   groupRecordFeaturesByForm,
+  recordFeatureSyncKey,
   useRecordFeatures,
   type RecordFeatureProps,
 } from './recordFeatures';
@@ -82,6 +83,24 @@ interface SelectedRecordPopoverContentProps {
 /** Short time which is used for various checks in the file, including guarding
  * the popover button, and for tap detection. */
 const SHORT_WAIT_CONSTANT = 400;
+
+function formExtentsEqual(
+  left: Record<string, [number, number, number, number]>,
+  right: Record<string, [number, number, number, number]>
+): boolean {
+  const leftKeys = Object.keys(left);
+  const rightKeys = Object.keys(right);
+  if (leftKeys.length !== rightKeys.length) {
+    return false;
+  }
+  return leftKeys.every(key => {
+    const a = left[key];
+    const b = right[key];
+    return (
+      !!b && a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3]
+    );
+  });
+}
 
 const SelectedRecordPopoverContent = ({
   feature,
@@ -279,13 +298,26 @@ export const OverviewMap = (props: OverviewMapProps) => {
     recordTypes: overviewMapTypes,
   });
 
+  // Keep the last plotted collection while a newly synced record hydrates
+  // (or one record fails) so this tree is not swapped for a spinner and
+  // the OpenLayers view is not recreated.
+  const lastCollectionRef = useRef(featureCollection);
+  if (featureCollection?.features.length) {
+    lastCollectionRef.current = featureCollection;
+  }
+  const plottedCollection = featureCollection?.features.length
+    ? featureCollection
+    : isLoading || isError
+      ? lastCollectionRef.current
+      : featureCollection;
+
   const recordFormDescriptors = useMemo(() => {
-    if (!featureCollection) {
+    if (!plottedCollection) {
       return [];
     }
     const formIds = [
       ...new Set(
-        featureCollection.features
+        plottedCollection.features
           .map(feature => feature.properties.form_id)
           .filter(Boolean)
       ),
@@ -295,7 +327,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
       name: uiSpec.viewsets[formId]?.label ?? formId,
       extent4326: formExtents[formId],
     }));
-  }, [featureCollection, formExtents, uiSpec]);
+  }, [formExtents, plottedCollection, uiSpec]);
 
   const recordLayers = useMemo(
     () =>
@@ -325,6 +357,11 @@ export const OverviewMap = (props: OverviewMapProps) => {
     [overviewMapTypes, project_id]
   );
 
+  const resetRecordLayers = useCallback(() => {
+    writeRecordFormLayerPrefs(project_id, {});
+    setRecordLayerPrefs({});
+  }, [project_id]);
+
   useEffect(() => {
     selectedFeatureRef.current = selectedFeature;
     for (const layer of layersByFormRef.current.values()) {
@@ -332,12 +369,17 @@ export const OverviewMap = (props: OverviewMapProps) => {
     }
   }, [selectedFeature]);
 
+  const plottedCollectionRef = useRef(plottedCollection);
+  plottedCollectionRef.current = plottedCollection;
+  const plottedSyncKey = recordFeatureSyncKey(plottedCollection);
+
   useEffect(() => {
-    if (!map || !featureCollection || featureCollection.features.length === 0) {
+    const collection = plottedCollectionRef.current;
+    if (!map || !collection || collection.features.length === 0) {
       return;
     }
 
-    const grouped = groupRecordFeaturesByForm(featureCollection);
+    const grouped = groupRecordFeaturesByForm(collection);
     const formIds = new Set(grouped.keys());
     const geoJson = new GeoJSON();
     const nextExtents: Record<string, [number, number, number, number]> = {};
@@ -421,11 +463,15 @@ export const OverviewMap = (props: OverviewMapProps) => {
       }
     }
 
-    setFormExtents(nextExtents);
+    setFormExtents(current =>
+      formExtentsEqual(current, nextExtents) ? current : nextExtents
+    );
+    // Fit the view only the first time features exist. Later syncs refresh
+    // the vector sources above; re-fitting here is what makes the map jump.
     if (overallExtent) {
-      setFeaturesExtent(overallExtent);
+      setFeaturesExtent(current => current ?? overallExtent);
     }
-  }, [featureCollection, map, overviewMapTypes]);
+  }, [map, overviewMapTypes, plottedSyncKey]);
 
   useEffect(() => {
     return () => {
@@ -548,35 +594,35 @@ export const OverviewMap = (props: OverviewMapProps) => {
     );
   }
 
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '400px',
-          gap: 2,
-        }}
-      >
-        <CircularProgress size={24} />
-        <span>Loading map data...</span>
-      </Box>
-    );
-  }
+  if (!plottedCollection || plottedCollection.features.length === 0) {
+    if (isLoading) {
+      return (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '400px',
+            gap: 2,
+          }}
+        >
+          <CircularProgress size={24} />
+          <span>Loading map data...</span>
+        </Box>
+      );
+    }
 
-  if (isError) {
-    return (
-      <Box sx={{p: 2}}>
-        <Alert severity="error">
-          Failed to load map data:{' '}
-          {error instanceof Error ? error.message : 'Unknown error'}
-        </Alert>
-      </Box>
-    );
-  }
+    if (isError) {
+      return (
+        <Box sx={{p: 2}}>
+          <Alert severity="error">
+            Failed to load map data:{' '}
+            {error instanceof Error ? error.message : 'Unknown error'}
+          </Alert>
+        </Box>
+      );
+    }
 
-  if (!featureCollection || featureCollection.features.length === 0) {
     return (
       <Box sx={{p: 2}}>
         <Alert severity="info">No records with location data found.</Alert>
@@ -606,6 +652,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
         enableFullscreen
         recordLayers={recordLayers}
         onUpdateRecordLayer={updateRecordLayer}
+        onResetRecordLayers={resetRecordLayers}
       />
       <Popover
         open={!!selectedFeature && !!popoverAnchorPosition}

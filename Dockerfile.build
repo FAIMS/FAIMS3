@@ -85,6 +85,7 @@ RUN apk add --no-cache \
       gdal-driver-png \
       gdal-driver-jpeg \
       poppler-utils \
+      unzip \
       sqlite-libs \
       zlib \
       curl \

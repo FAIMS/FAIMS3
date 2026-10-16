@@ -14,7 +14,7 @@
  */
 
 import {config} from '../buildconfig';
-import {verifyCouchDBConnection} from '../couchdb';
+import {waitForCouchDBConnection} from '../couchdb';
 import {
   findUnclaimedSpatialJob,
   processMapAsset,
@@ -36,7 +36,6 @@ GDAL_CACHEMAX                Raster block cache, megabytes (default 256)
 GDAL_WARP_MEMORY_MB          gdalwarp -wm megabytes (default 256)
 GDAL_WARP_MULTI              gdalwarp -multi (default true)
 TIPPECANOE_MAX_THREADS       Cap tippecanoe threads (default: all CPUs)
-TIPPECANOE_READ_PARALLEL     tippecanoe --read-parallel (default true)
 `);
 };
 
@@ -58,13 +57,18 @@ const main = async () => {
   }
 
   console.log(
-    `[spatial-worker] idleExitMs=${config.spatialWorkerIdleExitMs} pollMs=${config.spatialWorkerPollMs} gdalNumThreads=${config.gdalNumThreads} gdalCacheMaxMb=${config.gdalCacheMaxMb} gdalWarpMemoryMb=${config.gdalWarpMemoryMb} gdalWarpMulti=${config.gdalWarpMulti} tippecanoeMaxThreads=${config.tippecanoeMaxThreads ?? 'all'} tippecanoeReadParallel=${config.tippecanoeReadParallel}`
+    `[spatial-worker] idleExitMs=${config.spatialWorkerIdleExitMs} pollMs=${config.spatialWorkerPollMs} gdalNumThreads=${config.gdalNumThreads} gdalCacheMaxMb=${config.gdalCacheMaxMb} gdalWarpMemoryMb=${config.gdalWarpMemoryMb} gdalWarpMulti=${config.gdalWarpMulti} tippecanoeMaxThreads=${config.tippecanoeMaxThreads ?? 'all'}`
   );
   console.log(`Couch server: ${config.couchdbInternalUrl}`);
-  const connection = await verifyCouchDBConnection();
+  const connection = await waitForCouchDBConnection();
   if (!connection.valid) {
     console.error('Cannot reach CouchDB. Aborting.');
     console.error(connection.validate_error || connection.server_msg);
+    if (connection.database_errors?.length) {
+      for (const e of connection.database_errors) {
+        console.error(`  ${e}`);
+      }
+    }
     process.exit(1);
   }
 

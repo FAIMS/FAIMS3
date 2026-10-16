@@ -219,7 +219,7 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
           id="overview-map-tabpanel"
           aria-labelledby="overview-map-tab"
         >
-          <props.components.OverviewMap />
+          <props.components.OverviewMap records={records.planRecords} />
         </TabPanel>
       </TabContext>
     </>

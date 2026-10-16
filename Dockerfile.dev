@@ -4,12 +4,32 @@
 # lighter worker image so the compile happens once per machine.
 FROM node:24-slim AS spatial-tools
 
-# GDAL for GeoPackage export and map-layer ingest (GeoPDF needs Poppler),
-# tippecanoe and pmtiles for PMTiles archives, and curl for the api healthcheck.
+# Debian bookworm gdal-bin is 3.6 (no ogrinfo -json). conda-forge is 3.13.3,
+# matching current GDAL releases. `libgdal` pulls the PDF/WEBP plugins.
+ENV PATH="/opt/gdal/bin:${PATH}" \
+    GDAL_DATA="/opt/gdal/share/gdal" \
+    GDAL_DRIVER_PATH="/opt/gdal/lib/gdalplugins" \
+    PROJ_DATA="/opt/gdal/share/proj" \
+    PROJ_LIB="/opt/gdal/share/proj"
+
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-    gdal-bin poppler-utils curl ca-certificates \
+    unzip curl ca-certificates bzip2 \
     build-essential libsqlite3-dev zlib1g-dev git \
+  && arch="$(uname -m)" \
+  && case "$arch" in \
+       x86_64) mamba_arch=linux-64 ;; \
+       aarch64) mamba_arch=linux-aarch64 ;; \
+       *) echo "unsupported architecture $arch" && exit 1 ;; \
+     esac \
+  && curl -fsSL "https://micro.mamba.pm/api/micromamba/${mamba_arch}/2.3.3" \
+    | tar -xj -C /tmp bin/micromamba \
+  && /tmp/bin/micromamba create -y -p /opt/gdal -c conda-forge \
+    "gdal=3.13.3" \
+    "libgdal=3.13.3" \
+  && rm -rf /tmp/bin /root/.cache /root/.mamba \
+  && gdalinfo --version 2>&1 | grep -F '3.13.3' \
+  && ogrinfo --help 2>&1 | grep -q -- '-json' \
   && gdalinfo --formats | grep -qi pdf \
   && gdalinfo --formats | grep -qi MBTiles \
   && gdalinfo --formats | grep -qi WEBP \
@@ -17,7 +37,6 @@ RUN apt-get update \
   && make -C /tmp/tippecanoe -j"$(nproc)" \
   && make -C /tmp/tippecanoe install \
   && rm -rf /tmp/tippecanoe \
-  && arch="$(uname -m)" \
   && case "$arch" in \
        x86_64) pm_arch=x86_64 ;; \
        aarch64) pm_arch=arm64 ;; \
@@ -27,7 +46,7 @@ RUN apt-get update \
   && tar -C /usr/local/bin -xzf /tmp/pmtiles.tar.gz pmtiles \
   && chmod 755 /usr/local/bin/pmtiles \
   && rm /tmp/pmtiles.tar.gz \
-  && apt-get purge -y build-essential git \
+  && apt-get purge -y build-essential git bzip2 \
   && apt-get autoremove -y \
   && rm -rf /var/lib/apt/lists/* \
   && command -v tippecanoe \
@@ -75,9 +94,10 @@ FROM spatial-tools AS runtime
 
 COPY --from=source /usr/src .
 
-# Map-layer worker image. Compose bind-mounts api/src and data-model, and the
-# process runs tsx against that source, so this target does not copy the repo
-# or run turbo. A TypeScript edit does not invalidate the image.
+# Map-layer worker image. Compose bind-mounts api/src, api/keys, and
+# data-model, and the process runs tsx against that source, so this target
+# does not copy the repo or run turbo. A TypeScript edit does not invalidate
+# the image.
 FROM spatial-tools AS worker
 
 COPY --from=base /usr/src .

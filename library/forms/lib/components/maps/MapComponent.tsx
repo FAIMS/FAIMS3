@@ -123,6 +123,8 @@ export interface MapComponentProps {
    */
   recordLayers?: RecordFormLayer[];
   onUpdateRecordLayer?: (id: string, patch: RecordFormLayerPatch) => void;
+  /** Restore per-form record layers to default visibility, stack, and paint. */
+  onResetRecordLayers?: () => void;
 }
 
 /**
@@ -182,8 +184,13 @@ const MapComponentImpl = (props: MapComponentProps) => {
     );
     return layer;
   }, [tileStore]);
-  const {baseLayers, updateBaseLayer, vectorVisible, satelliteVisible} =
-    useBaseMapLayers(tileLayer, satelliteLayer, isOnline);
+  const {
+    baseLayers,
+    updateBaseLayer,
+    resetBaseLayers,
+    vectorVisible,
+    satelliteVisible,
+  } = useBaseMapLayers(tileLayer, satelliteLayer, isOnline);
 
   useEffect(() => {
     const vectorAttribution = tileStore.getAttribution() as unknown as string;
@@ -687,8 +694,10 @@ const MapComponentImpl = (props: MapComponentProps) => {
                     map={map}
                     baseLayers={baseLayers}
                     onUpdateBaseLayer={updateBaseLayer}
+                    onResetBaseLayers={resetBaseLayers}
                     recordLayers={props.recordLayers}
                     onUpdateRecordLayer={props.onUpdateRecordLayer}
+                    onResetRecordLayers={props.onResetRecordLayers}
                   />
                 )}
               </>

@@ -11,7 +11,8 @@ export const DEFAULT_GDAL_NUM_THREADS = 'ALL_CPUS';
 export const DEFAULT_GDAL_CACHE_MAX_MB = 256;
 export const DEFAULT_GDAL_WARP_MEMORY_MB = 256;
 export const DEFAULT_GDAL_WARP_MULTI = true;
-export const DEFAULT_TIPPECANOE_READ_PARALLEL = true;
+export const VECTOR_INTERMEDIATE_FILENAME = 'normalized.fgb';
+export const VECTOR_TILE_MAX_ZOOM = 14;
 
 export type SpatialToolPerformance = {
   /** `ALL_CPUS` or a positive integer as a string. */
@@ -24,11 +25,6 @@ export type SpatialToolPerformance = {
   gdalWarpMulti: boolean;
   /** Cap tippecanoe threads. Unset = all CPUs. */
   tippecanoeMaxThreads?: number;
-  /**
-   * `tippecanoe --read-parallel`. Requires newline-delimited GeoJSON, so
-   * ogr2ogr writes GeoJSONSeq when this is on.
-   */
-  tippecanoeReadParallel: boolean;
 };
 
 export const DEFAULT_SPATIAL_TOOL_PERFORMANCE: SpatialToolPerformance = {
@@ -36,16 +32,11 @@ export const DEFAULT_SPATIAL_TOOL_PERFORMANCE: SpatialToolPerformance = {
   gdalCacheMaxMb: DEFAULT_GDAL_CACHE_MAX_MB,
   gdalWarpMemoryMb: DEFAULT_GDAL_WARP_MEMORY_MB,
   gdalWarpMulti: DEFAULT_GDAL_WARP_MULTI,
-  tippecanoeReadParallel: DEFAULT_TIPPECANOE_READ_PARALLEL,
 };
 
-/** Intermediate vector filename. GeoJSONSeq is line-delimited for `-P`. */
-export function vectorIntermediateFilename(
-  perf: SpatialToolPerformance
-): string {
-  return perf.tippecanoeReadParallel
-    ? 'normalized.geojsons'
-    : 'normalized.geojson';
+/** Intermediate vector filename. FlatGeobuf for tippecanoe's parallel FGB path. */
+export function vectorIntermediateFilename(): string {
+  return VECTOR_INTERMEDIATE_FILENAME;
 }
 
 /** Child-process env so GDAL and tippecanoe see the same knobs as CLI flags. */
@@ -94,11 +85,16 @@ export function gdalWarpPerformanceArgs(
 }
 
 export function ogr2ogrGeometryArgs(
-  perf: SpatialToolPerformance,
   outputPath: string,
   gdalSource: string
 ): string[] {
-  const common = [
+  return [
+    '-f',
+    'FlatGeobuf',
+    '-nlt',
+    'GEOMETRY',
+    '-lco',
+    'SPATIAL_INDEX=NO',
     '-t_srs',
     'EPSG:4326',
     // One output layer. -nln appends every source layer (KML folders,
@@ -111,14 +107,23 @@ export function ogr2ogrGeometryArgs(
     outputPath,
     gdalSource,
   ];
-  if (perf.tippecanoeReadParallel) {
-    return ['-f', 'GeoJSONSeq', ...common];
-  }
-  return ['-f', 'GeoJSON', '-lco', 'RFC7946=YES', ...common];
 }
 
-export function tippecanoePerformanceArgs(
-  perf: SpatialToolPerformance
+export function tippecanoeVectorArgs(
+  pmtilesPath: string,
+  fgbPath: string
 ): string[] {
-  return perf.tippecanoeReadParallel ? ['--read-parallel'] : [];
+  return [
+    '-o',
+    pmtilesPath,
+    '-z',
+    String(VECTOR_TILE_MAX_ZOOM),
+    '--drop-densest-as-needed',
+    '--force',
+    '--json-progress',
+    '--progress-interval=5',
+    '-l',
+    'features',
+    fgbPath,
+  ];
 }

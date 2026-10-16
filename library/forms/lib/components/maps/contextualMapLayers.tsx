@@ -6,12 +6,6 @@ import type {TileByteRead} from './pmtilesRange';
 /** One PMTiles archive of image tiles or Mapbox vector tiles. */
 export type ContextualMapLayerKind = 'raster-tiles' | 'vector-tiles';
 
-/**
- * Visible overlays above this still draw, but frame time adds up on a
- * field phone. The layers panel says so.
- */
-export const CONTEXTUAL_VISIBLE_LAYER_HINT = 12;
-
 export function isVectorContextualKind(kind: ContextualMapLayerKind): boolean {
   return kind === 'vector-tiles';
 }
@@ -64,12 +58,15 @@ export type ContextualMapLayersValue = {
   layers: ContextualMapLayer[];
   updateLayer: (id: string, patch: ContextualMapLayerPatch) => void;
   moveLayer: (id: string, direction: 'up' | 'down') => void;
+  /** Restore downloaded overlays to their file defaults and original order. */
+  resetLayers: () => void;
 };
 
 const emptyContextualMapLayers: ContextualMapLayersValue = {
   layers: [],
   updateLayer: () => undefined,
   moveLayer: () => undefined,
+  resetLayers: () => undefined,
 };
 
 /** Provided by the field app for the notebook currently on screen. */

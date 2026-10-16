@@ -650,11 +650,6 @@ export const SpatialCapacityConfigSchema = z.object({
    * CPUs (tippecanoe's default).
    */
   tippecanoeMaxThreads: z.number().int().positive().max(256).optional(),
-  /**
-   * `tippecanoe --read-parallel`. Default true. The worker writes
-   * GeoJSONSeq so parallel parse is valid.
-   */
-  tippecanoeReadParallel: z.boolean().default(true),
 });
 
 const AppSupportLinksSchema = z.object({
@@ -856,7 +851,6 @@ export const ConfigSchema = z.object({
     gdalCacheMaxMb: 256,
     gdalWarpMemoryMb: 256,
     gdalWarpMulti: true,
-    tippecanoeReadParallel: true,
   }),
   /** Domain configuration for all services */
   domains: DomainsConfigSchema,

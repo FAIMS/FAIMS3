@@ -64,10 +64,10 @@ development, install them on the host:
 
 ```bash
 # Ubuntu / Debian
-sudo apt-get install gdal-bin poppler-utils tippecanoe
+sudo apt-get install gdal-bin poppler-utils unzip tippecanoe
 ```
 
-Install the `pmtiles` CLI from the [go-pmtiles releases](https://github.com/protomaps/go-pmtiles/releases) (v1.28.1). `go install github.com/protomaps/go-pmtiles@v1.28.1` produces `go-pmtiles`, which ingest also accepts. `PMTILES_BIN` and `TIPPECANOE_BIN` override the executable names. Spatial-worker GDAL/tippecanoe thread and memory knobs (`GDAL_NUM_THREADS`, `GDAL_CACHEMAX`, `GDAL_WARP_MEMORY_MB`, `GDAL_WARP_MULTI`, `TIPPECANOE_MAX_THREADS`, `TIPPECANOE_READ_PARALLEL`) are documented in `api/.env.dist` and CDK `spatialCapacity`.
+Install the `pmtiles` CLI from the [go-pmtiles releases](https://github.com/protomaps/go-pmtiles/releases) (v1.28.1). `go install github.com/protomaps/go-pmtiles@v1.28.1` produces `go-pmtiles`, which ingest also accepts. `PMTILES_BIN` and `TIPPECANOE_BIN` override the executable names. Spatial-worker GDAL/tippecanoe thread and memory knobs (`GDAL_NUM_THREADS`, `GDAL_CACHEMAX`, `GDAL_WARP_MEMORY_MB`, `GDAL_WARP_MULTI`, `TIPPECANOE_MAX_THREADS`) are documented in `api/.env.dist` and CDK `spatialCapacity`. File Geodatabase zips also need `unzip` on the worker image.
 
 Pipeline and module layout: [Geospatial export pipeline](../docs/developer/docs/source/markdown/GeospatialExport.md).
 

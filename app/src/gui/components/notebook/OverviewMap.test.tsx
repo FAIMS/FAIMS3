@@ -20,16 +20,22 @@ const mapProps = vi.hoisted(() => ({
           visible: boolean;
         }>;
         onUpdateRecordLayer?: (id: string, patch: {visible?: boolean}) => void;
+        onResetRecordLayers?: () => void;
       }
     | undefined,
+  mounts: 0,
 }));
 
 vi.mock('@faims3/forms', async importOriginal => {
+  const React = await import('react');
   const actual = await importOriginal<typeof import('@faims3/forms')>();
   return {
     ...actual,
     MapComponent: (props: (typeof mapProps)['current']) => {
       mapProps.current = props;
+      React.useEffect(() => {
+        mapProps.mounts += 1;
+      }, []);
       return <div data-testid="overview-map" />;
     },
   };
@@ -54,13 +60,23 @@ vi.mock('react-router-dom', () => ({
 }));
 
 const features = vi.hoisted(() => ({
-  current: {
+  data: {
     type: 'FeatureCollection',
     features: [],
-  } as RecordFeatureCollection,
+  } as RecordFeatureCollection | undefined,
+  isLoading: false,
+  isError: false,
+  error: null as Error | null,
 }));
 
 vi.mock('./recordFeatures', () => ({
+  recordFeatureSyncKey: (collection?: RecordFeatureCollection) =>
+    (collection?.features ?? [])
+      .map(
+        feature =>
+          `${feature.properties.record_id}:${feature.properties.revision_id}`
+      )
+      .join('|'),
   groupRecordFeaturesByForm: (collection: RecordFeatureCollection) => {
     const grouped = new Map<string, RecordFeatureCollection['features']>();
     for (const feature of collection.features) {
@@ -77,10 +93,10 @@ vi.mock('./recordFeatures', () => ({
     );
   },
   useRecordFeatures: () => ({
-    data: features.current,
-    isLoading: false,
-    isError: false,
-    error: null,
+    data: features.data,
+    isLoading: features.isLoading,
+    isError: features.isError,
+    error: features.error,
     dataEngine: {},
     gisFields: ['site_location'],
   }),
@@ -130,7 +146,11 @@ describe('OverviewMap record layers', () => {
   beforeEach(() => {
     localStorage.clear();
     mapProps.current = undefined;
-    features.current = {
+    mapProps.mounts = 0;
+    features.isLoading = false;
+    features.isError = false;
+    features.error = null;
+    features.data = {
       type: 'FeatureCollection',
       features: [feature('Site', 'site-1'), feature('Observation', 'obs-1')],
     };
@@ -187,5 +207,99 @@ describe('OverviewMap record layers', () => {
         localStorage.getItem('map-record-form-prefs:project-1') ?? '{}'
       )['record-form:Site'].visible
     ).toBe(false);
+  });
+
+  it('restores default record-layer paint when the panel resets', () => {
+    const {rerender} = render(
+      <OverviewMap
+        uiSpec={uiSpec}
+        project_id="project-1"
+        records={{allRecords: []}}
+      />
+    );
+
+    act(() => {
+      mapProps.current?.onUpdateRecordLayer?.('record-form:Site', {
+        visible: false,
+      });
+    });
+    rerender(
+      <OverviewMap
+        uiSpec={uiSpec}
+        project_id="project-1"
+        records={{allRecords: []}}
+      />
+    );
+    expect(
+      mapProps.current?.recordLayers?.find(layer => layer.formId === 'Site')
+        ?.visible
+    ).toBe(false);
+
+    act(() => {
+      mapProps.current?.onResetRecordLayers?.();
+    });
+    rerender(
+      <OverviewMap
+        uiSpec={uiSpec}
+        project_id="project-1"
+        records={{allRecords: []}}
+      />
+    );
+
+    const layers = mapProps.current?.recordLayers ?? [];
+    expect(layers.every(layer => layer.visible)).toBe(true);
+    expect(
+      JSON.parse(
+        localStorage.getItem('map-record-form-prefs:project-1') ?? '{}'
+      )
+    ).toEqual({});
+  });
+
+  it('keeps the map mounted when a newly synced record hydrates', () => {
+    const {rerender} = render(
+      <OverviewMap
+        uiSpec={uiSpec}
+        project_id="project-1"
+        records={{allRecords: []}}
+      />
+    );
+    expect(screen.getByTestId('overview-map')).toBeInTheDocument();
+    expect(mapProps.mounts).toBe(1);
+
+    features.isLoading = true;
+    features.data = undefined;
+    rerender(
+      <OverviewMap
+        uiSpec={uiSpec}
+        project_id="project-1"
+        records={{allRecords: []}}
+      />
+    );
+
+    expect(screen.getByTestId('overview-map')).toBeInTheDocument();
+    expect(mapProps.mounts).toBe(1);
+
+    features.isLoading = false;
+    features.data = {
+      type: 'FeatureCollection',
+      features: [
+        feature('Site', 'site-1'),
+        feature('Observation', 'obs-1'),
+        feature('Site', 'site-2'),
+      ],
+    };
+    rerender(
+      <OverviewMap
+        uiSpec={uiSpec}
+        project_id="project-1"
+        records={{allRecords: []}}
+      />
+    );
+
+    expect(screen.getByTestId('overview-map')).toBeInTheDocument();
+    expect(mapProps.mounts).toBe(1);
+    expect(
+      mapProps.current?.recordLayers?.map(layer => layer.formId).sort()
+    ).toEqual(['Observation', 'Site']);
   });
 });

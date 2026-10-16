@@ -50,6 +50,7 @@ function Harness({visible, map}: {visible: boolean; map: OlMap}) {
         layers,
         updateLayer: () => undefined,
         moveLayer: () => undefined,
+        resetLayers: () => undefined,
       }}
     >
       <MapHook map={map} />

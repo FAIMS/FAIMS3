@@ -42,8 +42,10 @@ services:
       - /usr/src/.pnpm
     command: pnpm run watch-api
     depends_on:
-      - couchdb
-      - rustfs
+      couchdb:
+        condition: service_healthy
+      rustfs:
+        condition: service_started
     healthcheck:
       test:
         ['CMD', 'curl', '-f', 'http://localhost:${CONDUCTOR_INTERNAL_PORT}/']
@@ -100,14 +102,17 @@ services:
     volumes:
       - ./library/data-model:/usr/src/library/data-model
       - ./api/src:/usr/src/api/src
+      - ./api/keys:/usr/src/api/keys
       - ./api/.env:/usr/src/api/.env
       - /usr/src/node_modules
       - /usr/src/api/node_modules
       - /usr/src/.pnpm
     command: pnpm --filter @faims3/api exec nodemon --watch src --ext ts --exec "tsx src/scripts/capacityManager.ts"
     depends_on:
-      - couchdb
-      - rustfs
+      couchdb:
+        condition: service_healthy
+      rustfs:
+        condition: service_started
 
   # GDAL / tippecanoe worker. Idle exit is off so compose does not restart-loop.
   # Scratch is its own volume — not shared with the API container.
@@ -123,6 +128,7 @@ services:
     volumes:
       - ./library/data-model:/usr/src/library/data-model
       - ./api/src:/usr/src/api/src
+      - ./api/keys:/usr/src/api/keys
       - ./api/.env:/usr/src/api/.env
       - /usr/src/node_modules
       - /usr/src/api/node_modules
@@ -132,8 +138,10 @@ services:
         target: /tmp
     command: pnpm --filter @faims3/api exec nodemon --watch src --ext ts --exec "tsx src/scripts/spatialWorker.ts --poll"
     depends_on:
-      - couchdb
-      - rustfs
+      couchdb:
+        condition: service_healthy
+      rustfs:
+        condition: service_started
 
   couchdb:
     env_file:
@@ -147,6 +155,12 @@ services:
         target: /opt/couchdb/data
     ports:
       - '0.0.0.0:${COUCHDB_EXTERNAL_PORT}:5984'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:5984/_up']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   # S3-compatible object store for map-layer files. The API talks to it
   # with the same S3 client used against AWS in production.

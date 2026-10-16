@@ -75,15 +75,21 @@ function renderControl(
   {
     baseLayers = [],
     onUpdateBaseLayer = vi.fn<(id: string, patch: BaseMapLayerPatch) => void>(),
+    onResetBaseLayers = vi.fn(),
     recordLayers = [],
     onUpdateRecordLayer = vi.fn<
       (id: string, patch: RecordFormLayerPatch) => void
     >(),
+    onResetRecordLayers = vi.fn(),
+    resetLayers = vi.fn(),
   }: {
     baseLayers?: BaseMapPanelLayer[];
     onUpdateBaseLayer?: (id: string, patch: BaseMapLayerPatch) => void;
+    onResetBaseLayers?: () => void;
     recordLayers?: RecordFormLayer[];
     onUpdateRecordLayer?: (id: string, patch: RecordFormLayerPatch) => void;
+    onResetRecordLayers?: () => void;
+    resetLayers?: () => void;
   } = {}
 ) {
   const fit = vi.fn();
@@ -94,14 +100,16 @@ function renderControl(
   render(
     <ThemeProvider theme={theme}>
       <ContextualMapLayersContext.Provider
-        value={{layers, updateLayer, moveLayer}}
+        value={{layers, updateLayer, moveLayer, resetLayers}}
       >
         <ContextualLayersControl
           map={map}
           baseLayers={baseLayers}
           onUpdateBaseLayer={onUpdateBaseLayer}
+          onResetBaseLayers={onResetBaseLayers}
           recordLayers={recordLayers}
           onUpdateRecordLayer={onUpdateRecordLayer}
+          onResetRecordLayers={onResetRecordLayers}
         />
       </ContextualMapLayersContext.Provider>
     </ThemeProvider>
@@ -110,8 +118,11 @@ function renderControl(
     fit,
     updateLayer,
     moveLayer,
+    resetLayers,
     onUpdateBaseLayer,
+    onResetBaseLayers,
     onUpdateRecordLayer,
+    onResetRecordLayers,
   };
 }
 
@@ -131,10 +142,18 @@ describe('ContextualLayersControl', () => {
     expect(
       screen.queryByRole('slider', {name: 'Site boundary opacity'})
     ).not.toBeInTheDocument();
+    expect(screen.queryByText('Style')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Show style for Site boundary'})
+    ).toHaveAttribute('aria-expanded', 'false');
 
     await user.click(
       screen.getByRole('button', {name: 'Show style for Site boundary'})
     );
+
+    expect(
+      screen.getByRole('button', {name: 'Hide style for Site boundary'})
+    ).toHaveAttribute('aria-expanded', 'true');
 
     expect(
       screen.getByRole('slider', {name: 'Site boundary opacity'})
@@ -400,22 +419,6 @@ describe('ContextualLayersControl', () => {
     expect(screen.queryByText('On map')).not.toBeInTheDocument();
   });
 
-  it('says when many overlays are visible at once', async () => {
-    const user = userEvent.setup();
-    const layers = Array.from({length: 13}, (_, index) =>
-      layer({id: `layer-${index}`, name: `Layer ${index}`})
-    );
-    renderControl(layers);
-    await user.click(
-      screen.getByRole('button', {name: /map layers, 13 of 13 shown/i})
-    );
-    expect(
-      screen.getByText(
-        'Many layers are visible. Hide some if the map feels slow.'
-      )
-    ).toBeInTheDocument();
-  });
-
   it('keeps stroke controls for vector tiles', async () => {
     const user = userEvent.setup();
     renderControl([layer({id: 'tiles', name: 'Tracks', kind: 'vector-tiles'})]);
@@ -477,6 +480,61 @@ describe('ContextualLayersControl', () => {
 
     await user.click(screen.getByRole('button', {name: 'Pan Sites into view'}));
     expect(fit).toHaveBeenCalledOnce();
+  });
+
+  it('resets overlays, base maps, and record layers from the panel header', async () => {
+    const user = userEvent.setup();
+    const {
+      resetLayers,
+      onResetBaseLayers,
+      onResetRecordLayers,
+      updateLayer,
+      onUpdateBaseLayer,
+      onUpdateRecordLayer,
+    } = renderControl(
+      [layer({id: 'boundary', name: 'Site boundary', zIndex: 40})],
+      vi.fn(),
+      vi.fn(),
+      {
+        baseLayers: [
+          {
+            id: BASE_MAP_VECTOR_ID,
+            name: 'Streets',
+            visible: false,
+            opacity: 0.4,
+            zIndex: 12,
+          },
+          {
+            id: BASE_MAP_SATELLITE_ID,
+            name: 'Satellite',
+            visible: true,
+            opacity: 0.5,
+            zIndex: 13,
+          },
+        ],
+        recordLayers: [
+          recordLayer({
+            id: 'record-form:Site',
+            formId: 'Site',
+            name: 'Sites',
+            visible: false,
+            zIndex: 2,
+          }),
+        ],
+      }
+    );
+
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 2 of 4 shown/i})
+    );
+    await user.click(screen.getByRole('button', {name: 'Reset to defaults'}));
+
+    expect(resetLayers).toHaveBeenCalledOnce();
+    expect(onResetBaseLayers).toHaveBeenCalledOnce();
+    expect(onResetRecordLayers).toHaveBeenCalledOnce();
+    expect(updateLayer).not.toHaveBeenCalled();
+    expect(onUpdateBaseLayer).not.toHaveBeenCalled();
+    expect(onUpdateRecordLayer).not.toHaveBeenCalled();
   });
 
   it('reorders a record form layer against an overlay', async () => {

@@ -142,8 +142,7 @@
     "gdalNumThreads": "ALL_CPUS",
     "gdalCacheMaxMb": 256,
     "gdalWarpMemoryMb": 256,
-    "gdalWarpMulti": true,
-    "tippecanoeReadParallel": true
+    "gdalWarpMulti": true
   },
   "authProviders": {
     "disableLocalLogin": false,

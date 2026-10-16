@@ -6,7 +6,7 @@ import {
   gdalWarpPerformanceArgs,
   ogr2ogrGeometryArgs,
   spatialToolProcessEnv,
-  tippecanoePerformanceArgs,
+  tippecanoeVectorArgs,
   vectorIntermediateFilename,
   type SpatialToolPerformance,
 } from '../src/spatial/gdalPerformance';
@@ -17,37 +17,40 @@ const tuned: SpatialToolPerformance = {
   gdalWarpMemoryMb: 1024,
   gdalWarpMulti: true,
   tippecanoeMaxThreads: 8,
-  tippecanoeReadParallel: true,
 };
 
 describe('spatial tool performance args', () => {
-  it('writes GeoJSONSeq and --read-parallel when parallel parse is on', () => {
-    expect(vectorIntermediateFilename(tuned)).toBe('normalized.geojsons');
-    expect(ogr2ogrGeometryArgs(tuned, 'out.geojsons', 'in.gpkg')).toEqual([
+  it('writes FlatGeobuf and tippecanoe -z 14', () => {
+    expect(vectorIntermediateFilename()).toBe('normalized.fgb');
+    expect(ogr2ogrGeometryArgs('out.fgb', 'in.gpkg')).toEqual([
       '-f',
-      'GeoJSONSeq',
+      'FlatGeobuf',
+      '-nlt',
+      'GEOMETRY',
+      '-lco',
+      'SPATIAL_INDEX=NO',
       '-t_srs',
       'EPSG:4326',
       '-nln',
       'features',
       '-select',
       '',
-      'out.geojsons',
+      'out.fgb',
       'in.gpkg',
     ]);
-    expect(tippecanoePerformanceArgs(tuned)).toEqual(['--read-parallel']);
-  });
-
-  it('keeps RFC7946 FeatureCollection when parallel parse is off', () => {
-    const serial: SpatialToolPerformance = {
-      ...DEFAULT_SPATIAL_TOOL_PERFORMANCE,
-      tippecanoeReadParallel: false,
-    };
-    expect(vectorIntermediateFilename(serial)).toBe('normalized.geojson');
-    expect(ogr2ogrGeometryArgs(serial, 'out.geojson', 'in.gpkg')[1]).toBe(
-      'GeoJSON'
-    );
-    expect(tippecanoePerformanceArgs(serial)).toEqual([]);
+    expect(tippecanoeVectorArgs('out.pmtiles', 'out.fgb')).toEqual([
+      '-o',
+      'out.pmtiles',
+      '-z',
+      '14',
+      '--drop-densest-as-needed',
+      '--force',
+      '--json-progress',
+      '--progress-interval=5',
+      '-l',
+      'features',
+      'out.fgb',
+    ]);
   });
 
   it('passes warp threads, cache, -multi, and -wm', () => {

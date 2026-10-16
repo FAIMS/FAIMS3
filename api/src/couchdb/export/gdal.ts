@@ -41,11 +41,14 @@ export const runGdalCommand = ({
   command,
   args,
   env,
+  onStderr,
 }: {
   command: string;
   args: string[];
   /** Extra / override env. When omitted, the child inherits `process.env`. */
   env?: NodeJS.ProcessEnv;
+  /** Live stderr (tippecanoe progress). Also still collected for the result. */
+  onStderr?: (chunk: string) => void;
 }): Promise<{stdout: string; stderr: string}> =>
   new Promise((resolve, reject) => {
     const proc = spawn(command, args, env ? {env} : undefined);
@@ -79,7 +82,9 @@ export const runGdalCommand = ({
       stdout += chunk.toString();
     });
     proc.stderr.on('data', chunk => {
-      stderr += chunk.toString();
+      const text = chunk.toString();
+      stderr += text;
+      onStderr?.(text);
     });
     proc.on('error', error => {
       finish(() => reject(error));

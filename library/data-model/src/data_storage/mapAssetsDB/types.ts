@@ -104,6 +104,7 @@ export const MapAssetProcessingStageSchema = z.enum([
   'uploading',
   'queued',
   'downloading',
+  'extracting-archive',
   'interpreting-crs',
   'converting-geometries',
   'tiling-vectors',
@@ -121,6 +122,7 @@ export const MAP_ASSET_PROCESSING_STAGE_LABELS = {
   uploading: 'Uploading original files',
   queued: 'Waiting for a worker',
   downloading: 'Downloading data',
+  'extracting-archive': 'Extracting archive',
   'interpreting-crs': 'Interpreting CRS',
   'converting-geometries': 'Converting geometries',
   'tiling-vectors': 'Building vector tiles',
@@ -138,6 +140,39 @@ export function mapAssetProcessingStageLabel(
     return undefined;
   }
   return MAP_ASSET_PROCESSING_STAGE_LABELS[stage];
+}
+
+/** Live tippecanoe / GDAL progress while `processingStage` is set. */
+export const MapAssetProcessingProgressSchema = z.object({
+  phase: z.string().min(1).max(80),
+  percent: z.number().min(0).max(100).optional(),
+});
+export type MapAssetProcessingProgress = z.infer<
+  typeof MapAssetProcessingProgressSchema
+>;
+
+export function formatMapAssetProcessingProgress(
+  progress: MapAssetProcessingProgress
+): string {
+  if (progress.percent === undefined) {
+    return progress.phase;
+  }
+  return `${progress.phase} ${Math.round(progress.percent)}%`;
+}
+
+/** Stage label, plus phase and percent when the worker has reported them. */
+export function mapAssetProcessingStatusText(asset: {
+  processingStage?: MapAssetProcessingStage;
+  processingProgress?: MapAssetProcessingProgress;
+}): string | undefined {
+  const stageLabel = mapAssetProcessingStageLabel(asset.processingStage);
+  if (!stageLabel) {
+    return undefined;
+  }
+  if (!asset.processingProgress) {
+    return stageLabel;
+  }
+  return `${stageLabel} — ${formatMapAssetProcessingProgress(asset.processingProgress)}`;
 }
 
 /** [minX, minY, maxX, maxY] */
@@ -223,6 +258,11 @@ export const MapAssetFieldsSchema = z.object({
    * the job reaches `ready` or `failed`.
    */
   processingStage: MapAssetProcessingStageSchema.optional(),
+  /**
+   * Phase and percent inside the current step (tippecanoe tiling). Cleared
+   * with `processingStage`.
+   */
+  processingProgress: MapAssetProcessingProgressSchema.optional(),
   kind: MapAssetKindSchema.optional(),
   /** Bounding box of the normalized data in EPSG:4326. */
   extent4326: MapExtentSchema.optional(),

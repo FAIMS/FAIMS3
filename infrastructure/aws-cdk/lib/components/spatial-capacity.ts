@@ -48,7 +48,6 @@ export const spatialWorkerPerformanceEnv = (
     GDAL_CACHEMAX: String(config.gdalCacheMaxMb),
     GDAL_WARP_MEMORY_MB: String(config.gdalWarpMemoryMb),
     GDAL_WARP_MULTI: config.gdalWarpMulti ? 'true' : 'false',
-    TIPPECANOE_READ_PARALLEL: config.tippecanoeReadParallel ? 'true' : 'false',
   };
   if (config.tippecanoeMaxThreads !== undefined) {
     env.TIPPECANOE_MAX_THREADS = String(config.tippecanoeMaxThreads);

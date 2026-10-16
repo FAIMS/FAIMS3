@@ -5,7 +5,7 @@ import {
   MAP_ASSET_UPLOAD_BUSY_MESSAGE,
   isMapAssetInProgress,
   mapAssetKindLabel,
-  mapAssetProcessingStageLabel,
+  mapAssetProcessingStatusText,
   type ExistingMapAsset,
   type GetMapAssetListResponse,
   type GetMapAssetResponse,
@@ -389,7 +389,7 @@ export function formatAssetStatus(asset: ExistingMapAsset): string {
   }
   if (isMapAssetInProgress(asset.status)) {
     return (
-      mapAssetProcessingStageLabel(asset.processingStage) ??
+      mapAssetProcessingStatusText(asset) ??
       (asset.status === 'pending' ? 'Pending' : 'Processing')
     );
   }

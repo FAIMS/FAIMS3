@@ -10,10 +10,12 @@
 import {copyFile, mkdtemp, open, rm, stat, writeFile} from 'fs/promises';
 import {tmpdir} from 'os';
 import path from 'path';
-import type {
-  MapAssetKind,
-  MapAssetProcessingStage,
-  MapExtent,
+import {
+  formatMapAssetProcessingProgress,
+  type MapAssetKind,
+  type MapAssetProcessingProgress,
+  type MapAssetProcessingStage,
+  type MapExtent,
 } from '@faims3/data-model';
 import {config} from '../../buildconfig';
 import {withMapAssetProcessingWait} from '../../logging';
@@ -22,10 +24,11 @@ import {
   gdalWarpPerformanceArgs,
   ogr2ogrGeometryArgs,
   spatialToolProcessEnv,
-  tippecanoePerformanceArgs,
-  vectorIntermediateFilename,
+  tippecanoeVectorArgs,
+  VECTOR_INTERMEDIATE_FILENAME,
   type SpatialToolPerformance,
 } from '../../spatial/gdalPerformance';
+import {consumeTippecanoeProgress} from '../../spatial/tippecanoeProgress';
 import {GdalCommandError, readGdalJson, runGdalCommand} from '../export/gdal';
 import {
   assertUploadCompanions,
@@ -35,13 +38,15 @@ import {
   safeUploadFilename,
   type UploadedMapFile,
 } from './uploadRules';
-import {resolveVectorGdalSource} from './zipSources';
+import {prepareVectorGdalSource} from './zipSources';
 
 /** Optional ids so GDAL wait lines can be correlated with the asset. */
 export type MapAssetNormalizeLogContext = {
   assetId?: string;
   /** Persist the current pipeline step onto the map-asset document. */
   onStage?: (stage: MapAssetProcessingStage) => void | Promise<void>;
+  /** Live tippecanoe phase + percent while tiling. */
+  onProgress?: (progress: MapAssetProcessingProgress) => void | Promise<void>;
 };
 
 async function emitStage(
@@ -115,15 +120,12 @@ function gdalSourcePath(filePath: string): string {
 }
 
 async function inspectCrs(
-  filePath: string,
+  source: string,
+  filename: string,
   vector: boolean,
   logContext?: MapAssetNormalizeLogContext
 ): Promise<unknown> {
-  const source = vector
-    ? await resolveVectorGdalSource(filePath)
-    : gdalSourcePath(filePath);
   const command = vector ? 'ogrinfo' : 'gdalinfo';
-  const filename = path.basename(filePath);
   const gdbZip =
     vector &&
     (/\.gdb(?:\/|$)/i.test(source) ||
@@ -177,7 +179,6 @@ function spatialToolPerformance(): SpatialToolPerformance {
     gdalWarpMemoryMb: config.gdalWarpMemoryMb,
     gdalWarpMulti: config.gdalWarpMulti,
     tippecanoeMaxThreads: config.tippecanoeMaxThreads,
-    tippecanoeReadParallel: config.tippecanoeReadParallel,
   };
 }
 
@@ -189,13 +190,14 @@ async function runMapTool(
   command: string,
   args: string[],
   fallbacks: string[],
-  missing: string
+  missing: string,
+  onStderr?: (chunk: string) => void
 ): Promise<void> {
   const names = [command, ...fallbacks];
   const env = spatialCommandEnv();
   for (const name of names) {
     try {
-      await runGdalCommand({command: name, args, env});
+      await runGdalCommand({command: name, args, env, onStderr});
       return;
     } catch (error) {
       const absent =
@@ -210,12 +212,16 @@ async function runMapTool(
   throw new Error(missing);
 }
 
-async function runTippecanoe(args: string[]): Promise<void> {
+async function runTippecanoe(
+  args: string[],
+  onStderr?: (chunk: string) => void
+): Promise<void> {
   await runMapTool(
     process.env.TIPPECANOE_BIN || 'tippecanoe',
     args,
     [],
-    'tippecanoe is not installed or not on PATH. Map-layer ingest requires it.'
+    'tippecanoe is not installed or not on PATH. Map-layer ingest requires it.',
+    onStderr
   );
 }
 
@@ -325,16 +331,16 @@ function extentFromRing(ring: number[][]): MapExtent {
 }
 
 async function convertVector(
-  sourcePath: string,
+  gdalSource: string,
+  filename: string,
   workDir: string,
-  logContext?: MapAssetNormalizeLogContext
+  logContext?: MapAssetNormalizeLogContext,
+  extractedGdbDir?: string
 ): Promise<NormalizedMapAsset> {
   const perf = spatialToolPerformance();
   const env = spatialToolProcessEnv(perf);
-  const geojsonPath = path.join(workDir, vectorIntermediateFilename(perf));
+  const fgbPath = path.join(workDir, VECTOR_INTERMEDIATE_FILENAME);
   const pmtilesPath = path.join(workDir, 'normalized.pmtiles');
-  const filename = path.basename(sourcePath);
-  const gdalSource = await resolveVectorGdalSource(sourcePath);
   await emitStage(logContext, 'converting-geometries');
   await withMapAssetProcessingWait(
     {
@@ -342,41 +348,64 @@ async function convertVector(
       assetId: logContext?.assetId,
       command: 'ogr2ogr',
       filename,
-      detail: perf.tippecanoeReadParallel
-        ? 'GeoJSONSeq EPSG:4326'
-        : 'GeoJSON EPSG:4326',
+      detail: 'FlatGeobuf EPSG:4326',
     },
     () =>
       runGdalCommand({
         command: 'ogr2ogr',
-        args: ogr2ogrGeometryArgs(perf, geojsonPath, gdalSource),
+        args: ogr2ogrGeometryArgs(fgbPath, gdalSource),
         env,
       })
   );
+  if (extractedGdbDir) {
+    await rm(path.join(workDir, 'extracted'), {recursive: true, force: true});
+  }
   await emitStage(logContext, 'tiling-vectors');
-  await withMapAssetProcessingWait(
-    {
-      event: 'gdal.command',
-      assetId: logContext?.assetId,
-      command: 'tippecanoe',
-      filename,
-      detail: 'vector PMTiles',
-    },
-    () =>
-      runTippecanoe([
-        '-o',
-        pmtilesPath,
-        '-zg',
-        '--drop-densest-as-needed',
-        '--extend-zooms-if-still-dropping',
-        '--force',
-        ...tippecanoePerformanceArgs(perf),
-        '-l',
-        'features',
-        geojsonPath,
-      ])
-  );
-  await rm(geojsonPath, {force: true});
+  let leftover = '';
+  let lastProgress: MapAssetProcessingProgress | undefined;
+  let progressWait = Promise.resolve();
+  const onStderr = (chunk: string) => {
+    const consumed = consumeTippecanoeProgress(leftover + chunk);
+    leftover = consumed.leftover;
+    for (const update of consumed.updates) {
+      lastProgress = update;
+      const reported = update;
+      progressWait = progressWait.then(() =>
+        Promise.resolve(logContext?.onProgress?.(reported))
+      );
+    }
+  };
+  try {
+    await withMapAssetProcessingWait(
+      {
+        event: 'gdal.command',
+        assetId: logContext?.assetId,
+        command: 'tippecanoe',
+        filename,
+        detail: 'vector PMTiles',
+      },
+      () => runTippecanoe(tippecanoeVectorArgs(pmtilesPath, fgbPath), onStderr)
+    );
+    const flushed = consumeTippecanoeProgress(`${leftover}\n`);
+    for (const update of flushed.updates) {
+      lastProgress = update;
+      await logContext?.onProgress?.(update);
+    }
+    await progressWait;
+  } catch (error) {
+    await progressWait.catch(() => undefined);
+    if (
+      error instanceof GdalCommandError &&
+      /timed out after/.test(error.stderr)
+    ) {
+      const suffix = lastProgress
+        ? ` (${formatMapAssetProcessingProgress(lastProgress)})`
+        : '';
+      throw new Error(`${error.stderr}${suffix}`);
+    }
+    throw error;
+  }
+  await rm(fgbPath, {force: true});
   const header = await readPmtilesHeader(pmtilesPath);
   return {
     kind: 'vector-tiles',
@@ -573,10 +602,30 @@ export async function normalizeMapUpload(
     }
     const sourcePath = path.join(workDir, safeUploadFilename(primary.filename));
     const vector = isVectorUpload(primary.filename);
+    const filename = path.basename(sourcePath);
+    let gdalSource = vector ? sourcePath : gdalSourcePath(sourcePath);
+    let extractedGdbDir: string | undefined;
+    if (vector) {
+      const prepared = await prepareVectorGdalSource(
+        sourcePath,
+        path.join(workDir, 'extracted'),
+        {
+          onExtracting: () => emitStage(logContext, 'extracting-archive'),
+        }
+      );
+      gdalSource = prepared.source;
+      extractedGdbDir = prepared.extractedGdbDir;
+    }
     await emitStage(logContext, 'interpreting-crs');
-    await inspectCrs(sourcePath, vector, logContext);
+    await inspectCrs(gdalSource, filename, vector, logContext);
     const result = vector
-      ? await convertVector(sourcePath, workDir, logContext)
+      ? await convertVector(
+          gdalSource,
+          filename,
+          workDir,
+          logContext,
+          extractedGdbDir
+        )
       : await convertRaster(sourcePath, workDir, logContext);
     return ownsWorkDir ? {...result, cleanupDir: workDir} : result;
   } catch (error) {

@@ -286,7 +286,7 @@ describe('SpatialCapacityConfigSchema GDAL / tippecanoe knobs', () => {
     expect(parsed.gdalWarpMemoryMb).toBe(256);
     expect(parsed.gdalWarpMulti).toBe(true);
     expect(parsed.tippecanoeMaxThreads).toBeUndefined();
-    expect(parsed.tippecanoeReadParallel).toBe(true);
+    expect(parsed).not.toHaveProperty('tippecanoeReadParallel');
   });
 
   it('accepts an explicit thread cap and larger warp buffer', () => {

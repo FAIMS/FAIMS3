@@ -318,6 +318,8 @@ export type MapAssetProcessingEntry = {
   kind?: string;
   command?: string;
   detail?: string;
+  phase?: string;
+  percent?: number;
   elapsedMs?: number;
   attempt?: number;
   maxAttempts?: number;

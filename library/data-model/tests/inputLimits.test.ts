@@ -24,6 +24,7 @@ import {
   GetMapAssetDownloadUrlResponseSchema,
   isMapAssetInProgress,
   mapAssetProcessingStageLabel,
+  mapAssetProcessingStatusText,
   PostCreateTeamInputSchema,
   PostCreateTemplateInputSchema,
   PostMapAssetLinkInputSchema,
@@ -297,6 +298,22 @@ describe('map layer schemas', () => {
       'Converting geometries'
     );
     expect(mapAssetProcessingStageLabel(undefined)).toBeUndefined();
+    expect(
+      MapAssetProcessingStageSchema.safeParse('extracting-archive').success
+    ).toBe(true);
+    expect(mapAssetProcessingStageLabel('extracting-archive')).toBe(
+      'Extracting archive'
+    );
+    expect(
+      mapAssetProcessingStatusText({processingStage: 'tiling-vectors'})
+    ).toBe('Building vector tiles');
+    expect(
+      mapAssetProcessingStatusText({
+        processingStage: 'tiling-vectors',
+        processingProgress: {phase: 'Reordering geometry', percent: 45.2},
+      })
+    ).toBe('Building vector tiles — Reordering geometry 45%');
+    expect(mapAssetProcessingStatusText({})).toBeUndefined();
   });
 
   it('accepts storedAttachments object-store metadata on an existing asset', () => {

@@ -4,6 +4,7 @@ import {DEFAULT_MAP_ASSET_STYLE} from '@faims3/data-model';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import contextualLayersReducer, {
   bindContextualLayersStore,
+  replaceContextualLayersState,
   type ContextualLayersState,
 } from '../../../context/slices/contextualLayersSlice';
 
@@ -40,6 +41,7 @@ vi.mock('@capacitor/filesystem', () => ({
 
 import {
   downloadContextualLayers,
+  resetContextualLayerPrefs,
   updateContextualLayerPrefs,
 } from './contextualLayerStore';
 
@@ -89,6 +91,107 @@ describe('updateContextualLayerPrefs', () => {
     );
 
     expect(store.getState().contextualLayers.prefs.layer.opacity).toBe(0.8);
+  });
+
+  it('restores file defaults and the original asset-id stack', () => {
+    store.dispatch(
+      replaceContextualLayersState({
+        files: {
+          tracks: {
+            ...seeded().files.layer,
+            assetId: 'tracks',
+            name: 'Tracks',
+            filename: 'tracks-hash.pmtiles',
+            defaultStyle: {
+              opacity: 0.85,
+              stroke: '#1565c0',
+              fill: '#1565c040',
+              lineWidth: 2,
+              pointSize: 6,
+            },
+          },
+          boundary: {
+            ...seeded().files.layer,
+            assetId: 'boundary',
+            name: 'Boundary',
+            filename: 'boundary-hash.pmtiles',
+            defaultStyle: {
+              opacity: 0.7,
+              stroke: '#cb181d',
+              fill: '#cb181d80',
+              lineWidth: 3,
+              pointSize: 8,
+              labelField: 'name',
+            },
+          },
+        },
+        prefs: {
+          tracks: {
+            visible: false,
+            opacity: 0.2,
+            zIndex: 40,
+            stroke: '#111111',
+            fill: '#222222',
+            lineWidth: 9,
+            pointSize: 20,
+            labelField: 'code',
+          },
+          boundary: {
+            visible: false,
+            opacity: 0.1,
+            zIndex: 50,
+            stroke: '#ffffff',
+            fill: '#000000',
+            lineWidth: 1,
+            pointSize: 1,
+          },
+        },
+        seenHashByProject: {},
+      })
+    );
+
+    expect(resetContextualLayerPrefs('survey')).toEqual({
+      boundary: {
+        visible: true,
+        opacity: 0.7,
+        zIndex: 10,
+        stroke: '#cb181d',
+        fill: '#cb181d80',
+        lineWidth: 3,
+        pointSize: 8,
+        labelField: 'name',
+      },
+      tracks: {
+        visible: true,
+        opacity: 0.85,
+        zIndex: 11,
+        stroke: '#1565c0',
+        fill: '#1565c040',
+        lineWidth: 2,
+        pointSize: 6,
+      },
+    });
+    expect(store.getState().contextualLayers.prefs).toEqual({
+      boundary: {
+        visible: true,
+        opacity: 0.7,
+        zIndex: 10,
+        stroke: '#cb181d',
+        fill: '#cb181d80',
+        lineWidth: 3,
+        pointSize: 8,
+        labelField: 'name',
+      },
+      tracks: {
+        visible: true,
+        opacity: 0.85,
+        zIndex: 11,
+        stroke: '#1565c0',
+        fill: '#1565c040',
+        lineWidth: 2,
+        pointSize: 6,
+      },
+    });
   });
 
   it('drops layer metadata when the app store is reset', async () => {

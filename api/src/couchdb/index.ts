@@ -106,6 +106,10 @@ export const databaseValidityReport: CouchDBConnectionResult = {
 
 export const verifyCouchDBConnection = async () => {
   const result = databaseValidityReport;
+  result.valid = true;
+  result.server_msg = '';
+  result.database_errors = [];
+  result.validate_error = '';
   const url = config.couchdbInternalUrl;
 
   // can we reach the couchdb server?
@@ -114,19 +118,18 @@ export const verifyCouchDBConnection = async () => {
     headers: {
       'Content-Type': 'application/json',
     },
-  }).catch(() => {
-    console.log('Catching error');
+  }).catch((error: unknown) => {
+    result.server_msg = error instanceof Error ? error.message : String(error);
     return null;
   });
 
   if (!response) {
     result.valid = false;
-    result.server_msg = `Unable to connect to CouchDB server at ${url}`;
+    result.server_msg =
+      `Unable to connect to CouchDB server at ${url}` +
+      (result.server_msg ? ` (${result.server_msg})` : '');
     return result;
   }
-
-  // reset valid to true here, will set to falsel below if something is missing
-  result.valid = true;
 
   // now we know we can connect to the server, but can we connect to the database?
   const pouch_options = pouchOptions();
@@ -146,15 +149,46 @@ export const verifyCouchDBConnection = async () => {
         result.valid = false;
         result.database_errors?.push(`Database ${db} not found`);
       }
-    } catch {
+    } catch (error: unknown) {
       result.valid = false;
+      const detail = error instanceof Error ? error.message : String(error);
       result.database_errors?.push(
-        `Unable to connect to CouchDB database ${db}`
+        `Unable to connect to CouchDB database ${db}: ${detail}`
       );
     }
   }
 
   return result;
+};
+
+const sleep = (ms: number) =>
+  new Promise<void>(resolve => {
+    setTimeout(resolve, ms);
+  });
+
+/**
+ * Retry {@link verifyCouchDBConnection} until Couch accepts traffic and the
+ * required databases exist. Compose `depends_on` only waits for the container
+ * to start, so workers can race Couch's HTTP listener.
+ */
+export const waitForCouchDBConnection = async (
+  attempts = 15,
+  delayMs = 2000
+): Promise<CouchDBConnectionResult> => {
+  let last = await verifyCouchDBConnection();
+  for (let attempt = 1; attempt < attempts && !last.valid; attempt++) {
+    const detail =
+      last.validate_error ||
+      last.server_msg ||
+      last.database_errors?.join('; ') ||
+      'unknown error';
+    console.warn(
+      `CouchDB not ready (attempt ${attempt}/${attempts}): ${detail}`
+    );
+    await sleep(delayMs);
+    last = await verifyCouchDBConnection();
+  }
+  return last;
 };
 
 export const getDirectoryDB = (): DatabaseInterface => {

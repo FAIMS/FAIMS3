@@ -18,6 +18,7 @@ import {
   contextualLayersForMap,
   moveContextualLayer,
   notifyContextualLayersChanged,
+  resetContextualLayerPrefs,
   updateContextualLayerPrefs,
 } from './contextualLayerStore';
 
@@ -149,6 +150,34 @@ export function NotebookContextualLayers({
         void moveContextualLayer(projectId, id, direction).then(() => {
           notifyContextualLayersChanged(projectId);
         });
+      },
+      resetLayers: () => {
+        loadGeneration.current += 1;
+        pendingPatches.current.clear();
+        if (flushTimer.current !== undefined) {
+          clearTimeout(flushTimer.current);
+          flushTimer.current = undefined;
+        }
+        const prefs = resetContextualLayerPrefs(projectId);
+        setLayers(current =>
+          current.map(layer => {
+            const next = prefs[layer.id];
+            return next
+              ? {
+                  ...layer,
+                  visible: next.visible,
+                  opacity: next.opacity,
+                  zIndex: next.zIndex,
+                  stroke: next.stroke,
+                  fill: next.fill,
+                  lineWidth: next.lineWidth,
+                  pointSize: next.pointSize,
+                  labelField: next.labelField,
+                }
+              : layer;
+          })
+        );
+        notifyContextualLayersChanged(projectId);
       },
     }),
     [layers, projectId, queuePatch]

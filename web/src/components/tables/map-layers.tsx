@@ -13,7 +13,7 @@ import {displayDateTime} from '@/lib/time';
 import {
   isMapAssetInProgress,
   mapAssetKindLabel,
-  mapAssetProcessingStageLabel,
+  mapAssetProcessingStatusText,
   type ExistingMapAsset,
 } from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
@@ -122,7 +122,7 @@ const statusColumn: ColumnDef<ExistingMapAsset> = {
     const asset = row.original;
     const label = statusLabel(asset);
     const progress = isMapAssetInProgress(asset.status)
-      ? mapAssetProcessingStageLabel(asset.processingStage)
+      ? mapAssetProcessingStatusText(asset)
       : undefined;
     const variant =
       asset.status === 'failed'

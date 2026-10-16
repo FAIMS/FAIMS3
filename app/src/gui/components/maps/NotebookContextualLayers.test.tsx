@@ -12,6 +12,7 @@ const harness = vi.hoisted(() => ({
   notifyContextualLayersChanged: vi.fn(),
   moveContextualLayer: vi.fn(async () => undefined),
   contextualLayersForMap: vi.fn(),
+  resetContextualLayerPrefs: vi.fn(),
 }));
 
 vi.mock('./contextualLayerStore', () => ({
@@ -20,6 +21,7 @@ vi.mock('./contextualLayerStore', () => ({
   updateContextualLayerPrefs: harness.updateContextualLayerPrefs,
   notifyContextualLayersChanged: harness.notifyContextualLayersChanged,
   moveContextualLayer: harness.moveContextualLayer,
+  resetContextualLayerPrefs: harness.resetContextualLayerPrefs,
 }));
 
 const storedLayer: ContextualMapLayer = {
@@ -73,10 +75,45 @@ function StackSlot() {
   );
 }
 
+function ResetPaint() {
+  const {resetLayers, updateLayer, layers} = useContext(
+    ContextualMapLayersContext
+  );
+  const layer = layers.find(item => item.id === 'boundary');
+  return (
+    <>
+      <span data-testid="opacity">{layer?.opacity}</span>
+      <span data-testid="z">{layer?.zIndex}</span>
+      <span data-testid="stroke">{layer?.stroke}</span>
+      <button
+        type="button"
+        onClick={() => updateLayer('boundary', {opacity: 0.2})}
+      >
+        Fade
+      </button>
+      <button type="button" onClick={resetLayers}>
+        Reset
+      </button>
+    </>
+  );
+}
+
 describe('NotebookContextualLayers', () => {
   beforeEach(() => {
     harness.updateContextualLayerPrefs.mockClear();
     harness.notifyContextualLayersChanged.mockClear();
+    harness.resetContextualLayerPrefs.mockReset();
+    harness.resetContextualLayerPrefs.mockReturnValue({
+      boundary: {
+        visible: true,
+        opacity: 0.85,
+        zIndex: 10,
+        stroke: '#1565c0',
+        fill: '#1565c040',
+        lineWidth: 2,
+        pointSize: 6,
+      },
+    });
     harness.contextualLayersForMap.mockReset();
     harness.contextualLayersForMap.mockResolvedValue([{...storedLayer}]);
     vi.useFakeTimers();
@@ -153,5 +190,40 @@ describe('NotebookContextualLayers', () => {
       pendingLoads[1]!([{...storedLayer, zIndex: 1}]);
     });
     expect(screen.getByTestId('z').textContent).toBe('5');
+  });
+
+  it('applies file defaults immediately and drops pending paint edits', async () => {
+    render(
+      <NotebookContextualLayers projectId="survey">
+        <ResetPaint />
+      </NotebookContextualLayers>
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByTestId('opacity').textContent).toBe('1');
+    expect(screen.getByTestId('z').textContent).toBe('1');
+
+    await act(async () => {
+      screen.getByRole('button', {name: 'Fade'}).click();
+    });
+    expect(screen.getByTestId('opacity').textContent).toBe('0.2');
+
+    await act(async () => {
+      screen.getByRole('button', {name: 'Reset'}).click();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(150);
+    });
+
+    expect(screen.getByTestId('opacity').textContent).toBe('0.85');
+    expect(screen.getByTestId('z').textContent).toBe('10');
+    expect(screen.getByTestId('stroke').textContent).toBe('#1565c0');
+    expect(harness.resetContextualLayerPrefs).toHaveBeenCalledWith('survey');
+    expect(harness.notifyContextualLayersChanged).toHaveBeenCalledWith(
+      'survey'
+    );
+    expect(harness.updateContextualLayerPrefs).not.toHaveBeenCalled();
   });
 });

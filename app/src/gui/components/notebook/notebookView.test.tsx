@@ -31,6 +31,7 @@ const {
   childField,
   specs,
   compileErrors,
+  overviewMapMounts,
 } = vi.hoisted(() => ({
   navigate: vi.fn(),
   routeParams: {
@@ -43,6 +44,7 @@ const {
   allRecords: {
     current: [] as Array<{recordId: string; planReference?: string}>,
   },
+  overviewMapMounts: {current: 0},
   // Whether the view asks the map for the whole notebook rather than its plan's
   plotAll: {current: false},
   // Every search the record list was asked for, newest last
@@ -269,17 +271,25 @@ vi.mock('./DefaultNotebookView', () => ({
 vi.mock('./settings', () => ({default: () => null}));
 vi.mock('./MetadataDisplay', () => ({MetadataDisplayComponent: () => null}));
 // Reports the records it plots, so the map and the lists can be held to one answer
-vi.mock('./OverviewMap', () => ({
-  OverviewMap: ({
-    records,
-  }: {
-    records: {allRecords: MinimalRecordMetadata[]};
-  }) => (
-    <span data-testid="plotted-records">
-      {records.allRecords.map(record => record.recordId).join(' ')}
-    </span>
-  ),
-}));
+vi.mock('./OverviewMap', async () => {
+  const React = await import('react');
+  return {
+    OverviewMap: ({
+      records,
+    }: {
+      records: {allRecords: MinimalRecordMetadata[]};
+    }) => {
+      React.useEffect(() => {
+        overviewMapMounts.current += 1;
+      }, []);
+      return (
+        <span data-testid="plotted-records">
+          {records.allRecords.map(record => record.recordId).join(' ')}
+        </span>
+      );
+    },
+  };
+});
 
 const plans = [
   {planId: 'field', planType: 'Counted', label: 'Field'},
@@ -332,6 +342,7 @@ beforeEach(() => {
   navigate.mockClear();
   allRecords.current = [];
   plotAll.current = false;
+  overviewMapMounts.current = 0;
   queries.current = [];
   authorised.current = false;
   engine.updates = [];
@@ -474,6 +485,29 @@ describe('NotebookView record scoping', () => {
     renderNotebook({planId: 'lab'});
     expect(screen.getByTestId('plotted-records')).toHaveTextContent(
       'mine theirs'
+    );
+  });
+
+  it('keeps the overview map mounted when a synced record arrives', () => {
+    allRecords.current = [record('mine', 'lab')];
+    const {rerender} = renderNotebook({planId: 'lab'});
+    expect(overviewMapMounts.current).toBe(1);
+    expect(screen.getByTestId('plotted-records')).toHaveTextContent('mine');
+
+    allRecords.current = [record('mine', 'lab'), record('later', 'lab')];
+    rerender(
+      <QueryClientProvider client={new QueryClient()}>
+        <NotebookRouteProvider>
+          <NotebookViewTabProvider>
+            <NotebookView project={project} />
+          </NotebookViewTabProvider>
+        </NotebookRouteProvider>
+      </QueryClientProvider>
+    );
+
+    expect(overviewMapMounts.current).toBe(1);
+    expect(screen.getByTestId('plotted-records')).toHaveTextContent(
+      'mine later'
     );
   });
 });
