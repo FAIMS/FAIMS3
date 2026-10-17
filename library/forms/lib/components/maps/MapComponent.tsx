@@ -4,7 +4,8 @@
 /**
  * MapComponent.tsx
  * This component renders an interactive OpenLayers map with support for:
- * - Real-time GPS tracking (blue dot, accuracy circle, direction triangle)
+ * - Real-time GPS tracking (blue dot, accuracy circle)
+ * - Device-compass bearing triangle (GPS course-over-ground as fallback)
  * - Offline map support using cached tiles
  * - Dynamic center control and zooming
  * - Integration with parent component through callback
@@ -39,8 +40,10 @@ import {
   useRef,
   useState,
 } from 'react';
+import {useDeviceHeading} from '../../hooks/useDeviceHeading';
 import {getCoordinates, useCurrentLocation} from '../../hooks/useLocation';
 import {logWarn} from '../../logging';
+import {CompassReference, displayHeadingDegrees} from './heading';
 import {headingIndicatorCoordinate} from './headingIndicator';
 import {
   CenterOnLocationControl,
@@ -135,7 +138,7 @@ export interface MapComponentProps {
  *
  * This is the main map rendering component. It:
  * - Initializes an OpenLayers map with tile support
- * - Renders live GPS location and directional cursor
+ * - Renders live GPS location and a compass (or GPS) heading triangle
  * - Accepts a parent callback to provide the map instance
  */
 /**
@@ -148,7 +151,7 @@ export const MapComponent = (props: MapComponentProps) => (
   </MapControlThemeProvider>
 );
 
-/** OpenLayers map with optional controls, GPS overlay, and layer toggle. */
+/** OpenLayers map with optional controls, GPS overlay, compass triangle, and layer toggle. */
 const MapComponentImpl = (props: MapComponentProps) => {
   // Defaults
   const showControls = props.showControls ?? true;
@@ -210,6 +213,29 @@ const MapComponentImpl = (props: MapComponentProps) => {
   const positionLayerRef = useRef<VectorLayer>();
   const watchIdRef = useRef<string | null>(null);
   const liveLocationRef = useRef<Position | null>(null);
+  // Compass is copied into refs so createLiveCursorFeatures (captured once
+  // by createMap) always reads the latest sample without recreating the map.
+  const compassHeadingRef = useRef<number | null>(null);
+  const compassReferenceRef = useRef<CompassReference | null>(null);
+  const liveCursorRef = useRef<{
+    updateCursorLocation: (position: Position) => void;
+    updateCursorAccuracy: (accuracy: number) => void;
+    updateHeadingTriangle: () => void;
+  } | null>(null);
+
+  const {
+    headingDeg: compassHeadingDeg,
+    reference: compassReference,
+    requestWebPermission,
+  } = useDeviceHeading();
+
+  // Compass updates ~10 Hz; GPS is ~1 Hz. Redraw the triangle on its own
+  // so standing still still shows a live bearing.
+  useEffect(() => {
+    compassHeadingRef.current = compassHeadingDeg;
+    compassReferenceRef.current = compassReference;
+    liveCursorRef.current?.updateHeadingTriangle();
+  }, [compassHeadingDeg, compassReference]);
 
   const hasInitialisedViewRef = useRef(false);
   const hasHandledFirstCurrentLocationRef = useRef(false);
@@ -253,6 +279,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
 
     // create the live cursor layer
     const liveCursor = createLiveCursorFeatures(theMap);
+    liveCursorRef.current = liveCursor;
 
     // Handle zoom events, keep track of the zoom level and
     // redraw the live cursor accuracy circle
@@ -278,6 +305,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
     // - Web: `minimumUpdateInterval` is ignored. `timeout` is the browser's
     //   max wait for a fix, not an interval; the browser chooses the rate.
     // `coords.heading` is GPS course-over-ground and only changes with a fix.
+    // The bearing triangle prefers the device compass and uses GPS as fallback.
     Geolocation.watchPosition(
       {
         enableHighAccuracy: true,
@@ -437,8 +465,8 @@ const MapComponentImpl = (props: MapComponentProps) => {
     });
   }, [map, currentPosition, autoFlyToCurrentLocation]);
 
-  // Create a layer to show the live cursor, return functions
-  // that can be used to update the cursor location and accuracy
+  // Live GPS overlay: blue dot, accuracy circle, and heading triangle.
+  // Returns updaters so GPS (~1 Hz) and compass (~10 Hz) can redraw independently.
   const createLiveCursorFeatures = (theMap: Map) => {
     // Clean up before re-adding
     if (positionLayerRef.current) {
@@ -474,13 +502,61 @@ const MapComponentImpl = (props: MapComponentProps) => {
     const accuracyFeature = new Feature(new Point([0, 0]));
     positionSource.addFeatures([dotFeature, triangleFeature, accuracyFeature]);
 
+    // Last projected GPS position. Compass ticks reuse this so the triangle
+    // can move without waiting for the next watchPosition callback.
+    let lastMapCoords: [number, number] | null = null;
+
+    const updateHeadingTriangle = () => {
+      const coords = lastMapCoords;
+      const headingDeg = displayHeadingDegrees({
+        compass: compassHeadingRef.current,
+        gps: liveLocationRef.current?.coords.heading,
+        compassReference: compassReferenceRef.current,
+        latitude: liveLocationRef.current?.coords.latitude,
+        longitude: liveLocationRef.current?.coords.longitude,
+      });
+
+      // Nothing to attach the triangle to until we have a GPS fix, even if
+      // the compass is already running.
+      if (!coords || headingDeg == null) {
+        triangleFeature.setStyle([]);
+        return;
+      }
+
+      const headingRadians = (headingDeg * Math.PI) / 180;
+      triangleFeature.setGeometry(new Point(coords));
+      triangleFeature.setStyle(
+        new Style({
+          image: new RegularShape({
+            points: 3,
+            radius: 12,
+            // angle PI draws one point facing down; add PI so heading 0 points north.
+            rotation: headingRadians + Math.PI,
+            // Default is screen-fixed, which leaves the marker pointing the
+            // same way after the user rotates the map.
+            rotateWithView: true,
+            angle: Math.PI,
+            fill: new Fill({color: '#1a73e8'}),
+            stroke: new Stroke({color: 'white', width: 2}),
+          }),
+          geometry: () => {
+            const resolution = theMap.getView().getResolution() ?? 1;
+            return new Point(
+              headingIndicatorCoordinate(coords, headingRadians, resolution)
+            );
+          },
+        })
+      );
+    };
+
     // function to update the cursor location when we move
     const updateCursorLocation = (position: Position) => {
       const coords = transform(
         [position.coords.longitude, position.coords.latitude],
         'EPSG:4326',
         theMap.getView().getProjection()
-      );
+      ) as [number, number];
+      lastMapCoords = coords;
 
       // set the location of the blue dot marking our position
       dotFeature.setGeometry(new Point(coords));
@@ -494,40 +570,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
         })
       );
 
-      // Heading triangle. 0 is north and is a real bearing, so don't treat it
-      // as missing. A null heading means the device is not reporting direction.
-      if (typeof position.coords.heading === 'number') {
-        const headingRadians = (position.coords.heading * Math.PI) / 180;
-        triangleFeature.setGeometry(new Point(coords));
-        triangleFeature.setStyle(
-          new Style({
-            image: new RegularShape({
-              points: 3,
-              radius: 12,
-              // angle PI draws one point facing down; add PI so heading 0 points north.
-              rotation: headingRadians + Math.PI,
-              // Default is screen-fixed, which leaves the marker pointing the
-              // same way after the user rotates the map.
-              rotateWithView: true,
-              angle: Math.PI,
-              fill: new Fill({color: '#1a73e8'}),
-              stroke: new Stroke({color: 'white', width: 2}),
-            }),
-            geometry: () => {
-              const resolution = theMap.getView().getResolution() ?? 1;
-              return new Point(
-                headingIndicatorCoordinate(
-                  coords as [number, number],
-                  headingRadians,
-                  resolution
-                )
-              );
-            },
-          })
-        );
-      } else {
-        triangleFeature.setStyle([]);
-      }
+      updateHeadingTriangle();
 
       // set the location of the accuracy circle
       accuracyFeature.setGeometry(new Point(coords));
@@ -549,7 +592,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
       );
     };
 
-    return {updateCursorLocation, updateCursorAccuracy};
+    return {updateCursorLocation, updateCursorAccuracy, updateHeadingTriangle};
   };
 
   // Center the map on the current location
@@ -631,6 +674,8 @@ const MapComponentImpl = (props: MapComponentProps) => {
       <Box sx={{position: 'relative', flex: 1, minHeight: 0, width: '100%'}}>
         <Box
           ref={refCallback} // will create the map
+          // iOS Safari DeviceOrientationEvent.requestPermission needs a gesture.
+          onPointerDown={requestWebPermission}
           sx={{
             height: '100%',
             width: '100%',
