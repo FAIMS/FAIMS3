@@ -18,6 +18,12 @@ import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
 import {designFileSchema, resourceNameSchema} from '@/lib/input-limits';
 import {INPUT_LIMITS, ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 import {usePlanConfigs} from '@/components/plans/usePlanConfigs';
+import {
+  collectSetupValues,
+  setupFieldsToFormFields,
+  setupSubmissionGate,
+} from '@/lib/setupFormFields';
+import {SetupFormHeading} from './setup-form-heading';
 
 // Import the default sample notebook JSON
 import blankNotebook from '../../../notebooks/blank-notebook.json';
@@ -76,6 +82,11 @@ export function CreateProjectForm({
     isError: Boolean(selectedTemplateId) && isError,
   });
 
+  // Setup form fields follow the chosen template the same way plan configs do
+  const setupForm =
+    selectedTemplate?.uiSpecification?.uiSpec?.settings?.setupForm;
+  const setupGate = setupForm ? setupSubmissionGate(setupForm) : undefined;
+
   const fields: Field[] = [
     {
       name: 'name',
@@ -130,6 +141,11 @@ export function CreateProjectForm({
     dividers.push({index: 4, component: <div className="h-5" />});
   }
 
+  if (setupForm) {
+    dividers.push({index: fields.length, component: <SetupFormHeading />});
+    fields.push(...setupFieldsToFormFields(setupForm));
+  }
+
   const withPlans = plans.appendTo({fields, dividers});
 
   interface onSubmitProps {
@@ -159,6 +175,9 @@ export function CreateProjectForm({
         template,
         teamId: specifiedTeam ?? team,
         planConfigs: plans.toPlanConfigs(values),
+        setupValues: setupForm
+          ? collectSetupValues(setupForm, values)
+          : undefined,
       });
     } else {
       // No template chosen: either use uploaded file or default blank notebook
@@ -216,7 +235,17 @@ export function CreateProjectForm({
       // pass in team ID default, if provided
       defaultValues={{team: defaultValues?.teamId}}
       footer={plans.footer}
-      disableSubmission={plans.gate}
+      // A plan config that is not ready is a hard block. Required setup
+      // fields validate on submit; only multiselects gate here.
+      disableSubmission={
+        plans.gate ??
+        (setupGate
+          ? {
+              disabled: data => setupGate.isBlocked(data),
+              reason: setupGate.reason,
+            }
+          : undefined)
+      }
     />
   );
 }
