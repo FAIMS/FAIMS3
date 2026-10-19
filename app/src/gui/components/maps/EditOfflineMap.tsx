@@ -11,6 +11,7 @@ import {
   formatOfflineMapSizeBytes,
   OfflineMapRegionEditor,
   ProgressBar,
+  STATIC_MAP_LAYER_PREVIEW_HEIGHT,
   StoredTileSet,
   tileSetDisplayName,
   tileSetDownloadProgress,
@@ -285,7 +286,7 @@ export function EditOfflineMap() {
           readOnly
           showRegionStatus={false}
           showMapControls={false}
-          mapHeight="clamp(380px, 55dvh, 650px)"
+          mapHeight={STATIC_MAP_LAYER_PREVIEW_HEIGHT}
           mapComponentProps={{
             autoFlyToCurrentLocation: false,
             lockNavigation: true,

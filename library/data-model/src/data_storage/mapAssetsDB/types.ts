@@ -16,9 +16,125 @@ import {CouchExistingDocumentSchema} from '../utils';
 export const MAP_ASSET_PRIMARY_FORMATS =
   'a GeoJSON, GeoPackage, zipped shapefile or File Geodatabase, KML, GeoTIFF, georeferenced PDF, or a PNG/JPEG';
 
+export const MAP_ASSET_VECTOR_EXTENSIONS = [
+  '.geojson',
+  '.json',
+  '.gpkg',
+  '.kml',
+  '.zip',
+] as const;
+
+export const MAP_ASSET_RASTER_EXTENSIONS = [
+  '.tif',
+  '.tiff',
+  '.pdf',
+  '.png',
+  '.jpg',
+  '.jpeg',
+] as const;
+
+export const MAP_ASSET_PRIMARY_EXTENSIONS = [
+  ...MAP_ASSET_VECTOR_EXTENSIONS,
+  ...MAP_ASSET_RASTER_EXTENSIONS,
+] as const;
+
+export const MAP_ASSET_WORLD_FILE_EXTENSIONS = [
+  '.pgw',
+  '.gfw',
+  '.jgw',
+  '.wld',
+  '.tfw',
+  '.j2w',
+] as const;
+
+export const MAP_ASSET_PRJ_EXTENSION = '.prj' as const;
+
+export const MAP_ASSET_ALLOWED_UPLOAD_EXTENSIONS = [
+  ...MAP_ASSET_PRIMARY_EXTENSIONS,
+  ...MAP_ASSET_WORLD_FILE_EXTENSIONS,
+  MAP_ASSET_PRJ_EXTENSION,
+] as const;
+
+/** `accept` value for a map-layer file input. */
+export const MAP_ASSET_UPLOAD_ACCEPT =
+  MAP_ASSET_ALLOWED_UPLOAD_EXTENSIONS.join(',');
+
+export const MAP_ASSET_IMAGE_COMPANION_MESSAGE =
+  'PNG and JPEG need a world file and a .prj.';
+
+const PRIMARY_EXTENSION_SET: ReadonlySet<string> = new Set(
+  MAP_ASSET_PRIMARY_EXTENSIONS
+);
+const VECTOR_EXTENSION_SET: ReadonlySet<string> = new Set(
+  MAP_ASSET_VECTOR_EXTENSIONS
+);
+const WORLD_FILE_EXTENSION_SET: ReadonlySet<string> = new Set(
+  MAP_ASSET_WORLD_FILE_EXTENSIONS
+);
+const ALLOWED_UPLOAD_EXTENSION_SET: ReadonlySet<string> = new Set(
+  MAP_ASSET_ALLOWED_UPLOAD_EXTENSIONS
+);
+
+/** Basename extension, lowercased, including the leading dot. */
+export function mapAssetFileExtension(filename: string): string {
+  const base = filename.replace(/^.*[/\\]/, '');
+  const dot = base.lastIndexOf('.');
+  return dot <= 0 ? '' : base.slice(dot).toLowerCase();
+}
+
+export function isMapAssetVectorExtension(extension: string): boolean {
+  return VECTOR_EXTENSION_SET.has(extension);
+}
+
+export function isMapAssetPrimaryExtension(extension: string): boolean {
+  return PRIMARY_EXTENSION_SET.has(extension);
+}
+
+export function isMapAssetWorldFileExtension(extension: string): boolean {
+  return WORLD_FILE_EXTENSION_SET.has(extension);
+}
+
+export function isMapAssetAllowedUploadExtension(extension: string): boolean {
+  return ALLOWED_UPLOAD_EXTENSION_SET.has(extension);
+}
+
+/** PNG and JPEG carry CRS in companion files, not in the image. */
+export function isMapAssetGeoreferencedImageExtension(
+  extension: string
+): boolean {
+  return extension === '.png' || extension === '.jpg' || extension === '.jpeg';
+}
+
+export function mapAssetPrimaryExtension(
+  extensions: readonly string[]
+): string | undefined {
+  return extensions.find(extension => isMapAssetPrimaryExtension(extension));
+}
+
+/**
+ * When the primary is PNG or JPEG, require a world file and a `.prj`.
+ * Other primaries carry CRS inside the file. Returns a user-facing message
+ * or `undefined` when companions are not required or are present.
+ */
+export function mapAssetGeoreferencedImageCompanionIssue(
+  extensions: readonly string[]
+): string | undefined {
+  const primary = mapAssetPrimaryExtension(extensions);
+  if (!primary || !isMapAssetGeoreferencedImageExtension(primary)) {
+    return undefined;
+  }
+  const hasWorld = extensions.some(extension =>
+    isMapAssetWorldFileExtension(extension)
+  );
+  if (!hasWorld || !extensions.includes(MAP_ASSET_PRJ_EXTENSION)) {
+    return MAP_ASSET_IMAGE_COMPANION_MESSAGE;
+  }
+  return undefined;
+}
+
 /** Object-store key for the bytes the user uploaded (or a zip of them). */
 export const MAP_ASSET_ORIGINAL_ATTACHMENT = 'original';
-/** Object-store key for the device-ready file (GeoJSON, PNG, or PMTiles). */
+/** Object-store key for the device-ready PMTiles archive. */
 export const MAP_ASSET_NORMALIZED_ATTACHMENT = 'normalized';
 
 /**
@@ -55,14 +171,17 @@ export function isTiledMapAssetKind(kind: MapAssetKind): boolean {
   return kind === 'raster-tiles' || kind === 'vector-tiles';
 }
 
+/** Filename extension of the device-ready PMTiles archive. */
 export function normalizedMapAssetExtension(_kind: MapAssetKind): 'pmtiles' {
   return 'pmtiles';
 }
 
+/** MIME type of the device-ready PMTiles archive. */
 export function normalizedMapAssetMediaType(_kind: MapAssetKind): string {
   return 'application/vnd.pmtiles';
 }
 
+/** Short UI label for a tiled map-asset kind. */
 export function mapAssetKindLabel(kind: MapAssetKind | undefined): string {
   switch (kind) {
     case 'raster-tiles':
@@ -118,6 +237,7 @@ export type MapAssetProcessingStage = z.infer<
   typeof MapAssetProcessingStageSchema
 >;
 
+/** User-facing copy for each processing stage id. */
 export const MAP_ASSET_PROCESSING_STAGE_LABELS = {
   uploading: 'Uploading original files',
   queued: 'Waiting for a worker',
@@ -133,6 +253,7 @@ export const MAP_ASSET_PROCESSING_STAGE_LABELS = {
   storing: 'Saving prepared layer',
 } as const satisfies Record<MapAssetProcessingStage, string>;
 
+/** User-facing label for a processing stage id. */
 export function mapAssetProcessingStageLabel(
   stage: MapAssetProcessingStage | undefined
 ): string | undefined {
@@ -151,6 +272,7 @@ export type MapAssetProcessingProgress = z.infer<
   typeof MapAssetProcessingProgressSchema
 >;
 
+/** Phase text plus optional percent. */
 export function formatMapAssetProcessingProgress(
   progress: MapAssetProcessingProgress
 ): string {
@@ -198,6 +320,7 @@ export const MapAssetStyleSchema = z.object({
 });
 export type MapAssetStyle = z.infer<typeof MapAssetStyleSchema>;
 
+/** Default paint stored on a new map-layer asset. */
 export const DEFAULT_MAP_ASSET_STYLE: MapAssetStyle = {
   stroke: '#1565c0',
   fill: '#1565c040',
@@ -306,7 +429,11 @@ export type ExistingMapAssetLink = z.infer<typeof ExistingMapAssetLinkSchema>;
 export type MapAssetsDBFields = MapAssetFields | MapAssetLinkFields;
 export type MapAssetsDB = DatabaseInterface<MapAssetsDBFields>;
 
-/** One ready layer as it appears on a survey listing. */
+/**
+ * One ready layer as it appears on a survey listing.
+ * Pending, processing, and failed assets are never listed; field devices use
+ * this array as the keep-set and drop any on-device file whose id is absent.
+ */
 export const ContextualLayerListingSchema = z.object({
   id: IdInputSchema.min(1),
   name: resourceNameString('Layer name'),

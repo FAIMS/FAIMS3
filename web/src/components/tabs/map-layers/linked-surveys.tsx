@@ -2,12 +2,6 @@
 import {DataTable} from '@/components/data-table/data-table';
 import {columns} from '@/components/tables/projects';
 import {Button} from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import {config} from '@/constants';
 import {useRequiredUser, userCanDo} from '@/hooks/auth-hooks';
 import {
@@ -50,10 +44,6 @@ function SurveyLinkAction({
     mode === 'link'
       ? `Link to this ${config.notebookName}`
       : `Unlink this ${config.notebookName}`;
-  const tooltip = canEdit
-    ? label
-    : `You do not have permission to change this ${config.notebookName}.`;
-
   const onClick = async (event: React.MouseEvent) => {
     event.stopPropagation();
     if (!canEdit || pending) {
@@ -84,72 +74,65 @@ function SurveyLinkAction({
     }
   };
 
+  if (!canEdit) {
+    return null;
+  }
+
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span
-            className="flex w-16"
-            onClick={event => event.stopPropagation()}
-            onKeyDown={event => event.stopPropagation()}
-          >
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full px-2"
-              disabled={!canEdit || pending}
-              aria-label={`${label}: ${project.name}`}
-              data-testid={
-                mode === 'link'
-                  ? 'web-map-layers-link-survey'
-                  : 'web-map-layers-unlink-survey'
-              }
-              onClick={event => void onClick(event)}
-            >
-              {mode === 'link' ? 'Link' : 'Unlink'}
-            </Button>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent side="top">{tooltip}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <span
+      className="flex w-16"
+      onClick={event => event.stopPropagation()}
+      onKeyDown={event => event.stopPropagation()}
+    >
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="w-full px-2"
+        disabled={pending}
+        aria-label={`${label}: ${project.name}`}
+        data-testid={
+          mode === 'link'
+            ? 'web-map-layers-link-survey'
+            : 'web-map-layers-unlink-survey'
+        }
+        onClick={event => void onClick(event)}
+      >
+        {mode === 'link' ? 'Link' : 'Unlink'}
+      </Button>
+    </span>
   );
 }
 
 function surveyColumns({
   assetId,
   mode,
+  showAction,
 }: {
   assetId: string;
   mode: 'link' | 'unlink';
+  showAction: boolean;
 }): ColumnDef<SurveyRow>[] {
-  return [
-    {
-      id: mode,
-      enableSorting: false,
-      enableGlobalFilter: false,
-      meta: {
-        headerClassName: 'w-px px-2',
-        cellClassName: 'w-px px-2',
-      },
-      header: () => (
-        <span className="sr-only">
-          {mode === 'link'
-            ? `Link to this ${config.notebookName}`
-            : `Unlink this ${config.notebookName}`}
-        </span>
-      ),
-      cell: ({row}) => (
-        <SurveyLinkAction
-          assetId={assetId}
-          project={row.original}
-          mode={mode}
-        />
-      ),
+  const actionColumn: ColumnDef<SurveyRow> = {
+    id: mode,
+    enableSorting: false,
+    enableGlobalFilter: false,
+    meta: {
+      headerClassName: 'w-px px-2',
+      cellClassName: 'w-px px-2',
     },
-    ...columns,
-  ];
+    header: () => (
+      <span className="sr-only">
+        {mode === 'link'
+          ? `Link to this ${config.notebookName}`
+          : `Unlink this ${config.notebookName}`}
+      </span>
+    ),
+    cell: ({row}) => (
+      <SurveyLinkAction assetId={assetId} project={row.original} mode={mode} />
+    ),
+  };
+  return showAction ? [actionColumn, ...columns] : columns;
 }
 
 export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
@@ -157,17 +140,15 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
   const navigate = useNavigate();
   const projects = useGetProjects({user, includeArchived: true});
   const links = useMapAssetLinks({user, assetId});
-  const linkedColumns = useMemo(
-    () => surveyColumns({assetId, mode: 'unlink'}),
-    [assetId]
-  );
-  const availableColumns = useMemo(
-    () => surveyColumns({assetId, mode: 'link'}),
-    [assetId]
-  );
 
   const linkedIds = new Set(links.data ?? []);
   const surveys = projects.data ?? [];
+  const canAdminister = (project: SurveyRow) =>
+    userCanDo({
+      user,
+      action: Action.UPDATE_PROJECT_DETAILS,
+      resourceId: project._id,
+    });
   const linkedSurveys = surveys.filter(project => linkedIds.has(project._id));
   const availableSurveys = surveys.filter(project => {
     if (
@@ -176,12 +157,21 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
     ) {
       return false;
     }
-    return userCanDo({
-      user,
-      action: Action.UPDATE_PROJECT_DETAILS,
-      resourceId: project._id,
-    });
+    return canAdminister(project);
   });
+  const canUnlinkSome = linkedSurveys.some(canAdminister);
+  const canLinkSome = surveys.some(
+    project =>
+      project.status !== ProjectStatus.ARCHIVED && canAdminister(project)
+  );
+  const linkedColumns = useMemo(
+    () => surveyColumns({assetId, mode: 'unlink', showAction: canUnlinkSome}),
+    [assetId, canUnlinkSome]
+  );
+  const availableColumns = useMemo(
+    () => surveyColumns({assetId, mode: 'link', showAction: true}),
+    [assetId]
+  );
 
   const openSurvey = ({_id}: SurveyRow) => {
     void navigate({to: `/projects/${_id}`});
@@ -218,26 +208,28 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
           emptyMessage={`No linked ${config.notebookNamePlural}.`}
         />
       </section>
-      <section className="flex flex-col gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">
-            Available {config.notebookNamePluralCapitalized}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Users can only download this map layer if they activate a linked{' '}
-            {config.notebookName}. The {config.notebookNamePlural} below are
-            available for linking.
-          </p>
-        </div>
-        <DataTable
-          columns={availableColumns}
-          data={availableSurveys}
-          loading={loading}
-          initialSorting={[{id: 'createdAt', desc: true}]}
-          onRowClick={openSurvey}
-          emptyMessage={`No available ${config.notebookNamePlural}.`}
-        />
-      </section>
+      {loading || canLinkSome ? (
+        <section className="flex flex-col gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">
+              Available {config.notebookNamePluralCapitalized}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Users can only download this map layer if they activate a linked{' '}
+              {config.notebookName}. The {config.notebookNamePlural} below are
+              available for linking.
+            </p>
+          </div>
+          <DataTable
+            columns={availableColumns}
+            data={availableSurveys}
+            loading={loading}
+            initialSorting={[{id: 'createdAt', desc: true}]}
+            onRowClick={openSurvey}
+            emptyMessage={`No available ${config.notebookNamePlural}.`}
+          />
+        </section>
+      ) : null}
     </div>
   );
 }

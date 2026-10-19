@@ -6,6 +6,7 @@ import type {TileByteRead} from './pmtilesRange';
 /** One PMTiles archive of image tiles or Mapbox vector tiles. */
 export type ContextualMapLayerKind = 'raster-tiles' | 'vector-tiles';
 
+/** True when the archive holds Mapbox vector tiles. */
 export function isVectorContextualKind(kind: ContextualMapLayerKind): boolean {
   return kind === 'vector-tiles';
 }

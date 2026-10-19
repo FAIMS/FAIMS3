@@ -122,15 +122,38 @@ export async function listAssetsByCreator(
   return loadAssets(ids);
 }
 
+export async function listAllAssets(): Promise<ExistingMapAsset[]> {
+  const result = await getMapAssetsDB().query<number | string>(
+    MAP_ASSETS_BY_STATUS,
+    {include_docs: false}
+  );
+  return loadAssets(
+    result.rows.map(row => row.id).filter((id): id is string => Boolean(id))
+  );
+}
+
+export async function listAssetsByProject(
+  projectId: string
+): Promise<ExistingMapAsset[]> {
+  return loadAssets(await listLinkAssetIds(projectId));
+}
+
 async function loadAssets(ids: string[]): Promise<ExistingMapAsset[]> {
+  const unique = [...new Set(ids.filter(id => id.length > 0))];
+  if (unique.length === 0) {
+    return [];
+  }
+  const result = await getMapAssetsDB().allDocs({
+    keys: unique,
+    include_docs: true,
+  });
   const assets: ExistingMapAsset[] = [];
-  for (const id of ids) {
-    try {
-      assets.push(await getMapAsset(id));
-    } catch (error) {
-      if (!(error instanceof Exceptions.ItemNotFoundException)) {
-        throw error;
-      }
+  for (const row of result.rows) {
+    if ('error' in row || !row.doc) {
+      continue;
+    }
+    if (isAsset(row.doc)) {
+      assets.push(row.doc);
     }
   }
   return assets;
@@ -149,14 +172,41 @@ export async function listLinkProjectIds(assetId: string): Promise<string[]> {
     .filter((value): value is string => typeof value === 'string');
 }
 
-export async function listLinkAssetIds(projectId: string): Promise<string[]> {
+/**
+ * Linked asset ids for many surveys in one `linksByProject` query.
+ * Surveys with no links are present with an empty array. Duplicate
+ * `projectIds` collapse to one map entry.
+ */
+async function listLinkAssetIdsByProject(
+  projectIds: readonly string[]
+): Promise<Map<string, string[]>> {
+  const byProject = new Map<string, string[]>();
+  for (const projectId of projectIds) {
+    if (!byProject.has(projectId)) {
+      byProject.set(projectId, []);
+    }
+  }
+  const keys = [...byProject.keys()].filter(id => id.length > 0);
+  if (keys.length === 0) {
+    return byProject;
+  }
   const result = await getMapAssetsDB().query<string>(
     MAP_ASSET_LINKS_BY_PROJECT,
-    {key: projectId, include_docs: false}
+    {keys, include_docs: false}
   );
-  return result.rows
-    .map(row => row.value)
-    .filter((value): value is string => typeof value === 'string');
+  for (const row of result.rows) {
+    const projectId = row.key;
+    const assetId = row.value;
+    if (typeof projectId !== 'string' || typeof assetId !== 'string') {
+      continue;
+    }
+    byProject.get(projectId)?.push(assetId);
+  }
+  return byProject;
+}
+
+export async function listLinkAssetIds(projectId: string): Promise<string[]> {
+  return (await listLinkAssetIdsByProject([projectId])).get(projectId) ?? [];
 }
 
 export function linkDocumentId(assetId: string, projectId: string): string {
@@ -344,6 +394,13 @@ export async function updateMapAssetDetails({
   return getMapAsset(assetId);
 }
 
+/**
+ * Upload a new original and re-process this asset.
+ * After staging succeeds, the previous object-store blobs are deleted and the
+ * asset leaves survey listings until the replacement is `ready`. That is
+ * intentional invalidation, not last-good: field devices drop the old file on
+ * the next directory refresh. Staging failure restores the previous document.
+ */
 export async function replaceMapAssetFiles({
   assetId,
   files,
@@ -363,7 +420,8 @@ export async function replaceMapAssetFiles({
     .map(file => file.filename)
     .filter(filename => filename !== primaryFilename);
   const previousStored = current.storedAttachments;
-  await getMapAssetsDB().put(
+  const db = getMapAssetsDB();
+  await db.put(
     omitUndefinedFields({
       ...current,
       originalFilename: primaryFilename,
@@ -386,8 +444,24 @@ export async function replaceMapAssetFiles({
       updatedAt: Date.now(),
     })
   );
-  await cleanupStaging(assetId);
-  await stageUploadFiles(assetId, files);
+  try {
+    await cleanupStaging(assetId);
+    await stageUploadFiles(assetId, files);
+  } catch (error) {
+    await cleanupStaging(assetId);
+    try {
+      const latest = await getMapAsset(assetId);
+      await db.put(
+        omitUndefinedFields({
+          ...current,
+          _rev: latest._rev,
+        })
+      );
+    } catch {
+      // Staging failed; restore the previous asset if we still can.
+    }
+    throw error;
+  }
   if (previousStored) {
     await Promise.all(
       Object.values(previousStored).map(location =>
@@ -897,6 +971,23 @@ function progressUnchanged(
   );
 }
 
+function progressAuditCommand(
+  stage: MapAssetProcessingStage | undefined
+): string | undefined {
+  switch (stage) {
+    case 'tiling-vectors':
+      return 'tippecanoe';
+    case 'warping-raster':
+      return 'gdalwarp';
+    case 'building-tiles':
+      return 'gdal_translate';
+    case 'building-overviews':
+      return 'gdaladdo';
+    default:
+      return undefined;
+  }
+}
+
 /**
  * Write tippecanoe / GDAL phase + percent so the Control Centre can poll
  * it. Serialized with other claim writes. A lost claim is a no-op.
@@ -935,7 +1026,7 @@ async function reportProcessingProgress(
           outcome: 'waiting',
           assetId,
           filename: latest.originalFilename,
-          command: 'tippecanoe',
+          command: progressAuditCommand(latest.processingStage),
           detail: formatMapAssetProcessingProgress(progress),
           phase: progress.phase,
           percent: progress.percent,
@@ -1552,6 +1643,12 @@ export async function deleteMapAsset(assetId: string): Promise<void> {
   );
 }
 
+/**
+ * Ready, downloadable layers only. Pending, processing, and failed assets are
+ * omitted even while the survey link remains. Directory consumers treat that
+ * absence as "do not keep this file" — replace is allowed to withdraw the old
+ * overlay before the new one exists.
+ */
 function toListing(
   asset: ExistingMapAsset
 ): ContextualLayerListing | undefined {
@@ -1578,26 +1675,18 @@ function toListing(
   };
 }
 
-/** Ready layers linked to one survey, plus the manifest hash. */
-export async function contextualLayersForProject(projectId: string): Promise<{
+type ContextualLayersManifest = {
   contextualLayers: ContextualLayerListing[];
   contextualLayersHash: string;
-}> {
-  const assetIds = await listLinkAssetIds(projectId);
-  const layers: ContextualLayerListing[] = [];
-  for (const assetId of assetIds) {
-    try {
-      const listing = toListing(await getMapAsset(assetId));
-      if (listing) {
-        layers.push(listing);
-      }
-    } catch (error) {
-      if (!(error instanceof Exceptions.ItemNotFoundException)) {
-        throw error;
-      }
-    }
-  }
-  layers.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+};
+
+async function manifestFromAssets(
+  assets: ExistingMapAsset[]
+): Promise<ContextualLayersManifest> {
+  const layers = assets
+    .map(toListing)
+    .filter((listing): listing is ContextualLayerListing => Boolean(listing))
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   return {
     contextualLayers: layers,
     contextualLayersHash: await buildContextualLayersHash(layers),
@@ -1605,9 +1694,58 @@ export async function contextualLayersForProject(projectId: string): Promise<{
 }
 
 /**
+ * Ready-layer manifests for many surveys: one `linksByProject` query, then
+ * one `allDocs({keys})` for the unique linked assets. Shared overlays are
+ * fetched once. Missing and non-ready assets are omitted from the keep-set.
+ */
+async function manifestsForProjects(
+  projectIds: readonly string[]
+): Promise<Map<string, ContextualLayersManifest>> {
+  const links = await listLinkAssetIdsByProject(projectIds);
+  const assetsById = new Map(
+    (await loadAssets([...new Set([...links.values()].flat())])).map(asset => [
+      asset._id,
+      asset,
+    ])
+  );
+  const manifests = new Map<string, ContextualLayersManifest>();
+  for (const [projectId, assetIds] of links) {
+    const assets: ExistingMapAsset[] = [];
+    for (const assetId of assetIds) {
+      const asset = assetsById.get(assetId);
+      if (asset) {
+        assets.push(asset);
+      }
+    }
+    manifests.set(projectId, await manifestFromAssets(assets));
+  }
+  return manifests;
+}
+
+/**
+ * Ready layers linked to one survey, plus the manifest hash of that ready set.
+ * Linked assets that are not ready do not appear; that is the keep-set
+ * contract used by field-device directory sync.
+ */
+export async function contextualLayersForProject(projectId: string): Promise<{
+  contextualLayers: ContextualLayerListing[];
+  contextualLayersHash: string;
+}> {
+  return (
+    (await manifestsForProjects([projectId])).get(projectId) ??
+    (await manifestFromAssets([]))
+  );
+}
+
+/**
  * Attaches the survey manifest onto listing rows.
+ * Uses two Couch round-trips for the whole list (link view + unique assets),
+ * not one query per survey.
  * A read failure leaves the fields off the row so a device does not treat a
  * transient error as "this survey no longer has layers" and delete local files.
+ * A successful empty or shorter `contextualLayers` array is the opposite:
+ * those ids are not ready (unlinked, replacing, or failed) and should be
+ * dropped on device. Do not conflate omitted fields with an empty ready list.
  */
 export async function attachContextualLayers<T extends {_id: string}>(
   projects: T[]
@@ -1617,13 +1755,15 @@ export async function attachContextualLayers<T extends {_id: string}>(
     contextualLayersHash?: string;
   })[]
 > {
+  if (projects.length === 0) {
+    return projects;
+  }
   try {
-    return await Promise.all(
-      projects.map(async project => {
-        const manifest = await contextualLayersForProject(project._id);
-        return {...project, ...manifest};
-      })
-    );
+    const manifests = await manifestsForProjects(projects.map(p => p._id));
+    return projects.map(project => {
+      const manifest = manifests.get(project._id);
+      return manifest ? {...project, ...manifest} : project;
+    });
   } catch (error) {
     console.error('[map-assets] failed to attach survey layers', error);
     return projects;

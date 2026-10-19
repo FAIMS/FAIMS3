@@ -48,7 +48,7 @@ export function ReplaceMapLayerForm({
           name: 'files',
           label: 'Replacement files',
           description:
-            'The same formats as a new layer. Surveys keep the link and pick up the new file once processing finishes.',
+            'The same formats as a new layer. Surveys keep the link. Devices drop the previous file on the next refresh and download the new one after processing finishes.',
           type: 'file',
           multiple: true,
           accept: MAP_LAYER_FILE_ACCEPT,

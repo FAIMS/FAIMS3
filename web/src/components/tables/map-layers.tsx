@@ -11,6 +11,7 @@ import {
 import {cn} from '@/lib/utils';
 import {displayDateTime} from '@/lib/time';
 import {
+  formatFileSize,
   isMapAssetInProgress,
   mapAssetKindLabel,
   mapAssetProcessingStatusText,
@@ -75,16 +76,6 @@ function TruncatedListingText({
       </Tooltip>
     </TooltipProvider>
   );
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes <= 0) {
-    return '—';
-  }
-  if (bytes < 1024 * 1024) {
-    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  }
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function statusLabel(asset: ExistingMapAsset): string {
@@ -153,7 +144,10 @@ const typeColumn: ColumnDef<ExistingMapAsset> = {
 const sizeColumn: ColumnDef<ExistingMapAsset> = {
   accessorKey: 'byteSize',
   header: ({column}) => <DataTableColumnHeader column={column} title="Size" />,
-  cell: ({getValue}) => formatBytes(getValue<number>()),
+  cell: ({getValue}) => {
+    const bytes = getValue<number>();
+    return bytes > 0 ? formatFileSize(bytes) : '—';
+  },
 };
 
 const teamColumn: ColumnDef<ExistingMapAsset> = {

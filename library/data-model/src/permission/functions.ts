@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import {COUCH_ADMIN_ROLE_NAME} from '../constants';
-import {roleGrantsAction} from './helpers';
+import {roleGrantsAction, shouldEncodeRoleInToken} from './helpers';
 import {
   Action,
   actionDetails,
@@ -460,6 +460,186 @@ export interface ResourceAssociation {
 }
 
 /**
+ * Ownership fields needed to authorize a map-layer action without a per-asset
+ * role in the token. Team proxy is applied from team roles already in the token.
+ */
+export type MapAssetAccessSubject = {
+  _id: string;
+  createdBy: string;
+  ownedByTeamId?: string;
+};
+
+/**
+ * Virtual resource roles a team (or other) role grants for a resource type.
+ * Used at request time for map layers, which are not exploded into the JWT.
+ */
+export function virtualRolesGrantedBy({
+  role,
+  resourceType,
+}: {
+  role: Role;
+  resourceType: Resource;
+}): Role[] {
+  return roleActions[role].virtualRoles?.get(resourceType) ?? [];
+}
+
+/**
+ * Map-layer roles implied by the token for one asset: `createdBy` is
+ * administrator, and team membership grants the team's virtual MAP_ASSET role.
+ * Does not include global roles — {@link isAuthorized} covers those.
+ */
+export function effectiveMapAssetRoles({
+  decodedToken,
+  asset,
+  actingUserId,
+}: {
+  decodedToken: DecodedTokenPermissions;
+  asset: MapAssetAccessSubject;
+  actingUserId: string;
+}): Role[] {
+  const roles = new Set<Role>();
+  if (asset.createdBy === actingUserId) {
+    roles.add(Role.MAP_ASSET_ADMIN);
+  }
+  if (asset.ownedByTeamId) {
+    for (const resourceRole of decodedToken.resourceRoles) {
+      if (resourceRole.resourceId !== asset.ownedByTeamId) {
+        continue;
+      }
+      for (const granted of virtualRolesGrantedBy({
+        role: resourceRole.role,
+        resourceType: Resource.MAP_ASSET,
+      })) {
+        roles.add(granted);
+      }
+    }
+  }
+  return [...roles];
+}
+
+/**
+ * Whether a team role on `teamId` (already in the token) virtually grants a
+ * map-layer action on every layer owned by that team.
+ */
+export function teamGrantsMapAssetAction({
+  decodedToken,
+  teamId,
+  action,
+}: {
+  decodedToken: DecodedTokenPermissions;
+  teamId: string;
+  action: Action;
+}): boolean {
+  if (globalRolesGrantAction(decodedToken, action)) {
+    return true;
+  }
+  for (const resourceRole of decodedToken.resourceRoles) {
+    if (resourceRole.resourceId !== teamId) {
+      continue;
+    }
+    if (
+      roleGrantsAction({
+        roles: virtualRolesGrantedBy({
+          role: resourceRole.role,
+          resourceType: Resource.MAP_ASSET,
+        }),
+        action,
+      })
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export type MapAssetAuthorizationInput = {
+  decodedToken: DecodedTokenPermissions;
+  asset: MapAssetAccessSubject;
+  actingUserId: string;
+  /** Survey ids linked to this layer. Grants {@link Action.READ_MAP_ASSET} only. */
+  linkedProjectIds?: string[];
+};
+
+/**
+ * Authorize a map-layer action using global roles, team proxy, creator
+ * ownership, and optional survey-link read access.
+ *
+ * Per-asset map-layer roles are not stored on the user or encoded in the token.
+ */
+export function isAuthorizedForMapAsset({
+  decodedToken,
+  action,
+  asset,
+  actingUserId,
+  linkedProjectIds,
+}: MapAssetAuthorizationInput & {action: Action}): boolean {
+  if (isAuthorized({decodedToken, action, resourceId: asset._id})) {
+    return true;
+  }
+  if (
+    roleGrantsAction({
+      roles: effectiveMapAssetRoles({decodedToken, asset, actingUserId}),
+      action,
+    })
+  ) {
+    return true;
+  }
+  if (action !== Action.READ_MAP_ASSET || !linkedProjectIds?.length) {
+    return false;
+  }
+  return linkedProjectIds.some(projectId =>
+    isAuthorized({
+      decodedToken,
+      action: Action.READ_PROJECT_METADATA,
+      resourceId: projectId,
+    })
+  );
+}
+
+function authorizeMapAssetAction(
+  action: Action,
+  input: MapAssetAuthorizationInput
+): boolean {
+  return isAuthorizedForMapAsset({...input, action});
+}
+
+export function isAuthorizedToReadMapAsset(
+  input: MapAssetAuthorizationInput
+): boolean {
+  return authorizeMapAssetAction(Action.READ_MAP_ASSET, input);
+}
+
+export function isAuthorizedToUpdateMapAssetDetails(
+  input: MapAssetAuthorizationInput
+): boolean {
+  return authorizeMapAssetAction(Action.UPDATE_MAP_ASSET_DETAILS, input);
+}
+
+/** Replace the uploaded files and re-process. */
+export function isAuthorizedToReplaceMapAssetFiles(
+  input: MapAssetAuthorizationInput
+): boolean {
+  return authorizeMapAssetAction(Action.UPDATE_MAP_ASSET_FILES, input);
+}
+
+export function isAuthorizedToDeleteMapAsset(
+  input: MapAssetAuthorizationInput
+): boolean {
+  return authorizeMapAssetAction(Action.DELETE_MAP_ASSET, input);
+}
+
+/** True when the user may rename, replace, or delete the layer. */
+export function isAuthorizedToMutateMapAsset(
+  input: MapAssetAuthorizationInput
+): boolean {
+  return (
+    isAuthorizedToUpdateMapAssetDetails(input) ||
+    isAuthorizedToReplaceMapAssetFiles(input) ||
+    isAuthorizedToDeleteMapAsset(input)
+  );
+}
+
+/**
  * Generates virtual resource roles for a user based on their existing roles and
  * resource associations
  *
@@ -521,6 +701,9 @@ export function generateVirtualResourceRoles({
 
         // Add each granted role to the map (unless a higher role already exists)
         for (const grantedRole of grantedRoles) {
+          if (!shouldEncodeRoleInToken(grantedRole)) {
+            continue;
+          }
           const mapKey = `${resourceId}:${grantedRole}`;
 
           // If we haven't seen this resource+role combination yet, add it
@@ -599,6 +782,9 @@ export function necessaryActionToCouchRoleList({
 
   rolesForAction.forEach(role => {
     const details = roleDetails[role];
+    if (!shouldEncodeRoleInToken(role)) {
+      return;
+    }
 
     // For global roles, just use the role name
     if (details.scope === RoleScope.GLOBAL) {

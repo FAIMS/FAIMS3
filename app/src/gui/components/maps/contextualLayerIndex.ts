@@ -48,8 +48,10 @@ export function assignDownloadedLayer<T extends StoredLayerRef>(
 }
 
 /**
- * Drop this survey from assets the server no longer links to it.
- * A file shared with another survey stays.
+ * Drop this survey from assets absent from the ready listing.
+ * That listing omits pending, replacing, and failed assets on purpose: a
+ * withdrawn overlay is not kept as last-good. A file shared with another
+ * survey stays.
  */
 export function retainListedLayers<T extends StoredLayerRef>(
   files: LayerFileIndex<T>,

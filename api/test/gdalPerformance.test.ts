@@ -53,8 +53,9 @@ describe('spatial tool performance args', () => {
     ]);
   });
 
-  it('passes warp threads, cache, -multi, and -wm', () => {
+  it('passes -progress, warp threads, cache, -multi, and -wm', () => {
     expect(gdalWarpPerformanceArgs(tuned)).toEqual([
+      '-progress',
       '--config',
       'GDAL_NUM_THREADS',
       'ALL_CPUS',
@@ -70,6 +71,7 @@ describe('spatial tool performance args', () => {
       'TILED=YES',
     ]);
     expect(gdalConfigArgs(tuned)).toEqual([
+      '-progress',
       '--config',
       'GDAL_NUM_THREADS',
       'ALL_CPUS',

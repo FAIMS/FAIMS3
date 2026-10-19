@@ -43,6 +43,7 @@ import {
 } from './contextualMapLayers';
 import {LayerLocationHint} from './LayerLocationHint';
 import {moveStackedLayer, sortLayersTopFirst} from './layerOrder';
+import {defaultMapControlPalette} from './mapTheme';
 import {
   RECORD_FORM_LAYER_KIND,
   type RecordFormLayer,
@@ -236,7 +237,8 @@ export function ContextualLayersControl({
             zIndex: 2,
             pointerEvents: 'auto',
             touchAction: 'none',
-            bgcolor: 'rgba(15, 23, 42, 0.12)',
+            bgcolor: theme =>
+              theme.palette.mapControl?.scrim ?? defaultMapControlPalette.scrim,
           }}
         />
       )}
@@ -267,10 +269,14 @@ export function ContextualLayersControl({
             pl: 1.25,
             pr: 1,
             minHeight: 40,
-            borderRadius: '12px',
-            bgcolor: 'background.paper',
+            borderRadius: 3,
+            bgcolor: theme =>
+              theme.palette.mapControl?.groupBackground ??
+              defaultMapControlPalette.groupBackground,
             color: 'text.primary',
-            boxShadow: '0 1px 4px rgba(15, 23, 42, 0.28)',
+            boxShadow: theme =>
+              theme.palette.mapControl?.groupShadow ??
+              defaultMapControlPalette.groupShadow,
             border: '1px solid',
             borderColor: open ? 'primary.main' : 'transparent',
           }}
@@ -310,12 +316,16 @@ export function ContextualLayersControl({
                 maxHeight: panelMaxHeight,
                 display: 'flex',
                 flexDirection: 'column',
-                bgcolor: 'background.paper',
-                borderRadius: '14px',
+                bgcolor: theme =>
+                  theme.palette.mapControl?.groupBackground ??
+                  defaultMapControlPalette.groupBackground,
+                borderRadius: 3.5,
                 overflow: 'hidden',
                 border: '1px solid',
                 borderColor: 'divider',
-                boxShadow: '0 12px 32px rgba(15, 23, 42, 0.22)',
+                boxShadow: theme =>
+                  theme.palette.mapControl?.sheetShadow ??
+                  defaultMapControlPalette.sheetShadow,
               }}
             >
               <Stack
@@ -477,25 +487,23 @@ function toPanelLayers(
   ];
 }
 
-/** Phone layouts keep a 2×2; tablet and up spread the controls in one row. */
-const LAYER_CONTROLS_WIDE = '@media (min-width: 600px)';
-
-function layerActionSx(extra: Record<string, unknown> = {}) {
-  const wideExtra = extra[LAYER_CONTROLS_WIDE];
-  const rest = {...extra};
-  delete rest[LAYER_CONTROLS_WIDE];
-  return {
+/** Phone layouts keep a 2×2; tablet and up (`sm`) spread the controls in one row. */
+function layerActionSx(
+  extra: Record<string, unknown> = {},
+  wide: Record<string, unknown> = {}
+) {
+  return (theme: Theme) => ({
     width: 40,
     height: 40,
     p: 0,
     flexShrink: 0,
-    ...rest,
-    [LAYER_CONTROLS_WIDE]: {
+    ...extra,
+    [theme.breakpoints.up('sm')]: {
       width: 36,
       height: 36,
-      ...(wideExtra && typeof wideExtra === 'object' ? wideExtra : {}),
+      ...wide,
     },
-  };
+  });
 }
 
 function layerKindLabel(layer: PanelLayer): string {
@@ -556,7 +564,7 @@ function LayerRow({
       }}
     >
       <Box
-        sx={{
+        sx={theme => ({
           display: 'flex',
           flexWrap: 'nowrap',
           alignItems: 'center',
@@ -565,12 +573,13 @@ function LayerRow({
           pr: 0.5,
           py: 0.75,
           minWidth: 0,
-          bgcolor: theme =>
-            expanded ? alpha(theme.palette.primary.main, 0.06) : 'transparent',
-          [LAYER_CONTROLS_WIDE]: {
+          bgcolor: expanded
+            ? alpha(theme.palette.primary.main, 0.06)
+            : 'transparent',
+          [theme.breakpoints.up('sm')]: {
             py: 0.5,
           },
-        }}
+        })}
       >
         <Stack
           direction="row"
@@ -628,9 +637,9 @@ function LayerRow({
           <Box sx={{flex: 1, minWidth: 0, px: 0.5, overflow: 'hidden'}}>
             <Typography
               noWrap
+              variant="body2"
               sx={{
                 fontWeight: 600,
-                fontSize: 14,
                 lineHeight: 1.3,
                 color: layer.visible ? 'text.primary' : 'text.secondary',
               }}
@@ -664,12 +673,12 @@ function LayerRow({
           </Box>
         </Stack>
         <Box
-          sx={{
+          sx={theme => ({
             display: 'grid',
             gridTemplateColumns: 'repeat(2, 40px)',
             gridTemplateRows: 'repeat(2, 40px)',
             flex: '0 0 auto',
-            [LAYER_CONTROLS_WIDE]: {
+            [theme.breakpoints.up('sm')]: {
               display: 'flex',
               flexDirection: 'row',
               alignItems: 'center',
@@ -677,7 +686,7 @@ function LayerRow({
               gridTemplateColumns: 'unset',
               gridTemplateRows: 'unset',
             },
-          }}
+          })}
         >
           <IconButton
             type="button"
@@ -685,25 +694,27 @@ function LayerRow({
             aria-expanded={expanded}
             aria-label={`${expanded ? 'Hide' : 'Show'} style for ${layer.name}`}
             onClick={onToggleExpanded}
-            sx={layerActionSx({
-              gridColumn: 1,
-              gridRow: 1,
-              [LAYER_CONTROLS_WIDE]: {
+            sx={layerActionSx(
+              {
+                gridColumn: 1,
+                gridRow: 1,
+                color: expanded ? 'primary.main' : 'text.secondary',
+                bgcolor: (theme: Theme) =>
+                  expanded
+                    ? alpha(theme.palette.primary.main, 0.16)
+                    : 'transparent',
+                border: '1px solid',
+                borderColor: expanded ? 'primary.main' : 'transparent',
+                '&:hover': {
+                  bgcolor: (theme: Theme) =>
+                    alpha(theme.palette.primary.main, expanded ? 0.22 : 0.08),
+                },
+              },
+              {
                 gridColumn: 'auto',
                 gridRow: 'auto',
-              },
-              color: expanded ? 'primary.main' : 'text.secondary',
-              bgcolor: (theme: Theme) =>
-                expanded
-                  ? alpha(theme.palette.primary.main, 0.16)
-                  : 'transparent',
-              border: '1px solid',
-              borderColor: expanded ? 'primary.main' : 'transparent',
-              '&:hover': {
-                bgcolor: (theme: Theme) =>
-                  alpha(theme.palette.primary.main, expanded ? 0.22 : 0.08),
-              },
-            })}
+              }
+            )}
           >
             <SettingsOutlinedIcon sx={{fontSize: 18}} />
           </IconButton>
@@ -713,25 +724,27 @@ function LayerRow({
               size="small"
               aria-label={`Pan ${layer.name} into view`}
               onClick={onPanIntoView}
-              sx={layerActionSx({
-                gridColumn: 2,
-                gridRow: 1,
-                [LAYER_CONTROLS_WIDE]: {
+              sx={layerActionSx(
+                {
+                  gridColumn: 2,
+                  gridRow: 1,
+                },
+                {
                   gridColumn: 'auto',
                   gridRow: 'auto',
-                },
-              })}
+                }
+              )}
             >
               <CenterFocusStrongIcon sx={{fontSize: 18}} />
             </IconButton>
           ) : (
             <Box
               aria-hidden
-              sx={{
+              sx={theme => ({
                 gridColumn: 2,
                 gridRow: 1,
-                [LAYER_CONTROLS_WIDE]: {display: 'none'},
-              }}
+                [theme.breakpoints.up('sm')]: {display: 'none'},
+              })}
             />
           )}
           <IconButton
@@ -740,14 +753,16 @@ function LayerRow({
             disabled={raiseDisabled}
             aria-label={`Raise ${layer.name}`}
             onClick={() => onMove('up')}
-            sx={layerActionSx({
-              gridColumn: 1,
-              gridRow: 2,
-              [LAYER_CONTROLS_WIDE]: {
+            sx={layerActionSx(
+              {
+                gridColumn: 1,
+                gridRow: 2,
+              },
+              {
                 gridColumn: 'auto',
                 gridRow: 'auto',
-              },
-            })}
+              }
+            )}
           >
             <ArrowUpwardIcon fontSize="small" />
           </IconButton>
@@ -757,14 +772,16 @@ function LayerRow({
             disabled={lowerDisabled}
             aria-label={`Lower ${layer.name}`}
             onClick={() => onMove('down')}
-            sx={layerActionSx({
-              gridColumn: 2,
-              gridRow: 2,
-              [LAYER_CONTROLS_WIDE]: {
+            sx={layerActionSx(
+              {
+                gridColumn: 2,
+                gridRow: 2,
+              },
+              {
                 gridColumn: 'auto',
                 gridRow: 'auto',
-              },
-            })}
+              }
+            )}
           >
             <ArrowDownwardIcon fontSize="small" />
           </IconButton>
@@ -944,7 +961,7 @@ function ColorSwatch({
             width: 40,
             height: 40,
             flexShrink: 0,
-            borderRadius: '10px',
+            borderRadius: 2.5,
             border: '1px solid',
             borderColor: 'divider',
             backgroundColor: hex,

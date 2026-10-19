@@ -6,12 +6,19 @@
 
 import {
   Action,
+  DecodedTokenPermissions,
   GetMapAssetDownloadUrlResponse,
   GetMapAssetListResponse,
   GetMapAssetResponse,
   IdInputSchema,
   INPUT_LIMITS,
+  globalRolesGrantAction,
+  isAuthorizedToDeleteMapAsset,
+  isAuthorizedToReadMapAsset,
+  isAuthorizedToReplaceMapAssetFiles,
+  isAuthorizedToUpdateMapAssetDetails,
   mapAssetUploadTooLargeMessage,
+  type MapAssetAuthorizationInput,
   MapAssetDetailsSchema,
   PostMapAssetLinkInputSchema,
 } from '@faims3/data-model';
@@ -27,9 +34,10 @@ import {
   deleteMapAsset,
   getMapAsset,
   linkMapAsset,
+  listAllAssets,
   listAssetsByCreator,
+  listAssetsByProject,
   listAssetsByTeam,
-  listLinkAssetIds,
   listLinkProjectIds,
   presignNormalizedAttachment,
   replaceMapAssetFiles,
@@ -199,41 +207,48 @@ function requireUser(req: express.Request) {
   return req.user;
 }
 
+function tokenOf(user: Express.User): DecodedTokenPermissions {
+  return {
+    globalRoles: user.globalRoles,
+    resourceRoles: user.resourceRoles,
+  };
+}
+
 function canUpload(user: Express.User, teamId?: string): boolean {
   if (teamId) {
     return userCanDo({
       user,
-      action: Action.CREATE_PROJECT_IN_TEAM,
+      action: Action.CREATE_MAP_ASSET_IN_TEAM,
       resourceId: teamId,
     });
   }
-  return userCanDo({user, action: Action.CREATE_PROJECT});
+  return userCanDo({user, action: Action.CREATE_MAP_ASSET});
+}
+
+function authorizeAsset(
+  user: Express.User,
+  asset: {createdBy: string; ownedByTeamId?: string; _id: string},
+  check: (input: MapAssetAuthorizationInput) => boolean,
+  linkedProjectIds?: string[]
+): boolean {
+  return check({
+    decodedToken: tokenOf(user),
+    asset,
+    actingUserId: user.user_id,
+    linkedProjectIds,
+  });
 }
 
 async function canReadAsset(
   user: Express.User,
   asset: {createdBy: string; ownedByTeamId?: string; _id: string}
 ): Promise<boolean> {
-  if (!asset.ownedByTeamId && asset.createdBy === user.user_id) {
-    return true;
-  }
-  if (
-    asset.ownedByTeamId &&
-    userCanDo({
-      user,
-      action: Action.VIEW_TEAM_DETAILS,
-      resourceId: asset.ownedByTeamId,
-    })
-  ) {
-    return true;
-  }
-  const projectIds = await listLinkProjectIds(asset._id);
-  return projectIds.some(projectId =>
-    userCanDo({
-      user,
-      action: Action.READ_PROJECT_METADATA,
-      resourceId: projectId,
-    })
+  const linkedProjectIds = await listLinkProjectIds(asset._id);
+  return authorizeAsset(
+    user,
+    asset,
+    isAuthorizedToReadMapAsset,
+    linkedProjectIds
   );
 }
 
@@ -242,20 +257,6 @@ function canAdministerProject(user: Express.User, projectId: string): boolean {
     user,
     action: Action.UPDATE_PROJECT_DETAILS,
     resourceId: projectId,
-  });
-}
-
-function canDelete(
-  user: Express.User,
-  asset: {createdBy: string; ownedByTeamId?: string}
-): boolean {
-  if (!asset.ownedByTeamId) {
-    return asset.createdBy === user.user_id;
-  }
-  return userCanDo({
-    user,
-    action: Action.UPDATE_TEAM_DETAILS,
-    resourceId: asset.ownedByTeamId,
   });
 }
 
@@ -330,6 +331,9 @@ api.get(
   }),
   async (req, res: Response<GetMapAssetListResponse>) => {
     const user = requireUser(req);
+    if (!userCanDo({user, action: Action.LIST_MAP_ASSETS})) {
+      throw new Exceptions.UnauthorizedException();
+    }
     const {teamId, projectId} = req.query;
 
     if (projectId) {
@@ -342,15 +346,12 @@ api.get(
       ) {
         throw new Exceptions.UnauthorizedException();
       }
-      const ids = await listLinkAssetIds(projectId);
-      const assets = [];
-      for (const id of ids) {
-        const asset = await getMapAsset(id);
-        if (await canReadAsset(user, asset)) {
-          assets.push(asset);
-        }
-      }
-      res.json({assets});
+      const linked = await listAssetsByProject(projectId);
+      res.json({
+        assets: linked.filter(asset =>
+          authorizeAsset(user, asset, isAuthorizedToReadMapAsset, [projectId])
+        ),
+      });
       return;
     }
 
@@ -364,7 +365,17 @@ api.get(
       ) {
         throw new Exceptions.UnauthorizedException();
       }
-      res.json({assets: await listAssetsByTeam(teamId)});
+      const teamAssets = await listAssetsByTeam(teamId);
+      res.json({
+        assets: teamAssets.filter(asset =>
+          authorizeAsset(user, asset, isAuthorizedToReadMapAsset)
+        ),
+      });
+      return;
+    }
+
+    if (globalRolesGrantAction(tokenOf(user), Action.READ_MAP_ASSET)) {
+      res.json({assets: await listAllAssets()});
       return;
     }
 
@@ -382,7 +393,9 @@ api.get(
     ).flat();
     const byId = new Map<string, (typeof own)[number]>();
     for (const asset of [...own, ...teamAssets]) {
-      byId.set(asset._id, asset);
+      if (authorizeAsset(user, asset, isAuthorizedToReadMapAsset)) {
+        byId.set(asset._id, asset);
+      }
     }
     res.json({assets: [...byId.values()]});
   }
@@ -510,7 +523,7 @@ api.patch(
   async (req, res: Response<GetMapAssetResponse>) => {
     const user = requireUser(req);
     const asset = await getMapAsset(req.params.id);
-    if (!canDelete(user, asset)) {
+    if (!authorizeAsset(user, asset, isAuthorizedToUpdateMapAssetDetails)) {
       throw new Exceptions.UnauthorizedException();
     }
     const updated = await updateMapAssetDetails({
@@ -530,10 +543,7 @@ api.put(
     try {
       const user = requireUser(req);
       const asset = await getMapAsset(req.params.id);
-      if (
-        !(await canReadAsset(user, asset)) ||
-        !canUpload(user, asset.ownedByTeamId)
-      ) {
+      if (!authorizeAsset(user, asset, isAuthorizedToReplaceMapAssetFiles)) {
         throw new Exceptions.UnauthorizedException();
       }
       const files = assertFiles(filesFromRequest(req));
@@ -597,7 +607,7 @@ api.delete(
   async (req, res) => {
     const user = requireUser(req);
     const asset = await getMapAsset(req.params.id);
-    if (!canDelete(user, asset)) {
+    if (!authorizeAsset(user, asset, isAuthorizedToDeleteMapAsset)) {
       throw new Exceptions.UnauthorizedException();
     }
     await deleteMapAsset(asset._id);

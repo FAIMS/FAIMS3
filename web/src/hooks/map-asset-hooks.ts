@@ -127,13 +127,15 @@ export async function fetchMapAssets({
 export function useMapAssets({
   user,
   projectId,
+  enabled = true,
 }: {
   user: User | null;
   projectId?: string;
+  enabled?: boolean;
 }) {
   return useQuery({
     queryKey: mapAssetQueryKey(user, projectId),
-    enabled: !!user,
+    enabled: !!user && enabled,
     queryFn: () => fetchMapAssets({user: user as User, projectId}),
     refetchInterval: query => {
       const assets = query.state.data?.assets ?? [];

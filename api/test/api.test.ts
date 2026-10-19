@@ -143,6 +143,8 @@ describe('API tests', () => {
         expect(response.body[0]).not.toHaveProperty('is_admin');
         expect(response.body[0].uiSpecProperties.hash).toHaveLength(64);
         expect(response.body[0].uiSpecProperties.schemaVersion).toBeTruthy();
+        expect(response.body[0].contextualLayers).toEqual([]);
+        expect(response.body[0].contextualLayersHash).toHaveLength(64);
       });
   });
 
@@ -181,6 +183,8 @@ describe('API tests', () => {
     expect(item).not.toHaveProperty('is_admin');
     expect(item.uiSpecProperties.hash).toHaveLength(64);
     expect(item.uiSpecProperties.schemaVersion).toBeTruthy();
+    expect(item.contextualLayers).toEqual([]);
+    expect(item.contextualLayersHash).toHaveLength(64);
   });
 
   it('writes uiSpecProperties on create/update uiSpec and not on metadata PUT', async () => {
@@ -688,6 +692,8 @@ describe('API tests', () => {
       .expect(response => {
         expect(response.body.name).toBe('test-notebook');
         expect(response.body.uiSpecification).toBeTruthy();
+        expect(response.body.contextualLayers).toEqual([]);
+        expect(response.body.contextualLayersHash).toHaveLength(64);
       });
   });
 

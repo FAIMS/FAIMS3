@@ -3,13 +3,19 @@ import {MapLayerPreview} from '@/components/maps/MapLayerPreview';
 import {Skeleton} from '@/components/ui/skeleton';
 import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useMapAsset} from '@/hooks/map-asset-hooks';
+import {STATIC_MAP_LAYER_PREVIEW_HEIGHT} from '@faims3/forms';
 
 export function MapLayerPreviewTab({assetId}: {assetId: string}) {
   const user = useRequiredUser();
   const {data, isPending, isError} = useMapAsset({user, assetId});
 
   if (isPending) {
-    return <Skeleton className="h-[clamp(380px,55vh,650px)] w-full" />;
+    return (
+      <Skeleton
+        className="w-full"
+        style={{height: STATIC_MAP_LAYER_PREVIEW_HEIGHT}}
+      />
+    );
   }
   if (isError || !data) {
     return (

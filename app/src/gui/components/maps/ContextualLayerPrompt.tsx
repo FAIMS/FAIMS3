@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
+  formatFileSize,
   mapAssetKindLabel,
   type ContextualLayerListing,
 } from '@faims3/data-model';
@@ -41,13 +42,6 @@ import {
   notifyContextualLayersChanged,
   type StoredContextualLayerSummary,
 } from './contextualLayerStore';
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024 * 1024) {
-    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  }
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function kindLabel(kind: ContextualLayerListing['kind']): string {
   return mapAssetKindLabel(kind);
@@ -137,7 +131,7 @@ function LayerChoice({
             data-testid={`map-layer-size-${layer.id}`}
             sx={{fontWeight: 700, whiteSpace: 'nowrap'}}
           >
-            {formatBytes(layer.byteSize)}
+            {formatFileSize(layer.byteSize)}
           </Typography>
         </Stack>
       }

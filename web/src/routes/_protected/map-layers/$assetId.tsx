@@ -5,9 +5,10 @@ import {MapLayerLinkedSurveys} from '@/components/tabs/map-layers/linked-surveys
 import {MapLayerPreviewTab} from '@/components/tabs/map-layers/preview';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {config} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useMapAsset} from '@/hooks/map-asset-hooks';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
+import {canMutateMapAsset} from '@/lib/map-layer-permissions';
 import {createFileRoute, useRouter} from '@tanstack/react-router';
 import {useMemo} from 'react';
 
@@ -27,7 +28,7 @@ export const Route = createFileRoute('/_protected/map-layers/$assetId')({
 
 function MapLayerPage() {
   const {assetId} = Route.useParams();
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const {data, isLoading} = useMapAsset({user, assetId});
   const pathname = useRouter().state.location.pathname;
   const paths = useMemo(
@@ -37,19 +38,26 @@ function MapLayerPage() {
     ],
     [pathname, data?.name, assetId]
   );
+  const visibleTabs = useMemo(
+    () =>
+      data && canMutateMapAsset(user, data)
+        ? tabs
+        : tabs.filter(tab => tab.name !== 'Actions'),
+    [data, user]
+  );
 
   useBreadcrumbUpdate({isLoading, paths});
 
   return (
-    <Tabs defaultValue={tabs[0].name}>
+    <Tabs defaultValue={visibleTabs[0].name}>
       <TabsList>
-        {tabs.map(({name}) => (
+        {visibleTabs.map(({name}) => (
           <TabsTrigger key={name} value={name}>
             {name}
           </TabsTrigger>
         ))}
       </TabsList>
-      {tabs.map(({name, Component}) => (
+      {visibleTabs.map(({name, Component}) => (
         <TabsContent key={name} value={name}>
           <Component assetId={assetId} />
         </TabsContent>

@@ -57,9 +57,10 @@ export function spatialToolProcessEnv(
   return env;
 }
 
-/** `--config` pairs applied to raster GDAL commands. */
+/** Flags applied to raster GDAL commands (`-progress` plus `--config` pairs). */
 export function gdalConfigArgs(perf: SpatialToolPerformance): string[] {
   return [
+    '-progress',
     '--config',
     'GDAL_NUM_THREADS',
     perf.gdalNumThreads,

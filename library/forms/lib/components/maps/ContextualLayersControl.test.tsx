@@ -20,6 +20,7 @@ import {
   type BaseMapPanelLayer,
 } from './baseMapLayers';
 import {ContextualLayersControl} from './ContextualLayersControl';
+import {MapControlThemeProvider} from './mapTheme';
 import {
   ContextualMapLayersContext,
   type ContextualMapLayer,
@@ -99,19 +100,21 @@ function renderControl(
   } as unknown as Map;
   render(
     <ThemeProvider theme={theme}>
-      <ContextualMapLayersContext.Provider
-        value={{layers, updateLayer, moveLayer, resetLayers}}
-      >
-        <ContextualLayersControl
-          map={map}
-          baseLayers={baseLayers}
-          onUpdateBaseLayer={onUpdateBaseLayer}
-          onResetBaseLayers={onResetBaseLayers}
-          recordLayers={recordLayers}
-          onUpdateRecordLayer={onUpdateRecordLayer}
-          onResetRecordLayers={onResetRecordLayers}
-        />
-      </ContextualMapLayersContext.Provider>
+      <MapControlThemeProvider>
+        <ContextualMapLayersContext.Provider
+          value={{layers, updateLayer, moveLayer, resetLayers}}
+        >
+          <ContextualLayersControl
+            map={map}
+            baseLayers={baseLayers}
+            onUpdateBaseLayer={onUpdateBaseLayer}
+            onResetBaseLayers={onResetBaseLayers}
+            recordLayers={recordLayers}
+            onUpdateRecordLayer={onUpdateRecordLayer}
+            onResetRecordLayers={onResetRecordLayers}
+          />
+        </ContextualMapLayersContext.Provider>
+      </MapControlThemeProvider>
     </ThemeProvider>
   );
   return {

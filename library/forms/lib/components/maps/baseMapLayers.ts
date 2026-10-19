@@ -7,17 +7,23 @@
 
 import {contextualLayerZIndex} from './layerStack';
 
+/** Stable id for the streets base layer in prefs and the layers panel. */
 export const BASE_MAP_VECTOR_ID = '__faims-basemap-vector';
+/** Stable id for the satellite base layer in prefs and the layers panel. */
 export const BASE_MAP_SATELLITE_ID = '__faims-basemap-satellite';
 
+/** Panel label for the streets base layer. */
 export const BASE_MAP_VECTOR_NAME = 'Streets';
+/** Panel label for the satellite base layer. */
 export const BASE_MAP_SATELLITE_NAME = 'Satellite';
 
 const BASE_MAP_PREFS_KEY = 'map-base-layer-prefs';
 /** Previous exclusive streets/satellite toggle. */
 const LEGACY_LAYER_PREFERENCE_KEY = 'map-layer-preference';
 
+/** Default stack value for streets (under satellite). */
 export const DEFAULT_VECTOR_Z_INDEX = 0;
+/** Default stack value for satellite (above streets). */
 export const DEFAULT_SATELLITE_Z_INDEX = 1;
 
 export type BaseMapLayerState = {
@@ -69,6 +75,7 @@ function layerState(
   };
 }
 
+/** Streets visible unless `preferSatellite` is set (legacy toggle). */
 export function defaultBaseMapLayersState(
   preferSatellite = false
 ): BaseMapLayersState {
@@ -86,6 +93,7 @@ export function defaultBaseMapLayersState(
   };
 }
 
+/** Clamp a stored prefs object to a complete streets/satellite state. */
 export function normalizeBaseMapLayersState(
   value: unknown
 ): BaseMapLayersState {
@@ -108,6 +116,7 @@ function readLegacySatellitePreference(): boolean {
   }
 }
 
+/** Read device-wide base-map prefs, falling back to the legacy toggle. */
 export function readBaseMapLayersState(): BaseMapLayersState {
   try {
     const stored = localStorage.getItem(BASE_MAP_PREFS_KEY);
@@ -120,6 +129,7 @@ export function readBaseMapLayersState(): BaseMapLayersState {
   return defaultBaseMapLayersState(readLegacySatellitePreference());
 }
 
+/** Persist device-wide base-map prefs. */
 export function writeBaseMapLayersState(state: BaseMapLayersState): void {
   try {
     localStorage.setItem(
@@ -131,6 +141,7 @@ export function writeBaseMapLayersState(state: BaseMapLayersState): void {
   }
 }
 
+/** Apply a visibility, opacity, or stack patch to one base layer. */
 export function applyBaseMapLayerPatch(
   state: BaseMapLayersState,
   id: string,
@@ -146,6 +157,7 @@ export function applyBaseMapLayerPatch(
   };
 }
 
+/** Push stored prefs onto an OpenLayers base layer. */
 export function applyBaseMapLayerPaint(
   layer: {
     setVisible: (visible: boolean) => void;

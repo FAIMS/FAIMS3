@@ -8,11 +8,34 @@ import {
   useMapAssets,
 } from '@/hooks/map-asset-hooks';
 import {Action} from '@faims3/data-model';
+import type {ReactNode} from 'react';
 import {toast} from 'sonner';
 
 type ProjectMapLayersProps = {
   projectId: string;
 };
+
+function LayerRow({
+  name,
+  detail,
+  action,
+}: {
+  name: string;
+  detail?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-md border p-3">
+      <div className="min-w-0 flex-1">
+        <div className="font-medium break-words">{name}</div>
+        {detail ? (
+          <div className="text-sm text-muted-foreground">{detail}</div>
+        ) : null}
+      </div>
+      {action ? <div className="shrink-0">{action}</div> : null}
+    </div>
+  );
+}
 
 /** Survey tab: link library layers onto this notebook. */
 export default function ProjectMapLayers({projectId}: ProjectMapLayersProps) {
@@ -22,7 +45,7 @@ export default function ProjectMapLayers({projectId}: ProjectMapLayersProps) {
     resourceId: projectId,
   });
   const linked = useMapAssets({user, projectId});
-  const library = useMapAssets({user});
+  const library = useMapAssets({user, enabled: canLink});
 
   const linkedIds = new Set(
     (linked.data?.assets ?? []).map(asset => asset._id)
@@ -53,64 +76,65 @@ export default function ProjectMapLayers({projectId}: ProjectMapLayersProps) {
       </div>
       <div className="flex flex-col gap-2">
         {(linked.data?.assets ?? []).map(asset => (
-          <div
+          <LayerRow
             key={asset._id}
-            className="flex items-center justify-between rounded-md border p-3"
-          >
-            <div>
-              <div className="font-medium">{asset.name}</div>
-              <div className="text-sm text-muted-foreground">
-                {formatAssetStatus(asset)}
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              disabled={!canLink}
-              onClick={() =>
-                void run(() =>
-                  unlinkMapAsset({user, assetId: asset._id, projectId})
-                )
-              }
-            >
-              Remove
-            </Button>
-          </div>
+            name={asset.name}
+            detail={formatAssetStatus(asset)}
+            action={
+              canLink ? (
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    void run(() =>
+                      unlinkMapAsset({user, assetId: asset._id, projectId})
+                    )
+                  }
+                >
+                  Remove
+                </Button>
+              ) : undefined
+            }
+          />
         ))}
         {linked.isSuccess && linkedIds.size === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p
+            className="text-sm text-muted-foreground"
+            data-testid="web-project-map-layers-empty"
+          >
             No layers linked to this survey.
           </p>
         ) : null}
       </div>
 
-      <div>
-        <h2 className="text-lg font-semibold">Add a layer</h2>
-        <div className="mt-2 flex flex-col gap-2">
-          {available.map(asset => (
-            <div
-              key={asset._id}
-              className="flex items-center justify-between rounded-md border p-3"
-            >
-              <div className="font-medium">{asset.name}</div>
-              <Button
-                disabled={!canLink}
-                onClick={() =>
-                  void run(() =>
-                    linkMapAsset({user, assetId: asset._id, projectId})
-                  )
+      {canLink ? (
+        <div>
+          <h2 className="text-lg font-semibold">Add a layer</h2>
+          <div className="mt-2 flex flex-col gap-2">
+            {available.map(asset => (
+              <LayerRow
+                key={asset._id}
+                name={asset.name}
+                action={
+                  <Button
+                    onClick={() =>
+                      void run(() =>
+                        linkMapAsset({user, assetId: asset._id, projectId})
+                      )
+                    }
+                  >
+                    Add to survey
+                  </Button>
                 }
-              >
-                Add to survey
-              </Button>
-            </div>
-          ))}
-          {library.isSuccess && available.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Ready layers from your library appear here.
-            </p>
-          ) : null}
+              />
+            ))}
+            {library.isSuccess && available.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Ready layers from your library appear here.
+              </p>
+            ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

@@ -6,6 +6,7 @@ const EARTH_RADIUS_M = 6_371_000;
 /** Smallest distance we bother naming when the point is outside the extent. */
 const MIN_DISTANCE_M = 5;
 
+/** Device is on the layer, or how far and which way it sits from the extent. */
 export type LayerLocationRelation =
   | {kind: 'inside'}
   | {
@@ -20,6 +21,7 @@ export type LayerLocationRelation =
 /** One step finer than the 8-point compass: N, NNE, NE, ENE, … */
 export const BEARING_STEP_DEGREES = 22.5;
 
+/** 16-point compass names, clockwise from north. */
 export const CARDINAL_DIRECTIONS = [
   'north',
   'north-northeast',
@@ -40,6 +42,7 @@ export const CARDINAL_DIRECTIONS = [
 ] as const;
 export type CardinalDirection = (typeof CARDINAL_DIRECTIONS)[number];
 
+/** True when the lon/lat sits inside or on the extent. */
 export function pointOverlapsExtent(
   longitude: number,
   latitude: number,
@@ -85,6 +88,7 @@ export function formatLayerDistance(meters: number): string {
   return `${rounded / 1000}km`;
 }
 
+/** Closest lon/lat on the extent rectangle to the point. */
 export function nearestPointOnExtent(
   longitude: number,
   latitude: number,
@@ -114,6 +118,7 @@ export function initialBearingDegrees(
   return (toDegrees(Math.atan2(y, x)) + 360) % 360;
 }
 
+/** Snap a bearing to the nearest 16-point compass step. */
 export function snapBearingDegrees(degrees: number): number {
   const normalized = ((degrees % 360) + 360) % 360;
   const stepped =
@@ -121,6 +126,7 @@ export function snapBearingDegrees(degrees: number): number {
   return stepped % 360;
 }
 
+/** Compass name for a bearing in degrees. */
 export function cardinalFromBearing(degrees: number): CardinalDirection {
   const index =
     Math.round(snapBearingDegrees(degrees) / BEARING_STEP_DEGREES) %
@@ -128,6 +134,7 @@ export function cardinalFromBearing(degrees: number): CardinalDirection {
   return CARDINAL_DIRECTIONS[index]!;
 }
 
+/** Whether the device is on the layer, or how far and which way. */
 export function layerLocationRelation(
   longitude: number,
   latitude: number,

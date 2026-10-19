@@ -20,7 +20,7 @@ Your main entry point for administration is the {{Dashboard}} application.
 ## Users, Teams and {{Notebooks}}
 
 Users in the system can be grouped into _Teams_ or they can be standalone. Teams are
-able to share some resources such as {{notebooks}} or {{notebook}} templates and can
+able to share some resources such as {{notebooks}}, {{notebook}} templates, and map layers, and can
 collaborate on data collection and analysis.
 
 {{Notebooks}} are used to collect data using a set of forms. Users will create

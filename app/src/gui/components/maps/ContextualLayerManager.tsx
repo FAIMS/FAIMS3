@@ -4,6 +4,7 @@
  */
 
 import {
+  formatFileSize,
   mapAssetKindLabel,
   type ContextualLayerListing,
 } from '@faims3/data-model';
@@ -18,9 +19,6 @@ import {
   Alert,
   Box,
   Button,
-  Card,
-  CardActionArea,
-  CardContent,
   Dialog,
   DialogActions,
   DialogContent,
@@ -37,6 +35,7 @@ import {
 } from '../../../context/slices/authSlice';
 import {useAppSelector} from '../../../context/store';
 import BackButton from '../ui/BackButton';
+import {OutlinedListingCard} from '../ui/outlined-listing-card';
 import {
   CONTEXTUAL_LAYERS_CHANGED_EVENT,
   downloadContextualLayers,
@@ -52,13 +51,6 @@ type SurveyLayer = {
   projectName: string;
   layer: ContextualLayerListing;
 };
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024 * 1024) {
-    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  }
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function kindLabel(kind: ContextualLayerListing['kind']): string {
   return mapAssetKindLabel(kind);
@@ -280,69 +272,23 @@ export function ContextualLayerManager() {
                 projectId => projectNameById.get(projectId) ?? projectId
               );
               return (
-                <Card key={file.assetId} variant="outlined">
-                  <CardActionArea
-                    onClick={() =>
-                      navigate(
-                        ROUTES.getOfflineMapLayerPreviewRoute({
-                          assetId: file.assetId,
-                        })
-                      )
-                    }
-                  >
-                    <CardContent sx={{py: 1.5}}>
-                      <Stack
-                        direction="row"
-                        spacing={1.5}
-                        sx={{
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <Stack spacing={0.5} sx={{flex: 1, minWidth: 0}}>
-                          <Typography
-                            variant="h5"
-                            sx={{fontWeight: 'bold', overflowWrap: 'anywhere'}}
-                          >
-                            {file.name}
-                          </Typography>
-                          <Stack
-                            direction="row"
-                            sx={{alignItems: 'center', minWidth: 0}}
-                          >
-                            <Typography variant="body2" color="text.secondary">
-                              {kindLabel(file.kind)} ·{' '}
-                              {formatBytes(file.byteSize)}
-                            </Typography>
-                            <LayerLocationHint
-                              extent={file.extent4326}
-                              location={location}
-                            />
-                          </Stack>
-                          <Typography variant="body2" color="text.secondary">
-                            {surveyNames.length > 0
-                              ? `Used by ${surveyNames.join(', ')}`
-                              : 'Not used by an activated survey'}
-                          </Typography>
-                          {updates.length > 0 ? (
-                            <Typography variant="body2" color="text.secondary">
-                              A newer file is available.
-                            </Typography>
-                          ) : null}
-                          {busyKey === `update:${file.assetId}` ? (
-                            <Box sx={{mt: 1}}>
-                              <ProgressBar
-                                completion={downloadCompletion ?? 0}
-                              />
-                            </Box>
-                          ) : null}
-                        </Stack>
-                        <ArrowForwardIos color="action" />
-                      </Stack>
-                    </CardContent>
-                  </CardActionArea>
-                  <CardContent sx={{pt: 0, pb: 1.5}}>
-                    <Stack direction="row" spacing={1}>
+                <OutlinedListingCard
+                  key={file.assetId}
+                  onClick={() =>
+                    navigate(
+                      ROUTES.getOfflineMapLayerPreviewRoute({
+                        assetId: file.assetId,
+                      })
+                    )
+                  }
+                  trailing={<ArrowForwardIos color="action" />}
+                  footer={
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      useFlexGap
+                      sx={{flexWrap: 'wrap'}}
+                    >
                       {updates.length > 0 ? (
                         <Button
                           variant="contained"
@@ -369,8 +315,42 @@ export function ContextualLayerManager() {
                         Remove
                       </Button>
                     </Stack>
-                  </CardContent>
-                </Card>
+                  }
+                >
+                  <Typography
+                    variant="h5"
+                    sx={{fontWeight: 'bold', overflowWrap: 'anywhere'}}
+                  >
+                    {file.name}
+                  </Typography>
+                  <Stack
+                    direction="row"
+                    sx={{alignItems: 'center', minWidth: 0, flexWrap: 'wrap'}}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      {kindLabel(file.kind)} · {formatFileSize(file.byteSize)}
+                    </Typography>
+                    <LayerLocationHint
+                      extent={file.extent4326}
+                      location={location}
+                    />
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    {surveyNames.length > 0
+                      ? `Used by ${surveyNames.join(', ')}`
+                      : 'Not used by an activated survey'}
+                  </Typography>
+                  {updates.length > 0 ? (
+                    <Typography variant="body2" color="text.secondary">
+                      A newer file is available.
+                    </Typography>
+                  ) : null}
+                  {busyKey === `update:${file.assetId}` ? (
+                    <Box sx={{mt: 1}}>
+                      <ProgressBar completion={downloadCompletion ?? 0} />
+                    </Box>
+                  ) : null}
+                </OutlinedListingCard>
               );
             })
           )}
@@ -384,13 +364,32 @@ export function ContextualLayerManager() {
             </Typography>
           ) : (
             missingBySurvey.map(group => (
-              <Stack key={group.rows[0].projectId} spacing={1}>
+              <Stack
+                key={group.rows[0].projectId}
+                spacing={1}
+                sx={{minWidth: 0}}
+              >
                 <Stack
                   direction="row"
-                  spacing={2}
-                  sx={{justifyContent: 'space-between', alignItems: 'center'}}
+                  spacing={1}
+                  useFlexGap
+                  sx={{
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    minWidth: 0,
+                  }}
                 >
-                  <Typography variant="h6">{group.projectName}</Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      flex: '1 1 12rem',
+                      minWidth: 0,
+                      overflowWrap: 'anywhere',
+                    }}
+                  >
+                    {group.projectName}
+                  </Typography>
                   <Button
                     variant="contained"
                     disabled={busyKey !== undefined}
@@ -400,6 +399,7 @@ export function ContextualLayerManager() {
                         `all:${group.rows[0].projectId}`
                       )
                     }
+                    sx={{flexShrink: 0}}
                   >
                     {downloadLabel(
                       busyKey === `all:${group.rows[0].projectId}`,
@@ -414,64 +414,48 @@ export function ContextualLayerManager() {
                   const alreadyStored = storedById.has(row.layer.id);
                   const key = `${row.projectId}:${row.layer.id}`;
                   return (
-                    <Card key={key} variant="outlined">
-                      <CardContent sx={{py: 1.5}}>
-                        <Stack
-                          direction="row"
-                          spacing={1.5}
-                          sx={{
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
+                    <OutlinedListingCard
+                      key={key}
+                      trailing={
+                        <Button
+                          variant="contained"
+                          size="small"
+                          disabled={busyKey !== undefined}
+                          onClick={() => void downloadRows([row], key)}
                         >
-                          <Stack spacing={0.5} sx={{flex: 1, minWidth: 0}}>
-                            <Typography
-                              variant="h5"
-                              sx={{
-                                fontWeight: 'bold',
-                                overflowWrap: 'anywhere',
-                              }}
-                            >
-                              {row.layer.name}
-                            </Typography>
-                            <Stack
-                              direction="row"
-                              sx={{alignItems: 'center', flexWrap: 'wrap'}}
-                            >
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                {kindLabel(row.layer.kind)} ·{' '}
-                                {formatBytes(row.layer.byteSize)}
-                                {alreadyStored
-                                  ? ' · Already on this device'
-                                  : ''}
-                              </Typography>
-                              <LayerLocationHint
-                                extent={row.layer.extent}
-                                location={location}
-                              />
-                            </Stack>
-                            {busyKey === key ? (
-                              <Box sx={{mt: 1}}>
-                                <ProgressBar
-                                  completion={downloadCompletion ?? 0}
-                                />
-                              </Box>
-                            ) : null}
-                          </Stack>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            disabled={busyKey !== undefined}
-                            onClick={() => void downloadRows([row], key)}
-                          >
-                            {downloadLabel(busyKey === key, 'Download')}
-                          </Button>
-                        </Stack>
-                      </CardContent>
-                    </Card>
+                          {downloadLabel(busyKey === key, 'Download')}
+                        </Button>
+                      }
+                    >
+                      <Typography
+                        variant="h5"
+                        sx={{
+                          fontWeight: 'bold',
+                          overflowWrap: 'anywhere',
+                        }}
+                      >
+                        {row.layer.name}
+                      </Typography>
+                      <Stack
+                        direction="row"
+                        sx={{alignItems: 'center', flexWrap: 'wrap'}}
+                      >
+                        <Typography variant="body2" color="text.secondary">
+                          {kindLabel(row.layer.kind)} ·{' '}
+                          {formatFileSize(row.layer.byteSize)}
+                          {alreadyStored ? ' · Already on this device' : ''}
+                        </Typography>
+                        <LayerLocationHint
+                          extent={row.layer.extent}
+                          location={location}
+                        />
+                      </Stack>
+                      {busyKey === key ? (
+                        <Box sx={{mt: 1}}>
+                          <ProgressBar completion={downloadCompletion ?? 0} />
+                        </Box>
+                      ) : null}
+                    </OutlinedListingCard>
                   );
                 })}
               </Stack>

@@ -290,6 +290,7 @@ export type PostImpersonateUserResponse = z.infer<
 /** GET /api/notebooks and GET /api/directory row. Lean project; no uiSpecification. */
 export const APINotebookListSchema = ProjectListItemSchema.extend({
   byteCount: z.number().optional(),
+  /** Ready linked layers. Omitted on attach failure; empty means none are ready. */
   contextualLayers: z.array(ContextualLayerListingSchema).optional(),
   contextualLayersHash: z.string().optional(),
 });
@@ -307,6 +308,7 @@ export type APINotebookListWithStats = z.infer<
 export const GetNotebookResponseSchema = ExistingProjectDocumentSchema.extend({
   recordCount: z.number().optional(),
   byteCount: z.number(),
+  /** Ready linked layers. Omitted on attach failure; empty means none are ready. */
   contextualLayers: z.array(ContextualLayerListingSchema).optional(),
   contextualLayersHash: z.string().optional(),
 });

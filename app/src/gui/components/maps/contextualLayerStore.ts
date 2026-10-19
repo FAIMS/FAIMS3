@@ -44,6 +44,31 @@ function writeIndex(index: LayerIndex): void {
   writeContextualLayersState(index);
 }
 
+/**
+ * One writer at a time for the on-device files map. Downloads, directory
+ * retain, release, and remove all replace `files` from a snapshot; overlapping
+ * them drops other surveys' entries, then deleteUnreferencedFiles removes those
+ * files from disk. Style edits stay outside this lock.
+ */
+function createAsyncMutex() {
+  let mutex = Promise.resolve();
+  return async function runExclusive<T>(fn: () => Promise<T>): Promise<T> {
+    const prev = mutex;
+    let resolveNext!: () => void;
+    mutex = new Promise<void>(r => {
+      resolveNext = r;
+    });
+    await prev.catch(() => {});
+    try {
+      return await fn();
+    } finally {
+      resolveNext();
+    }
+  };
+}
+
+const runFileIndexMutation = createAsyncMutex();
+
 async function listDeviceFilenames(): Promise<string[]> {
   if (Capacitor.isNativePlatform()) {
     try {
@@ -372,6 +397,14 @@ export type ContextualLayerDownloadProgress = {
   assetId?: string;
 };
 
+type DownloadContextualLayersArgs = {
+  serverUrl: string;
+  token: string;
+  projectId: string;
+  layers: ContextualLayerListing[];
+  onProgress?: (progress: ContextualLayerDownloadProgress) => void;
+};
+
 /**
  * Read a response body in chunks so the caller can show download progress.
  * Falls back to the full buffer when the body stream is unavailable.
@@ -463,19 +496,19 @@ async function downloadNativeLayerFile(
   }
 }
 
-export async function downloadContextualLayers({
+export async function downloadContextualLayers(
+  args: DownloadContextualLayersArgs
+): Promise<void> {
+  return runFileIndexMutation(() => downloadAndIndexContextualLayers(args));
+}
+
+async function downloadAndIndexContextualLayers({
   serverUrl,
   token,
   projectId,
   layers,
   onProgress,
-}: {
-  serverUrl: string;
-  token: string;
-  projectId: string;
-  layers: ContextualLayerListing[];
-  onProgress?: (progress: ContextualLayerDownloadProgress) => void;
-}): Promise<void> {
+}: DownloadContextualLayersArgs): Promise<void> {
   const index = readIndex();
   const previous = index.files;
   const batchBytes = layers.reduce((sum, layer) => sum + layer.byteSize, 0);
@@ -634,19 +667,27 @@ function layerRefsChanged(
   });
 }
 
+/**
+ * Keep only the ready listing ids for this survey. Directory sync passes
+ * `contextualLayers` here; ids omitted because a replace is in progress are
+ * dropped until the new file is ready. Skip this call when the listing fields
+ * were omitted (attach failure) so a glitch is not treated as unlink.
+ */
 export async function retainListedContextualLayers(
   projectId: string,
   listedAssetIds: string[]
 ): Promise<boolean> {
-  const index = readIndex();
-  const previous = index.files;
-  index.files = retainListedLayers(previous, projectId, listedAssetIds);
-  if (!layerRefsChanged(previous, index.files)) {
-    await deleteUnreferencedFiles(index);
-    return false;
-  }
-  await commitFiles(index, previous);
-  return true;
+  return runFileIndexMutation(async () => {
+    const index = readIndex();
+    const previous = index.files;
+    index.files = retainListedLayers(previous, projectId, listedAssetIds);
+    if (!layerRefsChanged(previous, index.files)) {
+      await deleteUnreferencedFiles(index);
+      return false;
+    }
+    await commitFiles(index, previous);
+    return true;
+  });
 }
 
 /** Remove this survey from layers the user did not keep. */
@@ -661,19 +702,21 @@ export async function forgetUnselectedContextualLayers(
 export async function releaseContextualLayersForProject(
   projectId: string
 ): Promise<void> {
-  const index = readIndex();
-  const previous = index.files;
-  const next = releaseProjectLayers(index.files, projectId);
-  index.files = next;
-  delete index.seenHashByProject[projectId];
-  dropUnusedPrefs(index);
-  writeIndex(index);
-  await Promise.all(
-    filenamesToDelete(previous, next).map(filename =>
-      removeDeviceFile(filename)
-    )
-  );
-  await deleteUnreferencedFiles(readIndex());
+  return runFileIndexMutation(async () => {
+    const index = readIndex();
+    const previous = index.files;
+    const next = releaseProjectLayers(index.files, projectId);
+    index.files = next;
+    delete index.seenHashByProject[projectId];
+    dropUnusedPrefs(index);
+    writeIndex(index);
+    await Promise.all(
+      filenamesToDelete(previous, next).map(filename =>
+        removeDeviceFile(filename)
+      )
+    );
+    await deleteUnreferencedFiles(readIndex());
+  });
 }
 
 export type StoredContextualLayerSummary = {
@@ -708,18 +751,20 @@ export async function listStoredContextualLayers(): Promise<
 export async function removeContextualLayerFromDevice(
   assetId: string
 ): Promise<void> {
-  const index = readIndex();
-  const previous = index.files;
-  const file = previous[assetId];
-  if (!file) {
-    return;
-  }
-  const {[assetId]: _removed, ...rest} = previous;
-  index.files = rest;
-  await commitFiles(index, previous);
-  for (const projectId of file.projectIds) {
-    notifyContextualLayersChanged(projectId);
-  }
+  return runFileIndexMutation(async () => {
+    const index = readIndex();
+    const previous = index.files;
+    const file = previous[assetId];
+    if (!file) {
+      return;
+    }
+    const {[assetId]: _removed, ...rest} = previous;
+    index.files = rest;
+    await commitFiles(index, previous);
+    for (const projectId of file.projectIds) {
+      notifyContextualLayersChanged(projectId);
+    }
+  });
 }
 
 export const CONTEXTUAL_LAYERS_CHANGED_EVENT = 'contextual-layers-changed';

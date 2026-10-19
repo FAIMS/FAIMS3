@@ -23,19 +23,47 @@ export const defaultMapControlPalette = {
   buttonActiveBackground: mapControlBrand.activeMain,
   buttonActiveBackgroundHover: mapControlBrand.activeHover,
   buttonForeground: '#FFFFFF',
+  scrim: mapControlBrand.scrim,
+  sheetShadow: mapControlBrand.sheetShadow,
+  locationRing: mapControlBrand.locationRing,
 } as const;
 
+type MapControlPalette = Theme['palette']['mapControl'];
+
+function hasCompleteMapControlPalette(
+  palette: Partial<MapControlPalette> | undefined
+): boolean {
+  return Boolean(
+    palette?.groupBackground &&
+    palette.groupShadow &&
+    palette.buttonBackground &&
+    palette.buttonBackgroundHover &&
+    palette.buttonActiveBackground &&
+    palette.buttonActiveBackgroundHover &&
+    palette.buttonForeground &&
+    palette.scrim &&
+    palette.sheetShadow &&
+    palette.locationRing
+  );
+}
+
 /**
- * Return `theme` unchanged when `palette.mapControl` is present; otherwise merge
- * in {@link defaultMapControlPalette}.
+ * Return `theme` unchanged when `palette.mapControl` is complete; otherwise merge
+ * in {@link defaultMapControlPalette}, keeping any host overrides.
  */
 export function ensureMapControlTheme(theme: Theme): Theme {
-  if (theme.palette.mapControl?.groupShadow) {
+  const existing = theme.palette.mapControl as
+    | Partial<MapControlPalette>
+    | undefined;
+  if (hasCompleteMapControlPalette(existing)) {
     return theme;
   }
   return createTheme(theme, {
     palette: {
-      mapControl: defaultMapControlPalette,
+      mapControl: {
+        ...defaultMapControlPalette,
+        ...(existing ?? {}),
+      },
     },
   });
 }

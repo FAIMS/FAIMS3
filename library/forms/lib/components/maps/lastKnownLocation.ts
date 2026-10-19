@@ -2,6 +2,7 @@
 /** Last GPS fix the map persisted, in EPSG:4326 [longitude, latitude]. */
 const LAST_LOCATION_KEY = 'last_map_center';
 
+/** Persist the last GPS fix for the next map open. */
 export function saveLastLocation(coords: [number, number]) {
   try {
     localStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(coords));
@@ -12,6 +13,7 @@ export function saveLastLocation(coords: [number, number]) {
   }
 }
 
+/** Read the last persisted GPS fix, or null if none. */
 export function loadLastLocation(): [number, number] | null {
   try {
     const stored = localStorage.getItem(LAST_LOCATION_KEY);

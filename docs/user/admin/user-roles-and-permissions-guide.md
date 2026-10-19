@@ -28,6 +28,7 @@ This guide does **not** cover:
 
 - Template creation or management
 - {{Notebook}} design and form building (see [Quickstart Guide](../authoring/quick-start-researchers.md))
+- Uploading and linking map layers (see [Map layers](map-layers.md))
 - Data collection and record management
 - API access and tokens
 - System configuration and Single Sign-On (SSO) setup
@@ -44,7 +45,7 @@ Before diving into procedures, here's how management differs across the three ar
 
 ### The Three-Tier Permission Model
 
-{{FAIMS}} uses a role-based permissions system to control access to different functions and data. The model centres around access to **resources**: teams, user accounts, templates, {{notebooks}}, and the system as a whole.
+{{FAIMS}} uses a role-based permissions system to control access to different functions and data. The model centres around access to **resources**: teams, user accounts, templates, {{notebooks}}, map layers, and the system as a whole.
 
 Roles are assigned at three levels:
 
@@ -105,8 +106,8 @@ The **Operations Administrator** role handles routine system management without 
 
 **Cannot do (by design):**
 
-- Access {{notebooks}}, templates, or research data
-- The {{Notebooks}} and Templates sidebar items are hidden from this role
+- Access {{notebooks}}, templates, map layers, or research data
+- The {{Notebooks}}, Templates, and Map layers sidebar items are hidden from this role
 
 > **Note:** If you need both administrative control and {{notebook}} access, you need the Super User role.
 
@@ -114,12 +115,13 @@ The **Operations Administrator** role handles routine system management without 
 
 During onboarding, enterprise users are typically assigned:
 
-- **Content Creator** system role — they can create {{notebooks}} and templates
+- **Content Creator** system role — they can create {{notebooks}}, templates, and map layers
 - **Team Administrator** of their assigned team — they have full control over their team (but they can't change their own role in the team)
 
 These roles are granted through invites created by an Operations Administrator or Super User (see "How Users Are Created" below). Once onboarded, a typical user can immediately:
 
 - Create {{notebooks}} (stand-alone or within their team)
+- Upload map layers and link them to {{notebooks}} they administer (see [Map layers](map-layers.md))
 - Invite users to their team and assign team roles
 - Invite users to {{notebooks}} they administer and assign {{notebook}} roles
 - Manage and update roles for their team members
@@ -132,6 +134,7 @@ The most restricted access level is General User, which can:
 
 - List {{notebooks}} they have access to
 - List templates they have access to
+- List map layers they are allowed to see
 
 General Users have to be granted access to a {{notebook}} directly (via {{notebook}} invite) or through relevant team membership to view or use it.
 
@@ -149,11 +152,12 @@ When you log in to the {{FAIMS}} {{Dashboard}}, you'll see a left sidebar with t
 ### Management
 
 - **Users** — View all system users and their roles (requires appropriate permissions)
+- **Map layers** — Upload georeferenced overlays and link them to {{notebooks}} (see [Map layers](map-layers.md))
 - **Teams** — View and manage teams
 - **Archive** — Archived {{notebooks}}, templates, and disabled users
 
 ```{screenshot} user-roles/01-dashboard-sidebar.png
-:alt: {{FAIMS}} {{Dashboard}} showing left sidebar with Content section ({{Notebooks}}, Templates) and Management section (Users, Teams, Archive), plus the Users page with Users and Invites tabs, displaying Name, Email, Roles, Reset Password, Impersonate, and Disable columns with role badges such as General User and Super User
+:alt: {{FAIMS}} {{Dashboard}} Users page with Users and Invites tabs. The left sidebar has a Content section ({{Notebooks}}, Templates) and a Management section; Users, Map layers, Teams, and Archive appear according to your roles
 :align: right
 :width: 100%
 ```
@@ -218,7 +222,7 @@ There are four system roles: **General User** (basic access), **Content Creator*
 
 Each role badge (visible in the {{Dashboard}} screenshot earlier) has a small **×** in the upper-right corner — click this to remove the role.
 
-> ⚠️ **Warning**: Be careful when removing roles. If you remove Content Creator from a user, they will no longer be able to create {{notebooks}} globally. However, they can still create {{notebooks}} within teams where they have the Team Member (Creator), Team Manager, or Team Administrator role.
+> ⚠️ **Warning**: Be careful when removing roles. If you remove Content Creator from a user, they will no longer be able to create {{notebooks}} or map layers globally. However, they can still create {{notebooks}} and map layers within teams where they have the Team Member (Creator), Team Manager, or Team Administrator role.
 
 **See also:** Troubleshooting → Can't Assign Team Administrator Role
 
@@ -484,7 +488,8 @@ From here you can:
 | **Invites**     | Invitation links for adding users                                             |
 | **Users**       | Current {{notebook}} users and their roles                                    |
 | **Export**      | Export {{notebook}} data                                                      |
-| **Offline Map** | Configure an offline map region for field use                                 |
+| **Offline Map** | Configure a base-map region (street tiles) for field use                      |
+| **Map layers**  | Link uploaded overlays from the Map layers library to this {{notebook}}       |
 | **Actions**     | Edit {{notebook}}, assign to team, download/replace JSON, {{notebook}} status |
 
 ### Understanding {{Notebook}} Roles

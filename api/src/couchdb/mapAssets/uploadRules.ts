@@ -4,32 +4,15 @@
  * `.zip` covers a shapefile set or an ESRI File Geodatabase (`.gdb.zip`).
  */
 
-import {INPUT_LIMITS, MAP_ASSET_PRIMARY_FORMATS} from '@faims3/data-model';
+import {
+  INPUT_LIMITS,
+  MAP_ASSET_PRIMARY_FORMATS,
+  isMapAssetPrimaryExtension,
+  isMapAssetVectorExtension,
+  mapAssetFileExtension,
+  mapAssetGeoreferencedImageCompanionIssue,
+} from '@faims3/data-model';
 import path from 'path';
-
-const VECTOR_EXTENSIONS = new Set([
-  '.geojson',
-  '.json',
-  '.gpkg',
-  '.kml',
-  '.zip',
-]);
-const RASTER_EXTENSIONS = new Set([
-  '.tif',
-  '.tiff',
-  '.pdf',
-  '.png',
-  '.jpg',
-  '.jpeg',
-]);
-const WORLD_FILE_EXTENSIONS = new Set([
-  '.pgw',
-  '.gfw',
-  '.jgw',
-  '.wld',
-  '.tfw',
-  '.j2w',
-]);
 
 export type UploadedMapFile = {
   filename: string;
@@ -62,11 +45,11 @@ export function safeUploadFilename(filename: string): string {
 }
 
 export function extensionOf(filename: string): string {
-  return path.extname(filename).toLowerCase();
+  return mapAssetFileExtension(filename);
 }
 
 export function isVectorUpload(filename: string): boolean {
-  return VECTOR_EXTENSIONS.has(extensionOf(filename));
+  return isMapAssetVectorExtension(extensionOf(filename));
 }
 
 /**
@@ -79,10 +62,9 @@ export function primaryUploadFile(files: UploadedMapFile[]): UploadedMapFile {
     ...file,
     filename: safeUploadFilename(file.filename),
   }));
-  const primary = named.find(file => {
-    const ext = extensionOf(file.filename);
-    return VECTOR_EXTENSIONS.has(ext) || RASTER_EXTENSIONS.has(ext);
-  });
+  const primary = named.find(file =>
+    isMapAssetPrimaryExtension(extensionOf(file.filename))
+  );
   if (!primary) {
     throw new Error(`Upload needs ${MAP_ASSET_PRIMARY_FORMATS}.`);
   }
@@ -94,20 +76,12 @@ export function primaryUploadFile(files: UploadedMapFile[]): UploadedMapFile {
  * carry their CRS inside the file, which GDAL checks later.
  */
 export function assertUploadCompanions(files: UploadedMapFile[]): void {
-  const primary = primaryUploadFile(files);
-  const ext = extensionOf(primary.filename);
-  if (ext !== '.png' && ext !== '.jpg' && ext !== '.jpeg') {
-    return;
-  }
-  const extensions = new Set(
-    files.map(file => extensionOf(safeUploadFilename(file.filename)))
+  primaryUploadFile(files);
+  const extensions = files.map(file =>
+    extensionOf(safeUploadFilename(file.filename))
   );
-  const hasWorld = [...extensions].some(item =>
-    WORLD_FILE_EXTENSIONS.has(item)
-  );
-  if (!hasWorld || !extensions.has('.prj')) {
-    throw new Error(
-      'PNG and JPEG uploads need a world file and a .prj that names the coordinate reference system.'
-    );
+  const issue = mapAssetGeoreferencedImageCompanionIssue(extensions);
+  if (issue) {
+    throw new Error(issue);
   }
 }

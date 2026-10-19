@@ -9,6 +9,7 @@ import {useMapAsset} from '@/hooks/map-asset-hooks';
 import {displayDateTime} from '@/lib/time';
 import {cn} from '@/lib/utils';
 import {
+  formatFileSize,
   mapAssetKindLabel,
   mapAssetProcessingStatusText,
   type ExistingMapAsset,
@@ -23,9 +24,8 @@ const statusIndication: Record<
 > = {
   ready: {
     label: 'Ready',
-    className:
-      'border-green-800/40 bg-green-800/[0.08] text-green-800 dark:border-emerald-400/40 dark:bg-emerald-400/10 dark:text-emerald-300',
-    iconClassName: 'text-green-800 dark:text-emerald-300',
+    className: 'border-success/40 bg-success/10 text-success',
+    iconClassName: 'text-success',
   },
   pending: {
     label: 'Pending',
@@ -88,16 +88,6 @@ function MapLayerStatusIndication({asset}: {asset: ExistingMapAsset}) {
   );
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes <= 0) {
-    return '—';
-  }
-  if (bytes < 1024 * 1024) {
-    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  }
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 export function MapLayerDetails({assetId}: {assetId: string}) {
   const user = useRequiredUser();
   const {data, isPending} = useMapAsset({user, assetId});
@@ -123,7 +113,12 @@ export function MapLayerDetails({assetId}: {assetId: string}) {
       label: 'Type',
       value: asset => mapAssetKindLabel(asset.kind) || '—',
     },
-    {key: 'size', label: 'Size', value: asset => formatBytes(asset.byteSize)},
+    {
+      key: 'size',
+      label: 'Size',
+      value: asset =>
+        asset.byteSize > 0 ? formatFileSize(asset.byteSize) : '—',
+    },
     {
       key: 'file',
       label: 'Original file',

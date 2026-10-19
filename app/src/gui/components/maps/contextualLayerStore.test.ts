@@ -42,6 +42,7 @@ vi.mock('@capacitor/filesystem', () => ({
 import {
   downloadContextualLayers,
   resetContextualLayerPrefs,
+  retainListedContextualLayers,
   updateContextualLayerPrefs,
 } from './contextualLayerStore';
 
@@ -378,5 +379,130 @@ describe('downloadContextualLayers on native', () => {
       directory: 'DATA',
     });
     expect(store.getState().contextualLayers.files).toEqual({});
+  });
+
+  it('keeps both surveys when two downloads overlap', async () => {
+    let releaseFirst!: () => void;
+    const firstHeld = new Promise<void>(resolve => {
+      releaseFirst = resolve;
+    });
+    let started = 0;
+    native.downloadFile.mockImplementation(async () => {
+      started += 1;
+      if (started === 1) {
+        await firstHeld;
+      }
+      return {path: 'map-assets'};
+    });
+
+    const first = downloadContextualLayers({
+      serverUrl: 'http://localhost:8080',
+      token: 'token',
+      projectId: 'survey-a',
+      layers: [
+        {
+          id: 'asset-a',
+          name: 'Survey A',
+          kind: 'vector-tiles',
+          byteSize: 100,
+          contentHash: 'hash-a',
+          extent: [0, 0, 1, 1],
+          defaultStyle: DEFAULT_MAP_ASSET_STYLE,
+        },
+      ],
+    });
+    await vi.waitFor(() => expect(started).toBe(1));
+
+    const second = downloadContextualLayers({
+      serverUrl: 'http://localhost:8080',
+      token: 'token',
+      projectId: 'survey-b',
+      layers: [
+        {
+          id: 'asset-b',
+          name: 'Survey B',
+          kind: 'vector-tiles',
+          byteSize: 100,
+          contentHash: 'hash-b',
+          extent: [0, 0, 1, 1],
+          defaultStyle: DEFAULT_MAP_ASSET_STYLE,
+        },
+      ],
+    });
+    await Promise.resolve();
+    expect(started).toBe(1);
+
+    releaseFirst();
+    await Promise.all([first, second]);
+
+    const files = store.getState().contextualLayers.files;
+    expect(files['asset-a']?.filename).toBe('asset-a-hash-a.pmtiles');
+    expect(files['asset-b']?.filename).toBe('asset-b-hash-b.pmtiles');
+  });
+
+  it('does not garbage-collect an in-flight download from another survey', async () => {
+    store.dispatch(
+      replaceContextualLayersState({
+        files: {
+          'asset-b': {
+            assetId: 'asset-b',
+            contentHash: 'hash-b',
+            kind: 'vector-tiles',
+            name: 'Survey B',
+            byteSize: 100,
+            extent4326: [0, 0, 1, 1],
+            defaultStyle: DEFAULT_MAP_ASSET_STYLE,
+            filename: 'asset-b-hash-b.pmtiles',
+            projectIds: ['survey-b'],
+          },
+        },
+        prefs: {},
+        seenHashByProject: {},
+      })
+    );
+    native.readdir.mockResolvedValue({
+      files: [
+        {name: 'asset-a-hash-a.pmtiles'},
+        {name: 'asset-b-hash-b.pmtiles'},
+      ],
+    });
+    let releaseDownload!: () => void;
+    const downloadHeld = new Promise<void>(resolve => {
+      releaseDownload = resolve;
+    });
+    native.downloadFile.mockImplementation(async () => {
+      await downloadHeld;
+      return {path: 'map-assets'};
+    });
+
+    const download = downloadContextualLayers({
+      serverUrl: 'http://localhost:8080',
+      token: 'token',
+      projectId: 'survey-a',
+      layers: [
+        {
+          id: 'asset-a',
+          name: 'Survey A',
+          kind: 'vector-tiles',
+          byteSize: 100,
+          contentHash: 'hash-a',
+          extent: [0, 0, 1, 1],
+          defaultStyle: DEFAULT_MAP_ASSET_STYLE,
+        },
+      ],
+    });
+    await vi.waitFor(() => expect(native.downloadFile).toHaveBeenCalled());
+
+    const retain = retainListedContextualLayers('survey-b', ['asset-b']);
+    await Promise.resolve();
+    expect(native.deleteFile).not.toHaveBeenCalled();
+
+    releaseDownload();
+    await Promise.all([download, retain]);
+
+    const files = store.getState().contextualLayers.files;
+    expect(files['asset-a']?.filename).toBe('asset-a-hash-a.pmtiles');
+    expect(files['asset-b']?.filename).toBe('asset-b-hash-b.pmtiles');
+    expect(native.deleteFile).not.toHaveBeenCalled();
   });
 });

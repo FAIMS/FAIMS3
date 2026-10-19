@@ -207,9 +207,13 @@ export interface ProjectListingInformation {
   disableQuickShare?: boolean;
   /** Digest of the server's uiSpecification (hash + schemaVersion). */
   uiSpecProperties: UiSpecProperties;
-  /** Ready contextual layers linked to this survey. */
+  /**
+   * Ready contextual layers linked to this survey. Directory sync uses this as
+   * the keep-set: ids that are pending, replacing, or failed are omitted, and
+   * the device drops those files until a new ready listing appears.
+   */
   contextualLayers?: ContextualLayerListing[];
-  /** SHA-256 of the linked asset id and content hash pairs. */
+  /** SHA-256 of the ready listing's asset id and content hash pairs. */
   contextualLayersHash?: string;
 }
 
@@ -2317,6 +2321,9 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           projectId: details._id,
           serverId,
         });
+        // Present array (including empty) is the ready keep-set. Replace
+        // withdraws the old overlay immediately; missing ids are dropped.
+        // Omitted fields mean attach failed — skip, do not treat as unlink.
         if (local?.isActivated && Array.isArray(details.contextualLayers)) {
           try {
             const dropped = await retainListedContextualLayers(

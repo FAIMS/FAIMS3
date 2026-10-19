@@ -27,6 +27,7 @@ import {
   VECTOR_INTERMEDIATE_FILENAME,
   type SpatialToolPerformance,
 } from '../../spatial/gdalPerformance';
+import {attachGdalProgress} from '../../spatial/gdalProgress';
 import {consumeTippecanoeProgress} from '../../spatial/tippecanoeProgress';
 import {GdalCommandError, readGdalJson, runGdalCommand} from '../export/gdal';
 import {
@@ -44,7 +45,7 @@ export type MapAssetNormalizeLogContext = {
   assetId?: string;
   /** Persist the current pipeline step onto the map-asset document. */
   onStage?: (stage: MapAssetProcessingStage) => void | Promise<void>;
-  /** Live tippecanoe phase + percent while tiling. */
+  /** Live tippecanoe / GDAL phase + percent while tiling or warping. */
   onProgress?: (progress: MapAssetProcessingProgress) => void | Promise<void>;
 };
 
@@ -79,7 +80,8 @@ export type NormalizedMapAsset = {
   cleanupDir?: string;
 };
 
-function wktFromInfo(info: unknown): string {
+/** GDAL JSON CRS WKT, or empty when GDAL did not report one. */
+export function wktFromInfo(info: unknown): string {
   if (!info || typeof info !== 'object') {
     return '';
   }
@@ -105,7 +107,7 @@ function wktFromInfo(info: unknown): string {
   return '';
 }
 
-function assertHasCrs(info: unknown, filename: string): void {
+export function assertHasCrs(info: unknown, filename: string): void {
   const wkt = wktFromInfo(info);
   if (!wkt || /unknown/i.test(wkt)) {
     throw new Error(
@@ -114,7 +116,7 @@ function assertHasCrs(info: unknown, filename: string): void {
   }
 }
 
-function gdalSourcePath(filePath: string): string {
+export function gdalSourcePath(filePath: string): string {
   return extensionOf(filePath) === '.zip' ? `/vsizip/${filePath}` : filePath;
 }
 
@@ -238,7 +240,7 @@ async function runPmtiles(args: string[]): Promise<void> {
  * PMTiles v3 header. Zoom is bytes 100–101. Bounds are int32 degrees × 1e7
  * starting at byte 102. Reading the header avoids scanning the GeoJSON.
  */
-async function readPmtilesHeader(filePath: string): Promise<{
+export async function readPmtilesHeader(filePath: string): Promise<{
   minZoom: number;
   maxZoom: number;
   extent4326: MapExtent;
@@ -279,7 +281,7 @@ async function readPmtilesHeader(filePath: string): Promise<{
 }
 
 /** Power-of-two overview factors from the MBTiles base zoom down to zoom 0. */
-function overviewFactors(maxZoom: number): string[] {
+export function overviewFactors(maxZoom: number): string[] {
   const factors: string[] = [];
   let factor = 2;
   while (maxZoom - Math.log2(factor) >= 0) {
@@ -289,7 +291,7 @@ function overviewFactors(maxZoom: number): string[] {
   return factors;
 }
 
-function maxZoomFromMbtilesInfo(info: unknown): number {
+export function maxZoomFromMbtilesInfo(info: unknown): number {
   if (!info || typeof info !== 'object') {
     return 0;
   }
@@ -307,7 +309,7 @@ function maxZoomFromMbtilesInfo(info: unknown): number {
   return 0;
 }
 
-function extentFromRing(ring: number[][]): MapExtent {
+export function extentFromRing(ring: number[][]): MapExtent {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -414,6 +416,48 @@ type GdalInfo = {
   wgs84Extent?: {coordinates?: number[][][]};
 };
 
+async function runRasterGdal({
+  command,
+  args,
+  filename,
+  detail,
+  phase,
+  env,
+  logContext,
+}: {
+  command: string;
+  args: string[];
+  filename: string;
+  detail: string;
+  phase: string;
+  env: NodeJS.ProcessEnv;
+  logContext?: MapAssetNormalizeLogContext;
+}): Promise<void> {
+  const progress = attachGdalProgress(logContext?.onProgress, phase);
+  try {
+    await withMapAssetProcessingWait(
+      {
+        event: 'gdal.command',
+        assetId: logContext?.assetId,
+        command,
+        filename,
+        detail,
+      },
+      () =>
+        runGdalCommand({
+          command,
+          args,
+          env,
+          onStdout: progress.onChunk,
+        })
+    );
+    await progress.finish();
+  } catch (error) {
+    await progress.finish().catch(() => undefined);
+    throw error;
+  }
+}
+
 async function convertRaster(
   sourcePath: string,
   workDir: string,
@@ -426,31 +470,25 @@ async function convertRaster(
   const perf = spatialToolPerformance();
   const env = spatialToolProcessEnv(perf);
   await emitStage(logContext, 'warping-raster');
-  await withMapAssetProcessingWait(
-    {
-      event: 'gdal.command',
-      assetId: logContext?.assetId,
-      command: 'gdalwarp',
-      filename,
-      detail: 'EPSG:3857 bilinear GeoTIFF',
-    },
-    () =>
-      runGdalCommand({
-        command: 'gdalwarp',
-        args: [
-          ...gdalWarpPerformanceArgs(perf),
-          '-t_srs',
-          'EPSG:3857',
-          '-r',
-          'bilinear',
-          '-of',
-          'GTiff',
-          gdalSourcePath(sourcePath),
-          warped,
-        ],
-        env,
-      })
-  );
+  await runRasterGdal({
+    command: 'gdalwarp',
+    args: [
+      ...gdalWarpPerformanceArgs(perf),
+      '-t_srs',
+      'EPSG:3857',
+      '-r',
+      'bilinear',
+      '-of',
+      'GTiff',
+      gdalSourcePath(sourcePath),
+      warped,
+    ],
+    filename,
+    detail: 'EPSG:3857 bilinear GeoTIFF',
+    phase: 'Warping',
+    env,
+    logContext,
+  });
 
   const info = (await withMapAssetProcessingWait(
     {
@@ -479,33 +517,27 @@ async function convertRaster(
     upperLeft[1],
   ];
   await emitStage(logContext, 'building-tiles');
-  await withMapAssetProcessingWait(
-    {
-      event: 'gdal.command',
-      assetId: logContext?.assetId,
-      command: 'gdal_translate',
-      filename,
-      detail: 'MBTiles WebP',
-    },
-    () =>
-      runGdalCommand({
-        command: 'gdal_translate',
-        args: [
-          ...gdalConfigArgs(perf),
-          '-of',
-          'MBTiles',
-          '-co',
-          'TILE_FORMAT=WEBP',
-          '-co',
-          `QUALITY=${RASTER_WEBP_QUALITY}`,
-          '-co',
-          'NAME=layer',
-          warped,
-          mbtiles,
-        ],
-        env,
-      })
-  );
+  await runRasterGdal({
+    command: 'gdal_translate',
+    args: [
+      ...gdalConfigArgs(perf),
+      '-of',
+      'MBTiles',
+      '-co',
+      'TILE_FORMAT=WEBP',
+      '-co',
+      `QUALITY=${RASTER_WEBP_QUALITY}`,
+      '-co',
+      'NAME=layer',
+      warped,
+      mbtiles,
+    ],
+    filename,
+    detail: 'MBTiles WebP',
+    phase: 'Tiling',
+    env,
+    logContext,
+  });
   const mbtilesInfo = await readGdalJson({
     command: 'gdalinfo',
     args: ['-json', mbtiles],
@@ -514,21 +546,15 @@ async function convertRaster(
   const factors = overviewFactors(maxZoomFromMbtilesInfo(mbtilesInfo));
   if (factors.length > 0) {
     await emitStage(logContext, 'building-overviews');
-    await withMapAssetProcessingWait(
-      {
-        event: 'gdal.command',
-        assetId: logContext?.assetId,
-        command: 'gdaladdo',
-        filename,
-        detail: `overviews ${factors.join(',')}`,
-      },
-      () =>
-        runGdalCommand({
-          command: 'gdaladdo',
-          args: [...gdalConfigArgs(perf), '-r', 'average', mbtiles, ...factors],
-          env,
-        })
-    );
+    await runRasterGdal({
+      command: 'gdaladdo',
+      args: [...gdalConfigArgs(perf), '-r', 'average', mbtiles, ...factors],
+      filename,
+      detail: `overviews ${factors.join(',')}`,
+      phase: 'Overviews',
+      env,
+      logContext,
+    });
   }
   await emitStage(logContext, 'converting-tiles');
   await withMapAssetProcessingWait(
@@ -623,7 +649,9 @@ export async function normalizeMapUpload(
   }
 }
 
-function sharedDiskDirectory(files: UploadedMapFile[]): string | undefined {
+export function sharedDiskDirectory(
+  files: UploadedMapFile[]
+): string | undefined {
   const dirs = new Set(
     files
       .map(file => (file.diskPath ? path.dirname(file.diskPath) : undefined))

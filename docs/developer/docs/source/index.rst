@@ -19,6 +19,7 @@ FAIMS3 Developer Documentation
    markdown/RecordsCRUDApi.md
    markdown/PollingHydratedRecords.md
    markdown/GeospatialExport.md
+   markdown/MapLayers.md
    markdown/Long-lived-tokens.md
    markdown/TokenManagement.md
    markdown/TtlCleanup.md

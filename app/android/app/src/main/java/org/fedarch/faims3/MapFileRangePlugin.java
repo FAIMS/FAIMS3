@@ -27,8 +27,8 @@ public class MapFileRangePlugin extends Plugin {
     @PluginMethod
     public void read(PluginCall call) {
         String path = call.getString("path");
-        Integer offset = call.getInt("offset");
-        Integer length = call.getInt("length");
+        Long offset = wholeNumber(call, "offset");
+        Long length = wholeNumber(call, "length");
         if (path == null || offset == null || length == null) {
             call.reject("A path, offset, and length are required.");
             return;
@@ -57,5 +57,28 @@ public class MapFileRangePlugin extends Plugin {
         } catch (IOException e) {
             call.reject("Could not read the file range.", e);
         }
+    }
+
+    /**
+     * JS numbers arrive as Integer, Long, or Double. Each Capacitor getter
+     * accepts only one of those types, so a byte offset needs all three.
+     */
+    private static Long wholeNumber(PluginCall call, String key) {
+        Integer asInt = call.getInt(key);
+        if (asInt != null) {
+            return asInt.longValue();
+        }
+        Long asLong = call.getLong(key);
+        if (asLong != null) {
+            return asLong;
+        }
+        Double asDouble = call.getDouble(key);
+        if (asDouble == null
+                || asDouble < 0d
+                || asDouble > (double) Long.MAX_VALUE
+                || asDouble != Math.rint(asDouble)) {
+            return null;
+        }
+        return asDouble.longValue();
     }
 }

@@ -12,11 +12,13 @@
 /** One tile or directory read. Larger than this is a whole-archive read. */
 export const TILE_RANGE_MAX_BYTES = 2 * 1024 * 1024;
 
+/** Read `length` bytes at `offset` from a local PMTiles archive. */
 export type TileByteRead = (
   offset: number,
   length: number
 ) => Promise<ArrayBuffer>;
 
+/** Reject a range that is not a bounded tile-sized read. */
 export function assertTileRange(offset: number, length: number): void {
   if (
     !Number.isInteger(offset) ||

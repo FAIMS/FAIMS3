@@ -1,37 +1,62 @@
 // SPDX-License-Identifier: Apache-2.0
 import type {User} from '@/context/auth-provider';
-import {userCanDo} from '@/hooks/auth-hooks';
-import {Action, type ExistingMapAsset} from '@faims3/data-model';
+import {
+  isAuthorizedToDeleteMapAsset,
+  isAuthorizedToMutateMapAsset,
+  isAuthorizedToReplaceMapAssetFiles,
+  isAuthorizedToUpdateMapAssetDetails,
+  type ExistingMapAsset,
+  type MapAssetAuthorizationInput,
+} from '@faims3/data-model';
 
-/** Rename and delete: the individual owner, or a team admin. */
-export function canManageMapAsset(
+function actingUserId(user: User): string | undefined {
+  return user.decodedToken?.username;
+}
+
+function authorizeMapAsset(
   user: User,
-  asset: ExistingMapAsset
+  asset: ExistingMapAsset,
+  check: (input: MapAssetAuthorizationInput) => boolean
 ): boolean {
-  if (!asset.ownedByTeamId) {
-    return user.decodedToken?.username === asset.createdBy;
+  const userId = actingUserId(user);
+  if (!user.decodedToken || !userId) {
+    return false;
   }
-  return userCanDo({
-    user,
-    action: Action.UPDATE_TEAM_DETAILS,
-    resourceId: asset.ownedByTeamId,
+  return check({
+    decodedToken: user.decodedToken,
+    asset,
+    actingUserId: userId,
   });
 }
 
-/** Replace the file: the same people who can upload into this owner. */
+/** Rename: creator, team manager+, or super user. */
+export function canUpdateMapAssetDetails(
+  user: User,
+  asset: ExistingMapAsset
+): boolean {
+  return authorizeMapAsset(user, asset, isAuthorizedToUpdateMapAssetDetails);
+}
+
+/** Delete: creator, team admin+, or super user. */
+export function canDeleteMapAsset(
+  user: User,
+  asset: ExistingMapAsset
+): boolean {
+  return authorizeMapAsset(user, asset, isAuthorizedToDeleteMapAsset);
+}
+
+/** Replace the file: creator, team manager+, or super user. */
 export function canReplaceMapAsset(
   user: User,
   asset: ExistingMapAsset
 ): boolean {
-  if (!asset.ownedByTeamId) {
-    return (
-      user.decodedToken?.username === asset.createdBy &&
-      userCanDo({user, action: Action.CREATE_PROJECT})
-    );
-  }
-  return userCanDo({
-    user,
-    action: Action.CREATE_PROJECT_IN_TEAM,
-    resourceId: asset.ownedByTeamId,
-  });
+  return authorizeMapAsset(user, asset, isAuthorizedToReplaceMapAssetFiles);
+}
+
+/** True when any library mutate action should be shown for this layer. */
+export function canMutateMapAsset(
+  user: User,
+  asset: ExistingMapAsset
+): boolean {
+  return authorizeMapAsset(user, asset, isAuthorizedToMutateMapAsset);
 }

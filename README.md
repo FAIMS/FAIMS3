@@ -103,13 +103,14 @@ Run the script to get all services running locally:
 ./localdev.sh --all
 ```
 
-This spins up five services:
+This spins up the application services plus CouchDB, RustFS, and the spatial worker pool:
 
 - Conductor API (`/api`) live reloading on http://localhost:8080
 - FAIMS3 app (`/app`) live reloading on http://localhost:3000
 - Web app (`/web`) live reloading on http://localhost:3001
 - CouchDB on http://localhost:5984/\_utils
 - RustFS (S3-compatible object store) on http://localhost:9000 (console http://localhost:9001)
+- `capacity-manager` and `spatial-worker` (map-layer ingest; uploads stay `pending` without the worker)
 
 On the **first run** this also installs all monorepo dependencies
 (`pnpm install`) and builds the shared libraries (`turbo build`) before the
@@ -148,17 +149,17 @@ notebooks and templates:
    pnpm run load-templates
    ```
 
-## CouchDB-only local development (recommended for live-reloading)
+## Native services with Docker dependencies (recommended for live-reloading)
 
-If you prefer to run the application services natively and only use Docker for CouchDB and RustFS:
+If you prefer to run the application services natively and only use Docker for CouchDB, RustFS, and the spatial worker pool:
 
-1. Start CouchDB and RustFS (default behaviour without `--all` flag):
+1. Start CouchDB, RustFS, and the spatial worker pool (default behaviour without `--all` flag):
 
 ```bash
 ./localdev.sh
 ```
 
-This starts CouchDB on http://localhost:5984/\_utils and RustFS on http://localhost:9000 (console http://localhost:9001). Map-layer files are stored in RustFS; CouchDB holds only the metadata (including an S3 resource URI). If your existing `api/.env` predates these settings, copy the `ATTACHMENT_*` block from `api/.env.dist`.
+This starts CouchDB on http://localhost:5984/\_utils, RustFS on http://localhost:9000 (console http://localhost:9001), and `capacity-manager` / `spatial-worker`. Map-layer files are stored in RustFS; CouchDB holds only the metadata (including an S3 resource URI). If your existing `api/.env` predates these settings, copy the `ATTACHMENT_*` block from `api/.env.dist`.
 
 2. Migrate the CouchDB:
 

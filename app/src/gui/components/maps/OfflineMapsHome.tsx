@@ -4,16 +4,10 @@
  */
 
 import {ArrowForwardIos} from '@mui/icons-material';
-import {
-  Box,
-  Card,
-  CardActionArea,
-  CardContent,
-  Stack,
-  Typography,
-} from '@mui/material';
+import {Box, Stack, Typography} from '@mui/material';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
+import {OutlinedListingCard} from '../ui/outlined-listing-card';
 
 export function OfflineMapsHome() {
   const navigate = useNavigate();
@@ -29,52 +23,30 @@ export function OfflineMapsHome() {
         </Stack>
 
         <Stack spacing={1}>
-          <HomeCard
-            title="Map regions"
-            detail="Base map areas downloaded for offline use."
+          <OutlinedListingCard
             onClick={() => navigate(ROUTES.OFFLINE_MAP_REGIONS)}
-          />
-          <HomeCard
-            title="Map layers"
-            detail="Contextual layers linked to activated surveys."
+            trailing={<ArrowForwardIos color="action" />}
+          >
+            <Typography variant="h5" sx={{fontWeight: 'bold'}}>
+              Map regions
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Base map areas downloaded for offline use.
+            </Typography>
+          </OutlinedListingCard>
+          <OutlinedListingCard
             onClick={() => navigate(ROUTES.OFFLINE_MAP_LAYERS)}
-          />
+            trailing={<ArrowForwardIos color="action" />}
+          >
+            <Typography variant="h5" sx={{fontWeight: 'bold'}}>
+              Map layers
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Contextual layers linked to activated surveys.
+            </Typography>
+          </OutlinedListingCard>
         </Stack>
       </Stack>
     </Box>
-  );
-}
-
-function HomeCard({
-  title,
-  detail,
-  onClick,
-}: {
-  title: string;
-  detail: string;
-  onClick: () => void;
-}) {
-  return (
-    <Card variant="outlined">
-      <CardActionArea onClick={onClick}>
-        <CardContent sx={{py: 1.5}}>
-          <Stack
-            direction="row"
-            spacing={1.5}
-            sx={{justifyContent: 'space-between', alignItems: 'center'}}
-          >
-            <Stack spacing={0.5} sx={{flex: 1, minWidth: 0}}>
-              <Typography variant="h5" sx={{fontWeight: 'bold'}}>
-                {title}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {detail}
-              </Typography>
-            </Stack>
-            <ArrowForwardIos color="action" />
-          </Stack>
-        </CardContent>
-      </CardActionArea>
-    </Card>
   );
 }

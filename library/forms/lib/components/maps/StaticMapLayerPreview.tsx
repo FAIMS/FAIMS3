@@ -4,7 +4,9 @@
  * No pan, zoom, or controls.
  */
 
+import {Box, Typography} from '@mui/material';
 import {Extent} from 'ol/extent';
+import BaseLayer from 'ol/layer/Base';
 import VectorLayer from 'ol/layer/Vector';
 import TileLayer from 'ol/layer/Tile';
 import Map from 'ol/Map';
@@ -19,6 +21,9 @@ import {MapConfig} from './types';
 import {createContextualMapLayer} from './useContextualMapLayers';
 
 const MAP_PROJECTION = 'EPSG:3857';
+
+/** Viewport-relative preview height; dvh avoids mobile browser chrome jumps. */
+export const STATIC_MAP_LAYER_PREVIEW_HEIGHT = 'clamp(380px, 55dvh, 650px)';
 
 export type StaticMapLayerKind = ContextualMapLayerKind;
 
@@ -42,6 +47,11 @@ export type StaticMapLayerPreviewProps = {
   minZoom?: number;
   maxZoom?: number;
   mapConfig: MapConfig;
+  /**
+   * Optional basemap. Defaults to OSM / MapTiler from `mapConfig`.
+   * Field devices pass a cached VectorTileStore layer so preview works offline.
+   */
+  baseLayer?: BaseLayer;
   className?: string;
 };
 
@@ -103,6 +113,7 @@ export function StaticMapLayerPreview({
   minZoom,
   maxZoom,
   mapConfig,
+  baseLayer,
   className,
 }: StaticMapLayerPreviewProps) {
   const container = useRef<HTMLDivElement>(null);
@@ -116,7 +127,7 @@ export function StaticMapLayerPreview({
     let cancelled = false;
     const map = new Map({
       target,
-      layers: [basemapLayer(mapConfig)],
+      layers: [baseLayer ?? basemapLayer(mapConfig)],
       controls: [],
       interactions: [],
       view: new View({center: [0, 0], zoom: 2}),
@@ -191,16 +202,17 @@ export function StaticMapLayerPreview({
     minZoom,
     maxZoom,
     mapConfig,
+    baseLayer,
   ]);
 
   return (
-    <div>
-      {error ? <p>{error}</p> : null}
-      <div
+    <Box>
+      {error ? <Typography color="error">{error}</Typography> : null}
+      <Box
         ref={container}
         className={className}
-        style={{width: '100%', height: 'clamp(380px, 55vh, 650px)'}}
+        sx={{width: '100%', height: STATIC_MAP_LAYER_PREVIEW_HEIGHT}}
       />
-    </div>
+    </Box>
   );
 }

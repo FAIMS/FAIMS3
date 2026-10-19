@@ -8,7 +8,6 @@ import {
   APINotebookList,
   NotebookDefinition,
   NotebookSchemaCompatibility,
-  ProjectListItem,
   UiSpecModel,
 } from '@faims3/data-model';
 import {config} from '../../../buildconfig';
@@ -287,13 +286,14 @@ export function projectInformationFromGetNotebook(
     offlineMapRegion: notebook.offlineMapRegion,
     disableQuickShare: notebook.disableQuickShare,
     uiSpecProperties: notebook.uiSpecProperties,
+    contextualLayers: notebook.contextualLayers,
+    contextualLayersHash: notebook.contextualLayersHash,
   };
 }
 
 /** Map a lean directory / list row to store listing fields (no form graph). */
 export function listingInformationFromDirectoryItem(
-  item: ProjectListItem &
-    Pick<APINotebookList, 'contextualLayers' | 'contextualLayersHash'>
+  item: APINotebookList
 ): ProjectListingInformation {
   return {
     name: item.name,
@@ -317,7 +317,7 @@ export function listedProjectFromDirectoryItem({
   item,
   serverId,
 }: {
-  item: ProjectListItem;
+  item: APINotebookList;
   serverId: string;
 }): ListedProject {
   return {

@@ -30,7 +30,7 @@ const indexDocument = {
     },
     [ASSETS_BY_CREATOR]: {
       map: convertToCouchDBString(doc => {
-        if (!doc || doc.docType !== 'asset' || doc.ownedByTeamId) {
+        if (!doc || doc.docType !== 'asset' || !doc.createdBy) {
           return;
         }
         emit(doc.createdBy, 1);

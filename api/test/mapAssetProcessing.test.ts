@@ -413,6 +413,45 @@ describe('map asset worker processing', () => {
     expect(finished.processingAttempts).toBe(1);
   });
 
+  it('restores the previous layer when replace staging fails', async () => {
+    const asset = await createStoredAsset();
+    await processMapAsset(asset._id, {
+      now: () => T0,
+      claimTimeoutMs: CLAIM_TIMEOUT_MS,
+    });
+    const ready = await getMapAsset(asset._id);
+    expect(ready.status).toBe('ready');
+
+    await expect(
+      replaceMapAssetFiles({
+        assetId: ready._id,
+        files: [{filename: 'replacement.geojson'}],
+        primaryFilename: 'replacement.geojson',
+      })
+    ).rejects.toThrow(/missing data/);
+
+    const restored = await getMapAsset(ready._id);
+    expect(restored.status).toBe('ready');
+    expect(restored.originalFilename).toBe(ready.originalFilename);
+    expect(restored.kind).toBe(ready.kind);
+    expect(restored.contentHash).toBe(ready.contentHash);
+    expect(restored.storedAttachments).toEqual(ready.storedAttachments);
+    expect(restored.failureReason).toBeUndefined();
+
+    const replaced = await replaceMapAssetFiles({
+      assetId: ready._id,
+      files: [
+        {
+          filename: 'replacement.geojson',
+          bytes: Buffer.from('{"type":"FeatureCollection"}'),
+        },
+      ],
+      primaryFilename: 'replacement.geojson',
+    });
+    expect(replaced.status).toBe('pending');
+    expect(replaced.storedAttachments).toBeUndefined();
+  });
+
   it('writes pipeline stages onto the asset while the worker runs', async () => {
     const asset = await createStoredAsset();
     expect(asset.processingStage).toBe('queued');
@@ -436,6 +475,32 @@ describe('map asset worker processing', () => {
     ]);
     expect((await getMapAsset(asset._id)).processingStage).toBeUndefined();
     expect((await getMapAsset(asset._id)).processingProgress).toBeUndefined();
+  });
+
+  it('writes processingProgress while warping and clears it when ready', async () => {
+    const asset = await createStoredAsset();
+    normalizeMapUpload.mockImplementation(async (_files, context) => {
+      await context?.onStage?.('warping-raster');
+      await context?.onProgress?.({
+        phase: 'Warping',
+        percent: 22.5,
+      });
+      const during = await getMapAsset(asset._id);
+      expect(during.processingStage).toBe('warping-raster');
+      expect(during.processingProgress).toEqual({
+        phase: 'Warping',
+        percent: 22.5,
+      });
+      return normalizedFixture();
+    });
+    await processMapAsset(asset._id, {
+      now: () => T0,
+      claimTimeoutMs: CLAIM_TIMEOUT_MS,
+    });
+    const finished = await getMapAsset(asset._id);
+    expect(finished.status).toBe('ready');
+    expect(finished.processingStage).toBeUndefined();
+    expect(finished.processingProgress).toBeUndefined();
   });
 
   it('writes processingProgress while tiling and clears it when ready', async () => {

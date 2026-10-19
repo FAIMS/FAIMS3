@@ -60,10 +60,12 @@ export type RecordFormLayerDescriptor = {
   extent4326?: [number, number, number, number];
 };
 
+/** Stable overlay id for one form's record geometry. */
 export function recordFormLayerId(formId: string): string {
   return `${RECORD_FORM_LAYER_ID_PREFIX}${formId}`;
 }
 
+/** Form id encoded in a record-form overlay id, if the prefix matches. */
 export function formIdFromRecordFormLayerId(id: string): string | undefined {
   if (!id.startsWith(RECORD_FORM_LAYER_ID_PREFIX)) {
     return undefined;
@@ -72,6 +74,7 @@ export function formIdFromRecordFormLayerId(id: string): string | undefined {
   return formId.length > 0 ? formId : undefined;
 }
 
+/** localStorage key for one project's record-form paint prefs. */
 export function recordFormLayerPrefsKey(projectId: string): string {
   return `${RECORD_FORM_PREFS_KEY_PREFIX}${projectId}`;
 }
@@ -97,6 +100,7 @@ function colorForForm(formId: string, colorFormIds: string[]): string {
   return RECORD_FORM_LAYER_COLORS[index % RECORD_FORM_LAYER_COLORS.length];
 }
 
+/** Default visibility, stack, and color for one form overlay. */
 export function defaultRecordFormLayerPrefs(
   formId: string,
   colorFormIds: string[],
@@ -114,6 +118,7 @@ export function defaultRecordFormLayerPrefs(
   };
 }
 
+/** Clamp a stored prefs object onto a complete form-overlay paint. */
 export function normalizeRecordFormLayerPrefs(
   value: Partial<RecordFormLayerPrefs> | undefined,
   fallback: RecordFormLayerPrefs
@@ -141,6 +146,7 @@ export function normalizeRecordFormLayerPrefs(
   };
 }
 
+/** Keep only well-formed per-form prefs from a stored map. */
 export function normalizeRecordFormLayersPrefsState(
   value: unknown
 ): RecordFormLayersPrefsState {
@@ -151,14 +157,10 @@ export function normalizeRecordFormLayersPrefsState(
   for (const [id, prefs] of Object.entries(
     value as Record<string, Partial<RecordFormLayerPrefs>>
   )) {
-    if (
-      !formIdFromRecordFormLayerId(id) ||
-      !prefs ||
-      typeof prefs !== 'object'
-    ) {
+    const formId = formIdFromRecordFormLayerId(id);
+    if (!formId || !prefs || typeof prefs !== 'object') {
       continue;
     }
-    const formId = formIdFromRecordFormLayerId(id) as string;
     next[id] = normalizeRecordFormLayerPrefs(
       prefs,
       defaultRecordFormLayerPrefs(formId, [formId], 0)
@@ -167,6 +169,7 @@ export function normalizeRecordFormLayersPrefsState(
   return next;
 }
 
+/** Read this project's record-form paint prefs from localStorage. */
 export function readRecordFormLayerPrefs(
   projectId: string
 ): RecordFormLayersPrefsState {
@@ -181,6 +184,7 @@ export function readRecordFormLayerPrefs(
   return {};
 }
 
+/** Persist this project's record-form paint prefs. */
 export function writeRecordFormLayerPrefs(
   projectId: string,
   state: RecordFormLayersPrefsState
@@ -195,6 +199,7 @@ export function writeRecordFormLayerPrefs(
   }
 }
 
+/** Apply a visibility, stack, or paint patch to one form overlay. */
 export function applyRecordFormLayerPatch(
   state: RecordFormLayersPrefsState,
   id: string,
@@ -210,6 +215,7 @@ export function applyRecordFormLayerPatch(
   };
 }
 
+/** Push stored prefs onto an OpenLayers record-form layer. */
 export function applyRecordFormLayerPaint(
   layer: {
     setVisible: (visible: boolean) => void;
@@ -223,6 +229,7 @@ export function applyRecordFormLayerPaint(
   layer.setZIndex(clampZIndex(prefs.zIndex));
 }
 
+/** Strip listing fields so only paint prefs remain. */
 export function prefsFromRecordFormLayer(
   layer: RecordFormLayer
 ): RecordFormLayerPrefs {

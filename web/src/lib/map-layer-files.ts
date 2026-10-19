@@ -2,45 +2,16 @@
 import {
   INPUT_LIMITS,
   MAP_ASSET_PRIMARY_FORMATS,
+  MAP_ASSET_UPLOAD_ACCEPT,
+  isMapAssetAllowedUploadExtension,
+  isMapAssetPrimaryExtension,
+  mapAssetFileExtension,
+  mapAssetGeoreferencedImageCompanionIssue,
   mapAssetUploadTooLargeMessage,
 } from '@faims3/data-model';
 import {z} from 'zod';
 
-const PRIMARY_EXTENSIONS = new Set([
-  '.geojson',
-  '.json',
-  '.gpkg',
-  '.zip',
-  '.kml',
-  '.tif',
-  '.tiff',
-  '.pdf',
-  '.png',
-  '.jpg',
-  '.jpeg',
-]);
-
-const WORLD_FILE_EXTENSIONS = new Set([
-  '.pgw',
-  '.gfw',
-  '.jgw',
-  '.wld',
-  '.tfw',
-  '.j2w',
-]);
-
-const ALLOWED_EXTENSIONS = new Set([
-  ...PRIMARY_EXTENSIONS,
-  ...WORLD_FILE_EXTENSIONS,
-  '.prj',
-]);
-
-export const MAP_LAYER_FILE_ACCEPT = [...ALLOWED_EXTENSIONS].join(',');
-
-function extensionOf(filename: string): string {
-  const dot = filename.lastIndexOf('.');
-  return dot === -1 ? '' : filename.slice(dot).toLowerCase();
-}
+export const MAP_LAYER_FILE_ACCEPT = MAP_ASSET_UPLOAD_ACCEPT;
 
 /**
  * One or more upload files. PNG and JPEG must include a world file and a
@@ -62,8 +33,10 @@ export function mapLayerFilesSchema() {
       });
       return;
     }
-    const extensions = files.map(file => extensionOf(file.name));
-    const unsupported = extensions.find(ext => !ALLOWED_EXTENSIONS.has(ext));
+    const extensions = files.map(file => mapAssetFileExtension(file.name));
+    const unsupported = extensions.find(
+      ext => !isMapAssetAllowedUploadExtension(ext)
+    );
     if (unsupported) {
       ctx.addIssue({
         code: 'custom',
@@ -71,22 +44,19 @@ export function mapLayerFilesSchema() {
       });
       return;
     }
-    const primary = extensions.find(ext => PRIMARY_EXTENSIONS.has(ext));
-    if (!primary) {
+    if (!extensions.some(ext => isMapAssetPrimaryExtension(ext))) {
       ctx.addIssue({
         code: 'custom',
         message: `Include ${MAP_ASSET_PRIMARY_FORMATS}.`,
       });
       return;
     }
-    if (primary === '.png' || primary === '.jpg' || primary === '.jpeg') {
-      const hasWorld = extensions.some(ext => WORLD_FILE_EXTENSIONS.has(ext));
-      if (!hasWorld || !extensions.includes('.prj')) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'PNG and JPEG need a world file and a .prj.',
-        });
-      }
+    const companionIssue = mapAssetGeoreferencedImageCompanionIssue(extensions);
+    if (companionIssue) {
+      ctx.addIssue({
+        code: 'custom',
+        message: companionIssue,
+      });
     }
     const total = files.reduce((sum, file) => sum + file.size, 0);
     if (total > INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_BYTES) {

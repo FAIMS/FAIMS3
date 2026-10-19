@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import {Box, Typography} from '@mui/material';
+import {mapControlBrand} from '@faims3/data-model';
 import {layerLocationRelation, type Extent4326} from './layerLocationProximity';
 
 /** Same fill as the live GPS cursor on the map. */
-const LOCATION_DOT_COLOR = '#1a73e8';
+const LOCATION_DOT_COLOR = mapControlBrand.activeMain;
 
 /**
  * Blue current-location dot plus "On map" when the device is on this asset.
@@ -59,7 +60,10 @@ export function LayerLocationHint({
               flexShrink: 0,
               borderRadius: '50%',
               bgcolor: LOCATION_DOT_COLOR,
-              border: '2px solid #fff',
+              border: '2px solid',
+              borderColor: theme =>
+                theme.palette.mapControl?.locationRing ??
+                theme.palette.background.paper,
               boxShadow: `0 0 0 1px ${LOCATION_DOT_COLOR}`,
             }}
           />
@@ -77,7 +81,7 @@ export function LayerLocationHint({
           <ArrowUpwardIcon
             aria-hidden
             sx={{
-              fontSize: 14,
+              fontSize: theme => theme.typography.caption.fontSize,
               color: LOCATION_DOT_COLOR,
               transform: `rotate(${relation.bearingDegrees}deg)`,
             }}

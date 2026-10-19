@@ -2,8 +2,9 @@
 import {createHash} from '../utils';
 
 /**
- * SHA-256 of the sorted `assetId:contentHash` pairs for one survey.
- * An empty link set hashes the empty string so the digest stays stable.
+ * SHA-256 of the sorted `assetId:contentHash` pairs for one survey's **ready**
+ * layers. Pending or failed linked assets are not in this digest. An empty
+ * ready set hashes the empty string so the digest stays stable.
  */
 export async function buildContextualLayersHash(
   layers: {id: string; contentHash: string}[]

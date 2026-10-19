@@ -29,11 +29,13 @@ export function CreateMapLayerForm({
   const queryClient = useQueryClient();
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const {data: teams} = useGetTeams({user});
-  const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
+  const canCreateGlobally = useIsAuthorisedTo({
+    action: Action.CREATE_MAP_ASSET,
+  });
   const possibleTeams = getPossibleTeamsForAction({
     teams: teams?.teams,
     canCreateGlobally,
-    createInTeamAction: Action.CREATE_PROJECT_IN_TEAM,
+    createInTeamAction: Action.CREATE_MAP_ASSET_IN_TEAM,
     decodedToken: user.decodedToken,
   });
   const {showTeamCallout, showTeamDropdown} = getTeamFieldState({

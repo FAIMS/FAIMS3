@@ -8,8 +8,9 @@ import {Skeleton} from '@/components/ui/skeleton';
 import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useMapAsset} from '@/hooks/map-asset-hooks';
 import {
-  canManageMapAsset,
+  canDeleteMapAsset,
   canReplaceMapAsset,
+  canUpdateMapAssetDetails,
 } from '@/lib/map-layer-permissions';
 import {isMapAssetInProgress} from '@faims3/data-model';
 
@@ -21,12 +22,21 @@ export function MapLayerActions({assetId}: {assetId: string}) {
     return <Skeleton className="h-32 w-full" />;
   }
 
-  const canManage = canManageMapAsset(user, data);
+  const canUpdateDetails = canUpdateMapAssetDetails(user, data);
   const canReplace = canReplaceMapAsset(user, data);
+  const canDelete = canDeleteMapAsset(user, data);
+
+  if (!canUpdateDetails && !canReplace && !canDelete) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        You do not have permission to change this layer.
+      </p>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {canManage ? (
+      {canUpdateDetails ? (
         <Card>
           <List>
             <ListItem>
@@ -61,7 +71,7 @@ export function MapLayerActions({assetId}: {assetId: string}) {
           </List>
         </Card>
       ) : null}
-      {canManage ? (
+      {canDelete ? (
         <Card>
           <List>
             <ListItem>
