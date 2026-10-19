@@ -18,6 +18,13 @@ export const mapAssetQueryKey = (user: User | null, projectId?: string) => [
   projectId ?? 'library',
 ];
 
+export const mapAssetTeamQueryKey = (user: User | null, teamId: string) => [
+  'map-assets',
+  user?.token,
+  'team',
+  teamId,
+];
+
 /** Pull a user-facing message from a JSON error body, else `statusText`. */
 export function messageFromBody(body: unknown, statusText: string): string {
   if (body && typeof body === 'object' && 'error' in body) {
@@ -138,19 +145,43 @@ export async function fetchMapAssets({
   return (await response.json()) as GetMapAssetListResponse;
 }
 
+export async function fetchTeamMapAssets({
+  user,
+  teamId,
+}: {
+  user: User;
+  teamId: string;
+}): Promise<GetMapAssetListResponse> {
+  const response = await fetch(
+    `${config.apiUrl}/api/teams/${encodeURIComponent(teamId)}/map-assets`,
+    {headers: {Authorization: `Bearer ${user.token}`}}
+  );
+  if (!response.ok) {
+    throw new Error(await errorMessage(response));
+  }
+  return (await response.json()) as GetMapAssetListResponse;
+}
+
 export function useMapAssets({
   user,
   projectId,
+  teamId,
   enabled = true,
 }: {
   user: User | null;
   projectId?: string;
+  teamId?: string;
   enabled?: boolean;
 }) {
   return useQuery({
-    queryKey: mapAssetQueryKey(user, projectId),
+    queryKey: teamId
+      ? mapAssetTeamQueryKey(user, teamId)
+      : mapAssetQueryKey(user, projectId),
     enabled: !!user && enabled,
-    queryFn: () => fetchMapAssets({user: user as User, projectId}),
+    queryFn: () =>
+      teamId
+        ? fetchTeamMapAssets({user: user as User, teamId})
+        : fetchMapAssets({user: user as User, projectId}),
     refetchInterval: query => {
       const assets = query.state.data?.assets ?? [];
       return assets.some(asset => isMapAssetInProgress(asset.status))

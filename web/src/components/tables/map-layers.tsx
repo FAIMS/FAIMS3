@@ -189,13 +189,15 @@ const descriptionColumn: ColumnDef<ExistingMapAsset> = {
   ),
 };
 
-export function getMapLayerTableColumns(): ColumnDef<ExistingMapAsset>[] {
+export function getMapLayerTableColumns(options?: {
+  hideTeamColumn?: boolean;
+}): ColumnDef<ExistingMapAsset>[] {
   return [
     nameColumn,
     statusColumn,
     typeColumn,
     sizeColumn,
-    teamColumn,
+    ...(options?.hideTeamColumn ? [] : [teamColumn]),
     ownerColumn,
     updatedColumn,
     descriptionColumn,

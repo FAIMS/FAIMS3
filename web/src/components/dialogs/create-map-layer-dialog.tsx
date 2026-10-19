@@ -9,16 +9,33 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {useCanUploadMapLayer} from '@/hooks/auth-hooks';
+import {
+  useCanUploadMapLayer,
+  useIsAuthorisedTo,
+  useRequiredUser,
+} from '@/hooks/auth-hooks';
+import {useGetTeam} from '@/hooks/queries';
+import {Action} from '@faims3/data-model';
 import {Plus} from 'lucide-react';
 import {useState} from 'react';
 
 /** Hidden when the user cannot upload a map layer. */
-export function CreateMapLayerDialog() {
+export function CreateMapLayerDialog({
+  specifiedTeam,
+}: {
+  specifiedTeam?: string;
+}) {
   const [open, setOpen] = useState(false);
+  const user = useRequiredUser();
   const canUpload = useCanUploadMapLayer();
+  const {data: team} = useGetTeam({user, teamId: specifiedTeam});
+  const canCreateInSpecifiedTeam = useIsAuthorisedTo({
+    action: Action.CREATE_MAP_ASSET_IN_TEAM,
+    resourceId: specifiedTeam,
+  });
+  const canCreate = specifiedTeam ? canCreateInSpecifiedTeam : canUpload;
 
-  if (!canUpload) {
+  if (!canCreate) {
     return null;
   }
 
@@ -41,6 +58,7 @@ export function CreateMapLayerDialog() {
         <DialogHeader>
           <DialogTitle className="text-lg font-medium">
             Add map layer
+            {specifiedTeam && <> in '{team?.name ?? 'Team'}'</>}
           </DialogTitle>
           <DialogDescription asChild>
             <div className="space-y-3 text-sm text-muted-foreground">
@@ -76,7 +94,10 @@ export function CreateMapLayerDialog() {
             </div>
           </DialogDescription>
         </DialogHeader>
-        <CreateMapLayerForm setDialogOpen={setOpen} />
+        <CreateMapLayerForm
+          setDialogOpen={setOpen}
+          specifiedTeam={specifiedTeam}
+        />
       </DialogContent>
     </Dialog>
   );

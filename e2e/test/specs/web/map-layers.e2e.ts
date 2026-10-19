@@ -64,6 +64,38 @@ describe('Web — Map layers', () => {
     });
   });
 
+  it('opens the team Map layers tab and presets the team on create', async () => {
+    await browser.reloadSession();
+    await loginWebPersona('managerBlue');
+    await browser.url(`${getWebUrl()}/teams`);
+    await waitForTestId('web-teams-heading');
+    const search = byTestId('web-data-table-search');
+    if (await search.isExisting()) {
+      await search.setValue('Blue');
+    }
+    const row = await $('tbody tr');
+    await row.waitForClickable({timeout: 10000});
+    await row.click();
+    await browser.waitUntil(
+      async () => (await browser.getUrl()).includes('/teams/'),
+      {timeout: 10000}
+    );
+    await waitForTestId('web-team-tab-map-layers');
+    await byTestId('web-team-tab-map-layers').click();
+    await waitForTestId('web-map-layers-create-button');
+    await byTestId('web-map-layers-create-button').click();
+    await waitForTestId('web-map-layers-create-dialog');
+    const title = await byTestId('web-map-layers-create-dialog')
+      .$('h2')
+      .getText();
+    expect(title).toContain('Add map layer in');
+    expect(title).toContain('Blue');
+    await captureStep({
+      surface: 'web',
+      label: 'team-map-layers-create-dialog',
+    });
+  });
+
   it('opens the survey Map layers tab with no linked layers', async () => {
     await browser.reloadSession();
     await loginWebPersona('managerBlue');

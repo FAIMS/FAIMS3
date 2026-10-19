@@ -22,8 +22,10 @@ import {useState} from 'react';
 
 export function CreateMapLayerForm({
   setDialogOpen,
+  specifiedTeam,
 }: {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  specifiedTeam?: string;
 }) {
   const user = useRequiredUser();
   const queryClient = useQueryClient();
@@ -40,6 +42,7 @@ export function CreateMapLayerForm({
   });
   const {showTeamCallout, showTeamDropdown} = getTeamFieldState({
     canCreateGlobally,
+    specifiedTeam,
     possibleTeams,
   });
 
@@ -86,6 +89,7 @@ export function CreateMapLayerForm({
   }) => {
     const teamId = resolveTeamId({
       canCreateGlobally,
+      specifiedTeam,
       possibleTeams,
       team: values.team,
     });

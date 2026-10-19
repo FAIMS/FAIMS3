@@ -20,6 +20,7 @@ export const MAP_ASSET_LINKS_BY_ASSET = `${INDEX_DOCUMENT_NAME}/${LINKS_BY_ASSET
 const indexDocument = {
   _id: `_design/${INDEX_DOCUMENT_NAME}`,
   views: {
+    // Team tab and GET /api/teams/:id/map-assets list by this key.
     [ASSETS_BY_TEAM]: {
       map: convertToCouchDBString(doc => {
         if (!doc || doc.docType !== 'asset' || !doc.ownedByTeamId) {

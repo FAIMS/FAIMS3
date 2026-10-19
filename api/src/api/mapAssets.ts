@@ -18,6 +18,7 @@ import {
   isAuthorizedToReadMapAsset,
   isAuthorizedToReplaceMapAssetFiles,
   isAuthorizedToUpdateMapAssetDetails,
+  teamGrantsMapAssetAction,
   mapAssetUploadTooLargeMessage,
   type MapAssetAuthorizationInput,
   MapAssetDetailsSchema,
@@ -240,6 +241,34 @@ function authorizeAsset(
   });
 }
 
+/**
+ * Team-owned layers from the Couch `assetsByTeam` view.
+ *
+ * Used by GET /api/teams/:id/map-assets and GET /api/map-assets?teamId=.
+ * The view is the team filter — this does not scan the library and drop
+ * other teams. When the caller's team role (or a global role) grants
+ * READ_MAP_ASSET, the view rows are returned as-is. Otherwise each asset is
+ * checked for creator / explicit read access (e.g. TEAM_MEMBER_CREATOR).
+ */
+export async function listReadableTeamMapAssets(
+  user: Express.User,
+  teamId: string
+) {
+  const assets = await listAssetsByTeam(teamId);
+  if (
+    teamGrantsMapAssetAction({
+      decodedToken: tokenOf(user),
+      teamId,
+      action: Action.READ_MAP_ASSET,
+    })
+  ) {
+    return assets;
+  }
+  return assets.filter(asset =>
+    authorizeAsset(user, asset, isAuthorizedToReadMapAsset)
+  );
+}
+
 async function canReadAsset(
   user: Express.User,
   asset: {createdBy: string; ownedByTeamId?: string; _id: string}
@@ -366,12 +395,7 @@ api.get(
       ) {
         throw new Exceptions.UnauthorizedException();
       }
-      const teamAssets = await listAssetsByTeam(teamId);
-      res.json({
-        assets: teamAssets.filter(asset =>
-          authorizeAsset(user, asset, isAuthorizedToReadMapAsset)
-        ),
-      });
+      res.json({assets: await listReadableTeamMapAssets(user, teamId)});
       return;
     }
 

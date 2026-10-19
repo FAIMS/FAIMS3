@@ -4,13 +4,14 @@ import {
   addTeamRole,
   buildContextualLayersHash,
   INPUT_LIMITS,
+  MAP_ASSETS_BY_TEAM,
   MAP_ASSET_NORMALIZED_ATTACHMENT,
   type PeopleDBDocument,
   registerClient,
   Role,
 } from '@faims3/data-model';
 import request from 'supertest';
-import {beforeEach, describe, expect, it} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   generateJwtFromUser,
   upgradeCouchUserToExpressUser,
@@ -557,5 +558,127 @@ describe('map asset survey links HTTP', () => {
     expect(emptied.body.contextualLayersHash).toBe(
       await buildContextualLayersHash([])
     );
+  });
+});
+
+describe('GET /api/teams/:id/map-assets', () => {
+  beforeEach(async () => {
+    await beforeApiTests();
+    await clearMapAssetDocs();
+  });
+
+  it('requires authentication', async () => {
+    const res = await request(app).get('/api/teams/team-missing/map-assets');
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({error: 'authentication required'});
+  });
+
+  it('returns 404 for a missing team the caller can view', async () => {
+    await auth(
+      request(app).get('/api/teams/team-missing/map-assets'),
+      adminToken
+    ).expect(404);
+  });
+
+  it('blocks a user who cannot view the team', async () => {
+    const team = await createTeam();
+    await auth(
+      request(app).get(`/api/teams/${team._id}/map-assets`),
+      localUserToken
+    ).expect(401);
+  });
+
+  it('lists only layers owned by that team from the team view', async () => {
+    const team = await createTeam();
+    const other = await createTeam('Other Map Team');
+    const inTeam = await createPendingAsset('admin', team._id);
+    await createPendingAsset('admin', other._id);
+    await createPendingAsset('admin');
+
+    const listed = await auth(
+      request(app).get(`/api/teams/${team._id}/map-assets`),
+      adminToken
+    ).expect(200);
+    expect(listed.body.assets.map((asset: {_id: string}) => asset._id)).toEqual(
+      [inTeam._id]
+    );
+  });
+
+  it('queries the assetsByTeam view rather than scanning the library', async () => {
+    const team = await createTeam();
+    await createPendingAsset('admin', team._id);
+    const db = getMapAssetsDB();
+    const query = vi.spyOn(db, 'query');
+    try {
+      await auth(
+        request(app).get(`/api/teams/${team._id}/map-assets`),
+        adminToken
+      ).expect(200);
+      expect(query).toHaveBeenCalledWith(
+        MAP_ASSETS_BY_TEAM,
+        expect.objectContaining({key: team._id, include_docs: false})
+      );
+    } finally {
+      query.mockRestore();
+    }
+  });
+
+  it('lets a team member see team layers and a member-creator only their own', async () => {
+    const team = await createTeam();
+    const member = await createRoleUser({
+      username: 'team-layer-member',
+      teamId: team._id,
+      teamRole: Role.TEAM_MEMBER,
+    });
+    const creator = await createRoleUser({
+      username: 'team-layer-creator',
+      teamId: team._id,
+      teamRole: Role.TEAM_MEMBER_CREATOR,
+    });
+    const manager = await createRoleUser({
+      username: 'team-layer-manager',
+      teamId: team._id,
+      teamRole: Role.TEAM_MANAGER,
+    });
+
+    const managerLayer = await createPendingAsset(
+      'team-layer-manager',
+      team._id
+    );
+    const creatorLayer = await createPendingAsset(
+      'team-layer-creator',
+      team._id
+    );
+
+    const memberList = await auth(
+      request(app).get(`/api/teams/${team._id}/map-assets`),
+      member.token
+    ).expect(200);
+    expect(
+      memberList.body.assets.map((asset: {_id: string}) => asset._id).sort()
+    ).toEqual([managerLayer._id, creatorLayer._id].sort());
+
+    const creatorList = await auth(
+      request(app).get(`/api/teams/${team._id}/map-assets`),
+      creator.token
+    ).expect(200);
+    expect(
+      creatorList.body.assets.map((asset: {_id: string}) => asset._id)
+    ).toEqual([creatorLayer._id]);
+
+    const managerList = await auth(
+      request(app).get(`/api/teams/${team._id}/map-assets`),
+      manager.token
+    ).expect(200);
+    expect(managerList.body.assets).toHaveLength(2);
+  });
+
+  it('returns an empty list when the team owns no layers', async () => {
+    const team = await createTeam();
+    const listed = await auth(
+      request(app).get(`/api/teams/${team._id}/map-assets`),
+      adminToken
+    ).expect(200);
+    expect(listed.body.assets).toEqual([]);
   });
 });

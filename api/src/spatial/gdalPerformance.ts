@@ -42,7 +42,7 @@ const FGB_GEOMETRY_FAMILY: Record<string, 'point' | 'line' | 'polygon'> = {
 function canonicalGeometryType(raw: string): string {
   return raw
     .toLowerCase()
-    .replace(/[\s_\-]/g, '')
+    .replace(/[\s_-]/g, '')
     .replace(/25d$/, '')
     .replace(/[zm]+$/, '');
 }

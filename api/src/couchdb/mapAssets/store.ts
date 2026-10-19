@@ -107,6 +107,7 @@ async function queryIds(view: string, key: string): Promise<string[]> {
     .filter((id): id is string => Boolean(id));
 }
 
+/** Team-owned layers from the Couch `assetsByTeam` view. Does not scan the library. */
 export async function listAssetsByTeam(
   teamId: string
 ): Promise<ExistingMapAsset[]> {
