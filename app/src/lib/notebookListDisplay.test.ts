@@ -1,9 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
+
+vi.mock('../context/store', () => ({
+  store: {
+    getState: vi.fn(),
+    dispatch: vi.fn(),
+    subscribe: vi.fn(() => vi.fn()),
+  },
+}));
+
 import type {Project} from '../context/slices/projectSlice';
 import {
   formatNotebookListDescription,
   isNotebookListDescriptionTruncated,
+  isProjectActivating,
+  partitionNotebookListProjects,
   sortProjectsByNewest,
 } from './notebookListDisplay';
 
@@ -58,5 +69,38 @@ describe('sortProjectsByNewest', () => {
     const before = [...input];
     sortProjectsByNewest(input);
     expect(input).toEqual(before);
+  });
+});
+
+describe('partitionNotebookListProjects', () => {
+  const listed = {
+    projectId: 'listed-1',
+    serverId: 'server-1',
+    isActivated: false,
+    updatedAt: '2024-01-01T00:00:00Z',
+  } as Project;
+  const activating = {
+    projectId: 'activating-1',
+    serverId: 'server-1',
+    isActivated: false,
+    updatedAt: '2024-02-01T00:00:00Z',
+  } as Project;
+  const activated = {
+    projectId: 'active-1',
+    serverId: 'server-1',
+    isActivated: true,
+    updatedAt: '2024-03-01T00:00:00Z',
+  } as Project;
+
+  it('keeps in-flight activations in the Active list', () => {
+    const keys = ['server-1:activating-1'];
+    expect(isProjectActivating(activating, keys)).toBe(true);
+    const {activatedProjects, availableProjects} =
+      partitionNotebookListProjects([listed, activating, activated], keys);
+    expect(activatedProjects.map(p => p.projectId)).toEqual([
+      'active-1',
+      'activating-1',
+    ]);
+    expect(availableProjects.map(p => p.projectId)).toEqual(['listed-1']);
   });
 });
