@@ -13,8 +13,6 @@ import {tmpdir} from 'os';
 import {ServiceUnavailableException} from '../../exceptions';
 import {logMapAssetProcessing} from '../../logging';
 
-export {MAP_ASSET_UPLOAD_FREE_DISK_BYTES};
-
 export async function freeDiskBytes(
   directory: string = tmpdir()
 ): Promise<number | undefined> {

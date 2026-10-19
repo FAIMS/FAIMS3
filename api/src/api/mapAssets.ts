@@ -52,7 +52,7 @@ import {
   primaryUploadFile,
   safeUploadFilename,
   UploadedMapFile,
-} from '../couchdb/mapAssets/normalize';
+} from '../couchdb/mapAssets/uploadRules';
 import {getAllTeams} from '../couchdb/teams';
 import * as Exceptions from '../exceptions';
 import {

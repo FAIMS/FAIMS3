@@ -54,15 +54,14 @@ import {
   sha256File,
   storedAttachmentLocation,
 } from './attachments';
-import {normalizeMapUpload, UploadedMapFile} from './normalize';
+import {normalizeMapUpload} from './normalize';
 import {
   cleanupStaging,
   ensureStagingPaths,
   readStagedFiles,
   stageUploadFiles,
 } from './staging';
-
-export {sha256} from './attachments';
+import {type UploadedMapFile} from './uploadRules';
 
 function isAsset(doc: {
   _id?: string;

@@ -56,13 +56,6 @@ async function emitStage(
   await logContext?.onStage?.(stage);
 }
 
-export {
-  assertUploadCompanions,
-  primaryUploadFile,
-  safeUploadFilename,
-  type UploadedMapFile,
-} from './uploadRules';
-
 export type NormalizedMapAsset = {
   kind: MapAssetKind;
   mediaType: string;
