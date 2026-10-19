@@ -754,6 +754,7 @@ type GalleryPhoto =
 const PhotoGallery: React.FC<{
   photos: useAttachmentsResult;
   pendingPhotos: Map<string, PendingPhoto>;
+  maxItems: number | null;
   onDelete: (attachmentId: string) => void;
   onAddPhoto: () => void;
   onPickFromGallery: () => void;
@@ -767,6 +768,7 @@ const PhotoGallery: React.FC<{
 }> = ({
   photos,
   pendingPhotos,
+  maxItems,
   onDelete,
   onAddPhoto,
   onPickFromGallery,
@@ -836,9 +838,18 @@ const PhotoGallery: React.FC<{
     return result;
   }, [photos, pendingPhotos]);
 
+  // Count displayed photos, including pending previews.
+  const uploadedCountLabel =
+    maxItems == null
+      ? galleryPhotos.length
+      : `${galleryPhotos.length}/${maxItems}`;
+
+  // Minimum width for two photo columns, including the gap and horizontal paddings.
+  const singleColumnQuery = `@container (max-width: calc(320px + ${theme.spacing(1.5)} + 2 * ${theme.spacing(1)}))`;
+
   return (
     <>
-      <Box sx={{width: '100%'}}>
+      <Box sx={{width: '100%', containerType: 'inline-size'}}>
         <Box
           sx={{
             display: 'grid',
@@ -848,13 +859,33 @@ const PhotoGallery: React.FC<{
             width: '100%',
           }}
         >
+          {/* On single column layouts, place the actions above this hint. */}
+          <Typography
+            variant="subtitle2"
+            gutterBottom
+            sx={{
+              margin: 0,
+              // span all available columns
+              gridColumn: '1 / -1',
+              // 160px + 160px + column gap + horizontal padding * 2
+              // When the container width <= singleColumnQuery width, place the hint in grid row 2.
+              [singleColumnQuery]: {gridRow: disabled ? 1 : 2},
+            }}
+          >
+            Uploaded photos ({uploadedCountLabel})
+          </Typography>
+
           {!disabled && (
-            <PhotoActionsTile
-              onAddPhoto={onAddPhoto}
-              onPickFromGallery={onPickFromGallery}
-              actionsDisabled={actionsDisabled}
-              actionsDisabledReason={actionsDisabledReason}
-            />
+            // When the container width <= singleColumnQuery width,
+            // place the action tile in grid row 1.
+            <Box sx={{[singleColumnQuery]: {gridRow: 1}}}>
+              <PhotoActionsTile
+                onAddPhoto={onAddPhoto}
+                onPickFromGallery={onPickFromGallery}
+                actionsDisabled={actionsDisabled}
+                actionsDisabledReason={actionsDisabledReason}
+              />
+            </Box>
           )}
 
           {/* Photo Grid - unified pending + loaded */}
@@ -1592,16 +1623,6 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       ? `Up to ${MAX_PARALLEL_SAVES} photos can save at once — wait for one to finish.`
       : undefined;
 
-  // Limit the gallery hint to the available photo capacity.
-  const gallerySelectionLimit = Math.min(
-    MAX_GALLERY_BATCH,
-    remainingCapacity ?? MAX_GALLERY_BATCH
-  );
-  const photoInputHint =
-    gallerySelectionLimit > 0
-      ? `Select up to ${gallerySelectionLimit} photo${gallerySelectionLimit === 1 ? '' : 's'} at once. `
-      : null;
-
   return (
     <FieldWrapper
       heading={label}
@@ -1611,19 +1632,6 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       errors={props.state.meta.errors as unknown as string[]}
     >
       <Box sx={{width: '100%'}}>
-        {/* Photo input hint and count */}
-        {(photoInputHint || maxItems != null) && (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{display: 'block', mt: 1}}
-          >
-            {photoInputHint}
-            {maxItems != null &&
-              `${currentCount} / ${maxItems} photo${maxItems === 1 ? '' : 's'}.`}
-          </Typography>
-        )}
-
         {/* Warn when the photo count exceeds the configured maximum. */}
         {exceedsPhotoMaximum && !disabled && (
           <Alert severity="info" sx={{mb: 2}}>
@@ -1674,6 +1682,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
           <PhotoGallery
             photos={loadedPhotos}
             pendingPhotos={pendingPhotos}
+            maxItems={maxItems}
             onDelete={handleDelete}
             onAddPhoto={takePhoto}
             onPickFromGallery={pickFromGallery}

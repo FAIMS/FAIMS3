@@ -517,16 +517,21 @@ const FileItem: React.FC<{
  */
 const FileList: React.FC<{
   files: useAttachmentsResult;
+  maxItems: number | null;
   onDelete: (index: number) => void;
   onView: (index: number) => void;
   disabled: boolean;
-}> = ({files, onDelete, onView, disabled}) => {
+}> = ({files, maxItems, onDelete, onView, disabled}) => {
   if (files.length === 0) return null;
+
+  // only files already represented in the attachment list are counted
+  const uploadedCountLabel =
+    maxItems == null ? files.length : `${files.length}/${maxItems}`;
 
   return (
     <Box sx={{mt: 2}}>
       <Typography variant="subtitle2" gutterBottom>
-        Uploaded Files ({files.length})
+        Uploaded files ({uploadedCountLabel})
       </Typography>
       <List sx={{width: '100%'}}>
         {files.map((file, index) => {
@@ -865,17 +870,6 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
           </Alert>
         )}
 
-        {/* File Count Info */}
-        {maxItems != null && (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{display: 'block', mt: 1}}
-          >
-            {currentCount} / {maxItems} file{maxItems === 1 ? '' : 's'}.
-          </Typography>
-        )}
-
         {/* Warn when the file count exceeds the configured maximum. */}
         {exceedsMaximum && !disabled && (
           <Alert severity="info" sx={{mt: 1}}>
@@ -902,6 +896,7 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
         {/* File List */}
         <FileList
           files={loadedFiles}
+          maxItems={maxItems}
           onDelete={handleDelete}
           onView={handleView}
           disabled={disabled}

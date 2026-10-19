@@ -330,7 +330,7 @@ describe('FileUploader upload UI', () => {
 
     expect(screen.getByTestId('file-input')).toBeDisabled();
     expect(mockDropzone.props?.disabled).toBe(true);
-    expect(screen.getByText(/1 \/ 1 file/)).toBeInTheDocument();
+    expect(screen.getByText('Uploaded files (1/1)')).toBeInTheDocument();
     expect(
       screen.queryByText(/Remove extra files to meet the limit/)
     ).not.toBeInTheDocument();
@@ -382,7 +382,8 @@ describe('FileUploader upload UI', () => {
 
     await dropFiles([file('a.txt'), file('b.txt')]);
     expect(addAttachment).toHaveBeenCalledTimes(1);
-    expect(screen.getByText(/2 \/ 3 files/)).toBeInTheDocument();
+    // Pending uploads reserve capacity but are not counted as uploaded files.
+    expect(screen.queryByText(/Uploaded files/)).not.toBeInTheDocument();
 
     // The two in-flight reservations leave room for only one more file.
     await dropFiles([file('c.txt'), file('d.txt')]);
@@ -398,7 +399,7 @@ describe('FileUploader upload UI', () => {
       second.resolve('id-b');
     });
     await waitFor(() => expect(store.current).toEqual(['id-a', 'id-b']));
-    expect(screen.getByText(/2 \/ 3 files/)).toBeInTheDocument();
+    expect(screen.getByText('Uploaded files (2/3)')).toBeInTheDocument();
   });
 
   it('keeps the form locked until all overlapping batches finish', async () => {
