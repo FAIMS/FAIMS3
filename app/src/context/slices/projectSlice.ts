@@ -442,6 +442,50 @@ function retainedActivatedFields(project: ActivatedProject) {
   };
 }
 
+/**
+ * Activates an existing project
+ *
+ * This involves
+ *
+ * - creating local pouch DB which stores the data synced from the remote
+ *   (and new records)
+ * - creating the remote pouch DB which is a connection point to the remote
+ *   data-database
+ * - creating the sync object which performs the synchronisation between the
+ *   two databases
+ * - registering the above non-serialisable objects into databaseService
+ * - marking the project as activated and updating store state
+ * - inclusion of design documents
+ *
+ * Declared before the slice so extraReducers can use typed pending/rejected
+ * matchers.
+ */
+export const activateProject = createAsyncThunk<
+  void,
+  ProjectIdentity & DatabaseAuth
+>('projects/activateProject', async (payload, {dispatch, getState}) => {
+  try {
+    await runActivateProject(payload, dispatch as AppDispatch, getState);
+  } catch (err) {
+    const project = projectByIdentity(
+      (getState() as RootState).projects,
+      payload
+    );
+    if (!project?.isActivated) {
+      dispatch(
+        addAlert({
+          severity: 'error',
+          message:
+            err instanceof Error
+              ? err.message
+              : `Failed to activate this ${config.notebookName}.`,
+        })
+      );
+    }
+    throw err;
+  }
+});
+
 const projectsSlice = createSlice({
   name: 'projects',
   initialState: initialProjectState,
@@ -1339,17 +1383,11 @@ const projectsSlice = createSlice({
     },
   },
   extraReducers: builder => {
-    builder.addCase('projects/activateProject/pending', (state, action) => {
-      addActivatingProject(
-        state,
-        (action as unknown as {meta: {arg: ProjectIdentity}}).meta.arg
-      );
+    builder.addCase(activateProject.pending, (state, action) => {
+      addActivatingProject(state, action.meta.arg);
     });
-    builder.addCase('projects/activateProject/rejected', (state, action) => {
-      removeActivatingProject(
-        state,
-        (action as unknown as {meta: {arg: ProjectIdentity}}).meta.arg
-      );
+    builder.addCase(activateProject.rejected, (state, action) => {
+      removeActivatingProject(state, action.meta.arg);
     });
   },
 });
@@ -1522,13 +1560,6 @@ export const selectPendingOfflineMapDownloadPrompt = (state: RootState) =>
 /** Keys of notebooks whose `activateProject` thunk is still in flight. */
 export const selectActivatingProjects = (state: RootState): string[] =>
   state.projects.activatingProjects ?? [];
-
-/** True while {@link activateProject} is preparing this notebook. */
-export const selectIsProjectActivating = (
-  state: RootState,
-  identity: ProjectIdentity
-): boolean =>
-  selectActivatingProjects(state).includes(projectIdentityKey(identity));
 
 /**
  * Finds a project by server and project ID.
@@ -1723,48 +1754,6 @@ export const updateDatabaseCredentials = createAsyncThunk<
         // You might want to collect errors and handle them appropriately
       }
     }
-  }
-});
-
-/**
- * Activates an existing project
- *
- * This involves
- *
- * - creating local pouch DB which stores the data synced from the remote
- *   (and new records)
- * - creating the remote pouch DB which is a connection point to the remote
- *   data-database
- * - creating the sync object which performs the synchronisation between the
- *   two databases
- * - registering the above non-serialisable objects into databaseService
- * - marking the project as activated and updating store state
- * - inclusion of design documents
- *
- */
-export const activateProject = createAsyncThunk<
-  void,
-  ProjectIdentity & DatabaseAuth
->('projects/activateProject', async (payload, {dispatch, getState}) => {
-  try {
-    await runActivateProject(payload, dispatch as AppDispatch, getState);
-  } catch (err) {
-    const project = projectByIdentity(
-      (getState() as RootState).projects,
-      payload
-    );
-    if (!project?.isActivated) {
-      dispatch(
-        addAlert({
-          severity: 'error',
-          message:
-            err instanceof Error
-              ? err.message
-              : `Failed to activate this ${config.notebookName}.`,
-        })
-      );
-    }
-    throw err;
   }
 });
 
