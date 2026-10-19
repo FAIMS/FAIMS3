@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {z} from 'zod';
 
 /**
@@ -19,7 +20,7 @@ const TRUTHY = new Set<string>(TRUTHY_STRINGS);
 const FALSEY = new Set<string>(FALSEY_STRINGS);
 
 /**
- * Boolean from the D3 vocabulary. Case-insensitive; anything else is an
+ * A boolean value from the environment. Case-insensitive; anything else is an
  * error. The generator emits `true`/`false`, so this is a strict superset of
  * what this module ever produces.
  */

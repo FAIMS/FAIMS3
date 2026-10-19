@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Script to validate that the generated .env file covers all environment
  * variables the consumers (mobile app, Control Centre, Fastlane) expect.

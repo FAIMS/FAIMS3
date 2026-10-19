@@ -1,5 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import {z} from 'zod';
-import {AuthProviderConfigMapSchema} from './auth-provider-config.js';
+import {
+  AUTH_PREFIX,
+  AuthProviderConfigMapSchema,
+} from './auth-provider-config.js';
 export {
   AuthProviderSchema,
   AuthProviderConfigMapSchema,
@@ -1055,7 +1059,7 @@ export function parseGeneratedEnv(raw: unknown): RuntimeConfig {
   // emits VITE_*, AUTH_* and the bare api keys). We do not need to enumerate
   // them to decide whether to run the api parser.
   const hasApiKey = Object.keys(rawEnv).some(
-    key => !key.startsWith('VITE_') && !key.startsWith('AUTH_')
+    key => !key.startsWith('VITE_') && !key.startsWith(AUTH_PREFIX)
   );
 
   // Merge the apps and api halves (either or both). The api half wins on
@@ -1068,7 +1072,7 @@ export function parseGeneratedEnv(raw: unknown): RuntimeConfig {
       ...parseAppsEnv(env),
     };
   }
-  if (hasApiKey || Object.keys(rawEnv).some(k => k.startsWith('AUTH_'))) {
+  if (hasApiKey || Object.keys(rawEnv).some(k => k.startsWith(AUTH_PREFIX))) {
     const apiPartial = parseApiEnv(rawEnv);
     partial = mergePartial(partial, apiPartial);
   }

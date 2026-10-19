@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Browser-safe entry point for @faims3/build-config.
  *

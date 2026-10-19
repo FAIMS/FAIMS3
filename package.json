@@ -39,7 +39,8 @@
     "build": "turbo build",
     "knip": "knip",
     "prepare": "husky",
-    "license-check": "pnpx @kt3k/license-checker -q"
+    "license-check": "pnpx @kt3k/license-checker -q",
+    "license-check:fix": "pnpx @kt3k/license-checker -q --inject"
   },
   "dependencies": {
     "@capacitor-community/exif": "^7.0.0",

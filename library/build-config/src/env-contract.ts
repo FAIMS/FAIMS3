@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {RuntimeConfig} from './build-config.js';
 import {buildAuthProviderEnvMap} from './auth-provider-config.js';
 

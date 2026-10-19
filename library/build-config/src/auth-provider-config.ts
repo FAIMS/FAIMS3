@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {z} from 'zod';
 import {FALSEY_STRINGS, TRUTHY_STRINGS} from './env-coercion.js';
 
@@ -205,11 +206,16 @@ export function isSAMLProvider(
   return config.type === 'saml';
 }
 
-const AUTH_PREFIX = 'AUTH_';
+// Environment variable parsing and utility functions for auth provider config.
+// All auth config is defined in environment variables prefixed with AUTH_ and is
+// translated into an AuthProviderConfigMap at runtime.
+
+export const AUTH_PREFIX = 'AUTH_';
 const AUTH_ENV_PATTERN = /^AUTH_([A-Z0-9]+)_([A-Z0-9_]+)?$/;
 const TRUTHY_SET = new Set<string>(TRUTHY_STRINGS);
 const FALSEY_SET = new Set<string>(FALSEY_STRINGS);
 
+// Convert an internal snake case name to camel case for use in the environment
 const snakeToCamel = (str: string): string => {
   const exceptions = ['ID', 'URL'];
   const parts = str.split('_');
@@ -224,6 +230,7 @@ const snakeToCamel = (str: string): string => {
   return almost.charAt(0).toLowerCase() + almost.slice(1);
 };
 
+// And convert back to snake case when parsing
 const camelToSnake = (str: string): string => {
   return str
     .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
@@ -231,6 +238,7 @@ const camelToSnake = (str: string): string => {
     .toUpperCase();
 };
 
+// Determine the type of a property in the auth provider schema (array, boolean, number, string)
 function getPropertyType(
   property: string
 ): 'array' | 'boolean' | 'number' | 'string' {
@@ -267,6 +275,9 @@ function getPropertyType(
   return 'string';
 }
 
+// Parse environment variables into an AuthProviderConfigMap. This reads all
+// environment variables prefixed with AUTH_ and converts them into the
+// appropriate types based on the auth provider schema.
 export function readAuthProviderConfigFromEnv(
   env: Record<string, string | undefined>
 ): AuthProviderConfigMap {
@@ -298,7 +309,7 @@ export function readAuthProviderConfigFromEnv(
     }
 
     if (propertyType === 'boolean') {
-      // D3 boolean vocabulary (see env-coercion). Strict: an unrecognised
+      // Strict: an unrecognised
       // value is dropped so the provider-level schema reports it, rather than
       // being silently coerced to false.
       const lower = (value ?? '').trim().toLowerCase();
