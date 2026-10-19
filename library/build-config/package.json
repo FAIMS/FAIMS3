@@ -19,7 +19,6 @@
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch",
     "generate": "tsx src/generate-build-config.ts",
-    "validate-coverage": "tsx src/validate-generated-env.ts",
     "test": "tsx --test test/*.test.ts",
     "lint": "oxlint --config ../../.oxlintrc.json ."
   },
