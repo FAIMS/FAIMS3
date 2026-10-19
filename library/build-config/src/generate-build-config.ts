@@ -8,13 +8,15 @@ import {
   toRuntimeConfig,
   type PartialBuildConfig,
 } from './build-config.js';
-import {buildEnvMapFromRuntime} from './env-contract.js';
+import {
+  buildEnvMapFromRuntime,
+  type SupportedPlatform,
+} from './env-contract.js';
 
-const HELP_TEXT = `Usage: pnpm --filter=@faims3/build-config run generate -- [--config path/to/config.json] [--platform apps|api] [--out path/to/.env]
+const HELP_TEXT = `Usage: pnpm --filter=@faims3/build-config run generate -- [--config path/to/config.json] [--platform apps|api|all] [--out path/to/.env]
 
 Generates a build environment file from the shared config JSON used by the app and web builds.
-Platforms: 'apps' (VITE_ vars for the mobile app and Control Centre builds,
-also accepts 'android' / 'ios' aliases), 'api' (server env vars).
+Platforms: 'apps' (VITE_ vars for the mobile app and Control Centre build), 'api' (server env vars).
 `;
 
 type Value =
@@ -25,8 +27,6 @@ type Value =
   | null
   | Array<string | number | boolean>;
 
-export type SupportedPlatform = 'apps' | 'api';
-
 export interface GenerateBuildConfigArgs {
   help?: boolean;
   config?: string;
@@ -35,38 +35,7 @@ export interface GenerateBuildConfigArgs {
   out?: string;
 }
 
-function readConfigJson(configArg: string, cwd = process.cwd()): unknown {
-  if (configArg === 'true') {
-    const stdin = fs.readFileSync(0, 'utf8').trim();
-    if (!stdin) {
-      throw new Error('No config JSON was provided on stdin.');
-    }
-    return JSON.parse(stdin);
-  }
-
-  const configPath = path.resolve(cwd, configArg);
-  if (!fs.existsSync(configPath)) {
-    throw new Error(`Config file not found: ${configPath}`);
-  }
-
-  return JSON.parse(fs.readFileSync(configPath, 'utf8'));
-}
-
-function readConfigForGeneration(configArg: string, cwd = process.cwd()) {
-  const parsed = parseBuildConfig(readConfigJson(configArg, cwd));
-  const commitVersion = resolveGitCommitVersion(
-    parsed.observability.commitVersion
-  );
-
-  return parseBuildConfig({
-    ...parsed,
-    observability: {
-      ...parsed.observability,
-      commitVersion,
-    },
-  });
-}
-
+// Parse the command line args to this script
 export function parseArgs(argv: string[]): GenerateBuildConfigArgs {
   const args: Record<string, string | boolean> = {};
 
@@ -105,6 +74,41 @@ export function parseArgs(argv: string[]): GenerateBuildConfigArgs {
   return args as GenerateBuildConfigArgs;
 }
 
+// Read the configuration JSON either from stdin or a file
+function readConfigJson(configArg: string, cwd = process.cwd()): unknown {
+  if (configArg === 'true') {
+    const stdin = fs.readFileSync(0, 'utf8').trim();
+    if (!stdin) {
+      throw new Error('No config JSON was provided on stdin.');
+    }
+    return JSON.parse(stdin);
+  }
+
+  const configPath = path.resolve(cwd, configArg);
+  if (!fs.existsSync(configPath)) {
+    throw new Error(`Config file not found: ${configPath}`);
+  }
+
+  return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+}
+
+// Read and parse the build configuration, injecting the git commit version string
+function readConfigForGeneration(configArg: string, cwd = process.cwd()) {
+  const parsed = parseBuildConfig(readConfigJson(configArg, cwd));
+  const commitVersion = resolveGitCommitVersion(
+    parsed.observability.commitVersion
+  );
+
+  return parseBuildConfig({
+    ...parsed,
+    observability: {
+      ...parsed.observability,
+      commitVersion,
+    },
+  });
+}
+
+// Convert a value to a string suitable for inclusion in an environment file
 function stringify(value: Value): string {
   if (typeof value === 'string') {
     return value.replace(/\r?\n/g, '\\n');
@@ -118,6 +122,8 @@ function stringify(value: Value): string {
   return '';
 }
 
+// Get a value for the Git Commit version if it hasn't been filled in the configuration
+// If the value is a placeholder or missing, attempt to resolve it using `git rev-parse HEAD`
 function resolveGitCommitVersion(value: unknown): string {
   const raw = typeof value === 'string' ? value.trim() : '';
   const placeholderPattern = /^output\s+of\s+`?git rev-parse HEAD`?$/i;
@@ -137,6 +143,8 @@ function resolveGitCommitVersion(value: unknown): string {
   }
 }
 
+// Environment generation from the parsed configuration, return a map
+// of environment variable names and values
 export function generateEnv({
   config,
   platform,
@@ -156,6 +164,7 @@ export function generateEnv({
     .join('\n');
 }
 
+// Handle script configuration and generate the build config based on the provided arguments
 export function generateBuildConfig(
   args: GenerateBuildConfigArgs,
   cwd = process.cwd()
@@ -164,22 +173,11 @@ export function generateBuildConfig(
     return `${HELP_TEXT}\n`;
   }
 
-  const rawPlatform = String(
-    args.platform ?? args.target ?? 'apps'
-  ).toLowerCase();
-  // The mobile CI workflows pass 'android' / 'ios'; both produce the same
-  // shared app/web env (the platform-specific values are additive).
-  const platformAliases: Record<string, SupportedPlatform> = {
-    apps: 'apps',
-    android: 'apps',
-    ios: 'apps',
-    api: 'api',
-  };
+  const platform = String(args.platform ?? args.target ?? 'all').toLowerCase();
 
-  const platform = platformAliases[rawPlatform];
-  if (!platform) {
+  if (platform !== 'apps' && platform !== 'api' && platform !== 'all') {
     throw new Error(
-      `Unsupported platform: ${rawPlatform}. Expected one of ${Object.keys(platformAliases).join(', ')}`
+      `Unsupported platform: ${platform}. Expected one of apps, api, all`
     );
   }
 

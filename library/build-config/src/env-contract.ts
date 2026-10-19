@@ -2,7 +2,7 @@
 import {RuntimeConfig} from './build-config.js';
 import {buildAuthProviderEnvMap} from './auth-provider-config.js';
 
-export type SupportedPlatform = 'apps' | 'api';
+export type SupportedPlatform = 'apps' | 'api' | 'all';
 
 export type EnvValue =
   | string
@@ -252,13 +252,13 @@ export function buildEnvMapFromRuntime(
   const {includeEmpty = false} = options;
   const map: Record<string, EnvValue> = {};
 
-  if (platform === 'apps') {
+  if (platform === 'apps' || platform === 'all') {
     applyContract(baseContract, runtime, map);
     applyContract(androidContract, runtime, map);
     applyContract(iosContract, runtime, map);
   }
 
-  if (platform === 'api') {
+  if (platform === 'api' || platform === 'all') {
     applyContract(apiContract, runtime, map);
     for (const [key, value] of Object.entries(
       buildAuthProviderEnvMap(runtime.authProviders)
