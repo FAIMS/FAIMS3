@@ -80,7 +80,7 @@ export const googleStrategyGenerator = ({
   const strategy = new Strategy(
     {
       clientID: clientID!,
-      clientSecret: clientSecret!, 
+      clientSecret: clientSecret!,
       callbackURL: config.conductorPublicUrl + providerAuthReturnUrl('google'),
       passReqToCallback: true,
       scope,

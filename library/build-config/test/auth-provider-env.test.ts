@@ -59,7 +59,8 @@ test('parses an oidc provider with a supplied index', () => {
     AUTH_AAF_DISPLAY_NAME: 'AAF',
     AUTH_AAF_INDEX: '50',
     AUTH_AAF_ISSUER: 'https://central.test.aaf.edu.au',
-    AUTH_AAF_AUTHORIZATION_URL: 'https://central.test.aaf.edu.au/oidc/authorize',
+    AUTH_AAF_AUTHORIZATION_URL:
+      'https://central.test.aaf.edu.au/oidc/authorize',
     AUTH_AAF_TOKEN_URL: 'https://central.test.aaf.edu.au/oidc/token',
     AUTH_AAF_USER_INFO_URL: 'https://central.test.aaf.edu.au/oidc/userinfo',
     AUTH_AAF_CLIENT_ID: 'aaf-client-id',
@@ -93,7 +94,8 @@ test('parses multiple providers at once', () => {
     AUTH_AAF_TYPE: 'oidc',
     AUTH_AAF_DISPLAY_NAME: 'AAF',
     AUTH_AAF_ISSUER: 'https://central.test.aaf.edu.au',
-    AUTH_AAF_AUTHORIZATION_URL: 'https://central.test.aaf.edu.au/oidc/authorize',
+    AUTH_AAF_AUTHORIZATION_URL:
+      'https://central.test.aaf.edu.au/oidc/authorize',
     AUTH_AAF_TOKEN_URL: 'https://central.test.aaf.edu.au/oidc/token',
     AUTH_AAF_USER_INFO_URL: 'https://central.test.aaf.edu.au/oidc/userinfo',
     AUTH_AAF_CLIENT_ID: 'aaf-client-id',
@@ -130,7 +132,10 @@ test('maps SAML *_URL env keys to camelCase fields and applies SAML defaults', (
   const result = readAuthProviderConfigFromEnv(env);
   const vg = result.vg;
   assert.equal(vg?.type, 'saml');
-  assert.equal(vg?.metadataErrorURL, 'https://conductor.example/auth/vg/sso-error');
+  assert.equal(
+    vg?.metadataErrorURL,
+    'https://conductor.example/auth/vg/sso-error'
+  );
   assert.equal(vg?.ssoErrorPageReturnURL, 'https://web.example/');
   // SAML-specific defaults
   assert.deepEqual(vg?.callbackMethods, ['POST']);

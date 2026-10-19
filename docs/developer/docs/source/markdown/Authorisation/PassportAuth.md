@@ -29,7 +29,8 @@ implementations.
 The available
 providers are configured via environment variables using a pattern of variable
 names to encode an object structure. Variables starting with `AUTH_` define
-the properties of different providers with the pattern `AUTH_{provider}_{property}`. There are two kinds of provider: Google and OIDC. These are configured
+the properties of different providers with the pattern `AUTH_{provider}_{property}`.
+There are three kinds of provider: Google , SAML and OIDC. These are configured
 as follows:
 
 For a Google provider, the TYPE property should be `google` and the following
@@ -127,7 +128,9 @@ of buttons on the login page.
 - `strategies/applyStrategies.ts`: Configures Passport.js strategies
 - `strategies/localStrategy.ts`: Local authentication strategy
 - `strategies/googleStrategy.ts`: Google OAuth strategy
-- `helpers.ts`: Utility functions for authentication including `completePostAuth` (shared post-authentication handler for all flows) and `ssoVerify` (Passport verify callback for all SSO strategies)
+- `helpers.ts`: Utility functions for authentication including `completePostAuth`
+  (shared post-authentication handler for all flows) and `ssoVerify` (Passport
+  verify callback for all SSO strategies)
 
 ## Token Exchange System
 
