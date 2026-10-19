@@ -3,10 +3,12 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {MemoryRouter} from 'react-router-dom';
 import {config} from '../../../buildconfig';
 
 const harness = vi.hoisted(() => ({
   isOnline: true,
+  activatingProjects: [] as string[],
 }));
 
 vi.mock('../../../utils/customHooks', () => ({
@@ -18,6 +20,11 @@ vi.mock('../../../utils/customHooks', () => ({
 }));
 
 vi.mock('../../../context/store', () => ({
+  store: {
+    getState: vi.fn(),
+    dispatch: vi.fn(),
+    subscribe: vi.fn(() => vi.fn()),
+  },
   useAppDispatch: () => vi.fn(),
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({
@@ -29,6 +36,7 @@ vi.mock('../../../context/store', () => ({
         },
       },
       projects: {
+        activatingProjects: harness.activatingProjects,
         servers: {
           'server-1': {
             serverId: 'server-1',
@@ -58,15 +66,13 @@ vi.mock('../../../context/popup', () => ({
   }),
 }));
 
-vi.mock('../ui/heading-grid', () => ({default: () => null}));
-vi.mock('../ui/tab-grid', () => ({default: () => null}));
 vi.mock('../authentication/inviteCodeEntry', () => ({
   InviteCodeEntry: () => null,
   InviteQRScanner: () => null,
 }));
 vi.mock('../notebook/settings/sync_switch', () => ({default: () => null}));
 
-import NoteBooks from './notebooks';
+import NoteBooks, {ACTIVATE_ACTIVE_VERB_LABEL} from './notebooks';
 
 class ResizeObserverStub {
   observe() {}
@@ -76,17 +82,20 @@ class ResizeObserverStub {
 
 function renderNotebooks() {
   return render(
-    <QueryClientProvider client={new QueryClient()}>
-      <ThemeProvider theme={createTheme()}>
-        <NoteBooks />
-      </ThemeProvider>
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={new QueryClient()}>
+        <ThemeProvider theme={createTheme()}>
+          <NoteBooks />
+        </ThemeProvider>
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 }
 
 describe('NoteBooks add survey button', () => {
   beforeEach(() => {
     harness.isOnline = true;
+    harness.activatingProjects = [];
     vi.stubGlobal('ResizeObserver', ResizeObserverStub);
   });
 
@@ -126,5 +135,23 @@ describe('NoteBooks add survey button', () => {
     ).toBe(
       `Connect to the internet to activate this ${config.notebookName}. Activation prepares the ${config.notebookName} for offline use.`
     );
+  });
+});
+
+describe('NoteBooks activating indicator', () => {
+  beforeEach(() => {
+    harness.isOnline = true;
+    harness.activatingProjects = ['server-1:survey-1'];
+    vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+  });
+
+  it('renders the production activating spinner on the Active list', () => {
+    renderNotebooks();
+
+    expect(screen.getByText('Creek survey')).toBeTruthy();
+    const indicator = screen.getByTestId('app-notebook-activating-indicator');
+    expect(indicator).toBeTruthy();
+    expect(indicator.textContent).toContain(ACTIVATE_ACTIVE_VERB_LABEL);
+    expect(indicator.querySelector('svg')).toBeTruthy();
   });
 });
