@@ -41,10 +41,7 @@ import {
 import {logError, logWarn} from '../../../logging';
 import {TakePhotoRender} from '../../../rendering/fields/view/specialised/TakePhoto';
 import {FieldInfo} from '../../types';
-import {
-  getItemCountHint,
-  getRemainingItemCount,
-} from '../../utils/itemCountHelpers';
+import {getRemainingItemCount} from '../../utils/itemCountHelpers';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {
   createConcurrencyLimiter,
@@ -1602,16 +1599,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   );
   const photoInputHint =
     gallerySelectionLimit > 0
-      ? `Take a photo or add up to ${gallerySelectionLimit} at once from the gallery.`
+      ? `Select up to ${gallerySelectionLimit} photo${gallerySelectionLimit === 1 ? '' : 's'} at once. `
       : null;
-
-  // Show the configured minimum/maximum before form validation.
-  const photoCountHint = getItemCountHint({
-    required,
-    minItems: props.minItems,
-    maxItems,
-    itemName: 'photo',
-  });
 
   return (
     <FieldWrapper
@@ -1622,25 +1611,16 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       errors={props.state.meta.errors as unknown as string[]}
     >
       <Box sx={{width: '100%'}}>
-        {/* Show photo count requirements and available input options. */}
-        {(photoCountHint || photoInputHint) && (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{display: 'block', mb: 1}}
-          >
-            {[photoCountHint, photoInputHint].filter(Boolean).join(' ')}
-          </Typography>
-        )}
-
-        {/* Photo Count Info */}
-        {maxItems != null && (
+        {/* Photo input hint and count */}
+        {(photoInputHint || maxItems != null) && (
           <Typography
             variant="caption"
             color="text.secondary"
             sx={{display: 'block', mt: 1}}
           >
-            {currentCount} / {maxItems} photo{maxItems === 1 ? '' : 's'}
+            {photoInputHint}
+            {maxItems != null &&
+              `${currentCount} / ${maxItems} photo${maxItems === 1 ? '' : 's'}.`}
           </Typography>
         )}
 

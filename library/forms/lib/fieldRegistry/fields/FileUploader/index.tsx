@@ -41,10 +41,7 @@ import {
 } from '../../../hooks/useAttachment';
 import {FileUploaderRender} from '../../../rendering/fields/view/specialised/FileUploader';
 import {FieldInfo} from '../../types';
-import {
-  getItemCountHint,
-  getRemainingItemCount,
-} from '../../utils/itemCountHelpers';
+import {getRemainingItemCount} from '../../utils/itemCountHelpers';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {fileUploaderValueSchema} from './valueSchema';
 
@@ -851,13 +848,6 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
     relevantErrors = [...relevantErrors, error];
   }
 
-  const itemCountHint = getItemCountHint({
-    required,
-    minItems: props.minItems,
-    maxItems,
-    itemName: 'file',
-  });
-
   return (
     <FieldWrapper
       heading={label}
@@ -875,17 +865,6 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
           </Alert>
         )}
 
-        {/* Show configured limits before validation errors appear. */}
-        {itemCountHint && (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{display: 'block', mb: 1}}
-          >
-            {itemCountHint}
-          </Typography>
-        )}
-
         {/* File Count Info */}
         {maxItems != null && (
           <Typography
@@ -893,7 +872,7 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
             color="text.secondary"
             sx={{display: 'block', mt: 1}}
           >
-            {currentCount} / {maxItems} file{maxItems === 1 ? '' : 's'}
+            {currentCount} / {maxItems} file{maxItems === 1 ? '' : 's'}.
           </Typography>
         )}
 
