@@ -11,7 +11,7 @@ import {SignedXml} from 'xml-crypto';
 import {config} from '../../buildconfig';
 import {providerAuthReturnUrl} from '../authRoutes';
 import {ssoVerify} from '../helpers';
-import {SAMLAuthProviderConfig} from './strategyTypes';
+import {SAMLAuthProviderConfig} from '@faims3/build-config';
 
 /**
  * Extracts email from SAML profile/assertion
@@ -135,8 +135,10 @@ export const samlStrategyGenerator = (
       // Required
       entryPoint: options.entryPoint,
       issuer: options.issuer,
-      // The IdP's public cert (for verifying IdP signatures)
-      cert: options.idpPublicKey,
+      // The IdP's public cert (for verifying IdP signatures).
+      // Deployment secret: always present in the API's generated env, so assert
+      // it (the shared build-config type keeps it optional).
+      cert: options.idpPublicKey!,
       // Callback URL
       callbackUrl:
         options.callbackURL ||

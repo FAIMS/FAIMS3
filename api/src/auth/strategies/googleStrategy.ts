@@ -13,6 +13,8 @@ import {
   VerifyCallback,
 } from 'passport-google-oauth20';
 
+import {GoogleAuthProviderConfig} from '@faims3/build-config';
+
 import {config} from '../../buildconfig';
 import {providerAuthReturnUrl} from '../authRoutes';
 import {ssoVerify} from '../helpers';
@@ -69,17 +71,16 @@ export const googleStrategyGenerator = ({
   clientID,
   clientSecret,
   scope,
-}: {
-  clientID: string;
-  clientSecret: string;
-  scope: string[];
-}) => {
+}: GoogleAuthProviderConfig) => {
   // This strategy handles both login and registration cases with the same
   // verify function
+  // clientID / clientSecret are deployment secrets: always present in the API's
+  // generated env, so assert them here (the shared build-config type keeps them
+  // optional so the secret-less committed core still validates).
   const strategy = new Strategy(
     {
-      clientID: clientID,
-      clientSecret: clientSecret,
+      clientID: clientID!,
+      clientSecret: clientSecret!, 
       callbackURL: config.conductorPublicUrl + providerAuthReturnUrl('google'),
       passReqToCallback: true,
       scope,

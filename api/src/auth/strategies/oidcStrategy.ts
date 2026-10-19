@@ -10,7 +10,7 @@ import {Profile, Strategy, VerifyCallback} from 'passport-openidconnect';
 import {config} from '../../buildconfig';
 import {providerAuthReturnUrl} from '../authRoutes';
 import {ssoVerify} from '../helpers';
-import {OIDCAuthProviderConfig} from './strategyTypes';
+import {OIDCAuthProviderConfig} from '@faims3/build-config';
 
 /**
  * The verify function receives the verified profile information from an IdP
@@ -75,8 +75,10 @@ export const oidcStrategyGenerator = (options: OIDCAuthProviderConfig) => {
       authorizationURL: options.authorizationURL,
       tokenURL: options.tokenURL,
       userInfoURL: options.userInfoURL,
-      clientID: options.clientID,
-      clientSecret: options.clientSecret,
+      // Deployment secrets: always present in the API's generated env, so
+      // assert them (the shared build-config type keeps them optional).
+      clientID: options.clientID!,
+      clientSecret: options.clientSecret!,
       callbackURL:
         config.conductorPublicUrl + providerAuthReturnUrl(options.id),
       passReqToCallback: true,

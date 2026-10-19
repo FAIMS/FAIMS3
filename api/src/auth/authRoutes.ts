@@ -64,7 +64,7 @@ import {
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {RegisteredAuthProviders} from './strategies/applyStrategies';
 import {verifyUserCredentials} from './strategies/localStrategy';
-import {SAMLAuthProviderConfig} from './strategies/strategyTypes';
+import {SAMLAuthProviderConfig} from '@faims3/build-config';
 import {injectSpSsoDescriptorErrorUrl} from './strategies/samlMetadataXml';
 import {
   buildSamlMetadataErrorUrl,

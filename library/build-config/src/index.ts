@@ -34,7 +34,20 @@ export type {
   ApiEnv,
   PartialBuildConfig,
 } from './build-config.js';
+export {
+  BaseAuthProviderConfigSchema,
+  GoogleAuthProviderConfigSchema,
+  OIDCAuthProviderConfigSchema,
+  SAMLAuthProviderConfigSchema,
+  isGoogleProvider,
+  isOIDCProvider,
+  isSAMLProvider,
+} from './auth-provider-config.js';
 export type {
+  BaseAuthProviderConfig,
+  GoogleAuthProviderConfig,
+  OIDCAuthProviderConfig,
+  SAMLAuthProviderConfig,
   AuthProviderConfig,
   AuthProviderConfigMap,
 } from './auth-provider-config.js';
