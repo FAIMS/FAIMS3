@@ -9,7 +9,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {useRequiredUser} from '@/hooks/auth-hooks';
-import {deleteMapAsset} from '@/hooks/map-asset-hooks';
+import {deleteMapAsset, invalidateMapAssets} from '@/hooks/map-asset-hooks';
 import {useNavigate} from '@tanstack/react-router';
 import {useQueryClient} from '@tanstack/react-query';
 import {Trash2} from 'lucide-react';
@@ -27,9 +27,7 @@ export function DeleteMapLayerDialog({assetId}: {assetId: string}) {
     setPending(true);
     try {
       await deleteMapAsset({user, assetId});
-      await queryClient.invalidateQueries({
-        queryKey: ['map-assets', user.token],
-      });
+      await invalidateMapAssets(queryClient, user, assetId);
       setOpen(false);
       toast.success('Map layer deleted');
       await navigate({to: '/map-layers'});

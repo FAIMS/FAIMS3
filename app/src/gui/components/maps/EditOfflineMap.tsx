@@ -36,6 +36,7 @@ import {useNavigate, useParams} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import BackButton from '../ui/BackButton';
+import {ListingPage} from '../ui/listing-page';
 
 export function EditOfflineMap() {
   const navigate = useNavigate();
@@ -190,15 +191,7 @@ export function EditOfflineMap() {
   const isDownloading = progress !== null && progress < 1;
 
   return (
-    <Box
-      sx={{
-        mx: 'auto',
-        width: '100%',
-        height: '100%',
-        px: 2,
-        pt: 3,
-      }}
-    >
+    <ListingPage>
       <Stack spacing={2}>
         <Stack
           direction="row"
@@ -351,6 +344,6 @@ export function EditOfflineMap() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </ListingPage>
   );
 }

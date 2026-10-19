@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
+import {INPUT_LIMITS, mapAssetExtractTooLargeMessage} from '@faims3/data-model';
 import {spawn} from 'child_process';
-import {mkdtemp, readdir, readFile, rm, writeFile} from 'fs/promises';
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  symlink,
+  writeFile,
+} from 'fs/promises';
 import {tmpdir} from 'os';
 import path from 'path';
 import {describe, expect, it} from 'vitest';
@@ -10,10 +19,15 @@ import {
   runGdalCommand,
 } from '../src/couchdb/export/gdal';
 import {
+  assertExtractContainsNoSymlinks,
+  assertZipExtractAllowed,
   fileGdbFoldersInZip,
+  listZipEntries,
   listZipEntryNames,
   prepareVectorGdalSource,
   resolveVectorGdalSource,
+  zipEntryIsUnixSymlink,
+  zipEntryPathIsUnsafe,
 } from '../src/couchdb/mapAssets/zipSources';
 
 function crc32(data: Uint8Array): number {
@@ -41,8 +55,28 @@ function concatBytes(parts: Uint8Array[]): Uint8Array {
   return out;
 }
 
+type ZipTestFile = {
+  name: string;
+  data?: Uint8Array;
+  uncompressedSize?: bigint;
+  omitZip64Extra?: boolean;
+  unixMode?: number;
+};
+
+function zip64Extra(uncompressedSize: bigint): Uint8Array {
+  const extra = new Uint8Array(12);
+  const extraView = viewOf(extra);
+  extraView.setUint16(0, 0x0001, true);
+  extraView.setUint16(2, 8, true);
+  extraView.setBigUint64(4, uncompressedSize, true);
+  return extra;
+}
+
 /** Uncompressed zip for resolver tests. */
-function buildZip(files: {name: string; data?: Uint8Array}[]): Uint8Array {
+function buildZip(
+  files: ZipTestFile[],
+  options?: {zip64Eocd?: boolean}
+): Uint8Array {
   const locals: Uint8Array[] = [];
   const centrals: Uint8Array[] = [];
   let offset = 0;
@@ -51,49 +85,90 @@ function buildZip(files: {name: string; data?: Uint8Array}[]): Uint8Array {
     const data = file.data ?? new Uint8Array(0);
     const name = encoder.encode(file.name);
     const crc = crc32(data);
+    const claimed = file.uncompressedSize ?? BigInt(data.length);
+    const useZip64Size = claimed >= BigInt(0xffffffff) && !file.omitZip64Extra;
+    const extra = useZip64Size ? zip64Extra(claimed) : new Uint8Array(0);
     const local = new Uint8Array(30 + name.length + data.length);
     const localView = viewOf(local);
     localView.setUint32(0, 0x04034b50, true);
-    localView.setUint16(4, 20, true);
+    localView.setUint16(4, useZip64Size ? 45 : 20, true);
     localView.setUint32(14, crc, true);
     localView.setUint32(18, data.length, true);
     localView.setUint32(22, data.length, true);
     localView.setUint16(26, name.length, true);
     local.set(name, 30);
     local.set(data, 30 + name.length);
-    const central = new Uint8Array(46 + name.length);
+    const zipVersion = useZip64Size ? 45 : 20;
+    const versionMadeBy =
+      file.unixMode === undefined ? zipVersion : (3 << 8) | zipVersion;
+    const central = new Uint8Array(46 + name.length + extra.length);
     const centralView = viewOf(central);
     centralView.setUint32(0, 0x02014b50, true);
-    centralView.setUint16(4, 20, true);
-    centralView.setUint16(6, 20, true);
+    centralView.setUint16(4, versionMadeBy, true);
+    centralView.setUint16(6, zipVersion, true);
     centralView.setUint32(16, crc, true);
     centralView.setUint32(20, data.length, true);
-    centralView.setUint32(24, data.length, true);
+    centralView.setUint32(
+      24,
+      useZip64Size || file.omitZip64Extra ? 0xffffffff : Number(claimed),
+      true
+    );
     centralView.setUint16(28, name.length, true);
+    centralView.setUint16(30, extra.length, true);
+    if (file.unixMode !== undefined) {
+      centralView.setUint32(38, (file.unixMode & 0xffff) << 16, true);
+    }
     centralView.setUint32(42, offset, true);
     central.set(name, 46);
+    central.set(extra, 46 + name.length);
     locals.push(local);
     centrals.push(central);
     offset += local.length;
   }
   const cd = concatBytes(centrals);
+  if (!options?.zip64Eocd) {
+    const eocd = new Uint8Array(22);
+    const eocdView = viewOf(eocd);
+    eocdView.setUint32(0, 0x06054b50, true);
+    eocdView.setUint16(8, files.length, true);
+    eocdView.setUint16(10, files.length, true);
+    eocdView.setUint32(12, cd.length, true);
+    eocdView.setUint32(16, offset, true);
+    return concatBytes([...locals, cd, eocd]);
+  }
+  const zip64Eocd = new Uint8Array(56);
+  const zip64View = viewOf(zip64Eocd);
+  zip64View.setUint32(0, 0x06064b50, true);
+  zip64View.setBigUint64(4, BigInt(44), true);
+  zip64View.setUint16(12, 45, true);
+  zip64View.setUint16(14, 45, true);
+  zip64View.setBigUint64(24, BigInt(files.length), true);
+  zip64View.setBigUint64(32, BigInt(files.length), true);
+  zip64View.setBigUint64(40, BigInt(cd.length), true);
+  zip64View.setBigUint64(48, BigInt(offset), true);
+  const locator = new Uint8Array(20);
+  const locatorView = viewOf(locator);
+  locatorView.setUint32(0, 0x07064b50, true);
+  locatorView.setBigUint64(8, BigInt(offset + cd.length), true);
+  locatorView.setUint32(16, 1, true);
   const eocd = new Uint8Array(22);
   const eocdView = viewOf(eocd);
   eocdView.setUint32(0, 0x06054b50, true);
-  eocdView.setUint16(8, files.length, true);
-  eocdView.setUint16(10, files.length, true);
-  eocdView.setUint32(12, cd.length, true);
-  eocdView.setUint32(16, offset, true);
-  return concatBytes([...locals, cd, eocd]);
+  eocdView.setUint16(8, 0xffff, true);
+  eocdView.setUint16(10, 0xffff, true);
+  eocdView.setUint32(12, 0xffffffff, true);
+  eocdView.setUint32(16, 0xffffffff, true);
+  return concatBytes([...locals, cd, zip64Eocd, locator, eocd]);
 }
 
 async function writeZip(
   dir: string,
   filename: string,
-  files: {name: string; data?: Uint8Array}[]
+  files: ZipTestFile[],
+  options?: {zip64Eocd?: boolean}
 ): Promise<string> {
   const filePath = path.join(dir, filename);
-  await writeFile(filePath, buildZip(files));
+  await writeFile(filePath, buildZip(files, options));
   return filePath;
 }
 
@@ -212,6 +287,168 @@ describe('prepareVectorGdalSource', () => {
       );
       expect(prepared.source).toBe(`/vsizip/${zipPath}`);
       expect(prepared.extractedGdbDir).toBeUndefined();
+    } finally {
+      await rm(dir, {recursive: true, force: true});
+    }
+  });
+
+  it('extracts a ZIP64 File Geodatabase zip', async () => {
+    if (!(await unzipAvailable())) {
+      return;
+    }
+    const dir = await mkdtemp(path.join(tmpdir(), 'faims-gdb-zip64-'));
+    try {
+      const zipPath = await writeZip(
+        dir,
+        'Sites.gdb.zip',
+        [
+          {name: 'Sites.gdb/'},
+          {name: 'Sites.gdb/a00000001.gdbtable', data: new Uint8Array([0x78])},
+        ],
+        {zip64Eocd: true}
+      );
+      const extractDir = path.join(dir, 'extracted');
+      const prepared = await prepareVectorGdalSource(zipPath, extractDir);
+      expect(prepared.source).toBe(path.join(extractDir, 'Sites.gdb'));
+    } finally {
+      await rm(dir, {recursive: true, force: true});
+    }
+  });
+
+  it('refuses a zip whose entries escape the extract directory', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'faims-zip-slip-'));
+    try {
+      const zipPath = await writeZip(dir, 'Sites.gdb.zip', [
+        {name: '../Sites.gdb/a00000001.gdbtable', data: new Uint8Array([0x78])},
+      ]);
+      await expect(
+        prepareVectorGdalSource(zipPath, path.join(dir, 'extracted'))
+      ).rejects.toThrow(/path that is not allowed/);
+    } finally {
+      await rm(dir, {recursive: true, force: true});
+    }
+  });
+
+  it('refuses a zip that claims more uncompressed bytes than the extract cap', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'faims-zip-bomb-'));
+    try {
+      const zipPath = await writeZip(dir, 'Sites.gdb.zip', [
+        {
+          name: 'Sites.gdb/a00000001.gdbtable',
+          data: new Uint8Array([0x78]),
+          uncompressedSize:
+            BigInt(INPUT_LIMITS.MAP_ASSET_EXTRACT_MAX_BYTES) + BigInt(1),
+        },
+      ]);
+      await expect(
+        prepareVectorGdalSource(zipPath, path.join(dir, 'extracted'))
+      ).rejects.toThrow(mapAssetExtractTooLargeMessage());
+    } finally {
+      await rm(dir, {recursive: true, force: true});
+    }
+  });
+});
+
+describe('zip extract safety', () => {
+  it('rejects parent, absolute, and NUL entry names', () => {
+    expect(zipEntryPathIsUnsafe('../Sites.gdb/a')).toBe(true);
+    expect(zipEntryPathIsUnsafe('Sites.gdb/foo/../../../etc/passwd')).toBe(
+      true
+    );
+    expect(zipEntryPathIsUnsafe('/tmp/Sites.gdb/a')).toBe(true);
+    expect(zipEntryPathIsUnsafe('C:/Sites.gdb/a')).toBe(true);
+    expect(zipEntryPathIsUnsafe('Sites.gdb/a\0.gdbtable')).toBe(true);
+    expect(zipEntryPathIsUnsafe('Sites.gdb/a00000001.gdbtable')).toBe(false);
+  });
+
+  it('detects Unix and OS X symlink modes, not DOS attributes', () => {
+    expect(zipEntryIsUnixSymlink(0x0314, 0o120777 << 16)).toBe(true);
+    expect(zipEntryIsUnixSymlink(0x1314, 0o120644 << 16)).toBe(true);
+    expect(zipEntryIsUnixSymlink(0x0314, 0o100644 << 16)).toBe(false);
+    expect(zipEntryIsUnixSymlink(20, 0o120777 << 16)).toBe(false);
+  });
+
+  it('refuses a zip whose entries are Unix symbolic links', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'faims-zip-symlink-'));
+    try {
+      const zipPath = await writeZip(dir, 'Sites.gdb.zip', [
+        {name: 'Sites.gdb/'},
+        {
+          name: 'Sites.gdb/a00000001.gdbtable',
+          data: new TextEncoder().encode('outside-the-extract-dir'),
+          unixMode: 0o120777,
+        },
+      ]);
+      const entries = await listZipEntries(zipPath);
+      expect(entries[1]?.isUnixSymlink).toBe(true);
+      await expect(
+        prepareVectorGdalSource(zipPath, path.join(dir, 'extracted'))
+      ).rejects.toThrow(/symbolic link that is not allowed/);
+    } finally {
+      await rm(dir, {recursive: true, force: true});
+    }
+  });
+
+  it('refuses an extract tree that still contains a symbolic link', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'faims-extract-symlink-'));
+    try {
+      const gdbDir = path.join(dir, 'Sites.gdb');
+      await mkdir(gdbDir, {recursive: true});
+      await writeFile(path.join(gdbDir, 'gdb'), 'x');
+      await symlink('gdb', path.join(gdbDir, 'a00000001.gdbtable'));
+      await expect(assertExtractContainsNoSymlinks(dir)).rejects.toThrow(
+        /symbolic link that is not allowed/
+      );
+    } finally {
+      await rm(dir, {recursive: true, force: true});
+    }
+  });
+
+  it('lists ZIP64 central directories and uncompressed sizes', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'faims-zip64-list-'));
+    try {
+      const zipPath = await writeZip(
+        dir,
+        'Sites.gdb.zip',
+        [
+          {name: 'Sites.gdb/'},
+          {
+            name: 'Sites.gdb/a00000001.gdbtable',
+            data: new Uint8Array([0x78]),
+            uncompressedSize:
+              BigInt(5) * BigInt(1024) * BigInt(1024) * BigInt(1024),
+          },
+        ],
+        {zip64Eocd: true}
+      );
+      const entries = await listZipEntries(zipPath);
+      expect(entries.map(entry => entry.name)).toEqual([
+        'Sites.gdb/',
+        'Sites.gdb/a00000001.gdbtable',
+      ]);
+      expect(entries[1]?.uncompressedSize).toBe(
+        BigInt(5) * BigInt(1024) * BigInt(1024) * BigInt(1024)
+      );
+      expect(() => assertZipExtractAllowed(entries)).not.toThrow();
+    } finally {
+      await rm(dir, {recursive: true, force: true});
+    }
+  });
+
+  it('fails closed when ZIP64 uncompressed size is missing', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'faims-zip64-missing-'));
+    try {
+      const zipPath = await writeZip(dir, 'Sites.gdb.zip', [
+        {
+          name: 'Sites.gdb/a00000001.gdbtable',
+          data: new Uint8Array([0x78]),
+          uncompressedSize: BigInt(0xffffffff),
+          omitZip64Extra: true,
+        },
+      ]);
+      await expect(
+        prepareVectorGdalSource(zipPath, path.join(dir, 'extracted'))
+      ).rejects.toThrow(mapAssetExtractTooLargeMessage());
     } finally {
       await rm(dir, {recursive: true, force: true});
     }

@@ -11,6 +11,8 @@ import {
   INPUT_LIMITS,
   MAP_ASSET_UPLOAD_BUSY_MESSAGE,
   MAP_ASSET_UPLOAD_FREE_DISK_BYTES,
+  mapAssetExtractMaxLabel,
+  mapAssetExtractTooLargeMessage,
   mapAssetUploadMaxLabel,
   mapAssetUploadTooLargeMessage,
   ROOT_DESCRIPTION_MAX_LENGTH,
@@ -49,8 +51,15 @@ describe('input limit constants', () => {
       2 * 1024 * 1024 * 1024
     );
     expect(INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_FILES).toBe(8);
+    expect(INPUT_LIMITS.MAP_ASSET_EXTRACT_MAX_BYTES).toBe(
+      4 * INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_BYTES
+    );
     expect(mapAssetUploadMaxLabel()).toBe('2 GB');
     expect(mapAssetUploadTooLargeMessage()).toBe('Files must be at most 2 GB.');
+    expect(mapAssetExtractMaxLabel()).toBe('8 GB');
+    expect(mapAssetExtractTooLargeMessage()).toBe(
+      'Unzipped map layer must be at most 8 GB.'
+    );
     expect(MAP_ASSET_UPLOAD_FREE_DISK_BYTES).toBe(
       3 * INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_BYTES
     );

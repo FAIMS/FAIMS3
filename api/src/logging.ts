@@ -285,7 +285,6 @@ export type MapAssetProcessingEvent =
   | 'gdal.command'
   | 'processing.normalized.store'
   | 'processing.commit'
-  | 'processing.sweep'
   | 'attachment.put'
   | 'attachment.download';
 

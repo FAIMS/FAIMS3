@@ -24,6 +24,7 @@ import {
   type ContextualLayerPrefs,
   type ContextualLayersState,
 } from '../../../context/slices/contextualLayersSlice';
+import {createAsyncMutex} from '../../../utils/asyncMutex';
 import {
   assignDownloadedLayer,
   filenamesToDelete,
@@ -50,23 +51,6 @@ function writeIndex(index: LayerIndex): void {
  * them drops other surveys' entries, then deleteUnreferencedFiles removes those
  * files from disk. Style edits stay outside this lock.
  */
-function createAsyncMutex() {
-  let mutex = Promise.resolve();
-  return async function runExclusive<T>(fn: () => Promise<T>): Promise<T> {
-    const prev = mutex;
-    let resolveNext!: () => void;
-    mutex = new Promise<void>(r => {
-      resolveNext = r;
-    });
-    await prev.catch(() => {});
-    try {
-      return await fn();
-    } finally {
-      resolveNext();
-    }
-  };
-}
-
 const runFileIndexMutation = createAsyncMutex();
 
 async function listDeviceFilenames(): Promise<string[]> {

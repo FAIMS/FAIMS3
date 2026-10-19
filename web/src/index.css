@@ -49,6 +49,8 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
     /* Listings public-template row and badge accent (HSL channels, no hsl() wrapper). */
     --accented-row: 158 52% 34%;
+    /* Match STATIC_MAP_LAYER_PREVIEW_HEIGHT in @faims3/forms. */
+    --map-layer-preview-height: clamp(380px, 55dvh, 650px);
   }
 
   :root,

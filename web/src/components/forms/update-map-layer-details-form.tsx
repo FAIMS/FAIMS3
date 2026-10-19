@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import {Form} from '@/components/form';
 import {useRequiredUser} from '@/hooks/auth-hooks';
-import {updateMapAssetDetails} from '@/hooks/map-asset-hooks';
+import {
+  invalidateMapAssets,
+  updateMapAssetDetails,
+} from '@/hooks/map-asset-hooks';
 import {resourceNameSchema} from '@/lib/input-limits';
 import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
 import {INPUT_LIMITS} from '@faims3/data-model';
@@ -42,7 +45,7 @@ export function UpdateMapLayerDetailsForm({
           error instanceof Error ? error.message : 'Could not save details.',
       };
     }
-    await queryClient.invalidateQueries({queryKey: ['map-assets', user.token]});
+    await invalidateMapAssets(queryClient, user, assetId);
     setDialogOpen(false);
   };
 

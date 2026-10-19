@@ -34,6 +34,7 @@ import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {useIsOnline} from '../../../utils/customHooks';
 import BackButton from '../ui/BackButton';
+import {ListingPage} from '../ui/listing-page';
 import {
   DownloadOfflineMapBanner,
   DownloadOfflineMapStatus,
@@ -226,15 +227,7 @@ export function DownloadOfflineMap() {
         : 'pending';
 
   return (
-    <Box
-      sx={{
-        mx: 'auto',
-        width: '100%',
-        height: '100%',
-        px: 2,
-        pt: 3,
-      }}
-    >
+    <ListingPage>
       <Stack direction="column" spacing={2}>
         <Stack
           direction="row"
@@ -358,6 +351,6 @@ export function DownloadOfflineMap() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </ListingPage>
   );
 }

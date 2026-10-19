@@ -7,6 +7,7 @@
 import {
   Action,
   DecodedTokenPermissions,
+  ExistingMapAssetLink,
   GetMapAssetDownloadUrlResponse,
   GetMapAssetListResponse,
   GetMapAssetResponse,
@@ -619,7 +620,7 @@ api.get(
   '/:id/links',
   requireAuthenticationAPI,
   validate({params: z.object({id: z.string()})}),
-  async (req, res) => {
+  async (req, res: Response<{projectIds: string[]}>) => {
     const user = requireUser(req);
     const asset = await getMapAsset(req.params.id);
     if (!(await canReadAsset(user, asset))) {
@@ -637,11 +638,15 @@ api.post(
     params: z.object({id: z.string()}),
     body: PostMapAssetLinkInputSchema,
   }),
-  async (req, res) => {
+  async (req, res: Response<ExistingMapAssetLink>) => {
     const user = requireUser(req);
     const asset = await getMapAsset(req.params.id);
-    if (!(await canReadAsset(user, asset))) {
-      throw new Exceptions.UnauthorizedException();
+    // Survey-link read is download-only. Linking is from the caller's library
+    // (owner, team, or global), not a layer they only see on another survey.
+    if (!authorizeAsset(user, asset, isAuthorizedToReadMapAsset)) {
+      throw new Exceptions.UnauthorizedException(
+        'You can only link layers from your library.'
+      );
     }
     if (!canAdministerProject(user, req.body.projectId)) {
       throw new Exceptions.UnauthorizedException(

@@ -375,6 +375,10 @@ export async function createMapAsset({
   return getMapAsset(assetId);
 }
 
+/**
+ * Name and description only. Retries 409s from concurrent processing writes
+ * on the same document so a rename during ingest is not rejected.
+ */
 export async function updateMapAssetDetails({
   assetId,
   name,
@@ -384,14 +388,24 @@ export async function updateMapAssetDetails({
   name: string;
   description: string;
 }): Promise<ExistingMapAsset> {
-  const current = await getMapAsset(assetId);
-  await getMapAssetsDB().put({
-    ...current,
-    name,
-    description,
-    updatedAt: Date.now(),
-  });
-  return getMapAsset(assetId);
+  const db = getMapAssetsDB();
+  for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
+    const current = await getMapAsset(assetId);
+    try {
+      await db.put({
+        ...current,
+        name,
+        description,
+        updatedAt: Date.now(),
+      });
+      return getMapAsset(assetId);
+    } catch (error) {
+      if (!isConflict(error)) {
+        throw error;
+      }
+    }
+  }
+  throw new Error(`Could not update map layer details for ${assetId}.`);
 }
 
 /**
@@ -547,13 +561,6 @@ export const MAP_ASSET_PROCESSING_CLAIM_TIMEOUT_MS = 2 * 60 * 60 * 1000;
  * many claims is marked failed. A GDAL error fails on the current claim.
  */
 export const MAP_ASSET_PROCESSING_MAX_ATTEMPTS = 3;
-export const MAP_ASSET_PROCESSING_SWEEP_INTERVAL_MS = 60 * 1000;
-/**
- * How long a pending asset may sit with no staging files and no
- * originals before the API marks it failed. Staging still on disk is
- * retried instead.
- */
-export const MAP_ASSET_ORIGINAL_UPLOAD_GRACE_MS = 2 * 60 * 1000;
 export const MAP_ASSET_ORIGINALS_MISSING_REASON =
   'The uploaded map files are no longer available.';
 export const MAP_ASSET_PROCESSING_EXHAUSTED_REASON =
@@ -565,8 +572,6 @@ export type MapAssetProcessingRuntime = {
   now?: () => number;
   claimTimeoutMs?: number;
   maxAttempts?: number;
-  /** Age before a pending asset with no files is failed. */
-  originalUploadGraceMs?: number;
   normalize?: typeof normalizeMapUpload;
 };
 
@@ -580,10 +585,6 @@ function claimTimeoutMs(runtime?: MapAssetProcessingRuntime): number {
 
 function maxProcessingAttempts(runtime?: MapAssetProcessingRuntime): number {
   return runtime?.maxAttempts ?? MAP_ASSET_PROCESSING_MAX_ATTEMPTS;
-}
-
-function originalUploadGraceMs(runtime?: MapAssetProcessingRuntime): number {
-  return runtime?.originalUploadGraceMs ?? MAP_ASSET_ORIGINAL_UPLOAD_GRACE_MS;
 }
 
 /** Claim timestamp. Stage, progress, and commit share `chain` so they don't race. */
@@ -1357,128 +1358,6 @@ export async function summarizeSpatialBacklog(
   return {inFlight, unclaimed};
 }
 
-/**
- * Retry original uploads from leftover staging, and fail pending assets
- * whose files are gone. Does not run GDAL.
- */
-export async function sweepPendingOriginalUploads(
-  runtime?: MapAssetProcessingRuntime
-): Promise<string[]> {
-  const now = processingNow(runtime);
-  const graceMs = originalUploadGraceMs(runtime);
-  logMapAssetProcessing({
-    event: 'processing.sweep',
-    outcome: 'started',
-    detail: 'original upload sweep',
-  });
-  const touched: string[] = [];
-  for (const assetId of await listInProgressMapAssetIds()) {
-    try {
-      const asset = await getMapAsset(assetId);
-      if (assetHasStoredAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
-        await cleanupStaging(asset._id);
-        continue;
-      }
-      const staged = await readStagedFiles(asset._id, uploadFilenames(asset));
-      if (staged) {
-        await storeOriginalsFromStaging(asset._id);
-        touched.push(asset._id);
-        continue;
-      }
-      if (now - asset.updatedAt < graceMs) {
-        continue;
-      }
-      await commitMissingOriginals(asset._id, now);
-      touched.push(asset._id);
-    } catch (error) {
-      if (!(error instanceof Exceptions.ItemNotFoundException)) {
-        throw error;
-      }
-    }
-  }
-  logMapAssetProcessing({
-    event: 'processing.sweep',
-    outcome: 'success',
-    fileCount: touched.length,
-    detail:
-      touched.length === 0
-        ? 'no pending original uploads'
-        : `updated ${touched.length} in-progress asset(s)`,
-  });
-  return touched;
-}
-
-async function commitMissingOriginals(
-  assetId: string,
-  now: number
-): Promise<void> {
-  const db = getMapAssetsDB();
-  for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
-    const latest = await getMapAsset(assetId);
-    if (!isMapAssetInProgress(latest.status)) {
-      return;
-    }
-    if (assetHasStoredAttachment(latest, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
-      return;
-    }
-    try {
-      await db.put(
-        omitUndefinedFields({
-          ...latest,
-          status: 'failed' as const,
-          failureReason: MAP_ASSET_ORIGINALS_MISSING_REASON,
-          processingStartedAt: undefined,
-          processingStage: undefined,
-          processingProgress: undefined,
-          updatedAt: now,
-        })
-      );
-      return;
-    } catch (error) {
-      if (!isConflict(error)) {
-        throw error;
-      }
-    }
-  }
-}
-
-let originalUploadSweepTimer: ReturnType<typeof setInterval> | undefined;
-
-/**
- * Start the API-side original-upload sweep. Idempotent. The timer does not
- * hold the process open. GDAL runs in the spatial worker, not here.
- */
-export function startMapAssetOriginalUploadSweeper(): void {
-  if (originalUploadSweepTimer) {
-    return;
-  }
-  const run = () => {
-    sweepPendingOriginalUploads().catch(error => {
-      logMapAssetProcessing({
-        event: 'processing.sweep',
-        outcome: 'failure',
-        reason: error instanceof Error ? error.message : String(error),
-      });
-      console.error(
-        `${MAP_ASSET_PROCESSING_LOG} original upload sweep failed`,
-        error
-      );
-    });
-  };
-  run();
-  originalUploadSweepTimer = setInterval(
-    run,
-    MAP_ASSET_PROCESSING_SWEEP_INTERVAL_MS
-  );
-  originalUploadSweepTimer.unref();
-  logMapAssetProcessing({
-    event: 'processing.sweep',
-    outcome: 'started',
-    detail: `original uploads every ${MAP_ASSET_PROCESSING_SWEEP_INTERVAL_MS}ms`,
-    source: 'sweeper',
-  });
-}
-
 /** How long a client-direct download grant stays valid. */
 export const MAP_ASSET_DOWNLOAD_URL_EXPIRY_SECONDS = 60 * 60;
 
@@ -1632,15 +1511,25 @@ export async function deleteMapAsset(assetId: string): Promise<void> {
       await db.remove(link);
     }
   }
-  const latest = await getMapAsset(asset._id);
-  const stored = latest.storedAttachments ?? {};
-  await db.remove(latest);
-  await cleanupStaging(assetId);
-  await Promise.all(
-    Object.values(stored).map(location =>
-      deleteStoredAttachment(location).catch(() => undefined)
-    )
-  );
+  for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
+    const latest = await getMapAsset(asset._id);
+    const stored = latest.storedAttachments ?? {};
+    try {
+      await db.remove(latest);
+      await cleanupStaging(assetId);
+      await Promise.all(
+        Object.values(stored).map(location =>
+          deleteStoredAttachment(location).catch(() => undefined)
+        )
+      );
+      return;
+    } catch (error) {
+      if (!isConflict(error)) {
+        throw error;
+      }
+    }
+  }
+  throw new Error(`Could not delete map layer ${assetId}.`);
 }
 
 /**

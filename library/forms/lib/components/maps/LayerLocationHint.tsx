@@ -1,11 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import {Box, Typography} from '@mui/material';
-import {mapControlBrand} from '@faims3/data-model';
+import type {Theme} from '@mui/material/styles';
 import {layerLocationRelation, type Extent4326} from './layerLocationProximity';
+import {defaultMapControlPalette} from './mapTheme';
 
-/** Same fill as the live GPS cursor on the map. */
-const LOCATION_DOT_COLOR = mapControlBrand.activeMain;
+/** Same fill as the live GPS cursor and active map-control accent. */
+function locationAccent(theme: Theme): string {
+  return (
+    theme.palette.mapControl?.buttonActiveBackground ??
+    defaultMapControlPalette.buttonActiveBackground
+  );
+}
 
 /**
  * Blue current-location dot plus "On map" when the device is on this asset.
@@ -59,12 +65,12 @@ export function LayerLocationHint({
               height: 10,
               flexShrink: 0,
               borderRadius: '50%',
-              bgcolor: LOCATION_DOT_COLOR,
+              bgcolor: locationAccent,
               border: '2px solid',
               borderColor: theme =>
                 theme.palette.mapControl?.locationRing ??
                 theme.palette.background.paper,
-              boxShadow: `0 0 0 1px ${LOCATION_DOT_COLOR}`,
+              boxShadow: theme => `0 0 0 1px ${locationAccent(theme)}`,
             }}
           />
           <Typography
@@ -82,7 +88,7 @@ export function LayerLocationHint({
             aria-hidden
             sx={{
               fontSize: theme => theme.typography.caption.fontSize,
-              color: LOCATION_DOT_COLOR,
+              color: locationAccent,
               transform: `rotate(${relation.bearingDegrees}deg)`,
             }}
           />

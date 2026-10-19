@@ -383,8 +383,8 @@ export const MapAssetFieldsSchema = z.object({
    */
   processingStage: MapAssetProcessingStageSchema.optional(),
   /**
-   * Phase and percent inside the current step (tippecanoe tiling). Cleared
-   * with `processingStage`.
+   * Phase and percent inside the current step (tippecanoe tiling or GDAL
+   * warp/translate/overviews). Cleared with `processingStage`.
    */
   processingProgress: MapAssetProcessingProgressSchema.optional(),
   kind: MapAssetKindSchema.optional(),

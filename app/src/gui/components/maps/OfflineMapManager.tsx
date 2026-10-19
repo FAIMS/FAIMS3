@@ -21,6 +21,7 @@ import {useNavigate} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import BackButton from '../ui/BackButton';
+import {ListingPage} from '../ui/listing-page';
 import {OutlinedListingCard} from '../ui/outlined-listing-card';
 
 /**
@@ -100,15 +101,7 @@ export const OfflineMapManager = () => {
   };
 
   return (
-    <Box
-      sx={{
-        mx: 'auto',
-        width: '100%',
-        height: '100%',
-        px: 2,
-        pt: 3,
-      }}
-    >
+    <ListingPage>
       <Stack direction="column" spacing={3}>
         <Stack
           direction="row"
@@ -213,6 +206,6 @@ export const OfflineMapManager = () => {
           )}
         </Stack>
       </Stack>
-    </Box>
+    </ListingPage>
   );
 };

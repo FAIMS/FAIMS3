@@ -11,6 +11,7 @@ import {
   RECORD_FORM_LAYER_Z_INDEX_BASE,
 } from './layerStack';
 
+/** Kind tag for per-form record geometry overlays. */
 export const RECORD_FORM_LAYER_KIND = 'record-form' as const;
 export type RecordFormLayerKind = typeof RECORD_FORM_LAYER_KIND;
 

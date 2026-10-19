@@ -35,6 +35,7 @@ import {
 } from '../../../context/slices/authSlice';
 import {useAppSelector} from '../../../context/store';
 import BackButton from '../ui/BackButton';
+import {ListingPage} from '../ui/listing-page';
 import {OutlinedListingCard} from '../ui/outlined-listing-card';
 import {
   CONTEXTUAL_LAYERS_CHANGED_EVENT,
@@ -238,7 +239,7 @@ export function ContextualLayerManager() {
   };
 
   return (
-    <Box sx={{mx: 'auto', width: '100%', height: '100%', px: 2, pt: 3}}>
+    <ListingPage data-testid="map-layer-manager">
       <Stack spacing={3}>
         <Stack
           direction="row"
@@ -262,7 +263,11 @@ export function ContextualLayerManager() {
         <Stack spacing={1}>
           <Typography variant="h5">On this device</Typography>
           {stored.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              data-testid="map-layer-on-device-empty"
+            >
               You currently have no map layers downloaded.
             </Typography>
           ) : (
@@ -311,6 +316,7 @@ export function ContextualLayerManager() {
                         endIcon={<DeleteIcon />}
                         disabled={busyKey !== undefined}
                         onClick={() => setPendingDelete(file)}
+                        data-testid={`map-layer-remove-${file.assetId}`}
                       >
                         Remove
                       </Button>
@@ -359,7 +365,11 @@ export function ContextualLayerManager() {
         <Stack spacing={2}>
           <Typography variant="h5">Not downloaded</Typography>
           {missingBySurvey.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              data-testid="map-layer-not-downloaded-empty"
+            >
               Activated surveys have no undownloaded layers.
             </Typography>
           ) : (
@@ -400,6 +410,7 @@ export function ContextualLayerManager() {
                       )
                     }
                     sx={{flexShrink: 0}}
+                    data-testid={`map-layer-download-all-${group.rows[0].projectId}`}
                   >
                     {downloadLabel(
                       busyKey === `all:${group.rows[0].projectId}`,
@@ -422,6 +433,7 @@ export function ContextualLayerManager() {
                           size="small"
                           disabled={busyKey !== undefined}
                           onClick={() => void downloadRows([row], key)}
+                          data-testid={`map-layer-download-${row.layer.id}`}
                         >
                           {downloadLabel(busyKey === key, 'Download')}
                         </Button>
@@ -487,11 +499,12 @@ export function ContextualLayerManager() {
             color="error"
             onClick={() => void confirmDelete()}
             disabled={busyKey !== undefined}
+            data-testid="map-layer-delete-confirm"
           >
             {busyKey === pendingDelete?.assetId ? 'Removing…' : 'Remove'}
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </ListingPage>
   );
 }

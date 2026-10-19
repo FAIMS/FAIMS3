@@ -8,7 +8,7 @@ import {
   resolveTeamId,
 } from '@/components/forms/template-team-field';
 import {useRequiredUser, useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {uploadMapAsset} from '@/hooks/map-asset-hooks';
+import {invalidateMapAssets, uploadMapAsset} from '@/hooks/map-asset-hooks';
 import {useGetTeams} from '@/hooks/queries';
 import {
   MAP_LAYER_FILE_ACCEPT,
@@ -107,7 +107,7 @@ export function CreateMapLayerForm({
     } finally {
       setUploadProgress(null);
     }
-    await queryClient.invalidateQueries({queryKey: ['map-assets', user.token]});
+    await invalidateMapAssets(queryClient, user);
     setDialogOpen(false);
   };
 

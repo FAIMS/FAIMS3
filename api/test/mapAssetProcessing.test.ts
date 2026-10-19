@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import {beforeAll, beforeEach, describe, expect, it, vi} from 'vitest';
 import {getMapAssetsDB} from '../src/couchdb';
-import {cleanupStaging} from '../src/couchdb/mapAssets/staging';
 import {
-  MAP_ASSET_ORIGINALS_MISSING_REASON,
   MAP_ASSET_PROCESSING_EXHAUSTED_REASON,
   MAP_ASSET_PROCESSING_MAX_ATTEMPTS,
   createMapAsset,
+  deleteMapAsset,
   findUnclaimedSpatialJob,
   getMapAsset,
   mapAssetIsClaimable,
@@ -14,7 +13,7 @@ import {
   replaceMapAssetFiles,
   storeOriginalsFromStaging,
   summarizeSpatialBacklog,
-  sweepPendingOriginalUploads,
+  updateMapAssetDetails,
 } from '../src/couchdb/mapAssets/store';
 import {resetDatabases} from './mocks';
 
@@ -143,11 +142,7 @@ describe('map asset original upload', () => {
 
   it('stores originals from staging and does not run GDAL', async () => {
     const asset = await createPendingAsset();
-    const stored = await sweepPendingOriginalUploads({
-      now: () => T0,
-      originalUploadGraceMs: CLAIM_TIMEOUT_MS,
-    });
-    expect(stored).toEqual([asset._id]);
+    expect(await storeOriginalsFromStaging(asset._id)).toBe(true);
     const finished = await getMapAsset(asset._id);
     expect(finished.status).toBe('pending');
     expect(finished.processingStage).toBe('queued');
@@ -181,33 +176,6 @@ describe('map asset original upload', () => {
     ).toBeUndefined();
   });
 
-  it('leaves a fresh claim alone and does not run GDAL from the sweep', async () => {
-    const asset = await createStoredAsset();
-    await getMapAssetsDB().put({
-      ...asset,
-      status: 'processing',
-      processingStartedAt: T0,
-      processingAttempts: 1,
-      updatedAt: T0,
-    });
-    const touched = await sweepPendingOriginalUploads({
-      now: () => T0,
-      claimTimeoutMs: CLAIM_TIMEOUT_MS,
-    });
-    expect(touched).toEqual([]);
-    const held = await getMapAsset(asset._id);
-    expect(held.status).toBe('processing');
-    expect(held.processingAttempts).toBe(1);
-    expect(held.processingStartedAt).toBe(T0);
-    expect(normalizeMapUpload).not.toHaveBeenCalled();
-    expect(
-      await findUnclaimedSpatialJob({
-        now: () => T0,
-        claimTimeoutMs: CLAIM_TIMEOUT_MS,
-      })
-    ).toBeUndefined();
-  });
-
   it('does not replace a layer that is still pending', async () => {
     const asset = await createPendingAsset();
     await expect(
@@ -217,25 +185,6 @@ describe('map asset original upload', () => {
         primaryFilename: 'layer.geojson',
       })
     ).rejects.toThrow(/still being prepared/);
-  });
-
-  it('fails a pending asset whose files are gone after the grace period', async () => {
-    const asset = await createPendingAsset();
-    await cleanupStaging(asset._id);
-    const current = await getMapAsset(asset._id);
-    await getMapAssetsDB().put({
-      ...current,
-      updatedAt: T0 - CLAIM_TIMEOUT_MS,
-    });
-    const touched = await sweepPendingOriginalUploads({
-      now: () => T0,
-      originalUploadGraceMs: CLAIM_TIMEOUT_MS,
-    });
-    expect(touched).toEqual([asset._id]);
-    const failed = await getMapAsset(asset._id);
-    expect(failed.status).toBe('failed');
-    expect(failed.failureReason).toBe(MAP_ASSET_ORIGINALS_MISSING_REASON);
-    expect(normalizeMapUpload).not.toHaveBeenCalled();
   });
 });
 
@@ -572,5 +521,78 @@ describe('map asset worker processing', () => {
         claimTimeoutMs: CLAIM_TIMEOUT_MS,
       })
     ).toBe(asset._id);
+  });
+});
+
+describe('map asset details during processing writes', () => {
+  beforeAll(async () => {
+    await resetDatabases();
+  });
+
+  beforeEach(async () => {
+    await clearMapAssetDocs();
+  });
+
+  it('retries rename when a processing write wins the revision', async () => {
+    const asset = await createPendingAsset();
+    const db = getMapAssetsDB();
+    const put = db.put.bind(db);
+    let injected = false;
+    const spy = vi.spyOn(db, 'put').mockImplementation(async doc => {
+      if (!injected && 'name' in doc && doc.name === 'Renamed') {
+        injected = true;
+        const latest = await db.get(asset._id);
+        await put({
+          ...latest,
+          processingStage: 'warping-raster',
+          processingProgress: {phase: 'Warping', percent: 10},
+        });
+      }
+      return put(doc);
+    });
+    try {
+      const updated = await updateMapAssetDetails({
+        assetId: asset._id,
+        name: 'Renamed',
+        description: 'updated',
+      });
+      expect(updated.name).toBe('Renamed');
+      expect(updated.description).toBe('updated');
+      expect(updated.processingStage).toBe('warping-raster');
+      expect(updated.processingProgress).toEqual({
+        phase: 'Warping',
+        percent: 10,
+      });
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('retries delete when a processing write wins the revision', async () => {
+    const asset = await createPendingAsset();
+    const db = getMapAssetsDB();
+    const put = db.put.bind(db);
+    const remove = db.remove.bind(db);
+    let injected = false;
+    const spy = vi.spyOn(db, 'remove').mockImplementation(async doc => {
+      const id = typeof doc === 'string' ? doc : doc._id;
+      if (!injected && id === asset._id) {
+        injected = true;
+        const latest = await db.get(asset._id);
+        await put({
+          ...latest,
+          processingStage: 'warping-raster',
+        });
+      }
+      return remove(doc);
+    });
+    try {
+      await deleteMapAsset(asset._id);
+      await expect(getMapAsset(asset._id)).rejects.toMatchObject({
+        status: 404,
+      });
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

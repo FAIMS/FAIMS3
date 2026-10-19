@@ -552,6 +552,7 @@ export function teamGrantsMapAssetAction({
   return false;
 }
 
+/** Token, ownership, and optional survey links used to authorize one layer. */
 export type MapAssetAuthorizationInput = {
   decodedToken: DecodedTokenPermissions;
   asset: MapAssetAccessSubject;
@@ -603,12 +604,14 @@ function authorizeMapAssetAction(
   return isAuthorizedForMapAsset({...input, action});
 }
 
+/** True when the user may view the layer and download it for offline use. */
 export function isAuthorizedToReadMapAsset(
   input: MapAssetAuthorizationInput
 ): boolean {
   return authorizeMapAssetAction(Action.READ_MAP_ASSET, input);
 }
 
+/** True when the user may rename the layer or edit its description. */
 export function isAuthorizedToUpdateMapAssetDetails(
   input: MapAssetAuthorizationInput
 ): boolean {
@@ -622,6 +625,7 @@ export function isAuthorizedToReplaceMapAssetFiles(
   return authorizeMapAssetAction(Action.UPDATE_MAP_ASSET_FILES, input);
 }
 
+/** True when the user may delete the layer. */
 export function isAuthorizedToDeleteMapAsset(
   input: MapAssetAuthorizationInput
 ): boolean {

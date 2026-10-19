@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
  * Refuse a map-layer upload when this node does not have enough free disk
- * for the incoming file plus GDAL scratch.
+ * for the original plus a copy while it uploads to object storage.
  */
 
 import {
@@ -34,7 +34,7 @@ export async function freeDiskBytes(
   }
 }
 
-/** Throws 503 when free space is below the processing headroom. */
+/** Throws 503 when free space is below the upload headroom. */
 export async function assertMapUploadDiskAvailable(
   directory: string = tmpdir()
 ): Promise<void> {

@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import {Form} from '@/components/form';
 import {useRequiredUser} from '@/hooks/auth-hooks';
-import {replaceMapAssetFiles} from '@/hooks/map-asset-hooks';
+import {
+  invalidateMapAssets,
+  replaceMapAssetFiles,
+} from '@/hooks/map-asset-hooks';
 import {
   MAP_LAYER_FILE_ACCEPT,
   mapLayerFilesSchema,
@@ -37,7 +40,7 @@ export function ReplaceMapLayerForm({
     } finally {
       setUploadProgress(null);
     }
-    await queryClient.invalidateQueries({queryKey: ['map-assets', user.token]});
+    await invalidateMapAssets(queryClient, user, assetId);
     setDialogOpen(false);
   };
 

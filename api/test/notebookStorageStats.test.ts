@@ -189,9 +189,10 @@ describe('notebook storage stats', () => {
     for (const notebook of notebooks) {
       expect(notebook).toHaveProperty('byteCount');
       expect(notebook.byteCount).toBeTypeOf('number');
-      expect(() =>
-        APINotebookListWithStatsSchema.parse(notebook)
-      ).not.toThrow();
+      const parsed = APINotebookListWithStatsSchema.parse(notebook);
+      expect(parsed.byteCount).toBeTypeOf('number');
+      expect(parsed.contextualLayers).toEqual([]);
+      expect(parsed.contextualLayersHash).toHaveLength(64);
     }
 
     const byteCountById = new Map(notebooks.map(n => [n._id, n.byteCount]));

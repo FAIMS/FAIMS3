@@ -296,8 +296,8 @@ export const APINotebookListSchema = ProjectListItemSchema.extend({
 });
 export type APINotebookList = z.infer<typeof APINotebookListSchema>;
 
-/** GET /api/notebooks?includeByteCount=true */
-export const APINotebookListWithStatsSchema = ProjectListItemSchema.extend({
+/** GET /api/notebooks?includeByteCount=true — same as list, with required `byteCount`. */
+export const APINotebookListWithStatsSchema = APINotebookListSchema.extend({
   byteCount: z.number(),
 });
 export type APINotebookListWithStats = z.infer<

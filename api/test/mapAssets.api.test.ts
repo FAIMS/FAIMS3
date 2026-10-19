@@ -416,24 +416,68 @@ describe('map asset survey links HTTP', () => {
   it('does not let a project guest add a layer to the survey', async () => {
     const projectId = await createNotebookFromSampleFile('guest link notebook');
     expect(projectId).toBeTruthy();
-    const asset = await createPendingAsset();
-    await auth(
-      request(app).post(`${MAP_ASSETS}/${asset._id}/links`),
-      adminToken
-    )
-      .send({projectId})
-      .expect(201);
     const guest = await createRoleUser({
       username: 'link-guest',
       projectId: projectId!,
       projectRole: Role.PROJECT_GUEST,
     });
+    const asset = await createPendingAsset(guest.user.user_id);
     const denied = await auth(
       request(app).post(`${MAP_ASSETS}/${asset._id}/links`),
       guest.token
     ).send({projectId});
     expect(denied.status).toBe(401);
     expect(denied.body.error.message).toMatch(/add layers to this survey/);
+  });
+
+  it('does not let a survey guest attach a linked layer to another survey they administer', async () => {
+    const sourceId = await createNotebookFromSampleFile('source guest survey');
+    const targetId = await createNotebookFromSampleFile(
+      'managed target survey'
+    );
+    expect(sourceId).toBeTruthy();
+    expect(targetId).toBeTruthy();
+    const asset = await markReady((await createPendingAsset())._id);
+    await linkMapAsset({
+      assetId: asset._id,
+      projectId: sourceId!,
+      linkedBy: 'admin',
+    });
+    const guest = await createRoleUser({
+      username: 'reshare-guest',
+      projectId: sourceId!,
+      projectRole: Role.PROJECT_GUEST,
+    });
+    addProjectRole({
+      user: guest.user,
+      projectId: targetId!,
+      role: Role.PROJECT_MANAGER,
+    });
+    await saveCouchUser(guest.user);
+    const token = await tokenFor(guest.user);
+
+    const directory = await auth(
+      request(app).get('/api/directory'),
+      token
+    ).expect(200);
+    const sourceRow = directory.body.find(
+      (row: {_id: string}) => row._id === sourceId
+    );
+    expect(
+      sourceRow.contextualLayers.map((layer: {id: string}) => layer.id)
+    ).toEqual([asset._id]);
+
+    const denied = await auth(
+      request(app).post(`${MAP_ASSETS}/${asset._id}/links`),
+      token
+    ).send({projectId: targetId});
+    expect(denied.status).toBe(401);
+    expect(denied.body.error.message).toMatch(/from your library/);
+
+    await auth(
+      request(app).get(`${MAP_ASSETS}/${asset._id}/download-url`),
+      token
+    ).expect(200);
   });
 
   it('attaches ready linked layers on notebook and directory GETs', async () => {

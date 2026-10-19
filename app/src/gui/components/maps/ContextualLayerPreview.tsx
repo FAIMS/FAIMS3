@@ -11,6 +11,7 @@ import {useParams} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import BackButton from '../ui/BackButton';
+import {ListingPage} from '../ui/listing-page';
 import {loadStoredContextualLayer} from './contextualLayerStore';
 
 function LayerPreviewMap({layer}: {layer: ContextualMapLayer}) {
@@ -95,7 +96,7 @@ export function ContextualLayerPreview() {
   }, [assetId]);
 
   return (
-    <Box sx={{mx: 'auto', width: '100%', height: '100%', px: 2, pt: 3}}>
+    <ListingPage data-testid="map-layer-preview">
       <Stack spacing={2}>
         <Stack
           direction="row"
@@ -110,8 +111,16 @@ export function ContextualLayerPreview() {
             Layer preview
           </Typography>
         </Stack>
-        {loading ? <Typography>Loading layer…</Typography> : null}
-        {message ? <Alert severity="error">{message}</Alert> : null}
+        {loading ? (
+          <Typography data-testid="map-layer-preview-loading">
+            Loading layer…
+          </Typography>
+        ) : null}
+        {message ? (
+          <Alert severity="error" data-testid="map-layer-preview-error">
+            {message}
+          </Alert>
+        ) : null}
         {layer ? (
           <>
             <Typography
@@ -124,6 +133,6 @@ export function ContextualLayerPreview() {
           </>
         ) : null}
       </Stack>
-    </Box>
+    </ListingPage>
   );
 }

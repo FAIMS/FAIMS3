@@ -1,6 +1,7 @@
 /**
  * Control Centre map-layer UI without uploading a file (GDAL / spatial-worker
- * are not part of the e2e stack).
+ * are not part of the e2e stack). Seed has no ready map assets, so linking
+ * and unlinking are out of scope; role-gated create is covered instead.
  */
 import {loginWebPersona} from '../../helpers/auth.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
@@ -37,6 +38,29 @@ describe('Web — Map layers', () => {
     await captureStep({
       surface: 'web',
       label: 'map-layers-create-dialog',
+    });
+  });
+
+  it('shows add-layer for a team manager (CREATE_MAP_ASSET_IN_TEAM)', async () => {
+    await browser.reloadSession();
+    await loginWebPersona('managerBlue');
+    await browser.url(`${getWebUrl()}/map-layers`);
+    await waitForTestId('web-map-layers-create-button');
+    await captureStep({
+      surface: 'web',
+      label: 'map-layers-manager-create',
+    });
+  });
+
+  it('hides add-layer for a team member without upload permission', async () => {
+    await browser.reloadSession();
+    await loginWebPersona('memberBoth');
+    await browser.url(`${getWebUrl()}/map-layers`);
+    await waitForTestId('web-map-layers-heading');
+    await expect(byTestId('web-map-layers-create-button')).not.toBeExisting();
+    await captureStep({
+      surface: 'web',
+      label: 'map-layers-member-no-create',
     });
   });
 

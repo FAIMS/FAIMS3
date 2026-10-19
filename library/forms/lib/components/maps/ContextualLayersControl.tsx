@@ -30,7 +30,7 @@ import {
   useState,
   type ChangeEvent,
 } from 'react';
-import {INPUT_LIMITS} from '@faims3/data-model';
+import {INPUT_LIMITS, mapAssetKindLabel} from '@faims3/data-model';
 import {
   BASE_MAP_SATELLITE_NAME,
   type BaseMapLayerPatch,
@@ -507,11 +507,8 @@ function layerActionSx(
 }
 
 function layerKindLabel(layer: PanelLayer): string {
-  if (layer.kind === 'raster-tiles') {
-    return 'Image tiles';
-  }
-  if (layer.kind === 'vector-tiles') {
-    return 'Vector tiles';
+  if (layer.kind === 'raster-tiles' || layer.kind === 'vector-tiles') {
+    return mapAssetKindLabel(layer.kind);
   }
   if (layer.kind === RECORD_FORM_LAYER_KIND) {
     return 'Records';
@@ -623,13 +620,12 @@ function LayerRow({
               height: 10,
               flexShrink: 0,
               borderRadius: vectorPaint ? '50%' : '2px',
-              bgcolor: vectorPaint
-                ? toColorInput(layer.stroke)
-                : layer.kind === 'basemap'
-                  ? layer.name === BASE_MAP_SATELLITE_NAME
-                    ? '#6b8f4e'
-                    : '#4a7cbf'
-                  : 'text.disabled',
+              bgcolor: (theme: Theme) =>
+                vectorPaint
+                  ? toColorInput(layer.stroke)
+                  : layer.kind === 'basemap'
+                    ? basemapSwatchColor(theme, layer.name)
+                    : 'text.disabled',
               border: '1px solid',
               borderColor: 'divider',
             }}
@@ -999,6 +995,14 @@ function ColorSwatch({
       </Stack>
     </Stack>
   );
+}
+
+function basemapSwatchColor(theme: Theme, name: string): string {
+  const palette = theme.palette.mapControl;
+  if (name === BASE_MAP_SATELLITE_NAME) {
+    return palette?.satelliteSwatch ?? defaultMapControlPalette.satelliteSwatch;
+  }
+  return palette?.vectorSwatch ?? defaultMapControlPalette.vectorSwatch;
 }
 
 /** `<input type="color">` only accepts #rrggbb. */

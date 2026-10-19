@@ -1129,7 +1129,7 @@ export const roleDetails: Record<Role, RoleDetails> = {
   [Role.GENERAL_CREATOR]: {
     name: 'Content Creator',
     description:
-      'Ability to create and manage templates and surveys across the system',
+      'Ability to create and manage templates, surveys, and map layers across the system',
     scope: RoleScope.GLOBAL,
   },
   [Role.OPERATIONS_ADMIN]: {
@@ -1204,20 +1204,20 @@ export const roleDetails: Record<Role, RoleDetails> = {
   [Role.TEAM_MANAGER]: {
     name: 'Team Manager',
     description:
-      'Can create templates, {notebooks}, and invites, open and close {notebooks}, and edit user roles. Cannot remove users.',
+      'Can create templates, {notebooks}, map layers, and invites, open and close {notebooks}, and edit user roles. Cannot remove users.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
   [Role.TEAM_MEMBER]: {
     name: 'Team Member (Contributor)',
     description:
-      'Can contribute to all {notebooks} in the team and view team details, users, {notebooks} and templates.',
+      'Can contribute to all {notebooks} in the team and view team details, users, {notebooks}, templates, and map layers.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
   [Role.TEAM_MEMBER_CREATOR]: {
     name: 'Team Member (Creator)',
-    description: 'Can create new {notebooks} within a team',
+    description: 'Can create new {notebooks} and map layers within a team',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },

@@ -49,7 +49,7 @@ function fakeVectorTile(coord: [number, number, number]) {
     getTileCoord: () => coord,
     getFormat: () => ({
       readFeatures() {
-        return [{id: coord.join('/')}] as FeatureLike[];
+        return [{} as FeatureLike];
       },
     }),
     setFeatures(features) {
@@ -100,7 +100,7 @@ describe('VectorTileStore.tileLoader', () => {
   });
 
   it('sets ERROR when the tile bytes cannot be decoded', async () => {
-    getTileBlob.mockImplementation(async url =>
+    getTileBlob.mockImplementation(async (url: string | undefined) =>
       url?.includes('.pbf') ? new Blob([new Uint8Array([1, 2, 3])]) : undefined
     );
     const store = new VectorTileStore(OSM_CONFIG);
@@ -112,7 +112,7 @@ describe('VectorTileStore.tileLoader', () => {
   });
 
   it('lets a later tile start after a miss reaches ERROR', async () => {
-    getTileBlob.mockImplementation(async url => {
+    getTileBlob.mockImplementation(async (url: string | undefined) => {
       if (!url?.includes('.pbf')) {
         return undefined;
       }
@@ -127,8 +127,8 @@ describe('VectorTileStore.tileLoader', () => {
     const missed = fakeVectorTile([1, 0, 0]);
     const later = fakeVectorTile([1, 1, 0]);
     const projection = getProjection('EPSG:3857');
-    store.tileLoader(missed as unknown as VectorTile);
-    store.tileLoader(later as unknown as VectorTile);
+    store.tileLoader(missed as unknown as VectorTile<FeatureLike>);
+    store.tileLoader(later as unknown as VectorTile<FeatureLike>);
     await missed.loader?.(WORLD_EXTENT, 1, projection);
     await later.loader?.(WORLD_EXTENT, 1, projection);
     expect(missed.getState()).toBe(TileState.ERROR);

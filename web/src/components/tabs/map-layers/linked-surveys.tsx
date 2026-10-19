@@ -5,6 +5,7 @@ import {Button} from '@/components/ui/button';
 import {config} from '@/constants';
 import {useRequiredUser, userCanDo} from '@/hooks/auth-hooks';
 import {
+  invalidateMapAssets,
   linkMapAsset,
   unlinkMapAsset,
   useMapAssetLinks,
@@ -58,9 +59,7 @@ function SurveyLinkAction({
         await unlinkMapAsset({user, assetId, projectId: project._id});
         toast.success(`Unlinked ${project.name}`);
       }
-      await queryClient.invalidateQueries({
-        queryKey: ['map-assets', user.token],
-      });
+      await invalidateMapAssets(queryClient, user, assetId);
     } catch (error) {
       toast.error(
         error instanceof Error

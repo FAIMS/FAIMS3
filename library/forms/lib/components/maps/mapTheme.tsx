@@ -26,6 +26,8 @@ export const defaultMapControlPalette = {
   scrim: mapControlBrand.scrim,
   sheetShadow: mapControlBrand.sheetShadow,
   locationRing: mapControlBrand.locationRing,
+  satelliteSwatch: mapControlBrand.satelliteSwatch,
+  vectorSwatch: mapControlBrand.vectorSwatch,
 } as const;
 
 type MapControlPalette = Theme['palette']['mapControl'];
@@ -43,7 +45,9 @@ function hasCompleteMapControlPalette(
     palette.buttonForeground &&
     palette.scrim &&
     palette.sheetShadow &&
-    palette.locationRing
+    palette.locationRing &&
+    palette.satelliteSwatch &&
+    palette.vectorSwatch
   );
 }
 

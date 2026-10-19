@@ -41,6 +41,7 @@ export type ContextualMapLayer = {
   tileSize?: number;
 };
 
+/** Visibility, opacity, stack, or paint change for one overlay. */
 export type ContextualMapLayerPatch = Partial<
   Pick<
     ContextualMapLayer,
@@ -55,6 +56,7 @@ export type ContextualMapLayerPatch = Partial<
   >
 >;
 
+/** Downloaded overlays and the panel actions that mutate them. */
 export type ContextualMapLayersValue = {
   layers: ContextualMapLayer[];
   updateLayer: (id: string, patch: ContextualMapLayerPatch) => void;

@@ -62,6 +62,7 @@ import {
 import {offlineMapRegionsEqual} from '@faims3/forms';
 import type {SyncMode} from '../../sync/syncMode';
 import {isReplicating, syncModeIncludesPull} from '../../sync/syncMode';
+import {createAsyncMutex} from '../../utils/asyncMutex';
 import {clearPushOnlyBannerDismissal} from '../../utils/pushOnlyBannerDismissal';
 import {reportNotebookSchemaCompatibility} from '../../logging';
 import {
@@ -70,28 +71,6 @@ import {
 } from '../../utils/remoteProjectRemoval';
 
 export type {SyncMode};
-
-/**
- * Promise-queue mutex: each `runExclusive` waits for the previous job to finish
- * before running `fn`, so overlapping async work is serialized. A rejected
- * predecessor must not block the queue, hence `await prev.catch(() => {})`.
- */
-function createAsyncMutex() {
-  let mutex = Promise.resolve();
-  return async function runExclusive<T>(fn: () => Promise<T>): Promise<T> {
-    const prev = mutex;
-    let resolveNext!: () => void;
-    mutex = new Promise<void>(r => {
-      resolveNext = r;
-    });
-    await prev.catch(() => {});
-    try {
-      return await fn();
-    } finally {
-      resolveNext();
-    }
-  };
-}
 
 // `initialiseProjects` does many awaits (directory, metadata, dispatches). Without
 // a per-server lock, a user refresh and token refresh could interleave: double
@@ -2270,6 +2249,8 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             ),
             offlineMapRegion: meta.offlineMapRegion,
             disableQuickShare: meta.disableQuickShare,
+            contextualLayers: meta.contextualLayers,
+            contextualLayersHash: meta.contextualLayersHash,
           })
         );
       }

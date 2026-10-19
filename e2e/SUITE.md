@@ -61,6 +61,7 @@ apply to the Fieldmark app path above. Appium (`test:e2e:android` /
 | `app/notebook-activate.e2e.ts`             | Notebook workspace, Active / Not Active tabs, activate control                                                                                                               |
 | `app/record-crud.e2e.ts`                   | Open notebook, add record, create text record, list/search                                                                                                                   |
 | `app/notebook-map.e2e.ts`                  | Capture a point, open the Map tab, assert record geometry plots                                                                                                              |
+| `app/map-layers.e2e.ts`                    | Offline maps chooser → contextual-layer manager empty state; no activation prompt when seed has no linked layers                                                             |
 | `app/notebook-schema-compatibility.e2e.ts` | Future-schema fixtures: list chips, major activation blocked, skeleton + copy report; degraded banner; last-good records survive a newer-major stamp + list refresh / reload |
 | `app/notebook-tab-context.e2e.ts`          | Tab out of the URL, back/edit/delete from a record return to its list                                                                                                        |
 | `journeys/template-to-record.e2e.ts`       | Cross-surface: templates in Control Centre → Fieldmark workspace                                                                                                             |
@@ -87,7 +88,7 @@ apply to the Fieldmark app path above. Appium (`test:e2e:android` /
 | `web/profile-tokens.e2e.ts`       | Long-lived API tokens: list, create, revoke                                                                        |
 | `web/exports.e2e.ts`              | Export tab; checkbox reveals From/To on Full / Data / Photo; time-range query params; file download still deferred |
 | `web/offline-map-region.e2e.ts`   | Offline Map UI; OpenLayers draw/save deferred                                                                      |
-| `web/map-layers.e2e.ts`           | Map layers create dialog; survey Map layers tab empty state (no upload)                                            |
+| `web/map-layers.e2e.ts`           | Map layers create dialog; team-manager create vs member-hidden; survey Map layers tab empty state (no upload)      |
 | `web/permissions-matrix.e2e.ts`   | Invite role options and create controls by persona                                                                 |
 | `app/impersonation.e2e.ts`        | Ops admin impersonates seed user; guest has no impersonate menu                                                    |
 | `conductor/password-reset.e2e.ts` | Forgot-password form + admin-generated reset link (no mail catcher)                                                |

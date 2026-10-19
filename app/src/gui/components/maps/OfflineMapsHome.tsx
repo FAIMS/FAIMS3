@@ -4,16 +4,17 @@
  */
 
 import {ArrowForwardIos} from '@mui/icons-material';
-import {Box, Stack, Typography} from '@mui/material';
+import {Stack, Typography} from '@mui/material';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
+import {ListingPage} from '../ui/listing-page';
 import {OutlinedListingCard} from '../ui/outlined-listing-card';
 
 export function OfflineMapsHome() {
   const navigate = useNavigate();
 
   return (
-    <Box sx={{mx: 'auto', width: '100%', height: '100%', px: 2, pt: 3}}>
+    <ListingPage data-testid="offline-maps-home">
       <Stack spacing={3}>
         <Stack spacing={1}>
           <Typography variant="h4">Manage Offline maps</Typography>
@@ -38,7 +39,11 @@ export function OfflineMapsHome() {
             onClick={() => navigate(ROUTES.OFFLINE_MAP_LAYERS)}
             trailing={<ArrowForwardIos color="action" />}
           >
-            <Typography variant="h5" sx={{fontWeight: 'bold'}}>
+            <Typography
+              variant="h5"
+              sx={{fontWeight: 'bold'}}
+              data-testid="offline-maps-layers-link"
+            >
               Map layers
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -47,6 +52,6 @@ export function OfflineMapsHome() {
           </OutlinedListingCard>
         </Stack>
       </Stack>
-    </Box>
+    </ListingPage>
   );
 }

@@ -14,6 +14,8 @@ declare module '@mui/material/styles' {
       scrim: string;
       sheetShadow: string;
       locationRing: string;
+      satelliteSwatch: string;
+      vectorSwatch: string;
     };
   }
 
@@ -29,6 +31,8 @@ declare module '@mui/material/styles' {
       scrim?: string;
       sheetShadow?: string;
       locationRing?: string;
+      satelliteSwatch?: string;
+      vectorSwatch?: string;
     };
   }
 }

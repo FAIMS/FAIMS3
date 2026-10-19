@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import type {MapAssetProcessingProgress} from '@faims3/data-model';
 import {describe, expect, it} from 'vitest';
 import {
   attachGdalProgress,
@@ -80,7 +81,7 @@ describe('createGdalProgressConsumer', () => {
 
 describe('attachGdalProgress', () => {
   it('reports phase plus percent in order and flushes a trailing decade', async () => {
-    const updates: Array<{phase: string; percent: number}> = [];
+    const updates: MapAssetProcessingProgress[] = [];
     const progress = attachGdalProgress(update => {
       updates.push(update);
     }, 'Warping');

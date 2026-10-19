@@ -37,8 +37,8 @@ see any user data.
 
 ### Team Roles
 
-Team roles relate to the management of teams, adding users and managing the templates
-and {{notebooks}} in the team.
+Team roles relate to the management of teams, adding users and managing the templates,
+{{notebooks}}, and map layers in the team.
 
 | Permission                                                               | Member | Member (Creator) | Manager | Administrator |
 | :----------------------------------------------------------------------- | :----: | :--------------: | :-----: | :-----------: |

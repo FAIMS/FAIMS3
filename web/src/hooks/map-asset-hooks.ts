@@ -10,12 +10,7 @@ import {
   type GetMapAssetListResponse,
   type GetMapAssetResponse,
 } from '@faims3/data-model';
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type QueryClient,
-} from '@tanstack/react-query';
+import {useQuery, type QueryClient} from '@tanstack/react-query';
 
 export const mapAssetQueryKey = (user: User | null, projectId?: string) => [
   'map-assets',
@@ -23,7 +18,8 @@ export const mapAssetQueryKey = (user: User | null, projectId?: string) => [
   projectId ?? 'library',
 ];
 
-function messageFromBody(body: unknown, statusText: string): string {
+/** Pull a user-facing message from a JSON error body, else `statusText`. */
+export function messageFromBody(body: unknown, statusText: string): string {
   if (body && typeof body === 'object' && 'error' in body) {
     const message = (body as {error?: {message?: string}}).error?.message;
     if (message) {
@@ -39,6 +35,22 @@ function messageFromBody(body: unknown, statusText: string): string {
     }
   }
   return statusText;
+}
+
+/** Map an upload HTTP status + parsed body to the toast / Error message. */
+export function mapAssetClientErrorMessage({
+  status,
+  body,
+  statusText,
+}: {
+  status: number;
+  body: unknown;
+  statusText: string;
+}): string {
+  if (status === 503) {
+    return MAP_ASSET_UPLOAD_BUSY_MESSAGE;
+  }
+  return messageFromBody(body, statusText);
 }
 
 async function errorMessage(response: Response): Promise<string> {
@@ -82,9 +94,11 @@ function sendFormData({
       if (xhr.status < 200 || xhr.status >= 300) {
         reject(
           new Error(
-            xhr.status === 503
-              ? MAP_ASSET_UPLOAD_BUSY_MESSAGE
-              : messageFromBody(json, xhr.statusText)
+            mapAssetClientErrorMessage({
+              status: xhr.status,
+              body: json,
+              statusText: xhr.statusText,
+            })
           )
         );
         return;
@@ -230,17 +244,22 @@ export async function replaceMapAssetFiles({
   return json as GetMapAssetResponse;
 }
 
-export function invalidateMapAssets(
+export async function invalidateMapAssets(
   queryClient: QueryClient,
   user: User,
   assetId?: string
-) {
-  void queryClient.invalidateQueries({queryKey: ['map-assets', user.token]});
+): Promise<void> {
+  const pending = [
+    queryClient.invalidateQueries({queryKey: ['map-assets', user.token]}),
+  ];
   if (assetId) {
-    void queryClient.invalidateQueries({
-      queryKey: ['map-assets', user.token, 'asset', assetId],
-    });
+    pending.push(
+      queryClient.invalidateQueries({
+        queryKey: ['map-assets', user.token, 'asset', assetId],
+      })
+    );
   }
+  await Promise.all(pending);
 }
 
 export async function fetchMapAssetLinks({
@@ -257,7 +276,7 @@ export async function fetchMapAssetLinks({
   if (!response.ok) {
     throw new Error(await errorMessage(response));
   }
-  const body = (await response.json()) as {projectIds?: string[]};
+  const body = (await response.json()) as {projectIds: string[]};
   return body.projectIds ?? [];
 }
 
@@ -371,18 +390,6 @@ export async function unlinkMapAsset({
   if (!response.ok) {
     throw new Error(await errorMessage(response));
   }
-}
-
-export function useUploadMapAsset(user: User) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: uploadMapAsset,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ['map-assets', user.token],
-      });
-    },
-  });
 }
 
 export function formatAssetStatus(asset: ExistingMapAsset): string {

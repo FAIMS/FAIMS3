@@ -50,6 +50,12 @@ export const INPUT_LIMITS = {
    * Bytes go to object storage, not CouchDB attachments.
    */
   MAP_ASSET_UPLOAD_MAX_BYTES: 2 * 1024 * 1024 * 1024, // 2 GiB
+  /**
+   * Combined uncompressed size of a map-layer zip on the spatial worker.
+   * Four times the compressed upload cap leaves room for a File Geodatabase
+   * while blocking zip bombs.
+   */
+  MAP_ASSET_EXTRACT_MAX_BYTES: 8 * 1024 * 1024 * 1024, // 8 GiB
   /** Maximum files in one map-layer upload (primary plus companions). */
   MAP_ASSET_UPLOAD_MAX_FILES: 8,
   /** Maximum entries accepted in the record sync-status map. */
@@ -67,17 +73,29 @@ export function mapAssetUploadTooLargeMessage(): string {
   return `Files must be at most ${mapAssetUploadMaxLabel()}.`;
 }
 
+/** User-facing size for {@link INPUT_LIMITS.MAP_ASSET_EXTRACT_MAX_BYTES}. */
+export function mapAssetExtractMaxLabel(): string {
+  const gb = INPUT_LIMITS.MAP_ASSET_EXTRACT_MAX_BYTES / (1024 * 1024 * 1024);
+  return Number.isInteger(gb) ? `${gb} GB` : `${gb.toFixed(1)} GB`;
+}
+
+/** Validation message when a zip would unpack larger than the extract cap. */
+export function mapAssetExtractTooLargeMessage(): string {
+  return `Unzipped map layer must be at most ${mapAssetExtractMaxLabel()}.`;
+}
+
 /**
  * Shown when the API rejects a map-layer upload because this node does not
- * have enough free disk for the file plus GDAL scratch.
+ * have enough free disk for the original plus a copy while it uploads to
+ * object storage. GDAL scratch lives on the spatial worker.
  */
 export const MAP_ASSET_UPLOAD_BUSY_MESSAGE =
   'The server is busy right now, please try again later. If this continues, please seek support via your system administrator.';
 
 /**
  * Free bytes that must remain on the upload filesystem before a stream is
- * accepted. Three times the upload cap covers the original, a warped copy,
- * and GDAL scratch.
+ * accepted. Three times the upload cap covers the original plus a copy
+ * while it streams to object storage. GDAL scratch lives on the spatial worker.
  */
 export const MAP_ASSET_UPLOAD_FREE_DISK_BYTES =
   INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_BYTES * 3;

@@ -62,4 +62,8 @@ export const mapControlBrand = {
   sheetShadow: '0 12px 32px rgba(0, 0, 0, 0.22)',
   /** White ring around the GPS glyph in list chrome, not the map cursor. */
   locationRing: '#FFFFFF',
+  /** Layers-panel swatch for the satellite basemap. */
+  satelliteSwatch: '#6b8f4e',
+  /** Layers-panel swatch for the vector/streets basemap. */
+  vectorSwatch: '#4a7cbf',
 } as const;

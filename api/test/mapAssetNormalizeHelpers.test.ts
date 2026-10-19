@@ -77,7 +77,7 @@ function pmtilesHeaderBytes({
 async function writeTempPmtiles(bytes: Buffer): Promise<string> {
   const dir = await mkdtemp(path.join(tmpdir(), 'faims-pmtiles-'));
   const filePath = path.join(dir, 'normalized.pmtiles');
-  await writeFile(filePath, bytes);
+  await writeFile(filePath, new Uint8Array(bytes));
   return filePath;
 }
 
@@ -297,14 +297,16 @@ describe('normalizeMapUpload', () => {
         const output = args[args.indexOf('-o') + 1] as string;
         await writeFile(
           output,
-          pmtilesHeaderBytes({
-            minZoom: 0,
-            maxZoom: 6,
-            west: 1,
-            south: 2,
-            east: 3,
-            north: 4,
-          })
+          new Uint8Array(
+            pmtilesHeaderBytes({
+              minZoom: 0,
+              maxZoom: 6,
+              west: 1,
+              south: 2,
+              east: 3,
+              north: 4,
+            })
+          )
         );
       }
     });

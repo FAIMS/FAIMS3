@@ -33,5 +33,11 @@ describe('ensureMapControlTheme', () => {
     expect(theme.palette.mapControl.locationRing).toBe(
       defaultMapControlPalette.locationRing
     );
+    expect(theme.palette.mapControl.satelliteSwatch).toBe(
+      defaultMapControlPalette.satelliteSwatch
+    );
+    expect(theme.palette.mapControl.vectorSwatch).toBe(
+      defaultMapControlPalette.vectorSwatch
+    );
   });
 });
