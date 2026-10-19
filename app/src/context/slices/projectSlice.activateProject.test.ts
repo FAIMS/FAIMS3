@@ -99,10 +99,12 @@ vi.mock('../../gui/components/maps/contextualLayerStore', () => ({
     contextualLayerStore.releaseContextualLayersForProject,
 }));
 
+import alertsReducer from './alertSlice';
 import {compiledSpecService} from './helpers/compiledSpecService';
 import projectsReducer, {
   activateProject,
   initialProjectState,
+  projectIdentityKey,
   selectPendingContextualLayerPrompt,
   type ListedProject,
   type ProjectsState,
@@ -220,8 +222,13 @@ function makeStore(listed: ListedProject = listedFixture()) {
     reducer: {
       projects: projectsReducer,
       auth: (state = authState) => state,
+      alerts: alertsReducer,
     },
-    preloadedState: {projects: projectsState, auth: authState},
+    preloadedState: {
+      projects: projectsState,
+      auth: authState,
+      alerts: {alerts: []},
+    },
   });
 }
 
@@ -274,6 +281,77 @@ describe('activateProject requires downloaded design details', () => {
     expect(
       store.getState().projects.servers[serverId].listed[projectId]
     ).toBeDefined();
+    expect(store.getState().projects.activatingProjects).toEqual([]);
+    expect(store.getState().alerts.alerts[0]?.message).toMatch(
+      /without downloading its design/
+    );
+  });
+
+  it('adds an activating key immediately while the notebook stays listed', async () => {
+    let finish!: (value: unknown) => void;
+    resolveActivationSyncMode.mockReturnValue(
+      new Promise(resolve => {
+        finish = resolve;
+      })
+    );
+    const store = makeStore();
+    const pending = store.dispatch(
+      activateProject({
+        serverId,
+        projectId,
+        jwtToken: 'tok',
+      }) as any
+    );
+
+    expect(store.getState().projects.activatingProjects).toEqual([
+      projectIdentityKey({serverId, projectId}),
+    ]);
+    expect(
+      store.getState().projects.servers[serverId].listed[projectId]
+    ).toBeDefined();
+    expect(
+      store.getState().projects.servers[serverId].activated[projectId]
+    ).toBeUndefined();
+
+    finish({
+      syncMode: 'both',
+      usedPushOnlyDefault: false,
+      details: getDetailsPayload,
+      recordCount: 3,
+    });
+    await pending;
+
+    expect(store.getState().projects.activatingProjects).toEqual([]);
+    expect(
+      store.getState().projects.servers[serverId].activated[projectId]
+        ?.isActivated
+    ).toBe(true);
+  });
+
+  it('clears the activating key and alerts when prepare fails', async () => {
+    resolveActivationSyncMode.mockRejectedValue(new Error('offline'));
+    const store = makeStore();
+
+    await expect(
+      store
+        .dispatch(
+          activateProject({
+            serverId,
+            projectId,
+            jwtToken: 'tok',
+          }) as any
+        )
+        .unwrap()
+    ).rejects.toThrow('offline');
+
+    expect(store.getState().projects.activatingProjects).toEqual([]);
+    expect(
+      store.getState().projects.servers[serverId].listed[projectId]
+    ).toBeDefined();
+    expect(
+      store.getState().projects.servers[serverId].activated[projectId]
+    ).toBeUndefined();
+    expect(store.getState().alerts.alerts[0]?.message).toBe('offline');
   });
 
   it('moves the listed notebook to activated with the GET details design payload', async () => {
@@ -320,6 +398,7 @@ describe('activateProject requires downloaded design details', () => {
     );
     expect(activated.name).toBe('Notebook One from GET');
     expect(activated.recordCount).toBe(3);
+    expect(store.getState().projects.activatingProjects).toEqual([]);
   });
 
   it('prompts for contextual layers when the listing is unseen', async () => {

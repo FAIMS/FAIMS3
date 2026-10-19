@@ -320,12 +320,47 @@ export interface PendingOfflineMapDownloadPrompt extends ProjectIdentity {
   isRegionUpdate?: boolean;
 }
 
-/** Dedupe key for the offline map prompt FIFO queue. */
-function offlineMapDownloadPromptKey({
+/** Stable `${serverId}:${projectId}` key for maps, queues, and activation. */
+export function projectIdentityKey({
   projectId,
   serverId,
 }: ProjectIdentity): string {
   return `${serverId}:${projectId}`;
+}
+
+/** Dedupe key for the offline map prompt FIFO queue. */
+function offlineMapDownloadPromptKey(identity: ProjectIdentity): string {
+  return projectIdentityKey(identity);
+}
+
+function ensureActivatingProjects(state: ProjectsState): string[] {
+  if (!state.activatingProjects) {
+    state.activatingProjects = [];
+  }
+  return state.activatingProjects;
+}
+
+function addActivatingProject(
+  state: ProjectsState,
+  identity: ProjectIdentity
+): void {
+  const keys = ensureActivatingProjects(state);
+  const key = projectIdentityKey(identity);
+  if (!keys.includes(key)) {
+    keys.push(key);
+  }
+}
+
+function removeActivatingProject(
+  state: ProjectsState,
+  identity: ProjectIdentity
+): void {
+  const keys = ensureActivatingProjects(state);
+  const key = projectIdentityKey(identity);
+  const index = keys.indexOf(key);
+  if (index !== -1) {
+    keys.splice(index, 1);
+  }
 }
 
 /** Migrate legacy persisted state that predates the prompt queue field. */
@@ -350,6 +385,11 @@ export interface ProjectsState {
   pendingOfflineMapDownloadPrompts?: PendingOfflineMapDownloadPrompt[];
   /** FIFO queue of contextual layer download dialogs. */
   pendingContextualLayerPrompts?: ProjectIdentity[];
+  /**
+   * Notebooks currently running {@link activateProject}. Not persisted — a
+   * reload must not leave a stuck spinner after the thunk is gone.
+   */
+  activatingProjects?: string[];
 }
 
 // UTILITY FUNCTIONS
@@ -365,6 +405,7 @@ export const initialProjectState: ProjectsState = {
   isInitialised: false,
   pendingOfflineMapDownloadPrompts: [],
   pendingContextualLayerPrompts: [],
+  activatingProjects: [],
 };
 
 /**
@@ -399,6 +440,50 @@ function retainedActivatedFields(project: ActivatedProject) {
     quickShare: project.quickShare,
   };
 }
+
+/**
+ * Activates an existing project
+ *
+ * This involves
+ *
+ * - creating local pouch DB which stores the data synced from the remote
+ *   (and new records)
+ * - creating the remote pouch DB which is a connection point to the remote
+ *   data-database
+ * - creating the sync object which performs the synchronisation between the
+ *   two databases
+ * - registering the above non-serialisable objects into databaseService
+ * - marking the project as activated and updating store state
+ * - inclusion of design documents
+ *
+ * Declared before the slice so extraReducers can use typed pending/rejected
+ * matchers.
+ */
+export const activateProject = createAsyncThunk<
+  void,
+  ProjectIdentity & DatabaseAuth
+>('projects/activateProject', async (payload, {dispatch, getState}) => {
+  try {
+    await runActivateProject(payload, dispatch as AppDispatch, getState);
+  } catch (err) {
+    const project = projectByIdentity(
+      (getState() as RootState).projects,
+      payload
+    );
+    if (!project?.isActivated) {
+      dispatch(
+        addAlert({
+          severity: 'error',
+          message:
+            err instanceof Error
+              ? err.message
+              : `Failed to activate this ${config.notebookName}.`,
+        })
+      );
+    }
+    throw err;
+  }
+});
 
 const projectsSlice = createSlice({
   name: 'projects',
@@ -841,6 +926,10 @@ const projectsSlice = createSlice({
 
       const server = state.servers[serverId];
       delete server.listed[project.projectId];
+      removeActivatingProject(state, {
+        serverId,
+        projectId: project.projectId,
+      });
       server.activated[project.projectId] = {
         ...retainedActivatedFields(project),
         offlineMapRegion: mergedOfflineMapRegion,
@@ -1316,6 +1405,14 @@ const projectsSlice = createSlice({
       delete project.quickShare;
     },
   },
+  extraReducers: builder => {
+    builder.addCase(activateProject.pending, (state, action) => {
+      addActivatingProject(state, action.meta.arg);
+    });
+    builder.addCase(activateProject.rejected, (state, action) => {
+      removeActivatingProject(state, action.meta.arg);
+    });
+  },
 });
 
 // STATE HELPERS
@@ -1485,6 +1582,10 @@ export const selectPendingOfflineMapDownloadPrompt = (state: RootState) =>
 
 export const selectPendingContextualLayerPrompt = (state: RootState) =>
   state.projects.pendingContextualLayerPrompts?.[0];
+
+/** Keys of notebooks whose `activateProject` thunk is still in flight. */
+export const selectActivatingProjects = (state: RootState): string[] =>
+  state.projects.activatingProjects ?? [];
 
 /**
  * Finds a project by server and project ID.
@@ -1682,26 +1783,11 @@ export const updateDatabaseCredentials = createAsyncThunk<
   }
 });
 
-/**
- * Activates an existing project
- *
- * This involves
- *
- * - creating local pouch DB which stores the data synced from the remote
- *   (and new records)
- * - creating the remote pouch DB which is a connection point to the remote
- *   data-database
- * - creating the sync object which performs the synchronisation between the
- *   two databases
- * - registering the above non-serialisable objects into databaseService
- * - marking the project as activated and updating store state
- * - inclusion of design documents
- *
- */
-export const activateProject = createAsyncThunk<
-  void,
-  ProjectIdentity & DatabaseAuth
->('projects/activateProject', async (payload, {dispatch, getState}) => {
+async function runActivateProject(
+  payload: ProjectIdentity & DatabaseAuth,
+  dispatch: AppDispatch,
+  getState: () => unknown
+): Promise<void> {
   // First, activate the project, then add the design docs (synchronous)
   //dispatch(activateProjectSync(payload));
 
@@ -1894,7 +1980,7 @@ export const activateProject = createAsyncThunk<
       );
     }
   }
-});
+}
 
 interface ActivateProjectSuccessPayload {
   project: ActivatedProject;
