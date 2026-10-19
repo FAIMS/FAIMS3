@@ -41,7 +41,6 @@ describe('spatial tool performance args', () => {
       'FlatGeobuf',
       '-nlt',
       'PROMOTE_TO_MULTI',
-      '-explodecollections',
       '-lco',
       'SPATIAL_INDEX=NO',
       '-t_srs',
@@ -53,6 +52,14 @@ describe('spatial tool performance args', () => {
       'out.fgb',
       'in.gpkg',
     ]);
+    expect(ogr2ogrGeometryArgs('out.fgb', 'in.gpkg', plan)).not.toContain(
+      '-explodecollections'
+    );
+    expect(vectorIntermediatePlan(ogrInfoForTypes('MultiPolygon'))).toEqual({
+      filename: 'normalized.fgb',
+      format: 'FlatGeobuf',
+      nlt: 'PROMOTE_TO_MULTI',
+    });
     expect(tippecanoeVectorArgs('out.pmtiles', 'out.fgb')).toEqual([
       '-o',
       'out.pmtiles',

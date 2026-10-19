@@ -200,18 +200,21 @@ export function ogr2ogrGeometryArgs(
   gdalSource: string,
   plan: VectorIntermediatePlan = vectorIntermediatePlan()
 ): string[] {
-  const layerCreation =
-    plan.format === 'FlatGeobuf'
-      ? ['-lco', 'SPATIAL_INDEX=NO']
-      : ['-lco', 'RS=YES'];
+  const flatGeobuf = plan.format === 'FlatGeobuf';
+  const layerCreation = flatGeobuf
+    ? ['-lco', 'SPATIAL_INDEX=NO']
+    : ['-lco', 'RS=YES'];
+  // -explodecollections plus -nlt PROMOTE_TO_MULTI makes FlatGeobuf create a
+  // Polygon layer then write MultiPolygon features (ICreateFeature mismatch).
+  // File Geodatabase polygon classes are often MultiPolygon. Keep explode on
+  // GeoJSONSeq so GeometryCollection members become ordinary features.
+  const explodeCollections = flatGeobuf ? [] : ['-explodecollections'];
   return [
     '-f',
     plan.format,
     '-nlt',
     plan.nlt,
-    // GeometryCollection is type 0/7 in FlatGeobuf; explode so members
-    // become ordinary Point / Line / Polygon features.
-    '-explodecollections',
+    ...explodeCollections,
     ...layerCreation,
     '-t_srs',
     'EPSG:4326',

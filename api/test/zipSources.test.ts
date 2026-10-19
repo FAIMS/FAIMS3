@@ -29,6 +29,10 @@ import {
   zipEntryIsUnixSymlink,
   zipEntryPathIsUnsafe,
 } from '../src/couchdb/mapAssets/zipSources';
+import {
+  ogr2ogrGeometryArgs,
+  vectorIntermediatePlan,
+} from '../src/spatial/gdalPerformance';
 
 function crc32(data: Uint8Array): number {
   let crc = ~0;
@@ -502,6 +506,70 @@ describe('OpenFileGDB zip', () => {
         layers?: {geometryFields?: {type?: string}[]}[];
       };
       expect(info.layers?.[0]?.geometryFields?.[0]?.type).toBe('Point');
+    } finally {
+      await rm(dir, {recursive: true, force: true});
+    }
+  });
+
+  it('writes a MultiPolygon source to FlatGeobuf with the ingest args', async () => {
+    if (!(await isGdalAvailable())) {
+      return;
+    }
+    const dir = await mkdtemp(path.join(tmpdir(), 'faims-ogr-multi-'));
+    try {
+      const input = path.join(dir, 'in.geojson');
+      const output = path.join(dir, 'out.fgb');
+      await writeFile(
+        input,
+        JSON.stringify({
+          type: 'FeatureCollection',
+          crs: {type: 'name', properties: {name: 'EPSG:4326'}},
+          features: [
+            {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'MultiPolygon',
+                coordinates: [
+                  [
+                    [
+                      [148.0, -35.0],
+                      [148.1, -35.0],
+                      [148.1, -34.9],
+                      [148.0, -34.9],
+                      [148.0, -35.0],
+                    ],
+                  ],
+                  [
+                    [
+                      [148.2, -35.0],
+                      [148.3, -35.0],
+                      [148.3, -34.9],
+                      [148.2, -34.9],
+                      [148.2, -35.0],
+                    ],
+                  ],
+                ],
+              },
+            },
+          ],
+        })
+      );
+      const plan = vectorIntermediatePlan({
+        layers: [{geometryFields: [{type: 'MultiPolygon'}]}],
+      });
+      await runGdalCommand({
+        command: 'ogr2ogr',
+        args: ogr2ogrGeometryArgs(output, input, plan),
+      });
+      const info = (await readGdalJson({
+        command: 'ogrinfo',
+        args: ['-json', '-so', '-al', output],
+      })) as {
+        layers?: {featureCount?: number; geometryFields?: {type?: string}[]}[];
+      };
+      expect(info.layers?.[0]?.geometryFields?.[0]?.type).toBe('MultiPolygon');
+      expect(info.layers?.[0]?.featureCount).toBe(1);
     } finally {
       await rm(dir, {recursive: true, force: true});
     }
