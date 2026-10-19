@@ -47,7 +47,7 @@ export const runGdalCommand = ({
   env?: NodeJS.ProcessEnv;
   /** Live stderr (tippecanoe progress). Also still collected for the result. */
   onStderr?: (chunk: string) => void;
-  /** Live stdout (GDAL `-progress` / GDALTermProgress). Also still collected. */
+  /** Live stdout (GDALTermProgress). Also still collected. */
   onStdout?: (chunk: string) => void;
 }): Promise<{stdout: string; stderr: string}> =>
   new Promise((resolve, reject) => {

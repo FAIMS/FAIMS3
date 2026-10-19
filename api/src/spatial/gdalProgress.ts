@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
- * Parse GDAL `-progress` / GDALTermProgress output.
+ * Parse GDALTermProgress output (default on gdalwarp / gdal_translate / gdaladdo).
  * Classic form: `0...10...20...30...40...50...60...70...80...90...100 - done.`
  * Each `.` is a 2.5% tick. `gdaladdo` may start a new bar after ` - done.`
  */

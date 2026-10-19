@@ -11,8 +11,117 @@ export const DEFAULT_GDAL_NUM_THREADS = 'ALL_CPUS';
 export const DEFAULT_GDAL_CACHE_MAX_MB = 256;
 export const DEFAULT_GDAL_WARP_MEMORY_MB = 256;
 export const DEFAULT_GDAL_WARP_MULTI = true;
-export const VECTOR_INTERMEDIATE_FILENAME = 'normalized.fgb';
+export const VECTOR_INTERMEDIATE_FGB = 'normalized.fgb';
+export const VECTOR_INTERMEDIATE_GEOJSONSEQ = 'normalized.geojson';
 export const VECTOR_TILE_MAX_ZOOM = 14;
+
+export type VectorOgrFormat = 'FlatGeobuf' | 'GeoJSONSeq';
+
+/**
+ * How ogr2ogr writes the geometry-only intermediate that tippecanoe reads.
+ * Tippecanoe's FlatGeobuf reader rejects header type 0 (Unknown) for
+ * MultiLineString and GeometryCollection, so mixed / unknown layers use
+ * GeoJSONSeq with RFC 8142 RS (still parallel).
+ */
+export type VectorIntermediatePlan = {
+  filename: string;
+  format: VectorOgrFormat;
+  nlt: string;
+};
+
+const FGB_GEOMETRY_FAMILY: Record<string, 'point' | 'line' | 'polygon'> = {
+  point: 'point',
+  multipoint: 'point',
+  linestring: 'line',
+  multilinestring: 'line',
+  linearring: 'line',
+  polygon: 'polygon',
+  multipolygon: 'polygon',
+};
+
+function canonicalGeometryType(raw: string): string {
+  return raw
+    .toLowerCase()
+    .replace(/[\s_\-]/g, '')
+    .replace(/25d$/, '')
+    .replace(/[zm]+$/, '');
+}
+
+/** Layer geometry types from `ogrinfo -json` (`geometryFields[].type`). */
+export function geometryFieldTypes(info: unknown): string[] {
+  if (!info || typeof info !== 'object') {
+    return [];
+  }
+  const layers = (info as {layers?: unknown}).layers;
+  if (!Array.isArray(layers)) {
+    return [];
+  }
+  const types: string[] = [];
+  for (const layer of layers) {
+    if (!layer || typeof layer !== 'object') {
+      continue;
+    }
+    const fields = (layer as {geometryFields?: unknown}).geometryFields;
+    if (!Array.isArray(fields)) {
+      continue;
+    }
+    for (const field of fields) {
+      if (!field || typeof field !== 'object') {
+        continue;
+      }
+      const type = (field as {type?: unknown}).type;
+      if (typeof type === 'string' && type.trim()) {
+        types.push(type);
+      }
+    }
+  }
+  return types;
+}
+
+function concreteFgbNlt(types: string[]): string | undefined {
+  const families = new Set<'point' | 'line' | 'polygon'>();
+  for (const raw of types) {
+    const canonical = canonicalGeometryType(raw);
+    if (
+      canonical === '' ||
+      canonical === 'none' ||
+      canonical === 'geometry' ||
+      canonical === 'geometrycollection' ||
+      canonical.startsWith('unknown')
+    ) {
+      return undefined;
+    }
+    const family = FGB_GEOMETRY_FAMILY[canonical];
+    if (!family) {
+      return undefined;
+    }
+    families.add(family);
+  }
+  if (families.size !== 1) {
+    return undefined;
+  }
+  return 'PROMOTE_TO_MULTI';
+}
+
+/**
+ * FlatGeobuf with a concrete type when every source layer is one geometry
+ * family. Otherwise GeoJSONSeq so tippecanoe can read mixed collections.
+ */
+export function vectorIntermediatePlan(info?: unknown): VectorIntermediatePlan {
+  const nlt = concreteFgbNlt(geometryFieldTypes(info));
+  if (nlt) {
+    return {
+      filename: VECTOR_INTERMEDIATE_FGB,
+      format: 'FlatGeobuf',
+      nlt,
+    };
+  }
+  return {
+    filename: VECTOR_INTERMEDIATE_GEOJSONSEQ,
+    format: 'GeoJSONSeq',
+    nlt: 'GEOMETRY',
+  };
+}
 
 export type SpatialToolPerformance = {
   /** `ALL_CPUS` or a positive integer as a string. */
@@ -34,9 +143,11 @@ export const DEFAULT_SPATIAL_TOOL_PERFORMANCE: SpatialToolPerformance = {
   gdalWarpMulti: DEFAULT_GDAL_WARP_MULTI,
 };
 
-/** Intermediate vector filename. FlatGeobuf for tippecanoe's parallel FGB path. */
-export function vectorIntermediateFilename(): string {
-  return VECTOR_INTERMEDIATE_FILENAME;
+/** Intermediate vector filename for the chosen ogr2ogr plan. */
+export function vectorIntermediateFilename(
+  plan: VectorIntermediatePlan = vectorIntermediatePlan()
+): string {
+  return plan.filename;
 }
 
 /** Child-process env so GDAL and tippecanoe see the same knobs as CLI flags. */
@@ -57,10 +168,9 @@ export function spatialToolProcessEnv(
   return env;
 }
 
-/** Flags applied to raster GDAL commands (`-progress` plus `--config` pairs). */
+/** `--config` pairs applied to raster GDAL commands. */
 export function gdalConfigArgs(perf: SpatialToolPerformance): string[] {
   return [
-    '-progress',
     '--config',
     'GDAL_NUM_THREADS',
     perf.gdalNumThreads,
@@ -87,15 +197,22 @@ export function gdalWarpPerformanceArgs(
 
 export function ogr2ogrGeometryArgs(
   outputPath: string,
-  gdalSource: string
+  gdalSource: string,
+  plan: VectorIntermediatePlan = vectorIntermediatePlan()
 ): string[] {
+  const layerCreation =
+    plan.format === 'FlatGeobuf'
+      ? ['-lco', 'SPATIAL_INDEX=NO']
+      : ['-lco', 'RS=YES'];
   return [
     '-f',
-    'FlatGeobuf',
+    plan.format,
     '-nlt',
-    'GEOMETRY',
-    '-lco',
-    'SPATIAL_INDEX=NO',
+    plan.nlt,
+    // GeometryCollection is type 0/7 in FlatGeobuf; explode so members
+    // become ordinary Point / Line / Polygon features.
+    '-explodecollections',
+    ...layerCreation,
     '-t_srs',
     'EPSG:4326',
     // One output layer. -nln appends every source layer (KML folders,
@@ -112,7 +229,7 @@ export function ogr2ogrGeometryArgs(
 
 export function tippecanoeVectorArgs(
   pmtilesPath: string,
-  fgbPath: string
+  inputPath: string
 ): string[] {
   return [
     '-o',
@@ -125,6 +242,6 @@ export function tippecanoeVectorArgs(
     '--progress-interval=5',
     '-l',
     'features',
-    fgbPath,
+    inputPath,
   ];
 }

@@ -696,7 +696,8 @@ Those fields become worker-task env (`GDAL_NUM_THREADS`, `GDAL_CACHEMAX`,
 `GDAL_WARP_MEMORY_MB`, `GDAL_WARP_MULTI`, and optional
 `TIPPECANOE_MAX_THREADS`). The capacity manager does not receive them.
 `gdalwarp` also gets `-multi`, `-wm`, `-wo NUM_THREADS=…`, and
-`-co TILED=YES`. Vectors are written as FlatGeobuf and tiled with
+`-co TILED=YES`. Homogeneous vector layers are written as FlatGeobuf;
+mixed or unknown geometry becomes GeoJSONSeq. Both are tiled with
 `tippecanoe -z 14`.
 
 Attachment storage JSON (defaults shown):

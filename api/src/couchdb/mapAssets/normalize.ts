@@ -24,7 +24,7 @@ import {
   ogr2ogrGeometryArgs,
   spatialToolProcessEnv,
   tippecanoeVectorArgs,
-  VECTOR_INTERMEDIATE_FILENAME,
+  vectorIntermediatePlan,
   type SpatialToolPerformance,
 } from '../../spatial/gdalPerformance';
 import {attachGdalProgress} from '../../spatial/gdalProgress';
@@ -329,11 +329,13 @@ async function convertVector(
   filename: string,
   workDir: string,
   logContext?: MapAssetNormalizeLogContext,
-  extractedGdbDir?: string
+  extractedGdbDir?: string,
+  ogrInfo?: unknown
 ): Promise<NormalizedMapAsset> {
   const perf = spatialToolPerformance();
   const env = spatialToolProcessEnv(perf);
-  const fgbPath = path.join(workDir, VECTOR_INTERMEDIATE_FILENAME);
+  const plan = vectorIntermediatePlan(ogrInfo);
+  const intermediatePath = path.join(workDir, plan.filename);
   const pmtilesPath = path.join(workDir, 'normalized.pmtiles');
   await emitStage(logContext, 'converting-geometries');
   await withMapAssetProcessingWait(
@@ -342,12 +344,12 @@ async function convertVector(
       assetId: logContext?.assetId,
       command: 'ogr2ogr',
       filename,
-      detail: 'FlatGeobuf EPSG:4326',
+      detail: `${plan.format} EPSG:4326`,
     },
     () =>
       runGdalCommand({
         command: 'ogr2ogr',
-        args: ogr2ogrGeometryArgs(fgbPath, gdalSource),
+        args: ogr2ogrGeometryArgs(intermediatePath, gdalSource, plan),
         env,
       })
   );
@@ -376,7 +378,11 @@ async function convertVector(
         filename,
         detail: 'vector PMTiles',
       },
-      () => runTippecanoe(tippecanoeVectorArgs(pmtilesPath, fgbPath), onStderr)
+      () =>
+        runTippecanoe(
+          tippecanoeVectorArgs(pmtilesPath, intermediatePath),
+          onStderr
+        )
     );
     const flushed = consumeTippecanoeProgress(`${leftover}\n`);
     for (const update of flushed.updates) {
@@ -387,7 +393,7 @@ async function convertVector(
     await progressWait.catch(() => undefined);
     throw error;
   }
-  await rm(fgbPath, {force: true});
+  await rm(intermediatePath, {force: true});
   const header = await readPmtilesHeader(pmtilesPath);
   return {
     kind: 'vector-tiles',
@@ -623,14 +629,15 @@ export async function normalizeMapUpload(
       extractedGdbDir = prepared.extractedGdbDir;
     }
     await emitStage(logContext, 'interpreting-crs');
-    await inspectCrs(gdalSource, filename, vector, logContext);
+    const ogrInfo = await inspectCrs(gdalSource, filename, vector, logContext);
     const result = vector
       ? await convertVector(
           gdalSource,
           filename,
           workDir,
           logContext,
-          extractedGdbDir
+          extractedGdbDir,
+          ogrInfo
         )
       : await convertRaster(sourcePath, workDir, logContext);
     return ownsWorkDir ? {...result, cleanupDir: workDir} : result;

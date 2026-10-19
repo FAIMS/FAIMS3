@@ -4,12 +4,20 @@ import {
   DEFAULT_SPATIAL_TOOL_PERFORMANCE,
   gdalConfigArgs,
   gdalWarpPerformanceArgs,
+  geometryFieldTypes,
   ogr2ogrGeometryArgs,
   spatialToolProcessEnv,
   tippecanoeVectorArgs,
   vectorIntermediateFilename,
+  vectorIntermediatePlan,
   type SpatialToolPerformance,
 } from '../src/spatial/gdalPerformance';
+
+function ogrInfoForTypes(...types: string[]) {
+  return {
+    layers: types.map(type => ({geometryFields: [{type}]})),
+  };
+}
 
 const tuned: SpatialToolPerformance = {
   gdalNumThreads: 'ALL_CPUS',
@@ -20,13 +28,20 @@ const tuned: SpatialToolPerformance = {
 };
 
 describe('spatial tool performance args', () => {
-  it('writes FlatGeobuf and tippecanoe -z 14', () => {
-    expect(vectorIntermediateFilename()).toBe('normalized.fgb');
-    expect(ogr2ogrGeometryArgs('out.fgb', 'in.gpkg')).toEqual([
+  it('writes FlatGeobuf for a homogeneous polygon layer', () => {
+    const plan = vectorIntermediatePlan(ogrInfoForTypes('Polygon'));
+    expect(plan).toEqual({
+      filename: 'normalized.fgb',
+      format: 'FlatGeobuf',
+      nlt: 'PROMOTE_TO_MULTI',
+    });
+    expect(vectorIntermediateFilename(plan)).toBe('normalized.fgb');
+    expect(ogr2ogrGeometryArgs('out.fgb', 'in.gpkg', plan)).toEqual([
       '-f',
       'FlatGeobuf',
       '-nlt',
-      'GEOMETRY',
+      'PROMOTE_TO_MULTI',
+      '-explodecollections',
       '-lco',
       'SPATIAL_INDEX=NO',
       '-t_srs',
@@ -53,9 +68,55 @@ describe('spatial tool performance args', () => {
     ]);
   });
 
-  it('passes -progress, warp threads, cache, -multi, and -wm', () => {
+  it('writes GeoJSONSeq when ogrinfo reports mixed or unknown geometry', () => {
+    expect(geometryFieldTypes(ogrInfoForTypes('Geometry'))).toEqual([
+      'Geometry',
+    ]);
+    const mixed = vectorIntermediatePlan(
+      ogrInfoForTypes('Polygon', 'Line String')
+    );
+    expect(mixed.format).toBe('GeoJSONSeq');
+    expect(vectorIntermediatePlan(ogrInfoForTypes('Geometry'))).toEqual({
+      filename: 'normalized.geojson',
+      format: 'GeoJSONSeq',
+      nlt: 'GEOMETRY',
+    });
+    expect(
+      vectorIntermediatePlan(ogrInfoForTypes('Geometry Collection'))
+    ).toEqual({
+      filename: 'normalized.geojson',
+      format: 'GeoJSONSeq',
+      nlt: 'GEOMETRY',
+    });
+    expect(
+      vectorIntermediatePlan(ogrInfoForTypes('Polygon', 'Multi Polygon'))
+    ).toEqual({
+      filename: 'normalized.fgb',
+      format: 'FlatGeobuf',
+      nlt: 'PROMOTE_TO_MULTI',
+    });
+    const plan = vectorIntermediatePlan(ogrInfoForTypes('Geometry'));
+    expect(ogr2ogrGeometryArgs('out.geojson', 'in.geojson', plan)).toEqual([
+      '-f',
+      'GeoJSONSeq',
+      '-nlt',
+      'GEOMETRY',
+      '-explodecollections',
+      '-lco',
+      'RS=YES',
+      '-t_srs',
+      'EPSG:4326',
+      '-nln',
+      'features',
+      '-select',
+      '',
+      'out.geojson',
+      'in.geojson',
+    ]);
+  });
+
+  it('passes warp threads, cache, -multi, and -wm', () => {
     expect(gdalWarpPerformanceArgs(tuned)).toEqual([
-      '-progress',
       '--config',
       'GDAL_NUM_THREADS',
       'ALL_CPUS',
@@ -71,7 +132,6 @@ describe('spatial tool performance args', () => {
       'TILED=YES',
     ]);
     expect(gdalConfigArgs(tuned)).toEqual([
-      '-progress',
       '--config',
       'GDAL_NUM_THREADS',
       'ALL_CPUS',
