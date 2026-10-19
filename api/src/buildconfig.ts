@@ -73,18 +73,14 @@ const runningUnderTest =
 
 // Signing-key identity. Blank PROFILE_NAME → 'test' key id / 'conductor' key
 // file host (distinct on purpose); the instance name falls back to the key id.
-const profileName = process.env.PROFILE_NAME;
+const profileName = canonical.auth.profileName;
 const conductorKeyId = configHelpers.isBlank(profileName)
   ? 'test'
   : profileName!;
 const keyFileHost = configHelpers.isBlank(profileName)
   ? 'conductor'
   : profileName!;
-const conductorInstanceName = configHelpers.isBlank(
-  process.env.CONDUCTOR_INSTANCE_NAME
-)
-  ? conductorKeyId
-  : process.env.CONDUCTOR_INSTANCE_NAME!;
+const conductorInstanceName = canonical.branding.conductorInstanceName;
 
 // Key-file path: fall back to '.' when the configured path does not exist.
 const keyFilePath = existsSync(canonical.auth.keyFilePath)
@@ -99,14 +95,10 @@ const cookieSecret = canonical.auth.cookieSecret
 
 // Local CouchDB auth: only used as a pair; a partial pair falls back to the
 // local dev credentials.
-const localCouchdbAuth: {username: string; password: string} =
-  configHelpers.isBlank(process.env.COUCHDB_USER) ||
-  configHelpers.isBlank(process.env.COUCHDB_PASSWORD)
-    ? {username: 'admin', password: 'password'}
-    : {
-        username: process.env.COUCHDB_USER!,
-        password: process.env.COUCHDB_PASSWORD!,
-      };
+const localCouchdbAuth: {username: string; password: string} = {
+  username: canonical.couchdb.couchdbUser,
+  password: canonical.couchdb.couchdbPassword,
+};
 
 // Local login is enabled unless explicitly disabled.
 const localLoginEnabled = !canonical.auth.disableLocalLogin;
@@ -121,13 +113,10 @@ if (canonical.auth.keySource === 'AWS_SM') {
 }
 
 // Redirect whitelist: required, and every entry must be a valid URL.
-const redirectWhitelist: string[] = (process.env.REDIRECT_WHITELIST ?? '')
-  .split(',')
-  .map(domain => domain.trim())
-  .filter(domain => domain.length > 0);
-if (redirectWhitelist.length === 0) {
+const redirectWhitelist = canonical.endpoints.redirectWhitelist;
+if (!redirectWhitelist || redirectWhitelist.length === 0) {
   throw new Error(
-    'REDIRECT_WHITELIST environment variable is required. Please provide a comma-separated list of allowed domains for redirects.'
+    'REDIRECT_WHITELIST is required. Please provide a comma-separated list of allowed domains for redirects.'
   );
 }
 for (const domain of redirectWhitelist) {
@@ -167,7 +156,7 @@ function resolveEmailServiceType(): EmailServiceType {
     console.log('Since we are testing, using mock email service.');
     return EmailServiceType.MOCK;
   }
-  const raw = process.env.EMAIL_SERVICE_TYPE;
+  const raw = canonical.email.emailServiceType;
   if (raw === undefined) return EmailServiceType.SMTP;
   if (raw === 'SMTP' || raw === 'MOCK') return raw as EmailServiceType;
   throw new Error(
@@ -177,9 +166,9 @@ function resolveEmailServiceType(): EmailServiceType {
 
 /** Builds from/name/reply-to from email env, with defaults when incomplete. */
 function resolveEmailConfig(): EmailConfig {
-  const fromEmail = process.env.EMAIL_FROM_ADDRESS;
-  const fromName = process.env.EMAIL_FROM_NAME;
-  const replyTo = process.env.EMAIL_REPLY_TO;
+  const fromEmail = canonical.email.emailFromAddress;
+  const fromName = canonical.email.emailFromName;
+  const replyTo = canonical.email.emailReplyTo;
 
   if (!fromEmail || !fromName) {
     console.warn('Email configuration is incomplete. Using default values.');
@@ -195,12 +184,12 @@ function resolveEmailConfig(): EmailConfig {
 
 /** Validates SMTP env and throws with a detailed missing-field report if incomplete. */
 function resolveSmtpConfig(): SMTPEmailServiceConfig {
-  const host = process.env.SMTP_HOST;
-  const portStr = process.env.SMTP_PORT;
-  const secure = process.env.SMTP_SECURE === 'true';
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASSWORD;
-  const cacheExpirySecondsStr = process.env.SMTP_CACHE_EXPIRY_SECONDS;
+  const host = canonical.email.smtpHost;
+  const portStr = canonical.email.smtpPort;
+  const secure = canonical.email.smtpSecure;
+  const user = canonical.email.smtpUser;
+  const pass = canonical.email.smtpPassword;
+  const cacheExpirySecondsStr = canonical.email.smtpCacheExpirySeconds;
 
   // Check for missing configuration and provide a detailed error message
   const missingConfig = [];
@@ -227,22 +216,16 @@ function resolveSmtpConfig(): SMTPEmailServiceConfig {
 
   return {
     host: host!,
-    port: parseInt(portStr!),
+    port: portStr!,
     secure,
     auth: {user: user!, pass: pass!},
-    cacheExpirySeconds: cacheExpirySecondsStr
-      ? parseInt(cacheExpirySecondsStr)
-      : 300,
+    cacheExpirySeconds: cacheExpirySecondsStr,
   };
 }
 
 const emailServiceType = resolveEmailServiceType();
 const email = resolveEmailConfig();
-const testEmailAddress = runningUnderTest
-  ? 'fake@gmail.com'
-  : configHelpers.isBlank(process.env.TEST_EMAIL_ADDRESS)
-    ? undefined
-    : process.env.TEST_EMAIL_ADDRESS;
+const testEmailAddress = canonical.email.testEmailAddress;
 
 /**
  * The singleton configuration object. Prefer reading values from here.
@@ -271,6 +254,7 @@ export const config = {
     .provisionSsoUsersPolicy as ProvisionSSOUsersPolicy,
   localLoginEnabled,
   cookieSecret,
+  authProviderConfig: canonical.authProviders,
 
   // Token lifetimes.
   accessTokenExpiryMinutes: canonical.authTokens.accessTokenExpiryMinutes,
