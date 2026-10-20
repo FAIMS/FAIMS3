@@ -63,7 +63,7 @@ Let's begin by logging into {{FAIMS}} and finding our way around.
    providers, such as Google)
 3. Click **Sign in**
 
-```{screenshot} quickstart/qs-001-login-desktop.png
+```{screenshot} first-notebook-tutorial/qs-001-login-desktop.png
 :alt: {{FAIMS}} login page with a Welcome card containing Email Address and Password fields, a Forgot password link, and a green Sign in button
 :align: right
 :width: 100%
@@ -86,7 +86,7 @@ After logging in, you'll see the {{Dashboard}} interface:
 > a **Users** entry under Management. If your sidebar has extra items, you
 > have broader permissions. Everything in this tutorial works the same way.
 
-```{screenshot} quickstart/qs-002-dashboard-overview-desktop.png
+```{screenshot} first-notebook-tutorial/qs-002-dashboard-overview-desktop.png
 :alt: {{FAIMS}} {{Dashboard}} with the {{Notebooks}} list open: the left sidebar shows {{Notebooks}} and Templates under Content, and Teams and Archive under Management; the main area has a search box, a Create {{Notebook}} button, and a table of {{notebooks}} with Name, Team, Template, Created by, Created, and Description columns; pagination at the bottom reads Rows per page 10, Page 1 of 2
 :align: right
 :width: 100%
@@ -117,7 +117,7 @@ From the {{Dashboard}}:
 1. Click **{{Notebooks}}** in the left navigation
 2. Click **+ Create {{Notebook}}**
 
-```{screenshot} quickstart/qs-003-create-dialog-desktop.png
+```{screenshot} first-notebook-tutorial/qs-003-create-dialog-desktop.png
 :alt: Create {{Notebook}} dialogue with an empty Name field, a Description field hinting at an optional summary of up to 250 characters, an optional Existing {{Notebook}} Template selector, an optional JSON File upload, a Create {{notebook}} in this team selector, and a Create {{Notebook}} button
 :align: right
 :width: 100%
@@ -136,7 +136,7 @@ In the creation dialogue:
 4. Leave the template and JSON options empty (those are advanced features)
 5. Click **Create {{Notebook}}**
 
-```{screenshot} quickstart/qs-004-create-dialog-filled-desktop.png
+```{screenshot} first-notebook-tutorial/qs-004-create-dialog-filled-desktop.png
 :alt: Create {{Notebook}} dialogue filled in: Name reads My First Survey and the Create {{notebook}} in this team selector shows {{FAIMS}} Demo Team
 :align: right
 :width: 100%
@@ -150,7 +150,7 @@ sorted by creation date, **newest first**, so your new {{notebook}} appears at
 the **top of the list**. It also appears in the left sidebar under
 **{{Notebooks}}**.
 
-```{screenshot} quickstart/qs-005-notebook-at-top-desktop.png
+```{screenshot} first-notebook-tutorial/qs-005-notebook-at-top-desktop.png
 :alt: {{Notebook}} list with My First Survey in the top row, the Created column sorted newest first, and My First Survey also listed in the left sidebar under {{Notebooks}}
 :align: right
 :width: 100%
@@ -174,7 +174,7 @@ The Actions tab also has a **Quick share** panel, set to **Enabled** by
 default. It lets users with the right permissions share the {{notebook}} from
 within the data collection app. You can leave it as it is for this tutorial.
 
-```{screenshot} quickstart/qs-006-actions-tab-desktop.png
+```{screenshot} first-notebook-tutorial/qs-006-actions-tab-desktop.png
 :alt: Actions tab on the {{notebook}} page, with panels for Edit {{Notebook}} details, Quick share with a switch labelled Enabled, Edit {{Notebook}} containing the Open in Editor button, Assign {{notebook}} to a Team, Download JSON, Replace {{Notebook}} JSON File, Create Template from this {{Notebook}}, {{Notebook}} Status showing Open with a Close {{Notebook}} button, and Archive {{Notebook}} with its button unavailable until the {{notebook}} is closed
 :align: right
 :width: 100%
@@ -208,7 +208,7 @@ the main interface elements:
 >
 > 💡 **Tip**: Notice the UNDO and REDO buttons in the toolbar. Use these to recover from accidental deletions or changes. They're your safety net while building forms!
 
-```{screenshot} quickstart/qs-007-editor-fresh-desktop.png
+```{screenshot} first-notebook-tutorial/qs-007-editor-fresh-desktop.png
 :alt: {{Notebook}} Editor open at the DESIGN tab: Save, Cancel, Undo, and Redo buttons with a Preview toggle set to Off, a Search design box at the top right, and the Forms heading with a New Form button above an otherwise empty workspace
 :align: right
 :width: 100%
@@ -259,7 +259,7 @@ Right now, we have an empty {{notebook}}. Let's create its first form!
    describes what data you'll collect)
 4. **Click "Add Form"** to create it
 
-```{screenshot} quickstart/qs-008-add-form-dialog-desktop.png
+```{screenshot} first-notebook-tutorial/qs-008-add-form-dialog-desktop.png
 :alt: Add New Form dialogue with the Form Name box containing Site Details, a hint reading Use a short descriptive name, for example Household Details, and Cancel and Add Form buttons
 :align: right
 :width: 100%
@@ -290,7 +290,7 @@ created:
 3. If you closed the dialogue by accident, click the blue **"+ New Section"**
    button next to the Sections heading instead
 
-```{screenshot} quickstart/qs-009-add-section-dialog-desktop.png
+```{screenshot} first-notebook-tutorial/qs-009-add-section-dialog-desktop.png
 :alt: Add New Section dialogue with the Section Name box containing Basic Information, a hint reading Name the section users will fill in first, and Cancel and Add Section buttons
 :align: right
 :width: 100%
@@ -310,7 +310,7 @@ created:
   Expand all / Collapse all controls
 - The section is ready to receive form fields
 
-```{screenshot} quickstart/qs-010-form-section-created-desktop.png
+```{screenshot} first-notebook-tutorial/qs-010-form-section-created-desktop.png
 :alt: {{Notebook}} Editor after the form and section are created: a SITE DETAILS form tab sits beside a NEW FORM tab under a control row of Edit name, Reorder, Settings, Include Add New Record button, and Delete; the Sections panel shows a chip numbered 1 labelled Basic Information with its own control row; the Fields panel below has a New Field button with Visible fields and Hidden fields areas
 :align: right
 :width: 100%
@@ -341,7 +341,7 @@ editor.
 3. **Click the "Text field" card** (single-line text input). The field is
    added immediately and the dialogue closes
 
-```{screenshot} quickstart/qs-011-add-field-gallery-desktop.png
+```{screenshot} first-notebook-tutorial/qs-011-add-field-gallery-desktop.png
 :alt: Add a field dialogue with the All category tab active, further tabs for Text, Numbers, Date and Time, Media, Location, and Choice ending in a chevron, a Search field types box, the hint Click any field card to add it instantly then name it in the field editor, and a gallery of field cards with Text field first
 :align: right
 :width: 100%
@@ -368,7 +368,7 @@ editor.
 > records, Annotation, and Uncertainty. We'll use Annotation and Uncertainty
 > on the next field.
 
-```{screenshot} quickstart/qs-012-site-name-editor-desktop.png
+```{screenshot} first-notebook-tutorial/qs-012-site-name-editor-desktop.png
 :alt: Expanded Site Name field in the field editor, with Text field and Required badges under its header: Label reads Site Name, Field ID reads Site-Name, Helper Text reads Enter the official site designation or name, Short answer is selected above an empty Default Text box, Required is ticked, and the Advanced controls group shows unticked Copy value to new records, Annotation, and Uncertainty boxes above a Voice-to-text section with Enable voice-to-text input for this field ticked
 :align: right
 :width: 100%
@@ -397,7 +397,7 @@ Now let's add a choice field where users select one option from a list.
    - **Click the "Select single" card** (one choice from a list, shown as
      radio buttons). The field is added immediately
 
-```{screenshot} quickstart/qs-013-add-field-choice-desktop.png
+```{screenshot} first-notebook-tutorial/qs-013-add-field-choice-desktop.png
 :alt: Add a field dialogue with the Choice tab active, showing three cards: Select multiple, Select single, and Select Field (Hierarchical); the hint Scroll left/right to view all field categories sits above the Search field types box
 :align: right
 :width: 100%
@@ -422,7 +422,7 @@ Now let's add a choice field where users select one option from a list.
 > display mode" choice: **Expanded checklist** (the default, which renders
 > as the radio-button list data collectors see) or **Dropdown list**.
 
-```{screenshot} quickstart/qs-014-edit-option-dialog-desktop.png
+```{screenshot} first-notebook-tutorial/qs-014-edit-option-dialog-desktop.png
 :alt: Edit Option dialogue with the Option Text field containing Habitation, and Cancel and Save buttons
 :align: right
 :width: 100%
@@ -434,7 +434,7 @@ Now let's add a choice field where users select one option from a list.
    - **Annotation**: Toggle ON ☑ (allows margin notes for qualifications)
    - **Uncertainty**: Toggle ON ☑ (allows flagging uncertain observations)
 
-```{screenshot} quickstart/qs-015-site-type-editor-desktop.png
+```{screenshot} first-notebook-tutorial/qs-015-site-type-editor-desktop.png
 :alt: Expanded Site Type field showing the options table with Habitation, Mortuary, Ceremonial, Workshop/Industrial, Defensive, Agricultural, and Other in order, each row carrying a drag handle, up and down arrows, and edit and delete icons; below sit the Add option box with its Add button, an Add Other Option button, the Select-one display mode choice with Expanded checklist selected, Required ticked, and an Advanced controls group with Copy value to new records unticked and Annotation and Uncertainty ticked, above Annotation Label and Uncertainty Label boxes reading annotation and uncertainty
 :align: right
 :width: 100%
@@ -468,7 +468,7 @@ Let's add the ability to capture photos - essential for field documentation!
    - **Click the "Take Photo" card** (enables camera capture). The field is
      added immediately
 
-```{screenshot} quickstart/qs-016-add-field-media-desktop.png
+```{screenshot} first-notebook-tutorial/qs-016-add-field-media-desktop.png
 :alt: Add a field dialogue with the Media tab active, showing three cards: Upload a File, Audio Recorder, and Take Photo
 :align: right
 :width: 100%
@@ -482,7 +482,7 @@ Let's add the ability to capture photos - essential for field documentation!
    - **Annotation**: Toggle ON ☑
    - **Annotation Label**: Change from "annotation" to **"Photo notes"**
 
-```{screenshot} quickstart/qs-017-site-photo-editor-desktop.png
+```{screenshot} first-notebook-tutorial/qs-017-site-photo-editor-desktop.png
 :alt: Site Photo field expanded in the field editor beneath the collapsed Site Name and Site Type fields, with a TakePhoto badge under its header: Label reads Site Photo, Field ID reads Site-Photo, Helper Text reads Photograph the site for documentation, Required is unticked, and in the Advanced controls group Copy value to new records and Uncertainty are unticked whilst Annotation is ticked, with the Annotation Label changed to Photo notes
 :align: right
 :width: 100%
@@ -496,7 +496,7 @@ Let's add the ability to capture photos - essential for field documentation!
 - All 3 fields are now visible: Site Name, Site Type, Site Photo
 - Your form is ready for data collection!
 
-```{screenshot} quickstart/qs-018-all-fields-visible-desktop.png
+```{screenshot} first-notebook-tutorial/qs-018-all-fields-visible-desktop.png
 :alt: Visible fields list with all three fields collapsed in order: Site Name with Text field and Required badges, Site Type with Select single and Required badges, and Site Photo with a TakePhoto badge; the Hidden fields area below reads No hidden fields
 :align: right
 :width: 100%
@@ -514,7 +514,7 @@ Before configuring Form Settings, you can preview how your form will look to dat
 2. **Click to enable Preview**
 3. **See your form in action** - a live preview panel appears on the right side showing exactly how your fields will render
 
-```{screenshot} quickstart/qs-019-preview-mode-desktop.png
+```{screenshot} first-notebook-tutorial/qs-019-preview-mode-desktop.png
 :alt: {{Notebook}} Editor with the Preview toggle on: the design panels stay on the left, and a live preview pane on the right renders the Basic Information section with a Site Name text input marked required and the Site Type radio-button options
 :align: right
 :width: 100%
@@ -528,7 +528,7 @@ This configuration is **essential**. The Human-Readable ID Field setting prevent
 
 Now let's configure how the form behaves when collecting data.
 
-```{screenshot} quickstart/qs-020-form-settings-modal-desktop.png
+```{screenshot} first-notebook-tutorial/qs-020-form-settings-modal-desktop.png
 :alt: Form Settings dialogue with four settings: Layout Style set to Tabs, an empty Summary Fields selector, an empty Human-Readable ID Field selector beneath its explainer text, and Overview Map set to Show spatial features, with a Close button at the bottom
 :align: right
 :width: 100%
@@ -565,7 +565,7 @@ Now let's configure how the form behaves when collecting data.
 >
 > **Set it now before saving!** Changing it later won't fix existing records.
 
-```{screenshot} quickstart/qs-021-form-settings-configured-desktop.png
+```{screenshot} first-notebook-tutorial/qs-021-form-settings-configured-desktop.png
 :alt: Form Settings dialogue configured: Summary Fields shows removable Site Name and Site Type chips, Human-Readable ID Field shows Site Name, Layout Style remains Tabs, and Overview Map remains Show spatial features
 :align: right
 :width: 100%
@@ -589,7 +589,7 @@ Now let's configure how the form behaves when collecting data.
 3. **To continue editing later**, click the **Actions** tab and choose
    **"Open in Editor"** again
 
-```{screenshot} quickstart/qs-022-designer-saved-desktop.png
+```{screenshot} first-notebook-tutorial/qs-022-designer-saved-desktop.png
 :alt: {{Notebook}} page on the Actions tab immediately after saving, showing the Edit {{Notebook}} details, Quick share, Edit {{Notebook}}, Assign {{notebook}} to a Team, Download JSON, and Replace {{Notebook}} JSON File panels, with a green message in the bottom-right corner reading Designer saved successfully
 :align: right
 :width: 100%
@@ -614,7 +614,7 @@ Your {{notebook}} has been saved in the Editor. Now let's activate it for data c
 1. **Open a new browser tab** and navigate to your {{FAIMS}} data collection app URL ({{APP_URL}})
 2. **Log in** with the same credentials you used to access the Editor
 
-```{screenshot} quickstart/qs-023-app-active-zero-desktop.png
+```{screenshot} first-notebook-tutorial/qs-023-app-active-zero-desktop.png
 :alt: {{FAIMS}} app My {{Notebooks}} screen: server name {{FAIMS}}, green REFRESH and ADD {{NOTEBOOK}} buttons, a Learn more about activating {{notebooks}} link, the ACTIVE tab selected with a count of 0 and an empty table reading No rows, a NOT ACTIVE tab with a count of 12, and text beneath the table explaining that {{notebooks}} in the NOT ACTIVE tab need to be activated before they can be used
 :align: right
 :width: 100%
@@ -627,7 +627,7 @@ and **ADD {{NOTEBOOK}}** buttons, a "Learn more about activating {{notebooks}}"
 link, and two tabs: **ACTIVE** and **NOT ACTIVE** (the number in
 parentheses on each tab is a count of {{notebooks}}):
 
-```{screenshot} quickstart/qs-024-not-active-tab-desktop.png
+```{screenshot} first-notebook-tutorial/qs-024-not-active-tab-desktop.png
 :alt: NOT ACTIVE tab selected with a count of 12, listing {{notebooks}} by name, each row with a green-outlined ACTIVATE button; My First Survey sits at the top, above other {{notebooks}} that carry short descriptions
 :align: right
 :width: 100%
@@ -641,7 +641,7 @@ parentheses on each tab is a count of {{notebooks}}):
    window that opens on top of the page and waits for an answer: the rest
    of the screen is unavailable until you confirm or cancel
 
-```{screenshot} quickstart/qs-025-activating-modal-desktop.png
+```{screenshot} first-notebook-tutorial/qs-025-activating-modal-desktop.png
 :alt: Activating {{Notebooks}} dialogue with a blue information icon, text explaining that activating a {{notebook}} downloads existing records so you are safe to work offline, a bold reminder to do this with a stable internet connection, and CANCEL and ACTIVATE buttons
 :align: right
 :width: 100%
@@ -659,7 +659,7 @@ parentheses on each tab is a count of {{notebooks}}):
 > {{Notebooks}} screen has a "Learn more about activating {{notebooks}}" link if you
 > want the details.
 
-```{screenshot} quickstart/qs-026-active-one-desktop.png
+```{screenshot} first-notebook-tutorial/qs-026-active-one-desktop.png
 :alt: ACTIVE tab selected with a count of 1, listing My First Survey under the Name column header, beside a NOT ACTIVE tab now counting 11
 :align: right
 :width: 100%
@@ -707,7 +707,7 @@ You'll see the record list interface:
   dropdown
 - Because this is a brand new {{notebook}}, the table is empty
 
-```{screenshot} quickstart/qs-027-record-list-empty-desktop.png
+```{screenshot} first-notebook-tutorial/qs-027-record-list-empty-desktop.png
 :alt: Empty record list for My First Survey: a Back link beside the {{notebook}} name and a green Share button at the top right, above an orange ADD NEW SITE DETAILS button, a REFRESH RECORDS button, tabs MY SITE DETAILSS (0), MAP, DETAILS, and SETTINGS, a Search record data box with a Sort By dropdown reading Recently Updated, and an empty table with Sync, Site Name, Site Type, Created, Created By, Last Updated, and Last Updated By columns reading No rows, with pagination reading Rows per page 25 and 0 to 0 of 0
 :align: right
 :width: 100%
@@ -719,7 +719,7 @@ Let's add your first record:
 
 1. **Click the orange "ADD NEW SITE DETAILS" button**
 
-```{screenshot} quickstart/qs-028-record-form-empty-desktop.png
+```{screenshot} first-notebook-tutorial/qs-028-record-form-empty-desktop.png
 :alt: Blank Site Details entry form headed Creating Site Details, with a Record list breadcrumb at the top left, a Saved indicator at the top right, a Finish Site Details button, a progress bar reading Completed 0 percent with 0 of 2 required fields, a numbered Basic Information section badge, an empty Site Name input marked required with its helper text, and the Site Type radio options below
 :align: right
 :width: 100%
@@ -750,7 +750,7 @@ You'll see the data entry form with:
    - Check the **uncertainty** checkbox to flag this observation as uncertain
    - This is a powerful feature for capturing data quality context!
 
-   ```{screenshot} quickstart/qs-029-annotation-interface-desktop.png
+   ```{screenshot} first-notebook-tutorial/qs-029-annotation-interface-desktop.png
    :alt: Lower Site Type options with the annotation area open below them: the annotation text box contains Surface scatter suggests domestic occupation, but no structures visible, and the uncertainty checkbox beneath it is ticked; further down, the Site Photo section reads No photos selected yet above two green icon buttons labelled Camera and Gallery
    :align: right
    :width: 100%
@@ -766,7 +766,7 @@ You'll see the data entry form with:
    - Take or choose any photo (even of your desk - this is just practice!)
    - Note: Site Photo also has a blue dog ear icon for "Photo notes" annotation
 
-```{screenshot} quickstart/qs-031-record-form-complete-desktop.png
+```{screenshot} first-notebook-tutorial/qs-031-record-form-complete-desktop.png
 :alt: Site Details form with a full green progress bar reading Completed 100 percent, 2 of 2 required fields: Site Name contains Test Location Alpha, Site Type has Habitation selected, and the Saved indicator shows at the top right
 :align: right
 :width: 100%
@@ -788,7 +788,7 @@ step that completes the record and returns you to the record list:
      the right choice)
    - **FINISH ANYWAY** - finish with incomplete fields
 
-   ```{screenshot} quickstart/qs-030-finish-guard-desktop.png
+   ```{screenshot} first-notebook-tutorial/qs-030-finish-guard-desktop.png
    :alt: Confirmation dialogue asking Are you sure you want to finish Site Details, reporting 1 field still has errors, with a red FINISH ANYWAY button and a green GO BACK AND REVIEW button
    :align: right
    :width: 100%
@@ -803,7 +803,7 @@ Congratulations! 🎉 You've just created your first {{FAIMS}} record!
 
 You're automatically returned to the record list view. Here's what you'll see:
 
-```{screenshot} quickstart/qs-032-record-list-unsynced-desktop.png
+```{screenshot} first-notebook-tutorial/qs-032-record-list-unsynced-desktop.png
 :alt: Record list with the MY SITE DETAILSS tab counting 1: the single row shows an orange three-dot icon in the Sync column, Test Location Alpha under Site Name, Habitation under Site Type, Created and Last Updated timestamps a few seconds apart, and the capture user's email under Created By and Last Updated By, with pagination reading 1 to 1 of 1. The green Share button sits at the top right
 :align: right
 :width: 100%
@@ -825,7 +825,7 @@ You're automatically returned to the record list view. Here's what you'll see:
 >
 > If multiple team members edit the same record while offline, {{FAIMS}} has a conflict resolution interface in the data collection app to help you merge changes.
 
-```{screenshot} quickstart/qs-033-record-list-synced-desktop.png
+```{screenshot} first-notebook-tutorial/qs-033-record-list-synced-desktop.png
 :alt: The same record list row with the Sync column now showing a green cloud icon with a tick, indicating the record has synced to the server. The other values are unchanged
 :align: right
 :width: 100%
@@ -838,7 +838,7 @@ You can click on any record in the list to view its details:
 1. **Click on the record row** (e.g., "Test Location Alpha")
 2. **The Record View opens** showing all your captured data
 
-```{screenshot} quickstart/qs-034-record-view-desktop.png
+```{screenshot} first-notebook-tutorial/qs-034-record-view-desktop.png
 :alt: Record view headed Viewing Site Details with Test Location Alpha beneath it, RECORD, INFO, HISTORY, and STATUS tabs, a full progress bar reading Completed 100 percent, 2 of 2 required fields, an EDIT RECORD button, and a Basic Information panel listing Site Name Test Location Alpha, Site Type Habitation, and Site Photo with no images to display
 :align: right
 :width: 100%
@@ -861,7 +861,7 @@ Before we finish, let's explore the SETTINGS tab to understand sync and data man
 
 1. **Click on the SETTINGS tab** (next to the MY SITE DETAILSS, MAP, and DETAILS tabs)
 
-```{screenshot} quickstart/qs-035-settings-tab-desktop.png
+```{screenshot} first-notebook-tutorial/qs-035-settings-tab-desktop.png
 :alt: SETTINGS tab with four panels: Quick share, reading Share this {{notebook}} with another user by generating a temporary QR code, with a SHARE THIS {{NOTEBOOK}} button; Sync Mode showing Upload and download above the helper text Choose how this {{notebook}} syncs record data with the server; Get attachments from other devices with its toggle Off and an explanation of the trade-offs; and De-activate {{Notebook}} with warning text and a red DE-ACTIVATE {{NOTEBOOK}} button
 :align: right
 :width: 100%
@@ -888,7 +888,7 @@ You'll see several important controls:
 - Whatever the mode, your data is always saved locally first: changing
   sync mode never deletes anything
 
-```{screenshot} quickstart/qs-036-sync-mode-open-desktop.png
+```{screenshot} first-notebook-tutorial/qs-036-sync-mode-open-desktop.png
 :alt: SETTINGS tab with the Sync Mode select open below the Quick share panel, listing three options: Sync off (local device only), Upload only, and Upload and download, with Upload and download highlighted as the current choice
 :align: right
 :width: 100%
@@ -915,7 +915,7 @@ You'll see several important controls:
 - Use this only when you're done using this {{notebook}} on this device; you
   can always re-activate it later
 
-```{screenshot} quickstart/qs-037-deactivate-dialog-desktop.png
+```{screenshot} first-notebook-tutorial/qs-037-deactivate-dialog-desktop.png
 :alt: De-activate {{Notebook}} confirmation dialogue asking Are you sure you want to de-activate the {{notebook}} and remove it from your device, with an unticked checkbox reading I have checked that all records have a green sync status, a CANCEL button, and a DE-ACTIVATE button greyed out until the box is ticked
 :align: right
 :width: 100%
@@ -1018,7 +1018,7 @@ keep the old format).
 
 ### {{Notebook}} Not Appearing in the {{FAIMS}} App
 
-**Solution**: Make sure you're logged into the {{FAIMS}} app (app.fieldmark.app) with the same
+**Solution**: Make sure you're logged into the {{FAIMS}} app ({{APP_URL}}) with the same
 credentials you used in the {{Dashboard}}. If you still don't see it, check with your administrator
 about team permissions.
 
