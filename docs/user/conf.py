@@ -90,3 +90,35 @@ myst_substitutions = {
   "IOS_APP_LINK": "<a href=\"" + IOS_APP_URL + "\">" + project + " IOS App</a>",
   "ANDROID_APP_LINK": "<a href=\"" + ANDROID_APP_URL + "\">" + project + " Android App</a>",
 }
+
+
+# -- Macros in image alt text ------------------------------------------------
+# MyST expands {{name}} substitutions in the text of a page, but not inside a
+# directive's options, so the :alt: of an {image} or {screenshot} kept its
+# braces. Once each page is read, the same values are put into image alt
+# text; an address value drops the <...> it carries for autolinking.
+
+import re
+from docutils import nodes
+
+_MACRO = re.compile(r"\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}")
+
+
+def _expand_alt_macros(app, doctree):
+    """Replace {{name}} in every image's alt text with its substitution."""
+
+    def value(match):
+        text = str(myst_substitutions.get(match.group(1), match.group(0)))
+        if text.startswith("<") and text.endswith(">"):
+            text = text[1:-1]
+        return text
+
+    # findall replaced traverse in docutils 0.18
+    find = getattr(doctree, "findall", doctree.traverse)
+    for image in find(nodes.image):
+        if "alt" in image:
+            image["alt"] = _MACRO.sub(value, image["alt"])
+
+
+def setup(app):
+    app.connect("doctree-read", _expand_alt_macros)
