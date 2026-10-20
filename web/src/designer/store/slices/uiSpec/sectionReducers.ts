@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {PayloadAction} from '@reduxjs/toolkit';
-import {cloneField} from '../../../domain/notebook/fieldFactory';
+import {cloneFieldWithDesignerIdentifier} from '../../../domain/notebook/fieldFactory';
 import {
-  buildUniqueFieldName,
+  buildUniqueExportName,
+  mintFieldStorageId,
   sanitizeUserLabel,
   slugify,
 } from '../../../domain/notebook/ids';
@@ -95,20 +96,20 @@ export const sectionReducers = {
     for (const originalFieldName of sourceSection.fields) {
       if (!(originalFieldName in state.fields)) continue;
       const originalField = state.fields[originalFieldName];
-      const baseLabel =
+      const newFieldLabel =
         originalField['component-parameters'].label || originalFieldName;
-      const newFieldLabel = baseLabel;
-      const fieldSlug = buildUniqueFieldName(
-        newFieldLabel,
-        Object.keys(state.fields)
+      const storageId = mintFieldStorageId(Object.keys(state.fields));
+      const exportName = buildUniqueExportName(
+        originalField.exportName || newFieldLabel,
+        Object.values(state.fields).map(f => f.exportName)
       );
-      const newField = cloneField(originalField);
+      const newField = cloneFieldWithDesignerIdentifier(originalField);
       newField['component-parameters'].label = newFieldLabel;
-      newField['component-parameters'].name = fieldSlug;
-      newField.designerIdentifier = crypto.randomUUID();
+      newField['component-parameters'].name = storageId;
+      newField.exportName = exportName;
 
-      state.fields[fieldSlug] = newField;
-      newSection.fields.push(fieldSlug);
+      state.fields[storageId] = newField;
+      newSection.fields.push(storageId);
     }
 
     state.views[newSectionId] = newSection;

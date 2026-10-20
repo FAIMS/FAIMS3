@@ -4,7 +4,7 @@
  *
  * This editor exists because TakePoint needs a custom "Button Label Text" field
  * that isn't part of BaseFieldEditor. Without this, TakePoint would just fall
- * through to BaseFieldEditor which only provides Label, Field ID, Helper Text, etc.
+ * through to BaseFieldEditor which only provides Label, Export name, Helper Text, etc.
  */
 
 import {Grid} from '@mui/material';

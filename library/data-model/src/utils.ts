@@ -30,6 +30,81 @@ export const slugify = (str: string) => {
 };
 
 /**
+ * Max length of a CSV / GIS column name derived from `exportName`.
+ *
+ * Notebooks are not always authored in designer, so this is applied at
+ * export time rather than assumed from stored field values.
+ */
+export const MAX_EXPORT_COLUMN_NAME_LENGTH = 100;
+
+/** Used when `exportName` sanitises to empty (e.g. only quotes / controls). */
+export const EMPTY_EXPORT_COLUMN_FALLBACK = 'field';
+
+/**
+ * Make a stored `exportName` safe as a CSV / GIS column (and as a KML
+ * `Data` name). Does not assume designer slugify ran.
+ *
+ * Strips ASCII controls (CR/LF/NUL — header and CSV-row injection), path
+ * separators, quotes, and other characters outside `[A-Za-z0-9._-]`. Leading
+ * formula / hidden-file prefixes (`=`, `+`, `-`, `@`, `.`) are removed.
+ * Designer-produced names such as `Site-Name` are unchanged.
+ *
+ * Not a download filename: ZIP paths and Content-Disposition still use
+ * storage ids / download-filename sanitizers, not `exportName`.
+ */
+export function sanitizeExportColumnName(
+  raw: string,
+  fallback = EMPTY_EXPORT_COLUMN_FALLBACK
+): string {
+  const withoutControls = Array.from(raw ?? '')
+    .filter(ch => {
+      const code = ch.charCodeAt(0);
+      return code >= 32 && code !== 127;
+    })
+    .join('');
+
+  let cleaned = withoutControls
+    .replace(/[/\\]/g, '_')
+    .replace(/[^A-Za-z0-9._-]/g, '_')
+    .replace(/_{2,}/g, '_')
+    .replace(/^[._=+\-@_]+/, '')
+    .replace(/[._]+$/, '');
+
+  if (cleaned.length > MAX_EXPORT_COLUMN_NAME_LENGTH) {
+    cleaned = cleaned
+      .slice(0, MAX_EXPORT_COLUMN_NAME_LENGTH)
+      .replace(/[._]+$/, '');
+  }
+
+  return cleaned.length > 0 ? cleaned : fallback;
+}
+
+/**
+ * {@link sanitizeExportColumnName} plus a numeric suffix when the result
+ * collides with an already-used column name in this export.
+ */
+export function uniqueExportColumnName(
+  raw: string,
+  used: Set<string>,
+  fallback = EMPTY_EXPORT_COLUMN_FALLBACK
+): string {
+  const base = sanitizeExportColumnName(raw, fallback);
+  let candidate = base;
+  let n = 1;
+  while (used.has(candidate)) {
+    const suffix = `_${n}`;
+    const truncated =
+      base.length + suffix.length > MAX_EXPORT_COLUMN_NAME_LENGTH
+        ? base.slice(0, MAX_EXPORT_COLUMN_NAME_LENGTH - suffix.length)
+        : base;
+    candidate = `${truncated}${suffix}`;
+    n += 1;
+  }
+  used.add(candidate);
+  return candidate;
+}
+
+/**
  * Formats file size in human-readable format
  */
 export function formatFileSize(bytes: number): string {

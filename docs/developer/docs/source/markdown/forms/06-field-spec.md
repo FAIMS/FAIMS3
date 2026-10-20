@@ -6,18 +6,22 @@ Fields in the UISpec are defined using `FieldDefinition`. This schema determines
 
 ## FieldDefinition Schema
 
+The `uiSpec.fields` object key is the immutable storage id. `exportName` is the
+editable CSV / GIS column (required since notebook schema `1.0.1`).
+
 ```typescript
-// @faims3/data-model
-const fieldDefinitionShape = {
+// @faims3/data-model (schema 1.0.1; FieldDefinitionSchema)
+const fieldDefinitionV1_0_1Shape = {
   'component-namespace': z.string(),
   'component-name': z.string(),
   'type-returned': z.string(),
   // base parameters common to all fields, with any per-field-type parameters
   // passed through unmodelled (validated precisely in the forms layer via each
   // field's `fieldPropsSchema`)
-  'component-parameters': BaseFieldParametersSchema.passthrough(),
+  'component-parameters': BaseFieldParametersSchema.loose(),
+  // editable CSV / GIS column; distinct from the `uiSpec.fields` storage id
+  exportName: z.string().min(1),
   initialValue: z.any().optional(),
-  // Not currently implemented in new forms module
   persistent: z.boolean().optional(),
   meta: FieldMetaSchema.optional(),
   // Conditional visibility logic (raw, serializable expression)
@@ -26,9 +30,11 @@ const fieldDefinitionShape = {
 
 // unmodelled keys (e.g. designer authoring metadata) survive a round-trip
 export const FieldDefinitionSchema = z
-  .object(fieldDefinitionShape)
-  .passthrough();
-export type FieldDefinition = z.infer<z.ZodObject<typeof fieldDefinitionShape>>;
+  .object(fieldDefinitionV1_0_1Shape)
+  .loose();
+export type FieldDefinition = z.infer<
+  z.ZodObject<typeof fieldDefinitionV1_0_1Shape>
+>;
 ```
 
 ### Standard vs compiled
@@ -42,15 +48,15 @@ base `FieldDefinition`, so the serializable shape stays clean:
 // @faims3/data-model
 export const CompiledFieldDefinitionSchema = z
   .object({
-    ...fieldDefinitionShape,
+    ...fieldDefinitionV1_0_1Shape,
     // attached at runtime by `compileUiSpecConditionals`
     conditionFn: z.custom<(v: RecordValues) => boolean>().optional(),
   })
-  .passthrough();
+  .loose();
 ```
 
 > The exported `FieldDefinition` **type** is derived from the strict (non-
-> passthrough) shape so it has no `[k: string]: unknown` index signature. That
+> loose) shape so it has no `[k: string]: unknown` index signature. That
 > keeps it composable with `Omit`/intersection downstream (e.g. the designer
 > overriding `component-parameters`), while the **schema** still passes
 > unmodelled keys through at runtime.
@@ -88,14 +94,14 @@ The `component-parameters` object is spread directly into the field component:
 
 All fields support base parameters:
 
-| Parameter            | Type      | Description                                                 |
-| -------------------- | --------- | ----------------------------------------------------------- |
-| `name`               | `string`  | **Required.** Field identifier (must be unique within form) |
-| `label`              | `string`  | Display label                                               |
-| `helperText`         | `string`  | Short help text below label                                 |
-| `advancedHelperText` | `string`  | Extended help (markdown, opens dialog)                      |
-| `required`           | `boolean` | Validation: field must have value                           |
-| `disabled`           | `boolean` | Prevent editing                                             |
+| Parameter            | Type      | Description                                                         |
+| -------------------- | --------- | ------------------------------------------------------------------- |
+| `name`               | `string`  | **Required.** Storage id; must match the `uiSpec.fields` object key |
+| `label`              | `string`  | Display label                                                       |
+| `helperText`         | `string`  | Short help text below label                                         |
+| `advancedHelperText` | `string`  | Extended help (markdown, opens dialog)                              |
+| `required`           | `boolean` | Validation: field must have value                                   |
+| `disabled`           | `boolean` | Prevent editing                                                     |
 
 ### Field-Specific Parameters
 
@@ -109,7 +115,8 @@ The `initialValue` property sets the field's default state when creating new rec
 {
   "component-namespace": "faims-custom",
   "component-name": "FAIMSTextField",
-  "component-parameters": {"name": "description", "label": "Description"},
+  "component-parameters": {"name": "f_a1b2c3", "label": "Description"},
+  "exportName": "Description",
   "initialValue": ""
 }
 ```
@@ -121,6 +128,7 @@ For complex fields:
   "component-namespace": "faims-custom",
   "component-name": "MultiSelect",
   "component-parameters": { ... },
+  "exportName": "Site-Hazards",
   "initialValue": []
 }
 ```
@@ -174,12 +182,13 @@ Enables uncertainty flag for field value:
 ### MapFormField
 
 ```json
-"Site-Location": {
+"f_c3d4e5": {
     "component-namespace": "mapping-plugin",
     "component-name": "MapFormField",
     "type-returned": "faims-core::JSON",
+    "exportName": "Site-Location",
     "component-parameters": {
-        "name": "Site-Location",
+        "name": "f_c3d4e5",
         "id": "map-form-field",
         "variant": "outlined",
         "required": true,
@@ -208,10 +217,11 @@ Enables uncertainty flag for field value:
 ### Select
 
 ```json
-"Site-Hazards": {
+"f_d4e5f6": {
     "component-namespace": "faims-custom",
     "component-name": "MultiSelect",
     "type-returned": "faims-core::Array",
+    "exportName": "Site-Hazards",
     "component-parameters": {
         "label": "Site Hazards",
         "fullWidth": true,
@@ -235,7 +245,7 @@ Enables uncertainty flag for field value:
             ],
             "expandedChecklist": true
         },
-        "name": "Site-Hazards",
+        "name": "f_d4e5f6",
         "protection": "none"
     },
     "initialValue": [],
@@ -271,9 +281,10 @@ To hide a field from display while keeping it in the data model:
 ```json
 {
   "component-parameters": {
-    "name": "internal_id",
+    "name": "f_e5f6a7",
     "hidden": true
-  }
+  },
+  "exportName": "internal_id"
 }
 ```
 

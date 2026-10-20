@@ -13,15 +13,22 @@ import {
   Select,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import {useMemo} from 'react';
+import {useMemo, useRef} from 'react';
 import {
   buildParentFieldTypes,
   buildRelatedFieldTypes,
   compileComputedExpressionForForm,
+  decodeMetadataRef,
+  decodeParentRef,
+  encodeMetadataRef,
   ExpressionError,
   ExprType,
+  extractExpressionReferences,
   FAIMS_TYPE_TO_EXPR_TYPE,
-  PARENT_REFERENCE_PREFIX,
+  fieldIdsForViewset,
+  isDerivedFieldName,
+  isReferenceableMetadataKey,
+  splitRelatedReference,
   UiSpecModel,
 } from '@faims3/data-model';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
@@ -33,49 +40,42 @@ import {
 } from '../field-selector';
 import {applyFieldFilters} from '../../features/field-search';
 import {
-  fieldIdsForViewset,
-  decodeMetadataRef,
-  encodeMetadataRef,
-  extractExpressionReferences,
-  isReferenceableMetadataKey,
-} from '@faims3/data-model';
-import {
   selectUiFields,
   selectUiViews,
   selectUiViewSets,
   selectCustomMetadata,
 } from '../../store/selectors';
-import DebouncedTextField from '../debounced-text-field';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {
+  createChipCatalog,
+  ExpressionEditor,
+  type ExpressionEditorHandle,
+} from '../../features/expression-editor';
 
+/** Props for {@link ComputedFieldEditor}. `viewId` is unused (form comes from `viewsetId`). */
 type PropType = {
   fieldName: string;
   viewId: string;
   viewsetId: string;
 };
 
-// Component names whose values are derived and so cannot feed an expression.
-const DERIVED_COMPONENT_NAMES = [
-  'ComputedNumber',
-  'ComputedText',
-  'TemplatedStringField',
-];
-
-// True if the field can be referenced from an expression: its type maps onto
-// an expression value type and it is not itself derived.
+/**
+ * Whether a field can appear in `{ref}`: its `type-returned` maps to an
+ * expression type and it is not itself a derived component.
+ */
 const isReferenceableField = (field: {
   'type-returned'?: string;
   'component-name'?: string;
 }) =>
   FAIMS_TYPE_TO_EXPR_TYPE[field['type-returned'] ?? ''] !== undefined &&
-  !DERIVED_COMPONENT_NAMES.includes(field['component-name'] ?? '');
+  !isDerivedFieldName(field['component-name'] ?? '');
 
 /**
- * Property editor shared by ComputedNumber and ComputedText. Uses
- * BaseFieldEditor for the standard field settings and adds the typed
- * expression below. Field references are wrapped in braces, e.g.
- * {Width} * {Height}; the field picker inserts a reference. The expression is
- * compiled as it changes and compile errors are shown inline.
+ * Property editor shared by ComputedNumber and ComputedText.
+ *
+ * Adds a chip expression editor under {@link BaseFieldEditor}. The stored
+ * value is still `{storageId}`; chips and pickers are display/insert only.
+ * The expression is compiled on change and errors show inline.
  */
 export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
   const field = useAppSelector(
@@ -86,14 +86,15 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
   const views = useAppSelector(selectUiViews);
   const viewsets = useAppSelector(selectUiViewSets);
   const dispatch = useAppDispatch();
+  const expressionEditorRef = useRef<ExpressionEditorHandle>(null);
 
-  // The data-model helpers read the uiSpec shape; the designer's slices are
-  // structurally compatible.
+  /** Designer slices cast to the data-model uiSpec shape for compile helpers. */
   const uiSpecForCompile = useMemo(
     () => ({fields: allFields, views, viewsets}) as unknown as UiSpecModel,
     [allFields, views, viewsets]
   );
 
+  /** Designer label for a storage id, or the id if the field has none. */
   const getFieldLabelFor = (id: string) =>
     (allFields[id]?.['component-parameters']?.label as string | undefined) ??
     id;
@@ -122,37 +123,40 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
     [viewsetId, views, viewsets, allFields, referenceableFieldFilters]
   );
 
-  // Parent fields referenceable as {_PARENT.Field-ID}.
+  /** Parent-form fields insertable as `{_PARENT.Field-ID}`. */
   const parentFieldOptions = useMemo(() => {
     const {types} = buildParentFieldTypes({
       uiSpecification: uiSpecForCompile,
       formId: viewsetId,
     });
-    return [...types.keys()].map(ref => ({
-      ref,
-      label: getFieldLabelFor(ref.slice(PARENT_REFERENCE_PREFIX.length)),
-    }));
+    return [...types.keys()].map(ref => {
+      const fieldId = decodeParentRef(ref);
+      return {
+        ref,
+        label: getFieldLabelFor(fieldId ?? ref),
+      };
+    });
   }, [uiSpecForCompile, viewsetId]);
 
-  // Fields on records linked through single-link Linked Related Records
-  // fields, referenceable as {Rel-Field-ID.Field-ID}.
+  /** Linked-record fields insertable as `{Rel-Field-ID.Field-ID}`. */
   const relatedFieldOptions = useMemo(() => {
     const {types} = buildRelatedFieldTypes({
       uiSpecification: uiSpecForCompile,
       formId: viewsetId,
     });
     return [...types.keys()].map(ref => {
-      const dot = ref.indexOf('.');
-      const relFieldId = ref.slice(0, dot);
-      const fieldId = ref.slice(dot + 1);
+      const parts = splitRelatedReference(ref);
+      if (!parts) {
+        return {ref, label: getFieldLabelFor(ref)};
+      }
       return {
         ref,
-        label: `${getFieldLabelFor(relFieldId)} > ${getFieldLabelFor(fieldId)}`,
+        label: `${getFieldLabelFor(parts.relFieldId)} > ${getFieldLabelFor(parts.fieldId)}`,
       };
     });
   }, [uiSpecForCompile, viewsetId]);
 
-  // Notebook metadata referenceable as {_METADATA.key}.
+  /** Custom metadata keys insertable as `{_METADATA.key}`. */
   const metadataOptions = useMemo(
     () =>
       Object.keys(custom)
@@ -161,8 +165,10 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
     [custom]
   );
 
-  // Compile with the per-form wrapper so {_PARENT.Field-ID} references
-  // validate against this form's possible parent forms.
+  /**
+   * Compile error (or missing/unsafe metadata). Empty source is not an error.
+   * Uses the per-form wrapper so `{_PARENT…}` is checked against this form.
+   */
   const validationError = useMemo(() => {
     if (expression.trim() === '') return null;
     try {
@@ -189,6 +195,19 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
     }
   }, [expression, uiSpecForCompile, viewsetId, requiredType, custom]);
 
+  /** Label/kind lookup for chips; rebuilt when fields or metadata change. */
+  const catalog = useMemo(
+    () =>
+      createChipCatalog({
+        fields: allFields,
+        views,
+        viewsets,
+        customMetadataKeys: Object.keys(custom),
+      }),
+    [allFields, views, viewsets, custom]
+  );
+
+  /** Persist the raw expression (debounced by the editor). */
   const updateExpression = (value: string) => {
     const newField = withUpdatedField(field, nextField => {
       nextField['component-parameters'].expression = value;
@@ -196,10 +215,12 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
     dispatch(fieldUpdated({fieldName, newField}));
   };
 
-  // Appends a braced field reference to the expression, space-separated.
+  /**
+   * Insert `{id}` at the caret. Do not also call {@link updateExpression} —
+   * the editor emits `onChange` so Redux echo does not fight the caret.
+   */
   const insertFieldRef = (id: string) => {
-    const ref = `{${id}}`;
-    updateExpression(expression === '' ? ref : `${expression} ${ref}`);
+    expressionEditorRef.current?.insertRef(id);
   };
 
   return (
@@ -208,21 +229,18 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
         <Typography variant="subtitle2" sx={{mb: 1}}>
           Expression
         </Typography>
-        <DebouncedTextField
-          name="expression"
-          variant="outlined"
-          fullWidth
-          multiline
-          rows={3}
+        <ExpressionEditor
+          ref={expressionEditorRef}
           value={expression}
-          onChange={e => updateExpression(e.target.value)}
+          onChange={updateExpression}
+          catalog={catalog}
           error={validationError !== null}
-          helperText={
-            isText
-              ? "Text expression over other fields, e.g. {Site-Code} & '-' & {Plot}"
-              : 'Numeric expression over other fields, e.g. {Width} * {Height}'
-          }
         />
+        <FormHelperText error={validationError !== null}>
+          {isText
+            ? 'Text expression over other fields. Hover on a field or constant to get more details.'
+            : 'Numeric expression over other fields. Hover on a field or constant to get more details.'}
+        </FormHelperText>
         {validationError && (
           <Alert severity="error" sx={{mt: 1}} data-testid="expression-error">
             {validationError}
@@ -382,9 +400,10 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
           </Alert>
         )}
         <FormHelperText>
-          Reference other fields by wrapping their ID in braces.
+          Field references appear as chips. The stored expression uses each
+          field's storage id in braces.
           {referenceableFieldCount > 0 &&
-            ' Use the field picker above to insert a reference.'}
+            ' Use the field picker above to insert a reference at the caret.'}
         </FormHelperText>
       </Box>
     </BaseFieldEditor>

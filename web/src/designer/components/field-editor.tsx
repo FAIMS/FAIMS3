@@ -49,6 +49,10 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import {
+  useShouldWarnOnExistingRecordData,
+  useDesignerEditingContext,
+} from '../state/editing-context';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {
   findFieldDependencyReferences,
@@ -178,9 +182,13 @@ const FieldEditorComponent = ({
     fieldComponentLabelMap[fieldComponent] || fieldComponent;
 
   const [deleteWarningOpen, setDeleteWarningOpen] = useState(false);
+  const [recordDataWarningOpen, setRecordDataWarningOpen] = useState(false);
   const [conditionsAffected, setConditionsAffected] = useState<
     FieldDependencyReference[]
   >([]);
+  const {existingRecordCount} = useDesignerEditingContext();
+  const shouldWarnOnExistingRecordData =
+    useShouldWarnOnExistingRecordData(designerIdentifier);
 
   const [conflictError, setConflictError] = useState<ConflictError | null>(
     null
@@ -192,6 +200,11 @@ const FieldEditorComponent = ({
   onLabelFocusedRef.current = onLabelFocused;
   // Runs the autofocus once per activation, not on every render.
   const didAutoFocusRef = useRef(false);
+
+  const commitFieldDelete = () => {
+    dispatch(fieldDeleted({fieldName, viewId}));
+    setRecordDataWarningOpen(false);
+  };
 
   const deleteField = (evt: React.SyntheticEvent) => {
     evt.stopPropagation();
@@ -206,9 +219,13 @@ const FieldEditorComponent = ({
     if (usage.length > 0) {
       setConditionsAffected(usage);
       setDeleteWarningOpen(true);
-    } else {
-      dispatch(fieldDeleted({fieldName, viewId}));
+      return;
     }
+    if (shouldWarnOnExistingRecordData) {
+      setRecordDataWarningOpen(true);
+      return;
+    }
+    commitFieldDelete();
   };
   const protection =
     config.templateProtections && field['component-parameters'].protection
@@ -1055,6 +1072,43 @@ const FieldEditorComponent = ({
           </DialogActions>
         </Dialog>
       </AccordionSummary>
+
+      <Dialog
+        open={recordDataWarningOpen}
+        onClose={() => setRecordDataWarningOpen(false)}
+        fullWidth
+        maxWidth="xs"
+        aria-labelledby="record-data-delete-dialog-title"
+        onClick={e => e.stopPropagation()}
+      >
+        <DialogTitle
+          id="record-data-delete-dialog-title"
+          sx={designerDialogTitleSx}
+        >
+          Delete field?
+        </DialogTitle>
+        <DialogContent sx={designerDialogContentSx}>
+          <Typography variant="body2" sx={designerDialogBodyTextSx}>
+            This notebook has{' '}
+            {(existingRecordCount ?? 0) === 1
+              ? '1 existing record'
+              : `${existingRecordCount ?? 0} existing records`}
+            . Deleting this field will permanently remove its collected values
+            from those records.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={designerDialogActionsSx}>
+          <Button
+            sx={designerCancelButtonSx}
+            onClick={() => setRecordDataWarningOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button variant="contained" color="error" onClick={commitFieldDelete}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog
         open={openMoveDialog}

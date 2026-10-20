@@ -9,6 +9,7 @@ import {
   ProjectID,
   UpdatedTimeFilter,
   slugify,
+  uniqueExportColumnName,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stringifier, stringify} from 'csv-stringify';
@@ -70,47 +71,47 @@ function generateRecordPrefixInformation(record: HydratedDataRecord) {
   ];
 }
 
-// Type for a field header generator function
-type FieldHeaderGenerator = (fieldName: string) => string[];
+/** Builds CSV column headers from a field's export name (not the storage id). */
+type FieldHeaderGenerator = (exportName: string) => string[];
 
 // Registry of component header generators (keyed by namespace::name)
 const FIELD_COMPONENT_HEADER_GENERATORS: Record<string, FieldHeaderGenerator> =
   {
-    'faims-custom::TakePoint': (fieldName: string) => [
-      fieldName,
-      `${fieldName}_latitude`,
-      `${fieldName}_longitude`,
-      `${fieldName}_accuracy`,
+    'faims-custom::TakePoint': (exportName: string) => [
+      exportName,
+      `${exportName}_latitude`,
+      `${exportName}_longitude`,
+      `${exportName}_accuracy`,
     ],
 
-    'faims-custom::AddressField': (fieldName: string) => [
-      fieldName,
-      `${fieldName}_house_number`,
-      `${fieldName}_road`,
-      `${fieldName}_suburb`,
-      `${fieldName}_town`,
-      `${fieldName}_state`,
-      `${fieldName}_postcode`,
-      `${fieldName}_country`,
-      `${fieldName}_country_code`,
-      `${fieldName}_manual`,
+    'faims-custom::AddressField': (exportName: string) => [
+      exportName,
+      `${exportName}_house_number`,
+      `${exportName}_road`,
+      `${exportName}_suburb`,
+      `${exportName}_town`,
+      `${exportName}_state`,
+      `${exportName}_postcode`,
+      `${exportName}_country`,
+      `${exportName}_country_code`,
+      `${exportName}_manual`,
     ],
 
-    'mapping-plugin::MapFormField': (fieldName: string) => [
-      fieldName,
-      `${fieldName}_latitude`,
-      `${fieldName}_longitude`,
+    'mapping-plugin::MapFormField': (exportName: string) => [
+      exportName,
+      `${exportName}_latitude`,
+      `${exportName}_longitude`,
     ],
 
-    'faims-custom::TakePhoto': (fieldName: string) => [fieldName],
-    'faims-custom::FileUploader': (fieldName: string) => [fieldName],
+    'faims-custom::TakePhoto': (exportName: string) => [exportName],
+    'faims-custom::FileUploader': (exportName: string) => [exportName],
 
-    'faims-custom::RelatedRecordSelector': (fieldName: string) => [fieldName],
+    'faims-custom::RelatedRecordSelector': (exportName: string) => [exportName],
   };
 
 // Default generator for unregistered components
-const defaultHeaderGenerator: FieldHeaderGenerator = (fieldName: string) => [
-  fieldName,
+const defaultHeaderGenerator: FieldHeaderGenerator = (exportName: string) => [
+  exportName,
 ];
 
 /**
@@ -127,7 +128,9 @@ function getHeaderGeneratorForComponent(
 /**
  * Generate CSV headers from UI specification fields. Uses the registered
  * component header generators (by namespace + name) to produce the additional
- * headers for each field type.
+ * headers for each field type. Column names come from a sanitised
+ * `field.exportName`, never the storage id and never the raw stored value
+ * (notebooks may skip designer).
  */
 export function getHeaderInfoFromUiSpecification({
   fields,
@@ -135,25 +138,32 @@ export function getHeaderInfoFromUiSpecification({
   fields: FieldSummary[];
 }): string[] {
   const additionalHeaders: string[] = [];
+  const usedExportNames = new Set<string>();
 
   for (const field of fields) {
+    const exportName = uniqueExportColumnName(
+      field.exportName || field.name,
+      usedExportNames
+    );
     const generator = getHeaderGeneratorForComponent(
       field.componentNamespace,
       field.componentName
     );
-    const fieldHeaders = generator(field.name);
+    const fieldHeaders = generator(exportName);
     additionalHeaders.push(...fieldHeaders);
 
     // Add annotation and uncertainty columns if present
-    if (field.annotation !== '') {
-      additionalHeaders.push(`${field.name}_${field.annotation}`);
+    if (field.annotation) {
+      additionalHeaders.push(`${exportName}_${field.annotation}`);
     }
-    if (field.uncertainty !== '') {
-      additionalHeaders.push(`${field.name}_${field.uncertainty}`);
+    if (field.uncertainty) {
+      additionalHeaders.push(`${exportName}_${field.uncertainty}`);
     }
   }
 
-  return additionalHeaders;
+  return additionalHeaders.filter(
+    (header): header is string => typeof header === 'string' && header !== ''
+  );
 }
 
 /**
