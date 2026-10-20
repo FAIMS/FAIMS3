@@ -450,6 +450,10 @@ export function ContextualLayersControl({
   );
 }
 
+/**
+ * Merge base, contextual, and record overlays into one panel list.
+ * Only contextual/record rows can pan; unavailable satellite stays listed.
+ */
 function toPanelLayers(
   layers: ContextualMapLayer[],
   baseLayers: BaseMapPanelLayer[],
@@ -506,6 +510,7 @@ function layerActionSx(
   });
 }
 
+/** Subtitle under the layer name: tiles kind, Records, or base-map hint. */
 function layerKindLabel(layer: PanelLayer): string {
   if (layer.kind === 'raster-tiles' || layer.kind === 'vector-tiles') {
     return mapAssetKindLabel(layer.kind);
@@ -516,6 +521,7 @@ function layerKindLabel(layer: PanelLayer): string {
   return layer.available ? 'Base map' : (layer.unavailableHint ?? 'Base map');
 }
 
+/** One expandable row: visibility, pan, stack, and paint controls. */
 function LayerRow({
   layer,
   location,
@@ -873,6 +879,7 @@ function LayerRow({
   );
 }
 
+/** Caption + value + small slider for opacity, width, or point size. */
 function LabeledSlider({
   label,
   ariaLabel,
@@ -928,6 +935,7 @@ function LabeledSlider({
   );
 }
 
+/** Native color input plus hex label for stroke or fill. */
 function ColorSwatch({
   label,
   ariaLabel,
@@ -997,6 +1005,7 @@ function ColorSwatch({
   );
 }
 
+/** Streets/satellite swatch from the map-control palette. */
 function basemapSwatchColor(theme: Theme, name: string): string {
   const palette = theme.palette.mapControl;
   if (name === BASE_MAP_SATELLITE_NAME) {

@@ -55,6 +55,7 @@ export type StaticMapLayerPreviewProps = {
   className?: string;
 };
 
+/** Pad an extent by 15% (or to a minimum span) so the preview is not edge-tight. */
 function bufferExtent(extent: Extent): Extent {
   const [minX, minY, maxX, maxY] = extent;
   const width = maxX - minX;
@@ -65,6 +66,7 @@ function bufferExtent(extent: Extent): Extent {
   return [minX - padX, minY - padY, maxX + padX, maxY + padY];
 }
 
+/** Online OSM or MapTiler raster used when the caller does not pass a cache. */
 function basemapLayer(mapConfig: MapConfig) {
   if (mapConfig.mapSource === 'maptiler' && mapConfig.mapSourceKey) {
     const style =
@@ -90,6 +92,7 @@ function basemapLayer(mapConfig: MapConfig) {
   });
 }
 
+/** Web-mercator extent for fitting; prefers a stored 3857 bbox. */
 function placementExtent(
   extent4326?: [number, number, number, number],
   extent3857?: [number, number, number, number]
@@ -103,6 +106,10 @@ function placementExtent(
   return undefined;
 }
 
+/**
+ * Non-interactive OpenLayers preview fitted to the layer extent.
+ * Devices should pass a cached `baseLayer` so the preview works offline.
+ */
 export function StaticMapLayerPreview({
   url,
   kind,

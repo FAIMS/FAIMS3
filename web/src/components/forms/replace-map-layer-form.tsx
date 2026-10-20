@@ -12,6 +12,7 @@ import {
 import {useQueryClient} from '@tanstack/react-query';
 import {useState} from 'react';
 
+/** Re-upload files for an existing layer and restart processing. */
 export function ReplaceMapLayerForm({
   assetId,
   setDialogOpen,

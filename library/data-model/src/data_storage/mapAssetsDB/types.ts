@@ -82,18 +82,22 @@ export function mapAssetFileExtension(filename: string): string {
   return dot <= 0 ? '' : base.slice(dot).toLowerCase();
 }
 
+/** True when the extension is a vector primary (GeoJSON, GPKG, KML, ZIP). */
 export function isMapAssetVectorExtension(extension: string): boolean {
   return VECTOR_EXTENSION_SET.has(extension);
 }
 
+/** True when the extension is a map-layer primary, vector or raster. */
 export function isMapAssetPrimaryExtension(extension: string): boolean {
   return PRIMARY_EXTENSION_SET.has(extension);
 }
 
+/** True when the extension is a world-file companion (`.pgw`, `.tfw`, …). */
 export function isMapAssetWorldFileExtension(extension: string): boolean {
   return WORLD_FILE_EXTENSION_SET.has(extension);
 }
 
+/** True when the extension may appear in a map-layer upload. */
 export function isMapAssetAllowedUploadExtension(extension: string): boolean {
   return ALLOWED_UPLOAD_EXTENSION_SET.has(extension);
 }
@@ -105,6 +109,7 @@ export function isMapAssetGeoreferencedImageExtension(
   return extension === '.png' || extension === '.jpg' || extension === '.jpeg';
 }
 
+/** First primary extension in `extensions`, or `undefined` if none. */
 export function mapAssetPrimaryExtension(
   extensions: readonly string[]
 ): string | undefined {

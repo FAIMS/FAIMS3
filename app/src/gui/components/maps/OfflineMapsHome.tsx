@@ -10,6 +10,7 @@ import * as ROUTES from '../../../constants/routes';
 import {ListingPage} from '../ui/listing-page';
 import {OutlinedListingCard} from '../ui/outlined-listing-card';
 
+/** Landing page linking to offline map regions and contextual layers. */
 export function OfflineMapsHome() {
   const navigate = useNavigate();
 

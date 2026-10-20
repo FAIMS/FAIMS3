@@ -10,6 +10,7 @@ import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
 import {INPUT_LIMITS} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 
+/** PATCH name and description for an existing layer. */
 export function UpdateMapLayerDetailsForm({
   assetId,
   name,

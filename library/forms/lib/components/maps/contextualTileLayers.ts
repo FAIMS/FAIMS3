@@ -43,10 +43,12 @@ class CallbackSource implements Source {
     private readonly key: string
   ) {}
 
+  /** Archive identity used by the PMTiles cache. */
   getKey(): string {
     return this.key;
   }
 
+  /** Range-read `length` bytes at `offset` from the stored archive. */
   async getBytes(offset: number, length: number) {
     assertTileRange(offset, length);
     const data = await this.read(offset, length);
@@ -57,6 +59,7 @@ class CallbackSource implements Source {
   }
 }
 
+/** Web-mercator clip extent, or `undefined` when the bbox is empty. */
 function layerExtent(spec: ContextualMapLayer) {
   if (spec.extent3857 && spec.extent3857[2] > spec.extent3857[0]) {
     return spec.extent3857;
@@ -68,6 +71,7 @@ function layerExtent(spec: ContextualMapLayer) {
   return undefined;
 }
 
+/** Decode raster tile bytes to an ImageBitmap (or HTMLImage fallback). */
 async function decodeTile(
   bytes: ArrayBuffer,
   mime: string
@@ -89,11 +93,13 @@ async function decodeTile(
 
 let emptyTile: Promise<ImageBitmap | HTMLImageElement> | undefined;
 
+/** Cached 1×1 transparent PNG used when a tile is missing. */
 function transparentTile(): Promise<ImageBitmap | HTMLImageElement> {
   emptyTile ??= decodeTile(TRANSPARENT_PNG.buffer, 'image/png');
   return emptyTile;
 }
 
+/** MIME type for a PMTiles raster tile type. */
 function tileMime(tileType: TileType): string {
   if (tileType === TileType.Jpeg) {
     return 'image/jpeg';
@@ -107,6 +113,7 @@ function tileMime(tileType: TileType): string {
   return 'image/png';
 }
 
+/** Open the layer's PMTiles archive via its range reader. */
 async function openArchive(spec: ContextualMapLayer): Promise<PMTiles> {
   if (!spec.readTileBytes) {
     throw new Error(`Layer ${spec.name} has no tile reader.`);

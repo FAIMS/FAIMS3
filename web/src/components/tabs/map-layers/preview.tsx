@@ -4,6 +4,7 @@ import {Skeleton} from '@/components/ui/skeleton';
 import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useMapAsset} from '@/hooks/map-asset-hooks';
 
+/** Layer detail tab that loads the asset and shows {@link MapLayerPreview}. */
 export function MapLayerPreviewTab({assetId}: {assetId: string}) {
   const user = useRequiredUser();
   const {data, isPending, isError} = useMapAsset({user, assetId});

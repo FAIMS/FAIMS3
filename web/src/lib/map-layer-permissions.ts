@@ -9,10 +9,12 @@ import {
   type MapAssetAuthorizationInput,
 } from '@faims3/data-model';
 
+/** Username from the decoded token, used as `actingUserId` in auth checks. */
 function actingUserId(user: User): string | undefined {
   return user.decodedToken?.username;
 }
 
+/** Run a data-model map-asset auth helper against the signed-in user. */
 function authorizeMapAsset(
   user: User,
   asset: ExistingMapAsset,

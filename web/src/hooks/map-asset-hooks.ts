@@ -12,12 +12,14 @@ import {
 } from '@faims3/data-model';
 import {useQuery, type QueryClient} from '@tanstack/react-query';
 
+/** React Query key for the library or one survey's linked layers. */
 export const mapAssetQueryKey = (user: User | null, projectId?: string) => [
   'map-assets',
   user?.token,
   projectId ?? 'library',
 ];
 
+/** React Query key for layers owned by one team. */
 export const mapAssetTeamQueryKey = (user: User | null, teamId: string) => [
   'map-assets',
   user?.token,
@@ -60,6 +62,7 @@ export function mapAssetClientErrorMessage({
   return messageFromBody(body, statusText);
 }
 
+/** User-facing message from a failed JSON response. */
 async function errorMessage(response: Response): Promise<string> {
   try {
     return messageFromBody(await response.json(), response.statusText);
@@ -68,6 +71,10 @@ async function errorMessage(response: Response): Promise<string> {
   }
 }
 
+/**
+ * POST/PUT multipart upload with XHR so `onProgress` can report 0–1
+ * completion. Maps non-2xx bodies through {@link mapAssetClientErrorMessage}.
+ */
 function sendFormData({
   url,
   method,
@@ -118,6 +125,7 @@ function sendFormData({
   });
 }
 
+/** GET /api/map-assets, optionally filtered by survey or team. */
 export async function fetchMapAssets({
   user,
   projectId,
@@ -145,6 +153,7 @@ export async function fetchMapAssets({
   return (await response.json()) as GetMapAssetListResponse;
 }
 
+/** GET /api/teams/:teamId/map-assets. */
 export async function fetchTeamMapAssets({
   user,
   teamId,
@@ -162,6 +171,10 @@ export async function fetchTeamMapAssets({
   return (await response.json()) as GetMapAssetListResponse;
 }
 
+/**
+ * List layers for the library, a survey, or a team.
+ * Polls every 2s while any listed layer is still processing.
+ */
 export function useMapAssets({
   user,
   projectId,
@@ -191,6 +204,7 @@ export function useMapAssets({
   });
 }
 
+/** GET /api/map-assets/:assetId. */
 export async function fetchMapAsset({
   user,
   assetId,
@@ -207,6 +221,7 @@ export async function fetchMapAsset({
   return (await response.json()) as GetMapAssetResponse;
 }
 
+/** One layer; polls every 2s while status is pending or processing. */
 export function useMapAsset({
   user,
   assetId,
@@ -225,6 +240,7 @@ export function useMapAsset({
   });
 }
 
+/** PATCH name and description. */
 export async function updateMapAssetDetails({
   user,
   assetId,
@@ -250,6 +266,7 @@ export async function updateMapAssetDetails({
   return (await response.json()) as GetMapAssetResponse;
 }
 
+/** PUT replacement files and restart processing. */
 export async function replaceMapAssetFiles({
   user,
   assetId,
@@ -275,6 +292,7 @@ export async function replaceMapAssetFiles({
   return json as GetMapAssetResponse;
 }
 
+/** Invalidate library, team, and optional single-asset map-layer queries. */
 export async function invalidateMapAssets(
   queryClient: QueryClient,
   user: User,
@@ -293,6 +311,7 @@ export async function invalidateMapAssets(
   await Promise.all(pending);
 }
 
+/** GET survey ids linked to this layer. */
 export async function fetchMapAssetLinks({
   user,
   assetId,
@@ -311,6 +330,7 @@ export async function fetchMapAssetLinks({
   return body.projectIds ?? [];
 }
 
+/** Linked survey ids for one layer. */
 export function useMapAssetLinks({
   user,
   assetId,
@@ -327,6 +347,7 @@ export function useMapAssetLinks({
   });
 }
 
+/** POST a new layer (files + details) with upload progress. */
 export async function uploadMapAsset({
   user,
   name,
@@ -361,6 +382,7 @@ export async function uploadMapAsset({
   return json as GetMapAssetResponse;
 }
 
+/** DELETE /api/map-assets/:assetId. */
 export async function deleteMapAsset({
   user,
   assetId,
@@ -377,6 +399,7 @@ export async function deleteMapAsset({
   }
 }
 
+/** POST a layer–survey link. */
 export async function linkMapAsset({
   user,
   assetId,
@@ -402,6 +425,7 @@ export async function linkMapAsset({
   }
 }
 
+/** DELETE a layer–survey link. */
 export async function unlinkMapAsset({
   user,
   assetId,
@@ -423,6 +447,7 @@ export async function unlinkMapAsset({
   }
 }
 
+/** Status, progress, or kind label for compact UI (toasts, badges). */
 export function formatAssetStatus(asset: ExistingMapAsset): string {
   if (asset.status === 'failed') {
     return asset.failureReason ?? 'Failed';

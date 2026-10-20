@@ -20,6 +20,10 @@ import {Action, INPUT_LIMITS, mapAssetUploadMaxLabel} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useState} from 'react';
 
+/**
+ * Upload form: name, description, optional team, and primary/companion files.
+ * Hidden when the user cannot create a layer in the chosen team.
+ */
 export function CreateMapLayerForm({
   setDialogOpen,
   specifiedTeam,

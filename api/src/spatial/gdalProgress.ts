@@ -9,18 +9,22 @@ import type {MapAssetProcessingProgress} from '@faims3/data-model';
 const DONE = ' - done.';
 const TICKS_PER_BAR = 40;
 
+/** GDALTermProgress percent for a 2.5% tick (0–40). */
 function percentForTick(tick: number): number {
   return Math.min(100, tick * 2.5);
 }
 
+/** Decade number printed at ticks 0, 4, 8, … (`0`, `10`, `20`). */
 function decadeLabel(tick: number): string {
   return String((tick / 4) * 10);
 }
 
+/** True on ticks that print a decade number (every 4th 2.5% tick). */
 function isDecadeTick(tick: number): boolean {
   return tick % 4 === 0;
 }
 
+/** True when `buffer[index]` is a `0` that is not part of a larger number. */
 function isBareZero(buffer: string, index: number): boolean {
   const prev = index === 0 ? undefined : buffer[index - 1];
   return prev === undefined || prev < '0' || prev > '9';
@@ -148,10 +152,12 @@ export function createGdalProgressConsumer(): {
   };
 
   return {
+    /** Feed a stdout chunk; returns percents completed in this chunk. */
     push(chunk: string): number[] {
       buf += chunk;
       return drain(false);
     },
+    /** Finish a trailing decade number at end-of-command. */
     flush(): number[] {
       const percents = drain(true);
       buf = '';

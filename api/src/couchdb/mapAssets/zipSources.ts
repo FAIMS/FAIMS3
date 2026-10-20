@@ -200,6 +200,7 @@ export type ZipEntryInfo = {
   isUnixSymlink: boolean;
 };
 
+/** Convert a zip64 size to a JS number, or `undefined` if it would overflow. */
 function bigintToSafeInt(value: bigint): number | undefined {
   if (value < BigInt(0) || value > BigInt(Number.MAX_SAFE_INTEGER)) {
     return undefined;
@@ -207,6 +208,7 @@ function bigintToSafeInt(value: bigint): number | undefined {
   return Number(value);
 }
 
+/** Exact `length` bytes at `position`, or `undefined` on a short read. */
 async function readSlice(
   handle: FileHandle,
   length: number,
@@ -223,6 +225,7 @@ async function readSlice(
   return buf;
 }
 
+/** DataView over `bytes` without copying the underlying buffer. */
 function viewOf(bytes: Uint8Array): DataView {
   return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 }
@@ -300,6 +303,10 @@ function zip64UncompressedSize(
   return undefined;
 }
 
+/**
+ * Walk the central directory and collect entry names, sizes, and symlink
+ * flags. A header we cannot size is treated as over the extract cap.
+ */
 function parseCentralDirectory(
   cd: Uint8Array,
   recordCount: number
@@ -548,6 +555,7 @@ export function fileGdbFoldersInZip(entries: string[]): string[] {
   return [...folders];
 }
 
+/** `/vsizip/` path, optionally into a `.gdb` folder inside the archive. */
 function gdalVsiZipSource(filePath: string, gdbFolder?: string): string {
   return gdbFolder
     ? `${GDAL_VSI_ZIP_PREFIX}${filePath}/${gdbFolder}`
@@ -631,6 +639,7 @@ export async function assertExtractContainsNoSymlinks(
   await walk(root);
 }
 
+/** Spawn Info-ZIP `unzip` into `destDir`. */
 function runUnzip(zipPath: string, destDir: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const proc = spawn('unzip', [

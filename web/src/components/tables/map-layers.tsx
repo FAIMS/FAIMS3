@@ -78,6 +78,7 @@ function TruncatedListingText({
   );
 }
 
+/** Title-case status for the listing column. */
 function statusLabel(asset: ExistingMapAsset): string {
   switch (asset.status) {
     case 'pending':
@@ -189,6 +190,7 @@ const descriptionColumn: ColumnDef<ExistingMapAsset> = {
   ),
 };
 
+/** Library/team/project map-layer columns; hide Team on a team tab. */
 export function getMapLayerTableColumns(options?: {
   hideTeamColumn?: boolean;
 }): ColumnDef<ExistingMapAsset>[] {

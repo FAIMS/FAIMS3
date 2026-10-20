@@ -20,11 +20,13 @@ type MapFileRangePlugin = {
 
 let plugin: MapFileRangePlugin | undefined;
 
+/** Lazily registered Capacitor MapFileRange plugin. */
 function mapFileRange(): MapFileRangePlugin {
   plugin ??= registerPlugin<MapFileRangePlugin>('MapFileRange');
   return plugin;
 }
 
+/** Decode the plugin's base64 payload into tile bytes. */
 export function decodeBase64Tile(data: string): Uint8Array {
   const binary = atob(data);
   const bytes = new Uint8Array(binary.length);

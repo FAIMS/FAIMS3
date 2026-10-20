@@ -72,14 +72,17 @@ type MapUploadRequest = Request & {
   mapUploadId?: string;
 };
 
+/** Temp directory multer wrote this request's files into. */
 function requestUploadDir(req: Request): string | undefined {
   return (req as MapUploadRequest).mapUploadDir;
 }
 
+/** Correlation id shared by multer staging and abort cleanup. */
 function requestUploadId(req: Request): string | undefined {
   return (req as MapUploadRequest).mapUploadId;
 }
 
+/** Best-effort removal of this request's multer temp directory. */
 async function cleanupRequestUpload(req: Request): Promise<void> {
   const dir = requestUploadDir(req);
   if (!dir) {
@@ -119,6 +122,10 @@ const upload = multer({
   },
 });
 
+/**
+ * Map a multer rejection to an API exception so file-size and file-count
+ * limits surface as 400s with the same copy as later validation.
+ */
 function multerUploadError(error: unknown): Error {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
@@ -136,6 +143,10 @@ function multerUploadError(error: unknown): Error {
   return error instanceof Error ? error : new Error('Upload was not accepted.');
 }
 
+/**
+ * Express middleware: refuse the upload when disk is tight, then stream
+ * `files` through multer. Cleans up the temp directory on abort or error.
+ */
 function acceptMapAssetFiles(req: Request, res: Response, next: NextFunction) {
   const uploadId = `req-${randomUUID()}`;
   (req as MapUploadRequest).mapUploadId = uploadId;
@@ -183,6 +194,7 @@ function acceptMapAssetFiles(req: Request, res: Response, next: NextFunction) {
   })();
 }
 
+/** Count, names, and total bytes for upload audit logs. */
 function uploadedFileSummary(files: UploadedMapFile[]): {
   fileCount: number;
   filenames: string[];
@@ -202,6 +214,7 @@ function uploadedFileSummary(files: UploadedMapFile[]): {
 
 export const api: express.Router = express.Router();
 
+/** Authenticated user, or 401 when the middleware left `req.user` unset. */
 function requireUser(req: express.Request) {
   if (!req.user) {
     throw new Exceptions.UnauthorizedException();
@@ -209,6 +222,7 @@ function requireUser(req: express.Request) {
   return req.user;
 }
 
+/** Roles from the Express user, shaped for `@faims3/data-model` auth checks. */
 function tokenOf(user: Express.User): DecodedTokenPermissions {
   return {
     globalRoles: user.globalRoles,
@@ -216,6 +230,11 @@ function tokenOf(user: Express.User): DecodedTokenPermissions {
   };
 }
 
+/**
+ * True when the user may create a layer. A `teamId` requires
+ * {@link Action.CREATE_MAP_ASSET_IN_TEAM} on that team; otherwise
+ * {@link Action.CREATE_MAP_ASSET} is enough (personal library).
+ */
 function canUpload(user: Express.User, teamId?: string): boolean {
   if (teamId) {
     return userCanDo({
@@ -227,6 +246,10 @@ function canUpload(user: Express.User, teamId?: string): boolean {
   return userCanDo({user, action: Action.CREATE_MAP_ASSET});
 }
 
+/**
+ * Run a map-asset auth helper against this user, the asset, and optional
+ * survey links that grant read access.
+ */
 function authorizeAsset(
   user: Express.User,
   asset: {createdBy: string; ownedByTeamId?: string; _id: string},
@@ -269,6 +292,7 @@ export async function listReadableTeamMapAssets(
   );
 }
 
+/** True when the user may view the layer, including via a survey link. */
 async function canReadAsset(
   user: Express.User,
   asset: {createdBy: string; ownedByTeamId?: string; _id: string}
@@ -282,6 +306,7 @@ async function canReadAsset(
   );
 }
 
+/** True when the user may change survey details (used to link/unlink layers). */
 function canAdministerProject(user: Express.User, projectId: string): boolean {
   return userCanDo({
     user,
@@ -290,6 +315,7 @@ function canAdministerProject(user: Express.User, projectId: string): boolean {
   });
 }
 
+/** Validate name/description against {@link MapAssetDetailsSchema}. */
 function parseDetails(
   name: string,
   description: string
@@ -306,6 +332,10 @@ function parseDetails(
   return parsed.data;
 }
 
+/**
+ * Multer files from the request, after count and total-size checks.
+ * Throws 400 when the field is empty or a filename is not safe.
+ */
 function filesFromRequest(req: express.Request): UploadedMapFile[] {
   const uploaded = req.files;
   const list = Array.isArray(uploaded) ? uploaded : [];
@@ -338,6 +368,10 @@ function filesFromRequest(req: express.Request): UploadedMapFile[] {
   }
 }
 
+/**
+ * Confirm companions and a primary file are present. Maps upload-rule
+ * errors onto 400 responses.
+ */
 function assertFiles(files: UploadedMapFile[]): UploadedMapFile[] {
   try {
     assertUploadCompanions(files);

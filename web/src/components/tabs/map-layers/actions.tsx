@@ -14,6 +14,7 @@ import {
 } from '@/lib/map-layer-permissions';
 import {isMapAssetInProgress} from '@faims3/data-model';
 
+/** Edit, replace, and delete actions the user is allowed to run. */
 export function MapLayerActions({assetId}: {assetId: string}) {
   const user = useRequiredUser();
   const {data, isPending} = useMapAsset({user, assetId});

@@ -14,6 +14,7 @@ import {
 /** Shorter than table cells so a long resource name cannot widen the header. */
 const BREADCRUMB_LABEL_MAX_LENGTH = 24;
 
+/** Truncate a long crumb and show the full name in a tooltip. */
 function BreadcrumbLabel({label}: {label: string}) {
   const isTruncated = label.length > BREADCRUMB_LABEL_MAX_LENGTH;
   const display = isTruncated

@@ -21,6 +21,7 @@ type ProjectMapLayersProps = {
   projectId: string;
 };
 
+/** Link or unlink one library layer from this survey. */
 function MapLayerLinkAction({
   projectId,
   asset,
@@ -97,6 +98,7 @@ function MapLayerLinkAction({
   );
 }
 
+/** Layer listing columns, with an optional link/unlink action column. */
 function mapLayerColumns({
   projectId,
   mode,

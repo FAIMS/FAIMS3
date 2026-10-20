@@ -1580,6 +1580,7 @@ export const selectProjectById = createSelector(
 export const selectPendingOfflineMapDownloadPrompt = (state: RootState) =>
   state.projects.pendingOfflineMapDownloadPrompts?.[0];
 
+/** Next survey whose linked-layer download prompt has not been shown. */
 export const selectPendingContextualLayerPrompt = (state: RootState) =>
   state.projects.pendingContextualLayerPrompts?.[0];
 

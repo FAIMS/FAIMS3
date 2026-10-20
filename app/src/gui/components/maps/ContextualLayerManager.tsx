@@ -53,10 +53,12 @@ type SurveyLayer = {
   layer: ContextualLayerListing;
 };
 
+/** User-facing kind label (vector tiles, raster tiles). */
 function kindLabel(kind: ContextualLayerListing['kind']): string {
   return mapAssetKindLabel(kind);
 }
 
+/** List, download, preview, and delete on-device contextual layers. */
 export function ContextualLayerManager() {
   const navigate = useNavigate();
   const servers = useAppSelector(state => state.projects.servers);

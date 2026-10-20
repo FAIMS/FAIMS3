@@ -157,18 +157,22 @@ export function layerLocationRelation(
   };
 }
 
+/** Clamp `value` to `[min, max]`. */
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+/** Degrees to radians. */
 function toRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
 
+/** Radians to degrees. */
 function toDegrees(radians: number): number {
   return (radians * 180) / Math.PI;
 }
 
+/** Great-circle distance in meters between two WGS84 points. */
 function haversineMeters(
   lon1: number,
   lat1: number,
@@ -185,6 +189,7 @@ function haversineMeters(
   return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(a)));
 }
 
+/** Round a distance to a 1–2–5 × 10^n meter step, never below {@link MIN_DISTANCE_M}. */
 function nearest125Meters(meters: number): number {
   if (meters <= MIN_DISTANCE_M) {
     return MIN_DISTANCE_M;

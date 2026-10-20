@@ -32,6 +32,7 @@ export const defaultMapControlPalette = {
 
 type MapControlPalette = Theme['palette']['mapControl'];
 
+/** True when the host theme already defines every map-control color. */
 function hasCompleteMapControlPalette(
   palette: Partial<MapControlPalette> | undefined
 ): boolean {

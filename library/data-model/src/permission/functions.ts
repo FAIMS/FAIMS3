@@ -597,6 +597,7 @@ export function isAuthorizedForMapAsset({
   );
 }
 
+/** {@link isAuthorizedForMapAsset} for a fixed {@link Action}. */
 function authorizeMapAssetAction(
   action: Action,
   input: MapAssetAuthorizationInput

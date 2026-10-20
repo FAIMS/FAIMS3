@@ -52,6 +52,7 @@ export type BaseMapLayerPatch = Partial<
   Pick<BaseMapPanelLayer, 'visible' | 'opacity' | 'zIndex'>
 >;
 
+/** Clamp opacity to 0–1; non-finite values become 1. */
 function clampOpacity(value: number): number {
   if (!Number.isFinite(value)) {
     return 1;
@@ -59,10 +60,12 @@ function clampOpacity(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
+/** Clamp a stack value to the shared contextual-layer range. */
 function clampZIndex(value: number): number {
   return contextualLayerZIndex(value);
 }
 
+/** Merge a partial stored state onto defaults with clamped opacity/zIndex. */
 function layerState(
   value: Partial<BaseMapLayerState> | undefined,
   fallback: BaseMapLayerState
@@ -108,6 +111,7 @@ export function normalizeBaseMapLayersState(
   };
 }
 
+/** True when the old exclusive toggle preferred satellite. */
 function readLegacySatellitePreference(): boolean {
   try {
     return localStorage.getItem(LEGACY_LAYER_PREFERENCE_KEY) === 'satellite';

@@ -43,10 +43,12 @@ import {
   type StoredContextualLayerSummary,
 } from './contextualLayerStore';
 
+/** User-facing kind label (vector tiles, raster tiles). */
 function kindLabel(kind: ContextualLayerListing['kind']): string {
   return mapAssetKindLabel(kind);
 }
 
+/** One checkbox row: name, kind, distance hint, and file size. */
 function LayerChoice({
   layer,
   status,
@@ -139,6 +141,7 @@ function LayerChoice({
   );
 }
 
+/** Titled group of layer checkboxes (on device / update / new). */
 function LayerGroup({
   title,
   testId,

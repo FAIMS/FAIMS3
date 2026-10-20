@@ -51,6 +51,7 @@ const statusIcon = {
   failed: AlertCircle,
 } as const satisfies Record<MapAssetStatus, typeof CheckCircle2>;
 
+/** Status badge plus processing progress or failure reason. */
 function MapLayerStatusIndication({asset}: {asset: ExistingMapAsset}) {
   const indication = statusIndication[asset.status];
   const Icon = statusIcon[asset.status];
@@ -88,6 +89,7 @@ function MapLayerStatusIndication({asset}: {asset: ExistingMapAsset}) {
   );
 }
 
+/** Metadata card: status, kind, size, team, owner, and timestamps. */
 export function MapLayerDetails({assetId}: {assetId: string}) {
   const user = useRequiredUser();
   const {data, isPending} = useMapAsset({user, assetId});

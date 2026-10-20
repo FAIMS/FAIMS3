@@ -15,6 +15,7 @@ import {attachmentStorageService} from '../../buildconfig';
 import {withMapAssetProcessingWait} from '../../logging';
 import {collectAttachmentBody} from '../../services/attachmentStorageService';
 
+/** SHA-256 hex digest of a file, streamed so large rasters stay off-heap. */
 export function sha256File(filePath: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const hash = createHash('sha256');
@@ -27,10 +28,12 @@ export function sha256File(filePath: string): Promise<string> {
   });
 }
 
+/** SHA-256 hex digest of an in-memory buffer. */
 export function sha256(bytes: Buffer): string {
   return createHash('sha256').update(new Uint8Array(bytes)).digest('hex');
 }
 
+/** Object-storage key for one attachment on a map-asset document. */
 export function mapAssetObjectKey(
   assetId: string,
   attachmentId: string
@@ -38,6 +41,10 @@ export function mapAssetObjectKey(
   return attachmentStorageService.objectKey(assetId, attachmentId);
 }
 
+/**
+ * Upload a file from disk into object storage and return the stored
+ * location metadata for the Couch document.
+ */
 export async function putFileAttachment({
   assetId,
   attachmentId,
@@ -71,6 +78,7 @@ export async function putFileAttachment({
   );
 }
 
+/** Upload an in-memory buffer (tests and tiny fixtures) to object storage. */
 export async function putBytesAttachment({
   assetId,
   attachmentId,
@@ -99,6 +107,7 @@ export async function putBytesAttachment({
   );
 }
 
+/** Stream an attachment from object storage onto disk. */
 export async function downloadAttachmentToFile({
   location,
   destPath,
@@ -124,10 +133,12 @@ export async function downloadAttachmentToFile({
   );
 }
 
+/** Readable stream of an attachment body from object storage. */
 export function downloadAttachmentStream(location: StoredAttachmentLocation) {
   return attachmentStorageService.download({location});
 }
 
+/** Time-limited GET URL for a stored attachment. */
 export function presignAttachmentDownload({
   location,
   expiresInSeconds,
@@ -147,12 +158,14 @@ export function presignAttachmentDownload({
   });
 }
 
+/** Remove one object from storage. Missing keys are ignored by the backend. */
 export async function deleteStoredAttachment(
   location: StoredAttachmentLocation
 ): Promise<void> {
   await attachmentStorageService.delete({location});
 }
 
+/** True when the asset document already records this attachment id. */
 export function assetHasStoredAttachment(
   asset: {storedAttachments?: Record<string, StoredAttachmentLocation>},
   attachmentId: string
@@ -160,6 +173,7 @@ export function assetHasStoredAttachment(
   return Boolean(asset.storedAttachments?.[attachmentId]);
 }
 
+/** Stored location for `attachmentId`, or `undefined` if it was never uploaded. */
 export function storedAttachmentLocation(
   asset: {storedAttachments?: Record<string, StoredAttachmentLocation>},
   attachmentId: string
@@ -167,6 +181,7 @@ export function storedAttachmentLocation(
   return asset.storedAttachments?.[attachmentId];
 }
 
+/** Buffer a Node readable; used when a caller must hold the whole body. */
 export async function collectStream(body: Readable): Promise<Buffer> {
   return collectAttachmentBody(body);
 }

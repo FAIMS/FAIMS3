@@ -26,6 +26,7 @@ export const Route = createFileRoute('/_protected/map-layers/$assetId')({
   component: MapLayerPage,
 });
 
+/** Control Centre page for one map layer (details, preview, links, actions). */
 function MapLayerPage() {
   const {assetId} = Route.useParams();
   const user = useRequiredUser();

@@ -21,6 +21,7 @@ import {
 } from '../couchdb/mapAssets/store';
 import {runSpatialWorkerLoop} from '../spatial/workerLoop';
 
+/** Print CLI usage and spatial-tool env vars. */
 const showHelp = () => {
   console.log(`Usage: node scripts/spatialWorker.js --poll
 
@@ -39,6 +40,7 @@ TIPPECANOE_MAX_THREADS       Cap tippecanoe threads (default: all CPUs)
 `);
 };
 
+/** Parse `--poll`, wait for Couch, then drain jobs until idle. */
 const main = async () => {
   const args = process.argv.slice(2);
   if (args.includes('-h') || args.includes('--help')) {

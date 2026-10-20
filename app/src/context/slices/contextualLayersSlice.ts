@@ -92,6 +92,7 @@ export function bindContextualLayersStore(store: LayersStore) {
   boundStore = store;
 }
 
+/** Bound app store, or a tiny standalone store for tests that never bind. */
 function layersStore(): LayersStore {
   if (!boundStore) {
     boundStore = configureStore({
@@ -101,6 +102,7 @@ function layersStore(): LayersStore {
   return boundStore;
 }
 
+/** Deep-cloned files, prefs, and seen hashes from the bound store. */
 export function readContextualLayersState(): ContextualLayersState {
   const {files, prefs, seenHashByProject} =
     layersStore().getState().contextualLayers;
@@ -111,6 +113,7 @@ export function readContextualLayersState(): ContextualLayersState {
   });
 }
 
+/** Replace persisted layer files, prefs, and seen hashes. */
 export function writeContextualLayersState(next: ContextualLayersState) {
   layersStore().dispatch(
     replaceContextualLayersState({

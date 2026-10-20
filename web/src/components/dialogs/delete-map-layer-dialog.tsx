@@ -16,6 +16,7 @@ import {Trash2} from 'lucide-react';
 import {useState} from 'react';
 import {toast} from 'sonner';
 
+/** Confirm-and-delete dialog for one library layer. */
 export function DeleteMapLayerDialog({assetId}: {assetId: string}) {
   const user = useRequiredUser();
   const queryClient = useQueryClient();

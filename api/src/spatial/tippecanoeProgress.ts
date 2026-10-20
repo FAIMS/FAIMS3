@@ -6,6 +6,7 @@ import type {MapAssetProcessingProgress} from '@faims3/data-model';
 
 const PHASE_MAX = 80;
 
+/** Clamp a percent to 0–100; non-finite values become 0. */
 function clampPercent(value: number): number {
   if (!Number.isFinite(value)) {
     return 0;
@@ -13,11 +14,13 @@ function clampPercent(value: number): number {
   return Math.min(100, Math.max(0, value));
 }
 
+/** Trim and cap a tippecanoe phase string for storage on the asset. */
 function clipPhase(phase: string): string {
   const trimmed = phase.trim();
   return trimmed.length <= PHASE_MAX ? trimmed : trimmed.slice(0, PHASE_MAX);
 }
 
+/** Parse one `--json-progress` object into phase + percent. */
 function fromJson(value: unknown): MapAssetProcessingProgress | undefined {
   if (!value || typeof value !== 'object') {
     return undefined;

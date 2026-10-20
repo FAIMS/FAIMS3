@@ -80,6 +80,7 @@ export function recordFormLayerPrefsKey(projectId: string): string {
   return `${RECORD_FORM_PREFS_KEY_PREFIX}${projectId}`;
 }
 
+/** Clamp opacity to 0–1; non-finite values become 1. */
 function clampOpacity(value: number): number {
   if (!Number.isFinite(value)) {
     return 1;
@@ -87,14 +88,17 @@ function clampOpacity(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
+/** Clamp a stack value to the shared contextual-layer range. */
 function clampZIndex(value: number): number {
   return contextualLayerZIndex(value);
 }
 
+/** Positive finite number, else `fallback` (line width / point size). */
 function clampPositive(value: number, fallback: number): number {
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
+/** Stable palette color for a form, from its index in the sorted form-id list. */
 function colorForForm(formId: string, colorFormIds: string[]): string {
   const sorted = [...colorFormIds].sort();
   const index = Math.max(0, sorted.indexOf(formId));

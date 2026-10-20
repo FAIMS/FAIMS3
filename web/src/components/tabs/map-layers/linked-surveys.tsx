@@ -24,6 +24,7 @@ import {toast} from 'sonner';
 
 type SurveyRow = GetNotebookListWithStatsResponse[number];
 
+/** Link or unlink this layer from one survey the user can administer. */
 function SurveyLinkAction({
   assetId,
   project,
@@ -103,6 +104,7 @@ function SurveyLinkAction({
   );
 }
 
+/** Survey listing columns, with an optional link/unlink action column. */
 function surveyColumns({
   assetId,
   mode,
@@ -134,6 +136,7 @@ function surveyColumns({
   return showAction ? [actionColumn, ...columns] : columns;
 }
 
+/** Surveys this layer is linked to, plus a table to add more links. */
 export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
   const user = useRequiredUser();
   const navigate = useNavigate();

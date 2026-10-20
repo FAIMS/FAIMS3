@@ -21,6 +21,7 @@ export type SpatialWorkerLoopOptions = {
   maxPolls?: number;
 };
 
+/** Resolve after `ms` milliseconds. */
 const defaultSleep = (ms: number) =>
   new Promise<void>(resolve => {
     setTimeout(resolve, ms);

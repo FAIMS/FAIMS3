@@ -14,6 +14,7 @@ import {useMapAsset} from '@/hooks/map-asset-hooks';
 import {Pencil} from 'lucide-react';
 import {useState} from 'react';
 
+/** Dialog wrapping {@link UpdateMapLayerDetailsForm} for one layer. */
 export function EditMapLayerDetailsDialog({assetId}: {assetId: string}) {
   const user = useRequiredUser();
   const {data, isLoading, isError} = useMapAsset({user, assetId});

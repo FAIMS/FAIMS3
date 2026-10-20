@@ -14,6 +14,7 @@ import BackButton from '../ui/BackButton';
 import {ListingPage} from '../ui/listing-page';
 import {loadStoredContextualLayer} from './contextualLayerStore';
 
+/** Fitted static map of one stored layer (vector basemap only). */
 function LayerPreviewMap({layer}: {layer: ContextualMapLayer}) {
   const mapConfig = useMemo(() => {
     const {satelliteSource: _satellite, ...vectorOnly} = getMapConfig();
@@ -51,6 +52,7 @@ function LayerPreviewMap({layer}: {layer: ContextualMapLayer}) {
   );
 }
 
+/** Route page: load a stored layer by `assetId` and show a static preview. */
 export function ContextualLayerPreview() {
   const {assetId} = useParams<{assetId: string}>();
   const [layer, setLayer] = useState<ContextualMapLayer | undefined>();

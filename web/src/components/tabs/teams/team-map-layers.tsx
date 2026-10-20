@@ -8,6 +8,7 @@ import {Action} from '@faims3/data-model';
 import {useNavigate} from '@tanstack/react-router';
 import {useMemo} from 'react';
 
+/** Team tab: layers owned by this team, plus create when permitted. */
 const TeamMapLayers = ({teamId}: {teamId: string}) => {
   const user = useRequiredUser();
   const assets = useMapAssets({user, teamId});

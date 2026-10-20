@@ -20,6 +20,7 @@ import {summarizeSpatialBacklog} from '../couchdb/mapAssets/store';
 import {createCapacityProvider} from '../services/capacityProvider';
 import {reconcileCapacity} from '../spatial/reconcileCapacity';
 
+/** Resolve after `ms` milliseconds. */
 const sleep = (ms: number) =>
   new Promise<void>(resolve => {
     setTimeout(resolve, ms);
@@ -31,6 +32,7 @@ const provider = createCapacityProvider({
   ecs: config.capacityEcs,
 });
 
+/** One reconcile pass: read the Couch backlog and start workers if needed. */
 async function tick(): Promise<void> {
   const backlog = await summarizeSpatialBacklog();
   const result = await reconcileCapacity({
@@ -45,6 +47,7 @@ async function tick(): Promise<void> {
   );
 }
 
+/** Wait for Couch, then reconcile forever at `capacityReconcileMs`. */
 const main = async () => {
   console.log(
     `[capacity] provider=${config.capacityProviderType} max=${config.capacityMax} scale=${config.capacityScaleThresholds.join(',')} reconcileMs=${config.capacityReconcileMs}`

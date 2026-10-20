@@ -154,6 +154,7 @@ export function recordFeatureSyncKey(
     .join('|')}`;
 }
 
+/** True when both collections encode the same records, revisions, and geometry. */
 export function recordFeatureCollectionsEqual(
   left: RecordFeatureCollection | undefined,
   right: RecordFeatureCollection | undefined

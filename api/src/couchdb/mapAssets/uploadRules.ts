@@ -23,6 +23,7 @@ export type UploadedMapFile = {
   size?: number;
 };
 
+/** Declared `size`, else in-memory byte length, else zero. */
 export function uploadedFileSize(file: UploadedMapFile): number {
   if (typeof file.size === 'number') {
     return file.size;
@@ -44,10 +45,12 @@ export function safeUploadFilename(filename: string): string {
   return base;
 }
 
+/** Lowercased basename extension including the leading dot. */
 export function extensionOf(filename: string): string {
   return mapAssetFileExtension(filename);
 }
 
+/** True when GDAL should treat this filename as a vector primary. */
 export function isVectorUpload(filename: string): boolean {
   return isMapAssetVectorExtension(extensionOf(filename));
 }

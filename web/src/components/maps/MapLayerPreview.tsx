@@ -19,6 +19,10 @@ import {
 } from '@faims3/forms';
 import {useEffect, useState} from 'react';
 
+/**
+ * Fetch a presigned download and render a static fitted preview.
+ * Shows processing/failed copy when the layer is not yet ready.
+ */
 export function MapLayerPreview({
   asset,
   user,

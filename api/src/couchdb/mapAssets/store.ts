@@ -63,6 +63,7 @@ import {
 } from './staging';
 import {type UploadedMapFile} from './uploadRules';
 
+/** True when the Couch document is a map-asset (not a survey link). */
 function isAsset(doc: {
   _id?: string;
   docType?: string;
@@ -70,10 +71,12 @@ function isAsset(doc: {
   return doc.docType === MAP_ASSET_DOC_TYPE;
 }
 
+/** True when the Couch document is a layer-to-survey link. */
 function isLink(doc: {docType?: string}): doc is ExistingMapAssetLink {
   return doc.docType === MAP_ASSET_LINK_DOC_TYPE;
 }
 
+/** Load one map-asset document, or 404 when it is missing or not an asset. */
 export async function getMapAsset(assetId: string): Promise<ExistingMapAsset> {
   try {
     const doc = await getMapAssetsDB().get(assetId);
@@ -97,6 +100,7 @@ export async function getMapAsset(assetId: string): Promise<ExistingMapAsset> {
   }
 }
 
+/** Document ids from a map-assets view for a single key. */
 async function queryIds(view: string, key: string): Promise<string[]> {
   const result = await getMapAssetsDB().query<number | string>(view, {
     key,
@@ -115,6 +119,7 @@ export async function listAssetsByTeam(
   return loadAssets(ids);
 }
 
+/** Layers created by `userId` (personal library and team-owned). */
 export async function listAssetsByCreator(
   userId: string
 ): Promise<ExistingMapAsset[]> {
@@ -122,6 +127,7 @@ export async function listAssetsByCreator(
   return loadAssets(ids);
 }
 
+/** Every map-asset document, via the `assetsByStatus` view. */
 export async function listAllAssets(): Promise<ExistingMapAsset[]> {
   const result = await getMapAssetsDB().query<number | string>(
     MAP_ASSETS_BY_STATUS,
@@ -132,12 +138,17 @@ export async function listAllAssets(): Promise<ExistingMapAsset[]> {
   );
 }
 
+/** Layers linked to a survey, including ones still processing or failed. */
 export async function listAssetsByProject(
   projectId: string
 ): Promise<ExistingMapAsset[]> {
   return loadAssets(await listLinkAssetIds(projectId));
 }
 
+/**
+ * Fetch asset documents for `ids` in one `allDocs`. Missing rows and
+ * non-asset documents are skipped.
+ */
 async function loadAssets(ids: string[]): Promise<ExistingMapAsset[]> {
   const unique = [...new Set(ids.filter(id => id.length > 0))];
   if (unique.length === 0) {
@@ -159,6 +170,7 @@ async function loadAssets(ids: string[]): Promise<ExistingMapAsset[]> {
   return assets;
 }
 
+/** Survey ids this layer is linked to. */
 export async function listLinkProjectIds(assetId: string): Promise<string[]> {
   const result = await getMapAssetsDB().query<string>(
     MAP_ASSET_LINKS_BY_ASSET,
@@ -205,14 +217,20 @@ async function listLinkAssetIdsByProject(
   return byProject;
 }
 
+/** Asset ids linked to one survey. */
 export async function listLinkAssetIds(projectId: string): Promise<string[]> {
   return (await listLinkAssetIdsByProject([projectId])).get(projectId) ?? [];
 }
 
+/** Deterministic Couch id for the link between a layer and a survey. */
 export function linkDocumentId(assetId: string, projectId: string): string {
   return `link-${assetId}-${projectId}`;
 }
 
+/**
+ * Stream the primary and companion originals from staging into object
+ * storage. Returns location metadata to persist on the asset document.
+ */
 async function putOriginalFilesFromDisk({
   assetId,
   files,
@@ -267,6 +285,11 @@ async function putOriginalFilesFromDisk({
   );
 }
 
+/**
+ * Merge new attachment locations onto the asset document, retrying Couch
+ * conflicts. A lost processing claim (`claimStartedAt` no longer matches)
+ * is a no-op so a newer worker is not overwritten.
+ */
 async function mergeStoredAttachments(
   assetId: string,
   locations: Record<string, StoredAttachmentLocation>,
@@ -306,6 +329,10 @@ async function mergeStoredAttachments(
   throw new Error(`Could not save map layer storage metadata for ${assetId}.`);
 }
 
+/**
+ * Delete objects that are in `previous` but not reused in `next`.
+ * Same `resourceUri` is kept (replace did not rewrite that attachment).
+ */
 async function deleteUnreferencedAttachments(
   previous: Record<string, StoredAttachmentLocation> | undefined,
   next: Record<string, StoredAttachmentLocation>
@@ -322,6 +349,10 @@ async function deleteUnreferencedAttachments(
   }
 }
 
+/**
+ * Create a pending map-asset document and stage the upload files.
+ * Originals are uploaded asynchronously; the worker claims the job later.
+ */
 export async function createMapAsset({
   name,
   description,
@@ -486,10 +517,15 @@ export async function replaceMapAssetFiles({
   return getMapAsset(assetId);
 }
 
+/** Primary filename plus companion names in upload order. */
 function uploadFilenames(asset: ExistingMapAsset): string[] {
   return [asset.originalFilename, ...(asset.companionFilenames ?? [])];
 }
 
+/**
+ * Download stored originals into the asset staging directory.
+ * Returns `undefined` when the original object is missing (404).
+ */
 async function downloadOriginalsToStaging(
   asset: ExistingMapAsset
 ): Promise<UploadedMapFile[] | undefined> {
@@ -575,14 +611,17 @@ export type MapAssetProcessingRuntime = {
   normalize?: typeof normalizeMapUpload;
 };
 
+/** Clock used by claim/timeout math; injectable for tests. */
 function processingNow(runtime?: MapAssetProcessingRuntime): number {
   return runtime?.now?.() ?? Date.now();
 }
 
+/** Stale-claim window; injectable for tests. */
 function claimTimeoutMs(runtime?: MapAssetProcessingRuntime): number {
   return runtime?.claimTimeoutMs ?? MAP_ASSET_PROCESSING_CLAIM_TIMEOUT_MS;
 }
 
+/** Max claims before a crash is marked failed; injectable for tests. */
 function maxProcessingAttempts(runtime?: MapAssetProcessingRuntime): number {
   return runtime?.maxAttempts ?? MAP_ASSET_PROCESSING_MAX_ATTEMPTS;
 }
@@ -593,6 +632,10 @@ type ClaimToken = {
   chain: Promise<void>;
 };
 
+/**
+ * Run `fn` on the claim's write chain so stage, progress, and commit
+ * cannot interleave Couch puts for the same job.
+ */
 function withClaimToken<T>(
   token: ClaimToken,
   fn: () => Promise<T>
@@ -605,6 +648,7 @@ function withClaimToken<T>(
   return run;
 }
 
+/** True when Couch rejected a put with 409. */
 function isConflict(error: unknown): boolean {
   return (
     typeof error === 'object' &&
@@ -614,6 +658,7 @@ function isConflict(error: unknown): boolean {
   );
 }
 
+/** Drop `undefined` fields so Couch does not persist them. */
 function omitUndefinedFields<T extends object>(doc: T): T {
   const next = {...doc};
   for (const key of Object.keys(next) as (keyof T)[]) {
@@ -624,6 +669,10 @@ function omitUndefinedFields<T extends object>(doc: T): T {
   return next;
 }
 
+/**
+ * Last time processing state was written (`updatedAt`, else claim start).
+ * Used to decide whether a `processing` job is stale enough to reclaim.
+ */
 function lastProcessingStateChangeAt(asset: {
   updatedAt?: number;
   processingStartedAt?: number;
@@ -891,6 +940,7 @@ export function scheduleStoreOriginals(assetId: string): void {
   });
 }
 
+/** True when this claim timestamp is still the live processing claim. */
 async function claimStillOwned(
   assetId: string,
   token: ClaimToken
@@ -962,6 +1012,7 @@ async function reportProcessingStage(
   }
 }
 
+/** True when phase and percent already match the document. */
 function progressUnchanged(
   latest: ExistingMapAsset,
   progress: MapAssetProcessingProgress
@@ -972,6 +1023,7 @@ function progressUnchanged(
   );
 }
 
+/** CLI name to record on a progress audit line for the current stage. */
 function progressAuditCommand(
   stage: MapAssetProcessingStage | undefined
 ): string | undefined {
@@ -1054,6 +1106,10 @@ async function reportProcessingProgress(
   }
 }
 
+/**
+ * Download originals from object storage into staging.
+ * Throws {@link MAP_ASSET_ORIGINALS_MISSING_REASON} when they are gone.
+ */
 async function loadOriginalFiles(
   asset: ExistingMapAsset
 ): Promise<UploadedMapFile[]> {
@@ -1287,6 +1343,7 @@ const IN_PROGRESS_STATUS_KEYS = [
   'processing',
 ] as const satisfies readonly MapAssetStatus[];
 
+/** Asset ids with `pending` or `processing` status. */
 async function listInProgressMapAssetIds(): Promise<string[]> {
   const result = await getMapAssetsDB().query<number>(MAP_ASSETS_BY_STATUS, {
     keys: [...IN_PROGRESS_STATUS_KEYS],
@@ -1361,6 +1418,10 @@ export async function summarizeSpatialBacklog(
 /** How long a client-direct download grant stays valid. */
 export const MAP_ASSET_DOWNLOAD_URL_EXPIRY_SECONDS = 60 * 60;
 
+/**
+ * Location and download filename for the device-ready PMTiles.
+ * Throws when the layer is not `ready` or the attachment is missing.
+ */
 function normalizedDownloadMeta(asset: ExistingMapAsset): {
   location: StoredAttachmentLocation;
   mediaType: string;
@@ -1412,6 +1473,7 @@ export async function presignNormalizedAttachment(
   };
 }
 
+/** Stream the device-ready file from object storage (Conductor-side download). */
 export async function openNormalizedAttachment(assetId: string): Promise<{
   body: Awaited<ReturnType<typeof downloadAttachmentStream>>;
   mediaType: string;
@@ -1429,6 +1491,7 @@ export async function openNormalizedAttachment(assetId: string): Promise<{
   };
 }
 
+/** Buffer the device-ready file; used by tests and small fixtures. */
 export async function readNormalizedAttachment(
   assetId: string
 ): Promise<{bytes: Buffer; mediaType: string; filename: string}> {
@@ -1440,6 +1503,10 @@ export async function readNormalizedAttachment(
   };
 }
 
+/**
+ * Link a layer to a survey. Idempotent: an existing link document is
+ * returned unchanged.
+ */
 export async function linkMapAsset({
   assetId,
   projectId,
@@ -1474,6 +1541,7 @@ export async function linkMapAsset({
   return {_id, _rev: created.rev, ...fields};
 }
 
+/** Remove the layer–survey link. Missing links are a no-op. */
 export async function unlinkMapAsset({
   assetId,
   projectId,
@@ -1495,6 +1563,10 @@ export async function unlinkMapAsset({
   }
 }
 
+/**
+ * Delete the asset document, its survey links, and stored objects.
+ * Used when the owner removes a layer from the library.
+ */
 export async function deleteMapAsset(assetId: string): Promise<void> {
   const db = getMapAssetsDB();
   const asset = await getMapAsset(assetId);
@@ -1569,6 +1641,7 @@ type ContextualLayersManifest = {
   contextualLayersHash: string;
 };
 
+/** Ready-layer listing plus content hash for one survey's overlay set. */
 async function manifestFromAssets(
   assets: ExistingMapAsset[]
 ): Promise<ContextualLayersManifest> {

@@ -37,10 +37,12 @@ type StoredFile = ContextualLayerFile;
 type LayerPrefs = ContextualLayerPrefs;
 type LayerIndex = ContextualLayersState;
 
+/** Persisted files, prefs, and seen hashes. */
 function readIndex(): LayerIndex {
   return readContextualLayersState();
 }
 
+/** Persist the files/prefs/seen-hash snapshot. */
 function writeIndex(index: LayerIndex): void {
   writeContextualLayersState(index);
 }
@@ -53,6 +55,7 @@ function writeIndex(index: LayerIndex): void {
  */
 const runFileIndexMutation = createAsyncMutex();
 
+/** Filenames already on disk (native Data dir or browser OPFS). */
 async function listDeviceFilenames(): Promise<string[]> {
   if (Capacitor.isNativePlatform()) {
     try {
@@ -91,6 +94,7 @@ async function deleteUnreferencedFiles(index: LayerIndex): Promise<void> {
   );
 }
 
+/** Drop paint prefs whose asset is no longer on the device. */
 function dropUnusedPrefs(index: LayerIndex): void {
   for (const assetId of Object.keys(index.prefs)) {
     if (!index.files[assetId]) {
@@ -99,6 +103,7 @@ function dropUnusedPrefs(index: LayerIndex): void {
   }
 }
 
+/** Stable on-device name: `{assetId}-{contentHash}.pmtiles`. */
 function filenameFor(layer: ContextualLayerListing): string {
   return `${layer.id}-${layer.contentHash}.${normalizedMapAssetExtension(layer.kind)}`;
 }
@@ -119,6 +124,7 @@ async function bindStoredLayerReader(filename: string): Promise<TileByteRead> {
   return (offset, length) => readBlobRange(file, offset, length);
 }
 
+/** Write PMTiles bytes into the browser Origin Private File System. */
 async function writeBrowserFile(
   filename: string,
   bytes: Uint8Array
@@ -135,6 +141,7 @@ async function writeBrowserFile(
 
 const browserObjectUrls = new Map<string, string>();
 
+/** Delete one stored file and revoke any browser object URL. */
 async function removeDeviceFile(filename: string): Promise<void> {
   const objectUrl = browserObjectUrls.get(filename);
   if (objectUrl) {
@@ -153,6 +160,10 @@ async function removeDeviceFile(filename: string): Promise<void> {
   await dir.removeEntry(filename).catch(() => undefined);
 }
 
+/**
+ * URL the map renderer can fetch. Native uses a Capacitor file URI;
+ * the browser caches an object URL for the OPFS blob.
+ */
 async function urlForFile(filename: string): Promise<string> {
   if (Capacitor.isNativePlatform()) {
     const {uri} = await Filesystem.getUri({
@@ -174,6 +185,10 @@ async function urlForFile(filename: string): Promise<string> {
   return url;
 }
 
+/**
+ * Stored paint prefs for a file, or file-default style with a stack
+ * `zIndex` from `order` when none have been saved.
+ */
 function prefsFor(
   file: StoredFile,
   prefs: LayerPrefs | undefined,
@@ -198,6 +213,7 @@ function prefsFor(
   };
 }
 
+/** Drop an empty `labelField` so it is not persisted. */
 function storeLayerPrefs(prefs: LayerPrefs): LayerPrefs {
   if (!prefs.labelField) {
     const {labelField: _labelField, ...rest} = prefs;
@@ -240,6 +256,7 @@ function nextUnusedZIndex(prefs: Record<string, LayerPrefs>): number {
   return max + 1;
 }
 
+/** Overlay stored paint prefs onto a loaded map layer. */
 function applyStoredPrefs(
   layer: ContextualMapLayer,
   prefs: LayerPrefs
@@ -257,12 +274,14 @@ function applyStoredPrefs(
   };
 }
 
+/** Last listing hash the user was shown for this survey, if any. */
 export async function getSeenContextualLayersHash(
   projectId: string
 ): Promise<string | undefined> {
   return readIndex().seenHashByProject[projectId];
 }
 
+/** Record that the user has seen this survey's current layer listing. */
 export async function markContextualLayersSeen(
   projectId: string,
   hash: string
@@ -311,6 +330,7 @@ export async function loadStoredContextualLayer(
   return layerFromFile(file, prefs, true);
 }
 
+/** Build a map-ready layer from a stored file and its paint prefs. */
 async function layerFromFile(
   file: StoredFile,
   prefs: LayerPrefs,
@@ -340,6 +360,7 @@ async function layerFromFile(
   };
 }
 
+/** Merge a paint-pref patch for one stored layer. Missing files are a no-op. */
 export async function updateContextualLayerPrefs(
   assetId: string,
   patch: Partial<LayerPrefs>
@@ -357,6 +378,10 @@ export async function updateContextualLayerPrefs(
   writeIndex(index);
 }
 
+/**
+ * Move a survey overlay up or down in the stack and persist the new
+ * `zIndex` values. A no-op when the layer is already at that edge.
+ */
 export async function moveContextualLayer(
   projectId: string,
   assetId: string,
@@ -450,6 +475,10 @@ async function ensureNativeMapAssetsDir(): Promise<void> {
   }
 }
 
+/**
+ * Stream a presigned URL onto the native Data directory with progress
+ * events. Ensures `map-assets/` exists first (Android will not mkdir).
+ */
 async function downloadNativeLayerFile(
   url: string,
   filename: string,
@@ -480,12 +509,18 @@ async function downloadNativeLayerFile(
   }
 }
 
+/** Download missing/updated layers and index them, serialized with other file writes. */
 export async function downloadContextualLayers(
   args: DownloadContextualLayersArgs
 ): Promise<void> {
   return runFileIndexMutation(() => downloadAndIndexContextualLayers(args));
 }
 
+/**
+ * Fetch each listing that is missing or whose `contentHash` changed,
+ * write the file, and update the persisted index. Same-hash layers are
+ * reused. Progress is reported as a 0–1 completion across the batch.
+ */
 async function downloadAndIndexContextualLayers({
   serverUrl,
   token,
@@ -604,6 +639,10 @@ async function downloadAndIndexContextualLayers({
   }
 }
 
+/**
+ * Publish a files snapshot, keep in-flight style edits, drop unused
+ * prefs, and delete files the snapshot no longer names.
+ */
 async function commitFiles(
   snapshot: LayerIndex,
   previous: LayerIndex['files']
@@ -753,6 +792,7 @@ export async function removeContextualLayerFromDevice(
 
 export const CONTEXTUAL_LAYERS_CHANGED_EVENT = 'contextual-layers-changed';
 
+/** Broadcast that a survey's on-device layer set changed. */
 export function notifyContextualLayersChanged(projectId: string): void {
   dispatchEvent(
     new CustomEvent(CONTEXTUAL_LAYERS_CHANGED_EVENT, {detail: {projectId}})

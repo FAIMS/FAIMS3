@@ -936,6 +936,7 @@ const testEmailAddress = configFields.runningUnderTest
     ? undefined
     : _email.testEmailAddress;
 
+/** Mock storage under test; otherwise the configured S3/RustFS provider. */
 function resolveAttachmentStorageType(): AttachmentStorageType {
   if (configFields.runningUnderTest) {
     console.log('Since we are testing, using mock attachment storage.');
@@ -1019,6 +1020,7 @@ const attachmentStorage =
     ? resolveAttachmentStorageConfig()
     : TEST_ATTACHMENT_STORAGE_CONFIG;
 
+/** Split a comma-separated env value, trimming blanks. */
 function splitCsv(value: string | undefined): string[] {
   if (configHelpers.isBlank(value)) {
     return [];
@@ -1029,6 +1031,7 @@ function splitCsv(value: string | undefined): string[] {
     .filter(part => part.length > 0);
 }
 
+/** Mock capacity under test; otherwise FIXED or ECS from env. */
 function resolveCapacityProviderType(): CapacityProviderType {
   if (configFields.runningUnderTest) {
     return CapacityProviderType.MOCK;

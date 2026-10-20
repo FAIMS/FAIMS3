@@ -84,6 +84,10 @@ interface SelectedRecordPopoverContentProps {
  * the popover button, and for tap detection. */
 const SHORT_WAIT_CONSTANT = 400;
 
+/**
+ * True when two form-id → bbox maps have the same keys and extents.
+ * Used to skip overview-map recentering when the record set did not move.
+ */
 function formExtentsEqual(
   left: Record<string, [number, number, number, number]>,
   right: Record<string, [number, number, number, number]>

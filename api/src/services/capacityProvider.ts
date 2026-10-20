@@ -59,10 +59,12 @@ export class FixedCapacityProvider extends BaseCapacityProvider {
     this.replicas = replicas;
   }
 
+  /** Report the configured replica count as already running. */
   async getCapacity(): Promise<CapacitySnapshot> {
     return {running: this.replicas, pending: 0};
   }
 
+  /** Log the request; a FIXED pool is already running. */
   async ensureCapacity(desired: number): Promise<void> {
     console.log(
       `[capacity] FIXED pool (${this.replicas} running); not changing capacity (wanted ${desired})`
@@ -86,10 +88,12 @@ export class MockCapacityProvider extends BaseCapacityProvider {
     this.pending = pending;
   }
 
+  /** Current in-memory running/pending counts. */
   async getCapacity(): Promise<CapacitySnapshot> {
     return {running: this.running, pending: this.pending};
   }
 
+  /** Raise `running` up to `desired`; never lowers it. */
   async ensureCapacity(desired: number): Promise<void> {
     this.ensured.push(desired);
     const have = this.running + this.pending;
@@ -228,6 +232,7 @@ export class EcsCapacityProvider extends BaseCapacityProvider {
     this.ecs = ecs;
   }
 
+  /** Count RUNNING and PENDING tasks for the worker family. */
   async getCapacity(): Promise<CapacitySnapshot> {
     const [running, pending] = await Promise.all([
       this.countTasks('RUNNING'),
@@ -236,6 +241,7 @@ export class EcsCapacityProvider extends BaseCapacityProvider {
     return {running, pending};
   }
 
+  /** RunTask enough new workers to close the gap; never stops existing ones. */
   async ensureCapacity(desired: number): Promise<void> {
     const snapshot = await this.getCapacity();
     let gap = desired - snapshot.running - snapshot.pending;
@@ -262,6 +268,7 @@ export class EcsCapacityProvider extends BaseCapacityProvider {
     }
   }
 
+  /** Paginated ListTasks count for one desired status. */
   private async countTasks(
     desiredStatus: 'RUNNING' | 'PENDING'
   ): Promise<number> {

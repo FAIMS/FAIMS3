@@ -19,10 +19,15 @@ import path from 'path';
 import {withMapAssetProcessingWait} from '../../logging';
 import {safeUploadFilename, type UploadedMapFile} from './uploadRules';
 
+/** Per-asset temp directory under the OS tmpdir. */
 export function mapAssetStagingDir(assetId: string): string {
   return path.join(tmpdir(), 'faims-map-uploads', assetId);
 }
 
+/**
+ * Move multer files (or write in-memory bytes) into the asset staging
+ * directory and drop the leftover multer folder.
+ */
 export async function stageUploadFiles(
   assetId: string,
   files: UploadedMapFile[]
@@ -67,6 +72,7 @@ export async function stageUploadFiles(
   );
 }
 
+/** Create the staging directory and return disk paths for each filename. */
 export async function ensureStagingPaths(
   assetId: string,
   filenames: string[]
@@ -79,6 +85,10 @@ export async function ensureStagingPaths(
   });
 }
 
+/**
+ * Existing staged files for `filenames`, or `undefined` if any path is
+ * missing (the worker should download from object storage instead).
+ */
 export async function readStagedFiles(
   assetId: string,
   filenames: string[]
@@ -98,10 +108,12 @@ export async function readStagedFiles(
   return files.length > 0 ? files : undefined;
 }
 
+/** Recursively delete the asset staging directory. */
 export async function cleanupStaging(assetId: string): Promise<void> {
   await rm(mapAssetStagingDir(assetId), {recursive: true, force: true});
 }
 
+/** Rename when possible; copy+unlink when the paths cross filesystems. */
 async function moveOrCopy(from: string, to: string): Promise<void> {
   if (path.resolve(from) === path.resolve(to)) {
     return;

@@ -49,6 +49,7 @@ export type MapAssetNormalizeLogContext = {
   onProgress?: (progress: MapAssetProcessingProgress) => void | Promise<void>;
 };
 
+/** Persist the current pipeline stage when the caller supplied `onStage`. */
 async function emitStage(
   logContext: MapAssetNormalizeLogContext | undefined,
   stage: MapAssetProcessingStage
@@ -100,6 +101,10 @@ export function wktFromInfo(info: unknown): string {
   return '';
 }
 
+/**
+ * Throw when GDAL's JSON info has no usable CRS WKT (missing or "unknown").
+ * Vector and raster ingest both require a CRS before reprojection.
+ */
 export function assertHasCrs(info: unknown, filename: string): void {
   const wkt = wktFromInfo(info);
   if (!wkt || /unknown/i.test(wkt)) {
@@ -109,10 +114,15 @@ export function assertHasCrs(info: unknown, filename: string): void {
   }
 }
 
+/** `/vsizip/` prefix for zips so GDAL opens the archive without unzipping. */
 export function gdalSourcePath(filePath: string): string {
   return extensionOf(filePath) === '.zip' ? `/vsizip/${filePath}` : filePath;
 }
 
+/**
+ * Run ogrinfo/gdalinfo JSON and require a CRS. File Geodatabase zips get a
+ * distinct audit detail so ingest logs can tell them apart from shapefile zips.
+ */
 async function inspectCrs(
   source: string,
   filename: string,
@@ -176,10 +186,15 @@ function spatialToolPerformance(): SpatialToolPerformance {
   };
 }
 
+/** GDAL/tippecanoe process env from the current API thread/cache config. */
 function spatialCommandEnv(): NodeJS.ProcessEnv {
   return spatialToolProcessEnv(spatialToolPerformance());
 }
 
+/**
+ * Run `command`, then each fallback name, until one is on PATH.
+ * Throws `missing` only when every name is ENOENT.
+ */
 async function runMapTool(
   command: string,
   args: string[],
@@ -206,6 +221,7 @@ async function runMapTool(
   throw new Error(missing);
 }
 
+/** Run tippecanoe, honouring `TIPPECANOE_BIN` when set. */
 async function runTippecanoe(
   args: string[],
   onStderr?: (chunk: string) => void
@@ -219,6 +235,7 @@ async function runTippecanoe(
   );
 }
 
+/** Run the go-pmtiles CLI (`PMTILES_BIN`, else `pmtiles`, else `go-pmtiles`). */
 async function runPmtiles(args: string[]): Promise<void> {
   const preferred = process.env.PMTILES_BIN;
   await runMapTool(
@@ -284,6 +301,10 @@ export function overviewFactors(maxZoom: number): string[] {
   return factors;
 }
 
+/**
+ * Highest `maxzoom` in gdalinfo MBTiles metadata domains.
+ * Returns 0 when GDAL did not report a usable zoom.
+ */
 export function maxZoomFromMbtilesInfo(info: unknown): number {
   if (!info || typeof info !== 'object') {
     return 0;
@@ -302,6 +323,7 @@ export function maxZoomFromMbtilesInfo(info: unknown): number {
   return 0;
 }
 
+/** Axis-aligned bbox of a GeoJSON ring; used for GDAL WGS84 extent rings. */
 export function extentFromRing(ring: number[][]): MapExtent {
   let minX = Infinity;
   let minY = Infinity;
@@ -324,6 +346,10 @@ export function extentFromRing(ring: number[][]): MapExtent {
   return [minX, minY, maxX, maxY];
 }
 
+/**
+ * Reproject the vector source to EPSG:4326, tile with tippecanoe, and
+ * return a PMTiles path plus header zoom/extent.
+ */
 async function convertVector(
   gdalSource: string,
   filename: string,
@@ -415,6 +441,10 @@ type GdalInfo = {
   wgs84Extent?: {coordinates?: number[][][]};
 };
 
+/**
+ * Run a GDAL CLI with stdout percent progress forwarded to `onProgress`.
+ * Always finishes the progress tracker so a crash still closes the last tick.
+ */
 async function runRasterGdal({
   command,
   args,
@@ -457,6 +487,10 @@ async function runRasterGdal({
   }
 }
 
+/**
+ * Warp the raster to EPSG:3857, build WebP MBTiles, convert to PMTiles,
+ * and read zoom/extent from the archive header.
+ */
 async function convertRaster(
   sourcePath: string,
   workDir: string,
@@ -649,6 +683,11 @@ export async function normalizeMapUpload(
   }
 }
 
+/**
+ * Common parent directory when every file is already on disk in the same
+ * folder (the worker can skip a copy). `undefined` when files are split
+ * or any entry is in-memory only.
+ */
 export function sharedDiskDirectory(
   files: UploadedMapFile[]
 ): string | undefined {

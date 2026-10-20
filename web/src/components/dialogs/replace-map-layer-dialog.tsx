@@ -12,6 +12,7 @@ import {
 import {Upload} from 'lucide-react';
 import {useState} from 'react';
 
+/** Dialog wrapping {@link ReplaceMapLayerForm} to re-upload layer files. */
 export function ReplaceMapLayerDialog({
   assetId,
   disabled,

@@ -83,14 +83,17 @@ export type MemoryMonitorDeps = {
   intervalMs?: number;
 };
 
+/** Convert bytes to megabytes. */
 function bytesToMb(bytes: number): number {
   return bytes / BYTES_PER_MB;
 }
 
+/** Convert nanoseconds to milliseconds. */
 function nsToMs(ns: number): number {
   return ns / 1e6;
 }
 
+/** Percent change from `baseline`, or `null` when the baseline is not usable. */
 function pctChange(current: number, baseline: number): number | null {
   if (baseline <= 0) {
     return null;
@@ -98,6 +101,7 @@ function pctChange(current: number, baseline: number): number | null {
   return ((current - baseline) / baseline) * 100;
 }
 
+/** Megabytes-per-minute growth over `windowMs`, or `null` if the window is empty. */
 function growMbPerMin(
   currentBytes: number,
   pastBytes: number,
@@ -109,6 +113,7 @@ function growMbPerMin(
   return ((currentBytes - pastBytes) / BYTES_PER_MB) * (60_000 / windowMs);
 }
 
+/** Signed percent for log lines (`+1.2%`, `n/a`). */
 function signedPct(value: number | null): string {
   if (value === null) {
     return 'n/a';
@@ -117,10 +122,12 @@ function signedPct(value: number | null): string {
   return `${sign}${value.toFixed(1)}%`;
 }
 
+/** One-decimal megabyte label for log lines. */
 function mb(value: number): string {
   return `${value.toFixed(1)}MB`;
 }
 
+/** Arithmetic mean, or `null` for an empty list. */
 function mean(values: number[]): number | null {
   if (values.length === 0) {
     return null;
@@ -128,6 +135,7 @@ function mean(values: number[]): number | null {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
+/** Latest sample at or before `atMs`, else the oldest sample. */
 function findSampleAtOrBefore(
   samples: readonly ProcessMemorySample[],
   atMs: number
@@ -140,6 +148,7 @@ function findSampleAtOrBefore(
   return samples[0];
 }
 
+/** V8 old-space used bytes, or 0 when the space is missing. */
 function oldSpaceUsedBytes(): number {
   const old = v8
     .getHeapSpaceStatistics()
@@ -147,6 +156,7 @@ function oldSpaceUsedBytes(): number {
   return old?.space_used_size ?? 0;
 }
 
+/** One process + V8 heap snapshot, optionally with event-loop delay. */
 export function collectProcessMemorySample(
   atMs: number,
   eventLoop?: IntervalHistogram
@@ -170,6 +180,10 @@ export function collectProcessMemorySample(
   };
 }
 
+/**
+ * Trends, peaks, and leak hints from a sample ring buffer.
+ * Returns `undefined` when there are no samples yet.
+ */
 export function computeMemoryDiagnostics(
   samples: readonly ProcessMemorySample[]
 ): MemoryDiagnostics | undefined {
@@ -315,6 +329,7 @@ export function computeMemoryDiagnostics(
   };
 }
 
+/** Single `[MemoryMonitor]` stdout line for one diagnostics snapshot. */
 export function formatMemoryDiagnostics(diag: MemoryDiagnostics): string {
   const heapUtil = `${diag.heapUsedMb.toFixed(1)}/${diag.heapTotalMb.toFixed(1)}MB`;
   const elag =
@@ -372,6 +387,7 @@ export class MemoryMonitor {
     return this.timer !== undefined;
   }
 
+  /** Start the 1 Hz sampler. Idempotent; the timer is `unref`'d. */
   start(): void {
     if (this.timer) {
       return;
@@ -389,6 +405,7 @@ export class MemoryMonitor {
     this.timer.unref();
   }
 
+  /** Stop the sampler and log peak heap/RSS. */
   stop(): void {
     if (this.timer) {
       clearInterval(this.timer);
@@ -405,6 +422,7 @@ export class MemoryMonitor {
     );
   }
 
+  /** Collect one sample, drop old ones, and log diagnostics. */
   tick(): MemoryDiagnostics | undefined {
     const sample = this.collect();
     this.record(sample);
@@ -418,10 +436,12 @@ export class MemoryMonitor {
     return diag;
   }
 
+  /** Diagnostics from the current ring buffer, without logging. */
   latest(): MemoryDiagnostics | undefined {
     return computeMemoryDiagnostics(this.samples);
   }
 
+  /** Append a sample and drop anything older than the 10-minute window. */
   private record(sample: ProcessMemorySample): void {
     this.samples.push(sample);
     const cutoff = sample.atMs - MEMORY_MONITOR_LONG_WINDOW_MS;
@@ -430,6 +450,7 @@ export class MemoryMonitor {
     }
   }
 
+  /** Live process + event-loop sample when no collector was injected. */
   private collectLive(): ProcessMemorySample {
     return collectProcessMemorySample(this.now(), this.histogram);
   }

@@ -13,6 +13,7 @@ export const Route = createFileRoute('/_protected/map-layers/')({
   component: MapLayersPage,
 });
 
+/** Control Centre library listing of map layers the user can see. */
 function MapLayersPage() {
   const user = useRequiredUser();
   const navigate = useNavigate();

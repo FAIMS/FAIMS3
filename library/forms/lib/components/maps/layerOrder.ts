@@ -11,10 +11,12 @@ export type StackedLayer = {
   zIndex: number;
 };
 
+/** Finite zIndex, or 0 when the stored value is not a number. */
 function stackValue(zIndex: number): number {
   return Number.isFinite(zIndex) ? zIndex : 0;
 }
 
+/** True when every layer has a distinct stack value. */
 function zValuesAreUnique<T extends StackedLayer>(layers: T[]): boolean {
   const seen = new Set<number>();
   for (const layer of layers) {

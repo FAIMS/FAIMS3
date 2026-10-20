@@ -13,6 +13,10 @@ import {tmpdir} from 'os';
 import {ServiceUnavailableException} from '../../exceptions';
 import {logMapAssetProcessing} from '../../logging';
 
+/**
+ * Available bytes on the filesystem that holds `directory`.
+ * Returns `undefined` when `statfs` fails so callers can skip the check.
+ */
 export async function freeDiskBytes(
   directory: string = tmpdir()
 ): Promise<number | undefined> {

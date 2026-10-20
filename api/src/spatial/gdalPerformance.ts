@@ -39,6 +39,7 @@ const FGB_GEOMETRY_FAMILY: Record<string, 'point' | 'line' | 'polygon'> = {
   multipolygon: 'polygon',
 };
 
+/** Lowercase GDAL geometry type without spaces, 25D, or Z/M suffixes. */
 function canonicalGeometryType(raw: string): string {
   return raw
     .toLowerCase()
@@ -78,6 +79,10 @@ export function geometryFieldTypes(info: unknown): string[] {
   return types;
 }
 
+/**
+ * FlatGeobuf `-nlt` when every layer is one family (point / line / polygon).
+ * Mixed or unknown types return `undefined` so the caller uses GeoJSONSeq.
+ */
 function concreteFgbNlt(types: string[]): string | undefined {
   const families = new Set<'point' | 'line' | 'polygon'>();
   for (const raw of types) {
@@ -180,6 +185,7 @@ export function gdalConfigArgs(perf: SpatialToolPerformance): string[] {
   ];
 }
 
+/** gdalwarp thread, cache, and tiled-GeoTIFF creation options. */
 export function gdalWarpPerformanceArgs(
   perf: SpatialToolPerformance
 ): string[] {
@@ -195,6 +201,11 @@ export function gdalWarpPerformanceArgs(
   ];
 }
 
+/**
+ * ogr2ogr args for a geometry-only EPSG:4326 intermediate.
+ * FlatGeobuf skips `-explodecollections` so MultiPolygon layers stay valid;
+ * GeoJSONSeq explodes collections so tippecanoe sees ordinary features.
+ */
 export function ogr2ogrGeometryArgs(
   outputPath: string,
   gdalSource: string,
@@ -230,6 +241,7 @@ export function ogr2ogrGeometryArgs(
   ];
 }
 
+/** tippecanoe args: PMTiles out, drop-densest, JSON progress every 5s. */
 export function tippecanoeVectorArgs(
   pmtilesPath: string,
   inputPath: string

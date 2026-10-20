@@ -78,15 +78,19 @@ export interface IAttachmentStorageService {
   /** Join the configured prefix with path parts to form a stored key. */
   objectKey(...parts: string[]): string;
 
+  /** Put an object and return the location metadata stored on the Couch document. */
   upload(params: UploadAttachmentParams): Promise<StoredAttachmentLocation>;
 
+  /** Stream an object body from storage. */
   download(params: {location: StoredAttachmentLocation}): Promise<Readable>;
 
+  /** Stream an object onto disk without buffering the whole body. */
   downloadToFile(params: {
     location: StoredAttachmentLocation;
     destPath: string;
   }): Promise<void>;
 
+  /** Time-limited GET URL. `publicEndpoint` is used when browsers cannot reach the internal host. */
   getPresignedDownloadURL(params: {
     location: StoredAttachmentLocation;
     expiresInSeconds?: number;
@@ -94,23 +98,31 @@ export interface IAttachmentStorageService {
     filename?: string;
   }): Promise<string>;
 
+  /** Time-limited PUT URL for a client-direct upload. */
   getPresignedUploadURL(params: {
     key: string;
     contentType: string;
     expiresInSeconds?: number;
   }): Promise<PresignedUploadResult>;
 
+  /** Remove an object. Missing keys are not an error. */
   delete(params: {location: StoredAttachmentLocation}): Promise<void>;
 
+  /** True when the object is present. */
   exists(params: {location: StoredAttachmentLocation}): Promise<boolean>;
 }
 
 const DEFAULT_PRESIGN_EXPIRY_SECONDS = 15 * 60;
 
+/** Strip leading and trailing slashes from an object-key prefix. */
 export function normalizePrefix(prefix: string): string {
   return prefix.replace(/^\/+|\/+$/g, '');
 }
 
+/**
+ * Join prefix + path parts into an object key, dropping `..` and empty
+ * segments so a filename cannot walk out of the prefix.
+ */
 export function joinObjectKey(prefix: string, ...parts: string[]): string {
   const normalized = normalizePrefix(prefix);
   const safe = parts
@@ -136,6 +148,10 @@ export function formatS3ResourceUri({
   return `s3://${region}/${bucket}/${key.replace(/^\/+/, '')}`;
 }
 
+/**
+ * Split `s3://{region}/{bucket}/{key}` back into parts.
+ * Throws when the URI is missing any component.
+ */
 export function parseS3ResourceUri(resourceUri: string): {
   region: string;
   bucket: string;
@@ -157,6 +173,7 @@ export function parseS3ResourceUri(resourceUri: string): {
   return {region, bucket, key};
 }
 
+/** Buffer an upload/download body (Buffer, Uint8Array, or async iterable). */
 export async function collectAttachmentBody(
   body: AttachmentBody
 ): Promise<Buffer> {
@@ -185,10 +202,12 @@ abstract class BaseAttachmentStorageService implements IAttachmentStorageService
     };
   }
 
+  /** Object key under the configured prefix. */
   objectKey(...parts: string[]): string {
     return joinObjectKey(this.config.prefix, ...parts);
   }
 
+  /** Build Couch location metadata for a key that was just written. */
   protected locationFor({
     key,
     contentType,
@@ -238,6 +257,10 @@ abstract class BaseAttachmentStorageService implements IAttachmentStorageService
   }): Promise<boolean>;
 }
 
+/**
+ * AWS SDK client options: custom endpoint for RustFS, path-style when
+ * needed, and explicit keys when they are not coming from the default chain.
+ */
 function s3ClientConfig(
   config: AttachmentStorageConfig,
   endpointOverride?: string
@@ -261,6 +284,7 @@ function s3ClientConfig(
   return clientConfig;
 }
 
+/** Coerce an S3 GetObject body to a Node `Readable`. */
 function asNodeReadable(body: unknown): Readable {
   if (body instanceof Readable) {
     return body;
@@ -296,6 +320,7 @@ export class S3AttachmentStorageService extends BaseAttachmentStorageService {
         : this.client;
   }
 
+  /** Create the bucket once; later calls share the same in-flight promise. */
   private async ensureReady(): Promise<void> {
     if (!this.ready) {
       this.ready = this.ensureBucket().catch(error => {
@@ -306,6 +331,10 @@ export class S3AttachmentStorageService extends BaseAttachmentStorageService {
     await this.ready;
   }
 
+  /**
+   * Head the bucket and create it when missing. 403 is ignored so a
+   * locked-down policy can still upload into an existing bucket.
+   */
   private async ensureBucket(): Promise<void> {
     let missing = false;
     try {
@@ -370,6 +399,7 @@ export class S3AttachmentStorageService extends BaseAttachmentStorageService {
     );
   }
 
+  /** Multipart-upload `body` to S3/RustFS and return the stored location. */
   async upload({
     key,
     body,
@@ -396,6 +426,7 @@ export class S3AttachmentStorageService extends BaseAttachmentStorageService {
     return this.locationFor({key, contentType, byteSize});
   }
 
+  /** GetObject as a Node readable. */
   async download({
     location,
   }: {
@@ -415,6 +446,7 @@ export class S3AttachmentStorageService extends BaseAttachmentStorageService {
     return asNodeReadable(response.Body);
   }
 
+  /** Pipe GetObject onto `destPath`. */
   async downloadToFile({
     location,
     destPath,
@@ -426,6 +458,7 @@ export class S3AttachmentStorageService extends BaseAttachmentStorageService {
     await pipeline(body, createWriteStream(destPath));
   }
 
+  /** Host-reachable signed GET, using `publicEndpoint` when set. */
   async getPresignedDownloadURL({
     location,
     expiresInSeconds = DEFAULT_PRESIGN_EXPIRY_SECONDS,
@@ -455,6 +488,7 @@ export class S3AttachmentStorageService extends BaseAttachmentStorageService {
     );
   }
 
+  /** Signed PUT for a client-direct upload. */
   async getPresignedUploadURL({
     key,
     contentType,
@@ -480,6 +514,7 @@ export class S3AttachmentStorageService extends BaseAttachmentStorageService {
     };
   }
 
+  /** DeleteObject; a missing key is not an error. */
   async delete({
     location,
   }: {
@@ -495,6 +530,7 @@ export class S3AttachmentStorageService extends BaseAttachmentStorageService {
     );
   }
 
+  /** HeadObject; 404 is `false`. */
   async exists({
     location,
   }: {
@@ -615,14 +651,17 @@ export class MockAttachmentStorageService extends BaseAttachmentStorageService {
     return this.objects.has(this.objectMapKey(location));
   }
 
+  /** Snapshot of objects currently in the mock store (tests). */
   getStoredObjects(): StoredMockObject[] {
     return [...this.objects.values()];
   }
 
+  /** Empty the mock store. */
   clear(): void {
     this.objects.clear();
   }
 
+  /** Map key for a stored location (the resource URI). */
   private objectMapKey(location: StoredAttachmentLocation): string {
     return location.resourceUri;
   }
