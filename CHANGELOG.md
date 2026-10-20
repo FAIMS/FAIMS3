@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore(deps): bump morgan from 1.11.0 to 1.12.1 ([#2369](https://github.com/FAIMS/FAIMS3/pull/2369))
 - chore(deps): bump multer from 2.3.0 to 2.4.0 ([#2368](https://github.com/FAIMS/FAIMS3/pull/2368))
 - chore(deps): bump nodemailer from 9.1.1 to 10.0.9 ([#2367](https://github.com/FAIMS/FAIMS3/pull/2367))
-- Add named constants for computed expressions (_CONSTANT.PI etc.) ([#2397](https://github.com/FAIMS/FAIMS3/issues/2397))
+- Add named constants for computed expressions (\_CONSTANT.PI etc.) ([#2397](https://github.com/FAIMS/FAIMS3/issues/2397))
 
 ## [1.9.1] - 2026-10-01
 
