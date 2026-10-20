@@ -1,8 +1,16 @@
 {
+  "domains": {
+    "base": "example.com",
+    "protocol": "https",
+    "services": {
+      "conductor": "api",
+      "couch": "db",
+      "web": "dashboard",
+      "app": "app",
+      "docs": "docs"
+    }
+  },
   "endpoints": {
-    "webUrl": "http://localhost:3001",
-    "apiUrl": "http://localhost:8080",
-    "appUrl": "http://localhost:3000",
     "couchdbInternalUrl": "http://localhost:5984",
     "couchdbPublicUrl": "http://localhost:5984",
     "androidAppPublicUrl": "https://play.google.com/store/apps/details?id=org.fedarch.faims3",
