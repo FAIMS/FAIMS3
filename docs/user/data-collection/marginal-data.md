@@ -27,5 +27,5 @@ If the {{notebook}} field has been configured to allow Annotations or Certainty 
 Tap or click on the icon and the marginal data flyout will appear.
 
 ```{note}
-All *Input* and *Structured Data* fields can be configured to include an annotation or certainty flag in the [Notebook Editor](../authoring/quick-start-researchers.md).
+All *Input* and *Structured Data* fields can be configured to include an annotation or certainty flag in the [{{Notebook}} Editor](../authoring/quick-start-researchers.md).
 ```

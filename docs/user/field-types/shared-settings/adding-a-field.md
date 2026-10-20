@@ -6,7 +6,7 @@ _How to open the Add a field dialog and add a new field to your form._
 
 ## The ADD A FIELD Button
 
-Each section in the Notebook Editor has an **ADD A FIELD** button below
+Each section in the {{Notebook}} Editor has an **ADD A FIELD** button below
 the section editing controls and above its **Visible Fields** list.
 **Click** this button to open the Add a field dialog.
 

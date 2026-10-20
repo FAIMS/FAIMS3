@@ -6,7 +6,7 @@ _A guide to selecting the right field type for your data._
 
 ## Overview
 
-When you add a field to a form in the Notebook Editor, the
+When you add a field to a form in the {{Notebook}} Editor, the
 [ADD A FIELD dialog](../shared-settings/adding-a-field.md) presents nearly two dozen
 field types across eight tabs. This guide helps you choose the right one
 by matching your data requirements to specific fields. It covers design

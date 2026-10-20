@@ -6,7 +6,7 @@ _The icon toolbar in each field's header bar._
 
 ## Overview
 
-Every field in the Notebook Editor has a toolbar of icon buttons on
+Every field in the {{Notebook}} Editor has a toolbar of icon buttons on
 the right side of its header bar (the grey bar you click to expand or
 collapse the field). The icons sit to the right of the field's Label,
 type badge, and Helper Text preview. These buttons provide quick
