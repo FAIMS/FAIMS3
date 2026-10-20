@@ -18,7 +18,7 @@ _This guide is organised by common tasks you need to perform, not by system comp
 | Start a new project with {{notebooks}} and team members | [Starting a New Project](#23-starting-a-new-project)                               |
 | Create a new team                                       | [Creating a Team](#24-creating-a-team)                                             |
 | Create or manage invites for system roles               | [Managing Invites → Global invites](#28-managing-invites)                          |
-| Figure out why someone can't see a {{notebook}}         | [Troubleshooting: Can't See a {{Notebook}}](#61-cant-see-a-{{notebook}})           |
+| Figure out why someone can't see a {{notebook}}         | [Troubleshooting: Can't See a {{Notebook}}](#61-cant-see-a-notebook)               |
 | Understand what roles exist                             | [Reference: Role Definitions](#51-role-definitions)                                |
 
 ### 1.2 Role Hierarchy Diagram
@@ -28,6 +28,8 @@ The diagram below shows roles at each of the three levels (System, Team, {{Noteb
 ```{image} ../images/permissions-hierarchy-v2-3.jpeg
 :alt: {{FAIMS}} Permissions Hierarchy Diagram showing three tiers: System Level (Super User with full system control, Operations Administrator for user and team management, Content Creator for {{notebooks}} and templates, General User for basic access), Team Level (Team Administrator, Team Manager, Team Member (Contributor), Team Member (Creator) with warning that Creator gets no automatic {{notebook}} access), and {{Notebook}} Level (Administrator, Manager, Contributor, Guest). Arrows indicate virtual role inheritance from team to {{notebook}} roles. A sidebar shows virtual role inheritance: Super User inherits all roles, Operations Administrator inherits none, Team Administrator grants Administrator, Team Manager grants Manager, Team Member (Contributor) grants Contributor, Team Member (Creator) grants none.
 ```
+
+(13-key-concept-virtual-vs-direct-access)=
 
 ### 1.3 Key Concept: Virtual vs. Direct Access
 
@@ -60,6 +62,8 @@ Understanding virtual and direct access is essential for troubleshooting unexpec
 
 ## 2. Common Tasks
 
+(21-onboarding-a-new-staff-member)=
+
 ### 2.1 Onboarding a New Staff Member
 
 **When to use**: A new team member has joined and needs access to your team's {{notebooks}}.
@@ -89,9 +93,11 @@ The new team member will immediately have virtual access to all team {{notebooks
 
 > **Note:** If you need to assign the Team Administrator role, you must have Operations Administrator or Super User permissions. Regular Team Administrators cannot elevate others to their level.
 
-**See also:** [Troubleshooting: Can't See a {{Notebook}}](#61-cant-see-a-{{notebook}})
+**See also:** [Troubleshooting: Can't See a {{Notebook}}](#61-cant-see-a-notebook)
 
 ---
+
+(22-off-boarding-removing-all-access)=
 
 ### 2.2 Off-boarding: Removing All Access
 
@@ -121,6 +127,8 @@ The new team member will immediately have virtual access to all team {{notebooks
 **See also:** [Troubleshooting: User Has Access But Shouldn't](#65-user-has-access-but-shouldnt)
 
 ---
+
+(23-starting-a-new-project)=
 
 ### 2.3 Starting a New Project
 
@@ -160,6 +168,8 @@ The new team member will immediately have virtual access to all team {{notebooks
 
 ---
 
+(24-creating-a-team)=
+
 ### 2.4 Creating a Team
 
 **When to use**: You need a new organisational unit for a project, department, or collaboration group.
@@ -192,6 +202,8 @@ The new team member will immediately have virtual access to all team {{notebooks
 > **Note:** Most teams are created during initial provisioning. You'll usually be managing existing teams rather than creating new ones.
 
 ---
+
+(25-granting-external-collaborator-access)=
 
 ### 2.5 Granting External Collaborator Access
 
@@ -250,6 +262,8 @@ Alternatively, navigate via **{{Notebooks}}** in the left sidebar if you're not 
 
 ---
 
+(26-changing-someones-role)=
+
 ### 2.6 Changing Someone's Role
 
 **When to use**: A team member needs different permissions (e.g., promotion to manager, temporary elevation for a task).
@@ -276,9 +290,11 @@ Alternatively, navigate via **{{Notebooks}}** in the left sidebar if you're not 
 
 > **Note:** If the user has virtual access from team membership, removing their direct role doesn't remove their access — they'll fall back to their virtual role.
 
-**See also:** [Troubleshooting: Can't Change a User's {{Notebook}} Role](#66-cant-change-a-users-{{notebook}}-role)
+**See also:** [Troubleshooting: Can't Change a User's {{Notebook}} Role](#66-cant-change-a-users-notebook-role)
 
 ---
+
+(27-handing-off-a-project)=
 
 ### 2.7 Handing Off a Project
 
@@ -341,6 +357,8 @@ Use this when transferring a single {{notebook}} while keeping team structure in
 > ⚠️ **Warning**: Never remove yourself before confirming the new Administrator has access. If you remove the last Administrator, no one can manage the {{notebook}}.
 
 ---
+
+(28-managing-invites)=
 
 ### 2.8 Managing Invites
 
@@ -521,6 +539,8 @@ This means they can immediately:
 
 > **Note:** Users do not have the necessary privileges to create their own teams. Teams are typically created during initial provisioning or by a Super User or Operations Administrator, and users are assigned as Team Administrator of their team via an invite.
 
+(34-how-users-are-created)=
+
 ### 3.4 How Users Are Created
 
 In an enterprise deployment, users are created through an invite-based workflow:
@@ -680,6 +700,8 @@ Use this method when you know the user's email address and want to add them imme
 
 The user appears in the team immediately. Only users who have already accepted an invite and signed in via SSO can be added this way.
 
+(adding-a-user-to-your-team-via-invite)=
+
 #### Adding a User to Your Team via Invite
 
 Use this method when you want to share a link or code that users can redeem themselves.
@@ -817,6 +839,8 @@ To transfer a {{notebook}} to a new owner:
 
 ## 5. Reference
 
+(51-role-definitions)=
+
 ### 5.1 Role Definitions
 
 #### System-Wide Roles
@@ -899,6 +923,8 @@ To transfer a {{notebook}} to a new owner:
 
 ## 6. Troubleshooting
 
+(61-cant-see-a-notebook)=
+
 ### 6.1 Can't See a {{Notebook}}
 
 **Possible causes:**
@@ -964,6 +990,8 @@ To transfer a {{notebook}} to a new owner:
 
 ---
 
+(65-user-has-access-but-shouldnt)=
+
 ### 6.5 User Has Access But Shouldn't
 
 **Possible causes:**
@@ -981,6 +1009,8 @@ To transfer a {{notebook}} to a new owner:
 > **Note:** You must remove both team membership AND direct roles to fully revoke access.
 
 ---
+
+(66-cant-change-a-users-notebook-role)=
 
 ### 6.6 Can't Change a User's {{Notebook}} Role
 
