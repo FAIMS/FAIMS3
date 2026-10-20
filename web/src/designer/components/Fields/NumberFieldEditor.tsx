@@ -156,6 +156,9 @@ export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
                   variant="outlined"
                   size="small"
                   fullWidth
+                  slotProps={{
+                    htmlInput: {step: numberType === 'integer' ? 1 : 'any'},
+                  }}
                 />
               </SimpleFieldWrapper>
             </Box>
@@ -169,6 +172,9 @@ export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
                   variant="outlined"
                   size="small"
                   fullWidth
+                  slotProps={{
+                    htmlInput: {step: numberType === 'integer' ? 1 : 'any'},
+                  }}
                 />
               </SimpleFieldWrapper>
             </Box>
