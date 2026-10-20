@@ -1,6 +1,6 @@
 # Take point
 
-_How to add and configure a Take point field in the Notebook Editor._
+_How to add and configure a Take point field in the {{Notebook}} Editor._
 
 ---
 

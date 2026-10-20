@@ -1,6 +1,6 @@
 # Select Field
 
-_How to add and configure a Select Field in the Notebook Editor._
+_How to add and configure a Select Field in the {{Notebook}} Editor._
 
 ---
 
