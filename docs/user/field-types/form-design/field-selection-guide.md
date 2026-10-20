@@ -212,6 +212,8 @@ Choose based on the level of temporal detail you need:
 > is deprecated as a separate field type. Existing fields keep working; for
 > new forms, use **Date time picker** with **Show "Now" button** enabled.
 
+(choices-and-controlled-vocabularies)=
+
 ### Choices and Controlled Vocabularies
 
 The number of options and the selection type determine which field to

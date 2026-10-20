@@ -143,14 +143,14 @@ When you log in to the {{FAIMS}} {{Dashboard}}, you'll see a left sidebar with t
 
 ### Content
 
-- **{{Notebooks}}** — View and manage data collection {{notebooks}}
-- **Templates** — View and manage reusable {{notebook}} templates
+- **{{Notebooks}}**: View and manage data collection {{notebooks}}
+- **Templates**: View and manage reusable {{notebook}} templates
 
 ### Management
 
-- **Users** — View all system users and their roles (requires appropriate permissions)
-- **Teams** — View and manage teams
-- **Archive** — Archived {{notebooks}}, templates, and disabled users
+- **Users**: View all system users and their roles (requires appropriate permissions)
+- **Teams**: View and manage teams
+- **Archive**: Archived {{notebooks}}, templates, and disabled users
 
 ```{screenshot} user-roles/01-dashboard-sidebar.png
 :alt: {{FAIMS}} {{Dashboard}} showing left sidebar with Content section ({{Notebooks}}, Templates) and Management section (Users, Teams, Archive), plus the Users page with Users and Invites tabs, displaying Name, Email, Roles, Reset Password, Impersonate, and Disable columns with role badges such as General User and Super User
@@ -177,18 +177,18 @@ In an enterprise deployment, users are created through an invite-based workflow:
 
 You cannot manually create user accounts through the {{Dashboard}} — users must accept an invite and sign in via SSO to create their account.
 
-> **Note:** SSO auto-provisioning (where user accounts are automatically created on first SSO sign-in with default roles) is under development but not yet deployed. Currently, all user creation requires an invite.
+> **Note:** An enterprise deployment can instead be set to create accounts automatically when people first sign in through the institution's SSO, either as general users or each with a personal team. By default it refuses anyone who has not accepted an invite, and the setting is chosen for each deployment. {{FAIMS}} does not synchronise with an institution's directory (through SCIM or LDAP, for example).
 
 ### Viewing Users
 
 1. Click **Users** in the left sidebar (under Management)
 2. You'll see a table with columns:
-   - **Name** — User's display name
-   - **Email** — User's email address
-   - **Roles** — System roles with "add" button and role badges
-   - **Reset Password** — Not applicable for SSO deployments; password management is handled through your institution's identity provider
-   - **Impersonate** — Sign in as this user to see exactly what they see (not available for your own account or Super Users)
-   - **Disable** — Disable the account so the user can no longer sign in ({{notebooks}} and records they contributed are retained). Disabled users appear under **Archive → Users**, where they can be re-enabled.
+   - **Name**: User's display name
+   - **Email**: User's email address
+   - **Roles**: System roles with "add" button and role badges
+   - **Reset Password**: Not applicable for SSO deployments; password management is handled through your institution's identity provider
+   - **Impersonate**: Sign in as this user to see exactly what they see (not available for your own account or Super Users)
+   - **Disable**: Disable the account so the user can no longer sign in ({{notebooks}} and records they contributed are retained). Disabled users appear under **Archive → Users**, where they can be re-enabled.
 
 The screenshot above shows this view, with the sidebar navigation on the left and the Users table in the main content area.
 
@@ -421,7 +421,7 @@ The **Invites** tab allows you to create invitation links that users can use to 
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Expiry**         | The date/time after which the invite link no longer works. Expired invites cannot be extended — create a new one instead.                            |
 | **Uses remaining** | Limits how many people can use this invite. Use multi-use invites for workshops or group onboarding. Leave unlimited (default) for open invitations. |
-| **QR Code**        | Scannable invite for mobile devices — preferred for in-person onboarding                                                                             |
+| **QR Code**        | Scannable invite for mobile devices, preferred for in-person onboarding                                                                              |
 | **Link**           | A URL that users can open to accept the invitation                                                                                                   |
 | **Code**           | Reveal the invite code for manual entry when a QR/link cannot be used (button labelled **Show code**)                                                |
 
@@ -546,7 +546,7 @@ The Invites tab shows:
 
 Quick share is a temporary QR code created in the app, not from **+ Create Invite**.
 
-On an activated {{notebook}}, someone who can invite opens **Share** (or **Quick share** in Settings), chooses an access level, and generates a QR code. The other person scans it the same way as any other invite. The code lasts one hour. Each person has one live code for that {{notebook}}; generating a new one stops the current code. Creating or replacing a code needs a connection to the server.
+On an activated {{notebook}}, someone who can invite opens **Share** (or **Quick share** in Settings), chooses an access level, and generates a QR code. The other person scans it the same way as any other invite. The code lasts one hour. Each person has one live code for that {{notebook}}. Generating a new one stops the current code. Creating or replacing a code needs a connection to the server.
 
 The code is listed on this **Invites** tab as **Quick share**. Remove it here if it should stop working before it expires.
 
@@ -690,8 +690,7 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
 | View/edit/delete own records |  ✅   |     ✅      |   ✅    |      ✅       |
 | View all records             |  ❌   |     ✅      |   ✅    |      ✅       |
 | Edit/delete others' records  |  ❌   |     ✅      |   ✅    |      ✅       |
-| Export own data              |  ✅   |     ✅      |   ✅    |      ✅       |
-| Export all {{notebook}} data |  ❌   |     ❌      |   ✅    |      ✅       |
+| Export {{notebook}} data     |  ❌   |     ❌      |   ✅    |      ✅       |
 | Edit {{notebook}} design     |  ❌   |     ❌      |   ✅    |      ✅       |
 | Close/reopen {{notebook}}    |  ❌   |     ❌      |   ✅    |      ✅       |
 | Reassign to different team   |  ❌   |     ❌      |   ✅    |      ✅       |
@@ -703,7 +702,7 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
 | Action                                   | Team Member (Contributor) | Team Member (Creator) | Team Manager |             Team Administrator              |
 | ---------------------------------------- | :-----------------------: | :-------------------: | :----------: | :-----------------------------------------: |
 | View team details and members            |            ✅             |          ✅           |      ✅      |                     ✅                      |
-| View team templates                      |            ✅             |          ❌           |      ✅      |                     ✅                      |
+| View team templates                      |            ✅             |          ✅           |      ✅      |                     ✅                      |
 | Access team {{notebooks}} (virtual role) |            ✅             |          ❌           |      ✅      |                     ✅                      |
 | Create {{notebooks}} in team             |            ❌             |          ✅           |      ✅      |                     ✅                      |
 | Create templates in team                 |            ❌             |          ❌           |      ✅      |                     ✅                      |
@@ -716,7 +715,7 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
 
 > ⚠️ **Note**: Team Member (Creator) can create {{notebooks}} but does NOT automatically get access to existing team {{notebooks}}. This is by design for teaching environments where students create isolated {{notebooks}}.
 >
-> Virtual roles: Team Member (Contributor) automatically receives **Contributor** access to team {{notebooks}}. Team Manager automatically receives **Manager** access. Team Administrator inherits Manager's virtual role. Team Member (Creator) receives **no** virtual {{notebook}} access.
+> Virtual roles: Team Member (Contributor) automatically receives **Contributor** access to team {{notebooks}}. Team Manager automatically receives **Manager** access. Team Administrator automatically receives **Administrator** access. Team Member (Creator) receives **no** virtual {{notebook}} access.
 
 ---
 
@@ -775,5 +774,5 @@ Remove from both locations if needed.
 
 ---
 
-_Guide Version: 1.9_
-_Last Updated: 2026-08-13_
+_Guide Version: 1.10_
+_Last Updated: 2026-10-20_
