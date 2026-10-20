@@ -34,6 +34,7 @@ import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {useIsOnline} from '../../../utils/customHooks';
 import BackButton from '../ui/BackButton';
+import {ListingPage} from '../ui/listing-page';
 import {
   DownloadOfflineMapBanner,
   DownloadOfflineMapStatus,
@@ -67,7 +68,7 @@ export function DownloadOfflineMap() {
   // Temporarily bypass the navigation blocker after a successful save.
   const allowNavigationRef = useRef(false);
 
-  // Offline downloads are vector-only — omit satellite so the layer toggle is hidden
+  // Offline downloads are vector-only — omit satellite from the layers panel
   const mapConfig = useMemo(() => {
     const {satelliteSource: _satellite, ...vectorOnly} = getMapConfig();
     return vectorOnly;
@@ -195,7 +196,7 @@ export function DownloadOfflineMap() {
       });
 
       allowNavigationRef.current = true;
-      navigate(ROUTES.OFFLINE_MAPS);
+      navigate(ROUTES.OFFLINE_MAP_REGIONS);
     } catch (saveError) {
       setError(
         saveError instanceof Error ? saveError.message : 'Could not save map'
@@ -226,15 +227,7 @@ export function DownloadOfflineMap() {
         : 'pending';
 
   return (
-    <Box
-      sx={{
-        mx: 'auto',
-        width: '100%',
-        height: '100%',
-        px: 2,
-        pt: 3,
-      }}
-    >
+    <ListingPage>
       <Stack direction="column" spacing={2}>
         <Stack
           direction="row"
@@ -244,7 +237,7 @@ export function DownloadOfflineMap() {
             alignItems: 'center',
           }}
         >
-          <BackButton link={ROUTES.OFFLINE_MAPS} />
+          <BackButton link={ROUTES.OFFLINE_MAP_REGIONS} />
           <Typography
             variant="h4"
             sx={{flex: 1, minWidth: 0, textAlign: 'center'}}
@@ -358,6 +351,6 @@ export function DownloadOfflineMap() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </ListingPage>
   );
 }

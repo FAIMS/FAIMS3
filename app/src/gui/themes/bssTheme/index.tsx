@@ -84,6 +84,11 @@ const baseTheme = createTheme({
       buttonActiveBackground: mapControlBrand.activeMain,
       buttonActiveBackgroundHover: mapControlBrand.activeHover,
       buttonForeground: '#FFFFFF',
+      scrim: mapControlBrand.scrim,
+      sheetShadow: mapControlBrand.sheetShadow,
+      locationRing: mapControlBrand.locationRing,
+      satelliteSwatch: mapControlBrand.satelliteSwatch,
+      vectorSwatch: mapControlBrand.vectorSwatch,
     },
     history: {
       marker: bssBrand.infoMain,

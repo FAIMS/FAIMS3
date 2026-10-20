@@ -17,6 +17,15 @@ export const INDIVIDUAL_NOTEBOOK_ROUTE = `/${config.notebookNamePlural}/`;
 export const NOTEBOOK_LIST_ROUTE = '/';
 export const ABOUT_BUILD = '/about-build';
 export const OFFLINE_MAPS = '/offline-maps';
+export const OFFLINE_MAP_REGIONS = `${OFFLINE_MAPS}/regions`;
+export const OFFLINE_MAP_LAYERS = `${OFFLINE_MAPS}/layers`;
+
+/**
+ * @returns /offline-maps/layers/<assetId>
+ */
+export function getOfflineMapLayerPreviewRoute({assetId}: {assetId: string}) {
+  return `${OFFLINE_MAP_LAYERS}/${encodeURIComponent(assetId)}`;
+}
 export const OFFLINE_MAP_NEW = `${OFFLINE_MAPS}/new`;
 export const AUTOINCREMENT = '/autoincrements/';
 export const PROJECT_ATTACHMENT = '/attachment/';

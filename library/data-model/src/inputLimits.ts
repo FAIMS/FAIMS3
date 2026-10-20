@@ -9,9 +9,10 @@ import {z} from 'zod';
  * library. They exist to stop maliciously long inputs from being accepted,
  * not to constrain legitimate use — so each is deliberately generous.
  *
- * Server-side byte limits (JSON body size, upload size) are configured via
- * environment variables in `api/src/buildconfig.ts`; browser-side file size
- * limits are configured in `web/src/constants.ts`. The character limits here
+ * Server-side JSON and restore upload sizes are configured via environment
+ * variables in `api/src/buildconfig.ts`. Map-layer upload size is a shared
+ * constant here so the Control Centre and API stay aligned. Other browser
+ * file-size limits live in `web/src/constants.ts`. The character limits here
  * are the shared contract between client and server validation.
  */
 export const INPUT_LIMITS = {
@@ -21,7 +22,7 @@ export const INPUT_LIMITS = {
   PASSWORD_MAX_LENGTH: 128,
   /** Human display names (people). */
   PERSON_NAME_MAX_LENGTH: 100,
-  /** Names of projects/notebooks, templates and teams. */
+  /** Names of projects/notebooks, templates, teams and map layers. */
   RESOURCE_NAME_MIN_LENGTH: 5,
   RESOURCE_NAME_MAX_LENGTH: 100,
   /** Team descriptions (root project/template descriptions are capped separately at 250). */
@@ -44,17 +45,69 @@ export const INPUT_LIMITS = {
   LONG_TEXT_MAX_LENGTH: 10000,
   /** Serialized size cap for a notebook/template ui-specification (design file). */
   UI_SPEC_MAX_BYTES: 10 * 1024 * 1024, // 10 MiB
+  /**
+   * Combined size of a map-layer upload (primary file plus companions).
+   * Bytes go to object storage, not CouchDB attachments.
+   */
+  MAP_ASSET_UPLOAD_MAX_BYTES: 2 * 1024 * 1024 * 1024, // 2 GiB
+  /**
+   * Combined uncompressed size of a map-layer zip on the spatial worker.
+   * Four times the compressed upload cap leaves room for a File Geodatabase
+   * while blocking zip bombs.
+   */
+  MAP_ASSET_EXTRACT_MAX_BYTES: 8 * 1024 * 1024 * 1024, // 8 GiB
+  /** Maximum files in one map-layer upload (primary plus companions). */
+  MAP_ASSET_UPLOAD_MAX_FILES: 8,
   /** Maximum entries accepted in the record sync-status map. */
   RECORD_MAP_MAX_ENTRIES: 10000,
 } as const;
+
+/** User-facing size for {@link INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_BYTES}. */
+export function mapAssetUploadMaxLabel(): string {
+  const gb = INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_BYTES / (1024 * 1024 * 1024);
+  return Number.isInteger(gb) ? `${gb} GB` : `${gb.toFixed(1)} GB`;
+}
+
+/** Validation message when a map-layer upload exceeds the shared size cap. */
+export function mapAssetUploadTooLargeMessage(): string {
+  return `Files must be at most ${mapAssetUploadMaxLabel()}.`;
+}
+
+/** User-facing size for {@link INPUT_LIMITS.MAP_ASSET_EXTRACT_MAX_BYTES}. */
+export function mapAssetExtractMaxLabel(): string {
+  const gb = INPUT_LIMITS.MAP_ASSET_EXTRACT_MAX_BYTES / (1024 * 1024 * 1024);
+  return Number.isInteger(gb) ? `${gb} GB` : `${gb.toFixed(1)} GB`;
+}
+
+/** Validation message when a zip would unpack larger than the extract cap. */
+export function mapAssetExtractTooLargeMessage(): string {
+  return `Unzipped map layer must be at most ${mapAssetExtractMaxLabel()}.`;
+}
+
+/**
+ * Shown when the API rejects a map-layer upload because this node does not
+ * have enough free disk for the original plus a copy while it uploads to
+ * object storage. GDAL scratch lives on the spatial worker.
+ */
+export const MAP_ASSET_UPLOAD_BUSY_MESSAGE =
+  'The server is busy right now, please try again later. If this continues, please seek support via your system administrator.';
+
+/**
+ * Free bytes that must remain on the upload filesystem before a stream is
+ * accepted. Three times the upload cap covers the original plus a copy
+ * while it streams to object storage. GDAL scratch lives on the spatial worker.
+ */
+export const MAP_ASSET_UPLOAD_FREE_DISK_BYTES =
+  INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_BYTES * 3;
 
 /** Bounded trimmed string builder for zod request schemas. */
 export const boundedString = (max: number, label = 'Value') =>
   z.string().trim().max(max, `${label} must be at most ${max} characters`);
 
 /**
- * Name of a project/notebook, template or team. Bounded at both ends so the
- * same min/max applies on every route that creates or edits a resource name.
+ * Name of a project/notebook, template, team or map layer. Bounded at both
+ * ends so the same min/max applies on every route that creates or edits a
+ * resource name.
  */
 export const resourceNameString = (label = 'Name') =>
   z

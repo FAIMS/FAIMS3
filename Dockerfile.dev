@@ -1,27 +1,83 @@
-# Base including pnpm setup
-FROM node:24 AS base
+# syntax=docker/dockerfile:1
 
-# Install pnpm
+# GDAL, tippecanoe, and pmtiles. Shared by the full dev runtime and the
+# lighter worker image so the compile happens once per machine.
+FROM node:24-slim AS spatial-tools
+
+# Debian bookworm gdal-bin is 3.6 (no ogrinfo -json). conda-forge is 3.13.3,
+# matching current GDAL releases. `libgdal` pulls the PDF/WEBP plugins.
+ENV PATH="/opt/gdal/bin:${PATH}" \
+    GDAL_DATA="/opt/gdal/share/gdal" \
+    GDAL_DRIVER_PATH="/opt/gdal/lib/gdalplugins" \
+    PROJ_DATA="/opt/gdal/share/proj" \
+    PROJ_LIB="/opt/gdal/share/proj"
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    unzip curl ca-certificates bzip2 \
+    build-essential libsqlite3-dev zlib1g-dev git \
+  && arch="$(uname -m)" \
+  && case "$arch" in \
+       x86_64) mamba_arch=linux-64 ;; \
+       aarch64) mamba_arch=linux-aarch64 ;; \
+       *) echo "unsupported architecture $arch" && exit 1 ;; \
+     esac \
+  && curl -fsSL "https://micro.mamba.pm/api/micromamba/${mamba_arch}/2.3.3" \
+    | tar -xj -C /tmp bin/micromamba \
+  && /tmp/bin/micromamba create -y -p /opt/gdal -c conda-forge \
+    "gdal=3.13.3" \
+    "libgdal=3.13.3" \
+  && rm -rf /tmp/bin /root/.cache /root/.mamba \
+  && gdalinfo --version 2>&1 | grep -F '3.13.3' \
+  && ogrinfo --help 2>&1 | grep -q -- '-json' \
+  && gdalinfo --formats | grep -qi pdf \
+  && gdalinfo --formats | grep -qi MBTiles \
+  && gdalinfo --formats | grep -qi WEBP \
+  && git clone --depth 1 --branch 2.79.0 https://github.com/felt/tippecanoe.git /tmp/tippecanoe \
+  && make -C /tmp/tippecanoe -j"$(nproc)" \
+  && make -C /tmp/tippecanoe install \
+  && rm -rf /tmp/tippecanoe \
+  && case "$arch" in \
+       x86_64) pm_arch=x86_64 ;; \
+       aarch64) pm_arch=arm64 ;; \
+       *) echo "unsupported architecture $arch" && exit 1 ;; \
+     esac \
+  && curl -fsSL -o /tmp/pmtiles.tar.gz "https://github.com/protomaps/go-pmtiles/releases/download/v1.28.1/go-pmtiles_1.28.1_Linux_${pm_arch}.tar.gz" \
+  && tar -C /usr/local/bin -xzf /tmp/pmtiles.tar.gz pmtiles \
+  && chmod 755 /usr/local/bin/pmtiles \
+  && rm /tmp/pmtiles.tar.gz \
+  && apt-get purge -y build-essential git bzip2 \
+  && apt-get autoremove -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && command -v tippecanoe \
+  && command -v pmtiles
+
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
 WORKDIR /usr/src
 
-# Copy pnpm workspace configuration
+# Dependency install only. No application source, so this layer stays valid
+# until a package manifest or the lockfile changes.
+FROM node:24 AS base
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+WORKDIR /usr/src
+
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 
-# Copy monorepo package.json files
 COPY api/package.json ./api/
 COPY app/package.json ./app/
 COPY web/package.json ./web/
 COPY library/data-model/package.json ./library/data-model/
 COPY library/forms/package.json ./library/forms/
 
-# Install dependencies with cache mount
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
   pnpm install --frozen-lockfile
-
 
 # Source stage. Compose bind-mounts the workspace libraries over this image, so the
 # data-model and forms output built here is masked at runtime (localdev.sh builds
@@ -29,28 +85,19 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 # are mounted, so api/build survives from the image.
 FROM base AS source
 
-# Copy source code
 COPY . .
 
-# Build the app and api
 RUN pnpm turbo build --filter=@faims3/api --filter=@faims3/app --filter=@faims3/web
 
-# Shared runtime for the three dev services. Compose sets command and ports per
-# service, so one stage serves all three.
-FROM node:24-slim AS runtime
+# Full dev image for api, web, and app (`./localdev.sh --all`).
+FROM spatial-tools AS runtime
 
-# ogr2ogr for GeoPackage export (see api/src/couchdb/export/gdal.ts), and curl for
-# the api healthcheck.
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends gdal-bin curl \
-  && rm -rf /var/lib/apt/lists/*
-
-# Install pnpm
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-
-WORKDIR /usr/src
-
-# Copy installed dependencies and source
 COPY --from=source /usr/src .
+
+# Map-layer worker image. Compose bind-mounts api/src, api/keys, and
+# data-model, and the process runs tsx against that source, so this target
+# does not copy the repo or run turbo. A TypeScript edit does not invalidate
+# the image.
+FROM spatial-tools AS worker
+
+COPY --from=base /usr/src .

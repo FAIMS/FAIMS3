@@ -114,6 +114,7 @@
     "provisionSSOUsersPolicy": "reject",
     "cpu": 1024,
     "memory": 2048,
+    "ephemeralStorageGiB": 21,
     "autoScaling": {
       "desiredCapacity": 2,
       "minCapacity": 1,
@@ -127,6 +128,21 @@
     "disableMigrateOnStartup": false,
     "disableStartupMigrationLock": false,
     "startupMigrationLockTimeoutMs": 1800000
+  },
+  "spatialCapacity": {
+    "maxCapacity": 4,
+    "scaleThresholds": [3, 8, 16, 32],
+    "reconcileMs": 15000,
+    "idleExitMs": 60000,
+    "cpu": 1024,
+    "memory": 2048,
+    "ephemeralStorageGiB": 80,
+    "managerCpu": 256,
+    "managerMemory": 512,
+    "gdalNumThreads": "ALL_CPUS",
+    "gdalCacheMaxMb": 256,
+    "gdalWarpMemoryMb": 256,
+    "gdalWarpMulti": true
   },
   "authProviders": {
     "disableLocalLogin": false,
@@ -183,6 +199,10 @@
     "title": "Control Centre"
   },
   "docs": {},
+  "attachmentStorage": {
+    "serviceType": "S3",
+    "prefix": "map-assets"
+  },
   "smtp": {
     "emailServiceType": "SMTP",
     "fromEmail": "notifications@your-domain.com",

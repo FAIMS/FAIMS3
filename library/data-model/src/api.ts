@@ -18,6 +18,7 @@ import {
   newFormRecordSchema,
 } from './databaseEngine';
 import {
+  ContextualLayerListingSchema,
   CreateRootDescriptionSchema,
   PeopleDBDocumentSchema,
   ProjectStatus,
@@ -289,11 +290,14 @@ export type PostImpersonateUserResponse = z.infer<
 /** GET /api/notebooks and GET /api/directory row. Lean project; no uiSpecification. */
 export const APINotebookListSchema = ProjectListItemSchema.extend({
   byteCount: z.number().optional(),
+  /** Ready linked layers. Omitted on attach failure; empty means none are ready. */
+  contextualLayers: z.array(ContextualLayerListingSchema).optional(),
+  contextualLayersHash: z.string().optional(),
 });
 export type APINotebookList = z.infer<typeof APINotebookListSchema>;
 
-/** GET /api/notebooks?includeByteCount=true */
-export const APINotebookListWithStatsSchema = ProjectListItemSchema.extend({
+/** GET /api/notebooks?includeByteCount=true — same as list, with required `byteCount`. */
+export const APINotebookListWithStatsSchema = APINotebookListSchema.extend({
   byteCount: z.number(),
 });
 export type APINotebookListWithStats = z.infer<
@@ -304,6 +308,9 @@ export type APINotebookListWithStats = z.infer<
 export const GetNotebookResponseSchema = ExistingProjectDocumentSchema.extend({
   recordCount: z.number().optional(),
   byteCount: z.number(),
+  /** Ready linked layers. Omitted on attach failure; empty means none are ready. */
+  contextualLayers: z.array(ContextualLayerListingSchema).optional(),
+  contextualLayersHash: z.string().optional(),
 });
 export type GetNotebookResponse = z.infer<typeof GetNotebookResponseSchema>;
 

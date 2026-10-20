@@ -5,11 +5,13 @@
  *   Preview, rename, and delete a downloaded offline map.
  */
 
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {
   extent3857ToOfflineMapRegion,
   formatOfflineMapSizeBytes,
   OfflineMapRegionEditor,
   ProgressBar,
+  STATIC_MAP_LAYER_PREVIEW_HEIGHT,
   StoredTileSet,
   tileSetDisplayName,
   tileSetDownloadProgress,
@@ -34,6 +36,7 @@ import {useNavigate, useParams} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import BackButton from '../ui/BackButton';
+import {ListingPage} from '../ui/listing-page';
 
 export function EditOfflineMap() {
   const navigate = useNavigate();
@@ -150,7 +153,7 @@ export function EditOfflineMap() {
     setMessage('');
     try {
       await tileStore.removeTileSet(offlineMapId);
-      navigate(ROUTES.OFFLINE_MAPS);
+      navigate(ROUTES.OFFLINE_MAP_REGIONS);
     } catch (deleteError) {
       setMessage(
         deleteError instanceof Error
@@ -175,7 +178,7 @@ export function EditOfflineMap() {
     return (
       <Box sx={{mx: 'auto', width: '100%', px: 2, py: 3}}>
         <Stack spacing={2}>
-          <BackButton link={ROUTES.OFFLINE_MAPS} />
+          <BackButton link={ROUTES.OFFLINE_MAP_REGIONS} />
           <Alert severity="error">{message || 'Offline map not found'}</Alert>
         </Stack>
       </Box>
@@ -188,22 +191,14 @@ export function EditOfflineMap() {
   const isDownloading = progress !== null && progress < 1;
 
   return (
-    <Box
-      sx={{
-        mx: 'auto',
-        width: '100%',
-        height: '100%',
-        px: 2,
-        pt: 3,
-      }}
-    >
+    <ListingPage>
       <Stack spacing={2}>
         <Stack
           direction="row"
           spacing={1}
           sx={{justifyContent: 'space-between', alignItems: 'center'}}
         >
-          <BackButton link={ROUTES.OFFLINE_MAPS} />
+          <BackButton link={ROUTES.OFFLINE_MAP_REGIONS} />
           <Typography
             variant="h4"
             sx={{flex: 1, minWidth: 0, textAlign: 'center'}}
@@ -284,7 +279,7 @@ export function EditOfflineMap() {
           readOnly
           showRegionStatus={false}
           showMapControls={false}
-          mapHeight="clamp(380px, 55dvh, 650px)"
+          mapHeight={STATIC_MAP_LAYER_PREVIEW_HEIGHT}
           mapComponentProps={{
             autoFlyToCurrentLocation: false,
             lockNavigation: true,
@@ -305,6 +300,9 @@ export function EditOfflineMap() {
             label="New map name"
             value={renameValue}
             onChange={event => setRenameValue(event.target.value)}
+            slotProps={{
+              htmlInput: {maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH},
+            }}
           />
         </DialogContent>
         <DialogActions>
@@ -346,6 +344,6 @@ export function EditOfflineMap() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </ListingPage>
   );
 }

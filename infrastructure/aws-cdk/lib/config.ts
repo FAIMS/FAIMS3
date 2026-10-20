@@ -273,6 +273,17 @@ const AuthProvidersConfigSchema = z
 
 export type AuthProvidersConfig = z.infer<typeof AuthProvidersConfigSchema>;
 
+export const AttachmentStorageConfigSchema = z.object({
+  /** Object-store backend. CDK production is S3 only. */
+  serviceType: z.enum(['S3']).default('S3'),
+  /**
+   * Key prefix inside the map-asset bucket (no leading/trailing slash).
+   * Couch documents store an S3 resource URI (`s3://region/bucket/key`)
+   * for each file.
+   */
+  prefix: z.string().min(1).default('map-assets'),
+});
+
 const SMTPConfigSchema = z.object({
   /** Email service type (SMTP or MOCK) */
   emailServiceType: z.enum(['SMTP']),
@@ -420,6 +431,12 @@ export const ConductorConfigSchema = z
     cpu: z.number().int().positive(),
     /** The amount of memory (in MiB) for the Fargate task */
     memory: z.number().int().positive(),
+    /**
+     * Fargate ephemeral storage (GiB) for the API task. Map-layer GDAL
+     * scratch lives on the spatial worker task, so the API only needs
+     * room to stage an upload before it is copied to S3. AWS allows 21–200.
+     */
+    ephemeralStorageGiB: z.number().int().min(21).max(200).default(21),
     /** Auto scaling configuration for the Conductor service */
     autoScaling: z.object({
       /** The desired number of tasks to run (general stable target) */
@@ -560,6 +577,79 @@ const TtlCleanupConfigSchema = z.object({
   cpu: z.number().int().positive().default(256),
   /** Fargate memory (MiB) for the cleanup task. */
   memory: z.number().int().positive().default(512),
+});
+
+/**
+ * Capacity manager (always-on, desired 1) plus a spatial-worker task
+ * definition. The manager starts workers with RunTask; workers exit when
+ * idle, so there is no worker ECS service to replace them.
+ */
+export const SpatialCapacityConfigSchema = z.object({
+  /** Max drain workers the manager may start at once. */
+  maxCapacity: z.number().int().positive().default(4),
+  /**
+   * Queue depths at which worker count increases from 1.
+   * `[3, 8, 16, 32]` means 1→2 at 3 jobs, 2→3 at 8, 3→4 at 16, 4→5 at 32.
+   * Always capped by maxCapacity. Passed to the manager as CSV.
+   */
+  scaleThresholds: z
+    .array(z.number().int().positive())
+    .default([3, 8, 16, 32])
+    .superRefine((values, ctx) => {
+      for (let i = 1; i < values.length; i++) {
+        if (values[i] <= values[i - 1]) {
+          ctx.addIssue({
+            code: 'custom',
+            message: 'scaleThresholds must be strictly increasing',
+          });
+          return;
+        }
+      }
+    }),
+  /** How often the manager reads the Couch queue (ms). */
+  reconcileMs: z.number().int().positive().default(15_000),
+  /**
+   * Worker exits after this many ms with no job. Must be > 0 on ECS or
+   * tasks would run until the next deploy.
+   */
+  idleExitMs: z.number().int().positive().default(60_000),
+  /** Fargate CPU units for one spatial worker. */
+  cpu: z.number().int().positive().default(1024),
+  /** Fargate memory (MiB) for one spatial worker. */
+  memory: z.number().int().positive().default(2048),
+  /**
+   * Worker ephemeral disk (GiB) for the original download plus GDAL scratch.
+   * AWS allows 21–200. Default 80.
+   */
+  ephemeralStorageGiB: z.number().int().min(21).max(200).default(80),
+  /** Fargate CPU units for the capacity manager. */
+  managerCpu: z.number().int().positive().default(256),
+  /** Fargate memory (MiB) for the capacity manager. */
+  managerMemory: z.number().int().positive().default(512),
+  /**
+   * GDAL worker threads (`GDAL_NUM_THREADS`). `ALL_CPUS` uses the task
+   * vCPU count. A positive integer caps it. Default `ALL_CPUS`.
+   */
+  gdalNumThreads: z
+    .union([z.literal('ALL_CPUS'), z.number().int().positive().max(256)])
+    .default('ALL_CPUS'),
+  /**
+   * Raster block cache in megabytes (`GDAL_CACHEMAX`). Default 256 fits
+   * the 2 GiB worker. Raise toward 1024–2048 on 16–32 GiB tasks.
+   */
+  gdalCacheMaxMb: z.number().int().positive().max(65536).default(256),
+  /**
+   * `gdalwarp -wm` working buffer in megabytes. Shared across warp
+   * threads — raise with `gdalNumThreads`. Default 256.
+   */
+  gdalWarpMemoryMb: z.number().int().positive().max(65536).default(256),
+  /** `gdalwarp -multi`: overlap I/O with compute. Default true. */
+  gdalWarpMulti: z.boolean().default(true),
+  /**
+   * Cap tippecanoe threads (`TIPPECANOE_MAX_THREADS`). Omit to use all
+   * CPUs (tippecanoe's default).
+   */
+  tippecanoeMaxThreads: z.number().int().positive().max(256).optional(),
 });
 
 const AppSupportLinksSchema = z.object({
@@ -743,6 +833,25 @@ export const ConfigSchema = z.object({
   }),
   /** Conductor service configuration */
   conductor: ConductorConfigSchema,
+  /**
+   * Spatial worker pool. The capacity manager is a tiny service (desired 1).
+   * Workers are a task definition only — RunTask, then idle exit.
+   */
+  spatialCapacity: SpatialCapacityConfigSchema.optional().default({
+    maxCapacity: 4,
+    scaleThresholds: [3, 8, 16, 32],
+    reconcileMs: 15_000,
+    idleExitMs: 60_000,
+    cpu: 1024,
+    memory: 2048,
+    ephemeralStorageGiB: 80,
+    managerCpu: 256,
+    managerMemory: 512,
+    gdalNumThreads: 'ALL_CPUS',
+    gdalCacheMaxMb: 256,
+    gdalWarpMemoryMb: 256,
+    gdalWarpMulti: true,
+  }),
   /** Domain configuration for all services */
   domains: DomainsConfigSchema,
   /** Mobile app URLs */
@@ -758,6 +867,14 @@ export const ConfigSchema = z.object({
   docs: DocsConfigSchema.optional().default({}),
   /** Email service configuration */
   smtp: SMTPConfigSchema,
+  /**
+   * Map-layer object storage. CDK always creates a private S3 bucket and
+   * grants the Conductor task role; static AWS keys are not set.
+   */
+  attachmentStorage: AttachmentStorageConfigSchema.optional().default({
+    serviceType: 'S3',
+    prefix: 'map-assets',
+  }),
   /** Social sign in providers */
   authProviders: AuthProvidersConfigSchema.optional(),
   /** Security parameters */
@@ -783,8 +900,12 @@ export type BugMonitoringConfiguration = z.infer<
 >;
 export type ConductorConfig = z.infer<typeof ConductorConfigSchema>;
 export type TtlCleanupConfig = z.infer<typeof TtlCleanupConfigSchema>;
+export type SpatialCapacityConfig = z.infer<typeof SpatialCapacityConfigSchema>;
 export type DomainsConfig = z.infer<typeof DomainsConfigSchema>;
 export type SMTPConfig = z.infer<typeof SMTPConfigSchema>;
+export type AttachmentStorageConfig = z.infer<
+  typeof AttachmentStorageConfigSchema
+>;
 export type OfflineMapsConfig = z.infer<typeof OfflineMapsConfigSchema>;
 export type AddressAutosuggestConfig = z.infer<
   typeof AddressAutosuggestConfigSchema

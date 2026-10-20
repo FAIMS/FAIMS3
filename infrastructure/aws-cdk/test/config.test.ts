@@ -4,11 +4,13 @@
  */
 import {ZodError} from 'zod';
 import {
+  AttachmentStorageConfigSchema,
   ConductorConfigSchema,
   DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW,
   DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS,
   DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
   SecurityConfigSchema,
+  SpatialCapacityConfigSchema,
   UiConfiguration,
 } from '../lib/config';
 
@@ -163,6 +165,22 @@ describe('SecurityConfigSchema export rate limiter', () => {
   });
 });
 
+describe('AttachmentStorageConfigSchema', () => {
+  it('defaults to S3 and the map-assets prefix', () => {
+    const parsed = AttachmentStorageConfigSchema.parse({});
+    expect(parsed.serviceType).toBe('S3');
+    expect(parsed.prefix).toBe('map-assets');
+  });
+
+  it('accepts a custom prefix', () => {
+    const parsed = AttachmentStorageConfigSchema.parse({
+      serviceType: 'S3',
+      prefix: 'layers',
+    });
+    expect(parsed.prefix).toBe('layers');
+  });
+});
+
 function minimalConductorConfig(overrides: Record<string, unknown> = {}) {
   return {
     name: 'Test',
@@ -186,11 +204,30 @@ function minimalConductorConfig(overrides: Record<string, unknown> = {}) {
 describe('ConductorConfigSchema startup migration lock', () => {
   it('defaults to migrate-on, lock enabled, and a 30 minute steal timeout', () => {
     const parsed = ConductorConfigSchema.parse(minimalConductorConfig());
+    expect(parsed.ephemeralStorageGiB).toBe(21);
     expect(parsed.disableMigrateOnStartup).toBe(false);
     expect(parsed.disableStartupMigrationLock).toBe(false);
     expect(parsed.startupMigrationLockTimeoutMs).toBe(
       DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS
     );
+  });
+
+  it('accepts an ephemeral storage override and rejects out of range', () => {
+    expect(
+      ConductorConfigSchema.parse(
+        minimalConductorConfig({ephemeralStorageGiB: 100})
+      ).ephemeralStorageGiB
+    ).toBe(100);
+    expect(() =>
+      ConductorConfigSchema.parse(
+        minimalConductorConfig({ephemeralStorageGiB: 20})
+      )
+    ).toThrow();
+    expect(() =>
+      ConductorConfigSchema.parse(
+        minimalConductorConfig({ephemeralStorageGiB: 201})
+      )
+    ).toThrow();
   });
 
   it('accepts an explicit timeout override', () => {
@@ -235,5 +272,38 @@ describe('ConductorConfigSchema startup migration lock', () => {
         })
       )
     ).toThrow(/disableStartupMigrationLock cannot be false/);
+  });
+});
+
+describe('SpatialCapacityConfigSchema GDAL / tippecanoe knobs', () => {
+  it('fills conservative performance defaults', () => {
+    const parsed = SpatialCapacityConfigSchema.parse({
+      cpu: 8192,
+      memory: 32768,
+    });
+    expect(parsed.gdalNumThreads).toBe('ALL_CPUS');
+    expect(parsed.gdalCacheMaxMb).toBe(256);
+    expect(parsed.gdalWarpMemoryMb).toBe(256);
+    expect(parsed.gdalWarpMulti).toBe(true);
+    expect(parsed.tippecanoeMaxThreads).toBeUndefined();
+    expect(parsed).not.toHaveProperty('tippecanoeReadParallel');
+  });
+
+  it('accepts an explicit thread cap and larger warp buffer', () => {
+    const parsed = SpatialCapacityConfigSchema.parse({
+      gdalNumThreads: 8,
+      gdalCacheMaxMb: 2048,
+      gdalWarpMemoryMb: 1024,
+      tippecanoeMaxThreads: 8,
+    });
+    expect(parsed.gdalNumThreads).toBe(8);
+    expect(parsed.gdalCacheMaxMb).toBe(2048);
+    expect(parsed.tippecanoeMaxThreads).toBe(8);
+  });
+
+  it('rejects a zero warp buffer', () => {
+    expect(() =>
+      SpatialCapacityConfigSchema.parse({gdalWarpMemoryMb: 0})
+    ).toThrow(ZodError);
   });
 });

@@ -1,0 +1,9 @@
+@attachmentBaseUrl = {{$dotenv BASE_URL}}/api/admin
+@token = {{$dotenv API_TOKEN}}
+
+### Test Attachment Storage
+# Uploads, downloads, presigns, and deletes a tiny probe object.
+# Requires operations / general admin authentication.
+
+POST {{attachmentBaseUrl}}/test-attachment-storage
+Authorization: Bearer {{token}}

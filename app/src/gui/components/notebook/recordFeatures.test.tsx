@@ -15,10 +15,17 @@ import {
   type NotebookUiSpec,
 } from '@faims3/data-model';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {renderHook, waitFor} from '@testing-library/react';
+import {act, renderHook, waitFor} from '@testing-library/react';
 import React, {ReactNode} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {getGISFields, useRecordFeatures} from './recordFeatures';
+import {
+  getGISFields,
+  groupRecordFeaturesByForm,
+  recordFeatureCollectionsEqual,
+  useRecordFeatures,
+  type RecordFeatureCollection,
+  type RecordGeoJSONFeature,
+} from './recordFeatures';
 
 const {getFieldValues} = vi.hoisted(() => ({getFieldValues: vi.fn()}));
 
@@ -242,6 +249,76 @@ describe('useRecordFeatures', () => {
     expect(result.current.data).toBeUndefined();
   }, 20000);
 
+  it('keeps the current collection while a newly synced record hydrates', async () => {
+    let releaseObservation: (value: unknown) => void = () => {};
+    getFieldValues.mockImplementation(({revisionId}: {revisionId: string}) => {
+      if (revisionId === 'frev-obs') {
+        return new Promise(resolve => {
+          releaseObservation = resolve;
+        });
+      }
+      return Promise.resolve({site_location: POINT_FEATURE});
+    });
+
+    const client = new QueryClient();
+    const stableWrapper = ({children}: {children: ReactNode}) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+
+    const {result, rerender} = renderHook(
+      ({records}: {records: MinimalRecordMetadata[]}) =>
+        useRecordFeatures({
+          projectId: 'test-project',
+          uiSpec,
+          records,
+          recordTypes,
+        }),
+      {wrapper: stableWrapper, initialProps: {records: [siteRecord]}}
+    );
+
+    await waitFor(() => expect(result.current.data?.features).toHaveLength(1));
+    const firstCollection = result.current.data;
+
+    rerender({records: [siteRecord, obsRecord]});
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.data).toBe(firstCollection);
+    expect(result.current.data?.features).toHaveLength(1);
+
+    await act(async () => {
+      releaseObservation({site_location: POINT_FEATURE});
+    });
+    await waitFor(() => expect(result.current.data?.features).toHaveLength(2));
+    expect(result.current.data).not.toBe(firstCollection);
+    expect(
+      result.current.data?.features.map(feature => feature.properties.record_id)
+    ).toEqual(['rec-site', 'rec-obs']);
+  });
+
+  it('picks up a record appended onto the same array instance', async () => {
+    const records = [siteRecord];
+    const client = new QueryClient();
+    const stableWrapper = ({children}: {children: ReactNode}) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+
+    const {result, rerender} = renderHook(
+      ({records}: {records: MinimalRecordMetadata[]}) =>
+        useRecordFeatures({
+          projectId: 'test-project',
+          uiSpec,
+          records,
+          recordTypes,
+        }),
+      {wrapper: stableWrapper, initialProps: {records}}
+    );
+
+    await waitFor(() => expect(result.current.data?.features).toHaveLength(1));
+    records.push(obsRecord);
+    rerender({records});
+    await waitFor(() => expect(result.current.data?.features).toHaveLength(2));
+  });
+
   it('stays disabled and touches no database when there are no records', async () => {
     const {result} = renderHook(
       () =>
@@ -258,5 +335,72 @@ describe('useRecordFeatures', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.data).toBeUndefined();
     expect(getFieldValues).not.toHaveBeenCalled();
+  });
+});
+
+describe('recordFeatureCollectionsEqual', () => {
+  const feature = (recordId: string): RecordGeoJSONFeature => ({
+    type: 'Feature',
+    geometry: {type: 'Point', coordinates: [151.2, -33.9]},
+    properties: {
+      name: recordId,
+      record_id: recordId,
+      revision_id: `${recordId}-rev`,
+      form_id: 'Site',
+    },
+  });
+
+  it('treats rebuilt collections of the same features as equal', () => {
+    const collection = {
+      type: 'FeatureCollection' as const,
+      features: [feature('a')],
+    };
+    expect(
+      recordFeatureCollectionsEqual(collection, {
+        type: 'FeatureCollection',
+        features: [feature('a')],
+      })
+    ).toBe(true);
+    expect(
+      recordFeatureCollectionsEqual(collection, {
+        type: 'FeatureCollection',
+        features: [feature('b')],
+      })
+    ).toBe(false);
+    expect(
+      recordFeatureCollectionsEqual(
+        {type: 'FeatureCollection', features: []},
+        undefined
+      )
+    ).toBe(false);
+  });
+});
+
+describe('groupRecordFeaturesByForm', () => {
+  const feature = (formId: string, recordId: string): RecordGeoJSONFeature => ({
+    type: 'Feature',
+    geometry: {type: 'Point', coordinates: [151.2, -33.9]},
+    properties: {
+      name: recordId,
+      record_id: recordId,
+      revision_id: `${recordId}-rev`,
+      form_id: formId,
+    },
+  });
+
+  it('splits a mixed collection into one FeatureCollection per form', () => {
+    const collection: RecordFeatureCollection = {
+      type: 'FeatureCollection',
+      features: [
+        feature('Site', 'a'),
+        feature('Observation', 'b'),
+        feature('Site', 'c'),
+      ],
+    };
+
+    const grouped = groupRecordFeaturesByForm(collection);
+    expect([...grouped.keys()]).toEqual(['Site', 'Observation']);
+    expect(grouped.get('Site')?.features).toHaveLength(2);
+    expect(grouped.get('Observation')?.features).toHaveLength(1);
   });
 });

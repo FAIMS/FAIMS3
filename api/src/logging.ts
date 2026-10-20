@@ -2,9 +2,11 @@
 /**
  * Conductor stdout logging helpers.
  *
- * Request access logs come from morgan (`combined`). This module adds
- * structured audit lines for impersonation, invite-code, and export-download
- * activity so they can be grepped independently of HTTP access logs.
+ * Request access logs come from morgan (`combined`) when
+ * `config.requestLoggingEnabled` (`REQUEST_LOGGING_ENABLED`) is on.
+ * This module adds structured audit lines for impersonation, invite-code,
+ * export-download, and map-layer upload/processing activity so they can
+ * be grepped independently of HTTP access logs.
  */
 import {INPUT_LIMITS} from '@faims3/data-model';
 import crypto from 'crypto';
@@ -253,4 +255,143 @@ export function logDownloadAudit(entry: {
       ...entry,
     })}`
   );
+}
+
+// Map-asset processing audit
+// ==========================
+// One JSON line per upload/processing stage, prefixed `[MapAssetProcessing]`.
+// Long waits (HTTP receive, CouchDB attachment I/O, GDAL) also emit
+// `outcome: "waiting"` heartbeats so a stalled job is visible. Skipped
+// under tests (`config.runningUnderTest`). Grep `[MapAssetProcessing]`.
+
+/** Prefix for map-layer upload and GDAL processing audit lines. */
+export const MAP_ASSET_PROCESSING_LOG = '[MapAssetProcessing]';
+
+/** How often a long stage repeats `outcome: "waiting"` while it is blocked. */
+export const MAP_ASSET_PROCESSING_HEARTBEAT_MS = 15_000;
+
+/** One stage of the map-layer upload → normalize → store pipeline. */
+export type MapAssetProcessingEvent =
+  | 'disk.check'
+  | 'upload.receive'
+  | 'upload.accept'
+  | 'asset.stage'
+  | 'processing.enqueue'
+  | 'processing.claim'
+  | 'processing.run'
+  | 'processing.files'
+  | 'processing.originals.store'
+  | 'processing.normalize'
+  | 'gdal.command'
+  | 'processing.normalized.store'
+  | 'processing.commit'
+  | 'attachment.put'
+  | 'attachment.download';
+
+/**
+ * `started` / `waiting` / `success` / `failure` for a stage that runs.
+ * `skipped` when the stage is a no-op (fresh claim held, disk probe failed
+ * open, lost the processing claim before store).
+ */
+export type MapAssetProcessingOutcome =
+  | 'started'
+  | 'waiting'
+  | 'success'
+  | 'failure'
+  | 'skipped';
+
+/** Fields written on a `[MapAssetProcessing]` line. */
+export type MapAssetProcessingEntry = {
+  event: MapAssetProcessingEvent;
+  outcome: MapAssetProcessingOutcome;
+  assetId?: string;
+  uploadId?: string;
+  reason?: string;
+  userId?: string;
+  teamId?: string;
+  method?: string;
+  filename?: string;
+  filenames?: string[];
+  fileCount?: number;
+  byteSize?: number;
+  kind?: string;
+  command?: string;
+  detail?: string;
+  phase?: string;
+  percent?: number;
+  elapsedMs?: number;
+  attempt?: number;
+  maxAttempts?: number;
+  fromStaging?: boolean;
+  attachmentId?: string;
+  source?: string;
+  ip?: string;
+  forwardedFor?: string;
+  userAgent?: string;
+};
+
+/**
+ * Structured map-layer processing audit line. Grep `[MapAssetProcessing]`.
+ * Does not log file paths, cookie values, or Authorization headers.
+ */
+export function formatMapAssetProcessingLine(
+  entry: MapAssetProcessingEntry,
+  ts: string = nowIso()
+): string {
+  return `${MAP_ASSET_PROCESSING_LOG} ${JSON.stringify({
+    ts,
+    ...entry,
+  })}`;
+}
+
+/**
+ * Write a structured map-layer processing audit line to stdout.
+ * Grep `[MapAssetProcessing]`.
+ */
+export function logMapAssetProcessing(entry: MapAssetProcessingEntry): void {
+  if (config.runningUnderTest) {
+    return;
+  }
+
+  console.log(formatMapAssetProcessingLine(entry));
+}
+
+/**
+ * Log `started`, optional `waiting` heartbeats, then `success` or `failure`
+ * around a stage that may block (HTTP receive, GDAL, attachment I/O).
+ */
+export async function withMapAssetProcessingWait<T>(
+  entry: Omit<MapAssetProcessingEntry, 'outcome' | 'elapsedMs'>,
+  work: () => Promise<T>,
+  heartbeatMs: number = MAP_ASSET_PROCESSING_HEARTBEAT_MS
+): Promise<T> {
+  const started = Date.now();
+  logMapAssetProcessing({...entry, outcome: 'started'});
+  const timer = setInterval(() => {
+    logMapAssetProcessing({
+      ...entry,
+      outcome: 'waiting',
+      elapsedMs: Date.now() - started,
+    });
+  }, heartbeatMs);
+  timer.unref();
+  try {
+    const result = await work();
+    logMapAssetProcessing({
+      ...entry,
+      outcome: 'success',
+      elapsedMs: Date.now() - started,
+    });
+    return result;
+  } catch (error) {
+    logMapAssetProcessing({
+      ...entry,
+      outcome: 'failure',
+      elapsedMs: Date.now() - started,
+      reason: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  } finally {
+    clearInterval(timer);
+  }
 }

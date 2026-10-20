@@ -1,0 +1,140 @@
+// SPDX-License-Identifier: Apache-2.0
+import {Field, Form} from '@/components/form';
+import {TemplateOwnerCallout} from '@/components/forms/template-owner-callout';
+import {
+  buildTeamField,
+  getPossibleTeamsForAction,
+  getTeamFieldState,
+  resolveTeamId,
+} from '@/components/forms/template-team-field';
+import {useRequiredUser, useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {invalidateMapAssets, uploadMapAsset} from '@/hooks/map-asset-hooks';
+import {useGetTeams} from '@/hooks/queries';
+import {
+  MAP_LAYER_FILE_ACCEPT,
+  mapLayerFilesSchema,
+} from '@/lib/map-layer-files';
+import {resourceNameSchema} from '@/lib/input-limits';
+import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
+import {Action, INPUT_LIMITS, mapAssetUploadMaxLabel} from '@faims3/data-model';
+import {useQueryClient} from '@tanstack/react-query';
+import {useState} from 'react';
+
+/**
+ * Upload form: name, description, optional team, and primary/companion files.
+ * Hidden when the user cannot create a layer in the chosen team.
+ */
+export function CreateMapLayerForm({
+  setDialogOpen,
+  specifiedTeam,
+}: {
+  setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  specifiedTeam?: string;
+}) {
+  const user = useRequiredUser();
+  const queryClient = useQueryClient();
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const {data: teams} = useGetTeams({user});
+  const canCreateGlobally = useIsAuthorisedTo({
+    action: Action.CREATE_MAP_ASSET,
+  });
+  const possibleTeams = getPossibleTeamsForAction({
+    teams: teams?.teams,
+    canCreateGlobally,
+    createInTeamAction: Action.CREATE_MAP_ASSET_IN_TEAM,
+    decodedToken: user.decodedToken,
+  });
+  const {showTeamCallout, showTeamDropdown} = getTeamFieldState({
+    canCreateGlobally,
+    specifiedTeam,
+    possibleTeams,
+  });
+
+  const fields: Field[] = [
+    {
+      name: 'name',
+      label: 'Name',
+      description: 'A short display name for the layer',
+      schema: resourceNameSchema(INPUT_LIMITS.RESOURCE_NAME_MIN_LENGTH, 'Name'),
+      maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
+      testId: 'web-map-layers-create-name',
+    },
+    optionalRootDescriptionField(),
+    {
+      name: 'files',
+      label: 'Files',
+      description: `Must include a coordinate reference system. Up to ${mapAssetUploadMaxLabel()}.`,
+      type: 'file',
+      multiple: true,
+      accept: MAP_LAYER_FILE_ACCEPT,
+      schema: mapLayerFilesSchema(),
+      testId: 'web-map-layers-create-files',
+    },
+  ];
+
+  if (showTeamDropdown) {
+    fields.push(
+      buildTeamField({
+        canCreateGlobally,
+        possibleTeams,
+        label: `Team${canCreateGlobally ? ' (optional)' : ''}`,
+        description: canCreateGlobally
+          ? 'Choose a team to own this layer, or leave blank to keep it as your own.'
+          : 'The team that will own this layer.',
+      })
+    );
+  }
+
+  const onSubmit = async (values: {
+    name: string;
+    description?: string;
+    files: File[];
+    team?: string;
+  }) => {
+    const teamId = resolveTeamId({
+      canCreateGlobally,
+      specifiedTeam,
+      possibleTeams,
+      team: values.team,
+    });
+    setUploadProgress(0);
+    try {
+      await uploadMapAsset({
+        user,
+        name: values.name.trim(),
+        description: values.description?.trim() ?? '',
+        teamId,
+        files: values.files,
+        onProgress: setUploadProgress,
+      });
+    } catch (error) {
+      return {
+        type: 'submit' as const,
+        message: error instanceof Error ? error.message : 'Upload failed.',
+      };
+    } finally {
+      setUploadProgress(null);
+    }
+    await invalidateMapAssets(queryClient, user);
+    setDialogOpen(false);
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      {showTeamCallout ? (
+        <TemplateOwnerCallout
+          heading="Map layer will be owned by"
+          teamName={possibleTeams[0].name}
+        />
+      ) : null}
+      <Form
+        fields={fields}
+        onSubmit={onSubmit}
+        submitButtonText="Add map layer"
+        submitButtonTestId="web-map-layers-create-submit"
+        submitProgress={uploadProgress}
+        defaultValues={{name: '', description: '', files: []}}
+      />
+    </div>
+  );
+}

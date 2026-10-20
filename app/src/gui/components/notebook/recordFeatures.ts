@@ -23,7 +23,7 @@ import {
   type GeoJSONFeature,
 } from '@faims3/forms';
 import {useQueries, type UseQueryResult} from '@tanstack/react-query';
-import {useMemo} from 'react';
+import {useMemo, useRef} from 'react';
 import {localGetDataDb} from '../../../utils/database';
 
 /** Properties tagged onto every extracted feature, tracing it to its record. */
@@ -44,6 +44,31 @@ export type RecordFeatureCollection = {
   type: 'FeatureCollection';
   features: RecordGeoJSONFeature[];
 };
+
+/** Split a notebook FeatureCollection into one collection per form type. */
+export function groupRecordFeaturesByForm(
+  collection: RecordFeatureCollection
+): Map<string, RecordFeatureCollection> {
+  const grouped = new Map<string, RecordGeoJSONFeature[]>();
+  for (const feature of collection.features) {
+    const formId = feature.properties.form_id;
+    if (!formId) {
+      continue;
+    }
+    const list = grouped.get(formId);
+    if (list) {
+      list.push(feature);
+    } else {
+      grouped.set(formId, [feature]);
+    }
+  }
+  return new Map(
+    [...grouped.entries()].map(([formId, features]) => [
+      formId,
+      {type: 'FeatureCollection', features},
+    ])
+  );
+}
 
 /**
  * Get the names of all GIS fields in a UI Specification: the fields whose AVP
@@ -110,24 +135,77 @@ interface UseRecordFeaturesParams {
 }
 
 /**
+ * True when two collections plot the same geometries for the same records.
+ * Used to keep the overview map's collection identity stable across a
+ * parent re-render that rebuilt the array without changing what is on it.
+ */
+export function recordFeatureSyncKey(
+  collection: RecordFeatureCollection | undefined
+): string {
+  if (!collection) {
+    return '';
+  }
+  // Prefix so an empty plotted collection is not the same key as "no data".
+  return `c:${collection.features
+    .map(
+      feature =>
+        `${feature.properties.record_id}:${feature.properties.revision_id}:${feature.properties.form_id}:${JSON.stringify(feature.geometry)}`
+    )
+    .join('|')}`;
+}
+
+/** True when both collections encode the same records, revisions, and geometry. */
+export function recordFeatureCollectionsEqual(
+  left: RecordFeatureCollection | undefined,
+  right: RecordFeatureCollection | undefined
+): boolean {
+  return recordFeatureSyncKey(left) === recordFeatureSyncKey(right);
+}
+
+/**
  * Fold the per-record query results into one collection plus aggregate status.
- * Module-scope so the reference is stable: React Query memoizes the combined
- * value on it, keeping the collection's identity stable across renders.
+ * A newly synced record is its own query: while it hydrates, already-ready
+ * results stay in the collection so the overview map is not torn down.
  */
 const combineRecordQueries = (
   results: UseQueryResult<RecordGeoJSONFeature[], Error>[]
-) => ({
-  data:
-    results.length > 0 && results.every(result => result.data !== undefined)
-      ? ({
-          type: 'FeatureCollection' as const,
-          features: results.flatMap(result => result.data ?? []),
-        } satisfies RecordFeatureCollection)
-      : undefined,
-  isLoading: results.some(result => result.isLoading),
-  isError: results.some(result => result.isError),
-  error: results.find(result => result.error)?.error ?? null,
-});
+) => {
+  const hasAnyData = results.some(result => result.data !== undefined);
+  const isError = results.some(result => result.isError);
+  const error = results.find(result => result.error)?.error ?? null;
+  const isInitialLoading =
+    results.length > 0 &&
+    !hasAnyData &&
+    results.some(result => result.isLoading);
+
+  if (results.length === 0 || isInitialLoading) {
+    return {
+      data: undefined,
+      isLoading: isInitialLoading,
+      isError: false,
+      error: null,
+    };
+  }
+
+  if (!hasAnyData) {
+    return {
+      data: undefined,
+      isLoading: false,
+      isError,
+      error,
+    };
+  }
+
+  return {
+    data: {
+      type: 'FeatureCollection' as const,
+      features: results.flatMap(result => result.data ?? []),
+    } satisfies RecordFeatureCollection,
+    isLoading: false,
+    isError: false,
+    error: null,
+  };
+};
 
 /**
  * Extract the GIS features of a notebook's records, managed by React Query
@@ -157,14 +235,26 @@ export const useRecordFeatures = ({
   // field list every record is read through
   const gisFields = useMemo(() => getGISFields(uiSpec), [uiSpec]);
 
+  // Identity is a string so a list that grew in place still creates a query
+  // for the new record; array reference alone would keep mapRecords stale.
+  const recordsIdentity =
+    records
+      ?.map(
+        record => `${record.recordId}:${record.revisionId}:${record.conflicts}`
+      )
+      .join(',') ?? '';
+
   const mapRecords = useMemo(
     () => records?.filter(record => recordTypes.includes(record.type)) ?? [],
-    [records, recordTypes]
+    [records, recordsIdentity, recordTypes]
   );
 
   const gisFieldsKey = gisFields.join(',');
 
-  const {data, isLoading, isError, error} = useQueries({
+  // Combine in the hook rather than in useQueries: the library's combined
+  // result is structurally shared, which can skip a notify when a newly
+  // synced record's query lands, leaving the map on the previous features.
+  const queryResults = useQueries({
     queries: mapRecords.map(record => ({
       queryKey: [
         'record-features',
@@ -178,14 +268,26 @@ export const useRecordFeatures = ({
       ],
       queryFn: () => extractFeaturesFromRecord(dataEngine, record, gisFields),
       enabled: gisFields.length > 0,
-      staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+      staleTime: 5 * 60 * 1000,
       gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
       retry: 2,
       retryDelay: (attemptIndex: number) =>
         Math.min(1000 * 2 ** attemptIndex, 10000),
     })),
-    combine: combineRecordQueries,
   });
 
-  return {data, isLoading, isError, error, dataEngine, gisFields};
+  const combined = combineRecordQueries(queryResults);
+  const stableDataRef = useRef(combined.data);
+  if (!recordFeatureCollectionsEqual(stableDataRef.current, combined.data)) {
+    stableDataRef.current = combined.data;
+  }
+
+  return {
+    data: stableDataRef.current,
+    isLoading: combined.isLoading,
+    isError: combined.isError,
+    error: combined.error,
+    dataEngine,
+    gisFields,
+  };
 };

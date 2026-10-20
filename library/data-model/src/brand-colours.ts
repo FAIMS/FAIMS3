@@ -50,8 +50,20 @@ export const defaultBrand = {
   infoMain: '#1976D2',
 } as const;
 
-/** Active map control button (e.g. satellite toggle on) — shared across themes */
+/**
+ * Map overlay chrome shared across VITE_THEME palettes.
+ * Active colours highlight a selected control (e.g. satellite on).
+ * `scrim` / `sheetShadow` are for floating sheets such as Layers.
+ */
 export const mapControlBrand = {
   activeMain: '#1a73e8',
   activeHover: '#1666cc',
+  scrim: 'rgba(0, 0, 0, 0.12)',
+  sheetShadow: '0 12px 32px rgba(0, 0, 0, 0.22)',
+  /** White ring around the GPS glyph in list chrome, not the map cursor. */
+  locationRing: '#FFFFFF',
+  /** Layers-panel swatch for the satellite basemap. */
+  satelliteSwatch: '#6b8f4e',
+  /** Layers-panel swatch for the vector/streets basemap. */
+  vectorSwatch: '#4a7cbf',
 } as const;

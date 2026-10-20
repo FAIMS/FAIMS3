@@ -25,6 +25,8 @@
     "dump-user-emails": "env-cmd tsx src/scripts/dumpUserEmails.ts",
     "delete-metadata-databases": "env-cmd tsx src/scripts/deleteMetadataDatabases.ts",
     "ttl-cleanup": "env-cmd tsx src/scripts/ttlCleanup.ts",
+    "capacity-manager": "env-cmd tsx src/scripts/capacityManager.ts",
+    "spatial-worker": "env-cmd tsx src/scripts/spatialWorker.ts --poll",
     "restore-backup": "env-cmd node --expose-gc --max-old-space-size=8000 --import tsx src/scripts/restoreBackup.ts",
     "migrate-test-backups": "tsx src/scripts/migrateBackupJsonl.ts test/backup-short.jsonl test/backup.jsonl",
     "migrate-notebook-json": "tsx src/scripts/migrateNotebookJson.ts",
@@ -32,6 +34,10 @@
     "debug-migration-lock": "env-cmd tsx scripts/debugMigrationLock.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-ecs": "^3.1147.0",
+    "@aws-sdk/client-s3": "^3.1147.0",
+    "@aws-sdk/lib-storage": "^3.1147.0",
+    "@aws-sdk/s3-request-presigner": "^3.1147.0",
     "@bugsnag/js": "^7.20.2",
     "@bugsnag/plugin-express": "^7.0.0",
     "@faims3/data-model": "workspace:*",

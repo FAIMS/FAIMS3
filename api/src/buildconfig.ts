@@ -26,6 +26,26 @@ import {
 import {existsSync} from 'fs';
 import {z} from 'zod';
 import {
+  AttachmentStorageConfig,
+  AttachmentStorageType,
+  createAttachmentStorageService,
+  IAttachmentStorageService,
+} from './services/attachmentStorageService';
+import {
+  CapacityProviderType,
+  EcsCapacityProviderConfig,
+} from './services/capacityProvider';
+import {
+  DEFAULT_GDAL_CACHE_MAX_MB,
+  DEFAULT_GDAL_NUM_THREADS,
+  DEFAULT_GDAL_WARP_MEMORY_MB,
+  DEFAULT_GDAL_WARP_MULTI,
+} from './spatial/gdalPerformance';
+import {
+  DEFAULT_CAPACITY_SCALE_THRESHOLDS_CSV,
+  parseCapacityScaleThresholds,
+} from './spatial/reconcileCapacity';
+import {
   createEmailService,
   EmailConfig,
   EmailServiceType,
@@ -269,6 +289,20 @@ const EnvSchema = z
      */
     ATTEMPT_LIMITER_ENABLED: configHelpers.boolWithDefault(true),
     /**
+     * When true, start a 1 Hz stdout memory sampler with leak-oriented
+     * diagnostics (heap/RSS deltas, moving averages, peaks, detached
+     * contexts, event-loop lag). Blank → off. Unrecognised values fail
+     * parse. Intended for local/debug leak hunts — noisy at 1 Hz.
+     */
+    MEMORY_MONITOR_ENABLED: configHelpers.boolWithDefault(false),
+    /**
+     * Whether morgan writes a combined-format access line for every HTTP
+     * request. Blank → on; unrecognised values fail parse. Set false to
+     * quiet stdout when structured audit logs (map-asset processing,
+     * invites, downloads) are enough. Does not affect those audit lines.
+     */
+    REQUEST_LOGGING_ENABLED: configHelpers.boolWithDefault(true),
+    /**
      * Canonical public URL of this Conductor (required). Trailing `/` is
      * stripped.
      */
@@ -324,6 +358,190 @@ const EnvSchema = z
      * validated when the endpoint is used. Forced to a fake address under test.
      */
     TEST_EMAIL_ADDRESS: z.string().optional(),
+    /**
+     * Object-store backend for map-layer files (`S3` or `MOCK`). Blank → S3.
+     * Forced to MOCK under test. S3 also talks to RustFS when
+     * ATTACHMENT_S3_ENDPOINT is set.
+     */
+    ATTACHMENT_STORAGE_TYPE: configHelpers.nativeEnumDefault(
+      AttachmentStorageType,
+      AttachmentStorageType.S3
+    ),
+    /** Bucket that holds map-layer objects (required when type is S3). */
+    ATTACHMENT_S3_BUCKET: z.string().optional(),
+    /**
+     * Key prefix inside the bucket, e.g. `map-assets` (required when type
+     * is S3). Leading/trailing slashes are stripped.
+     */
+    ATTACHMENT_S3_PREFIX: z.string().optional(),
+    /**
+     * AWS region, or a dummy region for RustFS (required when type is S3).
+     */
+    ATTACHMENT_S3_REGION: z.string().optional(),
+    /**
+     * Custom S3 endpoint (RustFS, MinIO). Omit for AWS S3. Native local
+     * dev uses `http://localhost:9000`; Docker `--all` uses
+     * `http://rustfs:9000`.
+     */
+    ATTACHMENT_S3_ENDPOINT: z.string().optional(),
+    /**
+     * Host-visible S3 endpoint used when signing download URLs. Needed
+     * when the API talks to RustFS as `http://rustfs:9000` but browsers
+     * fetch `http://localhost:9000`. Omit when the signing host is
+     * already reachable (native `./dev.sh`, AWS S3).
+     */
+    ATTACHMENT_S3_PUBLIC_ENDPOINT: z.string().optional(),
+    /**
+     * Path-style S3 URLs (`true` / other). Default true when an endpoint
+     * is set (required for RustFS).
+     */
+    ATTACHMENT_S3_FORCE_PATH_STYLE: z.string().optional(),
+    /**
+     * Optional static access key. Omit on ECS so the task role is used.
+     * Required for local RustFS.
+     */
+    ATTACHMENT_S3_ACCESS_KEY_ID: z.string().optional(),
+    /**
+     * Optional static secret key. Omit on ECS so the task role is used.
+     */
+    ATTACHMENT_S3_SECRET_ACCESS_KEY: z.string().optional(),
+    /**
+     * Who turns the Couch map-asset queue into workers.
+     * `FIXED` (default) — always-on pool; the manager does not start tasks.
+     * `ECS` — capacity manager calls RunTask. `MOCK` is forced under test.
+     */
+    CAPACITY_PROVIDER: configHelpers.nativeEnumDefault(
+      CapacityProviderType,
+      CapacityProviderType.FIXED
+    ),
+    /** Max workers the capacity manager will ask for at once. */
+    CAPACITY_MAX: configHelpers.intDefault(4, 'CAPACITY_MAX'),
+    /**
+     * Queue depths at which worker count increases from 1.
+     * `3,8,16,32` means 1→2 at 3 jobs, 2→3 at 8, 3→4 at 16, 4→5 at 32.
+     * Always capped by CAPACITY_MAX.
+     */
+    CAPACITY_SCALE_THRESHOLDS: z
+      .string()
+      .optional()
+      .transform((v, ctx) => {
+        const raw = configHelpers.isBlank(v)
+          ? DEFAULT_CAPACITY_SCALE_THRESHOLDS_CSV
+          : v;
+        try {
+          return parseCapacityScaleThresholds(raw);
+        } catch (error) {
+          ctx.addIssue({
+            code: 'custom',
+            message: error instanceof Error ? error.message : String(error),
+          });
+          return z.NEVER;
+        }
+      }),
+    /** How often the capacity manager reconciles queue depth (ms). */
+    CAPACITY_RECONCILE_MS: configHelpers.intDefault(
+      15_000,
+      'CAPACITY_RECONCILE_MS'
+    ),
+    /** Replica count reported by the FIXED provider. It does not start tasks. */
+    CAPACITY_FIXED_REPLICAS: configHelpers.intDefault(
+      1,
+      'CAPACITY_FIXED_REPLICAS'
+    ),
+    /** ECS cluster name or ARN. Required when CAPACITY_PROVIDER is ECS. */
+    CAPACITY_ECS_CLUSTER: z.string().optional(),
+    /** Worker task definition ARN passed to RunTask. */
+    CAPACITY_ECS_WORKER_TASK_DEFINITION: z.string().optional(),
+    /** Worker task definition family used to list running and pending tasks. */
+    CAPACITY_ECS_WORKER_TASK_FAMILY: z.string().optional(),
+    /** Container name inside the worker task definition. */
+    CAPACITY_ECS_WORKER_CONTAINER: z.string().optional(),
+    /** Comma-separated subnet ids for RunTask awsvpc networking. */
+    CAPACITY_ECS_SUBNETS: z.string().optional(),
+    /** Comma-separated security group ids for RunTask. */
+    CAPACITY_ECS_SECURITY_GROUPS: z.string().optional(),
+    /** `ENABLED` or `DISABLED`. Default ENABLED (public subnets, no NAT). */
+    CAPACITY_ECS_ASSIGN_PUBLIC_IP: z.string().optional(),
+    /**
+     * Spatial worker exits after this many ms with no job. `0` never exits
+     * (compose / on-prem). AWS default is 60s so Fargate returns to zero.
+     */
+    SPATIAL_WORKER_IDLE_EXIT_MS: configHelpers.intDefault(
+      60_000,
+      'SPATIAL_WORKER_IDLE_EXIT_MS'
+    ),
+    /** Delay between empty spatial-worker polls. */
+    SPATIAL_WORKER_POLL_MS: configHelpers.intDefault(
+      5_000,
+      'SPATIAL_WORKER_POLL_MS'
+    ),
+    /**
+     * GDAL worker threads for warp / overviews / compression.
+     * `ALL_CPUS` (default) or a positive integer. Scales with task vCPU.
+     */
+    GDAL_NUM_THREADS: z
+      .string()
+      .optional()
+      .transform((v, ctx) => {
+        if (configHelpers.isBlank(v)) {
+          return DEFAULT_GDAL_NUM_THREADS;
+        }
+        const upper = v.trim().toUpperCase();
+        if (upper === 'ALL_CPUS') {
+          return 'ALL_CPUS';
+        }
+        const parsed = parseInt(v, 10);
+        if (!Number.isInteger(parsed) || parsed < 1) {
+          ctx.addIssue({
+            code: 'custom',
+            message: 'GDAL_NUM_THREADS must be ALL_CPUS or a positive integer',
+          });
+          return z.NEVER;
+        }
+        return String(parsed);
+      }),
+    /**
+     * Raster block cache in megabytes (`GDAL_CACHEMAX`). Values below
+     * 100000 are MB. Default 256 fits a 2 GiB worker; raise on large tasks.
+     */
+    GDAL_CACHEMAX: configHelpers
+      .intDefault(DEFAULT_GDAL_CACHE_MAX_MB, 'GDAL_CACHEMAX')
+      .refine(n => n > 0, {
+        message: 'GDAL_CACHEMAX must be a positive integer',
+      }),
+    /**
+     * `gdalwarp -wm` working buffer in megabytes. Shared across warp
+     * threads — raise this when GDAL_NUM_THREADS > 1. Default 256.
+     */
+    GDAL_WARP_MEMORY_MB: configHelpers
+      .intDefault(DEFAULT_GDAL_WARP_MEMORY_MB, 'GDAL_WARP_MEMORY_MB')
+      .refine(n => n > 0, {
+        message: 'GDAL_WARP_MEMORY_MB must be a positive integer',
+      }),
+    /**
+     * `gdalwarp -multi`: overlap I/O with compute (two threads). Default on.
+     */
+    GDAL_WARP_MULTI: configHelpers.boolWithDefault(DEFAULT_GDAL_WARP_MULTI),
+    /**
+     * Cap tippecanoe threads. Blank = all CPUs (tippecanoe's default).
+     */
+    TIPPECANOE_MAX_THREADS: z
+      .string()
+      .optional()
+      .transform((v, ctx) => {
+        if (configHelpers.isBlank(v)) {
+          return undefined;
+        }
+        const parsed = parseInt(v, 10);
+        if (!Number.isInteger(parsed) || parsed < 1) {
+          ctx.addIssue({
+            code: 'custom',
+            message: 'TIPPECANOE_MAX_THREADS must be a positive integer',
+          });
+          return z.NEVER;
+        }
+        return parsed;
+      }),
     /**
      * Comma-separated list of domains to which auth-flow redirects are
      * allowed. Required; each entry must be a valid URL.
@@ -566,6 +784,8 @@ const EnvSchema = z
       exportRateLimiterWindowMs: env.EXPORT_RATE_LIMITER_WINDOW_MS,
       exportRateLimiterPerWindow: env.EXPORT_RATE_LIMITER_PER_WINDOW,
       authAttemptLimiterEnabled: env.ATTEMPT_LIMITER_ENABLED,
+      memoryMonitorEnabled: env.MEMORY_MONITOR_ENABLED,
+      requestLoggingEnabled: env.REQUEST_LOGGING_ENABLED,
       keySource: env.KEY_SOURCE,
       maximumLongLivedDurationDays: env.MAXIMUM_LONG_LIVED_DURATION_DAYS,
       bugsnagApiKey: env.BUGSNAG_API_KEY,
@@ -595,13 +815,45 @@ const EnvSchema = z
         smtpCacheExpirySeconds: env.SMTP_CACHE_EXPIRY_SECONDS,
         testEmailAddress: env.TEST_EMAIL_ADDRESS,
       },
+      _attachment: {
+        serviceType: env.ATTACHMENT_STORAGE_TYPE,
+        bucket: env.ATTACHMENT_S3_BUCKET,
+        prefix: env.ATTACHMENT_S3_PREFIX,
+        region: env.ATTACHMENT_S3_REGION,
+        endpoint: env.ATTACHMENT_S3_ENDPOINT,
+        publicEndpoint: env.ATTACHMENT_S3_PUBLIC_ENDPOINT,
+        forcePathStyle: env.ATTACHMENT_S3_FORCE_PATH_STYLE,
+        accessKeyId: env.ATTACHMENT_S3_ACCESS_KEY_ID,
+        secretAccessKey: env.ATTACHMENT_S3_SECRET_ACCESS_KEY,
+      },
+      _capacity: {
+        serviceType: env.CAPACITY_PROVIDER,
+        max: env.CAPACITY_MAX,
+        scaleThresholds: env.CAPACITY_SCALE_THRESHOLDS,
+        reconcileMs: env.CAPACITY_RECONCILE_MS,
+        fixedReplicas: env.CAPACITY_FIXED_REPLICAS,
+        cluster: env.CAPACITY_ECS_CLUSTER,
+        taskDefinition: env.CAPACITY_ECS_WORKER_TASK_DEFINITION,
+        taskFamily: env.CAPACITY_ECS_WORKER_TASK_FAMILY,
+        containerName: env.CAPACITY_ECS_WORKER_CONTAINER,
+        subnets: env.CAPACITY_ECS_SUBNETS,
+        securityGroups: env.CAPACITY_ECS_SECURITY_GROUPS,
+        assignPublicIp: env.CAPACITY_ECS_ASSIGN_PUBLIC_IP,
+        idleExitMs: env.SPATIAL_WORKER_IDLE_EXIT_MS,
+        pollMs: env.SPATIAL_WORKER_POLL_MS,
+        gdalNumThreads: env.GDAL_NUM_THREADS,
+        gdalCacheMaxMb: env.GDAL_CACHEMAX,
+        gdalWarpMemoryMb: env.GDAL_WARP_MEMORY_MB,
+        gdalWarpMulti: env.GDAL_WARP_MULTI,
+        tippecanoeMaxThreads: env.TIPPECANOE_MAX_THREADS,
+      },
       _keyFileHost: keyFileHost,
     };
   });
 
 const parsed = EnvSchema.parse(process.env);
 
-const {_email, _keyFileHost, ...configFields} = parsed;
+const {_email, _attachment, _capacity, _keyFileHost, ...configFields} = parsed;
 
 // ---------------------------------------------------------------------------
 // Email scalars resolved once and hung on `config`.
@@ -684,6 +936,160 @@ const testEmailAddress = configFields.runningUnderTest
     ? undefined
     : _email.testEmailAddress;
 
+/** Mock storage under test; otherwise the configured S3/RustFS provider. */
+function resolveAttachmentStorageType(): AttachmentStorageType {
+  if (configFields.runningUnderTest) {
+    console.log('Since we are testing, using mock attachment storage.');
+    return AttachmentStorageType.MOCK;
+  }
+  return _attachment.serviceType;
+}
+
+const TEST_ATTACHMENT_STORAGE_CONFIG: AttachmentStorageConfig = {
+  bucket: 'test-map-assets',
+  prefix: 'map-assets',
+  region: 'us-east-1',
+};
+
+/** Validates S3 env and throws with a detailed missing-field report if incomplete. */
+function resolveAttachmentStorageConfig(): AttachmentStorageConfig {
+  const bucket = _attachment.bucket;
+  const prefix = _attachment.prefix;
+  const region = _attachment.region;
+  const endpoint = configHelpers.isBlank(_attachment.endpoint)
+    ? undefined
+    : _attachment.endpoint;
+  const publicEndpoint = configHelpers.isBlank(_attachment.publicEndpoint)
+    ? undefined
+    : _attachment.publicEndpoint;
+  const accessKeyId = configHelpers.isBlank(_attachment.accessKeyId)
+    ? undefined
+    : _attachment.accessKeyId;
+  const secretAccessKey = configHelpers.isBlank(_attachment.secretAccessKey)
+    ? undefined
+    : _attachment.secretAccessKey;
+  const forcePathStyleExplicit = _attachment.forcePathStyle;
+  const forcePathStyle =
+    forcePathStyleExplicit === undefined
+      ? endpoint !== undefined
+      : forcePathStyleExplicit.toLowerCase() === 'true';
+
+  const missingConfig = [];
+  if (configHelpers.isBlank(bucket)) missingConfig.push('ATTACHMENT_S3_BUCKET');
+  if (configHelpers.isBlank(prefix)) missingConfig.push('ATTACHMENT_S3_PREFIX');
+  if (configHelpers.isBlank(region)) missingConfig.push('ATTACHMENT_S3_REGION');
+
+  if (missingConfig.length > 0) {
+    const providedConfig = {
+      ATTACHMENT_S3_BUCKET: bucket || '[missing]',
+      ATTACHMENT_S3_PREFIX: prefix || '[missing]',
+      ATTACHMENT_S3_REGION: region || '[missing]',
+      ATTACHMENT_S3_ENDPOINT: endpoint || '[not set — AWS S3]',
+      ATTACHMENT_S3_PUBLIC_ENDPOINT:
+        publicEndpoint || '[not set — same as endpoint]',
+      ATTACHMENT_S3_FORCE_PATH_STYLE: forcePathStyleExplicit || '[default]',
+      ATTACHMENT_S3_ACCESS_KEY_ID: accessKeyId
+        ? '[provided]'
+        : '[not set — default credential chain]',
+      ATTACHMENT_S3_SECRET_ACCESS_KEY: secretAccessKey
+        ? '[provided]'
+        : '[not set — default credential chain]',
+    };
+
+    throw new Error(
+      `Attachment storage configuration is incomplete. Missing required values: ${missingConfig.join(', ')}.\n` +
+        `Provided configuration: ${JSON.stringify(providedConfig, null, 2)}`
+    );
+  }
+
+  return {
+    bucket: bucket!,
+    prefix: prefix!,
+    region: region!,
+    endpoint,
+    publicEndpoint,
+    forcePathStyle,
+    accessKeyId,
+    secretAccessKey,
+  };
+}
+
+const attachmentStorageType = resolveAttachmentStorageType();
+const attachmentStorage =
+  attachmentStorageType === AttachmentStorageType.S3
+    ? resolveAttachmentStorageConfig()
+    : TEST_ATTACHMENT_STORAGE_CONFIG;
+
+/** Split a comma-separated env value, trimming blanks. */
+function splitCsv(value: string | undefined): string[] {
+  if (configHelpers.isBlank(value)) {
+    return [];
+  }
+  return value
+    .split(',')
+    .map(part => part.trim())
+    .filter(part => part.length > 0);
+}
+
+/** Mock capacity under test; otherwise FIXED or ECS from env. */
+function resolveCapacityProviderType(): CapacityProviderType {
+  if (configFields.runningUnderTest) {
+    return CapacityProviderType.MOCK;
+  }
+  return _capacity.serviceType;
+}
+
+/** Validates ECS RunTask env. Only called when the provider type is ECS. */
+function resolveEcsCapacityConfig(): EcsCapacityProviderConfig {
+  const cluster = _capacity.cluster;
+  const taskDefinition = _capacity.taskDefinition;
+  const taskFamily = _capacity.taskFamily;
+  const containerName = _capacity.containerName;
+  const subnets = splitCsv(_capacity.subnets);
+  const securityGroups = splitCsv(_capacity.securityGroups);
+  const assignRaw = configHelpers.isBlank(_capacity.assignPublicIp)
+    ? 'ENABLED'
+    : _capacity.assignPublicIp.toUpperCase();
+
+  const missing: string[] = [];
+  if (configHelpers.isBlank(cluster)) missing.push('CAPACITY_ECS_CLUSTER');
+  if (configHelpers.isBlank(taskDefinition)) {
+    missing.push('CAPACITY_ECS_WORKER_TASK_DEFINITION');
+  }
+  if (configHelpers.isBlank(taskFamily)) {
+    missing.push('CAPACITY_ECS_WORKER_TASK_FAMILY');
+  }
+  if (configHelpers.isBlank(containerName)) {
+    missing.push('CAPACITY_ECS_WORKER_CONTAINER');
+  }
+  if (subnets.length === 0) missing.push('CAPACITY_ECS_SUBNETS');
+  if (securityGroups.length === 0) missing.push('CAPACITY_ECS_SECURITY_GROUPS');
+  if (assignRaw !== 'ENABLED' && assignRaw !== 'DISABLED') {
+    missing.push('CAPACITY_ECS_ASSIGN_PUBLIC_IP (ENABLED or DISABLED)');
+  }
+  if (missing.length > 0) {
+    throw new Error(
+      `ECS capacity configuration is incomplete. Missing required values: ${missing.join(', ')}.`
+    );
+  }
+
+  return {
+    cluster: cluster!,
+    taskDefinition: taskDefinition!,
+    taskFamily: taskFamily!,
+    containerName: containerName!,
+    subnets,
+    securityGroups,
+    assignPublicIp: assignRaw as 'ENABLED' | 'DISABLED',
+  };
+}
+
+const capacityProviderType = resolveCapacityProviderType();
+const capacityEcs =
+  capacityProviderType === CapacityProviderType.ECS
+    ? resolveEcsCapacityConfig()
+    : undefined;
+
 /**
  * The singleton configuration object. Prefer reading values from here.
  *
@@ -698,6 +1104,22 @@ export const config = {
   email,
   /** Present for the admin email-test endpoint; optional at startup. */
   testEmailAddress,
+  attachmentStorageType,
+  attachmentStorage,
+  capacityProviderType,
+  /** Present when {@link capacityProviderType} is ECS. */
+  capacityEcs,
+  capacityMax: _capacity.max,
+  capacityScaleThresholds: _capacity.scaleThresholds,
+  capacityReconcileMs: _capacity.reconcileMs,
+  capacityFixedReplicas: _capacity.fixedReplicas,
+  spatialWorkerIdleExitMs: _capacity.idleExitMs,
+  spatialWorkerPollMs: _capacity.pollMs,
+  gdalNumThreads: _capacity.gdalNumThreads,
+  gdalCacheMaxMb: _capacity.gdalCacheMaxMb,
+  gdalWarpMemoryMb: _capacity.gdalWarpMemoryMb,
+  gdalWarpMulti: _capacity.gdalWarpMulti,
+  tippecanoeMaxThreads: _capacity.tippecanoeMaxThreads,
 };
 
 export type Config = typeof config;
@@ -764,3 +1186,10 @@ export const emailService: IEmailService = createEmailService({
       ? resolveSmtpConfig()
       : undefined,
 });
+
+/** Attachment-storage singleton. Tests may stub methods on this instance. */
+export const attachmentStorageService: IAttachmentStorageService =
+  createAttachmentStorageService({
+    serviceType: attachmentStorageType,
+    config: attachmentStorage,
+  });

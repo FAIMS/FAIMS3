@@ -42,58 +42,39 @@ import {
 import {getCoordinates, useCurrentLocation} from '../../hooks/useLocation';
 import {logWarn} from '../../logging';
 import {headingIndicatorCoordinate} from './headingIndicator';
+import {loadLastLocation, saveLastLocation} from './lastKnownLocation';
 import {
   CenterOnLocationControl,
   CompassControl,
-  LayerToggleControl,
+  FullscreenControl,
   UseCurrentLocationControl,
   ZoomControl,
 } from './controls/map-controls';
 import {MapControlsOverlay, MapControlStack} from './controls/primitives';
+import {useMapFullscreen} from './useMapFullscreen';
 import {MapControlThemeProvider} from './mapTheme';
 import {MapConfig} from './types';
+import {
+  applyBaseMapLayerPaint,
+  BASE_MAP_SATELLITE_ID,
+  BASE_MAP_VECTOR_ID,
+  readBaseMapLayersState,
+} from './baseMapLayers';
+import {ContextualLayersControl} from './ContextualLayersControl';
+import {GPS_CURSOR_LAYER_Z_INDEX} from './layerStack';
+import type {RecordFormLayer, RecordFormLayerPatch} from './recordFormLayers';
+import {useBaseMapLayers} from './useBaseMapLayers';
+import {useContextualMapLayers} from './useContextualMapLayers';
 import {createTileStore} from './tileDB/TileStore';
 
 export const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
 const MIN_ZOOM = 12;
 
-const LAST_LOCATION_KEY = 'last_map_center';
-
 const MAP_VIEW_ANIMATION_DURATION_MS = 800;
 const MAP_VIEW_FIT_PADDING_PX = [24, 24, 24, 24];
 // fallback to Sydney
 const FALLBACK_MAP_CENTER: [number, number] = [151.2093, -33.8688];
-
-function saveLastLocation(coords: [number, number]) {
-  try {
-    localStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(coords));
-  } catch {
-    // Silently ignore — localStorage can be unavailable in private browsing
-    // or when storage quota is exceeded. Losing the cached location is
-    // acceptable; the map will fall back to Sydney on next open.
-  }
-}
-
-function loadLastLocation(): [number, number] | null {
-  try {
-    const stored = localStorage.getItem(LAST_LOCATION_KEY);
-    if (stored) {
-      const coords = JSON.parse(stored);
-      if (
-        Array.isArray(coords) &&
-        coords.length === 2 &&
-        typeof coords[0] === 'number' &&
-        typeof coords[1] === 'number'
-      ) {
-        return coords as [number, number];
-      }
-    }
-  } catch {
-    //  malformed JSON in localStorage is treated as no cache
-  }
-  return null;
-}
 
 /**
  * A Map component for all our mapping needs.
@@ -120,14 +101,30 @@ export interface MapComponentProps {
   // control buttons.
   topOverlay?: ReactNode;
 
-  /** When false, hides zoom, compass, layer toggle, and location controls. */
+  /** When false, hides zoom, compass, layers, and location controls. */
   showControls?: boolean;
+
+  /**
+   * When true, shows a top-right control that expands this map into a
+   * lightbox-style full-screen view. Opt-in so hosts that are already
+   * full-screen (the map field dialog) do not nest another overlay.
+   */
+  enableFullscreen?: boolean;
 
   /** Whether to auto-fly to the first valid current location. Defaults to true. */
   autoFlyToCurrentLocation?: boolean;
 
   /** When true, disables user map navigation such as pan, zoom, and rotation. */
   lockNavigation?: boolean;
+
+  /**
+   * Per-form record geometry on the overview map. Listed in the Layers panel
+   * with the same visibility and vector paint controls as downloaded overlays.
+   */
+  recordLayers?: RecordFormLayer[];
+  onUpdateRecordLayer?: (id: string, patch: RecordFormLayerPatch) => void;
+  /** Restore per-form record layers to default visibility, stack, and paint. */
+  onResetRecordLayers?: () => void;
 }
 
 /**
@@ -148,45 +145,75 @@ export const MapComponent = (props: MapComponentProps) => (
   </MapControlThemeProvider>
 );
 
-/** OpenLayers map with optional controls, GPS overlay, and layer toggle. */
+/** OpenLayers map with optional controls, GPS overlay, and layers panel. */
 const MapComponentImpl = (props: MapComponentProps) => {
   // Defaults
   const showControls = props.showControls ?? true;
+  const enableFullscreen = props.enableFullscreen ?? false;
   const autoFlyToCurrentLocation = props.autoFlyToCurrentLocation ?? true;
+  const {isFullscreen, toggleFullscreen} = useMapFullscreen(enableFullscreen);
 
   const [map, setMap] = useState<Map | undefined>(undefined);
+  useContextualMapLayers(map);
   const [zoomLevel, setZoomLevel] = useState(props.zoom || MIN_ZOOM); // Default zoom level
   const [attribution, setAttribution] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   // Whether we have a live GPS fix (drives control button enablement)
   const [locationAvailable, setLocationAvailable] = useState<boolean>(false);
   const tileStore = useMemo(() => createTileStore(props.config), []);
-  // Layers are memoised so the layer toggle control operates on the same
-  // instances that were added to the map
-  const tileLayer = useMemo(() => tileStore.getTileLayer(), [tileStore]);
-  const satelliteLayer = useMemo(
-    () =>
-      tileStore.hasSatellite() ? tileStore.getSatelliteLayer() : undefined,
-    [tileStore]
-  );
-  const vectorZoomRange = useMemo(
-    () => tileStore.getVectorZoomRange(),
-    [tileStore]
-  );
-  const satelliteZoomRange = useMemo(
-    () => tileStore.getSatelliteZoomRange(),
-    [tileStore]
-  );
-  const handleLayerChange = useCallback(
-    (isSatellite: boolean) => {
-      setAttribution(
-        isSatellite
-          ? tileStore.getSatelliteAttribution()
-          : (tileStore.getAttribution() as unknown as string)
-      );
-    },
-    [tileStore]
-  );
+  // Same layer instances are added to the map and driven by the layers panel
+  const tileLayer = useMemo(() => {
+    const layer = tileStore.getTileLayer();
+    const prefs = readBaseMapLayersState();
+    applyBaseMapLayerPaint(layer, prefs.vector, prefs.vector.visible);
+    return layer;
+  }, [tileStore]);
+  const satelliteLayer = useMemo(() => {
+    if (!tileStore.hasSatellite()) {
+      return undefined;
+    }
+    const layer = tileStore.getSatelliteLayer();
+    if (!layer) {
+      return undefined;
+    }
+    const prefs = readBaseMapLayersState();
+    applyBaseMapLayerPaint(
+      layer,
+      prefs.satellite,
+      prefs.satellite.visible && navigator.onLine
+    );
+    return layer;
+  }, [tileStore]);
+  const {
+    baseLayers,
+    updateBaseLayer,
+    resetBaseLayers,
+    vectorVisible,
+    satelliteVisible,
+  } = useBaseMapLayers(tileLayer, satelliteLayer, isOnline);
+
+  useEffect(() => {
+    const vectorAttribution = tileStore.getAttribution() as unknown as string;
+    const visible = [
+      {
+        visible: satelliteVisible,
+        zIndex:
+          baseLayers.find(layer => layer.id === BASE_MAP_SATELLITE_ID)
+            ?.zIndex ?? 0,
+        attribution: tileStore.getSatelliteAttribution(),
+      },
+      {
+        visible: vectorVisible,
+        zIndex:
+          baseLayers.find(layer => layer.id === BASE_MAP_VECTOR_ID)?.zIndex ??
+          0,
+        attribution: vectorAttribution,
+      },
+    ]
+      .filter(layer => layer.visible && layer.attribution)
+      .sort((a, b) => b.zIndex - a.zIndex);
+    setAttribution(visible[0]?.attribution ?? vectorAttribution);
+  }, [tileStore, baseLayers, vectorVisible, satelliteVisible]);
 
   // Listen for online/offline events to update isOnline state
   useEffect(() => {
@@ -453,7 +480,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
     // instead of snapping when the gesture ends.
     const layer = new VectorLayer({
       source: positionSource,
-      zIndex: 999,
+      zIndex: GPS_CURSOR_LAYER_Z_INDEX,
       updateWhileAnimating: true,
       updateWhileInteracting: true,
     });
@@ -590,15 +617,20 @@ const MapComponentImpl = (props: MapComponentProps) => {
   );
 
   // Keep the OpenLayers canvas in sync with its container size (OL doesn't
-  // observe container resizes itself)
+  // observe container resizes itself). Also refresh after entering or leaving
+  // full-screen so tiles fill the new viewport immediately.
   useEffect(() => {
     if (!map) return;
     const target = map.getTargetElement();
     if (!target) return;
     const observer = new ResizeObserver(() => map.updateSize());
     observer.observe(target);
-    return () => observer.disconnect();
-  }, [map]);
+    const frame = requestAnimationFrame(() => map.updateSize());
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [map, isFullscreen]);
 
   // Handler for the "use current location" control (map picker only)
   const setSelectionAsCurrentLocation =
@@ -617,16 +649,31 @@ const MapComponentImpl = (props: MapComponentProps) => {
     }
   };
 
+  const showOverlay = showControls || props.topOverlay || enableFullscreen;
+  const showTopRight =
+    enableFullscreen || (showControls && !!setSelectionAsCurrentLocation);
+
   return (
     <Box
-      sx={{
+      role={isFullscreen ? 'dialog' : undefined}
+      aria-modal={isFullscreen || undefined}
+      aria-label={isFullscreen ? 'Full screen map' : undefined}
+      sx={theme => ({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
         width: '100%',
         minHeight: 0,
         minWidth: 0,
-      }}
+        ...(isFullscreen && {
+          position: 'fixed',
+          inset: 0,
+          zIndex: theme.zIndex.modal,
+          backgroundColor: theme.palette.background.paper,
+          overflow: 'hidden',
+          pb: 'env(safe-area-inset-bottom, 0px)',
+        }),
+      })}
     >
       <Box sx={{position: 'relative', flex: 1, minHeight: 0, width: '100%'}}>
         <Box
@@ -636,33 +683,47 @@ const MapComponentImpl = (props: MapComponentProps) => {
             width: '100%',
           }}
         />
-        {map && (showControls || props.topOverlay) && (
+        {map && showOverlay && (
           <MapControlsOverlay
-            topContent={props.topOverlay}
+            insetSafeArea={isFullscreen}
+            topContent={
+              <>
+                {props.topOverlay}
+                {showControls && (
+                  <ContextualLayersControl
+                    map={map}
+                    baseLayers={baseLayers}
+                    onUpdateBaseLayer={updateBaseLayer}
+                    onResetBaseLayers={resetBaseLayers}
+                    recordLayers={props.recordLayers}
+                    onUpdateRecordLayer={props.onUpdateRecordLayer}
+                    onResetRecordLayers={props.onResetRecordLayers}
+                  />
+                )}
+              </>
+            }
             topRight={
-              showControls &&
-              setSelectionAsCurrentLocation && (
-                <UseCurrentLocationControl
-                  onSetPoint={handleUseCurrentLocation}
-                  locationAvailable={locationAvailable}
-                />
+              showTopRight && (
+                <>
+                  {enableFullscreen && (
+                    <FullscreenControl
+                      isFullscreen={isFullscreen}
+                      onToggle={toggleFullscreen}
+                    />
+                  )}
+                  {showControls && setSelectionAsCurrentLocation && (
+                    <UseCurrentLocationControl
+                      onSetPoint={handleUseCurrentLocation}
+                      locationAvailable={locationAvailable}
+                    />
+                  )}
+                </>
               )
             }
             bottomRight={
               showControls && (
                 <MapControlStack>
                   <CompassControl map={map} />
-                  {satelliteLayer && (
-                    <LayerToggleControl
-                      map={map}
-                      vectorLayer={tileLayer}
-                      satelliteLayer={satelliteLayer}
-                      isOnline={isOnline}
-                      vectorZoomRange={vectorZoomRange}
-                      satelliteZoomRange={satelliteZoomRange}
-                      onLayerChange={handleLayerChange}
-                    />
-                  )}
                   <CenterOnLocationControl
                     onCenter={centerMap}
                     locationAvailable={locationAvailable}

@@ -401,6 +401,7 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `enhancedObservability`: (Optional) Enable ECS enhanced observability (container insights)
   - `cpu`: The number of CPU units for the Fargate task
   - `memory`: The amount of memory (in MiB) for the Fargate task
+  - `ephemeralStorageGiB`: (default `21`, range 21–200) Fargate ephemeral disk for the API task. Map-layer GDAL scratch is on the spatial worker (`spatialCapacity.ephemeralStorageGiB`, default 80), not here.
   - `localhostWhitelist`: (default false) Allow localhost-style redirects; not recommended for production
   - `disableMigrateOnStartup`: (default `false`) Skip API-boot Couch migrate and notebook walks (`DISABLE_MIGRATE_ON_STARTUP`). Leave false so boot still runs `initialiseAndMigrateDBs` + `validateDatabases`. Set true only when migrate is handled out of band (`pnpm migrate-with-keys`) or for a debug stack against an already-migrated DB. When true, the lock is unused: omit `disableStartupMigrationLock` (it is forced off) or set it `true`. An explicit `disableStartupMigrationLock: false` with this flag is a config error.
   - `disableStartupMigrationLock`: (optional, default treated as `false` when migrate-on-startup is still on) Opt out of the Couch-mediated startup-migration lock. AWS ECS is clustered, so CDK **hard-enables** `STARTUP_MIGRATION_LOCK_ENABLED` unless this is `true` or `disableMigrateOnStartup` is `true`. Leave unset/false in production so replicas claim/wait instead of racing migrate. Only set true for a single-task / debug stack (the same reason local `pnpm run dev` defaults the env flag off — a killed reload can leave a `running` lock that strands the next boot until the steal timeout).
@@ -658,3 +659,59 @@ This will:
 1. Send a test email to the configured test address
 2. Return detailed diagnostics about the process
 3. Help identify any configuration issues
+
+# Map-layer object storage
+
+CDK creates a private S3 bucket for map-layer originals and normalized files, with CORS `GET`/`HEAD` so the app and Control Centre can download via a Conductor-issued presigned URL. CouchDB stores only metadata, including an S3 resource URI (`s3://region/bucket/key`). The Conductor task role and the spatial-worker task role are granted read/write; the capacity manager is not. Static AWS access keys are not set.
+
+The capacity manager is a Fargate service with desired count 1 (min and max 1). It reads the Couch `pending` / `processing` queue and calls `ecs:RunTask` on the spatial-worker **task definition** (there is no worker service). Each worker polls and processes jobs until `spatialCapacity.idleExitMs` (default 60s) with nothing to claim, then exits. Idle tasks are not replaced. The manager role can `RunTask`, `ListTasks`, and `DescribeTasks`; it cannot `StopTask` or `UpdateService`.
+
+Worker count is a threshold map of total queue depth (`inFlight` + `unclaimed`), not one task per job. `scaleThresholds` are the depths at which count increases from 1: `[3, 8, 16, 32]` means 1 worker below 3 jobs, 2 below 8, 3 below 16, 4 below 32, and 5 at 32+, always capped by `maxCapacity`.
+
+Optional JSON (defaults shown). Performance knobs are conservative for the
+default 1 vCPU / 2 GiB worker. `gdalNumThreads: "ALL_CPUS"` already uses the
+task vCPU count; raise `gdalCacheMaxMb` and `gdalWarpMemoryMb` on larger
+tasks (for example 2048 / 1024 on an 8 vCPU / 32 GiB worker). Omit
+`tippecanoeMaxThreads` to let tippecanoe use all CPUs.
+
+```json
+"spatialCapacity": {
+  "maxCapacity": 4,
+  "scaleThresholds": [3, 8, 16, 32],
+  "reconcileMs": 15000,
+  "idleExitMs": 60000,
+  "cpu": 1024,
+  "memory": 2048,
+  "ephemeralStorageGiB": 80,
+  "managerCpu": 256,
+  "managerMemory": 512,
+  "gdalNumThreads": "ALL_CPUS",
+  "gdalCacheMaxMb": 256,
+  "gdalWarpMemoryMb": 256,
+  "gdalWarpMulti": true
+}
+```
+
+Those fields become worker-task env (`GDAL_NUM_THREADS`, `GDAL_CACHEMAX`,
+`GDAL_WARP_MEMORY_MB`, `GDAL_WARP_MULTI`, and optional
+`TIPPECANOE_MAX_THREADS`). The capacity manager does not receive them.
+`gdalwarp` also gets `-multi`, `-wm`, `-wo NUM_THREADS=…`, and
+`-co TILED=YES`. Homogeneous vector layers are written as FlatGeobuf;
+mixed or unknown geometry becomes GeoJSONSeq. Both are tiled with
+`tippecanoe -z 14`.
+
+Attachment storage JSON (defaults shown):
+
+```json
+"attachmentStorage": {
+  "serviceType": "S3",
+  "prefix": "map-assets"
+}
+```
+
+Conductor receives `ATTACHMENT_STORAGE_TYPE`, `ATTACHMENT_S3_BUCKET`, `ATTACHMENT_S3_PREFIX`, and `ATTACHMENT_S3_REGION`. After deploy, an operations admin can smoke-test auth with:
+
+```bash
+curl -X POST https://your-conductor-endpoint.com/api/admin/test-attachment-storage \
+  -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN"
+```

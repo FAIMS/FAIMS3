@@ -34,7 +34,8 @@ export function getPossibleTeamsForAction({
   canCreateGlobally: boolean;
   createInTeamAction:
     | Action.CREATE_TEMPLATE_IN_TEAM
-    | Action.CREATE_PROJECT_IN_TEAM;
+    | Action.CREATE_PROJECT_IN_TEAM
+    | Action.CREATE_MAP_ASSET_IN_TEAM;
   decodedToken?: DecodedTokenPermissions | null;
 }): TeamOption[] {
   const teamsAvailable =

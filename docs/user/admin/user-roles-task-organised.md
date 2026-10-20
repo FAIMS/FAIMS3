@@ -66,7 +66,7 @@ Understanding virtual and direct access is essential for troubleshooting unexpec
 
 **How new users are provisioned**: Users are created through an invite-based workflow — an Operations Administrator or Super User creates an invite, shares the code/link/QR code, and the user accepts it and signs in via SSO to create their account (see [How Users Are Created](#34-how-users-are-created)). Typically, enterprise users are onboarded with:
 
-- **Content Creator** system role — they can create {{notebooks}} and templates
+- **Content Creator** system role — they can create {{notebooks}}, templates, and map layers
 - **Team Administrator** of their own assigned team — they have full control over their team
 
 This means they can immediately create {{notebooks}}, but they won't have access to _your_ team's resources until you add them.
@@ -500,8 +500,8 @@ The **Operations Administrator** role handles routine system management without 
 
 **Cannot do (by design):**
 
-- Access {{notebooks}}, templates, or research data
-- The {{Notebooks}} and Templates sidebar items are hidden from this role
+- Access {{notebooks}}, templates, map layers, or research data
+- The {{Notebooks}}, Templates, and Map layers sidebar items are hidden from this role
 
 > **Note:** If you need both administrative control and {{notebook}} access, you need the Super User role.
 
@@ -509,12 +509,13 @@ The **Operations Administrator** role handles routine system management without 
 
 During onboarding, enterprise users are typically provisioned (via invites) with:
 
-- **Content Creator** system role — they can create {{notebooks}} and templates
+- **Content Creator** system role — they can create {{notebooks}}, templates, and map layers
 - **Team Administrator** of their assigned team — they have full control over their team
 
 This means they can immediately:
 
 - Create {{notebooks}} (stand-alone or within their team)
+- Upload map layers and link them to {{notebooks}} they administer
 - Invite users to their team and assign team roles
 - Invite users to {{notebooks}} they administer and assign {{notebook}} roles
 - Manage and update roles for their team members
@@ -540,6 +541,7 @@ This guide focuses on user, team, and {{notebook}} management. It does **not** c
 
 - **Template creation/management** — see technical documentation
 - **{{Notebook}} design and form building** — see [Quickstart Guide](../authoring/quick-start-researchers.md)
+- **Uploading and linking map layers** — see [Map layers](map-layers.md)
 - **Data collection and record management** — see [Quickstart Guide](../authoring/quick-start-researchers.md)
 - **System configuration and SSO setup** — contact your system administrator
 - **API tokens** — see technical documentation
@@ -561,7 +563,7 @@ This guide focuses on user, team, and {{notebook}} management. It does **not** c
    - **Remove** — Remove user from system
 
 ```{screenshot} user-roles/01-dashboard-sidebar.png
-:alt: {{FAIMS}} {{Dashboard}} showing left sidebar with Content section ({{Notebooks}}, Templates) and Management section (Users, Teams), plus the Users page with Users and Invites tabs, displaying Name, Email, Roles columns with role badges such as General User and Super User
+:alt: {{FAIMS}} {{Dashboard}} Users page with Users and Invites tabs. The left sidebar has a Content section ({{Notebooks}}, Templates) and a Management section; Users, Map layers, Teams, and Archive appear according to your roles
 :align: right
 :width: 100%
 ```
@@ -595,7 +597,7 @@ This guide focuses on user, team, and {{notebook}} management. It does **not** c
 3. Click the **×** in the upper-right corner of the role badge
 4. The role is removed immediately
 
-> ⚠️ **Warning**: Be careful when removing roles. If you remove Content Creator from a user, they will no longer be able to create {{notebooks}} globally. However, they can still create {{notebooks}} within teams where they have the Team Member (Creator), Team Manager, or Team Administrator role.
+> ⚠️ **Warning**: Be careful when removing roles. If you remove Content Creator from a user, they will no longer be able to create {{notebooks}} or map layers globally. However, they can still create {{notebooks}} and map layers within teams where they have the Team Member (Creator), Team Manager, or Team Administrator role.
 
 #### Managing Global Invites
 
