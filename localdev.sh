@@ -127,7 +127,7 @@ manage_docker_volumes() {
     # (about 1 GB a run); `rm --volumes` removes those and keeps couchdb_data.
     ${docker_prefix} rm --stop --force --volumes
     ${docker_prefix} down
-    echo "Skipping volume pruning (use --clear-db to clear volumes)"
+    echo "Keeping the couchdb database (use --clear-db to clear it)"
   fi
 
   echo "Starting Docker containers..."
