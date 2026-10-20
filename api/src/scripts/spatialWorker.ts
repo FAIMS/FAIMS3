@@ -64,14 +64,20 @@ const main = async () => {
   console.log(`Couch server: ${config.couchdbInternalUrl}`);
   const connection = await waitForCouchDBConnection();
   if (!connection.valid) {
-    console.error('Cannot reach CouchDB. Aborting.');
-    console.error(connection.validate_error || connection.server_msg);
+    // Missing databases (pre-migrate) are recoverable: the drain loop
+    // treats a failed poll as empty and retries. Unreachable Couch is not.
     if (connection.database_errors?.length) {
+      console.warn(
+        '[spatial-worker] CouchDB databases not ready yet; polling until they exist'
+      );
       for (const e of connection.database_errors) {
-        console.error(`  ${e}`);
+        console.warn(`  ${e}`);
       }
+    } else {
+      console.error('Cannot reach CouchDB. Aborting.');
+      console.error(connection.validate_error || connection.server_msg);
+      process.exit(1);
     }
-    process.exit(1);
   }
 
   const outcome = await runSpatialWorkerLoop({

@@ -44,22 +44,24 @@ session:
    `.env` files are gitignored so they may be missing on a fresh VM):
    `pnpm run generate-local-keys`. Then create env files if missing:
    `cp ./.env.dist ./.env; for d in api web app e2e; do [ -f ./$d/.env ] || cp ./$d/.env.dist ./$d/.env; done`
-3. Start CouchDB, RustFS, and the spatial worker pool:
-   `sudo docker compose up -d couchdb rustfs capacity-manager spatial-worker`,
+3. Start CouchDB and RustFS first:
+   `sudo docker compose up -d couchdb rustfs`,
    then wait for `curl http://localhost:5984/_up` and
-   `curl http://localhost:9000/health` to return 200. Compose builds
-   `faims-dev-worker:local` the first time that image is missing. Pass
-   `--build` only after `Dockerfile.dev` or the lockfile changes. A
-   TypeScript edit does not need a rebuild: the worker bind-mounts `api/src`.
-   Map-layer GDAL runs in `spatial-worker` (idle exit disabled).
-   `capacity-manager` uses the FIXED provider and does not start extra tasks.
-   Without the worker, uploads stay `pending`.
+   `curl http://localhost:9000/health` to return 200.
 4. Initialise the database (creates the `admin` user): `pnpm run migrate-with-keys`.
-5. Run all dev services with live reload: `pnpm run dev` (turbo builds the
+5. Start the spatial worker pool:
+   `sudo docker compose up -d capacity-manager spatial-worker`.
+   Compose builds `faims-dev-worker:local` the first time that image is
+   missing. Pass `--build` only after `Dockerfile.dev` or the lockfile
+   changes. A TypeScript edit does not need a rebuild: the worker
+   bind-mounts `api/src`. Map-layer GDAL runs in `spatial-worker` (idle
+   exit disabled). `capacity-manager` uses the FIXED provider and does
+   not start extra tasks. Without the worker, uploads stay `pending`.
+6. Run all dev services with live reload: `pnpm run dev` (turbo builds the
    shared libraries first, then runs api, app, web and the data-model watcher
    together). Run it in a long-lived tmux session; it stays in the foreground.
 
-`./localdev.sh` / `./dev.sh` automate steps 1-5 but assume `nvm`; running the
+`./localdev.sh` / `./dev.sh` automate steps 1-6 but assume `nvm`; running the
 steps directly (as above) is more reliable in this VM. `./localdev.sh --all`
 runs every service inside Docker instead of natively — slower and not needed
 for code work.

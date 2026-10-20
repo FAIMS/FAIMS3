@@ -1,14 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0
+import type {User} from '@/context/auth-provider';
 import {
   DEFAULT_MAP_ASSET_STYLE,
   MAP_ASSET_UPLOAD_BUSY_MESSAGE,
   type ExistingMapAsset,
 } from '@faims3/data-model';
+import {QueryClient} from '@tanstack/react-query';
 import {describe, expect, it} from 'vitest';
 import {
   formatAssetStatus,
+  inProgressMapAssetIds,
   mapAssetClientErrorMessage,
+  mapAssetDetailQueryKey,
+  mapAssetQueryKey,
+  mapAssetTeamQueryKey,
   messageFromBody,
+  overlayListWithCachedMapAssets,
+  patchMapAssetInLists,
+  replaceAssetInList,
+  seedMapAssetDetailsFromList,
 } from './map-asset-hooks';
 
 function asset(overrides: Partial<ExistingMapAsset> = {}): ExistingMapAsset {
@@ -69,6 +79,99 @@ describe('mapAssetClientErrorMessage', () => {
         statusText: 'Not Found',
       })
     ).toBe('Not Found');
+  });
+});
+
+const user = {token: 'tok'} as User;
+
+describe('map asset list cache helpers', () => {
+  it('lists only pending and processing ids', () => {
+    expect(
+      inProgressMapAssetIds([
+        asset({_id: 'ready', status: 'ready'}),
+        asset({_id: 'pending', status: 'pending'}),
+        asset({_id: 'failed', status: 'failed'}),
+        asset({_id: 'processing', status: 'processing'}),
+      ])
+    ).toEqual(['pending', 'processing']);
+  });
+
+  it('replaces a matching list row and leaves others alone', () => {
+    const current = asset({_id: 'asset-1', status: 'processing'});
+    const other = asset({_id: 'asset-2', status: 'ready'});
+    const next = asset({
+      _id: 'asset-1',
+      status: 'ready',
+      kind: 'vector-tiles',
+    });
+    const updated = replaceAssetInList({assets: [current, other]}, next);
+    expect(updated?.assets).toEqual([next, other]);
+    expect(replaceAssetInList({assets: [other]}, next)).toEqual({
+      assets: [other],
+    });
+  });
+
+  it('seeds details from the list without overwriting a newer poll', () => {
+    const queryClient = new QueryClient();
+    const listed = asset({updatedAt: 10, status: 'processing'});
+    const polled = asset({
+      updatedAt: 20,
+      status: 'processing',
+      processingStage: 'tiling-vectors',
+    });
+    seedMapAssetDetailsFromList(queryClient, user, [listed]);
+    expect(
+      queryClient.getQueryData(mapAssetDetailQueryKey(user, listed._id))
+    ).toEqual(listed);
+
+    queryClient.setQueryData(mapAssetDetailQueryKey(user, listed._id), polled);
+    seedMapAssetDetailsFromList(queryClient, user, [
+      asset({updatedAt: 15, status: 'processing'}),
+    ]);
+    expect(
+      queryClient.getQueryData(mapAssetDetailQueryKey(user, listed._id))
+    ).toEqual(polled);
+  });
+
+  it('overlays list rows with a newer cached details snapshot', () => {
+    const queryClient = new QueryClient();
+    const listed = asset({updatedAt: 10, status: 'processing'});
+    const polled = asset({updatedAt: 20, status: 'ready'});
+    queryClient.setQueryData(mapAssetDetailQueryKey(user, listed._id), polled);
+    expect(
+      overlayListWithCachedMapAssets(queryClient, user, {assets: [listed]})
+    ).toEqual({assets: [polled]});
+  });
+
+  it('patches list caches from a details poll, not links or other users', () => {
+    const queryClient = new QueryClient();
+    const listed = asset({status: 'processing', updatedAt: 1});
+    const otherUser = {token: 'other'} as User;
+    const ready = asset({status: 'ready', updatedAt: 2});
+    queryClient.setQueryData(mapAssetQueryKey(user), {assets: [listed]});
+    queryClient.setQueryData(mapAssetTeamQueryKey(user, 'team-1'), {
+      assets: [listed],
+    });
+    queryClient.setQueryData(mapAssetQueryKey(otherUser), {assets: [listed]});
+    queryClient.setQueryData(
+      ['map-assets', user.token, 'links', listed._id],
+      ['project-1']
+    );
+
+    patchMapAssetInLists(queryClient, user, ready);
+
+    expect(queryClient.getQueryData(mapAssetQueryKey(user))).toEqual({
+      assets: [ready],
+    });
+    expect(
+      queryClient.getQueryData(mapAssetTeamQueryKey(user, 'team-1'))
+    ).toEqual({assets: [ready]});
+    expect(queryClient.getQueryData(mapAssetQueryKey(otherUser))).toEqual({
+      assets: [listed],
+    });
+    expect(
+      queryClient.getQueryData(['map-assets', user.token, 'links', listed._id])
+    ).toEqual(['project-1']);
   });
 });
 

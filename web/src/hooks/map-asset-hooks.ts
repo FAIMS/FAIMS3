@@ -10,7 +10,15 @@ import {
   type GetMapAssetListResponse,
   type GetMapAssetResponse,
 } from '@faims3/data-model';
-import {useQuery, type QueryClient} from '@tanstack/react-query';
+import {
+  useQueries,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
+
+/** How often in-progress layers are polled via GET /api/map-assets/:id. */
+const MAP_ASSET_PROGRESS_POLL_MS = 2000;
 
 /** React Query key for the library or one survey's linked layers. */
 export const mapAssetQueryKey = (user: User | null, projectId?: string) => [
@@ -26,6 +34,98 @@ export const mapAssetTeamQueryKey = (user: User | null, teamId: string) => [
   'team',
   teamId,
 ];
+
+/** React Query key for one layer's details. */
+export const mapAssetDetailQueryKey = (user: User | null, assetId: string) => [
+  'map-assets',
+  user?.token,
+  'asset',
+  assetId,
+];
+
+/** True for library / survey / team list keys, not details or links. */
+function isMapAssetListQueryKey(queryKey: readonly unknown[]): boolean {
+  const kind = queryKey[2];
+  return kind !== 'asset' && kind !== 'links';
+}
+
+/** Replace one layer in a list payload, or return `old` when it is absent. */
+export function replaceAssetInList(
+  old: GetMapAssetListResponse | undefined,
+  asset: ExistingMapAsset
+): GetMapAssetListResponse | undefined {
+  if (!old?.assets) {
+    return old;
+  }
+  const index = old.assets.findIndex(item => item._id === asset._id);
+  if (index < 0 || old.assets[index] === asset) {
+    return old;
+  }
+  const assets = [...old.assets];
+  assets[index] = asset;
+  return {...old, assets};
+}
+
+/** Ids still waiting on a spatial worker. */
+export function inProgressMapAssetIds(assets: ExistingMapAsset[]): string[] {
+  return assets
+    .filter(asset => isMapAssetInProgress(asset.status))
+    .map(asset => asset._id);
+}
+
+/**
+ * Copy list rows into per-asset detail queries. A newer polled snapshot is
+ * left in place so a later list fetch cannot roll progress backwards.
+ */
+export function seedMapAssetDetailsFromList(
+  queryClient: QueryClient,
+  user: User,
+  assets: ExistingMapAsset[]
+): void {
+  for (const asset of assets) {
+    const key = mapAssetDetailQueryKey(user, asset._id);
+    const existing = queryClient.getQueryData<ExistingMapAsset>(key);
+    if (existing && existing.updatedAt >= asset.updatedAt) {
+      continue;
+    }
+    queryClient.setQueryData(key, asset);
+  }
+}
+
+/** Prefer a newer cached details snapshot over the list row. */
+export function overlayListWithCachedMapAssets(
+  queryClient: QueryClient,
+  user: User,
+  data: GetMapAssetListResponse
+): GetMapAssetListResponse {
+  const assets = data.assets.map(asset => {
+    const cached = queryClient.getQueryData<ExistingMapAsset>(
+      mapAssetDetailQueryKey(user, asset._id)
+    );
+    return cached && cached.updatedAt >= asset.updatedAt ? cached : asset;
+  });
+  const unchanged = assets.every(
+    (asset, index) => asset === data.assets[index]
+  );
+  return unchanged ? data : {...data, assets};
+}
+
+/** Write a details poll into every list cache that already contains the layer. */
+export function patchMapAssetInLists(
+  queryClient: QueryClient,
+  user: User,
+  asset: ExistingMapAsset
+): void {
+  queryClient.setQueriesData<GetMapAssetListResponse>(
+    {
+      predicate: query =>
+        query.queryKey[0] === 'map-assets' &&
+        query.queryKey[1] === user.token &&
+        isMapAssetListQueryKey(query.queryKey),
+    },
+    old => replaceAssetInList(old, asset)
+  );
+}
 
 /** Pull a user-facing message from a JSON error body, else `statusText`. */
 export function messageFromBody(body: unknown, statusText: string): string {
@@ -171,9 +271,43 @@ export async function fetchTeamMapAssets({
   return (await response.json()) as GetMapAssetListResponse;
 }
 
+/** Shared GET /api/map-assets/:id query; polls only while the job is live. */
+function mapAssetDetailQueryOptions({
+  queryClient,
+  user,
+  assetId,
+  enabled,
+}: {
+  queryClient: QueryClient;
+  user: User | null;
+  assetId: string;
+  enabled: boolean;
+}) {
+  return {
+    queryKey: mapAssetDetailQueryKey(user, assetId),
+    enabled: enabled && !!user && assetId.length > 0,
+    queryFn: async () => {
+      const asset = await fetchMapAsset({user: user as User, assetId});
+      patchMapAssetInLists(queryClient, user as User, asset);
+      return asset;
+    },
+    staleTime: (query: {state: {data?: ExistingMapAsset}}) =>
+      query.state.data && !isMapAssetInProgress(query.state.data.status)
+        ? Infinity
+        : 0,
+    refetchInterval: (query: {state: {data?: ExistingMapAsset}}) =>
+      query.state.data && isMapAssetInProgress(query.state.data.status)
+        ? MAP_ASSET_PROGRESS_POLL_MS
+        : false,
+  };
+}
+
 /**
  * List layers for the library, a survey, or a team.
- * Polls every 2s while any listed layer is still processing.
+ *
+ * Fetches the list once (plus invalidation / window focus). Ready rows stay
+ * in that snapshot and in per-asset detail queries. In-progress layers are
+ * refreshed via GET /api/map-assets/:id and patched back into the list.
  */
 export function useMapAssets({
   user,
@@ -186,22 +320,34 @@ export function useMapAssets({
   teamId?: string;
   enabled?: boolean;
 }) {
-  return useQuery({
+  const queryClient = useQueryClient();
+  const listQuery = useQuery({
     queryKey: teamId
       ? mapAssetTeamQueryKey(user, teamId)
       : mapAssetQueryKey(user, projectId),
     enabled: !!user && enabled,
-    queryFn: () =>
-      teamId
-        ? fetchTeamMapAssets({user: user as User, teamId})
-        : fetchMapAssets({user: user as User, projectId}),
-    refetchInterval: query => {
-      const assets = query.state.data?.assets ?? [];
-      return assets.some(asset => isMapAssetInProgress(asset.status))
-        ? 2000
-        : false;
+    queryFn: async () => {
+      const data = teamId
+        ? await fetchTeamMapAssets({user: user as User, teamId})
+        : await fetchMapAssets({user: user as User, projectId});
+      seedMapAssetDetailsFromList(queryClient, user as User, data.assets);
+      return overlayListWithCachedMapAssets(queryClient, user as User, data);
     },
   });
+
+  const inProgressIds = inProgressMapAssetIds(listQuery.data?.assets ?? []);
+  useQueries({
+    queries: inProgressIds.map(assetId =>
+      mapAssetDetailQueryOptions({
+        queryClient,
+        user,
+        assetId,
+        enabled: !!user && enabled,
+      })
+    ),
+  });
+
+  return listQuery;
 }
 
 /** GET /api/map-assets/:assetId. */
@@ -229,15 +375,15 @@ export function useMapAsset({
   user: User | null;
   assetId: string;
 }) {
-  return useQuery({
-    queryKey: ['map-assets', user?.token, 'asset', assetId],
-    enabled: !!user && assetId.length > 0,
-    queryFn: () => fetchMapAsset({user: user as User, assetId}),
-    refetchInterval: query =>
-      query.state.data && isMapAssetInProgress(query.state.data.status)
-        ? 2000
-        : false,
-  });
+  const queryClient = useQueryClient();
+  return useQuery(
+    mapAssetDetailQueryOptions({
+      queryClient,
+      user,
+      assetId,
+      enabled: true,
+    })
+  );
 }
 
 /** PATCH name and description. */
@@ -304,7 +450,7 @@ export async function invalidateMapAssets(
   if (assetId) {
     pending.push(
       queryClient.invalidateQueries({
-        queryKey: ['map-assets', user.token, 'asset', assetId],
+        queryKey: mapAssetDetailQueryKey(user, assetId),
       })
     );
   }

@@ -63,6 +63,7 @@ check_gdal() {
 
 check_gdal
 
+# localdev.sh starts CouchDB and RustFS, migrates Couch, then starts the
+# spatial worker pool. Native api/app/web follow.
 ./localdev.sh
-pnpm run migrate-with-keys
 pnpm run dev

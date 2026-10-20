@@ -153,21 +153,15 @@ notebooks and templates:
 
 If you prefer to run the application services natively and only use Docker for CouchDB, RustFS, and the spatial worker pool:
 
-1. Start CouchDB, RustFS, and the spatial worker pool (default behaviour without `--all` flag):
+1. Start CouchDB and RustFS, migrate Couch, then start the spatial worker pool (default behaviour without `--all` flag):
 
 ```bash
 ./localdev.sh
 ```
 
-This starts CouchDB on http://localhost:5984/\_utils, RustFS on http://localhost:9000 (console http://localhost:9001), and `capacity-manager` / `spatial-worker`. Map-layer files are stored in RustFS; CouchDB holds only the metadata (including an S3 resource URI). If your existing `api/.env` predates these settings, copy the `ATTACHMENT_*` block from `api/.env.dist`.
+This starts CouchDB on http://localhost:5984/\_utils, RustFS on http://localhost:9000 (console http://localhost:9001), runs `pnpm run migrate-with-keys`, then starts `capacity-manager` / `spatial-worker`. Map-layer files are stored in RustFS; CouchDB holds only the metadata (including an S3 resource URI). If your existing `api/.env` predates these settings, copy the `ATTACHMENT_*` block from `api/.env.dist`.
 
-2. Migrate the CouchDB:
-
-```bash
-pnpm run migrate-with-keys
-```
-
-3. Run development services natively (in a separate terminal):
+2. Run development services natively (in a separate terminal):
 
 ```bash
 pnpm run dev
@@ -181,7 +175,7 @@ This runs:
 
 Use the admin user/password from `api/.env` to login.
 
-These three commands are bundled into `dev.sh` i.e.
+These two commands are bundled into `dev.sh` i.e.
 
 ```bash
 ./dev.sh

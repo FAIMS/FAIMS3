@@ -19,7 +19,7 @@ The field app and Control Centre download the device-ready file directly from ob
 
 ## Local object storage (RustFS)
 
-`./dev.sh` / `./localdev.sh` start RustFS beside CouchDB, plus `capacity-manager` and `spatial-worker` (`docker compose up -d couchdb rustfs capacity-manager spatial-worker`). The worker image (`faims-dev-worker:local`, Dockerfile.dev target `worker`) has GDAL, tippecanoe, and pmtiles, and does not bake application source. Rebuild it with `--build` only when `Dockerfile.dev` or the lockfile changes. Its scratch directory is the `spatial_scratch` volume, not the API container's disk.
+`./dev.sh` / `./localdev.sh` start CouchDB and RustFS first, migrate Couch, then start `capacity-manager` and `spatial-worker`. The worker image (`faims-dev-worker:local`, Dockerfile.dev target `worker`) has GDAL, tippecanoe, and pmtiles, and does not bake application source. Rebuild it with `--build` only when `Dockerfile.dev` or the lockfile changes. Its scratch directory is the `spatial_scratch` volume, not the API container's disk.
 
 | Service | URL                                |
 | ------- | ---------------------------------- |

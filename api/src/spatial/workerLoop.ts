@@ -15,6 +15,11 @@ export type SpatialWorkerLoopOptions = {
   /** Claim and process one job. A lost claim should resolve, not throw. */
   processJob: (assetId: string) => Promise<void>;
   /**
+   * Called when `findJob` throws (missing DB/view, Couch blip). The loop
+   * treats that poll as empty and retries. Defaults to `console.error`.
+   */
+  onPollError?: (error: unknown) => void;
+  /**
    * Stop after this many polls (empty or not) instead of idling forever.
    * Used by tests when `idleExitMs` is 0.
    */
@@ -27,16 +32,22 @@ const defaultSleep = (ms: number) =>
     setTimeout(resolve, ms);
   });
 
+const defaultOnPollError = (error: unknown) => {
+  console.error('[spatial-worker] poll failed', error);
+};
+
 /**
  * Poll, process, repeat. A claim or a finished job resets the idle clock.
- * Time spent inside `processJob` is not idle. Returns `idle` on timeout
- * or `stopped` when `maxPolls` is hit.
+ * Time spent inside `processJob` is not idle. A thrown `findJob` is logged
+ * and treated as empty so a missing view or Couch blip does not kill the
+ * process. Returns `idle` on timeout or `stopped` when `maxPolls` is hit.
  */
 export async function runSpatialWorkerLoop(
   options: SpatialWorkerLoopOptions
 ): Promise<'idle' | 'stopped'> {
   const now = options.now ?? (() => Date.now());
   const sleep = options.sleep ?? defaultSleep;
+  const onPollError = options.onPollError ?? defaultOnPollError;
   let lastJobFinishedAt = now();
   let polls = 0;
 
@@ -45,7 +56,12 @@ export async function runSpatialWorkerLoop(
       return 'stopped';
     }
     polls += 1;
-    const assetId = await options.findJob();
+    let assetId: string | undefined;
+    try {
+      assetId = await options.findJob();
+    } catch (error) {
+      onPollError(error);
+    }
     if (assetId) {
       // A claim resets the idle window even if processing then loses the claim.
       lastJobFinishedAt = now();
