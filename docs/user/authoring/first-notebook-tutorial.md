@@ -1,6 +1,6 @@
 # Your First {{Notebook}} in 25-30 Minutes 🚀
 
-_Welcome to {{FAIMS}}®! In the next 25-30 minutes, you'll create your first data collection {{notebook}} and enter your first record. No experience needed - just follow along!_
+_Welcome to {{FAIMS}}! In the next 25-30 minutes, you'll create your first data collection {{notebook}} and enter your first record. No experience needed - just follow along!_
 
 ## What You'll Achieve
 
@@ -26,14 +26,14 @@ By the end of this guide, you'll have:
 
 **Browser**: Works best with Chrome, Firefox, or Safari. Make sure you're using a recent version.
 
-**Device**: The Notebook Editor needs a computer or tablet, since building a {{notebook}} involves a lot of on-screen detail. For collecting data, the app runs on Android 11 or later and on iOS, and there is no minimum hardware specification.
+**Device**: The {{Notebook}} Editor needs a computer or tablet, since building a {{notebook}} involves a lot of on-screen detail. For collecting data, the app runs on Android 11 or later and on iOS, and there is no minimum hardware specification.
 
-For a device to buy or borrow, a good starting point is anything from the last two years. On Android, aim for mid-range or better. Class matters more than age there: a flagship phone several years old is usually fine, if a little slower, whilst an entry-level tablet can be painful to work on even when new, so it is worth checking where a cheap tablet sits in its maker's range before relying on it in the field. Any recent iPhone is comfortable, and older ones generally cope too. Full details are in [Operating Systems](https://docs.fieldmark.app/data-collection/hardware.html).
+For a device to buy or borrow, a good starting point is anything from the last two years. On Android, aim for mid-range or better. Class matters more than age there: a flagship phone several years old is usually fine, if a little slower, whilst an entry-level tablet can be painful to work on even when new, so it is worth checking where a cheap tablet sits in its maker's range before relying on it in the field. Any recent iPhone is comfortable, and older ones generally cope too. Full details are in [Operating Systems](../data-collection/hardware.md).
 
 **URLs you'll use**:
 
-- **Dashboard URL**: Usually `https://dashboard.fieldmark.app` (for designing and managing {{notebooks}})
-- **Data Collection App URL**: Usually `https://app.fieldmark.app` (for entering records)
+- **{{Dashboard}} URL**: {{WEB_URL}} (for designing and managing {{notebooks}})
+- **Data Collection App URL**: {{APP_URL}} (for entering records)
 - Note: Your organisation may have custom URLs - check with your administrator
 
 <!-- URLs comparison explained in text above - no screenshot needed -->
@@ -44,7 +44,7 @@ Before we dive in, here are seven terms you'll see:
 
 - **{{Dashboard}}**: Your home screen after logging in - think of it as mission control
 - **{{Notebook}}**: A customisable data collection form (like a digital fieldwork form)
-- **Notebook Editor**: The visual tool where you build and modify {{notebooks}} and templates (sometimes just called "Editor")
+- **{{Notebook}} Editor**: The visual tool where you build and modify {{notebooks}} and templates (sometimes just called "Editor")
 - **Form**: A kind of thing your {{notebook}} records, such as a site, a specimen, or an interview. Each record is an instance of one form, and links between records are set up between forms
 - **Section**: A page of fields inside a form. Sections control how a form is laid out for the people filling it in, and have no effect on what the data means
 - **Records**: The actual data entries people create using your {{notebook}}
@@ -58,7 +58,7 @@ Let's begin by logging into {{FAIMS}} and finding our way around.
 
 ### Login to {{FAIMS}}
 
-1. Open your browser and navigate to `https://dashboard.fieldmark.app`
+1. Open your browser and navigate to {{WEB_URL}}
 2. Enter your email and password (some servers also offer single sign-on
    providers, such as Google)
 3. Click **Sign in**
@@ -96,11 +96,11 @@ After logging in, you'll see the {{Dashboard}} interface:
 
 ### ✓ You'll Know It Worked When...
 
-- [ ] You see your name or email in the bottom-left user menu
-- [ ] The left sidebar shows {{Notebooks}} and Templates under Content, and Teams
-      and Archive under Management
-- [ ] Clicking **{{Notebooks}}** shows a list of {{notebooks}} in the main window
-- [ ] No error messages or login prompts appear
+- You see your name or email in the bottom-left user menu
+- The left sidebar shows {{Notebooks}} and Templates under Content, and Teams
+  and Archive under Management
+- Clicking **{{Notebooks}}** shows a list of {{notebooks}} in the main window
+- No error messages or login prompts appear
 
 Great! You're in. Now let's create something amazing.
 
@@ -162,7 +162,7 @@ the **top of the list**. It also appears in the left sidebar under
      "Page 1 of 2" with arrow buttons to navigate pages
 2. Click on your {{notebook}} name to open it
 
-### Open the Notebook Editor
+### Open the {{Notebook}} Editor
 
 Your {{notebook}}'s page has a row of tabs: Details, Invites, Users, Export,
 Offline Map, and Actions.
@@ -180,11 +180,11 @@ within the data collection app. You can leave it as it is for this tutorial.
 :width: 100%
 ```
 
-### Hello, Notebook Editor!
+### Hello, {{Notebook}} Editor!
 
-Fantastic! You're now in the Notebook Editor. This is where the magic happens.
+Fantastic! You're now in the {{Notebook}} Editor. This is where the magic happens.
 
-The Editor opens as a full-screen window titled "Notebook Editor". You'll see
+The Editor opens as a full-screen window titled "{{Notebook}} Editor". You'll see
 the main interface elements:
 
 - **Tab bar**: DESIGN and INFO tabs at the top left
@@ -198,7 +198,7 @@ the main interface elements:
   form; each has its own blue "+ New ..." button
 
 > 🎨 **About the colours**: {{FAIMS}}'s standard configuration puts blue buttons
-> in the Notebook Editor and green ones in the {{Dashboard}} and the data collection
+> in the {{Notebook}} Editor and green ones in the {{Dashboard}} and the data collection
 > app, which is what the screenshots here show. {{FAIMS}} can also be themed per
 > organisation, so if your institution runs a branded instance your buttons may
 > be different colours. Button labels, positions, and behaviour stay the same
@@ -216,14 +216,14 @@ the main interface elements:
 
 ### ✓ You'll Know It Worked When...
 
-- [ ] The Notebook Editor opens as a full-screen window with the DESIGN tab
-      selected
-- [ ] The **Forms** heading is visible with a blue **+ New Form** button
-- [ ] Save, Cancel, Undo, and Redo buttons are visible in the toolbar
-- [ ] The "Search design..." box is visible at the top right
-- [ ] No error messages appear
+- The {{Notebook}} Editor opens as a full-screen window with the DESIGN tab
+  selected
+- The **Forms** heading is visible with a blue **+ New Form** button
+- Save, Cancel, Undo, and Redo buttons are visible in the toolbar
+- The "Search design..." box is visible at the top right
+- No error messages appear
 
-> 📱 **Mobile Users**: The Notebook Editor works best on tablets or computers. If you're on a phone, you might want to switch devices for this setup phase. Once created, your {{notebook}} will work perfectly on mobile for data collection!
+> 📱 **Mobile Users**: The {{Notebook}} Editor works best on tablets or computers. If you're on a phone, you might want to switch devices for this setup phase. Once created, your {{notebook}} will work perfectly on mobile for data collection!
 
 ### Understanding {{Notebooks}} Structure
 
@@ -269,11 +269,11 @@ Right now, we have an empty {{notebook}}. Let's create its first form!
 
 ### ✓ You'll Know It Worked When...
 
-- [ ] A **SITE DETAILS** tab appears in the Forms panel, next to a
-      "+ NEW FORM" tab
-- [ ] Form controls are visible above it: **Edit name**, **Reorder**,
-      **Settings**, **Include "Add New Record" button**, and **Delete**
-- [ ] A dialogue opens automatically inviting you to add your first section
+- A **SITE DETAILS** tab appears in the Forms panel, next to a
+  "+ NEW FORM" tab
+- Form controls are visible above it: **Edit name**, **Reorder**,
+  **Settings**, **Include "Add New Record" button**, and **Delete**
+- A dialogue opens automatically inviting you to add your first section
 
 Now you're ready to add a section to organise your fields!
 
@@ -300,15 +300,15 @@ created:
 
 ### ✓ You'll Know It Worked When...
 
-- [ ] Your section appears in the Sections panel as a card: **"Basic
-      Information"** with a numbered badge showing "1" (first section)
-- [ ] Section controls appear: **Edit name**, **Reorder**, **Duplicate**,
-      **Move section to another Form**, **Add condition to section**, and
-      **Delete**
-- [ ] Below it, the **Fields** panel shows a blue **"+ New Field"** button
-- [ ] "Visible fields" and "Hidden fields" areas are shown, each with
-      Expand all / Collapse all controls
-- [ ] The section is ready to receive form fields
+- Your section appears in the Sections panel as a card: **"Basic
+  Information"** with a numbered badge showing "1" (first section)
+- Section controls appear: **Edit name**, **Reorder**, **Duplicate**,
+  **Move section to another Form**, **Add condition to section**, and
+  **Delete**
+- Below it, the **Fields** panel shows a blue **"+ New Field"** button
+- "Visible fields" and "Hidden fields" areas are shown, each with
+  Expand all / Collapse all controls
+- The section is ready to receive form fields
 
 ```{screenshot} quickstart/qs-010-form-section-created-desktop.png
 :alt: {{Notebook}} Editor after the form and section are created: a SITE DETAILS form tab sits beside a NEW FORM tab under a control row of Edit name, Reorder, Settings, Include Add New Record button, and Delete; the Sections panel shows a chip numbered 1 labelled Basic Information with its own control row; the Fields panel below has a New Field button with Visible fields and Hidden fields areas
@@ -376,10 +376,10 @@ editor.
 
 ### ✓ You'll Know It Worked When...
 
-- [ ] The "Site Name" field appears in the "Visible Fields" area
-- [ ] Helper text displays: "Enter the official site designation or name"
-- [ ] Required ☑ is checked
-- [ ] The field is ready for data collection!
+- The "Site Name" field appears in the "Visible Fields" area
+- Helper text displays: "Enter the official site designation or name"
+- Required ☑ is checked
+- The field is ready for data collection!
 
 > 💡 **More Options**: Fields can also have Advanced Helper Text (formatted popup help), Conditions (show/hide based on other fields), Annotations, or "Copy value to new records" for smart defaults. We'll keep it simple for now!
 
@@ -442,11 +442,11 @@ Now let's add a choice field where users select one option from a list.
 
 ### ✓ You'll Know It Worked When...
 
-- [ ] The "Site Type" field shows a red "Required" badge in the header
-- [ ] All 7 options are visible in the list: Habitation, Mortuary, Ceremonial, Workshop/Industrial, Defensive, Agricultural, Other
-- [ ] Helper text displays: "Select the primary function of this site"
-- [ ] Required ☑, Annotation ☑, and Uncertainty ☑ are all checked with green checkmarks
-- [ ] The field is ready for data collection!
+- The "Site Type" field shows a red "Required" badge in the header
+- All 7 options are visible in the list: Habitation, Mortuary, Ceremonial, Workshop/Industrial, Defensive, Agricultural, Other
+- Helper text displays: "Select the primary function of this site"
+- Required ☑, Annotation ☑, and Uncertainty ☑ are all checked with green checkmarks
+- The field is ready for data collection!
 
 > ✨ **{{FAIMS}} Feature**: The **Annotation** and **Uncertainty** toggles are unique to {{FAIMS}}! They help capture data quality nuances:
 >
@@ -490,11 +490,11 @@ Let's add the ability to capture photos - essential for field documentation!
 
 ### ✓ You'll Know It Worked When...
 
-- [ ] The "Site Photo" field appears in the Visible Fields list with "TakePhoto" badge
-- [ ] Helper text displays: "Photograph the site for documentation"
-- [ ] Annotation ☑ is checked with custom label "Photo notes"
-- [ ] All 3 fields are now visible: Site Name, Site Type, Site Photo
-- [ ] Your form is ready for data collection!
+- The "Site Photo" field appears in the Visible Fields list with "TakePhoto" badge
+- Helper text displays: "Photograph the site for documentation"
+- Annotation ☑ is checked with custom label "Photo notes"
+- All 3 fields are now visible: Site Name, Site Type, Site Photo
+- Your form is ready for data collection!
 
 ```{screenshot} quickstart/qs-018-all-fields-visible-desktop.png
 :alt: Visible fields list with all three fields collapsed in order: Site Name with Text field and Required badges, Site Type with Select single and Required badges, and Site Photo with a TakePhoto badge; the Hidden fields area below reads No hidden fields
@@ -573,15 +573,15 @@ Now let's configure how the form behaves when collecting data.
 
 ### ✓ You'll Know It Worked When...
 
-- [ ] The Form Settings dialogue shows all four settings configured
-- [ ] Summary Fields displays "Site Name" and "Site Type"
-- [ ] Human-Readable ID Field shows "Site Name"
-- [ ] After closing the dialogue, all 3 fields are visible in your "Basic
-      Information" section
+- The Form Settings dialogue shows all four settings configured
+- Summary Fields displays "Site Name" and "Site Type"
+- Human-Readable ID Field shows "Site Name"
+- After closing the dialogue, all 3 fields are visible in your "Basic
+  Information" section
 
 ### Save Your Work
 
-**Important:** The Notebook Editor does not auto-save. Let's save your progress now.
+**Important:** The {{Notebook}} Editor does not auto-save. Let's save your progress now.
 
 1. **Click the blue Save button** in the Editor toolbar
 2. **The Editor closes** and you're back on your {{notebook}}'s page, with a
@@ -611,11 +611,11 @@ Time to see your creation in action! Let's activate your {{notebook}} in the {{F
 
 Your {{notebook}} has been saved in the Editor. Now let's activate it for data collection:
 
-1. **Open a new browser tab** and navigate to your {{FAIMS}} data collection app URL (usually `https://app.fieldmark.app`)
+1. **Open a new browser tab** and navigate to your {{FAIMS}} data collection app URL ({{APP_URL}})
 2. **Log in** with the same credentials you used to access the Editor
 
 ```{screenshot} quickstart/qs-023-app-active-zero-desktop.png
-:alt: {{FAIMS}} app My {{Notebooks}} screen: server name {{FAIMS}}, green REFRESH and ADD NOTEBOOK buttons, a Learn more about activating {{notebooks}} link, the ACTIVE tab selected with a count of 0 and an empty table reading No rows, a NOT ACTIVE tab with a count of 12, and text beneath the table explaining that {{notebooks}} in the NOT ACTIVE tab need to be activated before they can be used
+:alt: {{FAIMS}} app My {{Notebooks}} screen: server name {{FAIMS}}, green REFRESH and ADD {{NOTEBOOK}} buttons, a Learn more about activating {{notebooks}} link, the ACTIVE tab selected with a count of 0 and an empty table reading No rows, a NOT ACTIVE tab with a count of 12, and text beneath the table explaining that {{notebooks}} in the NOT ACTIVE tab need to be activated before they can be used
 :align: right
 :width: 100%
 ```
@@ -623,7 +623,7 @@ Your {{notebook}} has been saved in the Editor. Now let's activate it for data c
 ### Activate Your {{Notebook}}
 
 When the app opens, you'll see the "My {{Notebooks}}" screen, with **REFRESH**
-and **ADD NOTEBOOK** buttons, a "Learn more about activating {{notebooks}}"
+and **ADD {{NOTEBOOK}}** buttons, a "Learn more about activating {{notebooks}}"
 link, and two tabs: **ACTIVE** and **NOT ACTIVE** (the number in
 parentheses on each tab is a count of {{notebooks}}):
 
@@ -671,9 +671,9 @@ parentheses on each tab is a count of {{notebooks}}):
 
 ### ✓ You'll Know It Worked When...
 
-- [ ] The view automatically switches to the "ACTIVE" tab showing "ACTIVE (1)"
-- [ ] Your {{notebook}} appears in the list under the ACTIVE tab
-- [ ] You can now click on the {{notebook}} name to open it
+- The view automatically switches to the "ACTIVE" tab showing "ACTIVE (1)"
+- Your {{notebook}} appears in the list under the ACTIVE tab
+- You can now click on the {{notebook}} name to open it
 
 ### Understanding Offline-First Design
 
@@ -862,7 +862,7 @@ Before we finish, let's explore the SETTINGS tab to understand sync and data man
 1. **Click on the SETTINGS tab** (next to the MY SITE DETAILSS, MAP, and DETAILS tabs)
 
 ```{screenshot} quickstart/qs-035-settings-tab-desktop.png
-:alt: SETTINGS tab with four panels: Quick share, reading Share this {{notebook}} with another user by generating a temporary QR code, with a SHARE THIS NOTEBOOK button; Sync Mode showing Upload and download above the helper text Choose how this {{notebook}} syncs record data with the server; Get attachments from other devices with its toggle Off and an explanation of the trade-offs; and De-activate {{Notebook}} with warning text and a red DE-ACTIVATE NOTEBOOK button
+:alt: SETTINGS tab with four panels: Quick share, reading Share this {{notebook}} with another user by generating a temporary QR code, with a SHARE THIS {{NOTEBOOK}} button; Sync Mode showing Upload and download above the helper text Choose how this {{notebook}} syncs record data with the server; Get attachments from other devices with its toggle Off and an explanation of the trade-offs; and De-activate {{Notebook}} with warning text and a red DE-ACTIVATE {{NOTEBOOK}} button
 :align: right
 :width: 100%
 ```
@@ -871,7 +871,7 @@ You'll see several important controls:
 
 **Quick share**
 
-- **SHARE THIS NOTEBOOK** generates a temporary QR code for sharing the
+- **SHARE THIS {{NOTEBOOK}}** generates a temporary QR code for sharing the
   {{notebook}} with another user. The green **Share** button above the tabs
   opens the same dialogue
 
@@ -907,7 +907,7 @@ You'll see several important controls:
 - Removes the {{notebook}} from your device **and deletes all records stored on
   this device**. The panel reminds you to check that every record shows a
   green sync status (uploaded) first
-- Clicking **DE-ACTIVATE NOTEBOOK** opens a confirmation dialogue: "Are you
+- Clicking **DE-ACTIVATE {{NOTEBOOK}}** opens a confirmation dialogue: "Are you
   sure you want to de-activate the {{notebook}} and remove it from your
   device?" You must tick the acknowledgement (**"I have checked that all
   records have a green sync status."**) before the DE-ACTIVATE button
@@ -931,7 +931,7 @@ You'll see several important controls:
 
 Congratulations! You've successfully created your first {{FAIMS}} {{notebook}} and collected your first record. You've:
 
-- ✅ Created a {{notebook}} in the Notebook Editor
+- ✅ Created a {{notebook}} in the {{Notebook}} Editor
 - ✅ Added forms, sections, and fields with proper configuration
 - ✅ Configured Form Settings (Summary Fields, HRID)
 - ✅ Activated the {{notebook}} in the {{FAIMS}} app
@@ -946,15 +946,15 @@ Congratulations! You've successfully created your first {{FAIMS}} {{notebook}} a
 
 Congratulations! 🎊 Let's review everything you've accomplished:
 
-- [ ] Logged in to {{FAIMS}} and accessed your {{Dashboard}}
-- [ ] Created a new {{notebook}} using the Notebook Editor
-- [ ] Added three fields: text, choice, and photo
-- [ ] Configured the Human-Readable ID Field (critical step!)
-- [ ] Saved your {{notebook}} (and understood that Save closes the Editor)
-- [ ] Activated your {{notebook}} in the {{FAIMS}} app
-- [ ] Created and saved your first record
-- [ ] Saw your record display properly in the records list
-- [ ] Understand how to edit and improve your {{notebook}}
+- Logged in to {{FAIMS}} and accessed your {{Dashboard}}
+- Created a new {{notebook}} using the {{Notebook}} Editor
+- Added three fields: text, choice, and photo
+- Configured the Human-Readable ID Field (critical step!)
+- Saved your {{notebook}} (and understood that Save closes the Editor)
+- Activated your {{notebook}} in the {{FAIMS}} app
+- Created and saved your first record
+- Saw your record display properly in the records list
+- Understand how to edit and improve your {{notebook}}
 
 **If you've ticked all these boxes, you're officially a {{FAIMS}} {{notebook}} creator!** 🎯
 
@@ -982,7 +982,7 @@ Ready to take your {{notebook}} further? All of these features are managed throu
 > 💡 **Note**: This section is optional reference material. Most users won't encounter these
 > issues. Refer to this section if you get stuck.
 
-### Can't Find the Notebook Editor
+### Can't Find the {{Notebook}} Editor
 
 **Solution**: Look for "{{Notebooks}}" in your navigation, click "Create {{Notebook}}" and supply required information. Note the name you give your {{notebook}}. Then find your {{notebook}} at the top of the list. Click the {{notebook}} name → Actions tab → Open in Editor. If you don't see this option, check with your administrator about permissions.
 

@@ -79,6 +79,7 @@ myst_substitutions = {
   "theme": THEME_NAME, # the theme name, used to select screenshots
   "notebook": NOTEBOOK_NAME, # the name of a project (notebook or survey)
   "Notebook": NOTEBOOK_NAME.title(), # variations of the notebook name
+  "NOTEBOOK": NOTEBOOK_NAME.upper(),
   "notebooks": NOTEBOOK_NAME + 's',
   "Notebooks": NOTEBOOK_NAME.title() + 's',
   "dashboard": DASHBOARD_NAME, # the name of the web management app
