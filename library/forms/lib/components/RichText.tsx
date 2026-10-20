@@ -9,7 +9,9 @@ export const RichTextContent: React.FC<{content: string}> = ({content}) => {
 
   return (
     <div
-      dangerouslySetInnerHTML={{__html: contentToSanitizedHtml(content, false)}}
+      dangerouslySetInnerHTML={{
+        __html: contentToSanitizedHtml({content, inline: false}),
+      }}
     />
   );
 };

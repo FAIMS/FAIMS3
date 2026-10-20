@@ -169,10 +169,13 @@ const purify = createSanitizer();
  * @param inline Whether to render the content as inline Markdown or full Markdown
  * @returns Sanitized content suitable for injection into div
  */
-export const contentToSanitizedHtml = (
-  content: string,
-  inline: boolean = true
-): string => {
+export const contentToSanitizedHtml = ({
+  content,
+  inline = true,
+}: {
+  content: string;
+  inline: boolean;
+}): string => {
   try {
     const renderedContent = inline
       ? md.renderInline(content)

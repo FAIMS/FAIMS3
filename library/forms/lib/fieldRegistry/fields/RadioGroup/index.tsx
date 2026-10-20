@@ -372,7 +372,11 @@ const RadioGroupWidget = ({
                     marginTop: '0px',
                   }}
                   dangerouslySetInnerHTML={{
-                    __html: contentToSanitizedHtml(option.label),
+                    // we don't want inline html here - wraps label in a <p> tag
+                    __html: contentToSanitizedHtml({
+                      content: option.label,
+                      inline: false,
+                    }),
                   }}
                 />
               }
@@ -466,7 +470,10 @@ const DropDownWidget = ({
         return (
           <span
             dangerouslySetInnerHTML={{
-              __html: contentToSanitizedHtml(value),
+              __html: contentToSanitizedHtml({
+                content: value,
+                inline: true,
+              }),
             }}
           />
         );
@@ -554,7 +561,11 @@ const DropDownWidget = ({
                     lineHeight: '0.1rem',
                   }}
                   dangerouslySetInnerHTML={{
-                    __html: contentToSanitizedHtml(option.label),
+                    // generate inline html for the option label
+                    __html: contentToSanitizedHtml({
+                      content: option.label,
+                      inline: true,
+                    }),
                   }}
                 />
               }
