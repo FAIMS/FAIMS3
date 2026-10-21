@@ -38,6 +38,7 @@ type VectorSourceTiles = {
   getTileGridForProjection?: (projection: unknown) => TileGridLike | null;
   getTileGrid?: () => TileGridLike | null;
   zDirection?: number;
+  changed?: () => void;
 };
 
 type TileGridLike = {
@@ -70,6 +71,7 @@ export type RetryableTileLayer = {
   getSource: () => unknown;
   getExtent?: () => number[] | undefined;
   changed: () => void;
+  get?: (key: string) => unknown;
 };
 
 export type TileLoadMap = {
@@ -553,6 +555,44 @@ export function settleTileLayer(
   retryRemainingErrors(layer);
 }
 
+/**
+ * After drain: pan evicts tiles that left the view; zoom dumps the cache
+ * like the last stable build.
+ */
+export async function applySettledTileLoads(options: {
+  layers: RetryableTileLayer[];
+  map: TileLoadMap;
+  cancelled: () => boolean;
+  zoomChanged: boolean;
+}): Promise<void> {
+  const controllers = options.layers
+    .map(layer => tileLoadController(layer))
+    .filter((loads): loads is TileLoadController => loads !== undefined);
+  await Promise.all(controllers.map(loads => loads.drain()));
+  if (options.cancelled()) {
+    return;
+  }
+  if (options.zoomChanged) {
+    for (const layer of options.layers) {
+      tileLoadController(layer)?.gate.endInteraction();
+      refreshTileLayer(layer);
+    }
+    options.map.render?.();
+    return;
+  }
+  for (const layer of options.layers) {
+    evictStaleTiles(layer, options.map);
+  }
+  if (options.cancelled()) {
+    return;
+  }
+  for (const layer of options.layers) {
+    tileLoadController(layer)?.gate.endInteraction();
+    retryRemainingErrors(layer);
+  }
+  options.map.render?.();
+}
+
 /** Re-open ERROR tiles without dumping the cache. Prefer settleTileLayer. */
 export function retryAbortedTiles(layer: RetryableTileLayer): void {
   const renderer = layer.getRenderer() as TileRenderer | null;
@@ -576,9 +616,9 @@ export function tileLoadGate(layer: {
 
 /** Controller stored on a streets, satellite, or contextual layer. */
 export function tileLoadController(layer: {
-  get: (key: string) => unknown;
+  get?: (key: string) => unknown;
 }): TileLoadController | undefined {
-  return layer.get(TILE_LOAD_CONTROLLER) as TileLoadController | undefined;
+  return layer.get?.(TILE_LOAD_CONTROLLER) as TileLoadController | undefined;
 }
 
 /**
@@ -590,4 +630,46 @@ export function shouldPauseTileLoads(view: {
   getInteracting: () => boolean;
 }): boolean {
   return view.getInteracting();
+}
+
+/**
+ * True when the view resolution moved by at least a quarter zoom level.
+ * A pan keeps resolution; pinch/wheel/double-tap does not.
+ */
+export function isZoomChange(
+  fromResolution: number | undefined,
+  toResolution: number | undefined
+): boolean {
+  if (
+    fromResolution === undefined ||
+    toResolution === undefined ||
+    fromResolution <= 0 ||
+    toResolution <= 0
+  ) {
+    return false;
+  }
+  return Math.abs(Math.log2(fromResolution / toResolution)) >= 0.25;
+}
+
+/**
+ * Dump the renderer cache the way the last stable commit did: bump the
+ * source revision so prepareFrame clears tileCache_. Also drop source
+ * tiles so a zoom does not keep the previous z in memory.
+ */
+export function refreshTileLayer(layer: RetryableTileLayer): void {
+  const source = layer.getSource() as VectorSourceTiles | null;
+  const tiles = source?.sourceTiles_;
+  if (tiles) {
+    for (const url of Object.keys(tiles)) {
+      const tile = tiles[url];
+      delete tiles[url];
+      if (source.tileKeysBySourceTileUrl_) {
+        delete source.tileKeysBySourceTileUrl_[url];
+      }
+      if (tile) {
+        disposeTile(tile);
+      }
+    }
+  }
+  source?.changed?.();
 }

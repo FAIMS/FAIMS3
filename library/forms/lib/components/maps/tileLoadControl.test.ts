@@ -3,10 +3,13 @@ import TileState from 'ol/TileState';
 import {describe, expect, it, vi} from 'vitest';
 import {
   BASE_MAP_TILE_CONCURRENCY,
+  applySettledTileLoads,
   createTileLoadController,
   createTileLoadGate,
   createTileLoadLimiter,
   createTileLoadSettle,
+  isZoomChange,
+  refreshTileLayer,
   retryAbortedTiles,
   settleTileLayer,
   shouldPauseTileLoads,
@@ -307,5 +310,72 @@ describe('tile load control', () => {
   it('does not pause tiles for a programmatic view change', () => {
     expect(shouldPauseTileLoads({getInteracting: () => false})).toBe(false);
     expect(shouldPauseTileLoads({getInteracting: () => true})).toBe(true);
+  });
+
+  it('treats a resolution step as a zoom, not a pan', () => {
+    expect(isZoomChange(100, 100)).toBe(false);
+    expect(isZoomChange(100, 99)).toBe(false);
+    expect(isZoomChange(100, 50)).toBe(true);
+    expect(isZoomChange(50, 100)).toBe(true);
+  });
+
+  it('dumps the source cache on a zoom refresh', () => {
+    const sourceChanged = vi.fn();
+    const dispose = vi.fn();
+    const oldTile = {
+      getTileCoord: () => [2, 1, 1],
+      getState: () => TileState.LOADED,
+      dispose,
+    };
+    const sourceTiles: Record<string, typeof oldTile> = {old: oldTile};
+    refreshTileLayer({
+      getRenderer: () => null,
+      getSource: () => ({
+        changed: sourceChanged,
+        sourceTiles_: sourceTiles,
+      }),
+      changed: vi.fn(),
+    });
+    expect(sourceChanged).toHaveBeenCalled();
+    expect(sourceTiles.old).toBeUndefined();
+    expect(dispose).toHaveBeenCalled();
+  });
+
+  it('wipes on zoom settle and evicts on pan settle', async () => {
+    const sourceChanged = vi.fn();
+    const layerChanged = vi.fn();
+    const layer = {
+      getRenderer: () => null,
+      getSource: () => ({
+        changed: sourceChanged,
+      }),
+      changed: layerChanged,
+    };
+    const map = {
+      getView: () => ({
+        getProjection: () => 'EPSG:3857',
+        getResolution: () => 1,
+        calculateExtent: () => [0, 0, 1, 1],
+      }),
+      getSize: () => [256, 256],
+      render: vi.fn(),
+    };
+    await applySettledTileLoads({
+      layers: [layer],
+      map,
+      cancelled: () => false,
+      zoomChanged: true,
+    });
+    expect(sourceChanged).toHaveBeenCalled();
+    sourceChanged.mockClear();
+    layerChanged.mockClear();
+    await applySettledTileLoads({
+      layers: [layer],
+      map,
+      cancelled: () => false,
+      zoomChanged: false,
+    });
+    expect(sourceChanged).not.toHaveBeenCalled();
+    expect(layerChanged).toHaveBeenCalled();
   });
 });

@@ -4,9 +4,9 @@ import VectorTileLayer from 'ol/layer/VectorTile';
 import OlMap from 'ol/Map';
 import {useEffect} from 'react';
 import {
+  applySettledTileLoads,
   createTileLoadSettle,
-  evictStaleTiles,
-  retryRemainingErrors,
+  isZoomChange,
   shouldPauseTileLoads,
   tileLoadController,
 } from './tileLoadControl';
@@ -26,34 +26,23 @@ export function useBaseMapTileLoads(
     const layers = [streetsLayer, satelliteLayer].filter(
       (layer): layer is BaseMapLayer => layer !== undefined
     );
+    let startResolution: number | undefined;
     const settle = createTileLoadSettle(async cancelled => {
-      const controllers = layers
-        .map(layer => tileLoadController(layer))
-        .filter((loads): loads is NonNullable<typeof loads> => loads !== undefined);
-      await Promise.all(controllers.map(loads => loads.drain()));
-      if (cancelled()) {
-        return;
-      }
-      for (const layer of layers) {
-        evictStaleTiles(layer, map);
-      }
-      if (cancelled()) {
-        return;
-      }
-      for (const layer of layers) {
-        const loads = tileLoadController(layer);
-        if (!loads) {
-          continue;
-        }
-        loads.gate.endInteraction();
-        retryRemainingErrors(layer);
-      }
-      map.render();
+      await applySettledTileLoads({
+        layers,
+        map,
+        cancelled,
+        zoomChanged: isZoomChange(
+          startResolution,
+          map.getView().getResolution()
+        ),
+      });
     });
     const onMoveStart = () => {
       if (!shouldPauseTileLoads(map.getView())) {
         return;
       }
+      startResolution = map.getView().getResolution();
       settle.cancel();
       for (const layer of layers) {
         tileLoadController(layer)?.gate.startInteraction();
