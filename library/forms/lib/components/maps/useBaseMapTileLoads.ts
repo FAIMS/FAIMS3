@@ -5,7 +5,8 @@ import OlMap from 'ol/Map';
 import {useEffect} from 'react';
 import {
   createTileLoadSettle,
-  settleTileLayer,
+  evictStaleTiles,
+  retryRemainingErrors,
   shouldPauseTileLoads,
   tileLoadController,
 } from './tileLoadControl';
@@ -25,14 +26,27 @@ export function useBaseMapTileLoads(
     const layers = [streetsLayer, satelliteLayer].filter(
       (layer): layer is BaseMapLayer => layer !== undefined
     );
-    const settle = createTileLoadSettle(() => {
+    const settle = createTileLoadSettle(async cancelled => {
+      const controllers = layers
+        .map(layer => tileLoadController(layer))
+        .filter((loads): loads is NonNullable<typeof loads> => loads !== undefined);
+      await Promise.all(controllers.map(loads => loads.drain()));
+      if (cancelled()) {
+        return;
+      }
+      for (const layer of layers) {
+        evictStaleTiles(layer, map);
+      }
+      if (cancelled()) {
+        return;
+      }
       for (const layer of layers) {
         const loads = tileLoadController(layer);
         if (!loads) {
           continue;
         }
         loads.gate.endInteraction();
-        settleTileLayer(layer, map);
+        retryRemainingErrors(layer);
       }
       map.render();
     });

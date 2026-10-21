@@ -174,11 +174,22 @@ export type TileLoadLimiter = ReturnType<typeof createTileLoadLimiter>;
 export function createTileLoadController(max = BASE_MAP_TILE_CONCURRENCY) {
   const limiter = createTileLoadLimiter(max);
   const waiters: Array<() => void> = [];
+  const drained: Array<() => void> = [];
   let interacting = false;
   let loadAbort = new AbortController();
 
   const wakeWaiters = () => {
     const pending = waiters.splice(0);
+    for (const resume of pending) {
+      resume();
+    }
+  };
+
+  const notifyDrain = () => {
+    if (limiter.active > 0) {
+      return;
+    }
+    const pending = drained.splice(0);
     for (const resume of pending) {
       resume();
     }
@@ -243,7 +254,11 @@ export function createTileLoadController(max = BASE_MAP_TILE_CONCURRENCY) {
         if (signal.aborted) {
           throw new TileLoadPausedError();
         }
-        return await fn(signal);
+        const result = await fn(signal);
+        if (signal.aborted || interacting) {
+          throw new TileLoadPausedError();
+        }
+        return result;
       } catch (error) {
         if (isTileLoadPausedError(error) || isAbortError(error) || signal.aborted) {
           throw new TileLoadPausedError();
@@ -252,7 +267,17 @@ export function createTileLoadController(max = BASE_MAP_TILE_CONCURRENCY) {
       } finally {
         limiter.end();
         notify();
+        notifyDrain();
       }
+    },
+    /** Wait until aborted in-flight work has left the limiter. */
+    async drain(): Promise<void> {
+      if (limiter.active === 0) {
+        return;
+      }
+      await new Promise<void>(resolve => {
+        drained.push(resolve);
+      });
     },
     retry(layer: RetryableTileLayer, map: TileLoadMap) {
       settleTileLayer(layer, map);
@@ -264,21 +289,24 @@ export type TileLoadController = ReturnType<typeof createTileLoadController>;
 
 /** Arm a callback after the last navigation event. */
 export function createTileLoadSettle(
-  onSettle: () => void,
+  onSettle: (cancelled: () => boolean) => void | Promise<void>,
   delay = TILE_LOAD_SETTLE_MS
 ) {
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let epoch = 0;
   return {
     arm() {
       if (timer !== undefined) {
         clearTimeout(timer);
       }
+      const started = epoch;
       timer = setTimeout(() => {
         timer = undefined;
-        onSettle();
+        void Promise.resolve(onSettle(() => started !== epoch));
       }, delay);
     },
     cancel() {
+      epoch += 1;
       if (timer !== undefined) {
         clearTimeout(timer);
         timer = undefined;
@@ -470,7 +498,7 @@ function resetPausedTile(tile: Tile): void {
   renderTile.setState(TileState.IDLE);
 }
 
-function retryRemainingErrors(layer: RetryableTileLayer): void {
+export function retryRemainingErrors(layer: RetryableTileLayer): void {
   const renderer = layer.getRenderer() as TileRenderer | null;
   resetErrorTiles(renderer?.getTileCache?.());
   resetErrorTiles(renderer?.getSourceTileCache?.());
@@ -483,6 +511,36 @@ function retryRemainingErrors(layer: RetryableTileLayer): void {
   layer.changed();
 }
 
+/** Drop tiles whose extent no longer overlaps the view. Does not start loads. */
+export function evictStaleTiles(
+  layer: RetryableTileLayer,
+  map: TileLoadMap
+): void {
+  const coverage = viewCoverage(layer, map);
+  const source = layer.getSource() as VectorSourceTiles | null;
+  const renderer = layer.getRenderer() as TileRenderer | null;
+  if (
+    !coverage ||
+    coverage.extent[0] >= coverage.extent[2] ||
+    coverage.extent[1] >= coverage.extent[3]
+  ) {
+    return;
+  }
+  evictCache(
+    renderer?.getTileCache?.(),
+    coverage.extent,
+    coverage.viewGrid,
+    source
+  );
+  evictCache(
+    renderer?.getSourceTileCache?.(),
+    coverage.extent,
+    coverage.sourceGrid,
+    source
+  );
+  evictSourceTiles(source, coverage.extent, coverage.sourceGrid);
+}
+
 /**
  * After navigation settles: drop tiles that no longer cover the view (any
  * zoom), reopen remaining ERROR holes, and leave overlapping tiles on screen.
@@ -491,24 +549,7 @@ export function settleTileLayer(
   layer: RetryableTileLayer,
   map: TileLoadMap
 ): void {
-  const coverage = viewCoverage(layer, map);
-  const source = layer.getSource() as VectorSourceTiles | null;
-  const renderer = layer.getRenderer() as TileRenderer | null;
-  if (coverage && coverage.extent[0] < coverage.extent[2] && coverage.extent[1] < coverage.extent[3]) {
-    evictCache(
-      renderer?.getTileCache?.(),
-      coverage.extent,
-      coverage.viewGrid,
-      source
-    );
-    evictCache(
-      renderer?.getSourceTileCache?.(),
-      coverage.extent,
-      coverage.sourceGrid,
-      source
-    );
-    evictSourceTiles(source, coverage.extent, coverage.sourceGrid);
-  }
+  evictStaleTiles(layer, map);
   retryRemainingErrors(layer);
 }
 

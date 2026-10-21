@@ -67,6 +67,64 @@ describe('tile load control', () => {
     );
   });
 
+  it('discards a finished decode if the pan aborted it', async () => {
+    const loads = createTileLoadController(1);
+    let finish!: () => void;
+    const pending = loads.run(async () => {
+      await new Promise<void>(resolve => {
+        finish = resolve;
+      });
+      return 'decoded';
+    });
+    await Promise.resolve();
+    loads.gate.startInteraction();
+    finish();
+    await expect(pending).rejects.toBeInstanceOf(TileLoadPausedError);
+  });
+
+  it('drains in-flight work before a later generation can start', async () => {
+    const loads = createTileLoadController(1);
+    let release!: () => void;
+    const first = loads.run(
+      () =>
+        new Promise<void>(resolve => {
+          release = resolve;
+        })
+    );
+    let drained = false;
+    const waiting = loads.drain().then(() => {
+      drained = true;
+    });
+    await Promise.resolve();
+    expect(drained).toBe(false);
+    release();
+    await first;
+    await waiting;
+    expect(drained).toBe(true);
+  });
+
+  it('drops an in-flight settle if navigation restarts', async () => {
+    vi.useFakeTimers();
+    let proceed!: () => void;
+    const finished = vi.fn();
+    const settle = createTileLoadSettle(async cancelled => {
+      await new Promise<void>(resolve => {
+        proceed = resolve;
+      });
+      if (cancelled()) {
+        return;
+      }
+      finished();
+    }, 200);
+    settle.arm();
+    await vi.advanceTimersByTimeAsync(200);
+    settle.cancel();
+    proceed();
+    await Promise.resolve();
+    expect(finished).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
   it('aborts in-flight and queued work when a pan starts', async () => {
     const loads = createTileLoadController(1);
     const first = loads.run(

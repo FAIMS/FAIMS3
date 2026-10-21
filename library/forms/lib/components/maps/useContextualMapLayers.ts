@@ -10,7 +10,8 @@ import {
 } from './contextualTileLayers';
 import {
   createTileLoadSettle,
-  settleTileLayer,
+  evictStaleTiles,
+  retryRemainingErrors,
   shouldPauseTileLoads,
   tileLoadController,
 } from './tileLoadControl';
@@ -126,14 +127,28 @@ export function useContextualMapLayers(map: OlMap | undefined) {
     if (!map) {
       return;
     }
-    const settle = createTileLoadSettle(() => {
-      for (const layer of managed.current.values()) {
+    const settle = createTileLoadSettle(async cancelled => {
+      const layers = [...managed.current.values()];
+      const controllers = layers
+        .map(layer => tileLoadController(layer))
+        .filter((loads): loads is NonNullable<typeof loads> => loads !== undefined);
+      await Promise.all(controllers.map(loads => loads.drain()));
+      if (cancelled()) {
+        return;
+      }
+      for (const layer of layers) {
+        evictStaleTiles(layer, map);
+      }
+      if (cancelled()) {
+        return;
+      }
+      for (const layer of layers) {
         const loads = tileLoadController(layer);
         if (!loads) {
           continue;
         }
         loads.gate.endInteraction();
-        settleTileLayer(layer, map);
+        retryRemainingErrors(layer);
       }
       map.render();
     });
