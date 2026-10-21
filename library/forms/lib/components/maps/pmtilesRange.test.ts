@@ -9,6 +9,14 @@ describe('pmtiles range reads', () => {
     expect(Array.from(bytes)).toEqual([3, 4, 5]);
   });
 
+  it('does not read after the tile load is aborted', async () => {
+    const blob = new Blob([new Uint8Array([1, 2, 3, 4])]);
+    const signal = AbortSignal.abort();
+    await expect(readBlobRange(blob, 0, 2, signal)).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+  });
+
   it('rejects a range larger than one tile read', async () => {
     const blob = new Blob([new Uint8Array(8)]);
     await expect(readBlobRange(blob, 0, 3 * 1024 * 1024)).rejects.toThrow(

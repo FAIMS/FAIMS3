@@ -11,9 +11,11 @@ import TileState from 'ol/TileState';
 import {describe, expect, it, vi} from 'vitest';
 import {PMTiles, TileType} from 'pmtiles';
 import {
+  createContextualTileLoadGate,
   createRasterTileLayer,
   createVectorTileLayer,
   CONTEXTUAL_TILE_CACHE_SIZE,
+  CONTEXTUAL_TILE_LOAD_GATE,
 } from './contextualTileLayers';
 import type {ContextualMapLayer} from './contextualMapLayers';
 import {readBlobRange} from './pmtilesRange';
@@ -70,6 +72,7 @@ describe('local PMTiles layers', () => {
     const olLayer = await createRasterTileLayer(spec);
     expect(olLayer.get('preload')).toBe(0);
     expect(olLayer.get('cacheSize')).toBe(CONTEXTUAL_TILE_CACHE_SIZE);
+    expect(olLayer.get(CONTEXTUAL_TILE_LOAD_GATE)).toBeDefined();
     const reads = (spec as ContextualMapLayer & {reads: number[]}).reads;
     expect(reads.every(length => length < file.size || file.size < 16384)).toBe(
       true
@@ -83,6 +86,8 @@ describe('local PMTiles layers', () => {
     const olLayer = await createVectorTileLayer(spec);
     expect(olLayer.get('preload')).toBe(0);
     expect(olLayer.get('cacheSize')).toBe(CONTEXTUAL_TILE_CACHE_SIZE);
+    expect(olLayer.getUpdateWhileInteracting()).toBe(false);
+    expect(olLayer.getUpdateWhileAnimating()).toBe(false);
     const archive = new PMTiles({
       getKey: () => 'vector',
       getBytes: async (offset, length) => ({
@@ -112,5 +117,21 @@ describe('local PMTiles layers', () => {
     expect(
       features.every(feature => feature.getGeometry()?.getType() === 'Point')
     ).toBe(true);
+    expect(olLayer.get(CONTEXTUAL_TILE_LOAD_GATE)).toBeDefined();
+  });
+
+  it('aborts in-flight tile reads when a pan starts', async () => {
+    const gate = createContextualTileLoadGate();
+    const parent = new AbortController();
+    const {signal, done} = gate.branch(parent.signal);
+    expect(signal.aborted).toBe(false);
+    gate.startInteraction();
+    expect(signal.aborted).toBe(true);
+    expect(gate.interacting).toBe(true);
+    const skipped = gate.branch();
+    expect(skipped.signal.aborted).toBe(true);
+    gate.endInteraction();
+    expect(gate.interacting).toBe(false);
+    done();
   });
 });

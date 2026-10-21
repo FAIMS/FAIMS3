@@ -6,18 +6,26 @@ import Foundation
  *
  * That is Capacitor Directory.Data on iOS. Tile loads must not fetch the
  * archive: WebKit can drop the Range header, and a custom-scheme fetch fails
- * when the device is offline. This read never returns more than the
- * requested length, and never more than 2MB.
+ * when the device is offline. Bytes are written to a Cache file so JS can
+ * fetch an ArrayBuffer. They never cross the Capacitor bridge as base64.
+ * This read never returns more than the requested length, and never more
+ * than 2MB.
  */
 @objc(MapFileRangePlugin)
 public class MapFileRangePlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "MapFileRangePlugin"
     public let jsName = "MapFileRange"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "read", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "read", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "remove", returnType: CAPPluginReturnPromise)
     ]
 
     private static let maxLength = 2 * 1024 * 1024
+    private static let tempFolder = "map-range"
+
+    override public func load() {
+        sweepTempTiles()
+    }
 
     @objc func read(_ call: CAPPluginCall) {
         guard let path = call.getString("path"),
@@ -30,21 +38,8 @@ public class MapFileRangePlugin: CAPPlugin, CAPBridgedPlugin {
             call.reject("Tile range is larger than 2MB.")
             return
         }
-        if path.contains("..") || path.hasPrefix("/") {
-            call.reject("Invalid path.")
-            return
-        }
-        guard let documents = FileManager.default.urls(
-            for: .documentDirectory,
-            in: .userDomainMask
-        ).first else {
-            call.reject("Could not read the file range.")
-            return
-        }
-        let root = documents.standardizedFileURL
-        let fileURL = documents.appendingPathComponent(path).standardizedFileURL
-        let rootPath = root.path
-        if fileURL.path != rootPath && !fileURL.path.hasPrefix(rootPath + "/") {
+        guard let fileURL = validatedDataURL(path),
+              let cache = cacheRoot() else {
             call.reject("Invalid path.")
             return
         }
@@ -71,10 +66,79 @@ public class MapFileRangePlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject("Could not read the file range.")
                 return
             }
-            call.resolve(["data": data.base64EncodedString()])
+            let relative = "\(MapFileRangePlugin.tempFolder)/\(UUID().uuidString).tile"
+            let tmpURL = cache.appendingPathComponent(relative)
+            try FileManager.default.createDirectory(
+                at: tmpURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try data.write(to: tmpURL, options: .atomic)
+            call.resolve([
+                "path": relative,
+                "uri": tmpURL.absoluteString
+            ])
         } catch {
             call.reject("Could not read the file range.", nil, error)
         }
+    }
+
+    @objc func remove(_ call: CAPPluginCall) {
+        guard let path = call.getString("path"),
+              let tmpURL = validatedTempURL(path) else {
+            call.reject("Invalid path.")
+            return
+        }
+        try? FileManager.default.removeItem(at: tmpURL)
+        call.resolve()
+    }
+
+    private func cacheRoot() -> URL? {
+        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+    }
+
+    private func validatedDataURL(_ path: String) -> URL? {
+        if path.contains("..") || path.hasPrefix("/") {
+            return nil
+        }
+        guard let documents = FileManager.default.urls(
+            for: .documentDirectory,
+            in: .userDomainMask
+        ).first else {
+            return nil
+        }
+        let root = documents.standardizedFileURL
+        let fileURL = documents.appendingPathComponent(path).standardizedFileURL
+        if fileURL.path != root.path && !fileURL.path.hasPrefix(root.path + "/") {
+            return nil
+        }
+        return fileURL
+    }
+
+    private func validatedTempURL(_ path: String) -> URL? {
+        if path.contains("..") || path.hasPrefix("/") {
+            return nil
+        }
+        if !path.hasPrefix(MapFileRangePlugin.tempFolder + "/") {
+            return nil
+        }
+        guard let cache = cacheRoot() else {
+            return nil
+        }
+        let folder = cache.appendingPathComponent(MapFileRangePlugin.tempFolder)
+            .standardizedFileURL
+        let fileURL = cache.appendingPathComponent(path).standardizedFileURL
+        if !fileURL.path.hasPrefix(folder.path + "/") {
+            return nil
+        }
+        return fileURL
+    }
+
+    private func sweepTempTiles() {
+        guard let cache = cacheRoot() else {
+            return
+        }
+        let folder = cache.appendingPathComponent(MapFileRangePlugin.tempFolder)
+        try? FileManager.default.removeItem(at: folder)
     }
 
     /// JS numbers arrive as Int or Double. Both fit a byte offset.

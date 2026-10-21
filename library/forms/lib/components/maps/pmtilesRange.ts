@@ -15,8 +15,16 @@ export const TILE_RANGE_MAX_BYTES = 2 * 1024 * 1024;
 /** Read `length` bytes at `offset` from a local PMTiles archive. */
 export type TileByteRead = (
   offset: number,
-  length: number
+  length: number,
+  signal?: AbortSignal
 ) => Promise<ArrayBuffer>;
+
+/** Throw if a tile load was cancelled mid-pan. */
+export function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw new DOMException('Tile load aborted.', 'AbortError');
+  }
+}
 
 /** Reject a range that is not a bounded tile-sized read. */
 export function assertTileRange(offset: number, length: number): void {
@@ -37,9 +45,11 @@ export function assertTileRange(offset: number, length: number): void {
 export async function readBlobRange(
   blob: Blob,
   offset: number,
-  length: number
+  length: number,
+  signal?: AbortSignal
 ): Promise<ArrayBuffer> {
   assertTileRange(offset, length);
+  throwIfAborted(signal);
   if (length === 0) {
     return new ArrayBuffer(0);
   }

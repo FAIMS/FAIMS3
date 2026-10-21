@@ -17,7 +17,11 @@ import VectorTile from 'ol/VectorTile';
 import {PMTiles, TileType, type Source} from 'pmtiles';
 import type {ContextualMapLayer} from './contextualMapLayers';
 import {contextualVectorStyle} from './contextualVectorStyle';
-import {assertTileRange, type TileByteRead} from './pmtilesRange';
+import {
+  assertTileRange,
+  throwIfAborted,
+  type TileByteRead,
+} from './pmtilesRange';
 
 const MAP_PROJECTION = 'EPSG:3857';
 const TILE_SIZE = 256;
@@ -26,7 +30,53 @@ const TILE_SIZE = 256;
  * Tiles kept per contextual layer. A phone viewport is a few dozen tiles;
  * the streets base map keeps its own larger cache.
  */
-export const CONTEXTUAL_TILE_CACHE_SIZE = 32;
+export const CONTEXTUAL_TILE_CACHE_SIZE = 8;
+
+/** Layer property holding the gate that aborts tile reads during a pan. */
+export const CONTEXTUAL_TILE_LOAD_GATE = 'contextualTileLoadGate';
+
+/** Abort in-flight tile reads while the map is moving, then resume. */
+export function createContextualTileLoadGate() {
+  let interacting = false;
+  const controllers = new Set<AbortController>();
+
+  return {
+    get interacting() {
+      return interacting;
+    },
+    startInteraction() {
+      interacting = true;
+      for (const controller of controllers) {
+        controller.abort();
+      }
+      controllers.clear();
+    },
+    endInteraction() {
+      interacting = false;
+    },
+    branch(parent?: AbortSignal) {
+      const controller = new AbortController();
+      if (interacting || parent?.aborted) {
+        controller.abort();
+        return {signal: controller.signal, done() {}};
+      }
+      const onParentAbort = () => controller.abort();
+      parent?.addEventListener('abort', onParentAbort);
+      controllers.add(controller);
+      return {
+        signal: controller.signal,
+        done() {
+          controllers.delete(controller);
+          parent?.removeEventListener('abort', onParentAbort);
+        },
+      };
+    },
+  };
+}
+
+export type ContextualTileLoadGate = ReturnType<
+  typeof createContextualTileLoadGate
+>;
 
 const TRANSPARENT_PNG = Uint8Array.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49,
@@ -49,9 +99,15 @@ class CallbackSource implements Source {
   }
 
   /** Range-read `length` bytes at `offset` from the stored archive. */
-  async getBytes(offset: number, length: number) {
+  async getBytes(
+    offset: number,
+    length: number,
+    signal?: AbortSignal
+  ) {
     assertTileRange(offset, length);
-    const data = await this.read(offset, length);
+    throwIfAborted(signal);
+    const data = await this.read(offset, length, signal);
+    throwIfAborted(signal);
     if (data.byteLength > length) {
       throw new Error('Tile read returned more bytes than requested.');
     }
@@ -130,6 +186,7 @@ export async function createRasterTileLayer(
   const archive = await openArchive(spec);
   const header = await archive.getHeader();
   const mime = tileMime(header.tileType);
+  const gate = createContextualTileLoadGate();
   const source = new ImageTileSource({
     projection: MAP_PROJECTION,
     minZoom: header.minZoom,
@@ -138,19 +195,28 @@ export async function createRasterTileLayer(
     wrapX: false,
     transition: 0,
     loader: async (z, x, y, options) => {
-      const tile = await archive.getZxy(z, x, y, options?.signal);
-      if (!tile) {
-        return transparentTile();
+      const {signal, done} = gate.branch(options?.signal);
+      try {
+        throwIfAborted(signal);
+        const tile = await archive.getZxy(z, x, y, signal);
+        throwIfAborted(signal);
+        if (!tile) {
+          return transparentTile();
+        }
+        return decodeTile(tile.data, mime);
+      } finally {
+        done();
       }
-      return decodeTile(tile.data, mime);
     },
   });
-  return new TileLayer({
+  const layer = new TileLayer({
     source,
     preload: 0,
     cacheSize: CONTEXTUAL_TILE_CACHE_SIZE,
     extent: layerExtent(spec),
   });
+  layer.set(CONTEXTUAL_TILE_LOAD_GATE, gate);
+  return layer;
 }
 
 /** Vector PMTiles as an MVT layer. Paint stays a client style function. */
@@ -159,6 +225,7 @@ export async function createVectorTileLayer(
 ): Promise<VectorTileLayer> {
   const archive = await openArchive(spec);
   const header = await archive.getHeader();
+  const gate = createContextualTileLoadGate();
   const source = new VectorTileSource({
     format: new MVT(),
     minZoom: header.minZoom,
@@ -170,11 +237,22 @@ export async function createVectorTileLayer(
     tileUrlFunction: tileCoord =>
       tileCoord ? `${tileCoord[0]}/${tileCoord[1]}/${tileCoord[2]}` : undefined,
     tileLoadFunction: tile => {
-      const vectorTile = tile as VectorTile<FeatureLike>;
+      const vectorTile = tile as VectorTile<FeatureLike> & {
+        disposeInternal: () => void;
+      };
+      const controller = new AbortController();
+      const disposeInternal = vectorTile.disposeInternal.bind(vectorTile);
+      vectorTile.disposeInternal = () => {
+        controller.abort();
+        disposeInternal();
+      };
       vectorTile.setLoader(async (extent, _resolution, projection) => {
         const [z, x, y] = vectorTile.getTileCoord();
+        const {signal, done} = gate.branch(controller.signal);
         try {
-          const response = await archive.getZxy(z, x, y);
+          throwIfAborted(signal);
+          const response = await archive.getZxy(z, x, y, signal);
+          throwIfAborted(signal);
           if (!response) {
             vectorTile.setFeatures([]);
             return [];
@@ -183,20 +261,33 @@ export async function createVectorTileLayer(
             extent,
             featureProjection: projection,
           });
+          throwIfAborted(signal);
           vectorTile.setFeatures(features);
-        } catch {
+        } catch (error) {
           vectorTile.setState(TileState.ERROR);
+          if (
+            signal.aborted ||
+            (error instanceof DOMException && error.name === 'AbortError')
+          ) {
+            return [];
+          }
+        } finally {
+          done();
         }
         return [];
       });
     },
   });
-  return new VectorTileLayer({
+  const layer = new VectorTileLayer({
     source,
     style: contextualVectorStyle(spec),
     preload: 0,
     cacheSize: CONTEXTUAL_TILE_CACHE_SIZE,
+    updateWhileAnimating: false,
+    updateWhileInteracting: false,
     extent: layerExtent(spec),
-    renderBuffer: 64,
+    renderBuffer: 0,
   });
+  layer.set(CONTEXTUAL_TILE_LOAD_GATE, gate);
+  return layer;
 }

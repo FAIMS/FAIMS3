@@ -69,6 +69,8 @@ describe('useContextualMapLayers', () => {
       removeLayer: (value: BaseLayer) => {
         removed.push(value);
       },
+      on: () => undefined,
+      un: () => undefined,
     } as unknown as OlMap;
     const view = render(<Harness visible map={map} />);
     await vi.waitFor(() => {

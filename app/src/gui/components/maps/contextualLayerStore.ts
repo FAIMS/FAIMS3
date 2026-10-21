@@ -114,14 +114,14 @@ function filenameFor(layer: ContextualLayerListing): string {
  */
 async function bindStoredLayerReader(filename: string): Promise<TileByteRead> {
   if (Capacitor.isNativePlatform()) {
-    return (offset, length) =>
-      readNativeFileRange(`map-assets/${filename}`, offset, length);
+    return (offset, length, signal) =>
+      readNativeFileRange(`map-assets/${filename}`, offset, length, signal);
   }
   const root = await navigator.storage.getDirectory();
   const dir = await root.getDirectoryHandle('map-assets');
   const handle = await dir.getFileHandle(filename);
   const file = await handle.getFile();
-  return (offset, length) => readBlobRange(file, offset, length);
+  return (offset, length, signal) => readBlobRange(file, offset, length, signal);
 }
 
 /** Write PMTiles bytes into the browser Origin Private File System. */

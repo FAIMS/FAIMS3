@@ -5,17 +5,29 @@
  * Android's WebView file server does not seek. iOS can drop the Range
  * header, and a custom-scheme fetch fails while the device is offline.
  * Both platforms seek through the MapFileRange plugin instead.
+ *
+ * The plugin writes the range to a Cache file and returns its URI. JS
+ * fetches that file as an ArrayBuffer so tile bytes never cross the
+ * Capacitor bridge as base64 JSON (which logged and copied every tile
+ * during a pan and crashed iOS WebContent).
  */
 
-import {registerPlugin} from '@capacitor/core';
-import {assertTileRange} from '@faims3/forms';
+import {Capacitor, registerPlugin} from '@capacitor/core';
+import {assertTileRange, throwIfAborted} from '@faims3/forms';
+import {createAsyncSemaphore} from '../../../utils/asyncMutex';
+
+/** Concurrent native tile reads. Rapid pan used to fire dozens at once. */
+export const NATIVE_FILE_RANGE_CONCURRENCY = 2;
+
+const runLimitedRead = createAsyncSemaphore(NATIVE_FILE_RANGE_CONCURRENCY);
 
 type MapFileRangePlugin = {
   read(options: {
     path: string;
     offset: number;
     length: number;
-  }): Promise<{data: string}>;
+  }): Promise<{uri?: string; path?: string; data?: string}>;
+  remove(options: {path: string}): Promise<void>;
 };
 
 let plugin: MapFileRangePlugin | undefined;
@@ -26,7 +38,7 @@ function mapFileRange(): MapFileRangePlugin {
   return plugin;
 }
 
-/** Decode the plugin's base64 payload into tile bytes. */
+/** Decode a legacy plugin base64 payload into tile bytes. */
 export function decodeBase64Tile(data: string): Uint8Array {
   const binary = atob(data);
   const bytes = new Uint8Array(binary.length);
@@ -36,17 +48,54 @@ export function decodeBase64Tile(data: string): Uint8Array {
   return bytes;
 }
 
+/** Fetch the cache file the plugin wrote for this range. */
+async function readRangeFile(
+  uri: string,
+  signal?: AbortSignal
+): Promise<ArrayBuffer> {
+  const response = await fetch(Capacitor.convertFileSrc(uri), {signal});
+  if (!response.ok) {
+    throw new Error('Could not read the tile range file.');
+  }
+  return response.arrayBuffer();
+}
+
 /** Path is relative to Directory.Data, for example map-assets/a.pmtiles. */
 export async function readNativeFileRange(
   path: string,
   offset: number,
-  length: number
+  length: number,
+  signal?: AbortSignal
 ): Promise<ArrayBuffer> {
   assertTileRange(offset, length);
-  const {data} = await mapFileRange().read({path, offset, length});
-  const bytes = decodeBase64Tile(data);
-  if (bytes.byteLength > length) {
-    throw new Error('Tile read returned more bytes than requested.');
+  throwIfAborted(signal);
+  if (length === 0) {
+    return new ArrayBuffer(0);
   }
-  return bytes.slice().buffer;
+  return runLimitedRead(async () => {
+    throwIfAborted(signal);
+    const result = await mapFileRange().read({path, offset, length});
+    try {
+      throwIfAborted(signal);
+      const bytes = result.uri
+        ? new Uint8Array(await readRangeFile(result.uri, signal))
+        : result.data
+          ? decodeBase64Tile(result.data)
+          : undefined;
+      if (!bytes) {
+        throw new Error('Tile read returned no data.');
+      }
+      if (bytes.byteLength > length) {
+        throw new Error('Tile read returned more bytes than requested.');
+      }
+      throwIfAborted(signal);
+      return bytes.slice().buffer;
+    } finally {
+      if (result.path) {
+        await mapFileRange()
+          .remove({path: result.path})
+          .catch(() => undefined);
+      }
+    }
+  });
 }
