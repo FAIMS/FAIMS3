@@ -34,6 +34,7 @@ describe('spatial tool performance args', () => {
       filename: 'normalized.fgb',
       format: 'FlatGeobuf',
       nlt: 'PROMOTE_TO_MULTI',
+      family: 'polygon',
     });
     expect(vectorIntermediateFilename(plan)).toBe('normalized.fgb');
     expect(ogr2ogrGeometryArgs('out.fgb', 'in.gpkg', plan)).toEqual([
@@ -59,8 +60,9 @@ describe('spatial tool performance args', () => {
       filename: 'normalized.fgb',
       format: 'FlatGeobuf',
       nlt: 'PROMOTE_TO_MULTI',
+      family: 'polygon',
     });
-    expect(tippecanoeVectorArgs('out.pmtiles', 'out.fgb')).toEqual([
+    expect(tippecanoeVectorArgs('out.pmtiles', 'out.fgb', plan)).toEqual([
       '-o',
       'out.pmtiles',
       '-z',
@@ -82,6 +84,67 @@ describe('spatial tool performance args', () => {
       'features',
       'out.fgb',
     ]);
+  });
+
+  it('thins dense point layers by spacing, not coalesce', () => {
+    const plan = vectorIntermediatePlan(ogrInfoForTypes('Point'));
+    expect(plan).toEqual({
+      filename: 'normalized.fgb',
+      format: 'FlatGeobuf',
+      nlt: 'PROMOTE_TO_MULTI',
+      family: 'point',
+    });
+    expect(vectorIntermediatePlan(ogrInfoForTypes('Multi Point'))).toEqual({
+      filename: 'normalized.fgb',
+      format: 'FlatGeobuf',
+      nlt: 'PROMOTE_TO_MULTI',
+      family: 'point',
+    });
+    expect(tippecanoeVectorArgs('out.pmtiles', 'out.fgb', plan)).toEqual([
+      '-o',
+      'out.pmtiles',
+      '-z',
+      '14',
+      '--drop-densest-as-needed',
+      '--drop-rate=g',
+      '--maximum-tile-bytes=80000',
+      '--maximum-tile-features=5000',
+      '--hilbert',
+      '--force',
+      '--json-progress',
+      '--progress-interval=5',
+      '-l',
+      'features',
+      'out.fgb',
+    ]);
+  });
+
+  it('uses drop-densest for line and mixed layers', () => {
+    const line = vectorIntermediatePlan(ogrInfoForTypes('Line String'));
+    expect(line.family).toBe('line');
+    expect(tippecanoeVectorArgs('out.pmtiles', 'out.fgb', line)).toEqual([
+      '-o',
+      'out.pmtiles',
+      '-z',
+      '14',
+      '--drop-densest-as-needed',
+      '--force',
+      '--json-progress',
+      '--progress-interval=5',
+      '-l',
+      'features',
+      'out.fgb',
+    ]);
+    const mixed = vectorIntermediatePlan(
+      ogrInfoForTypes('Polygon', 'Line String')
+    );
+    expect(mixed.family).toBeUndefined();
+    expect(tippecanoeVectorArgs('out.pmtiles', 'out.geojson', mixed)).toContain(
+      '--drop-densest-as-needed'
+    );
+    expect(
+      tippecanoeVectorArgs('out.pmtiles', 'out.geojson', mixed)
+    ).not.toContain('--drop-polygons');
   });
 
   it('writes GeoJSONSeq when ogrinfo reports mixed or unknown geometry', () => {
@@ -110,6 +173,7 @@ describe('spatial tool performance args', () => {
       filename: 'normalized.fgb',
       format: 'FlatGeobuf',
       nlt: 'PROMOTE_TO_MULTI',
+      family: 'polygon',
     });
     const plan = vectorIntermediatePlan(ogrInfoForTypes('Geometry'));
     expect(ogr2ogrGeometryArgs('out.geojson', 'in.geojson', plan)).toEqual([

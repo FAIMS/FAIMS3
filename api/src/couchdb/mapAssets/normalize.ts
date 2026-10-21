@@ -406,7 +406,7 @@ async function convertVector(
       },
       () =>
         runTippecanoe(
-          tippecanoeVectorArgs(pmtilesPath, intermediatePath),
+          tippecanoeVectorArgs(pmtilesPath, intermediatePath, plan),
           onStderr
         )
     );

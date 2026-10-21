@@ -16,6 +16,7 @@ export const VECTOR_INTERMEDIATE_GEOJSONSEQ = 'normalized.geojson';
 export const VECTOR_TILE_MAX_ZOOM = 14;
 
 export type VectorOgrFormat = 'FlatGeobuf' | 'GeoJSONSeq';
+export type VectorGeometryFamily = 'point' | 'line' | 'polygon';
 
 /**
  * How ogr2ogr writes the geometry-only intermediate that tippecanoe reads.
@@ -27,9 +28,11 @@ export type VectorIntermediatePlan = {
   filename: string;
   format: VectorOgrFormat;
   nlt: string;
+  /** Set when every source layer is one point / line / polygon family. */
+  family?: VectorGeometryFamily;
 };
 
-const FGB_GEOMETRY_FAMILY: Record<string, 'point' | 'line' | 'polygon'> = {
+const FGB_GEOMETRY_FAMILY: Record<string, VectorGeometryFamily> = {
   point: 'point',
   multipoint: 'point',
   linestring: 'line',
@@ -80,11 +83,13 @@ export function geometryFieldTypes(info: unknown): string[] {
 }
 
 /**
- * FlatGeobuf `-nlt` when every layer is one family (point / line / polygon).
+ * Single point / line / polygon family when every layer matches.
  * Mixed or unknown types return `undefined` so the caller uses GeoJSONSeq.
  */
-function concreteFgbNlt(types: string[]): string | undefined {
-  const families = new Set<'point' | 'line' | 'polygon'>();
+function homogeneousGeometryFamily(
+  types: string[]
+): VectorGeometryFamily | undefined {
+  const families = new Set<VectorGeometryFamily>();
   for (const raw of types) {
     const canonical = canonicalGeometryType(raw);
     if (
@@ -105,7 +110,7 @@ function concreteFgbNlt(types: string[]): string | undefined {
   if (families.size !== 1) {
     return undefined;
   }
-  return 'PROMOTE_TO_MULTI';
+  return families.values().next().value;
 }
 
 /**
@@ -113,12 +118,13 @@ function concreteFgbNlt(types: string[]): string | undefined {
  * family. Otherwise GeoJSONSeq so tippecanoe can read mixed collections.
  */
 export function vectorIntermediatePlan(info?: unknown): VectorIntermediatePlan {
-  const nlt = concreteFgbNlt(geometryFieldTypes(info));
-  if (nlt) {
+  const family = homogeneousGeometryFamily(geometryFieldTypes(info));
+  if (family) {
     return {
       filename: VECTOR_INTERMEDIATE_FGB,
       format: 'FlatGeobuf',
-      nlt,
+      nlt: 'PROMOTE_TO_MULTI',
+      family,
     };
   }
   return {
@@ -241,28 +247,50 @@ export function ogr2ogrGeometryArgs(
   ];
 }
 
-/** tippecanoe args: PMTiles out, low-zoom coalesce/drop, JSON progress every 5s. */
+/** tippecanoe thinning: polygons coalesce/drop, points space, else drop-densest. */
+function tippecanoeThinningArgs(family?: VectorGeometryFamily): string[] {
+  if (family === 'polygon') {
+    // Attributes are already stripped. Merge same-attribute polygons, then
+    // thin them at zooms below --base-zoom so z0–z9 stay small.
+    return [
+      '--coalesce',
+      '--reorder',
+      '--hilbert',
+      '--coalesce-smallest-as-needed',
+      '--drop-polygons',
+      '--drop-rate=3',
+      '--base-zoom=10',
+      '--maximum-tile-bytes=80000',
+      '--simplification=10',
+      '--simplify-only-low-zooms',
+    ];
+  }
+  if (family === 'point') {
+    // Keep full detail only where spacing allows. Guess a drop rate that
+    // holds the densest tile under 50k, then cap bytes and feature count.
+    return [
+      '--drop-densest-as-needed',
+      '--drop-rate=g',
+      '--maximum-tile-bytes=80000',
+      '--maximum-tile-features=5000',
+      '--hilbert',
+    ];
+  }
+  return ['--drop-densest-as-needed'];
+}
+
+/** tippecanoe args: PMTiles out, family-specific thinning, JSON progress every 5s. */
 export function tippecanoeVectorArgs(
   pmtilesPath: string,
-  inputPath: string
+  inputPath: string,
+  plan: VectorIntermediatePlan = vectorIntermediatePlan()
 ): string[] {
   return [
     '-o',
     pmtilesPath,
     '-z',
     String(VECTOR_TILE_MAX_ZOOM),
-    // Attributes are already stripped. Merge same-attribute polygons, then
-    // thin them at zooms below --base-zoom so z0–z9 stay small.
-    '--coalesce',
-    '--reorder',
-    '--hilbert',
-    '--coalesce-smallest-as-needed',
-    '--drop-polygons',
-    '--drop-rate=3',
-    '--base-zoom=10',
-    '--maximum-tile-bytes=80000',
-    '--simplification=10',
-    '--simplify-only-low-zooms',
+    ...tippecanoeThinningArgs(plan.family),
     '--force',
     '--json-progress',
     '--progress-interval=5',
