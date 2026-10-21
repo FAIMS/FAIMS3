@@ -14,6 +14,7 @@ import {
   createContextualTileLoadGate,
   createRasterTileLayer,
   createVectorTileLayer,
+  resetErrorTiles,
   CONTEXTUAL_TILE_CACHE_SIZE,
   CONTEXTUAL_TILE_LOAD_GATE,
 } from './contextualTileLayers';
@@ -120,18 +121,36 @@ describe('local PMTiles layers', () => {
     expect(olLayer.get(CONTEXTUAL_TILE_LOAD_GATE)).toBeDefined();
   });
 
-  it('aborts in-flight tile reads when a pan starts', async () => {
+  it('lets in-flight reads finish and skips new ones while panning', () => {
     const gate = createContextualTileLoadGate();
-    const parent = new AbortController();
-    const {signal, done} = gate.branch(parent.signal);
+    const {signal, done} = gate.branch();
     expect(signal.aborted).toBe(false);
     gate.startInteraction();
-    expect(signal.aborted).toBe(true);
+    expect(signal.aborted).toBe(false);
     expect(gate.interacting).toBe(true);
     const skipped = gate.branch();
     expect(skipped.signal.aborted).toBe(true);
     gate.endInteraction();
     expect(gate.interacting).toBe(false);
     done();
+  });
+
+  it('retries aborted tiles without dropping ones that already drew', () => {
+    const loaded = {
+      getState: () => TileState.LOADED,
+      setState: vi.fn(),
+    };
+    const aborted = {
+      getState: () => TileState.ERROR,
+      setState: vi.fn(),
+    };
+    resetErrorTiles({
+      forEach: fn => {
+        fn(loaded as never);
+        fn(aborted as never);
+      },
+    });
+    expect(loaded.setState).not.toHaveBeenCalled();
+    expect(aborted.setState).toHaveBeenCalledWith(TileState.IDLE);
   });
 });

@@ -71,6 +71,7 @@ describe('useContextualMapLayers', () => {
       },
       on: () => undefined,
       un: () => undefined,
+      render: () => undefined,
     } as unknown as OlMap;
     const view = render(<Harness visible map={map} />);
     await vi.waitFor(() => {

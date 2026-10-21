@@ -4,6 +4,11 @@ import {get as getProjection} from 'ol/proj';
 import TileState from 'ol/TileState';
 import type VectorTile from 'ol/VectorTile';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {
+  TILE_LOAD_CONTROLLER,
+  TILE_LOAD_GATE,
+  tileLoadController,
+} from '../tileLoadControl';
 import {VectorTileStore} from './TileStore';
 
 vi.mock('ol-mapbox-style', () => ({
@@ -134,5 +139,29 @@ describe('VectorTileStore.tileLoader', () => {
     expect(missed.getState()).toBe(TileState.ERROR);
     expect(later.getState()).toBe(TileState.LOADED);
     expect(later.features).toHaveLength(1);
+  });
+
+  it('skips a streets fetch while the view is moving', async () => {
+    const store = new VectorTileStore(OSM_CONFIG);
+    getTileBlob.mockClear();
+    tileLoadController(store.tileLayer)!.gate.startInteraction();
+    const tile = fakeVectorTile([1, 0, 0]);
+    const projection = getProjection('EPSG:3857');
+    store.tileLoader(tile as unknown as VectorTile<FeatureLike>);
+    await tile.loader?.(WORLD_EXTENT, 1, projection);
+    expect(tile.getState()).toBe(TileState.ERROR);
+    expect(getTileBlob).not.toHaveBeenCalled();
+  });
+
+  it('attaches a load gate to streets and satellite layers', () => {
+    const store = new VectorTileStore({
+      ...OSM_CONFIG,
+      satelliteSource: 'maptiler',
+      mapSourceKey: 'test-key',
+    });
+    expect(store.tileLayer.get(TILE_LOAD_GATE)).toBeDefined();
+    const satellite = store.getSatelliteLayer();
+    expect(satellite?.get(TILE_LOAD_GATE)).toBeDefined();
+    expect(satellite?.get(TILE_LOAD_CONTROLLER)).toBeDefined();
   });
 });

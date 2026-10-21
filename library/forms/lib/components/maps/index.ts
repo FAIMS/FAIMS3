@@ -18,4 +18,5 @@ export * from './OfflineMapRegionEditor';
 export * from './offlineMapRegionUtils';
 export * from './styles';
 export * from './tileDB';
+export * from './tileLoadControl';
 export * from './types';

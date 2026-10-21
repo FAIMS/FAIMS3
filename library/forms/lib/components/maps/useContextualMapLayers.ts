@@ -8,6 +8,7 @@ import {
   CONTEXTUAL_TILE_LOAD_GATE,
   createRasterTileLayer,
   createVectorTileLayer,
+  retryAbortedContextualTiles,
   type ContextualTileLoadGate,
 } from './contextualTileLayers';
 import {contextualVectorStyle} from './contextualVectorStyle';
@@ -40,17 +41,22 @@ function dropLayer(map: OlMap, layer: ManagedLayer) {
   layer.dispose();
 }
 
-/** Abort tile reads for one overlay while the map is moving. */
+/** Pause new tile reads for one overlay while the map is moving. */
 function tileLoadGate(layer: ManagedLayer): ContextualTileLoadGate | undefined {
   return layer.get(CONTEXTUAL_TILE_LOAD_GATE) as
     | ContextualTileLoadGate
     | undefined;
 }
 
-/** Reload the viewport after a pan so aborted tiles can fill in. */
-function refreshLayerSource(layer: ManagedLayer) {
+/** Fill aborted holes after a pan without dumping tiles that already drew. */
+function resumeLayerTiles(layer: ManagedLayer) {
+  const gate = tileLoadGate(layer);
+  if (!gate?.interacting) {
+    return;
+  }
+  gate.endInteraction();
   if (layer instanceof TileLayer || layer instanceof VectorTileLayer) {
-    layer.getSource()?.refresh();
+    retryAbortedContextualTiles(layer);
   }
 }
 
@@ -143,13 +149,9 @@ export function useContextualMapLayers(map: OlMap | undefined) {
     };
     const onMoveEnd = () => {
       for (const layer of managed.current.values()) {
-        const gate = tileLoadGate(layer);
-        if (!gate?.interacting) {
-          continue;
-        }
-        gate.endInteraction();
-        refreshLayerSource(layer);
+        resumeLayerTiles(layer);
       }
+      map.render();
     };
     map.on('movestart', onMoveStart);
     map.on('moveend', onMoveEnd);

@@ -11,6 +11,7 @@ import {containsExtent, Extent} from 'ol/extent';
 import Feature, {FeatureLike} from 'ol/Feature';
 import MVT from 'ol/format/MVT';
 import {Geometry} from 'ol/geom';
+import ImageTile from 'ol/ImageTile';
 import TileLayer from 'ol/layer/Tile';
 import VectorTileLayer from 'ol/layer/VectorTile';
 import {XYZ} from 'ol/source';
@@ -35,6 +36,12 @@ import {InitTileDbResult} from './tileStoreUtils';
 import {MapConfig} from '../types';
 import {StoredTile, StoredTileSet} from './types';
 import {deleteDatabase} from '../IDBUtils';
+import {
+  TILE_LOAD_CONTROLLER,
+  TILE_LOAD_GATE,
+  createTileLoadController,
+  type TileLoadController,
+} from '../tileLoadControl';
 
 // When downloading maps we start at this zoom level
 const START_ZOOM = 2;
@@ -265,6 +272,7 @@ abstract class TileStoreBase {
   tileStore: MapTileDatabase;
   config: MapConfig;
   private activeDownloads = new Map<string, {cancelled: boolean}>();
+  protected readonly satelliteLoads = createTileLoadController();
 
   constructor(config: MapConfig) {
     this.tileStore = MapTileDatabase.getInstance();
@@ -332,17 +340,34 @@ abstract class TileStoreBase {
       url = config.url.replace('{key}', this.config.mapSourceKey || '');
     }
 
+    const loads = this.satelliteLoads;
+    let layer: TileLayer;
     const source = new XYZ({
       url: url,
       attributions: this.getSatelliteAttribution(),
       minZoom: config.minZoom,
       maxZoom: config.maxZoom,
+      tileLoadFunction: (tile, src) => {
+        const imageTile = tile as ImageTile;
+        if (!loads.begin(imageTile)) {
+          return;
+        }
+        const image = imageTile.getImage() as HTMLImageElement;
+        const onDone = () => loads.finish(layer);
+        image.addEventListener('load', onDone, {once: true});
+        image.addEventListener('error', onDone, {once: true});
+        image.src = src;
+      },
     });
 
-    return new TileLayer({
+    layer = new TileLayer({
       source: source,
       visible: false,
+      preload: 0,
     });
+    layer.set(TILE_LOAD_GATE, loads.gate);
+    layer.set(TILE_LOAD_CONTROLLER, loads);
+    return layer;
   }
 
   getSatelliteAttribution(): string {
@@ -864,6 +889,7 @@ export const failedURLs = new Set<string>();
 export class VectorTileStore extends TileStoreBase {
   declare source: VectorTileSource;
   declare tileLayer: VectorTileLayer;
+  private readonly streetsLoads: TileLoadController = createTileLoadController();
 
   constructor(config: MapConfig) {
     super(config);
@@ -878,7 +904,10 @@ export class VectorTileStore extends TileStoreBase {
     this.tileLayer = new VectorTileLayer({
       source: this.source,
       background: 'hsl(40, 26%, 93%)',
+      preload: 0,
     });
+    this.tileLayer.set(TILE_LOAD_GATE, this.streetsLoads.gate);
+    this.tileLayer.set(TILE_LOAD_CONTROLLER, this.streetsLoads);
     this.preCacheSprites();
     applyStyle(this.tileLayer, getMapStylesheet(this.config.mapStyle), {
       transformRequest: this.transformRequest.bind(this),
@@ -943,6 +972,9 @@ export class VectorTileStore extends TileStoreBase {
   tileLoader(tile: Tile) {
     const vTile = tile as VectorTile<FeatureLike>;
     vTile.setLoader(async (extent, _resolution, projection) => {
+      if (!this.streetsLoads.begin(vTile)) {
+        return [];
+      }
       const tileCoords = vTile.getTileCoord();
       const tileUrl = this.getURLForTile({
         z: tileCoords[0],
@@ -964,6 +996,8 @@ export class VectorTileStore extends TileStoreBase {
         vTile.setFeatures(features);
       } catch {
         vTile.setState(TileState.ERROR);
+      } finally {
+        this.streetsLoads.finish(this.tileLayer);
       }
       return [];
     });

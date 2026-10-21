@@ -64,6 +64,7 @@ import {ContextualLayersControl} from './ContextualLayersControl';
 import {GPS_CURSOR_LAYER_Z_INDEX} from './layerStack';
 import type {RecordFormLayer, RecordFormLayerPatch} from './recordFormLayers';
 import {useBaseMapLayers} from './useBaseMapLayers';
+import {useBaseMapTileLoads} from './useBaseMapTileLoads';
 import {useContextualMapLayers} from './useContextualMapLayers';
 import {createTileStore} from './tileDB/TileStore';
 
@@ -191,6 +192,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
     vectorVisible,
     satelliteVisible,
   } = useBaseMapLayers(tileLayer, satelliteLayer, isOnline);
+  useBaseMapTileLoads(map, tileLayer, satelliteLayer);
 
   useEffect(() => {
     const vectorAttribution = tileStore.getAttribution() as unknown as string;
