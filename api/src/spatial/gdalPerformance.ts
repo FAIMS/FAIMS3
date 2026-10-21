@@ -241,7 +241,7 @@ export function ogr2ogrGeometryArgs(
   ];
 }
 
-/** tippecanoe args: PMTiles out, drop-densest, JSON progress every 5s. */
+/** tippecanoe args: PMTiles out, low-zoom coalesce/drop, JSON progress every 5s. */
 export function tippecanoeVectorArgs(
   pmtilesPath: string,
   inputPath: string
@@ -251,7 +251,18 @@ export function tippecanoeVectorArgs(
     pmtilesPath,
     '-z',
     String(VECTOR_TILE_MAX_ZOOM),
-    '--drop-densest-as-needed',
+    // Attributes are already stripped. Merge same-attribute polygons, then
+    // thin them at zooms below --base-zoom so z0–z9 stay small.
+    '--coalesce',
+    '--reorder',
+    '--hilbert',
+    '--coalesce-smallest-as-needed',
+    '--drop-polygons',
+    '--drop-rate=3',
+    '--base-zoom=10',
+    '--maximum-tile-bytes=80000',
+    '--simplification=10',
+    '--simplify-only-low-zooms',
     '--force',
     '--json-progress',
     '--progress-interval=5',
