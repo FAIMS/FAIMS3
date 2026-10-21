@@ -3,7 +3,7 @@ import TileLayer from 'ol/layer/Tile';
 import VectorTileLayer from 'ol/layer/VectorTile';
 import OlMap from 'ol/Map';
 import {useEffect} from 'react';
-import {tileLoadController} from './tileLoadControl';
+import {shouldPauseTileLoads, tileLoadController} from './tileLoadControl';
 
 type BaseMapLayer = TileLayer | VectorTileLayer;
 
@@ -21,6 +21,9 @@ export function useBaseMapTileLoads(
       (layer): layer is BaseMapLayer => layer !== undefined
     );
     const onMoveStart = () => {
+      if (!shouldPauseTileLoads(map.getView())) {
+        return;
+      }
       for (const layer of layers) {
         tileLoadController(layer)?.gate.startInteraction();
       }

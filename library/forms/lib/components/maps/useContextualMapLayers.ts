@@ -11,6 +11,7 @@ import {
   retryAbortedContextualTiles,
   type ContextualTileLoadGate,
 } from './contextualTileLayers';
+import {shouldPauseTileLoads} from './tileLoadControl';
 import {contextualVectorStyle} from './contextualVectorStyle';
 import {
   ContextualMapLayersContext,
@@ -143,6 +144,9 @@ export function useContextualMapLayers(map: OlMap | undefined) {
       return;
     }
     const onMoveStart = () => {
+      if (!shouldPauseTileLoads(map.getView())) {
+        return;
+      }
       for (const layer of managed.current.values()) {
         tileLoadGate(layer)?.startInteraction();
       }

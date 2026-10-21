@@ -348,15 +348,16 @@ abstract class TileStoreBase {
       minZoom: config.minZoom,
       maxZoom: config.maxZoom,
       tileLoadFunction: (tile, src) => {
-        const imageTile = tile as ImageTile;
-        if (!loads.begin(imageTile)) {
-          return;
-        }
-        const image = imageTile.getImage() as HTMLImageElement;
-        const onDone = () => loads.finish(layer);
-        image.addEventListener('load', onDone, {once: true});
-        image.addEventListener('error', onDone, {once: true});
-        image.src = src;
+        const image = (tile as ImageTile).getImage() as HTMLImageElement;
+        void loads.run(
+          () =>
+            new Promise<void>(resolve => {
+              const onDone = () => resolve();
+              image.addEventListener('load', onDone, {once: true});
+              image.addEventListener('error', onDone, {once: true});
+              image.src = src;
+            })
+        );
       },
     });
 
@@ -972,33 +973,30 @@ export class VectorTileStore extends TileStoreBase {
   tileLoader(tile: Tile) {
     const vTile = tile as VectorTile<FeatureLike>;
     vTile.setLoader(async (extent, _resolution, projection) => {
-      if (!this.streetsLoads.begin(vTile)) {
-        return [];
-      }
-      const tileCoords = vTile.getTileCoord();
-      const tileUrl = this.getURLForTile({
-        z: tileCoords[0],
-        x: tileCoords[1],
-        y: tileCoords[2],
-      });
-      try {
-        const blob = await this.getTileBlob(tileUrl);
-        if (!blob) {
+      await this.streetsLoads.run(async () => {
+        const tileCoords = vTile.getTileCoord();
+        const tileUrl = this.getURLForTile({
+          z: tileCoords[0],
+          x: tileCoords[1],
+          y: tileCoords[2],
+        });
+        try {
+          const blob = await this.getTileBlob(tileUrl);
+          if (!blob) {
+            vTile.setState(TileState.ERROR);
+            return;
+          }
+          const features = vTile
+            .getFormat()
+            .readFeatures(await blob.arrayBuffer(), {
+              extent,
+              featureProjection: projection,
+            });
+          vTile.setFeatures(features);
+        } catch {
           vTile.setState(TileState.ERROR);
-          return [];
         }
-        const features = vTile
-          .getFormat()
-          .readFeatures(await blob.arrayBuffer(), {
-            extent,
-            featureProjection: projection,
-          });
-        vTile.setFeatures(features);
-      } catch {
-        vTile.setState(TileState.ERROR);
-      } finally {
-        this.streetsLoads.finish(this.tileLayer);
-      }
+      });
       return [];
     });
   }

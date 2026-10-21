@@ -141,16 +141,20 @@ describe('VectorTileStore.tileLoader', () => {
     expect(later.features).toHaveLength(1);
   });
 
-  it('skips a streets fetch while the view is moving', async () => {
+  it('waits to fetch a streets tile until the view stops moving', async () => {
     const store = new VectorTileStore(OSM_CONFIG);
     getTileBlob.mockClear();
     tileLoadController(store.tileLayer)!.gate.startInteraction();
     const tile = fakeVectorTile([1, 0, 0]);
     const projection = getProjection('EPSG:3857');
     store.tileLoader(tile as unknown as VectorTile<FeatureLike>);
-    await tile.loader?.(WORLD_EXTENT, 1, projection);
-    expect(tile.getState()).toBe(TileState.ERROR);
+    const pending = tile.loader?.(WORLD_EXTENT, 1, projection);
+    await Promise.resolve();
     expect(getTileBlob).not.toHaveBeenCalled();
+    tileLoadController(store.tileLayer)!.gate.endInteraction();
+    await pending;
+    expect(getTileBlob).toHaveBeenCalled();
+    expect(tile.getState()).toBe(TileState.ERROR);
   });
 
   it('attaches a load gate to streets and satellite layers', () => {

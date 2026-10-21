@@ -96,44 +96,71 @@ export function createTileLoadLimiter(max: number) {
 
 export type TileLoadLimiter = ReturnType<typeof createTileLoadLimiter>;
 
-/** Per-layer gate, cap, and the tiles we skipped so a real miss stays ERROR. */
+/**
+ * Cap in-flight work and pause new work during a user pan. Waiters stay
+ * LOADING so OpenLayers will still display them; marking them ERROR left
+ * streets/satellite blank because those tiles live outside the renderer
+ * cache our retry could see.
+ */
 export function createTileLoadController(max = BASE_MAP_TILE_CONCURRENCY) {
-  const gate = createTileLoadGate();
   const limiter = createTileLoadLimiter(max);
-  const deferred = new WeakSet<object>();
+  const waiters: Array<() => void> = [];
+  let interacting = false;
+
+  const notify = () => {
+    if (interacting) {
+      return;
+    }
+    while (waiters.length > 0 && limiter.active < max) {
+      waiters.shift()?.();
+    }
+  };
+
+  const gate: TileLoadGate = {
+    get interacting() {
+      return interacting;
+    },
+    startInteraction() {
+      interacting = true;
+    },
+    endInteraction() {
+      interacting = false;
+      notify();
+    },
+    branch(parent?: AbortSignal) {
+      const controller = new AbortController();
+      if (interacting || parent?.aborted) {
+        controller.abort();
+        return {signal: controller.signal, done() {}};
+      }
+      const onParentAbort = () => controller.abort();
+      parent?.addEventListener('abort', onParentAbort);
+      return {
+        signal: controller.signal,
+        done() {
+          parent?.removeEventListener('abort', onParentAbort);
+        },
+      };
+    },
+  };
 
   return {
     gate,
-    begin(tile: Tile) {
-      if (gate.interacting || !limiter.tryBegin()) {
-        deferred.add(tile);
-        tile.setState(TileState.ERROR);
-        return false;
+    async run<T>(fn: () => Promise<T>): Promise<T> {
+      while (interacting || !limiter.tryBegin()) {
+        await new Promise<void>(resolve => {
+          waiters.push(resolve);
+        });
       }
-      return true;
-    },
-    end() {
-      limiter.end();
+      try {
+        return await fn();
+      } finally {
+        limiter.end();
+        notify();
+      }
     },
     retry(layer: TileLayer | VectorTileLayer) {
-      const renderer = layer.getRenderer() as TileRenderer | null;
-      const reset = (cache?: TileCache) => {
-        cache?.forEach(tile => {
-          if (deferred.has(tile) && tile.getState() === TileState.ERROR) {
-            deferred.delete(tile);
-            tile.setState(TileState.IDLE);
-          }
-        });
-      };
-      reset(renderer?.getTileCache?.());
-      reset(renderer?.getSourceTileCache?.());
       layer.getSource()?.changed();
-    },
-    finish(layer: TileLayer | VectorTileLayer) {
-      limiter.end();
-      if (!gate.interacting) {
-        this.retry(layer);
-      }
     },
   };
 }
@@ -172,4 +199,15 @@ export function tileLoadController(layer: {
   get: (key: string) => unknown;
 }): TileLoadController | undefined {
   return layer.get(TILE_LOAD_CONTROLLER) as TileLoadController | undefined;
+}
+
+/**
+ * True only for a user pan/pinch/scroll. view.fit and setCenter also fire
+ * movestart; pausing those deferred the first viewport and left the overview
+ * map blank until the next gesture.
+ */
+export function shouldPauseTileLoads(view: {
+  getInteracting: () => boolean;
+}): boolean {
+  return view.getInteracting();
 }
