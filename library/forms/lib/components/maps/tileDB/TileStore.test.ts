@@ -141,19 +141,17 @@ describe('VectorTileStore.tileLoader', () => {
     expect(later.features).toHaveLength(1);
   });
 
-  it('waits to fetch a streets tile until the view stops moving', async () => {
+  it('refuses a streets tile during a pan instead of fetching it', async () => {
     const store = new VectorTileStore(OSM_CONFIG);
     getTileBlob.mockClear();
     tileLoadController(store.tileLayer)!.gate.startInteraction();
     const tile = fakeVectorTile([1, 0, 0]);
     const projection = getProjection('EPSG:3857');
     store.tileLoader(tile as unknown as VectorTile<FeatureLike>);
-    const pending = tile.loader?.(WORLD_EXTENT, 1, projection);
-    await Promise.resolve();
-    expect(getTileBlob).not.toHaveBeenCalled();
-    tileLoadController(store.tileLayer)!.gate.endInteraction();
-    await pending;
-    expect(getTileBlob).toHaveBeenCalled();
+    await tile.loader?.(WORLD_EXTENT, 1, projection);
+    expect(
+      getTileBlob.mock.calls.some(([url]) => String(url).includes('.pbf'))
+    ).toBe(false);
     expect(tile.getState()).toBe(TileState.ERROR);
   });
 

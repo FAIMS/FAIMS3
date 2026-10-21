@@ -5,13 +5,15 @@ import VectorTileLayer from 'ol/layer/VectorTile';
 import OlMap from 'ol/Map';
 import {useContext, useEffect, useRef} from 'react';
 import {
-  CONTEXTUAL_TILE_LOAD_GATE,
   createRasterTileLayer,
   createVectorTileLayer,
-  retryAbortedContextualTiles,
-  type ContextualTileLoadGate,
 } from './contextualTileLayers';
-import {shouldPauseTileLoads} from './tileLoadControl';
+import {
+  createTileLoadSettle,
+  settleTileLayer,
+  shouldPauseTileLoads,
+  tileLoadController,
+} from './tileLoadControl';
 import {contextualVectorStyle} from './contextualVectorStyle';
 import {
   ContextualMapLayersContext,
@@ -19,7 +21,7 @@ import {
 } from './contextualMapLayers';
 import {contextualLayerZIndex} from './layerStack';
 
-type ManagedLayer = BaseLayer;
+type ManagedLayer = TileLayer | VectorTileLayer;
 
 /** Show the overlay and apply opacity / clamped stack order. */
 function applyCommon(layer: ManagedLayer, spec: ContextualMapLayer) {
@@ -42,29 +44,10 @@ function dropLayer(map: OlMap, layer: ManagedLayer) {
   layer.dispose();
 }
 
-/** Pause new tile reads for one overlay while the map is moving. */
-function tileLoadGate(layer: ManagedLayer): ContextualTileLoadGate | undefined {
-  return layer.get(CONTEXTUAL_TILE_LOAD_GATE) as
-    | ContextualTileLoadGate
-    | undefined;
-}
-
-/** Fill aborted holes after a pan without dumping tiles that already drew. */
-function resumeLayerTiles(layer: ManagedLayer) {
-  const gate = tileLoadGate(layer);
-  if (!gate?.interacting) {
-    return;
-  }
-  gate.endInteraction();
-  if (layer instanceof TileLayer || layer instanceof VectorTileLayer) {
-    retryAbortedContextualTiles(layer);
-  }
-}
-
 /** One contextual overlay. Tile archives are read by range, not as one file. */
 export async function createContextualMapLayer(
   spec: ContextualMapLayer
-): Promise<ManagedLayer> {
+): Promise<BaseLayer> {
   if (spec.kind === 'raster-tiles') {
     const layer = await createRasterTileLayer(spec);
     layer.set('sourceUrl', spec.url);
@@ -126,7 +109,7 @@ export function useContextualMapLayers(map: OlMap | undefined) {
           if (previous) {
             dropLayer(map, previous);
           }
-          managed.current.set(spec.id, layer);
+          managed.current.set(spec.id, layer as ManagedLayer);
           map.addLayer(layer);
         })
         .catch(error => {
@@ -143,23 +126,42 @@ export function useContextualMapLayers(map: OlMap | undefined) {
     if (!map) {
       return;
     }
+    const settle = createTileLoadSettle(() => {
+      for (const layer of managed.current.values()) {
+        const loads = tileLoadController(layer);
+        if (!loads) {
+          continue;
+        }
+        loads.gate.endInteraction();
+        settleTileLayer(layer, map);
+      }
+      map.render();
+    });
     const onMoveStart = () => {
       if (!shouldPauseTileLoads(map.getView())) {
         return;
       }
+      settle.cancel();
       for (const layer of managed.current.values()) {
-        tileLoadGate(layer)?.startInteraction();
+        tileLoadController(layer)?.gate.startInteraction();
       }
     };
     const onMoveEnd = () => {
+      let shouldSettle = false;
       for (const layer of managed.current.values()) {
-        resumeLayerTiles(layer);
+        if (tileLoadController(layer)?.gate.interacting) {
+          shouldSettle = true;
+          break;
+        }
       }
-      map.render();
+      if (shouldSettle) {
+        settle.arm();
+      }
     };
     map.on('movestart', onMoveStart);
     map.on('moveend', onMoveEnd);
     return () => {
+      settle.cancel();
       map.un('movestart', onMoveStart);
       map.un('moveend', onMoveEnd);
     };

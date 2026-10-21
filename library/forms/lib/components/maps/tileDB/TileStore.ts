@@ -40,6 +40,8 @@ import {
   TILE_LOAD_CONTROLLER,
   TILE_LOAD_GATE,
   createTileLoadController,
+  isTileLoadPausedError,
+  TileLoadPausedError,
   type TileLoadController,
 } from '../tileLoadControl';
 
@@ -348,16 +350,36 @@ abstract class TileStoreBase {
       minZoom: config.minZoom,
       maxZoom: config.maxZoom,
       tileLoadFunction: (tile, src) => {
-        const image = (tile as ImageTile).getImage() as HTMLImageElement;
-        void loads.run(
-          () =>
-            new Promise<void>(resolve => {
-              const onDone = () => resolve();
-              image.addEventListener('load', onDone, {once: true});
-              image.addEventListener('error', onDone, {once: true});
-              image.src = src;
-            })
-        );
+        const imageTile = tile as ImageTile;
+        void loads
+          .run(
+            signal =>
+              new Promise<void>((resolve, reject) => {
+                if (signal.aborted) {
+                  reject(new TileLoadPausedError());
+                  return;
+                }
+                const image = imageTile.getImage() as HTMLImageElement;
+                const onDone = () => {
+                  signal.removeEventListener('abort', onAbort);
+                  resolve();
+                };
+                const onAbort = () => {
+                  image.removeEventListener('load', onDone);
+                  image.removeEventListener('error', onDone);
+                  reject(new TileLoadPausedError());
+                };
+                image.addEventListener('load', onDone, {once: true});
+                image.addEventListener('error', onDone, {once: true});
+                signal.addEventListener('abort', onAbort);
+                image.src = src;
+              })
+          )
+          .catch(error => {
+            if (isTileLoadPausedError(error)) {
+              imageTile.setState(TileState.ERROR);
+            }
+          });
       },
     });
 
@@ -973,15 +995,21 @@ export class VectorTileStore extends TileStoreBase {
   tileLoader(tile: Tile) {
     const vTile = tile as VectorTile<FeatureLike>;
     vTile.setLoader(async (extent, _resolution, projection) => {
-      await this.streetsLoads.run(async () => {
-        const tileCoords = vTile.getTileCoord();
-        const tileUrl = this.getURLForTile({
-          z: tileCoords[0],
-          x: tileCoords[1],
-          y: tileCoords[2],
-        });
-        try {
+      try {
+        await this.streetsLoads.run(async signal => {
+          if (signal.aborted) {
+            throw new TileLoadPausedError();
+          }
+          const tileCoords = vTile.getTileCoord();
+          const tileUrl = this.getURLForTile({
+            z: tileCoords[0],
+            x: tileCoords[1],
+            y: tileCoords[2],
+          });
           const blob = await this.getTileBlob(tileUrl);
+          if (signal.aborted) {
+            throw new TileLoadPausedError();
+          }
           if (!blob) {
             vTile.setState(TileState.ERROR);
             return;
@@ -992,11 +1020,14 @@ export class VectorTileStore extends TileStoreBase {
               extent,
               featureProjection: projection,
             });
+          if (signal.aborted) {
+            throw new TileLoadPausedError();
+          }
           vTile.setFeatures(features);
-        } catch {
-          vTile.setState(TileState.ERROR);
-        }
-      });
+        });
+      } catch {
+        vTile.setState(TileState.ERROR);
+      }
       return [];
     });
   }

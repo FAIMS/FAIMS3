@@ -1,30 +1,85 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
  * Shared tile-load pacing for contextual overlays and the streets/satellite
- * base maps. New loads pause while the view is moving. Base-map network
- * tiles also share a small in-flight cap so a slow radio cannot fill
- * OpenLayers' queue and stall local PMTiles reads.
+ * base maps. No new work starts while the view is moving. After the gesture
+ * settles, tiles that left the viewport are dropped and only in-view holes
+ * stream in, so overlapping tiles already on screen are not refetched.
  */
 
-import TileLayer from 'ol/layer/Tile';
-import VectorTileLayer from 'ol/layer/VectorTile';
 import Tile from 'ol/Tile';
 import TileState from 'ol/TileState';
 
-/** In-flight streets or satellite tile fetches. Extra tiles defer. */
+/** In-flight streets, satellite, or contextual tile work after settle. */
 export const BASE_MAP_TILE_CONCURRENCY = 2;
+
+/** Wait after the last moveend before loading holes. */
+export const TILE_LOAD_SETTLE_MS = 200;
 
 /** Layer property holding {@link createTileLoadGate}. */
 export const TILE_LOAD_GATE = 'tileLoadGate';
 
-/** Layer property holding {@link createTileLoadController} for base maps. */
+/** Layer property holding {@link createTileLoadController}. */
 export const TILE_LOAD_CONTROLLER = 'tileLoadController';
 
-type TileCache = {forEach: (fn: (tile: Tile) => void) => void};
+type TileCache = {
+  forEach: (fn: (tile: Tile, key?: string) => void) => void;
+  remove?: (key: string) => Tile;
+};
 
 type TileRenderer = {
   getTileCache?: () => TileCache;
   getSourceTileCache?: () => TileCache;
+};
+
+type VectorSourceTiles = {
+  sourceTiles_?: Record<string, Tile>;
+  tileKeysBySourceTileUrl_?: Record<string, unknown>;
+  removeSourceTiles?: (tile: Tile) => void;
+  getTileGridForProjection?: (projection: unknown) => TileGridLike | null;
+  getTileGrid?: () => TileGridLike | null;
+  zDirection?: number;
+};
+
+type TileGridLike = {
+  getZForResolution: (resolution: number, direction?: number) => number;
+  getTileRangeForExtentAndZ: (
+    extent: number[],
+    z: number
+  ) => {minX: number; maxX: number; minY: number; maxY: number} | null;
+  getTileCoordExtent?: (coord: number[]) => number[] | null;
+};
+
+type RenderTile = Tile & {
+  sourceTiles?: Tile[];
+  errorTileKeys?: Record<string, boolean>;
+  loadingSourceTiles?: number;
+  dispose?: () => void;
+  release?: () => void;
+};
+
+export type TileViewport = {
+  z: number;
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+};
+
+export type RetryableTileLayer = {
+  getRenderer: () => unknown;
+  getSource: () => unknown;
+  getExtent?: () => number[] | undefined;
+  changed: () => void;
+};
+
+export type TileLoadMap = {
+  getView: () => {
+    getProjection: () => unknown;
+    getResolution: () => number | undefined;
+    calculateExtent: (size: number[]) => number[];
+  };
+  getSize: () => number[] | undefined;
+  render?: () => void;
 };
 
 export type TileLoadGate = {
@@ -33,6 +88,22 @@ export type TileLoadGate = {
   endInteraction: () => void;
   branch: (parent?: AbortSignal) => {signal: AbortSignal; done: () => void};
 };
+
+/** Thrown when a tile is refused so a pan trail is not decoded. */
+export class TileLoadPausedError extends Error {
+  constructor() {
+    super('Tile load paused during interaction');
+    this.name = 'TileLoadPausedError';
+  }
+}
+
+export function isTileLoadPausedError(error: unknown): boolean {
+  return error instanceof TileLoadPausedError;
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'AbortError';
+}
 
 /**
  * Pause new tile reads while the map is moving. Reads that already started
@@ -97,15 +168,21 @@ export function createTileLoadLimiter(max: number) {
 export type TileLoadLimiter = ReturnType<typeof createTileLoadLimiter>;
 
 /**
- * Cap in-flight work and pause new work during a user pan. Waiters stay
- * LOADING so OpenLayers will still display them; marking them ERROR left
- * streets/satellite blank because those tiles live outside the renderer
- * cache our retry could see.
+ * Cap in-flight work after the map settles. During a gesture, refuse new
+ * work and abort in-flight reads so a pan trail is not decoded.
  */
 export function createTileLoadController(max = BASE_MAP_TILE_CONCURRENCY) {
   const limiter = createTileLoadLimiter(max);
   const waiters: Array<() => void> = [];
   let interacting = false;
+  let loadAbort = new AbortController();
+
+  const wakeWaiters = () => {
+    const pending = waiters.splice(0);
+    for (const resume of pending) {
+      resume();
+    }
+  };
 
   const notify = () => {
     if (interacting) {
@@ -122,6 +199,9 @@ export function createTileLoadController(max = BASE_MAP_TILE_CONCURRENCY) {
     },
     startInteraction() {
       interacting = true;
+      loadAbort.abort();
+      loadAbort = new AbortController();
+      wakeWaiters();
     },
     endInteraction() {
       interacting = false;
@@ -146,45 +226,304 @@ export function createTileLoadController(max = BASE_MAP_TILE_CONCURRENCY) {
 
   return {
     gate,
-    async run<T>(fn: () => Promise<T>): Promise<T> {
-      while (interacting || !limiter.tryBegin()) {
+    async run<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
+      if (interacting) {
+        throw new TileLoadPausedError();
+      }
+      const signal = loadAbort.signal;
+      while (!limiter.tryBegin()) {
         await new Promise<void>(resolve => {
           waiters.push(resolve);
         });
+        if (interacting || signal.aborted) {
+          throw new TileLoadPausedError();
+        }
       }
       try {
-        return await fn();
+        if (signal.aborted) {
+          throw new TileLoadPausedError();
+        }
+        return await fn(signal);
+      } catch (error) {
+        if (isTileLoadPausedError(error) || isAbortError(error) || signal.aborted) {
+          throw new TileLoadPausedError();
+        }
+        throw error;
       } finally {
         limiter.end();
         notify();
       }
     },
-    retry(layer: TileLayer | VectorTileLayer) {
-      layer.getSource()?.changed();
+    retry(layer: RetryableTileLayer, map: TileLoadMap) {
+      settleTileLayer(layer, map);
     },
   };
 }
 
 export type TileLoadController = ReturnType<typeof createTileLoadController>;
 
-/** Re-open failed tiles. Loaded tiles in the same cache are left alone. */
+/** Arm a callback after the last navigation event. */
+export function createTileLoadSettle(
+  onSettle: () => void,
+  delay = TILE_LOAD_SETTLE_MS
+) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return {
+    arm() {
+      if (timer !== undefined) {
+        clearTimeout(timer);
+      }
+      timer = setTimeout(() => {
+        timer = undefined;
+        onSettle();
+      }, delay);
+    },
+    cancel() {
+      if (timer !== undefined) {
+        clearTimeout(timer);
+        timer = undefined;
+      }
+    },
+  };
+}
+
+export function tileInViewport(
+  coord: number[] | undefined,
+  viewport: TileViewport
+): boolean {
+  if (!coord || coord.length < 3) {
+    return false;
+  }
+  const [z, x, y] = coord;
+  return (
+    z === viewport.z &&
+    x >= viewport.minX &&
+    x <= viewport.maxX &&
+    y >= viewport.minY &&
+    y <= viewport.maxY
+  );
+}
+
+function extentsIntersect(a: number[], b: number[]): boolean {
+  return a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
+}
+
+/** True if the tile covers the view, false if not, undefined if unknown. */
+export function tileCoversView(
+  tile: Tile,
+  grid: TileGridLike | undefined,
+  viewExtent: number[]
+): boolean | undefined {
+  const coord = tile.getTileCoord();
+  if (!coord || !grid?.getTileCoordExtent) {
+    return undefined;
+  }
+  const tileExtent = grid.getTileCoordExtent(coord);
+  if (!tileExtent) {
+    return undefined;
+  }
+  return extentsIntersect(tileExtent, viewExtent);
+}
+
+export function viewCoverage(
+  layer: RetryableTileLayer,
+  map: TileLoadMap
+): {extent: number[]; viewGrid: TileGridLike; sourceGrid: TileGridLike} | undefined {
+  const size = map.getSize();
+  if (!size) {
+    return undefined;
+  }
+  const view = map.getView();
+  const source = layer.getSource() as VectorSourceTiles | null;
+  const viewGrid =
+    source?.getTileGridForProjection?.(view.getProjection()) ??
+    source?.getTileGrid?.();
+  if (!viewGrid) {
+    return undefined;
+  }
+  let extent = view.calculateExtent(size);
+  const layerExtent = layer.getExtent?.();
+  if (layerExtent) {
+    extent = [
+      Math.max(extent[0], layerExtent[0]),
+      Math.max(extent[1], layerExtent[1]),
+      Math.min(extent[2], layerExtent[2]),
+      Math.min(extent[3], layerExtent[3]),
+    ];
+  }
+  return {
+    extent,
+    viewGrid,
+    sourceGrid: source?.getTileGrid?.() ?? viewGrid,
+  };
+}
+
+export function viewTileViewport(
+  layer: RetryableTileLayer,
+  map: TileLoadMap
+): TileViewport | undefined {
+  const coverage = viewCoverage(layer, map);
+  if (!coverage) {
+    return undefined;
+  }
+  const source = layer.getSource() as VectorSourceTiles | null;
+  const z = coverage.viewGrid.getZForResolution(
+    map.getView().getResolution() ?? 0,
+    source?.zDirection ?? 0
+  );
+  if (coverage.extent[0] >= coverage.extent[2] || coverage.extent[1] >= coverage.extent[3]) {
+    return {z, minX: 1, maxX: 0, minY: 1, maxY: 0};
+  }
+  const range = coverage.viewGrid.getTileRangeForExtentAndZ(coverage.extent, z);
+  if (!range) {
+    return {z, minX: 1, maxX: 0, minY: 1, maxY: 0};
+  }
+  return {
+    z,
+    minX: range.minX,
+    maxX: range.maxX,
+    minY: range.minY,
+    maxY: range.maxY,
+  };
+}
+
+function disposeTile(tile: Tile): void {
+  const renderTile = tile as RenderTile;
+  if (typeof renderTile.dispose === 'function') {
+    renderTile.dispose();
+    return;
+  }
+  renderTile.release?.();
+}
+
+function evictCache(
+  cache: TileCache | undefined,
+  viewExtent: number[],
+  grid: TileGridLike | undefined,
+  source: VectorSourceTiles | null
+): void {
+  if (!cache) {
+    return;
+  }
+  const drop: Array<{key: string; tile: Tile}> = [];
+  cache.forEach((tile, key) => {
+    if (key && tileCoversView(tile, grid, viewExtent) === false) {
+      drop.push({key, tile});
+    }
+  });
+  for (const {key, tile} of drop) {
+    source?.removeSourceTiles?.(tile);
+    cache.remove?.(key);
+    disposeTile(tile);
+  }
+}
+
+function evictSourceTiles(
+  source: VectorSourceTiles | null,
+  viewExtent: number[],
+  grid: TileGridLike | undefined
+): void {
+  const tiles = source?.sourceTiles_;
+  if (!tiles) {
+    return;
+  }
+  for (const [url, tile] of Object.entries(tiles)) {
+    if (tileCoversView(tile, grid, viewExtent) !== false) {
+      continue;
+    }
+    delete tiles[url];
+    if (source.tileKeysBySourceTileUrl_) {
+      delete source.tileKeysBySourceTileUrl_[url];
+    }
+    disposeTile(tile);
+  }
+}
+
+/** Re-open a failed tile. Loaded tiles are left alone. */
 export function resetErrorTiles(cache?: TileCache): void {
   cache?.forEach(tile => {
-    if (tile.getState() === TileState.ERROR) {
-      tile.setState(TileState.IDLE);
-    }
+    resetPausedTile(tile);
   });
 }
 
-/**
- * Fill holes from aborted reads after a pan. Does not dump the tile cache,
- * so tiles that already drew stay on screen.
- */
-export function retryAbortedTiles(layer: TileLayer | VectorTileLayer): void {
+function resetPausedTile(tile: Tile): void {
+  const renderTile = tile as RenderTile;
+  if (renderTile.getState() !== TileState.ERROR) {
+    return;
+  }
+  if (renderTile.errorTileKeys) {
+    for (const key of Object.keys(renderTile.errorTileKeys)) {
+      delete renderTile.errorTileKeys[key];
+    }
+  }
+  if (typeof renderTile.loadingSourceTiles === 'number') {
+    renderTile.loadingSourceTiles = 0;
+  }
+  if (renderTile.sourceTiles) {
+    for (const sourceTile of renderTile.sourceTiles) {
+      if (sourceTile.getState() === TileState.ERROR) {
+        sourceTile.setState(TileState.IDLE);
+      }
+    }
+    renderTile.sourceTiles.length = 0;
+  }
+  renderTile.setState(TileState.IDLE);
+}
+
+function retryRemainingErrors(layer: RetryableTileLayer): void {
   const renderer = layer.getRenderer() as TileRenderer | null;
   resetErrorTiles(renderer?.getTileCache?.());
   resetErrorTiles(renderer?.getSourceTileCache?.());
-  layer.getSource()?.changed();
+  const tiles = (layer.getSource() as VectorSourceTiles | null)?.sourceTiles_;
+  if (tiles) {
+    for (const tile of Object.values(tiles)) {
+      resetPausedTile(tile);
+    }
+  }
+  layer.changed();
+}
+
+/**
+ * After navigation settles: drop tiles that no longer cover the view (any
+ * zoom), reopen remaining ERROR holes, and leave overlapping tiles on screen.
+ */
+export function settleTileLayer(
+  layer: RetryableTileLayer,
+  map: TileLoadMap
+): void {
+  const coverage = viewCoverage(layer, map);
+  const source = layer.getSource() as VectorSourceTiles | null;
+  const renderer = layer.getRenderer() as TileRenderer | null;
+  if (coverage && coverage.extent[0] < coverage.extent[2] && coverage.extent[1] < coverage.extent[3]) {
+    evictCache(
+      renderer?.getTileCache?.(),
+      coverage.extent,
+      coverage.viewGrid,
+      source
+    );
+    evictCache(
+      renderer?.getSourceTileCache?.(),
+      coverage.extent,
+      coverage.sourceGrid,
+      source
+    );
+    evictSourceTiles(source, coverage.extent, coverage.sourceGrid);
+  }
+  retryRemainingErrors(layer);
+}
+
+/** Re-open ERROR tiles without dumping the cache. Prefer settleTileLayer. */
+export function retryAbortedTiles(layer: RetryableTileLayer): void {
+  const renderer = layer.getRenderer() as TileRenderer | null;
+  resetErrorTiles(renderer?.getTileCache?.());
+  resetErrorTiles(renderer?.getSourceTileCache?.());
+  const tiles = (layer.getSource() as VectorSourceTiles | null)?.sourceTiles_;
+  if (tiles) {
+    for (const tile of Object.values(tiles)) {
+      resetPausedTile(tile);
+    }
+  }
+  layer.changed();
 }
 
 /** Gate stored on a layer, if the loader attached one. */
@@ -194,7 +533,7 @@ export function tileLoadGate(layer: {
   return layer.get(TILE_LOAD_GATE) as TileLoadGate | undefined;
 }
 
-/** Controller stored on a streets or satellite layer. */
+/** Controller stored on a streets, satellite, or contextual layer. */
 export function tileLoadController(layer: {
   get: (key: string) => unknown;
 }): TileLoadController | undefined {
