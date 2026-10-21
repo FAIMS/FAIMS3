@@ -11,6 +11,7 @@ import {
   AuthContext,
   CodeInputSchema,
   IdInputSchema,
+  INPUT_LIMITS,
   RedirectInputSchema,
 } from '@faims3/data-model';
 import {Router} from 'express';
@@ -58,11 +59,19 @@ export function addAuthPages(
       query: z.object({
         redirect: RedirectInputSchema.optional(),
         inviteId: IdInputSchema.optional(),
+        // Prefill only — never 400 the login page on a bad identifier.
+        email: z
+          .string()
+          .trim()
+          .max(INPUT_LIMITS.EMAIL_MAX_LENGTH)
+          .optional()
+          .transform(value => (value && value.length > 0 ? value : undefined)),
       }),
     }),
     (req, res) => {
       // Pull out the invite ID
       const inviteId = req.query.inviteId;
+      const prefilledEmail = req.query.email;
 
       const {valid, redirect} = validateRedirect(
         req.query.redirect || DEFAULT_REDIRECT_URL
@@ -94,6 +103,7 @@ export function addAuthPages(
         } satisfies AuthContext,
         localAuth: config.localLoginEnabled,
         redirect,
+        prefilledEmail,
         messages: messages,
       });
     }

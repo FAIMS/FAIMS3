@@ -115,6 +115,39 @@ export async function loginWebPersona(key: PersonaKey): Promise<void> {
 }
 
 /**
+ * Write an expired Control Centre session on the web origin without logging
+ * in. Uses Vite's `/@vite/client` so the SPA router does not bounce us to
+ * Conductor before `localStorage` is set.
+ */
+export async function seedExpiredWebSession(user: {
+  email: string;
+  hasLocalProfile: boolean;
+}): Promise<void> {
+  const webUrl = getWebUrl();
+  await browser.url(`${webUrl}/@vite/client`);
+  await browser.execute(
+    (payload: {email: string; hasLocalProfile: boolean}) => {
+      localStorage.setItem(
+        'user',
+        JSON.stringify({
+          user: {
+            id: payload.email,
+            name: 'E2E',
+            email: payload.email,
+            isVerified: true,
+            hasLocalProfile: payload.hasLocalProfile,
+          },
+          token: 'expired.invalid.token',
+          refreshToken: '',
+          decodedToken: null,
+        })
+      );
+    },
+    user
+  );
+}
+
+/**
  * Fieldmark app login: /signin → Sign in → Conductor → auth-return → workspace.
  *
  * Conductor redirects to `/auth-return/?exchangeToken=...&serverId=...`. Do not
