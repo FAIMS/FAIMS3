@@ -15,7 +15,7 @@ import {config} from '../../../buildconfig';
 const testData1 = [{title: 'Workspace'}];
 const testData2 = [
   {title: 'Workspace'},
-  {title: config.notebookNameCapitalized},
+  {title: 'A long name that will be truncated'},
 ];
 
 // Can only check this if breadcrumbs are enabled
@@ -39,7 +39,8 @@ describe('Check breadcrumbs component', () => {
       );
       expect(screen.getByText(testData2[0].title)).toBeTruthy();
 
-      expect(screen.getByText(testData2[1].title)).toBeTruthy();
+      // notebook name will be truncated if it is longer than 7 chars
+      expect(screen.getByText('A long ...')).toBeTruthy();
     }
   });
 });
