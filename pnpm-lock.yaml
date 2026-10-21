@@ -344,8 +344,8 @@ importers:
         specifier: ^7.1.1
         version: 7.1.8(@capacitor/core@7.6.6)
       '@capacitor/ios':
-        specifier: ^7.2.0
-        version: 7.6.6(@capacitor/core@7.6.6)
+        specifier: ^7.6.9
+        version: 7.6.9(@capacitor/core@7.6.6)
       '@capacitor/share':
         specifier: ^7.0.1
         version: 7.0.4(@capacitor/core@7.6.6)
@@ -1516,8 +1516,8 @@ packages:
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
 
-  '@capacitor/ios@7.6.6':
-    resolution: {integrity: sha512-IjryNsqjYTs+YbVeIg/hpwgKtbEIMcUOblr75pdNSuE4bA++CgO2avqQi0cyviUHoaSa7e8L2hqvwNzghfor6g==}
+  '@capacitor/ios@7.6.9':
+    resolution: {integrity: sha512-LANP81TfwuJk1zq9EuF+J5AJK71rKDgXB5XD+VFJQHC7BxSH4Dsma6DSMyrjFT03jtqc/0JTMEfSMBE7go3ZjA==}
     peerDependencies:
       '@capacitor/core': ^7.6.0
 
@@ -13380,7 +13380,7 @@ snapshots:
       '@capacitor/core': 7.6.6
       '@capacitor/synapse': 1.0.4
 
-  '@capacitor/ios@7.6.6(@capacitor/core@7.6.6)':
+  '@capacitor/ios@7.6.9(@capacitor/core@7.6.6)':
     dependencies:
       '@capacitor/core': 7.6.6
 
