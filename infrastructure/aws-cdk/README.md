@@ -698,7 +698,7 @@ Those fields become worker-task env (`GDAL_NUM_THREADS`, `GDAL_CACHEMAX`,
 `gdalwarp` also gets `-multi`, `-wm`, `-wo NUM_THREADS=…`, and
 `-co TILED=YES`. Homogeneous vector layers are written as FlatGeobuf;
 mixed or unknown geometry becomes GeoJSONSeq. Both are tiled with
-`tippecanoe -z 14` with `--drop-fraction-as-needed` (polygons / mixed) or `--drop-densest-as-needed` (points / lines) and `--extend-zooms-if-still-dropping`.
+`tippecanoe -z 14` with family-specific thinning (polygons coalesce and simplify at low zoom; `--drop-fraction-as-needed --extend-zooms-if-still-dropping` so dense cadastre does not exit 100).
 
 Attachment storage JSON (defaults shown):
 

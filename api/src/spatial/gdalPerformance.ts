@@ -28,7 +28,7 @@ export type VectorIntermediatePlan = {
   filename: string;
   format: VectorOgrFormat;
   nlt: string;
-  /** Set when every source layer is one Point, Line, or Polygon family. */
+  /** Set when every source layer is one point / line / polygon family. */
   family?: VectorGeometryFamily;
 };
 
@@ -83,7 +83,7 @@ export function geometryFieldTypes(info: unknown): string[] {
 }
 
 /**
- * Single geometry family when every layer is Point, Line, or Polygon.
+ * Single point / line / polygon family when every layer matches.
  * Mixed or unknown types return `undefined` so the caller uses GeoJSONSeq.
  */
 function homogeneousGeometryFamily(
@@ -249,23 +249,50 @@ export function ogr2ogrGeometryArgs(
 }
 
 /**
- * tippecanoe 2.78+ exits 100 when `--drop-densest-as-needed` or
- * `--drop-smallest-as-needed` cannot raise their threshold ("Can't
- * increase feature area/gap threshold further"). Those branches do not
- * fall through to another strategy. Fraction dropping can always
- * increase, so polygons and mixed geometry use it. Points and lines
- * keep spacing-based densest drop. `--extend-zooms-if-still-dropping`
- * then adds zoom levels when z14 tiles still overflow after dropping.
+ * Family-specific tippecanoe thinning. Polygons coalesce and simplify at
+ * low zoom so dense cadastre does not drown a phone at z0–z9. Points
+ * space out. Lines and mixed layers drop-densest.
+ *
+ * tippecanoe 2.78+ exits 100 when `--coalesce-smallest-as-needed` cannot
+ * raise its area threshold ("Can't increase feature area threshold
+ * further"). That branch does not fall through. `--drop-fraction-as-needed`
+ * can always increase; `--extend-zooms-if-still-dropping` covers leftover
+ * overflow at `-z 14`.
  */
-export function tippecanoeDropArgs(plan: VectorIntermediatePlan): string[] {
-  const drop =
-    plan.family === 'point' || plan.family === 'line'
-      ? '--drop-densest-as-needed'
-      : '--drop-fraction-as-needed';
-  return [drop, '--extend-zooms-if-still-dropping'];
+function tippecanoeThinningArgs(family?: VectorGeometryFamily): string[] {
+  if (family === 'polygon') {
+    // Attributes are already stripped. Merge same-attribute polygons, then
+    // thin them at zooms below --base-zoom so z0–z9 stay small.
+    return [
+      '--coalesce',
+      '--reorder',
+      '--hilbert',
+      '--drop-fraction-as-needed',
+      '--drop-polygons',
+      '--drop-rate=3',
+      '--base-zoom=10',
+      '--maximum-tile-bytes=80000',
+      '--simplification=10',
+      '--simplify-only-low-zooms',
+      '--extend-zooms-if-still-dropping',
+    ];
+  }
+  if (family === 'point') {
+    // Keep full detail only where spacing allows. Guess a drop rate that
+    // holds the densest tile under 50k, then cap bytes and feature count.
+    return [
+      '--drop-densest-as-needed',
+      '--drop-rate=g',
+      '--maximum-tile-bytes=80000',
+      '--maximum-tile-features=5000',
+      '--hilbert',
+      '--extend-zooms-if-still-dropping',
+    ];
+  }
+  return ['--drop-densest-as-needed', '--extend-zooms-if-still-dropping'];
 }
 
-/** tippecanoe args: PMTiles out, geometry-aware drop, JSON progress every 5s. */
+/** tippecanoe args: PMTiles out, family-specific thinning, JSON progress every 5s. */
 export function tippecanoeVectorArgs(
   pmtilesPath: string,
   inputPath: string,
@@ -276,7 +303,7 @@ export function tippecanoeVectorArgs(
     pmtilesPath,
     '-z',
     String(VECTOR_TILE_MAX_ZOOM),
-    ...tippecanoeDropArgs(plan),
+    ...tippecanoeThinningArgs(plan.family),
     '--force',
     '--json-progress',
     '--progress-interval=5',
