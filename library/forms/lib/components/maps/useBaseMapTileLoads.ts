@@ -8,6 +8,9 @@ import {
   createTileLoadSettle,
   isZoomChange,
   shouldPauseTileLoads,
+  stopAllTileLoads,
+  stopTileLoads,
+  syncTileLoadsToVisibility,
   tileLoadController,
 } from './tileLoadControl';
 
@@ -26,6 +29,14 @@ export function useBaseMapTileLoads(
     const layers = [streetsLayer, satelliteLayer].filter(
       (layer): layer is BaseMapLayer => layer !== undefined
     );
+    const unlistenVisible = layers.map(layer => {
+      const onVisible = () => {
+        syncTileLoadsToVisibility(layer);
+      };
+      syncTileLoadsToVisibility(layer);
+      layer.on('change:visible', onVisible);
+      return () => layer.un('change:visible', onVisible);
+    });
     let startResolution: number | undefined;
     const settle = createTileLoadSettle(async cancelled => {
       await applySettledTileLoads({
@@ -45,11 +56,18 @@ export function useBaseMapTileLoads(
       startResolution = map.getView().getResolution();
       settle.cancel();
       for (const layer of layers) {
-        tileLoadController(layer)?.gate.startInteraction();
+        if (layer.getVisible()) {
+          tileLoadController(layer)?.gate.startInteraction();
+        }
       }
     };
     const onMoveEnd = () => {
-      if (layers.some(layer => tileLoadController(layer)?.gate.interacting)) {
+      if (
+        layers.some(
+          layer =>
+            layer.getVisible() && tileLoadController(layer)?.gate.interacting
+        )
+      ) {
         settle.arm();
       }
     };
@@ -59,6 +77,13 @@ export function useBaseMapTileLoads(
       settle.cancel();
       map.un('movestart', onMoveStart);
       map.un('moveend', onMoveEnd);
+      for (const unlisten of unlistenVisible) {
+        unlisten();
+      }
+      for (const layer of layers) {
+        stopTileLoads(layer);
+      }
+      stopAllTileLoads(map);
     };
   }, [map, streetsLayer, satelliteLayer]);
 }

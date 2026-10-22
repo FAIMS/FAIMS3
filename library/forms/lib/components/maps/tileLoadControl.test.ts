@@ -13,6 +13,7 @@ import {
   retryAbortedTiles,
   settleTileLayer,
   shouldPauseTileLoads,
+  syncTileLoadsToVisibility,
   TileLoadPausedError,
 } from './tileLoadControl';
 
@@ -126,6 +127,62 @@ describe('tile load control', () => {
     await Promise.resolve();
     expect(finished).not.toHaveBeenCalled();
     vi.useRealTimers();
+  });
+
+  it('drops queued work when stopped and does not resume on settle', async () => {
+    const loads = createTileLoadController(1);
+    let release!: () => void;
+    const first = loads.run(
+      () =>
+        new Promise<void>(resolve => {
+          release = resolve;
+        })
+    );
+    let secondStarted = false;
+    const second = loads.run(async () => {
+      secondStarted = true;
+    });
+    await Promise.resolve();
+    loads.stop();
+    loads.gate.endInteraction();
+    release();
+    await expect(first).rejects.toBeInstanceOf(TileLoadPausedError);
+    await expect(second).rejects.toBeInstanceOf(TileLoadPausedError);
+    expect(secondStarted).toBe(false);
+    await expect(loads.run(async () => undefined)).rejects.toBeInstanceOf(
+      TileLoadPausedError
+    );
+    loads.resume();
+    await loads.run(async () => undefined);
+  });
+
+  it('stops a hidden layer and retries holes when it is shown again', () => {
+    const loads = createTileLoadController(1);
+    const layerChanged = vi.fn();
+    const aborted = {
+      getState: () => TileState.ERROR,
+      setState: vi.fn(),
+    };
+    const layer = {
+      get: () => loads,
+      getVisible: () => false,
+      getRenderer: () => ({
+        getTileCache: () => ({
+          forEach: (fn: (tile: unknown) => void) => {
+            fn(aborted);
+          },
+        }),
+      }),
+      getSource: () => null,
+      changed: layerChanged,
+    };
+    syncTileLoadsToVisibility(layer);
+    expect(loads.stopped).toBe(true);
+    layer.getVisible = () => true;
+    syncTileLoadsToVisibility(layer);
+    expect(loads.stopped).toBe(false);
+    expect(aborted.setState).toHaveBeenCalledWith(TileState.IDLE);
+    expect(layerChanged).toHaveBeenCalled();
   });
 
   it('aborts in-flight and queued work when a pan starts', async () => {
@@ -377,5 +434,43 @@ describe('tile load control', () => {
     });
     expect(sourceChanged).not.toHaveBeenCalled();
     expect(layerChanged).toHaveBeenCalled();
+  });
+
+  it('does not retry a hidden layer after settle', async () => {
+    const layerChanged = vi.fn();
+    const sourceChanged = vi.fn();
+    const layer = {
+      getVisible: () => false,
+      getRenderer: () => ({
+        getTileCache: () => ({
+          forEach: (fn: (tile: unknown) => void) => {
+            fn({
+              getState: () => TileState.ERROR,
+              setState: vi.fn(),
+            });
+          },
+        }),
+      }),
+      getSource: () => ({
+        changed: sourceChanged,
+      }),
+      changed: layerChanged,
+    };
+    await applySettledTileLoads({
+      layers: [layer],
+      map: {
+        getView: () => ({
+          getProjection: () => 'EPSG:3857',
+          getResolution: () => 1,
+          calculateExtent: () => [0, 0, 1, 1],
+        }),
+        getSize: () => [256, 256],
+        render: vi.fn(),
+      },
+      cancelled: () => false,
+      zoomChanged: false,
+    });
+    expect(layerChanged).not.toHaveBeenCalled();
+    expect(sourceChanged).not.toHaveBeenCalled();
   });
 });

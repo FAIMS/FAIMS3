@@ -66,6 +66,7 @@ import type {RecordFormLayer, RecordFormLayerPatch} from './recordFormLayers';
 import {useBaseMapLayers} from './useBaseMapLayers';
 import {useBaseMapTileLoads} from './useBaseMapTileLoads';
 import {useContextualMapLayers} from './useContextualMapLayers';
+import {stopAllTileLoads} from './tileLoadControl';
 import {createTileStore} from './tileDB/TileStore';
 
 export const defaultMapProjection = 'EPSG:3857';
@@ -155,6 +156,8 @@ const MapComponentImpl = (props: MapComponentProps) => {
   const {isFullscreen, toggleFullscreen} = useMapFullscreen(enableFullscreen);
 
   const [map, setMap] = useState<Map | undefined>(undefined);
+  const olMapRef = useRef<Map | undefined>(undefined);
+  const mapMountedRef = useRef(true);
   useContextualMapLayers(map);
   const [zoomLevel, setZoomLevel] = useState(props.zoom || MIN_ZOOM); // Default zoom level
   const [attribution, setAttribution] = useState<string | null>(null);
@@ -337,16 +340,24 @@ const MapComponentImpl = (props: MapComponentProps) => {
     return theMap;
   }, []);
 
-  // Clean up the location watcher when the component unmounts
+  // Clean up the location watcher and any still-queued tile fetches.
   useEffect(() => {
+    mapMountedRef.current = true;
     return () => {
-      // Clean up location watcher when component unmounts
+      mapMountedRef.current = false;
       if (watchIdRef.current !== null) {
         Geolocation.clearWatch({id: watchIdRef.current}).catch(error =>
           logWarn('Failed to clear GPS watch on unmount:', error)
         );
         watchIdRef.current = null;
       }
+      const theMap = olMapRef.current;
+      if (!theMap) {
+        return;
+      }
+      stopAllTileLoads(theMap);
+      theMap.setTarget(undefined);
+      olMapRef.current = undefined;
     };
   }, []);
 
@@ -602,11 +613,24 @@ const MapComponentImpl = (props: MapComponentProps) => {
   // here is where we actually create the map if it doesn't exist already
   const refCallback = useCallback(
     (element: HTMLElement | null) => {
-      if (element === null) return;
+      if (element === null) {
+        const theMap = olMapRef.current ?? map;
+        if (theMap) {
+          stopAllTileLoads(theMap);
+          theMap.setTarget(undefined);
+        }
+        return;
+      }
 
       if (!map) {
         // First render - create new map
         createMap(element).then((theMap: Map) => {
+          if (!mapMountedRef.current || !element.isConnected) {
+            stopAllTileLoads(theMap);
+            theMap.setTarget(undefined);
+            return;
+          }
+          olMapRef.current = theMap;
           setMap(theMap);
           props.parentSetMap(theMap);
         });

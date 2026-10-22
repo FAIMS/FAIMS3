@@ -166,4 +166,38 @@ describe('VectorTileStore.tileLoader', () => {
     expect(satellite?.get(TILE_LOAD_GATE)).toBeDefined();
     expect(satellite?.get(TILE_LOAD_CONTROLLER)).toBeDefined();
   });
+
+  it('cancels an in-flight satellite image when the layer queue stops', async () => {
+    const store = new VectorTileStore({
+      ...OSM_CONFIG,
+      satelliteSource: 'maptiler',
+      mapSourceKey: 'test-key',
+    });
+    const layer = store.getSatelliteLayer();
+    expect(layer).toBeDefined();
+    const loadFn = layer!.getSource()!.getTileLoadFunction();
+    const image = {
+      src: 'about:blank',
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      removeAttribute(name: string) {
+        if (name === 'src') {
+          image.src = '';
+        }
+      },
+    };
+    const tile = {
+      getImage: () => image,
+      setState: vi.fn(),
+    };
+    loadFn(tile as never, 'https://example.com/sat/1/0/0.jpg');
+    await vi.waitFor(() => {
+      expect(image.src).toContain('example.com');
+    });
+    tileLoadController(layer!)!.stop();
+    expect(image.src).toBe('');
+    await vi.waitFor(() => {
+      expect(tile.setState).toHaveBeenCalledWith(TileState.ERROR);
+    });
+  });
 });

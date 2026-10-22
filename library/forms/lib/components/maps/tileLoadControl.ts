@@ -4,6 +4,7 @@
  * base maps. No new work starts while the view is moving. After the gesture
  * settles, tiles that left the viewport are dropped and only in-view holes
  * stream in, so overlapping tiles already on screen are not refetched.
+ * Hiding a layer or unmounting the map aborts that layer's queued fetches.
  */
 
 import Tile from 'ol/Tile';
@@ -74,6 +75,7 @@ export type RetryableTileLayer = {
   getRenderer: () => unknown;
   getSource: () => unknown;
   getExtent?: () => number[] | undefined;
+  getVisible?: () => boolean;
   changed: () => void;
   get?: (key: string) => unknown;
 };
@@ -175,7 +177,8 @@ export type TileLoadLimiter = ReturnType<typeof createTileLoadLimiter>;
 
 /**
  * Cap in-flight work after the map settles. During a gesture, refuse new
- * work and abort in-flight reads so a pan trail is not decoded.
+ * work and abort in-flight reads so a pan trail is not decoded. hide / unmount
+ * call {@link TileLoadController.stop} so queued fetches do not keep going.
  */
 export function createTileLoadController(
   max = resolveMapPerformanceProfile().tileConcurrency
@@ -184,13 +187,22 @@ export function createTileLoadController(
   const waiters: Array<() => void> = [];
   const drained: Array<() => void> = [];
   let interacting = false;
+  let stopped = false;
   let loadAbort = new AbortController();
+
+  const refuseNewWork = () => stopped || interacting;
 
   const wakeWaiters = () => {
     const pending = waiters.splice(0);
     for (const resume of pending) {
       resume();
     }
+  };
+
+  const abortGeneration = () => {
+    loadAbort.abort();
+    loadAbort = new AbortController();
+    wakeWaiters();
   };
 
   const notifyDrain = () => {
@@ -204,7 +216,7 @@ export function createTileLoadController(
   };
 
   const notify = () => {
-    if (interacting) {
+    if (refuseNewWork()) {
       return;
     }
     while (waiters.length > 0 && limiter.active < max) {
@@ -218,9 +230,7 @@ export function createTileLoadController(
     },
     startInteraction() {
       interacting = true;
-      loadAbort.abort();
-      loadAbort = new AbortController();
-      wakeWaiters();
+      abortGeneration();
     },
     endInteraction() {
       interacting = false;
@@ -228,7 +238,7 @@ export function createTileLoadController(
     },
     branch(parent?: AbortSignal) {
       const controller = new AbortController();
-      if (interacting || parent?.aborted) {
+      if (refuseNewWork() || parent?.aborted) {
         controller.abort();
         return {signal: controller.signal, done() {}};
       }
@@ -245,8 +255,25 @@ export function createTileLoadController(
 
   return {
     gate,
+    get stopped() {
+      return stopped;
+    },
+    /**
+     * Drop queued work and abort in-flight reads. New {@link run} calls fail
+     * until {@link resume}. Hiding a layer or unmounting the map uses this.
+     */
+    stop() {
+      stopped = true;
+      abortGeneration();
+    },
+    /** Allow loads again after {@link stop}. */
+    resume() {
+      stopped = false;
+      interacting = false;
+      notify();
+    },
     async run<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
-      if (interacting) {
+      if (refuseNewWork()) {
         throw new TileLoadPausedError();
       }
       const signal = loadAbort.signal;
@@ -254,16 +281,16 @@ export function createTileLoadController(
         await new Promise<void>(resolve => {
           waiters.push(resolve);
         });
-        if (interacting || signal.aborted) {
+        if (refuseNewWork() || signal.aborted) {
           throw new TileLoadPausedError();
         }
       }
       try {
-        if (signal.aborted) {
+        if (signal.aborted || refuseNewWork()) {
           throw new TileLoadPausedError();
         }
         const result = await fn(signal);
-        if (signal.aborted || interacting) {
+        if (signal.aborted || refuseNewWork()) {
           throw new TileLoadPausedError();
         }
         return result;
@@ -587,21 +614,22 @@ export async function applySettledTileLoads(options: {
   if (options.cancelled()) {
     return;
   }
+  const layers = options.layers.filter(isTileLayerVisible);
   if (options.zoomChanged) {
-    for (const layer of options.layers) {
+    for (const layer of layers) {
       tileLoadController(layer)?.gate.endInteraction();
       refreshTileLayer(layer);
     }
     options.map.render?.();
     return;
   }
-  for (const layer of options.layers) {
+  for (const layer of layers) {
     evictStaleTiles(layer, options.map);
   }
   if (options.cancelled()) {
     return;
   }
-  for (const layer of options.layers) {
+  for (const layer of layers) {
     tileLoadController(layer)?.gate.endInteraction();
     retryRemainingErrors(layer);
   }
@@ -634,6 +662,45 @@ export function tileLoadController(layer: {
   get?: (key: string) => unknown;
 }): TileLoadController | undefined {
   return layer.get?.(TILE_LOAD_CONTROLLER) as TileLoadController | undefined;
+}
+
+/** False only when the layer reports it is hidden. */
+export function isTileLayerVisible(layer: RetryableTileLayer): boolean {
+  return layer.getVisible?.() !== false;
+}
+
+/** Abort queued and in-flight loads for one layer. */
+export function stopTileLoads(layer: {get?: (key: string) => unknown}): void {
+  tileLoadController(layer)?.stop();
+}
+
+/** Abort loads on every map layer that has a controller. */
+export function stopAllTileLoads(map: {
+  getLayers: () => {
+    forEach: (fn: (layer: {get?: (key: string) => unknown}) => void) => void;
+  };
+}): void {
+  map.getLayers().forEach(stopTileLoads);
+}
+
+/**
+ * Hide stops the layer queue. Show starts it again and reopens ERROR holes
+ * left by the abort so the now-visible layer can fill in.
+ */
+export function syncTileLoadsToVisibility(layer: RetryableTileLayer): void {
+  const loads = tileLoadController(layer);
+  if (!loads) {
+    return;
+  }
+  if (!isTileLayerVisible(layer)) {
+    loads.stop();
+    return;
+  }
+  if (!loads.stopped) {
+    return;
+  }
+  loads.resume();
+  retryRemainingErrors(layer);
 }
 
 /**

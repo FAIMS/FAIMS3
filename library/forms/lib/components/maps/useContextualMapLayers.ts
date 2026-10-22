@@ -13,6 +13,7 @@ import {
   createTileLoadSettle,
   isZoomChange,
   shouldPauseTileLoads,
+  stopTileLoads,
   tileLoadController,
 } from './tileLoadControl';
 import {contextualVectorStyle} from './contextualVectorStyle';
@@ -41,6 +42,7 @@ function paintVector(layer: ManagedLayer, spec: ContextualMapLayer) {
 
 /** Remove and dispose a managed overlay. */
 function dropLayer(map: OlMap, layer: ManagedLayer) {
+  stopTileLoads(layer);
   map.removeLayer(layer);
   layer.dispose();
 }

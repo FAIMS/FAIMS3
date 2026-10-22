@@ -360,13 +360,18 @@ abstract class TileStoreBase {
                   return;
                 }
                 const image = imageTile.getImage() as HTMLImageElement;
+                const cancelImage = () => {
+                  image.removeEventListener('load', onDone);
+                  image.removeEventListener('error', onDone);
+                  image.removeAttribute('src');
+                  image.src = '';
+                };
                 const onDone = () => {
                   signal.removeEventListener('abort', onAbort);
                   resolve();
                 };
                 const onAbort = () => {
-                  image.removeEventListener('load', onDone);
-                  image.removeEventListener('error', onDone);
+                  cancelImage();
                   reject(new TileLoadPausedError());
                 };
                 image.addEventListener('load', onDone, {once: true});
@@ -463,7 +468,10 @@ abstract class TileStoreBase {
    * @param url Tile URL
    * @returns A blob from the cache or the network or `undefined` if we can't find it
    */
-  async getTileBlob(url: string | undefined): Promise<Blob | undefined> {
+  async getTileBlob(
+    url: string | undefined,
+    signal?: AbortSignal
+  ): Promise<Blob | undefined> {
     if (url) {
       if (this.tileStore.tileDB) {
         // we don't want the map key in the tileDB
@@ -471,8 +479,14 @@ abstract class TileStoreBase {
         const image = await this.tileStore.tileDB.get([cleanURL]);
         if (image) return image.data;
       }
+      if (signal?.aborted) {
+        throw new TileLoadPausedError();
+      }
       if (navigator.onLine) {
-        const response = await fetch(url);
+        const response = await fetch(url, signal ? {signal} : undefined);
+        if (signal?.aborted) {
+          throw new TileLoadPausedError();
+        }
         return await response.blob();
       }
     }
@@ -912,7 +926,8 @@ export const failedURLs = new Set<string>();
 export class VectorTileStore extends TileStoreBase {
   declare source: VectorTileSource;
   declare tileLayer: VectorTileLayer;
-  private readonly streetsLoads: TileLoadController = createTileLoadController();
+  private readonly streetsLoads: TileLoadController =
+    createTileLoadController();
 
   constructor(config: MapConfig) {
     super(config);
@@ -1006,7 +1021,7 @@ export class VectorTileStore extends TileStoreBase {
             x: tileCoords[1],
             y: tileCoords[2],
           });
-          const blob = await this.getTileBlob(tileUrl);
+          const blob = await this.getTileBlob(tileUrl, signal);
           if (signal.aborted) {
             throw new TileLoadPausedError();
           }
