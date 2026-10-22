@@ -76,18 +76,98 @@ const isObject = (value: unknown): value is JsonObject =>
 const readJson = async (filePath: string): Promise<unknown> =>
   JSON.parse(await fs.promises.readFile(filePath, 'utf8'));
 
+const scalarProperty = (value: unknown): string | number | boolean | null => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value
+      .map(item =>
+        item === null || item === undefined
+          ? ''
+          : typeof item === 'object'
+            ? JSON.stringify(item)
+            : String(item)
+      )
+      .join(',');
+  }
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+  return String(value);
+};
+
+const launderFieldName = (
+  raw: string,
+  used: Set<string>,
+  maxLen: number
+): string => {
+  const base = raw.replace(/[^A-Za-z0-9_]/g, '_').slice(0, maxLen) || 'field';
+  let candidate = base;
+  let n = 1;
+  while (used.has(candidate.toLowerCase())) {
+    const suffix = `_${n}`;
+    candidate = `${base.slice(0, Math.max(1, maxLen - suffix.length))}${suffix}`;
+    n += 1;
+  }
+  used.add(candidate.toLowerCase());
+  return candidate;
+};
+
+const sanitizeProperties = (
+  properties: JsonObject,
+  fieldNameMax: number
+): JsonObject => {
+  const used = new Set<string>();
+  const out: JsonObject = {};
+  for (const [key, value] of Object.entries(properties)) {
+    out[launderFieldName(key, used, fieldNameMax)] = scalarProperty(value);
+  }
+  return out;
+};
+
 const collectFeatures = (
   node: unknown,
   out: JsonObject[],
-  collectionPath: string
+  collectionPath: string,
+  fieldNameMax: number
 ): void => {
   if (!isObject(node)) {
     return;
   }
   if (node.type === 'Feature' && node.geometry) {
-    const properties = isObject(node.properties) ? {...node.properties} : {};
-    if (collectionPath) {
-      properties.collection = collectionPath;
+    const properties = sanitizeProperties(
+      {
+        ...(isObject(node.properties) ? node.properties : {}),
+        ...(collectionPath ? {collection: collectionPath} : {}),
+      },
+      fieldNameMax
+    );
+    const geometry = node.geometry;
+    if (
+      isObject(geometry) &&
+      geometry.type === 'GeometryCollection' &&
+      Array.isArray(geometry.geometries)
+    ) {
+      for (const child of geometry.geometries) {
+        if (!isObject(child)) {
+          continue;
+        }
+        out.push({
+          type: 'Feature',
+          id: node.id,
+          geometry: child,
+          properties,
+        });
+      }
+      return;
     }
     out.push({...node, properties});
     return;
@@ -98,23 +178,56 @@ const collectFeatures = (
         ? node.name
         : collectionPath;
     for (const child of node.features) {
-      collectFeatures(child, out, name);
+      collectFeatures(child, out, name, fieldNameMax);
     }
   }
 };
 
-const writeFlatGeoJson = async (
+const flattenFeatures = async (
   inputGeoJson: string,
-  outputGeoJson: string
-): Promise<number> => {
+  fieldNameMax: number
+): Promise<JsonObject[]> => {
   const root = await readJson(inputGeoJson);
   const features: JsonObject[] = [];
-  collectFeatures(root, features, '');
+  collectFeatures(root, features, '', fieldNameMax);
+  return features;
+};
+
+const writeFeatureCollection = async (
+  outputGeoJson: string,
+  features: JsonObject[]
+): Promise<void> => {
   await fs.promises.writeFile(
     outputGeoJson,
     JSON.stringify({type: 'FeatureCollection', features})
   );
-  return features.length;
+};
+
+const FAMILY_TYPES: Record<string, {types: Set<string>; nlt: string}> = {
+  points: {types: new Set(['Point', 'MultiPoint']), nlt: 'MULTIPOINT'},
+  lines: {
+    types: new Set(['LineString', 'MultiLineString']),
+    nlt: 'MULTILINESTRING',
+  },
+  polygons: {types: new Set(['Polygon', 'MultiPolygon']), nlt: 'MULTIPOLYGON'},
+};
+
+const featuresForFamily = (
+  features: JsonObject[],
+  family: string
+): JsonObject[] => {
+  const types = FAMILY_TYPES[family]?.types;
+  if (!types) {
+    return [];
+  }
+  return features.filter(feature => {
+    const geometry = feature.geometry;
+    return (
+      isObject(geometry) &&
+      typeof geometry.type === 'string' &&
+      types.has(geometry.type)
+    );
+  });
 };
 
 const coordPair = (position: unknown): string | undefined => {
@@ -297,8 +410,85 @@ const writeGpkg = async (
   ]);
 };
 
+const writeFamilyOgrLayer = async ({
+  driver,
+  destination,
+  layer,
+  nlt,
+  crs,
+  source,
+  update,
+}: {
+  driver: string;
+  destination: string;
+  layer: string;
+  nlt: string;
+  crs: string;
+  source: string;
+  update: boolean;
+}): Promise<void> => {
+  await ogr2ogr([
+    '-f',
+    driver,
+    ...(update ? ['-update'] : []),
+    '-s_srs',
+    WGS84,
+    '-t_srs',
+    crs,
+    '-dim',
+    'XY',
+    '-nlt',
+    nlt,
+    '-mapFieldType',
+    'StringList=String,IntegerList=String,RealList=String',
+    '-nln',
+    layer,
+    destination,
+    source,
+  ]);
+};
+
+const writeSplitOgrLayers = async ({
+  features,
+  driver,
+  destinationFor,
+  crs,
+  updateAfterFirst,
+}: {
+  features: JsonObject[];
+  driver: string;
+  destinationFor: (layer: string) => string;
+  crs: string;
+  updateAfterFirst: boolean;
+}): Promise<number> => {
+  let written = 0;
+  for (const layer of Object.keys(FAMILY_TYPES)) {
+    const subset = featuresForFamily(features, layer);
+    if (subset.length === 0) {
+      continue;
+    }
+    const source = tempPath(`-${layer}.geojson`);
+    await writeFeatureCollection(source, subset);
+    try {
+      await writeFamilyOgrLayer({
+        driver,
+        destination: destinationFor(layer),
+        layer,
+        nlt: FAMILY_TYPES[layer].nlt,
+        crs,
+        source,
+        update: updateAfterFirst && written > 0,
+      });
+      written += 1;
+    } finally {
+      await fs.promises.rm(source, {force: true});
+    }
+  }
+  return written;
+};
+
 const writeGdbZip = async (
-  flatGeoJson: string,
+  features: JsonObject[],
   outputZip: string,
   crs: string,
   name: string
@@ -308,73 +498,37 @@ const writeGdbZip = async (
   const gdbName = `${safeBase(name)}.gdb`;
   const gdbPath = path.join(work, gdbName);
   try {
-    await ogr2ogr([
-      '-f',
-      'OpenFileGDB',
-      '-s_srs',
-      WGS84,
-      '-t_srs',
+    const written = await writeSplitOgrLayers({
+      features,
+      driver: 'OpenFileGDB',
+      destinationFor: () => gdbPath,
       crs,
-      '-nln',
-      'features',
-      gdbPath,
-      flatGeoJson,
-    ]);
+      updateAfterFirst: true,
+    });
+    if (written === 0) {
+      throw new Error('FileGDB conversion wrote no geometry layers');
+    }
     await zipDirectory(gdbPath, outputZip, gdbName);
   } finally {
     await fs.promises.rm(work, {recursive: true, force: true});
   }
 };
 
-const SHAPE_LAYERS: Array<{
-  layer: string;
-  where: string;
-}> = [
-  {
-    layer: 'points',
-    where: "OGR_GEOMETRY='Point' OR OGR_GEOMETRY='MultiPoint'",
-  },
-  {
-    layer: 'lines',
-    where: "OGR_GEOMETRY='LineString' OR OGR_GEOMETRY='MultiLineString'",
-  },
-  {
-    layer: 'polygons',
-    where: "OGR_GEOMETRY='Polygon' OR OGR_GEOMETRY='MultiPolygon'",
-  },
-];
-
 const writeShapefileZip = async (
-  flatGeoJson: string,
+  features: JsonObject[],
   outputZip: string,
   crs: string
 ): Promise<void> => {
   const work = tempPath('-shp');
   await fs.promises.mkdir(work, {recursive: true});
-  let written = 0;
   try {
-    for (const layer of SHAPE_LAYERS) {
-      const shp = path.join(work, `${layer.layer}.shp`);
-      try {
-        await ogr2ogr([
-          '-f',
-          'ESRI Shapefile',
-          '-s_srs',
-          WGS84,
-          '-t_srs',
-          crs,
-          '-where',
-          layer.where,
-          shp,
-          flatGeoJson,
-        ]);
-        written += 1;
-      } catch (err) {
-        log(
-          `shapefile ${layer.layer} skipped: ${err instanceof Error ? err.message : err}`
-        );
-      }
-    }
+    const written = await writeSplitOgrLayers({
+      features,
+      driver: 'ESRI Shapefile',
+      destinationFor: layer => path.join(work, `${layer}.shp`),
+      crs,
+      updateAfterFirst: false,
+    });
     if (written === 0) {
       throw new Error('Shapefile conversion wrote no geometry layers');
     }
@@ -445,22 +599,30 @@ export const convertGeneratedSpatial = async (
     return {bytes: size, output: options.output};
   }
 
+  const features = await flattenFeatures(
+    options.inputGeoJson,
+    format === 'shapefile' ? 10 : 64
+  );
+  if (features.length === 0) {
+    throw new Error('No leaf Features found to convert');
+  }
+  log(
+    `flattened ${features.length} features for ${format} ${crs} (${info.nesting})`
+  );
+
   const flatPath = tempPath('-flat.geojson');
   try {
-    const count = await writeFlatGeoJson(options.inputGeoJson, flatPath);
-    if (count === 0) {
-      throw new Error('No leaf Features found to convert');
-    }
-    log(`flattened ${count} features for ${format} ${crs} (${info.nesting})`);
-
-    if (format === 'geojson') {
-      await reprojectFlatGeoJson(flatPath, options.output, crs);
-    } else if (format === 'gpkg') {
-      await writeGpkg(flatPath, options.output, crs);
+    if (format === 'geojson' || format === 'gpkg') {
+      await writeFeatureCollection(flatPath, features);
+      if (format === 'geojson') {
+        await reprojectFlatGeoJson(flatPath, options.output, crs);
+      } else {
+        await writeGpkg(flatPath, options.output, crs);
+      }
     } else if (format === 'gdb') {
-      await writeGdbZip(flatPath, options.output, crs, options.name);
+      await writeGdbZip(features, options.output, crs, options.name);
     } else {
-      await writeShapefileZip(flatPath, options.output, crs);
+      await writeShapefileZip(features, options.output, crs);
     }
   } finally {
     await fs.promises.rm(flatPath, {force: true});
