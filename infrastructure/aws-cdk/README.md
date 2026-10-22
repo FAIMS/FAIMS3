@@ -698,7 +698,7 @@ Those fields become worker-task env (`GDAL_NUM_THREADS`, `GDAL_CACHEMAX`,
 `gdalwarp` also gets `-multi`, `-wm`, `-wo NUM_THREADS=…`, and
 `-co TILED=YES`. Homogeneous vector layers are written as FlatGeobuf;
 mixed or unknown geometry becomes GeoJSONSeq. Both are tiled with
-`tippecanoe -z 14`.
+`tippecanoe -z 14` with `--drop-fraction-as-needed` (polygons / mixed) or `--drop-densest-as-needed` (points / lines) and `--extend-zooms-if-still-dropping`.
 
 Attachment storage JSON (defaults shown):
 

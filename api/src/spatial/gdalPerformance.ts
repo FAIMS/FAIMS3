@@ -16,6 +16,7 @@ export const VECTOR_INTERMEDIATE_GEOJSONSEQ = 'normalized.geojson';
 export const VECTOR_TILE_MAX_ZOOM = 14;
 
 export type VectorOgrFormat = 'FlatGeobuf' | 'GeoJSONSeq';
+export type VectorGeometryFamily = 'point' | 'line' | 'polygon';
 
 /**
  * How ogr2ogr writes the geometry-only intermediate that tippecanoe reads.
@@ -27,9 +28,11 @@ export type VectorIntermediatePlan = {
   filename: string;
   format: VectorOgrFormat;
   nlt: string;
+  /** Set when every source layer is one Point, Line, or Polygon family. */
+  family?: VectorGeometryFamily;
 };
 
-const FGB_GEOMETRY_FAMILY: Record<string, 'point' | 'line' | 'polygon'> = {
+const FGB_GEOMETRY_FAMILY: Record<string, VectorGeometryFamily> = {
   point: 'point',
   multipoint: 'point',
   linestring: 'line',
@@ -80,11 +83,13 @@ export function geometryFieldTypes(info: unknown): string[] {
 }
 
 /**
- * FlatGeobuf `-nlt` when every layer is one family (point / line / polygon).
+ * Single geometry family when every layer is Point, Line, or Polygon.
  * Mixed or unknown types return `undefined` so the caller uses GeoJSONSeq.
  */
-function concreteFgbNlt(types: string[]): string | undefined {
-  const families = new Set<'point' | 'line' | 'polygon'>();
+function homogeneousGeometryFamily(
+  types: string[]
+): VectorGeometryFamily | undefined {
+  const families = new Set<VectorGeometryFamily>();
   for (const raw of types) {
     const canonical = canonicalGeometryType(raw);
     if (
@@ -105,7 +110,8 @@ function concreteFgbNlt(types: string[]): string | undefined {
   if (families.size !== 1) {
     return undefined;
   }
-  return 'PROMOTE_TO_MULTI';
+  const [family] = families;
+  return family;
 }
 
 /**
@@ -113,12 +119,13 @@ function concreteFgbNlt(types: string[]): string | undefined {
  * family. Otherwise GeoJSONSeq so tippecanoe can read mixed collections.
  */
 export function vectorIntermediatePlan(info?: unknown): VectorIntermediatePlan {
-  const nlt = concreteFgbNlt(geometryFieldTypes(info));
-  if (nlt) {
+  const family = homogeneousGeometryFamily(geometryFieldTypes(info));
+  if (family) {
     return {
       filename: VECTOR_INTERMEDIATE_FGB,
       format: 'FlatGeobuf',
-      nlt,
+      nlt: 'PROMOTE_TO_MULTI',
+      family,
     };
   }
   return {
@@ -241,17 +248,35 @@ export function ogr2ogrGeometryArgs(
   ];
 }
 
-/** tippecanoe args: PMTiles out, drop-densest, JSON progress every 5s. */
+/**
+ * tippecanoe 2.78+ exits 100 when `--drop-densest-as-needed` or
+ * `--drop-smallest-as-needed` cannot raise their threshold ("Can't
+ * increase feature area/gap threshold further"). Those branches do not
+ * fall through to another strategy. Fraction dropping can always
+ * increase, so polygons and mixed geometry use it. Points and lines
+ * keep spacing-based densest drop. `--extend-zooms-if-still-dropping`
+ * then adds zoom levels when z14 tiles still overflow after dropping.
+ */
+export function tippecanoeDropArgs(plan: VectorIntermediatePlan): string[] {
+  const drop =
+    plan.family === 'point' || plan.family === 'line'
+      ? '--drop-densest-as-needed'
+      : '--drop-fraction-as-needed';
+  return [drop, '--extend-zooms-if-still-dropping'];
+}
+
+/** tippecanoe args: PMTiles out, geometry-aware drop, JSON progress every 5s. */
 export function tippecanoeVectorArgs(
   pmtilesPath: string,
-  inputPath: string
+  inputPath: string,
+  plan: VectorIntermediatePlan = vectorIntermediatePlan()
 ): string[] {
   return [
     '-o',
     pmtilesPath,
     '-z',
     String(VECTOR_TILE_MAX_ZOOM),
-    '--drop-densest-as-needed',
+    ...tippecanoeDropArgs(plan),
     '--force',
     '--json-progress',
     '--progress-interval=5',
