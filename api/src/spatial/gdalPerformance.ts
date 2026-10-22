@@ -293,6 +293,31 @@ function tippecanoeThinningArgs(family?: VectorGeometryFamily): string[] {
   return ['--drop-densest-as-needed', '--extend-zooms-if-still-dropping'];
 }
 
+/**
+ * MBTiles WebP quality. The MBTiles driver only honours QUALITY (lossy);
+ * it does not forward the WEBP driver's LOSSLESS flag. 90 keeps thin
+ * collar text readable without PNG-sized tiles.
+ */
+export const RASTER_WEBP_QUALITY = 90;
+
+/** True when GDAL is opening a GeoPDF (optional-content layers apply). */
+export function isPdfPath(filePath: string): boolean {
+  return /\.pdf$/i.test(filePath);
+}
+
+/**
+ * Turn every GeoPDF optional-content group on so collar / surround
+ * layers are rasterized, not just the default "Map Layers" group.
+ */
+export function gdalPdfOpenArgs(sourcePath: string): string[] {
+  return isPdfPath(sourcePath) ? ['-oo', 'LAYERS=ALL'] : [];
+}
+
+/** MBTiles WebP creation options for raster ingest. */
+export function mbtilesWebpCreationArgs(): string[] {
+  return ['-co', 'TILE_FORMAT=WEBP', '-co', `QUALITY=${RASTER_WEBP_QUALITY}`];
+}
+
 /** Highest zoom tippecanoe is asked to build before extend-zooms. */
 export function vectorTileMaxZoom(family?: VectorGeometryFamily): number {
   return family === 'polygon'

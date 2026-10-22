@@ -2,9 +2,10 @@
 /**
  * Turns an uploaded map file set into one PMTiles archive.
  * Vectors are reprojected to EPSG:4326 (geometry only) and tiled with
- * tippecanoe. Rasters, including a georeferenced PDF at GDAL's default
- * 150 DPI, are warped to EPSG:3857 and written as WebP tiles. Zoom
- * overviews and feature dropping happen in that tiling step.
+ * tippecanoe. Rasters, including a georeferenced PDF at GDAL's guessed
+ * DPI (150 fallback), are warped to EPSG:3857 and written as WebP
+ * quality-90 tiles. GeoPDF opens with LAYERS=ALL so collar groups stay
+ * on. Zoom overviews and feature dropping happen in that tiling step.
  */
 
 import {existsSync} from 'fs';
@@ -25,7 +26,9 @@ import {
 } from '../../spatial/flattenGeoJson';
 import {
   gdalConfigArgs,
+  gdalPdfOpenArgs,
   gdalWarpPerformanceArgs,
+  mbtilesWebpCreationArgs,
   ogr2ogrGeometryArgs,
   spatialToolProcessEnv,
   tippecanoeVectorArgs,
@@ -206,7 +209,7 @@ async function inspectCrs(
             })
           : readGdalJson({
               command: 'gdalinfo',
-              args: ['-json', source],
+              args: ['-json', ...gdalPdfOpenArgs(source), source],
               env: spatialCommandEnv(),
             })
     );
@@ -223,7 +226,6 @@ async function inspectCrs(
 }
 
 const PMTILES_TILE_SIZE = 256;
-const RASTER_WEBP_QUALITY = 75;
 const PMTILES_MEDIA_TYPE = 'application/vnd.pmtiles';
 
 /**
@@ -561,6 +563,7 @@ async function convertRaster(
     command: 'gdalwarp',
     args: [
       ...gdalWarpPerformanceArgs(perf),
+      ...gdalPdfOpenArgs(gdalSourcePath(sourcePath)),
       '-t_srs',
       'EPSG:3857',
       '-r',
@@ -610,10 +613,7 @@ async function convertRaster(
       ...gdalConfigArgs(perf),
       '-of',
       'MBTiles',
-      '-co',
-      'TILE_FORMAT=WEBP',
-      '-co',
-      `QUALITY=${RASTER_WEBP_QUALITY}`,
+      ...mbtilesWebpCreationArgs(),
       '-co',
       'NAME=layer',
       warped,

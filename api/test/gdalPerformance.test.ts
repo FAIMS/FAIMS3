@@ -3,8 +3,10 @@ import {describe, expect, it} from 'vitest';
 import {
   DEFAULT_SPATIAL_TOOL_PERFORMANCE,
   gdalConfigArgs,
+  gdalPdfOpenArgs,
   gdalWarpPerformanceArgs,
   geometryFieldTypes,
+  mbtilesWebpCreationArgs,
   ogr2ogrGeometryArgs,
   spatialToolProcessEnv,
   tippecanoeVectorArgs,
@@ -244,6 +246,18 @@ describe('spatial tool performance args', () => {
     expect(env.GDAL_NUM_THREADS).toBe('ALL_CPUS');
     expect(env.GDAL_CACHEMAX).toBe('2048');
     expect(env.TIPPECANOE_MAX_THREADS).toBe('8');
+  });
+
+  it('opens GeoPDF layers and writes higher-quality WebP tiles', () => {
+    expect(gdalPdfOpenArgs('sheet.pdf')).toEqual(['-oo', 'LAYERS=ALL']);
+    expect(gdalPdfOpenArgs('/tmp/Collar.PDF')).toEqual(['-oo', 'LAYERS=ALL']);
+    expect(gdalPdfOpenArgs('ortho.tif')).toEqual([]);
+    expect(mbtilesWebpCreationArgs()).toEqual([
+      '-co',
+      'TILE_FORMAT=WEBP',
+      '-co',
+      'QUALITY=90',
+    ]);
   });
 
   it('clears an inherited tippecanoe cap when unset', () => {
