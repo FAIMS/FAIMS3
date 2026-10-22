@@ -3,14 +3,15 @@
  * Loads a ready map layer and shows a static fitted preview.
  */
 
+import {MapLayerPreviewProgress} from '@/components/maps/MapLayerPreviewProgress';
 import {Alert, AlertDescription} from '@/components/ui/alert';
 import {config} from '@/constants';
 import type {User} from '@/context/auth-provider';
+import {useMapAssetPreviewDownload} from '@/hooks/map-asset-preview-hooks';
 import {
   isTiledMapAssetKind,
   mapAssetProcessingStatusText,
   type ExistingMapAsset,
-  type GetMapAssetDownloadUrlResponse,
 } from '@faims3/data-model';
 import {
   readBlobRange,
@@ -20,8 +21,9 @@ import {
 import {useEffect, useState} from 'react';
 
 /**
- * Fetch a presigned download and render a static fitted preview.
- * Shows processing/failed copy when the layer is not yet ready.
+ * Fetch a presigned download (cached after the first transfer) and render
+ * a static fitted preview. Shows processing/failed copy when the layer is
+ * not yet ready, and download progress while the file is arriving.
  */
 export function MapLayerPreview({
   asset,
@@ -30,72 +32,38 @@ export function MapLayerPreview({
   asset: ExistingMapAsset;
   user: User;
 }) {
+  const download = useMapAssetPreviewDownload({
+    asset,
+    token: user.token,
+    start: true,
+  });
   const [url, setUrl] = useState<string | undefined>();
   const [readTileBytes, setReadTileBytes] = useState<
     TileByteRead | undefined
   >();
-  const [error, setError] = useState('');
 
   useEffect(() => {
-    if (asset.status !== 'ready' || !asset.kind) {
+    const blob = download.blob;
+    if (!blob || !asset.kind) {
+      setUrl(undefined);
+      setReadTileBytes(undefined);
       return;
     }
-    let active = true;
-    let objectUrl: string | undefined;
-    const load = async () => {
-      try {
-        const grant = await fetch(
-          `${config.apiUrl}/api/map-assets/${asset._id}/download-url`,
-          {headers: {Authorization: `Bearer ${user.token}`}}
-        );
-        if (!grant.ok) {
-          throw new Error('Could not download the layer for preview.');
-        }
-        const {url: downloadUrl} =
-          (await grant.json()) as GetMapAssetDownloadUrlResponse;
-        if (!downloadUrl) {
-          throw new Error('Could not download the layer for preview.');
-        }
-        const response = await fetch(downloadUrl);
-        if (!response.ok) {
-          throw new Error('Could not download the layer for preview.');
-        }
-        const blob = await response.blob();
-        if (asset.kind && isTiledMapAssetKind(asset.kind)) {
-          if (active) {
-            setReadTileBytes(
-              () => (offset: number, length: number) =>
-                readBlobRange(blob, offset, length)
-            );
-            setUrl(`pmtiles:${asset._id}`);
-            setError('');
-          }
-          return;
-        }
-        objectUrl = URL.createObjectURL(blob);
-        if (active) {
-          setReadTileBytes(undefined);
-          setUrl(objectUrl);
-          setError('');
-        }
-      } catch (loadError) {
-        if (active) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : 'Could not download the layer for preview.'
-          );
-        }
-      }
-    };
-    void load();
+    if (isTiledMapAssetKind(asset.kind)) {
+      setReadTileBytes(
+        () => (offset: number, length: number) =>
+          readBlobRange(blob, offset, length)
+      );
+      setUrl(`pmtiles:${asset._id}`);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(blob);
+    setReadTileBytes(undefined);
+    setUrl(objectUrl);
     return () => {
-      active = false;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
+      URL.revokeObjectURL(objectUrl);
     };
-  }, [asset._id, asset.kind, asset.status, user.token]);
+  }, [asset._id, asset.kind, download.blob]);
 
   if (asset.status === 'pending' || asset.status === 'processing') {
     const progress =
@@ -118,15 +86,17 @@ export function MapLayerPreview({
       </Alert>
     );
   }
-  if (error) {
+  if (download.status === 'error') {
     return (
       <Alert variant="destructive">
-        <AlertDescription>{error}</AlertDescription>
+        <AlertDescription>
+          {download.error ?? 'Could not download the layer for preview.'}
+        </AlertDescription>
       </Alert>
     );
   }
   if (!url || !asset.kind) {
-    return <p className="text-sm text-muted-foreground">Loading preview…</p>;
+    return <MapLayerPreviewProgress download={download} />;
   }
   return (
     <div className="overflow-hidden rounded-md border">

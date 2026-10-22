@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import {MapLayerPreviewTabProgress} from '@/components/maps/MapLayerPreviewProgress';
 import {MapLayerActions} from '@/components/tabs/map-layers/actions';
 import {MapLayerDetails} from '@/components/tabs/map-layers/details';
 import {MapLayerLinkedSurveys} from '@/components/tabs/map-layers/linked-surveys';
@@ -7,6 +8,7 @@ import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {config} from '@/constants';
 import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useMapAsset} from '@/hooks/map-asset-hooks';
+import {useMapAssetPreviewDownload} from '@/hooks/map-asset-preview-hooks';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {canMutateMapAsset} from '@/lib/map-layer-permissions';
 import {createFileRoute, useRouter} from '@tanstack/react-router';
@@ -31,6 +33,11 @@ function MapLayerPage() {
   const {assetId} = Route.useParams();
   const user = useRequiredUser();
   const {data, isLoading} = useMapAsset({user, assetId});
+  const previewDownload = useMapAssetPreviewDownload({
+    asset: data,
+    token: user.token,
+    start: false,
+  });
   const pathname = useRouter().state.location.pathname;
   const paths = useMemo(
     () => [
@@ -53,8 +60,18 @@ function MapLayerPage() {
     <Tabs defaultValue={visibleTabs[0].name}>
       <TabsList>
         {visibleTabs.map(({name}) => (
-          <TabsTrigger key={name} value={name}>
+          <TabsTrigger
+            key={name}
+            value={name}
+            className="gap-1.5"
+            aria-busy={
+              name === 'Preview' && previewDownload.status === 'downloading'
+            }
+          >
             {name}
+            {name === 'Preview' ? (
+              <MapLayerPreviewTabProgress download={previewDownload} />
+            ) : null}
           </TabsTrigger>
         ))}
       </TabsList>

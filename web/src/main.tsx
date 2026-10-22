@@ -13,8 +13,11 @@ import {config} from './constants';
 import {AuthProvider, useAuth} from './context/auth-provider';
 import {BreadcrumbProvider} from './context/breadcrumb-provider';
 import './index.css';
+import {evictStaleMapAssetPreviewCache} from './lib/map-asset-preview-cache';
 import {getThemeClass} from './lib/theme';
 import {routeTree} from './routeTree.gen';
+
+void evictStaleMapAssetPreviewCache();
 
 // Initialize Bugsnag if API key is configured
 const bugsnagEnabled = config.bugsnagApiKey !== undefined;
