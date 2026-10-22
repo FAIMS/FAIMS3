@@ -227,7 +227,7 @@ function emitLeaf(
 }
 
 class JsonFileReader {
-  private buf = Buffer.alloc(0);
+  private buf = new Uint8Array(0);
   private bufFileStart = 0;
   private offset = 0;
   pos = 0;
@@ -253,7 +253,7 @@ class JsonFileReader {
 
   async seek(position: number): Promise<void> {
     this.pos = position;
-    this.buf = Buffer.alloc(0);
+    this.buf = new Uint8Array(0);
     this.bufFileStart = position;
     this.offset = 0;
   }
@@ -360,12 +360,12 @@ class JsonFileReader {
 
   async readRange(start: number, end: number): Promise<string> {
     const length = end - start;
-    const buffer = Buffer.alloc(length);
+    const buffer = new Uint8Array(length);
     const {bytesRead} = await this.handle.read(buffer, 0, length, start);
     if (bytesRead !== length) {
       throw new Error('Unexpected end of GeoJSON.');
     }
-    return buffer.toString('utf8');
+    return Buffer.from(buffer).toString('utf8');
   }
 
   private async skipContainer(): Promise<void> {
@@ -445,14 +445,17 @@ class JsonFileReader {
       this.remainingOnDisk() > 0
     ) {
       const unread = this.buf.subarray(this.offset);
-      const chunk = Buffer.alloc(CHUNK_SIZE);
+      const chunk = new Uint8Array(CHUNK_SIZE);
       const {bytesRead} = await this.handle.read(
         chunk,
         0,
         CHUNK_SIZE,
         this.bufFileStart + this.buf.length
       );
-      this.buf = Buffer.concat([unread, chunk.subarray(0, bytesRead)]);
+      const next = new Uint8Array(unread.length + bytesRead);
+      next.set(unread);
+      next.set(chunk.subarray(0, bytesRead), unread.length);
+      this.buf = next;
       this.bufFileStart = this.pos;
       this.offset = 0;
       if (bytesRead === 0) {

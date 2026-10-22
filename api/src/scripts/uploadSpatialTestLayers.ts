@@ -8,7 +8,6 @@
  *   pnpm run upload-spatial-test-layers -- --api http://localhost:8080 \
  *     --formats kml,gpkg,shapefile,gdb --crs EPSG:4326,EPSG:3857 --size 10MB
  */
-import {File} from 'node:buffer';
 import {openAsBlob} from 'node:fs';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -256,14 +255,13 @@ const uploadMapLayer = async ({
   mediaType: string;
 }): Promise<{id: string; status: string}> => {
   const blob = await openAsBlob(filePath, {type: mediaType});
-  const file = new File([blob], filename, {type: mediaType});
   const body = new FormData();
   body.set('name', name);
   body.set('description', description);
   if (teamId) {
     body.set('teamId', teamId);
   }
-  body.append('files', file);
+  body.append('files', blob, filename);
 
   const response = await client.request('/api/map-assets', {
     method: 'POST',

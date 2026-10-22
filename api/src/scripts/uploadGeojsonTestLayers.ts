@@ -13,7 +13,6 @@
  *   pnpm run upload-geojson-test-layers -- --api https://conductor.example \
  *     --size 100MB --team-id <teamId>
  */
-import {File} from 'node:buffer';
 import {openAsBlob} from 'node:fs';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -383,14 +382,13 @@ const uploadMapLayer = async ({
   teamId: string | undefined;
 }): Promise<{id: string; status: string}> => {
   const blob = await openAsBlob(filePath, {type: 'application/geo+json'});
-  const file = new File([blob], filename, {type: 'application/geo+json'});
   const body = new FormData();
   body.set('name', name);
   body.set('description', description);
   if (teamId) {
     body.set('teamId', teamId);
   }
-  body.append('files', file);
+  body.append('files', blob, filename);
 
   const response = await client.request('/api/map-assets', {
     method: 'POST',
