@@ -121,7 +121,8 @@ async function bindStoredLayerReader(filename: string): Promise<TileByteRead> {
   const dir = await root.getDirectoryHandle('map-assets');
   const handle = await dir.getFileHandle(filename);
   const file = await handle.getFile();
-  return (offset, length, signal) => readBlobRange(file, offset, length, signal);
+  return (offset, length, signal) =>
+    readBlobRange(file, offset, length, signal);
 }
 
 /** Write PMTiles bytes into the browser Origin Private File System. */

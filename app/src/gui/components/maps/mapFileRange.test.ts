@@ -85,12 +85,7 @@ describe('readNativeFileRange', () => {
 
   it('skips the plugin when the tile load is already aborted', async () => {
     await expect(
-      readNativeFileRange(
-        'map-assets/a.pmtiles',
-        0,
-        16,
-        AbortSignal.abort()
-      )
+      readNativeFileRange('map-assets/a.pmtiles', 0, 16, AbortSignal.abort())
     ).rejects.toMatchObject({name: 'AbortError'});
     expect(native.read).not.toHaveBeenCalled();
   });
