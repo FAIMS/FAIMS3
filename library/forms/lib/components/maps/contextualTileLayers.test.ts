@@ -15,10 +15,10 @@ import {
   createRasterTileLayer,
   createVectorTileLayer,
   resetErrorTiles,
-  CONTEXTUAL_TILE_CACHE_SIZE,
   CONTEXTUAL_TILE_LOAD_GATE,
 } from './contextualTileLayers';
 import type {ContextualMapLayer} from './contextualMapLayers';
+import {resolveMapPerformanceProfile} from './mapPerformance';
 import {readBlobRange} from './pmtilesRange';
 
 function fixture(name: string): Blob {
@@ -72,7 +72,9 @@ describe('local PMTiles layers', () => {
 
     const olLayer = await createRasterTileLayer(spec);
     expect(olLayer.get('preload')).toBe(0);
-    expect(olLayer.get('cacheSize')).toBe(CONTEXTUAL_TILE_CACHE_SIZE);
+    expect(olLayer.get('cacheSize')).toBe(
+      resolveMapPerformanceProfile().tileCacheSize
+    );
     expect(olLayer.get(CONTEXTUAL_TILE_LOAD_GATE)).toBeDefined();
     const reads = (spec as ContextualMapLayer & {reads: number[]}).reads;
     expect(reads.every(length => length < file.size || file.size < 16384)).toBe(
@@ -86,7 +88,12 @@ describe('local PMTiles layers', () => {
     const spec = layer('vector-tiles', file);
     const olLayer = await createVectorTileLayer(spec);
     expect(olLayer.get('preload')).toBe(0);
-    expect(olLayer.get('cacheSize')).toBe(CONTEXTUAL_TILE_CACHE_SIZE);
+    expect(olLayer.get('cacheSize')).toBe(
+      resolveMapPerformanceProfile().tileCacheSize
+    );
+    expect(olLayer.getRenderBuffer()).toBe(
+      resolveMapPerformanceProfile().renderBuffer
+    );
     expect(olLayer.getUpdateWhileInteracting()).toBe(false);
     expect(olLayer.getUpdateWhileAnimating()).toBe(false);
     const archive = new PMTiles({

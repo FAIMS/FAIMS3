@@ -23,6 +23,10 @@ import {
   type TileByteRead,
 } from './pmtilesRange';
 import {
+  NATIVE_MAP_PERFORMANCE,
+  resolveMapPerformanceProfile,
+} from './mapPerformance';
+import {
   TILE_LOAD_CONTROLLER,
   TILE_LOAD_GATE,
   createTileLoadController,
@@ -37,13 +41,14 @@ const MAP_PROJECTION = 'EPSG:3857';
 const TILE_SIZE = 256;
 
 /**
- * Tiles kept per contextual layer. One viewport, not a prefetch ring:
- * a larger cache plus decoded trail tiles crashed WebContent under load.
+ * Native tiles kept per contextual layer. Desktop uses
+ * {@link resolveMapPerformanceProfile}. A larger cache plus decoded
+ * trail tiles crashed WebContent under load.
  */
-export const CONTEXTUAL_TILE_CACHE_SIZE = 16;
+export const CONTEXTUAL_TILE_CACHE_SIZE = NATIVE_MAP_PERFORMANCE.tileCacheSize;
 
-/** No extra tiles around the view. Prefetch rings raise the decode peak. */
-export const CONTEXTUAL_RENDER_BUFFER = 0;
+/** Native prefetch. Desktop uses {@link resolveMapPerformanceProfile}. */
+export const CONTEXTUAL_RENDER_BUFFER = NATIVE_MAP_PERFORMANCE.renderBuffer;
 
 export const CONTEXTUAL_TILE_LOAD_GATE = TILE_LOAD_GATE;
 
@@ -73,11 +78,7 @@ class CallbackSource implements Source {
   }
 
   /** Range-read `length` bytes at `offset` from the stored archive. */
-  async getBytes(
-    offset: number,
-    length: number,
-    signal?: AbortSignal
-  ) {
+  async getBytes(offset: number, length: number, signal?: AbortSignal) {
     assertTileRange(offset, length);
     throwIfAborted(signal);
     const data = await this.read(offset, length, signal);
@@ -174,7 +175,8 @@ export async function createRasterTileLayer(
   const archive = await openArchive(spec);
   const header = await archive.getHeader();
   const mime = tileMime(header.tileType);
-  const loads = createTileLoadController();
+  const profile = resolveMapPerformanceProfile();
+  const loads = createTileLoadController(profile.tileConcurrency);
   const source = new ImageTileSource({
     projection: MAP_PROJECTION,
     minZoom: header.minZoom,
@@ -199,7 +201,7 @@ export async function createRasterTileLayer(
   const layer = new TileLayer({
     source,
     preload: 0,
-    cacheSize: CONTEXTUAL_TILE_CACHE_SIZE,
+    cacheSize: profile.tileCacheSize,
     extent: layerExtent(spec),
   });
   layer.set(TILE_LOAD_GATE, loads.gate);
@@ -213,7 +215,8 @@ export async function createVectorTileLayer(
 ): Promise<VectorTileLayer> {
   const archive = await openArchive(spec);
   const header = await archive.getHeader();
-  const loads = createTileLoadController();
+  const profile = resolveMapPerformanceProfile();
+  const loads = createTileLoadController(profile.tileConcurrency);
   const source = new VectorTileSource({
     format: new MVT(),
     minZoom: header.minZoom,
@@ -247,13 +250,12 @@ export async function createVectorTileLayer(
               vectorTile.setFeatures([]);
               return;
             }
-            const features = vectorTile.getFormat().readFeatures(
-              response.data,
-              {
+            const features = vectorTile
+              .getFormat()
+              .readFeatures(response.data, {
                 extent,
                 featureProjection: projection,
-              }
-            );
+              });
             throwIfAborted(pause);
             throwIfAborted(controller.signal);
             vectorTile.setFeatures(features);
@@ -276,11 +278,11 @@ export async function createVectorTileLayer(
     source,
     style: contextualVectorStyle(spec),
     preload: 0,
-    cacheSize: CONTEXTUAL_TILE_CACHE_SIZE,
+    cacheSize: profile.tileCacheSize,
     updateWhileAnimating: false,
     updateWhileInteracting: false,
     extent: layerExtent(spec),
-    renderBuffer: CONTEXTUAL_RENDER_BUFFER,
+    renderBuffer: profile.renderBuffer,
   });
   layer.set(TILE_LOAD_GATE, loads.gate);
   layer.set(TILE_LOAD_CONTROLLER, loads);

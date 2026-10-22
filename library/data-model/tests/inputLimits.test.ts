@@ -314,6 +314,21 @@ describe('map layer schemas', () => {
       'Extracting archive'
     );
     expect(
+      MapAssetProcessingStageSchema.safeParse('flattening-geojson').success
+    ).toBe(true);
+    expect(mapAssetProcessingStageLabel('flattening-geojson')).toBe(
+      'Flattening nested collections'
+    );
+    expect(
+      mapAssetProcessingStatusText({processingStage: 'flattening-geojson'})
+    ).toBe('Flattening nested collections');
+    expect(
+      mapAssetProcessingStatusText({
+        processingStage: 'flattening-geojson',
+        processingProgress: {phase: 'Flattening', percent: 45},
+      })
+    ).toBe('Flattening nested collections — Flattening 45%');
+    expect(
       mapAssetProcessingStatusText({processingStage: 'tiling-vectors'})
     ).toBe('Building vector tiles');
     expect(

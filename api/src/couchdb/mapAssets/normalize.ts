@@ -19,6 +19,10 @@ import {
 import {config} from '../../buildconfig';
 import {withMapAssetProcessingWait} from '../../logging';
 import {
+  flattenNestedFeatureCollections,
+  isGeoJsonPath,
+} from '../../spatial/flattenGeoJson';
+import {
   gdalConfigArgs,
   gdalWarpPerformanceArgs,
   ogr2ogrGeometryArgs,
@@ -45,7 +49,7 @@ export type MapAssetNormalizeLogContext = {
   assetId?: string;
   /** Persist the current pipeline step onto the map-asset document. */
   onStage?: (stage: MapAssetProcessingStage) => void | Promise<void>;
-  /** Live tippecanoe / GDAL phase + percent while tiling or warping. */
+  /** Live flatten / tippecanoe / GDAL phase + percent. */
   onProgress?: (progress: MapAssetProcessingProgress) => void | Promise<void>;
 };
 
@@ -661,6 +665,38 @@ export async function normalizeMapUpload(
       );
       gdalSource = prepared.source;
       extractedGdbDir = prepared.extractedGdbDir;
+    }
+    if (vector && isGeoJsonPath(gdalSource)) {
+      const flattenedPath = path.join(workDir, 'flattened.geojson');
+      await emitStage(logContext, 'flattening-geojson');
+      let progressWait = Promise.resolve();
+      await withMapAssetProcessingWait(
+        {
+          event: 'gdal.command',
+          assetId: logContext?.assetId,
+          command: 'flatten-geojson',
+          filename,
+          detail: 'nested FeatureCollections',
+        },
+        async () => {
+          await flattenNestedFeatureCollections(
+            gdalSource,
+            flattenedPath,
+            update => {
+              progressWait = progressWait.then(() =>
+                Promise.resolve(
+                  logContext?.onProgress?.({
+                    phase: 'Flattening',
+                    percent: update.percent,
+                  })
+                )
+              );
+            }
+          );
+          await progressWait;
+        }
+      );
+      gdalSource = flattenedPath;
     }
     await emitStage(logContext, 'interpreting-crs');
     const ogrInfo = await inspectCrs(gdalSource, filename, vector, logContext);

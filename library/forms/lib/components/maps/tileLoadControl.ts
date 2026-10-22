@@ -8,12 +8,16 @@
 
 import Tile from 'ol/Tile';
 import TileState from 'ol/TileState';
+import {
+  NATIVE_MAP_PERFORMANCE,
+  resolveMapPerformanceProfile,
+} from './mapPerformance';
 
-/** In-flight streets, satellite, or contextual tile work after settle. */
-export const BASE_MAP_TILE_CONCURRENCY = 2;
+/** Native in-flight cap. Desktop uses {@link resolveMapPerformanceProfile}. */
+export const BASE_MAP_TILE_CONCURRENCY = NATIVE_MAP_PERFORMANCE.tileConcurrency;
 
-/** Wait after the last moveend before loading holes. */
-export const TILE_LOAD_SETTLE_MS = 200;
+/** Native settle delay. Desktop uses {@link resolveMapPerformanceProfile}. */
+export const TILE_LOAD_SETTLE_MS = NATIVE_MAP_PERFORMANCE.settleMs;
 
 /** Layer property holding {@link createTileLoadGate}. */
 export const TILE_LOAD_GATE = 'tileLoadGate';
@@ -173,7 +177,9 @@ export type TileLoadLimiter = ReturnType<typeof createTileLoadLimiter>;
  * Cap in-flight work after the map settles. During a gesture, refuse new
  * work and abort in-flight reads so a pan trail is not decoded.
  */
-export function createTileLoadController(max = BASE_MAP_TILE_CONCURRENCY) {
+export function createTileLoadController(
+  max = resolveMapPerformanceProfile().tileConcurrency
+) {
   const limiter = createTileLoadLimiter(max);
   const waiters: Array<() => void> = [];
   const drained: Array<() => void> = [];
@@ -262,7 +268,11 @@ export function createTileLoadController(max = BASE_MAP_TILE_CONCURRENCY) {
         }
         return result;
       } catch (error) {
-        if (isTileLoadPausedError(error) || isAbortError(error) || signal.aborted) {
+        if (
+          isTileLoadPausedError(error) ||
+          isAbortError(error) ||
+          signal.aborted
+        ) {
           throw new TileLoadPausedError();
         }
         throw error;
@@ -292,7 +302,7 @@ export type TileLoadController = ReturnType<typeof createTileLoadController>;
 /** Arm a callback after the last navigation event. */
 export function createTileLoadSettle(
   onSettle: (cancelled: () => boolean) => void | Promise<void>,
-  delay = TILE_LOAD_SETTLE_MS
+  delay = resolveMapPerformanceProfile().settleMs
 ) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let epoch = 0;
@@ -358,7 +368,9 @@ export function tileCoversView(
 export function viewCoverage(
   layer: RetryableTileLayer,
   map: TileLoadMap
-): {extent: number[]; viewGrid: TileGridLike; sourceGrid: TileGridLike} | undefined {
+):
+  | {extent: number[]; viewGrid: TileGridLike; sourceGrid: TileGridLike}
+  | undefined {
   const size = map.getSize();
   if (!size) {
     return undefined;
@@ -401,7 +413,10 @@ export function viewTileViewport(
     map.getView().getResolution() ?? 0,
     source?.zDirection ?? 0
   );
-  if (coverage.extent[0] >= coverage.extent[2] || coverage.extent[1] >= coverage.extent[3]) {
+  if (
+    coverage.extent[0] >= coverage.extent[2] ||
+    coverage.extent[1] >= coverage.extent[3]
+  ) {
     return {z, minX: 1, maxX: 0, minY: 1, maxY: 0};
   }
   const range = coverage.viewGrid.getTileRangeForExtentAndZ(coverage.extent, z);

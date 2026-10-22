@@ -1028,6 +1028,8 @@ function progressAuditCommand(
   stage: MapAssetProcessingStage | undefined
 ): string | undefined {
   switch (stage) {
+    case 'flattening-geojson':
+      return 'flatten-geojson';
     case 'tiling-vectors':
       return 'tippecanoe';
     case 'warping-raster':

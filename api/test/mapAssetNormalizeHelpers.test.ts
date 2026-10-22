@@ -311,6 +311,7 @@ describe('normalizeMapUpload', () => {
       }
     });
     const stages: string[] = [];
+    const progress: {phase: string; percent?: number}[] = [];
     const result = await normalizeMapUpload(
       [
         {
@@ -318,13 +319,18 @@ describe('normalizeMapUpload', () => {
           bytes: Buffer.from('{"type":"FeatureCollection","features":[]}'),
         },
       ],
-      {onStage: stage => void stages.push(stage)}
+      {
+        onStage: stage => void stages.push(stage),
+        onProgress: update => void progress.push(update),
+      }
     );
     expect(stages).toEqual([
+      'flattening-geojson',
       'interpreting-crs',
       'converting-geometries',
       'tiling-vectors',
     ]);
+    expect(progress.some(update => update.phase === 'Flattening')).toBe(true);
     expect(result.kind).toBe('vector-tiles');
     expect(result.cleanupDir).toBeTruthy();
     expect(result.extent4326).toEqual([1, 2, 3, 4]);
