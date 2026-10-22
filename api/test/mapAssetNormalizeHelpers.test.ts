@@ -6,6 +6,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 import {GdalCommandError} from '../src/couchdb/export/gdal';
 import {
   assertHasCrs,
+  assignSiblingRasterPrj,
   extentFromRing,
   gdalSourcePath,
   maxZoomFromMbtilesInfo,
@@ -13,6 +14,7 @@ import {
   overviewFactors,
   readPmtilesHeader,
   sharedDiskDirectory,
+  siblingProjectionPath,
   wktFromInfo,
 } from '../src/couchdb/mapAssets/normalize';
 
@@ -112,6 +114,38 @@ describe('normalize CRS helpers', () => {
     expect(() =>
       assertHasCrs({coordinateSystem: {wkt: 'unknown'}}, 'plan.tif')
     ).toThrow(/no coordinate reference system/);
+  });
+
+  it('finds a sibling .prj next to a PNG and ignores a lone image', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'faims-prj-'));
+    const png = path.join(dir, 'plan.png');
+    const prj = path.join(dir, 'plan.prj');
+    await writeFile(png, 'png');
+    expect(siblingProjectionPath(png)).toBeUndefined();
+    await writeFile(prj, 'PROJCS["WGS_1984_Web_Mercator_Auxiliary_Sphere"]');
+    expect(siblingProjectionPath(png)).toBe(prj);
+    await rm(dir, {recursive: true, force: true});
+  });
+
+  it('assigns a sibling .prj onto a VRT so GDAL sees a CRS', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'faims-prj-assign-'));
+    const png = path.join(dir, 'plan.png');
+    const prj = path.join(dir, 'plan.prj');
+    await writeFile(png, 'png');
+    await writeFile(prj, 'PROJCS["WGS_1984_Web_Mercator_Auxiliary_Sphere"]');
+    runGdalCommand.mockResolvedValue({stdout: '', stderr: ''});
+    const assigned = await assignSiblingRasterPrj(png, dir);
+    expect(assigned).toBe(path.join(dir, 'plan-assigned.vrt'));
+    expect(runGdalCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        command: 'gdal_translate',
+        args: ['-of', 'VRT', '-a_srs', prj, png, assigned],
+      })
+    );
+    await expect(
+      assignSiblingRasterPrj(path.join(dir, 'bare.tif'), dir)
+    ).resolves.toBe(path.join(dir, 'bare.tif'));
+    await rm(dir, {recursive: true, force: true});
   });
 
   it('opens zip rasters through /vsizip/', () => {

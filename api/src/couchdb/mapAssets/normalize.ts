@@ -7,6 +7,7 @@
  * overviews and feature dropping happen in that tiling step.
  */
 
+import {existsSync} from 'fs';
 import {copyFile, mkdtemp, open, rm, stat, writeFile} from 'fs/promises';
 import {tmpdir} from 'os';
 import path from 'path';
@@ -121,6 +122,55 @@ export function assertHasCrs(info: unknown, filename: string): void {
 /** `/vsizip/` prefix for zips so GDAL opens the archive without unzipping. */
 export function gdalSourcePath(filePath: string): string {
   return extensionOf(filePath) === '.zip' ? `/vsizip/${filePath}` : filePath;
+}
+
+/**
+ * Sibling `.prj` next to a raster (PNG/JPEG carry CRS there, not in the
+ * image). GDAL's PNG/JPEG drivers read the world file for placement and
+ * ignore `.prj` unless we assign it.
+ */
+export function siblingProjectionPath(sourcePath: string): string | undefined {
+  const ext = path.extname(sourcePath);
+  if (!ext) {
+    return undefined;
+  }
+  const prjPath = `${sourcePath.slice(0, -ext.length)}.prj`;
+  return existsSync(prjPath) ? prjPath : undefined;
+}
+
+/**
+ * Build a VRT that copies the raster and sets `-a_srs` from a sibling
+ * `.prj`. Returns the original path when no `.prj` is present.
+ */
+export async function assignSiblingRasterPrj(
+  sourcePath: string,
+  workDir: string,
+  logContext?: MapAssetNormalizeLogContext
+): Promise<string> {
+  const prjPath = siblingProjectionPath(sourcePath);
+  if (!prjPath) {
+    return sourcePath;
+  }
+  const assigned = path.join(
+    workDir,
+    `${path.parse(sourcePath).name}-assigned.vrt`
+  );
+  await withMapAssetProcessingWait(
+    {
+      event: 'gdal.command',
+      assetId: logContext?.assetId,
+      command: 'gdal_translate',
+      filename: path.basename(sourcePath),
+      detail: 'assign CRS from .prj',
+    },
+    () =>
+      runGdalCommand({
+        command: 'gdal_translate',
+        args: ['-of', 'VRT', '-a_srs', prjPath, sourcePath, assigned],
+        env: spatialCommandEnv(),
+      })
+  );
+  return assigned;
 }
 
 /**
@@ -654,6 +704,7 @@ export async function normalizeMapUpload(
     const vector = isVectorUpload(primary.filename);
     const filename = path.basename(sourcePath);
     let gdalSource = vector ? sourcePath : gdalSourcePath(sourcePath);
+    let rasterSource = sourcePath;
     let extractedGdbDir: string | undefined;
     if (vector) {
       const prepared = await prepareVectorGdalSource(
@@ -699,6 +750,14 @@ export async function normalizeMapUpload(
       gdalSource = flattenedPath;
     }
     await emitStage(logContext, 'interpreting-crs');
+    if (!vector) {
+      rasterSource = await assignSiblingRasterPrj(
+        sourcePath,
+        workDir,
+        logContext
+      );
+      gdalSource = gdalSourcePath(rasterSource);
+    }
     const ogrInfo = await inspectCrs(gdalSource, filename, vector, logContext);
     const result = vector
       ? await convertVector(
@@ -709,7 +768,7 @@ export async function normalizeMapUpload(
           extractedGdbDir,
           ogrInfo
         )
-      : await convertRaster(sourcePath, workDir, logContext);
+      : await convertRaster(rasterSource, workDir, logContext);
     return ownsWorkDir ? {...result, cleanupDir: workDir} : result;
   } catch (error) {
     if (ownsWorkDir) {

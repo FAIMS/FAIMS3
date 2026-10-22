@@ -7,6 +7,8 @@
  *   FAIMS_API_TOKEN=... pnpm run upload-spatial-test-layers -- http://localhost:8080
  *   pnpm run upload-spatial-test-layers -- --api http://localhost:8080 \
  *     --formats kml,gpkg,shapefile,gdb --crs EPSG:4326,EPSG:3857 --size 10MB
+ *   pnpm run upload-spatial-test-layers -- --api http://localhost:8080 \
+ *     --rasters-only --raster-size 50MB
  */
 import {openAsBlob} from 'node:fs';
 import * as fs from 'fs';
@@ -20,15 +22,19 @@ import {
   parseByteSize,
 } from './exampleGeoJSONGenerator';
 import {
-  applySizeToCases,
-  buildSpatialTestCases,
+  applySizesToCases,
+  buildSuiteTestCases,
   parseOnlyTokens,
+  parseSuiteFormats,
+  type ParsedSuiteFormats,
   type SpatialTestCase,
 } from './spatialTestProfiles';
+import {RASTER_FORMAT_INFO, type RasterFormat} from './spatialRasterFormats';
+import {writeRasterTestCase} from './spatialRasterConvert';
+import {DEFAULT_RASTER_SIZE_BYTES} from './spatialRasterSource';
 import {
   SPATIAL_FORMAT_INFO,
   parseCrsList,
-  parseSpatialFormats,
   type SpatialFormat,
 } from './spatialTestFormats';
 
@@ -39,17 +45,24 @@ type UploadArgs = {
   clean: boolean;
   skipExisting: boolean;
   sizeBytes: number;
+  rasterSizeBytes: number;
+  includeVectors: boolean;
+  includeRasters: boolean;
   apiUrl: string | undefined;
   teamId: string | undefined;
   namePrefix: string;
   stageDir: string;
-  formats: SpatialFormat[] | undefined;
-  crsList: string[] | undefined;
+  rasterCacheDir: string;
+  vectorFormats: SpatialFormat[] | undefined;
+  rasterFormats: RasterFormat[] | undefined;
+  vectorCrsList: string[] | undefined;
+  rasterCrsList: string[] | undefined;
   only: string[] | undefined;
 };
 
 const DEFAULT_SIZE_BYTES = 10 * 1024 * 1024;
 const DEFAULT_STAGE_DIR = path.resolve('../tmp/spatial-upload-layers');
+const DEFAULT_RASTER_CACHE = path.resolve('../tmp/spatial-raster-cache');
 const DEFAULT_NAME_PREFIX = 'Spatial test';
 const NAME_MAX = 100;
 const NAME_MIN = 5;
@@ -59,6 +72,7 @@ const showHelp = (): void => {
   console.log(`Usage: pnpm run upload-spatial-test-layers -- <api-url> [options]
 
 Generate each format/profile/CRS case and POST it to /api/map-assets.
+PNG/JPEG uploads include the world file and .prj companions.
 
 Auth:
   FAIMS_API_TOKEN   Long-lived token (required)
@@ -67,13 +81,18 @@ Arguments:
   <api-url> / --api <url>   Conductor base URL
 
 Options:
-  --size <bytes>         GeoJSON budget per case before conversion (default: 10MB)
-  --formats a,b          geojson,kml,gpkg,shapefile,gdb (default: all)
-  --crs EPSG:4326,...    CRS list (default: EPSG:4326). KML stays WGS84.
+  --size <bytes>         GeoJSON budget per vector case (default: 10MB)
+  --raster-size <bytes>  Uncompressed RGB target per raster (default: 50MB)
+  --formats a,b          geojson,kml,gpkg,shapefile,gdb,geotiff,jpeg,png,pdf
+  --crs EPSG:4326,...    CRS for both kinds when set. Raster default
+                         EPSG:4326,3857,28356. KML stays WGS84.
+  --no-rasters           Skip satellite raster cases
+  --rasters-only         Only satellite raster cases
   --team-id <id>         Own layers on this team
   --name-prefix <text>   Layer name prefix (default: "Spatial test")
   --dir <path>           Staging directory
-  --only token,token     Format, geometry profile id, or case id
+  --raster-cache <path>  Shared native-window cache
+  --only token,token     Format, geometry profile id, raster, or case id
   --skip-existing        Reuse a staged file if present
   --clean                Delete generated files after upload
   --list / --dry-run     Plan only
@@ -120,14 +139,24 @@ const parseArgs = (argv: string[]): UploadArgs => {
     clean: false,
     skipExisting: false,
     sizeBytes: DEFAULT_SIZE_BYTES,
+    rasterSizeBytes: DEFAULT_RASTER_SIZE_BYTES,
+    includeVectors: true,
+    includeRasters: true,
     apiUrl: undefined,
     teamId: undefined,
     namePrefix: DEFAULT_NAME_PREFIX,
     stageDir: DEFAULT_STAGE_DIR,
-    formats: undefined,
-    crsList: undefined,
+    rasterCacheDir: DEFAULT_RASTER_CACHE,
+    vectorFormats: undefined,
+    rasterFormats: undefined,
+    vectorCrsList: undefined,
+    rasterCrsList: undefined,
     only: undefined,
   };
+  let formats: ParsedSuiteFormats | undefined;
+  let crsList: string[] | undefined;
+  let noRasters = false;
+  let rastersOnly = false;
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -168,13 +197,33 @@ const parseArgs = (argv: string[]): UploadArgs => {
     }
     if (arg === '--formats' || arg.startsWith('--formats=')) {
       const taken = takeValue(argv, i, '--formats');
-      args.formats = parseSpatialFormats(taken.value);
+      formats = parseSuiteFormats(taken.value);
       i = taken.next;
       continue;
     }
     if (arg === '--crs' || arg.startsWith('--crs=')) {
       const taken = takeValue(argv, i, '--crs');
-      args.crsList = parseCrsList(taken.value);
+      crsList = parseCrsList(taken.value);
+      i = taken.next;
+      continue;
+    }
+    if (arg === '--raster-size' || arg.startsWith('--raster-size=')) {
+      const taken = takeValue(argv, i, '--raster-size');
+      args.rasterSizeBytes = parseByteSize(taken.value);
+      i = taken.next;
+      continue;
+    }
+    if (arg === '--no-rasters') {
+      noRasters = true;
+      continue;
+    }
+    if (arg === '--rasters-only') {
+      rastersOnly = true;
+      continue;
+    }
+    if (arg === '--raster-cache' || arg.startsWith('--raster-cache=')) {
+      const taken = takeValue(argv, i, '--raster-cache');
+      args.rasterCacheDir = path.resolve(taken.value);
       i = taken.next;
       continue;
     }
@@ -211,6 +260,28 @@ const parseArgs = (argv: string[]): UploadArgs => {
     args.apiUrl = normalizeApiUrl(arg);
   }
 
+  if (formats) {
+    args.vectorFormats = formats.vectors;
+    args.rasterFormats = formats.rasters;
+    if (formats.vectors.length === 0) {
+      args.includeVectors = false;
+    }
+    if (formats.rasters.length === 0) {
+      args.includeRasters = false;
+    }
+  }
+  if (crsList) {
+    args.vectorCrsList = crsList;
+    args.rasterCrsList = crsList;
+  }
+  if (noRasters) {
+    args.includeRasters = false;
+  }
+  if (rastersOnly) {
+    args.includeVectors = false;
+    args.includeRasters = true;
+  }
+
   return args;
 };
 
@@ -219,7 +290,11 @@ const clip = (value: string, max: number): string =>
 
 const layerName = (prefix: string, testCase: SpatialTestCase): string => {
   const crsBit = testCase.crs.replace('EPSG:', '');
-  const full = `${prefix} ${testCase.format} ${testCase.profile.id} ${crsBit}`;
+  const middle =
+    testCase.kind === 'raster'
+      ? `raster ${testCase.format}`
+      : `${testCase.format} ${testCase.profile.id}`;
+  const full = `${prefix} ${middle} ${crsBit}`;
   const clipped = clip(full, NAME_MAX);
   if (clipped.length < NAME_MIN) {
     throw new Error(`Layer name is shorter than ${NAME_MIN} characters`);
@@ -228,19 +303,38 @@ const layerName = (prefix: string, testCase: SpatialTestCase): string => {
 };
 
 const plannedCases = (args: UploadArgs): SpatialTestCase[] =>
-  applySizeToCases(
-    buildSpatialTestCases({
-      formats: args.formats,
-      crsList: args.crsList,
+  applySizesToCases(
+    buildSuiteTestCases({
+      vectorFormats: args.vectorFormats,
+      rasterFormats: args.rasterFormats,
+      vectorCrsList: args.vectorCrsList,
+      rasterCrsList: args.rasterCrsList,
       only: args.only,
+      includeVectors: args.includeVectors,
+      includeRasters: args.includeRasters,
     }),
-    args.sizeBytes
+    args.sizeBytes,
+    args.rasterSizeBytes
   );
+
+const caseMediaType = (testCase: SpatialTestCase): string =>
+  testCase.kind === 'raster'
+    ? RASTER_FORMAT_INFO[testCase.format].mediaType
+    : SPATIAL_FORMAT_INFO[testCase.format].mediaType;
+
+const companionMediaType = (filename: string): string => {
+  const lower = filename.toLowerCase();
+  if (lower.endsWith('.prj')) {
+    return 'text/plain';
+  }
+  return 'application/octet-stream';
+};
 
 const uploadMapLayer = async ({
   client,
   filePath,
   filename,
+  companions,
   name,
   description,
   teamId,
@@ -249,6 +343,7 @@ const uploadMapLayer = async ({
   client: ConductorClient;
   filePath: string;
   filename: string;
+  companions: string[];
   name: string;
   description: string;
   teamId: string | undefined;
@@ -262,6 +357,16 @@ const uploadMapLayer = async ({
     body.set('teamId', teamId);
   }
   body.append('files', blob, filename);
+  for (const companion of companions) {
+    const companionPath = path.join(path.dirname(filePath), companion);
+    if (!fs.existsSync(companionPath)) {
+      throw new Error(`Missing companion file ${companion}`);
+    }
+    const companionBlob = await openAsBlob(companionPath, {
+      type: companionMediaType(companion),
+    });
+    body.append('files', companionBlob, companion);
+  }
 
   const response = await client.request('/api/map-assets', {
     method: 'POST',
@@ -313,10 +418,13 @@ const main = async (): Promise<void> => {
           apiUrl: args.apiUrl,
           teamId: args.teamId,
           sizeBytes: args.sizeBytes,
+          rasterSizeBytes: args.rasterSizeBytes,
           tokenConfigured: Boolean(token),
           cases: cases.map(testCase => ({
             id: testCase.id,
+            kind: testCase.kind,
             filename: testCase.filename,
+            companions: testCase.companionFilenames,
             layerName: layerName(args.namePrefix, testCase),
             format: testCase.format,
             crs: testCase.crs,
@@ -344,7 +452,7 @@ const main = async (): Promise<void> => {
   await client.exchange();
   await fs.promises.mkdir(args.stageDir, {recursive: true});
   log(
-    `uploading ${cases.length} layer(s) at ${formatBytes(args.sizeBytes)} GeoJSON each to ${args.apiUrl}`
+    `uploading ${cases.length} layer(s) (vector ${formatBytes(args.sizeBytes)}, raster ${formatBytes(args.rasterSizeBytes)}) to ${args.apiUrl}`
   );
 
   const failures: string[] = [];
@@ -352,12 +460,25 @@ const main = async (): Promise<void> => {
     const filePath = path.join(args.stageDir, testCase.filename);
     const name = layerName(args.namePrefix, testCase);
     const description = clip(testCase.description, DESCRIPTION_MAX);
-    const mediaType = SPATIAL_FORMAT_INFO[testCase.format].mediaType;
+    const mediaType = caseMediaType(testCase);
     log(`(${index + 1}/${cases.length}) ${testCase.id} -> ${name}`);
 
     try {
-      if (args.skipExisting && fs.existsSync(filePath)) {
+      const companionsReady = testCase.companionFilenames.every(companion =>
+        fs.existsSync(path.join(args.stageDir, companion))
+      );
+      if (args.skipExisting && fs.existsSync(filePath) && companionsReady) {
         log(`  reuse ${testCase.filename}`);
+      } else if (testCase.kind === 'raster') {
+        const written = await writeRasterTestCase({
+          cacheDir: args.rasterCacheDir,
+          outputDir: args.stageDir,
+          filename: testCase.filename,
+          format: testCase.format,
+          crs: testCase.crs,
+          targetBytes: args.rasterSizeBytes,
+        });
+        log(`  generated ${formatBytes(written.bytes)}`);
       } else {
         const generateArgs: CliArgs = {
           ...defaultCliArgs(),
@@ -378,10 +499,14 @@ const main = async (): Promise<void> => {
         );
       }
 
+      log(
+        `  files ${[testCase.filename, ...testCase.companionFilenames].join(', ')}`
+      );
       const uploaded = await uploadMapLayer({
         client,
         filePath,
         filename: testCase.filename,
+        companions: testCase.companionFilenames,
         name,
         description,
         teamId: args.teamId,
@@ -390,6 +515,11 @@ const main = async (): Promise<void> => {
       log(`  uploaded ${uploaded.id} (${uploaded.status})`);
       if (args.clean) {
         await fs.promises.rm(filePath, {force: true});
+        for (const companion of testCase.companionFilenames) {
+          await fs.promises.rm(path.join(args.stageDir, companion), {
+            force: true,
+          });
+        }
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

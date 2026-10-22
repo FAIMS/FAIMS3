@@ -66,9 +66,7 @@ describe('spatial tool performance args', () => {
       '-o',
       'out.pmtiles',
       '-z',
-      '14',
-      '--coalesce',
-      '--reorder',
+      '16',
       '--hilbert',
       '--drop-fraction-as-needed',
       '--drop-polygons',
@@ -85,6 +83,12 @@ describe('spatial tool performance args', () => {
       'features',
       'out.fgb',
     ]);
+    expect(tippecanoeVectorArgs('out.pmtiles', 'out.fgb', plan)).not.toContain(
+      '--coalesce'
+    );
+    expect(tippecanoeVectorArgs('out.pmtiles', 'out.fgb', plan)).not.toContain(
+      '--reorder'
+    );
     expect(tippecanoeVectorArgs('out.pmtiles', 'out.fgb', plan)).not.toContain(
       '--coalesce-smallest-as-needed'
     );

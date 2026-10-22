@@ -14,6 +14,8 @@ export const DEFAULT_GDAL_WARP_MULTI = true;
 export const VECTOR_INTERMEDIATE_FGB = 'normalized.fgb';
 export const VECTOR_INTERMEDIATE_GEOJSONSEQ = 'normalized.geojson';
 export const VECTOR_TILE_MAX_ZOOM = 14;
+/** Street-scale native tiles so cadastre is not overzoomed from z14. */
+export const VECTOR_POLYGON_TILE_MAX_ZOOM = 16;
 
 export type VectorOgrFormat = 'FlatGeobuf' | 'GeoJSONSeq';
 export type VectorGeometryFamily = 'point' | 'line' | 'polygon';
@@ -249,23 +251,22 @@ export function ogr2ogrGeometryArgs(
 }
 
 /**
- * Family-specific tippecanoe thinning. Polygons coalesce and simplify at
- * low zoom so dense cadastre does not drown a phone at z0–z9. Points
- * space out. Lines and mixed layers drop-densest.
+ * Family-specific tippecanoe thinning. Polygons drop (not coalesce) below
+ * `--base-zoom` so dense cadastre stays light at z0–z9 without dissolving
+ * street blocks. Attributes are stripped, so `--coalesce` would merge every
+ * neighbouring parcel. Points space out. Lines and mixed layers drop-densest.
  *
  * tippecanoe 2.78+ exits 100 when `--coalesce-smallest-as-needed` cannot
  * raise its area threshold ("Can't increase feature area threshold
  * further"). That branch does not fall through. `--drop-fraction-as-needed`
  * can always increase; `--extend-zooms-if-still-dropping` covers leftover
- * overflow at `-z 14`.
+ * overflow at the family max zoom.
  */
 function tippecanoeThinningArgs(family?: VectorGeometryFamily): string[] {
   if (family === 'polygon') {
-    // Attributes are already stripped. Merge same-attribute polygons, then
-    // thin them at zooms below --base-zoom so z0–z9 stay small.
+    // Drop tiny polygons at low zoom. Do not coalesce: empty attributes
+    // would dissolve adjacent parcels at every zoom, including street scale.
     return [
-      '--coalesce',
-      '--reorder',
       '--hilbert',
       '--drop-fraction-as-needed',
       '--drop-polygons',
@@ -292,6 +293,13 @@ function tippecanoeThinningArgs(family?: VectorGeometryFamily): string[] {
   return ['--drop-densest-as-needed', '--extend-zooms-if-still-dropping'];
 }
 
+/** Highest zoom tippecanoe is asked to build before extend-zooms. */
+export function vectorTileMaxZoom(family?: VectorGeometryFamily): number {
+  return family === 'polygon'
+    ? VECTOR_POLYGON_TILE_MAX_ZOOM
+    : VECTOR_TILE_MAX_ZOOM;
+}
+
 /** tippecanoe args: PMTiles out, family-specific thinning, JSON progress every 5s. */
 export function tippecanoeVectorArgs(
   pmtilesPath: string,
@@ -302,7 +310,7 @@ export function tippecanoeVectorArgs(
     '-o',
     pmtilesPath,
     '-z',
-    String(VECTOR_TILE_MAX_ZOOM),
+    String(vectorTileMaxZoom(plan.family)),
     ...tippecanoeThinningArgs(plan.family),
     '--force',
     '--json-progress',

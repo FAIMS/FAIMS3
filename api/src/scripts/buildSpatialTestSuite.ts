@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 /* eslint-disable n/no-process-exit */
 /**
- * Build a zip of profiled vector files across GeoJSON, KML, GeoPackage,
- * shapefile, and FileGDB.
+ * Build a zip of profiled vector files plus Sentinel-2 raster fixtures
+ * (GeoTIFF, JPEG+world, PNG+world, georeferenced PDF) in several CRSes.
  *
  * Usage (from api/):
  *   pnpm run build-spatial-test-suite -- --size 10MB
  *   pnpm run build-spatial-test-suite -- --formats kml,gpkg --crs EPSG:4326,EPSG:3857
  *   pnpm run build-spatial-test-suite -- --only flat-points,gdb
+ *   pnpm run build-spatial-test-suite -- --rasters-only --raster-size 50MB
  */
 import archiver from 'archiver';
 import * as fs from 'fs';
@@ -21,16 +22,24 @@ import {
   parseByteSize,
 } from './exampleGeoJSONGenerator';
 import {
-  applySizeToCases,
-  buildSpatialTestCases,
+  applySizesToCases,
+  buildSuiteTestCases,
   parseOnlyTokens,
+  parseSuiteFormats,
+  type ParsedSuiteFormats,
   type SpatialTestCase,
 } from './spatialTestProfiles';
+import {
+  RASTER_DEFAULT_CRS,
+  RASTER_FORMATS,
+  type RasterFormat,
+} from './spatialRasterFormats';
+import {writeRasterTestCase} from './spatialRasterConvert';
+import {DEFAULT_RASTER_SIZE_BYTES} from './spatialRasterSource';
 import {
   SPATIAL_FORMATS,
   WGS84,
   parseCrsList,
-  parseSpatialFormats,
   type SpatialFormat,
 } from './spatialTestFormats';
 
@@ -41,29 +50,43 @@ type SuiteArgs = {
   clean: boolean;
   skipExisting: boolean;
   sizeBytes: number;
+  rasterSizeBytes: number;
+  includeVectors: boolean;
+  includeRasters: boolean;
   output: string;
   stageDir: string | undefined;
-  formats: SpatialFormat[] | undefined;
-  crsList: string[] | undefined;
+  rasterCacheDir: string;
+  vectorFormats: SpatialFormat[] | undefined;
+  rasterFormats: RasterFormat[] | undefined;
+  vectorCrsList: string[] | undefined;
+  rasterCrsList: string[] | undefined;
   only: string[] | undefined;
 };
 
 const DEFAULT_SIZE_BYTES = 10 * 1024 * 1024;
 const DEFAULT_ZIP = path.resolve('../tmp/spatial-test-suite.zip');
+const DEFAULT_RASTER_CACHE = path.resolve('../tmp/spatial-raster-cache');
 
 const showHelp = (): void => {
   console.log(`Usage: pnpm run build-spatial-test-suite [options]
 
 Generate a cross-format map-layer fixture suite and zip it.
 
+Vector cases are generated. Raster cases download a pinned Sentinel-2 L2A
+RGB window (Earth Search, no auth) and write GeoTIFF / JPEG / PNG / PDF.
+
 Options:
-  --size <bytes>        Target GeoJSON size per case before conversion
-                        (default: 10MB)
-  --formats a,b         geojson,kml,gpkg,shapefile,gdb (default: all)
-  --crs EPSG:4326,...   CRS list (default: EPSG:4326). KML stays WGS84.
+  --size <bytes>        Target GeoJSON size per vector case (default: 10MB)
+  --raster-size <bytes> Target uncompressed RGB size per raster (default: 50MB)
+  --formats a,b         geojson,kml,gpkg,shapefile,gdb,geotiff,jpeg,png,pdf
+  --crs EPSG:4326,...   CRS for both kinds when set. Vector default EPSG:4326;
+                        raster default EPSG:4326,3857,28356. KML stays WGS84.
+  --no-rasters          Skip satellite raster cases
+  --rasters-only        Only satellite raster cases
   -o, --out <path>      Zip path (default: ../tmp/spatial-test-suite.zip)
   --dir <path>          Staging directory
-  --only token,token    Format, geometry profile id, or case id
+  --raster-cache <path> Shared native-window cache
+  --only token,token    Format, geometry profile id, raster, or case id
   --skip-existing       Reuse a staging file near the target size
   --clean               Delete staging after a successful zip
   --list                Print planned cases and exit
@@ -97,12 +120,22 @@ const parseArgs = (argv: string[]): SuiteArgs => {
     clean: false,
     skipExisting: false,
     sizeBytes: DEFAULT_SIZE_BYTES,
+    rasterSizeBytes: DEFAULT_RASTER_SIZE_BYTES,
+    includeVectors: true,
+    includeRasters: true,
     output: DEFAULT_ZIP,
     stageDir: undefined,
-    formats: undefined,
-    crsList: undefined,
+    rasterCacheDir: DEFAULT_RASTER_CACHE,
+    vectorFormats: undefined,
+    rasterFormats: undefined,
+    vectorCrsList: undefined,
+    rasterCrsList: undefined,
     only: undefined,
   };
+  let formats: ParsedSuiteFormats | undefined;
+  let crsList: string[] | undefined;
+  let noRasters = false;
+  let rastersOnly = false;
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -137,13 +170,33 @@ const parseArgs = (argv: string[]): SuiteArgs => {
     }
     if (arg === '--formats' || arg.startsWith('--formats=')) {
       const taken = takeValue(argv, i, '--formats');
-      args.formats = parseSpatialFormats(taken.value);
+      formats = parseSuiteFormats(taken.value);
       i = taken.next;
       continue;
     }
     if (arg === '--crs' || arg.startsWith('--crs=')) {
       const taken = takeValue(argv, i, '--crs');
-      args.crsList = parseCrsList(taken.value);
+      crsList = parseCrsList(taken.value);
+      i = taken.next;
+      continue;
+    }
+    if (arg === '--raster-size' || arg.startsWith('--raster-size=')) {
+      const taken = takeValue(argv, i, '--raster-size');
+      args.rasterSizeBytes = parseByteSize(taken.value);
+      i = taken.next;
+      continue;
+    }
+    if (arg === '--no-rasters') {
+      noRasters = true;
+      continue;
+    }
+    if (arg === '--rasters-only') {
+      rastersOnly = true;
+      continue;
+    }
+    if (arg === '--raster-cache' || arg.startsWith('--raster-cache=')) {
+      const taken = takeValue(argv, i, '--raster-cache');
+      args.rasterCacheDir = path.resolve(taken.value);
       i = taken.next;
       continue;
     }
@@ -171,25 +224,68 @@ const parseArgs = (argv: string[]): SuiteArgs => {
     throw new Error(`Unexpected argument: ${arg}`);
   }
 
+  if (formats) {
+    args.vectorFormats = formats.vectors.length > 0 ? formats.vectors : [];
+    args.rasterFormats = formats.rasters.length > 0 ? formats.rasters : [];
+    if (formats.vectors.length === 0) {
+      args.includeVectors = false;
+    }
+    if (formats.rasters.length === 0) {
+      args.includeRasters = false;
+    }
+  }
+  if (crsList) {
+    args.vectorCrsList = crsList;
+    args.rasterCrsList = crsList;
+  }
+  if (noRasters) {
+    args.includeRasters = false;
+  }
+  if (rastersOnly) {
+    args.includeVectors = false;
+    args.includeRasters = true;
+  }
+
   return args;
 };
 
 const plannedCases = (args: SuiteArgs): SpatialTestCase[] =>
-  applySizeToCases(
-    buildSpatialTestCases({
-      formats: args.formats,
-      crsList: args.crsList,
+  applySizesToCases(
+    buildSuiteTestCases({
+      vectorFormats: args.vectorFormats,
+      rasterFormats: args.rasterFormats,
+      vectorCrsList: args.vectorCrsList,
+      rasterCrsList: args.rasterCrsList,
       only: args.only,
+      includeVectors: args.includeVectors,
+      includeRasters: args.includeRasters,
     }),
-    args.sizeBytes
+    args.sizeBytes,
+    args.rasterSizeBytes
   );
 
-const existingNearTarget = (filePath: string, targetBytes: number): boolean => {
+const existingNearTarget = (
+  filePath: string,
+  targetBytes: number,
+  testCase: SpatialTestCase
+): boolean => {
   if (!fs.existsSync(filePath)) {
     return false;
   }
   const {size} = fs.statSync(filePath);
-  return size >= Math.min(targetBytes * 0.15, targetBytes) && size > 0;
+  if (size <= 0) {
+    return false;
+  }
+  const companionsPresent = testCase.companionFilenames.every(name =>
+    fs.existsSync(path.join(path.dirname(filePath), name))
+  );
+  if (!companionsPresent) {
+    return false;
+  }
+  if (testCase.kind === 'raster' && testCase.format !== 'geotiff') {
+    return true;
+  }
+  return size >= Math.min(targetBytes * 0.15, targetBytes);
 };
 
 const writeZip = async (stageDir: string, zipPath: string): Promise<number> => {
@@ -216,12 +312,23 @@ const log = (...args: unknown[]): void => {
 const generateCase = async (
   testCase: SpatialTestCase,
   filePath: string,
-  sizeBytes: number
+  args: SuiteArgs
 ): Promise<{bytes: number; features: number}> => {
+  if (testCase.kind === 'raster') {
+    const written = await writeRasterTestCase({
+      cacheDir: args.rasterCacheDir,
+      outputDir: path.dirname(filePath),
+      filename: testCase.filename,
+      format: testCase.format,
+      crs: testCase.crs,
+      targetBytes: args.rasterSizeBytes,
+    });
+    return {bytes: written.bytes, features: 0};
+  }
   const generateArgs: CliArgs = {
     ...defaultCliArgs(),
     ...testCase.profile.options,
-    sizeBytes,
+    sizeBytes: args.sizeBytes,
     featureCount: undefined,
     output: filePath,
     quiet: true,
@@ -261,11 +368,22 @@ const main = async (): Promise<void> => {
       JSON.stringify(
         {
           sizeBytes: args.sizeBytes,
-          formats: args.formats ?? [...SPATIAL_FORMATS],
-          crs: args.crsList ?? [WGS84],
+          rasterSizeBytes: args.rasterSizeBytes,
+          formats: {
+            vector: args.vectorFormats ?? [...SPATIAL_FORMATS],
+            raster: args.rasterFormats ?? [...RASTER_FORMATS],
+          },
+          crs: {
+            vector: args.vectorCrsList ?? [WGS84],
+            raster: args.rasterCrsList ?? [...RASTER_DEFAULT_CRS],
+          },
+          includeVectors: args.includeVectors,
+          includeRasters: args.includeRasters,
           cases: cases.map(testCase => ({
             id: testCase.id,
+            kind: testCase.kind,
             filename: testCase.filename,
+            companions: testCase.companionFilenames,
             format: testCase.format,
             crs: testCase.crs,
             description: testCase.description,
@@ -282,13 +400,15 @@ const main = async (): Promise<void> => {
     args.stageDir ?? path.join(path.dirname(args.output), 'spatial-test-suite');
   await fs.promises.mkdir(stageDir, {recursive: true});
   log(
-    `building ${cases.length} case(s) at ${formatBytes(args.sizeBytes)} GeoJSON each -> ${stageDir}`
+    `building ${cases.length} case(s) (vector ${formatBytes(args.sizeBytes)}, raster ${formatBytes(args.rasterSizeBytes)}) -> ${stageDir}`
   );
 
   const results: Array<{
     id: string;
+    kind: SpatialTestCase['kind'];
     filename: string;
-    format: SpatialFormat;
+    companions: string[];
+    format: SpatialTestCase['format'];
     crs: string;
     bytes: number;
     features: number;
@@ -297,15 +417,22 @@ const main = async (): Promise<void> => {
 
   for (const [index, testCase] of cases.entries()) {
     const filePath = path.join(stageDir, testCase.filename);
+    const targetBytes =
+      testCase.kind === 'raster' ? args.rasterSizeBytes : args.sizeBytes;
     log(
       `(${index + 1}/${cases.length}) ${testCase.id} -> ${testCase.filename}`
     );
-    if (args.skipExisting && existingNearTarget(filePath, args.sizeBytes)) {
+    if (
+      args.skipExisting &&
+      existingNearTarget(filePath, targetBytes, testCase)
+    ) {
       const {size} = fs.statSync(filePath);
       log(`  skip existing ${formatBytes(size)}`);
       results.push({
         id: testCase.id,
+        kind: testCase.kind,
         filename: testCase.filename,
+        companions: testCase.companionFilenames,
         format: testCase.format,
         crs: testCase.crs,
         bytes: size,
@@ -314,13 +441,17 @@ const main = async (): Promise<void> => {
       });
       continue;
     }
-    const generated = await generateCase(testCase, filePath, args.sizeBytes);
+    const generated = await generateCase(testCase, filePath, args);
     log(
-      `  wrote ${formatBytes(generated.bytes)} (${generated.features} features)`
+      testCase.kind === 'raster'
+        ? `  wrote ${formatBytes(generated.bytes)}${testCase.companionFilenames.length > 0 ? ` + ${testCase.companionFilenames.join(', ')}` : ''}`
+        : `  wrote ${formatBytes(generated.bytes)} (${generated.features} features)`
     );
     results.push({
       id: testCase.id,
+      kind: testCase.kind,
       filename: testCase.filename,
+      companions: testCase.companionFilenames,
       format: testCase.format,
       crs: testCase.crs,
       bytes: generated.bytes,
@@ -332,6 +463,7 @@ const main = async (): Promise<void> => {
   const manifest = {
     generatedAt: new Date().toISOString(),
     sizeBytes: args.sizeBytes,
+    rasterSizeBytes: args.rasterSizeBytes,
     generator: 'buildSpatialTestSuite',
     cases: results,
   };
