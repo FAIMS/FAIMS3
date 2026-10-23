@@ -35,8 +35,8 @@ function renderRadioGroupField({
         disabled={false}
         ElementProps={{
           options: [
-            {value: 'yes', label: 'Yes'},
-            {value: 'no', label: 'No'},
+            {id: 'yes', value: 'yes', label: 'Yes'},
+            {id: 'no', value: 'no', label: 'No'},
           ],
           expandedChecklist,
           enableOtherOption,

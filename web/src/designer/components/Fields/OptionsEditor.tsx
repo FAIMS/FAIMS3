@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
+  closestCenter,
   DndContext,
   DragEndEvent,
   PointerSensor,
-  closestCenter,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -15,11 +15,13 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import {CSS} from '@dnd-kit/utilities';
+import {ChoiceElementProps} from '@faims3/forms';
 import ArrowDropDownRoundedIcon from '@mui/icons-material/ArrowDropDownRounded';
 import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import InfoIcon from '@mui/icons-material/Info';
+import SyncIcon from '@mui/icons-material/Sync';
 import {
   Alert,
   Box,
@@ -34,6 +36,7 @@ import {
   FormLabel,
   Grid,
   IconButton,
+  InputAdornment,
   Radio,
   RadioGroup,
   Stack,
@@ -48,21 +51,15 @@ import {
   Typography,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
-import {ChoiceElementProps} from '@faims3/forms';
-import {designerHtmlInput, INPUT_LIMITS} from '../../lib/input-limits';
 import {useMemo, useState} from 'react';
+import {
+  findOptionReferences,
+  updateConditionReferences,
+} from '../../domain/conditions/conditionReferences';
+import {slugify} from '../../domain/notebook/ids';
+import {designerHtmlInput, INPUT_LIMITS} from '../../lib/input-limits';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
-
-/**
- * Subset of choice-field `component-parameters` this editor reads/writes. The
- * `ElementProps` shape is the shared {@link ChoiceElementProps} used by
- * RadioGroup, Select and MultiSelect in `@faims3/forms`; keys are optional here
- * because the editor patches them incrementally.
- */
-type ChoiceComponentParameters = {ElementProps?: Partial<ChoiceElementProps>};
-import {BaseFieldEditor} from './BaseFieldEditor';
-import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 import {fieldUpdated, sectionConditionChanged} from '../../store/slices/uiSpec';
 import {
   designerCancelButtonSx,
@@ -72,10 +69,56 @@ import {
   designerInfoIconSx,
 } from '../designer-style';
 import {DragHandle} from '../drag-handle';
-import {
-  findOptionReferences,
-  updateConditionReferences,
-} from '../../domain/conditions/conditionReferences';
+import {BaseFieldEditor} from './BaseFieldEditor';
+import {SimpleFieldWrapper} from './SimpleFieldWrapper';
+
+// ============================================================================
+// Types & Helpers
+// ============================================================================
+
+/**
+ * Subset of choice-field `component-parameters` this editor reads/writes. The
+ * `ElementProps` shape is the shared {@link ChoiceElementProps} used by
+ * RadioGroup, Select and MultiSelect in `@faims3/forms`; keys are optional here
+ * because the editor patches them incrementally.
+ */
+type ChoiceOption = ChoiceElementProps['options'][number];
+type ChoiceComponentParameters = {ElementProps?: Partial<ChoiceElementProps>};
+
+// Internal drag-and-drop identity, Other has no stored option ID.
+const OTHER_ROW_DND_ID = '__other__';
+
+/**
+ * Generate a unique option ID from its label.
+ * @param label - Option label used to generate the ID.
+ * @param usedIds - Set of existing and reserved IDs to avoid duplicates.
+ * @returns A unique ID within the maximum allowed length.
+ */
+const generateUniqueOptionId = (
+  label: string,
+  usedIds: Set<string>
+): string => {
+  // Generate an ID from the option label, respecting the length limit.
+  const base = (slugify(label) || 'option').slice(
+    0,
+    INPUT_LIMITS.ID_MAX_LENGTH
+  );
+
+  let id = base;
+  let suffix = 2;
+
+  // Add a numeric suffix if the generated ID is already in use.
+  while (usedIds.has(id)) {
+    const suffixText = `-${suffix++}`;
+    id = `${base.slice(0, INPUT_LIMITS.ID_MAX_LENGTH - suffixText.length)}${suffixText}`;
+  }
+
+  return id;
+};
+
+// ============================================================================
+// Sortable Row Components
+// ============================================================================
 
 /**
  * OptionsEditor is a component for managing a list of options for radio buttons or multi-select fields.
@@ -105,30 +148,29 @@ import {
  *
  */
 
-interface SortableItemProps {
-  // item ID
-  id: string;
-  // option information
-  option: {label: string; value: string};
-  // index in the list
-  index: number;
-  // should we show exclusive options control/column
-  showExclusiveOptions?: boolean;
-  // if so, which are the exclusive options
-  exclusiveOptions: string[];
-  // handler for toggling exclusive
-  onExclusiveToggle: (value: string) => void;
-  // to change an option value
-  onEdit: (value: string, index: number) => void;
-  // when removed
-  onRemove: (option: {label: string; value: string}) => void;
-  // when moved up/down
-  onMove: (index: number, direction: 'up' | 'down') => void;
-  // how many items in total?
-  totalItems: number;
-}
+// Keep the drag handle aligned to the left.
+const dragHandleCellSx = {
+  whiteSpace: 'nowrap',
+  py: 1,
+  pl: 1,
+  pr: {md: 1, lg: 2},
+} as const;
 
-const OTHER_OPTION_ID = '__other__';
+// exclusive and actions
+const compactCellSx = {
+  whiteSpace: 'nowrap',
+  py: 1,
+  px: {md: 1, lg: 2},
+} as const;
+
+// option text and option id
+const textCellSx = {
+  // Give Option text and Option ID equal shares of the available space.
+  width: '50%',
+  minWidth: 0,
+  py: 1,
+  overflowWrap: 'anywhere',
+} as const;
 
 interface OtherOptionRowProps {
   id: string;
@@ -166,7 +208,7 @@ const SortableOtherOptionRow = ({
       }}
       sx={optionRowSx}
     >
-      <TableCell sx={{width: {xs: 32, sm: 40}, py: 1}}>
+      <TableCell sx={dragHandleCellSx}>
         <DragHandle
           compact
           label="Drag Other option to reorder"
@@ -175,7 +217,7 @@ const SortableOtherOptionRow = ({
         />
       </TableCell>
 
-      <TableCell sx={{py: 1, minWidth: 0}}>
+      <TableCell sx={textCellSx}>
         <Tooltip title="Allows custom text input">
           <Typography
             sx={{
@@ -199,13 +241,14 @@ const SortableOtherOptionRow = ({
         </Tooltip>
       </TableCell>
 
-      {/* Empty exclusive checkbox column for alignment */}
-      {showExclusiveOptions && (
-        <TableCell align="center" sx={{py: 1, width: {xs: 96, sm: 140}}} />
-      )}
+      {/* Other is configured separately, it has no Other option ID. Empty column for alignment */}
+      <TableCell sx={textCellSx} />
 
-      <TableCell align="right" sx={{py: 1, width: {xs: 120, sm: 180}}}>
-        <Tooltip title="Move up">
+      {/* Empty exclusive checkbox column for alignment */}
+      {showExclusiveOptions && <TableCell align="center" sx={compactCellSx} />}
+
+      <TableCell align="right" sx={compactCellSx}>
+        <Tooltip title={isFirst ? 'Already at the top' : 'Move up'}>
           <span>
             <IconButton
               size="small"
@@ -219,7 +262,7 @@ const SortableOtherOptionRow = ({
             </IconButton>
           </span>
         </Tooltip>
-        <Tooltip title="Move down">
+        <Tooltip title={isLast ? 'Already at the bottom' : 'Move down'}>
           <span>
             <IconButton
               size="small"
@@ -233,6 +276,18 @@ const SortableOtherOptionRow = ({
             </IconButton>
           </span>
         </Tooltip>
+        {/* Reserve space for the Edit button to align actions. */}
+        <IconButton
+          size="small"
+          sx={{
+            visibility: 'hidden',
+            p: {xs: 0.25, sm: 0.5},
+          }}
+          aria-hidden
+          tabIndex={-1}
+        >
+          <EditIcon fontSize="small" />
+        </IconButton>
         <Tooltip title="Remove 'Other' option">
           <IconButton
             size="small"
@@ -259,6 +314,36 @@ const optionRowSx = {
   },
 } as const;
 
+// Allow option text and IDs to wrap within their columns.
+const optionTextSx = {
+  maxWidth: '100%',
+  fontSize: '0.875rem',
+  whiteSpace: 'normal',
+  overflowWrap: 'anywhere',
+} as const;
+
+interface SortableItemProps {
+  // item ID
+  id: string;
+  // Option data (ID, value, and label)
+  option: ChoiceOption;
+  // Whether the row is at either end of the displayed list.
+  isFirst: boolean;
+  isLast: boolean;
+  // should we show exclusive options control/column
+  showExclusiveOptions?: boolean;
+  // if so, which are the exclusive options
+  exclusiveOptions: string[];
+  // handler for toggling exclusive
+  onExclusiveToggle: (value: string) => void;
+  // Open the option editor
+  onEdit: (optionId: string) => void;
+  // when removed
+  onRemove: (option: ChoiceOption) => void;
+  // when moved up/down
+  onMove: (optionId: string, direction: 'up' | 'down') => void;
+}
+
 /**
  * Individual sortable item row component for the options table
  * Handles drag-and-drop functionality and row actions
@@ -269,14 +354,14 @@ const optionRowSx = {
 const SortableItem = ({
   id,
   option,
-  index,
+  isFirst,
+  isLast,
   showExclusiveOptions,
   exclusiveOptions,
   onExclusiveToggle,
   onEdit,
   onRemove,
   onMove,
-  totalItems,
 }: SortableItemProps) => {
   // Initialize drag-and-drop functionality
   const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
@@ -293,7 +378,7 @@ const SortableItem = ({
       sx={optionRowSx}
     >
       {/* Drag handle column */}
-      <TableCell sx={{width: {xs: 32, sm: 40}, py: 1}}>
+      <TableCell sx={dragHandleCellSx}>
         <DragHandle
           compact
           label="Drag option to reorder"
@@ -303,24 +388,22 @@ const SortableItem = ({
       </TableCell>
 
       {/* Option text column with tooltip */}
-      <TableCell sx={{py: 1, minWidth: 0}}>
+      <TableCell sx={textCellSx}>
         <Tooltip title={option.label}>
-          <Typography
-            sx={{
-              maxWidth: '100%',
-              fontSize: '0.875rem',
-              whiteSpace: 'normal',
-              overflowWrap: 'anywhere',
-            }}
-          >
-            {option.label}
-          </Typography>
+          <Typography sx={optionTextSx}>{option.label}</Typography>
+        </Tooltip>
+      </TableCell>
+
+      {/* Option ID column */}
+      <TableCell sx={textCellSx}>
+        <Tooltip title={option.id}>
+          <Typography sx={optionTextSx}>{option.id}</Typography>
         </Tooltip>
       </TableCell>
 
       {/* Optional exclusive checkbox column */}
       {showExclusiveOptions && (
-        <TableCell align="center" sx={{py: 1, width: {xs: 96, sm: 140}}}>
+        <TableCell align="center" sx={compactCellSx}>
           <Checkbox
             checked={exclusiveOptions.includes(option.value)}
             onChange={() => onExclusiveToggle(option.value)}
@@ -331,13 +414,13 @@ const SortableItem = ({
       )}
 
       {/* Action buttons column */}
-      <TableCell align="right" sx={{py: 1, width: {xs: 120, sm: 180}}}>
-        <Tooltip title="Move up">
+      <TableCell align="right" sx={compactCellSx}>
+        <Tooltip title={isFirst ? 'Already at the top' : 'Move up'}>
           <span>
             <IconButton
               size="small"
-              disabled={index === 0}
-              onClick={() => onMove(index, 'up')}
+              disabled={isFirst}
+              onClick={() => onMove(option.id, 'up')}
               sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.secondary'}}
             >
               <ArrowDropUpRoundedIcon
@@ -346,12 +429,12 @@ const SortableItem = ({
             </IconButton>
           </span>
         </Tooltip>
-        <Tooltip title="Move down">
+        <Tooltip title={isLast ? 'Already at the bottom' : 'Move down'}>
           <span>
             <IconButton
               size="small"
-              disabled={index === totalItems - 1}
-              onClick={() => onMove(index, 'down')}
+              disabled={isLast}
+              onClick={() => onMove(option.id, 'down')}
               sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.secondary'}}
             >
               <ArrowDropDownRoundedIcon
@@ -363,7 +446,7 @@ const SortableItem = ({
         <Tooltip title="Edit option">
           <IconButton
             size="small"
-            onClick={() => onEdit(option.label, index)}
+            onClick={() => onEdit(option.id)}
             sx={{p: {xs: 0.25, sm: 0.5}, color: 'success.main'}}
           >
             <EditIcon fontSize="small" />
@@ -383,12 +466,200 @@ const SortableItem = ({
   );
 };
 
+// ============================================================================
+// Edit Option Dialog
+// ============================================================================
+
+/** Editable option values, keeping the original ID for lookup. */
+type EditingOption = {
+  originalId: string;
+  id: string;
+  label: string;
+};
+
+/** Condition references and whether to update them on rename. */
+type RenameDialogState = {
+  references: string[];
+  updateConditions: boolean;
+};
+
+interface EditOptionDialogProps {
+  // Option currently being edited, or null when closed.
+  editingOption: EditingOption | null;
+  setEditingOption: React.Dispatch<React.SetStateAction<EditingOption | null>>;
+  // All options, used to generate a unique ID
+  options: ChoiceOption[];
+  // Original label, used to detect renaming.
+  originalLabel?: string;
+  // Condition references and update preference.
+  renameDialogState: RenameDialogState | null;
+  // Update the condition reference preference.
+  setRenameDialogState: React.Dispatch<
+    React.SetStateAction<RenameDialogState | null>
+  >;
+  // validation error to display.
+  errorMessage: string;
+  setErrorMessage: React.Dispatch<React.SetStateAction<string>>;
+  // Save the edited option.
+  onSave: () => void;
+  // Close the dialog.
+  onClose: () => void;
+  // ean up state after the dialog closes.
+  onExited: () => void;
+}
+
+/** Dialog for editing an option's label and ID. */
+const EditOptionDialog = ({
+  editingOption,
+  setEditingOption,
+  options,
+  originalLabel,
+  renameDialogState,
+  setRenameDialogState,
+  errorMessage,
+  setErrorMessage,
+  onSave,
+  onClose,
+  onExited,
+}: EditOptionDialogProps) => {
+  // Generate a unique ID without including the option being edited.
+  const suggestedId = editingOption
+    ? generateUniqueOptionId(
+        editingOption.label,
+        new Set([
+          ...options
+            .filter(option => option.id !== editingOption.originalId)
+            .map(option => option.id),
+          OTHER_ROW_DND_ID,
+        ])
+      )
+    : '';
+
+  const showSync = !!editingOption && suggestedId !== editingOption.id;
+
+  return (
+    <Dialog
+      open={!!editingOption}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      slotProps={{
+        transition: {onExited},
+      }}
+    >
+      <DialogTitle sx={designerDialogTitleSx}>Edit Option</DialogTitle>
+
+      <DialogContent sx={designerDialogContentSx}>
+        <TextField
+          autoFocus
+          margin="dense"
+          label="Display label"
+          fullWidth
+          value={editingOption?.label ?? ''}
+          onChange={e => {
+            setEditingOption(previous =>
+              previous ? {...previous, label: e.target.value} : null
+            );
+            setErrorMessage('');
+          }}
+          slotProps={{
+            htmlInput: designerHtmlInput(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
+          }}
+        />
+
+        <TextField
+          margin="dense"
+          label="Option ID"
+          fullWidth
+          value={editingOption?.id ?? ''}
+          onChange={e =>
+            setEditingOption(previous =>
+              previous ? {...previous, id: e.target.value} : null
+            )
+          }
+          slotProps={{
+            htmlInput: designerHtmlInput(INPUT_LIMITS.ID_MAX_LENGTH),
+            input: {
+              endAdornment: showSync ? (
+                <InputAdornment position="end">
+                  <Tooltip title="Sync ID with label">
+                    <IconButton
+                      aria-label="Sync ID with label"
+                      size="small"
+                      edge="end"
+                      onClick={() => {
+                        setEditingOption(previous =>
+                          previous ? {...previous, id: suggestedId} : null
+                        );
+                        setErrorMessage('');
+                      }}
+                    >
+                      <SyncIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </InputAdornment>
+              ) : undefined,
+            },
+          }}
+        />
+
+        {errorMessage && (
+          <Alert severity="error" sx={{mt: 2}}>
+            {errorMessage}
+          </Alert>
+        )}
+        {renameDialogState && editingOption?.label.trim() !== originalLabel && (
+          <Alert severity="warning" sx={{mt: 2}}>
+            <Typography variant="body2" sx={{mb: 1}}>
+              The option "<strong>{originalLabel}</strong>" is used in:
+            </Typography>
+            <ul>
+              {renameDialogState.references.map((ref, index) => (
+                <li key={index}>{ref}</li>
+              ))}
+            </ul>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={renameDialogState.updateConditions}
+                  onChange={e =>
+                    setRenameDialogState(previous =>
+                      previous
+                        ? {...previous, updateConditions: e.target.checked}
+                        : null
+                    )
+                  }
+                />
+              }
+              label="Automatically update conditions to use the new option name"
+              sx={{mt: 1}}
+            />
+          </Alert>
+        )}
+      </DialogContent>
+
+      <DialogActions>
+        <Button sx={designerCancelButtonSx} onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={onSave} color="primary">
+          Save
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+// ============================================================================
+// Main Component
+// ============================================================================
+
 type CombinedRow =
-  | {id: string; type: 'option'; option: {label: string; value: string}}
+  | {id: string; type: 'option'; option: ChoiceOption}
   | {id: string; type: 'other'};
 
 /**
- * Select / MultiSelect / Radio options table: reorder (dnd), edit, exclusive sets, condition ref updates.
+ * Choice options table: reorder options and edit IDs while preserving label rename behaviour.
  */
 export const OptionsEditor = ({
   fieldName,
@@ -409,9 +680,7 @@ export const OptionsEditor = ({
   const allFields = useAppSelector(
     state => state.notebook.uiSpec.present.fields
   );
-  const allFviews = useAppSelector(
-    state => state.notebook.uiSpec.present.views
-  );
+  const allViews = useAppSelector(state => state.notebook.uiSpec.present.views);
 
   const dispatch = useAppDispatch();
 
@@ -432,24 +701,40 @@ export const OptionsEditor = ({
   const [errorMessage, setErrorMessage] = useState('');
   const [deleteDialogRefs, setDeleteDialogRefs] = useState<string[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editingOption, setEditingOption] = useState<{
-    value: string;
-    index: number;
-  } | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const [lastEditedOption, setLastEditedOption] = useState<string | null>(null);
+
+  const [editingOption, setEditingOption] = useState<EditingOption | null>(
+    null
+  );
+
   const addOptionHasError = Boolean(errorMessage) && !editingOption;
 
-  // State for showing the alert inside the Edit Option dialog if the option is used in a condition
-  const [renameDialogState, setRenameDialogState] = useState<{
-    references: string[];
-    updateConditions: boolean;
-  } | null>(null);
+  const [renameDialogState, setRenameDialogState] =
+    useState<RenameDialogState | null>(null);
 
-  const options: Array<{label: string; value: string}> =
-    elementProps?.options || [];
+  // Preserve existing IDs and generate unique IDs for options with no ID.
+  // The Other option is stored separately, not included in either options or elementProps?.options
+  const options: ChoiceOption[] = useMemo(() => {
+    const source = elementProps?.options ?? [];
+
+    // Collect existing IDs and reserve the internal Other drag ID.
+    const usedIds = new Set(source.map(option => option.id).filter(Boolean));
+    usedIds.add(OTHER_ROW_DND_ID);
+
+    return source.map(option => {
+      // Keep existing option IDs unchanged.
+      if (option.id) return option;
+      // Generate and reserve a unique ID for this option.
+      const id = generateUniqueOptionId(option.label, usedIds);
+      usedIds.add(id);
+      return {...option, id};
+    });
+  }, [elementProps?.options]);
+
+  // Find the original option being edited by its ID.
+  const editingOriginal = options.find(o => o.id === editingOption?.originalId);
   const exclusiveOptions: string[] = elementProps?.exclusiveOptions || [];
   const enableOther: boolean = elementProps?.enableOtherOption ?? false;
+  // Use the saved Other position, or default to the end of the options list.
   const otherOptionPosition: number =
     elementProps?.otherOptionPosition ?? options.length;
 
@@ -458,64 +743,86 @@ export const OptionsEditor = ({
    * This combined list is thee source of truth for sortable order.
    */
   const combinedRows: CombinedRow[] = useMemo(() => {
-    const rows: CombinedRow[] = [];
-    let insertedOther = false;
+    // Create rows for regular options.
+    const rows: CombinedRow[] = options.map(option => ({
+      id: option.id,
+      type: 'option',
+      option,
+    }));
 
-    if (!enableOther) {
-      return options.map(o => ({id: o.value, type: 'option', option: o}));
-    }
-
-    const safeOtherPos = Math.max(
-      0,
-      Math.min(otherOptionPosition, options.length)
-    );
-
-    for (let i = 0; i <= options.length; i++) {
-      if (i === safeOtherPos && !insertedOther) {
-        rows.push({id: OTHER_OPTION_ID, type: 'other'});
-        insertedOther = true;
-      }
-      if (i < options.length) {
-        rows.push({id: options[i].value, type: 'option', option: options[i]});
-      }
-    }
-
-    if (!insertedOther) {
-      rows.push({id: OTHER_OPTION_ID, type: 'other'});
+    if (enableOther) {
+      // Keep Other's position within the available range.
+      const safeOtherPos = Math.max(
+        0,
+        Math.min(otherOptionPosition, rows.length)
+      );
+      // Insert Other at its configured position.
+      rows.splice(safeOtherPos, 0, {
+        id: OTHER_ROW_DND_ID,
+        type: 'other',
+      });
     }
 
     return rows;
   }, [enableOther, options, otherOptionPosition]);
 
+  //
+  // Validation & Actions
+  //
+
   /**
    * Validates option text for duplicates and empty values
    * @param text - Option text to validate
-   * @param currentIndex - Index of option being edited (for duplicate check)
+   * @param currentId - ID of the option being edited (excluded from duplicate checks)
    * @returns Error message string or null if valid
    */
   const validateOptionText = (
     text: string,
-    currentIndex?: number
+    currentId?: string
   ): string | null => {
-    if (text.trim().length === 0) {
-      return 'Option text cannot be empty';
-    }
+    const normalized = text.trim().toLowerCase();
+    if (!normalized) return 'Option text cannot be empty';
 
-    const duplicateExists = options.some((element, idx: number) => {
-      if (currentIndex !== undefined && idx === currentIndex) return false;
-      return element.label.toLowerCase() === text.toLowerCase();
-    });
+    const duplicateExists = options.some(
+      option =>
+        option.id !== currentId &&
+        option.label.trim().toLowerCase() === normalized
+    );
 
     return duplicateExists ? 'This option already exists in the list' : null;
   };
 
+  /** IDs are unique, non empty and must not clash with the special Other row. */
+  const validateOptionId = (id: string, currentId?: string): string | null => {
+    if (!id) return 'Option ID cannot be empty';
+    if (id.length > INPUT_LIMITS.ID_MAX_LENGTH)
+      return `Option ID must be ${INPUT_LIMITS.ID_MAX_LENGTH} characters or fewer`;
+    if (id === OTHER_ROW_DND_ID)
+      return 'This option ID is reserved. Please choose a different ID.';
+    if (options.some(o => o.id === id && o.id !== currentId)) {
+      return 'An option with this ID already exists. Please choose a different ID.';
+    }
+    return null;
+  };
+
+  /** Generate a unique ID for a new option. */
+  const generateOptionId = (label: string): string => {
+    // Collect existing option IDs and reserve the internal Other drag ID.
+    const usedIds = new Set(options.map(option => option.id));
+    usedIds.add(OTHER_ROW_DND_ID);
+
+    // Generate a unique ID without changing existing options.
+    return generateUniqueOptionId(label, usedIds);
+  };
+
   /**
-   * Updates field state in Redux store
-   * @param updatedOptions - New options array
-   * @param updatedExclusiveOptions - New exclusive options array
+   * Updates the field's options and related settings in Redux.
+   * @param updatedOptions - Updated options array.
+   * @param updatedExclusiveOptions - Updated exclusive options array.
+   * @param updatedOtherOptionPosition - Optional new position for Other; defaults to its current position.
    */
   const updateField = (
-    updatedOptions: Array<{label: string; value: string}>,
+    updatedOptions: ChoiceOption[],
     updatedExclusiveOptions: string[],
     updatedOtherOptionPosition?: number
   ) => {
@@ -524,7 +831,6 @@ export const OptionsEditor = ({
       'component-parameters'
     ] as ChoiceComponentParameters;
 
-    // Update field with new options and handle radio button IDs
     newParams.ElementProps = {
       ...newParams.ElementProps,
       options: updatedOptions.map((o, index) => {
@@ -537,28 +843,32 @@ export const OptionsEditor = ({
         return o;
       }),
       exclusiveOptions: updatedExclusiveOptions,
-      ...(enableOther
-        ? {
-            otherOptionPosition:
-              updatedOtherOptionPosition !== undefined
-                ? updatedOtherOptionPosition
-                : otherOptionPosition,
-          }
-        : updatedOtherOptionPosition !== undefined
-          ? {otherOptionPosition: updatedOtherOptionPosition}
-          : {}),
     };
 
+    // Preserve Other's position when enabled; otherwise remove it.
+    if (enableOther) {
+      newParams.ElementProps.otherOptionPosition =
+        updatedOtherOptionPosition ?? otherOptionPosition;
+    } else {
+      delete newParams.ElementProps.otherOptionPosition;
+    }
+
     dispatch(fieldUpdated({fieldName, newField}));
+
+    return newField;
   };
 
   /**
    * Used when user chooses to auto-update references in conditions
    */
-  const updateConditions = (oldValue: string, newValue: string) => {
+  const updateConditions = (
+    oldValue: string,
+    newValue: string,
+    updatedField: FieldType
+  ) => {
     // Field-level conditions
     for (const fId in allFields) {
-      const fieldDef = allFields[fId];
+      const fieldDef = fId === fieldName ? updatedField : allFields[fId];
       if (!fieldDef.condition) continue;
 
       const updatedCondition = updateConditionReferences(
@@ -579,8 +889,8 @@ export const OptionsEditor = ({
     }
 
     // Section-level conditions
-    for (const vId in allFviews) {
-      const sectionDef = allFviews[vId];
+    for (const vId in allViews) {
+      const sectionDef = allViews[vId];
       if (!sectionDef.condition) continue;
 
       const updatedCondition = updateConditionReferences(
@@ -598,76 +908,50 @@ export const OptionsEditor = ({
     }
   };
 
-  /**
-   * Handles drag-and-drop reordering for regular options only.
-   * "Other" option uses arrow buttons for positioning (not drag-and-drop).
-   */
-  const handleDragEnd = (event: DragEndEvent) => {
-    const {active, over} = event;
-
-    if (!over) return;
-
-    if (active.id === over.id) return;
-
-    const activeId = String(active.id);
-    const overId = String(over.id);
-
-    // Only handle drag if we have a valid drop target and it's different from source
-    // if (!over || active.id === over.id) return;
-
-    const oldIndex = combinedRows.findIndex(r => r.id === activeId);
-    const newIndex = combinedRows.findIndex(r => r.id === overId);
-
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    const newCombined = arrayMove(combinedRows, oldIndex, newIndex);
-
-    // Rebuild options array from the combined order (excluding Other)
-    const optionMap = new Map(options.map(o => [o.value, o]));
-    const newOptions = newCombined
-      .filter(r => r.type === 'option')
-      .map(r => optionMap.get(r.id))
-      .filter(Boolean) as Array<{label: string; value: string}>;
-
-    // Safety: if mapping failed, do nothing
+  /** Save the combined display order back into regular options and Other's position. */
+  const saveCombinedOrder = (rows: CombinedRow[]) => {
+    // Extract regular options in their new order, excluding Other.
+    const newOptions = rows.flatMap(row =>
+      row.type === 'option' ? [row.option] : []
+    );
+    // Ensure no regular options were lost during reordering.
     if (newOptions.length !== options.length) return;
 
-    const newOtherOptionPosition = enableOther
-      ? newCombined.findIndex(r => r.type === 'other')
+    // Find Other's new position if it is enabled.
+    const newOtherPosition = enableOther
+      ? rows.findIndex(row => row.type === 'other')
       : undefined;
+    // Do not save if the enabled Other row is missing.
+    if (enableOther && newOtherPosition === -1) return;
 
-    updateField(newOptions, exclusiveOptions, newOtherOptionPosition);
+    updateField(newOptions, exclusiveOptions, newOtherPosition);
   };
 
-  /**
-   * Moves option up or down using arrow buttons
-   */
-  const moveOption = (index: number, direction: 'up' | 'down') => {
-    const newOptions = [...options];
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
+  /** Move any visible row one place, including across the special Other row. */
+  const moveRow = (rowId: string, direction: 'up' | 'down') => {
+    const index = combinedRows.findIndex(row => row.id === rowId);
+    if (index < 0) return;
 
-    if (newIndex >= 0 && newIndex < options.length) {
-      [newOptions[index], newOptions[newIndex]] = [
-        newOptions[newIndex],
-        newOptions[index],
-      ];
-      updateField(newOptions, exclusiveOptions);
-    }
+    const nextIndex = index + (direction === 'up' ? -1 : 1);
+    if (nextIndex < 0 || nextIndex >= combinedRows.length) return;
+
+    const newCombined = arrayMove(combinedRows, index, nextIndex);
+    saveCombinedOrder(newCombined);
   };
 
-  /**
-   * Nudges the "Other" row up/down in the combined list. Other is never pinned —
-   * its position is tracked independently via otherOptionPosition.
-   */
-  const moveOtherOption = (direction: 'up' | 'down') => {
-    if (!enableOther) return;
-    const current = Math.max(0, Math.min(otherOptionPosition, options.length));
-    const next =
-      direction === 'up'
-        ? Math.max(0, current - 1)
-        : Math.min(options.length, current + 1);
-    if (next === current) return;
-    updateField(options, exclusiveOptions, next);
+  /** Drag-and-drop uses exactly the same ordering rules as the arrow buttons. */
+  const handleDragEnd = ({active, over}: DragEndEvent) => {
+    // Only handle drag if we have a valid drop target and it's different from source
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = combinedRows.findIndex(
+      row => row.id === String(active.id)
+    );
+    const newIndex = combinedRows.findIndex(row => row.id === String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const newCombined = arrayMove(combinedRows, oldIndex, newIndex);
+    saveCombinedOrder(newCombined);
   };
 
   /**
@@ -680,8 +964,16 @@ export const OptionsEditor = ({
     if (error) {
       setErrorMessage(error);
     } else {
-      const newOptionObj = {label: newOption, value: newOption};
+      const label = newOption.trim();
+      const newOptionObj: ChoiceOption = {
+        id: generateOptionId(label),
+        // label-as-value default
+        value: label,
+        label,
+      };
+
       updateField([...options, newOptionObj], exclusiveOptions);
+
       setErrorMessage('');
       setNewOption('');
     }
@@ -701,11 +993,11 @@ export const OptionsEditor = ({
    * Removes an option from the list.
    * If the option is used in any condition, show a warning dialog instead.
    */
-  const removeOption = (option: {label: string; value: string}) => {
+  const removeOption = (option: ChoiceOption) => {
     // Check if this option is referenced in any condition.
     const references = findOptionReferences(
       allFields,
-      allFviews,
+      allViews,
       fieldName,
       option.value
     );
@@ -716,86 +1008,99 @@ export const OptionsEditor = ({
       setIsDeleteDialogOpen(true);
     } else {
       // Option is not used: proceed with deletion.
-      const newOptions = options.filter(o => o.value !== option.value);
+      const newOptions = options.filter(o => o.id !== option.id);
       const newExclusiveOptions = exclusiveOptions.filter(
         eo => eo !== option.value
       );
-      updateField(newOptions, newExclusiveOptions);
+
+      // Removing an option before Other shifts its position left.
+      const removedIndex = options.findIndex(o => o.id === option.id);
+      const nextOtherPosition =
+        enableOther && removedIndex >= 0 && removedIndex < otherOptionPosition
+          ? otherOptionPosition - 1
+          : undefined;
+
+      updateField(newOptions, newExclusiveOptions, nextOtherPosition);
     }
   };
 
-  /**
-   * Open the dialog to edit an existing option
-   */
-  const handleOpenEditDialog = (value: string, index: number) => {
-    setEditingOption({value, index});
-    setEditValue(value);
-    setLastEditedOption(value);
+  /** Open the editor and check references to the option's stored value. */
+  const handleOpenEditDialog = (optionId: string) => {
+    const option = options.find(o => o.id === optionId);
+    if (!option) return;
 
-    // Check if this option is referenced in conditions
+    setEditingOption({
+      originalId: option.id,
+      id: option.id,
+      label: option.label,
+    });
+    setErrorMessage('');
+
     const references = findOptionReferences(
       allFields,
-      allFviews,
+      allViews,
       fieldName,
-      value
+      option.value
     );
-    if (references.length > 0) {
-      setRenameDialogState({references, updateConditions: true});
-    } else {
-      setRenameDialogState(null);
-    }
+    setRenameDialogState(
+      references.length > 0 ? {references, updateConditions: true} : null
+    );
   };
 
-  /**
-   * Actually rename the option in the Redux store (does not alter conditions)
-   */
-  const doRenameOption = (newValue: string, index: number) => {
-    const newOptions = [...options];
-    newOptions[index] = {label: newValue, value: newValue};
-
-    const newField: FieldType = {
-      ...field,
-      'component-parameters': {
-        ...field['component-parameters'],
-        ElementProps: {
-          ...elementProps,
-          options: newOptions,
-        },
-      },
-    };
-
-    dispatch(fieldUpdated({fieldName, newField}));
-  };
-
-  /**
-   * Finalizes the edit, optionally updates conditions
-   */
+  /** Preserve label-to-value renaming; ID-only edits leave value untouched. */
   const handleEditSubmit = () => {
     if (!editingOption) return;
 
-    const newValue = editValue.trim();
-    if (!newValue || editingOption.value === newValue) {
-      setEditingOption(null);
-      return;
-    }
+    const original = editingOriginal;
+    if (!original) return;
 
-    // Validate before renaming
-    const error = validateOptionText(newValue, editingOption.index);
+    const newId = editingOption.id.trim();
+    const newLabel = editingOption.label.trim();
+
+    const error =
+      validateOptionText(newLabel, original.id) ||
+      validateOptionId(newId, original.id);
     if (error) {
       setErrorMessage(error);
       return;
     }
 
-    // Rename in Redux
-    doRenameOption(newValue, editingOption.index);
+    const labelChanged = newLabel !== original.label;
+    const valueChanged = labelChanged && newLabel !== original.value;
+    const nextOptions = options.map(option =>
+      option.id === original.id
+        ? {
+            ...option,
+            id: newId,
+            label: newLabel,
+            // As before, renaming Option Text also updates its stored value.
+            value: labelChanged ? newLabel : option.value,
+          }
+        : option
+    );
 
-    // If chosen, also update references in conditions
-    if (renameDialogState?.updateConditions) {
-      updateConditions(editingOption.value, newValue);
+    // Keep exclusive selection working when its stored value is renamed.
+    const nextExclusiveOptions = valueChanged
+      ? exclusiveOptions.map(value =>
+          value === original.value ? newLabel : value
+        )
+      : exclusiveOptions;
+
+    // Should update field or section level conditions
+    const shouldUpdateConditions =
+      valueChanged && renameDialogState?.updateConditions;
+
+    // Save the updated options and exclusive selections.
+    const updatedField = updateField(nextOptions, nextExclusiveOptions);
+
+    // Conditions reference option.value, not option.id.
+    if (shouldUpdateConditions) {
+      updateConditions(original.value, newLabel, updatedField);
     }
 
-    // Close dialog
     setEditingOption(null);
+    setRenameDialogState(null);
+    setErrorMessage('');
   };
 
   /**
@@ -820,18 +1125,24 @@ export const OptionsEditor = ({
   /**
    * "Other" option feature
    */
-  const toggleEnableOtherOption = () => {
+  const setEnableOtherOption = (newEnable: boolean) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
     const newParams = newField[
       'component-parameters'
     ] as ChoiceComponentParameters;
-    const newValue = !elementProps?.enableOtherOption;
 
     newParams.ElementProps = {
       ...(newParams.ElementProps ?? {}),
-      enableOtherOption: newValue,
-      otherOptionPosition: undefined,
+      enableOtherOption: newEnable,
     };
+
+    if (newEnable) {
+      // Place Other at the end when enabled.
+      newParams.ElementProps.otherOptionPosition = options.length;
+    } else {
+      // Remove Other's position when disabled.
+      delete newParams.ElementProps.otherOptionPosition;
+    }
 
     dispatch(fieldUpdated({fieldName, newField}));
   };
@@ -882,10 +1193,7 @@ export const OptionsEditor = ({
                     overflow: 'auto',
                   }}
                 >
-                  <Table
-                    size="small"
-                    sx={{tableLayout: 'fixed', width: '100%'}}
-                  >
+                  <Table size="small" sx={{tableLayout: 'auto', width: '100%'}}>
                     <TableHead>
                       <TableRow
                         sx={{
@@ -902,14 +1210,12 @@ export const OptionsEditor = ({
                           },
                         }}
                       >
-                        {/* drag-handle column — empty header */}
-                        <TableCell sx={{width: {xs: 32, sm: 40}}} />
-                        <TableCell>Option text</TableCell>
+                        {/* Compact controls leave more room for both text columns. */}
+                        <TableCell sx={compactCellSx} />
+                        <TableCell sx={textCellSx}>Option text</TableCell>
+                        <TableCell sx={textCellSx}>Option ID</TableCell>
                         {showExclusiveOptions && (
-                          <TableCell
-                            align="center"
-                            sx={{width: {xs: 96, sm: 140}}}
-                          >
+                          <TableCell align="center" sx={compactCellSx}>
                             <Box
                               sx={{
                                 display: 'inline-flex',
@@ -929,10 +1235,7 @@ export const OptionsEditor = ({
                             </Box>
                           </TableCell>
                         )}
-                        <TableCell
-                          align="right"
-                          sx={{width: {xs: 120, sm: 180}}}
-                        >
+                        <TableCell align="right" sx={compactCellSx}>
                           Actions
                         </TableCell>
                       </TableRow>
@@ -951,37 +1254,35 @@ export const OptionsEditor = ({
                             if (row.type === 'other') {
                               return (
                                 <SortableOtherOptionRow
-                                  key={OTHER_OPTION_ID}
-                                  id={OTHER_OPTION_ID}
+                                  key={OTHER_ROW_DND_ID}
+                                  id={OTHER_ROW_DND_ID}
                                   showExclusiveOptions={showExclusiveOptions}
                                   isFirst={rowIdx === 0}
                                   isLast={rowIdx === combinedRows.length - 1}
-                                  onMoveUp={() => moveOtherOption('up')}
-                                  onMoveDown={() => moveOtherOption('down')}
-                                  onRemove={toggleEnableOtherOption}
+                                  onMoveUp={() =>
+                                    moveRow(OTHER_ROW_DND_ID, 'up')
+                                  }
+                                  onMoveDown={() =>
+                                    moveRow(OTHER_ROW_DND_ID, 'down')
+                                  }
+                                  onRemove={() => setEnableOtherOption(false)}
                                 />
                               );
                             }
 
-                            const optionIndex = options.findIndex(
-                              o => o.value === row.option.value
-                            );
-
                             return (
                               <SortableItem
-                                key={row.option.value}
-                                id={row.option.value}
+                                key={row.option.id}
+                                id={row.option.id}
                                 option={row.option}
-                                index={optionIndex}
+                                isFirst={rowIdx === 0}
+                                isLast={rowIdx === combinedRows.length - 1}
                                 showExclusiveOptions={showExclusiveOptions}
                                 exclusiveOptions={exclusiveOptions}
                                 onExclusiveToggle={handleExclusiveToggle}
-                                onEdit={(val, idx) =>
-                                  handleOpenEditDialog(val, idx)
-                                }
+                                onEdit={handleOpenEditDialog}
                                 onRemove={removeOption}
-                                onMove={moveOption}
-                                totalItems={options.length}
+                                onMove={moveRow}
                               />
                             );
                           })}
@@ -1067,7 +1368,7 @@ export const OptionsEditor = ({
                         variant="outlined"
                         color="primary"
                         size="small"
-                        onClick={toggleEnableOtherOption}
+                        onClick={() => setEnableOtherOption(true)}
                         disabled={enableOther}
                         sx={{
                           width: {xs: '100%', sm: 'auto'},
@@ -1158,78 +1459,23 @@ export const OptionsEditor = ({
       </Box>
 
       {/* Edit option dialog */}
-      <Dialog
-        open={!!editingOption}
+      <EditOptionDialog
+        editingOption={editingOption}
+        setEditingOption={setEditingOption}
+        options={options}
+        originalLabel={editingOriginal?.label}
+        renameDialogState={renameDialogState}
+        setRenameDialogState={setRenameDialogState}
+        errorMessage={errorMessage}
+        setErrorMessage={setErrorMessage}
+        onSave={handleEditSubmit}
         onClose={() => setEditingOption(null)}
-        slotProps={{
-          transition: {
-            onExited: () => {
-              setRenameDialogState(null);
-              setLastEditedOption(null);
-            },
-          },
+        onExited={() => {
+          setRenameDialogState(null);
+          setErrorMessage('');
         }}
-      >
-        <DialogTitle sx={designerDialogTitleSx}>Edit Option</DialogTitle>
-        <DialogContent sx={designerDialogContentSx}>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Option Text"
-            fullWidth
-            value={editValue}
-            onChange={e => setEditValue(e.target.value)}
-            slotProps={{
-              htmlInput: designerHtmlInput(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
-            }}
-          />
-          {errorMessage && (
-            <Alert severity="error" sx={{mt: 2}}>
-              {errorMessage}
-            </Alert>
-          )}
+      />
 
-          {renameDialogState && (
-            <Alert severity="warning" sx={{mt: 2}}>
-              <Typography variant="body2" sx={{mb: 1}}>
-                The option "<strong>{lastEditedOption}</strong>" is used in:
-              </Typography>
-              <ul>
-                {renameDialogState.references.map((r, idx) => (
-                  <li key={idx}>{r}</li>
-                ))}
-              </ul>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={renameDialogState.updateConditions}
-                    onChange={e =>
-                      setRenameDialogState(prev =>
-                        prev
-                          ? {...prev, updateConditions: e.target.checked}
-                          : null
-                      )
-                    }
-                  />
-                }
-                label="Automatically update conditions to use the new option name"
-                sx={{mt: 1}}
-              />
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            sx={designerCancelButtonSx}
-            onClick={() => setEditingOption(null)}
-          >
-            Cancel
-          </Button>
-          <Button onClick={handleEditSubmit} color="primary">
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
       {/* Delete Option Warning Dialog */}
       <Dialog
         open={isDeleteDialogOpen}

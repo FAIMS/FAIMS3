@@ -82,13 +82,17 @@ const ExpandedChecklist = ({
   exclusiveOptions,
   disabled,
   enableOtherOption,
+  otherOptionPosition,
   otherText,
   onOtherTextChange,
   hasOtherSelected,
   onBlur,
 }: ExpandedChecklistProps) => {
-  // Keep "Other" pinned to the bottom.
-  const otherPosition = options.length;
+  // Show Other at the position chosen in the notebook designer.
+  const otherPosition = Math.max(
+    0,
+    Math.min(otherOptionPosition ?? options.length, options.length)
+  );
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
 
   const handleChange = (optionValue: string) => {
@@ -163,7 +167,7 @@ const ExpandedChecklist = ({
   // Render a regular option component
   const renderOption = (option: ChoiceOption) => (
     <FormControlLabel
-      key={option.key || option.value}
+      key={option.id || option.key || option.value}
       control={
         <Checkbox
           checked={value.includes(option.value)}
@@ -257,12 +261,16 @@ const MuiMultiSelect = ({
   disabled,
   onBlur,
   enableOtherOption,
+  otherOptionPosition,
   otherText,
   onOtherTextChange,
   hasOtherSelected,
 }: MuiMultiSelectProps) => {
-  // Keep "Other" pinned to the bottom.
-  const otherPosition = options.length;
+  // Show Other at the position chosen in the notebook designer.
+  const otherPosition = Math.max(
+    0,
+    Math.min(otherOptionPosition ?? options.length, options.length)
+  );
   // state to control dropdown open/close
   const [isOpen, setIsOpen] = useState(false);
 
@@ -317,7 +325,7 @@ const MuiMultiSelect = ({
                 if (isOtherOptionValue(v)) {
                   return extractOtherText(v) || 'Other';
                 }
-                return v;
+                return options.find(option => option.value === v)?.label ?? v;
               })
               .join(', ');
 
@@ -422,7 +430,7 @@ const MuiMultiSelect = ({
             // Render a regular option MenuItem
             const renderOptionMenuItem = (option: ChoiceOption) => (
               <MenuItem
-                key={option.key || option.value}
+                key={option.id || option.key || option.value}
                 value={option.value}
                 disabled={
                   selectedExclusiveOption !== undefined &&
