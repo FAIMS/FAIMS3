@@ -130,8 +130,8 @@ importers:
         specifier: ^5.1.2
         version: 5.1.2
       nodemailer:
-        specifier: ^10.0.9
-        version: 10.0.9
+        specifier: ^10.0.10
+        version: 10.0.10
       oauth:
         specifier: 0.10.0
         version: 0.10.0
@@ -9955,8 +9955,8 @@ packages:
     resolution: {integrity: sha512-71kFFjYaSshDTA8/a2HiTYPLdASWjLJxUyJxGE+ffxU+KhxSBtM9kiLUX+R2yooFdSFKMFpi4n3PFtDy6qXv8A==}
     engines: {node: '>=18'}
 
-  nodemailer@10.0.9:
-    resolution: {integrity: sha512-BF0qcyplCwp+jMk6HCjFykBz/YhhZSsxrARhOldLwFWH+8kGjQsd2WIMIZhqEuyXRoGFi0ONbDeWDMDoL8MhLw==}
+  nodemailer@10.0.10:
+    resolution: {integrity: sha512-He9XskOFms62SyAKkLu8CcGcYHAo+BSHSsORI8s4PJH8qZgZY4L4lDfvyN0twvmbpyG+eGrxpyBlskj9d9rJ8A==}
     engines: {node: '>=20.0.0'}
 
   nodemon@3.1.14:
@@ -10807,8 +10807,8 @@ packages:
   react-is@19.2.7:
     resolution: {integrity: sha512-kZFnouyVv7eP/Phmrlo9FK+zcAdriZJvzxXHF1Sl1P377WSGe2G/JxVolhTrB/jeV47lKImhNUsijjHAAbcl/A==}
 
-  react-is@19.3.0:
-    resolution: {integrity: sha512-UpMYezM4v5/18F28aC66AEsjXIgE02kyEMH6yLdgLXu/UTfa1Ntwck/nNLrbqJsEXW7gPb0coNO9FQse9WTovA==}
+  react-is@19.3.1:
+    resolution: {integrity: sha512-RRieF6IyxQBkcK6pP8xOHprLTPW6QjRkbGdImtqNme+/hYVwCZkLQLdlZGOhUqXwkS9IEynaGvPJtv6XB/cz0Q==}
 
   react-json-view-lite@1.5.0:
     resolution: {integrity: sha512-nWqA1E4jKPklL2jvHWs6s+7Na0qNgw9HCP6xehdQJeg6nPBTFZgGwyko9Q0oj+jQWKTTVRS30u0toM5wiuL3iw==}
@@ -13903,9 +13903,14 @@ snapshots:
   '@esbuild/win32-x64@0.28.1':
     optional: true
 
-  '@eslint-community/eslint-utils@4.9.1(eslint@8.57.0)':
+  '@eslint-community/eslint-utils@4.9.1(eslint@8.57.0(supports-color@8.1.1))':
     dependencies:
       eslint: 8.57.0(supports-color@8.1.1)
+      eslint-visitor-keys: 3.4.3
+
+  '@eslint-community/eslint-utils@4.9.1(eslint@8.57.0)':
+    dependencies:
+      eslint: 8.57.0
       eslint-visitor-keys: 3.4.3
 
   '@eslint-community/regexpp@4.12.2': {}
@@ -17463,7 +17468,7 @@ snapshots:
 
   '@typescript-eslint/utils@5.62.0(eslint@8.57.0(supports-color@8.1.1))(typescript@7.0.2)':
     dependencies:
-      '@eslint-community/eslint-utils': 4.9.1(eslint@8.57.0)
+      '@eslint-community/eslint-utils': 4.9.1(eslint@8.57.0(supports-color@8.1.1))
       '@types/json-schema': 7.0.15
       '@types/semver': 7.7.1
       '@typescript-eslint/scope-manager': 5.62.0
@@ -20079,7 +20084,7 @@ snapshots:
 
   eslint@8.57.0:
     dependencies:
-      '@eslint-community/eslint-utils': 4.9.1(eslint@8.57.0)
+      '@eslint-community/eslint-utils': 4.9.1(eslint@8.57.0(supports-color@8.1.1))
       '@eslint-community/regexpp': 4.12.2
       '@eslint/eslintrc': 2.1.4
       '@eslint/js': 8.57.0
@@ -20122,7 +20127,7 @@ snapshots:
 
   eslint@8.57.0(supports-color@8.1.1):
     dependencies:
-      '@eslint-community/eslint-utils': 4.9.1(eslint@8.57.0)
+      '@eslint-community/eslint-utils': 4.9.1(eslint@8.57.0(supports-color@8.1.1))
       '@eslint-community/regexpp': 4.12.2
       '@eslint/eslintrc': 2.1.4(supports-color@8.1.1)
       '@eslint/js': 8.57.0
@@ -23376,7 +23381,7 @@ snapshots:
     dependencies:
       '@babel/parser': 7.29.7
 
-  nodemailer@10.0.9: {}
+  nodemailer@10.0.10: {}
 
   nodemon@3.1.14:
     dependencies:
@@ -24193,7 +24198,7 @@ snapshots:
       '@jest/schemas': 30.4.1
       ansi-styles: 5.2.0
       react-is-18: react-is@18.3.1
-      react-is-19: react-is@19.3.0
+      react-is-19: react-is@19.3.1
 
   pretty-ms@7.0.1:
     dependencies:
@@ -24393,7 +24398,7 @@ snapshots:
 
   react-is@19.2.7: {}
 
-  react-is@19.3.0: {}
+  react-is@19.3.1: {}
 
   react-json-view-lite@1.5.0(react@18.3.1):
     dependencies:
