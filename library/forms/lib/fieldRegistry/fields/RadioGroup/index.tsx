@@ -87,7 +87,14 @@ export const RadioGroup = (props: FieldProps) => {
 
   const rawValue = (state.value?.data as string) ?? '';
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
-  const otherOptionPosition = ElementProps.options.length;
+  // Use the configured Other position; older notebooks default to the end.
+  const otherOptionPosition = Math.max(
+    0,
+    Math.min(
+      ElementProps.otherOptionPosition ?? ElementProps.options.length,
+      ElementProps.options.length
+    )
+  );
   const predefinedValues = ElementProps.options.map(opt => opt.value);
   // if expandedChecklist is missing, we default to true - expanded by default
   const expandedChecklist = ElementProps.expandedChecklist !== false;
@@ -249,7 +256,7 @@ export const RadioGroup = (props: FieldProps) => {
 
 interface WidgetProps {
   displayValue: string;
-  options: {value: string; label: string}[];
+  options: ChoiceOption[];
   enableOtherOption: boolean;
   otherOptionPosition: number;
   handleChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -350,7 +357,7 @@ const RadioGroupWidget = ({
           // Render a regular option
           const renderOption = (option: ChoiceOption) => (
             <FormControlLabel
-              key={option.key || option.value}
+              key={option.id || option.key || option.value}
               value={option.value}
               control={
                 <MuiRadio
@@ -542,9 +549,9 @@ const DropDownWidget = ({
         );
 
         // Render a regular option MenuItem
-        const renderOptionMenuItem = (option: any) => (
+        const renderOptionMenuItem = (option: ChoiceOption) => (
           <MenuItem
-            key={option.key ? option.key : option.value}
+            key={option.id || option.key || option.value}
             value={option.value}
             sx={{
               whiteSpace: 'normal',
