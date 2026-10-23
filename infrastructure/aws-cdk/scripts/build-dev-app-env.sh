@@ -138,8 +138,8 @@ DERIVED_JSON="$(jq -c '
   | $c.domains.baseDomain as $base
   | $c.uiConfiguration as $ui
   | ($ui.offlineMaps // {}) as $maps
-  | ($ui.addressAutosuggest // {source: "NONE"}) as $auto
-  | ($auto.source // "NONE") as $auto_source
+  | ($ui.addressAutosuggest // {source: "none"}) as $auto
+  | ($auto.source // "none") as $auto_source
   | {
       VITE_CONDUCTOR_URL: "https://\($cond_sub).\($base):443",
       VITE_APP_ID: $ui.appId,
@@ -163,13 +163,13 @@ DERIVED_JSON="$(jq -c '
   + (if ($maps.mapSourceKey | nonempty) then {VITE_MAP_SOURCE_KEY: $maps.mapSourceKey} else {} end)
   + (if ($maps.satelliteSource | nonempty) then {VITE_SATELLITE_SOURCE: $maps.satelliteSource} else {} end)
   + (if ($c.bugMonitoring.bugsnagKey | nonempty) then {VITE_BUGSNAG_KEY: $c.bugMonitoring.bugsnagKey} else {} end)
-  + (if $auto_source != "NONE" then
+  + (if $auto_source != "none" then
       {}
       + (if ($auto.mapboxKey | nonempty) then {VITE_AUTOSUGGEST_MAPBOX_KEY: $auto.mapboxKey} else {} end)
       + (if ($auto.mapboxAddressCountry | nonempty) then {VITE_MAPBOX_ADDRESS_COUNTRY: $auto.mapboxAddressCountry} else {} end)
       + (if ($auto.maptilerAddressCountry | nonempty) then {VITE_MAPTILER_ADDRESS_COUNTRY: $auto.maptilerAddressCountry} else {} end)
       + (
-          if $auto_source == "MAPTILER" then
+          if $auto_source == "maptiler" then
             (
               if ($auto.maptilerKey | nonempty) then $auto.maptilerKey
               elif $maps.mapSource == "maptiler" and ($maps.mapSourceKey | nonempty) then $maps.mapSourceKey
@@ -323,7 +323,6 @@ mkdir -p "$OUTPUT_PARENT"
   emit_env_line VITE_LOGIN_BANNER_GRACE_MS 10000
   emit_env_line VITE_IGNORE_TOKEN_EXP false
   emit_env_line VITE_NAVIGATION none
-  emit_env_line VITE_SHOW_RECORD_LINKS false
   emit_env_line VITE_MIGRATE_OLD_DATABASES false
   emit_env_line VITE_ATTACHMENT_SERVICE_TYPE COUCH
   echo ""

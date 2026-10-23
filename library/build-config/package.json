@@ -1,0 +1,36 @@
+{
+  "name": "@faims3/build-config",
+  "version": "1.6.2",
+  "private": true,
+  "files": [
+    "build"
+  ],
+  "type": "module",
+  "main": "./build/src/index.js",
+  "types": "./build/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/src/index.d.ts",
+      "import": "./build/src/index.js",
+      "default": "./build/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "generate": "tsx src/generate-build-config.ts",
+    "test": "tsx --test test/*.test.ts",
+    "lint": "oxlint --config ../../.oxlintrc.json ."
+  },
+  "dependencies": {
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "tsx": "^4.22.4",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": "24"
+  },
+  "packageManager": "pnpm@11.6.0"
+}

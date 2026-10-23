@@ -141,10 +141,7 @@ export function getAppUrl(): string {
 }
 
 export function getWebUrl(): string {
-  return optionalEnv(
-    'WEB_URL',
-    optionalEnv('NEW_CONDUCTOR_URL', 'http://localhost:3001')
-  ).replace(/\/$/, '');
+  return optionalEnv('WEB_URL', 'http://localhost:3001').replace(/\/$/, '');
 }
 
 export function getConductorUrl(): string {

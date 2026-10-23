@@ -16,7 +16,22 @@ import {IHostedZone} from 'aws-cdk-lib/aws-route53';
 import {ICertificate} from 'aws-cdk-lib/aws-certificatemanager';
 import * as path from 'path';
 import {getPathHash, getPathToRoot} from '../util/mono';
-import {OfflineMapsConfig, AddressAutosuggestConfig} from '../config';
+import {
+  buildEnvMapFromRuntime,
+  type EnvValue,
+  type RuntimeConfig,
+} from '@faims3/build-config';
+
+/**
+ * Convert a build-config env value to the string the static-site build env
+ * expects. Arrays become CSV; booleans become 'true'/'false'; numbers are
+ * stringified. Undefined/null return undefined (the key is omitted).
+ */
+function envValueToString(value: EnvValue): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (Array.isArray(value)) return value.join(',');
+  return String(value);
+}
 
 const MAP_ORIGINS_SHARED = [
   'openmaptiles.github.io',
@@ -35,86 +50,30 @@ export interface FaimsFrontEndProps {
   // Domain name
   faimsDomainNames: Array<string>;
 
-  // customisation
-  uiTheme: 'bubble' | 'default' | 'bssTheme' | 'fieldmark';
-  notebookListType: 'tabs' | 'headings';
-  notebookName: string;
-  // App display name
-  appName: string;
-  // Top banner to display - defaults to appName
-  headingAppName?: string;
-  // Used for mobile app builds etc
-  appId: string;
-
-  // support links
-  supportEmail: string;
-  privacyPolicyUrl: string;
-  contactUrl: string;
-  docsUrl?: string;
+  /** The shared core config - the shared VITE_* env (branding, maps, autosuggest,
+   * support, sync, token settings, etc.) is generated from here via
+   * buildEnvMapFromRuntime(core, 'apps'). */
+  coreConfig: RuntimeConfig;
 
   // e.g. db.domain.com
   couchDbDomainOnly: string;
   // e.g. 443
   couchDbPort: number;
 
-  // conductor e.g. https://api.com
+  // conductor e.g. https://api.com (resolved by the CDK from the domains)
   conductorUrl: string;
 
-  // web config
+  // web config (resolved by the CDK from the domains)
   webDomainName: string;
 
-  // docs config (Sphinx user docs site)
+  // docs config (Sphinx user docs site, resolved by the CDK)
   docsDomainName: string;
-  /** Management website title for docs variable substitution (default: Control Centre) */
-  managementWebsiteTitle?: string;
   /** Mobile app store URLs for docs variable substitution */
   androidAppPublicUrl: string;
   iosAppPublicUrl: string;
 
   // Enable debugging settings @default false
   debugMode?: boolean;
-
-  // Offline maps settings -> env variables in faims
-  offlineMaps: OfflineMapsConfig;
-
-  /** Address autosuggest settings (NONE/MAPBOX/MAPTILER). Optional; when omitted or source NONE, autosuggest is disabled. */
-  addressAutosuggest?: AddressAutosuggestConfig;
-
-  /** Maximum long-lived token duration in days (undefined = infinite) */
-  maximumLongLivedDurationDays?: number;
-
-  /** Bugsnag key - enables app monitoring if desired */
-  bugsnagKey?: string;
-
-  /**
-   * Mobile app directory cleanup for archived surveys (`allow` | `never`).
-   * Passed to app and web VITE_FORCE_REMOTE_DELETION; default never.
-   */
-  forceRemoteDeletion?: 'allow' | 'never';
-
-  /**
-   * When true, manual notebook deactivation wipes local Pouch data (VITE_DELETE_ON_DEACTIVATION).
-   * Default false when omitted.
-   */
-  deleteOnDeactivation?: boolean;
-
-  /**
-   * Team roles hidden from Control Centre team-role dropdowns (VITE_EXCLUDED_TEAM_ROLES).
-   */
-  excludedTeamRoles?: string[];
-
-  /**
-   * When true (default), the designer can add a plan to templates without one
-   * (VITE_ENABLE_PLANS_IN_DESIGNER). When false, only existing plans can be
-   * reconfigured.
-   */
-  enablePlansInDesigner?: boolean;
-
-  /**
-   * When true (default), the record view shows a "Status" tab
-   * (VITE_SHOW_STATUS_TAB). When false, the tab is hidden.
-   */
-  showStatusTab?: boolean;
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -232,94 +191,28 @@ export class FaimsFrontEnd extends Construct {
     const appPath = 'app';
     const outputPath = 'build';
 
-    const environment: {[key: string]: string} = {
-      platform: 'web',
-      serverprefix: 'fieldmark',
-      VITE_CLUSTER_ADMIN_GROUP_NAME: 'cluster-admin',
-      // It's optional to provide this
-      // VITE_COMMIT_VERSION: 'unknown TBD',
-
-      // Debugging has performance implications
-      VITE_DEBUG_APP: this.debugMode ? 'true' : 'false',
-      VITE_DEBUG_POUCHDB: this.debugMode ? 'true' : 'false',
-      VITE_SHOW_WIPE: 'true',
-      VITE_SHOW_NEW_NOTEBOOK: 'true',
-      VITE_SHOW_POUCHDB_BROWSER: 'true',
-      VITE_SHOW_STATUS_TAB: props.showStatusTab === false ? 'false' : 'true',
-      VITE_APP_NAME: props.appName,
-      VITE_APP_ID: props.appId,
-      VITE_HEADING_APP_NAME: props.headingAppName ?? props.appName,
-      VITE_SUPPORT_EMAIL: props.supportEmail,
-      VITE_APP_PRIVACY_POLICY_URL: props.privacyPolicyUrl,
-      VITE_APP_CONTACT_URL: props.contactUrl,
-
-      // Theme: default or bubble
-      VITE_THEME: props.uiTheme,
-      // tabs or headings
-      VITE_NOTEBOOK_LIST_TYPE: props.notebookListType,
-      // e.g. survey, notebook
-      VITE_NOTEBOOK_NAME: props.notebookName,
-      // Include record summary counts
-      VITE_SHOW_RECORD_SUMMARY_COUNTS: 'true',
-      // Conductor API URL
-      VITE_CONDUCTOR_URL: props.conductorUrl,
-      VITE_FORCE_REMOTE_DELETION: props.forceRemoteDeletion ?? 'never',
-      VITE_DELETE_ON_DEACTIVATION:
-        props.deleteOnDeactivation === true ? 'true' : 'false',
-      VITE_TAG: 'CDKDeployment',
-
-      // offline maps configuration
-      VITE_MAP_SOURCE: props.offlineMaps.mapSource,
-      VITE_OFFLINE_MAPS: props.offlineMaps.offlineMaps ? 'true' : 'false',
-      VITE_MAP_STYLE: props.offlineMaps.mapStyle,
-      ...(props.offlineMaps.mapSourceKey
-        ? {VITE_MAP_SOURCE_KEY: props.offlineMaps.mapSourceKey}
-        : {}),
-      ...(props.offlineMaps.satelliteSource
-        ? {VITE_SATELLITE_SOURCE: props.offlineMaps.satelliteSource}
-        : {}),
-
-      // Address autosuggest configuration
-      ...(props.addressAutosuggest?.source &&
-      props.addressAutosuggest.source !== 'NONE'
-        ? {
-            VITE_AUTOSUGGEST_SOURCE: props.addressAutosuggest.source,
-            ...(props.addressAutosuggest.mapboxKey
-              ? {
-                  VITE_AUTOSUGGEST_MAPBOX_KEY:
-                    props.addressAutosuggest.mapboxKey,
-                }
-              : {}),
-            ...(props.addressAutosuggest.mapboxAddressCountry
-              ? {
-                  VITE_MAPBOX_ADDRESS_COUNTRY:
-                    props.addressAutosuggest.mapboxAddressCountry,
-                }
-              : {}),
-            // MapTiler: use maptilerKey if set, else fall back to map source
-            // key when mapSource is maptiler
-            ...(props.addressAutosuggest.source === 'MAPTILER'
-              ? {
-                  VITE_AUTOSUGGEST_MAPTILER_KEY:
-                    props.addressAutosuggest.maptilerKey?.trim() ||
-                    (props.offlineMaps.mapSource === 'maptiler' &&
-                    props.offlineMaps.mapSourceKey?.trim()
-                      ? props.offlineMaps.mapSourceKey
-                      : ''),
-                }
-              : {}),
-            ...(props.addressAutosuggest.maptilerAddressCountry
-              ? {
-                  VITE_MAPTILER_ADDRESS_COUNTRY:
-                    props.addressAutosuggest.maptilerAddressCountry,
-                }
-              : {}),
-          }
-        : {}),
-
-      // Monitoring
-      ...(props.bugsnagKey ? {VITE_BUGSNAG_KEY: props.bugsnagKey} : {}),
-    };
+    // The shared VITE_* env (branding, maps, autosuggest, sync, token
+    // settings, etc.) comes from build-config's contract via
+    // buildEnvMapFromRuntime(core, 'apps') - the same contract the app/web use
+    // to parse their env. Only the resolved URLs, build flags
+    // and debug mode are overlaid here (AWS-specific).
+    const environment: {[key: string]: string} = {};
+    for (const [key, value] of Object.entries(
+      buildEnvMapFromRuntime(props.coreConfig, 'apps')
+    )) {
+      const str = envValueToString(value);
+      if (str !== undefined) environment[key] = str;
+    }
+    environment.platform = 'web';
+    environment.serverprefix = 'fieldmark';
+    environment.VITE_CLUSTER_ADMIN_GROUP_NAME = 'cluster-admin';
+    environment.VITE_SHOW_NEW_NOTEBOOK = 'true';
+    environment.VITE_SHOW_RECORD_SUMMARY_COUNTS = 'true';
+    // Conductor URL is resolved by the CDK from the deployed domains.
+    environment.VITE_CONDUCTOR_URL = props.conductorUrl;
+    // Debugging has performance implications.
+    environment.VITE_DEBUG_APP = this.debugMode ? 'true' : 'false';
+    environment.VITE_DEBUG_POUCHDB = this.debugMode ? 'true' : 'false';
 
     // Setup a deployment into this bucket with static files
     new aws_s3_deployment.BucketDeployment(this, 'deploy', {
@@ -451,39 +344,19 @@ export class FaimsFrontEnd extends Construct {
     const appPath = 'web';
     const outputPath = 'dist';
 
-    const environment: {[key: string]: string} = {
-      VITE_WEB_URL: `https://${props.webDomainName}`,
-      VITE_API_URL: props.conductorUrl,
-      VITE_APP_NAME: props.appName,
-      VITE_APP_SHORT_NAME: props.headingAppName ?? props.appName,
-      // FAIMS /app URL (uses first domain if multiple provided)
-      VITE_APP_URL: this.faimsAppUrl,
-      VITE_NOTEBOOK_NAME: props.notebookName,
-      VITE_THEME: props.uiTheme,
-      VITE_WEBSITE_TITLE: props.managementWebsiteTitle ?? 'Control Centre',
-      VITE_DOCS_URL: props.docsUrl || '',
-      // Maps setup for web
-      VITE_MAP_SOURCE: props.offlineMaps.mapSource,
-      VITE_MAP_STYLE: props.offlineMaps.mapStyle,
-      ...(props.offlineMaps.mapSourceKey
-        ? {VITE_MAP_SOURCE_KEY: props.offlineMaps.mapSourceKey}
-        : {}),
-      ...(props.offlineMaps.satelliteSource
-        ? {VITE_SATELLITE_SOURCE: props.offlineMaps.satelliteSource}
-        : {}),
-      VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS:
-        props.maximumLongLivedDurationDays?.toString() ?? 'infinite',
-      VITE_FORCE_REMOTE_DELETION: props.forceRemoteDeletion ?? 'never',
-      VITE_DELETE_ON_DEACTIVATION:
-        props.deleteOnDeactivation === true ? 'true' : 'false',
-      ...(props.excludedTeamRoles?.length
-        ? {VITE_EXCLUDED_TEAM_ROLES: props.excludedTeamRoles.join(',')}
-        : {}),
-      VITE_ENABLE_PLANS_IN_DESIGNER:
-        props.enablePlansInDesigner === false ? 'false' : 'true',
-      // Monitoring
-      ...(props.bugsnagKey ? {VITE_BUGSNAG_API_KEY: props.bugsnagKey} : {}),
-    };
+    // Shared VITE_* env from build-config's contract; overlay the resolved
+    // URLs (web/app/api) which are AWS-specific.
+    const environment: {[key: string]: string} = {};
+    for (const [key, value] of Object.entries(
+      buildEnvMapFromRuntime(props.coreConfig, 'apps')
+    )) {
+      const str = envValueToString(value);
+      if (str !== undefined) environment[key] = str;
+    }
+    environment.VITE_WEB_URL = `https://${props.webDomainName}`;
+    environment.VITE_API_URL = props.conductorUrl;
+    // FAIMS /app URL (uses first domain if multiple provided)
+    environment.VITE_APP_URL = this.faimsAppUrl;
 
     // Setup a deployment into this bucket with static files
     new aws_s3_deployment.BucketDeployment(this, 'web-deploy', {
@@ -607,18 +480,23 @@ export class FaimsFrontEnd extends Construct {
     const rootPath = path.resolve(process.cwd(), getPathToRoot());
     const docsPath = path.join(rootPath, 'docs');
 
-    const docsEnv: {[key: string]: string} = {
-      VITE_APP_NAME: props.appName,
-      VITE_NOTEBOOK_NAME: props.notebookName,
-      VITE_WEBSITE_TITLE: props.managementWebsiteTitle ?? 'Control Centre',
-      // Uses default for now, as other themes are not implemented properly
-      VITE_THEME: 'default',
-      VITE_API_URL: props.conductorUrl,
-      VITE_APP_URL: this.faimsAppUrl,
-      VITE_WEB_URL: `https://${props.webDomainName}`,
-      ANDROID_APP_PUBLIC_URL: props.androidAppPublicUrl,
-      IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
-    };
+    // Shared VITE_* env from build-config's contract; overlay the resolved
+    // URLs + the mobile store URLs (docs variable substitution) + the
+    // default theme (other themes not yet implemented for docs).
+    const docsEnv: {[key: string]: string} = {};
+    for (const [key, value] of Object.entries(
+      buildEnvMapFromRuntime(props.coreConfig, 'apps')
+    )) {
+      const str = envValueToString(value);
+      if (str !== undefined) docsEnv[key] = str;
+    }
+    docsEnv.VITE_API_URL = props.conductorUrl;
+    docsEnv.VITE_APP_URL = this.faimsAppUrl;
+    docsEnv.VITE_WEB_URL = `https://${props.webDomainName}`;
+    // Uses default for now, as other themes are not implemented properly
+    docsEnv.VITE_THEME = 'default';
+    docsEnv.ANDROID_APP_PUBLIC_URL = props.androidAppPublicUrl;
+    docsEnv.IOS_APP_PUBLIC_URL = props.iosAppPublicUrl;
 
     const sphinxImage = DockerImage.fromBuild(docsPath, {
       file: 'Dockerfile',
