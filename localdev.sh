@@ -123,11 +123,8 @@ manage_docker_volumes() {
     echo "Pruning volume containing the couchdb database..."
     ${docker_prefix} down --volumes
   else
-    # Plain `down` leaves the anonymous node_modules and .pnpm volumes behind
-    # (about 1 GB a run); `rm --volumes` removes those and keeps couchdb_data.
-    ${docker_prefix} rm --stop --force --volumes
     ${docker_prefix} down
-    echo "Keeping the couchdb database (use --clear-db to clear it)"
+    echo "Skipping volume pruning (use --clear-db to clear volumes)"
   fi
 
   echo "Starting Docker containers..."
