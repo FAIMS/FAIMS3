@@ -35,6 +35,7 @@
     "@capacitor/core": "^7.4.3",
     "@capacitor/geolocation": "^7.1.5",
     "@capgo/capacitor-audio-recorder": "7",
+    "@capgo/capacitor-compass": "^7.1.1",
     "@capgo/capacitor-speech-recognition": "^8.0.4",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
@@ -82,6 +83,7 @@
     "@capacitor/camera": "^7.0.1",
     "@capacitor/core": "^7.2.0",
     "@capacitor/geolocation": "^7.1.1",
+    "@capgo/capacitor-compass": "^7.1.1",
     "@tanstack/react-query": "^5.62.16",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
