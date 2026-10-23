@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Base including pnpm setup
 FROM node:24 AS base
 
@@ -52,5 +53,9 @@ RUN corepack enable
 
 WORKDIR /usr/src
 
-# Copy installed dependencies and source
-COPY --from=source /usr/src .
+# Dependencies come straight from base, so every checkout with the same lockfile
+# and package.json files shares this layer and docker stores it once.
+COPY --from=base /usr/src .
+
+# Source and build output, the only layer that differs between checkouts.
+COPY --from=source --exclude=**/node_modules /usr/src .
