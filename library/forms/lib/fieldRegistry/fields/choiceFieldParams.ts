@@ -9,7 +9,7 @@ import {z} from 'zod';
  */
 export const ChoiceOptionSchema = z.object({
   // Unique option identity
-  id: z.string().optional(),
+  id: z.string(),
   value: z.string(),
   // Human-readable text displayed to users.
   label: z.string(),

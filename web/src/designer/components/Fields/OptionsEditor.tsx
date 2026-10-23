@@ -72,6 +72,10 @@ import {DragHandle} from '../drag-handle';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 
+// ============================================================================
+// Types & Helpers
+// ============================================================================
+
 /**
  * Subset of choice-field `component-parameters` this editor reads/writes. The
  * `ElementProps` shape is the shared {@link ChoiceElementProps} used by
@@ -80,6 +84,9 @@ import {SimpleFieldWrapper} from './SimpleFieldWrapper';
  */
 type ChoiceOption = ChoiceElementProps['options'][number];
 type ChoiceComponentParameters = {ElementProps?: Partial<ChoiceElementProps>};
+
+// Internal drag-and-drop identity, Other has no stored option ID.
+const OTHER_ROW_DND_ID = '__other__';
 
 /**
  * Generate a unique option ID from its label.
@@ -109,6 +116,10 @@ const generateUniqueOptionId = (
   return id;
 };
 
+// ============================================================================
+// Sortable Row Components
+// ============================================================================
+
 /**
  * OptionsEditor is a component for managing a list of options for radio buttons or multi-select fields.
  * It provides functionality to add, remove, reorder, and edit options, with additional features
@@ -136,9 +147,6 @@ const generateUniqueOptionId = (
  * 5. Visual feedback during drag
  *
  */
-
-// Internal drag-and-drop identity, Other has no stored option ID.
-const OTHER_ROW_DND_ID = '__other__';
 
 // Keep the drag handle aligned to the left.
 const dragHandleCellSx = {
@@ -458,6 +466,10 @@ const SortableItem = ({
   );
 };
 
+// ============================================================================
+// Edit Option Dialog
+// ============================================================================
+
 /** Editable option values, keeping the original ID for lookup. */
 type EditingOption = {
   originalId: string;
@@ -638,6 +650,10 @@ const EditOptionDialog = ({
   );
 };
 
+// ============================================================================
+// Main Component
+// ============================================================================
+
 type CombinedRow =
   | {id: string; type: 'option'; option: ChoiceOption}
   | {id: string; type: 'other'};
@@ -749,6 +765,10 @@ export const OptionsEditor = ({
 
     return rows;
   }, [enableOther, options, otherOptionPosition]);
+
+  //
+  // Validation & Actions
+  //
 
   /**
    * Validates option text for duplicates and empty values
