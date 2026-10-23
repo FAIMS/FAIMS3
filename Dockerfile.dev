@@ -53,8 +53,8 @@ RUN corepack enable
 
 WORKDIR /usr/src
 
-# Dependencies come straight from base, so every checkout with the same lockfile
-# and package.json files shares this layer and docker stores it once.
+# Dependencies come straight from base, so a source edit or another checkout
+# with the same lockfile and package.json files reuses this layer.
 COPY --from=base /usr/src .
 
 # Source and build output, the only layer that differs between checkouts.
