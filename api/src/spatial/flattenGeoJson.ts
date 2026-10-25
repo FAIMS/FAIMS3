@@ -6,8 +6,12 @@
  * GeoJSON driver only walks the root array, so those wrappers become an
  * empty layer and tippecanoe exits 110 ("Did not read any valid
  * geometries"). This pass streams the file and writes a flat
- * FeatureCollection of Feature / geometry objects. Attributes stay;
- * ogr2ogr `-select ''` still drops them.
+ * FeatureCollection of Feature / geometry objects. A `features` array
+ * is walked as soon as it is seen, even if `type` comes later, so a
+ * nested file is not scanned twice. A root-level legacy `crs` member is
+ * copied onto the output so ogrinfo / ogr2ogr still see a non-WGS84
+ * CRS after flatten. Attributes stay; ogr2ogr `-select ''` still drops
+ * them.
  */
 
 import {createWriteStream} from 'fs';
@@ -44,6 +48,11 @@ export type FlattenGeoJsonProgress = {
   percent: number;
 };
 
+/** Raw JSON of a root FeatureCollection `crs` member, if one was present. */
+type RootCrsCapture = {
+  raw?: string;
+};
+
 /** Write leaf Features from `inputPath` as one FeatureCollection. */
 export async function flattenNestedFeatureCollections(
   inputPath: string,
@@ -53,6 +62,7 @@ export async function flattenNestedFeatureCollections(
   const reader = await JsonFileReader.open(inputPath);
   const writer = createWriteStream(outputPath);
   const count = {n: 0};
+  const rootCrs: RootCrsCapture = {};
   let lastPercent = -1;
   const report = async (force = false) => {
     if (!onProgress) {
@@ -69,18 +79,35 @@ export async function flattenNestedFeatureCollections(
     lastPercent = rounded;
     await onProgress({percent: rounded});
   };
+  reader.onProgressTick = () => report();
   try {
     writer.write('{"type":"FeatureCollection","features":[');
     await reader.skipBom();
     await report();
+    let captureRootCrs = true;
     while (!(await reader.eof())) {
       await reader.skipWsAndRs();
       if (await reader.eof()) {
         break;
       }
-      await walkValue(reader, writer, count, report);
+      // Only the first top-level object is the collection whose `crs`
+      // GDAL would have used. Nested collections and later GeoJSONSeq
+      // records must not overwrite it.
+      await walkValue(
+        reader,
+        writer,
+        count,
+        report,
+        captureRootCrs ? rootCrs : undefined
+      );
+      captureRootCrs = false;
     }
-    writer.write(']}');
+    writer.write(']');
+    if (rootCrs.raw && rootCrs.raw.trim()) {
+      writer.write(',"crs":');
+      writer.write(rootCrs.raw);
+    }
+    writer.write('}');
     writer.end();
     await finished(writer);
     await report(true);
@@ -97,7 +124,8 @@ async function walkValue(
   reader: JsonFileReader,
   writer: NodeJS.WritableStream,
   count: {n: number},
-  report: () => Promise<void>
+  report: () => Promise<void>,
+  rootCrs?: RootCrsCapture
 ): Promise<void> {
   await reader.skipWs();
   const byte = await reader.peekByte();
@@ -113,8 +141,8 @@ async function walkValue(
   await reader.expectByte(L_BRACE);
   await reader.skipWs();
   let type: string | undefined;
-  let featuresPos: number | undefined;
   let walkedFeatures = false;
+  let hasGeometry = false;
   if ((await reader.peekByte()) !== R_BRACE) {
     while (true) {
       const key = await reader.readJsonString();
@@ -127,13 +155,23 @@ async function walkValue(
         key === 'features' &&
         (await reader.peekByte()) === L_BRACKET
       ) {
-        if (type === 'FeatureCollection') {
+        // Walk immediately even when `type` has not been seen yet. JSON
+        // key order is not fixed; skipping the array and rewinding would
+        // scan a nested collection twice with no progress ticks.
+        if (type === undefined || type === 'FeatureCollection') {
           await walkArray(reader, writer, count, report);
           walkedFeatures = true;
         } else {
-          featuresPos = reader.pos;
           await reader.skipValue();
         }
+      } else if (key === 'geometry') {
+        const geomByte = await reader.peekByte();
+        hasGeometry = geomByte === L_BRACE || geomByte === L_BRACKET;
+        await reader.skipValue();
+      } else if (key === 'crs' && rootCrs) {
+        const crsStart = reader.pos;
+        await reader.skipValue();
+        rootCrs.raw = await reader.readRange(crsStart, reader.pos);
       } else {
         await reader.skipValue();
       }
@@ -154,18 +192,9 @@ async function walkValue(
     await reader.readByte();
   }
   const end = reader.pos;
-  if (
-    type === 'FeatureCollection' &&
-    !walkedFeatures &&
-    featuresPos !== undefined
-  ) {
-    await reader.seek(featuresPos);
-    await walkArray(reader, writer, count, report);
-    await reader.seek(end);
-    await report();
-    return;
-  }
-  if (type === 'Feature' || (type && GEOMETRY_TYPES.has(type))) {
+  if (type === 'Feature' && hasGeometry && !walkedFeatures) {
+    emitRawFeature(writer, count, await reader.readRange(start, end));
+  } else if (type && GEOMETRY_TYPES.has(type) && !walkedFeatures) {
     const raw = await reader.readRange(start, end);
     emitLeaf(writer, count, JSON.parse(raw) as Record<string, unknown>);
   }
@@ -201,6 +230,18 @@ async function walkArray(
   }
 }
 
+function emitRawFeature(
+  writer: NodeJS.WritableStream,
+  count: {n: number},
+  raw: string
+): void {
+  if (count.n > 0) {
+    writer.write(',');
+  }
+  writer.write(raw);
+  count.n += 1;
+}
+
 function emitLeaf(
   writer: NodeJS.WritableStream,
   count: {n: number},
@@ -230,7 +271,10 @@ class JsonFileReader {
   private buf = new Uint8Array(0);
   private bufFileStart = 0;
   private offset = 0;
+  private unreadSinceReport = 0;
   pos = 0;
+  /** Called after each ~64 KiB of scanned bytes so long skips still tick. */
+  onProgressTick?: () => void | Promise<void>;
 
   private constructor(
     private readonly handle: FileHandle,
@@ -249,13 +293,6 @@ class JsonFileReader {
 
   async eof(): Promise<boolean> {
     return this.pos >= this.fileSize;
-  }
-
-  async seek(position: number): Promise<void> {
-    this.pos = position;
-    this.buf = new Uint8Array(0);
-    this.bufFileStart = position;
-    this.offset = 0;
   }
 
   async skipBom(): Promise<void> {
@@ -368,42 +405,69 @@ class JsonFileReader {
     return Buffer.from(buffer).toString('utf8');
   }
 
+  /**
+   * Walk a `{...}` / `[...]` without per-byte awaits. A 200 MB nested
+   * collection used to sit silent in this loop (especially when
+   * `features` appeared before `type`). Scan the current buffer, then
+   * tick progress.
+   */
   private async skipContainer(): Promise<void> {
     const stack = [await this.readByte()];
     let inString = false;
     let escaped = false;
     while (stack.length > 0) {
-      const byte = await this.readByte();
-      if (inString) {
-        if (escaped) {
-          escaped = false;
-          continue;
+      if (this.offset >= this.buf.length) {
+        await this.ensure(1);
+        if (this.offset >= this.buf.length) {
+          throw new Error('Unexpected end of GeoJSON.');
         }
-        if (byte === BACKSLASH) {
-          escaped = true;
+      }
+      const from = this.offset;
+      while (this.offset < this.buf.length && stack.length > 0) {
+        const byte = this.buf[this.offset++];
+        if (inString) {
+          if (escaped) {
+            escaped = false;
+            continue;
+          }
+          if (byte === BACKSLASH) {
+            escaped = true;
+            continue;
+          }
+          if (byte === QUOTE) {
+            inString = false;
+          }
           continue;
         }
         if (byte === QUOTE) {
-          inString = false;
+          inString = true;
+          continue;
         }
-        continue;
+        if (byte === L_BRACE || byte === L_BRACKET) {
+          stack.push(byte);
+          continue;
+        }
+        const open = stack[stack.length - 1];
+        if (
+          (byte === R_BRACE && open === L_BRACE) ||
+          (byte === R_BRACKET && open === L_BRACKET)
+        ) {
+          stack.pop();
+        }
       }
-      if (byte === QUOTE) {
-        inString = true;
-        continue;
-      }
-      if (byte === L_BRACE || byte === L_BRACKET) {
-        stack.push(byte);
-        continue;
-      }
-      const open = stack[stack.length - 1];
-      if (
-        (byte === R_BRACE && open === L_BRACE) ||
-        (byte === R_BRACKET && open === L_BRACKET)
-      ) {
-        stack.pop();
-      }
+      const consumed = this.offset - from;
+      this.pos += consumed;
+      this.unreadSinceReport += consumed;
+      await this.maybeReportProgress();
     }
+  }
+
+  private async maybeReportProgress(): Promise<void> {
+    if (this.unreadSinceReport < CHUNK_SIZE || !this.onProgressTick) {
+      return;
+    }
+    this.unreadSinceReport = 0;
+    await this.onProgressTick();
   }
 
   private async skipLiteral(): Promise<void> {
@@ -471,6 +535,7 @@ class JsonFileReader {
   private advance(bytes: number): void {
     this.offset += bytes;
     this.pos += bytes;
+    this.unreadSinceReport += bytes;
   }
 }
 

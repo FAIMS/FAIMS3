@@ -597,7 +597,7 @@ This guide focuses on user, team, and {{notebook}} management. It does **not** c
 3. Click the **×** in the upper-right corner of the role badge
 4. The role is removed immediately
 
-> ⚠️ **Warning**: Be careful when removing roles. If you remove Content Creator from a user, they will no longer be able to create {{notebooks}} or map layers globally. However, they can still create {{notebooks}} and map layers within teams where they have the Team Member (Creator), Team Manager, or Team Administrator role.
+> ⚠️ **Warning**: Be careful when removing roles. If you remove Content Creator from a user, they will no longer be able to create {{notebooks}} or templates globally. However, they can still create {{notebooks}} and map layers within teams where they have the Team Member (Creator), Team Manager, or Team Administrator role. Only Super Users can upload a map layer that is not owned by a team.
 
 #### Managing Global Invites
 

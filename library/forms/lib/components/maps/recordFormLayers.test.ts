@@ -57,7 +57,6 @@ describe('recordFormLayers', () => {
         fill: '#222222',
         lineWidth: 3,
         pointSize: 9,
-        labelField: 'name',
       },
     };
     writeRecordFormLayerPrefs('proj-1', stored);
@@ -82,7 +81,6 @@ describe('recordFormLayers', () => {
         fill: '#222222',
         lineWidth: 3,
         pointSize: 9,
-        labelField: 'name',
         extent4326: [0, 0, 1, 1],
       },
     ]);

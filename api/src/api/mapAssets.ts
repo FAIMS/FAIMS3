@@ -32,6 +32,8 @@ import {tmpdir} from 'os';
 import path from 'path';
 import {z} from 'zod';
 import {
+  attachLinkCount,
+  attachLinkCounts,
   createMapAsset,
   deleteMapAsset,
   getMapAsset,
@@ -232,8 +234,8 @@ function tokenOf(user: Express.User): DecodedTokenPermissions {
 
 /**
  * True when the user may create a layer. A `teamId` requires
- * {@link Action.CREATE_MAP_ASSET_IN_TEAM} on that team; otherwise
- * {@link Action.CREATE_MAP_ASSET} is enough (personal library).
+ * {@link Action.CREATE_MAP_ASSET_IN_TEAM} on that team. Creating outside a
+ * team requires {@link Action.CREATE_MAP_ASSET_OUTSIDE_TEAM} (Super User).
  */
 function canUpload(user: Express.User, teamId?: string): boolean {
   if (teamId) {
@@ -243,7 +245,7 @@ function canUpload(user: Express.User, teamId?: string): boolean {
       resourceId: teamId,
     });
   }
-  return userCanDo({user, action: Action.CREATE_MAP_ASSET});
+  return userCanDo({user, action: Action.CREATE_MAP_ASSET_OUTSIDE_TEAM});
 }
 
 /**
@@ -412,8 +414,10 @@ api.get(
       }
       const linked = await listAssetsByProject(projectId);
       res.json({
-        assets: linked.filter(asset =>
-          authorizeAsset(user, asset, isAuthorizedToReadMapAsset, [projectId])
+        assets: await attachLinkCounts(
+          linked.filter(asset =>
+            authorizeAsset(user, asset, isAuthorizedToReadMapAsset, [projectId])
+          )
         ),
       });
       return;
@@ -429,12 +433,16 @@ api.get(
       ) {
         throw new Exceptions.UnauthorizedException();
       }
-      res.json({assets: await listReadableTeamMapAssets(user, teamId)});
+      res.json({
+        assets: await attachLinkCounts(
+          await listReadableTeamMapAssets(user, teamId)
+        ),
+      });
       return;
     }
 
     if (globalRolesGrantAction(tokenOf(user), Action.READ_MAP_ASSET)) {
-      res.json({assets: await listAllAssets()});
+      res.json({assets: await attachLinkCounts(await listAllAssets())});
       return;
     }
 
@@ -456,7 +464,7 @@ api.get(
         byId.set(asset._id, asset);
       }
     }
-    res.json({assets: [...byId.values()]});
+    res.json({assets: await attachLinkCounts([...byId.values()])});
   }
 );
 
@@ -526,7 +534,7 @@ api.post(
         byteSize: summary.byteSize,
         ...inviteAuditFromRequest(req),
       });
-      res.status(201).json(asset);
+      res.status(201).json({...asset, linkCount: 0});
       scheduleStoreOriginals(asset._id);
     } catch (error) {
       logMapAssetProcessing({
@@ -565,10 +573,13 @@ api.get(
   async (req, res: Response<GetMapAssetResponse>) => {
     const user = requireUser(req);
     const asset = await getMapAsset(req.params.id);
-    if (!(await canReadAsset(user, asset))) {
+    const linkedProjectIds = await listLinkProjectIds(asset._id);
+    if (
+      !authorizeAsset(user, asset, isAuthorizedToReadMapAsset, linkedProjectIds)
+    ) {
       throw new Exceptions.UnauthorizedException();
     }
-    res.json(asset);
+    res.json({...asset, linkCount: linkedProjectIds.length});
   }
 );
 
@@ -590,7 +601,7 @@ api.patch(
       name: req.body.name,
       description: req.body.description,
     });
-    res.json(updated);
+    res.json(await attachLinkCount(updated));
   }
 );
 
@@ -640,7 +651,7 @@ api.put(
         byteSize: summary.byteSize,
         ...inviteAuditFromRequest(req),
       });
-      res.json(replaced);
+      res.json(await attachLinkCount(replaced));
       scheduleStoreOriginals(replaced._id);
     } catch (error) {
       logMapAssetProcessing({

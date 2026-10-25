@@ -10,7 +10,7 @@ import {
   unlinkMapAsset,
   useMapAssets,
 } from '@/hooks/map-asset-hooks';
-import {Action, type ExistingMapAsset} from '@faims3/data-model';
+import {Action, type MapAssetWithLinkCount} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
 import {ColumnDef} from '@tanstack/react-table';
@@ -28,7 +28,7 @@ function MapLayerLinkAction({
   mode,
 }: {
   projectId: string;
-  asset: ExistingMapAsset;
+  asset: MapAssetWithLinkCount;
   mode: 'link' | 'unlink';
 }) {
   const user = useRequiredUser();
@@ -107,8 +107,8 @@ function mapLayerColumns({
   projectId: string;
   mode: 'link' | 'unlink';
   showAction: boolean;
-}): ColumnDef<ExistingMapAsset>[] {
-  const actionColumn: ColumnDef<ExistingMapAsset> = {
+}): ColumnDef<MapAssetWithLinkCount>[] {
+  const actionColumn: ColumnDef<MapAssetWithLinkCount> = {
     id: mode,
     enableSorting: false,
     enableGlobalFilter: false,
@@ -158,7 +158,7 @@ export default function ProjectMapLayers({projectId}: ProjectMapLayersProps) {
     [projectId]
   );
 
-  const openLayer = ({_id}: ExistingMapAsset) => {
+  const openLayer = ({_id}: MapAssetWithLinkCount) => {
     void navigate({
       to: '/map-layers/$assetId',
       params: {assetId: _id},

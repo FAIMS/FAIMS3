@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
+import {isGeoJsonPath} from './flattenGeoJson';
+
 /**
  * GDAL / tippecanoe thread and memory knobs for map-layer ingest.
  *
@@ -245,6 +247,10 @@ export function ogr2ogrGeometryArgs(
     // Devices draw geometry. Style lives on the asset.
     '-select',
     '',
+    // Honour a legacy GeoJSON `crs` member. Flatten copies that member
+    // onto the rewritten FeatureCollection; RFC7946=YES would ignore it
+    // and treat projected coordinates as lon/lat degrees.
+    ...geoJsonOpenArgs(gdalSource),
     outputPath,
     gdalSource,
   ];
@@ -299,6 +305,14 @@ function tippecanoeThinningArgs(family?: VectorGeometryFamily): string[] {
  * collar text readable without PNG-sized tiles.
  */
 export const RASTER_WEBP_QUALITY = 90;
+
+/**
+ * Honour a legacy GeoJSON `crs` member. RFC 7946 files without one still
+ * read as WGS 84. Other formats are unchanged.
+ */
+export function geoJsonOpenArgs(sourcePath: string): string[] {
+  return isGeoJsonPath(sourcePath) ? ['-oo', 'RFC7946=NO'] : [];
+}
 
 /** True when GDAL is opening a GeoPDF (optional-content layers apply). */
 export function isPdfPath(filePath: string): boolean {

@@ -17,15 +17,15 @@ membership and ownership. See [Roles and Permissions](../core/permissions.md).
 1. Open **Map layers** in the left sidebar (under Management)
 2. Click **Add map layer**
 3. Give the layer a short name and, if useful, a description
-4. Choose a team to own the layer, or leave it as your own if that option
-   is shown
+4. Choose a team to own the layer. Team is required unless you are a Super
+   User, who may leave it blank to keep the layer as their own
 5. Attach the georeferenced file (or files) and click **Add map layer**
 
 The combined upload may be at most 2 GB and 8 files. Every file must
-include a coordinate reference system (CRS). Uploads with no CRS fail
-processing and cannot be used on devices.
+have a coordinate reference system (CRS) that {{FAIMS}} can read.
+Uploads with no CRS fail processing and cannot be used on devices.
 
-Accepted formats:
+Accepted formats (prefer GeoPackage or GeoTIFF when you can):
 
 | Kind       | Formats                                                                                                 |
 | ---------- | ------------------------------------------------------------------------------------------------------- |
@@ -36,6 +36,9 @@ For a zipped shapefile include `.shp`, `.shx`, `.dbf`, and `.prj`. A File
 Geodatabase should be a `.gdb.zip` (or a zip that contains one `.gdb`
 folder). Feature attributes are not shown in the app — vector layers draw
 geometry only.
+
+GIS staff: see [Map layer formats and coordinate systems](map-layer-formats.md)
+for CRS, file structure, and what we do not accept.
 
 ## Processing
 

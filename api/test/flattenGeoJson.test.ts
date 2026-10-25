@@ -104,6 +104,67 @@ describe('flattenNestedFeatureCollections', () => {
     ]);
   });
 
+  it('copies a root legacy crs member onto the flattened collection', async () => {
+    const crs = {
+      type: 'name',
+      properties: {name: 'urn:ogc:def:crs:EPSG::28356'},
+    };
+    const {collection} = await flatten({
+      type: 'FeatureCollection',
+      crs,
+      features: [
+        {
+          type: 'Feature',
+          geometry: {type: 'Point', coordinates: [334000, 6244000]},
+          properties: {},
+        },
+      ],
+    });
+    expect((collection as {crs?: unknown}).crs).toEqual(crs);
+    expect(collection.features).toHaveLength(1);
+  });
+
+  it('keeps root crs when the key appears after features', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'flatten-geojson-'));
+    dirs.push(dir);
+    const input = path.join(dir, 'in.geojson');
+    const output = path.join(dir, 'out.geojson');
+    await writeFile(
+      input,
+      '{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[1,2]},"properties":{}}],"crs":{"type":"name","properties":{"name":"urn:ogc:def:crs:EPSG::3857"}}}'
+    );
+    await flattenNestedFeatureCollections(input, output);
+    const collection = JSON.parse(await readFile(output, 'utf8')) as {
+      crs?: {properties?: {name?: string}};
+      features: unknown[];
+    };
+    expect(collection.crs?.properties?.name).toBe('urn:ogc:def:crs:EPSG::3857');
+    expect(collection.features).toHaveLength(1);
+  });
+
+  it('does not promote a nested collection crs to the root', async () => {
+    const {collection} = await flatten({
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'FeatureCollection',
+          crs: {
+            type: 'name',
+            properties: {name: 'urn:ogc:def:crs:EPSG::28356'},
+          },
+          features: [
+            {
+              type: 'Feature',
+              geometry: {type: 'Point', coordinates: [1, 2]},
+              properties: {},
+            },
+          ],
+        },
+      ],
+    });
+    expect((collection as {crs?: unknown}).crs).toBeUndefined();
+  });
+
   it('keeps an already-flat FeatureCollection as Features', async () => {
     const {count, collection} = await flatten({
       type: 'FeatureCollection',
@@ -196,5 +257,77 @@ describe('flattenNestedFeatureCollections', () => {
     expect(percents[0]).toBeGreaterThanOrEqual(0);
     expect(percents[percents.length - 1]).toBe(100);
     expect(percents).toEqual([...percents].sort((a, b) => a - b));
+  });
+
+  it('ticks percent while scanning a large geometry', async () => {
+    const percents: number[] = [];
+    const dir = await mkdtemp(path.join(tmpdir(), 'flatten-geojson-'));
+    dirs.push(dir);
+    const input = path.join(dir, 'in.geojson');
+    const output = path.join(dir, 'out.geojson');
+    const coordinates = Array.from({length: 12_000}, (_, i) => [
+      i * 0.0001,
+      -i * 0.0001,
+    ]);
+    await writeFile(
+      input,
+      JSON.stringify({
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: {type: 'MultiPoint', coordinates},
+            properties: {},
+          },
+        ],
+      })
+    );
+    await flattenNestedFeatureCollections(input, output, update => {
+      percents.push(update.percent);
+    });
+    expect(percents[0]).toBeGreaterThanOrEqual(0);
+    expect(percents[percents.length - 1]).toBe(100);
+    expect(percents.some(percent => percent > 0 && percent < 100)).toBe(true);
+    expect(percents).toEqual([...percents].sort((a, b) => a - b));
+  });
+
+  it('keeps ticking when nested features appear before type', async () => {
+    const percents: number[] = [];
+    const dir = await mkdtemp(path.join(tmpdir(), 'flatten-geojson-'));
+    dirs.push(dir);
+    const input = path.join(dir, 'in.geojson');
+    const output = path.join(dir, 'out.geojson');
+    const leaf = (i: number) => ({
+      type: 'Feature',
+      geometry: {type: 'Point', coordinates: [i, -i]},
+      properties: {i},
+    });
+    const first = Array.from({length: 4_000}, (_, i) => leaf(i));
+    const second = Array.from({length: 4_000}, (_, i) => leaf(i + 4_000));
+    await writeFile(
+      input,
+      JSON.stringify({
+        features: [
+          {features: first, type: 'FeatureCollection'},
+          {features: second, type: 'FeatureCollection'},
+        ],
+        type: 'FeatureCollection',
+      })
+    );
+    const count = await flattenNestedFeatureCollections(
+      input,
+      output,
+      update => {
+        percents.push(update.percent);
+      }
+    );
+    expect(count).toBe(8_000);
+    expect(percents[percents.length - 1]).toBe(100);
+    expect(percents.some(percent => percent > 10 && percent < 90)).toBe(true);
+    expect(percents).toEqual([...percents].sort((a, b) => a - b));
+    const collection = JSON.parse(await readFile(output, 'utf8')) as {
+      features: unknown[];
+    };
+    expect(collection.features).toHaveLength(8_000);
   });
 });

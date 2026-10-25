@@ -4,8 +4,8 @@
  * Bridge between the Couch map-asset queue and worker capacity.
  *
  * Reads pending and processing jobs that already have originals and asks the configured
- * capacity provider to start workers when there are not enough. Never stops
- * a worker — idle workers exit on their own.
+ * capacity provider to start workers when queue depth or job staleness says
+ * there are not enough. Never stops a worker — idle workers exit on their own.
  *
  * Usage:
  *   pnpm --filter=@faims3/api capacity-manager
@@ -39,18 +39,25 @@ async function tick(): Promise<void> {
     provider,
     inFlight: backlog.inFlight,
     unclaimed: backlog.unclaimed,
+    oldestUnclaimedMs: backlog.oldestUnclaimedMs,
     max: config.capacityMax,
     scaleThresholds: config.capacityScaleThresholds,
+    starvationMs: config.capacityStarvationMs,
+    scaleInCooldownMs: config.capacityScaleInCooldownMs,
   });
+  const oldest =
+    backlog.oldestUnclaimedMs === undefined
+      ? '-'
+      : String(backlog.oldestUnclaimedMs);
   console.log(
-    `[capacity] inFlight=${backlog.inFlight} unclaimed=${backlog.unclaimed} needed=${result.needed} ensured=${result.ensured}`
+    `[capacity] inFlight=${backlog.inFlight} unclaimed=${backlog.unclaimed} oldestUnclaimedMs=${oldest} needed=${result.needed} ensured=${result.ensured}`
   );
 }
 
 /** Wait for Couch, then reconcile forever at `capacityReconcileMs`. */
 const main = async () => {
   console.log(
-    `[capacity] provider=${config.capacityProviderType} max=${config.capacityMax} scale=${config.capacityScaleThresholds.join(',')} reconcileMs=${config.capacityReconcileMs}`
+    `[capacity] provider=${config.capacityProviderType} max=${config.capacityMax} scale=${config.capacityScaleThresholds.join(',')} starvationMs=${config.capacityStarvationMs} scaleInCooldownMs=${config.capacityScaleInCooldownMs} reconcileMs=${config.capacityReconcileMs}`
   );
   console.log(`Couch server: ${config.couchdbInternalUrl}`);
   const connection = await waitForCouchDBConnection();

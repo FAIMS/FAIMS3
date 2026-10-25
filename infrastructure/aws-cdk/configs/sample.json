@@ -133,6 +133,8 @@
     "maxCapacity": 4,
     "scaleThresholds": [3, 8, 16, 32],
     "reconcileMs": 15000,
+    "starvationMs": 300000,
+    "scaleInCooldownMs": 600000,
     "idleExitMs": 60000,
     "cpu": 1024,
     "memory": 2048,

@@ -48,6 +48,7 @@ import {
   requireAuthenticationAPI,
   userCanDo,
 } from '../middleware';
+import {attachLinkCounts} from '../couchdb/mapAssets/store';
 import {listReadableTeamMapAssets} from './mapAssets';
 import patch from '../utils/patchExpressAsync';
 
@@ -132,7 +133,11 @@ api.get(
     }
     const teamId = req.params.id;
     await getTeamById(teamId);
-    res.json({assets: await listReadableTeamMapAssets(req.user, teamId)});
+    res.json({
+      assets: await attachLinkCounts(
+        await listReadableTeamMapAssets(req.user, teamId)
+      ),
+    });
   }
 );
 

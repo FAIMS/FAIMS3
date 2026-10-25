@@ -148,6 +148,21 @@ describe('normalize CRS helpers', () => {
     await rm(dir, {recursive: true, force: true});
   });
 
+  it('does not assign a leftover .prj onto a GeoTIFF or PDF', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'faims-prj-ignore-'));
+    const tif = path.join(dir, 'plan.tif');
+    const pdf = path.join(dir, 'sheet.pdf');
+    await writeFile(tif, 'tif');
+    await writeFile(pdf, 'pdf');
+    await writeFile(path.join(dir, 'plan.prj'), 'PROJCS["wrong"]');
+    await writeFile(path.join(dir, 'sheet.prj'), 'PROJCS["wrong"]');
+    runGdalCommand.mockClear();
+    await expect(assignSiblingRasterPrj(tif, dir)).resolves.toBe(tif);
+    await expect(assignSiblingRasterPrj(pdf, dir)).resolves.toBe(pdf);
+    expect(runGdalCommand).not.toHaveBeenCalled();
+    await rm(dir, {recursive: true, force: true});
+  });
+
   it('opens zip rasters through /vsizip/', () => {
     expect(gdalSourcePath('/tmp/plan.tif')).toBe('/tmp/plan.tif');
     expect(gdalSourcePath('/tmp/survey.zip')).toBe('/vsizip//tmp/survey.zip');
@@ -357,6 +372,12 @@ describe('normalizeMapUpload', () => {
         onStage: stage => void stages.push(stage),
         onProgress: update => void progress.push(update),
       }
+    );
+    expect(readGdalJson).toHaveBeenCalledWith(
+      expect.objectContaining({
+        command: 'ogrinfo',
+        args: expect.arrayContaining(['-oo', 'RFC7946=NO']),
+      })
     );
     expect(stages).toEqual([
       'flattening-geojson',

@@ -12,7 +12,6 @@ vi.mock('@capacitor/geolocation', () => ({
     getCurrentPosition: vi.fn().mockRejectedValue(new Error('no gps')),
   },
 }));
-import {INPUT_LIMITS} from '@faims3/data-model';
 import {
   BASE_MAP_SATELLITE_ID,
   BASE_MAP_VECTOR_ID,
@@ -164,10 +163,9 @@ describe('ContextualLayersControl', () => {
     expect(
       screen.getByRole('slider', {name: 'Site boundary line width'})
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('Site boundary label field')).toHaveAttribute(
-      'maxLength',
-      String(INPUT_LIMITS.ID_MAX_LENGTH)
-    );
+    expect(
+      screen.queryByLabelText('Site boundary label field')
+    ).not.toBeInTheDocument();
   });
 
   it('closes on a press outside the sheet and swallows the following click', async () => {

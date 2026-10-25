@@ -49,10 +49,21 @@ function isMapAssetListQueryKey(queryKey: readonly unknown[]): boolean {
   return kind !== 'asset' && kind !== 'links';
 }
 
+/** Ensure a list/detail row has a numeric linked-survey count. */
+function withLinkCount(
+  asset: ExistingMapAsset & {linkCount?: number},
+  fallback = 0
+): GetMapAssetResponse {
+  return {
+    ...asset,
+    linkCount: asset.linkCount ?? fallback,
+  };
+}
+
 /** Replace one layer in a list payload, or return `old` when it is absent. */
 export function replaceAssetInList(
   old: GetMapAssetListResponse | undefined,
-  asset: ExistingMapAsset
+  asset: ExistingMapAsset & {linkCount?: number}
 ): GetMapAssetListResponse | undefined {
   if (!old?.assets) {
     return old;
@@ -61,9 +72,55 @@ export function replaceAssetInList(
   if (index < 0 || old.assets[index] === asset) {
     return old;
   }
+  const previous = old.assets[index];
+  const next = withLinkCount(asset, previous.linkCount);
+  if (previous === next) {
+    return old;
+  }
   const assets = [...old.assets];
-  assets[index] = asset;
+  assets[index] = next;
   return {...old, assets};
+}
+
+/**
+ * Insert a newly created layer, or replace it when this snapshot is newer.
+ * Leaves `old` unchanged when the cached row is already newer.
+ */
+export function upsertAssetInList(
+  old: GetMapAssetListResponse | undefined,
+  asset: ExistingMapAsset & {linkCount?: number}
+): GetMapAssetListResponse | undefined {
+  if (!old?.assets) {
+    return old;
+  }
+  const index = old.assets.findIndex(item => item._id === asset._id);
+  if (index < 0) {
+    return {
+      assets: [withLinkCount(asset), ...old.assets],
+    };
+  }
+  const current = old.assets[index];
+  if (current === asset || current.updatedAt > asset.updatedAt) {
+    return old;
+  }
+  const assets = [...old.assets];
+  assets[index] = withLinkCount(asset, current.linkCount);
+  return {...old, assets};
+}
+
+/** Library list, or the team list that owns this layer. Not survey lists. */
+function isListForCreatedAsset(
+  queryKey: readonly unknown[],
+  asset: ExistingMapAsset
+): boolean {
+  const kind = queryKey[2];
+  if (kind === 'library') {
+    return true;
+  }
+  if (kind === 'team') {
+    return queryKey[3] === asset.ownedByTeamId;
+  }
+  return false;
 }
 
 /** Ids still waiting on a spatial worker. */
@@ -99,10 +156,12 @@ export function overlayListWithCachedMapAssets(
   data: GetMapAssetListResponse
 ): GetMapAssetListResponse {
   const assets = data.assets.map(asset => {
-    const cached = queryClient.getQueryData<ExistingMapAsset>(
+    const cached = queryClient.getQueryData<GetMapAssetResponse>(
       mapAssetDetailQueryKey(user, asset._id)
     );
-    return cached && cached.updatedAt >= asset.updatedAt ? cached : asset;
+    return cached && cached.updatedAt >= asset.updatedAt
+      ? withLinkCount(cached, asset.linkCount)
+      : asset;
   });
   const unchanged = assets.every(
     (asset, index) => asset === data.assets[index]
@@ -245,7 +304,10 @@ export async function fetchMapAssets({
   const query = params.toString();
   const response = await fetch(
     `${config.apiUrl}/api/map-assets${query ? `?${query}` : ''}`,
-    {headers: {Authorization: `Bearer ${user.token}`}}
+    {
+      headers: {Authorization: `Bearer ${user.token}`},
+      cache: 'no-store',
+    }
   );
   if (!response.ok) {
     throw new Error(await errorMessage(response));
@@ -263,7 +325,10 @@ export async function fetchTeamMapAssets({
 }): Promise<GetMapAssetListResponse> {
   const response = await fetch(
     `${config.apiUrl}/api/teams/${encodeURIComponent(teamId)}/map-assets`,
-    {headers: {Authorization: `Bearer ${user.token}`}}
+    {
+      headers: {Authorization: `Bearer ${user.token}`},
+      cache: 'no-store',
+    }
   );
   if (!response.ok) {
     throw new Error(await errorMessage(response));
@@ -360,6 +425,7 @@ export async function fetchMapAsset({
 }): Promise<GetMapAssetResponse> {
   const response = await fetch(`${config.apiUrl}/api/map-assets/${assetId}`, {
     headers: {Authorization: `Bearer ${user.token}`},
+    cache: 'no-store',
   });
   if (!response.ok) {
     throw new Error(await errorMessage(response));
@@ -455,6 +521,48 @@ export async function invalidateMapAssets(
     );
   }
   await Promise.all(pending);
+}
+
+/**
+ * Put a just-created layer in the library/team list cache and its detail
+ * query so polling starts before the list refetch returns.
+ */
+export function cacheCreatedMapAsset(
+  queryClient: QueryClient,
+  user: User,
+  asset: ExistingMapAsset
+): void {
+  queryClient.setQueryData(mapAssetDetailQueryKey(user, asset._id), asset);
+  queryClient.setQueriesData<GetMapAssetListResponse>(
+    {
+      predicate: query =>
+        query.queryKey[0] === 'map-assets' &&
+        query.queryKey[1] === user.token &&
+        isMapAssetListQueryKey(query.queryKey) &&
+        isListForCreatedAsset(query.queryKey, asset),
+    },
+    old => upsertAssetInList(old, asset)
+  );
+}
+
+/**
+ * Seed the created layer, invalidate list fetches, then seed again if
+ * the refetch raced the Couch view and omitted the new row.
+ */
+export async function invalidateMapAssetsAfterCreate(
+  queryClient: QueryClient,
+  user: User,
+  asset: ExistingMapAsset
+): Promise<void> {
+  cacheCreatedMapAsset(queryClient, user, asset);
+  await queryClient.invalidateQueries({
+    predicate: query =>
+      query.queryKey[0] === 'map-assets' &&
+      query.queryKey[1] === user.token &&
+      isMapAssetListQueryKey(query.queryKey),
+    refetchType: 'all',
+  });
+  cacheCreatedMapAsset(queryClient, user, asset);
 }
 
 /** GET survey ids linked to this layer. */

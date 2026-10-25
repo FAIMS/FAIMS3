@@ -203,7 +203,6 @@ function prefsFor(
     fill: file.defaultStyle.fill,
     lineWidth: file.defaultStyle.lineWidth,
     pointSize: file.defaultStyle.pointSize,
-    labelField: file.defaultStyle.labelField,
   };
   if (!prefs) {
     return fallback;
@@ -212,15 +211,6 @@ function prefsFor(
     ...prefs,
     zIndex: Number.isFinite(prefs.zIndex) ? prefs.zIndex : fallback.zIndex,
   };
-}
-
-/** Drop an empty `labelField` so it is not persisted. */
-function storeLayerPrefs(prefs: LayerPrefs): LayerPrefs {
-  if (!prefs.labelField) {
-    const {labelField: _labelField, ...rest} = prefs;
-    return rest;
-  }
-  return prefs;
 }
 
 /**
@@ -238,7 +228,7 @@ export function resetContextualLayerPrefs(
   const nextPrefs: Record<string, LayerPrefs> = {};
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    const prefs = storeLayerPrefs(prefsFor(file, undefined, i));
+    const prefs = prefsFor(file, undefined, i);
     index.prefs[file.assetId] = prefs;
     nextPrefs[file.assetId] = prefs;
   }
@@ -271,7 +261,6 @@ function applyStoredPrefs(
     fill: prefs.fill,
     lineWidth: prefs.lineWidth,
     pointSize: prefs.pointSize,
-    labelField: prefs.labelField,
   };
 }
 
@@ -352,7 +341,6 @@ async function layerFromFile(
     fill: prefs.fill,
     lineWidth: prefs.lineWidth,
     pointSize: prefs.pointSize,
-    labelField: prefs.labelField,
     extent4326: file.extent4326,
     extent3857: file.extent3857,
     minZoom: file.minZoom,
@@ -373,9 +361,6 @@ export async function updateContextualLayerPrefs(
   }
   const current = prefsFor(file, index.prefs[assetId], 0);
   index.prefs[assetId] = {...current, ...patch};
-  if (!index.prefs[assetId].labelField) {
-    delete index.prefs[assetId].labelField;
-  }
   writeIndex(index);
 }
 
@@ -413,7 +398,63 @@ type DownloadContextualLayersArgs = {
   projectId: string;
   layers: ContextualLayerListing[];
   onProgress?: (progress: ContextualLayerDownloadProgress) => void;
+  /** Abort in-flight fetches and stop the batch. Native `downloadFile` is raced. */
+  signal?: AbortSignal;
 };
+
+/**
+ * Thrown when {@link downloadContextualLayers} is aborted via `signal`.
+ */
+export class ContextualLayerDownloadCancelledError extends Error {
+  constructor() {
+    super('Map layer download cancelled.');
+    this.name = 'ContextualLayerDownloadCancelledError';
+  }
+}
+
+/** Type guard for cancellation during contextual layer downloads. */
+export function isContextualLayerDownloadCancelledError(
+  error: unknown
+): error is ContextualLayerDownloadCancelledError {
+  return error instanceof ContextualLayerDownloadCancelledError;
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError';
+}
+
+function throwIfDownloadCancelled(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw new ContextualLayerDownloadCancelledError();
+  }
+}
+
+/** Rejects when `signal` aborts. Hangs forever when no signal is passed. */
+function whenDownloadCancelled(signal?: AbortSignal): Promise<never> {
+  return new Promise((_, reject) => {
+    const cancel = () => {
+      reject(new ContextualLayerDownloadCancelledError());
+    };
+    if (!signal) {
+      return;
+    }
+    if (signal.aborted) {
+      cancel();
+      return;
+    }
+    signal.addEventListener('abort', cancel, {once: true});
+  });
+}
+
+function asLayerDownloadError(error: unknown, layerName: string): Error {
+  if (isContextualLayerDownloadCancelledError(error) || isAbortError(error)) {
+    return new ContextualLayerDownloadCancelledError();
+  }
+  if (error instanceof Error && error.message.startsWith('Could not')) {
+    return error;
+  }
+  return new Error(`Could not download ${layerName}.`);
+}
 
 /**
  * Read a response body in chunks so the caller can show download progress.
@@ -422,8 +463,10 @@ type DownloadContextualLayersArgs = {
 async function readResponseBytes(
   response: Response,
   expectedBytes: number,
-  onReceived: (received: number, total: number) => void
+  onReceived: (received: number, total: number) => void,
+  signal?: AbortSignal
 ): Promise<Uint8Array> {
+  throwIfDownloadCancelled(signal);
   const headerLength = Number(response.headers.get('Content-Length'));
   const total =
     Number.isFinite(headerLength) && headerLength > 0
@@ -435,27 +478,36 @@ async function readResponseBytes(
     onReceived(bytes.byteLength, Math.max(total, bytes.byteLength));
     return bytes;
   }
-  const chunks: Uint8Array[] = [];
-  let received = 0;
-  while (true) {
-    const {done, value} = await reader.read();
-    if (done) {
-      break;
+  const abortRead = () => {
+    void reader.cancel();
+  };
+  signal?.addEventListener('abort', abortRead, {once: true});
+  try {
+    const chunks: Uint8Array[] = [];
+    let received = 0;
+    while (true) {
+      throwIfDownloadCancelled(signal);
+      const {done, value} = await reader.read();
+      if (done) {
+        break;
+      }
+      if (!value) {
+        continue;
+      }
+      chunks.push(value);
+      received += value.byteLength;
+      onReceived(received, Math.max(total, received));
     }
-    if (!value) {
-      continue;
+    const bytes = new Uint8Array(received);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
     }
-    chunks.push(value);
-    received += value.byteLength;
-    onReceived(received, Math.max(total, received));
+    return bytes;
+  } finally {
+    signal?.removeEventListener('abort', abortRead);
   }
-  const bytes = new Uint8Array(received);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return bytes;
 }
 
 /**
@@ -510,6 +562,40 @@ async function downloadNativeLayerFile(
   }
 }
 
+/**
+ * Native `downloadFile` has no abort API. Race it so Cancel can unblock
+ * the UI; delete the destination after the plugin call settles.
+ */
+async function downloadNativeLayerFileUntilCancelled(
+  url: string,
+  filename: string,
+  expectedBytes: number,
+  onReceived: (received: number, total: number) => void,
+  signal?: AbortSignal
+): Promise<void> {
+  throwIfDownloadCancelled(signal);
+  const download = downloadNativeLayerFile(
+    url,
+    filename,
+    expectedBytes,
+    onReceived
+  );
+  if (!signal) {
+    await download;
+    return;
+  }
+  try {
+    await Promise.race([download, whenDownloadCancelled(signal)]);
+  } catch (error) {
+    if (isContextualLayerDownloadCancelledError(error)) {
+      void download
+        .catch(() => undefined)
+        .then(() => removeDeviceFile(filename));
+    }
+    throw error;
+  }
+}
+
 /** Download missing/updated layers and index them, serialized with other file writes. */
 export async function downloadContextualLayers(
   args: DownloadContextualLayersArgs
@@ -528,7 +614,9 @@ async function downloadAndIndexContextualLayers({
   projectId,
   layers,
   onProgress,
+  signal,
 }: DownloadContextualLayersArgs): Promise<void> {
+  throwIfDownloadCancelled(signal);
   const index = readIndex();
   const previous = index.files;
   const batchBytes = layers.reduce((sum, layer) => sum + layer.byteSize, 0);
@@ -556,49 +644,51 @@ async function downloadAndIndexContextualLayers({
   };
   report(undefined, 0, 0);
   for (const layer of layers) {
+    throwIfDownloadCancelled(signal);
     const existing = index.files[layer.id];
     const filename =
       existing && existing.contentHash === layer.contentHash
         ? existing.filename
         : filenameFor(layer);
     if (!existing || existing.contentHash !== layer.contentHash) {
-      const grant = await fetch(
-        `${serverUrl}/api/map-assets/${layer.id}/download-url`,
-        {headers: {Authorization: `Bearer ${token}`}}
-      );
-      if (!grant.ok) {
-        throw new Error(`Could not download ${layer.name}.`);
-      }
-      const {url} = (await grant.json()) as GetMapAssetDownloadUrlResponse;
-      if (!url) {
-        throw new Error(`Could not download ${layer.name}.`);
-      }
       try {
+        const grant = await fetch(
+          `${serverUrl}/api/map-assets/${layer.id}/download-url`,
+          {headers: {Authorization: `Bearer ${token}`}, signal}
+        );
+        if (!grant.ok) {
+          throw new Error(`Could not download ${layer.name}.`);
+        }
+        const {url} = (await grant.json()) as GetMapAssetDownloadUrlResponse;
+        if (!url) {
+          throw new Error(`Could not download ${layer.name}.`);
+        }
+        throwIfDownloadCancelled(signal);
         if (Capacitor.isNativePlatform()) {
-          await downloadNativeLayerFile(
+          await downloadNativeLayerFileUntilCancelled(
             url,
             filename,
             layer.byteSize,
-            (received, total) => report(layer.id, received, total)
+            (received, total) => report(layer.id, received, total),
+            signal
           );
         } else {
-          const response = await fetch(url);
+          const response = await fetch(url, {signal});
           if (!response.ok) {
             throw new Error(`Could not download ${layer.name}.`);
           }
           const bytes = await readResponseBytes(
             response,
             layer.byteSize,
-            (received, total) => report(layer.id, received, total)
+            (received, total) => report(layer.id, received, total),
+            signal
           );
+          throwIfDownloadCancelled(signal);
           await writeBrowserFile(filename, bytes);
         }
       } catch (error) {
         await removeDeviceFile(filename);
-        if (error instanceof Error && error.message.startsWith('Could not')) {
-          throw error;
-        }
-        throw new Error(`Could not download ${layer.name}.`);
+        throw asLayerDownloadError(error, layer.name);
       }
     }
     completedBytes += layer.byteSize;

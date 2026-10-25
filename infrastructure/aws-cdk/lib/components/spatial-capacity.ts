@@ -164,6 +164,10 @@ export class FaimsSpatialCapacity extends Construct {
         CAPACITY_MAX: `${props.config.maxCapacity}`,
         CAPACITY_SCALE_THRESHOLDS: props.config.scaleThresholds.join(','),
         CAPACITY_RECONCILE_MS: `${props.config.reconcileMs}`,
+        CAPACITY_STARVATION_MS: `${props.config.starvationMs}`,
+        CAPACITY_SCALE_IN_COOLDOWN_MS: `${
+          props.config.scaleInCooldownMs ?? 2 * props.config.starvationMs
+        }`,
         CAPACITY_ECS_CLUSTER: props.cluster.clusterArn,
         CAPACITY_ECS_WORKER_TASK_DEFINITION:
           this.workerTaskDefinition.taskDefinitionArn,

@@ -33,7 +33,7 @@ function applyCommon(layer: ManagedLayer, spec: ContextualMapLayer) {
   layer.setZIndex(contextualLayerZIndex(spec.zIndex));
 }
 
-/** Apply vector stroke/fill/label style when the layer is a VectorTileLayer. */
+/** Apply vector stroke/fill style when the layer is a VectorTileLayer. */
 function paintVector(layer: ManagedLayer, spec: ContextualMapLayer) {
   if (layer instanceof VectorTileLayer) {
     layer.setStyle(contextualVectorStyle(spec));

@@ -166,16 +166,22 @@ describe('GET/POST /api/map-assets', () => {
     expect(post.body).toEqual({error: 'authentication required'});
   });
 
-  it('rejects a personal upload from a user without CREATE_MAP_ASSET', async () => {
+  it('rejects a personal upload from a user without CREATE_MAP_ASSET_OUTSIDE_TEAM', async () => {
     const res = await upload(localUserToken);
     expect(res.status).toBe(401);
     expect(res.body.error.message).toMatch(/permission to upload/);
   });
 
-  it('creates a personal pending layer for a notebook creator', async () => {
-    const res = await upload(notebookUserToken).expect(201);
+  it('rejects a personal upload from a content creator', async () => {
+    const res = await upload(notebookUserToken);
+    expect(res.status).toBe(401);
+    expect(res.body.error.message).toMatch(/permission to upload/);
+  });
+
+  it('creates a personal pending layer for a Super User', async () => {
+    const res = await upload(adminToken).expect(201);
     expect(res.body.status).toBe('pending');
-    expect(res.body.createdBy).toBe(notebookUserName);
+    expect(res.body.createdBy).toBe('admin');
     expect(res.body.ownedByTeamId).toBeUndefined();
     expect(res.body.docType).toBe('asset');
     expect(res.body.processingStage).toBe('uploading');
@@ -200,6 +206,24 @@ describe('GET/POST /api/map-assets', () => {
     const created = await upload(manager.token, {teamId: team._id}).expect(201);
     expect(created.body.ownedByTeamId).toBe(team._id);
     expect(created.body.createdBy).toBe('map-manager');
+  });
+
+  it('blocks a team manager from uploading outside a team or into another team', async () => {
+    const team = await createTeam();
+    const otherTeam = await createTeam('Other Map Team');
+    const manager = await createRoleUser({
+      username: 'map-manager-scope',
+      teamId: team._id,
+      teamRole: Role.TEAM_MANAGER,
+    });
+
+    const personal = await upload(manager.token);
+    expect(personal.status).toBe(401);
+    expect(personal.body.error.message).toMatch(/permission to upload/);
+
+    const other = await upload(manager.token, {teamId: otherTeam._id});
+    expect(other.status).toBe(401);
+    expect(other.body.error.message).toMatch(/permission to upload/);
   });
 
   it('rejects empty, oversized, unsupported, and unnamed uploads', async () => {
@@ -276,6 +300,7 @@ describe('GET/PATCH/PUT/DELETE /api/map-assets/:id', () => {
       notebookUserToken
     ).expect(200);
     expect(own.body._id).toBe(asset._id);
+    expect(own.body.linkCount).toBe(0);
   });
 
   it('renames, replaces, then deletes a layer', async () => {
@@ -403,6 +428,19 @@ describe('map asset survey links HTTP', () => {
       adminToken
     ).expect(200);
     expect(listed.body.projectIds).toEqual([projectId]);
+
+    const detail = await auth(
+      request(app).get(`${MAP_ASSETS}/${asset._id}`),
+      adminToken
+    ).expect(200);
+    expect(detail.body.linkCount).toBe(1);
+    const library = await auth(request(app).get(MAP_ASSETS), adminToken).expect(
+      200
+    );
+    expect(
+      library.body.assets.find((row: {_id: string}) => row._id === asset._id)
+        .linkCount
+    ).toBe(1);
 
     await auth(
       request(app).delete(`${MAP_ASSETS}/${asset._id}/links/${projectId}`),

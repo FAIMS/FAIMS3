@@ -40,7 +40,6 @@ export type RecordFormLayerPrefs = {
   fill: string;
   lineWidth: number;
   pointSize: number;
-  labelField?: string;
 };
 
 export type RecordFormLayersPrefsState = Record<string, RecordFormLayerPrefs>;
@@ -128,10 +127,6 @@ export function normalizeRecordFormLayerPrefs(
   value: Partial<RecordFormLayerPrefs> | undefined,
   fallback: RecordFormLayerPrefs
 ): RecordFormLayerPrefs {
-  const labelField =
-    typeof value?.labelField === 'string' && value.labelField.length > 0
-      ? value.labelField
-      : fallback.labelField;
   return {
     visible:
       typeof value?.visible === 'boolean' ? value.visible : fallback.visible,
@@ -147,7 +142,6 @@ export function normalizeRecordFormLayerPrefs(
         : fallback.fill,
     lineWidth: clampPositive(value?.lineWidth ?? fallback.lineWidth, 4),
     pointSize: clampPositive(value?.pointSize ?? fallback.pointSize, 7),
-    ...(labelField ? {labelField} : {}),
   };
 }
 
@@ -246,7 +240,6 @@ export function prefsFromRecordFormLayer(
     fill: layer.fill,
     lineWidth: layer.lineWidth,
     pointSize: layer.pointSize,
-    ...(layer.labelField ? {labelField: layer.labelField} : {}),
   };
 }
 

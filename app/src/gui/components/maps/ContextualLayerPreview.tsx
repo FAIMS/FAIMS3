@@ -43,7 +43,6 @@ function LayerPreviewMap({layer}: {layer: ContextualMapLayer}) {
           lineWidth: layer.lineWidth,
           pointSize: layer.pointSize,
           opacity: layer.opacity,
-          labelField: layer.labelField,
         }}
         mapConfig={mapConfig}
         baseLayer={tileStore.getTileLayer()}

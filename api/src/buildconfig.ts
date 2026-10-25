@@ -43,6 +43,8 @@ import {
 } from './spatial/gdalPerformance';
 import {
   DEFAULT_CAPACITY_SCALE_THRESHOLDS_CSV,
+  DEFAULT_CAPACITY_STARVATION_MS,
+  defaultScaleInCooldownMs,
   parseCapacityScaleThresholds,
 } from './spatial/reconcileCapacity';
 import {
@@ -443,6 +445,38 @@ const EnvSchema = z
       15_000,
       'CAPACITY_RECONCILE_MS'
     ),
+    /**
+     * How long the oldest unclaimed job may wait before the manager asks
+     * for the first extra worker (still capped by CAPACITY_MAX). `0`
+     * disables. Default 5 minutes.
+     */
+    CAPACITY_STARVATION_MS: configHelpers.intDefault(
+      DEFAULT_CAPACITY_STARVATION_MS,
+      'CAPACITY_STARVATION_MS'
+    ),
+    /**
+     * After the first staleness scale-up, how long the oldest unclaimed
+     * job must keep waiting before another extra worker. Blank defaults
+     * to twice CAPACITY_STARVATION_MS. `0` keeps only the first extra.
+     */
+    CAPACITY_SCALE_IN_COOLDOWN_MS: z
+      .string()
+      .optional()
+      .transform((v, ctx) => {
+        if (configHelpers.isBlank(v)) {
+          return undefined;
+        }
+        const parsed = parseInt(v, 10);
+        if (!Number.isInteger(parsed) || parsed < 0) {
+          ctx.addIssue({
+            code: 'custom',
+            message:
+              'CAPACITY_SCALE_IN_COOLDOWN_MS must be a non-negative integer',
+          });
+          return z.NEVER;
+        }
+        return parsed;
+      }),
     /** Replica count reported by the FIXED provider. It does not start tasks. */
     CAPACITY_FIXED_REPLICAS: configHelpers.intDefault(
       1,
@@ -831,6 +865,8 @@ const EnvSchema = z
         max: env.CAPACITY_MAX,
         scaleThresholds: env.CAPACITY_SCALE_THRESHOLDS,
         reconcileMs: env.CAPACITY_RECONCILE_MS,
+        starvationMs: env.CAPACITY_STARVATION_MS,
+        scaleInCooldownMs: env.CAPACITY_SCALE_IN_COOLDOWN_MS,
         fixedReplicas: env.CAPACITY_FIXED_REPLICAS,
         cluster: env.CAPACITY_ECS_CLUSTER,
         taskDefinition: env.CAPACITY_ECS_WORKER_TASK_DEFINITION,
@@ -1112,6 +1148,10 @@ export const config = {
   capacityMax: _capacity.max,
   capacityScaleThresholds: _capacity.scaleThresholds,
   capacityReconcileMs: _capacity.reconcileMs,
+  capacityStarvationMs: _capacity.starvationMs,
+  capacityScaleInCooldownMs:
+    _capacity.scaleInCooldownMs ??
+    defaultScaleInCooldownMs(_capacity.starvationMs),
   capacityFixedReplicas: _capacity.fixedReplicas,
   spatialWorkerIdleExitMs: _capacity.idleExitMs,
   spatialWorkerPollMs: _capacity.pollMs,

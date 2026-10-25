@@ -21,7 +21,7 @@ import {
   Typography,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {
   clearPendingContextualLayerPrompt,
@@ -37,6 +37,7 @@ import {
 import {
   downloadContextualLayers,
   forgetUnselectedContextualLayers,
+  isContextualLayerDownloadCancelledError,
   listStoredContextualLayers,
   markContextualLayersSeen,
   notifyContextualLayersChanged,
@@ -216,6 +217,8 @@ export function ContextualLayerPrompt() {
     'selected' | 'all' | null
   >(null);
   const [error, setError] = useState<string | undefined>();
+  const [cancelling, setCancelling] = useState(false);
+  const downloadAbort = useRef<AbortController | null>(null);
   const promptKey = prompt ? `${prompt.serverId}:${prompt.projectId}` : '';
   const location = useOccasionalDeviceLocation(Boolean(prompt));
 
@@ -223,6 +226,7 @@ export function ContextualLayerPrompt() {
     setSelected(null);
     setStored(null);
     setError(undefined);
+    setCancelling(false);
   }, [promptKey]);
 
   useEffect(() => {
@@ -289,6 +293,11 @@ export function ContextualLayerPrompt() {
     setSelected([...next]);
   };
 
+  const cancelDownload = () => {
+    setCancelling(true);
+    downloadAbort.current?.abort();
+  };
+
   const finish = async (
     ids: string[],
     action: 'selected' | 'all' | null = null
@@ -297,7 +306,10 @@ export function ContextualLayerPrompt() {
       dispatch(clearPendingContextualLayerPrompt());
       return;
     }
+    const controller = new AbortController();
+    downloadAbort.current = controller;
     setWorking(true);
+    setCancelling(false);
     setError(undefined);
     try {
       const toDownload = layers.filter(layer => ids.includes(layer.id));
@@ -309,6 +321,7 @@ export function ContextualLayerPrompt() {
           token: user.token,
           projectId: prompt.projectId,
           layers: toDownload,
+          signal: controller.signal,
           onProgress: progress => setDownloadCompletion(progress.completion),
         });
       }
@@ -321,13 +334,20 @@ export function ContextualLayerPrompt() {
       dispatch(clearPendingContextualLayerPrompt());
       setSelected(null);
     } catch (downloadError) {
+      if (isContextualLayerDownloadCancelledError(downloadError)) {
+        return;
+      }
       setError(
         downloadError instanceof Error
           ? downloadError.message
           : 'Download failed.'
       );
     } finally {
+      if (downloadAbort.current === controller) {
+        downloadAbort.current = null;
+      }
       setWorking(false);
+      setCancelling(false);
       setActiveDownload(null);
       setDownloadCompletion(null);
     }
@@ -354,7 +374,7 @@ export function ContextualLayerPrompt() {
   return (
     <Dialog open data-testid="map-layer-activation-prompt">
       <DialogTitle>Download map layers</DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{pb: 3}}>
         <Typography variant="body2" sx={{mb: 2}}>
           This survey has contextual layers available for download. In order to
           view these layers in the map, you must download them to the device.
@@ -388,12 +408,26 @@ export function ContextualLayerPrompt() {
           </Stack>
         )}
         {error ? (
-          <Typography color="error" variant="body2" sx={{mt: 1}}>
+          <Typography color="error" variant="body2" sx={{mt: 2}}>
             {error}
           </Typography>
         ) : null}
         {activeDownload ? (
-          <ProgressBar completion={downloadCompletion ?? 0} />
+          <Stack
+            spacing={1.5}
+            sx={{mt: 3}}
+            data-testid="map-layer-download-progress"
+          >
+            <ProgressBar completion={downloadCompletion ?? 0} />
+            <Button
+              variant="outlined"
+              onClick={cancelDownload}
+              disabled={cancelling}
+              data-testid="map-layer-download-cancel"
+            >
+              {cancelling ? 'Cancelling…' : 'Cancel download'}
+            </Button>
+          </Stack>
         ) : null}
       </DialogContent>
       <DialogActions>

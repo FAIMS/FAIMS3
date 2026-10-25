@@ -30,7 +30,6 @@ export type ContextualMapLayer = {
   fill: string;
   lineWidth: number;
   pointSize: number;
-  labelField?: string;
   /** EPSG:4326 [minX, minY, maxX, maxY]. */
   extent4326: [number, number, number, number];
   /** EPSG:3857 placement extent for images. */
@@ -52,7 +51,6 @@ export type ContextualMapLayerPatch = Partial<
     | 'fill'
     | 'lineWidth'
     | 'pointSize'
-    | 'labelField'
   >
 >;
 

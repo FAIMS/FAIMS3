@@ -220,6 +220,22 @@ export function isMapAssetInProgress(
   return status === 'pending' || status === 'processing';
 }
 
+/** How many surveys a listing/detail payload says this layer is linked to. */
+export function mapAssetLinkCount(asset: {linkCount?: number}): number {
+  return asset.linkCount ?? 0;
+}
+
+/**
+ * True when ingest has finished and no survey is linked yet. The Control
+ * Centre shows this as “Ready to link” rather than a green Ready chip.
+ */
+export function isMapAssetReadyToLink(asset: {
+  status: MapAssetStatus | string;
+  linkCount?: number;
+}): boolean {
+  return asset.status === 'ready' && mapAssetLinkCount(asset) === 0;
+}
+
 /**
  * Steps a spatial job writes back to the asset while it is in progress.
  * The Control Centre maps these to short user-facing messages.
@@ -322,7 +338,6 @@ export const MapAssetStyleSchema = z.object({
   fill: z.string().min(1),
   lineWidth: z.number().positive(),
   pointSize: z.number().positive(),
-  labelField: z.string().min(1).max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
   opacity: z.number().min(0).max(1),
 });
 export type MapAssetStyle = z.infer<typeof MapAssetStyleSchema>;
@@ -458,11 +473,20 @@ export type ContextualLayerListing = z.infer<
   typeof ContextualLayerListingSchema
 >;
 
-export const GetMapAssetResponseSchema = ExistingMapAssetSchema;
-export type GetMapAssetResponse = ExistingMapAsset;
+/**
+ * Couch asset plus how many surveys it is linked to. `linkCount` is computed
+ * at read time and is not stored on the asset document.
+ */
+export const MapAssetWithLinkCountSchema = ExistingMapAssetSchema.extend({
+  linkCount: z.number().int().nonnegative(),
+});
+export type MapAssetWithLinkCount = z.infer<typeof MapAssetWithLinkCountSchema>;
+
+export const GetMapAssetResponseSchema = MapAssetWithLinkCountSchema;
+export type GetMapAssetResponse = MapAssetWithLinkCount;
 
 export const GetMapAssetListResponseSchema = z.object({
-  assets: z.array(ExistingMapAssetSchema),
+  assets: z.array(MapAssetWithLinkCountSchema),
 });
 export type GetMapAssetListResponse = z.infer<
   typeof GetMapAssetListResponseSchema

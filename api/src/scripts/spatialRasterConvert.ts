@@ -17,7 +17,6 @@ import {
   type RasterFormat,
 } from './spatialRasterFormats';
 import {
-  RASTER_SOURCE_CRS,
   rasterCacheBasename,
   rasterSourceMatchesCrs,
   rasterWindowForBytes,

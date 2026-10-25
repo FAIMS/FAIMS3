@@ -294,7 +294,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
     isError,
     error,
     dataEngine,
-    gisFields,
   } = useRecordFeatures({
     projectId: project_id,
     uiSpec,
@@ -416,8 +415,8 @@ export const OverviewMap = (props: OverviewMapProps) => {
               revisionId === selected.revision_id
             );
             return isSelected
-              ? selectedVectorStyle(spec)(olFeature)
-              : contextualVectorStyle(spec)(olFeature);
+              ? selectedVectorStyle(spec)
+              : contextualVectorStyle(spec);
           },
         });
         map.addLayer(layer);
@@ -587,49 +586,18 @@ export const OverviewMap = (props: OverviewMapProps) => {
     setPopoverAnchorPosition(null);
   };
 
-  // Render states
-  if (gisFields.length === 0) {
+  // Show the map even when no records have geometry — map-asset layers are
+  // still useful. Only a failed hydration with nothing to plot stays an alert.
+  if (
+    isError &&
+    (!plottedCollection || plottedCollection.features.length === 0)
+  ) {
     return (
       <Box sx={{p: 2}}>
-        <Alert severity="info">
-          No GIS fields found in this project's form definition.
+        <Alert severity="error">
+          Failed to load map data:{' '}
+          {error instanceof Error ? error.message : 'Unknown error'}
         </Alert>
-      </Box>
-    );
-  }
-
-  if (!plottedCollection || plottedCollection.features.length === 0) {
-    if (isLoading) {
-      return (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '400px',
-            gap: 2,
-          }}
-        >
-          <CircularProgress size={24} />
-          <span>Loading map data...</span>
-        </Box>
-      );
-    }
-
-    if (isError) {
-      return (
-        <Box sx={{p: 2}}>
-          <Alert severity="error">
-            Failed to load map data:{' '}
-            {error instanceof Error ? error.message : 'Unknown error'}
-          </Alert>
-        </Box>
-      );
-    }
-
-    return (
-      <Box sx={{p: 2}}>
-        <Alert severity="info">No records with location data found.</Alert>
       </Box>
     );
   }

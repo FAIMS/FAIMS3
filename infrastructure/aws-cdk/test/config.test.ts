@@ -287,6 +287,40 @@ describe('SpatialCapacityConfigSchema GDAL / tippecanoe knobs', () => {
     expect(parsed.gdalWarpMulti).toBe(true);
     expect(parsed.tippecanoeMaxThreads).toBeUndefined();
     expect(parsed).not.toHaveProperty('tippecanoeReadParallel');
+    expect(parsed.starvationMs).toBe(5 * 60 * 1000);
+    expect(parsed.scaleInCooldownMs).toBeUndefined();
+  });
+
+  it('accepts a custom scale-in cooldown including disable', () => {
+    expect(
+      SpatialCapacityConfigSchema.parse({scaleInCooldownMs: 0})
+        .scaleInCooldownMs
+    ).toBe(0);
+    expect(
+      SpatialCapacityConfigSchema.parse({scaleInCooldownMs: 120_000})
+        .scaleInCooldownMs
+    ).toBe(120_000);
+  });
+
+  it('accepts a custom starvation timeout including disable', () => {
+    expect(
+      SpatialCapacityConfigSchema.parse({starvationMs: 0}).starvationMs
+    ).toBe(0);
+    expect(
+      SpatialCapacityConfigSchema.parse({starvationMs: 120_000}).starvationMs
+    ).toBe(120_000);
+  });
+
+  it('rejects a negative starvation timeout', () => {
+    expect(() => SpatialCapacityConfigSchema.parse({starvationMs: -1})).toThrow(
+      ZodError
+    );
+  });
+
+  it('rejects a negative scale-in cooldown', () => {
+    expect(() =>
+      SpatialCapacityConfigSchema.parse({scaleInCooldownMs: -1})
+    ).toThrow(ZodError);
   });
 
   it('accepts an explicit thread cap and larger warp buffer', () => {

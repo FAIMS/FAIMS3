@@ -10,6 +10,7 @@ import {
   DEFAULT_MAP_ASSET_STYLE,
   ExistingMapAsset,
   ExistingMapAssetLink,
+  MapAssetWithLinkCount,
   MAP_ASSET_DOC_TYPE,
   MAP_ASSET_LINK_DOC_TYPE,
   MAP_ASSET_LINKS_BY_ASSET,
@@ -182,6 +183,59 @@ export async function listLinkProjectIds(assetId: string): Promise<string[]> {
   return result.rows
     .map(row => row.value)
     .filter((value): value is string => typeof value === 'string');
+}
+
+/**
+ * Linked-survey counts for many layers in one `linksByAsset` query.
+ * Assets with no links are present with `0`. Duplicate ids collapse.
+ */
+export async function listLinkCountsByAsset(
+  assetIds: readonly string[]
+): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  for (const assetId of assetIds) {
+    if (assetId.length > 0 && !counts.has(assetId)) {
+      counts.set(assetId, 0);
+    }
+  }
+  const keys = [...counts.keys()];
+  if (keys.length === 0) {
+    return counts;
+  }
+  const result = await getMapAssetsDB().query<string>(
+    MAP_ASSET_LINKS_BY_ASSET,
+    {
+      keys,
+      include_docs: false,
+    }
+  );
+  for (const row of result.rows) {
+    const assetId = row.key;
+    if (typeof assetId !== 'string' || !counts.has(assetId)) {
+      continue;
+    }
+    counts.set(assetId, (counts.get(assetId) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/** Asset document plus how many surveys it is linked to. */
+export async function attachLinkCount(
+  asset: ExistingMapAsset
+): Promise<MapAssetWithLinkCount> {
+  const projectIds = await listLinkProjectIds(asset._id);
+  return {...asset, linkCount: projectIds.length};
+}
+
+/** Listing rows plus linked-survey counts, in one view query. */
+export async function attachLinkCounts(
+  assets: ExistingMapAsset[]
+): Promise<MapAssetWithLinkCount[]> {
+  const counts = await listLinkCountsByAsset(assets.map(asset => asset._id));
+  return assets.map(asset => ({
+    ...asset,
+    linkCount: counts.get(asset._id) ?? 0,
+  }));
 }
 
 /**
@@ -685,6 +739,23 @@ function lastProcessingStateChangeAt(asset: {
     Number.isFinite(asset.processingStartedAt)
   ) {
     return asset.processingStartedAt;
+  }
+  return undefined;
+}
+
+/**
+ * When an unclaimed job started waiting for a worker. Prefer `updatedAt`
+ * (originals landed / last queue write) over `createdAt` (upload start).
+ */
+function unclaimedWaitingSince(asset: {
+  updatedAt?: number;
+  createdAt?: number;
+}): number | undefined {
+  if (asset.updatedAt !== undefined && Number.isFinite(asset.updatedAt)) {
+    return asset.updatedAt;
+  }
+  if (asset.createdAt !== undefined && Number.isFinite(asset.createdAt)) {
+    return asset.createdAt;
   }
   return undefined;
 }
@@ -1392,11 +1463,16 @@ export async function findUnclaimedSpatialJob(
 /** Queue depth the capacity manager turns into worker tasks. */
 export async function summarizeSpatialBacklog(
   runtime?: MapAssetProcessingRuntime
-): Promise<{inFlight: number; unclaimed: number}> {
+): Promise<{
+  inFlight: number;
+  unclaimed: number;
+  oldestUnclaimedMs?: number;
+}> {
   const now = processingNow(runtime);
   const timeoutMs = claimTimeoutMs(runtime);
   let inFlight = 0;
   let unclaimed = 0;
+  let oldestWaitingSince: number | undefined;
   for (const assetId of await listInProgressMapAssetIds()) {
     try {
       const asset = await getMapAsset(assetId);
@@ -1405,6 +1481,14 @@ export async function summarizeSpatialBacklog(
       }
       if (mapAssetIsClaimable(asset, now, timeoutMs)) {
         unclaimed += 1;
+        const waitingSince = unclaimedWaitingSince(asset);
+        if (
+          waitingSince !== undefined &&
+          (oldestWaitingSince === undefined ||
+            waitingSince < oldestWaitingSince)
+        ) {
+          oldestWaitingSince = waitingSince;
+        }
       } else {
         inFlight += 1;
       }
@@ -1414,7 +1498,13 @@ export async function summarizeSpatialBacklog(
       }
     }
   }
-  return {inFlight, unclaimed};
+  return {
+    inFlight,
+    unclaimed,
+    ...(oldestWaitingSince === undefined
+      ? {}
+      : {oldestUnclaimedMs: Math.max(0, now - oldestWaitingSince)}),
+  };
 }
 
 /** How long a client-direct download grant stays valid. */

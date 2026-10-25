@@ -255,6 +255,59 @@ describe('OverviewMap record layers', () => {
     ).toEqual({});
   });
 
+  it('shows the map when there are no records with location data', () => {
+    features.data = {type: 'FeatureCollection', features: []};
+
+    render(
+      <OverviewMap
+        uiSpec={uiSpec}
+        project_id="project-1"
+        records={{allRecords: []}}
+      />
+    );
+
+    expect(screen.getByTestId('overview-map')).toBeInTheDocument();
+    expect(
+      screen.queryByText(/No records with location data/)
+    ).not.toBeInTheDocument();
+    expect(mapProps.current?.recordLayers).toEqual([]);
+  });
+
+  it('shows the map while the first record features are still loading', () => {
+    features.isLoading = true;
+    features.data = undefined;
+
+    render(
+      <OverviewMap
+        uiSpec={uiSpec}
+        project_id="project-1"
+        records={{allRecords: []}}
+      />
+    );
+
+    expect(screen.getByTestId('overview-map')).toBeInTheDocument();
+    expect(screen.queryByText(/Loading map data/)).not.toBeInTheDocument();
+  });
+
+  it('shows an error instead of an empty map when hydration fails', () => {
+    features.isError = true;
+    features.error = new Error('database is closed');
+    features.data = undefined;
+
+    render(
+      <OverviewMap
+        uiSpec={uiSpec}
+        project_id="project-1"
+        records={{allRecords: []}}
+      />
+    );
+
+    expect(screen.queryByTestId('overview-map')).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Failed to load map data: database is closed/)
+    ).toBeInTheDocument();
+  });
+
   it('keeps the map mounted when a newly synced record hydrates', () => {
     const {rerender} = render(
       <OverviewMap

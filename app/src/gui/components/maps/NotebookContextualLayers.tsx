@@ -172,7 +172,6 @@ export function NotebookContextualLayers({
                   fill: next.fill,
                   lineWidth: next.lineWidth,
                   pointSize: next.pointSize,
-                  labelField: next.labelField,
                 }
               : layer;
           })

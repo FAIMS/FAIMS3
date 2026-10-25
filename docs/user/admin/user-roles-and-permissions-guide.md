@@ -115,7 +115,7 @@ The **Operations Administrator** role handles routine system management without 
 
 During onboarding, enterprise users are typically assigned:
 
-- **Content Creator** system role — they can create {{notebooks}}, templates, and map layers
+- **Content Creator** system role — they can create {{notebooks}} and templates globally; map layers are created inside a team
 - **Team Administrator** of their assigned team — they have full control over their team (but they can't change their own role in the team)
 
 These roles are granted through invites created by an Operations Administrator or Super User (see "How Users Are Created" below). Once onboarded, a typical user can immediately:
@@ -222,7 +222,7 @@ There are four system roles: **General User** (basic access), **Content Creator*
 
 Each role badge (visible in the {{Dashboard}} screenshot earlier) has a small **×** in the upper-right corner — click this to remove the role.
 
-> ⚠️ **Warning**: Be careful when removing roles. If you remove Content Creator from a user, they will no longer be able to create {{notebooks}} or map layers globally. However, they can still create {{notebooks}} and map layers within teams where they have the Team Member (Creator), Team Manager, or Team Administrator role.
+> ⚠️ **Warning**: Be careful when removing roles. If you remove Content Creator from a user, they will no longer be able to create {{notebooks}} or templates globally. However, they can still create {{notebooks}} and map layers within teams where they have the Team Member (Creator), Team Manager, or Team Administrator role. Only Super Users can upload a map layer that is not owned by a team.
 
 **See also:** Troubleshooting → Can't Assign Team Administrator Role
 

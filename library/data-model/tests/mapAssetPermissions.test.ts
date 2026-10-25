@@ -6,6 +6,7 @@ import {
   encodeToken,
   ENCODING_SEPARATOR,
   generateVirtualResourceRoles,
+  isAuthorized,
   isAuthorizedForMapAsset,
   isAuthorizedToMutateMapAsset,
   isAuthorizedToReplaceMapAssetFiles,
@@ -391,5 +392,79 @@ describe('isAuthorizedForMapAsset', () => {
         actingUserId: otherId,
       })
     ).toBe(false);
+  });
+});
+
+describe('create map layer actions', () => {
+  it('lets only a Super User create a layer outside a team', () => {
+    expect(
+      isAuthorized({
+        decodedToken: token({globalRoles: [Role.GENERAL_ADMIN]}),
+        action: Action.CREATE_MAP_ASSET_OUTSIDE_TEAM,
+      })
+    ).toBe(true);
+    expect(
+      isAuthorized({
+        decodedToken: token({globalRoles: [Role.GENERAL_CREATOR]}),
+        action: Action.CREATE_MAP_ASSET_OUTSIDE_TEAM,
+      })
+    ).toBe(false);
+    expect(
+      isAuthorized({
+        decodedToken: token({globalRoles: [Role.OPERATIONS_ADMIN]}),
+        action: Action.CREATE_MAP_ASSET_OUTSIDE_TEAM,
+      })
+    ).toBe(false);
+    expect(
+      isAuthorized({
+        decodedToken: teamToken(Role.TEAM_MANAGER),
+        action: Action.CREATE_MAP_ASSET_OUTSIDE_TEAM,
+      })
+    ).toBe(false);
+  });
+
+  it('lets team creators upload only into a team they have the action on', () => {
+    expect(
+      isAuthorized({
+        decodedToken: teamToken(Role.TEAM_MEMBER_CREATOR),
+        action: Action.CREATE_MAP_ASSET_IN_TEAM,
+        resourceId: teamId,
+      })
+    ).toBe(true);
+    expect(
+      isAuthorized({
+        decodedToken: teamToken(Role.TEAM_MANAGER),
+        action: Action.CREATE_MAP_ASSET_IN_TEAM,
+        resourceId: teamId,
+      })
+    ).toBe(true);
+    expect(
+      isAuthorized({
+        decodedToken: teamToken(Role.TEAM_MEMBER),
+        action: Action.CREATE_MAP_ASSET_IN_TEAM,
+        resourceId: teamId,
+      })
+    ).toBe(false);
+    expect(
+      isAuthorized({
+        decodedToken: teamToken(Role.TEAM_MANAGER),
+        action: Action.CREATE_MAP_ASSET_IN_TEAM,
+        resourceId: 'other-team',
+      })
+    ).toBe(false);
+    expect(
+      isAuthorized({
+        decodedToken: token({globalRoles: [Role.GENERAL_CREATOR]}),
+        action: Action.CREATE_MAP_ASSET_IN_TEAM,
+        resourceId: teamId,
+      })
+    ).toBe(false);
+    expect(
+      isAuthorized({
+        decodedToken: token({globalRoles: [Role.GENERAL_ADMIN]}),
+        action: Action.CREATE_MAP_ASSET_IN_TEAM,
+        resourceId: teamId,
+      })
+    ).toBe(true);
   });
 });

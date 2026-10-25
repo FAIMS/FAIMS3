@@ -8,8 +8,10 @@ import {
 import {QueryClient} from '@tanstack/react-query';
 import {describe, expect, it} from 'vitest';
 import {
+  cacheCreatedMapAsset,
   formatAssetStatus,
   inProgressMapAssetIds,
+  invalidateMapAssetsAfterCreate,
   mapAssetClientErrorMessage,
   mapAssetDetailQueryKey,
   mapAssetQueryKey,
@@ -19,9 +21,12 @@ import {
   patchMapAssetInLists,
   replaceAssetInList,
   seedMapAssetDetailsFromList,
+  upsertAssetInList,
 } from './map-asset-hooks';
 
-function asset(overrides: Partial<ExistingMapAsset> = {}): ExistingMapAsset {
+function asset(
+  overrides: Partial<ExistingMapAsset> & {linkCount?: number} = {}
+): ExistingMapAsset & {linkCount: number} {
   return {
     _id: 'asset-1',
     _rev: '1',
@@ -36,8 +41,9 @@ function asset(overrides: Partial<ExistingMapAsset> = {}): ExistingMapAsset {
     defaultStyle: DEFAULT_MAP_ASSET_STYLE,
     createdAt: 1,
     updatedAt: 1,
+    linkCount: 0,
     ...overrides,
-  } as ExistingMapAsset;
+  } as ExistingMapAsset & {linkCount: number};
 }
 
 describe('mapAssetClientErrorMessage', () => {
@@ -111,6 +117,17 @@ describe('map asset list cache helpers', () => {
     });
   });
 
+  it('keeps the previous linkCount when a poll omits it', () => {
+    const listed = asset({_id: 'asset-1', status: 'processing', linkCount: 2});
+    const polled = {
+      ...asset({_id: 'asset-1', status: 'ready', updatedAt: 2}),
+    };
+    delete (polled as {linkCount?: number}).linkCount;
+    expect(
+      replaceAssetInList({assets: [listed]}, polled)?.assets[0].linkCount
+    ).toBe(2);
+  });
+
   it('seeds details from the list without overwriting a newer poll', () => {
     const queryClient = new QueryClient();
     const listed = asset({updatedAt: 10, status: 'processing'});
@@ -172,6 +189,93 @@ describe('map asset list cache helpers', () => {
     expect(
       queryClient.getQueryData(['map-assets', user.token, 'links', listed._id])
     ).toEqual(['project-1']);
+  });
+
+  it('inserts a created layer and keeps a newer cached row', () => {
+    const existing = asset({_id: 'asset-2', status: 'ready'});
+    const created = asset({
+      _id: 'asset-1',
+      status: 'pending',
+      updatedAt: 2,
+    });
+    expect(upsertAssetInList({assets: [existing]}, created)).toEqual({
+      assets: [created, existing],
+    });
+    expect(upsertAssetInList({assets: [created, existing]}, created)).toEqual({
+      assets: [created, existing],
+    });
+    expect(
+      upsertAssetInList(
+        {assets: [asset({_id: 'asset-1', updatedAt: 5}), existing]},
+        created
+      )
+    ).toEqual({
+      assets: [asset({_id: 'asset-1', updatedAt: 5}), existing],
+    });
+  });
+
+  it('seeds a created layer into library and owning team lists only', () => {
+    const queryClient = new QueryClient();
+    const existing = asset({_id: 'asset-2', status: 'ready'});
+    const created = asset({
+      _id: 'asset-1',
+      status: 'pending',
+      ownedByTeamId: 'team-1',
+    });
+    const otherUser = {token: 'other'} as User;
+    queryClient.setQueryData(mapAssetQueryKey(user), {assets: [existing]});
+    queryClient.setQueryData(mapAssetTeamQueryKey(user, 'team-1'), {
+      assets: [existing],
+    });
+    queryClient.setQueryData(mapAssetTeamQueryKey(user, 'team-2'), {
+      assets: [existing],
+    });
+    queryClient.setQueryData(mapAssetQueryKey(user, 'project-1'), {
+      assets: [existing],
+    });
+    queryClient.setQueryData(mapAssetQueryKey(otherUser), {assets: [existing]});
+
+    cacheCreatedMapAsset(queryClient, user, created);
+
+    expect(queryClient.getQueryData(mapAssetQueryKey(user))).toEqual({
+      assets: [created, existing],
+    });
+    expect(
+      queryClient.getQueryData(mapAssetTeamQueryKey(user, 'team-1'))
+    ).toEqual({assets: [created, existing]});
+    expect(
+      queryClient.getQueryData(mapAssetTeamQueryKey(user, 'team-2'))
+    ).toEqual({assets: [existing]});
+    expect(
+      queryClient.getQueryData(mapAssetQueryKey(user, 'project-1'))
+    ).toEqual({assets: [existing]});
+    expect(queryClient.getQueryData(mapAssetQueryKey(otherUser))).toEqual({
+      assets: [existing],
+    });
+    expect(
+      queryClient.getQueryData(mapAssetDetailQueryKey(user, created._id))
+    ).toEqual(created);
+  });
+
+  it('puts the created layer back after a list refetch omits it', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {queries: {retry: false}},
+    });
+    const existing = asset({_id: 'asset-2', status: 'ready'});
+    const created = asset({_id: 'asset-1', status: 'pending'});
+    await queryClient.prefetchQuery({
+      queryKey: mapAssetQueryKey(user),
+      queryFn: async () => ({assets: [existing]}),
+    });
+
+    await invalidateMapAssetsAfterCreate(queryClient, user, created);
+
+    expect(queryClient.getQueryData(mapAssetQueryKey(user))).toEqual({
+      assets: [created, existing],
+    });
+    expect(
+      queryClient.getQueryData(mapAssetDetailQueryKey(user, created._id))
+    ).toEqual(created);
   });
 });
 

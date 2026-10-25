@@ -66,6 +66,9 @@ vi.mock('./contextualLayerStore', () => ({
       : Promise.resolve([...harness.stored]),
   downloadContextualLayers: harness.download,
   removeContextualLayerFromDevice: harness.remove,
+  isContextualLayerDownloadCancelledError: (error: unknown) =>
+    error instanceof Error &&
+    error.name === 'ContextualLayerDownloadCancelledError',
 }));
 
 vi.mock('../ui/BackButton', () => ({
@@ -189,6 +192,50 @@ describe('ContextualLayerManager', () => {
       expect(
         screen.queryByTestId('map-layer-download-asset-new')
       ).not.toBeInTheDocument();
+    });
+  });
+
+  it('cancels an in-progress download and leaves the layer available', async () => {
+    const user = userEvent.setup();
+    harness.layers = [layer('asset-new', 'Vegetation')];
+    harness.download.mockImplementation(
+      ({signal}: {signal?: AbortSignal}) =>
+        new Promise<void>((_resolve, reject) => {
+          const onAbort = () => {
+            const error = new Error('Map layer download cancelled.');
+            error.name = 'ContextualLayerDownloadCancelledError';
+            reject(error);
+          };
+          if (signal?.aborted) {
+            onAbort();
+            return;
+          }
+          signal?.addEventListener('abort', onAbort, {once: true});
+        })
+    );
+    renderManager();
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId('map-layer-download-asset-new')
+      ).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId('map-layer-download-asset-new'));
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId('map-layer-download-cancel')
+      ).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId('map-layer-download-cancel'));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('map-layer-download-cancel')
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByTestId('map-layer-download-asset-new')
+      ).toBeInTheDocument();
     });
   });
 

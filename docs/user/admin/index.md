@@ -11,6 +11,7 @@ maxdepth: 1
 intro-admin.md
 web.md
 map-layers.md
+map-layer-formats.md
 notebook-admin.md
 user-roles-and-permissions-guide.md
 user-roles-task-organised.md

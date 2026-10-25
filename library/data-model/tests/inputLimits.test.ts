@@ -25,6 +25,8 @@ import {
   ExistingMapAssetSchema,
   GetMapAssetDownloadUrlResponseSchema,
   isMapAssetInProgress,
+  isMapAssetReadyToLink,
+  mapAssetLinkCount,
   mapAssetProcessingStageLabel,
   mapAssetProcessingStatusText,
   PostCreateTeamInputSchema,
@@ -291,6 +293,14 @@ describe('map layer schemas', () => {
     expect(isMapAssetInProgress('processing')).toBe(true);
     expect(isMapAssetInProgress('ready')).toBe(false);
     expect(isMapAssetInProgress('failed')).toBe(false);
+    expect(isMapAssetReadyToLink({status: 'ready', linkCount: 0})).toBe(true);
+    expect(isMapAssetReadyToLink({status: 'ready'})).toBe(true);
+    expect(isMapAssetReadyToLink({status: 'ready', linkCount: 2})).toBe(false);
+    expect(isMapAssetReadyToLink({status: 'processing', linkCount: 0})).toBe(
+      false
+    );
+    expect(mapAssetLinkCount({linkCount: 3})).toBe(3);
+    expect(mapAssetLinkCount({})).toBe(0);
   });
 
   it('maps processing stages to user-facing messages', () => {

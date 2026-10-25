@@ -8,7 +8,10 @@ import {
   resolveTeamId,
 } from '@/components/forms/template-team-field';
 import {useRequiredUser, useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {invalidateMapAssets, uploadMapAsset} from '@/hooks/map-asset-hooks';
+import {
+  invalidateMapAssetsAfterCreate,
+  uploadMapAsset,
+} from '@/hooks/map-asset-hooks';
 import {useGetTeams} from '@/hooks/queries';
 import {
   MAP_LAYER_FILE_ACCEPT,
@@ -21,8 +24,11 @@ import {useQueryClient} from '@tanstack/react-query';
 import {useState} from 'react';
 
 /**
- * Upload form: name, description, optional team, and primary/companion files.
- * Hidden when the user cannot create a layer in the chosen team.
+ * Upload form: name, description, team, and primary/companion files.
+ *
+ * Team is optional only for Super Users
+ * ({@link Action.CREATE_MAP_ASSET_OUTSIDE_TEAM}). Everyone else must create
+ * inside a team they can upload into.
  */
 export function CreateMapLayerForm({
   setDialogOpen,
@@ -35,17 +41,17 @@ export function CreateMapLayerForm({
   const queryClient = useQueryClient();
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const {data: teams} = useGetTeams({user});
-  const canCreateGlobally = useIsAuthorisedTo({
-    action: Action.CREATE_MAP_ASSET,
+  const canCreateOutsideTeam = useIsAuthorisedTo({
+    action: Action.CREATE_MAP_ASSET_OUTSIDE_TEAM,
   });
   const possibleTeams = getPossibleTeamsForAction({
     teams: teams?.teams,
-    canCreateGlobally,
+    canCreateGlobally: canCreateOutsideTeam,
     createInTeamAction: Action.CREATE_MAP_ASSET_IN_TEAM,
     decodedToken: user.decodedToken,
   });
   const {showTeamCallout, showTeamDropdown} = getTeamFieldState({
-    canCreateGlobally,
+    canCreateGlobally: canCreateOutsideTeam,
     specifiedTeam,
     possibleTeams,
   });
@@ -75,10 +81,10 @@ export function CreateMapLayerForm({
   if (showTeamDropdown) {
     fields.push(
       buildTeamField({
-        canCreateGlobally,
+        canCreateGlobally: canCreateOutsideTeam,
         possibleTeams,
-        label: `Team${canCreateGlobally ? ' (optional)' : ''}`,
-        description: canCreateGlobally
+        label: `Team${canCreateOutsideTeam ? ' (optional)' : ''}`,
+        description: canCreateOutsideTeam
           ? 'Choose a team to own this layer, or leave blank to keep it as your own.'
           : 'The team that will own this layer.',
       })
@@ -92,14 +98,14 @@ export function CreateMapLayerForm({
     team?: string;
   }) => {
     const teamId = resolveTeamId({
-      canCreateGlobally,
+      canCreateGlobally: canCreateOutsideTeam,
       specifiedTeam,
       possibleTeams,
       team: values.team,
     });
     setUploadProgress(0);
     try {
-      await uploadMapAsset({
+      const created = await uploadMapAsset({
         user,
         name: values.name.trim(),
         description: values.description?.trim() ?? '',
@@ -107,6 +113,7 @@ export function CreateMapLayerForm({
         files: values.files,
         onProgress: setUploadProgress,
       });
+      await invalidateMapAssetsAfterCreate(queryClient, user, created);
     } catch (error) {
       return {
         type: 'submit' as const,
@@ -115,7 +122,6 @@ export function CreateMapLayerForm({
     } finally {
       setUploadProgress(null);
     }
-    await invalidateMapAssets(queryClient, user);
     setDialogOpen(false);
   };
 

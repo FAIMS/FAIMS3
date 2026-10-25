@@ -15,8 +15,10 @@ import {
   useRequiredUser,
 } from '@/hooks/auth-hooks';
 import {useGetTeam} from '@/hooks/queries';
+import {config} from '@/constants';
+import {mapLayerFormatsDocsUrl} from '@/lib/map-layer-docs';
 import {Action} from '@faims3/data-model';
-import {Plus} from 'lucide-react';
+import {ExternalLink, Plus} from 'lucide-react';
 import {useState} from 'react';
 
 /** Hidden when the user cannot upload a map layer. */
@@ -91,6 +93,18 @@ export function CreateMapLayerDialog({
                   </ul>
                 </div>
               </div>
+              <p>
+                <a
+                  href={mapLayerFormatsDocsUrl(config.docsUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-medium text-foreground underline underline-offset-4 hover:text-primary"
+                  data-testid="web-map-layers-create-formats-docs"
+                >
+                  Learn more about supported formats and CRS
+                  <ExternalLink className="h-3 w-3" aria-hidden />
+                </a>
+              </p>
             </div>
           </DialogDescription>
         </DialogHeader>

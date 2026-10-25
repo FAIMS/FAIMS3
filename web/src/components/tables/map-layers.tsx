@@ -1,28 +1,31 @@
 // SPDX-License-Identifier: Apache-2.0
 import {DataTableColumnHeader} from '@/components/data-table/column-header';
 import {TeamCellComponent} from '@/components/tables/cells/team-cell';
-import {Badge} from '@/components/ui/badge';
+import {
+  MapLayerStatusCell,
+  mapLayerStatusLabel,
+} from '@/components/tables/map-layer-status';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {cn} from '@/lib/utils';
+import {config} from '@/constants';
 import {displayDateTime} from '@/lib/time';
+import {cn} from '@/lib/utils';
 import {
   formatFileSize,
-  isMapAssetInProgress,
   mapAssetKindLabel,
-  mapAssetProcessingStatusText,
-  type ExistingMapAsset,
+  mapAssetLinkCount,
+  type MapAssetWithLinkCount,
 } from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
 import {useLayoutEffect, useRef, useState} from 'react';
 
 /**
- * Single-line ellipsis. Names are narrower than descriptions; both use the
- * same truncation so the ellipsis shows in the same way.
+ * Single-line ellipsis. Names use this so a long title still shows a
+ * tooltip when it overflows.
  */
 function TruncatedListingText({
   text,
@@ -78,21 +81,7 @@ function TruncatedListingText({
   );
 }
 
-/** Title-case status for the listing column. */
-function statusLabel(asset: ExistingMapAsset): string {
-  switch (asset.status) {
-    case 'pending':
-      return 'Pending';
-    case 'processing':
-      return 'Processing';
-    case 'failed':
-      return 'Failed';
-    case 'ready':
-      return 'Ready';
-  }
-}
-
-const nameColumn: ColumnDef<ExistingMapAsset> = {
+const nameColumn: ColumnDef<MapAssetWithLinkCount> = {
   accessorKey: 'name',
   header: ({column}) => <DataTableColumnHeader column={column} title="Name" />,
   meta: {cellClassName: 'w-72 max-w-72 pr-8', headerClassName: 'w-72'},
@@ -104,45 +93,39 @@ const nameColumn: ColumnDef<ExistingMapAsset> = {
   ),
 };
 
-const statusColumn: ColumnDef<ExistingMapAsset> = {
+const statusColumn: ColumnDef<MapAssetWithLinkCount> = {
   id: 'status',
-  accessorFn: statusLabel,
+  accessorFn: mapLayerStatusLabel,
   header: ({column}) => (
     <DataTableColumnHeader column={column} title="Status" />
   ),
-  cell: ({row}) => {
-    const asset = row.original;
-    const label = statusLabel(asset);
-    const progress = isMapAssetInProgress(asset.status)
-      ? mapAssetProcessingStatusText(asset)
-      : undefined;
-    const variant =
-      asset.status === 'failed'
-        ? 'destructive'
-        : asset.status === 'ready'
-          ? 'secondary'
-          : 'outline';
-    return (
-      <div className="flex flex-col gap-0.5">
-        <Badge variant={variant} className="w-fit">
-          {label}
-        </Badge>
-        {progress ? (
-          <span className="text-xs text-muted-foreground">{progress}</span>
-        ) : null}
-      </div>
-    );
-  },
+  cell: ({row}) => <MapLayerStatusCell asset={row.original} />,
 };
 
-const typeColumn: ColumnDef<ExistingMapAsset> = {
+const linkedSurveysColumn: ColumnDef<MapAssetWithLinkCount> = {
+  id: 'linkCount',
+  accessorFn: mapAssetLinkCount,
+  header: ({column}) => (
+    <DataTableColumnHeader
+      column={column}
+      title={`Linked ${config.notebookNamePluralCapitalized}`}
+    />
+  ),
+  cell: ({row}) => (
+    <span data-testid="web-map-layers-link-count">
+      {mapAssetLinkCount(row.original)}
+    </span>
+  ),
+};
+
+const typeColumn: ColumnDef<MapAssetWithLinkCount> = {
   id: 'kind',
   accessorFn: asset => mapAssetKindLabel(asset.kind),
   header: ({column}) => <DataTableColumnHeader column={column} title="Type" />,
   cell: ({getValue}) => getValue<string>() || '—',
 };
 
-const sizeColumn: ColumnDef<ExistingMapAsset> = {
+const sizeColumn: ColumnDef<MapAssetWithLinkCount> = {
   accessorKey: 'byteSize',
   header: ({column}) => <DataTableColumnHeader column={column} title="Size" />,
   cell: ({getValue}) => {
@@ -151,7 +134,7 @@ const sizeColumn: ColumnDef<ExistingMapAsset> = {
   },
 };
 
-const teamColumn: ColumnDef<ExistingMapAsset> = {
+const teamColumn: ColumnDef<MapAssetWithLinkCount> = {
   id: 'team',
   accessorKey: 'ownedByTeamId',
   header: ({column}) => <DataTableColumnHeader column={column} title="Team" />,
@@ -163,12 +146,12 @@ const teamColumn: ColumnDef<ExistingMapAsset> = {
     ),
 };
 
-const ownerColumn: ColumnDef<ExistingMapAsset> = {
+const ownerColumn: ColumnDef<MapAssetWithLinkCount> = {
   accessorKey: 'createdBy',
   header: ({column}) => <DataTableColumnHeader column={column} title="Owner" />,
 };
 
-const updatedColumn: ColumnDef<ExistingMapAsset> = {
+const updatedColumn: ColumnDef<MapAssetWithLinkCount> = {
   accessorKey: 'updatedAt',
   header: ({column}) => (
     <DataTableColumnHeader column={column} title="Updated" />
@@ -176,32 +159,18 @@ const updatedColumn: ColumnDef<ExistingMapAsset> = {
   cell: ({getValue}) => displayDateTime({timestamp: getValue<number>()}),
 };
 
-const descriptionColumn: ColumnDef<ExistingMapAsset> = {
-  accessorKey: 'description',
-  header: ({column}) => (
-    <DataTableColumnHeader column={column} title="Description" />
-  ),
-  meta: {cellClassName: 'w-72 max-w-72', headerClassName: 'w-72'},
-  cell: ({getValue}) => (
-    <TruncatedListingText
-      text={getValue<string | undefined>()}
-      widthClass="w-72"
-    />
-  ),
-};
-
 /** Library/team/project map-layer columns; hide Team on a team tab. */
 export function getMapLayerTableColumns(options?: {
   hideTeamColumn?: boolean;
-}): ColumnDef<ExistingMapAsset>[] {
+}): ColumnDef<MapAssetWithLinkCount>[] {
   return [
     nameColumn,
     statusColumn,
+    linkedSurveysColumn,
     typeColumn,
     sizeColumn,
     ...(options?.hideTeamColumn ? [] : [teamColumn]),
     ownerColumn,
     updatedColumn,
-    descriptionColumn,
   ];
 }

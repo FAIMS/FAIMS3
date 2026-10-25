@@ -33,7 +33,6 @@ export type StaticMapLayerStyle = {
   lineWidth: number;
   pointSize: number;
   opacity: number;
-  labelField?: string;
 };
 
 export type StaticMapLayerPreviewProps = {
@@ -154,7 +153,6 @@ export function StaticMapLayerPreview({
         fill: style.fill,
         lineWidth: style.lineWidth,
         pointSize: style.pointSize,
-        labelField: style.labelField,
         extent4326: extent4326 ?? [0, 0, 0, 0],
         extent3857,
         minZoom,

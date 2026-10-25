@@ -64,7 +64,8 @@ Team roles relate to the management of teams, adding users and managing the temp
 > become _{{Notebook}} Administrator_ for any {{notebooks}} that they create.
 > The same pattern applies to map layers: they can upload into the team and
 > fully manage layers they uploaded, but they do not automatically see other
-> team members' layers.
+> team members' layers. Uploading a map layer that is not owned by a team is
+> a Super User action.
 
 ### Template Roles
 

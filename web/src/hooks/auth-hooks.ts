@@ -87,8 +87,9 @@ export const userCanCreateTemplate = (user: User | null): boolean => {
 };
 
 /**
- * True when the user may upload a map layer either globally
- * (`CREATE_MAP_ASSET`) or in at least one team (`CREATE_MAP_ASSET_IN_TEAM`).
+ * True when the user may upload a map layer either outside a team
+ * (`CREATE_MAP_ASSET_OUTSIDE_TEAM`, Super User) or in at least one team
+ * (`CREATE_MAP_ASSET_IN_TEAM`).
  */
 export const userCanUploadMapLayer = (user: User | null): boolean => {
   if (!user?.decodedToken) {
@@ -97,7 +98,7 @@ export const userCanUploadMapLayer = (user: User | null): boolean => {
   return (
     isAuthorized({
       decodedToken: user.decodedToken,
-      action: Action.CREATE_MAP_ASSET,
+      action: Action.CREATE_MAP_ASSET_OUTSIDE_TEAM,
     }) ||
     getUserResourcesForAction({
       decodedToken: user.decodedToken,

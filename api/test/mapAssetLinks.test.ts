@@ -8,6 +8,7 @@ import {attachmentStorageService} from '../src/buildconfig';
 import {getMapAssetsDB} from '../src/couchdb';
 import {
   attachContextualLayers,
+  attachLinkCounts,
   contextualLayersForProject,
   createMapAsset,
   getMapAsset,
@@ -111,6 +112,24 @@ describe('map asset survey links', () => {
     expect(await listLinkProjectIds(asset._id)).toEqual([]);
     await unlinkMapAsset({assetId: asset._id, projectId: 'survey-1'});
     expect(await listLinkProjectIds(asset._id)).toEqual([]);
+  });
+
+  it('attachLinkCounts reports zero or more survey links per asset', async () => {
+    const unlinked = await createPendingAsset('Unlinked layer');
+    const linked = await createPendingAsset('Linked layer');
+    await linkMapAsset({
+      assetId: linked._id,
+      projectId: 'survey-1',
+      linkedBy: 'admin',
+    });
+    await linkMapAsset({
+      assetId: linked._id,
+      projectId: 'survey-2',
+      linkedBy: 'admin',
+    });
+
+    const counted = await attachLinkCounts([unlinked, linked]);
+    expect(counted.map(asset => asset.linkCount)).toEqual([0, 2]);
   });
 
   it('linkMapAsset 404s when the asset is missing', async () => {

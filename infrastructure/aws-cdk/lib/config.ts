@@ -609,6 +609,22 @@ export const SpatialCapacityConfigSchema = z.object({
   /** How often the manager reads the Couch queue (ms). */
   reconcileMs: z.number().int().positive().default(15_000),
   /**
+   * How long the oldest unclaimed job may wait before the manager asks
+   * for the first extra worker (still capped by maxCapacity and job
+   * count). `0` disables. Default 5 minutes.
+   */
+  starvationMs: z
+    .number()
+    .int()
+    .nonnegative()
+    .default(5 * 60 * 1000),
+  /**
+   * After the first staleness scale-up, how long the oldest unclaimed
+   * job must keep waiting before another extra worker. Omit to use
+   * `2 * starvationMs`. `0` keeps only the first extra.
+   */
+  scaleInCooldownMs: z.number().int().nonnegative().optional(),
+  /**
    * Worker exits after this many ms with no job. Must be > 0 on ECS or
    * tasks would run until the next deploy.
    */
@@ -841,6 +857,7 @@ export const ConfigSchema = z.object({
     maxCapacity: 4,
     scaleThresholds: [3, 8, 16, 32],
     reconcileMs: 15_000,
+    starvationMs: 5 * 60 * 1000,
     idleExitMs: 60_000,
     cpu: 1024,
     memory: 2048,

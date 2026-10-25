@@ -36,14 +36,24 @@ describe('userCanUploadMapLayer', () => {
     expect(userCanUploadMapLayer(signedOut)).toBe(false);
   });
 
-  it('allows a global CREATE_MAP_ASSET role', () => {
+  it('allows a Super User CREATE_MAP_ASSET_OUTSIDE_TEAM role', () => {
+    expect(
+      userCanUploadMapLayer(
+        user('admin', {
+          globalRoles: [Role.GENERAL_USER, Role.GENERAL_ADMIN],
+        })
+      )
+    ).toBe(true);
+  });
+
+  it('does not let a content creator upload outside a team', () => {
     expect(
       userCanUploadMapLayer(
         user('creator', {
           globalRoles: [Role.GENERAL_USER, Role.GENERAL_CREATOR],
         })
       )
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('allows a team-only CREATE_MAP_ASSET_IN_TEAM role', () => {

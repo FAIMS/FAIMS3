@@ -4,6 +4,7 @@ import {
   DEFAULT_SPATIAL_TOOL_PERFORMANCE,
   gdalConfigArgs,
   gdalPdfOpenArgs,
+  geoJsonOpenArgs,
   gdalWarpPerformanceArgs,
   geometryFieldTypes,
   mbtilesWebpCreationArgs,
@@ -205,6 +206,8 @@ describe('spatial tool performance args', () => {
       'features',
       '-select',
       '',
+      '-oo',
+      'RFC7946=NO',
       'out.geojson',
       'in.geojson',
     ]);
@@ -252,6 +255,9 @@ describe('spatial tool performance args', () => {
     expect(gdalPdfOpenArgs('sheet.pdf')).toEqual(['-oo', 'LAYERS=ALL']);
     expect(gdalPdfOpenArgs('/tmp/Collar.PDF')).toEqual(['-oo', 'LAYERS=ALL']);
     expect(gdalPdfOpenArgs('ortho.tif')).toEqual([]);
+    expect(geoJsonOpenArgs('sites.geojson')).toEqual(['-oo', 'RFC7946=NO']);
+    expect(geoJsonOpenArgs('/tmp/legacy.JSON')).toEqual(['-oo', 'RFC7946=NO']);
+    expect(geoJsonOpenArgs('parcels.gpkg')).toEqual([]);
     expect(mbtilesWebpCreationArgs()).toEqual([
       '-co',
       'TILE_FORMAT=WEBP',

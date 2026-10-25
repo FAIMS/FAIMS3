@@ -210,8 +210,11 @@ export enum Action {
   /** View the list of map layers the user is allowed to see. */
   LIST_MAP_ASSETS = 'LIST_MAP_ASSETS',
 
-  /** Upload a map layer owned by the user (no team). */
-  CREATE_MAP_ASSET = 'CREATE_MAP_ASSET',
+  /**
+   * Upload a map layer that is not owned by a team. Super Users only — most
+   * users must create inside a team via {@link Action.CREATE_MAP_ASSET_IN_TEAM}.
+   */
+  CREATE_MAP_ASSET_OUTSIDE_TEAM = 'CREATE_MAP_ASSET_OUTSIDE_TEAM',
 
   /** Read metadata and download the device-ready file. */
   READ_MAP_ASSET = 'READ_MAP_ASSET',
@@ -826,9 +829,10 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: false,
     resource: Resource.MAP_ASSET,
   },
-  [Action.CREATE_MAP_ASSET]: {
-    name: 'Create Map Layer',
-    description: 'Upload a new map layer owned by the current user',
+  [Action.CREATE_MAP_ASSET_OUTSIDE_TEAM]: {
+    name: 'Create Map Layer (Outside team)',
+    description:
+      'Upload a new map layer that is not owned by a team (system administrators only)',
     resourceSpecific: false,
     resource: Resource.MAP_ASSET,
   },
@@ -1129,7 +1133,7 @@ export const roleDetails: Record<Role, RoleDetails> = {
   [Role.GENERAL_CREATOR]: {
     name: 'Content Creator',
     description:
-      'Ability to create and manage templates, surveys, and map layers across the system',
+      'Ability to create and manage templates and surveys across the system. Map layers must be created inside a team.',
     scope: RoleScope.GLOBAL,
   },
   [Role.OPERATIONS_ADMIN]: {
@@ -1380,11 +1384,7 @@ export const roleActions: Record<
     ],
   },
   [Role.GENERAL_CREATOR]: {
-    actions: [
-      Action.CREATE_PROJECT,
-      Action.CREATE_TEMPLATE,
-      Action.CREATE_MAP_ASSET,
-    ],
+    actions: [Action.CREATE_PROJECT, Action.CREATE_TEMPLATE],
   },
   [Role.OPERATIONS_ADMIN]: {
     actions: [
@@ -1455,7 +1455,11 @@ export const roleActions: Record<
 
   // Super User Admin role can see all user data - to be used sparingly
   [Role.GENERAL_ADMIN]: {
-    actions: [],
+    actions: [
+      // Personal / unteamed map layers are Super User only. Not inherited
+      // from GENERAL_CREATOR — content creators must upload into a team.
+      Action.CREATE_MAP_ASSET_OUTSIDE_TEAM,
+    ],
     inheritedRoles: [
       // God role
       Role.GENERAL_USER,

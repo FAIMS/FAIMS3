@@ -6,6 +6,11 @@ export type SpatialBacklog = {
   inFlight: number;
   /** `pending` jobs (or stale `processing`) with originals and no live claim. */
   unclaimed: number;
+  /**
+   * Age in ms of the oldest unclaimed job (`updatedAt`, else `createdAt`).
+   * Absent when nothing is waiting for a worker.
+   */
+  oldestUnclaimedMs?: number;
 };
 
 /**
@@ -16,6 +21,30 @@ export const DEFAULT_CAPACITY_SCALE_THRESHOLDS_CSV = '3,8,16,32';
 
 /** Parsed form of {@link DEFAULT_CAPACITY_SCALE_THRESHOLDS_CSV}. */
 export const DEFAULT_CAPACITY_SCALE_THRESHOLDS = [3, 8, 16, 32] as const;
+
+/**
+ * How long the oldest unclaimed job may wait before the manager asks for
+ * the first extra worker. `0` disables the staleness trigger.
+ */
+export const DEFAULT_CAPACITY_STARVATION_MS = 5 * 60 * 1000;
+
+/**
+ * After the first staleness scale-up, how long the oldest unclaimed job
+ * must keep waiting before another extra worker. Default is twice the
+ * starvation timeout. `0` keeps only the first extra worker.
+ */
+export const DEFAULT_CAPACITY_SCALE_IN_COOLDOWN_FACTOR = 2;
+
+/** Default cooldown when starvation is also at its default (10 minutes). */
+export const DEFAULT_CAPACITY_SCALE_IN_COOLDOWN_MS =
+  DEFAULT_CAPACITY_SCALE_IN_COOLDOWN_FACTOR * DEFAULT_CAPACITY_STARVATION_MS;
+
+/** Cooldown used when the caller does not set one: `2 * starvationMs`. */
+export function defaultScaleInCooldownMs(
+  starvationMs: number = DEFAULT_CAPACITY_STARVATION_MS
+): number {
+  return DEFAULT_CAPACITY_SCALE_IN_COOLDOWN_FACTOR * Math.max(0, starvationMs);
+}
 
 /** Lowest queue depth that unlocks this many workers. */
 export type CapacityScaleStep = {
@@ -70,18 +99,72 @@ export function parseCapacityScaleThresholds(csv: string): number[] {
 }
 
 /**
+ * True when the oldest unclaimed job has waited at least `starvationMs`.
+ * `starvationMs <= 0` turns the trigger off.
+ */
+export function backlogIsStarved({
+  unclaimed,
+  oldestUnclaimedMs,
+  starvationMs,
+}: Pick<SpatialBacklog, 'unclaimed' | 'oldestUnclaimedMs'> & {
+  starvationMs: number;
+}): boolean {
+  return (
+    starvationMs > 0 &&
+    unclaimed > 0 &&
+    oldestUnclaimedMs !== undefined &&
+    oldestUnclaimedMs >= starvationMs
+  );
+}
+
+/**
+ * Extra workers from the oldest unclaimed job's age.
+ * The first extra is at `starvationMs`; each further extra waits
+ * `scaleInCooldownMs`. `starvationMs <= 0` disables. `scaleInCooldownMs <= 0`
+ * keeps only that first extra.
+ */
+export function staleCapacityBonus({
+  unclaimed,
+  oldestUnclaimedMs,
+  starvationMs,
+  scaleInCooldownMs,
+}: Pick<SpatialBacklog, 'unclaimed' | 'oldestUnclaimedMs'> & {
+  starvationMs: number;
+  scaleInCooldownMs: number;
+}): number {
+  const age = oldestUnclaimedMs;
+  if (
+    age === undefined ||
+    !backlogIsStarved({unclaimed, oldestUnclaimedMs: age, starvationMs})
+  ) {
+    return 0;
+  }
+  if (scaleInCooldownMs <= 0) {
+    return 1;
+  }
+  return 1 + Math.floor((age - starvationMs) / scaleInCooldownMs);
+}
+
+/**
  * How many workers the queue needs right now.
  * Zero when nothing is in flight or waiting. Walks the scale map, then
- * never exceeds `max`.
+ * never exceeds `max` or the job count (`inFlight` + `unclaimed`). A
+ * starved unclaimed job adds extra workers above the depth step (first
+ * at `starvationMs`, then one per cooldown), still inside those caps.
  */
 export function capacityNeeded({
   inFlight,
   unclaimed,
+  oldestUnclaimedMs,
   max,
   scaleThresholds,
+  starvationMs = DEFAULT_CAPACITY_STARVATION_MS,
+  scaleInCooldownMs,
 }: SpatialBacklog & {
   max: number;
   scaleThresholds: readonly number[];
+  starvationMs?: number;
+  scaleInCooldownMs?: number;
 }): number {
   const waiting = Math.max(0, inFlight) + Math.max(0, unclaimed);
   if (waiting === 0 || max <= 0) {
@@ -93,7 +176,14 @@ export function capacityNeeded({
       needed = step.workers;
     }
   }
-  return Math.min(max, needed);
+  const cooldown = scaleInCooldownMs ?? defaultScaleInCooldownMs(starvationMs);
+  needed += staleCapacityBonus({
+    unclaimed,
+    oldestUnclaimedMs,
+    starvationMs,
+    scaleInCooldownMs: cooldown,
+  });
+  return Math.min(max, waiting, needed);
 }
 
 export type ReconcileCapacityResult = {
@@ -103,21 +193,36 @@ export type ReconcileCapacityResult = {
 };
 
 /**
- * Start workers when the backlog is deeper than running + pending capacity.
+ * Start workers when the backlog is deeper than running + pending capacity,
+ * or when the oldest unclaimed job has passed the starvation timeout
+ * (and later cooldown steps). Never asks for more workers than jobs.
  * When `needed` is 0 this does nothing — idle workers exit on their own.
  */
 export async function reconcileCapacity({
   provider,
   inFlight,
   unclaimed,
+  oldestUnclaimedMs,
   max,
   scaleThresholds,
+  starvationMs = DEFAULT_CAPACITY_STARVATION_MS,
+  scaleInCooldownMs,
 }: SpatialBacklog & {
   provider: ICapacityProvider;
   max: number;
   scaleThresholds: readonly number[];
+  starvationMs?: number;
+  scaleInCooldownMs?: number;
 }): Promise<ReconcileCapacityResult> {
-  const needed = capacityNeeded({inFlight, unclaimed, max, scaleThresholds});
+  const needed = capacityNeeded({
+    inFlight,
+    unclaimed,
+    oldestUnclaimedMs,
+    max,
+    scaleThresholds,
+    starvationMs,
+    scaleInCooldownMs,
+  });
   if (needed === 0) {
     return {needed, ensured: false};
   }

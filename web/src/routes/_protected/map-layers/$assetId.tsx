@@ -11,26 +11,38 @@ import {useMapAsset} from '@/hooks/map-asset-hooks';
 import {useMapAssetPreviewDownload} from '@/hooks/map-asset-preview-hooks';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {canMutateMapAsset} from '@/lib/map-layer-permissions';
-import {createFileRoute, useRouter} from '@tanstack/react-router';
-import {useMemo} from 'react';
+import {parseMapLayerTab, type MapLayerTab} from '@/lib/map-layer-tabs';
+import {createFileRoute, useNavigate, useRouter} from '@tanstack/react-router';
+import {useMemo, type ComponentType} from 'react';
 
-const tabs = [
-  {name: 'Details', Component: MapLayerDetails},
-  {name: 'Preview', Component: MapLayerPreviewTab},
+const tabs: {
+  id: MapLayerTab;
+  name: string;
+  Component: ComponentType<{assetId: string}>;
+}[] = [
+  {id: 'details', name: 'Details', Component: MapLayerDetails},
+  {id: 'preview', name: 'Preview', Component: MapLayerPreviewTab},
   {
+    id: 'links',
     name: `Linked ${config.notebookNamePluralCapitalized}`,
     Component: MapLayerLinkedSurveys,
   },
-  {name: 'Actions', Component: MapLayerActions},
+  {id: 'actions', name: 'Actions', Component: MapLayerActions},
 ];
 
 export const Route = createFileRoute('/_protected/map-layers/$assetId')({
+  validateSearch: (search: Record<string, unknown>): {tab?: MapLayerTab} => {
+    const tab = search.tab;
+    return tab === undefined ? {} : {tab: parseMapLayerTab(tab)};
+  },
   component: MapLayerPage,
 });
 
 /** Control Centre page for one map layer (details, preview, links, actions). */
 function MapLayerPage() {
   const {assetId} = Route.useParams();
+  const {tab: tabSearch} = Route.useSearch();
+  const navigate = useNavigate();
   const user = useRequiredUser();
   const {data, isLoading} = useMapAsset({user, assetId});
   const previewDownload = useMapAssetPreviewDownload({
@@ -50,33 +62,46 @@ function MapLayerPage() {
     () =>
       data && canMutateMapAsset(user, data)
         ? tabs
-        : tabs.filter(tab => tab.name !== 'Actions'),
+        : tabs.filter(tab => tab.id !== 'actions'),
     [data, user]
   );
+  const tab = visibleTabs.some(item => item.id === tabSearch)
+    ? (tabSearch as MapLayerTab)
+    : visibleTabs[0].id;
 
   useBreadcrumbUpdate({isLoading, paths});
 
   return (
-    <Tabs defaultValue={visibleTabs[0].name}>
+    <Tabs
+      value={tab}
+      onValueChange={value => {
+        void navigate({
+          to: '/map-layers/$assetId',
+          params: {assetId},
+          search: {tab: parseMapLayerTab(value)},
+          replace: true,
+        });
+      }}
+    >
       <TabsList>
-        {visibleTabs.map(({name}) => (
+        {visibleTabs.map(({id, name}) => (
           <TabsTrigger
-            key={name}
-            value={name}
+            key={id}
+            value={id}
             className="gap-1.5"
             aria-busy={
-              name === 'Preview' && previewDownload.status === 'downloading'
+              id === 'preview' && previewDownload.status === 'downloading'
             }
           >
             {name}
-            {name === 'Preview' ? (
+            {id === 'preview' ? (
               <MapLayerPreviewTabProgress download={previewDownload} />
             ) : null}
           </TabsTrigger>
         ))}
       </TabsList>
-      {visibleTabs.map(({name, Component}) => (
-        <TabsContent key={name} value={name}>
+      {visibleTabs.map(({id, Component}) => (
+        <TabsContent key={id} value={id}>
           <Component assetId={assetId} />
         </TabsContent>
       ))}

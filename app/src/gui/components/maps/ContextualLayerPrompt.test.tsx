@@ -4,6 +4,7 @@ import type {ContextualLayerListing} from '@faims3/data-model';
 import {DEFAULT_MAP_ASSET_STYLE} from '@faims3/data-model';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {render, screen, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type {StoredContextualLayerSummary} from './contextualLayerStore';
 
@@ -18,6 +19,7 @@ const harness = vi.hoisted(() => ({
   prompt: {projectId: 'survey-1', serverId: 'server-1'},
   stored: [] as StoredContextualLayerSummary[],
   layers: [] as ContextualLayerListing[],
+  download: vi.fn(),
 }));
 
 vi.mock('../../../context/store', () => ({
@@ -50,10 +52,13 @@ vi.mock('../../../context/slices/projectSlice', () => ({
 
 vi.mock('./contextualLayerStore', () => ({
   listStoredContextualLayers: () => Promise.resolve(harness.stored),
-  downloadContextualLayers: vi.fn(),
+  downloadContextualLayers: (...args: unknown[]) => harness.download(...args),
   forgetUnselectedContextualLayers: vi.fn(),
   markContextualLayersSeen: vi.fn(),
   notifyContextualLayersChanged: vi.fn(),
+  isContextualLayerDownloadCancelledError: (error: unknown) =>
+    error instanceof Error &&
+    error.name === 'ContextualLayerDownloadCancelledError',
 }));
 
 import {ContextualLayerPrompt} from './ContextualLayerPrompt';
@@ -104,6 +109,7 @@ describe('ContextualLayerPrompt', () => {
 
   beforeEach(() => {
     harness.dispatch.mockReset();
+    harness.download.mockReset().mockResolvedValue(undefined);
     harness.prompt = {projectId: 'survey-1', serverId: 'server-1'};
     harness.layers = [
       layer('asset-ready', 'Site boundaries', 'hash-a'),
@@ -174,5 +180,62 @@ describe('ContextualLayerPrompt', () => {
         screen.getByRole('img', {name: 'Current location is on this layer'})
       ).toBeInTheDocument();
     });
+  });
+
+  it('shows a cancel control while downloading and keeps the prompt open', async () => {
+    const user = userEvent.setup();
+    let release!: (error?: Error) => void;
+    const held = new Promise<void>((resolve, reject) => {
+      release = error => (error ? reject(error) : resolve());
+    });
+    harness.download.mockImplementation(
+      ({signal}: {signal?: AbortSignal}) =>
+        new Promise<void>((resolve, reject) => {
+          const onAbort = () => {
+            const error = new Error('Map layer download cancelled.');
+            error.name = 'ContextualLayerDownloadCancelledError';
+            reject(error);
+          };
+          if (signal?.aborted) {
+            onAbort();
+            return;
+          }
+          signal?.addEventListener('abort', onAbort, {once: true});
+          void held.then(resolve).catch(reject);
+        })
+    );
+
+    renderPrompt();
+    await waitFor(() => {
+      expect(screen.getByText('Download selected')).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByTestId('map-layer-download-cancel')
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByText('Download selected'));
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId('map-layer-download-progress')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTestId('map-layer-download-cancel')
+      ).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId('map-layer-download-cancel'));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('map-layer-download-progress')
+      ).not.toBeInTheDocument();
+      expect(screen.getByText('Download selected')).toBeInTheDocument();
+    });
+    expect(
+      screen.getByTestId('map-layer-activation-prompt')
+    ).toBeInTheDocument();
+    expect(harness.dispatch).not.toHaveBeenCalled();
+    release();
   });
 });

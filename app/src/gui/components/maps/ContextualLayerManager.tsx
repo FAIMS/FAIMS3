@@ -17,7 +17,6 @@ import {ArrowForwardIos} from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Alert,
-  Box,
   Button,
   Dialog,
   DialogActions,
@@ -26,7 +25,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {
@@ -40,6 +39,7 @@ import {OutlinedListingCard} from '../ui/outlined-listing-card';
 import {
   CONTEXTUAL_LAYERS_CHANGED_EVENT,
   downloadContextualLayers,
+  isContextualLayerDownloadCancelledError,
   listStoredContextualLayers,
   removeContextualLayerFromDevice,
   type StoredContextualLayerSummary,
@@ -70,6 +70,8 @@ export function ContextualLayerManager() {
   const [downloadCompletion, setDownloadCompletion] = useState<number | null>(
     null
   );
+  const [cancelling, setCancelling] = useState(false);
+  const downloadAbort = useRef<AbortController | null>(null);
   const [pendingDelete, setPendingDelete] = useState<
     StoredContextualLayerSummary | undefined
   >();
@@ -176,9 +178,37 @@ export function ContextualLayerManager() {
     return undefined;
   };
 
+  const cancelDownload = () => {
+    setCancelling(true);
+    downloadAbort.current?.abort();
+  };
+
+  const downloadProgress = (active: boolean) =>
+    active ? (
+      <Stack
+        spacing={1.5}
+        sx={{mt: 1}}
+        data-testid="map-layer-download-progress"
+      >
+        <ProgressBar completion={downloadCompletion ?? 0} />
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={cancelDownload}
+          disabled={cancelling}
+          data-testid="map-layer-download-cancel"
+        >
+          {cancelling ? 'Cancelling…' : 'Cancel download'}
+        </Button>
+      </Stack>
+    ) : null;
+
   const downloadRows = async (rows: SurveyLayer[], key: string) => {
+    const controller = new AbortController();
+    downloadAbort.current = controller;
     setBusyKey(key);
     setDownloadCompletion(0);
+    setCancelling(false);
     setMessage('');
     try {
       const byProject = new Map<string, SurveyLayer[]>();
@@ -199,14 +229,22 @@ export function ContextualLayerManager() {
           token,
           projectId,
           layers: group.map(row => row.layer),
+          signal: controller.signal,
           onProgress: progress => setDownloadCompletion(progress.completion),
         });
       }
       await refresh();
     } catch (error) {
+      if (isContextualLayerDownloadCancelledError(error)) {
+        return;
+      }
       setMessage(error instanceof Error ? error.message : 'Download failed.');
     } finally {
+      if (downloadAbort.current === controller) {
+        downloadAbort.current = null;
+      }
       setBusyKey(undefined);
+      setCancelling(false);
       setDownloadCompletion(null);
     }
   };
@@ -353,11 +391,7 @@ export function ContextualLayerManager() {
                       A newer file is available.
                     </Typography>
                   ) : null}
-                  {busyKey === `update:${file.assetId}` ? (
-                    <Box sx={{mt: 1}}>
-                      <ProgressBar completion={downloadCompletion ?? 0} />
-                    </Box>
-                  ) : null}
+                  {downloadProgress(busyKey === `update:${file.assetId}`)}
                 </OutlinedListingCard>
               );
             })
@@ -420,9 +454,7 @@ export function ContextualLayerManager() {
                     )}
                   </Button>
                 </Stack>
-                {busyKey === `all:${group.rows[0].projectId}` ? (
-                  <ProgressBar completion={downloadCompletion ?? 0} />
-                ) : null}
+                {downloadProgress(busyKey === `all:${group.rows[0].projectId}`)}
                 {group.rows.map(row => {
                   const alreadyStored = storedById.has(row.layer.id);
                   const key = `${row.projectId}:${row.layer.id}`;
@@ -464,11 +496,7 @@ export function ContextualLayerManager() {
                           location={location}
                         />
                       </Stack>
-                      {busyKey === key ? (
-                        <Box sx={{mt: 1}}>
-                          <ProgressBar completion={downloadCompletion ?? 0} />
-                        </Box>
-                      ) : null}
+                      {downloadProgress(busyKey === key)}
                     </OutlinedListingCard>
                   );
                 })}

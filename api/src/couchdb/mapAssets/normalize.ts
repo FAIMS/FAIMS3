@@ -13,6 +13,7 @@ import {copyFile, mkdtemp, open, rm, stat, writeFile} from 'fs/promises';
 import {tmpdir} from 'os';
 import path from 'path';
 import {
+  isMapAssetGeoreferencedImageExtension,
   type MapAssetKind,
   type MapAssetProcessingProgress,
   type MapAssetProcessingStage,
@@ -27,6 +28,7 @@ import {
 import {
   gdalConfigArgs,
   gdalPdfOpenArgs,
+  geoJsonOpenArgs,
   gdalWarpPerformanceArgs,
   mbtilesWebpCreationArgs,
   ogr2ogrGeometryArgs,
@@ -128,9 +130,8 @@ export function gdalSourcePath(filePath: string): string {
 }
 
 /**
- * Sibling `.prj` next to a raster (PNG/JPEG carry CRS there, not in the
- * image). GDAL's PNG/JPEG drivers read the world file for placement and
- * ignore `.prj` unless we assign it.
+ * Sibling `.prj` next to a PNG/JPEG (those images carry CRS there, not
+ * in the file). GeoTIFF and GeoPDF already have an embedded CRS.
  */
 export function siblingProjectionPath(sourcePath: string): string | undefined {
   const ext = path.extname(sourcePath);
@@ -142,14 +143,21 @@ export function siblingProjectionPath(sourcePath: string): string | undefined {
 }
 
 /**
- * Build a VRT that copies the raster and sets `-a_srs` from a sibling
- * `.prj`. Returns the original path when no `.prj` is present.
+ * Build a VRT that copies a PNG/JPEG and sets `-a_srs` from a sibling
+ * `.prj`. GDAL's PNG/JPEG drivers read the world file for placement and
+ * ignore `.prj` unless we assign it. GeoTIFF and GeoPDF keep their
+ * embedded CRS — a leftover `.prj` is not applied, so it cannot
+ * silently relabel them. Returns the original path when assignment
+ * does not apply.
  */
 export async function assignSiblingRasterPrj(
   sourcePath: string,
   workDir: string,
   logContext?: MapAssetNormalizeLogContext
 ): Promise<string> {
+  if (!isMapAssetGeoreferencedImageExtension(extensionOf(sourcePath))) {
+    return sourcePath;
+  }
   const prjPath = siblingProjectionPath(sourcePath);
   if (!prjPath) {
     return sourcePath;
@@ -204,7 +212,7 @@ async function inspectCrs(
         vector
           ? readGdalJson({
               command: 'ogrinfo',
-              args: ['-json', '-so', '-al', source],
+              args: ['-json', '-so', '-al', ...geoJsonOpenArgs(source), source],
               env: spatialCommandEnv(),
             })
           : readGdalJson({
@@ -721,32 +729,35 @@ export async function normalizeMapUpload(
       const flattenedPath = path.join(workDir, 'flattened.geojson');
       await emitStage(logContext, 'flattening-geojson');
       let progressWait = Promise.resolve();
-      await withMapAssetProcessingWait(
-        {
-          event: 'gdal.command',
-          assetId: logContext?.assetId,
-          command: 'flatten-geojson',
-          filename,
-          detail: 'nested FeatureCollections',
-        },
-        async () => {
-          await flattenNestedFeatureCollections(
-            gdalSource,
-            flattenedPath,
-            update => {
-              progressWait = progressWait.then(() =>
-                Promise.resolve(
-                  logContext?.onProgress?.({
-                    phase: 'Flattening',
-                    percent: update.percent,
-                  })
-                )
-              );
-            }
-          );
-          await progressWait;
-        }
-      );
+      const flattenLog = {
+        event: 'gdal.command' as const,
+        assetId: logContext?.assetId,
+        command: 'flatten-geojson',
+        filename,
+        detail: 'nested FeatureCollections',
+        phase: undefined as string | undefined,
+        percent: undefined as number | undefined,
+      };
+      await withMapAssetProcessingWait(flattenLog, async () => {
+        await flattenNestedFeatureCollections(
+          gdalSource,
+          flattenedPath,
+          update => {
+            flattenLog.phase = 'Flattening';
+            flattenLog.percent = update.percent;
+            flattenLog.detail = `Flattening ${update.percent}%`;
+            progressWait = progressWait.then(() =>
+              Promise.resolve(
+                logContext?.onProgress?.({
+                  phase: 'Flattening',
+                  percent: update.percent,
+                })
+              )
+            );
+          }
+        );
+        await progressWait;
+      });
       gdalSource = flattenedPath;
     }
     await emitStage(logContext, 'interpreting-crs');

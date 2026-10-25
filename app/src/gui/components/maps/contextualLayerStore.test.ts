@@ -40,7 +40,9 @@ vi.mock('@capacitor/filesystem', () => ({
 }));
 
 import {
+  ContextualLayerDownloadCancelledError,
   downloadContextualLayers,
+  isContextualLayerDownloadCancelledError,
   resetContextualLayerPrefs,
   retainListedContextualLayers,
   updateContextualLayerPrefs,
@@ -122,7 +124,6 @@ describe('updateContextualLayerPrefs', () => {
               fill: '#cb181d80',
               lineWidth: 3,
               pointSize: 8,
-              labelField: 'name',
             },
           },
         },
@@ -135,7 +136,6 @@ describe('updateContextualLayerPrefs', () => {
             fill: '#222222',
             lineWidth: 9,
             pointSize: 20,
-            labelField: 'code',
           },
           boundary: {
             visible: false,
@@ -160,7 +160,6 @@ describe('updateContextualLayerPrefs', () => {
         fill: '#cb181d80',
         lineWidth: 3,
         pointSize: 8,
-        labelField: 'name',
       },
       tracks: {
         visible: true,
@@ -181,7 +180,6 @@ describe('updateContextualLayerPrefs', () => {
         fill: '#cb181d80',
         lineWidth: 3,
         pointSize: 8,
-        labelField: 'name',
       },
       tracks: {
         visible: true,
@@ -504,5 +502,122 @@ describe('downloadContextualLayers on native', () => {
     expect(files['asset-a']?.filename).toBe('asset-a-hash-a.pmtiles');
     expect(files['asset-b']?.filename).toBe('asset-b-hash-b.pmtiles');
     expect(native.deleteFile).not.toHaveBeenCalled();
+  });
+
+  it('unblocks a hung native download when the signal is aborted', async () => {
+    native.downloadFile.mockImplementation(() => new Promise(() => {}));
+    const controller = new AbortController();
+    const download = downloadContextualLayers({
+      serverUrl: 'http://localhost:8080',
+      token: 'token',
+      projectId: 'survey',
+      signal: controller.signal,
+      layers: [
+        {
+          id: 'asset-1',
+          name: 'Digital atlas',
+          kind: 'vector-tiles',
+          byteSize: 100,
+          contentHash: 'hash-1',
+          extent: [0, 0, 1, 1],
+          defaultStyle: DEFAULT_MAP_ASSET_STYLE,
+        },
+      ],
+    });
+    await vi.waitFor(() => expect(native.downloadFile).toHaveBeenCalled());
+    controller.abort();
+
+    await expect(download).rejects.toSatisfy(
+      (error: unknown) =>
+        isContextualLayerDownloadCancelledError(error) &&
+        error.message === 'Map layer download cancelled.'
+    );
+    expect(store.getState().contextualLayers.files).toEqual({});
+  });
+});
+
+describe('downloadContextualLayers cancellation in the browser', () => {
+  let store: ReturnType<
+    typeof configureStore<{contextualLayers: ContextualLayersState}>
+  >;
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    native.isNative = false;
+    native.deleteFile.mockReset().mockResolvedValue(undefined);
+    native.readdir.mockReset().mockResolvedValue({files: []});
+    store = configureStore({
+      reducer: {contextualLayers: contextualLayersReducer},
+      preloadedState: {
+        contextualLayers: {files: {}, prefs: {}, seenHashByProject: {}},
+      },
+    });
+    bindContextualLayersStore(store);
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      storage: {
+        getDirectory: async () => ({
+          getDirectoryHandle: async () => ({
+            removeEntry: async () => undefined,
+            keys: async function* () {},
+          }),
+        }),
+      },
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('throws a cancel error instead of wrapping abort as a download failure', async () => {
+    const controller = new AbortController();
+    fetchMock.mockImplementation(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.signal?.aborted) {
+          const error = new Error('The operation was aborted.');
+          error.name = 'AbortError';
+          throw error;
+        }
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => {
+              const error = new Error('The operation was aborted.');
+              error.name = 'AbortError';
+              reject(error);
+            },
+            {once: true}
+          );
+        });
+      }
+    );
+
+    const download = downloadContextualLayers({
+      serverUrl: 'http://localhost:8080',
+      token: 'token',
+      projectId: 'survey',
+      signal: controller.signal,
+      layers: [
+        {
+          id: 'asset-1',
+          name: 'Digital atlas',
+          kind: 'vector-tiles',
+          byteSize: 100,
+          contentHash: 'hash-1',
+          extent: [0, 0, 1, 1],
+          defaultStyle: DEFAULT_MAP_ASSET_STYLE,
+        },
+      ],
+    });
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    controller.abort();
+
+    await expect(download).rejects.toBeInstanceOf(
+      ContextualLayerDownloadCancelledError
+    );
+    expect(store.getState().contextualLayers.files).toEqual({});
   });
 });

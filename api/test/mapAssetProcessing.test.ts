@@ -502,7 +502,41 @@ describe('map asset worker processing', () => {
         now: () => T0,
         claimTimeoutMs: CLAIM_TIMEOUT_MS,
       })
-    ).toEqual({inFlight: 1, unclaimed: 1});
+    ).toEqual({
+      inFlight: 1,
+      unclaimed: 1,
+      oldestUnclaimedMs: expect.any(Number),
+    });
+  });
+
+  it('reports the age of the oldest unclaimed stored job', async () => {
+    const older = await createStoredAsset();
+    const newer = await createStoredAsset();
+    const claimed = await createStoredAsset();
+    const db = getMapAssetsDB();
+    await db.put({
+      ...older,
+      updatedAt: T0 - 180_000,
+      createdAt: T0 - 180_000,
+    });
+    await db.put({
+      ...newer,
+      updatedAt: T0 - 30_000,
+      createdAt: T0 - 30_000,
+    });
+    await db.put({
+      ...claimed,
+      status: 'processing',
+      processingStartedAt: T0,
+      processingAttempts: 1,
+      updatedAt: T0,
+    });
+    expect(
+      await summarizeSpatialBacklog({
+        now: () => T0,
+        claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      })
+    ).toEqual({inFlight: 1, unclaimed: 2, oldestUnclaimedMs: 180_000});
   });
 
   it('treats a processing job as unclaimed after the last state change ages out', async () => {

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import {TeamCellComponent} from '@/components/tables/cells/team-cell';
+import {MapLayerStatusBadge} from '@/components/tables/map-layer-status';
 import {Badge} from '@/components/ui/badge';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
@@ -10,10 +11,11 @@ import {displayDateTime} from '@/lib/time';
 import {cn} from '@/lib/utils';
 import {
   formatFileSize,
+  isMapAssetReadyToLink,
   mapAssetKindLabel,
   mapAssetProcessingStatusText,
-  type ExistingMapAsset,
   type MapAssetStatus,
+  type MapAssetWithLinkCount,
 } from '@faims3/data-model';
 import {AlertCircle, CheckCircle2, Clock, LoaderCircle} from 'lucide-react';
 import type {ReactNode} from 'react';
@@ -52,7 +54,18 @@ const statusIcon = {
 } as const satisfies Record<MapAssetStatus, typeof CheckCircle2>;
 
 /** Status badge plus processing progress or failure reason. */
-function MapLayerStatusIndication({asset}: {asset: ExistingMapAsset}) {
+function MapLayerStatusIndication({asset}: {asset: MapAssetWithLinkCount}) {
+  if (asset.status === 'ready') {
+    return (
+      <div className="space-y-1.5" data-testid="web-map-layer-status">
+        <MapLayerStatusBadge
+          asset={asset}
+          linkToLinkingTab={isMapAssetReadyToLink(asset)}
+        />
+      </div>
+    );
+  }
+
   const indication = statusIndication[asset.status];
   const Icon = statusIcon[asset.status];
 
@@ -97,7 +110,7 @@ export function MapLayerDetails({assetId}: {assetId: string}) {
   const rows: {
     key: string;
     label: string;
-    value: (asset: ExistingMapAsset) => ReactNode;
+    value: (asset: MapAssetWithLinkCount) => ReactNode;
   }[] = [
     {key: 'name', label: 'Name', value: asset => asset.name},
     {

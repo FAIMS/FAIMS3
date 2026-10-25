@@ -38,7 +38,6 @@ export type ContextualLayerPrefs = {
   fill: string;
   lineWidth: number;
   pointSize: number;
-  labelField?: string;
 };
 
 export type ContextualLayersState = {

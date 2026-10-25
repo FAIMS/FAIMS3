@@ -16,7 +16,6 @@ import {
   IconButton,
   Slider,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material';
 import {alpha, type Theme} from '@mui/material/styles';
@@ -30,7 +29,7 @@ import {
   useState,
   type ChangeEvent,
 } from 'react';
-import {INPUT_LIMITS, mapAssetKindLabel} from '@faims3/data-model';
+import {mapAssetKindLabel} from '@faims3/data-model';
 import {
   BASE_MAP_SATELLITE_NAME,
   type BaseMapLayerPatch,
@@ -65,7 +64,6 @@ type PanelLayer = {
   fill: string;
   lineWidth: number;
   pointSize: number;
-  labelField?: string;
   extent4326?: ContextualMapLayer['extent4326'];
   extent3857?: ContextualMapLayer['extent3857'];
   canPan: boolean;
@@ -854,22 +852,6 @@ function LayerRow({
                 value={layer.pointSize}
                 display={String(layer.pointSize)}
                 onChange={pointSize => onPatch({pointSize})}
-              />
-              <TextField
-                size="small"
-                fullWidth
-                label="Label field"
-                placeholder="Attribute name"
-                value={layer.labelField ?? ''}
-                onChange={event =>
-                  onPatch({labelField: event.target.value || undefined})
-                }
-                slotProps={{
-                  htmlInput: {
-                    'aria-label': `${layer.name} label field`,
-                    maxLength: INPUT_LIMITS.ID_MAX_LENGTH,
-                  },
-                }}
               />
             </>
           )}

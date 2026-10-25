@@ -666,7 +666,7 @@ CDK creates a private S3 bucket for map-layer originals and normalized files, wi
 
 The capacity manager is a Fargate service with desired count 1 (min and max 1). It reads the Couch `pending` / `processing` queue and calls `ecs:RunTask` on the spatial-worker **task definition** (there is no worker service). Each worker polls and processes jobs until `spatialCapacity.idleExitMs` (default 60s) with nothing to claim, then exits. Idle tasks are not replaced. The manager role can `RunTask`, `ListTasks`, and `DescribeTasks`; it cannot `StopTask` or `UpdateService`.
 
-Worker count is a threshold map of total queue depth (`inFlight` + `unclaimed`), not one task per job. `scaleThresholds` are the depths at which count increases from 1: `[3, 8, 16, 32]` means 1 worker below 3 jobs, 2 below 8, 3 below 16, 4 below 32, and 5 at 32+, always capped by `maxCapacity`.
+Worker count is a threshold map of total queue depth (`inFlight` + `unclaimed`), not one task per job. `scaleThresholds` are the depths at which count increases from 1: `[3, 8, 16, 32]` means 1 worker below 3 jobs, 2 below 8, 3 below 16, 4 below 32, and 5 at 32+, always capped by `maxCapacity`. `starvationMs` (default 5 minutes) is a second scale-up trigger: if the oldest unclaimed job has waited that long, the manager asks for one extra worker above the depth step. `scaleInCooldownMs` (default `2 * starvationMs`, 10 minutes) spaces further extras from that same stale job so a worker coming online is not treated as another scale-up. Worker count never exceeds `maxCapacity` or the number of jobs in the queue (`inFlight` + `unclaimed`). `starvationMs: 0` disables the staleness trigger; `scaleInCooldownMs: 0` keeps only the first extra.
 
 Optional JSON (defaults shown). Performance knobs are conservative for the
 default 1 vCPU / 2 GiB worker. `gdalNumThreads: "ALL_CPUS"` already uses the
@@ -679,6 +679,8 @@ tasks (for example 2048 / 1024 on an 8 vCPU / 32 GiB worker). Omit
   "maxCapacity": 4,
   "scaleThresholds": [3, 8, 16, 32],
   "reconcileMs": 15000,
+  "starvationMs": 300000,
+  "scaleInCooldownMs": 600000,
   "idleExitMs": 60000,
   "cpu": 1024,
   "memory": 2048,
