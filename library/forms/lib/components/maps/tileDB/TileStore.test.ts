@@ -3,7 +3,15 @@ import type {FeatureLike} from 'ol/Feature';
 import {get as getProjection} from 'ol/proj';
 import TileState from 'ol/TileState';
 import type VectorTile from 'ol/VectorTile';
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type MockInstance,
+} from 'vitest';
 import {
   TILE_LOAD_CONTROLLER,
   TILE_LOAD_GATE,
@@ -72,7 +80,7 @@ function fakeVectorTile(coord: [number, number, number]) {
 }
 
 describe('VectorTileStore.tileLoader', () => {
-  let getTileBlob: ReturnType<typeof vi.spyOn>;
+  let getTileBlob: MockInstance<VectorTileStore['getTileBlob']>;
 
   beforeEach(() => {
     vi.stubGlobal(

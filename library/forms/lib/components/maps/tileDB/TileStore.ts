@@ -327,7 +327,7 @@ abstract class TileStoreBase {
    * Get a satellite tile layer (raster imagery)
    * Returns undefined if satellite is not configured
    */
-  getSatelliteLayer(): TileLayer | undefined {
+  getSatelliteLayer(): TileLayer<XYZ> | undefined {
     if (!this.config.satelliteSource) return undefined;
 
     const config = TILE_URL_MAP[this.config.satelliteSource]?.satellite;
@@ -343,7 +343,6 @@ abstract class TileStoreBase {
     }
 
     const loads = this.satelliteLoads;
-    let layer: TileLayer;
     const source = new XYZ({
       url: url,
       attributions: this.getSatelliteAttribution(),
@@ -388,7 +387,7 @@ abstract class TileStoreBase {
       },
     });
 
-    layer = new TileLayer({
+    const layer = new TileLayer({
       source: source,
       visible: false,
       preload: 0,
