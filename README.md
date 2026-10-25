@@ -186,7 +186,8 @@ a tool such as [Overmind](https://github.com/DarthSim/overmind). The `Procfile`
 contains the commands to run the different services and Overmind can be used
 to run them together. The advantage over `pnpm run dev` is that you can
 run them in the background, restart individual services easily and attach/detach
-the output from the servers in the terminal.
+the output from the servers in the terminal. The repo ships with `Procfile.dev` which you can rename to `Procfile` locally - committing `Procfile` would mess up some
+automated deployments.
 
 Run `pnpm build` before `overmind start`, because Overmind starts every process
 at once, so a service can compile against a library whose watch build is still
