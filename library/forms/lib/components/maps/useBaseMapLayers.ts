@@ -21,30 +21,41 @@ const SATELLITE_OFFLINE_HINT = 'Needs a network connection';
 /**
  * Streets and satellite paint prefs, applied to the OpenLayers base layers.
  * Satellite stays listed while offline but cannot be shown.
+ *
+ * Field maps persist prefs (`persist` defaults true). Preview hosts can pass
+ * `persist: false` so paint stays in memory for this map only.
  */
 export function useBaseMapLayers(
   tileLayer: VectorTileLayer | TileLayer,
   satelliteLayer: TileLayer | undefined,
-  isOnline: boolean
+  isOnline: boolean,
+  options?: {persist?: boolean}
 ) {
-  const [prefs, setPrefs] = useState(readBaseMapLayersState);
+  const persist = options?.persist ?? true;
+  const [prefs, setPrefs] = useState(() =>
+    persist ? readBaseMapLayersState() : defaultBaseMapLayersState()
+  );
 
   const updateBaseLayer = useCallback(
     (id: string, patch: BaseMapLayerPatch) => {
       setPrefs(current => {
         const next = applyBaseMapLayerPatch(current, id, patch);
-        writeBaseMapLayersState(next);
+        if (persist) {
+          writeBaseMapLayersState(next);
+        }
         return next;
       });
     },
-    []
+    [persist]
   );
 
   const resetBaseLayers = useCallback(() => {
     const next = defaultBaseMapLayersState();
-    writeBaseMapLayersState(next);
+    if (persist) {
+      writeBaseMapLayersState(next);
+    }
     setPrefs(next);
-  }, []);
+  }, [persist]);
 
   const vectorVisible = prefs.vector.visible;
   const satelliteVisible = Boolean(

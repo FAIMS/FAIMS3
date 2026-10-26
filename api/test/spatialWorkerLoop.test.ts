@@ -94,6 +94,43 @@ describe('spatial worker idle exit', () => {
     expect((pollErrors[0] as Error).message).toBe('missing');
   });
 
+  it('keeps running when processJob throws', async () => {
+    const processed: string[] = [];
+    const processErrors: unknown[] = [];
+    let polls = 0;
+    const outcome = await runSpatialWorkerLoop({
+      idleExitMs: 0,
+      pollIntervalMs: 10,
+      sleep: async () => undefined,
+      findJob: async () => {
+        polls += 1;
+        if (polls === 1) {
+          return 'gone';
+        }
+        if (polls === 2) {
+          return 'asset-1';
+        }
+        return undefined;
+      },
+      processJob: async assetId => {
+        if (assetId === 'gone') {
+          throw new Error('Map asset gone was not found.');
+        }
+        processed.push(assetId);
+      },
+      onProcessError: error => {
+        processErrors.push(error);
+      },
+      maxPolls: 4,
+    });
+    expect(outcome).toBe('stopped');
+    expect(processed).toEqual(['asset-1']);
+    expect(processErrors).toHaveLength(1);
+    expect((processErrors[0] as Error).message).toBe(
+      'Map asset gone was not found.'
+    );
+  });
+
   it('processes a job after a failed poll', async () => {
     let now = 0;
     const processed: string[] = [];

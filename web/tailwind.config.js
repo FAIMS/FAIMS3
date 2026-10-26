@@ -56,6 +56,11 @@ export default {
           foreground: 'hsl(var(--warning-foreground))',
           background: 'hsl(var(--warning-background))',
         },
+        notice: {
+          DEFAULT: 'hsl(var(--notice))',
+          foreground: 'hsl(var(--notice-foreground))',
+          background: 'hsl(var(--notice-background))',
+        },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',

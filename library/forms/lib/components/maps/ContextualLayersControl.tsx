@@ -3,6 +3,7 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import CenterFocusStrongIcon from '@mui/icons-material/CenterFocusStrong';
 import CloseIcon from '@mui/icons-material/Close';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
@@ -69,6 +70,7 @@ type PanelLayer = {
   canPan: boolean;
   available: boolean;
   unavailableHint?: string;
+  error?: string;
 };
 
 /**
@@ -86,6 +88,7 @@ export function ContextualLayersControl({
   recordLayers = [],
   onUpdateRecordLayer,
   onResetRecordLayers,
+  layerErrors = {},
 }: {
   map: Map;
   baseLayers?: BaseMapPanelLayer[];
@@ -94,6 +97,8 @@ export function ContextualLayersControl({
   recordLayers?: RecordFormLayer[];
   onUpdateRecordLayer?: (id: string, patch: RecordFormLayerPatch) => void;
   onResetRecordLayers?: () => void;
+  /** Create failures from the overlay hook. */
+  layerErrors?: Record<string, string>;
 }) {
   const {layers, updateLayer, resetLayers} = useContext(
     ContextualMapLayersContext
@@ -144,13 +149,19 @@ export function ContextualLayersControl({
     };
   }, [map, open, layers.length, baseLayers.length, recordLayers.length]);
 
-  const panelLayers = toPanelLayers(layers, baseLayers, recordLayers);
+  const panelLayers = toPanelLayers(
+    layers,
+    baseLayers,
+    recordLayers,
+    layerErrors
+  );
   if (panelLayers.length === 0) {
     return null;
   }
 
   const ordered = sortLayersTopFirst(panelLayers);
   const visibleCount = panelLayers.filter(layer => layer.visible).length;
+  const failedCount = panelLayers.filter(layer => layer.error).length;
 
   const patchLayer = (layer: PanelLayer, patch: ContextualMapLayerPatch) => {
     if (layer.source === 'basemap') {
@@ -257,7 +268,11 @@ export function ContextualLayersControl({
           type="button"
           aria-expanded={open}
           aria-controls={panelId}
-          aria-label={`Map layers, ${visibleCount} of ${panelLayers.length} shown`}
+          aria-label={
+            failedCount > 0
+              ? `Map layers, ${visibleCount} of ${panelLayers.length} shown, ${failedCount} failed to load`
+              : `Map layers, ${visibleCount} of ${panelLayers.length} shown`
+          }
           onClick={() => setOpen(value => !value)}
           sx={{
             pointerEvents: 'auto',
@@ -283,6 +298,12 @@ export function ContextualLayersControl({
           <Typography component="span" variant="body2" sx={{fontWeight: 700}}>
             Layers
           </Typography>
+          {failedCount > 0 ? (
+            <ErrorOutlineIcon
+              sx={{fontSize: 18, color: 'error.main'}}
+              aria-hidden
+            />
+          ) : null}
           <Box
             component="span"
             sx={{
@@ -455,7 +476,8 @@ export function ContextualLayersControl({
 function toPanelLayers(
   layers: ContextualMapLayer[],
   baseLayers: BaseMapPanelLayer[],
-  recordLayers: RecordFormLayer[]
+  recordLayers: RecordFormLayer[],
+  layerErrors: Record<string, string>
 ): PanelLayer[] {
   return [
     ...baseLayers.map(layer => ({
@@ -479,6 +501,7 @@ function toPanelLayers(
       source: 'contextual' as const,
       canPan: true,
       available: true,
+      error: layerErrors[layer.id],
     })),
     ...recordLayers.map(layer => ({
       ...layer,
@@ -670,6 +693,15 @@ function LayerRow({
                 />
               ) : null}
             </Box>
+            {layer.error ? (
+              <Typography
+                variant="caption"
+                color="error"
+                sx={{display: 'block', lineHeight: 1.3, whiteSpace: 'normal'}}
+              >
+                {layer.error}
+              </Typography>
+            ) : null}
           </Box>
         </Stack>
         <Box

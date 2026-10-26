@@ -3,7 +3,7 @@ import BaseLayer from 'ol/layer/Base';
 import TileLayer from 'ol/layer/Tile';
 import VectorTileLayer from 'ol/layer/VectorTile';
 import OlMap from 'ol/Map';
-import {useContext, useEffect, useRef} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {
   createRasterTileLayer,
   createVectorTileLayer,
@@ -40,6 +40,47 @@ function paintVector(layer: ManagedLayer, spec: ContextualMapLayer) {
   }
 }
 
+/** Message shown when a PMTiles overlay cannot be created. */
+export function contextualLayerCreateErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Could not draw this layer.';
+}
+
+/** Drop keys that are no longer in the notebook overlay list. */
+function pruneLayerErrors(
+  current: Record<string, string>,
+  nextIds: Set<string>
+): Record<string, string> {
+  let changed = false;
+  const next = {...current};
+  for (const id of Object.keys(next)) {
+    if (!nextIds.has(id)) {
+      delete next[id];
+      changed = true;
+    }
+  }
+  return changed ? next : current;
+}
+
+/** Set or clear one overlay create error without extra renders. */
+function writeLayerError(
+  current: Record<string, string>,
+  id: string,
+  message: string | undefined
+): Record<string, string> {
+  if (message === undefined) {
+    if (!(id in current)) {
+      return current;
+    }
+    const next = {...current};
+    delete next[id];
+    return next;
+  }
+  if (current[id] === message) {
+    return current;
+  }
+  return {...current, [id]: message};
+}
+
 /** Remove and dispose a managed overlay. */
 function dropLayer(map: OlMap, layer: ManagedLayer) {
   stopTileLoads(layer);
@@ -66,10 +107,14 @@ export async function createContextualMapLayer(
 /**
  * Adds, updates, and removes contextual OpenLayers layers for the current
  * notebook. A hidden overlay leaves the map so its tile cache can drop.
+ * Create failures are returned so the layers sheet can show them.
  */
-export function useContextualMapLayers(map: OlMap | undefined) {
+export function useContextualMapLayers(map: OlMap | undefined): {
+  layerErrors: Record<string, string>;
+} {
   const {layers} = useContext(ContextualMapLayersContext);
   const managed = useRef(new globalThis.Map<string, ManagedLayer>());
+  const [layerErrors, setLayerErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!map) {
@@ -77,6 +122,7 @@ export function useContextualMapLayers(map: OlMap | undefined) {
     }
     let cancelled = false;
     const nextIds = new Set(layers.map(layer => layer.id));
+    setLayerErrors(current => pruneLayerErrors(current, nextIds));
     for (const [id, layer] of managed.current) {
       if (!nextIds.has(id)) {
         dropLayer(map, layer);
@@ -91,6 +137,7 @@ export function useContextualMapLayers(map: OlMap | undefined) {
           dropLayer(map, existing);
           managed.current.delete(spec.id);
         }
+        setLayerErrors(current => writeLayerError(current, spec.id, undefined));
         continue;
       }
       if (existing && existing.get('sourceUrl') === spec.url) {
@@ -102,6 +149,7 @@ export function useContextualMapLayers(map: OlMap | undefined) {
         dropLayer(map, existing);
         managed.current.delete(spec.id);
       }
+      setLayerErrors(current => writeLayerError(current, spec.id, undefined));
       void createContextualMapLayer(spec)
         .then(layer => {
           if (cancelled) {
@@ -114,9 +162,22 @@ export function useContextualMapLayers(map: OlMap | undefined) {
           }
           managed.current.set(spec.id, layer as ManagedLayer);
           map.addLayer(layer);
+          setLayerErrors(current =>
+            writeLayerError(current, spec.id, undefined)
+          );
         })
         .catch(error => {
           console.error(error);
+          if (cancelled) {
+            return;
+          }
+          setLayerErrors(current =>
+            writeLayerError(
+              current,
+              spec.id,
+              contextualLayerCreateErrorMessage(error)
+            )
+          );
         });
     }
 
@@ -183,4 +244,6 @@ export function useContextualMapLayers(map: OlMap | undefined) {
       managed.current.clear();
     };
   }, [map]);
+
+  return {layerErrors};
 }

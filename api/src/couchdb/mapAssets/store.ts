@@ -368,7 +368,10 @@ async function mergeStoredAttachments(
             ...locations,
           },
           ...(latest.status === 'pending'
-            ? {processingStage: 'queued' as const}
+            ? {
+                processingStage: 'queued' as const,
+                processingProgress: undefined,
+              }
             : {}),
           updatedAt: Date.now(),
         })
@@ -651,10 +654,31 @@ export const MAP_ASSET_PROCESSING_CLAIM_TIMEOUT_MS = 2 * 60 * 60 * 1000;
  * many claims is marked failed. A GDAL error fails on the current claim.
  */
 export const MAP_ASSET_PROCESSING_MAX_ATTEMPTS = 3;
-export const MAP_ASSET_ORIGINALS_MISSING_REASON =
-  'The uploaded map files are no longer available.';
-export const MAP_ASSET_PROCESSING_EXHAUSTED_REASON =
-  'Map layer processing was interrupted too many times.';
+export const MAP_ASSET_PROCESSING_USER_HINT =
+  'Replace the file, or delete this layer and upload it again.';
+export const MAP_ASSET_ORIGINALS_MISSING_REASON = `The uploaded map files are no longer available. ${MAP_ASSET_PROCESSING_USER_HINT}`;
+export const MAP_ASSET_PROCESSING_EXHAUSTED_REASON = `Map layer processing was interrupted too many times. ${MAP_ASSET_PROCESSING_USER_HINT}`;
+/** Original-upload tries after the HTTP 201, including the first. */
+export const MAP_ASSET_ORIGINAL_STORE_MAX_ATTEMPTS = 3;
+/** Pause between original-upload retries so a short S3 blip can clear. */
+export const MAP_ASSET_ORIGINAL_STORE_RETRY_DELAY_MS = 2_000;
+
+/** Live phase shown after an original-upload attempt fails and another remains. */
+export function mapAssetOriginalStoreRetryPhase(
+  attempt: number,
+  maxAttempts: number = MAP_ASSET_ORIGINAL_STORE_MAX_ATTEMPTS
+): string {
+  return `Failed uploading asset, trying again (attempt ${attempt}/${maxAttempts})`;
+}
+
+/** Clock, retry, and store hooks for the fire-and-forget original upload. */
+export type OriginalStoreRuntime = {
+  now?: () => number;
+  store?: (assetId: string) => Promise<boolean>;
+  maxAttempts?: number;
+  delayMs?: number;
+  sleep?: (ms: number) => Promise<void>;
+};
 
 const PROCESSING_CLAIM_RETRIES = 5;
 
@@ -666,8 +690,18 @@ export type MapAssetProcessingRuntime = {
 };
 
 /** Clock used by claim/timeout math; injectable for tests. */
-function processingNow(runtime?: MapAssetProcessingRuntime): number {
+function processingNow(runtime?: {now?: () => number}): number {
   return runtime?.now?.() ?? Date.now();
+}
+
+/** Pause between original-upload retries. Zero or negative is a no-op. */
+function sleepMs(ms: number): Promise<void> {
+  if (ms <= 0) {
+    return Promise.resolve();
+  }
+  return new Promise(resolve => {
+    setTimeout(resolve, ms);
+  });
 }
 
 /** Stale-claim window; injectable for tests. */
@@ -710,6 +744,24 @@ function isConflict(error: unknown): boolean {
     'status' in error &&
     (error as {status?: number}).status === 409
   );
+}
+
+/** True when the map-asset document is gone (deleted between poll and commit). */
+function isMissingMapAsset(error: unknown): boolean {
+  return error instanceof Exceptions.ItemNotFoundException;
+}
+
+/** Failure text stored on the asset and shown in the Control Centre. */
+function formatProcessingFailureReason(error: unknown): string {
+  const raw =
+    error instanceof Error && error.message.trim()
+      ? error.message.trim()
+      : 'Map layer processing failed.';
+  if (raw.includes(MAP_ASSET_PROCESSING_USER_HINT)) {
+    return raw;
+  }
+  const detail = /[.!?]$/.test(raw) ? raw : `${raw}.`;
+  return `${detail} ${MAP_ASSET_PROCESSING_USER_HINT}`;
 }
 
 /** Drop `undefined` fields so Couch does not persist them. */
@@ -803,7 +855,21 @@ async function claimMapAssetProcessing(
   const maxAttempts = maxProcessingAttempts(runtime);
 
   for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
-    const asset = await getMapAsset(assetId);
+    let asset: ExistingMapAsset;
+    try {
+      asset = await getMapAsset(assetId);
+    } catch (error) {
+      if (isMissingMapAsset(error)) {
+        logMapAssetProcessing({
+          event: 'processing.claim',
+          outcome: 'skipped',
+          assetId,
+          reason: 'asset was deleted',
+        });
+        return undefined;
+      }
+      throw error;
+    }
     if (!mapAssetIsClaimable(asset, now, timeoutMs)) {
       logMapAssetProcessing({
         event: 'processing.claim',
@@ -867,7 +933,14 @@ async function claimMapAssetProcessing(
         attempt: attempts + 1,
         maxAttempts,
       });
-      return getMapAsset(assetId);
+      try {
+        return await getMapAsset(assetId);
+      } catch (error) {
+        if (isMissingMapAsset(error)) {
+          return undefined;
+        }
+        throw error;
+      }
     } catch (error) {
       if (isConflict(error)) {
         continue;
@@ -893,19 +966,27 @@ async function commitProcessingResult(
   assetId: string,
   claimStartedAt: number,
   build: (asset: ExistingMapAsset) => ExistingMapAsset
-): Promise<void> {
+): Promise<boolean> {
   const db = getMapAssetsDB();
   for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
-    const latest = await getMapAsset(assetId);
+    let latest: ExistingMapAsset;
+    try {
+      latest = await getMapAsset(assetId);
+    } catch (error) {
+      if (isMissingMapAsset(error)) {
+        return false;
+      }
+      throw error;
+    }
     if (
       latest.status !== 'processing' ||
       latest.processingStartedAt !== claimStartedAt
     ) {
-      return;
+      return false;
     }
     try {
       await db.put(omitUndefinedFields(build(latest)));
-      return;
+      return true;
     } catch (error) {
       if (!isConflict(error)) {
         throw error;
@@ -933,7 +1014,21 @@ async function putNormalizedAttachment({
   bytes?: Buffer;
   mediaType: string;
 }): Promise<StoredAttachmentLocation | undefined> {
-  const latest = await getMapAsset(assetId);
+  let latest: ExistingMapAsset;
+  try {
+    latest = await getMapAsset(assetId);
+  } catch (error) {
+    if (isMissingMapAsset(error)) {
+      logMapAssetProcessing({
+        event: 'processing.normalized.store',
+        outcome: 'skipped',
+        assetId,
+        reason: 'asset was deleted',
+      });
+      return undefined;
+    }
+    throw error;
+  }
   if (
     latest.status !== 'processing' ||
     latest.processingStartedAt !== claimStartedAt
@@ -995,9 +1090,202 @@ export async function storeOriginalsFromStaging(
   return true;
 }
 
+/** Terminal reason after the original-upload retries are exhausted. */
+function formatOriginalStoreFailureReason(
+  error: unknown,
+  maxAttempts: number
+): string {
+  const raw =
+    error instanceof Error && error.message.trim()
+      ? error.message.trim()
+      : 'Object storage was unavailable.';
+  if (raw.includes(MAP_ASSET_PROCESSING_USER_HINT)) {
+    return raw;
+  }
+  const detail = /[.!?]$/.test(raw) ? raw : `${raw}.`;
+  return `Could not upload the original map files after ${maxAttempts} attempts. ${detail} ${MAP_ASSET_PROCESSING_USER_HINT}`;
+}
+
+/**
+ * Write the retry phase onto a still-pending upload. A finished or
+ * deleted asset is left alone. Couch conflicts are retried.
+ */
+async function reportOriginalStoreRetry(
+  assetId: string,
+  attempt: number,
+  maxAttempts: number,
+  runtime?: OriginalStoreRuntime
+): Promise<void> {
+  const progress: MapAssetProcessingProgress = {
+    phase: mapAssetOriginalStoreRetryPhase(attempt, maxAttempts),
+  };
+  const db = getMapAssetsDB();
+  try {
+    for (let write = 0; write < PROCESSING_CLAIM_RETRIES; write++) {
+      let latest: ExistingMapAsset;
+      try {
+        latest = await getMapAsset(assetId);
+      } catch (error) {
+        if (isMissingMapAsset(error)) {
+          return;
+        }
+        throw error;
+      }
+      if (
+        !isMapAssetInProgress(latest.status) ||
+        assetHasStoredAttachment(latest, MAP_ASSET_ORIGINAL_ATTACHMENT)
+      ) {
+        return;
+      }
+      if (progressUnchanged(latest, progress)) {
+        return;
+      }
+      try {
+        await db.put({
+          ...latest,
+          processingStage: latest.processingStage ?? 'uploading',
+          processingProgress: progress,
+          updatedAt: processingNow(runtime),
+        });
+        logMapAssetProcessing({
+          event: 'processing.originals.store',
+          outcome: 'waiting',
+          assetId,
+          filename: latest.originalFilename,
+          reason: progress.phase,
+          attempt,
+          maxAttempts,
+        });
+        return;
+      } catch (error) {
+        if (!isConflict(error)) {
+          throw error;
+        }
+      }
+    }
+  } catch (error) {
+    console.error(
+      `${MAP_ASSET_PROCESSING_LOG} could not record original-upload retry for ${assetId}`,
+      error
+    );
+  }
+}
+
+/**
+ * Consume a pending upload that could not reach object storage. Replace
+ * becomes available. A finished or deleted asset is left alone.
+ */
+async function markOriginalStoreFailed(
+  assetId: string,
+  error: unknown,
+  runtime?: OriginalStoreRuntime
+): Promise<void> {
+  const maxAttempts =
+    runtime?.maxAttempts ?? MAP_ASSET_ORIGINAL_STORE_MAX_ATTEMPTS;
+  const reason = formatOriginalStoreFailureReason(error, maxAttempts);
+  const db = getMapAssetsDB();
+  for (let write = 0; write < PROCESSING_CLAIM_RETRIES; write++) {
+    let latest: ExistingMapAsset;
+    try {
+      latest = await getMapAsset(assetId);
+    } catch (caught) {
+      if (isMissingMapAsset(caught)) {
+        return;
+      }
+      throw caught;
+    }
+    if (
+      !isMapAssetInProgress(latest.status) ||
+      assetHasStoredAttachment(latest, MAP_ASSET_ORIGINAL_ATTACHMENT)
+    ) {
+      return;
+    }
+    try {
+      await db.put(
+        omitUndefinedFields({
+          ...latest,
+          status: 'failed' as const,
+          failureReason: reason,
+          processingStartedAt: undefined,
+          processingStage: undefined,
+          processingProgress: undefined,
+          updatedAt: processingNow(runtime),
+        })
+      );
+      await cleanupStaging(assetId);
+      logMapAssetProcessing({
+        event: 'processing.commit',
+        outcome: 'failure',
+        assetId,
+        filename: latest.originalFilename,
+        reason,
+        attempt: maxAttempts,
+        maxAttempts,
+      });
+      return;
+    } catch (caught) {
+      if (!isConflict(caught)) {
+        throw caught;
+      }
+    }
+  }
+  throw new Error(`Could not record original-upload failure for ${assetId}.`);
+}
+
+/**
+ * Upload staged originals, retrying a short S3 blip, then mark the asset
+ * failed so the user can replace it. Safe if the asset is deleted mid-way.
+ */
+export async function storeOriginalsFromStagingWithRetry(
+  assetId: string,
+  runtime?: OriginalStoreRuntime
+): Promise<void> {
+  const maxAttempts =
+    runtime?.maxAttempts ?? MAP_ASSET_ORIGINAL_STORE_MAX_ATTEMPTS;
+  const delayMs = runtime?.delayMs ?? MAP_ASSET_ORIGINAL_STORE_RETRY_DELAY_MS;
+  const store = runtime?.store ?? storeOriginalsFromStaging;
+  const sleep = runtime?.sleep ?? sleepMs;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const stored = await store(assetId);
+      if (stored) {
+        return;
+      }
+      const latest = await getMapAsset(assetId);
+      if (!isMapAssetInProgress(latest.status)) {
+        return;
+      }
+      if (assetHasStoredAttachment(latest, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
+        return;
+      }
+      throw new Error(MAP_ASSET_ORIGINALS_MISSING_REASON);
+    } catch (error) {
+      if (isMissingMapAsset(error)) {
+        return;
+      }
+      logMapAssetProcessing({
+        event: 'processing.originals.store',
+        outcome: 'failure',
+        assetId,
+        reason: error instanceof Error ? error.message : String(error),
+        attempt,
+        maxAttempts,
+      });
+      if (attempt < maxAttempts) {
+        await reportOriginalStoreRetry(assetId, attempt, maxAttempts, runtime);
+        await sleep(delayMs);
+        continue;
+      }
+      await markOriginalStoreFailed(assetId, error, runtime);
+      return;
+    }
+  }
+}
+
 /** Fire-and-forget original upload after the HTTP handler has responded. */
 export function scheduleStoreOriginals(assetId: string): void {
-  void storeOriginalsFromStaging(assetId).catch(error => {
+  void storeOriginalsFromStagingWithRetry(assetId).catch(error => {
     logMapAssetProcessing({
       event: 'processing.originals.store',
       outcome: 'failure',
@@ -1008,6 +1296,7 @@ export function scheduleStoreOriginals(assetId: string): void {
       `${MAP_ASSET_PROCESSING_LOG} original upload failed for ${assetId}`,
       error
     );
+    void markOriginalStoreFailed(assetId, error).catch(() => undefined);
   });
 }
 
@@ -1017,11 +1306,18 @@ async function claimStillOwned(
   token: ClaimToken
 ): Promise<boolean> {
   return withClaimToken(token, async () => {
-    const latest = await getMapAsset(assetId);
-    return (
-      latest.status === 'processing' &&
-      latest.processingStartedAt === token.current
-    );
+    try {
+      const latest = await getMapAsset(assetId);
+      return (
+        latest.status === 'processing' &&
+        latest.processingStartedAt === token.current
+      );
+    } catch (error) {
+      if (isMissingMapAsset(error)) {
+        return false;
+      }
+      throw error;
+    }
   });
 }
 
@@ -1219,7 +1515,21 @@ export async function processMapAsset(
   assetId: string,
   runtime?: MapAssetProcessingRuntime
 ): Promise<void> {
-  const existing = await getMapAsset(assetId);
+  let existing: ExistingMapAsset;
+  try {
+    existing = await getMapAsset(assetId);
+  } catch (error) {
+    if (isMissingMapAsset(error)) {
+      logMapAssetProcessing({
+        event: 'processing.run',
+        outcome: 'skipped',
+        assetId,
+        reason: 'asset was deleted',
+      });
+      return;
+    }
+    throw error;
+  }
   if (!isMapAssetInProgress(existing.status)) {
     return;
   }
@@ -1333,26 +1643,40 @@ export async function processMapAsset(
       ? await sha256File(normalized.filePath)
       : sha256(normalized.bytes ?? Buffer.alloc(0));
     const byteSize = normalized.byteSize ?? normalized.bytes?.length ?? 0;
-    await commitProcessingResult(assetId, token.current, latest =>
-      omitUndefinedFields({
-        ...latest,
-        status: 'ready' as const,
-        kind: normalized.kind,
-        contentHash,
-        byteSize,
-        storedAttachments: nextStored,
-        extent4326: normalized.extent4326,
-        extent3857: normalized.extent3857,
-        minZoom: normalized.minZoom,
-        maxZoom: normalized.maxZoom,
-        tileSize: normalized.tileSize,
-        failureReason: undefined,
-        processingStartedAt: undefined,
-        processingStage: undefined,
-        processingProgress: undefined,
-        updatedAt: processingNow(runtime),
-      })
+    const committed = await commitProcessingResult(
+      assetId,
+      token.current,
+      latest =>
+        omitUndefinedFields({
+          ...latest,
+          status: 'ready' as const,
+          kind: normalized.kind,
+          contentHash,
+          byteSize,
+          storedAttachments: nextStored,
+          extent4326: normalized.extent4326,
+          extent3857: normalized.extent3857,
+          minZoom: normalized.minZoom,
+          maxZoom: normalized.maxZoom,
+          tileSize: normalized.tileSize,
+          failureReason: undefined,
+          processingStartedAt: undefined,
+          processingStage: undefined,
+          processingProgress: undefined,
+          updatedAt: processingNow(runtime),
+        })
     );
+    if (!committed) {
+      logMapAssetProcessing({
+        event: 'processing.run',
+        outcome: 'skipped',
+        assetId,
+        filename: claimed.originalFilename,
+        elapsedMs: Date.now() - runStarted,
+        reason: 'lost the processing claim',
+      });
+      return;
+    }
     await deleteUnreferencedAttachments(previousStored, nextStored);
     logMapAssetProcessing({
       event: 'processing.commit',
@@ -1373,19 +1697,59 @@ export async function processMapAsset(
     });
   } catch (error) {
     await token.chain;
-    const message =
-      error instanceof Error ? error.message : 'Map layer processing failed.';
-    await commitProcessingResult(assetId, token.current, latest =>
-      omitUndefinedFields({
-        ...latest,
-        status: 'failed' as const,
-        failureReason: message,
-        processingStartedAt: undefined,
-        processingStage: undefined,
-        processingProgress: undefined,
-        updatedAt: processingNow(runtime),
-      })
-    );
+    if (isMissingMapAsset(error)) {
+      logMapAssetProcessing({
+        event: 'processing.run',
+        outcome: 'skipped',
+        assetId,
+        filename: claimed.originalFilename,
+        elapsedMs: Date.now() - runStarted,
+        reason: 'asset was deleted',
+      });
+      return;
+    }
+    const message = formatProcessingFailureReason(error);
+    let committed = false;
+    try {
+      committed = await commitProcessingResult(assetId, token.current, latest =>
+        omitUndefinedFields({
+          ...latest,
+          status: 'failed' as const,
+          failureReason: message,
+          processingStartedAt: undefined,
+          processingStage: undefined,
+          processingProgress: undefined,
+          updatedAt: processingNow(runtime),
+        })
+      );
+    } catch (commitError) {
+      logMapAssetProcessing({
+        event: 'processing.commit',
+        outcome: 'failure',
+        assetId,
+        filename: claimed.originalFilename,
+        reason:
+          commitError instanceof Error
+            ? commitError.message
+            : String(commitError),
+      });
+      console.error(
+        `${MAP_ASSET_PROCESSING_LOG} could not record failure for ${assetId}`,
+        commitError
+      );
+      return;
+    }
+    if (!committed) {
+      logMapAssetProcessing({
+        event: 'processing.run',
+        outcome: 'skipped',
+        assetId,
+        filename: claimed.originalFilename,
+        elapsedMs: Date.now() - runStarted,
+        reason: 'lost the processing claim',
+      });
+      return;
+    }
     logMapAssetProcessing({
       event: 'processing.commit',
       outcome: 'failure',

@@ -2,16 +2,21 @@
 import {beforeAll, beforeEach, describe, expect, it, vi} from 'vitest';
 import {getMapAssetsDB} from '../src/couchdb';
 import {
+  MAP_ASSET_ORIGINAL_STORE_MAX_ATTEMPTS,
+  MAP_ASSET_ORIGINALS_MISSING_REASON,
   MAP_ASSET_PROCESSING_EXHAUSTED_REASON,
   MAP_ASSET_PROCESSING_MAX_ATTEMPTS,
+  MAP_ASSET_PROCESSING_USER_HINT,
   createMapAsset,
   deleteMapAsset,
   findUnclaimedSpatialJob,
   getMapAsset,
   mapAssetIsClaimable,
+  mapAssetOriginalStoreRetryPhase,
   processMapAsset,
   replaceMapAssetFiles,
   storeOriginalsFromStaging,
+  storeOriginalsFromStagingWithRetry,
   summarizeSpatialBacklog,
   updateMapAssetDetails,
 } from '../src/couchdb/mapAssets/store';
@@ -186,6 +191,99 @@ describe('map asset original upload', () => {
       })
     ).rejects.toThrow(/still being prepared/);
   });
+
+  it('records retry progress then stores originals on a later attempt', async () => {
+    const asset = await createPendingAsset();
+    const phases: Array<string | undefined> = [];
+    const store = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('S3 unavailable'))
+      .mockRejectedValueOnce(new Error('S3 unavailable'))
+      .mockResolvedValueOnce(true);
+
+    await storeOriginalsFromStagingWithRetry(asset._id, {
+      store,
+      delayMs: 0,
+      sleep: async () => {
+        phases.push((await getMapAsset(asset._id)).processingProgress?.phase);
+      },
+    });
+
+    expect(store).toHaveBeenCalledTimes(3);
+    expect(phases).toEqual([
+      mapAssetOriginalStoreRetryPhase(1),
+      mapAssetOriginalStoreRetryPhase(2),
+    ]);
+    expect(mapAssetOriginalStoreRetryPhase(1).length).toBeLessThanOrEqual(80);
+    const current = await getMapAsset(asset._id);
+    expect(current.status).toBe('pending');
+    expect(current.failureReason).toBeUndefined();
+  });
+
+  it('marks the asset failed after the original-upload retries are exhausted', async () => {
+    const asset = await createPendingAsset();
+    await storeOriginalsFromStagingWithRetry(asset._id, {
+      store: async () => {
+        throw new Error('S3 unavailable');
+      },
+      delayMs: 0,
+    });
+
+    const failed = await getMapAsset(asset._id);
+    expect(failed.status).toBe('failed');
+    expect(failed.processingStage).toBeUndefined();
+    expect(failed.processingProgress).toBeUndefined();
+    expect(failed.failureReason).toContain('after 3 attempts');
+    expect(failed.failureReason).toContain('S3 unavailable');
+    expect(failed.failureReason).toContain(MAP_ASSET_PROCESSING_USER_HINT);
+    expect(
+      await findUnclaimedSpatialJob({
+        now: () => T0,
+        claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      })
+    ).toBeUndefined();
+
+    const replaced = await replaceMapAssetFiles({
+      assetId: failed._id,
+      files: [{filename: 'layer.geojson', bytes: Buffer.from('{}')}],
+      primaryFilename: 'layer.geojson',
+    });
+    expect(replaced.status).toBe('pending');
+    expect(replaced.failureReason).toBeUndefined();
+  });
+
+  it('marks the asset failed when staged originals never appear', async () => {
+    const asset = await createPendingAsset();
+    await storeOriginalsFromStagingWithRetry(asset._id, {
+      store: async () => false,
+      delayMs: 0,
+    });
+    const failed = await getMapAsset(asset._id);
+    expect(failed.status).toBe('failed');
+    expect(failed.failureReason).toBe(MAP_ASSET_ORIGINALS_MISSING_REASON);
+    expect(MAP_ASSET_ORIGINAL_STORE_MAX_ATTEMPTS).toBe(3);
+  });
+
+  it('does not fail an asset that was deleted during the original upload', async () => {
+    const asset = await createPendingAsset();
+    await deleteMapAsset(asset._id);
+    await storeOriginalsFromStagingWithRetry(asset._id, {delayMs: 0});
+    await expect(getMapAsset(asset._id)).rejects.toMatchObject({status: 404});
+  });
+
+  it('clears retry progress when originals land', async () => {
+    const asset = await createPendingAsset();
+    await getMapAssetsDB().put({
+      ...asset,
+      processingProgress: {
+        phase: mapAssetOriginalStoreRetryPhase(1),
+      },
+    });
+    expect(await storeOriginalsFromStaging(asset._id)).toBe(true);
+    const finished = await getMapAsset(asset._id);
+    expect(finished.processingStage).toBe('queued');
+    expect(finished.processingProgress).toBeUndefined();
+  });
 });
 
 describe('map asset worker processing', () => {
@@ -247,7 +345,9 @@ describe('map asset worker processing', () => {
 
     const failed = await getMapAsset(asset._id);
     expect(failed.status).toBe('failed');
-    expect(failed.failureReason).toBe('no crs');
+    expect(failed.failureReason).toBe(
+      `no crs. ${MAP_ASSET_PROCESSING_USER_HINT}`
+    );
     expect(failed.processingAttempts).toBe(1);
     expect(
       await findUnclaimedSpatialJob({
@@ -255,6 +355,35 @@ describe('map asset worker processing', () => {
         claimTimeoutMs: CLAIM_TIMEOUT_MS,
       })
     ).toBeUndefined();
+  });
+
+  it('returns when the asset is deleted before the worker claims it', async () => {
+    const asset = await createStoredAsset();
+    await deleteMapAsset(asset._id);
+    await expect(
+      processMapAsset(asset._id, {
+        now: () => T0,
+        claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      })
+    ).resolves.toBeUndefined();
+    expect(normalizeMapUpload).not.toHaveBeenCalled();
+  });
+
+  it('returns when the asset is deleted during processing', async () => {
+    const asset = await createStoredAsset();
+    normalizeMapUpload.mockImplementation(async () => {
+      await deleteMapAsset(asset._id);
+      return normalizedFixture();
+    });
+    await expect(
+      processMapAsset(asset._id, {
+        now: () => T0,
+        claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      })
+    ).resolves.toBeUndefined();
+    await expect(getMapAsset(asset._id)).rejects.toMatchObject({
+      status: 404,
+    });
   });
 
   it('does not let a second claim run GDAL while the first claim is fresh', async () => {

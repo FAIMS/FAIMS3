@@ -59,7 +59,7 @@ export function MapLayerStatusBadge({
 
   if (asset.status === 'ready' && isMapAssetReadyToLink(asset)) {
     const chip = (
-      <StatusChip className="cursor-pointer border-warning/40 bg-warning/10 text-warning hover:bg-warning/15">
+      <StatusChip className="cursor-pointer border-notice/40 bg-notice/10 text-notice hover:bg-notice/15">
         <Link2 className="h-3.5 w-3.5" aria-hidden />
         {label}
       </StatusChip>

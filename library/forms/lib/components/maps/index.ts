@@ -4,6 +4,7 @@ export * from './ContextualLayersControl';
 export * from './LayerLocationHint';
 export * from './layerLocationProximity';
 export * from './StaticMapLayerPreview';
+export * from './InteractiveMapLayerPreview';
 export * from './contextualMapLayers';
 export * from './pmtilesRange';
 export {createContextualMapLayer} from './useContextualMapLayers';

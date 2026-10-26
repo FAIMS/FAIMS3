@@ -158,7 +158,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
   const [map, setMap] = useState<Map | undefined>(undefined);
   const olMapRef = useRef<Map | undefined>(undefined);
   const mapMountedRef = useRef(true);
-  useContextualMapLayers(map);
+  const {layerErrors} = useContextualMapLayers(map);
   const [zoomLevel, setZoomLevel] = useState(props.zoom || MIN_ZOOM); // Default zoom level
   const [attribution, setAttribution] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
@@ -724,6 +724,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
                     recordLayers={props.recordLayers}
                     onUpdateRecordLayer={props.onUpdateRecordLayer}
                     onResetRecordLayers={props.onResetRecordLayers}
+                    layerErrors={layerErrors}
                   />
                 )}
               </>

@@ -11,7 +11,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {config} from '@/constants';
 import {displayDateTime} from '@/lib/time';
 import {cn} from '@/lib/utils';
 import {
@@ -106,10 +105,7 @@ const linkedSurveysColumn: ColumnDef<MapAssetWithLinkCount> = {
   id: 'linkCount',
   accessorFn: mapAssetLinkCount,
   header: ({column}) => (
-    <DataTableColumnHeader
-      column={column}
-      title={`Linked ${config.notebookNamePluralCapitalized}`}
-    />
+    <DataTableColumnHeader column={column} title="Linked" />
   ),
   cell: ({row}) => (
     <span data-testid="web-map-layers-link-count">

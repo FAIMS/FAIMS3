@@ -82,6 +82,7 @@ function renderControl(
     >(),
     onResetRecordLayers = vi.fn(),
     resetLayers = vi.fn(),
+    layerErrors = {},
   }: {
     baseLayers?: BaseMapPanelLayer[];
     onUpdateBaseLayer?: (id: string, patch: BaseMapLayerPatch) => void;
@@ -90,6 +91,7 @@ function renderControl(
     onUpdateRecordLayer?: (id: string, patch: RecordFormLayerPatch) => void;
     onResetRecordLayers?: () => void;
     resetLayers?: () => void;
+    layerErrors?: Record<string, string>;
   } = {}
 ) {
   const fit = vi.fn();
@@ -111,6 +113,7 @@ function renderControl(
             recordLayers={recordLayers}
             onUpdateRecordLayer={onUpdateRecordLayer}
             onResetRecordLayers={onResetRecordLayers}
+            layerErrors={layerErrors}
           />
         </ContextualMapLayersContext.Provider>
       </MapControlThemeProvider>
@@ -564,5 +567,35 @@ describe('ContextualLayersControl', () => {
       zIndex: 10,
     });
     expect(updateLayer).toHaveBeenCalledWith('boundary', {zIndex: 980});
+  });
+
+  it('shows a create failure on the overlay row', async () => {
+    const user = userEvent.setup();
+    renderControl(
+      [layer({id: 'boundary', name: 'Site boundary'})],
+      vi.fn(),
+      vi.fn(),
+      {
+        layerErrors: {
+          boundary: 'Layer Site boundary has no tile reader.',
+        },
+      }
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: /map layers, 1 of 1 shown, 1 failed to load/i,
+      })
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /map layers, 1 of 1 shown, 1 failed to load/i,
+      })
+    );
+
+    expect(
+      screen.getByText('Layer Site boundary has no tile reader.')
+    ).toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
- * Loads a ready map layer and shows a static fitted preview.
+ * Loads a ready map layer and shows an interactive fitted preview.
  */
 
 import {MapLayerPreviewProgress} from '@/components/maps/MapLayerPreviewProgress';
@@ -15,15 +15,15 @@ import {
 } from '@faims3/data-model';
 import {
   readBlobRange,
-  StaticMapLayerPreview,
+  InteractiveMapLayerPreview,
   type TileByteRead,
 } from '@faims3/forms';
 import {useEffect, useState} from 'react';
 
 /**
  * Fetch a presigned download (cached after the first transfer) and render
- * a static fitted preview. Shows processing/failed copy when the layer is
- * not yet ready, and download progress while the file is arriving.
+ * an interactive fitted preview. Shows processing/failed copy when the layer
+ * is not yet ready, and download progress while the file is arriving.
  */
 export function MapLayerPreview({
   asset,
@@ -99,8 +99,10 @@ export function MapLayerPreview({
     return <MapLayerPreviewProgress download={download} />;
   }
   return (
-    <div className="overflow-hidden rounded-md border">
-      <StaticMapLayerPreview
+    <div className="rounded-md border">
+      <InteractiveMapLayerPreview
+        id={asset._id}
+        name={asset.name}
         url={url}
         kind={asset.kind}
         extent4326={asset.extent4326}
