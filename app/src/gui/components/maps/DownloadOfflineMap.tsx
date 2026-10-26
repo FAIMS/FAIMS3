@@ -33,8 +33,7 @@ import {useBlocker, useNavigate} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {useIsOnline} from '../../../utils/customHooks';
-import BackButton from '../ui/BackButton';
-import {ListingPage} from '../ui/listing-page';
+import {ListingPage, ListingPageHeader} from '../ui/listing-page';
 import {
   DownloadOfflineMapBanner,
   DownloadOfflineMapStatus,
@@ -229,29 +228,19 @@ export function DownloadOfflineMap() {
   return (
     <ListingPage>
       <Stack direction="column" spacing={2}>
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <BackButton link={ROUTES.OFFLINE_MAP_REGIONS} />
-          <Typography
-            variant="h4"
-            sx={{flex: 1, minWidth: 0, textAlign: 'center'}}
-          >
-            Download new offline map
-          </Typography>
-          <Button
-            variant="contained"
-            disabled={saving || !isOnline}
-            onClick={handleSave}
-          >
-            {saving ? 'Saving…' : 'Save'}
-          </Button>
-        </Stack>
+        <ListingPageHeader
+          backLink={ROUTES.OFFLINE_MAP_REGIONS}
+          title="Download new offline map"
+          end={
+            <Button
+              variant="contained"
+              disabled={saving || !isOnline}
+              onClick={handleSave}
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </Button>
+          }
+        />
 
         {/* Error and warning alerts */}
         {error && <Alert severity="error">{error}</Alert>}

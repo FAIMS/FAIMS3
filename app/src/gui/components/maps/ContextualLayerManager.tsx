@@ -33,8 +33,7 @@ import {
   selectActiveUser,
 } from '../../../context/slices/authSlice';
 import {useAppSelector} from '../../../context/store';
-import BackButton from '../ui/BackButton';
-import {ListingPage} from '../ui/listing-page';
+import {ListingPage, ListingPageHeader} from '../ui/listing-page';
 import {OutlinedListingCard} from '../ui/outlined-listing-card';
 import {
   CONTEXTUAL_LAYERS_CHANGED_EVENT,
@@ -281,19 +280,7 @@ export function ContextualLayerManager() {
   return (
     <ListingPage data-testid="map-layer-manager">
       <Stack spacing={3}>
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{justifyContent: 'space-between', alignItems: 'center'}}
-        >
-          <BackButton link={ROUTES.OFFLINE_MAPS} />
-          <Typography
-            variant="h4"
-            sx={{flex: 1, minWidth: 0, textAlign: 'center'}}
-          >
-            Map layers
-          </Typography>
-        </Stack>
+        <ListingPageHeader backLink={ROUTES.OFFLINE_MAPS} title="Map layers" />
         <Typography variant="body2" color="text.secondary">
           Layers downloaded for activated surveys, and layers still available to
           download.
@@ -371,6 +358,7 @@ export function ContextualLayerManager() {
                   </Typography>
                   <Stack
                     direction="row"
+                    spacing={0.5}
                     sx={{alignItems: 'center', minWidth: 0, flexWrap: 'wrap'}}
                   >
                     <Typography variant="body2" color="text.secondary">
@@ -484,6 +472,7 @@ export function ContextualLayerManager() {
                       </Typography>
                       <Stack
                         direction="row"
+                        spacing={0.5}
                         sx={{alignItems: 'center', flexWrap: 'wrap'}}
                       >
                         <Typography variant="body2" color="text.secondary">

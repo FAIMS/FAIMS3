@@ -20,8 +20,7 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
-import BackButton from '../ui/BackButton';
-import {ListingPage} from '../ui/listing-page';
+import {ListingPage, ListingPageHeader} from '../ui/listing-page';
 import {OutlinedListingCard} from '../ui/outlined-listing-card';
 
 /**
@@ -103,19 +102,7 @@ export const OfflineMapManager = () => {
   return (
     <ListingPage>
       <Stack direction="column" spacing={3}>
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{justifyContent: 'space-between', alignItems: 'center'}}
-        >
-          <BackButton link={ROUTES.OFFLINE_MAPS} />
-          <Typography
-            variant="h4"
-            sx={{flex: 1, minWidth: 0, textAlign: 'center'}}
-          >
-            Map regions
-          </Typography>
-        </Stack>
+        <ListingPageHeader backLink={ROUTES.OFFLINE_MAPS} title="Map regions" />
 
         <Typography variant="body2" color="text.secondary">
           All maps you have downloaded for offline use will appear here.

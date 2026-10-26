@@ -8,11 +8,9 @@
  */
 
 import {Box, Typography} from '@mui/material';
-import {Extent} from 'ol/extent';
 import TileLayer from 'ol/layer/Tile';
 import Map from 'ol/Map';
 import 'ol/ol.css';
-import {transformExtent} from 'ol/proj';
 import XYZ from 'ol/source/XYZ';
 import View from 'ol/View';
 import {useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
@@ -35,7 +33,9 @@ import {
   type ContextualMapLayerPatch,
 } from './contextualMapLayers';
 import {moveStackedLayer} from './layerOrder';
+import {mapAttributionSx} from './mapAttributionSx';
 import {MapControlThemeProvider} from './mapTheme';
+import {bufferExtent, placementExtent} from './previewExtent';
 import {
   STATIC_MAP_LAYER_PREVIEW_HEIGHT,
   type StaticMapLayerKind,
@@ -49,7 +49,6 @@ import {useContextualMapLayers} from './useContextualMapLayers';
 import {useMapFullscreen} from './useMapFullscreen';
 import type {TileByteRead} from './pmtilesRange';
 
-const MAP_PROJECTION = 'EPSG:3857';
 /** Sit above default streets (0) and satellite (1). */
 const PREVIEW_LAYER_Z_INDEX = 2;
 
@@ -69,31 +68,6 @@ export type InteractiveMapLayerPreviewProps = {
   mapConfig: MapConfig;
   className?: string;
 };
-
-/** Pad an extent by 15% (or to a minimum span) so the preview is not edge-tight. */
-function bufferExtent(extent: Extent): Extent {
-  const [minX, minY, maxX, maxY] = extent;
-  const width = maxX - minX;
-  const height = maxY - minY;
-  const minSpan = 800;
-  const padX = Math.max(width * 0.15, (minSpan - width) / 2);
-  const padY = Math.max(height * 0.15, (minSpan - height) / 2);
-  return [minX - padX, minY - padY, maxX + padX, maxY + padY];
-}
-
-/** Web-mercator extent for fitting; prefers a stored 3857 bbox. */
-function placementExtent(
-  extent4326?: [number, number, number, number],
-  extent3857?: [number, number, number, number]
-): Extent | undefined {
-  if (extent3857) {
-    return [...extent3857];
-  }
-  if (extent4326) {
-    return transformExtent(extent4326, 'EPSG:4326', MAP_PROJECTION);
-  }
-  return undefined;
-}
 
 /** MapTiler raster style slug used for the streets preview layer. */
 function maptilerRasterStyle(mapStyle: MapConfig['mapStyle']): string {
@@ -426,17 +400,19 @@ function InteractiveMapLayerPreviewImpl({
         display: 'flex',
         flexDirection: 'column',
         width: '100%',
-        minHeight: 0,
         minWidth: 0,
         overflow: 'hidden',
-        ...(isFullscreen && {
-          position: 'fixed',
-          inset: 0,
-          zIndex: theme.zIndex.modal,
-          backgroundColor: theme.palette.background.paper,
-          overflow: 'hidden',
-          pb: 'env(safe-area-inset-bottom, 0px)',
-        }),
+        ...(isFullscreen
+          ? {
+              position: 'fixed',
+              inset: 0,
+              zIndex: theme.zIndex.modal,
+              backgroundColor: theme.palette.background.paper,
+              overflow: 'hidden',
+              pb: 'env(safe-area-inset-bottom, 0px)',
+              minHeight: 0,
+            }
+          : undefined),
       })}
     >
       {error ? <Typography color="error">{error}</Typography> : null}
@@ -446,12 +422,19 @@ function InteractiveMapLayerPreviewImpl({
         </Typography>
       ))}
       <Box
+        data-testid="interactive-map-layer-preview-canvas"
         sx={{
           position: 'relative',
-          flex: 1,
-          minHeight: 0,
           width: '100%',
-          height: isFullscreen ? '100%' : STATIC_MAP_LAYER_PREVIEW_HEIGHT,
+          // flex:1 + minHeight:0 collapses to 0px when the parent has no
+          // explicit height (Control Centre preview tab). Only use that
+          // stretch in fullscreen, where the overlay fills the viewport.
+          ...(isFullscreen
+            ? {flex: 1, minHeight: 0, height: '100%'}
+            : {
+                height: STATIC_MAP_LAYER_PREVIEW_HEIGHT,
+                flexShrink: 0,
+              }),
         }}
       >
         <Box ref={container} sx={{height: '100%', width: '100%'}} />
@@ -483,18 +466,7 @@ function InteractiveMapLayerPreviewImpl({
         ) : null}
       </Box>
       {attribution ? (
-        <Box
-          component="div"
-          sx={{
-            flexShrink: 0,
-            fontSize: '10px',
-            lineHeight: 1.3,
-            color: 'text.secondary',
-            py: 0.25,
-            px: {xs: 0.5, sm: 1},
-            wordBreak: 'break-word',
-          }}
-        >
+        <Box component="div" sx={mapAttributionSx}>
           {attribution}
         </Box>
       ) : null}

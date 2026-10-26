@@ -7,6 +7,7 @@
 
 import type {ContextualMapLayerPatch} from './contextualMapLayers';
 import {
+  clampLayerOpacity,
   contextualLayerZIndex,
   RECORD_FORM_LAYER_Z_INDEX_BASE,
 } from './layerStack';
@@ -79,19 +80,6 @@ export function recordFormLayerPrefsKey(projectId: string): string {
   return `${RECORD_FORM_PREFS_KEY_PREFIX}${projectId}`;
 }
 
-/** Clamp opacity to 0–1; non-finite values become 1. */
-function clampOpacity(value: number): number {
-  if (!Number.isFinite(value)) {
-    return 1;
-  }
-  return Math.min(1, Math.max(0, value));
-}
-
-/** Clamp a stack value to the shared contextual-layer range. */
-function clampZIndex(value: number): number {
-  return contextualLayerZIndex(value);
-}
-
 /** Positive finite number, else `fallback` (line width / point size). */
 function clampPositive(value: number, fallback: number): number {
   return Number.isFinite(value) && value > 0 ? value : fallback;
@@ -130,8 +118,8 @@ export function normalizeRecordFormLayerPrefs(
   return {
     visible:
       typeof value?.visible === 'boolean' ? value.visible : fallback.visible,
-    opacity: clampOpacity(value?.opacity ?? fallback.opacity),
-    zIndex: clampZIndex(value?.zIndex ?? fallback.zIndex),
+    opacity: clampLayerOpacity(value?.opacity ?? fallback.opacity),
+    zIndex: contextualLayerZIndex(value?.zIndex ?? fallback.zIndex),
     stroke:
       typeof value?.stroke === 'string' && value.stroke.length > 0
         ? value.stroke
@@ -224,8 +212,8 @@ export function applyRecordFormLayerPaint(
   prefs: RecordFormLayerPrefs
 ): void {
   layer.setVisible(prefs.visible);
-  layer.setOpacity(clampOpacity(prefs.opacity));
-  layer.setZIndex(clampZIndex(prefs.zIndex));
+  layer.setOpacity(clampLayerOpacity(prefs.opacity));
+  layer.setZIndex(contextualLayerZIndex(prefs.zIndex));
 }
 
 /** Strip listing fields so only paint prefs remain. */

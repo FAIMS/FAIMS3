@@ -43,6 +43,7 @@ import {getCoordinates, useCurrentLocation} from '../../hooks/useLocation';
 import {logWarn} from '../../logging';
 import {headingIndicatorCoordinate} from './headingIndicator';
 import {loadLastLocation, saveLastLocation} from './lastKnownLocation';
+import {mapAttributionSx} from './mapAttributionSx';
 import {
   CenterOnLocationControl,
   CompassControl,
@@ -766,15 +767,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
         <Box
           component="div"
           dangerouslySetInnerHTML={{__html: attribution}}
-          sx={{
-            flexShrink: 0,
-            fontSize: '10px',
-            lineHeight: 1.3,
-            color: 'text.secondary',
-            py: 0.25,
-            px: {xs: 0.5, sm: 1},
-            wordBreak: 'break-word',
-          }}
+          sx={mapAttributionSx}
         />
       )}
     </Box>

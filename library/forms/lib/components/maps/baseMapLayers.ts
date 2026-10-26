@@ -5,7 +5,7 @@
  * Stored in localStorage so every map on the device shares one stack.
  */
 
-import {contextualLayerZIndex} from './layerStack';
+import {clampLayerOpacity, contextualLayerZIndex} from './layerStack';
 
 /** Stable id for the streets base layer in prefs and the layers panel. */
 export const BASE_MAP_VECTOR_ID = '__faims-basemap-vector';
@@ -52,19 +52,6 @@ export type BaseMapLayerPatch = Partial<
   Pick<BaseMapPanelLayer, 'visible' | 'opacity' | 'zIndex'>
 >;
 
-/** Clamp opacity to 0–1; non-finite values become 1. */
-function clampOpacity(value: number): number {
-  if (!Number.isFinite(value)) {
-    return 1;
-  }
-  return Math.min(1, Math.max(0, value));
-}
-
-/** Clamp a stack value to the shared contextual-layer range. */
-function clampZIndex(value: number): number {
-  return contextualLayerZIndex(value);
-}
-
 /** Merge a partial stored state onto defaults with clamped opacity/zIndex. */
 function layerState(
   value: Partial<BaseMapLayerState> | undefined,
@@ -73,8 +60,8 @@ function layerState(
   return {
     visible:
       typeof value?.visible === 'boolean' ? value.visible : fallback.visible,
-    opacity: clampOpacity(value?.opacity ?? fallback.opacity),
-    zIndex: clampZIndex(value?.zIndex ?? fallback.zIndex),
+    opacity: clampLayerOpacity(value?.opacity ?? fallback.opacity),
+    zIndex: contextualLayerZIndex(value?.zIndex ?? fallback.zIndex),
   };
 }
 
@@ -172,6 +159,6 @@ export function applyBaseMapLayerPaint(
   visible: boolean
 ): void {
   layer.setVisible(visible);
-  layer.setOpacity(clampOpacity(prefs.opacity));
-  layer.setZIndex(clampZIndex(prefs.zIndex));
+  layer.setOpacity(clampLayerOpacity(prefs.opacity));
+  layer.setZIndex(contextualLayerZIndex(prefs.zIndex));
 }

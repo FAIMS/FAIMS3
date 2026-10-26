@@ -114,7 +114,7 @@ export async function cleanupStaging(assetId: string): Promise<void> {
 }
 
 /** Rename when possible; copy+unlink when the paths cross filesystems. */
-async function moveOrCopy(from: string, to: string): Promise<void> {
+export async function moveOrCopy(from: string, to: string): Promise<void> {
   if (path.resolve(from) === path.resolve(to)) {
     return;
   }

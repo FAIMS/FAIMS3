@@ -6,13 +6,17 @@ import {
   type ExistingMapAsset,
 } from '@faims3/data-model';
 import {QueryClient} from '@tanstack/react-query';
-import {describe, expect, it} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
+import {config} from '@/constants';
 import {
   cacheCreatedMapAsset,
+  deleteMapAsset,
   formatAssetStatus,
   inProgressMapAssetIds,
   invalidateMapAssetsAfterCreate,
+  linkMapAsset,
   mapAssetClientErrorMessage,
+  replaceMapAssetFiles,
   mapAssetDetailQueryKey,
   mapAssetQueryKey,
   mapAssetTeamQueryKey,
@@ -21,6 +25,8 @@ import {
   patchMapAssetInLists,
   replaceAssetInList,
   seedMapAssetDetailsFromList,
+  unlinkMapAsset,
+  updateMapAssetDetails,
   upsertAssetInList,
 } from './map-asset-hooks';
 
@@ -331,5 +337,98 @@ describe('formatAssetStatus', () => {
       'Image tiles'
     );
     expect(formatAssetStatus(asset({kind: undefined}))).toBe('Vector');
+  });
+});
+
+describe('map asset mutations', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('DELETEs a library layer', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ok: true});
+    vi.stubGlobal('fetch', fetchMock);
+    await deleteMapAsset({user, assetId: 'asset-1'});
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${config.apiUrl}/api/map-assets/asset-1`,
+      expect.objectContaining({method: 'DELETE'})
+    );
+  });
+
+  it('PATCHes name and description', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => asset({name: 'Renamed'}),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(
+      updateMapAssetDetails({
+        user,
+        assetId: 'asset-1',
+        name: 'Renamed',
+        description: 'Updated',
+      })
+    ).resolves.toMatchObject({name: 'Renamed'});
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${config.apiUrl}/api/map-assets/asset-1`,
+      expect.objectContaining({method: 'PATCH'})
+    );
+  });
+
+  it('POSTs and DELETEs a survey link', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ok: true});
+    vi.stubGlobal('fetch', fetchMock);
+    await linkMapAsset({user, assetId: 'asset-1', projectId: 'survey-1'});
+    await unlinkMapAsset({user, assetId: 'asset-1', projectId: 'survey-1'});
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      `${config.apiUrl}/api/map-assets/asset-1/links`
+    );
+    expect(fetchMock.mock.calls[0]?.[1]).toEqual(
+      expect.objectContaining({method: 'POST'})
+    );
+    expect(fetchMock.mock.calls[1]?.[0]).toBe(
+      `${config.apiUrl}/api/map-assets/asset-1/links/survey-1`
+    );
+    expect(fetchMock.mock.calls[1]?.[1]).toEqual(
+      expect.objectContaining({method: 'DELETE'})
+    );
+  });
+
+  it('PUTs replacement files', async () => {
+    class FakeXHR {
+      status = 200;
+      statusText = 'OK';
+      responseText = JSON.stringify(asset({status: 'pending'}));
+      upload = {onprogress: undefined as (() => void) | undefined};
+      open = vi.fn();
+      setRequestHeader = vi.fn();
+      send = vi.fn(() => {
+        this.onload?.();
+      });
+      onload: (() => void) | undefined;
+      onerror: (() => void) | undefined;
+    }
+    vi.stubGlobal('XMLHttpRequest', FakeXHR);
+    await expect(
+      replaceMapAssetFiles({
+        user,
+        assetId: 'asset-1',
+        files: [new File(['{}'], 'sites.geojson')],
+      })
+    ).resolves.toMatchObject({status: 'pending'});
+  });
+
+  it('surfaces a JSON error body from a failed mutation', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        statusText: 'Conflict',
+        json: async () => ({error: {message: 'Layer is in use.'}}),
+      })
+    );
+    await expect(deleteMapAsset({user, assetId: 'asset-1'})).rejects.toThrow(
+      'Layer is in use.'
+    );
   });
 });

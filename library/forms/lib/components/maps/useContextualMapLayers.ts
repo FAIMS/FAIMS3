@@ -8,14 +8,7 @@ import {
   createRasterTileLayer,
   createVectorTileLayer,
 } from './contextualTileLayers';
-import {
-  applySettledTileLoads,
-  createTileLoadSettle,
-  isZoomChange,
-  shouldPauseTileLoads,
-  stopTileLoads,
-  tileLoadController,
-} from './tileLoadControl';
+import {bindTileLoadPause, stopTileLoads} from './tileLoadControl';
 import {contextualVectorStyle} from './contextualVectorStyle';
 import {
   ContextualMapLayersContext,
@@ -190,47 +183,9 @@ export function useContextualMapLayers(map: OlMap | undefined): {
     if (!map) {
       return;
     }
-    let startResolution: number | undefined;
-    const settle = createTileLoadSettle(async cancelled => {
-      await applySettledTileLoads({
-        layers: [...managed.current.values()],
-        map,
-        cancelled,
-        zoomChanged: isZoomChange(
-          startResolution,
-          map.getView().getResolution()
-        ),
-      });
+    return bindTileLoadPause(map, () => [...managed.current.values()], {
+      includeLayer: () => true,
     });
-    const onMoveStart = () => {
-      if (!shouldPauseTileLoads(map.getView())) {
-        return;
-      }
-      startResolution = map.getView().getResolution();
-      settle.cancel();
-      for (const layer of managed.current.values()) {
-        tileLoadController(layer)?.gate.startInteraction();
-      }
-    };
-    const onMoveEnd = () => {
-      let shouldSettle = false;
-      for (const layer of managed.current.values()) {
-        if (tileLoadController(layer)?.gate.interacting) {
-          shouldSettle = true;
-          break;
-        }
-      }
-      if (shouldSettle) {
-        settle.arm();
-      }
-    };
-    map.on('movestart', onMoveStart);
-    map.on('moveend', onMoveEnd);
-    return () => {
-      settle.cancel();
-      map.un('movestart', onMoveStart);
-      map.un('moveend', onMoveEnd);
-    };
   }, [map]);
 
   useEffect(() => {

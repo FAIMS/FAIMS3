@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import {DataTable} from '@/components/data-table/data-table';
+import {
+  TABLE_ROW_ACTION_BUTTON_CLASS,
+  TableRowActionCell,
+} from '@/components/tables/table-row-action-cell';
 import {columns} from '@/components/tables/projects';
 import {Button} from '@/components/ui/button';
 import {config} from '@/constants';
@@ -79,16 +83,12 @@ function SurveyLinkAction({
   }
 
   return (
-    <span
-      className="flex w-16"
-      onClick={event => event.stopPropagation()}
-      onKeyDown={event => event.stopPropagation()}
-    >
+    <TableRowActionCell>
       <Button
         type="button"
         variant="outline"
         size="sm"
-        className="w-full px-2"
+        className={TABLE_ROW_ACTION_BUTTON_CLASS}
         disabled={pending}
         aria-label={`${label}: ${project.name}`}
         data-testid={
@@ -100,7 +100,7 @@ function SurveyLinkAction({
       >
         {mode === 'link' ? 'Link' : 'Unlink'}
       </Button>
-    </span>
+    </TableRowActionCell>
   );
 }
 

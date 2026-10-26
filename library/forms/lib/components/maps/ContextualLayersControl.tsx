@@ -423,12 +423,11 @@ export function ContextualLayersControl({
                 </Stack>
                 <IconButton
                   type="button"
-                  size="small"
                   aria-label="Close map layers"
                   onClick={() => setOpen(false)}
-                  sx={{flexShrink: 0, alignSelf: 'center'}}
+                  sx={layerActionSx({alignSelf: 'center'})}
                 >
-                  <CloseIcon fontSize="small" />
+                  <CloseIcon />
                 </IconButton>
               </Stack>
               <Box
@@ -673,6 +672,7 @@ function LayerRow({
               sx={{
                 display: 'flex',
                 alignItems: 'center',
+                gap: 0.5,
                 minWidth: 0,
                 overflow: 'hidden',
                 lineHeight: 1.2,

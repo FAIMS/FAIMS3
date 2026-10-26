@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import {DataTable} from '@/components/data-table/data-table';
 import {getMapLayerTableColumns} from '@/components/tables/map-layers';
+import {
+  TABLE_ROW_ACTION_BUTTON_CLASS,
+  TableRowActionCell,
+} from '@/components/tables/table-row-action-cell';
 import {Button} from '@/components/ui/button';
 import {config} from '@/constants';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
@@ -73,16 +77,12 @@ function MapLayerLinkAction({
   }
 
   return (
-    <span
-      className="flex w-16"
-      onClick={event => event.stopPropagation()}
-      onKeyDown={event => event.stopPropagation()}
-    >
+    <TableRowActionCell>
       <Button
         type="button"
         variant="outline"
         size="sm"
-        className="w-full px-2"
+        className={TABLE_ROW_ACTION_BUTTON_CLASS}
         disabled={pending}
         aria-label={`${label}: ${asset.name}`}
         data-testid={
@@ -94,7 +94,7 @@ function MapLayerLinkAction({
       >
         {mode === 'link' ? 'Link' : 'Unlink'}
       </Button>
-    </span>
+    </TableRowActionCell>
   );
 }
 

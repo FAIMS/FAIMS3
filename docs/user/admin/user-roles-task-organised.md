@@ -70,7 +70,7 @@ Understanding virtual and direct access is essential for troubleshooting unexpec
 
 **How new users are provisioned**: Users are created through an invite-based workflow — an Operations Administrator or Super User creates an invite, shares the code/link/QR code, and the user accepts it and signs in via SSO to create their account (see [How Users Are Created](#34-how-users-are-created)). Typically, enterprise users are onboarded with:
 
-- **Content Creator** system role — they can create {{notebooks}}, templates, and map layers
+- **Content Creator** system role — they can create {{notebooks}} and templates globally; map layers are created inside a team
 - **Team Administrator** of their own assigned team — they have full control over their team (but they can't change their own role in the team)
 
 This means they can immediately create {{notebooks}}, but they won't have access to _your_ team's resources until you add them.
@@ -530,7 +530,7 @@ The **Operations Administrator** role handles routine system management without 
 
 During onboarding, enterprise users are typically provisioned (via invites) with:
 
-- **Content Creator** system role — they can create {{notebooks}}, templates, and map layers
+- **Content Creator** system role — they can create {{notebooks}} and templates globally; map layers are created inside a team
 - **Team Administrator** of their assigned team — they have full control over their team (but they can't change their own role in the team)
 
 This means they can immediately:

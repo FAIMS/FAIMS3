@@ -10,6 +10,7 @@ import {
 } from 'react-hook-form';
 import {z} from 'zod';
 import {Button, ButtonProps} from '@/components/ui/button';
+import {Progress} from '@/components/ui/progress';
 import {
   Form as FormProvider,
   FormControl,
@@ -469,14 +470,10 @@ export function Form<
         submitProgress !== undefined &&
         submitProgress !== null ? (
           <div className="flex flex-col gap-1.5">
-            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full bg-primary transition-[width]"
-                style={{
-                  width: `${Math.round(Math.min(1, Math.max(0, submitProgress)) * 100)}%`,
-                }}
-              />
-            </div>
+            <Progress
+              value={Math.round(Math.min(1, Math.max(0, submitProgress)) * 100)}
+              label="Upload progress"
+            />
             <p className="text-xs text-muted-foreground">
               {Math.round(Math.min(1, Math.max(0, submitProgress)) * 100)}%
               complete

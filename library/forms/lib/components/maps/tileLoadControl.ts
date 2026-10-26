@@ -755,3 +755,64 @@ export function refreshTileLayer(layer: RetryableTileLayer): void {
   }
   source?.changed?.();
 }
+
+type TilePauseMap = {
+  getView: () => {
+    getProjection: () => unknown;
+    getResolution: () => number | undefined;
+    calculateExtent: (size: number[]) => number[];
+    getInteracting: () => boolean;
+  };
+  getSize: () => number[] | undefined;
+  render?: () => void;
+  on: (type: 'movestart' | 'moveend', listener: () => void) => void;
+  un: (type: 'movestart' | 'moveend', listener: () => void) => void;
+};
+
+/**
+ * Pause tile fetches while the user pans or zooms, then settle after
+ * moveend. Used by streets/satellite and contextual overlay hooks.
+ */
+export function bindTileLoadPause(
+  map: TilePauseMap,
+  getLayers: () => Iterable<RetryableTileLayer>,
+  options?: {includeLayer?: (layer: RetryableTileLayer) => boolean}
+): () => void {
+  const includeLayer = options?.includeLayer ?? isTileLayerVisible;
+  let startResolution: number | undefined;
+  const settle = createTileLoadSettle(async cancelled => {
+    await applySettledTileLoads({
+      layers: [...getLayers()],
+      map,
+      cancelled,
+      zoomChanged: isZoomChange(startResolution, map.getView().getResolution()),
+    });
+  });
+  const onMoveStart = () => {
+    if (!shouldPauseTileLoads(map.getView())) {
+      return;
+    }
+    startResolution = map.getView().getResolution();
+    settle.cancel();
+    for (const layer of getLayers()) {
+      if (includeLayer(layer)) {
+        tileLoadController(layer)?.gate.startInteraction();
+      }
+    }
+  };
+  const onMoveEnd = () => {
+    for (const layer of getLayers()) {
+      if (includeLayer(layer) && tileLoadController(layer)?.gate.interacting) {
+        settle.arm();
+        return;
+      }
+    }
+  };
+  map.on('movestart', onMoveStart);
+  map.on('moveend', onMoveEnd);
+  return () => {
+    settle.cancel();
+    map.un('movestart', onMoveStart);
+    map.un('moveend', onMoveEnd);
+  };
+}

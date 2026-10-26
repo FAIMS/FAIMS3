@@ -260,7 +260,7 @@ export function logDownloadAudit(entry: {
 // Map-asset processing audit
 // ==========================
 // One JSON line per upload/processing stage, prefixed `[MapAssetProcessing]`.
-// Long waits (HTTP receive, CouchDB attachment I/O, GDAL) also emit
+// Long waits (HTTP receive, object-store I/O, GDAL) also emit
 // `outcome: "waiting"` heartbeats so a stalled job is visible. Skipped
 // under tests (`config.runningUnderTest`). Grep `[MapAssetProcessing]`.
 

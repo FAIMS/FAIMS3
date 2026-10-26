@@ -36,7 +36,7 @@ import {useNavigate, useParams} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import BackButton from '../ui/BackButton';
-import {ListingPage} from '../ui/listing-page';
+import {ListingPage, ListingPageHeader} from '../ui/listing-page';
 
 export function EditOfflineMap() {
   const navigate = useNavigate();
@@ -193,19 +193,10 @@ export function EditOfflineMap() {
   return (
     <ListingPage>
       <Stack spacing={2}>
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{justifyContent: 'space-between', alignItems: 'center'}}
-        >
-          <BackButton link={ROUTES.OFFLINE_MAP_REGIONS} />
-          <Typography
-            variant="h4"
-            sx={{flex: 1, minWidth: 0, textAlign: 'center'}}
-          >
-            Edit offline map
-          </Typography>
-        </Stack>
+        <ListingPageHeader
+          backLink={ROUTES.OFFLINE_MAP_REGIONS}
+          title="Edit offline map"
+        />
 
         <Typography
           variant="h5"

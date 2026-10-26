@@ -3,6 +3,7 @@
  * Download progress for the map-layer Preview tab and its tab trigger.
  */
 
+import {Progress} from '@/components/ui/progress';
 import {
   mapAssetPreviewPercent,
   type MapAssetPreviewState,
@@ -64,23 +65,11 @@ export function MapLayerPreviewProgress({
       </div>
       {download.fromCache ? null : (
         <div className="flex flex-col gap-1.5">
-          <div
-            className="h-2 w-full overflow-hidden rounded-full bg-muted"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={percent}
-            aria-label="Preview download"
-          >
-            {percent === 0 && download.status !== 'ready' ? (
-              <div className="h-full w-1/3 animate-pulse bg-primary" />
-            ) : (
-              <div
-                className="h-full bg-primary transition-[width]"
-                style={{width: `${percent}%`}}
-              />
-            )}
-          </div>
+          <Progress
+            value={percent}
+            label="Preview download"
+            indeterminate={percent === 0 && download.status !== 'ready'}
+          />
           <p className="text-xs text-muted-foreground">
             {totalLabel
               ? `${receivedLabel} of ${totalLabel} (${percent}%)`

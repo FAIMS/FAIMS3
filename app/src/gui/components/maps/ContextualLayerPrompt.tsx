@@ -123,7 +123,11 @@ function LayerChoice({
             <Typography sx={{fontWeight: 600, overflowWrap: 'anywhere'}}>
               {layer.name}
             </Typography>
-            <Stack direction="row" sx={{alignItems: 'center', minWidth: 0}}>
+            <Stack
+              direction="row"
+              spacing={0.5}
+              sx={{alignItems: 'center', minWidth: 0}}
+            >
               <Typography variant="body2" color="text.secondary">
                 {kindLabel(layer.kind)}
               </Typography>
@@ -430,7 +434,7 @@ export function ContextualLayerPrompt() {
           </Stack>
         ) : null}
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={{flexWrap: 'wrap', gap: 1}}>
         <Button disabled={working} onClick={() => void finish([])}>
           None
         </Button>

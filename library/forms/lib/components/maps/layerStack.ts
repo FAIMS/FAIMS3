@@ -44,3 +44,11 @@ export function contextualLayerZIndex(zIndex: number): number {
   }
   return Math.min(Math.max(zIndex, 0), CONTEXTUAL_LAYER_Z_INDEX_MAX);
 }
+
+/** Clamp opacity to 0–1; non-finite values become 1. */
+export function clampLayerOpacity(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 1;
+  }
+  return Math.min(1, Math.max(0, value));
+}

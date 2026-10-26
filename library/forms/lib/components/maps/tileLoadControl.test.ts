@@ -4,6 +4,7 @@ import {describe, expect, it, vi} from 'vitest';
 import {
   BASE_MAP_TILE_CONCURRENCY,
   applySettledTileLoads,
+  bindTileLoadPause,
   createTileLoadController,
   createTileLoadGate,
   createTileLoadLimiter,
@@ -14,6 +15,7 @@ import {
   settleTileLayer,
   shouldPauseTileLoads,
   syncTileLoadsToVisibility,
+  TILE_LOAD_CONTROLLER,
   TileLoadPausedError,
 } from './tileLoadControl';
 
@@ -472,5 +474,35 @@ describe('tile load control', () => {
     });
     expect(layerChanged).not.toHaveBeenCalled();
     expect(sourceChanged).not.toHaveBeenCalled();
+  });
+
+  it('pauses visible layers on a user pan and arms settle on moveend', () => {
+    const loads = createTileLoadController(1);
+    const layer = {
+      getVisible: () => true,
+      get: (key: string) => (key === TILE_LOAD_CONTROLLER ? loads : undefined),
+    };
+    const listeners: Record<string, () => void> = {};
+    const map = {
+      getView: () => ({
+        getInteracting: () => true,
+        getResolution: () => 1,
+        getProjection: () => 'EPSG:3857',
+        calculateExtent: () => [0, 0, 1, 1],
+      }),
+      getSize: () => [256, 256],
+      on: (type: 'movestart' | 'moveend', listener: () => void) => {
+        listeners[type] = listener;
+      },
+      un: (type: 'movestart' | 'moveend') => {
+        delete listeners[type];
+      },
+    };
+    const unbind = bindTileLoadPause(map, () => [layer as never]);
+    listeners.movestart?.();
+    expect(loads.gate.interacting).toBe(true);
+    listeners.moveend?.();
+    unbind();
+    expect(listeners.movestart).toBeUndefined();
   });
 });

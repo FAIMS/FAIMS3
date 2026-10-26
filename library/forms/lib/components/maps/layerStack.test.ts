@@ -5,6 +5,7 @@ import {
   GPS_CURSOR_LAYER_Z_INDEX,
   OFFLINE_REGION_LAYER_Z_INDEX,
   USER_FEATURE_LAYER_Z_INDEX,
+  clampLayerOpacity,
   contextualLayerZIndex,
 } from './layerStack';
 
@@ -37,5 +38,14 @@ describe('contextualLayerZIndex', () => {
   it('treats a non-finite stack value as the base of the map', () => {
     expect(contextualLayerZIndex(Number.NaN)).toBe(0);
     expect(contextualLayerZIndex(Number.POSITIVE_INFINITY)).toBe(0);
+  });
+});
+
+describe('clampLayerOpacity', () => {
+  it('keeps values inside 0–1 and treats non-finite as opaque', () => {
+    expect(clampLayerOpacity(0.4)).toBe(0.4);
+    expect(clampLayerOpacity(-1)).toBe(0);
+    expect(clampLayerOpacity(2)).toBe(1);
+    expect(clampLayerOpacity(Number.NaN)).toBe(1);
   });
 });

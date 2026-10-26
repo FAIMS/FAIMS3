@@ -72,6 +72,10 @@ describe('InteractiveMapLayerPreview', () => {
       ).toBeInTheDocument();
     });
 
+    expect(
+      screen.getByTestId('interactive-map-layer-preview-canvas')
+    ).toHaveStyle({height: 'clamp(380px, 55dvh, 650px)'});
+
     expect(screen.getByRole('button', {name: 'Zoom in'})).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Zoom out'})).toBeInTheDocument();
     expect(

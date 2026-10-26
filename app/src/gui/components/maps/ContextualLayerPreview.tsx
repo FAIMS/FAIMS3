@@ -10,8 +10,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {useParams} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
-import BackButton from '../ui/BackButton';
-import {ListingPage} from '../ui/listing-page';
+import {ListingPage, ListingPageHeader} from '../ui/listing-page';
 import {loadStoredContextualLayer} from './contextualLayerStore';
 
 /** Fitted static map of one stored layer (vector basemap only). */
@@ -99,19 +98,10 @@ export function ContextualLayerPreview() {
   return (
     <ListingPage data-testid="map-layer-preview">
       <Stack spacing={2}>
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{justifyContent: 'space-between', alignItems: 'center'}}
-        >
-          <BackButton link={ROUTES.OFFLINE_MAP_LAYERS} />
-          <Typography
-            variant="h4"
-            sx={{flex: 1, minWidth: 0, textAlign: 'center'}}
-          >
-            Layer preview
-          </Typography>
-        </Stack>
+        <ListingPageHeader
+          backLink={ROUTES.OFFLINE_MAP_LAYERS}
+          title="Layer preview"
+        />
         {loading ? (
           <Typography data-testid="map-layer-preview-loading">
             Loading layer…

@@ -17,6 +17,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from '@tanstack/react-query';
+import {errorMessageFromNotebookJsonBody} from './project-hooks';
 
 /** How often in-progress layers are polled via GET /api/map-assets/:id. */
 const MAP_ASSET_PROGRESS_POLL_MS = 2000;
@@ -192,11 +193,9 @@ export function patchMapAssetInLists(
 
 /** Pull a user-facing message from a JSON error body, else `statusText`. */
 export function messageFromBody(body: unknown, statusText: string): string {
-  if (body && typeof body === 'object' && 'error' in body) {
-    const message = (body as {error?: {message?: string}}).error?.message;
-    if (message) {
-      return message;
-    }
+  const fromObject = errorMessageFromNotebookJsonBody(body, '');
+  if (fromObject) {
+    return fromObject;
   }
   if (Array.isArray(body)) {
     const issue = (
