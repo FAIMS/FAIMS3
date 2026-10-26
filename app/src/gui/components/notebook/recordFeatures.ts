@@ -135,9 +135,27 @@ interface UseRecordFeaturesParams {
 }
 
 /**
- * True when two collections plot the same geometries for the same records.
- * Used to keep the overview map's collection identity stable across a
- * parent re-render that rebuilt the array without changing what is on it.
+ * Fingerprint of what is plotted. Keeps collection identity stable across a
+ * parent re-render that rebuilt the array, and is the OverviewMap effect dep
+ * that refreshes vector sources in place (no MapComponent remount).
+ *
+ * One `record_id:revision_id:form_id` token per feature — do not unique them,
+ * or a second GIS field on the same record looks like a no-op. Empty → first
+ * geometry already changes the string.
+ *
+ * Options:
+ * - Identity key (this): cheap every render; live add / delete / new revision.
+ *   Misses in-place coordinate edits on an already-plotted feature, and a
+ *   GIS-field replace that keeps the same feature count.
+ * - `JSON.stringify(geometry)`: catches those two cases; serializes every
+ *   geometry on every parent render.
+ * - Identity + `gisFieldsKey` here: catches a spec field-list change; the
+ *   query key already includes `gisFieldsKey`, so the hook re-extracts.
+ *
+ * Same-revision late AVPs (create, then finish/flush location onto the same
+ * id) are not visible in this string until extract runs again. The query key
+ * includes `record.updated` for that; tab-away remount still honours
+ * staleTime (5 min). Full reload always re-reads.
  */
 export function recordFeatureSyncKey(
   collection: RecordFeatureCollection | undefined
@@ -149,12 +167,12 @@ export function recordFeatureSyncKey(
   return `c:${collection.features
     .map(
       feature =>
-        `${feature.properties.record_id}:${feature.properties.revision_id}:${feature.properties.form_id}:${JSON.stringify(feature.geometry)}`
+        `${feature.properties.record_id}:${feature.properties.revision_id}:${feature.properties.form_id}`
     )
     .join('|')}`;
 }
 
-/** True when both collections encode the same records, revisions, and geometry. */
+/** True when both collections encode the same records, revisions, and forms. */
 export function recordFeatureCollectionsEqual(
   left: RecordFeatureCollection | undefined,
   right: RecordFeatureCollection | undefined
@@ -237,10 +255,15 @@ export const useRecordFeatures = ({
 
   // Identity is a string so a list that grew in place still creates a query
   // for the new record; array reference alone would keep mapRecords stale.
+  // `updated` is the finish/flush stamp: a late GIS AVP on the same revision
+  // does not change recordId/revisionId/conflicts, so without it the 5 min
+  // cache would keep the first empty extract. Cost is a re-read when any
+  // field stamps; the list poll is 10s, so that is the live-vs-stale window.
   const recordsIdentity =
     records
       ?.map(
-        record => `${record.recordId}:${record.revisionId}:${record.conflicts}`
+        record =>
+          `${record.recordId}:${record.revisionId}:${record.conflicts}:${record.updated.getTime()}`
       )
       .join(',') ?? '';
 
@@ -264,6 +287,9 @@ export const useRecordFeatures = ({
         // conflicts is part of the key: a conflicting head syncing in can
         // flip it without changing the winning revision id
         record.conflicts,
+        // Same-revision late AVP: finish/flush stamps `updated` when location
+        // lands after the revision already existed (see recordFeatureSyncKey)
+        record.updated.getTime(),
         gisFieldsKey,
       ],
       queryFn: () => extractFeaturesFromRecord(dataEngine, record, gisFields),

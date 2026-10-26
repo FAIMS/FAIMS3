@@ -36,6 +36,7 @@ import {moveStackedLayer} from './layerOrder';
 import {mapAttributionSx} from './mapAttributionSx';
 import {MapControlThemeProvider} from './mapTheme';
 import {bufferExtent, placementExtent} from './previewExtent';
+import {createStreetsLayer, topVisibleAttribution} from './mapHelpers';
 import {
   STATIC_MAP_LAYER_PREVIEW_HEIGHT,
   type StaticMapLayerKind,
@@ -46,6 +47,7 @@ import {MapConfig} from './types';
 import {useBaseMapLayers} from './useBaseMapLayers';
 import {useBaseMapTileLoads} from './useBaseMapTileLoads';
 import {useContextualMapLayers} from './useContextualMapLayers';
+import {useIsOnline} from './useIsOnline';
 import {useMapFullscreen} from './useMapFullscreen';
 import type {TileByteRead} from './pmtilesRange';
 
@@ -68,38 +70,6 @@ export type InteractiveMapLayerPreviewProps = {
   mapConfig: MapConfig;
   className?: string;
 };
-
-/** MapTiler raster style slug used for the streets preview layer. */
-function maptilerRasterStyle(mapStyle: MapConfig['mapStyle']): string {
-  if (mapStyle === 'toner') {
-    return 'toner-v2';
-  }
-  if (mapStyle === 'osm-bright') {
-    return 'bright-v2';
-  }
-  if (mapStyle === 'openstreetmap') {
-    return 'openstreetmap';
-  }
-  return 'basic-v2';
-}
-
-/** Online streets raster (MapTiler when a key is set, otherwise OSM). */
-function createStreetsLayer(mapConfig: MapConfig): TileLayer {
-  if (mapConfig.mapSource === 'maptiler' && mapConfig.mapSourceKey) {
-    return new TileLayer({
-      source: new XYZ({
-        url: `https://api.maptiler.com/maps/${maptilerRasterStyle(mapConfig.mapStyle)}/{z}/{x}/{y}.png?key=${mapConfig.mapSourceKey}`,
-        attributions: '© MapTiler © OpenStreetMap contributors',
-      }),
-    });
-  }
-  return new TileLayer({
-    source: new XYZ({
-      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      attributions: '© OpenStreetMap contributors',
-    }),
-  });
-}
 
 /**
  * Online satellite raster. Uses the configured provider when possible,
@@ -261,9 +231,7 @@ function InteractiveMapLayerPreviewImpl({
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<Map | undefined>();
   const [error, setError] = useState('');
-  const [isOnline, setIsOnline] = useState(
-    () => typeof navigator === 'undefined' || navigator.onLine
-  );
+  const isOnline = useIsOnline();
   const {isFullscreen, toggleFullscreen} = useMapFullscreen(true);
 
   const streetsLayer = useMemo(() => {
@@ -295,18 +263,6 @@ function InteractiveMapLayerPreviewImpl({
 
   const {layerErrors} = useContextualMapLayers(map);
   useBaseMapTileLoads(map, streetsLayer, satelliteLayer);
-
-  useEffect(() => {
-    const updateOnlineStatus = () => {
-      setIsOnline(navigator.onLine);
-    };
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-    return () => {
-      window.removeEventListener('online', updateOnlineStatus);
-      window.removeEventListener('offline', updateOnlineStatus);
-    };
-  }, []);
 
   useEffect(() => {
     const target = container.current;
@@ -362,25 +318,25 @@ function InteractiveMapLayerPreviewImpl({
   }, [map, isFullscreen]);
 
   const attribution = useMemo(() => {
-    const visible = [
-      {
-        visible: satelliteVisible,
-        zIndex:
-          baseLayers.find(layer => layer.id === BASE_MAP_SATELLITE_ID)
-            ?.zIndex ?? 0,
-        attribution: sourceAttribution(satelliteLayer),
-      },
-      {
-        visible: vectorVisible,
-        zIndex:
-          baseLayers.find(layer => layer.id === BASE_MAP_VECTOR_ID)?.zIndex ??
-          0,
-        attribution: sourceAttribution(streetsLayer),
-      },
-    ]
-      .filter(layer => layer.visible && layer.attribution)
-      .sort((a, b) => b.zIndex - a.zIndex);
-    return visible[0]?.attribution ?? sourceAttribution(streetsLayer);
+    return topVisibleAttribution(
+      [
+        {
+          visible: satelliteVisible,
+          zIndex:
+            baseLayers.find(layer => layer.id === BASE_MAP_SATELLITE_ID)
+              ?.zIndex ?? 0,
+          attribution: sourceAttribution(satelliteLayer),
+        },
+        {
+          visible: vectorVisible,
+          zIndex:
+            baseLayers.find(layer => layer.id === BASE_MAP_VECTOR_ID)?.zIndex ??
+            0,
+          attribution: sourceAttribution(streetsLayer),
+        },
+      ],
+      sourceAttribution(streetsLayer)
+    );
   }, [
     baseLayers,
     satelliteLayer,

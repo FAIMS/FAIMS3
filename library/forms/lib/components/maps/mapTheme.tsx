@@ -28,6 +28,7 @@ export const defaultMapControlPalette = {
   locationRing: mapControlBrand.locationRing,
   satelliteSwatch: mapControlBrand.satelliteSwatch,
   vectorSwatch: mapControlBrand.vectorSwatch,
+  colorPickerFallback: mapControlBrand.colorPickerFallback,
 } as const;
 
 type MapControlPalette = Theme['palette']['mapControl'];
@@ -48,7 +49,8 @@ function hasCompleteMapControlPalette(
     palette.sheetShadow &&
     palette.locationRing &&
     palette.satelliteSwatch &&
-    palette.vectorSwatch
+    palette.vectorSwatch &&
+    palette.colorPickerFallback
   );
 }
 

@@ -44,6 +44,8 @@ import {logWarn} from '../../logging';
 import {headingIndicatorCoordinate} from './headingIndicator';
 import {loadLastLocation, saveLastLocation} from './lastKnownLocation';
 import {mapAttributionSx} from './mapAttributionSx';
+import {topVisibleAttribution} from './mapHelpers';
+import {useIsOnline} from './useIsOnline';
 import {
   CenterOnLocationControl,
   CompassControl,
@@ -131,14 +133,6 @@ export interface MapComponentProps {
 }
 
 /**
- * MapComponent
- *
- * This is the main map rendering component. It:
- * - Initializes an OpenLayers map with tile support
- * - Renders live GPS location and directional cursor
- * - Accepts a parent callback to provide the map instance
- */
-/**
  * Wraps {@link MapComponentImpl} with {@link MapControlThemeProvider} so map
  * controls render correctly outside the mobile app's MUI theme.
  */
@@ -162,7 +156,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
   const {layerErrors} = useContextualMapLayers(map);
   const [zoomLevel, setZoomLevel] = useState(props.zoom || MIN_ZOOM); // Default zoom level
   const [attribution, setAttribution] = useState<string | null>(null);
-  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  const isOnline = useIsOnline();
   // Whether we have a live GPS fix (drives control button enablement)
   const [locationAvailable, setLocationAvailable] = useState<boolean>(false);
   const tileStore = useMemo(() => createTileStore(props.config), []);
@@ -200,41 +194,28 @@ const MapComponentImpl = (props: MapComponentProps) => {
 
   useEffect(() => {
     const vectorAttribution = tileStore.getAttribution() as unknown as string;
-    const visible = [
-      {
-        visible: satelliteVisible,
-        zIndex:
-          baseLayers.find(layer => layer.id === BASE_MAP_SATELLITE_ID)
-            ?.zIndex ?? 0,
-        attribution: tileStore.getSatelliteAttribution(),
-      },
-      {
-        visible: vectorVisible,
-        zIndex:
-          baseLayers.find(layer => layer.id === BASE_MAP_VECTOR_ID)?.zIndex ??
-          0,
-        attribution: vectorAttribution,
-      },
-    ]
-      .filter(layer => layer.visible && layer.attribution)
-      .sort((a, b) => b.zIndex - a.zIndex);
-    setAttribution(visible[0]?.attribution ?? vectorAttribution);
+    setAttribution(
+      topVisibleAttribution(
+        [
+          {
+            visible: satelliteVisible,
+            zIndex:
+              baseLayers.find(layer => layer.id === BASE_MAP_SATELLITE_ID)
+                ?.zIndex ?? 0,
+            attribution: tileStore.getSatelliteAttribution(),
+          },
+          {
+            visible: vectorVisible,
+            zIndex:
+              baseLayers.find(layer => layer.id === BASE_MAP_VECTOR_ID)
+                ?.zIndex ?? 0,
+            attribution: vectorAttribution,
+          },
+        ],
+        vectorAttribution
+      )
+    );
   }, [tileStore, baseLayers, vectorVisible, satelliteVisible]);
-
-  // Listen for online/offline events to update isOnline state
-  useEffect(() => {
-    const updateOnlineStatus = () => {
-      setIsOnline(navigator.onLine);
-    };
-
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-
-    return () => {
-      window.removeEventListener('online', updateOnlineStatus);
-      window.removeEventListener('offline', updateOnlineStatus);
-    };
-  }, []);
 
   // Use the custom hook for location which we only need if we don't have a center or extent
   // passed in props

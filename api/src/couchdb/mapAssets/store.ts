@@ -2068,6 +2068,11 @@ async function listInProgressMapAssetIds(): Promise<string[]> {
   return ids;
 }
 
+/** Pending or processing assets, loaded in one `allDocs`. */
+async function listInProgressMapAssets(): Promise<ExistingMapAsset[]> {
+  return loadAssets(await listInProgressMapAssetIds());
+}
+
 /**
  * Mark `pending` uploads with no stored originals that have been waiting
  * longer than {@link MAP_ASSET_ORIGINAL_STORE_TIMEOUT_MS}, measured from
@@ -2082,14 +2087,13 @@ export async function failStaleOriginalStores(
   const now = processingNow(runtime);
   const timeoutMs = runtime?.timeoutMs ?? MAP_ASSET_ORIGINAL_STORE_TIMEOUT_MS;
   let failed = 0;
-  for (const assetId of await listInProgressMapAssetIds()) {
+  for (const asset of await listInProgressMapAssets()) {
     try {
-      const asset = await getMapAsset(assetId);
       if (!originalStoreIsTimedOut(asset, now, timeoutMs)) {
         continue;
       }
       await commitOriginalStoreFailure(
-        assetId,
+        asset._id,
         MAP_ASSET_ORIGINAL_STORE_TIMEOUT_REASON,
         runtime
       );
@@ -2113,21 +2117,14 @@ export async function findUnclaimedSpatialJob(
 ): Promise<string | undefined> {
   const now = processingNow(runtime);
   const timeoutMs = claimTimeoutMs(runtime);
-  for (const assetId of await listInProgressMapAssetIds()) {
-    try {
-      const asset = await getMapAsset(assetId);
-      if (!assetHasStoredAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
-        continue;
-      }
-      if (!mapAssetIsClaimable(asset, now, timeoutMs)) {
-        continue;
-      }
-      return asset._id;
-    } catch (error) {
-      if (!(error instanceof Exceptions.ItemNotFoundException)) {
-        throw error;
-      }
+  for (const asset of await listInProgressMapAssets()) {
+    if (!assetHasStoredAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
+      continue;
     }
+    if (!mapAssetIsClaimable(asset, now, timeoutMs)) {
+      continue;
+    }
+    return asset._id;
   }
   return undefined;
 }
@@ -2145,29 +2142,21 @@ export async function summarizeSpatialBacklog(
   let inFlight = 0;
   let unclaimed = 0;
   let oldestWaitingSince: number | undefined;
-  for (const assetId of await listInProgressMapAssetIds()) {
-    try {
-      const asset = await getMapAsset(assetId);
-      if (!assetHasStoredAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
-        continue;
+  for (const asset of await listInProgressMapAssets()) {
+    if (!assetHasStoredAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
+      continue;
+    }
+    if (mapAssetIsClaimable(asset, now, timeoutMs)) {
+      unclaimed += 1;
+      const waitingSince = unclaimedWaitingSince(asset);
+      if (
+        waitingSince !== undefined &&
+        (oldestWaitingSince === undefined || waitingSince < oldestWaitingSince)
+      ) {
+        oldestWaitingSince = waitingSince;
       }
-      if (mapAssetIsClaimable(asset, now, timeoutMs)) {
-        unclaimed += 1;
-        const waitingSince = unclaimedWaitingSince(asset);
-        if (
-          waitingSince !== undefined &&
-          (oldestWaitingSince === undefined ||
-            waitingSince < oldestWaitingSince)
-        ) {
-          oldestWaitingSince = waitingSince;
-        }
-      } else {
-        inFlight += 1;
-      }
-    } catch (error) {
-      if (!(error instanceof Exceptions.ItemNotFoundException)) {
-        throw error;
-      }
+    } else {
+      inFlight += 1;
     }
   }
   return {

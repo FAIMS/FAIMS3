@@ -74,7 +74,7 @@ vi.mock('./recordFeatures', () => ({
     (collection?.features ?? [])
       .map(
         feature =>
-          `${feature.properties.record_id}:${feature.properties.revision_id}`
+          `${feature.properties.record_id}:${feature.properties.revision_id}:${feature.properties.form_id}`
       )
       .join('|'),
   groupRecordFeaturesByForm: (collection: RecordFeatureCollection) => {

@@ -800,7 +800,8 @@ The Users tab shows two types of access:
 | **Invites**     | Invitation links for adding users                                             |
 | **Users**       | Current {{notebook}} users and their roles                                    |
 | **Export**      | Export {{notebook}} data                                                      |
-| **Offline Map** | Configure an offline map region for field use                                 |
+| **Offline Map** | Configure a base-map region (street tiles) for field use                      |
+| **Map layers**  | Link uploaded overlays from the Map layers library to this {{notebook}}       |
 | **Actions**     | Edit {{notebook}}, assign to team, download/replace JSON, {{notebook}} status |
 
 #### Understanding {{Notebook}} Roles

@@ -4,11 +4,7 @@ import {
   mapAssetKindLabel,
   type ContextualLayerListing,
 } from '@faims3/data-model';
-import {
-  LayerLocationHint,
-  ProgressBar,
-  useOccasionalDeviceLocation,
-} from '@faims3/forms';
+import {LayerLocationHint, useOccasionalDeviceLocation} from '@faims3/forms';
 import {
   Button,
   Checkbox,
@@ -43,6 +39,10 @@ import {
   notifyContextualLayersChanged,
   type StoredContextualLayerSummary,
 } from './contextualLayerStore';
+import {
+  MapLayerDownloadProgress,
+  mapLayerDownloadLabel,
+} from './MapLayerDownloadProgress';
 
 /** User-facing kind label (vector tiles, raster tiles). */
 function kindLabel(kind: ContextualLayerListing['kind']): string {
@@ -357,15 +357,8 @@ export function ContextualLayerPrompt() {
     }
   };
 
-  const downloadLabel = (action: 'selected' | 'all', idle: string) => {
-    if (activeDownload !== action) {
-      return idle;
-    }
-    if (downloadCompletion !== null && downloadCompletion > 0) {
-      return `Downloading… ${Math.round(downloadCompletion * 100)}%`;
-    }
-    return 'Preparing download…';
-  };
+  const downloadLabel = (action: 'selected' | 'all', idle: string) =>
+    mapLayerDownloadLabel(activeDownload === action, idle, downloadCompletion);
 
   const selectedIdleLabel =
     chosen.length === 0
@@ -417,21 +410,12 @@ export function ContextualLayerPrompt() {
           </Typography>
         ) : null}
         {activeDownload ? (
-          <Stack
-            spacing={1.5}
+          <MapLayerDownloadProgress
+            completion={downloadCompletion}
+            cancelling={cancelling}
+            onCancel={cancelDownload}
             sx={{mt: 3}}
-            data-testid="map-layer-download-progress"
-          >
-            <ProgressBar completion={downloadCompletion ?? 0} />
-            <Button
-              variant="outlined"
-              onClick={cancelDownload}
-              disabled={cancelling}
-              data-testid="map-layer-download-cancel"
-            >
-              {cancelling ? 'Cancelling…' : 'Cancel download'}
-            </Button>
-          </Stack>
+          />
         ) : null}
       </DialogContent>
       <DialogActions sx={{flexWrap: 'wrap', gap: 1}}>

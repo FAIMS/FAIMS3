@@ -2,6 +2,13 @@
 import {Card, CardActionArea, CardContent, Stack} from '@mui/material';
 import type {ReactNode} from 'react';
 
+/** Title on an outlined listing row: wrap long names instead of overflowing. */
+export const listingTitleSx = {
+  fontWeight: 'bold',
+  overflowWrap: 'anywhere',
+  whiteSpace: 'normal',
+} as const;
+
 /**
  * Outlined listing row: content on the left, trailing control on the right.
  * Wraps on narrow screens so titles and actions stay reachable.

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import {z} from 'zod';
+import {mapControlBrand} from '../../brand-colours';
 import {
   IdInputSchema,
   INPUT_LIMITS,
@@ -344,8 +345,8 @@ export type MapAssetStyle = z.infer<typeof MapAssetStyleSchema>;
 
 /** Default paint stored on a new map-layer asset. */
 export const DEFAULT_MAP_ASSET_STYLE: MapAssetStyle = {
-  stroke: '#1565c0',
-  fill: '#1565c040',
+  stroke: mapControlBrand.colorPickerFallback,
+  fill: `${mapControlBrand.colorPickerFallback}40`,
   lineWidth: 2,
   pointSize: 6,
   opacity: 0.85,

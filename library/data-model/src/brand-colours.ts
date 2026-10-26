@@ -66,4 +66,6 @@ export const mapControlBrand = {
   satelliteSwatch: '#6b8f4e',
   /** Layers-panel swatch for the vector/streets basemap. */
   vectorSwatch: '#4a7cbf',
+  /** Fallback for `<input type="color">` when a layer color is not #rrggbb. */
+  colorPickerFallback: '#1565c0',
 } as const;

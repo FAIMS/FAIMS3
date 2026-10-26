@@ -21,4 +21,5 @@ export * from './styles';
 export * from './tileDB';
 export * from './mapPerformance';
 export * from './tileLoadControl';
+export * from './readResponseBytes';
 export * from './types';

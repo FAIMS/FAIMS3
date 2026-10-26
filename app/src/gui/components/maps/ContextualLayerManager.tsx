@@ -8,11 +8,7 @@ import {
   mapAssetKindLabel,
   type ContextualLayerListing,
 } from '@faims3/data-model';
-import {
-  LayerLocationHint,
-  ProgressBar,
-  useOccasionalDeviceLocation,
-} from '@faims3/forms';
+import {LayerLocationHint, useOccasionalDeviceLocation} from '@faims3/forms';
 import {ArrowForwardIos} from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
@@ -34,7 +30,11 @@ import {
 } from '../../../context/slices/authSlice';
 import {useAppSelector} from '../../../context/store';
 import {ListingPage, ListingPageHeader} from '../ui/listing-page';
-import {OutlinedListingCard} from '../ui/outlined-listing-card';
+import {listingTitleSx, OutlinedListingCard} from '../ui/outlined-listing-card';
+import {
+  MapLayerDownloadProgress,
+  mapLayerDownloadLabel,
+} from './MapLayerDownloadProgress';
 import {
   CONTEXTUAL_LAYERS_CHANGED_EVENT,
   downloadContextualLayers,
@@ -184,22 +184,13 @@ export function ContextualLayerManager() {
 
   const downloadProgress = (active: boolean) =>
     active ? (
-      <Stack
-        spacing={1.5}
+      <MapLayerDownloadProgress
+        completion={downloadCompletion}
+        cancelling={cancelling}
+        onCancel={cancelDownload}
         sx={{mt: 1}}
-        data-testid="map-layer-download-progress"
-      >
-        <ProgressBar completion={downloadCompletion ?? 0} />
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={cancelDownload}
-          disabled={cancelling}
-          data-testid="map-layer-download-cancel"
-        >
-          {cancelling ? 'Cancelling…' : 'Cancel download'}
-        </Button>
-      </Stack>
+        cancelSize="small"
+      />
     ) : null;
 
   const downloadRows = async (rows: SurveyLayer[], key: string) => {
@@ -248,15 +239,8 @@ export function ContextualLayerManager() {
     }
   };
 
-  const downloadLabel = (active: boolean, idle: string) => {
-    if (!active) {
-      return idle;
-    }
-    if (downloadCompletion !== null && downloadCompletion > 0) {
-      return `Downloading… ${Math.round(downloadCompletion * 100)}%`;
-    }
-    return 'Preparing download…';
-  };
+  const downloadLabel = (active: boolean, idle: string) =>
+    mapLayerDownloadLabel(active, idle, downloadCompletion);
 
   const confirmDelete = async () => {
     if (!pendingDelete) {
@@ -350,10 +334,7 @@ export function ContextualLayerManager() {
                     </Stack>
                   }
                 >
-                  <Typography
-                    variant="h5"
-                    sx={{fontWeight: 'bold', overflowWrap: 'anywhere'}}
-                  >
+                  <Typography variant="h5" sx={listingTitleSx}>
                     {file.name}
                   </Typography>
                   <Stack
@@ -461,13 +442,7 @@ export function ContextualLayerManager() {
                         </Button>
                       }
                     >
-                      <Typography
-                        variant="h5"
-                        sx={{
-                          fontWeight: 'bold',
-                          overflowWrap: 'anywhere',
-                        }}
-                      >
+                      <Typography variant="h5" sx={listingTitleSx}>
                         {row.layer.name}
                       </Typography>
                       <Stack

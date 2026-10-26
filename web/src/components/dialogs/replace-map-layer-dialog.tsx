@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import {ReplaceMapLayerForm} from '@/components/forms/replace-map-layer-form';
+import {MapLayerFormatsDocsLink} from '@/components/maps/MapLayerFormatsDocsLink';
 import {Button} from '@/components/ui/button';
 import {
   Dialog,
@@ -10,8 +11,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {config} from '@/constants';
-import {mapLayerFormatsDocsUrl} from '@/lib/map-layer-docs';
-import {ExternalLink, Upload} from 'lucide-react';
+import {Upload} from 'lucide-react';
 import {useState} from 'react';
 
 /** Dialog wrapping {@link ReplaceMapLayerForm} to re-upload layer files. */
@@ -38,15 +38,7 @@ export function ReplaceMapLayerDialog({
           <DialogDescription>
             Upload a new georeferenced file for this layer. Linked surveys keep
             the layer and receive the new file after processing.{' '}
-            <a
-              href={mapLayerFormatsDocsUrl(config.docsUrl)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 font-medium text-foreground underline underline-offset-4 hover:text-primary"
-            >
-              Learn more about supported formats and CRS
-              <ExternalLink className="h-3 w-3" aria-hidden />
-            </a>
+            <MapLayerFormatsDocsLink docsUrl={config.docsUrl} />
           </DialogDescription>
         </DialogHeader>
         <ReplaceMapLayerForm assetId={assetId} setDialogOpen={setOpen} />

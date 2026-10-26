@@ -72,6 +72,7 @@ declare module '@mui/material/styles' {
       locationRing: string;
       satelliteSwatch: string;
       vectorSwatch: string;
+      colorPickerFallback: string;
     };
     history: {
       marker: string;
@@ -149,6 +150,7 @@ declare module '@mui/material/styles' {
       locationRing?: string;
       satelliteSwatch?: string;
       vectorSwatch?: string;
+      colorPickerFallback?: string;
     };
     history?: {
       marker: string;

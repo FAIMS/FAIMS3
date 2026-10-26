@@ -39,5 +39,8 @@ describe('ensureMapControlTheme', () => {
     expect(theme.palette.mapControl.vectorSwatch).toBe(
       defaultMapControlPalette.vectorSwatch
     );
+    expect(theme.palette.mapControl.colorPickerFallback).toBe(
+      defaultMapControlPalette.colorPickerFallback
+    );
   });
 });

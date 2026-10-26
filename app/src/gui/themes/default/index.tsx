@@ -93,6 +93,7 @@ const baseTheme = createTheme({
       locationRing: mapControlBrand.locationRing,
       satelliteSwatch: mapControlBrand.satelliteSwatch,
       vectorSwatch: mapControlBrand.vectorSwatch,
+      colorPickerFallback: mapControlBrand.colorPickerFallback,
     },
     history: {
       marker: defaultBrand.infoMain,

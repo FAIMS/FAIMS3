@@ -295,6 +295,36 @@ describe('useRecordFeatures', () => {
     ).toEqual(['rec-site', 'rec-obs']);
   });
 
+  it('re-extracts when the same revision later stamps updated', async () => {
+    getFieldValues.mockResolvedValueOnce({});
+    getFieldValues.mockResolvedValueOnce({site_location: POINT_FEATURE});
+
+    const client = new QueryClient();
+    const stableWrapper = ({children}: {children: ReactNode}) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+
+    const {result, rerender} = renderHook(
+      ({records}: {records: MinimalRecordMetadata[]}) =>
+        useRecordFeatures({
+          projectId: 'test-project',
+          uiSpec,
+          records,
+          recordTypes,
+        }),
+      {wrapper: stableWrapper, initialProps: {records: [siteRecord]}}
+    );
+
+    await waitFor(() => expect(result.current.data?.features).toHaveLength(0));
+
+    rerender({
+      records: [{...siteRecord, updated: new Date(1)}],
+    });
+
+    await waitFor(() => expect(result.current.data?.features).toHaveLength(1));
+    expect(getFieldValues).toHaveBeenCalledTimes(2);
+  });
+
   it('picks up a record appended onto the same array instance', async () => {
     const records = [siteRecord];
     const client = new QueryClient();
@@ -373,6 +403,15 @@ describe('recordFeatureCollectionsEqual', () => {
         undefined
       )
     ).toBe(false);
+    // Identity key: same record/rev/form, different coordinates, still equal
+    const moved = feature('a');
+    moved.geometry = {type: 'Point', coordinates: [0, 0]};
+    expect(
+      recordFeatureCollectionsEqual(collection, {
+        type: 'FeatureCollection',
+        features: [moved],
+      })
+    ).toBe(true);
   });
 });
 

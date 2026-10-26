@@ -21,7 +21,7 @@ import {useNavigate} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {ListingPage, ListingPageHeader} from '../ui/listing-page';
-import {OutlinedListingCard} from '../ui/outlined-listing-card';
+import {listingTitleSx, OutlinedListingCard} from '../ui/outlined-listing-card';
 
 /**
  * Offline map management screen.
@@ -161,14 +161,7 @@ export const OfflineMapManager = () => {
                       onClick={() => openMap(tileSet.setName)}
                       trailing={<ArrowForwardIos color="action" />}
                     >
-                      <Typography
-                        variant="h5"
-                        sx={{
-                          overflowWrap: 'anywhere',
-                          whiteSpace: 'normal',
-                          fontWeight: 'bold',
-                        }}
-                      >
+                      <Typography variant="h5" sx={listingTitleSx}>
                         {tileSetDisplayName(tileSet)}
                       </Typography>
 

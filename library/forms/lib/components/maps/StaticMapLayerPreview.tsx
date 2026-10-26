@@ -7,15 +7,14 @@
 import {Box, Typography} from '@mui/material';
 import BaseLayer from 'ol/layer/Base';
 import VectorLayer from 'ol/layer/Vector';
-import TileLayer from 'ol/layer/Tile';
 import Map from 'ol/Map';
 import 'ol/ol.css';
-import XYZ from 'ol/source/XYZ';
 import View from 'ol/View';
 import {useEffect, useRef, useState} from 'react';
 import type {ContextualMapLayerKind} from './contextualMapLayers';
 import type {TileByteRead} from './pmtilesRange';
 import {bufferExtent, placementExtent} from './previewExtent';
+import {createStreetsLayer} from './mapHelpers';
 import {MapConfig} from './types';
 import {createContextualMapLayer} from './useContextualMapLayers';
 
@@ -51,32 +50,6 @@ export type StaticMapLayerPreviewProps = {
   className?: string;
 };
 
-/** Online OSM or MapTiler raster used when the caller does not pass a cache. */
-function basemapLayer(mapConfig: MapConfig) {
-  if (mapConfig.mapSource === 'maptiler' && mapConfig.mapSourceKey) {
-    const style =
-      mapConfig.mapStyle === 'toner'
-        ? 'toner-v2'
-        : mapConfig.mapStyle === 'osm-bright'
-          ? 'bright-v2'
-          : mapConfig.mapStyle === 'openstreetmap'
-            ? 'openstreetmap'
-            : 'basic-v2';
-    return new TileLayer({
-      source: new XYZ({
-        url: `https://api.maptiler.com/maps/${style}/{z}/{x}/{y}.png?key=${mapConfig.mapSourceKey}`,
-        attributions: '© MapTiler © OpenStreetMap contributors',
-      }),
-    });
-  }
-  return new TileLayer({
-    source: new XYZ({
-      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      attributions: '© OpenStreetMap contributors',
-    }),
-  });
-}
-
 /**
  * Non-interactive OpenLayers preview fitted to the layer extent.
  * Devices should pass a cached `baseLayer` so the preview works offline.
@@ -105,7 +78,7 @@ export function StaticMapLayerPreview({
     let cancelled = false;
     const map = new Map({
       target,
-      layers: [baseLayer ?? basemapLayer(mapConfig)],
+      layers: [baseLayer ?? createStreetsLayer(mapConfig)],
       controls: [],
       interactions: [],
       view: new View({center: [0, 0], zoom: 2}),

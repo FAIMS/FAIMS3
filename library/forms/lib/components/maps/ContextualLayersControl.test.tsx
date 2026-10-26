@@ -164,11 +164,68 @@ describe('ContextualLayersControl', () => {
       screen.getByRole('slider', {name: 'Site boundary opacity'})
     ).toBeInTheDocument();
     expect(
+      screen.getByRole('slider', {name: 'Site boundary line opacity'})
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('slider', {name: 'Site boundary fill opacity'})
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole('slider', {name: 'Site boundary line width'})
     ).toBeInTheDocument();
     expect(
       screen.queryByLabelText('Site boundary label field')
     ).not.toBeInTheDocument();
+  });
+
+  it('patches line and fill opacity without changing the RGB', async () => {
+    const user = userEvent.setup();
+    const {updateLayer} = renderControl([
+      layer({id: 'boundary', name: 'Site boundary'}),
+    ]);
+
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 1 of 1 shown/i})
+    );
+    await user.click(
+      screen.getByRole('button', {name: 'Show style for Site boundary'})
+    );
+
+    fireEvent.change(
+      screen.getByRole('slider', {name: 'Site boundary line opacity'}),
+      {target: {value: '0.5'}}
+    );
+    expect(updateLayer).toHaveBeenCalledWith('boundary', {
+      stroke: '#1565c080',
+    });
+
+    fireEvent.change(
+      screen.getByRole('slider', {name: 'Site boundary fill opacity'}),
+      {target: {value: '0'}}
+    );
+    expect(updateLayer).toHaveBeenCalledWith('boundary', {
+      fill: '#1565c000',
+    });
+  });
+
+  it('keeps fill alpha when the color picker changes hue', async () => {
+    const user = userEvent.setup();
+    const {updateLayer} = renderControl([
+      layer({id: 'boundary', name: 'Site boundary'}),
+    ]);
+
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 1 of 1 shown/i})
+    );
+    await user.click(
+      screen.getByRole('button', {name: 'Show style for Site boundary'})
+    );
+
+    fireEvent.change(screen.getByLabelText('Site boundary fill'), {
+      target: {value: '#ff0000'},
+    });
+    expect(updateLayer).toHaveBeenCalledWith('boundary', {
+      fill: '#ff000080',
+    });
   });
 
   it('closes on a press outside the sheet and swallows the following click', async () => {
@@ -287,6 +344,9 @@ describe('ContextualLayersControl', () => {
     expect(
       screen.getByRole('slider', {name: 'Streets opacity'})
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('slider', {name: 'Streets line opacity'})
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('slider', {name: 'Streets line width'})
     ).not.toBeInTheDocument();
@@ -474,6 +534,12 @@ describe('ContextualLayersControl', () => {
     );
     expect(
       screen.getByRole('slider', {name: 'Sites opacity'})
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('slider', {name: 'Sites line opacity'})
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('slider', {name: 'Sites fill opacity'})
     ).toBeInTheDocument();
     expect(
       screen.getByRole('slider', {name: 'Sites line width'})

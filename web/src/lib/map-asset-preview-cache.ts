@@ -10,6 +10,7 @@
  */
 
 import type {GetMapAssetDownloadUrlResponse} from '@faims3/data-model';
+import {readResponseBlob} from '@faims3/forms';
 
 const PREVIEW_CACHE_NAME = 'faims-map-asset-previews-v1';
 const PREVIEW_CACHE_ORIGIN = 'https://map-asset-preview.invalid';
@@ -182,34 +183,7 @@ export async function readPreviewResponseBytes(
   expectedBytes: number,
   onReceived: (received: number, total: number) => void
 ): Promise<Blob> {
-  const headerLength = Number(response.headers.get('Content-Length'));
-  const total =
-    Number.isFinite(headerLength) && headerLength > 0
-      ? headerLength
-      : expectedBytes;
-  const reader = response.body?.getReader();
-  if (!reader) {
-    const blob = await response.blob();
-    onReceived(blob.size, Math.max(total, blob.size));
-    return blob;
-  }
-  const chunks: BlobPart[] = [];
-  let received = 0;
-  while (true) {
-    const {done, value} = await reader.read();
-    if (done) {
-      break;
-    }
-    if (!value) {
-      continue;
-    }
-    chunks.push(value);
-    received += value.byteLength;
-    onReceived(received, Math.max(total, received));
-  }
-  const blob = new Blob(chunks);
-  onReceived(blob.size, Math.max(total, blob.size));
-  return blob;
+  return readResponseBlob(response, {expectedBytes, onReceived});
 }
 
 export function configureMapAssetPreviewCacheForTests(options?: {

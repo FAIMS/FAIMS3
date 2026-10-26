@@ -11,6 +11,7 @@ import {useParams} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {ListingPage, ListingPageHeader} from '../ui/listing-page';
+import {listingTitleSx} from '../ui/outlined-listing-card';
 import {loadStoredContextualLayer} from './contextualLayerStore';
 
 /** Fitted static map of one stored layer (vector basemap only). */
@@ -114,10 +115,7 @@ export function ContextualLayerPreview() {
         ) : null}
         {layer ? (
           <>
-            <Typography
-              variant="h5"
-              sx={{fontWeight: 'bold', overflowWrap: 'anywhere'}}
-            >
+            <Typography variant="h5" sx={listingTitleSx}>
               {layer.name}
             </Typography>
             <LayerPreviewMap layer={layer} />

@@ -16,7 +16,11 @@ import {
   normalizedMapAssetExtension,
 } from '@faims3/data-model';
 import type {ContextualMapLayer, TileByteRead} from '@faims3/forms';
-import {moveStackedLayer, readBlobRange} from '@faims3/forms';
+import {
+  moveStackedLayer,
+  readBlobRange,
+  readResponseBytes,
+} from '@faims3/forms';
 import {
   readContextualLayersState,
   writeContextualLayersState,
@@ -457,60 +461,6 @@ function asLayerDownloadError(error: unknown, layerName: string): Error {
 }
 
 /**
- * Read a response body in chunks so the caller can show download progress.
- * Falls back to the full buffer when the body stream is unavailable.
- */
-async function readResponseBytes(
-  response: Response,
-  expectedBytes: number,
-  onReceived: (received: number, total: number) => void,
-  signal?: AbortSignal
-): Promise<Uint8Array> {
-  throwIfDownloadCancelled(signal);
-  const headerLength = Number(response.headers.get('Content-Length'));
-  const total =
-    Number.isFinite(headerLength) && headerLength > 0
-      ? headerLength
-      : expectedBytes;
-  const reader = response.body?.getReader();
-  if (!reader) {
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    onReceived(bytes.byteLength, Math.max(total, bytes.byteLength));
-    return bytes;
-  }
-  const abortRead = () => {
-    void reader.cancel();
-  };
-  signal?.addEventListener('abort', abortRead, {once: true});
-  try {
-    const chunks: Uint8Array[] = [];
-    let received = 0;
-    while (true) {
-      throwIfDownloadCancelled(signal);
-      const {done, value} = await reader.read();
-      if (done) {
-        break;
-      }
-      if (!value) {
-        continue;
-      }
-      chunks.push(value);
-      received += value.byteLength;
-      onReceived(received, Math.max(total, received));
-    }
-    const bytes = new Uint8Array(received);
-    let offset = 0;
-    for (const chunk of chunks) {
-      bytes.set(chunk, offset);
-      offset += chunk.byteLength;
-    }
-    return bytes;
-  } finally {
-    signal?.removeEventListener('abort', abortRead);
-  }
-}
-
-/**
  * Stream the presigned object straight to disk.
  * ADB live-reload enables CapacitorHttp, which intercepts `fetch` and
  * JSON-parses the whole body on the Android main thread. A large GeoJSON
@@ -677,12 +627,11 @@ async function downloadAndIndexContextualLayers({
           if (!response.ok) {
             throw new Error(`Could not download ${layer.name}.`);
           }
-          const bytes = await readResponseBytes(
-            response,
-            layer.byteSize,
-            (received, total) => report(layer.id, received, total),
-            signal
-          );
+          const bytes = await readResponseBytes(response, {
+            expectedBytes: layer.byteSize,
+            onReceived: (received, total) => report(layer.id, received, total),
+            signal,
+          });
           throwIfDownloadCancelled(signal);
           await writeBrowserFile(filename, bytes);
         }

@@ -105,6 +105,7 @@ export class TileLoadPausedError extends Error {
   }
 }
 
+/** True when a tile was refused because the view is still moving. */
 export function isTileLoadPausedError(error: unknown): boolean {
   return error instanceof TileLoadPausedError;
 }
@@ -354,6 +355,7 @@ export function createTileLoadSettle(
   };
 }
 
+/** True when a tile coord sits inside a z/x/y viewport box. */
 export function tileInViewport(
   coord: number[] | undefined,
   viewport: TileViewport
@@ -392,6 +394,7 @@ export function tileCoversView(
   return extentsIntersect(tileExtent, viewExtent);
 }
 
+/** View extent plus the grids used to enumerate tiles in it. */
 export function viewCoverage(
   layer: RetryableTileLayer,
   map: TileLoadMap
@@ -427,6 +430,7 @@ export function viewCoverage(
   };
 }
 
+/** z/x/y range of tiles that cover the current view for this layer. */
 export function viewTileViewport(
   layer: RetryableTileLayer,
   map: TileLoadMap
@@ -542,6 +546,7 @@ function resetPausedTile(tile: Tile): void {
   renderTile.setState(TileState.IDLE);
 }
 
+/** Re-open remaining ERROR tiles on a layer and mark it changed. */
 export function retryRemainingErrors(layer: RetryableTileLayer): void {
   const renderer = layer.getRenderer() as TileRenderer | null;
   resetErrorTiles(renderer?.getTileCache?.());

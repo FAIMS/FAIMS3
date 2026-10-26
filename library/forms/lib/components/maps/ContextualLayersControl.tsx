@@ -19,8 +19,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import {alpha, type Theme} from '@mui/material/styles';
-import {transformExtent} from 'ol/proj';
+import {alpha, useTheme, type Theme} from '@mui/material/styles';
 import Map from 'ol/Map';
 import {
   useContext,
@@ -43,6 +42,8 @@ import {
 } from './contextualMapLayers';
 import {LayerLocationHint} from './LayerLocationHint';
 import {moveStackedLayer, sortLayersTopFirst} from './layerOrder';
+import {opacityFromColor, rgbHexFromColor, withColorOpacity} from './mapColor';
+import {placementExtent} from './previewExtent';
 import {defaultMapControlPalette} from './mapTheme';
 import {
   RECORD_FORM_LAYER_KIND,
@@ -209,11 +210,7 @@ export function ContextualLayersControl({
     if (!layer.canPan) {
       return;
     }
-    const extent = layer.extent3857
-      ? layer.extent3857
-      : layer.extent4326
-        ? transformExtent(layer.extent4326, 'EPSG:4326', 'EPSG:3857')
-        : undefined;
+    const extent = placementExtent(layer.extent4326, layer.extent3857);
     if (!extent) {
       return;
     }
@@ -294,13 +291,14 @@ export function ContextualLayersControl({
             borderColor: open ? 'primary.main' : 'transparent',
           }}
         >
-          <LayersOutlinedIcon sx={{fontSize: 18}} />
+          <LayersOutlinedIcon fontSize="small" />
           <Typography component="span" variant="body2" sx={{fontWeight: 700}}>
             Layers
           </Typography>
           {failedCount > 0 ? (
             <ErrorOutlineIcon
-              sx={{fontSize: 18, color: 'error.main'}}
+              fontSize="small"
+              sx={{color: 'error.main'}}
               aria-hidden
             />
           ) : null}
@@ -634,9 +632,9 @@ function LayerRow({
             })}
           >
             {layer.visible ? (
-              <VisibilityOutlinedIcon sx={{fontSize: 20}} />
+              <VisibilityOutlinedIcon fontSize="small" />
             ) : (
-              <VisibilityOffOutlinedIcon sx={{fontSize: 20}} />
+              <VisibilityOffOutlinedIcon fontSize="small" />
             )}
           </IconButton>
           <Box
@@ -648,7 +646,7 @@ function LayerRow({
               borderRadius: vectorPaint ? '50%' : '2px',
               bgcolor: (theme: Theme) =>
                 vectorPaint
-                  ? toColorInput(layer.stroke)
+                  ? rgbHexForInput(layer.stroke, theme)
                   : layer.kind === 'basemap'
                     ? basemapSwatchColor(theme, layer.name)
                     : 'text.disabled',
@@ -748,7 +746,7 @@ function LayerRow({
               }
             )}
           >
-            <SettingsOutlinedIcon sx={{fontSize: 18}} />
+            <SettingsOutlinedIcon fontSize="small" />
           </IconButton>
           {layer.canPan ? (
             <IconButton
@@ -767,7 +765,7 @@ function LayerRow({
                 }
               )}
             >
-              <CenterFocusStrongIcon sx={{fontSize: 18}} />
+              <CenterFocusStrongIcon fontSize="small" />
             </IconButton>
           ) : (
             <Box
@@ -855,12 +853,14 @@ function LayerRow({
                 <ColorSwatch
                   label="Stroke"
                   ariaLabel={`${layer.name} stroke`}
+                  opacityAriaLabel={`${layer.name} line opacity`}
                   value={layer.stroke}
                   onChange={stroke => onPatch({stroke})}
                 />
                 <ColorSwatch
                   label="Fill"
                   ariaLabel={`${layer.name} fill`}
+                  opacityAriaLabel={`${layer.name} fill opacity`}
                   value={layer.fill}
                   onChange={fill => onPatch({fill})}
                 />
@@ -941,80 +941,156 @@ function LabeledSlider({
         sx={{
           mt: 0.5,
           py: 0.5,
-          '& .MuiSlider-thumb': {width: 18, height: 18},
-          '& .MuiSlider-rail, & .MuiSlider-track': {height: 4},
         }}
       />
     </Box>
   );
 }
 
-/** Native color input plus hex label for stroke or fill. */
+/** Native color input, hex label, and a mini opacity slider for stroke or fill. */
 function ColorSwatch({
   label,
   ariaLabel,
+  opacityAriaLabel,
   value,
   onChange,
 }: {
   label: string;
   ariaLabel: string;
+  opacityAriaLabel: string;
   value: string;
   onChange: (value: string) => void;
 }) {
-  const hex = toColorInput(value);
+  const theme = useTheme();
+  const fallback = colorPickerFallback(theme);
+  const hex = rgbHexFromColor(value) ?? fallback;
+  const opacity = opacityFromColor(value);
+  const painted = withColorOpacity(hex, opacity, fallback);
   return (
-    <Stack spacing={0.5} sx={{flex: '1 1 140px', minWidth: 0}}>
+    <Stack
+      spacing={0.5}
+      sx={{
+        flex: '1 1 100%',
+        minWidth: 0,
+        [theme.breakpoints.up('sm')]: {
+          flex: '1 1 140px',
+        },
+      }}
+    >
       <Typography variant="caption" color="text.secondary">
         {label}
       </Typography>
-      <Stack
-        direction="row"
-        spacing={1}
-        sx={{alignItems: 'center', minWidth: 0}}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 1.5,
+          minWidth: 0,
+          [theme.breakpoints.up('sm')]: {
+            flexDirection: 'column',
+            alignItems: 'stretch',
+            gap: 0.75,
+          },
+        }}
       >
-        <Box
-          component="label"
-          sx={{
-            position: 'relative',
-            width: 40,
-            height: 40,
-            flexShrink: 0,
-            borderRadius: 2.5,
-            border: '1px solid',
-            borderColor: 'divider',
-            backgroundColor: hex,
-            overflow: 'hidden',
-            cursor: 'pointer',
-          }}
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{alignItems: 'center', minWidth: 0, flexShrink: 0}}
         >
           <Box
-            component="input"
-            type="color"
-            value={hex}
-            aria-label={ariaLabel}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              onChange(event.target.value)
-            }
+            component="label"
             sx={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              opacity: 0,
+              position: 'relative',
+              width: 40,
+              height: 40,
+              flexShrink: 0,
+              borderRadius: 2.5,
+              border: '1px solid',
+              borderColor: 'divider',
+              overflow: 'hidden',
               cursor: 'pointer',
-              border: 0,
-              p: 0,
+              backgroundColor: '#fff',
+              backgroundImage: [
+                'linear-gradient(45deg, #d0d0d0 25%, transparent 25%)',
+                'linear-gradient(-45deg, #d0d0d0 25%, transparent 25%)',
+                'linear-gradient(45deg, transparent 75%, #d0d0d0 75%)',
+                'linear-gradient(-45deg, transparent 75%, #d0d0d0 75%)',
+              ].join(', '),
+              backgroundSize: '8px 8px',
+              backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
+            }}
+          >
+            <Box
+              aria-hidden
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: painted,
+              }}
+            />
+            <Box
+              component="input"
+              type="color"
+              value={hex}
+              aria-label={ariaLabel}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                onChange(
+                  withColorOpacity(event.target.value, opacity, fallback)
+                )
+              }
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                opacity: 0,
+                cursor: 'pointer',
+                border: 0,
+                p: 0,
+              }}
+            />
+          </Box>
+          <Typography
+            variant="caption"
+            noWrap
+            sx={{fontFamily: 'ui-monospace, monospace'}}
+          >
+            {hex}
+          </Typography>
+        </Stack>
+        <Box sx={{flex: 1, minWidth: 72, maxWidth: {sm: '100%'}}}>
+          <Stack
+            direction="row"
+            sx={{alignItems: 'baseline', justifyContent: 'space-between'}}
+          >
+            <Typography variant="caption" color="text.secondary">
+              Opacity
+            </Typography>
+            <Typography variant="caption" sx={{fontWeight: 700}}>
+              {`${Math.round(opacity * 100)}%`}
+            </Typography>
+          </Stack>
+          <Slider
+            size="small"
+            min={0}
+            max={1}
+            step={0.05}
+            value={opacity}
+            aria-label={opacityAriaLabel}
+            onChange={(_event, next) => {
+              if (typeof next === 'number') {
+                onChange(withColorOpacity(value, next, fallback));
+              }
+            }}
+            sx={{
+              mt: 0.25,
+              py: 0.25,
             }}
           />
         </Box>
-        <Typography
-          variant="caption"
-          noWrap
-          sx={{fontFamily: 'ui-monospace, monospace'}}
-        >
-          {hex}
-        </Typography>
-      </Stack>
+      </Box>
     </Stack>
   );
 }
@@ -1029,14 +1105,15 @@ function basemapSwatchColor(theme: Theme, name: string): string {
 }
 
 /** `<input type="color">` only accepts #rrggbb. */
-function toColorInput(color: string): string {
-  if (/^#[0-9a-fA-F]{6}$/.test(color)) {
-    return color;
-  }
-  if (/^#[0-9a-fA-F]{8}$/.test(color)) {
-    return color.slice(0, 7);
-  }
-  return '#1565c0';
+function rgbHexForInput(color: string, theme?: Theme): string {
+  return rgbHexFromColor(color) ?? colorPickerFallback(theme);
+}
+
+function colorPickerFallback(theme?: Theme): string {
+  return (
+    theme?.palette.mapControl?.colorPickerFallback ??
+    defaultMapControlPalette.colorPickerFallback
+  );
 }
 
 /**
