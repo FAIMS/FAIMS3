@@ -14,5 +14,16 @@ __pycache__/
 .cursor
 # Ignore config files that might include secrets
 /config
+# Generated deployment config (scripts/migrate-aws-config.ts outputs).
+# secrets.json is plaintext secrets — encrypt it (SOPS) and keep it, and the
+# migrated core/aws files, in the private config repo, never in this repo.
+**/secrets.json
+**/secrets.enc.json
+**/core.json
+**/aws.json
+**/aws-cdk.json
+**/migration-report.md
 .sops.yaml
 .jest-cache
+tmp/
+**token**

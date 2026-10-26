@@ -199,6 +199,36 @@ now source their config from this module:
 Each consumer preserves its public `config` shape, so only `buildconfig.ts` /
 `constants.ts` changed; no consumer components were touched.
 
+## Migrating a legacy AWS config
+
+`scripts/migrate-aws-config.ts` converts a legacy (pre-ADR-0002,
+`main`-branch) AWS CDK config JSON — the flat shape with `uiConfiguration`,
+`conductor`, `smtp`, `authProviders.config`, … — into the new layout. Given
+an authenticated AWS environment it also pulls the Secrets Manager secrets
+the legacy file only references by ARN (SMTP credentials, auth-provider
+credentials, and the CDK-generated CouchDB-admin / cookie secrets, the
+latter two discovered by name or via explicit ARN flags), using the `aws`
+CLI from the caller's environment.
+
+```bash
+pnpm --filter=@faims3/build-config run migrate-aws -- \
+  --config path/to/legacy-dev.json --out-dir path/to/migrated/dev
+```
+
+It writes `core.json` (non-secret core; secret slots empty, except the
+publishable map/Bugsnag client keys that were already plaintext),
+`secrets.json` (the unencrypted secret overlay in the
+`config/secrets.sample.json` shape — SOPS-encrypt it before committing
+anywhere, written mode `0600`), `aws.json` (AWS-only extension, ARNs only),
+`aws-cdk.json` (the combined `{core, aws}` file the CDK `loadConfig`
+expects) and `migration-report.md` (field-level mapping notes, dropped
+legacy keys, unresolved secrets — never secret values). Both `core.json`
+alone and `core.json` deep-merged with `secrets.json` are validated
+against `BuildConfigSchema` before anything is written. Secret values are
+never printed or logged; the signing-key secrets are not exported at all
+(they stay referenced by ARN — the API reads them via `KEY_SOURCE=AWS_SM`).
+Use `--no-aws` for an offline dry run, `--help` for all options.
+
 ## Scripts
 
 From this package:

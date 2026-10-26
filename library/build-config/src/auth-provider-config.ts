@@ -376,6 +376,7 @@ function serializeEnvValue(value: unknown): string {
   return String(value);
 }
 
+/** Serialise auth providers to their `AUTH_{PROVIDER}_{PROPERTY}` env map. */
 export function buildAuthProviderEnvMap(
   providers: AuthProviderConfigMap
 ): Record<string, string> {

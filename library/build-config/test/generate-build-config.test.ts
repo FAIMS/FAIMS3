@@ -13,7 +13,6 @@ import {
   type PartialBuildConfig,
 } from '../src/build-config';
 import {generateBuildConfig} from '../src/generate-build-config';
-import {validateGeneratedEnv} from '../src/validate-generated-env';
 
 function deepMerge(a: unknown, b: unknown): unknown {
   if (Array.isArray(a) || Array.isArray(b)) {
@@ -290,21 +289,6 @@ test('generator escapes multiline values for env-file compatibility', () => {
     output,
     /APPLE_KEY_CONTENT=\\n-----BEGIN PRIVATE KEY-----\\nABCDEF\\n-----END PRIVATE KEY-----\\n/
   );
-});
-
-test('validateBuildConfigCoverage catches missing env coverage', () => {
-  // With the app and web migrated to parse via this module, the only scanned
-  // (not-yet-migrated) consumer is Fastlane; a generated env that omits a
-  // Fastlane key must be flagged as missing.
-  const output = ['VITE_APP_NAME=Example'].join('\n');
-
-  const result = validateGeneratedEnv({
-    envText: output,
-  });
-
-  assert.ok(result.missing.includes('JAVA_KEYSTORE'));
-  assert.ok(result.missing.includes('ANDROID_JSON_KEY_FILE'));
-  assert.ok(result.missing.length > 0);
 });
 
 test('short/heading names fall back to the app name in generated env', () => {

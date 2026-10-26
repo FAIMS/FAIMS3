@@ -1043,14 +1043,17 @@ export function parseAppsEnv(env: GeneratedEnv): PartialBuildConfig {
   };
 }
 
+/** Parse and validate source JSON config into the canonical config. */
 export function parseBuildConfig(raw: unknown): SharedBuildConfig {
   return BuildConfigSchema.parse(raw);
 }
 
+/** Fill defaults/invariants in a partial config to produce the runtime config. */
 export function toRuntimeConfig(parsed: PartialBuildConfig): RuntimeConfig {
   return RuntimeConfigSchema.parse(parsed);
 }
 
+/** Parse a generated apps/api env (either or both halves) into the runtime config. */
 export function parseGeneratedEnv(raw: unknown): RuntimeConfig {
   const rawEnv = (raw ?? {}) as Record<string, unknown>;
 

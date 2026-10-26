@@ -30,7 +30,7 @@ The available
 providers are configured via environment variables using a pattern of variable
 names to encode an object structure. Variables starting with `AUTH_` define
 the properties of different providers with the pattern `AUTH_{provider}_{property}`.
-There are three kinds of provider: Google , SAML and OIDC. These are configured
+There are three kinds of provider: Google, SAML and OIDC. These are configured
 as follows:
 
 For a Google provider, the TYPE property should be `google` and the following

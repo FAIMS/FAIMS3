@@ -177,16 +177,16 @@ the "local mode" switch — there is no separate `environment` flag). Example:
 
 ### `branding` — naming and identity
 
-| Field                      | Type   | Default                           | Notes                                    |
-| -------------------------- | ------ | --------------------------------- | ---------------------------------------- |
-| `appName`                  | string | `FAIMS`                           | App name (store listings, headings).     |
-| `appShortName`             | string | falls back to `appName`           | Short name; falls back to `appName`.     |
-| `headingAppName`           | string | falls back to `appName`           | Banner heading; falls back to `appName`. |
-| `theme`                    | string | `default`                         | `default` \| `fieldmark` \| `bssTheme`.  |
-| `websiteTitle`             | string | `Control Centre`                  | Control Centre document title.           |
-| `conductorInstanceName`    | string | `Development FAIMS Server`        | Shown on the login/conductor listing.    |
-| `conductorDescription`     | string | `Development server on localhost` |                                          |
-| `conductorShortCodePrefix` | string | `FAIMS`                           | Invite-code prefix (`{prefix}-{code}`).  |
+| Field                      | Type   | Default                    | Notes                                    |
+| -------------------------- | ------ | -------------------------- | ---------------------------------------- |
+| `appName`                  | string | `FAIMS`                    | App name (store listings, headings).     |
+| `appShortName`             | string | falls back to `appName`    | Short name; falls back to `appName`.     |
+| `headingAppName`           | string | falls back to `appName`    | Banner heading; falls back to `appName`. |
+| `theme`                    | string | `default`                  | `default` \| `fieldmark` \| `bssTheme`.  |
+| `websiteTitle`             | string | `Control Centre`           | Control Centre document title.           |
+| `conductorInstanceName`    | string | `Development FAIMS Server` | Shown on the login/conductor listing.    |
+| `conductorDescription`     | string | `FAIMS Conductor Server`   |                                          |
+| `conductorShortCodePrefix` | string | `FAIMS`                    | Invite-code prefix (`{prefix}-{code}`).  |
 
 ### `support` — contacts and links
 
@@ -256,7 +256,8 @@ Invariant: the lock cannot be enabled while `disableMigrateOnStartup` is `true`.
 | ------------------------- | ------- | ----------- | ------------------------------------------ |
 | `profileName`             | string  | `local-dev` | Auth profile.                              |
 | `keyFilePath`             | string  | `.`         | Path to the local signing keypair.         |
-| `keySource`               | string  | `FILE`      | `FILE` \| `AWS_SM`.                        |
+| `keySource`               | string  | `FILE`      | `FILE` \| `ENV` \| `AWS_SM`.               |
+| `awsSecretKeyArn`         | string  | —           | Required when `keySource` is `AWS_SM`.     |
 | `cookieSecret`            | string  | —           | **Secret slot** (empty in committed core). |
 | `disableLocalLogin`       | boolean | `false`     | Disable the local (non-SSO) login.         |
 | `provisionSsoUsersPolicy` | string  | `reject`    | What to do with an unknown SSO user.       |
@@ -313,10 +314,10 @@ resolved from Secrets Manager on AWS. Non-secret fields (`displayName`, `helperT
 | `smtpHost`               | string  | `smtp.example.com`          | **Secret-adjacent** (host).  |
 | `smtpPort`               | number  | `587`                       |                              |
 | `smtpSecure`             | boolean | `true`                      | TLS.                         |
-| `smtpUser`               | string  | —                           | **Secret slot.**             |
-| `smtpPassword`           | string  | —                           | **Secret slot.**             |
+| `smtpUser`               | string  | `smtp_username`             | **Secret slot.**             |
+| `smtpPassword`           | string  | `smtp_password`             | **Secret slot.**             |
 | `smtpCacheExpirySeconds` | number  | `300`                       | SMTP connection-cache TTL.   |
-| `testEmailAddress`       | string  | —                           | Destination for test emails. |
+| `testEmailAddress`       | string  | `test@gmail.com`            | Destination for test emails. |
 
 ### `observability`
 

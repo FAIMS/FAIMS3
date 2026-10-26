@@ -244,6 +244,7 @@ function applyContract(
   }
 }
 
+/** Build the platform env map for a runtime config via the env contract. */
 export function buildEnvMapFromRuntime(
   runtime: RuntimeConfig,
   platform: SupportedPlatform,

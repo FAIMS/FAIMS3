@@ -220,12 +220,12 @@ write_mirror_after_push() {
   local environment="$4"
 
   mkdir -p "$local_root/$environment"
-  
+
   # Mirror plaintext config (already local, but ensure it's there)
   if [[ -f "$config_file" ]]; then
     cp "$config_file" "$local_root/$environment/core.json"
   fi
-  
+
   # Mirror encrypted secrets and decrypt it
   cp "$secrets_file" "$local_root/$environment/secrets.enc.json"
   if sops --decrypt "$secrets_file" >/dev/null 2>&1; then
