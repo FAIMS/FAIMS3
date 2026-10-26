@@ -160,6 +160,28 @@ describe('map asset list cache helpers', () => {
     ).toEqual({assets: [polled]});
   });
 
+  it('prefers a newer processing heartbeat when updatedAt matches', () => {
+    const queryClient = new QueryClient();
+    const listed = asset({updatedAt: 10, status: 'processing'});
+    const polled = asset({
+      updatedAt: 10,
+      status: 'processing',
+      processingHeartbeatMs: 20,
+      processingStage: 'tiling-vectors',
+    });
+    queryClient.setQueryData(mapAssetDetailQueryKey(user, listed._id), polled);
+    expect(
+      overlayListWithCachedMapAssets(queryClient, user, {assets: [listed]})
+    ).toEqual({assets: [polled]});
+
+    seedMapAssetDetailsFromList(queryClient, user, [
+      asset({updatedAt: 10, status: 'processing'}),
+    ]);
+    expect(
+      queryClient.getQueryData(mapAssetDetailQueryKey(user, listed._id))
+    ).toEqual(polled);
+  });
+
   it('patches list caches from a details poll, not links or other users', () => {
     const queryClient = new QueryClient();
     const listed = asset({status: 'processing', updatedAt: 1});

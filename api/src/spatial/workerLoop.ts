@@ -6,7 +6,10 @@ export type SpatialWorkerLoopOptions = {
    * `0` never exits (compose / on-prem).
    */
   idleExitMs: number;
-  /** Delay between empty polls. Ignored once the idle timeout has elapsed. */
+  /**
+   * Delay between empty polls, and after a thrown `processJob`. Ignored
+   * once the idle timeout has elapsed.
+   */
   pollIntervalMs: number;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
@@ -20,8 +23,9 @@ export type SpatialWorkerLoopOptions = {
    */
   onPollError?: (error: unknown) => void;
   /**
-   * Called when `processJob` throws (deleted layer, failed commit). The
-   * loop logs and continues so one bad job does not kill the worker.
+   * Called when `processJob` throws (deleted layer, failed commit, Couch
+   * blip on load/claim). The loop logs, sleeps `pollIntervalMs`, and
+   * continues so one bad job does not kill the worker or busy-loop.
    * Defaults to `console.error`.
    */
   onProcessError?: (error: unknown, assetId: string) => void;
@@ -51,8 +55,9 @@ const defaultOnProcessError = (error: unknown, assetId: string) => {
  * Time spent inside `processJob` is not idle. A thrown `findJob` is logged
  * and treated as empty so a missing view or Couch blip does not kill the
  * process. A thrown `processJob` is logged the same way so a deleted layer
- * or a failed commit does not exit the worker. Returns `idle` on timeout or
- * `stopped` when `maxPolls` is hit.
+ * or a failed commit does not exit the worker, then the loop sleeps
+ * `pollIntervalMs` so a still-claimable job cannot busy-loop. Returns
+ * `idle` on timeout or `stopped` when `maxPolls` is hit.
  */
 export async function runSpatialWorkerLoop(
   options: SpatialWorkerLoopOptions
@@ -82,6 +87,9 @@ export async function runSpatialWorkerLoop(
         await options.processJob(assetId);
       } catch (error) {
         onProcessError(error, assetId);
+        lastJobFinishedAt = now();
+        await sleep(options.pollIntervalMs);
+        continue;
       }
       lastJobFinishedAt = now();
       continue;

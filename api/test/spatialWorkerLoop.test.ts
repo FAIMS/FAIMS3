@@ -94,6 +94,34 @@ describe('spatial worker idle exit', () => {
     expect((pollErrors[0] as Error).message).toBe('missing');
   });
 
+  it('sleeps after processJob throws so a still-claimable job does not busy-loop', async () => {
+    let now = 0;
+    const sleeps: number[] = [];
+    let polls = 0;
+    const outcome = await runSpatialWorkerLoop({
+      idleExitMs: 0,
+      pollIntervalMs: 400,
+      now: () => now,
+      sleep: async ms => {
+        sleeps.push(ms);
+        now += ms;
+      },
+      findJob: async () => {
+        polls += 1;
+        return 'stuck';
+      },
+      processJob: async () => {
+        throw new Error('Couch unavailable');
+      },
+      onProcessError: () => undefined,
+      maxPolls: 3,
+    });
+    expect(outcome).toBe('stopped');
+    expect(polls).toBe(3);
+    expect(sleeps).toEqual([400, 400, 400]);
+    expect(now).toBe(1_200);
+  });
+
   it('keeps running when processJob throws', async () => {
     const processed: string[] = [];
     const processErrors: unknown[] = [];

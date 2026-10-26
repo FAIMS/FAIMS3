@@ -16,6 +16,7 @@ import {registerClient} from '@faims3/data-model';
 import type {Express} from 'express';
 import {assertLocalStartupConfig, config} from './buildconfig';
 import {getDataDb} from './couchdb';
+import {startOriginalStoreSweep} from './couchdb/mapAssets/originalStoreSweep';
 import {runStartupMigrations} from './couchdb/startupMigrations';
 import {createHealthApp} from './healthApp';
 
@@ -65,6 +66,7 @@ const startup = async () => {
 
   const {attachFullApi} = await import('./expressSetup.js');
   attachFullApi(app);
+  startOriginalStoreSweep();
   console.log('COUCHDB_INTERNAL_URL', config.couchdbInternalUrl);
   console.log('CONDUCTOR_PUBLIC_URL', config.conductorPublicUrl);
   console.log(

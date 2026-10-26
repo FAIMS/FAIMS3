@@ -390,10 +390,25 @@ export const MapAssetFieldsSchema = z.object({
   /**
    * Epoch ms when a spatial worker claimed this asset (`status` is then
    * `processing`). Absent on `pending`. This is the claim token. Another
-   * worker may retry when `updatedAt` (last stage/progress write) is older
-   * than the claim timeout.
+   * worker may retry when `processingHeartbeatMs` (last processing write)
+   * is older than the claim timeout.
    */
   processingStartedAt: z.number().optional(),
+  /**
+   * Epoch ms of the last processing write. Set on the first processing
+   * touch and refreshed on later claim, stage, and progress writes.
+   * Stale-claim recovery uses this, not `updatedAt`. Cleared when the
+   * job reaches `ready` or `failed`, or the file is replaced.
+   */
+  processingHeartbeatMs: z.number().optional(),
+  /**
+   * Epoch ms when this original-file upload began (create or replace).
+   * The abandoned-original sweep clocks from this, not `updatedAt`, so a
+   * rename during a stuck upload does not reset the timeout. Absent on
+   * documents written before this field existed; those fall back to
+   * `createdAt`.
+   */
+  originalUploadStartedMs: z.number().optional(),
   /**
    * How many times a process has claimed this upload. Counts crashes, not
    * GDAL errors (those set `failed` immediately). Reset when the file is replaced.
@@ -425,8 +440,29 @@ export const MapAssetFieldsSchema = z.object({
   tileSize: z.number().int().min(64).max(512).optional(),
   defaultStyle: MapAssetStyleSchema,
   createdAt: z.number(),
+  /**
+   * Last user-facing document change (create, rename, replace, ready/failed).
+   * Listing sort uses this. Processing stage/progress writes do not bump it.
+   */
   updatedAt: z.number(),
 });
+
+/**
+ * Latest write used to prefer one in-memory snapshot over another.
+ * Listing sort uses `updatedAt` only; this includes the processing
+ * heartbeat so a progress poll is not treated as older than a list row
+ * with the same `updatedAt`.
+ */
+export function mapAssetSnapshotMs(asset: {
+  updatedAt: number;
+  processingHeartbeatMs?: number;
+}): number {
+  const heartbeat = asset.processingHeartbeatMs;
+  if (heartbeat !== undefined && Number.isFinite(heartbeat)) {
+    return Math.max(asset.updatedAt, heartbeat);
+  }
+  return asset.updatedAt;
+}
 export type MapAssetFields = z.infer<typeof MapAssetFieldsSchema>;
 
 export const ExistingMapAssetSchema = CouchExistingDocumentSchema.extend(

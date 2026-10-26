@@ -3,16 +3,20 @@ import {beforeAll, beforeEach, describe, expect, it, vi} from 'vitest';
 import {getMapAssetsDB} from '../src/couchdb';
 import {
   MAP_ASSET_ORIGINAL_STORE_MAX_ATTEMPTS,
+  MAP_ASSET_ORIGINAL_STORE_TIMEOUT_MS,
+  MAP_ASSET_ORIGINAL_STORE_TIMEOUT_REASON,
   MAP_ASSET_ORIGINALS_MISSING_REASON,
   MAP_ASSET_PROCESSING_EXHAUSTED_REASON,
   MAP_ASSET_PROCESSING_MAX_ATTEMPTS,
   MAP_ASSET_PROCESSING_USER_HINT,
   createMapAsset,
   deleteMapAsset,
+  failStaleOriginalStores,
   findUnclaimedSpatialJob,
   getMapAsset,
   mapAssetIsClaimable,
   mapAssetOriginalStoreRetryPhase,
+  originalStoreIsTimedOut,
   processMapAsset,
   replaceMapAssetFiles,
   storeOriginalsFromStaging,
@@ -20,6 +24,7 @@ import {
   summarizeSpatialBacklog,
   updateMapAssetDetails,
 } from '../src/couchdb/mapAssets/store';
+import {attachmentStorageService} from '../src/buildconfig';
 import {resetDatabases} from './mocks';
 
 const normalizeMapUpload = vi.hoisted(() => vi.fn());
@@ -74,6 +79,51 @@ async function clearMapAssetDocs() {
   }
 }
 
+/** Park the next object-store put until `release`, then restore the service. */
+function holdNextAttachmentUpload() {
+  let markStarted: () => void = () => undefined;
+  let releaseUpload: (location: {
+    provider: 's3';
+    resourceUri: string;
+    contentType: string;
+    byteSize: number;
+  }) => void = () => undefined;
+  const started = new Promise<void>(resolve => {
+    markStarted = resolve;
+  });
+  const held = new Promise<{
+    provider: 's3';
+    resourceUri: string;
+    contentType: string;
+    byteSize: number;
+  }>(resolve => {
+    releaseUpload = resolve;
+  });
+  const spy = vi
+    .spyOn(attachmentStorageService, 'upload')
+    .mockImplementation(async ({key, contentType, contentLength}) => {
+      markStarted();
+      const released = await held;
+      return {
+        provider: 's3',
+        resourceUri: released.resourceUri || `s3://us-east-1/bucket/${key}`,
+        contentType: contentType || released.contentType,
+        byteSize: contentLength ?? released.byteSize,
+      };
+    });
+  return {
+    started,
+    release: () =>
+      releaseUpload({
+        provider: 's3',
+        resourceUri: 's3://us-east-1/bucket/stale-original',
+        contentType: 'application/octet-stream',
+        byteSize: 2,
+      }),
+    restore: () => spy.mockRestore(),
+  };
+}
+
 describe('map asset processing claim', () => {
   it('treats pending and stale processing as claimable, and a fresh claim as held', () => {
     expect(mapAssetIsClaimable({status: 'pending'}, T0, CLAIM_TIMEOUT_MS)).toBe(
@@ -84,7 +134,7 @@ describe('map asset processing claim', () => {
     ).toBe(true);
     expect(
       mapAssetIsClaimable(
-        {status: 'processing', updatedAt: T0 - CLAIM_TIMEOUT_MS},
+        {status: 'processing', processingHeartbeatMs: T0 - CLAIM_TIMEOUT_MS},
         T0,
         CLAIM_TIMEOUT_MS
       )
@@ -93,7 +143,7 @@ describe('map asset processing claim', () => {
       mapAssetIsClaimable(
         {
           status: 'processing',
-          updatedAt: T0 - CLAIM_TIMEOUT_MS + 1,
+          processingHeartbeatMs: T0 - CLAIM_TIMEOUT_MS + 1,
         },
         T0,
         CLAIM_TIMEOUT_MS
@@ -104,7 +154,7 @@ describe('map asset processing claim', () => {
         {
           status: 'processing',
           processingStartedAt: T0 - CLAIM_TIMEOUT_MS,
-          updatedAt: T0,
+          processingHeartbeatMs: T0,
         },
         T0,
         CLAIM_TIMEOUT_MS
@@ -115,7 +165,7 @@ describe('map asset processing claim', () => {
         {
           status: 'processing',
           processingStartedAt: T0,
-          updatedAt: T0 - CLAIM_TIMEOUT_MS,
+          processingHeartbeatMs: T0 - CLAIM_TIMEOUT_MS,
         },
         T0,
         CLAIM_TIMEOUT_MS
@@ -123,7 +173,7 @@ describe('map asset processing claim', () => {
     ).toBe(true);
     expect(
       mapAssetIsClaimable(
-        {status: 'ready', updatedAt: T0 - CLAIM_TIMEOUT_MS},
+        {status: 'ready', processingHeartbeatMs: T0 - CLAIM_TIMEOUT_MS},
         T0,
         CLAIM_TIMEOUT_MS
       )
@@ -131,6 +181,73 @@ describe('map asset processing claim', () => {
     expect(mapAssetIsClaimable({status: 'failed'}, T0, CLAIM_TIMEOUT_MS)).toBe(
       false
     );
+  });
+
+  it('treats a pending upload without originals as timed out after 2 hours', () => {
+    const started = T0 - MAP_ASSET_ORIGINAL_STORE_TIMEOUT_MS;
+    expect(
+      originalStoreIsTimedOut(
+        {status: 'pending', originalUploadStartedMs: started},
+        T0
+      )
+    ).toBe(true);
+    expect(
+      originalStoreIsTimedOut(
+        {status: 'pending', originalUploadStartedMs: started + 1},
+        T0
+      )
+    ).toBe(false);
+    expect(
+      originalStoreIsTimedOut(
+        {
+          status: 'pending',
+          originalUploadStartedMs: started,
+          createdAt: started,
+          updatedAt: T0,
+        },
+        T0
+      )
+    ).toBe(true);
+    expect(
+      originalStoreIsTimedOut(
+        {
+          status: 'pending',
+          originalUploadStartedMs: T0,
+          createdAt: started,
+          updatedAt: T0,
+        },
+        T0
+      )
+    ).toBe(false);
+    expect(
+      originalStoreIsTimedOut(
+        {status: 'pending', createdAt: started, updatedAt: T0},
+        T0
+      )
+    ).toBe(true);
+    expect(
+      originalStoreIsTimedOut(
+        {status: 'ready', originalUploadStartedMs: started},
+        T0
+      )
+    ).toBe(false);
+    expect(
+      originalStoreIsTimedOut(
+        {
+          status: 'pending',
+          originalUploadStartedMs: started,
+          storedAttachments: {
+            original: {
+              provider: 's3',
+              resourceUri: 's3://bucket/original',
+              contentType: 'application/geo+json',
+              byteSize: 2,
+            },
+          },
+        },
+        T0
+      )
+    ).toBe(false);
   });
 });
 
@@ -157,6 +274,8 @@ describe('map asset original upload', () => {
       asset._id
     );
     expect(finished.storedAttachments?.normalized).toBeUndefined();
+    expect(finished.processingHeartbeatMs).toEqual(expect.any(Number));
+    expect(finished.updatedAt).toBe(asset.updatedAt);
     expect(normalizeMapUpload).not.toHaveBeenCalled();
     expect(await findUnclaimedSpatialJob({now: () => T0})).toBe(asset._id);
   });
@@ -264,6 +383,75 @@ describe('map asset original upload', () => {
     expect(MAP_ASSET_ORIGINAL_STORE_MAX_ATTEMPTS).toBe(3);
   });
 
+  it('fails a pending upload with no originals after the 2 hour timeout', async () => {
+    const asset = await createPendingAsset();
+    const started = T0 - MAP_ASSET_ORIGINAL_STORE_TIMEOUT_MS;
+    await getMapAssetsDB().put({
+      ...asset,
+      createdAt: started,
+      updatedAt: started,
+      originalUploadStartedMs: started,
+    });
+
+    expect(await failStaleOriginalStores({now: () => T0})).toBe(1);
+
+    const failed = await getMapAsset(asset._id);
+    expect(failed.status).toBe('failed');
+    expect(failed.failureReason).toBe(MAP_ASSET_ORIGINAL_STORE_TIMEOUT_REASON);
+    expect(failed.processingStage).toBeUndefined();
+    expect(
+      await findUnclaimedSpatialJob({
+        now: () => T0,
+        claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      })
+    ).toBeUndefined();
+
+    const replaced = await replaceMapAssetFiles({
+      assetId: failed._id,
+      files: [{filename: 'layer.geojson', bytes: Buffer.from('{}')}],
+      primaryFilename: 'layer.geojson',
+    });
+    expect(replaced.status).toBe('pending');
+    expect(replaced.failureReason).toBeUndefined();
+    expect(replaced.createdAt).toBe(started);
+    expect(replaced.originalUploadStartedMs).toBeGreaterThan(started);
+    expect(await failStaleOriginalStores({now: () => T0})).toBe(0);
+    expect((await getMapAsset(replaced._id)).status).toBe('pending');
+  });
+
+  it('does not reset the original-upload timeout when the layer is renamed', async () => {
+    const asset = await createPendingAsset();
+    const started = T0 - MAP_ASSET_ORIGINAL_STORE_TIMEOUT_MS;
+    await getMapAssetsDB().put({
+      ...asset,
+      createdAt: started,
+      updatedAt: started,
+      originalUploadStartedMs: started,
+    });
+    const renamed = await updateMapAssetDetails({
+      assetId: asset._id,
+      name: 'Renamed',
+      description: '',
+    });
+    expect(renamed.updatedAt).toBeGreaterThan(started);
+    expect(renamed.originalUploadStartedMs).toBe(started);
+    expect(await failStaleOriginalStores({now: () => T0})).toBe(1);
+    expect((await getMapAsset(asset._id)).status).toBe('failed');
+  });
+
+  it('does not fail a fresh upload or one that already stored originals', async () => {
+    const pending = await createPendingAsset();
+    const stored = await createStoredAsset();
+    await getMapAssetsDB().put({
+      ...(await getMapAsset(stored._id)),
+      updatedAt: T0 - MAP_ASSET_ORIGINAL_STORE_TIMEOUT_MS,
+    });
+
+    expect(await failStaleOriginalStores({now: () => T0})).toBe(0);
+    expect((await getMapAsset(pending._id)).status).toBe('pending');
+    expect((await getMapAsset(stored._id)).status).toBe('pending');
+  });
+
   it('does not fail an asset that was deleted during the original upload', async () => {
     const asset = await createPendingAsset();
     await deleteMapAsset(asset._id);
@@ -283,6 +471,116 @@ describe('map asset original upload', () => {
     const finished = await getMapAsset(asset._id);
     expect(finished.processingStage).toBe('queued');
     expect(finished.processingProgress).toBeUndefined();
+  });
+
+  it('marks the asset failed when the live original upload exceeds the timeout', async () => {
+    const asset = await createPendingAsset();
+    let resolveStore: (value: boolean) => void = () => undefined;
+    const store = vi.fn(
+      () =>
+        new Promise<boolean>(resolve => {
+          resolveStore = resolve;
+        })
+    );
+
+    await storeOriginalsFromStagingWithRetry(asset._id, {
+      timeoutMs: 30,
+      store,
+      delayMs: 0,
+    });
+
+    const failed = await getMapAsset(asset._id);
+    expect(failed.status).toBe('failed');
+    expect(failed.failureReason).toBe(MAP_ASSET_ORIGINAL_STORE_TIMEOUT_REASON);
+    expect(failed.processingStage).toBeUndefined();
+    resolveStore(true);
+    expect((await getMapAsset(asset._id)).status).toBe('failed');
+    expect((await getMapAsset(asset._id)).storedAttachments).toBeUndefined();
+  });
+
+  it('does not write originals onto an asset that failed during the object-store put', async () => {
+    const asset = await createPendingAsset();
+    const upload = holdNextAttachmentUpload();
+    const storing = storeOriginalsFromStaging(asset._id);
+    await upload.started;
+
+    await getMapAssetsDB().put({
+      ...(await getMapAsset(asset._id)),
+      status: 'failed',
+      failureReason: MAP_ASSET_ORIGINAL_STORE_TIMEOUT_REASON,
+      processingStage: undefined,
+      processingProgress: undefined,
+    });
+    upload.release();
+
+    expect(await storing).toBe(false);
+    const latest = await getMapAsset(asset._id);
+    expect(latest.status).toBe('failed');
+    expect(latest.storedAttachments).toBeUndefined();
+    upload.restore();
+  });
+
+  it('does not write a late original put onto a replaced upload or delete its staging', async () => {
+    const asset = await createPendingAsset();
+    const upload = holdNextAttachmentUpload();
+    const storing = storeOriginalsFromStaging(asset._id);
+    await upload.started;
+
+    await getMapAssetsDB().put({
+      ...(await getMapAsset(asset._id)),
+      status: 'failed',
+      failureReason: MAP_ASSET_ORIGINAL_STORE_TIMEOUT_REASON,
+      processingStage: undefined,
+      processingProgress: undefined,
+    });
+    const replaced = await replaceMapAssetFiles({
+      assetId: asset._id,
+      files: [
+        {
+          filename: 'layer.geojson',
+          bytes: Buffer.from('{"type":"FeatureCollection"}'),
+        },
+      ],
+      primaryFilename: 'layer.geojson',
+    });
+    expect(replaced.originalUploadStartedMs).not.toBe(
+      asset.originalUploadStartedMs
+    );
+    upload.release();
+
+    expect(await storing).toBe(false);
+    upload.restore();
+
+    const latest = await getMapAsset(replaced._id);
+    expect(latest.status).toBe('pending');
+    expect(latest.processingStage).toBe('uploading');
+    expect(latest.storedAttachments).toBeUndefined();
+    expect(await storeOriginalsFromStaging(replaced._id)).toBe(true);
+    expect(
+      (await getMapAsset(replaced._id)).storedAttachments?.original?.provider
+    ).toBe('s3');
+  });
+
+  it('still stores originals after a rename during the object-store put', async () => {
+    const asset = await createPendingAsset();
+    const upload = holdNextAttachmentUpload();
+    const storing = storeOriginalsFromStaging(asset._id);
+    await upload.started;
+
+    await updateMapAssetDetails({
+      assetId: asset._id,
+      name: 'Renamed',
+      description: '',
+    });
+    upload.release();
+
+    expect(await storing).toBe(true);
+    upload.restore();
+    const latest = await getMapAsset(asset._id);
+    expect(latest.name).toBe('Renamed');
+    expect(latest.originalUploadStartedMs).toBe(asset.originalUploadStartedMs);
+    expect(latest.storedAttachments?.original?.provider).toBe('s3');
+    expect(latest.processingStage).toBe('queued');
   });
 });
 
@@ -307,7 +605,9 @@ describe('map asset worker processing', () => {
     expect(finished.status).toBe('ready');
     expect(finished.processingAttempts).toBe(1);
     expect(finished.processingStartedAt).toBeUndefined();
+    expect(finished.processingHeartbeatMs).toBeUndefined();
     expect(finished.processingStage).toBeUndefined();
+    expect(finished.updatedAt).toBe(T0);
     expect(finished.storedAttachments?.original?.provider).toBe('s3');
     expect(finished.storedAttachments?.normalized?.provider).toBe('s3');
     expect(normalizeMapUpload).toHaveBeenCalledOnce();
@@ -320,7 +620,7 @@ describe('map asset worker processing', () => {
       status: 'processing',
       processingStartedAt: T0 - CLAIM_TIMEOUT_MS,
       processingAttempts: MAP_ASSET_PROCESSING_MAX_ATTEMPTS,
-      updatedAt: T0 - CLAIM_TIMEOUT_MS,
+      processingHeartbeatMs: T0 - CLAIM_TIMEOUT_MS,
     });
 
     await processMapAsset(asset._id, {
@@ -478,6 +778,7 @@ describe('map asset worker processing', () => {
     expect(replaced.processingStage).toBe('uploading');
     expect(replaced.processingAttempts).toBeUndefined();
     expect(replaced.processingStartedAt).toBeUndefined();
+    expect(replaced.processingHeartbeatMs).toBeUndefined();
     expect(replaced.failureReason).toBeUndefined();
     expect(replaced.storedAttachments).toBeUndefined();
 
@@ -569,6 +870,8 @@ describe('map asset worker processing', () => {
         phase: 'Warping',
         percent: 22.5,
       });
+      expect(during.processingHeartbeatMs).toBe(T0);
+      expect(during.updatedAt).toBe(asset.updatedAt);
       return normalizedFixture();
     });
     await processMapAsset(asset._id, {
@@ -621,7 +924,7 @@ describe('map asset worker processing', () => {
       status: 'processing',
       processingStartedAt: T0,
       processingAttempts: 1,
-      updatedAt: T0,
+      processingHeartbeatMs: T0,
     });
     const staged = await createPendingAsset();
     expect(staged.status).toBe('pending');
@@ -658,7 +961,7 @@ describe('map asset worker processing', () => {
       status: 'processing',
       processingStartedAt: T0,
       processingAttempts: 1,
-      updatedAt: T0,
+      processingHeartbeatMs: T0,
     });
     expect(
       await summarizeSpatialBacklog({
@@ -676,8 +979,36 @@ describe('map asset worker processing', () => {
       processingStartedAt: T0,
       processingAttempts: 1,
       processingStage: 'tiling-vectors',
-      updatedAt: T0 - CLAIM_TIMEOUT_MS,
+      processingHeartbeatMs: T0 - CLAIM_TIMEOUT_MS,
     });
+    expect(
+      await findUnclaimedSpatialJob({
+        now: () => T0,
+        claimTimeoutMs: CLAIM_TIMEOUT_MS,
+      })
+    ).toBe(asset._id);
+  });
+
+  it('does not treat a rename as a processing heartbeat', async () => {
+    const asset = await createStoredAsset();
+    const createdUpdatedAt = asset.updatedAt;
+    await getMapAssetsDB().put({
+      ...asset,
+      status: 'processing',
+      processingStartedAt: T0,
+      processingAttempts: 1,
+      processingStage: 'tiling-vectors',
+      processingHeartbeatMs: T0 - CLAIM_TIMEOUT_MS,
+    });
+    const renamed = await updateMapAssetDetails({
+      assetId: asset._id,
+      name: 'Renamed',
+      description: 'updated',
+    });
+    expect(renamed.name).toBe('Renamed');
+    expect(renamed.updatedAt).toBeGreaterThan(createdUpdatedAt);
+    expect(renamed.processingHeartbeatMs).toBe(T0 - CLAIM_TIMEOUT_MS);
+    expect(mapAssetIsClaimable(renamed, T0, CLAIM_TIMEOUT_MS)).toBe(true);
     expect(
       await findUnclaimedSpatialJob({
         now: () => T0,

@@ -29,6 +29,7 @@ import {
   mapAssetLinkCount,
   mapAssetProcessingStageLabel,
   mapAssetProcessingStatusText,
+  mapAssetSnapshotMs,
   PostCreateTeamInputSchema,
   PostCreateTemplateInputSchema,
   PostMapAssetLinkInputSchema,
@@ -348,6 +349,13 @@ describe('map layer schemas', () => {
       })
     ).toBe('Building vector tiles — Reordering geometry 45%');
     expect(mapAssetProcessingStatusText({})).toBeUndefined();
+    expect(mapAssetSnapshotMs({updatedAt: 10})).toBe(10);
+    expect(mapAssetSnapshotMs({updatedAt: 10, processingHeartbeatMs: 20})).toBe(
+      20
+    );
+    expect(mapAssetSnapshotMs({updatedAt: 30, processingHeartbeatMs: 20})).toBe(
+      30
+    );
   });
 
   it('accepts storedAttachments object-store metadata on an existing asset', () => {

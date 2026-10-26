@@ -340,24 +340,76 @@ async function putOriginalFilesFromDisk({
 }
 
 /**
+ * Why an original-upload write must not touch this document. `undefined`
+ * means the job is still the live upload.
+ */
+function originalStoreWriteSkipReason(
+  latest: {
+    status: string;
+    originalUploadStartedMs?: number;
+    createdAt?: number;
+    storedAttachments?: ExistingMapAsset['storedAttachments'];
+  },
+  originalUploadStartedMs: number | undefined,
+  now: number
+): string | undefined {
+  if (!isMapAssetInProgress(latest.status)) {
+    return `status is ${latest.status}`;
+  }
+  if (originalStoreIsTimedOut(latest, now)) {
+    return 'original upload timed out';
+  }
+  if (
+    originalUploadStartedMs !== undefined &&
+    latest.originalUploadStartedMs !== originalUploadStartedMs
+  ) {
+    return 'original upload was replaced';
+  }
+  return undefined;
+}
+
+/**
  * Merge new attachment locations onto the asset document, retrying Couch
- * conflicts. A lost processing claim (`claimStartedAt` no longer matches)
- * is a no-op so a newer worker is not overwritten.
+ * conflicts. A lost processing claim, a failed/timed-out original upload,
+ * or a replace (`originalUploadStartedMs` no longer matches) is a no-op so
+ * a later job is not overwritten.
  */
 async function mergeStoredAttachments(
   assetId: string,
   locations: Record<string, StoredAttachmentLocation>,
-  claimStartedAt?: number
-): Promise<void> {
+  options?: {
+    claimStartedAt?: number;
+    originalUploadStartedMs?: number;
+  }
+): Promise<boolean> {
   const db = getMapAssetsDB();
+  const claimStartedAt = options?.claimStartedAt;
+  const originalUploadStartedMs = options?.originalUploadStartedMs;
   for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
     const latest = await getMapAsset(assetId);
-    if (
-      claimStartedAt !== undefined &&
-      (latest.status !== 'processing' ||
-        latest.processingStartedAt !== claimStartedAt)
-    ) {
-      return;
+    if (claimStartedAt !== undefined) {
+      if (
+        latest.status !== 'processing' ||
+        latest.processingStartedAt !== claimStartedAt
+      ) {
+        return false;
+      }
+    } else {
+      const skipReason = originalStoreWriteSkipReason(
+        latest,
+        originalUploadStartedMs,
+        Date.now()
+      );
+      if (skipReason) {
+        logMapAssetProcessing({
+          event: 'processing.originals.store',
+          outcome: 'skipped',
+          assetId,
+          filename: latest.originalFilename,
+          reason: skipReason,
+        });
+        return false;
+      }
     }
     try {
       await db.put(
@@ -373,10 +425,10 @@ async function mergeStoredAttachments(
                 processingProgress: undefined,
               }
             : {}),
-          updatedAt: Date.now(),
+          processingHeartbeatMs: Date.now(),
         })
       );
-      return;
+      return true;
     } catch (error) {
       if (!isConflict(error)) {
         throw error;
@@ -447,6 +499,7 @@ export async function createMapAsset({
     defaultStyle: style ?? DEFAULT_MAP_ASSET_STYLE,
     createdAt: now,
     updatedAt: now,
+    originalUploadStartedMs: now,
   };
   const created = await db.put({_id: assetId, ...fields});
   try {
@@ -523,6 +576,7 @@ export async function replaceMapAssetFiles({
     .filter(filename => filename !== primaryFilename);
   const previousStored = current.storedAttachments;
   const db = getMapAssetsDB();
+  const now = Date.now();
   await db.put(
     omitUndefinedFields({
       ...current,
@@ -541,9 +595,11 @@ export async function replaceMapAssetFiles({
       byteSize: 0,
       processingStartedAt: undefined,
       processingAttempts: undefined,
+      processingHeartbeatMs: undefined,
       processingStage: 'uploading',
       processingProgress: undefined,
-      updatedAt: Date.now(),
+      originalUploadStartedMs: now,
+      updatedAt: now,
     })
   );
   try {
@@ -646,7 +702,8 @@ async function downloadOriginalsToStaging(
 
 /**
  * A processing job with no stage or progress write for this long may be
- * claimed again. Measured from `updatedAt`, not claim start.
+ * claimed again. Measured from `processingHeartbeatMs`, not claim start
+ * or `updatedAt`.
  */
 export const MAP_ASSET_PROCESSING_CLAIM_TIMEOUT_MS = 2 * 60 * 60 * 1000;
 /**
@@ -662,6 +719,14 @@ export const MAP_ASSET_PROCESSING_EXHAUSTED_REASON = `Map layer processing was i
 export const MAP_ASSET_ORIGINAL_STORE_MAX_ATTEMPTS = 3;
 /** Pause between original-upload retries so a short S3 blip can clear. */
 export const MAP_ASSET_ORIGINAL_STORE_RETRY_DELAY_MS = 2_000;
+/**
+ * Wall-clock limit for the API-process original upload after the HTTP 201.
+ * The live upload reports `failed` itself when this elapses. A nodemon
+ * reload, deploy, or crash abandons that work; the sweep marks those
+ * `failed` so replace is available.
+ */
+export const MAP_ASSET_ORIGINAL_STORE_TIMEOUT_MS = 2 * 60 * 60 * 1000;
+export const MAP_ASSET_ORIGINAL_STORE_TIMEOUT_REASON = `The original map files were not stored within 2 hours. ${MAP_ASSET_PROCESSING_USER_HINT}`;
 
 /** Live phase shown after an original-upload attempt fails and another remains. */
 export function mapAssetOriginalStoreRetryPhase(
@@ -671,14 +736,19 @@ export function mapAssetOriginalStoreRetryPhase(
   return `Failed uploading asset, trying again (attempt ${attempt}/${maxAttempts})`;
 }
 
-/** Clock, retry, and store hooks for the fire-and-forget original upload. */
+/** Clock, retry, timeout, and store hooks for the fire-and-forget original upload. */
 export type OriginalStoreRuntime = {
   now?: () => number;
   store?: (assetId: string) => Promise<boolean>;
   maxAttempts?: number;
   delayMs?: number;
   sleep?: (ms: number) => Promise<void>;
+  /** Wall-clock limit for this upload. Defaults to the 2-hour module const. */
+  timeoutMs?: number;
 };
+
+/** Clock and timeout for the abandoned-original sweep. */
+export type OriginalStoreSweepRuntime = OriginalStoreRuntime;
 
 const PROCESSING_CLAIM_RETRIES = 5;
 
@@ -702,6 +772,57 @@ function sleepMs(ms: number): Promise<void> {
   return new Promise(resolve => {
     setTimeout(resolve, ms);
   });
+}
+
+/** Thrown when the live original upload exceeds its wall-clock limit. */
+class OriginalStoreTimeoutError extends Error {
+  constructor() {
+    super(MAP_ASSET_ORIGINAL_STORE_TIMEOUT_REASON);
+    this.name = 'OriginalStoreTimeoutError';
+  }
+}
+
+/** True when the live original upload hit its own deadline. */
+function isOriginalStoreTimeout(error: unknown): boolean {
+  return (
+    error instanceof OriginalStoreTimeoutError ||
+    (error instanceof Error &&
+      error.message === MAP_ASSET_ORIGINAL_STORE_TIMEOUT_REASON)
+  );
+}
+
+/**
+ * Reject `work` if it has not settled within `timeoutMs`. The loser is
+ * not cancelled; callers must treat a late finish as stale.
+ */
+async function withDeadline<T>(
+  work: Promise<T>,
+  timeoutMs: number
+): Promise<T> {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    void work.catch(() => undefined);
+    throw new OriginalStoreTimeoutError();
+  }
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      work,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new OriginalStoreTimeoutError());
+        }, timeoutMs);
+      }),
+    ]);
+  } catch (error) {
+    if (isOriginalStoreTimeout(error)) {
+      void work.catch(() => undefined);
+    }
+    throw error;
+  } finally {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+    }
+  }
 }
 
 /** Stale-claim window; injectable for tests. */
@@ -776,15 +897,19 @@ function omitUndefinedFields<T extends object>(doc: T): T {
 }
 
 /**
- * Last time processing state was written (`updatedAt`, else claim start).
- * Used to decide whether a `processing` job is stale enough to reclaim.
+ * Last time processing state was written (`processingHeartbeatMs`, else
+ * claim start). Used to decide whether a `processing` job is stale enough
+ * to reclaim. `updatedAt` is a document-level stamp and is ignored here.
  */
 function lastProcessingStateChangeAt(asset: {
-  updatedAt?: number;
+  processingHeartbeatMs?: number;
   processingStartedAt?: number;
 }): number | undefined {
-  if (asset.updatedAt !== undefined && Number.isFinite(asset.updatedAt)) {
-    return asset.updatedAt;
+  if (
+    asset.processingHeartbeatMs !== undefined &&
+    Number.isFinite(asset.processingHeartbeatMs)
+  ) {
+    return asset.processingHeartbeatMs;
   }
   if (
     asset.processingStartedAt !== undefined &&
@@ -797,7 +922,7 @@ function lastProcessingStateChangeAt(asset: {
 
 /**
  * When an unclaimed job started waiting for a worker. Prefer `updatedAt`
- * (originals landed / last queue write) over `createdAt` (upload start).
+ * (create / replace / rename) over `createdAt` (upload start).
  */
 function unclaimedWaitingSince(asset: {
   updatedAt?: number;
@@ -815,13 +940,13 @@ function unclaimedWaitingSince(asset: {
 /**
  * True when a worker may claim this asset: it is `pending`, or `processing`
  * with no live claim (the previous worker died, or a legacy unclaimed job).
- * A live claim is stale once `updatedAt` (last stage/progress write) is
- * older than `timeoutMs`.
+ * A live claim is stale once `processingHeartbeatMs` (last processing
+ * write) is older than `timeoutMs`.
  */
 export function mapAssetIsClaimable(
   asset: {
     status: string;
-    updatedAt?: number;
+    processingHeartbeatMs?: number;
     processingStartedAt?: number;
   },
   now: number,
@@ -892,6 +1017,7 @@ async function claimMapAssetProcessing(
             status: 'failed' as const,
             failureReason: MAP_ASSET_PROCESSING_EXHAUSTED_REASON,
             processingStartedAt: undefined,
+            processingHeartbeatMs: undefined,
             processingStage: undefined,
             processingProgress: undefined,
             updatedAt: now,
@@ -923,7 +1049,7 @@ async function claimMapAssetProcessing(
         processingAttempts: attempts + 1,
         processingStage: 'downloading',
         processingProgress: undefined,
-        updatedAt: now,
+        processingHeartbeatMs: now,
       });
       logMapAssetProcessing({
         event: 'processing.claim',
@@ -1085,7 +1211,12 @@ export async function storeOriginalsFromStaging(
     files: staged,
     primaryFilename: asset.originalFilename,
   });
-  await mergeStoredAttachments(assetId, locations);
+  const merged = await mergeStoredAttachments(assetId, locations, {
+    originalUploadStartedMs: asset.originalUploadStartedMs,
+  });
+  if (!merged) {
+    return false;
+  }
   await cleanupStaging(assetId);
   return true;
 }
@@ -1114,7 +1245,8 @@ async function reportOriginalStoreRetry(
   assetId: string,
   attempt: number,
   maxAttempts: number,
-  runtime?: OriginalStoreRuntime
+  runtime?: OriginalStoreRuntime,
+  originalUploadStartedMs?: number
 ): Promise<void> {
   const progress: MapAssetProcessingProgress = {
     phase: mapAssetOriginalStoreRetryPhase(attempt, maxAttempts),
@@ -1137,6 +1269,15 @@ async function reportOriginalStoreRetry(
       ) {
         return;
       }
+      if (
+        originalStoreWriteSkipReason(
+          latest,
+          originalUploadStartedMs,
+          processingNow(runtime)
+        )
+      ) {
+        return;
+      }
       if (progressUnchanged(latest, progress)) {
         return;
       }
@@ -1145,7 +1286,7 @@ async function reportOriginalStoreRetry(
           ...latest,
           processingStage: latest.processingStage ?? 'uploading',
           processingProgress: progress,
-          updatedAt: processingNow(runtime),
+          processingHeartbeatMs: processingNow(runtime),
         });
         logMapAssetProcessing({
           event: 'processing.originals.store',
@@ -1178,11 +1319,33 @@ async function reportOriginalStoreRetry(
 async function markOriginalStoreFailed(
   assetId: string,
   error: unknown,
-  runtime?: OriginalStoreRuntime
+  runtime?: OriginalStoreRuntime,
+  originalUploadStartedMs?: number
 ): Promise<void> {
   const maxAttempts =
     runtime?.maxAttempts ?? MAP_ASSET_ORIGINAL_STORE_MAX_ATTEMPTS;
-  const reason = formatOriginalStoreFailureReason(error, maxAttempts);
+  await commitOriginalStoreFailure(
+    assetId,
+    formatOriginalStoreFailureReason(error, maxAttempts),
+    runtime,
+    {attempt: maxAttempts, maxAttempts, originalUploadStartedMs}
+  );
+}
+
+/**
+ * Write `failed` for an original upload that never reached object storage.
+ * A finished or deleted asset is left alone. Couch conflicts are retried.
+ */
+async function commitOriginalStoreFailure(
+  assetId: string,
+  reason: string,
+  runtime?: OriginalStoreRuntime,
+  logExtra?: {
+    attempt?: number;
+    maxAttempts?: number;
+    originalUploadStartedMs?: number;
+  }
+): Promise<void> {
   const db = getMapAssetsDB();
   for (let write = 0; write < PROCESSING_CLAIM_RETRIES; write++) {
     let latest: ExistingMapAsset;
@@ -1200,6 +1363,12 @@ async function markOriginalStoreFailed(
     ) {
       return;
     }
+    if (
+      logExtra?.originalUploadStartedMs !== undefined &&
+      latest.originalUploadStartedMs !== logExtra.originalUploadStartedMs
+    ) {
+      return;
+    }
     try {
       await db.put(
         omitUndefinedFields({
@@ -1207,6 +1376,7 @@ async function markOriginalStoreFailed(
           status: 'failed' as const,
           failureReason: reason,
           processingStartedAt: undefined,
+          processingHeartbeatMs: undefined,
           processingStage: undefined,
           processingProgress: undefined,
           updatedAt: processingNow(runtime),
@@ -1219,8 +1389,10 @@ async function markOriginalStoreFailed(
         assetId,
         filename: latest.originalFilename,
         reason,
-        attempt: maxAttempts,
-        maxAttempts,
+        ...(logExtra?.attempt !== undefined ? {attempt: logExtra.attempt} : {}),
+        ...(logExtra?.maxAttempts !== undefined
+          ? {maxAttempts: logExtra.maxAttempts}
+          : {}),
       });
       return;
     } catch (caught) {
@@ -1230,6 +1402,56 @@ async function markOriginalStoreFailed(
     }
   }
   throw new Error(`Could not record original-upload failure for ${assetId}.`);
+}
+
+/**
+ * When this original-file upload began. Prefer `originalUploadStartedMs`
+ * (create / replace) over `createdAt` (legacy docs). `updatedAt` is
+ * ignored: a rename must not reset the 2-hour sweep.
+ */
+function originalUploadWaitingSince(asset: {
+  originalUploadStartedMs?: number;
+  createdAt?: number;
+}): number | undefined {
+  if (
+    asset.originalUploadStartedMs !== undefined &&
+    Number.isFinite(asset.originalUploadStartedMs)
+  ) {
+    return asset.originalUploadStartedMs;
+  }
+  if (asset.createdAt !== undefined && Number.isFinite(asset.createdAt)) {
+    return asset.createdAt;
+  }
+  return undefined;
+}
+
+/**
+ * True when this upload has been `pending` without originals past the
+ * timeout. Clocks from `originalUploadStartedMs` (create / replace), not
+ * `updatedAt`, so a rename does not reset the 2-hour sweep.
+ */
+export function originalStoreIsTimedOut(
+  asset: {
+    status: string;
+    originalUploadStartedMs?: number;
+    createdAt?: number;
+    updatedAt?: number;
+    storedAttachments?: ExistingMapAsset['storedAttachments'];
+  },
+  now: number,
+  timeoutMs: number = MAP_ASSET_ORIGINAL_STORE_TIMEOUT_MS
+): boolean {
+  if (!isMapAssetInProgress(asset.status)) {
+    return false;
+  }
+  if (assetHasStoredAttachment(asset, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
+    return false;
+  }
+  const started = originalUploadWaitingSince(asset);
+  if (started === undefined) {
+    return false;
+  }
+  return now - started >= timeoutMs;
 }
 
 /**
@@ -1245,15 +1467,49 @@ export async function storeOriginalsFromStagingWithRetry(
   const delayMs = runtime?.delayMs ?? MAP_ASSET_ORIGINAL_STORE_RETRY_DELAY_MS;
   const store = runtime?.store ?? storeOriginalsFromStaging;
   const sleep = runtime?.sleep ?? sleepMs;
+  const timeoutMs = runtime?.timeoutMs ?? MAP_ASSET_ORIGINAL_STORE_TIMEOUT_MS;
+  const deadlineMs = Date.now() + timeoutMs;
+
+  let originalUploadStartedMs: number | undefined;
+  try {
+    originalUploadStartedMs = (await getMapAsset(assetId))
+      .originalUploadStartedMs;
+  } catch (error) {
+    if (isMissingMapAsset(error)) {
+      return;
+    }
+    throw error;
+  }
+
+  const failTimedOut = () =>
+    commitOriginalStoreFailure(
+      assetId,
+      MAP_ASSET_ORIGINAL_STORE_TIMEOUT_REASON,
+      runtime,
+      {originalUploadStartedMs}
+    );
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const remainingMs = deadlineMs - Date.now();
+    if (remainingMs <= 0) {
+      await failTimedOut();
+      return;
+    }
     try {
-      const stored = await store(assetId);
+      const stored = await withDeadline(store(assetId), remainingMs);
       if (stored) {
         return;
       }
       const latest = await getMapAsset(assetId);
-      if (!isMapAssetInProgress(latest.status)) {
+      const skipReason = originalStoreWriteSkipReason(
+        latest,
+        originalUploadStartedMs,
+        Date.now()
+      );
+      if (skipReason) {
+        if (skipReason === 'original upload timed out') {
+          await failTimedOut();
+        }
         return;
       }
       if (assetHasStoredAttachment(latest, MAP_ASSET_ORIGINAL_ATTACHMENT)) {
@@ -1262,6 +1518,10 @@ export async function storeOriginalsFromStagingWithRetry(
       throw new Error(MAP_ASSET_ORIGINALS_MISSING_REASON);
     } catch (error) {
       if (isMissingMapAsset(error)) {
+        return;
+      }
+      if (isOriginalStoreTimeout(error)) {
+        await failTimedOut();
         return;
       }
       logMapAssetProcessing({
@@ -1273,11 +1533,22 @@ export async function storeOriginalsFromStagingWithRetry(
         maxAttempts,
       });
       if (attempt < maxAttempts) {
-        await reportOriginalStoreRetry(assetId, attempt, maxAttempts, runtime);
+        await reportOriginalStoreRetry(
+          assetId,
+          attempt,
+          maxAttempts,
+          runtime,
+          originalUploadStartedMs
+        );
         await sleep(delayMs);
         continue;
       }
-      await markOriginalStoreFailed(assetId, error, runtime);
+      await markOriginalStoreFailed(
+        assetId,
+        error,
+        runtime,
+        originalUploadStartedMs
+      );
       return;
     }
   }
@@ -1354,7 +1625,7 @@ async function reportProcessingStage(
             ...latest,
             processingStage: stage,
             processingProgress: undefined,
-            updatedAt: processingNow(runtime),
+            processingHeartbeatMs: processingNow(runtime),
           })
         );
         return;
@@ -1441,7 +1712,7 @@ async function reportProcessingProgress(
         await db.put({
           ...latest,
           processingProgress: progress,
-          updatedAt: processingNow(runtime),
+          processingHeartbeatMs: processingNow(runtime),
         });
         logMapAssetProcessing({
           event: 'gdal.command',
@@ -1661,6 +1932,7 @@ export async function processMapAsset(
           tileSize: normalized.tileSize,
           failureReason: undefined,
           processingStartedAt: undefined,
+          processingHeartbeatMs: undefined,
           processingStage: undefined,
           processingProgress: undefined,
           updatedAt: processingNow(runtime),
@@ -1717,6 +1989,7 @@ export async function processMapAsset(
           status: 'failed' as const,
           failureReason: message,
           processingStartedAt: undefined,
+          processingHeartbeatMs: undefined,
           processingStage: undefined,
           processingProgress: undefined,
           updatedAt: processingNow(runtime),
@@ -1793,6 +2066,41 @@ async function listInProgressMapAssetIds(): Promise<string[]> {
     }
   }
   return ids;
+}
+
+/**
+ * Mark `pending` uploads with no stored originals that have been waiting
+ * longer than {@link MAP_ASSET_ORIGINAL_STORE_TIMEOUT_MS}, measured from
+ * `originalUploadStartedMs` (create / replace; rename is ignored). The
+ * API-process original upload is fire-and-forget; a crash after the 201
+ * leaves these stuck until this sweep. Jobs that already have originals
+ * are left for the worker. Returns how many assets were marked failed.
+ */
+export async function failStaleOriginalStores(
+  runtime?: OriginalStoreSweepRuntime
+): Promise<number> {
+  const now = processingNow(runtime);
+  const timeoutMs = runtime?.timeoutMs ?? MAP_ASSET_ORIGINAL_STORE_TIMEOUT_MS;
+  let failed = 0;
+  for (const assetId of await listInProgressMapAssetIds()) {
+    try {
+      const asset = await getMapAsset(assetId);
+      if (!originalStoreIsTimedOut(asset, now, timeoutMs)) {
+        continue;
+      }
+      await commitOriginalStoreFailure(
+        assetId,
+        MAP_ASSET_ORIGINAL_STORE_TIMEOUT_REASON,
+        runtime
+      );
+      failed += 1;
+    } catch (error) {
+      if (!isMissingMapAsset(error)) {
+        throw error;
+      }
+    }
+  }
+  return failed;
 }
 
 /**

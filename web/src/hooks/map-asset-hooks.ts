@@ -6,6 +6,7 @@ import {
   isMapAssetInProgress,
   mapAssetKindLabel,
   mapAssetProcessingStatusText,
+  mapAssetSnapshotMs,
   type ExistingMapAsset,
   type GetMapAssetListResponse,
   type GetMapAssetResponse,
@@ -100,7 +101,10 @@ export function upsertAssetInList(
     };
   }
   const current = old.assets[index];
-  if (current === asset || current.updatedAt > asset.updatedAt) {
+  if (
+    current === asset ||
+    mapAssetSnapshotMs(current) > mapAssetSnapshotMs(asset)
+  ) {
     return old;
   }
   const assets = [...old.assets];
@@ -142,7 +146,7 @@ export function seedMapAssetDetailsFromList(
   for (const asset of assets) {
     const key = mapAssetDetailQueryKey(user, asset._id);
     const existing = queryClient.getQueryData<ExistingMapAsset>(key);
-    if (existing && existing.updatedAt >= asset.updatedAt) {
+    if (existing && mapAssetSnapshotMs(existing) >= mapAssetSnapshotMs(asset)) {
       continue;
     }
     queryClient.setQueryData(key, asset);
@@ -159,7 +163,7 @@ export function overlayListWithCachedMapAssets(
     const cached = queryClient.getQueryData<GetMapAssetResponse>(
       mapAssetDetailQueryKey(user, asset._id)
     );
-    return cached && cached.updatedAt >= asset.updatedAt
+    return cached && mapAssetSnapshotMs(cached) >= mapAssetSnapshotMs(asset)
       ? withLinkCount(cached, asset.linkCount)
       : asset;
   });

@@ -7,8 +7,9 @@ export type SpatialBacklog = {
   /** `pending` jobs (or stale `processing`) with originals and no live claim. */
   unclaimed: number;
   /**
-   * Age in ms of the oldest unclaimed job (`updatedAt`, else `createdAt`).
-   * Absent when nothing is waiting for a worker.
+   * Age in ms of the oldest unclaimed job (`updatedAt` of the last
+   * document change, else `createdAt`). Absent when nothing is waiting
+   * for a worker.
    */
   oldestUnclaimedMs?: number;
 };
