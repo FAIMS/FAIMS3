@@ -1487,7 +1487,12 @@ export async function main(
     return 1;
   }
 
-  const configPath = path.resolve(args.config);
+  // Resolve user paths against the directory the command was invoked from,
+  // not the process cwd: `pnpm --filter=... run migrate-aws` executes with
+  // cwd inside library/build-config, but callers pass repo-root-relative
+  // paths. pnpm/npm set INIT_CWD to the invocation directory.
+  const invocationDir = process.env.INIT_CWD ?? process.cwd();
+  const configPath = path.resolve(invocationDir, args.config);
   let oldRaw: unknown;
   try {
     oldRaw = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -1541,7 +1546,7 @@ export async function main(
     return 1;
   }
 
-  const outDir = path.resolve(args.outDir);
+  const outDir = path.resolve(invocationDir, args.outDir);
   const files: Array<{name: string; contents: string; mode: number}> = [
     {
       name: 'core.json',

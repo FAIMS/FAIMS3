@@ -19,11 +19,16 @@ TRACKED_ARTIFACTS=(
 usage() {
   cat <<EOF_USAGE
 Usage:
-  $0 <push|pull> <environment> [options]
+  $0 <push|pull|diff> <environment> [options]
 
 Options:
   --repo-path <path>      Path to an already-cloned private config/match repo
   --config-repo <url>     Git URL of private config/match repo (used if --repo-path is not provided)
+                          If neither is given, the repo for the environment is
+                          looked up in the local cache (.config-repo.json at
+                          the FAIMS3 repo root, gitignored); on first use for
+                          an environment you are prompted for it. An explicit
+                          --repo-path/--config-repo is remembered in the cache.
   --branch <name>         Branch to update (default: main)
   --message <text>        Commit message (default: update config for <environment>)
   --local-root <path>     Local mirror root for the private config repo (default: ${DEFAULT_LOCAL_CONFIG_ROOT})
@@ -39,6 +44,10 @@ Behaviour:
           encrypted to secrets.enc.json when present.
   - pull: Clones or reuses the private repo and mirrors the env folder locally
           to config/<environment>/, decrypting secrets.enc.json when present.
+  - diff: Dry run of push. Shows what a push would change (unified diff for
+          core.json/aws.json, changed key *paths* only for secrets, status
+          for tracked artifacts) and writes nothing. Exit code: 0 = no
+          changes pending, 1 = changes pending, 2 = error.
   - Tracked build artifacts: files generated/mutated by tooling during a
           build or deploy (not config) can be synced between a fixed home in
           this repo and the env folder in the config repo, so resolutions
@@ -114,16 +123,34 @@ SOPS_AGE_KEY before running this script.
 EOF_SOPS
 }
 
+# Run sops with the config repo's .sops.yaml pinned explicitly. Without
+# --config, sops discovers .sops.yaml by walking up from the cwd / file
+# location — neither of which is the config repo for most calls here (the
+# caller runs from the FAIMS3 root; files live in the local mirror or a
+# temp clone), so even a correct repo setup would fail to find recipients.
+sops_cmd() {
+  if [[ -n "${WORK_REPO_PATH:-}" && -f "${WORK_REPO_PATH}/.sops.yaml" ]]; then
+    sops --config "${WORK_REPO_PATH}/.sops.yaml" "$@"
+  else
+    sops "$@"
+  fi
+}
+
 preflight_sops() {
   local repo_path="$1"
   local encrypted_target="$2"
 
   if [[ -f "$encrypted_target" ]]; then
-    if ! sops --decrypt "$encrypted_target" >/dev/null 2>&1; then
+    local decrypt_err
+    decrypt_err="$(mktemp)"
+    if ! sops_cmd --decrypt "$encrypted_target" >/dev/null 2>"$decrypt_err"; then
       echo "Error: cannot decrypt existing target: ${encrypted_target}" >&2
+      sed 's/^/  sops: /' "$decrypt_err" >&2
+      rm -f "$decrypt_err"
       sops_key_help
       exit 1
     fi
+    rm -f "$decrypt_err"
     return
   fi
 
@@ -132,15 +159,118 @@ preflight_sops() {
     echo "Warning: encryption will rely on other sops key configuration." >&2
   fi
 
-  local tmp_probe
-  tmp_probe="$(mktemp)"
-  echo '{}' > "$tmp_probe"
-  if ! sops --encrypt --input-type json --output-type json "$tmp_probe" >/dev/null 2>&1; then
-    rm -f "$tmp_probe"
-    echo "Error: sops encryption preflight failed. Check recipient config (.sops.yaml) and key setup." >&2
+  # Probe with a file NAMED like the real target: creation_rules match on
+  # path_regex (commonly `secrets\.enc\.json$`), so a probe called
+  # `tmp.XXXXXX` in /tmp would match nothing and fail even with a perfect
+  # .sops.yaml.
+  local probe_dir probe_file
+  probe_dir="$(mktemp -d)"
+  probe_file="${probe_dir}/$(basename "$encrypted_target")"
+  echo '{}' > "$probe_file"
+  if ! sops_cmd --encrypt --input-type json --output-type json "$probe_file" >/dev/null 2>"${probe_file}.err"; then
+    echo "Error: sops encryption preflight failed. sops said:" >&2
+    sed 's/^/  /' "${probe_file}.err" >&2
+    rm -rf "$probe_dir"
+    echo "Check recipient config (.sops.yaml at the config repo root) and key setup." >&2
     exit 1
   fi
-  rm -f "$tmp_probe"
+  rm -rf "$probe_dir"
+}
+
+# --- Config-repo cache ------------------------------------------------------
+# .config-repo.json at the FAIMS3 repo root maps environment -> config repo
+# locator (git URL or local clone path), so push/pull don't need
+# --config-repo/--repo-path every time. It holds no secrets (URLs/paths
+# only) and is gitignored. FAIMS_CONFIG_REPO_CACHE overrides the location
+# (used by tests).
+
+CONFIG_REPO_CACHE_FILE="${FAIMS_CONFIG_REPO_CACHE:-${ROOT_DIR}/.config-repo.json}"
+
+cache_get() {
+  local environment="$1"
+  if [[ -f "$CONFIG_REPO_CACHE_FILE" ]]; then
+    jq -r --arg e "$environment" '.[$e] // empty' "$CONFIG_REPO_CACHE_FILE" 2>/dev/null || true
+  fi
+}
+
+cache_set() {
+  local environment="$1"
+  local locator="$2"
+  local tmp_cache
+  tmp_cache="$(mktemp)"
+  if [[ -f "$CONFIG_REPO_CACHE_FILE" ]]; then
+    jq --arg e "$environment" --arg v "$locator" '.[$e] = $v' "$CONFIG_REPO_CACHE_FILE" > "$tmp_cache"
+  else
+    jq -n --arg e "$environment" --arg v "$locator" '{($e): $v}' > "$tmp_cache"
+  fi
+  mv "$tmp_cache" "$CONFIG_REPO_CACHE_FILE"
+}
+
+looks_like_path() {
+  case "$1" in
+    /*|./*|../*|~*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Expand a leading "~" / "~/" to $HOME. Locators stored in the cache or
+# typed at the prompt arrive as literal strings — the shell only expands
+# tildes on words it parses itself, so "~/repo" would otherwise fail the
+# -d test and be handed to git clone as if it were a URL. (~user is left
+# as-is: unsupported, and will fail loudly downstream.)
+expand_home() {
+  case "$1" in
+    "~") printf '%s' "$HOME" ;;
+    "~/"*) printf '%s' "${HOME}/${1#\~/}" ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
+
+# Resolve REPO_PATH / CONFIG_REPO when neither flag was given: cache first,
+# then prompt (and remember the answer). Exits with guidance if no repo can
+# be determined (e.g. non-interactive run with an empty cache).
+resolve_config_repo() {
+  local environment="$1"
+
+  require_tool jq
+
+  if [[ -n "$REPO_PATH" || -n "$CONFIG_REPO" ]]; then
+    # Remember the explicit choice for next time (normalised, ~ expanded).
+    [[ -n "$REPO_PATH" ]] && REPO_PATH="$(expand_home "$REPO_PATH")"
+    cache_set "$environment" "${REPO_PATH:-$CONFIG_REPO}"
+    return
+  fi
+
+  local cached
+  cached="$(expand_home "$(cache_get "$environment")")"
+  if [[ -n "$cached" ]]; then
+    if [[ -d "$cached" ]]; then
+      REPO_PATH="$cached"
+      echo "Using cached config repo for '${environment}': ${cached}"
+      return
+    elif looks_like_path "$cached"; then
+      echo "Cached config repo path for '${environment}' no longer exists: ${cached}" >&2
+      # fall through to prompt
+    else
+      CONFIG_REPO="$cached"
+      echo "Using cached config repo for '${environment}': ${cached}"
+      return
+    fi
+  fi
+
+  local answer=""
+  read -r -p "No config repo known for environment '${environment}'. Enter config repo URL or local clone path: " answer || true
+  if [[ -z "$answer" ]]; then
+    echo "Error: no config repo provided. Pass --config-repo <url> or --repo-path <path> (the answer is cached in ${CONFIG_REPO_CACHE_FILE} for next time)." >&2
+    exit 1
+  fi
+  answer="$(expand_home "$answer")"
+  cache_set "$environment" "$answer"
+  if [[ -d "$answer" ]]; then
+    REPO_PATH="$answer"
+  else
+    CONFIG_REPO="$answer"
+  fi
 }
 
 validate_local_json() {
@@ -243,8 +373,8 @@ mirror_repo_to_local() {
   if [[ -f "$repo_env_dir/secrets.enc.json" ]]; then
     cp "$repo_env_dir/secrets.enc.json" "$local_root/$environment/secrets.enc.json"
     echo "Decrypting secrets.enc.json for environment $environment"
-    if sops --decrypt "$local_root/$environment/secrets.enc.json" >/dev/null 2>&1; then
-      sops --decrypt "$local_root/$environment/secrets.enc.json" > "$local_root/$environment/secrets.json"
+    if sops_cmd --decrypt "$local_root/$environment/secrets.enc.json" >/dev/null 2>&1; then
+      sops_cmd --decrypt "$local_root/$environment/secrets.enc.json" > "$local_root/$environment/secrets.json"
     else
       echo "Error: Failed to decrypt secrets.enc.json for environment $environment, is SOPS installed and configured correctly?" >&2
       exit 1
@@ -271,8 +401,8 @@ write_mirror_after_push() {
   # Mirror encrypted secrets and decrypt it (optional - many envs have none)
   if [[ -f "$repo_env_dir/secrets.enc.json" ]]; then
     cp "$repo_env_dir/secrets.enc.json" "$local_root/$environment/secrets.enc.json"
-    if sops --decrypt "$repo_env_dir/secrets.enc.json" >/dev/null 2>&1; then
-      sops --decrypt "$repo_env_dir/secrets.enc.json" > "$local_root/$environment/secrets.json"
+    if sops_cmd --decrypt "$repo_env_dir/secrets.enc.json" >/dev/null 2>&1; then
+      sops_cmd --decrypt "$repo_env_dir/secrets.enc.json" > "$local_root/$environment/secrets.json"
     fi
   fi
 }
@@ -399,7 +529,7 @@ push_config() {
   # left untouched.
   if [[ "$has_secrets" == true ]]; then
     if [[ -f "$repo_secrets_file" ]]; then
-      if ! sops --decrypt "$repo_secrets_file" > "$tmp_existing_secrets" 2>&1; then
+      if ! sops_cmd --decrypt "$repo_secrets_file" > "$tmp_existing_secrets" 2>&1; then
         echo "Error: cannot decrypt existing remote secrets file: ${repo_secrets_file}" >&2
         sops_key_help
         exit 1
@@ -469,7 +599,11 @@ push_config() {
 
   # Encrypt and update secrets.json (optional)
   if [[ "$secrets_changed" == true ]]; then
-    sops --encrypt --input-type json --output-type json --output "$repo_secrets_file" "$local_secrets_file"
+    # --filename-override: creation_rules match on the filename sops is
+    # told to encrypt. Without it sops matches the INPUT path
+    # (config/<env>/secrets.json), which a normal `secrets\.enc\.json$`
+    # rule can never match.
+    sops_cmd --encrypt --filename-override "$(basename "$repo_secrets_file")" --input-type json --output-type json --output "$repo_secrets_file" "$local_secrets_file"
   fi
 
   pushd "$WORK_REPO_PATH" >/dev/null
@@ -550,6 +684,146 @@ pull_config() {
   echo "Pulled config mirror into ${local_root}/${environment}"
 }
 
+# Prints the dotted scalar key paths whose values differ between two
+# plaintext secret JSON files (local, decrypted-remote). Paths only — never
+# values.
+changed_secret_key_paths() {
+  local local_file="$1"
+  local remote_plain="$2"
+  jq -rn --slurpfile l "$local_file" --slurpfile r "$remote_plain" '
+    def val($o; $p): try ($o | getpath($p)) catch null;
+    [ ([$l[0], $r[0]] | map([paths(scalars)]) | add | unique[]) as $p
+      | select(val($l[0]; $p) != val($r[0]; $p))
+      | ($p | map(tostring) | join(".")) ] | .[]'
+}
+
+# Dry run of push: compare the local mirror (+ artifact homes) with the
+# config repo and report what would change. Writes nothing to either side.
+# Exit: 0 = no changes pending, 1 = changes pending, 2 = error.
+diff_config() {
+  local environment="$1"
+  local local_root="$2"
+  local repo_path="$3"
+  local repo_url="$4"
+  local branch="$5"
+  local sync_artifacts="${6:-true}"
+
+  require_tool git
+  require_tool jq
+
+  local local_config_file="${local_root}/${environment}/core.json"
+  local local_aws_file="${local_root}/${environment}/aws.json"
+  local local_secrets_file="${local_root}/${environment}/secrets.json"
+
+  if [[ ! -f "$local_config_file" ]]; then
+    echo "Error: local core.json not found at ${local_config_file} (push would fail)." >&2
+    exit 2
+  fi
+  validate_local_json "$local_config_file" false
+  [[ -f "$local_aws_file" ]] && validate_local_json "$local_aws_file" false
+  if [[ -f "$local_secrets_file" ]]; then
+    require_tool sops
+    validate_local_json "$local_secrets_file" true
+  fi
+
+  prepare_repository "$branch" "$repo_path" "$repo_url"
+  trap cleanup EXIT
+
+  local repo_env_dir="${WORK_REPO_PATH}/${CONFIG_PATH}/${environment}"
+  local repo_config_file="${repo_env_dir}/core.json"
+  local repo_aws_file="${repo_env_dir}/aws.json"
+  local repo_secrets_file="${repo_env_dir}/secrets.enc.json"
+
+  local pending=0
+  echo "Config diff for '${environment}' (local -> ${CONFIG_PATH}/${environment}/, branch ${branch}; dry run, nothing written):"
+
+  # --- plaintext files: unified diff, repo (-) -> local (+) --------------
+  local label local_file repo_file
+  for pair in "core.json:${local_config_file}:${repo_config_file}" "aws.json:${local_aws_file}:${repo_aws_file}"; do
+    label="${pair%%:*}"
+    local rest="${pair#*:}"
+    local_file="${rest%%:*}"
+    repo_file="${rest#*:}"
+    if [[ ! -f "$local_file" ]]; then
+      # Only reachable for optional aws.json (core was checked above).
+      echo "  ${label}: not present locally (remote copy, if any, would be left untouched)"
+      continue
+    fi
+    if [[ ! -f "$repo_file" ]]; then
+      echo "  ${label}: WOULD BE CREATED in the config repo"
+      pending=$((pending + 1))
+      continue
+    fi
+    if diff -q "$local_file" "$repo_file" >/dev/null 2>&1; then
+      echo "  ${label}: unchanged"
+    else
+      echo "  ${label}: CHANGED"
+      diff -u --label "repo:${CONFIG_PATH}/${environment}/${label}" --label "local:config/${environment}/${label}" "$repo_file" "$local_file" 2>/dev/null | sed 's/^/    /' || true
+      pending=$((pending + 1))
+    fi
+  done
+
+  # --- secrets: compare values, report key paths only --------------------
+  if [[ -f "$local_secrets_file" ]]; then
+    if [[ -f "$repo_secrets_file" ]]; then
+      local tmp_remote_secrets
+      tmp_remote_secrets="$(mktemp)"
+      if ! sops_cmd --decrypt "$repo_secrets_file" > "$tmp_remote_secrets" 2>/dev/null; then
+        echo "  secrets.json: ERROR - cannot decrypt remote secrets.enc.json (see sops key setup)." >&2
+        rm -f "$tmp_remote_secrets"
+        exit 2
+      fi
+      local changed_paths
+      changed_paths="$(changed_secret_key_paths "$local_secrets_file" "$tmp_remote_secrets")"
+      rm -f "$tmp_remote_secrets"
+      if [[ -z "$changed_paths" ]]; then
+        echo "  secrets.json: unchanged"
+      else
+        echo "  secrets.json: CHANGED (encrypted on push; changed keys:)"
+        echo "$changed_paths" | sed 's/^/    - /'
+        pending=$((pending + 1))
+      fi
+    else
+      echo "  secrets.json: WOULD CREATE secrets.enc.json in the config repo (keys:)"
+      jq -r 'paths(scalars) | map(tostring) | join(".")' "$local_secrets_file" | sed 's/^/    - /'
+      pending=$((pending + 1))
+    fi
+  elif [[ -f "$repo_secrets_file" ]]; then
+    echo "  secrets.json: no local secrets.json (remote secrets.enc.json would be left untouched)"
+  else
+    echo "  secrets.json: none on either side"
+  fi
+
+  # --- tracked artifacts: status only (contents can be large) ------------
+  if [[ "$sync_artifacts" == true ]]; then
+    local a_name a_home a_repo_file changed_lines
+    while read -r a_name a_home a_repo_file; do
+      [[ -z "$a_name" ]] && continue
+      if [[ -f "$a_home" && -f "$a_repo_file" ]]; then
+        if diff -q "$a_home" "$a_repo_file" >/dev/null 2>&1; then
+          echo "  ${a_name} (tracked artifact): unchanged"
+        else
+          changed_lines="$(diff "$a_repo_file" "$a_home" 2>/dev/null | grep -c '^[<>]' || true)"
+          echo "  ${a_name} (tracked artifact): CHANGED (${changed_lines} differing line(s); home -> repo on push)"
+          pending=$((pending + 1))
+        fi
+      elif [[ -f "$a_home" ]]; then
+        echo "  ${a_name} (tracked artifact): WOULD BE CREATED in the config repo"
+        pending=$((pending + 1))
+      elif [[ -f "$a_repo_file" ]]; then
+        echo "  ${a_name} (tracked artifact): no local file (remote copy would be left untouched)"
+      fi
+    done < <(artifact_entries "$repo_env_dir")
+  fi
+
+  if [[ "$pending" -gt 0 ]]; then
+    echo "Summary: ${pending} file(s) would change on push."
+    exit 1
+  fi
+  echo "Summary: no changes pending."
+  exit 0
+}
+
 ENVIRONMENT=""
 COMMAND="push"
 LOCAL_ROOT="$DEFAULT_LOCAL_CONFIG_ROOT"
@@ -563,7 +837,7 @@ SYNC_ARTIFACTS=true
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    push|pull)
+    push|pull|diff)
       COMMAND="$1"
       shift
       ;;
@@ -626,6 +900,10 @@ if [[ -n "$REPO_PATH" && -n "$CONFIG_REPO" ]]; then
   exit 1
 fi
 
+# Fill in REPO_PATH / CONFIG_REPO from the .config-repo.json cache, or
+# prompt on first use for this environment.
+resolve_config_repo "$ENVIRONMENT"
+
 if [[ -z "$COMMIT_MESSAGE" ]]; then
   COMMIT_MESSAGE="update config for ${ENVIRONMENT}"
 fi
@@ -634,6 +912,8 @@ mkdir -p "$LOCAL_ROOT"
 
 if [[ "$COMMAND" == "push" ]]; then
   push_config "$ENVIRONMENT" "$LOCAL_ROOT" "$REPO_PATH" "$CONFIG_REPO" "$BRANCH" "$COMMIT_MESSAGE" "$FORCE" "$SYNC_ARTIFACTS"
+elif [[ "$COMMAND" == "diff" ]]; then
+  diff_config "$ENVIRONMENT" "$LOCAL_ROOT" "$REPO_PATH" "$CONFIG_REPO" "$BRANCH" "$SYNC_ARTIFACTS"
 else
   pull_config "$ENVIRONMENT" "$LOCAL_ROOT" "$REPO_PATH" "$CONFIG_REPO" "$BRANCH" "$SYNC_ARTIFACTS"
 fi
