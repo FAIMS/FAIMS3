@@ -235,6 +235,8 @@ export function addAuthRoutes(
           values: {
             inviteId: req.body.inviteId,
             redirect: req.body.redirect,
+            email:
+              typeof req.body.email === 'string' ? req.body.email : undefined,
           },
         })}`;
 

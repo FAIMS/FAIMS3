@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
-/* eslint-disable n/no-unsupported-features/node-builtins */
-import {Browser} from '@capacitor/browser';
 import {Button, ButtonProps} from '@mui/material';
 import React from 'react';
-import {config, IS_WEB_PLATFORM} from '../../../buildconfig';
+import {openConductorLogin} from './conductorLoginUrl';
 
 export type LoginButtonProps = {
   conductor_url: string;
   is_refresh: boolean;
+  /** Local-login identifier to prefill on Conductor. Omit for SSO accounts. */
+  email?: string;
   label?: string;
   size?: ButtonProps['size'];
   sx?: object;
@@ -29,18 +29,12 @@ export function LoginButton(props: LoginButtonProps) {
         ...props.sx,
       }}
       startIcon={props.startIcon}
-      onClick={async () => {
-        if (IS_WEB_PLATFORM) {
-          const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
-          window.location.href =
-            props.conductor_url + '/login?redirect=' + redirect;
-        } else {
-          // Use the capacitor browser plugin in apps
-          await Browser.open({
-            url: `${props.conductor_url}/login?redirect=${config.appId}://auth-return`,
-          });
-        }
-      }}
+      onClick={() =>
+        openConductorLogin({
+          conductorUrl: props.conductor_url,
+          email: props.email,
+        })
+      }
     >
       {!props.is_refresh ? <> Sign In </> : <> {props.label} </>}
     </Button>

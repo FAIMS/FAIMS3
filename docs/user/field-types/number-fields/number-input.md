@@ -1,6 +1,6 @@
 # Number Input
 
-_How to add and configure a Number Input field in the Notebook Editor._
+_How to add and configure a Number Input field in the {{Notebook}} Editor._
 
 ---
 

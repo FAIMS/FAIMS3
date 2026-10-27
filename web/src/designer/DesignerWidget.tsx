@@ -41,6 +41,7 @@ import {DesignerEditingProvider} from './state/editing-context';
 import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
 import {SetupFormPanel} from './components/setup-form-panel';
+import {config} from '@/constants';
 
 /**
  * @file Full-screen designer shell: hydrate notebook, Redux, memory router, export without internal ids.
@@ -242,7 +243,7 @@ export function DesignerWidget({
         }}
       >
         <Typography variant="h4" sx={{mb: 2, fontWeight: 'bold'}}>
-          Notebook Editor
+          {config.notebookNameCapitalized} Editor
         </Typography>
         <CircularProgress sx={{color: '#669911'}} />
       </Box>
@@ -270,7 +271,7 @@ export function DesignerWidget({
             <AppBar position="static" color="default" elevation={1}>
               <Toolbar sx={{justifyContent: 'space-between'}}>
                 <Typography variant="h6" sx={{fontWeight: 'bold'}}>
-                  Notebook Editor
+                  {config.notebookNameCapitalized} Editor
                 </Typography>
                 <IconButton
                   aria-label="close designer"
