@@ -307,25 +307,35 @@ export default function NoteBooks() {
       },
     },
   ];
-  const activatedColumns = baseColumns.concat([
-    {
-      field: 'actions',
-      type: 'actions',
-      width: 140,
-      renderCell: ({row}) =>
-        isProjectActivating(row, activatingProjectKeys) ? (
-          <Box
-            sx={{display: 'flex', alignItems: 'center', gap: 1}}
-            data-testid="app-notebook-activating-indicator"
-          >
-            <CircularProgress size={20} />
-            <Typography variant="caption">
-              {ACTIVATE_ACTIVE_VERB_LABEL}
-            </Typography>
-          </Box>
-        ) : null,
-    },
-  ]);
+
+  const hasActivatingProjects = activatedProjects.some(project =>
+    isProjectActivating(project, activatingProjectKeys)
+  );
+
+  const activatedColumns = baseColumns.concat(
+    hasActivatingProjects
+      ? [
+          {
+            field: 'actions',
+            type: 'actions',
+            width: 140,
+            renderCell: ({row}) =>
+              isProjectActivating(row, activatingProjectKeys) ? (
+                <Box
+                  sx={{display: 'flex', alignItems: 'center', gap: 1}}
+                  data-testid="app-notebook-activating-indicator"
+                >
+                  <CircularProgress size={20} />
+                  <Typography variant="caption">
+                    {ACTIVATE_ACTIVE_VERB_LABEL}
+                  </Typography>
+                </Box>
+              ) : null,
+          },
+        ]
+      : []
+  );
+
   const notActivatedColumns = baseColumns.concat([
     {
       field: 'actions',
