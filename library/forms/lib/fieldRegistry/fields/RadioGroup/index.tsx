@@ -359,7 +359,7 @@ const RadioGroupWidget = ({
           // Render a regular option
           const renderOption = (option: ChoiceOption) => (
             <FormControlLabel
-              key={option.key || option.value}
+              key={option.key ?? option.value}
               value={option.value}
               control={
                 <MuiRadio
@@ -552,7 +552,7 @@ const DropDownWidget = ({
         // Render a regular option MenuItem
         const renderOptionMenuItem = (option: ChoiceOption) => (
           <MenuItem
-            key={option.key || option.value}
+            key={option.key ?? option.value}
             value={option.value}
             sx={{
               whiteSpace: 'normal',

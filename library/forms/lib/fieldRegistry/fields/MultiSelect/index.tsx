@@ -173,7 +173,7 @@ const ExpandedChecklist = ({
   // Render a regular option component
   const renderOption = (option: ChoiceOption) => (
     <FormControlLabel
-      key={option.key || option.value}
+      key={option.key ?? option.value}
       control={
         <Checkbox
           checked={value.includes(option.value)}
@@ -442,7 +442,7 @@ const MuiMultiSelect = ({
             // Render a regular option MenuItem
             const renderOptionMenuItem = (option: ChoiceOption) => (
               <MenuItem
-                key={option.key || option.value}
+                key={option.key ?? option.value}
                 value={option.value}
                 disabled={
                   selectedExclusiveOption !== undefined &&
