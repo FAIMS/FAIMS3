@@ -9,12 +9,18 @@ shared, validated schema in [`@faims3/build-config`](../../../../../library/buil
 - the AWS CDK stack,
 - local development.
 
-The key idea: **the JSON is the source of truth; environment variables are just
-transport.** The schema validates the JSON into a typed `RuntimeConfig`, an explicit
-"env contract" maps that object to each platform's env vars, and the same module
-parses env back into the typed object. So the generated env is guaranteed to be what
-the consumers expect. You should not need to reason about individual `VITE_*` or API
-env-var names — set the JSON fields and let the contract do the mapping.
+There are **two parse layers**:
+
+1. **JSON (`core.json`)** is the deployment source of truth. `parseBuildConfig`
+   validates it into a typed `RuntimeConfig`. An explicit env contract then maps
+   that object to each platform's env vars. You should not need to reason about
+   individual `VITE_*` or API env-var names when authoring a deployment — set
+   the JSON fields and let the contract do the mapping.
+2. **Client ENV** is parsed by a dedicated schema per runnable
+   (`parseApiEnv` / `parseAppEnv` / `parseWebEnv` / `parseDesignerEnv`). Each
+   schema requires that client's endpoints, credentials, and identity. Missing
+   required values fail fast; there is no silent `localhost` or
+   placeholder-credential fallback at ENV parse time.
 
 ## The config chain
 
@@ -23,13 +29,18 @@ flowchart LR
   J[core.json + secrets] --> V[parseBuildConfig]
   V --> R[typed RuntimeConfig]
   R --> E["buildEnvMapFromRuntime → platform env"]
-  E --> P[app / web / api / CDK builds]
-  P -->|at runtime| Q[parseGeneratedEnv]
-  Q --> R
+  E --> API[parseApiEnv]
+  E --> APP[parseAppEnv]
+  E --> WEB[parseWebEnv]
+  E --> DES[parseDesignerEnv]
 ```
 
-- **Source of truth** (canonical schemas):
+- **Layer 1 JSON** (canonical schemas):
   [`library/build-config/src/build-config.ts`](../../../../../library/build-config/src/build-config.ts)
+- **Shared enums / defaults / invariants**:
+  [`library/build-config/src/shared-schemas.ts`](../../../../../library/build-config/src/shared-schemas.ts)
+- **Layer 2 client ENV parsers**:
+  [`library/build-config/src/client-env/`](../../../../../library/build-config/src/client-env/)
 - **Env mapping** (the transport contract):
   [`library/build-config/src/env-contract.ts`](../../../../../library/build-config/src/env-contract.ts)
 - **Concrete examples**:
@@ -37,10 +48,10 @@ flowchart LR
   and
   [`secrets.sample.json`](../../../../../library/build-config/config/secrets.sample.json)
 
-The shared invariants (name fallbacks, offline-map clamping for OSM, long-lived-token
-hint clamping, "no cap" normalisation) are applied
-in the schema transform, so they hold identically for the JSON, the generated env and
-the parsed env.
+Layer 1 applies shared invariants (name fallbacks, offline-map clamping for OSM,
+long-lived-token hint clamping, "no cap" normalisation) in the JSON schema
+transform. Layer 2 reuses the same helpers when a client reads those fields
+from env.
 
 ## Where the files live
 
@@ -306,19 +317,19 @@ resolved from Secrets Manager on AWS. Non-secret fields (`displayName`, `helperT
 
 ### `email`
 
-| Field                    | Type    | Default                     | Notes                        |
-| ------------------------ | ------- | --------------------------- | ---------------------------- |
-| `emailServiceType`       | string  | `MOCK`                      | `MOCK` \| `SMTP`.            |
-| `emailFromAddress`       | string  | `notifications@example.com` |                              |
-| `emailFromName`          | string  | `FAIMS Notification`        |                              |
-| `emailReplyTo`           | string  | `support@example.com`       |                              |
-| `smtpHost`               | string  | `smtp.example.com`          | **Secret-adjacent** (host).  |
-| `smtpPort`               | number  | `587`                       |                              |
-| `smtpSecure`             | boolean | `true`                      | TLS.                         |
-| `smtpUser`               | string  | `smtp_username`             | **Secret slot.**             |
-| `smtpPassword`           | string  | `smtp_password`             | **Secret slot.**             |
-| `smtpCacheExpirySeconds` | number  | `300`                       | SMTP connection-cache TTL.   |
-| `testEmailAddress`       | string  | `test@gmail.com`            | Destination for test emails. |
+| Field                    | Type    | Default                     | Notes                                                                                             |
+| ------------------------ | ------- | --------------------------- | ------------------------------------------------------------------------------------------------- |
+| `emailServiceType`       | string  | `MOCK`                      | `MOCK` \| `SMTP`.                                                                                 |
+| `emailFromAddress`       | string  | `notifications@example.com` |                                                                                                   |
+| `emailFromName`          | string  | `FAIMS Notification`        |                                                                                                   |
+| `emailReplyTo`           | string  | `support@example.com`       |                                                                                                   |
+| `smtpHost`               | string  | —                           | **Secret-adjacent** (host). Optional in JSON; required in API ENV when `EMAIL_SERVICE_TYPE=SMTP`. |
+| `smtpPort`               | number  | `587`                       |                                                                                                   |
+| `smtpSecure`             | boolean | `true`                      | TLS.                                                                                              |
+| `smtpUser`               | string  | —                           | **Secret slot.**                                                                                  |
+| `smtpPassword`           | string  | —                           | **Secret slot.**                                                                                  |
+| `smtpCacheExpirySeconds` | number  | `300`                       | SMTP connection-cache TTL.                                                                        |
+| `testEmailAddress`       | string  | `test@gmail.com`            | Destination for test emails.                                                                      |
 
 ### `observability`
 
@@ -375,11 +386,11 @@ flows use `appleKeyId` + `appleKeyContent` only.
 
 ### `couchdb`
 
-| Field          | Type   | Default                            | Notes            |
-| -------------- | ------ | ---------------------------------- | ---------------- |
-| `user`         | string | `admin`                            |                  |
-| `password`     | string | `aSecretPasswordThatCantBeGuessed` | **Secret slot.** |
-| `externalPort` | number | `5984`                             |                  |
+| Field          | Type   | Default | Notes                                                   |
+| -------------- | ------ | ------- | ------------------------------------------------------- |
+| `user`         | string | `admin` |                                                         |
+| `password`     | string | —       | **Secret slot.** Optional in JSON; required in API ENV. |
+| `externalPort` | number | `5984`  |                                                         |
 
 ### `conductor`
 
@@ -443,6 +454,6 @@ local values never get committed.
 
 Follow the sequence in the
 [`@faims3/build-config` README](../../../../../library/build-config/README.md#how-to-add-a-new-configuration-option):
-add the field to the canonical schema, extend the runtime model, add the env-contract
-mapping, add parser support, and add positive/negative tests. Then run
-`pnpm --filter=@faims3/build-config test`.
+add the field to the canonical JSON schema, extend the runtime model, add the
+env-contract mapping, add the field to the relevant client ENV schema, and add
+positive/negative tests. Then run `pnpm --filter=@faims3/build-config test`.

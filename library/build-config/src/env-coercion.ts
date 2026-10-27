@@ -13,7 +13,9 @@ import {z} from 'zod';
  * happens once, in these schemas, so the apps and api env parsers agree.
  */
 
+/** Accepted truthy env strings (case-insensitive). */
 export const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'] as const;
+/** Accepted falsey env strings (case-insensitive). */
 export const FALSEY_STRINGS = ['false', '0', 'off', 'no'] as const;
 
 const TRUTHY = new Set<string>(TRUTHY_STRINGS);
@@ -137,10 +139,6 @@ export function sanitizeCommitVersion(
 }
 
 /**
- * A bugsnag key that is blank or the literal string `false` (case-insensitive)
- * is treated as "off" → `undefined`. Mirrors the app's behaviour.
- */
-/**
  * Resolve the Vite `define` inject `__APP_VERSION__` (package.json version
  * at build time — not an import.meta.env key). Falls back to `unknown`.
  */
@@ -155,8 +153,279 @@ export function resolveInjectedAppVersion(
   return 'unknown';
 }
 
+/**
+ * Blank or the literal `false` (case-insensitive) means Bugsnag is off.
+ * Any other non-empty string is the client API key.
+ */
 export function parseBugsnagKey(value: string | undefined): string | undefined {
   const v = (value ?? '').trim();
   if (v === '' || v.toLowerCase() === 'false') return undefined;
   return v;
+}
+
+// ---------------------------------------------------------------------------
+// Declarative ENV field builders for client-specific schemas.
+// Missing required values fail parse; invalid present values fail parse;
+// omitted optional values use an explicit default or stay undefined.
+// ---------------------------------------------------------------------------
+
+/** True for missing, null, or whitespace-only env values. */
+const isBlankEnv = (value: unknown): boolean =>
+  value === undefined ||
+  value === null ||
+  (typeof value === 'string' && value.trim() === '');
+
+/** Coerce an env cell to a string; null/undefined stay undefined. */
+function asEnvString(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  return String(value);
+}
+
+/** Rejects missing or whitespace-only strings, naming the env key. */
+export function requiredEnvString(envKey: string) {
+  return z.any().transform((value, ctx) => {
+    const trimmed = (asEnvString(value) ?? '').trim();
+    if (!trimmed) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `Missing required env variable ${envKey}`,
+      });
+      return z.NEVER;
+    }
+    return trimmed;
+  });
+}
+
+/** Requires a non-empty URL. Custom schemes (app deep links) are accepted. */
+export function requiredEnvUrl(
+  envKey: string,
+  options: {stripSlash?: boolean} = {}
+) {
+  const stripSlash = options.stripSlash ?? true;
+  return z.any().transform((value, ctx) => {
+    const trimmed = (asEnvString(value) ?? '').trim();
+    if (!trimmed) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `Missing required env variable ${envKey}`,
+      });
+      return z.NEVER;
+    }
+    try {
+      new URL(trimmed);
+    } catch {
+      ctx.addIssue({
+        code: 'custom',
+        message: `Invalid URL for ${envKey}: "${trimmed}"`,
+      });
+      return z.NEVER;
+    }
+    return stripSlash ? stripTrailingSlash(trimmed) : trimmed;
+  });
+}
+
+/**
+ * CSV of URLs. Requires at least one entry; each entry must parse as a URL
+ * (http(s) or a custom scheme such as `org.example.app://auth-return`).
+ */
+export function requiredUrlCsv(envKey: string) {
+  return z.any().transform((value, ctx) => {
+    const raw = asEnvString(value);
+    if (isBlankEnv(raw)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `Missing required env variable ${envKey}`,
+      });
+      return z.NEVER;
+    }
+    const entries = (raw ?? '')
+      .split(',')
+      .map(entry => entry.trim())
+      .filter(entry => entry.length > 0);
+    if (entries.length === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `${envKey} must contain at least one valid URL.`,
+      });
+      return z.NEVER;
+    }
+    for (const entry of entries) {
+      try {
+        new URL(entry);
+      } catch {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Invalid URL in ${envKey}: "${entry}"`,
+        });
+        return z.NEVER;
+      }
+    }
+    return entries;
+  });
+}
+
+/** Blank / missing → `undefined`; otherwise a trimmed string. */
+export function optionalEnvString() {
+  return z
+    .any()
+    .optional()
+    .transform((value): string | undefined => {
+      if (isBlankEnv(value)) return undefined;
+      return String(value).trim();
+    });
+}
+
+/** Blank / missing → `def`; otherwise the trimmed string. */
+export function stringWithDefault(def: string) {
+  return z
+    .any()
+    .optional()
+    .transform((value): string => {
+      if (isBlankEnv(value)) return def;
+      return String(value).trim();
+    });
+}
+
+/** Blank / missing → `def`; invalid boolean vocabulary fails parse. */
+export function boolWithDefault(def: boolean) {
+  return z
+    .any()
+    .optional()
+    .transform((value, ctx) => {
+      if (isBlankEnv(value)) return def;
+      const lower = String(value).trim().toLowerCase();
+      if (TRUTHY.has(lower)) return true;
+      if (FALSEY.has(lower)) return false;
+      ctx.addIssue({
+        code: 'custom',
+        message: `Invalid boolean "${value}". Expected one of: ${[
+          ...TRUTHY_STRINGS,
+          ...FALSEY_STRINGS,
+        ].join(', ')}.`,
+      });
+      return z.NEVER;
+    });
+}
+
+/** Blank / missing → `undefined`; present values use the boolean vocabulary. */
+export function optionalBool() {
+  return z
+    .any()
+    .optional()
+    .transform((value, ctx) => {
+      if (isBlankEnv(value)) return undefined;
+      const lower = String(value).trim().toLowerCase();
+      if (TRUTHY.has(lower)) return true;
+      if (FALSEY.has(lower)) return false;
+      ctx.addIssue({
+        code: 'custom',
+        message: `Invalid boolean "${value}". Expected one of: ${[
+          ...TRUTHY_STRINGS,
+          ...FALSEY_STRINGS,
+        ].join(', ')}.`,
+      });
+      return z.NEVER;
+    });
+}
+
+/** Blank / missing → `def`; non-numeric or non-positive fails parse. */
+export function intWithDefault(def: number) {
+  return z
+    .any()
+    .optional()
+    .transform((value, ctx) => {
+      if (isBlankEnv(value)) return def;
+      const raw = String(value).trim();
+      if (!/^[0-9]+$/.test(raw)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Must be a positive integer.`,
+        });
+        return z.NEVER;
+      }
+      const parsed = Number.parseInt(raw, 10);
+      if (!Number.isInteger(parsed) || parsed <= 0) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Must be a positive integer.`,
+        });
+        return z.NEVER;
+      }
+      return parsed;
+    });
+}
+
+/**
+ * Match an env string against a Zod enum, trying the raw value then
+ * lower/upper case so historical `MAPBOX` / `NONE` still parse.
+ */
+function parseEnumValue<T extends z.ZodEnum<any>>(
+  enumSchema: T,
+  value: unknown
+): {success: true; data: z.infer<T>} | {success: false} {
+  const raw = String(value).trim();
+  for (const candidate of [raw, raw.toLowerCase(), raw.toUpperCase()]) {
+    const parsed = enumSchema.safeParse(candidate);
+    if (parsed.success) return {success: true, data: parsed.data};
+  }
+  return {success: false};
+}
+
+/** Blank / missing → `def`; otherwise must be a member of `enumSchema`. */
+export function enumWithDefault<T extends z.ZodEnum<any>>(
+  enumSchema: T,
+  def: z.infer<T>
+) {
+  return z
+    .any()
+    .optional()
+    .transform((value, ctx) => {
+      if (isBlankEnv(value)) return def as z.infer<T>;
+      const parsed = parseEnumValue(enumSchema, value);
+      if (!parsed.success) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Invalid value "${value}". Expected one of: ${enumSchema.options.join(', ')}.`,
+        });
+        return z.NEVER;
+      }
+      return parsed.data;
+    });
+}
+
+/** Blank / missing → `undefined`; otherwise must be a member of `enumSchema`. */
+export function optionalEnum<T extends z.ZodEnum<any>>(enumSchema: T) {
+  return z
+    .any()
+    .optional()
+    .transform((value, ctx) => {
+      if (isBlankEnv(value)) return undefined;
+      const parsed = parseEnumValue(enumSchema, value);
+      if (!parsed.success) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Invalid value "${value}". Expected one of: ${enumSchema.options.join(', ')}.`,
+        });
+        return z.NEVER;
+      }
+      return parsed.data as z.infer<T>;
+    });
+}
+
+/** Blank / missing → `def`; otherwise parseMaxLongLivedDays. */
+export function maxLongLivedDaysWithDefault(def = 90) {
+  return z
+    .any()
+    .optional()
+    .transform((value, ctx) => {
+      try {
+        return parseMaxLongLivedDays(asEnvString(value), def);
+      } catch (error) {
+        ctx.addIssue({
+          code: 'custom',
+          message: error instanceof Error ? error.message : String(error),
+        });
+        return z.NEVER;
+      }
+    });
 }

@@ -1,19 +1,28 @@
 # @faims3/build-config
 
-Central typed configuration module for FAIMS3 build-time and app runtime configuration.
+Central typed configuration module for FAIMS3 build-time and client runtime configuration.
 
-This package is the single source of truth for the config chain:
+This package is the single source of truth for two layers:
 
-1. Source JSON configuration validation
-2. Canonical typed runtime configuration object
-3. Environment variable generation for platform/app builds
-4. Environment parsing back into typed runtime config
+1. **Layer 1 — deployment JSON.** `core.json` (+ merged secrets) is validated by
+   `BuildConfigSchema` / `parseBuildConfig` into a typed `RuntimeConfig`, then
+   emitted as platform `.env` files via `buildEnvMapFromRuntime` / `generateEnv`.
+2. **Layer 2 — client ENV.** Each runnable client parses its own env with a
+   dedicated schema (`parseApiEnv`, `parseAppEnv`, `parseWebEnv`,
+   `parseDesignerEnv`) into a typed client runtime config. Required endpoints,
+   credentials, and identity fail fast. There is no silent `localhost` or
+   placeholder-credential fallback at ENV parse time.
+
+Shared Zod enums, operational defaults, and coercion helpers live in
+[src/shared-schemas.ts](src/shared-schemas.ts) and
+[src/env-coercion.ts](src/env-coercion.ts) so the two layers cannot drift on
+meaning.
 
 ## Goals
 
-- One canonical schema for configuration meaning
-- Strict validation (reject unknown keys and bad types)
-- Shared semantic groups across app, web, and api
+- One canonical JSON schema for deployment configuration
+- Client-specific ENV schemas that declare required vs optional vs defaulted
+- Strict validation (reject unknown JSON keys and bad env types)
 - Explicit environment contract for generated env keys
 - Deterministic tests for config behavior
 
@@ -21,52 +30,70 @@ This package is the single source of truth for the config chain:
 
 Core entry points:
 
-- Canonical schemas and runtime model: [src/build-config.ts](src/build-config.ts)
+- Layer 1 JSON schemas and runtime model: [src/build-config.ts](src/build-config.ts)
+- Shared enums / defaults / invariants: [src/shared-schemas.ts](src/shared-schemas.ts)
+- ENV coercion helpers: [src/env-coercion.ts](src/env-coercion.ts)
+- Layer 2 client parsers: [src/client-env/](src/client-env/)
 - Env contract map: [src/env-contract.ts](src/env-contract.ts)
 - Env generator CLI: [src/generate-build-config.ts](src/generate-build-config.ts)
-- Tests: [test/generate-build-config.test.ts](test/generate-build-config.test.ts)
+- Tests: [test/generate-build-config.test.ts](test/generate-build-config.test.ts),
+  [test/client-env.test.ts](test/client-env.test.ts)
 
 Data flow:
 
 ```mermaid
 flowchart LR
-  A[JSON config] --> B[parseBuildConfig]
+  A[core.json + secrets] --> B[parseBuildConfig]
   B --> C[toRuntimeConfig]
   C --> D[buildEnvMapFromRuntime]
   D --> E[generateEnv output]
-  E --> F[platform build env]
-
-  E -->|apps / VITE_ env| G[parseGeneratedEnv]
-  E -->|api / AUTH_ env| G
-  G --> H[typed RuntimeConfig]
+  E --> F_API[api/.env]
+  E --> F_APPS[app/.env and web/.env]
+  F_API --> P_API[parseApiEnv]
+  F_APPS --> P_APP[parseAppEnv]
+  F_APPS --> P_WEB[parseWebEnv]
+  F_APPS --> P_DES[parseDesignerEnv]
+  P_API --> R_API[ApiRuntimeConfig]
+  P_APP --> R_APP[AppRuntimeConfig]
+  P_WEB --> R_WEB[WebRuntimeConfig]
+  P_DES --> R_DES[DesignerRuntimeConfig]
 ```
-
-`parseGeneratedEnv` parses the **string** env (the `.env` file format) and accepts
-the apps half, the api half, or both (the api half wins on shared keys), so a
-deployment can produce a single typed `RuntimeConfig` from whatever it generates.
-The shared invariants (name fallbacks, OSM offline-map clamp,
-hints clamping, no-cap normalisation) are applied in the schema transform, so
-they hold for JSON, apps env and api env alike.
 
 Key design idea:
 
-- Configuration meaning is defined once in the canonical runtime model.
+- JSON meaning is defined once in the canonical Layer 1 model.
 - Environment keys are transport, defined in an explicit mapping contract.
-- Generators and parsers both route through the canonical model.
+- Each client declares its own required ENV and maps into a typed client object.
+- Shared enums and `SHARED_DEFAULTS` are reused; fake credentials and silent
+  localhost fallbacks are not.
 
 ## Runtime Shape
 
-The runtime config (`RuntimeConfig`) is a single, fully-populated object
-namespaced into the same thematic top-level groups as the input JSON
+Layer 1 (`RuntimeConfig`) is a single, fully-populated object namespaced into
+the same thematic top-level groups as the input JSON
 (see [Input Shape](#input-shape-grouped)). Every field that has a default is
 always present in the parsed result; genuinely-optional fields (e.g.
-`bugsnagApiKey`, `satelliteSource`, `appShortName`) are `| undefined`.
+`bugsnagApiKey`, `satelliteSource`, `appShortName`, `couchdb.password`) are
+`| undefined`.
 
-All three consumers (`app`, `web`, `api`) read their values from this one object
-via `parseGeneratedEnv`, and each keeps only its own runtime-specific derivation
-local (see [Migration status](#migration-status)).
+Layer 2 outputs four client-specific objects:
 
-See definitions in [src/build-config.ts](src/build-config.ts).
+| Parser             | Required ENV (fail fast if missing/blank)                                                                                                            | Consumer                                                                 |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `parseApiEnv`      | `CONDUCTOR_PUBLIC_URL`, `WEB_APP_PUBLIC_URL`, `COUCHDB_INTERNAL_URL`, `COUCHDB_PUBLIC_URL`, `COUCHDB_USER`, `COUCHDB_PASSWORD`, `REDIRECT_WHITELIST` | [api/src/buildconfig.ts](../../api/src/buildconfig.ts)                   |
+| `parseAppEnv`      | `VITE_CONDUCTOR_URL`, `VITE_APP_NAME`, `VITE_APP_ID`                                                                                                 | [app/src/buildconfig.ts](../../app/src/buildconfig.ts)                   |
+| `parseWebEnv`      | `VITE_WEB_URL`, `VITE_API_URL`, `VITE_APP_URL`, `VITE_APP_NAME`                                                                                      | [web/src/constants.ts](../../web/src/constants.ts)                       |
+| `parseDesignerEnv` | none (both flags defaulted)                                                                                                                          | [web/src/designer/buildconfig.ts](../../web/src/designer/buildconfig.ts) |
+
+Conditionally required: `AWS_SECRET_KEY_ARN` when `KEY_SOURCE=AWS_SM`; SMTP
+host/user/password when `EMAIL_SERVICE_TYPE=SMTP` and not under test; Mapbox /
+MapTiler autosuggest keys when that source is enabled.
+
+Omitted optional tuning values use `SHARED_DEFAULTS` (batch sizes, token
+windows, limiter settings). Present-but-invalid values fail parse.
+
+See Layer 1 definitions in [src/build-config.ts](src/build-config.ts) and Layer
+2 in [src/client-env/](src/client-env/).
 
 ## Input Shape (Grouped)
 
@@ -135,18 +162,21 @@ Use this sequence every time.
 - Map from runtime config to the generated environment key.
 - Keep compatibility aliases only when needed; avoid duplicate semantic sources.
 
-1. Add env parser support (if roundtrip parsing is needed)
+1. Add env parser support (if a client reads the new key)
 
-- Add/extend GeneratedEnvSchema in [src/build-config.ts](src/build-config.ts).
-- Update parseGeneratedEnv in [src/build-config.ts](src/build-config.ts) to map env value back to canonical model.
+- Add the field to the relevant client schema in [src/client-env/](src/client-env/)
+  (`ApiEnvSchema`, `AppEnvSchema`, `WebEnvSchema`, or `DesignerEnvSchema`).
+- Use `requiredEnvString` / `requiredEnvUrl` for identity and endpoints; use
+  `boolWithDefault` / `intWithDefault` / `enumWithDefault` for operational
+  defaults. Map the parsed value into that client's runtime config.
 
 1. Add tests
 
-- Add positive and negative tests in [test/generate-build-config.test.ts](test/generate-build-config.test.ts):
-  - valid config produces expected env
+- Add positive and negative tests:
+  - valid JSON produces expected env ([test/generate-build-config.test.ts](test/generate-build-config.test.ts))
+  - missing required ENV is rejected ([test/client-env.test.ts](test/client-env.test.ts))
   - invalid typed env is rejected
-  - strict unknown-key rejection works
-  - roundtrip behavior is preserved
+  - generateEnv → client parser round-trip is preserved
 
 1. Run checks
 
@@ -175,28 +205,26 @@ page for the full JSON structure.
 
 1. Runtime parsing
 
-- `app` and `web` call `parseGeneratedEnv(import.meta.env)`;
-  `api` calls `parseGeneratedEnv(process.env)`. Each then reads the
-  target-relevant sections of the resulting `RuntimeConfig`.
+- `app` calls `parseAppEnv(import.meta.env, {appVersion})`.
+- `web` calls `parseWebEnv(import.meta.env, {appVersion})`.
+- `web` designer calls `parseDesignerEnv(import.meta.env)`.
+- `api` calls `parseApiEnv(process.env)`.
 
-## Migration status
+Each consumer keeps only Node / UI-specific work local (key-file existence,
+service singletons, Capacitor constants, team-role filtering). Plurals, URL
+derivations, map config, and paired directory credentials are produced by the
+client parsers.
 
-All three consumers have been migrated off their local `EnvSchema` parsers and
-now source their config from this module:
+## Consumer status
 
-- `app` — [app/src/buildconfig.ts](../../app/src/buildconfig.ts) keeps app-only
-  derivation local (paired directory credentials, the MapTiler key fallback,
-  the aggregated `mapConfig`, pluralised notebook names, `runningUnderTest`,
-  the `__APP_VERSION__` inject).
-- `web` — [web/src/constants.ts](../../web/src/constants.ts) and
-  [web/src/designer/buildconfig.ts](../../web/src/designer/buildconfig.ts) keep
-  web-only derivation local (pluralised notebook names, derived URLs, the
-  aggregated `mapConfig`, team-role filtering).
-- `api` — [api/src/buildconfig.ts](../../api/src/buildconfig.ts) keeps
-  server-only runtime values local (signing-key identity, key-file existence
-  check, cookie-secret generation, local CouchDB auth, the AWS-SM ARN check,
-  the URL-validated redirect whitelist, `runningUnderTest` overrides, and the
-  SMTP/email resolution).
+- `app` — [app/src/buildconfig.ts](../../app/src/buildconfig.ts) keeps the
+  address-autosuggest factory and Capacitor platform constants.
+- `web` — [web/src/constants.ts](../../web/src/constants.ts) filters
+  `excludedTeamRoles` against known TEAM roles and attaches a few hardcoded
+  Control Centre constants. Designer flags live in
+  [web/src/designer/buildconfig.ts](../../web/src/designer/buildconfig.ts).
+- `api` — [api/src/buildconfig.ts](../../api/src/buildconfig.ts) checks
+  `existsSync(keyFilePath)` and instantiates the key/email service singletons.
 
 Each consumer preserves its public `config` shape, so only `buildconfig.ts` /
 `constants.ts` changed; no consumer components were touched.

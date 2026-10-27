@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
+/**
+ * Layer 1 — unified `core.json` schema.
+ *
+ * `parseBuildConfig` validates deployment JSON (plus merged secrets) into a
+ * typed `RuntimeConfig`. Env generation (`buildEnvMapFromRuntime`) is the
+ * transport out of this layer. Client ENV parsing lives in `src/client-env/`.
+ */
 import {z} from 'zod';
-import {
-  AUTH_PREFIX,
-  AuthProviderConfigMapSchema,
-} from './auth-provider-config.js';
+import {AuthProviderConfigMapSchema} from './auth-provider-config.js';
 export {
   AuthProviderSchema,
   AuthProviderConfigMapSchema,
   readAuthProviderConfigFromEnv,
   buildAuthProviderEnvMap,
 } from './auth-provider-config.js';
-import {readAuthProviderConfigFromEnv} from './auth-provider-config.js';
 export {
   BoolEnvSchema,
   PositiveIntStringSchema,
@@ -22,21 +25,35 @@ export {
   resolveInjectedAppVersion,
   NO_MAXIMUM_WORDS,
 } from './env-coercion.js';
+export {
+  DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS,
+  SHARED_DEFAULTS,
+} from './shared-schemas.js';
 import {
-  BoolEnvSchema,
-  PositiveIntStringSchema,
-  OptionalCsvSchema,
-  UpperCsvSchema,
-  parseMaxLongLivedDays,
-  sanitizeCommitVersion,
-  parseBugsnagKey,
-  stripTrailingSlash,
-} from './env-coercion.js';
+  AutosuggestSourceSchema,
+  DownloadCookieSameSiteSchema,
+  EmailServiceTypeSchema,
+  ForceRemoteDeletionSchema,
+  KeySourceSchema,
+  MapSourceSchema,
+  MapStyleSchema,
+  NavigationStyleSchema,
+  NotebookListTypeSchema,
+  ProvisionSsoUsersPolicySchema,
+  SHARED_DEFAULTS,
+  SatelliteSourceSchema,
+  resolveLongLivedDurationHints,
+  validateMapAndAutosuggestKeys,
+  validateMigrationLock,
+} from './shared-schemas.js';
 
 const EndpointsBuildConfigSchema = z
   .object({
+    /** Control Centre base URL. Overridden when `domains` is set. */
     webUrl: z.string().default('http://localhost:3001'),
+    /** Conductor API base URL. Overridden when `domains` is set. */
     apiUrl: z.string().default('http://localhost:8080'),
+    /** Mobile app / PWA base URL. Overridden when `domains` is set. */
     appUrl: z.string().default('http://localhost:3000'),
     /**
      * One or more Conductor URLs the mobile app can authenticate against
@@ -48,6 +65,7 @@ const EndpointsBuildConfigSchema = z
     couchdbPublicUrl: z.string().default('http://localhost:5984'),
     androidAppPublicUrl: z.string().default(''),
     iosAppPublicUrl: z.string().default(''),
+    /** Allowed OAuth/local-login redirect origins. Derived from public URLs if omitted. */
     redirectWhitelist: z.array(z.string()).optional(),
   })
   .strict();
@@ -100,7 +118,9 @@ export const DomainsBuildConfigSchema = z
 const BrandingBuildConfigSchema = z
   .object({
     appName: z.string().default('FAIMS'),
+    /** Falls back to `appName`. */
     appShortName: z.string().optional(),
+    /** Banner heading; falls back to `appName`. */
     headingAppName: z.string().optional(),
     theme: z.string().default('default'),
     websiteTitle: z.string().default('Control Centre'),
@@ -108,6 +128,7 @@ const BrandingBuildConfigSchema = z
     clusterAdminGroupName: z.string().default('cluster-admin'),
     conductorInstanceName: z.string().default('Development FAIMS Server'),
     conductorDescription: z.string().default('FAIMS Conductor Server'),
+    /** Invite-code prefix `{prefix}-{code}`. */
     conductorShortCodePrefix: z.string().default('FAIMS'),
   })
   .strict();
@@ -116,6 +137,7 @@ const SupportBuildConfigSchema = z
   .object({
     supportEmail: z.string().default('support@fieldmark.au'),
     privacyPolicyUrl: z.string().default('https://fieldnote.au/privacy'),
+    /** Empty hides the contact link. */
     appContactUrl: z.string().default(''),
     docsUrl: z.string().default(''),
   })
@@ -123,9 +145,10 @@ const SupportBuildConfigSchema = z
 
 const NotebookAndRecordUxBuildConfigSchema = z
   .object({
+    /** Lowercase singular notebook noun (`project`, `survey`, …). */
     notebookName: z.string().default('project'),
-    notebookListType: z.enum(['tabs', 'headings']).default('tabs'),
-    navigation: z.enum(['none', 'breadcrumbs']).default('none'),
+    notebookListType: NotebookListTypeSchema.default('tabs'),
+    navigation: NavigationStyleSchema.default('none'),
     showStatusTab: z.boolean().default(true),
     showNewNotebook: z.boolean().default(true),
     showRecordSummaryCounts: z.boolean().default(true),
@@ -134,14 +157,15 @@ const NotebookAndRecordUxBuildConfigSchema = z
 
 const MapsBuildConfigSchema = z
   .object({
-    mapSource: z.enum(['osm', 'maptiler', '']).default('osm'),
+    mapSource: MapSourceSchema.default('osm'),
+    /** Public/client tile key. */
     mapSourceKey: z.string().default(''),
-    satelliteSource: z.enum(['esri', 'maptiler']).optional(),
-    mapStyle: z
-      .enum(['basic', 'openstreetmap', 'osm-bright', 'toner'])
-      .default('basic'),
+    satelliteSource: SatelliteSourceSchema.optional(),
+    mapStyle: MapStyleSchema.default('basic'),
+    /** Clamped off when `mapSource` is `osm`. */
     offlineMaps: z.boolean().default(true),
-    autosuggestSource: z.enum(['none', 'mapbox', 'maptiler']).default('none'),
+    autosuggestSource: AutosuggestSourceSchema.default('none'),
+    /** Required when `autosuggestSource` is `mapbox`. */
     autosuggestMapboxKey: z.string().default(''),
     autosuggestMapTilerKey: z.string().default(''),
     /** ISO 3166-1 alpha-2 codes (CSV in env). Defaults to Australia. */
@@ -151,39 +175,18 @@ const MapsBuildConfigSchema = z
   })
   .strict()
   .superRefine((data, ctx) => {
-    // Address-autosuggest key requirements (moved here from the aws-cdk
-    // AddressAutosuggest + UiConfiguration refines), so every
-    // consumer validates the same rules.
-    if (
-      data.autosuggestSource === 'mapbox' &&
-      !data.autosuggestMapboxKey.trim()
-    ) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['autosuggestMapboxKey'],
-        message:
-          'When autosuggestSource is mapbox, autosuggestMapboxKey is required.',
-      });
-    }
-    if (data.autosuggestSource === 'maptiler') {
-      const hasTilerKey = !!data.autosuggestMapTilerKey.trim();
-      const fallsBackToMapKey =
-        data.mapSource === 'maptiler' && !!data.mapSourceKey.trim();
-      if (!hasTilerKey && !fallsBackToMapKey) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['autosuggestMapTilerKey'],
-          message:
-            'When autosuggestSource is maptiler, either autosuggestMapTilerKey must be set or mapSource must be "maptiler" with mapSourceKey set (the map tile key will be used for autosuggest).',
-        });
-      }
-    }
+    validateMapAndAutosuggestKeys(data, ctx);
   });
 
 const SyncBuildConfigSchema = z
   .object({
-    syncPushOnlyRecordThreshold: z.number().int().positive().default(500),
-    forceRemoteDeletion: z.enum(['allow', 'never']).default('never'),
+    syncPushOnlyRecordThreshold: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.syncPushOnlyRecordThreshold),
+    forceRemoteDeletion: ForceRemoteDeletionSchema.default('never'),
+    /** Wipe local Pouch data on manual deactivate. */
     deleteOnDeactivation: z.boolean().default(false),
   })
   .strict();
@@ -197,7 +200,9 @@ const AttachmentsBuildConfigSchema = z
 
 const MigrationBuildConfigSchema = z
   .object({
+    /** App-side migrate of legacy v1 Pouch databases. */
     migrateOldDatabases: z.boolean().default(false),
+    /** Skip API-boot Couch migrate. */
     disableMigrateOnStartup: z.boolean().default(false),
     /**
      * Optional so omit vs explicit false stay distinct: local API treats
@@ -205,21 +210,15 @@ const MigrationBuildConfigSchema = z
      * honours an explicit false (single-task / debug).
      */
     startupMigrationLockEnabled: z.boolean().optional(),
-    startupMigrationLockTimeoutMs: z.number().int().positive().default(1800000),
+    startupMigrationLockTimeoutMs: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.startupMigrationLockTimeoutMs),
   })
   .strict()
   .superRefine((data, ctx) => {
-    // A skip-migrate startup has nothing to lock: the clustered lock must not
-    // be enabled when migrate-on-startup is disabled. (Moved here from the
-    // aws-cdk ConductorConfig so every consumer validates the same invariant.)
-    if (data.disableMigrateOnStartup && data.startupMigrationLockEnabled) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['startupMigrationLockEnabled'],
-        message:
-          'startupMigrationLockEnabled cannot be true when disableMigrateOnStartup is true. There is nothing to lock if API boot skips migrate. Omit startupMigrationLockEnabled or set it false.',
-      });
-    }
+    validateMigrationLock(data, ctx);
   })
   .transform(data => ({
     ...data,
@@ -232,66 +231,130 @@ const MigrationBuildConfigSchema = z
 
 const AuthBuildConfigSchema = z
   .object({
+    /** Auth profile / JWT key id. */
     profileName: z.string().default('local-dev'),
     keyFilePath: z.string().default('.'),
-    keySource: z.enum(['FILE', 'ENV', 'AWS_SM']).default('FILE'),
+    keySource: KeySourceSchema.default('FILE'),
+    /** Required when `keySource` is `AWS_SM`. */
     awsSecretKeyArn: z.string().optional(),
+    /** Secret slot; empty in committed core. */
     cookieSecret: z.string().default(''),
     disableLocalLogin: z.boolean().default(false),
-    provisionSsoUsersPolicy: z
-      .enum(['own-team', 'general-user', 'reject'])
-      .default('reject'),
+    provisionSsoUsersPolicy: ProvisionSsoUsersPolicySchema.default('reject'),
   })
   .strict();
 
 const AuthTokensBuildConfigSchema = z
   .object({
-    tokenRefreshIntervalMs: z.number().int().positive().default(15000),
-    tokenRefreshWindowMs: z.number().int().positive().default(60000),
-    loginBannerGraceMs: z.number().int().positive().default(10000),
+    tokenRefreshIntervalMs: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.tokenRefreshIntervalMs),
+    tokenRefreshWindowMs: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.tokenRefreshWindowMs),
+    loginBannerGraceMs: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.loginBannerGraceMs),
     ignoreTokenExp: z.boolean().default(false),
+    /** Duration chips (days); clamped to `maximumLongLivedDurationDays`. */
     longLivedTokenDurationHints: z
       .array(z.number().int().positive())
       .optional(),
-    refreshTokenExpiryMinutes: z.number().int().positive().default(2880),
-    accessTokenExpiryMinutes: z.number().int().positive().default(5),
-    impersonationSessionExpiryMinutes: z.number().int().positive().default(60),
-    emailCodeExpiryMinutes: z.number().int().positive().default(30),
+    refreshTokenExpiryMinutes: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.refreshTokenExpiryMinutes),
+    accessTokenExpiryMinutes: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.accessTokenExpiryMinutes),
+    impersonationSessionExpiryMinutes: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.impersonationSessionExpiryMinutes),
+    emailCodeExpiryMinutes: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.emailCodeExpiryMinutes),
+    /** Cap on long-lived tokens; `'unlimited'` disables the cap. */
     maximumLongLivedDurationDays: z
       .union([z.number().int().positive(), z.literal('unlimited')])
-      .default(90),
+      .default(SHARED_DEFAULTS.maximumLongLivedDurationDays),
   })
   .strict();
 
 const LimitsBuildConfigSchema = z
   .object({
     rateLimiterEnabled: z.boolean().default(true),
-    rateLimiterWindowMs: z.number().int().positive().default(600000),
-    rateLimiterPerWindow: z.number().int().positive().default(1000),
+    rateLimiterWindowMs: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.rateLimiterWindowMs),
+    rateLimiterPerWindow: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.rateLimiterPerWindow),
     exportRateLimiterEnabled: z.boolean().default(true),
-    exportRateLimiterWindowMs: z.number().int().positive().default(600000),
-    exportRateLimiterPerWindow: z.number().int().positive().default(20),
+    exportRateLimiterWindowMs: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.exportRateLimiterWindowMs),
+    exportRateLimiterPerWindow: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.exportRateLimiterPerWindow),
+    /** Email-code / verification attempt limiter. */
     attemptLimiterEnabled: z.boolean().default(true),
-    jsonBodyLimit: z.string().default('25mb'),
-    urlencodedBodyLimit: z.string().default('1mb'),
-    restoreUploadMaxBytes: z.number().int().positive().default(1073741824),
-    downloadCookieSameSite: z.enum(['lax', 'strict', 'none']).default('lax'),
-    recordsHydratedPageLimit: z.number().int().positive().default(150),
+    jsonBodyLimit: z.string().default(SHARED_DEFAULTS.jsonBodyLimit),
+    urlencodedBodyLimit: z
+      .string()
+      .default(SHARED_DEFAULTS.urlencodedBodyLimit),
+    restoreUploadMaxBytes: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.restoreUploadMaxBytes),
+    downloadCookieSameSite: DownloadCookieSameSiteSchema.default('lax'),
+    recordsHydratedPageLimit: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.recordsHydratedPageLimit),
   })
   .strict();
 
 const EmailBuildConfigSchema = z
   .object({
-    emailServiceType: z.enum(['SMTP', 'MOCK']).default('MOCK'),
+    emailServiceType: EmailServiceTypeSchema.default('MOCK'),
     emailFromAddress: z.string().default('notifications@example.com'),
     emailFromName: z.string().default('FAIMS Notification'),
     emailReplyTo: z.string().default('support@example.com'),
-    smtpHost: z.string().default('smtp.example.com'),
-    smtpPort: z.number().int().positive().default(587),
+    /** Required in API ENV when `emailServiceType` is SMTP (not under test). */
+    smtpHost: z.string().optional(),
+    smtpPort: z.number().int().positive().default(SHARED_DEFAULTS.smtpPort),
     smtpSecure: z.boolean().default(true),
-    smtpUser: z.string().default('smtp_username'),
-    smtpPassword: z.string().default('smtp_password'),
-    smtpCacheExpirySeconds: z.number().int().positive().default(300),
+    /** Secret slot. */
+    smtpUser: z.string().optional(),
+    smtpPassword: z.string().optional(),
+    smtpCacheExpirySeconds: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.smtpCacheExpirySeconds),
     testEmailAddress: z.string().default('test@gmail.com'),
   })
   .strict();
@@ -304,19 +367,25 @@ const ObservabilityBuildConfigSchema = z
      * `git rev-parse HEAD` placeholder at emit time.
      */
     commitVersion: z.string().optional(),
+    /** Public/client Bugsnag key; blank or `false` disables reporting. */
     bugsnagApiKey: z.string().optional(),
   })
   .strict();
 
 const TeamAndRolePolicyBuildConfigSchema = z
   .object({
+    /** TEAM role ids hidden from Control Centre dropdowns. */
     excludedTeamRoles: z.array(z.string()).default([]),
   })
   .strict();
 
 const WebDesignerLimitsBuildConfigSchema = z
   .object({
-    maxDesignFileSizeMb: z.number().int().positive().default(10),
+    maxDesignFileSizeMb: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.maxDesignFileSizeMb),
     /** Enables template edit protections in the designer. */
     templateProtections: z.boolean().default(false),
     /**
@@ -329,9 +398,13 @@ const WebDesignerLimitsBuildConfigSchema = z
 
 const AndroidBuildConfigSchema = z
   .object({
+    /** Package id / Play Store application id. */
     appId: z.string().default('org.fedarch.faims3'),
+    /** Fastlane track: `draft` or `production`. */
     releaseStatus: z.string().default('draft'),
+    /** Secret slot — keystore, base64. */
     keystoreFileBase64: z.string().optional(),
+    /** Secret slot — Play service-account JSON, base64. */
     serviceAccountKeyJsonBase64: z.string().optional(),
     keystorePassword: z.string().optional(),
     keyAlias: z.string().optional(),
@@ -341,6 +414,7 @@ const AndroidBuildConfigSchema = z
 
 const IosBuildConfigSchema = z
   .object({
+    /** Falls back to `android.appId` at generate time when omitted in some flows. */
     bundleIdentifier: z.string().default('org.fedarch.faims3'),
     developerPortalTeamId: z.string().optional(),
     appStoreConnectTeamId: z.string().optional(),
@@ -350,7 +424,9 @@ const IosBuildConfigSchema = z
     matchGitUrl: z.string().optional(),
     gitAuthorization: z.string().optional(),
     provisioningProfileSpecifier: z.string().optional(),
+    /** Team-key id; individual-key flows use this or `appleIndividualKeyId`. */
     appleKeyId: z.string().optional(),
+    /** Team-key issuer; omit for individual-key flows. */
     appleIssuerId: z.string().optional(),
     appleKeyContent: z.string().optional(),
     appleIndividualKeyId: z.string().optional(),
@@ -361,8 +437,13 @@ const IosBuildConfigSchema = z
 const CouchdbBuildConfigSchema = z
   .object({
     user: z.string().default('admin'),
-    password: z.string().default('aSecretPasswordThatCantBeGuessed'),
-    externalPort: z.number().int().positive().default(5984),
+    /** Secret slot; required in API ENV. */
+    password: z.string().optional(),
+    externalPort: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.couchdbExternalPort),
   })
   .strict();
 
@@ -371,8 +452,16 @@ const CouchdbBuildConfigSchema = z
  * deployed values (ALB 443 / container 8000) regardless of core. */
 const ConductorBuildConfigSchema = z
   .object({
-    externalPort: z.number().int().positive().default(8080),
-    internalPort: z.number().int().positive().default(8080),
+    externalPort: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.conductorExternalPort),
+    internalPort: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.conductorInternalPort),
   })
   .strict();
 
@@ -381,6 +470,7 @@ const DevBuildConfigSchema = z
     developerMode: z.boolean().default(false),
     debugApp: z.boolean().default(false),
     debugPouchDb: z.boolean().default(false),
+    /** Show the "wipe data" developer action. */
     showWipe: z.boolean().default(true),
     showPouchDbBrowser: z.boolean().default(true),
   })
@@ -388,8 +478,16 @@ const DevBuildConfigSchema = z
 
 const PouchdbBuildConfigSchema = z
   .object({
-    pouchBatchSize: z.number().int().positive().default(10),
-    pouchBatchesLimit: z.number().int().positive().default(10),
+    pouchBatchSize: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.pouchBatchSize),
+    pouchBatchesLimit: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.pouchBatchesLimit),
   })
   .strict();
 
@@ -569,24 +667,15 @@ function deriveEndpointsFromDomains(
 }
 
 /**
- * Default Control Centre long-lived token duration chips (days). Used when
- * `authTokens.longLivedTokenDurationHints` is omitted or empty, then clamped
- * to `maximumLongLivedDurationDays` (so a 90-day cap yields 1,5,10,30,90).
- */
-export const DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS: readonly number[] = [
-  1, 5, 10, 30, 90, 365,
-];
-
-/**
  * Applies the shared cross-field invariants so that every
- * entry point (JSON, generated app env, generated api env) yields the same
- * canonical semantics:
+ * JSON entry point yields the same canonical semantics:
  *  - endpoints are derived from the domain structure when `domains` is set
  *  - conductorUrls falls back to apiUrl when empty (login needs at least one)
  *  - short / heading names fall back to the app name
  *  - offline maps are forced off for OSM (no bulk download)
  *  - long-lived token hints default to the shared chip list, then are clamped
  *    to the max duration, deduped, sorted
+ *  - redirectWhitelist falls back to the derived public endpoints
  */
 function applySharedInvariants(c: SharedBuildConfig): SharedBuildConfig {
   // Derive the concrete endpoints from the domain structure (when present),
@@ -600,8 +689,8 @@ function applySharedInvariants(c: SharedBuildConfig): SharedBuildConfig {
     }
   }
   // The app authenticates against conductorUrls. An omitted / empty list
-  // (blank VITE_CONDUCTOR_URL, or a core that only set apiUrl) must still
-  // yield a server — fall back to the Conductor / API URL.
+  // (a core that only set apiUrl) must still yield a server — fall back
+  // to the Conductor / API URL.
   if (!c.endpoints.conductorUrls.length && c.endpoints.apiUrl) {
     c.endpoints.conductorUrls = [c.endpoints.apiUrl];
   }
@@ -609,24 +698,19 @@ function applySharedInvariants(c: SharedBuildConfig): SharedBuildConfig {
   if (!c.branding.headingAppName)
     c.branding.headingAppName = c.branding.appName;
   if (c.maps.mapSource === 'osm') c.maps.offlineMaps = false;
-  const maxDays = c.authTokens.maximumLongLivedDurationDays;
-  const provided = c.authTokens.longLivedTokenDurationHints;
-  const sourceHints =
-    provided && provided.length > 0
-      ? provided
-      : [...DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS];
-  // 'unlimited' means no cap, so provided hints are left unclamped; an
-  // omitted list still gets the default chips.
-  if (typeof maxDays === 'number') {
-    let hints = sourceHints.filter((hint: number) => hint <= maxDays);
-    if (hints.length === 0) hints = [maxDays];
-    c.authTokens.longLivedTokenDurationHints = [...new Set(hints)].sort(
-      (a: number, b: number) => a - b
-    );
-  } else if (!provided || provided.length === 0) {
-    c.authTokens.longLivedTokenDurationHints = [
-      ...DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS,
-    ];
+  c.authTokens.longLivedTokenDurationHints = resolveLongLivedDurationHints(
+    c.authTokens.longLivedTokenDurationHints,
+    c.authTokens.maximumLongLivedDurationDays
+  );
+  if (!c.endpoints.redirectWhitelist?.length) {
+    const derived = [
+      c.endpoints.apiUrl,
+      c.endpoints.appUrl,
+      c.endpoints.webUrl,
+    ].filter((url): url is string => !!url);
+    if (derived.length > 0) {
+      c.endpoints.redirectWhitelist = [...new Set(derived)];
+    }
   }
   return c;
 }
@@ -702,10 +786,8 @@ export const BuildConfigCoreObjectSchema = z
 
 /**
  * The full shared config: the core object + the shared invariants transform.
- * This is the schema the app/web/api consumers parse their env
- * through, and what the mobile config JSON is validated against. The invariants
- * guarantee identical canonical semantics from every entry point (JSON, app
- * env, api env).
+ * This is what `core.json` (and the merged secrets overlay) is validated
+ * against before env generation.
  */
 export const BuildConfigSchema = BuildConfigCoreObjectSchema.transform(
   applySharedInvariants
@@ -721,382 +803,12 @@ export type RuntimeConfig = SharedBuildConfig;
 
 /**
  * A config where each top-level group and its scalar fields may be absent.
- * Produced incrementally by parseAppsEnv / parseApiEnv and consumed by
- * toRuntimeConfig (whose schema fills the remaining defaults).
+ * Consumed by toRuntimeConfig (whose schema fills the remaining defaults)
+ * when generating env from a partial JSON object.
  */
 export type PartialBuildConfig = {
   [K in keyof SharedBuildConfig]?: Partial<SharedBuildConfig[K]>;
 };
-
-export const GeneratedEnvSchema = z
-  .object({
-    VITE_APP_NAME: z.string().default('FAIMS'),
-    VITE_APP_SHORT_NAME: z.string().default('FAIMS'),
-    VITE_HEADING_APP_NAME: z.string().default('FAIMS'),
-    VITE_APP_ID: z.string().default('org.fedarch.faims3'),
-    VITE_CLUSTER_ADMIN_GROUP_NAME: z.string().default('cluster-admin'),
-    VITE_THEME: z.string().default('default'),
-    VITE_WEB_URL: z.string().default('http://localhost:3001'),
-    VITE_API_URL: z.string().default('http://localhost:8080'),
-    VITE_APP_URL: z.string().default('http://localhost:3000'),
-    /** CSV of one or more Conductor URLs (each becomes a login option). */
-    VITE_CONDUCTOR_URL: z.string().default(''),
-    VITE_WEBSITE_TITLE: z.string().default('Control Centre'),
-    VITE_NOTEBOOK_NAME: z.string().default('project'),
-    VITE_NOTEBOOK_LIST_TYPE: z.enum(['tabs', 'headings']).default('tabs'),
-    VITE_SUPPORT_EMAIL: z.string().default('support@fieldmark.au'),
-    VITE_DIRECTORY_USERNAME: z.string().default(''),
-    VITE_DIRECTORY_PASSWORD: z.string().default(''),
-    VITE_APP_PRIVACY_POLICY_URL: z
-      .string()
-      .default('https://fieldnote.au/privacy'),
-    VITE_APP_CONTACT_URL: z.string().default(''),
-    VITE_MAP_SOURCE: z.enum(['osm', 'maptiler', '']).default('osm'),
-    VITE_MAP_SOURCE_KEY: z.string().default(''),
-    VITE_MAP_STYLE: z
-      .enum(['basic', 'openstreetmap', 'osm-bright', 'toner'])
-      .default('basic'),
-    VITE_SATELLITE_SOURCE: z.enum(['', 'esri', 'maptiler']).default(''),
-    VITE_OFFLINE_MAPS: BoolEnvSchema.default(false),
-    VITE_BUGSNAG_KEY: z.string().default(''),
-    VITE_COMMIT_VERSION: z.string().default('local-build'),
-    VITE_FORCE_REMOTE_DELETION: z.enum(['allow', 'never']).default('never'),
-    VITE_DELETE_ON_DEACTIVATION: BoolEnvSchema.default(false),
-    VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD: PositiveIntStringSchema.default(500),
-    VITE_TOKEN_REFRESH_INTERVAL_MS: PositiveIntStringSchema.default(15000),
-    VITE_TOKEN_REFRESH_WINDOW_MS: PositiveIntStringSchema.default(60000),
-    VITE_LOGIN_BANNER_GRACE_MS: PositiveIntStringSchema.default(10000),
-    VITE_IGNORE_TOKEN_EXP: BoolEnvSchema.default(false),
-    VITE_NAVIGATION: z.enum(['none', 'breadcrumbs']).default('none'),
-    VITE_ATTACHMENT_SERVICE_TYPE: z.string().default('COUCH'),
-    VITE_ATTACHMENT_DOCUMENT_ID_PREFIX: z.string().default(''),
-    VITE_MIGRATE_OLD_DATABASES: BoolEnvSchema.default(false),
-    VITE_SHOW_WIPE: BoolEnvSchema.default(true),
-    VITE_SHOW_POUCHDB_BROWSER: BoolEnvSchema.default(true),
-    VITE_SHOW_NEW_NOTEBOOK: BoolEnvSchema.default(true),
-    VITE_SHOW_RECORD_SUMMARY_COUNTS: BoolEnvSchema.default(true),
-    VITE_SHOW_STATUS_TAB: BoolEnvSchema.default(true),
-    VITE_DEBUG_APP: BoolEnvSchema.default(false),
-    VITE_DEBUG_POUCHDB: BoolEnvSchema.default(false),
-    VITE_POUCH_BATCH_SIZE: PositiveIntStringSchema.default(10),
-    VITE_POUCH_BATCHES_LIMIT: PositiveIntStringSchema.default(10),
-    VITE_DEVELOPER_MODE: BoolEnvSchema.default(false),
-    VITE_AUTOSUGGEST_SOURCE: z
-      .enum(['none', 'mapbox', 'maptiler'])
-      .default('none'),
-    VITE_AUTOSUGGEST_MAPBOX_KEY: z.string().default(''),
-    VITE_AUTOSUGGEST_MAPTILER_KEY: z.string().default(''),
-    VITE_MAPBOX_ADDRESS_COUNTRY: z.string().default('AU'),
-    VITE_MAPTILER_ADDRESS_COUNTRY: z.string().default('AU'),
-
-    // iOS build/signing keys consumed by Fastlane (see env-contract.ts).
-    VITE_APPLE_BUNDLE_IDENTIFIER: z.string().default(''),
-    VITE_APP_STORE_CONNECT_TEAM_ID: z.string().default(''),
-
-    VITE_DOCS_URL: z.string().default(''),
-    VITE_MAX_DESIGN_FILE_SIZE_MB: PositiveIntStringSchema.default(10),
-    VITE_TEMPLATE_PROTECTIONS: BoolEnvSchema.default(false),
-    VITE_ENABLE_PLANS_IN_DESIGNER: BoolEnvSchema.default(true),
-    VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: z.string().default('90'),
-    VITE_LONG_LIVED_TOKEN_DURATION_HINTS: z
-      .string()
-      .default('1,5,10,30,90,365'),
-    VITE_EXCLUDED_TEAM_ROLES: z.string().default(''),
-  })
-  .passthrough();
-
-export type GeneratedEnv = z.infer<typeof GeneratedEnvSchema>;
-
-// ---------------------------------------------------------------------------
-// API env: the server-side half of the generated env (no VITE_ prefix).
-// Parsed with the same strict coercion helpers as the apps env so the two
-// halves agree. Every field is optional so a partial (e.g. apps-only) env
-// still parses; the canonical defaults in BuildConfigSchema fill the rest.
-// ---------------------------------------------------------------------------
-
-export const ApiEnvSchema = z
-  .object({
-    CONDUCTOR_PUBLIC_URL: z.string().optional(),
-    WEB_APP_PUBLIC_URL: z.string().optional(),
-    ANDROID_APP_PUBLIC_URL: z.string().optional(),
-    IOS_APP_PUBLIC_URL: z.string().optional(),
-    COUCHDB_INTERNAL_URL: z.string().optional(),
-    COUCHDB_PUBLIC_URL: z.string().optional(),
-    COUCHDB_USER: z.string().optional(),
-    COUCHDB_PASSWORD: z.string().optional(),
-    COUCHDB_EXTERNAL_PORT: PositiveIntStringSchema.optional(),
-    CONDUCTOR_EXTERNAL_PORT: PositiveIntStringSchema.optional(),
-    CONDUCTOR_INTERNAL_PORT: PositiveIntStringSchema.optional(),
-    REDIRECT_WHITELIST: z.string().optional(),
-    PROFILE_NAME: z.string().optional(),
-    KEY_FILE_PATH: z.string().optional(),
-    CONDUCTOR_INSTANCE_NAME: z.string().optional(),
-    CONDUCTOR_DESCRIPTION: z.string().optional(),
-    CONDUCTOR_SHORT_CODE_PREFIX: z.string().optional(),
-    FAIMS_COOKIE_SECRET: z.string().optional(),
-    KEY_SOURCE: z.enum(['FILE', 'ENV', 'AWS_SM']).optional(),
-    AWS_SECRET_KEY_ARN: z.string().optional(),
-    DISABLE_LOCAL_LOGIN: BoolEnvSchema.optional(),
-    PROVISION_SSO_USERS_POLICY: z
-      .enum(['own-team', 'general-user', 'reject'])
-      .optional(),
-    ACCESS_TOKEN_EXPIRY_MINUTES: PositiveIntStringSchema.optional(),
-    REFRESH_TOKEN_EXPIRY_MINUTES: PositiveIntStringSchema.optional(),
-    IMPERSONATION_SESSION_EXPIRY_MINUTES: PositiveIntStringSchema.optional(),
-    EMAIL_CODE_EXPIRY_MINUTES: PositiveIntStringSchema.optional(),
-    MAXIMUM_LONG_LIVED_DURATION_DAYS: z.string().optional(),
-    DISABLE_MIGRATE_ON_STARTUP: BoolEnvSchema.optional(),
-    STARTUP_MIGRATION_LOCK_ENABLED: BoolEnvSchema.optional(),
-    STARTUP_MIGRATION_LOCK_TIMEOUT_MS: PositiveIntStringSchema.optional(),
-    DEVELOPER_MODE: BoolEnvSchema.optional(),
-    RATE_LIMITER_ENABLED: BoolEnvSchema.optional(),
-    RATE_LIMITER_WINDOW_MS: PositiveIntStringSchema.optional(),
-    RATE_LIMITER_PER_WINDOW: PositiveIntStringSchema.optional(),
-    EXPORT_RATE_LIMITER_ENABLED: BoolEnvSchema.optional(),
-    EXPORT_RATE_LIMITER_WINDOW_MS: PositiveIntStringSchema.optional(),
-    EXPORT_RATE_LIMITER_PER_WINDOW: PositiveIntStringSchema.optional(),
-    ATTEMPT_LIMITER_ENABLED: BoolEnvSchema.optional(),
-    EMAIL_SERVICE_TYPE: z.enum(['SMTP', 'MOCK']).optional(),
-    EMAIL_FROM_ADDRESS: z.string().optional(),
-    EMAIL_FROM_NAME: z.string().optional(),
-    EMAIL_REPLY_TO: z.string().optional(),
-    SMTP_HOST: z.string().optional(),
-    SMTP_PORT: PositiveIntStringSchema.optional(),
-    SMTP_SECURE: BoolEnvSchema.optional(),
-    SMTP_USER: z.string().optional(),
-    SMTP_PASSWORD: z.string().optional(),
-    SMTP_CACHE_EXPIRY_SECONDS: PositiveIntStringSchema.optional(),
-    TEST_EMAIL_ADDRESS: z.string().optional(),
-    BUGSNAG_API_KEY: z.string().optional(),
-    JSON_BODY_LIMIT: z.string().optional(),
-    URLENCODED_BODY_LIMIT: z.string().optional(),
-    RESTORE_UPLOAD_MAX_BYTES: PositiveIntStringSchema.optional(),
-    DOWNLOAD_COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).optional(),
-    RECORDS_HYDRATED_PAGE_LIMIT: PositiveIntStringSchema.optional(),
-  })
-  .passthrough();
-
-export type ApiEnv = z.infer<typeof ApiEnvSchema>;
-
-/**
- * Parse the API half of a generated env into a partial canonical config.
- * `AUTH_*` auth-provider keys are handled by the caller via
- * readAuthProviderConfigFromEnv.
- */
-export function parseApiEnv(raw: Record<string, unknown>): PartialBuildConfig {
-  const api = ApiEnvSchema.parse(raw);
-  const maxDays =
-    api.MAXIMUM_LONG_LIVED_DURATION_DAYS !== undefined
-      ? parseMaxLongLivedDays(api.MAXIMUM_LONG_LIVED_DURATION_DAYS)
-      : undefined;
-  return {
-    endpoints: {
-      // The Control Centre / web URL is not a first-class api env value; the
-      // server reaches it via the redirect whitelist (CORS + auth redirects).
-      apiUrl: api.CONDUCTOR_PUBLIC_URL,
-      appUrl: api.WEB_APP_PUBLIC_URL,
-      androidAppPublicUrl: api.ANDROID_APP_PUBLIC_URL,
-      iosAppPublicUrl: api.IOS_APP_PUBLIC_URL,
-      couchdbInternalUrl: api.COUCHDB_INTERNAL_URL
-        ? stripTrailingSlash(api.COUCHDB_INTERNAL_URL)
-        : undefined,
-      couchdbPublicUrl: api.COUCHDB_PUBLIC_URL
-        ? stripTrailingSlash(api.COUCHDB_PUBLIC_URL)
-        : undefined,
-      redirectWhitelist: api.REDIRECT_WHITELIST
-        ? OptionalCsvSchema.parse(api.REDIRECT_WHITELIST)
-        : undefined,
-    },
-    branding: {
-      conductorInstanceName: api.CONDUCTOR_INSTANCE_NAME,
-      conductorDescription: api.CONDUCTOR_DESCRIPTION,
-      conductorShortCodePrefix: api.CONDUCTOR_SHORT_CODE_PREFIX,
-    },
-    auth: {
-      profileName: api.PROFILE_NAME,
-      keyFilePath: api.KEY_FILE_PATH,
-      keySource: api.KEY_SOURCE,
-      awsSecretKeyArn: api.AWS_SECRET_KEY_ARN,
-      cookieSecret: api.FAIMS_COOKIE_SECRET,
-      disableLocalLogin: api.DISABLE_LOCAL_LOGIN,
-      provisionSsoUsersPolicy: api.PROVISION_SSO_USERS_POLICY,
-    },
-    authTokens: {
-      accessTokenExpiryMinutes: api.ACCESS_TOKEN_EXPIRY_MINUTES,
-      refreshTokenExpiryMinutes: api.REFRESH_TOKEN_EXPIRY_MINUTES,
-      impersonationSessionExpiryMinutes:
-        api.IMPERSONATION_SESSION_EXPIRY_MINUTES,
-      emailCodeExpiryMinutes: api.EMAIL_CODE_EXPIRY_MINUTES,
-      maximumLongLivedDurationDays: maxDays,
-    },
-    migration: {
-      disableMigrateOnStartup: api.DISABLE_MIGRATE_ON_STARTUP,
-      startupMigrationLockEnabled: api.STARTUP_MIGRATION_LOCK_ENABLED,
-      startupMigrationLockTimeoutMs: api.STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
-    },
-    limits: {
-      rateLimiterEnabled: api.RATE_LIMITER_ENABLED,
-      rateLimiterWindowMs: api.RATE_LIMITER_WINDOW_MS,
-      rateLimiterPerWindow: api.RATE_LIMITER_PER_WINDOW,
-      exportRateLimiterEnabled: api.EXPORT_RATE_LIMITER_ENABLED,
-      exportRateLimiterWindowMs: api.EXPORT_RATE_LIMITER_WINDOW_MS,
-      exportRateLimiterPerWindow: api.EXPORT_RATE_LIMITER_PER_WINDOW,
-      attemptLimiterEnabled: api.ATTEMPT_LIMITER_ENABLED,
-      jsonBodyLimit: api.JSON_BODY_LIMIT,
-      urlencodedBodyLimit: api.URLENCODED_BODY_LIMIT,
-      restoreUploadMaxBytes: api.RESTORE_UPLOAD_MAX_BYTES,
-      downloadCookieSameSite: api.DOWNLOAD_COOKIE_SAMESITE,
-      recordsHydratedPageLimit: api.RECORDS_HYDRATED_PAGE_LIMIT,
-    },
-    email: {
-      emailServiceType: api.EMAIL_SERVICE_TYPE,
-      emailFromAddress: api.EMAIL_FROM_ADDRESS,
-      emailFromName: api.EMAIL_FROM_NAME,
-      emailReplyTo: api.EMAIL_REPLY_TO,
-      smtpHost: api.SMTP_HOST,
-      smtpPort: api.SMTP_PORT,
-      smtpSecure: api.SMTP_SECURE,
-      smtpUser: api.SMTP_USER,
-      smtpPassword: api.SMTP_PASSWORD,
-      smtpCacheExpirySeconds: api.SMTP_CACHE_EXPIRY_SECONDS,
-      testEmailAddress: api.TEST_EMAIL_ADDRESS,
-    },
-    observability: {
-      bugsnagApiKey: parseBugsnagKey(api.BUGSNAG_API_KEY),
-    },
-    couchdb: {
-      user: api.COUCHDB_USER,
-      password: api.COUCHDB_PASSWORD,
-      externalPort: api.COUCHDB_EXTERNAL_PORT,
-    },
-    conductor: {
-      externalPort: api.CONDUCTOR_EXTERNAL_PORT,
-      internalPort: api.CONDUCTOR_INTERNAL_PORT,
-    },
-    dev: {
-      developerMode: api.DEVELOPER_MODE,
-    },
-  };
-}
-
-/**
- * Parse an apps (VITE_*) env into a partial canonical config. Kept as a
- * building block of parseGeneratedEnv.
- */
-export function parseAppsEnv(env: GeneratedEnv): PartialBuildConfig {
-  return {
-    endpoints: {
-      webUrl: env.VITE_WEB_URL,
-      apiUrl: env.VITE_API_URL,
-      appUrl: env.VITE_APP_URL,
-      conductorUrls: OptionalCsvSchema.parse(env.VITE_CONDUCTOR_URL),
-    },
-    branding: {
-      appName: env.VITE_APP_NAME,
-      // Empty strings round-trip back to undefined so the appName fallbacks
-      // apply uniformly in JSON, generated env and parse output.
-      appShortName: env.VITE_APP_SHORT_NAME || undefined,
-      headingAppName: env.VITE_HEADING_APP_NAME || undefined,
-      websiteTitle: env.VITE_WEBSITE_TITLE,
-      theme: env.VITE_THEME,
-      clusterAdminGroupName: env.VITE_CLUSTER_ADMIN_GROUP_NAME,
-    },
-    support: {
-      supportEmail: env.VITE_SUPPORT_EMAIL,
-      privacyPolicyUrl: env.VITE_APP_PRIVACY_POLICY_URL,
-      appContactUrl: env.VITE_APP_CONTACT_URL,
-      docsUrl: env.VITE_DOCS_URL,
-    },
-    notebookAndRecordUX: {
-      notebookName: env.VITE_NOTEBOOK_NAME,
-      notebookListType: env.VITE_NOTEBOOK_LIST_TYPE,
-      navigation: env.VITE_NAVIGATION,
-      showStatusTab: env.VITE_SHOW_STATUS_TAB,
-      showNewNotebook: env.VITE_SHOW_NEW_NOTEBOOK,
-      showRecordSummaryCounts: env.VITE_SHOW_RECORD_SUMMARY_COUNTS,
-    },
-    maps: {
-      mapSource: env.VITE_MAP_SOURCE,
-      mapSourceKey: env.VITE_MAP_SOURCE_KEY,
-      mapStyle: env.VITE_MAP_STYLE,
-      satelliteSource:
-        env.VITE_SATELLITE_SOURCE === ''
-          ? undefined
-          : env.VITE_SATELLITE_SOURCE,
-      offlineMaps: env.VITE_OFFLINE_MAPS,
-      autosuggestSource: env.VITE_AUTOSUGGEST_SOURCE,
-      autosuggestMapboxKey: env.VITE_AUTOSUGGEST_MAPBOX_KEY,
-      autosuggestMapTilerKey: env.VITE_AUTOSUGGEST_MAPTILER_KEY,
-      mapboxAddressCountry: UpperCsvSchema.parse(
-        env.VITE_MAPBOX_ADDRESS_COUNTRY
-      ),
-      maptilerAddressCountry: UpperCsvSchema.parse(
-        env.VITE_MAPTILER_ADDRESS_COUNTRY
-      ),
-    },
-    sync: {
-      forceRemoteDeletion: env.VITE_FORCE_REMOTE_DELETION,
-      deleteOnDeactivation: env.VITE_DELETE_ON_DEACTIVATION,
-      syncPushOnlyRecordThreshold: env.VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD,
-    },
-    attachments: {
-      attachmentServiceType: env.VITE_ATTACHMENT_SERVICE_TYPE,
-      attachmentDocumentIdPrefix:
-        env.VITE_ATTACHMENT_DOCUMENT_ID_PREFIX || undefined,
-    },
-    authTokens: {
-      tokenRefreshIntervalMs: env.VITE_TOKEN_REFRESH_INTERVAL_MS,
-      tokenRefreshWindowMs: env.VITE_TOKEN_REFRESH_WINDOW_MS,
-      loginBannerGraceMs: env.VITE_LOGIN_BANNER_GRACE_MS,
-      ignoreTokenExp: env.VITE_IGNORE_TOKEN_EXP,
-      maximumLongLivedDurationDays: parseMaxLongLivedDays(
-        env.VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS
-      ),
-      longLivedTokenDurationHints: OptionalCsvSchema.parse(
-        env.VITE_LONG_LIVED_TOKEN_DURATION_HINTS
-      )
-        .map(item => Number.parseInt(item, 10))
-        .filter(item => Number.isFinite(item) && item > 0),
-    },
-    migration: {
-      migrateOldDatabases: env.VITE_MIGRATE_OLD_DATABASES,
-    },
-    dev: {
-      showWipe: env.VITE_SHOW_WIPE,
-      showPouchDbBrowser: env.VITE_SHOW_POUCHDB_BROWSER,
-      debugApp: env.VITE_DEBUG_APP,
-      debugPouchDb: env.VITE_DEBUG_POUCHDB,
-      developerMode: env.VITE_DEVELOPER_MODE,
-    },
-    pouchdb: {
-      pouchBatchSize: env.VITE_POUCH_BATCH_SIZE,
-      pouchBatchesLimit: env.VITE_POUCH_BATCHES_LIMIT,
-    },
-    observability: {
-      // Reject the same garbage the app hides (commit hash / release stamp
-      // only); placeholder text resolves to the generator's default.
-      // Sanitised: only a commit hash / release stamp survives; anything else
-      // (blank, placeholder, prose) is `undefined`.
-      commitVersion: sanitizeCommitVersion(env.VITE_COMMIT_VERSION),
-      bugsnagApiKey: parseBugsnagKey(env.VITE_BUGSNAG_KEY),
-    },
-    teamAndRolePolicy: {
-      excludedTeamRoles: OptionalCsvSchema.parse(env.VITE_EXCLUDED_TEAM_ROLES),
-    },
-    webDesignerLimits: {
-      maxDesignFileSizeMb: env.VITE_MAX_DESIGN_FILE_SIZE_MB,
-      templateProtections: env.VITE_TEMPLATE_PROTECTIONS,
-      enablePlansInDesigner: env.VITE_ENABLE_PLANS_IN_DESIGNER,
-    },
-    android: {
-      appId: env.VITE_APP_ID,
-    },
-    ios: {
-      bundleIdentifier: env.VITE_APPLE_BUNDLE_IDENTIFIER || env.VITE_APP_ID,
-      appStoreConnectTeamId: env.VITE_APP_STORE_CONNECT_TEAM_ID || undefined,
-    },
-  };
-}
 
 /** Parse and validate source JSON config into the canonical config. */
 export function parseBuildConfig(raw: unknown): SharedBuildConfig {
@@ -1106,91 +818,4 @@ export function parseBuildConfig(raw: unknown): SharedBuildConfig {
 /** Fill defaults/invariants in a partial config to produce the runtime config. */
 export function toRuntimeConfig(parsed: PartialBuildConfig): RuntimeConfig {
   return RuntimeConfigSchema.parse(parsed);
-}
-
-/** Parse a generated apps/api env (either or both halves) into the runtime config. */
-export function parseGeneratedEnv(raw: unknown): RuntimeConfig {
-  const rawEnv = (raw ?? {}) as Record<string, unknown>;
-
-  const hasAppsKey = Object.keys(rawEnv).some(key => key.startsWith('VITE_'));
-  // Any non-VITE_ / non-AUTH_ key is part of the api half (the generator only
-  // emits VITE_*, AUTH_* and the bare api keys). We do not need to enumerate
-  // them to decide whether to run the api parser.
-  const hasApiKey = Object.keys(rawEnv).some(
-    key => !key.startsWith('VITE_') && !key.startsWith(AUTH_PREFIX)
-  );
-
-  // Merge the apps and api halves (either or both). The api half wins on
-  // shared keys because it is the deployment-specific value.
-  let partial: PartialBuildConfig = {};
-  if (hasAppsKey) {
-    const env = GeneratedEnvSchema.parse(rawEnv);
-    partial = {
-      ...partial,
-      ...parseAppsEnv(env),
-    };
-  }
-  if (hasApiKey || Object.keys(rawEnv).some(k => k.startsWith(AUTH_PREFIX))) {
-    const apiPartial = parseApiEnv(rawEnv);
-    partial = mergePartial(partial, apiPartial);
-  }
-
-  const authProviders = readAuthProviderConfigFromEnv(
-    rawEnv as Record<string, string | undefined>
-  );
-  partial = {
-    ...partial,
-    ...(authProviders && Object.keys(authProviders).length
-      ? {authProviders}
-      : {}),
-  };
-
-  return toRuntimeConfig(partial);
-}
-
-/** Drop undefined values so they do not clobber a present sibling on merge. */
-function definedOnly(value: unknown): Record<string, unknown> {
-  if (value === null || typeof value !== 'object') return {};
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-    if (v !== undefined) out[k] = v;
-  }
-  return out;
-}
-
-/**
- * Deep-merge two partial configs one level deep (groups -> scalars): for each
- * group, a defined right-side field wins over a left-side field; undefined
- * right-side fields are ignored so an absent api value does not clobber a
- * present apps value (and vice versa).
- */
-function mergePartial(
-  left: PartialBuildConfig,
-  right: PartialBuildConfig
-): PartialBuildConfig {
-  const out: Record<string, unknown> = {};
-  const groups = new Set([
-    ...Object.keys(left),
-    ...Object.keys(right),
-  ] as (keyof SharedBuildConfig)[]);
-  for (const group of groups) {
-    const leftVal = (left as Record<string, unknown>)[group];
-    const rightVal = (right as Record<string, unknown>)[group];
-    if (
-      leftVal &&
-      typeof leftVal === 'object' &&
-      rightVal &&
-      typeof rightVal === 'object'
-    ) {
-      out[group] = {
-        ...definedOnly(leftVal),
-        ...definedOnly(rightVal),
-      };
-    } else if (rightVal !== undefined) {
-      out[group] = rightVal;
-    } else {
-      out[group] = leftVal;
-    }
-  }
-  return out as Partial<SharedBuildConfig>;
 }

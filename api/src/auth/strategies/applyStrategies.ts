@@ -11,10 +11,7 @@ import {oidcStrategyGenerator} from './oidcStrategy';
 import {samlStrategyGenerator} from './samlStrategy';
 import {config} from '../../buildconfig';
 
-// The parsed, validated auth provider map. buildconfig.ts already parses the
-// AUTH_* env vars through @faims3/build-config (parseGeneratedEnv ->
-// readAuthProviderConfigFromEnv), so we read the already-parsed values here
-// instead of re-reading process.env.
+/** Auth providers already parsed by `parseApiEnv` (AUTH_* env). */
 export const getAuthProviderConfig = (): AuthProviderConfigMap => {
   return config.authProviderConfig;
 };
