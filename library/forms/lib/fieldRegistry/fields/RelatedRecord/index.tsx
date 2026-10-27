@@ -48,7 +48,10 @@ import {useMemo, useState} from 'react';
 import {FullFormManagerConfig} from '../../../formModule/formManagers/types';
 import {BaseFieldParameters} from '@faims3/data-model';
 import {FormFieldContextProps} from '../../../formModule/types';
-import {RelatedRecordRenderer} from '../../../rendering/fields/view/specialised/RelatedRecord';
+import {
+  RELATED_HYDRATION_QUERY_KEY,
+  RelatedRecordRenderer,
+} from '../../../rendering/fields/view/specialised/RelatedRecord';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {
@@ -662,7 +665,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
   // and permission checks.
   const relatedRecordQueries = useQueries({
     queries: normalizedLinks.map(({record_id}) => ({
-      queryKey: ['related-hydration', record_id],
+      queryKey: [...RELATED_HYDRATION_QUERY_KEY, record_id],
       queryFn: async () => {
         const record = await props.config
           .dataEngine()
@@ -743,7 +746,9 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           : remaining[0];
     props.setFieldData(next as RelatedFieldValue);
     await props.config.trigger.commit();
-    await queryClient.invalidateQueries({queryKey: ['related-hydration']});
+    await queryClient.invalidateQueries({
+      queryKey: RELATED_HYDRATION_QUERY_KEY,
+    });
   };
 
   // Delete the linked record entirely (same as deleting from that record’s page).
@@ -773,7 +778,9 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         baseRevisionId: peer.revision._id,
         userId: props.config.user,
       });
-      await queryClient.invalidateQueries({queryKey: ['related-hydration']});
+      await queryClient.invalidateQueries({
+        queryKey: RELATED_HYDRATION_QUERY_KEY,
+      });
       setDeleteTarget(null);
     } catch (e) {
       setDeleteError(

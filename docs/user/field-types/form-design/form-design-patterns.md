@@ -30,7 +30,7 @@ need to go beyond single-field recording.
 
 When recording a measurement, combine:
 
-- A **Select one option** or **[Select Field](../choice-fields/select.md)** for the
+- A **Select single** or **[Select Field](../choice-fields/radio-group.md)** for the
   measurement type (e.g., length, width, depth).
 - A **Controlled Number** for the numeric value, with minimum and
   maximum bounds set to catch entry errors.
@@ -44,7 +44,7 @@ When recording a measurement, combine:
 
 When recording an identification that may be provisional, combine:
 
-- A **[Select Field](../choice-fields/select.md)** or
+- A **[Select Field](../choice-fields/radio-group.md)** or
   **Select Field (Hierarchical)** for the identification (e.g.,
   species, soil type, artefact class) drawn from a controlled
   vocabulary.
@@ -90,10 +90,8 @@ enabling depth when needed.
 When a controlled vocabulary needs an escape hatch for exceptions,
 combine:
 
-- A **[Select Field](../choice-fields/select.md)** or **Select one option** with an
+- A **[Select Field](../choice-fields/radio-group.md)** or **Select single** with an
   "Other" option included in the list.
-- A **[FAIMS Text Field](../text-fields/faims-text-field.md)** conditionally revealed
-  when "Other" is selected, prompting the collector to specify.
 
 This preserves the structure of controlled data while allowing
 flexibility for unanticipated values.

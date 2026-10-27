@@ -6,7 +6,7 @@ _A guide to selecting the right field type for your data._
 
 ## Overview
 
-When you add a field to a form in the Notebook Editor, the
+When you add a field to a form in the {{Notebook}} Editor, the
 [ADD A FIELD dialog](../shared-settings/adding-a-field.md) presents nearly two dozen
 field types across eight tabs. This guide helps you choose the right one
 by matching your data requirements to specific fields. It covers design
@@ -211,6 +211,8 @@ Choose based on the level of temporal detail you need:
 > **Note:** [Date and Time with Now button](../date-time-fields/date-time-now.md)
 > is deprecated as a separate field type. Existing fields keep working; for
 > new forms, use **Date time picker** with **Show "Now" button** enabled.
+
+(choices-and-controlled-vocabularies)=
 
 ### Choices and Controlled Vocabularies
 

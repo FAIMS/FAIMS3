@@ -47,7 +47,6 @@ export default function MainCard(props: MainCardProps) {
             '& .MuiCardHeader-action': {m: '0px auto', alignSelf: 'center'},
             // backgroundColor: theme.palette.grey[200]
           }}
-          titleTypographyProps={{variant: 'subtitle1'}}
           title={title}
         />
       )}
