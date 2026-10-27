@@ -29,7 +29,7 @@ import {config} from '../../buildconfig';
 import {designerHtmlInput, INPUT_LIMITS} from '../../lib/input-limits';
 import {getViewIDForField} from '../../state/helpers/uiSpec-helpers';
 import {useExportNameAutoSync} from '../../state/editing-context';
-import {useAppDispatch, useAppSelector} from '../../state/hooks';
+import {useAppDispatch, useAppSelector, useAppStore} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {
   fieldConditionChanged,
@@ -98,6 +98,7 @@ export const BaseFieldEditor = ({
   );
   const uiSpec = useAppSelector(state => state.notebook.uiSpec.present);
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const mdxEditorRef = useRef<MDXEditorMethods>(null);
   // The exact markdown the editor itself last emitted via onChange. The sync
   // effect uses this to tell our own edits (echoed back through the store) from
@@ -156,14 +157,33 @@ export const BaseFieldEditor = ({
     [dispatch, fieldName]
   );
 
+  const readStoredExportName = () =>
+    store.getState().notebook.uiSpec.present.fields[fieldName]?.exportName ??
+    '';
+
+  /**
+   * Commit `newExportName`, then show what the reducer actually stored
+   * (slugified and uniquified, e.g. `width` → `width-1`). Invalid input
+   * just restores the stored value.
+   */
   const commitExportName = (newExportName: string) => {
+    debouncedRename.cancel();
     const desired = newExportName.trim();
-    const viewId = getViewIDForField(uiSpec, fieldName);
-    if (viewId && desired && slugify(desired) && desired !== field.exportName) {
-      lastRequestedExportNameRef.current = desired;
-      setLocalExportName(desired);
+    const viewId = getViewIDForField(
+      store.getState().notebook.uiSpec.present,
+      fieldName
+    );
+    if (
+      viewId &&
+      desired &&
+      slugify(desired) &&
+      desired !== readStoredExportName()
+    ) {
       dispatch(fieldRenamed({viewId, fieldName, newExportName: desired}));
     }
+    const stored = readStoredExportName();
+    lastRequestedExportNameRef.current = stored;
+    setLocalExportName(stored);
   };
 
   const syncExportNameToLabel = (label: string) => {
@@ -182,17 +202,12 @@ export const BaseFieldEditor = ({
   };
 
   const handleIdBlur = () => {
-    const desired = localExportName.trim();
-    if (!desired || !slugify(desired)) {
-      setLocalExportName(field.exportName);
-      return;
-    }
-    commitExportName(desired);
+    commitExportName(localExportName);
   };
 
   const syncFieldID = () => {
     const desired = slugify(state.label || '');
-    if (!desired || desired === field.exportName) return;
+    if (!desired) return;
     disableAutoSync();
     commitExportName(desired);
   };
@@ -260,8 +275,10 @@ export const BaseFieldEditor = ({
   useEffect(() => {
     // Own rename echoing back through the store, including a uniquified
     // suffix (`width` → `width-1`). Do not reset the input — the user may
-    // already have typed past this committed prefix.
+    // already have typed past this committed prefix. Only while focused:
+    // otherwise an undo to `width-1` would look like an echo and be ignored.
     if (
+      document.activeElement === idInputRef.current &&
       isOwnExportNameEcho(lastRequestedExportNameRef.current, field.exportName)
     ) {
       return;

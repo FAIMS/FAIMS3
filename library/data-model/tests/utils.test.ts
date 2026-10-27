@@ -196,4 +196,42 @@ describe('uniqueExportColumnName', () => {
     expect(uniqueExportColumnName('foo/bar', used)).toBe('foo_bar');
     expect(uniqueExportColumnName('foo_bar', used)).toBe('foo_bar_1');
   });
+
+  it('skips a candidate whose derived extra column is already reserved', () => {
+    const used = new Set<string>();
+    expect(
+      uniqueExportColumnName('location', used, undefined, candidate => [
+        `${candidate}_latitude`,
+      ])
+    ).toBe('location');
+    expect(used.has('location_latitude')).toBe(true);
+    expect(uniqueExportColumnName('location latitude', used)).toBe(
+      'location_latitude_1'
+    );
+  });
+
+  it('renames a field whose extras would overwrite an earlier column', () => {
+    const used = new Set<string>();
+    expect(uniqueExportColumnName('location latitude', used)).toBe(
+      'location_latitude'
+    );
+    expect(
+      uniqueExportColumnName('location', used, undefined, candidate => [
+        `${candidate}_latitude`,
+      ])
+    ).toBe('location_1');
+  });
+
+  it('keeps a truncated suffixed name stable across a second pass', () => {
+    // Cut lands right after `_`: must not emit `…__1` (re-sanitises to `…_1`).
+    const raw = `${'a'.repeat(MAX_EXPORT_COLUMN_NAME_LENGTH - 3)}_bc`;
+    const first = new Set<string>();
+    uniqueExportColumnName(raw, first);
+    const suffixed = uniqueExportColumnName(raw, first);
+    expect(suffixed).toBe(`${'a'.repeat(MAX_EXPORT_COLUMN_NAME_LENGTH - 3)}_1`);
+
+    const second = new Set<string>();
+    uniqueExportColumnName(raw, second);
+    expect(uniqueExportColumnName(suffixed, second)).toBe(suffixed);
+  });
 });

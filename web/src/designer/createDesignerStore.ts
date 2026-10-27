@@ -52,7 +52,8 @@ export function createDesignerStore(
   });
 }
 
+/** Store instance returned by {@link createDesignerStore}. */
+export type DesignerStore = ReturnType<typeof createDesignerStore>;
+
 /** Dispatch type for the store instance from {@link createDesignerStore}. */
-export type DesignerDispatch = ReturnType<
-  typeof createDesignerStore
->['dispatch'];
+export type DesignerDispatch = DesignerStore['dispatch'];

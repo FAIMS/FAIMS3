@@ -3,9 +3,13 @@
  * CSV / ZIP / GIS JSON export splits the editable column name (`exportName`)
  * from the immutable storage id (`FieldSummary.name`).
  */
+import type archiver from 'archiver';
 import {describe, expect, it} from 'vitest';
-import type {FieldSummary} from '@faims3/data-model';
-import {generateFilenameForAttachment} from '../src/couchdb/export/attachmentExport';
+import type {FieldSummary, HydratedDataRecord} from '@faims3/data-model';
+import {
+  generateFilenameForAttachment,
+  processRecordAttachments,
+} from '../src/couchdb/export/attachmentExport';
 import {getHeaderInfoFromUiSpecification} from '../src/couchdb/export/csvExport';
 import {
   convertDataForOutput,
@@ -226,6 +230,112 @@ describe('export identity split', () => {
 
     expect(row.foo_bar).toBe('first');
     expect(row.foo_bar_1).toBe('second');
+  });
+
+  it('does not let a later field overwrite TakePoint suffix columns', () => {
+    const gps: FieldSummary = {
+      name: 'f_gps',
+      exportName: 'location',
+      type: 'faims-core::JSON',
+      componentNamespace: 'faims-custom',
+      componentName: 'TakePoint',
+      viewId: 'sectionA',
+      viewsetId: 'Survey',
+      annotation: '',
+      uncertainty: '',
+    };
+    const text: FieldSummary = {
+      ...annotatedTextFieldSummary(),
+      name: 'f_text',
+      exportName: 'location latitude',
+      annotation: '',
+      uncertainty: '',
+    };
+    const fields = [gps, text];
+
+    expect(getHeaderInfoFromUiSpecification({fields})).toEqual([
+      'location',
+      'location_latitude',
+      'location_longitude',
+      'location_accuracy',
+      'location_latitude_1',
+    ]);
+
+    const row = convertDataForOutput(
+      fields,
+      {
+        f_gps: {
+          type: 'Feature',
+          geometry: {type: 'Point', coordinates: [151.2, -33.8]},
+          properties: {accuracy: 4},
+        },
+        f_text: 'second',
+      },
+      {},
+      'REC-1',
+      [],
+      'Survey'
+    );
+
+    expect(row.location_latitude).toBe(-33.8);
+    expect(row.location_longitude).toBe(151.2);
+    expect(row.location_accuracy).toBe(4);
+    expect(row.location_latitude_1).toBe('second');
+  });
+
+  it('ZIP and CSV agree on attachment names when export names share a folder', () => {
+    const upper: FieldSummary = {
+      ...photoFieldSummary(),
+      name: 'f_upper',
+      exportName: 'Photo',
+    };
+    const lower: FieldSummary = {
+      ...photoFieldSummary(),
+      name: 'f_lower',
+      exportName: 'photo',
+    };
+    const fields = [upper, lower];
+    const attachment = (id: string) => [
+      {attachment_id: id, filename: `${id}.jpg`, file_type: 'image/jpeg'},
+    ];
+    // Record key order is the reverse of uiSpec order.
+    const data = {
+      f_lower: attachment('att-lower'),
+      f_upper: attachment('att-upper'),
+    };
+
+    const row = convertDataForOutput(fields, data, {}, 'REC-1', [], 'Survey');
+
+    const zipNames = new Map<string, string>();
+    processRecordAttachments({
+      record: {
+        record_id: 'rec-1',
+        hrid: 'REC-1',
+        type: 'Survey',
+        data,
+        types: {
+          f_lower: 'faims-attachment::Files',
+          f_upper: 'faims-attachment::Files',
+        },
+      } as unknown as HydratedDataRecord,
+      nanoDb: {
+        attachment: {
+          getAsStream: (id: string) => ({id, on: () => undefined}),
+        },
+      },
+      archive: {
+        append: (stream: {id: string}, {name}: {name: string}) =>
+          zipNames.set(stream.id, name),
+      } as unknown as archiver.Archiver,
+      filenames: [],
+      viewID: 'Survey',
+      pathPrefix: '',
+      exportNameByStorageId: new Map(fields.map(f => [f.name, f.exportName])),
+    });
+
+    expect(zipNames.get('att-upper')).toBe(row.Photo);
+    expect(zipNames.get('att-lower')).toBe(row.photo);
+    expect(row.Photo).not.toBe(row.photo);
   });
 });
 

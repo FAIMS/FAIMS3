@@ -8,8 +8,9 @@ import {
   notebookRecordIterator,
   ProjectID,
   UpdatedTimeFilter,
+  extraExportColumnNames,
   slugify,
-  uniqueExportColumnName,
+  uniqueFieldExportColumnName,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stringifier, stringify} from 'csv-stringify';
@@ -19,7 +20,6 @@ import {getCompiledUiSpecModel} from '../notebooks';
 import {stripDeletedRelatedRefsFromRecordData} from './stripDeletedRelatedRefs';
 import {
   convertDataForOutput,
-  getComponentKey,
   MAX_CSV_FILENAME_LENGTH,
   truncateWithHash,
 } from './utils';
@@ -71,66 +71,11 @@ function generateRecordPrefixInformation(record: HydratedDataRecord) {
   ];
 }
 
-/** Builds CSV column headers from a field's export name (not the storage id). */
-type FieldHeaderGenerator = (exportName: string) => string[];
-
-// Registry of component header generators (keyed by namespace::name)
-const FIELD_COMPONENT_HEADER_GENERATORS: Record<string, FieldHeaderGenerator> =
-  {
-    'faims-custom::TakePoint': (exportName: string) => [
-      exportName,
-      `${exportName}_latitude`,
-      `${exportName}_longitude`,
-      `${exportName}_accuracy`,
-    ],
-
-    'faims-custom::AddressField': (exportName: string) => [
-      exportName,
-      `${exportName}_house_number`,
-      `${exportName}_road`,
-      `${exportName}_suburb`,
-      `${exportName}_town`,
-      `${exportName}_state`,
-      `${exportName}_postcode`,
-      `${exportName}_country`,
-      `${exportName}_country_code`,
-      `${exportName}_manual`,
-    ],
-
-    'mapping-plugin::MapFormField': (exportName: string) => [
-      exportName,
-      `${exportName}_latitude`,
-      `${exportName}_longitude`,
-    ],
-
-    'faims-custom::TakePhoto': (exportName: string) => [exportName],
-    'faims-custom::FileUploader': (exportName: string) => [exportName],
-
-    'faims-custom::RelatedRecordSelector': (exportName: string) => [exportName],
-  };
-
-// Default generator for unregistered components
-const defaultHeaderGenerator: FieldHeaderGenerator = (exportName: string) => [
-  exportName,
-];
-
 /**
- * Get the header generator for a given component (namespace + name).
- */
-function getHeaderGeneratorForComponent(
-  componentNamespace: string,
-  componentName: string
-): FieldHeaderGenerator {
-  const key = getComponentKey(componentNamespace, componentName);
-  return FIELD_COMPONENT_HEADER_GENERATORS[key] || defaultHeaderGenerator;
-}
-
-/**
- * Generate CSV headers from UI specification fields. Uses the registered
- * component header generators (by namespace + name) to produce the additional
- * headers for each field type. Column names come from a sanitised
- * `field.exportName`, never the storage id and never the raw stored value
- * (notebooks may skip designer).
+ * Generate CSV headers from UI specification fields. Column names come from
+ * a sanitised, uniquified `field.exportName` plus the derived suffix columns
+ * ({@link extraExportColumnNames}) so GPS / address / annotation headers
+ * cannot collide with a later field.
  */
 export function getHeaderInfoFromUiSpecification({
   fields,
@@ -141,24 +86,15 @@ export function getHeaderInfoFromUiSpecification({
   const usedExportNames = new Set<string>();
 
   for (const field of fields) {
-    const exportName = uniqueExportColumnName(
+    const exportName = uniqueFieldExportColumnName(
       field.exportName || field.name,
-      usedExportNames
+      usedExportNames,
+      field
     );
-    const generator = getHeaderGeneratorForComponent(
-      field.componentNamespace,
-      field.componentName
+    additionalHeaders.push(
+      exportName,
+      ...extraExportColumnNames(field, exportName)
     );
-    const fieldHeaders = generator(exportName);
-    additionalHeaders.push(...fieldHeaders);
-
-    // Add annotation and uncertainty columns if present
-    if (field.annotation) {
-      additionalHeaders.push(`${exportName}_${field.annotation}`);
-    }
-    if (field.uncertainty) {
-      additionalHeaders.push(`${exportName}_${field.uncertainty}`);
-    }
   }
 
   return additionalHeaders.filter(

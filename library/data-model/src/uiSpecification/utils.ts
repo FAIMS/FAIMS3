@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import {HRID_STRING} from '../datamodel';
 import {FAIMSTypeName} from '../types';
-import {slugify, uniqueExportColumnName} from '../utils';
+import {
+  EMPTY_EXPORT_COLUMN_FALLBACK,
+  slugify,
+  uniqueExportColumnName,
+} from '../utils';
 import {compileExpression} from './conditionals';
 import {ExprType, FAIMS_TYPE_TO_EXPR_TYPE} from './expressions';
 import {
@@ -268,13 +272,79 @@ export const getFieldToIdsMap = (
 // Maintain this list of spatially relevant fields
 export const SPATIAL_FIELDS = ['MapFormField', 'TakePoint'];
 
+/**
+ * Extra CSV / GIS columns appended to a field's export name, keyed by
+ * `namespace::component`. Keep in sync with `csvFormatValue` suffix keys.
+ */
+export const EXTRA_EXPORT_COLUMN_SUFFIXES: Record<string, readonly string[]> = {
+  'faims-custom::TakePoint': ['_latitude', '_longitude', '_accuracy'],
+  'faims-custom::AddressField': [
+    '_house_number',
+    '_road',
+    '_suburb',
+    '_town',
+    '_state',
+    '_postcode',
+    '_country',
+    '_country_code',
+    '_manual',
+  ],
+  'mapping-plugin::MapFormField': ['_latitude', '_longitude'],
+};
+
+/** Field facts needed to list derived export columns. */
+export type ExportColumnField = {
+  componentNamespace: string;
+  componentName: string;
+  annotation?: string;
+  uncertainty?: string;
+};
+
+/**
+ * Columns this field emits besides its base export name (GPS / address
+ * pieces, annotation, uncertainty).
+ */
+export function extraExportColumnNames(
+  field: ExportColumnField,
+  exportName: string
+): string[] {
+  const key = field.componentNamespace
+    ? `${field.componentNamespace}::${field.componentName}`
+    : field.componentName;
+  const extras = (EXTRA_EXPORT_COLUMN_SUFFIXES[key] ?? []).map(
+    suffix => `${exportName}${suffix}`
+  );
+  if (field.annotation) extras.push(`${exportName}_${field.annotation}`);
+  if (field.uncertainty) extras.push(`${exportName}_${field.uncertainty}`);
+  return extras;
+}
+
+/**
+ * {@link uniqueExportColumnName} that also reserves
+ * {@link extraExportColumnNames} so a later field cannot take `location`
+ * from a TakePoint's `location_latitude`.
+ */
+export function uniqueFieldExportColumnName(
+  raw: string,
+  used: Set<string>,
+  field: ExportColumnField
+): string {
+  return uniqueExportColumnName(
+    raw,
+    used,
+    EMPTY_EXPORT_COLUMN_FALLBACK,
+    candidate => extraExportColumnNames(field, candidate)
+  );
+}
+
 export type FieldSummary = {
   /** Immutable storage id (`uiSpec.fields` key). */
   name: string;
   /**
    * CSV / GIS column name. When built by {@link getNotebookFieldTypes} this
-   * is sanitised (`sanitizeExportColumnName`) and uniquified — do not treat
-   * it as the raw stored `exportName` from an uploaded notebook.
+   * is sanitised (`sanitizeExportColumnName`) and uniquified against other
+   * bases and derived suffix columns — do not treat it as the raw stored
+   * `exportName` from an uploaded notebook.
    */
   exportName: string;
   type: string;
@@ -322,25 +392,30 @@ export const getNotebookFieldTypes = ({
   views.forEach((view: string) => {
     uiSpecification.views[view].fields.forEach((field: string) => {
       const fieldInfo = uiSpecification.fields[field];
+      const componentNamespace = fieldInfo['component-namespace'] ?? '';
+      const componentName = fieldInfo['component-name'];
+      const annotation = fieldInfo.meta?.annotation.include
+        ? slugify(fieldInfo.meta.annotation.label)
+        : '';
+      const uncertainty = fieldInfo.meta?.uncertainty.include
+        ? slugify(fieldInfo.meta.uncertainty.label)
+        : '';
       fields.push({
         name: field,
-        exportName: uniqueExportColumnName(
+        exportName: uniqueFieldExportColumnName(
           fieldInfo.exportName || field,
-          usedExportNames
+          usedExportNames,
+          {componentNamespace, componentName, annotation, uncertainty}
         ),
-        componentNamespace: fieldInfo['component-namespace'] ?? '',
-        componentName: fieldInfo['component-name'],
+        componentNamespace,
+        componentName,
         type: fieldInfo['type-returned'],
         viewsetId: viewID,
         viewId: view,
         // include a hint as to whether this is a spatial field
-        isSpatial: SPATIAL_FIELDS.some(f => f === fieldInfo['component-name']),
-        annotation: fieldInfo.meta?.annotation.include
-          ? slugify(fieldInfo.meta.annotation.label)
-          : '',
-        uncertainty: fieldInfo.meta?.uncertainty.include
-          ? slugify(fieldInfo.meta.uncertainty.label)
-          : '',
+        isSpatial: SPATIAL_FIELDS.some(f => f === componentName),
+        annotation,
+        uncertainty,
       });
     });
   });

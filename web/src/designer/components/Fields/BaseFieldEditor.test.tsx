@@ -8,6 +8,7 @@ import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import {ReactNode} from 'react';
 import {Provider} from 'react-redux';
+import {ActionCreators} from 'redux-undo';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createDesignerStore} from '../../createDesignerStore';
 import {getFieldSpec} from '../../fields';
@@ -16,7 +17,7 @@ import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   type AppState,
 } from '../../state/initial';
-import {loaded} from '../../store/slices/uiSpec';
+import {fieldRenamed, loaded} from '../../store/slices/uiSpec';
 import globalTheme from '../../theme/index';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
@@ -191,6 +192,7 @@ describe('BaseFieldEditor export name', () => {
     );
 
     const exportInput = screen.getByPlaceholderText('Enter export name');
+    exportInput.focus();
     fireEvent.change(exportInput, {target: {value: 'width'}});
 
     act(() => {
@@ -211,6 +213,136 @@ describe('BaseFieldEditor export name', () => {
     expect(
       store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
     ).toBe('width-cm');
+  });
+
+  it('shows the stored uniquified slug after blur, not the typed text', () => {
+    const store = createDesignerStore();
+    const taken = getFieldSpec('TextField');
+    taken['component-parameters'].name = 'f_taken';
+    taken.exportName = 'width';
+    taken.designerIdentifier = 'designer-taken';
+
+    const field = getFieldSpec('TextField');
+    field['component-parameters'].name = STORAGE_ID;
+    field.exportName = 'Site-Name';
+    field.designerIdentifier = DESIGNER_ID;
+
+    store.dispatch(
+      loaded({
+        fields: {f_taken: taken, [STORAGE_ID]: field},
+        views: {
+          sectionA: {label: 'Section A', fields: ['f_taken', STORAGE_ID]},
+        },
+        viewsets: {
+          formA: {label: 'Form A', views: ['sectionA'], summary_fields: []},
+        },
+        visible_types: ['formA'],
+        settings: {showQrCodeButton: false},
+        schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+      })
+    );
+
+    render(
+      <WithProviders store={store}>
+        <BaseFieldEditor fieldName={STORAGE_ID} showHelperText={false} />
+      </WithProviders>
+    );
+
+    const exportInput = screen.getByPlaceholderText('Enter export name');
+    fireEvent.change(exportInput, {target: {value: 'width'}});
+    fireEvent.blur(exportInput);
+
+    expect(
+      store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
+    ).toBe('width-1');
+    expect((exportInput as HTMLInputElement).value).toBe('width-1');
+
+    fireEvent.change(exportInput, {target: {value: 'Plot Name'}});
+    fireEvent.blur(exportInput);
+    expect((exportInput as HTMLInputElement).value).toBe('Plot-Name');
+  });
+
+  it('Sync with Label inside the debounce window wins over the typed text', () => {
+    vi.useFakeTimers();
+    const store = storeWithTextField();
+
+    render(
+      <WithProviders store={store}>
+        <BaseFieldEditor fieldName={STORAGE_ID} showHelperText={false} />
+      </WithProviders>
+    );
+
+    const exportInput = screen.getByPlaceholderText('Enter export name');
+    exportInput.focus();
+    fireEvent.change(exportInput, {target: {value: 'typed'}});
+    fireEvent.click(screen.getByRole('button', {name: 'Sync with Label'}));
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(
+      store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
+    ).toBe('Site-Name');
+    expect((exportInput as HTMLInputElement).value).toBe('Site-Name');
+  });
+
+  it('shows an undone export name even when it looks like an own echo', () => {
+    const store = createDesignerStore();
+    const taken = getFieldSpec('TextField');
+    taken['component-parameters'].name = 'f_taken';
+    taken.exportName = 'width';
+    taken.designerIdentifier = 'designer-taken';
+
+    const field = getFieldSpec('TextField');
+    field['component-parameters'].name = STORAGE_ID;
+    field.exportName = 'width-1';
+    field.designerIdentifier = DESIGNER_ID;
+
+    store.dispatch(
+      loaded({
+        fields: {f_taken: taken, [STORAGE_ID]: field},
+        views: {
+          sectionA: {label: 'Section A', fields: ['f_taken', STORAGE_ID]},
+        },
+        viewsets: {
+          formA: {label: 'Form A', views: ['sectionA'], summary_fields: []},
+        },
+        visible_types: ['formA'],
+        settings: {showQrCodeButton: false},
+        schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+      })
+    );
+
+    render(
+      <WithProviders store={store}>
+        <BaseFieldEditor fieldName={STORAGE_ID} showHelperText={false} />
+      </WithProviders>
+    );
+
+    // Free `width`, then take it with this field.
+    act(() => {
+      store.dispatch(
+        fieldRenamed({
+          viewId: 'sectionA',
+          fieldName: 'f_taken',
+          newExportName: 'breadth',
+        })
+      );
+    });
+    const exportInput = screen.getByPlaceholderText('Enter export name');
+    fireEvent.change(exportInput, {target: {value: 'width'}});
+    fireEvent.blur(exportInput);
+    expect((exportInput as HTMLInputElement).value).toBe('width');
+
+    // Undo back to `width-1`: same shape as an own uniquified echo.
+    act(() => {
+      store.dispatch(ActionCreators.undo());
+    });
+    expect(
+      store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
+    ).toBe('width-1');
+    expect((exportInput as HTMLInputElement).value).toBe('width-1');
   });
 });
 

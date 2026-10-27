@@ -67,6 +67,41 @@ describe('getNotebookFieldTypes', () => {
     expect(fields[0].name).toBe('f_abc123');
   });
 
+  it('uniquifies a later field that would collide with a TakePoint suffix column', () => {
+    const colliding = {
+      fields: {
+        f_gps: {
+          ...photoField,
+          exportName: 'location',
+          'component-namespace': 'faims-custom',
+          'component-name': 'TakePoint',
+          'type-returned': 'faims-core::JSON',
+        },
+        f_text: {
+          ...photoField,
+          exportName: 'location latitude',
+          'component-name': 'TextField',
+          'type-returned': 'faims-core::String',
+        },
+      },
+      views: {
+        'section-1': {fields: ['f_gps', 'f_text'], label: 'Section 1'},
+      },
+      viewsets: {photos: {views: ['section-1'], label: 'Photos'}},
+      visible_types: ['photos'],
+    } as UiSpecModel;
+
+    const fields = getNotebookFieldTypes({
+      uiSpecification: colliding,
+      viewID: 'photos',
+    });
+
+    expect(fields.map(f => f.exportName)).toEqual([
+      'location',
+      'location_latitude_1',
+    ]);
+  });
+
   it('uniquifies export names that collide after sanitisation', () => {
     const colliding = {
       fields: {

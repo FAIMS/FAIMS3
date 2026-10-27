@@ -319,7 +319,8 @@ export function createConfiguredArchive(
  * @param pathPrefix - Prefix for file paths in the archive
  * @returns Array of promises, one for each attachment stream initiated
  */
-function processRecordAttachments({
+/** Exported for tests — adds one record's attachments to the archive. */
+export function processRecordAttachments({
   record,
   nanoDb,
   archive,
@@ -338,8 +339,14 @@ function processRecordAttachments({
 }): Promise<void>[] {
   const promises: Promise<void>[] = [];
 
-  // Iterate through all fields in the record's data
-  for (const fieldId of Object.keys(record.data)) {
+  // Walk fields in uiSpec order (the map's insertion order) so collision
+  // suffixes match the CSV path when two export names share a ZIP folder
+  // (`Photo` / `photo`). Fields absent from the uiSpec follow.
+  const fieldIds = [
+    ...[...exportNameByStorageId.keys()].filter(id => id in record.data),
+    ...Object.keys(record.data).filter(id => !exportNameByStorageId.has(id)),
+  ];
+  for (const fieldId of fieldIds) {
     const fieldType = record.types[fieldId];
 
     // Only process attachment fields

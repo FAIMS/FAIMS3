@@ -64,15 +64,17 @@ export type ExpressionEditorHandle = {
 };
 
 /**
- * Insert `{id}` at the main selection. Prepends a space when the caret sits
- * after a non-whitespace character (same habit as the old append picker).
+ * Insert `{id}` at the main selection, space-separated from any adjacent
+ * non-whitespace so it never fuses with a neighbouring token (`{a}{b}`).
  */
 const insertTokenAtCursor = (view: EditorView, id: string) => {
-  const token = `{${id}}`;
+  const {doc} = view.state;
   const {from, to} = view.state.selection.main;
-  const before = from > 0 ? view.state.doc.sliceString(from - 1, from) : '';
-  const insert =
-    from === to && from > 0 && !/\s/.test(before) ? ` ${token}` : token;
+  const before = from > 0 ? doc.sliceString(from - 1, from) : '';
+  const after = to < doc.length ? doc.sliceString(to, to + 1) : '';
+  const insert = `${before && !/\s/.test(before) ? ' ' : ''}{${id}}${
+    after && !/\s/.test(after) ? ' ' : ''
+  }`;
   view.dispatch({
     changes: {from, to, insert},
     selection: {anchor: from + insert.length},
@@ -167,6 +169,9 @@ export const ExpressionEditor = forwardRef<
       parent,
       state: EditorState.create({
         doc: value,
+        // Caret at the end until the user places it, so a picker insert
+        // before any click appends rather than prepending.
+        selection: {anchor: value.length},
         extensions: [
           history(),
           Prec.highest(
@@ -190,6 +195,11 @@ export const ExpressionEditor = forwardRef<
           themeCompartment.current.of(expressionEditorTheme(theme)),
           editableCompartment.current.of(EditorView.editable.of(!disabled)),
           EditorView.updateListener.of(update => {
+            // A deleted or redrawn chip detaches the Popper anchor, which
+            // would otherwise leave the tooltip stuck at (0, 0).
+            setHover(current =>
+              current && !current.anchorEl.isConnected ? null : current
+            );
             if (!update.docChanged) return;
             const next = update.state.doc.toString();
             setDocValue(next);

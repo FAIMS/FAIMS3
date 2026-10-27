@@ -4,7 +4,7 @@ import {
   FAIMSAttachmentReference,
   FieldSummary,
   sanitizeExportColumnName,
-  uniqueExportColumnName,
+  uniqueFieldExportColumnName,
 } from '@faims3/data-model';
 import {generateFilenameForAttachment} from './attachmentExport';
 
@@ -65,6 +65,10 @@ const RELATIONSHIP_COMPONENT = 'faims-custom::RelatedRecordSelector';
  *
  * Serialization is determined by the field's component (namespace + name), not
  * by the return type.
+ *
+ * Suffix column names must match {@link extraExportColumnNames} /
+ * `EXTRA_EXPORT_COLUMN_SUFFIXES` so uniquify reserves the same keys
+ * `csvFormatValue` writes.
  *
  * TODO it would be better to merge the header generation and value formatting
  * logic together - currently some parts are encoded twice in two different
@@ -282,9 +286,10 @@ export const convertDataForOutput = (
   let result: {[key: string]: any} = {};
   const usedExportNames = new Set<string>();
   fields.forEach((field: FieldSummary) => {
-    const exportName = uniqueExportColumnName(
+    const exportName = uniqueFieldExportColumnName(
       field.exportName || field.name,
-      usedExportNames
+      usedExportNames,
+      field
     );
     if (field.name in data) {
       const formattedValue = csvFormatValue({

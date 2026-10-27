@@ -82,25 +82,42 @@ export function sanitizeExportColumnName(
 /**
  * {@link sanitizeExportColumnName} plus a numeric suffix when the result
  * collides with an already-used column name in this export.
+ *
+ * `extraNames(candidate)` lists columns this field would also emit (GPS
+ * `_latitude`, address `_road`, annotation, …). A candidate is skipped when
+ * any of those extras is already reserved, and the extras are reserved with
+ * the chosen name so a later field cannot reuse them.
  */
 export function uniqueExportColumnName(
   raw: string,
   used: Set<string>,
-  fallback = EMPTY_EXPORT_COLUMN_FALLBACK
+  fallback = EMPTY_EXPORT_COLUMN_FALLBACK,
+  extraNames?: (candidate: string) => readonly string[]
 ): string {
+  const extrasFor = extraNames ?? (() => []);
+  const isTaken = (name: string) =>
+    used.has(name) || extrasFor(name).some(extra => used.has(extra));
+
   const base = sanitizeExportColumnName(raw, fallback);
   let candidate = base;
   let n = 1;
-  while (used.has(candidate)) {
+  while (isTaken(candidate)) {
     const suffix = `_${n}`;
+    // Strip a trailing `.` / `_` left by the cut: `abc_` + `_1` would
+    // re-sanitise to `abc_1` and diverge on a second uniquify pass.
     const truncated =
       base.length + suffix.length > MAX_EXPORT_COLUMN_NAME_LENGTH
-        ? base.slice(0, MAX_EXPORT_COLUMN_NAME_LENGTH - suffix.length)
+        ? base
+            .slice(0, MAX_EXPORT_COLUMN_NAME_LENGTH - suffix.length)
+            .replace(/[._]+$/, '')
         : base;
     candidate = `${truncated}${suffix}`;
     n += 1;
   }
   used.add(candidate);
+  for (const extra of extrasFor(candidate)) {
+    if (extra) used.add(extra);
+  }
   return candidate;
 }
 

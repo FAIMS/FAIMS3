@@ -136,6 +136,21 @@ describe('ExpressionEditor', () => {
     expect(document.querySelector(`.${EXPR_CHIP_CLASS}`)).toBeNull();
   });
 
+  it('hides the chip tooltip when the hovered chip is deleted', () => {
+    renderEditor({value: '{f_abc} * 2'});
+    const view = viewFromEditor();
+    const chip = document.querySelector(`.${EXPR_CHIP_CLASS}`);
+    if (!chip) throw new Error('chip not rendered');
+    fireEvent.mouseOver(chip);
+    expect(screen.getByRole('tooltip')).toBeTruthy();
+
+    act(() => {
+      view.dispatch({selection: {anchor: '{f_abc}'.length}});
+      deleteCharBackward(view as never);
+    });
+    expect(screen.queryByRole('tooltip')).toBeNull();
+  });
+
   it('inserts a reference at the caret, not only at the end', () => {
     const {handle} = renderEditor({value: '1 + 2'});
     const view = viewFromEditor();
@@ -147,6 +162,24 @@ describe('ExpressionEditor', () => {
     expect(document.querySelector(`.${EXPR_CHIP_CLASS}`)?.textContent).toBe(
       'Width'
     );
+  });
+
+  it('appends when the picker inserts before the caret was ever placed', () => {
+    const {handle} = renderEditor({value: '{f_abc} * 2'});
+    act(() => {
+      handle.current?.insertRef('f_xyz');
+    });
+    expect(handle.current?.getValue()).toBe('{f_abc} * 2 {f_xyz}');
+  });
+
+  it('separates an inserted reference from a following token', () => {
+    const {handle} = renderEditor({value: '{f_abc}'});
+    const view = viewFromEditor();
+    act(() => {
+      view.dispatch({selection: {anchor: 0}});
+      handle.current?.insertRef('f_xyz');
+    });
+    expect(handle.current?.getValue()).toBe('{f_xyz} {f_abc}');
   });
 
   it('debounces onChange', () => {
