@@ -5,16 +5,17 @@
  * allows the user to select which server they want to authenticate with.
  */
 
-import {Browser} from '@capacitor/browser';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import {Box, Button, Paper, Stack, Typography, useTheme} from '@mui/material';
 import {useState} from 'react';
-import {config, IS_WEB_PLATFORM} from '../../../buildconfig';
+import {config} from '../../../buildconfig';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 import {getSelectedServer, Server} from '../../../context/slices/projectSlice';
+import {useAppSelector} from '../../../context/store';
 import {useIsOnline} from '../../../utils/customHooks';
+import {localReauthIdentifier, openConductorLogin} from './conductorLoginUrl';
 import {InviteCodeEntry, InviteQRScanner} from './inviteCodeEntry';
 import {MultiServerSelector} from './multiServerSelector';
-import {useAppSelector} from '../../../context/store';
 
 const OnboardingComponent = ({
   scanQr,
@@ -27,6 +28,23 @@ const OnboardingComponent = ({
   const [showCodeInput, setShowCodeInput] = useState(false);
   const theme = useTheme();
   const selectedServer = useAppSelector(getSelectedServer);
+  const activeUser = useAppSelector(selectActiveUser);
+  const storedUsers = useAppSelector(state =>
+    selectedServer
+      ? state.auth.servers[selectedServer.serverId]?.users
+      : undefined
+  );
+  const storedOnServer =
+    (activeUser &&
+    selectedServer &&
+    activeUser.serverId === selectedServer.serverId
+      ? storedUsers?.[activeUser.username]
+      : undefined) ?? Object.values(storedUsers ?? {})[0];
+  const reauthEmail = localReauthIdentifier({
+    username:
+      storedOnServer?.parsedToken.username ?? activeUser?.parsedToken.username,
+    hasLocalProfile: storedOnServer?.parsedToken.hasLocalProfile,
+  });
 
   if (!isOnline) {
     return <>{fallback}</>;
@@ -117,17 +135,12 @@ const OnboardingComponent = ({
               startIcon={
                 <LoginOutlinedIcon sx={{color: theme.palette.primary.main}} />
               }
-              onClick={async () => {
-                if (IS_WEB_PLATFORM) {
-                  const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
-                  window.location.href =
-                    selectedServer.serverUrl + '/login?redirect=' + redirect;
-                } else {
-                  await Browser.open({
-                    url: `${selectedServer.serverUrl}/login?redirect=${config.appId}://auth-return`,
-                  });
-                }
-              }}
+              onClick={() =>
+                openConductorLogin({
+                  conductorUrl: selectedServer.serverUrl,
+                  email: reauthEmail,
+                })
+              }
               sx={{
                 borderRadius: '12px',
                 padding: '12px 20px',
