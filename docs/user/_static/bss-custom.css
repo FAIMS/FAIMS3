@@ -1,0 +1,29 @@
+/* Navbar background */
+.bg-primary {
+  background-color: #38271f !important;
+}
+
+/* Links */
+a {
+  text-decoration-color: #f29a58 !important;
+}
+
+a:hover {
+  color: #f29a58 !important;
+  text-decoration-color: #b65312 !important;
+}
+
+/* Focus outline */
+*:focus-visible {
+  outline: 1px solid #f29a58 !important;
+}
+
+/* Button links */
+.btn-link {
+  color: #b65312 !important;
+}
+
+.btn-link:hover,
+.btn-link:focus {
+  color: #f29a58 !important;
+}
