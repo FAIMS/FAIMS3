@@ -10,11 +10,13 @@ import type {
   PostCreateTemplateInput,
 } from '@faims3/data-model';
 import {
+  GetTemplateByIdResponseSchema,
   PostCreateNotebookResponseSchema,
   PostCreateTemplateResponseSchema,
 } from '@faims3/data-model';
 import {beforeEach, describe, expect, it} from 'vitest';
 import request from 'supertest';
+import {getTemplatesDb} from '../src/couchdb';
 import {getProjectById} from '../src/couchdb/notebooks';
 import {app} from '../src/expressSetup';
 import {
@@ -170,6 +172,99 @@ describe('notebook creation from template with setupForm', () => {
       description: testNotebookDescription,
       template_id: template._id,
       setupValues: {technician: 'Thomas Bevan'},
+    })
+      .expect(200)
+      .then(res => PostCreateNotebookResponseSchema.parse(res.body).notebook);
+
+    const project = await getProjectById(notebookId);
+    expect(project.uiSpecification.metadata.setup).toBeUndefined();
+  });
+
+  it('strips leftover metadata.setup when creating a template', async () => {
+    const sample = sampleCreateTemplatePayload('leftover setup template');
+    const payload = {
+      ...sample,
+      uiSpecification: {
+        ...sample.uiSpecification,
+        metadata: {
+          ...sample.uiSpecification.metadata,
+          setup: VALID_VALUES,
+        },
+      },
+    } satisfies PostCreateTemplateInput;
+
+    const template = await requestAuthAndType(
+      request(app).post(TEMPLATE_API_BASE).send(payload)
+    )
+      .expect(200)
+      .then(res => PostCreateTemplateResponseSchema.parse(res.body));
+
+    const fetched = await requestAuthAndType(
+      request(app).get(`${TEMPLATE_API_BASE}/${template._id}`)
+    )
+      .expect(200)
+      .then(res => GetTemplateByIdResponseSchema.parse(res.body));
+
+    expect(fetched.uiSpecification.metadata.setup).toBeUndefined();
+    expect(fetched.uiSpecification.metadata.information).toEqual(
+      sample.uiSpecification.metadata.information
+    );
+  });
+
+  it('strips leftover metadata.setup when updating a template uiSpecification', async () => {
+    const template = await createTemplateWithSetupForm(SAMPLE_SETUP_FORM);
+    const sample = sampleCreateTemplatePayload('updated leftover setup');
+
+    await requestAuthAndType(
+      request(app)
+        .put(`${TEMPLATE_API_BASE}/${template._id}/uiSpecification`)
+        .send({
+          ...sample.uiSpecification,
+          metadata: {
+            ...sample.uiSpecification.metadata,
+            setup: VALID_VALUES,
+          },
+          uiSpec: {
+            ...sample.uiSpecification.uiSpec,
+            settings: {
+              ...sample.uiSpecification.uiSpec.settings,
+              setupForm: SAMPLE_SETUP_FORM,
+            },
+          },
+        })
+    ).expect(200);
+
+    const fetched = await requestAuthAndType(
+      request(app).get(`${TEMPLATE_API_BASE}/${template._id}`)
+    )
+      .expect(200)
+      .then(res => GetTemplateByIdResponseSchema.parse(res.body));
+
+    expect(fetched.uiSpecification.metadata.setup).toBeUndefined();
+    expect(fetched.uiSpecification.uiSpec.settings.setupForm).toEqual(
+      SAMPLE_SETUP_FORM
+    );
+  });
+
+  it('does not copy leftover template metadata.setup into a new notebook', async () => {
+    const template = await createTemplateWithSetupForm(undefined);
+    const templatesDb = getTemplatesDb();
+    const stored = await templatesDb.get(template._id);
+    await templatesDb.put({
+      ...stored,
+      uiSpecification: {
+        ...stored.uiSpecification,
+        metadata: {
+          ...stored.uiSpecification.metadata,
+          setup: VALID_VALUES,
+        },
+      },
+    });
+
+    const notebookId = await createNotebookFromTemplate({
+      name: 'stale setup notebook',
+      description: testNotebookDescription,
+      template_id: template._id,
     })
       .expect(200)
       .then(res => PostCreateNotebookResponseSchema.parse(res.body).notebook);

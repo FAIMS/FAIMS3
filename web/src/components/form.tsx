@@ -21,6 +21,7 @@ import {
   useFormField,
 } from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
+import {Textarea} from '@/components/ui/textarea';
 import {Checkbox} from '@/components/ui/checkbox';
 import {Label} from '@/components/ui/label';
 import React, {useEffect, useRef, useState} from 'react';
@@ -401,6 +402,16 @@ export function Form<
                                   event.target.files &&
                                   field.onChange(event.target.files[0])
                                 }
+                              />
+                            ) : type === 'textarea' ? (
+                              <Textarea
+                                {...field}
+                                disabled={isDisabled}
+                                value={field.value ?? ''}
+                                placeholder={placeholder}
+                                maxLength={maxLength}
+                                rows={4}
+                                data-testid={testId}
                               />
                             ) : (
                               <Input

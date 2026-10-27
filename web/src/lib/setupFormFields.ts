@@ -7,6 +7,14 @@ import type {Field} from '@/components/form';
 const PREFIX = 'setup__';
 const MULTI_SEPARATOR = '__opt__';
 
+/**
+ * Indexed RHF names so a user-edited field `name` or option label cannot
+ * introduce `.` path segments (react-hook-form would nest those).
+ */
+const fieldFormName = (fieldIndex: number) => `${PREFIX}${fieldIndex}`;
+const optionFormName = (fieldIndex: number, optionIndex: number) =>
+  `${PREFIX}${fieldIndex}${MULTI_SEPARATOR}${optionIndex}`;
+
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
@@ -38,15 +46,15 @@ const schemaFor = (field: SetupField): z.ZodSchema => {
  * by {@link collectSetupValues}.
  */
 export const setupFieldsToFormFields = (form: SetupForm): Field[] =>
-  form.fields.flatMap((field): Field[] => {
+  form.fields.flatMap((field, fieldIndex): Field[] => {
     if (field.type === 'multiselect') {
       return (field.options ?? []).map(
-        (option, index): Field => ({
-          name: `${PREFIX}${field.name}${MULTI_SEPARATOR}${option}`,
+        (option, optionIndex): Field => ({
+          name: optionFormName(fieldIndex, optionIndex),
           // label the group once, on its first checkbox
-          label: index === 0 ? field.label : undefined,
-          description: index === 0 ? field.helperText : undefined,
-          required: index === 0 ? field.required : undefined,
+          label: optionIndex === 0 ? field.label : undefined,
+          description: optionIndex === 0 ? field.helperText : undefined,
+          required: optionIndex === 0 ? field.required : undefined,
           type: 'checkbox',
           checkboxLabel: option,
           schema: z.boolean().optional(),
@@ -55,13 +63,14 @@ export const setupFieldsToFormFields = (form: SetupForm): Field[] =>
     }
     return [
       {
-        name: `${PREFIX}${field.name}`,
+        name: fieldFormName(fieldIndex),
         label: field.label,
         description: field.helperText,
         required: field.required,
         schema: schemaFor(field),
         ...(field.type === 'number' ? {type: 'number'} : {}),
         ...(field.type === 'date' ? {type: 'date'} : {}),
+        ...(field.type === 'longtext' ? {type: 'textarea'} : {}),
         ...(field.type === 'select'
           ? {
               options: (field.options ?? []).map(o => ({label: o, value: o})),
@@ -81,16 +90,16 @@ export const collectSetupValues = (
   data: Record<string, unknown>
 ): SetupValues => {
   const values: SetupValues = {};
-  for (const field of form.fields) {
+  for (const [fieldIndex, field] of form.fields.entries()) {
     if (field.type === 'multiselect') {
       const ticked = (field.options ?? []).filter(
-        option =>
-          data[`${PREFIX}${field.name}${MULTI_SEPARATOR}${option}`] === true
+        (_option, optionIndex) =>
+          data[optionFormName(fieldIndex, optionIndex)] === true
       );
       if (ticked.length > 0) values[field.name] = ticked;
       continue;
     }
-    const raw = data[`${PREFIX}${field.name}`];
+    const raw = data[fieldFormName(fieldIndex)];
     if (raw === undefined || raw === '' || raw === null) continue;
     values[field.name] = raw as string | number;
   }

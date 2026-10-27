@@ -30,6 +30,7 @@ import {
   getPlanTypeDefinition,
   normalizeNotebookTemplateUiSpecification,
   normalizeRootDescriptionForStore,
+  omitSetupFromMetadata,
   validateSetupValues,
   notebookUiSpecificationValidationMessage,
   buildUiSpecProperties,
@@ -612,9 +613,11 @@ export const createNotebookFromTemplate = async ({
     );
   }
 
-  // create the proto notebook definition from the template's uiSpecification
+  // create the proto notebook definition from the template's uiSpecification.
+  // Drop leftover metadata.setup so a notebook-turned-template cannot ship
+  // the previous notebook's values when the setup form has been removed.
   const uiSpecification: NotebookDefinition = {
-    metadata: {...template.uiSpecification.metadata},
+    metadata: omitSetupFromMetadata(template.uiSpecification.metadata),
     uiSpec: template.uiSpecification.uiSpec,
   };
 

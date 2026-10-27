@@ -461,7 +461,10 @@ export type NotebookInformationV1 = z.infer<typeof NotebookInformationV1Schema>;
 export const NotebookMetadataV1Schema = z.object({
   /** Non-functional information about the notebook. */
   information: NotebookInformationV1Schema,
-  /** Values captured by the template's setup form at creation (#2216). */
+  /**
+   * Values captured by the template's setup form at notebook creation (#2216).
+   * Instance data: stripped when a template is persisted.
+   */
   setup: SetupValuesSchema.optional(),
   /** Optional key/value bag for org-specific tagging; not for settings or user ids. */
   custom: z.record(z.string(), z.any()).optional(),

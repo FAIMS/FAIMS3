@@ -8,7 +8,7 @@
 import {config} from '@/constants';
 
 export const SetupFormHeading = () => (
-  <div className="mt-2 border-t pt-4">
+  <div className="mt-2 mb-4 border-t pt-4">
     <h3 className="text-sm font-medium">Setup details</h3>
     <p className="text-sm text-muted-foreground">
       Additional details this template asks for. They are stored with the{' '}
