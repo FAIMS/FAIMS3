@@ -4,6 +4,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {NotebookRouteProvider, useNotebookRoute} from './notebookRoute';
+import {config} from '../buildconfig';
 
 const {navigate, routeParams} = vi.hoisted(() => ({
   navigate: vi.fn(),
@@ -61,22 +62,28 @@ describe('useNotebookRoute', () => {
   it('returns a screen under the notebook to the plan it was opened from', () => {
     renderConsumer({planId: 'lab'});
     expect(screen.getByTestId('notebook-route')).toHaveTextContent(
-      '/surveys/srv/proj/lab'
+      `/${config.notebookNamePlural}/srv/proj/lab`
     );
   });
 
   it('replaces the entry on a move within the notebook', async () => {
     renderConsumer({});
     await userEvent.click(screen.getByRole('button', {name: 'show a plan'}));
-    expect(navigate).toHaveBeenCalledWith('/surveys/srv/proj/lab', {
-      replace: true,
-    });
+    expect(navigate).toHaveBeenCalledWith(
+      `/${config.notebookNamePlural}/srv/proj/lab`,
+      {
+        replace: true,
+      }
+    );
   });
 
   it('drops the plan to return to the chooser', async () => {
     renderConsumer({planId: 'lab'});
     await userEvent.click(screen.getByRole('button', {name: 'change plan'}));
-    expect(navigate).toHaveBeenCalledWith('/surveys/srv/proj', {replace: true});
+    expect(navigate).toHaveBeenCalledWith(
+      `/${config.notebookNamePlural}/srv/proj`,
+      {replace: true}
+    );
   });
 
   it('refuses to serve a screen outside the notebook route', () => {

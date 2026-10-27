@@ -10,6 +10,7 @@ import {config as loadDotenv} from 'dotenv';
 import {existsSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import pluralize from 'pluralize';
 
 const e2eRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -294,4 +295,14 @@ export function tryGetPersona(key: PersonaKey): Credentials | null {
   const password = process.env[mapping.pass];
   if (!email || !password) return null;
   return {email, password};
+}
+
+export function getNotebookName(): string {
+  return optionalEnv('NOTEBOOK_NAME', 'notebook');
+}
+
+export function getNotebookNamePlural(): string {
+  const notebookName = getNotebookName();
+  const notebookNamePlural = pluralize(notebookName);
+  return notebookNamePlural;
 }
