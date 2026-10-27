@@ -6,12 +6,16 @@ import path from 'node:path';
 import {generateEnv, parseArgs} from '../src/generate-build-config';
 import {
   buildAuthProviderEnvMap,
+  DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS,
+  OptionalCsvSchema,
   parseBuildConfig,
   parseGeneratedEnv,
   readAuthProviderConfigFromEnv,
+  resolveInjectedAppVersion,
   sanitizeCommitVersion,
   type PartialBuildConfig,
 } from '../src/build-config';
+import {isGoogleProvider} from '../src/auth-provider-config';
 import {generateBuildConfig} from '../src/generate-build-config';
 
 function deepMerge(a: unknown, b: unknown): unknown {
@@ -80,6 +84,9 @@ test('generator emits shared app and web env values', () => {
   assert.match(output, /VITE_CONDUCTOR_URL=/);
   assert.match(output, /VITE_WEB_URL=/);
   assert.match(output, /VITE_APP_ID=/);
+  assert.match(output, /VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin/);
+  assert.match(output, /VITE_SHOW_NEW_NOTEBOOK=true/);
+  assert.match(output, /VITE_SHOW_RECORD_SUMMARY_COUNTS=true/);
 });
 
 test('generator resolves git commit version automatically', () => {
@@ -204,7 +211,8 @@ test('auth provider env helpers roundtrip config for google provider', () => {
   assert.equal(parsed.google?.type, 'google');
   assert.equal(parsed.google?.displayName, 'Google');
   assert.deepEqual(parsed.google?.scope, ['profile', 'email']);
-  assert.equal((parsed.google as any)?.clientID, 'google-client-id');
+  assert.ok(parsed.google && isGoogleProvider(parsed.google));
+  assert.equal(parsed.google.clientID, 'google-client-id');
 });
 
 test('core.sample.json matches current build config schema', () => {
@@ -609,6 +617,17 @@ test('migration: lock cannot be enabled when migrate-on-startup is disabled', ()
   // Omitted lock is fine; skip-migrate forces the lock off.
   const parsed = parseBuildConfig({migration: {disableMigrateOnStartup: true}});
   assert.equal(parsed.migration.startupMigrationLockEnabled, false);
+  // Omit vs explicit false stay distinct when migrate-on-startup is on
+  // (AWS defaults omit to on; local API defaults omit to off).
+  assert.equal(
+    parseBuildConfig({}).migration.startupMigrationLockEnabled,
+    undefined
+  );
+  assert.equal(
+    parseBuildConfig({migration: {startupMigrationLockEnabled: false}})
+      .migration.startupMigrationLockEnabled,
+    false
+  );
 });
 
 // the autosuggest key rules live in the shared schema.
@@ -659,6 +678,29 @@ test('D4: long-lived token hints are clamped, deduped and sorted', () => {
     },
   });
   assert.deepEqual(allExceed.authTokens.longLivedTokenDurationHints, [7]);
+
+  // Omitted hints use the shared default list, then clamp (max 90 drops 365).
+  const omitted = parseBuildConfig({
+    authTokens: {maximumLongLivedDurationDays: 90},
+  });
+  assert.deepEqual(
+    omitted.authTokens.longLivedTokenDurationHints,
+    [1, 5, 10, 30, 90]
+  );
+
+  // A tight cap still keeps the default chips that fit.
+  const tight = parseBuildConfig({
+    authTokens: {maximumLongLivedDurationDays: 7},
+  });
+  assert.deepEqual(tight.authTokens.longLivedTokenDurationHints, [1, 5]);
+
+  // No cap: omitted hints stay the full default list.
+  const unlimited = parseBuildConfig({
+    authTokens: {maximumLongLivedDurationDays: 'unlimited'},
+  });
+  assert.deepEqual(unlimited.authTokens.longLivedTokenDurationHints, [
+    ...DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS,
+  ]);
 });
 
 test('D4: maximumLongLivedDurationDays accepts unlimited/infinite/none', () => {
@@ -735,6 +777,99 @@ test('domains: absent domains keeps concrete endpoints (backward compatible)', (
   });
   assert.equal(parsed.domains, undefined);
   assert.equal(parsed.endpoints.apiUrl, 'https://api.legacy.com');
+  // Empty conductorUrls falls back to apiUrl so the app has a server.
+  assert.deepEqual(parsed.endpoints.conductorUrls, ['https://api.legacy.com']);
+});
+
+test('OptionalCsvSchema trims entries and drops empties', () => {
+  assert.deepEqual(OptionalCsvSchema.parse(''), []);
+  assert.deepEqual(OptionalCsvSchema.parse('   '), []);
+  assert.deepEqual(OptionalCsvSchema.parse(', ,,  ,'), []);
+  assert.deepEqual(OptionalCsvSchema.parse('value1,'), ['value1']);
+  assert.deepEqual(OptionalCsvSchema.parse(' a , b , '), ['a', 'b']);
+});
+
+test('parseGeneratedEnv maps malformed conductor-URL CSV to an empty list before fallback', () => {
+  const empty = parseGeneratedEnv({
+    VITE_API_URL: 'https://api.example.org',
+    VITE_CONDUCTOR_URL: '',
+  });
+  assert.deepEqual(empty.endpoints.conductorUrls, ['https://api.example.org']);
+
+  const whitespace = parseGeneratedEnv({
+    VITE_API_URL: 'https://api.example.org',
+    VITE_CONDUCTOR_URL: '  ',
+  });
+  assert.deepEqual(whitespace.endpoints.conductorUrls, [
+    'https://api.example.org',
+  ]);
+
+  const trailing = parseGeneratedEnv({
+    VITE_API_URL: 'https://api.example.org',
+    VITE_CONDUCTOR_URL: 'https://api2.example.org,',
+  });
+  assert.deepEqual(trailing.endpoints.conductorUrls, [
+    'https://api2.example.org',
+  ]);
+
+  const commasOnly = parseGeneratedEnv({
+    VITE_API_URL: 'https://api.example.org',
+    VITE_CONDUCTOR_URL: ', ,,  ,',
+  });
+  assert.deepEqual(commasOnly.endpoints.conductorUrls, [
+    'https://api.example.org',
+  ]);
+});
+
+test('resolveInjectedAppVersion falls back to unknown', () => {
+  const info: string[] = [];
+  const warn: string[] = [];
+  const originalInfo = console.info;
+  const originalWarn = console.warn;
+  console.info = (message?: unknown) => {
+    info.push(String(message));
+  };
+  console.warn = (message?: unknown) => {
+    warn.push(String(message));
+  };
+  try {
+    assert.equal(resolveInjectedAppVersion('1.2.3'), '1.2.3');
+    assert.equal(resolveInjectedAppVersion(''), 'unknown');
+    assert.equal(resolveInjectedAppVersion(undefined), 'unknown');
+    assert.match(info[0] ?? '', /1\.2\.3/);
+    assert.match(warn[0] ?? '', /unknown/);
+  } finally {
+    console.info = originalInfo;
+    console.warn = originalWarn;
+  }
+});
+
+test('conductorUrls: omitted / empty list falls back to apiUrl', () => {
+  const fromJson = parseBuildConfig({
+    endpoints: {apiUrl: 'https://api.example.org', conductorUrls: []},
+  });
+  assert.deepEqual(fromJson.endpoints.conductorUrls, [
+    'https://api.example.org',
+  ]);
+
+  const fromEnv = parseGeneratedEnv({
+    VITE_API_URL: 'https://api.example.org',
+    VITE_CONDUCTOR_URL: '',
+  });
+  assert.deepEqual(fromEnv.endpoints.conductorUrls, [
+    'https://api.example.org',
+  ]);
+
+  // An explicit list is kept (not replaced by apiUrl).
+  const explicit = parseBuildConfig({
+    endpoints: {
+      apiUrl: 'https://api.example.org',
+      conductorUrls: ['https://api2.example.org'],
+    },
+  });
+  assert.deepEqual(explicit.endpoints.conductorUrls, [
+    'https://api2.example.org',
+  ]);
 });
 
 test('domains: rejects unknown service names', () => {

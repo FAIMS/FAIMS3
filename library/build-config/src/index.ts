@@ -13,6 +13,7 @@
 export {
   BuildConfigCoreObjectSchema,
   BuildConfigSchema,
+  DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS,
   DomainsBuildConfigSchema,
   DomainServiceName,
   RuntimeConfigSchema,
@@ -54,3 +55,4 @@ export type {
 } from './auth-provider-config.js';
 export {buildEnvMapFromRuntime} from './env-contract.js';
 export type {SupportedPlatform, EnvValue} from './env-contract.js';
+export {resolveInjectedAppVersion, OptionalCsvSchema} from './env-coercion.js';

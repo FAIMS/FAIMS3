@@ -86,8 +86,8 @@ for code work.
 - Startup migration lock (`STARTUP_MIGRATION_LOCK_ENABLED`) defaults **off**.
   That avoids a 30-minute wait after a killed `pnpm run dev` reload left a
   `running` lock. Clustered / multi-replica production MUST set it `true`
-  (AWS CDK hard-enables it unless JSON `disableStartupMigrationLock` is
-  set). `DISABLE_MIGRATE_ON_STARTUP` (default off) skips boot migrate
+  (AWS CDK defaults it on unless `core.migration.startupMigrationLockEnabled`
+  is `false`). `DISABLE_MIGRATE_ON_STARTUP` (default off) skips boot migrate
   entirely — no lock, no Couch migrate — and attaches the API immediately.
 - Both `api` dev loops run the same `tsc --incremental`, whose `tsbuildinfo`
   diagnostics cache under `outDir` can replay errors already gone from the

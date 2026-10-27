@@ -31,6 +31,7 @@ import {
   type EnvValue,
   type RuntimeConfig,
 } from '@faims3/build-config';
+import {AuthProvidersConfig, ConductorConfig} from '../config';
 
 /**
  * Convert a build-config env value to the string ECS container environment
@@ -42,7 +43,113 @@ function envValueToString(value: EnvValue): string | undefined {
   if (Array.isArray(value)) return value.join(',');
   return String(value);
 }
-import {AuthProvidersConfig, ConductorConfig} from '../config';
+
+const AUTH_SECRET_FIELDS: Record<string, string[]> = {
+  saml: ['privateKey', 'publicKey'],
+  google: ['clientID', 'clientSecret'],
+  oidc: ['clientID', 'clientSecret'],
+};
+
+const AUTH_SECRET_FIELD_SUFFIX: Record<string, string> = {
+  privateKey: 'PRIVATE_KEY',
+  publicKey: 'PUBLIC_KEY',
+  clientID: 'CLIENT_ID',
+  clientSecret: 'CLIENT_SECRET',
+};
+
+/** AUTH_{PROVIDER}_{FIELD} key used for Secrets Manager wiring and env drops. */
+export function authSecretEnvKey(provider: string, field: string): string {
+  const envProvider = provider.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  const suffix =
+    AUTH_SECRET_FIELD_SUFFIX[field] ??
+    field.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toUpperCase();
+  return `AUTH_${envProvider}_${suffix}`;
+}
+
+export interface ConductorRuntimeEnvInput {
+  coreConfig: RuntimeConfig;
+  conductorEndpoint: string;
+  webAppPublicUrl: string;
+  webUrl: string;
+  appId: string;
+  couchDBEndpoint: string;
+  couchDBPort: number;
+  conductorExternalPort: number;
+  conductorInternalPort: number;
+  privateKeySecretArn: string;
+  localhostWhitelist: boolean;
+  /** Provider ids enabled in aws.authProviders.providers. */
+  enabledAuthProviders: string[];
+  /** Plain-env keys that ECS will deliver via Secrets Manager instead. */
+  secretEnvKeys: string[];
+}
+
+/**
+ * Build the Conductor container's non-secret environment: the shared API
+ * contract, AWS-resolved URL/port overlays, enabled-provider AUTH_* fields,
+ * and no keys that also appear in `secrets`.
+ */
+export function buildConductorRuntimeEnv(
+  input: ConductorRuntimeEnvInput
+): Record<string, string> {
+  const sharedEnv = buildEnvMapFromRuntime(input.coreConfig, 'api');
+  const env: Record<string, string> = {};
+  for (const [key, value] of Object.entries(sharedEnv)) {
+    const str = envValueToString(value);
+    if (str !== undefined) env[key] = str;
+  }
+
+  env.PROFILE_NAME = 'default';
+  env.KEY_SOURCE = 'AWS_SM';
+  env.AWS_SECRET_KEY_ARN = input.privateKeySecretArn;
+  // Clustered ECS: default the Couch-mediated lock on so replicas
+  // claim/wait. Honour an explicit core.migration.startupMigrationLockEnabled
+  // false (single-task / debug). Skip-migrate leaves nothing to lock.
+  env.STARTUP_MIGRATION_LOCK_ENABLED =
+    input.coreConfig.migration.disableMigrateOnStartup ||
+    input.coreConfig.migration.startupMigrationLockEnabled === false
+      ? 'false'
+      : 'true';
+  env.COUCHDB_PUBLIC_URL = input.couchDBEndpoint;
+  env.COUCHDB_INTERNAL_URL = input.couchDBEndpoint;
+  env.COUCHDB_EXTERNAL_PORT = String(input.couchDBPort);
+  env.CONDUCTOR_EXTERNAL_PORT = String(input.conductorExternalPort);
+  env.CONDUCTOR_INTERNAL_PORT = String(input.conductorInternalPort);
+  env.CONDUCTOR_PUBLIC_URL = input.conductorEndpoint;
+  env.CONDUCTOR_URL = input.conductorEndpoint;
+  env.WEB_APP_PUBLIC_URL = input.webAppPublicUrl;
+  env.REDIRECT_WHITELIST = [
+    input.conductorEndpoint,
+    input.webAppPublicUrl,
+    input.webUrl,
+    `${input.appId}://`,
+    ...(input.localhostWhitelist
+      ? [
+          'http://localhost:3000',
+          'http://localhost:3001',
+          'http://localhost:8080',
+          'http://localhost:8000',
+        ]
+      : []),
+  ].join(',');
+
+  const enabled = new Set(
+    input.enabledAuthProviders.map(provider =>
+      provider.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
+    )
+  );
+  for (const key of Object.keys(env)) {
+    const match = /^AUTH_([A-Z0-9]+)_/.exec(key);
+    if (match && !enabled.has(match[1])) {
+      delete env[key];
+    }
+  }
+
+  for (const key of input.secretEnvKeys) {
+    delete env[key];
+  }
+  return env;
+}
 
 /**
  * Properties for the FaimsConductor construct
@@ -160,23 +267,16 @@ export class FaimsConductor extends Construct {
     );
 
     // Configure auth providers
-    // Based on the configuration we generate two sets of environment variables
-    // for secret and non-secret settings for each provider.
+    // Based on the configuration we generate Secrets Manager references for
+    // each enabled provider. Non-secret AUTH_* fields come from
+    // buildAuthProviderEnvMap via buildConductorRuntimeEnv.
     const authSecrets: Record<string, ecs.Secret> = {};
-    const authEnvironment: Record<string, string> = {};
     if (props.authProviders && props.authProviders.providers.length > 0) {
       const authSecret = sm.Secret.fromSecretCompleteArn(
         this,
         'AuthSecret',
         props.authProviders.secretArn
       );
-      // The secret field names per provider type - resolved from AWS Secrets
-      // Manager at runtime. These must be present in the final deployment.
-      const SECRET_FIELDS: Record<string, string[]> = {
-        saml: ['privateKey', 'publicKey'],
-        google: ['clientID', 'clientSecret'],
-        oidc: ['clientID', 'clientSecret'],
-      };
       props.authProviders.providers.forEach(provider => {
         // The provider *definitions* live in core.authProviders (build-config).
         // Their credentials are NOT read from the config file on the AWS path:
@@ -188,15 +288,15 @@ export class FaimsConductor extends Construct {
         // Wire this provider's Secrets Manager references FIRST...
         if (config.type === 'saml') {
           // SAML uses privateKey and publicKey (certificate) instead of clientID/clientSecret
-          authSecrets[`AUTH_${provider.toUpperCase()}_PRIVATE_KEY`] =
+          authSecrets[authSecretEnvKey(provider, 'privateKey')] =
             ecs.Secret.fromSecretsManager(authSecret, `${provider}-privateKey`);
-          authSecrets[`AUTH_${provider.toUpperCase()}_PUBLIC_KEY`] =
+          authSecrets[authSecretEnvKey(provider, 'publicKey')] =
             ecs.Secret.fromSecretsManager(authSecret, `${provider}-publicKey`);
         } else {
           // Google and OIDC use clientID and clientSecret
-          authSecrets[`AUTH_${provider.toUpperCase()}_CLIENT_ID`] =
+          authSecrets[authSecretEnvKey(provider, 'clientID')] =
             ecs.Secret.fromSecretsManager(authSecret, `${provider}-clientID`);
-          authSecrets[`AUTH_${provider.toUpperCase()}_CLIENT_SECRET`] =
+          authSecrets[authSecretEnvKey(provider, 'clientSecret')] =
             ecs.Secret.fromSecretsManager(
               authSecret,
               `${provider}-clientSecret`
@@ -206,115 +306,17 @@ export class FaimsConductor extends Construct {
         // ...then guard that every secret field the API needs is covered by
         // THIS provider's own SM reference (checked after wiring, and keyed
         // exactly, so a previous provider's fields can never satisfy it).
-        const required = SECRET_FIELDS[config.type] ?? [];
+        const required = AUTH_SECRET_FIELDS[config.type] ?? [];
         const missing = required.filter(
-          field =>
-            !(
-              `AUTH_${provider.toUpperCase()}_${camelToSnakeCase(field)}` in
-              authSecrets
-            )
+          field => !(authSecretEnvKey(provider, field) in authSecrets)
         );
         if (missing.length > 0) {
           throw new Error(
             `Auth provider '${provider}' (${config.type}) is missing required secret field(s): ${missing.join(', ')}. Add them to the Secrets Manager secret at aws.authProviders.secretArn (keys '<provider>-<field>'), or disable the provider in aws.authProviders.providers.`
           );
         }
-
-        // For each key in config, convert to an env variable
-        // (AUTH_ + provider + _ + key in uppercase) and add to the environment.
-        // Secret fields are excluded here - they are delivered via the SM
-        // references above, not baked into the container env.
-        const secretFieldSet = new Set([
-          ...Object.values(SECRET_FIELDS).flat(),
-          'id',
-        ]);
-        for (const [key, value] of Object.entries(config)) {
-          // Skip undefined/null values and secret fields
-          if (value === undefined || value === null) {
-            continue;
-          }
-          if (secretFieldSet.has(key)) {
-            continue;
-          }
-
-          const envName = `AUTH_${provider.toUpperCase()}_${camelToSnakeCase(key)}`;
-
-          // Handle different value types appropriately
-          if (Array.isArray(value)) {
-            // For arrays (e.g., authnContext), join with commas
-            authEnvironment[envName] = value.join(',');
-          } else if (typeof value === 'object') {
-            // For objects, stringify to JSON
-            authEnvironment[envName] = JSON.stringify(value);
-          } else {
-            authEnvironment[envName] = String(value);
-          }
-        }
       });
     }
-
-    // Expose env/secrets so sibling one-shot tasks (e.g. TTL cleanup) can reuse
-    // the same Couch + KEY_SOURCE bootstrapping without duplicating the block.
-    //
-    // The shared API env (branding, endpoints, limits, migration, email, token
-    // expiries, etc.) comes from build-config's apiContract via
-    // buildEnvMapFromRuntime(core, 'api') - the same contract the app/api use to
-    // parse their env, so the deployed env is guaranteed to parse. Only the
-    // genuinely AWS-specific bits (resolved endpoints, KEY_SOURCE/SM ARN,
-    // PROFILE_NAME, redirect whitelist, auth-provider fields) are overlaid here.
-    const sharedEnv = buildEnvMapFromRuntime(props.coreConfig, 'api');
-    const env: Record<string, string> = {};
-    for (const [key, value] of Object.entries(sharedEnv)) {
-      const str = envValueToString(value);
-      if (str !== undefined) env[key] = str;
-    }
-    // AWS-specific overrides (the core config's defaults are for local dev).
-    env.PROFILE_NAME = 'default';
-    env.KEY_SOURCE = 'AWS_SM';
-    env.AWS_SECRET_KEY_ARN = props.privateKeySecretArn;
-    // The concrete endpoints are resolved by the CDK from the deployed domains
-    // (not stored in the core config).
-    env.COUCHDB_PUBLIC_URL = props.couchDBEndpoint;
-    env.COUCHDB_INTERNAL_URL = props.couchDBEndpoint;
-    // Ports: the shared contract carries the local-dev defaults (CouchDB
-    // 5984, conductor 8080), but the deployed stack serves CouchDB behind
-    // the ALB on couchDBPort (443), the conductor's public surface is the
-    // ALB on externalPort (443, the port conductorEndpoint is built from),
-    // and the conductor container listens on internalPort (8000) - the
-    // target group / container port mapping use that same value, and the
-    // API binds CONDUCTOR_INTERNAL_PORT. Pin all three so the deployed env
-    // matches the pre-contract task definition (COUCHDB_EXTERNAL_PORT was
-    // explicitly 443; CONDUCTOR_INTERNAL_PORT was unset and fell back to
-    // the API's old 8000 default) and advertises the real deployed ports.
-    // CONDUCTOR_EXTERNAL_PORT has no consumer in the API today, but core
-    // may set it to 443 for consistency; this pin is authoritative since
-    // the CDK controls the ALB port. These pins also keep the env that
-    // env-from-cdk-stack.sh reconstructs truthful about the deployed API.
-    env.COUCHDB_EXTERNAL_PORT = String(props.couchDBPort);
-    env.CONDUCTOR_EXTERNAL_PORT = String(this.externalPort);
-    env.CONDUCTOR_INTERNAL_PORT = String(this.internalPort);
-    env.CONDUCTOR_PUBLIC_URL = this.conductorEndpoint;
-    env.CONDUCTOR_URL = this.conductorEndpoint;
-    // The shared contract derives WEB_APP_PUBLIC_URL from core endpoints;
-    // the CDK-resolved app URL (from aws.domains) is authoritative here.
-    env.WEB_APP_PUBLIC_URL = props.webAppPublicUrl;
-    // Whitelisting for redirects - should include API, APP, WEB and APP_ID://
-    env.REDIRECT_WHITELIST = [
-      this.conductorEndpoint,
-      props.webAppPublicUrl,
-      props.webUrl,
-      `${props.appId}://`,
-      ...(props.localhostWhitelist
-        ? [
-            'http://localhost:3000',
-            'http://localhost:3001',
-            'http://localhost:8080',
-            'http://localhost:8000',
-          ]
-        : []),
-    ].join(',');
-    // Auth-provider non-secret fields (from core.authProviders).
-    Object.assign(env, authEnvironment);
 
     this.secrets = {
       COUCHDB_PASSWORD: ecs.Secret.fromSecretsManager(
@@ -338,13 +340,29 @@ export class FaimsConductor extends Construct {
       ...authSecrets,
     };
 
-    // The SM-delivered secrets must not also be set as plain env vars (ECS
-    // prefers `secrets`, but the api's strict parse would otherwise see a
-    // placeholder from the shared contract). Drop the overlapping keys.
-    for (const key of Object.keys(this.secrets)) {
-      delete env[key];
-    }
-    this.environment = env;
+    // Expose env/secrets so sibling one-shot tasks (e.g. TTL cleanup) can reuse
+    // the same Couch + KEY_SOURCE bootstrapping without duplicating the block.
+    //
+    // The shared API env comes from build-config's apiContract via
+    // buildEnvMapFromRuntime (including AUTH_* from buildAuthProviderEnvMap).
+    // Only AWS-resolved endpoints/ports, KEY_SOURCE/SM ARN, PROFILE_NAME,
+    // the redirect whitelist, the enabled-provider filter, and SM-key
+    // deletions are overlaid here.
+    this.environment = buildConductorRuntimeEnv({
+      coreConfig: props.coreConfig,
+      conductorEndpoint: this.conductorEndpoint,
+      webAppPublicUrl: props.webAppPublicUrl,
+      webUrl: props.webUrl,
+      appId: props.appId,
+      couchDBEndpoint: props.couchDBEndpoint,
+      couchDBPort: props.couchDBPort,
+      conductorExternalPort: this.externalPort,
+      conductorInternalPort: this.internalPort,
+      privateKeySecretArn: props.privateKeySecretArn,
+      localhostWhitelist: props.localhostWhitelist,
+      enabledAuthProviders: props.authProviders?.providers ?? [],
+      secretEnvKeys: Object.keys(this.secrets),
+    });
 
     conductorTaskDfn.addContainer('conductor-container-dfn', {
       image: this.containerImage,
@@ -510,10 +528,3 @@ export class FaimsConductor extends Construct {
     );
   }
 }
-
-const camelToSnakeCase = (str: string): string => {
-  return str
-    .replace(/([a-z])([A-Z])/g, '$1_$2')
-    .replace(/[\s-]+/g, '_')
-    .toUpperCase();
-};

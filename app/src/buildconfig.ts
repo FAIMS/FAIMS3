@@ -19,7 +19,10 @@
  */
 
 import {Capacitor} from '@capacitor/core';
-import {parseGeneratedEnv} from '@faims3/build-config';
+import {
+  parseGeneratedEnv,
+  resolveInjectedAppVersion,
+} from '@faims3/build-config';
 import {
   type IAutosuggestAddressService,
   MapboxAutosuggestAddressService,
@@ -83,15 +86,7 @@ const maptilerApiKey =
       ? canonical.maps.mapSourceKey
       : undefined;
 
-// Build-time version inject via Vite `define` (__APP_VERSION__ from
-// package.json — not an import.meta.env key). Falls back to 'unknown'.
-let appVersion = 'unknown';
-if (__APP_VERSION__) {
-  console.info(`Using APP_VERSION from build: ${__APP_VERSION__}`);
-  appVersion = __APP_VERSION__;
-} else {
-  console.error('__APP_VERSION__ not defined in build. Using "unknown"');
-}
+const appVersion = resolveInjectedAppVersion(__APP_VERSION__);
 
 const mapConfig: MapConfig = {
   mapSource: canonical.maps.mapSource,

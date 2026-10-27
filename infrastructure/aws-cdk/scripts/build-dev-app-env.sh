@@ -155,16 +155,6 @@ mkdir -p "$OUTPUT_PARENT"
   printf '%s\n' "$GENERATED_ENV" | grep -E '^[A-Z0-9_]+=' || true
   echo ""
 
-  echo "# ---------------------------------------------------------------------------"
-  echo "# Hardcoded in CDK app bundling (not config keys; copied from front-end.ts)"
-  echo "# ---------------------------------------------------------------------------"
-  echo "VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin"
-  echo "VITE_SHOW_WIPE=true"
-  echo "VITE_SHOW_NEW_NOTEBOOK=true"
-  echo "VITE_SHOW_POUCHDB_BROWSER=true"
-  echo "VITE_SHOW_RECORD_SUMMARY_COUNTS=true"
-  echo ""
-
   # Debug flags: the deployed CloudFront app is debug-off; this script is
   # for a sideloaded debug APK, so default DEBUG_APP on. The generator emits
   # VITE_DEBUG_APP=false from core.dev - override it here (later wins in

@@ -237,19 +237,12 @@ async function main(): Promise<void> {
     process.env.CONFIG_DIR ||
     (process.env.CORE_CONFIG_FILE && process.env.AWS_CONFIG_FILE)
   ) {
-    try {
-      const {loadConfigFromEnv} = await import('../lib/config');
-      const cfg = loadConfigFromEnv(path.resolve(__dirname, '..'));
-      configSummary = {
-        stackName: cfg.aws.stackName,
-        couchVersionTag: cfg.aws.couch.couchVersionTag,
-        volumeSize: cfg.aws.couch.volumeSize,
-        backup: cfg.aws.backup,
-        couchHost: `${cfg.aws.domains.couch}.${cfg.aws.domains.baseDomain}`,
-      };
-    } catch {
-      configSummary = undefined;
-    }
+    const {tryLoadCouchUpgradeConfigSummary} =
+      await import('./couchUpgradeConfigSummary');
+    const {loadConfigFromEnv} = await import('../lib/config');
+    configSummary = tryLoadCouchUpgradeConfigSummary(() =>
+      loadConfigFromEnv(path.resolve(__dirname, '..'))
+    );
   }
 
   console.log(

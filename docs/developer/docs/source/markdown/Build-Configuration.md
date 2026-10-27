@@ -2,7 +2,7 @@
 
 The single source of truth for how a FAIMS3 deployment is built and configured is
 a **JSON file** (`core.json`). Every target reads its configuration from this one
-shared, validated schema in [`@faims3/build-config`](../../library/build-config/README.md):
+shared, validated schema in [`@faims3/build-config`](../../../../../library/build-config/README.md):
 
 - the mobile app and web (Vite) builds,
 - the Conductor API server,
@@ -29,13 +29,13 @@ flowchart LR
 ```
 
 - **Source of truth** (canonical schemas):
-  [`library/build-config/src/build-config.ts`](../../library/build-config/src/build-config.ts)
+  [`library/build-config/src/build-config.ts`](../../../../../library/build-config/src/build-config.ts)
 - **Env mapping** (the transport contract):
-  [`library/build-config/src/env-contract.ts`](../../library/build-config/src/env-contract.ts)
+  [`library/build-config/src/env-contract.ts`](../../../../../library/build-config/src/env-contract.ts)
 - **Concrete examples**:
-  [`core.sample.json`](../../library/build-config/config/core.sample.json)
+  [`core.sample.json`](../../../../../library/build-config/config/core.sample.json)
   and
-  [`secrets.sample.json`](../../library/build-config/config/secrets.sample.json)
+  [`secrets.sample.json`](../../../../../library/build-config/config/secrets.sample.json)
 
 The shared invariants (name fallbacks, offline-map clamping for OSM, long-lived-token
 hint clamping, "no cap" normalisation) are applied
@@ -70,8 +70,9 @@ Per-platform layout:
   **Fastlane/Match** repository is separate (or the same) — see
   [Mobile Deployment Setup Guide](Mobile-Deployment-Setup-Guide.md).
 - Local development: `config/dev/core.json` (see [Local development](#local-development)).
-- AWS: a single JSON the CDK loads, `{ "core": …, "aws": … }` (see
-  [Deploying the AWS stack](DeployingAWSStack.md)).
+- AWS: `config/<environment>/core.json` + `config/<environment>/aws.json`
+  (see [Deploying the AWS stack](DeployingAWSStack.md)). The CDK loads the
+  folder via `CONFIG_ENV` or `CONFIG_DIR`.
 
 ## Protecting the config + Match repositories
 
@@ -241,12 +242,12 @@ so only use keys suitable for public consumption.
 
 ### `migration`
 
-| Field                           | Type    | Default   | Notes                                        |
-| ------------------------------- | ------- | --------- | -------------------------------------------- |
-| `migrateOldDatabases`           | boolean | `false`   | Migrate legacy databases.                    |
-| `disableMigrateOnStartup`       | boolean | `false`   | Skip API-boot migrate.                       |
-| `startupMigrationLockEnabled`   | boolean | `false`   | Couch-mediated startup-migration lock.       |
-| `startupMigrationLockTimeoutMs` | number  | `1800000` | Age before a stuck `running` lock is stolen. |
+| Field                           | Type    | Default   | Notes                                                                                                      |
+| ------------------------------- | ------- | --------- | ---------------------------------------------------------------------------------------------------------- |
+| `migrateOldDatabases`           | boolean | `false`   | Migrate legacy databases.                                                                                  |
+| `disableMigrateOnStartup`       | boolean | `false`   | Skip API-boot migrate.                                                                                     |
+| `startupMigrationLockEnabled`   | boolean | omit      | Couch-mediated lock. Local API treats omit as off; AWS CDK treats omit as on and honours explicit `false`. |
+| `startupMigrationLockTimeoutMs` | number  | `1800000` | Age before a stuck `running` lock is stolen.                                                               |
 
 Invariant: the lock cannot be enabled while `disableMigrateOnStartup` is `true`.
 
@@ -441,8 +442,7 @@ local values never get committed.
 ## Adding a new configuration option
 
 Follow the sequence in the
-[`@faims3/build-config` README](../../library/build-config/README.md#how-to-add-a-new-configuration-option):
+[`@faims3/build-config` README](../../../../../library/build-config/README.md#how-to-add-a-new-configuration-option):
 add the field to the canonical schema, extend the runtime model, add the env-contract
 mapping, add parser support, and add positive/negative tests. Then run
-`pnpm --filter=@faims3/build-config test` and, if you changed generated keys,
-`pnpm --filter=@faims3/build-config run validate-coverage`.
+`pnpm --filter=@faims3/build-config test`.

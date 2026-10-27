@@ -2,7 +2,7 @@
 
 Central typed configuration module for FAIMS3 build-time and app runtime configuration.
 
-This package is becoming the single source of truth for the config chain:
+This package is the single source of truth for the config chain:
 
 1. Source JSON configuration validation
 2. Canonical typed runtime configuration object
@@ -24,7 +24,6 @@ Core entry points:
 - Canonical schemas and runtime model: [src/build-config.ts](src/build-config.ts)
 - Env contract map: [src/env-contract.ts](src/env-contract.ts)
 - Env generator CLI: [src/generate-build-config.ts](src/generate-build-config.ts)
-- Coverage validation utility: [src/validate-generated-env.ts](src/validate-generated-env.ts)
 - Tests: [test/generate-build-config.test.ts](test/generate-build-config.test.ts)
 
 Data flow:
@@ -204,9 +203,9 @@ Each consumer preserves its public `config` shape, so only `buildconfig.ts` /
 
 ## Migrating a legacy AWS config
 
-`scripts/migrate-aws-config.ts` converts a legacy (pre-ADR-0002,
-`main`-branch) AWS CDK config JSON — the flat shape with `uiConfiguration`,
-`conductor`, `smtp`, `authProviders.config`, … — into the new layout. Given
+`scripts/migrate-aws-config.ts` converts a legacy main-branch AWS CDK
+config JSON — the flat shape with `uiConfiguration`, `conductor`, `smtp`,
+`authProviders.config`, … — into the new layout. Given
 an authenticated AWS environment it also pulls the Secrets Manager secrets
 the legacy file only references by ARN (SMTP credentials, auth-provider
 credentials, and the CDK-generated CouchDB-admin / cookie secrets, the

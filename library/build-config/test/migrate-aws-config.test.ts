@@ -8,6 +8,24 @@ import {
   type SecretFetcher,
 } from '../scripts/migrate-aws-config';
 import {parseBuildConfig} from '../src/build-config';
+import {isGoogleProvider, isSAMLProvider} from '../src/auth-provider-config';
+
+type AwsSnapshot = {
+  stackName: string;
+  account: string;
+  smtpCredentialsSecretArn?: string;
+  conductor: {conductorDockerImage: string; name?: string};
+  authProviders?: {providers: string[]};
+  domains: {faims: string};
+  secrets: {privateKey: string; publicKey?: string};
+};
+
+type SecretsSnapshot = {
+  email?: {smtpPassword?: string};
+  authProviders?: {google?: {clientSecret?: string}};
+  couchdb?: {password?: string};
+  auth?: {cookieSecret?: string};
+};
 
 // Sentinel secret values: distinctive strings that must never appear in
 // core.json, aws.json, or the rendered report.
@@ -192,7 +210,7 @@ test('legacy AWS config migrates to core + secrets + aws that all validate', asy
   const result = await migrateOldAwsConfig(legacy, fakeFetcher());
 
   // Core spot checks across the renamed/restructured fields.
-  const core = result.core as any;
+  const core = parseBuildConfig(result.core);
   assert.equal(core.branding.theme, 'bssTheme');
   assert.equal(core.branding.appName, 'Example App');
   assert.equal(core.branding.conductorInstanceName, 'Example Server');
@@ -214,7 +232,7 @@ test('legacy AWS config migrates to core + secrets + aws that all validate', asy
   assert.equal(core.limits.attemptLimiterEnabled, false);
   assert.equal(core.limits.rateLimiterEnabled, false);
   // Domain model: legacy `faims` service renamed to `app`, endpoints derive.
-  assert.equal(core.domains.services.app, 'faims');
+  assert.equal(core.domains?.services.app, 'faims');
   // SMTP non-secret half comes from the fetched secret.
   assert.equal(core.email.smtpHost, 'smtp.example.com');
   assert.equal(core.email.smtpPort, 2525);
@@ -222,9 +240,13 @@ test('legacy AWS config migrates to core + secrets + aws that all validate', asy
   assert.equal(core.email.emailFromAddress, 'noreply@example.com');
   // Provider definitions: scope string split, secrets stripped, id added,
   // IdP public cert kept in core.
+  assert.ok(core.authProviders.google);
+  assert.ok(isGoogleProvider(core.authProviders.google));
   assert.deepEqual(core.authProviders.google.scope, ['profile', 'email']);
   assert.equal(core.authProviders.google.id, 'google');
   assert.equal(core.authProviders.google.clientSecret, undefined);
+  assert.ok(core.authProviders.vanguard);
+  assert.ok(isSAMLProvider(core.authProviders.vanguard));
   assert.equal(core.authProviders.vanguard.idpPublicKey, 'IDP-PUBLIC-CERT');
   assert.deepEqual(core.authProviders.vanguard.scope, ['profile', 'email']);
 
@@ -234,11 +256,14 @@ test('legacy AWS config migrates to core + secrets + aws that all validate', asy
   assert.equal(merged.email.smtpPassword, SMTP_PASS);
   assert.equal(merged.couchdb.password, COUCH_PASS);
   assert.equal(merged.auth.cookieSecret, COOKIE);
-  assert.equal((merged.authProviders.google as any).clientSecret, AUTH_SECRET);
+  assert.ok(
+    merged.authProviders.google && isGoogleProvider(merged.authProviders.google)
+  );
+  assert.equal(merged.authProviders.google.clientSecret, AUTH_SECRET);
   assert.equal(merged.endpoints.apiUrl, 'https://conductor.example.com');
 
   // AWS slot spot checks.
-  const aws = result.aws as any;
+  const aws = result.aws as AwsSnapshot;
   assert.equal(aws.stackName, 'ExampleStack');
   assert.equal(aws.account, '123456789012');
   assert.equal(aws.smtpCredentialsSecretArn, legacy.smtp.credentialsSecretArn);
@@ -247,6 +272,7 @@ test('legacy AWS config migrates to core + secrets + aws that all validate', asy
     'ghcr.io/example/faims3-api'
   );
   assert.equal(aws.conductor.name, undefined);
+  assert.ok(aws.authProviders);
   assert.deepEqual(aws.authProviders.providers, ['google', 'vanguard']);
   assert.equal(aws.domains.faims, 'faims');
   // Legacy secrets.publicKey has no slot in the new model and is dropped
@@ -279,23 +305,23 @@ test('secret values never leak into core, aws, or the report', async () => {
     }
   }
   // ...but they are all in secrets.json's overlay groups.
-  const secrets = result.secrets as any;
-  assert.equal(secrets.email.smtpPassword, SMTP_PASS);
-  assert.equal(secrets.authProviders.google.clientSecret, AUTH_SECRET);
-  assert.equal(secrets.couchdb.password, COUCH_PASS);
-  assert.equal(secrets.auth.cookieSecret, COOKIE);
+  const secrets = result.secrets as SecretsSnapshot;
+  assert.equal(secrets.email?.smtpPassword, SMTP_PASS);
+  assert.equal(secrets.authProviders?.google?.clientSecret, AUTH_SECRET);
+  assert.equal(secrets.couchdb?.password, COUCH_PASS);
+  assert.equal(secrets.auth?.cookieSecret, COOKIE);
 });
 
 test('offline (--no-aws) migration keeps ARNs and reports unresolved secrets', async () => {
   const result = await migrateOldAwsConfig(legacy, null);
-  const secrets = result.secrets as any;
+  const secrets = result.secrets as SecretsSnapshot;
   // SM-only values are absent...
   assert.equal(secrets.email, undefined);
   assert.equal(secrets.couchdb, undefined);
   // ...but the ARNs survive for AWS resolution, the merged config still
   // parses (build-config defaults fill the gaps), and the gap is reported.
   assert.equal(
-    (result.aws as any).smtpCredentialsSecretArn,
+    (result.aws as AwsSnapshot).smtpCredentialsSecretArn,
     legacy.smtp.credentialsSecretArn
   );
   assert.doesNotThrow(() =>

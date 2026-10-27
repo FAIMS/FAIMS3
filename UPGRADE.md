@@ -30,6 +30,8 @@ docker compose exec conductor pnpm run migrate
 
 Add the new `NEW_CONDUCTOR_URL` environment variable to the conductor/api build. This is already done in the aws-cdk IaC - however in existing deployments you may need to update your build configuration.
 
+This variable was later removed; see [Config consolidation: `NEW_CONDUCTOR_URL` removed](#config-consolidation-new_conductor_url-removed) above.
+
 **Note** ensure this includes the https:// prefix!
 
 This is a mandatory property and not including it will break the deployment.

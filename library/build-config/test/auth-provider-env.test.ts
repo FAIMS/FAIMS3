@@ -118,6 +118,25 @@ test('splits CSV array values and trims whitespace', () => {
   assert.deepEqual(result.goog?.scope, ['profile', 'email', 'openid']);
 });
 
+test('parses SAML skipRequestCompression from env', () => {
+  const env = {
+    AUTH_VG_TYPE: 'saml',
+    AUTH_VG_DISPLAY_NAME: 'Vanguard',
+    AUTH_VG_SCOPE: 'profile,email',
+    AUTH_VG_ENTRY_POINT: 'https://idp.example/sso',
+    AUTH_VG_ISSUER: 'https://sp.example/',
+    AUTH_VG_SKIP_REQUEST_COMPRESSION: 'true',
+    AUTH_VG_AUTHN_REQUEST_BINDING: 'HTTP-POST',
+  };
+  const result = readAuthProviderConfigFromEnv(env);
+  const vg = result.vg;
+  assert.equal(vg?.type, 'saml');
+  if (vg?.type === 'saml') {
+    assert.equal(vg.skipRequestCompression, true);
+    assert.equal(vg.authnRequestBinding, 'HTTP-POST');
+  }
+});
+
 test('maps SAML *_URL env keys to camelCase fields and applies SAML defaults', () => {
   const env = {
     AUTH_VG_TYPE: 'saml',

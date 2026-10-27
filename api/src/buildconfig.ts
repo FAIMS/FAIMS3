@@ -41,7 +41,6 @@ import {getKeyService, IKeyService, KeySource} from './services/keyService';
 
 // Get the package version directly from package.json
 import {version as packageVersion} from '../package.json';
-import type {ProvisionSSOUsersPolicy} from './auth/types';
 
 console.log(`Using API version from package.json: ${packageVersion}`);
 
@@ -250,8 +249,7 @@ export const config = {
   // Auth.
   keySource: canonical.auth.keySource as KeySource,
   awsSecretKeyArn,
-  provisionSSOUsersPolicy: canonical.auth
-    .provisionSsoUsersPolicy as ProvisionSSOUsersPolicy,
+  provisionSSOUsersPolicy: canonical.auth.provisionSsoUsersPolicy,
   localLoginEnabled,
   cookieSecret,
   authProviderConfig: canonical.authProviders,
@@ -266,7 +264,8 @@ export const config = {
 
   // Migrations.
   disableMigrateOnStartup: canonical.migration.disableMigrateOnStartup,
-  startupMigrationLockEnabled: canonical.migration.startupMigrationLockEnabled,
+  startupMigrationLockEnabled:
+    canonical.migration.startupMigrationLockEnabled ?? false,
   startupMigrationLockTimeoutMs:
     canonical.migration.startupMigrationLockTimeoutMs,
 

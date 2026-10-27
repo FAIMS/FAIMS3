@@ -33,6 +33,40 @@ function envValueToString(value: EnvValue): string | undefined {
   return String(value);
 }
 
+export interface FaimsAppBundlingEnvInput {
+  coreConfig: RuntimeConfig;
+  conductorUrl: string;
+  webUrl: string;
+  appUrl: string;
+  debugMode: boolean;
+}
+
+/**
+ * Apps-contract env for the CloudFront /app bundle, plus the CDK-resolved
+ * URLs, platform flags, and debug mode. Theme/UX flags such as
+ * VITE_CLUSTER_ADMIN_GROUP_NAME come from the contract, not a second mapping.
+ */
+export function buildFaimsAppBundlingEnv(
+  input: FaimsAppBundlingEnvInput
+): Record<string, string> {
+  const environment: Record<string, string> = {};
+  for (const [key, value] of Object.entries(
+    buildEnvMapFromRuntime(input.coreConfig, 'apps')
+  )) {
+    const str = envValueToString(value);
+    if (str !== undefined) environment[key] = str;
+  }
+  environment.platform = 'web';
+  environment.serverprefix = 'fieldmark';
+  environment.VITE_CONDUCTOR_URL = input.conductorUrl;
+  environment.VITE_API_URL = input.conductorUrl;
+  environment.VITE_WEB_URL = input.webUrl;
+  environment.VITE_APP_URL = input.appUrl;
+  environment.VITE_DEBUG_APP = input.debugMode ? 'true' : 'false';
+  environment.VITE_DEBUG_POUCHDB = input.debugMode ? 'true' : 'false';
+  return environment;
+}
+
 const MAP_ORIGINS_SHARED = [
   'openmaptiles.github.io',
   'api.maptiler.com',
@@ -191,34 +225,15 @@ export class FaimsFrontEnd extends Construct {
     const appPath = 'app';
     const outputPath = 'build';
 
-    // The shared VITE_* env (branding, maps, autosuggest, sync, token
-    // settings, etc.) comes from build-config's contract via
-    // buildEnvMapFromRuntime(core, 'apps') - the same contract the app/web use
-    // to parse their env. Only the resolved URLs, build flags
-    // and debug mode are overlaid here (AWS-specific).
-    const environment: {[key: string]: string} = {};
-    for (const [key, value] of Object.entries(
-      buildEnvMapFromRuntime(props.coreConfig, 'apps')
-    )) {
-      const str = envValueToString(value);
-      if (str !== undefined) environment[key] = str;
-    }
-    environment.platform = 'web';
-    environment.serverprefix = 'fieldmark';
-    environment.VITE_CLUSTER_ADMIN_GROUP_NAME = 'cluster-admin';
-    environment.VITE_SHOW_NEW_NOTEBOOK = 'true';
-    environment.VITE_SHOW_RECORD_SUMMARY_COUNTS = 'true';
-    // Resolved URLs are resolved by the CDK from the deployed domains and
-    // are authoritative — same overrides the web bundling applies. (The
-    // shared contract derives these from core.domains, so they should
-    // already agree; overriding guarantees the deployed domains win.)
-    environment.VITE_CONDUCTOR_URL = props.conductorUrl;
-    environment.VITE_API_URL = props.conductorUrl;
-    environment.VITE_WEB_URL = `https://${props.webDomainName}`;
-    environment.VITE_APP_URL = this.faimsAppUrl;
-    // Debugging has performance implications.
-    environment.VITE_DEBUG_APP = this.debugMode ? 'true' : 'false';
-    environment.VITE_DEBUG_POUCHDB = this.debugMode ? 'true' : 'false';
+    // Shared VITE_* env from the apps contract; overlay resolved URLs,
+    // platform flags, and debug mode only.
+    const environment = buildFaimsAppBundlingEnv({
+      coreConfig: props.coreConfig,
+      conductorUrl: props.conductorUrl,
+      webUrl: `https://${props.webDomainName}`,
+      appUrl: this.faimsAppUrl,
+      debugMode: this.debugMode,
+    });
 
     // Setup a deployment into this bucket with static files
     new aws_s3_deployment.BucketDeployment(this, 'deploy', {

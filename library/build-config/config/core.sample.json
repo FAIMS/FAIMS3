@@ -18,7 +18,8 @@
     "websiteTitle": "Control Centre",
     "conductorInstanceName": "Local FAIMS Server",
     "conductorDescription": "Local development server instance",
-    "conductorShortCodePrefix": "LOC"
+    "conductorShortCodePrefix": "LOC",
+    "clusterAdminGroupName": "cluster-admin"
   },
   "support": {
     "supportEmail": "support@fieldmark.au",
@@ -30,7 +31,9 @@
     "notebookName": "survey",
     "notebookListType": "tabs",
     "navigation": "breadcrumbs",
-    "showStatusTab": true
+    "showStatusTab": true,
+    "showNewNotebook": true,
+    "showRecordSummaryCounts": true
   },
   "maps": {
     "mapSource": "maptiler",

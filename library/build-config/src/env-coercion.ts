@@ -140,6 +140,21 @@ export function sanitizeCommitVersion(
  * A bugsnag key that is blank or the literal string `false` (case-insensitive)
  * is treated as "off" → `undefined`. Mirrors the app's behaviour.
  */
+/**
+ * Resolve the Vite `define` inject `__APP_VERSION__` (package.json version
+ * at build time — not an import.meta.env key). Falls back to `unknown`.
+ */
+export function resolveInjectedAppVersion(
+  injected: string | undefined
+): string {
+  if (injected) {
+    console.info(`Using APP_VERSION from build: ${injected}`);
+    return injected;
+  }
+  console.warn('__APP_VERSION__ not set in build. Using "unknown"');
+  return 'unknown';
+}
+
 export function parseBugsnagKey(value: string | undefined): string | undefined {
   const v = (value ?? '').trim();
   if (v === '' || v.toLowerCase() === 'false') return undefined;

@@ -4,9 +4,6 @@ import {
   AuthProviderConfig,
   AuthProviderConfigMap,
   BaseAuthProviderConfig,
-  GoogleAuthProviderConfig,
-  OIDCAuthProviderConfig,
-  SAMLAuthProviderConfig,
 } from '@faims3/build-config';
 import {googleStrategyGenerator} from './googleStrategy';
 import {getLocalAuthStrategy} from './localStrategy';
@@ -75,15 +72,14 @@ export const registerAuthProviders = (): RegisteredAuthProviders => {
     let strategy: passport.Strategy;
 
     if (config.type === 'google') {
-      strategy = googleStrategyGenerator(config as GoogleAuthProviderConfig);
+      strategy = googleStrategyGenerator(config);
     } else if (config.type === 'oidc') {
-      strategy = oidcStrategyGenerator(config as OIDCAuthProviderConfig);
+      strategy = oidcStrategyGenerator(config);
     } else if (config.type === 'saml') {
-      strategy = samlStrategyGenerator(
-        config as SAMLAuthProviderConfig
-      ) as passport.Strategy;
+      strategy = samlStrategyGenerator(config) as passport.Strategy;
     } else {
-      console.warn(`Unknown auth provider type: ${(config as any).type}`);
+      const unexpected: never = config;
+      console.warn(`Unknown auth provider type: ${String(unexpected)}`);
       return;
     }
 

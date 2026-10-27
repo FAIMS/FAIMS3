@@ -137,9 +137,6 @@ const DomainsConfigSchema = z.object({
   docs: z.string().default('docs'),
 });
 
-/** Age of a still-running lock after which a waiter steals it and runs migrate. */
-export const DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS = 1_800_000;
-
 export const ConductorConfigSchema = z
   .object({
     /** Conductor docker image e.g. org/faims3-api */

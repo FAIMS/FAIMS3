@@ -338,35 +338,13 @@ The **`aws`** fields are documented below.
   - `deleteExhaustedInvites`: Pass `--delete-exhausted-invites` for non-expired invites with exhausted uses (default: `false`; keep off so uses can be raised later)
   - `cpu` / `memory`: Fargate size for the one-shot task (defaults: `256` / `512`)
   - Failure alerts use the CouchDB monitoring SNS topic (`couch.monitoring.alarmTopic.emailAddress`)
-- `uiConfiguration` (**now in `core`**): UI and app build-time settings for the main FAIMS frontend — see the [Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md) reference for the shared fields.
-  - `uiTheme`: The UI theme: `default`, `fieldmark` or `bssTheme` (`bubble` is retired)
-  - `notebookListType`: Notebook list display mode: `tabs` or `headings`
-  - `notebookName`: Display name for notebooks, e.g. `survey` or `notebook`
-  - `appName`: App name used in app store and headings (e.g. "FAIMS Mobile")
-  - `appId`: App identifier for mobile builds (e.g. "FAIMS" or reverse-domain)
-  - `headingAppName`: (Optional) Override for the banner heading; defaults to `appName`
-  - `forceRemoteDeletion`: (Optional) `allow` or `never` — whether the mobile app removes local survey databases after sync when a survey is archived (must match app build). Passed to `VITE_FORCE_REMOTE_DELETION` for both `/app` and Control Centre web builds. Defaults to `never` when omitted.
-  - `deleteOnDeactivation`: (Optional) When `true`, manual notebook deactivation wipes local Pouch data in the mobile app (`VITE_DELETE_ON_DEACTIVATION`). Defaults to `false` when omitted.
-  - `excludedTeamRoles`: (Optional) Array of team role enum values to hide from Control Centre team-role dropdowns (e.g. `["TEAM_MEMBER_CREATOR"]`). Passed to the web build as `VITE_EXCLUDED_TEAM_ROLES`. Valid values: `TEAM_MEMBER`, `TEAM_MEMBER_CREATOR`, `TEAM_MANAGER`, `TEAM_ADMIN`. When omitted, all team roles are shown.
-  - `enablePlansInDesigner`: (Optional) When `true` (default), the designer can add a plan to templates that do not already have one. When `false`, Add Plan is hidden; templates that already have a plan can still be reconfigured. Passed to the web build as `VITE_ENABLE_PLANS_IN_DESIGNER`.
-  - `showStatusTab`: (Optional) When `true` (default), the record view shows a "Status" tab. When `false`, the tab is hidden. Passed to the app build as `VITE_SHOW_STATUS_TAB`.
-  - `offlineMaps`: Map and tile configuration for the app.
-    - `mapSource`: Map tile provider: `osm` or `maptiler`
-    - `mapSourceKey`: (Optional) API key for the map tile service (e.g. MapTiler)
-    - `satelliteSource`: (Optional) Satellite layer source: `esri` or `maptiler`
-    - `offlineMaps`: Whether to enable offline map downloads (some providers e.g. OSM do not allow this)
-    - `mapStyle`: Map style: `basic`, `osm-bright`, `openstreetmap`, or `toner` (default: `basic`)
-  - `addressAutosuggest`: (Optional) Address autosuggest/autocomplete for address fields. Omit or set `source` to `none` to disable. Defaults to `{ "source": "none" }` if omitted.
-    - `source`: `none` (disable), `mapbox`, or `maptiler`
-    - `mapboxKey`: (Required when `source` is `mapbox`) Mapbox access token for Search Box API
-    - `mapboxAddressCountry`: (Optional) Comma-separated ISO 3166-1 alpha-2 country codes for Mapbox (e.g. `AU` or `AU,NZ`). Defaults to Australia when unset.
-    - `maptilerKey`: (Optional when `source` is `maptiler`) MapTiler API key for the Geocoding API (see https://cloud.maptiler.com/). If omitted and your map tiles use MapTiler (`mapSource` is `maptiler` and `mapSourceKey` is set), that key is used for address autosuggest as well. Provide `maptilerKey` only when you want a _separate_ key for autosuggest (e.g. different quotas or restrictions) than for map tiles.
-    - `maptilerAddressCountry`: (Optional) Comma-separated ISO 3166-1 alpha-2 country codes for MapTiler (e.g. `AU` or `AU,NZ`). Defaults to Australia when unset.
-  - Example with MapTiler autosuggest (shared key): `"addressAutosuggest": { "source": "maptiler", "maptilerAddressCountry": "AU" }` when `offlineMaps.mapSource` is `maptiler` and `mapSourceKey` is set. Example with a dedicated autosuggest key: `"addressAutosuggest": { "source": "maptiler", "maptilerKey": "your-geocoding-key", "maptilerAddressCountry": "AU" }`
+- Shared UI, maps, support, and email fields live in `core.json` — see
+  [Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md)
+  and `configs/sample/core.json`. Map / autosuggest keys in `core.maps` are
+  baked into the front-end at build time; only use keys suitable for public
+  consumption and set provider usage limits.
 
-  **API keys and public exposure:** Any API keys you put in `uiConfiguration` (e.g. `mapSourceKey`, `mapboxKey`, `maptilerKey`) are baked into the front-end app at build time and can therefore be exposed in the client—for example in bundled source or network requests. You should only use keys that are suitable for public consumption. Both Mapbox and MapTiler support public/client keys for front-end use; this is a standard pattern and is generally safe. Be aware that if someone obtains and abuses these keys, there can be cost implications (e.g. usage beyond your quotas). Use provider dashboards to set usage limits and monitor usage where possible.
-
-- `supportLinks` (**now in `core.support`**): Links shown in the app (support, privacy, contact, docs).
+- `support` (**in `core.support`**): Links shown in the app (support, privacy, contact, docs).
   - `supportEmail`: Support email address (default: support@fieldmark.au)
   - `privacyPolicyUrl`: Privacy policy URL (default: https://fieldnote.au/privacy)
   - `contactUrl`: Contact page URL; empty string hides the contact link
@@ -402,8 +380,8 @@ The **`aws`** fields are documented below.
   - `cpu`: The number of CPU units for the Fargate task
   - `memory`: The amount of memory (in MiB) for the Fargate task
   - `localhostWhitelist`: (default false) Allow localhost-style redirects; not recommended for production
-  - `disableMigrateOnStartup`: (default `false`) Skip API-boot Couch migrate and notebook walks (`DISABLE_MIGRATE_ON_STARTUP`). Leave false so boot still runs `initialiseAndMigrateDBs` + `validateDatabases`. Set true only when migrate is handled out of band (`pnpm migrate-with-keys`) or for a debug stack against an already-migrated DB. When true, the lock is unused: omit `disableStartupMigrationLock` (it is forced off) or set it `true`. An explicit `disableStartupMigrationLock: false` with this flag is a config error.
-  - `disableStartupMigrationLock`: (optional, default treated as `false` when migrate-on-startup is still on) Opt out of the Couch-mediated startup-migration lock. AWS ECS is clustered, so CDK **hard-enables** `STARTUP_MIGRATION_LOCK_ENABLED` unless this is `true` or `disableMigrateOnStartup` is `true`. Leave unset/false in production so replicas claim/wait instead of racing migrate. Only set true for a single-task / debug stack (the same reason local `pnpm run dev` defaults the env flag off — a killed reload can leave a `running` lock that strands the next boot until the steal timeout).
+  - `disableMigrateOnStartup`: (default `false`) Skip API-boot Couch migrate and notebook walks (`DISABLE_MIGRATE_ON_STARTUP`). Leave false so boot still runs `initialiseAndMigrateDBs` + `validateDatabases`. Set true only when migrate is handled out of band (`pnpm migrate-with-keys`) or for a debug stack against an already-migrated DB. When true, the lock is unused (forced off). Setting `startupMigrationLockEnabled: true` with this flag is a config error.
+  - `startupMigrationLockEnabled`: (optional) Couch-mediated startup-migration lock. AWS ECS is clustered, so CDK **defaults the lock on** when this is omitted. Set `false` to opt out on a single-task / debug stack (the same reason local `pnpm run dev` defaults the env flag off — a killed reload can leave a `running` lock that strands the next boot until the steal timeout). Skip-migrate forces the lock off.
   - `startupMigrationLockTimeoutMs`: (default `1800000`) Age of a still-`running` lock after which clustered waiters steal it and run migrate themselves (`STARTUP_MIGRATION_LOCK_TIMEOUT_MS`, 30 minutes). Timeout is not “skip migrate and attach”. Age is `now - startedAtMs` (no heartbeat); a steal does not cancel the original doer. Only used when the lock is enabled. The Conductor ALB health check is `GET /up` (bound before migrate; old images already served this path). `GET /ready` is mounted only after the full API attaches. ECS `healthCheckGracePeriod` is 120s for process start through that bind.
   - `autoScaling`: Auto scaling configuration for the Conductor service
     - `desiredCapacity`: The desired number of tasks to run
@@ -625,29 +603,33 @@ Related scripts under `scripts/`: `ec2Snapshot.sh`, `ec2PrepareReplace.sh`,
 
 ### SMTP Configuration
 
-To configure the email service, add an `smtp` section to your configuration file with the following fields:
+To configure the email service, put identity and service type in
+`core.email` and the credentials ARN on `aws.smtpCredentialsSecretArn`:
 
 ```json
-"smtp": {
+"email": {
   "emailServiceType": "SMTP",
-  "fromEmail": "notifications@your-domain.com",
-  "fromName": "FAIMS Notification Service",
-  "replyTo": "support@your-domain.com",
+  "emailFromAddress": "notifications@your-domain.com",
+  "emailFromName": "FAIMS Notification Service",
+  "emailReplyTo": "support@your-domain.com",
   "testEmailAddress": "admin@your-domain.com",
-  "cacheExpirySeconds": 300,
-  "credentialsSecretArn": "arn:aws:secretsmanager:region:account-id:secret:smtp-credentials-id"
+  "smtpCacheExpirySeconds": 300
 }
+```
+
+```json
+"smtpCredentialsSecretArn": "arn:aws:secretsmanager:region:account-id:secret:smtp-credentials-id"
 ```
 
 Parameters:
 
 - `emailServiceType`: The email service implementation to use (SMTP or MOCK)
-- `fromEmail`: The email address to use as the sender
-- `fromName`: The display name to use for the sender
-- `replyTo`: (Optional) The reply-to email address
+- `emailFromAddress`: The email address to use as the sender
+- `emailFromName`: The display name to use for the sender
+- `emailReplyTo`: (Optional) The reply-to email address
 - `testEmailAddress`: Email address for admin verification tests
-- `cacheExpirySeconds`: (Optional) Duration to cache SMTP connections in seconds
-- `credentialsSecretArn`: ARN of the secret containing SMTP credentials
+- `smtpCacheExpirySeconds`: (Optional) Duration to cache SMTP connections in seconds
+- `smtpCredentialsSecretArn`: ARN of the secret containing SMTP credentials (`aws.json`)
 
 ### SMTP Credentials Secret
 

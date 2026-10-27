@@ -13,9 +13,9 @@ From now on, when I refer to commands in the CLI, assume unless otherwise stated
 You will need an SMTP server - including the following parameters:
 
 ```json
-    "fromEmail": "notifications@your-domain.com",
-    "fromName": "FAIMS Notification Service",
-    "replyTo": "support@your-domain.com",
+    "emailFromAddress": "notifications@your-domain.com",
+    "emailFromName": "FAIMS Notification Service",
+    "emailReplyTo": "support@your-domain.com",
     "testEmailAddress": "admin@your-domain.com",
 ```
 
@@ -217,10 +217,8 @@ Fill in these certificates - you noted down the ARNs earlier. Primary = your dep
 To be sure we are deploying to the right target, we include the AWS account ID and region:
 
 ```json
-  "aws": {
-    "account": "your-aws-account-id",
-    "region": "ap-southeast-2"
-  },
+  "account": "your-aws-account-id",
+  "region": "ap-southeast-2",
 ```
 
 ### Private and public key secrets
@@ -245,59 +243,56 @@ This will generate the keys locally, and upload them to AWS SM. Grab the indicat
 
 ```json
   "secrets": {
-    "privateKey": "arn:aws:secretsmanager:region:account-id:secret:private-key-secret-id",
-    "publicKey": "arn:aws:secretsmanager:region:account-id:secret:public-key-secret-id"
+    "privateKey": "arn:aws:secretsmanager:region:account-id:secret:signing-keys-secret-id"
   },
 ```
 
-### UI Configuration
+The public key lives in the same secret JSON (`rsa_public_key`); do not add a separate `publicKey` ARN.
 
-Let's talk through each option in the below:
+### Branding, notebooks, maps, and support (`core.json`)
+
+Shared UI and contact settings now live in `core.json` groups. Copy
+`infrastructure/aws-cdk/configs/sample/core.json` and see
+[Build Configuration](Build-Configuration.md) for every field. A typical
+starting point:
 
 ```json
-  "uiConfiguration": {
-    "uiTheme": "default",
-    "notebookListType": "tabs",
-    "notebookName": "notebook",
+{
+  "branding": {
+    "theme": "default",
     "appName": "FAIMS Mobile",
-    "appId": "FAIMS",
-    "offlineMaps": {
-      "mapSource": "maptiler",
-      "mapSourceKey": "your-maptiler-api-key",
-      "offlineMaps": true,
-      "mapStyle": "basic"
-    }
+    "websiteTitle": "Control Centre"
   },
-```
-
-- `uiTheme`: there are currently two themes, `bubble` or `default`.
-- `notebookListType`: 'tabs' or 'headings' display mode for notebook list
-- `notebookName`: the app display name for notebooks, e.g. 'survey'
-- `appName`: the title/display name of the app
-- `appId` : the registered ID for any associated mobile apps - usually a globally unique short ID - will depend on/inform your app deployments.
-- `headingAppName`: the heading banner display name - I'd recommend a short (fewer than five characters) acronym or abbreviation
-- `offlineMaps`
-  - `offlineMaps` true/false - false disables
-  - `mapStyle`: the map style can be basic, osm-bright, openstreetmap or toner
-  - `mapSource`: currently only supports 'osm' or 'maptiler'
-  - `mapSourceKey`: API key for maptiler or OSM
-  - `satelliteSource`: If you want to enable separate satellite maps (toggle
-    online only satellite) - provide either 'maptiler' or 'esri'. If maptiler,
-    also ensure you provide 'mapSourceKey'
-
-If you just want to get a deployment going, you can leave most of these options default.
-
-### Support links
-
-```json
-  "supportLinks": {
+  "notebookAndRecordUX": {
+    "notebookListType": "tabs",
+    "notebookName": "notebook"
+  },
+  "android": {
+    "appId": "FAIMS"
+  },
+  "maps": {
+    "mapSource": "maptiler",
+    "mapSourceKey": "your-maptiler-api-key",
+    "satelliteSource": "esri",
+    "offlineMaps": true,
+    "mapStyle": "basic"
+  },
+  "support": {
     "supportEmail": "support@your-domain.com",
     "privacyPolicyUrl": "https://your-domain.com/privacy-policy",
-    "contactUrl": "https://your-domain.com/contact"
-  },
+    "appContactUrl": "https://your-domain.com/contact"
+  }
+}
 ```
 
-Fill out these with sensible contact links, and privacy policy links.
+- `branding.theme`: `default`, `fieldmark`, or `bssTheme` (`bubble` is retired).
+- `notebookAndRecordUX.notebookListType`: `tabs` or `headings`.
+- `notebookAndRecordUX.notebookName`: display name for notebooks, e.g. `survey`.
+- `android.appId`: registered ID for associated mobile apps.
+- `maps`: tile provider, API key, optional satellite source, and offline downloads (OSM cannot enable offline maps).
+- `support`: contact email, privacy policy, and contact URL.
+
+If you just want to get a deployment going, you can leave most of these options default.
 
 ### Couch DB Detailed instance configuration
 
@@ -682,16 +677,22 @@ with the following content (see [Creating Secrets](#creating-secrets)).
 }
 ```
 
-Include the secret ARN alongside other parameters in the config file:
+Put the non-secret email identity in `core.email` and the credentials ARN
+on `aws.smtpCredentialsSecretArn`:
 
 ```json
+  "email": {
     "emailServiceType": "SMTP",
-    "fromEmail": "notifications@your-domain.com",
-    "fromName": "FAIMS Notification Service",
-    "replyTo": "support@your-domain.com",
+    "emailFromAddress": "notifications@your-domain.com",
+    "emailFromName": "FAIMS Notification Service",
+    "emailReplyTo": "support@your-domain.com",
     "testEmailAddress": "admin@your-domain.com",
-    "cacheExpirySeconds": 300,
-    "credentialsSecretArn": "your secret arn"
+    "smtpCacheExpirySeconds": 300
+  }
+```
+
+```json
+  "smtpCredentialsSecretArn": "arn:aws:secretsmanager:region:account-id:secret:smtp-credentials-id"
 ```
 
 ## Creating Secrets

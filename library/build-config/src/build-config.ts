@@ -19,6 +19,7 @@ export {
   parseMaxLongLivedDays,
   sanitizeCommitVersion,
   parseBugsnagKey,
+  resolveInjectedAppVersion,
   NO_MAXIMUM_WORDS,
 } from './env-coercion.js';
 import {
@@ -103,6 +104,8 @@ const BrandingBuildConfigSchema = z
     headingAppName: z.string().optional(),
     theme: z.string().default('default'),
     websiteTitle: z.string().default('Control Centre'),
+    /** Couch/directory cluster-admin group name baked into the app build. */
+    clusterAdminGroupName: z.string().default('cluster-admin'),
     conductorInstanceName: z.string().default('Development FAIMS Server'),
     conductorDescription: z.string().default('FAIMS Conductor Server'),
     conductorShortCodePrefix: z.string().default('FAIMS'),
@@ -124,6 +127,8 @@ const NotebookAndRecordUxBuildConfigSchema = z
     notebookListType: z.enum(['tabs', 'headings']).default('tabs'),
     navigation: z.enum(['none', 'breadcrumbs']).default('none'),
     showStatusTab: z.boolean().default(true),
+    showNewNotebook: z.boolean().default(true),
+    showRecordSummaryCounts: z.boolean().default(true),
   })
   .strict();
 
@@ -194,7 +199,12 @@ const MigrationBuildConfigSchema = z
   .object({
     migrateOldDatabases: z.boolean().default(false),
     disableMigrateOnStartup: z.boolean().default(false),
-    startupMigrationLockEnabled: z.boolean().default(false),
+    /**
+     * Optional so omit vs explicit false stay distinct: local API treats
+     * omit as off, AWS CDK treats omit as on (clustered default) and
+     * honours an explicit false (single-task / debug).
+     */
+    startupMigrationLockEnabled: z.boolean().optional(),
     startupMigrationLockTimeoutMs: z.number().int().positive().default(1800000),
   })
   .strict()
@@ -213,9 +223,11 @@ const MigrationBuildConfigSchema = z
   })
   .transform(data => ({
     ...data,
-    // Skip-migrate makes the lock unused; treat it as disabled.
-    startupMigrationLockEnabled:
-      !data.disableMigrateOnStartup && data.startupMigrationLockEnabled,
+    // Skip-migrate makes the lock unused. Otherwise keep omit as
+    // undefined so AWS can default-on while still honouring false.
+    startupMigrationLockEnabled: data.disableMigrateOnStartup
+      ? false
+      : data.startupMigrationLockEnabled,
   }));
 
 const AuthBuildConfigSchema = z
@@ -557,13 +569,24 @@ function deriveEndpointsFromDomains(
 }
 
 /**
+ * Default Control Centre long-lived token duration chips (days). Used when
+ * `authTokens.longLivedTokenDurationHints` is omitted or empty, then clamped
+ * to `maximumLongLivedDurationDays` (so a 90-day cap yields 1,5,10,30,90).
+ */
+export const DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS: readonly number[] = [
+  1, 5, 10, 30, 90, 365,
+];
+
+/**
  * Applies the shared cross-field invariants so that every
  * entry point (JSON, generated app env, generated api env) yields the same
  * canonical semantics:
  *  - endpoints are derived from the domain structure when `domains` is set
+ *  - conductorUrls falls back to apiUrl when empty (login needs at least one)
  *  - short / heading names fall back to the app name
  *  - offline maps are forced off for OSM (no bulk download)
- *  - long-lived token hints are clamped to the max duration, deduped, sorted
+ *  - long-lived token hints default to the shared chip list, then are clamped
+ *    to the max duration, deduped, sorted
  */
 function applySharedInvariants(c: SharedBuildConfig): SharedBuildConfig {
   // Derive the concrete endpoints from the domain structure (when present),
@@ -576,20 +599,34 @@ function applySharedInvariants(c: SharedBuildConfig): SharedBuildConfig {
       if (value !== undefined) ep[key] = value;
     }
   }
+  // The app authenticates against conductorUrls. An omitted / empty list
+  // (blank VITE_CONDUCTOR_URL, or a core that only set apiUrl) must still
+  // yield a server — fall back to the Conductor / API URL.
+  if (!c.endpoints.conductorUrls.length && c.endpoints.apiUrl) {
+    c.endpoints.conductorUrls = [c.endpoints.apiUrl];
+  }
   if (!c.branding.appShortName) c.branding.appShortName = c.branding.appName;
   if (!c.branding.headingAppName)
     c.branding.headingAppName = c.branding.appName;
   if (c.maps.mapSource === 'osm') c.maps.offlineMaps = false;
   const maxDays = c.authTokens.maximumLongLivedDurationDays;
-  // 'unlimited' means no cap, so the hints are left unclamped.
+  const provided = c.authTokens.longLivedTokenDurationHints;
+  const sourceHints =
+    provided && provided.length > 0
+      ? provided
+      : [...DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS];
+  // 'unlimited' means no cap, so provided hints are left unclamped; an
+  // omitted list still gets the default chips.
   if (typeof maxDays === 'number') {
-    let hints = (c.authTokens.longLivedTokenDurationHints ?? []).filter(
-      (hint: number) => hint <= maxDays
-    );
+    let hints = sourceHints.filter((hint: number) => hint <= maxDays);
     if (hints.length === 0) hints = [maxDays];
     c.authTokens.longLivedTokenDurationHints = [...new Set(hints)].sort(
       (a: number, b: number) => a - b
     );
+  } else if (!provided || provided.length === 0) {
+    c.authTokens.longLivedTokenDurationHints = [
+      ...DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS,
+    ];
   }
   return c;
 }
@@ -737,6 +774,7 @@ export const GeneratedEnvSchema = z
     VITE_SHOW_WIPE: BoolEnvSchema.default(true),
     VITE_SHOW_POUCHDB_BROWSER: BoolEnvSchema.default(true),
     VITE_SHOW_NEW_NOTEBOOK: BoolEnvSchema.default(true),
+    VITE_SHOW_RECORD_SUMMARY_COUNTS: BoolEnvSchema.default(true),
     VITE_SHOW_STATUS_TAB: BoolEnvSchema.default(true),
     VITE_DEBUG_APP: BoolEnvSchema.default(false),
     VITE_DEBUG_POUCHDB: BoolEnvSchema.default(false),
@@ -961,6 +999,7 @@ export function parseAppsEnv(env: GeneratedEnv): PartialBuildConfig {
       headingAppName: env.VITE_HEADING_APP_NAME || undefined,
       websiteTitle: env.VITE_WEBSITE_TITLE,
       theme: env.VITE_THEME,
+      clusterAdminGroupName: env.VITE_CLUSTER_ADMIN_GROUP_NAME,
     },
     support: {
       supportEmail: env.VITE_SUPPORT_EMAIL,
@@ -973,6 +1012,8 @@ export function parseAppsEnv(env: GeneratedEnv): PartialBuildConfig {
       notebookListType: env.VITE_NOTEBOOK_LIST_TYPE,
       navigation: env.VITE_NAVIGATION,
       showStatusTab: env.VITE_SHOW_STATUS_TAB,
+      showNewNotebook: env.VITE_SHOW_NEW_NOTEBOOK,
+      showRecordSummaryCounts: env.VITE_SHOW_RECORD_SUMMARY_COUNTS,
     },
     maps: {
       mapSource: env.VITE_MAP_SOURCE,

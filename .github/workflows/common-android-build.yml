@@ -89,6 +89,11 @@ jobs:
           node-version: 24
           cache: 'pnpm'
 
+      # generate-build-env runs `pnpm generate-build-config` (tsx). Install
+      # workspace deps before that, not in the later webapp build step.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Checkout deployment config repository
         uses: actions/checkout@v7
         with:
@@ -98,31 +103,12 @@ jobs:
           path: config-repo
 
       - name: Generate build environment from deployment config
+        uses: ./.github/actions/generate-build-env
         env:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
-        run: |
-          set -euo pipefail
-          CONFIG_ENV="${{ inputs.config_environment }}"
-          # Base path within the config repo (defaults to 'configs'; a leading
-          # slash is tolerated and stripped).
-          CONFIG_REPO_PATH="${{ vars.APP_CONFIG_REPO_PATH || 'configs' }}"
-          CONFIG_REPO_PATH="${CONFIG_REPO_PATH#/}"
-          BASE_CONFIG="config-repo/${CONFIG_REPO_PATH}/${CONFIG_ENV}/core.json"
-          SECRETS_CONFIG="config-repo/${CONFIG_REPO_PATH}/${CONFIG_ENV}/secrets.enc.json"
-
-          if [[ ! -f "$BASE_CONFIG" ]]; then
-            echo "Missing base config: $BASE_CONFIG" >&2
-            exit 1
-          fi
-
-          if [[ -f "$SECRETS_CONFIG" ]]; then
-            jq -s '.[0] * .[1]' "$BASE_CONFIG" <(sops --decrypt "$SECRETS_CONFIG") \
-              | pnpm generate-build-config --config - --platform apps \
-              | grep -E '^[A-Z0-9_]+=' >> "$GITHUB_ENV"
-          else
-            pnpm generate-build-config --config "$BASE_CONFIG" --platform apps \
-              | grep -E '^[A-Z0-9_]+=' >> "$GITHUB_ENV"
-          fi
+        with:
+          environment: ${{ inputs.config_environment }}
+          config-base-path: ${{ vars.APP_CONFIG_REPO_PATH || 'configs' }}
 
       - name: Set up adopt JDK 1.21
         uses: actions/setup-java@v4
@@ -165,7 +151,6 @@ jobs:
             export serverprefix="${{ inputs.serverprefix }}"
           fi
 
-          pnpm install --frozen-lockfile
           pnpm run build
 
       - name: Upload Bugsnag sourcemaps

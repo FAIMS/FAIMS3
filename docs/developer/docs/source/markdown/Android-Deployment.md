@@ -227,12 +227,13 @@ Here are the initial setup steps, others are described in more detail below.
 - **Set up ruby env**:
   Ruby is used for running `fastlane` to automate the upload to the app store.
 - **Decode Service Account Key JSON File**:
-  Decode the `GPLAY_SERVICE_ACCOUNT_KEY_JSON` secret that contains a base64 encoded
-  version of the Google Cloud Service Account key which you created earlier.
-  Resulting file will be used by `fastlane` later as `ANDROID_JSON_KEY_FILE`.
+  Decode the generated `GPLAY_SERVICE_ACCOUNT_KEY_JSON` env var (from
+  `android.serviceAccountKeyJsonBase64` in the merged config, via
+  `pnpm generate-build-config`). Resulting file will be used by `fastlane`
+  later as `ANDROID_JSON_KEY_FILE`.
 - **Decode Keystore File**:
-  Decode the `KEYSTORE_FILE` secret that contains the base64 encoded content of
-  the key store. (How do we make this?)
+  Decode the generated `KEYSTORE_FILE` env var (from
+  `android.keystoreFileBase64` in the merged config).
 - **Setup Android SDK**:
   Runs the action to make the SDK available to the build.
 

@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
-import {RuntimeConfig} from './build-config.js';
+import {
+  DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS,
+  RuntimeConfig,
+} from './build-config.js';
 import {buildAuthProviderEnvMap} from './auth-provider-config.js';
 
+/** Which half of the generated env to emit (`all` writes both). */
 export type SupportedPlatform = 'apps' | 'api' | 'all';
 
+/** Scalar or CSV-array value written into a generated env map. */
 export type EnvValue =
   | string
   | number
@@ -32,6 +37,8 @@ const baseContract: Record<string, EnvResolver> = {
   VITE_WEBSITE_TITLE: runtime =>
     runtime.branding.websiteTitle ?? 'Control Centre',
   VITE_THEME: runtime => runtime.branding.theme ?? 'default',
+  VITE_CLUSTER_ADMIN_GROUP_NAME: runtime =>
+    runtime.branding.clusterAdminGroupName ?? 'cluster-admin',
   VITE_NOTEBOOK_NAME: runtime =>
     runtime.notebookAndRecordUX.notebookName ?? 'notebook',
   VITE_NOTEBOOK_LIST_TYPE: runtime =>
@@ -89,6 +96,10 @@ const baseContract: Record<string, EnvResolver> = {
   VITE_SHOW_POUCHDB_BROWSER: runtime => runtime.dev.showPouchDbBrowser ?? true,
   VITE_SHOW_STATUS_TAB: runtime =>
     runtime.notebookAndRecordUX.showStatusTab ?? true,
+  VITE_SHOW_NEW_NOTEBOOK: runtime =>
+    runtime.notebookAndRecordUX.showNewNotebook ?? true,
+  VITE_SHOW_RECORD_SUMMARY_COUNTS: runtime =>
+    runtime.notebookAndRecordUX.showRecordSummaryCounts ?? true,
   VITE_DEBUG_APP: runtime => runtime.dev.debugApp ?? false,
   VITE_DEBUG_POUCHDB: runtime => runtime.dev.debugPouchDb ?? false,
   VITE_POUCH_BATCH_SIZE: runtime => runtime.pouchdb.pouchBatchSize ?? 10,
@@ -104,7 +115,9 @@ const baseContract: Record<string, EnvResolver> = {
   VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: runtime =>
     runtime.authTokens.maximumLongLivedDurationDays ?? 90,
   VITE_LONG_LIVED_TOKEN_DURATION_HINTS: runtime =>
-    runtime.authTokens.longLivedTokenDurationHints ?? [1, 5, 10, 30, 90, 365],
+    runtime.authTokens.longLivedTokenDurationHints ?? [
+      ...DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS,
+    ],
   VITE_EXCLUDED_TEAM_ROLES: runtime =>
     runtime.teamAndRolePolicy.excludedTeamRoles ?? [],
 };

@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-import {parseGeneratedEnv} from '@faims3/build-config';
+import {
+  parseGeneratedEnv,
+  resolveInjectedAppVersion,
+} from '@faims3/build-config';
 import {
   INVITE_EXPIRY_HINT_DAYS,
   Resource,
@@ -65,15 +68,7 @@ const canonical = parseGeneratedEnv(import.meta.env);
 const notebookName = canonical.notebookAndRecordUX.notebookName;
 const notebookNamePlural = pluralize(notebookName);
 
-// Build-time version inject via Vite `define` (__APP_VERSION__ from
-// package.json at build time — not an import.meta.env key).
-let appVersion = 'unknown';
-if (__APP_VERSION__) {
-  console.info(`Using APP_VERSION from build: ${__APP_VERSION__}`);
-  appVersion = __APP_VERSION__;
-} else {
-  console.warn('__APP_VERSION__ not set in build. Using "unknown"');
-}
+const appVersion = resolveInjectedAppVersion(__APP_VERSION__);
 
 export const config = {
   // Env-backed values, sourced from the shared canonical config.

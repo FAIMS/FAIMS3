@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
- * Migrate a legacy (pre-ADR-0002, `main`-branch) AWS CDK config to the new
- * shared JSON config layout.
+ * Migrate a legacy main-branch AWS CDK config (`uiConfiguration`, `smtp`,
+ * …) to the new shared JSON config layout.
  *
  * Input : one legacy AWS config JSON file (the flat shape validated by the
  *         old `infrastructure/aws-cdk/lib/config.ts` `ConfigSchema` on
