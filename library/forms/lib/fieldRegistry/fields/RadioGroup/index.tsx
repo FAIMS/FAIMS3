@@ -95,6 +95,7 @@ export const RadioGroup = (props: FieldProps) => {
       ElementProps.options.length
     )
   );
+  // Selections are stored as values; display labels are render-only.
   const predefinedValues = ElementProps.options.map(opt => opt.value);
   // if expandedChecklist is missing, we default to true - expanded by default
   const expandedChecklist = ElementProps.expandedChecklist !== false;
@@ -108,6 +109,7 @@ export const RadioGroup = (props: FieldProps) => {
     });
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
+  // Control selection is the stored value (or the special Other marker).
   const displayValue = hasOtherSelected
     ? OTHER_MARKER
     : predefinedValues.includes(rawValue)
@@ -357,7 +359,7 @@ const RadioGroupWidget = ({
           // Render a regular option
           const renderOption = (option: ChoiceOption) => (
             <FormControlLabel
-              key={option.id || option.key || option.value}
+              key={option.value}
               value={option.value}
               control={
                 <MuiRadio
@@ -467,8 +469,7 @@ const DropDownWidget = ({
       disabled={disabled}
       onBlur={handleBlur}
       renderValue={selected => {
-        // Get either the 'other' text or the value and
-        // render as markdown before displaying
+        // Render the label (or the free-text Other value), not the value.
         let value = selected === OTHER_MARKER ? otherText || 'Other' : selected;
         const option = options.find(opt => opt.value === selected);
         if (option) {
@@ -551,7 +552,7 @@ const DropDownWidget = ({
         // Render a regular option MenuItem
         const renderOptionMenuItem = (option: ChoiceOption) => (
           <MenuItem
-            key={option.id || option.key || option.value}
+            key={option.value}
             value={option.value}
             sx={{
               whiteSpace: 'normal',
@@ -603,6 +604,7 @@ const DropDownWidget = ({
 // ============================================================================
 
 const valueSchema = (props: RadioGroupFieldProps) => {
+  // Validate stored selections against configured values.
   const optionValues = props.ElementProps.options.map(option => option.value);
   const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
 

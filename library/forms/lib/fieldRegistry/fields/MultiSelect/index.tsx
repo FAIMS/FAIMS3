@@ -93,6 +93,7 @@ const ExpandedChecklist = ({
     0,
     Math.min(otherOptionPosition ?? options.length, options.length)
   );
+  // Exclusive choices are matched by stored ID, not rendered label.
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
 
   const handleChange = (optionValue: string) => {
@@ -167,7 +168,7 @@ const ExpandedChecklist = ({
   // Render a regular option component
   const renderOption = (option: ChoiceOption) => (
     <FormControlLabel
-      key={option.id || option.key || option.value}
+      key={option.value}
       control={
         <Checkbox
           checked={value.includes(option.value)}
@@ -325,6 +326,7 @@ const MuiMultiSelect = ({
                 if (isOtherOptionValue(v)) {
                   return extractOtherText(v) || 'Other';
                 }
+                // The selected input renders displayLabel; saved data stays the ID.
                 return options.find(option => option.value === v)?.label ?? v;
               })
               .join(', ');
@@ -430,7 +432,7 @@ const MuiMultiSelect = ({
             // Render a regular option MenuItem
             const renderOptionMenuItem = (option: ChoiceOption) => (
               <MenuItem
-                key={option.id || option.key || option.value}
+                key={option.value}
                 value={option.value}
                 disabled={
                   selectedExclusiveOption !== undefined &&
@@ -509,6 +511,7 @@ export const MultiSelect = (props: FieldProps) => {
   const exclusiveOptions = ElementProps.exclusiveOptions ?? [];
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
   const otherOptionPosition = ElementProps.otherOptionPosition;
+  // Form values and exclusiveOptions refer to values, not display labels.
   const predefinedValues = ElementProps.options.map(opt => opt.value);
 
   const {setOtherSelected, hasOtherSelected, otherText, handleOtherTextChange} =
@@ -519,6 +522,7 @@ export const MultiSelect = (props: FieldProps) => {
       setFieldData,
     });
 
+  // Only predefined values are passed to the selection controls; Other is separate.
   const selectedPredefined = value.filter(v => predefinedValues.includes(v));
   const otherValues = value.filter(v => isOtherOptionValue(v));
 
@@ -600,6 +604,7 @@ export const MultiSelect = (props: FieldProps) => {
 // ============================================================================
 
 const valueSchema = (props: MultiSelectFieldProps) => {
+  // Validate stored selections against the configured values.
   const optionValues = props.ElementProps.options.map(option => option.value);
   const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
 

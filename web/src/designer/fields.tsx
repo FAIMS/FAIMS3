@@ -236,8 +236,8 @@ const fields: {[key: string]: FieldType} = {
         expandedChecklist: true,
         enableOtherOption: false,
         options: [
-          {value: 'Default', label: 'Default', id: 'default-option-1'},
-          {value: 'Default2', label: 'Default2', id: 'default-option-2'},
+          {value: 'Default', label: 'Default'},
+          {value: 'Default2', label: 'Default2'},
         ],
       },
     },
@@ -268,7 +268,6 @@ const fields: {[key: string]: FieldType} = {
           {
             value: '1',
             label: '1',
-            id: 'default-option-1',
             RadioProps: {id: 'radio-group-field-1'},
           },
         ],

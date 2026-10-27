@@ -8,10 +8,9 @@ import {z} from 'zod';
  * the legacy radio-group rendering.
  */
 export const ChoiceOptionSchema = z.object({
-  // Unique option identity
-  id: z.string(),
+  // Stored option value used in answers, exports, and conditions.
   value: z.string(),
-  // Human-readable text displayed to users.
+  // Human-readable label displayed to users. Supports Markdown.
   label: z.string(),
   key: z.string().optional(),
   RadioProps: z.object({id: z.string()}).passthrough().optional(),
