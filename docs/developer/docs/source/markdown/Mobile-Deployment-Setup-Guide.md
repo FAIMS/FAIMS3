@@ -12,8 +12,9 @@ The model we are using is:
 - The **Fastlane Match** signing assets live in their own repository — or in the same
   repo as the config if you prefer. Keep them separate so routine config edits can't
   disturb signing state.
-- The config repo is checked out by the workflow using `vars.APP_CONFIG_REPO_SLUG`
-  (path `vars.APP_CONFIG_REPO_PATH`, default `configs`). The Match repo is
+- The config repo is checked out by the workflow using `vars.CONFIG_REPO_SLUG`
+  (path `vars.CONFIG_REPO_PATH`, default `configs`) from the selected GitHub
+  Environment (`dev`, `prod`, or `stage`). The Match repo is
   `vars.FASTLANE_REPO_SLUG` (unset = same repo as the config).
 - Overlay secrets, when an environment has them, are decrypted at runtime with
   `secrets.SOPS_AGE_KEY` and then merged into the generated env. `secrets.enc.json`
@@ -158,7 +159,7 @@ Match signing assets (certificates and provisioning profiles). You can keep the 
 assets in the config repo too — but keeping them separate means routine config edits
 can't accidentally disturb the signing state (and vice versa).
 
-- If the config and Match repos are the same, set only `APP_CONFIG_REPO_SLUG` (Match
+- If the config and Match repos are the same, set only `CONFIG_REPO_SLUG` (Match
   falls back to it).
 - If they are separate, also set `FASTLANE_REPO_SLUG` to the Match repo.
 
@@ -167,8 +168,9 @@ If you do not have the config repo yet:
 1. Create a new private GitHub repository.
 2. Add the `<config-path>/` directory structure (e.g. `configs/`).
 3. Configure SOPS / age so the repo can decrypt and encrypt JSON files.
-4. Add the repo slug to GitHub Actions as `vars.APP_CONFIG_REPO_SLUG` (and
-   `vars.APP_CONFIG_REPO_PATH` if the path is not `configs`).
+4. Add the repo slug to each GitHub Environment (`dev`, `prod`, `stage`) as
+   `vars.CONFIG_REPO_SLUG` (and `vars.CONFIG_REPO_PATH` if the path is not
+   `configs`).
 
 Example slug:
 
@@ -204,13 +206,13 @@ Or, if the repo is already cloned locally:
 
 ### What the script does
 
-1. Validates both local `core.json` and `secrets.json` exist and are valid JSON
+1. Validates that local `core.json` exists and is valid JSON (plus `aws.json` and `secrets.json`, when present)
 2. Connects to the private repo and fetches the latest version
 3. Compares your local files with the remote versions
 4. If files have changed:
-   - Encrypts `secrets.json` with SOPS
-   - Copies `core.json` to the remote repo
-   - Commits and pushes both files together
+   - Encrypts `secrets.json` with SOPS (when present)
+   - Copies `core.json` (and `aws.json`, when present) to the remote repo
+   - Commits and pushes the updated files together
 5. Updates the local cache copies (`secrets.enc.json`)
 
 ### Usage options
@@ -239,10 +241,10 @@ vim config/production/secrets.json
 
 ### Important notes
 
-- The script requires both `core.json` and `secrets.json` to exist in `config/<environment>/`
-- The repo must be available to `sops` via the expected key mechanism (`SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, or local age config)
+- `core.json` is required in `config/<environment>/`; `secrets.json` and `aws.json` are synced when present
+- When `secrets.json` is present, the repo must be available to `sops` via the expected key mechanism (`SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, or local age config)
 - The script only pushes if at least one file has actually changed
-- Both files are committed together in a single commit
+- Changed files are committed together in a single commit
 
 ## 7. Pulling remote config changes locally
 
@@ -263,22 +265,33 @@ Use this command when you need to sync remote changes (for example, if another t
 
 ## 8. Register the environment in GitHub Actions
 
-Set the `SOPS_AGE_KEY` repository secret to your key value (find this in keys.txt
-generated earlier).
+Create GitHub Environments named `dev`, `prod`, and `stage` (the workflow
+dropdown). Put the settings below on **each** Environment so you can swap
+deployment configs without touching the other targets. Protect `prod` with
+required reviewers if you can.
 
-Set the following repository variables for the workflow to discover the environment:
+Set `SOPS_AGE_KEY` as an Environment secret (the age key from keys.txt).
 
-- `APP_CONFIG_REPO_SLUG` — the config repo
-- `MOBILE_CONFIG_ENVIRONMENT` — the environment folder name
-- optionally `APP_CONFIG_REPO_PATH` — the base path within the config repo (default `mobile`)
-- optionally `MOBILE_CONFIG_BRANCH` if you are not using `main`
+On each Environment also set:
+
+- `CONFIG_REPO_SLUG` — the config repo
+- optionally `CONFIG_REPO_PATH` — the base path within the config repo (default `configs`)
+- optionally `CONFIG_BRANCH` if you are not using `main`
+- `CONFIG_ENVIRONMENT` — required. Config-repo folder this GitHub Environment
+  maps to (e.g. GitHub `stage` → folder `nightly`)
 - optionally `FASTLANE_REPO_SLUG` — the Match repo, if it is different from the config repo
 
-Example:
+Scheduled crons need a **repository** (global) variable naming which GitHub
+Environment to use — they do not default one:
+
+- `SCHEDULED_ANDROID_ENVIRONMENT` — nightly Android
+- `SCHEDULED_IOS_TESTFLIGHT_ENVIRONMENT` — scheduled iOS TestFlight
+
+Example on the `prod` Environment:
 
 ```text
-APP_CONFIG_REPO_SLUG = my-org/mobile-config
-MOBILE_CONFIG_BRANCH = main
+CONFIG_REPO_SLUG = my-org/mobile-config
+CONFIG_BRANCH = main
 ```
 
 For a separate Match repo, add:
@@ -295,7 +308,7 @@ config-repo/<config-path>/<environment>/secrets.enc.json
 ```
 
 and use these to generate the build environment (and, for iOS, point Match at
-`https://github.com/<FASTLANE_REPO_SLUG or APP_CONFIG_REPO_SLUG>.git`).
+`https://github.com/<FASTLANE_REPO_SLUG or CONFIG_REPO_SLUG>.git`).
 
 ## 9. Validate the first environment before full release
 

@@ -27,44 +27,45 @@ import {Construct} from 'constructs';
 import {getPathToRoot} from '../util/mono';
 import {SharedBalancer} from './networking';
 import {
-  buildEnvMapFromRuntime,
-  type EnvValue,
+  authProviderEnvKey,
+  buildStringEnvMapFromRuntime,
+  providerIdToEnvProvider,
+  type AuthProviderConfigInput,
   type RuntimeConfig,
 } from '@faims3/build-config';
 import {AuthProvidersConfig, ConductorConfig} from '../config';
 
-/**
- * Convert a build-config env value to the string ECS container environment
- * expects. Arrays become CSV; booleans become 'true'/'false'; numbers are
- * stringified. Undefined/null return undefined (the key is omitted).
- */
-function envValueToString(value: EnvValue): string | undefined {
-  if (value === undefined || value === null) return undefined;
-  if (Array.isArray(value)) return value.join(',');
-  return String(value);
-}
-
+/** SM fields every enabled provider of this type must have. */
 const AUTH_SECRET_FIELDS: Record<string, string[]> = {
   saml: ['privateKey', 'publicKey'],
   google: ['clientID', 'clientSecret'],
   oidc: ['clientID', 'clientSecret'],
 };
 
-const AUTH_SECRET_FIELD_SUFFIX: Record<string, string> = {
-  privateKey: 'PRIVATE_KEY',
-  publicKey: 'PUBLIC_KEY',
-  clientID: 'CLIENT_ID',
-  clientSecret: 'CLIENT_SECRET',
-};
+function coreHasIdpPublicKey(config: AuthProviderConfigInput): boolean {
+  return config.type === 'saml' && Boolean(config.idpPublicKey?.trim());
+}
+
+/**
+ * Secrets Manager JSON fields to inject as `AUTH_{PROVIDER}_{FIELD}`.
+ *
+ * SAML `idpPublicKey` is optional here: when `core.authProviders` already
+ * has the IdP cert, it stays in plain env. When it is omitted, the CDK
+ * wires `<provider>-idpPublicKey` from SM so a secrets-only cert still
+ * reaches Conductor.
+ */
+export function authSecretFieldsForProvider(
+  config: AuthProviderConfigInput
+): string[] {
+  const required = AUTH_SECRET_FIELDS[config.type] ?? [];
+  if (config.type === 'saml' && !coreHasIdpPublicKey(config)) {
+    return [...required, 'idpPublicKey'];
+  }
+  return [...required];
+}
 
 /** AUTH_{PROVIDER}_{FIELD} key used for Secrets Manager wiring and env drops. */
-export function authSecretEnvKey(provider: string, field: string): string {
-  const envProvider = provider.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-  const suffix =
-    AUTH_SECRET_FIELD_SUFFIX[field] ??
-    field.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toUpperCase();
-  return `AUTH_${envProvider}_${suffix}`;
-}
+export const authSecretEnvKey = authProviderEnvKey;
 
 export interface ConductorRuntimeEnvInput {
   coreConfig: RuntimeConfig;
@@ -92,12 +93,7 @@ export interface ConductorRuntimeEnvInput {
 export function buildConductorRuntimeEnv(
   input: ConductorRuntimeEnvInput
 ): Record<string, string> {
-  const sharedEnv = buildEnvMapFromRuntime(input.coreConfig, 'api');
-  const env: Record<string, string> = {};
-  for (const [key, value] of Object.entries(sharedEnv)) {
-    const str = envValueToString(value);
-    if (str !== undefined) env[key] = str;
-  }
+  const env = buildStringEnvMapFromRuntime(input.coreConfig, 'api');
 
   env.PROFILE_NAME = 'default';
   env.KEY_SOURCE = 'AWS_SM';
@@ -134,9 +130,7 @@ export function buildConductorRuntimeEnv(
   ].join(',');
 
   const enabled = new Set(
-    input.enabledAuthProviders.map(provider =>
-      provider.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
-    )
+    input.enabledAuthProviders.map(providerIdToEnvProvider)
   );
   for (const key of Object.keys(env)) {
     const match = /^AUTH_([A-Z0-9]+)_/.exec(key);
@@ -278,29 +272,17 @@ export class FaimsConductor extends Construct {
         props.authProviders.secretArn
       );
       props.authProviders.providers.forEach(provider => {
-        // The provider *definitions* live in core.authProviders (build-config).
-        // Their credentials are NOT read from the config file on the AWS path:
-        // they are delivered by Secrets Manager through the ECS `secrets:`
-        // references below (values move SM -> container, never through the
-        // CDK process, the synth template, or plain container env).
+        // Provider *definitions* live in core.authProviders. Client
+        // credentials and SP keys are delivered by Secrets Manager (SM ->
+        // container, never through CDK synth or plain env). SAML
+        // idpPublicKey may already be in core; if it is not, it is wired
+        // from SM the same way.
         const config = props.coreConfig.authProviders[provider];
 
         // Wire this provider's Secrets Manager references FIRST...
-        if (config.type === 'saml') {
-          // SAML uses privateKey and publicKey (certificate) instead of clientID/clientSecret
-          authSecrets[authSecretEnvKey(provider, 'privateKey')] =
-            ecs.Secret.fromSecretsManager(authSecret, `${provider}-privateKey`);
-          authSecrets[authSecretEnvKey(provider, 'publicKey')] =
-            ecs.Secret.fromSecretsManager(authSecret, `${provider}-publicKey`);
-        } else {
-          // Google and OIDC use clientID and clientSecret
-          authSecrets[authSecretEnvKey(provider, 'clientID')] =
-            ecs.Secret.fromSecretsManager(authSecret, `${provider}-clientID`);
-          authSecrets[authSecretEnvKey(provider, 'clientSecret')] =
-            ecs.Secret.fromSecretsManager(
-              authSecret,
-              `${provider}-clientSecret`
-            );
+        for (const field of authSecretFieldsForProvider(config)) {
+          authSecrets[authSecretEnvKey(provider, field)] =
+            ecs.Secret.fromSecretsManager(authSecret, `${provider}-${field}`);
         }
 
         // ...then guard that every secret field the API needs is covered by

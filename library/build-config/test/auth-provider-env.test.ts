@@ -125,6 +125,7 @@ test('parses SAML skipRequestCompression from env', () => {
     AUTH_VG_SCOPE: 'profile,email',
     AUTH_VG_ENTRY_POINT: 'https://idp.example/sso',
     AUTH_VG_ISSUER: 'https://sp.example/',
+    AUTH_VG_IDP_PUBLIC_KEY: 'MIIB',
     AUTH_VG_SKIP_REQUEST_COMPRESSION: 'true',
     AUTH_VG_AUTHN_REQUEST_BINDING: 'HTTP-POST',
   };
@@ -135,6 +136,26 @@ test('parses SAML skipRequestCompression from env', () => {
     assert.equal(vg.skipRequestCompression, true);
     assert.equal(vg.authnRequestBinding, 'HTTP-POST');
   }
+});
+
+test('drops providers missing required runtime credentials with a warning', () => {
+  const env = {
+    AUTH_GOOGLE_TYPE: 'google',
+    AUTH_GOOGLE_DISPLAY_NAME: 'Google',
+    AUTH_GOOGLE_SCOPE: 'profile,email',
+    AUTH_GOOGLE_CLIENT_ID: '',
+    AUTH_GOOGLE_CLIENT_SECRET: '',
+    AUTH_VG_TYPE: 'saml',
+    AUTH_VG_DISPLAY_NAME: 'Vanguard',
+    AUTH_VG_SCOPE: 'profile,email',
+    AUTH_VG_ENTRY_POINT: 'https://idp.example/sso',
+    AUTH_VG_ISSUER: 'https://sp.example/',
+  };
+  const {result, warned} = withNoConsoleWarn(() =>
+    readAuthProviderConfigFromEnv(env)
+  );
+  assert.equal(warned, true);
+  assert.deepEqual(result, {});
 });
 
 test('maps SAML *_URL env keys to camelCase fields and applies SAML defaults', () => {

@@ -2,8 +2,8 @@
 import passport from 'passport';
 import {
   AuthProviderConfig,
-  AuthProviderConfigMap,
   BaseAuthProviderConfig,
+  RuntimeAuthProviderConfigMap,
 } from '@faims3/build-config';
 import {googleStrategyGenerator} from './googleStrategy';
 import {getLocalAuthStrategy} from './localStrategy';
@@ -12,7 +12,7 @@ import {samlStrategyGenerator} from './samlStrategy';
 import {config} from '../../buildconfig';
 
 /** Auth providers already parsed by `parseApiEnv` (AUTH_* env). */
-export const getAuthProviderConfig = (): AuthProviderConfigMap => {
+export const getAuthProviderConfig = (): RuntimeAuthProviderConfigMap => {
   return config.authProviderConfig;
 };
 

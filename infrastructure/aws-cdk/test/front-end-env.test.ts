@@ -1,5 +1,8 @@
 import {parseBuildConfig} from '@faims3/build-config';
-import {buildFaimsAppBundlingEnv} from '../lib/components/front-end';
+import {
+  buildFaimsAppBundlingEnv,
+  overlayPublicServiceUrls,
+} from '../lib/components/front-end';
 
 describe('buildFaimsAppBundlingEnv', () => {
   const env = buildFaimsAppBundlingEnv({
@@ -27,5 +30,22 @@ describe('buildFaimsAppBundlingEnv', () => {
     expect(env.serverprefix).toBe('fieldmark');
     expect(env.VITE_DEBUG_APP).toBe('false');
     expect(env.VITE_DEBUG_POUCHDB).toBe('false');
+  });
+});
+
+describe('overlayPublicServiceUrls', () => {
+  it('writes the three public service URLs onto an existing env map', () => {
+    const env = overlayPublicServiceUrls(
+      {VITE_THEME: 'default'},
+      {
+        webUrl: 'https://web.example.com',
+        apiUrl: 'https://api.example.com',
+        appUrl: 'https://app.example.com',
+      }
+    );
+    expect(env.VITE_WEB_URL).toBe('https://web.example.com');
+    expect(env.VITE_API_URL).toBe('https://api.example.com');
+    expect(env.VITE_APP_URL).toBe('https://app.example.com');
+    expect(env.VITE_THEME).toBe('default');
   });
 });

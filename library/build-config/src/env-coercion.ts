@@ -21,13 +21,8 @@ export const FALSEY_STRINGS = ['false', '0', 'off', 'no'] as const;
 const TRUTHY = new Set<string>(TRUTHY_STRINGS);
 const FALSEY = new Set<string>(FALSEY_STRINGS);
 
-/**
- * A boolean value from the environment. Case-insensitive; anything else is an
- * error. The generator emits `true`/`false`, so this is a strict superset of
- * what this module ever produces.
- */
-export const BoolEnvSchema = z.string().transform((value, ctx) => {
-  const lower = value.trim().toLowerCase();
+function parseBoolValue(value: unknown, ctx: z.RefinementCtx): boolean {
+  const lower = String(value).trim().toLowerCase();
   if (TRUTHY.has(lower)) return true;
   if (FALSEY.has(lower)) return false;
   ctx.addIssue({
@@ -38,6 +33,15 @@ export const BoolEnvSchema = z.string().transform((value, ctx) => {
     ].join(', ')}.`,
   });
   return z.NEVER;
+}
+
+/**
+ * A boolean value from the environment. Case-insensitive; anything else is an
+ * error. The generator emits `true`/`false`, so this is a strict superset of
+ * what this module ever produces.
+ */
+export const BoolEnvSchema = z.string().transform((value, ctx) => {
+  return parseBoolValue(value, ctx);
 });
 
 /** Positive integer from a decimal string. Strict: non-numeric is an error. */
@@ -183,7 +187,7 @@ function asEnvString(value: unknown): string | undefined {
 
 /** Rejects missing or whitespace-only strings, naming the env key. */
 export function requiredEnvString(envKey: string) {
-  return z.any().transform((value, ctx) => {
+  return z.unknown().transform((value, ctx) => {
     const trimmed = (asEnvString(value) ?? '').trim();
     if (!trimmed) {
       ctx.addIssue({
@@ -202,7 +206,7 @@ export function requiredEnvUrl(
   options: {stripSlash?: boolean} = {}
 ) {
   const stripSlash = options.stripSlash ?? true;
-  return z.any().transform((value, ctx) => {
+  return z.unknown().transform((value, ctx) => {
     const trimmed = (asEnvString(value) ?? '').trim();
     if (!trimmed) {
       ctx.addIssue({
@@ -229,7 +233,7 @@ export function requiredEnvUrl(
  * (http(s) or a custom scheme such as `org.example.app://auth-return`).
  */
 export function requiredUrlCsv(envKey: string) {
-  return z.any().transform((value, ctx) => {
+  return z.unknown().transform((value, ctx) => {
     const raw = asEnvString(value);
     if (isBlankEnv(raw)) {
       ctx.addIssue({
@@ -267,7 +271,7 @@ export function requiredUrlCsv(envKey: string) {
 /** Blank / missing → `undefined`; otherwise a trimmed string. */
 export function optionalEnvString() {
   return z
-    .any()
+    .unknown()
     .optional()
     .transform((value): string | undefined => {
       if (isBlankEnv(value)) return undefined;
@@ -278,7 +282,7 @@ export function optionalEnvString() {
 /** Blank / missing → `def`; otherwise the trimmed string. */
 export function stringWithDefault(def: string) {
   return z
-    .any()
+    .unknown()
     .optional()
     .transform((value): string => {
       if (isBlankEnv(value)) return def;
@@ -289,49 +293,29 @@ export function stringWithDefault(def: string) {
 /** Blank / missing → `def`; invalid boolean vocabulary fails parse. */
 export function boolWithDefault(def: boolean) {
   return z
-    .any()
+    .unknown()
     .optional()
     .transform((value, ctx) => {
       if (isBlankEnv(value)) return def;
-      const lower = String(value).trim().toLowerCase();
-      if (TRUTHY.has(lower)) return true;
-      if (FALSEY.has(lower)) return false;
-      ctx.addIssue({
-        code: 'custom',
-        message: `Invalid boolean "${value}". Expected one of: ${[
-          ...TRUTHY_STRINGS,
-          ...FALSEY_STRINGS,
-        ].join(', ')}.`,
-      });
-      return z.NEVER;
+      return parseBoolValue(value, ctx);
     });
 }
 
 /** Blank / missing → `undefined`; present values use the boolean vocabulary. */
 export function optionalBool() {
   return z
-    .any()
+    .unknown()
     .optional()
     .transform((value, ctx) => {
       if (isBlankEnv(value)) return undefined;
-      const lower = String(value).trim().toLowerCase();
-      if (TRUTHY.has(lower)) return true;
-      if (FALSEY.has(lower)) return false;
-      ctx.addIssue({
-        code: 'custom',
-        message: `Invalid boolean "${value}". Expected one of: ${[
-          ...TRUTHY_STRINGS,
-          ...FALSEY_STRINGS,
-        ].join(', ')}.`,
-      });
-      return z.NEVER;
+      return parseBoolValue(value, ctx);
     });
 }
 
 /** Blank / missing → `def`; non-numeric or non-positive fails parse. */
 export function intWithDefault(def: number) {
   return z
-    .any()
+    .unknown()
     .optional()
     .transform((value, ctx) => {
       if (isBlankEnv(value)) return def;
@@ -355,11 +339,14 @@ export function intWithDefault(def: number) {
     });
 }
 
+/** Zod enum schema that exposes `.options` for error messages. */
+type ZodEnumSchema = z.ZodType<string> & {readonly options: readonly string[]};
+
 /**
  * Match an env string against a Zod enum, trying the raw value then
  * lower/upper case so historical `MAPBOX` / `NONE` still parse.
  */
-function parseEnumValue<T extends z.ZodEnum<any>>(
+function parseEnumValue<T extends ZodEnumSchema>(
   enumSchema: T,
   value: unknown
 ): {success: true; data: z.infer<T>} | {success: false} {
@@ -371,16 +358,38 @@ function parseEnumValue<T extends z.ZodEnum<any>>(
   return {success: false};
 }
 
-/** Blank / missing → `def`; otherwise must be a member of `enumSchema`. */
-export function enumWithDefault<T extends z.ZodEnum<any>>(
+/**
+ * Missing / null → `def`. A present value that is a valid enum member is
+ * kept, including `''` when the schema allows it (map source: blank
+ * disables the map). Other blank strings still use `def`.
+ */
+export function enumWithDefault<T extends ZodEnumSchema>(
   enumSchema: T,
   def: z.infer<T>
 ) {
   return z
-    .any()
+    .unknown()
     .optional()
     .transform((value, ctx) => {
-      if (isBlankEnv(value)) return def as z.infer<T>;
+      if (value === undefined || value === null) return def;
+      const parsed = parseEnumValue(enumSchema, value);
+      if (parsed.success) return parsed.data;
+      if (isBlankEnv(value)) return def;
+      ctx.addIssue({
+        code: 'custom',
+        message: `Invalid value "${value}". Expected one of: ${enumSchema.options.join(', ')}.`,
+      });
+      return z.NEVER;
+    });
+}
+
+/** Blank / missing → `undefined`; otherwise must be a member of `enumSchema`. */
+export function optionalEnum<T extends ZodEnumSchema>(enumSchema: T) {
+  return z
+    .unknown()
+    .optional()
+    .transform((value, ctx) => {
+      if (isBlankEnv(value)) return undefined;
       const parsed = parseEnumValue(enumSchema, value);
       if (!parsed.success) {
         ctx.addIssue({
@@ -393,29 +402,10 @@ export function enumWithDefault<T extends z.ZodEnum<any>>(
     });
 }
 
-/** Blank / missing → `undefined`; otherwise must be a member of `enumSchema`. */
-export function optionalEnum<T extends z.ZodEnum<any>>(enumSchema: T) {
-  return z
-    .any()
-    .optional()
-    .transform((value, ctx) => {
-      if (isBlankEnv(value)) return undefined;
-      const parsed = parseEnumValue(enumSchema, value);
-      if (!parsed.success) {
-        ctx.addIssue({
-          code: 'custom',
-          message: `Invalid value "${value}". Expected one of: ${enumSchema.options.join(', ')}.`,
-        });
-        return z.NEVER;
-      }
-      return parsed.data as z.infer<T>;
-    });
-}
-
 /** Blank / missing → `def`; otherwise parseMaxLongLivedDays. */
 export function maxLongLivedDaysWithDefault(def = 90) {
   return z
-    .any()
+    .unknown()
     .optional()
     .transform((value, ctx) => {
       try {

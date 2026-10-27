@@ -12,6 +12,7 @@ import {
   buildEnvMapFromRuntime,
   type SupportedPlatform,
 } from './env-contract.js';
+import {envValueToString, escapeEnvNewlines} from './env-value.js';
 
 const HELP_TEXT = `Usage: pnpm --filter=@faims3/build-config run generate -- [--config path/to/config.json] [--platform apps|api|all] [--out path/to/.env]
 
@@ -19,14 +20,7 @@ Generates a build environment file from the shared config JSON used by the app a
 Platforms: 'apps' (VITE_ vars for the mobile app and Control Centre build; android/ios are aliases), 'api' (server env vars).
 `;
 
-type Value =
-  | string
-  | number
-  | boolean
-  | undefined
-  | null
-  | Array<string | number | boolean>;
-
+/** Parsed CLI arguments for `generate-build-config`. */
 export interface GenerateBuildConfigArgs {
   help?: boolean;
   config?: string;
@@ -35,7 +29,7 @@ export interface GenerateBuildConfigArgs {
   out?: string;
 }
 
-// Parse the command line args to this script
+/** Parse command-line arguments into {@link GenerateBuildConfigArgs}. */
 export function parseArgs(argv: string[]): GenerateBuildConfigArgs {
   const args: Record<string, string | boolean> = {};
 
@@ -108,20 +102,6 @@ function readConfigForGeneration(configArg: string, cwd = process.cwd()) {
   });
 }
 
-// Convert a value to a string suitable for inclusion in an environment file
-function stringify(value: Value): string {
-  if (typeof value === 'string') {
-    return value.replace(/\r?\n/g, '\\n');
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value);
-  }
-  if (Array.isArray(value)) {
-    return (value as Array<string | number | boolean>).join(',');
-  }
-  return '';
-}
-
 // Get a value for the Git Commit version if it hasn't been filled in the configuration
 // If the value is a placeholder or missing, attempt to resolve it using `git rev-parse HEAD`
 function resolveGitCommitVersion(value: unknown): string {
@@ -143,8 +123,7 @@ function resolveGitCommitVersion(value: unknown): string {
   }
 }
 
-// Environment generation from the parsed configuration, return a map
-// of environment variable names and values
+/** Format a partial build config into `.env` lines for the requested platform. */
 export function generateEnv({
   config,
   platform,
@@ -160,11 +139,14 @@ export function generateEnv({
     .filter(([, value]) =>
       includeEmpty ? true : value !== undefined && value !== null
     )
-    .map(([key, value]) => `${key}=${stringify((value ?? '') as Value)}`)
+    .map(
+      ([key, value]) =>
+        `${key}=${escapeEnvNewlines(envValueToString(value) ?? '')}`
+    )
     .join('\n');
 }
 
-// Handle script configuration and generate the build config based on the provided arguments
+/** Validate CLI arguments, read config JSON, and return or write the generated `.env`. */
 export function generateBuildConfig(
   args: GenerateBuildConfigArgs,
   cwd = process.cwd()
@@ -206,6 +188,7 @@ export function generateBuildConfig(
   return `${env}\n`;
 }
 
+/** CLI entry point for `generate-build-config`. */
 export function main(
   argv: string[] = process.argv.slice(2),
   cwd = process.cwd()

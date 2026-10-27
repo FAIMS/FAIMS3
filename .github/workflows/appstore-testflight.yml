@@ -1,7 +1,21 @@
+# Scheduled runs do not default a GitHub Environment. Set the repository
+# (global) variable SCHEDULED_IOS_TESTFLIGHT_ENVIRONMENT to `dev`, `prod`,
+# or `stage`. Manual runs use the workflow_dispatch dropdown instead.
+
 name: Deploy to Apple App Store on Demo Track, Manual
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: GitHub environment that supplies config vars and secrets
+        required: true
+        default: stage
+        type: choice
+        options:
+          - dev
+          - prod
+          - stage
   schedule:
     - cron: '39 20 * * 1-5'
 
@@ -11,6 +25,7 @@ jobs:
     name: Check latest commit
     outputs:
       should_run: ${{ steps.should_run.outputs.should_run }}
+      environment: ${{ steps.resolve_env.outputs.environment }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -22,6 +37,20 @@ jobs:
         name: check latest commit is less than a day
         if: ${{ github.event_name == 'schedule' }}
         run: test -z $(git rev-list --after="24 hours"  ${{ github.sha }}) && echo "::set-output name=should_run::false"
+      - id: resolve_env
+        name: Resolve GitHub Environment for this run
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            ENV="${{ vars.SCHEDULED_IOS_TESTFLIGHT_ENVIRONMENT }}"
+            if [ -z "$ENV" ]; then
+              echo "Set repository variable SCHEDULED_IOS_TESTFLIGHT_ENVIRONMENT to the GitHub Environment name (dev, prod, or stage)." >&2
+              exit 1
+            fi
+          else
+            ENV="${{ github.event.inputs.environment }}"
+          fi
+          echo "Using GitHub Environment: $ENV"
+          echo "environment=$ENV" >> "$GITHUB_OUTPUT"
 
   ios-deploy:
     name: Deploying to Testflight
@@ -29,7 +58,7 @@ jobs:
     if: ${{ needs.check_date.outputs.should_run != 'false' }}
     uses: ./.github/workflows/common-ios-build.yml
     with:
-      config_environment: nightly
+      environment: ${{ needs.check_date.outputs.environment }}
       fastlane_lane: closed_beta_testflight
       fastlane_step_name: Deploy iOS Beta to TestFlight via Fastlane
       enable_bugsnag_sourcemaps: false

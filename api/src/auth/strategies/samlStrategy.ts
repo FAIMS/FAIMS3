@@ -130,15 +130,18 @@ const generateSamlVerifyFunction = ({
 export const samlStrategyGenerator = (
   options: SAMLAuthProviderConfig
 ): Strategy => {
+  if (!options.idpPublicKey) {
+    throw new Error(
+      `SAML auth provider '${options.id}' is missing required idpPublicKey.`
+    );
+  }
   const strategy = new Strategy(
     {
       // Required
       entryPoint: options.entryPoint,
       issuer: options.issuer,
       // The IdP's public cert (for verifying IdP signatures).
-      // Deployment secret: always present in the API's generated env, so assert
-      // it (the shared build-config type keeps it optional).
-      cert: options.idpPublicKey!,
+      cert: options.idpPublicKey,
       // Callback URL
       callbackUrl:
         options.callbackURL ||

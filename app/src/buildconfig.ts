@@ -18,7 +18,7 @@ import {
   type MapConfig,
 } from '@faims3/forms';
 
-const logError = (err: any) => console.error(err);
+const logError = (err: unknown) => console.error(err);
 
 /**
  * Source for address autosuggest service. NONE disables autocomplete; MAPBOX
@@ -34,20 +34,6 @@ export enum AutosuggestSource {
   /** MapTiler Search and Geocoding API (forward + by-id). */
   MAPTILER = 'maptiler',
 }
-
-/** Record navigation chrome. */
-export type NavigationStyleOption = 'none' | 'breadcrumbs';
-
-/**
- * When a local notebook is archived or confirmed deleted upstream, the app may
- * drop it from the device.
- * - `allow`: stop sync and remote handles, then **destroy** the local Pouch DB
- *   (IndexedDB) so no local notebook data remains — security.
- * - `never` (default): same teardown as manual deactivate (sync off, remote and
- *   local Pouch **closed** but not destroyed), then remove from the app list so
- *   on-disk data can be recovered if needed.
- */
-export type ForceRemoteDeletionMode = 'allow' | 'never';
 
 /** App singleton. Prefer `import {config}` and `config.<field>`. */
 export const config = parseAppEnv(import.meta.env, {

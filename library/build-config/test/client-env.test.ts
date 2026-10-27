@@ -132,6 +132,81 @@ test('parseApiEnv requires SMTP credentials when EMAIL_SERVICE_TYPE is SMTP', ()
   });
   assert.equal(parsed.emailServiceType, 'SMTP');
   assert.equal(parsed.smtp?.host, 'smtp.example.com');
+  assert.equal(parsed.smtp?.secure, false);
+});
+
+test('parseApiEnv restores FILE-key and instance-name fallbacks when profile env is blank', () => {
+  const omitted = parseApiEnv(MINIMAL_API);
+  assert.equal(omitted.conductorKeyId, 'test');
+  assert.equal(omitted.keyFileHost, 'conductor');
+  assert.equal(omitted.conductorInstanceName, 'test');
+
+  const profileOnly = parseApiEnv({
+    ...MINIMAL_API,
+    PROFILE_NAME: 'prod',
+  });
+  assert.equal(profileOnly.conductorKeyId, 'prod');
+  assert.equal(profileOnly.keyFileHost, 'prod');
+  assert.equal(profileOnly.conductorInstanceName, 'prod');
+
+  const both = parseApiEnv({
+    ...MINIMAL_API,
+    PROFILE_NAME: 'prod',
+    CONDUCTOR_INSTANCE_NAME: 'Example Server',
+  });
+  assert.equal(both.conductorKeyId, 'prod');
+  assert.equal(both.keyFileHost, 'prod');
+  assert.equal(both.conductorInstanceName, 'Example Server');
+});
+
+test('parseApiEnv leaves testEmailAddress undefined outside test unless set', () => {
+  const outsideTest = parseApiEnv(MINIMAL_API, {runningUnderTest: false});
+  assert.equal(outsideTest.testEmailAddress, undefined);
+
+  const underTest = parseApiEnv(MINIMAL_API, {runningUnderTest: true});
+  assert.equal(underTest.testEmailAddress, 'fake@gmail.com');
+
+  const explicit = parseApiEnv(
+    {...MINIMAL_API, TEST_EMAIL_ADDRESS: 'ops@example.org'},
+    {runningUnderTest: false}
+  );
+  assert.equal(explicit.testEmailAddress, 'ops@example.org');
+});
+
+test('generated api env without couchdb.password fails parseApiEnv', () => {
+  const env = generateEnv({
+    config: {
+      endpoints: {
+        apiUrl: 'https://api.example.org',
+        appUrl: 'https://app.example.org',
+        webUrl: 'https://web.example.org',
+      },
+      email: {emailServiceType: 'MOCK'},
+    },
+    platform: 'api',
+  });
+  assert.throws(() => parseApiEnv(envMap(env)), /COUCHDB_PASSWORD/);
+});
+
+test('parseApiEnv treats omitted SMTP_SECURE as STARTTLS and honours an explicit true', () => {
+  const omitted = parseApiEnv({
+    ...MINIMAL_API,
+    EMAIL_SERVICE_TYPE: 'SMTP',
+    SMTP_HOST: 'smtp.example.com',
+    SMTP_USER: 'user',
+    SMTP_PASSWORD: 'pass',
+  });
+  assert.equal(omitted.smtp?.secure, false);
+
+  const implicitTls = parseApiEnv({
+    ...MINIMAL_API,
+    EMAIL_SERVICE_TYPE: 'SMTP',
+    SMTP_HOST: 'smtp.example.com',
+    SMTP_USER: 'user',
+    SMTP_PASSWORD: 'pass',
+    SMTP_SECURE: 'true',
+  });
+  assert.equal(implicitTls.smtp?.secure, true);
 });
 
 test('parseApiEnv forces MOCK email under test even when SMTP is configured', () => {
@@ -350,6 +425,26 @@ test('app env enums accept historical uppercase values', () => {
   assert.equal(parsed.mapSource, 'osm');
 });
 
+test('blank VITE_MAP_SOURCE disables maps and survives generate→parse', () => {
+  assert.equal(parseAppEnv(MINIMAL_APP).mapSource, 'osm');
+  assert.equal(parseWebEnv(MINIMAL_WEB).mapSource, 'osm');
+  assert.equal(
+    parseAppEnv({...MINIMAL_APP, VITE_MAP_SOURCE: ''}).mapSource,
+    ''
+  );
+  assert.equal(
+    parseWebEnv({...MINIMAL_WEB, VITE_MAP_SOURCE: ''}).mapSource,
+    ''
+  );
+
+  const raw = envMap(
+    generateEnv({config: {maps: {mapSource: ''}}, platform: 'apps'})
+  );
+  assert.equal(raw.VITE_MAP_SOURCE, '');
+  assert.equal(parseAppEnv({...MINIMAL_APP, ...raw}).mapSource, '');
+  assert.equal(parseWebEnv({...MINIMAL_WEB, ...raw}).mapSource, '');
+});
+
 test('mapbox autosuggest requires a key on the app parser', () => {
   assert.throws(
     () => parseAppEnv({...MINIMAL_APP, VITE_AUTOSUGGEST_SOURCE: 'mapbox'}),
@@ -399,4 +494,18 @@ test('parseWebEnv unlimited duration maps to undefined', () => {
     VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: 'infinite',
   });
   assert.equal(parsed.maximumLongLivedDurationDays, undefined);
+});
+
+test('parseWebEnv parses VITE_EXCLUDED_TEAM_ROLES CSV and defaults to empty array', () => {
+  const defaults = parseWebEnv(MINIMAL_WEB);
+  assert.deepEqual(defaults.excludedTeamRoles, []);
+
+  const parsed = parseWebEnv({
+    ...MINIMAL_WEB,
+    VITE_EXCLUDED_TEAM_ROLES: ' TEAM_MEMBER_CREATOR , TEAM_ADMIN , ',
+  });
+  assert.deepEqual(parsed.excludedTeamRoles, [
+    'TEAM_MEMBER_CREATOR',
+    'TEAM_ADMIN',
+  ]);
 });

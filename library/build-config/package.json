@@ -13,6 +13,11 @@
       "types": "./build/src/index.d.ts",
       "import": "./build/src/index.js",
       "default": "./build/src/index.js"
+    },
+    "./node": {
+      "types": "./build/src/node.d.ts",
+      "import": "./build/src/node.js",
+      "default": "./build/src/node.js"
     }
   },
   "scripts": {

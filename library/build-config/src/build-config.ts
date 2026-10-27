@@ -42,7 +42,10 @@ import {
   ProvisionSsoUsersPolicySchema,
   SHARED_DEFAULTS,
   SatelliteSourceSchema,
+  ThemeSchema,
+  clampOfflineMaps,
   resolveLongLivedDurationHints,
+  resolveStartupMigrationLockEnabled,
   validateMapAndAutosuggestKeys,
   validateMigrationLock,
 } from './shared-schemas.js';
@@ -70,20 +73,7 @@ const EndpointsBuildConfigSchema = z
   })
   .strict();
 
-/**
- * The deployment's domain structure. Instead of storing concrete
- * endpoint URLs, the core names a base domain + per-service subdomains, and the
- * concrete `endpoints` are DERIVED from it (in the shared invariants transform).
- * A `localOverride` (optional) sets literal `host:port` hosts for one or more
- * services - its presence is the "local/dev" switch (protocol defaults to
- * http), so a production env omits it and a local/dev env sets it.
- *
- * This is optional so existing configs that still store concrete `endpoints`
- * keep working; when present it overrides the derived endpoints, and the app
- * build, web build and CDK all derive the same URLs from it (so they cannot
- * drift). The service-name set (conductor/couch/web/app/docs) is confirmed
- * against real deployments before the model is frozen.
- */
+/** Allowed service names in `core.domains.services` / `localOverride`. */
 export const DomainServiceName = z.enum([
   'conductor',
   'couch',
@@ -102,13 +92,27 @@ const DomainHostMap = z
   })
   .strict();
 
+/**
+ * The deployment's domain structure. Instead of storing concrete
+ * endpoint URLs, the core names a base domain + per-service subdomains, and the
+ * concrete `endpoints` are DERIVED from it (in the shared invariants transform).
+ * A `localOverride` (optional) sets literal `host:port` hosts for one or more
+ * services - its presence is the "local/dev" switch (protocol defaults to
+ * http), so a production env omits it and a local/dev env sets it.
+ *
+ * This is optional so existing configs that still store concrete `endpoints`
+ * keep working; when present it overrides the derived endpoints, and the app
+ * build, web build and CDK all derive the same URLs from it (so they cannot
+ * drift). The service-name set (conductor/couch/web/app/docs) is confirmed
+ * against real deployments before the model is frozen.
+ */
 export const DomainsBuildConfigSchema = z
   .object({
     /** The base domain, e.g. `faims.example.com` (no protocol, no host:port). */
     base: z.string().min(1),
     protocol: z.enum(['http', 'https']).default('https'),
     /** Subdomain per service (e.g. conductor = `api` -> `api.faims.example.com`). */
-    services: DomainHostMap,
+    services: DomainHostMap.default({}),
     /** Optional literal `host:port` overrides for local/dev (protocol -> http). */
     localOverride: DomainHostMap.optional(),
   })
@@ -122,7 +126,7 @@ const BrandingBuildConfigSchema = z
     appShortName: z.string().optional(),
     /** Banner heading; falls back to `appName`. */
     headingAppName: z.string().optional(),
-    theme: z.string().default('default'),
+    theme: ThemeSchema.default('default'),
     websiteTitle: z.string().default('Control Centre'),
     /** Couch/directory cluster-admin group name baked into the app build. */
     clusterAdminGroupName: z.string().default('cluster-admin'),
@@ -173,10 +177,7 @@ const MapsBuildConfigSchema = z
     /** ISO 3166-1 alpha-2 codes (CSV in env). Defaults to Australia. */
     maptilerAddressCountry: z.array(z.string()).default(['AU']),
   })
-  .strict()
-  .superRefine((data, ctx) => {
-    validateMapAndAutosuggestKeys(data, ctx);
-  });
+  .strict();
 
 const SyncBuildConfigSchema = z
   .object({
@@ -224,9 +225,10 @@ const MigrationBuildConfigSchema = z
     ...data,
     // Skip-migrate makes the lock unused. Otherwise keep omit as
     // undefined so AWS can default-on while still honouring false.
-    startupMigrationLockEnabled: data.disableMigrateOnStartup
-      ? false
-      : data.startupMigrationLockEnabled,
+    startupMigrationLockEnabled: resolveStartupMigrationLockEnabled(
+      data.disableMigrateOnStartup,
+      data.startupMigrationLockEnabled
+    ),
   }));
 
 const AuthBuildConfigSchema = z
@@ -346,7 +348,7 @@ const EmailBuildConfigSchema = z
     /** Required in API ENV when `emailServiceType` is SMTP (not under test). */
     smtpHost: z.string().optional(),
     smtpPort: z.number().int().positive().default(SHARED_DEFAULTS.smtpPort),
-    smtpSecure: z.boolean().default(true),
+    smtpSecure: z.boolean().default(false),
     /** Secret slot. */
     smtpUser: z.string().optional(),
     smtpPassword: z.string().optional(),
@@ -355,7 +357,7 @@ const EmailBuildConfigSchema = z
       .int()
       .positive()
       .default(SHARED_DEFAULTS.smtpCacheExpirySeconds),
-    testEmailAddress: z.string().default('test@gmail.com'),
+    testEmailAddress: z.string().optional(),
   })
   .strict();
 
@@ -414,8 +416,8 @@ const AndroidBuildConfigSchema = z
 
 const IosBuildConfigSchema = z
   .object({
-    /** Falls back to `android.appId` at generate time when omitted in some flows. */
-    bundleIdentifier: z.string().default('org.fedarch.faims3'),
+    /** Falls back to `android.appId` when omitted. */
+    bundleIdentifier: z.string().optional(),
     developerPortalTeamId: z.string().optional(),
     appStoreConnectTeamId: z.string().optional(),
     appleId: z.string().optional(),
@@ -492,20 +494,16 @@ const PouchdbBuildConfigSchema = z
   .strict();
 
 /**
- * The dedicated, optional `secrets` section.
+ * Optional `secrets` section retained for structural compatibility.
  *
- * These are the SENSITIVE slots that do not sit next to their config groups in
- * the committed core: the committed `core.json` declares them EMPTY, and the
- * real values are filled per platform — by a SOPS-encrypted `secrets.enc.json`
- * (mobile CI / Terraform / local dev) or resolved from AWS Secrets Manager
- * (the source of truth, which overrides) on AWS. Keeping them in one section
- * (rather than co-located with auth/email/maps/etc.) means the config
- * validator can enforce the invariant "no non-empty value in any declared
- * secret slot" in the committed core, and AWS can resolve them centrally.
+ * In the canonical overlay flow, `secrets.json` / `secrets.enc.json` is a
+ * partial `core.json` (see `config/secrets.sample.json`) that deep-merges
+ * directly into the top-level groups (`auth`, `authProviders`, `email`,
+ * `couchdb`, `maps`, `observability`, `android`, `ios`). On AWS, secret values
+ * are injected from Secrets Manager via the ARNs in `aws.json`.
  *
- * All slots are optional/empty: a config that omits `secrets` (or a slot) is
- * valid. When a slot is non-empty (local dev / SOPS-merged) it is used; on AWS
- * the Secrets Manager value wins.
+ * All slots here are optional/empty so configs that include or omit `secrets`
+ * remain valid.
  */
 const SecretsBuildConfigSchema = z
   .object({
@@ -655,29 +653,97 @@ function deriveEndpointsFromDomains(
     return `${protocol}://${subdomain}.${base}`;
   };
   const conductorUrl = resolve('conductor');
+  const webUrl = resolve('web');
+  const appUrl = resolve('app');
+  const couchUrl = resolve('couch');
   const derived: Partial<z.infer<typeof EndpointsBuildConfigSchema>> = {};
   if (conductorUrl) {
     derived.apiUrl = conductorUrl;
     derived.conductorUrls = [conductorUrl];
   }
-  if (services.web) derived.webUrl = resolve('web');
-  if (services.app) derived.appUrl = resolve('app');
-  if (services.couch) derived.couchdbPublicUrl = resolve('couch');
+  if (webUrl) derived.webUrl = webUrl;
+  if (appUrl) derived.appUrl = appUrl;
+  if (couchUrl) derived.couchdbPublicUrl = couchUrl;
   return derived;
+}
+
+/**
+ * Overlay non-empty values from `c.secrets` into their corresponding top-level
+ * config groups so configs that populate `core.secrets.*` (instead of or in
+ * addition to top-level group fields) flow into the runtime config and env contract.
+ */
+function applySecretsOverlay(c: SharedBuildConfig): void {
+  const s = c.secrets;
+  if (!s) return;
+
+  if (s.auth) {
+    if (s.auth.cookieSecret) c.auth.cookieSecret = s.auth.cookieSecret;
+    if (s.auth.authProviders) {
+      for (const [providerId, sec] of Object.entries(s.auth.authProviders)) {
+        const target = c.authProviders[providerId] as
+          | Record<string, unknown>
+          | undefined;
+        if (!target) continue;
+        for (const [key, val] of Object.entries(sec)) {
+          if (val !== undefined && val !== '') {
+            target[key] = val;
+          }
+        }
+      }
+    }
+  }
+  if (s.email) {
+    if (s.email.smtpUser) c.email.smtpUser = s.email.smtpUser;
+    if (s.email.smtpPassword) c.email.smtpPassword = s.email.smtpPassword;
+  }
+  if (s.observability?.bugsnagApiKey) {
+    c.observability.bugsnagApiKey = s.observability.bugsnagApiKey;
+  }
+  if (s.couchdb?.password) {
+    c.couchdb.password = s.couchdb.password;
+  }
+  if (s.maps) {
+    if (s.maps.mapSourceKey) c.maps.mapSourceKey = s.maps.mapSourceKey;
+    if (s.maps.autosuggestMapboxKey) {
+      c.maps.autosuggestMapboxKey = s.maps.autosuggestMapboxKey;
+    }
+    if (s.maps.autosuggestMapTilerKey) {
+      c.maps.autosuggestMapTilerKey = s.maps.autosuggestMapTilerKey;
+    }
+  }
+  if (s.mobile?.android) {
+    const target = c.android as Record<string, unknown>;
+    for (const [key, val] of Object.entries(s.mobile.android)) {
+      if (val !== undefined && val !== '') {
+        target[key] = val;
+      }
+    }
+  }
+  if (s.mobile?.ios) {
+    const target = c.ios as Record<string, unknown>;
+    for (const [key, val] of Object.entries(s.mobile.ios)) {
+      if (val !== undefined && val !== '') {
+        target[key] = val;
+      }
+    }
+  }
 }
 
 /**
  * Applies the shared cross-field invariants so that every
  * JSON entry point yields the same canonical semantics:
+ *  - non-empty `secrets.*` slots overlay onto their target groups
  *  - endpoints are derived from the domain structure when `domains` is set
  *  - conductorUrls falls back to apiUrl when empty (login needs at least one)
  *  - short / heading names fall back to the app name
+ *  - ios.bundleIdentifier falls back to android.appId
  *  - offline maps are forced off for OSM (no bulk download)
  *  - long-lived token hints default to the shared chip list, then are clamped
  *    to the max duration, deduped, sorted
  *  - redirectWhitelist falls back to the derived public endpoints
  */
 function applySharedInvariants(c: SharedBuildConfig): SharedBuildConfig {
+  applySecretsOverlay(c);
   // Derive the concrete endpoints from the domain structure (when present),
   // overriding the endpoint defaults. Shared by the app build, web build and
   // the CDK so the same core.domains cannot yield drifting URLs.
@@ -697,7 +763,8 @@ function applySharedInvariants(c: SharedBuildConfig): SharedBuildConfig {
   if (!c.branding.appShortName) c.branding.appShortName = c.branding.appName;
   if (!c.branding.headingAppName)
     c.branding.headingAppName = c.branding.appName;
-  if (c.maps.mapSource === 'osm') c.maps.offlineMaps = false;
+  if (!c.ios.bundleIdentifier) c.ios.bundleIdentifier = c.android.appId;
+  c.maps.offlineMaps = clampOfflineMaps(c.maps.mapSource, c.maps.offlineMaps);
   c.authTokens.longLivedTokenDurationHints = resolveLongLivedDurationHints(
     c.authTokens.longLivedTokenDurationHints,
     c.authTokens.maximumLongLivedDurationDays
@@ -791,7 +858,12 @@ export const BuildConfigCoreObjectSchema = z
  */
 export const BuildConfigSchema = BuildConfigCoreObjectSchema.transform(
   applySharedInvariants
-);
+).superRefine((c, ctx) => {
+  validateMapAndAutosuggestKeys(c.maps, ctx, {
+    mapbox: ['maps', 'autosuggestMapboxKey'],
+    tiler: ['maps', 'autosuggestMapTilerKey'],
+  });
+});
 
 /**
  * Same shape as SharedBuildConfig. Kept as an alias so generator, contract
@@ -799,6 +871,7 @@ export const BuildConfigSchema = BuildConfigCoreObjectSchema.transform(
  */
 export const RuntimeConfigSchema = BuildConfigSchema;
 
+/** Alias for {@link SharedBuildConfig} after defaults and shared invariants are applied. */
 export type RuntimeConfig = SharedBuildConfig;
 
 /**

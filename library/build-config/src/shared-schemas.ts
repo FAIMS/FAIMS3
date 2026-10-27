@@ -41,19 +41,31 @@ export const EmailServiceTypeSchema = z.enum(['SMTP', 'MOCK']);
 /** SameSite attribute on notebook-export download cookies. */
 export const DownloadCookieSameSiteSchema = z.enum(['lax', 'strict', 'none']);
 
+/** Visual theme name (same values as {@link ThemeSchema}). */
 export type Theme = z.infer<typeof ThemeSchema>;
+/** Notebook listing layout (same values as {@link NotebookListTypeSchema}). */
 export type NotebookListType = z.infer<typeof NotebookListTypeSchema>;
+/** Record navigation chrome (same values as {@link NavigationStyleSchema}). */
 export type NavigationStyle = z.infer<typeof NavigationStyleSchema>;
+/** Tile provider (same values as {@link MapSourceSchema}). */
 export type MapSource = z.infer<typeof MapSourceSchema>;
+/** MapLibre stylesheet name (same values as {@link MapStyleSchema}). */
 export type MapStyle = z.infer<typeof MapStyleSchema>;
+/** Optional satellite overlay (same values as {@link SatelliteSourceSchema}). */
 export type SatelliteSource = z.infer<typeof SatelliteSourceSchema>;
+/** Address-autosuggest provider (same values as {@link AutosuggestSourceSchema}). */
 export type AutosuggestSource = z.infer<typeof AutosuggestSourceSchema>;
+/** Local-DB cleanup after archive (same values as {@link ForceRemoteDeletionSchema}). */
 export type ForceRemoteDeletion = z.infer<typeof ForceRemoteDeletionSchema>;
+/** JWT signing-key source (same values as {@link KeySourceSchema}). */
 export type KeySource = z.infer<typeof KeySourceSchema>;
+/** SSO unmatched-user policy (same values as {@link ProvisionSsoUsersPolicySchema}). */
 export type ProvisionSsoUsersPolicy = z.infer<
   typeof ProvisionSsoUsersPolicySchema
 >;
+/** Outbound email backend (same values as {@link EmailServiceTypeSchema}). */
 export type EmailServiceType = z.infer<typeof EmailServiceTypeSchema>;
+/** Export-cookie SameSite (same values as {@link DownloadCookieSameSiteSchema}). */
 export type DownloadCookieSameSite = z.infer<
   typeof DownloadCookieSameSiteSchema
 >;

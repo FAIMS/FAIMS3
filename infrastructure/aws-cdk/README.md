@@ -289,6 +289,8 @@ Note that this validation is at a schema level, it might not catch improperly fo
 - If the configuration is valid, you'll see a summary message with stack/account/region.
 - If there are any validation errors, the script will output detailed error messages, indicating which parts of the configuration failed validation.
 
+In GitHub Actions, `.github/workflows/validate-config.yml` runs this same command against a checked-out config repo (`CONFIG_DIR`). It needs the config-repo token and path variables, but not AWS credentials. See [Deploying the AWS stack](../../docs/developer/docs/source/markdown/DeployingAWSStack.md#github-actions-validate--one-click-cdk-deploy).
+
 ## Configuration documentation
 
 The CDK loads **two config files**:
@@ -318,11 +320,14 @@ The **`aws`** fields are documented below.
 - `certificates`:
   - `primary`: ARN of your primary ACM certificate (must support \*.base.domain)
   - `cloudfront`: ARN of your CloudFront ACM certificate (must be in us-east-1 and support \*.base.domain)
-- `aws`:
-  - `account`: Your AWS account ID
-  - `region`: The AWS region for deployment (e.g., ap-southeast-2 for Sydney) - defaults to ap-southeast-2
+- `account`: Your AWS account ID
+- `region`: The AWS region for deployment (e.g., ap-southeast-2 for Sydney) - defaults to ap-southeast-2
 - `secrets`:
   - `privateKey`: ARN of the signing-key secret in Secrets Manager (one secret whose JSON holds both `rsa_private_key` and `rsa_public_key`; the API reads it at runtime)
+- `smtpCredentialsSecretArn`: ARN of the secret containing SMTP credentials (`host`, `port`, `secure`, `user`, `pass`)
+- `authProviders`: (Optional) AWS-specific social sign-in configuration (provider definitions live in `core.authProviders`)
+  - `providers`: Array of provider IDs enabled for this stack (each must exist in `core.authProviders`)
+  - `secretArn`: ARN of the Secrets Manager secret holding provider credentials (`<provider>-clientID`, `<provider>-clientSecret`, `<provider>-privateKey`, `<provider>-publicKey`, and `<provider>-idpPublicKey` when the SAML IdP cert is not in `core.authProviders`)
 - `backup`:
   - `vaultName`: The name of the AWS Backup vault to create or use
   - `vaultArn`: (Optional) The ARN of an existing backup vault to use. If provided, a new vault will not be created
@@ -347,7 +352,7 @@ The **`aws`** fields are documented below.
 - `support` (**in `core.support`**): Links shown in the app (support, privacy, contact, docs).
   - `supportEmail`: Support email address (default: support@fieldmark.au)
   - `privacyPolicyUrl`: Privacy policy URL (default: https://fieldnote.au/privacy)
-  - `contactUrl`: Contact page URL; empty string hides the contact link
+  - `appContactUrl`: Contact page URL; empty string hides the contact link
   - `docsUrl`: (Optional) Documentation site URL
 - `couch`:
   - `volumeSize`: The size in GB of the EBS volume to mount to the EC2 instance
@@ -369,20 +374,13 @@ The **`aws`** fields are documented below.
     - `http5xx`: (Optional) HTTP 5xx errors alarm settings (same structure as cpu, but threshold is count of errors)
     - `alarmTopic`: (Optional) SNS topic settings for alarms
       - `emailAddress`: Email address to send alarm notifications
-- `conductor`: AWS-specific configuration for the Conductor API service (Fargate image/sizing, autoscaling, `localhostWhitelist`, `enhancedObservability`). The shared instance identity (`name`, `description`, `shortCodePrefix`, `provisionSSOUsersPolicy`) and the migration flags now live in **`core`** — see [Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md).
-  - `name`: Title for this conductor instance (e.g. shown on listings page) — now in `core`
-  - `description`: Subheading or description for the instance
+- `conductor`: AWS-specific configuration for the Conductor API service (Fargate image/sizing, autoscaling, `localhostWhitelist`, `enhancedObservability`). Shared instance identity (`core.branding.conductorInstanceName`, `conductorDescription`, `conductorShortCodePrefix`), SSO policy (`core.auth.provisionSsoUsersPolicy`), and migration flags (`core.migration.*`) live in **`core.json`** — see [Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md).
   - `conductorDockerImage`: Conductor docker image name from public registry (e.g. ghcr.io/faims/faims3-api or org/faims3-api)
   - `conductorDockerImageTag`: (default "latest") Image tag; composed with `conductorDockerImage` as `image`:`tag`.
-  - `shortCodePrefix`: (default "FAIMS") Prefix for invite codes (`{prefix}-{code}`).
-  - `provisionSSOUsersPolicy`: (default "reject") When an unknown user signs in via SSO: `own-team`, `general-user`, or `reject`
   - `enhancedObservability`: (Optional) Enable ECS enhanced observability (container insights)
   - `cpu`: The number of CPU units for the Fargate task
   - `memory`: The amount of memory (in MiB) for the Fargate task
   - `localhostWhitelist`: (default false) Allow localhost-style redirects; not recommended for production
-  - `disableMigrateOnStartup`: (default `false`) Skip API-boot Couch migrate and notebook walks (`DISABLE_MIGRATE_ON_STARTUP`). Leave false so boot still runs `initialiseAndMigrateDBs` + `validateDatabases`. Set true only when migrate is handled out of band (`pnpm migrate-with-keys`) or for a debug stack against an already-migrated DB. When true, the lock is unused (forced off). Setting `startupMigrationLockEnabled: true` with this flag is a config error.
-  - `startupMigrationLockEnabled`: (optional) Couch-mediated startup-migration lock. AWS ECS is clustered, so CDK **defaults the lock on** when this is omitted. Set `false` to opt out on a single-task / debug stack (the same reason local `pnpm run dev` defaults the env flag off — a killed reload can leave a `running` lock that strands the next boot until the steal timeout). Skip-migrate forces the lock off.
-  - `startupMigrationLockTimeoutMs`: (default `1800000`) Age of a still-`running` lock after which clustered waiters steal it and run migrate themselves (`STARTUP_MIGRATION_LOCK_TIMEOUT_MS`, 30 minutes). Timeout is not “skip migrate and attach”. Age is `now - startedAtMs` (no heartbeat); a steal does not cancel the original doer. Only used when the lock is enabled. The Conductor ALB health check is `GET /up` (bound before migrate; old images already served this path). `GET /ready` is mounted only after the full API attaches. ECS `healthCheckGracePeriod` is 120s for process start through that bind.
   - `autoScaling`: Auto scaling configuration for the Conductor service
     - `desiredCapacity`: The desired number of tasks to run
     - `minCapacity`: The minimum number of tasks to run
@@ -391,6 +389,10 @@ The **`aws`** fields are documented below.
     - `targetMemoryUtilization`: The target memory utilization percentage for scaling
     - `scaleInCooldown`: The cooldown period (in seconds) before allowing another scale in action
     - `scaleOutCooldown`: The cooldown period (in seconds) before allowing another scale out action
+- `migration` (**now in `core.migration`**):
+  - `disableMigrateOnStartup`: (default `false`) Skip API-boot Couch migrate and notebook walks (`DISABLE_MIGRATE_ON_STARTUP`). Leave false so boot still runs `initialiseAndMigrateDBs` + `validateDatabases`. Set true only when migrate is handled out of band (`pnpm migrate-with-keys`) or for a debug stack against an already-migrated DB. When true, the lock is unused (forced off). Setting `startupMigrationLockEnabled: true` with this flag is a config error.
+  - `startupMigrationLockEnabled`: (optional) Couch-mediated startup-migration lock. AWS ECS is clustered, so CDK **defaults the lock on** when this is omitted. Set `false` to opt out on a single-task / debug stack (the same reason local `pnpm run dev` defaults the env flag off — a killed reload can leave a `running` lock that strands the next boot until the steal timeout). Skip-migrate forces the lock off.
+  - `startupMigrationLockTimeoutMs`: (default `1800000`) Age of a still-`running` lock after which clustered waiters steal it and run migrate themselves (`STARTUP_MIGRATION_LOCK_TIMEOUT_MS`, 30 minutes). Timeout is not “skip migrate and attach”. Age is `now - startedAtMs` (no heartbeat); a steal does not cancel the original doer. Only used when the lock is enabled. The Conductor ALB health check is `GET /up` (bound before migrate; old images already served this path). `GET /ready` is mounted only after the full API attaches. ECS `healthCheckGracePeriod` is 120s for process start through that bind.
 - `domains`: Route 53 subdomain prefixes that set up DNS/CDN. These are configured to **match** the URLs derived from `core.domains` (see [Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md)). Note: Apex domains are not currently supported.
   - `baseDomain`: The base domain for all services
   - `conductor`: The subdomain prefix for the conductor service
@@ -398,18 +400,16 @@ The **`aws`** fields are documented below.
   - `faims`: The subdomain prefix for the main FAIMS web application
   - `web`: The subdomain prefix for the new-conductor web application
   - `docs`: The subdomain prefix for the documentation site (default: `docs`)
-- `mobileApps` (**now in `core.endpoints`**): Configuration for mobile app URLs.
+- `endpoints` (**in `core.endpoints`**): Configuration for mobile app store URLs.
   - `androidAppPublicUrl`: The public URL for the Android application in the Google Play Store
   - `iosAppPublicUrl`: The public URL for the iOS application in the Apple App Store
-- `web`: Placeholder configuration for further web/new-conductor config - currently use {}
-- `docs`: Placeholder configuration for the documentation site - currently use `{}`
-- `security` (**now in `core`** — `authTokens` + `limits`): (Optional) Security-related Conductor API settings. Defaults applied when omitted.
-  - `maximumLongLivedTokenDurationDays`: (Optional) Max lifetime in days for long-lived tokens (default 90). Omit or leave unset for infinite when wiring through the stack prop as undefined.
-  - `rateLimiterEnabled`: (default `true`) Express HTTP IP rate limiter (`RATE_LIMITER_ENABLED`). Set `false` when per-IP limiting is handled upstream (e.g. ALB/WAF). Does **not** control CouchDB-backed auth attempt limits or the export limiter.
-  - `authAttemptLimiterEnabled`: (default `true`) Per-user email-code / verification-challenge attempt limits (`ATTEMPT_LIMITER_ENABLED`). Keep `true` in production even when HTTP rate limiting is disabled upstream.
-  - `exportRateLimiterEnabled`: (default `true`) Dedicated limiter for notebook export mint/redeem (`EXPORT_RATE_LIMITER_ENABLED`). Independent of `rateLimiterEnabled` so ZIP/GDAL work stays capped when the global IP limiter is off.
-  - `exportRateLimiterWindowMs`: (default `600000`) Export-limiter window in milliseconds (`EXPORT_RATE_LIMITER_WINDOW_MS`).
-  - `exportRateLimiterPerWindow`: (default `20`) Export mint/redeem requests allowed per window (`EXPORT_RATE_LIMITER_PER_WINDOW`). Raise for bulk scripted dumps.
+- `authTokens` & `limits` (**in `core.authTokens` and `core.limits`**): Security-related Conductor API settings. Defaults applied when omitted.
+  - `maximumLongLivedDurationDays` (`core.authTokens`): (Optional) Max lifetime in days for long-lived tokens (default 90), or `"unlimited"` for no cap.
+  - `rateLimiterEnabled` (`core.limits`): (default `true`) Express HTTP IP rate limiter (`RATE_LIMITER_ENABLED`). Set `false` when per-IP limiting is handled upstream (e.g. ALB/WAF). Does **not** control CouchDB-backed auth attempt limits or the export limiter.
+  - `attemptLimiterEnabled` (`core.limits`): (default `true`) Per-user email-code / verification-challenge attempt limits (`ATTEMPT_LIMITER_ENABLED`). Keep `true` in production even when HTTP rate limiting is disabled upstream.
+  - `exportRateLimiterEnabled` (`core.limits`): (default `true`) Dedicated limiter for notebook export mint/redeem (`EXPORT_RATE_LIMITER_ENABLED`). Independent of `rateLimiterEnabled` so ZIP/GDAL work stays capped when the global IP limiter is off.
+  - `exportRateLimiterWindowMs` (`core.limits`): (default `600000`) Export-limiter window in milliseconds (`EXPORT_RATE_LIMITER_WINDOW_MS`).
+  - `exportRateLimiterPerWindow` (`core.limits`): (default `20`) Export mint/redeem requests allowed per window (`EXPORT_RATE_LIMITER_PER_WINDOW`). Raise for bulk scripted dumps.
 
 To use a specific configuration when deploying or synthesizing your CDK stack:
 

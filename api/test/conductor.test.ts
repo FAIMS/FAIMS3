@@ -66,8 +66,8 @@ describe('Auth', () => {
   it('shows the configured login button(s)', async () => {
     const providers = getAuthProviderConfig();
     const response = await request(app).get('/login').expect(200);
-    Object.values(providers || {}).forEach(provider => {
-      if (providers) expect(response.text).toContain(provider.displayName);
+    Object.values(providers).forEach(provider => {
+      expect(response.text).toContain(provider.displayName);
     });
   });
 

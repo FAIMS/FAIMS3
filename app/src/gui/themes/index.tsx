@@ -15,8 +15,17 @@ export interface StepperColors {
   mobileBackground: string;
 }
 
+/** Known app theme names selected from `config.theme`. */
+export type AppThemeName = 'bssTheme' | 'fieldmark' | 'default';
+
+/** Map a config theme string to a known app theme variant. */
+export function resolveThemeName(theme: string): AppThemeName {
+  if (theme === 'bssTheme' || theme === 'fieldmark') return theme;
+  return 'default';
+}
+
 const exportTheme = () => {
-  switch (config.theme) {
+  switch (resolveThemeName(config.theme)) {
     case 'bssTheme':
       return bssTheme;
     case 'fieldmark':
@@ -27,7 +36,7 @@ const exportTheme = () => {
 };
 
 const exportAppBarStyling = () => {
-  switch (config.theme) {
+  switch (resolveThemeName(config.theme)) {
     case 'bssTheme':
       return faimsAppBarStyling;
     case 'fieldmark':
@@ -38,7 +47,7 @@ const exportAppBarStyling = () => {
 };
 
 const exportProjectListLayout = () => {
-  switch (config.theme) {
+  switch (resolveThemeName(config.theme)) {
     case 'bssTheme':
       return faimsProjectListLayout;
     case 'fieldmark':
@@ -49,7 +58,7 @@ const exportProjectListLayout = () => {
 };
 
 const exportProjectListVerbose = () => {
-  switch (config.theme) {
+  switch (resolveThemeName(config.theme)) {
     case 'bssTheme':
       return true;
     case 'fieldmark':
@@ -60,14 +69,7 @@ const exportProjectListVerbose = () => {
 };
 
 const exportAppBarHeading = () => {
-  switch (config.theme) {
-    case 'bssTheme':
-      return 'bssTheme';
-    case 'fieldmark':
-      return 'fieldmark';
-    default:
-      return 'default';
-  }
+  return resolveThemeName(config.theme);
 };
 export const theme = exportTheme();
 export const appBarStyling = exportAppBarStyling();

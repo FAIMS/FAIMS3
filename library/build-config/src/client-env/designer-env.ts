@@ -6,14 +6,7 @@
 import {z} from 'zod';
 import {boolWithDefault} from '../env-coercion.js';
 
-/** Designer flags produced by {@link parseDesignerEnv}. */
-export type DesignerRuntimeConfig = {
-  /** When true, lock fields that templates mark as protected. */
-  templateProtections: boolean;
-  /** Allow adding a plan on templates that do not already have one. */
-  enablePlansInDesigner: boolean;
-};
-
+/** Designer `import.meta.env` schema. */
 export const DesignerEnvSchema = z
   .object({
     VITE_TEMPLATE_PROTECTIONS: boolWithDefault(false),
@@ -21,17 +14,21 @@ export const DesignerEnvSchema = z
   })
   .strip();
 
+/** Parsed designer environment variables. */
 export type DesignerEnv = z.infer<typeof DesignerEnvSchema>;
 
 /**
  * Parse designer-only Vite flags. Both keys are optional with safe defaults.
  */
-export function parseDesignerEnv(
-  raw: Record<string, unknown>
-): DesignerRuntimeConfig {
+export function parseDesignerEnv(raw: Record<string, unknown>) {
   const env = DesignerEnvSchema.parse(raw);
   return {
+    /** When true, lock fields that templates mark as protected. */
     templateProtections: env.VITE_TEMPLATE_PROTECTIONS,
+    /** Allow adding a plan on templates that do not already have one. */
     enablePlansInDesigner: env.VITE_ENABLE_PLANS_IN_DESIGNER,
   };
 }
+
+/** Designer flags produced by {@link parseDesignerEnv}. */
+export type DesignerRuntimeConfig = ReturnType<typeof parseDesignerEnv>;

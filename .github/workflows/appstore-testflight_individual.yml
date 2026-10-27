@@ -3,17 +3,28 @@ name: Deploy to Apple App Store on Demo Track (Individual API Key), Manual
 # Uses an Individual App Store Connect API key and readonly fastlane match.
 # Certs/profiles must already exist in the Match git repo; this workflow will
 # not create or renew them. Set secrets APPLE_INDIVIDUAL_KEY_ID and
-# APPLE_INDIVIDUAL_KEY_CONTENT (no Issuer ID). Manual only — no nightly schedule.
+# APPLE_INDIVIDUAL_KEY_CONTENT on the selected GitHub Environment (no Issuer ID).
+# Team-key secrets are unused here. Manual only — no nightly schedule.
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: GitHub environment that supplies config vars and secrets
+        required: true
+        default: stage
+        type: choice
+        options:
+          - dev
+          - prod
+          - stage
 
 jobs:
   ios-deploy:
     name: Deploying to Testflight (Individual Key)
     uses: ./.github/workflows/common-ios-build.yml
     with:
-      config_environment: nightly
+      environment: ${{ github.event.inputs.environment }}
       fastlane_lane: closed_beta_testflight_individual
       fastlane_step_name: Deploy iOS Beta to TestFlight via Fastlane (individual key, readonly match)
       enable_bugsnag_sourcemaps: false

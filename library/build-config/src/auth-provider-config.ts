@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import {z} from 'zod';
 import {FALSEY_STRINGS, TRUTHY_STRINGS} from './env-coercion.js';
+import {envValueToString, type EnvValue} from './env-value.js';
 
 // Authentication Providers
 // ========================
 // Canonical auth-provider config types shared by every consumer (API, app,
-// web, CDK, mobile build). This is the single source of truth - do not keep
-// parallel copies in a consumer package.
+// web, CDK, mobile build).
 //
 // The schema is JSON shaped: arrays and booleans use their native JSON types.
 // readAuthProviderConfigFromEnv coerces the raw AUTH_* env strings (CSV arrays,
@@ -20,7 +20,7 @@ import {FALSEY_STRINGS, TRUTHY_STRINGS} from './env-coercion.js';
 
 const callbackMethodSchema = z.enum(['GET', 'POST']);
 
-// Base schema for common fields across all providers
+/** Base schema for common fields across all providers. */
 export const BaseAuthProviderConfigSchema = z.object({
   id: z.string(),
   index: z.number().optional(), // order for display in UI
@@ -31,25 +31,27 @@ export const BaseAuthProviderConfigSchema = z.object({
   /** HTTP methods accepted for the auth callback. Default: ['GET'] */
   callbackMethods: z.array(callbackMethodSchema).default(['GET']),
 });
+/** Common fields shared across all auth provider configs. */
 export type BaseAuthProviderConfig = z.infer<
   typeof BaseAuthProviderConfigSchema
 >;
 
-// Google auth provider schema
+/** Google OAuth 2.0 auth provider schema. */
 export const GoogleAuthProviderConfigSchema =
   BaseAuthProviderConfigSchema.extend({
     type: z.literal('google'),
-    // Optional: in the shared core these are typically empty (secrets live in
-    // core.secrets.auth.authProviders.<id>, resolved per platform - SOPS for
-    // mobile/local, AWS Secrets Manager for the CDK).
+    // Optional: in the shared core these are typically empty (supplied via
+    // the SOPS-encrypted secrets.enc.json overlay on mobile/local, or AWS
+    // Secrets Manager on the CDK).
     clientID: z.string().optional(),
     clientSecret: z.string().optional(),
   });
+/** Google OAuth 2.0 auth provider config. */
 export type GoogleAuthProviderConfig = z.infer<
   typeof GoogleAuthProviderConfigSchema
 >;
 
-// OIDC auth provider schema
+/** OIDC auth provider schema. */
 export const OIDCAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
   {
     type: z.literal('oidc'),
@@ -57,11 +59,12 @@ export const OIDCAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     authorizationURL: z.string(),
     tokenURL: z.string(),
     userInfoURL: z.string(),
-    // Optional: secrets live in core.secrets.auth.authProviders.<id>.
+    // Optional: supplied via secrets.enc.json (SOPS) or AWS Secrets Manager.
     clientID: z.string().optional(),
     clientSecret: z.string().optional(),
   }
 );
+/** OIDC auth provider config. */
 export type OIDCAuthProviderConfig = z.infer<
   typeof OIDCAuthProviderConfigSchema
 >;
@@ -169,37 +172,45 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
   }
 );
 
+/** SAML 2.0 auth provider config. */
 export type SAMLAuthProviderConfig = z.infer<
   typeof SAMLAuthProviderConfigSchema
 >;
 
-// Create a discriminated union of all auth provider schemas
+/** Discriminated union of all auth provider schemas (`google` | `oidc` | `saml`). */
 export const AuthProviderSchema = z.discriminatedUnion('type', [
   GoogleAuthProviderConfigSchema,
   OIDCAuthProviderConfigSchema,
   SAMLAuthProviderConfigSchema,
 ]);
+/** Union of all supported auth provider configs. */
 export type AuthProviderConfig = z.infer<typeof AuthProviderSchema>;
+/** JSON-input shape of {@link AuthProviderSchema} (defaults not yet applied). */
+export type AuthProviderConfigInput = z.input<typeof AuthProviderSchema>;
 
+/** Map of provider id to auth provider config schema. */
 export const AuthProviderConfigMapSchema = z.record(
   z.string(),
   AuthProviderSchema
 );
+/** Map of provider id to validated auth provider config. */
 export type AuthProviderConfigMap = z.infer<typeof AuthProviderConfigMapSchema>;
 
-// Type guard functions for runtime type checking
+/** Type guard for Google auth provider configs. */
 export function isGoogleProvider(
   config: AuthProviderConfig
 ): config is GoogleAuthProviderConfig {
   return config.type === 'google';
 }
 
+/** Type guard for OIDC auth provider configs. */
 export function isOIDCProvider(
   config: AuthProviderConfig
 ): config is OIDCAuthProviderConfig {
   return config.type === 'oidc';
 }
 
+/** Type guard for SAML auth provider configs. */
 export function isSAMLProvider(
   config: AuthProviderConfig
 ): config is SAMLAuthProviderConfig {
@@ -210,6 +221,7 @@ export function isSAMLProvider(
 // All auth config is defined in environment variables prefixed with AUTH_ and is
 // translated into an AuthProviderConfigMap at runtime.
 
+/** Prefix for auth-provider environment variables (`AUTH_{PROVIDER}_{PROPERTY}`). */
 export const AUTH_PREFIX = 'AUTH_';
 const AUTH_ENV_PATTERN = /^AUTH_([A-Z0-9]+)_([A-Z0-9_]+)?$/;
 const TRUTHY_SET = new Set<string>(TRUTHY_STRINGS);
@@ -247,18 +259,17 @@ function getPropertyType(
   let isNumber = false;
 
   AuthProviderSchema.options.some(schema => {
-    const shape = schema.shape as Record<string, z.ZodSchema>;
+    const shape = schema.shape as Record<string, z.ZodType>;
     if (property in shape) {
-      const fieldSchema = shape[property];
       // Unwrap any optional / default wrapper to reach the underlying type so
       // that .default() fields (e.g. callbackMethods, signMetadata) are still
       // detected as arrays / booleans rather than falling back to string.
-      let unwrapped: z.ZodType = fieldSchema as unknown as z.ZodType;
+      let unwrapped: z.ZodType = shape[property];
       while (
         unwrapped instanceof z.ZodOptional ||
         unwrapped instanceof z.ZodDefault
       ) {
-        unwrapped = unwrapped.unwrap() as unknown as z.ZodType;
+        unwrapped = unwrapped.unwrap() as z.ZodType;
       }
 
       isArray = unwrapped instanceof z.ZodArray;
@@ -275,23 +286,63 @@ function getPropertyType(
   return 'string';
 }
 
-// Parse environment variables into an AuthProviderConfigMap. This reads all
-// environment variables prefixed with AUTH_ and converts them into the
-// appropriate types based on the auth provider schema.
+/**
+ * Runtime env schema for `AUTH_*` providers: requires the credentials that
+ * Passport strategies need at API startup (`clientID`/`clientSecret` for
+ * Google and OIDC, `idpPublicKey` for SAML).
+ */
+export const RuntimeAuthProviderSchema = z.discriminatedUnion('type', [
+  GoogleAuthProviderConfigSchema.extend({
+    clientID: z.string().min(1),
+    clientSecret: z.string().min(1),
+  }),
+  OIDCAuthProviderConfigSchema.extend({
+    clientID: z.string().min(1),
+    clientSecret: z.string().min(1),
+  }),
+  SAMLAuthProviderConfigSchema.extend({
+    idpPublicKey: z.string().min(1),
+  }),
+]);
+/** Auth provider config after runtime credential requirements are applied. */
+export type RuntimeAuthProviderConfig = z.infer<
+  typeof RuntimeAuthProviderSchema
+>;
+
+/** Map of provider id to runtime-validated auth provider config schema. */
+export const RuntimeAuthProviderConfigMapSchema = z.record(
+  z.string(),
+  RuntimeAuthProviderSchema
+);
+/** Map of provider id to runtime-validated auth provider config. */
+export type RuntimeAuthProviderConfigMap = z.infer<
+  typeof RuntimeAuthProviderConfigMapSchema
+>;
+
+/**
+ * Parse `AUTH_*` environment variables into a
+ * {@link RuntimeAuthProviderConfigMap}, coercing CSV arrays, booleans, and
+ * integers based on the provider schema. Providers that fail the runtime
+ * credential requirements are dropped with a warning.
+ */
 export function readAuthProviderConfigFromEnv(
-  env: Record<string, string | undefined>
-): AuthProviderConfigMap {
+  env: Record<string, unknown>
+): RuntimeAuthProviderConfigMap {
   const envVars = Object.entries(env).filter(([key]) =>
     key.startsWith(AUTH_PREFIX)
   );
   const parsedConfig: Record<string, Record<string, unknown>> = {};
 
-  for (const [key, value] of envVars) {
+  for (const [key, rawValue] of envVars) {
     const match = key.match(AUTH_ENV_PATTERN);
     if (!match) {
       continue;
     }
 
+    const value =
+      rawValue === undefined || rawValue === null
+        ? undefined
+        : String(rawValue);
     const provider = match[1].toLowerCase();
     const property = snakeToCamel(match[2]);
 
@@ -331,7 +382,9 @@ export function readAuthProviderConfigFromEnv(
       continue;
     }
 
-    parsedConfig[provider][property] = value;
+    if (value !== undefined && value.trim() !== '') {
+      parsedConfig[provider][property] = value;
+    }
   }
 
   let index = 100;
@@ -342,9 +395,9 @@ export function readAuthProviderConfigFromEnv(
     }
   }
 
-  const typed: AuthProviderConfigMap = {};
+  const typed: RuntimeAuthProviderConfigMap = {};
   for (const [providerId, provider] of Object.entries(parsedConfig)) {
-    const parsed = AuthProviderSchema.safeParse(provider);
+    const parsed = RuntimeAuthProviderSchema.safeParse(provider);
     if (!parsed.success) {
       // Do not silently drop a misconfigured provider — surface it.
       console.warn(
@@ -359,21 +412,21 @@ export function readAuthProviderConfigFromEnv(
   return typed;
 }
 
-function providerIdToEnvProvider(providerId: string): string {
+/** Normalise a provider id (e.g. `some-oidc`) into its `AUTH_<PROVIDER>_*` prefix token. */
+export function providerIdToEnvProvider(providerId: string): string {
   return providerId.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
 }
 
+/** Build the `AUTH_{PROVIDER}_{PROPERTY}` env variable name for a provider property. */
+export function authProviderEnvKey(
+  providerId: string,
+  property: string
+): string {
+  return `${AUTH_PREFIX}${providerIdToEnvProvider(providerId)}_${camelToSnake(property)}`;
+}
+
 function serializeEnvValue(value: unknown): string {
-  if (Array.isArray(value)) {
-    return value.map(item => String(item)).join(',');
-  }
-  if (typeof value === 'boolean') {
-    return value ? 'true' : 'false';
-  }
-  if (value === undefined || value === null) {
-    return '';
-  }
-  return String(value);
+  return envValueToString(value as EnvValue) ?? '';
 }
 
 /** Serialise auth providers to their `AUTH_{PROVIDER}_{PROPERTY}` env map. */
@@ -383,13 +436,12 @@ export function buildAuthProviderEnvMap(
   const env: Record<string, string> = {};
 
   for (const [providerId, provider] of Object.entries(providers)) {
-    const envProvider = providerIdToEnvProvider(providerId);
     for (const [property, value] of Object.entries(provider)) {
       if (property === 'id') {
         continue;
       }
 
-      const envKey = `${AUTH_PREFIX}${envProvider}_${camelToSnake(property)}`;
+      const envKey = authProviderEnvKey(providerId, property);
       env[envKey] = serializeEnvValue(value);
     }
   }

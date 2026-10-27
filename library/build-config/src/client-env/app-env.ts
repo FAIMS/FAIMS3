@@ -35,77 +35,7 @@ import {
   deriveNotebookNames,
   resolveMapTilerApiKey,
   validateMapAndAutosuggestKeys,
-  type AutosuggestSource,
-  type ForceRemoteDeletion,
-  type MapConfigShape,
-  type MapSource,
-  type MapStyle,
-  type NavigationStyle,
-  type NotebookListType,
-  type SatelliteSource,
 } from '../shared-schemas.js';
-
-/** Paired directory listing credentials; only set when both env values are present. */
-export type AppDirectoryAuth = {username: string; password: string};
-
-/** Typed app runtime config produced by {@link parseAppEnv}. */
-export type AppRuntimeConfig = {
-  debugPouchdb: boolean;
-  debugApp: boolean;
-  showPouchdbBrowser: boolean;
-  showWipe: boolean;
-  showNewNotebook: boolean;
-  showRecordSummaryCounts: boolean;
-  showStatusTab: boolean;
-  pouchBatchSize: number;
-  pouchBatchesLimit: number;
-  syncPushOnlyRecordThreshold: number;
-  notebookListType: NotebookListType;
-  notebookName: string;
-  notebookNameCapitalized: string;
-  notebookNamePlural: string;
-  notebookNamePluralCapitalized: string;
-  /** Reverse-domain app id (store listing / deep-link scheme). */
-  appId: string;
-  appName: string;
-  /** Banner heading; falls back to appName. */
-  headingAppName: string;
-  privacyPolicyUrl: string;
-  /** Empty string hides the contact link. */
-  contactUrl: string;
-  supportEmail: string;
-  theme: string;
-  clusterAdminGroupName: string;
-  tokenRefreshIntervalMs: number;
-  tokenRefreshWindowMs: number;
-  loginBannerGraceMs: number;
-  ignoreTokenExp: boolean;
-  mapSource: MapSource;
-  mapSourceKey: string;
-  mapStyle: MapStyle;
-  satelliteSource?: SatelliteSource;
-  navigationStyle: NavigationStyle;
-  migrateOldDatabases: boolean;
-  forceRemoteDeletion: ForceRemoteDeletion;
-  deleteOnDeactivation: boolean;
-  attachmentServiceType: string;
-  attachmentDocumentIdPrefix?: string;
-  bugsnagKey?: string;
-  mapboxAccessToken?: string;
-  mapboxAddressCountry: string[];
-  maptilerAddressCountry: string[];
-  autosuggestSource: AutosuggestSource;
-  /** Conductor URLs the app may authenticate against (from VITE_CONDUCTOR_URL). */
-  conductorUrls: string[];
-  directoryAuth?: AppDirectoryAuth;
-  runningUnderTest: boolean;
-  maptilerApiKey?: string;
-  /** Forced off when mapSource is osm. */
-  offlineMaps: boolean;
-  appVersion: string;
-  commitHash?: string;
-  mapConfig: MapConfigShape;
-};
 
 /** App `import.meta.env` schema. */
 export const AppEnvSchema = z
@@ -194,8 +124,10 @@ export const AppEnvSchema = z
     );
   });
 
+/** Parsed mobile-app / PWA environment variables. */
 export type AppEnv = z.infer<typeof AppEnvSchema>;
 
+/** Options for {@link parseAppEnv}. */
 export interface ParseAppEnvOptions {
   /** Vite `define` `__APP_VERSION__` (package.json version). */
   appVersion?: string;
@@ -209,7 +141,7 @@ export interface ParseAppEnvOptions {
 export function parseAppEnv(
   raw: Record<string, unknown>,
   options: ParseAppEnvOptions = {}
-): AppRuntimeConfig {
+) {
   const env = AppEnvSchema.parse(raw);
   const names = deriveNotebookNames(env.VITE_NOTEBOOK_NAME);
   const maps = {
@@ -220,7 +152,7 @@ export function parseAppEnv(
     autosuggestMapTilerKey: env.VITE_AUTOSUGGEST_MAPTILER_KEY ?? '',
   };
 
-  let directoryAuth: AppDirectoryAuth | undefined;
+  let directoryAuth: {username: string; password: string} | undefined;
   if (env.VITE_DIRECTORY_USERNAME && env.VITE_DIRECTORY_PASSWORD) {
     directoryAuth = {
       username: env.VITE_DIRECTORY_USERNAME,
@@ -285,3 +217,8 @@ export function parseAppEnv(
     }),
   };
 }
+
+/** Typed app runtime config produced by {@link parseAppEnv}. */
+export type AppRuntimeConfig = ReturnType<typeof parseAppEnv>;
+/** Paired directory listing credentials; only set when both env values are present. */
+export type AppDirectoryAuth = NonNullable<AppRuntimeConfig['directoryAuth']>;

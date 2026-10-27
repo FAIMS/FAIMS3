@@ -36,8 +36,10 @@ Core entry points:
 - Layer 2 client parsers: [src/client-env/](src/client-env/)
 - Env contract map: [src/env-contract.ts](src/env-contract.ts)
 - Env generator CLI: [src/generate-build-config.ts](src/generate-build-config.ts)
+- Node `.env.dist` loader: [src/node.ts](src/node.ts) (`@faims3/build-config/node`)
 - Tests: [test/generate-build-config.test.ts](test/generate-build-config.test.ts),
-  [test/client-env.test.ts](test/client-env.test.ts)
+  [test/client-env.test.ts](test/client-env.test.ts),
+  [test/node.test.ts](test/node.test.ts)
 
 Data flow:
 
@@ -153,8 +155,7 @@ Use this sequence every time.
 
 1. Add field to runtime model
 
-- Extend RuntimeConfigSchema in [src/build-config.ts](src/build-config.ts).
-- Update toRuntimeConfig mapping in [src/build-config.ts](src/build-config.ts) so JSON resolves into typed runtime value.
+- `RuntimeConfigSchema` is an alias of `BuildConfigSchema`; adding the field above is enough. `toRuntimeConfig` re-parses a partial object through that schema.
 
 1. Add env transport mapping (if required)
 
@@ -241,8 +242,7 @@ latter two discovered by name or via explicit ARN flags), using the `aws`
 CLI from the caller's environment.
 
 ```bash
-pnpm --filter=@faims3/build-config run migrate-aws -- \
-  --config path/to/legacy-dev.json --out-dir path/to/migrated/dev
+pnpm --filter=@faims3/build-config run migrate-aws --config path/to/legacy-dev.json --out-dir path/to/migrated/dev
 ```
 
 It writes `core.json` (non-secret core; secret slots empty, except the

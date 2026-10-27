@@ -23,17 +23,11 @@ const DEFAULT_LONG_LIVED_TOKEN_HELP_LINK =
   'https://github.com/FAIMS/FAIMS3/blob/main/docs/developer/docs/source/markdown/Long-lived-tokens.md';
 
 /**
- * When the directory lists a notebook as archived (or id absent), the mobile app
- * may drop local DBs after sync (`allow`) or keep them closed but recoverable (`never`).
- */
-export type ForceRemoteDeletionMode = 'allow' | 'never';
-
-/**
  * `excludedTeamRoles` arrives as a plain list from the shared config. The
  * Control Centre additionally ignores any value that is not a valid TEAM role
  * (and warns), matching the previous behaviour.
  */
-function filterValidTeamRoles(roles: string[]): string[] {
+export function filterValidTeamRoles(roles: string[]): string[] {
   const validTeamRoles = new Set(
     resourceRoles[Resource.TEAM].map(r => r.role as string)
   );

@@ -8,8 +8,8 @@ import {config} from '@/constants';
  */
 export const THEME: string = config.theme || 'default';
 
-export const getThemeClass = () => {
-  switch (THEME) {
+export const getThemeClass = (theme: string = THEME) => {
+  switch (theme) {
     case 'bssTheme':
       return 'theme-bss';
     case 'fieldmark':

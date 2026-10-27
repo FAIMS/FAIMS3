@@ -124,6 +124,11 @@ test('generator supports platform-specific export selection', () => {
   assert.match(output, /VITE_APP_STORE_CONNECT_TEAM_ID=/);
   assert.match(output, /FASTLANE_APPLE_ID=/);
   assert.match(output, /ANDROID_RELEASE_STATUS=/);
+  const keys = output
+    .split('\n')
+    .filter(Boolean)
+    .map(line => line.slice(0, line.indexOf('=')));
+  assert.equal(new Set(keys).size, keys.length);
 });
 
 test('generator supports api platform export selection', () => {
@@ -393,6 +398,7 @@ test('generated API env includes conductor, auth, and email contract values', ()
   assert.equal(raw.RATE_LIMITER_ENABLED, 'false');
   assert.equal(raw.JSON_BODY_LIMIT, '50mb');
   assert.equal(raw.EMAIL_SERVICE_TYPE, 'MOCK');
+  assert.equal(raw.SMTP_SECURE, 'false');
   assert.equal(raw.CONDUCTOR_INTERNAL_PORT, '8080');
   assert.equal(raw.CONDUCTOR_SHORT_CODE_PREFIX, 'EXM');
 });
@@ -494,6 +500,63 @@ test('D4: short/heading names fall back to app name', () => {
   const parsed = parseBuildConfig({branding: {appName: 'Fieldmark'}});
   assert.equal(parsed.branding.appShortName, 'Fieldmark');
   assert.equal(parsed.branding.headingAppName, 'Fieldmark');
+});
+
+test('ios.bundleIdentifier falls back to android.appId when omitted', () => {
+  const parsed = parseBuildConfig({android: {appId: 'au.csiro.bss'}});
+  assert.equal(parsed.ios.bundleIdentifier, 'au.csiro.bss');
+  const env = generateEnv({
+    config: {android: {appId: 'au.csiro.bss'}},
+    platform: 'apps',
+  });
+  assert.match(env, /VITE_APPLE_BUNDLE_IDENTIFIER=au\.csiro\.bss/);
+});
+
+test('core.secrets overlays values into target config groups', () => {
+  const parsed = parseBuildConfig({
+    maps: {autosuggestSource: 'mapbox'},
+    authProviders: {
+      google: {
+        id: 'google',
+        type: 'google',
+        displayName: 'Google',
+        scope: ['profile', 'email'],
+      },
+    },
+    secrets: {
+      auth: {
+        cookieSecret: 'sec-cookie',
+        authProviders: {
+          google: {clientID: 'sec-cid', clientSecret: 'sec-csecret'},
+        },
+      },
+      email: {smtpUser: 'sec-user', smtpPassword: 'sec-pass'},
+      observability: {bugsnagApiKey: 'sec-bugsnag'},
+      couchdb: {password: 'sec-couch'},
+      maps: {
+        mapSourceKey: 'sec-map',
+        autosuggestMapboxKey: 'sec-mapbox',
+      },
+      mobile: {
+        android: {keystorePassword: 'sec-ks-pass'},
+        ios: {matchPassword: 'sec-match-pass'},
+      },
+    },
+  });
+  assert.equal(parsed.auth.cookieSecret, 'sec-cookie');
+  assert.ok(
+    parsed.authProviders.google && isGoogleProvider(parsed.authProviders.google)
+  );
+  assert.equal(parsed.authProviders.google.clientID, 'sec-cid');
+  assert.equal(parsed.authProviders.google.clientSecret, 'sec-csecret');
+  assert.equal(parsed.email.smtpUser, 'sec-user');
+  assert.equal(parsed.email.smtpPassword, 'sec-pass');
+  assert.equal(parsed.observability.bugsnagApiKey, 'sec-bugsnag');
+  assert.equal(parsed.couchdb.password, 'sec-couch');
+  assert.equal(parsed.maps.mapSourceKey, 'sec-map');
+  assert.equal(parsed.maps.autosuggestMapboxKey, 'sec-mapbox');
+  assert.equal(parsed.android.keystorePassword, 'sec-ks-pass');
+  assert.equal(parsed.ios.matchPassword, 'sec-match-pass');
 });
 
 test('D4: offline maps are forced off for OSM', () => {
@@ -657,6 +720,23 @@ test('domains: localOverride hosts are used verbatim with http', () => {
   assert.equal(parsed.endpoints.webUrl, 'http://localhost:3001');
   // A non-overridden service keeps its derived (https) URL.
   assert.equal(parsed.endpoints.appUrl, 'https://app.faims.example.com');
+
+  // localOverride works even when services.<name> is omitted.
+  const localOnly = parseBuildConfig({
+    domains: {
+      base: 'faims.example.com',
+      localOverride: {
+        conductor: 'localhost:8080',
+        web: 'localhost:3001',
+        app: 'localhost:3000',
+        couch: 'localhost:5984',
+      },
+    },
+  });
+  assert.equal(localOnly.endpoints.apiUrl, 'http://localhost:8080');
+  assert.equal(localOnly.endpoints.webUrl, 'http://localhost:3001');
+  assert.equal(localOnly.endpoints.appUrl, 'http://localhost:3000');
+  assert.equal(localOnly.endpoints.couchdbPublicUrl, 'http://localhost:5984');
 });
 
 test('domains: absent domains keeps concrete endpoints (backward compatible)', () => {

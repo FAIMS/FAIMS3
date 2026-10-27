@@ -1,6 +1,7 @@
 import {parseBuildConfig} from '@faims3/build-config';
 import {
   authSecretEnvKey,
+  authSecretFieldsForProvider,
   buildConductorRuntimeEnv,
 } from '../lib/components/conductor';
 
@@ -115,6 +116,113 @@ function envForMigration(migration: {
     secretEnvKeys,
   });
 }
+
+describe('authSecretFieldsForProvider', () => {
+  it('does not require SAML idpPublicKey from SM when core already has it', () => {
+    expect(
+      authSecretFieldsForProvider({
+        id: 'enterprise-sso',
+        type: 'saml',
+        displayName: 'Enterprise SSO',
+        scope: ['profile', 'email'],
+        entryPoint: 'https://idp.example/sso',
+        issuer: 'https://sp.example',
+        idpPublicKey: 'CORE-IDP-CERT',
+      })
+    ).toEqual(['privateKey', 'publicKey']);
+  });
+
+  it('wires SAML idpPublicKey from SM when the core value is blank', () => {
+    expect(
+      authSecretFieldsForProvider({
+        id: 'enterprise-sso',
+        type: 'saml',
+        displayName: 'Enterprise SSO',
+        scope: ['profile', 'email'],
+        entryPoint: 'https://idp.example/sso',
+        issuer: 'https://sp.example',
+        idpPublicKey: '   ',
+      })
+    ).toEqual(['privateKey', 'publicKey', 'idpPublicKey']);
+  });
+
+  it('wires SAML idpPublicKey from SM when core omits it', () => {
+    expect(
+      authSecretFieldsForProvider({
+        id: 'enterprise-sso',
+        type: 'saml',
+        displayName: 'Enterprise SSO',
+        scope: ['profile', 'email'],
+        entryPoint: 'https://idp.example/sso',
+        issuer: 'https://sp.example',
+      })
+    ).toEqual(['privateKey', 'publicKey', 'idpPublicKey']);
+  });
+
+  it('leaves Google/OIDC required fields unchanged', () => {
+    expect(
+      authSecretFieldsForProvider({
+        id: 'google',
+        type: 'google',
+        displayName: 'Google',
+        scope: ['profile', 'email'],
+      })
+    ).toEqual(['clientID', 'clientSecret']);
+  });
+});
+
+describe('buildConductorRuntimeEnv SAML idpPublicKey', () => {
+  const samlCore = parseBuildConfig({
+    authProviders: {
+      someSaml: {
+        id: 'someSaml',
+        type: 'saml',
+        displayName: 'Enterprise SSO',
+        scope: ['profile', 'email'],
+        entryPoint: 'https://idp.example/sso',
+        issuer: 'https://sp.example',
+        idpPublicKey: 'CORE-IDP-CERT',
+      },
+    },
+  });
+
+  function samlEnv(secretKeys: string[]) {
+    return buildConductorRuntimeEnv({
+      coreConfig: samlCore,
+      conductorEndpoint: 'https://api.example.com:443',
+      webAppPublicUrl: 'https://app.example.com',
+      webUrl: 'https://web.example.com',
+      appId: 'org.example.app',
+      couchDBEndpoint: 'https://couch.example.com:443',
+      couchDBPort: 443,
+      conductorExternalPort: 443,
+      conductorInternalPort: 8000,
+      privateKeySecretArn:
+        'arn:aws:secretsmanager:ap-southeast-2:123456789012:secret:pk',
+      localhostWhitelist: false,
+      enabledAuthProviders: ['someSaml'],
+      secretEnvKeys: secretKeys,
+    });
+  }
+
+  it('keeps a core idpPublicKey in plain env when SM does not supply it', () => {
+    const env = samlEnv([
+      authSecretEnvKey('someSaml', 'privateKey'),
+      authSecretEnvKey('someSaml', 'publicKey'),
+    ]);
+    expect(env.AUTH_SOMESAML_IDP_PUBLIC_KEY).toBe('CORE-IDP-CERT');
+    expect(env.AUTH_SOMESAML_PRIVATE_KEY).toBeUndefined();
+  });
+
+  it('drops the core idpPublicKey from plain env when SM is wired', () => {
+    const env = samlEnv([
+      authSecretEnvKey('someSaml', 'privateKey'),
+      authSecretEnvKey('someSaml', 'publicKey'),
+      authSecretEnvKey('someSaml', 'idpPublicKey'),
+    ]);
+    expect(env.AUTH_SOMESAML_IDP_PUBLIC_KEY).toBeUndefined();
+  });
+});
 
 describe('buildConductorRuntimeEnv startup migration lock', () => {
   it('defaults the lock on when the core omits the flag', () => {

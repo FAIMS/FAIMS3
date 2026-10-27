@@ -17,21 +17,9 @@ import {ICertificate} from 'aws-cdk-lib/aws-certificatemanager';
 import * as path from 'path';
 import {getPathHash, getPathToRoot} from '../util/mono';
 import {
-  buildEnvMapFromRuntime,
-  type EnvValue,
+  buildStringEnvMapFromRuntime,
   type RuntimeConfig,
 } from '@faims3/build-config';
-
-/**
- * Convert a build-config env value to the string the static-site build env
- * expects. Arrays become CSV; booleans become 'true'/'false'; numbers are
- * stringified. Undefined/null return undefined (the key is omitted).
- */
-function envValueToString(value: EnvValue): string | undefined {
-  if (value === undefined || value === null) return undefined;
-  if (Array.isArray(value)) return value.join(',');
-  return String(value);
-}
 
 export interface FaimsAppBundlingEnvInput {
   coreConfig: RuntimeConfig;
@@ -39,6 +27,17 @@ export interface FaimsAppBundlingEnvInput {
   webUrl: string;
   appUrl: string;
   debugMode: boolean;
+}
+
+/** Overlay the CDK-resolved public service URLs onto a generated env map. */
+export function overlayPublicServiceUrls(
+  environment: Record<string, string>,
+  urls: {webUrl: string; apiUrl: string; appUrl: string}
+): Record<string, string> {
+  environment.VITE_WEB_URL = urls.webUrl;
+  environment.VITE_API_URL = urls.apiUrl;
+  environment.VITE_APP_URL = urls.appUrl;
+  return environment;
 }
 
 /**
@@ -49,19 +48,15 @@ export interface FaimsAppBundlingEnvInput {
 export function buildFaimsAppBundlingEnv(
   input: FaimsAppBundlingEnvInput
 ): Record<string, string> {
-  const environment: Record<string, string> = {};
-  for (const [key, value] of Object.entries(
-    buildEnvMapFromRuntime(input.coreConfig, 'apps')
-  )) {
-    const str = envValueToString(value);
-    if (str !== undefined) environment[key] = str;
-  }
+  const environment = buildStringEnvMapFromRuntime(input.coreConfig, 'apps');
   environment.platform = 'web';
   environment.serverprefix = 'fieldmark';
   environment.VITE_CONDUCTOR_URL = input.conductorUrl;
-  environment.VITE_API_URL = input.conductorUrl;
-  environment.VITE_WEB_URL = input.webUrl;
-  environment.VITE_APP_URL = input.appUrl;
+  overlayPublicServiceUrls(environment, {
+    webUrl: input.webUrl,
+    apiUrl: input.conductorUrl,
+    appUrl: input.appUrl,
+  });
   environment.VITE_DEBUG_APP = input.debugMode ? 'true' : 'false';
   environment.VITE_DEBUG_POUCHDB = input.debugMode ? 'true' : 'false';
   return environment;
@@ -367,17 +362,15 @@ export class FaimsFrontEnd extends Construct {
 
     // Shared VITE_* env from build-config's contract; overlay the resolved
     // URLs (web/app/api) which are AWS-specific.
-    const environment: {[key: string]: string} = {};
-    for (const [key, value] of Object.entries(
-      buildEnvMapFromRuntime(props.coreConfig, 'apps')
-    )) {
-      const str = envValueToString(value);
-      if (str !== undefined) environment[key] = str;
-    }
-    environment.VITE_WEB_URL = `https://${props.webDomainName}`;
-    environment.VITE_API_URL = props.conductorUrl;
-    // FAIMS /app URL (uses first domain if multiple provided)
-    environment.VITE_APP_URL = this.faimsAppUrl;
+    const environment = overlayPublicServiceUrls(
+      buildStringEnvMapFromRuntime(props.coreConfig, 'apps'),
+      {
+        webUrl: `https://${props.webDomainName}`,
+        apiUrl: props.conductorUrl,
+        // FAIMS /app URL (uses first domain if multiple provided)
+        appUrl: this.faimsAppUrl,
+      }
+    );
 
     // Setup a deployment into this bucket with static files
     new aws_s3_deployment.BucketDeployment(this, 'web-deploy', {
@@ -504,16 +497,14 @@ export class FaimsFrontEnd extends Construct {
     // Shared VITE_* env from build-config's contract; overlay the resolved
     // URLs + the mobile store URLs (docs variable substitution) + the
     // default theme (other themes not yet implemented for docs).
-    const docsEnv: {[key: string]: string} = {};
-    for (const [key, value] of Object.entries(
-      buildEnvMapFromRuntime(props.coreConfig, 'apps')
-    )) {
-      const str = envValueToString(value);
-      if (str !== undefined) docsEnv[key] = str;
-    }
-    docsEnv.VITE_API_URL = props.conductorUrl;
-    docsEnv.VITE_APP_URL = this.faimsAppUrl;
-    docsEnv.VITE_WEB_URL = `https://${props.webDomainName}`;
+    const docsEnv = overlayPublicServiceUrls(
+      buildStringEnvMapFromRuntime(props.coreConfig, 'apps'),
+      {
+        webUrl: `https://${props.webDomainName}`,
+        apiUrl: props.conductorUrl,
+        appUrl: this.faimsAppUrl,
+      }
+    );
     // Uses default for now, as other themes are not implemented properly
     docsEnv.VITE_THEME = 'default';
     docsEnv.ANDROID_APP_PUBLIC_URL = props.androidAppPublicUrl;

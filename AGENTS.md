@@ -12,13 +12,15 @@ monorepo (Node 24, `pnpm@10.7.0`). The relevant runnable services are:
 | Control Centre / Designer | `web` (`@faims3/web`) | http://localhost:3001         | Vite web app (admin UI)          |
 | CouchDB                   | docker                | http://localhost:5984/\_utils | Runs in Docker, not Node         |
 
-Shared libraries: `library/data-model` (`@faims3/data-model`) and
-`library/forms` (`@faims3/forms`). Browser e2e: `e2e` (`@faims3/e2e`).
+Shared libraries: `library/data-model` (`@faims3/data-model`),
+`library/build-config` (`@faims3/build-config`), and `library/forms`
+(`@faims3/forms`). Browser e2e: `e2e` (`@faims3/e2e`).
 
 ### Runtime configuration
 
 Each runnable package exposes a typed `config` singleton parsed once from env
-via Zod (shared helpers live in `@faims3/data-model` as `configHelpers`):
+via `@faims3/build-config` (`parseApiEnv`, `parseAppEnv`, `parseWebEnv`,
+`parseDesignerEnv`):
 
 | Package  | Module                            | Env source               |
 | -------- | --------------------------------- | ------------------------ |
@@ -58,8 +60,8 @@ for code work.
 ### Non-obvious gotchas
 
 - Shared libraries must be built before the API/migrate can resolve
-  `@faims3/data-model` / `@faims3/forms` (their package `main` points at build
-  output). `pnpm run dev` builds them automatically: the app, web and api dev
+  `@faims3/data-model` / `@faims3/build-config` / `@faims3/forms` (their package
+  `main` points at build output). `pnpm run dev` builds them automatically: the app, web and api dev
   tasks wait on their dependencies' builds (`dev` -> `^build`), and
   `@faims3/data-model`'s own `dev` waits on its `build`, so the watcher never
   starts beside the build that writes the same directory. If you run

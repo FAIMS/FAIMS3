@@ -99,6 +99,52 @@ set -e
 assert_eq "1" "$DIFF_CHANGED_CODE" "sync diff exits 1 when core.json differs"
 assert_contains "$DIFF_CHANGED_OUT" "CHANGED" "sync diff reports a changed core.json"
 
+# --- sync-deployment-config.sh: cache resolution -------------------------
+set +e
+DIFF_CACHED_OUT="$(
+  FAIMS_CONFIG_REPO_CACHE="$CACHE" \
+    "${ROOT_DIR}/scripts/sync-deployment-config.sh" diff harness \
+    --local-root "${WORK}/local" \
+    --config-path configs \
+    --no-artifacts \
+    --force 2>&1
+)"
+DIFF_CACHED_CODE=$?
+set -e
+assert_eq "1" "$DIFF_CACHED_CODE" "sync diff resolves repo from .config-repo.json cache"
+assert_contains "$DIFF_CACHED_OUT" "Using cached config repo for 'harness'" "sync diff logs cached repo lookup"
+
+# --- sync-deployment-config.sh: push (core.json + aws.json) --------------
+printf '%s\n' '{"stackName":"HarnessStack"}' > "${WORK}/local/harness/aws.json"
+git -C "${WORK}/repo" config user.name test
+git -C "${WORK}/repo" config user.email test@example.com
+PUSH_OUT="$(
+  FAIMS_CONFIG_REPO_CACHE="$CACHE" \
+    "${ROOT_DIR}/scripts/sync-deployment-config.sh" push harness \
+    --repo-path "${WORK}/repo" \
+    --local-root "${WORK}/local" \
+    --config-path configs \
+    --no-artifacts \
+    --force 2>&1
+)"
+assert_contains "$PUSH_OUT" "Done: pushed changes to configs/harness/" "sync push commits and pushes core.json + aws.json"
+assert_eq '{"branding":{"appName":"Changed"}}' "$(cat "${WORK}/repo/configs/harness/core.json")" "sync push updated remote core.json"
+assert_eq '{"stackName":"HarnessStack"}' "$(cat "${WORK}/repo/configs/harness/aws.json")" "sync push created remote aws.json"
+
+# --- sync-deployment-config.sh: pull + tracked artifact sync -------------
+mkdir -p "${WORK}/pull-local"
+PULL_OUT="$(
+  FAIMS_CONFIG_REPO_CACHE="$CACHE" \
+    "${ROOT_DIR}/scripts/sync-deployment-config.sh" pull harness \
+    --config-repo "${WORK}/origin.git" \
+    --local-root "${WORK}/pull-local" \
+    --config-path configs \
+    --no-artifacts 2>&1
+)"
+assert_contains "$PULL_OUT" "Pulled config mirror into ${WORK}/pull-local/harness" "sync pull clones from bare origin and mirrors files"
+assert_eq '{"branding":{"appName":"Changed"}}' "$(cat "${WORK}/pull-local/harness/core.json")" "sync pull mirrored core.json"
+assert_eq '{"stackName":"HarnessStack"}' "$(cat "${WORK}/pull-local/harness/aws.json")" "sync pull mirrored aws.json"
+
 if [[ "$FAILS" -gt 0 ]]; then
   echo "${FAILS} assertion(s) failed" >&2
   exit 1

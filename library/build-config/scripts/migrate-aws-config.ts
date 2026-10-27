@@ -781,9 +781,10 @@ export async function migrateOldAwsConfig(
       for (const f of SAML_NON_SECRET_FIELDS) {
         if (cfg[f] !== undefined) out[f] = cfg[f];
       }
-      // idpPublicKey is the IdP's *public* certificate and the new CDK
-      // reads it from core, so it stays in core (it is also accepted as a
-      // secret slot, hence the mirror below for SOPS consumers).
+      // idpPublicKey is the IdP's *public* certificate. Keep it in core when
+      // present (the CDK leaves a core value in plain env). It is also a
+      // secret slot: SOPS merges it, and the CDK wires
+      // <provider>-idpPublicKey from SM when core omits it.
       if (str(cfg.idpPublicKey)) {
         out.idpPublicKey = cfg.idpPublicKey;
       }

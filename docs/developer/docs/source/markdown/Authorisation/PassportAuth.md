@@ -86,9 +86,9 @@ AUTH_SAML_CALLBACK_URL="https://your-app.example.com/auth/saml/callback"
 
 # Private key: Your SP's private key for signing requests
 AUTH_SAML_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nYourPrivateKeyHere\n-----END RSA PRIVATE KEY-----"
-# Public key: The IdP's certificate for verifying signatures (from IdP metadata)
-AUTH_SAML_PUBLIC_KEY="-----BEGIN CERTIFICATE-----\nIdPCertificateHere\n-----END CERTIFICATE-----"
-# IDP Public key: The IdP's public key for encrypting assertions (from IdP metadata)
+# Public key: Your SP's public key (included in metadata for the IdP)
+AUTH_SAML_PUBLIC_KEY="-----BEGIN CERTIFICATE-----\nYourPublicKeyHere\n-----END CERTIFICATE-----"
+# IDP Public key: The IdP's certificate for verifying IdP signatures (from IdP metadata)
 AUTH_SAML_IDP_PUBLIC_KEY=abcd1234
 # Sign the SAML metadata document? Requires private key
 AUTH_SAML_SIGN_METADATA=true

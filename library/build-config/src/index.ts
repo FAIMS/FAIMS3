@@ -38,12 +38,15 @@ export type {
   ApiEnv,
   ApiRuntimeConfig,
   ParseApiEnvOptions,
+  ApiEmailConfig,
+  ApiSmtpConfig,
 } from './client-env/api-env.js';
 export {AppEnvSchema, parseAppEnv} from './client-env/app-env.js';
 export type {
   AppEnv,
   AppRuntimeConfig,
   ParseAppEnvOptions,
+  AppDirectoryAuth,
 } from './client-env/app-env.js';
 export {WebEnvSchema, parseWebEnv} from './client-env/web-env.js';
 export type {
@@ -64,9 +67,13 @@ export {
   GoogleAuthProviderConfigSchema,
   OIDCAuthProviderConfigSchema,
   SAMLAuthProviderConfigSchema,
+  RuntimeAuthProviderSchema,
+  RuntimeAuthProviderConfigMapSchema,
   isGoogleProvider,
   isOIDCProvider,
   isSAMLProvider,
+  providerIdToEnvProvider,
+  authProviderEnvKey,
 } from './auth-provider-config.js';
 export type {
   BaseAuthProviderConfig,
@@ -74,10 +81,18 @@ export type {
   OIDCAuthProviderConfig,
   SAMLAuthProviderConfig,
   AuthProviderConfig,
+  AuthProviderConfigInput,
   AuthProviderConfigMap,
+  RuntimeAuthProviderConfig,
+  RuntimeAuthProviderConfigMap,
 } from './auth-provider-config.js';
-export {buildEnvMapFromRuntime} from './env-contract.js';
+export {
+  buildEnvMapFromRuntime,
+  buildStringEnvMapFromRuntime,
+  envValueToString,
+} from './env-contract.js';
 export type {SupportedPlatform, EnvValue} from './env-contract.js';
+export {escapeEnvNewlines} from './env-value.js';
 export {resolveInjectedAppVersion, OptionalCsvSchema} from './env-coercion.js';
 export {
   ThemeSchema,
@@ -94,4 +109,18 @@ export {
   DownloadCookieSameSiteSchema,
   deriveNotebookNames,
   buildMapConfig,
+} from './shared-schemas.js';
+export type {
+  Theme,
+  NotebookListType,
+  NavigationStyle,
+  MapSource,
+  MapStyle,
+  SatelliteSource,
+  AutosuggestSource,
+  ForceRemoteDeletion,
+  KeySource,
+  ProvisionSsoUsersPolicy,
+  EmailServiceType,
+  DownloadCookieSameSite,
 } from './shared-schemas.js';

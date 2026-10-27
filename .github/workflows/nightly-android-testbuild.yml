@@ -1,7 +1,31 @@
+# Scheduled runs do not default a GitHub Environment. Set the repository
+# (global) variable SCHEDULED_ANDROID_ENVIRONMENT to `dev`, `prod`, or
+# `stage`. Manual runs use the workflow_dispatch dropdown instead.
+
 name: Nightly Android builds
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: GitHub environment that supplies config vars and secrets
+        required: true
+        default: stage
+        type: choice
+        options:
+          - dev
+          - prod
+          - stage
+      android_deploy_track:
+        description: Google Play track
+        required: true
+        default: internal
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
 
   schedule:
     - cron: '39 20 * * 1-5'
@@ -12,6 +36,7 @@ jobs:
     name: Check latest commit
     outputs:
       should_run: ${{ steps.should_run.outputs.should_run }}
+      environment: ${{ steps.resolve_env.outputs.environment }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -23,13 +48,27 @@ jobs:
         name: check latest commit is less than a day
         if: ${{ github.event_name == 'schedule' }}
         run: test -z $(git rev-list --after="24 hours"  ${{ github.sha }}) && echo "::set-output name=should_run::false"
+      - id: resolve_env
+        name: Resolve GitHub Environment for this run
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            ENV="${{ vars.SCHEDULED_ANDROID_ENVIRONMENT }}"
+            if [ -z "$ENV" ]; then
+              echo "Set repository variable SCHEDULED_ANDROID_ENVIRONMENT to the GitHub Environment name (dev, prod, or stage)." >&2
+              exit 1
+            fi
+          else
+            ENV="${{ github.event.inputs.environment }}"
+          fi
+          echo "Using GitHub Environment: $ENV"
+          echo "environment=$ENV" >> "$GITHUB_OUTPUT"
 
   node-deb-gh-build-play:
     needs: check_date
     if: ${{ needs.check_date.outputs.should_run != 'false' }}
     uses: ./.github/workflows/common-android-build.yml
     with:
-      android_deploy_track: internal
-      config_environment: nightly
+      environment: ${{ needs.check_date.outputs.environment }}
+      android_deploy_track: ${{ github.event.inputs.android_deploy_track || 'internal' }}
       serverprefix: testing
     secrets: inherit

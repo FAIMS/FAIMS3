@@ -4,6 +4,7 @@ import {z} from 'zod';
 
 import {
   BuildConfigCoreObjectSchema,
+  SHARED_DEFAULTS,
   parseBuildConfig,
 } from '@faims3/build-config';
 
@@ -265,8 +266,10 @@ const TtlCleanupConfigSchema = z.object({
 // webDesignerLimits groups). The bubble theme is retired.
 
 /** Defaults shared with Conductor env wiring (`EXPORT_RATE_LIMITER_*`). */
-export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS = 600_000;
-export const DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW = 20;
+export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS =
+  SHARED_DEFAULTS.exportRateLimiterWindowMs;
+export const DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW =
+  SHARED_DEFAULTS.exportRateLimiterPerWindow;
 
 // Security parameters (max long-lived token duration, HTTP rate limiter,
 // attempt limiter, export rate limiter) are now core (build-config's limits

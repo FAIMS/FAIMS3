@@ -1,8 +1,18 @@
+# Shared config-targeting settings live on the selected GitHub Environment:
+#   - secrets.GIT_AUTHORIZATION, secrets.SOPS_AGE_KEY
+#   - vars.CONFIG_REPO_SLUG, vars.CONFIG_REPO_PATH, vars.CONFIG_BRANCH
+#   - vars.CONFIG_ENVIRONMENT (required; config-repo folder name)
+# Optional mobile: vars.FASTLANE_REPO_SLUG (unused here)
+
 name: Reusable Android Mobile Build
 
 on:
   workflow_call:
     inputs:
+      environment:
+        description: GitHub environment that supplies config vars and secrets.
+        required: true
+        type: string
       android_deploy_track:
         description: Google Play deploy track.
         required: false
@@ -18,18 +28,10 @@ on:
         required: false
         type: string
         default: ''
-      config_environment:
-        description: The configuration environment to use for the build.
-        required: true
-        type: string
-    secrets:
-      GIT_AUTHORIZATION:
-        required: true
-      SOPS_AGE_KEY:
-        required: true
 
 jobs:
   android-build:
+    environment: ${{ inputs.environment }}
     runs-on: ubuntu-latest
     continue-on-error: false
     steps:
@@ -94,12 +96,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Require CONFIG_ENVIRONMENT
+        run: |
+          if [[ -z "${{ vars.CONFIG_ENVIRONMENT }}" ]]; then
+            echo "CONFIG_ENVIRONMENT must be set on GitHub Environment '${{ inputs.environment }}' to the config-repo folder name." >&2
+            exit 1
+          fi
+
       - name: Checkout deployment config repository
         uses: actions/checkout@v7
         with:
-          repository: ${{ vars.APP_CONFIG_REPO_SLUG }}
+          repository: ${{ vars.CONFIG_REPO_SLUG }}
           token: ${{ secrets.GIT_AUTHORIZATION }}
-          ref: ${{ vars.MOBILE_CONFIG_BRANCH || 'main' }}
+          ref: ${{ vars.CONFIG_BRANCH || 'main' }}
           path: config-repo
 
       - name: Generate build environment from deployment config
@@ -107,8 +116,8 @@ jobs:
         env:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
         with:
-          environment: ${{ inputs.config_environment }}
-          config-base-path: ${{ vars.APP_CONFIG_REPO_PATH || 'configs' }}
+          environment: ${{ vars.CONFIG_ENVIRONMENT }}
+          config-base-path: ${{ vars.CONFIG_REPO_PATH || 'configs' }}
 
       - name: Set up adopt JDK 1.21
         uses: actions/setup-java@v4

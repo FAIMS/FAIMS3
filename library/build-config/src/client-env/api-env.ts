@@ -8,10 +8,7 @@
  * SMTP_HOST / SMTP_USER / SMTP_PASSWORD (EMAIL_SERVICE_TYPE=SMTP, not under test).
  */
 import {z} from 'zod';
-import {
-  type AuthProviderConfigMap,
-  readAuthProviderConfigFromEnv,
-} from '../auth-provider-config.js';
+import {readAuthProviderConfigFromEnv} from '../auth-provider-config.js';
 import {
   optionalBool,
   optionalEnvString,
@@ -31,11 +28,9 @@ import {
   KeySourceSchema,
   ProvisionSsoUsersPolicySchema,
   SHARED_DEFAULTS,
+  resolveStartupMigrationLockEnabled,
   validateMigrationLock,
-  type DownloadCookieSameSite,
   type EmailServiceType,
-  type KeySource,
-  type ProvisionSsoUsersPolicy,
 } from '../shared-schemas.js';
 
 /** From / reply headers used by the email service. */
@@ -52,87 +47,6 @@ export type ApiSmtpConfig = {
   secure: boolean;
   auth: {user: string; pass: string};
   cacheExpirySeconds: number;
-};
-
-/** Typed Conductor runtime config produced by {@link parseApiEnv}. */
-export type ApiRuntimeConfig = {
-  /** Public Conductor base URL (CONDUCTOR_PUBLIC_URL). */
-  conductorPublicUrl: string;
-  /** Public data-collection app URL used in emails/links (WEB_APP_PUBLIC_URL). */
-  webAppPublicUrl: string;
-  /** Optional Play Store listing URL. */
-  androidAppUrl: string;
-  /** Optional App Store listing URL. */
-  iosAppUrl: string;
-  /** CouchDB URL reachable from the API process. */
-  couchdbInternalUrl: string;
-  /** CouchDB URL the app syncs to. */
-  couchdbPublicUrl: string;
-  /** Port the API process binds. */
-  conductorInternalPort: number;
-  /** Published Conductor port (docker / local). */
-  conductorExternalPort: number;
-  /** Login-page / listing description (CONDUCTOR_DESCRIPTION). */
-  instanceDescription: string;
-  /** Invite-code prefix `{prefix}-{code}` (CONDUCTOR_SHORT_CODE_PREFIX). */
-  shortCodePrefix: string;
-  /** FILE | ENV | AWS_SM. */
-  keySource: KeySource;
-  /** Required when keySource is AWS_SM. */
-  awsSecretKeyArn?: string;
-  /** Policy for an SSO login that matches no existing user. */
-  provisionSSOUsersPolicy: ProvisionSsoUsersPolicy;
-  /** Inverse of DISABLE_LOCAL_LOGIN. */
-  localLoginEnabled: boolean;
-  /** Session cookie secret; random UUID if FAIMS_COOKIE_SECRET is omitted. */
-  cookieSecret: string;
-  /** Parsed AUTH_* provider map. */
-  authProviderConfig: AuthProviderConfigMap;
-  accessTokenExpiryMinutes: number;
-  refreshTokenExpiryMinutes: number;
-  impersonationSessionExpiryMinutes: number;
-  emailCodeExpiryMinutes: number;
-  /** Days, or `undefined` when the env value is unlimited/infinite/none. */
-  maximumLongLivedDurationDays: number | undefined;
-  /** Skip API-boot Couch migrate. */
-  disableMigrateOnStartup: boolean;
-  /** Couch-mediated migrate lock (forced off when disableMigrateOnStartup). */
-  startupMigrationLockEnabled: boolean;
-  startupMigrationLockTimeoutMs: number;
-  rateLimiterWindowMs: number;
-  rateLimiterPerWindow: number;
-  rateLimiterEnabled: boolean;
-  /** Forced off under test. */
-  exportRateLimiterEnabled: boolean;
-  exportRateLimiterWindowMs: number;
-  exportRateLimiterPerWindow: number;
-  /** Email-code / verification attempt limiter. */
-  authAttemptLimiterEnabled: boolean;
-  jsonBodyLimit: string;
-  urlencodedBodyLimit: string;
-  restoreUploadMaxBytes: number;
-  recordsHydratedPageLimit: number;
-  downloadCookieSameSite: DownloadCookieSameSite;
-  developerMode: boolean;
-  bugsnagApiKey?: string;
-  /** JWT key id; PROFILE_NAME, or `test` if blank. */
-  conductorKeyId: string;
-  conductorInstanceName: string;
-  /** Slug of conductorInstanceName (server id in tokens). */
-  conductorServerId: string;
-  /** Directory containing keys/<host>_{private,public}_key.pem. */
-  keyFilePath: string;
-  /** Host segment of the key filename; PROFILE_NAME, or `conductor` if blank. */
-  keyFileHost: string;
-  localCouchdbAuth: {username: string; password: string};
-  runningUnderTest: boolean;
-  /** Allowed OAuth/local-login redirect origins. */
-  redirectWhitelist: string[];
-  /** Forced to MOCK under test. */
-  emailServiceType: EmailServiceType;
-  email: ApiEmailConfig;
-  smtp?: ApiSmtpConfig;
-  testEmailAddress: string;
 };
 
 const DEFAULT_FROM_EMAIL = 'noreply@example.com';
@@ -162,10 +76,14 @@ export const ApiEnvSchema = z
     ),
     /** Allowed redirect origins (http(s) or app deep links). Required. */
     REDIRECT_WHITELIST: requiredUrlCsv('REDIRECT_WHITELIST'),
-    /** Auth profile / JWT key id. */
-    PROFILE_NAME: stringWithDefault('local-dev'),
+    /**
+     * Auth profile / JWT key id. Blank stays blank so parseApiEnv can apply
+     * the FILE-key fallbacks (kid `test`, host `conductor`).
+     */
+    PROFILE_NAME: optionalEnvString(),
     KEY_FILE_PATH: stringWithDefault('.'),
-    CONDUCTOR_INSTANCE_NAME: stringWithDefault('Development FAIMS Server'),
+    /** Blank falls back to the resolved key id (PROFILE_NAME or `test`). */
+    CONDUCTOR_INSTANCE_NAME: optionalEnvString(),
     CONDUCTOR_DESCRIPTION: stringWithDefault('FAIMS Conductor Server'),
     CONDUCTOR_SHORT_CODE_PREFIX: stringWithDefault('FAIMS'),
     FAIMS_COOKIE_SECRET: optionalEnvString(),
@@ -218,13 +136,14 @@ export const ApiEnvSchema = z
     EMAIL_REPLY_TO: optionalEnvString(),
     SMTP_HOST: optionalEnvString(),
     SMTP_PORT: intWithDefault(SHARED_DEFAULTS.smtpPort),
-    SMTP_SECURE: boolWithDefault(true),
+    /** Unset means STARTTLS (port 587); only an explicit truthy value enables implicit TLS. */
+    SMTP_SECURE: boolWithDefault(false),
     SMTP_USER: optionalEnvString(),
     SMTP_PASSWORD: optionalEnvString(),
     SMTP_CACHE_EXPIRY_SECONDS: intWithDefault(
       SHARED_DEFAULTS.smtpCacheExpirySeconds
     ),
-    TEST_EMAIL_ADDRESS: stringWithDefault('test@gmail.com'),
+    TEST_EMAIL_ADDRESS: optionalEnvString(),
     BUGSNAG_API_KEY: optionalEnvString(),
     JSON_BODY_LIMIT: stringWithDefault(SHARED_DEFAULTS.jsonBodyLimit),
     URLENCODED_BODY_LIMIT: stringWithDefault(
@@ -260,25 +179,13 @@ export const ApiEnvSchema = z
     );
   });
 
+/** Parsed Conductor API environment variables. */
 export type ApiEnv = z.infer<typeof ApiEnvSchema>;
 
+/** Options for {@link parseApiEnv}. */
 export interface ParseApiEnvOptions {
   /** Override NODE_ENV/JEST_WORKER_ID detection (forces MOCK email, disables export limiter). */
   runningUnderTest?: boolean;
-}
-
-/** Same slug rules as `@faims3/data-model` `slugify` (ASCII, dash-collapsed). */
-function slugify(value: string): string {
-  let str = value.trim().toLowerCase();
-  const from = 'ãàáäâáº½èéëêìíïîõòóöôùúüûñç·/_,:;';
-  const to = 'aaaaaeeeeeiiiiooooouuuunc------';
-  for (let i = 0; i < from.length; i++) {
-    str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
-  }
-  return str
-    .replace(/[^a-z0-9 -]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
 }
 
 /** Vitest/Jest set NODE_ENV=test or JEST_WORKER_ID; an explicit option wins. */
@@ -319,14 +226,15 @@ function resolveSmtpConfig(env: ApiEnv): ApiSmtpConfig {
 export function parseApiEnv(
   raw: Record<string, unknown>,
   options: ParseApiEnvOptions = {}
-): ApiRuntimeConfig {
+) {
   const env = ApiEnvSchema.parse(raw);
   const runningUnderTest = isRunningUnderTest(raw, options.runningUnderTest);
 
-  const profileName = env.PROFILE_NAME.trim();
+  const profileName = (env.PROFILE_NAME ?? '').trim();
   const conductorKeyId = profileName === '' ? 'test' : profileName;
   const keyFileHost = profileName === '' ? 'conductor' : profileName;
-  const conductorInstanceName = env.CONDUCTOR_INSTANCE_NAME;
+  const conductorInstanceName =
+    (env.CONDUCTOR_INSTANCE_NAME ?? '').trim() || conductorKeyId;
 
   const emailServiceType: EmailServiceType = runningUnderTest
     ? 'MOCK'
@@ -356,9 +264,7 @@ export function parseApiEnv(
     provisionSSOUsersPolicy: env.PROVISION_SSO_USERS_POLICY,
     localLoginEnabled: !env.DISABLE_LOCAL_LOGIN,
     cookieSecret: env.FAIMS_COOKIE_SECRET ?? crypto.randomUUID(),
-    authProviderConfig: readAuthProviderConfigFromEnv(
-      raw as Record<string, string | undefined>
-    ),
+    authProviderConfig: readAuthProviderConfigFromEnv(raw),
     accessTokenExpiryMinutes: env.ACCESS_TOKEN_EXPIRY_MINUTES,
     refreshTokenExpiryMinutes: env.REFRESH_TOKEN_EXPIRY_MINUTES,
     impersonationSessionExpiryMinutes: env.IMPERSONATION_SESSION_EXPIRY_MINUTES,
@@ -368,9 +274,11 @@ export function parseApiEnv(
         ? undefined
         : env.MAXIMUM_LONG_LIVED_DURATION_DAYS,
     disableMigrateOnStartup: env.DISABLE_MIGRATE_ON_STARTUP,
-    startupMigrationLockEnabled: env.DISABLE_MIGRATE_ON_STARTUP
-      ? false
-      : (env.STARTUP_MIGRATION_LOCK_ENABLED ?? false),
+    startupMigrationLockEnabled:
+      resolveStartupMigrationLockEnabled(
+        env.DISABLE_MIGRATE_ON_STARTUP,
+        env.STARTUP_MIGRATION_LOCK_ENABLED
+      ) ?? false,
     startupMigrationLockTimeoutMs: env.STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
     rateLimiterWindowMs: env.RATE_LIMITER_WINDOW_MS,
     rateLimiterPerWindow: env.RATE_LIMITER_PER_WINDOW,
@@ -393,7 +301,6 @@ export function parseApiEnv(
     bugsnagApiKey: parseBugsnagKey(env.BUGSNAG_API_KEY),
     conductorKeyId,
     conductorInstanceName,
-    conductorServerId: slugify(conductorInstanceName),
     keyFilePath: env.KEY_FILE_PATH,
     keyFileHost,
     localCouchdbAuth: {
@@ -405,6 +312,11 @@ export function parseApiEnv(
     emailServiceType,
     email,
     smtp,
-    testEmailAddress: env.TEST_EMAIL_ADDRESS,
+    testEmailAddress: runningUnderTest
+      ? (env.TEST_EMAIL_ADDRESS ?? 'fake@gmail.com')
+      : env.TEST_EMAIL_ADDRESS,
   };
 }
+
+/** Typed Conductor runtime config produced by {@link parseApiEnv}. */
+export type ApiRuntimeConfig = ReturnType<typeof parseApiEnv>;

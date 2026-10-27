@@ -29,52 +29,7 @@ import {
   buildMapConfig,
   deriveNotebookNames,
   resolveLongLivedDurationHints,
-  type ForceRemoteDeletion,
-  type MapConfigShape,
-  type MapSource,
-  type MapStyle,
-  type SatelliteSource,
 } from '../shared-schemas.js';
-
-/** Typed Control Centre runtime config produced by {@link parseWebEnv}. */
-export type WebRuntimeConfig = {
-  notebookName: string;
-  notebookNameCapitalized: string;
-  notebookNamePlural: string;
-  notebookNamePluralCapitalized: string;
-  websiteTitle: string;
-  docsUrl: string;
-  theme: string;
-  developerMode: boolean;
-  forceRemoteDeletion: ForceRemoteDeletion;
-  deleteOnDeactivation: boolean;
-  /** Days, or `undefined` when unlimited. */
-  maximumLongLivedDurationDays: number | undefined;
-  longLivedTokenDurationHints: number[];
-  mapSource: MapSource;
-  mapSourceKey: string;
-  mapStyle: MapStyle;
-  satelliteSource?: SatelliteSource;
-  bugsnagApiKey?: string;
-  appName: string;
-  /** Falls back to appName. */
-  appShortName: string;
-  webUrl: string;
-  apiUrl: string;
-  appUrl: string;
-  /** Role ids hidden from team-role dropdowns (still unfiltered here). */
-  excludedTeamRoles: string[];
-  maxDesignFileSizeMb: number;
-  maxDesignFileSizeBytes: number;
-  /** `webUrl` with a trailing slash. */
-  webHomeUrl: string;
-  /** Conductor login URL that redirects back to the Control Centre. */
-  signinPath: string;
-  /** App deep-link / PWA path that receives an auth token. */
-  appTokenReturnPath: string;
-  mapConfig: MapConfigShape;
-  appVersion: string;
-};
 
 /** Control Centre `import.meta.env` schema. */
 export const WebEnvSchema = z
@@ -113,8 +68,10 @@ export const WebEnvSchema = z
   })
   .strip();
 
+/** Parsed Control Centre environment variables. */
 export type WebEnv = z.infer<typeof WebEnvSchema>;
 
+/** Options for {@link parseWebEnv}. */
 export interface ParseWebEnvOptions {
   /** Vite `define` `__APP_VERSION__` (package.json version). */
   appVersion?: string;
@@ -127,7 +84,7 @@ export interface ParseWebEnvOptions {
 export function parseWebEnv(
   raw: Record<string, unknown>,
   options: ParseWebEnvOptions = {}
-): WebRuntimeConfig {
+) {
   const env = WebEnvSchema.parse(raw);
   const names = deriveNotebookNames(env.VITE_NOTEBOOK_NAME);
   const providedHints = env.VITE_LONG_LIVED_TOKEN_DURATION_HINTS
@@ -182,3 +139,6 @@ export function parseWebEnv(
     appVersion: resolveInjectedAppVersion(options.appVersion),
   };
 }
+
+/** Typed Control Centre runtime config produced by {@link parseWebEnv}. */
+export type WebRuntimeConfig = ReturnType<typeof parseWebEnv>;

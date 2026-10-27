@@ -11,7 +11,8 @@
  *   Prefer importing `{config}` and reading `config.<field>`.
  */
 
-import {parseApiEnv} from '@faims3/build-config';
+import {parseApiEnv, SHARED_DEFAULTS} from '@faims3/build-config';
+import {slugify} from '@faims3/data-model';
 import {existsSync} from 'fs';
 import {
   createEmailService,
@@ -25,9 +26,11 @@ import {version as packageVersion} from '../package.json';
 console.log(`Using API version from package.json: ${packageVersion}`);
 
 /** Fallback export-limiter window (10 min) if a caller needs the constant. */
-export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS = 10 * 60 * 1000;
+export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS =
+  SHARED_DEFAULTS.exportRateLimiterWindowMs;
 /** Fallback export-limiter allowance if a caller needs the constant. */
-export const DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW = 20;
+export const DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW =
+  SHARED_DEFAULTS.exportRateLimiterPerWindow;
 
 const parsed = parseApiEnv(process.env);
 
@@ -44,6 +47,8 @@ export const config = {
   keyFilePath,
   keySource: parsed.keySource as KeySource,
   apiVersion: packageVersion,
+  /** Directory / invite server id; same slug rules as `@faims3/data-model`. */
+  conductorServerId: slugify(parsed.conductorInstanceName),
 };
 
 export type Config = typeof config;
