@@ -308,6 +308,8 @@ export default function NoteBooks() {
     },
   ];
 
+  // Only show the activating column when needed,
+  // leaving the full width for survey names otherwise.
   const hasActivatingProjects = activatedProjects.some(project =>
     isProjectActivating(project, activatingProjectKeys)
   );
