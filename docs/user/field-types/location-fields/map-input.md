@@ -1,6 +1,6 @@
 # Map field
 
-_How to add and configure a Map field in the Notebook Editor._
+_How to add and configure a Map field in the {{Notebook}} Editor._
 
 ---
 
@@ -73,7 +73,7 @@ Annotation, Uncertainty, Conditions, and Copy value to new records — see
   enough for accurate drawing. Drawing precise polygons on a phone
   screen can be difficult.
 - **Configure offline maps in the {{FAIMS}} app,** not the
-  Notebook Editor. Downloading maps requires internet for
+  {{Notebook}} Editor. Downloading maps requires internet for
   initial tile loading. To prepare for offline use, tap the
   three-line menu icon (☰) in the {{FAIMS}} app and select
   **Offline Maps** to download OpenStreetMap tiles for your

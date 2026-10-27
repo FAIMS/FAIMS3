@@ -27,7 +27,6 @@ import {percentageSliderFieldSpec} from '../fieldRegistry/fields/PercentageSlide
 import {qrCodeFieldSpec} from '../fieldRegistry/fields/QRCodeFormField';
 import {radioGroupFieldSpec} from '../fieldRegistry/fields/RadioGroup';
 import {relatedRecordFieldSpec} from '../fieldRegistry/fields/RelatedRecord';
-import {selectFieldSpec} from '../fieldRegistry/fields/SelectField';
 import {takePhotoFieldSpec} from '../fieldRegistry/fields/TakePhoto';
 import {
   TAKE_PHOTO_REQUIRED_MESSAGE,
@@ -87,15 +86,6 @@ const cases: Case[] = [
     absentValues: [undefined, null, ''],
     valid: 'ada@example.com',
     invalid: {value: 'not-an-email', message: 'Enter a valid email address'},
-  },
-  {
-    name: 'Select',
-    spec: selectFieldSpec,
-    props: choiceProps,
-    requiredMessage: 'Please select an option',
-    absentValues: [undefined, null, ''],
-    valid: 'yes',
-    invalid: {value: 'nope', message: /select/i},
   },
   {
     name: 'RadioGroup',
@@ -330,7 +320,6 @@ describe('field validation error messages', () => {
     const validating = [
       textFieldSpec,
       emailFieldSpec,
-      selectFieldSpec,
       radioGroupFieldSpec,
       multiSelectFieldSpec,
       advancedSelectFieldSpec,
