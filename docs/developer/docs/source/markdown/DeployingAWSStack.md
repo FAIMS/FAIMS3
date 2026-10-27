@@ -114,10 +114,11 @@ In short, create a private repository, and create the following files/structure 
 
 ```text
 .
-├── infrastructure
+├── configs
 │   └── dev
-│       └── configs
-│           └── dev.json
+│       ├── core.json
+│       ├── aws.json
+│       └── secrets.enc.json (optional)
 └── README.md
 ```
 
@@ -125,37 +126,57 @@ Replacing `dev` with your proposed stage. There can be multiple stages, as in th
 
 ```text
 .
-├── infrastructure
+├── configs
 │   ├── dev
-│   │   └── configs
-│   │       └── dev.json
+│   │   ├── core.json
+│   │   ├── aws.json
+│   │   └── secrets.enc.json (optional)
 │   └── prod
-│       └── configs
-│           └── prod.json
+│       ├── core.json
+│       ├── aws.json
+│       └── secrets.enc.json (optional)
 └── README.md
 ```
 
-Use the `sample.json` in `infrastructure/aws-cdk/configs/sample.json` as a starting point for your configuration json.
+This is the one config layout for every platform. The deployment config is
+**two files**: `core.json` (shared, non-secret — the same file every
+platform uses, see [Build Configuration](Build-Configuration.md)) and
+`aws.json` (AWS-only: stack/Fargate/domains plus Secrets Manager **ARNs,
+never secret values** — Secrets Manager delivers values to the ECS task
+and API at runtime, so no secret merging or decryption happens on the CDK
+path; the optional SOPS `secrets.enc.json` is for non-AWS consumers and is
+ignored by the CDK). Use `infrastructure/aws-cdk/configs/sample/core.json`
+and `configs/sample/aws.json` as starting points. Legacy flat configs can
+be converted with `library/build-config/scripts/migrate-aws-config.ts`.
 
-From now on, when I refer to updating values in the `config json` - this is the file I am referring to. **Ensure you sync your changes using the config script in the infrastructure/aws-cdk package to pull/push the latest changes to your deployment context as you go!**.
+From now on, when I refer to updating values in the config, edit
+`core.json` / `aws.json` as appropriate (shared settings live in `core`,
+AWS settings in `aws`). **Ensure you sync your changes using the shared
+config sync script (`scripts/sync-deployment-config.sh`, run from the
+FAIMS3 repo root) to pull/push the latest changes to your deployment
+context as you go!** It mirrors each environment between the config repo
+(`configs/<stage>/`) and a local working copy at `config/<stage>/` in the
+FAIMS3 repo.
 
-Validate that you can pull the config by running
+Validate that you can pull the config by running (from the FAIMS3 repo root)
 
 ```sh
-./config.sh pull prod --config_repo git@github.com:repo-org/repo-name.git
+./scripts/sync-deployment-config.sh pull prod --config-repo git@github.com:repo-org/repo-name.git
 ```
 
-assuming you use SSH for git authentication. `prod` being replaced with your stage. After you do this once, you can push pull without the config repo argument.
+assuming you use SSH for git authentication. `prod` being replaced with your stage.
 
-Now, when we edit the config json, just change it directly in your configs/<file.json> path, and push the changes using
+Now, when we edit the config, just change `config/<stage>/core.json` /
+`config/<stage>/aws.json` in the local mirror, and push the changes using
 
 ```sh
-./config.sh push prod
+./scripts/sync-deployment-config.sh push prod
 ```
 
 ## Completing your configuration
 
-Now update the following values in your config json
+Now update the following values in your config files (`aws.json` unless
+noted as `core`)
 
 ### Stack name
 
@@ -678,7 +699,7 @@ Include the secret ARN alongside other parameters in the config file:
 To manage the secrets for authentication and SMTP configurations there is a script `genSecrets.sh`
 which will create secrets in AWS Secrets Manager from a JSON configuration file.
 
-First create a configuration file by copying `configs/secrets-sample.json`
+First create a configuration file by copying `infrastructure/aws-cdk/configs/secrets-sample.json`
 
 ```json
 {
@@ -712,25 +733,26 @@ Usage: ./scripts/genSecrets.sh <secrets_file> <config_file> [--replace]
 For example:
 
 ```sh
-./scripts/genSecrets.sh configs/my-secrets.json configs/prod.json
+./scripts/genSecrets.sh configs/my-secrets.json ../../config/prod/aws.json
 ```
 
 The script will show an error if the secrets already exist. In this case you can add the
 `--replace` flag to have it replace them with new secrets.
 
-The script will copy the resulting ARNs into the correct places in your main
-configuration file.
+The script will copy the resulting ARNs into the correct places in your
+`aws.json`. (Only ARNs ever land in the config files — the CDK never reads
+the secret values.)
 
 ## Deploying using your configuration
 
-You have bootstrapped your CDK account, setup some initial dependencies, and configured your config json (remembering to push it using `./config.sh push <stage>`), you should be ready to deploy FAIMS now.
+You have bootstrapped your CDK account, setup some initial dependencies, and configured your config (remembering to push it using `./scripts/sync-deployment-config.sh push <stage>` from the repo root), you should be ready to deploy FAIMS now.
 
 To deploy, first ensure you have your AWS credentials for the target account configured.
 
-Next, tell our CDK scripts which config to use, by setting the below environment variable to the filename of your config
+Next, tell our CDK scripts which config to use, by setting the below environment variable to the name of your environment (loading the local mirror `config/prod/core.json` + `aws.json` at the repo root; or set `CONFIG_DIR` to an env folder in a checked-out config repo, as CI does)
 
 ```bash
-export CONFIG_FILE_NAME=prod.json
+export CONFIG_ENV=prod
 ```
 
 then run a CDK diff

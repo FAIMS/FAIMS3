@@ -37,8 +37,12 @@
  *                      sizing / backup / TTL cleanup / Fargate conductor /
  *                      Route53 domains / enabled auth providers + secret
  *                      ARN. Secret *values* never land here, only ARNs.
- *   aws-cdk.json       `{core, aws}` combined — the single file the CDK
- *                      `loadConfig()` expects in `configs/`.
+ *                      Together core.json + aws.json are the env folder
+ *                      every consumer loads (the CDK via `loadConfigFromEnv`
+ *                      in `infrastructure/aws-cdk/lib/config.ts`:
+ *                      `CONFIG_ENV=<env>` reads the sync script's local
+ *                      mirror `config/<env>/`; `CONFIG_DIR=<dir>` reads
+ *                      any env folder, e.g. a config-repo checkout).
  *   migration-report.md  what was mapped, what was fetched (by ARN and
  *                      field *name* only), what was dropped, and what a
  *                      human still needs to check. Contains no secret
@@ -48,11 +52,12 @@
  *   - Secret values are held in memory only, written only to
  *     secrets.json (0600), and NEVER printed, logged, or put in the
  *     report. Error messages carry ARNs / field names, never payloads.
- *   - The signing-key secrets (`secrets.privateKey` / `publicKey`) are
- *     NOT exported: they have no slot in the new JSON model (the API
- *     reads them from Secrets Manager via KEY_SOURCE=AWS_SM) so they stay
- *     referenced by ARN in aws.json. They are only `describe-secret`d to
- *     confirm they exist.
+ *   - The signing-key secret (`secrets.privateKey`) is NOT exported: the
+ *     API reads both keys from that one secret via KEY_SOURCE=AWS_SM, so
+ *     only its ARN lands in aws.json and it is only `describe-secret`d to
+ *     confirm it exists. The legacy separate `secrets.publicKey` ARN has
+ *     no slot in the new model (the public key lives in the same secret's
+ *     JSON) and is dropped, noted in the report.
  *   - The CouchDB admin and cookie secrets are created by the CDK itself
  *     (not referenced by the legacy file), so they are discovered via
  *     `list-secrets` name matching, or taken from
@@ -335,8 +340,6 @@ export interface MigrateResult {
   core: Rec;
   secrets: Rec;
   aws: Rec;
-  /** `{core, aws}` — the file the CDK loadConfig() expects. */
-  awsCdk: {core: Rec; aws: Rec};
   report: ReportEntry[];
 }
 
@@ -884,7 +887,9 @@ export async function migrateOldAwsConfig(
     region: str(awsOld.region),
     secrets: prune({
       privateKey: str(signingOld.privateKey),
-      publicKey: str(signingOld.publicKey),
+      // Legacy secrets.publicKey is intentionally dropped: the new model
+      // has no slot for it — the API reads rsa_public_key from the
+      // privateKey secret's JSON (KEY_SOURCE=AWS_SM). Reported below.
     }),
     smtpCredentialsSecretArn: str(smtpOld.credentialsSecretArn),
     couch: isRec(old.couch) ? old.couch : undefined,
@@ -913,6 +918,12 @@ export async function migrateOldAwsConfig(
   }) as Rec;
   warnUnknown(report, awsOld, ['account', 'region'], 'aws');
   warnUnknown(report, signingOld, ['privateKey', 'publicKey'], 'secrets');
+  if (str(signingOld.publicKey)) {
+    report.info(
+      'signing-keys',
+      "Legacy secrets.publicKey ARN dropped: the new aws.secrets has only privateKey; the API reads rsa_public_key from that secret's JSON. The old public-key secret can be retired once nothing else references it."
+    );
+  }
   warnUnknown(
     report,
     old,
@@ -951,7 +962,6 @@ export async function migrateOldAwsConfig(
     ['aws.certificates.cloudfront', rec(aws.certificates).cloudfront],
     ['aws.account', aws.account],
     ['aws.secrets.privateKey', rec(aws.secrets).privateKey],
-    ['aws.secrets.publicKey', rec(aws.secrets).publicKey],
     ['aws.smtpCredentialsSecretArn', aws.smtpCredentialsSecretArn],
     ['aws.couch.volumeSize', rec(aws.couch).volumeSize],
     ['aws.couch.instanceType', rec(aws.couch).instanceType],
@@ -1132,7 +1142,7 @@ export async function migrateOldAwsConfig(
     // candidate (and vice versa).
     matchesName: (name: string) => boolean,
     label: string
-  ): Promise<string | null> => {
+  ): Promise<Rec | string | null> => {
     if (explicit) return fetchJsonSecret(explicit, label);
     if (!fetcher) {
       report.warn(
@@ -1237,25 +1247,24 @@ export async function migrateOldAwsConfig(
     );
   }
 
-  // ---- Signing keys: verify existence only; never export the value --------
-  for (const [label, arn] of [
-    ['privateKey', str(signingOld.privateKey)],
-    ['publicKey', str(signingOld.publicKey)],
-  ] as Array<[string, string | undefined]>) {
-    if (!arn) continue;
-    if (!fetcher) {
-      report.info(
-        'signing-keys',
-        `signing ${label} secret ${arn} kept as an ARN in aws.secrets (not checked, offline).`
-      );
-    } else {
-      const exists = await fetcher.describeSecret(arn);
-      report[exists ? 'info' : 'error'](
-        'signing-keys',
-        exists
-          ? `Signing ${label} secret exists (${arn}); value intentionally NOT exported — the API reads it via KEY_SOURCE=AWS_SM.`
-          : `Signing ${label} secret ${arn} could not be described; check the ARN / permissions.`
-      );
+  // ---- Signing key: verify existence only; never export the value --------
+  {
+    const arn = str(signingOld.privateKey);
+    if (arn) {
+      if (!fetcher) {
+        report.info(
+          'signing-keys',
+          `Signing privateKey secret ${arn} kept as an ARN in aws.secrets (not checked, offline).`
+        );
+      } else {
+        const exists = await fetcher.describeSecret(arn);
+        report[exists ? 'info' : 'error'](
+          'signing-keys',
+          exists
+            ? `Signing privateKey secret exists (${arn}); value intentionally NOT exported — the API reads it via KEY_SOURCE=AWS_SM.`
+            : `Signing privateKey secret ${arn} could not be described; check the ARN / permissions.`
+        );
+      }
     }
   }
 
@@ -1307,7 +1316,6 @@ export async function migrateOldAwsConfig(
     core: prunedCore,
     secrets: prunedSecrets,
     aws,
-    awsCdk: {core: prunedCore, aws},
     report: report.entries,
   };
 }
@@ -1327,7 +1335,8 @@ export function renderReport(
     '',
     'Outputs: `core.json` (non-secret), `secrets.json` (UNENCRYPTED secrets —',
     'encrypt with SOPS before committing anywhere), `aws.json` (AWS-only',
-    'extension, ARNs only), `aws-cdk.json` (`{core, aws}` for the CDK).',
+    'extension, ARNs only). core.json + aws.json form the env folder every',
+    'consumer loads.',
     '',
     'This report contains no secret values (only ARNs, provider ids, field',
     'names and config paths).',
@@ -1349,9 +1358,9 @@ export function renderReport(
     '- Review every warning above; dropped legacy keys are listed by path.',
     '- Encrypt `secrets.json` (`sops --encrypt`) into `secrets.enc.json` and',
     '  delete the plaintext copy; never commit it.',
-    '- Validate the CDK file: copy `aws-cdk.json` into',
-    '  `infrastructure/aws-cdk/configs/` and run a CDK synth / the aws-cdk',
-    '  config tests against it.',
+    '- Validate the CDK files: this output dir is already an env folder —',
+    '  `CONFIG_DIR=<this dir> pnpm --filter=@faims3/infra-aws-cdk run validate-config`',
+    '  (or place core.json + aws.json into `config/<env>/` and use CONFIG_ENV).',
     '- Sanity-check generated env from the merged config:',
     "  `jq -s '.[0] * .[1]' core.json secrets.json | pnpm --filter=@faims3/build-config run generate -- --config - --platform all`",
     ''
@@ -1380,7 +1389,7 @@ export interface CliArgs {
 const HELP = `Usage: pnpm --filter=@faims3/build-config run migrate-aws -- --config <legacy-aws-config.json> --out-dir <dir> [options]
 
 Migrates a legacy (main-branch) AWS CDK config JSON to core.json +
-secrets.json (unencrypted) + aws.json + aws-cdk.json ({core, aws}).
+secrets.json (unencrypted) + aws.json.
 
 Options:
   --config <path>            Legacy AWS config JSON (required)
@@ -1550,11 +1559,6 @@ export async function main(
       mode: 0o644,
     },
     {
-      name: 'aws-cdk.json',
-      contents: JSON.stringify(result.awsCdk, null, 2) + '\n',
-      mode: 0o644,
-    },
-    {
       name: 'migration-report.md',
       contents: renderReport(result, path.basename(configPath)),
       mode: 0o644,
@@ -1584,7 +1588,7 @@ export async function main(
   const warnings = result.report.filter(e => e.level === 'warn').length;
   const errors = result.report.filter(e => e.level === 'error').length;
   process.stdout.write(
-    `Wrote core.json, secrets.json (0600, UNENCRYPTED — encrypt before sharing/committing), aws.json, aws-cdk.json and migration-report.md to ${outDir}\n` +
+    `Wrote core.json, secrets.json (0600, UNENCRYPTED — encrypt before sharing/committing), aws.json and migration-report.md to ${outDir}\n` +
       `Report: ${errors} error(s), ${warnings} warning(s) — read migration-report.md before deploying.\n`
   );
   // Defence in depth: the FAIMS3 repo .gitignore covers these filenames,

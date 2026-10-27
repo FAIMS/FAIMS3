@@ -208,8 +208,14 @@ export class FaimsFrontEnd extends Construct {
     environment.VITE_CLUSTER_ADMIN_GROUP_NAME = 'cluster-admin';
     environment.VITE_SHOW_NEW_NOTEBOOK = 'true';
     environment.VITE_SHOW_RECORD_SUMMARY_COUNTS = 'true';
-    // Conductor URL is resolved by the CDK from the deployed domains.
+    // Resolved URLs are resolved by the CDK from the deployed domains and
+    // are authoritative — same overrides the web bundling applies. (The
+    // shared contract derives these from core.domains, so they should
+    // already agree; overriding guarantees the deployed domains win.)
     environment.VITE_CONDUCTOR_URL = props.conductorUrl;
+    environment.VITE_API_URL = props.conductorUrl;
+    environment.VITE_WEB_URL = `https://${props.webDomainName}`;
+    environment.VITE_APP_URL = this.faimsAppUrl;
     // Debugging has performance implications.
     environment.VITE_DEBUG_APP = this.debugMode ? 'true' : 'false';
     environment.VITE_DEBUG_POUCHDB = this.debugMode ? 'true' : 'false';

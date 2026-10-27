@@ -138,17 +138,19 @@ This project uses a JSON-based configuration system to manage different deployme
 
 ## Creating Your Configuration
 
-1. Navigate to the `configs/` directory in the project.
-2. You'll find a file named `sample.json`. This is a template for your configuration.
-3. Copy this file and rename it according to your environment (e.g., `dev.json`, `prod.json`).
-4. Open your new configuration file and replace the placeholder values with your actual settings.
+The deployment config is **two files**, the same ones every platform uses:
+`core.json` (the shared deployment config — see
+[Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md)),
+loaded through `@faims3/build-config`'s full parser (shared invariants,
+endpoint derivation), and `aws.json` (the AWS-specific extension: account /
+Fargate / domains plus Secrets Manager **ARNs — never secret values**;
+Secrets Manager delivers values to the ECS task and API at runtime).
 
-The config is a single JSON object with two top-level sections: `core` (the shared
-deployment config, identical in shape to `core.json` on every other platform — see
-[Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md))
-and `aws` (the AWS-specific extension).
-
-**For an example JSON structure, see `configs/sample.json`.**
+**For example JSON structures, see `configs/sample/core.json` and
+`configs/sample/aws.json`.** Copy them into an env folder (see below),
+replacing the placeholder values with your actual settings. Legacy flat
+configs can be migrated with
+`library/build-config/scripts/migrate-aws-config.ts`.
 
 ## Using an existing configuration from conforming config repo
 
@@ -156,129 +158,103 @@ If you wish to store your configurations in a private repository, you can use ou
 
 ### Config Repository Structure
 
-Your configuration repository should follow this structure:
+There is **one** config layout for every platform (app, web, api, CDK). Your
+configuration repository should follow this structure (base path `configs`
+by default):
 
 ```
 /
-├── infrastructure/
+├── configs/
 │   ├── dev/
-│   │   ├── configs/
-│   │   │   └── dev.json
-│   │   ├── cdk.context.json (optional)
-│   │   └── (other environment-specific files)
+│   │   ├── core.json
+│   │   ├── aws.json
+│   │   └── secrets.enc.json (optional, SOPS-encrypted; not used by CDK)
 │   ├── staging/
-│   │   ├── configs/
-│   │   │   └── staging.json
-│   │   ├── cdk.context.json (optional)
-│   │   └── (other environment-specific files)
+│   │   ├── core.json
+│   │   ├── aws.json
+│   │   └── secrets.enc.json (optional)
 │   └── prod/
-│       ├── configs/
-│       │   └── prod.json
-│       ├── cdk.context.json (optional)
-│       └── (other environment-specific files)
+│       ├── core.json
+│       ├── aws.json
+│       └── secrets.enc.json (optional)
 └── (other repository files)
 ```
 
-- The `infrastructure` directory contains subdirectories for each environment (e.g., `dev`, `staging`, `prod`).
-- Each environment directory should contain a `configs` folder with a JSON file named after the environment (e.g., `dev.json`), in the `{ core, aws }` shape described above.
-- You can include other environment-specific files in each environment directory as needed.
+- Each environment directory contains exactly one `core.json` (shared,
+  non-secret — the same file the app/web/api builds use) and, for AWS
+  deployments, `aws.json` (AWS extension, secret ARNs only). No
+  SOPS/`secrets.enc.json` step is needed or used for CDK deployments: AWS
+  secret values live in Secrets Manager and are resolved at runtime.
+  `secrets.enc.json` exists only for deployments that keep secret values in
+  the overlay for non-AWS consumers / local dev replicas, and is ignored
+  by the CDK.
+- You can include other environment-specific files in each environment
+  directory as needed. One is synced automatically: `cdk.context.json`,
+  the CDK context cache, is a tracked build artifact (see
+  [CDK Context File](#cdk-context-file-cdkcontextjson) below).
 
-### Using the Config Script
+### Pulling / pushing config: the sync script
 
-We provide a script called `config.sh` to manage configurations. This script can both fetch configurations from your private repository and push local changes back to the repository.
+All platforms share one script, `scripts/sync-deployment-config.sh` in the
+repo root (there is no CDK-specific config script). It mirrors an env
+folder between the private config repo and a local working copy at
+`<repo-root>/config/<environment>/`:
 
-#### Running the Script
-
-1. Ensure the `config.sh` script is in your project root and is executable:
-
-   ```bash
-   chmod +x config.sh
-   ```
-
-2. Run the script with the following syntax:
-
-   ```bash
-   ./config.sh <push/pull> <environment> [options]
-   ```
-
-   or
-
-   ```bash
-   pnpm run config <push/pull> <environment> [options]
-   ```
-
-   - `<push/pull>`: Use `pull` to fetch configurations, `push` to update the repository.
-   - `<environment>`: The name of the environment you want to work with (e.g., "dev", "staging", "prod").
-   - `[options]`: Additional options (see below).
-
-   Options:
-   - `--force`: Overwrite existing files without confirmation.
-   - `--branch <branch_name>`: Specify a git branch (default: main).
-   - `--message <commit_message>`: Specify a custom commit message (push only).
-   - `--config_repo <url>`: Override the config repository URL.
-
-   Examples:
-
-   ```bash
-   ./config.sh pull dev --config_repo "https://github.com/your-org/your-private-config-repo.git"
-   ./config.sh push prod --branch release --message "Updated prod configuration"
-   ```
-
-### The environments.json File
-
-The `environments.json` file is used to store the mapping between environment names and their corresponding config repository URLs. This file is created or updated automatically when you use the `--config_repo` option with the `config.sh` script.
-
-Structure of `environments.json`:
-
-```json
-{
-  "dev": {
-    "config_repo": "https://github.com/your-org/your-dev-config-repo.git"
-  },
-  "prod": {
-    "config_repo": "https://github.com/your-org/your-prod-config-repo.git"
-  }
-}
+```bash
+# from the FAIMS3 repo root
+./scripts/sync-deployment-config.sh pull prod --config-repo "https://github.com/your-org/your-private-config-repo.git"
+./scripts/sync-deployment-config.sh push prod --branch release --message "Updated prod configuration"
 ```
 
-- If `environments.json` exists and contains an entry for the specified environment, the script will use the stored URL unless overridden by `--config_repo`.
-- If you use `--config_repo` with a new environment, the script will add or update the entry in `environments.json`.
+- `<push/pull>`: Use `pull` to fetch an environment into `config/<env>/`,
+  `push` to commit your edited `config/<env>/` back to the repository.
+- `<environment>`: The name of the environment (e.g., "dev", "staging", "prod").
+- Options: `--force` (skip confirmations), `--branch <name>` (default:
+  main), `--message <text>` (push only), `--config-repo <url>` or
+  `--repo-path <path>` (an already-cloned config repo),
+  `--config-path <path>` (base path in the repo, default: `configs`),
+  `--local-root <path>` (local mirror root, default: `<repo-root>/config`).
+
+Push only sends what changed, prompts for confirmation unless `--force`,
+and refuses to commit unexpected files. `aws.json` and `secrets.json` are
+both optional per environment — an AWS + mobile env with no overlay secrets
+pushes and pulls cleanly with just `core.json` + `aws.json`.
 
 ### Handling Multiple Environments
 
-To switch between different environments:
-
-1. Run the config script for the desired environment:
+1. Pull the environment you want (from the repo root):
 
    ```bash
-   ./config.sh pull prod
+   ./scripts/sync-deployment-config.sh pull prod
    ```
 
-   or
+2. Point the CDK at the local mirror and work as usual (from
+   `infrastructure/aws-cdk`):
 
    ```bash
-   pnpm run config pull prod
+   export CONFIG_ENV=prod
+   pnpm run validate-config
+   pnpm cdk diff
    ```
 
-2. The script will copy the environment-specific files into your project and tell you to set the `CONFIG_FILE_NAME` environment variable. Set it like this:
+   `CONFIG_ENV=<name>` loads `<repo-root>/config/<name>/core.json` +
+   `aws.json`. Alternatively point the CDK straight at any env folder —
+   e.g. a checked-out config repo — with
+   `CONFIG_DIR=<checkout>/configs/prod` (this is what CI does; files are
+   read in place, nothing is copied).
+
+3. Edit files under `config/<env>/`, then push them back:
 
    ```bash
-   export CONFIG_FILE_NAME=prod.json
+   ./scripts/sync-deployment-config.sh push prod
    ```
-
-3. Now your project is configured for the "prod" environment. Repeat these steps with a different environment name to switch to another environment.
 
 ### Important Notes
 
-- The script will prompt for confirmation before overwriting existing files unless you use the `--force` flag.
 - Make sure your private repository is accessible from the machine where you're running the script.
 - Keep your config repository private and secure, as it may contain sensitive information.
-- After running the script, remember to set the `CONFIG_FILE_NAME` environment variable as instructed.
-- The script cleans up after itself, removing the temporary clone of your config repository.
 - When pushing changes, review your modifications carefully, especially for production environments.
-- The script will create necessary directories and files if they don't exist in the config repository.
-- If `cdk.context.json` or the environment-specific config file doesn't exist locally, the script will warn you and ask if you want to continue.
-- Always ensure that you're not accidentally pushing sensitive information to the repository.
+- Always ensure that you're not accidentally pushing sensitive information to the repository. Secret _values_ never belong in `core.json`/`aws.json` — AWS values live in Secrets Manager (referenced by ARN); overlay values belong in `secrets.json`, which the sync script only ever pushes SOPS-encrypted.
 
 By following this approach, you can securely manage different configurations for multiple environments while keeping your main project repository clean and your sensitive configuration data separate and private.
 
@@ -290,13 +266,13 @@ Note that this validation is at a schema level, it might not catch improperly fo
 
 #### Running the Validation Script
 
-1. To target your configuration file, set the `CONFIG_FILE_NAME` environment variable:
+1. To target your configuration files, set the `CONFIG_ENV` environment variable:
 
    ```bash
-   export CONFIG_FILE_NAME=prod.json
+   export CONFIG_ENV=prod
    ```
 
-   This will target the `prod.json` configuration file.
+   This will target the local mirror `config/prod/core.json` + `aws.json` at the repo root (or use `CONFIG_DIR`, or `CORE_CONFIG_FILE` + `AWS_CONFIG_FILE`, to point elsewhere).
 
 2. The validation script is already set up in the `package.json`. To run it, use the following command:
 
@@ -304,31 +280,34 @@ Note that this validation is at a schema level, it might not catch improperly fo
    pnpm run validate-config
    ```
 
-   This will validate the configuration file specified by `CONFIG_FILE_NAME`.
+   This will validate the configuration resolved from `CONFIG_ENV` / `CONFIG_DIR` / `CORE_CONFIG_FILE` + `AWS_CONFIG_FILE`.
 
 #### What the Validation Script Does
 
-- The script reads the specified configuration file from the `configs` directory.
-- It then validates the configuration against the `ConfigSchema` defined in your main stack file.
-- If the configuration is valid, you'll see the message "Configuration is valid."
+- The script loads the configuration exactly as the CDK app will (same env resolution, same parsers).
+- It validates `core.json` through `@faims3/build-config` (full schema + shared invariants) and `aws.json` against the `AwsConfigSchema`, plus the cross-file provider rule.
+- If the configuration is valid, you'll see a summary message with stack/account/region.
 - If there are any validation errors, the script will output detailed error messages, indicating which parts of the configuration failed validation.
 
 ## Configuration documentation
 
-The CDK loads a **single JSON object with two top-level sections**:
+The CDK loads **two config files**:
 
-- **`core`** — the shared deployment config (branding, endpoints/domains, maps,
+- **`core.json`** — the shared deployment config (branding, endpoints/domains, maps,
   sync, auth, authProviders, authTokens, limits, email, observability, android,
   ios, couchdb, dev, pouchdb). This is the same `core.json` every platform uses;
   the complete field reference is in the
   [Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md)
-  page. The CDK consumes it directly via `@faims3/build-config`.
-- **`aws`** — the AWS-specific extension: account/region, hosted zone,
-  certificates, Fargate sizing, backup, TTL cleanup, and the secret-slot →
-  Secrets-Manager-ARN map.
+  page. The CDK parses it via `@faims3/build-config`'s `parseBuildConfig`.
+- **`aws.json`** — the AWS-specific extension: account/region, hosted zone,
+  certificates, Fargate sizing, backup, TTL cleanup, and Secrets-Manager
+  **ARNs** (SMTP credentials, auth-provider credentials, signing key). Secret
+  values are never in these files and are never fetched by the CDK — ECS
+  injects them into the task from Secrets Manager, and the API fetches its
+  signing key from Secrets Manager itself at runtime.
 
-`configs/sample.json` shows the full `{ core, aws }` shape. The **`aws`** fields
-are documented below.
+`configs/sample/core.json` + `configs/sample/aws.json` show the full shape.
+The **`aws`** fields are documented below.
 
 ### `aws`
 
@@ -343,8 +322,7 @@ are documented below.
   - `account`: Your AWS account ID
   - `region`: The AWS region for deployment (e.g., ap-southeast-2 for Sydney) - defaults to ap-southeast-2
 - `secrets`:
-  - `privateKey`: ARN of your private key in Secrets Manager
-  - `publicKey`: ARN of your public key in Secrets Manager
+  - `privateKey`: ARN of the signing-key secret in Secrets Manager (one secret whose JSON holds both `rsa_private_key` and `rsa_public_key`; the API reads it at runtime)
 - `backup`:
   - `vaultName`: The name of the AWS Backup vault to create or use
   - `vaultArn`: (Optional) The ARN of an existing backup vault to use. If provided, a new vault will not be created
@@ -458,34 +436,46 @@ are documented below.
 To use a specific configuration when deploying or synthesizing your CDK stack:
 
 1. Open a terminal and navigate to your project directory.
-2. Set the `CONFIG_FILE_NAME` environment variable to the name of your configuration file.
+2. Set the `CONFIG_ENV` environment variable to the name of your environment.
 3. Run your CDK command.
 
-For example, to deploy using a `production.json` configuration:
+For example, to deploy using the `prod` configuration (the local mirror
+`config/prod/core.json` + `aws.json` at the repo root, pulled with the sync
+script):
 
 ```bash
-CONFIG_FILE_NAME=production.json cdk deploy
+CONFIG_ENV=prod cdk deploy
 ```
 
-Or to synthesize using a `development.json` configuration:
+Or to synthesize using the `dev` configuration:
 
 ```bash
-CONFIG_FILE_NAME=development.json cdk synth
+CONFIG_ENV=dev cdk synth
+```
+
+Alternatively point at any directory containing `core.json` + `aws.json` (e.g. an env folder in a checked-out config repo, read in place — this is what CI uses):
+
+```bash
+CONFIG_DIR=../../config-repo/configs/dev cdk synth
 ```
 
 ## Switching Between Configurations
 
-You can easily switch between different configurations by changing the `CONFIG_FILE_NAME`:
+You can easily switch between different configurations by changing the `CONFIG_ENV`:
 
-- For development: `CONFIG_FILE_NAME=development.json`
-- For production: `CONFIG_FILE_NAME=production.json`
-- For any other environment: `CONFIG_FILE_NAME=your-config-file-name.json`
+- For development: `CONFIG_ENV=dev`
+- For production: `CONFIG_ENV=prod`
+- For any other environment: `CONFIG_ENV=<name>` (the local mirror folder `config/<name>/` at the repo root)
 
 ## Configuration File Location
 
-All configuration files should be placed in the `configs/` directory of the project.
+One layout everywhere: an env folder holding `core.json` + `aws.json`. In
+the private config repository it lives at `configs/<environment>/` (base
+path configurable); locally the sync script mirrors it to
+`config/<environment>/` at the FAIMS3 repo root, and `CONFIG_ENV` reads
+from there. `CONFIG_DIR` can point at any such folder directly.
 
-These are automatically git ignored.
+The local mirror is automatically git ignored.
 
 ## Generating Keys and Setting ARNs
 
@@ -507,17 +497,20 @@ This project includes a script to generate RSA key pairs and store them in AWS S
 
 4. Copy the ARNs provided in the script output.
 
-5. Update your configuration file (e.g., `configs/development.json` or `configs/production.json`) with the new ARNs:
+5. Update your `aws.json` (e.g., `config/prod/aws.json` in the local mirror) with the new ARN:
 
    ```json
    {
      ...
      "secrets": {
-       "privateKey": "arn:aws:secretsmanager:region:account-id:secret:dev-keys-host-profile-private-xxxx",
-       "publicKey": "arn:aws:secretsmanager:region:account-id:secret:dev-keys-host-profile-public-xxxx"
+       "privateKey": "arn:aws:secretsmanager:region:account-id:secret:dev-keys-host-profile-private-xxxx"
      }
    }
    ```
+
+   Only the `privateKey` ARN exists in config: the API reads both
+   `rsa_private_key` and `rsa_public_key` from that one secret's JSON at
+   runtime.
 
 6. Replace the placeholder ARNs with the actual ARNs output by the script.
 
@@ -527,28 +520,38 @@ Remember to run this script and update your configuration whenever you need to r
 
 # CDK Context File (cdk.context.json)
 
-**If you have an existing deployment**.
+The `cdk.context.json` file (in this directory) is CDK's cache of
+non-deterministic resolutions made at synth time: AMI lookups, availability
+zones, subnet/VPC lookups, and similar. CDK generates and updates it
+automatically, and pinned values make synths reproducible across machines —
+without it, every fresh checkout re-resolves against live AWS and can drift.
 
-The `cdk.context.json` file is used by CDK to cache context values, which can include information about your AWS environment. This file is automatically generated and updated by CDK.
+It is **not config**, so it doesn't live in the config mirror; it is a
+_tracked build artifact_. The shared sync script
+(`scripts/sync-deployment-config.sh`) keeps a copy per environment in the
+private config repo (`configs/<env>/cdk.context.json`) and syncs it with
+the file here:
+
+- `pull <env>` copies the env's `cdk.context.json` into this directory (if
+  the env has one).
+- `push <env>` copies this directory's file back to the config repo (if it
+  exists locally; CDK mutating it during synth is exactly what push
+  captures). Absent on either side is a no-op — environments that have never
+  tracked one are unaffected. `--no-artifacts` skips artifact sync.
 
 Important notes about `cdk.context.json`:
 
-1. This file is gitignored to prevent committing potentially sensitive information.
-2. If you have an existing deployment, you should include this file in your work environment.
-3. Do not share this file publicly, as it may contain sensitive information about your AWS resources.
+1. This file is gitignored in this repo (per-environment copies live in the
+   private config repo instead).
+2. Its contents are non-secret (AMI/AZ/subnet identifiers), but keep the
+   config repo private as usual.
+3. Pinned values are deliberate: if an AMI is deregistered or an AZ removed,
+   synth fails loudly rather than silently shifting. To refresh, delete the
+   file, run `cdk synth`, then `sync-deployment-config.sh push <env>`.
 
-Managing `cdk.context.json`:
-
-- For personal use: Keep the file locally and do not commit it to version control.
-- For team use: Consider storing file in a private repository or a secure shared location.
-
-To use an existing `cdk.context.json`:
-
-1. Obtain the `cdk.context.json` file from your existing deployment or secure storage.
-2. Place it in the root directory of this CDK project.
-3. CDK will automatically use this file for context lookups.
-
-If you need to refresh the context, you can delete the file and run `cdk synth` to regenerate it.
+In CI, the CDK deploy workflow restores the env's `cdk.context.json` from
+the checked-out config repo into this directory before running CDK (and
+does not write it back — refresh it from a developer machine via push).
 
 ## Security Note
 
@@ -557,9 +560,9 @@ Your configuration files may contain sensitive information. Do not commit these 
 # Config Troubleshooting
 
 - If you encounter an error about missing or invalid configuration, ensure that:
-  1. Your configuration file exists in the `configs/` directory.
-  2. The file name matches what you specified in `CONFIG_FILE_NAME`.
-  3. The JSON in your configuration file is valid and contains all required fields.
+  1. Your configuration files exist (`config/<env>/core.json` + `aws.json` in the repo-root local mirror, or your `CONFIG_DIR` folder).
+  2. The env name matches what you specified in `CONFIG_ENV`.
+  3. The JSON in your configuration files is valid and contains all required fields.
 
 By following these steps, you can easily manage different configurations for various deployment environments in this project.
 
@@ -572,8 +575,8 @@ Then follow the above steps to
 - build the package artifacts `pnpm run build && pnpm run package`
 - generate your keys i.e. `./scripts/genKeysAWS.sh <host_target> [profile_name] [--replace]`
 - setup your config
-  - download your config from private repo, put in `configs`, `export CONFIG_FILE_NAME=dev.json` for example
-  - setup your `cdk.context.json` - put in this folder
+  - download your config from the private repo (`./scripts/sync-deployment-config.sh pull dev` from the repo root), then `export CONFIG_ENV=dev`
+  - the same pull restores the env's `cdk.context.json` into this folder (tracked artifact; nothing to set up by hand)
 - run appropriate cdk command
   - to synth only `cdk synth`
   - to diff `cdk diff`

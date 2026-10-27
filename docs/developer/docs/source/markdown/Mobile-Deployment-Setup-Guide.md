@@ -6,14 +6,19 @@ The model we are using is:
 
 - The app code repository owns the build logic and workflow definitions.
 - A private **config** repository stores the deployment config. Each environment is a
-  folder under `<config-path>/<environment>/` (path defaults to `mobile/`).
+  folder under `<config-path>/<environment>/` (path defaults to `configs/`) — the
+  one layout every platform uses: `core.json`, plus `aws.json` for AWS deployments
+  and an optional SOPS-encrypted `secrets.enc.json`.
 - The **Fastlane Match** signing assets live in their own repository — or in the same
   repo as the config if you prefer. Keep them separate so routine config edits can't
   disturb signing state.
 - The config repo is checked out by the workflow using `vars.APP_CONFIG_REPO_SLUG`
-  (path `vars.APP_CONFIG_REPO_PATH`, default `mobile`). The Match repo is
+  (path `vars.APP_CONFIG_REPO_PATH`, default `configs`). The Match repo is
   `vars.FASTLANE_REPO_SLUG` (unset = same repo as the config).
-- Secrets are decrypted at runtime with `secrets.SOPS_AGE_KEY` and then merged into the generated env.
+- Overlay secrets, when an environment has them, are decrypted at runtime with
+  `secrets.SOPS_AGE_KEY` and then merged into the generated env. `secrets.enc.json`
+  is optional: environments whose secrets live elsewhere (AWS Secrets Manager,
+  fastlane/match + CI environment) omit it and build from `core.json` alone.
 
 This guide covers the first-time setup and the workflow you can repeat for additional environments.
 
@@ -69,7 +74,7 @@ Why this is a good place:
 - It is clearly not part of the app build itself.
 - It is easy to exclude from git if you want to keep it private locally.
 - It serves as the source of truth for your deployment configuration.
-- It matches the target structure in the private repo: `mobile/<environment>/...`
+- It matches the target structure in the private repo: `configs/<environment>/...`
 
 The `sync-deployment-config.sh` script treats the local `config/<environment>/`
 directory as the source of truth, so any changes you make here will be synced to
@@ -144,9 +149,9 @@ A good first pass is:
 You need a private **config** repository that stores:
 
 - `<config-path>/<environment>/core.json`
-- `<config-path>/<environment>/secrets.enc.json`
+- `<config-path>/<environment>/secrets.enc.json` (optional — see the model above)
 
-where `<config-path>` defaults to `mobile/`.
+where `<config-path>` defaults to `configs/`.
 
 Optionally you also need a separate private **Match** repository for the Fastlane
 Match signing assets (certificates and provisioning profiles). You can keep the Match
@@ -160,10 +165,10 @@ can't accidentally disturb the signing state (and vice versa).
 If you do not have the config repo yet:
 
 1. Create a new private GitHub repository.
-2. Add the `<config-path>/` directory structure (e.g. `mobile/`).
+2. Add the `<config-path>/` directory structure (e.g. `configs/`).
 3. Configure SOPS / age so the repo can decrypt and encrypt JSON files.
 4. Add the repo slug to GitHub Actions as `vars.APP_CONFIG_REPO_SLUG` (and
-   `vars.APP_CONFIG_REPO_PATH` if the path is not `mobile`).
+   `vars.APP_CONFIG_REPO_PATH` if the path is not `configs`).
 
 Example slug:
 
@@ -187,7 +192,7 @@ First sync with a new repo URL:
 
 ```bash
 ./scripts/sync-deployment-config.sh push production \
-  --config_repo git@github.com:my-org/mobile-config.git
+  --config-repo git@github.com:my-org/mobile-config.git
 ```
 
 Or, if the repo is already cloned locally:
@@ -224,11 +229,11 @@ vim config/production/secrets.json
 
 # Sync changes to the private repo (with confirmation prompt)
 ./scripts/sync-deployment-config.sh push production \
-  --config_repo git@github.com:my-org/mobile-config.git
+  --config-repo git@github.com:my-org/mobile-config.git
 
 # Or force-push without confirmation
 ./scripts/sync-deployment-config.sh push production \
-  --config_repo git@github.com:my-org/mobile-config.git \
+  --config-repo git@github.com:my-org/mobile-config.git \
   --force
 ```
 
@@ -245,7 +250,7 @@ To pull the latest configuration from the private repo back into your local `con
 
 ```bash
 ./scripts/sync-deployment-config.sh pull production \
-  --config_repo git@github.com:my-org/mobile-config.git
+  --config-repo git@github.com:my-org/mobile-config.git
 ```
 
 This will:
@@ -285,8 +290,8 @@ FASTLANE_REPO_SLUG = my-org/mobile-match
 The workflow will then read:
 
 ```text
-config_repo/<config-path>/<environment>/core.json
-config_repo/<config-path>/<environment>/secrets.enc.json
+config-repo/<config-path>/<environment>/core.json
+config-repo/<config-path>/<environment>/secrets.enc.json
 ```
 
 and use these to generate the build environment (and, for iOS, point Match at
@@ -296,11 +301,11 @@ and use these to generate the build environment (and, for iOS, point Match at
 
 Before using a production config in a real release workflow, run through a minimal validation:
 
-1. Ensure both `config/production/core.json` and `config/production/secrets.json` exist locally.
+1. Ensure `config/production/core.json` exists locally (and `config/production/secrets.json` too, if this env uses overlay secrets).
 2. Verify both JSON files are valid by running: `jq empty config/production/*.json`
 3. Ensure the private repo is decryptable locally with your SOPS setup.
-4. Run the sync script to publish both files: `./scripts/sync-deployment-config.sh push production --config_repo <url>`
-5. Verify files exist in the private repo at `mobile/production/core.json` and `mobile/production/secrets.enc.json`
+4. Run the sync script to publish the files: `./scripts/sync-deployment-config.sh push production --config-repo <url>`
+5. Verify files exist in the private repo at `configs/production/core.json` (and `configs/production/secrets.enc.json` if the env uses overlay secrets)
 6. Confirm the workflow can read the files.
 7. Trigger the non-production workflow first if there is a test/nightly build path.
 

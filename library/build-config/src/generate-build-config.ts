@@ -16,7 +16,7 @@ import {
 const HELP_TEXT = `Usage: pnpm --filter=@faims3/build-config run generate -- [--config path/to/config.json] [--platform apps|api|all] [--out path/to/.env]
 
 Generates a build environment file from the shared config JSON used by the app and web builds.
-Platforms: 'apps' (VITE_ vars for the mobile app and Control Centre build), 'api' (server env vars).
+Platforms: 'apps' (VITE_ vars for the mobile app and Control Centre build; android/ios are aliases), 'api' (server env vars).
 `;
 
 type Value =
@@ -173,7 +173,13 @@ export function generateBuildConfig(
     return `${HELP_TEXT}\n`;
   }
 
-  const platform = String(args.platform ?? args.target ?? 'all').toLowerCase();
+  const rawPlatform = String(
+    args.platform ?? args.target ?? 'all'
+  ).toLowerCase();
+  // Mobile CI workflows pass --platform android / --platform ios; both are
+  // aliases for the shared apps env (VITE_* plus both mobile contracts).
+  const platform =
+    rawPlatform === 'android' || rawPlatform === 'ios' ? 'apps' : rawPlatform;
 
   if (platform !== 'apps' && platform !== 'api' && platform !== 'all') {
     throw new Error(

@@ -152,8 +152,10 @@ Use this sequence every time.
 
 - Run package tests:
   - pnpm --filter=@faims3/build-config test
-- Run coverage validator when changing generated keys:
-  - pnpm --filter=@faims3/build-config run validate-coverage
+- Run the shared quality targets (also covered by `./format-lint.sh` /
+  `pnpm lint` / `pnpm typecheck`):
+  - pnpm --filter=@faims3/build-config run typecheck
+  - pnpm --filter=@faims3/build-config run lint
 
 ## Using This Config In Different Apps
 
@@ -220,9 +222,10 @@ publishable map/Bugsnag client keys that were already plaintext),
 `secrets.json` (the unencrypted secret overlay in the
 `config/secrets.sample.json` shape — SOPS-encrypt it before committing
 anywhere, written mode `0600`), `aws.json` (AWS-only extension, ARNs only),
-`aws-cdk.json` (the combined `{core, aws}` file the CDK `loadConfig`
-expects) and `migration-report.md` (field-level mapping notes, dropped
-legacy keys, unresolved secrets — never secret values). Both `core.json`
+and `migration-report.md` (field-level mapping notes, dropped
+legacy keys, unresolved secrets — never secret values). `core.json` +
+`aws.json` together form the env folder every consumer loads (CDK via
+`CONFIG_ENV`/`CONFIG_DIR`, everything else via the config generators). Both `core.json`
 alone and `core.json` deep-merged with `secrets.json` are validated
 against `BuildConfigSchema` before anything is written. Secret values are
 never printed or logged; the signing-key secrets are not exported at all
@@ -236,11 +239,11 @@ From this package:
 - build: compiles the module to `build/` (consumers import the built output —
   run this, or rely on turbo's `^build`, before using the module from `api`,
   `web` or `app`). `dev` watches it.
+- typecheck / lint / fix / clean: same turbo targets as the other packages, so
+  `pnpm typecheck`, `pnpm lint`, and `./format-lint.sh` include this module.
 - generate: emits env from config JSON
 - generate platform values: `apps` (also accepts `android` / `ios` aliases, which
   the mobile CI workflows use) or `api`
-- validate-coverage: checks the generated env covers exactly the env keys the
-  consumers read (app/web `EnvSchema` + Fastlane), excluding CI/platform-provided keys
 - test: runs package tests
 
 See [package.json](package.json).

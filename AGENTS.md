@@ -103,6 +103,7 @@ for code work.
 - Build everything: `pnpm build` (`npx turbo build`).
 - Tests per package (no single repo-wide test script):
   `pnpm --filter=@faims3/data-model test` (jest),
+  `pnpm --filter=@faims3/build-config test` (`node:test` via tsx),
   `pnpm --filter=@faims3/api test` (vitest; uses in-memory PouchDB, no CouchDB
   needed), `pnpm --filter=@faims3/app test` (vitest).
   Note `web` and `forms` use bare `vitest`, which watches in a TTY — pass

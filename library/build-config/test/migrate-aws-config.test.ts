@@ -249,8 +249,10 @@ test('legacy AWS config migrates to core + secrets + aws that all validate', asy
   assert.equal(aws.conductor.name, undefined);
   assert.deepEqual(aws.authProviders.providers, ['google', 'vanguard']);
   assert.equal(aws.domains.faims, 'faims');
-  assert.equal(result.awsCdk.aws, result.aws);
-  assert.equal(result.awsCdk.core, result.core);
+  // Legacy secrets.publicKey has no slot in the new model and is dropped
+  // (the public key is read from the privateKey secret's JSON at runtime).
+  assert.equal(aws.secrets.privateKey, legacy.secrets.privateKey);
+  assert.equal('publicKey' in aws.secrets, false);
 
   // Unknown legacy fields are reported as dropped, not carried over.
   assert.ok(
@@ -266,7 +268,6 @@ test('secret values never leak into core, aws, or the report', async () => {
   for (const haystack of [
     JSON.stringify(result.core),
     JSON.stringify(result.aws),
-    JSON.stringify(result.awsCdk.aws),
     reportText,
     JSON.stringify(result.report),
   ]) {

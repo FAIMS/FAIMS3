@@ -397,6 +397,7 @@ test('parseGeneratedEnv round-trips API platform values', () => {
         type: 'google',
         displayName: 'Google',
         scope: ['profile', 'email'],
+        callbackMethods: ['GET'],
         clientID: 'cid',
         clientSecret: 'cs',
       },

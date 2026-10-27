@@ -140,6 +140,8 @@ local
 configs/*
 !configs/config-class.ts
 !configs/*sample.json
+!configs/sample
+!configs/sample/*.json
 
 
 # we shouldn't track this!

@@ -178,30 +178,14 @@ export class FaimsConductor extends Construct {
         oidc: ['clientID', 'clientSecret'],
       };
       props.authProviders.providers.forEach(provider => {
-        // The provider definitions live in core.authProviders (build-config).
-        const rawConfig = props.coreConfig.authProviders[provider];
-        // Merge any secret values present in core.secrets.auth.authProviders
-        // (typically empty for the CDK - they resolve from the SM via the
-        // authSecrets references below; present for SOPS/local deployments).
-        const mergedSecrets =
-          props.coreConfig.secrets?.auth?.authProviders?.[provider];
-        const config = {...rawConfig, ...mergedSecrets};
+        // The provider *definitions* live in core.authProviders (build-config).
+        // Their credentials are NOT read from the config file on the AWS path:
+        // they are delivered by Secrets Manager through the ECS `secrets:`
+        // references below (values move SM -> container, never through the
+        // CDK process, the synth template, or plain container env).
+        const config = props.coreConfig.authProviders[provider];
 
-        // Guard: ensure every secret the API needs is wired up. For the CDK
-        // these come from the SM (authSecrets), so require either an explicit
-        // value in the config or a generated SM reference for each field.
-        const required = SECRET_FIELDS[config.type] ?? [];
-        const missing = required.filter(field => {
-          const hasValue =
-            typeof config[field as keyof typeof config] === 'string' &&
-            (config[field as keyof typeof config] as string).trim() !== '';
-          const hasSmRef = Object.keys(authSecrets).some(k =>
-            k.endsWith(camelToSnakeCase(field))
-          );
-          return !hasValue && !hasSmRef;
-        });
-
-        // Handle secrets based on provider type
+        // Wire this provider's Secrets Manager references FIRST...
         if (config.type === 'saml') {
           // SAML uses privateKey and publicKey (certificate) instead of clientID/clientSecret
           authSecrets[`AUTH_${provider.toUpperCase()}_PRIVATE_KEY`] =
@@ -219,9 +203,20 @@ export class FaimsConductor extends Construct {
             );
         }
 
+        // ...then guard that every secret field the API needs is covered by
+        // THIS provider's own SM reference (checked after wiring, and keyed
+        // exactly, so a previous provider's fields can never satisfy it).
+        const required = SECRET_FIELDS[config.type] ?? [];
+        const missing = required.filter(
+          field =>
+            !(
+              `AUTH_${provider.toUpperCase()}_${camelToSnakeCase(field)}` in
+              authSecrets
+            )
+        );
         if (missing.length > 0) {
           throw new Error(
-            `Auth provider '${provider}' (${config.type}) is missing required secret field(s): ${missing.join(', ')}. Provide them in core.secrets.auth.authProviders.${provider} or wire them to the AWS Secrets Manager secret.`
+            `Auth provider '${provider}' (${config.type}) is missing required secret field(s): ${missing.join(', ')}. Add them to the Secrets Manager secret at aws.authProviders.secretArn (keys '<provider>-<field>'), or disable the provider in aws.authProviders.providers.`
           );
         }
 
@@ -229,7 +224,10 @@ export class FaimsConductor extends Construct {
         // (AUTH_ + provider + _ + key in uppercase) and add to the environment.
         // Secret fields are excluded here - they are delivered via the SM
         // references above, not baked into the container env.
-        const secretFieldSet = new Set([...Object.values(SECRET_FIELDS), 'id']);
+        const secretFieldSet = new Set([
+          ...Object.values(SECRET_FIELDS).flat(),
+          'id',
+        ]);
         for (const [key, value] of Object.entries(config)) {
           // Skip undefined/null values and secret fields
           if (value === undefined || value === null) {
@@ -251,8 +249,6 @@ export class FaimsConductor extends Construct {
           } else {
             authEnvironment[envName] = String(value);
           }
-
-          console.log('ENV', envName, authEnvironment[envName]);
         }
       });
     }
@@ -282,6 +278,9 @@ export class FaimsConductor extends Construct {
     env.COUCHDB_INTERNAL_URL = props.couchDBEndpoint;
     env.CONDUCTOR_PUBLIC_URL = this.conductorEndpoint;
     env.CONDUCTOR_URL = this.conductorEndpoint;
+    // The shared contract derives WEB_APP_PUBLIC_URL from core endpoints;
+    // the CDK-resolved app URL (from aws.domains) is authoritative here.
+    env.WEB_APP_PUBLIC_URL = props.webAppPublicUrl;
     // Whitelisting for redirects - should include API, APP, WEB and APP_ID://
     env.REDIRECT_WHITELIST = [
       this.conductorEndpoint,

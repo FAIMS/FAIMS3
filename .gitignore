@@ -21,7 +21,6 @@ __pycache__/
 **/secrets.enc.json
 **/core.json
 **/aws.json
-**/aws-cdk.json
 **/migration-report.md
 .sops.yaml
 .jest-cache

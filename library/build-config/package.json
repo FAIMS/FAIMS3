@@ -17,11 +17,14 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsc -p tsconfig.build.json --watch",
+    "clean": "rm -rf build",
     "generate": "tsx src/generate-build-config.ts",
     "migrate-aws": "tsx scripts/migrate-aws-config.ts",
     "test": "tsx --test test/*.test.ts",
-    "lint": "oxlint --config ../../.oxlintrc.json ."
+    "lint": "oxlint --config ../../.oxlintrc.json .",
+    "fix": "oxlint --config ../../.oxlintrc.json --fix . && oxfmt --config ../../.oxfmtrc.json ."
   },
   "dependencies": {
     "zod": "^4.1.12"

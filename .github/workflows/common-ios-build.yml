@@ -85,7 +85,7 @@ jobs:
           repository: ${{ vars.APP_CONFIG_REPO_SLUG }}
           token: ${{ secrets.GIT_AUTHORIZATION }}
           ref: ${{ vars.MOBILE_CONFIG_BRANCH || 'main' }}
-          path: config_repo
+          path: config-repo
 
       - name: Generate build environment from deployment config
         env:
@@ -93,12 +93,12 @@ jobs:
         run: |
           set -euo pipefail
           CONFIG_ENV="${{ inputs.config_environment }}"
-          # Base path within the config repo (defaults to 'mobile'; a leading
+          # Base path within the config repo (defaults to 'configs'; a leading
           # slash is tolerated and stripped).
-          CONFIG_REPO_PATH="${{ vars.APP_CONFIG_REPO_PATH || 'mobile' }}"
+          CONFIG_REPO_PATH="${{ vars.APP_CONFIG_REPO_PATH || 'configs' }}"
           CONFIG_REPO_PATH="${CONFIG_REPO_PATH#/}"
-          BASE_CONFIG="config_repo/${CONFIG_REPO_PATH}/${CONFIG_ENV}/core.json"
-          SECRETS_CONFIG="config_repo/${CONFIG_REPO_PATH}/${CONFIG_ENV}/secrets.enc.json"
+          BASE_CONFIG="config-repo/${CONFIG_REPO_PATH}/${CONFIG_ENV}/core.json"
+          SECRETS_CONFIG="config-repo/${CONFIG_REPO_PATH}/${CONFIG_ENV}/secrets.enc.json"
 
           if [[ ! -f "$BASE_CONFIG" ]]; then
             echo "Missing base config: $BASE_CONFIG" >&2
