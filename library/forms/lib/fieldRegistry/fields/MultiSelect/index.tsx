@@ -17,7 +17,7 @@
  * - disabled: Whether the field is disabled.
  */
 
-import React, {useState} from 'react';
+import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {
   Box,
   Checkbox,
@@ -28,15 +28,9 @@ import {
   Select,
   TextField,
 } from '@mui/material';
+import React, {useState} from 'react';
 import {z} from 'zod';
-import {schemaWithAbsent} from '../../../validationModule/readableErrors';
-import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
-import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
-import {ListWrapper} from '../../../rendering/fields/view/wrappers/PrimitiveWrappers';
-import {FieldInfo} from '../../types';
-import {contentToSanitizedHtml} from '../RichText/DomPurifier';
-import FieldWrapper from '../wrappers/FieldWrapper';
 import {
   OTHER_MARKER,
   OTHER_PREFIX,
@@ -45,6 +39,12 @@ import {
   otherTextFieldSx,
   useOtherOption,
 } from '../../../hooks/useOtherOption';
+import {ListWrapper} from '../../../rendering/fields/view/wrappers/PrimitiveWrappers';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
+import {FieldInfo} from '../../types';
+import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
+import {contentToSanitizedHtml} from '../RichText/DomPurifier';
+import FieldWrapper from '../wrappers/FieldWrapper';
 
 // ============================================================================
 // Types & Schema
@@ -173,7 +173,7 @@ const ExpandedChecklist = ({
   // Render a regular option component
   const renderOption = (option: ChoiceOption) => (
     <FormControlLabel
-      key={option.value}
+      key={option.key || option.value}
       control={
         <Checkbox
           checked={value.includes(option.value)}
@@ -442,7 +442,7 @@ const MuiMultiSelect = ({
             // Render a regular option MenuItem
             const renderOptionMenuItem = (option: ChoiceOption) => (
               <MenuItem
-                key={option.value}
+                key={option.key || option.value}
                 value={option.value}
                 disabled={
                   selectedExclusiveOption !== undefined &&

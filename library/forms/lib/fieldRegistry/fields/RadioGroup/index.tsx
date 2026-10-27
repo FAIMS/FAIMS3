@@ -17,6 +17,7 @@
  * - disabled: Whether the field is disabled.
  */
 
+import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {
   Button,
   Dialog,
@@ -35,11 +36,9 @@ import FormControl from '@mui/material/FormControl';
 import MuiRadio from '@mui/material/Radio';
 import MuiRadioGroup from '@mui/material/RadioGroup';
 import {alpha} from '@mui/material/styles';
+import {useRef, useState} from 'react';
 import {z} from 'zod';
-import {schemaWithAbsent} from '../../../validationModule/readableErrors';
-import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
-import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
 import {
   OTHER_MARKER,
   OTHER_PREFIX,
@@ -47,10 +46,11 @@ import {
   useOtherOption,
 } from '../../../hooks/useOtherOption';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {FieldInfo} from '../../types';
+import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {useRef, useState} from 'react';
 
 // ============================================================================
 // Types & Schema
@@ -359,7 +359,7 @@ const RadioGroupWidget = ({
           // Render a regular option
           const renderOption = (option: ChoiceOption) => (
             <FormControlLabel
-              key={option.value}
+              key={option.key || option.value}
               value={option.value}
               control={
                 <MuiRadio
@@ -552,7 +552,7 @@ const DropDownWidget = ({
         // Render a regular option MenuItem
         const renderOptionMenuItem = (option: ChoiceOption) => (
           <MenuItem
-            key={option.value}
+            key={option.key || option.value}
             value={option.value}
             sx={{
               whiteSpace: 'normal',
