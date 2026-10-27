@@ -272,6 +272,7 @@ const validateLabel = (
 
 /**
  * Ensure the option value is not empty or already used by another option.
+ * Comparison is case-insensitive and ignores surrounding whitespace.
  *
  * @param options - Existing predefined options.
  * @param newValue - The option value to validate.
@@ -283,11 +284,14 @@ const validateValue = (
   newValue: string,
   originalValue?: string
 ): string | null => {
-  if (!newValue.trim()) return 'Option value is required';
+  const normalizedValue = newValue.trim().toLowerCase();
+  if (!normalizedValue) return 'Option value is required';
 
   if (
     options.some(
-      option => option.value === newValue && option.value !== originalValue
+      option =>
+        option.value.trim().toLowerCase() === normalizedValue &&
+        option.value !== originalValue
     )
   ) {
     return 'This option value is already used by another option';
