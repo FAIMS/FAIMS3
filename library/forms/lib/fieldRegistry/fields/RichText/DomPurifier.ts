@@ -78,6 +78,14 @@ const purifyConfig: Config = {
     'ol',
     'li',
 
+    // Tables - Markdown table structure
+    'table',
+    'thead',
+    'tbody',
+    'tr',
+    'th',
+    'td',
+
     // Media - Only images are allowed
     'img',
 

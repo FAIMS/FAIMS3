@@ -238,4 +238,21 @@ describe('MultiSelect value schema', () => {
 
     expect(screen.getByText('Yes', {selector: 'strong'})).toBeInTheDocument();
   });
+
+  it('disables the Other input when an exclusive option is selected', async () => {
+    const {user, setFieldDataCalls} = renderMultiSelectField({
+      enableOtherOption: true,
+      exclusiveOptions: ['NONE_ID'],
+    });
+
+    await user.click(screen.getByRole('checkbox', {name: 'None of the above'}));
+
+    const otherInput = screen.getByPlaceholderText('Other');
+    expect(otherInput).toBeDisabled();
+
+    await user.click(otherInput);
+
+    expect(setFieldDataCalls.at(-1)).toEqual(['NONE_ID']);
+    expect(otherInput).toHaveValue('');
+  });
 });

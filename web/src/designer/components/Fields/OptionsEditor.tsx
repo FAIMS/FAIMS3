@@ -17,6 +17,7 @@ import {
 import {CSS} from '@dnd-kit/utilities';
 import {ChoiceElementProps} from '@faims3/forms';
 import {MDXEditorMethods} from '@mdxeditor/editor';
+import {AddCircle} from '@mui/icons-material';
 import ArrowDropDownRoundedIcon from '@mui/icons-material/ArrowDropDownRounded';
 import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -33,7 +34,6 @@ import {
   DialogTitle,
   FormControl,
   FormControlLabel,
-  FormLabel,
   Grid,
   IconButton,
   Radio,
@@ -99,9 +99,23 @@ enum ChoiceDisplayMode {
 const DISPLAY_LABEL_TOOLTIP =
   'Shown to users when they choose this option. Supports Markdown.';
 const OPTION_VALUE_TOOLTIP =
-  'The value saved when users select this option. Also used in exports and conditions.';
+  'The value saved when users select this option. Also used in exports.';
 const EXCLUSIVE_TOOLTIP =
   "Marks the option as exclusive — selecting it clears any other selections in this field. Useful for choices like 'None of the above'.";
+const ADD_OPTION_TOOLTIP = (
+  <Box>
+    <Typography variant="body2" component="h4">
+      Add a new option using the following fields:
+    </Typography>
+    <Typography variant="body2" component="h5">
+      <strong>Display label:</strong> Text shown to users. Supports Markdown.
+    </Typography>
+    <Typography variant="body2" component="h5">
+      <strong>Option value:</strong> Value saved with answers and used in
+      exports and conditions.
+    </Typography>
+  </Box>
+);
 
 // dndId: Internal drag-and-drop row identifier.
 // type: Distinguishes normal options from Other.
@@ -172,13 +186,42 @@ const optionTextSx = {
 } as const;
 
 // heading with tooltip.
-const OptionInputHeading = ({label, help}: {label: string; help: string}) => (
+const OptionInputHeading = ({label, help}: {label: string; help?: string}) => (
   <Stack direction="row" spacing={0.65} sx={{mb: 1, alignItems: 'center'}}>
     <Typography component="span">{label}</Typography>
-    <Tooltip title={help}>
-      <InfoIcon sx={designerInfoIconSx} />
-    </Tooltip>
+    {!!help && (
+      <Tooltip title={help}>
+        <InfoIcon sx={designerInfoIconSx} />
+      </Tooltip>
+    )}
   </Stack>
+);
+
+/** Render a table header label with an info tooltip. */
+const OptionHeaderWithTooltip = ({
+  label,
+  tooltip,
+}: {
+  label: string;
+  tooltip: string;
+}) => (
+  <Box
+    sx={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 0.4,
+    }}
+  >
+    {label}
+    <Tooltip title={tooltip}>
+      <InfoIcon
+        sx={{
+          ...designerInfoIconSx,
+          fontSize: '1.1rem',
+        }}
+      />
+    </Tooltip>
+  </Box>
 );
 
 // ============================================================================
@@ -1187,32 +1230,28 @@ export const OptionsEditor = ({
                         {/* Compact controls leave more room for both text columns. */}
                         <TableCell sx={compactCellSx} />
                         <TableCell sx={{...textCellHeaderSx, ...labelColumnSx}}>
-                          Display label
+                          <OptionHeaderWithTooltip
+                            label="Display label"
+                            tooltip={DISPLAY_LABEL_TOOLTIP}
+                          />
                         </TableCell>
+
                         <TableCell sx={{...textCellHeaderSx, ...valueColumnSx}}>
-                          Option value
+                          <OptionHeaderWithTooltip
+                            label="Option value"
+                            tooltip={OPTION_VALUE_TOOLTIP}
+                          />
                         </TableCell>
+
                         {showExclusiveOptions && (
                           <TableCell align="center" sx={compactCellSx}>
-                            <Box
-                              sx={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 0.4,
-                              }}
-                            >
-                              Exclusive
-                              <Tooltip title={EXCLUSIVE_TOOLTIP}>
-                                <InfoIcon
-                                  sx={{
-                                    ...designerInfoIconSx,
-                                    fontSize: '1.1rem',
-                                  }}
-                                />
-                              </Tooltip>
-                            </Box>
+                            <OptionHeaderWithTooltip
+                              label="Exclusive"
+                              tooltip={EXCLUSIVE_TOOLTIP}
+                            />
                           </TableCell>
                         )}
+
                         <TableCell align="right" sx={compactCellSx}>
                           Actions
                         </TableCell>
@@ -1277,28 +1316,36 @@ export const OptionsEditor = ({
             {/* Add option: a compact two-row panel works better than forcing
                 the taller Markdown editor onto the option value/button row. */}
             <Grid size={12}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{my: 0.75, alignItems: 'center'}}
+              >
+                <Typography
+                  component="h4"
+                  sx={{
+                    fontSize: '1rem',
+                    fontWeight: 700,
+                    color: 'text.primary',
+                  }}
+                >
+                  Add option
+                </Typography>
+                <Tooltip title={ADD_OPTION_TOOLTIP}>
+                  <InfoIcon sx={designerInfoIconSx} />
+                </Tooltip>
+              </Stack>
               <Box
                 sx={{
-                  mt: 0.5,
-                  p: {xs: 1.5, sm: 2},
+                  p: 2,
                   border: '1px solid',
                   borderColor: 'divider',
                   borderRadius: 1.25,
                 }}
               >
-                <Typography
-                  component="h4"
-                  sx={{fontSize: '1rem', fontWeight: 700, mb: 1.5}}
-                >
-                  Add option
-                </Typography>
-
                 {/* First row: give the Markdown editor the full panel width. */}
                 <Box sx={{mb: 1.5, minWidth: 0}}>
-                  <OptionInputHeading
-                    label="Display label"
-                    help={DISPLAY_LABEL_TOOLTIP}
-                  />
+                  <OptionInputHeading label="Display label" />
                   <MdxEditor
                     key={newOptionEditorKey}
                     initialMarkdown=""
@@ -1321,10 +1368,7 @@ export const OptionsEditor = ({
                 >
                   {/* Require an explicit option value, separate from the Markdown label. */}
                   <Box sx={{flex: 1, minWidth: 0}}>
-                    <OptionInputHeading
-                      label="Option value"
-                      help={OPTION_VALUE_TOOLTIP}
-                    />
+                    <OptionInputHeading label="Option value" />
                     <TextField
                       size="small"
                       placeholder="Enter a unique option value"
@@ -1345,30 +1389,27 @@ export const OptionsEditor = ({
                     useFlexGap
                     sx={{alignItems: 'center', flexWrap: 'wrap'}}
                   >
-                    {/* Add a predefined option using the two fields above. */}
+                    {/* Add a predefined option using the label and value above. */}
                     <Button
-                      color="primary"
                       variant="outlined"
+                      color="success"
+                      startIcon={<AddCircle />}
                       size="small"
                       onClick={addOption}
-                      sx={{
-                        height: 40,
-                        minWidth: 56,
-                        px: 2,
-                        textTransform: 'none',
-                      }}
+                      sx={{height: 40}}
                     >
-                      Add
+                      Add option
                     </Button>
 
                     {/* Other remains a separate option with its own input. */}
                     <Button
                       variant="outlined"
-                      color="primary"
+                      color="info"
+                      startIcon={<AddCircle />}
                       size="small"
                       onClick={() => setEnableOtherOption(true)}
                       disabled={enableOther}
-                      sx={{height: 40, px: 2}}
+                      sx={{height: 40}}
                     >
                       Add "Other" Option
                     </Button>
@@ -1392,31 +1433,27 @@ export const OptionsEditor = ({
             {showExpandedCheckListControl && (
               <Grid size={12}>
                 <FormControl sx={{mt: 0.5}}>
-                  <FormLabel>
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      sx={{alignItems: 'center'}}
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{my: 0.75, alignItems: 'center'}}
+                  >
+                    <Typography
+                      component="h4"
+                      sx={{
+                        fontSize: '1rem',
+                        fontWeight: 700,
+                        color: 'text.primary',
+                      }}
                     >
-                      <Typography
-                        component="h4"
-                        sx={{
-                          fontSize: '1rem',
-                          fontWeight: 700,
-                          color: 'text.primary',
-                          lineHeight: 1.25,
-                          letterSpacing: '0.012em',
-                        }}
-                      >
-                        {isMultiSelectField
-                          ? 'Multi-select display mode'
-                          : 'Select-one display mode'}
-                      </Typography>
-                      <Tooltip title="Choose whether to show options as a checklist or a dropdown list.">
-                        <InfoIcon sx={designerInfoIconSx} />
-                      </Tooltip>
-                    </Stack>
-                  </FormLabel>
+                      {isMultiSelectField
+                        ? 'Multi-select display mode'
+                        : 'Select-one display mode'}
+                    </Typography>
+                    <Tooltip title="Choose whether to show options as a checklist or a dropdown list.">
+                      <InfoIcon sx={designerInfoIconSx} />
+                    </Tooltip>
+                  </Stack>
                   <RadioGroup row value={displayMode} onChange={setDisplayMode}>
                     <FormControlLabel
                       value={ChoiceDisplayMode.expanded}

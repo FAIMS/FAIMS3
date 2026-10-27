@@ -98,6 +98,8 @@ const ExpandedChecklist = ({
 
   const handleChange = (optionValue: string) => {
     if (optionValue === OTHER_MARKER) {
+      // Other must not be selected while an exclusive option is active.
+      if (selectedExclusiveOption !== undefined) return;
       if (hasOtherSelected) {
         onChange(value.filter(v => v !== OTHER_MARKER));
       } else {
@@ -138,18 +140,21 @@ const ExpandedChecklist = ({
           placeholder="Other"
           value={otherText || ''}
           onChange={e => {
+            // Do not let typing bypass the disabled Other checkbox.
+            if (selectedExclusiveOption !== undefined || disabled) return;
             if (!hasOtherSelected && e.target.value.length > 0) {
               onChange([...value, OTHER_MARKER]);
             }
             onOtherTextChange?.(e.target.value);
           }}
           onFocus={() => {
+            if (selectedExclusiveOption !== undefined || disabled) return;
             if (!hasOtherSelected) {
               onChange([...value, OTHER_MARKER]);
             }
           }}
           onBlur={onBlur}
-          disabled={disabled}
+          disabled={selectedExclusiveOption !== undefined || disabled}
           variant="standard"
           multiline
           sx={{
@@ -386,6 +391,9 @@ const MuiMultiSelect = ({
                   value={otherText || ''}
                   onChange={e => {
                     e.stopPropagation();
+                    // Never enable Other through typing while exclusive is active.
+                    if (selectedExclusiveOption !== undefined || disabled)
+                      return;
                     if (!hasOtherSelected && e.target.value.length > 0) {
                       onChange([...value, OTHER_MARKER]);
                     }
@@ -393,6 +401,8 @@ const MuiMultiSelect = ({
                   }}
                   onClick={e => {
                     e.stopPropagation();
+                    if (selectedExclusiveOption !== undefined || disabled)
+                      return;
                     if (!hasOtherSelected) {
                       onChange([...value, OTHER_MARKER]);
                     }
@@ -408,7 +418,7 @@ const MuiMultiSelect = ({
                       setIsOpen(false);
                     }
                   }}
-                  disabled={disabled}
+                  disabled={selectedExclusiveOption !== undefined || disabled}
                   variant="standard"
                   multiline
                   fullWidth
