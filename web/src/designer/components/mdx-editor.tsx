@@ -74,10 +74,15 @@ const SUPPORTED_NODE_TYPES = new Set([
   'imageReference',
 ]);
 
+/** Editor features that can be disabled for specific use cases. */
+export type MdxEditorFeature = 'headings' | 'lists' | 'tables' | 'images';
+
 type Props = {
   initialMarkdown: string;
   editorRef: React.Ref<MDXEditorMethods> | undefined;
   handleChange: ((markdown: string) => void) | undefined;
+  // Features to disable. All features are enabled by default.
+  disabledFeatures?: MdxEditorFeature[];
 };
 
 /** Constrained MDX/Markdown editor for long-form metadata (toolbar + allowed mdast nodes). */
@@ -85,6 +90,7 @@ export const MdxEditor = ({
   initialMarkdown,
   editorRef,
   handleChange,
+  disabledFeatures = [],
 }: Props) => {
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -124,6 +130,9 @@ export const MdxEditor = ({
       },
     };
 
+    // Use the configured features to control both plugins and toolbar buttons.
+    const disabled = new Set(disabledFeatures);
+
     const [catchAllPlugin] = realmPlugin({
       id: 'catchAll',
       systemSpec: system(() => ({})),
@@ -140,28 +149,46 @@ export const MdxEditor = ({
       });
 
     return [
-      headingsPlugin(),
-      listsPlugin(),
+      ...(!disabled.has('headings') ? [headingsPlugin()] : []),
+      ...(!disabled.has('lists') ? [listsPlugin()] : []),
       thematicBreakPlugin(),
       markdownShortcutPlugin(),
-      tablePlugin(),
+      ...(!disabled.has('tables') ? [tablePlugin()] : []),
       diffSourcePlugin({diffMarkdown: initialMarkdownRef.current}),
       linkPlugin(),
-      imagePlugin({imageUploadHandler, disableImageResize: false}),
+      ...(!disabled.has('images')
+        ? [imagePlugin({imageUploadHandler, disableImageResize: false})]
+        : []),
       toolbarPlugin({
         toolbarContents: () => (
           <DiffSourceToggleWrapper>
             <UndoRedo />
             <Separator />
             <BoldItalicUnderlineToggles />
-            <Separator />
-            <BlockTypeSelect />
-            <Separator />
-            <ListsToggle />
-            <Separator />
-            <InsertTable />
-            <Separator />
-            <InsertImage />
+            {!disabled.has('headings') && (
+              <>
+                <Separator />
+                <BlockTypeSelect />
+              </>
+            )}
+            {!disabled.has('lists') && (
+              <>
+                <Separator />
+                <ListsToggle />
+              </>
+            )}
+            {!disabled.has('tables') && (
+              <>
+                <Separator />
+                <InsertTable />
+              </>
+            )}
+            {!disabled.has('images') && (
+              <>
+                <Separator />
+                <InsertImage />
+              </>
+            )}
           </DiffSourceToggleWrapper>
         ),
       }),

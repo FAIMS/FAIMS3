@@ -66,7 +66,7 @@ import {
   designerInfoIconSx,
 } from '../designer-style';
 import {DragHandle} from '../drag-handle';
-import {MdxEditor} from '../mdx-editor';
+import {MdxEditor, MdxEditorFeature} from '../mdx-editor';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
 // ============================================================================
@@ -94,6 +94,13 @@ enum ChoiceDisplayMode {
   expanded = 'expanded',
   dropdown = 'dropdown',
 }
+
+// Disable some markdown features to keep option display labels simple.
+const mdxEditorDisabledFeatures: MdxEditorFeature[] = [
+  'lists',
+  'tables',
+  'images',
+];
 
 // tooltip titles
 const DISPLAY_LABEL_TOOLTIP =
@@ -188,7 +195,9 @@ const optionTextSx = {
 // heading with tooltip.
 const OptionInputHeading = ({label, help}: {label: string; help?: string}) => (
   <Stack direction="row" spacing={0.65} sx={{mb: 1, alignItems: 'center'}}>
-    <Typography component="span">{label}</Typography>
+    <Typography component="span" sx={{fontWeight: 700}}>
+      {label}
+    </Typography>
     {!!help && (
       <Tooltip title={help}>
         <InfoIcon sx={designerInfoIconSx} />
@@ -370,6 +379,7 @@ const EditOptionDialog = ({
               setErrorMessage('');
             }}
             editorRef={editorRef}
+            disabledFeatures={mdxEditorDisabledFeatures}
           />
         </Box>
 
@@ -1354,6 +1364,7 @@ export const OptionsEditor = ({
                       setAddErrorMessage('');
                     }}
                     editorRef={newOptionEditorRef}
+                    disabledFeatures={mdxEditorDisabledFeatures}
                   />
                 </Box>
 
