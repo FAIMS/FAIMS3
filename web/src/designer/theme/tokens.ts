@@ -68,6 +68,8 @@ export type DesignerThemeTokens = {
   outlinedInputFocusBorder: string;
   /** Focus ring colour (consumers apply alpha) */
   outlinedInputFocusRing: string;
+  /** Disabled outlined field surface (consumers apply alpha) */
+  outlinedInputDisabledSurface: string;
 
   // ── Expression chips ────────────────────────────────────────────────────
   /** Neutral wash for constant / system expression chips */

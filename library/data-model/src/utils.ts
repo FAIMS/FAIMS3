@@ -49,8 +49,9 @@ export const EMPTY_EXPORT_COLUMN_FALLBACK = 'field';
  * formula / hidden-file prefixes (`=`, `+`, `-`, `@`, `.`) are removed.
  * Designer-produced names such as `Site-Name` are unchanged.
  *
- * Not a download filename: ZIP paths and Content-Disposition still use
- * storage ids / download-filename sanitizers, not `exportName`.
+ * Not a download filename on its own: attachment ZIP path segments run this
+ * then `slugify` (see `generateFilenameForAttachment`), and
+ * Content-Disposition filenames use the download-filename sanitizers.
  */
 export function sanitizeExportColumnName(
   raw: string,

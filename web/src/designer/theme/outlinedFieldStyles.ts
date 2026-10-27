@@ -4,7 +4,6 @@
  * (CodeMirror expression editor).
  */
 
-import {colors} from '@mui/material';
 import {alpha, type SxProps, type Theme} from '@mui/material/styles';
 import type {DesignerThemeTokens} from './tokens';
 
@@ -31,7 +30,7 @@ export function outlinedFieldBackgrounds(tokens: DesignerThemeTokens) {
       tokens.outlinedInputWash,
       0.14
     )} 100%)`,
-    disabled: alpha(colors.blueGrey[50], 0.45),
+    disabled: alpha(tokens.outlinedInputDisabledSurface, 0.45),
   };
 }
 

@@ -5,19 +5,18 @@
 
 import {EditorView} from '@codemirror/view';
 import {ThemeProvider} from '@mui/material/styles';
-import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
 import {act, fireEvent, render, screen, within} from '@testing-library/react';
 import {ReactNode} from 'react';
 import {Provider} from 'react-redux';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {createDesignerStore} from '../../createDesignerStore';
+import {
+  createDesignerStore,
+  type DesignerStore,
+} from '../../createDesignerStore';
 import {EXPR_CHIP_CLASS} from '../../features/expression-editor';
 import {getFieldSpec} from '../../fields';
 import {DesignerEditingProvider} from '../../state/editing-context';
-import {
-  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
-  type AppState,
-} from '../../state/initial';
+import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../../state/initial';
 import {loaded} from '../../store/slices/uiSpec';
 import globalTheme from '../../theme/index';
 import {ComputedFieldEditor} from './ComputedFieldEditor';
@@ -36,7 +35,7 @@ const WithProviders = ({
   store,
 }: {
   children: ReactNode;
-  store: ToolkitStore<AppState>;
+  store: DesignerStore;
 }) => (
   <ThemeProvider theme={globalTheme}>
     <Provider store={store}>
@@ -92,7 +91,7 @@ function storeWithComputed(expression = '') {
   return store;
 }
 
-const renderEditor = (store: ToolkitStore<AppState>) =>
+const renderEditor = (store: DesignerStore) =>
   render(
     <WithProviders store={store}>
       <ComputedFieldEditor
@@ -103,7 +102,7 @@ const renderEditor = (store: ToolkitStore<AppState>) =>
     </WithProviders>
   );
 
-const storedExpression = (store: ToolkitStore<AppState>) =>
+const storedExpression = (store: DesignerStore) =>
   store.getState().notebook.uiSpec.present.fields[COMPUTED_ID][
     'component-parameters'
   ].expression;

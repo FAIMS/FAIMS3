@@ -22,4 +22,3 @@ export {
   EXPR_CHIP_CLASS,
   truncateChipLabel,
 } from './refChipExtension';
-export {tokenizeExpression} from './tokenize';

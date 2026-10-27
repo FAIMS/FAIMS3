@@ -29,7 +29,7 @@ import {
 } from '../uiSpecification';
 
 /** Computed field component names (ComputedNumber / ComputedText). */
-export const COMPUTED_FIELD_NAMES = ['ComputedNumber', 'ComputedText'];
+const COMPUTED_FIELD_NAMES = ['ComputedNumber', 'ComputedText'];
 
 /**
  * Component names whose values are themselves derived. These are excluded as
@@ -38,7 +38,7 @@ export const COMPUTED_FIELD_NAMES = ['ComputedNumber', 'ComputedText'];
  * linked derived fields are still usable — their stored values carry no
  * ordering problem (see resolveParentRef).
  */
-export const DERIVED_FIELD_NAMES = [
+const DERIVED_FIELD_NAMES = [
   ...COMPUTED_FIELD_NAMES,
   TEMPLATED_STRING_FIELD_NAME,
 ];

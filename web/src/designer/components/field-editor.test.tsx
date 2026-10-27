@@ -6,19 +6,15 @@
 import {DndContext} from '@dnd-kit/core';
 import {SortableContext, verticalListSortingStrategy} from '@dnd-kit/sortable';
 import {ThemeProvider} from '@mui/material/styles';
-import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {ReactNode} from 'react';
 import {Provider} from 'react-redux';
 import {describe, expect, it, vi} from 'vitest';
-import {createDesignerStore} from '../createDesignerStore';
+import {createDesignerStore, type DesignerStore} from '../createDesignerStore';
 import {getFieldSpec} from '../fields';
 import {DesignerEditingProvider} from '../state/editing-context';
 import {useAppSelector} from '../state/hooks';
-import {
-  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
-  type AppState,
-} from '../state/initial';
+import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../state/initial';
 import {loaded} from '../store/slices/uiSpec';
 import globalTheme from '../theme/index';
 import {FieldEditor} from './field-editor';
@@ -37,7 +33,7 @@ const WithProviders = ({
   originalFieldIdentifiers,
 }: {
   children: ReactNode;
-  store: ToolkitStore<AppState>;
+  store: DesignerStore;
   existingRecordCount?: number;
   originalFieldIdentifiers?: ReadonlySet<string>;
 }) => (
@@ -104,7 +100,7 @@ function FieldEditorIfPresent() {
 }
 
 function renderEditor(
-  store: ToolkitStore<AppState>,
+  store: DesignerStore,
   editing: {
     existingRecordCount?: number;
     originalFieldIdentifiers?: ReadonlySet<string>;

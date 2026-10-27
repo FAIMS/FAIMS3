@@ -274,7 +274,8 @@ export const SPATIAL_FIELDS = ['MapFormField', 'TakePoint'];
 
 /**
  * Extra CSV / GIS columns appended to a field's export name, keyed by
- * `namespace::component`. Keep in sync with `csvFormatValue` suffix keys.
+ * `namespace::component`. Must match the suffix keys `csvFormatValue` writes
+ * (asserted in `api/test/exportFieldIdentity.test.ts`).
  */
 export const EXTRA_EXPORT_COLUMN_SUFFIXES: Record<string, readonly string[]> = {
   'faims-custom::TakePoint': ['_latitude', '_longitude', '_accuracy'],

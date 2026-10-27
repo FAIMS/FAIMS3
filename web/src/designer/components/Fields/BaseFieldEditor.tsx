@@ -400,9 +400,6 @@ export const BaseFieldEditor = ({
 
   const isSpeechEnabled = checkSpeechEnabled(field);
   const speechSettings = isSpeechEnabled ? getSpeechSettings(field) : null;
-  const isChoiceField =
-    field['component-name'] === 'Select' ||
-    field['component-name'] === 'MultiSelect';
   // Always use the unified wrapper pattern so labels are rendered as headings
   // above inputs (no floating labels), even for legacy/deprecated field types.
   const useUnifiedFieldWrapper = true;
@@ -425,160 +422,53 @@ export const BaseFieldEditor = ({
           <Grid container spacing={2}>
             <Grid size={{xs: 12, md: 4}}>
               <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                {isChoiceField ? (
-                  <>
-                    <SimpleFieldWrapper heading="Label">
-                      <DebouncedTextField
-                        fullWidth
-                        label=""
-                        placeholder="Enter field label"
-                        value={state.label}
-                        onChange={e => handleLabelChange(e.target.value)}
-                        onBlur={handleLabelBlur}
-                        inputRef={labelInputRef}
-                        slotProps={{
-                          htmlInput: {'data-field-label-input': 'true'},
-                        }}
-                      />
-                    </SimpleFieldWrapper>
-                    <SimpleFieldWrapper heading="Export name">
-                      <TextField
-                        fullWidth
-                        label=""
-                        placeholder="Enter export name"
-                        helperText="Column name in CSV and GIS exports. Changing it does not affect collected data."
-                        value={localExportName}
-                        onChange={handleIdChange}
-                        onBlur={handleIdBlur}
-                        inputRef={idInputRef}
-                        slotProps={{
-                          htmlInput: designerHtmlInput(
-                            INPUT_LIMITS.ID_MAX_LENGTH
-                          ),
-                          input: {
-                            endAdornment:
-                              state.label &&
-                              slugify(state.label) !== localExportName ? (
-                                <InputAdornment position="end">
-                                  <Tooltip title="Sync with Label">
-                                    <IconButton
-                                      size="small"
-                                      onClick={syncFieldID}
-                                      onMouseDown={keepFocusOnMouseDown}
-                                      edge="end"
-                                    >
-                                      <SyncIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
-                                </InputAdornment>
-                              ) : undefined,
-                          },
-                        }}
-                      />
-                    </SimpleFieldWrapper>
-                  </>
-                ) : (
-                  <>
-                    {useUnifiedFieldWrapper ? (
-                      <>
-                        <SimpleFieldWrapper heading="Label">
-                          <DebouncedTextField
-                            fullWidth
-                            label=""
-                            placeholder="Enter field label"
-                            value={state.label}
-                            onChange={e => handleLabelChange(e.target.value)}
-                            onBlur={handleLabelBlur}
-                            inputRef={labelInputRef}
-                            slotProps={{
-                              htmlInput: {'data-field-label-input': 'true'},
-                            }}
-                          />
-                        </SimpleFieldWrapper>
-                        <SimpleFieldWrapper heading="Export name">
-                          <TextField
-                            fullWidth
-                            label=""
-                            placeholder="Enter export name"
-                            helperText="Column name in CSV and GIS exports. Changing it does not affect collected data."
-                            value={localExportName}
-                            onChange={handleIdChange}
-                            onBlur={handleIdBlur}
-                            inputRef={idInputRef}
-                            slotProps={{
-                              htmlInput: designerHtmlInput(
-                                INPUT_LIMITS.ID_MAX_LENGTH
-                              ),
-                              input: {
-                                endAdornment:
-                                  state.label &&
-                                  slugify(state.label) !== localExportName ? (
-                                    <InputAdornment position="end">
-                                      <Tooltip title="Sync with Label">
-                                        <IconButton
-                                          size="small"
-                                          onClick={syncFieldID}
-                                          onMouseDown={keepFocusOnMouseDown}
-                                          edge="end"
-                                        >
-                                          <SyncIcon fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                    </InputAdornment>
-                                  ) : undefined,
-                              },
-                            }}
-                          />
-                        </SimpleFieldWrapper>
-                      </>
-                    ) : (
-                      <>
-                        <DebouncedTextField
-                          fullWidth
-                          label="Label"
-                          value={state.label}
-                          onChange={e => handleLabelChange(e.target.value)}
-                          onBlur={handleLabelBlur}
-                          inputRef={labelInputRef}
-                          slotProps={{
-                            htmlInput: {'data-field-label-input': 'true'},
-                          }}
-                        />
-                        <TextField
-                          fullWidth
-                          label="Export name"
-                          value={localExportName}
-                          onChange={handleIdChange}
-                          onBlur={handleIdBlur}
-                          inputRef={idInputRef}
-                          slotProps={{
-                            htmlInput: designerHtmlInput(
-                              INPUT_LIMITS.ID_MAX_LENGTH
-                            ),
-                            input: {
-                              endAdornment:
-                                state.label &&
-                                slugify(state.label) !== localExportName ? (
-                                  <InputAdornment position="end">
-                                    <Tooltip title="Sync with Label">
-                                      <IconButton
-                                        size="small"
-                                        onClick={syncFieldID}
-                                        onMouseDown={keepFocusOnMouseDown}
-                                        edge="end"
-                                      >
-                                        <SyncIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                  </InputAdornment>
-                                ) : undefined,
-                            },
-                          }}
-                        />
-                      </>
-                    )}
-                  </>
-                )}
+                <SimpleFieldWrapper heading="Label">
+                  <DebouncedTextField
+                    fullWidth
+                    label=""
+                    placeholder="Enter field label"
+                    value={state.label}
+                    onChange={e => handleLabelChange(e.target.value)}
+                    onBlur={handleLabelBlur}
+                    inputRef={labelInputRef}
+                    slotProps={{
+                      htmlInput: {'data-field-label-input': 'true'},
+                    }}
+                  />
+                </SimpleFieldWrapper>
+                <SimpleFieldWrapper heading="Export name">
+                  <TextField
+                    fullWidth
+                    label=""
+                    placeholder="Enter export name"
+                    helperText="Column name in CSV and GIS exports. Changing it does not affect collected data."
+                    value={localExportName}
+                    onChange={handleIdChange}
+                    onBlur={handleIdBlur}
+                    inputRef={idInputRef}
+                    slotProps={{
+                      htmlInput: designerHtmlInput(INPUT_LIMITS.ID_MAX_LENGTH),
+                      input: {
+                        endAdornment:
+                          state.label &&
+                          slugify(state.label) !== localExportName ? (
+                            <InputAdornment position="end">
+                              <Tooltip title="Sync with Label">
+                                <IconButton
+                                  size="small"
+                                  onClick={syncFieldID}
+                                  onMouseDown={keepFocusOnMouseDown}
+                                  edge="end"
+                                >
+                                  <SyncIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </InputAdornment>
+                          ) : undefined,
+                      },
+                    }}
+                  />
+                </SimpleFieldWrapper>
               </Box>
             </Grid>
             {showHelperText && (

@@ -55,6 +55,7 @@ export const defaultTokens: DesignerThemeTokens = {
   outlinedInputHoverBorder: colors.blueGrey[900],
   outlinedInputFocusBorder: colors.grey[900],
   outlinedInputFocusRing: colors.blueGrey[900],
+  outlinedInputDisabledSurface: colors.blueGrey[50],
 
   // ── Expression chips ────────────────────────────────────────────────────
   chipWashNeutral: colors.blueGrey[700],

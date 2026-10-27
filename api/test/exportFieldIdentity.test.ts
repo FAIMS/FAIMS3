@@ -5,7 +5,11 @@
  */
 import type archiver from 'archiver';
 import {describe, expect, it} from 'vitest';
-import type {FieldSummary, HydratedDataRecord} from '@faims3/data-model';
+import {
+  extraExportColumnNames,
+  type FieldSummary,
+  type HydratedDataRecord,
+} from '@faims3/data-model';
 import {
   generateFilenameForAttachment,
   processRecordAttachments,
@@ -14,7 +18,7 @@ import {getHeaderInfoFromUiSpecification} from '../src/couchdb/export/csvExport'
 import {
   convertDataForOutput,
   csvFormatValue,
-  MAX_FIELD_ID_LENGTH,
+  MAX_EXPORT_NAME_SEGMENT_LENGTH,
   rewriteFileFieldsForJsonExport,
 } from '../src/couchdb/export/utils';
 
@@ -68,7 +72,6 @@ describe('export identity split', () => {
       componentNamespace: 'faims-custom',
       componentName: 'TakePhoto',
       exportName: PHOTO_EXPORT_NAME,
-      storageId: PHOTO_STORAGE_ID,
       value: photoValue,
       hrid: 'REC-1',
       filenames,
@@ -104,6 +107,30 @@ describe('export identity split', () => {
     expect(filenames[0]).toContain('site-photos/');
     expect(filenames[0]).not.toContain(PHOTO_STORAGE_ID);
   });
+
+  it.each([
+    ['faims-custom', 'TakePoint', null],
+    ['faims-custom', 'AddressField', {display_name: '1 Main St', address: {}}],
+    ['mapping-plugin', 'MapFormField', null],
+  ])(
+    'csvFormatValue writes exactly the suffix columns reserved for %s::%s',
+    (componentNamespace, componentName, value) => {
+      const row = csvFormatValue({
+        componentNamespace,
+        componentName,
+        exportName: 'loc',
+        value,
+        hrid: 'REC-1',
+        filenames: [],
+        viewsetId: 'Survey',
+      });
+
+      expect(Object.keys(row)).toEqual([
+        'loc',
+        ...extraExportColumnNames({componentNamespace, componentName}, 'loc'),
+      ]);
+    }
+  );
 
   it('annotation and uncertainty CSV columns use exportName, not the storage id', () => {
     const fields = [annotatedTextFieldSummary()];
@@ -378,7 +405,7 @@ describe('generateFilenameForAttachment', () => {
     });
 
     const folder = path.split('/')[1];
-    expect(folder.length).toBeLessThanOrEqual(MAX_FIELD_ID_LENGTH);
+    expect(folder.length).toBeLessThanOrEqual(MAX_EXPORT_NAME_SEGMENT_LENGTH);
     expect(path.length).toBeLessThan(175);
   });
 

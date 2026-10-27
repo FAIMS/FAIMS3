@@ -20,7 +20,7 @@ const fieldDefinitionV1_0_1Shape = {
   // field's `fieldPropsSchema`)
   'component-parameters': BaseFieldParametersSchema.loose(),
   // editable CSV / GIS column; distinct from the `uiSpec.fields` storage id
-  exportName: z.string().min(1),
+  exportName: z.string().min(1).max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
   initialValue: z.any().optional(),
   persistent: z.boolean().optional(),
   meta: FieldMetaSchema.optional(),

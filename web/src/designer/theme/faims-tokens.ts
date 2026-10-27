@@ -54,6 +54,7 @@ export const faimsTokens: DesignerThemeTokens = {
   outlinedInputHoverBorder: colors.blueGrey[800],
   outlinedInputFocusBorder: fieldmarkBrand.primaryDark,
   outlinedInputFocusRing: colors.blueGrey[800],
+  outlinedInputDisabledSurface: colors.blueGrey[50],
 
   // ── Expression chips ────────────────────────────────────────────────────
   chipWashNeutral: colors.blueGrey[600],

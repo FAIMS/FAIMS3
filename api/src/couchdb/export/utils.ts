@@ -22,7 +22,7 @@ import {generateFilenameForAttachment} from './attachmentExport';
  * This leaves room for pathPrefix in full exports.
  */
 export const MAX_VIEW_ID_LENGTH = 30;
-export const MAX_FIELD_ID_LENGTH = 30;
+export const MAX_EXPORT_NAME_SEGMENT_LENGTH = 30;
 export const MAX_HRID_LENGTH = 40;
 export const MAX_CSV_FILENAME_LENGTH = 40;
 
@@ -78,7 +78,6 @@ const RELATIONSHIP_COMPONENT = 'faims-custom::RelatedRecordSelector';
  *   - componentNamespace: The component namespace from the UI spec.
  *   - componentName: The component name from the UI spec.
  *   - exportName: Editable column header (`FieldSummary.exportName`).
- *   - storageId: Immutable `uiSpec.fields` key (`FieldSummary.name`).
  *   - value: The raw value to serialize (looked up by storage id).
  *   - hrid: Human-readable ID (for attachment filenames, etc).
  *   - filenames: List to which CSV attachment filenames are appended.
@@ -90,7 +89,6 @@ export const csvFormatValue = ({
   componentNamespace,
   componentName,
   exportName,
-  storageId: _storageId,
   value,
   hrid,
   filenames,
@@ -99,7 +97,6 @@ export const csvFormatValue = ({
   componentNamespace: string;
   componentName: string;
   exportName: string;
-  storageId: string;
   value: any;
   hrid: string;
   filenames: string[];
@@ -296,7 +293,6 @@ export const convertDataForOutput = (
         componentNamespace: field.componentNamespace,
         componentName: field.componentName,
         exportName,
-        storageId: field.name,
         value: data[field.name],
         hrid,
         filenames,
@@ -329,7 +325,7 @@ export function rewriteFileFieldsForJsonExport({
   filenames,
   resolveViewId,
 }: {
-  data: {[key: string]: any};
+  data: Record<string, unknown>;
   fields?: FieldSummary[];
   hrid: string;
   viewID: string;
@@ -339,7 +335,7 @@ export function rewriteFileFieldsForJsonExport({
   for (const fieldName in data) {
     const values = data[fieldName];
     if (values instanceof Array) {
-      const names = values.map((v: any) => {
+      const names = values.map(v => {
         if (v instanceof File) {
           const resolvedViewID = resolveViewId?.(fieldName) ?? viewID;
           const exportName =

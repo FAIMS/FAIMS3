@@ -56,6 +56,7 @@ export const bssTokens: DesignerThemeTokens = {
   outlinedInputHoverBorder: colors.grey[900],
   outlinedInputFocusBorder: '#111111',
   outlinedInputFocusRing: colors.grey[900],
+  outlinedInputDisabledSurface: colors.blueGrey[50],
 
   // ── Expression chips ────────────────────────────────────────────────────
   chipWashNeutral: colors.grey[700],

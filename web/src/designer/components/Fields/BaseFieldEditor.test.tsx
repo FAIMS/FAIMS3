@@ -4,19 +4,18 @@
  */
 
 import {ThemeProvider} from '@mui/material/styles';
-import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import {ReactNode} from 'react';
 import {Provider} from 'react-redux';
 import {ActionCreators} from 'redux-undo';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {createDesignerStore} from '../../createDesignerStore';
+import {
+  createDesignerStore,
+  type DesignerStore,
+} from '../../createDesignerStore';
 import {getFieldSpec} from '../../fields';
 import {DesignerEditingProvider} from '../../state/editing-context';
-import {
-  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
-  type AppState,
-} from '../../state/initial';
+import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../../state/initial';
 import {fieldRenamed, loaded} from '../../store/slices/uiSpec';
 import globalTheme from '../../theme/index';
 import {BaseFieldEditor} from './BaseFieldEditor';
@@ -36,7 +35,7 @@ const WithProviders = ({
   originalFieldIdentifiers,
 }: {
   children: ReactNode;
-  store: ToolkitStore<AppState>;
+  store: DesignerStore;
   originalFieldIdentifiers?: ReadonlySet<string>;
 }) => (
   <ThemeProvider theme={globalTheme}>

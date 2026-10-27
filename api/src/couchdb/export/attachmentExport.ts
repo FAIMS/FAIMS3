@@ -11,7 +11,7 @@ import archiver from 'archiver';
 import {getDataDb, getNanoDataDb} from '..';
 import {getUiSpecModel} from '../notebooks';
 import {
-  MAX_FIELD_ID_LENGTH,
+  MAX_EXPORT_NAME_SEGMENT_LENGTH,
   MAX_HRID_LENGTH,
   MAX_VIEW_ID_LENGTH,
   slugify,
@@ -303,9 +303,11 @@ export function createConfiguredArchive(
 
 /**
  * Processes a single record and adds all its attachments to the archive.
+ * Exported for tests.
  *
  * This function:
- * 1. Iterates through all fields in the record
+ * 1. Iterates through the record's fields in uiSpec order, then any fields
+ *    absent from the uiSpec
  * 2. Identifies attachment fields by type
  * 3. For each attachment, generates a unique filename
  * 4. Streams the file data from database directly into the archive
@@ -317,9 +319,10 @@ export function createConfiguredArchive(
  * @param filenames - Array tracking all filenames to prevent duplicates
  * @param viewID - The view identifier (used in folder structure)
  * @param pathPrefix - Prefix for file paths in the archive
+ * @param exportNameByStorageId - Storage id → sanitised export name, in
+ *   uiSpec order; names the ZIP folder and fixes iteration order
  * @returns Array of promises, one for each attachment stream initiated
  */
-/** Exported for tests — adds one record's attachments to the archive. */
 export function processRecordAttachments({
   record,
   nanoDb,
@@ -499,7 +502,7 @@ export const generateFilenameForAttachment = ({
   const safeViewID = truncateWithHash(slugifiedViewID, MAX_VIEW_ID_LENGTH);
   const safeExportName = truncateWithHash(
     slugifiedExportName,
-    MAX_FIELD_ID_LENGTH
+    MAX_EXPORT_NAME_SEGMENT_LENGTH
   );
   const safeHrid = truncateWithHash(slugifiedHrid, MAX_HRID_LENGTH);
 
