@@ -374,13 +374,22 @@ flows use `appleKeyId` + `appleKeyContent` only.
 
 ### `couchdb`
 
-| Field                   | Type   | Default                            | Notes            |
-| ----------------------- | ------ | ---------------------------------- | ---------------- |
-| `couchdbUser`           | string | `admin`                            |                  |
-| `couchdbPassword`       | string | `aSecretPasswordThatCantBeGuessed` | **Secret slot.** |
-| `couchdbExternalPort`   | number | `5984`                             |                  |
-| `conductorExternalPort` | number | `8080`                             |                  |
-| `conductorInternalPort` | number | `8080`                             |                  |
+| Field          | Type   | Default                            | Notes            |
+| -------------- | ------ | ---------------------------------- | ---------------- |
+| `user`         | string | `admin`                            |                  |
+| `password`     | string | `aSecretPasswordThatCantBeGuessed` | **Secret slot.** |
+| `externalPort` | number | `5984`                             |                  |
+
+### `conductor`
+
+Port topology for the conductor (API server). On AWS the CDK pins both to
+the deployed values (external `443` via the ALB, internal `8000`) regardless
+of what core says.
+
+| Field          | Type   | Default | Notes                       |
+| -------------- | ------ | ------- | --------------------------- |
+| `externalPort` | number | `8080`  | Published surface port.     |
+| `internalPort` | number | `8080`  | Port the API process binds. |
 
 ### `dev` and `pouchdb` — development / PouchDB tuning
 

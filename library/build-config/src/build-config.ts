@@ -348,11 +348,19 @@ const IosBuildConfigSchema = z
 
 const CouchdbBuildConfigSchema = z
   .object({
-    couchdbUser: z.string().default('admin'),
-    couchdbPassword: z.string().default('aSecretPasswordThatCantBeGuessed'),
-    couchdbExternalPort: z.number().int().positive().default(5984),
-    conductorExternalPort: z.number().int().positive().default(8080),
-    conductorInternalPort: z.number().int().positive().default(8080),
+    user: z.string().default('admin'),
+    password: z.string().default('aSecretPasswordThatCantBeGuessed'),
+    externalPort: z.number().int().positive().default(5984),
+  })
+  .strict();
+
+/** Conductor (API server) port topology: the published/external surface
+ * port and the port the process binds. On AWS the CDK pins both to the
+ * deployed values (ALB 443 / container 8000) regardless of core. */
+const ConductorBuildConfigSchema = z
+  .object({
+    externalPort: z.number().int().positive().default(8080),
+    internalPort: z.number().int().positive().default(8080),
   })
   .strict();
 
@@ -437,7 +445,7 @@ const SecretsBuildConfigSchema = z
     /** CouchDB admin password. */
     couchdb: z
       .object({
-        couchdbPassword: z.string().optional(),
+        password: z.string().optional(),
       })
       .strict()
       .optional(),
@@ -511,6 +519,7 @@ export type SharedBuildConfig = {
   android: z.infer<typeof AndroidBuildConfigSchema>;
   ios: z.infer<typeof IosBuildConfigSchema>;
   couchdb: z.infer<typeof CouchdbBuildConfigSchema>;
+  conductor: z.infer<typeof ConductorBuildConfigSchema>;
   dev: z.infer<typeof DevBuildConfigSchema>;
   pouchdb: z.infer<typeof PouchdbBuildConfigSchema>;
   /** Dedicated, optional secret slots; empty in committed core. */
@@ -642,6 +651,9 @@ export const BuildConfigCoreObjectSchema = z
     ios: IosBuildConfigSchema.default(() => IosBuildConfigSchema.parse({})),
     couchdb: CouchdbBuildConfigSchema.default(() =>
       CouchdbBuildConfigSchema.parse({})
+    ),
+    conductor: ConductorBuildConfigSchema.default(() =>
+      ConductorBuildConfigSchema.parse({})
     ),
     dev: DevBuildConfigSchema.default(() => DevBuildConfigSchema.parse({})),
     pouchdb: PouchdbBuildConfigSchema.default(() =>
@@ -915,11 +927,13 @@ export function parseApiEnv(raw: Record<string, unknown>): PartialBuildConfig {
       bugsnagApiKey: parseBugsnagKey(api.BUGSNAG_API_KEY),
     },
     couchdb: {
-      couchdbUser: api.COUCHDB_USER,
-      couchdbPassword: api.COUCHDB_PASSWORD,
-      couchdbExternalPort: api.COUCHDB_EXTERNAL_PORT,
-      conductorExternalPort: api.CONDUCTOR_EXTERNAL_PORT,
-      conductorInternalPort: api.CONDUCTOR_INTERNAL_PORT,
+      user: api.COUCHDB_USER,
+      password: api.COUCHDB_PASSWORD,
+      externalPort: api.COUCHDB_EXTERNAL_PORT,
+    },
+    conductor: {
+      externalPort: api.CONDUCTOR_EXTERNAL_PORT,
+      internalPort: api.CONDUCTOR_INTERNAL_PORT,
     },
     dev: {
       developerMode: api.DEVELOPER_MODE,

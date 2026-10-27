@@ -96,8 +96,8 @@ const cookieSecret = canonical.auth.cookieSecret
 // Local CouchDB auth: only used as a pair; a partial pair falls back to the
 // local dev credentials.
 const localCouchdbAuth: {username: string; password: string} = {
-  username: canonical.couchdb.couchdbUser,
-  password: canonical.couchdb.couchdbPassword,
+  username: canonical.couchdb.user,
+  password: canonical.couchdb.password,
 };
 
 // Local login is enabled unless explicitly disabled.
@@ -241,7 +241,7 @@ export const config = {
   iosAppUrl: canonical.endpoints.iosAppPublicUrl,
   couchdbInternalUrl: canonical.endpoints.couchdbInternalUrl,
   couchdbPublicUrl: canonical.endpoints.couchdbPublicUrl,
-  conductorInternalPort: canonical.couchdb.conductorInternalPort,
+  conductorInternalPort: canonical.conductor.internalPort,
 
   // Branding (server-facing).
   instanceDescription: canonical.branding.conductorDescription,

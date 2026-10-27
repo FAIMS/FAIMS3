@@ -276,6 +276,23 @@ export class FaimsConductor extends Construct {
     // (not stored in the core config).
     env.COUCHDB_PUBLIC_URL = props.couchDBEndpoint;
     env.COUCHDB_INTERNAL_URL = props.couchDBEndpoint;
+    // Ports: the shared contract carries the local-dev defaults (CouchDB
+    // 5984, conductor 8080), but the deployed stack serves CouchDB behind
+    // the ALB on couchDBPort (443), the conductor's public surface is the
+    // ALB on externalPort (443, the port conductorEndpoint is built from),
+    // and the conductor container listens on internalPort (8000) - the
+    // target group / container port mapping use that same value, and the
+    // API binds CONDUCTOR_INTERNAL_PORT. Pin all three so the deployed env
+    // matches the pre-contract task definition (COUCHDB_EXTERNAL_PORT was
+    // explicitly 443; CONDUCTOR_INTERNAL_PORT was unset and fell back to
+    // the API's old 8000 default) and advertises the real deployed ports.
+    // CONDUCTOR_EXTERNAL_PORT has no consumer in the API today, but core
+    // may set it to 443 for consistency; this pin is authoritative since
+    // the CDK controls the ALB port. These pins also keep the env that
+    // env-from-cdk-stack.sh reconstructs truthful about the deployed API.
+    env.COUCHDB_EXTERNAL_PORT = String(props.couchDBPort);
+    env.CONDUCTOR_EXTERNAL_PORT = String(this.externalPort);
+    env.CONDUCTOR_INTERNAL_PORT = String(this.internalPort);
     env.CONDUCTOR_PUBLIC_URL = this.conductorEndpoint;
     env.CONDUCTOR_URL = this.conductorEndpoint;
     // The shared contract derives WEB_APP_PUBLIC_URL from core endpoints;

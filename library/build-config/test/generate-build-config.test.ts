@@ -166,8 +166,8 @@ test('generator supports api platform export selection', () => {
     android: {},
     ios: {},
     couchdb: {
-      couchdbUser: 'admin',
-      couchdbPassword: 'secret',
+      user: 'admin',
+      password: 'secret',
     },
     dev: {},
     pouchdb: {},
@@ -406,9 +406,11 @@ test('parseGeneratedEnv round-trips API platform values', () => {
     limits: {rateLimiterEnabled: false, jsonBodyLimit: '50mb'},
     email: {emailServiceType: 'MOCK'},
     couchdb: {
-      couchdbUser: 'admin',
-      couchdbPassword: 'pw',
-      conductorInternalPort: 8080,
+      user: 'admin',
+      password: 'pw',
+    },
+    conductor: {
+      internalPort: 8080,
     },
   };
 
@@ -827,7 +829,7 @@ test('parseGeneratedEnv parses the api half into the canonical model', () => {
   assert.equal(parsed.authTokens.accessTokenExpiryMinutes, 60);
   assert.equal(parsed.authTokens.refreshTokenExpiryMinutes, 1440);
   assert.equal(parsed.email.emailServiceType, 'MOCK');
-  assert.equal(parsed.couchdb.conductorInternalPort, 8080);
+  assert.equal(parsed.conductor.internalPort, 8080);
   assert.equal(parsed.branding.conductorShortCodePrefix, 'EXM');
   assert.equal(parsed.branding.conductorInstanceName, 'Example');
   assert.equal(parsed.limits.rateLimiterEnabled, false);

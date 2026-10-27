@@ -94,6 +94,7 @@ Top-level groups include:
 - `android`
 - `ios`
 - `couchdb`
+- `conductor`
 - `dev`
 - `pouchdb`
 

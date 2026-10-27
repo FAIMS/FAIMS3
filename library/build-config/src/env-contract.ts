@@ -151,18 +151,16 @@ const apiContract: Record<string, EnvResolver> = {
     runtime.branding.conductorDescription ?? 'Development server on localhost',
   CONDUCTOR_SHORT_CODE_PREFIX: runtime =>
     runtime.branding.conductorShortCodePrefix ?? 'DEV',
-  COUCHDB_USER: runtime => runtime.couchdb.couchdbUser ?? 'admin',
+  COUCHDB_USER: runtime => runtime.couchdb.user ?? 'admin',
   COUCHDB_PASSWORD: runtime =>
-    runtime.couchdb.couchdbPassword ?? 'aSecretPasswordThatCantBeGuessed',
-  COUCHDB_EXTERNAL_PORT: runtime => runtime.couchdb.couchdbExternalPort ?? 5984,
+    runtime.couchdb.password ?? 'aSecretPasswordThatCantBeGuessed',
+  COUCHDB_EXTERNAL_PORT: runtime => runtime.couchdb.externalPort ?? 5984,
   COUCHDB_INTERNAL_URL: runtime =>
     runtime.endpoints.couchdbInternalUrl ?? 'http://localhost:5984',
   COUCHDB_PUBLIC_URL: runtime =>
     runtime.endpoints.couchdbPublicUrl ?? 'http://localhost:5984',
-  CONDUCTOR_EXTERNAL_PORT: runtime =>
-    runtime.couchdb.conductorExternalPort ?? 8080,
-  CONDUCTOR_INTERNAL_PORT: runtime =>
-    runtime.couchdb.conductorInternalPort ?? 8080,
+  CONDUCTOR_EXTERNAL_PORT: runtime => runtime.conductor.externalPort ?? 8080,
+  CONDUCTOR_INTERNAL_PORT: runtime => runtime.conductor.internalPort ?? 8080,
   CONDUCTOR_PUBLIC_URL: runtime =>
     runtime.endpoints.apiUrl ?? 'http://localhost:8080',
   WEB_APP_PUBLIC_URL: runtime =>

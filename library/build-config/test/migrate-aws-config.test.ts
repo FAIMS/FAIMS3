@@ -232,7 +232,7 @@ test('legacy AWS config migrates to core + secrets + aws that all validate', asy
   assert.doesNotThrow(() => parseBuildConfig(result.core));
   const merged = parseBuildConfig(deepMerge(result.core, result.secrets));
   assert.equal(merged.email.smtpPassword, SMTP_PASS);
-  assert.equal(merged.couchdb.couchdbPassword, COUCH_PASS);
+  assert.equal(merged.couchdb.password, COUCH_PASS);
   assert.equal(merged.auth.cookieSecret, COOKIE);
   assert.equal((merged.authProviders.google as any).clientSecret, AUTH_SECRET);
   assert.equal(merged.endpoints.apiUrl, 'https://conductor.example.com');
@@ -282,7 +282,7 @@ test('secret values never leak into core, aws, or the report', async () => {
   const secrets = result.secrets as any;
   assert.equal(secrets.email.smtpPassword, SMTP_PASS);
   assert.equal(secrets.authProviders.google.clientSecret, AUTH_SECRET);
-  assert.equal(secrets.couchdb.couchdbPassword, COUCH_PASS);
+  assert.equal(secrets.couchdb.password, COUCH_PASS);
   assert.equal(secrets.auth.cookieSecret, COOKIE);
 });
 

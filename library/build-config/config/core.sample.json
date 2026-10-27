@@ -150,11 +150,13 @@
     "appleKeyContent": "<secret>"
   },
   "couchdb": {
-    "couchdbUser": "admin",
-    "couchdbPassword": "aSecretPasswordThatCantBeGuessed",
-    "couchdbExternalPort": 5984,
-    "conductorExternalPort": 8080,
-    "conductorInternalPort": 8080
+    "user": "admin",
+    "password": "aSecretPasswordThatCantBeGuessed",
+    "externalPort": 5984
+  },
+  "conductor": {
+    "externalPort": 8080,
+    "internalPort": 8080
   },
   "dev": {
     "developerMode": false,

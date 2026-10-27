@@ -1196,10 +1196,10 @@ export async function migrateOldAwsConfig(
   );
   if (isRec(couchSecret)) {
     const couchCore: Rec = isRec(core.couchdb) ? (core.couchdb as Rec) : {};
-    if (str(couchSecret.username)) couchCore.couchdbUser = couchSecret.username;
+    if (str(couchSecret.username)) couchCore.user = couchSecret.username;
     if (Object.keys(couchCore).length) core.couchdb = couchCore;
     if (str(couchSecret.password)) {
-      secretGroup('couchdb').couchdbPassword = couchSecret.password;
+      secretGroup('couchdb').password = couchSecret.password;
       report.info(
         'couch-secret',
         'CouchDB admin username went to core.couchdb, password to secrets.json:couchdb.'
@@ -1240,7 +1240,7 @@ export async function migrateOldAwsConfig(
       'No cookie secret in secrets.json: a merged (non-AWS) config will generate/need one at runtime. On AWS the CDK still generates it, so this only matters off-AWS.'
     );
   }
-  if (!str(secretGroup('couchdb').couchdbPassword)) {
+  if (!str(secretGroup('couchdb').password)) {
     report.warn(
       'couch-secret',
       'No CouchDB password in secrets.json: DO NOT deploy a merged config like this — it would fall back to the build-config local-dev password. On AWS the CDK-generated secret still wins.'
