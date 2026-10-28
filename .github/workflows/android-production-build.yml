@@ -2,13 +2,33 @@ name: Deploy to Google Play For Production
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: GitHub environment that supplies config vars and secrets
+        required: true
+        default: prod
+        type: choice
+        options:
+          - dev
+          - prod
+          - stage
+      android_deploy_track:
+        description: Google Play track
+        required: true
+        default: production
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
 
 jobs:
   node-deb-gh-build-play:
     uses: ./.github/workflows/common-android-build.yml
     with:
-      config_environment: production
-      android_deploy_track: production
+      environment: ${{ github.event.inputs.environment }}
+      android_deploy_track: ${{ github.event.inputs.android_deploy_track }}
       enable_bugsnag_sourcemaps: true
       serverprefix: fieldmark
     secrets: inherit

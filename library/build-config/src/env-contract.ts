@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
-import {RuntimeConfig} from './build-config.js';
+import {
+  DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS,
+  RuntimeConfig,
+  SHARED_DEFAULTS,
+} from './build-config.js';
 import {buildAuthProviderEnvMap} from './auth-provider-config.js';
+import {envValueToString, type EnvValue} from './env-value.js';
 
+export {envValueToString, type EnvValue} from './env-value.js';
+
+/** Which half of the generated env to emit (`all` writes both). */
 export type SupportedPlatform = 'apps' | 'api' | 'all';
-
-export type EnvValue =
-  | string
-  | number
-  | boolean
-  | undefined
-  | null
-  | Array<string | number | boolean>;
 
 type EnvResolver = (runtime: RuntimeConfig) => EnvValue;
 
@@ -32,6 +32,8 @@ const baseContract: Record<string, EnvResolver> = {
   VITE_WEBSITE_TITLE: runtime =>
     runtime.branding.websiteTitle ?? 'Control Centre',
   VITE_THEME: runtime => runtime.branding.theme ?? 'default',
+  VITE_CLUSTER_ADMIN_GROUP_NAME: runtime =>
+    runtime.branding.clusterAdminGroupName ?? 'cluster-admin',
   VITE_NOTEBOOK_NAME: runtime =>
     runtime.notebookAndRecordUX.notebookName ?? 'notebook',
   VITE_NOTEBOOK_LIST_TYPE: runtime =>
@@ -45,25 +47,22 @@ const baseContract: Record<string, EnvResolver> = {
   VITE_SUPPORT_EMAIL: runtime => runtime.support.supportEmail ?? '',
   VITE_APP_CONTACT_URL: runtime => runtime.support.appContactUrl ?? '',
   VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD: runtime =>
-    runtime.sync.syncPushOnlyRecordThreshold ?? 500,
+    runtime.sync.syncPushOnlyRecordThreshold ??
+    SHARED_DEFAULTS.syncPushOnlyRecordThreshold,
   VITE_TOKEN_REFRESH_INTERVAL_MS: runtime =>
-    runtime.authTokens.tokenRefreshIntervalMs ?? 15000,
+    runtime.authTokens.tokenRefreshIntervalMs ??
+    SHARED_DEFAULTS.tokenRefreshIntervalMs,
   VITE_TOKEN_REFRESH_WINDOW_MS: runtime =>
-    runtime.authTokens.tokenRefreshWindowMs ?? 60000,
+    runtime.authTokens.tokenRefreshWindowMs ??
+    SHARED_DEFAULTS.tokenRefreshWindowMs,
   VITE_LOGIN_BANNER_GRACE_MS: runtime =>
-    runtime.authTokens.loginBannerGraceMs ?? 10000,
+    runtime.authTokens.loginBannerGraceMs ?? SHARED_DEFAULTS.loginBannerGraceMs,
   VITE_IGNORE_TOKEN_EXP: runtime => runtime.authTokens.ignoreTokenExp ?? false,
   VITE_NAVIGATION: runtime => runtime.notebookAndRecordUX.navigation ?? 'none',
   VITE_ATTACHMENT_SERVICE_TYPE: runtime =>
     runtime.attachments.attachmentServiceType ?? 'COUCH',
   VITE_ATTACHMENT_DOCUMENT_ID_PREFIX: runtime =>
     runtime.attachments.attachmentDocumentIdPrefix ?? '',
-  VITE_APPLE_BUNDLE_IDENTIFIER: runtime =>
-    runtime.ios.bundleIdentifier ??
-    runtime.android.appId ??
-    'org.fedarch.faims3',
-  VITE_APP_STORE_CONNECT_TEAM_ID: runtime =>
-    runtime.ios.appStoreConnectTeamId ?? '',
   VITE_MAP_SOURCE: runtime => runtime.maps.mapSource ?? 'maptiler',
   VITE_MAP_SOURCE_KEY: runtime => runtime.maps.mapSourceKey ?? '',
   VITE_SATELLITE_SOURCE: runtime => runtime.maps.satelliteSource ?? '',
@@ -89,22 +88,32 @@ const baseContract: Record<string, EnvResolver> = {
   VITE_SHOW_POUCHDB_BROWSER: runtime => runtime.dev.showPouchDbBrowser ?? true,
   VITE_SHOW_STATUS_TAB: runtime =>
     runtime.notebookAndRecordUX.showStatusTab ?? true,
+  VITE_SHOW_NEW_NOTEBOOK: runtime =>
+    runtime.notebookAndRecordUX.showNewNotebook ?? true,
+  VITE_SHOW_RECORD_SUMMARY_COUNTS: runtime =>
+    runtime.notebookAndRecordUX.showRecordSummaryCounts ?? true,
   VITE_DEBUG_APP: runtime => runtime.dev.debugApp ?? false,
   VITE_DEBUG_POUCHDB: runtime => runtime.dev.debugPouchDb ?? false,
-  VITE_POUCH_BATCH_SIZE: runtime => runtime.pouchdb.pouchBatchSize ?? 10,
-  VITE_POUCH_BATCHES_LIMIT: runtime => runtime.pouchdb.pouchBatchesLimit ?? 10,
+  VITE_POUCH_BATCH_SIZE: runtime =>
+    runtime.pouchdb.pouchBatchSize ?? SHARED_DEFAULTS.pouchBatchSize,
+  VITE_POUCH_BATCHES_LIMIT: runtime =>
+    runtime.pouchdb.pouchBatchesLimit ?? SHARED_DEFAULTS.pouchBatchesLimit,
   VITE_DEVELOPER_MODE: runtime => runtime.dev.developerMode ?? false,
   VITE_DOCS_URL: runtime => runtime.support.docsUrl ?? '',
   VITE_MAX_DESIGN_FILE_SIZE_MB: runtime =>
-    runtime.webDesignerLimits.maxDesignFileSizeMb ?? 10,
+    runtime.webDesignerLimits.maxDesignFileSizeMb ??
+    SHARED_DEFAULTS.maxDesignFileSizeMb,
   VITE_TEMPLATE_PROTECTIONS: runtime =>
     runtime.webDesignerLimits.templateProtections ?? false,
   VITE_ENABLE_PLANS_IN_DESIGNER: runtime =>
     runtime.webDesignerLimits.enablePlansInDesigner ?? true,
   VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: runtime =>
-    runtime.authTokens.maximumLongLivedDurationDays ?? 90,
+    runtime.authTokens.maximumLongLivedDurationDays ??
+    SHARED_DEFAULTS.maximumLongLivedDurationDays,
   VITE_LONG_LIVED_TOKEN_DURATION_HINTS: runtime =>
-    runtime.authTokens.longLivedTokenDurationHints ?? [1, 5, 10, 30, 90, 365],
+    runtime.authTokens.longLivedTokenDurationHints ?? [
+      ...DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS,
+    ],
   VITE_EXCLUDED_TEAM_ROLES: runtime =>
     runtime.teamAndRolePolicy.excludedTeamRoles ?? [],
 };
@@ -151,18 +160,18 @@ const apiContract: Record<string, EnvResolver> = {
     runtime.branding.conductorDescription ?? 'Development server on localhost',
   CONDUCTOR_SHORT_CODE_PREFIX: runtime =>
     runtime.branding.conductorShortCodePrefix ?? 'DEV',
-  COUCHDB_USER: runtime => runtime.couchdb.couchdbUser ?? 'admin',
-  COUCHDB_PASSWORD: runtime =>
-    runtime.couchdb.couchdbPassword ?? 'aSecretPasswordThatCantBeGuessed',
-  COUCHDB_EXTERNAL_PORT: runtime => runtime.couchdb.couchdbExternalPort ?? 5984,
+  COUCHDB_USER: runtime => runtime.couchdb.user ?? 'admin',
+  COUCHDB_PASSWORD: runtime => runtime.couchdb.password ?? '',
+  COUCHDB_EXTERNAL_PORT: runtime =>
+    runtime.couchdb.externalPort ?? SHARED_DEFAULTS.couchdbExternalPort,
   COUCHDB_INTERNAL_URL: runtime =>
     runtime.endpoints.couchdbInternalUrl ?? 'http://localhost:5984',
   COUCHDB_PUBLIC_URL: runtime =>
     runtime.endpoints.couchdbPublicUrl ?? 'http://localhost:5984',
   CONDUCTOR_EXTERNAL_PORT: runtime =>
-    runtime.couchdb.conductorExternalPort ?? 8080,
+    runtime.conductor.externalPort ?? SHARED_DEFAULTS.conductorExternalPort,
   CONDUCTOR_INTERNAL_PORT: runtime =>
-    runtime.couchdb.conductorInternalPort ?? 8080,
+    runtime.conductor.internalPort ?? SHARED_DEFAULTS.conductorInternalPort,
   CONDUCTOR_PUBLIC_URL: runtime =>
     runtime.endpoints.apiUrl ?? 'http://localhost:8080',
   WEB_APP_PUBLIC_URL: runtime =>
@@ -174,34 +183,41 @@ const apiContract: Record<string, EnvResolver> = {
   KEY_SOURCE: runtime => runtime.auth.keySource ?? 'FILE',
   AWS_SECRET_KEY_ARN: runtime => runtime.auth.awsSecretKeyArn ?? '',
   REFRESH_TOKEN_EXPIRY_MINUTES: runtime =>
-    runtime.authTokens.refreshTokenExpiryMinutes ?? 2880,
+    runtime.authTokens.refreshTokenExpiryMinutes ??
+    SHARED_DEFAULTS.refreshTokenExpiryMinutes,
   ACCESS_TOKEN_EXPIRY_MINUTES: runtime =>
-    runtime.authTokens.accessTokenExpiryMinutes ?? 5,
+    runtime.authTokens.accessTokenExpiryMinutes ??
+    SHARED_DEFAULTS.accessTokenExpiryMinutes,
   IMPERSONATION_SESSION_EXPIRY_MINUTES: runtime =>
-    runtime.authTokens.impersonationSessionExpiryMinutes ?? 60,
+    runtime.authTokens.impersonationSessionExpiryMinutes ??
+    SHARED_DEFAULTS.impersonationSessionExpiryMinutes,
   EMAIL_CODE_EXPIRY_MINUTES: runtime =>
-    runtime.authTokens.emailCodeExpiryMinutes ?? 30,
+    runtime.authTokens.emailCodeExpiryMinutes ??
+    SHARED_DEFAULTS.emailCodeExpiryMinutes,
   DISABLE_MIGRATE_ON_STARTUP: runtime =>
     runtime.migration.disableMigrateOnStartup ?? false,
   STARTUP_MIGRATION_LOCK_ENABLED: runtime =>
     runtime.migration.startupMigrationLockEnabled ?? false,
   STARTUP_MIGRATION_LOCK_TIMEOUT_MS: runtime =>
-    runtime.migration.startupMigrationLockTimeoutMs ?? 1800000,
+    runtime.migration.startupMigrationLockTimeoutMs ??
+    SHARED_DEFAULTS.startupMigrationLockTimeoutMs,
   DEVELOPER_MODE: runtime => runtime.dev.developerMode ?? false,
   DISABLE_LOCAL_LOGIN: runtime => runtime.auth.disableLocalLogin ?? false,
   PROVISION_SSO_USERS_POLICY: runtime =>
     runtime.auth.provisionSsoUsersPolicy ?? 'reject',
   RATE_LIMITER_WINDOW_MS: runtime =>
-    runtime.limits.rateLimiterWindowMs ?? 600000,
+    runtime.limits.rateLimiterWindowMs ?? SHARED_DEFAULTS.rateLimiterWindowMs,
   RATE_LIMITER_PER_WINDOW: runtime =>
-    runtime.limits.rateLimiterPerWindow ?? 1000,
+    runtime.limits.rateLimiterPerWindow ?? SHARED_DEFAULTS.rateLimiterPerWindow,
   RATE_LIMITER_ENABLED: runtime => runtime.limits.rateLimiterEnabled ?? true,
   EXPORT_RATE_LIMITER_ENABLED: runtime =>
     runtime.limits.exportRateLimiterEnabled ?? true,
   EXPORT_RATE_LIMITER_WINDOW_MS: runtime =>
-    runtime.limits.exportRateLimiterWindowMs ?? 600000,
+    runtime.limits.exportRateLimiterWindowMs ??
+    SHARED_DEFAULTS.exportRateLimiterWindowMs,
   EXPORT_RATE_LIMITER_PER_WINDOW: runtime =>
-    runtime.limits.exportRateLimiterPerWindow ?? 20,
+    runtime.limits.exportRateLimiterPerWindow ??
+    SHARED_DEFAULTS.exportRateLimiterPerWindow,
   ATTEMPT_LIMITER_ENABLED: runtime =>
     runtime.limits.attemptLimiterEnabled ?? true,
   REDIRECT_WHITELIST: runtime => runtime.endpoints.redirectWhitelist ?? [],
@@ -212,26 +228,31 @@ const apiContract: Record<string, EnvResolver> = {
     runtime.email.emailFromName ?? 'FAIMS Notification',
   EMAIL_REPLY_TO: runtime =>
     runtime.email.emailReplyTo ?? 'support@example.com',
-  SMTP_HOST: runtime => runtime.email.smtpHost ?? 'smtp.example.com',
-  SMTP_PORT: runtime => runtime.email.smtpPort ?? 587,
-  SMTP_SECURE: runtime => runtime.email.smtpSecure ?? true,
-  SMTP_USER: runtime => runtime.email.smtpUser ?? 'smtp_username',
-  SMTP_PASSWORD: runtime => runtime.email.smtpPassword ?? 'smtp_password',
+  SMTP_HOST: runtime => runtime.email.smtpHost ?? '',
+  SMTP_PORT: runtime => runtime.email.smtpPort ?? SHARED_DEFAULTS.smtpPort,
+  SMTP_SECURE: runtime => runtime.email.smtpSecure ?? false,
+  SMTP_USER: runtime => runtime.email.smtpUser ?? '',
+  SMTP_PASSWORD: runtime => runtime.email.smtpPassword ?? '',
   SMTP_CACHE_EXPIRY_SECONDS: runtime =>
-    runtime.email.smtpCacheExpirySeconds ?? 300,
-  TEST_EMAIL_ADDRESS: runtime =>
-    runtime.email.testEmailAddress ?? 'test@gmail.com',
+    runtime.email.smtpCacheExpirySeconds ??
+    SHARED_DEFAULTS.smtpCacheExpirySeconds,
+  TEST_EMAIL_ADDRESS: runtime => runtime.email.testEmailAddress ?? '',
   MAXIMUM_LONG_LIVED_DURATION_DAYS: runtime =>
-    runtime.authTokens.maximumLongLivedDurationDays ?? 90,
+    runtime.authTokens.maximumLongLivedDurationDays ??
+    SHARED_DEFAULTS.maximumLongLivedDurationDays,
   BUGSNAG_API_KEY: runtime => runtime.observability.bugsnagApiKey ?? '',
-  JSON_BODY_LIMIT: runtime => runtime.limits.jsonBodyLimit ?? '25mb',
-  URLENCODED_BODY_LIMIT: runtime => runtime.limits.urlencodedBodyLimit ?? '1mb',
+  JSON_BODY_LIMIT: runtime =>
+    runtime.limits.jsonBodyLimit ?? SHARED_DEFAULTS.jsonBodyLimit,
+  URLENCODED_BODY_LIMIT: runtime =>
+    runtime.limits.urlencodedBodyLimit ?? SHARED_DEFAULTS.urlencodedBodyLimit,
   RESTORE_UPLOAD_MAX_BYTES: runtime =>
-    runtime.limits.restoreUploadMaxBytes ?? 1073741824,
+    runtime.limits.restoreUploadMaxBytes ??
+    SHARED_DEFAULTS.restoreUploadMaxBytes,
   DOWNLOAD_COOKIE_SAMESITE: runtime =>
     runtime.limits.downloadCookieSameSite ?? 'lax',
   RECORDS_HYDRATED_PAGE_LIMIT: runtime =>
-    runtime.limits.recordsHydratedPageLimit ?? 150,
+    runtime.limits.recordsHydratedPageLimit ??
+    SHARED_DEFAULTS.recordsHydratedPageLimit,
 };
 
 function applyContract(
@@ -244,6 +265,7 @@ function applyContract(
   }
 }
 
+/** Build the platform env map for a runtime config via the env contract. */
 export function buildEnvMapFromRuntime(
   runtime: RuntimeConfig,
   platform: SupportedPlatform,
@@ -276,4 +298,21 @@ export function buildEnvMapFromRuntime(
   }
 
   return map;
+}
+
+/**
+ * Build a string-valued env map for a runtime config via the env contract,
+ * omitting `undefined` and `null` entries.
+ */
+export function buildStringEnvMapFromRuntime(
+  runtime: RuntimeConfig,
+  platform: SupportedPlatform
+): Record<string, string> {
+  const raw = buildEnvMapFromRuntime(runtime, platform);
+  const env: Record<string, string> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    const str = envValueToString(value);
+    if (str !== undefined) env[key] = str;
+  }
+  return env;
 }

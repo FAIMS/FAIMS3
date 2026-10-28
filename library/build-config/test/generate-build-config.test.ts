@@ -6,14 +6,16 @@ import path from 'node:path';
 import {generateEnv, parseArgs} from '../src/generate-build-config';
 import {
   buildAuthProviderEnvMap,
+  DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS,
+  OptionalCsvSchema,
   parseBuildConfig,
-  parseGeneratedEnv,
   readAuthProviderConfigFromEnv,
+  resolveInjectedAppVersion,
   sanitizeCommitVersion,
   type PartialBuildConfig,
 } from '../src/build-config';
+import {isGoogleProvider} from '../src/auth-provider-config';
 import {generateBuildConfig} from '../src/generate-build-config';
-import {validateGeneratedEnv} from '../src/validate-generated-env';
 
 function deepMerge(a: unknown, b: unknown): unknown {
   if (Array.isArray(a) || Array.isArray(b)) {
@@ -81,6 +83,9 @@ test('generator emits shared app and web env values', () => {
   assert.match(output, /VITE_CONDUCTOR_URL=/);
   assert.match(output, /VITE_WEB_URL=/);
   assert.match(output, /VITE_APP_ID=/);
+  assert.match(output, /VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin/);
+  assert.match(output, /VITE_SHOW_NEW_NOTEBOOK=true/);
+  assert.match(output, /VITE_SHOW_RECORD_SUMMARY_COUNTS=true/);
 });
 
 test('generator resolves git commit version automatically', () => {
@@ -119,6 +124,11 @@ test('generator supports platform-specific export selection', () => {
   assert.match(output, /VITE_APP_STORE_CONNECT_TEAM_ID=/);
   assert.match(output, /FASTLANE_APPLE_ID=/);
   assert.match(output, /ANDROID_RELEASE_STATUS=/);
+  const keys = output
+    .split('\n')
+    .filter(Boolean)
+    .map(line => line.slice(0, line.indexOf('=')));
+  assert.equal(new Set(keys).size, keys.length);
 });
 
 test('generator supports api platform export selection', () => {
@@ -167,8 +177,8 @@ test('generator supports api platform export selection', () => {
     android: {},
     ios: {},
     couchdb: {
-      couchdbUser: 'admin',
-      couchdbPassword: 'secret',
+      user: 'admin',
+      password: 'secret',
     },
     dev: {},
     pouchdb: {},
@@ -205,7 +215,8 @@ test('auth provider env helpers roundtrip config for google provider', () => {
   assert.equal(parsed.google?.type, 'google');
   assert.equal(parsed.google?.displayName, 'Google');
   assert.deepEqual(parsed.google?.scope, ['profile', 'email']);
-  assert.equal((parsed.google as any)?.clientID, 'google-client-id');
+  assert.ok(parsed.google && isGoogleProvider(parsed.google));
+  assert.equal(parsed.google.clientID, 'google-client-id');
 });
 
 test('core.sample.json matches current build config schema', () => {
@@ -292,21 +303,6 @@ test('generator escapes multiline values for env-file compatibility', () => {
   );
 });
 
-test('validateBuildConfigCoverage catches missing env coverage', () => {
-  // With the app and web migrated to parse via this module, the only scanned
-  // (not-yet-migrated) consumer is Fastlane; a generated env that omits a
-  // Fastlane key must be flagged as missing.
-  const output = ['VITE_APP_NAME=Example'].join('\n');
-
-  const result = validateGeneratedEnv({
-    envText: output,
-  });
-
-  assert.ok(result.missing.includes('JAVA_KEYSTORE'));
-  assert.ok(result.missing.includes('ANDROID_JSON_KEY_FILE'));
-  assert.ok(result.missing.length > 0);
-});
-
 test('short/heading names fall back to the app name in generated env', () => {
   const output = generateEnv({config: sampleConfig, platform: 'apps'});
 
@@ -315,9 +311,7 @@ test('short/heading names fall back to the app name in generated env', () => {
   assert.match(output, /VITE_HEADING_APP_NAME=FAIMS/);
 });
 
-// Golden round trip: a config's generated env must parse back to the same
-// canonical values. This is the guarantee the typed chain relies on.
-test('parseGeneratedEnv(buildEnvMapFromRuntime(config)) reproduces canonical values', () => {
+test('generated apps env includes canonical branding and endpoint keys', () => {
   const config: PartialBuildConfig = {
     ...sampleConfig,
     endpoints: {
@@ -325,69 +319,22 @@ test('parseGeneratedEnv(buildEnvMapFromRuntime(config)) reproduces canonical val
       apiUrl: 'https://api.example.org',
       appUrl: 'https://app.example.org',
       conductorUrls: ['https://api.example.org', 'https://api2.example.org'],
-      redirectWhitelist: ['https://web.example.org'],
     },
     branding: {appName: 'Fieldmark', theme: 'fieldmark'},
-    support: {appContactUrl: 'https://example.org/contact'},
-    notebookAndRecordUX: {navigation: 'breadcrumbs'},
-    maps: {mapSource: 'maptiler', satelliteSource: 'esri', offlineMaps: false},
-    sync: {forceRemoteDeletion: 'allow', deleteOnDeactivation: true},
-    attachments: {attachmentDocumentIdPrefix: 'fieldmark'},
-    // disableLocalLogin is api-only (DISABLE_LOCAL_LOGIN) and is not part of
-    // the apps env round trip.
-    authTokens: {
-      longLivedTokenDurationHints: [1, 30],
-      maximumLongLivedDurationDays: 90,
-    },
-    teamAndRolePolicy: {excludedTeamRoles: ['TEAM_ADMIN']},
     android: {appId: 'org.example.app'},
-    ios: {
-      bundleIdentifier: 'org.example.app.ios',
-      appStoreConnectTeamId: 'TEAM123',
-      matchGitUrl: 'https://github.com/example/match.git',
-    },
   };
 
   const env = generateEnv({config, platform: 'apps', includeEmpty: true});
-  const lines = env
-    .split('\n')
-    .filter(line => line.includes('='))
-    .map(line => line.split('='));
-  const raw: Record<string, unknown> = {};
-  for (const [key, value] of lines) raw[key] = value;
-
-  const parsed = parseGeneratedEnv(raw);
-
-  assert.equal(parsed.branding.appName, 'Fieldmark');
-  // Unset short/heading names are emitted with the appName fallback,
-  // so the round trip recovers the fallback, not the blank.
-  assert.equal(parsed.branding.appShortName, 'Fieldmark');
-  assert.equal(parsed.branding.headingAppName, 'Fieldmark');
-  assert.equal(parsed.branding.theme, 'fieldmark');
-  assert.deepEqual(parsed.endpoints.conductorUrls, [
-    'https://api.example.org',
-    'https://api2.example.org',
-  ]);
-  // REDIRECT_WHITELIST is only emitted on the api platform (no app/web
-  // consumer), so it is absent from the apps env and parses as undefined.
-  assert.equal(parsed.support.appContactUrl, 'https://example.org/contact');
-  assert.equal(parsed.notebookAndRecordUX.navigation, 'breadcrumbs');
-  assert.equal(parsed.maps.mapSource, 'maptiler');
-  assert.equal(parsed.maps.satelliteSource, 'esri');
-  assert.equal(parsed.maps.offlineMaps, false);
-  assert.equal(parsed.sync.forceRemoteDeletion, 'allow');
-  assert.equal(parsed.sync.deleteOnDeactivation, true);
-  assert.equal(parsed.attachments.attachmentDocumentIdPrefix, 'fieldmark');
-  assert.deepEqual(parsed.authTokens.longLivedTokenDurationHints, [1, 30]);
-  assert.equal(parsed.authTokens.maximumLongLivedDurationDays, 90);
-  assert.deepEqual(parsed.teamAndRolePolicy.excludedTeamRoles, ['TEAM_ADMIN']);
-  assert.equal(parsed.android.appId, 'org.example.app');
-  assert.equal(parsed.ios.bundleIdentifier, 'org.example.app.ios');
-  assert.equal(parsed.ios.appStoreConnectTeamId, 'TEAM123');
+  assert.match(env, /VITE_APP_NAME=Fieldmark/);
+  assert.match(env, /VITE_THEME=fieldmark/);
+  assert.match(env, /VITE_APP_ID=org.example.app/);
+  assert.match(
+    env,
+    /VITE_CONDUCTOR_URL=https:\/\/api.example.org,https:\/\/api2.example.org/
+  );
 });
 
-// Same golden test for the API platform (api contract + auth provider env).
-test('parseGeneratedEnv round-trips API platform values', () => {
+test('generated API env includes conductor, auth, and email contract values', () => {
   const config: PartialBuildConfig = {
     ...sampleConfig,
     endpoints: {
@@ -413,6 +360,7 @@ test('parseGeneratedEnv round-trips API platform values', () => {
         type: 'google',
         displayName: 'Google',
         scope: ['profile', 'email'],
+        callbackMethods: ['GET'],
         clientID: 'cid',
         clientSecret: 'cs',
       },
@@ -421,9 +369,11 @@ test('parseGeneratedEnv round-trips API platform values', () => {
     limits: {rateLimiterEnabled: false, jsonBodyLimit: '50mb'},
     email: {emailServiceType: 'MOCK'},
     couchdb: {
-      couchdbUser: 'admin',
-      couchdbPassword: 'pw',
-      conductorInternalPort: 8080,
+      user: 'admin',
+      password: 'pw',
+    },
+    conductor: {
+      internalPort: 8080,
     },
   };
 
@@ -435,8 +385,8 @@ test('parseGeneratedEnv round-trips API platform values', () => {
     raw[line.slice(0, idx)] = line.slice(idx + 1);
   }
 
-  // API env is not currently parsed back through parseGeneratedEnv (it targets
-  // the app/web VITE_ chain); assert the emitted contract values instead.
+  // Assert the emitted API contract values. Client-specific parse
+  // round-trips live in client-env.test.ts.
   assert.equal(raw.CONDUCTOR_PUBLIC_URL, 'https://api.example.org');
   assert.equal(raw.WEB_APP_PUBLIC_URL, 'https://app.example.org');
   assert.equal(raw.PROFILE_NAME, 'prod');
@@ -448,6 +398,7 @@ test('parseGeneratedEnv round-trips API platform values', () => {
   assert.equal(raw.RATE_LIMITER_ENABLED, 'false');
   assert.equal(raw.JSON_BODY_LIMIT, '50mb');
   assert.equal(raw.EMAIL_SERVICE_TYPE, 'MOCK');
+  assert.equal(raw.SMTP_SECURE, 'false');
   assert.equal(raw.CONDUCTOR_INTERNAL_PORT, '8080');
   assert.equal(raw.CONDUCTOR_SHORT_CODE_PREFIX, 'EXM');
 });
@@ -502,88 +453,42 @@ test('schema rejects unknown top-level keys', () => {
   );
 });
 
-test('generated env parser accepts the D3 boolean vocabulary', () => {
-  for (const truthy of ['true', '1', 'on', 'yes']) {
-    const parsed = parseGeneratedEnv({VITE_DEBUG_APP: truthy});
-    assert.equal(parsed.dev.debugApp, true, `expected ${truthy} -> true`);
-  }
-  for (const falsy of ['false', '0', 'off', 'no']) {
-    const parsed = parseGeneratedEnv({VITE_DEBUG_APP: falsy});
-    assert.equal(parsed.dev.debugApp, false, `expected ${falsy} -> false`);
-  }
-});
-
-test('generated env parser rejects invalid boolean strings', () => {
-  assert.throws(
-    () =>
-      parseGeneratedEnv({
-        VITE_APP_NAME: 'Fieldmark',
-        VITE_DEBUG_APP: 'banana',
-      }),
-    /Invalid boolean/i
-  );
-});
-
-test('generated env parser converts typed values into grouped runtime config', () => {
-  const parsed = parseGeneratedEnv({
-    VITE_APP_NAME: 'Fieldmark',
-    VITE_APP_SHORT_NAME: 'FM',
-    VITE_HEADING_APP_NAME: 'Fieldmark Mobile',
-    VITE_APP_ID: 'org.fedarch.faims3',
-    VITE_WEB_URL: 'https://web.example.org',
-    VITE_API_URL: 'https://api.example.org',
-    VITE_APP_URL: 'https://app.example.org',
-    VITE_WEBSITE_TITLE: 'Control Centre',
-    VITE_NOTEBOOK_NAME: 'notebook',
-    VITE_NOTEBOOK_LIST_TYPE: 'tabs',
-    VITE_SUPPORT_EMAIL: 'support@example.org',
-    VITE_APP_PRIVACY_POLICY_URL: 'https://example.org/privacy',
-    VITE_APP_CONTACT_URL: 'https://example.org/contact',
-    VITE_MAP_SOURCE: 'maptiler',
-    VITE_MAP_SOURCE_KEY: 'abc123',
-    VITE_MAP_STYLE: 'basic',
-    VITE_SATELLITE_SOURCE: 'esri',
-    VITE_OFFLINE_MAPS: 'true',
-    VITE_BUGSNAG_KEY: 'bugsnag-key',
-    VITE_COMMIT_VERSION: 'abcdef1',
-    VITE_FORCE_REMOTE_DELETION: 'never',
-    VITE_DELETE_ON_DEACTIVATION: 'false',
-    VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD: '500',
-    VITE_TOKEN_REFRESH_INTERVAL_MS: '15000',
-    VITE_TOKEN_REFRESH_WINDOW_MS: '60000',
-    VITE_LOGIN_BANNER_GRACE_MS: '10000',
-    VITE_IGNORE_TOKEN_EXP: 'false',
-    VITE_NAVIGATION: 'none',
-    VITE_ATTACHMENT_SERVICE_TYPE: 'COUCH',
-    VITE_ATTACHMENT_DOCUMENT_ID_PREFIX: '',
-    VITE_MIGRATE_OLD_DATABASES: 'false',
-    VITE_SHOW_WIPE: 'true',
-    VITE_SHOW_POUCHDB_BROWSER: 'true',
-    VITE_SHOW_NEW_NOTEBOOK: 'true',
-    VITE_SHOW_STATUS_TAB: 'true',
-    VITE_DEBUG_APP: 'false',
-    VITE_DEBUG_POUCHDB: 'false',
-    VITE_POUCH_BATCH_SIZE: '10',
-    VITE_POUCH_BATCHES_LIMIT: '10',
-    VITE_AUTOSUGGEST_SOURCE: 'none',
-    VITE_AUTOSUGGEST_MAPBOX_KEY: '',
-    VITE_AUTOSUGGEST_MAPTILER_KEY: '',
-    VITE_MAPBOX_ADDRESS_COUNTRY: 'AU',
-    VITE_MAPTILER_ADDRESS_COUNTRY: 'AU',
-    VITE_DOCS_URL: '',
-    VITE_MAX_DESIGN_FILE_SIZE_MB: '10',
-    VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: '90',
-    VITE_LONG_LIVED_TOKEN_DURATION_HINTS: '1,5,10',
-    VITE_EXCLUDED_TEAM_ROLES: 'TEAM_MEMBER_CREATOR,TEAM_ADMIN',
+test('generator emits boolean and integer values as strings', () => {
+  const env = generateEnv({
+    config: {
+      ...sampleConfig,
+      dev: {debugApp: true},
+      pouchdb: {pouchBatchSize: 25},
+    },
+    platform: 'apps',
   });
+  assert.match(env, /VITE_DEBUG_APP=true/);
+  assert.match(env, /VITE_POUCH_BATCH_SIZE=25/);
+});
 
-  assert.equal(parsed.branding.appName, 'Fieldmark');
-  assert.equal(parsed.maps.offlineMaps, true);
-  assert.deepEqual(parsed.authTokens.longLivedTokenDurationHints, [1, 5, 10]);
-  assert.deepEqual(parsed.teamAndRolePolicy.excludedTeamRoles, [
-    'TEAM_MEMBER_CREATOR',
-    'TEAM_ADMIN',
-  ]);
+test('generator emits typed branding and map values', () => {
+  const env = generateEnv({
+    config: {
+      ...sampleConfig,
+      branding: {appName: 'Fieldmark', appShortName: 'FM'},
+      endpoints: {
+        webUrl: 'https://web.example.org',
+        apiUrl: 'https://api.example.org',
+        appUrl: 'https://app.example.org',
+      },
+      maps: {
+        mapSource: 'maptiler',
+        mapSourceKey: 'abc123',
+        satelliteSource: 'esri',
+        offlineMaps: true,
+      },
+    },
+    platform: 'apps',
+  });
+  assert.match(env, /VITE_APP_NAME=Fieldmark/);
+  assert.match(env, /VITE_APP_SHORT_NAME=FM/);
+  assert.match(env, /VITE_MAP_SOURCE=maptiler/);
+  assert.match(env, /VITE_SATELLITE_SOURCE=esri/);
 });
 
 // ---------------------------------------------------------------------------
@@ -595,6 +500,63 @@ test('D4: short/heading names fall back to app name', () => {
   const parsed = parseBuildConfig({branding: {appName: 'Fieldmark'}});
   assert.equal(parsed.branding.appShortName, 'Fieldmark');
   assert.equal(parsed.branding.headingAppName, 'Fieldmark');
+});
+
+test('ios.bundleIdentifier falls back to android.appId when omitted', () => {
+  const parsed = parseBuildConfig({android: {appId: 'au.csiro.bss'}});
+  assert.equal(parsed.ios.bundleIdentifier, 'au.csiro.bss');
+  const env = generateEnv({
+    config: {android: {appId: 'au.csiro.bss'}},
+    platform: 'apps',
+  });
+  assert.match(env, /VITE_APPLE_BUNDLE_IDENTIFIER=au\.csiro\.bss/);
+});
+
+test('core.secrets overlays values into target config groups', () => {
+  const parsed = parseBuildConfig({
+    maps: {autosuggestSource: 'mapbox'},
+    authProviders: {
+      google: {
+        id: 'google',
+        type: 'google',
+        displayName: 'Google',
+        scope: ['profile', 'email'],
+      },
+    },
+    secrets: {
+      auth: {
+        cookieSecret: 'sec-cookie',
+        authProviders: {
+          google: {clientID: 'sec-cid', clientSecret: 'sec-csecret'},
+        },
+      },
+      email: {smtpUser: 'sec-user', smtpPassword: 'sec-pass'},
+      observability: {bugsnagApiKey: 'sec-bugsnag'},
+      couchdb: {password: 'sec-couch'},
+      maps: {
+        mapSourceKey: 'sec-map',
+        autosuggestMapboxKey: 'sec-mapbox',
+      },
+      mobile: {
+        android: {keystorePassword: 'sec-ks-pass'},
+        ios: {matchPassword: 'sec-match-pass'},
+      },
+    },
+  });
+  assert.equal(parsed.auth.cookieSecret, 'sec-cookie');
+  assert.ok(
+    parsed.authProviders.google && isGoogleProvider(parsed.authProviders.google)
+  );
+  assert.equal(parsed.authProviders.google.clientID, 'sec-cid');
+  assert.equal(parsed.authProviders.google.clientSecret, 'sec-csecret');
+  assert.equal(parsed.email.smtpUser, 'sec-user');
+  assert.equal(parsed.email.smtpPassword, 'sec-pass');
+  assert.equal(parsed.observability.bugsnagApiKey, 'sec-bugsnag');
+  assert.equal(parsed.couchdb.password, 'sec-couch');
+  assert.equal(parsed.maps.mapSourceKey, 'sec-map');
+  assert.equal(parsed.maps.autosuggestMapboxKey, 'sec-mapbox');
+  assert.equal(parsed.android.keystorePassword, 'sec-ks-pass');
+  assert.equal(parsed.ios.matchPassword, 'sec-match-pass');
 });
 
 test('D4: offline maps are forced off for OSM', () => {
@@ -622,6 +584,17 @@ test('migration: lock cannot be enabled when migrate-on-startup is disabled', ()
   // Omitted lock is fine; skip-migrate forces the lock off.
   const parsed = parseBuildConfig({migration: {disableMigrateOnStartup: true}});
   assert.equal(parsed.migration.startupMigrationLockEnabled, false);
+  // Omit vs explicit false stay distinct when migrate-on-startup is on
+  // (AWS defaults omit to on; local API defaults omit to off).
+  assert.equal(
+    parseBuildConfig({}).migration.startupMigrationLockEnabled,
+    undefined
+  );
+  assert.equal(
+    parseBuildConfig({migration: {startupMigrationLockEnabled: false}})
+      .migration.startupMigrationLockEnabled,
+    false
+  );
 });
 
 // the autosuggest key rules live in the shared schema.
@@ -672,30 +645,37 @@ test('D4: long-lived token hints are clamped, deduped and sorted', () => {
     },
   });
   assert.deepEqual(allExceed.authTokens.longLivedTokenDurationHints, [7]);
+
+  // Omitted hints use the shared default list, then clamp (max 90 drops 365).
+  const omitted = parseBuildConfig({
+    authTokens: {maximumLongLivedDurationDays: 90},
+  });
+  assert.deepEqual(
+    omitted.authTokens.longLivedTokenDurationHints,
+    [1, 5, 10, 30, 90]
+  );
+
+  // A tight cap still keeps the default chips that fit.
+  const tight = parseBuildConfig({
+    authTokens: {maximumLongLivedDurationDays: 7},
+  });
+  assert.deepEqual(tight.authTokens.longLivedTokenDurationHints, [1, 5]);
+
+  // No cap: omitted hints stay the full default list.
+  const unlimited = parseBuildConfig({
+    authTokens: {maximumLongLivedDurationDays: 'unlimited'},
+  });
+  assert.deepEqual(unlimited.authTokens.longLivedTokenDurationHints, [
+    ...DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS,
+  ]);
 });
 
-test('D4: maximumLongLivedDurationDays accepts unlimited/infinite/none', () => {
+test('D4: maximumLongLivedDurationDays accepts unlimited', () => {
   assert.equal(
     parseBuildConfig({authTokens: {maximumLongLivedDurationDays: 'unlimited'}})
       .authTokens.maximumLongLivedDurationDays,
     'unlimited'
   );
-  // In the env parse path the no-cap words normalise to the 'unlimited'
-  // sentinel.
-  const env = parseGeneratedEnv({
-    VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: 'infinite',
-  });
-  assert.equal(env.authTokens.maximumLongLivedDurationDays, 'unlimited');
-});
-
-// Country codes are arrays in the canonical model, CSV in env.
-test('D5-ish: address country codes round trip as arrays', () => {
-  const parsed = parseGeneratedEnv({
-    VITE_MAPBOX_ADDRESS_COUNTRY: 'au,nz',
-    VITE_MAPTILER_ADDRESS_COUNTRY: 'AU',
-  });
-  assert.deepEqual(parsed.maps.mapboxAddressCountry, ['AU', 'NZ']);
-  assert.deepEqual(parsed.maps.maptilerAddressCountry, ['AU']);
 });
 
 // the domain structure derives the concrete endpoints.
@@ -740,6 +720,23 @@ test('domains: localOverride hosts are used verbatim with http', () => {
   assert.equal(parsed.endpoints.webUrl, 'http://localhost:3001');
   // A non-overridden service keeps its derived (https) URL.
   assert.equal(parsed.endpoints.appUrl, 'https://app.faims.example.com');
+
+  // localOverride works even when services.<name> is omitted.
+  const localOnly = parseBuildConfig({
+    domains: {
+      base: 'faims.example.com',
+      localOverride: {
+        conductor: 'localhost:8080',
+        web: 'localhost:3001',
+        app: 'localhost:3000',
+        couch: 'localhost:5984',
+      },
+    },
+  });
+  assert.equal(localOnly.endpoints.apiUrl, 'http://localhost:8080');
+  assert.equal(localOnly.endpoints.webUrl, 'http://localhost:3001');
+  assert.equal(localOnly.endpoints.appUrl, 'http://localhost:3000');
+  assert.equal(localOnly.endpoints.couchdbPublicUrl, 'http://localhost:5984');
 });
 
 test('domains: absent domains keeps concrete endpoints (backward compatible)', () => {
@@ -748,6 +745,59 @@ test('domains: absent domains keeps concrete endpoints (backward compatible)', (
   });
   assert.equal(parsed.domains, undefined);
   assert.equal(parsed.endpoints.apiUrl, 'https://api.legacy.com');
+  // Empty conductorUrls falls back to apiUrl so the app has a server.
+  assert.deepEqual(parsed.endpoints.conductorUrls, ['https://api.legacy.com']);
+});
+
+test('OptionalCsvSchema trims entries and drops empties', () => {
+  assert.deepEqual(OptionalCsvSchema.parse(''), []);
+  assert.deepEqual(OptionalCsvSchema.parse('   '), []);
+  assert.deepEqual(OptionalCsvSchema.parse(', ,,  ,'), []);
+  assert.deepEqual(OptionalCsvSchema.parse('value1,'), ['value1']);
+  assert.deepEqual(OptionalCsvSchema.parse(' a , b , '), ['a', 'b']);
+});
+
+test('resolveInjectedAppVersion falls back to unknown', () => {
+  const info: string[] = [];
+  const warn: string[] = [];
+  const originalInfo = console.info;
+  const originalWarn = console.warn;
+  console.info = (message?: unknown) => {
+    info.push(String(message));
+  };
+  console.warn = (message?: unknown) => {
+    warn.push(String(message));
+  };
+  try {
+    assert.equal(resolveInjectedAppVersion('1.2.3'), '1.2.3');
+    assert.equal(resolveInjectedAppVersion(''), 'unknown');
+    assert.equal(resolveInjectedAppVersion(undefined), 'unknown');
+    assert.match(info[0] ?? '', /1\.2\.3/);
+    assert.match(warn[0] ?? '', /unknown/);
+  } finally {
+    console.info = originalInfo;
+    console.warn = originalWarn;
+  }
+});
+
+test('conductorUrls: omitted / empty list falls back to apiUrl', () => {
+  const fromJson = parseBuildConfig({
+    endpoints: {apiUrl: 'https://api.example.org', conductorUrls: []},
+  });
+  assert.deepEqual(fromJson.endpoints.conductorUrls, [
+    'https://api.example.org',
+  ]);
+
+  // An explicit list is kept (not replaced by apiUrl).
+  const explicit = parseBuildConfig({
+    endpoints: {
+      apiUrl: 'https://api.example.org',
+      conductorUrls: ['https://api2.example.org'],
+    },
+  });
+  assert.deepEqual(explicit.endpoints.conductorUrls, [
+    'https://api2.example.org',
+  ]);
 });
 
 test('domains: rejects unknown service names', () => {
@@ -765,104 +815,6 @@ test('domains: rejects unknown service names', () => {
       },
     })
   );
-});
-
-// Commit version is sanitised: only hashes / release stamps survive.
-test('commit version is sanitised (garbage becomes undefined)', () => {
-  assert.equal(
-    parseGeneratedEnv({VITE_COMMIT_VERSION: 'abcdef1'}).observability
-      .commitVersion,
-    'abcdef1'
-  );
-  assert.equal(
-    parseGeneratedEnv({
-      VITE_COMMIT_VERSION: 'v1.2.3-ios-#abc1234',
-    }).observability.commitVersion,
-    'v1.2.3-ios-#abc1234'
-  );
-  // Prose / placeholders resolve to "no commit" (undefined).
-  assert.equal(
-    parseGeneratedEnv({VITE_COMMIT_VERSION: 'output of git rev-parse HEAD'})
-      .observability.commitVersion,
-    undefined
-  );
-});
-
-// Bugsnag: blank or the literal 'false' means off.
-test('bugsnag key: blank and literal false resolve to undefined', () => {
-  assert.equal(
-    parseGeneratedEnv({VITE_BUGSNAG_KEY: 'false'}).observability.bugsnagApiKey,
-    undefined
-  );
-  assert.equal(
-    parseGeneratedEnv({VITE_BUGSNAG_KEY: ''}).observability.bugsnagApiKey,
-    undefined
-  );
-  assert.equal(
-    parseGeneratedEnv({VITE_BUGSNAG_KEY: 'abc'}).observability.bugsnagApiKey,
-    'abc'
-  );
-});
-
-// ---------------------------------------------------------------------------
-// API env: the server half of a generated env parses into the same model.
-// ---------------------------------------------------------------------------
-
-test('parseGeneratedEnv parses the api half into the canonical model', () => {
-  const parsed = parseGeneratedEnv({
-    CONDUCTOR_PUBLIC_URL: 'https://api.example.org',
-    WEB_APP_PUBLIC_URL: 'https://app.example.org',
-    PROFILE_NAME: 'prod',
-    KEY_SOURCE: 'FILE',
-    DISABLE_LOCAL_LOGIN: 'true',
-    PROVISION_SSO_USERS_POLICY: 'own-team',
-    ACCESS_TOKEN_EXPIRY_MINUTES: '60',
-    REFRESH_TOKEN_EXPIRY_MINUTES: '1440',
-    EMAIL_SERVICE_TYPE: 'MOCK',
-    CONDUCTOR_INTERNAL_PORT: '8080',
-    CONDUCTOR_SHORT_CODE_PREFIX: 'EXM',
-    CONDUCTOR_INSTANCE_NAME: 'Example',
-    REDIRECT_WHITELIST: 'https://web.example.org,https://app.example.org',
-    RATE_LIMITER_ENABLED: 'no',
-    JSON_BODY_LIMIT: '50mb',
-  });
-
-  assert.equal(parsed.endpoints.apiUrl, 'https://api.example.org');
-  assert.equal(parsed.endpoints.appUrl, 'https://app.example.org');
-  // The Control Centre / web URL is carried via the redirect whitelist (there
-  // is no dedicated api env value for it); webUrl stays at its default.
-  assert.equal(parsed.endpoints.webUrl, 'http://localhost:3001');
-  assert.deepEqual(parsed.endpoints.redirectWhitelist, [
-    'https://web.example.org',
-    'https://app.example.org',
-  ]);
-  assert.equal(parsed.auth.profileName, 'prod');
-  assert.equal(parsed.auth.disableLocalLogin, true);
-  assert.equal(parsed.auth.provisionSsoUsersPolicy, 'own-team');
-  assert.equal(parsed.authTokens.accessTokenExpiryMinutes, 60);
-  assert.equal(parsed.authTokens.refreshTokenExpiryMinutes, 1440);
-  assert.equal(parsed.email.emailServiceType, 'MOCK');
-  assert.equal(parsed.couchdb.conductorInternalPort, 8080);
-  assert.equal(parsed.branding.conductorShortCodePrefix, 'EXM');
-  assert.equal(parsed.branding.conductorInstanceName, 'Example');
-  assert.equal(parsed.limits.rateLimiterEnabled, false);
-  assert.equal(parsed.limits.jsonBodyLimit, '50mb');
-});
-
-test('parseGeneratedEnv merges apps and api halves (api wins on shared keys)', () => {
-  const parsed = parseGeneratedEnv({
-    VITE_APP_NAME: 'Fieldmark',
-    VITE_API_URL: 'https://api.apps.example.org',
-    CONDUCTOR_PUBLIC_URL: 'https://api.deploy.example.org',
-    RATE_LIMITER_ENABLED: 'false',
-  });
-
-  // app/web-specific value survives
-  assert.equal(parsed.branding.appName, 'Fieldmark');
-  // api half overrides the shared apiUrl
-  assert.equal(parsed.endpoints.apiUrl, 'https://api.deploy.example.org');
-  // api-only value present
-  assert.equal(parsed.limits.rateLimiterEnabled, false);
 });
 
 test('auth provider env: invalid provider is dropped with a warning (not silently)', () => {
@@ -887,19 +839,7 @@ test('auth provider env: invalid provider is dropped with a warning (not silentl
   assert.deepEqual(result, {});
 });
 
-// D1: strict numeric coercion — non-numeric is an error, not a silent default.
-test('D1: non-numeric integer env value is a parse error', () => {
-  assert.throws(
-    () => parseGeneratedEnv({VITE_POUCH_BATCH_SIZE: 'ten'}),
-    /positive integer/i
-  );
-  assert.throws(
-    () => parseGeneratedEnv({VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: 'abc'}),
-    /MAXIMUM_LONG_LIVED_DURATION_DAYS/
-  );
-});
-
-test('designer-only web keys emit and parse round trip', () => {
+test('designer-only web keys emit in generated apps env', () => {
   const config: PartialBuildConfig = {
     ...sampleConfig,
     webDesignerLimits: {
@@ -910,13 +850,6 @@ test('designer-only web keys emit and parse round trip', () => {
   const env = generateEnv({config, platform: 'apps'});
   assert.match(env, /VITE_TEMPLATE_PROTECTIONS=true/);
   assert.match(env, /VITE_ENABLE_PLANS_IN_DESIGNER=false/);
-
-  const parsed = parseGeneratedEnv({
-    VITE_TEMPLATE_PROTECTIONS: 'true',
-    VITE_ENABLE_PLANS_IN_DESIGNER: 'false',
-  });
-  assert.equal(parsed.webDesignerLimits.templateProtections, true);
-  assert.equal(parsed.webDesignerLimits.enablePlansInDesigner, false);
 });
 
 test('sanitizeCommitVersion keeps hashes and release stamps, drops the rest', () => {

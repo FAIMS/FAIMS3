@@ -1,8 +1,18 @@
+# Shared config-targeting settings live on the selected GitHub Environment:
+#   - secrets.GIT_AUTHORIZATION, secrets.SOPS_AGE_KEY
+#   - vars.CONFIG_REPO_SLUG, vars.CONFIG_REPO_PATH, vars.CONFIG_BRANCH
+#   - vars.CONFIG_ENVIRONMENT (required; config-repo folder name)
+# Optional mobile: vars.FASTLANE_REPO_SLUG (unused here)
+
 name: Reusable Android Mobile Build
 
 on:
   workflow_call:
     inputs:
+      environment:
+        description: GitHub environment that supplies config vars and secrets.
+        required: true
+        type: string
       android_deploy_track:
         description: Google Play deploy track.
         required: false
@@ -18,18 +28,10 @@ on:
         required: false
         type: string
         default: ''
-      config_environment:
-        description: The configuration environment to use for the build.
-        required: true
-        type: string
-    secrets:
-      GIT_AUTHORIZATION:
-        required: true
-      SOPS_AGE_KEY:
-        required: true
 
 jobs:
   android-build:
+    environment: ${{ inputs.environment }}
     runs-on: ubuntu-latest
     continue-on-error: false
     steps:
@@ -89,40 +91,33 @@ jobs:
           node-version: 24
           cache: 'pnpm'
 
-      - name: Checkout deployment config repository
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ vars.APP_CONFIG_REPO_SLUG }}
-          token: ${{ secrets.GIT_AUTHORIZATION }}
-          ref: ${{ vars.MOBILE_CONFIG_BRANCH || 'main' }}
-          path: config_repo
+      # generate-build-env runs `pnpm generate-build-config` (tsx). Install
+      # workspace deps before that, not in the later webapp build step.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Generate build environment from deployment config
-        env:
-          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+      - name: Require CONFIG_ENVIRONMENT
         run: |
-          set -euo pipefail
-          CONFIG_ENV="${{ inputs.config_environment }}"
-          # Base path within the config repo (defaults to 'mobile'; a leading
-          # slash is tolerated and stripped).
-          CONFIG_REPO_PATH="${{ vars.APP_CONFIG_REPO_PATH || 'mobile' }}"
-          CONFIG_REPO_PATH="${CONFIG_REPO_PATH#/}"
-          BASE_CONFIG="config_repo/${CONFIG_REPO_PATH}/${CONFIG_ENV}/core.json"
-          SECRETS_CONFIG="config_repo/${CONFIG_REPO_PATH}/${CONFIG_ENV}/secrets.enc.json"
-
-          if [[ ! -f "$BASE_CONFIG" ]]; then
-            echo "Missing base config: $BASE_CONFIG" >&2
+          if [[ -z "${{ vars.CONFIG_ENVIRONMENT }}" ]]; then
+            echo "CONFIG_ENVIRONMENT must be set on GitHub Environment '${{ inputs.environment }}' to the config-repo folder name." >&2
             exit 1
           fi
 
-          if [[ -f "$SECRETS_CONFIG" ]]; then
-            jq -s '.[0] * .[1]' "$BASE_CONFIG" <(sops --decrypt "$SECRETS_CONFIG") \
-              | pnpm generate-build-config --config - --platform apps \
-              | grep -E '^[A-Z0-9_]+=' >> "$GITHUB_ENV"
-          else
-            pnpm generate-build-config --config "$BASE_CONFIG" --platform apps \
-              | grep -E '^[A-Z0-9_]+=' >> "$GITHUB_ENV"
-          fi
+      - name: Checkout deployment config repository
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ vars.CONFIG_REPO_SLUG }}
+          token: ${{ secrets.GIT_AUTHORIZATION }}
+          ref: ${{ vars.CONFIG_BRANCH || 'main' }}
+          path: config-repo
+
+      - name: Generate build environment from deployment config
+        uses: ./.github/actions/generate-build-env
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        with:
+          environment: ${{ vars.CONFIG_ENVIRONMENT }}
+          config-base-path: ${{ vars.CONFIG_REPO_PATH || 'configs' }}
 
       - name: Set up adopt JDK 1.21
         uses: actions/setup-java@v4
@@ -165,7 +160,6 @@ jobs:
             export serverprefix="${{ inputs.serverprefix }}"
           fi
 
-          pnpm install --frozen-lockfile
           pnpm run build
 
       - name: Upload Bugsnag sourcemaps

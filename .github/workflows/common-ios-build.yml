@@ -1,8 +1,18 @@
+# Shared config-targeting settings live on the selected GitHub Environment:
+#   - secrets.GIT_AUTHORIZATION, secrets.SOPS_AGE_KEY
+#   - vars.CONFIG_REPO_SLUG, vars.CONFIG_REPO_PATH, vars.CONFIG_BRANCH
+#   - vars.CONFIG_ENVIRONMENT (required; config-repo folder name)
+# Optional mobile: vars.FASTLANE_REPO_SLUG
+
 name: Reusable iOS Mobile Build
 
 on:
   workflow_call:
     inputs:
+      environment:
+        description: GitHub environment that supplies config vars and secrets.
+        required: true
+        type: string
       fastlane_lane:
         description: Fastlane lane used for deployment.
         required: true
@@ -17,18 +27,10 @@ on:
         required: false
         type: boolean
         default: false
-      config_environment:
-        description: The configuration environment to use for the build.
-        required: true
-        type: string
-    secrets:
-      GIT_AUTHORIZATION:
-        required: true
-      SOPS_AGE_KEY:
-        required: true
 
 jobs:
   ios-deploy:
+    environment: ${{ inputs.environment }}
     runs-on: macOS-latest
     continue-on-error: false
     steps:
@@ -79,41 +81,33 @@ jobs:
           node-version: 24
           cache: 'pnpm'
 
-      - name: Checkout deployment config repository
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ vars.APP_CONFIG_REPO_SLUG }}
-          token: ${{ secrets.GIT_AUTHORIZATION }}
-          ref: ${{ vars.MOBILE_CONFIG_BRANCH || 'main' }}
-          path: config_repo
+      # generate-build-env runs `pnpm generate-build-config` (tsx). Install
+      # workspace deps before that, not in the later webapp build step.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Generate build environment from deployment config
-        env:
-          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+      - name: Require CONFIG_ENVIRONMENT
         run: |
-          set -euo pipefail
-          CONFIG_ENV="${{ inputs.config_environment }}"
-          # Base path within the config repo (defaults to 'mobile'; a leading
-          # slash is tolerated and stripped).
-          CONFIG_REPO_PATH="${{ vars.APP_CONFIG_REPO_PATH || 'mobile' }}"
-          CONFIG_REPO_PATH="${CONFIG_REPO_PATH#/}"
-          BASE_CONFIG="config_repo/${CONFIG_REPO_PATH}/${CONFIG_ENV}/core.json"
-          SECRETS_CONFIG="config_repo/${CONFIG_REPO_PATH}/${CONFIG_ENV}/secrets.enc.json"
-
-          if [[ ! -f "$BASE_CONFIG" ]]; then
-            echo "Missing base config: $BASE_CONFIG" >&2
+          if [[ -z "${{ vars.CONFIG_ENVIRONMENT }}" ]]; then
+            echo "CONFIG_ENVIRONMENT must be set on GitHub Environment '${{ inputs.environment }}' to the config-repo folder name." >&2
             exit 1
           fi
 
-          if [[ -f "$SECRETS_CONFIG" ]]; then
-            jq -s '.[0] * .[1]' "$BASE_CONFIG" <(sops --decrypt "$SECRETS_CONFIG") \
-              | pnpm generate-build-config --config - --platform apps \
-              | grep -E '^[A-Z0-9_]+=' >> "$GITHUB_ENV"
-          else
-            pnpm generate-build-config --config "$BASE_CONFIG" --platform apps \
-              | grep -E '^[A-Z0-9_]+=' >> "$GITHUB_ENV"
+      - name: Checkout deployment config repository
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ vars.CONFIG_REPO_SLUG }}
+          token: ${{ secrets.GIT_AUTHORIZATION }}
+          ref: ${{ vars.CONFIG_BRANCH || 'main' }}
+          path: config-repo
 
-          fi
+      - name: Generate build environment from deployment config
+        uses: ./.github/actions/generate-build-env
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        with:
+          environment: ${{ vars.CONFIG_ENVIRONMENT }}
+          config-base-path: ${{ vars.CONFIG_REPO_PATH || 'configs' }}
 
       - name: Use Python 3.10
         uses: actions/setup-python@v4
@@ -125,7 +119,6 @@ jobs:
           export platform="github-actions-ios"
           export serverprefix="fieldmark"
 
-          pnpm install --frozen-lockfile
           pnpm --filter=@faims3/app run configIOSbuild
           pnpm run build
 
@@ -162,7 +155,7 @@ jobs:
           MATCH_PASSWORD: '${{ env.MATCH_PASSWORD }}'
           # The fastlane/Match repo. Defaults to the config repo when
           # FASTLANE_REPO_SLUG is unset (same-repo behavior).
-          MATCH_GIT_URL: 'https://github.com/${{ vars.FASTLANE_REPO_SLUG || vars.APP_CONFIG_REPO_SLUG }}.git'
+          MATCH_GIT_URL: 'https://github.com/${{ vars.FASTLANE_REPO_SLUG || vars.CONFIG_REPO_SLUG }}.git'
           GIT_AUTHORIZATION: '${{ secrets.GIT_AUTHORIZATION }}'
           PROVISIONING_PROFILE_SPECIFIER: '${{ env.PROVISIONING_PROFILE_SPECIFIER }}'
           APPLE_KEY_ID: '${{ env.APPLE_KEY_ID }}'

@@ -2,13 +2,23 @@ name: Deploy to Apple App Store Production, Manual
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: GitHub environment that supplies config vars and secrets
+        required: true
+        default: prod
+        type: choice
+        options:
+          - dev
+          - prod
+          - stage
 
 jobs:
   ios-deploy:
     name: Deploying to Production
     uses: ./.github/workflows/common-ios-build.yml
     with:
-      config_environment: production
+      environment: ${{ github.event.inputs.environment }}
       fastlane_lane: production
       fastlane_step_name: Deploy iOS app to production with Fastlane
       enable_bugsnag_sourcemaps: true

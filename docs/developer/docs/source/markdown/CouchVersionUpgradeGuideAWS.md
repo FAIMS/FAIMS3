@@ -46,16 +46,20 @@ The numbered procedure below is AWS-specific but may provide some general guidan
 
 ### CDK config
 
-From `infrastructure/aws-cdk`:
+Pull the env config (from the FAIMS3 repo root; add
+`--config-repo <git clone string>` the first time on a stage), then validate
+from `infrastructure/aws-cdk`:
 
 ```bash
-./config.sh pull <env> # note you may need --config_repo <git clone string> if first time running on a stage
-export CONFIG_FILE_NAME=<env>.json
+./scripts/sync-deployment-config.sh pull <env>
+cd infrastructure/aws-cdk
+export CONFIG_ENV=<env>
 pnpm run validate-config
 ```
 
-Keep `CONFIG_FILE_NAME` set for the whole window. `stackName` / region are in
-`configs/<env>.json`.
+Keep `CONFIG_ENV` (or `CONFIG_DIR`) set for the whole window. `stackName` /
+region are in `config/<env>/aws.json` (beside `core.json`, in the repo-root
+local mirror).
 
 ### Repo revision and build
 
@@ -146,7 +150,7 @@ cp scripts/.env.dist scripts/.env
 
 Then use the values from `api/.env` to fill out the first fields (db url,
 username, password) in `scripts/.env`, and set `STACK_NAME` to the CloudFormation
-stack name from `configs/<env>.json` (same as `stackName`).
+stack name from `config/<env>/aws.json` (same as `stackName`).
 
 When ready, run (from `infrastructure/aws-cdk`, with **AWS credentials active**):
 
@@ -158,7 +162,7 @@ pnpm run couch-upgrade-baseline                    # save the JSON output
 
 `--instance-id` looks up the Couch EC2 instance from `STACK_NAME` via
 CloudFormation and writes `EC2_INSTANCE_ID` into `scripts/.env`. With
-`CONFIG_FILE_NAME` set, the script also prints a short config summary.
+`CONFIG_ENV` (or `CONFIG_DIR`) set, the script also prints a short config summary.
 
 ## 2. Backup
 
@@ -175,12 +179,12 @@ point) for this stack’s data volume.
 
 ## 3. Change tag and deploy
 
-In `configs/<env>.json`, set `"couch": { "couchVersionTag": "<new-tag>" }`.
+In `config/<env>/aws.json` (local mirror), set `"couch": { "couchVersionTag": "<new-tag>" }`.
 
-First push up config changes:
+First push up config changes (from the repo root):
 
 ```bash
-./config.sh push <env>   # if you use the private config repo
+./scripts/sync-deployment-config.sh push <env>   # if you use the private config repo
 ```
 
 Then diff CDK to see what is changing (should expect only the instance, volume should be retained)

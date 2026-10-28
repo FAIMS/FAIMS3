@@ -17,8 +17,11 @@ import {
   notebookListDataGridSx,
 } from '../workspace/notebooks';
 import {isNotebookActivationBlocked} from '../../../context/slices/helpers/notebookDefinition';
-import {Project} from '../../../context/slices/projectSlice';
-import {sortProjectsByNewest} from '../../../lib/notebookListDisplay';
+import type {Project} from '../../../context/slices/projectSlice';
+import {
+  isProjectActivating,
+  partitionNotebookListProjects,
+} from '../../../lib/notebookListDisplay';
 
 /**
  * Renders a grid with two sections: Active and Not Active.
@@ -33,18 +36,17 @@ export default function HeadingProjectGrid({
   activatedColumns,
   notActivatedColumns,
   serverId,
+  activatingProjectKeys = [],
 }: {
   projects: Project[];
   activatedColumns: GridColDef<Project>[];
   notActivatedColumns: GridColDef<Project>[];
   serverId: string;
+  activatingProjectKeys?: readonly string[];
 }) {
-  // pull out active/inactive notebooks
-  const activatedProjects = sortProjectsByNewest(
-    projects.filter(({isActivated}) => isActivated)
-  );
-  const availableProjects = sortProjectsByNewest(
-    projects.filter(({isActivated}) => !isActivated)
+  const {activatedProjects, availableProjects} = partitionNotebookListProjects(
+    projects,
+    activatingProjectKeys
   );
 
   const history = useNavigate();
@@ -106,6 +108,11 @@ export default function HeadingProjectGrid({
           ...notebookListDataGridSx,
         }}
         getRowId={({projectId}) => projectId}
+        getRowClassName={({row}) =>
+          isProjectActivating(row, activatingProjectKeys)
+            ? 'notebook-row-activating'
+            : ''
+        }
         hideFooter={true}
         paginationModel={paginationModel}
         onPaginationModelChange={setPaginationModel}

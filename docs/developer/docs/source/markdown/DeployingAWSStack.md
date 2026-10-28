@@ -13,9 +13,9 @@ From now on, when I refer to commands in the CLI, assume unless otherwise stated
 You will need an SMTP server - including the following parameters:
 
 ```json
-    "fromEmail": "notifications@your-domain.com",
-    "fromName": "FAIMS Notification Service",
-    "replyTo": "support@your-domain.com",
+    "emailFromAddress": "notifications@your-domain.com",
+    "emailFromName": "FAIMS Notification Service",
+    "emailReplyTo": "support@your-domain.com",
     "testEmailAddress": "admin@your-domain.com",
 ```
 
@@ -114,10 +114,11 @@ In short, create a private repository, and create the following files/structure 
 
 ```text
 .
-├── infrastructure
+├── configs
 │   └── dev
-│       └── configs
-│           └── dev.json
+│       ├── core.json
+│       ├── aws.json
+│       └── secrets.enc.json (optional)
 └── README.md
 ```
 
@@ -125,37 +126,57 @@ Replacing `dev` with your proposed stage. There can be multiple stages, as in th
 
 ```text
 .
-├── infrastructure
+├── configs
 │   ├── dev
-│   │   └── configs
-│   │       └── dev.json
+│   │   ├── core.json
+│   │   ├── aws.json
+│   │   └── secrets.enc.json (optional)
 │   └── prod
-│       └── configs
-│           └── prod.json
+│       ├── core.json
+│       ├── aws.json
+│       └── secrets.enc.json (optional)
 └── README.md
 ```
 
-Use the `sample.json` in `infrastructure/aws-cdk/configs/sample.json` as a starting point for your configuration json.
+This is the one config layout for every platform. The deployment config is
+**two files**: `core.json` (shared, non-secret — the same file every
+platform uses, see [Build Configuration](Build-Configuration.md)) and
+`aws.json` (AWS-only: stack/Fargate/domains plus Secrets Manager **ARNs,
+never secret values** — Secrets Manager delivers values to the ECS task
+and API at runtime, so no secret merging or decryption happens on the CDK
+path; the optional SOPS `secrets.enc.json` is for non-AWS consumers and is
+ignored by the CDK). Use `infrastructure/aws-cdk/configs/sample/core.json`
+and `configs/sample/aws.json` as starting points. Legacy flat configs can
+be converted with `library/build-config/scripts/migrate-aws-config.ts`.
 
-From now on, when I refer to updating values in the `config json` - this is the file I am referring to. **Ensure you sync your changes using the config script in the infrastructure/aws-cdk package to pull/push the latest changes to your deployment context as you go!**.
+From now on, when I refer to updating values in the config, edit
+`core.json` / `aws.json` as appropriate (shared settings live in `core`,
+AWS settings in `aws`). **Ensure you sync your changes using the shared
+config sync script (`scripts/sync-deployment-config.sh`, run from the
+FAIMS3 repo root) to pull/push the latest changes to your deployment
+context as you go!** It mirrors each environment between the config repo
+(`configs/<stage>/`) and a local working copy at `config/<stage>/` in the
+FAIMS3 repo.
 
-Validate that you can pull the config by running
+Validate that you can pull the config by running (from the FAIMS3 repo root)
 
 ```sh
-./config.sh pull prod --config_repo git@github.com:repo-org/repo-name.git
+./scripts/sync-deployment-config.sh pull prod --config-repo git@github.com:repo-org/repo-name.git
 ```
 
-assuming you use SSH for git authentication. `prod` being replaced with your stage. After you do this once, you can push pull without the config repo argument.
+assuming you use SSH for git authentication. `prod` being replaced with your stage.
 
-Now, when we edit the config json, just change it directly in your configs/<file.json> path, and push the changes using
+Now, when we edit the config, just change `config/<stage>/core.json` /
+`config/<stage>/aws.json` in the local mirror, and push the changes using
 
 ```sh
-./config.sh push prod
+./scripts/sync-deployment-config.sh push prod
 ```
 
 ## Completing your configuration
 
-Now update the following values in your config json
+Now update the following values in your config files (`aws.json` unless
+noted as `core`)
 
 ### Stack name
 
@@ -196,10 +217,8 @@ Fill in these certificates - you noted down the ARNs earlier. Primary = your dep
 To be sure we are deploying to the right target, we include the AWS account ID and region:
 
 ```json
-  "aws": {
-    "account": "your-aws-account-id",
-    "region": "ap-southeast-2"
-  },
+  "account": "your-aws-account-id",
+  "region": "ap-southeast-2",
 ```
 
 ### Private and public key secrets
@@ -224,59 +243,56 @@ This will generate the keys locally, and upload them to AWS SM. Grab the indicat
 
 ```json
   "secrets": {
-    "privateKey": "arn:aws:secretsmanager:region:account-id:secret:private-key-secret-id",
-    "publicKey": "arn:aws:secretsmanager:region:account-id:secret:public-key-secret-id"
+    "privateKey": "arn:aws:secretsmanager:region:account-id:secret:signing-keys-secret-id"
   },
 ```
 
-### UI Configuration
+The public key lives in the same secret JSON (`rsa_public_key`); do not add a separate `publicKey` ARN.
 
-Let's talk through each option in the below:
+### Branding, notebooks, maps, and support (`core.json`)
+
+Shared UI and contact settings now live in `core.json` groups. Copy
+`infrastructure/aws-cdk/configs/sample/core.json` and see
+[Build Configuration](Build-Configuration.md) for every field. A typical
+starting point:
 
 ```json
-  "uiConfiguration": {
-    "uiTheme": "default",
-    "notebookListType": "tabs",
-    "notebookName": "notebook",
+{
+  "branding": {
+    "theme": "default",
     "appName": "FAIMS Mobile",
-    "appId": "FAIMS",
-    "offlineMaps": {
-      "mapSource": "maptiler",
-      "mapSourceKey": "your-maptiler-api-key",
-      "offlineMaps": true,
-      "mapStyle": "basic"
-    }
+    "websiteTitle": "Control Centre"
   },
-```
-
-- `uiTheme`: there are currently two themes, `bubble` or `default`.
-- `notebookListType`: 'tabs' or 'headings' display mode for notebook list
-- `notebookName`: the app display name for notebooks, e.g. 'survey'
-- `appName`: the title/display name of the app
-- `appId` : the registered ID for any associated mobile apps - usually a globally unique short ID - will depend on/inform your app deployments.
-- `headingAppName`: the heading banner display name - I'd recommend a short (fewer than five characters) acronym or abbreviation
-- `offlineMaps`
-  - `offlineMaps` true/false - false disables
-  - `mapStyle`: the map style can be basic, osm-bright, openstreetmap or toner
-  - `mapSource`: currently only supports 'osm' or 'maptiler'
-  - `mapSourceKey`: API key for maptiler or OSM
-  - `satelliteSource`: If you want to enable separate satellite maps (toggle
-    online only satellite) - provide either 'maptiler' or 'esri'. If maptiler,
-    also ensure you provide 'mapSourceKey'
-
-If you just want to get a deployment going, you can leave most of these options default.
-
-### Support links
-
-```json
-  "supportLinks": {
+  "notebookAndRecordUX": {
+    "notebookListType": "tabs",
+    "notebookName": "notebook"
+  },
+  "android": {
+    "appId": "FAIMS"
+  },
+  "maps": {
+    "mapSource": "maptiler",
+    "mapSourceKey": "your-maptiler-api-key",
+    "satelliteSource": "esri",
+    "offlineMaps": true,
+    "mapStyle": "basic"
+  },
+  "support": {
     "supportEmail": "support@your-domain.com",
     "privacyPolicyUrl": "https://your-domain.com/privacy-policy",
-    "contactUrl": "https://your-domain.com/contact"
-  },
+    "appContactUrl": "https://your-domain.com/contact"
+  }
+}
 ```
 
-Fill out these with sensible contact links, and privacy policy links.
+- `branding.theme`: `default`, `fieldmark`, or `bssTheme` (`bubble` is retired).
+- `notebookAndRecordUX.notebookListType`: `tabs` or `headings`.
+- `notebookAndRecordUX.notebookName`: display name for notebooks, e.g. `survey`.
+- `android.appId`: registered ID for associated mobile apps.
+- `maps`: tile provider, API key, optional satellite source, and offline downloads (OSM cannot enable offline maps).
+- `support`: contact email, privacy policy, and contact URL.
+
+If you just want to get a deployment going, you can leave most of these options default.
 
 ### Couch DB Detailed instance configuration
 
@@ -358,18 +374,33 @@ aws backup delete-backup-vault \
 
 ### Conductor (API) Configuration
 
-The following section configures the API.
+Conductor configuration is split between **`core.json`** (shared instance branding and startup-migration flags) and **`aws.json`** (Fargate image/sizing, autoscaling, `localhostWhitelist`, and `enhancedObservability`).
+
+In **`core.json`**:
+
+```json
+  "branding": {
+    "conductorInstanceName": "FAIMS Server",
+    "conductorDescription": "FAIMS Conductor instance deployment.",
+    "conductorShortCodePrefix": "FAIMS"
+  },
+  "migration": {
+    "disableMigrateOnStartup": false,
+    "startupMigrationLockEnabled": true,
+    "startupMigrationLockTimeoutMs": 1800000
+  },
+```
+
+In **`aws.json`**:
 
 ```json
   "conductor": {
-    "name": "FAIMS Server",
-    "description": "FAIMS Conductor instance deployment.",
     "conductorDockerImage": "see-below",
     "conductorDockerImageTag": "latest",
-    "shortCodePrefix": "FAIMS",
     "cpu": 1024,
     "memory": 2048,
     "autoScaling": {
+      "desiredCapacity": 2,
       "minCapacity": 1,
       "maxCapacity": 10,
       "targetCpuUtilization": 70,
@@ -378,17 +409,15 @@ The following section configures the API.
       "scaleOutCooldown": 60
     },
     "localhostWhitelist": false,
-    "disableMigrateOnStartup": false,
-    "disableStartupMigrationLock": false,
-    "startupMigrationLockTimeoutMs": 1800000
+    "enhancedObservability": true
   },
 ```
 
-`disableMigrateOnStartup` is optional (default `false`). When `true`, CDK sets `DISABLE_MIGRATE_ON_STARTUP=true` and API boot skips Couch migrate and notebook walks — use only when migrate is handled out of band (`pnpm migrate-with-keys`) or for a debug stack against an already-migrated DB. The lock is then unused: omit `disableStartupMigrationLock` or set it `true`. Setting `disableStartupMigrationLock: false` together with `disableMigrateOnStartup: true` fails config validation (nothing to lock).
+`core.migration.disableMigrateOnStartup` is optional (default `false`). When `true`, CDK sets `DISABLE_MIGRATE_ON_STARTUP=true` and API boot skips Couch migrate and notebook walks — use only when migrate is handled out of band (`pnpm migrate-with-keys`) or for a debug stack against an already-migrated DB. The lock is then unused: omit `startupMigrationLockEnabled` or set it `false`. Setting `startupMigrationLockEnabled: true` together with `disableMigrateOnStartup: true` fails config validation (nothing to lock).
 
-AWS ECS is a cluster: when migrate-on-startup is still on, CDK **hard-enables** the Couch-mediated startup-migration lock (`STARTUP_MIGRATION_LOCK_ENABLED=true`) so replicas claim/wait instead of racing `initialiseAndMigrateDBs`. `disableStartupMigrationLock` is optional (treated as `false` unless skip-migrate forced it off). Set it `true` only for a single-task / debug stack — the same reason local `pnpm run dev` defaults the env flag **off** (a killed reload can leave a `running` lock that strands the next boot until the steal timeout). Clustered production deployments **must leave the lock enabled** if they still migrate on boot.
+AWS ECS is a cluster: when migrate-on-startup is still on, CDK **defaults the Couch-mediated startup-migration lock on** (`STARTUP_MIGRATION_LOCK_ENABLED=true`) when `core.migration.startupMigrationLockEnabled` is omitted or `true`, so replicas claim/wait instead of racing `initialiseAndMigrateDBs`. Set `startupMigrationLockEnabled: false` only for a single-task / debug stack — the same reason local `pnpm run dev` defaults the env flag **off** (a killed reload can leave a `running` lock that strands the next boot until the steal timeout). Clustered production deployments **must leave the lock enabled** if they still migrate on boot.
 
-`startupMigrationLockTimeoutMs` is optional (default 1800000 / 30 minutes). It is passed through as `STARTUP_MIGRATION_LOCK_TIMEOUT_MS`. Clustered waiters poll until the lock is `complete` or `failed`; if it is still `running` after this age (`now - startedAtMs`, no heartbeat) they steal the lock and run migrate themselves — they do not skip migrate and attach. A steal does not cancel the original doer, so a slow-but-alive holder can overlap with the thief. Only used when the lock is enabled.
+`core.migration.startupMigrationLockTimeoutMs` is optional (default 1800000 / 30 minutes). It is passed through as `STARTUP_MIGRATION_LOCK_TIMEOUT_MS`. Clustered waiters poll until the lock is `complete` or `failed`; if it is still `running` after this age (`now - startedAtMs`, no heartbeat) they steal the lock and run migrate themselves — they do not skip migrate and attach. A steal does not cancel the original doer, so a slow-but-alive holder can overlap with the thief. Only used when the lock is enabled.
 
 Conductor binds liveness `GET /up` (200, no Couch) before startup migrations, then attaches the rest of the API on the same listener. Old Conductor images already served `/up`, so the ALB target group can probe `/up` across the image cutover. `GET /ready` is mounted only after the full API attaches. ECS `healthCheckGracePeriod` is 120s to cover Node import through that first bind — not the migrate itself.
 
@@ -412,6 +441,7 @@ The remaining options are for your consideration. They are largely performance, 
         "cpu": 2048,
         "memory": 4096,
         "autoScaling": {
+            "desiredCapacity": 2,
             "minCapacity": 2,
             "maxCapacity": 5,
             "targetCpuUtilization": 60,
@@ -457,10 +487,10 @@ Note that:
 
 ### Mobile application links
 
-Put in the public links to the iOS and Android apps, once they are deployed. I would recommend deploying the backend and web interfaces first (what we are doing now), then adding in the app deployments.
+Put in the public links to the iOS and Android apps in **`core.json`** under `endpoints`, once they are deployed. I would recommend deploying the backend and web interfaces first (what we are doing now), then adding in the app deployments.
 
 ```json
-  "mobileApps": {
+  "endpoints": {
     "androidAppPublicUrl": "https://play.google.com/store/apps/details?id=your.android.app.id",
     "iosAppPublicUrl": "https://apps.apple.com/app/your-ios-app-id"
   },
@@ -468,46 +498,53 @@ Put in the public links to the iOS and Android apps, once they are deployed. I w
 
 ### Authentication Configuration
 
-By default only local authentication (email and password) is supported but additional
+By default only local authentication (email and password) is supported, but additional
 identity providers can be configured. Currently supported providers are Google, any
 OIDC compliant provider, and SAML 2.0 identity providers.
 
-To configure additional providers add the `"authProviders"` property to the production
-configuration. The following example shows both Google and an OIDC provider:
+Provider **definitions** live in **`core.json`** (`core.authProviders`), while the enabled provider IDs and the Secrets Manager ARN holding their credentials live in **`aws.json`** (`aws.authProviders`).
+
+In **`core.json`**:
 
 ```json
-"authProviders": {
-    "providers": ["google", "someOidcProvider"],
-    "secretArn": "arn:aws:secretsmanager:region:account-id:secret:auth-providers-credentials-id",
-    "config": {
-      "google": {
-        "type": "google",
-        "index": 1,
-        "displayName": "Google",
-        "helperText": "Login with Google",
-        "scope": "profile,email,https://www.googleapis.com/auth/plus.login"
-      },
-      "someOidcProvider": {
-        "type": "oidc",
-        "index": 2,
-        "displayName": "OIDC Provider",
-        "helperText": "Log in with your organization's OIDC provider.",
-        "authorizationURL": "https://your-oidc-provider.com",
-        "tokenURL": "https://your-oidc-provider.com/token",
-        "userInfoURL": "https://your-oidc-provider.com/userinfo",
-        "scope": "profile,email"
-      }
+  "authProviders": {
+    "google": {
+      "id": "google",
+      "type": "google",
+      "index": 1,
+      "displayName": "Google",
+      "helperText": "Login with Google",
+      "scope": ["profile", "email", "https://www.googleapis.com/auth/plus.login"]
+    },
+    "someOidcProvider": {
+      "id": "someOidcProvider",
+      "type": "oidc",
+      "index": 2,
+      "displayName": "OIDC Provider",
+      "helperText": "Log in with your organization's OIDC provider.",
+      "issuer": "https://your-oidc-provider.com",
+      "authorizationURL": "https://your-oidc-provider.com/authorize",
+      "tokenURL": "https://your-oidc-provider.com/token",
+      "userInfoURL": "https://your-oidc-provider.com/userinfo",
+      "scope": ["openid", "profile", "email"]
     }
   },
 ```
 
-The `providers` property lists the providers to be configured; for each of these
-there must be a property in the `config` object containing the detailed configuration.
+In **`aws.json`**:
 
-The `secretArn` property contains the identity of an AWS Secret Manager secret containing
-the credentials for each provider (see [Creating Secrets](#creating-secrets)).
+```json
+  "authProviders": {
+    "providers": ["google", "someOidcProvider"],
+    "secretArn": "arn:aws:secretsmanager:region:account-id:secret:auth-providers-credentials-id"
+  },
+```
 
-For **Google** and **OIDC** providers, include:
+The `aws.authProviders.providers` array lists the provider IDs enabled for this stack; for each ID there must be a matching entry in `core.authProviders`.
+
+The `aws.authProviders.secretArn` property contains the ARN of an AWS Secrets Manager secret containing the credentials for each enabled provider (see [Creating Secrets](#creating-secrets)).
+
+For **Google** and **OIDC** providers, include in the Secrets Manager secret JSON:
 
 ```json
 {
@@ -516,44 +553,52 @@ For **Google** and **OIDC** providers, include:
 }
 ```
 
-where `provider` matches the provider name in your main configuration.
+where `provider` matches the provider ID in `core.authProviders`.
 
-The `config` property contains the detailed configuration for each provider. The `type`
-property determines what type of provider it is. We currently support `google`, `oidc`, and `saml`.
+Each entry in `core.authProviders` contains the non-secret configuration for that provider (`id`, `type`, `displayName`, optional `index`, `helperText`, and `scope` array). We currently support `google`, `oidc`, and `saml`.
 There should only be one entry of type `google`. The optional `index` property defines where this
 appears in the list of providers. The `displayName` property will be used to title the
 login button (`Continue with XXX`). The optional `helperText` property is a string that
 will be displayed below the login button.
 
-There can be more than one OIDC provider. In addition to the common properties there are three
-properties that configure the OIDC endpoint: `authorizationURL`, `tokenURL`, and `userInfoURL`.
+There can be more than one OIDC provider. In addition to the common properties there are four
+properties that configure the OIDC endpoint: `issuer`, `authorizationURL`, `tokenURL`, and `userInfoURL`.
 
 #### SAML Authentication
 
 SAML 2.0 providers require more detailed configuration. The configuration is based on the
 [passport-saml](https://www.passportjs.org/packages/passport-saml/) specification, with full
-schema documentation available in `SAMLAuthProviderConfigSchema` in the CDK config.
+schema documentation available in `SAMLAuthProviderConfigSchema` in `@faims3/build-config`.
 
 **Example SAML configuration:**
 
+In **`core.json`**:
+
 ```json
-"authProviders": {
-    "providers": ["enterprise-sso"],
-    "secretArn": "arn:aws:secretsmanager:region:account-id:secret:auth-providers-credentials-id",
-    "config": {
-      "enterprise-sso": {
-        "type": "saml",
-        "index": 1,
-        "displayName": "Enterprise SSO",
-        "helperText": "Log in with your organization account",
-        "entryPoint": "https://idp.example.com/sso/saml",
-        "issuer": "https://your-app.example.com",
-        "idpPublicKey": "-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----",
-        "identifierFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
-        "wantAssertionsSigned": true,
-        "signatureAlgorithm": "sha256"
-      }
+  "authProviders": {
+    "enterprise-sso": {
+      "id": "enterprise-sso",
+      "type": "saml",
+      "index": 1,
+      "displayName": "Enterprise SSO",
+      "helperText": "Log in with your organization account",
+      "scope": ["profile", "email"],
+      "entryPoint": "https://idp.example.com/sso/saml",
+      "issuer": "https://your-app.example.com",
+      "idpPublicKey": "-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----",
+      "identifierFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
+      "wantAssertionsSigned": true,
+      "signatureAlgorithm": "sha256"
     }
+  }
+```
+
+In **`aws.json`**:
+
+```json
+  "authProviders": {
+    "providers": ["enterprise-sso"],
+    "secretArn": "arn:aws:secretsmanager:region:account-id:secret:auth-providers-credentials-id"
   }
 ```
 
@@ -598,17 +643,21 @@ requests and decrypting assertions:
 ```json
 {
   "provider-privateKey": "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----",
-  "provider-publicKey": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
+  "provider-publicKey": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----",
+  "provider-idpPublicKey": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
 }
 ```
 
-| Secret Key            | Description                                                                       |
-| --------------------- | --------------------------------------------------------------------------------- |
-| `provider-privateKey` | Your SP's private key for signing requests and decrypting assertions (PEM format) |
-| `provider-publicKey`  | Your SP's public certificate, included in metadata for the IdP (PEM format)       |
+| Secret Key              | Description                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| `provider-privateKey`   | Your SP's private key for signing requests and decrypting assertions (PEM format) |
+| `provider-publicKey`    | Your SP's public certificate, included in metadata for the IdP (PEM format)       |
+| `provider-idpPublicKey` | The IdP's public certificate. Required in SM when omitted from `core.json`.       |
 
-**Note:** The `idpPublicKey` can be specified either in the config (as shown in the example) or
-in the secrets as `provider-idpPublicKey`. If provided in both places, the secrets value takes precedence.
+**Note:** The `idpPublicKey` can be specified either in `core.authProviders` (as shown
+in the example) or in Secrets Manager as `provider-idpPublicKey`. The CDK wires the
+SM key only when the core value is omitted, so a secrets-only cert still reaches
+Conductor. If both are set, the core value is used.
 
 **SP Metadata:**
 
@@ -661,16 +710,22 @@ with the following content (see [Creating Secrets](#creating-secrets)).
 }
 ```
 
-Include the secret ARN alongside other parameters in the config file:
+Put the non-secret email identity in `core.email` and the credentials ARN
+on `aws.smtpCredentialsSecretArn`:
 
 ```json
+  "email": {
     "emailServiceType": "SMTP",
-    "fromEmail": "notifications@your-domain.com",
-    "fromName": "FAIMS Notification Service",
-    "replyTo": "support@your-domain.com",
+    "emailFromAddress": "notifications@your-domain.com",
+    "emailFromName": "FAIMS Notification Service",
+    "emailReplyTo": "support@your-domain.com",
     "testEmailAddress": "admin@your-domain.com",
-    "cacheExpirySeconds": 300,
-    "credentialsSecretArn": "your secret arn"
+    "smtpCacheExpirySeconds": 300
+  }
+```
+
+```json
+  "smtpCredentialsSecretArn": "arn:aws:secretsmanager:region:account-id:secret:smtp-credentials-id"
 ```
 
 ## Creating Secrets
@@ -678,7 +733,7 @@ Include the secret ARN alongside other parameters in the config file:
 To manage the secrets for authentication and SMTP configurations there is a script `genSecrets.sh`
 which will create secrets in AWS Secrets Manager from a JSON configuration file.
 
-First create a configuration file by copying `configs/secrets-sample.json`
+First create a configuration file by copying `infrastructure/aws-cdk/configs/secrets-sample.json`
 
 ```json
 {
@@ -712,25 +767,26 @@ Usage: ./scripts/genSecrets.sh <secrets_file> <config_file> [--replace]
 For example:
 
 ```sh
-./scripts/genSecrets.sh configs/my-secrets.json configs/prod.json
+./scripts/genSecrets.sh configs/my-secrets.json ../../config/prod/aws.json
 ```
 
 The script will show an error if the secrets already exist. In this case you can add the
 `--replace` flag to have it replace them with new secrets.
 
-The script will copy the resulting ARNs into the correct places in your main
-configuration file.
+The script will copy the resulting ARNs into the correct places in your
+`aws.json`. (Only ARNs ever land in the config files — the CDK never reads
+the secret values.)
 
 ## Deploying using your configuration
 
-You have bootstrapped your CDK account, setup some initial dependencies, and configured your config json (remembering to push it using `./config.sh push <stage>`), you should be ready to deploy FAIMS now.
+You have bootstrapped your CDK account, setup some initial dependencies, and configured your config (remembering to push it using `./scripts/sync-deployment-config.sh push <stage>` from the repo root), you should be ready to deploy FAIMS now.
 
 To deploy, first ensure you have your AWS credentials for the target account configured.
 
-Next, tell our CDK scripts which config to use, by setting the below environment variable to the filename of your config
+Next, tell our CDK scripts which config to use, by setting the below environment variable to the name of your environment (loading the local mirror `config/prod/core.json` + `aws.json` at the repo root; or set `CONFIG_DIR` to an env folder in a checked-out config repo, as CI does)
 
 ```bash
-export CONFIG_FILE_NAME=prod.json
+export CONFIG_ENV=prod
 ```
 
 then run a CDK diff
@@ -830,8 +886,46 @@ I don't recommend using the CouchDB admin user/password to manage the system. In
 
 You can now manage the deployment with your personal login.
 
+## GitHub Actions (validate + one-click CDK deploy)
+
+The workflows in this repo already use the two-file config layout. You do not write env vars into the YAML — you create GitHub Environments and put the config-targeting settings on each one. Every workflow (CDK, validate, mobile) has a dropdown for `dev`, `prod`, or `stage`. Need more names? Fork and add another choice plus Environment.
+
+### What to copy
+
+If you are working from a fork, keep these files (or copy them from `.github/workflow-templates/`):
+
+- `.github/actions/config/action.yml` — resolves `configs/<env>/` and outputs `CONFIG_DIR` + AWS account/region
+- `.github/workflows/validate-config.yml` — checkout + `pnpm run validate-config` (no AWS credentials)
+- `.github/workflows/deploy-aws-cdk.yml` — same checkout, then `cdk diff` / `cdk deploy`
+
+### GitHub Environments and settings
+
+Create GitHub Environments named `dev`, `prod`, and `stage`. Protect `prod` with required reviewers if you can. On **each** Environment set:
+
+| Setting              | Type     | Purpose                                                                      |
+| -------------------- | -------- | ---------------------------------------------------------------------------- |
+| `GIT_AUTHORIZATION`  | Secret   | Token with read access to the private config repo                            |
+| `CONFIG_REPO_SLUG`   | Variable | Config repo slug (`owner/repo`)                                              |
+| `CONFIG_ENVIRONMENT` | Variable | Required. Config-repo folder this GitHub Environment maps to                 |
+| `CONFIG_BRANCH`      | Variable | Optional; defaults to `main`                                                 |
+| `CONFIG_REPO_PATH`   | Variable | Optional; defaults to `configs`                                              |
+| `DEPLOY_GA_ROLE_ARN` | Variable | IAM role the deploy workflow assumes via OIDC. Not used by `validate-config` |
+
+The config repo folder the workflows read is `<CONFIG_REPO_PATH>/<CONFIG_ENVIRONMENT>/`:
+
+```text
+<config-repo>/configs/prod/core.json
+<config-repo>/configs/prod/aws.json
+```
+
+Deploy also needs an AWS IAM role that trusts GitHub's OIDC provider (`permissions: id-token: write` is already in `deploy-aws-cdk.yml`). Validate does not.
+
+### First check
+
+Run **Validate FAIMS deployment config** from the Actions tab and pick `dev`, `prod`, or `stage`. That confirms the token can clone the config repo and that `core.json` + `aws.json` pass the same parser CDK uses. Then run **CDK Deploy FAIMS3 to AWS** with `diff` before `deploy`.
+
 ## Additional configurations
 
 There are other additional configurations we did not cover, however they are out of scope for this particular tutorial.
 
-For example, you can configure Google social sign in, and apply different theming. You may also want to setup the GitHub actions CDK deployment workflow which allows a one click deploy.
+For example, you can configure Google social sign in, and apply different theming.

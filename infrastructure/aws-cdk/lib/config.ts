@@ -2,13 +2,21 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {z} from 'zod';
 
-import {BuildConfigCoreObjectSchema} from '@faims3/build-config';
+import {
+  BuildConfigCoreObjectSchema,
+  SHARED_DEFAULTS,
+  parseBuildConfig,
+} from '@faims3/build-config';
 
 // The shared deployment config (bugsnag key, maps/offline maps, address
 // autosuggest, theme/notebook branding, support links, security, SMTP, auth
-// provider definitions, conductor instance name/description/migrate flags) is
-// validated verbatim by @faims3/build-config's BuildConfigCoreObjectSchema in
-// the `core` slot. Only the AWS-specific config remains below.
+// provider definitions, conductor instance name/description/migrate flags)
+// is the same `core.json` every platform uses, parsed with build-config's
+// full `parseBuildConfig` (shared invariants included — domain endpoint
+// derivation, name fallbacks, clamps). Only the AWS-specific config
+// (`aws.json`) remains below. There is deliberately no secret *value*
+// handling here: `aws.json` carries Secrets Manager ARNs, and secret
+// values move only inside AWS (SM -> ECS task / SM -> API process).
 
 // For each provider we should have these secrets in the secrets manager
 // const AuthProviderSecretSchema = z.object({
@@ -129,9 +137,6 @@ const DomainsConfigSchema = z.object({
   /** The subdomain prefix for the documentation site (user docs, built with Sphinx) */
   docs: z.string().default('docs'),
 });
-
-/** Age of a still-running lock after which a waiter steals it and runs migrate. */
-export const DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS = 1_800_000;
 
 export const ConductorConfigSchema = z
   .object({
@@ -261,8 +266,10 @@ const TtlCleanupConfigSchema = z.object({
 // webDesignerLimits groups). The bubble theme is retired.
 
 /** Defaults shared with Conductor env wiring (`EXPORT_RATE_LIMITER_*`). */
-export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS = 600_000;
-export const DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW = 20;
+export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS =
+  SHARED_DEFAULTS.exportRateLimiterWindowMs;
+export const DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW =
+  SHARED_DEFAULTS.exportRateLimiterPerWindow;
 
 // Security parameters (max long-lived token duration, HTTP rate limiter,
 // attempt limiter, export rate limiter) are now core (build-config's limits
@@ -298,10 +305,12 @@ export const AwsConfigSchema = z.object({
   // AWS Region
   region: z.string().default('ap-southeast-2'),
   secrets: z.object({
-    /** ARN of the private key secret */
+    /**
+     * ARN of the signing-key secret. The API fetches it at runtime
+     * (KEY_SOURCE=AWS_SM) and expects JSON {rsa_private_key, rsa_public_key}
+     * in this one secret — there is no separate public-key secret.
+     */
     privateKey: z.string(),
-    /** ARN of the public key secret */
-    publicKey: z.string(),
   }),
   /** ARN of the secret containing SMTP credentials (host/port/user/pass). */
   smtpCredentialsSecretArn: z.string(),
@@ -333,15 +342,23 @@ export const AwsConfigSchema = z.object({
 });
 
 /**
- * The top-level CDK config: `{ core, aws }`. `core` is validated
- * verbatim by @faims3/build-config (the same schema the app/web/api and the
- * mobile build use), so the shared config is guaranteed identical across all
- * consumers; `aws` is the AWS-specific extension above.
+ * The top-level CDK config, composed from the two deployment files:
+ * `core` (the shared `core.json`, the same file the app/web/api and mobile
+ * builds use) and `aws` (the AWS-only extension in `aws.json`).
+ *
+ * `core` is first shape-checked with build-config's core object schema
+ * (which is composable into this object), then run through the full
+ * `parseBuildConfig` in the transform so the shared invariants (domain
+ * endpoint derivation, name fallbacks, OSM/token clamps) apply on the AWS
+ * path exactly as they do everywhere else. Parsing the core object schema
+ * alone would silently skip those derivations.
  */
-export const ConfigSchema = z.object({
-  core: BuildConfigCoreObjectSchema,
-  aws: AwsConfigSchema,
-});
+export const ConfigSchema = z
+  .object({
+    core: BuildConfigCoreObjectSchema,
+    aws: AwsConfigSchema,
+  })
+  .transform(({core, aws}) => ({core: parseBuildConfig(core), aws}));
 
 // Infer the types from the schemas
 export type Config = z.infer<typeof ConfigSchema>;
@@ -353,34 +370,110 @@ export type TtlCleanupConfig = z.infer<typeof TtlCleanupConfigSchema>;
 export type DomainsConfig = z.infer<typeof DomainsConfigSchema>;
 export type AuthProvidersConfig = z.infer<typeof AuthProvidersAwsConfigSchema>;
 
-export const loadConfig = (filePath: string): Config => {
-  // Parse and validate the config
-  try {
-    const absolutePath = path.resolve(process.cwd(), filePath);
-    const fileContents = fs.readFileSync(absolutePath, 'utf-8');
-    const jsonData = JSON.parse(fileContents);
-    const config = ConfigSchema.parse(jsonData);
-    // Cross-slot rule: every provider enabled in aws.authProviders
-    // must have a definition in core.authProviders.
-    const enabled = config.aws.authProviders?.providers ?? [];
-    const missing = enabled.filter(id => !(id in config.core.authProviders));
-    if (missing.length > 0) {
-      throw new Error(
-        `authProviders.providers lists provider(s) with no core.authProviders entry: ${missing.join(', ')}`
-      );
-    }
-    return config;
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      console.error('Configuration validation failed:');
-      error.issues.forEach(err => {
-        console.error(`- ${err.path.join('.')}: ${err.message}`);
-      });
-    } else {
-      console.error('Error loading configuration:', error);
-    }
+/**
+ * Validate a parsed core + aws pair (composing them through ConfigSchema,
+ * which runs the core through the full build-config invariants) and apply
+ * the cross-file rule: every provider enabled in aws.authProviders must
+ * have a definition in core.authProviders.
+ */
+export function parseConfig(coreRaw: unknown, awsRaw: unknown): Config {
+  const config = ConfigSchema.parse({core: coreRaw, aws: awsRaw});
+  const enabled = config.aws.authProviders?.providers ?? [];
+  const missing = enabled.filter(id => !(id in config.core.authProviders));
+  if (missing.length > 0) {
+    throw new Error(
+      `authProviders.providers lists provider(s) with no core.authProviders entry: ${missing.join(', ')}`
+    );
   }
-  //process.exit(1);
+  return config;
+}
+
+function readJsonFile(filePath: string): unknown {
+  const absolutePath = path.resolve(process.cwd(), filePath);
+  return JSON.parse(fs.readFileSync(absolutePath, 'utf-8'));
+}
+
+function reportAndThrow(error: unknown): never {
+  if (error instanceof z.ZodError) {
+    console.error('Configuration validation failed:');
+    error.issues.forEach(err => {
+      console.error(`- ${err.path.join('.')}: ${err.message}`);
+    });
+  } else {
+    console.error('Error loading configuration:', error);
+  }
   process.exitCode = 1;
   throw new Error('Error loading configuration');
+}
+
+/**
+ * Load the canonical two-file deployment config: `core.json` (shared,
+ * parsed by @faims3/build-config) + `aws.json` (AWS extension, ARNs only —
+ * no secret values are read or merged on this path; Secrets Manager
+ * delivers them to the ECS task / API at runtime).
+ */
+export const loadConfigFiles = (
+  coreFilePath: string,
+  awsFilePath: string
+): Config => {
+  try {
+    return parseConfig(readJsonFile(coreFilePath), readJsonFile(awsFilePath));
+  } catch (error) {
+    return reportAndThrow(error);
+  }
+};
+
+/**
+ * Resolve and load the deployment config from environment variables, in
+ * precedence order:
+ *  1. CORE_CONFIG_FILE + AWS_CONFIG_FILE (explicit file paths)
+ *  2. CONFIG_DIR (a directory containing core.json + aws.json — e.g. an
+ *     env folder in a checked-out config repository; read in place, no
+ *     copying. This is what CI uses, via the FAIMS Config GitHub Action.)
+ *  3. CONFIG_ENV=<name> (the local config mirror written by
+ *     scripts/sync-deployment-config.sh at <repo-root>/config/<name>/)
+ * There is one config layout everywhere: an env folder holding core.json
+ * (shared, non-secret) + aws.json (AWS extension, Secrets Manager ARNs
+ * only). The legacy flat and combined single-file formats are gone; migrate
+ * old files with library/build-config/scripts/migrate-aws-config.ts.
+ * `baseDir` is the aws-cdk package directory (infrastructure/aws-cdk).
+ */
+export const loadConfigFromEnv = (
+  baseDir: string,
+  env: NodeJS.ProcessEnv = process.env
+): Config => {
+  const resolve = (p: string) =>
+    path.isAbsolute(p) ? p : path.resolve(process.cwd(), p);
+
+  if (env.CORE_CONFIG_FILE || env.AWS_CONFIG_FILE) {
+    if (!env.CORE_CONFIG_FILE || !env.AWS_CONFIG_FILE) {
+      throw new Error(
+        'CORE_CONFIG_FILE and AWS_CONFIG_FILE must be set together.'
+      );
+    }
+    return loadConfigFiles(
+      resolve(env.CORE_CONFIG_FILE),
+      resolve(env.AWS_CONFIG_FILE)
+    );
+  }
+  if (env.CONFIG_DIR) {
+    const dir = resolve(env.CONFIG_DIR);
+    return loadConfigFiles(
+      path.join(dir, 'core.json'),
+      path.join(dir, 'aws.json')
+    );
+  }
+  if (env.CONFIG_ENV) {
+    // Local mirror: <repo-root>/config/<env>/ (baseDir is
+    // <repo-root>/infrastructure/aws-cdk), populated by
+    // scripts/sync-deployment-config.sh pull <env>.
+    const dir = path.resolve(baseDir, '..', '..', 'config', env.CONFIG_ENV);
+    return loadConfigFiles(
+      path.join(dir, 'core.json'),
+      path.join(dir, 'aws.json')
+    );
+  }
+  throw new Error(
+    'No deployment config specified. Set CONFIG_ENV=<name> (local mirror config/<name>/ from scripts/sync-deployment-config.sh), CONFIG_DIR=<dir containing core.json + aws.json>, or CORE_CONFIG_FILE + AWS_CONFIG_FILE.'
+  );
 };

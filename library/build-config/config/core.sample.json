@@ -26,7 +26,8 @@
     "websiteTitle": "Control Centre",
     "conductorInstanceName": "Local FAIMS Server",
     "conductorDescription": "Local development server instance",
-    "conductorShortCodePrefix": "LOC"
+    "conductorShortCodePrefix": "LOC",
+    "clusterAdminGroupName": "cluster-admin"
   },
   "support": {
     "supportEmail": "support@fieldmark.au",
@@ -38,7 +39,9 @@
     "notebookName": "survey",
     "notebookListType": "tabs",
     "navigation": "breadcrumbs",
-    "showStatusTab": true
+    "showStatusTab": true,
+    "showNewNotebook": true,
+    "showRecordSummaryCounts": true
   },
   "maps": {
     "mapSource": "maptiler",
@@ -158,11 +161,13 @@
     "appleKeyContent": "<secret>"
   },
   "couchdb": {
-    "couchdbUser": "admin",
-    "couchdbPassword": "aSecretPasswordThatCantBeGuessed",
-    "couchdbExternalPort": 5984,
-    "conductorExternalPort": 8080,
-    "conductorInternalPort": 8080
+    "user": "admin",
+    "password": "aSecretPasswordThatCantBeGuessed",
+    "externalPort": 5984
+  },
+  "conductor": {
+    "externalPort": 8080,
+    "internalPort": 8080
   },
   "dev": {
     "developerMode": false,

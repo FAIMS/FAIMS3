@@ -186,7 +186,11 @@ const ExpandedChecklist = ({
             lineHeight: '1.5',
           }}
           dangerouslySetInnerHTML={{
-            __html: contentToSanitizedHtml(option.label),
+            // we don't want inline html here - wraps label in a <p> tag
+            __html: contentToSanitizedHtml({
+              content: option.label,
+              inline: false,
+            }),
           }}
         />
       }
@@ -320,7 +324,11 @@ const MuiMultiSelect = ({
             return (
               <span
                 dangerouslySetInnerHTML={{
-                  __html: contentToSanitizedHtml(displayText),
+                  // generate inline html for the option list
+                  __html: contentToSanitizedHtml({
+                    content: displayText,
+                    inline: true,
+                  }),
                 }}
               />
             );
@@ -434,7 +442,10 @@ const MuiMultiSelect = ({
                         wordBreak: 'break-word',
                       }}
                       dangerouslySetInnerHTML={{
-                        __html: contentToSanitizedHtml(option.label),
+                        __html: contentToSanitizedHtml({
+                          content: option.label,
+                          inline: false,
+                        }),
                       }}
                     />
                   }

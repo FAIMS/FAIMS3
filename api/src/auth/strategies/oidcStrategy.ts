@@ -67,6 +67,11 @@ const generateOIDCVerifyFunction = ({
 // - issuer, authorizationURL, tokenURL, userInfoURL, clientID, clientSecret
 //   are all as per the passport-openidconnect Strategy configuration
 export const oidcStrategyGenerator = (options: OIDCAuthProviderConfig) => {
+  if (!options.clientID || !options.clientSecret) {
+    throw new Error(
+      `OIDC auth provider '${options.id}' is missing required clientID or clientSecret.`
+    );
+  }
   // This strategy handles both login and registration cases with the same
   // verify function
   const strategy = new Strategy(
@@ -75,10 +80,8 @@ export const oidcStrategyGenerator = (options: OIDCAuthProviderConfig) => {
       authorizationURL: options.authorizationURL,
       tokenURL: options.tokenURL,
       userInfoURL: options.userInfoURL,
-      // Deployment secrets: always present in the API's generated env, so
-      // assert them (the shared build-config type keeps them optional).
-      clientID: options.clientID!,
-      clientSecret: options.clientSecret!,
+      clientID: options.clientID,
+      clientSecret: options.clientSecret,
       callbackURL:
         config.conductorPublicUrl + providerAuthReturnUrl(options.id),
       passReqToCallback: true,

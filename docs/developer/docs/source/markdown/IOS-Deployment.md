@@ -88,7 +88,7 @@ See [Fastlane Lanes: Team vs Individual](#-fastlane-lanes-team-vs-individual).
 [Fastlane match](https://docs.fastlane.tools/actions/match/) is used to store signing keys
 for the App Store. It requires that we create a new **private** repository on Github
 to store the signing certificates. Create this repository and set the value of
-`vars.APP_CONFIG_REPO_SLUG` in GitHub Actions; workflows derive
+`vars.CONFIG_REPO_SLUG` in GitHub Actions; workflows derive
 `MATCH_GIT_URL` as `https://github.com/<slug>.git`.
 
 To generate the secrets we need to run `fastlane match`. This requires a temporary file
@@ -182,7 +182,7 @@ The current iOS deployment workflows are:
 All four workflows follow the same config pattern:
 
 1. Checkout this repository.
-2. Checkout the private config repository from `vars.APP_CONFIG_REPO_SLUG`.
+2. Checkout the private config repository from `vars.CONFIG_REPO_SLUG`.
 3. Read `core.json` and decrypt `secrets.enc.json`.
 4. Generate env vars with `pnpm generate-build-config --platform ios`.
 5. Run the relevant Fastlane lane.
@@ -194,11 +194,11 @@ repository instead of declaring most values as direct GitHub secrets/variables.
 
 Each workflow does the following:
 
-1. Checkout the config repository using `vars.APP_CONFIG_REPO_SLUG`.
+1. Checkout the config repository using `vars.CONFIG_REPO_SLUG`.
 2. Read environment-specific files:
 
-- `mobile/<environment>/core.json`
-- `mobile/<environment>/secrets.enc.json`
+- `configs/<environment>/core.json`
+- `configs/<environment>/secrets.enc.json`
 
 3. Decrypt `secrets.enc.json` in CI with `secrets.SOPS_AGE_KEY`.
 4. Merge both JSON files and run `pnpm generate-build-config --platform ios`.
@@ -211,23 +211,26 @@ For the JSON structure and the meaning of each field, see
 
 Only a small bootstrap set is required in GitHub Actions:
 
-- `vars.APP_CONFIG_REPO_SLUG` - the config repo slug in the form `owner/repo`
-- `vars.APP_CONFIG_REPO_PATH` - base path within the config repo (default `mobile`)
+- `vars.CONFIG_REPO_SLUG` - the config repo slug in the form `owner/repo`
+- `vars.CONFIG_REPO_PATH` - base path within the config repo (default `configs`)
 - `vars.FASTLANE_REPO_SLUG` - the Match repo slug (unset = same repo as config)
-- `vars.MOBILE_CONFIG_BRANCH` - config branch (defaults to `main`)
-- `vars.MOBILE_CONFIG_ENVIRONMENT` - environment folder under the config path
+- `vars.CONFIG_BRANCH` - config branch (defaults to `main`)
+- `vars.CONFIG_ENVIRONMENT` - required. Config-repo folder this GitHub Environment maps to
 - `secrets.GIT_AUTHORIZATION` - token with read access to the config repo
 - `secrets.SOPS_AGE_KEY` - age private key for decrypting `secrets.enc.json`
 
+Set these on each GitHub Environment (`dev`, `prod`, `stage`). Workflows pick
+the Environment from a dropdown.
+
 The workflow derives `MATCH_GIT_URL` as
-`https://github.com/<FASTLANE_REPO_SLUG or APP_CONFIG_REPO_SLUG>.git` — the Match repo
+`https://github.com/<FASTLANE_REPO_SLUG or CONFIG_REPO_SLUG>.git` — the Match repo
 when `FASTLANE_REPO_SLUG` is set, otherwise the config repo. Keeping them separate
 isolates Match's git activity from config edits.
 
 Because the same repository is also used for Fastlane Match certificates/profiles,
 follow the shared-repo safety guidance in
 [Build Configuration](Build-Configuration.md#protecting-the-config--match-repositories)
-before changing anything outside `mobile/<environment>/`.
+before changing anything outside `configs/<environment>/`.
 
 ## Appfile & Fastfile Logic
 
@@ -284,6 +287,9 @@ There is no Issuer ID for Individual keys.
   `match AppStore <bundle-id>`, set `PROVISIONING_PROFILE_SPECIFIER` to the
   exact name (both team and individual workflows honour this).
 - Individual workflows are `workflow_dispatch` only (no nightly schedule).
+- The scheduled TestFlight workflow (`appstore-testflight.yml`) uses the
+  repository variable `SCHEDULED_IOS_TESTFLIGHT_ENVIRONMENT` (`dev`, `prod`,
+  or `stage`). It does not default an Environment. Manual runs use the dropdown.
 
 ## Note on Development Team
 

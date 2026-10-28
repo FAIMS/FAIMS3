@@ -2,11 +2,8 @@
 import passport from 'passport';
 import {
   AuthProviderConfig,
-  AuthProviderConfigMap,
   BaseAuthProviderConfig,
-  GoogleAuthProviderConfig,
-  OIDCAuthProviderConfig,
-  SAMLAuthProviderConfig,
+  RuntimeAuthProviderConfigMap,
 } from '@faims3/build-config';
 import {googleStrategyGenerator} from './googleStrategy';
 import {getLocalAuthStrategy} from './localStrategy';
@@ -14,11 +11,8 @@ import {oidcStrategyGenerator} from './oidcStrategy';
 import {samlStrategyGenerator} from './samlStrategy';
 import {config} from '../../buildconfig';
 
-// The parsed, validated auth provider map. buildconfig.ts already parses the
-// AUTH_* env vars through @faims3/build-config (parseGeneratedEnv ->
-// readAuthProviderConfigFromEnv), so we read the already-parsed values here
-// instead of re-reading process.env.
-export const getAuthProviderConfig = (): AuthProviderConfigMap => {
+/** Auth providers already parsed by `parseApiEnv` (AUTH_* env). */
+export const getAuthProviderConfig = (): RuntimeAuthProviderConfigMap => {
   return config.authProviderConfig;
 };
 
@@ -75,15 +69,14 @@ export const registerAuthProviders = (): RegisteredAuthProviders => {
     let strategy: passport.Strategy;
 
     if (config.type === 'google') {
-      strategy = googleStrategyGenerator(config as GoogleAuthProviderConfig);
+      strategy = googleStrategyGenerator(config);
     } else if (config.type === 'oidc') {
-      strategy = oidcStrategyGenerator(config as OIDCAuthProviderConfig);
+      strategy = oidcStrategyGenerator(config);
     } else if (config.type === 'saml') {
-      strategy = samlStrategyGenerator(
-        config as SAMLAuthProviderConfig
-      ) as passport.Strategy;
+      strategy = samlStrategyGenerator(config) as passport.Strategy;
     } else {
-      console.warn(`Unknown auth provider type: ${(config as any).type}`);
+      const unexpected: never = config;
+      console.warn(`Unknown auth provider type: ${String(unexpected)}`);
       return;
     }
 

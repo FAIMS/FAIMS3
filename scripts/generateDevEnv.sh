@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Thin wrapper around generate-build-config for local .env files.
+# Covered by scripts/test/deployment-scripts.test.sh (missing-file path).
 # generate .env files for all apps from the shared config JSON
 
 if [ ! -f `pwd`/config/dev/core.json ]; then

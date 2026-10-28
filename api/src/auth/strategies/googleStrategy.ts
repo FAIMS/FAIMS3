@@ -68,19 +68,22 @@ async function oauthVerify(
 }
 
 export const googleStrategyGenerator = ({
+  id,
   clientID,
   clientSecret,
   scope,
 }: GoogleAuthProviderConfig) => {
+  if (!clientID || !clientSecret) {
+    throw new Error(
+      `Google auth provider '${id}' is missing required clientID or clientSecret.`
+    );
+  }
   // This strategy handles both login and registration cases with the same
   // verify function
-  // clientID / clientSecret are deployment secrets: always present in the API's
-  // generated env, so assert them here (the shared build-config type keeps them
-  // optional so the secret-less committed core still validates).
   const strategy = new Strategy(
     {
-      clientID: clientID!,
-      clientSecret: clientSecret!,
+      clientID,
+      clientSecret,
       callbackURL: config.conductorPublicUrl + providerAuthReturnUrl('google'),
       passReqToCallback: true,
       scope,

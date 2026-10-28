@@ -138,17 +138,19 @@ This project uses a JSON-based configuration system to manage different deployme
 
 ## Creating Your Configuration
 
-1. Navigate to the `configs/` directory in the project.
-2. You'll find a file named `sample.json`. This is a template for your configuration.
-3. Copy this file and rename it according to your environment (e.g., `dev.json`, `prod.json`).
-4. Open your new configuration file and replace the placeholder values with your actual settings.
+The deployment config is **two files**, the same ones every platform uses:
+`core.json` (the shared deployment config — see
+[Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md)),
+loaded through `@faims3/build-config`'s full parser (shared invariants,
+endpoint derivation), and `aws.json` (the AWS-specific extension: account /
+Fargate / domains plus Secrets Manager **ARNs — never secret values**;
+Secrets Manager delivers values to the ECS task and API at runtime).
 
-The config is a single JSON object with two top-level sections: `core` (the shared
-deployment config, identical in shape to `core.json` on every other platform — see
-[Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md))
-and `aws` (the AWS-specific extension).
-
-**For an example JSON structure, see `configs/sample.json`.**
+**For example JSON structures, see `configs/sample/core.json` and
+`configs/sample/aws.json`.** Copy them into an env folder (see below),
+replacing the placeholder values with your actual settings. Legacy flat
+configs can be migrated with
+`library/build-config/scripts/migrate-aws-config.ts`.
 
 ## Using an existing configuration from conforming config repo
 
@@ -156,129 +158,103 @@ If you wish to store your configurations in a private repository, you can use ou
 
 ### Config Repository Structure
 
-Your configuration repository should follow this structure:
+There is **one** config layout for every platform (app, web, api, CDK). Your
+configuration repository should follow this structure (base path `configs`
+by default):
 
 ```
 /
-├── infrastructure/
+├── configs/
 │   ├── dev/
-│   │   ├── configs/
-│   │   │   └── dev.json
-│   │   ├── cdk.context.json (optional)
-│   │   └── (other environment-specific files)
+│   │   ├── core.json
+│   │   ├── aws.json
+│   │   └── secrets.enc.json (optional, SOPS-encrypted; not used by CDK)
 │   ├── staging/
-│   │   ├── configs/
-│   │   │   └── staging.json
-│   │   ├── cdk.context.json (optional)
-│   │   └── (other environment-specific files)
+│   │   ├── core.json
+│   │   ├── aws.json
+│   │   └── secrets.enc.json (optional)
 │   └── prod/
-│       ├── configs/
-│       │   └── prod.json
-│       ├── cdk.context.json (optional)
-│       └── (other environment-specific files)
+│       ├── core.json
+│       ├── aws.json
+│       └── secrets.enc.json (optional)
 └── (other repository files)
 ```
 
-- The `infrastructure` directory contains subdirectories for each environment (e.g., `dev`, `staging`, `prod`).
-- Each environment directory should contain a `configs` folder with a JSON file named after the environment (e.g., `dev.json`), in the `{ core, aws }` shape described above.
-- You can include other environment-specific files in each environment directory as needed.
+- Each environment directory contains exactly one `core.json` (shared,
+  non-secret — the same file the app/web/api builds use) and, for AWS
+  deployments, `aws.json` (AWS extension, secret ARNs only). No
+  SOPS/`secrets.enc.json` step is needed or used for CDK deployments: AWS
+  secret values live in Secrets Manager and are resolved at runtime.
+  `secrets.enc.json` exists only for deployments that keep secret values in
+  the overlay for non-AWS consumers / local dev replicas, and is ignored
+  by the CDK.
+- You can include other environment-specific files in each environment
+  directory as needed. One is synced automatically: `cdk.context.json`,
+  the CDK context cache, is a tracked build artifact (see
+  [CDK Context File](#cdk-context-file-cdkcontextjson) below).
 
-### Using the Config Script
+### Pulling / pushing config: the sync script
 
-We provide a script called `config.sh` to manage configurations. This script can both fetch configurations from your private repository and push local changes back to the repository.
+All platforms share one script, `scripts/sync-deployment-config.sh` in the
+repo root (there is no CDK-specific config script). It mirrors an env
+folder between the private config repo and a local working copy at
+`<repo-root>/config/<environment>/`:
 
-#### Running the Script
-
-1. Ensure the `config.sh` script is in your project root and is executable:
-
-   ```bash
-   chmod +x config.sh
-   ```
-
-2. Run the script with the following syntax:
-
-   ```bash
-   ./config.sh <push/pull> <environment> [options]
-   ```
-
-   or
-
-   ```bash
-   pnpm run config <push/pull> <environment> [options]
-   ```
-
-   - `<push/pull>`: Use `pull` to fetch configurations, `push` to update the repository.
-   - `<environment>`: The name of the environment you want to work with (e.g., "dev", "staging", "prod").
-   - `[options]`: Additional options (see below).
-
-   Options:
-   - `--force`: Overwrite existing files without confirmation.
-   - `--branch <branch_name>`: Specify a git branch (default: main).
-   - `--message <commit_message>`: Specify a custom commit message (push only).
-   - `--config_repo <url>`: Override the config repository URL.
-
-   Examples:
-
-   ```bash
-   ./config.sh pull dev --config_repo "https://github.com/your-org/your-private-config-repo.git"
-   ./config.sh push prod --branch release --message "Updated prod configuration"
-   ```
-
-### The environments.json File
-
-The `environments.json` file is used to store the mapping between environment names and their corresponding config repository URLs. This file is created or updated automatically when you use the `--config_repo` option with the `config.sh` script.
-
-Structure of `environments.json`:
-
-```json
-{
-  "dev": {
-    "config_repo": "https://github.com/your-org/your-dev-config-repo.git"
-  },
-  "prod": {
-    "config_repo": "https://github.com/your-org/your-prod-config-repo.git"
-  }
-}
+```bash
+# from the FAIMS3 repo root
+./scripts/sync-deployment-config.sh pull prod --config-repo "https://github.com/your-org/your-private-config-repo.git"
+./scripts/sync-deployment-config.sh push prod --branch release --message "Updated prod configuration"
 ```
 
-- If `environments.json` exists and contains an entry for the specified environment, the script will use the stored URL unless overridden by `--config_repo`.
-- If you use `--config_repo` with a new environment, the script will add or update the entry in `environments.json`.
+- `<push/pull>`: Use `pull` to fetch an environment into `config/<env>/`,
+  `push` to commit your edited `config/<env>/` back to the repository.
+- `<environment>`: The name of the environment (e.g., "dev", "staging", "prod").
+- Options: `--force` (skip confirmations), `--branch <name>` (default:
+  main), `--message <text>` (push only), `--config-repo <url>` or
+  `--repo-path <path>` (an already-cloned config repo),
+  `--config-path <path>` (base path in the repo, default: `configs`),
+  `--local-root <path>` (local mirror root, default: `<repo-root>/config`).
+
+Push only sends what changed, prompts for confirmation unless `--force`,
+and refuses to commit unexpected files. `aws.json` and `secrets.json` are
+both optional per environment — an AWS + mobile env with no overlay secrets
+pushes and pulls cleanly with just `core.json` + `aws.json`.
 
 ### Handling Multiple Environments
 
-To switch between different environments:
-
-1. Run the config script for the desired environment:
+1. Pull the environment you want (from the repo root):
 
    ```bash
-   ./config.sh pull prod
+   ./scripts/sync-deployment-config.sh pull prod
    ```
 
-   or
+2. Point the CDK at the local mirror and work as usual (from
+   `infrastructure/aws-cdk`):
 
    ```bash
-   pnpm run config pull prod
+   export CONFIG_ENV=prod
+   pnpm run validate-config
+   pnpm cdk diff
    ```
 
-2. The script will copy the environment-specific files into your project and tell you to set the `CONFIG_FILE_NAME` environment variable. Set it like this:
+   `CONFIG_ENV=<name>` loads `<repo-root>/config/<name>/core.json` +
+   `aws.json`. Alternatively point the CDK straight at any env folder —
+   e.g. a checked-out config repo — with
+   `CONFIG_DIR=<checkout>/configs/prod` (this is what CI does; files are
+   read in place, nothing is copied).
+
+3. Edit files under `config/<env>/`, then push them back:
 
    ```bash
-   export CONFIG_FILE_NAME=prod.json
+   ./scripts/sync-deployment-config.sh push prod
    ```
-
-3. Now your project is configured for the "prod" environment. Repeat these steps with a different environment name to switch to another environment.
 
 ### Important Notes
 
-- The script will prompt for confirmation before overwriting existing files unless you use the `--force` flag.
 - Make sure your private repository is accessible from the machine where you're running the script.
 - Keep your config repository private and secure, as it may contain sensitive information.
-- After running the script, remember to set the `CONFIG_FILE_NAME` environment variable as instructed.
-- The script cleans up after itself, removing the temporary clone of your config repository.
 - When pushing changes, review your modifications carefully, especially for production environments.
-- The script will create necessary directories and files if they don't exist in the config repository.
-- If `cdk.context.json` or the environment-specific config file doesn't exist locally, the script will warn you and ask if you want to continue.
-- Always ensure that you're not accidentally pushing sensitive information to the repository.
+- Always ensure that you're not accidentally pushing sensitive information to the repository. Secret _values_ never belong in `core.json`/`aws.json` — AWS values live in Secrets Manager (referenced by ARN); overlay values belong in `secrets.json`, which the sync script only ever pushes SOPS-encrypted.
 
 By following this approach, you can securely manage different configurations for multiple environments while keeping your main project repository clean and your sensitive configuration data separate and private.
 
@@ -290,13 +266,13 @@ Note that this validation is at a schema level, it might not catch improperly fo
 
 #### Running the Validation Script
 
-1. To target your configuration file, set the `CONFIG_FILE_NAME` environment variable:
+1. To target your configuration files, set the `CONFIG_ENV` environment variable:
 
    ```bash
-   export CONFIG_FILE_NAME=prod.json
+   export CONFIG_ENV=prod
    ```
 
-   This will target the `prod.json` configuration file.
+   This will target the local mirror `config/prod/core.json` + `aws.json` at the repo root (or use `CONFIG_DIR`, or `CORE_CONFIG_FILE` + `AWS_CONFIG_FILE`, to point elsewhere).
 
 2. The validation script is already set up in the `package.json`. To run it, use the following command:
 
@@ -304,31 +280,36 @@ Note that this validation is at a schema level, it might not catch improperly fo
    pnpm run validate-config
    ```
 
-   This will validate the configuration file specified by `CONFIG_FILE_NAME`.
+   This will validate the configuration resolved from `CONFIG_ENV` / `CONFIG_DIR` / `CORE_CONFIG_FILE` + `AWS_CONFIG_FILE`.
 
 #### What the Validation Script Does
 
-- The script reads the specified configuration file from the `configs` directory.
-- It then validates the configuration against the `ConfigSchema` defined in your main stack file.
-- If the configuration is valid, you'll see the message "Configuration is valid."
+- The script loads the configuration exactly as the CDK app will (same env resolution, same parsers).
+- It validates `core.json` through `@faims3/build-config` (full schema + shared invariants) and `aws.json` against the `AwsConfigSchema`, plus the cross-file provider rule.
+- If the configuration is valid, you'll see a summary message with stack/account/region.
 - If there are any validation errors, the script will output detailed error messages, indicating which parts of the configuration failed validation.
+
+In GitHub Actions, `.github/workflows/validate-config.yml` runs this same command against a checked-out config repo (`CONFIG_DIR`). It needs the config-repo token and path variables, but not AWS credentials. See [Deploying the AWS stack](../../docs/developer/docs/source/markdown/DeployingAWSStack.md#github-actions-validate--one-click-cdk-deploy).
 
 ## Configuration documentation
 
-The CDK loads a **single JSON object with two top-level sections**:
+The CDK loads **two config files**:
 
-- **`core`** — the shared deployment config (branding, endpoints/domains, maps,
+- **`core.json`** — the shared deployment config (branding, endpoints/domains, maps,
   sync, auth, authProviders, authTokens, limits, email, observability, android,
   ios, couchdb, dev, pouchdb). This is the same `core.json` every platform uses;
   the complete field reference is in the
   [Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md)
-  page. The CDK consumes it directly via `@faims3/build-config`.
-- **`aws`** — the AWS-specific extension: account/region, hosted zone,
-  certificates, Fargate sizing, backup, TTL cleanup, and the secret-slot →
-  Secrets-Manager-ARN map.
+  page. The CDK parses it via `@faims3/build-config`'s `parseBuildConfig`.
+- **`aws.json`** — the AWS-specific extension: account/region, hosted zone,
+  certificates, Fargate sizing, backup, TTL cleanup, and Secrets-Manager
+  **ARNs** (SMTP credentials, auth-provider credentials, signing key). Secret
+  values are never in these files and are never fetched by the CDK — ECS
+  injects them into the task from Secrets Manager, and the API fetches its
+  signing key from Secrets Manager itself at runtime.
 
-`configs/sample.json` shows the full `{ core, aws }` shape. The **`aws`** fields
-are documented below.
+`configs/sample/core.json` + `configs/sample/aws.json` show the full shape.
+The **`aws`** fields are documented below.
 
 ### `aws`
 
@@ -339,12 +320,14 @@ are documented below.
 - `certificates`:
   - `primary`: ARN of your primary ACM certificate (must support \*.base.domain)
   - `cloudfront`: ARN of your CloudFront ACM certificate (must be in us-east-1 and support \*.base.domain)
-- `aws`:
-  - `account`: Your AWS account ID
-  - `region`: The AWS region for deployment (e.g., ap-southeast-2 for Sydney) - defaults to ap-southeast-2
+- `account`: Your AWS account ID
+- `region`: The AWS region for deployment (e.g., ap-southeast-2 for Sydney) - defaults to ap-southeast-2
 - `secrets`:
-  - `privateKey`: ARN of your private key in Secrets Manager
-  - `publicKey`: ARN of your public key in Secrets Manager
+  - `privateKey`: ARN of the signing-key secret in Secrets Manager (one secret whose JSON holds both `rsa_private_key` and `rsa_public_key`; the API reads it at runtime)
+- `smtpCredentialsSecretArn`: ARN of the secret containing SMTP credentials (`host`, `port`, `secure`, `user`, `pass`)
+- `authProviders`: (Optional) AWS-specific social sign-in configuration (provider definitions live in `core.authProviders`)
+  - `providers`: Array of provider IDs enabled for this stack (each must exist in `core.authProviders`)
+  - `secretArn`: ARN of the Secrets Manager secret holding provider credentials (`<provider>-clientID`, `<provider>-clientSecret`, `<provider>-privateKey`, `<provider>-publicKey`, and `<provider>-idpPublicKey` when the SAML IdP cert is not in `core.authProviders`)
 - `backup`:
   - `vaultName`: The name of the AWS Backup vault to create or use
   - `vaultArn`: (Optional) The ARN of an existing backup vault to use. If provided, a new vault will not be created
@@ -360,38 +343,16 @@ are documented below.
   - `deleteExhaustedInvites`: Pass `--delete-exhausted-invites` for non-expired invites with exhausted uses (default: `false`; keep off so uses can be raised later)
   - `cpu` / `memory`: Fargate size for the one-shot task (defaults: `256` / `512`)
   - Failure alerts use the CouchDB monitoring SNS topic (`couch.monitoring.alarmTopic.emailAddress`)
-- `uiConfiguration` (**now in `core`**): UI and app build-time settings for the main FAIMS frontend — see the [Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md) reference for the shared fields.
-  - `uiTheme`: The UI theme: `default`, `fieldmark` or `bssTheme` (`bubble` is retired)
-  - `notebookListType`: Notebook list display mode: `tabs` or `headings`
-  - `notebookName`: Display name for notebooks, e.g. `survey` or `notebook`
-  - `appName`: App name used in app store and headings (e.g. "FAIMS Mobile")
-  - `appId`: App identifier for mobile builds (e.g. "FAIMS" or reverse-domain)
-  - `headingAppName`: (Optional) Override for the banner heading; defaults to `appName`
-  - `forceRemoteDeletion`: (Optional) `allow` or `never` — whether the mobile app removes local survey databases after sync when a survey is archived (must match app build). Passed to `VITE_FORCE_REMOTE_DELETION` for both `/app` and Control Centre web builds. Defaults to `never` when omitted.
-  - `deleteOnDeactivation`: (Optional) When `true`, manual notebook deactivation wipes local Pouch data in the mobile app (`VITE_DELETE_ON_DEACTIVATION`). Defaults to `false` when omitted.
-  - `excludedTeamRoles`: (Optional) Array of team role enum values to hide from Control Centre team-role dropdowns (e.g. `["TEAM_MEMBER_CREATOR"]`). Passed to the web build as `VITE_EXCLUDED_TEAM_ROLES`. Valid values: `TEAM_MEMBER`, `TEAM_MEMBER_CREATOR`, `TEAM_MANAGER`, `TEAM_ADMIN`. When omitted, all team roles are shown.
-  - `enablePlansInDesigner`: (Optional) When `true` (default), the designer can add a plan to templates that do not already have one. When `false`, Add Plan is hidden; templates that already have a plan can still be reconfigured. Passed to the web build as `VITE_ENABLE_PLANS_IN_DESIGNER`.
-  - `showStatusTab`: (Optional) When `true` (default), the record view shows a "Status" tab. When `false`, the tab is hidden. Passed to the app build as `VITE_SHOW_STATUS_TAB`.
-  - `offlineMaps`: Map and tile configuration for the app.
-    - `mapSource`: Map tile provider: `osm` or `maptiler`
-    - `mapSourceKey`: (Optional) API key for the map tile service (e.g. MapTiler)
-    - `satelliteSource`: (Optional) Satellite layer source: `esri` or `maptiler`
-    - `offlineMaps`: Whether to enable offline map downloads (some providers e.g. OSM do not allow this)
-    - `mapStyle`: Map style: `basic`, `osm-bright`, `openstreetmap`, or `toner` (default: `basic`)
-  - `addressAutosuggest`: (Optional) Address autosuggest/autocomplete for address fields. Omit or set `source` to `none` to disable. Defaults to `{ "source": "none" }` if omitted.
-    - `source`: `none` (disable), `mapbox`, or `maptiler`
-    - `mapboxKey`: (Required when `source` is `mapbox`) Mapbox access token for Search Box API
-    - `mapboxAddressCountry`: (Optional) Comma-separated ISO 3166-1 alpha-2 country codes for Mapbox (e.g. `AU` or `AU,NZ`). Defaults to Australia when unset.
-    - `maptilerKey`: (Optional when `source` is `maptiler`) MapTiler API key for the Geocoding API (see https://cloud.maptiler.com/). If omitted and your map tiles use MapTiler (`mapSource` is `maptiler` and `mapSourceKey` is set), that key is used for address autosuggest as well. Provide `maptilerKey` only when you want a _separate_ key for autosuggest (e.g. different quotas or restrictions) than for map tiles.
-    - `maptilerAddressCountry`: (Optional) Comma-separated ISO 3166-1 alpha-2 country codes for MapTiler (e.g. `AU` or `AU,NZ`). Defaults to Australia when unset.
-  - Example with MapTiler autosuggest (shared key): `"addressAutosuggest": { "source": "maptiler", "maptilerAddressCountry": "AU" }` when `offlineMaps.mapSource` is `maptiler` and `mapSourceKey` is set. Example with a dedicated autosuggest key: `"addressAutosuggest": { "source": "maptiler", "maptilerKey": "your-geocoding-key", "maptilerAddressCountry": "AU" }`
+- Shared UI, maps, support, and email fields live in `core.json` — see
+  [Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md)
+  and `configs/sample/core.json`. Map / autosuggest keys in `core.maps` are
+  baked into the front-end at build time; only use keys suitable for public
+  consumption and set provider usage limits.
 
-  **API keys and public exposure:** Any API keys you put in `uiConfiguration` (e.g. `mapSourceKey`, `mapboxKey`, `maptilerKey`) are baked into the front-end app at build time and can therefore be exposed in the client—for example in bundled source or network requests. You should only use keys that are suitable for public consumption. Both Mapbox and MapTiler support public/client keys for front-end use; this is a standard pattern and is generally safe. Be aware that if someone obtains and abuses these keys, there can be cost implications (e.g. usage beyond your quotas). Use provider dashboards to set usage limits and monitor usage where possible.
-
-- `supportLinks` (**now in `core.support`**): Links shown in the app (support, privacy, contact, docs).
+- `support` (**in `core.support`**): Links shown in the app (support, privacy, contact, docs).
   - `supportEmail`: Support email address (default: support@fieldmark.au)
   - `privacyPolicyUrl`: Privacy policy URL (default: https://fieldnote.au/privacy)
-  - `contactUrl`: Contact page URL; empty string hides the contact link
+  - `appContactUrl`: Contact page URL; empty string hides the contact link
   - `docsUrl`: (Optional) Documentation site URL
 - `couch`:
   - `volumeSize`: The size in GB of the EBS volume to mount to the EC2 instance
@@ -413,20 +374,13 @@ are documented below.
     - `http5xx`: (Optional) HTTP 5xx errors alarm settings (same structure as cpu, but threshold is count of errors)
     - `alarmTopic`: (Optional) SNS topic settings for alarms
       - `emailAddress`: Email address to send alarm notifications
-- `conductor`: AWS-specific configuration for the Conductor API service (Fargate image/sizing, autoscaling, `localhostWhitelist`, `enhancedObservability`). The shared instance identity (`name`, `description`, `shortCodePrefix`, `provisionSSOUsersPolicy`) and the migration flags now live in **`core`** — see [Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md).
-  - `name`: Title for this conductor instance (e.g. shown on listings page) — now in `core`
-  - `description`: Subheading or description for the instance
+- `conductor`: AWS-specific configuration for the Conductor API service (Fargate image/sizing, autoscaling, `localhostWhitelist`, `enhancedObservability`). Shared instance identity (`core.branding.conductorInstanceName`, `conductorDescription`, `conductorShortCodePrefix`), SSO policy (`core.auth.provisionSsoUsersPolicy`), and migration flags (`core.migration.*`) live in **`core.json`** — see [Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md).
   - `conductorDockerImage`: Conductor docker image name from public registry (e.g. ghcr.io/faims/faims3-api or org/faims3-api)
   - `conductorDockerImageTag`: (default "latest") Image tag; composed with `conductorDockerImage` as `image`:`tag`.
-  - `shortCodePrefix`: (default "FAIMS") Prefix for invite codes (`{prefix}-{code}`).
-  - `provisionSSOUsersPolicy`: (default "reject") When an unknown user signs in via SSO: `own-team`, `general-user`, or `reject`
   - `enhancedObservability`: (Optional) Enable ECS enhanced observability (container insights)
   - `cpu`: The number of CPU units for the Fargate task
   - `memory`: The amount of memory (in MiB) for the Fargate task
   - `localhostWhitelist`: (default false) Allow localhost-style redirects; not recommended for production
-  - `disableMigrateOnStartup`: (default `false`) Skip API-boot Couch migrate and notebook walks (`DISABLE_MIGRATE_ON_STARTUP`). Leave false so boot still runs `initialiseAndMigrateDBs` + `validateDatabases`. Set true only when migrate is handled out of band (`pnpm migrate-with-keys`) or for a debug stack against an already-migrated DB. When true, the lock is unused: omit `disableStartupMigrationLock` (it is forced off) or set it `true`. An explicit `disableStartupMigrationLock: false` with this flag is a config error.
-  - `disableStartupMigrationLock`: (optional, default treated as `false` when migrate-on-startup is still on) Opt out of the Couch-mediated startup-migration lock. AWS ECS is clustered, so CDK **hard-enables** `STARTUP_MIGRATION_LOCK_ENABLED` unless this is `true` or `disableMigrateOnStartup` is `true`. Leave unset/false in production so replicas claim/wait instead of racing migrate. Only set true for a single-task / debug stack (the same reason local `pnpm run dev` defaults the env flag off — a killed reload can leave a `running` lock that strands the next boot until the steal timeout).
-  - `startupMigrationLockTimeoutMs`: (default `1800000`) Age of a still-`running` lock after which clustered waiters steal it and run migrate themselves (`STARTUP_MIGRATION_LOCK_TIMEOUT_MS`, 30 minutes). Timeout is not “skip migrate and attach”. Age is `now - startedAtMs` (no heartbeat); a steal does not cancel the original doer. Only used when the lock is enabled. The Conductor ALB health check is `GET /up` (bound before migrate; old images already served this path). `GET /ready` is mounted only after the full API attaches. ECS `healthCheckGracePeriod` is 120s for process start through that bind.
   - `autoScaling`: Auto scaling configuration for the Conductor service
     - `desiredCapacity`: The desired number of tasks to run
     - `minCapacity`: The minimum number of tasks to run
@@ -435,6 +389,10 @@ are documented below.
     - `targetMemoryUtilization`: The target memory utilization percentage for scaling
     - `scaleInCooldown`: The cooldown period (in seconds) before allowing another scale in action
     - `scaleOutCooldown`: The cooldown period (in seconds) before allowing another scale out action
+- `migration` (**now in `core.migration`**):
+  - `disableMigrateOnStartup`: (default `false`) Skip API-boot Couch migrate and notebook walks (`DISABLE_MIGRATE_ON_STARTUP`). Leave false so boot still runs `initialiseAndMigrateDBs` + `validateDatabases`. Set true only when migrate is handled out of band (`pnpm migrate-with-keys`) or for a debug stack against an already-migrated DB. When true, the lock is unused (forced off). Setting `startupMigrationLockEnabled: true` with this flag is a config error.
+  - `startupMigrationLockEnabled`: (optional) Couch-mediated startup-migration lock. AWS ECS is clustered, so CDK **defaults the lock on** when this is omitted. Set `false` to opt out on a single-task / debug stack (the same reason local `pnpm run dev` defaults the env flag off — a killed reload can leave a `running` lock that strands the next boot until the steal timeout). Skip-migrate forces the lock off.
+  - `startupMigrationLockTimeoutMs`: (default `1800000`) Age of a still-`running` lock after which clustered waiters steal it and run migrate themselves (`STARTUP_MIGRATION_LOCK_TIMEOUT_MS`, 30 minutes). Timeout is not “skip migrate and attach”. Age is `now - startedAtMs` (no heartbeat); a steal does not cancel the original doer. Only used when the lock is enabled. The Conductor ALB health check is `GET /up` (bound before migrate; old images already served this path). `GET /ready` is mounted only after the full API attaches. ECS `healthCheckGracePeriod` is 120s for process start through that bind.
 - `domains`: Route 53 subdomain prefixes that set up DNS/CDN. These are configured to **match** the URLs derived from `core.domains` (see [Build Configuration](../../docs/developer/docs/source/markdown/Build-Configuration.md)). Note: Apex domains are not currently supported.
   - `baseDomain`: The base domain for all services
   - `conductor`: The subdomain prefix for the conductor service
@@ -442,50 +400,60 @@ are documented below.
   - `faims`: The subdomain prefix for the main FAIMS web application
   - `web`: The subdomain prefix for the new-conductor web application
   - `docs`: The subdomain prefix for the documentation site (default: `docs`)
-- `mobileApps` (**now in `core.endpoints`**): Configuration for mobile app URLs.
+- `endpoints` (**in `core.endpoints`**): Configuration for mobile app store URLs.
   - `androidAppPublicUrl`: The public URL for the Android application in the Google Play Store
   - `iosAppPublicUrl`: The public URL for the iOS application in the Apple App Store
-- `web`: Placeholder configuration for further web/new-conductor config - currently use {}
-- `docs`: Placeholder configuration for the documentation site - currently use `{}`
-- `security` (**now in `core`** — `authTokens` + `limits`): (Optional) Security-related Conductor API settings. Defaults applied when omitted.
-  - `maximumLongLivedTokenDurationDays`: (Optional) Max lifetime in days for long-lived tokens (default 90). Omit or leave unset for infinite when wiring through the stack prop as undefined.
-  - `rateLimiterEnabled`: (default `true`) Express HTTP IP rate limiter (`RATE_LIMITER_ENABLED`). Set `false` when per-IP limiting is handled upstream (e.g. ALB/WAF). Does **not** control CouchDB-backed auth attempt limits or the export limiter.
-  - `authAttemptLimiterEnabled`: (default `true`) Per-user email-code / verification-challenge attempt limits (`ATTEMPT_LIMITER_ENABLED`). Keep `true` in production even when HTTP rate limiting is disabled upstream.
-  - `exportRateLimiterEnabled`: (default `true`) Dedicated limiter for notebook export mint/redeem (`EXPORT_RATE_LIMITER_ENABLED`). Independent of `rateLimiterEnabled` so ZIP/GDAL work stays capped when the global IP limiter is off.
-  - `exportRateLimiterWindowMs`: (default `600000`) Export-limiter window in milliseconds (`EXPORT_RATE_LIMITER_WINDOW_MS`).
-  - `exportRateLimiterPerWindow`: (default `20`) Export mint/redeem requests allowed per window (`EXPORT_RATE_LIMITER_PER_WINDOW`). Raise for bulk scripted dumps.
+- `authTokens` & `limits` (**in `core.authTokens` and `core.limits`**): Security-related Conductor API settings. Defaults applied when omitted.
+  - `maximumLongLivedDurationDays` (`core.authTokens`): (Optional) Max lifetime in days for long-lived tokens (default 90), or `"unlimited"` for no cap.
+  - `rateLimiterEnabled` (`core.limits`): (default `true`) Express HTTP IP rate limiter (`RATE_LIMITER_ENABLED`). Set `false` when per-IP limiting is handled upstream (e.g. ALB/WAF). Does **not** control CouchDB-backed auth attempt limits or the export limiter.
+  - `attemptLimiterEnabled` (`core.limits`): (default `true`) Per-user email-code / verification-challenge attempt limits (`ATTEMPT_LIMITER_ENABLED`). Keep `true` in production even when HTTP rate limiting is disabled upstream.
+  - `exportRateLimiterEnabled` (`core.limits`): (default `true`) Dedicated limiter for notebook export mint/redeem (`EXPORT_RATE_LIMITER_ENABLED`). Independent of `rateLimiterEnabled` so ZIP/GDAL work stays capped when the global IP limiter is off.
+  - `exportRateLimiterWindowMs` (`core.limits`): (default `600000`) Export-limiter window in milliseconds (`EXPORT_RATE_LIMITER_WINDOW_MS`).
+  - `exportRateLimiterPerWindow` (`core.limits`): (default `20`) Export mint/redeem requests allowed per window (`EXPORT_RATE_LIMITER_PER_WINDOW`). Raise for bulk scripted dumps.
 
 To use a specific configuration when deploying or synthesizing your CDK stack:
 
 1. Open a terminal and navigate to your project directory.
-2. Set the `CONFIG_FILE_NAME` environment variable to the name of your configuration file.
+2. Set the `CONFIG_ENV` environment variable to the name of your environment.
 3. Run your CDK command.
 
-For example, to deploy using a `production.json` configuration:
+For example, to deploy using the `prod` configuration (the local mirror
+`config/prod/core.json` + `aws.json` at the repo root, pulled with the sync
+script):
 
 ```bash
-CONFIG_FILE_NAME=production.json cdk deploy
+CONFIG_ENV=prod cdk deploy
 ```
 
-Or to synthesize using a `development.json` configuration:
+Or to synthesize using the `dev` configuration:
 
 ```bash
-CONFIG_FILE_NAME=development.json cdk synth
+CONFIG_ENV=dev cdk synth
+```
+
+Alternatively point at any directory containing `core.json` + `aws.json` (e.g. an env folder in a checked-out config repo, read in place — this is what CI uses):
+
+```bash
+CONFIG_DIR=../../config-repo/configs/dev cdk synth
 ```
 
 ## Switching Between Configurations
 
-You can easily switch between different configurations by changing the `CONFIG_FILE_NAME`:
+You can easily switch between different configurations by changing the `CONFIG_ENV`:
 
-- For development: `CONFIG_FILE_NAME=development.json`
-- For production: `CONFIG_FILE_NAME=production.json`
-- For any other environment: `CONFIG_FILE_NAME=your-config-file-name.json`
+- For development: `CONFIG_ENV=dev`
+- For production: `CONFIG_ENV=prod`
+- For any other environment: `CONFIG_ENV=<name>` (the local mirror folder `config/<name>/` at the repo root)
 
 ## Configuration File Location
 
-All configuration files should be placed in the `configs/` directory of the project.
+One layout everywhere: an env folder holding `core.json` + `aws.json`. In
+the private config repository it lives at `configs/<environment>/` (base
+path configurable); locally the sync script mirrors it to
+`config/<environment>/` at the FAIMS3 repo root, and `CONFIG_ENV` reads
+from there. `CONFIG_DIR` can point at any such folder directly.
 
-These are automatically git ignored.
+The local mirror is automatically git ignored.
 
 ## Generating Keys and Setting ARNs
 
@@ -507,17 +475,20 @@ This project includes a script to generate RSA key pairs and store them in AWS S
 
 4. Copy the ARNs provided in the script output.
 
-5. Update your configuration file (e.g., `configs/development.json` or `configs/production.json`) with the new ARNs:
+5. Update your `aws.json` (e.g., `config/prod/aws.json` in the local mirror) with the new ARN:
 
    ```json
    {
      ...
      "secrets": {
-       "privateKey": "arn:aws:secretsmanager:region:account-id:secret:dev-keys-host-profile-private-xxxx",
-       "publicKey": "arn:aws:secretsmanager:region:account-id:secret:dev-keys-host-profile-public-xxxx"
+       "privateKey": "arn:aws:secretsmanager:region:account-id:secret:dev-keys-host-profile-private-xxxx"
      }
    }
    ```
+
+   Only the `privateKey` ARN exists in config: the API reads both
+   `rsa_private_key` and `rsa_public_key` from that one secret's JSON at
+   runtime.
 
 6. Replace the placeholder ARNs with the actual ARNs output by the script.
 
@@ -527,28 +498,38 @@ Remember to run this script and update your configuration whenever you need to r
 
 # CDK Context File (cdk.context.json)
 
-**If you have an existing deployment**.
+The `cdk.context.json` file (in this directory) is CDK's cache of
+non-deterministic resolutions made at synth time: AMI lookups, availability
+zones, subnet/VPC lookups, and similar. CDK generates and updates it
+automatically, and pinned values make synths reproducible across machines —
+without it, every fresh checkout re-resolves against live AWS and can drift.
 
-The `cdk.context.json` file is used by CDK to cache context values, which can include information about your AWS environment. This file is automatically generated and updated by CDK.
+It is **not config**, so it doesn't live in the config mirror; it is a
+_tracked build artifact_. The shared sync script
+(`scripts/sync-deployment-config.sh`) keeps a copy per environment in the
+private config repo (`configs/<env>/cdk.context.json`) and syncs it with
+the file here:
+
+- `pull <env>` copies the env's `cdk.context.json` into this directory (if
+  the env has one).
+- `push <env>` copies this directory's file back to the config repo (if it
+  exists locally; CDK mutating it during synth is exactly what push
+  captures). Absent on either side is a no-op — environments that have never
+  tracked one are unaffected. `--no-artifacts` skips artifact sync.
 
 Important notes about `cdk.context.json`:
 
-1. This file is gitignored to prevent committing potentially sensitive information.
-2. If you have an existing deployment, you should include this file in your work environment.
-3. Do not share this file publicly, as it may contain sensitive information about your AWS resources.
+1. This file is gitignored in this repo (per-environment copies live in the
+   private config repo instead).
+2. Its contents are non-secret (AMI/AZ/subnet identifiers), but keep the
+   config repo private as usual.
+3. Pinned values are deliberate: if an AMI is deregistered or an AZ removed,
+   synth fails loudly rather than silently shifting. To refresh, delete the
+   file, run `cdk synth`, then `sync-deployment-config.sh push <env>`.
 
-Managing `cdk.context.json`:
-
-- For personal use: Keep the file locally and do not commit it to version control.
-- For team use: Consider storing file in a private repository or a secure shared location.
-
-To use an existing `cdk.context.json`:
-
-1. Obtain the `cdk.context.json` file from your existing deployment or secure storage.
-2. Place it in the root directory of this CDK project.
-3. CDK will automatically use this file for context lookups.
-
-If you need to refresh the context, you can delete the file and run `cdk synth` to regenerate it.
+In CI, the CDK deploy workflow restores the env's `cdk.context.json` from
+the checked-out config repo into this directory before running CDK (and
+does not write it back — refresh it from a developer machine via push).
 
 ## Security Note
 
@@ -557,9 +538,9 @@ Your configuration files may contain sensitive information. Do not commit these 
 # Config Troubleshooting
 
 - If you encounter an error about missing or invalid configuration, ensure that:
-  1. Your configuration file exists in the `configs/` directory.
-  2. The file name matches what you specified in `CONFIG_FILE_NAME`.
-  3. The JSON in your configuration file is valid and contains all required fields.
+  1. Your configuration files exist (`config/<env>/core.json` + `aws.json` in the repo-root local mirror, or your `CONFIG_DIR` folder).
+  2. The env name matches what you specified in `CONFIG_ENV`.
+  3. The JSON in your configuration files is valid and contains all required fields.
 
 By following these steps, you can easily manage different configurations for various deployment environments in this project.
 
@@ -572,8 +553,8 @@ Then follow the above steps to
 - build the package artifacts `pnpm run build && pnpm run package`
 - generate your keys i.e. `./scripts/genKeysAWS.sh <host_target> [profile_name] [--replace]`
 - setup your config
-  - download your config from private repo, put in `configs`, `export CONFIG_FILE_NAME=dev.json` for example
-  - setup your `cdk.context.json` - put in this folder
+  - download your config from the private repo (`./scripts/sync-deployment-config.sh pull dev` from the repo root), then `export CONFIG_ENV=dev`
+  - the same pull restores the env's `cdk.context.json` into this folder (tracked artifact; nothing to set up by hand)
 - run appropriate cdk command
   - to synth only `cdk synth`
   - to diff `cdk diff`
@@ -622,29 +603,33 @@ Related scripts under `scripts/`: `ec2Snapshot.sh`, `ec2PrepareReplace.sh`,
 
 ### SMTP Configuration
 
-To configure the email service, add an `smtp` section to your configuration file with the following fields:
+To configure the email service, put identity and service type in
+`core.email` and the credentials ARN on `aws.smtpCredentialsSecretArn`:
 
 ```json
-"smtp": {
+"email": {
   "emailServiceType": "SMTP",
-  "fromEmail": "notifications@your-domain.com",
-  "fromName": "FAIMS Notification Service",
-  "replyTo": "support@your-domain.com",
+  "emailFromAddress": "notifications@your-domain.com",
+  "emailFromName": "FAIMS Notification Service",
+  "emailReplyTo": "support@your-domain.com",
   "testEmailAddress": "admin@your-domain.com",
-  "cacheExpirySeconds": 300,
-  "credentialsSecretArn": "arn:aws:secretsmanager:region:account-id:secret:smtp-credentials-id"
+  "smtpCacheExpirySeconds": 300
 }
+```
+
+```json
+"smtpCredentialsSecretArn": "arn:aws:secretsmanager:region:account-id:secret:smtp-credentials-id"
 ```
 
 Parameters:
 
 - `emailServiceType`: The email service implementation to use (SMTP or MOCK)
-- `fromEmail`: The email address to use as the sender
-- `fromName`: The display name to use for the sender
-- `replyTo`: (Optional) The reply-to email address
+- `emailFromAddress`: The email address to use as the sender
+- `emailFromName`: The display name to use for the sender
+- `emailReplyTo`: (Optional) The reply-to email address
 - `testEmailAddress`: Email address for admin verification tests
-- `cacheExpirySeconds`: (Optional) Duration to cache SMTP connections in seconds
-- `credentialsSecretArn`: ARN of the secret containing SMTP credentials
+- `smtpCacheExpirySeconds`: (Optional) Duration to cache SMTP connections in seconds
+- `smtpCredentialsSecretArn`: ARN of the secret containing SMTP credentials (`aws.json`)
 
 ### SMTP Credentials Secret
 

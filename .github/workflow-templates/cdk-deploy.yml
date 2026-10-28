@@ -3,22 +3,23 @@
 # CDK Deploy Workflow for FAIMS3
 #
 # This workflow deploys FAIMS3 infrastructure to AWS using CDK.
-# It supports multiple environments (dev/prod) with manual deployment triggers.
+# It supports multiple GitHub environments (dev/prod/stage) with manual triggers.
 #
-# Required GitHub Secrets:
-#   - CDK_CONFIG_REPO_TOKEN: OAuth token for accessing the configuration repository
+# Shared config-targeting settings (same names as mobile CI):
+#   - secrets.GIT_AUTHORIZATION: token with read access to the config repository
+#   - vars.CONFIG_REPO_SLUG: config repository slug (owner/repo)
+#   - vars.CONFIG_ENVIRONMENT: required config-repo folder name
+#   - vars.CONFIG_BRANCH: config repo branch (optional, defaults to 'main')
+#   - vars.CONFIG_REPO_PATH: base path within the config repo (optional,
+#     defaults to 'configs'; env folder = core.json + aws.json)
 #
-# Required GitHub Environment Variables (per environment):
-#   - CDK_CONFIG_REPO_PATH: Path to config repository (e.g., org/repo-name)
-#   - CDK_DEPLOY_ENVIRONMENT: Environment name used for config file selection
-#   - CDK_DEPLOY_GA_ROLE_ARN: AWS IAM role ARN for GitHub Actions authentication to CDK/AWS
-#
-# Optional GitHub Environment Variables:
-#   - CDK_DEPLOY_BRANCH: Config repo branch to use (defaults to 'main')
+# CDK-only:
+#   - vars.DEPLOY_GA_ROLE_ARN: AWS IAM role ARN for GitHub Actions OIDC
 #
 # Methodology:
 #   1. Checkout main code and external config repository
-#   2. Run config setup action to extract AWS account and region details
+#   2. Run config setup action to extract AWS account/region and the env
+#      folder path (read in place via CDK CONFIG_DIR; nothing is copied)
 #   3. Authenticate with AWS using OIDC (no long-lived credentials)
 #   4. Install dependencies and run CDK diff or deploy based on user input
 
@@ -43,6 +44,7 @@ on:
         options:
           - dev
           - prod
+          - stage
 permissions:
   id-token: write
   contents: read
@@ -75,41 +77,66 @@ jobs:
           echo "Working directory contents:"
           ls -la
 
+      - name: Require CONFIG_ENVIRONMENT
+        run: |
+          if [[ -z "${{ vars.CONFIG_ENVIRONMENT }}" ]]; then
+            echo "CONFIG_ENVIRONMENT must be set on GitHub Environment '${{ github.event.inputs.environment }}' to the config-repo folder name." >&2
+            exit 1
+          fi
+
       - name: Checkout config code
         uses: actions/checkout@v7
         with:
           # e.g. org/repo-name
-          repository: ${{ vars.CDK_CONFIG_REPO_PATH }}
+          repository: ${{ vars.CONFIG_REPO_SLUG }}
           # The OAuth token providing access
-          token: ${{ secrets.CDK_CONFIG_REPO_TOKEN }}
+          token: ${{ secrets.GIT_AUTHORIZATION }}
+          # Branch of the config repo to deploy from
+          ref: ${{ vars.CONFIG_BRANCH || 'main' }}
           # Where to clone the repo to
-          path: ./config_repo
+          path: ./config-repo
 
       - name: Display Config Repository Info
         run: |
           echo "Config repository checked out"
-          echo "Config repo path: ${{ vars.CDK_CONFIG_REPO_PATH }}"
+          echo "Config repo slug: ${{ vars.CONFIG_REPO_SLUG }}"
           echo "Config directory contents:"
-          ls -la ./config_repo/ || echo "Config directory not found"
+          ls -la ./config-repo/ || echo "Config directory not found"
 
       - name: Display CDK Configuration Variables
         run: |
           echo "========================================="
           echo "CDK Configuration Variables"
           echo "========================================="
-          echo "CDK Deploy Environment: ${{ vars.CDK_DEPLOY_ENVIRONMENT }}"
-          echo "CDK Deploy Branch: ${{ vars.CDK_DEPLOY_BRANCH || 'main' }}"
-          echo "CDK Config Repo Path: ${{ vars.CDK_CONFIG_REPO_PATH }}"
-          echo "CDK Deploy GA Role ARN: ${{ vars.CDK_DEPLOY_GA_ROLE_ARN }}"
+          echo "GitHub environment: ${{ github.event.inputs.environment }}"
+          echo "Config folder: ${{ vars.CONFIG_ENVIRONMENT }}"
+          echo "Config branch: ${{ vars.CONFIG_BRANCH || 'main' }}"
+          echo "Config repo slug: ${{ vars.CONFIG_REPO_SLUG }}"
+          echo "Deploy GA Role ARN: ${{ vars.DEPLOY_GA_ROLE_ARN }}"
           echo "========================================="
 
       - name: Run FAIMS Config Setup Action
         uses: ./.github/actions/config
         id: faims-config-setup
         with:
-          environment: ${{ vars.CDK_DEPLOY_ENVIRONMENT }}
-          branch: ${{ vars.CDK_DEPLOY_BRANCH || 'main' }}
-          config-repo-path: config_repo
+          environment: ${{ vars.CONFIG_ENVIRONMENT }}
+          config-repo-path: config-repo
+          config-base-path: ${{ vars.CONFIG_REPO_PATH || 'configs' }}
+
+      - name: Restore CDK context cache (tracked artifact, if present)
+        run: |
+          # cdk.context.json pins non-deterministic synth resolutions
+          # (AMIs/AZs/subnets). It is a tracked build artifact kept per env
+          # in the config repo; CDK reads it from the app directory. CI is
+          # pull-only: refresh it from a developer machine via
+          # scripts/sync-deployment-config.sh push.
+          CONTEXT_FILE="${{ steps.faims-config-setup.outputs.config-dir }}/cdk.context.json"
+          if [ -f "$CONTEXT_FILE" ]; then
+            cp "$CONTEXT_FILE" infrastructure/aws-cdk/cdk.context.json
+            echo "Restored cdk.context.json from the config repo"
+          else
+            echo "No tracked cdk.context.json for this environment; CDK will resolve live"
+          fi
 
       - name: Display AWS Target Details
         run: |
@@ -118,13 +145,13 @@ jobs:
           echo "========================================="
           echo "AWS Region: ${{ steps.faims-config-setup.outputs.aws-region }}"
           echo "AWS Account: ${{ steps.faims-config-setup.outputs.aws-account }}"
-          echo "Role to Assume: ${{ vars.CDK_DEPLOY_GA_ROLE_ARN }}"
+          echo "Role to Assume: ${{ vars.DEPLOY_GA_ROLE_ARN }}"
           echo "========================================="
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: ${{ vars.CDK_DEPLOY_GA_ROLE_ARN }}
+          role-to-assume: ${{ vars.DEPLOY_GA_ROLE_ARN }}
           aws-region: ${{ steps.faims-config-setup.outputs.aws-region }}
 
       - name: Verify AWS Configuration
@@ -173,7 +200,7 @@ jobs:
           echo "========================================="
           echo "Action to perform: ${{ github.event.inputs.action }}"
           echo "Environment: ${{ github.event.inputs.environment }}"
-          echo "Config file: ${{ vars.CDK_DEPLOY_ENVIRONMENT }}.json"
+          echo "Config dir: ${{ steps.faims-config-setup.outputs.config-dir }} (core.json + aws.json)"
           echo "AWS Region: ${{ steps.faims-config-setup.outputs.aws-region }}"
           echo "AWS Account: ${{ steps.faims-config-setup.outputs.aws-account }}"
           echo "Working directory: $(pwd)"
@@ -184,8 +211,8 @@ jobs:
       - name: Run CDK Command
         working-directory: infrastructure/aws-cdk
         run: |
-          export CONFIG_FILE_NAME=${{ vars.CDK_DEPLOY_ENVIRONMENT }}.json
-          echo "CONFIG_FILE_NAME set to: $CONFIG_FILE_NAME"
+          export CONFIG_DIR=${{ steps.faims-config-setup.outputs.config-dir }}
+          echo "CONFIG_DIR set to: $CONFIG_DIR"
 
           if [ "${{ github.event.inputs.action }}" = "deploy" ]; then
             echo "Starting CDK deployment..."

@@ -2,19 +2,25 @@
 
 The single source of truth for how a FAIMS3 deployment is built and configured is
 a **JSON file** (`core.json`). Every target reads its configuration from this one
-shared, validated schema in [`@faims3/build-config`](../../library/build-config/README.md):
+shared, validated schema in [`@faims3/build-config`](../../../../../library/build-config/README.md):
 
 - the mobile app and web (Vite) builds,
 - the Conductor API server,
 - the AWS CDK stack,
 - local development.
 
-The key idea: **the JSON is the source of truth; environment variables are just
-transport.** The schema validates the JSON into a typed `RuntimeConfig`, an explicit
-"env contract" maps that object to each platform's env vars, and the same module
-parses env back into the typed object. So the generated env is guaranteed to be what
-the consumers expect. You should not need to reason about individual `VITE_*` or API
-env-var names — set the JSON fields and let the contract do the mapping.
+There are **two parse layers**:
+
+1. **JSON (`core.json`)** is the deployment source of truth. `parseBuildConfig`
+   validates it into a typed `RuntimeConfig`. An explicit env contract then maps
+   that object to each platform's env vars. You should not need to reason about
+   individual `VITE_*` or API env-var names when authoring a deployment — set
+   the JSON fields and let the contract do the mapping.
+2. **Client ENV** is parsed by a dedicated schema per runnable
+   (`parseApiEnv` / `parseAppEnv` / `parseWebEnv` / `parseDesignerEnv`). Each
+   schema requires that client's endpoints, credentials, and identity. Missing
+   required values fail fast; there is no silent `localhost` or
+   placeholder-credential fallback at ENV parse time.
 
 ## The config chain
 
@@ -23,24 +29,29 @@ flowchart LR
   J[core.json + secrets] --> V[parseBuildConfig]
   V --> R[typed RuntimeConfig]
   R --> E["buildEnvMapFromRuntime → platform env"]
-  E --> P[app / web / api / CDK builds]
-  P -->|at runtime| Q[parseGeneratedEnv]
-  Q --> R
+  E --> API[parseApiEnv]
+  E --> APP[parseAppEnv]
+  E --> WEB[parseWebEnv]
+  E --> DES[parseDesignerEnv]
 ```
 
-- **Source of truth** (canonical schemas):
-  [`library/build-config/src/build-config.ts`](../../library/build-config/src/build-config.ts)
+- **Layer 1 JSON** (canonical schemas):
+  [`library/build-config/src/build-config.ts`](../../../../../library/build-config/src/build-config.ts)
+- **Shared enums / defaults / invariants**:
+  [`library/build-config/src/shared-schemas.ts`](../../../../../library/build-config/src/shared-schemas.ts)
+- **Layer 2 client ENV parsers**:
+  [`library/build-config/src/client-env/`](../../../../../library/build-config/src/client-env/)
 - **Env mapping** (the transport contract):
-  [`library/build-config/src/env-contract.ts`](../../library/build-config/src/env-contract.ts)
+  [`library/build-config/src/env-contract.ts`](../../../../../library/build-config/src/env-contract.ts)
 - **Concrete examples**:
-  [`core.sample.json`](../../library/build-config/config/core.sample.json)
+  [`core.sample.json`](../../../../../library/build-config/config/core.sample.json)
   and
-  [`secrets.sample.json`](../../library/build-config/config/secrets.sample.json)
+  [`secrets.sample.json`](../../../../../library/build-config/config/secrets.sample.json)
 
-The shared invariants (name fallbacks, offline-map clamping for OSM, long-lived-token
-hint clamping, "no cap" normalisation) are applied
-in the schema transform, so they hold identically for the JSON, the generated env and
-the parsed env.
+Layer 1 applies shared invariants (name fallbacks, offline-map clamping for OSM,
+long-lived-token hint clamping, "no cap" normalisation) in the JSON schema
+transform. Layer 2 reuses the same helpers when a client reads those fields
+from env.
 
 ## Where the files live
 
@@ -66,12 +77,13 @@ Per-platform layout:
 
 - Mobile CI / Terraform: `<config-path>/<environment>/core.json` +
   `<config-path>/<environment>/secrets.enc.json` in the private **config** repository
-  (`<config-path>` defaults to `mobile`, configurable via `APP_CONFIG_REPO_PATH`). The
+  (`<config-path>` defaults to `configs`, configurable via `CONFIG_REPO_PATH`). The
   **Fastlane/Match** repository is separate (or the same) — see
   [Mobile Deployment Setup Guide](Mobile-Deployment-Setup-Guide.md).
 - Local development: `config/dev/core.json` (see [Local development](#local-development)).
-- AWS: a single JSON the CDK loads, `{ "core": …, "aws": … }` (see
-  [Deploying the AWS stack](DeployingAWSStack.md)).
+- AWS: `config/<environment>/core.json` + `config/<environment>/aws.json`
+  (see [Deploying the AWS stack](DeployingAWSStack.md)). The CDK loads the
+  folder via `CONFIG_ENV` or `CONFIG_DIR`.
 
 ## Protecting the config + Match repositories
 
@@ -79,8 +91,8 @@ The deployment config and the Fastlane Match signing artifacts can live in the
 **same** repository or in **separate** ones:
 
 - deployment config + encrypted secrets: `<config-path>/<environment>/core.json` and
-  `secrets.enc.json` in the **config** repository (`APP_CONFIG_REPO_SLUG`, path
-  `APP_CONFIG_REPO_PATH`, default `mobile`)
+  `secrets.enc.json` in the **config** repository (`CONFIG_REPO_SLUG`, path
+  `CONFIG_REPO_PATH`, default `configs`)
 - Fastlane Match artifacts (certificates and provisioning profiles): the **Match**
   repository (`FASTLANE_REPO_SLUG`, which falls back to the config repo when unset)
 
@@ -89,7 +101,7 @@ state) from config edits, so routine config changes can't accidentally damage si
 state — and vice versa. The guardrails below apply to either arrangement (they matter
 most when both share one repo):
 
-1. **Keep strict path ownership** — edit only `mobile/<environment>/...` for config
+1. **Keep strict path ownership** — edit only `configs/<environment>/...` for config
    updates; treat Match-managed paths (`certs/`, `profiles/`, and Match metadata files)
    as tool-managed.
 2. **Never hand-edit Match artifacts** — use `fastlane match` commands to
@@ -97,7 +109,7 @@ most when both share one repo):
    under Match-managed paths manually.
 3. **Use PR review and branch protection** — require pull requests for changes to this
    repository and at least one reviewer familiar with mobile signing for changes outside
-   `mobile/`.
+   `configs/`.
 4. **Avoid destructive git operations** — do not force-push shared branches, and do not
    squash away the latest known-good Match state without verification.
 5. **Keep rollback simple** — tag known-good signing states before certificate/profile
@@ -113,17 +125,23 @@ certificate rotations and keep routine config edits separate from signing change
 ## GitHub bootstrap settings
 
 These values stay in GitHub Actions because they are needed before config files can be
-read/decrypted (they are _not_ part of `core.json`):
+read/decrypted (they are _not_ part of `core.json`). Put them on each GitHub
+Environment (`dev`, `prod`, `stage`) so environments stay isolated. Workflows
+take a dropdown for that Environment. `CONFIG_ENVIRONMENT` is required: it is
+the explicit mapping from the GitHub Environment to the config-repo folder.
 
-| GitHub setting                   | Type     | Purpose                                                                    |
-| -------------------------------- | -------- | -------------------------------------------------------------------------- |
-| `vars.APP_CONFIG_REPO_SLUG`      | Variable | Config repository slug (`owner/repo`) for `core.json` + `secrets.enc.json` |
-| `vars.APP_CONFIG_REPO_PATH`      | Variable | Base path within the config repo where env folders live (default `mobile`) |
-| `vars.FASTLANE_REPO_SLUG`        | Variable | Fastlane/Match repository slug (`owner/repo`); unset = same repo as config |
-| `vars.MOBILE_CONFIG_BRANCH`      | Variable | Branch in config repository (default `main`)                               |
-| `vars.MOBILE_CONFIG_ENVIRONMENT` | Variable | Environment folder name (under the config path, e.g. `mobile/production`)  |
-| `secrets.GIT_AUTHORIZATION`      | Secret   | Token used for private config-repo checkout and Fastlane git auth          |
-| `secrets.SOPS_AGE_KEY`           | Secret   | Age private key used by `sops --decrypt`                                   |
+| GitHub setting                              | Type     | Purpose                                                                                                                     |
+| ------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `vars.CONFIG_REPO_SLUG`                     | Variable | Config repository slug (`owner/repo`)                                                                                       |
+| `vars.CONFIG_REPO_PATH`                     | Variable | Base path within the config repo where env folders live (default `configs`)                                                 |
+| `vars.CONFIG_BRANCH`                        | Variable | Branch in the config repository (default `main`)                                                                            |
+| `vars.CONFIG_ENVIRONMENT`                   | Variable | Required. Config-repo folder this GitHub Environment maps to (e.g. `prod`, `nightly`)                                       |
+| `secrets.GIT_AUTHORIZATION`                 | Secret   | Token used for private config-repo checkout and Fastlane git auth                                                           |
+| `vars.FASTLANE_REPO_SLUG`                   | Variable | Mobile only. Fastlane/Match repository slug (`owner/repo`); unset = same repo as config                                     |
+| `secrets.SOPS_AGE_KEY`                      | Secret   | Mobile only. Age private key used by `sops --decrypt`                                                                       |
+| `vars.DEPLOY_GA_ROLE_ARN`                   | Variable | CDK only. IAM role the deploy workflow assumes via OIDC. Not used by `validate-config`                                      |
+| `vars.SCHEDULED_ANDROID_ENVIRONMENT`        | Variable | Repository-level. GitHub Environment name (`dev`/`prod`/`stage`) for the nightly Android cron. Required for scheduled runs. |
+| `vars.SCHEDULED_IOS_TESTFLIGHT_ENVIRONMENT` | Variable | Repository-level. GitHub Environment name for the scheduled iOS TestFlight cron. Required for scheduled runs.               |
 
 ## The JSON structure
 
@@ -177,16 +195,17 @@ the "local mode" switch — there is no separate `environment` flag). Example:
 
 ### `branding` — naming and identity
 
-| Field                      | Type   | Default                           | Notes                                    |
-| -------------------------- | ------ | --------------------------------- | ---------------------------------------- |
-| `appName`                  | string | `FAIMS`                           | App name (store listings, headings).     |
-| `appShortName`             | string | falls back to `appName`           | Short name; falls back to `appName`.     |
-| `headingAppName`           | string | falls back to `appName`           | Banner heading; falls back to `appName`. |
-| `theme`                    | string | `default`                         | `default` \| `fieldmark` \| `bssTheme`.  |
-| `websiteTitle`             | string | `Control Centre`                  | Control Centre document title.           |
-| `conductorInstanceName`    | string | `Development FAIMS Server`        | Shown on the login/conductor listing.    |
-| `conductorDescription`     | string | `Development server on localhost` |                                          |
-| `conductorShortCodePrefix` | string | `FAIMS`                           | Invite-code prefix (`{prefix}-{code}`).  |
+| Field                      | Type   | Default                    | Notes                                                  |
+| -------------------------- | ------ | -------------------------- | ------------------------------------------------------ |
+| `appName`                  | string | `FAIMS`                    | App name (store listings, headings).                   |
+| `appShortName`             | string | falls back to `appName`    | Short name; falls back to `appName`.                   |
+| `headingAppName`           | string | falls back to `appName`    | Banner heading; falls back to `appName`.               |
+| `theme`                    | string | `default`                  | `default` \| `fieldmark` \| `bssTheme`.                |
+| `websiteTitle`             | string | `Control Centre`           | Control Centre document title.                         |
+| `clusterAdminGroupName`    | string | `cluster-admin`            | Couch/directory cluster-admin group name in app build. |
+| `conductorInstanceName`    | string | `Development FAIMS Server` | Shown on the login/conductor listing.                  |
+| `conductorDescription`     | string | `FAIMS Conductor Server`   |                                                        |
+| `conductorShortCodePrefix` | string | `FAIMS`                    | Invite-code prefix (`{prefix}-{code}`).                |
 
 ### `support` — contacts and links
 
@@ -199,12 +218,14 @@ the "local mode" switch — there is no separate `environment` flag). Example:
 
 ### `notebookAndRecordUX` — notebook/record presentation
 
-| Field              | Type    | Default   | Notes                         |
-| ------------------ | ------- | --------- | ----------------------------- |
-| `notebookName`     | string  | `project` | Display name for a notebook.  |
-| `notebookListType` | string  | `tabs`    | `tabs` \| `headings`.         |
-| `navigation`       | string  | `none`    | `none` \| `breadcrumbs` \| …  |
-| `showStatusTab`    | boolean | `true`    | Show the record "Status" tab. |
+| Field                     | Type    | Default   | Notes                                         |
+| ------------------------- | ------- | --------- | --------------------------------------------- |
+| `notebookName`            | string  | `project` | Display name for a notebook.                  |
+| `notebookListType`        | string  | `tabs`    | `tabs` \| `headings`.                         |
+| `navigation`              | string  | `none`    | `none` \| `breadcrumbs`.                      |
+| `showStatusTab`           | boolean | `true`    | Show the record "Status" tab.                 |
+| `showNewNotebook`         | boolean | `true`    | Show the "New notebook" action in the app.    |
+| `showRecordSummaryCounts` | boolean | `true`    | Show record summary counts on notebook cards. |
 
 ### `maps` — tiles and address autosuggest
 
@@ -241,12 +262,12 @@ so only use keys suitable for public consumption.
 
 ### `migration`
 
-| Field                           | Type    | Default   | Notes                                        |
-| ------------------------------- | ------- | --------- | -------------------------------------------- |
-| `migrateOldDatabases`           | boolean | `false`   | Migrate legacy databases.                    |
-| `disableMigrateOnStartup`       | boolean | `false`   | Skip API-boot migrate.                       |
-| `startupMigrationLockEnabled`   | boolean | `false`   | Couch-mediated startup-migration lock.       |
-| `startupMigrationLockTimeoutMs` | number  | `1800000` | Age before a stuck `running` lock is stolen. |
+| Field                           | Type    | Default   | Notes                                                                                                      |
+| ------------------------------- | ------- | --------- | ---------------------------------------------------------------------------------------------------------- |
+| `migrateOldDatabases`           | boolean | `false`   | Migrate legacy databases.                                                                                  |
+| `disableMigrateOnStartup`       | boolean | `false`   | Skip API-boot migrate.                                                                                     |
+| `startupMigrationLockEnabled`   | boolean | omit      | Couch-mediated lock. Local API treats omit as off; AWS CDK treats omit as on and honours explicit `false`. |
+| `startupMigrationLockTimeoutMs` | number  | `1800000` | Age before a stuck `running` lock is stolen.                                                               |
 
 Invariant: the lock cannot be enabled while `disableMigrateOnStartup` is `true`.
 
@@ -256,7 +277,8 @@ Invariant: the lock cannot be enabled while `disableMigrateOnStartup` is `true`.
 | ------------------------- | ------- | ----------- | ------------------------------------------ |
 | `profileName`             | string  | `local-dev` | Auth profile.                              |
 | `keyFilePath`             | string  | `.`         | Path to the local signing keypair.         |
-| `keySource`               | string  | `FILE`      | `FILE` \| `AWS_SM`.                        |
+| `keySource`               | string  | `FILE`      | `FILE` \| `ENV` \| `AWS_SM`.               |
+| `awsSecretKeyArn`         | string  | —           | Required when `keySource` is `AWS_SM`.     |
 | `cookieSecret`            | string  | —           | **Secret slot** (empty in committed core). |
 | `disableLocalLogin`       | boolean | `false`     | Disable the local (non-SSO) login.         |
 | `provisionSsoUsersPolicy` | string  | `reject`    | What to do with an unknown SSO user.       |
@@ -272,18 +294,18 @@ resolved from Secrets Manager on AWS. Non-secret fields (`displayName`, `helperT
 
 ### `authTokens`
 
-| Field                               | Type     | Default              | Notes                                                                             |
-| ----------------------------------- | -------- | -------------------- | --------------------------------------------------------------------------------- |
-| `tokenRefreshIntervalMs`            | number   | `15000`              | Token refresh interval.                                                           |
-| `tokenRefreshWindowMs`              | number   | `60000`              | Refresh window.                                                                   |
-| `loginBannerGraceMs`                | number   | `10000`              | Grace period before the login banner.                                             |
-| `ignoreTokenExp`                    | boolean  | `false`              | Ignore token expiry (dev/testing).                                                |
-| `longLivedTokenDurationHints`       | number[] | `[1,5,10,30,90,365]` | Offered long-lived token durations (clamped to ≤ `maximumLongLivedDurationDays`). |
-| `refreshTokenExpiryMinutes`         | number   | `2880`               | Refresh-token lifetime.                                                           |
-| `accessTokenExpiryMinutes`          | number   | `5`                  | Access-token lifetime.                                                            |
-| `impersonationSessionExpiryMinutes` | number   | `60`                 | Impersonation session lifetime.                                                   |
-| `emailCodeExpiryMinutes`            | number   | `30`                 | Email verification code lifetime.                                                 |
-| `maximumLongLivedDurationDays`      | number   | `90`                 | Max long-lived token duration.                                                    |
+| Field                               | Type                    | Default              | Notes                                                                             |
+| ----------------------------------- | ----------------------- | -------------------- | --------------------------------------------------------------------------------- |
+| `tokenRefreshIntervalMs`            | number                  | `15000`              | Token refresh interval.                                                           |
+| `tokenRefreshWindowMs`              | number                  | `60000`              | Refresh window.                                                                   |
+| `loginBannerGraceMs`                | number                  | `10000`              | Grace period before the login banner.                                             |
+| `ignoreTokenExp`                    | boolean                 | `false`              | Ignore token expiry (dev/testing).                                                |
+| `longLivedTokenDurationHints`       | number[]                | `[1,5,10,30,90,365]` | Offered long-lived token durations (clamped to ≤ `maximumLongLivedDurationDays`). |
+| `refreshTokenExpiryMinutes`         | number                  | `2880`               | Refresh-token lifetime.                                                           |
+| `accessTokenExpiryMinutes`          | number                  | `5`                  | Access-token lifetime.                                                            |
+| `impersonationSessionExpiryMinutes` | number                  | `60`                 | Impersonation session lifetime.                                                   |
+| `emailCodeExpiryMinutes`            | number                  | `30`                 | Email verification code lifetime.                                                 |
+| `maximumLongLivedDurationDays`      | number \| `"unlimited"` | `90`                 | Max long-lived token duration (`"unlimited"` disables the cap).                   |
 
 ### `limits`
 
@@ -304,19 +326,19 @@ resolved from Secrets Manager on AWS. Non-secret fields (`displayName`, `helperT
 
 ### `email`
 
-| Field                    | Type    | Default                     | Notes                        |
-| ------------------------ | ------- | --------------------------- | ---------------------------- |
-| `emailServiceType`       | string  | `MOCK`                      | `MOCK` \| `SMTP`.            |
-| `emailFromAddress`       | string  | `notifications@example.com` |                              |
-| `emailFromName`          | string  | `FAIMS Notification`        |                              |
-| `emailReplyTo`           | string  | `support@example.com`       |                              |
-| `smtpHost`               | string  | `smtp.example.com`          | **Secret-adjacent** (host).  |
-| `smtpPort`               | number  | `587`                       |                              |
-| `smtpSecure`             | boolean | `true`                      | TLS.                         |
-| `smtpUser`               | string  | —                           | **Secret slot.**             |
-| `smtpPassword`           | string  | —                           | **Secret slot.**             |
-| `smtpCacheExpirySeconds` | number  | `300`                       | SMTP connection-cache TTL.   |
-| `testEmailAddress`       | string  | —                           | Destination for test emails. |
+| Field                    | Type    | Default                     | Notes                                                                                             |
+| ------------------------ | ------- | --------------------------- | ------------------------------------------------------------------------------------------------- |
+| `emailServiceType`       | string  | `MOCK`                      | `MOCK` \| `SMTP`.                                                                                 |
+| `emailFromAddress`       | string  | `notifications@example.com` |                                                                                                   |
+| `emailFromName`          | string  | `FAIMS Notification`        |                                                                                                   |
+| `emailReplyTo`           | string  | `support@example.com`       |                                                                                                   |
+| `smtpHost`               | string  | —                           | **Secret-adjacent** (host). Optional in JSON; required in API ENV when `EMAIL_SERVICE_TYPE=SMTP`. |
+| `smtpPort`               | number  | `587`                       |                                                                                                   |
+| `smtpSecure`             | boolean | `false`                     | Implicit TLS. Unset means STARTTLS (typical port 587).                                            |
+| `smtpUser`               | string  | —                           | **Secret slot.**                                                                                  |
+| `smtpPassword`           | string  | —                           | **Secret slot.**                                                                                  |
+| `smtpCacheExpirySeconds` | number  | `300`                       | SMTP connection-cache TTL.                                                                        |
+| `testEmailAddress`       | string  | —                           | Optional destination for admin test emails (`POST /api/admin/test-email`).                        |
 
 ### `observability`
 
@@ -373,13 +395,22 @@ flows use `appleKeyId` + `appleKeyContent` only.
 
 ### `couchdb`
 
-| Field                   | Type   | Default                            | Notes            |
-| ----------------------- | ------ | ---------------------------------- | ---------------- |
-| `couchdbUser`           | string | `admin`                            |                  |
-| `couchdbPassword`       | string | `aSecretPasswordThatCantBeGuessed` | **Secret slot.** |
-| `couchdbExternalPort`   | number | `5984`                             |                  |
-| `conductorExternalPort` | number | `8080`                             |                  |
-| `conductorInternalPort` | number | `8080`                             |                  |
+| Field          | Type   | Default | Notes                                                   |
+| -------------- | ------ | ------- | ------------------------------------------------------- |
+| `user`         | string | `admin` |                                                         |
+| `password`     | string | —       | **Secret slot.** Optional in JSON; required in API ENV. |
+| `externalPort` | number | `5984`  |                                                         |
+
+### `conductor`
+
+Port topology for the conductor (API server). On AWS the CDK pins both to
+the deployed values (external `443` via the ALB, internal `8000`) regardless
+of what core says.
+
+| Field          | Type   | Default | Notes                       |
+| -------------- | ------ | ------- | --------------------------- |
+| `externalPort` | number | `8080`  | Published surface port.     |
+| `internalPort` | number | `8080`  | Port the API process binds. |
 
 ### `dev` and `pouchdb` — development / PouchDB tuning
 
@@ -431,8 +462,7 @@ local values never get committed.
 ## Adding a new configuration option
 
 Follow the sequence in the
-[`@faims3/build-config` README](../../library/build-config/README.md#how-to-add-a-new-configuration-option):
-add the field to the canonical schema, extend the runtime model, add the env-contract
-mapping, add parser support, and add positive/negative tests. Then run
-`pnpm --filter=@faims3/build-config test` and, if you changed generated keys,
-`pnpm --filter=@faims3/build-config run validate-coverage`.
+[`@faims3/build-config` README](../../../../../library/build-config/README.md#how-to-add-a-new-configuration-option):
+add the field to the canonical JSON schema, extend the runtime model, add the
+env-contract mapping, add the field to the relevant client ENV schema, and add
+positive/negative tests. Then run `pnpm --filter=@faims3/build-config test`.
