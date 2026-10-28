@@ -66,6 +66,9 @@ type Props = {
   showExtraConfig?: boolean;
   showHelperText?: boolean;
   children?: React.ReactNode;
+  // Allow field-specific updates when Required changes.
+  // Modifies the new field before dispatch so related changes share one undo step.
+  onRequiredChange?: (field: FieldType, required: boolean) => void;
 };
 
 type StateType = {
@@ -92,6 +95,7 @@ export const BaseFieldEditor = ({
   showExtraConfig = true,
   showHelperText = true,
   children,
+  onRequiredChange,
 }: Props) => {
   const field = useAppSelector(
     state => state.notebook.uiSpec.present.fields[fieldName]
@@ -385,6 +389,11 @@ export const BaseFieldEditor = ({
     }
 
     newField.persistent = newState.persistent || false;
+
+    // Apply field-specific changes in the same Redux update for consistent undo/redo.
+    if (newState.required !== state.required) {
+      onRequiredChange?.(newField, newState.required);
+    }
 
     updateField(fieldName, newField);
   };

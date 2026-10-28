@@ -165,6 +165,10 @@ const fields: {[key: string]: Omit<FieldType, 'exportName'>} = {
       name: 'file-upload-field',
       id: 'file-upload-field',
       helperText: '',
+      // Optional attachment-count constraints.
+      // null means no additional minimum or maximum restriction.
+      minItems: null,
+      maxItems: null,
     },
     initialValue: null,
     humanReadableName: 'Upload a File',
@@ -384,6 +388,10 @@ const fields: {[key: string]: Omit<FieldType, 'exportName'>} = {
       helperText: '',
       advancedHelperText: '',
       label: 'Take Photo',
+      // Optional photo-count constraints.
+      // null means no additional minimum or maximum restriction.
+      minItems: null,
+      maxItems: null,
     },
     initialValue: null,
     humanReadableName: 'Take Photo',

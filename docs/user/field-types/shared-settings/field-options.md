@@ -1,6 +1,6 @@
 # Field Options
 
-_Shared options available on every field type in the Notebook Editor._
+_Shared options available on every field type in the {{Notebook}} Editor._
 
 ---
 

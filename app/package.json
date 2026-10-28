@@ -1,6 +1,6 @@
 {
   "name": "@faims3/app",
-  "version": "1.9.1",
+  "version": "1.9.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -21,7 +21,6 @@
     "preintegration": "pnpm run compile",
     "integration": "NODE_ENV=test react-scripts test --env=node --forceExit --runInBand --detectOpenHandles src/integration_tests --transformIgnorePatterns \"node_modules/(?!ol)/\"",
     "postintegration": "pnpm run lint",
-    "preserve": "pnpm run build",
     "serve": "vite preview",
     "prewebapp-build": "pnpm run build",
     "webapp-build": "cap copy",

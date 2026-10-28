@@ -1,6 +1,6 @@
 # RichText
 
-_How to add and configure a RichText field in the Notebook Editor._
+_How to add and configure a RichText field in the {{Notebook}} Editor._
 
 ---
 
@@ -62,7 +62,7 @@ headings, lists, and links. You can also insert images as Base64-encoded
 data through the editor's image upload feature.
 
 > **Note:** Tables created in the editor will appear correctly in the
-> Notebook Editor but are stripped at runtime and will not display in the
+> {{Notebook}} Editor but are stripped at runtime and will not display in the
 > data collection app.
 
 ### Shared Field Options

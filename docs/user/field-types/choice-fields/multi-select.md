@@ -58,14 +58,14 @@ controls. Below the Markdown syntax info banner, you will find the
 **Add Option** input, the **Add "Other" Option** button, and a table
 listing all current options.
 
-| Setting                 | What It Does                                                                                                                           |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **Options list**        | The choices available for selection. Each option appears as a row in the table.                                                        |
-| **Add "Other" Option**  | Adds a special "Other" choice that prompts the collector to type a custom value when selected.                                         |
-| **Display as dropdown** | When enabled, shows a compact dropdown instead of the default expanded checklist. Best for longer lists where screen space is limited. |
-| **Exclusive**           | A per-option checkbox that marks an option as exclusive — selecting it clears all other selections (e.g., "None observed").            |
+| Setting                | What It Does                                                                                                                |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Options list**       | The choices available for selection. Each option appears as a row in the table.                                             |
+| **Add "Other" Option** | Adds a special "Other" choice that prompts the collector to type a custom value when selected.                              |
+| **Display mode**       | Select _Expanded Checklist_ or _Dropdown list_.                                                                             |
+| **Exclusive**          | A per-option checkbox that marks an option as exclusive — selecting it clears all other selections (e.g., "None observed"). |
 
-**Note**: As per the banner, you can use Markdown syntax in
+**Note**: You can use Markdown syntax in
 option text (e.g., \*\*bold\*\* or \*italic\*) to add emphasis
 or formatting to individual options.
 

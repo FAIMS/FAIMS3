@@ -1,6 +1,6 @@
 # Address
 
-_How to add and configure an Address field in the Notebook Editor._
+_How to add and configure an Address field in the {{Notebook}} Editor._
 
 ---
 

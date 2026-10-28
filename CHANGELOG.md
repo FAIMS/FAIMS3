@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.2] - 2026-10-21
+
+### Changes
+
+- docs: correct and update the user-roles pages ([#2442](https://github.com/FAIMS/FAIMS3/pull/2442))
+- docs: expand macros in image alt text ([#2439](https://github.com/FAIMS/FAIMS3/pull/2439))
+- docs: tutorial screenshot folder and in-page link labels ([#2438](https://github.com/FAIMS/FAIMS3/pull/2438))
+- Fix/update minSdkVersion ([#2437](https://github.com/FAIMS/FAIMS3/pull/2437))
+- fix/remove unrecognised property in CardHeader ([#2436](https://github.com/FAIMS/FAIMS3/pull/2436))
+- Fix/use notebookName in designer ([#2435](https://github.com/FAIMS/FAIMS3/pull/2435))
+- Feat/fix radiogroup select divergence ([#2429](https://github.com/FAIMS/FAIMS3/pull/2429))
+- fix: accept decimal minimum and maximum on a float number field ([#2427](https://github.com/FAIMS/FAIMS3/pull/2427))
+- refactor: share three duplicated helpers in forms and data-model ([#2422](https://github.com/FAIMS/FAIMS3/pull/2422))
+- docs: name the platform FAIMS3 in the citation title ([#2420](https://github.com/FAIMS/FAIMS3/pull/2420))
+- fix: don't allow creating related records while photos or attachments are saving ([#2415](https://github.com/FAIMS/FAIMS3/pull/2415))
+- feat: visual redesign of history timeline ([#2414](https://github.com/FAIMS/FAIMS3/pull/2414))
+- fix: run library watch scripts under one supervisor ([#2410](https://github.com/FAIMS/FAIMS3/pull/2410))
+- fix: serve built artefacts in the E2E stack instead of dev servers ([#2409](https://github.com/FAIMS/FAIMS3/pull/2409))
+- docs: require a build before starting the Procfile stack ([#2408](https://github.com/FAIMS/FAIMS3/pull/2408))
+- chore: document the tsbuildinfo reset, add a forms clean script ([#2407](https://github.com/FAIMS/FAIMS3/pull/2407))
+- feat: activation loading indicator ([#2405](https://github.com/FAIMS/FAIMS3/pull/2405))
+- docs: add a first-notebook tutorial for new users ([#2403](https://github.com/FAIMS/FAIMS3/pull/2403))
+- feat: add-conditional-chip ([#2399](https://github.com/FAIMS/FAIMS3/pull/2399))
+- feat: named constants in computed expressions (#2397) ([#2398](https://github.com/FAIMS/FAIMS3/pull/2398))
+- Release v1.9.1 ([#2394](https://github.com/FAIMS/FAIMS3/pull/2394))
+- chore(deps): bump dompurify from 3.4.13 to 3.4.16 ([#2391](https://github.com/FAIMS/FAIMS3/pull/2391))
+- docs: name significant contributors ([#2381](https://github.com/FAIMS/FAIMS3/pull/2381))
+- fix: keep dev task ordering by dropping turbo --parallel ([#2380](https://github.com/FAIMS/FAIMS3/pull/2380))
+- chore(deps): bump morgan from 1.11.0 to 1.12.1 ([#2369](https://github.com/FAIMS/FAIMS3/pull/2369))
+- chore(deps): bump multer from 2.3.0 to 2.4.0 ([#2368](https://github.com/FAIMS/FAIMS3/pull/2368))
+- chore(deps): bump nodemailer from 9.1.1 to 10.0.9 ([#2367](https://github.com/FAIMS/FAIMS3/pull/2367))
+- Add named constants for computed expressions (\_CONSTANT.PI etc.) ([#2397](https://github.com/FAIMS/FAIMS3/issues/2397))
+
 ## [1.9.1] - 2026-10-01
 
 ### Changes

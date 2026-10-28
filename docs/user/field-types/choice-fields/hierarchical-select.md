@@ -15,7 +15,7 @@ selection, and the stored value can be either the full path
 (e.g., "Ceramics > Coarseware > Cooking pot") or just the leaf node name.
 
 > **Note:** This field is a **beta feature**. The hierarchy structure
-> must be defined via JSON editing — the Notebook Editor does not yet
+> must be defined via JSON editing — the {{Notebook}} Editor does not yet
 > provide a visual tree editor. Also consider the display
 > size of the field on mobile devices.
 
@@ -55,7 +55,7 @@ desired Helper Text.
 
 ### Select Field (Hierarchical)-Specific Settings
 
-The Notebook Editor exposes only basic field properties for this field
+The {{Notebook}} Editor exposes only basic field properties for this field
 type. The hierarchy structure itself must be defined by editing the
 {{notebook}} JSON directly. A JSON editor is provided in the
 Editor UI, pre-populated with a simple template. Expanding
@@ -67,7 +67,7 @@ a valid JSON structure with two levels.
 | **Value type** | Controls what is stored when a selection is made: "full" stores the complete path (e.g., "Ceramics > Coarseware > Cooking pot"), while "child" stores only the selected node name (e.g., "Cooking pot"). |
 
 The **hierarchy tree** (the `optiontree` structure) is not configurable
-in the Notebook Editor and must be defined via JSON editing.
+in the {{Notebook}} Editor and must be defined via JSON editing.
 
 ### Shared Field Options
 

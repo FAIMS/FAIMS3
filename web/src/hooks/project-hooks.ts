@@ -6,6 +6,7 @@ import {
   type OfflineMapRegion,
   type ProjectStatus,
   type PutUpdateNotebookMetadataInput,
+  type SetupValues,
 } from '@faims3/data-model';
 import {rootDescriptionForApi} from '@/lib/rootDescriptionField';
 import {config} from '@/constants';
@@ -40,6 +41,7 @@ export const createProjectFromTemplate = async ({
   template,
   teamId,
   planConfigs,
+  setupValues,
 }: {
   user: User;
   name: string;
@@ -47,6 +49,7 @@ export const createProjectFromTemplate = async ({
   template: string;
   teamId?: string;
   planConfigs?: Record<string, Record<string, unknown>>;
+  setupValues?: SetupValues;
 }) =>
   await fetch(`${config.apiUrl}/api/notebooks`, {
     method: 'POST',
@@ -60,6 +63,7 @@ export const createProjectFromTemplate = async ({
       ...rootDescriptionForApi(description),
       teamId,
       ...(planConfigs ? {planConfigs} : {}),
+      ...(setupValues ? {setupValues} : {}),
     }),
   });
 

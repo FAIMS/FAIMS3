@@ -1,6 +1,6 @@
 # FAIMS Text Field
 
-_How to add and configure a FAIMS Text Field in the Notebook Editor._
+_How to add and configure a FAIMS Text Field in the {{Notebook}} Editor._
 
 ---
 

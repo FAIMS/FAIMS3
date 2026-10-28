@@ -21,7 +21,11 @@ const microtaskGate = vi.hoisted(() => {
   };
   return gate;
 });
-import {TAKE_PHOTO_REQUIRED_MESSAGE} from '../../fieldRegistry/fields/TakePhoto/valueSchema';
+
+import {
+  TAKE_PHOTO_REQUIRED_MESSAGE,
+  getTakePhotoMinimumMessage,
+} from '../../fieldRegistry/fields/TakePhoto/valueSchema';
 import {EditableFormManager} from '../formManagers/EditableFormManager';
 
 vi.mock('@capacitor/camera', () => ({
@@ -84,7 +88,7 @@ function textField(name: string, label: string) {
   };
 }
 
-function twoSectionSpec(): UiSpecModel {
+function twoSectionSpec(minItems?: number): UiSpecModel {
   return {
     fields: {
       note: textField('note', 'Note'),
@@ -98,6 +102,7 @@ function twoSectionSpec(): UiSpecModel {
           name: 'photos',
           required: true,
           helperText: '',
+          ...(minItems !== undefined && {minItems}),
         },
         validationSchema: [['yup.mixed']],
         initialValue: null,
@@ -118,9 +123,9 @@ function twoSectionSpec(): UiSpecModel {
   } as UiSpecModel;
 }
 
-function renderNewRecordForm() {
+function renderNewRecordForm(minItems?: number) {
   const dataEngine = {
-    uiSpec: twoSectionSpec(),
+    uiSpec: twoSectionSpec(minItems),
     form: {
       createRevision: vi.fn(async () => ({_id: 'rev-2'})),
       updateRevision: vi.fn(async () => undefined),
@@ -229,38 +234,49 @@ describe('section exit validates never-focused photos', () => {
     vi.restoreAllMocks();
   });
 
-  it('fails an untouched required photo only after the deferred validate', async () => {
-    const user = userEvent.setup();
-    renderNewRecordForm();
+  it.each([
+    {
+      name: 'required photo',
+      minItems: undefined,
+      message: TAKE_PHOTO_REQUIRED_MESSAGE,
+    },
+    {
+      name: 'minimum of 2 photos',
+      minItems: 2,
+      message: getTakePhotoMinimumMessage(2),
+    },
+  ])(
+    'validates an untouched $name after deferred validation',
+    async ({minItems, message}) => {
+      const user = userEvent.setup();
+      renderNewRecordForm(minItems);
 
-    const noteField = await screen.findByTestId('app-record-field-note');
-    const note = noteField.querySelector('input') ?? noteField;
-    expect(screen.queryByText(TAKE_PHOTO_REQUIRED_MESSAGE)).toBeNull();
+      const noteField = await screen.findByTestId('app-record-field-note');
+      const note = noteField.querySelector('input') ?? noteField;
+      expect(screen.queryByText(message)).toBeNull();
 
-    await user.type(note, 'seen');
+      await user.type(note, 'seen');
 
-    microtaskGate.hold = true;
-    await user.click(screen.getAllByRole('button', {name: 'Next'})[0]);
+      microtaskGate.hold = true;
+      await user.click(screen.getAllByRole('button', {name: 'Next'})[0]);
 
-    // The synchronous validate runs before the new isTouched flags are
-    // visible, so the required photo is not an error yet.
-    expect(screen.queryByText(/1 error/)).toBeNull();
-    expect(screen.queryByText(TAKE_PHOTO_REQUIRED_MESSAGE)).toBeNull();
+      // Synchronous validation runs before the new isTouched flags are visible.
+      expect(screen.queryByText(/1 error/)).toBeNull();
+      expect(screen.queryByText(message)).toBeNull();
 
-    const queued = microtaskGate.queued.splice(0);
-    expect(queued.length).toBeGreaterThan(0);
-    microtaskGate.hold = false;
-    act(() => {
-      for (const cb of queued) cb();
-    });
+      const queued = microtaskGate.queued.splice(0);
+      expect(queued.length).toBeGreaterThan(0);
+      microtaskGate.hold = false;
+      act(() => {
+        for (const cb of queued) cb();
+      });
 
-    await waitFor(() => {
-      expect(screen.getAllByText(/1 error/).length).toBeGreaterThan(0);
-    });
+      await waitFor(() => {
+        expect(screen.getAllByText(/1 error/).length).toBeGreaterThan(0);
+      });
 
-    await user.click(screen.getByRole('tab', {name: /Details/}));
-    expect(
-      screen.getAllByText(TAKE_PHOTO_REQUIRED_MESSAGE).length
-    ).toBeGreaterThan(0);
-  });
+      await user.click(screen.getByRole('tab', {name: /Details/}));
+      expect(screen.getAllByText(message).length).toBeGreaterThan(0);
+    }
+  );
 });
