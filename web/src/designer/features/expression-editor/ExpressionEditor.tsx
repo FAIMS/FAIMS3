@@ -92,9 +92,8 @@ const editorHistoryKeymap = historyKeymap.map(binding => ({
   ...binding,
   preventDefault: true,
   stopPropagation: true,
-  // `binding.run` is typed against @codemirror/commands' nested view copy.
-  run: (...args: Parameters<NonNullable<typeof binding.run>>) => {
-    binding.run?.(...args);
+  run: (view: EditorView) => {
+    binding.run?.(view);
     return true;
   },
 }));
@@ -180,12 +179,7 @@ export const ExpressionEditor = forwardRef<
               {key: 'Shift-Tab', preventDefault: false, run: () => false},
             ])
           ),
-          keymap.of(
-            // commands may type against a nested @codemirror/view copy
-            [...editorHistoryKeymap, ...defaultKeymap] as Parameters<
-              typeof keymap.of
-            >[0]
-          ),
+          keymap.of([...editorHistoryKeymap, ...defaultKeymap]),
           EditorView.lineWrapping,
           EditorState.changeFilter.of(
             tr => tr.newDoc.length <= INPUT_LIMITS.LONG_TEXT_MAX_LENGTH

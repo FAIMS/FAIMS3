@@ -11,39 +11,13 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      // Same pinning as vite.config: one copy so Facet/Compartment instanceof matches.
-      '@codemirror/state': path.resolve(
-        __dirname,
-        'node_modules/@codemirror/state'
-      ),
-      '@codemirror/view': path.resolve(
-        __dirname,
-        'node_modules/@codemirror/view'
-      ),
     },
-    dedupe: [
-      '@mui/material',
-      '@emotion/react',
-      '@emotion/styled',
-      '@codemirror/state',
-      '@codemirror/view',
-      '@codemirror/commands',
-    ],
+    dedupe: ['@mui/material', '@emotion/react', '@emotion/styled'],
   },
   test: {
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/setupTests.ts',
-    // One @codemirror/state instance so history() Facets pass instanceof.
-    server: {
-      deps: {
-        inline: [
-          '@codemirror/commands',
-          '@codemirror/state',
-          '@codemirror/view',
-        ],
-      },
-    },
     browser: {
       enabled: true,
       headless: true,

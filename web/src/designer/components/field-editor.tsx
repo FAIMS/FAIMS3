@@ -16,7 +16,6 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 import DuplicateIcon from '@mui/icons-material/ContentCopy';
 
-import {TemplatedStringProps} from '@faims3/forms';
 import {config} from '../buildconfig';
 
 import {
@@ -58,6 +57,7 @@ import {
   findFieldDependencyReferences,
   type FieldDependencyReference,
   findInvalidConditionReferences,
+  getFieldLabel,
 } from '@/lib/conditionUtils';
 import DebouncedTextField from './debounced-text-field';
 import {keyframes} from '@emotion/react';
@@ -245,16 +245,10 @@ const FieldEditorComponent = ({
     isDerivedFromSet &&
     (protection === 'protected' || protection === 'allow-hiding');
 
-  const getFieldLabel = () => {
-    const params = field['component-parameters'] as TemplatedStringProps;
-    return (
-      params.label ||
-      (params.InputLabelProps && params.InputLabelProps.label) ||
-      params.name
-    );
-  };
+  const getLabel = () =>
+    getFieldLabel(field) || field['component-parameters'].name;
 
-  const label = getFieldLabel();
+  const label = getLabel();
 
   const moveFieldDown = (event: React.SyntheticEvent) => {
     event.stopPropagation();
@@ -284,7 +278,7 @@ const FieldEditorComponent = ({
     if (expanded) {
       event.stopPropagation();
     }
-    const currentLabel = getFieldLabel();
+    const currentLabel = getLabel();
     setDuplicateTitle(currentLabel + ' Copy');
     setOpenDuplicateDialog(true);
   };

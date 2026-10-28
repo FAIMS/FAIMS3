@@ -3,10 +3,11 @@
  * @file Maps a stored expression `{ref}` to the display model used by chips.
  *
  * The CodeMirror document keeps the raw reference (`{f_a1b2c3}`,
- * `{_CONSTANT.PI}`, …). This module never rewrites that string. It only
+ * `{_CONSTANT.PI}`, …). This module never rewrites that string. It
  * decides what the chip face and hover tooltip should show: a human label,
  * kind, export name, expression type, and an `error` when the ref is
- * missing or invalid.
+ * missing or invalid. It also reports which storage id a typed `{Title}`
+ * uniquely names, so the editor can substitute it on input.
  *
  * Classification is {@link resolveRefType} from the data-model. Unknown
  * ids come back as `FIELD` plus `error`, not a separate kind — there is no
@@ -69,6 +70,11 @@ export type ChipModelContext = {
   viewsets: Record<string, {label: string; views: string[]}>;
   /** Custom metadata keys on this notebook (Info panel). */
   customMetadataKeys: ReadonlySet<string> | readonly string[];
+  /**
+   * Fields a bare `{Title}` may be rewritten to (the form's insertable
+   * fields). Defaults to every field in `fields`.
+   */
+  referenceableFieldIds?: readonly string[];
 };
 
 /**
@@ -78,7 +84,15 @@ export type ChipModelContext = {
 export type ChipCatalog = {
   /** Resolve a ref; `undefined` means the plugin should use {@link fallbackChipModel}. */
   get(ref: string): ChipModel | undefined;
+  /**
+   * Storage id to substitute for a typed `{Title}` / `{export-name}`, or
+   * undefined when the ref is already valid or has no unique match.
+   */
+  resolve?(ref: string): string | undefined;
 };
+
+/** Points the designer at the picker rather than hand-typed ids. */
+const FIELD_PICKER_HINT = 'Use "Insert field" to choose a field.';
 
 /** Tooltip / aria heading for each {@link RefType}. */
 export const CHIP_KIND_LABELS: Record<RefType, string> = {
@@ -155,6 +169,57 @@ const fieldLocation = (
 /** Compiler type from `type-returned`, or undefined if the field is not referenceable. */
 const exprTypeOf = (field: FieldType | undefined): ExprType | undefined =>
   field ? FAIMS_TYPE_TO_EXPR_TYPE[field['type-returned'] ?? ''] : undefined;
+
+/** Case- and whitespace-insensitive key for title matching. */
+const titleKey = (value: string | undefined): string =>
+  (value ?? '').trim().toLowerCase();
+
+/**
+ * Referenceable fields whose title (label) or export name — the pre-opaque
+ * id carried over by migration — matches `name`.
+ *
+ * @param name - Text typed inside braces, e.g. `Size`.
+ * @returns Matching storage ids (empty, one, or ambiguous many).
+ */
+export const findFieldsByTitle = (
+  name: string,
+  ctx: ChipModelContext
+): string[] => {
+  const key = titleKey(name);
+  if (key === '') return [];
+  const ids = ctx.referenceableFieldIds ?? Object.keys(ctx.fields);
+  return ids.filter(id => {
+    const field = ctx.fields[id];
+    if (!field) return false;
+    const label = getFieldLabel(field);
+    return (
+      (typeof label === 'string' && titleKey(label) === key) ||
+      titleKey(field.exportName) === key
+    );
+  });
+};
+
+/**
+ * Storage id to substitute for a bare `{ref}` that is not a field id but
+ * uniquely names one by title or export name.
+ *
+ * @param ref - Inner braces only.
+ * @returns The storage id, or undefined when no rewrite applies.
+ */
+export const resolveRefByTitle = (
+  ref: string,
+  ctx: ChipModelContext
+): string | undefined => {
+  if (resolveRefType(ref) !== 'FIELD' || ctx.fields[ref]) return undefined;
+  const matches = findFieldsByTitle(ref, ctx);
+  return matches.length === 1 ? matches[0] : undefined;
+};
+
+/** Error for a bare ref that is not a storage id. */
+const missingFieldError = (ref: string, ctx: ChipModelContext): string =>
+  findFieldsByTitle(ref, ctx).length > 1
+    ? `More than one field is called "${ref}". ${FIELD_PICKER_HINT}`
+    : `No field with this ID. ${FIELD_PICKER_HINT}`;
 
 /**
  * Chip used when the catalog has no entry so an opaque id never stands alone
@@ -257,7 +322,7 @@ export const buildChipModel = (
           ref,
           kind,
           label: fieldId,
-          error: 'Field not found',
+          error: 'Field not found. Use "Insert parent field" to choose one.',
         };
       }
       return {
@@ -283,7 +348,8 @@ export const buildChipModel = (
           ref,
           kind,
           label: ref,
-          error: 'Field not found',
+          error:
+            'Field not found. Use "Insert linked record field" to choose one.',
         };
       }
       return {
@@ -305,7 +371,7 @@ export const buildChipModel = (
           ref,
           kind: 'FIELD',
           label: ref,
-          error: 'Field not found',
+          error: missingFieldError(ref, ctx),
         };
       }
       return {
@@ -337,6 +403,9 @@ export const createChipCatalog = (ctx: ChipModelContext): ChipCatalog => {
       const model = buildChipModel(ref, ctx);
       cache.set(ref, model);
       return model;
+    },
+    resolve(ref: string) {
+      return resolveRefByTitle(ref, ctx);
     },
   };
 };

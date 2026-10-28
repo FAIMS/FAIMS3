@@ -57,12 +57,12 @@ around the field's storage id (for example `{f_a1b2c3}`), but the
 editor shows each complete reference as a **chip** with that field's
 Label. Hover a chip for the field's type, export name, and storage id.
 Below the expression, a searchable field picker lists fields by their
-Label; selecting one inserts a chip at the caret.
+Label; selecting one inserts a chip at the cursor.
 
 | Setting          | What It Does                                                                                                                           |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | **Expression**   | The calculation: literals, operators, and field chips. The stored form uses single-brace storage ids (e.g. `{f_a1b2c3} * {f_c4d5e6}`). |
-| **Insert field** | A searchable picker of the referenceable fields in the form. Selecting one inserts a labelled chip at the caret.                       |
+| **Insert field** | A searchable picker of the referenceable fields in the form. Selecting one inserts a labelled chip at the cursor.                      |
 
 The expression is typed and checked when the {{notebook}} is designed —
 mixing types is reported as an error in the Editor. The overall

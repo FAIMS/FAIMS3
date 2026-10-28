@@ -93,7 +93,8 @@ export function outlinedFieldHostSx(
   return {
     border: '1px solid',
     borderColor: borders.rest,
-    borderRadius: theme.shape.borderRadius,
+    // `sx` multiplies numeric radii by `theme.shape.borderRadius`.
+    borderRadius: 1,
     background: backgrounds.rest,
     transition: OUTLINED_FIELD_TRANSITION,
     cursor: disabled ? 'default' : 'text',

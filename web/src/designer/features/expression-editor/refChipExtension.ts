@@ -8,7 +8,13 @@
  */
 
 import {scanExpressionReferences} from '@faims3/data-model';
-import {Compartment, Facet, RangeSetBuilder} from '@codemirror/state';
+import {
+  Compartment,
+  EditorState,
+  Facet,
+  RangeSetBuilder,
+  type ChangeSpec,
+} from '@codemirror/state';
 import {
   Decoration,
   type DecorationSet,
@@ -192,5 +198,37 @@ const refChipViewPlugin = ViewPlugin.fromClass(RefChipPlugin, {
     ),
 });
 
-/** Chip decorations + atomic ranges so backspace deletes a whole `{ref}`. */
-export const refChipExtension = refChipViewPlugin;
+/**
+ * On typing or paste, rewrites each `{Title}` touched by the edit to the
+ * storage id it uniquely names ({@link ChipCatalog.resolve}). Store syncs
+ * and picker inserts carry no `input` user event, so loaded expressions
+ * are left alone.
+ */
+const refAutoResolveFilter = EditorState.transactionFilter.of(tr => {
+  if (!tr.docChanged || !tr.isUserEvent('input')) return tr;
+  const catalog = tr.startState.facet(chipCatalogFacet);
+  if (!catalog.resolve) return tr;
+
+  const touched: Array<[number, number]> = [];
+  tr.changes.iterChangedRanges((_fromA, _toA, fromB, toB) => {
+    touched.push([fromB, toB]);
+  });
+
+  const changes: ChangeSpec[] = [];
+  for (const span of scanExpressionReferences(tr.newDoc.toString())) {
+    if (!touched.some(([from, to]) => span.from <= to && span.to >= from)) {
+      continue;
+    }
+    const id = catalog.resolve(span.ref);
+    if (id && id !== span.ref) {
+      changes.push({from: span.from + 1, to: span.to - 1, insert: id});
+    }
+  }
+  return changes.length > 0 ? [tr, {changes, sequential: true}] : tr;
+});
+
+/**
+ * Chip decorations + atomic ranges so backspace deletes a whole `{ref}`,
+ * plus `{Title}` → storage id substitution on input.
+ */
+export const refChipExtension = [refChipViewPlugin, refAutoResolveFilter];

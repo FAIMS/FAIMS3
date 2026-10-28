@@ -11,7 +11,12 @@ import {
   CREATOR_NAME_ID,
 } from '@faims3/data-model';
 import type {FieldType} from '../../state/initial';
-import {buildChipModel, type ChipModelContext} from './chipModel';
+import {
+  buildChipModel,
+  findFieldsByTitle,
+  resolveRefByTitle,
+  type ChipModelContext,
+} from './chipModel';
 import {CHIP_LABEL_MAX_LENGTH, truncateChipLabel} from './refChipExtension';
 
 /** Minimal number field for chip-model tests. */
@@ -98,12 +103,22 @@ describe('buildChipModel', () => {
     ).toBe('f_idonly');
   });
 
-  test('marks a missing field as an error', () => {
+  test('marks a missing field as an error that points at the picker', () => {
     expect(buildChipModel('f_missing', ctx)).toMatchObject({
       kind: 'FIELD',
       label: 'f_missing',
-      error: 'Field not found',
+      error: 'No field with this ID. Use "Insert field" to choose a field.',
     });
+  });
+
+  test('says when a typed title matches several fields', () => {
+    const dupes = {
+      ...fields,
+      f_w2: numberField('f_w2', 'Width', {exportName: 'Width-2'}),
+    };
+    expect(buildChipModel('Width', {...ctx, fields: dupes}).error).toBe(
+      'More than one field is called "Width". Use "Insert field" to choose a field.'
+    );
   });
 
   test('parent field uses a Parent prefix', () => {
@@ -165,6 +180,38 @@ describe('buildChipModel', () => {
       kind: 'SYSTEM',
       label: 'Creator Name',
     });
+  });
+});
+
+describe('resolveRefByTitle', () => {
+  test('maps a unique title or export name to the storage id', () => {
+    expect(resolveRefByTitle('Width', ctx)).toBe('f_width');
+    expect(resolveRefByTitle(' height ', ctx)).toBe('f_height');
+    expect(resolveRefByTitle('Plot-Height', ctx)).toBe('f_height');
+  });
+
+  test('leaves valid ids, unknown names and non-field refs alone', () => {
+    expect(resolveRefByTitle('f_width', ctx)).toBeUndefined();
+    expect(resolveRefByTitle('Size', ctx)).toBeUndefined();
+    expect(resolveRefByTitle(encodeConstantRef('PI'), ctx)).toBeUndefined();
+  });
+
+  test('does not guess between duplicate titles', () => {
+    const dupes = {
+      ...fields,
+      f_w2: numberField('f_w2', 'Width', {exportName: 'Width-2'}),
+    };
+    expect(resolveRefByTitle('Width', {...ctx, fields: dupes})).toBeUndefined();
+    expect(findFieldsByTitle('Width', {...ctx, fields: dupes})).toEqual([
+      'f_width',
+      'f_w2',
+    ]);
+  });
+
+  test('only matches within referenceableFieldIds when given', () => {
+    expect(
+      resolveRefByTitle('Width', {...ctx, referenceableFieldIds: ['f_height']})
+    ).toBeUndefined();
   });
 });
 

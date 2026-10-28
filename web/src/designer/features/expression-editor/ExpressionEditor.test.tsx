@@ -125,6 +125,28 @@ describe('ExpressionEditor', () => {
     );
   });
 
+  it('rewrites a typed {Title} to the storage id', () => {
+    const {handle} = renderEditor({value: '{Width'});
+    const view = viewFromEditor();
+    act(() => {
+      view.dispatch({
+        changes: {from: '{Width'.length, insert: '} * 2'},
+        selection: {anchor: '{Width} * 2'.length},
+        userEvent: 'input.type',
+      });
+    });
+    expect(handle.current?.getValue()).toBe('{f_xyz} * 2');
+    expect(view.state.selection.main.head).toBe('{f_xyz} * 2'.length);
+    expect(document.querySelector(`.${EXPR_CHIP_CLASS}`)?.textContent).toBe(
+      'Width'
+    );
+  });
+
+  it('does not rewrite a {Title} that arrives without user input', () => {
+    const {handle} = renderEditor({value: '{Width}'});
+    expect(handle.current?.getValue()).toBe('{Width}');
+  });
+
   it('deletes an entire chip on backspace', () => {
     const {handle} = renderEditor({value: '{f_abc} * 2'});
     const view = viewFromEditor();

@@ -113,15 +113,17 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
     [fieldName]
   );
 
-  const referenceableFieldCount = useMemo(
+  /** Fields the "Insert field" picker offers for this form. */
+  const referenceableFieldIds = useMemo(
     () =>
       applyFieldFilters(
         fieldIdsForViewset({views, viewsets}, viewsetId),
         allFields,
         referenceableFieldFilters
-      ).length,
+      ),
     [viewsetId, views, viewsets, allFields, referenceableFieldFilters]
   );
+  const referenceableFieldCount = referenceableFieldIds.length;
 
   /** Parent-form fields insertable as `{_PARENT.Field-ID}`. */
   const parentFieldOptions = useMemo(() => {
@@ -203,8 +205,9 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
         views,
         viewsets,
         customMetadataKeys: Object.keys(custom),
+        referenceableFieldIds,
       }),
-    [allFields, views, viewsets, custom]
+    [allFields, views, viewsets, custom, referenceableFieldIds]
   );
 
   /** Persist the raw expression (debounced by the editor). */
@@ -403,7 +406,7 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
           Field references appear as chips. The stored expression uses each
           field's storage id in braces.
           {referenceableFieldCount > 0 &&
-            ' Use the field picker above to insert a reference at the caret.'}
+            ' Use the field picker above to insert a reference at the cursor.'}
         </FormHelperText>
       </Box>
     </BaseFieldEditor>
