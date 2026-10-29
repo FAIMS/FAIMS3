@@ -81,6 +81,14 @@ describe('RadioGroup field rendering', () => {
     expect(screen.getByRole('combobox')).toBeInTheDocument();
     expect(screen.queryByRole('radio', {name: 'Yes'})).not.toBeInTheDocument();
   });
+
+  it('stores the value instead of the display label', async () => {
+    const {user, setFieldDataCalls} = renderRadioGroupField();
+
+    await user.click(screen.getByRole('radio', {name: 'Yes'}));
+
+    expect(setFieldDataCalls.at(-1)).toBe('yes');
+  });
 });
 
 describe('RadioGroup Other option', () => {
@@ -128,6 +136,10 @@ describe('RadioGroup value schema', () => {
       enableOtherOption: true,
     },
   } as any);
+
+  it('accepts predefined option values', () => {
+    expect(schema.safeParse('yes').success).toBe(true);
+  });
 
   it('accepts values entered through the Other option', () => {
     expect(schema.safeParse(`${OTHER_PREFIX}Custom value`).success).toBe(true);

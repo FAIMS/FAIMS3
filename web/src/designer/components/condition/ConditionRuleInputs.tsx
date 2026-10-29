@@ -235,21 +235,13 @@ const MultiValueSelect = (props: {
             typeof nextValue === 'string' ? nextValue.split(',') : nextValue
           );
         }}
-        renderValue={selected =>
-          selected
-            .map(selectedValue => {
-              const option = possibleOptions.find(
-                item => item.value === selectedValue
-              );
-              return option ? option.label : selectedValue;
-            })
-            .join(', ')
-        }
+        // Display stored option values only in condition rules.
+        renderValue={selected => selected.join(', ')}
       >
         {possibleOptions.map(option => (
           <MenuItem key={option.value} value={option.value}>
             <Checkbox checked={selectedValues.includes(option.value)} />
-            <ListItemText primary={option.label} />
+            <ListItemText primary={option.value} />
           </MenuItem>
         ))}
       </Select>
@@ -349,7 +341,7 @@ const ValueEditor = (props: {
           >
             {possibleOptions.map(option => (
               <MenuItem key={option.value} value={option.value}>
-                {option.label}
+                {option.value}
               </MenuItem>
             ))}
           </Select>
