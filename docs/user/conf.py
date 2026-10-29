@@ -44,19 +44,29 @@ html_static_path = ["_static"]
 
 THEME_NAME = os.getenv("VITE_THEME", "default")
 
-# Theme specific documentation assets.
+# Theme-specific documentation assets.
 THEME_CONFIG = {
     "default": {
-        "logo": "img/logo-dark.png",
-        "css": ["custom.css"],
+        "logo": "img/default-logo.png",
+        "css": ["css/custom.css"],
+    },
+    "fieldmark": {
+        "logo": "img/fieldmark-logo.png",
+        "css": ["css/custom.css"],
     },
     "bssTheme": {
-        "logo": "img/bss-logo.png",
-        "css": ["bss-custom.css"],
+        "logo": "img/bssTheme-logo.png",
+        "css": ["css/bss-custom.css"],
     },
 }
-# Fall back to the default configuration for unknown themes.
+
+# Use the default theme configuration if the theme is not recognised.
 theme_config = THEME_CONFIG.get(THEME_NAME, THEME_CONFIG["default"])
+
+# Warn if the theme logo has not been copied from the app.
+logo_path = Path(__file__).parent / "_static" / theme_config["logo"]
+if not logo_path.is_file():
+    print(f"Warning: Documentation logo not found: {logo_path}")
 
 html_css_files = theme_config["css"]
 

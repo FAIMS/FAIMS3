@@ -65,6 +65,19 @@ if test -f ./public/assets/icons/icon-192.png; then
   cp -r ./public/assets/icons ../web/public/assets/icons
 fi
 
+## Copy theme logos to the Sphinx user documentation
+DOCS_LOGO_DIR="../docs/user/_static/img"
+mkdir -p "$DOCS_LOGO_DIR"
+for theme_dir in ./public/base-assets/*/; do
+  theme_name=$(basename "$theme_dir")
+  logo="${theme_dir}logo.png"
+  if test -f "$logo"; then
+    cp "$logo" "${DOCS_LOGO_DIR}/${theme_name}-logo.png"
+  else
+    echo "Warning: Logo not found for ${theme_name} theme at ${logo}" >&2
+  fi
+done
+
 # Warn if the loading screen icon was not generated
 if ! test -f ./public/assets/icons/icon-512.png; then
   echo "Warning: icon-512.png was not generated, the app loading screen logo may be missing."
