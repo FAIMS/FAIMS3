@@ -29,5 +29,4 @@ __pycache__/
 tmp
 tmp/
 .token
-**token**
 Procfile
