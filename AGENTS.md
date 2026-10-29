@@ -13,13 +13,15 @@ monorepo (Node 24, `pnpm@10.7.0`). The relevant runnable services are:
 | CouchDB                   | docker                | http://localhost:5984/\_utils | Runs in Docker, not Node                           |
 | RustFS                    | docker                | http://localhost:9000         | S3-compatible store for map layers (console :9001) |
 
-Shared libraries: `library/data-model` (`@faims3/data-model`) and
-`library/forms` (`@faims3/forms`). Browser e2e: `e2e` (`@faims3/e2e`).
+Shared libraries: `library/data-model` (`@faims3/data-model`),
+`library/build-config` (`@faims3/build-config`), and `library/forms`
+(`@faims3/forms`). Browser e2e: `e2e` (`@faims3/e2e`).
 
 ### Runtime configuration
 
 Each runnable package exposes a typed `config` singleton parsed once from env
-via Zod (shared helpers live in `@faims3/data-model` as `configHelpers`):
+via `@faims3/build-config` (`parseApiEnv`, `parseAppEnv`, `parseWebEnv`,
+`parseDesignerEnv`):
 
 | Package  | Module                            | Env source               |
 | -------- | --------------------------------- | ------------------------ |
@@ -69,8 +71,8 @@ for code work.
 ### Non-obvious gotchas
 
 - Shared libraries must be built before the API/migrate can resolve
-  `@faims3/data-model` / `@faims3/forms` (their package `main` points at build
-  output). `pnpm run dev` builds them automatically: the app, web and api dev
+  `@faims3/data-model` / `@faims3/build-config` / `@faims3/forms` (their package
+  `main` points at build output). `pnpm run dev` builds them automatically: the app, web and api dev
   tasks wait on their dependencies' builds (`dev` -> `^build`), and
   `@faims3/data-model`'s own `dev` waits on its `build`, so the watcher never
   starts beside the build that writes the same directory. If you run
@@ -97,8 +99,8 @@ for code work.
 - Startup migration lock (`STARTUP_MIGRATION_LOCK_ENABLED`) defaults **off**.
   That avoids a 30-minute wait after a killed `pnpm run dev` reload left a
   `running` lock. Clustered / multi-replica production MUST set it `true`
-  (AWS CDK hard-enables it unless JSON `disableStartupMigrationLock` is
-  set). `DISABLE_MIGRATE_ON_STARTUP` (default off) skips boot migrate
+  (AWS CDK defaults it on unless `core.migration.startupMigrationLockEnabled`
+  is `false`). `DISABLE_MIGRATE_ON_STARTUP` (default off) skips boot migrate
   entirely — no lock, no Couch migrate — and attaches the API immediately.
 - Both `api` dev loops run the same `tsc --incremental`, whose `tsbuildinfo`
   diagnostics cache under `outDir` can replay errors already gone from the
@@ -114,6 +116,7 @@ for code work.
 - Build everything: `pnpm build` (`npx turbo build`).
 - Tests per package (no single repo-wide test script):
   `pnpm --filter=@faims3/data-model test` (jest),
+  `pnpm --filter=@faims3/build-config test` (`node:test` via tsx),
   `pnpm --filter=@faims3/api test` (vitest; uses in-memory PouchDB, no CouchDB
   needed), `pnpm --filter=@faims3/app test` (vitest).
   Note `web` and `forms` use bare `vitest`, which watches in a TTY — pass

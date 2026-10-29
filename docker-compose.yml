@@ -29,6 +29,7 @@ services:
     ports:
       - '0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}'
     volumes:
+      - ./library/build-config:/usr/src/library/build-config
       - ./library/data-model:/usr/src/library/data-model
       - ./api/src:/usr/src/api/src
       - ./api/views:/usr/src/api/views
@@ -36,10 +37,6 @@ services:
       - ./api/public:/usr/src/api/public
       - ./api/test:/usr/src/api/test
       - ./api/.env:/usr/src/api/.env
-      # Exclude node_modules from being overwritten by host mount
-      - /usr/src/node_modules
-      - /usr/src/api/node_modules
-      - /usr/src/.pnpm
     command: pnpm run watch-api
     depends_on:
       couchdb:
@@ -60,6 +57,7 @@ services:
     ports:
       - '0.0.0.0:3001:3001'
     volumes:
+      - ./library/build-config:/usr/src/library/build-config
       - ./library/data-model:/usr/src/library/data-model
       - ./library/forms:/usr/src/library/forms
       - ./web/src:/usr/src/web/src
@@ -73,16 +71,13 @@ services:
     ports:
       - '3000:3000'
     volumes:
+      - ./library/build-config:/usr/src/library/build-config
       - ./library/data-model:/usr/src/library/data-model
       - ./library/forms:/usr/src/library/forms
       - ./app/assets:/usr/src/app/assets
       - ./app/public:/usr/src/app/public
       - ./app/.env:/usr/src/app/.env
       - ./app/src:/usr/src/app/src
-      # Exclude node_modules from being overwritten by host mount
-      - /usr/src/node_modules
-      - /usr/src/app/node_modules
-      - /usr/src/.pnpm
     command: pnpm run start-app -- --force
     depends_on:
       - api
@@ -100,6 +95,7 @@ services:
       - CAPACITY_PROVIDER=FIXED
       - CAPACITY_FIXED_REPLICAS=1
     volumes:
+      - ./library/build-config:/usr/src/library/build-config
       - ./library/data-model:/usr/src/library/data-model
       - ./api/src:/usr/src/api/src
       - ./api/keys:/usr/src/api/keys
@@ -126,6 +122,7 @@ services:
       - ATTACHMENT_S3_PUBLIC_ENDPOINT=http://localhost:9000
       - SPATIAL_WORKER_IDLE_EXIT_MS=0
     volumes:
+      - ./library/build-config:/usr/src/library/build-config
       - ./library/data-model:/usr/src/library/data-model
       - ./api/src:/usr/src/api/src
       - ./api/keys:/usr/src/api/keys

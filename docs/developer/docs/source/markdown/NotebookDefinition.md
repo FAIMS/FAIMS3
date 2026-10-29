@@ -76,7 +76,7 @@ Dropped from the typed core (not migrated into `custom`): `accesses`, `ispublic`
 
 ### Zod models and versioned types
 
-`library/data-model/src/uiSpecification/types.ts` defines the notebook JSON model in **versioned blocks** with paired inferred types — `NotebookDefinitionV1Schema` / `NotebookDefinitionV1`, `NotebookUiSpecV1Schema`, `NotebookMetadataV1Schema`, `TemplateDefinitionV1Schema`, `CompiledNotebookDefinitionV1Schema`, … — following the `projectsDB/types.ts` / `templatesDB/types.ts` convention. The unversioned names (`NotebookDefinitionSchema`, `NotebookDefinition`, `TemplateDefinition`, …) are **aliases of the latest block**; import those unless you are writing a migration step. `schemaVersion` is validated by `NotebookSchemaSemverSchema` (`uiSpecification/schemaVersion.ts`).
+`library/data-model/src/uiSpecification/types.ts` defines the notebook JSON model in **versioned blocks** named after `uiSpec.schemaVersion` (`V1` = `1.0.0`, `V1_0_1` = `1.0.1`, …) with paired inferred types (`NotebookDefinitionV1Schema` / `NotebookDefinitionV1`, `NotebookDefinitionV1_0_1Schema`, …). Unchanged envelopes (settings, metadata) are aliased forward. The unversioned names (`NotebookDefinitionSchema`, `NotebookDefinition`, `TemplateDefinition`, …) are **aliases of the latest block**; import those unless you are writing a migration step. `schemaVersion` is validated by `NotebookSchemaSemverSchema` (`uiSpecification/schemaVersion.ts`).
 
 ## Deploying an upgrade
 

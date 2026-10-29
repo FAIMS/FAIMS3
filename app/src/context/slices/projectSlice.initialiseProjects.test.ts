@@ -74,6 +74,7 @@ const currentDefinition = () => ({
         'component-name': 'TextField',
         'type-returned': 'faims-core::String',
         'component-parameters': {label: 'Title', name: 'title'},
+        exportName: 'title',
         initialValue: '',
       },
     },

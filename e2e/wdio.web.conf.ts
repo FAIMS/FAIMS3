@@ -9,7 +9,7 @@ beginSuite('web');
  * WebdriverIO configuration for the web management dashboard (web/).
  *
  * specs: test/specs/web/** + journeys + conductor
- * baseUrl: WEB_URL / NEW_CONDUCTOR_URL (default http://localhost:3001)
+ * baseUrl: WEB_URL (default http://localhost:3001)
  *
  * Suite label is `web` (includes Control Centre, journeys, and Conductor auth).
  *

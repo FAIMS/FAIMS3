@@ -1,4 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
+import {
+  DEFAULT_GDAL_CACHE_MAX_MB,
+  DEFAULT_GDAL_NUM_THREADS,
+  DEFAULT_GDAL_WARP_MEMORY_MB,
+  DEFAULT_GDAL_WARP_MULTI,
+} from '@faims3/build-config';
 import {isGeoJsonPath} from './flattenGeoJson';
 
 /**
@@ -9,10 +15,12 @@ import {isGeoJsonPath} from './flattenGeoJson';
  * `gdalNumThreads: ALL_CPUS` already scales with the task vCPU count.
  */
 
-export const DEFAULT_GDAL_NUM_THREADS = 'ALL_CPUS';
-export const DEFAULT_GDAL_CACHE_MAX_MB = 256;
-export const DEFAULT_GDAL_WARP_MEMORY_MB = 256;
-export const DEFAULT_GDAL_WARP_MULTI = true;
+export {
+  DEFAULT_GDAL_CACHE_MAX_MB,
+  DEFAULT_GDAL_NUM_THREADS,
+  DEFAULT_GDAL_WARP_MEMORY_MB,
+  DEFAULT_GDAL_WARP_MULTI,
+};
 export const VECTOR_INTERMEDIATE_FGB = 'normalized.fgb';
 export const VECTOR_INTERMEDIATE_GEOJSONSEQ = 'normalized.geojson';
 export const VECTOR_TILE_MAX_ZOOM = 14;

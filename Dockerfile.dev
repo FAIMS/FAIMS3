@@ -73,6 +73,7 @@ COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY api/package.json ./api/
 COPY app/package.json ./app/
 COPY web/package.json ./web/
+COPY library/build-config/package.json ./library/build-config/
 COPY library/data-model/package.json ./library/data-model/
 COPY library/forms/package.json ./library/forms/
 

@@ -365,9 +365,10 @@ EOF
   echo "RustFS Console: http://localhost:9001"
 
   echo ""
-  echo "Starting shared-library watchers (data-model + forms)..."
+  echo "Starting shared-library watchers (build-config + data-model + forms)..."
   echo "Press Ctrl-C to stop watching; containers keep running."
   trap 'kill 0' EXIT
+  pnpm --filter=@faims3/build-config run watch &
   pnpm --filter=@faims3/data-model run watch &
   pnpm --filter=@faims3/forms run watch &
   # A bare `wait` returns only once both watches are gone, so a watch that dies

@@ -1,0 +1,124 @@
+{
+  "stackName": "FaimsInfraStack",
+  "hostedZone": {
+    "id": "your-hosted-zone-id",
+    "name": "your-domain.com"
+  },
+  "certificates": {
+    "primary": "arn:aws:acm:region:account-id:certificate/certificate-id",
+    "cloudfront": "arn:aws:acm:us-east-1:account-id:certificate/certificate-id"
+  },
+  "account": "your-aws-account-id",
+  "region": "ap-southeast-2",
+  "secrets": {
+    "privateKey": "arn:aws:secretsmanager:region:account-id:secret:signing-keys-secret-id"
+  },
+  "smtpCredentialsSecretArn": "arn:aws:secretsmanager:region:account-id:secret:smtp-credentials-id",
+  "couch": {
+    "ebsRecoverySnapshotId": "1234",
+    "volumeSize": 20,
+    "instanceType": "t3.small",
+    "monitoring": {
+      "cpu": {
+        "threshold": 80,
+        "evaluationPeriods": 3,
+        "datapointsToAlarm": 2
+      },
+      "memory": {
+        "threshold": 80,
+        "evaluationPeriods": 3,
+        "datapointsToAlarm": 2
+      },
+      "disk": {
+        "threshold": 80,
+        "evaluationPeriods": 3,
+        "datapointsToAlarm": 2
+      },
+      "statusCheck": {
+        "evaluationPeriods": 2,
+        "datapointsToAlarm": 2
+      },
+      "networkIn": {
+        "threshold": 10000000,
+        "evaluationPeriods": 3,
+        "datapointsToAlarm": 2
+      },
+      "networkOut": {
+        "threshold": 10000000,
+        "evaluationPeriods": 3,
+        "datapointsToAlarm": 2
+      },
+      "http5xx": {
+        "threshold": 10,
+        "evaluationPeriods": 5,
+        "datapointsToAlarm": 3
+      },
+      "alarmTopic": {
+        "emailAddress": "fake@gmail.com"
+      }
+    }
+  },
+  "backup": {
+    "vaultName": "faims-backup-vault",
+    "retentionDays": 30,
+    "scheduleExpression": "cron(0 3 * * ? *)"
+  },
+  "ttlCleanup": {
+    "enabled": false,
+    "scheduleExpression": "cron(0 2 * * ? *)",
+    "scheduleExpressionTimezone": "Australia/Sydney",
+    "dryRun": false,
+    "compact": false,
+    "includeLongLived": false,
+    "deleteExhaustedInvites": false,
+    "cpu": 256,
+    "memory": 512
+  },
+  "conductor": {
+    "enhancedObservability": true,
+    "conductorDockerImage": "ghcr.io/faims/faims3-api",
+    "conductorDockerImageTag": "latest",
+    "cpu": 1024,
+    "memory": 2048,
+    "ephemeralStorageGiB": 21,
+    "autoScaling": {
+      "desiredCapacity": 2,
+      "minCapacity": 1,
+      "maxCapacity": 10,
+      "targetCpuUtilization": 70,
+      "targetMemoryUtilization": 70,
+      "scaleInCooldown": 300,
+      "scaleOutCooldown": 60
+    },
+    "localhostWhitelist": false
+  },
+  "spatialCapacity": {
+    "maxCapacity": 4,
+    "scaleThresholds": [3, 8, 16, 32],
+    "reconcileMs": 15000,
+    "starvationMs": 300000,
+    "scaleInCooldownMs": 600000,
+    "idleExitMs": 60000,
+    "cpu": 1024,
+    "memory": 2048,
+    "ephemeralStorageGiB": 80,
+    "managerCpu": 256,
+    "managerMemory": 512,
+    "gdalNumThreads": "ALL_CPUS",
+    "gdalCacheMaxMb": 256,
+    "gdalWarpMemoryMb": 256,
+    "gdalWarpMulti": true
+  },
+  "authProviders": {
+    "providers": ["google", "someOidcProvider", "someSamlProvider"],
+    "secretArn": "arn:aws:secretsmanager:region:account-id:secret:auth-providers-credentials-id"
+  },
+  "domains": {
+    "baseDomain": "your-domain.com",
+    "conductor": "conductor",
+    "couch": "couchdb",
+    "faims": "faims",
+    "web": "web",
+    "docs": "docs"
+  }
+}

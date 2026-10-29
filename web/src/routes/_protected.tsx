@@ -17,6 +17,11 @@ import {
 } from '@/components/ui/tooltip';
 import {config} from '@/constants';
 import {getStoredUser, isUserExpired, useAuth} from '@/context/auth-provider';
+import {
+  signinPathForExpiredSession,
+  stashReloginEmail,
+  loginIdentifierFromUser,
+} from '@/lib/signin';
 import {useRequestVerify} from '@/hooks/queries';
 import {
   PostExchangeTokenInput,
@@ -119,7 +124,7 @@ export const Route = createFileRoute('/_protected')({
       if (success) return;
 
       // otherwise we need to redirect to login
-      window.location.href = config.signinPath;
+      window.location.href = signinPathForExpiredSession(null);
       return;
     }
 
@@ -133,7 +138,8 @@ export const Route = createFileRoute('/_protected')({
 
     // No valid authentication found - redirect to login
     if (!isAuthenticated) {
-      window.location.href = config.signinPath;
+      stashReloginEmail(loginIdentifierFromUser(parsedUser?.user));
+      window.location.href = signinPathForExpiredSession(parsedUser?.user);
     }
   },
   component: RouteComponent,

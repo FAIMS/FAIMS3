@@ -3,8 +3,6 @@
  * @file Pure helpers for UI-spec ids, viewset membership, summary fields, and condition rewrites.
  */
 
-import {ConditionType} from '../../types/condition';
-import {replaceFieldInCondition as replaceFieldInConditionDomain} from '../../domain/conditions/conditionReferences';
 import {NotebookUISpec} from '../initial';
 
 /**
@@ -94,18 +92,3 @@ export const getViewIDForField = (
   }
   return null;
 };
-
-/**
- * Re-exports domain traversal helper for reducers that should not import UI layers.
- *
- * @param condition - Condition subtree.
- * @param oldId - Field id before rename.
- * @param newId - Field id after rename.
- * @returns Updated condition or undefined/null passthrough.
- */
-export const replaceFieldInCondition = (
-  condition: ConditionType | null | undefined,
-  oldId: string,
-  newId: string
-): ConditionType | null | undefined =>
-  replaceFieldInConditionDomain(condition, oldId, newId);

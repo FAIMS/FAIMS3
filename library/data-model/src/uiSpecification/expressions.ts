@@ -153,6 +153,42 @@ function substituteReferences(source: string): {
   return {processed: out, placeholders};
 }
 
+/** A complete `{ref}` span in an expression source. `to` is exclusive. */
+export type ExprRefSpan = {
+  /** Inner id, e.g. `f_abc` or `_CONSTANT.PI`. */
+  ref: string;
+  /** Index of the opening `{`. */
+  from: number;
+  /** Index after the closing `}`. */
+  to: number;
+};
+
+/** Complete `{[^{}]+}` spans, including braces. Incomplete `{foo` and empty
+ * `{}` produce no span. Nested `{a{b}}` matches the inner `{b}` only — the
+ * same scan `extractExpressionReferences` has always used. */
+const EXPRESSION_REF_PATTERN = /\{([^{}]+)\}/g;
+
+/**
+ * Offset-aware scan of braced references in an expression source.
+ * Tolerant of malformed or incomplete expressions — never throws.
+ *
+ * @param source The expression source, e.g. "{Width} * {Height}"
+ * @returns Each complete brace span, in source order (duplicates kept)
+ */
+export const scanExpressionReferences = (source: string): ExprRefSpan[] => {
+  const spans: ExprRefSpan[] = [];
+  const pattern = new RegExp(EXPRESSION_REF_PATTERN.source, 'g');
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(source)) !== null) {
+    spans.push({
+      ref: match[1],
+      from: match.index,
+      to: match.index + match[0].length,
+    });
+  }
+  return spans;
+};
+
 /**
  * Extracts the field IDs referenced in braces in an expression source.
  * Tolerant of malformed or incomplete expressions - unlike
@@ -163,15 +199,9 @@ function substituteReferences(source: string): {
  * @param source The expression source, e.g. "{Width} * {Height}"
  * @returns The unique field IDs referenced
  */
-export const extractExpressionReferences = (source: string): string[] => {
-  const refs = new Set<string>();
-  const pattern = /\{([^{}]+)\}/g;
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(source)) !== null) {
-    refs.add(match[1]);
-  }
-  return [...refs];
-};
+export const extractExpressionReferences = (source: string): string[] => [
+  ...new Set(scanExpressionReferences(source).map(span => span.ref)),
+];
 
 // Recursively compiles an AST node into a typed closure, collecting referenced
 // field ids and type checking as it goes. Disallowed node types (member access,

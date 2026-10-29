@@ -2,304 +2,27 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {z} from 'zod';
 
-/** Monitoring configuration */
-const BugMonitoringConfigurationSchema = z.object({
-  /** To enable BugSnag - include API key here */
-  bugsnagKey: z.string().min(1).optional(),
-});
+import {
+  AttachmentStorageBuildConfigSchema,
+  BuildConfigCoreObjectSchema,
+  CapacityScaleThresholdsArraySchema,
+  GdalNumThreadsJsonSchema,
+  SHARED_DEFAULTS,
+  parseBuildConfig,
+} from '@faims3/build-config';
 
-/** Configuration for the maps/offline maps */
-const OfflineMapsConfigSchema = z.object({
-  /** Map source provider ('osm', 'maptiler', or empty string) */
-  mapSource: z.enum(['osm', 'maptiler']).default('maptiler'),
-  /** API key for the map tile service (e.g., maptiler) */
-  mapSourceKey: z.string().optional(),
-  /** The source of satellite layers (if enabled) */
-  satelliteSource: z.enum(['esri', 'maptiler']).optional(),
-  /** Enable offline map downloads. Note that some services, notably OSM, don't
-   * allow map tile downloads */
-  offlineMaps: z.boolean(),
-  /** Map style to use. Can be 'basic' (default), 'osm-bright', 'openstreetmap',
-   * 'toner' */
-  mapStyle: z
-    .enum(['basic', 'osm-bright', 'openstreetmap', 'toner'])
-    .default('basic'),
-});
+// The shared deployment config (bugsnag key, maps/offline maps, address
+// autosuggest, theme/notebook branding, support links, security, SMTP, auth
+// provider definitions, attachment storage prefix, conductor instance
+// name/description/migrate flags) is the same `core.json` every platform
+// uses, parsed with build-config's full `parseBuildConfig` (shared
+// invariants included — domain endpoint derivation, name fallbacks, clamps).
+// Only the AWS-specific config (`aws.json`) remains below. There is
+// deliberately no secret *value* handling here: `aws.json` carries Secrets
+// Manager ARNs, and secret values move only inside AWS (SM -> ECS task / SM
+// -> API process).
 
-/** Address autosuggest source. NONE disables autocomplete; MAPBOX/MAPTILER
- * require the corresponding API key. */
-const AddressAutosuggestSourceSchema = z.enum(['NONE', 'MAPBOX', 'MAPTILER']);
-
-/** Configuration for address autosuggest in the app (KEY_SOURCE-style
- * dispatch). */
-const AddressAutosuggestConfigSchema = z
-  .object({
-    /** Source for address autosuggest. NONE disables; MAPBOX requires
-     * mapboxKey; MAPTILER requires maptilerKey or map source key (when
-     * mapSource is maptiler). */
-    source: AddressAutosuggestSourceSchema.default('NONE'),
-    /** Mapbox access token (required when source is MAPBOX). */
-    mapboxKey: z.string().min(1).optional(),
-    /** Mapbox address search country filter: comma-separated ISO 3166-1 alpha-2
-     * (e.g. AU or AU,NZ). Defaults to AU. */
-    mapboxAddressCountry: z.string().optional(),
-    /** MapTiler API key for Geocoding API. Optional when source is MAPTILER if
-     * mapSource is maptiler and mapSourceKey is set—then that key is used.
-     * Provide this when you want a separate key for autosuggest than for map
-     * tiles. */
-    maptilerKey: z.string().min(1).optional(),
-    /** MapTiler address search country filter: comma-separated ISO 3166-1 alpha-2
-     * (e.g. AU or AU,NZ). Defaults to AU. */
-    maptilerAddressCountry: z.string().optional(),
-  })
-  .refine(
-    data => {
-      if (data.source === 'MAPBOX') return !!data.mapboxKey;
-      return true;
-    },
-    {
-      message: 'When source is MAPBOX, mapboxKey is required.',
-    }
-  );
-
-// For each provider we should have these secrets in the secrets manager
-// const AuthProviderSecretSchema = z.object({
-//   clientID: z.string(),
-//   clientSecret: z.string(),
-// });
-
-const BaseAuthProviderConfigSchema = z.object({
-  index: z.number().optional(), // order for display in UI
-  type: z.string(),
-  displayName: z.string(),
-  helperText: z.string().optional(),
-  scope: z.string(),
-  /** HTTP methods accepted for the auth callback. Default: ['GET'] */
-  callbackMethods: z
-    .array(z.enum(['GET', 'POST']))
-    .optional()
-    .default(['GET'])
-    .describe('HTTP methods accepted for the auth return callback'),
-});
-
-const GoogleAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
-  type: z.literal('google'),
-});
-
-const OIDCAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
-  type: z.literal('oidc'),
-  issuer: z.string(),
-  authorizationURL: z.string(),
-  tokenURL: z.string(),
-  userInfoURL: z.string(),
-});
-
-/**
- * This is in-depth configuration for SAML
- *
- * Note these will be passed through almost 1:1 to the passport-saml
- * configuration.
- *
- * NOTE:
- *
- * This excludes your SP keypair (Service Provider signing keys).
- *
- * privateKey: include this in your secrets as provider-privateKey
- * publicKey: include this in your secrets as provider-publicKey
- *
- * The idpPublicKey (Identity Provider's certificate) can be included here
- * or in secrets as provider-idpPublicKey.
- *
- * See https://www.passportjs.org/packages/passport-saml/ for details.
- */
-const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
-  // Discrimination field
-  type: z.literal('saml'),
-  // Override default callback method to just POST
-  callbackMethods: z
-    .array(z.enum(['GET', 'POST']))
-    .optional()
-    .default(['POST'])
-    .describe('HTTP methods accepted for the auth return callback'),
-  // Required fields
-  entryPoint: z
-    .string()
-    .describe('IdP SSO URL - where to send authentication requests'),
-  issuer: z
-    .string()
-    .describe(
-      'Service Provider entity ID - identifies your application to the IdP'
-    ),
-  // Callback configuration (at least one needed)
-  callbackURL: z
-    .string()
-    .optional()
-    .describe(
-      'Full callback URL (overrides path/protocol/host if provided) - RECOMMEND using the default callback generated by the auth routes. This allows overriding it.'
-    ),
-  path: z
-    .string()
-    .optional()
-    .default('/saml/callback')
-    .describe('Callback path if callbackURL not specified'),
-  authnRequestBinding: z
-    .enum(['HTTP-Redirect', 'HTTP-POST'])
-    .optional()
-    .default('HTTP-POST')
-    .describe(
-      'Outbound AuthnRequest binding for passport-saml: HTTP-POST (default) or HTTP-Redirect'
-    ),
-  skipRequestCompression: z
-    .boolean()
-    .optional()
-    .describe(
-      'If true, do not DEFLATE outbound SAMLRequest (passport-saml); e.g. VANguard FAS'
-    ),
-  // If you want the metadata document signed using your PK
-  signMetadata: z.boolean().optional().default(false),
-  // IdP certificate for verifying signatures (can also be in secrets)
-  idpPublicKey: z
-    .string()
-    .optional()
-    .describe('IdP public certificate for verifying signatures (PEM format)'),
-  // SP signing/decryption behavior
-  enableDecryptionPvk: z
-    .boolean()
-    .optional()
-    .default(true)
-    .describe(
-      'Use the SP private key to decrypt IdP assertions. Default True.'
-    ),
-  // Signature configuration
-  signatureAlgorithm: z
-    .enum(['sha1', 'sha256', 'sha512'])
-    .optional()
-    .default('sha256'),
-  digestAlgorithm: z
-    .enum(['sha1', 'sha256', 'sha512'])
-    .optional()
-    .default('sha256')
-    .describe(
-      'XML digest for signed SAML requests (passport-saml; default sha256). Use sha1 only if your IdP requires it.'
-    ),
-  wantAssertionsSigned: z.boolean().optional().default(true),
-  // SAML behavior options
-  identifierFormat: z
-    .string()
-    .optional()
-    .describe('NameID format to request from IdP'),
-  authnContext: z
-    .union([z.string(), z.array(z.string())])
-    .optional()
-    .describe('Authentication context class(es) to request'),
-  disableRequestedAuthnContext: z
-    .boolean()
-    .optional()
-    .describe('Set true for ADFS compatibility'),
-  forceAuthn: z
-    .boolean()
-    .optional()
-    .describe('Force re-authentication even with valid session'),
-  // Validation options
-  acceptedClockSkewMs: z
-    .number()
-    .optional()
-    .default(0)
-    .describe(
-      'Allowed clock skew in ms for NotBefore/NotOnOrAfter (-1 to disable)'
-    ),
-  maxAssertionAgeMs: z
-    .number()
-    .optional()
-    .describe('Max age of assertions in ms'),
-  validateInResponseTo: z
-    .boolean()
-    .optional()
-    .describe('Validate InResponseTo to prevent replay attacks'),
-  requestIdExpirationPeriodMs: z
-    .number()
-    .optional()
-    .default(28800000)
-    .describe('How long request IDs are valid (default 8 hours)'),
-  // Logout
-  logoutURL: z
-    .string()
-    .optional()
-    .describe('IdP logout URL (defaults to entryPoint)'),
-  logoutCallbackURL: z.string().optional().describe('SP logout callback URL'),
-  // IdP validation
-  idpIssuer: z
-    .string()
-    .optional()
-    .describe('Expected IdP issuer for logout validation'),
-  audience: z.string().optional().describe('Expected SAML response Audience'),
-  metadataErrorURL: z
-    .string()
-    .optional()
-    .describe(
-      'Optional absolute URL for SPSSODescriptor errorURL in SAML metadata (default: Conductor /auth/{provider}/sso-error)'
-    ),
-  ssoErrorPageTitle: z.string().optional(),
-  ssoErrorPageHeading: z.string().optional(),
-  ssoErrorPageLead: z.string().optional(),
-  ssoErrorPageDetailMarkdown: z.string().optional(),
-  ssoErrorPageReturnURL: z.string().optional(),
-  ssoErrorPageReturnLabel: z.string().optional(),
-});
-
-const AuthProvidersConfigSchema = z
-  .object({
-    disableLocalLogin: z.boolean().optional().default(false),
-    providers: z.array(z.string()),
-    secretArn: z.string(),
-    config: z.record(
-      z.string(),
-      z.discriminatedUnion('type', [
-        GoogleAuthProviderConfigSchema,
-        OIDCAuthProviderConfigSchema,
-        SAMLAuthProviderConfigSchema,
-      ])
-    ),
-  })
-  .refine(
-    data => {
-      // Ensure all providers listed in 'providers' have a corresponding config
-      return data.providers.every(provider => provider in data.config);
-    },
-    {
-      message: 'All providers must have a corresponding configuration entry',
-    }
-  );
-
-export type AuthProvidersConfig = z.infer<typeof AuthProvidersConfigSchema>;
-
-export const AttachmentStorageConfigSchema = z.object({
-  /** Object-store backend. CDK production is S3 only. */
-  serviceType: z.enum(['S3']).default('S3'),
-  /**
-   * Key prefix inside the map-asset bucket (no leading/trailing slash).
-   * Couch documents store an S3 resource URI (`s3://region/bucket/key`)
-   * for each file.
-   */
-  prefix: z.string().min(1).default('map-assets'),
-});
-
-const SMTPConfigSchema = z.object({
-  /** Email service type (SMTP or MOCK) */
-  emailServiceType: z.enum(['SMTP']),
-  /** From email address */
-  fromEmail: z.string().email(),
-  /** From name */
-  fromName: z.string(),
-  /** Reply-to email address (optional) */
-  replyTo: z.string().email().optional(),
-  /** Test email address for admin verification */
-  testEmailAddress: z.string().email(),
-  /** Cache expiry in seconds (optional) */
-  cacheExpirySeconds: z.number().int().positive().optional(),
-  /** ARN of the secret containing SMTP credentials */
-  credentialsSecretArn: z.string(),
-});
+export const AttachmentStorageConfigSchema = AttachmentStorageBuildConfigSchema;
 
 const MonitoringConfigSchema = z.object({
   cpu: z
@@ -406,27 +129,12 @@ const DomainsConfigSchema = z.object({
   docs: z.string().default('docs'),
 });
 
-/** Age of a still-running lock after which a waiter steals it and runs migrate. */
-export const DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS = 1_800_000;
-
 export const ConductorConfigSchema = z
   .object({
-    /** The title for this conductor instance, shown on listings page */
-    name: z.string(),
-    /** Enable enhanced cluster observability? See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#container-insights-setting-enhanced */
-    enhancedObservability: z.boolean().optional(),
-    /** The description shown underneath as a sub heading */
-    description: z.string(),
     /** Conductor docker image e.g. org/faims3-api */
     conductorDockerImage: z.string(),
     /** Conductor docker image e.g. latest, sha-123456 */
     conductorDockerImageTag: z.string().default('latest'),
-    /** Prefix for generated invite codes (e.g. `FAIMS` → `FAIMS-…`). */
-    shortCodePrefix: z.string().default('FAIMS'),
-    /** Provision SSO users policy - do we create a new user for an unknown SSO sign-in? Default 'reject' */
-    provisionSSOUsersPolicy: z
-      .enum(['own-team', 'general-user', 'reject'])
-      .default('reject'),
     /** The number of CPU units for the Fargate task */
     cpu: z.number().int().positive(),
     /** The amount of memory (in MiB) for the Fargate task */
@@ -457,63 +165,28 @@ export const ConductorConfigSchema = z
     /** Allow localhost typical addresses in the redirects for conductor? NOT
      * recommended for production use cases (for security reasons). */
     localhostWhitelist: z.boolean().default(false),
-    /**
-     * When true, Conductor env sets `DISABLE_MIGRATE_ON_STARTUP=true` and
-     * API boot skips Couch migrate / notebook walks. Default false —
-     * migrate still runs. Use only when migrate is handled out of band
-     * (`pnpm migrate-with-keys`) or for a debug stack against an
-     * already-migrated DB.
-     */
-    disableMigrateOnStartup: z.boolean().default(false),
-    /**
-     * When true, Conductor env sets `STARTUP_MIGRATION_LOCK_ENABLED=false`.
-     * Omit or false — AWS ECS is clustered, so the lock is hard-enabled
-     * whenever migrate-on-startup is still on. Only set true for a
-     * single-task / debug stack where the wait/steal path would be a
-     * problem (the same reason local `pnpm run dev` defaults the env
-     * flag off). Optional so we can reject an explicit `false` when
-     * `disableMigrateOnStartup` is true (nothing to lock).
-     */
-    disableStartupMigrationLock: z.boolean().optional(),
-    /**
-     * Age of a still-`running` lock after which clustered waiters steal
-     * it and run migrate themselves (`STARTUP_MIGRATION_LOCK_TIMEOUT_MS`).
-     * Timeout is not "skip migrate and attach". Age is `now - startedAtMs`
-     * (no heartbeat); the original doer is not cancelled. Default 1800000
-     * (30 minutes). Only used when the lock is enabled.
-     */
-    startupMigrationLockTimeoutMs: z
-      .number()
-      .int()
-      .min(1000)
-      .default(DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS),
+    /** Enable enhanced cluster observability? See the ECS container-insights docs. */
+    enhancedObservability: z.boolean().optional(),
   })
-  .superRefine((data, ctx) => {
-    if (
-      data.disableMigrateOnStartup &&
-      data.disableStartupMigrationLock === false
-    ) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['disableStartupMigrationLock'],
-        message:
-          'disableStartupMigrationLock cannot be false when disableMigrateOnStartup is true. There is nothing to lock if API boot skips migrate. Omit disableStartupMigrationLock or set it true.',
-      });
-    }
-  })
-  .transform(data => ({
-    ...data,
-    // Skip-migrate makes the lock unused; treat omitted as disabled.
-    disableStartupMigrationLock:
-      data.disableMigrateOnStartup || data.disableStartupMigrationLock === true,
-  }));
+  .strict();
 
-const WebConfigSchema = z.object({
-  title: z.string().default('Control Centre'),
+/**
+ * AWS-specific social-sign-in provider config. The provider
+ * definitions live in `core.authProviders` (build-config's AuthProviderConfigMap).
+ * Here we keep only the AWS bits: which providers are enabled for this stack
+ * and the Secrets Manager ARN holding their client secrets / private keys.
+ */
+export const AuthProvidersAwsConfigSchema = z.object({
+  /** Provider ids (keys of core.authProviders) enabled for this stack. */
+  providers: z.array(z.string()),
+  /** ARN of the secret containing the provider client secrets / private keys. */
+  secretArn: z.string(),
 });
 
-/** Documentation site (Sphinx user docs) configuration */
-const DocsConfigSchema = z.object({});
+// The shared provider *definitions* are now core.authProviders (build-config).
+export type AuthProviderConfigMap = z.infer<
+  typeof BuildConfigCoreObjectSchema
+>['authProviders'];
 
 // Define the schema for the backup configuration
 const BackupConfigSchema = z
@@ -586,28 +259,21 @@ const TtlCleanupConfigSchema = z.object({
  */
 export const SpatialCapacityConfigSchema = z.object({
   /** Max drain workers the manager may start at once. */
-  maxCapacity: z.number().int().positive().default(4),
+  maxCapacity: z.number().int().positive().default(SHARED_DEFAULTS.capacityMax),
   /**
    * Queue depths at which worker count increases from 1.
    * `[3, 8, 16, 32]` means 1→2 at 3 jobs, 2→3 at 8, 3→4 at 16, 4→5 at 32.
    * Always capped by maxCapacity. Passed to the manager as CSV.
    */
-  scaleThresholds: z
-    .array(z.number().int().positive())
-    .default([3, 8, 16, 32])
-    .superRefine((values, ctx) => {
-      for (let i = 1; i < values.length; i++) {
-        if (values[i] <= values[i - 1]) {
-          ctx.addIssue({
-            code: 'custom',
-            message: 'scaleThresholds must be strictly increasing',
-          });
-          return;
-        }
-      }
-    }),
+  scaleThresholds: CapacityScaleThresholdsArraySchema.default([
+    ...SHARED_DEFAULTS.capacityScaleThresholds,
+  ]),
   /** How often the manager reads the Couch queue (ms). */
-  reconcileMs: z.number().int().positive().default(15_000),
+  reconcileMs: z
+    .number()
+    .int()
+    .positive()
+    .default(SHARED_DEFAULTS.capacityReconcileMs),
   /**
    * How long the oldest unclaimed job may wait before the manager asks
    * for the first extra worker (still capped by maxCapacity and job
@@ -617,7 +283,7 @@ export const SpatialCapacityConfigSchema = z.object({
     .number()
     .int()
     .nonnegative()
-    .default(5 * 60 * 1000),
+    .default(SHARED_DEFAULTS.capacityStarvationMs),
   /**
    * After the first staleness scale-up, how long the oldest unclaimed
    * job must keep waiting before another extra worker. Omit to use
@@ -628,7 +294,11 @@ export const SpatialCapacityConfigSchema = z.object({
    * Worker exits after this many ms with no job. Must be > 0 on ECS or
    * tasks would run until the next deploy.
    */
-  idleExitMs: z.number().int().positive().default(60_000),
+  idleExitMs: z
+    .number()
+    .int()
+    .positive()
+    .default(SHARED_DEFAULTS.spatialWorkerIdleExitMs),
   /** Fargate CPU units for one spatial worker. */
   cpu: z.number().int().positive().default(1024),
   /** Fargate memory (MiB) for one spatial worker. */
@@ -646,21 +316,31 @@ export const SpatialCapacityConfigSchema = z.object({
    * GDAL worker threads (`GDAL_NUM_THREADS`). `ALL_CPUS` uses the task
    * vCPU count. A positive integer caps it. Default `ALL_CPUS`.
    */
-  gdalNumThreads: z
-    .union([z.literal('ALL_CPUS'), z.number().int().positive().max(256)])
-    .default('ALL_CPUS'),
+  gdalNumThreads: GdalNumThreadsJsonSchema.default(
+    SHARED_DEFAULTS.gdalNumThreads
+  ),
   /**
    * Raster block cache in megabytes (`GDAL_CACHEMAX`). Default 256 fits
    * the 2 GiB worker. Raise toward 1024–2048 on 16–32 GiB tasks.
    */
-  gdalCacheMaxMb: z.number().int().positive().max(65536).default(256),
+  gdalCacheMaxMb: z
+    .number()
+    .int()
+    .positive()
+    .max(65536)
+    .default(SHARED_DEFAULTS.gdalCacheMaxMb),
   /**
    * `gdalwarp -wm` working buffer in megabytes. Shared across warp
    * threads — raise with `gdalNumThreads`. Default 256.
    */
-  gdalWarpMemoryMb: z.number().int().positive().max(65536).default(256),
+  gdalWarpMemoryMb: z
+    .number()
+    .int()
+    .positive()
+    .max(65536)
+    .default(SHARED_DEFAULTS.gdalWarpMemoryMb),
   /** `gdalwarp -multi`: overlap I/O with compute. Default true. */
-  gdalWarpMulti: z.boolean().default(true),
+  gdalWarpMulti: z.boolean().default(SHARED_DEFAULTS.gdalWarpMulti),
   /**
    * Cap tippecanoe threads (`TIPPECANOE_MAX_THREADS`). Omit to use all
    * CPUs (tippecanoe's default).
@@ -668,136 +348,24 @@ export const SpatialCapacityConfigSchema = z.object({
   tippecanoeMaxThreads: z.number().int().positive().max(256).optional(),
 });
 
-const AppSupportLinksSchema = z.object({
-  /** The support email address */
-  supportEmail: z.string().default('support@fieldmark.au'),
-  /** The URL for the privacy policy */
-  privacyPolicyUrl: z.string().url().default('https://fieldnote.au/privacy'),
-  /** The URL for the contact page */
-  contactUrl: z.string().url().default(''),
-  /** Documentation website URL */
-  docsUrl: z.string().url().optional(),
-});
-
-export const UiConfiguration = z
-  .object({
-    /** The UI Theme for the app */
-    uiTheme: z.enum(['bubble', 'default', 'bssTheme', 'fieldmark']),
-    /** The notebook list type for the app */
-    notebookListType: z.enum(['tabs', 'headings']),
-    /** The display name for notebooks e.g. survey, notebook */
-    notebookName: z.string(),
-    /** The name of the App in app store etc - heading by default */
-    appName: z.string(),
-    /** The ID of the App in app store - should be simple acronym/short e.g. FAIMS */
-    appId: z.string(),
-    /** Override the heading text in banner */
-    headingAppName: z.string().optional(),
-    /** Offline maps settings */
-    offlineMaps: OfflineMapsConfigSchema,
-    /** Address autosuggest settings (NONE/MAPBOX/MAPTILER). Optional; defaults to NONE when omitted. */
-    addressAutosuggest: AddressAutosuggestConfigSchema.optional().default({
-      source: 'NONE',
-    }),
-    /**
-     * Mobile app directory cleanup when a survey is archived (`allow` = wipe local DB after sync;
-     * `never` = keep closed). Baked into web and app builds; must match for accurate Control Centre copy.
-     */
-    forceRemoteDeletion: z.enum(['allow', 'never']).optional(),
-    /**
-     * When true, manual notebook deactivation destroys the local Pouch/IndexedDB database.
-     * When false or omitted, deactivation only closes sync and DB handles (data may remain on disk).
-     */
-    deleteOnDeactivation: z.boolean().optional(),
-    /**
-     * Team roles to hide from Control Centre team-role dropdowns.
-     * Passed to the web build as VITE_EXCLUDED_TEAM_ROLES (comma-separated).
-     */
-    excludedTeamRoles: z
-      .array(
-        z.enum([
-          'TEAM_MEMBER',
-          'TEAM_MEMBER_CREATOR',
-          'TEAM_MANAGER',
-          'TEAM_ADMIN',
-        ])
-      )
-      .optional(),
-    /**
-     * When true (default), the designer can add a plan to templates that do
-     * not already have one. When false, Add Plan is hidden; templates that
-     * already have a plan can still be reconfigured. Passed to the web build
-     * as VITE_ENABLE_PLANS_IN_DESIGNER.
-     */
-    enablePlansInDesigner: z.boolean().default(true),
-    /**
-     * When true (default), the record view shows a "Status" tab. When false,
-     * the tab is hidden. Passed to the app build as VITE_SHOW_STATUS_TAB.
-     */
-    showStatusTab: z.boolean().default(true),
-  })
-  .refine(
-    data => {
-      if (data.addressAutosuggest?.source !== 'MAPTILER') return true;
-      if (data.addressAutosuggest.maptilerKey?.trim()) return true;
-      return (
-        data.offlineMaps.mapSource === 'maptiler' &&
-        !!data.offlineMaps.mapSourceKey?.trim()
-      );
-    },
-    {
-      message:
-        'When addressAutosuggest.source is MAPTILER, either maptilerKey must be set or mapSource must be "maptiler" with mapSourceKey set (the map tile key will be used for autosuggest).',
-    }
-  );
-
 /** Defaults shared with Conductor env wiring (`EXPORT_RATE_LIMITER_*`). */
-export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS = 600_000;
-export const DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW = 20;
+export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS =
+  SHARED_DEFAULTS.exportRateLimiterWindowMs;
+export const DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW =
+  SHARED_DEFAULTS.exportRateLimiterPerWindow;
 
-export const SecurityConfigSchema = z.object({
-  /** Maximum number of days for long lived tokens */
-  maximumLongLivedTokenDurationDays: z.number().int().min(1).optional(),
-  /**
-   * Express HTTP IP rate limiter (`RATE_LIMITER_ENABLED`). Default true.
-   * Set false when per-IP limiting is handled upstream (e.g. ALB/WAF).
-   * Does not control CouchDB-backed auth attempt limits.
-   */
-  rateLimiterEnabled: z.boolean().default(true),
-  /**
-   * Per-user email-code / verification-challenge attempt limits
-   * (`ATTEMPT_LIMITER_ENABLED`). Default true. Keep enabled in
-   * production even when HTTP rate limiting is disabled upstream.
-   */
-  authAttemptLimiterEnabled: z.boolean().default(true),
-  /**
-   * Dedicated export mint/redeem limiter (`EXPORT_RATE_LIMITER_ENABLED`).
-   * Default true. Independent of `rateLimiterEnabled` so ZIP/GDAL work
-   * stays capped when the global IP limiter is off (upstream WAF).
-   */
-  exportRateLimiterEnabled: z.boolean().default(true),
-  /**
-   * Export-limiter window in milliseconds (`EXPORT_RATE_LIMITER_WINDOW_MS`).
-   * Default 600000 (10 minutes).
-   */
-  exportRateLimiterWindowMs: z
-    .number()
-    .int()
-    .min(1000)
-    .default(DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS),
-  /**
-   * Export mint/redeem requests allowed per window
-   * (`EXPORT_RATE_LIMITER_PER_WINDOW`). Default 20.
-   */
-  exportRateLimiterPerWindow: z
-    .number()
-    .int()
-    .min(1)
-    .default(DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW),
-});
-
-// Define the schema
-export const ConfigSchema = z.object({
+/**
+ * The AWS-specific extension of the shared core config.
+ * Everything genuinely about deploying to AWS: the CloudFormation stack
+ * identity, the hosted zone / certificates, account/region, the Secrets
+ * Manager key + SMTP-credentials ARNs, the CouchDB EC2/EBS sizing, backups,
+ * TTL cleanup, the Conductor Fargate task (docker image, CPU/memory,
+ * ephemeral storage, autoscaling, localhost whitelist), the spatial worker
+ * Fargate pool, the Route53 subdomain prefixes, and the AWS bits of auth
+ * providers (enabled list + secret ARN). The shared deployment config lives
+ * in `core`, validated by @faims3/build-config.
+ */
+export const AwsConfigSchema = z.object({
   /** The name of the stack to deploy to cloudformation. Note that changing
    * this will completely redeploy your application. */
   stackName: z.string(),
@@ -812,23 +380,21 @@ export const ConfigSchema = z.object({
     /** ARN of the CloudFront SSL/TLS certificate */
     cloudfront: z.string(),
   }),
-  aws: z.object({
-    // AWS Account ID
-    account: z.string(),
-    // AWS Region
-    region: z.string().default('ap-southeast-2'),
-  }),
+  // AWS Account ID
+  account: z.string(),
+  // AWS Region
+  region: z.string().default('ap-southeast-2'),
   secrets: z.object({
-    /** ARN of the private key secret */
+    /**
+     * ARN of the signing-key secret. The API fetches it at runtime
+     * (KEY_SOURCE=AWS_SM) and expects JSON {rsa_private_key, rsa_public_key}
+     * in this one secret — there is no separate public-key secret.
+     */
     privateKey: z.string(),
-    /** ARN of the public key secret */
-    publicKey: z.string(),
   }),
-  /** UI Configuration values */
-  uiConfiguration: UiConfiguration,
-  /** The support links for the app */
-  supportLinks: AppSupportLinksSchema,
-  /** CouchDB configuration */
+  /** ARN of the secret containing SMTP credentials (host/port/user/pass). */
+  smtpCredentialsSecretArn: z.string(),
+  /** CouchDB configuration (EC2/EBS sizing) */
   couch: CouchConfigSchema,
   /** Backup configuration */
   backup: BackupConfigSchema,
@@ -847,105 +413,171 @@ export const ConfigSchema = z.object({
     cpu: 256,
     memory: 512,
   }),
-  /** Conductor service configuration */
+  /** Conductor service configuration (Fargate/docker/autoscaling) */
   conductor: ConductorConfigSchema,
   /**
    * Spatial worker pool. The capacity manager is a tiny service (desired 1).
    * Workers are a task definition only — RunTask, then idle exit.
    */
   spatialCapacity: SpatialCapacityConfigSchema.optional().default({
-    maxCapacity: 4,
-    scaleThresholds: [3, 8, 16, 32],
-    reconcileMs: 15_000,
-    starvationMs: 5 * 60 * 1000,
-    idleExitMs: 60_000,
+    maxCapacity: SHARED_DEFAULTS.capacityMax,
+    scaleThresholds: [...SHARED_DEFAULTS.capacityScaleThresholds],
+    reconcileMs: SHARED_DEFAULTS.capacityReconcileMs,
+    starvationMs: SHARED_DEFAULTS.capacityStarvationMs,
+    idleExitMs: SHARED_DEFAULTS.spatialWorkerIdleExitMs,
     cpu: 1024,
     memory: 2048,
     ephemeralStorageGiB: 80,
     managerCpu: 256,
     managerMemory: 512,
-    gdalNumThreads: 'ALL_CPUS',
-    gdalCacheMaxMb: 256,
-    gdalWarpMemoryMb: 256,
-    gdalWarpMulti: true,
+    gdalNumThreads: SHARED_DEFAULTS.gdalNumThreads,
+    gdalCacheMaxMb: SHARED_DEFAULTS.gdalCacheMaxMb,
+    gdalWarpMemoryMb: SHARED_DEFAULTS.gdalWarpMemoryMb,
+    gdalWarpMulti: SHARED_DEFAULTS.gdalWarpMulti,
   }),
-  /** Domain configuration for all services */
+  /** Domain configuration for all services (Route53 subdomain prefixes) */
   domains: DomainsConfigSchema,
-  /** Mobile app URLs */
-  mobileApps: z.object({
-    /** The public URL for the Android application */
-    androidAppPublicUrl: z.string(),
-    /** The public URL for the iOS application */
-    iosAppPublicUrl: z.string(),
-  }),
-  /** The new-conductor / web config */
-  web: WebConfigSchema,
-  /** Documentation site config (Sphinx user docs) */
-  docs: DocsConfigSchema.optional().default({}),
-  /** Email service configuration */
-  smtp: SMTPConfigSchema,
-  /**
-   * Map-layer object storage. CDK always creates a private S3 bucket and
-   * grants the Conductor task role; static AWS keys are not set.
-   */
-  attachmentStorage: AttachmentStorageConfigSchema.optional().default({
-    serviceType: 'S3',
-    prefix: 'map-assets',
-  }),
-  /** Social sign in providers */
-  authProviders: AuthProvidersConfigSchema.optional(),
-  /** Security parameters */
-  security: SecurityConfigSchema.optional().default({
-    maximumLongLivedTokenDurationDays: 90,
-    rateLimiterEnabled: true,
-    authAttemptLimiterEnabled: true,
-    exportRateLimiterEnabled: true,
-    exportRateLimiterWindowMs: DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS,
-    exportRateLimiterPerWindow: DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW,
-  }),
-  /** Bugsnag/monitoring */
-  bugMonitoring: BugMonitoringConfigurationSchema,
+  /** Social sign-in providers: which are enabled + the secret ARN. */
+  authProviders: AuthProvidersAwsConfigSchema.optional(),
 });
+
+/**
+ * The top-level CDK config, composed from the two deployment files:
+ * `core` (the shared `core.json`, the same file the app/web/api and mobile
+ * builds use) and `aws` (the AWS-only extension in `aws.json`).
+ *
+ * `core` is first shape-checked with build-config's core object schema
+ * (which is composable into this object), then run through the full
+ * `parseBuildConfig` in the transform so the shared invariants (domain
+ * endpoint derivation, name fallbacks, OSM/token clamps) apply on the AWS
+ * path exactly as they do everywhere else. Parsing the core object schema
+ * alone would silently skip those derivations.
+ */
+export const ConfigSchema = z
+  .object({
+    core: BuildConfigCoreObjectSchema,
+    aws: AwsConfigSchema,
+  })
+  .transform(({core, aws}) => ({core: parseBuildConfig(core), aws}));
 
 // Infer the types from the schemas
 export type Config = z.infer<typeof ConfigSchema>;
 export type CouchConfig = z.infer<typeof CouchConfigSchema>;
 export type BackupConfig = z.infer<typeof BackupConfigSchema>;
 export type MonitoringConfig = z.infer<typeof MonitoringConfigSchema>;
-export type BugMonitoringConfiguration = z.infer<
-  typeof BugMonitoringConfigurationSchema
->;
 export type ConductorConfig = z.infer<typeof ConductorConfigSchema>;
 export type TtlCleanupConfig = z.infer<typeof TtlCleanupConfigSchema>;
 export type SpatialCapacityConfig = z.infer<typeof SpatialCapacityConfigSchema>;
 export type DomainsConfig = z.infer<typeof DomainsConfigSchema>;
-export type SMTPConfig = z.infer<typeof SMTPConfigSchema>;
+export type AuthProvidersConfig = z.infer<typeof AuthProvidersAwsConfigSchema>;
 export type AttachmentStorageConfig = z.infer<
   typeof AttachmentStorageConfigSchema
 >;
-export type OfflineMapsConfig = z.infer<typeof OfflineMapsConfigSchema>;
-export type AddressAutosuggestConfig = z.infer<
-  typeof AddressAutosuggestConfigSchema
->;
 
-export const loadConfig = (filePath: string): Config => {
-  // Parse and validate the config
-  try {
-    const absolutePath = path.resolve(process.cwd(), filePath);
-    const fileContents = fs.readFileSync(absolutePath, 'utf-8');
-    const jsonData = JSON.parse(fileContents);
-    return ConfigSchema.parse(jsonData);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      console.error('Configuration validation failed:');
-      error.issues.forEach(err => {
-        console.error(`- ${err.path.join('.')}: ${err.message}`);
-      });
-    } else {
-      console.error('Error loading configuration:', error);
-    }
+/**
+ * Validate a parsed core + aws pair (composing them through ConfigSchema,
+ * which runs the core through the full build-config invariants) and apply
+ * the cross-file rule: every provider enabled in aws.authProviders must
+ * have a definition in core.authProviders.
+ */
+export function parseConfig(coreRaw: unknown, awsRaw: unknown): Config {
+  const config = ConfigSchema.parse({core: coreRaw, aws: awsRaw});
+  const enabled = config.aws.authProviders?.providers ?? [];
+  const missing = enabled.filter(id => !(id in config.core.authProviders));
+  if (missing.length > 0) {
+    throw new Error(
+      `authProviders.providers lists provider(s) with no core.authProviders entry: ${missing.join(', ')}`
+    );
   }
-  //process.exit(1);
+  return config;
+}
+
+function readJsonFile(filePath: string): unknown {
+  const absolutePath = path.resolve(process.cwd(), filePath);
+  return JSON.parse(fs.readFileSync(absolutePath, 'utf-8'));
+}
+
+function reportAndThrow(error: unknown): never {
+  if (error instanceof z.ZodError) {
+    console.error('Configuration validation failed:');
+    error.issues.forEach(err => {
+      console.error(`- ${err.path.join('.')}: ${err.message}`);
+    });
+  } else {
+    console.error('Error loading configuration:', error);
+  }
   process.exitCode = 1;
   throw new Error('Error loading configuration');
+}
+
+/**
+ * Load the canonical two-file deployment config: `core.json` (shared,
+ * parsed by @faims3/build-config) + `aws.json` (AWS extension, ARNs only —
+ * no secret values are read or merged on this path; Secrets Manager
+ * delivers them to the ECS task / API at runtime).
+ */
+export const loadConfigFiles = (
+  coreFilePath: string,
+  awsFilePath: string
+): Config => {
+  try {
+    return parseConfig(readJsonFile(coreFilePath), readJsonFile(awsFilePath));
+  } catch (error) {
+    return reportAndThrow(error);
+  }
+};
+
+/**
+ * Resolve and load the deployment config from environment variables, in
+ * precedence order:
+ *  1. CORE_CONFIG_FILE + AWS_CONFIG_FILE (explicit file paths)
+ *  2. CONFIG_DIR (a directory containing core.json + aws.json — e.g. an
+ *     env folder in a checked-out config repository; read in place, no
+ *     copying. This is what CI uses, via the FAIMS Config GitHub Action.)
+ *  3. CONFIG_ENV=<name> (the local config mirror written by
+ *     scripts/sync-deployment-config.sh at <repo-root>/config/<name>/)
+ * There is one config layout everywhere: an env folder holding core.json
+ * (shared, non-secret) + aws.json (AWS extension, Secrets Manager ARNs
+ * only). The legacy flat and combined single-file formats are gone; migrate
+ * old files with library/build-config/scripts/migrate-aws-config.ts.
+ * `baseDir` is the aws-cdk package directory (infrastructure/aws-cdk).
+ */
+export const loadConfigFromEnv = (
+  baseDir: string,
+  env: NodeJS.ProcessEnv = process.env
+): Config => {
+  const resolve = (p: string) =>
+    path.isAbsolute(p) ? p : path.resolve(process.cwd(), p);
+
+  if (env.CORE_CONFIG_FILE || env.AWS_CONFIG_FILE) {
+    if (!env.CORE_CONFIG_FILE || !env.AWS_CONFIG_FILE) {
+      throw new Error(
+        'CORE_CONFIG_FILE and AWS_CONFIG_FILE must be set together.'
+      );
+    }
+    return loadConfigFiles(
+      resolve(env.CORE_CONFIG_FILE),
+      resolve(env.AWS_CONFIG_FILE)
+    );
+  }
+  if (env.CONFIG_DIR) {
+    const dir = resolve(env.CONFIG_DIR);
+    return loadConfigFiles(
+      path.join(dir, 'core.json'),
+      path.join(dir, 'aws.json')
+    );
+  }
+  if (env.CONFIG_ENV) {
+    // Local mirror: <repo-root>/config/<env>/ (baseDir is
+    // <repo-root>/infrastructure/aws-cdk), populated by
+    // scripts/sync-deployment-config.sh pull <env>.
+    const dir = path.resolve(baseDir, '..', '..', 'config', env.CONFIG_ENV);
+    return loadConfigFiles(
+      path.join(dir, 'core.json'),
+      path.join(dir, 'aws.json')
+    );
+  }
+  throw new Error(
+    'No deployment config specified. Set CONFIG_ENV=<name> (local mirror config/<name>/ from scripts/sync-deployment-config.sh), CONFIG_DIR=<dir containing core.json + aws.json>, or CORE_CONFIG_FILE + AWS_CONFIG_FILE.'
+  );
 };

@@ -22,6 +22,7 @@ import {
   useFormField,
 } from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
+import {Textarea} from '@/components/ui/textarea';
 import {Checkbox} from '@/components/ui/checkbox';
 import {Label} from '@/components/ui/label';
 import React, {useEffect, useRef, useState} from 'react';
@@ -40,6 +41,8 @@ export interface Field {
   name: string;
   label?: string;
   description?: string;
+  /** Draws a required marker after the label. Validation is still the schema's job. */
+  required?: boolean;
   schema: z.ZodSchema;
   type?: string;
   options?: {label: string; value: string; description?: string}[];
@@ -254,6 +257,7 @@ export function Form<
                 name,
                 label,
                 description,
+                required,
                 type,
                 options,
                 excludedBy,
@@ -295,7 +299,20 @@ export function Form<
                     render={({field}) =>
                       type === 'checkbox' ? (
                         <FormItem>
-                          {label && <FormLabel>{label}</FormLabel>}
+                          {label && (
+                            <FormLabel>
+                              {label}
+                              {required && (
+                                <span
+                                  aria-hidden="true"
+                                  className="text-destructive"
+                                >
+                                  {' '}
+                                  *
+                                </span>
+                              )}
+                            </FormLabel>
+                          )}
                           {description && (
                             <FormDescription>{description}</FormDescription>
                           )}
@@ -314,7 +331,20 @@ export function Form<
                         </FormItem>
                       ) : (
                         <FormItem>
-                          {label && <FormLabel>{label}</FormLabel>}
+                          {label && (
+                            <FormLabel>
+                              {label}
+                              {required && (
+                                <span
+                                  aria-hidden="true"
+                                  className="text-destructive"
+                                >
+                                  {' '}
+                                  *
+                                </span>
+                              )}
+                            </FormLabel>
+                          )}
                           {description && (
                             <FormDescription>{description}</FormDescription>
                           )}
@@ -393,6 +423,16 @@ export function Form<
                                     multiple ? Array.from(chosen) : chosen[0]
                                   );
                                 }}
+                              />
+                            ) : type === 'textarea' ? (
+                              <Textarea
+                                {...field}
+                                disabled={isDisabled}
+                                value={field.value ?? ''}
+                                placeholder={placeholder}
+                                maxLength={maxLength}
+                                rows={4}
+                                data-testid={testId}
                               />
                             ) : (
                               <Input

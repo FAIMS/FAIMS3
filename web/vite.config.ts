@@ -19,7 +19,9 @@ export default defineConfig({
     react(),
   ],
   resolve: {
-    alias: {'@': path.resolve(__dirname, './src')},
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
     dedupe: ['@mui/material', '@emotion/react', '@emotion/styled'],
   },
   server: {
