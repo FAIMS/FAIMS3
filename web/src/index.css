@@ -58,7 +58,7 @@
   }
 
   :root,
-  :theme-default {
+  .theme-default {
     --primary: 83 80% 22%;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 96.1%;

@@ -61,10 +61,13 @@ declare module '@tanstack/react-router' {
 function App() {
   const auth = useAuth();
 
-  // Set the website title
+  // Set the website title. Brand class is applied without replacing light/dark.
   useEffect(() => {
     document.title = config.websiteTitle ?? 'Control Centre';
-    document.documentElement.className = getThemeClass();
+    const root = document.documentElement;
+    const brandClass = getThemeClass();
+    root.classList.remove('theme-default', 'theme-bss');
+    root.classList.add(brandClass);
   }, []);
 
   /* Initialise offline Map database */

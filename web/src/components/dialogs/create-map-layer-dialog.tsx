@@ -45,8 +45,8 @@ export function CreateMapLayerDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
         <Button
-          variant="default"
-          className="flex items-center space-x-2"
+          variant="outline"
+          className="flex items-center space-x-2 bg-primary text-primary-foreground"
           data-testid="web-map-layers-create-button"
         >
           <Plus size={16} />
