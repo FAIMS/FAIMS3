@@ -5,7 +5,56 @@
  * Stored in localStorage so every map on the device shares one stack.
  */
 
+import type {BackgroundColor} from 'ol/layer/Base';
 import {clampLayerOpacity, contextualLayerZIndex} from './layerStack';
+import {cssColorWithOpacity} from './mapColor';
+
+/** Marks the getBackground wrapper so applyStyle can replace it and we re-bind. */
+const BACKGROUND_OPACITY_WRAPPERS = new WeakMap<object, BackgroundColor>();
+
+type VectorBackgroundLayer = {
+  getOpacity: () => number;
+  getBackground: () => BackgroundColor | false | undefined;
+  setBackground: (background: BackgroundColor) => void;
+};
+
+function isVectorBackgroundLayer(
+  layer: object
+): layer is VectorBackgroundLayer {
+  return (
+    typeof (layer as VectorBackgroundLayer).getBackground === 'function' &&
+    typeof (layer as VectorBackgroundLayer).setBackground === 'function' &&
+    typeof (layer as VectorBackgroundLayer).getOpacity === 'function'
+  );
+}
+
+/**
+ * OpenLayers draws VectorTileLayer.background as a CSS fill on the layer
+ * container, so setOpacity only fades the feature canvas. Wrap the backdrop
+ * so it tracks layer opacity, including after ol-mapbox-style applyStyle.
+ */
+export function bindVectorTileBackgroundToLayerOpacity(layer: object): void {
+  if (!isVectorBackgroundLayer(layer)) {
+    return;
+  }
+  const existing = BACKGROUND_OPACITY_WRAPPERS.get(layer);
+  if (existing && layer.getBackground() === existing) {
+    return;
+  }
+  const source = layer.getBackground();
+  if (!source) {
+    return;
+  }
+  const wrapper: BackgroundColor = resolution => {
+    const color = typeof source === 'function' ? source(resolution) : source;
+    if (!color) {
+      return '';
+    }
+    return cssColorWithOpacity(color, layer.getOpacity());
+  };
+  BACKGROUND_OPACITY_WRAPPERS.set(layer, wrapper);
+  layer.setBackground(wrapper);
+}
 
 /** Stable id for the streets base layer in prefs and the layers panel. */
 export const BASE_MAP_VECTOR_ID = '__faims-basemap-vector';
@@ -161,4 +210,5 @@ export function applyBaseMapLayerPaint(
   layer.setVisible(visible);
   layer.setOpacity(clampLayerOpacity(prefs.opacity));
   layer.setZIndex(contextualLayerZIndex(prefs.zIndex));
+  bindVectorTileBackgroundToLayerOpacity(layer);
 }

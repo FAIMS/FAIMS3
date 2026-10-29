@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import {describe, expect, it} from 'vitest';
-import {opacityFromColor, rgbHexFromColor, withColorOpacity} from './mapColor';
+import {
+  cssColorWithOpacity,
+  opacityFromColor,
+  rgbHexFromColor,
+  withColorOpacity,
+} from './mapColor';
 
 describe('mapColor', () => {
   it('reads RGB from 6- and 8-digit hex', () => {
@@ -25,5 +30,18 @@ describe('mapColor', () => {
 
   it('keeps the fallback RGB when the stored color is not hex', () => {
     expect(withColorOpacity('blue', 0.5, '#ff0000')).toBe('#ff000080');
+  });
+
+  it('fades CSS colors used by the streets backdrop', () => {
+    expect(cssColorWithOpacity('rgb(242, 236, 225)', 0.5)).toBe(
+      'rgba(242,236,225,0.5)'
+    );
+    expect(cssColorWithOpacity('rgba(242, 236, 225, 0.8)', 0.5)).toBe(
+      'rgba(242,236,225,0.4)'
+    );
+    expect(cssColorWithOpacity('#f2ece1', 0.25)).toBe('rgba(242,236,225,0.25)');
+    expect(cssColorWithOpacity('hsl(40, 26%, 93%)', 0.5)).toBe(
+      'hsla(40, 26%, 93%, 0.5)'
+    );
   });
 });

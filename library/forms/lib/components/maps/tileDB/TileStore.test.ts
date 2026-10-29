@@ -163,6 +163,16 @@ describe('VectorTileStore.tileLoader', () => {
     expect(tile.getState()).toBe(TileState.ERROR);
   });
 
+  it('fades the streets backdrop when layer opacity changes', () => {
+    const store = new VectorTileStore(OSM_CONFIG);
+    store.tileLayer.setOpacity(0.4);
+    const background = store.tileLayer.getBackground();
+    expect(typeof background).toBe('function');
+    expect((background as (resolution: number) => string)(1)).toBe(
+      'hsla(40, 26%, 93%, 0.4)'
+    );
+  });
+
   it('attaches a load gate to streets and satellite layers', () => {
     const store = new VectorTileStore({
       ...OSM_CONFIG,

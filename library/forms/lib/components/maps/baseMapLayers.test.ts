@@ -1,15 +1,37 @@
 // SPDX-License-Identifier: Apache-2.0
+import MVT from 'ol/format/MVT';
+import VectorTileLayer from 'ol/layer/VectorTile';
+import VectorTileSource from 'ol/source/VectorTile';
 import {afterEach, describe, expect, it} from 'vitest';
 import {
   applyBaseMapLayerPaint,
   applyBaseMapLayerPatch,
   BASE_MAP_SATELLITE_ID,
   BASE_MAP_VECTOR_ID,
+  bindVectorTileBackgroundToLayerOpacity,
   defaultBaseMapLayersState,
   normalizeBaseMapLayersState,
   readBaseMapLayersState,
   writeBaseMapLayersState,
 } from './baseMapLayers';
+
+function streetsLayer(background = 'rgb(242, 236, 225)') {
+  return new VectorTileLayer({
+    source: new VectorTileSource({format: new MVT()}),
+    background,
+  });
+}
+
+function backgroundColor(
+  layer: VectorTileLayer,
+  resolution = 1
+): string | undefined {
+  const background = layer.getBackground();
+  if (typeof background === 'function') {
+    return background(resolution);
+  }
+  return background || undefined;
+}
 
 afterEach(() => {
   localStorage.clear();
@@ -73,5 +95,27 @@ describe('baseMapLayers', () => {
       false
     );
     expect(calls).toEqual({visible: false, opacity: 0.25, zIndex: 8});
+  });
+
+  it('fades the streets VectorTile background with layer opacity', () => {
+    const layer = streetsLayer();
+    applyBaseMapLayerPaint(
+      layer,
+      {visible: true, opacity: 0.4, zIndex: 0},
+      true
+    );
+    expect(backgroundColor(layer)).toBe('rgba(242,236,225,0.4)');
+
+    layer.setOpacity(0.2);
+    expect(backgroundColor(layer)).toBe('rgba(242,236,225,0.2)');
+  });
+
+  it('rebinds after applyStyle replaces the streets background', () => {
+    const layer = streetsLayer();
+    bindVectorTileBackgroundToLayerOpacity(layer);
+    layer.setOpacity(0.5);
+    layer.setBackground('rgb(248, 244, 240)');
+    bindVectorTileBackgroundToLayerOpacity(layer);
+    expect(backgroundColor(layer)).toBe('rgba(248,244,240,0.5)');
   });
 });

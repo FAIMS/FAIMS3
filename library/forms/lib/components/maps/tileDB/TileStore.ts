@@ -31,6 +31,7 @@ import {
   TileDbMigrationError,
   TileDbMigrationState,
 } from '../migrations';
+import {bindVectorTileBackgroundToLayerOpacity} from '../baseMapLayers';
 import {getMapStylesheet} from '../styles';
 import {InitTileDbResult} from './tileStoreUtils';
 import {MapConfig} from '../types';
@@ -945,9 +946,12 @@ export class VectorTileStore extends TileStoreBase {
     });
     this.tileLayer.set(TILE_LOAD_GATE, this.streetsLoads.gate);
     this.tileLayer.set(TILE_LOAD_CONTROLLER, this.streetsLoads);
+    bindVectorTileBackgroundToLayerOpacity(this.tileLayer);
     this.preCacheSprites();
-    applyStyle(this.tileLayer, getMapStylesheet(this.config.mapStyle), {
+    void applyStyle(this.tileLayer, getMapStylesheet(this.config.mapStyle), {
       transformRequest: this.transformRequest.bind(this),
+    }).then(() => {
+      bindVectorTileBackgroundToLayerOpacity(this.tileLayer);
     });
   }
 
