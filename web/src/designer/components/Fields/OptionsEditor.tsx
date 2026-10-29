@@ -80,7 +80,7 @@ import {BaseFieldEditor} from './BaseFieldEditor';
  * because the editor patches them incrementally.
  */
 
-// Choice options have separate stored values and Markdown display labels.
+// Choice options have separate stored values and Markdown option labels.
 type ChoiceOption = ChoiceElementProps['options'][number];
 type ChoiceComponentParameters = {ElementProps?: Partial<ChoiceElementProps>};
 
@@ -95,7 +95,7 @@ enum ChoiceDisplayMode {
   dropdown = 'dropdown',
 }
 
-// Disable some markdown features to keep option display labels simple.
+// Disable some Markdown features to keep option labels simple.
 const mdxEditorDisabledFeatures: MdxEditorFeature[] = [
   'lists',
   'tables',
@@ -103,26 +103,13 @@ const mdxEditorDisabledFeatures: MdxEditorFeature[] = [
 ];
 
 // tooltip titles
-const DISPLAY_LABEL_TOOLTIP =
-  'Shown to users when they choose this option. Supports Markdown.';
 const OPTION_VALUE_TOOLTIP =
   'The value saved when users select this option. Also used in exports.';
+const OPTION_LABEL_TOOLTIP =
+  'Shown to users when they choose this option. Supports Markdown.';
+const OPTION_LABEL_HINT = 'optional - leave blank to use the option value';
 const EXCLUSIVE_TOOLTIP =
   "Marks the option as exclusive — selecting it clears any other selections in this field. Useful for choices like 'None of the above'.";
-const ADD_OPTION_TOOLTIP = (
-  <Box>
-    <Typography variant="body2" component="h4">
-      Add a new option using the following fields:
-    </Typography>
-    <Typography variant="body2" component="h5">
-      <strong>Display label:</strong> Text shown to users. Supports Markdown.
-    </Typography>
-    <Typography variant="body2" component="h5">
-      <strong>Option value:</strong> Value saved with answers and used in
-      exports and conditions.
-    </Typography>
-  </Box>
-);
 
 // dndId: Internal drag-and-drop row identifier.
 // type: Distinguishes normal options from Other.
@@ -142,35 +129,43 @@ const dragHandleCellSx = {
   pr: {md: 1, lg: 2},
 } as const;
 
-// exclusive and actions
+// Compact controls leave more room for text columns.
+// drag handle, exclusive and actions
 const compactCellSx = {
   whiteSpace: 'nowrap',
   py: 1,
   px: {md: 1, lg: 2},
 } as const;
 
-// Let drag, exclusive and action columns size to their controls, as before.
-// Give the remaining text area a preferred 65/35 label-to-ID split. With the
-// table's auto layout these are flexible proportions, not fixed pixel widths.
-const labelColumnSx = {width: '65%', minWidth: 0} as const;
-const valueColumnSx = {width: '35%', minWidth: 0} as const;
+// Prefer a 35/65 value-to-label split, allowing auto layout to adjust widths
+// to accommodate the drag handle, exclusive checkbox, and action buttons.
+const valueColumnSx = {
+  width: '35%',
+} as const;
+
+const labelColumnSx = {
+  width: '65%',
+} as const;
 
 // Headings
 const textCellHeaderSx = {
   py: 1,
+  minWidth: 0,
   whiteSpace: 'normal',
   overflowWrap: 'normal',
   wordBreak: 'normal',
 } as const;
 
-// Markdown can include unbroken image URLs: wrap these.
+// Text cells allow shrinking and truncation in auto-layout tables.
 const textCellSx = {
   py: 1,
-  whiteSpace: 'normal',
-  overflowWrap: 'anywhere',
+  // Allow the cell to shrink
+  minWidth: 0,
+  // Prevent long text from determining the column's preferred width.
+  maxWidth: 0,
 } as const;
 
-/** Shared row styling: subtle background + clear hover state + row divider. */
+// Shared row styling: subtle background + clear hover state + row divider.
 const optionRowSx = {
   backgroundColor: alpha('#000', 0.015),
   borderBottom: '1px solid',
@@ -182,26 +177,42 @@ const optionRowSx = {
   },
 } as const;
 
-// Allow option labels and values to wrap within their columns.
+// Show a single line with an ellipsis when text overflows.
 const optionTextSx = {
-  maxWidth: '100%',
+  width: '100%',
   minWidth: 0,
   fontSize: '0.875rem',
-  whiteSpace: 'normal',
-  overflowWrap: 'anywhere',
-  wordBreak: 'break-word',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
 } as const;
 
-// heading with tooltip.
-const OptionInputHeading = ({label, help}: {label: string; help?: string}) => (
+// Render a field heading with optional tooltip and hint text.
+const OptionInputHeading = ({
+  label,
+  tooltip,
+  hint,
+}: {
+  // Heading text.
+  label: string;
+  // Optional tooltip content displayed next to the heading.
+  tooltip?: React.ReactNode;
+  // Optional hint text displayed inline after the tooltip.
+  hint?: string;
+}) => (
   <Stack direction="row" spacing={0.65} sx={{mb: 1, alignItems: 'center'}}>
     <Typography component="span" sx={{fontWeight: 700}}>
       {label}
     </Typography>
-    {!!help && (
-      <Tooltip title={help}>
+    {!!tooltip && (
+      <Tooltip title={tooltip}>
         <InfoIcon sx={designerInfoIconSx} />
       </Tooltip>
+    )}
+    {hint && (
+      <Typography variant="caption" sx={{color: 'text.secondary'}}>
+        ({hint})
+      </Typography>
     )}
   </Stack>
 );
@@ -212,7 +223,7 @@ const OptionHeaderWithTooltip = ({
   tooltip,
 }: {
   label: string;
-  tooltip: string;
+  tooltip: React.ReactNode;
 }) => (
   <Box
     sx={{
@@ -238,10 +249,11 @@ const OptionHeaderWithTooltip = ({
 // ============================================================================
 
 /**
- * Ensure the display label is not empty or already used by another option.
+ * Ensure the final option label is not empty or already used.
+ * The caller resolves an empty input to the option value first.
  *
  * @param options - Existing predefined options.
- * @param newLabel - The display label to validate.
+ * @param newLabel - The option label to validate.
  * @param originalValue - The original option value to exclude when editing.
  * @returns An error message if invalid, otherwise null.
  */
@@ -250,22 +262,18 @@ const validateLabel = (
   newLabel: string,
   originalValue?: string
 ): string | null => {
-  const label = newLabel.trim();
+  const normalizedLabel = newLabel.trim().toLowerCase();
+  if (!normalizedLabel) return 'Option label is required';
 
-  if (!label) return 'Display label is required';
+  // Check if another option already uses the same label.
+  const isDuplicateLabel = options.some(
+    option =>
+      option.value !== originalValue &&
+      option.label.trim().toLowerCase() === normalizedLabel
+  );
 
-  // Compare labels without leading/trailing whitespace or case differences.
-  const normalizedLabel = label.toLocaleLowerCase();
-
-  if (
-    options.some(
-      option =>
-        option.value !== originalValue &&
-        option.label.trim().toLocaleLowerCase() === normalizedLabel
-    )
-  ) {
-    return 'This display label is already used by another option';
-  }
+  if (isDuplicateLabel)
+    return 'This option label is already used by another option';
 
   return null;
 };
@@ -287,15 +295,15 @@ const validateValue = (
   const normalizedValue = newValue.trim().toLowerCase();
   if (!normalizedValue) return 'Option value is required';
 
-  if (
-    options.some(
-      option =>
-        option.value.trim().toLowerCase() === normalizedValue &&
-        option.value !== originalValue
-    )
-  ) {
+  // Check if another option already uses the same value.
+  const isDuplicateValue = options.some(
+    option =>
+      option.value.trim().toLowerCase() === normalizedValue &&
+      option.value !== originalValue
+  );
+
+  if (isDuplicateValue)
     return 'This option value is already used by another option';
-  }
 
   return null;
 };
@@ -306,15 +314,15 @@ const validateValue = (
 
 /** Values for the option currently being edited. */
 type EditingOption = {
-  // Original value used to locate the option.
+  // Original stored value used to locate the option.
   originalValue: string;
   // Value stored with answers.
   value: string;
-  // Label displayed to users (supports Markdown).
+  // Optional user-facing Markdown label.
   label: string;
 };
 
-/** Condition references affected by a option value change. */
+/** Condition references affected by an option value change. */
 type ConditionUpdateState = {
   // Conditions referencing the original option value.
   references: string[];
@@ -342,7 +350,7 @@ interface EditOptionDialogProps {
   onExited: () => void;
 }
 
-/** Edit the rendered Markdown and stored ID independently. */
+/** Edit the option value and Markdown label independently. */
 const EditOptionDialog = ({
   editingOption,
   setEditingOption,
@@ -366,40 +374,50 @@ const EditOptionDialog = ({
     >
       <DialogTitle sx={designerDialogTitleSx}>Edit Option</DialogTitle>
       <DialogContent sx={designerDialogContentSx}>
+        {/* First row: stored option value */}
         <Box sx={{mt: 1, mb: 2}}>
           <OptionInputHeading
-            label="Display label"
-            help={DISPLAY_LABEL_TOOLTIP}
+            label="Option value"
+            tooltip={OPTION_VALUE_TOOLTIP}
           />
-          {/* MdxEditor reads initialMarkdown only on mount. Its key resets it
-              when opening a different option without interrupting typing. */}
-          <MdxEditor
-            key={editingOption?.originalValue ?? 'closed'}
-            initialMarkdown={editingOption?.label ?? ''}
-            handleChange={markdown => {
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Enter a unique option value"
+            required
+            value={editingOption?.value ?? ''}
+            onChange={e => {
               setEditingOption(previous =>
-                previous ? {...previous, label: markdown} : null
+                previous ? {...previous, value: e.target.value} : null
               );
               setErrorMessage('');
             }}
-            editorRef={editorRef}
-            disabledFeatures={mdxEditorDisabledFeatures}
           />
         </Box>
 
-        <OptionInputHeading label="Option value" help={OPTION_VALUE_TOOLTIP} />
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="Option value"
-          value={editingOption?.value ?? ''}
-          onChange={e => {
-            setEditingOption(previous =>
-              previous ? {...previous, value: e.target.value} : null
-            );
-            setErrorMessage('');
-          }}
-        />
+        {/* Second row: optional Markdown label */}
+        <Box sx={{mb: 1}}>
+          <OptionInputHeading
+            label="Option label"
+            tooltip={OPTION_LABEL_TOOLTIP}
+            hint={OPTION_LABEL_HINT}
+          />
+          {/* Remount the editor when opening an option, not while typing. */}
+          {editingOption && (
+            <MdxEditor
+              key={editingOption.originalValue}
+              initialMarkdown={editingOption.label}
+              handleChange={markdown => {
+                setEditingOption(previous =>
+                  previous ? {...previous, label: markdown} : null
+                );
+                setErrorMessage('');
+              }}
+              editorRef={editorRef}
+              disabledFeatures={mdxEditorDisabledFeatures}
+            />
+          )}
+        </Box>
 
         {errorMessage && (
           <Alert severity="error" sx={{mt: 2}}>
@@ -540,7 +558,10 @@ const SortableOtherOptionRow = ({
         />
       </TableCell>
 
-      {/* Display label column */}
+      {/* Other is configured separately, so its option value column stays empty. */}
+      <TableCell sx={{...textCellSx, ...valueColumnSx}} />
+
+      {/* Option label column */}
       <TableCell sx={{...textCellSx, ...labelColumnSx}}>
         <Tooltip title="Allows custom text input">
           <Typography sx={optionTextSx}>
@@ -557,9 +578,6 @@ const SortableOtherOptionRow = ({
           </Typography>
         </Tooltip>
       </TableCell>
-
-      {/* Other is configured separately, so its option value column stays empty. */}
-      <TableCell sx={{...textCellSx, ...valueColumnSx}} />
 
       {/* Empty exclusive checkbox column for alignment */}
       {showExclusiveOptions && <TableCell align="center" sx={compactCellSx} />}
@@ -631,7 +649,7 @@ interface SortableItemProps {
   showExclusiveOptions?: boolean;
   // values of options that exclude the other selections.
   exclusiveOptions: string[];
-  // Toggle by value, never by display label.
+  // Toggle by value, never by option label.
   onExclusiveToggle: (value: string) => void;
   // Editing uses the current stored ID to locate the option.
   onEdit: (value: string) => void;
@@ -684,17 +702,17 @@ const SortableItem = ({
         />
       </TableCell>
 
-      {/* Display label column */}
-      <TableCell sx={{...textCellSx, ...labelColumnSx}}>
-        <Tooltip title={option.label}>
-          <Typography sx={optionTextSx}>{option.label}</Typography>
-        </Tooltip>
-      </TableCell>
-
-      {/* This value is what the App stores. */}
+      {/* Option value column */}
       <TableCell sx={{...textCellSx, ...valueColumnSx}}>
         <Tooltip title={option.value}>
           <Typography sx={optionTextSx}>{option.value}</Typography>
+        </Tooltip>
+      </TableCell>
+
+      {/* Option label column */}
+      <TableCell sx={{...textCellSx, ...labelColumnSx}}>
+        <Tooltip title={option.label}>
+          <Typography sx={optionTextSx}>{option.label}</Typography>
         </Tooltip>
       </TableCell>
 
@@ -768,7 +786,7 @@ const SortableItem = ({
 // ============================================================================
 
 /**
- * Manage choice options with separate stored values and display labels.
+ * Manage choice options with separate stored values and option labels.
  * Supports editing, reordering, exclusive options, and Other.
  */
 export const OptionsEditor = ({
@@ -1009,18 +1027,22 @@ export const OptionsEditor = ({
     saveCombinedOrder(newCombined);
   };
 
-  /** Add an option only when both the Markdown label and option value are provided. */
+  /**
+   * Add an option with a required value and optional Markdown label.
+   * An empty label defaults to the option value.
+   */
   const addOption = () => {
-    const label = newOptionLabel.trim();
     const value = newOptionValue.trim();
-    const error =
-      validateLabel(options, label) || validateValue(options, value);
+    const label = newOptionLabel.trim() || value;
 
+    const error =
+      validateValue(options, value) || validateLabel(options, label);
     if (error) {
       setAddErrorMessage(error);
       return;
     }
 
+    // add a new option
     updateField([...options, {value, label}]);
     setNewOptionLabel('');
     setNewOptionValue('');
@@ -1100,10 +1122,11 @@ export const OptionsEditor = ({
     }
 
     const newValue = editingOption.value.trim();
-    const newLabel = editingOption.label.trim();
+    const newLabel = editingOption.label.trim() || newValue;
+
     const error =
-      validateLabel(options, newLabel, original.value) ||
-      validateValue(options, newValue, original.value);
+      validateValue(options, newValue, original.value) ||
+      validateLabel(options, newLabel, original.value);
     if (error) {
       setEditErrorMessage(error);
       return;
@@ -1223,7 +1246,7 @@ export const OptionsEditor = ({
                     overflow: 'auto',
                   }}
                 >
-                  {/* Auto-sized control columns leave flexible space for label/ID. */}
+                  {/* Auto-sized control columns leave flexible space for value and label. */}
                   <Table size="small" sx={{tableLayout: 'auto', width: '100%'}}>
                     <TableHead>
                       <TableRow
@@ -1241,19 +1264,20 @@ export const OptionsEditor = ({
                           },
                         }}
                       >
-                        {/* Compact controls leave more room for both text columns. */}
+                        {/* Drag handle header */}
                         <TableCell sx={compactCellSx} />
-                        <TableCell sx={{...textCellHeaderSx, ...labelColumnSx}}>
-                          <OptionHeaderWithTooltip
-                            label="Display label"
-                            tooltip={DISPLAY_LABEL_TOOLTIP}
-                          />
-                        </TableCell>
 
                         <TableCell sx={{...textCellHeaderSx, ...valueColumnSx}}>
                           <OptionHeaderWithTooltip
                             label="Option value"
                             tooltip={OPTION_VALUE_TOOLTIP}
+                          />
+                        </TableCell>
+
+                        <TableCell sx={{...textCellHeaderSx, ...labelColumnSx}}>
+                          <OptionHeaderWithTooltip
+                            label="Option label"
+                            tooltip={OPTION_LABEL_TOOLTIP}
                           />
                         </TableCell>
 
@@ -1327,28 +1351,20 @@ export const OptionsEditor = ({
               )}
             </Grid>
 
-            {/* Add option: a compact two-row panel works better than forcing
-                the taller Markdown editor onto the option value/button row. */}
+            {/* Add option panel */}
             <Grid size={12}>
-              <Stack
-                direction="row"
-                spacing={1}
-                sx={{my: 0.75, alignItems: 'center'}}
+              <Typography
+                component="h4"
+                sx={{
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  color: 'text.primary',
+                  my: 0.75,
+                }}
               >
-                <Typography
-                  component="h4"
-                  sx={{
-                    fontSize: '1rem',
-                    fontWeight: 700,
-                    color: 'text.primary',
-                  }}
-                >
-                  Add option
-                </Typography>
-                <Tooltip title={ADD_OPTION_TOOLTIP}>
-                  <InfoIcon sx={designerInfoIconSx} />
-                </Tooltip>
-              </Stack>
+                Add option
+              </Typography>
+
               <Box
                 sx={{
                   p: 2,
@@ -1357,33 +1373,21 @@ export const OptionsEditor = ({
                   borderRadius: 1.25,
                 }}
               >
-                {/* First row: give the Markdown editor the full panel width. */}
-                <Box sx={{mb: 1.5, minWidth: 0}}>
-                  <OptionInputHeading label="Display label" />
-                  <MdxEditor
-                    key={newOptionEditorKey}
-                    initialMarkdown=""
-                    handleChange={markdown => {
-                      setNewOptionLabel(markdown);
-                      setAddErrorMessage('');
-                    }}
-                    editorRef={newOptionEditorRef}
-                    disabledFeatures={mdxEditorDisabledFeatures}
-                  />
-                </Box>
-
-                {/* Second row: the option value and action buttons. */}
+                {/* First row: option value and action buttons. */}
                 <Box
                   sx={{
                     display: 'flex',
                     flexDirection: {xs: 'column', md: 'row'},
                     alignItems: {xs: 'stretch', md: 'flex-end'},
                     gap: 1.5,
+                    mb: 2,
                   }}
                 >
-                  {/* Require an explicit option value, separate from the Markdown label. */}
                   <Box sx={{flex: 1, minWidth: 0}}>
-                    <OptionInputHeading label="Option value" />
+                    <OptionInputHeading
+                      label="Option value"
+                      tooltip={OPTION_VALUE_TOOLTIP}
+                    />
                     <TextField
                       size="small"
                       placeholder="Enter a unique option value"
@@ -1392,6 +1396,12 @@ export const OptionsEditor = ({
                       onChange={e => {
                         setNewOptionValue(e.target.value);
                         setAddErrorMessage('');
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                          e.preventDefault();
+                          addOption();
+                        }
                       }}
                       error={!!addErrorMessage}
                       fullWidth
@@ -1404,7 +1414,7 @@ export const OptionsEditor = ({
                     useFlexGap
                     sx={{alignItems: 'center', flexWrap: 'wrap'}}
                   >
-                    {/* Add a predefined option using the label and value above. */}
+                    {/* Add a predefined option using the new value and label. */}
                     <Button
                       variant="outlined"
                       color="success"
@@ -1435,6 +1445,25 @@ export const OptionsEditor = ({
                   </Stack>
                 </Box>
 
+                {/* Second row: optional Markdown label. */}
+                <Box sx={{minWidth: 0}}>
+                  <OptionInputHeading
+                    label="Option label"
+                    tooltip={OPTION_LABEL_TOOLTIP}
+                    hint={OPTION_LABEL_HINT}
+                  />
+                  <MdxEditor
+                    key={newOptionEditorKey}
+                    initialMarkdown=""
+                    handleChange={markdown => {
+                      setNewOptionLabel(markdown);
+                      setAddErrorMessage('');
+                    }}
+                    editorRef={newOptionEditorRef}
+                    disabledFeatures={mdxEditorDisabledFeatures}
+                  />
+                </Box>
+
                 {addErrorMessage && (
                   <Alert severity="error" sx={{mt: 1.5}}>
                     {addErrorMessage}
@@ -1447,7 +1476,7 @@ export const OptionsEditor = ({
                 It updates expandedChecklist through the existing Redux handler. */}
             {showExpandedCheckListControl && (
               <Grid size={12}>
-                <FormControl sx={{mt: 0.5}}>
+                <FormControl>
                   <Stack
                     direction="row"
                     spacing={1}
