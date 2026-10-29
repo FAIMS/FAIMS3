@@ -16,7 +16,14 @@
     },
     "test": {
       "dependsOn": ["build"],
-      "inputs": ["src/**/*.ts", "lib/**/*.ts", "test/**/*.ts", "package.json"],
+      "inputs": [
+        "src/**/*.ts",
+        "lib/**/*.ts",
+        "scripts/**/*.ts",
+        "test/**/*.ts",
+        "config/**",
+        "package.json"
+      ],
       "outputs": [],
       "cache": true
     },
@@ -27,6 +34,12 @@
       "persistent": true
     },
     "@faims3/data-model#dev": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": [],
+      "persistent": true
+    },
+    "@faims3/build-config#dev": {
       "dependsOn": ["build"],
       "cache": false,
       "outputs": [],

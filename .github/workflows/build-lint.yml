@@ -74,4 +74,4 @@ jobs:
           cd ../app
           cp .env.dist .env
           cd ../
-          npx turbo run test --filter=@faims3/api --filter=@faims3/data-model --filter=@faims3/app --filter=@faims3/forms --filter=@faims3/infra-aws-cdk
+          npx turbo run test --filter=@faims3/api --filter=@faims3/data-model --filter=@faims3/app --filter=@faims3/forms --filter=@faims3/build-config --filter=@faims3/infra-aws-cdk

@@ -72,6 +72,7 @@ function textField(name: string, label: string) {
     'component-namespace': 'faims-custom',
     'component-name': 'TextField',
     'type-returned': 'faims-core::String',
+    exportName: name,
     'component-parameters': {
       label,
       name,
@@ -95,6 +96,7 @@ function twoSectionSpec(minItems?: number): UiSpecModel {
         'component-namespace': 'faims-custom',
         'component-name': 'TakePhoto',
         'type-returned': 'faims-attachment::Files',
+        exportName: 'photos',
         'component-parameters': {
           label: 'Photos',
           name: 'photos',

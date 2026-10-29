@@ -15,7 +15,7 @@
 // limitations under the License.
 
 /**
- * @file Top-level designer chrome: Design / Info routing tabs, plus a
+ * @file Top-level designer layout: Design / Info routing tabs, plus a
  * Setup Form tab in template mode (#2216).
  */
 

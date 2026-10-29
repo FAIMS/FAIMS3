@@ -50,6 +50,7 @@ function testUiSpec(): CompiledNotebookUiSpec {
         'component-namespace': 'faims-custom',
         'component-name': 'RelatedRecordSelector',
         'type-returned': 'faims-core::Relationship',
+        exportName: 'relF',
         ...fieldMeta(),
         'component-parameters': {
           name: 'relF',
@@ -69,6 +70,7 @@ function testUiSpec(): CompiledNotebookUiSpec {
         'component-namespace': 'mapping-plugin',
         'component-name': 'MapFormField',
         'type-returned': 'faims-core::Json',
+        exportName: 'mapF',
         ...fieldMeta(),
         'component-parameters': {
           name: 'mapF',

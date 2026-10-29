@@ -64,7 +64,6 @@ import {
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {RegisteredAuthProviders} from './strategies/applyStrategies';
 import {verifyUserCredentials} from './strategies/localStrategy';
-import {SAMLAuthProviderConfig} from './strategies/strategyTypes';
 import {injectSpSsoDescriptorErrorUrl} from './strategies/samlMetadataXml';
 import {
   buildSamlMetadataErrorUrl,
@@ -918,7 +917,7 @@ export function addAuthRoutes(
     // If SAML - we expose a metadata endpoint, optionally signed, and an SSO error page
     if (handlerDetails.type === 'saml') {
       const strategy = handlerStrategy as SamlStrategy;
-      const samlConfig = handlerDetails as SAMLAuthProviderConfig;
+      const samlConfig = handlerDetails;
 
       app.get(`/auth/${provider}/sso-error`, (req, res) => {
         const messages = req.flash();

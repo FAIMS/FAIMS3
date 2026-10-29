@@ -9,7 +9,8 @@
 #     "oidc-clientID": "your-oidc-client-id",
 #     "oidc-clientSecret": "your-oidc-client-secret",
 #     "samlProvider-privateKey": "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----",
-#     "samlProvider-publicKey": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
+#     "samlProvider-publicKey": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----",
+#     "samlProvider-idpPublicKey": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
 #   },
 #   "smtp": {
 #     "host": "smtp.example.com",
@@ -24,11 +25,12 @@
 #
 # Auth secrets format by provider type:
 #   - Google/OIDC: <provider>-clientID and <provider>-clientSecret
-#   - SAML: <provider>-privateKey (SP signing key) and <provider>-publicKey (IdP certificate)
+#   - SAML: <provider>-privateKey (SP signing key), <provider>-publicKey (SP certificate),
+#     and <provider>-idpPublicKey (IdP certificate; required in SM when omitted from core)
 #
 # The provider name must match the key used in authProviders.config in your deployment config.
 # For example, if your config has authProviders.config.fasThirdParty, use:
-#   "fasThirdParty-privateKey" and "fasThirdParty-publicKey"
+#   "fasThirdParty-privateKey", "fasThirdParty-publicKey", and "fasThirdParty-idpPublicKey"
 #
 # We also have a JSON configuration file passed as an argument
 # that contains details of our deployment, the generated secret
@@ -70,14 +72,16 @@ usage() {
   echo '      "google-clientID": "...", "google-clientSecret": "...",'
   echo '      "oidc-clientID": "...", "oidc-clientSecret": "...",'
   echo '      "samlProvider-privateKey": "-----BEGIN RSA PRIVATE KEY-----\\n...\\n-----END RSA PRIVATE KEY-----",'
-  echo '      "samlProvider-publicKey": "-----BEGIN CERTIFICATE-----\\n...\\n-----END CERTIFICATE-----"'
+  echo '      "samlProvider-publicKey": "-----BEGIN CERTIFICATE-----\\n...\\n-----END CERTIFICATE-----",'
+  echo '      "samlProvider-idpPublicKey": "-----BEGIN CERTIFICATE-----\\n...\\n-----END CERTIFICATE-----"'
   echo '    },'
   echo '    "smtp": { "host": "...", "port": "...", "secure": "...", "user": "...", "pass": "..." }'
   echo '  }'
   echo ""
   echo "Auth provider types:"
   echo "  - Google/OIDC: Use <provider>-clientID and <provider>-clientSecret"
-  echo "  - SAML: Use <provider>-privateKey (your SP key) and <provider>-publicKey (IdP cert)"
+  echo "  - SAML: Use <provider>-privateKey (SP key), <provider>-publicKey (SP cert),"
+  echo "    and <provider>-idpPublicKey (IdP cert; required in SM when omitted from core)"
   exit 1
 }
 
@@ -199,7 +203,7 @@ echo "  ARN:  $AUTH_ARN"
 
 # Show detected provider types
 echo "  Detected providers:"
-for key in $(jq -r '.auth | keys[]' "$SECRETS_FILE" | sed 's/-clientID$//' | sed 's/-clientSecret$//' | sed 's/-privateKey$//' | sed 's/-publicKey$//' | sort -u); do
+for key in $(jq -r '.auth | keys[]' "$SECRETS_FILE" | sed 's/-clientID$//' | sed 's/-clientSecret$//' | sed 's/-privateKey$//' | sed 's/-publicKey$//' | sed 's/-idpPublicKey$//' | sort -u); do
   if jq -e ".auth[\"${key}-privateKey\"]" "$SECRETS_FILE" &>/dev/null; then
     echo "    - $key (SAML)"
   elif jq -e ".auth[\"${key}-clientID\"]" "$SECRETS_FILE" &>/dev/null; then

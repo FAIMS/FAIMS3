@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * @file Shared undo/redo hook for designer chrome and related controls.
+ * @file Shared undo/redo hook for the designer UI and related controls.
  */
 
 import {useCallback} from 'react';
