@@ -8,6 +8,7 @@ FAIMS3 Developer Documentation
    markdown/Drafts.md
    markdown/Knip.md
    markdown/RulesOfHooks.md
+   markdown/CodeMirrorMdxEditor.md
    markdown/CouchMigrations.md
    markdown/ProjectLifecycle.md
    markdown/PermissionModel.md

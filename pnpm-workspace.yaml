@@ -31,6 +31,11 @@ ignoreScripts: true
 overrides:
   'level': '^7.0.0'
   'sharp': '^0.34.2'
+  # One CodeMirror 6 copy for the designer ExpressionEditor and MDXEditor.
+  # See docs/developer/docs/source/markdown/CodeMirrorMdxEditor.md
+  '@codemirror/commands': '6.11.1'
+  '@codemirror/state': '6.7.6'
+  '@codemirror/view': '6.43.13'
 
 peerDependencyRules:
   allowedVersions:

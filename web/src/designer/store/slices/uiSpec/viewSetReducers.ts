@@ -131,7 +131,7 @@ export const viewSetReducers = {
       state.viewsets[viewSetId].displayInOverviewMap = displayInOverviewMap;
     }
   },
-  /** Add/remove form id from `visible_types` when user toggles form in notebook chrome. */
+  /** Add/remove form id from `visible_types` when user toggles form in the notebook UI. */
   formVisibilityUpdated: (
     state: NotebookUISpec,
     action: PayloadAction<{

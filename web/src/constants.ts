@@ -66,7 +66,7 @@ const EnvSchema = z
      * Plural / capitalised forms are derived.
      */
     VITE_NOTEBOOK_NAME: configHelpers.stringDefault('project'),
-    /** Browser tab / chrome title for the Control Centre. */
+    /** Browser tab title for the Control Centre. */
     VITE_WEBSITE_TITLE: configHelpers.stringDefault('Control Centre'),
     /** Product display name (required). */
     VITE_APP_NAME: z
@@ -88,7 +88,7 @@ const EnvSchema = z
       .min(1, 'Missing required env variable VITE_APP_URL'),
     /** Optional docs / help site URL. */
     VITE_DOCS_URL: configHelpers.stringDefault(''),
-    /** Theme identifier applied to the Control Centre chrome. */
+    /** Theme identifier applied to the Control Centre UI. */
     VITE_APP_THEME: configHelpers.stringDefault('default'),
     /** Enables developer-only UI when exactly `'true'`. */
     VITE_DEVELOPER_MODE: z
