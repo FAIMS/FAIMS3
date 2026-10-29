@@ -7,8 +7,11 @@
  * Hiding a layer or unmounting the map aborts that layer's queued fetches.
  */
 
+import ImageTile from 'ol/ImageTile';
+import Map from 'ol/Map';
 import Tile from 'ol/Tile';
 import TileState from 'ol/TileState';
+import {getUid} from 'ol/util';
 import {
   NATIVE_MAP_PERFORMANCE,
   resolveMapPerformanceProfile,
@@ -25,6 +28,16 @@ export const TILE_LOAD_GATE = 'tileLoadGate';
 
 /** Layer property holding {@link createTileLoadController}. */
 export const TILE_LOAD_CONTROLLER = 'tileLoadController';
+
+/** Layer property: extra OpenLayers tile-queue cost. Lower starts sooner. */
+export const TILE_LOAD_PRIORITY = 'tileLoadPriority';
+
+/**
+ * Added to satellite tiles so the shared queue drains local streets and
+ * on-device overlays first. Spatial priority is unchanged within a band.
+ * Larger than any 65536 * ln(resolution) + pixel-distance term.
+ */
+export const SATELLITE_TILE_LOAD_PRIORITY = 10_000_000;
 
 type TileCache = {
   forEach: (fn: (tile: Tile, key?: string) => void) => void;
@@ -517,12 +530,59 @@ function evictSourceTiles(
 
 /** Re-open a failed tile. Loaded tiles are left alone. */
 export function resetErrorTiles(cache?: TileCache): void {
-  cache?.forEach(tile => {
+  const drop: string[] = [];
+  cache?.forEach((tile, key) => {
+    if (key && isTerminalEmptyImageTile(tile)) {
+      drop.push(key);
+      return;
+    }
     resetPausedTile(tile);
   });
+  for (const key of drop) {
+    const tile = cache?.remove?.(key);
+    if (tile) {
+      disposeTile(tile);
+    }
+  }
 }
 
+/** EMPTY is terminal in OpenLayers; the renderer must create a new tile. */
+function isTerminalEmptyImageTile(tile: Tile): boolean {
+  return tile instanceof ImageTile && tile.getState() === TileState.EMPTY;
+}
+
+function dropEmptySourceTiles(source: VectorSourceTiles | null): void {
+  const tiles = source?.sourceTiles_;
+  if (!tiles) {
+    return;
+  }
+  for (const [url, tile] of Object.entries(tiles)) {
+    if (!isTerminalEmptyImageTile(tile)) {
+      continue;
+    }
+    delete tiles[url];
+    if (source.tileKeysBySourceTileUrl_) {
+      delete source.tileKeysBySourceTileUrl_[url];
+    }
+    disposeTile(tile);
+  }
+}
+
+/**
+ * Satellite XYZ tiles are {@link ImageTile}s. Abort / error replaces the
+ * `<img>` with a blank canvas; {@link ImageTile#load} only allocates a new
+ * image from ERROR. Vector tiles must go to IDLE so the OpenLayers queue
+ * will call load(). Do not treat vector render tiles as ImageTiles — they
+ * can expose getImage() for the painted canvas.
+ */
 function resetPausedTile(tile: Tile): void {
+  if (tile instanceof ImageTile) {
+    if (tile.getState() !== TileState.ERROR) {
+      return;
+    }
+    tile.load();
+    return;
+  }
   const renderTile = tile as RenderTile;
   if (renderTile.getState() !== TileState.ERROR) {
     return;
@@ -537,9 +597,7 @@ function resetPausedTile(tile: Tile): void {
   }
   if (renderTile.sourceTiles) {
     for (const sourceTile of renderTile.sourceTiles) {
-      if (sourceTile.getState() === TileState.ERROR) {
-        sourceTile.setState(TileState.IDLE);
-      }
+      resetPausedTile(sourceTile);
     }
     renderTile.sourceTiles.length = 0;
   }
@@ -551,7 +609,9 @@ export function retryRemainingErrors(layer: RetryableTileLayer): void {
   const renderer = layer.getRenderer() as TileRenderer | null;
   resetErrorTiles(renderer?.getTileCache?.());
   resetErrorTiles(renderer?.getSourceTileCache?.());
-  const tiles = (layer.getSource() as VectorSourceTiles | null)?.sourceTiles_;
+  const source = layer.getSource() as VectorSourceTiles | null;
+  dropEmptySourceTiles(source);
+  const tiles = source?.sourceTiles_;
   if (tiles) {
     for (const tile of Object.values(tiles)) {
       resetPausedTile(tile);
@@ -604,7 +664,8 @@ export function settleTileLayer(
 
 /**
  * After drain: pan evicts tiles that left the view; zoom dumps the cache
- * like the last stable build.
+ * like the last stable build. A zoom must abort leftover in-flight tiles
+ * first — otherwise drain waits out satellite JPEGs from the previous z.
  */
 export async function applySettledTileLoads(options: {
   layers: RetryableTileLayer[];
@@ -615,6 +676,11 @@ export async function applySettledTileLoads(options: {
   const controllers = options.layers
     .map(layer => tileLoadController(layer))
     .filter((loads): loads is TileLoadController => loads !== undefined);
+  if (options.zoomChanged) {
+    for (const loads of controllers) {
+      loads.gate.startInteraction();
+    }
+  }
   await Promise.all(controllers.map(loads => loads.drain()));
   if (options.cancelled()) {
     return;
@@ -646,7 +712,9 @@ export function retryAbortedTiles(layer: RetryableTileLayer): void {
   const renderer = layer.getRenderer() as TileRenderer | null;
   resetErrorTiles(renderer?.getTileCache?.());
   resetErrorTiles(renderer?.getSourceTileCache?.());
-  const tiles = (layer.getSource() as VectorSourceTiles | null)?.sourceTiles_;
+  const source = layer.getSource() as VectorSourceTiles | null;
+  dropEmptySourceTiles(source);
+  const tiles = source?.sourceTiles_;
   if (tiles) {
     for (const tile of Object.values(tiles)) {
       resetPausedTile(tile);
@@ -709,9 +777,10 @@ export function syncTileLoadsToVisibility(layer: RetryableTileLayer): void {
 }
 
 /**
- * True only for a user pan/pinch/scroll. view.fit and setCenter also fire
- * movestart; pausing those deferred the first viewport and left the overview
- * map blank until the next gesture.
+ * True only for a user pan/pinch/scroll. view.fit, setCenter, and the +/-
+ * zoom buttons also fire movestart; pausing those deferred the first
+ * viewport and left the overview map blank. Programmatic zooms still
+ * settle after moveend so leftover tiles can be aborted.
  */
 export function shouldPauseTileLoads(view: {
   getInteracting: () => boolean;
@@ -794,10 +863,10 @@ export function bindTileLoadPause(
     });
   });
   const onMoveStart = () => {
+    startResolution = map.getView().getResolution();
     if (!shouldPauseTileLoads(map.getView())) {
       return;
     }
-    startResolution = map.getView().getResolution();
     settle.cancel();
     for (const layer of getLayers()) {
       if (includeLayer(layer)) {
@@ -806,6 +875,10 @@ export function bindTileLoadPause(
     }
   };
   const onMoveEnd = () => {
+    if (isZoomChange(startResolution, map.getView().getResolution())) {
+      settle.arm();
+      return;
+    }
     for (const layer of getLayers()) {
       if (includeLayer(layer) && tileLoadController(layer)?.gate.interacting) {
         settle.arm();
@@ -820,4 +893,61 @@ export function bindTileLoadPause(
     map.un('movestart', onMoveStart);
     map.un('moveend', onMoveEnd);
   };
+}
+
+type PriorityLayer = {
+  getSource?: () => object | null | undefined;
+  get?: (key: string) => unknown;
+  set?: (key: string, value: unknown) => void;
+};
+
+type PriorityMap = {
+  getLayers: () => {getArray: () => PriorityLayer[]};
+};
+
+/** Mark a satellite layer so its tiles wait behind local streets/overlays. */
+export function setSatelliteTileLoadPriority(layer: PriorityLayer): void {
+  layer.set?.(TILE_LOAD_PRIORITY, SATELLITE_TILE_LOAD_PRIORITY);
+}
+
+/** Queue offset stored on the layer whose source uid is `tileSourceKey`. */
+export function tileLoadPriorityOffset(
+  map: PriorityMap,
+  tileSourceKey: string
+): number {
+  for (const layer of map.getLayers().getArray()) {
+    const source = layer.getSource?.();
+    if (!source || getUid(source) !== tileSourceKey) {
+      continue;
+    }
+    const value = layer.get?.(TILE_LOAD_PRIORITY);
+    return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  }
+  return 0;
+}
+
+/** Keep DROP (Infinity) unchanged; otherwise add the layer offset. */
+export function applyTileQueuePriority(base: number, offset: number): number {
+  if (!Number.isFinite(base)) {
+    return base;
+  }
+  return base + offset;
+}
+
+/**
+ * OpenLayers map whose shared tile queue prefers unmarked layers (streets,
+ * on-device overlays) over satellite. Does not raise concurrency.
+ */
+export class PrioritizedTileMap extends Map {
+  getTilePriority(
+    tile: Tile,
+    tileSourceKey: string,
+    tileCenter: number[],
+    tileResolution: number
+  ): number {
+    return applyTileQueuePriority(
+      super.getTilePriority(tile, tileSourceKey, tileCenter, tileResolution),
+      tileLoadPriorityOffset(this, tileSourceKey)
+    );
+  }
 }

@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
+import ImageTile from 'ol/ImageTile';
+import TileLayer from 'ol/layer/Tile';
+import OSM from 'ol/source/OSM';
+import XYZ from 'ol/source/XYZ';
 import TileState from 'ol/TileState';
+import {getUid} from 'ol/util';
 import {describe, expect, it, vi} from 'vitest';
 import {
   BASE_MAP_TILE_CONCURRENCY,
   applySettledTileLoads,
+  applyTileQueuePriority,
   bindTileLoadPause,
   createTileLoadController,
   createTileLoadGate,
@@ -11,11 +17,16 @@ import {
   createTileLoadSettle,
   isZoomChange,
   refreshTileLayer,
+  resetErrorTiles,
   retryAbortedTiles,
+  SATELLITE_TILE_LOAD_PRIORITY,
+  setSatelliteTileLoadPriority,
   settleTileLayer,
   shouldPauseTileLoads,
   syncTileLoadsToVisibility,
   TILE_LOAD_CONTROLLER,
+  TILE_LOAD_PRIORITY,
+  tileLoadPriorityOffset,
   TileLoadPausedError,
 } from './tileLoadControl';
 
@@ -335,6 +346,67 @@ describe('tile load control', () => {
     expect(sourceChanged).not.toHaveBeenCalled();
   });
 
+  it('reloads an ImageTile from ERROR so OpenLayers allocates a new image', () => {
+    const tileLoadFunction = vi.fn();
+    const tile = new ImageTile(
+      [2, 1, 1],
+      TileState.ERROR,
+      'https://example.com/sat.png',
+      {crossOrigin: null},
+      tileLoadFunction
+    );
+    resetErrorTiles({
+      forEach: fn => {
+        fn(tile);
+      },
+    });
+    expect(tile.getState()).toBe(TileState.LOADING);
+    expect(tileLoadFunction).toHaveBeenCalledTimes(1);
+    expect(tile.getImage()).toBeInstanceOf(Image);
+  });
+
+  it('drops a terminal EMPTY ImageTile so the renderer can create a new one', () => {
+    const tileLoadFunction = vi.fn();
+    const tile = new ImageTile(
+      [2, 1, 2],
+      TileState.EMPTY,
+      'https://example.com/sat.png',
+      {crossOrigin: null},
+      tileLoadFunction
+    );
+    const dispose = vi.spyOn(tile, 'dispose');
+    const remove = vi.fn((key: string) => {
+      expect(key).toBe('sat/2/1/2');
+      return tile;
+    });
+    resetErrorTiles({
+      forEach: fn => {
+        fn(tile, 'sat/2/1/2');
+      },
+      remove,
+    });
+    expect(remove).toHaveBeenCalledWith('sat/2/1/2');
+    expect(dispose).toHaveBeenCalled();
+    expect(tileLoadFunction).not.toHaveBeenCalled();
+  });
+
+  it('idles a vector render tile even when it exposes getImage', () => {
+    const load = vi.fn();
+    const tile = {
+      getState: () => TileState.ERROR,
+      setState: vi.fn(),
+      getImage: () => ({tagName: 'CANVAS'}),
+      load,
+    };
+    resetErrorTiles({
+      forEach: fn => {
+        fn(tile as never);
+      },
+    });
+    expect(tile.setState).toHaveBeenCalledWith(TileState.IDLE);
+    expect(load).not.toHaveBeenCalled();
+  });
+
   it('retries refused tiles without dumping ones that already drew', () => {
     const sourceChanged = vi.fn();
     const layerChanged = vi.fn();
@@ -438,6 +510,100 @@ describe('tile load control', () => {
     expect(layerChanged).toHaveBeenCalled();
   });
 
+  it('aborts leftover in-flight tiles on zoom settle instead of waiting them out', async () => {
+    const loads = createTileLoadController(1);
+    const sourceChanged = vi.fn();
+    const layer = {
+      getVisible: () => true,
+      get: (key: string) => (key === TILE_LOAD_CONTROLLER ? loads : undefined),
+      getRenderer: () => null,
+      getSource: () => ({
+        changed: sourceChanged,
+      }),
+      changed: vi.fn(),
+    };
+    const pending = loads.run(
+      signal =>
+        new Promise<void>((_resolve, reject) => {
+          signal.addEventListener('abort', () => {
+            reject(new DOMException('aborted', 'AbortError'));
+          });
+        })
+    );
+    const aborted = expect(pending).rejects.toBeInstanceOf(TileLoadPausedError);
+    await Promise.resolve();
+    const settled = applySettledTileLoads({
+      layers: [layer as never],
+      map: {
+        getView: () => ({
+          getProjection: () => 'EPSG:3857',
+          getResolution: () => 1,
+          calculateExtent: () => [0, 0, 1, 1],
+        }),
+        getSize: () => [256, 256],
+        render: vi.fn(),
+      },
+      cancelled: () => false,
+      zoomChanged: true,
+    });
+    await aborted;
+    await settled;
+    expect(sourceChanged).toHaveBeenCalled();
+    expect(loads.gate.interacting).toBe(false);
+  });
+
+  it('arms settle after a programmatic zoom so leftover tiles are dropped', async () => {
+    vi.useFakeTimers();
+    const loads = createTileLoadController(1);
+    const sourceChanged = vi.fn();
+    const layer = {
+      getVisible: () => true,
+      get: (key: string) => (key === TILE_LOAD_CONTROLLER ? loads : undefined),
+      getRenderer: () => null,
+      getSource: () => ({
+        changed: sourceChanged,
+      }),
+      changed: vi.fn(),
+    };
+    const listeners: Record<string, () => void> = {};
+    let resolution = 100;
+    const map = {
+      getView: () => ({
+        getInteracting: () => false,
+        getResolution: () => resolution,
+        getProjection: () => 'EPSG:3857',
+        calculateExtent: () => [0, 0, 1, 1],
+      }),
+      getSize: () => [256, 256],
+      render: vi.fn(),
+      on: (type: 'movestart' | 'moveend', listener: () => void) => {
+        listeners[type] = listener;
+      },
+      un: (type: 'movestart' | 'moveend') => {
+        delete listeners[type];
+      },
+    };
+    const pending = loads.run(
+      signal =>
+        new Promise<void>((_resolve, reject) => {
+          signal.addEventListener('abort', () => {
+            reject(new DOMException('aborted', 'AbortError'));
+          });
+        })
+    );
+    const aborted = expect(pending).rejects.toBeInstanceOf(TileLoadPausedError);
+    await Promise.resolve();
+    bindTileLoadPause(map, () => [layer as never]);
+    listeners.movestart?.();
+    expect(loads.gate.interacting).toBe(false);
+    resolution = 50;
+    listeners.moveend?.();
+    await vi.advanceTimersByTimeAsync(200);
+    await aborted;
+    expect(sourceChanged).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
   it('does not retry a hidden layer after settle', async () => {
     const layerChanged = vi.fn();
     const sourceChanged = vi.fn();
@@ -504,5 +670,34 @@ describe('tile load control', () => {
     listeners.moveend?.();
     unbind();
     expect(listeners.movestart).toBeUndefined();
+  });
+
+  it('defers satellite tiles behind unmarked layers in the shared queue', () => {
+    const streets = new TileLayer({source: new OSM()});
+    const satellite = new TileLayer({
+      source: new XYZ({url: 'https://example.com/{z}/{x}/{y}.png'}),
+    });
+    setSatelliteTileLoadPriority(satellite);
+    expect(satellite.get(TILE_LOAD_PRIORITY)).toBe(
+      SATELLITE_TILE_LOAD_PRIORITY
+    );
+    const map = {
+      getLayers: () => ({
+        getArray: () => [streets, satellite],
+      }),
+    };
+    expect(tileLoadPriorityOffset(map, getUid(streets.getSource()!))).toBe(0);
+    expect(tileLoadPriorityOffset(map, getUid(satellite.getSource()!))).toBe(
+      SATELLITE_TILE_LOAD_PRIORITY
+    );
+    expect(
+      applyTileQueuePriority(12, SATELLITE_TILE_LOAD_PRIORITY)
+    ).toBeGreaterThan(applyTileQueuePriority(12, 0));
+    expect(
+      applyTileQueuePriority(
+        Number.POSITIVE_INFINITY,
+        SATELLITE_TILE_LOAD_PRIORITY
+      )
+    ).toBe(Number.POSITIVE_INFINITY);
   });
 });

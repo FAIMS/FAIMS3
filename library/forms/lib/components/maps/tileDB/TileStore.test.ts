@@ -13,8 +13,10 @@ import {
   type MockInstance,
 } from 'vitest';
 import {
+  SATELLITE_TILE_LOAD_PRIORITY,
   TILE_LOAD_CONTROLLER,
   TILE_LOAD_GATE,
+  TILE_LOAD_PRIORITY,
   tileLoadController,
 } from '../tileLoadControl';
 import {VectorTileStore} from './TileStore';
@@ -183,6 +185,9 @@ describe('VectorTileStore.tileLoader', () => {
     const satellite = store.getSatelliteLayer();
     expect(satellite?.get(TILE_LOAD_GATE)).toBeDefined();
     expect(satellite?.get(TILE_LOAD_CONTROLLER)).toBeDefined();
+    expect(satellite?.get(TILE_LOAD_PRIORITY)).toBe(
+      SATELLITE_TILE_LOAD_PRIORITY
+    );
   });
 
   it('cancels an in-flight satellite image when the layer queue stops', async () => {
@@ -214,6 +219,38 @@ describe('VectorTileStore.tileLoader', () => {
     });
     tileLoadController(layer!)!.stop();
     expect(image.src).toBe('');
+    await vi.waitFor(() => {
+      expect(tile.setState).toHaveBeenCalledWith(TileState.ERROR);
+    });
+  });
+
+  it('marks a satellite tile ERROR when the image fails to load', async () => {
+    const store = new VectorTileStore({
+      ...OSM_CONFIG,
+      satelliteSource: 'maptiler',
+      mapSourceKey: 'test-key',
+    });
+    const layer = store.getSatelliteLayer();
+    expect(layer).toBeDefined();
+    const loadFn = layer!.getSource()!.getTileLoadFunction();
+    const listeners: Record<string, () => void> = {};
+    const image = {
+      src: 'about:blank',
+      addEventListener: vi.fn((type: string, listener: () => void) => {
+        listeners[type] = listener;
+      }),
+      removeEventListener: vi.fn(),
+      removeAttribute: vi.fn(),
+    };
+    const tile = {
+      getImage: () => image,
+      setState: vi.fn(),
+    };
+    loadFn(tile as never, 'https://example.com/sat/1/0/0.jpg');
+    await vi.waitFor(() => {
+      expect(image.src).toContain('example.com');
+    });
+    listeners.error?.();
     await vi.waitFor(() => {
       expect(tile.setState).toHaveBeenCalledWith(TileState.ERROR);
     });

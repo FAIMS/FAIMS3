@@ -42,7 +42,11 @@ import {
   type StaticMapLayerKind,
   type StaticMapLayerStyle,
 } from './StaticMapLayerPreview';
-import {stopAllTileLoads} from './tileLoadControl';
+import {
+  PrioritizedTileMap,
+  setSatelliteTileLoadPriority,
+  stopAllTileLoads,
+} from './tileLoadControl';
 import {MapConfig} from './types';
 import {useBaseMapLayers} from './useBaseMapLayers';
 import {useBaseMapTileLoads} from './useBaseMapTileLoads';
@@ -81,21 +85,22 @@ function createSatelliteLayer(mapConfig: MapConfig): TileLayer {
     (mapConfig.satelliteSource === 'maptiler' ||
       (!mapConfig.satelliteSource && mapConfig.mapSource === 'maptiler')) &&
     Boolean(mapConfig.mapSourceKey);
-  if (useMaptiler) {
-    return new TileLayer({
-      source: new XYZ({
-        url: `https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=${mapConfig.mapSourceKey}`,
-        attributions: '© MapTiler © OpenStreetMap contributors',
-      }),
-    });
-  }
-  return new TileLayer({
-    source: new XYZ({
-      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      attributions:
-        'Powered by Esri | Esri, USGS, FAO, NOAA, Maxar, Earthstar Geographics, and the GIS User Community',
-    }),
-  });
+  const layer = useMaptiler
+    ? new TileLayer({
+        source: new XYZ({
+          url: `https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=${mapConfig.mapSourceKey}`,
+          attributions: '© MapTiler © OpenStreetMap contributors',
+        }),
+      })
+    : new TileLayer({
+        source: new XYZ({
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          attributions:
+            'Powered by Esri | Esri, USGS, FAO, NOAA, Maxar, Earthstar Geographics, and the GIS User Community',
+        }),
+      });
+  setSatelliteTileLoadPriority(layer);
+  return layer;
 }
 
 function sourceAttribution(layer: TileLayer): string {
@@ -269,7 +274,7 @@ function InteractiveMapLayerPreviewImpl({
     if (!target) {
       return;
     }
-    const olMap = new Map({
+    const olMap = new PrioritizedTileMap({
       target,
       layers: [streetsLayer, satelliteLayer],
       controls: [],

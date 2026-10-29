@@ -9,7 +9,7 @@ import {join} from 'node:path';
 import {get as getProjection} from 'ol/proj';
 import TileState from 'ol/TileState';
 import {describe, expect, it, vi} from 'vitest';
-import {PMTiles, TileType} from 'pmtiles';
+import {PMTiles, ResolvedValueCache, TileType} from 'pmtiles';
 import {
   createContextualTileLoadGate,
   createRasterTileLayer,
@@ -126,6 +126,31 @@ describe('local PMTiles layers', () => {
       features.every(feature => feature.getGeometry()?.getType() === 'Point')
     ).toBe(true);
     expect(olLayer.get(CONTEXTUAL_TILE_LOAD_GATE)).toBeDefined();
+  });
+
+  it('retries a failed archive read instead of keeping the rejection', async () => {
+    const file = fixture('points.pmtiles');
+    let extraReads = 0;
+    const archive = new PMTiles(
+      {
+        getKey: () => 'retry-dir',
+        getBytes: async (offset, length) => {
+          if (offset > 0) {
+            extraReads += 1;
+            if (extraReads === 1) {
+              throw new Error('transient range');
+            }
+          }
+          return {data: await readBlobRange(file, offset, length)};
+        },
+      },
+      new ResolvedValueCache()
+    );
+    await archive.getHeader();
+    await expect(archive.getZxy(0, 0, 0)).rejects.toThrow('transient range');
+    const tile = await archive.getZxy(0, 0, 0);
+    expect(tile).toBeDefined();
+    expect(tile!.data.byteLength).toBeGreaterThan(0);
   });
 
   it('lets in-flight reads finish and skips new ones while panning', () => {

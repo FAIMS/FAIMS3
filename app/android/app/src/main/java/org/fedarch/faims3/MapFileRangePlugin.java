@@ -74,6 +74,7 @@ public class MapFileRangePlugin extends Plugin {
             JSObject result = new JSObject();
             result.put("path", relative);
             result.put("uri", Uri.fromFile(tmp).toString());
+            result.put("bytes", buffer.length);
             call.resolve(result);
         } catch (IOException e) {
             call.reject("Could not read the file range.", e);

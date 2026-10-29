@@ -14,7 +14,7 @@ import ImageTileSource from 'ol/source/ImageTile';
 import VectorTileSource from 'ol/source/VectorTile';
 import TileState from 'ol/TileState';
 import VectorTile from 'ol/VectorTile';
-import {PMTiles, TileType, type Source} from 'pmtiles';
+import {PMTiles, ResolvedValueCache, TileType, type Source} from 'pmtiles';
 import type {ContextualMapLayer} from './contextualMapLayers';
 import {contextualVectorStyle} from './contextualVectorStyle';
 import {
@@ -163,8 +163,13 @@ async function openArchive(spec: ContextualMapLayer): Promise<PMTiles> {
   if (!spec.readTileBytes) {
     throw new Error(`Layer ${spec.name} has no tile reader.`);
   }
+  // SharedPromiseCache keeps a rejected directory promise, so one failed
+  // leaf-directory read blanks that zoom until LRU evicts it. Resolved
+  // values are cached the same way; only successful header/directory
+  // reads are stored. Tile pixels are not cached here.
   return new PMTiles(
-    new CallbackSource(spec.readTileBytes, spec.url || spec.id)
+    new CallbackSource(spec.readTileBytes, spec.url || spec.id),
+    new ResolvedValueCache()
   );
 }
 

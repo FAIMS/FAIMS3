@@ -69,7 +69,7 @@ import type {RecordFormLayer, RecordFormLayerPatch} from './recordFormLayers';
 import {useBaseMapLayers} from './useBaseMapLayers';
 import {useBaseMapTileLoads} from './useBaseMapTileLoads';
 import {useContextualMapLayers} from './useContextualMapLayers';
-import {stopAllTileLoads} from './tileLoadControl';
+import {PrioritizedTileMap, stopAllTileLoads} from './tileLoadControl';
 import {createTileStore} from './tileDB/TileStore';
 
 export const defaultMapProjection = 'EPSG:3857';
@@ -256,7 +256,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
       maxZoom: MAX_ZOOM,
     });
 
-    const theMap = new Map({
+    const theMap = new PrioritizedTileMap({
       target: element,
       layers,
       view: view,

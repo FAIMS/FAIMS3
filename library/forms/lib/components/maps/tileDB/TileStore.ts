@@ -41,7 +41,7 @@ import {
   TILE_LOAD_CONTROLLER,
   TILE_LOAD_GATE,
   createTileLoadController,
-  isTileLoadPausedError,
+  setSatelliteTileLoadPriority,
   TileLoadPausedError,
   type TileLoadController,
 } from '../tileLoadControl';
@@ -355,35 +355,55 @@ abstract class TileStoreBase {
           .run(
             signal =>
               new Promise<void>((resolve, reject) => {
+                const image = imageTile.getImage();
+                // Abort replaces the <img> with a blank canvas. Setting
+                // .src on that canvas never completes and holds a limiter
+                // slot. ImageTile.load() from ERROR allocates a new image.
+                if (
+                  typeof HTMLCanvasElement !== 'undefined' &&
+                  image instanceof HTMLCanvasElement
+                ) {
+                  reject(new Error('Satellite tile image is not reloadable'));
+                  return;
+                }
+                const tileImage = image as HTMLImageElement;
+                const cleanup = () => {
+                  signal.removeEventListener('abort', onAbort);
+                  tileImage.removeEventListener('load', onLoad);
+                  tileImage.removeEventListener('error', onError);
+                };
+                const onLoad = () => {
+                  cleanup();
+                  resolve();
+                };
+                const onError = () => {
+                  cleanup();
+                  reject(new Error('Satellite tile failed to load'));
+                };
+                const onAbort = () => {
+                  cleanup();
+                  // Drop src so WebKit cancels the decode. Do not skip this:
+                  // a pan trail of in-flight JPEGs crashed WebContent.
+                  tileImage.removeAttribute('src');
+                  tileImage.src = '';
+                  reject(new TileLoadPausedError());
+                };
                 if (signal.aborted) {
                   reject(new TileLoadPausedError());
                   return;
                 }
-                const image = imageTile.getImage() as HTMLImageElement;
-                const cancelImage = () => {
-                  image.removeEventListener('load', onDone);
-                  image.removeEventListener('error', onDone);
-                  image.removeAttribute('src');
-                  image.src = '';
-                };
-                const onDone = () => {
-                  signal.removeEventListener('abort', onAbort);
-                  resolve();
-                };
-                const onAbort = () => {
-                  cancelImage();
-                  reject(new TileLoadPausedError());
-                };
-                image.addEventListener('load', onDone, {once: true});
-                image.addEventListener('error', onDone, {once: true});
-                signal.addEventListener('abort', onAbort);
-                image.src = src;
+                tileImage.addEventListener('load', onLoad, {once: true});
+                tileImage.addEventListener('error', onError, {once: true});
+                signal.addEventListener('abort', onAbort, {once: true});
+                if (signal.aborted) {
+                  onAbort();
+                  return;
+                }
+                tileImage.src = src;
               })
           )
-          .catch(error => {
-            if (isTileLoadPausedError(error)) {
-              imageTile.setState(TileState.ERROR);
-            }
+          .catch(() => {
+            imageTile.setState(TileState.ERROR);
           });
       },
     });
@@ -395,6 +415,7 @@ abstract class TileStoreBase {
     });
     layer.set(TILE_LOAD_GATE, loads.gate);
     layer.set(TILE_LOAD_CONTROLLER, loads);
+    setSatelliteTileLoadPriority(layer);
     return layer;
   }
 
@@ -486,6 +507,9 @@ abstract class TileStoreBase {
         const response = await fetch(url, signal ? {signal} : undefined);
         if (signal?.aborted) {
           throw new TileLoadPausedError();
+        }
+        if (!response.ok) {
+          return undefined;
         }
         return await response.blob();
       }

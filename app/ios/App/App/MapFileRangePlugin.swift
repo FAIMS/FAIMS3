@@ -75,7 +75,8 @@ public class MapFileRangePlugin: CAPPlugin, CAPBridgedPlugin {
             try data.write(to: tmpURL, options: .atomic)
             call.resolve([
                 "path": relative,
-                "uri": tmpURL.absoluteString
+                "uri": tmpURL.absoluteString,
+                "bytes": data.count
             ])
         } catch {
             call.reject("Could not read the file range.", nil, error)

@@ -26,7 +26,7 @@ type MapFileRangePlugin = {
     path: string;
     offset: number;
     length: number;
-  }): Promise<{uri?: string; path?: string; data?: string}>;
+  }): Promise<{uri?: string; path?: string; data?: string; bytes?: number}>;
   remove(options: {path: string}): Promise<void>;
 };
 
@@ -87,6 +87,15 @@ export async function readNativeFileRange(
       }
       if (bytes.byteLength > length) {
         throw new Error('Tile read returned more bytes than requested.');
+      }
+      // The plugin may clamp to EOF. Compare against the bytes it wrote,
+      // not the requested length, so a short-but-complete EOF read is fine.
+      if (
+        typeof result.bytes === 'number' &&
+        Number.isFinite(result.bytes) &&
+        bytes.byteLength !== result.bytes
+      ) {
+        throw new Error('Tile read returned an incomplete range.');
       }
       throwIfAborted(signal);
       return bytes.slice().buffer;

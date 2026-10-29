@@ -45,6 +45,7 @@ describe('readNativeFileRange', () => {
     native.read.mockResolvedValue({
       uri: 'file:///tmp/map-range/a.tile',
       path: 'map-range/a.tile',
+      bytes: 3,
     });
 
     const bytes = await readNativeFileRange('map-assets/a.pmtiles', 0, 16);
@@ -80,6 +81,19 @@ describe('readNativeFileRange', () => {
     await expect(
       readNativeFileRange('map-assets/a.pmtiles', 0, 16)
     ).rejects.toThrow('Could not read the tile range file.');
+    expect(native.remove).toHaveBeenCalledWith({path: 'map-range/a.tile'});
+  });
+
+  it('rejects a cache file shorter than the plugin wrote', async () => {
+    native.read.mockResolvedValue({
+      uri: 'file:///tmp/map-range/a.tile',
+      path: 'map-range/a.tile',
+      bytes: 8,
+    });
+
+    await expect(
+      readNativeFileRange('map-assets/a.pmtiles', 0, 16)
+    ).rejects.toThrow('incomplete range');
     expect(native.remove).toHaveBeenCalledWith({path: 'map-range/a.tile'});
   });
 
