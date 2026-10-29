@@ -28,7 +28,7 @@ import DebouncedTextField from '../debounced-text-field';
 
 type OptionTreeType = {
   name: string;
-  type?: '' | 'image';
+  type?: string; // currently not used
   label?: string;
   children?: OptionTreeType[];
 };
@@ -94,14 +94,6 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
         throw new Error(
           "Invalid 'name' property. The 'name' property must be a string. Please refer to the example and try again."
         );
-      } else if (
-        opt.type &&
-        opt.type.trim().length !== 0 &&
-        opt.type !== 'image'
-      ) {
-        throw new Error(
-          `Invalid 'type' property at level ${opt.name}. The 'type' property must be an empty string ("") or "image". Please refer to the example and try again.`
-        );
       } else if (opt.label && typeof opt.label !== 'string') {
         throw new Error(
           `Invalid 'label' property at level ${opt.name}. The 'label' property must be a string. Please refer to the example and try again.`
@@ -165,8 +157,8 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
                   levels. The first level goes 1 level deep (i.e., stops at
                   Level 1), the second goes 2 levels deep (i.e., includes Level
                   2 and Level 2.1). The properties <code>name</code> and{' '}
-                  <code>children</code> must be included, whereas the properties{' '}
-                  <code>type</code> and <code>label</code> are optional.
+                  <code>children</code> must be included, whereas the{' '}
+                  <code>label</code> property is optional.
                 </p>
 
                 <Button
@@ -191,7 +183,6 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
                         {
                           name: 'Level 1',
                           label: 'example',
-                          type: 'image',
                           children: [],
                         },
                         {

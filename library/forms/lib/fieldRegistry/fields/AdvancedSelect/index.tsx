@@ -178,16 +178,11 @@ export const AdvancedSelect = (props: FieldProps) => {
   const onSelectValue = (
     newValue: string,
     type: string | undefined,
-    name: string,
-    nodeLabel: string | undefined
+    name: string
   ) => {
     if (valuetype === 'child') {
-      // For child mode, store just the name (with label for images)
-      let childValue = name;
-      if (type === 'image' && nodeLabel) {
-        childValue = `${nodeLabel}(${name})`;
-      }
-      setFieldData(childValue);
+      // For child mode, store just the name
+      setFieldData(name);
     } else {
       // For full mode, store the full path (nodeId contains the full path)
       setFieldData(newValue);
@@ -206,16 +201,8 @@ export const AdvancedSelect = (props: FieldProps) => {
     const singleKey = parentKey !== '' ? `${parentKey}.${key}` : `${key}`;
 
     // Build the full path for this node
-    let nodePath: string;
-    if (node.type === 'image' && node.label !== undefined) {
-      nodePath =
-        parentNodePath !== ''
-          ? `${parentNodePath} > ${node.label}(${node.name})`
-          : `${node.label}(${node.name})`;
-    } else {
-      nodePath =
-        parentNodePath !== '' ? `${parentNodePath} > ${node.name}` : node.name;
-    }
+    let nodePath =
+      parentNodePath !== '' ? `${parentNodePath} > ${node.name}` : node.name;
 
     return (
       <CustomTreeItem
