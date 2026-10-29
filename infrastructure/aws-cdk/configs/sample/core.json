@@ -1,0 +1,118 @@
+{
+  "branding": {
+    "theme": "default",
+    "appName": "FAIMS Mobile",
+    "websiteTitle": "Control Centre",
+    "conductorInstanceName": "FAIMS Server",
+    "conductorDescription": "FAIMS Conductor instance deployment.",
+    "conductorShortCodePrefix": "FAIMS"
+  },
+  "notebookAndRecordUX": {
+    "notebookListType": "tabs",
+    "notebookName": "notebook",
+    "showStatusTab": true
+  },
+  "android": {
+    "appId": "FAIMS"
+  },
+  "maps": {
+    "mapSource": "maptiler",
+    "mapSourceKey": "your-maptiler-api-key",
+    "satelliteSource": "esri",
+    "offlineMaps": true,
+    "mapStyle": "basic",
+    "autosuggestSource": "none"
+  },
+  "sync": {
+    "forceRemoteDeletion": "never",
+    "deleteOnDeactivation": false
+  },
+  "teamAndRolePolicy": {
+    "excludedTeamRoles": ["TEAM_MEMBER_CREATOR"]
+  },
+  "webDesignerLimits": {
+    "enablePlansInDesigner": true
+  },
+  "support": {
+    "supportEmail": "support@your-domain.com",
+    "privacyPolicyUrl": "https://your-domain.com/privacy-policy",
+    "appContactUrl": "https://your-domain.com/contact",
+    "docsUrl": "https://docs.your-domain.com"
+  },
+  "email": {
+    "emailServiceType": "SMTP",
+    "emailFromAddress": "notifications@your-domain.com",
+    "emailFromName": "FAIMS Notification Service",
+    "emailReplyTo": "support@your-domain.com",
+    "testEmailAddress": "admin@your-domain.com",
+    "smtpCacheExpirySeconds": 300
+  },
+  "auth": {
+    "disableLocalLogin": false,
+    "provisionSsoUsersPolicy": "reject"
+  },
+  "authProviders": {
+    "google": {
+      "id": "google",
+      "type": "google",
+      "index": 1,
+      "displayName": "Google",
+      "scope": ["profile", "email"]
+    },
+    "someOidcProvider": {
+      "id": "someOidcProvider",
+      "type": "oidc",
+      "index": 2,
+      "displayName": "OIDC Provider",
+      "helperText": "Log in with your organization's OIDC provider.",
+      "scope": ["openid", "profile", "email"],
+      "issuer": "https://your-oidc-provider.com",
+      "authorizationURL": "https://your-oidc-provider.com/authorize",
+      "tokenURL": "https://your-oidc-provider.com/token",
+      "userInfoURL": "https://your-oidc-provider.com/userinfo"
+    },
+    "someSamlProvider": {
+      "id": "someSamlProvider",
+      "type": "saml",
+      "index": 3,
+      "displayName": "Enterprise SSO",
+      "signMetadata": true,
+      "helperText": "Log in with your organization's identity provider.",
+      "scope": ["profile", "email"],
+      "entryPoint": "https://idp.example.com/saml2/sso",
+      "issuer": "https://faims.example.com",
+      "authnRequestBinding": "HTTP-POST",
+      "callbackURL": "https://faims.example.com/auth/saml/callback",
+      "signatureAlgorithm": "sha256",
+      "digestAlgorithm": "sha256",
+      "wantAssertionsSigned": true
+    }
+  },
+  "authTokens": {
+    "maximumLongLivedDurationDays": 90
+  },
+  "limits": {
+    "rateLimiterEnabled": true,
+    "attemptLimiterEnabled": true,
+    "exportRateLimiterEnabled": true,
+    "exportRateLimiterWindowMs": 600000,
+    "exportRateLimiterPerWindow": 20
+  },
+  "observability": {
+    "bugsnagApiKey": "1234-your-key"
+  },
+  "migration": {
+    "disableMigrateOnStartup": false,
+    "startupMigrationLockEnabled": true,
+    "startupMigrationLockTimeoutMs": 1800000
+  },
+  "endpoints": {
+    "androidAppPublicUrl": "https://play.google.com/store/apps/details?id=your.android.app.id",
+    "iosAppPublicUrl": "https://apps.apple.com/app/your-ios-app-id"
+  },
+  "secrets": {
+    "auth": {
+      "authProviders": {}
+    }
+  }
+}

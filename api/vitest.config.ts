@@ -1,7 +1,12 @@
+// SPDX-License-Identifier: Apache-2.0
+import {loadEnvDistIfUnset} from '@faims3/build-config/node';
 import {defineConfig} from 'vitest/config';
+
+const distEnv = loadEnvDistIfUnset(process.cwd());
 
 export default defineConfig({
   test: {
+    env: distEnv,
     environment: 'node',
     globals: false,
     include: ['test/**/*.test.ts'],

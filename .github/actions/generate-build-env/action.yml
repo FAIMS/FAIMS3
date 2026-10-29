@@ -1,0 +1,46 @@
+name: 'Generate FAIMS build environment'
+description: 'Merge core.json with an optional SOPS secrets.enc.json and emit generate-build-config env into GITHUB_ENV'
+inputs:
+  environment:
+    description: 'The configuration environment folder (e.g. production, nightly)'
+    required: true
+  config-repo-path:
+    description: 'Path to the cloned config repository relative to the workspace'
+    required: false
+    default: 'config-repo'
+  config-base-path:
+    description: 'Base path within the config repository where env folders live'
+    required: false
+    default: 'configs'
+  platform:
+    description: 'generate-build-config platform (apps, api, or all)'
+    required: false
+    default: 'apps'
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate build environment from deployment config
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Callers must `pnpm install` first: this runs `tsx` via
+        # generate-build-config and needs workspace deps linked.
+        CONFIG_ENV="${{ inputs.environment }}"
+        CONFIG_REPO_PATH="${{ inputs.config-base-path }}"
+        CONFIG_REPO_PATH="${CONFIG_REPO_PATH#/}"
+        BASE_CONFIG="${{ inputs.config-repo-path }}/${CONFIG_REPO_PATH}/${CONFIG_ENV}/core.json"
+        SECRETS_CONFIG="${{ inputs.config-repo-path }}/${CONFIG_REPO_PATH}/${CONFIG_ENV}/secrets.enc.json"
+
+        if [[ ! -f "$BASE_CONFIG" ]]; then
+          echo "Missing base config: $BASE_CONFIG" >&2
+          exit 1
+        fi
+
+        if [[ -f "$SECRETS_CONFIG" ]]; then
+          jq -s '.[0] * .[1]' "$BASE_CONFIG" <(sops --decrypt "$SECRETS_CONFIG") \
+            | pnpm generate-build-config --config - --platform "${{ inputs.platform }}" \
+            | grep -E '^[A-Z0-9_]+=' >> "$GITHUB_ENV"
+        else
+          pnpm generate-build-config --config "$BASE_CONFIG" --platform "${{ inputs.platform }}" \
+            | grep -E '^[A-Z0-9_]+=' >> "$GITHUB_ENV"
+        fi

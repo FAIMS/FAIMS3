@@ -1,5 +1,5 @@
 name: 'FAIMS Config'
-description: 'Pull FAIMS configuration into CDK context and output AWS details. Requires an already cloned github repo!'
+description: 'Resolve a FAIMS deployment config env folder (core.json required; aws.json and secrets.enc.json optional) in an already checked-out config repository. Requires an already cloned config repo!'
 inputs:
   environment:
     description: 'The deployment environment (e.g., dev, staging, production)'
@@ -7,39 +7,62 @@ inputs:
   config-repo-path:
     description: 'Path to the cloned config repository relative to the GitHub workspace'
     required: true
-  branch:
-    description: 'Branch to use in the config repository'
-    required: true
-    default: 'main'
+  config-base-path:
+    description: 'Base path within the config repository where env folders live'
+    required: false
+    default: 'configs'
 outputs:
   aws-region:
-    description: 'AWS region from the config'
+    description: 'AWS region from aws.json when present'
     value: ${{ steps.parse-config.outputs.aws-region }}
   aws-account:
-    description: 'AWS account ID from the config'
+    description: 'AWS account ID from aws.json when present'
     value: ${{ steps.parse-config.outputs.aws-account }}
+  config-dir:
+    description: 'Absolute path of the env folder (core.json required); pass to validators as CONFIG_DIR'
+    value: ${{ steps.parse-config.outputs.config-dir }}
+  has-aws-config:
+    description: 'true when aws.json is present in the env folder'
+    value: ${{ steps.parse-config.outputs.has-aws-config }}
+  has-secrets-enc:
+    description: 'true when secrets.enc.json is present in the env folder'
+    value: ${{ steps.parse-config.outputs.has-secrets-enc }}
 runs:
   using: 'composite'
   steps:
-    - name: Run config script
-      shell: bash
-      run: |
-        cd infrastructure/aws-cdk
-        chmod +x config.sh
-        ./config.sh pull ${{ inputs.environment }} --repo-path ../../${{ inputs.config-repo-path }} --branch ${{ inputs.branch }}
-
     - name: Parse config and set outputs
       id: parse-config
       shell: bash
       run: |
-        CONFIG_FILE="infrastructure/aws-cdk/configs/${{ inputs.environment }}.json"
-        if [ ! -f "$CONFIG_FILE" ]; then
-          echo "Error: Config file not found at $CONFIG_FILE"
+        # One config layout everywhere: <base>/<env>/core.json (shared,
+        # non-secret). aws.json (AWS extension) and secrets.enc.json
+        # (SOPS overlay) are optional. Region/account live at the top
+        # level of aws.json when that file exists. No secret values are
+        # read here — aws.json carries Secrets Manager ARNs only. The
+        # folder is read in place (CONFIG_DIR); nothing is copied.
+        ENV_DIR="${{ github.workspace }}/${{ inputs.config-repo-path }}/${{ inputs.config-base-path }}/${{ inputs.environment }}"
+        CORE_FILE="$ENV_DIR/core.json"
+        AWS_FILE="$ENV_DIR/aws.json"
+        SECRETS_ENC="$ENV_DIR/secrets.enc.json"
+        if [ ! -f "$CORE_FILE" ]; then
+          echo "Error: Config file not found at $CORE_FILE"
           exit 1
         fi
-        AWS_REGION=$(jq -r '.aws.region' "$CONFIG_FILE")
-        AWS_ACCOUNT=$(jq -r '.aws.account' "$CONFIG_FILE")
-        echo "aws-region=${AWS_REGION}" >> $GITHUB_OUTPUT
-        echo "aws-account=${AWS_ACCOUNT}" >> $GITHUB_OUTPUT
-        echo "AWS Region: $AWS_REGION"
-        echo "AWS Account: $AWS_ACCOUNT"
+        echo "config-dir=${ENV_DIR}" >> $GITHUB_OUTPUT
+        echo "Config dir: $ENV_DIR"
+        if [ -f "$AWS_FILE" ]; then
+          AWS_REGION=$(jq -r '.region' "$AWS_FILE")
+          AWS_ACCOUNT=$(jq -r '.account' "$AWS_FILE")
+          echo "aws-region=${AWS_REGION}" >> $GITHUB_OUTPUT
+          echo "aws-account=${AWS_ACCOUNT}" >> $GITHUB_OUTPUT
+          echo "has-aws-config=true" >> $GITHUB_OUTPUT
+          echo "AWS Region: $AWS_REGION"
+        else
+          echo "has-aws-config=false" >> $GITHUB_OUTPUT
+          echo "aws.json not present; skipping AWS account/region"
+        fi
+        if [ -f "$SECRETS_ENC" ]; then
+          echo "has-secrets-enc=true" >> $GITHUB_OUTPUT
+        else
+          echo "has-secrets-enc=false" >> $GITHUB_OUTPUT
+        fi
