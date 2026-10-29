@@ -270,11 +270,7 @@ const fields: {[key: string]: Omit<FieldType, 'exportName'>} = {
       ElementProps: {
         enableOtherOption: false,
         options: [
-          {
-            value: '1',
-            label: '1',
-            RadioProps: {id: 'radio-group-field-1'},
-          },
+          {value: '1', label: '1', RadioProps: {id: 'radio-group-field-1'}},
         ],
       },
       helperText: '',
