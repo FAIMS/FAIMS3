@@ -36,8 +36,10 @@ Core entry points:
 - Layer 2 client parsers: [src/client-env/](src/client-env/)
 - Env contract map: [src/env-contract.ts](src/env-contract.ts)
 - Env generator CLI: [src/generate-build-config.ts](src/generate-build-config.ts)
+- Config validate CLI: [src/validate-build-config.ts](src/validate-build-config.ts)
 - Node `.env.dist` loader: [src/node.ts](src/node.ts) (`@faims3/build-config/node`)
 - Tests: [test/generate-build-config.test.ts](test/generate-build-config.test.ts),
+  [test/validate-build-config.test.ts](test/validate-build-config.test.ts),
   [test/client-env.test.ts](test/client-env.test.ts),
   [test/node.test.ts](test/node.test.ts)
 
@@ -272,6 +274,9 @@ From this package:
 - generate: emits env from config JSON
 - generate platform values: `apps` (also accepts `android` / `ios` aliases, which
   the mobile CI workflows use) or `api`
+- validate: parses `core.json` (`--config`, `--config-dir`, or `CONFIG_DIR`);
+  optionally deep-merges a secrets overlay (`--secrets`, or `secrets.enc.json`
+  via sops when a SOPS key is set)
 - test: runs package tests
 
 See [package.json](package.json).

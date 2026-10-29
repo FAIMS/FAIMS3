@@ -138,7 +138,7 @@ the explicit mapping from the GitHub Environment to the config-repo folder.
 | `vars.CONFIG_ENVIRONMENT`                   | Variable | Required. Config-repo folder this GitHub Environment maps to (e.g. `prod`, `nightly`)                                       |
 | `secrets.GIT_AUTHORIZATION`                 | Secret   | Token used for private config-repo checkout and Fastlane git auth                                                           |
 | `vars.FASTLANE_REPO_SLUG`                   | Variable | Mobile only. Fastlane/Match repository slug (`owner/repo`); unset = same repo as config                                     |
-| `secrets.SOPS_AGE_KEY`                      | Secret   | Mobile only. Age private key used by `sops --decrypt`                                                                       |
+| `secrets.SOPS_AGE_KEY`                      | Secret   | Mobile, and validate-config when `secrets.enc.json` is present. Age private key used by `sops --decrypt`                    |
 | `vars.DEPLOY_GA_ROLE_ARN`                   | Variable | CDK only. IAM role the deploy workflow assumes via OIDC. Not used by `validate-config`                                      |
 | `vars.SCHEDULED_ANDROID_ENVIRONMENT`        | Variable | Repository-level. GitHub Environment name (`dev`/`prod`/`stage`) for the nightly Android cron. Required for scheduled runs. |
 | `vars.SCHEDULED_IOS_TESTFLIGHT_ENVIRONMENT` | Variable | Repository-level. GitHub Environment name for the scheduled iOS TestFlight cron. Required for scheduled runs.               |

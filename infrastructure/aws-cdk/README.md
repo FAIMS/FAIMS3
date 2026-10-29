@@ -289,7 +289,7 @@ Note that this validation is at a schema level, it might not catch improperly fo
 - If the configuration is valid, you'll see a summary message with stack/account/region.
 - If there are any validation errors, the script will output detailed error messages, indicating which parts of the configuration failed validation.
 
-In GitHub Actions, `.github/workflows/validate-config.yml` runs this same command against a checked-out config repo (`CONFIG_DIR`). It needs the config-repo token and path variables, but not AWS credentials. See [Deploying the AWS stack](../../docs/developer/docs/source/markdown/DeployingAWSStack.md#github-actions-validate--one-click-cdk-deploy).
+In GitHub Actions, `.github/workflows/validate-config.yml` always parses `core.json` via `@faims3/build-config`. When `aws.json` is present it also runs this same CDK command against the checked-out config repo (`CONFIG_DIR`). It needs the config-repo token and path variables, but not AWS credentials. See [Deploying the AWS stack](../../docs/developer/docs/source/markdown/DeployingAWSStack.md#github-actions-validate--one-click-cdk-deploy).
 
 ## Configuration documentation
 

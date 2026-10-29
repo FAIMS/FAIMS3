@@ -46,7 +46,7 @@ CDK-only (not used by `validate-config` or mobile):
 | -------------------- | -------- | ------------------------------------------------------------ |
 | `DEPLOY_GA_ROLE_ARN` | Variable | IAM role for CDK deploy (OIDC). Was `CDK_DEPLOY_GA_ROLE_ARN` |
 
-Mobile-only, also per Environment: `secrets.SOPS_AGE_KEY`, optionally `vars.FASTLANE_REPO_SLUG`. Need more than `dev`/`prod`/`stage`? Fork and add another choice + Environment.
+Mobile (and validate-config when `secrets.enc.json` is present), also per Environment: `secrets.SOPS_AGE_KEY`, optionally `vars.FASTLANE_REPO_SLUG`. Need more than `dev`/`prod`/`stage`? Fork and add another choice + Environment.
 
 Scheduled workflows do **not** default an Environment. Set these **repository** (global) variables to the GitHub Environment name the cron should use:
 
@@ -55,7 +55,7 @@ Scheduled workflows do **not** default an Environment. Set these **repository** 
 | `SCHEDULED_ANDROID_ENVIRONMENT`        | Nightly Android            |
 | `SCHEDULED_IOS_TESTFLIGHT_ENVIRONMENT` | iOS TestFlight (scheduled) |
 
-The env folder must contain `core.json` + `aws.json` (plus optional `secrets.enc.json` for mobile). `validate-config` needs no AWS credentials — it only checks that the config repo is reachable and the files parse.
+The env folder must contain `core.json`. `aws.json` is required for CDK deploy; `secrets.enc.json` is optional (mobile, and the validate-config secrets overlay). `validate-config` needs no AWS credentials — it always parses `core.json`, and also parses `aws.json` / a SOPS secrets overlay when those files are present.
 
 ### `@faims3/data-model` `configHelpers` removed
 

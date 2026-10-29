@@ -26,6 +26,7 @@
     "dev": "tsc -p tsconfig.build.json --watch",
     "clean": "rm -rf build",
     "generate": "tsx src/generate-build-config.ts",
+    "validate": "tsx src/validate-build-config.ts",
     "migrate-aws": "tsx scripts/migrate-aws-config.ts",
     "test": "tsx --test test/*.test.ts",
     "lint": "oxlint --config ../../.oxlintrc.json .",

@@ -6,11 +6,12 @@
  * Layer 2: client ENV → typed client runtime config (`parseApiEnv`,
  * `parseAppEnv`, `parseWebEnv`, `parseDesignerEnv`).
  *
- * The generator / CLI side (src/generate-build-config.ts, which imports
- * node:fs / node:child_process) is deliberately NOT re-exported here so it
- * is never pulled into the app or Control Centre browser bundle. Invoke the
- * generator via the package script:
+ * The generator / CLI side (src/generate-build-config.ts and
+ * src/validate-build-config.ts, which import node:fs / node:child_process)
+ * is deliberately NOT re-exported here so it is never pulled into the app
+ * or Control Centre browser bundle. Invoke those via the package scripts:
  *   pnpm --filter=@faims3/build-config run generate --config … --platform …
+ *   pnpm --filter=@faims3/build-config run validate --config-dir …
  */
 
 export {

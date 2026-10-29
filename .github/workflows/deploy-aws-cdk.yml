@@ -123,6 +123,12 @@ jobs:
           config-repo-path: config-repo
           config-base-path: ${{ vars.CONFIG_REPO_PATH || 'configs' }}
 
+      - name: Require aws.json
+        if: ${{ steps.faims-config-setup.outputs.has-aws-config != 'true' }}
+        run: |
+          echo "CDK deploy requires aws.json in ${{ steps.faims-config-setup.outputs.config-dir }}." >&2
+          exit 1
+
       - name: Restore CDK context cache (tracked artifact, if present)
         run: |
           # cdk.context.json pins non-deterministic synth resolutions

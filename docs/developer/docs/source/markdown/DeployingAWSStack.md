@@ -894,8 +894,8 @@ The workflows in this repo already use the two-file config layout. You do not wr
 
 If you are working from a fork, keep these files (or copy them from `.github/workflow-templates/`):
 
-- `.github/actions/config/action.yml` — resolves `configs/<env>/` and outputs `CONFIG_DIR` + AWS account/region
-- `.github/workflows/validate-config.yml` — checkout + `pnpm run validate-config` (no AWS credentials)
+- `.github/actions/config/action.yml` — resolves `configs/<env>/` (`core.json` required; `aws.json` / `secrets.enc.json` optional) and outputs `CONFIG_DIR` plus AWS account/region when `aws.json` is present
+- `.github/workflows/validate-config.yml` — checkout + parse `core.json` via `@faims3/build-config`; also parse `aws.json` (CDK) and a SOPS secrets overlay when those files are present. No AWS credentials
 - `.github/workflows/deploy-aws-cdk.yml` — same checkout, then `cdk diff` / `cdk deploy`
 
 ### GitHub Environments and settings
@@ -915,14 +915,15 @@ The config repo folder the workflows read is `<CONFIG_REPO_PATH>/<CONFIG_ENVIRON
 
 ```text
 <config-repo>/configs/prod/core.json
-<config-repo>/configs/prod/aws.json
+<config-repo>/configs/prod/aws.json          # optional; required for CDK deploy
+<config-repo>/configs/prod/secrets.enc.json  # optional; validated when SOPS_AGE_KEY is set
 ```
 
 Deploy also needs an AWS IAM role that trusts GitHub's OIDC provider (`permissions: id-token: write` is already in `deploy-aws-cdk.yml`). Validate does not.
 
 ### First check
 
-Run **Validate FAIMS deployment config** from the Actions tab and pick `dev`, `prod`, or `stage`. That confirms the token can clone the config repo and that `core.json` + `aws.json` pass the same parser CDK uses. Then run **CDK Deploy FAIMS3 to AWS** with `diff` before `deploy`.
+Run **Validate FAIMS deployment config** from the Actions tab and pick `dev`, `prod`, or `stage`. That confirms the token can clone the config repo and that `core.json` parses. If `aws.json` is present it is checked with the same parser CDK uses; if `secrets.enc.json` is present and `SOPS_AGE_KEY` is set, the decrypted overlay is merged and parsed too. Then run **CDK Deploy FAIMS3 to AWS** with `diff` before `deploy`.
 
 ## Additional configurations
 

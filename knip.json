@@ -33,6 +33,7 @@
       "entry": [
         "src/index.ts",
         "src/generate-build-config.ts",
+        "src/validate-build-config.ts",
         "scripts/migrate-aws-config.ts"
       ],
       "project": ["src/**/*.{js,ts}", "scripts/**/*.{js,ts}"]
