@@ -43,6 +43,8 @@ import {
 } from './webPhotoFallback';
 import {
   TAKE_PHOTO_REQUIRED_MESSAGE,
+  getTakePhotoMinimumMessage,
+  getTakePhotoMaximumMessage,
   takePhotoIsComplete,
   takePhotoValueSchema,
 } from './valueSchema';
@@ -192,11 +194,15 @@ function renderTakePhoto({
   setAttachmentSaving = vi.fn(),
   removeAttachment = vi.fn(async () => undefined),
   withExistingPhoto = false,
+  minItems,
+  maxItems,
 }: {
   addAttachment: () => Promise<string>;
   setAttachmentSaving?: (saving: boolean) => void;
   removeAttachment?: (params: {attachmentId: string}) => Promise<void>;
   withExistingPhoto?: boolean;
+  minItems?: number | null;
+  maxItems?: number | null;
 }) {
   const client = queryClient();
 
@@ -218,6 +224,8 @@ function renderTakePhoto({
           name="photos"
           label="Photos"
           required={false}
+          minItems={minItems}
+          maxItems={maxItems}
           helperText=""
           advancedHelperText=""
           fieldId="photos"
@@ -358,6 +366,86 @@ describe('takePhotoValueSchema', () => {
     expect(optionalSchema().safeParse(null).success).toBe(true);
     expect(optionalSchema().safeParse([]).success).toBe(true);
     expect(optionalSchema().safeParse(['att-1']).success).toBe(true);
+  });
+
+  it('requires the configured minimum even when Required is false', () => {
+    const schema = takePhotoValueSchema({required: false, minItems: 2});
+
+    for (const value of [undefined, null, [], ['att-1']]) {
+      const result = schema.safeParse(value);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0]?.message).toBe(
+          getTakePhotoMinimumMessage(2)
+        );
+      }
+    }
+    expect(schema.safeParse(['att-1', 'att-2']).success).toBe(true);
+  });
+
+  it('enforces maximum without requiring a photo', () => {
+    const schema = takePhotoValueSchema({required: false, maxItems: 1});
+
+    for (const value of [undefined, null, [], ['att-1']]) {
+      expect(schema.safeParse(value).success).toBe(true);
+    }
+
+    const result = schema.safeParse(['att-1', 'att-2']);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(
+        getTakePhotoMaximumMessage(1)
+      );
+    }
+  });
+
+  it('enforces both bounds and allows values inside the range', () => {
+    const schema = takePhotoValueSchema({minItems: 2, maxItems: 3});
+
+    expect(schema.safeParse(['att-1']).success).toBe(false);
+    expect(schema.safeParse(['att-1', 'att-2']).success).toBe(true);
+    expect(schema.safeParse(['att-1', 'att-2', 'att-3']).success).toBe(true);
+    expect(schema.safeParse(['att-1', 'att-2', 'att-3', 'att-4']).success).toBe(
+      false
+    );
+  });
+
+  it('uses the configured minimum when Required is already true', () => {
+    const schema = takePhotoValueSchema({required: true, minItems: 3});
+
+    const result = schema.safeParse(['att-1']);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(
+        getTakePhotoMinimumMessage(3)
+      );
+    }
+  });
+
+  it('accepts legacy configurations without count limits', () => {
+    const schema = takePhotoValueSchema({required: false});
+    expect(schema.safeParse(undefined).success).toBe(true);
+    expect(schema.safeParse(Array(12).fill('att')).success).toBe(true);
+
+    const explicitlyUnrestricted = takePhotoValueSchema({
+      required: false,
+      minItems: null,
+      maxItems: null,
+    });
+    expect(explicitlyUnrestricted.safeParse([]).success).toBe(true);
+  });
+
+  it('rejects a missing object key when minItems is configured', () => {
+    const formSchema = z.object({photos: takePhotoValueSchema({minItems: 2})});
+    const result = formSchema.safeParse({});
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.path).toEqual(['photos']);
+      expect(result.error.issues[0]?.message).toBe(
+        getTakePhotoMinimumMessage(2)
+      );
+    }
   });
 
   it('fails a required photo that is missing from compiled form data', () => {
@@ -685,6 +773,58 @@ describe('TakePhoto parallel save UI', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('disables camera and gallery when the field already has maxItems photos', async () => {
+    const addAttachment = vi.fn(async () => 'att-new');
+    renderTakePhoto({addAttachment, withExistingPhoto: true, maxItems: 1});
+
+    expect(screen.getByRole('button', {name: 'Camera'})).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    );
+    expect(
+      screen.getByRole('button', {
+        name: 'Add photos from gallery, multiple selection allowed',
+      })
+    ).toHaveAttribute('aria-disabled', 'true');
+    expect(
+      screen.queryByText(/Remove the extra photos to continue/)
+    ).not.toBeInTheDocument();
+    expect(addAttachment).not.toHaveBeenCalled();
+  });
+
+  it('limits a gallery selection to the remaining maxItems capacity', async () => {
+    const user = userEvent.setup();
+    vi.mocked(Camera.pickImages).mockResolvedValue({
+      photos: Array.from({length: 4}, (_, i) => ({
+        webPath: `blob:photo-${i}`,
+        format: 'jpeg',
+      })),
+    } as never);
+
+    const addAttachment = vi
+      .fn()
+      .mockResolvedValueOnce('att-new-1')
+      .mockResolvedValueOnce('att-new-2');
+
+    renderTakePhoto({addAttachment, withExistingPhoto: true, maxItems: 3});
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add photos from gallery, multiple selection allowed',
+      })
+    );
+
+    await waitFor(() => {
+      expect(addAttachment).toHaveBeenCalledTimes(2);
+    });
+    expect(Camera.pickImages).toHaveBeenCalledWith(
+      expect.objectContaining({limit: 2})
+    );
+    expect(
+      await screen.findByText(/Only 2 more photos can be added/i)
+    ).toBeInTheDocument();
   });
 
   it('holds the form lock from the open picker through the save', async () => {

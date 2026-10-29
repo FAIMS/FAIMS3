@@ -29,7 +29,10 @@
     "load-templates": "pnpm --filter=api run load-templates",
     "generate-local-keys": "./api/keymanagement/makeInstanceKeys.sh",
     "build-web": "turbo build --filter @faims3/web",
-    "dev": "turbo dev --filter=@faims3/app --filter=@faims3/web --filter=@faims3/api --filter=@faims3/data-model",
+    "generate-build-config": "pnpm --filter=@faims3/build-config run generate",
+    "validate-build-config": "pnpm --filter=@faims3/build-config run validate",
+    "test:scripts": "bash scripts/test/deployment-scripts.test.sh",
+    "dev": "turbo dev --filter=@faims3/app --filter=@faims3/web --filter=@faims3/api --filter=@faims3/data-model --filter=@faims3/build-config",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "format": "oxfmt .",
@@ -38,7 +41,8 @@
     "build": "turbo build",
     "knip": "knip",
     "prepare": "husky",
-    "license-check": "pnpx @kt3k/license-checker -q"
+    "license-check": "pnpx @kt3k/license-checker -q",
+    "license-check:fix": "pnpx @kt3k/license-checker -q --inject"
   },
   "dependencies": {
     "@capacitor-community/exif": "^7.0.0",

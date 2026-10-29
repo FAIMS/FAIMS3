@@ -228,27 +228,21 @@ async function main(): Promise<void> {
     };
   }
 
-  const configFileName = process.env.CONFIG_FILE_NAME;
+  // Config summary from the same two-file deployment config the CDK loads
+  // (CONFIG_ENV / CONFIG_DIR / CORE_CONFIG_FILE + AWS_CONFIG_FILE).
+  // Best-effort only: the baseline is still useful without it.
   let configSummary: Record<string, unknown> | undefined;
-  if (configFileName) {
-    const configPath = path.resolve(__dirname, '..', 'configs', configFileName);
-    if (fs.existsSync(configPath)) {
-      const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8')) as {
-        stackName?: string;
-        couch?: {couchVersionTag?: string; volumeSize?: number};
-        domains?: {couch?: string; baseDomain?: string};
-        backup?: unknown;
-      };
-      configSummary = {
-        stackName: cfg.stackName,
-        couchVersionTag: cfg.couch?.couchVersionTag,
-        volumeSize: cfg.couch?.volumeSize,
-        backup: cfg.backup,
-        couchHost: cfg.domains
-          ? `${cfg.domains.couch}.${cfg.domains.baseDomain}`
-          : undefined,
-      };
-    }
+  if (
+    process.env.CONFIG_ENV ||
+    process.env.CONFIG_DIR ||
+    (process.env.CORE_CONFIG_FILE && process.env.AWS_CONFIG_FILE)
+  ) {
+    const {tryLoadCouchUpgradeConfigSummary} =
+      await import('./couchUpgradeConfigSummary');
+    const {loadConfigFromEnv} = await import('../lib/config');
+    configSummary = tryLoadCouchUpgradeConfigSummary(() =>
+      loadConfigFromEnv(path.resolve(__dirname, '..'))
+    );
   }
 
   console.log(

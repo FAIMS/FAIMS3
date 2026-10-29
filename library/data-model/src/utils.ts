@@ -30,6 +30,99 @@ export const slugify = (str: string) => {
 };
 
 /**
+ * Max length of a CSV / GIS column name derived from `exportName`.
+ *
+ * Notebooks are not always authored in designer, so this is applied at
+ * export time rather than assumed from stored field values.
+ */
+export const MAX_EXPORT_COLUMN_NAME_LENGTH = 100;
+
+/** Used when `exportName` sanitises to empty (e.g. only quotes / controls). */
+export const EMPTY_EXPORT_COLUMN_FALLBACK = 'field';
+
+/**
+ * Make a stored `exportName` safe as a CSV / GIS column (and as a KML
+ * `Data` name). Does not assume designer slugify ran.
+ *
+ * Strips ASCII controls (CR/LF/NUL — header and CSV-row injection), path
+ * separators, quotes, and other characters outside `[A-Za-z0-9._-]`. Leading
+ * formula / hidden-file prefixes (`=`, `+`, `-`, `@`, `.`) are removed.
+ * Designer-produced names such as `Site-Name` are unchanged.
+ *
+ * Not a download filename on its own: attachment ZIP path segments run this
+ * then `slugify` (see `generateFilenameForAttachment`), and
+ * Content-Disposition filenames use the download-filename sanitizers.
+ */
+export function sanitizeExportColumnName(
+  raw: string,
+  fallback = EMPTY_EXPORT_COLUMN_FALLBACK
+): string {
+  const withoutControls = Array.from(raw ?? '')
+    .filter(ch => {
+      const code = ch.charCodeAt(0);
+      return code >= 32 && code !== 127;
+    })
+    .join('');
+
+  let cleaned = withoutControls
+    .replace(/[/\\]/g, '_')
+    .replace(/[^A-Za-z0-9._-]/g, '_')
+    .replace(/_{2,}/g, '_')
+    .replace(/^[._=+\-@_]+/, '')
+    .replace(/[._]+$/, '');
+
+  if (cleaned.length > MAX_EXPORT_COLUMN_NAME_LENGTH) {
+    cleaned = cleaned
+      .slice(0, MAX_EXPORT_COLUMN_NAME_LENGTH)
+      .replace(/[._]+$/, '');
+  }
+
+  return cleaned.length > 0 ? cleaned : fallback;
+}
+
+/**
+ * {@link sanitizeExportColumnName} plus a numeric suffix when the result
+ * collides with an already-used column name in this export.
+ *
+ * `extraNames(candidate)` lists columns this field would also emit (GPS
+ * `_latitude`, address `_road`, annotation, …). A candidate is skipped when
+ * any of those extras is already reserved, and the extras are reserved with
+ * the chosen name so a later field cannot reuse them.
+ */
+export function uniqueExportColumnName(
+  raw: string,
+  used: Set<string>,
+  fallback = EMPTY_EXPORT_COLUMN_FALLBACK,
+  extraNames?: (candidate: string) => readonly string[]
+): string {
+  const extrasFor = extraNames ?? (() => []);
+  const isTaken = (name: string) =>
+    used.has(name) || extrasFor(name).some(extra => used.has(extra));
+
+  const base = sanitizeExportColumnName(raw, fallback);
+  let candidate = base;
+  let n = 1;
+  while (isTaken(candidate)) {
+    const suffix = `_${n}`;
+    // Strip a trailing `.` / `_` left by the cut: `abc_` + `_1` would
+    // re-sanitise to `abc_1` and diverge on a second uniquify pass.
+    const truncated =
+      base.length + suffix.length > MAX_EXPORT_COLUMN_NAME_LENGTH
+        ? base
+            .slice(0, MAX_EXPORT_COLUMN_NAME_LENGTH - suffix.length)
+            .replace(/[._]+$/, '')
+        : base;
+    candidate = `${truncated}${suffix}`;
+    n += 1;
+  }
+  used.add(candidate);
+  for (const extra of extrasFor(candidate)) {
+    if (extra) used.add(extra);
+  }
+  return candidate;
+}
+
+/**
  * Formats file size in human-readable format
  */
 export function formatFileSize(bytes: number): string {

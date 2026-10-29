@@ -27,42 +27,122 @@ import {Construct} from 'constructs';
 import {getPathToRoot} from '../util/mono';
 import {SharedBalancer} from './networking';
 import {
-  AuthProvidersConfig,
-  ConductorConfig,
-  DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW,
-  DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS,
-  DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
-} from '../config';
+  authProviderEnvKey,
+  buildStringEnvMapFromRuntime,
+  providerIdToEnvProvider,
+  type AuthProviderConfigInput,
+  type RuntimeConfig,
+} from '@faims3/build-config';
+import {AuthProvidersConfig, ConductorConfig} from '../config';
 
-const DEFAULT_SMTP_CACHE_EXPIRY = 300;
+/** SM fields every enabled provider of this type must have. */
+const AUTH_SECRET_FIELDS: Record<string, string[]> = {
+  saml: ['privateKey', 'publicKey'],
+  google: ['clientID', 'clientSecret'],
+  oidc: ['clientID', 'clientSecret'],
+};
+
+function coreHasIdpPublicKey(config: AuthProviderConfigInput): boolean {
+  return config.type === 'saml' && Boolean(config.idpPublicKey?.trim());
+}
 
 /**
- * SMTP credentials secret structure
+ * Secrets Manager JSON fields to inject as `AUTH_{PROVIDER}_{FIELD}`.
  *
- * The AWS Secrets Manager secret should contain the following fields:
- * - host: SMTP server hostname (string)
- * - port: SMTP server port (number)
- * - secure: Whether to use TLS/SSL (boolean) e.g. true/false
- * - user: SMTP authentication username (string)
- * - pass: SMTP authentication password (string)
+ * SAML `idpPublicKey` is optional here: when `core.authProviders` already
+ * has the IdP cert, it stays in plain env. When it is omitted, the CDK
+ * wires `<provider>-idpPublicKey` from SM so a secrets-only cert still
+ * reaches Conductor.
  */
+export function authSecretFieldsForProvider(
+  config: AuthProviderConfigInput
+): string[] {
+  const required = AUTH_SECRET_FIELDS[config.type] ?? [];
+  if (config.type === 'saml' && !coreHasIdpPublicKey(config)) {
+    return [...required, 'idpPublicKey'];
+  }
+  return [...required];
+}
+
+/** AUTH_{PROVIDER}_{FIELD} key used for Secrets Manager wiring and env drops. */
+export const authSecretEnvKey = authProviderEnvKey;
+
+export interface ConductorRuntimeEnvInput {
+  coreConfig: RuntimeConfig;
+  conductorEndpoint: string;
+  webAppPublicUrl: string;
+  webUrl: string;
+  appId: string;
+  couchDBEndpoint: string;
+  couchDBPort: number;
+  conductorExternalPort: number;
+  conductorInternalPort: number;
+  privateKeySecretArn: string;
+  localhostWhitelist: boolean;
+  /** Provider ids enabled in aws.authProviders.providers. */
+  enabledAuthProviders: string[];
+  /** Plain-env keys that ECS will deliver via Secrets Manager instead. */
+  secretEnvKeys: string[];
+}
 
 /**
- * General SMTP configuration for email service
+ * Build the Conductor container's non-secret environment: the shared API
+ * contract, AWS-resolved URL/port overlays, enabled-provider AUTH_* fields,
+ * and no keys that also appear in `secrets`.
  */
-export interface SMTPGeneralConfig {
-  /** Email service type (SMTP or MOCK) */
-  emailServiceType: string;
-  /** From email address */
-  fromEmail: string;
-  /** From name */
-  fromName: string;
-  /** Reply-to email address (optional) */
-  replyTo?: string;
-  /** Test email address for admin verification */
-  testEmailAddress: string;
-  /** Cache expiry in seconds (optional) */
-  cacheExpirySeconds?: number;
+export function buildConductorRuntimeEnv(
+  input: ConductorRuntimeEnvInput
+): Record<string, string> {
+  const env = buildStringEnvMapFromRuntime(input.coreConfig, 'api');
+
+  env.PROFILE_NAME = 'default';
+  env.KEY_SOURCE = 'AWS_SM';
+  env.AWS_SECRET_KEY_ARN = input.privateKeySecretArn;
+  // Clustered ECS: default the Couch-mediated lock on so replicas
+  // claim/wait. Honour an explicit core.migration.startupMigrationLockEnabled
+  // false (single-task / debug). Skip-migrate leaves nothing to lock.
+  env.STARTUP_MIGRATION_LOCK_ENABLED =
+    input.coreConfig.migration.disableMigrateOnStartup ||
+    input.coreConfig.migration.startupMigrationLockEnabled === false
+      ? 'false'
+      : 'true';
+  env.COUCHDB_PUBLIC_URL = input.couchDBEndpoint;
+  env.COUCHDB_INTERNAL_URL = input.couchDBEndpoint;
+  env.COUCHDB_EXTERNAL_PORT = String(input.couchDBPort);
+  env.CONDUCTOR_EXTERNAL_PORT = String(input.conductorExternalPort);
+  env.CONDUCTOR_INTERNAL_PORT = String(input.conductorInternalPort);
+  env.CONDUCTOR_PUBLIC_URL = input.conductorEndpoint;
+  env.CONDUCTOR_URL = input.conductorEndpoint;
+  env.WEB_APP_PUBLIC_URL = input.webAppPublicUrl;
+  env.REDIRECT_WHITELIST = [
+    input.conductorEndpoint,
+    input.webAppPublicUrl,
+    input.webUrl,
+    `${input.appId}://`,
+    ...(input.localhostWhitelist
+      ? [
+          'http://localhost:3000',
+          'http://localhost:3001',
+          'http://localhost:8080',
+          'http://localhost:8000',
+        ]
+      : []),
+  ].join(',');
+
+  const enabled = new Set(
+    input.enabledAuthProviders.map(providerIdToEnvProvider)
+  );
+  for (const key of Object.keys(env)) {
+    const match = /^AUTH_([A-Z0-9]+)_/.exec(key);
+    if (match && !enabled.has(match[1])) {
+      delete env[key];
+    }
+  }
+
+  for (const key of input.secretEnvKeys) {
+    delete env[key];
+  }
+  return env;
 }
 
 /**
@@ -91,54 +171,24 @@ export interface FaimsConductorProps {
   webUrl: string;
   /** Public URL for web app */
   webAppPublicUrl: string;
-  /** Public URL for Android app */
-  androidAppPublicUrl: string;
-  /** Public URL for iOS app */
-  iosAppPublicUrl: string;
   /** iOS/Android APP_ID */
   appId: string;
-  /** The configuration object for the Conductor service */
+  /** The configuration object for the Conductor service (AWS-only: docker/
+   * CPU/memory/autoscaling). */
   config: ConductorConfig;
+  /** The shared core config - the shared API env (branding, limits, migration,
+   * email, token expiries, etc.) is generated from here via
+   * buildEnvMapFromRuntime(core, 'api'). */
+  coreConfig: RuntimeConfig;
   /** FAIMS_COOKIE_SECRET */
   cookieSecret: sm.Secret;
   /** SMTP credentials secret ARN */
   smtpCredsArn: string;
-  /** SMTP general configuration */
-  smtpConfig: SMTPGeneralConfig;
   /** Social providers info (if enabled) */
   authProviders?: AuthProvidersConfig;
-  /** Provision SSO users policy - do we create a new user for an unknown SSO sign-in? Default 'reject' */
-  provisionSSOUsersPolicy?: 'own-team' | 'general-user' | 'reject';
   /** If true, adds typical localhost addresses to the allowable redirect
    * whitelist (DEV ONLY) */
   localhostWhitelist: boolean;
-  /** Maximum long-lived token duration in days (undefined = infinite) */
-  maximumLongLivedDurationDays?: number;
-  /**
-   * Express HTTP IP rate limiter. Default true. Set false when per-IP
-   * limiting is handled upstream. Independent of authAttemptLimiterEnabled.
-   */
-  rateLimiterEnabled?: boolean;
-  /**
-   * Per-user email-code / verification-challenge attempt limits. Default
-   * true. Keep enabled in production even when HTTP limiting is upstream.
-   */
-  authAttemptLimiterEnabled?: boolean;
-  /**
-   * Dedicated export mint/redeem limiter. Default true. Independent of
-   * rateLimiterEnabled so ZIP/GDAL work stays capped when the global IP
-   * limiter is off.
-   */
-  exportRateLimiterEnabled?: boolean;
-  /** Export-limiter window in milliseconds. Default 600000 (10 minutes). */
-  exportRateLimiterWindowMs?: number;
-  /** Export mint/redeem requests allowed per window. Default 20. */
-  exportRateLimiterPerWindow?: number;
-  /** Bugsnag config */
-  /** Version e.g. v1.2.3 */
-  apiVersion?: string;
-  /** Bugsnag API key */
-  bugsnagApiKey?: string;
 }
 
 /**
@@ -211,10 +261,10 @@ export class FaimsConductor extends Construct {
     );
 
     // Configure auth providers
-    // Based on the configuration we generate two sets of environment variables
-    // for secret and non-secret settings for each provider.
+    // Based on the configuration we generate Secrets Manager references for
+    // each enabled provider. Non-secret AUTH_* fields come from
+    // buildAuthProviderEnvMap via buildConductorRuntimeEnv.
     const authSecrets: Record<string, ecs.Secret> = {};
-    const authEnvironment: Record<string, string> = {};
     if (props.authProviders && props.authProviders.providers.length > 0) {
       const authSecret = sm.Secret.fromSecretCompleteArn(
         this,
@@ -222,145 +272,33 @@ export class FaimsConductor extends Construct {
         props.authProviders.secretArn
       );
       props.authProviders.providers.forEach(provider => {
-        const config = props.authProviders!.config[provider];
+        // Provider *definitions* live in core.authProviders. Client
+        // credentials and SP keys are delivered by Secrets Manager (SM ->
+        // container, never through CDK synth or plain env). SAML
+        // idpPublicKey may already be in core; if it is not, it is wired
+        // from SM the same way.
+        const config = props.coreConfig.authProviders[provider];
 
-        // Handle secrets based on provider type
-        if (config.type === 'saml') {
-          // SAML uses privateKey and publicKey (certificate) instead of clientID/clientSecret
-          authSecrets[`AUTH_${provider.toUpperCase()}_PRIVATE_KEY`] =
-            ecs.Secret.fromSecretsManager(authSecret, `${provider}-privateKey`);
-          authSecrets[`AUTH_${provider.toUpperCase()}_PUBLIC_KEY`] =
-            ecs.Secret.fromSecretsManager(authSecret, `${provider}-publicKey`);
-        } else {
-          // Google and OIDC use clientID and clientSecret
-          authSecrets[`AUTH_${provider.toUpperCase()}_CLIENT_ID`] =
-            ecs.Secret.fromSecretsManager(authSecret, `${provider}-clientID`);
-          authSecrets[`AUTH_${provider.toUpperCase()}_CLIENT_SECRET`] =
-            ecs.Secret.fromSecretsManager(
-              authSecret,
-              `${provider}-clientSecret`
-            );
+        // Wire this provider's Secrets Manager references FIRST...
+        for (const field of authSecretFieldsForProvider(config)) {
+          authSecrets[authSecretEnvKey(provider, field)] =
+            ecs.Secret.fromSecretsManager(authSecret, `${provider}-${field}`);
         }
 
-        // For each key in config, convert to an env variable
-        // (AUTH_ + provider + _ + key in uppercase) and add to the environment
-
-        for (const [key, value] of Object.entries(config)) {
-          // Skip undefined/null values
-          if (value === undefined || value === null) {
-            continue;
-          }
-
-          const envName = `AUTH_${provider.toUpperCase()}_${camelToSnakeCase(key)}`;
-
-          // Handle different value types appropriately
-          if (Array.isArray(value)) {
-            // For arrays (e.g., authnContext), join with commas
-            authEnvironment[envName] = value.join(',');
-          } else if (typeof value === 'object') {
-            // For objects, stringify to JSON
-            authEnvironment[envName] = JSON.stringify(value);
-          } else {
-            authEnvironment[envName] = String(value);
-          }
-
-          console.log('ENV', envName, authEnvironment[envName]);
+        // ...then guard that every secret field the API needs is covered by
+        // THIS provider's own SM reference (checked after wiring, and keyed
+        // exactly, so a previous provider's fields can never satisfy it).
+        const required = AUTH_SECRET_FIELDS[config.type] ?? [];
+        const missing = required.filter(
+          field => !(authSecretEnvKey(provider, field) in authSecrets)
+        );
+        if (missing.length > 0) {
+          throw new Error(
+            `Auth provider '${provider}' (${config.type}) is missing required secret field(s): ${missing.join(', ')}. Add them to the Secrets Manager secret at aws.authProviders.secretArn (keys '<provider>-<field>'), or disable the provider in aws.authProviders.providers.`
+          );
         }
       });
     }
-
-    // Expose env/secrets so sibling one-shot tasks (e.g. TTL cleanup) can reuse
-    // the same Couch + KEY_SOURCE bootstrapping without duplicating the block.
-    this.environment = {
-      PROFILE_NAME: 'default',
-      CONDUCTOR_INSTANCE_NAME: props.config.name,
-      CONDUCTOR_DESCRIPTION: props.config.description,
-      COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
-      COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
-      COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
-      CONDUCTOR_SHORT_CODE_PREFIX: props.config.shortCodePrefix,
-      // Conductor API URLs
-      CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
-      CONDUCTOR_URL: this.conductorEndpoint,
-      WEB_APP_PUBLIC_URL: props.webAppPublicUrl,
-      ANDROID_APP_PUBLIC_URL: props.androidAppPublicUrl,
-      IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
-      KEY_SOURCE: 'AWS_SM',
-      AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
-      NEW_CONDUCTOR_URL: props.webUrl,
-      PROVISION_SSO_USERS_POLICY: props.config.provisionSSOUsersPolicy,
-
-      // Bugsnag (optional)
-      ...(props.bugsnagApiKey ? {BUGSNAG_API_KEY: props.bugsnagApiKey} : {}),
-
-      // add any auth environment variables
-      ...authEnvironment,
-
-      // disable local login if specified in config (for SSO only deployments)
-      // defaults to false if not provided in config
-      DISABLE_LOCAL_LOGIN: props.authProviders
-        ? props.authProviders.disableLocalLogin
-          ? 'true'
-          : 'false'
-        : 'false',
-
-      // Security configurations
-      MAXIMUM_LONG_LIVED_DURATION_DAYS: props.maximumLongLivedDurationDays
-        ? props.maximumLongLivedDurationDays.toString()
-        : 'infinite',
-      RATE_LIMITER_ENABLED:
-        props.rateLimiterEnabled === false ? 'false' : 'true',
-      ATTEMPT_LIMITER_ENABLED:
-        props.authAttemptLimiterEnabled === false ? 'false' : 'true',
-      EXPORT_RATE_LIMITER_ENABLED:
-        props.exportRateLimiterEnabled === false ? 'false' : 'true',
-      EXPORT_RATE_LIMITER_WINDOW_MS: `${
-        props.exportRateLimiterWindowMs ?? DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS
-      }`,
-      EXPORT_RATE_LIMITER_PER_WINDOW: `${
-        props.exportRateLimiterPerWindow ??
-        DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW
-      }`,
-      // Skip-migrate takes precedence; lock is unused in that case.
-      DISABLE_MIGRATE_ON_STARTUP: props.config.disableMigrateOnStartup
-        ? 'true'
-        : 'false',
-      // Clustered ECS: lock is on unless JSON `disableStartupMigrationLock`
-      // (or migrate-on-startup is skipped — schema forces the lock off).
-      STARTUP_MIGRATION_LOCK_ENABLED:
-        props.config.disableMigrateOnStartup ||
-        props.config.disableStartupMigrationLock
-          ? 'false'
-          : 'true',
-      STARTUP_MIGRATION_LOCK_TIMEOUT_MS: `${
-        props.config.startupMigrationLockTimeoutMs ??
-        DEFAULT_STARTUP_MIGRATION_LOCK_TIMEOUT_MS
-      }`,
-
-      // Email Service Configuration
-      EMAIL_SERVICE_TYPE: props.smtpConfig.emailServiceType,
-      EMAIL_FROM_ADDRESS: props.smtpConfig.fromEmail,
-      EMAIL_FROM_NAME: props.smtpConfig.fromName,
-      EMAIL_REPLY_TO: props.smtpConfig.replyTo || props.smtpConfig.fromEmail,
-      TEST_EMAIL_ADDRESS: props.smtpConfig.testEmailAddress,
-      SMTP_CACHE_EXPIRY_SECONDS: `${props.smtpConfig.cacheExpirySeconds || DEFAULT_SMTP_CACHE_EXPIRY}`,
-
-      // Whitelisting for redirects - should include API, APP, WEB and APP_ID://
-      REDIRECT_WHITELIST: [
-        this.conductorEndpoint,
-        props.webAppPublicUrl,
-        props.webUrl,
-        `${props.appId}://`,
-        ...(props.localhostWhitelist
-          ? [
-              'http://localhost:3000',
-              'http://localhost:3001',
-              'http://localhost:8080',
-              'http://localhost:8000',
-            ]
-          : []),
-      ].join(','),
-    };
 
     this.secrets = {
       COUCHDB_PASSWORD: ecs.Secret.fromSecretsManager(
@@ -383,6 +321,30 @@ export class FaimsConductor extends Construct {
       // Include any auth config secrets
       ...authSecrets,
     };
+
+    // Expose env/secrets so sibling one-shot tasks (e.g. TTL cleanup) can reuse
+    // the same Couch + KEY_SOURCE bootstrapping without duplicating the block.
+    //
+    // The shared API env comes from build-config's apiContract via
+    // buildEnvMapFromRuntime (including AUTH_* from buildAuthProviderEnvMap).
+    // Only AWS-resolved endpoints/ports, KEY_SOURCE/SM ARN, PROFILE_NAME,
+    // the redirect whitelist, the enabled-provider filter, and SM-key
+    // deletions are overlaid here.
+    this.environment = buildConductorRuntimeEnv({
+      coreConfig: props.coreConfig,
+      conductorEndpoint: this.conductorEndpoint,
+      webAppPublicUrl: props.webAppPublicUrl,
+      webUrl: props.webUrl,
+      appId: props.appId,
+      couchDBEndpoint: props.couchDBEndpoint,
+      couchDBPort: props.couchDBPort,
+      conductorExternalPort: this.externalPort,
+      conductorInternalPort: this.internalPort,
+      privateKeySecretArn: props.privateKeySecretArn,
+      localhostWhitelist: props.localhostWhitelist,
+      enabledAuthProviders: props.authProviders?.providers ?? [],
+      secretEnvKeys: Object.keys(this.secrets),
+    });
 
     conductorTaskDfn.addContainer('conductor-container-dfn', {
       image: this.containerImage,
@@ -548,10 +510,3 @@ export class FaimsConductor extends Construct {
     );
   }
 }
-
-const camelToSnakeCase = (str: string): string => {
-  return str
-    .replace(/([a-z])([A-Z])/g, '$1_$2')
-    .replace(/[\s-]+/g, '_')
-    .toUpperCase();
-};

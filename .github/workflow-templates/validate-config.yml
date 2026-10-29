@@ -1,0 +1,116 @@
+# acknowledging extended from OSS https://github.com/FAIMS/FAIMS3
+#
+# Validate FAIMS deployment config
+#
+# Checks that the private config repository is reachable and that the
+# selected environment's core.json parses via @faims3/build-config
+# (schema + shared invariants). Optional extensions:
+#   - aws.json: same CDK parse as deploy (schema + provider rule)
+#   - secrets.enc.json: decrypt + deep-merge + parse again when
+#     SOPS_AGE_KEY is set (skipped if the key is absent)
+# No AWS credentials are required.
+#
+# Shared config-targeting settings (same names as mobile CI):
+#   - secrets.GIT_AUTHORIZATION: token with read access to the config repository
+#   - vars.CONFIG_REPO_SLUG: config repository slug (owner/repo)
+#   - vars.CONFIG_ENVIRONMENT: required config-repo folder name
+#   - vars.CONFIG_BRANCH: config repo branch (optional, defaults to 'main')
+#   - vars.CONFIG_REPO_PATH: base path within the config repo (optional,
+#     defaults to 'configs'; env folder = core.json + optional aws.json
+#     / secrets.enc.json)
+#   - secrets.SOPS_AGE_KEY: optional; used only when secrets.enc.json is present
+
+name: Validate FAIMS deployment config
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Which GitHub environment to validate'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+          - stage
+permissions:
+  contents: read
+jobs:
+  validate-config:
+    environment: ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main code
+        uses: actions/checkout@v7
+
+      - name: Require CONFIG_ENVIRONMENT
+        run: |
+          if [[ -z "${{ vars.CONFIG_ENVIRONMENT }}" ]]; then
+            echo "CONFIG_ENVIRONMENT must be set on GitHub Environment '${{ github.event.inputs.environment }}' to the config-repo folder name." >&2
+            exit 1
+          fi
+
+      - name: Checkout config code
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ vars.CONFIG_REPO_SLUG }}
+          token: ${{ secrets.GIT_AUTHORIZATION }}
+          ref: ${{ vars.CONFIG_BRANCH || 'main' }}
+          path: ./config-repo
+
+      - name: Resolve config env folder
+        uses: ./.github/actions/config
+        id: faims-config-setup
+        with:
+          environment: ${{ vars.CONFIG_ENVIRONMENT }}
+          config-repo-path: config-repo
+          config-base-path: ${{ vars.CONFIG_REPO_PATH || 'configs' }}
+
+      - name: Show resolved config folder
+        run: |
+          echo "GitHub environment: ${{ github.event.inputs.environment }}"
+          echo "Config repo: ${{ vars.CONFIG_REPO_SLUG }}"
+          echo "Config folder: ${{ vars.CONFIG_ENVIRONMENT }}"
+          echo "Config dir: ${{ steps.faims-config-setup.outputs.config-dir }}"
+          echo "Has aws.json: ${{ steps.faims-config-setup.outputs.has-aws-config }}"
+          echo "Has secrets.enc.json: ${{ steps.faims-config-setup.outputs.has-secrets-enc }}"
+          if [[ "${{ steps.faims-config-setup.outputs.has-aws-config }}" == "true" ]]; then
+            echo "AWS account: ${{ steps.faims-config-setup.outputs.aws-account }}"
+            echo "AWS region: ${{ steps.faims-config-setup.outputs.aws-region }}"
+          fi
+          ls -la "${{ steps.faims-config-setup.outputs.config-dir }}"
+
+      - name: Setup sops
+        if: ${{ steps.faims-config-setup.outputs.has-secrets-enc == 'true' && secrets.SOPS_AGE_KEY != '' }}
+        uses: nhedger/setup-sops@v2
+        with:
+          version: 3.13.3
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared config library
+        run: pnpm --filter=@faims3/build-config run build
+
+      - name: Validate core.json
+        env:
+          CONFIG_DIR: ${{ steps.faims-config-setup.outputs.config-dir }}
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: pnpm --filter=@faims3/build-config run validate
+
+      - name: Validate aws.json
+        if: ${{ steps.faims-config-setup.outputs.has-aws-config == 'true' }}
+        env:
+          CONFIG_DIR: ${{ steps.faims-config-setup.outputs.config-dir }}
+        run: pnpm --filter=@faims3/infra-aws-cdk run validate-config

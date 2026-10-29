@@ -10,6 +10,8 @@ FAIMS3 Developer Documentation
    markdown/Authorisation/PassportAuth.md
    markdown/Authorisation/RefreshTokens.md
    markdown/Backup.md
+   markdown/Build-Configuration.md
+   markdown/CodeMirrorMdxEditor.md
    markdown/Configuration.md
    markdown/CouchBackupRecoveryGuideAWS.md
    markdown/CouchMigrations.md
@@ -22,6 +24,7 @@ FAIMS3 Developer Documentation
    markdown/Knip.md
    markdown/Long-lived-tokens.md
    markdown/MetadataMigrationGuide.md
+   markdown/Mobile-Deployment-Setup-Guide.md
    markdown/NotebookDefinition.md
    markdown/NotebookMigrations.md
    markdown/PermissionModel.md

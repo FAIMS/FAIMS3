@@ -1,6 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+import {loadEnvDistIfUnset} from '@faims3/build-config/node';
 import {defineConfig} from 'vitest/config';
 import {webdriverio} from '@vitest/browser-webdriverio';
 import path from 'path';
+
+const distEnv = loadEnvDistIfUnset(process.cwd());
 
 export default defineConfig({
   define: {
@@ -9,10 +13,13 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
   },
   resolve: {
-    alias: {'@': path.resolve(__dirname, './src')},
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
     dedupe: ['@mui/material', '@emotion/react', '@emotion/styled'],
   },
   test: {
+    env: distEnv,
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/setupTests.ts',
