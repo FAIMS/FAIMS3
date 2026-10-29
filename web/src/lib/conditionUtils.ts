@@ -979,17 +979,12 @@ export const parseDropTarget = (id: string): ParsedDropTarget | null => {
 ///
 
 /**
- * Display label for a field (`InputLabelProps.label` overrides `component-parameters.label`).
+ * Display label for a field (`component-parameters.label`).
  *
  * @param f - Field definition from the UI spec.
  * @returns Human-readable label string.
  */
-export const getFieldLabel = (f: FieldType) => {
-  const params = f['component-parameters'] as TemplatedStringProps;
-  return (
-    (params.InputLabelProps && params.InputLabelProps.label) || params.label
-  );
-};
+export const getFieldLabel = (f: FieldType) => f['component-parameters'].label;
 
 ///
 /// Other common condition helpers

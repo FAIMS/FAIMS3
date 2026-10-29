@@ -222,6 +222,22 @@ test('parseApiEnv forces MOCK email under test even when SMTP is configured', ()
   assert.equal(parsed.exportRateLimiterEnabled, false);
 });
 
+test('parseApiEnv forces disableMigrateOnStartup under test', () => {
+  const omitted = parseApiEnv(MINIMAL_API, {runningUnderTest: false});
+  assert.equal(omitted.disableMigrateOnStartup, false);
+
+  const underTest = parseApiEnv(
+    {
+      ...MINIMAL_API,
+      DISABLE_MIGRATE_ON_STARTUP: 'false',
+      STARTUP_MIGRATION_LOCK_ENABLED: 'true',
+    },
+    {runningUnderTest: true}
+  );
+  assert.equal(underTest.disableMigrateOnStartup, true);
+  assert.equal(underTest.startupMigrationLockEnabled, false);
+});
+
 test('parseApiEnv requires AWS_SECRET_KEY_ARN when KEY_SOURCE is AWS_SM', () => {
   assert.throws(
     () =>

@@ -13,7 +13,10 @@ interface DesignerDialogProps {
   designerMode?: DesignerDocumentMode;
   /** Survey/template display name for the exported JSON filename. */
   exportBaseName?: string;
-  /** Records already collected for the survey. Omit for templates. */
+  /**
+   * Records already collected for the survey. Omit for templates.
+   * Forwarded into the designer so field delete can warn about stored data.
+   */
   existingRecordCount?: number;
   onClose: (file?: File) => void;
   animationDuration?: number;

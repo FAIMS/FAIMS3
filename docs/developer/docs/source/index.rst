@@ -8,6 +8,7 @@ FAIMS3 Developer Documentation
    markdown/Build-Configuration.md
    markdown/ProjectLifecycle.md
    markdown/RulesOfHooks.md
+   markdown/CodeMirrorMdxEditor.md
    markdown/CouchMigrations.md
    markdown/Mobile-Deployment-Setup-Guide.md
    markdown/PermissionModel.md

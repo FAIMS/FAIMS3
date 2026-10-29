@@ -57,6 +57,7 @@ function photoSpec(): UiSpecModel {
         'component-namespace': 'faims-custom',
         'component-name': 'TakePhoto',
         'type-returned': 'faims-attachment::Files',
+        exportName: 'photos',
         'component-parameters': {
           label: 'Photos',
           name: 'photos',

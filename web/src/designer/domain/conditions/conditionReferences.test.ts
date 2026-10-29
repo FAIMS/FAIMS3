@@ -61,6 +61,7 @@ describe('conditionReferences — field usage and rename', () => {
 });
 
 const selectField: FieldType = {
+  exportName: 'choice',
   'component-namespace': 'faims-custom',
   'component-name': 'Select',
   'type-returned': 'faims-core::String',
@@ -77,6 +78,7 @@ const selectField: FieldType = {
 };
 
 const dependentField: FieldType = {
+  exportName: 'dependent',
   'component-namespace': 'faims-custom',
   'component-name': 'FAIMSTextField',
   'type-returned': 'faims-core::String',

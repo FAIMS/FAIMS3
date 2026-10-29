@@ -110,6 +110,10 @@ export const ApiEnvSchema = z
     MAXIMUM_LONG_LIVED_DURATION_DAYS: maxLongLivedDaysWithDefault(
       SHARED_DEFAULTS.maximumLongLivedDurationDays
     ),
+    /**
+     * Skip API-boot Couch migrate. Forced on under test in
+     * {@link parseApiEnv} so unit tests never walk Couch on import.
+     */
     DISABLE_MIGRATE_ON_STARTUP: boolWithDefault(false),
     STARTUP_MIGRATION_LOCK_ENABLED: optionalBool(),
     STARTUP_MIGRATION_LOCK_TIMEOUT_MS: intWithDefault(
@@ -184,7 +188,11 @@ export type ApiEnv = z.infer<typeof ApiEnvSchema>;
 
 /** Options for {@link parseApiEnv}. */
 export interface ParseApiEnvOptions {
-  /** Override NODE_ENV/JEST_WORKER_ID detection (forces MOCK email, disables export limiter). */
+  /**
+   * Override NODE_ENV/JEST_WORKER_ID detection. Under test: MOCK email,
+   * export limiter off, and `disableMigrateOnStartup` forced on so API unit
+   * tests never walk Couch or notebook JSON on import.
+   */
   runningUnderTest?: boolean;
 }
 
@@ -248,6 +256,14 @@ export function parseApiEnv(
 
   const smtp = emailServiceType === 'SMTP' ? resolveSmtpConfig(env) : undefined;
 
+  // API unit tests import the Express app without the production boot path,
+  // but still share this singleton. Force-skip Couch + notebook startup
+  // migrate so fixture restores keep their on-disk schema and tests that
+  // need a walk call it explicitly.
+  const disableMigrateOnStartup = runningUnderTest
+    ? true
+    : env.DISABLE_MIGRATE_ON_STARTUP;
+
   return {
     conductorPublicUrl: env.CONDUCTOR_PUBLIC_URL,
     webAppPublicUrl: env.WEB_APP_PUBLIC_URL,
@@ -273,10 +289,10 @@ export function parseApiEnv(
       env.MAXIMUM_LONG_LIVED_DURATION_DAYS === 'unlimited'
         ? undefined
         : env.MAXIMUM_LONG_LIVED_DURATION_DAYS,
-    disableMigrateOnStartup: env.DISABLE_MIGRATE_ON_STARTUP,
+    disableMigrateOnStartup,
     startupMigrationLockEnabled:
       resolveStartupMigrationLockEnabled(
-        env.DISABLE_MIGRATE_ON_STARTUP,
+        disableMigrateOnStartup,
         env.STARTUP_MIGRATION_LOCK_ENABLED
       ) ?? false,
     startupMigrationLockTimeoutMs: env.STARTUP_MIGRATION_LOCK_TIMEOUT_MS,

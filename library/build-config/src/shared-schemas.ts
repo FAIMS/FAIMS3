@@ -11,7 +11,7 @@ import {z} from 'zod';
 export const ThemeSchema = z.string();
 /** Notebook listing layout: tabbed vs heading sections. */
 export const NotebookListTypeSchema = z.enum(['tabs', 'headings']);
-/** Record navigation chrome: none, or breadcrumbs. */
+/** Record navigation style: none, or breadcrumbs. */
 export const NavigationStyleSchema = z.enum(['none', 'breadcrumbs']);
 /** Tile provider. Blank disables the map. OSM cannot serve offline downloads. */
 export const MapSourceSchema = z.enum(['osm', 'maptiler', '']);
@@ -45,7 +45,7 @@ export const DownloadCookieSameSiteSchema = z.enum(['lax', 'strict', 'none']);
 export type Theme = z.infer<typeof ThemeSchema>;
 /** Notebook listing layout (same values as {@link NotebookListTypeSchema}). */
 export type NotebookListType = z.infer<typeof NotebookListTypeSchema>;
-/** Record navigation chrome (same values as {@link NavigationStyleSchema}). */
+/** Record navigation style (same values as {@link NavigationStyleSchema}). */
 export type NavigationStyle = z.infer<typeof NavigationStyleSchema>;
 /** Tile provider (same values as {@link MapSourceSchema}). */
 export type MapSource = z.infer<typeof MapSourceSchema>;
