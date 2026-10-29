@@ -30,6 +30,10 @@
     --warning: 32 95% 44%;
     --warning-foreground: 25 95% 18%;
     --warning-background: 36 100% 95%;
+    /* Soft orange attention (Ready to link). Distinct from warning, which is red in BSS. */
+    --notice: 38 85% 46%;
+    --notice-foreground: 30 75% 24%;
+    --notice-background: 40 90% 95%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
     --ring: 0 0% 3.9%;
@@ -49,10 +53,12 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
     /* Listings public-template row and badge accent (HSL channels, no hsl() wrapper). */
     --accented-row: 158 52% 34%;
+    /* Match STATIC_MAP_LAYER_PREVIEW_HEIGHT in @faims3/forms. */
+    --map-layer-preview-height: clamp(380px, 55dvh, 650px);
   }
 
   :root,
-  :theme-default {
+  .theme-default {
     --primary: 83 80% 22%;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 96.1%;
@@ -68,6 +74,9 @@
     --warning: 0 82% 49%;
     --warning-foreground: 0 82% 49%;
     --warning-background: 0 0% 100%;
+    --notice: 38 85% 46%;
+    --notice-foreground: 30 75% 24%;
+    --notice-background: 40 90% 95%;
   }
 
   .dark {
@@ -96,6 +105,9 @@
     --warning: 38 92% 50%;
     --warning-foreground: 36 100% 90%;
     --warning-background: 30 40% 18%;
+    --notice: 38 82% 58%;
+    --notice-foreground: 40 90% 90%;
+    --notice-background: 32 35% 16%;
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
@@ -120,6 +132,9 @@
     --warning: 0 82% 55%;
     --warning-foreground: 0 100% 90%;
     --warning-background: 0 40% 12%;
+    --notice: 38 82% 58%;
+    --notice-foreground: 40 90% 90%;
+    --notice-background: 32 35% 16%;
   }
 }
 

@@ -4,9 +4,10 @@ import path from 'path';
 import {describe, expect, it} from 'vitest';
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+  DEFAULT_MAP_ASSET_STYLE,
   ProjectStatus,
+  type APINotebookList,
   type GetNotebookResponse,
-  type ProjectListItem,
 } from '@faims3/data-model';
 import {
   ingestLegacyPersistedProjectForStore,
@@ -80,10 +81,21 @@ describe('notebookDefinitionFromLegacyPersistedProject', () => {
 });
 
 const HASH_A = 'a'.repeat(64);
+const LAYERS_HASH = 'c'.repeat(64);
+
+const readyLayer = {
+  id: 'asset-ready',
+  name: 'Site boundaries',
+  kind: 'vector-tiles' as const,
+  byteSize: 2048,
+  contentHash: 'layer-content-a',
+  extent: [0, 0, 1, 1] as [number, number, number, number],
+  defaultStyle: DEFAULT_MAP_ASSET_STYLE,
+};
 
 function directoryListItem(
-  overrides: Partial<ProjectListItem> = {}
-): ProjectListItem {
+  overrides: Partial<APINotebookList> = {}
+): APINotebookList {
   return {
     _id: 'nb-1',
     _rev: '1-x',
@@ -162,11 +174,25 @@ describe('projectInformationFromGetNotebook (fail-soft ingest)', () => {
     );
     expect(info.uiSpecProperties).toEqual(uiSpecProperties);
   });
+
+  it('copies contextualLayers and contextualLayersHash from GET /notebooks/:id', () => {
+    const info = projectInformationFromGetNotebook({
+      ...base,
+      uiSpecification: legacyNotebook as any,
+      contextualLayers: [readyLayer],
+      contextualLayersHash: LAYERS_HASH,
+    });
+    expect(info.contextualLayers).toEqual([readyLayer]);
+    expect(info.contextualLayersHash).toBe(LAYERS_HASH);
+  });
 });
 
 describe('listingInformationFromDirectoryItem / listedProjectFromDirectoryItem', () => {
   it('maps listing fields and assesses compatibility from uiSpecProperties', () => {
-    const item = directoryListItem();
+    const item = directoryListItem({
+      contextualLayers: [readyLayer],
+      contextualLayersHash: LAYERS_HASH,
+    });
     const info = listingInformationFromDirectoryItem(item);
     expect(info.name).toBe('Listed NB');
     expect(info.description).toBe('from directory');
@@ -175,6 +201,8 @@ describe('listingInformationFromDirectoryItem / listedProjectFromDirectoryItem',
     expect(info.updatedAt).toBe('2024-02-01T00:00:00.000Z');
     expect(info.disableQuickShare).toBe(true);
     expect(info.uiSpecProperties).toEqual(item.uiSpecProperties);
+    expect(info.contextualLayers).toEqual([readyLayer]);
+    expect(info.contextualLayersHash).toBe(LAYERS_HASH);
     expect(info.schemaCompatibility).toMatchObject({
       tier: 'compatible',
       notebookSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
@@ -196,7 +224,10 @@ describe('listingInformationFromDirectoryItem / listedProjectFromDirectoryItem',
   });
 
   it('builds a listed project with ids and no uiDefinition', () => {
-    const item = directoryListItem();
+    const item = directoryListItem({
+      contextualLayers: [readyLayer],
+      contextualLayersHash: LAYERS_HASH,
+    });
     const listed = listedProjectFromDirectoryItem({
       item,
       serverId: 'server-a',
@@ -205,6 +236,8 @@ describe('listingInformationFromDirectoryItem / listedProjectFromDirectoryItem',
     expect(listed.projectId).toBe('nb-1');
     expect(listed.serverId).toBe('server-a');
     expect(listed.uiSpecProperties).toEqual(item.uiSpecProperties);
+    expect(listed.contextualLayers).toEqual([readyLayer]);
+    expect(listed.contextualLayersHash).toBe(LAYERS_HASH);
     expect(listed).not.toHaveProperty('uiDefinition');
     expect(listed).not.toHaveProperty('uiSpecificationId');
     expect(listed).not.toHaveProperty('database');

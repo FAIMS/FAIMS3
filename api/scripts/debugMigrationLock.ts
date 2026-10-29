@@ -65,6 +65,7 @@ export const EXPECTED_GLOBAL_DBS: ReadonlyArray<{
   {dbType: DatabaseType.PROJECTS, dbName: 'projects'},
   {dbType: DatabaseType.TEMPLATES, dbName: 'templates'},
   {dbType: DatabaseType.TEAMS, dbName: 'teams'},
+  {dbType: DatabaseType.MAP_ASSETS, dbName: 'mapassets'},
   {dbType: DatabaseType.TOMBSTONE, dbName: 'tombstone'},
 ];
 

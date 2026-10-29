@@ -27,6 +27,10 @@
     "forceRemoteDeletion": "never",
     "deleteOnDeactivation": false
   },
+  "attachmentStorage": {
+    "serviceType": "S3",
+    "prefix": "map-assets"
+  },
   "teamAndRolePolicy": {
     "excludedTeamRoles": ["TEAM_MEMBER_CREATOR"]
   },

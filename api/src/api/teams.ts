@@ -10,9 +10,11 @@ import {
   Action,
   addTeamRole,
   GetListTeamsResponse,
+  GetMapAssetListResponse,
   GetTeamByIdResponse,
   getTeamMembershipAction,
   GetTeamMembersResponse,
+  IdInputSchema,
   PostCreateTeamInputSchema,
   PostCreateTeamResponse,
   PutUpdateTeamInputSchema,
@@ -46,6 +48,8 @@ import {
   requireAuthenticationAPI,
   userCanDo,
 } from '../middleware';
+import {attachLinkCounts} from '../couchdb/mapAssets/store';
+import {listReadableTeamMapAssets} from './mapAssets';
 import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
@@ -97,6 +101,43 @@ api.get(
   async (req, res: Response<GetTeamByIdResponse>) => {
     const team = await getTeamById(req.params.id);
     res.json(team);
+  }
+);
+
+/**
+ * GET map layers owned by a team.
+ *
+ * Reads the Couch `assetsByTeam` view (`MAP_ASSETS_BY_TEAM`) rather than
+ * listing the library and filtering. Requires `VIEW_TEAM_DETAILS` on the
+ * team and `LIST_MAP_ASSETS`. Each returned layer is still subject to
+ * `READ_MAP_ASSET` (team virtual roles, or creator ownership).
+ */
+api.get(
+  '/:id/map-assets',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.VIEW_TEAM_DETAILS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  validate({
+    params: z.object({id: IdInputSchema.min(1)}),
+  }),
+  async (req, res: Response<GetMapAssetListResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    if (!userCanDo({user: req.user, action: Action.LIST_MAP_ASSETS})) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const teamId = req.params.id;
+    await getTeamById(teamId);
+    res.json({
+      assets: await attachLinkCounts(
+        await listReadableTeamMapAssets(req.user, teamId)
+      ),
+    });
   }
 );
 

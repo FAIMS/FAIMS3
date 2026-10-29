@@ -253,6 +253,61 @@ const apiContract: Record<string, EnvResolver> = {
   RECORDS_HYDRATED_PAGE_LIMIT: runtime =>
     runtime.limits.recordsHydratedPageLimit ??
     SHARED_DEFAULTS.recordsHydratedPageLimit,
+  MEMORY_MONITOR_ENABLED: runtime =>
+    runtime.observability.memoryMonitorEnabled ?? false,
+  REQUEST_LOGGING_ENABLED: runtime =>
+    runtime.observability.requestLoggingEnabled ?? true,
+  ATTACHMENT_STORAGE_TYPE: runtime =>
+    runtime.attachmentStorage.serviceType ?? 'S3',
+  ATTACHMENT_S3_BUCKET: runtime =>
+    runtime.attachmentStorage.bucket ?? SHARED_DEFAULTS.attachmentS3Bucket,
+  ATTACHMENT_S3_PREFIX: runtime =>
+    runtime.attachmentStorage.prefix ?? SHARED_DEFAULTS.attachmentS3Prefix,
+  ATTACHMENT_S3_REGION: runtime =>
+    runtime.attachmentStorage.region ?? SHARED_DEFAULTS.attachmentS3Region,
+  ATTACHMENT_S3_ENDPOINT: runtime => runtime.attachmentStorage.endpoint,
+  ATTACHMENT_S3_PUBLIC_ENDPOINT: runtime =>
+    runtime.attachmentStorage.publicEndpoint,
+  ATTACHMENT_S3_FORCE_PATH_STYLE: runtime =>
+    runtime.attachmentStorage.forcePathStyle,
+  ATTACHMENT_S3_ACCESS_KEY_ID: runtime => runtime.attachmentStorage.accessKeyId,
+  ATTACHMENT_S3_SECRET_ACCESS_KEY: runtime =>
+    runtime.attachmentStorage.secretAccessKey,
+  CAPACITY_PROVIDER: runtime => runtime.spatialCapacity.provider ?? 'FIXED',
+  CAPACITY_MAX: runtime =>
+    runtime.spatialCapacity.maxCapacity ?? SHARED_DEFAULTS.capacityMax,
+  CAPACITY_SCALE_THRESHOLDS: runtime =>
+    runtime.spatialCapacity.scaleThresholds ?? [
+      ...SHARED_DEFAULTS.capacityScaleThresholds,
+    ],
+  CAPACITY_RECONCILE_MS: runtime =>
+    runtime.spatialCapacity.reconcileMs ?? SHARED_DEFAULTS.capacityReconcileMs,
+  CAPACITY_STARVATION_MS: runtime =>
+    runtime.spatialCapacity.starvationMs ??
+    SHARED_DEFAULTS.capacityStarvationMs,
+  CAPACITY_SCALE_IN_COOLDOWN_MS: runtime =>
+    runtime.spatialCapacity.scaleInCooldownMs,
+  CAPACITY_FIXED_REPLICAS: runtime =>
+    runtime.spatialCapacity.fixedReplicas ??
+    SHARED_DEFAULTS.capacityFixedReplicas,
+  SPATIAL_WORKER_IDLE_EXIT_MS: runtime =>
+    runtime.spatialCapacity.idleExitMs ??
+    SHARED_DEFAULTS.spatialWorkerIdleExitMs,
+  SPATIAL_WORKER_POLL_MS: runtime =>
+    runtime.spatialCapacity.pollMs ?? SHARED_DEFAULTS.spatialWorkerPollMs,
+  GDAL_NUM_THREADS: runtime =>
+    String(
+      runtime.spatialCapacity.gdalNumThreads ?? SHARED_DEFAULTS.gdalNumThreads
+    ),
+  GDAL_CACHEMAX: runtime =>
+    runtime.spatialCapacity.gdalCacheMaxMb ?? SHARED_DEFAULTS.gdalCacheMaxMb,
+  GDAL_WARP_MEMORY_MB: runtime =>
+    runtime.spatialCapacity.gdalWarpMemoryMb ??
+    SHARED_DEFAULTS.gdalWarpMemoryMb,
+  GDAL_WARP_MULTI: runtime =>
+    runtime.spatialCapacity.gdalWarpMulti ?? SHARED_DEFAULTS.gdalWarpMulti,
+  TIPPECANOE_MAX_THREADS: runtime =>
+    runtime.spatialCapacity.tippecanoeMaxThreads,
 };
 
 function applyContract(

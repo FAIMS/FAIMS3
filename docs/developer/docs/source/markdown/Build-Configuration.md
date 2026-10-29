@@ -260,6 +260,39 @@ so only use keys suitable for public consumption.
 | `attachmentServiceType`      | string | `COUCH` | Where attachments are stored.       |
 | `attachmentDocumentIdPrefix` | string | `''`    | Prefix for attachment document IDs. |
 
+### `attachmentStorage` — map-layer object storage
+
+| Field             | Type    | Default            | Notes                                                                   |
+| ----------------- | ------- | ------------------ | ----------------------------------------------------------------------- |
+| `serviceType`     | string  | `S3`               | `S3` \| `MOCK`.                                                         |
+| `bucket`          | string  | `faims-map-assets` | S3 bucket name (overridden on AWS by the CDK-created bucket).           |
+| `prefix`          | string  | `map-assets`       | Key prefix inside the bucket.                                           |
+| `region`          | string  | `us-east-1`        | AWS region or RustFS dummy region (overridden on AWS by stack region).  |
+| `endpoint`        | string  | —                  | Custom S3 endpoint (e.g. `http://localhost:9000` for RustFS).           |
+| `publicEndpoint`  | string  | —                  | Host-visible signing endpoint when `endpoint` is internal-only.         |
+| `forcePathStyle`  | boolean | —                  | Path-style S3 URLs (defaults to `true` when `endpoint` is set).         |
+| `accessKeyId`     | string  | —                  | **Secret slot** — static S3 access key (omit on AWS ECS for task role). |
+| `secretAccessKey` | string  | —                  | **Secret slot** — static S3 secret key (omit on AWS ECS for task role). |
+
+### `spatialCapacity` — spatial worker pool & GDAL tuning
+
+| Field                  | Type                | Default          | Notes                                                                |
+| ---------------------- | ------------------- | ---------------- | -------------------------------------------------------------------- |
+| `provider`             | string              | `FIXED`          | `FIXED` \| `ECS` \| `MOCK`.                                          |
+| `maxCapacity`          | number              | `4`              | Max workers the capacity manager will ask for at once.               |
+| `scaleThresholds`      | number[]            | `[3, 8, 16, 32]` | Strictly-increasing queue depths that add a worker.                  |
+| `reconcileMs`          | number              | `15000`          | Queue reconciliation interval (ms).                                  |
+| `starvationMs`         | number              | `300000`         | Age of oldest unclaimed job before asking for an extra worker (`0`). |
+| `scaleInCooldownMs`    | number              | —                | Cooldown between staleness scale-ups (defaults to `2 * starvation`). |
+| `fixedReplicas`        | number              | `1`              | Replica count reported by the `FIXED` provider.                      |
+| `idleExitMs`           | number              | `60000`          | Worker idle timeout before exit (`0` never exits).                   |
+| `pollMs`               | number              | `5000`           | Delay between empty worker polls (ms).                               |
+| `gdalNumThreads`       | `"ALL_CPUS"` \| int | `"ALL_CPUS"`     | GDAL worker thread count.                                            |
+| `gdalCacheMaxMb`       | number              | `256`            | GDAL raster block cache (MB).                                        |
+| `gdalWarpMemoryMb`     | number              | `256`            | `gdalwarp -wm` working buffer (MB).                                  |
+| `gdalWarpMulti`        | boolean             | `true`           | `gdalwarp -multi` overlap I/O with compute.                          |
+| `tippecanoeMaxThreads` | number              | —                | Optional cap on tippecanoe threads.                                  |
+
 ### `migration`
 
 | Field                           | Type    | Default   | Notes                                                                                                      |
@@ -342,10 +375,12 @@ resolved from Secrets Manager on AWS. Non-secret fields (`displayName`, `helperT
 
 ### `observability`
 
-| Field           | Type   | Default | Notes                                                                          |
-| --------------- | ------ | ------- | ------------------------------------------------------------------------------ |
-| `bugsnagApiKey` | string | `''`    | **Secret slot.** Client key.                                                   |
-| `commitVersion` | string | —       | Build commit; `output of \`git rev-parse HEAD\`` is resolved at generate time. |
+| Field                   | Type    | Default | Notes                                                                          |
+| ----------------------- | ------- | ------- | ------------------------------------------------------------------------------ |
+| `bugsnagApiKey`         | string  | `''`    | **Secret slot.** Client key.                                                   |
+| `commitVersion`         | string  | —       | Build commit; `output of \`git rev-parse HEAD\`` is resolved at generate time. |
+| `memoryMonitorEnabled`  | boolean | `false` | Start the 1 Hz API stdout memory sampler for leak hunts.                       |
+| `requestLoggingEnabled` | boolean | `true`  | Write Morgan combined-format HTTP access lines on the API server.              |
 
 ### `teamAndRolePolicy`
 

@@ -1,17 +1,35 @@
+# api, web, and app share one build of Dockerfile.dev target runtime.
+x-dev-image: &dev-image
+  image: faims-dev:local
+  build:
+    context: .
+    dockerfile: Dockerfile.dev
+    target: runtime
+
+# capacity-manager and spatial-worker share the lighter worker target.
+# It installs dependencies and GDAL, and does not copy application source.
+x-worker-image: &worker-image
+  image: faims-dev-worker:local
+  build:
+    context: .
+    dockerfile: Dockerfile.dev
+    target: worker
+
 services:
   api:
+    <<: *dev-image
     env_file:
       - ./api/.env
     environment:
       # Override this so that the API refers to the internal DNS name
       - COUCHDB_INTERNAL_URL=http://couchdb:5984
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-      target: runtime
+      - ATTACHMENT_S3_ENDPOINT=http://rustfs:9000
+      # Browsers cannot resolve `rustfs`; sign download URLs for localhost.
+      - ATTACHMENT_S3_PUBLIC_ENDPOINT=http://localhost:9000
     ports:
       - '0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}'
     volumes:
+      - ./library/build-config:/usr/src/library/build-config
       - ./library/data-model:/usr/src/library/data-model
       - ./api/src:/usr/src/api/src
       - ./api/views:/usr/src/api/views
@@ -21,7 +39,10 @@ services:
       - ./api/.env:/usr/src/api/.env
     command: pnpm run watch-api
     depends_on:
-      - couchdb
+      couchdb:
+        condition: service_healthy
+      rustfs:
+        condition: service_started
     healthcheck:
       test:
         ['CMD', 'curl', '-f', 'http://localhost:${CONDUCTOR_INTERNAL_PORT}/']
@@ -30,15 +51,13 @@ services:
       retries: 3
       start_period: 40s
   web:
+    <<: *dev-image
     env_file:
       - ./web/.env
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-      target: runtime
     ports:
       - '0.0.0.0:3001:3001'
     volumes:
+      - ./library/build-config:/usr/src/library/build-config
       - ./library/data-model:/usr/src/library/data-model
       - ./library/forms:/usr/src/library/forms
       - ./web/src:/usr/src/web/src
@@ -46,15 +65,13 @@ services:
     command: pnpm run web-dev
 
   app:
+    <<: *dev-image
     env_file:
       - ./app/.env
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-      target: runtime
     ports:
       - '3000:3000'
     volumes:
+      - ./library/build-config:/usr/src/library/build-config
       - ./library/data-model:/usr/src/library/data-model
       - ./library/forms:/usr/src/library/forms
       - ./app/assets:/usr/src/app/assets
@@ -64,6 +81,64 @@ services:
     command: pnpm run start-app -- --force
     depends_on:
       - api
+
+  # Watches the Couch map-asset queue and asks the capacity provider for
+  # workers. FIXED does not start tasks; the compose worker is always on.
+  capacity-manager:
+    <<: *worker-image
+    env_file:
+      - ./api/.env
+    environment:
+      - COUCHDB_INTERNAL_URL=http://couchdb:5984
+      - ATTACHMENT_S3_ENDPOINT=http://rustfs:9000
+      - ATTACHMENT_S3_PUBLIC_ENDPOINT=http://localhost:9000
+      - CAPACITY_PROVIDER=FIXED
+      - CAPACITY_FIXED_REPLICAS=1
+    volumes:
+      - ./library/build-config:/usr/src/library/build-config
+      - ./library/data-model:/usr/src/library/data-model
+      - ./api/src:/usr/src/api/src
+      - ./api/keys:/usr/src/api/keys
+      - ./api/.env:/usr/src/api/.env
+      - /usr/src/node_modules
+      - /usr/src/api/node_modules
+      - /usr/src/.pnpm
+    command: pnpm --filter @faims3/api exec nodemon --watch src --ext ts --exec "tsx src/scripts/capacityManager.ts"
+    depends_on:
+      couchdb:
+        condition: service_healthy
+      rustfs:
+        condition: service_started
+
+  # GDAL / tippecanoe worker. Idle exit is off so compose does not restart-loop.
+  # Scratch is its own volume — not shared with the API container.
+  spatial-worker:
+    <<: *worker-image
+    env_file:
+      - ./api/.env
+    environment:
+      - COUCHDB_INTERNAL_URL=http://couchdb:5984
+      - ATTACHMENT_S3_ENDPOINT=http://rustfs:9000
+      - ATTACHMENT_S3_PUBLIC_ENDPOINT=http://localhost:9000
+      - SPATIAL_WORKER_IDLE_EXIT_MS=0
+    volumes:
+      - ./library/build-config:/usr/src/library/build-config
+      - ./library/data-model:/usr/src/library/data-model
+      - ./api/src:/usr/src/api/src
+      - ./api/keys:/usr/src/api/keys
+      - ./api/.env:/usr/src/api/.env
+      - /usr/src/node_modules
+      - /usr/src/api/node_modules
+      - /usr/src/.pnpm
+      - type: volume
+        source: spatial_scratch
+        target: /tmp
+    command: pnpm --filter @faims3/api exec nodemon --watch src --ext ts --exec "tsx src/scripts/spatialWorker.ts --poll"
+    depends_on:
+      couchdb:
+        condition: service_healthy
+      rustfs:
+        condition: service_started
 
   couchdb:
     env_file:
@@ -77,6 +152,33 @@ services:
         target: /opt/couchdb/data
     ports:
       - '0.0.0.0:${COUCHDB_EXTERNAL_PORT}:5984'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:5984/_up']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  # S3-compatible object store for map-layer files. The API talks to it
+  # with the same S3 client used against AWS in production.
+  rustfs:
+    image: rustfs/rustfs:latest
+    ports:
+      - '0.0.0.0:${RUSTFS_EXTERNAL_PORT:-9000}:9000'
+      - '0.0.0.0:${RUSTFS_CONSOLE_PORT:-9001}:9001'
+    environment:
+      RUSTFS_ACCESS_KEY: faimsdev
+      RUSTFS_SECRET_KEY: faimsdevsecret1
+      RUSTFS_ADDRESS: ':9000'
+      RUSTFS_CONSOLE_ADDRESS: ':9001'
+      RUSTFS_CONSOLE_ENABLE: 'true'
+    volumes:
+      - type: volume
+        source: rustfs_data
+        target: /data
+    command: /data
 
 volumes:
   couchdb_data:
+  rustfs_data:
+  spatial_scratch:

@@ -13,6 +13,9 @@ export enum Resource {
   // Teams in the system
   TEAM = 'TEAM',
 
+  // Map layers (offline contextual GIS files)
+  MAP_ASSET = 'MAP_ASSET',
+
   // Other aspects of the system such as configuration
   SYSTEM = 'SYSTEM',
 }
@@ -168,6 +171,7 @@ export enum Action {
   // CRUD (resource specific)
   CREATE_PROJECT_IN_TEAM = 'CREATE_PROJECT_IN_TEAM',
   CREATE_TEMPLATE_IN_TEAM = 'CREATE_TEMPLATE_IN_TEAM',
+  CREATE_MAP_ASSET_IN_TEAM = 'CREATE_MAP_ASSET_IN_TEAM',
   DELETE_TEAM = 'DELETE_TEAM',
   UPDATE_TEAM_DETAILS = 'UPDATE_TEAM_DETAILS',
   VIEW_TEAM_DETAILS = 'VIEW_TEAM_DETAILS',
@@ -198,6 +202,31 @@ export enum Action {
   CREATE_ADMIN_TEAM_INVITE = 'CREATE_ADMIN_TEAM_INVITE',
   EDIT_ADMIN_TEAM_INVITE = 'EDIT_ADMIN_TEAM_INVITE',
   DELETE_ADMIN_TEAM_INVITE = 'DELETE_ADMIN_TEAM_INVITE',
+
+  // ============================================================
+  // MAP ASSET (MAP LAYER) ACTIONS
+  // ============================================================
+
+  /** View the list of map layers the user is allowed to see. */
+  LIST_MAP_ASSETS = 'LIST_MAP_ASSETS',
+
+  /**
+   * Upload a map layer that is not owned by a team. Super Users only — most
+   * users must create inside a team via {@link Action.CREATE_MAP_ASSET_IN_TEAM}.
+   */
+  CREATE_MAP_ASSET_OUTSIDE_TEAM = 'CREATE_MAP_ASSET_OUTSIDE_TEAM',
+
+  /** Read metadata and download the device-ready file. */
+  READ_MAP_ASSET = 'READ_MAP_ASSET',
+
+  /** Rename or edit the description of a map layer. */
+  UPDATE_MAP_ASSET_DETAILS = 'UPDATE_MAP_ASSET_DETAILS',
+
+  /** Replace the uploaded files and re-process the layer. */
+  UPDATE_MAP_ASSET_FILES = 'UPDATE_MAP_ASSET_FILES',
+
+  /** Permanently delete a map layer and its survey links. */
+  DELETE_MAP_ASSET = 'DELETE_MAP_ASSET',
 
   // ============================================================
   // USER ACTIONS
@@ -261,6 +290,7 @@ export enum Action {
   VALIDATE_DBS = 'VALIDATE_DBS',
   RESTORE_FROM_BACKUP = 'RESTORE_FROM_BACKUP',
   SEND_TEST_EMAIL = 'SEND_TEST_EMAIL',
+  TEST_ATTACHMENT_STORAGE = 'TEST_ATTACHMENT_STORAGE',
   VERIFY_EMAIL = 'VERIFY_EMAIL',
 }
 
@@ -724,6 +754,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: true,
     resource: Resource.TEAM,
   },
+  [Action.CREATE_MAP_ASSET_IN_TEAM]: {
+    name: 'Create Map Layer (In team)',
+    description: 'Upload a new map layer owned by a given team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
   [Action.READ_TEMPLATE_DETAILS]: {
     name: 'View template',
     description:
@@ -782,6 +818,47 @@ export const actionDetails: Record<Action, ActionDetails> = {
       'Permanently remove an archived template from the system (hard delete)',
     resourceSpecific: true,
     resource: Resource.TEMPLATE,
+  },
+
+  // ============================================================
+  // MAP ASSET (MAP LAYER) ACTIONS
+  // ============================================================
+  [Action.LIST_MAP_ASSETS]: {
+    name: 'List Map Layers',
+    description: 'List map layers the user is allowed to see',
+    resourceSpecific: false,
+    resource: Resource.MAP_ASSET,
+  },
+  [Action.CREATE_MAP_ASSET_OUTSIDE_TEAM]: {
+    name: 'Create Map Layer (Outside team)',
+    description:
+      'Upload a new map layer that is not owned by a team (system administrators only)',
+    resourceSpecific: false,
+    resource: Resource.MAP_ASSET,
+  },
+  [Action.READ_MAP_ASSET]: {
+    name: 'Read Map Layer',
+    description: 'View map layer metadata and download the prepared file',
+    resourceSpecific: true,
+    resource: Resource.MAP_ASSET,
+  },
+  [Action.UPDATE_MAP_ASSET_DETAILS]: {
+    name: 'Update Map Layer Details',
+    description: 'Modify the name or description of a map layer',
+    resourceSpecific: true,
+    resource: Resource.MAP_ASSET,
+  },
+  [Action.UPDATE_MAP_ASSET_FILES]: {
+    name: 'Replace Map Layer Files',
+    description: 'Upload replacement files and re-process a map layer',
+    resourceSpecific: true,
+    resource: Resource.MAP_ASSET,
+  },
+  [Action.DELETE_MAP_ASSET]: {
+    name: 'Delete Map Layer',
+    description: 'Permanently remove a map layer and its survey links',
+    resourceSpecific: true,
+    resource: Resource.MAP_ASSET,
   },
 
   // ============================================================
@@ -891,6 +968,13 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: false,
     resource: Resource.SYSTEM,
   },
+  [Action.TEST_ATTACHMENT_STORAGE]: {
+    name: 'Test attachment storage',
+    description:
+      'Run the attachment storage smoke test (upload, download, presign, delete)',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
   [Action.VERIFY_EMAIL]: {
     name: 'Verify an email address',
     description: 'Allows the user to generate a verification challenge email.',
@@ -994,6 +1078,12 @@ export enum Role {
   TEAM_MEMBER_CREATOR = 'TEAM_MEMBER_CREATOR',
   TEAM_MANAGER = 'TEAM_MANAGER',
   TEAM_ADMIN = 'TEAM_ADMIN',
+
+  // MAP ASSET (MAP LAYER) ROLES
+  // ================
+  MAP_ASSET_GUEST = 'MAP_ASSET_GUEST',
+  MAP_ASSET_MANAGER = 'MAP_ASSET_MANAGER',
+  MAP_ASSET_ADMIN = 'MAP_ASSET_ADMIN',
 }
 
 // Define role scope for clarity
@@ -1016,6 +1106,13 @@ export interface RoleDetails {
    * first). Set this when adding a role that appears in an invite/role dropdown.
    */
   order?: number;
+  /**
+   * When false, this role is never written into JWTs or `_couchdb.roles`.
+   * Authorization uses database state (ownership and team proxy). Default true.
+   * Map-layer roles are API-only: Conductor always has DB access, so per-asset
+   * ids are not exploded into the token the way survey/template roles are.
+   */
+  encodeInToken?: boolean;
 }
 
 // Map each role to its details
@@ -1036,7 +1133,7 @@ export const roleDetails: Record<Role, RoleDetails> = {
   [Role.GENERAL_CREATOR]: {
     name: 'Content Creator',
     description:
-      'Ability to create and manage templates and surveys across the system',
+      'Ability to create and manage templates and surveys across the system. Map layers must be created inside a team.',
     scope: RoleScope.GLOBAL,
   },
   [Role.OPERATIONS_ADMIN]: {
@@ -1111,22 +1208,49 @@ export const roleDetails: Record<Role, RoleDetails> = {
   [Role.TEAM_MANAGER]: {
     name: 'Team Manager',
     description:
-      'Can create templates, {notebooks}, and invites, open and close {notebooks}, and edit user roles. Cannot remove users.',
+      'Can create templates, {notebooks}, map layers, and invites, open and close {notebooks}, and edit user roles. Cannot remove users.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
   [Role.TEAM_MEMBER]: {
     name: 'Team Member (Contributor)',
     description:
-      'Can contribute to all {notebooks} in the team and view team details, users, {notebooks} and templates.',
+      'Can contribute to all {notebooks} in the team and view team details, users, {notebooks}, templates, and map layers.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
   [Role.TEAM_MEMBER_CREATOR]: {
     name: 'Team Member (Creator)',
-    description: 'Can create new {notebooks} within a team',
+    description: 'Can create new {notebooks} and map layers within a team',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
+  },
+
+  // Map layer roles. Not stored on the user document and not encoded in
+  // tokens; team membership and `createdBy` are applied at request time.
+  [Role.MAP_ASSET_GUEST]: {
+    name: 'Map Layer Guest',
+    description: 'View a map layer and download it for offline use.',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.MAP_ASSET,
+    order: 0,
+    encodeInToken: false,
+  },
+  [Role.MAP_ASSET_MANAGER]: {
+    name: 'Map Layer Manager',
+    description: 'Update map layer details and replace the uploaded files.',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.MAP_ASSET,
+    order: 1,
+    encodeInToken: false,
+  },
+  [Role.MAP_ASSET_ADMIN]: {
+    name: 'Map Layer Administrator',
+    description: 'Full control over a map layer, including deleting it.',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.MAP_ASSET,
+    order: 2,
+    encodeInToken: false,
   },
 };
 
@@ -1249,6 +1373,7 @@ export const roleActions: Record<
       Action.READ_PROJECT_TOMBSTONE,
       Action.LIST_TEMPLATES,
       Action.READ_PUBLIC_TEMPLATE_DETAILS,
+      Action.LIST_MAP_ASSETS,
       Action.VERIFY_EMAIL,
 
       // Long-lived token actions for own tokens (CRUD)
@@ -1282,6 +1407,7 @@ export const roleActions: Record<
       Action.RESTORE_FROM_BACKUP,
       Action.VALIDATE_DBS,
       Action.SEND_TEST_EMAIL,
+      Action.TEST_ATTACHMENT_STORAGE,
 
       // Teams
       Action.CREATE_TEAM,
@@ -1329,7 +1455,11 @@ export const roleActions: Record<
 
   // Super User Admin role can see all user data - to be used sparingly
   [Role.GENERAL_ADMIN]: {
-    actions: [],
+    actions: [
+      // Personal / unteamed map layers are Super User only. Not inherited
+      // from GENERAL_CREATOR — content creators must upload into a team.
+      Action.CREATE_MAP_ASSET_OUTSIDE_TEAM,
+    ],
     inheritedRoles: [
       // God role
       Role.GENERAL_USER,
@@ -1338,6 +1468,7 @@ export const roleActions: Record<
       Role.PROJECT_ADMIN,
       Role.TEAM_ADMIN,
       Role.TEMPLATE_ADMIN,
+      Role.MAP_ASSET_ADMIN,
     ],
   },
 
@@ -1349,6 +1480,8 @@ export const roleActions: Record<
       [Resource.PROJECT, [Role.PROJECT_CONTRIBUTOR]],
       // Template owned by team -> guest
       [Resource.TEMPLATE, [Role.TEMPLATE_GUEST]],
+      // Map layers owned by team -> guest (read/download)
+      [Resource.MAP_ASSET, [Role.MAP_ASSET_GUEST]],
     ]),
   },
 
@@ -1359,10 +1492,14 @@ export const roleActions: Record<
       Action.VIEW_TEAM_DETAILS,
       Action.VIEW_TEAM_MEMBERS,
       Action.CREATE_PROJECT_IN_TEAM,
+      Action.CREATE_MAP_ASSET_IN_TEAM,
     ],
     virtualRoles: new Map([
       // Template owned by team -> guest
       [Resource.TEMPLATE, [Role.TEMPLATE_GUEST]],
+      // No MAP_ASSET virtual role: same as surveys, this role does not
+      // automatically see existing team layers. The uploader is MAP_ASSET_ADMIN
+      // on layers they created via `createdBy` at request time.
     ]),
   },
 
@@ -1377,6 +1514,7 @@ export const roleActions: Record<
       // resources in that team
       Action.CREATE_PROJECT_IN_TEAM, // resource
       Action.CREATE_TEMPLATE_IN_TEAM, // resource
+      Action.CREATE_MAP_ASSET_IN_TEAM, // resource
 
       // invites
       Action.VIEW_TEAM_INVITES,
@@ -1400,6 +1538,8 @@ export const roleActions: Record<
       [Resource.PROJECT, [Role.PROJECT_MANAGER]],
       // Template owned by team -> manager
       [Resource.TEMPLATE, [Role.TEMPLATE_MANAGER]],
+      // Map layers owned by team -> manager (update details/files, not delete)
+      [Resource.MAP_ASSET, [Role.MAP_ASSET_MANAGER]],
     ]),
   },
 
@@ -1420,7 +1560,21 @@ export const roleActions: Record<
       [Resource.PROJECT, [Role.PROJECT_ADMIN]],
       // Template owned by team -> admin
       [Resource.TEMPLATE, [Role.TEMPLATE_ADMIN]],
+      // Map layers owned by team -> admin
+      [Resource.MAP_ASSET, [Role.MAP_ASSET_ADMIN]],
     ]),
+  },
+
+  [Role.MAP_ASSET_GUEST]: {
+    actions: [Action.READ_MAP_ASSET],
+  },
+  [Role.MAP_ASSET_MANAGER]: {
+    actions: [Action.UPDATE_MAP_ASSET_DETAILS, Action.UPDATE_MAP_ASSET_FILES],
+    inheritedRoles: [Role.MAP_ASSET_GUEST],
+  },
+  [Role.MAP_ASSET_ADMIN]: {
+    actions: [Action.DELETE_MAP_ASSET],
+    inheritedRoles: [Role.MAP_ASSET_MANAGER],
   },
 };
 

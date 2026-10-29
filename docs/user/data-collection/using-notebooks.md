@@ -33,7 +33,7 @@ Below these buttons is the area where existing records are displayed along with 
 
 - The **DETAILS** tab has some details about the {{notebook}} such as the owner and, when set, a short description of the {{notebook}} (longer design intent may appear in design metadata).
 - The **SETTINGS** tab has a number of settings for the {{notebook}} on your device.
-- The **MAP** tab will show an overview map of the records that have been collected if those records include GPS locations.
+- The **MAP** tab shows an overview map of the {{notebook}}, including any collected records that have GPS locations and any downloaded [map layers](../admin/map-layers.md). The map is available even when no records have been collected yet.
 
 The main tab shows the records you have access to on your device:
 

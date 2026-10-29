@@ -15,20 +15,13 @@ import {
 } from '@faims3/forms';
 import {ArrowForwardIos} from '@mui/icons-material';
 import AddIcon from '@mui/icons-material/Add';
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  CardActionArea,
-  CardContent,
-  Stack,
-  Typography,
-} from '@mui/material';
+import {Alert, Box, Button, Stack, Typography} from '@mui/material';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
+import {ListingPage, ListingPageHeader} from '../ui/listing-page';
+import {listingTitleSx, OutlinedListingCard} from '../ui/outlined-listing-card';
 
 /**
  * Offline map management screen.
@@ -107,25 +100,13 @@ export const OfflineMapManager = () => {
   };
 
   return (
-    <Box
-      sx={{
-        mx: 'auto',
-        width: '100%',
-        height: '100%',
-        px: 2,
-        pt: 3,
-      }}
-    >
+    <ListingPage>
       <Stack direction="column" spacing={3}>
-        <Stack spacing={1}>
-          <Typography variant="h4" sx={{flex: 1, minWidth: 0}}>
-            Manage Offline maps
-          </Typography>
+        <ListingPageHeader backLink={ROUTES.OFFLINE_MAPS} title="Map regions" />
 
-          <Typography variant="body2" color="text.secondary">
-            All maps you have downloaded for offline use will appear here.
-          </Typography>
-        </Stack>
+        <Typography variant="body2" color="text.secondary">
+          All maps you have downloaded for offline use will appear here.
+        </Typography>
 
         {/* Show loading error. */}
         {message && <Alert severity="error">{message}</Alert>}
@@ -175,56 +156,29 @@ export const OfflineMapManager = () => {
                   const isDownloading = progress !== null && progress < 1;
 
                   return (
-                    <Card key={tileSet.setName} variant="outlined">
-                      <CardActionArea onClick={() => openMap(tileSet.setName)}>
-                        <CardContent sx={{py: 1}}>
-                          <Stack
-                            direction="row"
-                            spacing={1.5}
-                            sx={{
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                            }}
-                          >
-                            <Stack spacing={0.5} sx={{flex: 1, minWidth: 0}}>
-                              <Typography
-                                variant="h5"
-                                sx={{
-                                  overflowWrap: 'anywhere',
-                                  whiteSpace: 'normal',
-                                  fontWeight: 'bold',
-                                }}
-                              >
-                                {tileSetDisplayName(tileSet)}
-                              </Typography>
+                    <OutlinedListingCard
+                      key={tileSet.setName}
+                      onClick={() => openMap(tileSet.setName)}
+                      trailing={<ArrowForwardIos color="action" />}
+                    >
+                      <Typography variant="h5" sx={listingTitleSx}>
+                        {tileSetDisplayName(tileSet)}
+                      </Typography>
 
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                Size: {formatOfflineMapSizeBytes(tileSet.size)}
-                              </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Size: {formatOfflineMapSizeBytes(tileSet.size)}
+                      </Typography>
 
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                Downloaded on:{' '}
-                                {tileSet.created.toLocaleDateString()}
-                              </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Downloaded on: {tileSet.created.toLocaleDateString()}
+                      </Typography>
 
-                              {isDownloading && (
-                                <Box sx={{mt: 1}}>
-                                  <ProgressBar completion={progress} />
-                                </Box>
-                              )}
-                            </Stack>
-
-                            <ArrowForwardIos color="action" />
-                          </Stack>
-                        </CardContent>
-                      </CardActionArea>
-                    </Card>
+                      {isDownloading && (
+                        <Box sx={{mt: 1}}>
+                          <ProgressBar completion={progress} />
+                        </Box>
+                      )}
+                    </OutlinedListingCard>
                   );
                 })}
               </Stack>
@@ -232,6 +186,6 @@ export const OfflineMapManager = () => {
           )}
         </Stack>
       </Stack>
-    </Box>
+    </ListingPage>
   );
 };

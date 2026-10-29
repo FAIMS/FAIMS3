@@ -14,7 +14,12 @@ type AwsSnapshot = {
   stackName: string;
   account: string;
   smtpCredentialsSecretArn?: string;
-  conductor: {conductorDockerImage: string; name?: string};
+  conductor: {
+    conductorDockerImage: string;
+    ephemeralStorageGiB?: number;
+    name?: string;
+  };
+  spatialCapacity?: {maxCapacity: number};
   authProviders?: {providers: string[]};
   domains: {faims: string};
   secrets: {privateKey: string; publicKey?: string};
@@ -85,6 +90,7 @@ const legacy = {
     provisionSSOUsersPolicy: 'own-team',
     cpu: 1024,
     memory: 2048,
+    ephemeralStorageGiB: 40,
     autoScaling: {
       desiredCapacity: 1,
       minCapacity: 1,
@@ -152,8 +158,10 @@ const legacy = {
     authAttemptLimiterEnabled: false,
   },
   bugMonitoring: {bugsnagKey: 'bugsnag-public-key'},
-  // Legacy/unknown fields the migration must flag, not silently carry over.
+  attachmentStorage: {serviceType: 'S3', prefix: 'custom-layers'},
   spatialCapacity: {maxCapacity: 4},
+  // Legacy/unknown fields the migration must flag, not silently carry over.
+  obsoleteLegacySection: {enabled: true},
 };
 
 function fakeFetcher(): SecretFetcher {
@@ -272,6 +280,9 @@ test('legacy AWS config migrates to core + secrets + aws that all validate', asy
     'ghcr.io/example/faims3-api'
   );
   assert.equal(aws.conductor.name, undefined);
+  assert.equal(aws.conductor.ephemeralStorageGiB, 40);
+  assert.equal(aws.spatialCapacity?.maxCapacity, 4);
+  assert.equal(core.attachmentStorage.prefix, 'custom-layers');
   assert.ok(aws.authProviders);
   assert.deepEqual(aws.authProviders.providers, ['google', 'vanguard']);
   assert.equal(aws.domains.faims, 'faims');
@@ -283,7 +294,7 @@ test('legacy AWS config migrates to core + secrets + aws that all validate', asy
   // Unknown legacy fields are reported as dropped, not carried over.
   assert.ok(
     result.report.some(
-      e => e.level === 'warn' && e.message.includes('spatialCapacity')
+      e => e.level === 'warn' && e.message.includes('obsoleteLegacySection')
     )
   );
 });

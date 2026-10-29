@@ -73,7 +73,7 @@ GeoPackage is **not** streamed end-to-end:
 3. After iteration, **`convertLayeredGeoJsonToGeoPackage`** (`gdal.ts`) runs `ogr2ogr` once per layer (first creates the `.gpkg`, rest append).
 4. The finished `.gpkg` is read from disk and appended to the archive or HTTP response.
 
-**Requirement:** GDAL on PATH (`ogr2ogr`). Included in API Docker image and devcontainer; optional on native dev (`gdal-bin` / Homebrew `gdal`). `./dev.sh` warns if missing.
+**Requirement:** GDAL on PATH (`ogr2ogr`). Included in API Docker image and devcontainer; optional on native dev (`gdal-bin` / Homebrew `gdal`). `./dev.sh` warns if missing. Map-layer ingest's extra tools (Poppler, tippecanoe, pmtiles) are in [Map Layers](MapLayers.md).
 
 ## Full export behaviour
 
@@ -100,4 +100,5 @@ To add a new spatial format: hook into `iterateSpatialFeatures` or extend `appen
 ## Related docs
 
 - [Records CRUD API](RecordsCRUDApi.md) — per-record reads; bulk files use export API
+- [Map Layers](MapLayers.md) — Control Centre uploads, spatial workers, survey listings
 - User-facing overview: `docs/user/data-export/export.md`

@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import {BackupConstruct} from './components/backups';
 import {Construct} from 'constructs';
@@ -8,6 +9,7 @@ import {FaimsConductor} from './components/conductor';
 import {FaimsFrontEnd} from './components/front-end';
 import {FaimsNetworking} from './components/networking';
 import {EC2CouchDB} from './components/couch-db';
+import {FaimsSpatialCapacity} from './components/spatial-capacity';
 import {FaimsTtlCleanup} from './components/ttl-cleanup';
 import {Config} from './config';
 
@@ -112,6 +114,32 @@ export class FaimsInfraStack extends cdk.Stack {
       cookieSecret: cookieSecret,
     });
 
+    // MAP-LAYER OBJECT STORAGE
+    // ========================
+    // Private bucket for original and normalized map-layer files. Couch
+    // stores only metadata (including an S3 resource URI). The
+    // Conductor task role is granted read/write; no static AWS keys.
+    const mapAssetBucket = new s3.Bucket(this, 'map-asset-attachments', {
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      enforceSSL: true,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      // App and Control Centre GET presigned objects from the bucket.
+      cors: [
+        {
+          allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.HEAD],
+          allowedOrigins: ['*'],
+          allowedHeaders: ['*'],
+          exposedHeaders: [
+            'Content-Length',
+            'Content-Type',
+            'Content-Disposition',
+          ],
+          maxAge: 3600,
+        },
+      ],
+    });
+
     // CONDUCTOR
     // =========
 
@@ -134,8 +162,26 @@ export class FaimsInfraStack extends cdk.Stack {
       webUrl: `https://${domains.web}`,
       // Add SMTP configuration
       smtpCredsArn: config.aws.smtpCredentialsSecretArn,
+      mapAssetBucket,
+      mapAssetPrefix: config.core.attachmentStorage.prefix,
       authProviders: config.aws.authProviders,
       localhostWhitelist: config.aws.conductor.localhostWhitelist,
+    });
+
+    // SPATIAL WORKERS
+    // ===============
+    // Tiny capacity manager (desired 1) plus a worker task definition.
+    // The manager RunTasks workers; they exit when idle. Not a worker service.
+    new FaimsSpatialCapacity(this, 'spatial-capacity', {
+      vpc: networking.vpc,
+      cluster: conductor.cluster,
+      securityGroups: [conductor.serviceSecurityGroup],
+      containerImage: conductor.containerImage,
+      environment: conductor.environment,
+      secrets: conductor.secrets,
+      privateKeySecretArn: config.aws.secrets.privateKey,
+      mapAssetBucket,
+      config: config.aws.spatialCapacity,
     });
 
     // TTL CLEANUP (scheduled one-shot; not in-process cron)
@@ -168,6 +214,7 @@ export class FaimsInfraStack extends cdk.Stack {
       faimsHz: hz,
       faimsUsEast1Certificate: cfnCert,
       conductorUrl: conductor.conductorEndpoint,
+      mapAssetBucket,
       coreConfig: config.core,
       webDomainName: domains.web,
       docsDomainName: domains.docs,

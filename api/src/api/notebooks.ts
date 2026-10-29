@@ -42,6 +42,7 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
 import {config} from '../buildconfig';
+import {contextualLayersForProject} from '../couchdb/mapAssets/store';
 import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {deleteAllInvitesForProject} from '../couchdb/invites';
@@ -296,10 +297,12 @@ api.get(
       );
     }
 
+    const layers = await contextualLayersForProject(projectId);
     res.json({
       ...project,
       recordCount: await countRecordsInNotebook(projectId),
       byteCount: await getByteCount(projectId),
+      ...layers,
     } satisfies GetNotebookResponse);
   }
 );

@@ -40,6 +40,17 @@ export const ProvisionSsoUsersPolicySchema = z.enum([
 export const EmailServiceTypeSchema = z.enum(['SMTP', 'MOCK']);
 /** SameSite attribute on notebook-export download cookies. */
 export const DownloadCookieSameSiteSchema = z.enum(['lax', 'strict', 'none']);
+/** Object-store backend for map-layer files (`S3` or `MOCK`). */
+export const AttachmentStorageTypeSchema = z.enum(['S3', 'MOCK']);
+/** Who turns the Couch map-asset queue into spatial workers. */
+export const CapacityProviderTypeSchema = z.enum(['FIXED', 'ECS', 'MOCK']);
+/** ECS RunTask public IP assignment mode. */
+export const EcsAssignPublicIpSchema = z.enum(['ENABLED', 'DISABLED']);
+/** GDAL worker thread setting (`ALL_CPUS` or a positive integer cap). */
+export const GdalNumThreadsJsonSchema = z.union([
+  z.literal('ALL_CPUS'),
+  z.number().int().positive().max(256),
+]);
 
 /** Visual theme name (same values as {@link ThemeSchema}). */
 export type Theme = z.infer<typeof ThemeSchema>;
@@ -69,6 +80,49 @@ export type EmailServiceType = z.infer<typeof EmailServiceTypeSchema>;
 export type DownloadCookieSameSite = z.infer<
   typeof DownloadCookieSameSiteSchema
 >;
+/** Map-layer object-store backend (same values as {@link AttachmentStorageTypeSchema}). */
+export type AttachmentStorageType = z.infer<typeof AttachmentStorageTypeSchema>;
+/** Spatial worker capacity provider (same values as {@link CapacityProviderTypeSchema}). */
+export type CapacityProviderType = z.infer<typeof CapacityProviderTypeSchema>;
+/** ECS public IP assignment mode (same values as {@link EcsAssignPublicIpSchema}). */
+export type EcsAssignPublicIp = z.infer<typeof EcsAssignPublicIpSchema>;
+/** GDAL worker thread setting (same values as {@link GdalNumThreadsJsonSchema}). */
+export type GdalNumThreads = z.infer<typeof GdalNumThreadsJsonSchema>;
+
+/**
+ * Queue depths at which worker count increases from 1.
+ * `3,8,16,32` means 1→2 at 3 jobs, 2→3 at 8, 3→4 at 16, 4→5 at 32.
+ */
+export const DEFAULT_CAPACITY_SCALE_THRESHOLDS_CSV = '3,8,16,32';
+
+/** Parsed form of {@link DEFAULT_CAPACITY_SCALE_THRESHOLDS_CSV}. */
+export const DEFAULT_CAPACITY_SCALE_THRESHOLDS = [3, 8, 16, 32] as const;
+
+/**
+ * How long the oldest unclaimed job may wait before the manager asks for
+ * the first extra worker. `0` disables the staleness trigger.
+ */
+export const DEFAULT_CAPACITY_STARVATION_MS = 5 * 60 * 1000;
+
+/**
+ * After the first staleness scale-up, how long the oldest unclaimed job
+ * must keep waiting before another extra worker. Default is twice the
+ * starvation timeout. `0` keeps only the first extra worker.
+ */
+export const DEFAULT_CAPACITY_SCALE_IN_COOLDOWN_FACTOR = 2;
+
+/** Default cooldown when starvation is also at its default (10 minutes). */
+export const DEFAULT_CAPACITY_SCALE_IN_COOLDOWN_MS =
+  DEFAULT_CAPACITY_SCALE_IN_COOLDOWN_FACTOR * DEFAULT_CAPACITY_STARVATION_MS;
+
+/** Default GDAL thread setting (`ALL_CPUS`). */
+export const DEFAULT_GDAL_NUM_THREADS = 'ALL_CPUS';
+/** Default GDAL raster block cache in megabytes. */
+export const DEFAULT_GDAL_CACHE_MAX_MB = 256;
+/** Default `gdalwarp -wm` working buffer in megabytes. */
+export const DEFAULT_GDAL_WARP_MEMORY_MB = 256;
+/** Default `gdalwarp -multi` flag. */
+export const DEFAULT_GDAL_WARP_MULTI = true;
 
 /**
  * Operational defaults that are genuinely safe to apply when a field is
@@ -131,6 +185,38 @@ export const SHARED_DEFAULTS = {
   couchdbExternalPort: 5984,
   /** Default long-lived token duration chips (days). */
   defaultLongLivedHints: [1, 5, 10, 30, 90, 365] as readonly number[],
+  /** Default map-layer S3 bucket name for local/default configs. */
+  attachmentS3Bucket: 'faims-map-assets',
+  /** Default map-layer S3 key prefix. */
+  attachmentS3Prefix: 'map-assets',
+  /** Default map-layer S3 region. */
+  attachmentS3Region: 'us-east-1',
+  /** Max spatial workers the capacity manager will ask for at once. */
+  capacityMax: 4,
+  /** Queue-depth steps at which spatial worker count increases. */
+  capacityScaleThresholds: DEFAULT_CAPACITY_SCALE_THRESHOLDS,
+  /** CSV form of `capacityScaleThresholds`. */
+  capacityScaleThresholdsCsv: DEFAULT_CAPACITY_SCALE_THRESHOLDS_CSV,
+  /** How often the capacity manager reconciles queue depth (ms). */
+  capacityReconcileMs: 15000,
+  /** Age of oldest unclaimed job before asking for an extra worker (ms). */
+  capacityStarvationMs: DEFAULT_CAPACITY_STARVATION_MS,
+  /** Multiplier for default scale-in cooldown (`2 * starvationMs`). */
+  capacityScaleInCooldownFactor: DEFAULT_CAPACITY_SCALE_IN_COOLDOWN_FACTOR,
+  /** Replica count reported by the FIXED capacity provider. */
+  capacityFixedReplicas: 1,
+  /** Spatial worker idle timeout before exit (ms). */
+  spatialWorkerIdleExitMs: 60000,
+  /** Delay between empty spatial-worker polls (ms). */
+  spatialWorkerPollMs: 5000,
+  /** Default GDAL worker thread setting. */
+  gdalNumThreads: DEFAULT_GDAL_NUM_THREADS,
+  /** Default GDAL raster block cache (MB). */
+  gdalCacheMaxMb: DEFAULT_GDAL_CACHE_MAX_MB,
+  /** Default `gdalwarp -wm` working buffer (MB). */
+  gdalWarpMemoryMb: DEFAULT_GDAL_WARP_MEMORY_MB,
+  /** Default `gdalwarp -multi` flag. */
+  gdalWarpMulti: DEFAULT_GDAL_WARP_MULTI,
 } as const;
 
 /** Default chip list for long-lived token duration; clamped to the max days. */
@@ -314,3 +400,63 @@ export function buildMapConfig(input: {
   }
   return mapConfig;
 }
+
+/** Cooldown used when the caller does not set one: `2 * starvationMs`. */
+export function defaultScaleInCooldownMs(
+  starvationMs: number = DEFAULT_CAPACITY_STARVATION_MS
+): number {
+  return DEFAULT_CAPACITY_SCALE_IN_COOLDOWN_FACTOR * Math.max(0, starvationMs);
+}
+
+/**
+ * Parse `3,8,16,32` into strictly increasing positive integers.
+ * @throws Error when a token is missing, not a positive integer, or not increasing.
+ */
+export function parseCapacityScaleThresholds(csv: string): number[] {
+  const values = csv
+    .split(',')
+    .map(part => part.trim())
+    .filter(part => part.length > 0)
+    .map(part => {
+      if (!/^[0-9]+$/.test(part)) {
+        throw new Error(
+          `CAPACITY_SCALE_THRESHOLDS must be a CSV of positive integers, got "${csv}"`
+        );
+      }
+      return Number(part);
+    });
+  if (values.some(value => !Number.isInteger(value) || value < 1)) {
+    throw new Error(
+      `CAPACITY_SCALE_THRESHOLDS must be a CSV of positive integers, got "${csv}"`
+    );
+  }
+  for (let i = 1; i < values.length; i++) {
+    if (values[i] <= values[i - 1]) {
+      throw new Error(
+        `CAPACITY_SCALE_THRESHOLDS must be strictly increasing, got "${csv}"`
+      );
+    }
+  }
+  return values;
+}
+
+/** Zod superRefine helper: `scaleThresholds` must be strictly increasing. */
+export function validateCapacityScaleThresholds(
+  values: readonly number[],
+  ctx: z.RefinementCtx
+): void {
+  for (let i = 1; i < values.length; i++) {
+    if (values[i] <= values[i - 1]) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'scaleThresholds must be strictly increasing',
+      });
+      return;
+    }
+  }
+}
+
+/** Strictly-increasing positive integer array schema for `scaleThresholds`. */
+export const CapacityScaleThresholdsArraySchema = z
+  .array(z.number().int().positive())
+  .superRefine(validateCapacityScaleThresholds);

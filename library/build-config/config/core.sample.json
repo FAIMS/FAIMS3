@@ -64,6 +64,30 @@
     "attachmentServiceType": "COUCH",
     "attachmentDocumentIdPrefix": "fieldmark"
   },
+  "attachmentStorage": {
+    "serviceType": "S3",
+    "bucket": "faims-map-assets",
+    "prefix": "map-assets",
+    "region": "us-east-1",
+    "endpoint": "http://localhost:9000",
+    "forcePathStyle": true,
+    "accessKeyId": "faimsdev",
+    "secretAccessKey": "faimsdevsecret1"
+  },
+  "spatialCapacity": {
+    "provider": "FIXED",
+    "maxCapacity": 4,
+    "scaleThresholds": [3, 8, 16, 32],
+    "reconcileMs": 15000,
+    "starvationMs": 300000,
+    "fixedReplicas": 1,
+    "idleExitMs": 60000,
+    "pollMs": 5000,
+    "gdalNumThreads": "ALL_CPUS",
+    "gdalCacheMaxMb": 256,
+    "gdalWarpMemoryMb": 256,
+    "gdalWarpMulti": true
+  },
   "migration": {
     "migrateOldDatabases": false,
     "disableMigrateOnStartup": false,
@@ -131,7 +155,9 @@
   },
   "observability": {
     "bugsnagApiKey": "",
-    "commitVersion": "output of `git rev-parse HEAD`"
+    "commitVersion": "output of `git rev-parse HEAD`",
+    "memoryMonitorEnabled": false,
+    "requestLoggingEnabled": true
   },
   "teamAndRolePolicy": {
     "excludedTeamRoles": []

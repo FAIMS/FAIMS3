@@ -11,7 +11,8 @@ features — points, lines, and polygons — directly on base map tiles.
 Use it for delineating site boundaries, recording transect routes,
 outlining excavation areas, or any spatial data that requires geometry
 beyond a single GPS coordinate. It uses OpenLayers for map rendering
-and supports offline tile caching.
+and can show downloaded map layers and cached base-map tiles when you
+are offline.
 
 ## Adding the Field
 
@@ -73,13 +74,22 @@ Annotation, Uncertainty, Conditions, and Copy value to new records — see
 - **Best used on tablets or desktops** where the screen is large
   enough for accurate drawing. Drawing precise polygons on a phone
   screen can be difficult.
-- **Configure offline maps in the {{FAIMS}} app,** not the
-  {{Notebook}} Editor. Downloading maps requires internet for
-  initial tile loading. To prepare for offline use, tap the
-  three-line menu icon (☰) in the {{FAIMS}} app and select
-  **Offline Maps** to download OpenStreetMap tiles for your
-  field area; plan accordingly for remote locations. This
-  feature is experimental.
+- **Prepare overlays and base-map tiles before you go offline.** Neither
+  is configured in the Notebook Editor.
+
+  **Map layers** are georeferenced overlays (site plans, imagery,
+  boundaries) uploaded in the {{Dashboard}} and linked to the
+  {{notebook}}. When a collector activates the {{notebook}}, the app
+  offers those layers for download. See
+  [Map layers](../../admin/map-layers.md).
+
+  **Map regions** are a patch of base-map street tiles. If your
+  deployment shows **Offline Maps** in the app menu (☰), open it and
+  choose **Map regions** to download tiles for your field area. That
+  download needs internet. OpenStreetMap-based deployments cannot
+  download tiles in bulk. Satellite imagery, when offered, is typically
+  online-only.
+
 - **Each field supports only one geometry type and one feature.** If
   you need to record both a point and a polygon for the same feature,
   use two separate Map Input fields. Drawing a new feature replaces

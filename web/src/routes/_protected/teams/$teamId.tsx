@@ -2,6 +2,7 @@
 import {UpdateTeamDialog} from '@/components/dialogs/teams/update-team-dialog';
 import TeamDetails from '@/components/tabs/teams/team-details';
 import TeamInvites from '@/components/tabs/teams/team-invites';
+import TeamMapLayers from '@/components/tabs/teams/team-map-layers';
 import TeamProjects from '@/components/tabs/teams/team-projects';
 import TeamTemplates from '@/components/tabs/teams/team-templates';
 import TeamUsers from '@/components/tabs/teams/team-users';
@@ -16,7 +17,13 @@ import {createFileRoute, useRouter} from '@tanstack/react-router';
 import {Edit} from 'lucide-react';
 import {useMemo, useState} from 'react';
 
-type TabLabel = 'Details' | 'Invites' | 'Projects' | 'Templates' | 'Users';
+type TabLabel =
+  | 'Details'
+  | 'Invites'
+  | 'Projects'
+  | 'Map layers'
+  | 'Templates'
+  | 'Users';
 
 export const Route = createFileRoute('/_protected/teams/$teamId')({
   component: RouteComponent,
@@ -76,7 +83,12 @@ function RouteComponent() {
     resourceId: teamId,
   });
 
-  const tabs: {label?: string; id: TabLabel; Component: any}[] = [];
+  const tabs: {
+    label?: string;
+    id: TabLabel;
+    Component: any;
+    testId?: string;
+  }[] = [];
 
   // details?
   if (canSeeTeamDetails) {
@@ -90,6 +102,13 @@ function RouteComponent() {
       id: 'Projects',
       label: config.notebookNamePluralCapitalized,
       Component: TeamProjects,
+    });
+  }
+  if (canSeeTeamDetails) {
+    tabs.push({
+      id: 'Map layers',
+      Component: TeamMapLayers,
+      testId: 'web-team-tab-map-layers',
     });
   }
   if (canViewTeamTemplates) {
@@ -111,8 +130,8 @@ function RouteComponent() {
     >
       <div className="flex justify-start items-center gap-4">
         <TabsList>
-          {tabs.map(({id, label}) => (
-            <TabsTrigger key={id} value={id}>
+          {tabs.map(({id, label, testId}) => (
+            <TabsTrigger key={id} value={id} data-testid={testId}>
               {label ?? id}
             </TabsTrigger>
           ))}

@@ -84,15 +84,15 @@ Step-by-step rollout (Couch migrate, validation, deleting `metadata-*` DBs, when
 
 ## API surfaces
 
-| Operation            | Route                                    | Body                                                                                           |
-| -------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Get full survey      | `GET /api/notebooks/:id`                 | Full `ProjectDocument` (+ optional `recordCount`)                                              |
-| List surveys         | `GET /api/notebooks`                     | Lean `ProjectListItem` (no `uiSpecification`). Pass `includeByteCount=true` for storage sizes. |
-| Device directory     | `GET /api/directory`                     | Cheap alias of the notebooks list (no `byteCount`)                                             |
-| Update title / blurb | `PUT /api/notebooks/:id`                 | `{ name?, description?, disableQuickShare? }` partial; `UPDATE_PROJECT_DETAILS`                |
-| Replace design       | `PUT /api/notebooks/:id/uiSpecification` | Loose JSON; server runs `migrateNotebook` + strict validation; `UPDATE_PROJECT_UISPEC`         |
-| Create from scratch  | `POST /api/notebooks`                    | `{ name, description?, uiSpecification, teamId? }`                                             |
-| Create from template | `POST /api/notebooks`                    | `{ name, description?, template_id, teamId? }`                                                 |
+| Operation            | Route                                    | Body                                                                                                                                                                 |
+| -------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Get full survey      | `GET /api/notebooks/:id`                 | Full `ProjectDocument` (+ optional `recordCount`)                                                                                                                    |
+| List surveys         | `GET /api/notebooks`                     | Lean `ProjectListItem` (no `uiSpecification`). Pass `includeByteCount=true` for storage sizes.                                                                       |
+| Device directory     | `GET /api/directory`                     | Cheap alias of the notebooks list (no `byteCount`). `contextualLayers` is the ready keep-set; see [Map Layers](./MapLayers.md#survey-listings-and-on-device-copies). |
+| Update title / blurb | `PUT /api/notebooks/:id`                 | `{ name?, description?, disableQuickShare? }` partial; `UPDATE_PROJECT_DETAILS`                                                                                      |
+| Replace design       | `PUT /api/notebooks/:id/uiSpecification` | Loose JSON; server runs `migrateNotebook` + strict validation; `UPDATE_PROJECT_UISPEC`                                                                               |
+| Create from scratch  | `POST /api/notebooks`                    | `{ name, description?, uiSpecification, teamId? }`                                                                                                                   |
+| Create from template | `POST /api/notebooks`                    | `{ name, description?, template_id, teamId? }`                                                                                                                       |
 
 Templates mirror this: `PUT /api/templates/:id` for optional `name` / `description`, `PUT /api/templates/:id/uiSpecification` for the design bundle. **Create:** `POST /api/templates` with `{ name, description?, uiSpecification, teamId?, isPublic? }`.
 

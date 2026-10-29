@@ -20,6 +20,7 @@ import {Link, useLocation} from '@tanstack/react-router';
 import {
   ArchiveRestore,
   House,
+  Layers,
   LayoutTemplate,
   LetterText,
   Users,
@@ -43,6 +44,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const canSeeProjects = useIsAuthorisedTo({action: Action.LIST_PROJECTS});
   const canSeeTemplates = useIsAuthorisedTo({action: Action.LIST_TEMPLATES});
   const canSeeUsers = useIsAuthorisedTo({action: Action.VIEW_USER_LIST});
+  const canSeeMapLayers = useIsAuthorisedTo({action: Action.LIST_MAP_ASSETS});
 
   // currently anyone can list teams - but it is filtered per resource
   const canSeeTeams = true;
@@ -98,6 +100,16 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       url: '/users',
       icon: Users,
       testId: 'web-nav-users',
+    });
+  }
+
+  if (canSeeMapLayers) {
+    bottomSectionNavItems.push({
+      title: 'Map layers',
+      url: '/map-layers',
+      icon: Layers,
+      testId: 'web-nav-map-layers',
+      isActive: pathname.startsWith('/map-layers'),
     });
   }
 

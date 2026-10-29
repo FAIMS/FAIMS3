@@ -3,35 +3,26 @@ import * as path from 'path';
 import {z} from 'zod';
 
 import {
+  AttachmentStorageBuildConfigSchema,
   BuildConfigCoreObjectSchema,
+  CapacityScaleThresholdsArraySchema,
+  GdalNumThreadsJsonSchema,
   SHARED_DEFAULTS,
   parseBuildConfig,
 } from '@faims3/build-config';
 
 // The shared deployment config (bugsnag key, maps/offline maps, address
 // autosuggest, theme/notebook branding, support links, security, SMTP, auth
-// provider definitions, conductor instance name/description/migrate flags)
-// is the same `core.json` every platform uses, parsed with build-config's
-// full `parseBuildConfig` (shared invariants included — domain endpoint
-// derivation, name fallbacks, clamps). Only the AWS-specific config
-// (`aws.json`) remains below. There is deliberately no secret *value*
-// handling here: `aws.json` carries Secrets Manager ARNs, and secret
-// values move only inside AWS (SM -> ECS task / SM -> API process).
+// provider definitions, attachment storage prefix, conductor instance
+// name/description/migrate flags) is the same `core.json` every platform
+// uses, parsed with build-config's full `parseBuildConfig` (shared
+// invariants included — domain endpoint derivation, name fallbacks, clamps).
+// Only the AWS-specific config (`aws.json`) remains below. There is
+// deliberately no secret *value* handling here: `aws.json` carries Secrets
+// Manager ARNs, and secret values move only inside AWS (SM -> ECS task / SM
+// -> API process).
 
-// For each provider we should have these secrets in the secrets manager
-// const AuthProviderSecretSchema = z.object({
-//   clientID: z.string(),
-//   clientSecret: z.string(),
-// });
-
-// The auth provider *definitions* (google/oidc/saml config objects) are now
-// validated by @faims3/build-config's AuthProviderConfigMap in core.authProviders.
-// The AWS-specific parts (which providers are enabled + the
-// Secrets Manager ARN) are in AuthProvidersAwsConfigSchema above.
-
-// SMTP general config (emailServiceType, from/reply-to, etc.) is now
-// core.email (build-config). The AWS-only SMTP credentials secret ARN is in
-// the aws slot below (aws.smtpCredentialsSecretArn).
+export const AttachmentStorageConfigSchema = AttachmentStorageBuildConfigSchema;
 
 const MonitoringConfigSchema = z.object({
   cpu: z
@@ -148,6 +139,12 @@ export const ConductorConfigSchema = z
     cpu: z.number().int().positive(),
     /** The amount of memory (in MiB) for the Fargate task */
     memory: z.number().int().positive(),
+    /**
+     * Fargate ephemeral storage (GiB) for the API task. Map-layer GDAL
+     * scratch lives on the spatial worker task, so the API only needs
+     * room to stage an upload before it is copied to S3. AWS allows 21–200.
+     */
+    ephemeralStorageGiB: z.number().int().min(21).max(200).default(21),
     /** Auto scaling configuration for the Conductor service */
     autoScaling: z.object({
       /** The desired number of tasks to run (general stable target) */
@@ -190,9 +187,6 @@ export const AuthProvidersAwsConfigSchema = z.object({
 export type AuthProviderConfigMap = z.infer<
   typeof BuildConfigCoreObjectSchema
 >['authProviders'];
-
-// web.title (management website title) is now core.branding.websiteTitle; the
-// docs site has no config (core has no docs group).
 
 // Define the schema for the backup configuration
 const BackupConfigSchema = z
@@ -258,12 +252,101 @@ const TtlCleanupConfigSchema = z.object({
   memory: z.number().int().positive().default(512),
 });
 
-// support links (supportEmail/privacyPolicy/contactUrl/docsUrl) are now
-// core.support, and the theme/notebook/app/branding + offline-maps + autosuggest
-// + force-remote-deletion / delete-on-deactivation / excluded-team-roles /
-// enable-plans / status-tab UI settings are now in core (build-config's
-// branding / notebookAndRecordUX / maps / sync / teamAndRolePolicy /
-// webDesignerLimits groups). The bubble theme is retired.
+/**
+ * Capacity manager (always-on, desired 1) plus a spatial-worker task
+ * definition. The manager starts workers with RunTask; workers exit when
+ * idle, so there is no worker ECS service to replace them.
+ */
+export const SpatialCapacityConfigSchema = z.object({
+  /** Max drain workers the manager may start at once. */
+  maxCapacity: z.number().int().positive().default(SHARED_DEFAULTS.capacityMax),
+  /**
+   * Queue depths at which worker count increases from 1.
+   * `[3, 8, 16, 32]` means 1→2 at 3 jobs, 2→3 at 8, 3→4 at 16, 4→5 at 32.
+   * Always capped by maxCapacity. Passed to the manager as CSV.
+   */
+  scaleThresholds: CapacityScaleThresholdsArraySchema.default([
+    ...SHARED_DEFAULTS.capacityScaleThresholds,
+  ]),
+  /** How often the manager reads the Couch queue (ms). */
+  reconcileMs: z
+    .number()
+    .int()
+    .positive()
+    .default(SHARED_DEFAULTS.capacityReconcileMs),
+  /**
+   * How long the oldest unclaimed job may wait before the manager asks
+   * for the first extra worker (still capped by maxCapacity and job
+   * count). `0` disables. Default 5 minutes.
+   */
+  starvationMs: z
+    .number()
+    .int()
+    .nonnegative()
+    .default(SHARED_DEFAULTS.capacityStarvationMs),
+  /**
+   * After the first staleness scale-up, how long the oldest unclaimed
+   * job must keep waiting before another extra worker. Omit to use
+   * `2 * starvationMs`. `0` keeps only the first extra.
+   */
+  scaleInCooldownMs: z.number().int().nonnegative().optional(),
+  /**
+   * Worker exits after this many ms with no job. Must be > 0 on ECS or
+   * tasks would run until the next deploy.
+   */
+  idleExitMs: z
+    .number()
+    .int()
+    .positive()
+    .default(SHARED_DEFAULTS.spatialWorkerIdleExitMs),
+  /** Fargate CPU units for one spatial worker. */
+  cpu: z.number().int().positive().default(1024),
+  /** Fargate memory (MiB) for one spatial worker. */
+  memory: z.number().int().positive().default(2048),
+  /**
+   * Worker ephemeral disk (GiB) for the original download plus GDAL scratch.
+   * AWS allows 21–200. Default 80.
+   */
+  ephemeralStorageGiB: z.number().int().min(21).max(200).default(80),
+  /** Fargate CPU units for the capacity manager. */
+  managerCpu: z.number().int().positive().default(256),
+  /** Fargate memory (MiB) for the capacity manager. */
+  managerMemory: z.number().int().positive().default(512),
+  /**
+   * GDAL worker threads (`GDAL_NUM_THREADS`). `ALL_CPUS` uses the task
+   * vCPU count. A positive integer caps it. Default `ALL_CPUS`.
+   */
+  gdalNumThreads: GdalNumThreadsJsonSchema.default(
+    SHARED_DEFAULTS.gdalNumThreads
+  ),
+  /**
+   * Raster block cache in megabytes (`GDAL_CACHEMAX`). Default 256 fits
+   * the 2 GiB worker. Raise toward 1024–2048 on 16–32 GiB tasks.
+   */
+  gdalCacheMaxMb: z
+    .number()
+    .int()
+    .positive()
+    .max(65536)
+    .default(SHARED_DEFAULTS.gdalCacheMaxMb),
+  /**
+   * `gdalwarp -wm` working buffer in megabytes. Shared across warp
+   * threads — raise with `gdalNumThreads`. Default 256.
+   */
+  gdalWarpMemoryMb: z
+    .number()
+    .int()
+    .positive()
+    .max(65536)
+    .default(SHARED_DEFAULTS.gdalWarpMemoryMb),
+  /** `gdalwarp -multi`: overlap I/O with compute. Default true. */
+  gdalWarpMulti: z.boolean().default(SHARED_DEFAULTS.gdalWarpMulti),
+  /**
+   * Cap tippecanoe threads (`TIPPECANOE_MAX_THREADS`). Omit to use all
+   * CPUs (tippecanoe's default).
+   */
+  tippecanoeMaxThreads: z.number().int().positive().max(256).optional(),
+});
 
 /** Defaults shared with Conductor env wiring (`EXPORT_RATE_LIMITER_*`). */
 export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS =
@@ -271,19 +354,16 @@ export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS =
 export const DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW =
   SHARED_DEFAULTS.exportRateLimiterPerWindow;
 
-// Security parameters (max long-lived token duration, HTTP rate limiter,
-// attempt limiter, export rate limiter) are now core (build-config's limits
-// + authTokens groups).
-
 /**
  * The AWS-specific extension of the shared core config.
  * Everything genuinely about deploying to AWS: the CloudFormation stack
  * identity, the hosted zone / certificates, account/region, the Secrets
  * Manager key + SMTP-credentials ARNs, the CouchDB EC2/EBS sizing, backups,
  * TTL cleanup, the Conductor Fargate task (docker image, CPU/memory,
- * autoscaling, localhost whitelist), the Route53 subdomain prefixes, and the
- * AWS bits of auth providers (enabled list + secret ARN). The shared
- * deployment config lives in `core`, validated by @faims3/build-config.
+ * ephemeral storage, autoscaling, localhost whitelist), the spatial worker
+ * Fargate pool, the Route53 subdomain prefixes, and the AWS bits of auth
+ * providers (enabled list + secret ARN). The shared deployment config lives
+ * in `core`, validated by @faims3/build-config.
  */
 export const AwsConfigSchema = z.object({
   /** The name of the stack to deploy to cloudformation. Note that changing
@@ -335,6 +415,26 @@ export const AwsConfigSchema = z.object({
   }),
   /** Conductor service configuration (Fargate/docker/autoscaling) */
   conductor: ConductorConfigSchema,
+  /**
+   * Spatial worker pool. The capacity manager is a tiny service (desired 1).
+   * Workers are a task definition only — RunTask, then idle exit.
+   */
+  spatialCapacity: SpatialCapacityConfigSchema.optional().default({
+    maxCapacity: SHARED_DEFAULTS.capacityMax,
+    scaleThresholds: [...SHARED_DEFAULTS.capacityScaleThresholds],
+    reconcileMs: SHARED_DEFAULTS.capacityReconcileMs,
+    starvationMs: SHARED_DEFAULTS.capacityStarvationMs,
+    idleExitMs: SHARED_DEFAULTS.spatialWorkerIdleExitMs,
+    cpu: 1024,
+    memory: 2048,
+    ephemeralStorageGiB: 80,
+    managerCpu: 256,
+    managerMemory: 512,
+    gdalNumThreads: SHARED_DEFAULTS.gdalNumThreads,
+    gdalCacheMaxMb: SHARED_DEFAULTS.gdalCacheMaxMb,
+    gdalWarpMemoryMb: SHARED_DEFAULTS.gdalWarpMemoryMb,
+    gdalWarpMulti: SHARED_DEFAULTS.gdalWarpMulti,
+  }),
   /** Domain configuration for all services (Route53 subdomain prefixes) */
   domains: DomainsConfigSchema,
   /** Social sign-in providers: which are enabled + the secret ARN. */
@@ -367,8 +467,12 @@ export type BackupConfig = z.infer<typeof BackupConfigSchema>;
 export type MonitoringConfig = z.infer<typeof MonitoringConfigSchema>;
 export type ConductorConfig = z.infer<typeof ConductorConfigSchema>;
 export type TtlCleanupConfig = z.infer<typeof TtlCleanupConfigSchema>;
+export type SpatialCapacityConfig = z.infer<typeof SpatialCapacityConfigSchema>;
 export type DomainsConfig = z.infer<typeof DomainsConfigSchema>;
 export type AuthProvidersConfig = z.infer<typeof AuthProvidersAwsConfigSchema>;
+export type AttachmentStorageConfig = z.infer<
+  typeof AttachmentStorageConfigSchema
+>;
 
 /**
  * Validate a parsed core + aws pair (composing them through ConfigSchema,

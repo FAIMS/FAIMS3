@@ -9,6 +9,9 @@ export default {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
+      height: {
+        'map-layer-preview': 'var(--map-layer-preview-height)',
+      },
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
@@ -52,6 +55,11 @@ export default {
           DEFAULT: 'hsl(var(--warning))',
           foreground: 'hsl(var(--warning-foreground))',
           background: 'hsl(var(--warning-background))',
+        },
+        notice: {
+          DEFAULT: 'hsl(var(--notice))',
+          foreground: 'hsl(var(--notice-foreground))',
+          background: 'hsl(var(--notice-background))',
         },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

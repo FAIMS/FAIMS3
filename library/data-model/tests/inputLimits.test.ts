@@ -9,11 +9,30 @@ import {
   CreateNotebookFromTemplateSchema,
   estimateJsonBytes,
   INPUT_LIMITS,
+  MAP_ASSET_UPLOAD_BUSY_MESSAGE,
+  MAP_ASSET_UPLOAD_FREE_DISK_BYTES,
+  mapAssetExtractMaxLabel,
+  mapAssetExtractTooLargeMessage,
+  mapAssetUploadMaxLabel,
+  mapAssetUploadTooLargeMessage,
+  ROOT_DESCRIPTION_MAX_LENGTH,
   PostChangePasswordInputSchema,
   PostCreateGlobalInviteInputSchema,
   PostCreateResourceInviteInputSchema,
+  MapAssetDetailsSchema,
+  MapAssetStatusSchema,
+  MapAssetProcessingStageSchema,
+  ExistingMapAssetSchema,
+  GetMapAssetDownloadUrlResponseSchema,
+  isMapAssetInProgress,
+  isMapAssetReadyToLink,
+  mapAssetLinkCount,
+  mapAssetProcessingStageLabel,
+  mapAssetProcessingStatusText,
+  mapAssetSnapshotMs,
   PostCreateTeamInputSchema,
   PostCreateTemplateInputSchema,
+  PostMapAssetLinkInputSchema,
   PostLoginInputSchema,
   PostRecordStatusInputSchema,
   PostRegisterInputSchema,
@@ -31,6 +50,23 @@ describe('input limit constants', () => {
     expect(INPUT_LIMITS.EMAIL_MAX_LENGTH).toBe(254);
     expect(INPUT_LIMITS.PASSWORD_MAX_LENGTH).toBeGreaterThanOrEqual(64);
     expect(INPUT_LIMITS.UI_SPEC_MAX_BYTES).toBeGreaterThan(1024 * 1024);
+    expect(INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_BYTES).toBe(
+      2 * 1024 * 1024 * 1024
+    );
+    expect(INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_FILES).toBe(8);
+    expect(INPUT_LIMITS.MAP_ASSET_EXTRACT_MAX_BYTES).toBe(
+      4 * INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_BYTES
+    );
+    expect(mapAssetUploadMaxLabel()).toBe('2 GB');
+    expect(mapAssetUploadTooLargeMessage()).toBe('Files must be at most 2 GB.');
+    expect(mapAssetExtractMaxLabel()).toBe('8 GB');
+    expect(mapAssetExtractTooLargeMessage()).toBe(
+      'Unzipped map layer must be at most 8 GB.'
+    );
+    expect(MAP_ASSET_UPLOAD_FREE_DISK_BYTES).toBe(
+      3 * INPUT_LIMITS.MAP_ASSET_UPLOAD_MAX_BYTES
+    );
+    expect(MAP_ASSET_UPLOAD_BUSY_MESSAGE).toMatch(/server is busy/i);
   });
 });
 
@@ -226,6 +262,168 @@ describe('team schemas', () => {
         description: longString(INPUT_LIMITS.TEAM_DESCRIPTION_MAX_LENGTH + 1),
       }).success
     ).toBe(false);
+  });
+});
+
+describe('map layer schemas', () => {
+  it('rejects oversized layer name and description', () => {
+    expect(
+      MapAssetDetailsSchema.safeParse({
+        name: longString(INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH + 1),
+        description: '',
+      }).success
+    ).toBe(false);
+    expect(
+      MapAssetDetailsSchema.safeParse({
+        name: 'Site boundary',
+        description: longString(ROOT_DESCRIPTION_MAX_LENGTH + 1),
+      }).success
+    ).toBe(false);
+    expect(
+      MapAssetDetailsSchema.safeParse({
+        name: 'Site boundary',
+        description: 'Optional layer notes',
+      }).success
+    ).toBe(true);
+  });
+
+  it('accepts pending and processing statuses as in-progress', () => {
+    expect(MapAssetStatusSchema.safeParse('pending').success).toBe(true);
+    expect(MapAssetStatusSchema.safeParse('processing').success).toBe(true);
+    expect(isMapAssetInProgress('pending')).toBe(true);
+    expect(isMapAssetInProgress('processing')).toBe(true);
+    expect(isMapAssetInProgress('ready')).toBe(false);
+    expect(isMapAssetInProgress('failed')).toBe(false);
+    expect(isMapAssetReadyToLink({status: 'ready', linkCount: 0})).toBe(true);
+    expect(isMapAssetReadyToLink({status: 'ready'})).toBe(true);
+    expect(isMapAssetReadyToLink({status: 'ready', linkCount: 2})).toBe(false);
+    expect(isMapAssetReadyToLink({status: 'processing', linkCount: 0})).toBe(
+      false
+    );
+    expect(mapAssetLinkCount({linkCount: 3})).toBe(3);
+    expect(mapAssetLinkCount({})).toBe(0);
+  });
+
+  it('maps processing stages to user-facing messages', () => {
+    expect(MapAssetProcessingStageSchema.safeParse('downloading').success).toBe(
+      true
+    );
+    expect(mapAssetProcessingStageLabel('downloading')).toBe(
+      'Downloading data'
+    );
+    expect(mapAssetProcessingStageLabel('interpreting-crs')).toBe(
+      'Interpreting CRS'
+    );
+    expect(mapAssetProcessingStageLabel('converting-geometries')).toBe(
+      'Converting geometries'
+    );
+    expect(mapAssetProcessingStageLabel(undefined)).toBeUndefined();
+    expect(
+      MapAssetProcessingStageSchema.safeParse('extracting-archive').success
+    ).toBe(true);
+    expect(mapAssetProcessingStageLabel('extracting-archive')).toBe(
+      'Extracting archive'
+    );
+    expect(
+      MapAssetProcessingStageSchema.safeParse('flattening-geojson').success
+    ).toBe(true);
+    expect(mapAssetProcessingStageLabel('flattening-geojson')).toBe(
+      'Flattening nested collections'
+    );
+    expect(
+      mapAssetProcessingStatusText({processingStage: 'flattening-geojson'})
+    ).toBe('Flattening nested collections');
+    expect(
+      mapAssetProcessingStatusText({
+        processingStage: 'flattening-geojson',
+        processingProgress: {phase: 'Flattening', percent: 45},
+      })
+    ).toBe('Flattening nested collections — Flattening 45%');
+    expect(
+      mapAssetProcessingStatusText({processingStage: 'tiling-vectors'})
+    ).toBe('Building vector tiles');
+    expect(
+      mapAssetProcessingStatusText({
+        processingStage: 'tiling-vectors',
+        processingProgress: {phase: 'Reordering geometry', percent: 45.2},
+      })
+    ).toBe('Building vector tiles — Reordering geometry 45%');
+    expect(mapAssetProcessingStatusText({})).toBeUndefined();
+    expect(mapAssetSnapshotMs({updatedAt: 10})).toBe(10);
+    expect(mapAssetSnapshotMs({updatedAt: 10, processingHeartbeatMs: 20})).toBe(
+      20
+    );
+    expect(mapAssetSnapshotMs({updatedAt: 30, processingHeartbeatMs: 20})).toBe(
+      30
+    );
+  });
+
+  it('accepts storedAttachments object-store metadata on an existing asset', () => {
+    expect(
+      ExistingMapAssetSchema.safeParse({
+        _id: 'asset-1',
+        _rev: '1-abc',
+        docType: 'asset',
+        name: 'Site boundary',
+        description: '',
+        createdBy: 'user-1',
+        originalFilename: 'layer.geojson',
+        byteSize: 12,
+        status: 'ready',
+        kind: 'vector-tiles',
+        defaultStyle: {
+          stroke: '#1565c0',
+          fill: '#1565c040',
+          lineWidth: 2,
+          pointSize: 6,
+          opacity: 0.85,
+        },
+        createdAt: 1,
+        updatedAt: 1,
+        storedAttachments: {
+          original: {
+            provider: 's3',
+            resourceUri:
+              's3://us-east-1/faims-map-assets/map-assets/asset-1/original',
+            contentType: 'application/octet-stream',
+            byteSize: 2,
+            endpoint: 'http://localhost:9000',
+          },
+          normalized: {
+            provider: 's3',
+            resourceUri:
+              's3://us-east-1/faims-map-assets/map-assets/asset-1/normalized',
+            contentType: 'application/vnd.pmtiles',
+            byteSize: 12,
+          },
+        },
+      }).success
+    ).toBe(true);
+  });
+
+  it('accepts a map-layer download-url grant', () => {
+    expect(
+      GetMapAssetDownloadUrlResponseSchema.safeParse({
+        url: 'https://s3.example/object?X-Amz-Signature=abc',
+        mediaType: 'application/vnd.pmtiles',
+        filename: 'Site boundary.pmtiles',
+        byteSize: 12,
+        expiresInSeconds: 3600,
+      }).success
+    ).toBe(true);
+  });
+
+  it('rejects an oversized link project id', () => {
+    expect(
+      PostMapAssetLinkInputSchema.safeParse({
+        projectId: longString(INPUT_LIMITS.ID_MAX_LENGTH + 1),
+      }).success
+    ).toBe(false);
+    expect(
+      PostMapAssetLinkInputSchema.safeParse({
+        projectId: 'notebook-1',
+      }).success
+    ).toBe(true);
   });
 });
 

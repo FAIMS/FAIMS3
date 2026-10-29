@@ -53,6 +53,7 @@ import {
   registerDataDbAtCurrentVersion,
   unregisterDataDbMigration,
 } from '.';
+import {attachContextualLayers} from './mapAssets/store';
 import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {userCanDo} from '../middleware';
@@ -267,7 +268,7 @@ export const getUserProjectsListing = async (
     });
 
   if (!includeByteCount) {
-    return userProjects;
+    return attachContextualLayers(userProjects);
   }
 
   const detailed: APINotebookList[] = [];
@@ -282,7 +283,7 @@ export const getUserProjectsListing = async (
       ))
     );
   }
-  return detailed;
+  return attachContextualLayers(detailed);
 };
 
 /**

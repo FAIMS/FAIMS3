@@ -428,6 +428,7 @@ export async function migrateOldAwsConfig(
   const securityOld = rec(old.security);
   const domainsOld = rec(old.domains);
   const mobileAppsOld = rec(old.mobileApps);
+  const attachmentStorageOld = rec(old.attachmentStorage);
 
   // ---- endpoints + domains ---------------------------------------------
   // The CDK derives concrete URLs from aws.domains; the app/web/api builds
@@ -622,6 +623,20 @@ export async function migrateOldAwsConfig(
   }
   if (bool(ui.enablePlansInDesigner) !== undefined) {
     core.webDesignerLimits = {enablePlansInDesigner: ui.enablePlansInDesigner};
+  }
+
+  // ---- attachment storage (map-layer object store) ------------------------
+  if (isRec(old.attachmentStorage)) {
+    core.attachmentStorage = prune({
+      serviceType: str(attachmentStorageOld.serviceType),
+      prefix: str(attachmentStorageOld.prefix),
+    });
+    warnUnknown(
+      report,
+      attachmentStorageOld,
+      ['serviceType', 'prefix'],
+      'attachmentStorage'
+    );
   }
 
   // ---- auth (non-provider) ----------------------------------------------
@@ -855,6 +870,7 @@ export async function migrateOldAwsConfig(
       'provisionSSOUsersPolicy',
       'cpu',
       'memory',
+      'ephemeralStorageGiB',
       'autoScaling',
       'localhostWhitelist',
       'disableMigrateOnStartup',
@@ -896,11 +912,15 @@ export async function migrateOldAwsConfig(
     couch: isRec(old.couch) ? old.couch : undefined,
     backup: isRec(old.backup) ? old.backup : undefined,
     ttlCleanup: isRec(old.ttlCleanup) ? old.ttlCleanup : undefined,
+    spatialCapacity: isRec(old.spatialCapacity)
+      ? old.spatialCapacity
+      : undefined,
     conductor: prune({
       conductorDockerImage: str(conductorOld.conductorDockerImage),
       conductorDockerImageTag: str(conductorOld.conductorDockerImageTag),
       cpu: num(conductorOld.cpu),
       memory: num(conductorOld.memory),
+      ephemeralStorageGiB: num(conductorOld.ephemeralStorageGiB),
       autoScaling: isRec(conductorOld.autoScaling)
         ? conductorOld.autoScaling
         : undefined,
@@ -939,11 +959,13 @@ export async function migrateOldAwsConfig(
       'couch',
       'backup',
       'ttlCleanup',
+      'spatialCapacity',
       'conductor',
       'domains',
       'mobileApps',
       'web',
       'docs',
+      'attachmentStorage',
       'smtp',
       'authProviders',
       'security',

@@ -33,6 +33,7 @@ import {NotificationProvider} from './context/popup';
 import {InitialiseGate, StateProvider} from './context/store';
 import {AuthReturn} from './gui/components/authentication/auth_return';
 import {DownloadOfflineMap} from './gui/components/maps/DownloadOfflineMap';
+import {ContextualLayerPrompt} from './gui/components/maps/ContextualLayerPrompt';
 import {NotebookOfflineMapPrompt} from './gui/components/maps/OfflineMapPrompt';
 import MainLayout from './gui/layout';
 import NotFound404 from './gui/pages/404';
@@ -49,7 +50,10 @@ import {VersionWarning} from './gui/components/VersionWarning';
 import {registerAppRouter} from './appRouter';
 import {queryClient} from './queryClient';
 import {useProjectRouteGuard} from './utils/useProjectRouteGuard';
+import {ContextualLayerManager} from './gui/components/maps/ContextualLayerManager';
+import {ContextualLayerPreview} from './gui/components/maps/ContextualLayerPreview';
 import {OfflineMapManager} from './gui/components/maps/OfflineMapManager';
+import {OfflineMapsHome} from './gui/components/maps/OfflineMapsHome';
 import {EditOfflineMap} from './gui/components/maps/EditOfflineMap';
 
 // =============================================================================
@@ -95,6 +99,7 @@ const RootLayout = () => {
       {/* Main application layout (header, sidebar, etc.) */}
       <MainLayout>
         <NotebookOfflineMapPrompt />
+        <ContextualLayerPrompt />
         {/* Nested route content renders here */}
         <Outlet />
       </MainLayout>
@@ -190,7 +195,19 @@ const routes: RouteObject[] = [
         ? [
             {
               path: ROUTES.OFFLINE_MAPS,
+              element: <OfflineMapsHome />,
+            },
+            {
+              path: ROUTES.OFFLINE_MAP_REGIONS,
               element: <OfflineMapManager />,
+            },
+            {
+              path: ROUTES.OFFLINE_MAP_LAYERS,
+              element: <ContextualLayerManager />,
+            },
+            {
+              path: `${ROUTES.OFFLINE_MAP_LAYERS}/:assetId`,
+              element: <ContextualLayerPreview />,
             },
             {
               path: ROUTES.OFFLINE_MAP_NEW,

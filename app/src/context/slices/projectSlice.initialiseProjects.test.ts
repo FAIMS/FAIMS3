@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+  DEFAULT_MAP_ASSET_STYLE,
   ProjectStatus,
 } from '@faims3/data-model';
 import {configureStore} from '@reduxjs/toolkit';
@@ -30,6 +31,23 @@ vi.mock('../../logging', () => ({
   logError: vi.fn(),
 }));
 
+const contextualLayerStore = vi.hoisted(() => ({
+  getSeenContextualLayersHash: vi.fn(),
+  retainListedContextualLayers: vi.fn(),
+  notifyContextualLayersChanged: vi.fn(),
+  releaseContextualLayersForProject: vi.fn(),
+}));
+
+vi.mock('../../gui/components/maps/contextualLayerStore', () => ({
+  getSeenContextualLayersHash: contextualLayerStore.getSeenContextualLayersHash,
+  retainListedContextualLayers:
+    contextualLayerStore.retainListedContextualLayers,
+  notifyContextualLayersChanged:
+    contextualLayerStore.notifyContextualLayersChanged,
+  releaseContextualLayersForProject:
+    contextualLayerStore.releaseContextualLayersForProject,
+}));
+
 import {reportNotebookSchemaCompatibility} from '../../logging';
 import {compiledSpecService} from './helpers/compiledSpecService';
 import projectsReducer, {
@@ -37,6 +55,7 @@ import projectsReducer, {
   initialiseProjects,
   initialProjectState,
   reassessSchemaCompatibility,
+  selectPendingContextualLayerPrompt,
   type ActivatedProject,
   type ListedProject,
   type ProjectsState,
@@ -191,16 +210,28 @@ function makeStore({
   });
 }
 
+const sampleLayer = {
+  id: 'asset-ready',
+  name: 'Site boundaries',
+  kind: 'vector-tiles',
+  byteSize: 2048,
+  contentHash: 'layer-content-a',
+  extent: [0, 0, 1, 1],
+  defaultStyle: DEFAULT_MAP_ASSET_STYLE,
+};
+
 function stubFetch({
   directory = [directoryItem()],
   notebookUiSpecification = currentDefinition(),
   notebookUiSpecProperties = uiSpecProperties(),
   notebookOk = true,
+  notebookExtras = {},
 }: {
   directory?: Record<string, unknown>[];
   notebookUiSpecification?: unknown;
   notebookUiSpecProperties?: {schemaVersion: string; hash: string};
   notebookOk?: boolean;
+  notebookExtras?: Record<string, unknown>;
 } = {}) {
   const notebook = {
     _id: 'nb-1',
@@ -210,6 +241,7 @@ function stubFetch({
     uiSpecification: notebookUiSpecification,
     uiSpecProperties: notebookUiSpecProperties,
     recordCount: 3,
+    ...notebookExtras,
   };
   const fetchMock = vi.fn(async (url: string) => {
     if (url.endsWith('/api/directory')) {
@@ -239,6 +271,13 @@ describe('initialiseProjects lean directory + hash refresh', () => {
   beforeEach(() => {
     vi.mocked(reportNotebookSchemaCompatibility).mockClear();
     vi.mocked(compiledSpecService.compileAndRegisterSpec).mockClear();
+    contextualLayerStore.getSeenContextualLayersHash
+      .mockReset()
+      .mockResolvedValue(undefined);
+    contextualLayerStore.retainListedContextualLayers
+      .mockReset()
+      .mockResolvedValue(false);
+    contextualLayerStore.notifyContextualLayersChanged.mockReset();
   });
 
   it('lists a new notebook without fetching GET /:id', async () => {
@@ -400,6 +439,55 @@ describe('initialiseProjects lean directory + hash refresh', () => {
         String(url).endsWith('/api/notebooks/nb-1')
       )
     ).toBe(true);
+  });
+
+  it('keeps contextual layers from GET /:id when an activated notebook hash changes', async () => {
+    const layersHash = 'c'.repeat(64);
+    stubFetch({
+      directory: [
+        directoryItem({
+          uiSpecProperties: uiSpecProperties(
+            CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+            HASH_B
+          ),
+          contextualLayers: [sampleLayer],
+          contextualLayersHash: layersHash,
+        }),
+      ],
+      notebookUiSpecProperties: uiSpecProperties(
+        CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+        HASH_B
+      ),
+      notebookExtras: {
+        contextualLayers: [sampleLayer],
+        contextualLayersHash: layersHash,
+      },
+    });
+    const store = makeStore({
+      activated: {
+        'nb-1': activatedFixture({
+          contextualLayers: [
+            {
+              ...sampleLayer,
+              id: 'asset-stale',
+              name: 'Old overlay',
+              contentHash: 'layer-content-old',
+            },
+          ],
+          contextualLayersHash: 'd'.repeat(64),
+        }),
+      },
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    const project = activatedOf(store);
+    expect(project.uiSpecProperties.hash).toBe(HASH_B);
+    expect(project.contextualLayers).toEqual([sampleLayer]);
+    expect(project.contextualLayersHash).toBe(layersHash);
+    expect(selectPendingContextualLayerPrompt(store.getState() as any)).toEqual(
+      {projectId: 'nb-1', serverId}
+    );
   });
 
   it('keeps the last good definition when an activated hash-change ingest is incompatible', async () => {
@@ -717,5 +805,141 @@ describe('compileSpecs', () => {
       'spec-2',
       expect.objectContaining({fields: expect.any(Object)})
     );
+  });
+});
+
+describe('initialiseProjects contextual layer retain and prompt', () => {
+  beforeEach(() => {
+    contextualLayerStore.getSeenContextualLayersHash
+      .mockReset()
+      .mockResolvedValue(undefined);
+    contextualLayerStore.retainListedContextualLayers
+      .mockReset()
+      .mockResolvedValue(false);
+    contextualLayerStore.notifyContextualLayersChanged.mockReset();
+  });
+
+  it('retains listed ids for an activated notebook when contextualLayers is an array', async () => {
+    const layersHash = 'c'.repeat(64);
+    stubFetch({
+      directory: [
+        directoryItem({
+          contextualLayers: [sampleLayer],
+          contextualLayersHash: layersHash,
+        }),
+      ],
+    });
+    const store = makeStore({
+      activated: {'nb-1': activatedFixture()},
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    expect(
+      contextualLayerStore.retainListedContextualLayers
+    ).toHaveBeenCalledWith('nb-1', ['asset-ready']);
+    expect(
+      contextualLayerStore.notifyContextualLayersChanged
+    ).not.toHaveBeenCalled();
+  });
+
+  it('retains an empty keep-set when the directory lists no ready layers', async () => {
+    stubFetch({
+      directory: [
+        directoryItem({
+          contextualLayers: [],
+          contextualLayersHash: 'e'.repeat(64),
+        }),
+      ],
+    });
+    const store = makeStore({
+      activated: {'nb-1': activatedFixture()},
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    expect(
+      contextualLayerStore.retainListedContextualLayers
+    ).toHaveBeenCalledWith('nb-1', []);
+  });
+
+  it('skips retain when contextualLayers is omitted (attach failed)', async () => {
+    stubFetch({
+      directory: [directoryItem()],
+    });
+    const store = makeStore({
+      activated: {'nb-1': activatedFixture()},
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    expect(
+      contextualLayerStore.retainListedContextualLayers
+    ).not.toHaveBeenCalled();
+  });
+
+  it('does not retain layers for a listed notebook that is not activated', async () => {
+    stubFetch({
+      directory: [
+        directoryItem({
+          contextualLayers: [sampleLayer],
+          contextualLayersHash: 'c'.repeat(64),
+        }),
+      ],
+    });
+    const store = makeStore({
+      listed: {'nb-1': listedFixture()},
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    expect(
+      contextualLayerStore.retainListedContextualLayers
+    ).not.toHaveBeenCalled();
+  });
+
+  it('notifies when retain drops a previously stored layer', async () => {
+    contextualLayerStore.retainListedContextualLayers.mockResolvedValue(true);
+    stubFetch({
+      directory: [
+        directoryItem({
+          contextualLayers: [],
+          contextualLayersHash: 'e'.repeat(64),
+        }),
+      ],
+    });
+    const store = makeStore({
+      activated: {'nb-1': activatedFixture()},
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    expect(
+      contextualLayerStore.notifyContextualLayersChanged
+    ).toHaveBeenCalledWith('nb-1');
+  });
+
+  it('does not prompt when the listing hash was already seen', async () => {
+    const layersHash = 'c'.repeat(64);
+    contextualLayerStore.getSeenContextualLayersHash.mockResolvedValue(
+      layersHash
+    );
+    stubFetch({
+      directory: [
+        directoryItem({
+          contextualLayers: [sampleLayer],
+          contextualLayersHash: layersHash,
+        }),
+      ],
+    });
+    const store = makeStore({
+      activated: {'nb-1': activatedFixture()},
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    expect(
+      selectPendingContextualLayerPrompt(store.getState() as any)
+    ).toBeUndefined();
   });
 });

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {z} from 'zod';
 
-/** Max length for root `description` on stored projects/templates and API input. */
+/** Max length for root `description` on stored projects/templates/map layers and API input. */
 export const ROOT_DESCRIPTION_MAX_LENGTH = 250;
 
 /**

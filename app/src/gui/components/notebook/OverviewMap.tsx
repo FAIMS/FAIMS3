@@ -15,7 +15,20 @@ import {
   ProjectID,
   formatTimestamp,
 } from '@faims3/data-model';
-import {MapComponent} from '@faims3/forms';
+import {
+  applyRecordFormLayerPaint,
+  applyRecordFormLayerPatch,
+  buildRecordFormLayers,
+  contextualVectorStyle,
+  defaultRecordFormLayerPrefs,
+  formIdFromRecordFormLayerId,
+  MapComponent,
+  prefsFromRecordFormLayer,
+  readRecordFormLayerPrefs,
+  selectedVectorStyle,
+  writeRecordFormLayerPrefs,
+  type RecordFormLayerPatch,
+} from '@faims3/forms';
 import {
   Alert,
   Box,
@@ -34,16 +47,15 @@ import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import {transformExtent} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
-import {Fill, Stroke, Style} from 'ol/style';
-import CircleStyle from 'ol/style/Circle';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {useNotebookRoute} from '../../../context/notebookRoute';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {
+  groupRecordFeaturesByForm,
+  recordFeatureSyncKey,
   useRecordFeatures,
-  type RecordFeatureCollection,
   type RecordFeatureProps,
 } from './recordFeatures';
 
@@ -53,20 +65,6 @@ interface OverviewMapProps {
   project_id: ProjectID;
   records: {allRecords: MinimalRecordMetadata[]};
 }
-
-/** Distinct colors for form types on the map */
-const FORM_TYPE_COLORS = [
-  '#2171b5', // blue
-  '#cb181d', // red
-  '#238b45', // green
-  '#6a51a3', // purple
-  '#d94801', // orange
-  '#0c2c84', // dark blue
-  '#e7298a', // magenta
-  '#006d2c', // dark green
-  '#8856a7', // violet
-  '#dd3497', // pink
-];
 
 /** Query key prefix for overview map record hydration (data engine) */
 const OVERVIEW_MAP_RECORD_KEY_PREFIX = 'overview-map-record';
@@ -85,6 +83,28 @@ interface SelectedRecordPopoverContentProps {
 /** Short time which is used for various checks in the file, including guarding
  * the popover button, and for tap detection. */
 const SHORT_WAIT_CONSTANT = 400;
+
+/**
+ * True when two form-id → bbox maps have the same keys and extents.
+ * Used to skip overview-map recentering when the record set did not move.
+ */
+function formExtentsEqual(
+  left: Record<string, [number, number, number, number]>,
+  right: Record<string, [number, number, number, number]>
+): boolean {
+  const leftKeys = Object.keys(left);
+  const rightKeys = Object.keys(right);
+  if (leftKeys.length !== rightKeys.length) {
+    return false;
+  }
+  return leftKeys.every(key => {
+    const a = left[key];
+    const b = right[key];
+    return (
+      !!b && a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3]
+    );
+  });
+}
 
 const SelectedRecordPopoverContent = ({
   feature,
@@ -242,28 +262,29 @@ export const OverviewMap = (props: OverviewMapProps) => {
     top: number;
   } | null>(null);
   const [featuresExtent, setFeaturesExtent] = useState<Extent | undefined>();
+  const [formExtents, setFormExtents] = useState<
+    Record<string, [number, number, number, number]>
+  >({});
+  const [recordLayerPrefs, setRecordLayerPrefs] = useState(() =>
+    readRecordFormLayerPrefs(project_id)
+  );
 
-  // Keep ref in sync so vector layer style can highlight selected feature
-  useEffect(() => {
-    selectedFeatureRef.current = selectedFeature;
-    const layer = vectorLayerRef.current;
-    if (layer) {
-      layer.changed();
-    }
-  }, [selectedFeature]);
-
-  // Track if we've added the layer to prevent duplicates
-  const layerAddedRef = useRef(false);
-  const vectorLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
   // When the popover was opened (timestamp). Used to ignore immediate backdropClick from the same touch.
   const popoverOpenedAtRef = useRef<number>(0);
   // Ref so the vector layer style function can read current selection and highlight it
   const selectedFeatureRef = useRef<RecordFeatureProps | null>(null);
+  const layersByFormRef = useRef(
+    new globalThis.Map<string, VectorLayer<VectorSource>>()
+  );
 
   const mapConfig = getMapConfig();
 
   // Only forms configured to display on the overview map: this tab's own scope
   const overviewMapTypes = useMemo(() => getOverviewMapTypes(uiSpec), [uiSpec]);
+
+  useEffect(() => {
+    setRecordLayerPrefs(readRecordFormLayerPrefs(project_id));
+  }, [project_id]);
 
   // The records' GIS features, plus the hook's memoized data engine and GIS
   // field list
@@ -273,7 +294,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
     isError,
     error,
     dataEngine,
-    gisFields,
   } = useRecordFeatures({
     projectId: project_id,
     uiSpec,
@@ -281,126 +301,208 @@ export const OverviewMap = (props: OverviewMapProps) => {
     recordTypes: overviewMapTypes,
   });
 
-  /**
-   * Build a map from form_id to color for styling features by form type.
-   */
-  const getFormIdToColor = useCallback(
-    (features: RecordFeatureCollection): Record<string, string> => {
-      const formIds = [
-        ...new Set(
-          features.features
-            .map(f => (f.properties?.form_id as string) ?? '')
-            .filter(Boolean)
-        ),
-      ].sort();
-      const map: Record<string, string> = {};
-      formIds.forEach((id, i) => {
-        map[id] = FORM_TYPE_COLORS[i % FORM_TYPE_COLORS.length];
+  // Keep the last plotted collection while a newly synced record hydrates
+  // (or one record fails) so this tree is not swapped for a spinner and
+  // the OpenLayers view is not recreated.
+  const lastCollectionRef = useRef(featureCollection);
+  if (featureCollection?.features.length) {
+    lastCollectionRef.current = featureCollection;
+  }
+  const plottedCollection = featureCollection?.features.length
+    ? featureCollection
+    : isLoading || isError
+      ? lastCollectionRef.current
+      : featureCollection;
+
+  const recordFormDescriptors = useMemo(() => {
+    if (!plottedCollection) {
+      return [];
+    }
+    const formIds = [
+      ...new Set(
+        plottedCollection.features
+          .map(feature => feature.properties.form_id)
+          .filter(Boolean)
+      ),
+    ].sort();
+    return formIds.map(formId => ({
+      formId,
+      name: uiSpec.viewsets[formId]?.label ?? formId,
+      extent4326: formExtents[formId],
+    }));
+  }, [formExtents, plottedCollection, uiSpec]);
+
+  const recordLayers = useMemo(
+    () =>
+      buildRecordFormLayers(
+        recordFormDescriptors,
+        recordLayerPrefs,
+        overviewMapTypes
+      ),
+    [overviewMapTypes, recordFormDescriptors, recordLayerPrefs]
+  );
+  const recordLayersRef = useRef(recordLayers);
+  recordLayersRef.current = recordLayers;
+
+  const updateRecordLayer = useCallback(
+    (id: string, patch: RecordFormLayerPatch) => {
+      setRecordLayerPrefs(current => {
+        const layer = recordLayersRef.current.find(item => item.id === id);
+        const formId = layer?.formId ?? formIdFromRecordFormLayerId(id) ?? id;
+        const fallback = layer
+          ? prefsFromRecordFormLayer(layer)
+          : defaultRecordFormLayerPrefs(formId, overviewMapTypes, 0);
+        const next = applyRecordFormLayerPatch(current, id, patch, fallback);
+        writeRecordFormLayerPrefs(project_id, next);
+        return next;
       });
-      return map;
     },
-    []
+    [overviewMapTypes, project_id]
   );
 
-  /**
-   * Add the features to the map and set the map view to encompass the features.
-   */
-  const addFeaturesToMap = useCallback(
-    (theMap: Map, features: RecordFeatureCollection) => {
-      // Remove existing layer if present
-      if (vectorLayerRef.current) {
-        theMap.removeLayer(vectorLayerRef.current);
-        vectorLayerRef.current = null;
-      }
+  const resetRecordLayers = useCallback(() => {
+    writeRecordFormLayerPrefs(project_id, {});
+    setRecordLayerPrefs({});
+  }, [project_id]);
 
-      const source = new VectorSource();
-      const geoJson = new GeoJSON();
-      const formIdToColor = getFormIdToColor(features);
-
-      const layer = new VectorLayer({
-        source: source,
-        style: (olFeature: FeatureLike) => {
-          const formId = (olFeature.get('form_id') as string) ?? '';
-          const color = formIdToColor[formId] ?? FORM_TYPE_COLORS[0];
-          const recordId = olFeature.get('record_id') as string | undefined;
-          const revisionId = olFeature.get('revision_id') as string | undefined;
-          const selected = selectedFeatureRef.current;
-          const isSelected =
-            selected &&
-            recordId === selected.record_id &&
-            revisionId === selected.revision_id;
-
-          if (isSelected) {
-            return new Style({
-              stroke: new Stroke({
-                color: '#ffffff',
-                width: 5,
-              }),
-              fill: new Fill({color: color + 'cc'}),
-              image: new CircleStyle({
-                radius: 10,
-                fill: new Fill({color}),
-                stroke: new Stroke({color: '#ffffff', width: 4}),
-              }),
-            });
-          }
-
-          return new Style({
-            stroke: new Stroke({
-              color,
-              width: 4,
-            }),
-            fill: new Fill({color: color + '80'}), // 50% opacity for polygons
-            image: new CircleStyle({
-              radius: 7,
-              fill: new Fill({color}),
-              stroke: new Stroke({color: '#fff', width: 2}),
-            }),
-          });
-        },
-      });
-
-      if (features.features.length > 0) {
-        try {
-          const parsedFeatures = geoJson.readFeatures(features, {
-            dataProjection: 'EPSG:4326',
-            featureProjection: theMap.getView().getProjection(),
-          });
-          source.addFeatures(parsedFeatures);
-
-          // Calculate and set extent
-          const sourceExtent = source.getExtent();
-          if (sourceExtent && !sourceExtent.some(val => !isFinite(val))) {
-            const extent = transformExtent(
-              sourceExtent,
-              theMap.getView().getProjection(),
-              'EPSG:4326'
-            );
-            if (!extent.some(val => !isFinite(val))) {
-              setFeaturesExtent(extent);
-            }
-          }
-        } catch (error) {
-          console.error('Failed to parse GeoJSON features:', error);
-        }
-      }
-
-      theMap.addLayer(layer);
-      vectorLayerRef.current = layer;
-      layerAddedRef.current = true;
-    },
-    [getFormIdToColor]
-  );
-
-  // Effect to add features to map when both are ready
   useEffect(() => {
-    if (!map || !featureCollection || featureCollection.features.length === 0) {
+    selectedFeatureRef.current = selectedFeature;
+    for (const layer of layersByFormRef.current.values()) {
+      layer.changed();
+    }
+  }, [selectedFeature]);
+
+  const plottedCollectionRef = useRef(plottedCollection);
+  plottedCollectionRef.current = plottedCollection;
+  const plottedSyncKey = recordFeatureSyncKey(plottedCollection);
+
+  useEffect(() => {
+    const collection = plottedCollectionRef.current;
+    if (!map || !collection || collection.features.length === 0) {
       return;
     }
 
-    addFeaturesToMap(map, featureCollection);
+    const grouped = groupRecordFeaturesByForm(collection);
+    const formIds = new Set(grouped.keys());
+    const geoJson = new GeoJSON();
+    const nextExtents: Record<string, [number, number, number, number]> = {};
+    let overallExtent: Extent | undefined;
 
-    // Resolve feature at pixel and open popover if found
+    for (const [formId, layer] of layersByFormRef.current) {
+      if (!formIds.has(formId)) {
+        map.removeLayer(layer);
+        layersByFormRef.current.delete(formId);
+      }
+    }
+
+    for (const [formId, collection] of grouped) {
+      let layer = layersByFormRef.current.get(formId);
+      if (!layer) {
+        layer = new VectorLayer({
+          source: new VectorSource(),
+          style: (olFeature: FeatureLike) => {
+            const spec =
+              recordLayersRef.current.find(item => item.formId === formId) ??
+              defaultRecordFormLayerPrefs(formId, overviewMapTypes, 0);
+            const recordId = olFeature.get('record_id') as string | undefined;
+            const revisionId = olFeature.get('revision_id') as
+              | string
+              | undefined;
+            const selected = selectedFeatureRef.current;
+            const isSelected = Boolean(
+              selected &&
+              recordId === selected.record_id &&
+              revisionId === selected.revision_id
+            );
+            return isSelected
+              ? selectedVectorStyle(spec)
+              : contextualVectorStyle(spec);
+          },
+        });
+        map.addLayer(layer);
+        layersByFormRef.current.set(formId, layer);
+      }
+
+      const source = layer.getSource();
+      if (!source) {
+        continue;
+      }
+      source.clear();
+      try {
+        const parsedFeatures = geoJson.readFeatures(collection, {
+          dataProjection: 'EPSG:4326',
+          featureProjection: map.getView().getProjection(),
+        });
+        source.addFeatures(parsedFeatures);
+        const sourceExtent = source.getExtent();
+        if (
+          sourceExtent &&
+          !sourceExtent.some((val: number) => !isFinite(val))
+        ) {
+          const extent = transformExtent(
+            sourceExtent,
+            map.getView().getProjection(),
+            'EPSG:4326'
+          );
+          if (!extent.some((val: number) => !isFinite(val))) {
+            nextExtents[formId] = extent as [number, number, number, number];
+            overallExtent = overallExtent
+              ? [
+                  Math.min(overallExtent[0], extent[0]),
+                  Math.min(overallExtent[1], extent[1]),
+                  Math.max(overallExtent[2], extent[2]),
+                  Math.max(overallExtent[3], extent[3]),
+                ]
+              : extent;
+          }
+        }
+      } catch (error) {
+        console.error('Failed to parse GeoJSON features:', error);
+      }
+
+      const spec = recordLayersRef.current.find(item => item.formId === formId);
+      if (spec) {
+        applyRecordFormLayerPaint(layer, spec);
+      }
+    }
+
+    setFormExtents(current =>
+      formExtentsEqual(current, nextExtents) ? current : nextExtents
+    );
+    // Fit the view only the first time features exist. Later syncs refresh
+    // the vector sources above; re-fitting here is what makes the map jump.
+    if (overallExtent) {
+      setFeaturesExtent(current => current ?? overallExtent);
+    }
+  }, [map, overviewMapTypes, plottedSyncKey]);
+
+  useEffect(() => {
+    return () => {
+      if (!map) {
+        return;
+      }
+      for (const layer of layersByFormRef.current.values()) {
+        map.removeLayer(layer);
+      }
+      layersByFormRef.current.clear();
+    };
+  }, [map]);
+
+  useEffect(() => {
+    for (const spec of recordLayers) {
+      const layer = layersByFormRef.current.get(spec.formId);
+      if (layer) {
+        applyRecordFormLayerPaint(layer, spec);
+        layer.changed();
+      }
+    }
+  }, [recordLayers]);
+
+  useEffect(() => {
+    if (!map) {
+      return;
+    }
+
     const selectFeatureAtPixel = (pixel: number[]) => {
       const feature = map.forEachFeatureAtPixel(
         pixel,
@@ -415,8 +517,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
       );
       if (feature) {
         popoverOpenedAtRef.current = Date.now();
-        // Anchor popover to click position so it's reliable on first open (map container
-        // rect can be wrong before layout has settled)
         const mapEl = map.getTargetElement();
         const rect = mapEl.getBoundingClientRect();
         setPopoverAnchorPosition({
@@ -465,18 +565,11 @@ export const OverviewMap = (props: OverviewMapProps) => {
     const mapEl = map.getTargetElement();
     mapEl.addEventListener('pointerdown', handlePointerDown);
     mapEl.addEventListener('pointerup', handlePointerUp);
-
-    // Cleanup
     return () => {
       mapEl.removeEventListener('pointerdown', handlePointerDown);
       mapEl.removeEventListener('pointerup', handlePointerUp);
-      if (vectorLayerRef.current) {
-        map.removeLayer(vectorLayerRef.current);
-        vectorLayerRef.current = null;
-      }
-      layerAddedRef.current = false;
     };
-  }, [map, featureCollection, addFeaturesToMap]);
+  }, [map]);
 
   const handlePopoverClose = (
     _event: object,
@@ -493,49 +586,18 @@ export const OverviewMap = (props: OverviewMapProps) => {
     setPopoverAnchorPosition(null);
   };
 
-  // Render states
-  if (gisFields.length === 0) {
-    return (
-      <Box sx={{p: 2}}>
-        <Alert severity="info">
-          No GIS fields found in this project's form definition.
-        </Alert>
-      </Box>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '400px',
-          gap: 2,
-        }}
-      >
-        <CircularProgress size={24} />
-        <span>Loading map data...</span>
-      </Box>
-    );
-  }
-
-  if (isError) {
+  // Show the map even when no records have geometry — map-asset layers are
+  // still useful. Only a failed hydration with nothing to plot stays an alert.
+  if (
+    isError &&
+    (!plottedCollection || plottedCollection.features.length === 0)
+  ) {
     return (
       <Box sx={{p: 2}}>
         <Alert severity="error">
           Failed to load map data:{' '}
           {error instanceof Error ? error.message : 'Unknown error'}
         </Alert>
-      </Box>
-    );
-  }
-
-  if (!featureCollection || featureCollection.features.length === 0) {
-    return (
-      <Box sx={{p: 2}}>
-        <Alert severity="info">No records with location data found.</Alert>
       </Box>
     );
   }
@@ -559,6 +621,10 @@ export const OverviewMap = (props: OverviewMapProps) => {
         extent={featuresExtent}
         config={mapConfig}
         autoFlyToCurrentLocation={false}
+        enableFullscreen
+        recordLayers={recordLayers}
+        onUpdateRecordLayer={updateRecordLayer}
+        onResetRecordLayers={resetRecordLayers}
       />
       <Popover
         open={!!selectedFeature && !!popoverAnchorPosition}

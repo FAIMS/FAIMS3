@@ -24,6 +24,7 @@ import {
   initMigrationsDB,
   initPeopleDB,
   initProjectsDB,
+  initMapAssetsDB,
   initTeamsDB,
   initTemplatesDB,
   initTombstoneDB,
@@ -42,6 +43,7 @@ import {
   ProjectDataObject,
   ProjectDocument,
   ProjectID,
+  MapAssetsDB,
   TeamsDB,
   TemplateDB,
   TombstoneDB,
@@ -61,6 +63,7 @@ const PEOPLE_DB_NAME = 'people';
 const MIGRATIONS_DB_NAME = 'migrations';
 const INVITE_DB_NAME = 'invites';
 const TEAMS_DB_NAME = 'teams';
+const MAP_ASSETS_DB_NAME = 'mapassets';
 const TOMBSTONE_DB_NAME = 'tombstone';
 
 let _directoryDB: DatabaseInterface | undefined;
@@ -70,6 +73,7 @@ let _authDB: AuthDatabase | undefined;
 let _usersDB: PeopleDB | undefined;
 let _invitesDB: InvitesDB | undefined;
 let _teamsDB: TeamsDB | undefined;
+let _mapAssetsDB: MapAssetsDB | undefined;
 let _tombstoneDB: TombstoneDB | undefined;
 let _migrationsDB: MigrationsDB | undefined;
 
@@ -102,6 +106,10 @@ export const databaseValidityReport: CouchDBConnectionResult = {
 
 export const verifyCouchDBConnection = async () => {
   const result = databaseValidityReport;
+  result.valid = true;
+  result.server_msg = '';
+  result.database_errors = [];
+  result.validate_error = '';
   const url = config.couchdbInternalUrl;
 
   // can we reach the couchdb server?
@@ -110,19 +118,18 @@ export const verifyCouchDBConnection = async () => {
     headers: {
       'Content-Type': 'application/json',
     },
-  }).catch(() => {
-    console.log('Catching error');
+  }).catch((error: unknown) => {
+    result.server_msg = error instanceof Error ? error.message : String(error);
     return null;
   });
 
   if (!response) {
     result.valid = false;
-    result.server_msg = `Unable to connect to CouchDB server at ${url}`;
+    result.server_msg =
+      `Unable to connect to CouchDB server at ${url}` +
+      (result.server_msg ? ` (${result.server_msg})` : '');
     return result;
   }
-
-  // reset valid to true here, will set to falsel below if something is missing
-  result.valid = true;
 
   // now we know we can connect to the server, but can we connect to the database?
   const pouch_options = pouchOptions();
@@ -142,15 +149,47 @@ export const verifyCouchDBConnection = async () => {
         result.valid = false;
         result.database_errors?.push(`Database ${db} not found`);
       }
-    } catch {
+    } catch (error: unknown) {
       result.valid = false;
+      const detail = error instanceof Error ? error.message : String(error);
       result.database_errors?.push(
-        `Unable to connect to CouchDB database ${db}`
+        `Unable to connect to CouchDB database ${db}: ${detail}`
       );
     }
   }
 
   return result;
+};
+
+/** Resolve after `ms` milliseconds. */
+const sleep = (ms: number) =>
+  new Promise<void>(resolve => {
+    setTimeout(resolve, ms);
+  });
+
+/**
+ * Retry {@link verifyCouchDBConnection} until Couch accepts traffic and the
+ * required databases exist. Compose `depends_on` only waits for the container
+ * to start, so workers can race Couch's HTTP listener.
+ */
+export const waitForCouchDBConnection = async (
+  attempts = 15,
+  delayMs = 2000
+): Promise<CouchDBConnectionResult> => {
+  let last = await verifyCouchDBConnection();
+  for (let attempt = 1; attempt < attempts && !last.valid; attempt++) {
+    const detail =
+      last.validate_error ||
+      last.server_msg ||
+      last.database_errors?.join('; ') ||
+      'unknown error';
+    console.warn(
+      `CouchDB not ready (attempt ${attempt}/${attempts}): ${detail}`
+    );
+    await sleep(delayMs);
+    last = await verifyCouchDBConnection();
+  }
+  return last;
 };
 
 export const getDirectoryDB = (): DatabaseInterface => {
@@ -275,6 +314,21 @@ export const getTeamsDB = (): TeamsDB => {
   return _teamsDB;
 };
 
+export const getMapAssetsDB = (): MapAssetsDB => {
+  if (!_mapAssetsDB) {
+    const pouch_options = pouchOptions();
+    const dbName = config.couchdbInternalUrl + '/' + MAP_ASSETS_DB_NAME;
+    try {
+      _mapAssetsDB = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting map assets database.'
+      );
+    }
+  }
+  return _mapAssetsDB;
+};
+
 export const getTombstoneDB = (): TombstoneDB => {
   if (!_tombstoneDB) {
     const pouch_options = pouchOptions();
@@ -377,6 +431,8 @@ export const getDbById: GetDbById = async ({dbType, id}) => {
       return getTemplatesDb();
     case DatabaseType.TEAMS:
       return getTeamsDB();
+    case DatabaseType.MAP_ASSETS:
+      return getMapAssetsDB();
     case DatabaseType.TOMBSTONE:
       return getTombstoneDB();
     default: {
@@ -535,6 +591,11 @@ export const initialiseDbAndKeys = async ({
     {dbName: PEOPLE_DB_NAME, db: getUsersDB(), content: initPeopleDB({})},
     {dbName: INVITE_DB_NAME, db: getInvitesDB(), content: initInvitesDB({})},
     {dbName: TEAMS_DB_NAME, db: getTeamsDB(), content: initTeamsDB({})},
+    {
+      dbName: MAP_ASSETS_DB_NAME,
+      db: getMapAssetsDB(),
+      content: initMapAssetsDB({}),
+    },
     {
       dbName: TOMBSTONE_DB_NAME,
       db: getTombstoneDB(),
@@ -704,6 +765,11 @@ export const initialiseAndMigrateDBs = async ({
       dbName: TEAMS_DB_NAME,
     },
     {
+      db: getMapAssetsDB(),
+      dbType: DatabaseType.MAP_ASSETS,
+      dbName: MAP_ASSETS_DB_NAME,
+    },
+    {
       db: getTombstoneDB(),
       dbType: DatabaseType.TOMBSTONE,
       dbName: TOMBSTONE_DB_NAME,
@@ -753,6 +819,14 @@ const getNanoInstance = async (): Promise<Nano.ServerScope> => {
   }
 
   return _nanoInstance;
+};
+
+/** Nano document scope for the mapassets database (metadata only). */
+export const getMapAssetsNano = async (): Promise<
+  Nano.DocumentScope<unknown>
+> => {
+  const nano = await getNanoInstance();
+  return nano.use(MAP_ASSETS_DB_NAME);
 };
 
 /** Lists all database names on the configured CouchDB server. */

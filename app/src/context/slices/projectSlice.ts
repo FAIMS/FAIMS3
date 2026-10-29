@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
+  ContextualLayerListing,
   couchInitialiser,
   initDataDB,
   NotebookDefinition,
   NotebookSchemaCompatibility,
   OfflineMapRegion,
   ProjectDataObject,
-  ProjectListItem,
+  APINotebookList,
   ProjectStatus,
   PublicServerInfo,
   Role,
@@ -49,12 +50,19 @@ import {syncStateService} from './helpers/syncStateService';
 import {addAlert} from './alertSlice';
 import {resolveActivationSyncMode} from '../../sync/syncModeDefaults';
 import {
+  getSeenContextualLayersHash,
+  notifyContextualLayersChanged,
+  releaseContextualLayersForProject,
+  retainListedContextualLayers,
+} from '../../gui/components/maps/contextualLayerStore';
+import {
   reconcileOfflineMapRegionPlanChange,
   shouldSkipOfflineMapActivationPrompt,
 } from '../../gui/components/maps/projectOfflineMap';
 import {offlineMapRegionsEqual} from '@faims3/forms';
 import type {SyncMode} from '../../sync/syncMode';
 import {isReplicating, syncModeIncludesPull} from '../../sync/syncMode';
+import {createAsyncMutex} from '../../utils/asyncMutex';
 import {clearPushOnlyBannerDismissal} from '../../utils/pushOnlyBannerDismissal';
 import {reportNotebookSchemaCompatibility} from '../../logging';
 import {
@@ -63,28 +71,6 @@ import {
 } from '../../utils/remoteProjectRemoval';
 
 export type {SyncMode};
-
-/**
- * Promise-queue mutex: each `runExclusive` waits for the previous job to finish
- * before running `fn`, so overlapping async work is serialized. A rejected
- * predecessor must not block the queue, hence `await prev.catch(() => {})`.
- */
-function createAsyncMutex() {
-  let mutex = Promise.resolve();
-  return async function runExclusive<T>(fn: () => Promise<T>): Promise<T> {
-    const prev = mutex;
-    let resolveNext!: () => void;
-    mutex = new Promise<void>(r => {
-      resolveNext = r;
-    });
-    await prev.catch(() => {});
-    try {
-      return await fn();
-    } finally {
-      resolveNext();
-    }
-  };
-}
 
 // `initialiseProjects` does many awaits (directory, metadata, dispatches). Without
 // a per-server lock, a user refresh and token refresh could interleave: double
@@ -200,6 +186,14 @@ export interface ProjectListingInformation {
   disableQuickShare?: boolean;
   /** Digest of the server's uiSpecification (hash + schemaVersion). */
   uiSpecProperties: UiSpecProperties;
+  /**
+   * Ready contextual layers linked to this survey. Directory sync uses this as
+   * the keep-set: ids that are pending, replacing, or failed are omitted, and
+   * the device drops those files until a new ready listing appears.
+   */
+  contextualLayers?: ContextualLayerListing[];
+  /** SHA-256 of the ready listing's asset id and content hash pairs. */
+  contextualLayersHash?: string;
 }
 
 interface ProjectIdentityFields {
@@ -389,6 +383,8 @@ export interface ProjectsState {
   selectedServerId?: string;
   /** FIFO queue of offline map download dialogs to show one at a time. */
   pendingOfflineMapDownloadPrompts?: PendingOfflineMapDownloadPrompt[];
+  /** FIFO queue of contextual layer download dialogs. */
+  pendingContextualLayerPrompts?: ProjectIdentity[];
   /**
    * Notebooks currently running {@link activateProject}. Not persisted — a
    * reload must not leave a stuck spinner after the thunk is gone.
@@ -408,6 +404,7 @@ export const initialProjectState: ProjectsState = {
   // start out uninitialised
   isInitialised: false,
   pendingOfflineMapDownloadPrompts: [],
+  pendingContextualLayerPrompts: [],
   activatingProjects: [],
 };
 
@@ -438,6 +435,8 @@ function retainedActivatedFields(project: ActivatedProject) {
     recordCount: project.recordCount,
     offlineMapRegion: project.offlineMapRegion,
     disableQuickShare: project.disableQuickShare,
+    contextualLayers: project.contextualLayers,
+    contextualLayersHash: project.contextualLayersHash,
     quickShare: project.quickShare,
   };
 }
@@ -796,6 +795,8 @@ const projectsSlice = createSlice({
         ),
         offlineMapRegion: payload.offlineMapRegion,
         disableQuickShare: payload.disableQuickShare,
+        contextualLayers: payload.contextualLayers,
+        contextualLayersHash: payload.contextualLayersHash,
         uiSpecProperties: payload.uiSpecProperties,
       };
 
@@ -1035,6 +1036,8 @@ const projectsSlice = createSlice({
         recordCount: project.recordCount,
         offlineMapRegion: project.offlineMapRegion,
         disableQuickShare: project.disableQuickShare,
+        contextualLayers: project.contextualLayers,
+        contextualLayersHash: project.contextualLayersHash,
         uiSpecProperties: project.uiSpecProperties,
         isActivated: false,
         ...(project.quickShare ? {quickShare: project.quickShare} : {}),
@@ -1066,6 +1069,26 @@ const projectsSlice = createSlice({
      */
     clearPendingOfflineMapDownloadPrompt: state => {
       ensureOfflineMapPromptQueue(state).shift();
+    },
+
+    setPendingContextualLayerPrompt: (
+      state,
+      action: PayloadAction<ProjectIdentity>
+    ) => {
+      if (!state.pendingContextualLayerPrompts) {
+        state.pendingContextualLayerPrompts = [];
+      }
+      const key = offlineMapDownloadPromptKey(action.payload);
+      const alreadyQueued = state.pendingContextualLayerPrompts.some(
+        prompt => offlineMapDownloadPromptKey(prompt) === key
+      );
+      if (!alreadyQueued) {
+        state.pendingContextualLayerPrompts.push(action.payload);
+      }
+    },
+
+    clearPendingContextualLayerPrompt: state => {
+      state.pendingContextualLayerPrompts?.shift();
     },
 
     /**
@@ -1557,6 +1580,10 @@ export const selectProjectById = createSelector(
 export const selectPendingOfflineMapDownloadPrompt = (state: RootState) =>
   state.projects.pendingOfflineMapDownloadPrompts?.[0];
 
+/** Next survey whose linked-layer download prompt has not been shown. */
+export const selectPendingContextualLayerPrompt = (state: RootState) =>
+  state.projects.pendingContextualLayerPrompts?.[0];
+
 /** Keys of notebooks whose `activateProject` thunk is still in flight. */
 export const selectActivatingProjects = (state: RootState): string[] =>
   state.projects.activatingProjects ?? [];
@@ -1941,6 +1968,19 @@ async function runActivateProject(
       );
     }
   }
+
+  const layerHash = project.contextualLayersHash;
+  if ((project.contextualLayers?.length ?? 0) > 0 && layerHash) {
+    const seen = await getSeenContextualLayersHash(payload.projectId);
+    if (seen !== layerHash) {
+      dispatch(
+        setPendingContextualLayerPrompt({
+          projectId: payload.projectId,
+          serverId: payload.serverId,
+        })
+      );
+    }
+  }
 }
 
 interface ActivateProjectSuccessPayload {
@@ -2110,7 +2150,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         );
       }
 
-      const directoryResults = (await response.json()) as ProjectListItem[];
+      const directoryResults = (await response.json()) as APINotebookList[];
 
       const stateBeforeSync = getState() as RootState;
       const serverBefore = stateBeforeSync.projects.servers[serverId];
@@ -2296,6 +2336,8 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             ),
             offlineMapRegion: meta.offlineMapRegion,
             disableQuickShare: meta.disableQuickShare,
+            contextualLayers: meta.contextualLayers,
+            contextualLayersHash: meta.contextualLayersHash,
           })
         );
       }
@@ -2341,6 +2383,47 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       // Cleanup decisions must see the same project list the user would after
       // the dispatches above (add/update), not pre-dispatch state.
       const stateAfterDirectory = getState() as RootState;
+
+      for (const details of directoryResults) {
+        const local = projectByIdentity(stateAfterDirectory.projects, {
+          projectId: details._id,
+          serverId,
+        });
+        // Present array (including empty) is the ready keep-set. Replace
+        // withdraws the old overlay immediately; missing ids are dropped.
+        // Omitted fields mean attach failed — skip, do not treat as unlink.
+        if (local?.isActivated && Array.isArray(details.contextualLayers)) {
+          try {
+            const dropped = await retainListedContextualLayers(
+              details._id,
+              details.contextualLayers.map(layer => layer.id)
+            );
+            if (dropped) {
+              notifyContextualLayersChanged(details._id);
+            }
+          } catch (error) {
+            console.error('[map-assets] failed to drop unlinked layers', error);
+          }
+        }
+        const hash = details.contextualLayersHash;
+        if (
+          !local?.isActivated ||
+          !hash ||
+          (details.contextualLayers?.length ?? 0) === 0
+        ) {
+          continue;
+        }
+        const seen = await getSeenContextualLayersHash(details._id);
+        if (seen !== hash) {
+          appDispatch(
+            setPendingContextualLayerPrompt({
+              projectId: details._id,
+              serverId,
+            })
+          );
+        }
+      }
+
       const directoryByProjectId = new Map(
         directoryResults.map(d => [d._id, d])
       );
@@ -2389,13 +2472,24 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         ).map(({projectId, tombstone}) => [projectId, tombstone])
       );
 
-      const removeLocalProjectAfterRemoteLifecycle = (projectId: string) => {
+      const removeLocalProjectAfterRemoteLifecycle = async (
+        projectId: string
+      ) => {
         const proj = projectByIdentity(stateAfterDirectory.projects, {
           serverId,
           projectId,
         });
         if (!proj) {
           return;
+        }
+
+        try {
+          await releaseContextualLayersForProject(projectId);
+        } catch (error) {
+          console.error(
+            '[map-assets] failed to remove layers for a deleted survey',
+            error
+          );
         }
 
         if (config.forceRemoteDeletion === 'allow') {
@@ -2426,14 +2520,14 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         }
 
         if (lifecycle === 'archived') {
-          removeLocalProjectAfterRemoteLifecycle(projectId);
+          await removeLocalProjectAfterRemoteLifecycle(projectId);
           continue;
         }
 
         // lifecycle === 'missing' — only remove when tombstone proves deletion.
         const tombstone = tombstoneByMissingId.get(projectId) ?? 'unreachable';
         if (tombstone === 'tombstoned') {
-          removeLocalProjectAfterRemoteLifecycle(projectId);
+          await removeLocalProjectAfterRemoteLifecycle(projectId);
         }
       }
     });
@@ -2760,6 +2854,8 @@ export const {
   reassessSchemaCompatibility,
   setPendingOfflineMapDownloadPrompt,
   clearPendingOfflineMapDownloadPrompt,
+  setPendingContextualLayerPrompt,
+  clearPendingContextualLayerPrompt,
 } = projectsSlice.actions;
 
 export default projectsSlice.reducer;

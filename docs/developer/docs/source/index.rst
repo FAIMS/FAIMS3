@@ -23,6 +23,7 @@ FAIMS3 Developer Documentation
    markdown/CouchBackupRecoveryGuideAWS.md
    markdown/PollingHydratedRecords.md
    markdown/GeospatialExport.md
+   markdown/MapLayers.md
    markdown/Long-lived-tokens.md
    markdown/TokenManagement.md
    markdown/TestDatasetSeeding.md

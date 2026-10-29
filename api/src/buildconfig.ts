@@ -4,16 +4,23 @@
  * Filename: buildconfig.ts
  * Description:
  *   Server configuration. Env-backed scalars and server-specific derivation
- *   (signing-key identity, Couch auth, token lifetimes, email/SMTP) are
- *   parsed by `@faims3/build-config` (`parseApiEnv`). This module layers on
- *   Node-only work: key-file existence, cookie-secret already filled by the
- *   parser, and the key/email service singletons.
+ *   (signing-key identity, Couch auth, token lifetimes, email/SMTP,
+ *   map-layer attachment storage, and spatial worker capacity) are parsed by
+ *   `@faims3/build-config` (`parseApiEnv`). This module layers on Node-only
+ *   work: key-file existence and the key/email/attachment-storage service
+ *   singletons.
  *   Prefer importing `{config}` and reading `config.<field>`.
  */
 
 import {parseApiEnv, SHARED_DEFAULTS} from '@faims3/build-config';
 import {slugify} from '@faims3/data-model';
 import {existsSync} from 'fs';
+import {
+  AttachmentStorageType,
+  createAttachmentStorageService,
+  IAttachmentStorageService,
+} from './services/attachmentStorageService';
+import {CapacityProviderType} from './services/capacityProvider';
 import {
   createEmailService,
   EmailServiceType,
@@ -46,6 +53,9 @@ export const config = {
   ...parsed,
   keyFilePath,
   keySource: parsed.keySource as KeySource,
+  emailServiceType: parsed.emailServiceType as EmailServiceType,
+  attachmentStorageType: parsed.attachmentStorageType as AttachmentStorageType,
+  capacityProviderType: parsed.capacityProviderType as CapacityProviderType,
   apiVersion: packageVersion,
   /** Directory / invite server id; same slug rules as `@faims3/data-model`. */
   conductorServerId: slugify(parsed.conductorInstanceName),
@@ -108,8 +118,15 @@ export const keyService: IKeyService = getKeyService(config.keySource);
 
 /** Email singleton. Tests may stub methods on this instance. */
 export const emailService: IEmailService = createEmailService({
-  serviceType: config.emailServiceType as EmailServiceType,
+  serviceType: config.emailServiceType,
   emailConfig: config.email,
   serviceConfig:
     config.emailServiceType === EmailServiceType.SMTP ? config.smtp : undefined,
 });
+
+/** Attachment-storage singleton. Tests may stub methods on this instance. */
+export const attachmentStorageService: IAttachmentStorageService =
+  createAttachmentStorageService({
+    serviceType: config.attachmentStorageType,
+    config: config.attachmentStorage,
+  });

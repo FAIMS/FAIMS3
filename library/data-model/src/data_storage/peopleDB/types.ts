@@ -136,7 +136,8 @@ export const PeopleV5FieldsSchema = PeopleV4FieldsSchema.extend({
 export type PeopleV5Fields = z.infer<typeof PeopleV5FieldsSchema>;
 export type PeopleV5Document = PouchDB.Core.ExistingDocument<PeopleV5Fields>;
 
-// Current version
+// Current version. Map-layer roles are not stored on the user document;
+// team proxy and `createdBy` are applied at request time.
 export const PeopleDBFieldsSchema = PeopleV5FieldsSchema;
 export type PeopleDBFields = z.infer<typeof PeopleDBFieldsSchema>;
 
