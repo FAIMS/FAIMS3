@@ -16,8 +16,6 @@
  * - disabled: Whether the field is disabled.
  */
 
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {SimpleTreeView, TreeItem, TreeItemProps} from '@mui/x-tree-view';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
