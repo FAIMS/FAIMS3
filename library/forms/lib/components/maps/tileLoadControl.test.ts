@@ -15,6 +15,7 @@ import {
   createTileLoadGate,
   createTileLoadLimiter,
   createTileLoadSettle,
+  isProgrammaticCameraMove,
   isZoomChange,
   refreshTileLayer,
   resetErrorTiles,
@@ -484,6 +485,76 @@ describe('tile load control', () => {
     expect(dispose).toHaveBeenCalled();
   });
 
+  it('clears renderer tile caches on a refresh, not just the source revision', () => {
+    const sourceChanged = vi.fn();
+    const clearTileCache = vi.fn();
+    const clearSourceTileCache = vi.fn();
+    refreshTileLayer({
+      getRenderer: () => ({
+        getTileCache: () => ({clear: clearTileCache}),
+        getSourceTileCache: () => ({clear: clearSourceTileCache}),
+      }),
+      getSource: () => ({
+        changed: sourceChanged,
+        sourceTiles_: {},
+      }),
+      changed: vi.fn(),
+    });
+    expect(clearTileCache).toHaveBeenCalled();
+    expect(clearSourceTileCache).toHaveBeenCalled();
+    expect(sourceChanged).toHaveBeenCalled();
+  });
+
+  it('drops a stale programmatic flag when the next move is a user drag', async () => {
+    vi.useFakeTimers();
+    const loads = createTileLoadController(1);
+    const sourceChanged = vi.fn();
+    const layerChanged = vi.fn();
+    const layer = {
+      getVisible: () => true,
+      get: (key: string) => (key === TILE_LOAD_CONTROLLER ? loads : undefined),
+      getRenderer: () => null,
+      getSource: () => ({
+        changed: sourceChanged,
+      }),
+      changed: layerChanged,
+    };
+    const listeners: Record<string, () => void> = {};
+    const map = {
+      getView: () => ({
+        getInteracting: () => true,
+        getAnimating: () => false,
+        getResolution: () => 1,
+        getProjection: () => 'EPSG:3857',
+        calculateExtent: () => [0, 0, 1, 1],
+        cancelAnimations: vi.fn(),
+      }),
+      getSize: () => [256, 256],
+      render: vi.fn(),
+      on: (type: 'movestart' | 'moveend', listener: () => void) => {
+        listeners[type] = listener;
+      },
+      un: (type: 'movestart' | 'moveend') => {
+        delete listeners[type];
+      },
+    };
+    bindTileLoadPause(map, () => [layer as never]);
+    // A fit-to-extent that did not move the view, so no movestart ever
+    // consumed the flag.
+    startProgrammaticCameraMove(map);
+    expect(isProgrammaticCameraMove(map)).toBe(true);
+    listeners.movestart?.();
+    expect(isProgrammaticCameraMove(map)).toBe(false);
+    expect(loads.gate.interacting).toBe(true);
+    listeners.moveend?.();
+    await vi.advanceTimersByTimeAsync(300);
+    // The drag settles as a pan (retry), not as a cache wipe.
+    expect(sourceChanged).not.toHaveBeenCalled();
+    expect(layerChanged).toHaveBeenCalled();
+    expect(loads.gate.interacting).toBe(false);
+    vi.useRealTimers();
+  });
+
   it('wipes on zoom settle and evicts on pan settle', async () => {
     const sourceChanged = vi.fn();
     const layerChanged = vi.fn();
@@ -697,6 +768,164 @@ describe('tile load control', () => {
     await aborted;
     expect(sourceChanged).toHaveBeenCalled();
     vi.useRealTimers();
+  });
+
+  it('retries tiles whose aborted reads only land in ERROR after drain', async () => {
+    const loads = createTileLoadController(1);
+    let tileState = TileState.LOADING;
+    const tile = {
+      getTileCoord: () => [2, 5, 5],
+      getState: () => tileState,
+      setState: vi.fn((state: number) => {
+        tileState = state;
+      }),
+      dispose: vi.fn(),
+    };
+    const layerChanged = vi.fn();
+    const grid = {
+      getZForResolution: () => 2,
+      getTileRangeForExtentAndZ: () => ({
+        minX: 4,
+        maxX: 7,
+        minY: 4,
+        maxY: 7,
+      }),
+      getTileCoordExtent: () => [0, 0, 1, 1],
+    };
+    const layer = {
+      getVisible: () => true,
+      get: (key: string) => (key === TILE_LOAD_CONTROLLER ? loads : undefined),
+      getExtent: () => undefined,
+      getRenderer: () => ({
+        getTileCache: () => ({
+          forEach: (fn: (tile: unknown, key?: string) => void) => {
+            fn(tile, 'a');
+          },
+        }),
+      }),
+      getSource: () => ({
+        changed: vi.fn(),
+        sourceTiles_: {},
+        getTileGridForProjection: () => grid,
+        getTileGrid: () => grid,
+      }),
+      changed: layerChanged,
+    };
+    let release!: () => void;
+    const pending = loads.run(async () => {
+      await new Promise<void>(resolve => {
+        release = resolve;
+      });
+      return 'decoded';
+    });
+    // Like the vector loaders: the tile only becomes ERROR in the catch
+    // after the aborted run rejects.
+    const landed = pending.catch(() => {
+      tileState = TileState.ERROR;
+    });
+    await Promise.resolve();
+    // The movestart abort. The read above ignores the signal until it
+    // returns, so the run (and the ERROR) unwind late.
+    loads.gate.startInteraction();
+    const settled = applySettledTileLoads({
+      layers: [layer as never],
+      map: {
+        getView: () => ({
+          getProjection: () => 'EPSG:3857',
+          getResolution: () => 1,
+          calculateExtent: () => [0, 0, 1, 1],
+        }),
+        getSize: () => [256, 256],
+        render: vi.fn(),
+      },
+      cancelled: () => false,
+      wipe: false,
+    });
+    release();
+    await settled;
+    await landed;
+    expect(tile.setState).toHaveBeenCalledWith(TileState.IDLE);
+    expect(layerChanged).toHaveBeenCalled();
+    expect(loads.gate.interacting).toBe(false);
+  });
+
+  it('keeps a fit wipe when a resize move follows inside the settle window', async () => {
+    vi.useFakeTimers();
+    const loads = createTileLoadController(1);
+    const sourceChanged = vi.fn();
+    const layer = {
+      getVisible: () => true,
+      get: (key: string) => (key === TILE_LOAD_CONTROLLER ? loads : undefined),
+      getRenderer: () => null,
+      getSource: () => ({
+        changed: sourceChanged,
+      }),
+      changed: vi.fn(),
+    };
+    const listeners: Record<string, () => void> = {};
+    const map = {
+      getView: () => ({
+        getInteracting: () => false,
+        getAnimating: () => false,
+        getResolution: () => 1,
+        getProjection: () => 'EPSG:3857',
+        calculateExtent: () => [0, 0, 1, 1],
+        cancelAnimations: vi.fn(),
+      }),
+      getSize: () => [256, 256],
+      render: vi.fn(),
+      on: (type: 'movestart' | 'moveend', listener: () => void) => {
+        listeners[type] = listener;
+      },
+      un: (type: 'movestart' | 'moveend') => {
+        delete listeners[type];
+      },
+    };
+    bindTileLoadPause(map, () => [layer as never]);
+    startProgrammaticCameraMove(map);
+    listeners.movestart?.();
+    expect(loads.gate.interacting).toBe(true);
+    listeners.moveend?.();
+    // A container resize / updateSize pair (routine while a tab mounts):
+    // not interacting, not animating, same resolution. It must not demote
+    // the pending wipe to an evict + retry.
+    listeners.movestart?.();
+    listeners.moveend?.();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(sourceChanged).toHaveBeenCalled();
+    expect(loads.gate.interacting).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it('ends the gate of a layer hidden while a wipe settle was pending', async () => {
+    const loads = createTileLoadController(1);
+    const sourceChanged = vi.fn();
+    const layer = {
+      getVisible: () => false,
+      get: (key: string) => (key === TILE_LOAD_CONTROLLER ? loads : undefined),
+      getRenderer: () => null,
+      getSource: () => ({
+        changed: sourceChanged,
+      }),
+      changed: vi.fn(),
+    };
+    loads.gate.startInteraction();
+    await applySettledTileLoads({
+      layers: [layer as never],
+      map: {
+        getView: () => ({
+          getProjection: () => 'EPSG:3857',
+          getResolution: () => 1,
+          calculateExtent: () => [0, 0, 1, 1],
+        }),
+        getSize: () => [256, 256],
+        render: vi.fn(),
+      },
+      cancelled: () => false,
+      wipe: true,
+    });
+    expect(loads.gate.interacting).toBe(false);
+    expect(sourceChanged).not.toHaveBeenCalled();
   });
 
   it('does not retry a hidden layer after settle', async () => {

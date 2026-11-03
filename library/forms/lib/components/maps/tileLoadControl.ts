@@ -43,6 +43,7 @@ export const SATELLITE_TILE_LOAD_PRIORITY = 10_000_000;
 type TileCache = {
   forEach: (fn: (tile: Tile, key?: string) => void) => void;
   remove?: (key: string) => Tile;
+  clear?: () => void;
 };
 
 type TileRenderer = {
@@ -664,10 +665,32 @@ export function settleTileLayer(
 }
 
 /**
+ * Let loader catch handlers mark drained tiles ERROR before a retry scan.
+ * Drain resolves from {@link TileLoadController.run}'s `finally`, which runs
+ * before the awaiting loader's catch sets its tile to ERROR. Without this
+ * yield a retry can scan while those tiles still read LOADING, skip them,
+ * and then strand them when they land in ERROR a moment later: OpenLayers
+ * never reloads an ERROR tile on its own, so the layer stays blank until
+ * the next pan / zoom settle or a layer recreate.
+ */
+async function letTileLoadErrorsLand(): Promise<void> {
+  await new Promise<void>(resolve => {
+    setTimeout(resolve, 0);
+  });
+}
+
+/**
  * After drain: pan evicts tiles that left the view; zoom / fly-to / fit
  * dump the cache like the last stable build. A wipe must abort leftover
  * in-flight tiles first — otherwise drain waits out satellite JPEGs from
  * the previous viewport.
+ *
+ * Both paths wait for in-flight loads to drain first. A read aborted at
+ * movestart only becomes ERROR when its underlying read notices the abort,
+ * and native range reads check the signal between plugin awaits, so that
+ * can land well after moveend and after the settle delay. Retrying before
+ * those reads unwind leaves the in-view tiles they belong to in ERROR with
+ * nothing left to reopen them.
  */
 export async function applySettledTileLoads(options: {
   layers: RetryableTileLayer[];
@@ -687,10 +710,19 @@ export async function applySettledTileLoads(options: {
   if (options.cancelled()) {
     return;
   }
+  await letTileLoadErrorsLand();
+  if (options.cancelled()) {
+    return;
+  }
   const layers = options.layers.filter(isTileLayerVisible);
+  // End every gate, not just the visible layers': a layer hidden while the
+  // settle was pending would otherwise keep a paused gate (and refuse all
+  // loads) until the next move, even though it is shown again.
+  for (const layer of options.layers) {
+    tileLoadController(layer)?.gate.endInteraction();
+  }
   if (options.wipe) {
     for (const layer of layers) {
-      tileLoadController(layer)?.gate.endInteraction();
       refreshTileLayer(layer);
     }
     options.map.render?.();
@@ -703,7 +735,6 @@ export async function applySettledTileLoads(options: {
     return;
   }
   for (const layer of layers) {
-    tileLoadController(layer)?.gate.endInteraction();
     retryRemainingErrors(layer);
   }
   options.map.render?.();
@@ -811,20 +842,37 @@ export function isZoomChange(
 }
 
 /**
- * Dump the renderer cache the way the last stable commit did: bump the
- * source revision so prepareFrame clears tileCache_. Also drop source
- * tiles so a zoom does not keep the previous z in memory.
+ * Dump the renderer cache the way the last stable commit did. Also drop
+ * source tiles so a zoom does not keep the previous z in memory.
+ *
+ * The renderer caches must be cleared explicitly, not left to the source
+ * revision bump below: OpenLayers' prepareFrame only clears tileCache_
+ * when it sees a new revision, and it treats a stored revision of 0 as
+ * "not yet initialised" (`if (!this.renderedSourceRevision_)`). A fresh
+ * source starts at revision 0, so the first `changed()` after a layer is
+ * created is silently adopted without clearing anything. The render
+ * tiles then stay in cache marked LOADED, pointing at the source tiles
+ * disposed here, and are never re-requested — the layer is blank until
+ * some later move creates tiles at new coords or bumps the revision
+ * again. That is why a wipe only stranded a layer when the tiles it
+ * needed were already cached (a pan at the same zoom, a fit back to the
+ * same tiles), while a zoom onto fresh coords looked fine.
  */
 export function refreshTileLayer(layer: RetryableTileLayer): void {
   const source = layer.getSource() as VectorSourceTiles | null;
   const tiles = source?.sourceTiles_;
+  const captured = tiles ? Object.values(tiles) : [];
+  const renderer = layer.getRenderer() as TileRenderer | null;
+  renderer?.getTileCache?.().clear?.();
+  renderer?.getSourceTileCache?.().clear?.();
   if (tiles) {
     for (const url of Object.keys(tiles)) {
-      const tile = tiles[url];
       delete tiles[url];
       if (source.tileKeysBySourceTileUrl_) {
         delete source.tileKeysBySourceTileUrl_[url];
       }
+    }
+    for (const tile of captured) {
       if (tile) {
         disposeTile(tile);
       }
@@ -888,11 +936,16 @@ export function bindTileLoadPause(
   let startResolution: number | undefined;
   let wipeOnSettle = false;
   const settle = createTileLoadSettle(async cancelled => {
+    // Snapshot and clear: the wipe decision belongs to the move that armed
+    // this settle, not to whatever move happens to be current when the
+    // timer fires.
+    const wipe = wipeOnSettle;
+    wipeOnSettle = false;
     await applySettledTileLoads({
       layers: [...getLayers()],
       map,
       cancelled,
-      wipe: wipeOnSettle,
+      wipe,
     });
   });
   const pauseLayers = () => {
@@ -904,10 +957,28 @@ export function bindTileLoadPause(
     }
   };
   const onMoveStart = () => {
-    startResolution = map.getView().getResolution();
-    const programmatic = isProgrammaticCameraMove(map);
-    wipeOnSettle = programmatic;
-    if (!shouldPauseTileLoads(map.getView()) && !programmatic) {
+    const view = map.getView();
+    startResolution = view.getResolution();
+    const flagged = isProgrammaticCameraMove(map);
+    // A fit that does not actually move the view (already at the fitted
+    // extent) never dispatches movestart, so its flag is still pending at
+    // the next move. That next move is not the fit: a user drag must not
+    // inherit the flag and turn into a cache wipe, so drop it. A real
+    // programmatic move is never user-interacting at its movestart.
+    if (flagged && view.getInteracting()) {
+      programmaticCameraMoves.delete(map);
+    }
+    const programmatic = flagged && !view.getInteracting();
+    // Never demote a pending wipe. An instant fit dispatches movestart and
+    // moveend in one frame, and a container resize / updateSize during a
+    // tab mount dispatches another non-pausing pair inside the settle
+    // window. That second movestart used to clear the wipe, so the fit
+    // settled with an evict + retry that can strand tiles whose aborted
+    // reads land in ERROR after the retry (see applySettledTileLoads).
+    if (programmatic) {
+      wipeOnSettle = true;
+    }
+    if (!shouldPauseTileLoads(view) && !programmatic) {
       return;
     }
     pauseLayers();
