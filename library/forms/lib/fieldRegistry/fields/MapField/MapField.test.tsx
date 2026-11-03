@@ -8,7 +8,7 @@ import {
 } from '../../../components/maps/contextualMapLayers';
 import {MapFormField} from './index';
 
-const getTileSets = vi.fn(async () => []);
+const getTileSets = vi.fn(async (): Promise<Array<{setName: string}>> => []);
 
 vi.mock('@capacitor/geolocation', () => ({
   Geolocation: {getCurrentPosition: vi.fn()},
@@ -74,6 +74,7 @@ function renderMapField({
         advancedHelperText=""
         disabled={false}
         featureType={featureType}
+        allowSetToCurrentPoint={false}
         center={[151.2, -33.87]}
         state={{value: {data: undefined}, meta: {errors: []}} as never}
         setFieldData={vi.fn()}
