@@ -15,6 +15,7 @@ import {getUid} from 'ol/util';
 import {
   NATIVE_MAP_PERFORMANCE,
   resolveMapPerformanceProfile,
+  viewAnimationDuration,
 } from './mapPerformance';
 
 /** Native in-flight cap. Desktop uses {@link resolveMapPerformanceProfile}. */
@@ -663,20 +664,21 @@ export function settleTileLayer(
 }
 
 /**
- * After drain: pan evicts tiles that left the view; zoom dumps the cache
- * like the last stable build. A zoom must abort leftover in-flight tiles
- * first — otherwise drain waits out satellite JPEGs from the previous z.
+ * After drain: pan evicts tiles that left the view; zoom / fly-to / fit
+ * dump the cache like the last stable build. A wipe must abort leftover
+ * in-flight tiles first — otherwise drain waits out satellite JPEGs from
+ * the previous viewport.
  */
 export async function applySettledTileLoads(options: {
   layers: RetryableTileLayer[];
   map: TileLoadMap;
   cancelled: () => boolean;
-  zoomChanged: boolean;
+  wipe: boolean;
 }): Promise<void> {
   const controllers = options.layers
     .map(layer => tileLoadController(layer))
     .filter((loads): loads is TileLoadController => loads !== undefined);
-  if (options.zoomChanged) {
+  if (options.wipe) {
     for (const loads of controllers) {
       loads.gate.startInteraction();
     }
@@ -686,7 +688,7 @@ export async function applySettledTileLoads(options: {
     return;
   }
   const layers = options.layers.filter(isTileLayerVisible);
-  if (options.zoomChanged) {
+  if (options.wipe) {
     for (const layer of layers) {
       tileLoadController(layer)?.gate.endInteraction();
       refreshTileLayer(layer);
@@ -777,15 +779,16 @@ export function syncTileLoadsToVisibility(layer: RetryableTileLayer): void {
 }
 
 /**
- * True only for a user pan/pinch/scroll. view.fit, setCenter, and the +/-
- * zoom buttons also fire movestart; pausing those deferred the first
- * viewport and left the overview map blank. Programmatic zooms still
- * settle after moveend so leftover tiles can be aborted.
+ * True for a user pan/pinch/scroll or a view.animate / fit-with-duration.
+ * Instant setCenter / fit (first paint) leave both flags false so the
+ * first viewport can load. Fly-to and later fits call
+ * {@link beginProgrammaticCameraMove} so they pause even when duration is 0.
  */
 export function shouldPauseTileLoads(view: {
   getInteracting: () => boolean;
+  getAnimating?: () => boolean;
 }): boolean {
-  return view.getInteracting();
+  return view.getInteracting() || view.getAnimating?.() === true;
 }
 
 /**
@@ -836,6 +839,8 @@ type TilePauseMap = {
     getResolution: () => number | undefined;
     calculateExtent: (size: number[]) => number[];
     getInteracting: () => boolean;
+    getAnimating?: () => boolean;
+    cancelAnimations?: () => void;
   };
   getSize: () => number[] | undefined;
   render?: () => void;
@@ -844,8 +849,35 @@ type TilePauseMap = {
 };
 
 /**
+ * Next fly-to / fit should pause and wipe even when the camera jumps
+ * with no animation (native `viewAnimationMs` is 0).
+ */
+const programmaticCameraMoves = new WeakMap<object, true>();
+
+/** Mark the next camera jump so {@link bindTileLoadPause} pauses and wipes. */
+export function beginProgrammaticCameraMove(map: object): void {
+  programmaticCameraMoves.set(map, true);
+}
+
+/** True when {@link beginProgrammaticCameraMove} is waiting for movestart. */
+export function isProgrammaticCameraMove(map: object): boolean {
+  return programmaticCameraMoves.has(map);
+}
+
+/** Flag the next fly-to / fit, cancel a running camera move, return duration. */
+export function startProgrammaticCameraMove(
+  map: TilePauseMap
+): number | undefined {
+  beginProgrammaticCameraMove(map);
+  map.getView().cancelAnimations?.();
+  return viewAnimationDuration();
+}
+
+/**
  * Pause tile fetches while the user pans or zooms, then settle after
- * moveend. Used by streets/satellite and contextual overlay hooks.
+ * moveend. Fly-to and fit call {@link beginProgrammaticCameraMove} so
+ * they pause and wipe the same way a zoom does. Used by streets/satellite
+ * and contextual overlay hooks.
  */
 export function bindTileLoadPause(
   map: TilePauseMap,
@@ -854,19 +886,16 @@ export function bindTileLoadPause(
 ): () => void {
   const includeLayer = options?.includeLayer ?? isTileLayerVisible;
   let startResolution: number | undefined;
+  let wipeOnSettle = false;
   const settle = createTileLoadSettle(async cancelled => {
     await applySettledTileLoads({
       layers: [...getLayers()],
       map,
       cancelled,
-      zoomChanged: isZoomChange(startResolution, map.getView().getResolution()),
+      wipe: wipeOnSettle,
     });
   });
-  const onMoveStart = () => {
-    startResolution = map.getView().getResolution();
-    if (!shouldPauseTileLoads(map.getView())) {
-      return;
-    }
+  const pauseLayers = () => {
     settle.cancel();
     for (const layer of getLayers()) {
       if (includeLayer(layer)) {
@@ -874,8 +903,24 @@ export function bindTileLoadPause(
       }
     }
   };
+  const onMoveStart = () => {
+    startResolution = map.getView().getResolution();
+    const programmatic = isProgrammaticCameraMove(map);
+    wipeOnSettle = programmatic;
+    if (!shouldPauseTileLoads(map.getView()) && !programmatic) {
+      return;
+    }
+    pauseLayers();
+  };
   const onMoveEnd = () => {
+    if (isProgrammaticCameraMove(map)) {
+      wipeOnSettle = true;
+      programmaticCameraMoves.delete(map);
+    }
     if (isZoomChange(startResolution, map.getView().getResolution())) {
+      wipeOnSettle = true;
+    }
+    if (wipeOnSettle) {
       settle.arm();
       return;
     }
@@ -890,6 +935,7 @@ export function bindTileLoadPause(
   map.on('moveend', onMoveEnd);
   return () => {
     settle.cancel();
+    programmaticCameraMoves.delete(map);
     map.un('movestart', onMoveStart);
     map.un('moveend', onMoveEnd);
   };

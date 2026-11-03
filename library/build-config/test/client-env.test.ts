@@ -415,6 +415,30 @@ test('parseWebEnv maps a generated apps env into WebRuntimeConfig', () => {
     'https://api.example.org/login?redirect=https://web.example.org'
   );
   assert.equal(parsed.notebookNamePlural, 'projects');
+  assert.equal(parsed.docsUrl, '');
+});
+
+test('parseWebEnv maps derived domains.docs onto docsUrl', () => {
+  const parsed = parseWebEnv(
+    envMap(
+      generateEnv({
+        config: {
+          endpoints: {
+            apiUrl: 'https://api.example.org',
+            webUrl: 'https://web.example.org',
+            appUrl: 'https://app.example.org',
+          },
+          domains: {
+            base: 'bss.nbic.cloud',
+            services: {docs: 'docs'},
+          },
+          branding: {appName: 'BSS'},
+        },
+        platform: 'apps',
+      })
+    )
+  );
+  assert.equal(parsed.docsUrl, 'https://docs.bss.nbic.cloud');
 });
 
 test('parseApiEnv maps a generated api env into ApiRuntimeConfig', () => {

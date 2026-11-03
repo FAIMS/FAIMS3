@@ -63,6 +63,11 @@ const EndpointsBuildConfigSchema = z
     /** Mobile app / PWA base URL. Overridden when `domains` is set. */
     appUrl: z.string().default('http://localhost:3000'),
     /**
+     * Sphinx user-docs site. Derived from `domains.services.docs` when
+     * `domains` is set (e.g. `https://docs.example.com`).
+     */
+    docsUrl: z.string().default(''),
+    /**
      * One or more Conductor URLs the mobile app can authenticate against
      * (CSV in the generated env; each entry becomes a login option).
      * Always non-empty: the shared invariant falls back to `apiUrl`.
@@ -107,7 +112,8 @@ const DomainHostMap = z
  * This is optional so existing configs that still store concrete `endpoints`
  * keep working; when present it overrides the derived endpoints, and the app
  * build, web build and CDK all derive the same URLs from it (so they cannot
- * drift). The service-name set (conductor/couch/web/app/docs) is confirmed
+ * drift). `docs` becomes `endpoints.docsUrl` (the published Sphinx site).
+ * The service-name set (conductor/couch/web/app/docs) is confirmed
  * against real deployments before the model is frozen.
  */
 export const DomainsBuildConfigSchema = z
@@ -786,6 +792,7 @@ function deriveEndpointsFromDomains(
   const webUrl = resolve('web');
   const appUrl = resolve('app');
   const couchUrl = resolve('couch');
+  const docsUrl = resolve('docs');
   const derived: Partial<z.infer<typeof EndpointsBuildConfigSchema>> = {};
   if (conductorUrl) {
     derived.apiUrl = conductorUrl;
@@ -794,6 +801,7 @@ function deriveEndpointsFromDomains(
   if (webUrl) derived.webUrl = webUrl;
   if (appUrl) derived.appUrl = appUrl;
   if (couchUrl) derived.couchdbPublicUrl = couchUrl;
+  if (docsUrl) derived.docsUrl = docsUrl;
   return derived;
 }
 

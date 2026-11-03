@@ -14,6 +14,9 @@ describe('mapLayerFormatsDocsUrl', () => {
     expect(mapLayerFormatsDocsUrl('https://docs.example.org/')).toBe(
       `https://docs.example.org${MAP_LAYER_FORMATS_DOC_PATH}`
     );
+    expect(mapLayerFormatsDocsUrl('https://docs.bss.nbic.cloud')).toBe(
+      'https://docs.bss.nbic.cloud/admin/map-layer-formats.html'
+    );
   });
 
   it('falls back to the repository page when no docs site is configured', () => {

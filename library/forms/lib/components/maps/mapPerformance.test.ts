@@ -5,6 +5,7 @@ import {
   DESKTOP_MAP_PERFORMANCE,
   NATIVE_MAP_PERFORMANCE,
   resolveMapPerformanceProfile,
+  viewAnimationDuration,
 } from './mapPerformance';
 
 describe('map performance profile', () => {
@@ -22,7 +23,9 @@ describe('map performance profile', () => {
       settleMs: 200,
       tileCacheSize: 16,
       renderBuffer: 0,
+      viewAnimationMs: 0,
     });
+    expect(viewAnimationDuration(NATIVE_MAP_PERFORMANCE)).toBeUndefined();
   });
 
   it('raises throughput on web / desktop', () => {
@@ -37,6 +40,12 @@ describe('map performance profile', () => {
     );
     expect(DESKTOP_MAP_PERFORMANCE.settleMs).toBeLessThan(
       NATIVE_MAP_PERFORMANCE.settleMs
+    );
+    expect(DESKTOP_MAP_PERFORMANCE.viewAnimationMs).toBeGreaterThan(
+      NATIVE_MAP_PERFORMANCE.viewAnimationMs
+    );
+    expect(viewAnimationDuration(DESKTOP_MAP_PERFORMANCE)).toBe(
+      DESKTOP_MAP_PERFORMANCE.viewAnimationMs
     );
   });
 

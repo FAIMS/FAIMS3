@@ -269,6 +269,7 @@ test('legacy AWS config migrates to core + secrets + aws that all validate', asy
   );
   assert.equal(merged.authProviders.google.clientSecret, AUTH_SECRET);
   assert.equal(merged.endpoints.apiUrl, 'https://conductor.example.com');
+  assert.equal(merged.endpoints.docsUrl, 'https://docs.example.com');
 
   // AWS slot spot checks.
   const aws = result.aws as AwsSnapshot;

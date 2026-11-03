@@ -69,17 +69,36 @@ import type {RecordFormLayer, RecordFormLayerPatch} from './recordFormLayers';
 import {useBaseMapLayers} from './useBaseMapLayers';
 import {useBaseMapTileLoads} from './useBaseMapTileLoads';
 import {useContextualMapLayers} from './useContextualMapLayers';
-import {PrioritizedTileMap, stopAllTileLoads} from './tileLoadControl';
+import {
+  PrioritizedTileMap,
+  startProgrammaticCameraMove,
+  stopAllTileLoads,
+} from './tileLoadControl';
 import {createTileStore} from './tileDB/TileStore';
 
 export const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
 const MIN_ZOOM = 12;
 
-const MAP_VIEW_ANIMATION_DURATION_MS = 800;
 const MAP_VIEW_FIT_PADDING_PX = [24, 24, 24, 24];
 // fallback to Sydney
 const FALLBACK_MAP_CENTER: [number, number] = [151.2093, -33.8688];
+
+/**
+ * Instant jump when duration is omitted. `view.animate` treats a missing
+ * duration as 1000 ms, which is why native fly-to must use setCenter.
+ */
+function moveViewCenter(
+  view: View,
+  center: number[],
+  duration: number | undefined
+) {
+  if (duration === undefined) {
+    view.setCenter(center);
+    return;
+  }
+  view.animate({center, duration});
+}
 
 /**
  * A Map component for all our mapping needs.
@@ -372,7 +391,8 @@ const MapComponentImpl = (props: MapComponentProps) => {
    * - extent takes priority over center, otherwise the cached/fallback location is used.
    * - Initial view positioning is applied immediately without animation.
    *
-   * On later runs, changes to extent or center are animated.
+   * On later runs, changes to extent or center use the profile camera
+   * animation (disabled on native) and wipe in-flight tiles like a zoom.
    * If either is cleared, the current map position is preserved.
    */
   useEffect(() => {
@@ -390,13 +410,15 @@ const MapComponentImpl = (props: MapComponentProps) => {
 
     // Extent takes priority over center. Later extent changes are animated.
     if (props.extent) {
-      view.cancelAnimations();
+      const duration = isInitialView
+        ? undefined
+        : startProgrammaticCameraMove(map);
       view.fit(
         transformExtent(props.extent, 'EPSG:4326', view.getProjection()),
         {
           padding: MAP_VIEW_FIT_PADDING_PX,
           maxZoom: props.zoom,
-          duration: isInitialView ? undefined : MAP_VIEW_ANIMATION_DURATION_MS,
+          duration,
         }
       );
 
@@ -410,11 +432,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
       if (isInitialView) {
         view.setCenter(center);
       } else {
-        view.cancelAnimations();
-        view.animate({
-          center,
-          duration: MAP_VIEW_ANIMATION_DURATION_MS,
-        });
+        moveViewCenter(view, center, startProgrammaticCameraMove(map));
       }
 
       return;
@@ -451,12 +469,11 @@ const MapComponentImpl = (props: MapComponentProps) => {
     // Later location updates only update the GPS marker, not the map view.
     hasHandledFirstCurrentLocationRef.current = true;
 
-    const view = map.getView();
-    view.cancelAnimations();
-    view.animate({
-      center: transform(coords, 'EPSG:4326', defaultMapProjection),
-      duration: MAP_VIEW_ANIMATION_DURATION_MS,
-    });
+    moveViewCenter(
+      map.getView(),
+      transform(coords, 'EPSG:4326', defaultMapProjection),
+      startProgrammaticCameraMove(map)
+    );
   }, [map, currentPosition, autoFlyToCurrentLocation]);
 
   // Create a layer to show the live cursor, return functions
@@ -580,13 +597,11 @@ const MapComponentImpl = (props: MapComponentProps) => {
       const coords = getCoordinates(liveLocationRef.current);
 
       if (coords) {
-        const view = map.getView();
-
-        view.cancelAnimations();
-        view.animate({
-          center: transform(coords, 'EPSG:4326', defaultMapProjection),
-          duration: MAP_VIEW_ANIMATION_DURATION_MS,
-        });
+        moveViewCenter(
+          map.getView(),
+          transform(coords, 'EPSG:4326', defaultMapProjection),
+          startProgrammaticCameraMove(map)
+        );
       }
     }
   };

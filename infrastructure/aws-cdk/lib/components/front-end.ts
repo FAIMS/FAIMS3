@@ -26,17 +26,21 @@ export interface FaimsAppBundlingEnvInput {
   conductorUrl: string;
   webUrl: string;
   appUrl: string;
+  docsUrl: string;
   debugMode: boolean;
 }
 
 /** Overlay the CDK-resolved public service URLs onto a generated env map. */
 export function overlayPublicServiceUrls(
   environment: Record<string, string>,
-  urls: {webUrl: string; apiUrl: string; appUrl: string}
+  urls: {webUrl: string; apiUrl: string; appUrl: string; docsUrl?: string}
 ): Record<string, string> {
   environment.VITE_WEB_URL = urls.webUrl;
   environment.VITE_API_URL = urls.apiUrl;
   environment.VITE_APP_URL = urls.appUrl;
+  if (urls.docsUrl) {
+    environment.VITE_DOCS_URL = urls.docsUrl;
+  }
   return environment;
 }
 
@@ -56,6 +60,7 @@ export function buildFaimsAppBundlingEnv(
     webUrl: input.webUrl,
     apiUrl: input.conductorUrl,
     appUrl: input.appUrl,
+    docsUrl: input.docsUrl,
   });
   environment.VITE_DEBUG_APP = input.debugMode ? 'true' : 'false';
   environment.VITE_DEBUG_POUCHDB = input.debugMode ? 'true' : 'false';
@@ -257,6 +262,7 @@ export class FaimsFrontEnd extends Construct {
       conductorUrl: props.conductorUrl,
       webUrl: `https://${props.webDomainName}`,
       appUrl: this.faimsAppUrl,
+      docsUrl: `https://${props.docsDomainName}`,
       debugMode: this.debugMode,
     });
 
@@ -403,6 +409,7 @@ export class FaimsFrontEnd extends Construct {
         apiUrl: props.conductorUrl,
         // FAIMS /app URL (uses first domain if multiple provided)
         appUrl: this.faimsAppUrl,
+        docsUrl: `https://${props.docsDomainName}`,
       }
     );
 
@@ -537,6 +544,7 @@ export class FaimsFrontEnd extends Construct {
         webUrl: `https://${props.webDomainName}`,
         apiUrl: props.conductorUrl,
         appUrl: this.faimsAppUrl,
+        docsUrl: `https://${props.docsDomainName}`,
       }
     );
     // Uses default for now, as other themes are not implemented properly

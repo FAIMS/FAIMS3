@@ -99,7 +99,8 @@ const baseContract: Record<string, EnvResolver> = {
   VITE_POUCH_BATCHES_LIMIT: runtime =>
     runtime.pouchdb.pouchBatchesLimit ?? SHARED_DEFAULTS.pouchBatchesLimit,
   VITE_DEVELOPER_MODE: runtime => runtime.dev.developerMode ?? false,
-  VITE_DOCS_URL: runtime => runtime.support.docsUrl ?? '',
+  VITE_DOCS_URL: runtime =>
+    runtime.support.docsUrl || runtime.endpoints.docsUrl || '',
   VITE_MAX_DESIGN_FILE_SIZE_MB: runtime =>
     runtime.webDesignerLimits.maxDesignFileSizeMb ??
     SHARED_DEFAULTS.maxDesignFileSizeMb,

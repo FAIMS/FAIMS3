@@ -23,6 +23,7 @@ import {
   setSatelliteTileLoadPriority,
   settleTileLayer,
   shouldPauseTileLoads,
+  startProgrammaticCameraMove,
   syncTileLoadsToVisibility,
   TILE_LOAD_CONTROLLER,
   TILE_LOAD_PRIORITY,
@@ -438,9 +439,20 @@ describe('tile load control', () => {
     expect(sourceChanged).not.toHaveBeenCalled();
   });
 
-  it('does not pause tiles for a programmatic view change', () => {
-    expect(shouldPauseTileLoads({getInteracting: () => false})).toBe(false);
+  it('does not pause tiles for an instant programmatic view change', () => {
+    expect(
+      shouldPauseTileLoads({
+        getInteracting: () => false,
+        getAnimating: () => false,
+      })
+    ).toBe(false);
     expect(shouldPauseTileLoads({getInteracting: () => true})).toBe(true);
+    expect(
+      shouldPauseTileLoads({
+        getInteracting: () => false,
+        getAnimating: () => true,
+      })
+    ).toBe(true);
   });
 
   it('treats a resolution step as a zoom, not a pan', () => {
@@ -495,7 +507,7 @@ describe('tile load control', () => {
       layers: [layer],
       map,
       cancelled: () => false,
-      zoomChanged: true,
+      wipe: true,
     });
     expect(sourceChanged).toHaveBeenCalled();
     sourceChanged.mockClear();
@@ -504,7 +516,7 @@ describe('tile load control', () => {
       layers: [layer],
       map,
       cancelled: () => false,
-      zoomChanged: false,
+      wipe: false,
     });
     expect(sourceChanged).not.toHaveBeenCalled();
     expect(layerChanged).toHaveBeenCalled();
@@ -544,7 +556,7 @@ describe('tile load control', () => {
         render: vi.fn(),
       },
       cancelled: () => false,
-      zoomChanged: true,
+      wipe: true,
     });
     await aborted;
     await settled;
@@ -604,6 +616,89 @@ describe('tile load control', () => {
     vi.useRealTimers();
   });
 
+  it('pauses tiles while the view is animating', () => {
+    const loads = createTileLoadController(1);
+    const layer = {
+      getVisible: () => true,
+      get: (key: string) => (key === TILE_LOAD_CONTROLLER ? loads : undefined),
+    };
+    const listeners: Record<string, () => void> = {};
+    const map = {
+      getView: () => ({
+        getInteracting: () => false,
+        getAnimating: () => true,
+        getResolution: () => 1,
+        getProjection: () => 'EPSG:3857',
+        calculateExtent: () => [0, 0, 1, 1],
+      }),
+      getSize: () => [256, 256],
+      on: (type: 'movestart' | 'moveend', listener: () => void) => {
+        listeners[type] = listener;
+      },
+      un: (type: 'movestart' | 'moveend') => {
+        delete listeners[type];
+      },
+    };
+    bindTileLoadPause(map, () => [layer as never]);
+    listeners.movestart?.();
+    expect(loads.gate.interacting).toBe(true);
+  });
+
+  it('pauses and wipes a fly-to / fit the same way a zoom does', async () => {
+    vi.useFakeTimers();
+    const loads = createTileLoadController(1);
+    const sourceChanged = vi.fn();
+    const layer = {
+      getVisible: () => true,
+      get: (key: string) => (key === TILE_LOAD_CONTROLLER ? loads : undefined),
+      getRenderer: () => null,
+      getSource: () => ({
+        changed: sourceChanged,
+      }),
+      changed: vi.fn(),
+    };
+    const listeners: Record<string, () => void> = {};
+    const cancelAnimations = vi.fn();
+    const map = {
+      getView: () => ({
+        getInteracting: () => false,
+        getAnimating: () => false,
+        getResolution: () => 1,
+        getProjection: () => 'EPSG:3857',
+        calculateExtent: () => [0, 0, 1, 1],
+        cancelAnimations,
+      }),
+      getSize: () => [256, 256],
+      render: vi.fn(),
+      on: (type: 'movestart' | 'moveend', listener: () => void) => {
+        listeners[type] = listener;
+      },
+      un: (type: 'movestart' | 'moveend') => {
+        delete listeners[type];
+      },
+    };
+    const pending = loads.run(
+      signal =>
+        new Promise<void>((_resolve, reject) => {
+          signal.addEventListener('abort', () => {
+            reject(new DOMException('aborted', 'AbortError'));
+          });
+        })
+    );
+    const aborted = expect(pending).rejects.toBeInstanceOf(TileLoadPausedError);
+    await Promise.resolve();
+    bindTileLoadPause(map, () => [layer as never]);
+    startProgrammaticCameraMove(map);
+    expect(cancelAnimations).toHaveBeenCalled();
+    listeners.movestart?.();
+    expect(loads.gate.interacting).toBe(true);
+    listeners.moveend?.();
+    await vi.advanceTimersByTimeAsync(200);
+    await aborted;
+    expect(sourceChanged).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
   it('does not retry a hidden layer after settle', async () => {
     const layerChanged = vi.fn();
     const sourceChanged = vi.fn();
@@ -636,7 +731,7 @@ describe('tile load control', () => {
         render: vi.fn(),
       },
       cancelled: () => false,
-      zoomChanged: false,
+      wipe: false,
     });
     expect(layerChanged).not.toHaveBeenCalled();
     expect(sourceChanged).not.toHaveBeenCalled();

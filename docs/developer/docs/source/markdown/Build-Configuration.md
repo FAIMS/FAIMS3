@@ -154,19 +154,20 @@ fully-populated local-dev config. The authoritative field types and defaults are
 ### `endpoints` — service URLs
 
 Concrete URLs. If you also set `domains` (below), the derived endpoint fields
-(`apiUrl`, `webUrl`, `appUrl`, `couchdbPublicUrl`, `conductorUrls`) override these.
+(`apiUrl`, `webUrl`, `appUrl`, `docsUrl`, `couchdbPublicUrl`, `conductorUrls`) override these.
 
-| Field                 | Type     | Notes                                               |
-| --------------------- | -------- | --------------------------------------------------- |
-| `apiUrl`              | string   | Conductor API base URL.                             |
-| `webUrl`              | string   | Control Centre (web) base URL.                      |
-| `appUrl`              | string   | Mobile app (PWA) base URL.                          |
-| `couchdbInternalUrl`  | string   | CouchDB URL reachable from the API.                 |
-| `couchdbPublicUrl`    | string   | CouchDB URL the app syncs to.                       |
-| `androidAppPublicUrl` | string   | Google Play store listing URL.                      |
-| `iosAppPublicUrl`     | string   | Apple App Store listing URL.                        |
-| `conductorUrls`       | string[] | Conductor URLs the app may contact (CSV in env).    |
-| `redirectWhitelist`   | string[] | Allowed redirect origins (the app adds `appId://`). |
+| Field                 | Type     | Notes                                                 |
+| --------------------- | -------- | ----------------------------------------------------- |
+| `apiUrl`              | string   | Conductor API base URL.                               |
+| `webUrl`              | string   | Control Centre (web) base URL.                        |
+| `appUrl`              | string   | Mobile app (PWA) base URL.                            |
+| `docsUrl`             | string   | User-docs site. Derived from `domains.services.docs`. |
+| `couchdbInternalUrl`  | string   | CouchDB URL reachable from the API.                   |
+| `couchdbPublicUrl`    | string   | CouchDB URL the app syncs to.                         |
+| `androidAppPublicUrl` | string   | Google Play store listing URL.                        |
+| `iosAppPublicUrl`     | string   | Apple App Store listing URL.                          |
+| `conductorUrls`       | string[] | Conductor URLs the app may contact (CSV in env).      |
+| `redirectWhitelist`   | string[] | Allowed redirect origins (the app adds `appId://`).   |
 
 ### `domains` — derived endpoints (optional)
 

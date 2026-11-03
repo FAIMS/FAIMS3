@@ -50,6 +50,7 @@ import {
   type RecordFormLayer,
   type RecordFormLayerPatch,
 } from './recordFormLayers';
+import {startProgrammaticCameraMove} from './tileLoadControl';
 import {useOccasionalDeviceLocation} from './useOccasionalDeviceLocation';
 
 type PanelLayerKind = ContextualMapLayer['kind'] | 'basemap' | 'record-form';
@@ -216,7 +217,7 @@ export function ContextualLayersControl({
     }
     map.getView().fit(extent, {
       padding: [24, 24, 24, 24],
-      duration: 400,
+      duration: startProgrammaticCameraMove(map),
       maxZoom: 16,
     });
   };
