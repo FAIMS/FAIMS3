@@ -74,13 +74,16 @@ const isTypeMatch = (optionTree: OptionTreeType[]) => {
       );
     }
 
-    if (!Array.isArray(opt.children)) {
+    // children is optional but must be an array if provided
+    if (opt.children && !Array.isArray(opt.children)) {
       throw new Error(
-        `Missing property: children at level ${opt.name}. Please refer to the example and try again.`
+        `Invalid 'children' property at level ${opt.name}. The 'children' property must be an array. Please refer to the example and try again.`
       );
     }
 
-    isTypeMatch(opt.children);
+    if (opt.children) {
+      isTypeMatch(opt.children);
+    }
   });
 };
 
@@ -143,7 +146,9 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
 
   const updateFieldFromState = useCallback(
     (newState: NewState) => {
-      const newField = JSON.parse(JSON.stringify(fieldRef.current)) as FieldType;
+      const newField = JSON.parse(
+        JSON.stringify(fieldRef.current)
+      ) as FieldType;
       const newParams = newField[
         'component-parameters'
       ] as AdvancedSelectFieldProps;
