@@ -317,7 +317,6 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
                       {
                         name: 'level-1',
                         label: 'Level 1',
-                        children: [],
                       },
                       {
                         name: 'level-2',
@@ -325,7 +324,6 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
                           {
                             name: 'level-2-1',
                             label: 'Level 2.1',
-                            children: [],
                           },
                         ],
                       },
