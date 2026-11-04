@@ -37,12 +37,45 @@ export function writeFieldUpdates({
   }
 }
 
+/**
+ * Raster image content types the app is willing to render as an `<img>`.
+ *
+ * Deliberately excludes `image/svg+xml`: SVG can carry script and event
+ * handlers, so a stored SVG attachment must never be rendered as an image.
+ * Anything not in this list is shown as a generic file (icon + filename).
+ */
 export const IMAGE_TYPES = [
   'image/png',
   'image/jpeg',
   'image/jpg',
   'image/webp',
   'image/gif',
-  'image/svg+xml',
   'image/bmp',
 ];
+
+/**
+ * Normalises a declared content type for comparison: lower-case, trimmed,
+ * with any `;charset=…` style parameters removed. Non-string input becomes
+ * the empty string so callers fail closed.
+ */
+export function normaliseContentType(
+  contentType: string | null | undefined
+): string {
+  if (typeof contentType !== 'string') return '';
+  const semicolon = contentType.indexOf(';');
+  const bare = semicolon === -1 ? contentType : contentType.slice(0, semicolon);
+  return bare.trim().toLowerCase();
+}
+
+/**
+ * Whether an attachment with this declared content type may be rendered as an
+ * image (`<img>`, thumbnail, lightbox). This is the single classifier for all
+ * attachment display decisions; it is an exact match against
+ * {@link IMAGE_TYPES} after normalisation and fails closed for anything else
+ * (SVG, HTML, missing or malformed types).
+ */
+export function isDisplayableImageType(
+  contentType: string | null | undefined
+): boolean {
+  return IMAGE_TYPES.includes(normaliseContentType(contentType));
+}

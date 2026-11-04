@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import {describe, expect, it} from 'vitest';
 import {FaimsForm} from './formModule/types';
-import {writeFieldUpdates} from './utils';
+import {
+  IMAGE_TYPES,
+  isDisplayableImageType,
+  normaliseContentType,
+  writeFieldUpdates,
+} from './utils';
 
 type FormEntry = {data: unknown; annotation?: object};
 
@@ -98,5 +103,70 @@ describe('writeFieldUpdates', () => {
     writeFieldUpdates({form, updates: {}, runListeners: false});
 
     expect(setCalls).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Attachment display classification (stored XSS via SVG mitigation)
+// ---------------------------------------------------------------------------
+
+describe('normaliseContentType', () => {
+  it('lower-cases, trims and strips parameters', () => {
+    expect(normaliseContentType('Image/JPEG')).toBe('image/jpeg');
+    expect(normaliseContentType('  image/png  ')).toBe('image/png');
+    expect(normaliseContentType('image/svg+xml;charset=utf-8')).toBe(
+      'image/svg+xml'
+    );
+    expect(normaliseContentType('text/html; charset=UTF-8')).toBe('text/html');
+  });
+
+  it('turns non-string input into the empty string', () => {
+    expect(normaliseContentType(undefined)).toBe('');
+    expect(normaliseContentType(null)).toBe('');
+    expect(normaliseContentType('')).toBe('');
+  });
+});
+
+describe('isDisplayableImageType', () => {
+  it('does not list SVG as a displayable image type', () => {
+    expect(IMAGE_TYPES).not.toContain('image/svg+xml');
+    expect(IMAGE_TYPES.some(t => t.includes('svg'))).toBe(false);
+  });
+
+  it.each([
+    'image/svg+xml',
+    'Image/SVG+XML',
+    'image/svg+xml;charset=utf-8',
+    ' image/svg+xml ',
+    'image/svg',
+    'text/html',
+    'application/xhtml+xml',
+    'application/octet-stream',
+    'application/pdf',
+    '',
+    undefined,
+    null,
+  ])('is false for %j', contentType => {
+    expect(isDisplayableImageType(contentType)).toBe(false);
+  });
+
+  it.each([
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+    'image/bmp',
+    'IMAGE/JPEG',
+    'image/png; charset=binary',
+    '  image/webp',
+  ])('is true for %j', contentType => {
+    expect(isDisplayableImageType(contentType)).toBe(true);
+  });
+
+  it('fails closed for image/ prefixed types outside the allowlist', () => {
+    expect(isDisplayableImageType('image/x-icon')).toBe(false);
+    expect(isDisplayableImageType('image/tiff')).toBe(false);
+    expect(isDisplayableImageType('image/')).toBe(false);
   });
 });

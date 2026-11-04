@@ -74,14 +74,26 @@ vi.mock('react-dropzone', () => ({
   },
 }));
 
+/**
+ * Per-attachment content types for the mocked loader. Ids not listed here
+ * load as `text/plain`.
+ */
+const mockAttachmentTypes = vi.hoisted(
+  () => ({}) as Record<string, {contentType: string; filename: string}>
+);
+
 vi.mock('../../../hooks/useAttachment', () => ({
   useAttachments: (ids: string[]) =>
     ids.map(id => ({
       isLoading: false,
       isError: false,
       data: {
+        id,
         url: `blob:${id}`,
-        metadata: {filename: `${id}.txt`, contentType: 'text/plain'},
+        metadata: mockAttachmentTypes[id] ?? {
+          filename: `${id}.txt`,
+          contentType: 'text/plain',
+        },
       },
     })),
 }));
@@ -205,6 +217,9 @@ function renderUploader({
 
 afterEach(() => {
   mockDropzone.props = null;
+  for (const key of Object.keys(mockAttachmentTypes)) {
+    delete mockAttachmentTypes[key];
+  }
   vi.clearAllMocks();
 });
 
@@ -521,5 +536,77 @@ describe('FileUploader upload UI', () => {
   it('uses the default maximum size when none is configured', () => {
     renderUploader({});
     expect(mockDropzone.props?.maxSize).toBe(DEFAULT_MAXIMUM_FILE_SIZE_BYTES);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Attachment display: SVG/HTML must never be rendered as an image
+// ---------------------------------------------------------------------------
+
+describe('FileUploader attachment display', () => {
+  /**
+   * Every element that could load or execute attachment bytes. (MUI icons are
+   * inline <svg>s, so the check is on nodes that reference the blob URL plus
+   * any embedding element at all.)
+   */
+  function activeContentNodes(url: string) {
+    return [
+      ...document.querySelectorAll(`[src="${url}"], [data="${url}"]`),
+      ...document.querySelectorAll('object, embed, iframe'),
+    ];
+  }
+
+  it('renders a stored SVG attachment as a generic file with no <img>', async () => {
+    const user = userEvent.setup();
+    mockAttachmentTypes['evil'] = {
+      filename: 'evil.svg',
+      contentType: 'image/svg+xml',
+    };
+    renderUploader({initialIds: ['evil']});
+
+    expect(screen.getByText('evil.svg')).toBeInTheDocument();
+    expect(screen.getByText('image/svg+xml')).toBeInTheDocument();
+    expect(activeContentNodes('blob:evil')).toHaveLength(0);
+    expect(document.querySelector('img')).toBeNull();
+
+    await user.click(screen.getByText('evil.svg'));
+    expect(
+      await screen.findByText('File preview not available')
+    ).toBeInTheDocument();
+    // Opening the dialog must not render the blob either.
+    expect(activeContentNodes('blob:evil')).toHaveLength(0);
+    expect(document.querySelector('img')).toBeNull();
+  });
+
+  it.each([
+    'Image/SVG+XML',
+    'image/svg+xml;charset=utf-8',
+    'text/html',
+    'application/xhtml+xml',
+  ])('treats %s as a non-image attachment', contentType => {
+    mockAttachmentTypes['odd'] = {filename: 'odd.bin', contentType};
+    renderUploader({initialIds: ['odd']});
+
+    expect(screen.getByText('odd.bin')).toBeInTheDocument();
+    expect(activeContentNodes('blob:odd')).toHaveLength(0);
+    expect(document.querySelector('img')).toBeNull();
+  });
+
+  it('still renders a JPEG thumbnail and the image dialog', async () => {
+    const user = userEvent.setup();
+    mockAttachmentTypes['pic'] = {
+      filename: 'pic.jpg',
+      contentType: 'image/jpeg',
+    };
+    renderUploader({initialIds: ['pic']});
+
+    const thumbnail = document.querySelector('img[src="blob:pic"]');
+    expect(thumbnail).not.toBeNull();
+
+    await user.click(thumbnail as Element);
+    await waitFor(() => {
+      expect(document.querySelectorAll('img[src="blob:pic"]')).toHaveLength(2);
+    });
+    expect(screen.queryByText('File preview not available')).toBeNull();
   });
 });

@@ -40,6 +40,7 @@ import {
   useAttachmentsResult,
 } from '../../../hooks/useAttachment';
 import {FileUploaderRender} from '../../../rendering/fields/view/specialised/FileUploader';
+import {isDisplayableImageType} from '../../../utils';
 import {FieldInfo} from '../../types';
 import {getRemainingItemCount} from '../../utils/itemCountHelpers';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -82,17 +83,10 @@ interface FullFileUploaderFieldProps extends FileUploaderFieldProps {
 // ============================================================================
 
 /**
- * Determines if a file is an image based on MIME type
- */
-function isImageFile(contentType: string): boolean {
-  return contentType.startsWith('image/');
-}
-
-/**
  * Gets appropriate icon for file type
  */
 function getFileIcon(contentType: string) {
-  if (isImageFile(contentType)) {
+  if (isDisplayableImageType(contentType)) {
     return <ImageIcon />;
   }
   return <InsertDriveFileIcon />;
@@ -135,7 +129,7 @@ const AttachmentDialog: React.FC<{
 
   if (!attachment) return null;
 
-  const isImage = isImageFile(attachment.metadata.contentType);
+  const isImage = isDisplayableImageType(attachment.metadata.contentType);
 
   return (
     <Dialog
@@ -396,7 +390,7 @@ const FileItem: React.FC<{
   disabled: boolean;
 }> = ({data, onDelete, onClick, disabled}) => {
   const theme = useTheme();
-  const isImage = isImageFile(data.metadata.contentType);
+  const isImage = isDisplayableImageType(data.metadata.contentType);
 
   return (
     <ListItem

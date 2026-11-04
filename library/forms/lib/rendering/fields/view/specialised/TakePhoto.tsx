@@ -4,7 +4,7 @@ import {Box, Paper, Typography} from '@mui/material';
 import {useMemo, useState} from 'react';
 import {PhotoLightbox} from '../../../../components/PhotoLightbox';
 import {useAttachments} from '../../../../hooks/useAttachment';
-import {IMAGE_TYPES} from '../../../../utils';
+import {isDisplayableImageType} from '../../../../utils';
 import {DataViewFieldRender} from '../../../types';
 import {TextWrapper} from '../wrappers';
 
@@ -31,8 +31,10 @@ export const TakePhotoRender: DataViewFieldRender = props => {
     data: att.blob,
     url: att.url,
   }));
+  // Only safe raster types are rendered; SVG/HTML-typed attachments are
+  // silently excluded from the gallery (never an <img>, never the lightbox).
   const displayableImages = toDisplay.filter(item =>
-    IMAGE_TYPES.includes(item.contentType.toLowerCase())
+    isDisplayableImageType(item.contentType)
   );
 
   return (
