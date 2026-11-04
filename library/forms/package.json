@@ -42,6 +42,7 @@
     "@mui/icons-material": "9.0.1",
     "@mui/lab": "9.0.0-beta.3",
     "@mui/material": "9.0.1",
+    "@mui/x-tree-view": "^9.16.0",
     "@tanstack/react-form": "^1.23.8",
     "@tanstack/react-query": "^5.62.16",
     "buffer": "^6.0.3",
