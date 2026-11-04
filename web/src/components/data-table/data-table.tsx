@@ -36,6 +36,8 @@ interface DataTableProps<TData, TValue> {
   getRowClassName?: (row: TData) => string | undefined;
   defaultRowsPerPage?: number;
   initialSorting?: SortingState;
+  /** Shown when the table has no rows (after filtering). Defaults to "No results." */
+  emptyMessage?: ReactNode;
 }
 
 /**
@@ -54,6 +56,7 @@ export function DataTable<TData, TValue>({
   getRowClassName,
   defaultRowsPerPage = 10,
   initialSorting = [],
+  emptyMessage = 'No results.',
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>(initialSorting);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -175,7 +178,7 @@ export function DataTable<TData, TValue>({
                   className="h-24 text-center"
                   data-testid="web-data-table-empty"
                 >
-                  No results.
+                  {emptyMessage}
                 </TableCell>
               </TableRow>
             )}

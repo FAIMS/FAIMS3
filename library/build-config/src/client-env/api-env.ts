@@ -10,12 +10,18 @@
 import {z} from 'zod';
 import {readAuthProviderConfigFromEnv} from '../auth-provider-config.js';
 import {
-  optionalBool,
-  optionalEnvString,
   boolWithDefault,
+  capacityScaleThresholdsWithDefault,
   enumWithDefault,
+  gdalNumThreadsWithDefault,
   intWithDefault,
   maxLongLivedDaysWithDefault,
+  nonNegativeIntWithDefault,
+  optionalBool,
+  optionalEnvString,
+  optionalNonNegativeInt,
+  optionalPositiveInt,
+  OptionalCsvSchema,
   parseBugsnagKey,
   requiredEnvString,
   requiredEnvUrl,
@@ -23,13 +29,18 @@ import {
   stringWithDefault,
 } from '../env-coercion.js';
 import {
+  AttachmentStorageTypeSchema,
+  CapacityProviderTypeSchema,
   DownloadCookieSameSiteSchema,
   EmailServiceTypeSchema,
   KeySourceSchema,
   ProvisionSsoUsersPolicySchema,
   SHARED_DEFAULTS,
+  defaultScaleInCooldownMs,
   resolveStartupMigrationLockEnabled,
   validateMigrationLock,
+  type AttachmentStorageType,
+  type CapacityProviderType,
   type EmailServiceType,
 } from '../shared-schemas.js';
 
@@ -47,6 +58,29 @@ export type ApiSmtpConfig = {
   secure: boolean;
   auth: {user: string; pass: string};
   cacheExpirySeconds: number;
+};
+
+/** Object-store settings for map-layer files. */
+export type ApiAttachmentStorageConfig = {
+  bucket: string;
+  prefix: string;
+  region: string;
+  endpoint?: string;
+  publicEndpoint?: string;
+  forcePathStyle?: boolean;
+  accessKeyId?: string;
+  secretAccessKey?: string;
+};
+
+/** ECS RunTask settings; present only when capacityProviderType is ECS. */
+export type ApiEcsCapacityConfig = {
+  cluster: string;
+  taskDefinition: string;
+  taskFamily: string;
+  containerName: string;
+  subnets: string[];
+  securityGroups: string[];
+  assignPublicIp: 'ENABLED' | 'DISABLED';
 };
 
 const DEFAULT_FROM_EMAIL = 'noreply@example.com';
@@ -163,6 +197,80 @@ export const ApiEnvSchema = z
     RECORDS_HYDRATED_PAGE_LIMIT: intWithDefault(
       SHARED_DEFAULTS.recordsHydratedPageLimit
     ),
+    /** Start the 1 Hz stdout memory sampler for leak hunts. */
+    MEMORY_MONITOR_ENABLED: boolWithDefault(false),
+    /** Write Morgan combined-format HTTP access lines. */
+    REQUEST_LOGGING_ENABLED: boolWithDefault(true),
+    /** Object-store backend for map-layer files (`S3` or `MOCK`). */
+    ATTACHMENT_STORAGE_TYPE: enumWithDefault(AttachmentStorageTypeSchema, 'S3'),
+    /** Required when ATTACHMENT_STORAGE_TYPE is S3 (not under test). */
+    ATTACHMENT_S3_BUCKET: optionalEnvString(),
+    /** Required when ATTACHMENT_STORAGE_TYPE is S3 (not under test). */
+    ATTACHMENT_S3_PREFIX: optionalEnvString(),
+    /** Required when ATTACHMENT_STORAGE_TYPE is S3 (not under test). */
+    ATTACHMENT_S3_REGION: optionalEnvString(),
+    /** Custom S3 endpoint (RustFS, MinIO, Spaces). Omit for AWS S3. */
+    ATTACHMENT_S3_ENDPOINT: optionalEnvString(),
+    /** Host-visible S3 endpoint used when signing download URLs. */
+    ATTACHMENT_S3_PUBLIC_ENDPOINT: optionalEnvString(),
+    /** Path-style S3 URLs. Defaults to true when an endpoint is set. */
+    ATTACHMENT_S3_FORCE_PATH_STYLE: optionalBool(),
+    /** Optional static access key. Omit on ECS so the task role is used. */
+    ATTACHMENT_S3_ACCESS_KEY_ID: optionalEnvString(),
+    /** Optional static secret key. Omit on ECS so the task role is used. */
+    ATTACHMENT_S3_SECRET_ACCESS_KEY: optionalEnvString(),
+    /** Spatial worker capacity provider (`FIXED`, `ECS`, or `MOCK`). */
+    CAPACITY_PROVIDER: enumWithDefault(CapacityProviderTypeSchema, 'FIXED'),
+    /** Max workers the capacity manager will ask for at once. */
+    CAPACITY_MAX: intWithDefault(SHARED_DEFAULTS.capacityMax),
+    /** Queue depths at which worker count increases from 1. */
+    CAPACITY_SCALE_THRESHOLDS: capacityScaleThresholdsWithDefault(
+      SHARED_DEFAULTS.capacityScaleThresholdsCsv
+    ),
+    /** How often the capacity manager reconciles queue depth (ms). */
+    CAPACITY_RECONCILE_MS: intWithDefault(SHARED_DEFAULTS.capacityReconcileMs),
+    /** Age of oldest unclaimed job before asking for the first extra worker (`0` disables). */
+    CAPACITY_STARVATION_MS: nonNegativeIntWithDefault(
+      SHARED_DEFAULTS.capacityStarvationMs
+    ),
+    /** Cooldown before another extra worker from the same stale job (`0` keeps only first extra). */
+    CAPACITY_SCALE_IN_COOLDOWN_MS: optionalNonNegativeInt(
+      'CAPACITY_SCALE_IN_COOLDOWN_MS'
+    ),
+    /** Replica count reported by the FIXED capacity provider. */
+    CAPACITY_FIXED_REPLICAS: intWithDefault(
+      SHARED_DEFAULTS.capacityFixedReplicas
+    ),
+    /** ECS cluster name or ARN (required when CAPACITY_PROVIDER is ECS). */
+    CAPACITY_ECS_CLUSTER: optionalEnvString(),
+    /** Worker task definition ARN passed to RunTask. */
+    CAPACITY_ECS_WORKER_TASK_DEFINITION: optionalEnvString(),
+    /** Worker task definition family used to list running and pending tasks. */
+    CAPACITY_ECS_WORKER_TASK_FAMILY: optionalEnvString(),
+    /** Container name inside the worker task definition. */
+    CAPACITY_ECS_WORKER_CONTAINER: optionalEnvString(),
+    /** Comma-separated subnet ids for RunTask awsvpc networking. */
+    CAPACITY_ECS_SUBNETS: optionalEnvString(),
+    /** Comma-separated security group ids for RunTask. */
+    CAPACITY_ECS_SECURITY_GROUPS: optionalEnvString(),
+    /** `ENABLED` or `DISABLED`. Default `ENABLED`. */
+    CAPACITY_ECS_ASSIGN_PUBLIC_IP: optionalEnvString(),
+    /** Spatial worker exits after this many ms with no job (`0` never exits). */
+    SPATIAL_WORKER_IDLE_EXIT_MS: nonNegativeIntWithDefault(
+      SHARED_DEFAULTS.spatialWorkerIdleExitMs
+    ),
+    /** Delay between empty spatial-worker polls (ms). */
+    SPATIAL_WORKER_POLL_MS: intWithDefault(SHARED_DEFAULTS.spatialWorkerPollMs),
+    /** GDAL worker threads (`ALL_CPUS` or a positive integer). */
+    GDAL_NUM_THREADS: gdalNumThreadsWithDefault(SHARED_DEFAULTS.gdalNumThreads),
+    /** Raster block cache in megabytes (`GDAL_CACHEMAX`). */
+    GDAL_CACHEMAX: intWithDefault(SHARED_DEFAULTS.gdalCacheMaxMb),
+    /** `gdalwarp -wm` working buffer in megabytes. */
+    GDAL_WARP_MEMORY_MB: intWithDefault(SHARED_DEFAULTS.gdalWarpMemoryMb),
+    /** `gdalwarp -multi`: overlap I/O with compute. */
+    GDAL_WARP_MULTI: boolWithDefault(SHARED_DEFAULTS.gdalWarpMulti),
+    /** Cap tippecanoe threads. Blank = all CPUs. */
+    TIPPECANOE_MAX_THREADS: optionalPositiveInt('TIPPECANOE_MAX_THREADS'),
   })
   .strip()
   .superRefine((data, ctx) => {
@@ -225,6 +333,108 @@ function resolveSmtpConfig(env: ApiEnv): ApiSmtpConfig {
   };
 }
 
+const TEST_ATTACHMENT_STORAGE_CONFIG: ApiAttachmentStorageConfig = {
+  bucket: 'test-map-assets',
+  prefix: 'map-assets',
+  region: 'us-east-1',
+};
+
+/** Fail if ATTACHMENT_S3_BUCKET / ATTACHMENT_S3_PREFIX / ATTACHMENT_S3_REGION are missing. */
+function resolveAttachmentStorageConfig(
+  env: ApiEnv
+): ApiAttachmentStorageConfig {
+  const bucket = env.ATTACHMENT_S3_BUCKET;
+  const prefix = env.ATTACHMENT_S3_PREFIX;
+  const region = env.ATTACHMENT_S3_REGION;
+  const endpoint = env.ATTACHMENT_S3_ENDPOINT;
+  const publicEndpoint = env.ATTACHMENT_S3_PUBLIC_ENDPOINT;
+  const accessKeyId = env.ATTACHMENT_S3_ACCESS_KEY_ID;
+  const secretAccessKey = env.ATTACHMENT_S3_SECRET_ACCESS_KEY;
+  const forcePathStyle =
+    env.ATTACHMENT_S3_FORCE_PATH_STYLE ?? endpoint !== undefined;
+
+  const missing: string[] = [];
+  if (!bucket) missing.push('ATTACHMENT_S3_BUCKET');
+  if (!prefix) missing.push('ATTACHMENT_S3_PREFIX');
+  if (!region) missing.push('ATTACHMENT_S3_REGION');
+  if (missing.length > 0) {
+    const providedConfig = {
+      ATTACHMENT_S3_BUCKET: bucket || '[missing]',
+      ATTACHMENT_S3_PREFIX: prefix || '[missing]',
+      ATTACHMENT_S3_REGION: region || '[missing]',
+      ATTACHMENT_S3_ENDPOINT: endpoint || '[not set — AWS S3]',
+      ATTACHMENT_S3_PUBLIC_ENDPOINT:
+        publicEndpoint || '[not set — same as endpoint]',
+      ATTACHMENT_S3_FORCE_PATH_STYLE:
+        env.ATTACHMENT_S3_FORCE_PATH_STYLE !== undefined
+          ? String(env.ATTACHMENT_S3_FORCE_PATH_STYLE)
+          : '[default]',
+      ATTACHMENT_S3_ACCESS_KEY_ID: accessKeyId
+        ? '[provided]'
+        : '[not set — default credential chain]',
+      ATTACHMENT_S3_SECRET_ACCESS_KEY: secretAccessKey
+        ? '[provided]'
+        : '[not set — default credential chain]',
+    };
+    throw new Error(
+      `Attachment storage configuration is incomplete. Missing required values: ${missing.join(', ')}.\n` +
+        `Provided configuration: ${JSON.stringify(providedConfig, null, 2)}`
+    );
+  }
+
+  return {
+    bucket: bucket!,
+    prefix: prefix!,
+    region: region!,
+    endpoint,
+    publicEndpoint,
+    forcePathStyle,
+    accessKeyId,
+    secretAccessKey,
+  };
+}
+
+/** Fail if ECS RunTask env is incomplete when CAPACITY_PROVIDER is ECS. */
+function resolveEcsCapacityConfig(env: ApiEnv): ApiEcsCapacityConfig {
+  const cluster = env.CAPACITY_ECS_CLUSTER;
+  const taskDefinition = env.CAPACITY_ECS_WORKER_TASK_DEFINITION;
+  const taskFamily = env.CAPACITY_ECS_WORKER_TASK_FAMILY;
+  const containerName = env.CAPACITY_ECS_WORKER_CONTAINER;
+  const subnets = OptionalCsvSchema.parse(env.CAPACITY_ECS_SUBNETS ?? '');
+  const securityGroups = OptionalCsvSchema.parse(
+    env.CAPACITY_ECS_SECURITY_GROUPS ?? ''
+  );
+  const assignRaw = (env.CAPACITY_ECS_ASSIGN_PUBLIC_IP ?? 'ENABLED')
+    .trim()
+    .toUpperCase();
+
+  const missing: string[] = [];
+  if (!cluster) missing.push('CAPACITY_ECS_CLUSTER');
+  if (!taskDefinition) missing.push('CAPACITY_ECS_WORKER_TASK_DEFINITION');
+  if (!taskFamily) missing.push('CAPACITY_ECS_WORKER_TASK_FAMILY');
+  if (!containerName) missing.push('CAPACITY_ECS_WORKER_CONTAINER');
+  if (subnets.length === 0) missing.push('CAPACITY_ECS_SUBNETS');
+  if (securityGroups.length === 0) missing.push('CAPACITY_ECS_SECURITY_GROUPS');
+  if (assignRaw !== 'ENABLED' && assignRaw !== 'DISABLED') {
+    missing.push('CAPACITY_ECS_ASSIGN_PUBLIC_IP (ENABLED or DISABLED)');
+  }
+  if (missing.length > 0) {
+    throw new Error(
+      `ECS capacity configuration is incomplete. Missing required values: ${missing.join(', ')}.`
+    );
+  }
+
+  return {
+    cluster: cluster!,
+    taskDefinition: taskDefinition!,
+    taskFamily: taskFamily!,
+    containerName: containerName!,
+    subnets,
+    securityGroups,
+    assignPublicIp: assignRaw as 'ENABLED' | 'DISABLED',
+  };
+}
+
 /**
  * Parse the Conductor API process environment into a typed runtime config.
  * Required endpoints, Couch credentials, and the redirect whitelist fail
@@ -255,6 +465,20 @@ export function parseApiEnv(
   };
 
   const smtp = emailServiceType === 'SMTP' ? resolveSmtpConfig(env) : undefined;
+
+  const attachmentStorageType: AttachmentStorageType = runningUnderTest
+    ? 'MOCK'
+    : env.ATTACHMENT_STORAGE_TYPE;
+  const attachmentStorage =
+    attachmentStorageType === 'S3'
+      ? resolveAttachmentStorageConfig(env)
+      : TEST_ATTACHMENT_STORAGE_CONFIG;
+
+  const capacityProviderType: CapacityProviderType = runningUnderTest
+    ? 'MOCK'
+    : env.CAPACITY_PROVIDER;
+  const capacityEcs =
+    capacityProviderType === 'ECS' ? resolveEcsCapacityConfig(env) : undefined;
 
   // API unit tests import the Express app without the production boot path,
   // but still share this singleton. Force-skip Couch + notebook startup
@@ -331,6 +555,28 @@ export function parseApiEnv(
     testEmailAddress: runningUnderTest
       ? (env.TEST_EMAIL_ADDRESS ?? 'fake@gmail.com')
       : env.TEST_EMAIL_ADDRESS,
+    memoryMonitorEnabled: env.MEMORY_MONITOR_ENABLED,
+    requestLoggingEnabled: env.REQUEST_LOGGING_ENABLED,
+    attachmentStorageType,
+    attachmentStorage,
+    capacityProviderType,
+    /** Present when {@link capacityProviderType} is ECS. */
+    capacityEcs,
+    capacityMax: env.CAPACITY_MAX,
+    capacityScaleThresholds: env.CAPACITY_SCALE_THRESHOLDS,
+    capacityReconcileMs: env.CAPACITY_RECONCILE_MS,
+    capacityStarvationMs: env.CAPACITY_STARVATION_MS,
+    capacityScaleInCooldownMs:
+      env.CAPACITY_SCALE_IN_COOLDOWN_MS ??
+      defaultScaleInCooldownMs(env.CAPACITY_STARVATION_MS),
+    capacityFixedReplicas: env.CAPACITY_FIXED_REPLICAS,
+    spatialWorkerIdleExitMs: env.SPATIAL_WORKER_IDLE_EXIT_MS,
+    spatialWorkerPollMs: env.SPATIAL_WORKER_POLL_MS,
+    gdalNumThreads: env.GDAL_NUM_THREADS,
+    gdalCacheMaxMb: env.GDAL_CACHEMAX,
+    gdalWarpMemoryMb: env.GDAL_WARP_MEMORY_MB,
+    gdalWarpMulti: env.GDAL_WARP_MULTI,
+    tippecanoeMaxThreads: env.TIPPECANOE_MAX_THREADS,
   };
 }
 

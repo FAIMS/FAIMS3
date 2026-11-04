@@ -33,7 +33,7 @@ import {useBlocker, useNavigate} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {useIsOnline} from '../../../utils/customHooks';
-import BackButton from '../ui/BackButton';
+import {ListingPage, ListingPageHeader} from '../ui/listing-page';
 import {
   DownloadOfflineMapBanner,
   DownloadOfflineMapStatus,
@@ -67,7 +67,7 @@ export function DownloadOfflineMap() {
   // Temporarily bypass the navigation blocker after a successful save.
   const allowNavigationRef = useRef(false);
 
-  // Offline downloads are vector-only — omit satellite so the layer toggle is hidden
+  // Offline downloads are vector-only — omit satellite from the layers panel
   const mapConfig = useMemo(() => {
     const {satelliteSource: _satellite, ...vectorOnly} = getMapConfig();
     return vectorOnly;
@@ -195,7 +195,7 @@ export function DownloadOfflineMap() {
       });
 
       allowNavigationRef.current = true;
-      navigate(ROUTES.OFFLINE_MAPS);
+      navigate(ROUTES.OFFLINE_MAP_REGIONS);
     } catch (saveError) {
       setError(
         saveError instanceof Error ? saveError.message : 'Could not save map'
@@ -226,39 +226,21 @@ export function DownloadOfflineMap() {
         : 'pending';
 
   return (
-    <Box
-      sx={{
-        mx: 'auto',
-        width: '100%',
-        height: '100%',
-        px: 2,
-        pt: 3,
-      }}
-    >
+    <ListingPage>
       <Stack direction="column" spacing={2}>
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <BackButton link={ROUTES.OFFLINE_MAPS} />
-          <Typography
-            variant="h4"
-            sx={{flex: 1, minWidth: 0, textAlign: 'center'}}
-          >
-            Download new offline map
-          </Typography>
-          <Button
-            variant="contained"
-            disabled={saving || !isOnline}
-            onClick={handleSave}
-          >
-            {saving ? 'Saving…' : 'Save'}
-          </Button>
-        </Stack>
+        <ListingPageHeader
+          backLink={ROUTES.OFFLINE_MAP_REGIONS}
+          title="Download new offline map"
+          end={
+            <Button
+              variant="contained"
+              disabled={saving || !isOnline}
+              onClick={handleSave}
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </Button>
+          }
+        />
 
         {/* Error and warning alerts */}
         {error && <Alert severity="error">{error}</Alert>}
@@ -358,6 +340,6 @@ export function DownloadOfflineMap() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </ListingPage>
   );
 }

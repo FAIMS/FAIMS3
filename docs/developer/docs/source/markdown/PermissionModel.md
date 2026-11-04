@@ -4,7 +4,7 @@
 
 This permissions system is built around Resources, Actions, and Roles. It provides a flexible way to manage user access across different parts of the application.
 
-- **Resources**: Represent entities in the system (Projects, Templates, Users, System)
+- **Resources**: Represent entities in the system (Projects, Templates, Teams, Map layers, Users, System)
 - **Actions**: Operations that can be performed on resources
 - **Roles**: Collections of actions that can be assigned to users
 
@@ -35,6 +35,8 @@ Authorization is managed through tokens that encode:
 - `_couchdb.roles` which is a flattened representation of a) global roles e.g. `GENERAL_ADMIN` b) resource specific roles applied globally as granted from global roles e.g. `PROJECT_ADMIN` c) resource specific roles e.g. `survey123||PROJECT_GUEST`
 
 CouchDB uses these roles in the `validate_doc_update` design document function and `member` array of the security document to enforce permissions.
+
+Map-layer (`MAP_ASSET`) roles are **not** written into the JWT or `_couchdb.roles`. The map-assets database is API-only; Conductor always has database access, so team proxy and `createdBy` ownership are applied at request time (`isAuthorizedForMapAsset`) instead of exploding every layer id into the token.
 
 ## Usage Examples
 
@@ -136,6 +138,7 @@ export enum Action {
 ```
 
 3. Assign the action to appropriate roles in the `roleActions` mapping.
+4. If CouchDB does not need to enforce the new resource (API-only data), set `encodeInToken: false` on its resource-specific roles and authorize with a request-time helper instead of `getRelevantUserAssociations`.
 
 ### Adding a New Role
 

@@ -23,6 +23,7 @@ FAIMS3 Developer Documentation
    markdown/IOS-Deployment.md
    markdown/Knip.md
    markdown/Long-lived-tokens.md
+   markdown/MapLayers.md
    markdown/MetadataMigrationGuide.md
    markdown/Mobile-Deployment-Setup-Guide.md
    markdown/NotebookDefinition.md

@@ -32,6 +32,7 @@ export * from './migrationsDB';
 export * from './peopleDB';
 export * from './rootMetadata';
 export * from './projectsDB';
+export * from './mapAssetsDB';
 export * from './teamsDB';
 export * from './templatesDB';
 export * from './tombstoneDB';

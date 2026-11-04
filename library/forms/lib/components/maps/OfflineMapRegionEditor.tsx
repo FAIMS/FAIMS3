@@ -17,6 +17,7 @@ import {transformExtent} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import {Fill, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useRef, useState} from 'react';
+import {OFFLINE_REGION_LAYER_Z_INDEX} from './layerStack';
 import {MapComponent, MapComponentProps} from './MapComponent';
 import {
   extent4326ToOfflineMapRegion,
@@ -137,7 +138,7 @@ export function OfflineMapRegionEditor({
       const layer = new VectorLayer({
         source: vectorSourceRef.current,
         style: regionStyle,
-        zIndex: 997,
+        zIndex: OFFLINE_REGION_LAYER_Z_INDEX,
         updateWhileAnimating: true,
       });
       map.addLayer(layer);
@@ -184,6 +185,7 @@ export function OfflineMapRegionEditor({
       geometryFunction: createBox(),
       maxPoints: 2,
     });
+    draw.getOverlay().setZIndex(OFFLINE_REGION_LAYER_Z_INDEX);
 
     draw.on('drawstart', () => {
       vectorSourceRef.current.clear();

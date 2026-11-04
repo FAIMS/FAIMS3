@@ -10,6 +10,7 @@ describe('buildFaimsAppBundlingEnv', () => {
     conductorUrl: 'https://api.example.com',
     webUrl: 'https://web.example.com',
     appUrl: 'https://app.example.com',
+    docsUrl: 'https://docs.example.com',
     debugMode: false,
   });
 
@@ -26,6 +27,7 @@ describe('buildFaimsAppBundlingEnv', () => {
     expect(env.VITE_API_URL).toBe('https://api.example.com');
     expect(env.VITE_WEB_URL).toBe('https://web.example.com');
     expect(env.VITE_APP_URL).toBe('https://app.example.com');
+    expect(env.VITE_DOCS_URL).toBe('https://docs.example.com');
     expect(env.platform).toBe('web');
     expect(env.serverprefix).toBe('fieldmark');
     expect(env.VITE_DEBUG_APP).toBe('false');
@@ -34,18 +36,20 @@ describe('buildFaimsAppBundlingEnv', () => {
 });
 
 describe('overlayPublicServiceUrls', () => {
-  it('writes the three public service URLs onto an existing env map', () => {
+  it('writes the public service URLs onto an existing env map', () => {
     const env = overlayPublicServiceUrls(
       {VITE_THEME: 'default'},
       {
         webUrl: 'https://web.example.com',
         apiUrl: 'https://api.example.com',
         appUrl: 'https://app.example.com',
+        docsUrl: 'https://docs.example.com',
       }
     );
     expect(env.VITE_WEB_URL).toBe('https://web.example.com');
     expect(env.VITE_API_URL).toBe('https://api.example.com');
     expect(env.VITE_APP_URL).toBe('https://app.example.com');
+    expect(env.VITE_DOCS_URL).toBe('https://docs.example.com');
     expect(env.VITE_THEME).toBe('default');
   });
 });

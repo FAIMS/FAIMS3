@@ -12,7 +12,7 @@ import {
 } from '../data_storage/peopleDB/types';
 import {Role} from './model';
 import {encodeToken} from './tokenEncoding';
-import {drillRoles} from './helpers';
+import {drillRoles, shouldEncodeRoleInToken} from './helpers';
 
 // ======
 // CHECKS
@@ -418,9 +418,11 @@ export function couchUserToResourceRoles({
   // And build it into resource roles list
   const combined = allResourceRoles.concat(virtualRoles);
 
-  // Now filter again - just in case of unpredictable interactions re: global roles
+  // Now filter again - just in case of unpredictable interactions re: global roles.
+  // Map-layer roles are never token-encoded (CouchDB does not enforce them).
   return combined.filter(
     resourceRole =>
+      shouldEncodeRoleInToken(resourceRole.role) &&
       !globalRoles.some(globalRole =>
         drillRoles({role: globalRole}).some(rr => rr === resourceRole.role)
       )

@@ -3,7 +3,10 @@ import {describe, expect, it} from 'vitest';
 import {
   getEditRecordRoute,
   getNotebookRoute,
+  getOfflineMapLayersRoute,
   INDIVIDUAL_NOTEBOOK_ROUTE,
+  OFFLINE_MAP_LAYERS,
+  safeReturnPath,
 } from './routes';
 
 describe('getNotebookRoute', () => {
@@ -16,6 +19,33 @@ describe('getNotebookRoute', () => {
 
   it('names the plan on screen', () => {
     expect(getNotebookRoute({...notebook, planId: 'lab'})).toBe(`${base}/lab`);
+  });
+});
+
+describe('getOfflineMapLayersRoute', () => {
+  it('is the manager itself with no return hint', () => {
+    expect(getOfflineMapLayersRoute()).toBe(OFFLINE_MAP_LAYERS);
+  });
+
+  it('encodes the screen that opened the manager', () => {
+    expect(getOfflineMapLayersRoute({from: '/notebooks/server/project'})).toBe(
+      `${OFFLINE_MAP_LAYERS}?from=%2Fnotebooks%2Fserver%2Fproject`
+    );
+  });
+});
+
+describe('safeReturnPath', () => {
+  it('accepts a same-app path', () => {
+    expect(safeReturnPath('/notebooks/server/project')).toBe(
+      '/notebooks/server/project'
+    );
+  });
+
+  it('rejects missing, protocol-relative, and absolute URLs', () => {
+    expect(safeReturnPath(null)).toBeUndefined();
+    expect(safeReturnPath('//example.com')).toBeUndefined();
+    expect(safeReturnPath('https://example.com')).toBeUndefined();
+    expect(safeReturnPath('/open?next=https://example.com')).toBeUndefined();
   });
 });
 

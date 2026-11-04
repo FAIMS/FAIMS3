@@ -52,18 +52,24 @@ To run the Conductor server you first need to install dependencies:
 pnpm install
 ```
 
-### GeoPackage export (optional)
+### GDAL, tippecanoe, and pmtiles (GeoPackage export and map-layer ingest)
 
-GeoPackage (`.gpkg`) export uses GDAL's `ogr2ogr` at runtime. It is included in the
-API Docker image and devcontainer. For native Node development, install GDAL on your
-host:
+GeoPackage (`.gpkg`) export uses `ogr2ogr`. Map-layer ingest uses `ogrinfo`,
+`gdalinfo`, `gdalwarp`, `gdal_translate`, `gdaladdo`, `tippecanoe`, and
+`pmtiles`. Every layer is stored as one PMTiles archive. Vector zips may be a
+shapefile or an ESRI File Geodatabase (`OpenFileGDB`). Georeferenced PDFs need
+the PDF driver (Poppler). Raster tiles need the MBTiles and WEBP drivers.
+These are included in the API Docker image and devcontainer. For native Node
+development, install them on the host:
 
 ```bash
 # Ubuntu / Debian
-sudo apt-get install gdal-bin
+sudo apt-get install gdal-bin poppler-utils unzip tippecanoe
 ```
 
-Pipeline and module layout: [Geospatial export pipeline](../docs/developer/docs/source/markdown/GeospatialExport.md).
+Install the `pmtiles` CLI from the [go-pmtiles releases](https://github.com/protomaps/go-pmtiles/releases) (v1.28.1). `go install github.com/protomaps/go-pmtiles@v1.28.1` produces `go-pmtiles`, which ingest also accepts. `PMTILES_BIN` and `TIPPECANOE_BIN` override the executable names. Spatial-worker GDAL/tippecanoe thread and memory knobs (`GDAL_NUM_THREADS`, `GDAL_CACHEMAX`, `GDAL_WARP_MEMORY_MB`, `GDAL_WARP_MULTI`, `TIPPECANOE_MAX_THREADS`) are documented in `api/.env.dist` and CDK `spatialCapacity`. File Geodatabase zips also need `unzip` on the worker image.
+
+Pipeline and module layout: [Geospatial export pipeline](../docs/developer/docs/source/markdown/GeospatialExport.md) and [Map Layers](../docs/developer/docs/source/markdown/MapLayers.md).
 
 You should then be able to run the server with:
 
@@ -78,6 +84,21 @@ pnpm run watch
 ```
 
 instead, which will monitor for changes with `nodemon`.
+
+## Service entrypoints
+
+The HTTP API (`src/index.ts`, `pnpm start`) is one of three long-running
+processes. The other two live in [`src/entrypoints/`](src/entrypoints/) so it
+is obvious they are valid runnable services, not one-off CLI scripts (those
+stay in `src/scripts/`).
+
+| Process          | Role                                                                                                                          | Local                           |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| HTTP API         | Auth, Couch, map-asset HTTP. Does **not** run GDAL ingest.                                                                    | `pnpm start` / `pnpm run watch` |
+| Capacity manager | Reads the Couch map-asset queue and asks the capacity provider for workers. Never stops a worker.                             | `pnpm run capacity-manager`     |
+| Spatial worker   | Claims one job at a time, runs GDAL / tippecanoe / pmtiles, exits after `SPATIAL_WORKER_IDLE_EXIT_MS` idle (`0` never exits). | `pnpm run spatial-worker`       |
+
+Local compose starts both extras (`docker compose up -d capacity-manager spatial-worker`) with `CAPACITY_PROVIDER=FIXED` and idle-exit disabled. Without the worker, map-layer uploads stay `pending`. Production uses the same compiled files (`node entrypoints/capacityManager.js` and `node entrypoints/spatialWorker.js --poll` from `WORKDIR` `/app/api/build/src`). See [`src/entrypoints/README.md`](src/entrypoints/README.md) and [Map Layers](../docs/developer/docs/source/markdown/MapLayers.md).
 
 ## Initialisation and migration
 

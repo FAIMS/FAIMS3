@@ -5,6 +5,7 @@ import {
   getAllActionsForRole,
   Role,
   roleActions,
+  roleDetails,
 } from './model';
 import {ResourceRole} from './types';
 
@@ -141,6 +142,14 @@ export function roleGrantsAction({
 
 export const resourceRolesEqual = (a: ResourceRole, b: ResourceRole): boolean =>
   a.resourceId === b.resourceId && a.role === b.role;
+
+/**
+ * Resource roles with `encodeInToken: false` (map layers) are never written
+ * into JWTs or `_couchdb.roles`. CouchDB does not enforce those permissions.
+ */
+export function shouldEncodeRoleInToken(role: Role): boolean {
+  return roleDetails[role].encodeInToken !== false;
+}
 
 /**
  * Given a set of roles, returns all actions that can be performed
