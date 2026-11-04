@@ -41,12 +41,39 @@ html_theme = 'sphinx_wagtail_theme'
 
 # These folders are copied to the documentation's HTML output.
 html_static_path = ["_static"]
-html_css_files = ["custom.css"]
+
+THEME_NAME = os.getenv("VITE_THEME", "default")
+
+# Theme-specific documentation assets.
+THEME_CONFIG = {
+    "default": {
+        "logo": "img/default-logo.png",
+        "css": ["css/custom.css"],
+    },
+    "fieldmark": {
+        "logo": "img/fieldmark-logo.png",
+        "css": ["css/custom.css"],
+    },
+    "bssTheme": {
+        "logo": "img/bssTheme-logo.png",
+        "css": ["css/bss-custom.css"],
+    },
+}
+
+# Use the default theme configuration if the theme is not recognised.
+theme_config = THEME_CONFIG.get(THEME_NAME, THEME_CONFIG["default"])
+
+# Warn if the theme logo has not been copied from the app.
+logo_path = Path(__file__).parent / "_static" / theme_config["logo"]
+if not logo_path.is_file():
+    print(f"Warning: Documentation logo not found: {logo_path}")
+
+html_css_files = theme_config["css"]
 
 # These are options specifically for the Wagtail Theme.
 html_theme_options = dict(
     project_name = project + " Documentation",
-    logo = "img/logo-dark.png",
+    logo = theme_config["logo"],
     logo_alt = project,
     logo_height = 59,
     logo_url = "/",
@@ -65,7 +92,6 @@ myst_enable_extensions = [
 
 NOTEBOOK_NAME = os.getenv("VITE_NOTEBOOK_NAME", "notebook")
 DASHBOARD_NAME = os.getenv("VITE_WEBSITE_TITLE", "dashboard")
-THEME_NAME = os.getenv("VITE_THEME", "default")
 
 API_URL = os.getenv("VITE_API_URL")
 APP_URL = os.getenv("VITE_APP_URL")
