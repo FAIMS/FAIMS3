@@ -11,7 +11,7 @@
  *   pnpm --filter=@faims3/api capacity-manager
  *
  * Production image (WORKDIR /app/api/build/src):
- *   node scripts/capacityManager.js
+ *   node entrypoints/capacityManager.js
  */
 
 import {config} from '../buildconfig';

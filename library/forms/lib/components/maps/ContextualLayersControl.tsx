@@ -7,6 +7,8 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import VerticalAlignBottomIcon from '@mui/icons-material/VerticalAlignBottom';
+import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import {
@@ -41,7 +43,11 @@ import {
   type ContextualMapLayerPatch,
 } from './contextualMapLayers';
 import {LayerLocationHint} from './LayerLocationHint';
-import {moveStackedLayer, sortLayersTopFirst} from './layerOrder';
+import {
+  moveStackedLayer,
+  sortLayersTopFirst,
+  type StackMoveDirection,
+} from './layerOrder';
 import {opacityFromColor, rgbHexFromColor, withColorOpacity} from './mapColor';
 import {placementExtent} from './previewExtent';
 import {defaultMapControlPalette} from './mapTheme';
@@ -157,7 +163,9 @@ export function ContextualLayersControl({
     recordLayers,
     layerErrors
   );
-  if (panelLayers.length === 0) {
+  // Stay mounted while the sheet is open so a layers reload that briefly
+  // empties the list cannot drop `open` and close the dialog.
+  if (panelLayers.length === 0 && !open) {
     return null;
   }
 
@@ -194,7 +202,7 @@ export function ContextualLayersControl({
     onResetRecordLayers?.();
   };
 
-  const movePanelLayer = (layer: PanelLayer, direction: 'up' | 'down') => {
+  const movePanelLayer = (layer: PanelLayer, direction: StackMoveDirection) => {
     const next = moveStackedLayer(panelLayers, layer.id, direction);
     if (next === panelLayers) {
       return;
@@ -510,7 +518,7 @@ function toPanelLayers(
   ];
 }
 
-/** Phone layouts keep a 2×2; tablet and up (`sm`) spread the controls in one row. */
+/** Phone layouts keep a 2×2 (raise/lower above settings/fit); tablet+ is one row. */
 function layerActionSx(
   extra: Record<string, unknown> = {},
   wide: Record<string, unknown> = {}
@@ -563,7 +571,7 @@ function LayerRow({
   onToggleExpanded: () => void;
   onToggleVisible: () => void;
   onPanIntoView: () => void;
-  onMove: (direction: 'up' | 'down') => void;
+  onMove: (direction: StackMoveDirection) => void;
   onPatch: (patch: ContextualMapLayerPatch) => void;
 }) {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -728,7 +736,7 @@ function LayerRow({
             sx={layerActionSx(
               {
                 gridColumn: 1,
-                gridRow: 1,
+                gridRow: 2,
                 color: expanded ? 'primary.main' : 'text.secondary',
                 bgcolor: (theme: Theme) =>
                   expanded
@@ -758,7 +766,7 @@ function LayerRow({
               sx={layerActionSx(
                 {
                   gridColumn: 2,
-                  gridRow: 1,
+                  gridRow: 2,
                 },
                 {
                   gridColumn: 'auto',
@@ -773,7 +781,7 @@ function LayerRow({
               aria-hidden
               sx={theme => ({
                 gridColumn: 2,
-                gridRow: 1,
+                gridRow: 2,
                 [theme.breakpoints.up('sm')]: {display: 'none'},
               })}
             />
@@ -787,7 +795,7 @@ function LayerRow({
             sx={layerActionSx(
               {
                 gridColumn: 1,
-                gridRow: 2,
+                gridRow: 1,
               },
               {
                 gridColumn: 'auto',
@@ -806,7 +814,7 @@ function LayerRow({
             sx={layerActionSx(
               {
                 gridColumn: 2,
-                gridRow: 2,
+                gridRow: 1,
               },
               {
                 gridColumn: 'auto',
@@ -833,6 +841,49 @@ function LayerRow({
             bgcolor: theme => alpha(theme.palette.primary.main, 0.04),
           }}
         >
+          <Stack
+            direction="row"
+            spacing={0.75}
+            useFlexGap
+            sx={{flexWrap: 'wrap'}}
+          >
+            <Button
+              type="button"
+              size="small"
+              variant="outlined"
+              disabled={raiseDisabled}
+              startIcon={<VerticalAlignTopIcon />}
+              aria-label={`Move ${layer.name} to top`}
+              onClick={() => onMove('top')}
+              sx={{
+                flex: '1 1 88px',
+                minWidth: 0,
+                textTransform: 'none',
+                minHeight: 32,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Move to top
+            </Button>
+            <Button
+              type="button"
+              size="small"
+              variant="outlined"
+              disabled={lowerDisabled}
+              startIcon={<VerticalAlignBottomIcon />}
+              aria-label={`Move ${layer.name} to bottom`}
+              onClick={() => onMove('bottom')}
+              sx={{
+                flex: '1 1 88px',
+                minWidth: 0,
+                textTransform: 'none',
+                minHeight: 32,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Move to bottom
+            </Button>
+          </Stack>
           <LabeledSlider
             label="Opacity"
             ariaLabel={`${layer.name} opacity`}

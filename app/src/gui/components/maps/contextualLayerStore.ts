@@ -2,7 +2,9 @@
 /**
  * On-device copies of normalized map layers, plus local paint preferences.
  * File bytes live in Capacitor Filesystem or the Origin Private File System.
- * The file index, style edits, and seen-listing hashes live in persisted Redux.
+ * The file catalog, per-survey style edits, and seen-listing hashes live in
+ * persisted Redux. Survey membership is the survey listing: a stored file is
+ * available to every activated survey that lists that asset.
  */
 
 import {Capacitor} from '@capacitor/core';
@@ -32,7 +34,7 @@ import {createAsyncMutex} from '../../../utils/asyncMutex';
 import {
   assignDownloadedLayer,
   filenamesToDelete,
-  releaseProjectLayers,
+  layerDeviceStatus,
   retainListedLayers,
 } from './contextualLayerIndex';
 import {readNativeFileRange} from './mapFileRange';
@@ -56,8 +58,106 @@ function writeIndex(index: LayerIndex): void {
  * retain, release, and remove all replace `files` from a snapshot; overlapping
  * them drops other surveys' entries, then deleteUnreferencedFiles removes those
  * files from disk. Style edits stay outside this lock.
+ *
+ * Downloads only hold this lock for the short index commit after their bytes
+ * are on disk, so layers can transfer in parallel. The commit re-reads the
+ * index under the lock, so a parallel download's entry is never overwritten
+ * by a stale snapshot taken before the transfer started.
  */
 const runFileIndexMutation = createAsyncMutex();
+
+/**
+ * Filenames an in-flight download is writing. The file is not in the index
+ * until its commit, so without this an unrelated commit's
+ * deleteUnreferencedFiles sweep would delete the partial file mid-transfer.
+ */
+const inFlightFileWrites = new Set<string>();
+
+/**
+ * Maximum number of layer files transferring at once, across every caller
+ * (settings panel, activation prompt, preview). Extra downloads wait —
+ * cancellably — for a free slot rather than saturating the connection and
+ * disk on a field device. Three sits in the middle of the useful 2–4 range:
+ * enough to hide latency between files, few enough for a weak link.
+ */
+export const MAP_LAYER_DOWNLOAD_CONCURRENCY = 3;
+
+let activeLayerTransfers = 0;
+type LayerTransferWaiter = {
+  resolve: () => void;
+  reject: (error: Error) => void;
+  signal?: AbortSignal;
+  onAbort: () => void;
+};
+const layerTransferWaiters: LayerTransferWaiter[] = [];
+
+/** Take a transfer slot, waiting (cancellably) when all slots are busy. */
+async function acquireLayerTransferSlot(signal?: AbortSignal): Promise<void> {
+  throwIfDownloadCancelled(signal);
+  if (activeLayerTransfers < MAP_LAYER_DOWNLOAD_CONCURRENCY) {
+    activeLayerTransfers += 1;
+    return;
+  }
+  await new Promise<void>((resolve, reject) => {
+    const waiter: LayerTransferWaiter = {
+      signal,
+      resolve: () => {
+        signal?.removeEventListener('abort', waiter.onAbort);
+        resolve();
+      },
+      reject,
+      onAbort: () => {
+        const index = layerTransferWaiters.indexOf(waiter);
+        if (index >= 0) {
+          layerTransferWaiters.splice(index, 1);
+        }
+        reject(new ContextualLayerDownloadCancelledError());
+      },
+    };
+    signal?.addEventListener('abort', waiter.onAbort, {once: true});
+    layerTransferWaiters.push(waiter);
+  });
+}
+
+/** Free a transfer slot and hand it to the longest-waiting download. */
+function releaseLayerTransferSlot(): void {
+  const next = layerTransferWaiters.shift();
+  if (next) {
+    // The slot passes straight to the waiter, so the count is unchanged.
+    next.resolve();
+    return;
+  }
+  activeLayerTransfers -= 1;
+}
+
+const layerDownloadChains = new Map<string, Promise<void>>();
+
+/**
+ * Serialize downloads of one asset (concurrent callers would write the same
+ * filename), while downloads of different assets run in parallel. A queued
+ * caller re-checks the index once it holds the asset, so it reuses the copy
+ * the caller ahead of it just committed instead of downloading it again.
+ */
+async function runLayerDownloadExclusive<T>(
+  assetId: string,
+  fn: () => Promise<T>
+): Promise<T> {
+  const previous = layerDownloadChains.get(assetId) ?? Promise.resolve();
+  let release!: () => void;
+  const current = new Promise<void>(resolve => {
+    release = resolve;
+  });
+  layerDownloadChains.set(assetId, current);
+  await previous.catch(() => {});
+  try {
+    return await fn();
+  } finally {
+    release();
+    if (layerDownloadChains.get(assetId) === current) {
+      layerDownloadChains.delete(assetId);
+    }
+  }
+}
 
 /** Filenames already on disk (native Data dir or browser OPFS). */
 async function listDeviceFilenames(): Promise<string[]> {
@@ -93,16 +193,24 @@ async function deleteUnreferencedFiles(index: LayerIndex): Promise<void> {
   const onDisk = await listDeviceFilenames();
   await Promise.all(
     onDisk
-      .filter(filename => !referenced.has(filename))
+      .filter(
+        filename =>
+          !referenced.has(filename) && !inFlightFileWrites.has(filename)
+      )
       .map(filename => removeDeviceFile(filename))
   );
 }
 
 /** Drop paint prefs whose asset is no longer on the device. */
 function dropUnusedPrefs(index: LayerIndex): void {
-  for (const assetId of Object.keys(index.prefs)) {
-    if (!index.files[assetId]) {
-      delete index.prefs[assetId];
+  for (const [projectId, byAsset] of Object.entries(index.prefs)) {
+    for (const assetId of Object.keys(byAsset)) {
+      if (!index.files[assetId]) {
+        delete byAsset[assetId];
+      }
+    }
+    if (Object.keys(byAsset).length === 0) {
+      delete index.prefs[projectId];
     }
   }
 }
@@ -223,19 +331,21 @@ function prefsFor(
  * update before the listing reloads.
  */
 export function resetContextualLayerPrefs(
-  projectId: string
+  projectId: string,
+  listedAssetIds: readonly string[]
 ): Record<string, LayerPrefs> {
   const index = readIndex();
-  const files = Object.values(index.files)
-    .filter(file => file.projectIds.includes(projectId))
+  const files = listedAssetIds
+    .map(assetId => index.files[assetId])
+    .filter((file): file is StoredFile => file !== undefined)
     .sort((a, b) => a.assetId.localeCompare(b.assetId));
   const nextPrefs: Record<string, LayerPrefs> = {};
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     const prefs = prefsFor(file, undefined, i);
-    index.prefs[file.assetId] = prefs;
     nextPrefs[file.assetId] = prefs;
   }
+  index.prefs[projectId] = nextPrefs;
   writeIndex(index);
   return nextPrefs;
 }
@@ -285,24 +395,26 @@ export async function markContextualLayersSeen(
   writeIndex(index);
 }
 
-/** Layers downloaded for this survey, in stack order. */
+/** Layers this survey lists that are already on the device, in stack order. */
 export async function contextualLayersForMap(
-  projectId: string
+  projectId: string,
+  listedAssetIds: readonly string[]
 ): Promise<ContextualMapLayer[]> {
   const index = readIndex();
-  const files = Object.values(index.files).filter(file =>
-    file.projectIds.includes(projectId)
-  );
+  const files = listedAssetIds
+    .map(assetId => index.files[assetId])
+    .filter((file): file is StoredFile => file !== undefined);
   files.sort((a, b) => a.assetId.localeCompare(b.assetId));
+  const projectPrefs = index.prefs[projectId] ?? {};
   const layers: ContextualMapLayer[] = [];
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    const prefs = prefsFor(file, index.prefs[file.assetId], i);
+    const prefs = prefsFor(file, projectPrefs[file.assetId], i);
     layers.push(await layerFromFile(file, prefs, prefs.visible));
   }
   // URI work above is slow on Android. Re-read paint so a raise that
   // landed while we waited is not returned as the old stack.
-  const latestPrefs = readIndex().prefs;
+  const latestPrefs = readIndex().prefs[projectId] ?? {};
   return layers
     .map(layer => {
       const prefs = latestPrefs[layer.id];
@@ -311,7 +423,13 @@ export async function contextualLayersForMap(
     .sort((a, b) => a.zIndex - b.zIndex);
 }
 
-/** One stored layer, including its file URL, for a static preview. */
+/**
+ * One stored layer, including its file URL, for the layer preview.
+ *
+ * Paint is the file-default style (default opacity, stroke, and fill), not
+ * the per-survey paint saved from notebook maps, so the preview always
+ * opens at its default view regardless of earlier styling edits.
+ */
 export async function loadStoredContextualLayer(
   assetId: string
 ): Promise<ContextualMapLayer | undefined> {
@@ -320,7 +438,7 @@ export async function loadStoredContextualLayer(
   if (!file) {
     return undefined;
   }
-  const prefs = prefsFor(file, index.prefs[file.assetId], 0);
+  const prefs = prefsFor(file, undefined, 0);
   return layerFromFile(file, prefs, true);
 }
 
@@ -355,6 +473,7 @@ async function layerFromFile(
 
 /** Merge a paint-pref patch for one stored layer. Missing files are a no-op. */
 export async function updateContextualLayerPrefs(
+  projectId: string,
   assetId: string,
   patch: Partial<LayerPrefs>
 ): Promise<void> {
@@ -363,8 +482,12 @@ export async function updateContextualLayerPrefs(
   if (!file) {
     return;
   }
-  const current = prefsFor(file, index.prefs[assetId], 0);
-  index.prefs[assetId] = {...current, ...patch};
+  const projectPrefs = index.prefs[projectId] ?? {};
+  const current = prefsFor(file, projectPrefs[assetId], 0);
+  index.prefs[projectId] = {
+    ...projectPrefs,
+    [assetId]: {...current, ...patch},
+  };
   writeIndex(index);
 }
 
@@ -374,10 +497,11 @@ export async function updateContextualLayerPrefs(
  */
 export async function moveContextualLayer(
   projectId: string,
+  listedAssetIds: readonly string[],
   assetId: string,
   direction: 'up' | 'down'
 ): Promise<void> {
-  const layers = await contextualLayersForMap(projectId);
+  const layers = await contextualLayersForMap(projectId, listedAssetIds);
   const next = moveStackedLayer(layers, assetId, direction);
   if (next === layers) {
     return;
@@ -385,7 +509,9 @@ export async function moveContextualLayer(
   for (const layer of next) {
     const previous = layers.find(item => item.id === layer.id);
     if (previous && previous.zIndex !== layer.zIndex) {
-      await updateContextualLayerPrefs(layer.id, {zIndex: layer.zIndex});
+      await updateContextualLayerPrefs(projectId, layer.id, {
+        zIndex: layer.zIndex,
+      });
     }
   }
 }
@@ -546,11 +672,60 @@ async function downloadNativeLayerFileUntilCancelled(
   }
 }
 
-/** Download missing/updated layers and index them, serialized with other file writes. */
+/**
+ * Download missing/updated layers and index them. Transfers run in parallel
+ * across separate calls (and only serialize per asset); each layer's index
+ * entry is committed under the file-index lock once its bytes are on disk.
+ */
 export async function downloadContextualLayers(
   args: DownloadContextualLayersArgs
 ): Promise<void> {
-  return runFileIndexMutation(() => downloadAndIndexContextualLayers(args));
+  return downloadAndIndexContextualLayers(args);
+}
+
+/**
+ * Record one downloaded (or already stored) layer in the on-device index.
+ * Runs under the file-index lock and starts from a fresh snapshot, so
+ * parallel downloads of other layers are preserved. Returns the surveys to
+ * notify: empty (everyone) when the filename changed, otherwise just this
+ * survey. A replacement invalidates every survey's copy of the old file.
+ */
+async function indexDownloadedLayer(
+  projectId: string,
+  layer: ContextualLayerListing,
+  filename: string
+): Promise<string[] | undefined> {
+  return runFileIndexMutation(async () => {
+    const index = readIndex();
+    const previous = index.files;
+    const before = previous[layer.id];
+    index.files = assignDownloadedLayer<StoredFile>(index.files, {
+      assetId: layer.id,
+      contentHash: layer.contentHash,
+      kind: layer.kind,
+      name: layer.name,
+      byteSize: layer.byteSize,
+      extent4326: layer.extent,
+      extent3857: layer.extent3857,
+      minZoom: layer.minZoom,
+      maxZoom: layer.maxZoom,
+      tileSize: layer.tileSize,
+      defaultStyle: layer.defaultStyle,
+      filename,
+    });
+    const projectPrefs = index.prefs[projectId] ?? {};
+    if (!projectPrefs[layer.id]) {
+      index.prefs[projectId] = {
+        ...projectPrefs,
+        [layer.id]: {
+          ...prefsFor(index.files[layer.id], undefined, 0),
+          zIndex: nextUnusedZIndex(projectPrefs),
+        },
+      };
+    }
+    await commitFiles(index, previous);
+    return !before || before.filename !== filename ? undefined : [projectId];
+  });
 }
 
 /**
@@ -567,8 +742,6 @@ async function downloadAndIndexContextualLayers({
   signal,
 }: DownloadContextualLayersArgs): Promise<void> {
   throwIfDownloadCancelled(signal);
-  const index = readIndex();
-  const previous = index.files;
   const batchBytes = layers.reduce((sum, layer) => sum + layer.byteSize, 0);
   let completedBytes = 0;
   let lastPercent = -1;
@@ -595,87 +768,94 @@ async function downloadAndIndexContextualLayers({
   report(undefined, 0, 0);
   for (const layer of layers) {
     throwIfDownloadCancelled(signal);
-    const existing = index.files[layer.id];
-    const filename =
-      existing && existing.contentHash === layer.contentHash
-        ? existing.filename
-        : filenameFor(layer);
-    if (!existing || existing.contentHash !== layer.contentHash) {
-      try {
-        const grant = await fetch(
-          `${serverUrl}/api/map-assets/${layer.id}/download-url`,
-          {headers: {Authorization: `Bearer ${token}`}, signal}
-        );
-        if (!grant.ok) {
-          throw new Error(`Could not download ${layer.name}.`);
-        }
-        const {url} = (await grant.json()) as GetMapAssetDownloadUrlResponse;
-        if (!url) {
-          throw new Error(`Could not download ${layer.name}.`);
-        }
-        throwIfDownloadCancelled(signal);
-        if (Capacitor.isNativePlatform()) {
-          await downloadNativeLayerFileUntilCancelled(
-            url,
-            filename,
-            layer.byteSize,
-            (received, total) => report(layer.id, received, total),
-            signal
-          );
-        } else {
-          const response = await fetch(url, {signal});
-          if (!response.ok) {
-            throw new Error(`Could not download ${layer.name}.`);
+    // Layers within one batch still transfer one at a time; parallelism is
+    // across batches (e.g. two individually started downloads). Only another
+    // batch downloading this same asset makes this wait, and then the fresh
+    // index check below reuses its copy instead of fetching it again.
+    await runLayerDownloadExclusive(layer.id, async () => {
+      throwIfDownloadCancelled(signal);
+      const existing = readIndex().files[layer.id];
+      const filename =
+        existing && existing.contentHash === layer.contentHash
+          ? existing.filename
+          : filenameFor(layer);
+      if (!existing || existing.contentHash !== layer.contentHash) {
+        // Only the transfer itself holds a concurrency slot; waiting for a
+        // slot (or for the index commit below) does not count against it.
+        await acquireLayerTransferSlot(signal);
+        inFlightFileWrites.add(filename);
+        try {
+          try {
+            const grant = await fetch(
+              `${serverUrl}/api/map-assets/${layer.id}/download-url`,
+              {headers: {Authorization: `Bearer ${token}`}, signal}
+            );
+            if (!grant.ok) {
+              throw new Error(`Could not download ${layer.name}.`);
+            }
+            const {url} =
+              (await grant.json()) as GetMapAssetDownloadUrlResponse;
+            if (!url) {
+              throw new Error(`Could not download ${layer.name}.`);
+            }
+            throwIfDownloadCancelled(signal);
+            if (Capacitor.isNativePlatform()) {
+              await downloadNativeLayerFileUntilCancelled(
+                url,
+                filename,
+                layer.byteSize,
+                (received, total) => report(layer.id, received, total),
+                signal
+              );
+            } else {
+              const response = await fetch(url, {signal});
+              if (!response.ok) {
+                throw new Error(`Could not download ${layer.name}.`);
+              }
+              const bytes = await readResponseBytes(response, {
+                expectedBytes: layer.byteSize,
+                onReceived: (received, total) =>
+                  report(layer.id, received, total),
+                signal,
+              });
+              throwIfDownloadCancelled(signal);
+              await writeBrowserFile(filename, bytes);
+            }
+          } catch (error) {
+            await removeDeviceFile(filename);
+            throw asLayerDownloadError(error, layer.name);
+          } finally {
+            releaseLayerTransferSlot();
           }
-          const bytes = await readResponseBytes(response, {
-            expectedBytes: layer.byteSize,
-            onReceived: (received, total) => report(layer.id, received, total),
-            signal,
-          });
           throwIfDownloadCancelled(signal);
-          await writeBrowserFile(filename, bytes);
+          const touched = await indexDownloadedLayer(
+            projectId,
+            layer,
+            filename
+          );
+          if (!touched) {
+            notifyContextualLayersChanged();
+          } else {
+            for (const id of touched) {
+              notifyContextualLayersChanged(id);
+            }
+          }
+        } finally {
+          inFlightFileWrites.delete(filename);
         }
-      } catch (error) {
-        await removeDeviceFile(filename);
-        throw asLayerDownloadError(error, layer.name);
+      } else {
+        const touched = await indexDownloadedLayer(projectId, layer, filename);
+        if (!touched) {
+          notifyContextualLayersChanged();
+        } else {
+          for (const id of touched) {
+            notifyContextualLayersChanged(id);
+          }
+        }
       }
-    }
+    });
     completedBytes += layer.byteSize;
     report(layer.id, 0, 0);
-    index.files = assignDownloadedLayer<StoredFile>(index.files, projectId, {
-      assetId: layer.id,
-      contentHash: layer.contentHash,
-      kind: layer.kind,
-      name: layer.name,
-      byteSize: layer.byteSize,
-      extent4326: layer.extent,
-      extent3857: layer.extent3857,
-      minZoom: layer.minZoom,
-      maxZoom: layer.maxZoom,
-      tileSize: layer.tileSize,
-      defaultStyle: layer.defaultStyle,
-      filename,
-      projectIds: [projectId],
-    });
-    if (!index.prefs[layer.id]) {
-      index.prefs[layer.id] = {
-        ...prefsFor(index.files[layer.id], undefined, 0),
-        zIndex: nextUnusedZIndex(index.prefs),
-      };
-    }
-  }
-  await commitFiles(index, previous);
-  const touched = new Set<string>([projectId]);
-  for (const file of Object.values(index.files)) {
-    const before = previous[file.assetId];
-    if (!before || before.filename !== file.filename) {
-      for (const id of file.projectIds) {
-        touched.add(id);
-      }
-    }
-  }
-  for (const id of touched) {
-    notifyContextualLayersChanged(id);
   }
 }
 
@@ -690,9 +870,19 @@ async function commitFiles(
   const latest = readIndex();
   latest.files = snapshot.files;
   // Keep style edits saved while this snapshot was being prepared.
-  for (const [assetId, prefs] of Object.entries(snapshot.prefs)) {
-    if (latest.files[assetId] && !latest.prefs[assetId]) {
-      latest.prefs[assetId] = prefs;
+  for (const [projectId, byAsset] of Object.entries(snapshot.prefs)) {
+    const current = latest.prefs[projectId] ?? {};
+    let merged = current;
+    for (const [assetId, prefs] of Object.entries(byAsset)) {
+      if (latest.files[assetId] && !current[assetId]) {
+        if (merged === current) {
+          merged = {...current};
+        }
+        merged[assetId] = prefs;
+      }
+    }
+    if (merged !== current) {
+      latest.prefs[projectId] = merged;
     }
   }
   dropUnusedPrefs(latest);
@@ -722,28 +912,24 @@ function layerRefsChanged(
   return nextIds.some(assetId => {
     const before = previous[assetId];
     const after = next[assetId];
-    return (
-      !before ||
-      before.filename !== after.filename ||
-      before.projectIds.join('\0') !== after.projectIds.join('\0')
-    );
+    return !before || before.filename !== after.filename;
   });
 }
 
 /**
- * Keep only the ready listing ids for this survey. Directory sync passes
- * `contextualLayers` here; ids omitted because a replace is in progress are
- * dropped until the new file is ready. Skip this call when the listing fields
- * were omitted (attach failure) so a glitch is not treated as unlink.
+ * Keep only the ready listing ids for the whole device. Directory sync
+ * passes the union of activated surveys' `contextualLayers`; ids omitted
+ * because a replace is in progress are dropped until the new file is ready.
+ * Skip this call when any listing field was omitted (attach failure) so a
+ * glitch is not treated as unlink.
  */
 export async function retainListedContextualLayers(
-  projectId: string,
-  listedAssetIds: string[]
+  listedAssetIds: readonly string[]
 ): Promise<boolean> {
   return runFileIndexMutation(async () => {
     const index = readIndex();
     const previous = index.files;
-    index.files = retainListedLayers(previous, projectId, listedAssetIds);
+    index.files = retainListedLayers(previous, listedAssetIds);
     if (!layerRefsChanged(previous, index.files)) {
       await deleteUnreferencedFiles(index);
       return false;
@@ -753,28 +939,27 @@ export async function retainListedContextualLayers(
   });
 }
 
-/** Remove this survey from layers the user did not keep. */
-export async function forgetUnselectedContextualLayers(
-  projectId: string,
-  keepIds: string[]
-): Promise<void> {
-  await retainListedContextualLayers(projectId, keepIds);
-}
-
-/** Drop this survey's reference. Delete the file when no survey still uses it. */
+/**
+ * Drop this survey's paint prefs and seen-listing hash. When `keepAssetIds`
+ * is provided, also drop files no remaining survey lists. Omit it when the
+ * remaining keep-set is unknown so a glitch does not delete shared files.
+ */
 export async function releaseContextualLayersForProject(
-  projectId: string
+  projectId: string,
+  keepAssetIds?: readonly string[]
 ): Promise<void> {
   return runFileIndexMutation(async () => {
     const index = readIndex();
     const previous = index.files;
-    const next = releaseProjectLayers(index.files, projectId);
-    index.files = next;
+    if (keepAssetIds) {
+      index.files = retainListedLayers(previous, keepAssetIds);
+    }
+    delete index.prefs[projectId];
     delete index.seenHashByProject[projectId];
     dropUnusedPrefs(index);
     writeIndex(index);
     await Promise.all(
-      filenamesToDelete(previous, next).map(filename =>
+      filenamesToDelete(previous, index.files).map(filename =>
         removeDeviceFile(filename)
       )
     );
@@ -788,7 +973,6 @@ export type StoredContextualLayerSummary = {
   kind: ContextualLayerListing['kind'];
   byteSize: number;
   contentHash: string;
-  projectIds: string[];
   extent4326: ContextualLayerListing['extent'];
 };
 
@@ -804,10 +988,24 @@ export async function listStoredContextualLayers(): Promise<
       kind: file.kind,
       byteSize: file.byteSize,
       contentHash: file.contentHash,
-      projectIds: [...file.projectIds],
       extent4326: file.extent4326,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * True when every listed layer already has a matching file on this device.
+ * An empty listing is already satisfied.
+ */
+export function areContextualLayersOnDevice(
+  layers: ReadonlyArray<{id: string; contentHash: string}>
+): boolean {
+  const storedById = new Map(
+    Object.values(readIndex().files).map(file => [file.assetId, file])
+  );
+  return layers.every(
+    layer => layerDeviceStatus(layer, storedById) === 'on-device'
+  );
 }
 
 /** Delete one layer file even when several surveys reference it. */
@@ -824,16 +1022,17 @@ export async function removeContextualLayerFromDevice(
     const {[assetId]: _removed, ...rest} = previous;
     index.files = rest;
     await commitFiles(index, previous);
-    for (const projectId of file.projectIds) {
-      notifyContextualLayersChanged(projectId);
-    }
+    notifyContextualLayersChanged();
   });
 }
 
 export const CONTEXTUAL_LAYERS_CHANGED_EVENT = 'contextual-layers-changed';
 
-/** Broadcast that a survey's on-device layer set changed. */
-export function notifyContextualLayersChanged(projectId: string): void {
+/**
+ * Broadcast that on-device layers changed. Omit `projectId` when every
+ * survey that lists the file should reload.
+ */
+export function notifyContextualLayersChanged(projectId?: string): void {
   dispatchEvent(
     new CustomEvent(CONTEXTUAL_LAYERS_CHANGED_EVENT, {detail: {projectId}})
   );

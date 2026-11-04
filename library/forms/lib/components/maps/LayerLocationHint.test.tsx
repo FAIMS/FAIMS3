@@ -26,6 +26,14 @@ describe('LayerLocationHint', () => {
     expect(
       screen.getByRole('img', {name: 'Current location is on this layer'})
     ).toBeInTheDocument();
-    expect(screen.getByText('On map')).toBeInTheDocument();
+    expect(screen.getByText('0m away')).toBeInTheDocument();
+  });
+
+  it('renders a compact distance and away label when the device is outside', () => {
+    renderHint([151.222, -33.865]);
+    expect(screen.getByText('1km away')).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', {name: /of this layer/i})
+    ).toBeInTheDocument();
   });
 });

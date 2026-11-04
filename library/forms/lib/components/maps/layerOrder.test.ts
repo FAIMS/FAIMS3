@@ -37,5 +37,24 @@ describe('moveStackedLayer', () => {
   it('does not move the layer already at the top of the panel', () => {
     const layers = [layer('top', 2), layer('bottom', 1)];
     expect(moveStackedLayer(layers, 'top', 'up')).toBe(layers);
+    expect(moveStackedLayer(layers, 'top', 'top')).toBe(layers);
+  });
+
+  it('jumps a layer to the top or bottom of the panel', () => {
+    const layers = [layer('low', 1), layer('high', 3), layer('mid', 2)];
+    const names = (stack: {id: string; zIndex: number}[]) =>
+      sortLayersTopFirst(stack).map(item => item.id);
+
+    expect(names(layers)).toEqual(['high', 'mid', 'low']);
+    expect(names(moveStackedLayer(layers, 'low', 'top'))).toEqual([
+      'low',
+      'high',
+      'mid',
+    ]);
+    expect(names(moveStackedLayer(layers, 'high', 'bottom'))).toEqual([
+      'mid',
+      'low',
+      'high',
+    ]);
   });
 });

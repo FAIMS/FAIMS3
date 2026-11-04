@@ -19,11 +19,26 @@ export function EditMapLayerDetailsDialog({assetId}: {assetId: string}) {
   const user = useRequiredUser();
   const {data, isLoading, isError} = useMapAsset({user, assetId});
   const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<{name: string; description: string}>();
+
+  const handleOpenChange = (next: boolean) => {
+    if (next && data) {
+      setDraft({name: data.name, description: data.description});
+    }
+    if (!next) {
+      setDraft(undefined);
+    }
+    setOpen(next);
+  };
+
+  const formValues =
+    draft ??
+    (data ? {name: data.name, description: data.description} : undefined);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline" disabled={isLoading}>
+        <Button variant="outline" disabled={isLoading && !data}>
           Edit name &amp; description
           <Pencil className="ml-1 h-4 w-4" aria-hidden />
         </Button>
@@ -36,16 +51,19 @@ export function EditMapLayerDetailsDialog({assetId}: {assetId: string}) {
             same.
           </DialogDescription>
         </DialogHeader>
-        {isError || !data ? (
+        {isError || !formValues ? (
           <p className="text-sm text-destructive">
             Could not load map layer details.
           </p>
         ) : (
           <UpdateMapLayerDetailsForm
             assetId={assetId}
-            name={data.name}
-            description={data.description}
-            setDialogOpen={setOpen}
+            name={formValues.name}
+            description={formValues.description}
+            setDialogOpen={value => {
+              const next = typeof value === 'function' ? value(open) : value;
+              handleOpenChange(next);
+            }}
           />
         )}
       </DialogContent>

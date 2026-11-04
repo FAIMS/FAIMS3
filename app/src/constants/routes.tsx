@@ -21,6 +21,35 @@ export const OFFLINE_MAP_REGIONS = `${OFFLINE_MAPS}/regions`;
 export const OFFLINE_MAP_LAYERS = `${OFFLINE_MAPS}/layers`;
 
 /**
+ * Same-app path from `?from=`, or undefined if missing or not a relative path.
+ * Rejects protocol-relative and absolute URLs so back cannot leave the app.
+ */
+export function safeReturnPath(
+  from: string | null | undefined
+): string | undefined {
+  if (
+    !from ||
+    !from.startsWith('/') ||
+    from.startsWith('//') ||
+    from.includes('://')
+  ) {
+    return undefined;
+  }
+  return from;
+}
+
+/**
+ * @returns /offline-maps/layers, optionally with `?from=` so Back returns
+ * to the screen that opened the manager (e.g. survey settings).
+ */
+export function getOfflineMapLayersRoute({from}: {from?: string} = {}) {
+  if (!from) {
+    return OFFLINE_MAP_LAYERS;
+  }
+  return `${OFFLINE_MAP_LAYERS}?${new URLSearchParams({from}).toString()}`;
+}
+
+/**
  * @returns /offline-maps/layers/<assetId>
  */
 export function getOfflineMapLayerPreviewRoute({assetId}: {assetId: string}) {

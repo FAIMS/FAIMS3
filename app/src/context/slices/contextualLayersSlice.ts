@@ -4,6 +4,10 @@
  * and which layer listing a survey has already been shown.
  * File bytes stay in Capacitor Filesystem or the Origin Private File System.
  * redux-persist writes this slice to IndexedDB.
+ *
+ * Files are a device-wide catalog keyed by asset id. Survey membership is
+ * the survey listing: a stored file is available to every activated survey
+ * that lists that asset. Paint prefs are per survey and asset.
  */
 
 import type {ContextualLayerListing, MapAssetStyle} from '@faims3/data-model';
@@ -26,8 +30,6 @@ export type ContextualLayerFile = {
   tileSize?: ContextualLayerListing['tileSize'];
   defaultStyle: MapAssetStyle;
   filename: string;
-  /** Active surveys that downloaded this file. */
-  projectIds: string[];
 };
 
 export type ContextualLayerPrefs = {
@@ -42,7 +44,8 @@ export type ContextualLayerPrefs = {
 
 export type ContextualLayersState = {
   files: Record<string, ContextualLayerFile>;
-  prefs: Record<string, ContextualLayerPrefs>;
+  /** Paint prefs keyed by project id, then asset id. */
+  prefs: Record<string, Record<string, ContextualLayerPrefs>>;
   seenHashByProject: Record<string, string>;
 };
 

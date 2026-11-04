@@ -125,7 +125,10 @@ describe('NotebookContextualLayers', () => {
 
   it('keeps the dragged opacity on screen and writes it once', async () => {
     render(
-      <NotebookContextualLayers projectId="survey">
+      <NotebookContextualLayers
+        projectId="survey"
+        listedAssetIds={['boundary']}
+      >
         <DragOpacity />
       </NotebookContextualLayers>
     );
@@ -146,6 +149,7 @@ describe('NotebookContextualLayers', () => {
 
     expect(harness.updateContextualLayerPrefs).toHaveBeenCalledTimes(1);
     expect(harness.updateContextualLayerPrefs).toHaveBeenCalledWith(
+      'survey',
       'boundary',
       {
         opacity: 0.8,
@@ -163,7 +167,10 @@ describe('NotebookContextualLayers', () => {
     );
 
     render(
-      <NotebookContextualLayers projectId="survey">
+      <NotebookContextualLayers
+        projectId="survey"
+        listedAssetIds={['boundary']}
+      >
         <StackSlot />
       </NotebookContextualLayers>
     );
@@ -194,7 +201,10 @@ describe('NotebookContextualLayers', () => {
 
   it('applies file defaults immediately and drops pending paint edits', async () => {
     render(
-      <NotebookContextualLayers projectId="survey">
+      <NotebookContextualLayers
+        projectId="survey"
+        listedAssetIds={['boundary']}
+      >
         <ResetPaint />
       </NotebookContextualLayers>
     );
@@ -220,7 +230,9 @@ describe('NotebookContextualLayers', () => {
     expect(screen.getByTestId('opacity').textContent).toBe('0.85');
     expect(screen.getByTestId('z').textContent).toBe('10');
     expect(screen.getByTestId('stroke').textContent).toBe('#1565c0');
-    expect(harness.resetContextualLayerPrefs).toHaveBeenCalledWith('survey');
+    expect(harness.resetContextualLayerPrefs).toHaveBeenCalledWith('survey', [
+      'boundary',
+    ]);
     expect(harness.notifyContextualLayersChanged).toHaveBeenCalledWith(
       'survey'
     );

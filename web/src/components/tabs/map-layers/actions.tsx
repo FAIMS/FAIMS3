@@ -5,6 +5,7 @@ import {ReplaceMapLayerDialog} from '@/components/dialogs/replace-map-layer-dial
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
+import {config} from '@/constants';
 import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useMapAsset} from '@/hooks/map-asset-hooks';
 import {
@@ -17,9 +18,9 @@ import {isMapAssetInProgress} from '@faims3/data-model';
 /** Edit, replace, and delete actions the user is allowed to run. */
 export function MapLayerActions({assetId}: {assetId: string}) {
   const user = useRequiredUser();
-  const {data, isPending} = useMapAsset({user, assetId});
+  const {data} = useMapAsset({user, assetId});
 
-  if (isPending || !data) {
+  if (!data) {
     return <Skeleton className="h-32 w-full" />;
   }
 
@@ -78,8 +79,7 @@ export function MapLayerActions({assetId}: {assetId: string}) {
             <ListItem>
               <ListLabel>Delete</ListLabel>
               <ListDescription>
-                Remove this layer from the library and from every survey that
-                uses it.
+                {`Permanently delete this map layer, which will remove it from all ${config.notebookNamePlural} that use it`}
               </ListDescription>
             </ListItem>
             <ListItem>

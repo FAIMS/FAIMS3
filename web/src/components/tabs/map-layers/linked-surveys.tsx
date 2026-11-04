@@ -8,6 +8,7 @@ import {columns} from '@/components/tables/projects';
 import {Button} from '@/components/ui/button';
 import {config} from '@/constants';
 import {useRequiredUser, userCanDo} from '@/hooks/auth-hooks';
+import {Info} from 'lucide-react';
 import {
   invalidateMapAssets,
   linkMapAsset,
@@ -188,28 +189,45 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
   }
 
   const loading = projects.isPending || links.isPending;
+  const hasLinks = (links.data?.length ?? 0) > 0;
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="flex flex-col gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">
-            Linked {config.notebookNamePluralCapitalized}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Users who activate these {config.notebookNamePlural} can choose to
-            download this layer.
+      {!loading && !hasLinks ? (
+        <div
+          role="status"
+          data-testid="web-map-layers-linked-empty"
+          className="flex gap-3 rounded-lg border border-info/40 bg-info/10 p-4 text-sm text-foreground"
+        >
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" aria-hidden />
+          <p>
+            This map layer is not currently linked to any{' '}
+            {config.notebookNamePlural}. Get started by linking a{' '}
+            {config.notebookName} below.
           </p>
         </div>
-        <DataTable
-          columns={linkedColumns}
-          data={linkedSurveys}
-          loading={loading}
-          initialSorting={[{id: 'createdAt', desc: true}]}
-          onRowClick={openSurvey}
-          emptyMessage={`No linked ${config.notebookNamePlural}.`}
-        />
-      </section>
+      ) : null}
+      {loading || hasLinks ? (
+        <section className="flex flex-col gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">
+              Linked {config.notebookNamePluralCapitalized}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Users who activate these {config.notebookNamePlural} can choose to
+              download this layer.
+            </p>
+          </div>
+          <DataTable
+            columns={linkedColumns}
+            data={linkedSurveys}
+            loading={loading}
+            initialSorting={[{id: 'createdAt', desc: true}]}
+            onRowClick={openSurvey}
+            emptyMessage={`No linked ${config.notebookNamePlural}.`}
+          />
+        </section>
+      ) : null}
       {loading || canLinkSome ? (
         <section className="flex flex-col gap-3">
           <div>

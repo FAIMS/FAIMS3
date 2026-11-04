@@ -13,22 +13,32 @@ function locationAccent(theme: Theme): string {
   );
 }
 
+/** Compact "10m" / "10km" as spoken distance, e.g. "10m away". */
+function distanceAwayText(compact: string): string {
+  return `${compact} away`;
+}
+
 /**
- * Blue current-location dot plus "On map" when the device is on this asset.
+ * Blue current-location dot plus "0m away" when the device is on this asset.
  * Otherwise a bearing arrow toward the extent and a coarse distance.
  * Hidden when location or extent is unknown.
  */
 export function LayerLocationHint({
   extent,
   location,
+  leadingSeparator = true,
 }: {
   extent?: Extent4326;
   location?: readonly [number, number];
+  /** Leading middle-dot before the glyph; hide when the hint is right-aligned. */
+  leadingSeparator?: boolean;
 }) {
   if (!extent || !location) {
     return null;
   }
   const relation = layerLocationRelation(location[0], location[1], extent);
+  const awayText =
+    relation.kind === 'inside' ? '0m away' : distanceAwayText(relation.label);
   const label =
     relation.kind === 'inside'
       ? 'Current location is on this layer'
@@ -51,9 +61,11 @@ export function LayerLocationHint({
         minWidth: 0,
       }}
     >
-      <Box component="span" aria-hidden sx={{color: 'text.secondary'}}>
-        ·
-      </Box>
+      {leadingSeparator ? (
+        <Box component="span" aria-hidden sx={{color: 'text.secondary'}}>
+          ·
+        </Box>
+      ) : null}
       {relation.kind === 'inside' ? (
         <>
           <Box
@@ -78,7 +90,7 @@ export function LayerLocationHint({
             color="text.secondary"
             sx={{lineHeight: 1.2, whiteSpace: 'nowrap'}}
           >
-            On map
+            {awayText}
           </Typography>
         </>
       ) : (
@@ -97,7 +109,7 @@ export function LayerLocationHint({
             color="text.secondary"
             sx={{lineHeight: 1.2, whiteSpace: 'nowrap'}}
           >
-            {relation.label}
+            {awayText}
           </Typography>
         </>
       )}

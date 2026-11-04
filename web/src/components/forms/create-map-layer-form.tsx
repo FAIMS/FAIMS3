@@ -60,7 +60,8 @@ export function CreateMapLayerForm({
     {
       name: 'name',
       label: 'Name',
-      description: 'A short display name for the layer',
+      description:
+        'Select a short and clear display name to help users understand the contents of this layer.',
       schema: resourceNameSchema(INPUT_LIMITS.RESOURCE_NAME_MIN_LENGTH, 'Name'),
       maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
       testId: 'web-map-layers-create-name',

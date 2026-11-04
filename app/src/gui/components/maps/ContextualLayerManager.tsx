@@ -9,20 +9,10 @@ import {
   type ContextualLayerListing,
 } from '@faims3/data-model';
 import {LayerLocationHint, useOccasionalDeviceLocation} from '@faims3/forms';
-import {ArrowForwardIos} from '@mui/icons-material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import {
-  Alert,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Stack,
-  Typography,
-} from '@mui/material';
+import {ArrowForwardIos, Download} from '@mui/icons-material';
+import {Alert, Button, IconButton, Stack, Typography} from '@mui/material';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {
   isTokenValid,
@@ -35,12 +25,12 @@ import {
   MapLayerDownloadProgress,
   mapLayerDownloadLabel,
 } from './MapLayerDownloadProgress';
+import {layerDeviceStatus} from './contextualLayerIndex';
 import {
   CONTEXTUAL_LAYERS_CHANGED_EVENT,
   downloadContextualLayers,
   isContextualLayerDownloadCancelledError,
   listStoredContextualLayers,
-  removeContextualLayerFromDevice,
   type StoredContextualLayerSummary,
 } from './contextualLayerStore';
 
@@ -52,28 +42,53 @@ type SurveyLayer = {
   layer: ContextualLayerListing;
 };
 
+/** Progress for one in-flight download entry, keyed in {@link downloads}. */
+type ActiveDownload = {
+  completion: number | null;
+  cancelling: boolean;
+};
+
+/** Key for one layer's individual download entry. */
+const rowDownloadKey = (row: SurveyLayer): string =>
+  `${row.projectId}:${row.layer.id}`;
+
+/** Key for a survey's "Download all" entry. */
+const allDownloadKey = (projectId: string): string => `all:${projectId}`;
+
 /** User-facing kind label (vector tiles, raster tiles). */
 function kindLabel(kind: ContextualLayerListing['kind']): string {
   return mapAssetKindLabel(kind);
 }
 
-/** List, download, preview, and delete on-device contextual layers. */
+/** "Linked to: 'Creek survey', 'Another'" or the empty-state line. */
+function linkedSurveysLabel(surveyNames: string[]): string {
+  if (surveyNames.length === 0) {
+    return 'Not linked to an activated survey';
+  }
+  return `Linked to: ${surveyNames.map(name => `'${name}'`).join(', ')}`;
+}
+
+/**
+ * List and download on-device contextual layers. Opening a downloaded layer
+ * shows its details page, where update and remove actions live — matching
+ * offline map regions, whose list rows only navigate to their edit page.
+ */
 export function ContextualLayerManager() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const backLink =
+    ROUTES.safeReturnPath(searchParams.get('from')) ?? ROUTES.OFFLINE_MAPS;
   const servers = useAppSelector(state => state.projects.servers);
   const auth = useAppSelector(state => state.auth);
   const activeUser = useAppSelector(selectActiveUser);
   const [stored, setStored] = useState<StoredContextualLayerSummary[]>([]);
   const [message, setMessage] = useState('');
-  const [busyKey, setBusyKey] = useState<string | undefined>();
-  const [downloadCompletion, setDownloadCompletion] = useState<number | null>(
-    null
-  );
-  const [cancelling, setCancelling] = useState(false);
-  const downloadAbort = useRef<AbortController | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<
-    StoredContextualLayerSummary | undefined
-  >();
+  // Download state is per entry (one individual layer, or one survey's
+  // "Download all"), so starting one download never blocks another entry.
+  const [downloads, setDownloads] = useState<
+    ReadonlyMap<string, ActiveDownload>
+  >(() => new Map());
+  const downloadAborts = useRef(new Map<string, AbortController>());
   const location = useOccasionalDeviceLocation();
 
   const refresh = useCallback(async () => {
@@ -114,14 +129,6 @@ export function ContextualLayerManager() {
     return rows;
   }, [servers]);
 
-  const projectNameById = useMemo(() => {
-    const names = new Map<string, string>();
-    for (const row of surveyLayers) {
-      names.set(row.projectId, row.projectName);
-    }
-    return names;
-  }, [surveyLayers]);
-
   const storedById = useMemo(
     () => new Map(stored.map(file => [file.assetId, file])),
     [stored]
@@ -143,15 +150,8 @@ export function ContextualLayerManager() {
       {projectName: string; rows: SurveyLayer[]}
     >();
     for (const row of surveyLayers) {
-      const file = storedById.get(row.layer.id);
-      const current =
-        file &&
-        file.contentHash === row.layer.contentHash &&
-        file.projectIds.includes(row.projectId);
-      if (current) {
-        continue;
-      }
-      if (file && file.contentHash !== row.layer.contentHash) {
+      const status = layerDeviceStatus(row.layer, storedById);
+      if (status === 'on-device' || status === 'update') {
         continue;
       }
       const existing = groups.get(row.projectId);
@@ -177,28 +177,42 @@ export function ContextualLayerManager() {
     return undefined;
   };
 
-  const cancelDownload = () => {
-    setCancelling(true);
-    downloadAbort.current?.abort();
+  const cancelDownload = (key: string) => {
+    setDownloads(current => {
+      if (!current.has(key)) {
+        return current;
+      }
+      const next = new Map(current);
+      next.set(key, {...current.get(key)!, cancelling: true});
+      return next;
+    });
+    downloadAborts.current.get(key)?.abort();
   };
 
-  const downloadProgress = (active: boolean) =>
-    active ? (
+  const downloadProgress = (key: string) => {
+    const active = downloads.get(key);
+    return active ? (
       <MapLayerDownloadProgress
-        completion={downloadCompletion}
-        cancelling={cancelling}
-        onCancel={cancelDownload}
+        completion={active.completion}
+        cancelling={active.cancelling}
+        onCancel={() => cancelDownload(key)}
         sx={{mt: 1}}
         cancelSize="small"
       />
     ) : null;
+  };
 
   const downloadRows = async (rows: SurveyLayer[], key: string) => {
+    if (downloadAborts.current.has(key)) {
+      return;
+    }
     const controller = new AbortController();
-    downloadAbort.current = controller;
-    setBusyKey(key);
-    setDownloadCompletion(0);
-    setCancelling(false);
+    downloadAborts.current.set(key, controller);
+    setDownloads(current => {
+      const next = new Map(current);
+      next.set(key, {completion: 0, cancelling: false});
+      return next;
+    });
     setMessage('');
     try {
       const byProject = new Map<string, SurveyLayer[]>();
@@ -220,7 +234,18 @@ export function ContextualLayerManager() {
           projectId,
           layers: group.map(row => row.layer),
           signal: controller.signal,
-          onProgress: progress => setDownloadCompletion(progress.completion),
+          onProgress: progress =>
+            setDownloads(current => {
+              if (!current.has(key)) {
+                return current;
+              }
+              const next = new Map(current);
+              next.set(key, {
+                ...current.get(key)!,
+                completion: progress.completion,
+              });
+              return next;
+            }),
         });
       }
       await refresh();
@@ -230,49 +255,35 @@ export function ContextualLayerManager() {
       }
       setMessage(error instanceof Error ? error.message : 'Download failed.');
     } finally {
-      if (downloadAbort.current === controller) {
-        downloadAbort.current = null;
+      if (downloadAborts.current.get(key) === controller) {
+        downloadAborts.current.delete(key);
       }
-      setBusyKey(undefined);
-      setCancelling(false);
-      setDownloadCompletion(null);
+      setDownloads(current => {
+        if (!current.has(key)) {
+          return current;
+        }
+        const next = new Map(current);
+        next.delete(key);
+        return next;
+      });
     }
   };
 
-  const downloadLabel = (active: boolean, idle: string) =>
-    mapLayerDownloadLabel(active, idle, downloadCompletion);
-
-  const confirmDelete = async () => {
-    if (!pendingDelete) {
-      return;
-    }
-    setBusyKey(pendingDelete.assetId);
-    setMessage('');
-    try {
-      await removeContextualLayerFromDevice(pendingDelete.assetId);
-      setPendingDelete(undefined);
-      await refresh();
-    } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : 'Could not remove the layer.'
-      );
-    } finally {
-      setBusyKey(undefined);
-    }
-  };
+  const downloadLabel = (key: string, idle: string) =>
+    mapLayerDownloadLabel(
+      downloads.has(key),
+      idle,
+      downloads.get(key)?.completion ?? null
+    );
 
   return (
     <ListingPage data-testid="map-layer-manager">
       <Stack spacing={3}>
-        <ListingPageHeader backLink={ROUTES.OFFLINE_MAPS} title="Map layers" />
-        <Typography variant="body2" color="text.secondary">
-          Layers downloaded for activated surveys, and layers still available to
-          download.
-        </Typography>
+        <ListingPageHeader backLink={backLink} title="Manage map layers" />
         {message ? <Alert severity="error">{message}</Alert> : null}
 
         <Stack spacing={1}>
-          <Typography variant="h5">On this device</Typography>
+          <Typography variant="h5">Downloaded</Typography>
           {stored.length === 0 ? (
             <Typography
               variant="body2"
@@ -284,9 +295,13 @@ export function ContextualLayerManager() {
           ) : (
             stored.map(file => {
               const updates = updatesFor(file);
-              const surveyNames = file.projectIds.map(
-                projectId => projectNameById.get(projectId) ?? projectId
-              );
+              const surveyNames = [
+                ...new Set(
+                  surveyLayers
+                    .filter(row => row.layer.id === file.assetId)
+                    .map(row => row.projectName)
+                ),
+              ];
               return (
                 <OutlinedListingCard
                   key={file.assetId}
@@ -298,41 +313,6 @@ export function ContextualLayerManager() {
                     )
                   }
                   trailing={<ArrowForwardIos color="action" />}
-                  footer={
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      useFlexGap
-                      sx={{flexWrap: 'wrap'}}
-                    >
-                      {updates.length > 0 ? (
-                        <Button
-                          variant="contained"
-                          size="small"
-                          disabled={busyKey !== undefined}
-                          onClick={() =>
-                            void downloadRows(updates, `update:${file.assetId}`)
-                          }
-                        >
-                          {downloadLabel(
-                            busyKey === `update:${file.assetId}`,
-                            'Update'
-                          )}
-                        </Button>
-                      ) : null}
-                      <Button
-                        variant="contained"
-                        size="small"
-                        color="error"
-                        endIcon={<DeleteIcon />}
-                        disabled={busyKey !== undefined}
-                        onClick={() => setPendingDelete(file)}
-                        data-testid={`map-layer-remove-${file.assetId}`}
-                      >
-                        Remove
-                      </Button>
-                    </Stack>
-                  }
                 >
                   <Typography variant="h5" sx={listingTitleSx}>
                     {file.name}
@@ -351,16 +331,13 @@ export function ContextualLayerManager() {
                     />
                   </Stack>
                   <Typography variant="body2" color="text.secondary">
-                    {surveyNames.length > 0
-                      ? `Used by ${surveyNames.join(', ')}`
-                      : 'Not used by an activated survey'}
+                    {linkedSurveysLabel(surveyNames)}
                   </Typography>
                   {updates.length > 0 ? (
                     <Typography variant="body2" color="text.secondary">
                       A newer file is available.
                     </Typography>
                   ) : null}
-                  {downloadProgress(busyKey === `update:${file.assetId}`)}
                 </OutlinedListingCard>
               );
             })
@@ -368,7 +345,7 @@ export function ContextualLayerManager() {
         </Stack>
 
         <Stack spacing={2}>
-          <Typography variant="h5">Not downloaded</Typography>
+          <Typography variant="h5">Available for download</Typography>
           {missingBySurvey.length === 0 ? (
             <Typography
               variant="body2"
@@ -387,59 +364,71 @@ export function ContextualLayerManager() {
                 <Stack
                   direction="row"
                   spacing={1}
-                  useFlexGap
                   sx={{
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    flexWrap: 'wrap',
                     minWidth: 0,
                   }}
                 >
                   <Typography
                     variant="h6"
-                    sx={{
-                      flex: '1 1 12rem',
-                      minWidth: 0,
-                      overflowWrap: 'anywhere',
-                    }}
+                    noWrap
+                    title={group.projectName}
+                    sx={{flex: '1 1 auto', minWidth: 0}}
                   >
                     {group.projectName}
                   </Typography>
                   <Button
-                    variant="contained"
-                    disabled={busyKey !== undefined}
+                    variant="outlined"
+                    size="small"
+                    // Only this survey's own entries block "Download all":
+                    // it would re-download a layer already in flight. Other
+                    // surveys' downloads run in parallel with it.
+                    disabled={
+                      downloads.has(allDownloadKey(group.rows[0].projectId)) ||
+                      group.rows.some(row => downloads.has(rowDownloadKey(row)))
+                    }
                     onClick={() =>
                       void downloadRows(
                         group.rows,
-                        `all:${group.rows[0].projectId}`
+                        allDownloadKey(group.rows[0].projectId)
                       )
                     }
                     sx={{flexShrink: 0}}
                     data-testid={`map-layer-download-all-${group.rows[0].projectId}`}
                   >
                     {downloadLabel(
-                      busyKey === `all:${group.rows[0].projectId}`,
+                      allDownloadKey(group.rows[0].projectId),
                       'Download all'
                     )}
                   </Button>
                 </Stack>
-                {downloadProgress(busyKey === `all:${group.rows[0].projectId}`)}
+                {downloadProgress(allDownloadKey(group.rows[0].projectId))}
                 {group.rows.map(row => {
-                  const alreadyStored = storedById.has(row.layer.id);
-                  const key = `${row.projectId}:${row.layer.id}`;
+                  const key = rowDownloadKey(row);
+                  const rowDownloading = downloads.has(key);
+                  const allDownloading = downloads.has(
+                    allDownloadKey(row.projectId)
+                  );
                   return (
                     <OutlinedListingCard
                       key={key}
                       trailing={
-                        <Button
-                          variant="contained"
-                          size="small"
-                          disabled={busyKey !== undefined}
-                          onClick={() => void downloadRows([row], key)}
-                          data-testid={`map-layer-download-${row.layer.id}`}
-                        >
-                          {downloadLabel(busyKey === key, 'Download')}
-                        </Button>
+                        rowDownloading || allDownloading ? undefined : (
+                          <IconButton
+                            color="primary"
+                            aria-label={`Download ${row.layer.name}`}
+                            onClick={() => void downloadRows([row], key)}
+                            data-testid={`map-layer-download-${row.layer.id}`}
+                            sx={{
+                              bgcolor: 'primary.main',
+                              color: 'primary.contrastText',
+                              '&:hover': {bgcolor: 'primary.dark'},
+                            }}
+                          >
+                            <Download />
+                          </IconButton>
+                        )
                       }
                     >
                       <Typography variant="h5" sx={listingTitleSx}>
@@ -453,14 +442,13 @@ export function ContextualLayerManager() {
                         <Typography variant="body2" color="text.secondary">
                           {kindLabel(row.layer.kind)} ·{' '}
                           {formatFileSize(row.layer.byteSize)}
-                          {alreadyStored ? ' · Already on this device' : ''}
                         </Typography>
                         <LayerLocationHint
                           extent={row.layer.extent}
                           location={location}
                         />
                       </Stack>
-                      {downloadProgress(busyKey === key)}
+                      {downloadProgress(key)}
                     </OutlinedListingCard>
                   );
                 })}
@@ -469,36 +457,6 @@ export function ContextualLayerManager() {
           )}
         </Stack>
       </Stack>
-
-      <Dialog
-        open={pendingDelete !== undefined}
-        onClose={() => busyKey === undefined && setPendingDelete(undefined)}
-      >
-        <DialogTitle>Remove map layer</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Remove {pendingDelete?.name} from this device? Surveys that use it
-            can download it again later.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setPendingDelete(undefined)}
-            disabled={busyKey !== undefined}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={() => void confirmDelete()}
-            disabled={busyKey !== undefined}
-            data-testid="map-layer-delete-confirm"
-          >
-            {busyKey === pendingDelete?.assetId ? 'Removing…' : 'Remove'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </ListingPage>
   );
 }

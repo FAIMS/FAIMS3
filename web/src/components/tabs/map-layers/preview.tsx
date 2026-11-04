@@ -9,7 +9,7 @@ export function MapLayerPreviewTab({assetId}: {assetId: string}) {
   const user = useRequiredUser();
   const {data, isPending, isError} = useMapAsset({user, assetId});
 
-  if (isPending) {
+  if (isPending && !data) {
     return <Skeleton className="w-full h-map-layer-preview" />;
   }
   if (isError || !data) {

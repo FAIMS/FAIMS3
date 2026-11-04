@@ -7,6 +7,7 @@ import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import * as ROUTES from '../../../constants/routes';
 import type {StoredContextualLayerSummary} from './contextualLayerStore';
 
 const harness = vi.hoisted(() => ({
@@ -72,7 +73,11 @@ vi.mock('./contextualLayerStore', () => ({
 }));
 
 vi.mock('../ui/BackButton', () => ({
-  default: () => <button type="button">Back</button>,
+  default: ({link}: {link: string}) => (
+    <button type="button" data-testid="map-layer-manager-back">
+      {link}
+    </button>
+  ),
 }));
 
 import {ContextualLayerManager} from './ContextualLayerManager';
@@ -104,14 +109,13 @@ function stored(
     kind: 'vector-tiles',
     byteSize: 2048,
     contentHash,
-    projectIds: ['survey-1'],
     extent4326: [0, 0, 1, 1],
   };
 }
 
-function renderManager() {
+function renderManager(initialEntry = ROUTES.OFFLINE_MAP_LAYERS) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <ThemeProvider theme={createTheme()}>
         <ContextualLayerManager />
       </ThemeProvider>
@@ -128,6 +132,37 @@ describe('ContextualLayerManager', () => {
     harness.remove.mockReset().mockResolvedValue(undefined);
   });
 
+  it('goes back to offline maps when opened without a return hint', async () => {
+    renderManager();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('map-layer-manager-back')).toHaveTextContent(
+        ROUTES.OFFLINE_MAPS
+      );
+    });
+  });
+
+  it('goes back to the hinted path when opened from survey settings', async () => {
+    const from = '/notebooks/server-1/survey-1';
+    renderManager(ROUTES.getOfflineMapLayersRoute({from}));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('map-layer-manager-back')).toHaveTextContent(
+        from
+      );
+    });
+  });
+
+  it('ignores an unsafe return hint', async () => {
+    renderManager(`${ROUTES.OFFLINE_MAP_LAYERS}?from=https://example.com`);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('map-layer-manager-back')).toHaveTextContent(
+        ROUTES.OFFLINE_MAPS
+      );
+    });
+  });
+
   it('shows empty states when nothing is stored or available', async () => {
     renderManager();
 
@@ -142,6 +177,13 @@ describe('ContextualLayerManager', () => {
     expect(
       screen.getByText('You currently have no map layers downloaded.')
     ).toBeInTheDocument();
+    expect(screen.getByText('Manage map layers')).toBeInTheDocument();
+    expect(screen.getByText('Available for download')).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        'Layers downloaded for activated surveys, and layers still available to download.'
+      )
+    ).not.toBeInTheDocument();
   });
 
   it('lists stored layers', async () => {
@@ -152,10 +194,16 @@ describe('ContextualLayerManager', () => {
     await waitFor(() => {
       expect(screen.getByText('Site boundaries')).toBeInTheDocument();
     });
-    expect(screen.getByText('Used by Creek survey')).toBeInTheDocument();
+    expect(screen.getByText("Linked to: 'Creek survey'")).toBeInTheDocument();
     expect(
-      screen.getByTestId('map-layer-remove-asset-ready')
+      screen.getByTestId('map-layer-not-downloaded-empty')
     ).toBeInTheDocument();
+    // Actions live on the layer details page, not on the list row —
+    // matching offline map regions.
+    expect(
+      screen.queryByTestId('map-layer-remove-asset-ready')
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Remove')).not.toBeInTheDocument();
     expect(
       screen.queryByTestId('map-layer-on-device-empty')
     ).not.toBeInTheDocument();
@@ -239,31 +287,95 @@ describe('ContextualLayerManager', () => {
     });
   });
 
-  it('confirms delete before removing a stored layer', async () => {
+  it('downloads layers in parallel instead of blocking every button', async () => {
     const user = userEvent.setup();
-    harness.stored = [stored('asset-ready', 'Site boundaries')];
-    harness.remove.mockImplementation(async () => {
-      harness.stored = [];
-    });
+    harness.layers = [
+      layer('asset-a', 'Vegetation'),
+      layer('asset-b', 'Geology'),
+    ];
+    harness.download.mockImplementation(() => new Promise<void>(() => {}));
     renderManager();
 
     await waitFor(() => {
       expect(
-        screen.getByTestId('map-layer-remove-asset-ready')
+        screen.getByTestId('map-layer-download-asset-a')
       ).toBeInTheDocument();
     });
-    await user.click(screen.getByTestId('map-layer-remove-asset-ready'));
-    expect(screen.getByText('Remove map layer')).toBeInTheDocument();
-    await user.click(screen.getByTestId('map-layer-delete-confirm'));
+    await user.click(screen.getByTestId('map-layer-download-asset-a'));
 
     await waitFor(() => {
-      expect(harness.remove).toHaveBeenCalledWith('asset-ready');
+      expect(
+        screen.queryByTestId('map-layer-download-asset-a')
+      ).not.toBeInTheDocument();
     });
+    // The other layer's button stays usable while the first downloads.
+    expect(
+      screen.getByTestId('map-layer-download-asset-b')
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('map-layer-download-asset-b'));
+
+    await waitFor(() => {
+      expect(harness.download).toHaveBeenCalledTimes(2);
+      expect(
+        screen.queryByTestId('map-layer-download-asset-b')
+      ).not.toBeInTheDocument();
+    });
+    // "Download all" would duplicate layers already in flight.
+    expect(
+      screen.getByTestId('map-layer-download-all-survey-1')
+    ).toBeDisabled();
+  });
+
+  it('cancels one parallel download without cancelling the other', async () => {
+    const user = userEvent.setup();
+    harness.layers = [
+      layer('asset-a', 'Vegetation'),
+      layer('asset-b', 'Geology'),
+    ];
+    harness.download.mockImplementation(
+      ({signal}: {signal?: AbortSignal}) =>
+        new Promise<void>((_resolve, reject) => {
+          const onAbort = () => {
+            const error = new Error('Map layer download cancelled.');
+            error.name = 'ContextualLayerDownloadCancelledError';
+            reject(error);
+          };
+          if (signal?.aborted) {
+            onAbort();
+            return;
+          }
+          signal?.addEventListener('abort', onAbort, {once: true});
+        })
+    );
+    renderManager();
+
     await waitFor(() => {
       expect(
-        screen.getByTestId('map-layer-on-device-empty')
+        screen.getByTestId('map-layer-download-asset-a')
       ).toBeInTheDocument();
     });
+    await user.click(screen.getByTestId('map-layer-download-asset-a'));
+    await user.click(screen.getByTestId('map-layer-download-asset-b'));
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId('map-layer-download-cancel')).toHaveLength(
+        2
+      );
+    });
+    await user.click(screen.getAllByTestId('map-layer-download-cancel')[0]);
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId('map-layer-download-asset-a')
+      ).toBeInTheDocument();
+      expect(screen.getAllByTestId('map-layer-download-cancel')).toHaveLength(
+        1
+      );
+    });
+    expect(
+      screen.queryByTestId('map-layer-download-asset-b')
+    ).not.toBeInTheDocument();
   });
 
   it('shows an error when stored layers cannot be loaded', async () => {

@@ -207,7 +207,14 @@ abstract class BaseAttachmentStorageService implements IAttachmentStorageService
     return joinObjectKey(this.config.prefix, ...parts);
   }
 
-  /** Build Couch location metadata for a key that was just written. */
+  /**
+   * Couch location for a key that was just written.
+   * Persist this process's internal S3 host (`endpoint`), never
+   * `publicEndpoint`. The only reader is the API/worker, which already
+   * talks to the store on that host. Deployed API and workers share one
+   * endpoint; local compose may override the worker to `rustfs` so
+   * original vs normalized can differ in hybrid localdev.
+   */
   protected locationFor({
     key,
     contentType,

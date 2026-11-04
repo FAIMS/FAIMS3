@@ -151,15 +151,16 @@ export const MAP_ASSET_NORMALIZED_ATTACHMENT = 'normalized';
  * interpret it. For `provider: 's3'` the URI is
  * `s3://{region}/{bucket}/{key}` (the key may contain slashes).
  *
- * `endpoint` is S3-only: a custom host for RustFS or another S3-compatible
- * store. Omit it when talking to AWS S3.
+ * `endpoint` is S3-only: the internal host the API/worker used to reach
+ * RustFS or another S3-compatible store. It is not the browser-facing
+ * `publicEndpoint`. Omit it when talking to AWS S3.
  */
 export const StoredAttachmentLocationSchema = z.object({
   provider: z.literal('s3'),
   resourceUri: z.string().min(1),
   contentType: z.string().min(1),
   byteSize: z.number().nonnegative(),
-  /** S3-compatible custom endpoint (e.g. local RustFS). Ignored for AWS S3. */
+  /** Internal S3-compatible endpoint (e.g. RustFS). Ignored for AWS S3. */
   endpoint: z.string().min(1).optional(),
 });
 export type StoredAttachmentLocation = z.infer<

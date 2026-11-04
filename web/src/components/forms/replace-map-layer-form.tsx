@@ -50,9 +50,6 @@ export function ReplaceMapLayerForm({
       fields={[
         {
           name: 'files',
-          label: 'Replacement files',
-          description:
-            'The same formats as a new layer. Surveys keep the link. Devices drop the previous file on the next refresh and download the new one after processing finishes.',
           type: 'file',
           multiple: true,
           accept: MAP_LAYER_FILE_ACCEPT,
@@ -63,6 +60,7 @@ export function ReplaceMapLayerForm({
       onSubmit={onSubmit}
       submitButtonText="Upload replacement"
       submitProgress={uploadProgress}
+      warningMessage="Users with this map layer action will lose access to the old layer while the replacement is being processed."
     />
   );
 }

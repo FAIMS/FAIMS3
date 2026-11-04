@@ -43,6 +43,8 @@ import {
   ContextualLayerDownloadCancelledError,
   downloadContextualLayers,
   isContextualLayerDownloadCancelledError,
+  MAP_LAYER_DOWNLOAD_CONCURRENCY,
+  loadStoredContextualLayer,
   resetContextualLayerPrefs,
   retainListedContextualLayers,
   updateContextualLayerPrefs,
@@ -65,7 +67,6 @@ const seeded = (): ContextualLayersState => ({
         pointSize: 6,
       },
       filename: 'layer-hash.pmtiles',
-      projectIds: ['survey'],
     },
   },
   prefs: {},
@@ -89,11 +90,27 @@ describe('updateContextualLayerPrefs', () => {
   it('keeps every opacity edit, with the last one winning', async () => {
     await Promise.all(
       Array.from({length: 8}, (_, index) =>
-        updateContextualLayerPrefs('layer', {opacity: (index + 1) / 10})
+        updateContextualLayerPrefs('survey', 'layer', {
+          opacity: (index + 1) / 10,
+        })
       )
     );
 
-    expect(store.getState().contextualLayers.prefs.layer.opacity).toBe(0.8);
+    expect(store.getState().contextualLayers.prefs.survey.layer.opacity).toBe(
+      0.8
+    );
+  });
+
+  it('keeps paint prefs per survey', async () => {
+    await updateContextualLayerPrefs('survey-a', 'layer', {opacity: 0.3});
+    await updateContextualLayerPrefs('survey-b', 'layer', {opacity: 0.9});
+
+    expect(
+      store.getState().contextualLayers.prefs['survey-a'].layer.opacity
+    ).toBe(0.3);
+    expect(
+      store.getState().contextualLayers.prefs['survey-b'].layer.opacity
+    ).toBe(0.9);
   });
 
   it('restores file defaults and the original asset-id stack', () => {
@@ -128,73 +145,79 @@ describe('updateContextualLayerPrefs', () => {
           },
         },
         prefs: {
-          tracks: {
-            visible: false,
-            opacity: 0.2,
-            zIndex: 40,
-            stroke: '#111111',
-            fill: '#222222',
-            lineWidth: 9,
-            pointSize: 20,
-          },
-          boundary: {
-            visible: false,
-            opacity: 0.1,
-            zIndex: 50,
-            stroke: '#ffffff',
-            fill: '#000000',
-            lineWidth: 1,
-            pointSize: 1,
+          survey: {
+            tracks: {
+              visible: false,
+              opacity: 0.2,
+              zIndex: 40,
+              stroke: '#111111',
+              fill: '#222222',
+              lineWidth: 9,
+              pointSize: 20,
+            },
+            boundary: {
+              visible: false,
+              opacity: 0.1,
+              zIndex: 50,
+              stroke: '#ffffff',
+              fill: '#000000',
+              lineWidth: 1,
+              pointSize: 1,
+            },
           },
         },
         seenHashByProject: {},
       })
     );
 
-    expect(resetContextualLayerPrefs('survey')).toEqual({
-      boundary: {
-        visible: true,
-        opacity: 0.7,
-        zIndex: 10,
-        stroke: '#cb181d',
-        fill: '#cb181d80',
-        lineWidth: 3,
-        pointSize: 8,
-      },
-      tracks: {
-        visible: true,
-        opacity: 0.85,
-        zIndex: 11,
-        stroke: '#1565c0',
-        fill: '#1565c040',
-        lineWidth: 2,
-        pointSize: 6,
-      },
-    });
+    expect(resetContextualLayerPrefs('survey', ['tracks', 'boundary'])).toEqual(
+      {
+        boundary: {
+          visible: true,
+          opacity: 0.7,
+          zIndex: 10,
+          stroke: '#cb181d',
+          fill: '#cb181d80',
+          lineWidth: 3,
+          pointSize: 8,
+        },
+        tracks: {
+          visible: true,
+          opacity: 0.85,
+          zIndex: 11,
+          stroke: '#1565c0',
+          fill: '#1565c040',
+          lineWidth: 2,
+          pointSize: 6,
+        },
+      }
+    );
     expect(store.getState().contextualLayers.prefs).toEqual({
-      boundary: {
-        visible: true,
-        opacity: 0.7,
-        zIndex: 10,
-        stroke: '#cb181d',
-        fill: '#cb181d80',
-        lineWidth: 3,
-        pointSize: 8,
-      },
-      tracks: {
-        visible: true,
-        opacity: 0.85,
-        zIndex: 11,
-        stroke: '#1565c0',
-        fill: '#1565c040',
-        lineWidth: 2,
-        pointSize: 6,
+      survey: {
+        boundary: {
+          visible: true,
+          opacity: 0.7,
+          zIndex: 10,
+          stroke: '#cb181d',
+          fill: '#cb181d80',
+          lineWidth: 3,
+          pointSize: 8,
+        },
+        tracks: {
+          visible: true,
+          opacity: 0.85,
+          zIndex: 11,
+          stroke: '#1565c0',
+          fill: '#1565c040',
+          lineWidth: 2,
+          pointSize: 6,
+        },
       },
     });
   });
 
   it('drops layer metadata when the app store is reset', async () => {
-    await updateContextualLayerPrefs('layer', {
+    await updateContextualLayerPrefs('survey', 'layer', {
       opacity: 0.4,
       stroke: '#ff0000',
     });
@@ -205,6 +228,70 @@ describe('updateContextualLayerPrefs', () => {
       files: {},
       prefs: {},
       seenHashByProject: {},
+    });
+  });
+});
+
+describe('loadStoredContextualLayer', () => {
+  beforeEach(() => {
+    native.isNative = false;
+    const store = configureStore({
+      reducer: {contextualLayers: contextualLayersReducer},
+      preloadedState: {
+        contextualLayers: {
+          ...seeded(),
+          prefs: {
+            survey: {
+              layer: {
+                visible: false,
+                opacity: 0.2,
+                zIndex: 40,
+                stroke: '#111111',
+                fill: '#222222',
+                lineWidth: 9,
+                pointSize: 20,
+              },
+            },
+          },
+        },
+      },
+    });
+    bindContextualLayersStore(store);
+    const file = new File(['tiles'], 'layer-hash.pmtiles');
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      storage: {
+        getDirectory: async () => ({
+          getDirectoryHandle: async () => ({
+            getFileHandle: async () => ({
+              getFile: async () => file,
+            }),
+          }),
+        }),
+      },
+    });
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: () => 'blob:layer',
+      revokeObjectURL: vi.fn(),
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('loads file-default paint for the preview, ignoring saved prefs', async () => {
+    const layer = await loadStoredContextualLayer('layer');
+
+    expect(layer).toMatchObject({
+      id: 'layer',
+      visible: true,
+      opacity: 1,
+      stroke: '#1565c0',
+      fill: '#1565c080',
+      lineWidth: 2,
+      pointSize: 6,
     });
   });
 });
@@ -379,7 +466,7 @@ describe('downloadContextualLayers on native', () => {
     expect(store.getState().contextualLayers.files).toEqual({});
   });
 
-  it('keeps both surveys when two downloads overlap', async () => {
+  it('downloads two surveys in parallel and keeps both', async () => {
     let releaseFirst!: () => void;
     const firstHeld = new Promise<void>(resolve => {
       releaseFirst = resolve;
@@ -427,8 +514,9 @@ describe('downloadContextualLayers on native', () => {
         },
       ],
     });
-    await Promise.resolve();
-    expect(started).toBe(1);
+    // The second transfer starts without waiting for the first to finish;
+    // only their index commits serialize.
+    await vi.waitFor(() => expect(started).toBe(2));
 
     releaseFirst();
     await Promise.all([first, second]);
@@ -436,6 +524,117 @@ describe('downloadContextualLayers on native', () => {
     const files = store.getState().contextualLayers.files;
     expect(files['asset-a']?.filename).toBe('asset-a-hash-a.pmtiles');
     expect(files['asset-b']?.filename).toBe('asset-b-hash-b.pmtiles');
+  });
+
+  it('queues downloads beyond the concurrent transfer limit', async () => {
+    const releases: Array<() => void> = [];
+    let started = 0;
+    let transferring = 0;
+    let peak = 0;
+    native.downloadFile.mockImplementation(async () => {
+      started += 1;
+      transferring += 1;
+      peak = Math.max(peak, transferring);
+      await new Promise<void>(resolve => {
+        releases.push(resolve);
+      });
+      transferring -= 1;
+      return {path: 'map-assets'};
+    });
+
+    const assetIds = ['asset-1', 'asset-2', 'asset-3', 'asset-4'];
+    const downloads = assetIds.map((id, index) =>
+      downloadContextualLayers({
+        serverUrl: 'http://localhost:8080',
+        token: 'token',
+        projectId: `survey-${index}`,
+        layers: [
+          {
+            id,
+            name: `Layer ${index}`,
+            kind: 'vector-tiles',
+            byteSize: 100,
+            contentHash: `hash-${index}`,
+            extent: [0, 0, 1, 1],
+            defaultStyle: DEFAULT_MAP_ASSET_STYLE,
+          },
+        ],
+      })
+    );
+
+    await vi.waitFor(() =>
+      expect(started).toBe(MAP_LAYER_DOWNLOAD_CONCURRENCY)
+    );
+    expect(peak).toBe(MAP_LAYER_DOWNLOAD_CONCURRENCY);
+
+    // Freeing one slot admits exactly the queued transfer.
+    releases[0]();
+    await vi.waitFor(() => expect(started).toBe(assetIds.length));
+    expect(peak).toBe(MAP_LAYER_DOWNLOAD_CONCURRENCY);
+
+    for (const release of releases) {
+      release();
+    }
+    await Promise.all(downloads);
+    expect(Object.keys(store.getState().contextualLayers.files)).toHaveLength(
+      assetIds.length
+    );
+  });
+
+  it('cancels a download waiting for a transfer slot', async () => {
+    let releaseHeld!: () => void;
+    const held = new Promise<void>(resolve => {
+      releaseHeld = resolve;
+    });
+    let started = 0;
+    native.downloadFile.mockImplementation(async () => {
+      started += 1;
+      await held;
+      return {path: 'map-assets'};
+    });
+
+    const layerFor = (id: string) => ({
+      id,
+      name: id,
+      kind: 'vector-tiles' as const,
+      byteSize: 100,
+      contentHash: `hash-${id}`,
+      extent: [0, 0, 1, 1] as [number, number, number, number],
+      defaultStyle: DEFAULT_MAP_ASSET_STYLE,
+    });
+    const running = Array.from(
+      {length: MAP_LAYER_DOWNLOAD_CONCURRENCY},
+      (_, i) =>
+        downloadContextualLayers({
+          serverUrl: 'http://localhost:8080',
+          token: 'token',
+          projectId: `survey-${i}`,
+          layers: [layerFor(`asset-${i}`)],
+        })
+    );
+    await vi.waitFor(() =>
+      expect(started).toBe(MAP_LAYER_DOWNLOAD_CONCURRENCY)
+    );
+
+    const controller = new AbortController();
+    const queued = downloadContextualLayers({
+      serverUrl: 'http://localhost:8080',
+      token: 'token',
+      projectId: 'survey-queued',
+      signal: controller.signal,
+      layers: [layerFor('asset-queued')],
+    });
+    // Let the queued download reach the transfer-slot wait before cancelling.
+    await new Promise(resolve => setTimeout(resolve, 0));
+    controller.abort();
+
+    await expect(queued).rejects.toBeInstanceOf(
+      ContextualLayerDownloadCancelledError
+    );
+    expect(started).toBe(MAP_LAYER_DOWNLOAD_CONCURRENCY);
+
+    releaseHeld();
+    await Promise.all(running);
   });
 
   it('does not garbage-collect an in-flight download from another survey', async () => {
@@ -451,7 +650,6 @@ describe('downloadContextualLayers on native', () => {
             extent4326: [0, 0, 1, 1],
             defaultStyle: DEFAULT_MAP_ASSET_STYLE,
             filename: 'asset-b-hash-b.pmtiles',
-            projectIds: ['survey-b'],
           },
         },
         prefs: {},
@@ -491,7 +689,7 @@ describe('downloadContextualLayers on native', () => {
     });
     await vi.waitFor(() => expect(native.downloadFile).toHaveBeenCalled());
 
-    const retain = retainListedContextualLayers('survey-b', ['asset-b']);
+    const retain = retainListedContextualLayers(['asset-b']);
     await Promise.resolve();
     expect(native.deleteFile).not.toHaveBeenCalled();
 

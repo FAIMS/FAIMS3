@@ -11,6 +11,9 @@ export type StackedLayer = {
   zIndex: number;
 };
 
+/** One step toward the top/bottom of the panel, or jump to either end. */
+export type StackMoveDirection = 'up' | 'down' | 'top' | 'bottom';
+
 /** Finite zIndex, or 0 when the stored value is not a number. */
 function stackValue(zIndex: number): number {
   return Number.isFinite(zIndex) ? zIndex : 0;
@@ -50,41 +53,56 @@ export function rankLayersTopFirst<T extends StackedLayer>(topFirst: T[]): T[] {
 }
 
 /**
- * Move one step in the panel. `up` is toward the top of the list.
- * Unique stacks keep their z values and only swap the pair. A tied stack is
- * re-ranked so the layer actually changes place.
+ * Move in the panel. `up`/`top` go toward the top of the list.
+ * One-step moves on a unique stack keep existing z values and only swap the
+ * pair. Jumps to either end, and any tied stack, are re-ranked so the layer
+ * actually changes place.
  */
 export function moveStackedLayer<T extends StackedLayer>(
   layers: T[],
   id: string,
-  direction: 'up' | 'down'
+  direction: StackMoveDirection
 ): T[] {
   const ordered = sortLayersTopFirst(layers);
   const index = ordered.findIndex(layer => layer.id === id);
-  const swapWith = direction === 'up' ? index - 1 : index + 1;
-  if (index < 0 || swapWith < 0 || swapWith >= ordered.length) {
+  const targetIndex =
+    direction === 'up'
+      ? index - 1
+      : direction === 'down'
+        ? index + 1
+        : direction === 'top'
+          ? 0
+          : ordered.length - 1;
+  if (
+    index < 0 ||
+    index === targetIndex ||
+    targetIndex < 0 ||
+    targetIndex >= ordered.length
+  ) {
     return layers;
   }
 
   const current = ordered[index];
-  const other = ordered[swapWith];
-  if (
-    stackValue(current.zIndex) !== stackValue(other.zIndex) &&
-    zValuesAreUnique(layers)
-  ) {
-    return layers.map(layer => {
-      if (layer.id === current.id) {
-        return {...layer, zIndex: other.zIndex};
-      }
-      if (layer.id === other.id) {
-        return {...layer, zIndex: current.zIndex};
-      }
-      return layer;
-    });
+  if (direction === 'up' || direction === 'down') {
+    const other = ordered[targetIndex];
+    if (
+      stackValue(current.zIndex) !== stackValue(other.zIndex) &&
+      zValuesAreUnique(layers)
+    ) {
+      return layers.map(layer => {
+        if (layer.id === current.id) {
+          return {...layer, zIndex: other.zIndex};
+        }
+        if (layer.id === other.id) {
+          return {...layer, zIndex: current.zIndex};
+        }
+        return layer;
+      });
+    }
   }
 
   const next = [...ordered];
-  next[index] = other;
-  next[swapWith] = current;
+  next.splice(index, 1);
+  next.splice(targetIndex, 0, current);
   return rankLayersTopFirst(next);
 }

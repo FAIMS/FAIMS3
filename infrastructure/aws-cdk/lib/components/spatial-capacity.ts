@@ -25,14 +25,14 @@ export const CAPACITY_MANAGER_CONTAINER_NAME = 'capacity-manager-container';
 /** Compiled worker entry, relative to the production WORKDIR. */
 export const buildSpatialWorkerCommand = (): string[] => [
   'node',
-  'scripts/spatialWorker.js',
+  'entrypoints/spatialWorker.js',
   '--poll',
 ];
 
 /** Compiled capacity-manager entry, relative to the production WORKDIR. */
 export const buildCapacityManagerCommand = (): string[] => [
   'node',
-  'scripts/capacityManager.js',
+  'entrypoints/capacityManager.js',
 ];
 
 /**

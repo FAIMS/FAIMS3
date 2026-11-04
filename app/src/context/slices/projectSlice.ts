@@ -50,7 +50,13 @@ import {syncStateService} from './helpers/syncStateService';
 import {addAlert} from './alertSlice';
 import {resolveActivationSyncMode} from '../../sync/syncModeDefaults';
 import {
+  activatedSurveysFromServers,
+  collectActivatedLayerKeepSet,
+} from '../../gui/components/maps/contextualLayerIndex';
+import {
+  areContextualLayersOnDevice,
   getSeenContextualLayersHash,
+  markContextualLayersSeen,
   notifyContextualLayersChanged,
   releaseContextualLayersForProject,
   retainListedContextualLayers,
@@ -187,9 +193,11 @@ export interface ProjectListingInformation {
   /** Digest of the server's uiSpecification (hash + schemaVersion). */
   uiSpecProperties: UiSpecProperties;
   /**
-   * Ready contextual layers linked to this survey. Directory sync uses this as
-   * the keep-set: ids that are pending, replacing, or failed are omitted, and
-   * the device drops those files until a new ready listing appears.
+   * Ready contextual layers linked to this survey. Directory sync unions this
+   * with other activated surveys as the device keep-set: ids that are pending,
+   * replacing, or failed are omitted, and the device drops a file only when no
+   * activated survey still lists it. A stored file is available to every
+   * survey that lists that asset.
    */
   contextualLayers?: ContextualLayerListing[];
   /** SHA-256 of the ready listing's asset id and content hash pairs. */
@@ -1970,15 +1978,20 @@ async function runActivateProject(
   }
 
   const layerHash = project.contextualLayersHash;
-  if ((project.contextualLayers?.length ?? 0) > 0 && layerHash) {
+  const layers = project.contextualLayers ?? [];
+  if (layers.length > 0 && layerHash) {
     const seen = await getSeenContextualLayersHash(payload.projectId);
     if (seen !== layerHash) {
-      dispatch(
-        setPendingContextualLayerPrompt({
-          projectId: payload.projectId,
-          serverId: payload.serverId,
-        })
-      );
+      if (areContextualLayersOnDevice(layers)) {
+        await markContextualLayersSeen(payload.projectId, layerHash);
+      } else {
+        dispatch(
+          setPendingContextualLayerPrompt({
+            projectId: payload.projectId,
+            serverId: payload.serverId,
+          })
+        );
+      }
     }
   }
 }
@@ -2384,44 +2397,60 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       // the dispatches above (add/update), not pre-dispatch state.
       const stateAfterDirectory = getState() as RootState;
 
+      const listingByProjectId = new Map<
+        string,
+        readonly string[] | undefined
+      >();
+      for (const details of directoryResults) {
+        if (Array.isArray(details.contextualLayers)) {
+          listingByProjectId.set(
+            details._id,
+            details.contextualLayers.map(layer => layer.id)
+          );
+        }
+      }
+      const {keepIds, uncertain} = collectActivatedLayerKeepSet(
+        activatedSurveysFromServers(stateAfterDirectory.projects.servers),
+        listingByProjectId
+      );
+      // Present arrays (including empty) are the ready keep-set. Replace
+      // withdraws the old overlay immediately. Omitted fields mean attach
+      // failed — skip GC so a glitch is not treated as unlink.
+      if (!uncertain) {
+        try {
+          const dropped = await retainListedContextualLayers(keepIds);
+          if (dropped) {
+            notifyContextualLayersChanged();
+          }
+        } catch (error) {
+          console.error('[map-assets] failed to drop unlinked layers', error);
+        }
+      }
+
       for (const details of directoryResults) {
         const local = projectByIdentity(stateAfterDirectory.projects, {
           projectId: details._id,
           serverId,
         });
-        // Present array (including empty) is the ready keep-set. Replace
-        // withdraws the old overlay immediately; missing ids are dropped.
-        // Omitted fields mean attach failed — skip, do not treat as unlink.
-        if (local?.isActivated && Array.isArray(details.contextualLayers)) {
-          try {
-            const dropped = await retainListedContextualLayers(
-              details._id,
-              details.contextualLayers.map(layer => layer.id)
-            );
-            if (dropped) {
-              notifyContextualLayersChanged(details._id);
-            }
-          } catch (error) {
-            console.error('[map-assets] failed to drop unlinked layers', error);
-          }
-        }
         const hash = details.contextualLayersHash;
-        if (
-          !local?.isActivated ||
-          !hash ||
-          (details.contextualLayers?.length ?? 0) === 0
-        ) {
+        const layers = details.contextualLayers ?? [];
+        if (!local?.isActivated || !hash || layers.length === 0) {
           continue;
         }
         const seen = await getSeenContextualLayersHash(details._id);
-        if (seen !== hash) {
-          appDispatch(
-            setPendingContextualLayerPrompt({
-              projectId: details._id,
-              serverId,
-            })
-          );
+        if (seen === hash) {
+          continue;
         }
+        if (areContextualLayersOnDevice(layers)) {
+          await markContextualLayersSeen(details._id, hash);
+          continue;
+        }
+        appDispatch(
+          setPendingContextualLayerPrompt({
+            projectId: details._id,
+            serverId,
+          })
+        );
       }
 
       const directoryByProjectId = new Map(
@@ -2484,7 +2513,15 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         }
 
         try {
-          await releaseContextualLayersForProject(projectId);
+          const {keepIds, uncertain} = collectActivatedLayerKeepSet(
+            activatedSurveysFromServers(
+              stateAfterDirectory.projects.servers
+            ).filter(survey => survey.projectId !== projectId)
+          );
+          await releaseContextualLayersForProject(
+            projectId,
+            uncertain ? undefined : keepIds
+          );
         } catch (error) {
           console.error(
             '[map-assets] failed to remove layers for a deleted survey',

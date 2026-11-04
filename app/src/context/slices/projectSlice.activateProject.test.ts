@@ -87,6 +87,8 @@ const contextualLayerStore = vi.hoisted(() => ({
   retainListedContextualLayers: vi.fn(),
   notifyContextualLayersChanged: vi.fn(),
   releaseContextualLayersForProject: vi.fn(),
+  areContextualLayersOnDevice: vi.fn(),
+  markContextualLayersSeen: vi.fn(),
 }));
 
 vi.mock('../../gui/components/maps/contextualLayerStore', () => ({
@@ -97,6 +99,8 @@ vi.mock('../../gui/components/maps/contextualLayerStore', () => ({
     contextualLayerStore.notifyContextualLayersChanged,
   releaseContextualLayersForProject:
     contextualLayerStore.releaseContextualLayersForProject,
+  areContextualLayersOnDevice: contextualLayerStore.areContextualLayersOnDevice,
+  markContextualLayersSeen: contextualLayerStore.markContextualLayersSeen,
 }));
 
 import alertsReducer from './alertSlice';
@@ -247,6 +251,12 @@ describe('activateProject requires downloaded design details', () => {
     couchInitialiser.mockReset().mockResolvedValue(undefined);
     vi.mocked(compiledSpecService.compileAndRegisterSpec).mockClear();
     contextualLayerStore.getSeenContextualLayersHash
+      .mockReset()
+      .mockResolvedValue(undefined);
+    contextualLayerStore.areContextualLayersOnDevice
+      .mockReset()
+      .mockReturnValue(false);
+    contextualLayerStore.markContextualLayersSeen
       .mockReset()
       .mockResolvedValue(undefined);
   });
@@ -495,5 +505,39 @@ describe('activateProject requires downloaded design details', () => {
     expect(
       contextualLayerStore.getSeenContextualLayersHash
     ).not.toHaveBeenCalled();
+  });
+
+  it('marks the listing seen instead of prompting when layers are already on the device', async () => {
+    contextualLayerStore.areContextualLayersOnDevice.mockReturnValue(true);
+    resolveActivationSyncMode.mockResolvedValue({
+      syncMode: 'both',
+      usedPushOnlyDefault: false,
+      details: getDetailsPayload,
+      recordCount: 3,
+    });
+    const store = makeStore(
+      listedFixture({
+        contextualLayers: [sampleLayer],
+        contextualLayersHash: layersHash,
+      })
+    );
+
+    await store
+      .dispatch(
+        activateProject({
+          serverId,
+          projectId,
+          jwtToken: 'tok',
+        }) as any
+      )
+      .unwrap();
+
+    expect(contextualLayerStore.markContextualLayersSeen).toHaveBeenCalledWith(
+      projectId,
+      layersHash
+    );
+    expect(
+      selectPendingContextualLayerPrompt(store.getState() as any)
+    ).toBeUndefined();
   });
 });

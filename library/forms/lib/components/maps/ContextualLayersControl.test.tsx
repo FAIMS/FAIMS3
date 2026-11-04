@@ -149,6 +149,9 @@ describe('ContextualLayersControl', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText('Style')).not.toBeInTheDocument();
     expect(
+      screen.queryByRole('button', {name: 'Move Site boundary to top'})
+    ).not.toBeInTheDocument();
+    expect(
       screen.getByRole('button', {name: 'Show style for Site boundary'})
     ).toHaveAttribute('aria-expanded', 'false');
 
@@ -160,6 +163,12 @@ describe('ContextualLayersControl', () => {
       screen.getByRole('button', {name: 'Hide style for Site boundary'})
     ).toHaveAttribute('aria-expanded', 'true');
 
+    expect(
+      screen.getByRole('button', {name: 'Move Site boundary to top'})
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', {name: 'Move Site boundary to bottom'})
+    ).toBeDisabled();
     expect(
       screen.getByRole('slider', {name: 'Site boundary opacity'})
     ).toBeInTheDocument();
@@ -272,6 +281,58 @@ describe('ContextualLayersControl', () => {
     await user.click(screen.getByRole('button', {name: 'Raise Tracks'}));
     expect(updateLayer).toHaveBeenCalledWith('lower', {zIndex: 2});
     expect(updateLayer).toHaveBeenCalledWith('upper', {zIndex: 1});
+  });
+
+  it('moves a layer to the top or bottom from the style section', async () => {
+    const user = userEvent.setup();
+    const {updateLayer} = renderControl([
+      layer({id: 'base', name: 'Base', zIndex: 0}),
+      layer({id: 'tracks', name: 'Tracks', zIndex: 1}),
+      layer({id: 'boundary', name: 'Boundary', zIndex: 2}),
+    ]);
+
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 3 of 3 shown/i})
+    );
+    await user.click(
+      screen.getByRole('button', {name: 'Show style for Boundary'})
+    );
+    expect(
+      screen.getByRole('button', {name: 'Move Boundary to top'})
+    ).toBeDisabled();
+    await user.click(
+      screen.getByRole('button', {name: 'Move Boundary to bottom'})
+    );
+
+    const zIndexFor = (id: string) =>
+      updateLayer.mock.calls.find(call => call[0] === id)?.[1]?.zIndex;
+    expect(zIndexFor('tracks')).toBeGreaterThan(zIndexFor('base') as number);
+    expect(zIndexFor('base')).toBeGreaterThan(zIndexFor('boundary') as number);
+  });
+
+  it('moves the bottom layer to the top from the style section', async () => {
+    const user = userEvent.setup();
+    const {updateLayer} = renderControl([
+      layer({id: 'base', name: 'Base', zIndex: 0}),
+      layer({id: 'tracks', name: 'Tracks', zIndex: 1}),
+      layer({id: 'boundary', name: 'Boundary', zIndex: 2}),
+    ]);
+
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 3 of 3 shown/i})
+    );
+    await user.click(screen.getByRole('button', {name: 'Show style for Base'}));
+    expect(
+      screen.getByRole('button', {name: 'Move Base to bottom'})
+    ).toBeDisabled();
+    await user.click(screen.getByRole('button', {name: 'Move Base to top'}));
+
+    const zIndexFor = (id: string) =>
+      updateLayer.mock.calls.find(call => call[0] === id)?.[1]?.zIndex;
+    expect(zIndexFor('base')).toBeGreaterThan(zIndexFor('boundary') as number);
+    expect(zIndexFor('boundary')).toBeGreaterThan(
+      zIndexFor('tracks') as number
+    );
   });
 
   it('shows or hides every layer from the panel header', async () => {
@@ -465,7 +526,7 @@ describe('ContextualLayersControl', () => {
     expect(
       screen.getByRole('img', {name: 'Current location is on this layer'})
     ).toBeInTheDocument();
-    expect(screen.getByText('On map')).toBeInTheDocument();
+    expect(screen.getByText('0m away')).toBeInTheDocument();
   });
 
   it('shows a bearing arrow and coarse distance when the device is outside the layer', async () => {
@@ -480,7 +541,7 @@ describe('ContextualLayersControl', () => {
     expect(
       screen.getByRole('img', {name: /of this layer/i})
     ).toBeInTheDocument();
-    expect(screen.queryByText('On map')).not.toBeInTheDocument();
+    expect(screen.queryByText('0m away')).not.toBeInTheDocument();
   });
 
   it('keeps stroke controls for vector tiles', async () => {
@@ -633,6 +694,69 @@ describe('ContextualLayersControl', () => {
       zIndex: 10,
     });
     expect(updateLayer).toHaveBeenCalledWith('boundary', {zIndex: 980});
+  });
+
+  it('keeps the layers sheet open when the overlay list is briefly empty', async () => {
+    const user = userEvent.setup();
+    const overlay = layer({id: 'boundary', name: 'Site boundary'});
+    const {rerender} = render(
+      <ThemeProvider theme={theme}>
+        <MapControlThemeProvider>
+          <ContextualMapLayersContext.Provider
+            value={{
+              layers: [overlay],
+              updateLayer: vi.fn(),
+              moveLayer: vi.fn(),
+              resetLayers: vi.fn(),
+            }}
+          >
+            <ContextualLayersControl
+              map={
+                {
+                  getView: () => ({fit: vi.fn()}),
+                  getTargetElement: () => document.createElement('div'),
+                } as unknown as Map
+              }
+            />
+          </ContextualMapLayersContext.Provider>
+        </MapControlThemeProvider>
+      </ThemeProvider>
+    );
+
+    await user.click(
+      screen.getByRole('button', {name: /map layers, 1 of 1 shown/i})
+    );
+    expect(
+      screen.getByRole('dialog', {name: 'Map layers'})
+    ).toBeInTheDocument();
+
+    rerender(
+      <ThemeProvider theme={theme}>
+        <MapControlThemeProvider>
+          <ContextualMapLayersContext.Provider
+            value={{
+              layers: [],
+              updateLayer: vi.fn(),
+              moveLayer: vi.fn(),
+              resetLayers: vi.fn(),
+            }}
+          >
+            <ContextualLayersControl
+              map={
+                {
+                  getView: () => ({fit: vi.fn()}),
+                  getTargetElement: () => document.createElement('div'),
+                } as unknown as Map
+              }
+            />
+          </ContextualMapLayersContext.Provider>
+        </MapControlThemeProvider>
+      </ThemeProvider>
+    );
+
+    expect(
+      screen.getByRole('dialog', {name: 'Map layers'})
+    ).toBeInTheDocument();
   });
 
   it('shows a create failure on the overlay row', async () => {

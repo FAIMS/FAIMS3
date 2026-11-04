@@ -5,7 +5,9 @@ import {
   type ContextualLayerListing,
 } from '@faims3/data-model';
 import {LayerLocationHint, useOccasionalDeviceLocation} from '@faims3/forms';
+import CloseIcon from '@mui/icons-material/Close';
 import {
+  Box,
   Button,
   Checkbox,
   Dialog,
@@ -13,6 +15,7 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
+  IconButton,
   Stack,
   Typography,
 } from '@mui/material';
@@ -32,7 +35,6 @@ import {
 } from './contextualLayerIndex';
 import {
   downloadContextualLayers,
-  forgetUnselectedContextualLayers,
   isContextualLayerDownloadCancelledError,
   listStoredContextualLayers,
   markContextualLayersSeen,
@@ -47,6 +49,24 @@ import {
 /** User-facing kind label (vector tiles, raster tiles). */
 function kindLabel(kind: ContextualLayerListing['kind']): string {
   return mapAssetKindLabel(kind);
+}
+
+/** Keep Select/Unselect on one line without wrapping into tall buttons. */
+const selectActionSx = {
+  whiteSpace: 'nowrap',
+  minWidth: 0,
+  px: {xs: 1, sm: 1.25},
+  fontSize: {xs: '0.75rem', sm: '0.8125rem'},
+  lineHeight: 1.25,
+} as const;
+
+/** Idle download button: count and combined size of the ticked layers. */
+function downloadIdleLabel(count: number, bytes: number): string {
+  if (count === 0) {
+    return 'Download (0 layers)';
+  }
+  const layers = count === 1 ? '1 layer' : `${count} layers`;
+  return `Download (${layers}, ${formatFileSize(bytes)})`;
 }
 
 /** One checkbox row: name, kind, distance hint, and file size. */
@@ -75,78 +95,78 @@ function LayerChoice({
         mx: 0,
         width: '100%',
         py: 1,
-        px: 1,
+        pl: 0.25,
+        pr: 1,
         borderRadius: 1,
         '& .MuiFormControlLabel-label': {flex: 1, minWidth: 0},
+        '& .MuiCheckbox-root': {p: 0.5, ml: 0, mr: 0.5},
         border: '1px solid',
         borderColor: checked
-          ? status === 'on-device'
-            ? alpha(theme.palette.success.main, 0.4)
-            : status === 'update'
-              ? alpha(theme.palette.warning.main, 0.4)
-              : alpha(theme.palette.primary.main, 0.4)
+          ? status === 'update'
+            ? alpha(theme.palette.warning.main, 0.4)
+            : alpha(theme.palette.primary.main, 0.4)
           : theme.palette.divider,
         bgcolor: checked
-          ? status === 'on-device'
-            ? alpha(theme.palette.success.main, 0.08)
-            : status === 'update'
-              ? alpha(theme.palette.warning.main, 0.08)
-              : alpha(theme.palette.primary.main, 0.06)
+          ? status === 'update'
+            ? alpha(theme.palette.warning.main, 0.08)
+            : alpha(theme.palette.primary.main, 0.06)
           : 'transparent',
       })}
       control={
         <Checkbox
           checked={checked}
-          color={
-            status === 'on-device'
-              ? 'success'
-              : status === 'update'
-                ? 'warning'
-                : 'primary'
-          }
+          color={status === 'update' ? 'warning' : 'primary'}
           onChange={event => onToggle(event.target.checked)}
         />
       }
       label={
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{
-            pt: 0.75,
-            minWidth: 0,
-            alignItems: 'baseline',
-            justifyContent: 'space-between',
-            width: '100%',
-          }}
-        >
-          <Stack spacing={0.25} sx={{minWidth: 0}}>
-            <Typography sx={{fontWeight: 600, overflowWrap: 'anywhere'}}>
+        <Stack spacing={0.25} sx={{pt: 0.25, minWidth: 0, width: '100%'}}>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              minWidth: 0,
+            }}
+          >
+            <Typography
+              sx={{fontWeight: 600, overflowWrap: 'anywhere', minWidth: 0}}
+            >
               {layer.name}
             </Typography>
-            <Stack
-              direction="row"
-              spacing={0.5}
-              sx={{alignItems: 'center', minWidth: 0}}
+            <Typography
+              data-testid={`map-layer-size-${layer.id}`}
+              sx={{fontWeight: 700, whiteSpace: 'nowrap'}}
             >
-              <Typography variant="body2" color="text.secondary">
-                {kindLabel(layer.kind)}
-              </Typography>
-              <LayerLocationHint extent={layer.extent} location={location} />
-            </Stack>
+              {formatFileSize(layer.byteSize)}
+            </Typography>
           </Stack>
-          <Typography
-            data-testid={`map-layer-size-${layer.id}`}
-            sx={{fontWeight: 700, whiteSpace: 'nowrap'}}
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              minWidth: 0,
+            }}
           >
-            {formatFileSize(layer.byteSize)}
-          </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {kindLabel(layer.kind)}
+            </Typography>
+            <LayerLocationHint
+              extent={layer.extent}
+              location={location}
+              leadingSeparator={false}
+            />
+          </Stack>
         </Stack>
       }
     />
   );
 }
 
-/** Titled group of layer checkboxes (on device / update / new). */
+/** Titled group of layer checkboxes still available to download. */
 function LayerGroup({
   title,
   testId,
@@ -190,8 +210,10 @@ function LayerGroup({
 }
 
 /**
- * Asks which contextual layers to keep on the device when a survey is
- * activated or its layer manifest hash changes.
+ * Asks which contextual layers to download when a survey is activated or
+ * its layer manifest hash changes. Already-downloaded copies stay on the
+ * device and are not listed here. When every linked layer is already on
+ * the device the prompt is skipped and the listing is marked seen.
  */
 export function ContextualLayerPrompt() {
   const prompt = useAppSelector(selectPendingContextualLayerPrompt);
@@ -217,12 +239,12 @@ export function ContextualLayerPrompt() {
   const [downloadCompletion, setDownloadCompletion] = useState<number | null>(
     null
   );
-  const [activeDownload, setActiveDownload] = useState<
-    'selected' | 'all' | null
-  >(null);
+  const [activeDownload, setActiveDownload] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [cancelling, setCancelling] = useState(false);
   const downloadAbort = useRef<AbortController | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const progressRef = useRef<HTMLDivElement | null>(null);
   const promptKey = prompt ? `${prompt.serverId}:${prompt.projectId}` : '';
   const location = useOccasionalDeviceLocation(Boolean(prompt));
 
@@ -260,6 +282,27 @@ export function ContextualLayerPrompt() {
     }
   }, [prompt, layers.length, dispatch]);
 
+  useEffect(() => {
+    if (!activeDownload) {
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      const content = contentRef.current;
+      if (content) {
+        if (typeof content.scrollTo === 'function') {
+          content.scrollTo({top: content.scrollHeight, behavior: 'smooth'});
+        } else {
+          content.scrollTop = content.scrollHeight;
+        }
+      }
+      const progress = progressRef.current;
+      if (progress && typeof progress.scrollIntoView === 'function') {
+        progress.scrollIntoView({block: 'end', behavior: 'smooth'});
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeDownload]);
+
   const storedById = useMemo(
     () => new Map((stored ?? []).map(file => [file.assetId, file])),
     [stored]
@@ -271,24 +314,49 @@ export function ContextualLayerPrompt() {
     }
     return statuses;
   }, [layers, storedById]);
-  const onDeviceLayers = layers.filter(
-    layer => statusById.get(layer.id) === 'on-device'
-  );
-  const toDownloadLayers = layers.filter(
-    layer => statusById.get(layer.id) !== 'on-device'
-  );
+  // Until the on-device index loads, treat every layer as unknown so the
+  // list does not flash already-downloaded copies as available.
+  const toDownloadLayers =
+    stored === null
+      ? []
+      : layers.filter(layer => statusById.get(layer.id) !== 'on-device');
+
+  useEffect(() => {
+    if (!prompt || !project || stored === null) {
+      return;
+    }
+    if (toDownloadLayers.length > 0) {
+      return;
+    }
+    if (project.contextualLayersHash) {
+      void markContextualLayersSeen(
+        prompt.projectId,
+        project.contextualLayersHash
+      );
+    }
+    dispatch(clearPendingContextualLayerPrompt());
+  }, [dispatch, prompt, project, stored, toDownloadLayers.length]);
 
   if (!prompt || !project || layers.length === 0) {
     return null;
   }
+  // Avoid flashing an empty dialog while the index loads, or when every
+  // linked layer is already on the device (the effect above closes it).
+  if (stored === null || toDownloadLayers.length === 0) {
+    return null;
+  }
 
-  const chosen = selected ?? layers.map(layer => layer.id);
-  const selectedNeedDownload = chosen.filter(
-    id => statusById.get(id) !== 'on-device'
+  const chosenIds = selected ?? toDownloadLayers.map(layer => layer.id);
+  const chosenLayers = toDownloadLayers.filter(layer =>
+    chosenIds.includes(layer.id)
+  );
+  const chosenBytes = chosenLayers.reduce(
+    (sum, layer) => sum + layer.byteSize,
+    0
   );
 
   const toggleLayer = (layerId: string, checked: boolean) => {
-    const next = new Set(chosen);
+    const next = new Set(chosenIds);
     if (checked) {
       next.add(layerId);
     } else {
@@ -297,17 +365,39 @@ export function ContextualLayerPrompt() {
     setSelected([...next]);
   };
 
+  const selectAll = () => {
+    setSelected(toDownloadLayers.map(layer => layer.id));
+  };
+
+  const unselectAll = () => {
+    setSelected([]);
+  };
+
   const cancelDownload = () => {
     setCancelling(true);
     downloadAbort.current?.abort();
   };
 
-  const finish = async (
-    ids: string[],
-    action: 'selected' | 'all' | null = null
-  ) => {
-    if (!project.contextualLayersHash || !server?.serverUrl || !user?.token) {
-      dispatch(clearPendingContextualLayerPrompt());
+  const closePrompt = () => {
+    downloadAbort.current?.abort();
+    if (project.contextualLayersHash) {
+      void markContextualLayersSeen(
+        prompt.projectId,
+        project.contextualLayersHash
+      );
+    }
+    dispatch(clearPendingContextualLayerPrompt());
+    setSelected(null);
+  };
+
+  const downloadSelected = async () => {
+    if (
+      chosenLayers.length === 0 ||
+      !project.contextualLayersHash ||
+      !server?.serverUrl ||
+      !user?.token
+    ) {
+      closePrompt();
       return;
     }
     const controller = new AbortController();
@@ -315,21 +405,17 @@ export function ContextualLayerPrompt() {
     setWorking(true);
     setCancelling(false);
     setError(undefined);
+    setActiveDownload(true);
+    setDownloadCompletion(0);
     try {
-      const toDownload = layers.filter(layer => ids.includes(layer.id));
-      if (toDownload.length > 0) {
-        setActiveDownload(action);
-        setDownloadCompletion(0);
-        await downloadContextualLayers({
-          serverUrl: server.serverUrl,
-          token: user.token,
-          projectId: prompt.projectId,
-          layers: toDownload,
-          signal: controller.signal,
-          onProgress: progress => setDownloadCompletion(progress.completion),
-        });
-      }
-      await forgetUnselectedContextualLayers(prompt.projectId, ids);
+      await downloadContextualLayers({
+        serverUrl: server.serverUrl,
+        token: user.token,
+        projectId: prompt.projectId,
+        layers: chosenLayers,
+        signal: controller.signal,
+        onProgress: progress => setDownloadCompletion(progress.completion),
+      });
       notifyContextualLayersChanged(prompt.projectId);
       await markContextualLayersSeen(
         prompt.projectId,
@@ -352,92 +438,133 @@ export function ContextualLayerPrompt() {
       }
       setWorking(false);
       setCancelling(false);
-      setActiveDownload(null);
+      setActiveDownload(false);
       setDownloadCompletion(null);
     }
   };
 
-  const downloadLabel = (action: 'selected' | 'all', idle: string) =>
-    mapLayerDownloadLabel(activeDownload === action, idle, downloadCompletion);
-
-  const selectedIdleLabel =
-    chosen.length === 0
-      ? 'Download selected'
-      : selectedNeedDownload.length > 0
-        ? 'Download selected'
-        : 'Keep selected';
-  const allIdleLabel = toDownloadLayers.length > 0 ? 'All' : 'Keep all';
+  const idleDownloadLabel = downloadIdleLabel(chosenLayers.length, chosenBytes);
+  const allSelected =
+    toDownloadLayers.length > 0 &&
+    chosenLayers.length === toDownloadLayers.length;
 
   return (
-    <Dialog open data-testid="map-layer-activation-prompt">
-      <DialogTitle>Download map layers</DialogTitle>
-      <DialogContent sx={{pb: 3}}>
-        <Typography variant="body2" sx={{mb: 2}}>
-          This survey has contextual layers available for download. In order to
-          view these layers in the map, you must download them to the device.
+    <Dialog
+      open
+      onClose={closePrompt}
+      data-testid="map-layer-activation-prompt"
+      sx={{
+        '& .MuiDialog-paper': {
+          m: {xs: 1.5, sm: 4},
+          maxWidth: {xs: 'calc(100% - 24px)', sm: undefined},
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1,
+          px: {xs: 2, sm: 3},
+          pt: {xs: 1.5, sm: 2},
+          pb: 0.5,
+          pr: {xs: 1, sm: 1.5},
+        }}
+      >
+        Download map layers
+        <IconButton
+          aria-label="close"
+          onClick={closePrompt}
+          data-testid="map-layer-prompt-close"
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent
+        ref={contentRef}
+        sx={{px: {xs: 2, sm: 3}, pt: 1, pb: {xs: 1.5, sm: 3}}}
+      >
+        <Typography variant="body2" sx={{mb: {xs: 1.5, sm: 2}}}>
+          This survey has associated map layers which are available to assist
+          with collection. Please select the layers below you'd like to download
+          to your device. Downloaded layers will be available offline.
         </Typography>
-        {stored === null ? (
-          <Typography variant="body2" color="text.secondary">
-            Checking which layers are already on this device…
-          </Typography>
-        ) : (
-          <Stack spacing={2}>
-            <LayerGroup
-              title="Already on the device"
-              testId="map-layer-group-on-device"
-              layers={onDeviceLayers}
-              statusById={statusById}
-              chosen={chosen}
-              disabled={working}
-              location={location}
-              onToggle={toggleLayer}
-            />
-            <LayerGroup
-              title="Not yet downloaded"
-              testId="map-layer-group-to-download"
-              layers={toDownloadLayers}
-              statusById={statusById}
-              chosen={chosen}
-              disabled={working}
-              location={location}
-              onToggle={toggleLayer}
-            />
-          </Stack>
-        )}
+        <LayerGroup
+          title="Available for download"
+          testId="map-layer-group-to-download"
+          layers={toDownloadLayers}
+          statusById={statusById}
+          chosen={chosenIds}
+          disabled={working}
+          location={location}
+          onToggle={toggleLayer}
+        />
         {error ? (
           <Typography color="error" variant="body2" sx={{mt: 2}}>
             {error}
           </Typography>
         ) : null}
         {activeDownload ? (
-          <MapLayerDownloadProgress
-            completion={downloadCompletion}
-            cancelling={cancelling}
-            onCancel={cancelDownload}
-            sx={{mt: 3}}
-          />
+          <Box ref={progressRef}>
+            <MapLayerDownloadProgress
+              completion={downloadCompletion}
+              cancelling={cancelling}
+              onCancel={cancelDownload}
+              sx={{mt: 3}}
+            />
+          </Box>
         ) : null}
       </DialogContent>
-      <DialogActions sx={{flexWrap: 'wrap', gap: 1}}>
-        <Button disabled={working} onClick={() => void finish([])}>
-          None
-        </Button>
-        <Button
-          disabled={working || chosen.length === 0}
-          onClick={() => void finish(chosen, 'selected')}
+      <DialogActions
+        sx={{
+          display: 'flex',
+          alignItems: {xs: 'flex-end', sm: 'center'},
+          justifyContent: 'space-between',
+          gap: 1,
+          px: {xs: 1.5, sm: 3},
+          py: {xs: 1, sm: 1.5},
+        }}
+      >
+        <Stack
+          direction={{xs: 'column', sm: 'row'}}
+          spacing={1}
+          sx={{alignItems: {xs: 'stretch', sm: 'center'}, flexShrink: 0}}
         >
-          {downloadLabel('selected', selectedIdleLabel)}
-        </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            disabled={working || stored === null || allSelected}
+            onClick={selectAll}
+            sx={selectActionSx}
+          >
+            Select all
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            disabled={working || stored === null || chosenLayers.length === 0}
+            onClick={unselectAll}
+            sx={selectActionSx}
+          >
+            Unselect all
+          </Button>
+        </Stack>
         <Button
-          disabled={working}
-          onClick={() =>
-            void finish(
-              layers.map(layer => layer.id),
-              'all'
-            )
-          }
+          variant="contained"
+          disabled={working || stored === null || chosenLayers.length === 0}
+          onClick={() => void downloadSelected()}
+          sx={{
+            whiteSpace: 'normal',
+            textAlign: 'center',
+            flex: '0 1 auto',
+          }}
         >
-          {downloadLabel('all', allIdleLabel)}
+          {mapLayerDownloadLabel(
+            activeDownload,
+            idleDownloadLabel,
+            downloadCompletion
+          )}
         </Button>
       </DialogActions>
     </Dialog>

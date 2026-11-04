@@ -12,6 +12,7 @@ import {
   type GetMapAssetResponse,
 } from '@faims3/data-model';
 import {
+  keepPreviousData,
   useQueries,
   useQuery,
   useQueryClient,
@@ -22,17 +23,34 @@ import {errorMessageFromNotebookJsonBody} from './project-hooks';
 /** How often in-progress layers are polled via GET /api/map-assets/:id. */
 const MAP_ASSET_PROGRESS_POLL_MS = 2000;
 
+/**
+ * List rows are patched from the in-progress poll. A short stale window
+ * avoids a full list refetch on every window focus (file picker, alt-tab),
+ * which remounted open create/replace dialogs.
+ */
+const MAP_ASSET_LIST_STALE_MS = 60_000;
+
+/**
+ * Stable cache identity for one Control Centre session. The JWT rotates
+ * every few minutes; putting it in the query key made every map-layer
+ * query look new (`isPending`), which swapped pages for skeletons and
+ * closed dialogs.
+ */
+export function mapAssetQueryUserKey(user: User | null): string | undefined {
+  return user?.user?.id ?? user?.decodedToken?.username ?? user?.token;
+}
+
 /** React Query key for the library or one survey's linked layers. */
 export const mapAssetQueryKey = (user: User | null, projectId?: string) => [
   'map-assets',
-  user?.token,
+  mapAssetQueryUserKey(user),
   projectId ?? 'library',
 ];
 
 /** React Query key for layers owned by one team. */
 export const mapAssetTeamQueryKey = (user: User | null, teamId: string) => [
   'map-assets',
-  user?.token,
+  mapAssetQueryUserKey(user),
   'team',
   teamId,
 ];
@@ -40,7 +58,7 @@ export const mapAssetTeamQueryKey = (user: User | null, teamId: string) => [
 /** React Query key for one layer's details. */
 export const mapAssetDetailQueryKey = (user: User | null, assetId: string) => [
   'map-assets',
-  user?.token,
+  mapAssetQueryUserKey(user),
   'asset',
   assetId,
 ];
@@ -184,7 +202,7 @@ export function patchMapAssetInLists(
     {
       predicate: query =>
         query.queryKey[0] === 'map-assets' &&
-        query.queryKey[1] === user.token &&
+        query.queryKey[1] === mapAssetQueryUserKey(user) &&
         isMapAssetListQueryKey(query.queryKey),
     },
     old => replaceAssetInList(old, asset)
@@ -367,15 +385,18 @@ function mapAssetDetailQueryOptions({
       query.state.data && isMapAssetInProgress(query.state.data.status)
         ? MAP_ASSET_PROGRESS_POLL_MS
         : false,
+    placeholderData: keepPreviousData,
   };
 }
 
 /**
  * List layers for the library, a survey, or a team.
  *
- * Fetches the list once (plus invalidation / window focus). Ready rows stay
- * in that snapshot and in per-asset detail queries. In-progress layers are
+ * Fetches the list once (plus invalidation). Ready rows stay in that
+ * snapshot and in per-asset detail queries. In-progress layers are
  * refreshed via GET /api/map-assets/:id and patched back into the list.
+ * Window-focus refetch is off so a file picker or alt-tab does not remount
+ * open dialogs.
  */
 export function useMapAssets({
   user,
@@ -394,6 +415,9 @@ export function useMapAssets({
       ? mapAssetTeamQueryKey(user, teamId)
       : mapAssetQueryKey(user, projectId),
     enabled: !!user && enabled,
+    staleTime: MAP_ASSET_LIST_STALE_MS,
+    refetchOnWindowFocus: false,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const data = teamId
         ? await fetchTeamMapAssets({user: user as User, teamId})
@@ -514,7 +538,9 @@ export async function invalidateMapAssets(
   assetId?: string
 ): Promise<void> {
   const pending = [
-    queryClient.invalidateQueries({queryKey: ['map-assets', user.token]}),
+    queryClient.invalidateQueries({
+      queryKey: ['map-assets', mapAssetQueryUserKey(user)],
+    }),
   ];
   if (assetId) {
     pending.push(
@@ -540,7 +566,7 @@ export function cacheCreatedMapAsset(
     {
       predicate: query =>
         query.queryKey[0] === 'map-assets' &&
-        query.queryKey[1] === user.token &&
+        query.queryKey[1] === mapAssetQueryUserKey(user) &&
         isMapAssetListQueryKey(query.queryKey) &&
         isListForCreatedAsset(query.queryKey, asset),
     },
@@ -561,7 +587,7 @@ export async function invalidateMapAssetsAfterCreate(
   await queryClient.invalidateQueries({
     predicate: query =>
       query.queryKey[0] === 'map-assets' &&
-      query.queryKey[1] === user.token &&
+      query.queryKey[1] === mapAssetQueryUserKey(user) &&
       isMapAssetListQueryKey(query.queryKey),
     refetchType: 'all',
   });
@@ -598,7 +624,7 @@ export function useMapAssetLinks({
   enabled?: boolean;
 }) {
   return useQuery({
-    queryKey: ['map-assets', user?.token, 'links', assetId],
+    queryKey: ['map-assets', mapAssetQueryUserKey(user), 'links', assetId],
     enabled: !!user && assetId.length > 0 && enabled,
     queryFn: () => fetchMapAssetLinks({user: user as User, assetId}),
   });

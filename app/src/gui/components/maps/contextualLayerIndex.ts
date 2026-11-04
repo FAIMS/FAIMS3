@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
- * Reference counts for on-device map layers.
- * One record per asset id. A file is deleted only when no survey still lists it.
+ * Device catalog for on-device map layers.
+ * One record per asset id. A file is deleted only when no activated survey
+ * still lists it.
  */
 
 export type StoredLayerRef = {
   assetId: string;
   contentHash: string;
   filename: string;
-  projectIds: string[];
 };
 
 export type LayerFileIndex<T extends StoredLayerRef> = Record<string, T>;
@@ -30,56 +30,95 @@ export function filenamesToDelete<T extends StoredLayerRef>(
 
 /**
  * Store one copy of an asset. A new content hash replaces that copy.
- * Other surveys that already reference the asset keep their reference.
+ * Survey membership is the listing, not this record.
  */
 export function assignDownloadedLayer<T extends StoredLayerRef>(
   files: LayerFileIndex<T>,
-  projectId: string,
   incoming: T
 ): LayerFileIndex<T> {
-  const existing = files[incoming.assetId];
-  const projectIds = existing
-    ? Array.from(new Set([...existing.projectIds, projectId]))
-    : [projectId];
   return {
     ...files,
-    [incoming.assetId]: {...incoming, projectIds},
+    [incoming.assetId]: incoming,
   };
 }
 
 /**
- * Drop this survey from assets absent from the ready listing.
+ * Keep only assets in the ready listing union.
  * That listing omits pending, replacing, and failed assets on purpose: a
- * withdrawn overlay is not kept as last-good. A file shared with another
- * survey stays.
+ * withdrawn overlay is not kept as last-good.
  */
 export function retainListedLayers<T extends StoredLayerRef>(
   files: LayerFileIndex<T>,
-  projectId: string,
   listedAssetIds: Iterable<string>
 ): LayerFileIndex<T> {
   const listed = new Set(listedAssetIds);
-  const next: LayerFileIndex<T> = {...files};
+  const next: LayerFileIndex<T> = {};
   for (const file of Object.values(files)) {
-    if (!file.projectIds.includes(projectId) || listed.has(file.assetId)) {
-      continue;
-    }
-    const projectIds = file.projectIds.filter(id => id !== projectId);
-    if (projectIds.length === 0) {
-      delete next[file.assetId];
-    } else {
-      next[file.assetId] = {...file, projectIds};
+    if (listed.has(file.assetId)) {
+      next[file.assetId] = file;
     }
   }
   return next;
 }
 
-/** Drop every reference from one survey. Delete a file only when it was the last. */
-export function releaseProjectLayers<T extends StoredLayerRef>(
-  files: LayerFileIndex<T>,
-  projectId: string
-): LayerFileIndex<T> {
-  return retainListedLayers(files, projectId, []);
+/**
+ * Union of listed asset ids. An omitted listing (`undefined`) means the
+ * keep-set is unknown — callers must not delete files from an uncertain set.
+ */
+export function unionListedAssetIds(
+  listings: ReadonlyArray<readonly string[] | undefined>
+): {keepIds: string[]; uncertain: boolean} {
+  const keep = new Set<string>();
+  let uncertain = false;
+  for (const listing of listings) {
+    if (!listing) {
+      uncertain = true;
+      continue;
+    }
+    for (const id of listing) {
+      keep.add(id);
+    }
+  }
+  return {keepIds: [...keep], uncertain};
+}
+
+export type ActivatedSurveyLayerSource = {
+  projectId: string;
+  contextualLayers?: ReadonlyArray<{id: string}>;
+};
+
+/**
+ * Device keep-set from activated surveys. `listingByProjectId` overrides the
+ * survey's last-known listing (directory refresh). A present override of
+ * `undefined` is an omitted attach and makes the set uncertain.
+ */
+export function collectActivatedLayerKeepSet(
+  surveys: Iterable<ActivatedSurveyLayerSource>,
+  listingByProjectId?: ReadonlyMap<string, readonly string[] | undefined>
+): {keepIds: string[]; uncertain: boolean} {
+  const listings: Array<readonly string[] | undefined> = [];
+  for (const survey of surveys) {
+    if (listingByProjectId?.has(survey.projectId)) {
+      listings.push(listingByProjectId.get(survey.projectId));
+    } else {
+      listings.push(survey.contextualLayers?.map(layer => layer.id));
+    }
+  }
+  return unionListedAssetIds(listings);
+}
+
+/** Flatten activated surveys from every server. */
+export function activatedSurveysFromServers(
+  servers: Record<
+    string,
+    {activated: Record<string, ActivatedSurveyLayerSource>}
+  >
+): ActivatedSurveyLayerSource[] {
+  const surveys: ActivatedSurveyLayerSource[] = [];
+  for (const server of Object.values(servers)) {
+    surveys.push(...Object.values(server.activated));
+  }
+  return surveys;
 }
 
 /** How a listed layer compares with the copy stored on this device, if any. */

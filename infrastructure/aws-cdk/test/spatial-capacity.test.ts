@@ -19,12 +19,12 @@ describe('spatial worker commands', () => {
   it('runs the compiled drain worker and capacity manager, not the API server', () => {
     expect(buildSpatialWorkerCommand()).toEqual([
       'node',
-      'scripts/spatialWorker.js',
+      'entrypoints/spatialWorker.js',
       '--poll',
     ]);
     expect(buildCapacityManagerCommand()).toEqual([
       'node',
-      'scripts/capacityManager.js',
+      'entrypoints/capacityManager.js',
     ]);
   });
 });
@@ -85,7 +85,7 @@ describe('FaimsSpatialCapacity synth', () => {
       ContainerDefinitions: Match.arrayWith([
         Match.objectLike({
           Name: SPATIAL_WORKER_CONTAINER_NAME,
-          Command: ['node', 'scripts/spatialWorker.js', '--poll'],
+          Command: ['node', 'entrypoints/spatialWorker.js', '--poll'],
           Environment: Match.arrayWith([
             Match.objectLike({
               Name: 'SPATIAL_WORKER_IDLE_EXIT_MS',
@@ -109,7 +109,7 @@ describe('FaimsSpatialCapacity synth', () => {
       ContainerDefinitions: Match.arrayWith([
         Match.objectLike({
           Name: CAPACITY_MANAGER_CONTAINER_NAME,
-          Command: ['node', 'scripts/capacityManager.js'],
+          Command: ['node', 'entrypoints/capacityManager.js'],
           Environment: Match.arrayWith([
             Match.objectLike({Name: 'CAPACITY_PROVIDER', Value: 'ECS'}),
             Match.objectLike({Name: 'CAPACITY_MAX', Value: '4'}),

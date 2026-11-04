@@ -198,7 +198,7 @@ export class AwsEcsControlPlane implements EcsControlPlane {
           containerOverrides: [
             {
               name: input.containerName,
-              command: ['node', 'scripts/spatialWorker.js', '--poll'],
+              command: ['node', 'entrypoints/spatialWorker.js', '--poll'],
             },
           ],
         },

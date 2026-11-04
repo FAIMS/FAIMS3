@@ -1,25 +1,251 @@
 # Map Layers
 
-How Control Centre map-layer uploads become device-ready PMTiles, how survey
-listings expose them, and how field devices keep on-device copies.
+Map layers are reference overlays — basemaps, survey areas, historic maps —
+that a survey can display in the field app. An administrator uploads a GIS
+file in the Control Centre, a background worker converts it to PMTiles, and
+field devices download and keep a local copy.
 
-Record GeoJSON / KML / GeoPackage export is separate: [Geospatial export pipeline](GeospatialExport.md).
+This page covers that pipeline end to end: upload → conversion → download →
+on-device storage.
 
-## Ingest
+> **Not this page:** exporting _record_ geometry as GeoJSON / KML /
+> GeoPackage. See [Geospatial export pipeline](GeospatialExport.md).
 
-Control Centre uploads are stored as Couch metadata in the `mapassets` database. File bytes go to object storage (AWS S3 in production, local RustFS in `./dev.sh`). Each asset document records the exact location in `storedAttachments` (`provider`, `resourceUri`, content type, byte size, optional S3 `endpoint`) for `original`, companion files, and `normalized`. For S3 the URI is `s3://{region}/{bucket}/{key}`. The combined upload may be at most 2 GB (8 files).
+## At a glance
 
-The HTTP request writes files to disk (`multer` disk storage) and returns `201` while the asset is `pending`. After the response, the API streams originals to object storage and deletes the local staging directory. That live upload is bounded to 2 hours and marks the asset `failed` itself if it overruns; a background sweep does the same for uploads abandoned by a crash or reload. A late object-store put does not write onto a failed or replaced document, and does not delete the replacement's staging files. Nothing on that path buffers the whole original in RAM. GDAL does not run in the API process.
+```mermaid
+flowchart LR
+  A[Control Centre upload] --> B[Conductor API: stage to disk]
+  B --> C[Object storage: original files]
+  B --> D[(CouchDB mapassets: pending)]
+  D --> E[Spatial worker: GDAL / tippecanoe / pmtiles]
+  E --> F[Object storage: PMTiles]
+  F --> G[Signed download URL]
+  G --> H[Control Centre / field app]
+```
 
-A spatial worker then claims the job (`pending` → `processing`), downloads the originals, runs GDAL, and streams the normalized PMTiles archive back to object storage. Workers poll the Couch `pending` / stale-`processing` queue (one asset at a time per process) and exit after `SPATIAL_WORKER_IDLE_EXIT_MS` with no claim (`0` never exits). A capacity manager is the only process that starts workers. It maps total queue depth (`inFlight` + `unclaimed`) through `CAPACITY_SCALE_THRESHOLDS` (`3,8,16,32` by default: 1→2 at 3 jobs, 2→3 at 8, and so on), caps at `CAPACITY_MAX`, and calls a pluggable capacity provider (`ECS`, `FIXED`, or `MOCK`). If the oldest unclaimed job has waited at least `CAPACITY_STARVATION_MS` (default 5 minutes; `0` disables), the manager asks for one extra worker above the depth step. Further extras from that same stale job are spaced by `CAPACITY_SCALE_IN_COOLDOWN_MS` (default twice the starvation timeout; `0` keeps only the first extra). Worker count never exceeds `CAPACITY_MAX` or the number of jobs in the queue. The provider adds capacity; it does not stop in-flight workers.
+Every asset moves through the same states:
 
-On AWS the manager is a small Fargate service (desired 1). It `RunTask`s worker tasks. There is no worker ECS service, so an idle exit is not replaced and compute returns to zero. Locally and on-prem, `CAPACITY_PROVIDER=FIXED` and a compose / always-on worker polls with idle exit disabled.
+| Status       | Meaning                                           |
+| ------------ | ------------------------------------------------- |
+| `pending`    | Upload accepted; waiting for storage or a worker  |
+| `processing` | A worker has claimed the job and is converting it |
+| `ready`      | PMTiles stored; available to surveys and devices  |
+| `failed`     | Conversion or upload failed; see the failure text |
 
-The field app and Control Centre download the device-ready file directly from object storage. `GET /api/map-assets/:id/download-url` (Bearer) returns a JSON grant (`url`, `mediaType`, `filename`, `byteSize`, `expiresInSeconds`). The client then `GET`s `url` — Conductor does not stream the bytes. Grants last one hour. When the API reaches RustFS on an internal hostname, set `ATTACHMENT_S3_PUBLIC_ENDPOINT` (e.g. `http://localhost:9000`) so the signed host is reachable from the browser. Docker `--all` and the compose API service set that automatically. The bucket allows CORS `GET`/`HEAD` (CDK in AWS; Conductor applies it on local RustFS).
+Two design points explain most behaviour below:
 
-## Local object storage (RustFS)
+- **The API never runs GDAL and never streams file bytes to clients.** It
+  stages uploads, stores originals, and issues signed URLs. Workers convert;
+  clients download directly from object storage.
+- **Nothing buffers a whole file in RAM.** Uploads, originals, and results
+  are streamed between disk and object storage.
 
-`./dev.sh` / `./localdev.sh` start CouchDB and RustFS first, migrate Couch, then start `capacity-manager` and `spatial-worker`. The worker image (`faims-dev-worker:local`, Dockerfile.dev target `worker`) has GDAL, tippecanoe, and pmtiles, and does not bake application source. Rebuild it with `--build` only when `Dockerfile.dev` or the lockfile changes. Its scratch directory is the `spatial_scratch` volume, not the API container's disk.
+## Accepted uploads and output
+
+Combined upload limit: **2 GB across at most 8 files** (original plus any
+companion files).
+
+| Upload                                    | Notes                                              |
+| ----------------------------------------- | -------------------------------------------------- |
+| GeoJSON (`.geojson`, `.json`)             | A legacy collection-level `crs` member is honoured |
+| GeoPackage (`.gpkg`)                      | All layers merged into one overlay                 |
+| Zipped shapefile (`.shp/.shx/.dbf/.prj`)  | Upload as one zip                                  |
+| Zipped ESRI File Geodatabase (`.gdb.zip`) | See notes below                                    |
+| KML (`.kml`)                              | All folders merged into one overlay                |
+| GeoTIFF (`.tif`, `.tiff`)                 | Embedded CRS is used; a stray `.prj` is ignored    |
+| Georeferenced PDF (`.pdf`)                | Embedded CRS is used; treated as a raster          |
+| PNG / JPEG + world file + `.prj`          | The sibling `.prj` supplies the CRS (images only)  |
+
+File Geodatabase specifics: a `.zip` containing exactly one `.gdb` folder
+also works (more than one is rejected). Feature classes are merged into one
+layer. Domains, subtypes, relationships, and attachments are dropped.
+
+**A CRS is required.** GDAL must be able to report one; otherwise the asset
+is marked `failed` with the GDAL error as the failure text, and no
+normalized file is stored.
+
+### Output: one PMTiles archive per asset
+
+Every accepted file becomes a single PMTiles archive
+(`application/vnd.pmtiles`):
+
+| Source type        | Conversion                                                                 | Projection  |
+| ------------------ | -------------------------------------------------------------------------- | ----------- |
+| Vector             | `ogr2ogr` to an intermediate (FlatGeobuf or GeoJSONSeq), then `tippecanoe` | `EPSG:4326` |
+| Raster (incl. PDF) | `gdalwarp` to WebP MBTiles, `gdaladdo` overviews, then `pmtiles convert`   | `EPSG:3857` |
+
+Both paths drop feature attributes (the app only draws geometry), merge all
+source layers into one overlay layer, and delete intermediates afterwards.
+Raster assets also store their placement extent plus `minZoom`, `maxZoom`,
+and `tileSize` (256) from the archive header.
+
+Exact tool flags and the edge cases behind them are in
+[Appendix: conversion details](#appendix-conversion-details).
+
+## How an upload is processed
+
+1. **Stage.** The API writes the multipart upload to local disk (`multer`
+   disk storage) and returns `201` with the asset `pending`. Rejected or
+   aborted uploads delete their staging directory.
+2. **Store originals.** After responding, the API streams the files to
+   object storage and deletes the staging directory. The asset document in
+   the CouchDB `mapassets` database records each file in
+   `storedAttachments` (`original`, companions, later `normalized`): provider,
+   `resourceUri` (`s3://{region}/{bucket}/{key}` on S3), content type, byte
+   size, and optional S3 `endpoint`.
+3. **Convert.** A spatial worker claims the job (`pending` → `processing`),
+   downloads the originals, runs GDAL, and streams the PMTiles result back to
+   object storage. The API process never runs GDAL.
+4. **Publish.** On success the asset becomes `ready`. On a GDAL error it
+   becomes `failed` immediately (no retry — see
+   [Failures and retries](#failures-and-retries)).
+5. **Download.** Clients fetch a signed URL (below) and download the PMTiles
+   directly from object storage.
+
+### Downloads
+
+`GET /api/map-assets/:id/download-url` (Bearer auth) returns a grant:
+`url`, `mediaType`, `filename`, `byteSize`, `expiresInSeconds`. Grants last
+**one hour**. Conductor does not proxy the bytes.
+
+If the API reaches object storage on an internal hostname (local RustFS),
+set `ATTACHMENT_S3_PUBLIC_ENDPOINT` (e.g. `http://localhost:9000`) so the
+signed URL is reachable from the browser. Docker `--all` and the compose API
+service set this automatically. The bucket allows CORS `GET`/`HEAD` (via CDK
+on AWS; Conductor configures local RustFS itself).
+
+## Workers and scaling
+
+Only the **capacity manager** (`api/src/entrypoints/capacityManager.ts`)
+starts workers. It watches queue depth (`inFlight` + `unclaimed`) and asks a
+provider to add workers; it never stops one mid-job — workers exit on their
+own when idle.
+
+Workers (`api/src/entrypoints/spatialWorker.ts`):
+
+- Poll CouchDB for `pending` and stale `processing` jobs, one asset at a time
+- Do not claim a job until its originals are in object storage
+- Exit after `spatialCapacity.idleExitMs` with no claim (`0` = never exit)
+
+Providers (`spatialCapacity.provider`):
+
+| Provider | Used for        | Behaviour                                                                                                                                                           |
+| -------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ECS`    | AWS             | Manager is a Fargate service (desired count 1) that `RunTask`s workers. There is no worker ECS service, so an idle exit is not replaced and compute returns to zero |
+| `FIXED`  | Local / on-prem | A compose or always-on worker polls with idle exit disabled                                                                                                         |
+| `MOCK`   | Tests           | Fake provider                                                                                                                                                       |
+
+### Scaling knobs
+
+All under `spatialCapacity` in `core.json` (see
+[Build configuration](Build-Configuration.md)):
+
+| Setting             | Default                                         | Effect                                                                 |
+| ------------------- | ----------------------------------------------- | ---------------------------------------------------------------------- |
+| `scaleThresholds`   | `[3, 8, 16, 32]`                                | Queue depths that raise worker count: 1→2 at 3 jobs, 2→3 at 8, …       |
+| `maxCapacity`       | — (hard cap)                                    | Worker count never exceeds this, nor the number of queued jobs         |
+| `starvationMs`      | 5 min (`0` disables)                            | If the oldest unclaimed job has waited this long, add one extra worker |
+| `scaleInCooldownMs` | 2 × `starvationMs` (`0` = only the first extra) | Minimum gap before the same stale job earns another extra worker       |
+
+## Survey listings and on-device copies
+
+`GET /api/directory` and the notebook list/get endpoints attach
+`contextualLayers` to each survey: **only `ready` assets linked to that
+survey**. `pending`, `processing`, and `failed` assets are omitted, even
+though the survey link still exists.
+
+That array is the field app's **keep-set**. On directory refresh, an
+activated survey deletes any on-device layer whose id is not listed (a file
+still used by another survey is kept).
+
+> ⚠️ **Absent is not empty.** If the field is omitted entirely (e.g. the
+> manifest attach failed), the app treats that as "unknown" and deletes
+> nothing. Only a present-but-smaller list triggers cleanup.
+
+### Replacing a file invalidates the old one immediately
+
+Replace is _not_ last-good-wins. Once a replacement is staged:
+
+- The previous object-storage blobs are deleted
+- The asset leaves survey listings until the new file is `ready`
+- Devices holding the old file delete it on next refresh, then download the
+  new file when it appears
+
+A withdrawn overlay is never kept as a fallback. This is intentional.
+
+## Limits, timeouts, and failures
+
+### Size and disk
+
+- Before an upload streams, the API checks free space on `os.tmpdir()`. If
+  less than **3 × the 2 GB cap** remains (original plus working copy), it
+  returns **503** with `MAP_ASSET_UPLOAD_BUSY_MESSAGE`, which the Control
+  Centre shows verbatim instead of a generic error.
+- AWS Conductor ephemeral storage defaults to **21 GiB**. GDAL scratch lives
+  on the worker task: `spatialCapacity.ephemeralStorageGiB`, default **80**
+  (range 21–200).
+
+### Timeouts
+
+- Node's default `server.requestTimeout` (5 min) would kill slow 2 GB
+  uploads, so Conductor sets it to **1 hour** (`headersTimeout` slightly
+  higher). This is process-wide, not per-route.
+- An in-flight upload is bounded to **2 hours**. Overrun marks the asset
+  `failed`. A background sweep does the same for `pending` assets abandoned
+  by a crash or reload (no stored originals 2 hours after
+  `originalUploadStartedMs`). A late object-store write never overwrites a
+  `failed` or replaced document, and never deletes a replacement's staging
+  files.
+- Proxies can still cut _paused_ uploads: an AWS ALB idles out at ~60 s and
+  the DigitalOcean nginx config inherits a 60 s `proxy_read_timeout` (its
+  `client_max_body_size` is unlimited). A continuously sending upload stays
+  alive.
+
+### Failures and retries
+
+Claiming a job sets `status: processing`, `processingStartedAt`, and a
+heartbeat (`processingHeartbeatMs`, refreshed by every claim, stage, and
+progress write). `processingAttempts` counts claims.
+
+- No heartbeat for **2 hours** → the job is treated as abandoned and can be
+  claimed again
+- After **3 claims** → marked `failed`
+- A **GDAL error** → `failed` immediately, not retried
+
+Replacing a file resets all of this: back to `pending`, a fresh
+`originalUploadStartedMs`, and claim, attempt count, heartbeat, and previous
+storage pointers cleared. (A rename does none of this.) Note `updatedAt` is
+only the last _user-facing_ change — create, rename, replace, ready/failed —
+and is what listings sort by; processing writes do not touch it.
+
+## Processing progress
+
+While processing, the asset carries two fields (both cleared on `ready` /
+`failed`):
+
+- `processingStage` — a stable step id: `uploading`, `queued`, `downloading`,
+  `extracting-archive`, `flattening-geojson`, `interpreting-crs`,
+  `converting-geometries`, `tiling-vectors`, `warping-raster`,
+  `building-tiles`, `building-overviews`, `converting-tiles`, `storing`
+- `processingProgress` — stage-specific detail the Control Centre renders
+  (e.g. "Building vector tiles — Reordering geometry 45%") and polls with the
+  rest of the asset:
+
+| Stage(s)                                                 | Progress value                       |
+| -------------------------------------------------------- | ------------------------------------ |
+| `flattening-geojson`                                     | Bytes consumed (`Flattening` / 45)   |
+| `tiling-vectors`                                         | tippecanoe phase + percent           |
+| `warping-raster`, `building-tiles`, `building-overviews` | GDAL progress ticks (`Warping` / 45) |
+
+`converting-tiles` (`pmtiles convert`) reports no live percent. Progress
+writes also refresh the claim heartbeat, so a long GeoTIFF step is not
+stolen by another worker.
+
+## Local development (RustFS)
+
+`./dev.sh` / `./localdev.sh` start CouchDB and RustFS first, migrate Couch,
+then start `capacity-manager` and `spatial-worker`.
 
 | Service | URL                                |
 | ------- | ---------------------------------- |
@@ -27,50 +253,110 @@ The field app and Control Centre download the device-ready file directly from ob
 | Console | http://localhost:9001              |
 | Health  | `GET http://localhost:9000/health` |
 
-`api/.env.dist` points Conductor at that endpoint with static local keys (`faimsdev` / `faimsdevsecret1`). `./localdev.sh --all` overrides `ATTACHMENT_S3_ENDPOINT` to `http://rustfs:9000` so the API container uses Docker DNS, and `ATTACHMENT_S3_PUBLIC_ENDPOINT` to `http://localhost:9000` so presigned downloads work from the host browser. On AWS ECS, omit the keys and endpoint — the task role authenticates, and CDK creates the bucket with CORS for client GETs.
+- The worker image (`faims-dev-worker:local`, `Dockerfile.dev` target
+  `worker`) ships GDAL, tippecanoe, and pmtiles but no application source —
+  it bind-mounts `api/src`. Rebuild with `--build` **only** when
+  `Dockerfile.dev` or the lockfile changes. Its scratch space is the
+  `spatial_scratch` volume, not the API container's disk.
+- `api/.env.dist` points Conductor at RustFS with static local keys
+  (`faimsdev` / `faimsdevsecret1`). `./localdev.sh --all` overrides
+  `ATTACHMENT_S3_ENDPOINT` to `http://rustfs:9000` (Docker DNS inside the API
+  container) and `ATTACHMENT_S3_PUBLIC_ENDPOINT` to
+  `http://localhost:9000` (host browser). On AWS, omit keys and endpoint —
+  the task role authenticates and CDK creates the bucket with CORS.
+- Storage backend: `ATTACHMENT_STORAGE_TYPE=S3` or `MOCK` (forced under
+  test), mirroring the email backend switch.
+- Smoke test: `POST /api/admin/test-attachment-storage` uploads, heads,
+  downloads, presigns, and deletes a tiny probe object.
 
-Admin smoke test (operations / general admin): `POST /api/admin/test-attachment-storage`. It uploads, heads, downloads, presigns, and deletes a tiny probe object.
+## Performance tuning
 
-The storage backend is selected like email: `ATTACHMENT_STORAGE_TYPE=S3` or `MOCK` (forced under test). Implementation: `api/src/services/attachmentStorageService.ts`.
+Worker memory/thread knobs, also under `spatialCapacity` in `core.json`:
 
-A rejected or aborted upload deletes its `req-*` staging directory: multer size/count errors and a client disconnect both clean up. Before the stream starts, the API checks free space on `os.tmpdir()`. If less than three times the 2 GB cap remains (room for the original plus a copy while it uploads to object storage), it returns **503** with `MAP_ASSET_UPLOAD_BUSY_MESSAGE`. The Control Centre shows that text rather than a generic failure. AWS Conductor ephemeral storage defaults to **21 GiB**. GDAL scratch is on the spatial worker task (`spatialCapacity.ephemeralStorageGiB`, default **80**, range 21–200).
+| Setting                | Meaning                   |
+| ---------------------- | ------------------------- |
+| `gdalNumThreads`       | `ALL_CPUS` or an integer  |
+| `gdalCacheMaxMb`       | GDAL cache size           |
+| `gdalWarpMemoryMb`     | `gdalwarp -wm` buffer     |
+| `gdalWarpMulti`        | `gdalwarp -multi` on/off  |
+| `tippecanoeMaxThreads` | Optional; omit = all CPUs |
 
-Node 18+ defaults `server.requestTimeout` to 5 minutes, which would abort a slow 2 GB upload. Conductor sets `requestTimeout` to 1 hour (`headersTimeout` slightly higher). That is a process-wide HTTP server setting, not per-route. An AWS ALB idle timeout is still typically 60 seconds: a continuously sending upload stays alive; a paused upload can still be cut. DigitalOcean nginx in this repo sets `client_max_body_size 0` but inherits the default 60s `proxy_read_timeout` unless you raise it.
+Defaults (256 MB cache and warp buffer) fit a 1 vCPU / 2 GiB worker. On an
+8 vCPU / 32 GiB task, raise cache toward 1024–2048 MB and warp memory toward
+1024 MB. On AWS, CDK applies these to the worker task only.
 
-## Accepted uploads
+## Implementation map
 
-- GeoJSON (`.geojson`, `.json`)
-- GeoPackage (`.gpkg`)
-- Zipped shapefile, including `.shp`, `.shx`, `.dbf`, and `.prj`
-- Zipped ESRI File Geodatabase (`.gdb.zip`, or a `.zip` with one `.gdb` folder). GDAL OpenFileGDB reads it; ArcGIS / Pro "Export File Geodatabase" zips work. A zip with more than one `.gdb` is rejected. Feature classes are merged into one layer. Domains, subtypes, relationships, and attachments are dropped.
-- KML (`.kml`)
-- GeoTIFF (`.tif`, `.tiff`)
-- Georeferenced PDF (`.pdf`)
-- PNG or JPEG with a world file and a `.prj`. A sibling `.prj` is assigned only for those images (`-a_srs` onto a VRT). GeoTIFF and GeoPDF keep their embedded CRS; a leftover `.prj` is ignored.
+| Area                                | Files                                          |
+| ----------------------------------- | ---------------------------------------------- |
+| Asset store, claim, original upload | `api/src/couchdb/mapAssets/store.ts`           |
+| GDAL conversion                     | `api/src/couchdb/mapAssets/normalize.ts`       |
+| Object storage backend              | `api/src/services/attachmentStorageService.ts` |
+| Worker loop                         | `api/src/entrypoints/spatialWorker.ts`         |
+| Capacity manager                    | `api/src/entrypoints/capacityManager.ts`       |
+| Providers (ECS / FIXED / MOCK)      | `api/src/services/capacityProvider.ts`         |
+| GDAL command helpers                | `api/src/couchdb/export/gdal.ts`               |
 
-GDAL must report a CRS. Uploads with no CRS are marked `failed` and no normalized attachment is stored. The failure text is the GDAL message. GeoJSON is opened with `-oo RFC7946=NO` so a legacy collection-level `crs` member is honoured. Flatten copies that root `crs` onto the rewritten FeatureCollection before `ogrinfo` / `ogr2ogr`.
+Docker images install GDAL, Poppler, unzip, tippecanoe 2.79.0, and the
+go-pmtiles 1.28.1 CLI. The build fails unless `gdalinfo --formats` lists PDF,
+MBTiles, and WEBP. `PMTILES_BIN` and `TIPPECANOE_BIN` override executable
+names (`pmtiles` falls back to `go-pmtiles`).
 
-Every accepted file becomes one PMTiles archive (`application/vnd.pmtiles`):
+Note the one exception to "no GDAL in the API": GeoPackage _export_ still
+runs GDAL in the API process — see
+[Geospatial export pipeline](GeospatialExport.md).
 
-- Vectors are reprojected to a geometry-only layer in `EPSG:4326`. Homogeneous Point, Line, or Polygon layers become FlatGeobuf (`ogr2ogr -f FlatGeobuf -nlt PROMOTE_TO_MULTI`). `-explodecollections` is omitted on that path: combined with `PROMOTE_TO_MULTI` it makes FlatGeobuf a Polygon layer then writes MultiPolygon features (`ICreateFeature: Mismatched geometry type`), which is the usual File Geodatabase polygon class. Mixed or unknown layers (a GeoJSON `GeometryCollection`, MultiLineString beside polygons, multi-folder KML) become RFC 8142 GeoJSONSeq (`-explodecollections` so collection members become ordinary features), because tippecanoe's FlatGeobuf reader rejects header type 0 (`Unknown`) for those geometries. Then `tippecanoe -l features` with family-specific thinning: polygons `-z 16 --hilbert --drop-fraction-as-needed --drop-polygons --drop-rate=3 --base-zoom=10 --maximum-tile-bytes=80000 --simplification=10 --simplify-only-low-zooms --extend-zooms-if-still-dropping` (drop, do not `--coalesce`: attributes are stripped, so coalesce would dissolve neighbouring parcels at every zoom, including street scale; fraction dropping instead of `--coalesce-smallest-as-needed`, which tippecanoe 2.78+ exits 100 on when the area threshold cannot increase); points `-z 14 --drop-densest-as-needed --drop-rate=g --maximum-tile-bytes=80000 --maximum-tile-features=5000 --hilbert --extend-zooms-if-still-dropping`; lines and mixed/unknown layers `-z 14 --drop-densest-as-needed --extend-zooms-if-still-dropping`. Extra zoom levels are added only when a tile at that family max zoom still overflows after dropping. A zipped File Geodatabase is extracted to scratch before ogr2ogr so GDAL does not read through `/vsizip`. GeoJSON FeatureCollection items that are themselves FeatureCollections are flattened to leaf Features before ogrinfo/ogr2ogr; `-explodecollections` does not walk that nesting. Every source layer is written into that one layer, so a multi-folder KML, multi-layer GeoPackage, or File Geodatabase becomes a single overlay. Feature attributes are dropped — the app only draws geometry. The intermediate file is deleted after tiling.
-- Rasters, including georeferenced PDFs, are warped to `EPSG:3857`. A PDF is rasterized at GDAL's guessed DPI (150 fallback) with `-oo LAYERS=ALL` so optional-content collar / surround groups stay on. `gdalwarp` uses `-multi`, `-wm`, and `NUM_THREADS` from config (defaults: 256 MB warp buffer, `ALL_CPUS`). Progress ticks are the default `GDALTermProgress` stdout (these tools have no `-progress` flag). GDAL writes WebP MBTiles (`QUALITY=90`; the MBTiles driver has no lossless WebP) at the native zoom, `gdaladdo` fills the lower zooms, and `pmtiles convert` writes the archive. The MBTiles file is deleted after conversion. The asset document stores the placement extent plus `minZoom`, `maxZoom`, and `tileSize` (256) from the archive header.
+## Appendix: conversion details
 
-Worker thread / memory knobs (env or CDK `spatialCapacity`): `GDAL_NUM_THREADS` (`ALL_CPUS` or an integer), `GDAL_CACHEMAX` (MB), `GDAL_WARP_MEMORY_MB` (`gdalwarp -wm`), `GDAL_WARP_MULTI`, `TIPPECANOE_MAX_THREADS` (omit = all CPUs). Conservative defaults (256 MB cache and warp buffer) fit a 1 vCPU / 2 GiB worker. Raise cache toward 1024–2048 MB and warp memory toward 1024 MB on an 8 vCPU / 32 GiB task. CDK copies these onto the worker task only.
+Reference for the vector/raster tool invocations and the edge cases behind
+them. Safe to skip unless you are debugging a conversion.
 
-The worker claims a `pending` asset by setting `status` to `processing` and writing `processingStartedAt`. The first processing write sets `processingHeartbeatMs`; later claim, stage, and progress writes refresh it. `updatedAt` is the last user-facing document change (create, rename, replace, ready/failed) and is what listings sort by. A job with no processing heartbeat for 2 hours is treated as abandoned and may be claimed again. `processingAttempts` counts claims. A fresh claim is left alone. After three claims the asset is marked `failed`. A GDAL error fails the asset immediately and is not retried. Workers do not claim a job until originals are in object storage. The live original upload times itself out after 2 hours from start and reports `failed`; the API process also sweeps `pending` uploads that still have no stored originals after 2 hours from `originalUploadStartedMs` (set on create and replace; a rename does not reset that clock) so a crash after the 201 can still be replaced. Replacing the file returns the asset to `pending`, stamps a new `originalUploadStartedMs`, and clears the claim, the attempt count, the heartbeat, and the previous object-store pointers.
+### Vectors
 
-## Survey listings and on-device copies
+The intermediate format depends on the layer's geometry types:
 
-`GET /api/directory` (and notebook list/get) attach `contextualLayers`: **ready** linked assets only. Pending, processing, and failed assets are omitted even while the survey link remains.
+- **Homogeneous** Point/Line/Polygon layers → FlatGeobuf
+  (`ogr2ogr -f FlatGeobuf -nlt PROMOTE_TO_MULTI`). `-explodecollections` is
+  deliberately omitted here: combined with `PROMOTE_TO_MULTI` it produces a
+  mismatched-geometry error on typical File Geodatabase polygon classes.
+- **Mixed or unknown** layers (GeometryCollections, MultiLineString beside
+  polygons, multi-folder KML) → RFC 8142 GeoJSONSeq with
+  `-explodecollections`, because tippecanoe's FlatGeobuf reader rejects
+  unknown header geometry types.
 
-That array is the field app's keep-set. On directory refresh, an activated survey drops any on-device file whose id is not listed (a file still used by another survey stays). Omitting the fields entirely (manifest attach failure) is the opposite signal: do not treat that as "no layers" and do not delete.
+tippecanoe then tiles one `features` layer, by geometry family:
 
-Replace is immediate invalidation, not last-good. After staging succeeds, the previous object-store blobs are gone and the asset leaves the listing until the new file is `ready`. Devices that already hold the old file delete it on the next refresh, then download the new hash when it appears. A withdrawn overlay is not kept as a fallback. This is intentional for now.
+| Family        | Key flags                                                                                                                                                                                          |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Polygons      | `-z 16 --hilbert --drop-fraction-as-needed --drop-polygons --drop-rate=3 --base-zoom=10 --maximum-tile-bytes=80000 --simplification=10 --simplify-only-low-zooms --extend-zooms-if-still-dropping` |
+| Points        | `-z 14 --drop-densest-as-needed --drop-rate=g --maximum-tile-bytes=80000 --maximum-tile-features=5000 --hilbert --extend-zooms-if-still-dropping`                                                  |
+| Lines / mixed | `-z 14 --drop-densest-as-needed --extend-zooms-if-still-dropping`                                                                                                                                  |
 
-## Processing progress
+Extra zooms are added only if a tile at the family max zoom still overflows
+after dropping. Two deliberate choices in the polygon flags:
 
-While a job is in progress the asset also carries `processingStage`: a stable step id (`uploading`, `queued`, `downloading`, `extracting-archive`, `flattening-geojson`, `interpreting-crs`, `converting-geometries`, `tiling-vectors`, `warping-raster`, `building-tiles`, `building-overviews`, `converting-tiles`, `storing`). During `flattening-geojson`, `processingProgress` is bytes consumed (`Flattening` / `45`), including while a large geometry or a nested collection is scanned (`features` before `type` is walked in one pass). During `tiling-vectors`, it holds tippecanoe's phase and percent (`Reordering geometry` / `45`). During `warping-raster`, `building-tiles`, and `building-overviews`, it holds GDALTermProgress ticks (`Warping` / `45`). Those writes also refresh the processing claim so a long GeoTIFF step is not stolen. `pmtiles convert` (`converting-tiles`) still has no live percent. The Control Centre maps those to short messages (Building vector tiles — Reordering geometry 45%) and polls them with the rest of the asset. Both fields are cleared when the job reaches `ready` or `failed`.
+- `--drop-fraction-as-needed`, not `--coalesce`: attributes are stripped, so
+  coalescing would dissolve neighbouring parcels at every zoom. It also
+  avoids `--coalesce-smallest-as-needed`, which tippecanoe 2.78+ exits 100
+  on when the area threshold cannot increase.
 
-## Implementation
+Pre-processing edge cases:
 
-`api/src/couchdb/mapAssets/normalize.ts` and `api/src/couchdb/mapAssets/store.ts` (claim, original upload, GDAL), `api/src/scripts/spatialWorker.ts` (poll until idle), `api/src/scripts/capacityManager.ts` (queue depth / staleness → capacity), `api/src/services/capacityProvider.ts` (ECS / FIXED / MOCK). Command helpers live in `api/src/couchdb/export/gdal.ts`. Docker images install GDAL, Poppler, unzip, tippecanoe 2.79.0, and the go-pmtiles 1.28.1 CLI (`pmtiles`). The image build fails unless `gdalinfo --formats` lists PDF, MBTiles, and WEBP. `PMTILES_BIN` and `TIPPECANOE_BIN` override the executable names; `pmtiles` falls back to `go-pmtiles`. GeoPackage export still runs GDAL inside the API process; see [Geospatial export pipeline](GeospatialExport.md).
+- GeoJSON is opened with `-oo RFC7946=NO` so a legacy collection-level `crs`
+  is honoured; flattening copies that root `crs` onto the rewritten
+  FeatureCollection before `ogrinfo` / `ogr2ogr`.
+- FeatureCollections nested inside a FeatureCollection are flattened to leaf
+  Features first (`-explodecollections` does not walk that nesting).
+- A zipped File Geodatabase is extracted to scratch before `ogr2ogr` so GDAL
+  does not read through `/vsizip`.
+
+### Rasters
+
+- PDFs are rasterized at GDAL's guessed DPI (150 fallback) with
+  `-oo LAYERS=ALL`, keeping optional-content collar/surround groups visible.
+- `gdalwarp` uses `-multi`, `-wm`, and `NUM_THREADS` from config (defaults:
+  256 MB warp buffer, `ALL_CPUS`). Progress comes from the default
+  `GDALTermProgress` stdout (these tools have no `-progress` flag).
+- Output is WebP MBTiles at `QUALITY=90` — the MBTiles driver has no lossless
+  WebP — at native zoom; `gdaladdo` fills lower zooms and `pmtiles convert`
+  writes the final archive.

@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {config} from '@/constants';
 import {useRequiredUser} from '@/hooks/auth-hooks';
 import {deleteMapAsset, invalidateMapAssets} from '@/hooks/map-asset-hooks';
 import {useNavigate} from '@tanstack/react-router';
@@ -51,8 +52,7 @@ export function DeleteMapLayerDialog({assetId}: {assetId: string}) {
         <DialogHeader>
           <DialogTitle>Delete this map layer?</DialogTitle>
           <DialogDescription>
-            Surveys stop listing it. Devices drop the downloaded file the next
-            time those surveys refresh their layers.
+            {`Deleting this layer will permanently remove it from the system. The layer will no longer be available on any linked ${config.notebookNamePlural}.`}
           </DialogDescription>
         </DialogHeader>
         <div className="flex justify-end gap-2">

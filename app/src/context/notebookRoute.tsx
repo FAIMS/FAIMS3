@@ -11,6 +11,8 @@ import {createContext, ReactNode, useContext, useMemo} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import * as ROUTES from '../constants/routes';
 import {RecordRouteNotebook} from '../constants/routes';
+import {selectProjectById} from './slices/projectSlice';
+import {useAppSelector} from './store';
 
 export type NotebookRouteContextType = {
   /** The notebook on screen with the plan it stands on: what a link under it is built from. */
@@ -47,6 +49,11 @@ export const NotebookRouteProvider = ({children}: {children: ReactNode}) => {
     planId?: string;
   }>();
   const navigate = useNavigate();
+  const listedAssetIds = useAppSelector(state =>
+    (selectProjectById(state, projectId as string)?.contextualLayers ?? []).map(
+      layer => layer.id
+    )
+  );
 
   const value = useMemo(() => {
     // The route cannot match without the ids, so they are named, not optional.
@@ -74,7 +81,10 @@ export const NotebookRouteProvider = ({children}: {children: ReactNode}) => {
 
   return (
     <NotebookRouteContext.Provider value={value}>
-      <NotebookContextualLayers projectId={value.notebook.projectId}>
+      <NotebookContextualLayers
+        projectId={value.notebook.projectId}
+        listedAssetIds={listedAssetIds}
+      >
         {children}
       </NotebookContextualLayers>
     </NotebookRouteContext.Provider>

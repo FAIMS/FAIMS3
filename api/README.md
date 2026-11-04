@@ -85,6 +85,21 @@ pnpm run watch
 
 instead, which will monitor for changes with `nodemon`.
 
+## Service entrypoints
+
+The HTTP API (`src/index.ts`, `pnpm start`) is one of three long-running
+processes. The other two live in [`src/entrypoints/`](src/entrypoints/) so it
+is obvious they are valid runnable services, not one-off CLI scripts (those
+stay in `src/scripts/`).
+
+| Process          | Role                                                                                                                          | Local                           |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| HTTP API         | Auth, Couch, map-asset HTTP. Does **not** run GDAL ingest.                                                                    | `pnpm start` / `pnpm run watch` |
+| Capacity manager | Reads the Couch map-asset queue and asks the capacity provider for workers. Never stops a worker.                             | `pnpm run capacity-manager`     |
+| Spatial worker   | Claims one job at a time, runs GDAL / tippecanoe / pmtiles, exits after `SPATIAL_WORKER_IDLE_EXIT_MS` idle (`0` never exits). | `pnpm run spatial-worker`       |
+
+Local compose starts both extras (`docker compose up -d capacity-manager spatial-worker`) with `CAPACITY_PROVIDER=FIXED` and idle-exit disabled. Without the worker, map-layer uploads stay `pending`. Production uses the same compiled files (`node entrypoints/capacityManager.js` and `node entrypoints/spatialWorker.js --poll` from `WORKDIR` `/app/api/build/src`). See [`src/entrypoints/README.md`](src/entrypoints/README.md) and [Map Layers](../docs/developer/docs/source/markdown/MapLayers.md).
+
 ## Initialisation and migration
 
 Once the services are up and running we need to initialise the CouchDB

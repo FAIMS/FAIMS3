@@ -36,6 +36,10 @@ import {
 } from '../../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../../context/store';
 import {logError} from '../../../../logging';
+import {
+  activatedSurveysFromServers,
+  collectActivatedLayerKeepSet,
+} from '../../maps/contextualLayerIndex';
 import {releaseContextualLayersForProject} from '../../maps/contextualLayerStore';
 import {removeProjectOfflineMaps} from '../../maps/projectOfflineMap';
 import {theme} from '../../../themes';
@@ -48,6 +52,7 @@ import {
   syncModeIncludesPush,
 } from '../../../../sync/syncMode';
 import AutoIncrementerSettingsList from './auto_incrementers';
+import NotebookContextualLayerSettings from './contextualLayerSettings';
 import NotebookOfflineMapSettings from './offlineMapSettings';
 import NotebookQuickShare from './quickShare';
 import NotebookSyncSwitch from './sync_switch';
@@ -60,6 +65,7 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
   const project = useAppSelector(state =>
     projectId ? selectProjectById(state, projectId) : undefined
   );
+  const servers = useAppSelector(state => state.projects.servers);
   const [openDeactivateDialog, setOpenDeactivateDialog] = React.useState(false);
   const [deactivateSyncAcknowledged, setDeactivateSyncAcknowledged] =
     React.useState(false);
@@ -94,7 +100,15 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
       }
     }
     try {
-      await releaseContextualLayersForProject(projectId);
+      const {keepIds, uncertain} = collectActivatedLayerKeepSet(
+        activatedSurveysFromServers(servers).filter(
+          survey => survey.projectId !== projectId
+        )
+      );
+      await releaseContextualLayersForProject(
+        projectId,
+        uncertain ? undefined : keepIds
+      );
     } catch (e) {
       logError(
         new Error('Failed to remove contextual map layers on deactivation', {
@@ -215,6 +229,8 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
           {config.offlineMaps && (
             <NotebookOfflineMapSettings project={project} />
           )}
+
+          <NotebookContextualLayerSettings project={project} />
 
           <Box component={Paper} variant={'outlined'} elevation={0} sx={{p: 2}}>
             <Typography variant={'h6'} sx={{mb: 2}}>

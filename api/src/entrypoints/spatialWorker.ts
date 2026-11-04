@@ -7,10 +7,10 @@
  *
  * Usage:
  *   pnpm --filter=@faims3/api spatial-worker
- *   node scripts/spatialWorker.js --poll
+ *   node entrypoints/spatialWorker.js --poll
  *
  * Production image (WORKDIR /app/api/build/src):
- *   node scripts/spatialWorker.js --poll
+ *   node entrypoints/spatialWorker.js --poll
  */
 
 import {config} from '../buildconfig';
@@ -23,7 +23,7 @@ import {runSpatialWorkerLoop} from '../spatial/workerLoop';
 
 /** Print CLI usage and spatial-tool env vars. */
 const showHelp = () => {
-  console.log(`Usage: node scripts/spatialWorker.js --poll
+  console.log(`Usage: node entrypoints/spatialWorker.js --poll
 
 Poll the Couch map-asset queue and process jobs until idle.
 
@@ -58,10 +58,6 @@ const main = async () => {
     process.exit(1);
   }
 
-  console.log(
-    `[spatial-worker] idleExitMs=${config.spatialWorkerIdleExitMs} pollMs=${config.spatialWorkerPollMs} gdalNumThreads=${config.gdalNumThreads} gdalCacheMaxMb=${config.gdalCacheMaxMb} gdalWarpMemoryMb=${config.gdalWarpMemoryMb} gdalWarpMulti=${config.gdalWarpMulti} tippecanoeMaxThreads=${config.tippecanoeMaxThreads ?? 'all'}`
-  );
-  console.log(`Couch server: ${config.couchdbInternalUrl}`);
   const connection = await waitForCouchDBConnection();
   if (!connection.valid) {
     // Missing databases (pre-migrate) are recoverable: the drain loop

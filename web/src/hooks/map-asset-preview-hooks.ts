@@ -25,42 +25,42 @@ export function useMapAssetPreviewDownload({
   token: string;
   start: boolean;
 }): MapAssetPreviewState {
+  const assetId = asset?._id;
+  const ready = asset?.status === 'ready';
+  const kind = asset?.kind;
+  const version = asset && ready ? mapAssetPreviewVersion(asset) : '';
+  const byteSize = asset?.byteSize ?? 0;
   const cacheKey =
-    asset && asset.status === 'ready'
-      ? mapAssetPreviewCacheKey(asset._id, mapAssetPreviewVersion(asset))
-      : '';
+    assetId && ready ? mapAssetPreviewCacheKey(assetId, version) : '';
   const [state, setState] = useState<MapAssetPreviewState>(() => {
     const current = cacheKey
       ? getMapAssetPreviewState(cacheKey)
       : IDLE_MAP_ASSET_PREVIEW_STATE;
-    if (current.status === 'idle' && asset && asset.byteSize > 0) {
-      return {...current, totalBytes: asset.byteSize};
+    if (current.status === 'idle' && byteSize > 0) {
+      return {...current, totalBytes: byteSize};
     }
     return current;
   });
 
   useEffect(() => {
-    if (!asset || asset.status !== 'ready' || !asset.kind) {
+    if (!assetId || !ready || !kind) {
       setState(IDLE_MAP_ASSET_PREVIEW_STATE);
       return;
     }
-    const key = mapAssetPreviewCacheKey(
-      asset._id,
-      mapAssetPreviewVersion(asset)
-    );
+    const key = mapAssetPreviewCacheKey(assetId, version);
     setState(getMapAssetPreviewState(key));
     const unsubscribe = subscribeMapAssetPreview(key, setState);
     if (start) {
       void ensureMapAssetPreviewDownload({
-        assetId: asset._id,
-        version: mapAssetPreviewVersion(asset),
-        byteSize: asset.byteSize,
+        assetId,
+        version,
+        byteSize,
         token,
         apiUrl: config.apiUrl,
       }).catch(() => undefined);
     }
     return unsubscribe;
-  }, [asset, start, token]);
+  }, [assetId, ready, kind, version, byteSize, start, token]);
 
   return state;
 }

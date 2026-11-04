@@ -32,7 +32,11 @@ export function ReplaceMapLayerDialog({
           <Upload className="ml-1 h-4 w-4" aria-hidden />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent
+        className="max-w-lg"
+        onPointerDownOutside={event => event.preventDefault()}
+        onInteractOutside={event => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Replace map layer file</DialogTitle>
           <DialogDescription>

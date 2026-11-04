@@ -36,6 +36,8 @@ const contextualLayerStore = vi.hoisted(() => ({
   retainListedContextualLayers: vi.fn(),
   notifyContextualLayersChanged: vi.fn(),
   releaseContextualLayersForProject: vi.fn(),
+  areContextualLayersOnDevice: vi.fn(),
+  markContextualLayersSeen: vi.fn(),
 }));
 
 vi.mock('../../gui/components/maps/contextualLayerStore', () => ({
@@ -46,6 +48,8 @@ vi.mock('../../gui/components/maps/contextualLayerStore', () => ({
     contextualLayerStore.notifyContextualLayersChanged,
   releaseContextualLayersForProject:
     contextualLayerStore.releaseContextualLayersForProject,
+  areContextualLayersOnDevice: contextualLayerStore.areContextualLayersOnDevice,
+  markContextualLayersSeen: contextualLayerStore.markContextualLayersSeen,
 }));
 
 import {reportNotebookSchemaCompatibility} from '../../logging';
@@ -278,6 +282,12 @@ describe('initialiseProjects lean directory + hash refresh', () => {
       .mockReset()
       .mockResolvedValue(false);
     contextualLayerStore.notifyContextualLayersChanged.mockReset();
+    contextualLayerStore.areContextualLayersOnDevice
+      .mockReset()
+      .mockReturnValue(false);
+    contextualLayerStore.markContextualLayersSeen
+      .mockReset()
+      .mockResolvedValue(undefined);
   });
 
   it('lists a new notebook without fetching GET /:id', async () => {
@@ -817,6 +827,12 @@ describe('initialiseProjects contextual layer retain and prompt', () => {
       .mockReset()
       .mockResolvedValue(false);
     contextualLayerStore.notifyContextualLayersChanged.mockReset();
+    contextualLayerStore.areContextualLayersOnDevice
+      .mockReset()
+      .mockReturnValue(false);
+    contextualLayerStore.markContextualLayersSeen
+      .mockReset()
+      .mockResolvedValue(undefined);
   });
 
   it('retains listed ids for an activated notebook when contextualLayers is an array', async () => {
@@ -837,7 +853,7 @@ describe('initialiseProjects contextual layer retain and prompt', () => {
 
     expect(
       contextualLayerStore.retainListedContextualLayers
-    ).toHaveBeenCalledWith('nb-1', ['asset-ready']);
+    ).toHaveBeenCalledWith(['asset-ready']);
     expect(
       contextualLayerStore.notifyContextualLayersChanged
     ).not.toHaveBeenCalled();
@@ -860,7 +876,7 @@ describe('initialiseProjects contextual layer retain and prompt', () => {
 
     expect(
       contextualLayerStore.retainListedContextualLayers
-    ).toHaveBeenCalledWith('nb-1', []);
+    ).toHaveBeenCalledWith([]);
   });
 
   it('skips retain when contextualLayers is omitted (attach failed)', async () => {
@@ -893,9 +909,10 @@ describe('initialiseProjects contextual layer retain and prompt', () => {
 
     await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
 
+    // No activated surveys remain, so the device keep-set is empty.
     expect(
       contextualLayerStore.retainListedContextualLayers
-    ).not.toHaveBeenCalled();
+    ).toHaveBeenCalledWith([]);
   });
 
   it('notifies when retain drops a previously stored layer', async () => {
@@ -916,7 +933,7 @@ describe('initialiseProjects contextual layer retain and prompt', () => {
 
     expect(
       contextualLayerStore.notifyContextualLayersChanged
-    ).toHaveBeenCalledWith('nb-1');
+    ).toHaveBeenCalledWith();
   });
 
   it('does not prompt when the listing hash was already seen', async () => {
@@ -938,6 +955,32 @@ describe('initialiseProjects contextual layer retain and prompt', () => {
 
     await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
 
+    expect(
+      selectPendingContextualLayerPrompt(store.getState() as any)
+    ).toBeUndefined();
+  });
+
+  it('marks the listing seen instead of prompting when layers are already on the device', async () => {
+    const layersHash = 'c'.repeat(64);
+    contextualLayerStore.areContextualLayersOnDevice.mockReturnValue(true);
+    stubFetch({
+      directory: [
+        directoryItem({
+          contextualLayers: [sampleLayer],
+          contextualLayersHash: layersHash,
+        }),
+      ],
+    });
+    const store = makeStore({
+      activated: {'nb-1': activatedFixture()},
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    expect(contextualLayerStore.markContextualLayersSeen).toHaveBeenCalledWith(
+      'nb-1',
+      layersHash
+    );
     expect(
       selectPendingContextualLayerPrompt(store.getState() as any)
     ).toBeUndefined();

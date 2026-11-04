@@ -37,7 +37,9 @@ export function CreateMapLayerDialog({
   });
   const canCreate = specifiedTeam ? canCreateInSpecifiedTeam : canUpload;
 
-  if (!canCreate) {
+  // Stay mounted while open so a token refresh or list refetch cannot
+  // unmount the dialog and drop the in-progress form.
+  if (!canCreate && !open) {
     return null;
   }
 
@@ -56,6 +58,8 @@ export function CreateMapLayerDialog({
       <DialogContent
         className="max-h-[90vh] max-w-lg overflow-y-auto"
         data-testid="web-map-layers-create-dialog"
+        onPointerDownOutside={event => event.preventDefault()}
+        onInteractOutside={event => event.preventDefault()}
       >
         <DialogHeader>
           <DialogTitle className="text-lg font-medium">

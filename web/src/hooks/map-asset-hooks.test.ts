@@ -19,6 +19,7 @@ import {
   replaceMapAssetFiles,
   mapAssetDetailQueryKey,
   mapAssetQueryKey,
+  mapAssetQueryUserKey,
   mapAssetTeamQueryKey,
   messageFromBody,
   overlayListWithCachedMapAssets,
@@ -95,6 +96,30 @@ describe('mapAssetClientErrorMessage', () => {
 });
 
 const user = {token: 'tok'} as User;
+
+describe('mapAssetQueryUserKey', () => {
+  it('stays the same when only the JWT rotates', () => {
+    const before = {
+      token: 'old-jwt',
+      user: {id: 'user-1'},
+      decodedToken: {username: 'admin'},
+    } as User;
+    const after = {
+      ...before,
+      token: 'new-jwt',
+    };
+    expect(mapAssetQueryUserKey(before)).toBe('user-1');
+    expect(mapAssetQueryUserKey(after)).toBe('user-1');
+    expect(mapAssetQueryKey(before)).toEqual(mapAssetQueryKey(after));
+    expect(mapAssetDetailQueryKey(before, 'asset-1')).toEqual(
+      mapAssetDetailQueryKey(after, 'asset-1')
+    );
+  });
+
+  it('falls back to the token when the session has no user id', () => {
+    expect(mapAssetQueryUserKey(user)).toBe('tok');
+  });
+});
 
 describe('map asset list cache helpers', () => {
   it('lists only pending and processing ids', () => {

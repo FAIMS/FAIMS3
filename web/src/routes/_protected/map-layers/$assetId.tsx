@@ -13,7 +13,7 @@ import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {canMutateMapAsset} from '@/lib/map-layer-permissions';
 import {parseMapLayerTab, type MapLayerTab} from '@/lib/map-layer-tabs';
 import {createFileRoute, useNavigate, useRouter} from '@tanstack/react-router';
-import {useMemo, type ComponentType} from 'react';
+import {useMemo, useState, type ComponentType} from 'react';
 
 const tabs: {
   id: MapLayerTab;
@@ -58,13 +58,16 @@ function MapLayerPage() {
     ],
     [pathname, data?.name, assetId]
   );
-  const visibleTabs = useMemo(
-    () =>
-      data && canMutateMapAsset(user, data)
-        ? tabs
-        : tabs.filter(tab => tab.id !== 'actions'),
-    [data, user]
-  );
+  const [canShowActions, setCanShowActions] = useState(false);
+  const nextCanShowActions = data
+    ? canMutateMapAsset(user, data)
+    : canShowActions;
+  if (data && nextCanShowActions !== canShowActions) {
+    setCanShowActions(nextCanShowActions);
+  }
+  const visibleTabs = canShowActions
+    ? tabs
+    : tabs.filter(tab => tab.id !== 'actions');
   const tab = visibleTabs.some(item => item.id === tabSearch)
     ? (tabSearch as MapLayerTab)
     : visibleTabs[0].id;

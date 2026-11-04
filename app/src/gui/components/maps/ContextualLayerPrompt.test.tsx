@@ -20,6 +20,7 @@ const harness = vi.hoisted(() => ({
   stored: [] as StoredContextualLayerSummary[],
   layers: [] as ContextualLayerListing[],
   download: vi.fn(),
+  markSeen: vi.fn(),
 }));
 
 vi.mock('../../../context/store', () => ({
@@ -53,8 +54,7 @@ vi.mock('../../../context/slices/projectSlice', () => ({
 vi.mock('./contextualLayerStore', () => ({
   listStoredContextualLayers: () => Promise.resolve(harness.stored),
   downloadContextualLayers: (...args: unknown[]) => harness.download(...args),
-  forgetUnselectedContextualLayers: vi.fn(),
-  markContextualLayersSeen: vi.fn(),
+  markContextualLayersSeen: (...args: unknown[]) => harness.markSeen(...args),
   notifyContextualLayersChanged: vi.fn(),
   isContextualLayerDownloadCancelledError: (error: unknown) =>
     error instanceof Error &&
@@ -89,7 +89,6 @@ function stored(
     kind: 'vector-tiles',
     byteSize: 2048,
     contentHash,
-    projectIds: ['survey-1'],
     extent4326: [0, 0, 1, 1],
   };
 }
@@ -110,6 +109,7 @@ describe('ContextualLayerPrompt', () => {
   beforeEach(() => {
     harness.dispatch.mockReset();
     harness.download.mockReset().mockResolvedValue(undefined);
+    harness.markSeen.mockReset().mockResolvedValue(undefined);
     harness.prompt = {projectId: 'survey-1', serverId: 'server-1'};
     harness.layers = [
       layer('asset-ready', 'Site boundaries', 'hash-a'),
@@ -122,60 +122,108 @@ describe('ContextualLayerPrompt', () => {
     ];
   });
 
-  it('groups already-downloaded layers apart from layers that still need a download', async () => {
+  it('lists only layers that still need a download', async () => {
     renderPrompt();
 
     await waitFor(() => {
       expect(
-        screen.getByTestId('map-layer-group-on-device')
+        screen.getByTestId('map-layer-group-to-download')
       ).toBeInTheDocument();
     });
 
-    const onDevice = screen.getByTestId('map-layer-group-on-device');
     const toDownload = screen.getByTestId('map-layer-group-to-download');
 
-    expect(onDevice).toHaveTextContent('Already on the device (1)');
-    expect(onDevice).toHaveTextContent('Site boundaries');
-    expect(onDevice).toHaveTextContent('Vector tiles');
-    expect(screen.getByTestId('map-layer-size-asset-ready')).toHaveTextContent(
+    expect(toDownload).toHaveTextContent('Available for download (2)');
+    expect(toDownload).toHaveTextContent('Vegetation');
+    expect(toDownload).toHaveTextContent('Tracks');
+    expect(toDownload).toHaveTextContent('Vector tiles');
+    expect(screen.getByTestId('map-layer-size-asset-new')).toHaveTextContent(
       '2 KB'
     );
+    expect(screen.queryByText('Already on the device')).not.toBeInTheDocument();
+    expect(screen.queryByText('Site boundaries')).not.toBeInTheDocument();
     expect(screen.queryByText('On this device')).not.toBeInTheDocument();
     expect(screen.queryByText('Needs download')).not.toBeInTheDocument();
     expect(
       screen.queryByText('0.000, 0.000, 1.000, 1.000')
     ).not.toBeInTheDocument();
-
-    expect(toDownload).toHaveTextContent('Not yet downloaded (2)');
-    expect(toDownload).toHaveTextContent('Vegetation');
-    expect(toDownload).toHaveTextContent('Tracks');
+    expect(screen.queryByText('Keep all')).not.toBeInTheDocument();
+    expect(screen.queryByText('Keep selected')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Download (2 layers, 4 KB)'})
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'This survey has contextual layers available for download. In order to view these layers in the map, you must download them to the device.'
+        "This survey has associated map layers which are available to assist with collection. Please select the layers below you'd like to download to your device. Downloaded layers will be available offline."
       )
     ).toBeInTheDocument();
   });
 
-  it('labels the selected action as keep when every ticked layer is already on the device', async () => {
+  it('closes without downloading when every linked layer is already on the device', async () => {
     harness.layers = [layer('asset-ready', 'Site boundaries', 'hash-a')];
     harness.stored = [stored('asset-ready', 'hash-a')];
     renderPrompt();
 
     await waitFor(() => {
-      expect(screen.getByText('Keep selected')).toBeInTheDocument();
+      expect(harness.dispatch).toHaveBeenCalledWith({type: 'clear-prompt'});
     });
-    expect(screen.getByText('Keep all')).toBeInTheDocument();
-    expect(screen.queryByText('Not yet downloaded')).not.toBeInTheDocument();
+    expect(harness.markSeen).toHaveBeenCalledWith('survey-1', 'hash-manifest');
+    expect(harness.download).not.toHaveBeenCalled();
+    expect(
+      screen.queryByTestId('map-layer-activation-prompt')
+    ).not.toBeInTheDocument();
   });
 
-  it('shows a current-location dot when the device is on a layer', async () => {
-    harness.layers = [layer('asset-ready', 'Site boundaries', 'hash-a')];
-    harness.stored = [stored('asset-ready', 'hash-a')];
+  it('closes without starting a download', async () => {
+    const user = userEvent.setup();
+    renderPrompt();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {name: 'Download (2 layers, 4 KB)'})
+      ).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId('map-layer-prompt-close'));
+
+    expect(harness.download).not.toHaveBeenCalled();
+    expect(harness.dispatch).toHaveBeenCalledWith({type: 'clear-prompt'});
+  });
+
+  it('updates the download label when layers are unselected', async () => {
+    const user = userEvent.setup();
+    renderPrompt();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {name: 'Download (2 layers, 4 KB)'})
+      ).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', {name: 'Unselect all'}));
+    expect(
+      screen.getByRole('button', {name: 'Download (0 layers)'})
+    ).toBeDisabled();
+
+    await user.click(screen.getByRole('button', {name: 'Select all'}));
+    expect(
+      screen.getByRole('button', {name: 'Download (2 layers, 4 KB)'})
+    ).toBeEnabled();
+
+    await user.click(screen.getByTestId('map-layer-choice-asset-new'));
+    expect(
+      screen.getByRole('button', {name: 'Download (1 layer, 2 KB)'})
+    ).toBeInTheDocument();
+  });
+
+  it('shows a current-location distance when the device is on a layer', async () => {
+    harness.layers = [layer('asset-new', 'Vegetation', 'hash-b')];
+    harness.stored = [];
     localStorage.setItem('last_map_center', JSON.stringify([0.5, 0.5]));
     renderPrompt();
 
     await waitFor(() => {
-      expect(screen.getByText('On map')).toBeInTheDocument();
+      expect(screen.getByText('0m away')).toBeInTheDocument();
       expect(
         screen.getByRole('img', {name: 'Current location is on this layer'})
       ).toBeInTheDocument();
@@ -207,13 +255,17 @@ describe('ContextualLayerPrompt', () => {
 
     renderPrompt();
     await waitFor(() => {
-      expect(screen.getByText('Download selected')).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', {name: 'Download (2 layers, 4 KB)'})
+      ).toBeInTheDocument();
     });
     expect(
       screen.queryByTestId('map-layer-download-cancel')
     ).not.toBeInTheDocument();
 
-    await user.click(screen.getByText('Download selected'));
+    await user.click(
+      screen.getByRole('button', {name: 'Download (2 layers, 4 KB)'})
+    );
 
     await waitFor(() => {
       expect(
@@ -230,7 +282,9 @@ describe('ContextualLayerPrompt', () => {
       expect(
         screen.queryByTestId('map-layer-download-progress')
       ).not.toBeInTheDocument();
-      expect(screen.getByText('Download selected')).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', {name: 'Download (2 layers, 4 KB)'})
+      ).toBeInTheDocument();
     });
     expect(
       screen.getByTestId('map-layer-activation-prompt')

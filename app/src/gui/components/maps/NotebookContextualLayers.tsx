@@ -28,9 +28,11 @@ const PREFS_WRITE_DELAY_MS = 150;
 /** Shares one notebook's downloaded layers with every map on that screen. */
 export function NotebookContextualLayers({
   projectId,
+  listedAssetIds,
   children,
 }: {
   projectId: string;
+  listedAssetIds: readonly string[];
   children: ReactNode;
 }) {
   const [layers, setLayers] = useState<ContextualMapLayer[]>([]);
@@ -46,7 +48,7 @@ export function NotebookContextualLayers({
 
   const reload = useCallback(async () => {
     const generation = ++loadGeneration.current;
-    const stored = await contextualLayersForMap(projectId);
+    const stored = await contextualLayersForMap(projectId, listedAssetIds);
     if (generation !== loadGeneration.current) {
       return;
     }
@@ -56,7 +58,7 @@ export function NotebookContextualLayers({
         pending.has(layer.id) ? {...layer, ...pending.get(layer.id)} : layer
       )
     );
-  }, [projectId]);
+  }, [listedAssetIds, projectId]);
 
   const flushPatches = useCallback(async () => {
     if (flushing.current) {
@@ -70,7 +72,7 @@ export function NotebookContextualLayers({
         pendingPatches.current.clear();
         for (const [id, patch] of batch) {
           try {
-            await updateContextualLayerPrefs(id, patch);
+            await updateContextualLayerPrefs(projectId, id, patch);
           } catch (error) {
             console.error(error);
             const newer = pendingPatches.current.get(id);
@@ -113,7 +115,7 @@ export function NotebookContextualLayers({
   useEffect(() => {
     const onChange = (event: Event) => {
       const detail = (event as CustomEvent<{projectId?: string}>).detail;
-      if (detail?.projectId === projectId) {
+      if (!detail?.projectId || detail.projectId === projectId) {
         void reload();
       }
     };
@@ -129,7 +131,7 @@ export function NotebookContextualLayers({
       const pending = new Map(pendingPatches.current);
       pendingPatches.current.clear();
       for (const [id, patch] of pending) {
-        void updateContextualLayerPrefs(id, patch);
+        void updateContextualLayerPrefs(projectId, id, patch);
       }
     };
   }, []);
@@ -147,9 +149,11 @@ export function NotebookContextualLayers({
       moveLayer: (id: string, direction: 'up' | 'down') => {
         loadGeneration.current += 1;
         setLayers(current => moveStackedLayer(current, id, direction));
-        void moveContextualLayer(projectId, id, direction).then(() => {
-          notifyContextualLayersChanged(projectId);
-        });
+        void moveContextualLayer(projectId, listedAssetIds, id, direction).then(
+          () => {
+            notifyContextualLayersChanged(projectId);
+          }
+        );
       },
       resetLayers: () => {
         loadGeneration.current += 1;
@@ -158,7 +162,7 @@ export function NotebookContextualLayers({
           clearTimeout(flushTimer.current);
           flushTimer.current = undefined;
         }
-        const prefs = resetContextualLayerPrefs(projectId);
+        const prefs = resetContextualLayerPrefs(projectId, listedAssetIds);
         setLayers(current =>
           current.map(layer => {
             const next = prefs[layer.id];
@@ -179,7 +183,7 @@ export function NotebookContextualLayers({
         notifyContextualLayersChanged(projectId);
       },
     }),
-    [layers, projectId, queuePatch]
+    [layers, listedAssetIds, projectId, queuePatch]
   );
 
   return (

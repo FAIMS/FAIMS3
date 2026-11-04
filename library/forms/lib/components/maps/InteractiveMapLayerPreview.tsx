@@ -9,6 +9,7 @@
 
 import {Box, Typography} from '@mui/material';
 import TileLayer from 'ol/layer/Tile';
+import VectorTileLayer from 'ol/layer/VectorTile';
 import Map from 'ol/Map';
 import 'ol/ol.css';
 import XYZ from 'ol/source/XYZ';
@@ -72,6 +73,18 @@ export type InteractiveMapLayerPreviewProps = {
   minZoom?: number;
   maxZoom?: number;
   mapConfig: MapConfig;
+  /**
+   * Optional streets base layer, e.g. the cached `VectorTileStore` layer on
+   * a field device so the preview works offline. Defaults to the online
+   * streets layer built from `mapConfig`.
+   */
+  baseLayer?: VectorTileLayer | TileLayer;
+  /**
+   * Optional satellite base layer. Pass `null` when the host has no
+   * satellite source so the layers panel does not offer one; when omitted,
+   * an online satellite layer is built from `mapConfig`.
+   */
+  satelliteLayer?: TileLayer | null;
   className?: string;
 };
 
@@ -103,7 +116,12 @@ function createSatelliteLayer(mapConfig: MapConfig): TileLayer {
   return layer;
 }
 
-function sourceAttribution(layer: TileLayer): string {
+function sourceAttribution(
+  layer: TileLayer | VectorTileLayer | undefined
+): string {
+  if (!layer) {
+    return '';
+  }
   const attributions = layer.getSource()?.getAttributions();
   if (typeof attributions === 'string') {
     return attributions;
@@ -158,7 +176,9 @@ function PreviewLayerProvider({
 
 /**
  * Interactive fitted preview with zoom, compass, fullscreen, and a layers
- * sheet for the target overlay plus streets/satellite. Styling is not saved.
+ * sheet for the target overlay plus streets/satellite. Styling is not saved:
+ * every mount starts from the default view — streets on, satellite off, and
+ * the overlay visible at the opacity in `style` (its default opacity).
  */
 export function InteractiveMapLayerPreview({
   id = 'preview',
@@ -172,6 +192,8 @@ export function InteractiveMapLayerPreview({
   minZoom,
   maxZoom,
   mapConfig,
+  baseLayer,
+  satelliteLayer,
   className,
 }: InteractiveMapLayerPreviewProps) {
   const overlay = useMemo(
@@ -213,6 +235,8 @@ export function InteractiveMapLayerPreview({
         <InteractiveMapLayerPreviewImpl
           className={className}
           mapConfig={mapConfig}
+          baseLayer={baseLayer}
+          satelliteLayer={satelliteLayer}
           extent4326={extent4326}
           extent3857={extent3857}
         />
@@ -225,11 +249,15 @@ export function InteractiveMapLayerPreview({
 function InteractiveMapLayerPreviewImpl({
   className,
   mapConfig,
+  baseLayer: baseLayerProp,
+  satelliteLayer: satelliteLayerProp,
   extent4326,
   extent3857,
 }: {
   className?: string;
   mapConfig: MapConfig;
+  baseLayer?: VectorTileLayer | TileLayer;
+  satelliteLayer?: TileLayer | null;
   extent4326?: [number, number, number, number];
   extent3857?: [number, number, number, number];
 }) {
@@ -239,14 +267,20 @@ function InteractiveMapLayerPreviewImpl({
   const isOnline = useIsOnline();
   const {isFullscreen, toggleFullscreen} = useMapFullscreen(true);
 
+  // Host-supplied layers may be reused, so always repaint them to the
+  // defaults (streets on, satellite off) instead of inheriting whatever
+  // visibility/opacity a previous preview left on the shared instance.
   const streetsLayer = useMemo(() => {
-    const layer = createStreetsLayer(mapConfig);
+    const layer = baseLayerProp ?? createStreetsLayer(mapConfig);
     const prefs = defaultBaseMapLayersState();
     applyBaseMapLayerPaint(layer, prefs.vector, prefs.vector.visible);
     return layer;
-  }, [mapConfig]);
+  }, [baseLayerProp, mapConfig]);
   const satelliteLayer = useMemo(() => {
-    const layer = createSatelliteLayer(mapConfig);
+    if (satelliteLayerProp === null) {
+      return undefined;
+    }
+    const layer = satelliteLayerProp ?? createSatelliteLayer(mapConfig);
     const prefs = defaultBaseMapLayersState();
     applyBaseMapLayerPaint(
       layer,
@@ -255,7 +289,7 @@ function InteractiveMapLayerPreviewImpl({
         (typeof navigator === 'undefined' || navigator.onLine)
     );
     return layer;
-  }, [mapConfig]);
+  }, [satelliteLayerProp, mapConfig]);
   const {
     baseLayers,
     updateBaseLayer,
@@ -276,7 +310,10 @@ function InteractiveMapLayerPreviewImpl({
     }
     const olMap = new PrioritizedTileMap({
       target,
-      layers: [streetsLayer, satelliteLayer],
+      layers: satelliteLayer ? [streetsLayer, satelliteLayer] : [streetsLayer],
+      // No `interactions: []` here (unlike the static preview): the default
+      // OpenLayers interactions give pan, pinch/mouse-wheel zoom, double-click
+      // zoom, rotation, and keyboard pan/zoom.
       controls: [],
       view: new View({center: [0, 0], zoom: 2}),
     });
@@ -427,9 +464,14 @@ function InteractiveMapLayerPreviewImpl({
         ) : null}
       </Box>
       {attribution ? (
-        <Box component="div" sx={mapAttributionSx}>
-          {attribution}
-        </Box>
+        // Attributions are provider-supplied HTML (e.g. the OSM copyright
+        // link from the cached tile store), so render them as MapComponent
+        // does rather than showing the raw markup as text.
+        <Box
+          component="div"
+          dangerouslySetInnerHTML={{__html: attribution}}
+          sx={mapAttributionSx}
+        />
       ) : null}
     </Box>
   );

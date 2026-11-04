@@ -18,9 +18,10 @@ export function OfflineMapsHome() {
     <ListingPage data-testid="offline-maps-home">
       <Stack spacing={3}>
         <Stack spacing={1}>
-          <Typography variant="h4">Manage Offline maps</Typography>
+          <Typography variant="h4">Manage offline maps and layers</Typography>
           <Typography variant="body2" color="text.secondary">
-            Download map regions and contextual layers for offline use.
+            Download map layers linked to surveys, and base maps for offline
+            use.
           </Typography>
         </Stack>
 
@@ -33,7 +34,7 @@ export function OfflineMapsHome() {
               Map regions
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Base map areas downloaded for offline use.
+              Prepare to work offline by downloading selected base map regions.
             </Typography>
           </OutlinedListingCard>
           <OutlinedListingCard
@@ -48,7 +49,7 @@ export function OfflineMapsHome() {
               Map layers
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Contextual layers linked to activated surveys.
+              Manage map layers linked to surveys. Download maps work offline.
             </Typography>
           </OutlinedListingCard>
         </Stack>
