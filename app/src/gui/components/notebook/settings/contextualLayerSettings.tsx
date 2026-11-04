@@ -106,6 +106,7 @@ export default function NotebookContextualLayerSettings({
   );
   const availableBytes = layers.reduce((sum, layer) => sum + layer.byteSize, 0);
 
+  /** Open the on-device layer manager, returning here afterwards. */
   const handleOpenManager = () => {
     navigate(
       ROUTES.getOfflineMapLayersRoute({
@@ -114,6 +115,7 @@ export default function NotebookContextualLayerSettings({
     );
   };
 
+  /** Re-open the activation download prompt for this survey. */
   const handleOpenPrompt = () => {
     dispatch(
       setPendingContextualLayerPrompt({

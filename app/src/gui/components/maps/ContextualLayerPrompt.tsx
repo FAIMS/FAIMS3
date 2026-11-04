@@ -355,6 +355,7 @@ export function ContextualLayerPrompt() {
     0
   );
 
+  /** Include or exclude one layer from the download selection. */
   const toggleLayer = (layerId: string, checked: boolean) => {
     const next = new Set(chosenIds);
     if (checked) {
@@ -365,19 +366,23 @@ export function ContextualLayerPrompt() {
     setSelected([...next]);
   };
 
+  /** Select every layer the survey lists that is not already on-device. */
   const selectAll = () => {
     setSelected(toDownloadLayers.map(layer => layer.id));
   };
 
+  /** Clear the download selection. */
   const unselectAll = () => {
     setSelected([]);
   };
 
+  /** Abort the in-flight batch and keep the prompt open. */
   const cancelDownload = () => {
     setCancelling(true);
     downloadAbort.current?.abort();
   };
 
+  /** Dismiss the prompt and mark this listing hash as seen. */
   const closePrompt = () => {
     downloadAbort.current?.abort();
     if (project.contextualLayersHash) {
@@ -390,6 +395,7 @@ export function ContextualLayerPrompt() {
     setSelected(null);
   };
 
+  /** Download the checked layers, then mark the listing as seen. */
   const downloadSelected = async () => {
     if (
       chosenLayers.length === 0 ||

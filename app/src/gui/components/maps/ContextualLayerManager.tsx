@@ -91,6 +91,7 @@ export function ContextualLayerManager() {
   const downloadAborts = useRef(new Map<string, AbortController>());
   const location = useOccasionalDeviceLocation();
 
+  /** Reload the on-device file catalog. */
   const refresh = useCallback(async () => {
     try {
       setStored(await listStoredContextualLayers());
@@ -134,6 +135,7 @@ export function ContextualLayerManager() {
     [stored]
   );
 
+  /** Surveys that list a newer hash than the stored copy of this layer. */
   const updatesFor = useCallback(
     (file: StoredContextualLayerSummary) =>
       surveyLayers.filter(
@@ -164,6 +166,7 @@ export function ContextualLayerManager() {
     return [...groups.values()];
   }, [storedById, surveyLayers]);
 
+  /** Bearer token for `serverId`, preferring the active user. */
   const tokenFor = (serverId: string): string | undefined => {
     if (activeUser?.serverId === serverId && auth.isAuthenticated) {
       return activeUser.token;
@@ -177,6 +180,7 @@ export function ContextualLayerManager() {
     return undefined;
   };
 
+  /** Abort one in-flight download entry and show the cancelling state. */
   const cancelDownload = (key: string) => {
     setDownloads(current => {
       if (!current.has(key)) {
@@ -189,6 +193,7 @@ export function ContextualLayerManager() {
     downloadAborts.current.get(key)?.abort();
   };
 
+  /** Progress + cancel control for one download entry, or null if idle. */
   const downloadProgress = (key: string) => {
     const active = downloads.get(key);
     return active ? (
@@ -202,6 +207,7 @@ export function ContextualLayerManager() {
     ) : null;
   };
 
+  /** Download `rows` as one cancellable batch keyed in {@link downloads}. */
   const downloadRows = async (rows: SurveyLayer[], key: string) => {
     if (downloadAborts.current.has(key)) {
       return;
@@ -269,6 +275,7 @@ export function ContextualLayerManager() {
     }
   };
 
+  /** Idle label, or a live percent while that entry is transferring. */
   const downloadLabel = (key: string, idle: string) =>
     mapLayerDownloadLabel(
       downloads.has(key),

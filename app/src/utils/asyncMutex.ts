@@ -32,6 +32,7 @@ export function createAsyncSemaphore(max: number) {
   }
   let active = 0;
   const waiters: Array<() => void> = [];
+  /** Wait for a free slot, then occupy it. */
   const acquire = async () => {
     if (active >= max) {
       await new Promise<void>(resolve => {
@@ -40,6 +41,7 @@ export function createAsyncSemaphore(max: number) {
     }
     active += 1;
   };
+  /** Free a slot and wake the next waiter. */
   const release = () => {
     active -= 1;
     waiters.shift()?.();

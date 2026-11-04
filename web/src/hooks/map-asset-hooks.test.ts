@@ -213,6 +213,67 @@ describe('map asset list cache helpers', () => {
     ).toEqual(polled);
   });
 
+  it('takes the list linkCount when the cached snapshot is not older', () => {
+    const queryClient = new QueryClient();
+    const listed = asset({updatedAt: 10, linkCount: 2});
+    queryClient.setQueryData(
+      mapAssetDetailQueryKey(user, listed._id),
+      asset({updatedAt: 10, linkCount: 0})
+    );
+    expect(
+      overlayListWithCachedMapAssets(queryClient, user, {assets: [listed]})
+        .assets[0]
+    ).toMatchObject({updatedAt: 10, linkCount: 2});
+
+    const polled = asset({
+      updatedAt: 10,
+      status: 'processing',
+      processingHeartbeatMs: 20,
+      processingStage: 'tiling-vectors',
+      linkCount: 0,
+    });
+    queryClient.setQueryData(mapAssetDetailQueryKey(user, listed._id), polled);
+    expect(
+      overlayListWithCachedMapAssets(queryClient, user, {
+        assets: [asset({updatedAt: 10, status: 'processing', linkCount: 1})],
+      }).assets[0]
+    ).toMatchObject({
+      processingHeartbeatMs: 20,
+      processingStage: 'tiling-vectors',
+      linkCount: 1,
+    });
+  });
+
+  it('merges the list linkCount into a kept details snapshot', () => {
+    const queryClient = new QueryClient();
+    const cached = asset({updatedAt: 10, linkCount: 0});
+    queryClient.setQueryData(mapAssetDetailQueryKey(user, cached._id), cached);
+    seedMapAssetDetailsFromList(queryClient, user, [
+      asset({updatedAt: 10, linkCount: 2}),
+    ]);
+    expect(
+      queryClient.getQueryData(mapAssetDetailQueryKey(user, cached._id))
+    ).toMatchObject({updatedAt: 10, linkCount: 2});
+
+    const polled = asset({
+      updatedAt: 20,
+      status: 'processing',
+      processingStage: 'tiling-vectors',
+      linkCount: 0,
+    });
+    queryClient.setQueryData(mapAssetDetailQueryKey(user, cached._id), polled);
+    seedMapAssetDetailsFromList(queryClient, user, [
+      asset({updatedAt: 10, status: 'processing', linkCount: 1}),
+    ]);
+    expect(
+      queryClient.getQueryData(mapAssetDetailQueryKey(user, cached._id))
+    ).toMatchObject({
+      updatedAt: 20,
+      processingStage: 'tiling-vectors',
+      linkCount: 1,
+    });
+  });
+
   it('patches list caches from a details poll, not links or other users', () => {
     const queryClient = new QueryClient();
     const listed = asset({status: 'processing', updatedAt: 1});

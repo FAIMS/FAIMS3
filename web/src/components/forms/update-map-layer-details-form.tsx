@@ -25,6 +25,7 @@ export function UpdateMapLayerDetailsForm({
   const user = useRequiredUser();
   const queryClient = useQueryClient();
 
+  /** Save name and description without touching the uploaded files. */
   const onSubmit = async ({
     name: nextName,
     description: nextDescription,

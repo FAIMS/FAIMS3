@@ -23,10 +23,13 @@ public class MapFileRangePlugin: CAPPlugin, CAPBridgedPlugin {
     private static let maxLength = 2 * 1024 * 1024
     private static let tempFolder = "map-range"
 
+    /// Clear leftover range-cache files from a previous session.
     override public func load() {
         sweepTempTiles()
     }
 
+    /// Seek `offset`/`length` in a Documents file and write the bytes to a
+    /// cache file whose URI JS can fetch.
     @objc func read(_ call: CAPPluginCall) {
         guard let path = call.getString("path"),
               let offset = wholeNumber(call, key: "offset"),
@@ -83,6 +86,7 @@ public class MapFileRangePlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
+    /// Delete one range-cache file written by `read`.
     @objc func remove(_ call: CAPPluginCall) {
         guard let path = call.getString("path"),
               let tmpURL = validatedTempURL(path) else {
@@ -93,10 +97,12 @@ public class MapFileRangePlugin: CAPPlugin, CAPBridgedPlugin {
         call.resolve()
     }
 
+    /// App Caches directory used for range-cache files.
     private func cacheRoot() -> URL? {
         FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
     }
 
+    /// Resolve `path` under Documents, or nil if it escapes.
     private func validatedDataURL(_ path: String) -> URL? {
         if path.contains("..") || path.hasPrefix("/") {
             return nil
@@ -115,6 +121,7 @@ public class MapFileRangePlugin: CAPPlugin, CAPBridgedPlugin {
         return fileURL
     }
 
+    /// Resolve a `map-range/...` cache path, or nil if it escapes.
     private func validatedTempURL(_ path: String) -> URL? {
         if path.contains("..") || path.hasPrefix("/") {
             return nil
@@ -134,6 +141,7 @@ public class MapFileRangePlugin: CAPPlugin, CAPBridgedPlugin {
         return fileURL
     }
 
+    /// Delete the whole range-cache folder.
     private func sweepTempTiles() {
         guard let cache = cacheRoot() else {
             return

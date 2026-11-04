@@ -540,4 +540,40 @@ describe('activateProject requires downloaded design details', () => {
       selectPendingContextualLayerPrompt(store.getState() as any)
     ).toBeUndefined();
   });
+
+  it('prompts using fresh details.contextualLayers when the listed row is stale or empty', async () => {
+    resolveActivationSyncMode.mockResolvedValue({
+      syncMode: 'both',
+      usedPushOnlyDefault: false,
+      details: {
+        ...getDetailsPayload,
+        contextualLayers: [sampleLayer],
+        contextualLayersHash: layersHash,
+      },
+      recordCount: 3,
+    });
+    const store = makeStore(
+      listedFixture({
+        contextualLayers: [],
+        contextualLayersHash: undefined,
+      })
+    );
+
+    await store
+      .dispatch(
+        activateProject({
+          serverId,
+          projectId,
+          jwtToken: 'tok',
+        }) as any
+      )
+      .unwrap();
+
+    expect(selectPendingContextualLayerPrompt(store.getState() as any)).toEqual(
+      {
+        projectId,
+        serverId,
+      }
+    );
+  });
 });

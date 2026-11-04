@@ -53,7 +53,10 @@ import {
   registerDataDbAtCurrentVersion,
   unregisterDataDbMigration,
 } from '.';
-import {attachContextualLayers} from './mapAssets/store';
+import {
+  attachContextualLayers,
+  unlinkMapAssetsForProject,
+} from './mapAssets/store';
 import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {userCanDo} from '../middleware';
@@ -516,6 +519,10 @@ export const deleteNotebook = async (project_id: string) => {
       'Could not find the specified project. Are you sure the project id is correct?'
     );
   }
+
+  // Drop layer–survey links first so a failed destroy can be retried
+  // without leaving a tombstoned survey inflating `linkCount`.
+  await unlinkMapAssetsForProject(project_id);
 
   const dataDB = await getDataDb(project_id);
   await dataDB.destroy();

@@ -136,6 +136,7 @@ export function ContextualLayersControl({
     if (!mapElement || typeof ResizeObserver === 'undefined') {
       return;
     }
+    /** Keep the sheet inside the map when the map or button is resized. */
     const update = () => {
       const button = buttonRef.current;
       if (!button) {
@@ -173,6 +174,7 @@ export function ContextualLayersControl({
   const visibleCount = panelLayers.filter(layer => layer.visible).length;
   const failedCount = panelLayers.filter(layer => layer.error).length;
 
+  /** Apply a paint/visibility patch to a base, record, or contextual layer. */
   const patchLayer = (layer: PanelLayer, patch: ContextualMapLayerPatch) => {
     if (layer.source === 'basemap') {
       onUpdateBaseLayer?.(layer.id, patch);
@@ -185,6 +187,7 @@ export function ContextualLayersControl({
     updateLayer(layer.id, patch);
   };
 
+  /** Show or hide every available layer in the panel. */
   const setAllVisible = (visible: boolean) => {
     for (const layer of panelLayers) {
       if (!layer.available && visible) {
@@ -196,12 +199,14 @@ export function ContextualLayersControl({
     }
   };
 
+  /** Restore default visibility, opacity, and stack order. */
   const resetToDefaults = () => {
     resetLayers();
     onResetBaseLayers?.();
     onResetRecordLayers?.();
   };
 
+  /** Move one layer in the stack and persist the new z-indexes. */
   const movePanelLayer = (layer: PanelLayer, direction: StackMoveDirection) => {
     const next = moveStackedLayer(panelLayers, layer.id, direction);
     if (next === panelLayers) {
@@ -215,6 +220,7 @@ export function ContextualLayersControl({
     }
   };
 
+  /** Fit the map to a layer extent without treating the move as a user pan. */
   const panLayerIntoView = (layer: PanelLayer) => {
     if (!layer.canPan) {
       return;
@@ -577,6 +583,7 @@ function LayerRow({
   const sectionRef = useRef<HTMLDivElement>(null);
   const vectorPaint =
     layer.kind === 'vector-tiles' || layer.kind === RECORD_FORM_LAYER_KIND;
+  /** Scroll this row into view when its paint controls expand. */
   const revealSection = () => {
     const node = sectionRef.current;
     if (node && typeof node.scrollIntoView === 'function') {
@@ -1161,6 +1168,7 @@ function rgbHexForInput(color: string, theme?: Theme): string {
   return rgbHexFromColor(color) ?? colorPickerFallback(theme);
 }
 
+/** Fallback `#rrggbb` when a layer color is not a 6-digit hex. */
 function colorPickerFallback(theme?: Theme): string {
   return (
     theme?.palette.mapControl?.colorPickerFallback ??
@@ -1179,6 +1187,7 @@ function closeWithoutMapInteraction(
 ) {
   event.preventDefault();
   event.stopPropagation();
+  /** Swallow the click that would otherwise land on the map after unmount. */
   const swallow = (clickEvent: Event) => {
     clickEvent.preventDefault();
     clickEvent.stopPropagation();

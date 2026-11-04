@@ -8,6 +8,7 @@ export function useIsOnline(): boolean {
   );
 
   useEffect(() => {
+    /** Mirror `navigator.onLine` after an online/offline event. */
     const updateOnlineStatus = () => {
       setIsOnline(navigator.onLine);
     };

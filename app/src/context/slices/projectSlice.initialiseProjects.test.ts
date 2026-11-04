@@ -869,7 +869,12 @@ describe('initialiseProjects contextual layer retain and prompt', () => {
       ],
     });
     const store = makeStore({
-      activated: {'nb-1': activatedFixture()},
+      activated: {
+        'nb-1': activatedFixture({
+          contextualLayers: [sampleLayer],
+          contextualLayersHash: 'c'.repeat(64),
+        }),
+      },
     });
 
     await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
@@ -877,6 +882,43 @@ describe('initialiseProjects contextual layer retain and prompt', () => {
     expect(
       contextualLayerStore.retainListedContextualLayers
     ).toHaveBeenCalledWith([]);
+    expect(contextualLayerStore.markContextualLayersSeen).toHaveBeenCalledWith(
+      'nb-1',
+      'e'.repeat(64)
+    );
+    expect(
+      selectPendingContextualLayerPrompt(store.getState() as any)
+    ).toBeUndefined();
+    const project = activatedOf(store);
+    expect(project.contextualLayers).toEqual([]);
+    expect(project.contextualLayersHash).toBe('e'.repeat(64));
+  });
+
+  it('prompts after an empty listing when the previous set is relinked', async () => {
+    const layersHash = 'c'.repeat(64);
+    contextualLayerStore.getSeenContextualLayersHash.mockResolvedValue(
+      'e'.repeat(64)
+    );
+    stubFetch({
+      directory: [
+        directoryItem({
+          contextualLayers: [sampleLayer],
+          contextualLayersHash: layersHash,
+        }),
+      ],
+    });
+    const store = makeStore({
+      activated: {'nb-1': activatedFixture()},
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    expect(selectPendingContextualLayerPrompt(store.getState() as any)).toEqual(
+      {
+        projectId: 'nb-1',
+        serverId,
+      }
+    );
   });
 
   it('skips retain when contextualLayers is omitted (attach failed)', async () => {
@@ -891,6 +933,36 @@ describe('initialiseProjects contextual layer retain and prompt', () => {
 
     expect(
       contextualLayerStore.retainListedContextualLayers
+    ).not.toHaveBeenCalled();
+    expect(
+      contextualLayerStore.markContextualLayersSeen
+    ).not.toHaveBeenCalled();
+  });
+
+  it('keeps last-known layers when the directory omits them (attach failed)', async () => {
+    const layersHash = 'c'.repeat(64);
+    stubFetch({
+      directory: [directoryItem()],
+    });
+    const store = makeStore({
+      activated: {
+        'nb-1': activatedFixture({
+          contextualLayers: [sampleLayer],
+          contextualLayersHash: layersHash,
+        }),
+      },
+    });
+
+    await store.dispatch(initialiseProjects({serverId}) as any).unwrap();
+
+    const project = activatedOf(store);
+    expect(project.contextualLayers).toEqual([sampleLayer]);
+    expect(project.contextualLayersHash).toBe(layersHash);
+    expect(
+      contextualLayerStore.retainListedContextualLayers
+    ).toHaveBeenCalledWith(['asset-ready']);
+    expect(
+      contextualLayerStore.markContextualLayersSeen
     ).not.toHaveBeenCalled();
   });
 

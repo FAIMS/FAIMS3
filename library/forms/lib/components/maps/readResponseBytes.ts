@@ -6,6 +6,7 @@ export type ReadResponseBytesOptions = {
   signal?: AbortSignal;
 };
 
+/** Re-throw the abort reason (or a DOM AbortError) when `signal` is aborted. */
 function throwIfAborted(signal?: AbortSignal): void {
   if (!signal?.aborted) {
     return;
@@ -41,6 +42,7 @@ export async function readResponseBytes(
     onReceived(bytes.byteLength, Math.max(total, bytes.byteLength));
     return bytes;
   }
+  /** Cancel the body reader when the caller aborts. */
   const abortRead = () => {
     void reader.cancel();
   };

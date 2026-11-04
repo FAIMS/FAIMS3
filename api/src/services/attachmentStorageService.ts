@@ -577,6 +577,7 @@ interface StoredMockObject {
 export class MockAttachmentStorageService extends BaseAttachmentStorageService {
   private objects = new Map<string, StoredMockObject>();
 
+  /** Keep `body` in memory and return a mock location. */
   async upload({
     key,
     body,
@@ -593,6 +594,7 @@ export class MockAttachmentStorageService extends BaseAttachmentStorageService {
     return location;
   }
 
+  /** Stream the in-memory bytes for `location`. */
   async download({
     location,
   }: {
@@ -605,6 +607,7 @@ export class MockAttachmentStorageService extends BaseAttachmentStorageService {
     return Readable.from(stored.bytes);
   }
 
+  /** Write the in-memory object onto `destPath`. */
   async downloadToFile({
     location,
     destPath,
@@ -616,6 +619,7 @@ export class MockAttachmentStorageService extends BaseAttachmentStorageService {
     await pipeline(body, createWriteStream(destPath));
   }
 
+  /** `mock://` token for tests; not fetchable over HTTP. */
   async getPresignedDownloadURL({
     location,
   }: {
@@ -628,6 +632,7 @@ export class MockAttachmentStorageService extends BaseAttachmentStorageService {
     return `mock://attachment-storage/download/${location.resourceUri}`;
   }
 
+  /** `mock://` PUT token for tests; not fetchable over HTTP. */
   async getPresignedUploadURL({
     key,
     contentType,
@@ -642,6 +647,7 @@ export class MockAttachmentStorageService extends BaseAttachmentStorageService {
     };
   }
 
+  /** Drop the in-memory object. A missing key is a no-op. */
   async delete({
     location,
   }: {
@@ -650,6 +656,7 @@ export class MockAttachmentStorageService extends BaseAttachmentStorageService {
     this.objects.delete(this.objectMapKey(location));
   }
 
+  /** True when the mock store still has this object. */
   async exists({
     location,
   }: {

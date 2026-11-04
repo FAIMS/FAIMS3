@@ -49,6 +49,7 @@ export function withColorOpacity(
   return `${rgb}${alpha}`;
 }
 
+/** Parse an hsl(a) alpha token (`0.4` or `40%`) as 0–1. Missing is opaque. */
 function cssAlphaToken(token: string | undefined): number {
   if (token === undefined) {
     return 1;

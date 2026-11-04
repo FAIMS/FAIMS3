@@ -42,10 +42,12 @@ const defaultSleep = (ms: number) =>
     setTimeout(resolve, ms);
   });
 
+/** Log a thrown `findJob` so a Couch blip does not kill the worker. */
 const defaultOnPollError = (error: unknown) => {
   console.error('[spatial-worker] poll failed', error);
 };
 
+/** Log a thrown `processJob` so one bad layer does not exit the worker. */
 const defaultOnProcessError = (error: unknown, assetId: string) => {
   console.error(`[spatial-worker] process failed ${assetId}`, error);
 };

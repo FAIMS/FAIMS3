@@ -21,6 +21,7 @@ export function EditMapLayerDetailsDialog({assetId}: {assetId: string}) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<{name: string; description: string}>();
 
+  /** Snapshot current details when opening; drop the draft when closing. */
   const handleOpenChange = (next: boolean) => {
     if (next && data) {
       setDraft({name: data.name, description: data.description});

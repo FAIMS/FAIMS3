@@ -146,6 +146,7 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
 
   const linkedIds = new Set(links.data ?? []);
   const surveys = projects.data ?? [];
+  /** True when the user can change this survey's details (and thus its links). */
   const canAdminister = (project: SurveyRow) =>
     userCanDo({
       user,
@@ -176,6 +177,7 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
     [assetId]
   );
 
+  /** Open the survey's Control Centre page. */
   const openSurvey = ({_id}: SurveyRow) => {
     void navigate({to: `/projects/${_id}`});
   };

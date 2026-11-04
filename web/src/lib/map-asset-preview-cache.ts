@@ -186,6 +186,7 @@ export async function readPreviewResponseBytes(
   return readResponseBlob(response, {expectedBytes, onReceived});
 }
 
+/** Replace persist/fetch/now for tests. Defaults to an in-memory store. */
 export function configureMapAssetPreviewCacheForTests(options?: {
   persist?: MapAssetPreviewPersist;
   fetch?: typeof fetch;
@@ -196,6 +197,7 @@ export function configureMapAssetPreviewCacheForTests(options?: {
   nowImpl = options?.now ?? (() => Date.now());
 }
 
+/** Clear in-memory entries and restore production persist/fetch/now. */
 export function resetMapAssetPreviewCacheForTests(): void {
   entries.clear();
   persist = createCacheStoragePersist();
@@ -203,6 +205,7 @@ export function resetMapAssetPreviewCacheForTests(): void {
   nowImpl = () => Date.now();
 }
 
+/** Public fields of an entry, or idle when the key has not started. */
 function snapshot(entry: PreviewEntry | undefined): MapAssetPreviewState {
   if (!entry) {
     return IDLE_MAP_ASSET_PREVIEW_STATE;
@@ -217,6 +220,7 @@ function snapshot(entry: PreviewEntry | undefined): MapAssetPreviewState {
   };
 }
 
+/** Drop in-memory previews of other versions of the same layer. */
 function evictOtherMemoryVersions(assetId: string, keepKey: string): void {
   const prefix = `${assetId}:`;
   for (const key of entries.keys()) {
@@ -226,6 +230,7 @@ function evictOtherMemoryVersions(assetId: string, keepKey: string): void {
   }
 }
 
+/** Existing entry for `cacheKey`, or a new idle one. */
 function getOrCreateEntry(cacheKey: string): PreviewEntry {
   const existing = entries.get(cacheKey);
   if (existing) {
@@ -240,6 +245,7 @@ function getOrCreateEntry(cacheKey: string): PreviewEntry {
   return created;
 }
 
+/** Merge `patch` and notify listeners. Byte ticks coalesce to whole percents. */
 function notify(
   cacheKey: string,
   patch: Partial<MapAssetPreviewState>,
@@ -262,6 +268,7 @@ function notify(
   }
 }
 
+/** Serve Cache Storage, else download, persist, and notify progress. */
 async function loadPreview({
   cacheKey,
   assetId,
@@ -351,6 +358,7 @@ async function loadPreview({
   }
 }
 
+/** Presign, fetch, and stream the normalized file with progress ticks. */
 async function downloadPreview({
   cacheKey,
   assetId,
@@ -386,12 +394,14 @@ async function downloadPreview({
   );
 }
 
+/** Cache Storage request for one layer version (synthetic origin). */
 function previewRequest(assetId: string, version: string): Request {
   return new Request(
     `${PREVIEW_CACHE_ORIGIN}/${encodeURIComponent(assetId)}/${encodeURIComponent(version)}`
   );
 }
 
+/** In-memory persist used by tests and as a Cache Storage fallback. */
 function createMemoryPreviewPersist(): MapAssetPreviewPersist {
   const blobs = new Map<string, {blob: Blob; storedAt: number}>();
   return {
@@ -423,6 +433,7 @@ function createMemoryPreviewPersist(): MapAssetPreviewPersist {
   };
 }
 
+/** Browser Cache Storage persist; no-ops when `caches` is unavailable. */
 function createCacheStoragePersist(): MapAssetPreviewPersist {
   return {
     async get(assetId, version) {
@@ -478,6 +489,7 @@ function createCacheStoragePersist(): MapAssetPreviewPersist {
   };
 }
 
+/** Stored timestamp from the persist header, if it is a finite number. */
 function cachedAtMs(response: Response): number | undefined {
   const raw = response.headers.get(PREVIEW_CACHED_AT_HEADER);
   if (!raw) {
@@ -487,6 +499,7 @@ function cachedAtMs(response: Response): number | undefined {
   return Number.isFinite(storedAt) ? storedAt : undefined;
 }
 
+/** Open the preview Cache Storage bucket, or undefined when unavailable. */
 async function openPreviewCache(): Promise<Cache | undefined> {
   if (typeof caches === 'undefined') {
     return undefined;
@@ -498,6 +511,7 @@ async function openPreviewCache(): Promise<Cache | undefined> {
   }
 }
 
+/** Delete persisted previews of other versions of the same layer. */
 async function evictOtherVersions(
   cache: Cache,
   assetId: string,

@@ -46,6 +46,7 @@ import {
   MAP_LAYER_DOWNLOAD_CONCURRENCY,
   loadStoredContextualLayer,
   resetContextualLayerPrefs,
+  resetLayerDownloadExclusiveForTests,
   retainListedContextualLayers,
   updateContextualLayerPrefs,
 } from './contextualLayerStore';
@@ -305,6 +306,7 @@ describe('downloadContextualLayers on native', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    resetLayerDownloadExclusiveForTests();
     native.isNative = true;
     native.downloadFile.mockReset().mockResolvedValue({path: 'map-assets'});
     native.addListener.mockReset().mockResolvedValue({remove: vi.fn()});
@@ -732,6 +734,73 @@ describe('downloadContextualLayers on native', () => {
     );
     expect(store.getState().contextualLayers.files).toEqual({});
   });
+
+  it('does not delete a retried native file after a cancelled download settles', async () => {
+    let finishCancelledDownload!: () => void;
+    const cancelledDownloadHeld = new Promise<void>(resolve => {
+      finishCancelledDownload = resolve;
+    });
+    let started = 0;
+    let finishedDownloads = 0;
+    native.downloadFile.mockImplementation(async () => {
+      started += 1;
+      if (started === 1) {
+        await cancelledDownloadHeld;
+      }
+      finishedDownloads += 1;
+      return {path: 'map-assets'};
+    });
+    const deleteAfterRetryFinished: string[] = [];
+    native.deleteFile.mockImplementation(async ({path}: {path: string}) => {
+      if (finishedDownloads >= 2) {
+        deleteAfterRetryFinished.push(path);
+      }
+    });
+
+    const layer = {
+      id: 'asset-1',
+      name: 'Digital atlas',
+      kind: 'vector-tiles' as const,
+      byteSize: 100,
+      contentHash: 'hash-1',
+      extent: [0, 0, 1, 1] as [number, number, number, number],
+      defaultStyle: DEFAULT_MAP_ASSET_STYLE,
+    };
+    const controller = new AbortController();
+    const cancelled = downloadContextualLayers({
+      serverUrl: 'http://localhost:8080',
+      token: 'token',
+      projectId: 'survey',
+      signal: controller.signal,
+      layers: [layer],
+    });
+    await vi.waitFor(() => expect(started).toBe(1));
+    controller.abort();
+    await expect(cancelled).rejects.toBeInstanceOf(
+      ContextualLayerDownloadCancelledError
+    );
+
+    const retry = downloadContextualLayers({
+      serverUrl: 'http://localhost:8080',
+      token: 'token',
+      projectId: 'survey',
+      layers: [layer],
+    });
+    // The cancelled plugin call still holds the per-asset lock, so a
+    // retry must not start writing the same {assetId}-{hash}.pmtiles.
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(started).toBe(1);
+
+    finishCancelledDownload();
+    await retry;
+
+    expect(started).toBe(2);
+    expect(deleteAfterRetryFinished).toEqual([]);
+    expect(store.getState().contextualLayers.files['asset-1']?.filename).toBe(
+      'asset-1-hash-1.pmtiles'
+    );
+  });
 });
 
 describe('downloadContextualLayers cancellation in the browser', () => {
@@ -741,6 +810,7 @@ describe('downloadContextualLayers cancellation in the browser', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    resetLayerDownloadExclusiveForTests();
     native.isNative = false;
     native.deleteFile.mockReset().mockResolvedValue(undefined);
     native.readdir.mockReset().mockResolvedValue({files: []});

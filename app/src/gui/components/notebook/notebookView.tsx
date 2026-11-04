@@ -639,6 +639,7 @@ function NotebookViewWithSpec({
     ]
   );
 
+  /** Wrap a tab in the shared overview-map host so OpenLayers is not remounted. */
   const withOverviewMap = (node: ReactNode) => (
     <OverviewMapNotebookContext.Provider value={overviewMapContextValue}>
       {node}

@@ -18,6 +18,7 @@ type VectorBackgroundLayer = {
   setBackground: (background: BackgroundColor) => void;
 };
 
+/** True when `layer` exposes the VectorTile background get/set hooks. */
 function isVectorBackgroundLayer(
   layer: object
 ): layer is VectorBackgroundLayer {

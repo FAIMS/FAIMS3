@@ -39,6 +39,7 @@ const GEOMETRY_TYPES = new Set([
   'GeometryCollection',
 ]);
 
+/** True for `.geojson` / `.json` paths that the flatten pass can rewrite. */
 export function isGeoJsonPath(filePath: string): boolean {
   return /\.(?:geojson|json)$/i.test(filePath);
 }
@@ -64,6 +65,7 @@ export async function flattenNestedFeatureCollections(
   const count = {n: 0};
   const rootCrs: RootCrsCapture = {};
   let lastPercent = -1;
+  /** Tick `onProgress` when the rounded percent changes, or when forced. */
   const report = async (force = false) => {
     if (!onProgress) {
       return;
@@ -120,6 +122,10 @@ export async function flattenNestedFeatureCollections(
   }
 }
 
+/**
+ * Walk one JSON value. A `features` array is flattened immediately; a
+ * Feature or geometry object is emitted as a leaf.
+ */
 async function walkValue(
   reader: JsonFileReader,
   writer: NodeJS.WritableStream,
@@ -201,6 +207,7 @@ async function walkValue(
   await report();
 }
 
+/** Walk each item of a JSON array as a nested value (nested collections). */
 async function walkArray(
   reader: JsonFileReader,
   writer: NodeJS.WritableStream,
@@ -230,6 +237,7 @@ async function walkArray(
   }
 }
 
+/** Write a Feature's original JSON onto the output collection. */
 function emitRawFeature(
   writer: NodeJS.WritableStream,
   count: {n: number},
@@ -242,6 +250,7 @@ function emitRawFeature(
   count.n += 1;
 }
 
+/** Write a Feature, or wrap a bare geometry as one, onto the output. */
 function emitLeaf(
   writer: NodeJS.WritableStream,
   count: {n: number},
@@ -267,6 +276,7 @@ function emitLeaf(
   count.n += 1;
 }
 
+/** Chunked byte reader for one GeoJSON file; ticks progress every ~64 KiB. */
 class JsonFileReader {
   private buf = new Uint8Array(0);
   private bufFileStart = 0;
@@ -281,20 +291,24 @@ class JsonFileReader {
     readonly fileSize: number
   ) {}
 
+  /** Open `filePath` for sequential reads. Caller must {@link close}. */
   static async open(filePath: string): Promise<JsonFileReader> {
     const handle = await open(filePath, 'r');
     const {size} = await handle.stat();
     return new JsonFileReader(handle, size);
   }
 
+  /** Release the file handle. */
   async close(): Promise<void> {
     await this.handle.close();
   }
 
+  /** True when every byte has been consumed. */
   async eof(): Promise<boolean> {
     return this.pos >= this.fileSize;
   }
 
+  /** Skip a leading UTF-8 BOM so the first `{` is not rejected. */
   async skipBom(): Promise<void> {
     if (this.fileSize < 3) {
       return;
@@ -309,6 +323,7 @@ class JsonFileReader {
     }
   }
 
+  /** Skip whitespace and GeoJSONSeq RS separators between top-level values. */
   async skipWsAndRs(): Promise<void> {
     while (!(await this.eof())) {
       const byte = await this.peekByte();
@@ -320,6 +335,7 @@ class JsonFileReader {
     }
   }
 
+  /** Skip ASCII whitespace. */
   async skipWs(): Promise<void> {
     while (!(await this.eof())) {
       const byte = await this.peekByte();
@@ -330,6 +346,7 @@ class JsonFileReader {
     }
   }
 
+  /** Next byte, or `-1` at EOF. Does not advance. */
   async peekByte(): Promise<number> {
     if (await this.eof()) {
       return -1;
@@ -338,6 +355,7 @@ class JsonFileReader {
     return this.buf[this.offset];
   }
 
+  /** Consume and return the next byte. Throws at EOF. */
   async readByte(): Promise<number> {
     const byte = await this.peekByte();
     if (byte < 0) {
@@ -347,6 +365,7 @@ class JsonFileReader {
     return byte;
   }
 
+  /** Consume one byte and throw unless it matches `expected`. */
   async expectByte(expected: number): Promise<void> {
     const byte = await this.readByte();
     if (byte !== expected) {
@@ -356,6 +375,7 @@ class JsonFileReader {
     }
   }
 
+  /** Read a JSON string token, including escapes. */
   async readJsonString(): Promise<string> {
     await this.expectByte(QUOTE);
     const bytes = [QUOTE];
@@ -377,6 +397,7 @@ class JsonFileReader {
     }
   }
 
+  /** Skip one JSON value without parsing it. */
   async skipValue(): Promise<void> {
     await this.skipWs();
     const byte = await this.peekByte();
@@ -395,6 +416,7 @@ class JsonFileReader {
     await this.skipNumber();
   }
 
+  /** Absolute file slice `[start, end)` as UTF-8. Used to copy Features. */
   async readRange(start: number, end: number): Promise<string> {
     const length = end - start;
     const buffer = new Uint8Array(length);
@@ -462,6 +484,7 @@ class JsonFileReader {
     }
   }
 
+  /** Fire {@link onProgressTick} after each ~64 KiB of newly scanned bytes. */
   private async maybeReportProgress(): Promise<void> {
     if (this.unreadSinceReport < CHUNK_SIZE || !this.onProgressTick) {
       return;
@@ -470,6 +493,7 @@ class JsonFileReader {
     await this.onProgressTick();
   }
 
+  /** Skip `true` / `false` / `null`. */
   private async skipLiteral(): Promise<void> {
     const first = await this.readByte();
     const rest =
@@ -485,6 +509,7 @@ class JsonFileReader {
     }
   }
 
+  /** Skip a JSON number token. */
   private async skipNumber(): Promise<void> {
     while (!(await this.eof())) {
       const byte = await this.peekByte();
@@ -503,6 +528,7 @@ class JsonFileReader {
     }
   }
 
+  /** Fill the buffer until `needed` unread bytes are available, or EOF. */
   private async ensure(needed: number): Promise<void> {
     while (
       this.offset + needed > this.buf.length &&
@@ -528,10 +554,12 @@ class JsonFileReader {
     }
   }
 
+  /** Bytes past the current buffer that have not been read from disk. */
   private remainingOnDisk(): number {
     return this.fileSize - (this.bufFileStart + this.buf.length);
   }
 
+  /** Advance the read cursor and the progress counter. */
   private advance(bytes: number): void {
     this.offset += bytes;
     this.pos += bytes;
@@ -539,6 +567,7 @@ class JsonFileReader {
   }
 }
 
+/** ASCII space, tab, LF, or CR. */
 function isWhitespace(byte: number): boolean {
   return byte === 0x20 || byte === 0x09 || byte === 0x0a || byte === 0x0d;
 }

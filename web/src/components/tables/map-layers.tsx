@@ -41,6 +41,7 @@ function TruncatedListingText({
     if (!el) {
       return;
     }
+    /** True when the truncated text overflows, so a tooltip is worth showing. */
     const measure = () => {
       setOverflowing(el.scrollWidth > el.clientWidth + 1);
     };

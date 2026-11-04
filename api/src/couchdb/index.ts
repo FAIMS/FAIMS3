@@ -314,6 +314,7 @@ export const getTeamsDB = (): TeamsDB => {
   return _teamsDB;
 };
 
+/** Lazy Pouch handle for the map-assets database (layers and survey links). */
 export const getMapAssetsDB = (): MapAssetsDB => {
   if (!_mapAssetsDB) {
     const pouch_options = pouchOptions();

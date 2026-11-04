@@ -137,10 +137,15 @@ const layerDownloadChains = new Map<string, Promise<void>>();
  * filename), while downloads of different assets run in parallel. A queued
  * caller re-checks the index once it holds the asset, so it reuses the copy
  * the caller ahead of it just committed instead of downloading it again.
+ *
+ * `fn` may register leftover work with `holdUntil`. The caller still
+ * returns immediately, but the next download of this asset waits until
+ * that work settles — used so a cancelled native `downloadFile` can
+ * delete `{assetId}-{hash}.pmtiles` before a retry indexes the same name.
  */
 async function runLayerDownloadExclusive<T>(
   assetId: string,
-  fn: () => Promise<T>
+  fn: (holdUntil: (work: Promise<unknown>) => void) => Promise<T>
 ): Promise<T> {
   const previous = layerDownloadChains.get(assetId) ?? Promise.resolve();
   let release!: () => void;
@@ -149,14 +154,30 @@ async function runLayerDownloadExclusive<T>(
   });
   layerDownloadChains.set(assetId, current);
   await previous.catch(() => {});
-  try {
-    return await fn();
-  } finally {
+  const leftovers: Promise<unknown>[] = [];
+  /** Release this asset's download chain once leftovers settle. */
+  const finish = () => {
     release();
     if (layerDownloadChains.get(assetId) === current) {
       layerDownloadChains.delete(assetId);
     }
+  };
+  try {
+    return await fn(work => {
+      leftovers.push(work);
+    });
+  } finally {
+    if (leftovers.length === 0) {
+      finish();
+    } else {
+      void Promise.allSettled(leftovers).then(finish);
+    }
   }
+}
+
+/** Drop per-asset download chains left held by cancelled native transfers. */
+export function resetLayerDownloadExclusiveForTests(): void {
+  layerDownloadChains.clear();
 }
 
 /** Filenames already on disk (native Data dir or browser OPFS). */
@@ -549,10 +570,12 @@ export function isContextualLayerDownloadCancelledError(
   return error instanceof ContextualLayerDownloadCancelledError;
 }
 
+/** True when `fetch` (or an AbortController) aborted the transfer. */
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === 'AbortError';
 }
 
+/** Throw the download-cancelled error if `signal` has already aborted. */
 function throwIfDownloadCancelled(signal?: AbortSignal): void {
   if (signal?.aborted) {
     throw new ContextualLayerDownloadCancelledError();
@@ -562,6 +585,7 @@ function throwIfDownloadCancelled(signal?: AbortSignal): void {
 /** Rejects when `signal` aborts. Hangs forever when no signal is passed. */
 function whenDownloadCancelled(signal?: AbortSignal): Promise<never> {
   return new Promise((_, reject) => {
+    /** Reject the waiter with the download-cancelled error. */
     const cancel = () => {
       reject(new ContextualLayerDownloadCancelledError());
     };
@@ -576,6 +600,7 @@ function whenDownloadCancelled(signal?: AbortSignal): Promise<never> {
   });
 }
 
+/** Map a thrown download failure to a user-facing error, or cancellation. */
 function asLayerDownloadError(error: unknown, layerName: string): Error {
   if (isContextualLayerDownloadCancelledError(error) || isAbortError(error)) {
     return new ContextualLayerDownloadCancelledError();
@@ -640,14 +665,16 @@ async function downloadNativeLayerFile(
 
 /**
  * Native `downloadFile` has no abort API. Race it so Cancel can unblock
- * the UI; delete the destination after the plugin call settles.
+ * the UI; delete the destination after the plugin call settles. Pass
+ * `holdUntil` so the per-asset lock stays held across that delete.
  */
 async function downloadNativeLayerFileUntilCancelled(
   url: string,
   filename: string,
   expectedBytes: number,
   onReceived: (received: number, total: number) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  holdUntil?: (work: Promise<unknown>) => void
 ): Promise<void> {
   throwIfDownloadCancelled(signal);
   const download = downloadNativeLayerFile(
@@ -664,9 +691,14 @@ async function downloadNativeLayerFileUntilCancelled(
     await Promise.race([download, whenDownloadCancelled(signal)]);
   } catch (error) {
     if (isContextualLayerDownloadCancelledError(error)) {
-      void download
+      const leftover = download
         .catch(() => undefined)
         .then(() => removeDeviceFile(filename));
+      if (holdUntil) {
+        holdUntil(leftover);
+      } else {
+        void leftover;
+      }
     }
     throw error;
   }
@@ -745,6 +777,7 @@ async function downloadAndIndexContextualLayers({
   const batchBytes = layers.reduce((sum, layer) => sum + layer.byteSize, 0);
   let completedBytes = 0;
   let lastPercent = -1;
+  /** Batch 0–1 completion; percent ticks only, unless the last layer finishes. */
   const report = (
     assetId: string | undefined,
     currentReceived: number,
@@ -772,7 +805,7 @@ async function downloadAndIndexContextualLayers({
     // across batches (e.g. two individually started downloads). Only another
     // batch downloading this same asset makes this wait, and then the fresh
     // index check below reuses its copy instead of fetching it again.
-    await runLayerDownloadExclusive(layer.id, async () => {
+    await runLayerDownloadExclusive(layer.id, async holdUntil => {
       throwIfDownloadCancelled(signal);
       const existing = readIndex().files[layer.id];
       const filename =
@@ -805,7 +838,8 @@ async function downloadAndIndexContextualLayers({
                 filename,
                 layer.byteSize,
                 (received, total) => report(layer.id, received, total),
-                signal
+                signal,
+                holdUntil
               );
             } else {
               const response = await fetch(url, {signal});

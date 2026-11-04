@@ -156,23 +156,40 @@ export function inProgressMapAssetIds(assets: ExistingMapAsset[]): string[] {
 /**
  * Copy list rows into per-asset detail queries. A newer polled snapshot is
  * left in place so a later list fetch cannot roll progress backwards.
+ * `linkCount` is computed at read time and is not on `updatedAt`, so a
+ * kept snapshot still takes the list row's count.
  */
 export function seedMapAssetDetailsFromList(
   queryClient: QueryClient,
   user: User,
-  assets: ExistingMapAsset[]
+  assets: Array<ExistingMapAsset & {linkCount?: number}>
 ): void {
   for (const asset of assets) {
     const key = mapAssetDetailQueryKey(user, asset._id);
-    const existing = queryClient.getQueryData<ExistingMapAsset>(key);
+    const existing = queryClient.getQueryData<
+      ExistingMapAsset & {linkCount?: number}
+    >(key);
     if (existing && mapAssetSnapshotMs(existing) >= mapAssetSnapshotMs(asset)) {
+      if (
+        asset.linkCount !== undefined &&
+        existing.linkCount !== asset.linkCount
+      ) {
+        queryClient.setQueryData(key, {
+          ...existing,
+          linkCount: asset.linkCount,
+        });
+      }
       continue;
     }
     queryClient.setQueryData(key, asset);
   }
 }
 
-/** Prefer a newer cached details snapshot over the list row. */
+/**
+ * Prefer a newer cached details snapshot over the list row. Always take
+ * `linkCount` from the list: linking does not bump `updatedAt`, so a
+ * cached seed would otherwise hide the new count.
+ */
 export function overlayListWithCachedMapAssets(
   queryClient: QueryClient,
   user: User,
@@ -183,7 +200,7 @@ export function overlayListWithCachedMapAssets(
       mapAssetDetailQueryKey(user, asset._id)
     );
     return cached && mapAssetSnapshotMs(cached) >= mapAssetSnapshotMs(asset)
-      ? withLinkCount(cached, asset.linkCount)
+      ? {...cached, linkCount: asset.linkCount}
       : asset;
   });
   const unchanged = assets.every(

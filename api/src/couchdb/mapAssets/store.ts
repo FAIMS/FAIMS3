@@ -1481,6 +1481,7 @@ export async function storeOriginalsFromStagingWithRetry(
     throw error;
   }
 
+  /** Persist the timeout failure once the overall deadline has elapsed. */
   const failTimedOut = () =>
     commitOriginalStoreFailure(
       assetId,
@@ -1602,6 +1603,7 @@ async function reportProcessingStage(
   token?: ClaimToken,
   runtime?: MapAssetProcessingRuntime
 ): Promise<void> {
+  /** One claim-guarded Couch write; retried on conflict. */
   const write = async () => {
     const db = getMapAssetsDB();
     for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
@@ -1691,6 +1693,7 @@ async function reportProcessingProgress(
   token?: ClaimToken,
   runtime?: MapAssetProcessingRuntime
 ): Promise<void> {
+  /** One claim-guarded Couch write; retried on conflict. */
   const write = async () => {
     const db = getMapAssetsDB();
     for (let attempt = 0; attempt < PROCESSING_CLAIM_RETRIES; attempt++) {
@@ -2317,6 +2320,29 @@ export async function unlinkMapAsset({
 }
 
 /**
+ * Remove every layer–survey link for a survey. Used when the survey is
+ * permanently deleted so `linkCount` and linked-survey listings drop.
+ */
+export async function unlinkMapAssetsForProject(
+  projectId: string
+): Promise<void> {
+  const db = getMapAssetsDB();
+  const result = await db.query<string>(MAP_ASSET_LINKS_BY_PROJECT, {
+    key: projectId,
+    include_docs: false,
+  });
+  for (const row of result.rows) {
+    if (!row.id) {
+      continue;
+    }
+    const link = await db.get(row.id);
+    if (isLink(link)) {
+      await db.remove(link);
+    }
+  }
+}
+
+/**
  * Delete the asset document, its survey links, and stored objects.
  * Used when the owner removes a layer from the library.
  */
@@ -2453,7 +2479,7 @@ export async function contextualLayersForProject(projectId: string): Promise<{
 }
 
 /**
- * Attaches the survey manifest onto listing rows.
+ * Attaches the survey manifest onto listing rows and GET /notebooks/:id.
  * Uses two Couch round-trips for the whole list (link view + unique assets),
  * not one query per survey.
  * A read failure leaves the fields off the row so a device does not treat a

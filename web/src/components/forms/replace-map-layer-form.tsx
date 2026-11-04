@@ -24,6 +24,7 @@ export function ReplaceMapLayerForm({
   const queryClient = useQueryClient();
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
+  /** Replace the layer files and leave details (name, links) unchanged. */
   const onSubmit = async ({files}: {files: File[]}) => {
     setUploadProgress(0);
     try {

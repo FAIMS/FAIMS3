@@ -146,6 +146,7 @@ export default function ProjectMapLayers({projectId}: ProjectMapLayersProps) {
 
   const linkedLayers = linked.data?.assets ?? [];
   const linkedIds = new Set(linkedLayers.map(asset => asset._id));
+  /** Ready library layers that are not already linked to this survey. */
   const availableLayers = (library.data?.assets ?? []).filter(
     asset => asset.status === 'ready' && !linkedIds.has(asset._id)
   );
@@ -158,6 +159,7 @@ export default function ProjectMapLayers({projectId}: ProjectMapLayersProps) {
     [projectId]
   );
 
+  /** Open the layer's library detail page. */
   const openLayer = ({_id}: MapAssetWithLinkCount) => {
     void navigate({
       to: '/map-layers/$assetId',

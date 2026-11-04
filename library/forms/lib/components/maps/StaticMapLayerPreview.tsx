@@ -84,6 +84,7 @@ export function StaticMapLayerPreview({
       view: new View({center: [0, 0], zoom: 2}),
     });
 
+    /** Add the preview overlay and fit the view to its extent. */
     const show = async () => {
       const overlay = await createContextualMapLayer({
         id: 'preview',

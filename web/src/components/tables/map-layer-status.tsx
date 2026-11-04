@@ -27,6 +27,7 @@ export function mapLayerStatusLabel(
   }
 }
 
+/** Outline chip used by ready / ready-to-link status badges. */
 function StatusChip({
   className,
   children,

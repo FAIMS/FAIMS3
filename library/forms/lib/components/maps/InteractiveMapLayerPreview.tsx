@@ -116,6 +116,7 @@ function createSatelliteLayer(mapConfig: MapConfig): TileLayer {
   return layer;
 }
 
+/** First attribution string from a layer source, or empty. */
 function sourceAttribution(
   layer: TileLayer | VectorTileLayer | undefined
 ): string {

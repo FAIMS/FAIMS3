@@ -125,6 +125,7 @@ export function isTileLoadPausedError(error: unknown): boolean {
   return error instanceof TileLoadPausedError;
 }
 
+/** True when a tile fetch was aborted (pan, hide, or unmount). */
 function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
 }
@@ -140,18 +141,22 @@ export function createTileLoadGate(): TileLoadGate {
     get interacting() {
       return interacting;
     },
+    /** Mark the view as moving so new tile reads are refused. */
     startInteraction() {
       interacting = true;
     },
+    /** Allow new tile reads after the view settles. */
     endInteraction() {
       interacting = false;
     },
+    /** Child signal aborted if the view is moving or `parent` aborts. */
     branch(parent?: AbortSignal) {
       const controller = new AbortController();
       if (interacting || parent?.aborted) {
         controller.abort();
         return {signal: controller.signal, done() {}};
       }
+      /** Abort this branch when the parent signal (map hide / unmount) fires. */
       const onParentAbort = () => controller.abort();
       parent?.addEventListener('abort', onParentAbort);
       return {
@@ -206,8 +211,10 @@ export function createTileLoadController(
   let stopped = false;
   let loadAbort = new AbortController();
 
+  /** True while the map is moving or the controller has been stopped. */
   const refuseNewWork = () => stopped || interacting;
 
+  /** Release every waiter blocked on a concurrency slot. */
   const wakeWaiters = () => {
     const pending = waiters.splice(0);
     for (const resume of pending) {
@@ -215,12 +222,14 @@ export function createTileLoadController(
     }
   };
 
+  /** Abort in-flight reads and replace the generation signal. */
   const abortGeneration = () => {
     loadAbort.abort();
     loadAbort = new AbortController();
     wakeWaiters();
   };
 
+  /** Resolve `whenDrained` waiters once no tile is in flight. */
   const notifyDrain = () => {
     if (limiter.active > 0) {
       return;
@@ -231,6 +240,7 @@ export function createTileLoadController(
     }
   };
 
+  /** Wake waiters up to the concurrency cap when the view is settled. */
   const notify = () => {
     if (refuseNewWork()) {
       return;
@@ -258,6 +268,7 @@ export function createTileLoadController(
         controller.abort();
         return {signal: controller.signal, done() {}};
       }
+      /** Abort this branch when the parent signal (map hide / unmount) fires. */
       const onParentAbort = () => controller.abort();
       parent?.addEventListener('abort', onParentAbort);
       return {
@@ -288,6 +299,7 @@ export function createTileLoadController(
       interacting = false;
       notify();
     },
+    /** Run `fn` under the concurrency cap, or throw if the view is moving. */
     async run<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
       if (refuseNewWork()) {
         throw new TileLoadPausedError();
@@ -388,6 +400,7 @@ export function tileInViewport(
   );
 }
 
+/** True when two `[minX, minY, maxX, maxY]` boxes overlap. */
 function extentsIntersect(a: number[], b: number[]): boolean {
   return a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
 }
@@ -478,6 +491,7 @@ export function viewTileViewport(
   };
 }
 
+/** Release GPU/decoded resources for a tile that left the view. */
 function disposeTile(tile: Tile): void {
   const renderTile = tile as RenderTile;
   if (typeof renderTile.dispose === 'function') {
@@ -487,6 +501,7 @@ function disposeTile(tile: Tile): void {
   renderTile.release?.();
 }
 
+/** Drop cached tiles that no longer cover the view. */
 function evictCache(
   cache: TileCache | undefined,
   viewExtent: number[],
@@ -509,6 +524,7 @@ function evictCache(
   }
 }
 
+/** Drop source-tile entries that no longer cover the view. */
 function evictSourceTiles(
   source: VectorSourceTiles | null,
   viewExtent: number[],
@@ -553,6 +569,7 @@ function isTerminalEmptyImageTile(tile: Tile): boolean {
   return tile instanceof ImageTile && tile.getState() === TileState.EMPTY;
 }
 
+/** Remove terminal EMPTY image tiles so the renderer can create new ones. */
 function dropEmptySourceTiles(source: VectorSourceTiles | null): void {
   const tiles = source?.sourceTiles_;
   if (!tiles) {
@@ -948,6 +965,7 @@ export function bindTileLoadPause(
       wipe,
     });
   });
+  /** Cancel a pending settle and pause new tile reads on visible layers. */
   const pauseLayers = () => {
     settle.cancel();
     for (const layer of getLayers()) {
@@ -956,6 +974,7 @@ export function bindTileLoadPause(
       }
     }
   };
+  /** Pause tile reads for a user pan, or flag a programmatic fit for wipe. */
   const onMoveStart = () => {
     const view = map.getView();
     startResolution = view.getResolution();
@@ -983,6 +1002,7 @@ export function bindTileLoadPause(
     }
     pauseLayers();
   };
+  /** After a zoom or programmatic fit, wipe stale tiles once the view settles. */
   const onMoveEnd = () => {
     if (isProgrammaticCameraMove(map)) {
       wipeOnSettle = true;

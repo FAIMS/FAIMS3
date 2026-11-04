@@ -6,6 +6,7 @@ import {
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {attachmentStorageService} from '../src/buildconfig';
 import {getMapAssetsDB} from '../src/couchdb';
+import {createNotebook, deleteNotebook} from '../src/couchdb/notebooks';
 import {
   attachContextualLayers,
   attachLinkCounts,
@@ -15,8 +16,10 @@ import {
   linkMapAsset,
   listLinkProjectIds,
   unlinkMapAsset,
+  unlinkMapAssetsForProject,
 } from '../src/couchdb/mapAssets/store';
 import {resetDatabases} from './mocks';
+import {EMPTY_UI_SPECIFICATION} from './sampleNotebook';
 
 async function clearMapAssetDocs() {
   const db = getMapAssetsDB();
@@ -112,6 +115,61 @@ describe('map asset survey links', () => {
     expect(await listLinkProjectIds(asset._id)).toEqual([]);
     await unlinkMapAsset({assetId: asset._id, projectId: 'survey-1'});
     expect(await listLinkProjectIds(asset._id)).toEqual([]);
+  });
+
+  it('unlinkMapAssetsForProject removes only links for that survey', async () => {
+    const first = await createPendingAsset('First layer');
+    const second = await createPendingAsset('Second layer');
+    await linkMapAsset({
+      assetId: first._id,
+      projectId: 'survey-keep',
+      linkedBy: 'admin',
+    });
+    await linkMapAsset({
+      assetId: first._id,
+      projectId: 'survey-gone',
+      linkedBy: 'admin',
+    });
+    await linkMapAsset({
+      assetId: second._id,
+      projectId: 'survey-gone',
+      linkedBy: 'admin',
+    });
+
+    await unlinkMapAssetsForProject('survey-gone');
+    expect(await listLinkProjectIds(first._id)).toEqual(['survey-keep']);
+    expect(await listLinkProjectIds(second._id)).toEqual([]);
+    expect(
+      (await attachLinkCounts([first, second])).map(asset => asset.linkCount)
+    ).toEqual([1, 0]);
+
+    await unlinkMapAssetsForProject('survey-gone');
+    expect(await listLinkProjectIds(first._id)).toEqual(['survey-keep']);
+  });
+
+  it('deleteNotebook drops leftover survey links so linkCount falls', async () => {
+    const projectId = await createNotebook({
+      projectName: 'Linked Survey Delete',
+      uiSpecification: EMPTY_UI_SPECIFICATION,
+      description: '',
+      createdBy: 'admin',
+    });
+    expect(projectId).toBeDefined();
+    if (!projectId) {
+      return;
+    }
+
+    const asset = await createPendingAsset();
+    await linkMapAsset({
+      assetId: asset._id,
+      projectId,
+      linkedBy: 'admin',
+    });
+    expect(await listLinkProjectIds(asset._id)).toEqual([projectId]);
+
+    await deleteNotebook(projectId);
+    expect(await listLinkProjectIds(asset._id)).toEqual([]);
+    expect((await attachLinkCounts([asset]))[0].linkCount).toBe(0);
   });
 
   it('attachLinkCounts reports zero or more survey links per asset', async () => {

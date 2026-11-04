@@ -136,6 +136,7 @@ export function ContextualLayerPreview() {
   const [cancelling, setCancelling] = useState(false);
   const downloadAbort = useRef<AbortController | null>(null);
 
+  /** Load the stored file and any survey listings that reference it. */
   const load = useCallback(async () => {
     setLoading(true);
     setMessage('');
@@ -202,6 +203,7 @@ export function ContextualLayerPreview() {
 
   const surveyNames = surveyLayers.map(row => row.projectName);
 
+  /** Bearer token for `serverId`, preferring the active user. */
   const tokenFor = (serverId: string): string | undefined => {
     if (activeUser?.serverId === serverId && auth.isAuthenticated) {
       return activeUser.token;
@@ -215,11 +217,13 @@ export function ContextualLayerPreview() {
     return undefined;
   };
 
+  /** Abort the in-flight update download. */
   const cancelDownload = () => {
     setCancelling(true);
     downloadAbort.current?.abort();
   };
 
+  /** Re-download this layer from every survey that lists a newer hash. */
   const handleUpdate = async () => {
     if (updates.length === 0) {
       return;
@@ -269,6 +273,7 @@ export function ContextualLayerPreview() {
     }
   };
 
+  /** Remove the on-device file and return to the layer list. */
   const handleDelete = async () => {
     if (!assetId) {
       return;

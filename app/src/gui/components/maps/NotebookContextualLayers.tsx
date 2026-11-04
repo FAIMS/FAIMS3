@@ -46,6 +46,7 @@ export function NotebookContextualLayers({
   // and put the row back where it was.
   const loadGeneration = useRef(0);
 
+  /** Reload on-device layers, ignoring a listing that started before a local edit. */
   const reload = useCallback(async () => {
     const generation = ++loadGeneration.current;
     const stored = await contextualLayersForMap(projectId, listedAssetIds);
@@ -60,6 +61,7 @@ export function NotebookContextualLayers({
     );
   }, [listedAssetIds, projectId]);
 
+  /** Persist queued paint edits; re-queue a failed id so the next flush retries. */
   const flushPatches = useCallback(async () => {
     if (flushing.current) {
       return;
@@ -93,6 +95,7 @@ export function NotebookContextualLayers({
     }
   }, [projectId]);
 
+  /** Merge a paint edit and write it after the drag/keystroke settles. */
   const queuePatch = useCallback(
     (id: string, patch: ContextualMapLayerPatch) => {
       const existing = pendingPatches.current.get(id);

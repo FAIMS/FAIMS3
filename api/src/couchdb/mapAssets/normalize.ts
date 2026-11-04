@@ -8,7 +8,7 @@
  * on. Zoom overviews and feature dropping happen in that tiling step.
  */
 
-import {existsSync} from 'fs';
+import {readdirSync} from 'fs';
 import {copyFile, mkdtemp, open, rm, stat, writeFile} from 'fs/promises';
 import {tmpdir} from 'os';
 import path from 'path';
@@ -132,14 +132,23 @@ export function gdalSourcePath(filePath: string): string {
 /**
  * Sibling `.prj` next to a PNG/JPEG (those images carry CRS there, not
  * in the file). GeoTIFF and GeoPDF already have an embedded CRS.
+ * Matching is case-insensitive so `plan.PRJ` is found on Linux.
  */
 export function siblingProjectionPath(sourcePath: string): string | undefined {
   const ext = path.extname(sourcePath);
   if (!ext) {
     return undefined;
   }
-  const prjPath = `${sourcePath.slice(0, -ext.length)}.prj`;
-  return existsSync(prjPath) ? prjPath : undefined;
+  const dir = path.dirname(sourcePath);
+  const expected = `${path.basename(sourcePath, ext)}.prj`.toLowerCase();
+  try {
+    const match = readdirSync(dir).find(
+      name => name.toLowerCase() === expected
+    );
+    return match ? path.join(dir, match) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -449,6 +458,7 @@ async function convertVector(
   await emitStage(logContext, 'tiling-vectors');
   let leftover = '';
   let progressWait = Promise.resolve();
+  /** Parse tippecanoe stderr into percent ticks for the Control Centre. */
   const onStderr = (chunk: string) => {
     const consumed = consumeTippecanoeProgress(leftover + chunk);
     leftover = consumed.leftover;

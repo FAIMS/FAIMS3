@@ -692,7 +692,9 @@ api.get(
   async (req, res: Response<{projectIds: string[]}>) => {
     const user = requireUser(req);
     const asset = await getMapAsset(req.params.id);
-    if (!(await canReadAsset(user, asset))) {
+    // Survey-link read is download-only. The full link list is library
+    // access (owner, team, or global), not a layer seen on one survey.
+    if (!authorizeAsset(user, asset, isAuthorizedToReadMapAsset)) {
       throw new Exceptions.UnauthorizedException();
     }
     const projectIds = await listLinkProjectIds(asset._id);

@@ -25,6 +25,7 @@ export function DeleteMapLayerDialog({assetId}: {assetId: string}) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
 
+  /** Delete the layer, drop list caches, and return to the library. */
   const onDelete = async () => {
     setPending(true);
     try {

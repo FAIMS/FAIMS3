@@ -519,6 +519,42 @@ describe('map asset survey links HTTP', () => {
     ).expect(200);
   });
 
+  it('does not let a survey guest list every survey the layer is linked to', async () => {
+    const visibleId = await createNotebookFromSampleFile(
+      'visible guest survey'
+    );
+    const hiddenId = await createNotebookFromSampleFile('hidden linked survey');
+    expect(visibleId).toBeTruthy();
+    expect(hiddenId).toBeTruthy();
+    const asset = await markReady((await createPendingAsset())._id);
+    await linkMapAsset({
+      assetId: asset._id,
+      projectId: visibleId!,
+      linkedBy: 'admin',
+    });
+    await linkMapAsset({
+      assetId: asset._id,
+      projectId: hiddenId!,
+      linkedBy: 'admin',
+    });
+    const guest = await createRoleUser({
+      username: 'links-guest',
+      projectId: visibleId!,
+      projectRole: Role.PROJECT_GUEST,
+    });
+
+    const listed = await auth(
+      request(app).get(`${MAP_ASSETS}/${asset._id}/links`),
+      guest.token
+    );
+    expect(listed.status).toBe(401);
+
+    await auth(
+      request(app).get(`${MAP_ASSETS}/${asset._id}/download-url`),
+      guest.token
+    ).expect(200);
+  });
+
   it('attaches ready linked layers on notebook and directory GETs', async () => {
     const projectId = await createNotebookFromSampleFile('layer notebook');
     expect(projectId).toBeTruthy();
@@ -596,6 +632,32 @@ describe('map asset survey links HTTP', () => {
     expect(emptied.body.contextualLayersHash).toBe(
       await buildContextualLayersHash([])
     );
+  });
+
+  it('GET /api/notebooks/:id omits layer fields when the map-assets view fails', async () => {
+    const projectId = await createNotebookFromSampleFile('layer fail-open');
+    expect(projectId).toBeTruthy();
+    const db = getMapAssetsDB();
+    const query = vi
+      .spyOn(db, 'query')
+      .mockRejectedValue(new Error('view down'));
+    const errorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    try {
+      const detail = await auth(
+        request(app).get(`/api/notebooks/${projectId}`),
+        adminToken
+      ).expect(200);
+      expect(detail.body.name).toBe('layer fail-open');
+      expect(detail.body.uiSpecification).toBeTruthy();
+      expect(detail.body).not.toHaveProperty('contextualLayers');
+      expect(detail.body).not.toHaveProperty('contextualLayersHash');
+      expect(errorSpy).toHaveBeenCalled();
+    } finally {
+      query.mockRestore();
+      errorSpy.mockRestore();
+    }
   });
 });
 

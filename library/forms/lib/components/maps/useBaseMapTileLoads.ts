@@ -26,6 +26,7 @@ export function useBaseMapTileLoads(
       (layer): layer is BaseMapLayer => layer !== undefined
     );
     const unlistenVisible = layers.map(layer => {
+      /** Stop or resume tile fetches when the layer is toggled. */
       const onVisible = () => {
         syncTileLoadsToVisibility(layer);
       };

@@ -127,6 +127,17 @@ describe('normalize CRS helpers', () => {
     await rm(dir, {recursive: true, force: true});
   });
 
+  it('finds an uppercase .PRJ sibling on a case-sensitive filesystem', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'faims-prj-case-'));
+    const png = path.join(dir, 'plan.png');
+    const prj = path.join(dir, 'plan.PRJ');
+    await writeFile(png, 'png');
+    await writeFile(prj, 'PROJCS["WGS_1984_Web_Mercator_Auxiliary_Sphere"]');
+    expect(siblingProjectionPath(png)).toBe(prj);
+    expect(siblingProjectionPath(path.join(dir, 'other.png'))).toBeUndefined();
+    await rm(dir, {recursive: true, force: true});
+  });
+
   it('assigns a sibling .prj onto a VRT so GDAL sees a CRS', async () => {
     const dir = await mkdtemp(path.join(tmpdir(), 'faims-prj-assign-'));
     const png = path.join(dir, 'plan.png');

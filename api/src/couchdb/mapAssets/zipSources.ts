@@ -598,6 +598,7 @@ export type PreparedVectorGdalSource = {
  */
 export async function findGdbDirectories(root: string): Promise<string[]> {
   const found: string[] = [];
+  /** Recurse into directories; stop at a `.gdb` so nested gdbs stay distinct. */
   const walk = async (dir: string): Promise<void> => {
     const entries = await readdir(dir, {withFileTypes: true});
     for (const entry of entries) {
@@ -625,6 +626,7 @@ export async function findGdbDirectories(root: string): Promise<string[]> {
 export async function assertExtractContainsNoSymlinks(
   root: string
 ): Promise<void> {
+  /** Recurse without following links so a leftover symlink is rejected. */
   const walk = async (dir: string): Promise<void> => {
     const entries = await readdir(dir, {withFileTypes: true});
     for (const entry of entries) {

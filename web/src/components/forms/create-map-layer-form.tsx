@@ -92,6 +92,7 @@ export function CreateMapLayerForm({
     );
   }
 
+  /** Upload the files and seed the library cache with the new layer. */
   const onSubmit = async (values: {
     name: string;
     description?: string;

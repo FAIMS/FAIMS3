@@ -32,6 +32,7 @@ const defaultSleep = (ms: number) =>
     setTimeout(resolve, ms);
   });
 
+/** Log a thrown sweep so a Couch blip does not kill the API process. */
 const defaultOnPollError = (error: unknown) => {
   console.error(
     `${MAP_ASSET_PROCESSING_LOG} original-store sweep failed`,

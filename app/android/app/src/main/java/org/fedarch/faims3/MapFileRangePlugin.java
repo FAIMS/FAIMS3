@@ -29,11 +29,16 @@ public class MapFileRangePlugin extends Plugin {
     private static final int MAX_LENGTH = 2 * 1024 * 1024;
     private static final String TEMP_FOLDER = "map-range";
 
+    /** Clear leftover range-cache files from a previous session. */
     @Override
     public void load() {
         sweepTempTiles();
     }
 
+    /**
+     * Seek `offset`/`length` in a Data-directory file and write the bytes
+     * to a cache file whose URI JS can fetch.
+     */
     @PluginMethod
     public void read(PluginCall call) {
         String path = call.getString("path");
@@ -81,6 +86,7 @@ public class MapFileRangePlugin extends Plugin {
         }
     }
 
+    /** Delete one range-cache file written by {@link #read}. */
     @PluginMethod
     public void remove(PluginCall call) {
         String path = call.getString("path");
@@ -94,6 +100,7 @@ public class MapFileRangePlugin extends Plugin {
         call.resolve();
     }
 
+    /** Resolve `path` under the app files dir, or null if it escapes. */
     private File validatedDataFile(String path) {
         if (path == null || path.contains("..") || path.startsWith("/")) {
             return null;
@@ -112,6 +119,7 @@ public class MapFileRangePlugin extends Plugin {
         return file;
     }
 
+    /** Resolve a `map-range/...` cache path, or null if it escapes. */
     private File validatedTempFile(String path) {
         if (path == null || path.contains("..") || path.startsWith("/")) {
             return null;
@@ -133,11 +141,13 @@ public class MapFileRangePlugin extends Plugin {
         return file;
     }
 
+    /** Delete the whole range-cache folder. */
     private void sweepTempTiles() {
         File folder = new File(getContext().getCacheDir(), TEMP_FOLDER);
         deleteRecursively(folder);
     }
 
+    /** Delete a file or directory tree. Errors are ignored. */
     private static void deleteRecursively(File file) {
         if (file.isDirectory()) {
             File[] children = file.listFiles();

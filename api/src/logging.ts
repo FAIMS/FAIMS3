@@ -46,6 +46,7 @@ export function shouldReportErrorToBugsnag(error: unknown): boolean {
   return true;
 }
 
+/** HTTP status from an Error-like object (`status` or `statusCode`). */
 function httpStatus(error: unknown): number | undefined {
   if (!error || typeof error !== 'object') {
     return undefined;
@@ -60,6 +61,7 @@ function httpStatus(error: unknown): number | undefined {
   return undefined;
 }
 
+/** True for the intentional tombstone-miss 404 (not a Bugsnag-worthy error). */
 function isTombstoneNotFound(error: unknown): boolean {
   if (!error || typeof error !== 'object') {
     return false;

@@ -69,10 +69,12 @@ export function createGdalProgressConsumer(): {
   let inBar = false;
   let nextTick = 0;
 
+  /** Parse completed percents from `buf`. `flush` finishes a trailing decade. */
   const drain = (flush: boolean): number[] => {
     const percents: number[] = [];
     let i = 0;
 
+    /** Unparsed suffix of `buf` from the current index. */
     const remaining = () => buf.slice(i);
 
     while (i < buf.length) {
@@ -180,6 +182,7 @@ export function attachGdalProgress(
 } {
   const consumer = createGdalProgressConsumer();
   let progressWait = Promise.resolve();
+  /** Queue one `onProgress` write per newly completed percent. */
   const enqueue = (percents: number[]) => {
     for (const percent of percents) {
       const reported: MapAssetProcessingProgress = {phase, percent};

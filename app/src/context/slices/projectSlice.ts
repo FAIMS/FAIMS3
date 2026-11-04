@@ -87,6 +87,7 @@ const initialiseProjectsMutexByServer = new Map<
   ReturnType<typeof createAsyncMutex>
 >();
 
+/** Run `fn` under the per-server initialise lock so refreshes cannot interleave. */
 function withInitialiseProjectsLock<T>(
   serverId: string,
   fn: () => Promise<T>
@@ -341,6 +342,7 @@ function offlineMapDownloadPromptKey(identity: ProjectIdentity): string {
   return projectIdentityKey(identity);
 }
 
+/** The in-flight activation list, creating it on older persisted state. */
 function ensureActivatingProjects(state: ProjectsState): string[] {
   if (!state.activatingProjects) {
     state.activatingProjects = [];
@@ -348,6 +350,7 @@ function ensureActivatingProjects(state: ProjectsState): string[] {
   return state.activatingProjects;
 }
 
+/** Record that this survey is mid-activation (prompt / overlay). */
 function addActivatingProject(
   state: ProjectsState,
   identity: ProjectIdentity
@@ -359,6 +362,7 @@ function addActivatingProject(
   }
 }
 
+/** Clear the mid-activation flag once activation finishes or fails. */
 function removeActivatingProject(
   state: ProjectsState,
   identity: ProjectIdentity
@@ -790,6 +794,12 @@ const projectsSlice = createSlice({
 
       server.couchDbUrl = payload.couchDbUrl;
 
+      const existingListing = (existingActivated ?? existingListed)!;
+      // Omitted contextualLayers means attach failed (API contract). Keep the
+      // last-known listing so maps and settings still show downloaded layers.
+      // A present array, including empty, is the new ready list.
+      const keepExistingLayers = !Array.isArray(payload.contextualLayers);
+
       const listing: ProjectListingInformation = {
         name: payload.name,
         description: payload.description,
@@ -799,12 +809,16 @@ const projectsSlice = createSlice({
         status: payload.status,
         recordCount: mergeRecordCount(
           payload.recordCount,
-          (existingActivated ?? existingListed)!.recordCount
+          existingListing.recordCount
         ),
         offlineMapRegion: payload.offlineMapRegion,
         disableQuickShare: payload.disableQuickShare,
-        contextualLayers: payload.contextualLayers,
-        contextualLayersHash: payload.contextualLayersHash,
+        contextualLayers: keepExistingLayers
+          ? existingListing.contextualLayers
+          : payload.contextualLayers,
+        contextualLayersHash: keepExistingLayers
+          ? existingListing.contextualLayersHash
+          : payload.contextualLayersHash,
         uiSpecProperties: payload.uiSpecProperties,
       };
 
@@ -1792,6 +1806,10 @@ export const updateDatabaseCredentials = createAsyncThunk<
   }
 });
 
+/**
+ * Open local DBs, attach listing metadata, and queue the offline-map and
+ * contextual-layer prompts when this activation has new files to download.
+ */
 async function runActivateProject(
   payload: ProjectIdentity & DatabaseAuth,
   dispatch: AppDispatch,
@@ -1977,8 +1995,8 @@ async function runActivateProject(
     }
   }
 
-  const layerHash = project.contextualLayersHash;
-  const layers = project.contextualLayers ?? [];
+  const layerHash = activating.contextualLayersHash;
+  const layers = activating.contextualLayers ?? [];
   if (layers.length > 0 && layerHash) {
     const seen = await getSeenContextualLayersHash(payload.projectId);
     if (seen !== layerHash) {
@@ -2433,15 +2451,18 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           serverId,
         });
         const hash = details.contextualLayersHash;
-        const layers = details.contextualLayers ?? [];
-        if (!local?.isActivated || !hash || layers.length === 0) {
+        const layers = details.contextualLayers;
+        // Omitted field is attach-failed, not unlink — leave the seen hash.
+        // A present empty array is unlink: still record that hash so a later
+        // relink of the same set is not skipped as already-seen.
+        if (!local?.isActivated || !hash || !Array.isArray(layers)) {
           continue;
         }
         const seen = await getSeenContextualLayersHash(details._id);
         if (seen === hash) {
           continue;
         }
-        if (areContextualLayersOnDevice(layers)) {
+        if (layers.length === 0 || areContextualLayersOnDevice(layers)) {
           await markContextualLayersSeen(details._id, hash);
           continue;
         }

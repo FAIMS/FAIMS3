@@ -155,6 +155,7 @@ export class AwsEcsControlPlane implements EcsControlPlane {
     this.client = client;
   }
 
+  /** List RUNNING or PENDING tasks for one family (paginated). */
   async listTasks(input: {
     cluster: string;
     family: string;
@@ -172,6 +173,7 @@ export class AwsEcsControlPlane implements EcsControlPlane {
     return {taskArns: page.taskArns, nextToken: page.nextToken};
   }
 
+  /** Start Fargate tasks. Failures are returned, not thrown. */
   async runTask(input: {
     cluster: string;
     taskDefinition: string;
