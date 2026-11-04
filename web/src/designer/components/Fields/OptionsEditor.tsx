@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import {designerHtmlInput, INPUT_LIMITS} from '@/designer/lib/input-limits';
 import {
   closestCenter,
   DndContext,
@@ -17,7 +18,6 @@ import {
 import {CSS} from '@dnd-kit/utilities';
 import {ChoiceElementProps} from '@faims3/forms';
 import {MDXEditorMethods} from '@mdxeditor/editor';
-import {AddCircle} from '@mui/icons-material';
 import ArrowDropDownRoundedIcon from '@mui/icons-material/ArrowDropDownRounded';
 import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -34,6 +34,7 @@ import {
   DialogTitle,
   FormControl,
   FormControlLabel,
+  FormLabel,
   Grid,
   IconButton,
   Radio,
@@ -187,6 +188,19 @@ const optionTextSx = {
   textOverflow: 'ellipsis',
 } as const;
 
+// MUI TextField error and focus border override.
+const optionInputErrorSx = (hasError: boolean) => ({
+  '& .MuiOutlinedInput-root': {
+    ...(hasError && {
+      '& .MuiOutlinedInput-notchedOutline, &.Mui-focused .MuiOutlinedInput-notchedOutline':
+        {
+          borderColor: 'error.main',
+          borderWidth: 2,
+        },
+    }),
+  },
+});
+
 // Render a field heading with optional tooltip and hint text.
 const OptionInputHeading = ({
   label,
@@ -314,11 +328,11 @@ const validateValue = (
 
 /** Values for the option currently being edited. */
 type EditingOption = {
-  // Original stored value used to locate the option.
+  // Original stored value used to identify the option.
   originalValue: string;
-  // Value stored with answers.
+  // Updated option value to save.
   value: string;
-  // Optional user-facing Markdown label.
+  // Updated user-facing Markdown label to save.
   label: string;
 };
 
@@ -339,11 +353,10 @@ interface EditOptionDialogProps {
   setConditionUpdateState: React.Dispatch<
     React.SetStateAction<ConditionUpdateState | null>
   >;
-  // validation error to display.
-  errorMessage: string;
-  setErrorMessage: React.Dispatch<React.SetStateAction<string>>;
-  // Save the edited option.
-  onSave: () => void;
+  // Existing options used to validate unique values and labels.
+  options: ChoiceOption[];
+  // Save the validated option value and label.
+  onSave: (value: string, label: string) => void;
   // Closes the dialog without saving changes.
   onCancel: () => void;
   // Clear temporary dialog state after its closing animation finishes
@@ -356,13 +369,48 @@ const EditOptionDialog = ({
   setEditingOption,
   conditionUpdateState,
   setConditionUpdateState,
-  errorMessage,
-  setErrorMessage,
+  options,
   onSave,
   onCancel,
   onExited,
 }: EditOptionDialogProps) => {
   const editorRef = useRef<MDXEditorMethods>(null);
+
+  const [valueError, setValueError] = useState('');
+  const [labelError, setLabelError] = useState('');
+
+  // Validate the edited value and label before saving through the parent.
+  const handleSave = () => {
+    if (!editingOption) return;
+
+    const newValue = editingOption.value.trim();
+    const newLabel = editingOption.label.trim() || newValue;
+
+    const valueErrorMessage = validateValue(
+      options,
+      newValue,
+      editingOption.originalValue
+    );
+
+    const labelErrorMessage = validateLabel(
+      options,
+      newLabel,
+      editingOption.originalValue
+    );
+
+    setValueError(valueErrorMessage ?? '');
+    setLabelError(labelErrorMessage ?? '');
+
+    if (valueErrorMessage || labelErrorMessage) return;
+
+    onSave(newValue, newLabel);
+  };
+
+  const handleExited = () => {
+    setValueError('');
+    setLabelError('');
+    onExited();
+  };
 
   return (
     <Dialog
@@ -370,7 +418,7 @@ const EditOptionDialog = ({
       onClose={onCancel}
       fullWidth
       maxWidth="md"
-      slotProps={{transition: {onExited}}}
+      slotProps={{transition: {onExited: handleExited}}}
     >
       <DialogTitle sx={designerDialogTitleSx}>Edit Option</DialogTitle>
       <DialogContent sx={designerDialogContentSx}>
@@ -386,13 +434,24 @@ const EditOptionDialog = ({
             placeholder="Enter a unique option value"
             required
             value={editingOption?.value ?? ''}
+            error={!!valueError}
             onChange={e => {
               setEditingOption(previous =>
                 previous ? {...previous, value: e.target.value} : null
               );
-              setErrorMessage('');
+              setValueError('');
             }}
+            slotProps={{
+              htmlInput: designerHtmlInput(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
+            }}
+            sx={optionInputErrorSx(!!valueError)}
           />
+
+          {valueError && (
+            <Alert severity="error" sx={{mt: 1.5}}>
+              {valueError}
+            </Alert>
+          )}
         </Box>
 
         {/* Second row: optional Markdown label */}
@@ -411,21 +470,21 @@ const EditOptionDialog = ({
                 setEditingOption(previous =>
                   previous ? {...previous, label: markdown} : null
                 );
-                setErrorMessage('');
+                setLabelError('');
               }}
               editorRef={editorRef}
               disabledFeatures={mdxEditorDisabledFeatures}
             />
           )}
+
+          {labelError && (
+            <Alert severity="error" sx={{mt: 1.5}}>
+              {labelError}
+            </Alert>
+          )}
         </Box>
 
-        {errorMessage && (
-          <Alert severity="error" sx={{mt: 2}}>
-            {errorMessage}
-          </Alert>
-        )}
-
-        {/* Changing the ID is data-affecting even if no condition uses it. */}
+        {/* Warn that changing the stored value may affect existing records. */}
         {editingOption &&
           editingOption.value.trim() !== editingOption.originalValue && (
             <Alert severity="warning" sx={{mt: 2}}>
@@ -471,7 +530,7 @@ const EditOptionDialog = ({
         <Button sx={designerCancelButtonSx} onClick={onCancel}>
           Cancel
         </Button>
-        <Button onClick={onSave} color="primary">
+        <Button onClick={handleSave} color="primary">
           Save
         </Button>
       </DialogActions>
@@ -815,15 +874,10 @@ export const OptionsEditor = ({
   // Configure drag-and-drop sensors - just pointer sensor is fine
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const [newOptionLabel, setNewOptionLabel] = useState('');
   const [newOptionValue, setNewOptionValue] = useState('');
-  // Force the uncontrolled Markdown editor to reset after successfully adding.
-  const [newOptionEditorKey, setNewOptionEditorKey] = useState(0);
-  const newOptionEditorRef = useRef<MDXEditorMethods>(null);
 
-  // Validation errors for adding and editing options.
+  // Validation errors for adding new option.
   const [addErrorMessage, setAddErrorMessage] = useState('');
-  const [editErrorMessage, setEditErrorMessage] = useState('');
 
   const [deleteDialogRefs, setDeleteDialogRefs] = useState<string[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -1028,25 +1082,24 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Add an option with a required value and optional Markdown label.
-   * An empty label defaults to the option value.
+   * Add a new option using the entered value as both
+   * the stored value and display label.
    */
-  const addOption = () => {
+  const addOption = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
     const value = newOptionValue.trim();
-    const label = newOptionLabel.trim() || value;
 
     const error =
-      validateValue(options, value) || validateLabel(options, label);
+      validateValue(options, value) || validateLabel(options, value);
     if (error) {
       setAddErrorMessage(error);
       return;
     }
 
     // add a new option
-    updateField([...options, {value, label}]);
-    setNewOptionLabel('');
+    updateField([...options, {value, label: value}]);
     setNewOptionValue('');
-    setNewOptionEditorKey(previous => previous + 1);
     setAddErrorMessage('');
   };
 
@@ -1096,7 +1149,6 @@ export const OptionsEditor = ({
       value: option.value,
       label: option.label,
     });
-    setEditErrorMessage('');
 
     const references = findOptionReferences(
       allFields,
@@ -1109,26 +1161,16 @@ export const OptionsEditor = ({
     );
   };
 
-  /** Only value changes require remapping exclusive choices/conditions. */
-  const handleEditSubmit = () => {
+  // Save the edited option and update related references if its value changes.
+  const handleEditSubmit = (newValue: string, newLabel: string) => {
     if (!editingOption) return;
     // Find the original option, even if its option value has been edited.
     const original = options.find(
       option => option.value === editingOption.originalValue
     );
     if (!original) {
-      setEditErrorMessage('This option no longer exists.');
-      return;
-    }
-
-    const newValue = editingOption.value.trim();
-    const newLabel = editingOption.label.trim() || newValue;
-
-    const error =
-      validateValue(options, newValue, original.value) ||
-      validateLabel(options, newLabel, original.value);
-    if (error) {
-      setEditErrorMessage(error);
+      // close editor dialog
+      setEditingOption(null);
       return;
     }
 
@@ -1153,7 +1195,6 @@ export const OptionsEditor = ({
 
     setEditingOption(null);
     setConditionUpdateState(null);
-    setEditErrorMessage('');
   };
 
   /**
@@ -1365,46 +1406,33 @@ export const OptionsEditor = ({
                 Add option
               </Typography>
 
-              <Box
-                sx={{
-                  p: 2,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 1.25,
-                }}
-              >
-                {/* First row: option value and action buttons. */}
+              <Box component="form" onSubmit={addOption}>
                 <Box
                   sx={{
                     display: 'flex',
                     flexDirection: {xs: 'column', md: 'row'},
                     alignItems: {xs: 'stretch', md: 'flex-end'},
-                    gap: 1.5,
-                    mb: 2,
+                    gap: 1,
                   }}
                 >
                   <Box sx={{flex: 1, minWidth: 0}}>
-                    <OptionInputHeading
-                      label="Option value"
-                      tooltip={OPTION_VALUE_TOOLTIP}
-                    />
                     <TextField
                       size="small"
-                      placeholder="Enter a unique option value"
+                      placeholder="Add option"
                       required
                       value={newOptionValue}
                       onChange={e => {
                         setNewOptionValue(e.target.value);
                         setAddErrorMessage('');
                       }}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                          e.preventDefault();
-                          addOption();
-                        }
-                      }}
                       error={!!addErrorMessage}
+                      slotProps={{
+                        htmlInput: designerHtmlInput(
+                          INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH
+                        ),
+                      }}
                       fullWidth
+                      sx={optionInputErrorSx(!!addErrorMessage)}
                     />
                   </Box>
 
@@ -1414,27 +1442,26 @@ export const OptionsEditor = ({
                     useFlexGap
                     sx={{alignItems: 'center', flexWrap: 'wrap'}}
                   >
-                    {/* Add a predefined option using the new value and label. */}
                     <Button
+                      type="submit"
                       variant="outlined"
-                      color="success"
-                      startIcon={<AddCircle />}
-                      size="small"
-                      onClick={addOption}
-                      sx={{height: 40}}
+                      color="primary"
+                      sx={{
+                        height: 40,
+                      }}
                     >
-                      Add option
+                      Add
                     </Button>
 
-                    {/* Other remains a separate option with its own input. */}
                     <Button
+                      type="button"
                       variant="outlined"
-                      color="info"
-                      startIcon={<AddCircle />}
-                      size="small"
+                      color="primary"
                       onClick={() => setEnableOtherOption(true)}
                       disabled={enableOther}
-                      sx={{height: 40}}
+                      sx={{
+                        height: 40,
+                      }}
                     >
                       Add "Other" Option
                     </Button>
@@ -1443,25 +1470,6 @@ export const OptionsEditor = ({
                       <InfoIcon sx={{...designerInfoIconSx, ml: 0}} />
                     </Tooltip>
                   </Stack>
-                </Box>
-
-                {/* Second row: optional Markdown label. */}
-                <Box sx={{minWidth: 0}}>
-                  <OptionInputHeading
-                    label="Option label"
-                    tooltip={OPTION_LABEL_TOOLTIP}
-                    hint={OPTION_LABEL_HINT}
-                  />
-                  <MdxEditor
-                    key={newOptionEditorKey}
-                    initialMarkdown=""
-                    handleChange={markdown => {
-                      setNewOptionLabel(markdown);
-                      setAddErrorMessage('');
-                    }}
-                    editorRef={newOptionEditorRef}
-                    disabledFeatures={mdxEditorDisabledFeatures}
-                  />
                 </Box>
 
                 {addErrorMessage && (
@@ -1477,27 +1485,22 @@ export const OptionsEditor = ({
             {showExpandedCheckListControl && (
               <Grid size={12}>
                 <FormControl>
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    sx={{my: 0.75, alignItems: 'center'}}
-                  >
-                    <Typography
-                      component="h4"
-                      sx={{
-                        fontSize: '1rem',
-                        fontWeight: 700,
-                        color: 'text.primary',
-                      }}
+                  <FormLabel>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{my: 0.75, alignItems: 'center'}}
                     >
-                      {isMultiSelectField
-                        ? 'Multi-select display mode'
-                        : 'Select-one display mode'}
-                    </Typography>
-                    <Tooltip title="Choose whether to show options as a checklist or a dropdown list.">
-                      <InfoIcon sx={designerInfoIconSx} />
-                    </Tooltip>
-                  </Stack>
+                      <Typography component="h4">
+                        {isMultiSelectField
+                          ? 'Multi-select display mode'
+                          : 'Select-one display mode'}
+                      </Typography>
+                      <Tooltip title="Choose whether to show options as a checklist or a dropdown list.">
+                        <InfoIcon sx={designerInfoIconSx} />
+                      </Tooltip>
+                    </Stack>
+                  </FormLabel>
                   <RadioGroup row value={displayMode} onChange={setDisplayMode}>
                     <FormControlLabel
                       value={ChoiceDisplayMode.expanded}
@@ -1523,13 +1526,11 @@ export const OptionsEditor = ({
         setEditingOption={setEditingOption}
         conditionUpdateState={conditionUpdateState}
         setConditionUpdateState={setConditionUpdateState}
-        errorMessage={editErrorMessage}
-        setErrorMessage={setEditErrorMessage}
+        options={options}
         onSave={handleEditSubmit}
         onCancel={() => setEditingOption(null)}
         onExited={() => {
           setConditionUpdateState(null);
-          setEditErrorMessage('');
         }}
       />
 
