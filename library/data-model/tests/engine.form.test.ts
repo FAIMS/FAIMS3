@@ -390,8 +390,35 @@ describe('Form Operations', () => {
         })
       ).rejects.toThrow(/takes only one/);
       // The refusal must come before the write, or the new row is an orphan
-      // its parent never lists.
+      // its parent never lists. `site-0` does not exist, so this also covers a
+      // target that cannot be read: unknown counts as live.
       expect((await db.allDocs({})).rows.length).toBe(before);
+    });
+
+    it('takes a new link on a field whose one link points at a deleted record', async () => {
+      const engineWithRelations = relatedEngine();
+      const dead = await engineWithRelations.form.createRecord({
+        createdBy: 'alice',
+        formId: 'Site',
+      });
+      await engineWithRelations.form.deleteRecord({
+        recordId: dead.record._id,
+        baseRevisionId: dead.revision._id,
+        userId: 'alice',
+      });
+      const {link, linked} = await engineWithRelations.form.createRelatedRecord(
+        {
+          parentRecordId: 'parent-1',
+          parentFieldId: 'peer',
+          createdBy: 'alice',
+          parentFieldValue: {
+            record_id: dead.record._id,
+            relation_type_vocabPair: ['is linked to', 'is linked from'],
+          },
+        }
+      );
+      // The dead link is replaced, not kept beside the new one.
+      expect(linked).toEqual(link);
     });
 
     it('writes no record when the field holds a value it cannot read', async () => {

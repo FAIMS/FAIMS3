@@ -615,6 +615,39 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
   const [linkError, setLinkError] = useState<string | undefined>(undefined);
 
+  // One query per linked id (order matches `normalizedLinks`) for list display
+  // and permission checks.
+  const relatedRecordQueries = useQueries({
+    queries: normalizedLinks.map(({record_id}) => ({
+      queryKey: [...RELATED_HYDRATION_QUERY_KEY, record_id],
+      queryFn: async () => {
+        const record = await props.config
+          .dataEngine()
+          .hydrated.getHydratedRecord({
+            recordId: record_id,
+            config: {conflictBehaviour: 'pickLast'},
+          });
+
+        return record ?? undefined;
+      },
+      networkMode: 'always',
+      staleTime: 0,
+      refetchOnMount: true,
+    })),
+  });
+
+  /** Targets the list already hides as deleted; a single-link field holding
+   * one is free to take a new link, the same as the create path. */
+  const deletedTargetIds = () =>
+    new Set(
+      normalizedLinks
+        .filter((_, index) => {
+          const d = relatedRecordQueries[index]?.data;
+          return d !== undefined && (d.record.deleted || d.revision.deleted);
+        })
+        .map(link => link.record_id)
+    );
+
   const handleLinkExisting = async (record: HydratedRecord) => {
     setLinkError(undefined);
     // Both halves come from one place, so a caller outside a form derives the
@@ -631,6 +664,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       // Matches how detaching writes it back: an array while the field takes
       // many, a bare entry while it takes one.
       isMultiple: props.multiple,
+      deletedTargetIds: deletedTargetIds(),
     });
 
     // The field value is form state; the target's revision is not.
@@ -660,27 +694,6 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       );
     }
   };
-
-  // One query per linked id (order matches `normalizedLinks`) for list display
-  // and permission checks.
-  const relatedRecordQueries = useQueries({
-    queries: normalizedLinks.map(({record_id}) => ({
-      queryKey: [...RELATED_HYDRATION_QUERY_KEY, record_id],
-      queryFn: async () => {
-        const record = await props.config
-          .dataEngine()
-          .hydrated.getHydratedRecord({
-            recordId: record_id,
-            config: {conflictBehaviour: 'pickLast'},
-          });
-
-        return record ?? undefined;
-      },
-      networkMode: 'always',
-      staleTime: 0,
-      refetchOnMount: true,
-    })),
-  });
 
   // Navigates to an existing link
   const handleLinkClick = (recordId: string) => {
