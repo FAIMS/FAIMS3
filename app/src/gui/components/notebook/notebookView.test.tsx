@@ -226,7 +226,13 @@ const uiSpecification = {
 
 vi.mock('../../../context/store', () => ({
   useAppDispatch: () => vi.fn(),
-  useAppSelector: () => ({username: 'testuser', parsedToken: {}}),
+  useAppSelector: (
+    selector: (state: {projects: {servers: object}}) => unknown
+  ) =>
+    selector({projects: {servers: {}}}) ?? {
+      username: 'testuser',
+      parsedToken: {},
+    },
 }));
 vi.mock('../../../context/slices/authSlice', () => ({
   selectActiveUser: vi.fn(),
