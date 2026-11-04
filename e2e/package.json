@@ -40,6 +40,7 @@
   },
   "devDependencies": {
     "@testing-library/webdriverio": "^3.2.1",
+    "@types/pluralize": "^0.0.33",
     "@wdio/appium-service": "^9.27.2",
     "@wdio/cli": "^9.27.2",
     "@wdio/globals": "^9.27.2",
@@ -53,6 +54,7 @@
     "chromedriver": "^138.0.4",
     "dotenv": "^16.6.1",
     "expect-webdriverio": "^5.6.8",
+    "pluralize": "^8.0.0",
     "tsx": "^4.20.3",
     "typescript": "^7.0.2",
     "wdio-wait-for": "^3.1.0"
