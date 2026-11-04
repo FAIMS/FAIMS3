@@ -164,7 +164,6 @@ function renderRelatedRecordField({
                   label: 'Back',
                   navigate: vi.fn(),
                 },
-                navigateToViewRecord: vi.fn(),
               },
               incrementerService: {} as any,
               appName: 'test-app',

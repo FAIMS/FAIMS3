@@ -189,7 +189,6 @@ function renderNewRecordForm(minItems?: number) {
               getToRecordLink: () => '/record',
               navigateToLink: vi.fn(),
               navigateToRecordList: {label: 'Back', navigate: vi.fn()},
-              navigateToViewRecord: vi.fn(),
             },
             appName: 'test-app',
             user: 'user-1',

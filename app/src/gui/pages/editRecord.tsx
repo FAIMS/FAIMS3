@@ -275,20 +275,9 @@ export const EditRecordPage = () => {
       mapConfig: getMapConfig,
       navigation: {
         navigateToRecordList: {
-          label: 'Return to record list',
           navigate: () => {
             navigate(notebookRoute);
           },
-        },
-        // Takes you back to view record (note this is only shown if there are no
-        // parent navigation history)
-        navigateToViewRecord: params => {
-          navigate(
-            getViewRecordRoute({
-              ...notebook,
-              recordId: params.recordId,
-            })
-          );
         },
         toRecord: ({
           recordId: targetRecordId,

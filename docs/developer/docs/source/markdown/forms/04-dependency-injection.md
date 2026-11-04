@@ -220,11 +220,9 @@ interface NavigationConfig {
   navigateToLink: (to: string) => void;
 
   navigateToRecordList: {
-    label: string;
+    label?: string;
     navigate: () => void;
   };
-
-  navigateToViewRecord: (params: {recordId: string}) => void;
 }
 ```
 

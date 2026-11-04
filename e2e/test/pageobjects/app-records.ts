@@ -13,6 +13,20 @@ import AppNotebooksPage from './app-notebooks.ts';
 /**
  * Fieldmark record create / finish helpers.
  */
+/**
+ * Accept the finish-anyway dialog, but only when it is warning about fields.
+ * The same dialog opens when the write itself was refused, and clicking past
+ * that takes the suite green on a record that was never saved.
+ */
+async function confirmFinishAnyway() {
+  const dialog = await $('[role="dialog"]');
+  const text = (await dialog.isExisting()) ? await dialog.getText() : '';
+  if (/could not be saved|could not update its timestamp/i.test(text)) {
+    throw new Error(`Finish was refused by a failed save: ${text}`);
+  }
+  await $('button*=Finish anyway').click();
+}
+
 class AppRecordsPage extends Page {
   /**
    * Add / new record control for a specific viewset (record type).
@@ -116,7 +130,7 @@ class AppRecordsPage extends Page {
     // Confirm finish-anyway dialog if validation warns
     const finishAnyway = await $('button*=Finish anyway');
     if (await finishAnyway.isExisting()) {
-      await finishAnyway.click();
+      await confirmFinishAnyway();
     }
     await browser.waitUntil(
       async () => (await browser.getUrl()).includes('/surveys/'),
@@ -195,7 +209,7 @@ class AppRecordsPage extends Page {
     // renders a beat after the click, and missing it strands the URL wait below.
     const finishAnyway = await $('button*=Finish anyway');
     if (await finishAnyway.waitForExist({timeout: 3000}).catch(() => false)) {
-      await finishAnyway.click();
+      await confirmFinishAnyway();
     }
     await browser.waitUntil(
       async () => (await browser.getUrl()).includes('/surveys/'),
