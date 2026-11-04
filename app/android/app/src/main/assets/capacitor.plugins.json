@@ -48,6 +48,10 @@
 		"classpath": "app.capgo.audiorecorder.CapacitorAudioRecorderPlugin"
 	},
 	{
+		"pkg": "@capgo/capacitor-compass",
+		"classpath": "app.capgo.capacitor.compass.CapgoCompassPlugin"
+	},
+	{
 		"pkg": "@capgo/capacitor-speech-recognition",
 		"classpath": "app.capgo.speechrecognition.SpeechRecognitionPlugin"
 	}
