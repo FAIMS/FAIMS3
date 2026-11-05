@@ -274,7 +274,9 @@ describe('BaseFieldEditor export title', () => {
     const exportInput = screen.getByPlaceholderText('Enter export title');
     exportInput.focus();
     fireEvent.change(exportInput, {target: {value: 'typed'}});
-    fireEvent.click(screen.getByRole('button', {name: 'Sync with Field Heading'}));
+    fireEvent.click(
+      screen.getByRole('button', {name: 'Sync with Field Heading'})
+    );
 
     act(() => {
       vi.advanceTimersByTime(1000);
