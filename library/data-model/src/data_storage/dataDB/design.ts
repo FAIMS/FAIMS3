@@ -24,36 +24,17 @@ export const attachmentFilterDocument = {
 /**
  * Design document for permissions validation (is built from project Id)
  *
- * The `validate_doc_update` function is `toString()`-ed and shipped to
- * CouchDB, so everything it needs must live inside its body; it cannot
- * reference imports or module constants. It runs on EVERY write to every
- * project data DB (records, revisions, AVPs, attachments, deletes).
+ * `validate_doc_update` is `toString()`-ed and shipped to CouchDB, so it
+ * cannot reference imports, and it runs on every write to the data DB.
  *
- * Attachment content-type gate (stored XSS via uploaded SVG mitigation):
- *
- * - Gate first on the attachment-doc identity (`attach_format_version === 1`,
- *   the same test the `attachments` index view uses) and `!_deleted`. For
- *   every non-attachment document the added cost is one property lookup and
- *   one comparison; `_attachments` is never touched. Deletes always pass so
- *   a legacy hostile attachment can still be removed.
- * - Inside the gate, only each stub's `content_type` string is read
- *   (normalised: cut at `;`, trimmed, lower-cased). No `data`/`digest`/
- *   `length`, no serialisation, no regular expressions. Fails fast on the
- *   first blocked stub. A missing/empty `content_type` on an attachment stub
- *   fails closed.
- * - Blocklist (not allowlist) so generic files (PDF, CSV, ZIP, audio,
- *   `application/octet-stream`) keep syncing. The list MUST stay identical to
- *   `BLOCKED_ATTACHMENT_CONTENT_TYPES` in `library/forms/lib/utils.ts`;
- *   there is no shared runtime, so the two are kept in sync by hand.
- * - Throws `{forbidden}` (403, per-document rejection) rather than
- *   `{unauthorized}` so replication reports a per-doc error instead of
- *   treating it as an auth failure.
- *
- * Propagation: `initDataDB` -> `couchInitialiser` with `forceWrite: true`
- * from API startup (`initialiseAndMigrateDBs({force: true})` and
- * `validateDatabases` -> `initialiseDataDb({force: true})`) and from the app
- * on project activation, so existing databases pick up the new validator on
- * the next API boot / activation without a migration step.
+ * Attachment content-type gate (stored XSS via uploaded SVG): only
+ * attachment docs (`attach_format_version === 1`, not `_deleted`) are
+ * inspected, and only each stub's `content_type` (normalised) is read. A
+ * blocked or missing type throws `{forbidden}` so replication reports a
+ * per-doc error rather than an auth failure. The blocklist must match
+ * `BLOCKED_ATTACHMENT_CONTENT_TYPES` in `library/forms/lib/utils.ts`.
+ * Propagated by `couchInitialiser({forceWrite: true})` on API startup and
+ * project activation; no migration step needed.
  */
 export const permissionsDocument = (projectId: string) => ({
   _id: '_design/permissions',

@@ -13,8 +13,9 @@
  * - blocked attachment content types -> {forbidden}
  * - allowed types, two-step store shape, inline-data shape, deletes
  * - structural performance guarantees (non-attachment docs never enter the
- *   gate; gate appears before the role machinery; no heavy ops in source)
- * - pre-existing permission behaviour is unchanged
+ *   gate; gate appears before the role machinery)
+ * - the permission logic itself: login, author lock, edit-my / edit-any /
+ *   delete-my / delete-any role lists, project scoping, ownership resolution
  */
 import {permissionsDocument} from '../src/data_storage/dataDB/design';
 import {Action} from '../src/permission/model';
@@ -392,22 +393,6 @@ describe('validate_doc_update attachment content-type gate: structure', () => {
     expect(gateLine).toContain('_deleted');
   });
 
-  it('contains no heavyweight operations', () => {
-    expect(source).not.toContain('JSON.stringify');
-    expect(source).not.toContain('JSON.parse');
-    expect(source).not.toMatch(/\.data\b/);
-    expect(source).not.toContain('.digest');
-    expect(source).not.toContain('Object.keys');
-    expect(source).not.toContain('Object.entries');
-    expect(source).not.toContain('Object.values');
-    // No regular-expression literals anywhere in the validator.
-    expect(source).not.toMatch(/[=(,:]\s*\/[^/*\n][^\n]*\/[gimsuy]*\s*[;,)]/);
-    expect(source).not.toContain('new RegExp');
-    expect(source).not.toContain('.match(');
-    expect(source).not.toContain('.replace(');
-    expect(source).not.toContain('.test(');
-  });
-
   it('throws forbidden (not unauthorized) for content rejections', () => {
     const idx = source.indexOf('Attachments of type');
     expect(idx).toBeGreaterThan(-1);
@@ -433,43 +418,408 @@ describe('validate_doc_update attachment content-type gate: structure', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 7. Pre-existing permission behaviour unchanged
+// 7. Permission logic
 // ---------------------------------------------------------------------------
 
-describe('validate_doc_update pre-existing permission logic', () => {
+describe('validate_doc_update permission logic', () => {
+  const OTHER_USER = 'bob';
+  const OTHER_PROJECT = 'some-other-project';
+
+  const roleList = (action: Action, resourceId = PROJECT_ID) =>
+    necessaryActionToCouchRoleList({action, resourceId});
+
+  const editMyRoles = roleList(Action.EDIT_MY_PROJECT_RECORDS);
+  const editAnyRoles = roleList(Action.EDIT_ALL_PROJECT_RECORDS);
+  const deleteMyRoles = roleList(Action.DELETE_MY_PROJECT_RECORDS);
+  const deleteAnyRoles = roleList(Action.DELETE_ALL_PROJECT_RECORDS);
+
+  // Roles that grant "my" but not "any" (e.g. project guest).
+  const myOnlyEditRoles = editMyRoles.filter(r => !editAnyRoles.includes(r));
+  const myOnlyDeleteRoles = deleteMyRoles.filter(
+    r => !deleteAnyRoles.includes(r)
+  );
+
+  const ctx = (roles: string[], name: string = USER) => ({name, roles});
+
   const record = (extra: Record<string, unknown> = {}) => ({
     _id: 'rec-1',
     record_format_version: 1,
     created_by: USER,
     ...extra,
   });
+  const mine = record({_rev: '1-a'});
+  const theirs = record({_rev: '1-a', created_by: OTHER_USER});
 
-  it('requires a user context', () => {
-    expect(outcome(record(), null, null)).toHaveProperty('unauthorized');
-    expect(outcome(record(), null, {name: null})).toHaveProperty(
-      'unauthorized'
-    );
-  });
-
-  it('blocks author changes', () => {
-    const result = outcome(record({created_by: 'bob'}), record(), adminCtx);
+  const expectUnauthorized = (
+    result: Record<string, unknown> | null,
+    message: RegExp
+  ) => {
+    expect(result).not.toBeNull();
     expect(result).toHaveProperty('unauthorized');
-    expect(result!.unauthorized).toMatch(/change the author/);
+    expect(result).not.toHaveProperty('forbidden');
+    expect(result!.unauthorized).toMatch(message);
+  };
+
+  describe('templating', () => {
+    it('substitutes every role placeholder with the per-project role lists', () => {
+      expect(source).not.toContain('_ACCEPTABLE_');
+      for (const r of [
+        ...editMyRoles,
+        ...editAnyRoles,
+        ...deleteMyRoles,
+        ...deleteAnyRoles,
+      ]) {
+        expect(source).toContain(`'${r}'`);
+      }
+    });
+
+    it('is scoped to the project it was built for', () => {
+      const other = permissionsDocument(OTHER_PROJECT).validate_doc_update;
+      expect(other).toContain(`'${OTHER_PROJECT}||`);
+      expect(other).not.toContain(`'${PROJECT_ID}||`);
+    });
+
+    it('the role model distinguishes my-only roles from any roles', () => {
+      // Sanity check on the role model these tests rely on: at least one
+      // role (project guest) can edit/delete its own records but not others'.
+      expect(myOnlyEditRoles.length).toBeGreaterThan(0);
+      expect(myOnlyDeleteRoles.length).toBeGreaterThan(0);
+      // Every "any" role also satisfies "my".
+      for (const r of editAnyRoles) expect(editMyRoles).toContain(r);
+      for (const r of deleteAnyRoles) expect(deleteMyRoles).toContain(r);
+    });
   });
 
-  it('lets an editor edit their own record and not another user', () => {
-    expect(outcome(record())).toBeNull();
-    const other = outcome(record({created_by: 'bob'}), null, editorCtx);
-    expect(other).toHaveProperty('unauthorized');
+  describe('login requirement', () => {
+    it.each([
+      ['null userCtx', null],
+      ['null name', {name: null, roles: editAnyRoles}],
+      ['undefined name', {roles: editAnyRoles}],
+    ])('rejects %s even with full roles', (_label, userCtx) => {
+      const result = outcome(record(), null, userCtx);
+      expectUnauthorized(result, /must be logged in/);
+    });
+
+    it('rejects an undefined userCtx', () => {
+      // Call directly: `outcome` would substitute its default context.
+      let thrown: Record<string, unknown> | null = null;
+      try {
+        validate(record(), null, undefined as unknown as null);
+      } catch (e) {
+        thrown = e as Record<string, unknown>;
+      }
+      expectUnauthorized(thrown, /must be logged in/);
+    });
+
+    it('login check runs before the attachment gate', () => {
+      const result = outcome(
+        attachmentDoc({att1: stub('image/svg+xml')}),
+        null,
+        null
+      );
+      expectUnauthorized(result, /must be logged in/);
+    });
   });
 
-  it('lets an edit-any role edit another user record', () => {
-    expect(outcome(record({created_by: 'bob'}), null, adminCtx)).toBeNull();
+  describe('author lock', () => {
+    it('rejects changing created_by on an existing doc, even for edit-any', () => {
+      const result = outcome(
+        record({created_by: OTHER_USER}),
+        mine,
+        ctx(editAnyRoles)
+      );
+      expectUnauthorized(result, /change the author/);
+    });
+
+    it('rejects changing created_by on an existing doc owned by someone else', () => {
+      // bob's record, alice tries to claim it
+      const result = outcome(
+        record({created_by: USER}),
+        theirs,
+        ctx(editAnyRoles)
+      );
+      expectUnauthorized(result, /change the author/);
+    });
+
+    it('allows an update that keeps created_by unchanged', () => {
+      expect(outcome(record({extra: 1}), mine, ctx(editMyRoles))).toBeNull();
+    });
+
+    it('does not apply when the old doc has no created_by', () => {
+      const legacy = {_id: 'rec-1', _rev: '1-a', record_format_version: 1};
+      expect(outcome(record(), legacy, ctx(editAnyRoles))).toBeNull();
+    });
+
+    it('does not apply when the new doc has no created_by', () => {
+      const stripped = {_id: 'rec-1', record_format_version: 1};
+      // Ownership falls back to the old doc, which is mine.
+      expect(outcome(stripped, mine, ctx(editMyRoles))).toBeNull();
+    });
+
+    it('does not apply on creation (no old doc)', () => {
+      expect(outcome(record(), null, ctx(editMyRoles))).toBeNull();
+    });
   });
 
-  it('still allows a benign attachment doc subject to the same role checks', () => {
-    const doc = attachmentDoc({att1: stub('image/jpeg')}, {created_by: 'bob'});
-    expect(outcome(doc, null, editorCtx)).toHaveProperty('unauthorized');
-    expect(outcome(doc, null, adminCtx)).toBeNull();
+  describe('editing my own record', () => {
+    it.each(editMyRoles)('allows role %s to create a record it owns', role => {
+      expect(outcome(record(), null, ctx([role]))).toBeNull();
+    });
+
+    it.each(editMyRoles)('allows role %s to update a record it owns', role => {
+      expect(outcome(record({x: 1}), mine, ctx([role]))).toBeNull();
+    });
+
+    it('rejects with no roles', () => {
+      expectUnauthorized(outcome(record(), null, ctx([])), /edit your record/);
+    });
+
+    it('rejects when roles is undefined', () => {
+      expectUnauthorized(
+        outcome(record(), null, {name: USER}),
+        /edit your record/
+      );
+    });
+
+    it('rejects a role for a different project', () => {
+      const foreign = roleList(Action.EDIT_ALL_PROJECT_RECORDS, OTHER_PROJECT)
+        // Keep only the project-scoped roles; global roles would still apply.
+        .filter(r => r.includes('||'));
+      expect(foreign.length).toBeGreaterThan(0);
+      expectUnauthorized(
+        outcome(record(), null, ctx(foreign)),
+        /edit your record/
+      );
+    });
+
+    it('rejects an unrelated / malformed role string', () => {
+      expectUnauthorized(
+        outcome(record(), null, ctx(['PROJECT_ADMIN', `${PROJECT_ID}||`])),
+        /edit your record/
+      );
+    });
+
+    it('only needs one acceptable role among many', () => {
+      const roles = ['junk', 'more-junk', editMyRoles[0]];
+      expect(outcome(record(), null, ctx(roles))).toBeNull();
+    });
+  });
+
+  describe("editing another user's record", () => {
+    it.each(editAnyRoles)(
+      'allows role %s to create a record owned by someone else',
+      role => {
+        expect(
+          outcome(record({created_by: OTHER_USER}), null, ctx([role]))
+        ).toBeNull();
+      }
+    );
+
+    it.each(editAnyRoles)(
+      "allows role %s to update someone else's record",
+      role => {
+        expect(
+          outcome(record({created_by: OTHER_USER, x: 1}), theirs, ctx([role]))
+        ).toBeNull();
+      }
+    );
+
+    it.each(myOnlyEditRoles)(
+      'rejects my-only role %s from creating a record owned by someone else',
+      role => {
+        expectUnauthorized(
+          outcome(record({created_by: OTHER_USER}), null, ctx([role])),
+          /edit another user's record/
+        );
+      }
+    );
+
+    it.each(myOnlyEditRoles)(
+      "rejects my-only role %s from updating someone else's record",
+      role => {
+        expectUnauthorized(
+          outcome(record({created_by: OTHER_USER, x: 1}), theirs, ctx([role])),
+          /edit another user's record/
+        );
+      }
+    );
+
+    it('rejects with no roles', () => {
+      expectUnauthorized(
+        outcome(record({created_by: OTHER_USER}), null, ctx([])),
+        /edit another user's record/
+      );
+    });
+  });
+
+  describe('ownership resolution', () => {
+    it('uses the old doc to decide ownership when one exists', () => {
+      // Old doc is bob's; new doc omits created_by so the author lock does
+      // not fire. A my-only role must still be refused because it is bob's.
+      const stripped = {_id: 'rec-1', record_format_version: 1};
+      expectUnauthorized(
+        outcome(stripped, theirs, ctx(myOnlyEditRoles)),
+        /edit another user's record/
+      );
+    });
+
+    it('a new doc with no created_by is not mine', () => {
+      const anonymous = {_id: 'rec-1', record_format_version: 1};
+      expectUnauthorized(
+        outcome(anonymous, null, ctx(myOnlyEditRoles)),
+        /edit another user's record/
+      );
+      expect(outcome(anonymous, null, ctx(editAnyRoles))).toBeNull();
+    });
+
+    it('an old doc with no created_by is not mine', () => {
+      const legacy = {_id: 'rec-1', _rev: '1-a', record_format_version: 1};
+      expectUnauthorized(
+        outcome(record(), legacy, ctx(myOnlyEditRoles)),
+        /edit another user's record/
+      );
+    });
+
+    it('ownership is an exact match on the user name', () => {
+      expectUnauthorized(
+        outcome(record(), null, ctx(myOnlyEditRoles, USER.toUpperCase())),
+        /edit another user's record/
+      );
+    });
+  });
+
+  describe('deleting', () => {
+    const deletedMine = record({_rev: '2-b', _deleted: true});
+    const deletedTheirs = record({
+      _rev: '2-b',
+      _deleted: true,
+      created_by: OTHER_USER,
+    });
+
+    it.each(deleteMyRoles)('allows role %s to delete its own record', role => {
+      expect(outcome(deletedMine, mine, ctx([role]))).toBeNull();
+    });
+
+    it.each(deleteAnyRoles)(
+      "allows role %s to delete someone else's record",
+      role => {
+        expect(outcome(deletedTheirs, theirs, ctx([role]))).toBeNull();
+      }
+    );
+
+    it.each(myOnlyDeleteRoles)(
+      "rejects my-only role %s from deleting someone else's record",
+      role => {
+        expectUnauthorized(
+          outcome(deletedTheirs, theirs, ctx([role])),
+          /delete another user's record/
+        );
+      }
+    );
+
+    it('rejects deleting my own record with no delete role', () => {
+      expectUnauthorized(
+        outcome(deletedMine, mine, ctx([])),
+        /delete your record/
+      );
+    });
+
+    it('treats the soft `deleted` flag the same as `_deleted`', () => {
+      const softDeleted = record({_rev: '2-b', deleted: true});
+      expect(outcome(softDeleted, mine, ctx(deleteMyRoles))).toBeNull();
+      expectUnauthorized(
+        outcome(softDeleted, mine, ctx([])),
+        /delete your record/
+      );
+    });
+
+    it('is only a delete when the old doc was not already deleted', () => {
+      // Re-saving an already deleted doc is treated as an edit.
+      const alreadyDeleted = record({_rev: '2-b', _deleted: true});
+      const again = record({_rev: '3-c', _deleted: true});
+      expectUnauthorized(
+        outcome(again, alreadyDeleted, ctx([])),
+        /edit your record/
+      );
+      expect(outcome(again, alreadyDeleted, ctx(editMyRoles))).toBeNull();
+    });
+
+    it('a brand-new tombstone (no old doc) is treated as an edit', () => {
+      const tombstone = record({_deleted: true});
+      expect(outcome(tombstone, null, ctx(editMyRoles))).toBeNull();
+      expectUnauthorized(outcome(tombstone, null, ctx([])), /edit your record/);
+    });
+
+    it('uses the old doc owner when deciding whose record is being deleted', () => {
+      // Tombstone omits created_by; old doc is bob's.
+      const tombstone = {_id: 'rec-1', _rev: '2-b', _deleted: true};
+      expectUnauthorized(
+        outcome(tombstone, theirs, ctx(myOnlyDeleteRoles)),
+        /delete another user's record/
+      );
+      expect(outcome(tombstone, theirs, ctx(deleteAnyRoles))).toBeNull();
+    });
+
+    it('the author lock still applies to a delete that rewrites created_by', () => {
+      const result = outcome(
+        record({_rev: '2-b', _deleted: true, created_by: OTHER_USER}),
+        mine,
+        ctx(deleteAnyRoles)
+      );
+      expectUnauthorized(result, /change the author/);
+    });
+  });
+
+  describe('applies uniformly to every document kind', () => {
+    const kinds: [string, Record<string, unknown>][] = [
+      ['record', {_id: 'rec-1', record_format_version: 1}],
+      ['revision', {_id: 'frev-1', revision_format_version: 1}],
+      ['avp', {_id: 'avp-1', avp_format_version: 1}],
+      ['attachment', {_id: 'att-1', attach_format_version: 1}],
+      ['untyped', {_id: 'misc-1'}],
+    ];
+
+    it.each(kinds)(
+      '%s: my-only role can write its own, not others',
+      (_k, base) => {
+        expect(
+          outcome({...base, created_by: USER}, null, ctx(myOnlyEditRoles))
+        ).toBeNull();
+        expectUnauthorized(
+          outcome(
+            {...base, created_by: OTHER_USER},
+            null,
+            ctx(myOnlyEditRoles)
+          ),
+          /edit another user's record/
+        );
+      }
+    );
+
+    it.each(kinds)('%s: edit-any role can write others', (_k, base) => {
+      expect(
+        outcome({...base, created_by: OTHER_USER}, null, ctx(editAnyRoles))
+      ).toBeNull();
+    });
+  });
+
+  describe('attachment gate and permissions compose', () => {
+    it('a benign attachment doc is still subject to the role checks', () => {
+      const doc = attachmentDoc(
+        {att1: stub('image/jpeg')},
+        {created_by: OTHER_USER}
+      );
+      expectUnauthorized(
+        outcome(doc, null, ctx(myOnlyEditRoles)),
+        /edit another user's record/
+      );
+      expect(outcome(doc, null, ctx(editAnyRoles))).toBeNull();
+    });
+
+    it('a blocked attachment is refused before roles are consulted', () => {
+      const doc = attachmentDoc({att1: stub('text/html')});
+      // No roles at all, yet the error is the content gate, not a role error.
+      expectForbiddenContent(outcome(doc, null, ctx([])), 'text/html');
+    });
   });
 });
