@@ -26,17 +26,21 @@ export interface FaimsAppBundlingEnvInput {
   conductorUrl: string;
   webUrl: string;
   appUrl: string;
+  docsUrl: string;
   debugMode: boolean;
 }
 
 /** Overlay the CDK-resolved public service URLs onto a generated env map. */
 export function overlayPublicServiceUrls(
   environment: Record<string, string>,
-  urls: {webUrl: string; apiUrl: string; appUrl: string}
+  urls: {webUrl: string; apiUrl: string; appUrl: string; docsUrl?: string}
 ): Record<string, string> {
   environment.VITE_WEB_URL = urls.webUrl;
   environment.VITE_API_URL = urls.apiUrl;
   environment.VITE_APP_URL = urls.appUrl;
+  if (urls.docsUrl) {
+    environment.VITE_DOCS_URL = urls.docsUrl;
+  }
   return environment;
 }
 
@@ -56,6 +60,7 @@ export function buildFaimsAppBundlingEnv(
     webUrl: input.webUrl,
     apiUrl: input.conductorUrl,
     appUrl: input.appUrl,
+    docsUrl: input.docsUrl,
   });
   environment.VITE_DEBUG_APP = input.debugMode ? 'true' : 'false';
   environment.VITE_DEBUG_POUCHDB = input.debugMode ? 'true' : 'false';
@@ -68,6 +73,28 @@ const MAP_ORIGINS_SHARED = [
   'api.mapbox.com',
   '*.openstreetmap.org',
 ];
+
+/** Virtual-hosted presigned GETs use the regional S3 hostname. */
+function mapAssetConnectSrc(bucket: aws_s3.IBucket): string {
+  return `https://${bucket.bucketRegionalDomainName}`;
+}
+
+/** CloudFront connect-src for the data-collection app and Control Centre. */
+export function frontendConnectSrc(options: {
+  includeBlob: boolean;
+  extraOrigins: string[];
+  mapAssetBucket: aws_s3.IBucket;
+}): string {
+  const origins = [
+    "'self'",
+    ...(options.includeBlob ? ['blob:'] : []),
+    ...options.extraOrigins,
+    mapAssetConnectSrc(options.mapAssetBucket),
+    '*.bugsnag.com',
+    ...MAP_ORIGINS_SHARED,
+  ];
+  return `connect-src ${origins.join(' ')}`;
+}
 
 export interface FaimsFrontEndProps {
   // FAIMS main website
@@ -91,6 +118,12 @@ export interface FaimsFrontEndProps {
 
   // conductor e.g. https://api.com (resolved by the CDK from the domains)
   conductorUrl: string;
+
+  /**
+   * Private map-layer object bucket. Control Centre previews and the app
+   * download presigned objects from this host, so it must be on connect-src.
+   */
+  mapAssetBucket: aws_s3.IBucket;
 
   // web config (resolved by the CDK from the domains)
   webDomainName: string;
@@ -171,9 +204,11 @@ export class FaimsFrontEnd extends Construct {
     // connect-src covers fetch/XHR. `blob:` is a scheme source (CSP cannot
     // origin-scope it; 'self' does not match blob:). Required so TakePhoto
     // gallery-add can fetch Capacitor's URL.createObjectURL(file) on web.
-    const csp =
-      `connect-src 'self' blob: https://${props.couchDbDomainOnly} ${props.conductorUrl} *.bugsnag.com ` +
-      MAP_ORIGINS_SHARED.join(' ');
+    const csp = frontendConnectSrc({
+      includeBlob: true,
+      extraOrigins: [`https://${props.couchDbDomainOnly}`, props.conductorUrl],
+      mapAssetBucket: props.mapAssetBucket,
+    });
 
     const website = new StaticWebsite(this, 'faims-website', {
       hostedZone: props.faimsHz,
@@ -227,6 +262,7 @@ export class FaimsFrontEnd extends Construct {
       conductorUrl: props.conductorUrl,
       webUrl: `https://${props.webDomainName}`,
       appUrl: this.faimsAppUrl,
+      docsUrl: `https://${props.docsDomainName}`,
       debugMode: this.debugMode,
     });
 
@@ -319,9 +355,13 @@ export class FaimsFrontEnd extends Construct {
   }
 
   setupWebDistribution(props: FaimsFrontEndProps) {
-    const csp =
-      `connect-src 'self' ${props.conductorUrl} *.bugsnag.com ` +
-      MAP_ORIGINS_SHARED.join(' ');
+    // blob: is required so vector-layer preview can fetch object URLs.
+    // The map-asset bucket host is the presigned GetObject endpoint.
+    const csp = frontendConnectSrc({
+      includeBlob: true,
+      extraOrigins: [props.conductorUrl],
+      mapAssetBucket: props.mapAssetBucket,
+    });
 
     const website = new StaticWebsite(this, 'web-website', {
       hostedZone: props.faimsHz,
@@ -369,6 +409,7 @@ export class FaimsFrontEnd extends Construct {
         apiUrl: props.conductorUrl,
         // FAIMS /app URL (uses first domain if multiple provided)
         appUrl: this.faimsAppUrl,
+        docsUrl: `https://${props.docsDomainName}`,
       }
     );
 
@@ -503,6 +544,7 @@ export class FaimsFrontEnd extends Construct {
         webUrl: `https://${props.webDomainName}`,
         apiUrl: props.conductorUrl,
         appUrl: this.faimsAppUrl,
+        docsUrl: `https://${props.docsDomainName}`,
       }
     );
     // Uses default for now, as other themes are not implemented properly

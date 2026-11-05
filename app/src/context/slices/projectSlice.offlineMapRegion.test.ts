@@ -22,9 +22,12 @@ vi.mock('./helpers/compiledSpecService', () => ({
 }));
 
 import projectsReducer, {
+  clearPendingContextualLayerPrompt,
   clearPendingOfflineMapDownloadPrompt,
   initialProjectState,
+  selectPendingContextualLayerPrompt,
   selectPendingOfflineMapDownloadPrompt,
+  setPendingContextualLayerPrompt,
   setPendingOfflineMapDownloadPrompt,
   updateDatabaseAuthSuccess,
   updateProjectDetails,
@@ -312,6 +315,103 @@ describe('projectSlice offline map download prompt queue', () => {
     );
 
     expect(state.pendingOfflineMapDownloadPrompts).toEqual([
+      {projectId: 'project-1', serverId},
+    ]);
+  });
+});
+
+describe('projectSlice contextual layer prompt queue', () => {
+  it('enqueues multiple prompts without overwriting earlier ones', () => {
+    let state = initialProjectState;
+
+    state = projectsReducer(
+      state,
+      setPendingContextualLayerPrompt({
+        projectId: 'project-1',
+        serverId,
+      })
+    );
+    state = projectsReducer(
+      state,
+      setPendingContextualLayerPrompt({
+        projectId: 'project-2',
+        serverId,
+      })
+    );
+
+    expect(state.pendingContextualLayerPrompts).toEqual([
+      {projectId: 'project-1', serverId},
+      {projectId: 'project-2', serverId},
+    ]);
+    expect(
+      selectPendingContextualLayerPrompt({projects: state} as never)
+    ).toEqual({projectId: 'project-1', serverId});
+  });
+
+  it('deduplicates prompts for the same project', () => {
+    let state = initialProjectState;
+
+    state = projectsReducer(
+      state,
+      setPendingContextualLayerPrompt({
+        projectId: 'project-1',
+        serverId,
+      })
+    );
+    state = projectsReducer(
+      state,
+      setPendingContextualLayerPrompt({
+        projectId: 'project-1',
+        serverId,
+      })
+    );
+
+    expect(state.pendingContextualLayerPrompts).toEqual([
+      {projectId: 'project-1', serverId},
+    ]);
+  });
+
+  it('shows the next prompt after clearing the current one', () => {
+    let state = projectsReducer(
+      initialProjectState,
+      setPendingContextualLayerPrompt({
+        projectId: 'project-1',
+        serverId,
+      })
+    );
+    state = projectsReducer(
+      state,
+      setPendingContextualLayerPrompt({
+        projectId: 'project-2',
+        serverId,
+      })
+    );
+
+    state = projectsReducer(state, clearPendingContextualLayerPrompt());
+
+    expect(state.pendingContextualLayerPrompts).toEqual([
+      {projectId: 'project-2', serverId},
+    ]);
+    expect(
+      selectPendingContextualLayerPrompt({projects: state} as never)
+    ).toEqual({projectId: 'project-2', serverId});
+  });
+
+  it('initialises the queue when rehydrated state omits it', () => {
+    const rehydratedFromMain = {
+      ...initialProjectState,
+      pendingContextualLayerPrompts: undefined,
+    };
+
+    const state = projectsReducer(
+      rehydratedFromMain,
+      setPendingContextualLayerPrompt({
+        projectId: 'project-1',
+        serverId,
+      })
+    );
+
+    expect(state.pendingContextualLayerPrompts).toEqual([
       {projectId: 'project-1', serverId},
     ]);
   });

@@ -112,6 +112,8 @@ Top-level groups include:
 - `maps`
 - `sync`
 - `attachments`
+- `attachmentStorage`
+- `spatialCapacity`
 - `migration`
 - `auth`
 - `authProviders`

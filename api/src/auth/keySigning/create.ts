@@ -22,6 +22,10 @@ import {createNewRefreshToken} from '../../couchdb/refreshTokens';
 import {getTemplateIdsByTeamId} from '../../couchdb/templates';
 import type {SigningKey} from '../../services/keyService';
 
+/** Resources whose team-owned ids are exploded into the JWT as virtual roles.
+ * Map layers are intentionally omitted: CouchDB does not enforce map-asset
+ * permissions, so per-asset ids stay out of the token. Team proxy is applied
+ * at request time from team roles already in the token. */
 const ASSOCIATIVE_RESOURCES = [Resource.TEMPLATE, Resource.PROJECT];
 
 /**

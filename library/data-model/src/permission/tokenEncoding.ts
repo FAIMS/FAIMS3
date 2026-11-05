@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import {COUCHDB_ROLES_PATH, ENCODING_SEPARATOR} from '../constants';
-import {drillRoles} from './helpers';
+import {drillRoles, shouldEncodeRoleInToken} from './helpers';
 import {
   DecodedTokenPermissions,
   decodedTokenSchema,
@@ -118,6 +118,7 @@ export function encodeToken(
   const resourceRoles = decodedToken.resourceRoles
     .filter(
       resourceRole =>
+        shouldEncodeRoleInToken(resourceRole.role) &&
         !decodedToken.globalRoles.some(globalRole =>
           drillRoles({role: globalRole}).some(rr => rr === resourceRole.role)
         )

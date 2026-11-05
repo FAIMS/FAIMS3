@@ -688,12 +688,14 @@ test('domains: production base+services derive concrete endpoints', () => {
         couch: 'couchdb',
         web: 'dashboard',
         app: 'app',
+        docs: 'docs',
       },
     },
   });
   assert.equal(parsed.endpoints.apiUrl, 'https://api.faims.example.com');
   assert.equal(parsed.endpoints.webUrl, 'https://dashboard.faims.example.com');
   assert.equal(parsed.endpoints.appUrl, 'https://app.faims.example.com');
+  assert.equal(parsed.endpoints.docsUrl, 'https://docs.faims.example.com');
   assert.equal(
     parsed.endpoints.couchdbPublicUrl,
     'https://couchdb.faims.example.com'
@@ -701,6 +703,31 @@ test('domains: production base+services derive concrete endpoints', () => {
   assert.deepEqual(parsed.endpoints.conductorUrls, [
     'https://api.faims.example.com',
   ]);
+});
+
+test('VITE_DOCS_URL uses derived domains.docs, unless support.docsUrl is set', () => {
+  const fromDomains = generateEnv({
+    config: {
+      domains: {
+        base: 'bss.nbic.cloud',
+        services: {docs: 'docs'},
+      },
+    },
+    platform: 'apps',
+  });
+  assert.match(fromDomains, /VITE_DOCS_URL=https:\/\/docs.bss.nbic.cloud/);
+
+  const fromSupport = generateEnv({
+    config: {
+      domains: {
+        base: 'bss.nbic.cloud',
+        services: {docs: 'docs'},
+      },
+      support: {docsUrl: 'https://docs.elsewhere.example'},
+    },
+    platform: 'apps',
+  });
+  assert.match(fromSupport, /VITE_DOCS_URL=https:\/\/docs.elsewhere.example/);
 });
 
 test('domains: localOverride hosts are used verbatim with http', () => {

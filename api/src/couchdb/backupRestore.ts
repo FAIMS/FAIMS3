@@ -9,6 +9,7 @@
 import {batchWriteDocuments} from '@faims3/data-model';
 import {open} from 'node:fs/promises';
 import {
+  getMapAssetsDB,
   initialiseDataDb,
   localGetProjectsDb,
   migrateAllProjectDataDbs,
@@ -96,6 +97,8 @@ export const restoreFromBackup = async ({
             // conductor instance id
             // we'll put all projects into our projectsDB
             db = localGetProjectsDb();
+          } else if (!skipping && dbName === 'mapassets') {
+            db = getMapAssetsDB();
           } else if (!skipping && dbName.startsWith('data')) {
             const projectName = dbName.split('||')[1];
             // TODO: set up permissions for the databases

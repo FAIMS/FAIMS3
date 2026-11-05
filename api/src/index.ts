@@ -16,6 +16,7 @@ import {registerClient} from '@faims3/data-model';
 import type {Express} from 'express';
 import {assertLocalStartupConfig, config} from './buildconfig';
 import {getDataDb} from './couchdb';
+import {startOriginalStoreSweep} from './couchdb/mapAssets/originalStoreSweep';
 import {runStartupMigrations} from './couchdb/startupMigrations';
 import {createHealthApp} from './healthApp';
 
@@ -31,6 +32,9 @@ process.on('unhandledRejection', error => {
   // don't re-throw the error since we don't want to crash the server
 });
 
+/** Node 18+ defaults `requestTimeout` to 5 minutes and would abort a 2 GB upload. */
+const MAP_ASSET_HTTP_REQUEST_TIMEOUT_MS = 60 * 60 * 1000;
+
 function listenHealth(app: Express): Promise<void> {
   return new Promise((resolve, reject) => {
     const server = app.listen(config.conductorInternalPort, '0.0.0.0', () => {
@@ -39,6 +43,9 @@ function listenHealth(app: Express): Promise<void> {
       );
       resolve();
     });
+    server.requestTimeout = MAP_ASSET_HTTP_REQUEST_TIMEOUT_MS;
+    // headersTimeout must stay above requestTimeout or Node closes the socket.
+    server.headersTimeout = MAP_ASSET_HTTP_REQUEST_TIMEOUT_MS + 5 * 1000;
     server.once('error', reject);
   });
 }
@@ -47,6 +54,11 @@ function listenHealth(app: Express): Promise<void> {
 const startup = async () => {
   assertLocalStartupConfig();
 
+  if (config.memoryMonitorEnabled) {
+    const {startMemoryMonitor} = await import('./memoryMonitor.js');
+    startMemoryMonitor();
+  }
+
   const app = createHealthApp();
   await listenHealth(app);
 
@@ -54,6 +66,7 @@ const startup = async () => {
 
   const {attachFullApi} = await import('./expressSetup.js');
   attachFullApi(app);
+  startOriginalStoreSweep();
   console.log('COUCHDB_INTERNAL_URL', config.couchdbInternalUrl);
   console.log('CONDUCTOR_PUBLIC_URL', config.conductorPublicUrl);
   console.log(

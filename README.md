@@ -74,17 +74,26 @@ nvm use 24
 
 You will also need Docker and Docker Compose installed.
 
-GeoPackage export requires [GDAL](https://gdal.org/) (`ogr2ogr` on PATH). This is
-included in the API Docker image and devcontainer. For native development, `./dev.sh`
-warns if GDAL is missing; install locally when you need `.gpkg` export:
+GeoPackage export and map-layer ingest require [GDAL](https://gdal.org/)
+(`ogr2ogr`, `gdalinfo`, `gdalwarp`, `gdal_translate`, `gdaladdo` on PATH),
+[tippecanoe](https://github.com/felt/tippecanoe), and the
+[pmtiles](https://github.com/protomaps/go-pmtiles) CLI. Georeferenced PDF
+uploads also need GDAL's PDF driver (Poppler), and raster tiles need the
+MBTiles and WEBP drivers. This is included in the API Docker image and
+devcontainer. For native development, `./dev.sh` warns if any of them are
+missing:
 
 ```bash
 # Ubuntu / Debian
-sudo apt-get install gdal-bin
+sudo apt-get install gdal-bin poppler-utils unzip tippecanoe
 
 # macOS (Homebrew)
-brew install gdal
+brew install gdal poppler tippecanoe
 ```
+
+Install the `pmtiles` binary from the go-pmtiles releases (or `go install
+github.com/protomaps/go-pmtiles@v1.28.1`, which produces `go-pmtiles`). Set
+`PMTILES_BIN` if the executable has another name.
 
 ### Starting all services
 
@@ -94,12 +103,14 @@ Run the script to get all services running locally:
 ./localdev.sh --all
 ```
 
-This spins up four services:
+This spins up the application services plus CouchDB, RustFS, and the spatial worker pool:
 
 - Conductor API (`/api`) live reloading on http://localhost:8080
 - FAIMS3 app (`/app`) live reloading on http://localhost:3000
 - Web app (`/web`) live reloading on http://localhost:3001
 - CouchDB on http://localhost:5984/\_utils
+- RustFS (S3-compatible object store) on http://localhost:9000 (console http://localhost:9001)
+- `capacity-manager` and `spatial-worker` (map-layer ingest; uploads stay `pending` without the worker)
 
 On the **first run** this also installs all monorepo dependencies
 (`pnpm install`) and builds the shared libraries (`turbo build`) before the
@@ -138,25 +149,19 @@ notebooks and templates:
    pnpm run load-templates
    ```
 
-## CouchDB-only local development (recommended for live-reloading)
+## Native services with Docker dependencies (recommended for live-reloading)
 
-If you prefer to run the application services natively and only use Docker for CouchDB:
+If you prefer to run the application services natively and only use Docker for CouchDB, RustFS, and the spatial worker pool:
 
-1. Start CouchDB only (default behaviour without `--all` flag):
+1. Start CouchDB and RustFS, migrate Couch, then start the spatial worker pool (default behaviour without `--all` flag):
 
 ```bash
 ./localdev.sh
 ```
 
-This starts CouchDB on http://localhost:5984/\_utils
+This starts CouchDB on http://localhost:5984/\_utils, RustFS on http://localhost:9000 (console http://localhost:9001), runs `pnpm run migrate-with-keys`, then starts `capacity-manager` / `spatial-worker`. Map-layer files are stored in RustFS; CouchDB holds only the metadata (including an S3 resource URI). If your existing `api/.env` predates these settings, copy the `ATTACHMENT_*` block from `api/.env.dist`.
 
-2. Migrate the CouchDB:
-
-```bash
-pnpm run migrate-with-keys
-```
-
-3. Run development services natively (in a separate terminal):
+2. Run development services natively (in a separate terminal):
 
 ```bash
 pnpm run dev
@@ -170,7 +175,7 @@ This runs:
 
 Use the admin user/password from `api/.env` to login.
 
-These three commands are bundled into `dev.sh` i.e.
+These two commands are bundled into `dev.sh` i.e.
 
 ```bash
 ./dev.sh

@@ -38,6 +38,7 @@ import {Fill, Icon, Stroke, Style} from 'ol/style';
 import proj4 from 'proj4';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {MapComponent} from '../../../components/maps/MapComponent';
+import {USER_FEATURE_LAYER_Z_INDEX} from '../../../components/maps/layerStack';
 import {MapConfig} from '../../../components/maps/types';
 import {logError, logWarn} from '../../../logging';
 
@@ -100,6 +101,8 @@ const generatePointLayer = () => {
   return new VectorLayer({
     source: vectorSource,
     style: pinStyle,
+    // Above contextual reference layers, under the live GPS cursor.
+    zIndex: USER_FEATURE_LAYER_Z_INDEX,
   });
 };
 
@@ -157,10 +160,15 @@ function MapWrapper(props: MapProps) {
         source: source,
         type: props.featureType || 'Point',
       });
+      // The sketch overlay is a separate layer. Keep the in-progress pin,
+      // line, or polygon in the same band as the committed feature.
+      draw.getOverlay().setZIndex(USER_FEATURE_LAYER_Z_INDEX);
       // Expose the Draw to handleClose so Clear can abort an in-progress sketch.
       drawRef.current = draw;
 
       const modify = new Modify({source: source});
+      // Vertex handles sit with the feature so a reference layer cannot hide them.
+      modify.getOverlay().setZIndex(USER_FEATURE_LAYER_Z_INDEX);
 
       // Only allow one point at a time
       draw.on('drawstart', () => {
@@ -260,10 +268,10 @@ function MapWrapper(props: MapProps) {
       if (map) {
         map.getLayers().forEach(layer => {
           try {
-            // Only remove pin layers, not the GPS live cursor
+            // Only remove pin layers, not the GPS live cursor.
             const zIndex =
               typeof layer.getZIndex === 'function' ? layer.getZIndex() : -1;
-            if (zIndex === 998) map.removeLayer(layer); // 999 is used by live cursor in mapcomponent.
+            if (zIndex === USER_FEATURE_LAYER_Z_INDEX) map.removeLayer(layer);
           } catch (err) {
             logWarn('Error while checking/removing layer:', err);
           }

@@ -42,6 +42,7 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
 import {config} from '../buildconfig';
+import {attachContextualLayers} from '../couchdb/mapAssets/store';
 import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {deleteAllInvitesForProject} from '../couchdb/invites';
@@ -296,11 +297,17 @@ api.get(
       );
     }
 
-    res.json({
-      ...project,
-      recordCount: await countRecordsInNotebook(projectId),
-      byteCount: await getByteCount(projectId),
-    } satisfies GetNotebookResponse);
+    // Same fail-open as directory/list: omit layer fields on a map-assets
+    // read error so activation still gets the design payload. An empty
+    // array would be treated as "unlink and delete local files".
+    const [payload] = await attachContextualLayers([
+      {
+        ...project,
+        recordCount: await countRecordsInNotebook(projectId),
+        byteCount: await getByteCount(projectId),
+      },
+    ]);
+    res.json(payload satisfies GetNotebookResponse);
   }
 );
 

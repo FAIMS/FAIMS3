@@ -263,8 +263,8 @@ document and media types.
   accuracy metadata.
 - **Boundaries, transects, or areas** →
   **[Map field](../location-fields/map-input.md)** — draw points,
-  lines, and polygons on a base map. Requires an internet connection
-  for initial tile loading (offline maps are experimental).
+  lines, and polygons on a base map. Prepare overlays and Map
+  regions before you go offline.
 - **Both point and area data** → combine both field types in the same
   form.
 
@@ -287,9 +287,10 @@ document and media types.
   are too tight — match precision to your actual research
   needs.
 - **Ignoring platform constraints.** QR / Barcode Scanner is
-  mobile only; Map field requires an internet connection;
-  location accuracy in the web app on desktop may be poor.
-  Design for your actual deployment platform.
+  mobile only; Map field needs overlays and Map regions
+  prepared before you go offline; location accuracy in the
+  web app on desktop may be poor. Design for your actual
+  deployment platform.
 - **Over-using required fields.** Marking fields as required
   "just in case" antagonises users if applied to minor
   omissions, and too many alerts in the interface hide the
@@ -314,9 +315,10 @@ document and media types.
   "rec-5f8a9b3c"). A dedicated HRID guide is planned.
 - **[QR / Barcode Scanner](../text-fields/qr-barcode-scanner.md) is mobile only.**
   It will not function on desktop browsers.
-- **[Map field](../location-fields/map-input.md) requires an internet
-  connection** for initial tile loading. Offline map support
-  is experimental.
+- **[Map field](../location-fields/map-input.md) can show downloaded
+  map layers and cached base-map tiles when you are offline.**
+  Prepare overlays and Map regions before you go offline.
+  That download needs internet.
 - **Plan your vocabularies before building.** The display label and
   stored value are always the same — what users see is exactly what
   appears in exported data.

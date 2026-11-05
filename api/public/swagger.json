@@ -2003,6 +2003,47 @@
         }
       }
     },
+    "/teams/{id}/map-assets": {
+      "get": {
+        "summary": "List map layers owned by a team",
+        "description": "Returns map layers owned by the team from the Couch `assetsByTeam` view. Does not scan the global library. Requires VIEW_TEAM_DETAILS on the team and LIST_MAP_ASSETS. Layers the caller cannot READ_MAP_ASSET (for example a TEAM_MEMBER_CREATOR who did not upload them) are omitted.",
+        "tags": ["Teams"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Team identifier"
+          }
+        ],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/GetMapAssetListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "description": "Team not found"
+          }
+        }
+      }
+    },
     "/invites/notebook/{projectId}": {
       "get": {
         "summary": "Get all project invites",
@@ -3263,6 +3304,56 @@
           }
         }
       }
+    },
+    "GetMapAssetListResponse": {
+      "type": "object",
+      "description": "Map layer library listing. Used by GET /api/map-assets and GET /api/teams/{id}/map-assets.",
+      "properties": {
+        "assets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MapAssetDocument"
+          }
+        }
+      },
+      "required": ["assets"]
+    },
+    "MapAssetDocument": {
+      "type": "object",
+      "description": "Couch map-layer metadata document (`docType: asset`).",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "docType": {
+          "type": "string",
+          "enum": ["asset"]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "processing", "ready", "failed"]
+        },
+        "createdBy": {
+          "type": "string"
+        },
+        "ownedByTeamId": {
+          "type": "string",
+          "description": "Owning team, when the layer is team-owned"
+        },
+        "createdAt": {
+          "type": "number"
+        },
+        "updatedAt": {
+          "type": "number"
+        }
+      },
+      "required": ["_id", "docType", "name", "status", "createdBy"]
     },
     "TombstoneDocument": {
       "type": "object",

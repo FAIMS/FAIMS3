@@ -18,11 +18,13 @@ import { Route as ProtectedTemplatesIndexRouteImport } from './routes/_protected
 import { Route as ProtectedTeamsIndexRouteImport } from './routes/_protected/teams/index'
 import { Route as ProtectedProjectsIndexRouteImport } from './routes/_protected/projects/index'
 import { Route as ProtectedProfileIndexRouteImport } from './routes/_protected/profile/index'
+import { Route as ProtectedMapLayersIndexRouteImport } from './routes/_protected/map-layers/index'
 import { Route as ProtectedArchiveIndexRouteImport } from './routes/_protected/archive/index'
 import { Route as ProtectedTemplatesTemplateIdRouteImport } from './routes/_protected/templates/$templateId'
 import { Route as ProtectedTeamsTeamIdRouteImport } from './routes/_protected/teams/$teamId'
 import { Route as ProtectedProjectsProjectIdRouteImport } from './routes/_protected/projects/$projectId'
 import { Route as ProtectedProfileLongLivedTokensRouteImport } from './routes/_protected/profile/long-lived-tokens'
+import { Route as ProtectedMapLayersAssetIdRouteImport } from './routes/_protected/map-layers/$assetId'
 import { Route as ProtectedAdminUsersRouteImport } from './routes/_protected/_admin/users'
 
 const ProtectedRoute = ProtectedRouteImport.update({
@@ -58,6 +60,11 @@ const ProtectedProfileIndexRoute = ProtectedProfileIndexRouteImport.update({
   path: '/profile/',
   getParentRoute: () => ProtectedRoute,
 } as any)
+const ProtectedMapLayersIndexRoute = ProtectedMapLayersIndexRouteImport.update({
+  id: '/map-layers/',
+  path: '/map-layers/',
+  getParentRoute: () => ProtectedRoute,
+} as any)
 const ProtectedArchiveIndexRoute = ProtectedArchiveIndexRouteImport.update({
   id: '/archive/',
   path: '/archive/',
@@ -86,6 +93,12 @@ const ProtectedProfileLongLivedTokensRoute =
     path: '/profile/long-lived-tokens',
     getParentRoute: () => ProtectedRoute,
   } as any)
+const ProtectedMapLayersAssetIdRoute =
+  ProtectedMapLayersAssetIdRouteImport.update({
+    id: '/map-layers/$assetId',
+    path: '/map-layers/$assetId',
+    getParentRoute: () => ProtectedRoute,
+  } as any)
 const ProtectedAdminUsersRoute = ProtectedAdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -95,11 +108,13 @@ const ProtectedAdminUsersRoute = ProtectedAdminUsersRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof ProtectedIndexRoute
   '/users': typeof ProtectedAdminUsersRoute
+  '/map-layers/$assetId': typeof ProtectedMapLayersAssetIdRoute
   '/profile/long-lived-tokens': typeof ProtectedProfileLongLivedTokensRoute
   '/projects/$projectId': typeof ProtectedProjectsProjectIdRoute
   '/teams/$teamId': typeof ProtectedTeamsTeamIdRoute
   '/templates/$templateId': typeof ProtectedTemplatesTemplateIdRoute
   '/archive/': typeof ProtectedArchiveIndexRoute
+  '/map-layers/': typeof ProtectedMapLayersIndexRoute
   '/profile/': typeof ProtectedProfileIndexRoute
   '/projects/': typeof ProtectedProjectsIndexRoute
   '/teams/': typeof ProtectedTeamsIndexRoute
@@ -108,11 +123,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof ProtectedIndexRoute
   '/users': typeof ProtectedAdminUsersRoute
+  '/map-layers/$assetId': typeof ProtectedMapLayersAssetIdRoute
   '/profile/long-lived-tokens': typeof ProtectedProfileLongLivedTokensRoute
   '/projects/$projectId': typeof ProtectedProjectsProjectIdRoute
   '/teams/$teamId': typeof ProtectedTeamsTeamIdRoute
   '/templates/$templateId': typeof ProtectedTemplatesTemplateIdRoute
   '/archive': typeof ProtectedArchiveIndexRoute
+  '/map-layers': typeof ProtectedMapLayersIndexRoute
   '/profile': typeof ProtectedProfileIndexRoute
   '/projects': typeof ProtectedProjectsIndexRoute
   '/teams': typeof ProtectedTeamsIndexRoute
@@ -124,11 +141,13 @@ export interface FileRoutesById {
   '/_protected/_admin': typeof ProtectedAdminRouteWithChildren
   '/_protected/': typeof ProtectedIndexRoute
   '/_protected/_admin/users': typeof ProtectedAdminUsersRoute
+  '/_protected/map-layers/$assetId': typeof ProtectedMapLayersAssetIdRoute
   '/_protected/profile/long-lived-tokens': typeof ProtectedProfileLongLivedTokensRoute
   '/_protected/projects/$projectId': typeof ProtectedProjectsProjectIdRoute
   '/_protected/teams/$teamId': typeof ProtectedTeamsTeamIdRoute
   '/_protected/templates/$templateId': typeof ProtectedTemplatesTemplateIdRoute
   '/_protected/archive/': typeof ProtectedArchiveIndexRoute
+  '/_protected/map-layers/': typeof ProtectedMapLayersIndexRoute
   '/_protected/profile/': typeof ProtectedProfileIndexRoute
   '/_protected/projects/': typeof ProtectedProjectsIndexRoute
   '/_protected/teams/': typeof ProtectedTeamsIndexRoute
@@ -139,11 +158,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/users'
+    | '/map-layers/$assetId'
     | '/profile/long-lived-tokens'
     | '/projects/$projectId'
     | '/teams/$teamId'
     | '/templates/$templateId'
     | '/archive/'
+    | '/map-layers/'
     | '/profile/'
     | '/projects/'
     | '/teams/'
@@ -152,11 +173,13 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/users'
+    | '/map-layers/$assetId'
     | '/profile/long-lived-tokens'
     | '/projects/$projectId'
     | '/teams/$teamId'
     | '/templates/$templateId'
     | '/archive'
+    | '/map-layers'
     | '/profile'
     | '/projects'
     | '/teams'
@@ -167,11 +190,13 @@ export interface FileRouteTypes {
     | '/_protected/_admin'
     | '/_protected/'
     | '/_protected/_admin/users'
+    | '/_protected/map-layers/$assetId'
     | '/_protected/profile/long-lived-tokens'
     | '/_protected/projects/$projectId'
     | '/_protected/teams/$teamId'
     | '/_protected/templates/$templateId'
     | '/_protected/archive/'
+    | '/_protected/map-layers/'
     | '/_protected/profile/'
     | '/_protected/projects/'
     | '/_protected/teams/'
@@ -233,6 +258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedProfileIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
+    '/_protected/map-layers/': {
+      id: '/_protected/map-layers/'
+      path: '/map-layers'
+      fullPath: '/map-layers/'
+      preLoaderRoute: typeof ProtectedMapLayersIndexRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
     '/_protected/archive/': {
       id: '/_protected/archive/'
       path: '/archive'
@@ -268,6 +300,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedProfileLongLivedTokensRouteImport
       parentRoute: typeof ProtectedRoute
     }
+    '/_protected/map-layers/$assetId': {
+      id: '/_protected/map-layers/$assetId'
+      path: '/map-layers/$assetId'
+      fullPath: '/map-layers/$assetId'
+      preLoaderRoute: typeof ProtectedMapLayersAssetIdRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
     '/_protected/_admin/users': {
       id: '/_protected/_admin/users'
       path: '/users'
@@ -293,11 +332,13 @@ const ProtectedAdminRouteWithChildren = ProtectedAdminRoute._addFileChildren(
 interface ProtectedRouteChildren {
   ProtectedAdminRoute: typeof ProtectedAdminRouteWithChildren
   ProtectedIndexRoute: typeof ProtectedIndexRoute
+  ProtectedMapLayersAssetIdRoute: typeof ProtectedMapLayersAssetIdRoute
   ProtectedProfileLongLivedTokensRoute: typeof ProtectedProfileLongLivedTokensRoute
   ProtectedProjectsProjectIdRoute: typeof ProtectedProjectsProjectIdRoute
   ProtectedTeamsTeamIdRoute: typeof ProtectedTeamsTeamIdRoute
   ProtectedTemplatesTemplateIdRoute: typeof ProtectedTemplatesTemplateIdRoute
   ProtectedArchiveIndexRoute: typeof ProtectedArchiveIndexRoute
+  ProtectedMapLayersIndexRoute: typeof ProtectedMapLayersIndexRoute
   ProtectedProfileIndexRoute: typeof ProtectedProfileIndexRoute
   ProtectedProjectsIndexRoute: typeof ProtectedProjectsIndexRoute
   ProtectedTeamsIndexRoute: typeof ProtectedTeamsIndexRoute
@@ -307,11 +348,13 @@ interface ProtectedRouteChildren {
 const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedAdminRoute: ProtectedAdminRouteWithChildren,
   ProtectedIndexRoute: ProtectedIndexRoute,
+  ProtectedMapLayersAssetIdRoute: ProtectedMapLayersAssetIdRoute,
   ProtectedProfileLongLivedTokensRoute: ProtectedProfileLongLivedTokensRoute,
   ProtectedProjectsProjectIdRoute: ProtectedProjectsProjectIdRoute,
   ProtectedTeamsTeamIdRoute: ProtectedTeamsTeamIdRoute,
   ProtectedTemplatesTemplateIdRoute: ProtectedTemplatesTemplateIdRoute,
   ProtectedArchiveIndexRoute: ProtectedArchiveIndexRoute,
+  ProtectedMapLayersIndexRoute: ProtectedMapLayersIndexRoute,
   ProtectedProfileIndexRoute: ProtectedProfileIndexRoute,
   ProtectedProjectsIndexRoute: ProtectedProjectsIndexRoute,
   ProtectedTeamsIndexRoute: ProtectedTeamsIndexRoute,

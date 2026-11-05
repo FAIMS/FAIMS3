@@ -25,7 +25,8 @@ import {
   generateUserToken,
   upgradeCouchUserToExpressUser,
 } from '../auth/keySigning/create';
-import {config, emailService} from '../buildconfig';
+import {config, emailService, attachmentStorageService} from '../buildconfig';
+import {collectAttachmentBody} from '../services/attachmentStorageService';
 import {initialiseDbAndKeys} from '../couchdb';
 import {restoreFromBackup} from '../couchdb/backupRestore';
 import {getUserProjectsListing} from '../couchdb/notebooks';
@@ -452,6 +453,196 @@ If you received this email, the email service is configured correctly.
       }
 
       // Return the result to the client
+      res.json(responseData);
+    }
+  }
+);
+
+/**
+ * Attachment-storage smoke test: upload, exists, download, presign, delete.
+ * Gated to operations / general admins. Uses a tiny payload so it is safe
+ * against a live S3 or local RustFS bucket.
+ */
+api.post(
+  '/admin/test-attachment-storage',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({action: Action.TEST_ATTACHMENT_STORAGE}),
+  async (req, res) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('Authentication required.');
+    }
+
+    const startTime = Date.now();
+    if (!config.runningUnderTest) {
+      console.log(
+        `[Attachment Storage Test] Starting smoke test requested by admin user ${req.user._id}`
+      );
+    }
+
+    const responseData: {
+      success: boolean;
+      status: string;
+      message: string;
+      details: Record<string, unknown>;
+      timings: {
+        total: number;
+        upload: number;
+        download: number;
+        presign: number;
+        delete: number;
+      };
+    } = {
+      success: false,
+      status: 'unknown',
+      message: '',
+      details: {},
+      timings: {
+        total: 0,
+        upload: 0,
+        download: 0,
+        presign: 0,
+        delete: 0,
+      },
+    };
+
+    const payload = Buffer.from(
+      `faims-attachment-smoke-test ${nowIso()} ${req.user._id}`
+    );
+    const key = attachmentStorageService.objectKey(
+      '_smoke-test',
+      `probe-${Date.now()}.txt`
+    );
+    let uploadedLocation: Awaited<
+      ReturnType<typeof attachmentStorageService.upload>
+    > | null = null;
+
+    try {
+      const uploadStart = Date.now();
+      uploadedLocation = await attachmentStorageService.upload({
+        key,
+        body: payload,
+        contentType: 'text/plain',
+        contentLength: payload.length,
+      });
+      const existsAfterUpload = await attachmentStorageService.exists({
+        location: uploadedLocation,
+      });
+      responseData.timings.upload = Date.now() - uploadStart;
+
+      const downloadStart = Date.now();
+      const downloaded = await attachmentStorageService.download({
+        location: uploadedLocation,
+      });
+      const downloadedBytes = await collectAttachmentBody(downloaded);
+      responseData.timings.download = Date.now() - downloadStart;
+
+      if (!downloadedBytes.equals(payload)) {
+        throw new Error(
+          'Downloaded bytes did not match the uploaded smoke-test payload.'
+        );
+      }
+      if (!existsAfterUpload) {
+        throw new Error('exists() returned false immediately after upload.');
+      }
+
+      const presignStart = Date.now();
+      const downloadUrl =
+        await attachmentStorageService.getPresignedDownloadURL({
+          location: uploadedLocation,
+          expiresInSeconds: 120,
+        });
+      const presignedUpload =
+        await attachmentStorageService.getPresignedUploadURL({
+          key: attachmentStorageService.objectKey(
+            '_smoke-test',
+            `presign-${Date.now()}.txt`
+          ),
+          contentType: 'text/plain',
+          expiresInSeconds: 120,
+        });
+      let presignedDownloadFetched = 'skipped';
+      if (
+        downloadUrl.startsWith('http://') ||
+        downloadUrl.startsWith('https://')
+      ) {
+        const presignedResponse = await fetch(downloadUrl);
+        if (!presignedResponse.ok) {
+          throw new Error(
+            `Presigned download URL returned HTTP ${presignedResponse.status}.`
+          );
+        }
+        const presignedBytes = Buffer.from(
+          await presignedResponse.arrayBuffer()
+        );
+        if (!presignedBytes.equals(payload)) {
+          throw new Error(
+            'Presigned download did not match the uploaded smoke-test payload.'
+          );
+        }
+        presignedDownloadFetched = 'fetched';
+      }
+      responseData.timings.presign = Date.now() - presignStart;
+
+      const deleteStart = Date.now();
+      const uploadedResourceUri = uploadedLocation.resourceUri;
+      await attachmentStorageService.delete({location: uploadedLocation});
+      const existsAfterDelete = await attachmentStorageService.exists({
+        location: uploadedLocation,
+      });
+      responseData.timings.delete = Date.now() - deleteStart;
+      uploadedLocation = null;
+
+      if (existsAfterDelete) {
+        throw new Error('exists() returned true after delete.');
+      }
+
+      responseData.success = true;
+      responseData.status = 'ok';
+      responseData.message =
+        'Attachment storage smoke test completed successfully.';
+      responseData.details = {
+        attachmentStorageType: config.attachmentStorageType,
+        bucket: config.attachmentStorage.bucket,
+        prefix: config.attachmentStorage.prefix,
+        region: config.attachmentStorage.region,
+        endpoint: config.attachmentStorage.endpoint,
+        resourceUri: uploadedResourceUri,
+        presignedDownloadFetched,
+        presignedUploadUrlReturned: Boolean(presignedUpload.url),
+        requestedBy: req.user._id,
+      };
+    } catch (error: unknown) {
+      const err = error as {name?: string; message?: string; stack?: string};
+      responseData.success = false;
+      responseData.status = 'error';
+      responseData.message = `Attachment storage smoke test failed: ${err.message ?? error}`;
+      responseData.details = {
+        attachmentStorageType: config.attachmentStorageType,
+        bucket: config.attachmentStorage.bucket,
+        prefix: config.attachmentStorage.prefix,
+        region: config.attachmentStorage.region,
+        endpoint: config.attachmentStorage.endpoint,
+        error: {
+          name: err.name,
+          message: err.message,
+          stack: err.stack,
+          suggestion:
+            'Check ATTACHMENT_S3_BUCKET / PREFIX / REGION, the endpoint (RustFS vs AWS), and credentials or the ECS task role.',
+        },
+      };
+      console.error('[Attachment Storage Test] Smoke test failed:', error);
+    } finally {
+      if (uploadedLocation) {
+        await attachmentStorageService
+          .delete({location: uploadedLocation})
+          .catch(() => undefined);
+      }
+      responseData.timings.total = Date.now() - startTime;
+      if (!config.runningUnderTest) {
+        console.log(
+          `[Attachment Storage Test] Complete. Status: ${responseData.status}. Duration: ${responseData.timings.total}ms`
+        );
+      }
       res.json(responseData);
     }
   }

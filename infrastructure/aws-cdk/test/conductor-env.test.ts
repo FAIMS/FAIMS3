@@ -57,9 +57,11 @@ describe('buildConductorRuntimeEnv', () => {
     localhostWhitelist: false,
     enabledAuthProviders: ['google'],
     secretEnvKeys,
+    mapAssetBucketName: 'faims-prod-map-assets',
+    awsRegion: 'ap-southeast-2',
   });
 
-  it('overlays resolved endpoints, ports, and KEY_SOURCE', () => {
+  it('overlays resolved endpoints, ports, S3 bucket/region, and KEY_SOURCE', () => {
     expect(env.CONDUCTOR_PUBLIC_URL).toBe('https://api.example.com:443');
     expect(env.CONDUCTOR_URL).toBe('https://api.example.com:443');
     expect(env.WEB_APP_PUBLIC_URL).toBe('https://app.example.com');
@@ -70,6 +72,12 @@ describe('buildConductorRuntimeEnv', () => {
     expect(env.KEY_SOURCE).toBe('AWS_SM');
     expect(env.PROFILE_NAME).toBe('default');
     expect(env.STARTUP_MIGRATION_LOCK_ENABLED).toBe('true');
+    expect(env.ATTACHMENT_STORAGE_TYPE).toBe('S3');
+    expect(env.ATTACHMENT_S3_BUCKET).toBe('faims-prod-map-assets');
+    expect(env.ATTACHMENT_S3_PREFIX).toBe('map-assets');
+    expect(env.ATTACHMENT_S3_REGION).toBe('ap-southeast-2');
+    expect(env.ATTACHMENT_S3_ENDPOINT).toBeUndefined();
+    expect(env.ATTACHMENT_S3_ACCESS_KEY_ID).toBeUndefined();
     expect(env.REDIRECT_WHITELIST.split(',')).toEqual(
       expect.arrayContaining([
         'https://api.example.com:443',

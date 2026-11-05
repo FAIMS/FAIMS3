@@ -1,0 +1,91 @@
+/* --------------------------------------------------------------------------
+   Page Layout
+   -------------------------------------------------------------------------- */
+
+/* Ensure the page fills the viewport height */
+html,
+body {
+  min-height: 100%;
+}
+/* Keep the footer at the bottom of short pages */
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+/* targets the .container-fluid element immediately following a <header> that is a direct child of <body> */
+body > header + .container-fluid {
+  flex: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Theme Colours
+   -------------------------------------------------------------------------- */
+
+:root {
+  /* custom colours */
+  --docs-orange: #b65312;
+  --docs-orange-dark: #38271f;
+  --docs-orange-light: #f29a58;
+  --docs-orange-dark-bg: #4d3730;
+  --docs-orange-light-bg: #fff1e6;
+}
+
+/* --------------------------------------------------------------------------
+   Theme Overrides
+   -------------------------------------------------------------------------- */
+
+/* Theme primary colour */
+html[data-theme='light'] {
+  --pst-color-primary: var(--docs-orange);
+}
+html[data-theme='dark'] {
+  --pst-color-primary: var(--docs-orange);
+}
+
+/* Navbar background */
+.bg-primary {
+  background-color: var(--docs-orange-dark-bg) !important;
+}
+
+/* Links */
+a {
+  text-decoration-color: var(--docs-orange-light) !important;
+}
+
+a:hover {
+  color: var(--docs-orange-light) !important;
+  text-decoration-color: var(--docs-orange) !important;
+}
+
+/* Focus outline */
+*:focus-visible {
+  outline: 1px solid var(--docs-orange-light) !important;
+}
+
+/* Button links */
+.btn-link {
+  color: var(--docs-orange) !important;
+}
+
+.btn-link:hover,
+.btn-link:focus {
+  color: var(--docs-orange-light) !important;
+}
+
+/* Admonition title */
+.admonition-title {
+  background-color: var(--docs-orange) !important;
+}
+
+/* Light mode */
+.admonition.hint,
+.admonition.note {
+  background-color: var(--docs-orange-light-bg) !important;
+}
+
+/* Dark mode */
+body.theme-dark .admonition.hint,
+body.theme-dark .admonition.note {
+  background-color: var(--docs-orange-dark-bg) !important;
+}

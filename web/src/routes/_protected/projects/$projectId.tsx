@@ -6,6 +6,7 @@ import ProjectInvites from '@/components/tabs/project/invites';
 import ProjectUsers from '@/components/tabs/project/users';
 import ProjectExport from '@/components/tabs/project/export';
 import ProjectActions from '@/components/tabs/project/actions';
+import ProjectMapLayers from '@/components/tabs/project/map-layers';
 import ProjectOfflineMap from '@/components/tabs/project/offline-map';
 import {useGetProject} from '@/hooks/queries';
 import {useAuth} from '@/context/auth-provider';
@@ -31,6 +32,11 @@ const tabs = [
     name: 'Offline Map',
     Component: ProjectOfflineMap,
     testId: 'web-project-tab-offline-map',
+  },
+  {
+    name: 'Map layers',
+    Component: ProjectMapLayers,
+    testId: 'web-project-tab-map-layers',
   },
   {
     name: 'Actions',

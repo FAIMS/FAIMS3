@@ -97,7 +97,7 @@ To activate a {{notebook}} on your device:
 :align: left
 ```
 
-The sync process will now begin, linking your device to the server. You may able to see records from other users, depending on your role with respect to this {{notebook}}.
+The sync process will now begin, linking your device to the server. You may be able to see records from other users, depending on your role with respect to this {{notebook}}. If the {{notebook}} has map layers, the app may ask which ones to download for offline maps — see [Activating {{Notebook}}s](activating-notebooks.md).
 
 For more information see [Activating {{Notebook}}s](activating-notebooks.md).
 

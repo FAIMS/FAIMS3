@@ -30,10 +30,14 @@ export {
   SHARED_DEFAULTS,
 } from './shared-schemas.js';
 import {
+  AttachmentStorageTypeSchema,
   AutosuggestSourceSchema,
+  CapacityProviderTypeSchema,
+  CapacityScaleThresholdsArraySchema,
   DownloadCookieSameSiteSchema,
   EmailServiceTypeSchema,
   ForceRemoteDeletionSchema,
+  GdalNumThreadsJsonSchema,
   KeySourceSchema,
   MapSourceSchema,
   MapStyleSchema,
@@ -58,6 +62,11 @@ const EndpointsBuildConfigSchema = z
     apiUrl: z.string().default('http://localhost:8080'),
     /** Mobile app / PWA base URL. Overridden when `domains` is set. */
     appUrl: z.string().default('http://localhost:3000'),
+    /**
+     * Sphinx user-docs site. Derived from `domains.services.docs` when
+     * `domains` is set (e.g. `https://docs.example.com`).
+     */
+    docsUrl: z.string().default(''),
     /**
      * One or more Conductor URLs the mobile app can authenticate against
      * (CSV in the generated env; each entry becomes a login option).
@@ -103,7 +112,8 @@ const DomainHostMap = z
  * This is optional so existing configs that still store concrete `endpoints`
  * keep working; when present it overrides the derived endpoints, and the app
  * build, web build and CDK all derive the same URLs from it (so they cannot
- * drift). The service-name set (conductor/couch/web/app/docs) is confirmed
+ * drift). `docs` becomes `endpoints.docsUrl` (the published Sphinx site).
+ * The service-name set (conductor/couch/web/app/docs) is confirmed
  * against real deployments before the model is frozen.
  */
 export const DomainsBuildConfigSchema = z
@@ -196,6 +206,118 @@ const AttachmentsBuildConfigSchema = z
   .object({
     attachmentServiceType: z.string().default('COUCH'),
     attachmentDocumentIdPrefix: z.string().optional(),
+  })
+  .strict();
+
+/**
+ * Map-layer object storage (`ATTACHMENT_STORAGE_TYPE`, `ATTACHMENT_S3_*`).
+ * On AWS ECS, the CDK creates the private S3 bucket and grants the task role,
+ * overriding `bucket` and `region` and omitting `endpoint`/static credentials.
+ */
+export const AttachmentStorageBuildConfigSchema = z
+  .object({
+    /** Object-store backend for map-layer files (`S3` or `MOCK`). */
+    serviceType: AttachmentStorageTypeSchema.default('S3'),
+    /** Bucket that holds map-layer objects. */
+    bucket: z.string().min(1).default(SHARED_DEFAULTS.attachmentS3Bucket),
+    /** Key prefix inside the bucket (no leading/trailing slash), e.g. `map-assets`. */
+    prefix: z.string().min(1).default(SHARED_DEFAULTS.attachmentS3Prefix),
+    /** AWS region, or a dummy region for RustFS (`us-east-1`). */
+    region: z.string().min(1).default(SHARED_DEFAULTS.attachmentS3Region),
+    /** Custom S3 endpoint for RustFS / MinIO / Spaces. Omit for AWS S3. */
+    endpoint: z.string().optional(),
+    /** Host-visible S3 endpoint used when signing download URLs. */
+    publicEndpoint: z.string().optional(),
+    /** Path-style S3 URLs. Defaults to true when `endpoint` is set. */
+    forcePathStyle: z.boolean().optional(),
+    /** Secret slot: static access key (local RustFS / non-AWS S3). Omit on ECS. */
+    accessKeyId: z.string().optional(),
+    /** Secret slot: static secret key (local RustFS / non-AWS S3). Omit on ECS. */
+    secretAccessKey: z.string().optional(),
+  })
+  .strict();
+
+/**
+ * Spatial worker pool & GDAL/tippecanoe runtime tuning.
+ * On AWS ECS, Fargate sizing and worker/manager overrides live in `aws.spatialCapacity`.
+ */
+export const SpatialCapacityBuildConfigSchema = z
+  .object({
+    /** Capacity provider (`FIXED`, `ECS`, or `MOCK`). */
+    provider: CapacityProviderTypeSchema.default('FIXED'),
+    /** Max drain workers the capacity manager may ask for at once. */
+    maxCapacity: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.capacityMax),
+    /**
+     * Queue depths at which worker count increases from 1.
+     * `[3, 8, 16, 32]` means 1→2 at 3 jobs, 2→3 at 8, 3→4 at 16, 4→5 at 32.
+     */
+    scaleThresholds: CapacityScaleThresholdsArraySchema.default([
+      ...SHARED_DEFAULTS.capacityScaleThresholds,
+    ]),
+    /** How often the capacity manager reads the Couch queue (ms). */
+    reconcileMs: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.capacityReconcileMs),
+    /**
+     * How long the oldest unclaimed job may wait before the manager asks for
+     * the first extra worker. `0` disables. Default 5 minutes.
+     */
+    starvationMs: z
+      .number()
+      .int()
+      .nonnegative()
+      .default(SHARED_DEFAULTS.capacityStarvationMs),
+    /**
+     * Cooldown before another extra worker from the same stale job (ms).
+     * Omit to use `2 * starvationMs`. `0` keeps only the first extra.
+     */
+    scaleInCooldownMs: z.number().int().nonnegative().optional(),
+    /** Replica count reported by the FIXED provider. */
+    fixedReplicas: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.capacityFixedReplicas),
+    /** Worker exits after this many ms with no job (`0` never exits). */
+    idleExitMs: z
+      .number()
+      .int()
+      .nonnegative()
+      .default(SHARED_DEFAULTS.spatialWorkerIdleExitMs),
+    /** Delay between empty spatial-worker polls (ms). */
+    pollMs: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.spatialWorkerPollMs),
+    /** GDAL worker threads (`ALL_CPUS` or a positive integer cap). */
+    gdalNumThreads: GdalNumThreadsJsonSchema.default(
+      SHARED_DEFAULTS.gdalNumThreads
+    ),
+    /** Raster block cache in megabytes (`GDAL_CACHEMAX`). */
+    gdalCacheMaxMb: z
+      .number()
+      .int()
+      .positive()
+      .max(65536)
+      .default(SHARED_DEFAULTS.gdalCacheMaxMb),
+    /** `gdalwarp -wm` working buffer in megabytes. */
+    gdalWarpMemoryMb: z
+      .number()
+      .int()
+      .positive()
+      .max(65536)
+      .default(SHARED_DEFAULTS.gdalWarpMemoryMb),
+    /** `gdalwarp -multi`: overlap I/O with compute. */
+    gdalWarpMulti: z.boolean().default(SHARED_DEFAULTS.gdalWarpMulti),
+    /** Cap tippecanoe threads (`TIPPECANOE_MAX_THREADS`). Omit for all CPUs. */
+    tippecanoeMaxThreads: z.number().int().positive().max(256).optional(),
   })
   .strict();
 
@@ -371,6 +493,10 @@ const ObservabilityBuildConfigSchema = z
     commitVersion: z.string().optional(),
     /** Public/client Bugsnag key; blank or `false` disables reporting. */
     bugsnagApiKey: z.string().optional(),
+    /** Start the 1 Hz API stdout memory sampler for leak hunts. */
+    memoryMonitorEnabled: z.boolean().default(false),
+    /** Write Morgan combined-format HTTP access lines on the API server. */
+    requestLoggingEnabled: z.boolean().default(true),
   })
   .strict();
 
@@ -557,6 +683,14 @@ const SecretsBuildConfigSchema = z
       })
       .strict()
       .optional(),
+    /** Map-layer object-store static credentials (local RustFS / non-AWS S3). */
+    attachmentStorage: z
+      .object({
+        accessKeyId: z.string().optional(),
+        secretAccessKey: z.string().optional(),
+      })
+      .strict()
+      .optional(),
     /** Map / address-autosuggest provider keys (mobile builds). */
     maps: z
       .object({
@@ -615,6 +749,8 @@ export type SharedBuildConfig = {
   maps: z.infer<typeof MapsBuildConfigSchema>;
   sync: z.infer<typeof SyncBuildConfigSchema>;
   attachments: z.infer<typeof AttachmentsBuildConfigSchema>;
+  attachmentStorage: z.infer<typeof AttachmentStorageBuildConfigSchema>;
+  spatialCapacity: z.infer<typeof SpatialCapacityBuildConfigSchema>;
   migration: z.infer<typeof MigrationBuildConfigSchema>;
   auth: z.infer<typeof AuthBuildConfigSchema>;
   authProviders: z.infer<typeof AuthProviderConfigMapSchema>;
@@ -656,6 +792,7 @@ function deriveEndpointsFromDomains(
   const webUrl = resolve('web');
   const appUrl = resolve('app');
   const couchUrl = resolve('couch');
+  const docsUrl = resolve('docs');
   const derived: Partial<z.infer<typeof EndpointsBuildConfigSchema>> = {};
   if (conductorUrl) {
     derived.apiUrl = conductorUrl;
@@ -664,6 +801,7 @@ function deriveEndpointsFromDomains(
   if (webUrl) derived.webUrl = webUrl;
   if (appUrl) derived.appUrl = appUrl;
   if (couchUrl) derived.couchdbPublicUrl = couchUrl;
+  if (docsUrl) derived.docsUrl = docsUrl;
   return derived;
 }
 
@@ -701,6 +839,14 @@ function applySecretsOverlay(c: SharedBuildConfig): void {
   }
   if (s.couchdb?.password) {
     c.couchdb.password = s.couchdb.password;
+  }
+  if (s.attachmentStorage) {
+    if (s.attachmentStorage.accessKeyId) {
+      c.attachmentStorage.accessKeyId = s.attachmentStorage.accessKeyId;
+    }
+    if (s.attachmentStorage.secretAccessKey) {
+      c.attachmentStorage.secretAccessKey = s.attachmentStorage.secretAccessKey;
+    }
   }
   if (s.maps) {
     if (s.maps.mapSourceKey) c.maps.mapSourceKey = s.maps.mapSourceKey;
@@ -807,6 +953,12 @@ export const BuildConfigCoreObjectSchema = z
     sync: SyncBuildConfigSchema.default(() => SyncBuildConfigSchema.parse({})),
     attachments: AttachmentsBuildConfigSchema.default(() =>
       AttachmentsBuildConfigSchema.parse({})
+    ),
+    attachmentStorage: AttachmentStorageBuildConfigSchema.default(() =>
+      AttachmentStorageBuildConfigSchema.parse({})
+    ),
+    spatialCapacity: SpatialCapacityBuildConfigSchema.default(() =>
+      SpatialCapacityBuildConfigSchema.parse({})
     ),
     migration: MigrationBuildConfigSchema.default(() =>
       MigrationBuildConfigSchema.parse({})

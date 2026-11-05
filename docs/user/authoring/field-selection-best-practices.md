@@ -170,7 +170,7 @@ The number of options and selection constraints guide choice:
 Spatial requirements determine appropriate fields:
 
 - **Single point** → Take GPS Point
-- **Boundaries/areas** → Map Field (requires internet)
+- **Boundaries/areas** → Map Field (prepare overlays and Map regions before you go offline)
 - **Both needed** → Combine both field types
 - **Manual coordinates** → Text field with validation
 
