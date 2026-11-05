@@ -10,7 +10,7 @@
  * - Exclusive options: certain options can be configured to deselect all others when chosen
  * - Rich text labels: option labels support sanitized HTML content
  * Props:
- * - label (string, optional): The field label displayed as a heading.
+ * - label (string, optional): The text displayed as the field heading.
  * - helperText (string, optional): The field help text displayed below the heading.
  * - ElementProps (object): Contains the options array, expandedChecklist flag, and exclusiveOptions.
  * - required: To visually show if the field is required.

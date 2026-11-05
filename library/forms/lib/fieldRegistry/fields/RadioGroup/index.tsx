@@ -4,13 +4,13 @@
  * RadioGroup Component
  * This component renders a group of radio buttons using Material-UI.
  * It integrates with the form system for managing state and includes:
- * - A heading (field label) rendered using FieldWrapper.
+ * - A heading (field heading) rendered using FieldWrapper.
  * - A subheading (help text) rendered using FieldWrapper.
  * - Toggle behavior: clicking a selected radio deselects it.
  * - Rich text labels: option labels support sanitized HTML content.
  * - "Other" option: allows users to enter custom text beyond predefined choices.
  * Props:
- * - label (string, optional): The field label displayed as a heading.
+ * - label (string, optional): The text displayed as the field heading.
  * - helperText (string, optional): The field help text displayed below the heading.
  * - ElementProps (object): Contains the radio options array and enableOtherOption flag.
  * - required: To visually show if the field is required.

@@ -137,7 +137,7 @@ Selection depends upon precision requirements and constraints:
    - Decimal precision requirements
    - Default values to accelerate entry
    - Sticky behaviour for environmental constants
-   - Unit specification in field labels
+   - Unit specification in field headings
 
 ### Temporal Data Capture
 

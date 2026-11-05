@@ -1400,7 +1400,7 @@ export const OptionsEditor = ({
               )}
             </Grid>
 
-            {/* Add option panel */}
+            {/* Add option row */}
             <Grid size={12}>
               <Typography
                 component="h4"
@@ -1423,7 +1423,7 @@ export const OptionsEditor = ({
                     gap: 1,
                   }}
                 >
-                  <Box sx={{flex: 1, minWidth: 0}}>
+                  <Box sx={{width: {xs: '100%', md: '50%'}, minWidth: 0}}>
                     <TextField
                       size="small"
                       placeholder="Add option"
