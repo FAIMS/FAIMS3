@@ -718,7 +718,7 @@ interface SortableItemProps {
   exclusiveOptions: string[];
   // Toggle by value, never by display label.
   onExclusiveToggle: (value: string) => void;
-  // Editing uses the current stored ID to locate the option.
+  // Editing uses the current export value to locate the option.
   onEdit: (value: string) => void;
   // Delete by current value.
   onRemove: (value: string) => void;
@@ -920,7 +920,7 @@ export const OptionsEditor = ({
   /** Merge regular options and Other into one sortable visual sequence. */
   const combinedRows: CombinedRow[] = useMemo(() => {
     const rows: CombinedRow[] = options.map(option => ({
-      // Prefix the stored ID so it cannot conflict with Other's sortable ID.
+      // Prefix the export value so it cannot conflict with Other's sortable ID.
       dndId: getOptionDndId(option.value),
       type: 'option',
       option,
