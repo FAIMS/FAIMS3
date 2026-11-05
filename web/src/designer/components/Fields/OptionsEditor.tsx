@@ -81,7 +81,7 @@ import {BaseFieldEditor} from './BaseFieldEditor';
  * because the editor patches them incrementally.
  */
 
-// Choice options have separate stored values and Markdown option labels.
+// Choice options have separate stored values and Markdown display labels.
 type ChoiceOption = ChoiceElementProps['options'][number];
 type ChoiceComponentParameters = {ElementProps?: Partial<ChoiceElementProps>};
 
@@ -96,7 +96,7 @@ enum ChoiceDisplayMode {
   dropdown = 'dropdown',
 }
 
-// Disable some Markdown features to keep option labels simple.
+// Disable some Markdown features to keep display labels simple.
 const mdxEditorDisabledFeatures: MdxEditorFeature[] = [
   'lists',
   'tables',
@@ -104,11 +104,10 @@ const mdxEditorDisabledFeatures: MdxEditorFeature[] = [
 ];
 
 // tooltip titles
-const OPTION_VALUE_TOOLTIP =
-  'The value saved when users select this option. Also used in exports.';
-const OPTION_LABEL_TOOLTIP =
-  'Shown to users when they choose this option. Supports Markdown.';
-const OPTION_LABEL_HINT = 'optional - leave blank to use the option value';
+const EXPORT_VALUE_TOOLTIP = 'The value saved in exported data.';
+const DISPLAY_LABEL_TOOLTIP =
+  'What users will see when viewing options. Supports advanced formatting e.g. bold, italic, underline etc.';
+const DISPLAY_LABEL_HINT = 'optional - leave blank to use the export value';
 const EXCLUSIVE_TOOLTIP =
   "Marks the option as exclusive — selecting it clears any other selections in this field. Useful for choices like 'None of the above'.";
 
@@ -262,13 +261,17 @@ const OptionHeaderWithTooltip = ({
 // Option Validation Helpers
 // ============================================================================
 
+/** Normalize whitespace in Markdown labels for validation. */
+const normaliseMarkdownWhitespace = (label: string): string =>
+  label.replace(/&#x20;|&#32;|&#xa0;|&#160;|&nbsp;/gi, ' ').trim();
+
 /**
- * Ensure the final option label is not empty or already used.
- * The caller resolves an empty input to the option value first.
+ * Ensure the final display label is not empty or already used.
+ * The caller resolves an empty input to the export value first.
  *
  * @param options - Existing predefined options.
- * @param newLabel - The option label to validate.
- * @param originalValue - The original option value to exclude when editing.
+ * @param newLabel - The display label to validate.
+ * @param originalValue - The original export value to exclude when editing.
  * @returns An error message if invalid, otherwise null.
  */
 const validateLabel = (
@@ -276,29 +279,30 @@ const validateLabel = (
   newLabel: string,
   originalValue?: string
 ): string | null => {
-  const normalizedLabel = newLabel.trim().toLowerCase();
-  if (!normalizedLabel) return 'Option label is required';
+  const normalizedLabel = normaliseMarkdownWhitespace(newLabel).toLowerCase();
+  if (!normalizedLabel) return 'Display label is required';
 
   // Check if another option already uses the same label.
   const isDuplicateLabel = options.some(
     option =>
       option.value !== originalValue &&
-      option.label.trim().toLowerCase() === normalizedLabel
+      normaliseMarkdownWhitespace(option.label).toLowerCase() ===
+        normalizedLabel
   );
 
   if (isDuplicateLabel)
-    return 'This option label is already used by another option';
+    return 'This display label already exists. Please enter a unique label.';
 
   return null;
 };
 
 /**
- * Ensure the option value is not empty or already used by another option.
+ * Ensure the export value is not empty or already used by another option.
  * Comparison is case-insensitive and ignores surrounding whitespace.
  *
  * @param options - Existing predefined options.
- * @param newValue - The option value to validate.
- * @param originalValue - The original option value to exclude when editing.
+ * @param newValue - The export value to validate.
+ * @param originalValue - The original export value to exclude when editing.
  * @returns An error message if invalid, otherwise null.
  */
 const validateValue = (
@@ -307,7 +311,7 @@ const validateValue = (
   originalValue?: string
 ): string | null => {
   const normalizedValue = newValue.trim().toLowerCase();
-  if (!normalizedValue) return 'Option value is required';
+  if (!normalizedValue) return 'Export value is required';
 
   // Check if another option already uses the same value.
   const isDuplicateValue = options.some(
@@ -317,7 +321,7 @@ const validateValue = (
   );
 
   if (isDuplicateValue)
-    return 'This option value is already used by another option';
+    return 'This export value already exists. Please enter a unique value.';
 
   return null;
 };
@@ -330,15 +334,15 @@ const validateValue = (
 type EditingOption = {
   // Original stored value used to identify the option.
   originalValue: string;
-  // Updated option value to save.
+  // Updated export value to save.
   value: string;
   // Updated user-facing Markdown label to save.
   label: string;
 };
 
-/** Condition references affected by an option value change. */
+/** Condition references affected by an export value change. */
 type ConditionUpdateState = {
-  // Conditions referencing the original option value.
+  // Conditions referencing the original export value.
   references: string[];
   // Whether to update those conditions.
   updateConditions: boolean;
@@ -355,7 +359,7 @@ interface EditOptionDialogProps {
   >;
   // Existing options used to validate unique values and labels.
   options: ChoiceOption[];
-  // Save the validated option value and label.
+  // Save the validated export value and label.
   onSave: (value: string, label: string) => void;
   // Closes the dialog without saving changes.
   onCancel: () => void;
@@ -363,7 +367,7 @@ interface EditOptionDialogProps {
   onExited: () => void;
 }
 
-/** Edit the option value and Markdown label independently. */
+/** Edit the export value and Markdown label independently. */
 const EditOptionDialog = ({
   editingOption,
   setEditingOption,
@@ -384,7 +388,11 @@ const EditOptionDialog = ({
     if (!editingOption) return;
 
     const newValue = editingOption.value.trim();
-    const newLabel = editingOption.label.trim() || newValue;
+    const rawLabel = editingOption.label.trim();
+    // Default empty or whitespace only Markdown labels to the export value.
+    const newLabel = normaliseMarkdownWhitespace(rawLabel)
+      ? rawLabel
+      : newValue;
 
     const valueErrorMessage = validateValue(
       options,
@@ -422,16 +430,16 @@ const EditOptionDialog = ({
     >
       <DialogTitle sx={designerDialogTitleSx}>Edit Option</DialogTitle>
       <DialogContent sx={designerDialogContentSx}>
-        {/* First row: stored option value */}
+        {/* First row: stored export value */}
         <Box sx={{mt: 1, mb: 2}}>
           <OptionInputHeading
-            label="Option value"
-            tooltip={OPTION_VALUE_TOOLTIP}
+            label="Export value"
+            tooltip={EXPORT_VALUE_TOOLTIP}
           />
           <TextField
             fullWidth
             size="small"
-            placeholder="Enter a unique option value"
+            placeholder="Enter a unique export value"
             required
             value={editingOption?.value ?? ''}
             error={!!valueError}
@@ -457,9 +465,9 @@ const EditOptionDialog = ({
         {/* Second row: optional Markdown label */}
         <Box sx={{mb: 1}}>
           <OptionInputHeading
-            label="Option label"
-            tooltip={OPTION_LABEL_TOOLTIP}
-            hint={OPTION_LABEL_HINT}
+            label="Display label"
+            tooltip={DISPLAY_LABEL_TOOLTIP}
+            hint={DISPLAY_LABEL_HINT}
           />
           {/* Remount the editor when opening an option, not while typing. */}
           {editingOption && (
@@ -488,13 +496,13 @@ const EditOptionDialog = ({
         {editingOption &&
           editingOption.value.trim() !== editingOption.originalValue && (
             <Alert severity="warning" sx={{mt: 2}}>
-              Changing the option value will not update existing saved records.
-              Answers using the old option value may no longer match this
+              Changing the export value will not update existing saved records.
+              Answers using the old export value may no longer match this
               option.
               {conditionUpdateState && (
                 <>
                   <Typography variant="body2" sx={{mt: 1, mb: 1}}>
-                    This option value is also used in:
+                    This export value is also used in:
                   </Typography>
                   <ul>
                     {conditionUpdateState.references.map((ref, index) => (
@@ -517,7 +525,7 @@ const EditOptionDialog = ({
                         }
                       />
                     }
-                    label="Update conditions to use the new option value"
+                    label="Update conditions to use the new export value"
                     sx={{mt: 1}}
                   />
                 </>
@@ -571,7 +579,7 @@ const EditOptionDialog = ({
  */
 
 interface OtherOptionRowProps {
-  // Internal dnd-kit identifier, separate from the stored option value.
+  // Internal dnd-kit identifier, separate from the stored export value.
   dndId: string;
   showExclusiveOptions?: boolean;
   isFirst: boolean;
@@ -617,10 +625,10 @@ const SortableOtherOptionRow = ({
         />
       </TableCell>
 
-      {/* Other is configured separately, so its option value column stays empty. */}
+      {/* Other is configured separately, so its export value column stays empty. */}
       <TableCell sx={{...textCellSx, ...valueColumnSx}} />
 
-      {/* Option label column */}
+      {/* Display label column */}
       <TableCell sx={{...textCellSx, ...labelColumnSx}}>
         <Tooltip title="Allows custom text input">
           <Typography sx={optionTextSx}>
@@ -698,7 +706,7 @@ const SortableOtherOptionRow = ({
 };
 
 interface SortableItemProps {
-  // Internal dnd-kit identifier, separate from the stored option value.
+  // Internal dnd-kit identifier, separate from the stored export value.
   dndId: string;
   option: ChoiceOption;
   // Whether the row is at either end of the displayed list.
@@ -708,7 +716,7 @@ interface SortableItemProps {
   showExclusiveOptions?: boolean;
   // values of options that exclude the other selections.
   exclusiveOptions: string[];
-  // Toggle by value, never by option label.
+  // Toggle by value, never by display label.
   onExclusiveToggle: (value: string) => void;
   // Editing uses the current stored ID to locate the option.
   onEdit: (value: string) => void;
@@ -761,14 +769,14 @@ const SortableItem = ({
         />
       </TableCell>
 
-      {/* Option value column */}
+      {/* Export value column */}
       <TableCell sx={{...textCellSx, ...valueColumnSx}}>
         <Tooltip title={option.value}>
           <Typography sx={optionTextSx}>{option.value}</Typography>
         </Tooltip>
       </TableCell>
 
-      {/* Option label column */}
+      {/* Display label column */}
       <TableCell sx={{...textCellSx, ...labelColumnSx}}>
         <Tooltip title={option.label}>
           <Typography sx={optionTextSx}>{option.label}</Typography>
@@ -845,7 +853,7 @@ const SortableItem = ({
 // ============================================================================
 
 /**
- * Manage choice options with separate stored values and option labels.
+ * Manage choice options with separate stored values and display labels.
  * Supports editing, reordering, exclusive options, and Other.
  */
 export const OptionsEditor = ({
@@ -937,7 +945,7 @@ export const OptionsEditor = ({
    * Update the field's options and related settings in Redux.
    *
    * @param updatedOptions - The updated predefined options.
-   * @param updatedExclusiveOptions - Optional updated exclusive option values.
+   * @param updatedExclusiveOptions - Optional updated exclusive export values.
    * @param updatedOtherOptionPosition - The new Other option position, if provided.
    * @returns The updated field configuration.
    */
@@ -1097,7 +1105,7 @@ export const OptionsEditor = ({
       return;
     }
 
-    // add a new option
+    // Add a new option, defaulting the label to the export value.
     updateField([...options, {value, label: value}]);
     setNewOptionValue('');
     setAddErrorMessage('');
@@ -1164,7 +1172,7 @@ export const OptionsEditor = ({
   // Save the edited option and update related references if its value changes.
   const handleEditSubmit = (newValue: string, newLabel: string) => {
     if (!editingOption) return;
-    // Find the original option, even if its option value has been edited.
+    // Find the original option, even if its export value has been edited.
     const original = options.find(
       option => option.value === editingOption.originalValue
     );
@@ -1310,15 +1318,15 @@ export const OptionsEditor = ({
 
                         <TableCell sx={{...textCellHeaderSx, ...valueColumnSx}}>
                           <OptionHeaderWithTooltip
-                            label="Option value"
-                            tooltip={OPTION_VALUE_TOOLTIP}
+                            label="Export value"
+                            tooltip={EXPORT_VALUE_TOOLTIP}
                           />
                         </TableCell>
 
                         <TableCell sx={{...textCellHeaderSx, ...labelColumnSx}}>
                           <OptionHeaderWithTooltip
-                            label="Option label"
-                            tooltip={OPTION_LABEL_TOOLTIP}
+                            label="Display label"
+                            tooltip={DISPLAY_LABEL_TOOLTIP}
                           />
                         </TableCell>
 
