@@ -93,7 +93,7 @@ const ExpandedChecklist = ({
     0,
     Math.min(otherOptionPosition ?? options.length, options.length)
   );
-  // Exclusive choices are matched by stored ID, not rendered label.
+  // Exclusive choices are matched by stored value, not rendered label.
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
 
   const handleChange = (optionValue: string) => {
@@ -331,7 +331,7 @@ const MuiMultiSelect = ({
                 if (isOtherOptionValue(v)) {
                   return extractOtherText(v) || 'Other';
                 }
-                // The selected input renders displayLabel; saved data stays the ID.
+                // Show the display label while keeping the export value in stored data.
                 return options.find(option => option.value === v)?.label ?? v;
               })
               .join(', ');
