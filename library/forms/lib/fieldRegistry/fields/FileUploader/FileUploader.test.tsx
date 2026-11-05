@@ -396,7 +396,8 @@ describe('FileUploader upload UI', () => {
     const {store} = renderUploader({maxItems: 3, addAttachment});
 
     await dropFiles([file('a.txt'), file('b.txt')]);
-    expect(addAttachment).toHaveBeenCalledTimes(1);
+    // The leading-byte content sniff runs before the first save.
+    await waitFor(() => expect(addAttachment).toHaveBeenCalledTimes(1));
     // Pending uploads reserve capacity but are not counted as uploaded files.
     expect(screen.queryByText(/Uploaded files/)).not.toBeInTheDocument();
 
@@ -433,7 +434,7 @@ describe('FileUploader upload UI', () => {
 
     await dropFiles([file('a.txt')]);
     await dropFiles([file('b.txt')]);
-    expect(addAttachment).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(addAttachment).toHaveBeenCalledTimes(2));
     expect(mockDropzone.props?.disabled).toBe(true);
     expect(setAttachmentSaving).toHaveBeenCalledWith(true);
 
@@ -536,6 +537,146 @@ describe('FileUploader upload UI', () => {
   it('uses the default maximum size when none is configured', () => {
     renderUploader({});
     expect(mockDropzone.props?.maxSize).toBe(DEFAULT_MAXIMUM_FILE_SIZE_BYTES);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Upload rejection: SVG/HTML by type, extension or leading bytes
+// ---------------------------------------------------------------------------
+
+const SCRIPT_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>';
+const JPEG_BYTES = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
+const PNG_BYTES = new Uint8Array([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+]);
+const GPX =
+  '<?xml version="1.0"?><gpx version="1.1"><wpt lat="0" lon="0"/></gpx>';
+
+describe('FileUploader blocked uploads', () => {
+  const blocked: [string, File][] = [
+    ['evil.svg', new File([SCRIPT_SVG], 'evil.svg', {type: 'image/svg+xml'})],
+    [
+      'evil.html',
+      new File(['<!doctype html><script>alert(1)</script>'], 'evil.html', {
+        type: 'text/html',
+      }),
+    ],
+    [
+      'page.htm',
+      new File(['<html></html>'], 'page.htm', {
+        type: 'application/octet-stream',
+      }),
+    ],
+    // Mislabelled: SVG bytes behind a PNG name and type (caught by sniff).
+    ['photo.png', new File([SCRIPT_SVG], 'photo.png', {type: 'image/png'})],
+    // Upper-case extension, empty type.
+    ['PHOTO.SVG', new File([SCRIPT_SVG], 'PHOTO.SVG', {type: ''})],
+    // SVG bytes behind a text name/type.
+    ['notes.txt', new File([SCRIPT_SVG], 'notes.txt', {type: 'text/plain'})],
+  ];
+
+  it.each(blocked)(
+    'rejects %s, releases the lock and stays usable',
+    async (name, evil) => {
+      const addAttachment = vi.fn(async () => 'new-id');
+      const setAttachmentSaving = vi.fn();
+      const {store} = renderUploader({
+        maxItems: 1,
+        addAttachment,
+        setAttachmentSaving,
+      });
+
+      act(() => mockDropzone.props?.onFileDialogOpen?.());
+      await dropFiles([evil]);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(`"${name}": SVG and HTML files cannot be uploaded.`)
+        ).toBeInTheDocument();
+      });
+      expect(addAttachment).not.toHaveBeenCalled();
+      await waitFor(() =>
+        expect(setAttachmentSaving).toHaveBeenLastCalledWith(false)
+      );
+      // Nothing reserved: dropzone is still enabled at maxItems=1.
+      expect(mockDropzone.props?.disabled).toBe(false);
+
+      // A subsequent valid drop succeeds (no leaked reservation/active count).
+      await dropFiles([file('good.txt')]);
+      await waitFor(() => expect(addAttachment).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(store.current).toEqual(['new-id']));
+      expect(
+        screen.queryByText(/SVG and HTML files cannot be uploaded/)
+      ).toBeNull();
+    }
+  );
+
+  it('rejects the whole batch when one file is blocked', async () => {
+    const addAttachment = vi.fn(async () => 'new-id');
+    const setAttachmentSaving = vi.fn();
+    const {store} = renderUploader({addAttachment, setAttachmentSaving});
+
+    await dropFiles([
+      file('good.txt'),
+      new File([SCRIPT_SVG], 'evil.svg', {type: 'image/svg+xml'}),
+    ]);
+
+    expect(
+      screen.getByText('"evil.svg": SVG and HTML files cannot be uploaded.')
+    ).toBeInTheDocument();
+    expect(addAttachment).not.toHaveBeenCalled();
+    expect(store.current).toEqual([]);
+    expect(setAttachmentSaving).not.toHaveBeenCalledWith(true);
+  });
+
+  it('rejects the whole batch when a later file fails the byte sniff', async () => {
+    const addAttachment = vi.fn(async () => 'new-id');
+    const setAttachmentSaving = vi.fn();
+    const {store} = renderUploader({addAttachment, setAttachmentSaving});
+
+    await dropFiles([
+      file('good.txt'),
+      new File([SCRIPT_SVG], 'photo.png', {type: 'image/png'}),
+    ]);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('"photo.png": SVG and HTML files cannot be uploaded.')
+      ).toBeInTheDocument();
+    });
+    expect(addAttachment).not.toHaveBeenCalled();
+    expect(store.current).toEqual([]);
+    await waitFor(() =>
+      expect(setAttachmentSaving).toHaveBeenLastCalledWith(false)
+    );
+  });
+
+  it('accepts benign controls', async () => {
+    let n = 0;
+    const addAttachment = vi.fn(async () => `id-${++n}`);
+    const {store} = renderUploader({addAttachment});
+
+    const good = [
+      new File([JPEG_BYTES], 'photo.jpg', {type: 'image/jpeg'}),
+      new File([PNG_BYTES], 'photo.png', {type: 'image/png'}),
+      new File(['%PDF-1.4'], 'report.pdf', {type: 'application/pdf'}),
+      new File(['notes'], 'notes.txt', {type: 'text/plain'}),
+      new File([GPX], 'track.gpx', {type: ''}),
+    ];
+    await dropFiles(good);
+
+    await waitFor(() => expect(addAttachment).toHaveBeenCalledTimes(5));
+    await waitFor(() => expect(store.current).toHaveLength(5));
+    expect(
+      screen.queryByText(/SVG and HTML files cannot be uploaded/)
+    ).toBeNull();
+    expect(addAttachment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: 'application/octet-stream',
+        fileFormat: 'gpx',
+      })
+    );
   });
 });
 

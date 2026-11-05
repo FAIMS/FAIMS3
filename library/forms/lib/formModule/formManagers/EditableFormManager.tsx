@@ -24,7 +24,7 @@ import {useForm} from '@tanstack/react-form';
 import {debounce, DebouncedFunc} from 'lodash';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {logError, logInfo, logWarn} from '../../logging';
-import {formDataExtractor} from '../../utils';
+import {formDataExtractor, isBlockedAttachmentContentType} from '../../utils';
 import {completion, getFieldId} from '../utils';
 import {
   collectFieldErrorMessages,
@@ -765,6 +765,15 @@ export const EditableFormManager: React.FC<
     }) => {
       if (!blob && !base64) {
         throw new Error('Either blob or base64 data must be provided');
+      }
+
+      // Single choke point for every field (FileUploader, TakePhoto,
+      // AudioRecorder, ...): active content types are never stored, whatever
+      // UI produced them. Mirrors the CouchDB validate_doc_update list.
+      if (isBlockedAttachmentContentType(contentType)) {
+        throw new Error(
+          `Attachments of type ${contentType} are not allowed (SVG and HTML files cannot be uploaded).`
+        );
       }
 
       attachmentSaveTrace('handleAddAttachment:start', {
