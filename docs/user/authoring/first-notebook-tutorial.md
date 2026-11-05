@@ -409,12 +409,11 @@ Now let's add a choice field where users select one option from a list.
    users will see:
    - You'll see one default option, "1", with a pencil (**Edit option**) and
      bin (**Delete option**) icon in its Actions column
-   - Click the **pencil icon** to open the "Edit Option" dialogue, change
-     "1" to **"Habitation"**, and click **Save**
+   - Click the pencil icon to open the **Edit Option** dialogue. Change both **Export value** and **Display label** from "1" to "Habitation", then click Save.
    - Now use the **"Add option"** box to add the remaining options: type
      **"Mortuary"** and click **"Add"**, then repeat for **"Ceremonial"**,
      **"Workshop/Industrial"**, **"Defensive"**, **"Agricultural"**, and
-     **"Other"**
+     **"Other"**. The **Display label** defaults to the **Export value** when adding a new option.
    - Reorder options if needed using the drag handle (⠿) or the up/down
      arrows in each row
 
@@ -423,7 +422,7 @@ Now let's add a choice field where users select one option from a list.
 > as the radio-button list data collectors see) or **Dropdown list**.
 
 ```{screenshot} first-notebook-tutorial/qs-014-edit-option-dialog-desktop.png
-:alt: Edit Option dialogue with the Option Text field containing Habitation, and Cancel and Save buttons
+:alt: Edit Option dialogue with Export value and Display label both set to Habitation, and Cancel and Save buttons
 :align: right
 :width: 100%
 ```
@@ -453,7 +452,7 @@ Now let's add a choice field where users select one option from a list.
 > - **Annotation**: Add contextual notes (e.g., when selecting "Other", use annotation to describe what type of site it actually is)
 > - **Uncertainty**: Flag observations you're unsure about for later review
 >
-> 💡 **Pro Tip**: You can use markdown in option text - try `**Important Option**` to make text bold!
+> 💡 **Pro Tip**: You can use Markdown formatting in the Display label — try `**Important Option**` to make the text bold!
 
 **Quick Save**: Click the **Save** button at the left of the toolbar to save your progress.
 
