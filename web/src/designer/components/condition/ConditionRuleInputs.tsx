@@ -31,8 +31,8 @@ import {FieldSearchAutocomplete} from '../field-selector';
 const getSelectableOptions = (
   fieldDef: FieldType
 ): SelectableConditionOption[] =>
-  ((fieldDef['component-parameters'] as {ElementProps?: ChoiceElementProps})
-    .ElementProps?.options ?? []) as SelectableConditionOption[];
+  (fieldDef['component-parameters'] as {ElementProps?: ChoiceElementProps})
+    .ElementProps?.options ?? [];
 
 /* Checks if a field has predefined options */
 const isPredefinedOptions = (fieldDef: FieldType | null): boolean => {
@@ -161,9 +161,7 @@ const isValueValidForField = (
   const params = (fieldDef['component-parameters'] || {}) as {
     ElementProps?: ChoiceElementProps;
   };
-  const possibleOptions =
-    (params.ElementProps?.options as SelectableConditionOption[] | undefined) ??
-    [];
+  const possibleOptions = params.ElementProps?.options ?? [];
   const enableOtherOption = params.ElementProps?.enableOtherOption ?? false;
 
   if (
@@ -235,21 +233,13 @@ const MultiValueSelect = (props: {
             typeof nextValue === 'string' ? nextValue.split(',') : nextValue
           );
         }}
-        renderValue={selected =>
-          selected
-            .map(selectedValue => {
-              const option = possibleOptions.find(
-                item => item.value === selectedValue
-              );
-              return option ? option.label : selectedValue;
-            })
-            .join(', ')
-        }
+        // Display stored option values only in condition rules.
+        renderValue={selected => selected.join(', ')}
       >
         {possibleOptions.map(option => (
           <MenuItem key={option.value} value={option.value}>
             <Checkbox checked={selectedValues.includes(option.value)} />
-            <ListItemText primary={option.label} />
+            <ListItemText primary={option.value} />
           </MenuItem>
         ))}
       </Select>
@@ -299,9 +289,7 @@ const ValueEditor = (props: {
   const params = (fieldDef['component-parameters'] || {}) as {
     ElementProps?: ChoiceElementProps;
   };
-  const possibleOptions =
-    (params.ElementProps?.options as SelectableConditionOption[] | undefined) ??
-    [];
+  const possibleOptions = params.ElementProps?.options ?? [];
 
   const updateValue = (nextValue: RuleCondition['value']) => {
     onChange({value: nextValue});
@@ -349,7 +337,7 @@ const ValueEditor = (props: {
           >
             {possibleOptions.map(option => (
               <MenuItem key={option.value} value={option.value}>
-                {option.label}
+                {option.value}
               </MenuItem>
             ))}
           </Select>

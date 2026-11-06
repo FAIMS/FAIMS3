@@ -72,7 +72,7 @@ function storeWithTextField() {
   return store;
 }
 
-describe('BaseFieldEditor export name', () => {
+describe('BaseFieldEditor export title', () => {
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -86,7 +86,7 @@ describe('BaseFieldEditor export name', () => {
       </WithProviders>
     );
 
-    const exportInput = screen.getByPlaceholderText('Enter export name');
+    const exportInput = screen.getByPlaceholderText('Enter export title');
     fireEvent.change(exportInput, {target: {value: 'Observation-Notes'}});
     fireEvent.blur(exportInput);
 
@@ -104,7 +104,7 @@ describe('BaseFieldEditor export name', () => {
     ).toBeNull();
   });
 
-  it('reverts punctuation-only export names instead of persisting an empty slug', () => {
+  it('reverts punctuation-only export titles instead of persisting an empty slug', () => {
     const store = storeWithTextField();
 
     render(
@@ -113,7 +113,7 @@ describe('BaseFieldEditor export name', () => {
       </WithProviders>
     );
 
-    const exportInput = screen.getByPlaceholderText('Enter export name');
+    const exportInput = screen.getByPlaceholderText('Enter export title');
     fireEvent.change(exportInput, {target: {value: '!!!'}});
     fireEvent.blur(exportInput);
 
@@ -132,7 +132,7 @@ describe('BaseFieldEditor export name', () => {
       </WithProviders>
     );
 
-    const exportInput = screen.getByPlaceholderText('Enter export name');
+    const exportInput = screen.getByPlaceholderText('Enter export title');
 
     fireEvent.change(exportInput, {target: {value: 'Observation'}});
 
@@ -154,7 +154,7 @@ describe('BaseFieldEditor export name', () => {
     ).toBe('Observation-Notes');
   });
 
-  it('does not reset the input when a colliding export name is uniquified mid-typing', () => {
+  it('does not reset the input when a colliding export title is uniquified mid-typing', () => {
     vi.useFakeTimers();
     const store = createDesignerStore();
     const taken = getFieldSpec('TextField');
@@ -190,7 +190,7 @@ describe('BaseFieldEditor export name', () => {
       </WithProviders>
     );
 
-    const exportInput = screen.getByPlaceholderText('Enter export name');
+    const exportInput = screen.getByPlaceholderText('Enter export title');
     exportInput.focus();
     fireEvent.change(exportInput, {target: {value: 'width'}});
 
@@ -247,7 +247,7 @@ describe('BaseFieldEditor export name', () => {
       </WithProviders>
     );
 
-    const exportInput = screen.getByPlaceholderText('Enter export name');
+    const exportInput = screen.getByPlaceholderText('Enter export title');
     fireEvent.change(exportInput, {target: {value: 'width'}});
     fireEvent.blur(exportInput);
 
@@ -261,7 +261,7 @@ describe('BaseFieldEditor export name', () => {
     expect((exportInput as HTMLInputElement).value).toBe('Plot-Name');
   });
 
-  it('Sync with Label inside the debounce window wins over the typed text', () => {
+  it('Sync with Field Heading inside the debounce window wins over the typed text', () => {
     vi.useFakeTimers();
     const store = storeWithTextField();
 
@@ -271,10 +271,12 @@ describe('BaseFieldEditor export name', () => {
       </WithProviders>
     );
 
-    const exportInput = screen.getByPlaceholderText('Enter export name');
+    const exportInput = screen.getByPlaceholderText('Enter export title');
     exportInput.focus();
     fireEvent.change(exportInput, {target: {value: 'typed'}});
-    fireEvent.click(screen.getByRole('button', {name: 'Sync with Label'}));
+    fireEvent.click(
+      screen.getByRole('button', {name: 'Sync with Field Heading'})
+    );
 
     act(() => {
       vi.advanceTimersByTime(1000);
@@ -286,7 +288,7 @@ describe('BaseFieldEditor export name', () => {
     expect((exportInput as HTMLInputElement).value).toBe('Site-Name');
   });
 
-  it('shows an undone export name even when it looks like an own echo', () => {
+  it('shows an undone export title even when it looks like an own echo', () => {
     const store = createDesignerStore();
     const taken = getFieldSpec('TextField');
     taken['component-parameters'].name = 'f_taken';
@@ -329,7 +331,7 @@ describe('BaseFieldEditor export name', () => {
         })
       );
     });
-    const exportInput = screen.getByPlaceholderText('Enter export name');
+    const exportInput = screen.getByPlaceholderText('Enter export title');
     fireEvent.change(exportInput, {target: {value: 'width'}});
     fireEvent.blur(exportInput);
     expect((exportInput as HTMLInputElement).value).toBe('width');
@@ -360,11 +362,11 @@ describe('BaseFieldEditor first-edit export-name auto-sync', () => {
     return store;
   }
 
-  it('syncs export name from the label after the first typing pause', () => {
+  it('syncs export title from the label after the first typing pause', () => {
     vi.useFakeTimers();
     const store = renderNewFieldEditor();
 
-    fireEvent.change(screen.getByPlaceholderText('Enter field label'), {
+    fireEvent.change(screen.getByPlaceholderText('Enter field heading'), {
       target: {value: 'Observation Notes'},
     });
     act(() => {
@@ -379,7 +381,7 @@ describe('BaseFieldEditor first-edit export-name auto-sync', () => {
   it('keeps syncing on later debounce pauses until the label loses focus', () => {
     vi.useFakeTimers();
     const store = renderNewFieldEditor();
-    const labelInput = screen.getByPlaceholderText('Enter field label');
+    const labelInput = screen.getByPlaceholderText('Enter field heading');
 
     fireEvent.change(labelInput, {target: {value: 'Site'}});
     act(() => {
@@ -401,7 +403,7 @@ describe('BaseFieldEditor first-edit export-name auto-sync', () => {
   it('syncs the latest typed label when tabbing or clicking away', () => {
     vi.useFakeTimers();
     const store = renderNewFieldEditor();
-    const labelInput = screen.getByPlaceholderText('Enter field label');
+    const labelInput = screen.getByPlaceholderText('Enter field heading');
 
     fireEvent.change(labelInput, {target: {value: 'Observation'}});
     act(() => {
@@ -419,7 +421,7 @@ describe('BaseFieldEditor first-edit export-name auto-sync', () => {
   it('does not keep auto-syncing after the label loses focus', () => {
     vi.useFakeTimers();
     const store = renderNewFieldEditor();
-    const labelInput = screen.getByPlaceholderText('Enter field label');
+    const labelInput = screen.getByPlaceholderText('Enter field heading');
 
     fireEvent.change(labelInput, {target: {value: 'Site'}});
     fireEvent.blur(labelInput);
@@ -438,11 +440,11 @@ describe('BaseFieldEditor first-edit export-name auto-sync', () => {
     ).toBe('Site');
   });
 
-  it('does not overwrite a custom export name when the label later changes', () => {
+  it('does not overwrite a custom export title when the label later changes', () => {
     vi.useFakeTimers();
     const store = renderNewFieldEditor();
 
-    fireEvent.change(screen.getByPlaceholderText('Enter export name'), {
+    fireEvent.change(screen.getByPlaceholderText('Enter export title'), {
       target: {value: 'Custom-Export'},
     });
     act(() => {
@@ -452,7 +454,7 @@ describe('BaseFieldEditor first-edit export-name auto-sync', () => {
       store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
     ).toBe('Custom-Export');
 
-    fireEvent.change(screen.getByPlaceholderText('Enter field label'), {
+    fireEvent.change(screen.getByPlaceholderText('Enter field heading'), {
       target: {value: 'Observation Notes'},
     });
     act(() => {
@@ -476,13 +478,13 @@ describe('BaseFieldEditor first-edit export-name auto-sync', () => {
       </WithProviders>
     );
 
-    fireEvent.change(screen.getByPlaceholderText('Enter field label'), {
+    fireEvent.change(screen.getByPlaceholderText('Enter field heading'), {
       target: {value: 'Observation Notes'},
     });
     act(() => {
       vi.advanceTimersByTime(LABEL_AUTO_SYNC_MS);
     });
-    fireEvent.blur(screen.getByPlaceholderText('Enter field label'));
+    fireEvent.blur(screen.getByPlaceholderText('Enter field heading'));
 
     expect(
       store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
