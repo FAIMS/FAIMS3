@@ -1060,3 +1060,94 @@ describe('TakePhoto handleDelete during parallel saves', () => {
     expect(removeAttachment).toHaveBeenCalledWith({attachmentId: 'photo-a'});
   });
 });
+
+// ---------------------------------------------------------------------------
+// Gallery display: loaded attachments are gated by content type
+// ---------------------------------------------------------------------------
+
+describe('TakePhoto gallery content-type gating', () => {
+  beforeEach(() => {
+    stubBrowserPhotoApis();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function renderWithLoaded(contentType: string, filename: string) {
+    const client = queryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <TakePhoto
+          name="photos"
+          label="Photos"
+          required={false}
+          helperText=""
+          advancedHelperText=""
+          fieldId="photos"
+          state={
+            {
+              value: {
+                data: ['att-1'],
+                attachments: [{attachmentId: 'att-1', filename, fileType: ''}],
+              },
+              meta: {errors: []},
+            } as never
+          }
+          setFieldData={vi.fn()}
+          setFieldAnnotation={vi.fn()}
+          addAttachment={vi.fn(async () => 'x')}
+          removeAttachment={vi.fn(async () => undefined)}
+          setAttachmentSaving={vi.fn()}
+          handleBlur={vi.fn()}
+          trigger={{commit: vi.fn(async () => undefined)}}
+          config={
+            {
+              mode: 'full',
+              layout: 'inline',
+              platform: 'web',
+              mapConfig: () => ({}),
+              appName: 'test-app',
+              attachmentEngine: () => ({
+                loadAttachmentAsBlob: vi.fn(async () => ({
+                  blob: new Blob(['<svg/>'], {type: contentType}),
+                  metadata: {filename, contentType},
+                })),
+              }),
+            } as never
+          }
+        />
+      </QueryClientProvider>
+    );
+  }
+
+  it('does not render a loaded SVG-typed attachment as an <img>', async () => {
+    const user = userEvent.setup();
+    renderWithLoaded('image/svg+xml', 'script.svg');
+
+    const placeholder = await screen.findByTestId('non-image-attachment');
+    expect(placeholder).toBeInTheDocument();
+    expect(screen.getByText('script.svg')).toBeInTheDocument();
+    expect(document.querySelector('img')).toBeNull();
+    expect(document.querySelectorAll('object, embed, iframe')).toHaveLength(0);
+
+    // Clicking the placeholder must not open the lightbox.
+    await user.click(placeholder);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.querySelector('img')).toBeNull();
+
+    // The hostile attachment can still be deleted.
+    expect(
+      screen.getByRole('button', {name: 'Delete photo'})
+    ).toBeInTheDocument();
+  });
+
+  it('still renders a loaded JPEG as an <img>', async () => {
+    renderWithLoaded('image/jpeg', 'photo.jpeg');
+
+    await waitFor(() => {
+      expect(document.querySelector('img')).not.toBeNull();
+    });
+    expect(screen.queryByTestId('non-image-attachment')).toBeNull();
+  });
+});

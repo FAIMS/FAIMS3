@@ -12,6 +12,7 @@ import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ImageIcon from '@mui/icons-material/Image';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import SyncIcon from '@mui/icons-material/Sync';
 import {Alert, Box, Paper, Tooltip, Typography, useTheme} from '@mui/material';
@@ -40,6 +41,7 @@ import {
 } from '../../../hooks/useAttachment';
 import {logError, logWarn} from '../../../logging';
 import {TakePhotoRender} from '../../../rendering/fields/view/specialised/TakePhoto';
+import {isDisplayableImageType} from '../../../utils';
 import {FieldInfo} from '../../types';
 import {getRemainingItemCount} from '../../utils/itemCountHelpers';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -614,6 +616,11 @@ const PhotoItem: React.FC<{
   deleteDisabled?: boolean;
 }> = ({data, onDelete, onClick, deleteDisabled = false}) => {
   const theme = useTheme();
+  // Loaded attachments come from the database, not the camera: a poisoned or
+  // legacy DB could hand this gallery an SVG/HTML blob. Only safe raster
+  // types are rendered as an <img> and may open the lightbox; anything else
+  // is shown as an inert placeholder that can still be deleted.
+  const isImage = isDisplayableImageType(data.metadata.contentType);
 
   return (
     <ImageItemContainer>
@@ -628,18 +635,53 @@ const PhotoItem: React.FC<{
           bgcolor: theme.palette.grey[100],
         }}
       >
-        <Box
-          component="img"
-          src={data.url}
-          onClick={onClick}
-          alt={`Photo ${data.metadata.filename}`}
-          sx={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            cursor: 'pointer',
-          }}
-        />
+        {isImage ? (
+          <Box
+            component="img"
+            src={data.url}
+            onClick={onClick}
+            alt={`Photo ${data.metadata.filename}`}
+            sx={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              cursor: 'pointer',
+            }}
+          />
+        ) : (
+          <Box
+            data-testid="non-image-attachment"
+            sx={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 0.5,
+              p: 1,
+              cursor: 'default',
+            }}
+          >
+            <InsertDriveFileIcon sx={{fontSize: 36, color: 'text.secondary'}} />
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                textAlign: 'center',
+                wordBreak: 'break-word',
+              }}
+            >
+              {data.metadata.filename}
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{color: 'text.disabled', textAlign: 'center'}}
+            >
+              Preview not available
+            </Typography>
+          </Box>
+        )}
         <ImageListItemBar
           sx={{background: 'rgba(0, 0, 0, 0.7)'}}
           position="top"
@@ -916,12 +958,18 @@ const PhotoGallery: React.FC<{
               );
             }
 
+            const loaded = photo.data;
             return (
               <PhotoItem
-                key={photo.data.id}
-                data={photo.data}
-                onDelete={() => handleDeleteClick(photo.data.id)}
-                onClick={() => setLightboxUrl(photo.data.url)}
+                key={loaded.id}
+                data={loaded}
+                onDelete={() => handleDeleteClick(loaded.id)}
+                onClick={() => {
+                  // Never open the lightbox for a non-image attachment.
+                  if (isDisplayableImageType(loaded.metadata.contentType)) {
+                    setLightboxUrl(loaded.url);
+                  }
+                }}
                 deleteDisabled={deleteDisabled}
               />
             );

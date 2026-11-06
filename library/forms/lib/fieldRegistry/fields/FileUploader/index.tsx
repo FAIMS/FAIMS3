@@ -40,6 +40,13 @@ import {
   useAttachmentsResult,
 } from '../../../hooks/useAttachment';
 import {FileUploaderRender} from '../../../rendering/fields/view/specialised/FileUploader';
+import {
+  blockedAttachmentMessage,
+  fileHasActiveContent,
+  isBlockedAttachmentContentType,
+  isBlockedAttachmentFilename,
+  isDisplayableImageType,
+} from '../../../utils';
 import {FieldInfo} from '../../types';
 import {getRemainingItemCount} from '../../utils/itemCountHelpers';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -82,17 +89,10 @@ interface FullFileUploaderFieldProps extends FileUploaderFieldProps {
 // ============================================================================
 
 /**
- * Determines if a file is an image based on MIME type
- */
-function isImageFile(contentType: string): boolean {
-  return contentType.startsWith('image/');
-}
-
-/**
  * Gets appropriate icon for file type
  */
 function getFileIcon(contentType: string) {
-  if (isImageFile(contentType)) {
+  if (isDisplayableImageType(contentType)) {
     return <ImageIcon />;
   }
   return <InsertDriveFileIcon />;
@@ -135,7 +135,7 @@ const AttachmentDialog: React.FC<{
 
   if (!attachment) return null;
 
-  const isImage = isImageFile(attachment.metadata.contentType);
+  const isImage = isDisplayableImageType(attachment.metadata.contentType);
 
   return (
     <Dialog
@@ -396,7 +396,7 @@ const FileItem: React.FC<{
   disabled: boolean;
 }> = ({data, onDelete, onClick, disabled}) => {
   const theme = useTheme();
-  const isImage = isImageFile(data.metadata.contentType);
+  const isImage = isDisplayableImageType(data.metadata.contentType);
 
   return (
     <ListItem
@@ -669,6 +669,21 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
         return;
       }
 
+      // Reject the whole batch if any file is SVG/HTML by declared type or
+      // extension. These checks are synchronous and run before any capacity
+      // is reserved or any attachment is stored. (The leading-byte sniff is
+      // async and runs below, before the first addAttachment.)
+      const blockedByName = acceptedFiles.find(
+        f =>
+          isBlockedAttachmentContentType(f.type) ||
+          isBlockedAttachmentFilename(f.name)
+      );
+      if (blockedByName) {
+        setError(blockedAttachmentMessage(blockedByName.name));
+        releasePicker();
+        return;
+      }
+
       // Recheck capacity using the latest reservations before uploading.
       const currentCount = getOccupiedFileCount({
         attachments: state.value?.attachments ?? [],
@@ -700,6 +715,18 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
         // Drag-and-drop sets the lock here; click-to-select sets it on dialog open.
         if (!lockFromPicker) {
           setAttachmentSaving?.(true);
+        }
+
+        // Leading-byte sniff (<= 512 bytes per file, one slice read each):
+        // catches SVG/HTML bytes hiding behind a benign name/type. The batch
+        // holds its reservation while this runs so a concurrent drop cannot
+        // over-commit; the finally block releases it on rejection. Nothing
+        // is stored until every file has passed.
+        for (const file of acceptedFiles) {
+          if (await fileHasActiveContent(file)) {
+            setError(blockedAttachmentMessage(file.name));
+            return;
+          }
         }
 
         attachmentSaveTrace('FileUploader:save-start', {
