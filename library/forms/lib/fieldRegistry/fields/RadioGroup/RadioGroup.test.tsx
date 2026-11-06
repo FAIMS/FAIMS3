@@ -41,7 +41,7 @@ function renderRadioGroupField({
           expandedChecklist,
           enableOtherOption,
         }}
-        state={{value: {data: value}, meta: {errors: []}} as any}
+        state={{value: {data: value}, meta: {errors: []}} as never}
         setFieldData={(nextOrUpdater: unknown) => {
           setValue(prev => {
             const next =
@@ -57,7 +57,7 @@ function renderRadioGroupField({
         removeAttachment={vi.fn(async () => undefined)}
         handleBlur={vi.fn()}
         trigger={{commit: vi.fn(async () => undefined)}}
-        config={{} as any}
+        config={{} as never}
       />
     );
   };
@@ -135,7 +135,7 @@ describe('RadioGroup value schema', () => {
       ],
       enableOtherOption: true,
     },
-  } as any);
+  });
 
   it('accepts predefined option values', () => {
     expect(schema.safeParse('yes').success).toBe(true);

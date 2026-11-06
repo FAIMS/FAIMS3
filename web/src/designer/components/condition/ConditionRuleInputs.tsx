@@ -31,8 +31,8 @@ import {FieldSearchAutocomplete} from '../field-selector';
 const getSelectableOptions = (
   fieldDef: FieldType
 ): SelectableConditionOption[] =>
-  ((fieldDef['component-parameters'] as {ElementProps?: ChoiceElementProps})
-    .ElementProps?.options ?? []) as SelectableConditionOption[];
+  (fieldDef['component-parameters'] as {ElementProps?: ChoiceElementProps})
+    .ElementProps?.options ?? [];
 
 /* Checks if a field has predefined options */
 const isPredefinedOptions = (fieldDef: FieldType | null): boolean => {
@@ -161,9 +161,7 @@ const isValueValidForField = (
   const params = (fieldDef['component-parameters'] || {}) as {
     ElementProps?: ChoiceElementProps;
   };
-  const possibleOptions =
-    (params.ElementProps?.options as SelectableConditionOption[] | undefined) ??
-    [];
+  const possibleOptions = params.ElementProps?.options ?? [];
   const enableOtherOption = params.ElementProps?.enableOtherOption ?? false;
 
   if (
@@ -291,9 +289,7 @@ const ValueEditor = (props: {
   const params = (fieldDef['component-parameters'] || {}) as {
     ElementProps?: ChoiceElementProps;
   };
-  const possibleOptions =
-    (params.ElementProps?.options as SelectableConditionOption[] | undefined) ??
-    [];
+  const possibleOptions = params.ElementProps?.options ?? [];
 
   const updateValue = (nextValue: RuleCondition['value']) => {
     onChange({value: nextValue});

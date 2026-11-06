@@ -49,7 +49,7 @@ function renderMultiSelectField({
           otherOptionPosition,
           exclusiveOptions,
         }}
-        state={{value: {data: value}, meta: {errors: []}} as any}
+        state={{value: {data: value}, meta: {errors: []}} as never}
         setFieldData={(nextOrUpdater: unknown) => {
           setValue(prev => {
             const next =
@@ -65,7 +65,7 @@ function renderMultiSelectField({
         removeAttachment={vi.fn(async () => undefined)}
         handleBlur={vi.fn()}
         trigger={{commit: vi.fn(async () => undefined)}}
-        config={{} as any}
+        config={{} as never}
       />
     );
   };
@@ -203,7 +203,7 @@ describe('MultiSelect value schema', () => {
         ],
         enableOtherOption,
       },
-    } as any);
+    });
 
   it('accepts an array of predefined values', () => {
     expect(createSchema().safeParse(['YES_ID', 'NO_ID']).success).toBe(true);

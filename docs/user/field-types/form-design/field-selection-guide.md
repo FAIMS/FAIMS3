@@ -319,9 +319,9 @@ document and media types.
   map layers and cached base-map tiles when you are offline.**
   Prepare overlays and Map regions before you go offline.
   That download needs internet.
-- **Plan your vocabularies before building.** The display label and
-  stored value are always the same — what users see is exactly what
-  appears in exported data.
+- **Plan your vocabularies before building.** The **Display label** is
+  shown to collectors, while the **Export value** is stored with their
+  answers and used in exported data.
 - **Each record type exports as a separate CSV.** Relationships are
   preserved through identifier columns. Plan your data model with
   export in mind.

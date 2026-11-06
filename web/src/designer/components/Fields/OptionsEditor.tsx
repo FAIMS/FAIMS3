@@ -56,6 +56,7 @@ import {
   findOptionReferences,
   updateConditionReferences,
 } from '../../domain/conditions/conditionReferences';
+import {cloneField} from '../../domain/notebook/fieldFactory';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {fieldUpdated, sectionConditionChanged} from '../../store/slices/uiSpec';
@@ -74,15 +75,15 @@ import {BaseFieldEditor} from './BaseFieldEditor';
 // Types & Consts
 // ============================================================================
 
+// Choice options have separate stored values and Markdown display labels.
+type ChoiceOption = ChoiceElementProps['options'][number];
+
 /**
  * Subset of choice-field `component-parameters` this editor reads/writes. The
  * `ElementProps` shape is the shared {@link ChoiceElementProps} used by
  * RadioGroup, Select and MultiSelect in `@faims3/forms`; keys are optional here
  * because the editor patches them incrementally.
  */
-
-// Choice options have separate stored values and Markdown display labels.
-type ChoiceOption = ChoiceElementProps['options'][number];
 type ChoiceComponentParameters = {ElementProps?: Partial<ChoiceElementProps>};
 
 // Prefix sortable IDs without changing values: normalising their text could
@@ -954,7 +955,7 @@ export const OptionsEditor = ({
     updatedExclusiveOptions?: string[],
     updatedOtherOptionPosition?: number
   ) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
+    const newField = cloneField(field);
     const newParams = newField[
       'component-parameters'
     ] as ChoiceComponentParameters;
@@ -1105,8 +1106,20 @@ export const OptionsEditor = ({
       return;
     }
 
+    // Keep Other at the end when it already sits there. A new choice is
+    // appended to the regular list, so an end index would otherwise land
+    // that choice below Other. Delete already shifts this index.
+    const nextOtherPosition =
+      enableOther && otherOptionPosition >= options.length
+        ? otherOptionPosition + 1
+        : otherOptionPosition;
+
     // Add a new option, defaulting the label to the export value.
-    updateField([...options, {value, label: value}]);
+    updateField(
+      [...options, {value, label: value}],
+      undefined,
+      nextOtherPosition
+    );
     setNewOptionValue('');
     setAddErrorMessage('');
   };
@@ -1213,7 +1226,7 @@ export const OptionsEditor = ({
     _value: string
   ) => {
     const selectedMode = event.target.value as ChoiceDisplayMode;
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
+    const newField = cloneField(field);
     const newParams = newField[
       'component-parameters'
     ] as ChoiceComponentParameters;
@@ -1228,7 +1241,7 @@ export const OptionsEditor = ({
    * "Other" option feature
    */
   const setEnableOtherOption = (newEnable: boolean) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
+    const newField = cloneField(field);
     const newParams = newField[
       'component-parameters'
     ] as ChoiceComponentParameters;
@@ -1488,8 +1501,7 @@ export const OptionsEditor = ({
               </Box>
             </Grid>
 
-            {/* Restore the original expanded/dropdown display mode control.
-                It updates expandedChecklist through the existing Redux handler. */}
+            {/* Expanded/dropdown display mode. Updates expandedChecklist in Redux. */}
             {showExpandedCheckListControl && (
               <Grid size={12}>
                 <FormControl>
