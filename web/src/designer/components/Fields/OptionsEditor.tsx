@@ -50,7 +50,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import {alpha} from '@mui/material/styles';
+import {alpha, Theme} from '@mui/material/styles';
 import {useMemo, useRef, useState} from 'react';
 import {
   findOptionReferences,
@@ -97,8 +97,8 @@ enum ChoiceDisplayMode {
   dropdown = 'dropdown',
 }
 
-// Disable some Markdown features to keep display labels simple.
-const mdxEditorDisabledFeatures: MdxEditorFeature[] = [
+// Hide toolbar buttons while keeping Markdown features supported.
+const hiddenOptionToolbarFeatures: MdxEditorFeature[] = [
   'lists',
   'tables',
   'images',
@@ -121,6 +121,21 @@ type CombinedRow =
 // ============================================================================
 // Styles & Shared Components
 // ============================================================================
+
+// Shared table header styling: theme-aware background and divider.
+const optionTableHeaderSx = {
+  backgroundColor: (theme: Theme) => alpha(theme.palette.text.primary, 0.025),
+  '& .MuiTableCell-root': {
+    borderBottom: '1px solid',
+    borderColor: (theme: Theme) => alpha(theme.palette.text.primary, 0.12),
+    fontWeight: 700,
+    fontSize: '0.78rem',
+    color: 'text.secondary',
+    textTransform: 'uppercase',
+    letterSpacing: '0.03em',
+    py: 0.9,
+  },
+} as const;
 
 // Keep the drag handle aligned to the left.
 const dragHandleCellSx = {
@@ -168,13 +183,13 @@ const textCellSx = {
 
 // Shared row styling: subtle background + clear hover state + row divider.
 const optionRowSx = {
-  backgroundColor: alpha('#000', 0.015),
+  backgroundColor: (theme: Theme) => alpha(theme.palette.text.primary, 0.015),
   borderBottom: '1px solid',
-  borderColor: alpha('#000', 0.08),
+  borderColor: (theme: Theme) => alpha(theme.palette.text.primary, 0.08),
   transition: 'background-color 140ms ease',
   '&:last-of-type': {borderBottom: 'none'},
   '&:hover': {
-    backgroundColor: alpha('#1976d2', 0.06),
+    backgroundColor: (theme: Theme) => alpha(theme.palette.primary.main, 0.06),
   },
 } as const;
 
@@ -482,7 +497,7 @@ const EditOptionDialog = ({
                 setLabelError('');
               }}
               editorRef={editorRef}
-              disabledFeatures={mdxEditorDisabledFeatures}
+              hiddenToolbarFeatures={hiddenOptionToolbarFeatures}
             />
           )}
 
@@ -638,7 +653,7 @@ const SortableOtherOptionRow = ({
               component="span"
               sx={{
                 fontSize: '0.75rem',
-                color: 'rgba(0, 0, 0, 0.6)',
+                color: 'text.secondary',
               }}
             >
               (allows custom text input)
@@ -655,6 +670,7 @@ const SortableOtherOptionRow = ({
         <Tooltip title={isFirst ? 'Already at the top' : 'Move up'}>
           <span>
             <IconButton
+              aria-label="Move up"
               size="small"
               disabled={isFirst}
               onClick={onMoveUp}
@@ -669,6 +685,7 @@ const SortableOtherOptionRow = ({
         <Tooltip title={isLast ? 'Already at the bottom' : 'Move down'}>
           <span>
             <IconButton
+              aria-label="Move down"
               size="small"
               disabled={isLast}
               onClick={onMoveDown}
@@ -801,6 +818,7 @@ const SortableItem = ({
         <Tooltip title={isFirst ? 'Already at the top' : 'Move up'}>
           <span>
             <IconButton
+              aria-label="Move up"
               size="small"
               disabled={isFirst}
               onClick={() => onMove(option.value, 'up')}
@@ -815,6 +833,7 @@ const SortableItem = ({
         <Tooltip title={isLast ? 'Already at the bottom' : 'Move down'}>
           <span>
             <IconButton
+              aria-label="Move down"
               size="small"
               disabled={isLast}
               onClick={() => onMove(option.value, 'down')}
@@ -1284,7 +1303,7 @@ export const OptionsEditor = ({
             borderColor: 'divider',
             borderRadius: 1.25,
             p: {xs: 1.25, sm: 1.75},
-            backgroundColor: '#fff',
+            backgroundColor: 'background.paper',
           }}
         >
           <Grid container spacing={1.5}>
@@ -1311,21 +1330,7 @@ export const OptionsEditor = ({
                   {/* Auto-sized control columns leave flexible space for value and label. */}
                   <Table size="small" sx={{tableLayout: 'auto', width: '100%'}}>
                     <TableHead>
-                      <TableRow
-                        sx={{
-                          backgroundColor: alpha('#000', 0.025),
-                          '& .MuiTableCell-root': {
-                            borderBottom: '1px solid',
-                            borderColor: alpha('#000', 0.12),
-                            fontWeight: 700,
-                            fontSize: '0.78rem',
-                            color: 'text.secondary',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.03em',
-                            py: 0.9,
-                          },
-                        }}
-                      >
+                      <TableRow sx={optionTableHeaderSx}>
                         {/* Drag handle header */}
                         <TableCell sx={compactCellSx} />
 

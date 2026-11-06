@@ -322,32 +322,42 @@ const MuiMultiSelect = ({
           onChange={handleChange}
           onBlur={onBlur}
           value={value}
-          renderValue={selected => {
-            const displayText = (selected as string[])
-              .map(v => {
-                if (v === OTHER_MARKER) {
-                  return otherText || 'Other';
-                }
-                if (isOtherOptionValue(v)) {
-                  return extractOtherText(v) || 'Other';
-                }
-                // Show the display label while keeping the export value in stored data.
-                return options.find(option => option.value === v)?.label ?? v;
-              })
-              .join(', ');
+          renderValue={selected => (
+            <span>
+              {(selected as string[]).map((v, index) => {
+                const label =
+                  v === OTHER_MARKER
+                    ? otherText || 'Other'
+                    : isOtherOptionValue(v)
+                      ? extractOtherText(v) || 'Other'
+                      : (options.find(option => option.value === v)?.label ??
+                        v);
 
-            return (
-              <span
-                dangerouslySetInnerHTML={{
-                  // generate inline html for the option list
-                  __html: contentToSanitizedHtml({
-                    content: displayText,
-                    inline: true,
-                  }),
-                }}
-              />
-            );
-          }}
+                const isOther = v === OTHER_MARKER || isOtherOptionValue(v);
+
+                return (
+                  <React.Fragment key={`${v}-${index}`}>
+                    {/* Separate selected options without combining their Markdown. */}
+                    {index > 0 && ', '}
+
+                    {isOther ? (
+                      label
+                    ) : (
+                      <span
+                        dangerouslySetInnerHTML={{
+                          // Parse each label separately to prevent Markdown formatting from spanning options.
+                          __html: contentToSanitizedHtml({
+                            content: label,
+                            inline: true,
+                          }),
+                        }}
+                      />
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </span>
+          )}
           MenuProps={{
             slotProps: {
               paper: {

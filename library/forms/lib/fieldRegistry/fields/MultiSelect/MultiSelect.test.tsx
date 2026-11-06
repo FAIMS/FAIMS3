@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+
 import '@testing-library/jest-dom/vitest';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -13,6 +14,7 @@ type RenderParams = {
   otherOptionPosition?: number;
   exclusiveOptions?: string[];
   initialValue?: string[];
+  options?: {value: string; label: string}[];
 };
 
 /** Render a controlled MultiSelect and capture the stored field values. */
@@ -22,6 +24,11 @@ function renderMultiSelectField({
   otherOptionPosition,
   exclusiveOptions = [],
   initialValue = [],
+  options = [
+    {value: 'YES_ID', label: '**Yes**'},
+    {value: 'NO_ID', label: 'No'},
+    {value: 'NONE_ID', label: 'None of the above'},
+  ],
 }: RenderParams = {}) {
   const setFieldDataCalls: string[][] = [];
   const user = userEvent.setup();
@@ -39,11 +46,7 @@ function renderMultiSelectField({
         advancedHelperText=""
         disabled={false}
         ElementProps={{
-          options: [
-            {value: 'YES_ID', label: '**Yes**'},
-            {value: 'NO_ID', label: 'No'},
-            {value: 'NONE_ID', label: 'None of the above'},
-          ],
+          options,
           expandedChecklist,
           enableOtherOption,
           otherOptionPosition,
@@ -91,6 +94,15 @@ describe('MultiSelect field rendering', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('renders Markdown formatting in option labels', () => {
+    renderMultiSelectField();
+
+    const checkbox = screen.getByRole('checkbox', {name: 'Yes'});
+    expect(checkbox).toBeInTheDocument();
+
+    expect(screen.getByText('Yes', {selector: 'strong'})).toBeInTheDocument();
+  });
+
   it('stores values rather than display labels in expanded mode', async () => {
     const {user, setFieldDataCalls} = renderMultiSelectField();
 
@@ -122,6 +134,23 @@ describe('MultiSelect field rendering', () => {
     // The dropdown displays the label rather than the stored value.
     expect(screen.getByRole('combobox')).toHaveTextContent('Yes');
     expect(screen.getByRole('combobox')).not.toHaveTextContent('YES_ID');
+  });
+
+  it('renders selected Markdown labels independently in dropdown mode', () => {
+    renderMultiSelectField({
+      expandedChecklist: false,
+      initialValue: ['A_ID', 'B_ID'],
+      options: [
+        {value: 'A_ID', label: 'A*'},
+        {value: 'B_ID', label: '*B'},
+      ],
+    });
+
+    const combobox = screen.getByRole('combobox');
+
+    // Markdown markers from separate options must not combine.
+    expect(combobox).toHaveTextContent('A*, *B');
+    expect(combobox.querySelector('em')).toBeNull();
   });
 });
 
@@ -190,6 +219,23 @@ describe('MultiSelect Other option', () => {
 
     expect(setFieldDataCalls.at(-1)).toEqual([`${OTHER_PREFIX}Papaya`]);
   });
+
+  it('disables the Other input when an exclusive option is selected', async () => {
+    const {user, setFieldDataCalls} = renderMultiSelectField({
+      enableOtherOption: true,
+      exclusiveOptions: ['NONE_ID'],
+    });
+
+    await user.click(screen.getByRole('checkbox', {name: 'None of the above'}));
+
+    const otherInput = screen.getByPlaceholderText('Other');
+    expect(otherInput).toBeDisabled();
+
+    await user.click(otherInput);
+
+    expect(setFieldDataCalls.at(-1)).toEqual(['NONE_ID']);
+    expect(otherInput).toHaveValue('');
+  });
 });
 
 describe('MultiSelect value schema', () => {
@@ -228,31 +274,5 @@ describe('MultiSelect value schema', () => {
     expect(createSchema().safeParse([`${OTHER_PREFIX}Custom`]).success).toBe(
       false
     );
-  });
-
-  it('renders Markdown formatting in option labels', () => {
-    renderMultiSelectField();
-
-    const checkbox = screen.getByRole('checkbox', {name: 'Yes'});
-    expect(checkbox).toBeInTheDocument();
-
-    expect(screen.getByText('Yes', {selector: 'strong'})).toBeInTheDocument();
-  });
-
-  it('disables the Other input when an exclusive option is selected', async () => {
-    const {user, setFieldDataCalls} = renderMultiSelectField({
-      enableOtherOption: true,
-      exclusiveOptions: ['NONE_ID'],
-    });
-
-    await user.click(screen.getByRole('checkbox', {name: 'None of the above'}));
-
-    const otherInput = screen.getByPlaceholderText('Other');
-    expect(otherInput).toBeDisabled();
-
-    await user.click(otherInput);
-
-    expect(setFieldDataCalls.at(-1)).toEqual(['NONE_ID']);
-    expect(otherInput).toHaveValue('');
   });
 });

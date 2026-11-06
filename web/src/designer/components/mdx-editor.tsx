@@ -74,15 +74,15 @@ const SUPPORTED_NODE_TYPES = new Set([
   'imageReference',
 ]);
 
-/** Editor features that can be disabled for specific use cases. */
+// Editor features that can be hidden from the toolbar.
 export type MdxEditorFeature = 'headings' | 'lists' | 'tables' | 'images';
 
 type Props = {
   initialMarkdown: string;
   editorRef: React.Ref<MDXEditorMethods> | undefined;
   handleChange: ((markdown: string) => void) | undefined;
-  // Features to disable. All features are enabled by default.
-  disabledFeatures?: MdxEditorFeature[];
+  // Hide toolbar buttons without disabling Markdown support.
+  hiddenToolbarFeatures?: MdxEditorFeature[];
 };
 
 /** Constrained MDX/Markdown editor for long-form metadata (toolbar + allowed mdast nodes). */
@@ -90,7 +90,7 @@ export const MdxEditor = ({
   initialMarkdown,
   editorRef,
   handleChange,
-  disabledFeatures = [],
+  hiddenToolbarFeatures = [],
 }: Props) => {
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -130,8 +130,8 @@ export const MdxEditor = ({
       },
     };
 
-    // Use the configured features to control both plugins and toolbar buttons.
-    const disabled = new Set(disabledFeatures);
+    // Hide selected toolbar buttons while keeping all Markdown plugins enabled.
+    const hidden = new Set(hiddenToolbarFeatures);
 
     const [catchAllPlugin] = realmPlugin({
       id: 'catchAll',
@@ -149,41 +149,39 @@ export const MdxEditor = ({
       });
 
     return [
-      ...(!disabled.has('headings') ? [headingsPlugin()] : []),
-      ...(!disabled.has('lists') ? [listsPlugin()] : []),
+      headingsPlugin(),
+      listsPlugin(),
       thematicBreakPlugin(),
       markdownShortcutPlugin(),
-      ...(!disabled.has('tables') ? [tablePlugin()] : []),
+      tablePlugin(),
       diffSourcePlugin({diffMarkdown: initialMarkdownRef.current}),
       linkPlugin(),
-      ...(!disabled.has('images')
-        ? [imagePlugin({imageUploadHandler, disableImageResize: false})]
-        : []),
+      imagePlugin({imageUploadHandler, disableImageResize: false}),
       toolbarPlugin({
         toolbarContents: () => (
           <DiffSourceToggleWrapper>
             <UndoRedo />
             <Separator />
             <BoldItalicUnderlineToggles />
-            {!disabled.has('headings') && (
+            {!hidden.has('headings') && (
               <>
                 <Separator />
                 <BlockTypeSelect />
               </>
             )}
-            {!disabled.has('lists') && (
+            {!hidden.has('lists') && (
               <>
                 <Separator />
                 <ListsToggle />
               </>
             )}
-            {!disabled.has('tables') && (
+            {!hidden.has('tables') && (
               <>
                 <Separator />
                 <InsertTable />
               </>
             )}
-            {!disabled.has('images') && (
+            {!hidden.has('images') && (
               <>
                 <Separator />
                 <InsertImage />
