@@ -615,8 +615,35 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
   const [linkError, setLinkError] = useState<string | undefined>(undefined);
 
+  // One query per linked id (order matches `normalizedLinks`) for list display
+  // and permission checks.
+  const relatedRecordQueries = useQueries({
+    queries: normalizedLinks.map(({record_id}) => ({
+      queryKey: [...RELATED_HYDRATION_QUERY_KEY, record_id],
+      queryFn: async () => {
+        const record = await props.config
+          .dataEngine()
+          .hydrated.getHydratedRecord({
+            recordId: record_id,
+            config: {conflictBehaviour: 'pickLast'},
+          });
+
+        return record ?? undefined;
+      },
+      networkMode: 'always',
+      staleTime: 0,
+      refetchOnMount: true,
+    })),
+  });
+
   const handleLinkExisting = async (record: HydratedRecord) => {
     setLinkError(undefined);
+    const engine = props.config.dataEngine();
+    // The engine judges whether a dead link still holds a single-link field,
+    // as it does on create, so the two paths cannot disagree.
+    const deletedTargetIds = props.multiple
+      ? undefined
+      : await engine.form.deletedLinkTargets(normalizedLinks);
     // Both halves come from one place, so a caller outside a form derives the
     // same link this field does.
     const {fieldValue, relationship} = relatedLinkWrites({
@@ -631,11 +658,12 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       // Matches how detaching writes it back: an array while the field takes
       // many, a bare entry while it takes one.
       isMultiple: props.multiple,
+      deletedTargetIds,
     });
 
     // The field value is form state; the target's revision is not.
     props.setFieldData(fieldValue);
-    await props.config.dataEngine().hydrated.updateRevision(
+    await engine.hydrated.updateRevision(
       {
         ...record.revision,
         relationship,
@@ -660,27 +688,6 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       );
     }
   };
-
-  // One query per linked id (order matches `normalizedLinks`) for list display
-  // and permission checks.
-  const relatedRecordQueries = useQueries({
-    queries: normalizedLinks.map(({record_id}) => ({
-      queryKey: [...RELATED_HYDRATION_QUERY_KEY, record_id],
-      queryFn: async () => {
-        const record = await props.config
-          .dataEngine()
-          .hydrated.getHydratedRecord({
-            recordId: record_id,
-            config: {conflictBehaviour: 'pickLast'},
-          });
-
-        return record ?? undefined;
-      },
-      networkMode: 'always',
-      staleTime: 0,
-      refetchOnMount: true,
-    })),
-  });
 
   // Navigates to an existing link
   const handleLinkClick = (recordId: string) => {
