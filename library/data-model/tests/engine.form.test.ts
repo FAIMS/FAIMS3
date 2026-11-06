@@ -421,6 +421,31 @@ describe('Form Operations', () => {
       expect(linked).toEqual(link);
     });
 
+    it('takes a new link on a field whose one link points at a record it cannot read', async () => {
+      const engineWithRelations = relatedEngine();
+      // A document under the linked id that is not a record at all.
+      await db.put({_id: 'rec-broken-1', type: 'not-a-record'});
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        const {link, linked} =
+          await engineWithRelations.form.createRelatedRecord({
+            parentRecordId: 'parent-1',
+            parentFieldId: 'peer',
+            createdBy: 'alice',
+            parentFieldValue: {
+              record_id: 'rec-broken-1',
+              relation_type_vocabPair: ['is linked to', 'is linked from'],
+            },
+          });
+        // Reported, then replaced: the list cannot show this target and the
+        // operator cannot detach it, so refusing would strand the field.
+        expect(warn).toHaveBeenCalled();
+        expect(linked).toEqual(link);
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
     it('writes no record when the field holds a value it cannot read', async () => {
       const engineWithRelations = relatedEngine();
       const before = (await db.allDocs({})).rows.length;

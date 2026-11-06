@@ -1781,13 +1781,18 @@ class FormOperations {
   }
 
   /**
-   * Which of these links point at a deleted record, read the way the related
-   * records list reads them, so the engine and the list agree on what the
-   * field holds. A target that cannot be read counts as live: refusing is the
-   * safe side when its state is unknown.
+   * Which of these links no longer hold a single-link field, read the way the
+   * related records list reads them so the engine and the list agree. Both
+   * creating and linking call this, so a field is judged in one place.
+   *
+   * A target that is not found counts as live: it may not have synced yet.
+   * Any other failure to read it is reported and counts as not holding the
+   * field: a target whose documents cannot be read is one the list cannot
+   * show and the operator cannot detach, so refusing would leave the field
+   * stuck with no way forward. Never throws.
    */
-  private async deletedLinkTargets(
-    links: RelatedRecordFieldAvpEntry[]
+  async deletedLinkTargets(
+    links: Array<{record_id: string}>
   ): Promise<Set<string>> {
     const deleted = new Set<string>();
     await Promise.all(
@@ -1802,12 +1807,12 @@ class FormOperations {
           const revision = await this.core.getRevision(selectedHead);
           if (revision.deleted === true) deleted.add(record_id);
         } catch (error) {
-          if (
-            !(error instanceof Exceptions.DocumentNotFoundError) &&
-            !(error instanceof Exceptions.NoHeadsError)
-          ) {
-            throw error;
-          }
+          if (error instanceof Exceptions.DocumentNotFoundError) return;
+          console.warn(
+            `Could not read linked record ${record_id}; its link no longer holds the field`,
+            error
+          );
+          deleted.add(record_id);
         }
       })
     );

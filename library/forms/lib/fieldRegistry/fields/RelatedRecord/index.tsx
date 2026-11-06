@@ -636,20 +636,14 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     })),
   });
 
-  /** Targets the list already hides as deleted; a single-link field holding
-   * one is free to take a new link, the same as the create path. */
-  const deletedTargetIds = () =>
-    new Set(
-      normalizedLinks
-        .filter((_, index) => {
-          const d = relatedRecordQueries[index]?.data;
-          return d !== undefined && (d.record.deleted || d.revision.deleted);
-        })
-        .map(link => link.record_id)
-    );
-
   const handleLinkExisting = async (record: HydratedRecord) => {
     setLinkError(undefined);
+    const engine = props.config.dataEngine();
+    // The engine judges whether a dead link still holds a single-link field,
+    // as it does on create, so the two paths cannot disagree.
+    const deletedTargetIds = props.multiple
+      ? undefined
+      : await engine.form.deletedLinkTargets(normalizedLinks);
     // Both halves come from one place, so a caller outside a form derives the
     // same link this field does.
     const {fieldValue, relationship} = relatedLinkWrites({
@@ -664,12 +658,12 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       // Matches how detaching writes it back: an array while the field takes
       // many, a bare entry while it takes one.
       isMultiple: props.multiple,
-      deletedTargetIds: deletedTargetIds(),
+      deletedTargetIds,
     });
 
     // The field value is form state; the target's revision is not.
     props.setFieldData(fieldValue);
-    await props.config.dataEngine().hydrated.updateRevision(
+    await engine.hydrated.updateRevision(
       {
         ...record.revision,
         relationship,
