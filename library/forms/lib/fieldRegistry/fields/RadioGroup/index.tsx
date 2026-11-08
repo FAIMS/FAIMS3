@@ -41,6 +41,10 @@ import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
 import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
 import {
+  otherOptionPositionAmongVisible,
+  visibleChoiceOptions,
+} from '../visibleChoiceOptions';
+import {
   OTHER_MARKER,
   OTHER_PREFIX,
   otherTextFieldSx,
@@ -83,11 +87,21 @@ export const RadioGroup = (props: FieldProps) => {
     setFieldData,
     handleBlur,
     ElementProps,
+    conditionValues,
   } = props;
 
   const rawValue = (state.value?.data as string) ?? '';
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
-  const otherOptionPosition = ElementProps.options.length;
+  const visibleOptions = visibleChoiceOptions(
+    ElementProps.options,
+    conditionValues ?? {},
+    rawValue
+  );
+  const otherOptionPosition = otherOptionPositionAmongVisible(
+    ElementProps.options,
+    visibleOptions,
+    ElementProps.otherOptionPosition
+  );
   const predefinedValues = ElementProps.options.map(opt => opt.value);
   // if expandedChecklist is missing, we default to true - expanded by default
   const expandedChecklist = ElementProps.expandedChecklist !== false;
@@ -158,7 +172,7 @@ export const RadioGroup = (props: FieldProps) => {
         {expandedChecklist && (
           <RadioGroupWidget
             displayValue={displayValue}
-            options={ElementProps.options}
+            options={visibleOptions}
             enableOtherOption={enableOtherOption}
             otherOptionPosition={otherOptionPosition}
             handleChange={handleChange}
@@ -173,7 +187,7 @@ export const RadioGroup = (props: FieldProps) => {
         {!expandedChecklist && (
           <DropDownWidget
             displayValue={displayValue}
-            options={ElementProps.options}
+            options={visibleOptions}
             enableOtherOption={enableOtherOption}
             otherOptionPosition={otherOptionPosition}
             handleChange={handleChange}
@@ -249,7 +263,7 @@ export const RadioGroup = (props: FieldProps) => {
 
 interface WidgetProps {
   displayValue: string;
-  options: {value: string; label: string}[];
+  options: ChoiceOption[];
   enableOtherOption: boolean;
   otherOptionPosition: number;
   handleChange: (event: React.ChangeEvent<HTMLInputElement>) => void;

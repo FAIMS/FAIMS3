@@ -3,9 +3,10 @@ import {
   BaseFieldParameters,
   FormAnnotation,
   FormUpdateData,
+  ValuesObject,
 } from '@faims3/data-model';
 import {useForm} from '@tanstack/react-form';
-import React from 'react';
+import React, {createContext} from 'react';
 import {FormConfig} from './formManagers/types';
 
 export type FaimsFormData = FormUpdateData | undefined;
@@ -35,10 +36,24 @@ export interface SetFieldDataFn {
   (updater: (prev: any) => any): void;
 }
 
+/**
+ * Live `buildConditionValues` bag used to filter choice options. Form managers
+ * provide the current record plus parent / linked-record / metadata values.
+ * Empty when a field is rendered outside a form manager (unit tests pass
+ * `conditionValues` on the field props instead).
+ */
+export const ConditionValuesContext = createContext<ValuesObject>({});
+
 export type FormFieldContextProps = {
   // Which field is being rendered?
   fieldId: string;
   state: FaimsFormFieldState;
+  /**
+   * Value bag for option-level visibility conditions. Same shape as field and
+   * section conditions (`buildConditionValues`). Optional so unit tests can
+   * omit it when no option is conditioned.
+   */
+  conditionValues?: ValuesObject;
   /**
    * Update the field's data value.
    *

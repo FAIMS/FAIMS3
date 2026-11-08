@@ -66,6 +66,7 @@ export const buildFieldSearchEntry = (
  * - `context`: same form as the editing target, excluding either the current field
  *   (`fieldId`) or all fields in the current section (`sectionId`) — mirrors
  *   condition-editor rules so a field cannot reference itself or its section peers.
+ *   Pass `includeFieldId` to keep `fieldId` in the list (option conditions).
  */
 export const resolveFieldIdsInScope = (
   allFields: Record<string, FieldType>,
@@ -106,7 +107,9 @@ export const resolveFieldIdsInScope = (
     : [];
 
   if (scope.fieldId) {
-    return formFields.filter(id => id !== scope.fieldId);
+    return scope.includeFieldId
+      ? formFields
+      : formFields.filter(id => id !== scope.fieldId);
   }
   // Section condition: reference fields from other sections in the same form only.
   return formFields.filter(id => !ownSectionFields.includes(id));

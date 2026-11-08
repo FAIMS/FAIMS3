@@ -461,16 +461,18 @@ export type ConditionRuleInputsProps = {
   onChange: (patch: Partial<RuleCondition>) => void;
   field?: string;
   view?: string;
+  includeField?: boolean;
   showLabels?: boolean;
 };
 
 export const ConditionRuleInputs = (props: ConditionRuleInputsProps) => {
-  const {rule, onChange, field, view, showLabels} = props;
+  const {rule, onChange, field, view, includeField, showLabels} = props;
 
   const {allFields, fieldSearchScope, referenceEntries} =
     useConditionRuleFieldContext({
       field,
       view,
+      includeField,
     });
 
   // Reference the operator input so the dropdown can match its width.

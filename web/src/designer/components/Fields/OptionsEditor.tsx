@@ -48,7 +48,7 @@ import {
   Typography,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
-import {ChoiceElementProps} from '@faims3/forms';
+import {ChoiceElementProps, ChoiceOption} from '@faims3/forms';
 import {designerHtmlInput, INPUT_LIMITS} from '../../lib/input-limits';
 import {useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
@@ -74,8 +74,11 @@ import {
 import {DragHandle} from '../drag-handle';
 import {
   findOptionReferences,
+  getFieldChoiceOptions,
   updateConditionReferences,
 } from '../../domain/conditions/conditionReferences';
+import {ConditionType} from '../../types/condition';
+import {ConditionModal} from '../condition/ConditionModal';
 
 /**
  * OptionsEditor is a component for managing a list of options for radio buttons or multi-select fields.
@@ -109,9 +112,11 @@ interface SortableItemProps {
   // item ID
   id: string;
   // option information
-  option: {label: string; value: string};
+  option: ChoiceOption;
   // index in the list
   index: number;
+  // parent choice field id (for option-level conditions)
+  fieldName: string;
   // should we show exclusive options control/column
   showExclusiveOptions?: boolean;
   // if so, which are the exclusive options
@@ -121,9 +126,11 @@ interface SortableItemProps {
   // to change an option value
   onEdit: (value: string, index: number) => void;
   // when removed
-  onRemove: (option: {label: string; value: string}) => void;
+  onRemove: (option: ChoiceOption) => void;
   // when moved up/down
   onMove: (index: number, direction: 'up' | 'down') => void;
+  // persist or clear this option's visibility condition
+  onConditionChange: (index: number, condition: ConditionType | null) => void;
   // how many items in total?
   totalItems: number;
 }
@@ -204,7 +211,7 @@ const SortableOtherOptionRow = ({
         <TableCell align="center" sx={{py: 1, width: {xs: 96, sm: 140}}} />
       )}
 
-      <TableCell align="right" sx={{py: 1, width: {xs: 120, sm: 180}}}>
+      <TableCell align="right" sx={{py: 1, width: {xs: 152, sm: 216}}}>
         <Tooltip title="Move up">
           <span>
             <IconButton
@@ -270,12 +277,14 @@ const SortableItem = ({
   id,
   option,
   index,
+  fieldName,
   showExclusiveOptions,
   exclusiveOptions,
   onExclusiveToggle,
   onEdit,
   onRemove,
   onMove,
+  onConditionChange,
   totalItems,
 }: SortableItemProps) => {
   // Initialize drag-and-drop functionality
@@ -331,7 +340,7 @@ const SortableItem = ({
       )}
 
       {/* Action buttons column */}
-      <TableCell align="right" sx={{py: 1, width: {xs: 120, sm: 180}}}>
+      <TableCell align="right" sx={{py: 1, width: {xs: 152, sm: 216}}}>
         <Tooltip title="Move up">
           <span>
             <IconButton
@@ -360,6 +369,14 @@ const SortableItem = ({
             </IconButton>
           </span>
         </Tooltip>
+        <ConditionModal
+          trigger="icon"
+          label={option.condition ? 'Update condition' : 'Add condition'}
+          initial={(option.condition as ConditionType | undefined) ?? null}
+          onChange={condition => onConditionChange(index, condition)}
+          field={fieldName}
+          includeField
+        />
         <Tooltip title="Edit option">
           <IconButton
             size="small"
@@ -384,7 +401,7 @@ const SortableItem = ({
 };
 
 type CombinedRow =
-  | {id: string; type: 'option'; option: {label: string; value: string}}
+  | {id: string; type: 'option'; option: ChoiceOption}
   | {id: string; type: 'other'};
 
 /**
@@ -446,8 +463,7 @@ export const OptionsEditor = ({
     updateConditions: boolean;
   } | null>(null);
 
-  const options: Array<{label: string; value: string}> =
-    elementProps?.options || [];
+  const options: ChoiceOption[] = elementProps?.options || [];
   const exclusiveOptions: string[] = elementProps?.exclusiveOptions || [];
   const enableOther: boolean = elementProps?.enableOtherOption ?? false;
   const otherOptionPosition: number =
@@ -515,7 +531,7 @@ export const OptionsEditor = ({
    * @param updatedExclusiveOptions - New exclusive options array
    */
   const updateField = (
-    updatedOptions: Array<{label: string; value: string}>,
+    updatedOptions: ChoiceOption[],
     updatedExclusiveOptions: string[],
     updatedOtherOptionPosition?: number
   ) => {
@@ -524,17 +540,17 @@ export const OptionsEditor = ({
       'component-parameters'
     ] as ChoiceComponentParameters;
 
-    // Update field with new options and handle radio button IDs
+    // Keep extra option keys (including `condition`) across rebuilds.
     newParams.ElementProps = {
       ...newParams.ElementProps,
       options: updatedOptions.map((o, index) => {
         if (fieldName.includes('radio')) {
           return {
-            RadioProps: {id: 'radio-group-field-' + index},
             ...o,
+            RadioProps: {id: 'radio-group-field-' + index},
           };
         }
-        return o;
+        return {...o};
       }),
       exclusiveOptions: updatedExclusiveOptions,
       ...(enableOther
@@ -555,26 +571,75 @@ export const OptionsEditor = ({
   /**
    * Used when user chooses to auto-update references in conditions
    */
-  const updateConditions = (oldValue: string, newValue: string) => {
-    // Field-level conditions
-    for (const fId in allFields) {
-      const fieldDef = allFields[fId];
-      if (!fieldDef.condition) continue;
-
+  const rewriteOptionConditions = (
+    choiceOptions: ChoiceOption[],
+    oldValue: string,
+    newValue: string
+  ): {options: ChoiceOption[]; changed: boolean} => {
+    let changed = false;
+    const next = choiceOptions.map(option => {
+      if (!option.condition) return option;
       const updatedCondition = updateConditionReferences(
-        fieldDef.condition,
+        option.condition as ConditionType,
         fieldName,
         oldValue,
         newValue
       );
+      if (updatedCondition === option.condition) return option;
+      changed = true;
+      return {...option, condition: updatedCondition};
+    });
+    return {options: next, changed};
+  };
 
-      if (updatedCondition !== fieldDef.condition) {
-        dispatch(
-          fieldUpdated({
-            fieldName: fId,
-            newField: {...fieldDef, condition: updatedCondition},
-          })
+  const updateConditions = (oldValue: string, newValue: string) => {
+    // Field-level conditions and option-level conditions on other fields.
+    // The field being renamed applies option rewrites on its already-updated
+    // options array in handleEditSubmit.
+    for (const fId in allFields) {
+      const fieldDef = allFields[fId];
+      let nextField = fieldDef;
+      let fieldChanged = false;
+
+      if (fieldDef.condition) {
+        const updatedCondition = updateConditionReferences(
+          fieldDef.condition,
+          fieldName,
+          oldValue,
+          newValue
         );
+        if (updatedCondition !== fieldDef.condition) {
+          nextField = {...nextField, condition: updatedCondition};
+          fieldChanged = true;
+        }
+      }
+
+      if (fId !== fieldName) {
+        const choiceOptions = getFieldChoiceOptions(fieldDef);
+        const rewritten = rewriteOptionConditions(
+          choiceOptions as ChoiceOption[],
+          oldValue,
+          newValue
+        );
+        if (rewritten.changed) {
+          nextField = {
+            ...nextField,
+            'component-parameters': {
+              ...nextField['component-parameters'],
+              ElementProps: {
+                ...(
+                  nextField['component-parameters'] as ChoiceComponentParameters
+                ).ElementProps,
+                options: rewritten.options,
+              },
+            },
+          };
+          fieldChanged = true;
+        }
+      }
+
+      if (fieldChanged) {
+        dispatch(fieldUpdated({fieldName: fId, newField: nextField}));
       }
     }
 
@@ -627,7 +692,7 @@ export const OptionsEditor = ({
     const newOptions = newCombined
       .filter(r => r.type === 'option')
       .map(r => optionMap.get(r.id))
-      .filter(Boolean) as Array<{label: string; value: string}>;
+      .filter(Boolean) as ChoiceOption[];
 
     // Safety: if mapping failed, do nothing
     if (newOptions.length !== options.length) return;
@@ -680,11 +745,26 @@ export const OptionsEditor = ({
     if (error) {
       setErrorMessage(error);
     } else {
-      const newOptionObj = {label: newOption, value: newOption};
+      const newOptionObj: ChoiceOption = {label: newOption, value: newOption};
       updateField([...options, newOptionObj], exclusiveOptions);
       setErrorMessage('');
       setNewOption('');
     }
+  };
+
+  const setOptionCondition = (
+    index: number,
+    condition: ConditionType | null
+  ) => {
+    const newOptions = options.map((option, i) => {
+      if (i !== index) return option;
+      if (condition === null) {
+        const {condition: _removed, ...rest} = option;
+        return rest;
+      }
+      return {...option, condition};
+    });
+    updateField(newOptions, exclusiveOptions);
   };
 
   /**
@@ -701,7 +781,7 @@ export const OptionsEditor = ({
    * Removes an option from the list.
    * If the option is used in any condition, show a warning dialog instead.
    */
-  const removeOption = (option: {label: string; value: string}) => {
+  const removeOption = (option: ChoiceOption) => {
     // Check if this option is referenced in any condition.
     const references = findOptionReferences(
       allFields,
@@ -749,22 +829,18 @@ export const OptionsEditor = ({
   /**
    * Actually rename the option in the Redux store (does not alter conditions)
    */
-  const doRenameOption = (newValue: string, index: number) => {
-    const newOptions = [...options];
-    newOptions[index] = {label: newValue, value: newValue};
-
-    const newField: FieldType = {
-      ...field,
-      'component-parameters': {
-        ...field['component-parameters'],
-        ElementProps: {
-          ...elementProps,
-          options: newOptions,
-        },
-      },
+  const doRenameOption = (
+    newValue: string,
+    index: number,
+    nextOptions?: ChoiceOption[]
+  ) => {
+    const newOptions = [...(nextOptions ?? options)];
+    newOptions[index] = {
+      ...newOptions[index],
+      label: newValue,
+      value: newValue,
     };
-
-    dispatch(fieldUpdated({fieldName, newField}));
+    updateField(newOptions, exclusiveOptions);
   };
 
   /**
@@ -786,13 +862,18 @@ export const OptionsEditor = ({
       return;
     }
 
-    // Rename in Redux
-    doRenameOption(newValue, editingOption.index);
-
-    // If chosen, also update references in conditions
+    let nextOptions = options;
     if (renameDialogState?.updateConditions) {
+      nextOptions = rewriteOptionConditions(
+        options,
+        editingOption.value,
+        newValue
+      ).options;
       updateConditions(editingOption.value, newValue);
     }
+
+    // Rename in Redux (keeps condition and other extra keys)
+    doRenameOption(newValue, editingOption.index, nextOptions);
 
     // Close dialog
     setEditingOption(null);
@@ -931,7 +1012,7 @@ export const OptionsEditor = ({
                         )}
                         <TableCell
                           align="right"
-                          sx={{width: {xs: 120, sm: 180}}}
+                          sx={{width: {xs: 152, sm: 216}}}
                         >
                           Actions
                         </TableCell>
@@ -973,6 +1054,7 @@ export const OptionsEditor = ({
                                 id={row.option.value}
                                 option={row.option}
                                 index={optionIndex}
+                                fieldName={fieldName}
                                 showExclusiveOptions={showExclusiveOptions}
                                 exclusiveOptions={exclusiveOptions}
                                 onExclusiveToggle={handleExclusiveToggle}
@@ -981,6 +1063,7 @@ export const OptionsEditor = ({
                                 }
                                 onRemove={removeOption}
                                 onMove={moveOption}
+                                onConditionChange={setOptionCondition}
                                 totalItems={options.length}
                               />
                             );

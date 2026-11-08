@@ -33,6 +33,10 @@ import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
 import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
+import {
+  otherOptionPositionAmongVisible,
+  visibleChoiceOptions,
+} from '../visibleChoiceOptions';
 import {ListWrapper} from '../../../rendering/fields/view/wrappers/PrimitiveWrappers';
 import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
@@ -82,13 +86,13 @@ const ExpandedChecklist = ({
   exclusiveOptions,
   disabled,
   enableOtherOption,
+  otherOptionPosition,
   otherText,
   onOtherTextChange,
   hasOtherSelected,
   onBlur,
 }: ExpandedChecklistProps) => {
-  // Keep "Other" pinned to the bottom.
-  const otherPosition = options.length;
+  const otherPosition = otherOptionPosition ?? options.length;
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
 
   const handleChange = (optionValue: string) => {
@@ -257,12 +261,12 @@ const MuiMultiSelect = ({
   disabled,
   onBlur,
   enableOtherOption,
+  otherOptionPosition,
   otherText,
   onOtherTextChange,
   hasOtherSelected,
 }: MuiMultiSelectProps) => {
-  // Keep "Other" pinned to the bottom.
-  const otherPosition = options.length;
+  const otherPosition = otherOptionPosition ?? options.length;
   // state to control dropdown open/close
   const [isOpen, setIsOpen] = useState(false);
 
@@ -488,6 +492,7 @@ export const MultiSelect = (props: FieldProps) => {
     setFieldData,
     handleBlur,
     ElementProps,
+    conditionValues,
   } = props;
 
   const rawValue = state.value?.data;
@@ -500,7 +505,16 @@ export const MultiSelect = (props: FieldProps) => {
   const isExpandedChecklist = ElementProps.expandedChecklist ?? true;
   const exclusiveOptions = ElementProps.exclusiveOptions ?? [];
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
-  const otherOptionPosition = ElementProps.otherOptionPosition;
+  const visibleOptions = visibleChoiceOptions(
+    ElementProps.options,
+    conditionValues ?? {},
+    value
+  );
+  const otherOptionPosition = otherOptionPositionAmongVisible(
+    ElementProps.options,
+    visibleOptions,
+    ElementProps.otherOptionPosition
+  );
   const predefinedValues = ElementProps.options.map(opt => opt.value);
 
   const {setOtherSelected, hasOtherSelected, otherText, handleOtherTextChange} =
@@ -555,7 +569,7 @@ export const MultiSelect = (props: FieldProps) => {
       <Box sx={{mb: 1}}>
         {isExpandedChecklist ? (
           <ExpandedChecklist
-            options={ElementProps.options}
+            options={visibleOptions}
             value={uiValue}
             onChange={handleChange}
             exclusiveOptions={exclusiveOptions}
@@ -569,7 +583,7 @@ export const MultiSelect = (props: FieldProps) => {
           />
         ) : (
           <MuiMultiSelect
-            options={ElementProps.options}
+            options={visibleOptions}
             value={uiValue}
             onChange={handleChange}
             exclusiveOptions={exclusiveOptions}
