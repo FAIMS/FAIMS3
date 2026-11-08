@@ -458,6 +458,11 @@ const LimitsBuildConfigSchema = z
       .int()
       .positive()
       .default(SHARED_DEFAULTS.recordsHydratedPageLimit),
+    adminStatsCacheTtlMs: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.adminStatsCacheTtlMs),
   })
   .strict();
 

@@ -22,6 +22,10 @@
     {
       "name": "Records",
       "description": "Notebook record metadata, paginated hydrated field values, and full-record reads. Optional exclusive updatedAfter / updatedBefore (epoch ms) filter list and export routes. Mutating routes are omitted from this spec until records CRUD is enabled in the API."
+    },
+    {
+      "name": "Admin Stats",
+      "description": "Instance-wide usage snapshots for system administrators (`VIEW_SYSTEM_STATS`). Overall counts plus paginated per-team and per-person rows from the same cached snapshot. Attachments (including photos) are a single bucket; there is no photoCount."
     }
   ],
   "components": {
@@ -89,6 +93,149 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/admin/stats": {
+      "get": {
+        "summary": "Get overall admin stats snapshot",
+        "description": "Returns instance-wide usage counts from a cached snapshot (TTL 1–5 minutes, configurable via ADMIN_STATS_CACHE_TTL_MS). Requires authentication and `VIEW_SYSTEM_STATS` (granted to OPERATIONS_ADMIN, inherited by GENERAL_ADMIN). Does not grant `READ_ALL_PROJECT_RECORDS`. Pass `refresh=true` to recompute. `generatedAt` is when the snapshot was computed; `expiresAt` is when the API will recompute. `incomplete` is true when at least one per-survey data-DB query failed and was skipped. There is no `photoCount` — attachments including photos are one bucket.",
+        "tags": ["Admin Stats"],
+        "security": [{"Auth": []}],
+        "parameters": [
+          {
+            "name": "refresh",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string", "enum": ["true", "false"]},
+            "description": "When `true`, bypasses the API snapshot cache and recomputes."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Overall counts plus cache timestamps",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/definitions/GetAdminStatsResponse"}
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/UnauthorizedError"},
+          "403": {
+            "description": "Authenticated but missing VIEW_SYSTEM_STATS"
+          }
+        }
+      }
+    },
+    "/admin/stats/refresh": {
+      "post": {
+        "summary": "Refresh the admin stats snapshot",
+        "description": "Recomputes the instance-wide usage snapshot and returns overall counts. Requires authentication and `VIEW_SYSTEM_STATS`. Same payload as `GET /admin/stats`.",
+        "tags": ["Admin Stats"],
+        "security": [{"Auth": []}],
+        "responses": {
+          "200": {
+            "description": "Newly computed overall counts plus cache timestamps",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/definitions/GetAdminStatsResponse"}
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/UnauthorizedError"},
+          "403": {
+            "description": "Authenticated but missing VIEW_SYSTEM_STATS"
+          }
+        }
+      }
+    },
+    "/admin/stats/teams": {
+      "get": {
+        "summary": "List per-team admin stats",
+        "description": "Paginated per-team rows from the **same** snapshot as overall stats (`generatedAt` is echoed). Notebooks with no `ownedByTeamId` appear as an explicit unteamed row (`teamId` `__unteamed__`). Requires `VIEW_SYSTEM_STATS`. Default `limit` is 50, maximum 200. `total` is the full row count so the client can page. Pass `refresh=true` to recompute the snapshot first.",
+        "tags": ["Admin Stats"],
+        "security": [{"Auth": []}],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string"},
+            "description": "Page size (1–200, default 50)"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string"},
+            "description": "Number of rows to skip (default 0)"
+          },
+          {
+            "name": "refresh",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string", "enum": ["true", "false"]},
+            "description": "When `true`, bypasses the API snapshot cache and recomputes."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of team rows from the current snapshot",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/definitions/GetAdminStatsTeamsResponse"}
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/UnauthorizedError"},
+          "403": {
+            "description": "Authenticated but missing VIEW_SYSTEM_STATS"
+          }
+        }
+      }
+    },
+    "/admin/stats/people": {
+      "get": {
+        "summary": "List per-person admin stats",
+        "description": "Paginated per-person rows from the **same** snapshot as overall stats (`generatedAt` is echoed). Keyed by record `created_by`; attachments are attributed to the parent record's `created_by`. Email is populated from the people DB when known. Users with zero records and zero attachments are omitted. Requires `VIEW_SYSTEM_STATS`. Default `limit` is 50, maximum 200.",
+        "tags": ["Admin Stats"],
+        "security": [{"Auth": []}],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string"},
+            "description": "Page size (1–200, default 50)"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string"},
+            "description": "Number of rows to skip (default 0)"
+          },
+          {
+            "name": "refresh",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string", "enum": ["true", "false"]},
+            "description": "When `true`, bypasses the API snapshot cache and recomputes."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of people rows from the current snapshot",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/definitions/GetAdminStatsPeopleResponse"}
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/UnauthorizedError"},
+          "403": {
+            "description": "Authenticated but missing VIEW_SYSTEM_STATS"
           }
         }
       }
@@ -3785,6 +3932,155 @@
         }
       },
       "required": ["accessToken", "refreshToken", "expiresIn"]
+    },
+    "GetAdminStatsResponse": {
+      "type": "object",
+      "description": "Overall instance usage snapshot. No photoCount — attachments including photos are one bucket. incomplete is the sentinel for skipped per-survey queries.",
+      "required": [
+        "generatedAt",
+        "expiresAt",
+        "teamCount",
+        "userCount",
+        "notebookCount",
+        "archivedNotebookCount",
+        "templateCount",
+        "archivedTemplateCount",
+        "mapAssetCount",
+        "recordCount",
+        "attachmentCount",
+        "byteCount",
+        "disabledUserCount",
+        "inviteCount",
+        "longLivedTokenCount",
+        "tombstoneCount",
+        "incomplete"
+      ],
+      "properties": {
+        "generatedAt": {
+          "type": "string",
+          "description": "ISO-8601 time when this snapshot was computed"
+        },
+        "expiresAt": {
+          "type": "string",
+          "description": "ISO-8601 time when the API will recompute this snapshot"
+        },
+        "teamCount": {"type": "integer"},
+        "userCount": {"type": "integer"},
+        "notebookCount": {
+          "type": "integer",
+          "description": "All project documents, including archived"
+        },
+        "archivedNotebookCount": {"type": "integer"},
+        "templateCount": {"type": "integer"},
+        "archivedTemplateCount": {"type": "integer"},
+        "mapAssetCount": {"type": "integer"},
+        "recordCount": {
+          "type": "integer",
+          "description": "Sum of index/recordCount across notebooks"
+        },
+        "attachmentCount": {
+          "type": "integer",
+          "description": "All attachments including photos; no separate photoCount"
+        },
+        "byteCount": {"type": "integer"},
+        "disabledUserCount": {"type": "integer"},
+        "inviteCount": {"type": "integer"},
+        "longLivedTokenCount": {"type": "integer"},
+        "tombstoneCount": {"type": "integer"},
+        "incomplete": {
+          "type": "boolean",
+          "description": "True when at least one per-survey data-DB query failed and was skipped"
+        },
+        "incompleteNotebookIds": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "AdminStatsTeamRow": {
+      "type": "object",
+      "required": [
+        "teamId",
+        "name",
+        "notebookCount",
+        "recordCount",
+        "attachmentCount",
+        "byteCount"
+      ],
+      "properties": {
+        "teamId": {
+          "type": "string",
+          "description": "Team id, or `__unteamed__` for notebooks with no ownedByTeamId"
+        },
+        "name": {"type": "string"},
+        "notebookCount": {"type": "integer"},
+        "recordCount": {"type": "integer"},
+        "attachmentCount": {"type": "integer"},
+        "byteCount": {"type": "integer"}
+      }
+    },
+    "GetAdminStatsTeamsResponse": {
+      "type": "object",
+      "required": [
+        "generatedAt",
+        "expiresAt",
+        "teams",
+        "total",
+        "limit",
+        "offset",
+        "incomplete"
+      ],
+      "properties": {
+        "generatedAt": {"type": "string"},
+        "expiresAt": {"type": "string"},
+        "teams": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/AdminStatsTeamRow"}
+        },
+        "total": {"type": "integer"},
+        "limit": {"type": "integer"},
+        "offset": {"type": "integer"},
+        "incomplete": {"type": "boolean"}
+      }
+    },
+    "AdminStatsPersonRow": {
+      "type": "object",
+      "required": ["userId", "recordCount", "attachmentCount"],
+      "properties": {
+        "userId": {"type": "string"},
+        "email": {
+          "type": "string",
+          "nullable": true,
+          "description": "Present when the people DB has an email for this user"
+        },
+        "name": {"type": "string"},
+        "recordCount": {"type": "integer"},
+        "attachmentCount": {"type": "integer"}
+      }
+    },
+    "GetAdminStatsPeopleResponse": {
+      "type": "object",
+      "required": [
+        "generatedAt",
+        "expiresAt",
+        "people",
+        "total",
+        "limit",
+        "offset",
+        "incomplete"
+      ],
+      "properties": {
+        "generatedAt": {"type": "string"},
+        "expiresAt": {"type": "string"},
+        "people": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/AdminStatsPersonRow"}
+        },
+        "total": {"type": "integer"},
+        "limit": {"type": "integer"},
+        "offset": {"type": "integer"},
+        "incomplete": {"type": "boolean"}
+      }
     }
   }
 }

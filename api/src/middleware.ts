@@ -128,10 +128,13 @@ export const isAllowedToMiddleware = ({
   action,
   getAction,
   getResourceId,
+  forbiddenOnDeny = false,
 }: {
   action?: Action;
   getAction?: (req: Express.Request) => Action;
   getResourceId?: (req: Express.Request) => string | undefined;
+  /** When true, an authenticated but unauthorized caller gets 403 instead of 401. */
+  forbiddenOnDeny?: boolean;
 }) => {
   return (
     req: Express.Request,
@@ -175,6 +178,10 @@ export const isAllowedToMiddleware = ({
 
     if (isAllowed) {
       next();
+    } else if (forbiddenOnDeny) {
+      throw new Exceptions.ForbiddenException(
+        'You are not authorized to perform this action.'
+      );
     } else {
       throw new Exceptions.UnauthorizedException(
         'You are not authorized to perform this action.'

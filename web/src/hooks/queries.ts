@@ -3,6 +3,9 @@ import {config, buildRegisterUrl} from '@/constants';
 import {User} from '@/context/auth-provider';
 import {sortNotebookListNewestFirst} from '@/lib/utils';
 import type {
+  GetAdminStatsPeopleResponse,
+  GetAdminStatsResponse,
+  GetAdminStatsTeamsResponse,
   GetCurrentUserResponse,
   GetListAllUsersResponse,
   GetLongLivedTokensResponse,
@@ -649,3 +652,92 @@ export const revokeLongLivedToken = async ({
 
   return (await response.json()) as PutRevokeLongLivedTokenResponse;
 };
+
+function adminStatsListPath(
+  path: '/api/admin/stats/teams' | '/api/admin/stats/people',
+  {limit, offset, refresh}: {limit: number; offset: number; refresh?: boolean}
+) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  if (refresh) {
+    params.set('refresh', 'true');
+  }
+  return `${path}?${params.toString()}`;
+}
+
+/**
+ * Overall admin stats. Disabled until the Stats page Load control enables it.
+ * Pass `refresh` to bypass the API snapshot cache (`?refresh=true`).
+ */
+export const useGetAdminStats = ({
+  user,
+  enabled = true,
+  refresh = false,
+}: {
+  user: User | null;
+  enabled?: boolean;
+  refresh?: boolean;
+}) =>
+  useQuery({
+    queryKey: ['admin-stats', user?.token, refresh],
+    queryFn: () =>
+      get<GetAdminStatsResponse>(
+        `/api/admin/stats${refresh ? '?refresh=true' : ''}`,
+        user
+      ),
+    enabled: !!user && enabled,
+  });
+
+/**
+ * Paginated per-team admin stats from the same snapshot as overall counts.
+ */
+export const useGetAdminStatsTeams = ({
+  user,
+  enabled = true,
+  limit,
+  offset,
+  refresh = false,
+}: {
+  user: User | null;
+  enabled?: boolean;
+  limit: number;
+  offset: number;
+  refresh?: boolean;
+}) =>
+  useQuery({
+    queryKey: ['admin-stats-teams', user?.token, limit, offset, refresh],
+    queryFn: () =>
+      get<GetAdminStatsTeamsResponse>(
+        adminStatsListPath('/api/admin/stats/teams', {limit, offset, refresh}),
+        user
+      ),
+    enabled: !!user && enabled,
+  });
+
+/**
+ * Paginated per-person admin stats from the same snapshot as overall counts.
+ */
+export const useGetAdminStatsPeople = ({
+  user,
+  enabled = true,
+  limit,
+  offset,
+  refresh = false,
+}: {
+  user: User | null;
+  enabled?: boolean;
+  limit: number;
+  offset: number;
+  refresh?: boolean;
+}) =>
+  useQuery({
+    queryKey: ['admin-stats-people', user?.token, limit, offset, refresh],
+    queryFn: () =>
+      get<GetAdminStatsPeopleResponse>(
+        adminStatsListPath('/api/admin/stats/people', {limit, offset, refresh}),
+        user
+      ),
+    enabled: !!user && enabled,
+  });

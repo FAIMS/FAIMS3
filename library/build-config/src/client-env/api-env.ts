@@ -197,6 +197,10 @@ export const ApiEnvSchema = z
     RECORDS_HYDRATED_PAGE_LIMIT: intWithDefault(
       SHARED_DEFAULTS.recordsHydratedPageLimit
     ),
+    /** Admin stats snapshot cache TTL in milliseconds (default 120000 = 2 min). */
+    ADMIN_STATS_CACHE_TTL_MS: intWithDefault(
+      SHARED_DEFAULTS.adminStatsCacheTtlMs
+    ),
     /** Start the 1 Hz stdout memory sampler for leak hunts. */
     MEMORY_MONITOR_ENABLED: boolWithDefault(false),
     /** Write Morgan combined-format HTTP access lines. */
@@ -536,6 +540,7 @@ export function parseApiEnv(
       env.RECORDS_HYDRATED_PAGE_LIMIT,
       SHARED_DEFAULTS.recordsHydratedPageLimitMax
     ),
+    adminStatsCacheTtlMs: env.ADMIN_STATS_CACHE_TTL_MS,
     downloadCookieSameSite: env.DOWNLOAD_COOKIE_SAMESITE,
     developerMode: env.DEVELOPER_MODE,
     bugsnagApiKey: parseBugsnagKey(env.BUGSNAG_API_KEY),

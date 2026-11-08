@@ -215,7 +215,7 @@ export const getAllProjectsListing = async (): Promise<ProjectListItem[]> => {
  * user/team with many notebooks from opening one connection per project at once
  * and exhausting CouchDB's connection limits.
  */
-const BYTE_COUNT_BATCH_SIZE = 10;
+export const BYTE_COUNT_BATCH_SIZE = 10;
 
 /** Filters for {@link getUserProjectsListing}. `byteCount` is off by default. */
 export type GetUserProjectsListingOptions = {

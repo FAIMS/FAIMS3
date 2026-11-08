@@ -292,6 +292,13 @@ export enum Action {
   SEND_TEST_EMAIL = 'SEND_TEST_EMAIL',
   TEST_ATTACHMENT_STORAGE = 'TEST_ATTACHMENT_STORAGE',
   VERIFY_EMAIL = 'VERIFY_EMAIL',
+
+  /**
+   * View instance-wide usage snapshots (attachments, notebooks, records, and
+   * other first-class entity counts) overall, per team, and per person.
+   * Aggregates only — does not grant READ_ALL_PROJECT_RECORDS.
+   */
+  VIEW_SYSTEM_STATS = 'VIEW_SYSTEM_STATS',
 }
 
 /**
@@ -981,6 +988,13 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: false,
     resource: Resource.SYSTEM,
   },
+  [Action.VIEW_SYSTEM_STATS]: {
+    name: 'View system stats',
+    description:
+      'View instance-wide usage counts (attachments including photos, notebooks, records, and other first-class entities) overall, per team, and per person. Aggregates only; does not grant access to record bodies.',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
 
   // ============================================================
   // LONG LIVED TOKEN ACTIONS
@@ -1449,6 +1463,9 @@ export const roleActions: Record<
       // only ops/system admins may make templates visible to all users
       Action.CHANGE_TEMPLATE_VISIBILITY,
       Action.CREATE_PUBLIC_TEMPLATE,
+
+      // Instance-wide usage snapshots (aggregates; not record bodies)
+      Action.VIEW_SYSTEM_STATS,
     ],
     inheritedRoles: [],
   },

@@ -138,7 +138,8 @@
     "urlencodedBodyLimit": "1mb",
     "restoreUploadMaxBytes": 1073741824,
     "downloadCookieSameSite": "lax",
-    "recordsHydratedPageLimit": 150
+    "recordsHydratedPageLimit": 150,
+    "adminStatsCacheTtlMs": 120000
   },
   "email": {
     "emailServiceType": "MOCK",

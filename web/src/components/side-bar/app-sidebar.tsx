@@ -19,6 +19,7 @@ import {Action, GetListTemplatesResponse} from '@faims3/data-model';
 import {Link, useLocation} from '@tanstack/react-router';
 import {
   ArchiveRestore,
+  BarChart3,
   House,
   Layers,
   LayoutTemplate,
@@ -44,6 +45,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const canSeeProjects = useIsAuthorisedTo({action: Action.LIST_PROJECTS});
   const canSeeTemplates = useIsAuthorisedTo({action: Action.LIST_TEMPLATES});
   const canSeeUsers = useIsAuthorisedTo({action: Action.VIEW_USER_LIST});
+  const canSeeStats = useIsAuthorisedTo({action: Action.VIEW_SYSTEM_STATS});
   const canSeeMapLayers = useIsAuthorisedTo({action: Action.LIST_MAP_ASSETS});
 
   // currently anyone can list teams - but it is filtered per resource
@@ -100,6 +102,15 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       url: '/users',
       icon: Users,
       testId: 'web-nav-users',
+    });
+  }
+
+  if (canSeeStats) {
+    bottomSectionNavItems.push({
+      title: 'Stats',
+      url: '/stats',
+      icon: BarChart3,
+      testId: 'web-nav-stats',
     });
   }
 

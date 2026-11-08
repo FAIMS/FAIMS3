@@ -59,6 +59,7 @@ import {api as teamsApi} from './api/teams';
 import {api as templatesApi} from './api/templates';
 import {api as tombstonesApi} from './api/tombstones';
 import {api as usersApi} from './api/users';
+import {api as adminStatsApi} from './api/adminStats';
 import {api as utilityApi} from './api/utilities';
 import {api as emailVerifyApi} from './api/verificationChallenges';
 import {createHealthApp, READY_PATH} from './healthApp';
@@ -246,6 +247,7 @@ export function attachFullApi(app: express.Express): void {
   app.use('/api/teams', teamsApi);
   app.use('/api/tombstones', tombstonesApi);
   app.use('/api/users', usersApi);
+  app.use('/api/admin/stats', adminStatsApi);
   app.use('/api/verify', emailVerifyApi);
   app.use('/api/reset', resetPasswordApi);
   app.use('/api/long-lived-tokens', longLivedApi);
