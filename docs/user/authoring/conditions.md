@@ -14,6 +14,27 @@ are evaluated each time a value changes in the form. This means that when
 the user enters data in the form, some fields or sections may appear or
 disappear.
 
+Select single and Select multiple fields can also attach a condition to
+an **individual option**. In the options table, each ordinary option
+row has a compact condition icon in the Actions column (sized like edit
+and delete; tooltip **Add condition** when unset and **Update
+condition** when set). This is not the labeled field-level **Add
+condition** button. The synthetic **Other** option cannot take a
+condition.
+
+An option with no condition, or one whose condition evaluates true, is
+offered for selection. An option whose condition is false is hidden
+**unless it is currently selected** — then it stays visible and selected
+until the collector changes it. The stored value is not cleared
+automatically, and view mode and CSV/GIS export still show it.
+
+Option conditions use the same builder and field picker as field
+conditions (same form, plus parent / linked-record / notebook-metadata
+references). Unlike a field condition, an option condition **may**
+reference its parent choice field, so a MultiSelect can cascade inside
+one list. The option itself is not a field and cannot be chosen as the
+target of a condition.
+
 ## Simple Conditions
 
 A simple condition compares the value of a field with the value entered in

@@ -10,7 +10,7 @@ import {useForm} from '@tanstack/react-form';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ComponentProps, useEffect, useMemo, useState} from 'react';
 import {formDataExtractor} from '../../utils';
-import {FaimsFormData} from '../types';
+import {ConditionValuesContext, FaimsFormData} from '../types';
 import {FieldVisibilityMap} from './types';
 import {onChangeTemplatedFields} from './templatedFields';
 import {onChangeComputedFields} from './computedFields';
@@ -75,6 +75,12 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
       viewsetId: props.formName,
     })
   );
+  const [conditionValues, setConditionValues] = useState(() =>
+    buildConditionValues({
+      values: formDataExtractor({fullData: formValues}),
+      context: previewContext,
+    })
+  );
 
   // Initialize form with mock data and simple logging
   const form = useForm({
@@ -103,13 +109,16 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
           context: previewContext,
         });
 
-        // Updating visibility
+        // Updating visibility and the option-condition value bag together so
+        // choice lists re-filter when a referenced sibling changes.
+        const values = buildConditionValues({
+          values: formDataExtractor({fullData: form.state.values}),
+          context: previewContext,
+        });
+        setConditionValues(values);
         setVisibleMap(
           currentlyVisibleMap({
-            values: buildConditionValues({
-              values: formDataExtractor({fullData: form.state.values}),
-              context: previewContext,
-            }),
+            values,
             uiSpec: uiSpec,
             viewsetId: props.formName,
           })
@@ -120,12 +129,14 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
 
   // Whenever the uiSpec, formName or metadata changes, recompute the visible fields
   useEffect(() => {
+    const values = buildConditionValues({
+      values: formDataExtractor({fullData: form.state.values}),
+      context: previewContext,
+    });
+    setConditionValues(values);
     setVisibleMap(
       currentlyVisibleMap({
-        values: buildConditionValues({
-          values: formDataExtractor({fullData: form.state.values}),
-          context: previewContext,
-        }),
+        values,
         uiSpec: uiSpec,
         viewsetId: props.formName,
       })
@@ -143,13 +154,15 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <FormManager
-        form={form}
-        formName={props.formName}
-        uiSpec={uiSpec}
-        config={config}
-        fieldVisibilityMap={visibleMap}
-      />
+      <ConditionValuesContext.Provider value={conditionValues}>
+        <FormManager
+          form={form}
+          formName={props.formName}
+          uiSpec={uiSpec}
+          config={config}
+          fieldVisibilityMap={visibleMap}
+        />
+      </ConditionValuesContext.Provider>
     </QueryClientProvider>
   );
 };

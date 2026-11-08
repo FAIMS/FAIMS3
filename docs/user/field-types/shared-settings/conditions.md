@@ -14,6 +14,14 @@ a dropdown, or reveal a detailed damage assessment section only when a
 checkbox is ticked. Conditions are configured per-field in the {{Notebook}}
 Editor and evaluated dynamically during data collection.
 
+Select single and Select multiple fields can also hide or show
+**individual options** with the same condition builder. That control is
+a compact **condition** icon in the option row's Actions column
+(tooltip **Add condition** / **Update condition**), not the field-level
+**Add condition** button. Other cannot take a condition. A selected
+option whose condition becomes false stays visible until the collector
+changes it.
+
 ```{screenshot} field-types-design/shared-05-conditions.png
 :alt: An expanded field showing a configured condition banner
 :align: right

@@ -70,6 +70,8 @@ const metadataFieldDef = (key: string): FieldType =>
 export const useConditionRuleFieldContext = (props: {
   field?: string;
   view?: string;
+  /** Keep `field` in the picker so an option condition can reference its parent. */
+  includeField?: boolean;
 }) => {
   const allFields = useAppSelector(
     state => state.notebook.uiSpec.present.fields
@@ -93,11 +95,15 @@ export const useConditionRuleFieldContext = (props: {
     }
 
     if (props.field) {
-      return {kind: 'context', fieldId: props.field};
+      return {
+        kind: 'context',
+        fieldId: props.field,
+        includeFieldId: props.includeField,
+      };
     }
     // Standalone use, no context: nothing to scope to, show all fields.
     return {kind: 'all'};
-  }, [props.view, props.field]);
+  }, [props.view, props.field, props.includeField]);
 
   // Resolve the form this condition belongs to, matching the scope logic:
   // a section condition names its section; a field condition names a field

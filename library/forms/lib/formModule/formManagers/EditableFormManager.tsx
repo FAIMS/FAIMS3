@@ -31,7 +31,7 @@ import {
   CompiledFormSchema,
   FormValidation,
 } from '../../validationModule';
-import {FaimsForm, FaimsFormData} from '../types';
+import {ConditionValuesContext, FaimsForm, FaimsFormData} from '../types';
 import {LiveFormProgress} from './components/FormProgress';
 import {FormManager} from './FormManager';
 import {
@@ -192,6 +192,12 @@ export const EditableFormManager: React.FC<
       viewsetId: props.formId,
     })
   );
+  const [conditionValues, setConditionValues] = useState(() =>
+    buildConditionValues({
+      values: formDataExtractor({fullData: props.initialData ?? {}}),
+      context: buildContext(),
+    })
+  );
 
   const validationSchema = useRef<CompiledFormSchema>(
     FormValidation.compileFormSchema({
@@ -280,12 +286,14 @@ export const EditableFormManager: React.FC<
   // Visibility Updates
   // ---------------------------------------------------------------------------
   const updateVisibility = useCallback(() => {
+    const values = buildConditionValues({
+      values: formDataExtractor({fullData: form.state.values}),
+      context: buildContext(),
+    });
+    setConditionValues(values);
     setVisibleMap(
       currentlyVisibleMap({
-        values: buildConditionValues({
-          values: formDataExtractor({fullData: form.state.values}),
-          context: buildContext(),
-        }),
+        values,
         uiSpec: dataEngine.uiSpec,
         viewsetId: props.formId,
       })
@@ -1186,16 +1194,18 @@ export const EditableFormManager: React.FC<
       />
 
       {/* Main Form */}
-      <FormManager
-        key={props.recordId}
-        form={form as FaimsForm}
-        formName={props.formId}
-        uiSpec={dataEngine.uiSpec}
-        config={formManagerConfig}
-        navigationContext={props.navigationContext}
-        fieldVisibilityMap={visibleMap}
-        debugMode={debugMode}
-      />
+      <ConditionValuesContext.Provider value={conditionValues}>
+        <FormManager
+          key={props.recordId}
+          form={form as FaimsForm}
+          formName={props.formId}
+          uiSpec={dataEngine.uiSpec}
+          config={formManagerConfig}
+          navigationContext={props.navigationContext}
+          fieldVisibilityMap={visibleMap}
+          debugMode={debugMode}
+        />
+      </ConditionValuesContext.Provider>
 
       {/* Navigation Buttons (Bottom) */}
       <NavigationButtonsDisplay

@@ -123,6 +123,36 @@ describe('ConditionControl', () => {
     // expect(document.querySelector('[data-value="Sample-Location"]')).not.toBeNull();
   });
 
+  test('option condition picker includes the parent field', () => {
+    const store = createDesignerStore();
+    const {migrated: notebook} = migrateNotebook(sampleNotebook);
+    store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));
+
+    render(
+      <WithProviders store={store}>
+        <ConditionControl
+          onChange={vi.fn()}
+          field="New-Text-Field"
+          includeField
+        />
+      </WithProviders>
+    );
+
+    const input = within(screen.getByTestId('field-input')).getByRole(
+      'combobox'
+    ) as HTMLInputElement;
+    act(() => {
+      input.focus();
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+    });
+    const optionLabels = screen
+      .getAllByRole('option')
+      .map(option => option.textContent ?? '');
+    expect(
+      optionLabels.some(label => label.includes('Location Description'))
+    ).toBe(true);
+  });
+
   test('field condition omits all view fields in select', () => {
     const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);

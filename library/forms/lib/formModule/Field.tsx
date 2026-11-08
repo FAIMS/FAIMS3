@@ -7,13 +7,32 @@ import {
   FormDataEntry,
 } from '@faims3/data-model';
 import {Alert} from '@mui/material';
-import React, {useMemo} from 'react';
+import React, {useContext, useMemo} from 'react';
 import {getFieldInfo} from '../fieldRegistry/registry';
 import {logInfo} from '../logging';
 import {FieldAnnotation} from './Annotation';
 import {FormManagerConfig, FullFormManagerConfig} from './formManagers/types';
-import {FaimsForm, FaimsFormFieldState} from './types';
+import {ConditionValuesContext, FaimsForm, FaimsFormFieldState} from './types';
 import {getFieldId} from './utils';
+
+/** Choice fields that filter options from {@link ConditionValuesContext}. */
+const CHOICE_COMPONENT_NAMES = new Set(['RadioGroup', 'Select', 'MultiSelect']);
+
+/**
+ * Subscribes only choice fields to the live condition-value bag so sibling
+ * edits re-filter options without remounting the field or re-rendering every
+ * other control.
+ */
+const ChoiceFieldConditionBridge = ({
+  children,
+}: {
+  children: (
+    conditionValues: React.ContextType<typeof ConditionValuesContext>
+  ) => React.ReactNode;
+}) => {
+  const conditionValues = useContext(ConditionValuesContext);
+  return children(conditionValues);
+};
 
 interface FieldProps {
   fieldId: string;
@@ -35,6 +54,9 @@ export const Field = React.memo((props: FieldProps) => {
 
   // Rename here to prompt tsx it's a component
   const Component = fieldInfo?.component;
+  const isChoiceField = CHOICE_COMPONENT_NAMES.has(
+    props.fieldSpec['component-name']
+  );
 
   return (
     <props.form.Field name={props.fieldSpec['component-parameters'].name}>
@@ -117,8 +139,8 @@ export const Field = React.memo((props: FieldProps) => {
                   logInfo('Mock triggered commit() function.');
                 },
               };
-        return (
-          <div id={getFieldId({fieldId: props.fieldId})}>
+        const renderField = (conditionValues?: {[key: string]: unknown}) => (
+          <>
             {fallback && (
               <Alert severity="warning">
                 The field type "{props.fieldSpec['component-name']}" is
@@ -142,12 +164,24 @@ export const Field = React.memo((props: FieldProps) => {
               handleBlur={field.handleBlur}
               fieldId={props.fieldId}
               trigger={triggers}
+              {...(conditionValues !== undefined ? {conditionValues} : {})}
             />
             <FieldAnnotation
               config={props.fieldSpec.meta}
               state={field.state as any} // avoid Typescript complaint
               setFieldAnnotation={setFieldAnnotation}
             />
+          </>
+        );
+        return (
+          <div id={getFieldId({fieldId: props.fieldId})}>
+            {isChoiceField ? (
+              <ChoiceFieldConditionBridge>
+                {conditionValues => renderField(conditionValues)}
+              </ChoiceFieldConditionBridge>
+            ) : (
+              renderField()
+            )}
           </div>
         );
       }}

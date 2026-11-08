@@ -42,7 +42,9 @@ export type RecordValues = z.infer<typeof RecordValuesSchema>;
 
 /**
  * A conditional logic expression, evaluated against a record's values to decide
- * whether a section or field is shown. May nest via `conditions`.
+ * whether a section, field, or individual choice option is shown. May nest via
+ * `conditions`. Option-level `condition` is an additive key on choice
+ * `ElementProps.options` and does not bump the notebook schema.
  *
  * This type is declared explicitly rather than inferred: it is self-referential,
  * and zod needs a type annotation to resolve a recursive `z.lazy` schema.

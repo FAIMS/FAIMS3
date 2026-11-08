@@ -70,8 +70,20 @@ options.
   option, or use the **up/down arrow** buttons in the Actions column.
 - **To delete an option:** Click the **trash** icon in the option's Actions
   column.
+- **To show an option only sometimes:** Click the **condition** icon in that
+  option's Actions column (tooltip **Add condition**, or **Update
+  condition** when a rule is already set). This is a compact icon next to
+  edit and delete — not the field-level **Add condition** button. Use it
+  so a choice such as "Asbestos" appears only when Site type is Industrial.
+  The synthetic **Other** row cannot take a condition.
 - **Add "Other" Option** Click to allow the user to select 'Other' from the
   list and enter free text into this field.
+
+If a collector has already selected an option and its condition later
+becomes false (for example they change Site type away from Industrial),
+that option stays visible and selected until they choose something else.
+The stored value is not cleared, and it still appears in view mode and
+in CSV/GIS export.
 
 **Note**: You can use Markdown syntax in
 option text (e.g., \*\*bold\*\* or \*italic\*) to add emphasis
