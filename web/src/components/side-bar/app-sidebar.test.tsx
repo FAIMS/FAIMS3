@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {Action} from '@faims3/data-model';
 import {render, screen} from '@testing-library/react';
+import type {ReactNode} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {SidebarProvider} from '@/components/ui/sidebar';
 
@@ -41,11 +42,11 @@ vi.mock('@tanstack/react-router', () => ({
     ...rest
   }: {
     to: string;
-    children: unknown;
+    children: ReactNode;
     'data-testid'?: string;
   }) => (
     <a href={to} data-testid={rest['data-testid']}>
-      {children as never}
+      {children}
     </a>
   ),
   useLocation: () => ({pathname: '/', search: {}}),
@@ -98,6 +99,7 @@ beforeEach(() => {
   });
 });
 
+/** Render {@link AppSidebar} inside the shadcn sidebar provider. */
 function renderSidebar() {
   return render(
     <SidebarProvider>
@@ -106,6 +108,7 @@ function renderSidebar() {
   );
 }
 
+/** Stats nav is next to Users and is hidden without VIEW_SYSTEM_STATS. */
 describe('AppSidebar stats nav', () => {
   it('hides the Stats item without VIEW_SYSTEM_STATS', () => {
     authorised.canSeeUsers = true;

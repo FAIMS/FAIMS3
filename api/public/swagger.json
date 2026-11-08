@@ -131,7 +131,7 @@
     "/admin/stats/refresh": {
       "post": {
         "summary": "Refresh the admin stats snapshot",
-        "description": "Recomputes the instance-wide usage snapshot and returns overall counts. Requires authentication and `VIEW_SYSTEM_STATS`. Same payload as `GET /admin/stats`.",
+        "description": "Recomputes the instance-wide usage snapshot and returns overall counts. Requires authentication and `VIEW_SYSTEM_STATS`. Same payload as `GET /admin/stats?refresh=true`. Control Centre Refresh calls this once, then pages teams/people from the new cache without `refresh=true`. Concurrent refresh callers share one in-flight scan.",
         "tags": ["Admin Stats"],
         "security": [{"Auth": []}],
         "responses": {
@@ -198,7 +198,7 @@
     "/admin/stats/people": {
       "get": {
         "summary": "List per-person admin stats",
-        "description": "Paginated per-person rows from the **same** snapshot as overall stats (`generatedAt` is echoed). Keyed by record `created_by`; attachments are attributed to the parent record's `created_by`. Email is populated from the people DB when known. Users with zero records and zero attachments are omitted. Requires `VIEW_SYSTEM_STATS`. Default `limit` is 50, maximum 200.",
+        "description": "Paginated per-person rows from the **same** snapshot as overall stats (`generatedAt` is echoed). Keyed by record `created_by`; attachments are attributed to the parent record's `created_by`. Email is populated from the people DB when known. Users with zero records and zero attachments are omitted. Requires `VIEW_SYSTEM_STATS`. Default `limit` is 50, maximum 200. Pass `refresh=true` to recompute the snapshot first.",
         "tags": ["Admin Stats"],
         "security": [{"Auth": []}],
         "parameters": [
@@ -3982,7 +3982,10 @@
           "type": "integer",
           "description": "All attachments including photos; no separate photoCount"
         },
-        "byteCount": {"type": "integer"},
+        "byteCount": {
+          "type": "integer",
+          "description": "Sum of CouchDB sizes.active across survey data DBs"
+        },
         "disabledUserCount": {"type": "integer"},
         "inviteCount": {"type": "integer"},
         "longLivedTokenCount": {"type": "integer"},
@@ -3993,7 +3996,8 @@
         },
         "incompleteNotebookIds": {
           "type": "array",
-          "items": {"type": "string"}
+          "items": {"type": "string"},
+          "description": "Survey ids whose data-DB query failed; omitted when incomplete is false"
         }
       }
     },
@@ -4021,6 +4025,7 @@
     },
     "GetAdminStatsTeamsResponse": {
       "type": "object",
+      "description": "Paginated per-team rows from the same snapshot as overall stats.",
       "required": [
         "generatedAt",
         "expiresAt",
@@ -4060,6 +4065,7 @@
     },
     "GetAdminStatsPeopleResponse": {
       "type": "object",
+      "description": "Paginated per-person rows from the same snapshot as overall stats.",
       "required": [
         "generatedAt",
         "expiresAt",

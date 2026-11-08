@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
+/*
+ * Stats page: denied without VIEW_SYSTEM_STATS, empty until Load, Refresh
+ * POSTs once, and team/people tables page from the API.
+ */
 import {Action, Role} from '@faims3/data-model';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
@@ -9,6 +13,7 @@ const canSeeStats = vi.hoisted(() => ({value: true}));
 const useGetAdminStats = vi.hoisted(() => vi.fn());
 const useGetAdminStatsTeams = vi.hoisted(() => vi.fn());
 const useGetAdminStatsPeople = vi.hoisted(() => vi.fn());
+const useRefreshAdminStats = vi.hoisted(() => vi.fn());
 
 vi.mock('@/hooks/use-breadcrumbs', () => ({
   useBreadcrumbUpdate: () => undefined,
@@ -28,6 +33,7 @@ vi.mock('@/hooks/queries', () => ({
   useGetAdminStats: (args: unknown) => useGetAdminStats(args),
   useGetAdminStatsTeams: (args: unknown) => useGetAdminStatsTeams(args),
   useGetAdminStatsPeople: (args: unknown) => useGetAdminStatsPeople(args),
+  useRefreshAdminStats: (args: unknown) => useRefreshAdminStats(args),
 }));
 
 import {StatsPage} from './stats';
@@ -71,6 +77,7 @@ const overall = {
   incomplete: false,
 };
 
+/** React Query stub: idle unless the test overlays `data` / fetch flags. */
 function idleQuery(extra: Record<string, unknown> = {}) {
   return {
     data: undefined,
@@ -82,11 +89,15 @@ function idleQuery(extra: Record<string, unknown> = {}) {
 }
 
 describe('Stats page', () => {
+  const refreshMutate = vi.fn();
+
   beforeEach(() => {
     canSeeStats.value = true;
+    refreshMutate.mockReset();
     useGetAdminStats.mockReset();
     useGetAdminStatsTeams.mockReset();
     useGetAdminStatsPeople.mockReset();
+    useRefreshAdminStats.mockReset();
     useGetAdminStats.mockReturnValue(idleQuery());
     useGetAdminStatsTeams.mockReturnValue(
       idleQuery({data: {teams: [], total: 0}})
@@ -94,6 +105,10 @@ describe('Stats page', () => {
     useGetAdminStatsPeople.mockReturnValue(
       idleQuery({data: {people: [], total: 0}})
     );
+    useRefreshAdminStats.mockReturnValue({
+      mutate: refreshMutate,
+      isPending: false,
+    });
   });
 
   it('shows a denied state without VIEW_SYSTEM_STATS', () => {
@@ -105,13 +120,12 @@ describe('Stats page', () => {
     expect(screen.queryByTestId('web-stats-load')).toBeNull();
   });
 
-  it('does not enable stats queries until Load, then Refresh bypasses cache', () => {
-    useGetAdminStats.mockImplementation(
-      ({enabled}: {enabled: boolean; refresh: boolean}) =>
-        idleQuery({
-          data: enabled ? overall : undefined,
-          isFetched: enabled,
-        })
+  it('does not enable stats queries until Load, then Refresh POSTs once', () => {
+    useGetAdminStats.mockImplementation(({enabled}: {enabled: boolean}) =>
+      idleQuery({
+        data: enabled ? overall : undefined,
+        isFetched: enabled,
+      })
     );
     useGetAdminStatsTeams.mockImplementation(
       ({
@@ -154,14 +168,13 @@ describe('Stats page', () => {
     render(<StatsPage />);
 
     expect(useGetAdminStats).toHaveBeenCalledWith(
-      expect.objectContaining({enabled: false, refresh: false})
+      expect.objectContaining({enabled: false})
     );
     expect(useGetAdminStatsTeams).toHaveBeenCalledWith(
       expect.objectContaining({
         enabled: false,
         limit: 10,
         offset: 0,
-        refresh: false,
       })
     );
     expect(screen.getByTestId('web-stats-empty')).toBeDefined();
@@ -170,7 +183,13 @@ describe('Stats page', () => {
     fireEvent.click(screen.getByTestId('web-stats-load'));
 
     expect(useGetAdminStats).toHaveBeenCalledWith(
-      expect.objectContaining({enabled: true, refresh: false})
+      expect.objectContaining({enabled: true})
+    );
+    expect(useGetAdminStatsTeams).toHaveBeenCalledWith(
+      expect.objectContaining({enabled: true, limit: 10, offset: 0})
+    );
+    expect(useGetAdminStatsPeople).toHaveBeenCalledWith(
+      expect.objectContaining({enabled: true, limit: 10, offset: 0})
     );
     expect(screen.getByTestId('web-stats-cache-times').textContent).toContain(
       overall.generatedAt
@@ -186,14 +205,27 @@ describe('Stats page', () => {
 
     fireEvent.click(screen.getByTestId('web-stats-refresh'));
 
-    expect(useGetAdminStats).toHaveBeenCalledWith(
-      expect.objectContaining({enabled: true, refresh: true})
+    expect(refreshMutate).toHaveBeenCalled();
+    const lastTeamsCall = useGetAdminStatsTeams.mock.calls.at(-1)?.[0] as {
+      refresh?: boolean;
+    };
+    const lastPeopleCall = useGetAdminStatsPeople.mock.calls.at(-1)?.[0] as {
+      refresh?: boolean;
+    };
+    expect(lastTeamsCall).not.toHaveProperty('refresh');
+    expect(lastPeopleCall).not.toHaveProperty('refresh');
+  });
+
+  it('renders a warning alert when the snapshot is incomplete', () => {
+    useGetAdminStats.mockReturnValue(
+      idleQuery({data: {...overall, incomplete: true}, isFetched: true})
     );
-    expect(useGetAdminStatsTeams).toHaveBeenCalledWith(
-      expect.objectContaining({enabled: true, refresh: true})
-    );
-    expect(useGetAdminStatsPeople).toHaveBeenCalledWith(
-      expect.objectContaining({enabled: true, refresh: true})
+
+    render(<StatsPage />);
+    fireEvent.click(screen.getByTestId('web-stats-load'));
+
+    expect(screen.getByTestId('web-stats-incomplete').textContent).toMatch(
+      /could not be scanned/i
     );
   });
 

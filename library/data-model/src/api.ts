@@ -1503,10 +1503,7 @@ export const ADMIN_STATS_DEFAULT_PAGE_LIMIT = 50;
 /** Absolute ceiling applied to stats list `limit`. */
 export const ADMIN_STATS_MAX_PAGE_LIMIT = 200;
 
-/**
- * `incomplete: true` means at least one per-survey data-DB query failed and
- * was skipped. Counts are still returned for everything that succeeded.
- */
+/** JSON field name (`incomplete`) for the skipped-query flag on stats responses. */
 export const ADMIN_STATS_INCOMPLETE_SENTINEL = 'incomplete' as const;
 
 /** Shared cache timestamps echoed on every stats response. */
@@ -1523,6 +1520,7 @@ export type AdminStatsCacheMeta = z.infer<typeof AdminStatsCacheMetaSchema>;
  * photos) are a single bucket.
  */
 export const GetAdminStatsResponseSchema = AdminStatsCacheMetaSchema.extend({
+  /** Number of teams (does not include the unteamed sentinel row). */
   teamCount: z.number().int().nonnegative(),
   userCount: z.number().int().nonnegative(),
   notebookCount: z.number().int().nonnegative(),
@@ -1531,7 +1529,9 @@ export const GetAdminStatsResponseSchema = AdminStatsCacheMetaSchema.extend({
   archivedTemplateCount: z.number().int().nonnegative(),
   mapAssetCount: z.number().int().nonnegative(),
   recordCount: z.number().int().nonnegative(),
+  /** Attachments of every kind, including photos. */
   attachmentCount: z.number().int().nonnegative(),
+  /** Sum of CouchDB `sizes.active` across survey data DBs. */
   byteCount: z.number().int().nonnegative(),
   disabledUserCount: z.number().int().nonnegative(),
   inviteCount: z.number().int().nonnegative(),
@@ -1542,11 +1542,14 @@ export const GetAdminStatsResponseSchema = AdminStatsCacheMetaSchema.extend({
    * The rest of the snapshot is still valid.
    */
   incomplete: z.boolean(),
+  /** Survey ids whose data-DB query failed; omitted when `incomplete` is false. */
   incompleteNotebookIds: z.array(z.string()).optional(),
 });
 export type GetAdminStatsResponse = z.infer<typeof GetAdminStatsResponseSchema>;
 
+/** One team's aggregated notebook / record / attachment / byte counts. */
 export const AdminStatsTeamRowSchema = z.object({
+  /** Team id, or {@link ADMIN_STATS_UNTEAMED_TEAM_ID} for notebooks with no team. */
   teamId: z.string(),
   name: z.string(),
   notebookCount: z.number().int().nonnegative(),
@@ -1556,6 +1559,7 @@ export const AdminStatsTeamRowSchema = z.object({
 });
 export type AdminStatsTeamRow = z.infer<typeof AdminStatsTeamRowSchema>;
 
+/** Paginated team rows from the same snapshot as overall counts. */
 export const GetAdminStatsTeamsResponseSchema =
   AdminStatsCacheMetaSchema.extend({
     teams: z.array(AdminStatsTeamRowSchema),
@@ -1568,6 +1572,10 @@ export type GetAdminStatsTeamsResponse = z.infer<
   typeof GetAdminStatsTeamsResponseSchema
 >;
 
+/**
+ * One person's aggregated record / attachment counts, keyed by record
+ * `created_by`. Email/name are omitted when the user doc is missing.
+ */
 export const AdminStatsPersonRowSchema = z.object({
   userId: z.string(),
   email: z.string().nullable().optional(),
@@ -1577,6 +1585,7 @@ export const AdminStatsPersonRowSchema = z.object({
 });
 export type AdminStatsPersonRow = z.infer<typeof AdminStatsPersonRowSchema>;
 
+/** Paginated people rows from the same snapshot as overall counts. */
 export const GetAdminStatsPeopleResponseSchema =
   AdminStatsCacheMetaSchema.extend({
     people: z.array(AdminStatsPersonRowSchema),
@@ -1589,12 +1598,18 @@ export type GetAdminStatsPeopleResponse = z.infer<
   typeof GetAdminStatsPeopleResponseSchema
 >;
 
+/**
+ * Zod refine: optional `limit` must parse as 1..{@link ADMIN_STATS_MAX_PAGE_LIMIT}.
+ */
 const adminStatsLimitRefine = (data: {limit?: string}) => {
   if (data.limit === undefined || data.limit === '') return true;
   const n = parseInt(data.limit, 10);
   return !Number.isNaN(n) && n >= 1 && n <= ADMIN_STATS_MAX_PAGE_LIMIT;
 };
 
+/**
+ * Zod refine: optional `offset` must parse as a non-negative integer.
+ */
 const adminStatsOffsetRefine = (data: {offset?: string}) => {
   if (data.offset === undefined || data.offset === '') return true;
   const n = parseInt(data.offset, 10);
@@ -1603,6 +1618,7 @@ const adminStatsOffsetRefine = (data: {offset?: string}) => {
 
 /** GET /api/admin/stats query (refresh bypasses the API snapshot cache). */
 export const GetAdminStatsQuerySchema = z.object({
+  /** `'true'` forces a recompute; omitted or `'false'` uses the TTL cache. */
   refresh: z.enum(['true', 'false']).optional(),
 });
 export type GetAdminStatsQuery = z.infer<typeof GetAdminStatsQuerySchema>;
@@ -1610,8 +1626,11 @@ export type GetAdminStatsQuery = z.infer<typeof GetAdminStatsQuerySchema>;
 /** GET /api/admin/stats/teams and /people query. */
 export const GetAdminStatsListQuerySchema = z
   .object({
+    /** `'true'` forces a recompute; omitted or `'false'` uses the TTL cache. */
     refresh: z.enum(['true', 'false']).optional(),
+    /** Page size as a decimal string (1..{@link ADMIN_STATS_MAX_PAGE_LIMIT}). */
     limit: z.string().max(16).optional(),
+    /** Page offset as a decimal string (non-negative). */
     offset: z.string().max(16).optional(),
   })
   .refine(adminStatsLimitRefine, {

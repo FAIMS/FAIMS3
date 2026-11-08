@@ -13,6 +13,7 @@ PouchDB.plugin(PouchDBFind);
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
+/** Mocked nano `info()` used by `getByteCount` (Pouch has no `sizes.active`). */
 const getNanoDataDb = vi.hoisted(() => vi.fn());
 
 vi.mock('../src/couchdb', async importOriginal => {
@@ -60,8 +61,12 @@ import {adminToken, beforeApiTests, localUserToken} from './utils';
 
 registerClient(callbackObject);
 
+/** Fixture `sizes.active` returned by the mocked nano `info()` per project. */
 const byteCountByProject = new Map<string, number>();
 
+/**
+ * Create a Couch user, grant the given global roles, and return a signed JWT.
+ */
 const createUserWithRolesAndToken = async ({
   username,
   roles,
@@ -86,6 +91,9 @@ const createUserWithRolesAndToken = async ({
   return await generateJwtFromUser({user: expressUser, signingKey});
 };
 
+/**
+ * Create a notebook (optionally teamed) and record a mocked byte count for it.
+ */
 async function createNamedNotebook({
   name,
   teamId,
@@ -109,6 +117,7 @@ async function createNamedNotebook({
   return projectId;
 }
 
+/** Insert a minimal `record_format_version: 1` document into a survey data DB. */
 async function putRecord({
   projectId,
   recordId,
@@ -132,6 +141,10 @@ async function putRecord({
   });
 }
 
+/**
+ * Insert a minimal `attach_format_version: 1` document (photo or other file)
+ * linked to `recordId`.
+ */
 async function putAttachment({
   projectId,
   attachmentId,
@@ -185,6 +198,8 @@ describe('admin stats API', () => {
   });
 
   describe('auth', () => {
+    // Unauthenticated → 401; authenticated without VIEW_SYSTEM_STATS → 403;
+    // OPERATIONS_ADMIN and GENERAL_ADMIN → 200.
     it('unauthenticated GET of each stats route returns 401', async () => {
       await request(app).get('/api/admin/stats').expect(401);
       await request(app).get('/api/admin/stats/teams').expect(401);
@@ -243,6 +258,7 @@ describe('admin stats API', () => {
   });
 
   describe('overall counts', () => {
+    // Fixture notebooks + records + mixed attachments (photo and other).
     it('counts notebooks including archived, teams, users, templates, records, attachments, and bytes', async () => {
       const team = await createTeamDocument({
         name: 'Stats Team',
@@ -318,6 +334,7 @@ describe('admin stats API', () => {
   });
 
   describe('teams', () => {
+    // Pagination, unteamed sentinel last, and team sums matching overall.
     it('pages team rows and splits counts by ownedByTeamId', async () => {
       const teamA = await createTeamDocument({
         name: 'Alpha Team',
@@ -483,6 +500,7 @@ describe('admin stats API', () => {
   });
 
   describe('people', () => {
+    // Rows keyed by record created_by; attachments attributed to the parent.
     it('pages people by created_by, includes email, omits users with no records', async () => {
       await createUser({
         username: 'alice',
@@ -581,6 +599,7 @@ describe('admin stats API', () => {
   });
 
   describe('cache', () => {
+    // Second GET is a cache hit; ?refresh=true and POST /refresh recompute.
     it('reuses generatedAt within the TTL and refresh computes a new snapshot', async () => {
       await createNamedNotebook({name: 'Cache NB', bytes: 9});
 
@@ -631,9 +650,44 @@ describe('admin stats API', () => {
         new Date(refreshedPost.generatedAt).getTime()
       ).toBeGreaterThanOrEqual(new Date(refreshedGet.generatedAt).getTime());
     });
+
+    it('coalesces concurrent refresh callers onto one snapshot', async () => {
+      await createNamedNotebook({name: 'Coalesce NB', bytes: 1});
+
+      const [overall, teams, people, posted] = await Promise.all([
+        request(app)
+          .get('/api/admin/stats')
+          .query({refresh: 'true'})
+          .set('Authorization', `Bearer ${adminToken}`)
+          .expect(200)
+          .then(res => GetAdminStatsResponseSchema.parse(res.body)),
+        request(app)
+          .get('/api/admin/stats/teams')
+          .query({refresh: 'true'})
+          .set('Authorization', `Bearer ${adminToken}`)
+          .expect(200)
+          .then(res => GetAdminStatsTeamsResponseSchema.parse(res.body)),
+        request(app)
+          .get('/api/admin/stats/people')
+          .query({refresh: 'true'})
+          .set('Authorization', `Bearer ${adminToken}`)
+          .expect(200)
+          .then(res => GetAdminStatsPeopleResponseSchema.parse(res.body)),
+        request(app)
+          .post('/api/admin/stats/refresh')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .expect(200)
+          .then(res => GetAdminStatsResponseSchema.parse(res.body)),
+      ]);
+
+      expect(teams.generatedAt).toBe(overall.generatedAt);
+      expect(people.generatedAt).toBe(overall.generatedAt);
+      expect(posted.generatedAt).toBe(overall.generatedAt);
+    });
   });
 
   describe('directory listing', () => {
+    // GET /api/directory/ is unchanged: no stats fields on listing items.
     it('GET /api/directory still omits stats fields', async () => {
       const projectId = await createNamedNotebook({name: 'Dir NB', bytes: 99});
 

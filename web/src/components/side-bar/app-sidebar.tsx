@@ -45,6 +45,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const canSeeProjects = useIsAuthorisedTo({action: Action.LIST_PROJECTS});
   const canSeeTemplates = useIsAuthorisedTo({action: Action.LIST_TEMPLATES});
   const canSeeUsers = useIsAuthorisedTo({action: Action.VIEW_USER_LIST});
+  // VIEW_SYSTEM_STATS is ops/general admin only; hides Stats for everyone else.
   const canSeeStats = useIsAuthorisedTo({action: Action.VIEW_SYSTEM_STATS});
   const canSeeMapLayers = useIsAuthorisedTo({action: Action.LIST_MAP_ASSETS});
 
@@ -105,6 +106,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
     });
   }
 
+  // Instance-usage snapshot; gated to VIEW_SYSTEM_STATS (ops / general admin).
   if (canSeeStats) {
     bottomSectionNavItems.push({
       title: 'Stats',

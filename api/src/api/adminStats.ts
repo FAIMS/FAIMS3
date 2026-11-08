@@ -28,6 +28,12 @@ patch();
 
 export const api: express.Router = express.Router();
 
+/**
+ * All stats routes require a signed-in caller with `VIEW_SYSTEM_STATS`.
+ * `forbiddenOnDeny` returns 403 (not 401) when the user is authenticated but
+ * not an operations / general admin — so the UI can distinguish "log in"
+ * from "you cannot see this".
+ */
 const statsAuth = [
   requireAuthenticationAPI,
   isAllowedToMiddleware({
@@ -36,6 +42,10 @@ const statsAuth = [
   }),
 ] as const;
 
+/**
+ * GET /api/admin/stats — overall instance counts from the cached snapshot.
+ * Pass `?refresh=true` to bypass TTL and recompute.
+ */
 api.get(
   '/',
   ...statsAuth,
@@ -48,6 +58,11 @@ api.get(
   }
 );
 
+/**
+ * POST /api/admin/stats/refresh — always recompute, then return overall counts.
+ * Same payload as GET /?refresh=true. Control Centre Refresh uses this POST
+ * once, then pages teams/people from the new cache without `refresh=true`.
+ */
 api.post(
   '/refresh',
   ...statsAuth,
@@ -57,6 +72,10 @@ api.post(
   }
 );
 
+/**
+ * GET /api/admin/stats/teams — paginated per-team rows from the same snapshot
+ * as overall counts (`limit` / `offset` query params).
+ */
 api.get(
   '/teams',
   ...statsAuth,
@@ -75,6 +94,10 @@ api.get(
   }
 );
 
+/**
+ * GET /api/admin/stats/people — paginated per-person rows keyed by record
+ * `created_by`, from the same snapshot as overall counts.
+ */
 api.get(
   '/people',
   ...statsAuth,

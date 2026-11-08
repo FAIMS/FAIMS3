@@ -1073,6 +1073,11 @@ describe('Virtual Resource Roles', () => {
   });
 });
 
+/**
+ * VIEW_SYSTEM_STATS is a non-resource-specific SYSTEM action granted to
+ * OPERATIONS_ADMIN (and inherited by GENERAL_ADMIN). It is aggregates-only
+ * and must not leak to ordinary users, creators, or team/project admins.
+ */
 describe('VIEW_SYSTEM_STATS permission', () => {
   it('is granted to OPERATIONS_ADMIN', () => {
     expect(

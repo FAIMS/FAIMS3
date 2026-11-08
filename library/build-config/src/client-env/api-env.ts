@@ -540,6 +540,7 @@ export function parseApiEnv(
       env.RECORDS_HYDRATED_PAGE_LIMIT,
       SHARED_DEFAULTS.recordsHydratedPageLimitMax
     ),
+    // Snapshot TTL for GET /api/admin/stats (milliseconds).
     adminStatsCacheTtlMs: env.ADMIN_STATS_CACHE_TTL_MS,
     downloadCookieSameSite: env.DOWNLOAD_COOKIE_SAMESITE,
     developerMode: env.DEVELOPER_MODE,

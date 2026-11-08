@@ -254,6 +254,7 @@ const apiContract: Record<string, EnvResolver> = {
   RECORDS_HYDRATED_PAGE_LIMIT: runtime =>
     runtime.limits.recordsHydratedPageLimit ??
     SHARED_DEFAULTS.recordsHydratedPageLimit,
+  // Admin stats snapshot cache TTL in milliseconds (default 2 minutes).
   ADMIN_STATS_CACHE_TTL_MS: runtime =>
     runtime.limits.adminStatsCacheTtlMs ?? SHARED_DEFAULTS.adminStatsCacheTtlMs,
   MEMORY_MONITOR_ENABLED: runtime =>

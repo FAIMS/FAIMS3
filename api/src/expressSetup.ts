@@ -247,6 +247,7 @@ export function attachFullApi(app: express.Express): void {
   app.use('/api/teams', teamsApi);
   app.use('/api/tombstones', tombstonesApi);
   app.use('/api/users', usersApi);
+  // Instance-usage snapshot (overall / teams / people); VIEW_SYSTEM_STATS.
   app.use('/api/admin/stats', adminStatsApi);
   app.use('/api/verify', emailVerifyApi);
   app.use('/api/reset', resetPasswordApi);
