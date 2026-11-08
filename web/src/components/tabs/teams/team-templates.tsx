@@ -4,7 +4,7 @@ import type {ColumnDef} from '@tanstack/react-table';
 import {CreateTemplateDialog} from '@/components/dialogs/create-template-dialog';
 import {getTemplatesTableColumns} from '@/components/tables/templates';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {useGetTemplatesForTeam} from '@/hooks/queries';
+import {usePagedTemplates} from '@/hooks/queries';
 import {
   Action,
   globalRolesGrantAction,
@@ -23,7 +23,18 @@ type TemplateListRow = GetListTemplatesResponse['templates'][number];
 
 const TeamTemplates = ({teamId}: {teamId: string}) => {
   const user = useRequiredUser();
-  const {isPending, data} = useGetTemplatesForTeam({user, teamId});
+  const {
+    isPending,
+    templates,
+    pageSize,
+    pageIndex,
+    hasNextPage,
+    canPreviousPage,
+    goNext,
+    goPrevious,
+    goFirst,
+    changePageSize,
+  } = usePagedTemplates({user, teamId});
   const [visibilityFilter, setVisibilityFilter] =
     useState<TemplateVisibilityFilterValue>('all');
 
@@ -52,8 +63,8 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
   );
 
   const filteredTemplates = useMemo(
-    () => filterTemplatesByVisibility(data?.templates, visibilityFilter),
-    [data?.templates, visibilityFilter]
+    () => filterTemplatesByVisibility(templates, visibilityFilter),
+    [templates, visibilityFilter]
   );
 
   return (
@@ -74,6 +85,17 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
       button={
         canAddTemplateInTeam && <CreateTemplateDialog specifiedTeam={teamId} />
       }
+      defaultRowsPerPage={pageSize}
+      serverPagination={{
+        pageIndex,
+        pageSize,
+        hasNextPage,
+        canPreviousPage,
+        onNextPage: goNext,
+        onPreviousPage: goPrevious,
+        onFirstPage: goFirst,
+        onPageSizeChange: changePageSize,
+      }}
     />
   );
 };

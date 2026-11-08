@@ -25,7 +25,9 @@ import {
   GetTeamByIdResponse,
   GetTeamInvitesResponse,
   GetTeamMembersResponse,
+  TEMPLATE_LIST_LIMIT_MAX,
 } from '@faims3/data-model';
+import {useState} from 'react';
 import {getTemplateSurveyReferences} from '@/hooks/template-hooks';
 import {useMutation, useQuery} from '@tanstack/react-query';
 import QRCode from 'qrcode';
@@ -216,27 +218,63 @@ export const useGetProjectsForTeam = ({
     select: sortNotebookListNewestFirst,
   });
 
+export type TemplatesListQueryArgs = {
+  teamId?: string;
+  includeArchived?: boolean;
+  limit?: number;
+  startKey?: string;
+};
+
 /**
- * useGetTemplatesForTeam hook returns a query for fetching projects.
- *
- * @param {User} user - The user object.
- * @returns {Query} A query for fetching projects.
+ * Path and React Query key for GET /api/templates. `limit` / `startKey` are
+ * part of the key so each table page is a distinct request.
+ */
+export function buildTemplatesListRequest({
+  teamId,
+  includeArchived = false,
+  limit,
+  startKey,
+}: TemplatesListQueryArgs): {path: string; queryKey: unknown[]} {
+  const params = new URLSearchParams();
+  if (includeArchived) params.set('includeArchived', 'true');
+  if (teamId) params.set('teamId', teamId);
+  if (limit !== undefined) params.set('limit', String(limit));
+  if (startKey) params.set('startKey', startKey);
+  const qs = params.toString();
+  return {
+    path: `/api/templates${qs ? `?${qs}` : ''}`,
+    queryKey: [
+      'templates',
+      includeArchived ? 'archived' : 'active',
+      teamId ?? null,
+      limit ?? null,
+      startKey ?? null,
+    ],
+  };
+}
+
+/**
+ * useGetTemplatesForTeam hook returns a query for fetching team templates.
  */
 export const useGetTemplatesForTeam = ({
   teamId,
   user,
+  limit,
+  startKey,
+  includeArchived = false,
 }: {
   user: User | null;
   teamId: string;
+  limit?: number;
+  startKey?: string;
+  includeArchived?: boolean;
 }) =>
-  useQuery({
-    queryKey: ['templatesbyteam', user?.token, teamId],
-    queryFn: async () =>
-      get<GetListTemplatesResponse>(
-        `/api/templates?teamId=${encodeURIComponent(teamId)}`,
-        user
-      ),
-    enabled: !!user,
+  useGetTemplates({
+    user,
+    teamId,
+    limit,
+    startKey,
+    includeArchived,
   });
 
 /**
@@ -301,38 +339,117 @@ export const useGetTeams = ({
   });
 
 /**
- * useGetTemplates hook returns a query for fetching templates.
+ * useGetTemplates hook returns a query for fetching one page of templates.
  * By default archived templates are excluded. Pass includeArchived: true for the Archive section.
- *
- * @param {User} user - The user object.
- * @returns {Query} A query for fetching templates.
+ * Callers that used to treat the result as an unbounded array must read
+ * `data.templates` and `data.nextStartKey`.
  */
 export const useGetTemplates = ({
   user,
   enabled = true,
   includeArchived = false,
+  teamId,
+  limit,
+  startKey,
 }: {
   user: User | null;
   enabled?: boolean;
   /** When true, lists only archived templates (requires includeArchived=true on the API). */
   includeArchived?: boolean;
-}) =>
-  useQuery({
-    queryKey: [
-      'templates',
-      user?.token,
-      includeArchived ? 'archived' : 'active',
-    ],
-    queryFn: async () => {
-      const qs = includeArchived ? '?includeArchived=true' : '';
-      const data = await get<GetListTemplatesResponse>(
-        `/api/templates${qs}`,
-        user
-      );
-      return data.templates;
-    },
+  teamId?: string;
+  limit?: number;
+  startKey?: string;
+}) => {
+  const {path, queryKey} = buildTemplatesListRequest({
+    teamId,
+    includeArchived,
+    limit,
+    startKey,
+  });
+  return useQuery({
+    queryKey: [...queryKey, user?.token],
+    queryFn: async () => get<GetListTemplatesResponse>(path, user),
     enabled: !!user && enabled,
   });
+};
+
+/**
+ * Cursor-stack pagination for Control Centre template tables. Next uses
+ * `nextStartKey`; Previous re-requests the previous page's startKey.
+ * Next stays available when `nextStartKey` is set even on a short or empty page.
+ */
+export const usePagedTemplates = ({
+  user,
+  enabled = true,
+  includeArchived = false,
+  teamId,
+  defaultPageSize = 10,
+}: {
+  user: User | null;
+  enabled?: boolean;
+  includeArchived?: boolean;
+  teamId?: string;
+  defaultPageSize?: number;
+}) => {
+  const [pageSize, setPageSize] = useState(defaultPageSize);
+  const [startKey, setStartKey] = useState<string | undefined>(undefined);
+  const [cursorStack, setCursorStack] = useState<(string | undefined)[]>([]);
+
+  const query = useGetTemplates({
+    user,
+    enabled,
+    includeArchived,
+    teamId,
+    limit: pageSize,
+    startKey,
+  });
+
+  const hasNextPage = query.data?.nextStartKey !== undefined;
+  const pageIndex = cursorStack.length;
+
+  const goNext = () => {
+    const next = query.data?.nextStartKey;
+    if (next === undefined) return;
+    setCursorStack(stack => [...stack, startKey]);
+    setStartKey(next);
+  };
+
+  const goPrevious = () => {
+    setCursorStack(stack => {
+      if (stack.length === 0) return stack;
+      const nextStack = stack.slice(0, -1);
+      setStartKey(stack[stack.length - 1]);
+      return nextStack;
+    });
+  };
+
+  const goFirst = () => {
+    setCursorStack([]);
+    setStartKey(undefined);
+  };
+
+  const changePageSize = (size: number) => {
+    setPageSize(size);
+    setCursorStack([]);
+    setStartKey(undefined);
+  };
+
+  return {
+    ...query,
+    templates: query.data?.templates,
+    pageSize,
+    pageIndex,
+    hasNextPage,
+    canPreviousPage: pageIndex > 0,
+    goNext,
+    goPrevious,
+    goFirst,
+    changePageSize,
+  };
+};
+
+/** Compact consumers (sidebar, create-survey picker) stay on the same GET. */
+export const TEMPLATE_CATALOGUE_PICKER_LIMIT = TEMPLATE_LIST_LIMIT_MAX;
 
 /**
  * useGetUsers hook returns a query for fetching users.

@@ -637,9 +637,57 @@ export const TemplateApiListItemSchema = TemplateListItemSchema.extend({
 });
 export type TemplateApiListItem = z.infer<typeof TemplateApiListItemSchema>;
 
+/** Default page size when GET /api/templates omits `limit`. */
+export const TEMPLATE_LIST_DEFAULT_LIMIT = 50;
+/** Absolute ceiling for GET /api/templates `limit`. */
+export const TEMPLATE_LIST_LIMIT_MAX = 500;
+/**
+ * Per-request listing-view scan cap (same number as max `limit`). A caller who
+ * cannot read most rows iterates with `nextStartKey` instead of forcing a
+ * full-catalogue scan in one HTTP request.
+ */
+export const TEMPLATE_LIST_VIEW_SCAN_MAX = 500;
+/** Max Couch listing-view queries used to fill one GET /api/templates page. */
+export const TEMPLATE_LIST_VIEW_QUERY_MAX = 5;
+
+/** Zod refine: omitted/empty `limit` is ok; otherwise a decimal integer 1…`max`. */
+function listTemplatesLimitRefine(max: number) {
+  return (data: {limit?: string}) => {
+    if (data.limit === undefined || data.limit === '') return true;
+    if (!/^[0-9]+$/.test(data.limit)) return false;
+    const n = Number(data.limit);
+    return n >= 1 && n <= max;
+  };
+}
+
+/** GET /api/templates query (all values are strings from the query string). */
+export const GetListTemplatesQuerySchema = z
+  .object({
+    teamId: z.string().min(1).optional(),
+    includeArchived: z.enum(['true', 'false']).optional(),
+    limit: z.string().max(16).optional(),
+    startKey: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
+  })
+  .refine(listTemplatesLimitRefine(TEMPLATE_LIST_LIMIT_MAX), {
+    message: 'limit must be between 1 and 500',
+  });
+export type GetListTemplatesQuery = z.infer<typeof GetListTemplatesQuerySchema>;
+
+const templateListRowSchema = z
+  .unknown()
+  .refine(
+    (val: unknown) =>
+      val !== null &&
+      typeof val === 'object' &&
+      !Object.prototype.hasOwnProperty.call(val, 'uiSpecification'),
+    {message: 'uiSpecification must not be present on template list items'}
+  )
+  .pipe(TemplateApiListItemSchema);
+
 // GET list all templates response
 export const GetListTemplatesResponseSchema = z.object({
-  templates: z.array(TemplateApiListItemSchema),
+  templates: z.array(templateListRowSchema),
+  nextStartKey: z.string().optional(),
 });
 export type GetListTemplatesResponse = z.infer<
   typeof GetListTemplatesResponseSchema

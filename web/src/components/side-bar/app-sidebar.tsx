@@ -14,7 +14,12 @@ import {
 } from '@/components/ui/sidebar';
 import {config} from '@/constants';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/queries';
+import {
+  TEMPLATE_CATALOGUE_PICKER_LIMIT,
+  useGetProjects,
+  useGetTeams,
+  useGetTemplates,
+} from '@/hooks/queries';
 import {Action, GetListTemplatesResponse} from '@faims3/data-model';
 import {Link, useLocation} from '@tanstack/react-router';
 import {
@@ -50,7 +55,12 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const canSeeTeams = true;
 
   const {data: projects} = useGetProjects({user, enabled: canSeeProjects});
-  const {data: templates} = useGetTemplates({user, enabled: canSeeTemplates});
+  const {data: templatesPage} = useGetTemplates({
+    user,
+    enabled: canSeeTemplates,
+    limit: TEMPLATE_CATALOGUE_PICKER_LIMIT,
+  });
+  const templates = templatesPage?.templates;
   const {data: teams} = useGetTeams({user, enabled: canSeeTeams});
 
   const topSectionNavItems: NavItem[] = [];

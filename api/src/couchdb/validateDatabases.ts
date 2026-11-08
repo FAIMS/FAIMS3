@@ -80,6 +80,8 @@ export async function migrateTemplateUiSpecificationsOnStartup(): Promise<{
   count: number;
   outcomes: NotebookStartupUiSpecCounts;
 }> {
+  // Full server-side walk (not the paginated HTTP list). Startup must see
+  // every stored template, including archived.
   const templates = await getTemplates({});
   logNotebookStartup('templates_loaded', {count: templates.length});
   const outcomes = emptyNotebookStartupUiSpecCounts();

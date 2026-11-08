@@ -13,7 +13,7 @@ import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {archivedProjectColumns} from '@/components/tables/archived-projects';
-import {useGetProjects, useGetTemplates, useGetUsers} from '@/hooks/queries';
+import {useGetProjects, useGetUsers, usePagedTemplates} from '@/hooks/queries';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {createFileRoute, Navigate, useNavigate} from '@tanstack/react-router';
 import {Action, ProjectStatus} from '@faims3/data-model';
@@ -60,7 +60,18 @@ function RouteComponent() {
     paths,
   });
 
-  const {isPending, data} = useGetTemplates({
+  const {
+    isPending,
+    templates,
+    pageSize,
+    pageIndex,
+    hasNextPage,
+    canPreviousPage,
+    goNext,
+    goPrevious,
+    goFirst,
+    changePageSize,
+  } = usePagedTemplates({
     user,
     includeArchived: true,
     enabled: !!user && canSeeTemplates,
@@ -140,8 +151,19 @@ function RouteComponent() {
           <TabsContent value="templates" className="mt-4">
             <DataTable
               columns={archivedTemplateColumns}
-              data={data}
+              data={templates}
               loading={isPending}
+              defaultRowsPerPage={pageSize}
+              serverPagination={{
+                pageIndex,
+                pageSize,
+                hasNextPage,
+                canPreviousPage,
+                onNextPage: goNext,
+                onPreviousPage: goPrevious,
+                onFirstPage: goFirst,
+                onPageSizeChange: changePageSize,
+              }}
             />
           </TabsContent>
         )}

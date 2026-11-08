@@ -27,6 +27,8 @@ import {
   PutUpdateTemplateInput,
   PutUpdateTemplateResponse,
   PutUpdateTemplateResponseSchema,
+  TEMPLATE_LIST_LIMIT_MAX,
+  TEMPLATE_LIST_VIEW_SCAN_MAX,
   TemplateApiDocumentSchema,
   TemplateApiListItemSchema,
 } from '@faims3/data-model';
@@ -104,11 +106,22 @@ const createSampleTemplate = async (
 export const listTemplates = async (
   app: Express,
   token: string = adminToken,
-  query?: {includeArchived?: boolean}
+  query?: {
+    includeArchived?: boolean;
+    limit?: number;
+    startKey?: string;
+    teamId?: string;
+  }
 ): Promise<GetListTemplatesResponse> => {
-  const qs = query?.includeArchived === true ? '?includeArchived=true' : '';
+  const params = new URLSearchParams();
+  if (query?.includeArchived === true) params.set('includeArchived', 'true');
+  if (query?.includeArchived === false) params.set('includeArchived', 'false');
+  if (query?.limit !== undefined) params.set('limit', String(query.limit));
+  if (query?.startKey) params.set('startKey', query.startKey);
+  if (query?.teamId) params.set('teamId', query.teamId);
+  const qs = params.toString();
   return await requestAuthAndType(
-    request(app).get(`${TEMPLATE_API_BASE}${qs}`),
+    request(app).get(`${TEMPLATE_API_BASE}${qs ? `?${qs}` : ''}`),
     token
   )
     .expect(200)
@@ -116,6 +129,56 @@ export const listTemplates = async (
       // Parse the response body against model
       return GetListTemplatesResponseSchema.parse(res.body);
     });
+};
+
+const collectTemplatePages = async (
+  app: Express,
+  token: string,
+  query: {
+    limit: number;
+    includeArchived?: boolean;
+    teamId?: string;
+  }
+): Promise<GetListTemplatesResponse[]> => {
+  const pages: GetListTemplatesResponse[] = [];
+  let startKey: string | undefined;
+  for (;;) {
+    const page = await listTemplates(app, token, {...query, startKey});
+    pages.push(page);
+    if (!page.nextStartKey) break;
+    startKey = page.nextStartKey;
+  }
+  return pages;
+};
+
+const seedListingTemplates = async (
+  docs: Array<{
+    _id: string;
+    isPublic?: boolean;
+    archived?: boolean;
+    ownedByTeamId?: string;
+  }>
+) => {
+  const db = getTemplatesDb();
+  const now = new Date().toISOString();
+  await db.bulkDocs(
+    docs.map(d => ({
+      _id: d._id,
+      name: d._id,
+      version: 1,
+      archived: d.archived === true,
+      isPublic: d.isPublic === true,
+      ownedByTeamId: d.ownedByTeamId,
+      createdBy: 'admin',
+      createdAt: now,
+      updatedAt: now,
+      uiSpecification: {uiSpec: {fields: {}}, metadata: {}},
+      uiSpecProperties: {
+        schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+        hash: 'a'.repeat(64),
+      },
+    })) as never
+  );
 };
 
 /**
@@ -453,6 +516,186 @@ describe('template API tests', () => {
 
     await setTemplateArchived(app, template._id, true);
     await deleteATemplate(app, template._id);
+  });
+
+  it('GET list without limit returns at most 50 thin rows', async () => {
+    await seedListingTemplates(
+      Array.from({length: 51}, (_, i) => ({
+        _id: `cap-${String(i).padStart(3, '0')}`,
+        isPublic: true,
+      }))
+    );
+    const listed = await listTemplates(app);
+    expect(listed.templates.length).toBeLessThanOrEqual(50);
+    expect(listed.templates).toHaveLength(50);
+    expect(listed.nextStartKey).toBeDefined();
+    for (const row of listed.templates) {
+      TemplateApiListItemSchema.parse(row);
+      expect(row).not.toHaveProperty('uiSpecification');
+    }
+  });
+
+  it('paginates active templates with limit and startKey', async () => {
+    const created = [];
+    for (const name of ['page-alpha', 'page-bravo', 'page-charlie']) {
+      created.push((await createSampleTemplate(app, {name})).template);
+    }
+    const expectedIds = created.map(t => t._id).sort();
+
+    const first = await listTemplates(app, adminToken, {limit: 2});
+    expect(first.templates).toHaveLength(2);
+    expect(first.nextStartKey).toBeDefined();
+    const firstIds = first.templates.map(t => t._id);
+    expect(new Set(firstIds).size).toBe(2);
+
+    const second = await listTemplates(app, adminToken, {
+      limit: 2,
+      startKey: first.nextStartKey,
+    });
+    const secondIds = second.templates.map(t => t._id);
+    expect(secondIds.some(id => firstIds.includes(id))).toBe(false);
+    expect([...firstIds, ...secondIds]).toEqual(
+      [...firstIds, ...secondIds].sort()
+    );
+
+    const pages = await collectTemplatePages(app, adminToken, {limit: 2});
+    const walked = pages.flatMap(p => p.templates.map(t => t._id));
+    expect(pages[pages.length - 1].nextStartKey).toBeUndefined();
+    expect(walked).toEqual(expectedIds);
+
+    const highLimit = await listTemplates(app, adminToken, {
+      limit: TEMPLATE_LIST_LIMIT_MAX,
+    });
+    expect(highLimit.templates.map(t => t._id)).toEqual(expectedIds);
+    expect(highLimit.nextStartKey).toBeUndefined();
+  });
+
+  it('paginates archived templates only', async () => {
+    const active = (await createSampleTemplate(app, {name: 'keep-active'}))
+      .template;
+    const archived = [];
+    for (const name of ['arch-one', 'arch-two', 'arch-three']) {
+      const {template} = await createSampleTemplate(app, {name});
+      await setTemplateArchived(app, template._id, true);
+      archived.push(template);
+    }
+    const expectedArchived = archived.map(t => t._id).sort();
+
+    const defaultList = await listTemplates(app, adminToken, {limit: 2});
+    expect(defaultList.templates.every(t => t.archived !== true)).toBe(true);
+    expect(defaultList.templates.map(t => t._id)).toContain(active._id);
+    expect(
+      defaultList.templates.some(t => expectedArchived.includes(t._id))
+    ).toBe(false);
+
+    const pages = await collectTemplatePages(app, adminToken, {
+      limit: 2,
+      includeArchived: true,
+    });
+    const walked = pages.flatMap(p => p.templates.map(t => t._id));
+    expect(walked).toEqual(expectedArchived);
+    expect(
+      pages.flatMap(p => p.templates).every(t => t.archived === true)
+    ).toBe(true);
+    expect(walked).not.toContain(active._id);
+  });
+
+  it('paginates by teamId and teamId+includeArchived', async () => {
+    const teamA = await createSampleTeam(app, {teamName: 'Pager Team A'});
+    const teamB = await createSampleTeam(app, {teamName: 'Pager Team B'});
+    const inA: {_id: string}[] = [];
+    for (const name of ['team-a-one', 'team-a-two', 'team-a-three']) {
+      inA.push(
+        (await createSampleTemplate(app, {name, teamId: teamA._id})).template
+      );
+    }
+    const inB = (
+      await createSampleTemplate(app, {name: 'team-b-only', teamId: teamB._id})
+    ).template;
+    const unowned = (await createSampleTemplate(app, {name: 'no-team-pager'}))
+      .template;
+    await setTemplateArchived(app, inA[0]._id, true);
+
+    const expectedActiveA = inA
+      .filter(t => t._id !== inA[0]._id)
+      .map(t => t._id)
+      .sort();
+    const pages = await collectTemplatePages(app, adminToken, {
+      limit: 2,
+      teamId: teamA._id,
+    });
+    const walked = pages.flatMap(p => p.templates.map(t => t._id));
+    expect(walked).toEqual(expectedActiveA);
+    expect(walked).not.toContain(inB._id);
+    expect(walked).not.toContain(unowned._id);
+    expect(walked).not.toContain(inA[0]._id);
+
+    const archivedPages = await collectTemplatePages(app, adminToken, {
+      limit: 2,
+      teamId: teamA._id,
+      includeArchived: true,
+    });
+    const archivedWalked = archivedPages.flatMap(p =>
+      p.templates.map(t => t._id)
+    );
+    expect(archivedWalked).toEqual([inA[0]._id]);
+    expect(archivedWalked.every(id => id === inA[0]._id)).toBe(true);
+  });
+
+  it('fills a page after skipping unreadables inside the scan cap', async () => {
+    await seedListingTemplates([
+      {_id: 'priv-aaa', isPublic: false},
+      {_id: 'priv-bbb', isPublic: false},
+      {_id: 'priv-ccc', isPublic: false},
+      {_id: 'pub-visible', isPublic: true},
+    ]);
+
+    const page = await listTemplates(app, localUserToken, {limit: 1});
+    expect(page.templates.map(t => t._id)).toEqual(['pub-visible']);
+    expect(page.templates.some(t => t._id.startsWith('priv-'))).toBe(false);
+
+    const adminPage = await listTemplates(app, adminToken, {limit: 500});
+    expect(adminPage.templates.map(t => t._id)).toEqual([
+      'priv-aaa',
+      'priv-bbb',
+      'priv-ccc',
+      'pub-visible',
+    ]);
+  });
+
+  it('scan cap returns an empty page with nextStartKey before a later readable row', async () => {
+    const unreadables = Array.from(
+      {length: TEMPLATE_LIST_VIEW_SCAN_MAX},
+      (_, i) => ({
+        _id: `aaa-${String(i).padStart(3, '0')}`,
+        isPublic: false,
+      })
+    );
+    await seedListingTemplates([
+      ...unreadables,
+      {_id: 'zzz-readable', isPublic: true},
+    ]);
+
+    const first = await listTemplates(app, localUserToken, {limit: 1});
+    expect(first.templates).toEqual([]);
+    expect(first.nextStartKey).toBeDefined();
+    expect(first.nextStartKey).not.toBe('zzz-readable');
+
+    const second = await listTemplates(app, localUserToken, {
+      limit: 1,
+      startKey: first.nextStartKey,
+    });
+    expect(second.templates.map(t => t._id)).toEqual(['zzz-readable']);
+  });
+
+  it('unknown startKey returns an empty page without nextStartKey', async () => {
+    await createSampleTemplate(app, {name: 'cursor-exists'});
+    const listed = await listTemplates(app, adminToken, {
+      limit: 1,
+      startKey: 'no-such-template-cursor',
+    });
+    expect(listed.templates).toEqual([]);
+    expect(listed.nextStartKey).toBeUndefined();
   });
 
   it('create, list, get, delete', async () => {

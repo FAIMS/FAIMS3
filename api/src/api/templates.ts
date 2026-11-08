@@ -9,6 +9,7 @@
 import {
   Action,
   addTemplateRole,
+  GetListTemplatesQuerySchema,
   GetListTemplatesResponse,
   GetTemplateByIdResponse,
   GetTemplateSurveyReferencesResponse,
@@ -22,6 +23,7 @@ import {
   PutUpdateTemplateResponse,
   PutUpdateTemplateUiSpecificationInputSchema,
   Role,
+  TEMPLATE_LIST_DEFAULT_LIMIT,
   userCanReadTemplateDocument,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
@@ -34,7 +36,7 @@ import {
   createTemplate,
   deleteExistingTemplate,
   getTemplate,
-  getTemplates,
+  getTemplatesPage,
   restoreTemplateFromArchive,
   setTemplateVisibility,
   updateExistingTemplate,
@@ -57,45 +59,52 @@ export const api: express.Router = express.Router();
  * GET list templates — lightweight summaries from a CouchDB view (no
  * ui-specification). Use GET /api/templates/:id for full detail.
  *
- * Can filter by team; uses an index that omits the form payload.
+ * Cursor pagination (`limit`, `startKey`, `nextStartKey`) matches record
+ * listing. Omitting `limit` defaults to 50; there is no unbounded dump.
  */
 api.get(
   '/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.LIST_TEMPLATES}),
   validate({
-    query: z.object({
-      teamId: z.string().min(1).optional(),
-      // Query strings only: omit (default) or includeArchived=true|false
-      includeArchived: z.enum(['true', 'false']).optional(),
-    }),
+    query: GetListTemplatesQuerySchema,
   }),
   async (req, res: Response<GetListTemplatesResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
 
-    const templatesRaw = await getTemplates({
-      teamId: req.query.teamId,
-    });
     const includeArchived = req.query.includeArchived === 'true';
+    const rawLimit = req.query.limit;
+    const limit =
+      rawLimit !== undefined && rawLimit !== ''
+        ? parseInt(rawLimit, 10)
+        : TEMPLATE_LIST_DEFAULT_LIMIT;
+    const startKey =
+      req.query.startKey !== undefined && req.query.startKey !== ''
+        ? req.query.startKey
+        : undefined;
 
-    const filteredByArchive = templatesRaw.filter(t => {
-      const archived = t.archived === true;
-      return includeArchived ? archived : !archived;
+    const page = await getTemplatesPage({
+      teamId: req.query.teamId,
+      includeArchived,
+      limit,
+      startKey,
+      canRead: template =>
+        userCanReadTemplateDocument({
+          decodedToken: {
+            globalRoles: req.user!.globalRoles,
+            resourceRoles: req.user!.resourceRoles,
+          },
+          template,
+        }),
     });
 
-    const visible = filteredByArchive.filter(t =>
-      userCanReadTemplateDocument({
-        decodedToken: {
-          globalRoles: req.user!.globalRoles,
-          resourceRoles: req.user!.resourceRoles,
-        },
-        template: t,
-      })
-    );
     res.json({
-      templates: await withOwnedByTeamDisplayNames(visible),
+      templates: await withOwnedByTeamDisplayNames(page.templates),
+      ...(page.nextStartKey !== undefined
+        ? {nextStartKey: page.nextStartKey}
+        : {}),
     });
   }
 );

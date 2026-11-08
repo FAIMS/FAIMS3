@@ -4,7 +4,7 @@ import type {ColumnDef} from '@tanstack/react-table';
 import {DataTable} from '@/components/data-table/data-table';
 import {getTemplatesTableColumns} from '@/components/tables/templates';
 import {useRequiredUser} from '@/hooks/auth-hooks';
-import {useGetTemplates} from '@/hooks/queries';
+import {usePagedTemplates} from '@/hooks/queries';
 import {CreateTemplateDialog} from '@/components/dialogs/create-template-dialog';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {useMemo, useState} from 'react';
@@ -34,7 +34,18 @@ export const Route = createFileRoute('/_protected/templates/')({
  */
 function RouteComponent() {
   const user = useRequiredUser();
-  const {isPending, data} = useGetTemplates({user});
+  const {
+    isPending,
+    templates,
+    pageSize,
+    pageIndex,
+    hasNextPage,
+    canPreviousPage,
+    goNext,
+    goPrevious,
+    goFirst,
+    changePageSize,
+  } = usePagedTemplates({user});
   const navigate = useNavigate();
   const [visibilityFilter, setVisibilityFilter] =
     useState<TemplateVisibilityFilterValue>('all');
@@ -71,8 +82,8 @@ function RouteComponent() {
   );
 
   const filteredTemplates = useMemo(
-    () => filterTemplatesByVisibility(data, visibilityFilter),
-    [data, visibilityFilter]
+    () => filterTemplatesByVisibility(templates, visibilityFilter),
+    [templates, visibilityFilter]
   );
 
   return (
@@ -100,6 +111,17 @@ function RouteComponent() {
         }
         onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
         button={<CreateTemplateDialog />}
+        defaultRowsPerPage={pageSize}
+        serverPagination={{
+          pageIndex,
+          pageSize,
+          hasNextPage,
+          canPreviousPage,
+          onNextPage: goNext,
+          onPreviousPage: goPrevious,
+          onFirstPage: goFirst,
+          onPageSizeChange: changePageSize,
+        }}
       />
     </div>
   );

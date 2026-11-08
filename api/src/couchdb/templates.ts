@@ -27,6 +27,8 @@ import {
   TEMPLATES_BY_TEAM_ID,
   TEMPLATES_LISTING_BY_TEAM_ID,
   TEMPLATES_LISTING_BY_TEMPLATE_ID,
+  TEMPLATE_LIST_VIEW_QUERY_MAX,
+  TEMPLATE_LIST_VIEW_SCAN_MAX,
   getPlanTypeDefinition,
   normalizeNotebookTemplateUiSpecification,
   normalizeRootDescriptionForStore,
@@ -34,6 +36,9 @@ import {
   validateSetupValues,
   notebookUiSpecificationValidationMessage,
   buildUiSpecProperties,
+  templateListingGlobalRange,
+  templateListingTeamAllRange,
+  templateListingTeamRange,
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
@@ -65,7 +70,7 @@ export const getTemplates = async ({
       ? await templatesDb.query<TemplateListItem>(
           TEMPLATES_LISTING_BY_TEAM_ID,
           {
-            key: teamId,
+            ...templateListingTeamAllRange(teamId),
             include_docs: false,
           }
         )
@@ -83,6 +88,149 @@ export const getTemplates = async ({
       'An error occurred while reading templates from the Template DB.'
     );
   }
+};
+
+function isListingViewRow(
+  row: PouchDB.Query.Response<TemplateListItem>['rows'][number]
+): row is typeof row & {id: string; value: TemplateListItem} {
+  return row.value != null && !!row.id && !row.id.startsWith('_');
+}
+
+export type PaginatedTemplateList = {
+  templates: TemplateListItem[];
+  nextStartKey?: string;
+};
+
+/**
+ * Page of thin listing-view rows the caller may read. `limit` counts visible
+ * rows after archive + `canRead`. Scans at most
+ * {@link TEMPLATE_LIST_VIEW_SCAN_MAX} view rows across at most
+ * {@link TEMPLATE_LIST_VIEW_QUERY_MAX} Couch queries. `startKey` is exclusive
+ * (the page starts after that template `_id`). An unknown `startKey` yields an
+ * empty page with no `nextStartKey`.
+ */
+export const getTemplatesPage = async ({
+  teamId,
+  includeArchived,
+  limit,
+  startKey,
+  canRead,
+}: {
+  teamId?: string;
+  includeArchived: boolean;
+  limit: number;
+  startKey?: string;
+  canRead: (template: TemplateListItem) => boolean;
+}): Promise<PaginatedTemplateList> => {
+  const templatesDb = getTemplatesDb();
+  const view = teamId
+    ? TEMPLATES_LISTING_BY_TEAM_ID
+    : TEMPLATES_LISTING_BY_TEMPLATE_ID;
+  const rangeFor = (cursor?: string) =>
+    teamId
+      ? templateListingTeamRange({teamId, includeArchived, startKey: cursor})
+      : templateListingGlobalRange({includeArchived, startKey: cursor});
+
+  const visible: TemplateListItem[] = [];
+  let examined = 0;
+  let queries = 0;
+  let lastExaminedId: string | undefined;
+  let exclusiveAfter =
+    startKey !== undefined && startKey !== '' ? startKey : undefined;
+  let requireExactStart = exclusiveAfter !== undefined;
+  let moreRemain = false;
+
+  try {
+    while (
+      visible.length < limit &&
+      examined < TEMPLATE_LIST_VIEW_SCAN_MAX &&
+      queries < TEMPLATE_LIST_VIEW_QUERY_MAX
+    ) {
+      const remainingScan = TEMPLATE_LIST_VIEW_SCAN_MAX - examined;
+      const remainingQueries = TEMPLATE_LIST_VIEW_QUERY_MAX - queries;
+      const extra = exclusiveAfter ? 1 : 0;
+      const remainingFill = limit - visible.length;
+      const minBatch = Math.ceil((remainingScan + extra) / remainingQueries);
+      const batchLimit = Math.min(
+        remainingScan + extra,
+        Math.max(remainingFill + extra, minBatch)
+      );
+
+      const result = await templatesDb.query<TemplateListItem>(view, {
+        ...rangeFor(exclusiveAfter),
+        include_docs: false,
+        limit: batchLimit,
+      });
+      queries++;
+
+      let rows = result.rows.filter(isListingViewRow);
+      if (exclusiveAfter) {
+        if (requireExactStart) {
+          if (rows.length === 0 || rows[0].id !== exclusiveAfter) {
+            return {templates: []};
+          }
+          requireExactStart = false;
+        }
+        if (rows[0]?.id === exclusiveAfter) {
+          rows = rows.slice(1);
+        }
+        exclusiveAfter = undefined;
+      }
+
+      const couchExhausted = result.rows.length < batchLimit;
+      if (rows.length === 0) {
+        moreRemain = false;
+        break;
+      }
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        if (examined >= TEMPLATE_LIST_VIEW_SCAN_MAX) {
+          moreRemain = true;
+          break;
+        }
+        examined++;
+        lastExaminedId = row.id;
+        const item = row.value;
+        const archived = item.archived === true;
+        if (includeArchived ? !archived : archived) {
+          continue;
+        }
+        if (!canRead(item)) {
+          continue;
+        }
+        visible.push(item);
+        if (visible.length >= limit) {
+          moreRemain = i < rows.length - 1 || !couchExhausted;
+          break;
+        }
+      }
+
+      if (visible.length >= limit) {
+        break;
+      }
+      if (examined >= TEMPLATE_LIST_VIEW_SCAN_MAX) {
+        moreRemain = moreRemain || !couchExhausted;
+        break;
+      }
+      if (couchExhausted) {
+        moreRemain = false;
+        break;
+      }
+      exclusiveAfter = lastExaminedId;
+    }
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading templates from the Template DB.'
+    );
+  }
+
+  return {
+    templates: visible,
+    ...(moreRemain && lastExaminedId !== undefined
+      ? {nextStartKey: lastExaminedId}
+      : {}),
+  };
 };
 
 /**

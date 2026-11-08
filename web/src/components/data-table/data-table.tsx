@@ -18,7 +18,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {useState, ReactNode} from 'react';
-import {DataTablePagination} from './pagination';
+import {
+  DataTablePagination,
+  type DataTableServerPagination,
+} from './pagination';
 import {Input} from '@/components/ui/input';
 import {Skeleton} from '@/components/ui/skeleton';
 import {INPUT_LIMITS} from '@faims3/data-model';
@@ -38,6 +41,11 @@ interface DataTableProps<TData, TValue> {
   initialSorting?: SortingState;
   /** Shown when the table has no rows (after filtering). Defaults to "No results." */
   emptyMessage?: ReactNode;
+  /**
+   * When set, the table shows the current API page and Next follows
+   * `nextStartKey`. Unrelated callers keep client-side `getPaginationRowModel`.
+   */
+  serverPagination?: DataTableServerPagination;
 }
 
 /**
@@ -57,6 +65,7 @@ export function DataTable<TData, TValue>({
   defaultRowsPerPage = 10,
   initialSorting = [],
   emptyMessage = 'No results.',
+  serverPagination,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>(initialSorting);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -69,15 +78,23 @@ export function DataTable<TData, TValue>({
     data: data || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: serverPagination
+      ? undefined
+      : getPaginationRowModel(),
     onPaginationChange: setPagination,
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     onGlobalFilterChange: setGlobalFilter,
     getFilteredRowModel: getFilteredRowModel(),
+    manualPagination: Boolean(serverPagination),
     state: {
       sorting,
-      pagination,
+      pagination: serverPagination
+        ? {
+            pageIndex: serverPagination.pageIndex,
+            pageSize: serverPagination.pageSize,
+          }
+        : pagination,
       globalFilter,
     },
   });
@@ -185,7 +202,7 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} />
+      <DataTablePagination table={table} serverPagination={serverPagination} />
     </div>
   );
 }

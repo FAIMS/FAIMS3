@@ -3,7 +3,12 @@ import {Field, Form} from '@/components/form';
 import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {useGetTeams, useGetTemplate, useGetTemplates} from '@/hooks/queries';
+import {
+  TEMPLATE_CATALOGUE_PICKER_LIMIT,
+  useGetTeams,
+  useGetTemplate,
+  useGetTemplates,
+} from '@/hooks/queries';
 import {Action, TemplateListItem} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useCallback, useState} from 'react';
@@ -53,7 +58,11 @@ export function CreateProjectForm({
   // can they create projects outside team?
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
 
-  const {data: templates} = useGetTemplates({user});
+  const {data: templatesPage} = useGetTemplates({
+    user,
+    limit: TEMPLATE_CATALOGUE_PICKER_LIMIT,
+  });
+  const templates = templatesPage?.templates;
   const {data: teams} = useGetTeams({user});
 
   // The template picker only has list items; fetch the full document so its

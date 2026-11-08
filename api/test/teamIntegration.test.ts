@@ -642,6 +642,32 @@ describe('Team integration with templates and projects', () => {
 
     expect(team2Templates).toHaveLength(1);
     expect(team2Templates).toContain(template2._id);
+
+    const page = await requestAuthAndType(
+      request(app)
+        .get(TEMPLATE_API_BASE)
+        .query({teamId: team1._id, limit: '1'}),
+      adminToken
+    ).expect(200);
+    expect(page.body.templates).toHaveLength(1);
+    expect(page.body.nextStartKey).toBeDefined();
+    const rest = await requestAuthAndType(
+      request(app).get(TEMPLATE_API_BASE).query({
+        teamId: team1._id,
+        limit: '1',
+        startKey: page.body.nextStartKey,
+      }),
+      adminToken
+    ).expect(200);
+    const walked = [
+      ...page.body.templates.map((t: {_id: string}) => t._id),
+      ...rest.body.templates.map((t: {_id: string}) => t._id),
+    ];
+    expect(walked).toHaveLength(2);
+    expect(walked).toEqual(
+      expect.arrayContaining([template1._id, template3._id])
+    );
+    expect(walked).not.toContain(template2._id);
   });
 
   it('correctly fetches projects by team ID', async () => {

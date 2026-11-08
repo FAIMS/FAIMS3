@@ -1381,7 +1381,7 @@
     "/templates/": {
       "get": {
         "summary": "Get a list of templates",
-        "description": "Lists template summaries (no `uiSpecification` form payload in each row). Use GET `/api/templates/{id}` for full detail including the form. By default only non-archived templates are returned. Pass `includeArchived=true` to list archived templates (still subject to `READ_TEMPLATE_DETAILS`). Optional `teamId` scopes to a team. Each item may include `ownedByTeamDisplayName` when the template has `ownedByTeamId` and the server can resolve the team — so clients can show the owning team name without calling the teams API (e.g. for public catalogue templates).",
+        "description": "Lists template summaries (no `uiSpecification` form payload in each row). Use GET `/api/templates/{id}` for full detail including the form. Cursor pagination uses `limit` (1–500, default 50) and exclusive `startKey`; `nextStartKey` is present when more listing-view rows remain. Omitting `limit` does not dump the full catalogue. By default only non-archived templates are returned. Pass `includeArchived=true` to list archived templates (still subject to `READ_TEMPLATE_DETAILS` / `READ_PUBLIC_TEMPLATE_DETAILS`). Optional `teamId` scopes to a team. Each item may include `ownedByTeamDisplayName` when the template has `ownedByTeamId` and the server can resolve the team — so clients can show the owning team name without calling the teams API (e.g. for public catalogue templates).",
         "tags": ["Templates"],
         "produces": ["application/json"],
         "security": [
@@ -1409,6 +1409,24 @@
               "enum": ["true", "false"]
             },
             "description": "When `true`, returns archived templates only; when omitted or `false`, returns non-archived templates only."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (1–500). Default 50 when omitted or empty. There is no unbounded dump."
+          },
+          {
+            "name": "startKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive pagination cursor (template `_id`) from a previous response’s `nextStartKey`. Omit for the first page. An unknown cursor returns an empty page without `nextStartKey`."
           }
         ],
         "responses": {
@@ -3063,7 +3081,7 @@
     },
     "GetListTemplatesResponse": {
       "type": "object",
-      "description": "Template list items are lean summaries (no `uiSpecification`) plus optional `ownedByTeamDisplayName` from the server.",
+      "description": "Template list items are lean summaries (no `uiSpecification`) plus optional `ownedByTeamDisplayName` from the server. `nextStartKey` is present when more listing-view rows remain; pass it as `startKey` on the next request.",
       "properties": {
         "templates": {
           "type": "array",
@@ -3077,8 +3095,13 @@
               }
             ]
           }
+        },
+        "nextStartKey": {
+          "type": "string",
+          "description": "Present when the server stopped before the end of the listing view; pass as `startKey` on the next request. Omitted when the view is exhausted."
         }
-      }
+      },
+      "required": ["templates"]
     },
     "TemplateListItem": {
       "type": "object",
