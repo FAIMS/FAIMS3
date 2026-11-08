@@ -64,7 +64,9 @@ session:
    together). Run it in a long-lived tmux session; it stays in the foreground.
 
 `./localdev.sh` / `./dev.sh` automate steps 1-6 but assume `nvm`; running the
-steps directly (as above) is more reliable in this VM. `./localdev.sh --all`
+steps directly (as above) is more reliable in this VM. `./dev.sh --no-spatial`
+skips RustFS and the spatial worker pool (steps 3's rustfs and step 5) and
+only starts CouchDB plus native api/app/web. `./localdev.sh --all`
 runs every service inside Docker instead of natively — slower and not needed
 for code work.
 
