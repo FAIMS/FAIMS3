@@ -443,6 +443,11 @@ const LimitsBuildConfigSchema = z
       .default(SHARED_DEFAULTS.exportRateLimiterPerWindow),
     /** Email-code / verification attempt limiter. */
     attemptLimiterEnabled: z.boolean().default(true),
+    /**
+     * Couch-backed local-password lockout (LOGIN_LOCKOUT_ENABLED). Independent
+     * of attemptLimiterEnabled.
+     */
+    loginLockoutEnabled: z.boolean().default(true),
     jsonBodyLimit: z.string().default(SHARED_DEFAULTS.jsonBodyLimit),
     urlencodedBodyLimit: z
       .string()

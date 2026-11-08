@@ -499,6 +499,22 @@ export const VerificationChallengeV6FieldsSchema =
 export const LongLivedTokenV6FieldsSchema = LongLivedTokenV5FieldsSchema;
 
 /**
+ * Progressive local-login lockout. One document per people `_id`, keyed as
+ * `loginlockout_<userId>`. Count + last-attempt are the only source of truth
+ * across Conductor tasks (no in-memory cache).
+ */
+export const LoginLockoutV6FieldsSchema = z.object({
+  // Discriminator field
+  documentType: z.literal('loginlockout'),
+  // People document `_id` this counter belongs to
+  userId: z.string(),
+  // Consecutive failed local-password attempts since last success / stale reset
+  count: z.number().int().nonnegative(),
+  // Unix epoch ms of the most recent failed attempt (including while delayed)
+  lastAttemptMs: z.number(),
+});
+
+/**
  * Export formats stored on a download grant. Same schema as the export API
  * ({@link ExportFormatSchema}); aliased here so the V6 grant fields stay
  * readable next to the other auth record types.
@@ -551,6 +567,7 @@ export const AuthRecordV6FieldsSchema = z.discriminatedUnion('documentType', [
   VerificationChallengeV6FieldsSchema,
   LongLivedTokenV6FieldsSchema,
   DownloadGrantV6FieldsSchema,
+  LoginLockoutV6FieldsSchema,
 ]);
 
 export const AuthRecordV6DocumentSchema = z.discriminatedUnion('documentType', [
@@ -559,6 +576,7 @@ export const AuthRecordV6DocumentSchema = z.discriminatedUnion('documentType', [
   CouchDocumentSchema.extend(VerificationChallengeV6FieldsSchema.shape),
   CouchDocumentSchema.extend(LongLivedTokenV6FieldsSchema.shape),
   CouchDocumentSchema.extend(DownloadGrantV6FieldsSchema.shape),
+  CouchDocumentSchema.extend(LoginLockoutV6FieldsSchema.shape),
 ]);
 export type AuthRecordV6Document = z.infer<typeof AuthRecordV6DocumentSchema>;
 
@@ -572,6 +590,7 @@ export const AuthRecordV6ExistingDocumentSchema = z.discriminatedUnion(
     ),
     CouchExistingDocumentSchema.extend(LongLivedTokenV6FieldsSchema.shape),
     CouchExistingDocumentSchema.extend(DownloadGrantV6FieldsSchema.shape),
+    CouchExistingDocumentSchema.extend(LoginLockoutV6FieldsSchema.shape),
   ]
 );
 export type AuthRecordV6ExistingDocument = z.infer<
@@ -587,6 +606,7 @@ export type LongLivedTokenV6Fields = z.infer<
   typeof LongLivedTokenV6FieldsSchema
 >;
 export type DownloadGrantV6Fields = z.infer<typeof DownloadGrantV6FieldsSchema>;
+export type LoginLockoutV6Fields = z.infer<typeof LoginLockoutV6FieldsSchema>;
 export type AuthRecordV6Fields = z.infer<typeof AuthRecordV6FieldsSchema>;
 
 export const DownloadGrantV6DocumentSchema = CouchDocumentSchema.extend(
@@ -600,6 +620,19 @@ export const DownloadGrantV6ExistingDocumentSchema =
   CouchExistingDocumentSchema.extend(DownloadGrantV6FieldsSchema.shape);
 export type DownloadGrantV6ExistingDocument = z.infer<
   typeof DownloadGrantV6ExistingDocumentSchema
+>;
+
+export const LoginLockoutV6DocumentSchema = CouchDocumentSchema.extend(
+  LoginLockoutV6FieldsSchema.shape
+);
+export type LoginLockoutV6Document = z.infer<
+  typeof LoginLockoutV6DocumentSchema
+>;
+
+export const LoginLockoutV6ExistingDocumentSchema =
+  CouchExistingDocumentSchema.extend(LoginLockoutV6FieldsSchema.shape);
+export type LoginLockoutV6ExistingDocument = z.infer<
+  typeof LoginLockoutV6ExistingDocumentSchema
 >;
 
 // CURRENT EXPORTS
@@ -624,6 +657,7 @@ export type EmailCodeFields = EmailCodeV6Fields;
 export type VerificationChallengeFields = VerificationChallengeV6Fields;
 export type LongLivedTokenFields = LongLivedTokenV6Fields;
 export type DownloadGrantFields = DownloadGrantV6Fields;
+export type LoginLockoutFields = LoginLockoutV6Fields;
 
 // refresh token
 export const RefreshRecordDocumentSchema = RefreshRecordV5DocumentSchema;
@@ -662,6 +696,13 @@ export const DownloadGrantExistingDocumentSchema =
   DownloadGrantV6ExistingDocumentSchema;
 export type DownloadGrantExistingDocument = DownloadGrantV6ExistingDocument;
 
+// login lockout
+export const LoginLockoutDocumentSchema = LoginLockoutV6DocumentSchema;
+export type LoginLockoutDocument = LoginLockoutV6Document;
+export const LoginLockoutExistingDocumentSchema =
+  LoginLockoutV6ExistingDocumentSchema;
+export type LoginLockoutExistingDocument = LoginLockoutV6ExistingDocument;
+
 // ID prefix map
 export const AUTH_RECORD_ID_PREFIXES = {
   refresh: 'refresh_',
@@ -669,6 +710,7 @@ export const AUTH_RECORD_ID_PREFIXES = {
   verification: 'verification_',
   longlived: 'longlived_',
   downloadgrant: 'downloadgrant_',
+  loginlockout: 'loginlockout_',
 } as const;
 
 // Database

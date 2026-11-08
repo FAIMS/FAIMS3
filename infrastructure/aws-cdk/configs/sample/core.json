@@ -98,6 +98,7 @@
   "limits": {
     "rateLimiterEnabled": true,
     "attemptLimiterEnabled": true,
+    "loginLockoutEnabled": true,
     "exportRateLimiterEnabled": true,
     "exportRateLimiterWindowMs": 600000,
     "exportRateLimiterPerWindow": 20

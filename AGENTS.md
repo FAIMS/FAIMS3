@@ -96,6 +96,8 @@ for code work.
   `RATE_LIMITER_ENABLED=false` and `ATTEMPT_LIMITER_ENABLED=false` in
   `api/.env` and restart the API. The former is the Express HTTP IP limiter;
   the latter gates CouchDB-backed email-code / verification-challenge limits.
+  Local-password lockout is a separate Couch-backed control
+  (`LOGIN_LOCKOUT_ENABLED`, default true; forced off in API unit tests).
 - Startup migration lock (`STARTUP_MIGRATION_LOCK_ENABLED`) defaults **off**.
   That avoids a 30-minute wait after a killed `pnpm run dev` reload left a
   `running` lock. Clustered / multi-replica production MUST set it `true`
