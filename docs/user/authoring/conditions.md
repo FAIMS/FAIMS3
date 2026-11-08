@@ -16,11 +16,10 @@ disappear.
 
 Select single and Select multiple fields can also attach a condition to
 an **individual option**. In the options table, each ordinary option
-row has a compact condition icon in the Actions column (sized like edit
-and delete; tooltip **Add condition** when unset and **Update
-condition** when set). This is not the labeled field-level **Add
-condition** button. The synthetic **Other** option cannot take a
-condition.
+row has a **condition** control in the Actions column (**Add condition**
+when unset, **Update condition** when set). This is separate from the
+field-level **Add condition** control. The synthetic **Other** option
+cannot take a condition.
 
 An option with no condition, or one whose condition evaluates true, is
 offered for selection. An option whose condition is false is hidden

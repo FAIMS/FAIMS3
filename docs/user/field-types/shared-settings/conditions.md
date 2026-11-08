@@ -15,10 +15,10 @@ checkbox is ticked. Conditions are configured per-field in the {{Notebook}}
 Editor and evaluated dynamically during data collection.
 
 Select single and Select multiple fields can also hide or show
-**individual options** with the same condition builder. That control is
-a compact **condition** icon in the option row's Actions column
-(tooltip **Add condition** / **Update condition**), not the field-level
-**Add condition** button. Other cannot take a condition. A selected
+**individual options** with the same condition builder. Use the
+**condition** control in the option row's Actions column (**Add
+condition** / **Update condition**), not the field-level **Add
+condition** control. Other cannot take a condition. A selected
 option whose condition becomes false stays visible until the collector
 changes it.
 

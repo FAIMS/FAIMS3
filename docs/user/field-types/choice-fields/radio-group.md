@@ -70,12 +70,12 @@ options.
   option, or use the **up/down arrow** buttons in the Actions column.
 - **To delete an option:** Click the **trash** icon in the option's Actions
   column.
-- **To show an option only sometimes:** Click the **condition** icon in that
-  option's Actions column (tooltip **Add condition**, or **Update
-  condition** when a rule is already set). This is a compact icon next to
-  edit and delete — not the field-level **Add condition** button. Use it
-  so a choice such as "Asbestos" appears only when Site type is Industrial.
-  The synthetic **Other** row cannot take a condition.
+- **To show an option only sometimes:** Click the **condition** control in
+  that option's Actions column (**Add condition**, or **Update condition**
+  when a rule is already set). This is not the field-level **Add
+  condition** control. Use it so a choice such as "Asbestos" appears only
+  when Site type is Industrial. The synthetic **Other** row cannot take a
+  condition.
 - **Add "Other" Option** Click to allow the user to select 'Other' from the
   list and enter free text into this field.
 
