@@ -12,6 +12,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 PouchDB.plugin(PouchDBFind);
 
 import {
+  addTeamRole,
   GetListTeamsResponse,
   GetListTeamsResponseSchema,
   GetTeamByIdResponse,
@@ -22,14 +23,32 @@ import {
   PutUpdateTeamInput,
   PutUpdateTeamResponse,
   PutUpdateTeamResponseSchema,
+  Role,
+  userHasTeamRole,
 } from '@faims3/data-model';
 import {beforeEach, describe, expect, it} from 'vitest';
 import {Express} from 'express';
 import request from 'supertest';
+import {
+  generateJwtFromUser,
+  upgradeCouchUserToExpressUser,
+} from '../src/auth/keySigning/create';
+import {keyService} from '../src/buildconfig';
+import {
+  createUser,
+  getCouchUserFromEmailOrUserId,
+  saveCouchUser,
+} from '../src/couchdb/users';
 import {app} from '../src/expressSetup';
+import {
+  EMPTY_UI_SPECIFICATION,
+  sampleCreateTemplatePayload,
+  testNotebookDescription,
+} from './sampleNotebook';
 import {
   adminToken,
   beforeApiTests,
+  localUserName,
   localUserToken,
   requestAuthAndType,
 } from './utils';
@@ -76,14 +95,31 @@ export const createSampleTeam = async (
  */
 export const listTeams = async (
   app: Express,
-  token: string = adminToken
+  token: string = adminToken,
+  query?: {includeArchived?: boolean}
 ): Promise<GetListTeamsResponse> => {
-  return await requestAuthAndType(request(app).get(`${TEAMS_API_BASE}`), token)
+  const qs = query?.includeArchived === true ? '?includeArchived=true' : '';
+  return await requestAuthAndType(
+    request(app).get(`${TEAMS_API_BASE}${qs}`),
+    token
+  )
     .expect(200)
     .then(res => {
       // Parse the response body against model
       return GetListTeamsResponseSchema.parse(res.body);
     });
+};
+
+const setTeamArchived = async (
+  app: Express,
+  teamId: string,
+  archive: boolean,
+  token: string = adminToken
+) => {
+  return await requestAuthAndType(
+    request(app).put(`${TEAMS_API_BASE}/${teamId}/archive`).send({archive}),
+    token
+  ).expect(200);
 };
 
 /**
@@ -230,7 +266,8 @@ describe('Teams API tests', () => {
       expect(team.description).toBe('Second test team description');
     });
 
-    // Delete the second team
+    // Delete the second team (must be archived first)
+    await setTeamArchived(app, teamId2, true);
     await deleteATeam(app, teamId2);
 
     // List again and check there's only one team
@@ -240,6 +277,7 @@ describe('Teams API tests', () => {
     });
 
     // Delete the first team
+    await setTeamArchived(app, teamId1, true);
     await deleteATeam(app, teamId1);
 
     // List again and check there are no teams
@@ -483,5 +521,382 @@ describe('Teams API tests', () => {
       request(app).post(`${TEAMS_API_BASE}/123456/delete`).send(),
       localUserToken
     ).expect(401);
+  });
+
+  it('excludes archived teams by default; includeArchived lists archived only', async () => {
+    const activeTeam = await createSampleTeam(app, {
+      teamName: 'Active Archive List Team',
+    });
+    const archivedTeam = await createSampleTeam(app, {
+      teamName: 'Archived Archive List Team',
+    });
+    await setTeamArchived(app, archivedTeam._id, true);
+
+    const defaultList = await listTeams(app);
+    expect(defaultList.teams.map(t => t._id).sort()).toEqual(
+      [activeTeam._id].sort()
+    );
+
+    const archivedOnly = await listTeams(app, adminToken, {
+      includeArchived: true,
+    });
+    expect(archivedOnly.teams.map(t => t._id).sort()).toEqual(
+      [archivedTeam._id].sort()
+    );
+  });
+
+  it('PUT archive removes team from default list; GET by id still returns it; restore lists update', async () => {
+    const team = await createSampleTeam(app, {
+      teamName: 'Archive Restore Cycle Team',
+    });
+    const id = team._id;
+
+    let defaultList = await listTeams(app);
+    expect(defaultList.teams.map(t => t._id)).toContain(id);
+
+    await setTeamArchived(app, id, true);
+    const archivedDoc = await getATeam(app, id);
+    expect(archivedDoc.archived).toBe(true);
+    expect(archivedDoc.updatedAt).toBeGreaterThanOrEqual(team.updatedAt);
+
+    defaultList = await listTeams(app);
+    expect(defaultList.teams.map(t => t._id)).not.toContain(id);
+    const archivedOnly = await listTeams(app, adminToken, {
+      includeArchived: true,
+    });
+    expect(archivedOnly.teams.map(t => t._id)).toContain(id);
+
+    await setTeamArchived(app, id, false);
+    const restored = await getATeam(app, id);
+    expect(restored.archived).toBe(false);
+    expect(restored._id).toBe(id);
+
+    defaultList = await listTeams(app);
+    expect(defaultList.teams.map(t => t._id)).toContain(id);
+    const archivedAfter = await listTeams(app, adminToken, {
+      includeArchived: true,
+    });
+    expect(archivedAfter.teams.map(t => t._id)).not.toContain(id);
+  });
+
+  it('PUT archive {archive:false} rejects when team is not archived', async () => {
+    const team = await createSampleTeam(app, {
+      teamName: 'Not Archived Restore Team',
+    });
+    const response = await requestAuthAndType(
+      request(app)
+        .put(`${TEAMS_API_BASE}/${team._id}/archive`)
+        .send({archive: false}),
+      adminToken
+    );
+    expect(response.status).toBe(400);
+    expect(response.body.error.message).toBe(
+      'Only archived teams can be restored.'
+    );
+  });
+
+  it('TEAM_MANAGER cannot archive; TEAM_ADMIN can; local user cannot', async () => {
+    const team = await createSampleTeam(app, {
+      teamName: 'Permission Archive Team',
+    });
+    const signingKey = await keyService.getSigningKey();
+
+    const [manager, managerErr] = await createUser({
+      username: 'team-archive-manager',
+      name: 'Team Archive Manager',
+    });
+    const [admin, adminErr] = await createUser({
+      username: 'team-archive-admin',
+      name: 'Team Archive Admin',
+    });
+    expect(managerErr).toBe('');
+    expect(adminErr).toBe('');
+    expect(manager).not.toBeNull();
+    expect(admin).not.toBeNull();
+
+    addTeamRole({
+      user: manager!,
+      teamId: team._id,
+      role: Role.TEAM_MANAGER,
+    });
+    addTeamRole({
+      user: admin!,
+      teamId: team._id,
+      role: Role.TEAM_ADMIN,
+    });
+    await saveCouchUser(manager!);
+    await saveCouchUser(admin!);
+
+    const managerToken = await generateJwtFromUser({
+      user: await upgradeCouchUserToExpressUser({dbUser: manager!}),
+      signingKey,
+    });
+    const adminUserToken = await generateJwtFromUser({
+      user: await upgradeCouchUserToExpressUser({dbUser: admin!}),
+      signingKey,
+    });
+
+    await requestAuthAndType(
+      request(app)
+        .put(`${TEAMS_API_BASE}/${team._id}/archive`)
+        .send({archive: true}),
+      managerToken
+    ).expect(401);
+
+    await requestAuthAndType(
+      request(app)
+        .put(`${TEAMS_API_BASE}/${team._id}/archive`)
+        .send({archive: true}),
+      localUserToken
+    ).expect(401);
+
+    await setTeamArchived(app, team._id, true, adminUserToken);
+    await getATeam(app, team._id).then(doc => {
+      expect(doc.archived).toBe(true);
+    });
+
+    await requestAuthAndType(
+      request(app)
+        .put(`${TEAMS_API_BASE}/${team._id}/archive`)
+        .send({archive: false}),
+      managerToken
+    ).expect(401);
+
+    await setTeamArchived(app, team._id, false, adminUserToken);
+  });
+
+  it('refuses team-as-container mutations while archived and allows them after restore', async () => {
+    const team = await createSampleTeam(app, {
+      teamName: 'Frozen Container Team',
+    });
+    await requestAuthAndType(
+      request(app).post(`${TEAMS_API_BASE}/${team._id}/members`).send({
+        username: localUserName,
+        role: Role.TEAM_MEMBER,
+        action: 'ADD_ROLE',
+      }),
+      adminToken
+    ).expect(200);
+
+    await setTeamArchived(app, team._id, true);
+
+    const updateRes = await requestAuthAndType(
+      request(app)
+        .put(`${TEAMS_API_BASE}/${team._id}`)
+        .send({name: 'Should Not Persist'}),
+      adminToken
+    );
+    expect(updateRes.status).toBe(400);
+    await getATeam(app, team._id).then(doc => {
+      expect(doc.name).toBe('Frozen Container Team');
+    });
+
+    const memberRes = await requestAuthAndType(
+      request(app).post(`${TEAMS_API_BASE}/${team._id}/members`).send({
+        username: localUserName,
+        role: Role.TEAM_MANAGER,
+        action: 'ADD_ROLE',
+      }),
+      adminToken
+    );
+    expect(memberRes.status).toBe(400);
+
+    const inviteRes = await requestAuthAndType(
+      request(app).post(`/api/invites/team/${team._id}`).send({
+        role: Role.TEAM_MEMBER,
+        name: 'Archived team invite',
+      }),
+      adminToken
+    );
+    expect(inviteRes.status).toBe(400);
+
+    await requestAuthAndType(
+      request(app).get(`${TEAMS_API_BASE}/${team._id}`),
+      adminToken
+    ).expect(200);
+    await requestAuthAndType(
+      request(app).get(`${TEAMS_API_BASE}/${team._id}/members`),
+      adminToken
+    ).expect(200);
+    await requestAuthAndType(
+      request(app).get(`/api/invites/team/${team._id}`),
+      adminToken
+    ).expect(200);
+
+    await setTeamArchived(app, team._id, false);
+
+    await updateATeam(app, team._id, {name: 'Restored Container Team'}).then(
+      updated => {
+        expect(updated.name).toBe('Restored Container Team');
+      }
+    );
+    await requestAuthAndType(
+      request(app).post(`${TEAMS_API_BASE}/${team._id}/members`).send({
+        username: localUserName,
+        role: Role.TEAM_MANAGER,
+        action: 'ADD_ROLE',
+      }),
+      adminToken
+    ).expect(200);
+    await requestAuthAndType(
+      request(app).post(`/api/invites/team/${team._id}`).send({
+        role: Role.TEAM_MEMBER,
+        name: 'Restored team invite',
+      }),
+      adminToken
+    ).expect(200);
+
+    const localUser = await getCouchUserFromEmailOrUserId(localUserName);
+    expect(localUser).not.toBeNull();
+    expect(
+      userHasTeamRole({
+        user: localUser!,
+        teamId: team._id,
+        role: Role.TEAM_MEMBER,
+      })
+    ).toBe(true);
+  });
+
+  it('refuses in-team creates and assign-to archived team; allows moving a child off', async () => {
+    const archivedTeam = await createSampleTeam(app, {
+      teamName: 'Archived Target Team',
+    });
+    const activeTeam = await createSampleTeam(app, {
+      teamName: 'Active Target Team',
+    });
+    const notebook = await requestAuthAndType(
+      request(app).post('/api/notebooks').send({
+        name: 'Owned by archived team',
+        description: testNotebookDescription,
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: archivedTeam._id,
+      }),
+      adminToken
+    )
+      .expect(200)
+      .then(res => res.body as {notebook: string});
+
+    const template = await requestAuthAndType(
+      request(app)
+        .post('/api/templates')
+        .send({
+          ...sampleCreateTemplatePayload('owned template'),
+          teamId: archivedTeam._id,
+        }),
+      adminToken
+    )
+      .expect(200)
+      .then(res => res.body as {_id: string});
+
+    await setTeamArchived(app, archivedTeam._id, true);
+
+    const createNotebookRes = await requestAuthAndType(
+      request(app).post('/api/notebooks').send({
+        name: 'Blocked notebook',
+        description: testNotebookDescription,
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: archivedTeam._id,
+      }),
+      adminToken
+    );
+    expect(createNotebookRes.status).toBe(400);
+
+    const createTemplateRes = await requestAuthAndType(
+      request(app)
+        .post('/api/templates')
+        .send({
+          ...sampleCreateTemplatePayload('blocked template'),
+          teamId: archivedTeam._id,
+        }),
+      adminToken
+    );
+    expect(createTemplateRes.status).toBe(400);
+
+    const assignNotebookRes = await requestAuthAndType(
+      request(app).put(`/api/notebooks/${notebook.notebook}/team`).send({
+        teamId: archivedTeam._id,
+      }),
+      adminToken
+    );
+    expect(assignNotebookRes.status).toBe(400);
+
+    const assignTemplateRes = await requestAuthAndType(
+      request(app).put(`/api/templates/${template._id}/team`).send({
+        teamId: archivedTeam._id,
+      }),
+      adminToken
+    );
+    expect(assignTemplateRes.status).toBe(400);
+
+    await requestAuthAndType(
+      request(app).get(`/api/notebooks?teamId=${archivedTeam._id}`),
+      adminToken
+    ).expect(200);
+
+    await requestAuthAndType(
+      request(app).put(`/api/notebooks/${notebook.notebook}/team`).send({
+        teamId: activeTeam._id,
+      }),
+      adminToken
+    ).expect(200);
+
+    await setTeamArchived(app, archivedTeam._id, false);
+    await requestAuthAndType(
+      request(app).post('/api/notebooks').send({
+        name: 'Allowed after restore',
+        description: testNotebookDescription,
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: archivedTeam._id,
+      }),
+      adminToken
+    ).expect(200);
+  });
+
+  it('POST delete requires archive and empty children', async () => {
+    const team = await createSampleTeam(app, {
+      teamName: 'Delete Gate Team',
+    });
+
+    const liveDelete = await requestAuthAndType(
+      request(app).post(`${TEAMS_API_BASE}/${team._id}/delete`),
+      adminToken
+    );
+    expect(liveDelete.status).toBe(400);
+    expect(liveDelete.body.error.message).toMatch(/archived/i);
+    await getATeam(app, team._id);
+
+    await requestAuthAndType(
+      request(app).post('/api/notebooks').send({
+        name: 'Child of delete-gate team',
+        description: testNotebookDescription,
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: team._id,
+      }),
+      adminToken
+    ).expect(200);
+
+    await setTeamArchived(app, team._id, true);
+    const withChild = await requestAuthAndType(
+      request(app).post(`${TEAMS_API_BASE}/${team._id}/delete`),
+      adminToken
+    );
+    expect(withChild.status).toBe(400);
+    await getATeam(app, team._id);
+
+    const emptyTeam = await createSampleTeam(app, {
+      teamName: 'Empty Delete Team',
+    });
+    await setTeamArchived(app, emptyTeam._id, true);
+    await deleteATeam(app, emptyTeam._id);
+    await requestAuthAndType(
+      request(app).get(`${TEAMS_API_BASE}/${emptyTeam._id}`),
+      adminToken
+    ).expect(404);
+    const defaultList = await listTeams(app);
+    expect(defaultList.teams.map(t => t._id)).not.toContain(emptyTeam._id);
+    const archivedOnly = await listTeams(app, adminToken, {
+      includeArchived: true,
+    });
+    expect(archivedOnly.teams.map(t => t._id)).not.toContain(emptyTeam._id);
   });
 });

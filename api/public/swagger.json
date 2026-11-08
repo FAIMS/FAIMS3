@@ -1870,11 +1870,23 @@
     "/teams/": {
       "get": {
         "summary": "Get a list of teams",
-        "description": "Gets a list of all teams from the teams DB",
+        "description": "Gets a list of teams the caller can view. By default only non-archived teams are returned. Pass `includeArchived=true` to list archived teams only (still subject to `VIEW_TEAM_DETAILS`).",
         "tags": ["Teams"],
         "security": [
           {
             "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When `true`, returns archived teams only; when omitted or `false`, returns non-archived teams only."
           }
         ],
         "responses": {
@@ -1999,6 +2011,53 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/teams/{id}/archive": {
+      "put": {
+        "summary": "Archive or restore a team",
+        "description": "Sets the team’s top-level `archived` flag. Use `{ \"archive\": true }` to archive and `{ \"archive\": false }` to restore from archive. Restore is rejected unless the team is currently archived. Requires `CHANGE_TEAM_STATUS` on the team. Archiving does not archive, close, or delete owned surveys, templates, or map layers.",
+        "tags": ["Teams"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Team id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PutArchiveTeamRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation"
+          },
+          "400": {
+            "description": "Invalid request (e.g. restore when not archived)"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed"
           }
         }
       }
@@ -2673,6 +2732,16 @@
         "archive": {
           "type": "boolean",
           "description": "When true, archive the template; when false, restore from archive"
+        }
+      },
+      "required": ["archive"]
+    },
+    "PutArchiveTeamRequest": {
+      "type": "object",
+      "properties": {
+        "archive": {
+          "type": "boolean",
+          "description": "When true, archive the team; when false, restore from archive"
         }
       },
       "required": ["archive"]
@@ -3461,6 +3530,10 @@
         "updatedAt": {
           "type": "number",
           "description": "Unix timestamp when team was last updated"
+        },
+        "archived": {
+          "type": "boolean",
+          "description": "When true, the team is archived. Missing or false means active."
         }
       },
       "required": ["_id", "name", "createdBy", "createdAt", "updatedAt"]

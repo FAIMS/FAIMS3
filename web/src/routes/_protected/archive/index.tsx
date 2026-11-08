@@ -7,13 +7,19 @@ import {
 } from '@/archive/archive-tabs';
 import {DataTable} from '@/components/data-table/data-table';
 import {archivedDisabledUserColumns} from '@/components/tables/archived-disabled-users';
+import {archivedTeamColumns} from '@/components/tables/archived-teams';
 import {archivedTemplateColumns} from '@/components/tables/archived-templates';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {archivedProjectColumns} from '@/components/tables/archived-projects';
-import {useGetProjects, useGetTemplates, useGetUsers} from '@/hooks/queries';
+import {
+  useGetProjects,
+  useGetTeams,
+  useGetTemplates,
+  useGetUsers,
+} from '@/hooks/queries';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {createFileRoute, Navigate, useNavigate} from '@tanstack/react-router';
 import {Action, ProjectStatus} from '@faims3/data-model';
@@ -34,15 +40,18 @@ function RouteComponent() {
   const canSeeProjects = useIsAuthorisedTo({action: Action.LIST_PROJECTS});
   const canSeeTemplates = useIsAuthorisedTo({action: Action.LIST_TEMPLATES});
   const canSeeUsers = useIsAuthorisedTo({action: Action.VIEW_USER_LIST});
+  // Same visibility as /teams: anyone who can list teams (filtered per resource).
+  const canSeeTeams = true;
 
   const visibleArchiveTabs = useMemo(
     () =>
       getVisibleArchiveTabs({
         canSeeProjects,
         canSeeTemplates,
+        canSeeTeams,
         canSeeUsers,
       }),
-    [canSeeProjects, canSeeTemplates, canSeeUsers]
+    [canSeeProjects, canSeeTemplates, canSeeTeams, canSeeUsers]
   );
 
   const paths = useMemo(
@@ -70,6 +79,12 @@ function RouteComponent() {
     user,
     includeArchived: true,
     enabled: !!user && canSeeProjects,
+  });
+
+  const {isPending: teamsLoading, data: archivedTeamsData} = useGetTeams({
+    user,
+    includeArchived: true,
+    enabled: !!user && canSeeTeams,
   });
 
   const {isPending: disabledUsersLoading, data: allUsersForArchive} =
@@ -142,6 +157,16 @@ function RouteComponent() {
               columns={archivedTemplateColumns}
               data={data}
               loading={isPending}
+            />
+          </TabsContent>
+        )}
+
+        {canSeeTeams && (
+          <TabsContent value="teams" className="mt-4">
+            <DataTable
+              columns={archivedTeamColumns}
+              data={archivedTeamsData?.teams ?? []}
+              loading={teamsLoading}
             />
           </TabsContent>
         )}

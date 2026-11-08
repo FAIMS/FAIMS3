@@ -1582,4 +1582,60 @@ describe('Team integration with templates and projects', () => {
       })
     ).toBe(true);
   });
+
+  it('keeps owned notebooks readable after team archive and allows moving them off', async () => {
+    const archivedTeam = await createTeam(app, {
+      teamName: 'Archive Child Team',
+    });
+    const activeTeam = await createTeam(app, {
+      teamName: 'Archive Destination Team',
+    });
+
+    const project = await requestAuthAndType(
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Notebook on archived team',
+        description: testNotebookDescription,
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: archivedTeam._id,
+      }),
+      adminToken
+    )
+      .expect(200)
+      .then(res => res.body as {notebook: string});
+
+    await requestAuthAndType(
+      request(app)
+        .put(`${TEAMS_API_BASE}/${archivedTeam._id}/archive`)
+        .send({archive: true}),
+      adminToken
+    ).expect(200);
+
+    const listed = await requestAuthAndType(
+      request(app).get(`${NOTEBOOKS_API_BASE}?teamId=${archivedTeam._id}`),
+      adminToken
+    ).expect(200);
+    expect(
+      (listed.body as Array<{_id: string}>).some(
+        n => n._id === project.notebook
+      )
+    ).toBe(true);
+
+    await requestAuthAndType(
+      request(app).get(`${NOTEBOOKS_API_BASE}/${project.notebook}`),
+      adminToken
+    ).expect(200);
+
+    await requestAuthAndType(
+      request(app).put(`${NOTEBOOKS_API_BASE}/${project.notebook}/team`).send({
+        teamId: activeTeam._id,
+      }),
+      adminToken
+    ).expect(200);
+
+    // Child was moved off; archived team is empty and may be deleted.
+    await requestAuthAndType(
+      request(app).post(`${TEAMS_API_BASE}/${archivedTeam._id}/delete`),
+      adminToken
+    ).expect(200);
+  });
 });

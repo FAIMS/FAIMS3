@@ -35,6 +35,7 @@ import {customAlphabet} from 'nanoid';
 import {getInvitesDB} from '.';
 import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
+import {assertTeamNotArchived} from './teams';
 
 /** Cryptographically strong invite-code body generator (nanoid). */
 const generateInviteCodeBody = customAlphabet(
@@ -301,6 +302,10 @@ export async function consumeInvite({
     throw new Error(
       'This invite is invalid, reason: ' + (reason ?? 'Unspecified.')
     );
+  }
+
+  if (invite.resourceId && invite.resourceType === Resource.TEAM) {
+    await assertTeamNotArchived(invite.resourceId);
   }
 
   // Update the invite with the new usage

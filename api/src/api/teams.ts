@@ -17,6 +17,7 @@ import {
   IdInputSchema,
   PostCreateTeamInputSchema,
   PostCreateTeamResponse,
+  PutArchiveTeamRequestSchema,
   PutUpdateTeamInputSchema,
   PutUpdateTeamResponse,
   removeTeamRole,
@@ -29,11 +30,18 @@ import {
 import express, {Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
+import {listAssetsByTeam} from '../couchdb/mapAssets/store';
+import {getProjectIdsByTeamId} from '../couchdb/notebooks';
+import {getTemplateIdsByTeamId} from '../couchdb/templates';
 import {
+  archiveTeam,
+  assertTeamNotArchived,
   createTeamDocument,
   deleteTeam,
   getAllTeams,
   getTeamById,
+  restoreTeamFromArchive,
+  teamIsArchived,
   updateTeam,
 } from '../couchdb/teams';
 import {
@@ -64,14 +72,25 @@ export const api: express.Router = express.Router();
 api.get(
   '/',
   requireAuthenticationAPI,
+  validate({
+    query: z.object({
+      // Query strings only: omit (default) or includeArchived=true|false
+      includeArchived: z.enum(['true', 'false']).optional(),
+    }),
+  }),
   async (req, res: Response<GetListTeamsResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
     const allTeams = await getAllTeams();
+    const includeArchived = req.query.includeArchived === 'true';
+    const filteredByArchive = allTeams.filter(t => {
+      const archived = teamIsArchived(t);
+      return includeArchived ? archived : !archived;
+    });
 
     // filter to only visible teams
-    const visible = allTeams.filter(t =>
+    const visible = filteredByArchive.filter(t =>
       userCanDo({
         action: Action.VIEW_TEAM_DETAILS,
         user: req.user!,
@@ -205,8 +224,36 @@ api.put(
 );
 
 /**
+ * PUT archive or restore a team. `{ archive: true }` archives; `{ archive: false }`
+ * restores (rejected unless the team is currently archived).
+ */
+api.put(
+  '/:id/archive',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.CHANGE_TEAM_STATUS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  validate({
+    params: z.object({id: z.string()}),
+    body: PutArchiveTeamRequestSchema,
+  }),
+  async ({params: {id}, body: {archive}}, res) => {
+    if (archive) {
+      await archiveTeam(id, true);
+    } else {
+      await restoreTeamFromArchive(id);
+    }
+    res.sendStatus(200);
+  }
+);
+
+/**
  * POST delete existing team
- * Deletes an existing team.
+ * Deletes an existing team. The team must already be archived and must not
+ * own surveys, templates, or map layers.
  */
 api.post(
   '/:id/delete',
@@ -223,6 +270,28 @@ api.post(
   async (req, res) => {
     // Pull out team ID
     const teamId = req.params.id;
+
+    const team = await getTeamById(teamId);
+    if (!teamIsArchived(team)) {
+      throw new Exceptions.InvalidRequestException(
+        'Only archived teams can be permanently deleted. Archive the team first, then delete it from the Archive view.'
+      );
+    }
+
+    const [projectIds, templateIds, mapAssets] = await Promise.all([
+      getProjectIdsByTeamId({teamId}),
+      getTemplateIdsByTeamId({teamId}),
+      listAssetsByTeam(teamId),
+    ]);
+    if (
+      projectIds.length > 0 ||
+      templateIds.length > 0 ||
+      mapAssets.length > 0
+    ) {
+      throw new Exceptions.InvalidRequestException(
+        'Cannot permanently delete a team that still owns surveys, templates, or map layers. Reassign or delete them first.'
+      );
+    }
 
     // Delete the team
     await deleteTeam(teamId);
@@ -306,8 +375,8 @@ api.post(
     const teamId = req.params.id;
     const {username, role, action} = req.body;
 
-    // First verify team exists
-    await getTeamById(teamId);
+    // First verify team exists and is not archived
+    await assertTeamNotArchived(teamId);
 
     // Get user to modify
     const targetUser = await getCouchUserFromEmailOrUserId(username);

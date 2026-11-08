@@ -173,6 +173,8 @@ export enum Action {
   CREATE_TEMPLATE_IN_TEAM = 'CREATE_TEMPLATE_IN_TEAM',
   CREATE_MAP_ASSET_IN_TEAM = 'CREATE_MAP_ASSET_IN_TEAM',
   DELETE_TEAM = 'DELETE_TEAM',
+  /** Archive or restore a team */
+  CHANGE_TEAM_STATUS = 'CHANGE_TEAM_STATUS',
   UPDATE_TEAM_DETAILS = 'UPDATE_TEAM_DETAILS',
   VIEW_TEAM_DETAILS = 'VIEW_TEAM_DETAILS',
   VIEW_TEAM_MEMBERS = 'VIEW_TEAM_MEMBERS',
@@ -607,6 +609,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
   [Action.DELETE_TEAM]: {
     name: 'Delete Team',
     description: 'Permanently remove a team from the system',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.CHANGE_TEAM_STATUS]: {
+    name: 'Change Team Status',
+    description: 'Archive or restore a team',
     resourceSpecific: true,
     resource: Resource.TEAM,
   },
@@ -1412,6 +1420,7 @@ export const roleActions: Record<
       // Teams
       Action.CREATE_TEAM,
       Action.DELETE_TEAM,
+      Action.CHANGE_TEAM_STATUS,
       Action.UPDATE_TEAM_DETAILS,
       Action.VIEW_TEAM_DETAILS,
       Action.VIEW_TEAM_INVITES,
@@ -1546,6 +1555,7 @@ export const roleActions: Record<
   [Role.TEAM_ADMIN]: {
     actions: [
       Action.DELETE_TEAM,
+      Action.CHANGE_TEAM_STATUS,
       Action.ADD_MANAGER_TO_TEAM,
       Action.REMOVE_MANAGER_FROM_TEAM,
 
