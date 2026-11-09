@@ -23,9 +23,9 @@ export interface DesignerEditingContextValue {
   originalFieldIdentifiers?: ReadonlySet<string>;
   /**
    * Fields that have already used (or opted out of) the one-shot
-   * Label→export-name auto-sync. Owned by the provider so collapsing a field,
+   * Field Heading→export-title auto-sync. Owned by the provider so collapsing a field,
    * changing section, or otherwise remounting the editor cannot re-arm sync
-   * and overwrite a custom export name.
+   * and overwrite a custom export title.
    */
   consumedExportNameAutoSyncIds: Set<string>;
 }
@@ -70,7 +70,7 @@ export const useDesignerEditingContext = () =>
 
 /**
  * True when the field was added during this session. Used to auto-sync
- * export name from Label once. Identifiers survive export-name edits. Defaults
+ * Export Title from Field Heading once. Identifiers survive export-name edits. Defaults
  * to `false` when the set is unknown.
  */
 export const useIsFieldNewInSession = (

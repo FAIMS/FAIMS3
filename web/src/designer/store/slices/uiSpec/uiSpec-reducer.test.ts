@@ -3,9 +3,10 @@
  * @file Integration-style tests for UI-spec reducers (fields, sections, viewsets).
  */
 
+import type {ChoiceElementProps} from '@faims3/forms';
 import {describe, expect, it} from 'vitest';
 import {getFieldSpec} from '../../../fields';
-import type {NotebookUISpec} from '../../../state/initial';
+import type {FieldType, NotebookUISpec} from '../../../state/initial';
 import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../../../state/initial';
 import {
   fieldAdded,
@@ -25,6 +26,10 @@ import {
   viewSetDisplayInOverviewMapUpdated,
   viewSetSummaryFieldsUpdated,
 } from '.';
+
+function choiceElementProps(field: FieldType): ChoiceElementProps {
+  return field['component-parameters'].ElementProps as ChoiceElementProps;
+}
 
 const createBaseUiSpec = (): NotebookUISpec => ({
   fields: {},
@@ -55,6 +60,51 @@ const createBaseUiSpec = (): NotebookUISpec => ({
 });
 
 describe('uiSpecificationReducer', () => {
+  it('uses the requested defaults for related-record and map field templates', () => {
+    expect(
+      getFieldSpec('RelatedRecordSelector')['component-parameters']
+    ).toMatchObject({
+      allowLinkToExisting: false,
+      hideCreateAnotherButton: true,
+    });
+    expect(getFieldSpec('MapFormField')['component-parameters'].zoom).toBe(14);
+  });
+
+  it('copies related-record and map defaults when adding fields', () => {
+    const initial = createBaseUiSpec();
+
+    const relatedAdded = uiSpecificationReducer.reducer(
+      initial,
+      fieldAdded({
+        fieldName: 'Related Record',
+        fieldType: 'RelatedRecordSelector',
+        viewId: 'sectionA',
+        viewSetId: 'formA',
+        addAfter: '',
+      })
+    );
+    const relatedField =
+      relatedAdded.fields[relatedAdded.views.sectionA.fields[0]];
+    expect(relatedField['component-parameters']).toMatchObject({
+      allowLinkToExisting: false,
+      hideCreateAnotherButton: true,
+      related_type: 'formA',
+    });
+
+    const mapAdded = uiSpecificationReducer.reducer(
+      createBaseUiSpec(),
+      fieldAdded({
+        fieldName: 'Map',
+        fieldType: 'MapFormField',
+        viewId: 'sectionA',
+        viewSetId: 'formA',
+        addAfter: '',
+      })
+    );
+    const mapField = mapAdded.fields[mapAdded.views.sectionA.fields[0]];
+    expect(mapField['component-parameters'].zoom).toBe(14);
+  });
+
   it('adds fields with minted storage id, export name, and designer identifier', () => {
     const initial = createBaseUiSpec();
 
@@ -341,6 +391,57 @@ describe('uiSpecificationReducer', () => {
       'Site Name'
     );
     expect(next.views.sectionA.fields).toEqual(['field-a', copyId]);
+  });
+
+  it('adds RadioGroup and MultiSelect fields with empty, unshared options', () => {
+    const initial = createBaseUiSpec();
+
+    const withRadio = uiSpecificationReducer.reducer(
+      initial,
+      fieldAdded({
+        fieldName: 'Select Single',
+        fieldType: 'RadioGroup',
+        viewId: 'sectionA',
+        viewSetId: 'formA',
+        addAfter: '',
+      })
+    );
+    const withBoth = uiSpecificationReducer.reducer(
+      withRadio,
+      fieldAdded({
+        fieldName: 'Select Multiple',
+        fieldType: 'MultiSelect',
+        viewId: 'sectionA',
+        viewSetId: 'formA',
+        addAfter: '',
+      })
+    );
+
+    const [radioId, multiId] = withBoth.views.sectionA.fields;
+    const radioProps = choiceElementProps(withBoth.fields[radioId]);
+    const multiProps = choiceElementProps(withBoth.fields[multiId]);
+
+    expect(radioProps.options).toEqual([]);
+    expect(multiProps.options).toEqual([]);
+    expect(radioProps.enableOtherOption).toBe(false);
+    expect(multiProps.enableOtherOption).toBe(false);
+    expect(multiProps.expandedChecklist).toBe(true);
+    expect(radioProps.options).not.toBe(multiProps.options);
+    expect(radioProps.options).not.toBe(
+      choiceElementProps(getFieldSpec('RadioGroup')).options
+    );
+
+    const mutatedRadio = JSON.parse(
+      JSON.stringify(withBoth.fields[radioId])
+    ) as FieldType;
+    choiceElementProps(mutatedRadio).options.push({
+      value: 'mutated',
+      label: 'mutated',
+    });
+    expect(choiceElementProps(withBoth.fields[radioId]).options).toEqual([]);
+    expect(choiceElementProps(withBoth.fields[multiId]).options).toEqual([]);
+    expect(choiceElementProps(getFieldSpec('RadioGroup')).options).toEqual([]);
+    expect(choiceElementProps(getFieldSpec('MultiSelect')).options).toEqual([]);
   });
 
   it('uses a caller-supplied storage id when adding a field', () => {

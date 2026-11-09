@@ -14,7 +14,9 @@ import {z} from 'zod';
  * at render time by `visibleChoiceOptions`.
  */
 export const ChoiceOptionSchema = z.object({
+  // Stored option value used in answers, exports, and conditions.
   value: z.string(),
+  // Human-readable label displayed to users. Supports Markdown.
   label: z.string(),
   key: z.string().optional(),
   RadioProps: z.object({id: z.string()}).passthrough().optional(),

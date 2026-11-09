@@ -68,7 +68,7 @@ function renderRadioGroupField({
             enableOtherOption,
           }}
           conditionValues={liveConditionValues}
-          state={{value: {data: value}, meta: {errors: []}} as any}
+          state={{value: {data: value}, meta: {errors: []}} as never}
           setFieldData={(nextOrUpdater: unknown) => {
             setValue(prev => {
               const next =
@@ -84,7 +84,7 @@ function renderRadioGroupField({
           removeAttachment={vi.fn(async () => undefined)}
           handleBlur={vi.fn()}
           trigger={{commit: vi.fn(async () => undefined)}}
-          config={{} as any}
+          config={{} as never}
         />
       </>
     );
@@ -121,6 +121,14 @@ describe('RadioGroup field rendering', () => {
 
     expect(screen.getByRole('combobox')).toBeInTheDocument();
     expect(screen.queryByRole('radio', {name: 'Yes'})).not.toBeInTheDocument();
+  });
+
+  it('stores the value instead of the display label', async () => {
+    const {user, setFieldDataCalls} = renderRadioGroupField();
+
+    await user.click(screen.getByRole('radio', {name: 'Yes'}));
+
+    expect(setFieldDataCalls.at(-1)).toBe('yes');
   });
 });
 
@@ -168,7 +176,11 @@ describe('RadioGroup value schema', () => {
       ],
       enableOtherOption: true,
     },
-  } as any);
+  });
+
+  it('accepts predefined option values', () => {
+    expect(schema.safeParse('yes').success).toBe(true);
+  });
 
   it('accepts values entered through the Other option', () => {
     expect(schema.safeParse(`${OTHER_PREFIX}Custom value`).success).toBe(true);
