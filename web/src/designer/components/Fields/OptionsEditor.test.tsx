@@ -237,4 +237,15 @@ describe('OptionsEditor', () => {
     });
     expect(props.exclusiveOptions).toEqual(['updated-a']);
   });
+
+  it('adds the first option from an empty list without throwing', () => {
+    setup({options: []});
+
+    expect(screen.getByPlaceholderText('Add option')).toBeTruthy();
+    expect(screen.getByRole('button', {name: /^Add$/})).toBeTruthy();
+    expect(() => add('First')).not.toThrow();
+    expect(latestField()['component-parameters'].ElementProps.options).toEqual([
+      {value: 'First', label: 'First'},
+    ]);
+  });
 });
