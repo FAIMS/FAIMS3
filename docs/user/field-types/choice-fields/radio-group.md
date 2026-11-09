@@ -32,13 +32,13 @@ tab, and click the **Select single** card. Then click the
 ## Configuring the Field
 
 Click the field's **grey header bar** to expand it and see its settings.
-For an overview of the settings shared by all fields — including Label,
-Helper Text, Export name, and the field toolbar — see
+For an overview of the settings shared by all fields — including Field Heading,
+Helper Text, Export Title, and the field toolbar — see
 [Field Identity](../shared-settings/field-identity.md) and
 [Field Toolbar](../shared-settings/field-toolbar.md).
 
-Give the field a meaningful Label (the title collectors see), review
-the auto-populated Export name (the CSV/GIS column header), and add any
+Give the field a meaningful Field Heading (the title collectors see), review
+the auto-populated Export Title (the CSV/GIS column header), and add any
 desired Helper Text.
 
 ```{screenshot} field-types-design/radio-group-02-configured.png
@@ -54,18 +54,18 @@ structure to the Select Field. Below the Markdown syntax info banner,
 you will find the **Add Option** input and a table listing all current
 options.
 
-| Setting                | What It Does                                                                                   |
-| ---------------------- | ---------------------------------------------------------------------------------------------- |
-| **Options list**       | The choices displayed as radio buttons. Each option appears as a row in the table.             |
-| **Add "Other" Option** | Adds a special "Other" choice that prompts the collector to type a custom value when selected. |
-| **Display mode**       | Select _Expanded Checklist_ or _Dropdown list_.                                                |
+| Setting                | What It Does                                                                                                                                        |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Options list**       | The choices displayed as radio buttons. Each option appears as a row in the table.                                                                  |
+| **Export value**       | The value saved in exported data.                                                                                                                   |
+| **Display label**      | The text shown to users when viewing options. Supports formatting such as bold, italic, and underline. If left blank, defaults to the Export value. |
+| **Add "Other" Option** | Adds a special "Other" choice that prompts the collector to type a custom value when selected.                                                      |
+| **Display mode**       | Select _Expanded Checklist_ or _Dropdown list_.                                                                                                     |
 
 **Managing options:**
 
-- **To add an option:** Type the option text in the **Add Option** input
-  field and click **Add** (or press Enter).
-- **To edit an option:** Click the **pencil** icon in the option's Actions
-  column.
+- **To add an option:** Enter a value in the **Add Option** input and click **Add** (or press Enter). The Display label defaults to the Export value.
+- **To edit an option:** Click the **pencil** icon in the option's Actions column. You can edit the **Display label** and **Export value** separately.
 - **To reorder options:** Drag the **six-dot handle** on the left of the
   option, or use the **up/down arrow** buttons in the Actions column.
 - **To delete an option:** Click the **trash** icon in the option's Actions
@@ -74,7 +74,7 @@ options.
   list and enter free text into this field.
 
 **Note**: You can use Markdown syntax in
-option text (e.g., \*\*bold\*\* or \*italic\*) to add emphasis
+Display label (e.g., \*\*bold\*\* or \*italic\*) to add emphasis
 or formatting to individual options.
 
 ```{screenshot} field-types-design/radio-group-03-options.png
@@ -99,6 +99,6 @@ Annotation, Uncertainty, Conditions, and Copy value to new records — see
   Radio buttons take more vertical space than a dropdown;
   on mobile devices with small screens a long radio list
   requires scrolling, offsetting their speed advantage.
-- **Option text supports Markdown formatting** — use
+- **Display label supports Markdown formatting** — use
   \*\*bold\*\* or \*italic\* to add emphasis to individual
   options.

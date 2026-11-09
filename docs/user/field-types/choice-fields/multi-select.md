@@ -36,13 +36,13 @@ tab, and click the **Select Multiple** card. Then click the
 ## Configuring the Field
 
 Click the field's **grey header bar** to expand it and see its settings.
-For an overview of the settings shared by all fields — including Label,
-Helper Text, Export name, and the field toolbar — see
+For an overview of the settings shared by all fields — including Field Heading,
+Helper Text, Export Title, and the field toolbar — see
 [Field Identity](../shared-settings/field-identity.md) and
 [Field Toolbar](../shared-settings/field-toolbar.md).
 
-Give the field a meaningful Label (the title collectors see), review
-the auto-populated Export name (the CSV/GIS column header), and add any
+Give the field a meaningful Field Heading (the title collectors see), review
+the auto-populated Export Title (the CSV/GIS column header), and add any
 desired Helper Text.
 
 ```{screenshot} field-types-design/multi-select-02-configured.png
@@ -58,15 +58,17 @@ controls. Below the Markdown syntax info banner, you will find the
 **Add Option** input, the **Add "Other" Option** button, and a table
 listing all current options.
 
-| Setting                | What It Does                                                                                                                |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| **Options list**       | The choices available for selection. Each option appears as a row in the table.                                             |
-| **Add "Other" Option** | Adds a special "Other" choice that prompts the collector to type a custom value when selected.                              |
-| **Display mode**       | Select _Expanded Checklist_ or _Dropdown list_.                                                                             |
-| **Exclusive**          | A per-option checkbox that marks an option as exclusive — selecting it clears all other selections (e.g., "None observed"). |
+| Setting                | What It Does                                                                                                                                        |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Options list**       | The choices available for selection. Each option appears as a row in the table.                                                                     |
+| **Export value**       | The value saved in exported data.                                                                                                                   |
+| **Display label**      | The text shown to users when viewing options. Supports formatting such as bold, italic, and underline. If left blank, defaults to the Export value. |
+| **Add "Other" Option** | Adds a special "Other" choice that prompts the collector to type a custom value when selected.                                                      |
+| **Display mode**       | Select _Expanded Checklist_ or _Dropdown list_.                                                                                                     |
+| **Exclusive**          | A per-option checkbox that marks an option as exclusive — selecting it clears all other selections (e.g., "None observed").                         |
 
 **Note**: You can use Markdown syntax in
-option text (e.g., \*\*bold\*\* or \*italic\*) to add emphasis
+Display label (e.g., \*\*bold\*\* or \*italic\*) to add emphasis
 or formatting to individual options.
 
 ```{screenshot} field-types-design/multi-select-03-options.png
@@ -77,10 +79,8 @@ or formatting to individual options.
 
 **Managing options:**
 
-- **To add an option:** Type the option text in the **Add Option** input
-  field and click **Add** (or press Enter).
-- **To edit an option:** Click the **pencil** icon in the option's Actions
-  column.
+- **To add an option:** Enter a value in the **Add Option** input and click **Add** (or press Enter). The Display label defaults to the Export value.
+- **To edit an option:** Click the **pencil** icon in the option's Actions column. You can edit the **Display label** and **Export value** separately.
 - **To reorder options:** Drag the **six-dot handle** on the left of the
   option, or use the **up/down arrow** buttons in the Actions column.
 - **To delete an option:** Click the **trash** icon in the option's Actions
@@ -89,8 +89,7 @@ or formatting to individual options.
   option's row. When a collector selects an exclusive option, all other
   selections are cleared.
 
-The display label and stored value are always the same — what your users
-see is exactly what appears in exported data.
+The **Display label** is shown to collectors, while the **Export value** is stored with their answers and used in exported data.
 
 ### Shared Field Options
 
