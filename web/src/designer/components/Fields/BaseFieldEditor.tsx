@@ -64,12 +64,67 @@ const FIRST_AUTO_SYNC_DELAY_MS = 700;
 type Props = {
   fieldName: string;
   showExtraConfig?: boolean;
+  /** Show the visibility condition while keeping the other general settings hidden. */
+  showCondition?: boolean;
   showHelperText?: boolean;
   children?: React.ReactNode;
   // Allow field-specific updates when Required changes.
   // Modifies the new field before dispatch so related changes share one undo step.
   onRequiredChange?: (field: FieldType, required: boolean) => void;
 };
+
+const ConditionSettings = ({
+  condition,
+  onChange,
+  field,
+}: {
+  condition?: ConditionType | null;
+  onChange: (condition: ConditionType | null) => void;
+  field: string;
+}) => (
+  <>
+    <Stack
+      direction="row"
+      sx={{
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        gap: 2,
+        flexWrap: 'wrap',
+      }}
+    >
+      <ConditionModal
+        label={condition ? 'Update condition' : 'Add condition'}
+        initial={condition}
+        onChange={onChange}
+        field={field}
+        buttonSx={{
+          textTransform: 'none',
+          fontWeight: 600,
+          fontSize: '0.875rem',
+        }}
+      />
+    </Stack>
+
+    {condition && (
+      <Box
+        sx={{
+          ...(designerInfoCalloutSx as Record<string, unknown>),
+          p: 1.5,
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{fontWeight: 600, color: 'text.secondary'}}
+        >
+          Show this field if{' '}
+        </Typography>
+        <Typography variant="caption" color="text.primary">
+          <ConditionSummary condition={condition} />
+        </Typography>
+      </Box>
+    )}
+  </>
+);
 
 type StateType = {
   label?: string;
@@ -93,6 +148,7 @@ type StateType = {
 export const BaseFieldEditor = ({
   fieldName,
   showExtraConfig = true,
+  showCondition = showExtraConfig,
   showHelperText = true,
   children,
   onRequiredChange,
@@ -664,6 +720,21 @@ export const BaseFieldEditor = ({
         </Card>
       </Grid>
 
+      {/* ── Condition-only card ── */}
+      {showCondition && !showExtraConfig && (
+        <Grid size={12}>
+          <Card variant="outlined" sx={{overflow: 'hidden'}}>
+            <Box sx={{p: 2}}>
+              <ConditionSettings
+                condition={state.condition}
+                onChange={conditionChanged}
+                field={fieldName}
+              />
+            </Box>
+          </Card>
+        </Grid>
+      )}
+
       {/* ── General field settings card ── */}
       {showExtraConfig && (
         <Grid size={12}>
@@ -714,22 +785,24 @@ export const BaseFieldEditor = ({
                       </Typography>
                     }
                   />
-                  <ConditionModal
-                    label={
-                      state.condition ? 'Update condition' : 'Add condition'
-                    }
-                    initial={state.condition}
-                    onChange={conditionChanged}
-                    field={fieldName}
-                    buttonSx={{
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      fontSize: '0.875rem',
-                    }}
-                  />
+                  {showCondition && (
+                    <ConditionModal
+                      label={
+                        state.condition ? 'Update condition' : 'Add condition'
+                      }
+                      initial={state.condition}
+                      onChange={conditionChanged}
+                      field={fieldName}
+                      buttonSx={{
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        fontSize: '0.875rem',
+                      }}
+                    />
+                  )}
                 </Stack>
 
-                {state.condition && (
+                {showCondition && state.condition && (
                   <Box
                     sx={{
                       ...(designerInfoCalloutSx as Record<string, unknown>),
