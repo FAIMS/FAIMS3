@@ -11,6 +11,7 @@ import {
   AccountCircle,
   ExpandLess,
   ExpandMore,
+  Feedback as FeedbackIcon,
   Person,
   Settings,
   SupervisorAccount,
@@ -50,6 +51,7 @@ import {
   PutLogoutInput,
 } from '@faims3/data-model';
 import ImpersonateDialog from './impersonate-dialog';
+import FeedbackDialog from '../feedback/FeedbackDialog';
 
 const SignInButtonComponent = () => {
   return (
@@ -85,6 +87,7 @@ const AuthenticatedDisplayComponent = () => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [switchMenuOpen, setSwitchMenuOpen] = React.useState(false);
   const [impersonateOpen, setImpersonateOpen] = React.useState(false);
+  const [feedbackOpen, setFeedbackOpen] = React.useState(false);
   const open = Boolean(anchorEl);
   const navigate = useNavigate();
 
@@ -392,6 +395,19 @@ const AuthenticatedDisplayComponent = () => {
           </MenuItem>
         )}
 
+        <MenuItem
+          data-testid="app-feedback-button"
+          onClick={() => {
+            setFeedbackOpen(true);
+            handleClose();
+          }}
+        >
+          <ListItemIcon>
+            <FeedbackIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Send feedback" />
+        </MenuItem>
+
         {/* Manage Button */}
         <MenuItem component={NavLink} to={ROUTES.SIGN_IN} onClick={handleClose}>
           <ListItemIcon>
@@ -423,6 +439,14 @@ const AuthenticatedDisplayComponent = () => {
         open={impersonateOpen}
         onClose={() => setImpersonateOpen(false)}
       />
+      {activeUser && (
+        <FeedbackDialog
+          open={feedbackOpen}
+          onClose={() => setFeedbackOpen(false)}
+          conductorUrl={activeServerInfo?.serverUrl ?? ''}
+          token={activeUser.token}
+        />
+      )}
     </>
   );
 };

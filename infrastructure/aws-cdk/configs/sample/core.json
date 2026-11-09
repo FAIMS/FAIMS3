@@ -100,7 +100,10 @@
     "attemptLimiterEnabled": true,
     "exportRateLimiterEnabled": true,
     "exportRateLimiterWindowMs": 600000,
-    "exportRateLimiterPerWindow": 20
+    "exportRateLimiterPerWindow": 20,
+    "feedbackRateLimiterEnabled": true,
+    "feedbackRateLimiterWindowMs": 600000,
+    "feedbackRateLimiterPerWindow": 5
   },
   "observability": {
     "bugsnagApiKey": "1234-your-key"

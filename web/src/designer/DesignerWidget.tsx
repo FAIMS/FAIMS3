@@ -42,6 +42,7 @@ import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
 import {SetupFormPanel} from './components/setup-form-panel';
 import {config} from '@/constants';
+import {FeedbackDialog} from '@/components/feedback/feedback-dialog';
 
 /**
  * @file Full-screen designer shell: hydrate notebook, Redux, memory router, export without internal ids.
@@ -72,6 +73,8 @@ export interface DesignerWidgetProps {
   animationDuration?: number;
   /** Scale factor when hidden (`scale(animationScale)` before fade-in). */
   animationScale?: number;
+  /** Access token for in-app feedback. Omitted in tests that do not exercise it. */
+  feedbackToken?: string;
 }
 
 /**
@@ -89,6 +92,7 @@ export function DesignerWidget({
   loadingDuration = 1000,
   animationDuration = 300,
   animationScale = 0.95,
+  feedbackToken,
 }: DesignerWidgetProps) {
   const baseTheme = useMemo(() => createDesignerTheme(THEME), []);
   const notebookIdentity = notebook?.metadata?.custom?.project_id ?? '__none__';
@@ -155,6 +159,7 @@ export function DesignerWidget({
   const [animateIn, setAnimateIn] = useState(false);
   const [animateOut, setAnimateOut] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // Kick off loading animation
   useEffect(() => {
@@ -277,20 +282,39 @@ export function DesignerWidget({
                 <Typography variant="h6" sx={{fontWeight: 'bold'}}>
                   {config.notebookNameCapitalized} Editor
                 </Typography>
-                <IconButton
-                  aria-label="close designer"
-                  data-testid="web-designer-close-button"
-                  onClick={() => setCancelDialogOpen(true)}
-                  size="small"
-                  sx={{
-                    color: 'text.secondary',
-                    '&:hover': {color: 'text.primary'},
-                  }}
-                >
-                  <CloseRoundedIcon />
-                </IconButton>
+                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                  {feedbackToken && (
+                    <Button
+                      color="inherit"
+                      data-testid="web-designer-feedback-button"
+                      onClick={() => setFeedbackOpen(true)}
+                    >
+                      Feedback
+                    </Button>
+                  )}
+                  <IconButton
+                    aria-label="close designer"
+                    data-testid="web-designer-close-button"
+                    onClick={() => setCancelDialogOpen(true)}
+                    size="small"
+                    sx={{
+                      color: 'text.secondary',
+                      '&:hover': {color: 'text.primary'},
+                    }}
+                  >
+                    <CloseRoundedIcon />
+                  </IconButton>
+                </Box>
               </Toolbar>
             </AppBar>
+            {feedbackToken && (
+              <FeedbackDialog
+                open={feedbackOpen}
+                onOpenChange={setFeedbackOpen}
+                source="designer"
+                token={feedbackToken}
+              />
+            )}
 
             <Dialog
               open={cancelDialogOpen}

@@ -221,6 +221,30 @@ test('parseApiEnv forces MOCK email under test even when SMTP is configured', ()
   assert.equal(parsed.emailServiceType, 'MOCK');
   assert.equal(parsed.smtp, undefined);
   assert.equal(parsed.exportRateLimiterEnabled, false);
+  assert.equal(parsed.feedbackRateLimiterEnabled, false);
+});
+
+test('parseApiEnv defaults feedback destination and limiter, and honours overrides', () => {
+  const defaults = parseApiEnv(MINIMAL_API, {runningUnderTest: false});
+  assert.equal(defaults.feedbackEmail, 'support@fieldmark.au');
+  assert.equal(defaults.feedbackRateLimiterEnabled, true);
+  assert.equal(defaults.feedbackRateLimiterWindowMs, 600000);
+  assert.equal(defaults.feedbackRateLimiterPerWindow, 5);
+
+  const overridden = parseApiEnv(
+    {
+      ...MINIMAL_API,
+      FEEDBACK_EMAIL: 'product@example.org',
+      FEEDBACK_RATE_LIMITER_ENABLED: 'false',
+      FEEDBACK_RATE_LIMITER_WINDOW_MS: '120000',
+      FEEDBACK_RATE_LIMITER_PER_WINDOW: '3',
+    },
+    {runningUnderTest: false}
+  );
+  assert.equal(overridden.feedbackEmail, 'product@example.org');
+  assert.equal(overridden.feedbackRateLimiterEnabled, false);
+  assert.equal(overridden.feedbackRateLimiterWindowMs, 120000);
+  assert.equal(overridden.feedbackRateLimiterPerWindow, 3);
 });
 
 test('parseApiEnv requires S3 bucket, prefix, and region when ATTACHMENT_STORAGE_TYPE is S3', () => {

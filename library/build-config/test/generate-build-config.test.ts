@@ -17,6 +17,16 @@ import {
 import {isGoogleProvider} from '../src/auth-provider-config';
 import {generateBuildConfig} from '../src/generate-build-config';
 
+function envMap(output: string): Record<string, string> {
+  const raw: Record<string, string> = {};
+  for (const line of output.split('\n')) {
+    if (!line.includes('=')) continue;
+    const idx = line.indexOf('=');
+    raw[line.slice(0, idx)] = line.slice(idx + 1);
+  }
+  return raw;
+}
+
 function deepMerge(a: unknown, b: unknown): unknown {
   if (Array.isArray(a) || Array.isArray(b)) {
     return b ?? a;
@@ -397,10 +407,37 @@ test('generated API env includes conductor, auth, and email contract values', ()
   assert.equal(raw.ACCESS_TOKEN_EXPIRY_MINUTES, '60');
   assert.equal(raw.RATE_LIMITER_ENABLED, 'false');
   assert.equal(raw.JSON_BODY_LIMIT, '50mb');
+  assert.equal(raw.FEEDBACK_EMAIL, 'support@fieldmark.au');
+  assert.equal(raw.FEEDBACK_RATE_LIMITER_ENABLED, 'true');
+  assert.equal(raw.FEEDBACK_RATE_LIMITER_WINDOW_MS, '600000');
+  assert.equal(raw.FEEDBACK_RATE_LIMITER_PER_WINDOW, '5');
   assert.equal(raw.EMAIL_SERVICE_TYPE, 'MOCK');
   assert.equal(raw.SMTP_SECURE, 'false');
   assert.equal(raw.CONDUCTOR_INTERNAL_PORT, '8080');
   assert.equal(raw.CONDUCTOR_SHORT_CODE_PREFIX, 'EXM');
+});
+
+test('FEEDBACK_EMAIL falls back to support.supportEmail and prefers limits.feedbackEmail', () => {
+  const fromSupport = generateEnv({
+    config: {
+      ...sampleConfig,
+      support: {supportEmail: 'ops@example.org'},
+    },
+    platform: 'api',
+    includeEmpty: true,
+  });
+  assert.equal(envMap(fromSupport).FEEDBACK_EMAIL, 'ops@example.org');
+
+  const fromLimits = generateEnv({
+    config: {
+      ...sampleConfig,
+      support: {supportEmail: 'ops@example.org'},
+      limits: {feedbackEmail: 'product@example.org'},
+    },
+    platform: 'api',
+    includeEmpty: true,
+  });
+  assert.equal(envMap(fromLimits).FEEDBACK_EMAIL, 'product@example.org');
 });
 
 // The mobile CI workflows pass --platform android / --platform ios.

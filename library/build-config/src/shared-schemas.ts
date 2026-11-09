@@ -159,6 +159,12 @@ export const SHARED_DEFAULTS = {
   exportRateLimiterWindowMs: 600000,
   /** Export requests allowed per window. */
   exportRateLimiterPerWindow: 20,
+  /** In-app feedback limiter window (10 min). */
+  feedbackRateLimiterWindowMs: 600000,
+  /** Feedback submissions allowed per authenticated user per window. */
+  feedbackRateLimiterPerWindow: 5,
+  /** Default destination for in-app feedback mail. */
+  feedbackEmail: 'support@fieldmark.au',
   /** Age of a stuck `running` migration lock before it is stolen (30 min). */
   startupMigrationLockTimeoutMs: 1800000,
   /** Max uploaded design JSON size in the designer. */

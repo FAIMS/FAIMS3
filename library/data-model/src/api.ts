@@ -1489,3 +1489,57 @@ export type TombstoneDocument = z.infer<typeof TombstoneDocumentSchema>;
 export type GetTombstoneByIdResponse = z.infer<
   typeof GetTombstoneByIdResponseSchema
 >;
+
+// =====
+// FEEDBACK
+// =====
+
+/** Client surface that submitted in-app feedback. */
+export const FeedbackSourceSchema = z.enum(['app', 'web', 'designer']);
+export type FeedbackSource = z.infer<typeof FeedbackSourceSchema>;
+
+/** Optional triage label for in-app feedback. */
+export const FeedbackCategorySchema = z.enum(['bug', 'suggestion', 'other']);
+export type FeedbackCategory = z.infer<typeof FeedbackCategorySchema>;
+
+/**
+ * POST /api/feedback body. Identity is taken from the access token, not the
+ * body. Unknown fields are rejected so clients cannot inject a sender.
+ */
+export const PostFeedbackRequestSchema = z
+  .object({
+    message: z
+      .string()
+      .trim()
+      .min(1, 'Message is required')
+      .max(
+        INPUT_LIMITS.LONG_TEXT_MAX_LENGTH,
+        `Message must be at most ${INPUT_LIMITS.LONG_TEXT_MAX_LENGTH} characters`
+      ),
+    source: FeedbackSourceSchema.optional(),
+    category: FeedbackCategorySchema.optional(),
+    path: z
+      .string()
+      .trim()
+      .max(INPUT_LIMITS.REDIRECT_URL_MAX_LENGTH)
+      .optional(),
+    clientVersion: z
+      .string()
+      .trim()
+      .max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH)
+      .optional(),
+    userAgent: z
+      .string()
+      .trim()
+      .max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH)
+      .optional(),
+  })
+  .strict();
+
+export type PostFeedbackRequest = z.infer<typeof PostFeedbackRequestSchema>;
+
+/** POST /api/feedback success body. */
+export const PostFeedbackResponseSchema = z.object({
+  success: z.literal(true),
+});
+export type PostFeedbackResponse = z.infer<typeof PostFeedbackResponseSchema>;

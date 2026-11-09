@@ -166,6 +166,14 @@ export const ApiEnvSchema = z
     EXPORT_RATE_LIMITER_PER_WINDOW: intWithDefault(
       SHARED_DEFAULTS.exportRateLimiterPerWindow
     ),
+    FEEDBACK_EMAIL: stringWithDefault(SHARED_DEFAULTS.feedbackEmail),
+    FEEDBACK_RATE_LIMITER_ENABLED: boolWithDefault(true),
+    FEEDBACK_RATE_LIMITER_WINDOW_MS: intWithDefault(
+      SHARED_DEFAULTS.feedbackRateLimiterWindowMs
+    ),
+    FEEDBACK_RATE_LIMITER_PER_WINDOW: intWithDefault(
+      SHARED_DEFAULTS.feedbackRateLimiterPerWindow
+    ),
     ATTEMPT_LIMITER_ENABLED: boolWithDefault(true),
     /** Default SMTP; forced to MOCK under test. */
     EMAIL_SERVICE_TYPE: enumWithDefault(EmailServiceTypeSchema, 'SMTP'),
@@ -528,6 +536,12 @@ export function parseApiEnv(
       : env.EXPORT_RATE_LIMITER_ENABLED,
     exportRateLimiterWindowMs: env.EXPORT_RATE_LIMITER_WINDOW_MS,
     exportRateLimiterPerWindow: env.EXPORT_RATE_LIMITER_PER_WINDOW,
+    feedbackEmail: env.FEEDBACK_EMAIL,
+    feedbackRateLimiterEnabled: runningUnderTest
+      ? false
+      : env.FEEDBACK_RATE_LIMITER_ENABLED,
+    feedbackRateLimiterWindowMs: env.FEEDBACK_RATE_LIMITER_WINDOW_MS,
+    feedbackRateLimiterPerWindow: env.FEEDBACK_RATE_LIMITER_PER_WINDOW,
     authAttemptLimiterEnabled: env.ATTEMPT_LIMITER_ENABLED,
     jsonBodyLimit: env.JSON_BODY_LIMIT,
     urlencodedBodyLimit: env.URLENCODED_BODY_LIMIT,

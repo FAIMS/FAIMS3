@@ -61,6 +61,7 @@ import {api as tombstonesApi} from './api/tombstones';
 import {api as usersApi} from './api/users';
 import {api as utilityApi} from './api/utilities';
 import {api as emailVerifyApi} from './api/verificationChallenges';
+import {api as feedbackApi} from './api/feedback';
 import {createHealthApp, READY_PATH} from './healthApp';
 import {shouldReportErrorToBugsnag} from './logging';
 import patch from './utils/patchExpressAsync';
@@ -182,6 +183,14 @@ export function attachFullApi(app: express.Express): void {
     console.log('Not enabling export rate limiter (explicitly disabled).');
   }
 
+  if (!IS_TEST && config.feedbackRateLimiterEnabled) {
+    console.log(
+      `Activating feedback rate limiter (${config.feedbackRateLimiterPerWindow} req / ${config.feedbackRateLimiterWindowMs} ms)`
+    );
+  } else if (!IS_TEST) {
+    console.log('Not enabling feedback rate limiter (explicitly disabled).');
+  }
+
   if (config.requestLoggingEnabled) {
     app.use(morgan('combined'));
   } else if (!IS_TEST) {
@@ -250,6 +259,7 @@ export function attachFullApi(app: express.Express): void {
   app.use('/api/reset', resetPasswordApi);
   app.use('/api/long-lived-tokens', longLivedApi);
   app.use('/api/invites', invitesApi);
+  app.use('/api/feedback', feedbackApi);
   app.use('/api', utilityApi);
 
   // Swagger-UI Routes
