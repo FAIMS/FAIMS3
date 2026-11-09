@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 /*
- * Stats page: denied without VIEW_SYSTEM_STATS, empty until Load, Refresh
+ * Stats page: denied without VIEW_SYSTEM_STATS, fetches on landing, Refresh
  * POSTs once, and team/people tables page from the API.
  */
 import {Action, Role} from '@faims3/data-model';
@@ -67,9 +67,10 @@ const overall = {
   templateCount: 1,
   archivedTemplateCount: 0,
   mapAssetCount: 0,
+  mapAssetByteCount: 2_097_152,
   recordCount: 5,
   attachmentCount: 2,
-  byteCount: 100,
+  byteCount: 1_474_208,
   disabledUserCount: 0,
   inviteCount: 0,
   longLivedTokenCount: 0,
@@ -118,9 +119,13 @@ describe('Stats page', () => {
       screen.getByText('You do not have access to view this page.')
     ).toBeDefined();
     expect(screen.queryByTestId('web-stats-load')).toBeNull();
+    expect(screen.queryByTestId('web-stats-refresh')).toBeNull();
+    expect(useGetAdminStats).toHaveBeenCalledWith(
+      expect.objectContaining({enabled: false})
+    );
   });
 
-  it('does not enable stats queries until Load, then Refresh POSTs once', () => {
+  it('fetches on landing and Refresh POSTs once', () => {
     useGetAdminStats.mockImplementation(({enabled}: {enabled: boolean}) =>
       idleQuery({
         data: enabled ? overall : undefined,
@@ -147,7 +152,8 @@ describe('Stats page', () => {
                     notebookCount: 1,
                     recordCount: 1,
                     attachmentCount: 0,
-                    byteCount: 10,
+                    byteCount: 10_240,
+                    mapAssetByteCount: 512,
                   },
                 ],
                 total: 25,
@@ -168,21 +174,6 @@ describe('Stats page', () => {
     render(<StatsPage />);
 
     expect(useGetAdminStats).toHaveBeenCalledWith(
-      expect.objectContaining({enabled: false})
-    );
-    expect(useGetAdminStatsTeams).toHaveBeenCalledWith(
-      expect.objectContaining({
-        enabled: false,
-        limit: 10,
-        offset: 0,
-      })
-    );
-    expect(screen.getByTestId('web-stats-empty')).toBeDefined();
-    expect(screen.queryByTestId('web-stats-cache-times')).toBeNull();
-
-    fireEvent.click(screen.getByTestId('web-stats-load'));
-
-    expect(useGetAdminStats).toHaveBeenCalledWith(
       expect.objectContaining({enabled: true})
     );
     expect(useGetAdminStatsTeams).toHaveBeenCalledWith(
@@ -191,17 +182,15 @@ describe('Stats page', () => {
     expect(useGetAdminStatsPeople).toHaveBeenCalledWith(
       expect.objectContaining({enabled: true, limit: 10, offset: 0})
     );
-    expect(screen.getByTestId('web-stats-cache-times').textContent).toContain(
-      overall.generatedAt
-    );
-    expect(screen.getByTestId('web-stats-cache-times').textContent).toContain(
-      overall.expiresAt
-    );
-    expect(
-      screen.getByText(
-        'as of 2026-11-08T10:00:00.000Z, cached until 2026-11-08T10:02:00.000Z'
-      )
-    ).toBeDefined();
+    expect(screen.queryByTestId('web-stats-load')).toBeNull();
+    expect(screen.queryByTestId('web-stats-empty')).toBeNull();
+    expect(screen.queryByTestId('web-stats-cache-times')).toBeNull();
+    expect(screen.queryByText(/cached until/i)).toBeNull();
+    expect(screen.queryByText('Storage (bytes)')).toBeNull();
+    expect(screen.getByText('1.41 MB')).toBeDefined();
+    expect(screen.getByText('2 MB')).toBeDefined();
+    expect(screen.getByText('10 KB')).toBeDefined();
+    expect(screen.getByText('512 Bytes')).toBeDefined();
 
     fireEvent.click(screen.getByTestId('web-stats-refresh'));
 
@@ -222,7 +211,6 @@ describe('Stats page', () => {
     );
 
     render(<StatsPage />);
-    fireEvent.click(screen.getByTestId('web-stats-load'));
 
     expect(screen.getByTestId('web-stats-incomplete').textContent).toMatch(
       /could not be scanned/i
@@ -249,7 +237,6 @@ describe('Stats page', () => {
     );
 
     render(<StatsPage />);
-    fireEvent.click(screen.getByTestId('web-stats-load'));
 
     expect(useGetAdminStatsTeams).toHaveBeenCalledWith(
       expect.objectContaining({limit: 10, offset: 0})

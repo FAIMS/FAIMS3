@@ -27,9 +27,11 @@ vi.mock('../src/couchdb', async importOriginal => {
 import {
   addGlobalRole,
   ADMIN_STATS_UNTEAMED_TEAM_ID,
+  DEFAULT_MAP_ASSET_STYLE,
   GetAdminStatsPeopleResponseSchema,
   GetAdminStatsResponseSchema,
   GetAdminStatsTeamsResponseSchema,
+  MAP_ASSET_DOC_TYPE,
   ProjectStatus,
   registerClient,
   Role,
@@ -40,7 +42,7 @@ import {
   upgradeCouchUserToExpressUser,
 } from '../src/auth/keySigning/create';
 import {keyService} from '../src/buildconfig';
-import {getDataDb} from '../src/couchdb';
+import {getDataDb, getMapAssetsDB} from '../src/couchdb';
 import {resetAdminStatsCache} from '../src/couchdb/adminStats';
 import {
   applyNotebookLifecycleStatus,
@@ -178,6 +180,39 @@ async function putAttachment({
   });
 }
 
+/** Insert a map-layer document with a known `byteSize` (skips upload/staging). */
+async function putMapAsset({
+  id,
+  byteSize,
+  ownedByTeamId,
+}: {
+  id: string;
+  byteSize: number;
+  ownedByTeamId?: string;
+}): Promise<void> {
+  const now = Date.now();
+  await getMapAssetsDB().put({
+    _id: id,
+    docType: MAP_ASSET_DOC_TYPE,
+    name: id,
+    description: '',
+    createdBy: 'admin',
+    originalFilename: `${id}.pmtiles`,
+    ...(ownedByTeamId ? {ownedByTeamId} : {}),
+    byteSize,
+    contentHash: `hash-${id}`,
+    status: 'ready',
+    kind: 'vector-tiles',
+    extent4326: [0, 0, 1, 1],
+    minZoom: 0,
+    maxZoom: 1,
+    tileSize: 256,
+    defaultStyle: DEFAULT_MAP_ASSET_STYLE,
+    createdAt: now,
+    updatedAt: now,
+  });
+}
+
 describe('admin stats API', () => {
   beforeEach(async () => {
     await beforeApiTests();
@@ -251,6 +286,7 @@ describe('admin stats API', () => {
       expect(adminBody.notebookCount).toBeTypeOf('number');
       expect(adminBody.templateCount).toBeTypeOf('number');
       expect(adminBody.mapAssetCount).toBeTypeOf('number');
+      expect(adminBody.mapAssetByteCount).toBeTypeOf('number');
       expect(adminBody.recordCount).toBeTypeOf('number');
       expect(adminBody.attachmentCount).toBeTypeOf('number');
       expect(adminBody.byteCount).toBeTypeOf('number');
@@ -325,6 +361,7 @@ describe('admin stats API', () => {
       expect(body.templateCount).toBe(1);
       expect(body.userCount).toBeGreaterThanOrEqual(3);
       expect(body.mapAssetCount).toBe(0);
+      expect(body.mapAssetByteCount).toBe(0);
       expect(body.recordCount).toBe(expectedRecords);
       expect(body.recordCount).toBe(2);
       expect(body.attachmentCount).toBe(2);
@@ -492,10 +529,59 @@ describe('admin stats API', () => {
         (sum, row) => sum + row.byteCount,
         0
       );
+      const summedMapAssetBytes = teams.teams.reduce(
+        (sum, row) => sum + row.mapAssetByteCount,
+        0
+      );
       expect(summedNotebooks).toBe(overall.notebookCount);
       expect(summedRecords).toBe(overall.recordCount);
       expect(summedAttachments).toBe(overall.attachmentCount);
       expect(summedBytes).toBe(overall.byteCount);
+      expect(summedMapAssetBytes).toBe(overall.mapAssetByteCount);
+    });
+
+    it('attributes map-layer byteSize to ownedByTeamId and the unteamed row', async () => {
+      const team = await createTeamDocument({
+        name: 'Layer Team',
+        description: '',
+        createdBy: 'admin',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      await putMapAsset({
+        id: 'asset-team',
+        ownedByTeamId: team._id,
+        byteSize: 1000,
+      });
+      await putMapAsset({id: 'asset-personal', byteSize: 250});
+
+      const overall = await request(app)
+        .get('/api/admin/stats')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+        .then(res => GetAdminStatsResponseSchema.parse(res.body));
+
+      expect(overall.mapAssetCount).toBe(2);
+      expect(overall.mapAssetByteCount).toBe(1250);
+
+      const teams = await request(app)
+        .get('/api/admin/stats/teams')
+        .query({limit: 50})
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+        .then(res => GetAdminStatsTeamsResponseSchema.parse(res.body));
+
+      const teamRow = teams.teams.find(row => row.teamId === team._id);
+      const unteamedRow = teams.teams.find(
+        row => row.teamId === ADMIN_STATS_UNTEAMED_TEAM_ID
+      );
+      expect(teamRow).toBeDefined();
+      expect(teamRow!.mapAssetByteCount).toBe(1000);
+      expect(unteamedRow).toBeDefined();
+      expect(unteamedRow!.mapAssetByteCount).toBe(250);
+      expect(
+        teams.teams.reduce((sum, row) => sum + row.mapAssetByteCount, 0)
+      ).toBe(overall.mapAssetByteCount);
     });
   });
 

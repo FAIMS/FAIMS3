@@ -30,7 +30,12 @@ import {
   GetTeamMembersResponse,
 } from '@faims3/data-model';
 import {getTemplateSurveyReferences} from '@/hooks/template-hooks';
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import QRCode from 'qrcode';
 
 /**
@@ -668,9 +673,32 @@ function adminStatsListPath(
   return `${path}?${params.toString()}`;
 }
 
+/** Keep unused snapshots in memory after leaving /stats so a quick return is free. */
+const ADMIN_STATS_GC_MS = 10 * 60 * 1000;
+
 /**
- * Overall admin stats (`GET /api/admin/stats`). The Stats page keeps this
- * query disabled until Load; the hook itself defaults `enabled` to true.
+ * Milliseconds until the API snapshot TTL (`expiresAt`) elapses.
+ * Used as React Query `staleTime` so a recent visit does not refetch.
+ */
+function adminStatsRemainingMs(expiresAt?: string): number {
+  if (!expiresAt) return 0;
+  const remaining = Date.parse(expiresAt) - Date.now();
+  return Number.isFinite(remaining) ? Math.max(0, remaining) : 0;
+}
+
+const adminStatsQueryCache = {
+  staleTime: (query: {state: {data?: {expiresAt?: string}}}) =>
+    adminStatsRemainingMs(query.state.data?.expiresAt),
+  refetchInterval: (query: {state: {data?: {expiresAt?: string}}}) => {
+    const remaining = adminStatsRemainingMs(query.state.data?.expiresAt);
+    return remaining > 0 ? remaining : false;
+  },
+  gcTime: ADMIN_STATS_GC_MS,
+};
+
+/**
+ * Overall admin stats (`GET /api/admin/stats`). Fetches on landing; React Query
+ * keeps the snapshot fresh until `expiresAt`, then GET again. Refresh POSTs.
  *
  * @param user - Authenticated Control Centre user
  * @param enabled - When false, the query does not run
@@ -686,6 +714,7 @@ export const useGetAdminStats = ({
     queryKey: ['admin-stats', user?.token],
     queryFn: () => get<GetAdminStatsResponse>('/api/admin/stats', user),
     enabled: !!user && enabled,
+    ...adminStatsQueryCache,
   });
 
 /**
@@ -715,6 +744,8 @@ export const useGetAdminStatsTeams = ({
         user
       ),
     enabled: !!user && enabled,
+    placeholderData: keepPreviousData,
+    ...adminStatsQueryCache,
   });
 
 /**
@@ -745,6 +776,8 @@ export const useGetAdminStatsPeople = ({
         user
       ),
     enabled: !!user && enabled,
+    placeholderData: keepPreviousData,
+    ...adminStatsQueryCache,
   });
 
 /**

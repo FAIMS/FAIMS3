@@ -52,6 +52,7 @@ type TeamAccumulator = {
   recordCount: number;
   attachmentCount: number;
   byteCount: number;
+  mapAssetByteCount: number;
 };
 
 /**
@@ -311,6 +312,7 @@ async function computeSnapshot(): Promise<AdminStatsSnapshot> {
       recordCount: 0,
       attachmentCount: 0,
       byteCount: 0,
+      mapAssetByteCount: 0,
     };
     teamAcc.set(teamId, created);
     return created;
@@ -370,6 +372,19 @@ async function computeSnapshot(): Promise<AdminStatsSnapshot> {
     }
   }
 
+  let mapAssetByteCount = 0;
+  for (const asset of mapAssets) {
+    const size = asset.byteSize ?? 0;
+    mapAssetByteCount += size;
+    const teamId = asset.ownedByTeamId
+      ? asset.ownedByTeamId
+      : ADMIN_STATS_UNTEAMED_TEAM_ID;
+    const teamName = asset.ownedByTeamId
+      ? (teamNameById.get(asset.ownedByTeamId) ?? asset.ownedByTeamId)
+      : 'Unteamed';
+    ensureTeam(teamId, teamName).mapAssetByteCount += size;
+  }
+
   const overall: AdminStatsSnapshot['overall'] = {
     teamCount: teams.length,
     userCount: users.length,
@@ -381,6 +396,7 @@ async function computeSnapshot(): Promise<AdminStatsSnapshot> {
     archivedTemplateCount: templates.filter(template => template.archived)
       .length,
     mapAssetCount: mapAssets.length,
+    mapAssetByteCount,
     recordCount,
     attachmentCount,
     byteCount,

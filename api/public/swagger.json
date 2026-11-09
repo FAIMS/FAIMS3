@@ -3946,6 +3946,7 @@
         "templateCount",
         "archivedTemplateCount",
         "mapAssetCount",
+        "mapAssetByteCount",
         "recordCount",
         "attachmentCount",
         "byteCount",
@@ -3974,6 +3975,10 @@
         "templateCount": {"type": "integer"},
         "archivedTemplateCount": {"type": "integer"},
         "mapAssetCount": {"type": "integer"},
+        "mapAssetByteCount": {
+          "type": "integer",
+          "description": "Sum of map-layer byteSize (normalized file; 0 while pending)"
+        },
         "recordCount": {
           "type": "integer",
           "description": "Sum of index/recordCount across notebooks"
@@ -4009,7 +4014,8 @@
         "notebookCount",
         "recordCount",
         "attachmentCount",
-        "byteCount"
+        "byteCount",
+        "mapAssetByteCount"
       ],
       "properties": {
         "teamId": {
@@ -4020,7 +4026,11 @@
         "notebookCount": {"type": "integer"},
         "recordCount": {"type": "integer"},
         "attachmentCount": {"type": "integer"},
-        "byteCount": {"type": "integer"}
+        "byteCount": {"type": "integer"},
+        "mapAssetByteCount": {
+          "type": "integer",
+          "description": "Sum of this team's map-layer byteSize; personal layers use the unteamed row"
+        }
       }
     },
     "GetAdminStatsTeamsResponse": {

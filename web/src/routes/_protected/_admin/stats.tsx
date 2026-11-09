@@ -16,10 +16,11 @@ import {
   Action,
   AdminStatsPersonRow,
   AdminStatsTeamRow,
+  formatFileSize,
 } from '@faims3/data-model';
 import {ColumnDef, PaginationState} from '@tanstack/react-table';
 import {createFileRoute} from '@tanstack/react-router';
-import {AlertTriangle} from 'lucide-react';
+import {AlertTriangle, RefreshCw} from 'lucide-react';
 import {useMemo, useState} from 'react';
 
 export const Route = createFileRoute('/_protected/_admin/stats')({
@@ -40,9 +41,19 @@ function formatCount(value: number | undefined): string {
 }
 
 /**
+ * Storage totals use the same size-dependent units as map layers / project
+ * details (`formatFileSize`). Undefined stays an em dash until the snapshot
+ * arrives.
+ */
+function formatStorage(value: number | undefined): string {
+  if (value === undefined) return '—';
+  return formatFileSize(value);
+}
+
+/**
  * Control Centre Stats page: instance-wide usage counts overall, per team,
- * and per person. Fetch is opt-in (Load) so opening the page does not scan
- * every data DB; Refresh POSTs once then pages teams/people from the new cache.
+ * and per person. Queries run on landing; React Query keeps the snapshot until
+ * `expiresAt` (or Refresh POSTs once and pages teams/people from the new cache).
  */
 export function StatsPage() {
   const user = useRequiredUser();
@@ -58,8 +69,6 @@ export function StatsPage() {
   );
   useBreadcrumbUpdate({isLoading: false, paths});
 
-  // Queries stay disabled until Load; opening /stats must not scan CouchDB.
-  const [hasLoaded, setHasLoaded] = useState(false);
   const [teamPagination, setTeamPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: DEFAULT_PAGE_SIZE,
@@ -71,17 +80,17 @@ export function StatsPage() {
 
   const statsQuery = useGetAdminStats({
     user,
-    enabled: hasLoaded && canSeeStats,
+    enabled: canSeeStats,
   });
   const teamsQuery = useGetAdminStatsTeams({
     user,
-    enabled: hasLoaded && canSeeStats,
+    enabled: canSeeStats,
     limit: teamPagination.pageSize,
     offset: teamPagination.pageIndex * teamPagination.pageSize,
   });
   const peopleQuery = useGetAdminStatsPeople({
     user,
-    enabled: hasLoaded && canSeeStats,
+    enabled: canSeeStats,
     limit: peoplePagination.pageSize,
     offset: peoplePagination.pageIndex * peoplePagination.pageSize,
   });
@@ -99,7 +108,16 @@ export function StatsPage() {
         accessorKey: 'attachmentCount',
         header: 'Attachments (including photos)',
       },
-      {accessorKey: 'byteCount', header: 'Storage (bytes)'},
+      {
+        accessorKey: 'byteCount',
+        header: `${config.notebookNameCapitalized} storage`,
+        cell: ({getValue}) => formatStorage(getValue<number | undefined>()),
+      },
+      {
+        accessorKey: 'mapAssetByteCount',
+        header: 'Map layer storage',
+        cell: ({getValue}) => formatStorage(getValue<number | undefined>()),
+      },
     ],
     []
   );
@@ -121,9 +139,12 @@ export function StatsPage() {
   }
 
   const overall = statsQuery.data;
-  const listsLoading = refreshMutation.isPending;
 
-  const countCards: {label: string; value: number | undefined}[] = [
+  const countCards: {
+    label: string;
+    value: number | undefined;
+    format?: 'bytes';
+  }[] = [
     {label: 'Teams', value: overall?.teamCount},
     {label: 'Users', value: overall?.userCount},
     {
@@ -132,9 +153,18 @@ export function StatsPage() {
     },
     {label: 'Templates', value: overall?.templateCount},
     {label: 'Map layers', value: overall?.mapAssetCount},
+    {
+      label: 'Map layer storage',
+      value: overall?.mapAssetByteCount,
+      format: 'bytes',
+    },
     {label: 'Records', value: overall?.recordCount},
     {label: 'Attachments (including photos)', value: overall?.attachmentCount},
-    {label: 'Storage (bytes)', value: overall?.byteCount},
+    {
+      label: `${config.notebookNameCapitalized} storage`,
+      value: overall?.byteCount,
+      format: 'bytes',
+    },
   ];
 
   return (
@@ -142,104 +172,82 @@ export function StatsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">Stats</h1>
         <div className="flex gap-2">
-          {!hasLoaded ? (
-            <Button
-              data-testid="web-stats-load"
-              onClick={() => setHasLoaded(true)}
-            >
-              Load
-            </Button>
-          ) : (
-            <Button
-              data-testid="web-stats-refresh"
-              variant="outline"
-              disabled={refreshMutation.isPending}
-              onClick={() => refreshMutation.mutate()}
-            >
-              Refresh
-            </Button>
-          )}
+          <Button
+            data-testid="web-stats-refresh"
+            variant="outline"
+            disabled={refreshMutation.isPending || statsQuery.isPending}
+            onClick={() => refreshMutation.mutate()}
+          >
+            <RefreshCw
+              className={refreshMutation.isPending ? 'animate-spin' : undefined}
+            />
+            {refreshMutation.isPending ? 'Refreshing…' : 'Refresh'}
+          </Button>
         </div>
       </div>
 
-      {!hasLoaded ? (
-        <p data-testid="web-stats-empty">
-          Usage counts are not loaded automatically. Choose Load to compute a
-          snapshot of attachments (including photos),{' '}
-          {config.notebookNamePlural}, records, and other first-class entities.
-        </p>
-      ) : (
-        <>
-          {overall ? (
-            <p data-testid="web-stats-cache-times">
-              as of {overall.generatedAt}, cached until {overall.expiresAt}
-            </p>
-          ) : (
-            <p data-testid="web-stats-loading">Loading snapshot…</p>
+      {overall?.incomplete ? (
+        <Alert variant="warning" data-testid="web-stats-incomplete">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Some {config.notebookNamePlural} could not be scanned; counts may be
+            incomplete.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {countCards.map(card => (
+          <Card key={card.label}>
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {card.label}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 text-2xl font-semibold">
+              {card.format === 'bytes'
+                ? formatStorage(card.value)
+                : formatCount(card.value)}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-xl font-semibold">Teams</h2>
+        <DataTable
+          testId="web-stats-teams-table"
+          columns={teamColumns}
+          data={teamsQuery.data?.teams ?? []}
+          loading={teamsQuery.isPending}
+          emptyMessage="No team rows in this snapshot."
+          hideSearch
+          manualPagination
+          pageCount={Math.ceil(
+            (teamsQuery.data?.total ?? 0) / teamPagination.pageSize
           )}
+          pagination={teamPagination}
+          onPaginationChange={setTeamPagination}
+        />
+      </section>
 
-          {overall?.incomplete ? (
-            <Alert variant="warning" data-testid="web-stats-incomplete">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                Some {config.notebookNamePlural} could not be scanned; counts
-                may be incomplete.
-              </AlertDescription>
-            </Alert>
-          ) : null}
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {countCards.map(card => (
-              <Card key={card.label}>
-                <CardHeader className="p-4 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {card.label}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 text-2xl font-semibold">
-                  {formatCount(card.value)}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <section className="flex flex-col gap-3">
-            <h2 className="text-xl font-semibold">Teams</h2>
-            <DataTable
-              testId="web-stats-teams-table"
-              columns={teamColumns}
-              data={teamsQuery.data?.teams ?? []}
-              loading={teamsQuery.isPending || listsLoading}
-              emptyMessage="No team rows in this snapshot."
-              hideSearch
-              manualPagination
-              pageCount={Math.ceil(
-                (teamsQuery.data?.total ?? 0) / teamPagination.pageSize
-              )}
-              pagination={teamPagination}
-              onPaginationChange={setTeamPagination}
-            />
-          </section>
-
-          <section className="flex flex-col gap-3">
-            <h2 className="text-xl font-semibold">People</h2>
-            <DataTable
-              testId="web-stats-people-table"
-              columns={peopleColumns}
-              data={peopleQuery.data?.people ?? []}
-              loading={peopleQuery.isPending || listsLoading}
-              emptyMessage="No people with records or attachments in this snapshot."
-              hideSearch
-              manualPagination
-              pageCount={Math.ceil(
-                (peopleQuery.data?.total ?? 0) / peoplePagination.pageSize
-              )}
-              pagination={peoplePagination}
-              onPaginationChange={setPeoplePagination}
-            />
-          </section>
-        </>
-      )}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-xl font-semibold">People</h2>
+        <DataTable
+          testId="web-stats-people-table"
+          columns={peopleColumns}
+          data={peopleQuery.data?.people ?? []}
+          loading={peopleQuery.isPending}
+          emptyMessage="No people with records or attachments in this snapshot."
+          hideSearch
+          manualPagination
+          pageCount={Math.ceil(
+            (peopleQuery.data?.total ?? 0) / peoplePagination.pageSize
+          )}
+          pagination={peoplePagination}
+          onPaginationChange={setPeoplePagination}
+        />
+      </section>
     </div>
   );
 }

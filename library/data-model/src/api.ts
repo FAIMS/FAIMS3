@@ -1528,6 +1528,8 @@ export const GetAdminStatsResponseSchema = AdminStatsCacheMetaSchema.extend({
   templateCount: z.number().int().nonnegative(),
   archivedTemplateCount: z.number().int().nonnegative(),
   mapAssetCount: z.number().int().nonnegative(),
+  /** Sum of map-layer `byteSize` (normalized file; 0 while pending). */
+  mapAssetByteCount: z.number().int().nonnegative(),
   recordCount: z.number().int().nonnegative(),
   /** Attachments of every kind, including photos. */
   attachmentCount: z.number().int().nonnegative(),
@@ -1556,6 +1558,8 @@ export const AdminStatsTeamRowSchema = z.object({
   recordCount: z.number().int().nonnegative(),
   attachmentCount: z.number().int().nonnegative(),
   byteCount: z.number().int().nonnegative(),
+  /** Sum of this team's map-layer `byteSize`; personal layers use the unteamed row. */
+  mapAssetByteCount: z.number().int().nonnegative(),
 });
 export type AdminStatsTeamRow = z.infer<typeof AdminStatsTeamRowSchema>;
 
