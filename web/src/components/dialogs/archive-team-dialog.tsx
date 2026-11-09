@@ -92,7 +92,7 @@ export const ArchiveTeamDialog = ({archived}: {archived: boolean}) => {
           <DialogTitle>Archive Team</DialogTitle>
           <DialogDescription>
             Hide this team from default lists and stop new membership, invites,
-            and in-team creates. Owned {config.notebookNamePlural}, templates,
+            and creation of new resources in this team. Owned {config.notebookNamePlural}, templates,
             and map layers keep their own status and stay usable.
           </DialogDescription>
         </DialogHeader>

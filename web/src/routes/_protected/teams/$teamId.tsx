@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import {ArchiveTeamDialog} from '@/components/dialogs/archive-team-dialog';
-import {UpdateTeamDialog} from '@/components/dialogs/teams/update-team-dialog';
+import TeamActions from '@/components/tabs/teams/actions';
 import TeamDetails from '@/components/tabs/teams/team-details';
 import TeamInvites from '@/components/tabs/teams/team-invites';
 import TeamMapLayers from '@/components/tabs/teams/team-map-layers';
@@ -16,8 +15,7 @@ import {useGetTeam} from '@/hooks/queries';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {Action} from '@faims3/data-model';
 import {createFileRoute, Link, useRouter} from '@tanstack/react-router';
-import {Edit} from 'lucide-react';
-import {useMemo, useState} from 'react';
+import {useMemo} from 'react';
 
 type TabLabel =
   | 'Details'
@@ -25,7 +23,8 @@ type TabLabel =
   | 'Projects'
   | 'Map layers'
   | 'Templates'
-  | 'Users';
+  | 'Users'
+  | 'Actions';
 
 export const Route = createFileRoute('/_protected/teams/$teamId')({
   component: RouteComponent,
@@ -89,6 +88,7 @@ function RouteComponent() {
     resourceId: teamId,
   });
   const teamIsArchived = team?.archived === true;
+  const canSeeTeamActions = canEditTeamDetails || canChangeTeamStatus;
 
   const tabs: {
     label?: string;
@@ -125,8 +125,13 @@ function RouteComponent() {
   if (canViewTeamMembers) {
     tabs.push({id: 'Users', Component: TeamUsers});
   }
-
-  const [activeTab, setActiveTab] = useState<TabLabel>(tabs[0].id);
+  if (canSeeTeamActions) {
+    tabs.push({
+      id: 'Actions',
+      Component: TeamActions,
+      testId: 'web-team-tab-actions',
+    });
+  }
 
   return (
     <>
@@ -152,35 +157,14 @@ function RouteComponent() {
           </AlertDescription>
         </Alert>
       ) : null}
-      <Tabs
-        defaultValue={tabs[0].id}
-        onValueChange={tab => {
-          setActiveTab(tab as TabLabel);
-        }}
-      >
-        <div className="flex justify-start items-center gap-4">
-          <TabsList>
-            {tabs.map(({id, label, testId}) => (
-              <TabsTrigger key={id} value={id} data-testid={testId}>
-                {label ?? id}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {activeTab === 'Details' && canEditTeamDetails && !teamIsArchived && (
-            <UpdateTeamDialog
-              teamId={teamId}
-              buttonContent={
-                <>
-                  Edit <Edit size={18} />
-                </>
-              }
-            ></UpdateTeamDialog>
-          )}
-          {activeTab === 'Details' && canChangeTeamStatus && (
-            <ArchiveTeamDialog archived={teamIsArchived} />
-          )}
-        </div>
+      <Tabs defaultValue={tabs[0].id}>
+        <TabsList>
+          {tabs.map(({id, label, testId}) => (
+            <TabsTrigger key={id} value={id} data-testid={testId}>
+              {label ?? id}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
         {tabs.map(({id, Component}) => (
           <TabsContent key={id} value={id}>
