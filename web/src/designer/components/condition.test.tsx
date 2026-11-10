@@ -123,7 +123,7 @@ describe('ConditionControl', () => {
     // expect(document.querySelector('[data-value="Sample-Location"]')).not.toBeNull();
   });
 
-  test('option condition picker includes the parent field', () => {
+  test('MultiSelect option condition picker includes the parent field', () => {
     const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
     store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));

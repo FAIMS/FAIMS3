@@ -758,6 +758,10 @@ interface SortableItemProps {
   onMove: (value: string, direction: 'up' | 'down') => void;
   // parent choice field id (for option-level conditions)
   fieldName: string;
+  // Keep the parent MultiSelect in the option-condition picker so the list
+  // can cascade. Omit for Select single — a self-referencing option would
+  // only be visible while a different option is selected, then go stale.
+  includeField?: boolean;
   // persist or clear this option's visibility condition
   onConditionChange: (value: string, condition: ConditionType | null) => void;
 }
@@ -781,6 +785,7 @@ const SortableItem = ({
   onRemove,
   onMove,
   fieldName,
+  includeField,
   onConditionChange,
 }: SortableItemProps) => {
   // Initialize drag-and-drop functionality
@@ -871,7 +876,7 @@ const SortableItem = ({
           initial={(option.condition as ConditionType | undefined) ?? null}
           onChange={condition => onConditionChange(option.value, condition)}
           field={fieldName}
-          includeField
+          includeField={includeField}
         />
         <Tooltip title="Edit option">
           <IconButton
@@ -1509,6 +1514,7 @@ export const OptionsEditor = ({
                                   moveRow(getOptionDndId(value), direction)
                                 }
                                 fieldName={fieldName}
+                                includeField={isMultiSelectField}
                                 onConditionChange={setOptionCondition}
                               />
                             );

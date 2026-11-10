@@ -157,8 +157,9 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Context (not a Field prop) so memo'd non-choice fields skip bag
-          updates; only ChoiceFieldConditionBridge subscribes. */}
+      {/* Context (not a Field prop) so memo'd fields that do not consume
+          condition values skip bag updates; only ConditionValuesBridge
+          subscribes. */}
       <ConditionValuesContext.Provider value={conditionValues}>
         <FormManager
           form={form}

@@ -206,6 +206,7 @@ describe('OptionsEditor option conditions', () => {
       .getAllByRole('option')
       .map(o => o.textContent ?? '');
     expect(fieldOptions.some(label => label.includes('Hazards'))).toBe(true);
+    expect(fieldOptions.some(label => label.includes('Site type'))).toBe(true);
     expect(fieldOptions.some(label => label.includes('Notes'))).toBe(true);
     fireEvent.click(screen.getByRole('option', {name: /Notes/}));
     const valueInput = within(dialog)
@@ -370,5 +371,34 @@ describe('OptionsEditor option conditions', () => {
     expect(
       within(optionRow('Industrial')).queryByText('Add condition')
     ).toBeNull();
+  });
+
+  it('omits the parent Select single field from the option-condition picker', async () => {
+    const store = storeWithChoiceFields();
+    const user = userEvent.setup();
+    render(
+      <WithProviders store={store}>
+        <OptionsEditor fieldName={SITE_TYPE} />
+      </WithProviders>
+    );
+
+    await user.click(
+      within(optionRow('Industrial')).getByRole('button', {
+        name: 'Add condition',
+      })
+    );
+    const dialog = await screen.findByRole('dialog');
+    const fieldInput = within(dialog).getByTestId('field-input');
+    const input = within(fieldInput).getByRole('combobox') as HTMLInputElement;
+    act(() => {
+      input.focus();
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+    });
+    const fieldOptions = screen
+      .getAllByRole('option')
+      .map(o => o.textContent ?? '');
+    expect(fieldOptions.some(label => label.includes('Site type'))).toBe(false);
+    expect(fieldOptions.some(label => label.includes('Hazards'))).toBe(true);
+    expect(fieldOptions.some(label => label.includes('Notes'))).toBe(true);
   });
 });

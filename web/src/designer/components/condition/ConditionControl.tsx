@@ -38,7 +38,7 @@ export type ConditionControlProps = {
   /** When set, restricts which fields can be chosen (e.g. same-section rules). */
   field?: string;
   view?: string;
-  /** Keep `field` selectable so an option condition can reference its parent. */
+  /** Keep `field` selectable so a MultiSelect option condition can cascade. */
   includeField?: boolean;
 };
 

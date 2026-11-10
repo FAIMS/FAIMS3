@@ -52,11 +52,13 @@ entries to populate the picker.
 Field and section conditions omit the target field (or the current
 section's fields) so a rule cannot depend on itself.
 
-Option-level conditions (Select single / Select multiple) pass
-`includeField`. The option is not a field, so the parent choice field
-must stay in the picker — otherwise a MultiSelect cannot cascade inside
-one list. `FieldSearchScope.includeFieldId` in `features/field-search`
-is the corresponding flag.
+Option-level conditions on MultiSelect pass `includeField`. The option
+is not a field, so the parent MultiSelect must stay in the picker —
+otherwise it cannot cascade inside one list. Select single (RadioGroup)
+omits the parent: a self-referencing option would only be visible while
+a different option is selected, then go stale the moment it is chosen.
+`FieldSearchScope.includeFieldId` in `features/field-search` is the
+corresponding flag.
 
 ## Undo/Redo Architecture
 

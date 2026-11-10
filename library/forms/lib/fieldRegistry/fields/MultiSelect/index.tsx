@@ -742,4 +742,5 @@ export const multiSelectFieldSpec: FieldInfo<FieldProps> = {
     },
     config: {},
   },
+  consumesConditionValues: true,
 };

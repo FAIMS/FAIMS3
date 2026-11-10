@@ -1196,8 +1196,9 @@ export const EditableFormManager: React.FC<
         visibilityMap={visibleMap}
       />
 
-      {/* Main Form. Context (not a Field prop) so memo'd non-choice fields
-          skip bag updates; only ChoiceFieldConditionBridge subscribes. */}
+      {/* Main Form. Context (not a Field prop) so memo'd fields that do not
+          consume condition values skip bag updates; only ConditionValuesBridge
+          subscribes. */}
       <ConditionValuesContext.Provider value={conditionValues}>
         <FormManager
           key={props.recordId}

@@ -79,7 +79,7 @@ describe('resolveFieldIdsInScope', () => {
     ).toEqual(['field-b', 'field-c']);
   });
 
-  test('context field scope can keep the parent field for option conditions', () => {
+  test('context field scope can keep the parent field for MultiSelect option conditions', () => {
     expect(
       resolveFieldIdsInScope(allFields, views, viewsets, {
         kind: 'context',

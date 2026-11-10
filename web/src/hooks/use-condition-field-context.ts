@@ -70,7 +70,7 @@ const metadataFieldDef = (key: string): FieldType =>
 export const useConditionRuleFieldContext = (props: {
   field?: string;
   view?: string;
-  /** Keep `field` in the picker so an option condition can reference its parent. */
+  /** Keep `field` in the picker so a MultiSelect option condition can cascade. */
   includeField?: boolean;
 }) => {
   const allFields = useAppSelector(

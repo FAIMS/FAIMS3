@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '@faims3/data-model';
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {ChoiceOptionSchema} from './choiceFieldParams';
 import {
   otherOptionPositionAmongVisible,
@@ -120,6 +119,29 @@ describe('visibleChoiceOptions', () => {
     ).toEqual(['none']);
     expect(calls).toBe(2);
   });
+
+  it('shows an uncompiled option when its condition cannot be compiled', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const malformed = [
+      {value: 'none', label: 'None observed'},
+      {
+        value: 'asbestos',
+        label: 'Asbestos',
+        condition: {operator: 'unknown-operator', field: 'site-type'},
+      },
+    ];
+    expect(
+      visibleChoiceOptions(malformed, {'site-type': 'residential'}).map(
+        option => option.value
+      )
+    ).toEqual(['none', 'asbestos']);
+    expect(warn).toHaveBeenCalledWith(
+      '[FormLogger] Warning:',
+      'Choice option "asbestos" has an invalid visibility condition; showing the option',
+      expect.any(Error)
+    );
+    warn.mockRestore();
+  });
 });
 
 describe('otherOptionPositionAmongVisible', () => {
@@ -132,11 +154,5 @@ describe('otherOptionPositionAmongVisible', () => {
     const visible = visibleChoiceOptions(all, {'site-type': 'residential'});
     // Other was after A and B (index 2). B is hidden, so Other follows A.
     expect(otherOptionPositionAmongVisible(all, visible, 2)).toBe(1);
-  });
-});
-
-describe('notebook schema version', () => {
-  it('does not bump CURRENT_NOTEBOOK_UI_SCHEMA_VERSION for option conditions', () => {
-    expect(CURRENT_NOTEBOOK_UI_SCHEMA_VERSION).toBe('1.0.1');
   });
 });

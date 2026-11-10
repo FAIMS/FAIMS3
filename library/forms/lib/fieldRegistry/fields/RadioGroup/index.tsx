@@ -659,6 +659,7 @@ export const radioGroupFieldSpec: FieldInfo<FieldProps> = {
   fieldPropsSchema: RadioGroupFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
   view: {component: DefaultRenderer, config: {}},
+  consumesConditionValues: true,
 };
 
 // We also register this as the 'Select' field for backward
@@ -672,4 +673,5 @@ export const selectFieldSpec: FieldInfo<FieldProps> = {
   fieldPropsSchema: RadioGroupFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
   view: {component: DefaultRenderer, config: {}},
+  consumesConditionValues: true,
 };

@@ -28,11 +28,13 @@ until the collector changes it. The stored value is not cleared
 automatically, and view mode and CSV/GIS export still show it.
 
 Option conditions use the same builder and field picker as field
-conditions. Unlike a field condition, an option condition **may**
-reference its parent choice field, so a MultiSelect can cascade inside
-one list. For example, selecting option A, may reveal options B and C.
-The option itself is not a field and cannot be chosen as the target of
-a condition.
+conditions. On a **Select multiple** field, an option condition **may**
+reference its parent field, so the list can cascade: selecting option A
+may reveal options B and C. **Select single** option conditions cannot
+reference their own field — a self-referencing option would only be
+visible while a different option is selected, then go stale the moment
+it is chosen. The option itself is not a field and cannot be chosen as
+the target of a condition.
 
 ## Simple Conditions
 

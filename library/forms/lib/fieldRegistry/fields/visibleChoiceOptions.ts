@@ -8,6 +8,7 @@
  */
 
 import {compileExpression, type RecordValues} from '@faims3/data-model';
+import {logWarn} from '../../logging';
 import type {ChoiceOption} from './choiceFieldParams';
 
 const selectedValueSet = (
@@ -25,13 +26,20 @@ const optionConditionHolds = (
   option: ChoiceOption,
   values: RecordValues
 ): boolean => {
-  if (option.conditionFn) return option.conditionFn(values);
+  // First check that we actually have a set condition
   if (option.condition == null) return true;
+  // Then try and use compiled function
+  if (option.conditionFn) return option.conditionFn(values);
+  // Backup is to try to compile on the fly - this shouldn't occur
   try {
     return compileExpression(option.condition)(values);
-  } catch {
-    // Unknown operator or a malformed AST on an uncompiled option: hide it.
-    return false;
+  } catch (e) {
+    // Unknown operator or a malformed AST on an uncompiled option: fail open.
+    logWarn(
+      `Choice option "${option.value}" has an invalid visibility condition; showing the option`,
+      e
+    );
+    return true;
   }
 };
 
