@@ -43,7 +43,7 @@ import {
   clearTemplateIdFromProjectsReferencingTemplate,
   createNotebook,
 } from './notebooks';
-import {getTeamById} from './teams';
+import {assertTeamNotArchived, getTeamById} from './teams';
 import {stripTemplateRolesForTemplateId} from './users';
 
 /**
@@ -236,11 +236,14 @@ export const createTemplate = async ({
   // Get a unique id for the template Id
   const templateId = generateTemplateId(payload.name);
 
-  // if there is a team id provided, it must be an actual team
+  // if there is a team id provided, it must be an actual, non-archived team
   if (payload.teamId) {
     try {
-      await getTeamById(payload.teamId);
+      await assertTeamNotArchived(payload.teamId);
     } catch (error) {
+      if (error instanceof Exceptions.InvalidRequestException) {
+        throw error;
+      }
       throw new Exceptions.InternalSystemError(
         'The specified team ID does not exist.'
       );
@@ -367,10 +370,13 @@ export const changeTemplateTeam = async (
     );
   }
 
-  // check that it is a valid team
+  // check that it is a valid, non-archived team
   try {
-    await getTeamById(payload.teamId);
+    await assertTeamNotArchived(payload.teamId);
   } catch (error) {
+    if (error instanceof Exceptions.InvalidRequestException) {
+      throw error;
+    }
     throw new Exceptions.InternalSystemError(
       'The specified team ID does not exist.'
     );

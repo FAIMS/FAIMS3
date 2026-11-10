@@ -751,6 +751,38 @@ describe('template API tests', () => {
     });
   });
 
+  it('will not create or assign a template onto an archived team', async () => {
+    const team = await createSampleTeam(app, {
+      teamName: 'archived-template-team',
+    });
+    await requestAuthAndType(
+      request(app).put(`/api/teams/${team._id}/archive`).send({archive: true}),
+      adminToken
+    ).expect(200);
+
+    const createRes = await requestAuthAndType(
+      request(app)
+        .post(`${TEMPLATE_API_BASE}`)
+        .send({
+          ...sampleCreateTemplatePayload('blocked-archived-team'),
+          teamId: team._id,
+        }),
+      adminToken
+    );
+    expect(createRes.status).toBe(400);
+
+    const {template} = await createSampleTemplate(app, {
+      name: 'assign-onto-archived',
+    });
+    const assignRes = await requestAuthAndType(
+      request(app).put(`${TEMPLATE_API_BASE}/${template._id}/team`).send({
+        teamId: team._id,
+      }),
+      adminToken
+    );
+    expect(assignRes.status).toBe(400);
+  });
+
   it('will not update team ownership to a team that does not exist', async () => {
     const team1 = await createSampleTeam(app, {teamName: 'team1'});
 

@@ -4,7 +4,7 @@ import type {ColumnDef} from '@tanstack/react-table';
 import {CreateTemplateDialog} from '@/components/dialogs/create-template-dialog';
 import {getTemplatesTableColumns} from '@/components/tables/templates';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {useGetTemplatesForTeam} from '@/hooks/queries';
+import {useGetTeam, useGetTemplatesForTeam} from '@/hooks/queries';
 import {
   Action,
   globalRolesGrantAction,
@@ -24,6 +24,8 @@ type TemplateListRow = GetListTemplatesResponse['templates'][number];
 const TeamTemplates = ({teamId}: {teamId: string}) => {
   const user = useRequiredUser();
   const {isPending, data} = useGetTemplatesForTeam({user, teamId});
+  const {data: team} = useGetTeam({user, teamId});
+  const archived = team?.archived === true;
   const [visibilityFilter, setVisibilityFilter] =
     useState<TemplateVisibilityFilterValue>('all');
 
@@ -72,7 +74,8 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
       }
       onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
       button={
-        canAddTemplateInTeam && <CreateTemplateDialog specifiedTeam={teamId} />
+        canAddTemplateInTeam &&
+        !archived && <CreateTemplateDialog specifiedTeam={teamId} />
       }
     />
   );
