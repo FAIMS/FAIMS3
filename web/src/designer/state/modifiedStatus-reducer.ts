@@ -3,6 +3,11 @@
 /**
  * @file Tracks whether the notebook has unsaved edits. Set `true` by metadata/UI-spec actions;
  * reset via {@link resetFlag} after save.
+ *
+ * Publish enablement does not use this boolean: unpublished is a stable JSON
+ * compare of the present export against the last published snapshot (see
+ * `useDesignerDraftSession`). Autosave watches the same store changes that
+ * appear in that export, including undo/redo back to the snapshot.
  */
 
 import {createSlice} from '@reduxjs/toolkit';

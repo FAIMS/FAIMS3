@@ -43,6 +43,16 @@ export const toDesignerNotebookWithHistory = (
   return notebookDefinitionToDesignerHistory(result.data);
 };
 
+/**
+ * Hydrate a stored or exported notebook through the same load path as a server
+ * record (`tryNormalizeApiUiSpecification` / `migrateNotebook`).
+ */
+export const hydrateExportedNotebook = (
+  exported: unknown,
+  mode: DesignerDocumentMode = 'project'
+): NotebookWithHistory | undefined =>
+  toDesignerNotebookWithHistory({uiSpecification: exported}, mode);
+
 /** Wrap a normalized definition for Redux (empty undo stacks). */
 export const notebookDefinitionToDesignerHistory = (
   definition: Notebook

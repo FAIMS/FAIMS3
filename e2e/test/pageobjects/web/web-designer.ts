@@ -11,7 +11,7 @@ class WebDesignerPage extends Page {
     return byTestId('web-designer-shell');
   }
 
-  /** Persist current notebook design. */
+  /** Publish current notebook design (primary persist control). */
   get saveButton() {
     return byTestId('web-designer-save-button');
   }
@@ -41,7 +41,7 @@ class WebDesignerPage extends Page {
     return this.shell.isDisplayed().catch(() => false);
   }
 
-  /** Click Save. */
+  /** Click Publish changes. */
   async save() {
     await this.saveButton.waitForClickable({timeout: 10000});
     await this.saveButton.click();

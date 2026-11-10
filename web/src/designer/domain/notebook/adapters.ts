@@ -74,3 +74,10 @@ export const stripDesignerIdentifiers = (notebook: Notebook): Notebook => {
   });
   return cloned;
 };
+
+/**
+ * Present notebook as it would be published: undo history and in-memory
+ * `designerIdentifier` keys removed.
+ */
+export const toPublishedNotebook = (notebook: NotebookWithHistory): Notebook =>
+  stripDesignerIdentifiers(toNotebook(notebook));

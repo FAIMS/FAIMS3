@@ -5,6 +5,9 @@
  */
 
 /** Public hooks and adapters for embedding the designer in the main web app. */
+export * from './draftStorage';
+export * from './hostClose';
 export * from './legacyNotebook';
 export * from './notebookAdapters';
+export * from './useDesignerDraftSession';
 export * from './useDesignerSaveMutation';

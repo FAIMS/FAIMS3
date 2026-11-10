@@ -22,6 +22,7 @@ import {
   type MouseEvent,
 } from 'react';
 import {INPUT_LIMITS} from '../../lib/input-limits';
+import {registerPendingEditFlush} from '../../state/pendingEditFlush';
 import {outlinedFieldHostSx} from '../../theme/outlinedFieldStyles';
 import {fallbackChipModel, type ChipCatalog, type ChipModel} from './chipModel';
 import {expressionEditorTheme} from './expressionEditorTheme';
@@ -152,13 +153,16 @@ export const ExpressionEditor = forwardRef<
     []
   );
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    const unregister = registerPendingEditFlush(() => {
+      debouncedEmit.flush();
+    });
+    return () => {
+      unregister();
       debouncedEmit.flush();
       debouncedEmit.cancel();
-    },
-    [debouncedEmit]
-  );
+    };
+  }, [debouncedEmit]);
 
   useEffect(() => {
     const parent = parentRef.current;

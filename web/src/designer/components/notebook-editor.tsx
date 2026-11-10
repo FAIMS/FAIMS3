@@ -36,6 +36,7 @@ import {useCallback, useEffect, useState} from 'react';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import {useDesignerUndoRedo} from '../state/use-designer-undo-redo';
+import {useDesignerChrome} from '../state/designer-chrome-context';
 import {useAppSelector} from '../state/hooks';
 import {selectDesignerMode} from '../store/selectors';
 import {
@@ -45,20 +46,14 @@ import {
 import {DesignerGlobalSearch} from './design-search';
 
 /** Layout shell: Design / Info tabs and `Outlet` for nested designer routes. */
-export type NotebookEditorProps = {
-  onSave: () => void;
-  onCancelRequest: () => void;
-};
-
 export type PreviewOutletContext = {
   previewForm: boolean;
   setPreviewForm: (preview: boolean) => void;
 };
 
-export const NotebookEditor = ({
-  onSave,
-  onCancelRequest,
-}: NotebookEditorProps) => {
+export const NotebookEditor = () => {
+  const {onPublish, onPublishAndClose, onCancelRequest, publishDisabled} =
+    useDesignerChrome();
   const {pathname} = useLocation();
   const isDesignRoute = pathname.startsWith('/design/');
   const [previewForm, setPreviewForm] = useState(false);
@@ -182,13 +177,20 @@ export const NotebookEditor = ({
           </Box>
           <Box sx={toolbarSx}>
             <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
-              {isDesignRoute && (
-                <>
+              <Tooltip
+                title={
+                  publishDisabled
+                    ? 'No unpublished changes'
+                    : 'Publish this design'
+                }
+              >
+                <span>
                   <Button
                     variant="contained"
                     color="primary"
                     size="small"
-                    onClick={onSave}
+                    onClick={onPublish}
+                    disabled={publishDisabled}
                     data-testid="web-designer-save-button"
                     sx={{
                       textTransform: 'none',
@@ -199,22 +201,42 @@ export const NotebookEditor = ({
                       py: 0.4,
                     }}
                   >
-                    Save
+                    Publish changes
                   </Button>
-                  <Button
-                    onClick={onCancelRequest}
-                    color="primary"
-                    size="small"
-                    data-testid="web-designer-cancel-button"
-                    sx={{
-                      ...designerCancelButtonSx,
-                      fontSize: '0.78rem',
-                      py: 0.4,
-                      minWidth: 72,
-                    }}
-                  >
-                    Cancel
-                  </Button>
+                </span>
+              </Tooltip>
+              <Button
+                variant="outlined"
+                color="primary"
+                size="small"
+                onClick={onPublishAndClose}
+                data-testid="web-designer-publish-and-close-button"
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  boxShadow: 'none',
+                  fontSize: '0.78rem',
+                  py: 0.4,
+                }}
+              >
+                Publish changes and close
+              </Button>
+              <Button
+                onClick={onCancelRequest}
+                color="primary"
+                size="small"
+                data-testid="web-designer-cancel-button"
+                sx={{
+                  ...designerCancelButtonSx,
+                  fontSize: '0.78rem',
+                  py: 0.4,
+                  minWidth: 72,
+                }}
+              >
+                Cancel
+              </Button>
+              {isDesignRoute && (
+                <>
                   <Tooltip
                     title={
                       canUndo
@@ -303,11 +325,6 @@ export const NotebookEditor = ({
                       />
                     }
                   />
-                  {!isDesignRoute && (
-                    <Button variant="contained" size="small" onClick={onSave}>
-                      Save
-                    </Button>
-                  )}
                 </>
               )}
             </Stack>

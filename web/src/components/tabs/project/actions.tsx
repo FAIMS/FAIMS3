@@ -14,6 +14,7 @@ import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {Spinner} from '@/components/ui/spinner';
 import {config} from '@/constants';
 import {
+  closeDesignerHostOverlay,
   toDesignerNotebookWithHistory,
   useDesignerSaveMutation,
 } from '@/designer/integration';
@@ -64,9 +65,9 @@ const ProjectActions = (): JSX.Element => {
     queryClient.invalidateQueries({queryKey: ['projects', projectId]});
   };
 
+  // Publish is in-editor; closing without a file must not PUT.
   const handleEditorClose = (file?: File) => {
-    if (file) saveProjectNotebook.mutateAsyncWithToast(file);
-    setEditorOpen(false);
+    closeDesignerHostOverlay(() => setEditorOpen(false), file);
   };
 
   const canUpdateProjectDetails = useIsAuthorisedTo({
@@ -291,6 +292,10 @@ const ProjectActions = (): JSX.Element => {
         exportBaseName={data?.name}
         existingRecordCount={data?.recordCount}
         onClose={handleEditorClose}
+        userId={user.user.id}
+        resourceKind="projects"
+        resourceId={projectId}
+        publishNotebook={saveProjectNotebook.mutateAsyncWithToast}
       />
     </>
   );

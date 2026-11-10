@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import React, {useEffect, useState} from 'react';
 import {DesignerWidget} from '../../designer/DesignerWidget';
+import type {DesignerResourceKind} from '../../designer/integration/draftStorage';
 import type {
   DesignerDocumentMode,
   NotebookWithHistory,
@@ -18,9 +19,16 @@ interface DesignerDialogProps {
    * Forwarded into the designer so field delete can warn about stored data.
    */
   existingRecordCount?: number;
+  /** Overlay close. Publish is in-editor; a missing file must not PUT. */
   onClose: (file?: File) => void;
   animationDuration?: number;
   animationScale?: number;
+  /** Signed-in user id (`user.user.id`) for origin-private draft keys. */
+  userId: string;
+  resourceKind: DesignerResourceKind;
+  resourceId: string;
+  /** Host save mutation; designer calls this only on confirmed publish. */
+  publishNotebook: (file: File) => Promise<unknown>;
 }
 
 export function DesignerDialog({
@@ -32,6 +40,10 @@ export function DesignerDialog({
   onClose,
   animationDuration = 300,
   animationScale = 0.95,
+  userId,
+  resourceKind,
+  resourceId,
+  publishNotebook,
 }: DesignerDialogProps) {
   const [mounted, setMounted] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
@@ -43,7 +55,8 @@ export function DesignerDialog({
   // Open: capture notebook once, mount, animate in. The functional updater
   // makes the snapshot idempotent — once `sessionNotebook` is set, later
   // upstream refetches (React Query refetchOnWindowFocus, polling) cannot
-  // overwrite it. The session is only cleared on close.
+  // overwrite a restored or in-session draft. The session is only cleared
+  // on close.
   useEffect(() => {
     if (!open) return;
     setSessionNotebook(prev => prev ?? notebook);
@@ -74,21 +87,6 @@ export function DesignerDialog({
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prev;
-    };
-  }, [mounted]);
-
-  // Warn on tab close/refresh while editing
-  useEffect(() => {
-    if (!mounted) return;
-
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = ''; // Required for Chrome to show the prompt
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [mounted]);
 
@@ -123,6 +121,10 @@ export function DesignerDialog({
           existingRecordCount={existingRecordCount}
           onClose={handleWidgetClose}
           designerMode={designerMode}
+          userId={userId}
+          resourceKind={resourceKind}
+          resourceId={resourceId}
+          publishNotebook={publishNotebook}
         />
       </div>
     </div>

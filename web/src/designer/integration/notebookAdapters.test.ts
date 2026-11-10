@@ -9,6 +9,7 @@ import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../state/initial';
 import {tryNormalizeApiUiSpecification} from './legacyNotebook';
 import {
   designerHistoryToNotebookDefinition,
+  hydrateExportedNotebook,
   notebookDefinitionToDesignerHistory,
   toDesignerNotebookWithHistory,
 } from './notebookAdapters';
@@ -141,6 +142,13 @@ describe('designer load is tolerant of a newer schemaVersion', () => {
     expect(
       toDesignerNotebookWithHistory({uiSpecification: newer})
     ).toBeDefined();
+  });
+
+  it('hydrates an exported notebook through the load adapters', () => {
+    const definition = createDefinition();
+    const history = hydrateExportedNotebook(definition);
+    expect(history?.metadata).toEqual(definition.metadata);
+    expect(history?.uiSpec.present).toEqual(definition.uiSpec);
   });
 
   it('does not throw when the design cannot be parsed', () => {

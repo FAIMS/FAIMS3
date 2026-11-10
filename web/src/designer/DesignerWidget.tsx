@@ -1,22 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import React, {useMemo, useState, useEffect, useCallback} from 'react';
+import React, {useMemo, useState, useEffect, useCallback, useRef} from 'react';
 import {Provider as ReduxProvider} from 'react-redux';
 import {
   ThemeProvider,
   ScopedCssBaseline,
   Box,
-  Button,
   IconButton,
   Typography,
   AppBar,
   Toolbar,
-  Dialog,
-  Grow,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   CircularProgress,
 } from '@mui/material';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
@@ -33,18 +26,29 @@ import type {
   Notebook,
   NotebookWithHistory,
 } from './state/initial';
-import {stripDesignerIdentifiers, toNotebook} from './domain/notebook/adapters';
 import {slugify} from './domain/notebook/ids';
 import {THEME} from '../lib/theme';
 import {NotebookEditor} from './components/notebook-editor';
+import {DesignerChromeProvider} from './state/designer-chrome-context';
 import {DesignerEditingProvider} from './state/editing-context';
 import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
 import {SetupFormPanel} from './components/setup-form-panel';
 import {config} from '@/constants';
+import type {DesignerResourceKind} from './integration/draftStorage';
+import {
+  type DesignerPublishIntent,
+  DesignerPublishDialog,
+} from './components/designer-publish-dialog';
+import {DesignerCloseDraftDialog} from './components/designer-close-draft-dialog';
+import {DesignerDraftStatusLabel} from './components/designer-draft-status';
+import {
+  resolveDesignerSessionNotebook,
+  useDesignerDraftSession,
+} from './integration/useDesignerDraftSession';
 
 /**
- * @file Full-screen designer shell: hydrate notebook, Redux, memory router, export without internal ids.
+ * @file Full-screen designer shell: hydrate notebook, Redux, memory router, local drafts, publish.
  */
 
 /** Props for the full-screen notebook designer embedded in the main app. */
@@ -60,7 +64,7 @@ export interface DesignerWidgetProps {
    * Field delete warns when this is greater than 0 and the field existed at open.
    */
   existingRecordCount?: number;
-  /** Called with exported JSON `File` on Done, or undefined on cancel. */
+  /** Called when the overlay should close. Publish is in-editor; this is not a PUT. */
   onClose: (notebookJsonFile: File | undefined) => void;
   /** Optional MUI theme merge or factory `(base) => theme` for host branding. */
   themeOverride?: Parameters<typeof ThemeProvider>[0]['theme'];
@@ -72,11 +76,58 @@ export interface DesignerWidgetProps {
   animationDuration?: number;
   /** Scale factor when hidden (`scale(animationScale)` before fade-in). */
   animationScale?: number;
+  /** Signed-in user id (`user.user.id`) for origin-private draft keys. */
+  userId?: string;
+  /** Resource collection; a project draft must not load as a template. */
+  resourceKind?: DesignerResourceKind;
+  /** Project or template id. */
+  resourceId?: string;
+  /**
+   * Host `useDesignerSaveMutation().mutateAsyncWithToast`. Runs the live PUT.
+   * Autosave never calls this.
+   */
+  publishNotebook?: (file: File) => Promise<unknown>;
+}
+
+/** Inject in-memory designerIdentifiers and reset undo stacks for a session. */
+function withDesignerIdentifiers(
+  notebook?: NotebookWithHistory
+): NotebookWithHistory | undefined {
+  if (!notebook?.metadata?.information || !notebook.uiSpec?.present) {
+    return undefined;
+  }
+
+  const present = structuredClone(notebook.uiSpec.present);
+
+  Object.values(present.fields).forEach(field => {
+    if (!field.designerIdentifier) {
+      field.designerIdentifier = crypto.randomUUID();
+    }
+  });
+
+  return {
+    metadata: notebook.metadata,
+    uiSpec: {
+      present,
+      past: [],
+      future: [],
+    },
+    planTemplates: notebook.planTemplates ?? [],
+    plans: notebook.plans ?? [],
+  };
+}
+
+function notebookJsonFile(exported: Notebook, exportBaseName?: string): File {
+  const json = JSON.stringify(exported, null, 2);
+  const filename = `${slugify(String(exportBaseName ?? 'notebook')) || 'notebook'}.json`;
+  return new File([json], filename, {
+    type: 'application/json',
+  });
 }
 
 /**
  * Standalone designer shell: hydrates notebook data, mounts Redux + router, and
- * serialises without `designerIdentifier` on save.
+ * serialises without `designerIdentifier` on publish.
  */
 export function DesignerWidget({
   notebook,
@@ -89,41 +140,43 @@ export function DesignerWidget({
   loadingDuration = 1000,
   animationDuration = 300,
   animationScale = 0.95,
+  userId,
+  resourceKind,
+  resourceId,
+  publishNotebook,
 }: DesignerWidgetProps) {
   const baseTheme = useMemo(() => createDesignerTheme(THEME), []);
-  const notebookIdentity = notebook?.metadata?.custom?.project_id ?? '__none__';
+  const identity =
+    userId && resourceKind && resourceId
+      ? {userId, resourceKind, resourceId}
+      : undefined;
+  const notebookIdentity = identity
+    ? `${identity.userId}:${identity.resourceKind}:${identity.resourceId}`
+    : (notebook?.metadata?.custom?.project_id ?? '__none__');
 
-  // 1. Hydrate + inject designerIdentifiers + reset undo history on each new notebook
-  // (schema migration runs in notebookAdapters before the parent passes `notebook` here)
+  const identityKeyRef = useRef(notebookIdentity);
+  const serverNotebookRef = useRef(notebook);
+  if (identityKeyRef.current !== notebookIdentity) {
+    identityKeyRef.current = notebookIdentity;
+    serverNotebookRef.current = notebook;
+  }
 
-  const processedNotebook = useMemo<NotebookWithHistory | undefined>(() => {
-    // check that we have an actual notebook
-    if (!notebook?.metadata?.information || !notebook.uiSpec?.present) {
-      return undefined;
-    }
-
-    const present = structuredClone(notebook.uiSpec.present);
-
-    // Inject in-memory designerIdentifier if missing
-    Object.values(present.fields).forEach(field => {
-      if (!field.designerIdentifier) {
-        field.designerIdentifier = crypto.randomUUID();
-      }
+  const session = useMemo(() => {
+    const resolved = resolveDesignerSessionNotebook({
+      identity,
+      serverNotebook: serverNotebookRef.current,
+      mode: designerMode,
     });
-
     return {
-      metadata: notebook.metadata,
-      uiSpec: {
-        present,
-        past: [],
-        future: [],
-      },
-      planTemplates: notebook.planTemplates ?? [],
-      plans: notebook.plans ?? [],
+      notebook: withDesignerIdentifiers(resolved.notebook),
+      published: resolved.published,
     };
-  }, [notebook]);
+    // Restore once per host resource; do not re-run on a same-session refetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notebookIdentity, designerMode]);
 
-  // 2. Keep one Redux store for a notebook identity; do not reset on same-notebook refetch.
+  const processedNotebook = session.notebook;
+
   const [store, setStore] = useState(() =>
     createDesignerStore(processedNotebook, debug, designerMode)
   );
@@ -132,9 +185,6 @@ export function DesignerWidget({
     setStore(createDesignerStore(processedNotebook, debug, designerMode));
   }, [notebookIdentity, debug, designerMode]);
 
-  // Fields present at load. Read from the store as created, not from
-  // `processedNotebook`: a same-notebook refetch re-injects fresh random
-  // identifiers there while the store keeps the originals.
   const originalFieldIdentifiers = useMemo(
     () =>
       new Set(
@@ -150,13 +200,20 @@ export function DesignerWidget({
     [existingRecordCount, originalFieldIdentifiers]
   );
 
-  // Local UI state
+  const draftSession = useDesignerDraftSession({
+    store,
+    identity,
+    initialPublished: session.published,
+  });
+
   const [loading, setLoading] = useState(true);
   const [animateIn, setAnimateIn] = useState(false);
   const [animateOut, setAnimateOut] = useState(false);
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [publishIntent, setPublishIntent] =
+    useState<DesignerPublishIntent | null>(null);
+  const [publishing, setPublishing] = useState(false);
 
-  // Kick off loading animation
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setLoading(false);
@@ -165,7 +222,6 @@ export function DesignerWidget({
     return () => window.clearTimeout(timer);
   }, [loadingDuration]);
 
-  // Merge external theme override
   const mergedTheme = useMemo(() => {
     if (typeof themeOverride === 'function') {
       return themeOverride(baseTheme);
@@ -178,45 +234,114 @@ export function DesignerWidget({
     [onClose]
   );
 
-  /** Serialise present notebook, strip internal ids, and return a downloadable JSON `File`. */
-  const handleDone = useCallback(() => {
-    const definition: Notebook = toNotebook(store.getState().notebook);
+  const closeOverlay = useCallback(
+    (file: File | undefined) => {
+      setCloseDialogOpen(false);
+      setPublishIntent(null);
+      setAnimateOut(true);
+      setAnimateIn(false);
+      window.setTimeout(() => doClose(file), animationDuration);
+    },
+    [animationDuration, doClose]
+  );
 
-    // Remove internal IDs before serialisation
-    const exportNotebook = stripDesignerIdentifiers(definition);
+  const unpublishedOrWriting =
+    draftSession.isUnpublished ||
+    draftSession.isDebouncePending ||
+    draftSession.isDraftWriteInFlight;
 
-    const blob = new Blob([JSON.stringify(exportNotebook, null, 2)], {
-      type: 'application/json',
-    });
-    const filename = `${slugify(String(exportBaseName ?? 'notebook')) || 'notebook'}.json`;
-    const file = new File([blob], filename, {
-      type: 'application/json',
-    });
+  const requestClose = useCallback(() => {
+    if (unpublishedOrWriting) {
+      setCloseDialogOpen(true);
+      return;
+    }
+    closeOverlay(undefined);
+  }, [closeOverlay, unpublishedOrWriting]);
 
-    setAnimateOut(true);
-    setAnimateIn(false);
-    window.setTimeout(() => doClose(file), animationDuration);
-  }, [animationDuration, doClose, exportBaseName, store]);
+  const handleCloseKeepDraft = useCallback(() => {
+    draftSession.persistDraftNow();
+    closeOverlay(undefined);
+  }, [closeOverlay, draftSession]);
 
-  /** Close without saving after user confirms cancel dialog. */
-  const handleCancel = useCallback(() => {
-    setCancelDialogOpen(false);
-    setAnimateOut(true);
-    setAnimateIn(false);
-    window.setTimeout(() => doClose(undefined), animationDuration);
-  }, [animationDuration, doClose]);
+  const handleDiscardDraft = useCallback(() => {
+    draftSession.discardDraft();
+    closeOverlay(undefined);
+  }, [closeOverlay, draftSession]);
 
-  // 3. Build routes once
+  const handlePublishRequest = useCallback(
+    (intent: DesignerPublishIntent) => {
+      if (!draftSession.isUnpublished) {
+        if (intent === 'close') {
+          closeOverlay(undefined);
+        }
+        return;
+      }
+      setPublishIntent(intent);
+    },
+    [closeOverlay, draftSession.isUnpublished]
+  );
+
+  const handlePublishConfirm = useCallback(async () => {
+    const intent = publishIntent;
+    const exported = draftSession.exportPresentNotebook();
+    if (!publishNotebook) {
+      setPublishIntent(null);
+      if (intent === 'close') {
+        closeOverlay(undefined);
+      }
+      return;
+    }
+    setPublishing(true);
+    try {
+      await publishNotebook(notebookJsonFile(exported, exportBaseName));
+      draftSession.markPublished(exported);
+      draftSession.persistDraftNow();
+      setPublishIntent(null);
+      if (intent === 'close') {
+        closeOverlay(undefined);
+      }
+    } catch {
+      // Host toast (Download JSON) already ran; keep the overlay and draft.
+    } finally {
+      setPublishing(false);
+    }
+  }, [
+    closeOverlay,
+    draftSession,
+    exportBaseName,
+    publishIntent,
+    publishNotebook,
+  ]);
+
+  useEffect(() => {
+    if (!unpublishedOrWriting) {
+      return;
+    }
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [unpublishedOrWriting]);
+
+  const chromeValue = useMemo(
+    () => ({
+      onPublish: () => handlePublishRequest('stay'),
+      onPublishAndClose: () => handlePublishRequest('close'),
+      onCancelRequest: requestClose,
+      publishDisabled: !draftSession.isUnpublished || publishing,
+    }),
+    [draftSession.isUnpublished, handlePublishRequest, publishing, requestClose]
+  );
+
   const routes: RouteObject[] = useMemo(
     () => [
       {
         path: '/',
-        element: (
-          <NotebookEditor
-            onSave={handleDone}
-            onCancelRequest={() => setCancelDialogOpen(true)}
-          />
-        ),
+        element: <NotebookEditor />,
         children: [
           {index: true, element: <Navigate to="/design/0" replace />},
           {path: 'info', element: <InfoPanel />},
@@ -225,10 +350,9 @@ export function DesignerWidget({
         ],
       },
     ],
-    [handleDone, setCancelDialogOpen]
+    []
   );
 
-  // 4. Recreate router on notebook change to wipe any internal routing state
   const memoryRouterInstance = useMemo(
     () => createMemoryRouter(routes, {initialEntries: ['/design/0']}),
     [notebookIdentity, routes]
@@ -258,78 +382,74 @@ export function DesignerWidget({
 
   return (
     <ReduxProvider store={store}>
-      <DesignerEditingProvider value={editingContextValue}>
-        <ThemeProvider theme={mergedTheme}>
-          <ScopedCssBaseline />
-          <Box
-            data-testid="web-designer-shell"
-            sx={{
-              opacity: isVisible ? 1 : 0,
-              transform: isVisible ? 'scale(1)' : `scale(${animationScale})`,
-              transition: `opacity ${animationDuration}ms ease, transform ${animationDuration}ms ease`,
-              display: 'flex',
-              flexDirection: 'column',
-              height: '100%',
-            }}
-          >
-            <AppBar position="static" color="default" elevation={1}>
-              <Toolbar sx={{justifyContent: 'space-between'}}>
-                <Typography variant="h6" sx={{fontWeight: 'bold'}}>
-                  {config.notebookNameCapitalized} Editor
-                </Typography>
-                <IconButton
-                  aria-label="close designer"
-                  data-testid="web-designer-close-button"
-                  onClick={() => setCancelDialogOpen(true)}
-                  size="small"
-                  sx={{
-                    color: 'text.secondary',
-                    '&:hover': {color: 'text.primary'},
-                  }}
-                >
-                  <CloseRoundedIcon />
-                </IconButton>
-              </Toolbar>
-            </AppBar>
-
-            <Dialog
-              open={cancelDialogOpen}
-              onClose={() => setCancelDialogOpen(false)}
-              slots={{transition: Grow}}
-              transitionDuration={animationDuration}
-              aria-labelledby="cancel-dialog-title"
-              aria-describedby="cancel-dialog-description"
-              slotProps={{paper: {sx: {transformOrigin: 'top center'}}}}
+      <DesignerChromeProvider value={chromeValue}>
+        <DesignerEditingProvider value={editingContextValue}>
+          <ThemeProvider theme={mergedTheme}>
+            <ScopedCssBaseline />
+            <Box
+              data-testid="web-designer-shell"
+              sx={{
+                opacity: isVisible ? 1 : 0,
+                transform: isVisible ? 'scale(1)' : `scale(${animationScale})`,
+                transition: `opacity ${animationDuration}ms ease, transform ${animationDuration}ms ease`,
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+              }}
             >
-              <DialogTitle id="cancel-dialog-title">
-                Are you sure you want to cancel?
-              </DialogTitle>
-              <DialogContent>
-                <DialogContentText id="cancel-dialog-description">
-                  Any changes you've made will be lost. If you're sure, hit
-                  "Yes, cancel". Otherwise, choose "No, keep editing".
-                </DialogContentText>
-              </DialogContent>
-              <DialogActions>
-                <Button
-                  variant="contained"
-                  onClick={() => setCancelDialogOpen(false)}
-                  autoFocus
-                >
-                  No, keep editing
-                </Button>
-                <Button onClick={handleCancel} color="inherit">
-                  Yes, cancel
-                </Button>
-              </DialogActions>
-            </Dialog>
+              <AppBar position="static" color="default" elevation={1}>
+                <Toolbar sx={{justifyContent: 'space-between', gap: 2}}>
+                  <Typography variant="h6" sx={{fontWeight: 'bold'}}>
+                    {config.notebookNameCapitalized} Editor
+                  </Typography>
+                  <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
+                    <DesignerDraftStatusLabel
+                      status={draftSession.status}
+                      errorMessage={draftSession.errorMessage}
+                    />
+                    <IconButton
+                      aria-label="close designer"
+                      data-testid="web-designer-close-button"
+                      onClick={requestClose}
+                      size="small"
+                      sx={{
+                        color: 'text.secondary',
+                        '&:hover': {color: 'text.primary'},
+                      }}
+                    >
+                      <CloseRoundedIcon />
+                    </IconButton>
+                  </Box>
+                </Toolbar>
+              </AppBar>
 
-            <Box sx={{flexGrow: 1, minHeight: 0, overflow: 'auto'}}>
-              <RouterProvider router={memoryRouterInstance} />
+              <DesignerCloseDraftDialog
+                open={closeDialogOpen}
+                animationDuration={animationDuration}
+                onKeepEditing={() => setCloseDialogOpen(false)}
+                onCloseKeepDraft={handleCloseKeepDraft}
+                onDiscardDraft={handleDiscardDraft}
+              />
+
+              <DesignerPublishDialog
+                open={publishIntent !== null}
+                mode={designerMode}
+                intent={publishIntent}
+                busy={publishing}
+                animationDuration={animationDuration}
+                onCancel={() => setPublishIntent(null)}
+                onConfirm={() => {
+                  void handlePublishConfirm();
+                }}
+              />
+
+              <Box sx={{flexGrow: 1, minHeight: 0, overflow: 'auto'}}>
+                <RouterProvider router={memoryRouterInstance} />
+              </Box>
             </Box>
-          </Box>
-        </ThemeProvider>
-      </DesignerEditingProvider>
+          </ThemeProvider>
+        </DesignerEditingProvider>
+      </DesignerChromeProvider>
     </ReduxProvider>
   );
 }
