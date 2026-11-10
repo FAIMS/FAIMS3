@@ -6,6 +6,7 @@ import {
   designerDraftStorageKey,
   discardDraft,
   getDraft,
+  hasUnpublishedDesignerDraft,
   isUnpublishedDraft,
   setDraft,
   type DesignerDraftKey,
@@ -64,6 +65,14 @@ describe('draftStorage', () => {
     expect(isUnpublishedDraft(published, published)).toBe(false);
     expect(isUnpublishedDraft(edited, published)).toBe(true);
     expect(isUnpublishedDraft(edited, edited)).toBe(false);
+  });
+
+  it('hasUnpublishedDesignerDraft is true only for a stored unpublished draft', () => {
+    expect(hasUnpublishedDesignerDraft(key)).toBe(false);
+    setDraft(key, {draft: edited, published});
+    expect(hasUnpublishedDesignerDraft(key)).toBe(true);
+    setDraft(key, {draft: published, published});
+    expect(hasUnpublishedDesignerDraft(key)).toBe(false);
   });
 
   it('surfaces a mocked quota setItem failure instead of swallowing it', () => {

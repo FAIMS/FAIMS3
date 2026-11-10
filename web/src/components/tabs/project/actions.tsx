@@ -3,6 +3,7 @@ import {AddProjectToTeamDialog} from '@/components/dialogs/add-project-to-team-d
 import {ArchiveProjectDialog} from '@/components/dialogs/archive-project-dialog';
 import {ProjectStatusDialog} from '@/components/dialogs/change-project-status-dialog';
 import {CreateTemplateFromProjectDialog} from '@/components/dialogs/create-template-from-project-dialog';
+import {DesignerUnsavedDraftIndicator} from '@/components/designer-unsaved-draft-indicator';
 import {DesignerDialog} from '@/components/dialogs/designer-dialog';
 import {EditProjectDetailsDialog} from '@/components/dialogs/edit-project-details-dialog';
 import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
@@ -17,6 +18,7 @@ import {
   closeDesignerHostOverlay,
   toDesignerNotebookWithHistory,
   useDesignerSaveMutation,
+  useHasUnpublishedDesignerDraft,
 } from '@/designer/integration';
 import type {NotebookWithHistory} from '@/designer/state/initial';
 import {
@@ -46,6 +48,14 @@ const ProjectActions = (): JSX.Element => {
   const queryClient = useQueryClient();
 
   const [editorOpen, setEditorOpen] = useState(false);
+  const hasUnpublishedDraft = useHasUnpublishedDesignerDraft(
+    {
+      userId: user.user.id,
+      resourceKind: 'projects',
+      resourceId: projectId,
+    },
+    editorOpen
+  );
 
   // Prepare notebook data for the Designer
   const initialNotebook = useMemo<NotebookWithHistory | undefined>(() => {
@@ -163,7 +173,12 @@ const ProjectActions = (): JSX.Element => {
           <Card className="flex-1">
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
-                <ListLabel>Edit {config.notebookNameCapitalized}</ListLabel>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ListLabel>Edit {config.notebookNameCapitalized}</ListLabel>
+                  <DesignerUnsavedDraftIndicator
+                    visible={hasUnpublishedDraft}
+                  />
+                </div>
               </ListItem>
               <ListItem>
                 <Button

@@ -428,6 +428,10 @@ export function DesignerWidget({
               <DesignerCloseDraftDialog
                 open={closeDialogOpen}
                 animationDuration={animationDuration}
+                onPublishNow={() => {
+                  setCloseDialogOpen(false);
+                  handlePublishRequest('stay');
+                }}
                 onKeepEditing={() => setCloseDialogOpen(false)}
                 onCloseKeepDraft={handleCloseKeepDraft}
                 onDiscardDraft={handleDiscardDraft}

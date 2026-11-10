@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import {brandNotebook} from '@/constants';
 import {
   Button,
   Dialog,
@@ -13,10 +14,24 @@ import {
 type DesignerCloseDraftDialogProps = {
   open: boolean;
   animationDuration: number;
+  onPublishNow: () => void;
   onKeepEditing: () => void;
   onCloseKeepDraft: () => void;
   onDiscardDraft: () => void;
 };
+
+const CLOSE_DRAFT_COPY =
+  'You have unpublished changes. You can publish them now, discard them, or keep them as an unpublished draft (you can safely open this {notebook} again, on this device, and finish your work).';
+
+const closeDraftButtonSx = {
+  textTransform: 'none',
+  fontWeight: 700,
+} as const;
+
+const closeDraftNeutralButtonSx = {
+  ...closeDraftButtonSx,
+  color: 'text.secondary',
+} as const;
 
 /**
  * Warn that close leaves an unpublished local draft (unless the user discards).
@@ -24,6 +39,7 @@ type DesignerCloseDraftDialogProps = {
 export function DesignerCloseDraftDialog({
   open,
   animationDuration,
+  onPublishNow,
   onKeepEditing,
   onCloseKeepDraft,
   onDiscardDraft,
@@ -38,37 +54,51 @@ export function DesignerCloseDraftDialog({
       aria-describedby="close-draft-dialog-description"
       slotProps={{paper: {sx: {transformOrigin: 'top center'}}}}
     >
-      <DialogTitle id="close-draft-dialog-title">Unpublished draft</DialogTitle>
-      <DialogContent>
+      <DialogTitle id="close-draft-dialog-title" sx={{pb: 0}}>
+        Unpublished draft
+      </DialogTitle>
+      <DialogContent sx={{'&&': {pt: 1}}}>
         <DialogContentText id="close-draft-dialog-description">
-          Your work is saved as a local unpublished draft in this browser.
-          Closing keeps the draft so you can restore it later. Discarding
-          removes the draft; the next time you open this editor you will see the
-          published design.
+          {brandNotebook(CLOSE_DRAFT_COPY)}
         </DialogContentText>
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={{flexWrap: 'wrap', gap: 1, px: 2, pb: 2}}>
         <Button
-          variant="contained"
+          variant="outlined"
+          color="primary"
+          onClick={onPublishNow}
+          data-testid="web-designer-close-publish-now-button"
+          sx={closeDraftButtonSx}
+        >
+          Publish now
+        </Button>
+        <Button
+          variant="outlined"
+          color="inherit"
+          onClick={onCloseKeepDraft}
+          data-testid="web-designer-close-keep-draft-button"
+          sx={closeDraftNeutralButtonSx}
+        >
+          Close and keep draft
+        </Button>
+        <Button
+          variant="outlined"
+          color="inherit"
           onClick={onKeepEditing}
           autoFocus
           data-testid="web-designer-keep-editing-button"
+          sx={closeDraftNeutralButtonSx}
         >
-          Keep editing
+          Keep working
         </Button>
         <Button
-          onClick={onCloseKeepDraft}
-          color="inherit"
-          data-testid="web-designer-close-keep-draft-button"
-        >
-          Close
-        </Button>
-        <Button
-          onClick={onDiscardDraft}
+          variant="outlined"
           color="error"
+          onClick={onDiscardDraft}
           data-testid="web-designer-discard-draft-button"
+          sx={closeDraftButtonSx}
         >
-          Discard draft
+          Close and discard draft
         </Button>
       </DialogActions>
     </Dialog>

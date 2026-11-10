@@ -147,6 +147,17 @@ export function getDraft(
 }
 
 /**
+ * True when this user and resource have a stored draft that differs from the
+ * last published snapshot.
+ */
+export function hasUnpublishedDesignerDraft(key: DesignerDraftKey): boolean {
+  const stored = getDraft(key);
+  return (
+    stored !== undefined && isUnpublishedDraft(stored.draft, stored.published)
+  );
+}
+
+/**
  * Write the present notebook export and last-published snapshot. Quota or
  * `setItem` failures are returned, never swallowed.
  */

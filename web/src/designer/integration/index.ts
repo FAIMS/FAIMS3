@@ -11,3 +11,4 @@ export * from './legacyNotebook';
 export * from './notebookAdapters';
 export * from './useDesignerDraftSession';
 export * from './useDesignerSaveMutation';
+export * from './useHasUnpublishedDesignerDraft';

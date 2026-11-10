@@ -221,15 +221,23 @@ describe('DesignerWidget publish and close', () => {
     await screen.findByTestId('web-designer-shell');
 
     fireEvent.click(screen.getByTestId('web-designer-close-button'));
-    expect(await screen.findByText(/local unpublished draft/i)).toBeTruthy();
+    expect(
+      await screen.findByText(/You have unpublished changes/i)
+    ).toBeTruthy();
 
     fireEvent.click(screen.getByTestId('web-designer-keep-editing-button'));
     await waitFor(() =>
-      expect(screen.queryByText(/local unpublished draft/i)).toBeNull()
+      expect(screen.queryByText(/You have unpublished changes/i)).toBeNull()
     );
     expect(onClose).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByTestId('web-designer-cancel-button'));
+    expect(
+      await screen.findByRole('button', {name: 'Keep working'})
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', {name: 'Close and keep draft'})
+    ).toBeTruthy();
     fireEvent.click(
       await screen.findByTestId('web-designer-close-keep-draft-button')
     );
@@ -237,6 +245,20 @@ describe('DesignerWidget publish and close', () => {
     expect(onClose.mock.calls[0][0]).toBeUndefined();
     expect(publishNotebook).not.toHaveBeenCalled();
     expect(getDraft(identity)).toBeDefined();
+  });
+
+  it('opens the publish dialog from Publish now and does not close the editor', async () => {
+    seedUnpublishedDraft();
+    const {onClose, publishNotebook} = renderWidget();
+    await screen.findByTestId('web-designer-shell');
+    fireEvent.click(screen.getByTestId('web-designer-close-button'));
+    fireEvent.click(
+      await screen.findByTestId('web-designer-close-publish-now-button')
+    );
+    expect(await screen.findByText(/Publish changes\?/)).toBeTruthy();
+    expect(screen.queryByText(/You have unpublished changes/i)).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(publishNotebook).not.toHaveBeenCalled();
   });
 
   it('discard draft removes storage and closes without PUT', async () => {
@@ -262,7 +284,7 @@ describe('DesignerWidget publish and close', () => {
     );
 
     fireEvent.click(screen.getByTestId('web-designer-close-button'));
-    expect(screen.queryByText(/local unpublished draft/i)).toBeNull();
+    expect(screen.queryByText(/You have unpublished changes/i)).toBeNull();
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 

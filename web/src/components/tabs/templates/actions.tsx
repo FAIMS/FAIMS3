@@ -10,6 +10,7 @@ import {Card} from '@/components/ui/card';
 import {useGetTemplate} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {useQueryClient} from '@tanstack/react-query';
+import {DesignerUnsavedDraftIndicator} from '@/components/designer-unsaved-draft-indicator';
 import {DesignerDialog} from '@/components/dialogs/designer-dialog';
 import type {NotebookWithHistory} from '@/designer/state/initial';
 import {EditTemplateDialog} from '@/components/dialogs/edit-template';
@@ -27,6 +28,7 @@ import {
   closeDesignerHostOverlay,
   toDesignerNotebookWithHistory,
   useDesignerSaveMutation,
+  useHasUnpublishedDesignerDraft,
 } from '@/designer/integration';
 import {Spinner} from '@/components/ui/spinner';
 
@@ -43,6 +45,14 @@ const TemplateActions = () => {
   const {data, isLoading} = useGetTemplate({user, templateId});
   const queryClient = useQueryClient();
   const [editorOpen, setEditorOpen] = useState(false);
+  const hasUnpublishedDraft = useHasUnpublishedDesignerDraft(
+    {
+      userId: user.user.id,
+      resourceKind: 'templates',
+      resourceId: templateId,
+    },
+    editorOpen
+  );
 
   // PUT template notebook JSON from the designer; react-query updates cache on success.
   const saveTemplateNotebook = useDesignerSaveMutation({
@@ -136,7 +146,12 @@ const TemplateActions = () => {
           <Card>
             <List>
               <ListItem>
-                <ListLabel>Edit Template</ListLabel>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ListLabel>Edit Template</ListLabel>
+                  <DesignerUnsavedDraftIndicator
+                    visible={hasUnpublishedDraft}
+                  />
+                </div>
                 <ListDescription>
                   Edit this template in the {config.notebookNameCapitalized}{' '}
                   Editor.
