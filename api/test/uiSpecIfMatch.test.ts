@@ -39,6 +39,8 @@ describe('assertUiSpecIfMatch', () => {
   });
 
   it('conflicts when the live hash has moved', () => {
-    expect(() => assertUiSpecIfMatch(HASH_A, HASH_B)).toThrow(ConflictException);
+    expect(() => assertUiSpecIfMatch(HASH_A, HASH_B)).toThrow(
+      ConflictException
+    );
   });
 });
