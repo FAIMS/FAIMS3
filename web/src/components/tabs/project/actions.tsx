@@ -183,6 +183,12 @@ const ProjectActions = (): JSX.Element => {
                 <ListLabel>Assign {config.notebookName} to a Team</ListLabel>
               </ListItem>
               <ListItem>
+                <ListDescription>
+                  Assign this {config.notebookName} to a different team. This
+                  will change who can see and use it.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
                 <AddProjectToTeamDialog projectId={projectId} />
               </ListItem>
             </List>
@@ -196,6 +202,12 @@ const ProjectActions = (): JSX.Element => {
                 <ListLabel>
                   Create Template from this {config.notebookNameCapitalized}
                 </ListLabel>
+              </ListItem>
+              <ListItem>
+                <ListDescription>
+                  Create a new template based on this {config.notebookName}
+                  &apos;s design.
+                </ListDescription>
               </ListItem>
               <ListItem>
                 <CreateTemplateFromProjectDialog projectId={projectId} />
@@ -280,11 +292,11 @@ const ProjectActions = (): JSX.Element => {
                 <ListLabel className="block">
                   Archive {config.notebookNameCapitalized}
                 </ListLabel>
-                {!projectIsClosed && (
-                  <ListDescription>
-                    To archive, you must close the {config.notebookName} first
-                  </ListDescription>
-                )}
+                <ListDescription>
+                  {projectIsClosed
+                    ? `Archiving a ${config.notebookName} disables data collection, and removes it from active devices. Ensure all data is exported before archiving.`
+                    : `To archive, you must close the ${config.notebookName} first`}
+                </ListDescription>
                 <ArchiveProjectDialog
                   projectId={projectId}
                   disabled={!projectIsClosed}
