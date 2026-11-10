@@ -23,6 +23,7 @@ import {
   PutUpdateTeamInput,
   PutUpdateTeamResponse,
   PutUpdateTeamResponseSchema,
+  Resource,
   Role,
   userHasTeamRole,
 } from '@faims3/data-model';
@@ -34,6 +35,11 @@ import {
   upgradeCouchUserToExpressUser,
 } from '../src/auth/keySigning/create';
 import {keyService} from '../src/buildconfig';
+import {
+  createResourceInvite,
+  getInvite,
+  getInvitesForResource,
+} from '../src/couchdb/invites';
 import {
   createUser,
   getCouchUserFromEmailOrUserId,
@@ -757,6 +763,84 @@ describe('Teams API tests', () => {
     ).toBe(true);
   });
 
+  it('allows removing members from an archived team but refuses adding', async () => {
+    const team = await createSampleTeam(app, {
+      teamName: 'Archived Membership Team',
+    });
+    await requestAuthAndType(
+      request(app).post(`${TEAMS_API_BASE}/${team._id}/members`).send({
+        username: localUserName,
+        role: Role.TEAM_MEMBER,
+        action: 'ADD_ROLE',
+      }),
+      adminToken
+    ).expect(200);
+    await requestAuthAndType(
+      request(app).post(`${TEAMS_API_BASE}/${team._id}/members`).send({
+        username: localUserName,
+        role: Role.TEAM_MANAGER,
+        action: 'ADD_ROLE',
+      }),
+      adminToken
+    ).expect(200);
+
+    await setTeamArchived(app, team._id, true);
+
+    const addRes = await requestAuthAndType(
+      request(app).post(`${TEAMS_API_BASE}/${team._id}/members`).send({
+        username: localUserName,
+        role: Role.TEAM_ADMIN,
+        action: 'ADD_ROLE',
+      }),
+      adminToken
+    );
+    expect(addRes.status).toBe(400);
+
+    await requestAuthAndType(
+      request(app).post(`${TEAMS_API_BASE}/${team._id}/members`).send({
+        username: localUserName,
+        role: Role.TEAM_MANAGER,
+        action: 'REMOVE_ROLE',
+      }),
+      adminToken
+    ).expect(200);
+
+    let localUser = await getCouchUserFromEmailOrUserId(localUserName);
+    expect(localUser).not.toBeNull();
+    expect(
+      userHasTeamRole({
+        user: localUser!,
+        teamId: team._id,
+        role: Role.TEAM_MANAGER,
+      })
+    ).toBe(false);
+    expect(
+      userHasTeamRole({
+        user: localUser!,
+        teamId: team._id,
+        role: Role.TEAM_MEMBER,
+      })
+    ).toBe(true);
+
+    await requestAuthAndType(
+      request(app).post(`${TEAMS_API_BASE}/${team._id}/members`).send({
+        username: localUserName,
+        action: 'REMOVE_USER',
+      }),
+      adminToken
+    ).expect(200);
+
+    localUser = await getCouchUserFromEmailOrUserId(localUserName);
+    expect(localUser).not.toBeNull();
+    expect(
+      userHasTeamRole({
+        user: localUser!,
+        teamId: team._id,
+        role: Role.TEAM_MEMBER,
+      })
+    ).toBe(false);
+  });
+
   it('refuses in-team creates and assign-to archived team; allows moving a child off', async () => {
     const archivedTeam = await createSampleTeam(app, {
       teamName: 'Archived Target Team',
@@ -938,5 +1022,55 @@ describe('Teams API tests', () => {
       })
     ).toBe(false);
     expect(afterDelete!.teamRoles ?? []).toEqual([]);
+  });
+
+  it('POST delete removes the team invites from the invites DB', async () => {
+    const team = await createSampleTeam(app, {
+      teamName: 'Delete Strips Invites Team',
+    });
+    const otherTeam = await createSampleTeam(app, {
+      teamName: 'Unrelated Invite Team',
+    });
+    const memberInvite = await createResourceInvite({
+      resourceType: Resource.TEAM,
+      resourceId: team._id,
+      role: Role.TEAM_MEMBER,
+      name: 'Member invite to delete with team',
+      createdBy: 'admin',
+      usesOriginal: 1,
+    });
+    const managerInvite = await createResourceInvite({
+      resourceType: Resource.TEAM,
+      resourceId: team._id,
+      role: Role.TEAM_MANAGER,
+      name: 'Manager invite to delete with team',
+      createdBy: 'admin',
+    });
+    const otherInvite = await createResourceInvite({
+      resourceType: Resource.TEAM,
+      resourceId: otherTeam._id,
+      role: Role.TEAM_MEMBER,
+      name: 'Invite on a different team',
+      createdBy: 'admin',
+    });
+
+    await setTeamArchived(app, team._id, true);
+    await deleteATeam(app, team._id);
+
+    expect(await getInvite({inviteId: memberInvite._id})).toBeNull();
+    expect(await getInvite({inviteId: managerInvite._id})).toBeNull();
+    expect(
+      await getInvitesForResource({
+        resourceType: Resource.TEAM,
+        resourceId: team._id,
+      })
+    ).toEqual([]);
+    expect(await getInvite({inviteId: otherInvite._id})).not.toBeNull();
+
+    const redeemRes = await requestAuthAndType(
+      request(app).post(`/api/invites/${memberInvite._id}/use`),
+      localUserToken
+    );
+    expect(redeemRes.status).toBe(400);
   });
 });

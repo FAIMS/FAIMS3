@@ -4,6 +4,7 @@ import {CreateMapLayerDialog} from '@/components/dialogs/create-map-layer-dialog
 import {getMapLayerTableColumns} from '@/components/tables/map-layers';
 import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useMapAssets} from '@/hooks/map-asset-hooks';
+import {useGetTeam} from '@/hooks/queries';
 import {useNavigate} from '@tanstack/react-router';
 import {useMemo} from 'react';
 
@@ -11,6 +12,8 @@ import {useMemo} from 'react';
 const TeamMapLayers = ({teamId}: {teamId: string}) => {
   const user = useRequiredUser();
   const assets = useMapAssets({user, teamId});
+  const {data: team} = useGetTeam({user, teamId});
+  const archived = team?.archived === true;
   const navigate = useNavigate();
   const columns = useMemo(
     () => getMapLayerTableColumns({hideTeamColumn: true}),
@@ -29,7 +32,7 @@ const TeamMapLayers = ({teamId}: {teamId: string}) => {
           params: {assetId: asset._id},
         })
       }
-      button={<CreateMapLayerDialog specifiedTeam={teamId} />}
+      button={!archived && <CreateMapLayerDialog specifiedTeam={teamId} />}
     />
   );
 };

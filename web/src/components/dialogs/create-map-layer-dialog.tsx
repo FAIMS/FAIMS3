@@ -39,7 +39,7 @@ export function CreateMapLayerDialog({
 
   // Stay mounted while open so a token refresh or list refetch cannot
   // unmount the dialog and drop the in-progress form.
-  if (!canCreate && !open) {
+  if (!open && (!canCreate || team?.archived === true)) {
     return null;
   }
 

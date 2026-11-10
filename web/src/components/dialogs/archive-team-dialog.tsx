@@ -63,7 +63,7 @@ export const ArchiveTeamDialog = ({archived}: {archived: boolean}) => {
         </Button>
       </DialogTrigger>
       <DialogContent data-testid="web-team-archive-dialog">
-        <DialogHeader>
+        <DialogHeader className="text-left">
           <DialogTitle>Un-archive Team</DialogTitle>
           <DialogDescription>
             Restore this team so it appears in Teams lists and can be used for
@@ -88,7 +88,7 @@ export const ArchiveTeamDialog = ({archived}: {archived: boolean}) => {
         </Button>
       </DialogTrigger>
       <DialogContent data-testid="web-team-archive-dialog">
-        <DialogHeader>
+        <DialogHeader className="text-left">
           <DialogTitle>Archive Team</DialogTitle>
           <DialogDescription>
             Hide this team from lists and stop new membership, invites, and

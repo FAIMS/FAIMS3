@@ -30,6 +30,7 @@ import {
 import express, {Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
+import {deleteAllInvitesForTeam} from '../couchdb/invites';
 import {listAssetsByTeam} from '../couchdb/mapAssets/store';
 import {getProjectIdsByTeamId} from '../couchdb/notebooks';
 import {getTemplateIdsByTeamId} from '../couchdb/templates';
@@ -294,8 +295,11 @@ api.post(
       );
     }
 
-    // Strip membership here (not in deleteTeam). couchdb/teams cannot import
-    // users: that module already depends on teams via auth/helpers and notebooks.
+    // Strip membership and invites here (not in deleteTeam). couchdb/teams
+    // cannot import users: that module already depends on teams via
+    // auth/helpers and notebooks. Invites are removed so leftover codes cannot
+    // be redeemed against a missing team (that path 500s).
+    await deleteAllInvitesForTeam(teamId);
     await stripTeamRolesForTeamId(teamId);
     await deleteTeam(teamId);
 
@@ -378,8 +382,13 @@ api.post(
     const teamId = req.params.id;
     const {username, role, action} = req.body;
 
-    // First verify team exists and is not archived
-    await assertTeamNotArchived(teamId);
+    // Archived teams still grant virtual roles on owned surveys/templates, so
+    // removals stay allowed. New membership is what archive is meant to stop.
+    if (action === 'ADD_ROLE') {
+      await assertTeamNotArchived(teamId);
+    } else {
+      await getTeamById(teamId);
+    }
 
     // Get user to modify
     const targetUser = await getCouchUserFromEmailOrUserId(username);

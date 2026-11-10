@@ -101,7 +101,8 @@ function RouteComponent() {
   if (canSeeTeamDetails) {
     tabs.push({id: 'Details', Component: TeamDetails});
   }
-  if (canSeeTeamInvites) {
+  // Invites cannot be created or redeemed while the team is archived.
+  if (canSeeTeamInvites && !teamIsArchived) {
     tabs.push({id: 'Invites', Component: TeamInvites});
   }
   if (canViewTeamProjects) {

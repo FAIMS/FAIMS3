@@ -463,16 +463,35 @@ export async function getInvitesForResource({
   });
 }
 
+async function deleteInvites(
+  invites: ExistingInvitesDBDocument[]
+): Promise<void> {
+  for (const invite of invites) {
+    await deleteInvite({invite});
+  }
+}
+
 /**
  * Deletes every invite document targeting a project (survey).
  */
 export async function deleteAllInvitesForProject(
   projectId: string
 ): Promise<void> {
-  const invites = await getProjectInvites(projectId);
-  for (const invite of invites) {
-    await deleteInvite({invite});
-  }
+  await deleteInvites(await getProjectInvites(projectId));
+}
+
+/**
+ * Deletes every invite document targeting a team. Run when a team is
+ * permanently deleted so leftover codes cannot be redeemed against a missing
+ * team document.
+ */
+export async function deleteAllInvitesForTeam(teamId: string): Promise<void> {
+  await deleteInvites(
+    await getInvitesForResource({
+      resourceType: Resource.TEAM,
+      resourceId: teamId,
+    })
+  );
 }
 
 /**
