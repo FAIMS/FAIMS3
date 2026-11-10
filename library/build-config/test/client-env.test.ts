@@ -223,6 +223,40 @@ test('parseApiEnv forces MOCK email under test even when SMTP is configured', ()
   assert.equal(parsed.exportRateLimiterEnabled, false);
 });
 
+test('parseApiEnv defaults loginLockoutEnabled true outside test and forces false under test', () => {
+  const unsetOutsideTest = parseApiEnv(MINIMAL_API, {runningUnderTest: false});
+  assert.equal(unsetOutsideTest.loginLockoutEnabled, true);
+  assert.equal(unsetOutsideTest.authAttemptLimiterEnabled, true);
+
+  const envTrueOutsideTest = parseApiEnv(
+    {...MINIMAL_API, LOGIN_LOCKOUT_ENABLED: 'true'},
+    {runningUnderTest: false}
+  );
+  assert.equal(envTrueOutsideTest.loginLockoutEnabled, true);
+
+  const envFalseOutsideTest = parseApiEnv(
+    {...MINIMAL_API, LOGIN_LOCKOUT_ENABLED: 'false'},
+    {runningUnderTest: false}
+  );
+  assert.equal(envFalseOutsideTest.loginLockoutEnabled, false);
+
+  const forcedOffUnderTest = parseApiEnv(
+    {...MINIMAL_API, LOGIN_LOCKOUT_ENABLED: 'true'},
+    {runningUnderTest: true}
+  );
+  assert.equal(forcedOffUnderTest.loginLockoutEnabled, false);
+
+  const independentOfAttemptLimiter = parseApiEnv(
+    {
+      ...MINIMAL_API,
+      ATTEMPT_LIMITER_ENABLED: 'false',
+    },
+    {runningUnderTest: false}
+  );
+  assert.equal(independentOfAttemptLimiter.authAttemptLimiterEnabled, false);
+  assert.equal(independentOfAttemptLimiter.loginLockoutEnabled, true);
+});
+
 test('parseApiEnv requires S3 bucket, prefix, and region when ATTACHMENT_STORAGE_TYPE is S3', () => {
   assert.throws(
     () =>

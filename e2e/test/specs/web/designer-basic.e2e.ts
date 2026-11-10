@@ -13,7 +13,7 @@ describe('Web Dashboard — Designer basic', () => {
     await loginWebPersona('redMemberCreator');
   });
 
-  it('should open designer from a template when Open in Editor is available', async () => {
+  it('should open designer from a template when Open in Designer is available', async () => {
     await browser.url(`${getWebUrl()}/templates`);
     await browser.waitUntil(
       async () =>
@@ -37,15 +37,15 @@ describe('Web Dashboard — Designer basic', () => {
       await actionsTab.click();
     }
 
-    const openEditor = await $('button*=Editor');
-    if (!(await openEditor.isExisting())) {
+    const openDesigner = await $('button*=Designer');
+    if (!(await openDesigner.isExisting())) {
       await captureStep({
         surface: 'web',
-        label: 'open-editor-unavailable',
+        label: 'open-designer-unavailable',
       });
       return;
     }
-    await openEditor.click();
+    await openDesigner.click();
 
     await WebDesignerPage.waitForOpen();
     await expect(byTestId('web-designer-shell')).toBeDisplayed();

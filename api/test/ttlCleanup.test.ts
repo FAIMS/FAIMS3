@@ -21,10 +21,12 @@ import {
   DEFAULT_RATE_LIMIT_GRACE_MS,
   DEFAULT_REFRESH_GRACE_MS,
   emailCodeRetentionMs,
+  loginLockoutRetentionMs,
   runTtlCleanup,
   shouldDeleteDownloadGrant,
   shouldDeleteEmailCode,
   shouldDeleteInvite,
+  shouldDeleteLoginLockout,
   shouldDeleteLongLivedToken,
   shouldDeleteRefreshToken,
   shouldDeleteVerificationChallenge,
@@ -426,6 +428,47 @@ describe('TTL cleanup retention predicates', () => {
           now
         )
       ).toBe(true);
+    });
+  });
+
+  describe('shouldDeleteLoginLockout', () => {
+    it('deletes lockout docs whose last attempt is older than 15m + grace', () => {
+      expect(
+        shouldDeleteLoginLockout(
+          {
+            _id: `${AUTH_RECORD_ID_PREFIXES.loginlockout}a`,
+            documentType: 'loginlockout',
+            lastAttemptMs: now - loginLockoutRetentionMs() - 1,
+          },
+          now
+        )
+      ).toBe(true);
+    });
+
+    it('retains lockout docs with a fresher last attempt', () => {
+      expect(
+        shouldDeleteLoginLockout(
+          {
+            _id: `${AUTH_RECORD_ID_PREFIXES.loginlockout}a`,
+            documentType: 'loginlockout',
+            lastAttemptMs: now - loginLockoutRetentionMs() + HOUR_MS,
+          },
+          now
+        )
+      ).toBe(false);
+    });
+
+    it('retains a just-updated lockout doc', () => {
+      expect(
+        shouldDeleteLoginLockout(
+          {
+            _id: `${AUTH_RECORD_ID_PREFIXES.loginlockout}a`,
+            documentType: 'loginlockout',
+            lastAttemptMs: now,
+          },
+          now
+        )
+      ).toBe(false);
     });
   });
 });

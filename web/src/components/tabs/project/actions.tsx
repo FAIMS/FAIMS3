@@ -7,6 +7,7 @@ import {DesignerDialog} from '@/components/dialogs/designer-dialog';
 import {EditProjectDetailsDialog} from '@/components/dialogs/edit-project-details-dialog';
 import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
 import {GenerateTestRecordsDialog} from '@/components/dialogs/generate-test-records-dialog';
+import {ActionsGrid} from '@/components/tabs/actions-grid';
 import {ProjectQuickShareSetting} from '@/components/tabs/project/quick-share-setting';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
@@ -115,28 +116,44 @@ const ProjectActions = (): JSX.Element => {
 
   return (
     <>
-      <div className="flex flex-col gap-2 justify-between">
-        {config.developerMode && canGenerateTestRecords && (
-          <Card className="flex-1">
+      <ActionsGrid>
+        {canEditProject && (
+          <Card>
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
-                <ListLabel>Generate test records</ListLabel>
+                <ListLabel>
+                  Edit {config.notebookNameCapitalized} in Designer
+                </ListLabel>
               </ListItem>
               <ListItem>
                 <ListDescription>
-                  Create random sample records for development and testing.
-                  Available only when developer mode is enabled on the server.
+                  Open the Designer to change forms and fields for this{' '}
+                  {config.notebookName}.
                 </ListDescription>
               </ListItem>
               <ListItem>
-                <GenerateTestRecordsDialog disabled={isLoading} />
+                <Button
+                  disabled={
+                    isLoading || !initialNotebook || isProjectNotebookSaving
+                  }
+                  onClick={() => setEditorOpen(true)}
+                >
+                  {isProjectNotebookSaving ? (
+                    <span className="flex items-center gap-2">
+                      <Spinner className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </span>
+                  ) : (
+                    'Open in Designer'
+                  )}
+                </Button>
               </ListItem>
             </List>
           </Card>
         )}
 
         {canUpdateProjectDetails && (
-          <Card className="flex-1">
+          <Card>
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>
@@ -158,39 +175,17 @@ const ProjectActions = (): JSX.Element => {
 
         {canUpdateProjectDetails && <ProjectQuickShareSetting />}
 
-        {canEditProject && (
-          <Card className="flex-1">
-            <List className="flex flex-col gap-2 space-y-0">
-              <ListItem>
-                <ListLabel>Edit {config.notebookNameCapitalized}</ListLabel>
-              </ListItem>
-              <ListItem>
-                <Button
-                  variant="outline"
-                  disabled={
-                    isLoading || !initialNotebook || isProjectNotebookSaving
-                  }
-                  onClick={() => setEditorOpen(true)}
-                >
-                  {isProjectNotebookSaving ? (
-                    <span className="flex items-center gap-2">
-                      <Spinner className="h-4 w-4 animate-spin" />
-                      Saving...
-                    </span>
-                  ) : (
-                    'Open in Editor'
-                  )}
-                </Button>
-              </ListItem>
-            </List>
-          </Card>
-        )}
-
         {canAddProjectToTeam && (
-          <Card className="flex-1">
+          <Card>
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>Assign {config.notebookName} to a Team</ListLabel>
+              </ListItem>
+              <ListItem>
+                <ListDescription>
+                  Assign this {config.notebookName} to a different team. This
+                  will change who can see and use it.
+                </ListDescription>
               </ListItem>
               <ListItem>
                 <AddProjectToTeamDialog projectId={projectId} />
@@ -199,8 +194,29 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
+        {canCreateTemplateFromProject && (
+          <Card>
+            <List className="flex flex-col gap-2 space-y-0">
+              <ListItem>
+                <ListLabel>
+                  Create Template from this {config.notebookNameCapitalized}
+                </ListLabel>
+              </ListItem>
+              <ListItem>
+                <ListDescription>
+                  Create a new template based on this {config.notebookName}
+                  &apos;s design.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <CreateTemplateFromProjectDialog projectId={projectId} />
+              </ListItem>
+            </List>
+          </Card>
+        )}
+
         {canReadProjectMetadata && (
-          <Card className="flex-1">
+          <Card>
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>Download JSON</ListLabel>
@@ -209,7 +225,7 @@ const ProjectActions = (): JSX.Element => {
                 </ListDescription>
               </ListItem>
               <ListItem>
-                <Button variant="outline" disabled={isLoading}>
+                <Button disabled={isLoading}>
                   <a
                     href={`data:text/json;charset=utf-8,${encodeURIComponent(
                       JSON.stringify(data?.uiSpecification ?? {}, null, 2)
@@ -225,7 +241,7 @@ const ProjectActions = (): JSX.Element => {
         )}
 
         {canEditProject && (
-          <Card className="flex-1">
+          <Card>
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>
@@ -243,39 +259,43 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
-        {canCreateTemplateFromProject && (
-          <Card className="flex-1">
+        {config.developerMode && canGenerateTestRecords && (
+          <Card>
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
-                <ListLabel>
-                  Create Template from this {config.notebookNameCapitalized}
-                </ListLabel>
+                <ListLabel>Generate test records</ListLabel>
               </ListItem>
               <ListItem>
-                <CreateTemplateFromProjectDialog projectId={projectId} />
+                <ListDescription>
+                  Create random sample records for development and testing.
+                  Available only when developer mode is enabled on the server.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <GenerateTestRecordsDialog disabled={isLoading} />
               </ListItem>
             </List>
           </Card>
         )}
 
         {canChangeProjectStatus && (
-          <Card className="flex-1">
+          <Card>
             <ProjectStatusDialog projectId={projectId} />
           </Card>
         )}
 
         {canChangeArchive && (
-          <Card className="flex-1">
+          <Card>
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem className="flex flex-col items-start gap-2">
                 <ListLabel className="block">
                   Archive {config.notebookNameCapitalized}
                 </ListLabel>
-                {!projectIsClosed && (
-                  <ListDescription>
-                    To archive, you must close the {config.notebookName} first
-                  </ListDescription>
-                )}
+                <ListDescription>
+                  {projectIsClosed
+                    ? `Archiving a ${config.notebookName} disables data collection, and removes it from active devices. Ensure all data is exported before archiving.`
+                    : `To archive, you must close the ${config.notebookName} first`}
+                </ListDescription>
                 <ArchiveProjectDialog
                   projectId={projectId}
                   disabled={!projectIsClosed}
@@ -284,7 +304,7 @@ const ProjectActions = (): JSX.Element => {
             </List>
           </Card>
         )}
-      </div>
+      </ActionsGrid>
       <DesignerDialog
         open={editorOpen}
         notebook={initialNotebook}

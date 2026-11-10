@@ -41,7 +41,7 @@ export const CreateProjectDialog = ({
     canCreateGlobally ||
     (specifiedTeam ? canCreateInSpecifiedTeam : canCreateInSomeTeam);
 
-  if (!canCreate) {
+  if (!canCreate || team?.archived === true) {
     return null;
   }
 

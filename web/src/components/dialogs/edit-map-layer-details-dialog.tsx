@@ -39,9 +39,9 @@ export function EditMapLayerDetailsDialog({assetId}: {assetId: string}) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline" disabled={isLoading && !data}>
+        <Button disabled={isLoading && !data}>
+          <Pencil aria-hidden />
           Edit name &amp; description
-          <Pencil className="ml-1 h-4 w-4" aria-hidden />
         </Button>
       </DialogTrigger>
       <DialogContent>

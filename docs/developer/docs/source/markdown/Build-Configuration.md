@@ -352,6 +352,7 @@ resolved from Secrets Manager on AWS. Non-secret fields (`displayName`, `helperT
 | `exportRateLimiterWindowMs`  | number  | `600000`     | Export-limiter window.                 |
 | `exportRateLimiterPerWindow` | number  | `20`         | Export requests allowed per window.    |
 | `attemptLimiterEnabled`      | boolean | `true`       | Email-code/verification attempt limit. |
+| `loginLockoutEnabled`        | boolean | `true`       | Couch-backed local-password lockout.   |
 | `jsonBodyLimit`              | string  | `25mb`       | JSON request body limit.               |
 | `urlencodedBodyLimit`        | string  | `1mb`        | URL-encoded request body limit.        |
 | `restoreUploadMaxBytes`      | number  | `1073741824` | Max restore-upload size.               |
