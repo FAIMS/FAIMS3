@@ -1,6 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 import type {ReactNode} from 'react';
 import {ProjectStatus} from '@faims3/data-model';
+import {config} from '@/constants';
+
+/**
+ * Informational copy for each survey lifecycle status. Shared by the
+ * Actions-tab status control and listing-chip tooltips.
+ */
+export function projectStatusHelpText(status: ProjectStatus): string {
+  switch (status) {
+    case ProjectStatus.OPEN:
+      return `${config.notebookNameCapitalized} is active and available for data collection on user devices.`;
+    case ProjectStatus.CLOSED:
+      return `${config.notebookNameCapitalized} is read-only. Users will not be able to activate this ${config.notebookName} for data collection.`;
+    case ProjectStatus.ARCHIVED:
+      return `This ${config.notebookName} is archived and hidden from default lists.`;
+  }
+}
 
 /**
  * Renders a small coloured indicator and label for a project (notebook) status.

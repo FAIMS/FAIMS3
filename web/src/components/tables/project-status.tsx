@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import {ProjectStatus} from '@faims3/data-model';
-import {config} from '@/constants';
+import {projectStatusHelpText} from '@/lib/status-display';
 import {Badge} from '../ui/badge';
 import {
   Tooltip,
@@ -24,19 +24,19 @@ export function projectStatusDisplay(
       return {
         label: 'Open',
         className: 'border-success/40 bg-success/10 text-success',
-        tooltip: `${config.notebookNameCapitalized} is active and available for data collection on user devices.`,
+        tooltip: projectStatusHelpText(status),
       };
     case ProjectStatus.CLOSED:
       return {
         label: 'Closed',
         className: 'border-destructive/40 bg-destructive/10 text-destructive',
-        tooltip: `${config.notebookNameCapitalized} is read-only. Users will not be able to activate this ${config.notebookName} for data collection.`,
+        tooltip: projectStatusHelpText(status),
       };
     case ProjectStatus.ARCHIVED:
       return {
         label: 'Archived',
         className: 'border-muted-foreground/40 bg-muted text-muted-foreground',
-        tooltip: `This ${config.notebookName} is archived and hidden from default lists.`,
+        tooltip: projectStatusHelpText(status),
       };
   }
 }
@@ -46,18 +46,21 @@ export function ProjectStatusBadge({status}: {status: ProjectStatus}) {
   const display = projectStatusDisplay(status);
 
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={0}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Badge
-            variant="outline"
-            className={`w-fit cursor-help ${display.className}`}
+          {/* Native span so Radix can attach hover/focus handlers. */}
+          <span
+            className="inline-flex w-fit cursor-help"
             tabIndex={0}
+            onClick={event => event.stopPropagation()}
           >
-            {display.label}
-          </Badge>
+            <Badge variant="outline" className={`w-fit ${display.className}`}>
+              {display.label}
+            </Badge>
+          </span>
         </TooltipTrigger>
-        <TooltipContent>
+        <TooltipContent className="max-w-sm">
           <p>{display.tooltip}</p>
         </TooltipContent>
       </Tooltip>
