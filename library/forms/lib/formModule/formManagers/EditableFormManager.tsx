@@ -192,6 +192,8 @@ export const EditableFormManager: React.FC<
       viewsetId: props.formId,
     })
   );
+  // Same bag currentlyVisibleMap already uses, kept in state because option
+  // conditions need the values — visibleMap is only field/section hide-show.
   const [conditionValues, setConditionValues] = useState(() =>
     buildConditionValues({
       values: formDataExtractor({fullData: props.initialData ?? {}}),
@@ -290,6 +292,7 @@ export const EditableFormManager: React.FC<
       values: formDataExtractor({fullData: form.state.values}),
       context: buildContext(),
     });
+    // Publish both: field/section visibility, and the live bag for option filters.
     setConditionValues(values);
     setVisibleMap(
       currentlyVisibleMap({
@@ -1193,7 +1196,8 @@ export const EditableFormManager: React.FC<
         visibilityMap={visibleMap}
       />
 
-      {/* Main Form */}
+      {/* Main Form. Context (not a Field prop) so memo'd non-choice fields
+          skip bag updates; only ChoiceFieldConditionBridge subscribes. */}
       <ConditionValuesContext.Provider value={conditionValues}>
         <FormManager
           key={props.recordId}

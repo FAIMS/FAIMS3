@@ -37,10 +37,12 @@ export interface SetFieldDataFn {
 }
 
 /**
- * Live `buildConditionValues` bag used to filter choice options. Form managers
- * provide the current record plus parent / linked-record / metadata values.
- * Empty when a field is rendered outside a form manager (unit tests pass
- * `conditionValues` on the field props instead).
+ * Live `buildConditionValues` bag for option-level visibility (siblings,
+ * parent, linked records, notebook metadata). Form managers publish it so
+ * choice fields can re-filter when some *other* value changes — TanStack
+ * `form.Field` only re-renders on this field's own state.
+ *
+ * Empty outside a form manager; unit tests pass `conditionValues` as a prop.
  */
 export const ConditionValuesContext = createContext<ValuesObject>({});
 
@@ -50,8 +52,9 @@ export type FormFieldContextProps = {
   state: FaimsFormFieldState;
   /**
    * Value bag for option-level visibility conditions. Same shape as field and
-   * section conditions (`buildConditionValues`). Optional so unit tests can
-   * omit it when no option is conditioned.
+   * section conditions (`buildConditionValues`). Supplied live via
+   * {@link ConditionValuesContext} in form managers; optional so unit tests
+   * can pass a snapshot (or omit it when no option is conditioned).
    */
   conditionValues?: ValuesObject;
   /**

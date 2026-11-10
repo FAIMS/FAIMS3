@@ -9,6 +9,8 @@ import {
 import {compileExpression} from './conditionals';
 import {ExprType, FAIMS_TYPE_TO_EXPR_TYPE} from './expressions';
 import {
+  CompiledChoiceOption,
+  CompiledFieldDefinition,
   CompiledUiSpecModel,
   FieldDefinition,
   HridFieldMap,
@@ -628,15 +630,61 @@ export function getViewsMatchingCondition(
   });
 }
 
+/**
+ * Choice-field options live on unmodelled `component-parameters.ElementProps`.
+ * Only RadioGroup / Select / MultiSelect populate this array.
+ */
+const choiceOptionsOnField = (
+  fieldDef: CompiledFieldDefinition
+): CompiledChoiceOption[] | undefined => {
+  const options = (
+    fieldDef['component-parameters'] as {
+      ElementProps?: {options?: CompiledChoiceOption[]};
+    }
+  ).ElementProps?.options;
+  return Array.isArray(options) ? options : undefined;
+};
+
+/**
+ * Compile option-level visibility conditions in place. Only options that
+ * define `condition` receive a `conditionFn`; others stay serializable-only.
+ *
+ * A malformed option AST does not fail notebook compile: that option is
+ * hidden (`() => false`) so sibling options and the rest of the spec still
+ * load.
+ */
+const compileChoiceOptionConditionFns = (
+  fieldDef: CompiledFieldDefinition,
+  fieldId: string
+) => {
+  const options = choiceOptionsOnField(fieldDef);
+  if (!options) return;
+  for (const option of options) {
+    if (option?.condition == null) continue;
+    try {
+      option.conditionFn = compileExpression(option.condition);
+    } catch (e) {
+      option.conditionFn = () => false;
+      console.warn(
+        `Choice option "${option.value}" on field "${fieldId}" has an invalid condition`,
+        e
+      );
+    }
+  }
+};
+
 // compile all conditional expressions in this UiSpec and store the
-// compiled versions as a property `conditionFn` on the field or view
+// compiled versions as a property `conditionFn` on the field, view, or
+// choice option (when that option defines a condition)
 export function compileUiSpecConditionals(
   uiSpecification: UiSpecModel | NotebookUiSpec
 ) {
-  // conditionals can appear on views or fields
-  // compile each one and add compiled fn as a property on the field/view
+  // conditionals can appear on views, fields, or choice options
+  // compile each one and add compiled fn as a property on the field/view/option
   // any field/view with no condition will get a conditionFn returning true
   // so we can always just call this fn to filter fields/views
+  // choice options only get a conditionFn when `condition` is defined;
+  // a bad option AST hides that option instead of failing the whole compile
 
   // Compiled functions are attached in place; the function returns nothing.
   const expressionFieldTypes = new Map<string, ExprType>();
@@ -653,8 +701,9 @@ export function compileUiSpecConditionals(
   };
 
   for (const field in uiSpecification.fields) {
-    const fieldDef = uiSpecification.fields[field];
+    const fieldDef = uiSpecification.fields[field] as CompiledFieldDefinition;
     fieldDef.conditionFn = compileExpression(fieldDef.condition);
+    compileChoiceOptionConditionFns(fieldDef, field);
 
     // Compile computed field expressions at notebook load, attaching the
     // evaluator and its references in place (mirrors conditionFn above).

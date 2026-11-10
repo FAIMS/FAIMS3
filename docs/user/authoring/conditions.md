@@ -18,7 +18,7 @@ Select single and Select multiple fields can also attach a condition to
 an **individual option**. In the options table, each ordinary option
 row has a **condition** control in the Actions column (**Add condition**
 when unset, **Update condition** when set). This is separate from the
-field-level **Add condition** control. The synthetic **Other** option
+field-level **Add condition** control. The **Other** option
 cannot take a condition.
 
 An option with no condition, or one whose condition evaluates true, is
@@ -28,11 +28,11 @@ until the collector changes it. The stored value is not cleared
 automatically, and view mode and CSV/GIS export still show it.
 
 Option conditions use the same builder and field picker as field
-conditions (same form, plus parent / linked-record / notebook-metadata
-references). Unlike a field condition, an option condition **may**
+conditions. Unlike a field condition, an option condition **may**
 reference its parent choice field, so a MultiSelect can cascade inside
-one list. The option itself is not a field and cannot be chosen as the
-target of a condition.
+one list. For example, selecting option A, may reveal options B and C.
+The option itself is not a field and cannot be chosen as the target of
+a condition.
 
 ## Simple Conditions
 

@@ -92,6 +92,8 @@ export const RadioGroup = (props: FieldProps) => {
 
   const rawValue = (state.value?.data as string) ?? '';
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
+  // Sibling / parent / metadata bag from ConditionValuesContext — this field's
+  // TanStack state is not enough to evaluate option.condition.
   const visibleOptions = visibleChoiceOptions(
     ElementProps.options,
     conditionValues ?? {},

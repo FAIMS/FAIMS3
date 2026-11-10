@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import {ConditionalExpressionSchema} from '@faims3/data-model';
+import {
+  ConditionalExpressionSchema,
+  type ConditionFn,
+} from '@faims3/data-model';
 import {z} from 'zod';
 
 /**
@@ -9,9 +12,11 @@ import {z} from 'zod';
  * the legacy radio-group rendering.
  *
  * `condition` is the same visibility AST used on fields and sections. Absence,
- * `undefined`, or `null` means the option is always listed. Compiled
- * `conditionFn` values must not be stored on this object — they are evaluated
- * at render time by `visibleChoiceOptions`.
+ * `undefined`, or `null` means the option is always listed.
+ *
+ * `conditionFn` is not part of stored notebook JSON: this schema strips it.
+ * `compileUiSpecConditionals` attaches it in memory on compiled specs
+ * ({@link ChoiceOption.conditionFn}) so `visibleChoiceOptions` can reuse it.
  */
 export const ChoiceOptionSchema = z.object({
   // Stored option value used in answers, exports, and conditions.
@@ -22,7 +27,10 @@ export const ChoiceOptionSchema = z.object({
   RadioProps: z.object({id: z.string()}).passthrough().optional(),
   condition: ConditionalExpressionSchema.nullable().optional(),
 });
-export type ChoiceOption = z.infer<typeof ChoiceOptionSchema>;
+export type ChoiceOption = z.infer<typeof ChoiceOptionSchema> & {
+  /** Present only after `compileUiSpecConditionals`, when `condition` is set. */
+  conditionFn?: ConditionFn;
+};
 
 /**
  * The `ElementProps` shape shared by the options-based choice fields. This is

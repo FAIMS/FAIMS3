@@ -90,7 +90,7 @@ or formatting to individual options.
   when a rule is already set). This is not the field-level **Add
   condition** control. A MultiSelect can also condition an option on the
   same field, so site-specific hazards appear only after a region is
-  chosen, while "None observed" stays always listed. The synthetic
+  chosen, while "None observed" stays always listed. The 
   **Other** row cannot take a condition.
 - **To make an option exclusive:** Tick the **Exclusive** checkbox in the
   option's row. When a collector selects an exclusive option, all other

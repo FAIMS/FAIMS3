@@ -43,6 +43,7 @@ describe('ChoiceOptionSchema', () => {
       value: 'asbestos',
       label: 'Asbestos',
       condition: industrialOnly,
+      conditionFn: () => true,
     });
     expect(parsed).not.toHaveProperty('conditionFn');
     expect(JSON.parse(JSON.stringify(parsed))).toEqual(parsed);
@@ -90,6 +91,34 @@ describe('visibleChoiceOptions', () => {
         'asbestos',
       ]).map(option => option.value)
     ).toEqual(['none', 'asbestos']);
+  });
+
+  it('reuses a precompiled conditionFn instead of compiling the AST', () => {
+    let calls = 0;
+    const compiled = [
+      {value: 'none', label: 'None observed'},
+      {
+        value: 'asbestos',
+        label: 'Asbestos',
+        // Would hide the option if the AST were compiled at eval time.
+        condition: {operator: 'unknown-operator', field: 'site-type'},
+        conditionFn: (values: {'site-type'?: string}) => {
+          calls += 1;
+          return values['site-type'] === 'industrial';
+        },
+      },
+    ];
+    expect(
+      visibleChoiceOptions(compiled, {'site-type': 'industrial'}).map(
+        option => option.value
+      )
+    ).toEqual(['none', 'asbestos']);
+    expect(
+      visibleChoiceOptions(compiled, {'site-type': 'residential'}).map(
+        option => option.value
+      )
+    ).toEqual(['none']);
+    expect(calls).toBe(2);
   });
 });
 

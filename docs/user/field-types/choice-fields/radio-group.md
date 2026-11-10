@@ -74,7 +74,7 @@ options.
   that option's Actions column (**Add condition**, or **Update condition**
   when a rule is already set). This is not the field-level **Add
   condition** control. Use it so a choice such as "Asbestos" appears only
-  when Site type is Industrial. The synthetic **Other** row cannot take a
+  when Site type is Industrial. The **Other** row cannot take a
   condition.
 - **Add "Other" Option** Click to allow the user to select 'Other' from the
   list and enter free text into this field.

@@ -2,9 +2,9 @@
 
 /**
  * Runtime filtering of choice-field options by their optional visibility
- * `condition`. Compiles with {@link compileExpression} against the same value
- * bag field and section conditions use. Never writes `conditionFn` onto the
- * option object.
+ * `condition`. Prefers the `conditionFn` attached once by
+ * `compileUiSpecConditionals`; falls back to compiling the AST for
+ * uncompiled options (unit tests, specs that skipped notebook compile).
  */
 
 import {compileExpression, type RecordValues} from '@faims3/data-model';
@@ -18,6 +18,24 @@ const selectedValueSet = (
 };
 
 /**
+ * Evaluate the option's visibility condition against `values`. Uses the
+ * precompiled `conditionFn` when present so notebook compile runs once.
+ */
+const optionConditionHolds = (
+  option: ChoiceOption,
+  values: RecordValues
+): boolean => {
+  if (option.conditionFn) return option.conditionFn(values);
+  if (option.condition == null) return true;
+  try {
+    return compileExpression(option.condition)(values);
+  } catch {
+    // Unknown operator or a malformed AST on an uncompiled option: hide it.
+    return false;
+  }
+};
+
+/**
  * True when the option has no condition, the condition evaluates true, or the
  * option is currently selected (so a now-failing choice stays visible).
  */
@@ -27,13 +45,7 @@ export const isChoiceOptionVisible = (
   selected: Set<string>
 ): boolean => {
   if (selected.has(option.value)) return true;
-  if (option.condition == null) return true;
-  try {
-    return compileExpression(option.condition)(values);
-  } catch {
-    // Unknown operator or a malformed AST: do not offer the option.
-    return false;
-  }
+  return optionConditionHolds(option, values);
 };
 
 /**

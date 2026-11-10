@@ -75,6 +75,8 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
       viewsetId: props.formName,
     })
   );
+  // Same bag currentlyVisibleMap already uses, kept in state because option
+  // conditions need the values — visibleMap is only field/section hide-show.
   const [conditionValues, setConditionValues] = useState(() =>
     buildConditionValues({
       values: formDataExtractor({fullData: formValues}),
@@ -127,7 +129,8 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
     },
   });
 
-  // Whenever the uiSpec, formName or metadata changes, recompute the visible fields
+  // Whenever the uiSpec, formName or metadata changes, recompute visibility
+  // and republish the option-condition bag (same as onChange above).
   useEffect(() => {
     const values = buildConditionValues({
       values: formDataExtractor({fullData: form.state.values}),
@@ -154,6 +157,8 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
 
   return (
     <QueryClientProvider client={queryClient}>
+      {/* Context (not a Field prop) so memo'd non-choice fields skip bag
+          updates; only ChoiceFieldConditionBridge subscribes. */}
       <ConditionValuesContext.Provider value={conditionValues}>
         <FormManager
           form={form}

@@ -19,9 +19,13 @@ import {getFieldId} from './utils';
 const CHOICE_COMPONENT_NAMES = new Set(['RadioGroup', 'Select', 'MultiSelect']);
 
 /**
- * Subscribes only choice fields to the live condition-value bag so sibling
- * edits re-filter options without remounting the field or re-rendering every
- * other control.
+ * Subscribes one choice field to the live condition-value bag.
+ *
+ * `Field` is memo'd and must not `useContext` itself — that would re-render
+ * every control whenever any value changes. TanStack `form.Field` also only
+ * notifies this field, so option conditions that reference siblings / parent /
+ * metadata would otherwise stay stale. This child is the subscription: the
+ * list re-filters without remounting the field or busting memo on others.
  */
 const ChoiceFieldConditionBridge = ({
   children,
@@ -164,6 +168,8 @@ export const Field = React.memo((props: FieldProps) => {
               handleBlur={field.handleBlur}
               fieldId={props.fieldId}
               trigger={triggers}
+              // Choice fields get the live bag; omit it otherwise so non-choice
+              // components and unit tests that skip the provider are unchanged.
               {...(conditionValues !== undefined ? {conditionValues} : {})}
             />
             <FieldAnnotation
@@ -180,6 +186,7 @@ export const Field = React.memo((props: FieldProps) => {
                 {conditionValues => renderField(conditionValues)}
               </ChoiceFieldConditionBridge>
             ) : (
+              // No context subscription: this field's own TanStack state is enough.
               renderField()
             )}
           </div>

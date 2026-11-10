@@ -535,6 +535,9 @@ export const MultiSelect = (props: FieldProps) => {
   const isExpandedChecklist = ElementProps.expandedChecklist ?? true;
   const exclusiveOptions = ElementProps.exclusiveOptions ?? [];
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
+  // Sibling / parent / metadata bag from ConditionValuesContext — this field's
+  // TanStack state is not enough to evaluate option.condition (including
+  // conditions that reference this MultiSelect itself).
   const visibleOptions = visibleChoiceOptions(
     ElementProps.options,
     conditionValues ?? {},
