@@ -326,7 +326,8 @@ api.put(
   async (req, res: Response<PutUpdateTemplateResponse>) => {
     const updatedTemplate = await updateTemplateUiSpecification(
       req.params.id,
-      req.body
+      req.body,
+      {ifMatchHeader: req.get('If-Match') ?? undefined}
     );
     res.json(await withOwnedByTeamDisplayName(updatedTemplate));
   }

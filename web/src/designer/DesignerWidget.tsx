@@ -5,6 +5,7 @@ import {Provider as ReduxProvider} from 'react-redux';
 import {
   ThemeProvider,
   ScopedCssBaseline,
+  Alert,
   Box,
   IconButton,
   Typography,
@@ -35,16 +36,22 @@ import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
 import {SetupFormPanel} from './components/setup-form-panel';
 import {config} from '@/constants';
-import type {DesignerResourceKind} from './integration/draftStorage';
+import {
+  discardDraft,
+  type DesignerResourceKind,
+} from './integration/draftStorage';
 import {
   type DesignerPublishIntent,
   DesignerPublishDialog,
 } from './components/designer-publish-dialog';
 import {DesignerCloseDraftDialog} from './components/designer-close-draft-dialog';
+import {DesignerPublishConflictDialog} from './components/designer-publish-conflict-dialog';
+import {DesignerStaleDraftDialog} from './components/designer-stale-draft-dialog';
 import {
   resolveDesignerSessionNotebook,
   useDesignerDraftSession,
 } from './integration/useDesignerDraftSession';
+import {DesignerUiSpecConflictError} from './integration/useDesignerSaveMutation';
 
 /**
  * @file Full-screen designer shell: hydrate notebook, Redux, memory router, local drafts, publish.
@@ -83,9 +90,27 @@ export interface DesignerWidgetProps {
   resourceId?: string;
   /**
    * Host `useDesignerSaveMutation().mutateAsyncWithToast`. Runs the live PUT.
-   * Autosave never calls this.
+   * Autosave never calls this. Pass `ifMatch` (uiSpec hash) for a conditional
+   * write; omit it only for confirmed overwrite after a 409.
    */
-  publishNotebook?: (file: File) => Promise<unknown>;
+  publishNotebook?: (
+    file: File,
+    options?: {ifMatch?: string}
+  ) => Promise<unknown>;
+  /**
+   * `uiSpecProperties.hash` of the live design at open. Used for If-Match and
+   * stale-draft detection. Pinned by the host overlay for the session.
+   */
+  liveUiSpecHash?: string;
+}
+
+function uiSpecHashFromPublishResult(result: unknown): string | undefined {
+  if (!result || typeof result !== 'object') {
+    return undefined;
+  }
+  const hash = (result as {uiSpecProperties?: {hash?: unknown}})
+    .uiSpecProperties?.hash;
+  return typeof hash === 'string' && hash.length === 64 ? hash : undefined;
 }
 
 /** Inject in-memory designerIdentifiers and reset undo stacks for a session. */
@@ -143,6 +168,7 @@ export function DesignerWidget({
   resourceKind,
   resourceId,
   publishNotebook,
+  liveUiSpecHash,
 }: DesignerWidgetProps) {
   const baseTheme = useMemo(() => createDesignerTheme(THEME), []);
   const identity =
@@ -155,24 +181,40 @@ export function DesignerWidget({
 
   const identityKeyRef = useRef(notebookIdentity);
   const serverNotebookRef = useRef(notebook);
+  const liveHashRef = useRef(liveUiSpecHash);
   if (identityKeyRef.current !== notebookIdentity) {
     identityKeyRef.current = notebookIdentity;
     serverNotebookRef.current = notebook;
+    liveHashRef.current = liveUiSpecHash;
+  } else if (!liveHashRef.current && liveUiSpecHash) {
+    liveHashRef.current = liveUiSpecHash;
   }
+
+  const [loadLiveForIdentity, setLoadLiveForIdentity] = useState<string | null>(
+    null
+  );
+  const [staleAckForIdentity, setStaleAckForIdentity] = useState<string | null>(
+    null
+  );
+  const forceLive = loadLiveForIdentity === notebookIdentity;
+  const staleAcknowledged = staleAckForIdentity === notebookIdentity;
 
   const session = useMemo(() => {
     const resolved = resolveDesignerSessionNotebook({
-      identity,
+      identity: forceLive ? undefined : identity,
       serverNotebook: serverNotebookRef.current,
       mode: designerMode,
+      liveUiSpecHash: liveHashRef.current,
     });
     return {
       notebook: withDesignerIdentifiers(resolved.notebook),
       published: resolved.published,
+      isStale: forceLive ? false : resolved.isStale,
+      publishedHash: resolved.publishedHash,
     };
     // Restore once per host resource; do not re-run on a same-session refetch.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notebookIdentity, designerMode]);
+  }, [notebookIdentity, designerMode, forceLive]);
 
   const processedNotebook = session.notebook;
 
@@ -182,7 +224,7 @@ export function DesignerWidget({
 
   useEffect(() => {
     setStore(createDesignerStore(processedNotebook, debug, designerMode));
-  }, [notebookIdentity, debug, designerMode]);
+  }, [notebookIdentity, debug, designerMode, forceLive]);
 
   const originalFieldIdentifiers = useMemo(
     () =>
@@ -203,6 +245,7 @@ export function DesignerWidget({
     store,
     identity,
     initialPublished: session.published,
+    publishedHash: session.publishedHash,
   });
 
   const [loading, setLoading] = useState(true);
@@ -212,6 +255,7 @@ export function DesignerWidget({
   const [publishIntent, setPublishIntent] =
     useState<DesignerPublishIntent | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [conflictOpen, setConflictOpen] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -267,6 +311,19 @@ export function DesignerWidget({
     closeOverlay(undefined);
   }, [closeOverlay, draftSession]);
 
+  const handleContinueStaleDraft = useCallback(() => {
+    setStaleAckForIdentity(notebookIdentity);
+  }, [notebookIdentity]);
+
+  const handleDiscardStaleAndLoadLive = useCallback(() => {
+    draftSession.discardDraft();
+    if (identity) {
+      discardDraft(identity);
+    }
+    setLoadLiveForIdentity(notebookIdentity);
+    setStaleAckForIdentity(notebookIdentity);
+  }, [draftSession, identity, notebookIdentity]);
+
   const handlePublishRequest = useCallback(
     (intent: DesignerPublishIntent) => {
       if (!draftSession.isUnpublished) {
@@ -292,14 +349,23 @@ export function DesignerWidget({
     }
     setPublishing(true);
     try {
-      await publishNotebook(notebookJsonFile(exported, exportBaseName));
-      draftSession.markPublished(exported);
+      const file = notebookJsonFile(exported, exportBaseName);
+      const result = await publishNotebook(file, {
+        ifMatch: draftSession.publishedHash,
+      });
+      draftSession.markPublished(exported, uiSpecHashFromPublishResult(result));
       draftSession.persistDraftNow();
       setPublishIntent(null);
+      setConflictOpen(false);
       if (intent === 'close') {
         closeOverlay(undefined);
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof DesignerUiSpecConflictError) {
+        setPublishIntent(null);
+        setConflictOpen(true);
+        return;
+      }
       // Host toast (Download JSON) already ran; keep the overlay and draft.
     } finally {
       setPublishing(false);
@@ -311,6 +377,27 @@ export function DesignerWidget({
     publishIntent,
     publishNotebook,
   ]);
+
+  const handleOverwriteLiveDesign = useCallback(async () => {
+    const exported = draftSession.exportPresentNotebook();
+    if (!publishNotebook) {
+      setConflictOpen(false);
+      return;
+    }
+    setPublishing(true);
+    try {
+      const result = await publishNotebook(
+        notebookJsonFile(exported, exportBaseName)
+      );
+      draftSession.markPublished(exported, uiSpecHashFromPublishResult(result));
+      draftSession.persistDraftNow();
+      setConflictOpen(false);
+    } catch {
+      // Host toast already ran; keep the overlay and draft.
+    } finally {
+      setPublishing(false);
+    }
+  }, [draftSession, exportBaseName, publishNotebook]);
 
   useEffect(() => {
     if (!unpublishedOrWriting) {
@@ -425,6 +512,29 @@ export function DesignerWidget({
                 </Toolbar>
               </AppBar>
 
+              {session.isStale && staleAcknowledged && !forceLive ? (
+                <Alert
+                  severity="warning"
+                  data-testid="web-designer-stale-draft-banner"
+                  sx={{borderRadius: 0}}
+                >
+                  The live design has changed since this draft. Publishing will
+                  replace it.
+                </Alert>
+              ) : null}
+
+              <DesignerStaleDraftDialog
+                open={
+                  !loading &&
+                  session.isStale &&
+                  !staleAcknowledged &&
+                  !forceLive
+                }
+                animationDuration={animationDuration}
+                onContinue={handleContinueStaleDraft}
+                onDiscardAndLoadLive={handleDiscardStaleAndLoadLive}
+              />
+
               <DesignerCloseDraftDialog
                 open={closeDialogOpen}
                 animationDuration={animationDuration}
@@ -444,9 +554,20 @@ export function DesignerWidget({
                 busy={publishing}
                 animationDuration={animationDuration}
                 existingRecordCount={existingRecordCount}
+                stale={session.isStale}
                 onCancel={() => setPublishIntent(null)}
                 onConfirm={() => {
                   void handlePublishConfirm();
+                }}
+              />
+
+              <DesignerPublishConflictDialog
+                open={conflictOpen}
+                busy={publishing}
+                animationDuration={animationDuration}
+                onKeepWorking={() => setConflictOpen(false)}
+                onOverwrite={() => {
+                  void handleOverwriteLiveDesign();
                 }}
               />
 

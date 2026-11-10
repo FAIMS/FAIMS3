@@ -37,6 +37,7 @@ import {
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
+import {assertUiSpecIfMatch} from '../utils/uiSpecIfMatch';
 import {nowIso} from '../time';
 import {generateRandomString} from '../utils';
 import {
@@ -404,12 +405,14 @@ export const changeTemplateTeam = async (
 
 /**
  * Replaces the full uiSpecification bundle and bumps version.
+ * Optional If-Match (uiSpec hash) refuses the write when the live design moved.
  */
 export const updateTemplateUiSpecification = async (
   templateId: string,
   uiSpecification:
     | PutUpdateTemplateUiSpecificationInput
-    | NotebookUiSpecificationInput
+    | NotebookUiSpecificationInput,
+  options?: {ifMatchHeader?: string}
 ): Promise<ExistingTemplateDocument> => {
   let normalizedUiSpecification;
   try {
@@ -430,6 +433,10 @@ export const updateTemplateUiSpecification = async (
       'An error occurred while trying to fetch an existing template. Are you sure the ID is correct?'
     );
   }
+  assertUiSpecIfMatch(
+    existingTemplate.uiSpecProperties.hash,
+    options?.ifMatchHeader
+  );
 
   // Now on the new put, we make sure to include the _rev of previous document which allows replacement
   const templateDb = getTemplatesDb();

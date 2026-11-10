@@ -45,17 +45,22 @@ const editFieldLabel = (store: DesignerStore, label: string) => {
   );
 };
 
+const LIVE_HASH = 'a'.repeat(64);
+
 function Harness({
   store,
   initialPublished,
+  publishedHash = LIVE_HASH,
 }: {
   store: DesignerStore;
   initialPublished: ReturnType<typeof toPublishedNotebook>;
+  publishedHash?: string;
 }) {
   const session = useDesignerDraftSession({
     store,
     identity,
     initialPublished,
+    publishedHash,
   });
   return (
     <div>
@@ -98,6 +103,28 @@ describe('useDesignerDraftSession', () => {
         'component-parameters'
       ].label
     ).toBe('Autosaved label');
+  });
+
+  it('persists the live uiSpec hash with the draft', () => {
+    vi.useFakeTimers();
+    const hash = 'a'.repeat(64);
+    const store = createDesignerStore(historyFromSample());
+    const published = toPublishedNotebook(store.getState().notebook);
+    render(
+      <Harness
+        store={store}
+        initialPublished={published}
+        publishedHash={hash}
+      />
+    );
+
+    act(() => {
+      editFieldLabel(store, 'Hashed draft');
+    });
+    act(() => {
+      vi.advanceTimersByTime(AUTOSAVE_DEBOUNCE_MS);
+    });
+    expect(getDraft(identity)?.publishedHash).toBe(hash);
   });
 
   it('disables unpublished after undo back to the published snapshot', () => {
@@ -152,7 +179,8 @@ describe('resolveDesignerSessionNotebook', () => {
       'Restored draft';
     setDraft(identity, {
       draft,
-      published: structuredClone(sampleNotebook),
+      published: toPublishedNotebook(server),
+      publishedHash: LIVE_HASH,
     });
 
     const resolved = resolveDesignerSessionNotebook({
@@ -166,6 +194,26 @@ describe('resolveDesignerSessionNotebook', () => {
         'component-parameters'
       ].label
     ).toBe('Restored draft');
+    expect(resolved.isStale).toBe(false);
+  });
+
+  it('marks a restored draft stale when the live hash has moved', () => {
+    const server = historyFromSample();
+    const draft = structuredClone(sampleNotebook);
+    draft.uiSpec.fields['New-Text-Field']['component-parameters'].label =
+      'Old draft';
+    setDraft(identity, {
+      draft,
+      published: structuredClone(sampleNotebook),
+      publishedHash: 'a'.repeat(64),
+    });
+    const resolved = resolveDesignerSessionNotebook({
+      identity,
+      serverNotebook: server,
+      liveUiSpecHash: 'b'.repeat(64),
+    });
+    expect(resolved.isStale).toBe(true);
+    expect(resolved.publishedHash).toBe('a'.repeat(64));
   });
 
   it('does not restore a draft for a different resource id', () => {
@@ -176,6 +224,7 @@ describe('resolveDesignerSessionNotebook', () => {
     setDraft(identity, {
       draft,
       published: structuredClone(sampleNotebook),
+      publishedHash: LIVE_HASH,
     });
 
     const resolved = resolveDesignerSessionNotebook({

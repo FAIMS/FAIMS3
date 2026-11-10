@@ -41,6 +41,13 @@ describe('DesignerPublishDialog', () => {
     expect(screen.queryByText(/loss of existing data/i)).toBeNull();
   });
 
+  it('adds a live-design-changed sentence when the draft is stale', () => {
+    renderDialog({stale: true});
+    expect(
+      screen.getByText(/the design has changed since this draft was created/i)
+    ).toBeTruthy();
+  });
+
   it('does not warn for templates, even if a record count is supplied', () => {
     renderDialog({mode: 'template', existingRecordCount: 12});
     expect(

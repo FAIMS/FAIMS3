@@ -5,12 +5,14 @@ import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import type {ComponentProps} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {DesignerWidget} from './DesignerWidget';
+import {toPublishedNotebook} from './domain/notebook/adapters';
 import {
   discardDraft,
   getDraft,
   setDraft,
   type DesignerDraftKey,
 } from './integration/draftStorage';
+import {DesignerUiSpecConflictError} from './integration/useDesignerSaveMutation';
 import type {
   Notebook,
   NotebookUISpec,
@@ -33,6 +35,8 @@ const identity: DesignerDraftKey = {
 };
 
 const DRAFT_LABEL = 'DRAFT-ONLY-LABEL';
+const HASH_A = 'a'.repeat(64);
+const HASH_B = 'b'.repeat(64);
 
 const serverNotebook = (): NotebookWithHistory => {
   const {migrated} = migrateNotebook(structuredClone(sampleNotebook));
@@ -50,13 +54,15 @@ const serverNotebook = (): NotebookWithHistory => {
 
 const seedUnpublishedDraft = (
   key: DesignerDraftKey = identity,
-  label = DRAFT_LABEL
+  label = DRAFT_LABEL,
+  publishedHash = HASH_A
 ) => {
   const draft = structuredClone(sampleNotebook) as Notebook;
   draft.uiSpec.fields['New-Text-Field']['component-parameters'].label = label;
   setDraft(key, {
     draft,
-    published: structuredClone(sampleNotebook) as Notebook,
+    published: toPublishedNotebook(serverNotebook()),
+    publishedHash,
   });
 };
 
@@ -311,6 +317,72 @@ describe('DesignerWidget publish and close', () => {
     expect(screen.getByTestId('web-designer-draft-status').textContent).toBe(
       'Saved draft'
     );
+  });
+
+  it('warns on open when the local draft is based on an older live hash', async () => {
+    seedUnpublishedDraft(identity, DRAFT_LABEL, HASH_A);
+    renderWidget({liveUiSpecHash: HASH_B});
+    fireEvent.click(
+      await screen.findByTestId('web-designer-stale-continue-button')
+    );
+    expect(
+      await screen.findByTestId('web-designer-stale-draft-banner')
+    ).toBeTruthy();
+    expect(getDraft(identity)).toBeDefined();
+  });
+
+  it('discards the local draft and loads the live design', async () => {
+    seedUnpublishedDraft(identity, DRAFT_LABEL, HASH_A);
+    renderWidget({liveUiSpecHash: HASH_B});
+    fireEvent.click(
+      await screen.findByTestId('web-designer-stale-load-live-button')
+    );
+    await waitFor(() => expect(getDraft(identity)).toBeUndefined());
+    expect(screen.queryByTestId('web-designer-stale-draft-banner')).toBeNull();
+    expect(
+      screen.queryByTestId('web-designer-stale-continue-button')
+    ).toBeNull();
+  });
+
+  it('sends If-Match from the stored published hash', async () => {
+    seedUnpublishedDraft(identity, DRAFT_LABEL, HASH_A);
+    const {publishNotebook} = renderWidget({liveUiSpecHash: HASH_A});
+    const publish = await screen.findByTestId('web-designer-save-button');
+    await waitFor(() => expect(isButtonDisabled(publish)).toBe(false));
+    fireEvent.click(publish);
+    fireEvent.click(
+      await screen.findByTestId('web-designer-publish-confirm-button')
+    );
+    await waitFor(() => expect(publishNotebook).toHaveBeenCalledTimes(1));
+    expect(publishNotebook.mock.calls[0][1]).toEqual({ifMatch: HASH_A});
+  });
+
+  it('opens a conflict dialog on 409 and overwrites without If-Match', async () => {
+    seedUnpublishedDraft(identity, DRAFT_LABEL, HASH_A);
+    const {publishNotebook} = renderWidget({liveUiSpecHash: HASH_A});
+    publishNotebook.mockRejectedValueOnce(new DesignerUiSpecConflictError());
+    publishNotebook.mockResolvedValueOnce({
+      uiSpecProperties: {hash: HASH_B},
+    });
+
+    const publish = await screen.findByTestId('web-designer-save-button');
+    await waitFor(() => expect(isButtonDisabled(publish)).toBe(false));
+    fireEvent.click(publish);
+    fireEvent.click(
+      await screen.findByTestId('web-designer-publish-confirm-button')
+    );
+
+    expect(
+      await screen.findByTestId('web-designer-conflict-overwrite-button')
+    ).toBeTruthy();
+    expect(publishNotebook).toHaveBeenCalledTimes(1);
+    expect(publishNotebook.mock.calls[0][1]).toEqual({ifMatch: HASH_A});
+
+    fireEvent.click(
+      screen.getByTestId('web-designer-conflict-overwrite-button')
+    );
+    await waitFor(() => expect(publishNotebook).toHaveBeenCalledTimes(2));
+    expect(publishNotebook.mock.calls[1][1]).toBeUndefined();
   });
 
   it('does not call fetch during restore of an unpublished draft', async () => {

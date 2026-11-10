@@ -11,7 +11,13 @@ import {
 /**
  * Actions-tab chip when this device has an unpublished designer draft.
  */
-export function DesignerUnsavedDraftIndicator({visible}: {visible: boolean}) {
+export function DesignerUnsavedDraftIndicator({
+  visible,
+  stale = false,
+}: {
+  visible: boolean;
+  stale?: boolean;
+}) {
   if (!visible) {
     return null;
   }
@@ -24,6 +30,7 @@ export function DesignerUnsavedDraftIndicator({visible}: {visible: boolean}) {
             className="inline-flex w-fit cursor-help"
             tabIndex={0}
             data-testid="web-designer-unsaved-changes-indicator"
+            data-stale={stale ? 'true' : 'false'}
           >
             <Badge
               variant="outline"
@@ -33,14 +40,17 @@ export function DesignerUnsavedDraftIndicator({visible}: {visible: boolean}) {
                 className="h-1.5 w-1.5 rounded-full bg-current"
                 aria-hidden
               />
-              Unsaved changes
+              {stale
+                ? 'Unsaved changes — live design has changed'
+                : 'Unsaved changes'}
             </Badge>
           </span>
         </TooltipTrigger>
         <TooltipContent className="max-w-sm">
           <p>
-            This device has an unpublished local draft. Open in Editor to
-            continue or publish.
+            {stale
+              ? 'This device has an unpublished local draft based on an older live design. Open in Editor to continue, or discard the draft and load the live design.'
+              : 'This device has an unpublished local draft. Open in Editor to continue or publish.'}
           </p>
         </TooltipContent>
       </Tooltip>

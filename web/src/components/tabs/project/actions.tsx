@@ -17,8 +17,8 @@ import {config} from '@/constants';
 import {
   closeDesignerHostOverlay,
   toDesignerNotebookWithHistory,
+  useDesignerDraftHostStatus,
   useDesignerSaveMutation,
-  useHasUnpublishedDesignerDraft,
 } from '@/designer/integration';
 import type {NotebookWithHistory} from '@/designer/state/initial';
 import {
@@ -48,12 +48,14 @@ const ProjectActions = (): JSX.Element => {
   const queryClient = useQueryClient();
 
   const [editorOpen, setEditorOpen] = useState(false);
-  const hasUnpublishedDraft = useHasUnpublishedDesignerDraft(
+  const liveUiSpecHash = data?.uiSpecProperties?.hash;
+  const draftHost = useDesignerDraftHostStatus(
     {
       userId: user.user.id,
       resourceKind: 'projects',
       resourceId: projectId,
     },
+    liveUiSpecHash ? {uiSpecHash: liveUiSpecHash} : undefined,
     editorOpen
   );
 
@@ -176,7 +178,8 @@ const ProjectActions = (): JSX.Element => {
                 <div className="flex flex-wrap items-center gap-2">
                   <ListLabel>Edit {config.notebookNameCapitalized}</ListLabel>
                   <DesignerUnsavedDraftIndicator
-                    visible={hasUnpublishedDraft}
+                    visible={draftHost.unpublished}
+                    stale={draftHost.stale}
                   />
                 </div>
               </ListItem>
@@ -311,6 +314,7 @@ const ProjectActions = (): JSX.Element => {
         resourceKind="projects"
         resourceId={projectId}
         publishNotebook={saveProjectNotebook.mutateAsyncWithToast}
+        liveUiSpecHash={liveUiSpecHash}
       />
     </>
   );

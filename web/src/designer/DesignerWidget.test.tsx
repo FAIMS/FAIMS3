@@ -79,6 +79,8 @@ const identity: DesignerDraftKey = {
   resourceId: 'proj-1',
 };
 
+const publishedHash = 'a'.repeat(64);
+
 describe('DesignerWidget', () => {
   afterEach(() => {
     seen.contextIds.length = 0;
@@ -120,6 +122,7 @@ describe('DesignerWidget', () => {
     setDraft(identity, {
       draft,
       published: structuredClone(sampleNotebook) as Notebook,
+      publishedHash,
     });
 
     render(
@@ -145,6 +148,7 @@ describe('DesignerWidget', () => {
     setDraft(identity, {
       draft,
       published: structuredClone(sampleNotebook) as Notebook,
+      publishedHash,
     });
 
     render(
@@ -171,6 +175,7 @@ describe('DesignerWidget', () => {
     setDraft(identity, {
       draft,
       published: structuredClone(sampleNotebook) as Notebook,
+      publishedHash,
     });
 
     render(

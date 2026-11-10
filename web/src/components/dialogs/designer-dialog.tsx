@@ -28,7 +28,15 @@ interface DesignerDialogProps {
   resourceKind: DesignerResourceKind;
   resourceId: string;
   /** Host save mutation; designer calls this only on confirmed publish. */
-  publishNotebook: (file: File) => Promise<unknown>;
+  publishNotebook: (
+    file: File,
+    options?: {ifMatch?: string}
+  ) => Promise<unknown>;
+  /**
+   * `uiSpecProperties.hash` of the live design when the overlay opened.
+   * Pinned for the session so a refetch cannot change If-Match.
+   */
+  liveUiSpecHash?: string;
 }
 
 export function DesignerDialog({
@@ -44,6 +52,7 @@ export function DesignerDialog({
   resourceKind,
   resourceId,
   publishNotebook,
+  liveUiSpecHash,
 }: DesignerDialogProps) {
   const [mounted, setMounted] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
@@ -51,6 +60,7 @@ export function DesignerDialog({
   const [sessionNotebook, setSessionNotebook] = useState<
     NotebookWithHistory | undefined
   >(undefined);
+  const [sessionLiveHash, setSessionLiveHash] = useState<string | undefined>();
 
   // Open: capture notebook once, mount, animate in. The functional updater
   // makes the snapshot idempotent — once `sessionNotebook` is set, later
@@ -60,11 +70,12 @@ export function DesignerDialog({
   useEffect(() => {
     if (!open) return;
     setSessionNotebook(prev => prev ?? notebook);
+    setSessionLiveHash(prev => prev ?? liveUiSpecHash);
     setMounted(true);
     if (animateIn) return;
     const tid = window.setTimeout(() => setAnimateIn(true), 50);
     return () => window.clearTimeout(tid);
-  }, [open, notebook, animateIn]);
+  }, [open, notebook, liveUiSpecHash, animateIn]);
 
   // Close: animate out, then unmount and clear the snapshot so the next
   // open starts fresh.
@@ -76,6 +87,7 @@ export function DesignerDialog({
       setMounted(false);
       setAnimateOut(false);
       setSessionNotebook(undefined);
+      setSessionLiveHash(undefined);
     }, animationDuration);
     return () => window.clearTimeout(tid);
   }, [open, mounted, animationDuration]);
@@ -125,6 +137,7 @@ export function DesignerDialog({
           resourceKind={resourceKind}
           resourceId={resourceId}
           publishNotebook={publishNotebook}
+          liveUiSpecHash={sessionLiveHash}
         />
       </div>
     </div>

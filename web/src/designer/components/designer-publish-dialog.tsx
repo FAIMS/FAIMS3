@@ -22,6 +22,8 @@ type DesignerPublishDialogProps = {
   animationDuration: number;
   /** Collected records for this survey. Templates and empty surveys omit this. */
   existingRecordCount?: number;
+  /** Local draft is based on an older live design. */
+  stale?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -35,6 +37,9 @@ const TEMPLATE_PUBLISH_COPY =
 const EXISTING_RECORDS_PUBLISH_COPY =
   'This {notebook} has existing records. Changing the {notebook} design could result in the loss of existing data.';
 
+const STALE_DRAFT_PUBLISH_COPY =
+  'Warning: the design has changed since this draft was created. Publishing will replace the current version.';
+
 /**
  * Confirm that a designer publish is a live write (project vs template copy).
  * The existing-records warning is survey-only and hidden when none exist.
@@ -46,6 +51,7 @@ export function DesignerPublishDialog({
   busy,
   animationDuration,
   existingRecordCount,
+  stale = false,
   onCancel,
   onConfirm,
 }: DesignerPublishDialogProps) {
@@ -71,6 +77,7 @@ export function DesignerPublishDialog({
           {showExistingRecordsWarning
             ? ` ${brandNotebook(EXISTING_RECORDS_PUBLISH_COPY)}`
             : null}
+          {stale ? ` ${STALE_DRAFT_PUBLISH_COPY}` : null}
         </DialogContentText>
       </DialogContent>
       <DialogActions>

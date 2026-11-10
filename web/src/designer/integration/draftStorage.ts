@@ -25,6 +25,8 @@ export type DesignerDraftRecord = {
   draft: Notebook;
   published: Notebook;
   savedAt: number;
+  /** `uiSpecProperties.hash` of the live design this draft was based on. */
+  publishedHash: string;
 };
 
 const DRAFT_RECORD_VERSION = 1;
@@ -119,7 +121,9 @@ function isDraftRecord(value: unknown): value is DesignerDraftRecord {
     typeof record.draft === 'object' &&
     record.draft !== null &&
     typeof record.published === 'object' &&
-    record.published !== null
+    record.published !== null &&
+    typeof record.publishedHash === 'string' &&
+    record.publishedHash.length > 0
   );
 }
 
@@ -151,10 +155,45 @@ export function getDraft(
  * last published snapshot.
  */
 export function hasUnpublishedDesignerDraft(key: DesignerDraftKey): boolean {
+  return getDesignerDraftHostStatus(key).unpublished;
+}
+
+/** Live design hash used to detect a draft based on an older published design. */
+export type DesignerLiveDesignRef = {
+  uiSpecHash?: string;
+};
+
+/**
+ * True when the stored last-published hash is not the current live design.
+ */
+export function isStoredDraftStaleVsLive(
+  stored: DesignerDraftRecord,
+  live?: DesignerLiveDesignRef
+): boolean {
+  if (!live?.uiSpecHash) {
+    return false;
+  }
+  return stored.publishedHash !== live.uiSpecHash;
+}
+
+/** Unpublished local draft, and whether the live design has moved since. */
+export type DesignerDraftHostStatus = {
+  unpublished: boolean;
+  stale: boolean;
+};
+
+export function getDesignerDraftHostStatus(
+  key: DesignerDraftKey,
+  live?: DesignerLiveDesignRef
+): DesignerDraftHostStatus {
   const stored = getDraft(key);
-  return (
-    stored !== undefined && isUnpublishedDraft(stored.draft, stored.published)
-  );
+  if (!stored || !isUnpublishedDraft(stored.draft, stored.published)) {
+    return {unpublished: false, stale: false};
+  }
+  return {
+    unpublished: true,
+    stale: isStoredDraftStaleVsLive(stored, live),
+  };
 }
 
 /**
@@ -163,7 +202,7 @@ export function hasUnpublishedDesignerDraft(key: DesignerDraftKey): boolean {
  */
 export function setDraft(
   key: DesignerDraftKey,
-  record: {draft: Notebook; published: Notebook},
+  record: {draft: Notebook; published: Notebook; publishedHash: string},
   storage: Storage | undefined = defaultStorage()
 ): DraftWriteResult {
   if (!storage) {
@@ -174,6 +213,7 @@ export function setDraft(
     draft: record.draft,
     published: record.published,
     savedAt: Date.now(),
+    publishedHash: record.publishedHash,
   };
   try {
     storage.setItem(designerDraftStorageKey(key), JSON.stringify(payload));

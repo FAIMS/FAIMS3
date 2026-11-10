@@ -329,6 +329,47 @@ describe('template API tests', () => {
     await deleteATemplate(app, template._id);
   });
 
+  it('PUT uiSpecification If-Match refuses a stale hash and allows a matching hash', async () => {
+    const {template} = await createSampleTemplate(app, {
+      name: 'if-match-template',
+    });
+    const created = await getATemplate(app, template._id);
+    const originalHash = created.uiSpecProperties.hash;
+    const nextSpec = {
+      ...created.uiSpecification,
+      uiSpec: {
+        ...created.uiSpecification.uiSpec,
+        visible_types: [
+          ...created.uiSpecification.uiSpec.visible_types,
+          'if-match-form',
+        ],
+      },
+    };
+
+    await requestAuthAndType(
+      request(app)
+        .put(`${TEMPLATE_API_BASE}/${template._id}/uiSpecification`)
+        .set('If-Match', `"${'c'.repeat(64)}"`)
+        .send(nextSpec)
+    ).expect(409);
+    expect((await getATemplate(app, template._id)).uiSpecProperties.hash).toBe(
+      originalHash
+    );
+
+    await requestAuthAndType(
+      request(app)
+        .put(`${TEMPLATE_API_BASE}/${template._id}/uiSpecification`)
+        .set('If-Match', `"${originalHash}"`)
+        .send(nextSpec)
+    ).expect(200);
+    expect(
+      (await getATemplate(app, template._id)).uiSpecProperties.hash
+    ).not.toBe(originalHash);
+
+    await setTemplateArchived(app, template._id, true);
+    await deleteATemplate(app, template._id);
+  });
+
   it('startup migrates stale template uiSpecs and rebuilds uiSpecProperties', async () => {
     const {template: current} = await createSampleTemplate(app, {
       name: 'already-current-template',

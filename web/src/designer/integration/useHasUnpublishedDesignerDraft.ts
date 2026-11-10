@@ -3,25 +3,27 @@
 import {useEffect, useState} from 'react';
 import {
   designerDraftStorageKey,
-  hasUnpublishedDesignerDraft,
+  getDesignerDraftHostStatus,
+  type DesignerDraftHostStatus,
   type DesignerDraftKey,
+  type DesignerLiveDesignRef,
 } from './draftStorage';
 
 /**
- * Whether this user and resource have an unpublished local draft. Re-reads when
- * `refreshToken` changes (for example when the editor overlay closes) and when
- * another tab writes the same storage key.
+ * Unpublished / stale-vs-live status for the Actions-tab editor card.
+ * Re-reads when `refreshToken` changes and when another tab writes the key.
  */
-export function useHasUnpublishedDesignerDraft(
+export function useDesignerDraftHostStatus(
   key: DesignerDraftKey,
+  live?: DesignerLiveDesignRef,
   refreshToken?: unknown
-): boolean {
-  const [hasUnpublished, setHasUnpublished] = useState(() =>
-    hasUnpublishedDesignerDraft(key)
+): DesignerDraftHostStatus {
+  const [status, setStatus] = useState(() =>
+    getDesignerDraftHostStatus(key, live)
   );
 
   useEffect(() => {
-    const read = () => setHasUnpublished(hasUnpublishedDesignerDraft(key));
+    const read = () => setStatus(getDesignerDraftHostStatus(key, live));
     read();
     const onStorage = (event: StorageEvent) => {
       if (event.key === null || event.key === designerDraftStorageKey(key)) {
@@ -30,7 +32,23 @@ export function useHasUnpublishedDesignerDraft(
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
-  }, [key.resourceId, key.resourceKind, key.userId, refreshToken]);
+  }, [
+    key.resourceId,
+    key.resourceKind,
+    key.userId,
+    live?.uiSpecHash,
+    refreshToken,
+  ]);
 
-  return hasUnpublished;
+  return status;
+}
+
+/**
+ * Whether this user and resource have an unpublished local draft.
+ */
+export function useHasUnpublishedDesignerDraft(
+  key: DesignerDraftKey,
+  refreshToken?: unknown
+): boolean {
+  return useDesignerDraftHostStatus(key, undefined, refreshToken).unpublished;
 }

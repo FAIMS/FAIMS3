@@ -27,8 +27,8 @@ import {
 import {
   closeDesignerHostOverlay,
   toDesignerNotebookWithHistory,
+  useDesignerDraftHostStatus,
   useDesignerSaveMutation,
-  useHasUnpublishedDesignerDraft,
 } from '@/designer/integration';
 import {Spinner} from '@/components/ui/spinner';
 
@@ -45,12 +45,14 @@ const TemplateActions = () => {
   const {data, isLoading} = useGetTemplate({user, templateId});
   const queryClient = useQueryClient();
   const [editorOpen, setEditorOpen] = useState(false);
-  const hasUnpublishedDraft = useHasUnpublishedDesignerDraft(
+  const liveUiSpecHash = data?.uiSpecProperties?.hash;
+  const draftHost = useDesignerDraftHostStatus(
     {
       userId: user.user.id,
       resourceKind: 'templates',
       resourceId: templateId,
     },
+    liveUiSpecHash ? {uiSpecHash: liveUiSpecHash} : undefined,
     editorOpen
   );
 
@@ -149,7 +151,8 @@ const TemplateActions = () => {
                 <div className="flex flex-wrap items-center gap-2">
                   <ListLabel>Edit Template</ListLabel>
                   <DesignerUnsavedDraftIndicator
-                    visible={hasUnpublishedDraft}
+                    visible={draftHost.unpublished}
+                    stale={draftHost.stale}
                   />
                 </div>
                 <ListDescription>
@@ -309,6 +312,7 @@ const TemplateActions = () => {
         resourceKind="templates"
         resourceId={templateId}
         publishNotebook={saveTemplateNotebook.mutateAsyncWithToast}
+        liveUiSpecHash={liveUiSpecHash}
       />
     </>
   );

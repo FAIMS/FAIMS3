@@ -17,6 +17,7 @@ import {
   type DesignerDraftKey,
   discardDraft,
   getDraft,
+  isStoredDraftStaleVsLive,
   setDraft,
   stableStringify,
   type DraftWriteResult,
@@ -56,26 +57,42 @@ export function resolveDesignerSessionNotebook({
   identity,
   serverNotebook,
   mode = 'project',
+  liveUiSpecHash,
 }: {
   identity?: DesignerSessionIdentity;
   serverNotebook?: NotebookWithHistory;
   mode?: DesignerDocumentMode;
+  liveUiSpecHash?: string;
 }): {
   notebook?: NotebookWithHistory;
   published?: Notebook;
+  isStale: boolean;
+  publishedHash?: string;
 } {
+  const livePublished = serverNotebook
+    ? toPublishedNotebook(serverNotebook)
+    : undefined;
   if (identity) {
     const stored = getDraft(identity);
     if (stored) {
       const restored = hydrateExportedNotebook(stored.draft, mode);
       if (restored) {
-        return {notebook: restored, published: stored.published};
+        return {
+          notebook: restored,
+          published: stored.published,
+          isStale: isStoredDraftStaleVsLive(stored, {
+            uiSpecHash: liveUiSpecHash,
+          }),
+          publishedHash: stored.publishedHash,
+        };
       }
     }
   }
   return {
     notebook: serverNotebook,
-    published: serverNotebook ? toPublishedNotebook(serverNotebook) : undefined,
+    published: livePublished,
+    isStale: false,
+    publishedHash: liveUiSpecHash,
   };
 }
 
@@ -86,9 +103,10 @@ export type DesignerDraftSession = {
   isUnpublished: boolean;
   isDraftWriteInFlight: boolean;
   isDebouncePending: boolean;
+  publishedHash?: string;
   persistDraftNow: () => DraftWriteResult;
   discardDraft: () => void;
-  markPublished: (snapshot: Notebook) => void;
+  markPublished: (snapshot: Notebook, nextPublishedHash?: string) => void;
   exportPresentNotebook: () => Notebook;
 };
 
@@ -100,14 +118,17 @@ export function useDesignerDraftSession({
   store,
   identity,
   initialPublished,
+  publishedHash,
 }: {
   store: DesignerStore;
   identity?: DesignerSessionIdentity;
   initialPublished?: Notebook;
+  publishedHash?: string;
 }): DesignerDraftSession {
   const identityRef = useRef(identity);
   identityRef.current = identity;
   const publishedRef = useRef(initialPublished);
+  const publishedHashRef = useRef(publishedHash);
   const discardedRef = useRef(false);
   const flushingRef = useRef(false);
   const lastWrittenRef = useRef(
@@ -123,6 +144,8 @@ export function useDesignerDraftSession({
   const [exportSignature, setExportSignature] = useState(
     lastWrittenRef.current
   );
+  const [sessionPublishedHash, setSessionPublishedHash] =
+    useState(publishedHash);
 
   const exportPresentNotebook = useCallback((): Notebook => {
     flushPendingDesignerEdits();
@@ -150,10 +173,19 @@ export function useDesignerDraftSession({
       return {ok: true};
     }
 
+    const publishedHash = publishedHashRef.current;
+    if (!publishedHash) {
+      setDebouncePending(false);
+      setStatus('error');
+      setErrorMessage('The local draft could not be saved.');
+      return {ok: false, error: 'The local draft could not be saved.'};
+    }
+
     setWriteInFlight(true);
     const result = setDraft(currentIdentity, {
       draft: exported,
       published: publishedRef.current ?? exported,
+      publishedHash,
     });
     setWriteInFlight(false);
     setDebouncePending(false);
@@ -190,6 +222,8 @@ export function useDesignerDraftSession({
   useEffect(() => {
     discardedRef.current = false;
     publishedRef.current = initialPublished;
+    publishedHashRef.current = publishedHash;
+    setSessionPublishedHash(publishedHash);
     setPublished(initialPublished);
     const signature = stableStringify(
       toPublishedNotebook(store.getState().notebook)
@@ -253,15 +287,22 @@ export function useDesignerDraftSession({
     }
   }, []);
 
-  const markPublished = useCallback((snapshot: Notebook) => {
-    publishedRef.current = snapshot;
-    setPublished(snapshot);
-    const signature = stableStringify(snapshot);
-    lastWrittenRef.current = signature;
-    setExportSignature(signature);
-    setStatus('saved');
-    setErrorMessage(undefined);
-  }, []);
+  const markPublished = useCallback(
+    (snapshot: Notebook, nextPublishedHash?: string) => {
+      publishedRef.current = snapshot;
+      setPublished(snapshot);
+      if (nextPublishedHash) {
+        publishedHashRef.current = nextPublishedHash;
+        setSessionPublishedHash(nextPublishedHash);
+      }
+      const signature = stableStringify(snapshot);
+      lastWrittenRef.current = signature;
+      setExportSignature(signature);
+      setStatus('saved');
+      setErrorMessage(undefined);
+    },
+    []
+  );
 
   const publishedSignature = published ? stableStringify(published) : undefined;
   const isUnpublished = Boolean(
@@ -279,5 +320,6 @@ export function useDesignerDraftSession({
     discardDraft: handleDiscard,
     markPublished,
     exportPresentNotebook,
+    publishedHash: sessionPublishedHash,
   };
 }

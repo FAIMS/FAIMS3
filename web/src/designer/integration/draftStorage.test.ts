@@ -5,6 +5,7 @@ import {sampleNotebook} from '../test-notebook';
 import {
   designerDraftStorageKey,
   discardDraft,
+  getDesignerDraftHostStatus,
   getDraft,
   hasUnpublishedDesignerDraft,
   isUnpublishedDraft,
@@ -22,6 +23,7 @@ const published = structuredClone(sampleNotebook);
 const edited = structuredClone(sampleNotebook);
 edited.uiSpec.fields['New-Text-Field']['component-parameters'].label =
   'Edited label';
+const publishedHash = 'a'.repeat(64);
 
 afterEach(() => {
   localStorage.clear();
@@ -30,7 +32,7 @@ afterEach(() => {
 
 describe('draftStorage', () => {
   it('round-trips a draft and published snapshot', () => {
-    const result = setDraft(key, {draft: edited, published});
+    const result = setDraft(key, {draft: edited, published, publishedHash});
     expect(result).toEqual({ok: true});
     const stored = getDraft(key);
     expect(
@@ -44,7 +46,7 @@ describe('draftStorage', () => {
   });
 
   it('isolates keys by user, resource kind, and resource id', () => {
-    setDraft(key, {draft: edited, published});
+    setDraft(key, {draft: edited, published, publishedHash});
     expect(getDraft({...key, userId: 'user-2'})).toBeUndefined();
     expect(getDraft({...key, resourceKind: 'templates'})).toBeUndefined();
     expect(getDraft({...key, resourceId: 'proj-2'})).toBeUndefined();
@@ -55,7 +57,7 @@ describe('draftStorage', () => {
   });
 
   it('discard deletes the storage key', () => {
-    setDraft(key, {draft: edited, published});
+    setDraft(key, {draft: edited, published, publishedHash});
     discardDraft(key);
     expect(getDraft(key)).toBeUndefined();
     expect(localStorage.getItem(designerDraftStorageKey(key))).toBeNull();
@@ -69,10 +71,37 @@ describe('draftStorage', () => {
 
   it('hasUnpublishedDesignerDraft is true only for a stored unpublished draft', () => {
     expect(hasUnpublishedDesignerDraft(key)).toBe(false);
-    setDraft(key, {draft: edited, published});
+    setDraft(key, {draft: edited, published, publishedHash});
     expect(hasUnpublishedDesignerDraft(key)).toBe(true);
-    setDraft(key, {draft: published, published});
+    setDraft(key, {draft: published, published, publishedHash});
     expect(hasUnpublishedDesignerDraft(key)).toBe(false);
+  });
+
+  it('ignores a stored record that has no publishedHash', () => {
+    localStorage.setItem(
+      designerDraftStorageKey(key),
+      JSON.stringify({
+        version: 1,
+        draft: edited,
+        published,
+        savedAt: Date.now(),
+      })
+    );
+    expect(getDraft(key)).toBeUndefined();
+  });
+
+  it('marks a draft stale when the live uiSpec hash has moved', () => {
+    setDraft(key, {
+      draft: edited,
+      published,
+      publishedHash,
+    });
+    expect(
+      getDesignerDraftHostStatus(key, {uiSpecHash: 'a'.repeat(64)}).stale
+    ).toBe(false);
+    expect(
+      getDesignerDraftHostStatus(key, {uiSpecHash: 'b'.repeat(64)}).stale
+    ).toBe(true);
   });
 
   it('surfaces a mocked quota setItem failure instead of swallowing it', () => {
@@ -82,7 +111,7 @@ describe('draftStorage', () => {
         'QuotaExceededError'
       );
     });
-    const result = setDraft(key, {draft: edited, published});
+    const result = setDraft(key, {draft: edited, published, publishedHash});
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error).toMatch(/full|quota/i);
