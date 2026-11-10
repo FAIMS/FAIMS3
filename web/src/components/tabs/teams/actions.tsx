@@ -59,8 +59,8 @@ const TeamActions = ({teamId}: {teamId: string}) => {
               <ListItem>
                 <ListLabel>Archive Team</ListLabel>
                 <ListDescription>
-                  Hide this team from default lists and stop new membership,
-                  invites, and creation of new resources in this team.
+                  Hide this team from lists and stop new membership, invites,
+                  and creation of new resources in this team.
                 </ListDescription>
               </ListItem>
             )}

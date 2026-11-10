@@ -428,7 +428,7 @@ export const actionDetails: Record<Action, ActionDetails> = {
   [Action.CHANGE_PROJECT_ARCHIVE_STATUS]: {
     name: 'Archive or Restore Project',
     description:
-      'Archive a survey (hide from default lists) or restore an archived survey to closed state',
+      'Archive a survey (hide from lists) or restore an archived survey to closed state',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
