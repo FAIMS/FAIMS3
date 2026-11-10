@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
- * Shared team-selection helpers for create flows (templates, projects from
- * templates, etc.).
+ * Shared team-selection helpers for create and reassign flows (templates,
+ * projects from templates, assign-to-team dialogs, etc.).
  *
  * The API distinguishes global create (`CREATE_*`) from in-team create
  * (`CREATE_*_IN_TEAM`). These helpers pick the correct UI (callout vs required
  * dropdown with a permission-gated "No team" option) and resolve the `teamId`
- * sent on submit.
+ * sent on submit. Reassign dialogs reuse the same "No team" sentinel when the
+ * user has `REMOVE_*_FROM_TEAM` on the resource.
  */
 import type {Field} from '@/components/form';
 import {
@@ -152,12 +153,40 @@ export function defaultTeamFromOwner({
 }
 
 /**
+ * Default value for the assign-to-team select.
+ *
+ * Prefills the current owner when that team is in the dropdown. If the
+ * resource has no team and the user may unassign (`REMOVE_*_FROM_TEAM`), uses
+ * {@link NO_TEAM_SENTINEL} so the field shows "No team" instead of a
+ * placeholder.
+ */
+export function defaultTeamForReassign({
+  ownerTeamId,
+  possibleTeams,
+  canUnassign,
+}: {
+  ownerTeamId?: string;
+  possibleTeams: TeamOption[];
+  canUnassign: boolean;
+}): string | undefined {
+  if (ownerTeamId && possibleTeams.some(t => t._id === ownerTeamId)) {
+    return ownerTeamId;
+  }
+  if (!ownerTeamId && canUnassign) {
+    return NO_TEAM_SENTINEL;
+  }
+  return undefined;
+}
+
+/**
  * Builds a {@link Field} definition for a team select.
  *
- * When `canCreateGlobally` is true and `allowBlank` is false, the options
- * include {@link NO_TEAM_LABEL} (sentinel {@link NO_TEAM_SENTINEL}). The
- * schema still requires a choice — pick a team or "No team". Map-layer upload
- * sets `allowBlank` so Super Users may leave the field empty instead.
+ * When `includeNoTeam` is true (defaults to `canCreateGlobally`) and
+ * `allowBlank` is false, the options include {@link NO_TEAM_LABEL} (sentinel
+ * {@link NO_TEAM_SENTINEL}). The schema still requires a choice — pick a team
+ * or "No team". Map-layer upload sets `allowBlank` so Super Users may leave
+ * the field empty instead. Assign dialogs pass `includeNoTeam` from
+ * `REMOVE_*_FROM_TEAM`.
  *
  * Callers always pass {@link description} so the selector has help text
  * whether or not the user may create outside a team. Optionality is spelled
@@ -169,6 +198,7 @@ export function buildTeamField({
   label,
   description,
   allowBlank = false,
+  includeNoTeam = canCreateGlobally,
 }: {
   canCreateGlobally: boolean;
   possibleTeams: TeamOption[];
@@ -180,13 +210,18 @@ export function buildTeamField({
    * with a "No team" sentinel when the user can create unowned.
    */
   allowBlank?: boolean;
+  /**
+   * Show the "No team" sentinel. Defaults to {@link canCreateGlobally}. Assign
+   * dialogs set this from `REMOVE_*_FROM_TEAM` instead of create permission.
+   */
+  includeNoTeam?: boolean;
 }): Field {
   const teamOptions = possibleTeams.map(({_id, name}) => ({
     label: name,
     value: _id,
   }));
   const options =
-    canCreateGlobally && !allowBlank
+    includeNoTeam && !allowBlank
       ? [{label: NO_TEAM_LABEL, value: NO_TEAM_SENTINEL}, ...teamOptions]
       : teamOptions;
 

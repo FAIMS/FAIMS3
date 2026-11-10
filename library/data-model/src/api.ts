@@ -397,12 +397,9 @@ export type PutChangeNotebookStatusInput = z.infer<
   typeof PutChangeNotebookStatusInputSchema
 >;
 
-// PUT :/id change project team
+// PUT :/id change project team. Omit teamId to remove team ownership.
 export const PutChangeNotebookTeamInputSchema = z.object({
-  teamId: z
-    .string()
-    .min(1, 'Team ID is required')
-    .max(INPUT_LIMITS.ID_MAX_LENGTH),
+  teamId: z.string().trim().min(1).max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
 });
 
 export type PutChangeNotebookTeamInput = z.infer<
@@ -588,13 +585,9 @@ export type PutUpdateTemplateInput = z.infer<
   typeof PutUpdateTemplateInputSchema
 >;
 
-/** PUT /api/templates/:id/team — change owning team only. */
+/** PUT /api/templates/:id/team — change owning team only. Omit teamId to remove team ownership. */
 export const PutChangeTemplateTeamInputSchema = z.object({
-  teamId: z
-    .string()
-    .trim()
-    .min(1, 'Team ID is required')
-    .max(INPUT_LIMITS.ID_MAX_LENGTH),
+  teamId: z.string().trim().min(1).max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
 });
 export type PutChangeTemplateTeamInput = z.infer<
   typeof PutChangeTemplateTeamInputSchema

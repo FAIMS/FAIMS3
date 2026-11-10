@@ -949,6 +949,237 @@ describe('Team integration with templates and projects', () => {
     expect(updatedProjectDoc.ownedByTeamId).toBe(team._id);
   });
 
+  it('can remove a project from a team after assignment', async () => {
+    const team = await createTeam(app, {
+      teamName: 'Unassign Team',
+      description: 'Team for unassigning projects',
+    });
+
+    const project = await requestAuthAndType(
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Project to Unassign',
+        description: testNotebookDescription,
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: team._id,
+      }),
+      adminToken
+    )
+      .expect(200)
+      .then(res => res.body);
+
+    const projectsDb = localGetProjectsDb();
+    const projectDoc = await projectsDb.get(project.notebook);
+    expect(projectDoc.ownedByTeamId).toBe(team._id);
+
+    await requestAuthAndType(
+      request(app)
+        .put(`${NOTEBOOKS_API_BASE}/${project.notebook}/team`)
+        .send({}),
+      adminToken
+    ).expect(200);
+
+    const clearedProjectDoc = await projectsDb.get(project.notebook);
+    expect(clearedProjectDoc.ownedByTeamId).toBeUndefined();
+  });
+
+  it('does not let a team manager remove team ownership', async () => {
+    const team = await createTeam(app, {
+      teamName: 'Manager Unassign Team',
+      description: 'Team for unassign permission tests',
+    });
+
+    const template = await requestAuthAndType(
+      request(app)
+        .post(`${TEMPLATE_API_BASE}`)
+        .send({
+          ...sampleCreateTemplatePayload('manager-owned template'),
+          name: 'manager-owned template',
+          teamId: team._id,
+        } satisfies PostCreateTemplateInput),
+      adminToken
+    )
+      .expect(200)
+      .then(res => res.body);
+
+    const project = await requestAuthAndType(
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Manager owned project',
+        description: testNotebookDescription,
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: team._id,
+      }),
+      adminToken
+    )
+      .expect(200)
+      .then(res => res.body);
+
+    const [user, err] = await createUser({
+      username: 'cannotunassign',
+      name: 'Team Manager Without Remove-From-Team',
+    });
+    expect(err).toBe('');
+    expect(user).not.toBeNull();
+    if (!user) {
+      throw new Error('User creation failed ' + err);
+    }
+
+    addTeamRole({
+      user,
+      teamId: team._id,
+      role: Role.TEAM_MANAGER,
+    });
+    await saveCouchUser(user);
+
+    const signingKey = await keyService.getSigningKey();
+    const manager = await getExpressUserFromEmailOrUserId(user._id);
+    const managerToken = await generateJwtFromUser({
+      user: manager!,
+      signingKey,
+    });
+
+    expect(
+      userCanDo({
+        user: manager!,
+        action: Action.CHANGE_TEMPLATE_TEAM,
+        resourceId: template._id,
+      })
+    ).toBe(true);
+    expect(
+      userCanDo({
+        user: manager!,
+        action: Action.REMOVE_TEMPLATE_FROM_TEAM,
+        resourceId: template._id,
+      })
+    ).toBe(false);
+    expect(
+      userCanDo({
+        user: manager!,
+        action: Action.CHANGE_PROJECT_TEAM,
+        resourceId: project.notebook,
+      })
+    ).toBe(true);
+    expect(
+      userCanDo({
+        user: manager!,
+        action: Action.REMOVE_PROJECT_FROM_TEAM,
+        resourceId: project.notebook,
+      })
+    ).toBe(false);
+
+    await requestAuthAndType(
+      request(app).put(`${TEMPLATE_API_BASE}/${template._id}/team`).send({}),
+      managerToken
+    ).expect(401);
+
+    await requestAuthAndType(
+      request(app)
+        .put(`${NOTEBOOKS_API_BASE}/${project.notebook}/team`)
+        .send({}),
+      managerToken
+    ).expect(401);
+
+    expect((await getTemplate(template._id)).ownedByTeamId).toBe(team._id);
+    const projectsDb = localGetProjectsDb();
+    expect((await projectsDb.get(project.notebook)).ownedByTeamId).toBe(
+      team._id
+    );
+  });
+
+  it('lets a team admin remove team ownership', async () => {
+    const team = await createTeam(app, {
+      teamName: 'Admin Unassign Team',
+      description: 'Team for admin unassign permission tests',
+    });
+
+    const template = await requestAuthAndType(
+      request(app)
+        .post(`${TEMPLATE_API_BASE}`)
+        .send({
+          ...sampleCreateTemplatePayload('admin-unassign template'),
+          name: 'admin-unassign template',
+          teamId: team._id,
+        } satisfies PostCreateTemplateInput),
+      adminToken
+    )
+      .expect(200)
+      .then(res => res.body);
+
+    const project = await requestAuthAndType(
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Admin unassign project',
+        description: testNotebookDescription,
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: team._id,
+      }),
+      adminToken
+    )
+      .expect(200)
+      .then(res => res.body);
+
+    const [user, err] = await createUser({
+      username: 'canunassignadmin',
+      name: 'Team Admin Who Can Unassign',
+    });
+    expect(err).toBe('');
+    expect(user).not.toBeNull();
+    if (!user) {
+      throw new Error('User creation failed ' + err);
+    }
+
+    addTeamRole({
+      user,
+      teamId: team._id,
+      role: Role.TEAM_ADMIN,
+    });
+    await saveCouchUser(user);
+
+    const signingKey = await keyService.getSigningKey();
+    const admin = await getExpressUserFromEmailOrUserId(user._id);
+    const teamAdminToken = await generateJwtFromUser({
+      user: admin!,
+      signingKey,
+    });
+
+    expect(
+      userCanDo({
+        user: admin!,
+        action: Action.CREATE_TEMPLATE,
+      })
+    ).toBe(false);
+    expect(
+      userCanDo({
+        user: admin!,
+        action: Action.REMOVE_TEMPLATE_FROM_TEAM,
+        resourceId: template._id,
+      })
+    ).toBe(true);
+    expect(
+      userCanDo({
+        user: admin!,
+        action: Action.REMOVE_PROJECT_FROM_TEAM,
+        resourceId: project.notebook,
+      })
+    ).toBe(true);
+
+    await requestAuthAndType(
+      request(app).put(`${TEMPLATE_API_BASE}/${template._id}/team`).send({}),
+      teamAdminToken
+    ).expect(200);
+
+    await requestAuthAndType(
+      request(app)
+        .put(`${NOTEBOOKS_API_BASE}/${project.notebook}/team`)
+        .send({}),
+      teamAdminToken
+    ).expect(200);
+
+    expect((await getTemplate(template._id)).ownedByTeamId).toBeUndefined();
+    const projectsDb = localGetProjectsDb();
+    expect(
+      (await projectsDb.get(project.notebook)).ownedByTeamId
+    ).toBeUndefined();
+  });
+
   it('getRelevantUserAssociations with no teams returns empty array', async () => {
     // Create test user with no team roles
     const [user, err] = await createUser({

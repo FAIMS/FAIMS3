@@ -70,8 +70,11 @@ export enum Action {
   /** Archive a survey or restore from archive (returns to closed). */
   CHANGE_PROJECT_ARCHIVE_STATUS = 'CHANGE_PROJECT_ARCHIVE_STATUS',
 
-  // Change team of a project
+  // Change team of a project (reassign to another team)
   CHANGE_PROJECT_TEAM = 'CHANGE_PROJECT_TEAM',
+
+  /** Remove a project from its owning team, leaving it unowned. */
+  REMOVE_PROJECT_FROM_TEAM = 'REMOVE_PROJECT_FROM_TEAM',
 
   /**
    * Permanently destroy survey data on the server (requires archive first).
@@ -140,8 +143,11 @@ export enum Action {
   // Update the template high level details (e.g. description, title etc)
   UPDATE_TEMPLATE_DETAILS = 'UPDATE_TEMPLATE_DETAILS',
 
-  /** Change the team associated with a template */
+  /** Change the team associated with a template (reassign to another team) */
   CHANGE_TEMPLATE_TEAM = 'CHANGE_TEMPLATE_TEAM',
+
+  /** Remove a template from its owning team, leaving it unowned. */
+  REMOVE_TEMPLATE_FROM_TEAM = 'REMOVE_TEMPLATE_FROM_TEAM',
 
   // Update the UI specification
   UPDATE_TEMPLATE_UISPEC = 'UPDATE_TEMPLATE_UISPEC',
@@ -432,7 +438,15 @@ export const actionDetails: Record<Action, ActionDetails> = {
   },
   [Action.CHANGE_PROJECT_TEAM]: {
     name: 'Change Project Team',
-    description: 'Change the team associated with a project',
+    description:
+      'Reassign a project to a different team. Removing team ownership uses REMOVE_PROJECT_FROM_TEAM.',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.REMOVE_PROJECT_FROM_TEAM]: {
+    name: 'Remove Project From Team',
+    description:
+      'Remove a project from its owning team, leaving it unowned. Distinct from reassigning to another team.',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
@@ -788,7 +802,15 @@ export const actionDetails: Record<Action, ActionDetails> = {
   },
   [Action.CHANGE_TEMPLATE_TEAM]: {
     name: 'Change Template Team',
-    description: 'Change the team associated with a template',
+    description:
+      'Reassign a template to a different team. Removing team ownership uses REMOVE_TEMPLATE_FROM_TEAM.',
+    resourceSpecific: true,
+    resource: Resource.TEMPLATE,
+  },
+  [Action.REMOVE_TEMPLATE_FROM_TEAM]: {
+    name: 'Remove Template From Team',
+    description:
+      'Remove a template from its owning team, leaving it unowned. Distinct from reassigning to another team.',
     resourceSpecific: true,
     resource: Resource.TEMPLATE,
   },
@@ -1344,6 +1366,7 @@ export const roleActions: Record<
       Action.REMOVE_ADMIN_FROM_PROJECT,
       Action.GENERATE_RANDOM_PROJECT_RECORDS,
       Action.DELETE_PROJECT,
+      Action.REMOVE_PROJECT_FROM_TEAM,
     ],
     inheritedRoles: [Role.PROJECT_MANAGER],
   },
@@ -1362,7 +1385,7 @@ export const roleActions: Record<
     inheritedRoles: [Role.TEMPLATE_GUEST],
   },
   [Role.TEMPLATE_ADMIN]: {
-    actions: [Action.DELETE_TEMPLATE],
+    actions: [Action.DELETE_TEMPLATE, Action.REMOVE_TEMPLATE_FROM_TEAM],
     inheritedRoles: [Role.TEMPLATE_MANAGER],
   },
 

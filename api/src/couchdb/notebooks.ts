@@ -479,20 +479,25 @@ export const applyNotebookLifecycleStatus = async (
 };
 
 /**
- * Updates the team associated with a notebook
+ * Updates the team associated with a notebook. Omitting `teamId` removes
+ * team ownership.
  */
 export const changeNotebookTeam = async ({
   projectId,
   teamId,
 }: {
   projectId: string;
-  teamId: string;
+  teamId?: string;
 }) => {
   // get existing project record
   const project = await getProjectById(projectId);
 
-  // update team
-  const updated = {...project, ownedByTeamId: teamId, updatedAt: nowIso()};
+  const updated = {...project, updatedAt: nowIso()};
+  if (teamId) {
+    updated.ownedByTeamId = teamId;
+  } else {
+    delete updated.ownedByTeamId;
+  }
   await putProjectDoc(updated);
 };
 

@@ -4,6 +4,7 @@ import {Action, Role} from '@faims3/data-model';
 import {
   buildTeamField,
   buildTemplateTeamField,
+  defaultTeamForReassign,
   defaultTeamFromOwner,
   getPossibleTeamsForAction,
   getTeamFieldState,
@@ -56,6 +57,17 @@ describe('buildTeamField (survey/template create)', () => {
     });
     expect(inTeamField.label).toBe('Team');
     expect(inTeamField.description).toBe(chooseTeam);
+  });
+
+  it('lets includeNoTeam show No team without global create', () => {
+    const field = buildTeamField({
+      canCreateGlobally: false,
+      includeNoTeam: true,
+      possibleTeams: [blue, red],
+      label: 'Team',
+      description: chooseTeamOrNoTeam,
+    });
+    expect(optionValues(field)).toEqual([NO_TEAM_SENTINEL, blue._id, red._id]);
   });
 
   it('includes a No team option only when canCreateGlobally', () => {
@@ -293,5 +305,45 @@ describe('defaultTeamFromOwner', () => {
         possibleTeams: [blue, red],
       })
     ).not.toBe(NO_TEAM_SENTINEL);
+  });
+});
+
+describe('defaultTeamForReassign', () => {
+  it('defaults to the currently assigned team when it is in the list', () => {
+    expect(
+      defaultTeamForReassign({
+        ownerTeamId: blue._id,
+        possibleTeams: [blue, red],
+        canUnassign: true,
+      })
+    ).toBe(blue._id);
+  });
+
+  it('defaults to No team when unowned and the user may unassign', () => {
+    expect(
+      defaultTeamForReassign({
+        possibleTeams: [blue, red],
+        canUnassign: true,
+      })
+    ).toBe(NO_TEAM_SENTINEL);
+  });
+
+  it('leaves the field empty when unowned and the user cannot unassign', () => {
+    expect(
+      defaultTeamForReassign({
+        possibleTeams: [blue, red],
+        canUnassign: false,
+      })
+    ).toBeUndefined();
+  });
+
+  it('does not default to an owner team missing from the dropdown', () => {
+    expect(
+      defaultTeamForReassign({
+        ownerTeamId: blue._id,
+        possibleTeams: [red],
+        canUnassign: true,
+      })
+    ).toBeUndefined();
   });
 });

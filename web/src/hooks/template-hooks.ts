@@ -151,14 +151,14 @@ export const updateTemplateUiSpecificationRequest = async ({
     }
   );
 
-/** PUT /api/templates/:templateId/team — change owning team only. */
+/** PUT /api/templates/:templateId/team — change owning team only. Omit teamId to unassign. */
 export const modifyTeamForTemplate = async ({
   templateId,
   teamId,
   user,
 }: {
   templateId: string;
-  teamId: string;
+  teamId?: string;
   user: User;
 }) =>
   await fetch(
@@ -169,7 +169,7 @@ export const modifyTeamForTemplate = async ({
         'Content-Type': 'application/json',
         Authorization: `Bearer ${user.token}`,
       },
-      body: JSON.stringify({teamId}),
+      body: JSON.stringify(teamId ? {teamId} : {}),
     }
   );
 

@@ -402,7 +402,7 @@
           }
         ],
         "requestBody": {
-          "description": "Target team",
+          "description": "Target team. Omit teamId to remove team ownership.",
           "required": true,
           "content": {
             "application/json": {
@@ -1575,7 +1575,7 @@
           }
         ],
         "requestBody": {
-          "description": "Target team",
+          "description": "Target team. Omit teamId to remove team ownership.",
           "required": true,
           "content": {
             "application/json": {
@@ -2461,10 +2461,9 @@
         "teamId": {
           "type": "string",
           "minLength": 1,
-          "description": "Team that will own the notebook"
+          "description": "Team that will own the notebook. Omit to remove team ownership."
         }
-      },
-      "required": ["teamId"]
+      }
     },
     "PostCreateNotebookFromScratch": {
       "type": "object",
@@ -3151,10 +3150,9 @@
         "teamId": {
           "type": "string",
           "minLength": 1,
-          "description": "Team that will own the template"
+          "description": "Team that will own the template. Omit to remove team ownership."
         }
-      },
-      "required": ["teamId"]
+      }
     },
     "PutUpdateTemplateResponse": {
       "$ref": "#/definitions/TemplateStoredDocument"

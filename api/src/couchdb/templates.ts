@@ -350,7 +350,8 @@ export const updateExistingTemplate = async (
 };
 
 /**
- * Updates the team associated with a template.
+ * Updates the team associated with a template. Omitting `teamId` removes
+ * team ownership.
  */
 export const changeTemplateTeam = async (
   templateId: string,
@@ -367,22 +368,27 @@ export const changeTemplateTeam = async (
     );
   }
 
-  // check that it is a valid team
-  try {
-    await getTeamById(payload.teamId);
-  } catch (error) {
-    throw new Exceptions.InternalSystemError(
-      'The specified team ID does not exist.'
-    );
+  if (payload.teamId) {
+    try {
+      await getTeamById(payload.teamId);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'The specified team ID does not exist.'
+      );
+    }
   }
 
   const newDocument: TemplateDocument = {
     ...existingTemplate,
     _id: templateId,
     _rev: existingTemplate._rev,
-    ownedByTeamId: payload.teamId,
     updatedAt: nowIso(),
   };
+  if (payload.teamId) {
+    newDocument.ownedByTeamId = payload.teamId;
+  } else {
+    delete newDocument.ownedByTeamId;
+  }
 
   // Now on the new put, we make sure to include the _rev of previous document which allows replacement
   const templateDb = getTemplatesDb();
