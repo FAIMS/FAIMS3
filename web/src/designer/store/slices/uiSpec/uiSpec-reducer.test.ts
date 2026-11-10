@@ -60,6 +60,51 @@ const createBaseUiSpec = (): NotebookUISpec => ({
 });
 
 describe('uiSpecificationReducer', () => {
+  it('uses the requested defaults for related-record and map field templates', () => {
+    expect(
+      getFieldSpec('RelatedRecordSelector')['component-parameters']
+    ).toMatchObject({
+      allowLinkToExisting: false,
+      hideCreateAnotherButton: true,
+    });
+    expect(getFieldSpec('MapFormField')['component-parameters'].zoom).toBe(14);
+  });
+
+  it('copies related-record and map defaults when adding fields', () => {
+    const initial = createBaseUiSpec();
+
+    const relatedAdded = uiSpecificationReducer.reducer(
+      initial,
+      fieldAdded({
+        fieldName: 'Related Record',
+        fieldType: 'RelatedRecordSelector',
+        viewId: 'sectionA',
+        viewSetId: 'formA',
+        addAfter: '',
+      })
+    );
+    const relatedField =
+      relatedAdded.fields[relatedAdded.views.sectionA.fields[0]];
+    expect(relatedField['component-parameters']).toMatchObject({
+      allowLinkToExisting: false,
+      hideCreateAnotherButton: true,
+      related_type: 'formA',
+    });
+
+    const mapAdded = uiSpecificationReducer.reducer(
+      createBaseUiSpec(),
+      fieldAdded({
+        fieldName: 'Map',
+        fieldType: 'MapFormField',
+        viewId: 'sectionA',
+        viewSetId: 'formA',
+        addAfter: '',
+      })
+    );
+    const mapField = mapAdded.fields[mapAdded.views.sectionA.fields[0]];
+    expect(mapField['component-parameters'].zoom).toBe(14);
+  });
+
   it('adds fields with minted storage id, export name, and designer identifier', () => {
     const initial = createBaseUiSpec();
 
