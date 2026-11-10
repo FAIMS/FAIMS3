@@ -510,7 +510,7 @@ export const LoginLockoutV6FieldsSchema = z.object({
   userId: z.string(),
   // Consecutive failed local-password attempts since last success / stale reset
   count: z.number().int().nonnegative(),
-  // Unix epoch ms of the most recent failed attempt (including while delayed)
+  // Unix epoch ms of the most recent claimed guess (not updated while delayed)
   lastAttemptMs: z.number(),
 });
 

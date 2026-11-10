@@ -34,9 +34,8 @@ import {
 import {revokeUnusedGrantsForUser} from '../couchdb/downloadGrants';
 import {getTokenByToken, invalidateToken} from '../couchdb/refreshTokens';
 import {
-  evaluateLoginLockoutForIdentifier,
+  claimLoginAttemptForIdentifier,
   formatLoginLockoutMessage,
-  incrementLoginLockoutForIdentifier,
   resetLoginLockoutForIdentifier,
 } from '../couchdb/loginLockout';
 import {
@@ -97,17 +96,6 @@ export const providerSsoErrorPath = (provider: string) => {
 };
 
 const GENERIC_LOGIN_FAILURE = 'Login failed';
-
-const recordFailedLocalLogin = async (identifier: string) => {
-  if (!config.loginLockoutEnabled) {
-    return;
-  }
-  try {
-    await incrementLoginLockoutForIdentifier(identifier);
-  } catch (error) {
-    console.error('Failed to persist login lockout increment:', error);
-  }
-};
 
 const clearFailedLocalLogin = async (identifier: string) => {
   if (!config.loginLockoutEnabled) {
@@ -188,32 +176,6 @@ export function addAuthRoutes(
 
         // Now we have a validated login payload - proceed
 
-        // Couch-backed lockout before any credential work. When the flag is
-        // off we skip reads/writes (including fail-closed) entirely.
-        if (config.loginLockoutEnabled) {
-          let delayMs = 0;
-          try {
-            const evaluation = await evaluateLoginLockoutForIdentifier(
-              loginPayload.email
-            );
-            delayMs = evaluation.delayMs;
-          } catch (error) {
-            console.error('Login lockout evaluation failed:', error);
-            req.flash('error', {
-              loginError: {msg: GENERIC_LOGIN_FAILURE},
-            });
-            return res.redirect(errorRedirect);
-          }
-          if (delayMs > 0) {
-            req.flash('error', {
-              loginError: {msg: formatLoginLockoutMessage(delayMs)},
-            });
-            // Refresh lastAttemptMs (and count) so the delay window moves
-            await recordFailedLocalLogin(loginPayload.email);
-            return res.redirect(errorRedirect);
-          }
-        }
-
         // Are we redirecting?
         const {valid, redirect} = validateRedirect(
           loginPayload.redirect || DEFAULT_REDIRECT_URL
@@ -221,6 +183,30 @@ export function addAuthRoutes(
 
         if (!valid) {
           return res.render('redirect-error', {redirect});
+        }
+
+        // Claim a guess in Couch before PBKDF2. Parallel requests serialize
+        // on 409; once delay applies, further claims reject with no write
+        // and no hash. Couch errors fail closed. When the flag is off we
+        // skip reads/writes entirely.
+        if (config.loginLockoutEnabled) {
+          try {
+            const claim = await claimLoginAttemptForIdentifier(
+              loginPayload.email
+            );
+            if (claim.status === 'delayed') {
+              req.flash('error', {
+                loginError: {msg: formatLoginLockoutMessage(claim.delayMs)},
+              });
+              return res.redirect(errorRedirect);
+            }
+          } catch (error) {
+            console.error('Login lockout claim failed:', error);
+            req.flash('error', {
+              loginError: {msg: GENERIC_LOGIN_FAILURE},
+            });
+            return res.redirect(errorRedirect);
+          }
         }
 
         // Login with local passport strategy - catching the on success to apply
@@ -237,7 +223,6 @@ export function addAuthRoutes(
               req.flash('error', {
                 loginError: {msg: err.message || GENERIC_LOGIN_FAILURE},
               });
-              await recordFailedLocalLogin(req.body.email);
               return res.redirect(errorRedirect);
             }
             if (!user) {
@@ -247,7 +232,6 @@ export function addAuthRoutes(
               req.flash('error', {
                 loginError: {msg: info?.message || GENERIC_LOGIN_FAILURE},
               });
-              await recordFailedLocalLogin(req.body.email);
               return res.redirect(errorRedirect);
             }
             await clearFailedLocalLogin(req.body.email);

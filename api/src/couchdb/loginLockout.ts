@@ -4,7 +4,9 @@
  *
  * One Auth document per people `_id` (`loginlockout_<userId>`). Couch is the
  * only source of truth — no process-local cache — so every Conductor task
- * shares the same counter. Unknown identifiers never create a document.
+ * shares the same counter. Login claims a guess before PBKDF2: an active
+ * delay rejects with no write; otherwise the counter increments (409-retry)
+ * and the password check proceeds. Unknown identifiers never create a document.
  */
 
 import {
@@ -96,15 +98,10 @@ const wrapReadError = (error: unknown, id: string): never => {
   );
 };
 
-/**
- * Fetch the lockout document for a people `_id`. Missing/404 → null.
- * Any other read/parse error fails closed via {@link LoginLockoutUnavailableError}.
- */
-export const getLoginLockoutForUserId = async (
-  userId: string
+const loadLockoutDoc = async (
+  id: string
 ): Promise<LoginLockoutExistingDocument | null> => {
   const authDB = getAuthDB();
-  const id = loginLockoutDocumentId(userId);
   try {
     const raw = await authDB.get(id);
     const parsed = LoginLockoutExistingDocumentSchema.safeParse(raw);
@@ -123,6 +120,50 @@ export const getLoginLockoutForUserId = async (
     }
     return wrapReadError(error, id);
   }
+};
+
+/**
+ * Fetch the lockout document for a people `_id`. Missing/404 → null.
+ * Any other read/parse error fails closed via {@link LoginLockoutUnavailableError}.
+ */
+export const getLoginLockoutForUserId = async (
+  userId: string
+): Promise<LoginLockoutExistingDocument | null> => {
+  return loadLockoutDoc(loginLockoutDocumentId(userId));
+};
+
+const persistIncrement = async ({
+  id,
+  userId,
+  existing,
+  now,
+}: {
+  id: string;
+  userId: string;
+  existing: LoginLockoutExistingDocument | null;
+  now: number;
+}): Promise<LoginLockoutExistingDocument> => {
+  const authDB = getAuthDB();
+  if (!existing) {
+    const created: LoginLockoutFields & {_id: string} = {
+      _id: id,
+      documentType: 'loginlockout',
+      userId,
+      count: 1,
+      lastAttemptMs: now,
+    };
+    const put = await authDB.put(created);
+    return {...created, _rev: put.rev};
+  }
+
+  const nextCount = isLoginLockoutStale(existing, now) ? 1 : existing.count + 1;
+  const updated: LoginLockoutExistingDocument = {
+    ...existing,
+    count: nextCount,
+    lastAttemptMs: now,
+  };
+  const put = await authDB.put(updated);
+  return {...updated, _rev: put.rev};
 };
 
 const deleteLoginLockoutDoc = async (
@@ -185,55 +226,14 @@ export const evaluateLoginLockoutForIdentifier = async (
 export const incrementLoginLockoutForUserId = async (
   userId: string
 ): Promise<LoginLockoutExistingDocument> => {
-  const authDB = getAuthDB();
   const id = loginLockoutDocumentId(userId);
   let lastError: unknown;
 
   for (let attempt = 0; attempt < INCREMENT_RETRY_BUDGET; attempt++) {
     const now = nowMs();
     try {
-      let existing: LoginLockoutExistingDocument | null = null;
-      try {
-        const raw = await authDB.get(id);
-        const parsed = LoginLockoutExistingDocumentSchema.safeParse(raw);
-        if (!parsed.success) {
-          throw new LoginLockoutUnavailableError(
-            `Login lockout document ${id} failed schema parse`
-          );
-        }
-        existing = parsed.data;
-      } catch (error) {
-        if (isNotFound(error)) {
-          existing = null;
-        } else if (error instanceof LoginLockoutUnavailableError) {
-          throw error;
-        } else {
-          return wrapReadError(error, id);
-        }
-      }
-
-      if (!existing) {
-        const created: LoginLockoutFields & {_id: string} = {
-          _id: id,
-          documentType: 'loginlockout',
-          userId,
-          count: 1,
-          lastAttemptMs: now,
-        };
-        const put = await authDB.put(created);
-        return {...created, _rev: put.rev};
-      }
-
-      const nextCount = isLoginLockoutStale(existing, now)
-        ? 1
-        : existing.count + 1;
-      const updated: LoginLockoutExistingDocument = {
-        ...existing,
-        count: nextCount,
-        lastAttemptMs: now,
-      };
-      const put = await authDB.put(updated);
-      return {...updated, _rev: put.rev};
+      const existing = await loadLockoutDoc(id);
+      return await persistIncrement({id, userId, existing, now});
     } catch (error) {
       lastError = error;
       if (isConflict(error)) {
@@ -260,6 +260,68 @@ export const incrementLoginLockoutForIdentifier = async (
     return null;
   }
   return incrementLoginLockoutForUserId(user._id);
+};
+
+export type LoginLockoutClaim =
+  | {status: 'allowed'; userId?: string}
+  | {status: 'delayed'; delayMs: number; userId: string};
+
+/**
+ * Reserve a password-guess slot for a known people `_id`.
+ *
+ * If a delay is already active, returns it without writing. Otherwise
+ * increments (409-retry) and allows the hash. Stale docs restart at count 1.
+ * Retry exhaustion and unexpected Couch errors throw so the caller can fail
+ * closed (no PBKDF2).
+ */
+export const claimLoginAttemptForUserId = async (
+  userId: string
+): Promise<LoginLockoutClaim> => {
+  const id = loginLockoutDocumentId(userId);
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < INCREMENT_RETRY_BUDGET; attempt++) {
+    const now = nowMs();
+    try {
+      const existing = await loadLockoutDoc(id);
+      if (existing && !isLoginLockoutStale(existing, now)) {
+        const delayMs = getAccountLockoutDelayMs({
+          count: existing.count,
+          lastAttemptMs: existing.lastAttemptMs,
+          now,
+        });
+        if (delayMs > 0) {
+          return {status: 'delayed', delayMs, userId};
+        }
+      }
+      await persistIncrement({id, userId, existing, now});
+      return {status: 'allowed', userId};
+    } catch (error) {
+      lastError = error;
+      if (isConflict(error)) {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw (
+    lastError ?? new Error(`Login lockout claim retries exhausted for ${id}`)
+  );
+};
+
+/**
+ * Claim a guess for the people user resolved from `identifier`.
+ * Unknown identifiers write nothing and are allowed (the password check fails).
+ */
+export const claimLoginAttemptForIdentifier = async (
+  identifier: string
+): Promise<LoginLockoutClaim> => {
+  const user = await getCouchUserFromEmailOrUserId(identifier);
+  if (!user) {
+    return {status: 'allowed'};
+  }
+  return claimLoginAttemptForUserId(user._id);
 };
 
 const resetLoginLockoutForUserIdOnce = async (

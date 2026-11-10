@@ -10,6 +10,8 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {config} from '../src/buildconfig';
 import {getAuthDB} from '../src/couchdb';
 import {
+  claimLoginAttemptForIdentifier,
+  claimLoginAttemptForUserId,
   getAccountLockoutDelayMs,
   getLoginLockoutForUserId,
   incrementLoginLockoutForIdentifier,
@@ -181,6 +183,48 @@ describe('login lockout store', () => {
     expect(stored?.count).toBe(2);
     expect(new Set([a.count, b.count])).toEqual(new Set([1, 2]));
   });
+
+  it('serializes parallel claims so only the first five are allowed', async () => {
+    const results = await Promise.all(
+      Array.from({length: 15}, () => claimLoginAttemptForUserId(adminUserName))
+    );
+    expect(results.filter(result => result.status === 'allowed')).toHaveLength(
+      5
+    );
+    expect(results.filter(result => result.status === 'delayed')).toHaveLength(
+      10
+    );
+    const stored = await getLoginLockoutForUserId(adminUserName);
+    expect(stored?.count).toBe(5);
+  });
+
+  it('does not increment when a claim is already delayed', async () => {
+    for (let i = 0; i < 5; i++) {
+      await incrementLoginLockoutForUserId(adminUserName);
+    }
+    const before = await getLoginLockoutForUserId(adminUserName);
+    const claim = await claimLoginAttemptForUserId(adminUserName);
+    expect(claim.status).toBe('delayed');
+    if (claim.status === 'delayed') {
+      expect(claim.delayMs).toBeGreaterThan(0);
+    }
+    const after = await getLoginLockoutForUserId(adminUserName);
+    expect(after?.count).toBe(5);
+    expect(after?.lastAttemptMs).toBe(before?.lastAttemptMs);
+  });
+
+  it('allows a claim and writes nothing for an unknown identifier', async () => {
+    const claim = await claimLoginAttemptForIdentifier(
+      'nobody-at-all@example.test'
+    );
+    expect(claim).toEqual({status: 'allowed'});
+    const authDB = getAuthDB();
+    const all = await authDB.allDocs({include_docs: true});
+    const lockouts = all.rows.filter(row =>
+      row.id.startsWith(AUTH_RECORD_ID_PREFIXES.loginlockout)
+    );
+    expect(lockouts).toHaveLength(0);
+  });
 });
 
 describe('POST /auth/local login lockout', () => {
@@ -240,6 +284,37 @@ describe('POST /auth/local login lockout', () => {
     expect(blocked.header.location).not.toMatch(/exchangeToken/);
   });
 
+  it('does not bump count or restart the delay on blocked retries', async () => {
+    vi.useFakeTimers({toFake: ['Date']});
+    const started = Date.now();
+    vi.setSystemTime(started);
+
+    for (let i = 0; i < 5; i++) {
+      await request(app).post('/auth/local').send(loginBody());
+    }
+
+    const afterFive = await getLoginLockoutForUserId(adminUserName);
+    expect(afterFive?.count).toBe(5);
+    const lastAttemptMs = afterFive!.lastAttemptMs;
+
+    vi.setSystemTime(started + 3000);
+    for (let i = 0; i < 3; i++) {
+      const blocked = await request(app)
+        .post('/auth/local')
+        .send(loginBody({password: adminPassword}));
+      expect(blocked.header.location).not.toMatch(/exchangeToken/);
+    }
+
+    const duringDelay = await getLoginLockoutForUserId(adminUserName);
+    expect(duringDelay?.count).toBe(5);
+    expect(duringDelay?.lastAttemptMs).toBe(lastAttemptMs);
+
+    vi.setSystemTime(started + LOCKOUT_PERIOD_SHORT_MS + 1);
+    await request(app).post('/auth/local').send(loginBody());
+    const afterRealFailure = await getLoginLockoutForUserId(adminUserName);
+    expect(afterRealFailure?.count).toBe(6);
+  });
+
   it('clears lockout on success so the next failure starts at 1', async () => {
     vi.useFakeTimers({toFake: ['Date']});
     const started = Date.now();
@@ -297,6 +372,26 @@ describe('POST /auth/local login lockout', () => {
       row.id.startsWith(AUTH_RECORD_ID_PREFIXES.loginlockout)
     );
     expect(lockouts).toHaveLength(0);
+  });
+
+  it('does not let a parallel burst exceed five guesses before lockout', async () => {
+    const burst = await Promise.all(
+      Array.from({length: 15}, () =>
+        request(app).post('/auth/local').send(loginBody())
+      )
+    );
+    for (const response of burst) {
+      expect(response.status).toBe(302);
+      expect(response.header.location).not.toMatch(/exchangeToken/);
+    }
+
+    const stored = await getLoginLockoutForUserId(adminUserName);
+    expect(stored?.count).toBe(5);
+
+    const blocked = await request(app)
+      .post('/auth/local')
+      .send(loginBody({password: adminPassword}));
+    expect(blocked.header.location).not.toMatch(/exchangeToken/);
   });
 });
 
