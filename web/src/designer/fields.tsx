@@ -207,7 +207,7 @@ const fields: {[key: string]: Omit<FieldType, 'exportName'>} = {
       variant: 'outlined',
       required: false,
       featureType: 'Point',
-      zoom: 12,
+      zoom: 14,
       label: 'Map Field',
       geoTiff: '',
     },
@@ -240,10 +240,7 @@ const fields: {[key: string]: Omit<FieldType, 'exportName'>} = {
         // Default to expanded checklist mode; users can opt into compact dropdown.
         expandedChecklist: true,
         enableOtherOption: false,
-        options: [
-          {value: 'Default', label: 'Default'},
-          {value: 'Default2', label: 'Default2'},
-        ],
+        options: [],
       },
     },
     initialValue: [],
@@ -269,9 +266,7 @@ const fields: {[key: string]: Omit<FieldType, 'exportName'>} = {
       required: false,
       ElementProps: {
         enableOtherOption: false,
-        options: [
-          {value: '1', label: '1', RadioProps: {id: 'radio-group-field-1'}},
-        ],
+        options: [],
       },
       helperText: '',
     },
@@ -314,8 +309,8 @@ const fields: {[key: string]: Omit<FieldType, 'exportName'>} = {
       related_type: '',
       relation_type: 'faims-core::Child',
       multiple: false,
-      allowLinkToExisting: true,
-      hideCreateAnotherButton: false,
+      allowLinkToExisting: false,
+      hideCreateAnotherButton: true,
     },
     humanReadableName: 'Add Related Record',
     humanReadableDescription: 'Add a child or other linked record',

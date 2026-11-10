@@ -92,14 +92,20 @@ vi.mock('./webPhotoFallback', async () => {
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-type Deferred<T> = {promise: Promise<T>; resolve: (value: T) => void};
+type Deferred<T> = {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason?: unknown) => void;
+};
 
 function deferred<T>(): Deferred<T> {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>(res => {
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
     resolve = res;
+    reject = rej;
   });
-  return {promise, resolve};
+  return {promise, resolve, reject};
 }
 
 function photoBlob(contents = 'photo') {
@@ -173,7 +179,27 @@ function stubBrowserPhotoApis() {
   });
 }
 
-function takePhotoConfig() {
+type LoadAttachmentParams = {identifier: {id: string}};
+
+function defaultLoadAttachmentAsBlob({identifier}: LoadAttachmentParams) {
+  return {
+    blob: photoBlob(),
+    metadata: {
+      filename:
+        identifier.id === 'att-existing'
+          ? 'existing.jpeg'
+          : `${identifier.id}.jpeg`,
+      contentType: 'image/jpeg',
+    },
+  };
+}
+
+function takePhotoConfig(
+  loadAttachmentAsBlob?: (
+    params: LoadAttachmentParams
+  ) => Promise<ReturnType<typeof defaultLoadAttachmentAsBlob>>
+) {
+  const load = loadAttachmentAsBlob ?? defaultLoadAttachmentAsBlob;
   return {
     mode: 'full',
     layout: 'inline',
@@ -181,10 +207,7 @@ function takePhotoConfig() {
     mapConfig: () => ({}),
     appName: 'test-app',
     attachmentEngine: () => ({
-      loadAttachmentAsBlob: vi.fn(async () => ({
-        blob: photoBlob(),
-        metadata: {filename: 'existing.jpeg'},
-      })),
+      loadAttachmentAsBlob: vi.fn(load),
     }),
   } as never;
 }
@@ -196,6 +219,7 @@ function renderTakePhoto({
   withExistingPhoto = false,
   minItems,
   maxItems,
+  loadAttachmentAsBlob,
 }: {
   addAttachment: () => Promise<string>;
   setAttachmentSaving?: (saving: boolean) => void;
@@ -203,23 +227,34 @@ function renderTakePhoto({
   withExistingPhoto?: boolean;
   minItems?: number | null;
   maxItems?: number | null;
+  loadAttachmentAsBlob?: (
+    params: LoadAttachmentParams
+  ) => Promise<ReturnType<typeof defaultLoadAttachmentAsBlob>>;
 }) {
   const client = queryClient();
-
-  const attachments = withExistingPhoto
-    ? [
-        {
-          attachmentId: 'att-existing',
-          filename: 'existing.jpeg',
-          fileType: 'image/jpeg',
-        },
-      ]
-    : [];
+  const initialIds = withExistingPhoto ? ['att-existing'] : [];
 
   const Wrapper = () => {
-    const query = useMemo(() => client, []);
+    const [data, setData] = useState<string[]>(initialIds);
+
+    const setFieldData = (value: unknown) => {
+      setData(previous => {
+        const updated =
+          typeof value === 'function'
+            ? (value as (prev: string[] | undefined) => string[])(previous)
+            : (value as string[] | undefined);
+        return updated ?? [];
+      });
+    };
+
+    const attachments = data.map(id => ({
+      attachmentId: id,
+      filename: id === 'att-existing' ? 'existing.jpeg' : `${id}.jpeg`,
+      fileType: 'image/jpeg',
+    }));
+
     return (
-      <QueryClientProvider client={query}>
+      <QueryClientProvider client={client}>
         <TakePhoto
           name="photos"
           label="Photos"
@@ -232,20 +267,20 @@ function renderTakePhoto({
           state={
             {
               value: {
-                data: withExistingPhoto ? ['att-existing'] : [],
+                data,
                 attachments,
               },
               meta: {errors: []},
             } as never
           }
-          setFieldData={vi.fn()}
+          setFieldData={setFieldData}
           setFieldAnnotation={vi.fn()}
           addAttachment={addAttachment}
           removeAttachment={removeAttachment}
           setAttachmentSaving={setAttachmentSaving}
           handleBlur={vi.fn()}
           trigger={{commit: vi.fn(async () => undefined)}}
-          config={takePhotoConfig()}
+          config={takePhotoConfig(loadAttachmentAsBlob)}
         />
       </QueryClientProvider>
     );
@@ -253,6 +288,14 @@ function renderTakePhoto({
 
   render(<Wrapper />);
   return {setAttachmentSaving, removeAttachment};
+}
+
+/** Pending previews + loaded thumbnails (`<img>`) plus in-flight placeholders. */
+function galleryTileCount() {
+  return (
+    screen.queryAllByRole('img').length +
+    screen.queryAllByRole('status', {name: 'Loading photo'}).length
+  );
 }
 
 /**
@@ -910,7 +953,9 @@ describe('TakePhoto parallel save UI', () => {
       attachmentId: 'att-existing',
     });
 
-    save.resolve('att-new');
+    await act(async () => {
+      save.resolve('att-new');
+    });
   });
 
   it('caps parallel gallery saves and disables capture at capacity', async () => {
@@ -1058,5 +1103,319 @@ describe('TakePhoto handleDelete during parallel saves', () => {
       expect(store.current).toEqual(['photo-b', 'new-1', 'new-2']);
     });
     expect(removeAttachment).toHaveBeenCalledWith({attachmentId: 'photo-a'});
+  });
+});
+
+describe('TakePhoto pending-to-loaded gallery merge', () => {
+  beforeEach(() => {
+    vi.mocked(Camera.getPhoto).mockReset();
+    vi.mocked(Camera.pickImages).mockReset();
+    stubBrowserPhotoApis();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('keeps one tile while the saved attachment is still loading, then swaps to the loaded thumbnail', async () => {
+    const user = userEvent.setup();
+    const save = deferred<string>();
+    const load = deferred<ReturnType<typeof defaultLoadAttachmentAsBlob>>();
+    const loadAttachmentAsBlob = vi.fn(
+      async ({identifier}: LoadAttachmentParams) => {
+        const result = await load.promise;
+        return {
+          ...result,
+          metadata: {
+            ...result.metadata,
+            filename: `${identifier.id}.jpeg`,
+          },
+        };
+      }
+    );
+    vi.mocked(Camera.getPhoto).mockResolvedValue({
+      base64String: btoa('photo'),
+      format: 'jpeg',
+    } as never);
+
+    renderTakePhoto({
+      addAttachment: () => save.promise,
+      loadAttachmentAsBlob,
+    });
+
+    expect(screen.queryByText(/Uploaded photos \(/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Camera'}));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('img', {name: 'Saving photo...'})
+      ).toBeInTheDocument();
+    });
+    expect(galleryTileCount()).toBe(1);
+    expect(screen.getByText('Uploaded photos (1)')).toBeInTheDocument();
+
+    await act(async () => {
+      save.resolve('att-new');
+    });
+
+    await waitFor(() => {
+      expect(loadAttachmentAsBlob).toHaveBeenCalledWith(
+        expect.objectContaining({identifier: {id: 'att-new'}})
+      );
+    });
+    expect(
+      screen.getByRole('img', {name: 'Saving photo...'})
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('status', {name: 'Loading photo'})
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole('img')).toHaveLength(1);
+    expect(galleryTileCount()).toBe(1);
+    expect(screen.getByText('Uploaded photos (1)')).toBeInTheDocument();
+
+    await act(async () => {
+      load.resolve(defaultLoadAttachmentAsBlob({identifier: {id: 'att-new'}}));
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('img', {name: 'Photo att-new.jpeg'})
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole('img', {name: 'Saving photo...'})
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getAllByRole('img', {name: 'Photo att-new.jpeg'})
+    ).toHaveLength(1);
+    expect(
+      screen.getByRole('button', {name: 'Delete photo'})
+    ).toBeInTheDocument();
+    expect(galleryTileCount()).toBe(1);
+    expect(screen.getByText('Uploaded photos (1)')).toBeInTheDocument();
+  });
+
+  it('does not duplicate an already-loaded photo while a new capture is mid-transition', async () => {
+    const user = userEvent.setup();
+    const save = deferred<string>();
+    const load = deferred<ReturnType<typeof defaultLoadAttachmentAsBlob>>();
+    const loadAttachmentAsBlob = vi.fn(
+      async ({identifier}: LoadAttachmentParams) => {
+        if (identifier.id === 'att-existing') {
+          return defaultLoadAttachmentAsBlob({identifier});
+        }
+        const result = await load.promise;
+        return {
+          ...result,
+          metadata: {
+            ...result.metadata,
+            filename: `${identifier.id}.jpeg`,
+          },
+        };
+      }
+    );
+    vi.mocked(Camera.getPhoto).mockResolvedValue({
+      base64String: btoa('photo'),
+      format: 'jpeg',
+    } as never);
+
+    renderTakePhoto({
+      withExistingPhoto: true,
+      addAttachment: () => save.promise,
+      loadAttachmentAsBlob,
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('img', {name: 'Photo existing.jpeg'})
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getAllByRole('img', {name: 'Photo existing.jpeg'})
+    ).toHaveLength(1);
+    expect(galleryTileCount()).toBe(1);
+    expect(screen.getByText('Uploaded photos (1)')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Camera'}));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('img', {name: 'Saving photo...'})
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getAllByRole('img', {name: 'Photo existing.jpeg'})
+    ).toHaveLength(1);
+    expect(galleryTileCount()).toBe(2);
+    expect(screen.getByText('Uploaded photos (2)')).toBeInTheDocument();
+
+    await act(async () => {
+      save.resolve('att-new');
+    });
+
+    await waitFor(() => {
+      expect(loadAttachmentAsBlob).toHaveBeenCalledWith(
+        expect.objectContaining({identifier: {id: 'att-new'}})
+      );
+    });
+    expect(
+      screen.getByRole('img', {name: 'Saving photo...'})
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('img', {name: 'Photo existing.jpeg'})
+    ).toHaveLength(1);
+    expect(
+      screen.queryByRole('status', {name: 'Loading photo'})
+    ).not.toBeInTheDocument();
+    expect(galleryTileCount()).toBe(2);
+    expect(screen.getByText('Uploaded photos (2)')).toBeInTheDocument();
+
+    await act(async () => {
+      load.resolve(defaultLoadAttachmentAsBlob({identifier: {id: 'att-new'}}));
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('img', {name: 'Photo att-new.jpeg'})
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getAllByRole('img', {name: 'Photo existing.jpeg'})
+    ).toHaveLength(1);
+    expect(
+      screen.queryByRole('img', {name: 'Saving photo...'})
+    ).not.toBeInTheDocument();
+    expect(galleryTileCount()).toBe(2);
+    expect(screen.getByText('Uploaded photos (2)')).toBeInTheDocument();
+  });
+
+  it('never shows more than N photo tiles while a gallery batch is mid-transition', async () => {
+    const user = userEvent.setup();
+    const load = deferred<ReturnType<typeof defaultLoadAttachmentAsBlob>>();
+    const saves = [deferred<string>(), deferred<string>()];
+    let saveCalls = 0;
+    const loadAttachmentAsBlob = vi.fn(
+      async ({identifier}: LoadAttachmentParams) => {
+        const result = await load.promise;
+        return {
+          ...result,
+          metadata: {
+            ...result.metadata,
+            filename: `${identifier.id}.jpeg`,
+          },
+        };
+      }
+    );
+    vi.mocked(Camera.pickImages).mockResolvedValue({
+      photos: [
+        {webPath: 'blob:one', format: 'jpeg'},
+        {webPath: 'blob:two', format: 'jpeg'},
+      ],
+    } as never);
+
+    renderTakePhoto({
+      addAttachment: () => {
+        const pending = saves[saveCalls];
+        saveCalls += 1;
+        return pending.promise;
+      },
+      loadAttachmentAsBlob,
+    });
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add photos from gallery, multiple selection allowed',
+      })
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getAllByRole('img', {name: 'Saving photo...'})
+      ).toHaveLength(2);
+    });
+    expect(galleryTileCount()).toBe(2);
+    expect(screen.getByText('Uploaded photos (2)')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(saveCalls).toBe(2);
+    });
+
+    await act(async () => {
+      saves[0].resolve('att-batch-1');
+      saves[1].resolve('att-batch-2');
+    });
+
+    await waitFor(() => {
+      expect(loadAttachmentAsBlob).toHaveBeenCalledWith(
+        expect.objectContaining({identifier: {id: 'att-batch-1'}})
+      );
+      expect(loadAttachmentAsBlob).toHaveBeenCalledWith(
+        expect.objectContaining({identifier: {id: 'att-batch-2'}})
+      );
+    });
+    expect(screen.getAllByRole('img', {name: 'Saving photo...'})).toHaveLength(
+      2
+    );
+    expect(
+      screen.queryByRole('status', {name: 'Loading photo'})
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole('img')).toHaveLength(2);
+    expect(galleryTileCount()).toBe(2);
+    expect(screen.getByText('Uploaded photos (2)')).toBeInTheDocument();
+
+    await act(async () => {
+      load.resolve(
+        defaultLoadAttachmentAsBlob({identifier: {id: 'att-batch-1'}})
+      );
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('img', {name: 'Saving photo...'})
+      ).not.toBeInTheDocument();
+    });
+    expect(galleryTileCount()).toBe(2);
+    expect(screen.getByText('Uploaded photos (2)')).toBeInTheDocument();
+  });
+
+  it('drops the optimistic preview when addAttachment rejects', async () => {
+    const user = userEvent.setup();
+    const save = deferred<string>();
+    vi.mocked(Camera.getPhoto).mockResolvedValue({
+      base64String: btoa('photo'),
+      format: 'jpeg',
+    } as never);
+
+    renderTakePhoto({
+      addAttachment: () => save.promise,
+    });
+
+    await user.click(screen.getByRole('button', {name: 'Camera'}));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('img', {name: 'Saving photo...'})
+      ).toBeInTheDocument();
+    });
+    expect(galleryTileCount()).toBe(1);
+
+    await act(async () => {
+      save.reject(new Error('disk full'));
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('img', {name: 'Saving photo...'})
+      ).not.toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole('status', {name: 'Loading photo'})
+    ).not.toBeInTheDocument();
+    expect(screen.queryAllByRole('img')).toHaveLength(0);
+    expect(screen.getByText('No photos selected yet')).toBeInTheDocument();
+    expect(
+      screen.getByText('Could not save the photo. Please try again.')
+    ).toBeInTheDocument();
   });
 });
