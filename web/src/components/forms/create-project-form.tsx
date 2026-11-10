@@ -24,6 +24,13 @@ import {
   setupSubmissionGate,
 } from '@/lib/setupFormFields';
 import {SetupFormHeading} from './setup-form-heading';
+import {TemplateOwnerCallout} from './template-owner-callout';
+import {
+  buildTeamField,
+  getPossibleTeamsForAction,
+  getTeamFieldState,
+  resolveTeamId,
+} from './template-team-field';
 
 // Import the default sample notebook JSON
 import blankNotebook from '../../../notebooks/blank-notebook.json';
@@ -36,7 +43,10 @@ interface CreateProjectFormProps {
 
 /**
  * CreateProjectForm component renders a form for creating a project.
- * It provides a button to open the dialog and a form to create the project.
+ *
+ * Team UI follows {@link getTeamFieldState}: a callout when the user must
+ * create in their only team, or a required dropdown when they have a choice.
+ * Global creators (`CREATE_PROJECT`) may select "No team" to omit ownership.
  *
  * @param {CreateProjectFormProps} props - The props for the form.
  * @returns {JSX.Element} The rendered CreateProjectForm component.
@@ -55,6 +65,19 @@ export function CreateProjectForm({
 
   const {data: templates} = useGetTemplates({user});
   const {data: teams} = useGetTeams({user});
+
+  const possibleTeams = getPossibleTeamsForAction({
+    teams: teams?.teams,
+    canCreateGlobally,
+    createInTeamAction: Action.CREATE_PROJECT_IN_TEAM,
+    decodedToken: user.decodedToken,
+  });
+
+  const {showTeamCallout, showTeamDropdown} = getTeamFieldState({
+    canCreateGlobally,
+    specifiedTeam,
+    possibleTeams,
+  });
 
   // The template picker only has list items; fetch the full document so its
   // plan templates can be configured the same way as the template-detail form.
@@ -126,18 +149,17 @@ export function CreateProjectForm({
     {index: 3, component: <Divider word="OR" />},
   ];
 
-  if (!specifiedTeam) {
-    fields.push({
-      name: 'team',
-      label: `Create ${config.notebookName} in this team${
-        canCreateGlobally ? ' (optional)' : ''
-      }`,
-      options: teams?.teams.map(({_id, name}) => ({
-        label: name,
-        value: _id,
-      })),
-      schema: canCreateGlobally ? z.string().optional() : z.string(),
-    });
+  if (showTeamDropdown) {
+    fields.push(
+      buildTeamField({
+        canCreateGlobally,
+        possibleTeams,
+        label: `Create ${config.notebookName} in this team`,
+        description: canCreateGlobally
+          ? `Choose a team for this ${config.notebookName}, or select "No team" to create outside any team.`
+          : undefined,
+      })
+    );
     dividers.push({index: 4, component: <div className="h-5" />});
   }
 
@@ -165,6 +187,12 @@ export function CreateProjectForm({
    */
   const onSubmit = async (values: onSubmitProps) => {
     const {name, description, template, file, team} = values;
+    const chosenTeamId = resolveTeamId({
+      canCreateGlobally,
+      specifiedTeam,
+      possibleTeams,
+      team,
+    });
     let response;
     if (template) {
       // Create from selected template
@@ -173,7 +201,7 @@ export function CreateProjectForm({
         name,
         description,
         template,
-        teamId: specifiedTeam ?? team,
+        teamId: chosenTeamId,
         planConfigs: plans.toPlanConfigs(values),
         setupValues: setupForm
           ? collectSetupValues(setupForm, values)
@@ -196,7 +224,7 @@ export function CreateProjectForm({
         name,
         description,
         file: fileToUpload,
-        teamId: specifiedTeam ?? team,
+        teamId: chosenTeamId,
       });
     }
 
@@ -226,26 +254,34 @@ export function CreateProjectForm({
   };
 
   return (
-    <Form
-      fields={withPlans.fields}
-      dividers={withPlans.dividers}
-      onSubmit={onSubmit}
-      submitButtonText={`Create ${config.notebookNameCapitalized}`}
-      submitButtonTestId="web-projects-create-submit"
-      // pass in team ID default, if provided
-      defaultValues={{team: defaultValues?.teamId}}
-      footer={plans.footer}
-      // A plan config that is not ready is a hard block. Required setup
-      // fields validate on submit; only multiselects gate here.
-      disableSubmission={
-        plans.gate ??
-        (setupGate
-          ? {
-              disabled: data => setupGate.isBlocked(data),
-              reason: setupGate.reason,
-            }
-          : undefined)
-      }
-    />
+    <div className="flex flex-col gap-4">
+      {showTeamCallout && (
+        <TemplateOwnerCallout
+          heading={`${config.notebookNameCapitalized} will be created in`}
+          teamName={possibleTeams[0].name}
+        />
+      )}
+      <Form
+        fields={withPlans.fields}
+        dividers={withPlans.dividers}
+        onSubmit={onSubmit}
+        submitButtonText={`Create ${config.notebookNameCapitalized}`}
+        submitButtonTestId="web-projects-create-submit"
+        // pass in team ID default, if provided
+        defaultValues={{team: defaultValues?.teamId}}
+        footer={plans.footer}
+        // A plan config that is not ready is a hard block. Required setup
+        // fields validate on submit; only multiselects gate here.
+        disableSubmission={
+          plans.gate ??
+          (setupGate
+            ? {
+                disabled: data => setupGate.isBlocked(data),
+                reason: setupGate.reason,
+              }
+            : undefined)
+        }
+      />
+    </div>
   );
 }

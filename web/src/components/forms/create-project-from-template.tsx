@@ -41,8 +41,8 @@ interface CreateProjectFromTemplateFormProps {
  *
  * Team selection mirrors other create flows ({@link getTeamFieldState}). When
  * the template has `ownedByTeamId` and the user may create projects in that
- * team, the dropdown defaults to that team; global creators can clear it to
- * create outside any team.
+ * team, the dropdown defaults to that team; global creators must select
+ * "No team" to create outside any team.
  *
  * When the template defines a setup form (#2216), its fields are appended
  * to the form and the submitted values are sent as `setupValues`.
@@ -91,14 +91,12 @@ export function CreateProjectFromTemplateForm({
     isLoading: templateLoading,
   });
 
-  const teamLabel = `Create ${config.notebookName} in this team${
-    canCreateGlobally ? ' (optional)' : ''
-  }`;
+  const teamLabel = `Create ${config.notebookName} in this team`;
 
   const teamDescription = canCreateGlobally
     ? defaultTeamId
-      ? `Defaults to the template's team. Clear the selection to create outside any team.`
-      : `Choose a team for this ${config.notebookName}, or leave blank to create outside any team.`
+      ? `Defaults to the template's team. Select "No team" to create outside any team.`
+      : `Choose a team for this ${config.notebookName}, or select "No team" to create outside any team.`
     : undefined;
 
   const formFields = useMemo(() => {

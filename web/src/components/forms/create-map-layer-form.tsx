@@ -79,7 +79,9 @@ export function CreateMapLayerForm({
     },
   ];
 
-  if (showTeamDropdown) {
+  // Hide an empty optional select when a Super User has no visible teams;
+  // they can still submit without a teamId via resolveTeamId.
+  if (showTeamDropdown && possibleTeams.length > 0) {
     fields.push(
       buildTeamField({
         canCreateGlobally: canCreateOutsideTeam,
@@ -88,6 +90,7 @@ export function CreateMapLayerForm({
         description: canCreateOutsideTeam
           ? 'Choose a team to own this layer, or leave blank to keep it as your own.'
           : 'The team that will own this layer.',
+        allowBlank: true,
       })
     );
   }
