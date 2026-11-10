@@ -38,10 +38,13 @@ describe('DesignerCloseDraftDialog', () => {
     fireEvent.click(
       screen.getByRole('button', {name: 'Close and discard draft'})
     );
+    fireEvent.click(
+      screen.getByTestId('web-designer-close-draft-dismiss-button')
+    );
 
     expect(onPublishNow).toHaveBeenCalledTimes(1);
     expect(onCloseKeepDraft).toHaveBeenCalledTimes(1);
-    expect(onKeepEditing).toHaveBeenCalledTimes(1);
+    expect(onKeepEditing).toHaveBeenCalledTimes(2);
     expect(onDiscardDraft).toHaveBeenCalledTimes(1);
   });
 });

@@ -41,7 +41,7 @@ export function DesignerUnsavedDraftIndicator({
                 aria-hidden
               />
               {stale
-                ? 'Unsaved changes — live design has changed'
+                ? 'Unsaved changes — latest design has changed'
                 : 'Unsaved changes'}
             </Badge>
           </span>
@@ -49,7 +49,7 @@ export function DesignerUnsavedDraftIndicator({
         <TooltipContent className="max-w-sm">
           <p>
             {stale
-              ? 'This device has an unpublished local draft based on an older live design. Open in Editor to continue, or discard the draft and load the live design.'
+              ? 'This device has an unpublished local draft based on an older design. Open in Editor to download a backup, switch to the latest design, or keep working on your version.'
               : 'This device has an unpublished local draft. Open in Editor to continue or publish.'}
           </p>
         </TooltipContent>

@@ -19,10 +19,10 @@ describe('DesignerUnsavedDraftIndicator', () => {
     ).toBe('Unsaved changes');
   });
 
-  it('names a live-design change when the draft is stale', () => {
+  it('names a latest-design change when the draft is stale', () => {
     render(<DesignerUnsavedDraftIndicator visible stale />);
     expect(
       screen.getByTestId('web-designer-unsaved-changes-indicator').textContent
-    ).toBe('Unsaved changes — live design has changed');
+    ).toBe('Unsaved changes — latest design has changed');
   });
 });

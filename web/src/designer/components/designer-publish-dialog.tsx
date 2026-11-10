@@ -10,6 +10,10 @@ import {
   DialogTitle,
   Grow,
 } from '@mui/material';
+import {
+  DesignerDialogCloseButton,
+  designerDialogTitleWithCloseSx,
+} from './designer-dialog-close-button';
 import type {DesignerDocumentMode} from '../state/initial';
 
 export type DesignerPublishIntent = 'stay' | 'close';
@@ -70,7 +74,14 @@ export function DesignerPublishDialog({
       aria-describedby="publish-dialog-description"
       slotProps={{paper: {sx: {transformOrigin: 'top center'}}}}
     >
-      <DialogTitle id="publish-dialog-title">Publish changes?</DialogTitle>
+      <DialogTitle id="publish-dialog-title" sx={designerDialogTitleWithCloseSx}>
+        Publish changes?
+        <DesignerDialogCloseButton
+          onClick={onCancel}
+          disabled={busy}
+          data-testid="web-designer-publish-dismiss-button"
+        />
+      </DialogTitle>
       <DialogContent>
         <DialogContentText id="publish-dialog-description">
           {mode === 'template' ? TEMPLATE_PUBLISH_COPY : PROJECT_PUBLISH_COPY}

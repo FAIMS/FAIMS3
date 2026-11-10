@@ -10,17 +10,28 @@ import {
   DialogTitle,
   Grow,
 } from '@mui/material';
+import {
+  DesignerDialogCloseButton,
+  designerDialogTitleWithCloseSx,
+} from './designer-dialog-close-button';
 
 type DesignerPublishConflictDialogProps = {
   open: boolean;
   busy: boolean;
   animationDuration: number;
-  onKeepWorking: () => void;
-  onOverwrite: () => void;
+  onDismiss: () => void;
+  onSwitchToLatest: () => void;
+  onForcePublish: () => void;
+  onDownloadBackup: () => void;
 };
 
 const CONFLICT_COPY =
-  'The live {notebook} design has changed since this draft. Publishing was not applied. You can keep working on the local draft, or overwrite the live design.';
+  'The {notebook} has been updated remotely since you created your draft. You can either switch to the latest version (losing your draft changes) or forcefully overwrite the latest version. You can download your draft design as a backup, if needed.';
+
+const conflictButtonSx = {
+  textTransform: 'none',
+  fontWeight: 700,
+} as const;
 
 /**
  * Shown when PUT /uiSpecification returns 409 (If-Match hash mismatch).
@@ -29,21 +40,31 @@ export function DesignerPublishConflictDialog({
   open,
   busy,
   animationDuration,
-  onKeepWorking,
-  onOverwrite,
+  onDismiss,
+  onSwitchToLatest,
+  onForcePublish,
+  onDownloadBackup,
 }: DesignerPublishConflictDialogProps) {
   return (
     <Dialog
       open={open}
-      onClose={busy ? undefined : onKeepWorking}
+      onClose={busy ? undefined : onDismiss}
       slots={{transition: Grow}}
       transitionDuration={animationDuration}
       aria-labelledby="publish-conflict-dialog-title"
       aria-describedby="publish-conflict-dialog-description"
       slotProps={{paper: {sx: {transformOrigin: 'top center'}}}}
     >
-      <DialogTitle id="publish-conflict-dialog-title" sx={{pb: 0}}>
+      <DialogTitle
+        id="publish-conflict-dialog-title"
+        sx={designerDialogTitleWithCloseSx}
+      >
         Could not publish
+        <DesignerDialogCloseButton
+          onClick={onDismiss}
+          disabled={busy}
+          data-testid="web-designer-conflict-dismiss-button"
+        />
       </DialogTitle>
       <DialogContent sx={{'&&': {pt: 1}}}>
         <DialogContentText id="publish-conflict-dialog-description">
@@ -54,23 +75,33 @@ export function DesignerPublishConflictDialog({
         <Button
           variant="outlined"
           color="inherit"
-          onClick={onKeepWorking}
+          onClick={onSwitchToLatest}
           disabled={busy}
           autoFocus
-          data-testid="web-designer-conflict-keep-working-button"
-          sx={{textTransform: 'none', fontWeight: 700, color: 'text.secondary'}}
+          data-testid="web-designer-conflict-switch-latest-button"
+          sx={{...conflictButtonSx, color: 'text.secondary'}}
         >
-          Keep working
+          Switch to latest version
         </Button>
         <Button
           variant="outlined"
           color="error"
-          onClick={onOverwrite}
+          onClick={onForcePublish}
           disabled={busy}
           data-testid="web-designer-conflict-overwrite-button"
-          sx={{textTransform: 'none', fontWeight: 700}}
+          sx={conflictButtonSx}
         >
-          Overwrite live design
+          Forcefully publish
+        </Button>
+        <Button
+          variant="text"
+          color="inherit"
+          onClick={onDownloadBackup}
+          disabled={busy}
+          data-testid="web-designer-conflict-download-backup-button"
+          sx={{...conflictButtonSx, color: 'text.secondary'}}
+        >
+          Download JSON backup
         </Button>
       </DialogActions>
     </Dialog>

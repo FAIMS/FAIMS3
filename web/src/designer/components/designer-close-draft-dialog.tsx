@@ -10,6 +10,10 @@ import {
   DialogTitle,
   Grow,
 } from '@mui/material';
+import {
+  DesignerDialogCloseButton,
+  designerDialogTitleWithCloseSx,
+} from './designer-dialog-close-button';
 
 type DesignerCloseDraftDialogProps = {
   open: boolean;
@@ -54,8 +58,15 @@ export function DesignerCloseDraftDialog({
       aria-describedby="close-draft-dialog-description"
       slotProps={{paper: {sx: {transformOrigin: 'top center'}}}}
     >
-      <DialogTitle id="close-draft-dialog-title" sx={{pb: 0}}>
+      <DialogTitle
+        id="close-draft-dialog-title"
+        sx={designerDialogTitleWithCloseSx}
+      >
         Unpublished draft
+        <DesignerDialogCloseButton
+          onClick={onKeepEditing}
+          data-testid="web-designer-close-draft-dismiss-button"
+        />
       </DialogTitle>
       <DialogContent sx={{'&&': {pt: 1}}}>
         <DialogContentText id="close-draft-dialog-description">

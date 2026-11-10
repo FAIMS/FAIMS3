@@ -36,6 +36,7 @@ import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
 import {SetupFormPanel} from './components/setup-form-panel';
 import {config} from '@/constants';
+import {downloadFile} from '@/lib/utils';
 import {
   discardDraft,
   type DesignerResourceKind,
@@ -311,11 +312,12 @@ export function DesignerWidget({
     closeOverlay(undefined);
   }, [closeOverlay, draftSession]);
 
-  const handleContinueStaleDraft = useCallback(() => {
+  const handleWorkOnMyVersion = useCallback(() => {
     setStaleAckForIdentity(notebookIdentity);
   }, [notebookIdentity]);
 
   const handleDiscardStaleAndLoadLive = useCallback(() => {
+    setConflictOpen(false);
     draftSession.discardDraft();
     if (identity) {
       discardDraft(identity);
@@ -323,6 +325,16 @@ export function DesignerWidget({
     setLoadLiveForIdentity(notebookIdentity);
     setStaleAckForIdentity(notebookIdentity);
   }, [draftSession, identity, notebookIdentity]);
+
+  const handleDownloadDraftBackup = useCallback(() => {
+    const exported = draftSession.exportPresentNotebook();
+    const json = JSON.stringify(exported, null, 2);
+    const base = slugify(String(exportBaseName ?? 'notebook')) || 'notebook';
+    void downloadFile(
+      new Blob([json], {type: 'application/json'}),
+      `${base}-draft-backup.json`
+    );
+  }, [draftSession, exportBaseName]);
 
   const handlePublishRequest = useCallback(
     (intent: DesignerPublishIntent) => {
@@ -518,8 +530,8 @@ export function DesignerWidget({
                   data-testid="web-designer-stale-draft-banner"
                   sx={{borderRadius: 0}}
                 >
-                  The live design has changed since this draft. Publishing will
-                  replace it.
+                  You are working on a stale draft. Saving will overwrite the
+                  latest version.
                 </Alert>
               ) : null}
 
@@ -531,8 +543,10 @@ export function DesignerWidget({
                   !forceLive
                 }
                 animationDuration={animationDuration}
-                onContinue={handleContinueStaleDraft}
-                onDiscardAndLoadLive={handleDiscardStaleAndLoadLive}
+                onDismiss={handleCloseKeepDraft}
+                onSwitchToLatest={handleDiscardStaleAndLoadLive}
+                onWorkOnMyVersion={handleWorkOnMyVersion}
+                onDownloadBackup={handleDownloadDraftBackup}
               />
 
               <DesignerCloseDraftDialog
@@ -565,10 +579,12 @@ export function DesignerWidget({
                 open={conflictOpen}
                 busy={publishing}
                 animationDuration={animationDuration}
-                onKeepWorking={() => setConflictOpen(false)}
-                onOverwrite={() => {
+                onDismiss={() => setConflictOpen(false)}
+                onSwitchToLatest={handleDiscardStaleAndLoadLive}
+                onForcePublish={() => {
                   void handleOverwriteLiveDesign();
                 }}
+                onDownloadBackup={handleDownloadDraftBackup}
               />
 
               <Box sx={{flexGrow: 1, minHeight: 0, overflow: 'auto'}}>

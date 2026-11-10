@@ -4,6 +4,7 @@ import {migrateNotebook} from '@faims3/data-model';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import type {ComponentProps} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
+import {downloadFile} from '@/lib/utils';
 import {DesignerWidget} from './DesignerWidget';
 import {toPublishedNotebook} from './domain/notebook/adapters';
 import {
@@ -19,6 +20,14 @@ import type {
   NotebookWithHistory,
 } from './state/initial';
 import {sampleNotebook} from './test-notebook';
+
+vi.mock('@/lib/utils', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/lib/utils')>();
+  return {
+    ...actual,
+    downloadFile: vi.fn().mockResolvedValue(undefined),
+  };
+});
 
 vi.mock('./components/info-panel', () => ({InfoPanel: () => null}));
 vi.mock('./components/design-panel', () => ({DesignPanel: () => null}));
@@ -94,6 +103,7 @@ const renderWidget = (
 describe('DesignerWidget publish and close', () => {
   afterEach(() => {
     localStorage.clear();
+    vi.mocked(downloadFile).mockClear();
     vi.restoreAllMocks();
   });
 
@@ -321,6 +331,32 @@ describe('DesignerWidget publish and close', () => {
 
   it('warns on open when the local draft is based on an older live hash', async () => {
     seedUnpublishedDraft(identity, DRAFT_LABEL, HASH_A);
+    renderWidget({liveUiSpecHash: HASH_B, exportBaseName: 'Field Survey'});
+    expect(
+      await screen.findByRole('button', {name: 'Switch to latest version'})
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', {name: 'Download JSON backup'})
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', {name: 'Work on my version'})
+    ).toBeTruthy();
+
+    fireEvent.click(
+      screen.getByTestId('web-designer-stale-download-backup-button')
+    );
+    expect(downloadFile).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(downloadFile).mock.calls[0][1]).toBe(
+      'Field-Survey-draft-backup.json'
+    );
+    expect(getDraft(identity)).toBeDefined();
+    expect(
+      screen.getByTestId('web-designer-stale-load-live-button')
+    ).toBeTruthy();
+  });
+
+  it('continues with the stale draft and shows a warning banner', async () => {
+    seedUnpublishedDraft(identity, DRAFT_LABEL, HASH_A);
     renderWidget({liveUiSpecHash: HASH_B});
     fireEvent.click(
       await screen.findByTestId('web-designer-stale-continue-button')
@@ -329,18 +365,31 @@ describe('DesignerWidget publish and close', () => {
       await screen.findByTestId('web-designer-stale-draft-banner')
     ).toBeTruthy();
     expect(getDraft(identity)).toBeDefined();
+    expect(
+      screen.queryByTestId('web-designer-stale-load-live-button')
+    ).toBeNull();
   });
 
-  it('discards the local draft and loads the live design', async () => {
+  it('closes the overlay from the stale dialog without discarding the draft', async () => {
+    seedUnpublishedDraft(identity, DRAFT_LABEL, HASH_A);
+    const {onClose} = renderWidget({liveUiSpecHash: HASH_B});
+    fireEvent.click(
+      await screen.findByTestId('web-designer-stale-dismiss-button')
+    );
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(onClose.mock.calls[0][0]).toBeUndefined();
+    expect(getDraft(identity)).toBeDefined();
+  });
+
+  it('discards the local draft and loads the latest design', async () => {
     seedUnpublishedDraft(identity, DRAFT_LABEL, HASH_A);
     renderWidget({liveUiSpecHash: HASH_B});
     fireEvent.click(
       await screen.findByTestId('web-designer-stale-load-live-button')
     );
     await waitFor(() => expect(getDraft(identity)).toBeUndefined());
-    expect(screen.queryByTestId('web-designer-stale-draft-banner')).toBeNull();
     expect(
-      screen.queryByTestId('web-designer-stale-continue-button')
+      screen.queryByTestId('web-designer-stale-load-live-button')
     ).toBeNull();
   });
 
@@ -375,6 +424,12 @@ describe('DesignerWidget publish and close', () => {
     expect(
       await screen.findByTestId('web-designer-conflict-overwrite-button')
     ).toBeTruthy();
+    expect(
+      screen.getByRole('button', {name: 'Switch to latest version'})
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', {name: 'Download JSON backup'})
+    ).toBeTruthy();
     expect(publishNotebook).toHaveBeenCalledTimes(1);
     expect(publishNotebook.mock.calls[0][1]).toEqual({ifMatch: HASH_A});
 
@@ -383,6 +438,83 @@ describe('DesignerWidget publish and close', () => {
     );
     await waitFor(() => expect(publishNotebook).toHaveBeenCalledTimes(2));
     expect(publishNotebook.mock.calls[1][1]).toBeUndefined();
+  });
+
+  it('downloads a JSON backup of the local draft without publishing again', async () => {
+    seedUnpublishedDraft(identity, DRAFT_LABEL, HASH_A);
+    const {publishNotebook} = renderWidget({
+      liveUiSpecHash: HASH_A,
+      exportBaseName: 'Field Survey',
+    });
+    publishNotebook.mockRejectedValueOnce(new DesignerUiSpecConflictError());
+
+    const publish = await screen.findByTestId('web-designer-save-button');
+    await waitFor(() => expect(isButtonDisabled(publish)).toBe(false));
+    fireEvent.click(publish);
+    fireEvent.click(
+      await screen.findByTestId('web-designer-publish-confirm-button')
+    );
+
+    fireEvent.click(
+      await screen.findByTestId('web-designer-conflict-download-backup-button')
+    );
+    expect(downloadFile).toHaveBeenCalledTimes(1);
+    const [blob, filename] = vi.mocked(downloadFile).mock.calls[0];
+    expect(filename).toBe('Field-Survey-draft-backup.json');
+    expect(blob).toBeInstanceOf(Blob);
+    expect(publishNotebook).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByTestId('web-designer-conflict-overwrite-button')
+    ).toBeTruthy();
+    expect(getDraft(identity)).toBeDefined();
+  });
+
+  it('returns to the editor from a publish conflict without overwriting', async () => {
+    seedUnpublishedDraft(identity, DRAFT_LABEL, HASH_A);
+    const {onClose, publishNotebook} = renderWidget({liveUiSpecHash: HASH_A});
+    publishNotebook.mockRejectedValueOnce(new DesignerUiSpecConflictError());
+
+    const publish = await screen.findByTestId('web-designer-save-button');
+    await waitFor(() => expect(isButtonDisabled(publish)).toBe(false));
+    fireEvent.click(publish);
+    fireEvent.click(
+      await screen.findByTestId('web-designer-publish-confirm-button')
+    );
+
+    fireEvent.click(
+      await screen.findByTestId('web-designer-conflict-dismiss-button')
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('web-designer-conflict-overwrite-button')
+      ).toBeNull()
+    );
+    expect(publishNotebook).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(getDraft(identity)).toBeDefined();
+    expect(screen.getByTestId('web-designer-shell')).toBeTruthy();
+  });
+
+  it('switches to the live design from a publish conflict without publishing', async () => {
+    seedUnpublishedDraft(identity, DRAFT_LABEL, HASH_A);
+    const {publishNotebook} = renderWidget({liveUiSpecHash: HASH_A});
+    publishNotebook.mockRejectedValueOnce(new DesignerUiSpecConflictError());
+
+    const publish = await screen.findByTestId('web-designer-save-button');
+    await waitFor(() => expect(isButtonDisabled(publish)).toBe(false));
+    fireEvent.click(publish);
+    fireEvent.click(
+      await screen.findByTestId('web-designer-publish-confirm-button')
+    );
+
+    fireEvent.click(
+      await screen.findByTestId('web-designer-conflict-switch-latest-button')
+    );
+    await waitFor(() => expect(getDraft(identity)).toBeUndefined());
+    expect(publishNotebook).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByTestId('web-designer-conflict-overwrite-button')
+    ).toBeNull();
   });
 
   it('does not call fetch during restore of an unpublished draft', async () => {

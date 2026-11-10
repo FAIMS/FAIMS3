@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import {render, screen} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {config} from '@/constants';
 import {DesignerPublishDialog} from './designer-publish-dialog';
@@ -46,6 +46,15 @@ describe('DesignerPublishDialog', () => {
     expect(
       screen.getByText(/the design has changed since this draft was created/i)
     ).toBeTruthy();
+  });
+
+  it('exits via the close icon without confirming', () => {
+    const onCancel = vi.fn();
+    const onConfirm = vi.fn();
+    renderDialog({onCancel, onConfirm});
+    fireEvent.click(screen.getByTestId('web-designer-publish-dismiss-button'));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
   });
 
   it('does not warn for templates, even if a record count is supplied', () => {
