@@ -9,12 +9,13 @@ import {
 } from '@/components/ui/dialog';
 import {config} from '@/constants';
 import {useRequiredUser} from '@/hooks/auth-hooks';
+import {useGetProject} from '@/hooks/queries';
+import {projectStatusHelpText} from '@/lib/status-display';
 import {ProjectStatus} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {AlertCircle, CheckCircle, Info} from 'lucide-react';
 import {useState} from 'react';
 import {Button} from '../ui/button';
-import {useGetProject} from '@/hooks/queries';
 
 export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
   const user = useRequiredUser();
@@ -76,16 +77,13 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
                       <span className="font-medium text-emerald-600 dark:text-emerald-500">
                         Open:
                       </span>{' '}
-                      {config.notebookNameCapitalized} is active and available
-                      for data collection on user devices.
+                      {projectStatusHelpText(ProjectStatus.OPEN)}
                     </p>
                     <p>
                       <span className="font-medium text-destructive">
                         Closed:
                       </span>{' '}
-                      {config.notebookNameCapitalized} is read-only. Users will
-                      not be able to activate this {config.notebookName} for
-                      data collection.
+                      {projectStatusHelpText(ProjectStatus.CLOSED)}
                     </p>
                   </div>
                 </DialogDescription>
