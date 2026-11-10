@@ -7,13 +7,33 @@ import {
   FormDataEntry,
 } from '@faims3/data-model';
 import {Alert} from '@mui/material';
-import React, {useMemo} from 'react';
+import React, {useContext, useMemo} from 'react';
 import {getFieldInfo} from '../fieldRegistry/registry';
 import {logInfo} from '../logging';
 import {FieldAnnotation} from './Annotation';
 import {FormManagerConfig, FullFormManagerConfig} from './formManagers/types';
-import {FaimsForm, FaimsFormFieldState} from './types';
+import {ConditionValuesContext, FaimsForm, FaimsFormFieldState} from './types';
 import {getFieldId} from './utils';
+
+/**
+ * Subscribes one field to the live condition-value bag.
+ *
+ * `Field` is memo'd and must not `useContext` itself — that would re-render
+ * every control whenever any value changes. TanStack `form.Field` also only
+ * notifies this field, so option conditions that reference siblings / parent /
+ * metadata would otherwise stay stale. This child is the subscription: the
+ * list re-filters without remounting the field or busting memo on others.
+ */
+const ConditionValuesBridge = ({
+  children,
+}: {
+  children: (
+    conditionValues: React.ContextType<typeof ConditionValuesContext>
+  ) => React.ReactNode;
+}) => {
+  const conditionValues = useContext(ConditionValuesContext);
+  return children(conditionValues);
+};
 
 interface FieldProps {
   fieldId: string;
@@ -35,6 +55,7 @@ export const Field = React.memo((props: FieldProps) => {
 
   // Rename here to prompt tsx it's a component
   const Component = fieldInfo?.component;
+  const consumesConditionValues = fieldInfo?.consumesConditionValues === true;
 
   return (
     <props.form.Field name={props.fieldSpec['component-parameters'].name}>
@@ -117,8 +138,8 @@ export const Field = React.memo((props: FieldProps) => {
                   logInfo('Mock triggered commit() function.');
                 },
               };
-        return (
-          <div id={getFieldId({fieldId: props.fieldId})}>
+        const renderField = (conditionValues?: {[key: string]: unknown}) => (
+          <>
             {fallback && (
               <Alert severity="warning">
                 The field type "{props.fieldSpec['component-name']}" is
@@ -142,12 +163,28 @@ export const Field = React.memo((props: FieldProps) => {
               handleBlur={field.handleBlur}
               fieldId={props.fieldId}
               trigger={triggers}
+              // Fields with consumesConditionValues get the live bag; omit it
+              // otherwise so other components and unit tests that skip the
+              // provider are unchanged.
+              {...(conditionValues !== undefined ? {conditionValues} : {})}
             />
             <FieldAnnotation
               config={props.fieldSpec.meta}
               state={field.state as any} // avoid Typescript complaint
               setFieldAnnotation={setFieldAnnotation}
             />
+          </>
+        );
+        return (
+          <div id={getFieldId({fieldId: props.fieldId})}>
+            {consumesConditionValues ? (
+              <ConditionValuesBridge>
+                {conditionValues => renderField(conditionValues)}
+              </ConditionValuesBridge>
+            ) : (
+              // No context subscription: this field's own TanStack state is enough.
+              renderField()
+            )}
           </div>
         );
       }}

@@ -40,6 +40,10 @@ import {useRef, useState} from 'react';
 import {z} from 'zod';
 import {FullFieldProps} from '../../../formModule/types';
 import {
+  otherOptionPositionAmongVisible,
+  visibleChoiceOptions,
+} from '../visibleChoiceOptions';
+import {
   OTHER_MARKER,
   OTHER_PREFIX,
   otherTextFieldSx,
@@ -83,17 +87,23 @@ export const RadioGroup = (props: FieldProps) => {
     setFieldData,
     handleBlur,
     ElementProps,
+    conditionValues,
   } = props;
 
   const rawValue = (state.value?.data as string) ?? '';
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
-  // Use the configured Other position; older notebooks default to the end.
-  const otherOptionPosition = Math.max(
-    0,
-    Math.min(
-      ElementProps.otherOptionPosition ?? ElementProps.options.length,
-      ElementProps.options.length
-    )
+  // Sibling / parent / metadata bag from ConditionValuesContext — this field's
+  // TanStack state is not enough to evaluate option.condition.
+  const visibleOptions = visibleChoiceOptions(
+    ElementProps.options,
+    conditionValues ?? {},
+    rawValue
+  );
+  // Other stays after the same visible predecessors; older notebooks default to the end.
+  const otherOptionPosition = otherOptionPositionAmongVisible(
+    ElementProps.options,
+    visibleOptions,
+    ElementProps.otherOptionPosition
   );
   // Selections are stored as values; display labels are render-only.
   const predefinedValues = ElementProps.options.map(opt => opt.value);
@@ -167,7 +177,7 @@ export const RadioGroup = (props: FieldProps) => {
         {expandedChecklist && (
           <RadioGroupWidget
             displayValue={displayValue}
-            options={ElementProps.options}
+            options={visibleOptions}
             enableOtherOption={enableOtherOption}
             otherOptionPosition={otherOptionPosition}
             handleChange={handleChange}
@@ -182,7 +192,7 @@ export const RadioGroup = (props: FieldProps) => {
         {!expandedChecklist && (
           <DropDownWidget
             displayValue={displayValue}
-            options={ElementProps.options}
+            options={visibleOptions}
             enableOtherOption={enableOtherOption}
             otherOptionPosition={otherOptionPosition}
             handleChange={handleChange}
@@ -649,6 +659,7 @@ export const radioGroupFieldSpec: FieldInfo<FieldProps> = {
   fieldPropsSchema: RadioGroupFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
   view: {component: DefaultRenderer, config: {}},
+  consumesConditionValues: true,
 };
 
 // We also register this as the 'Select' field for backward
@@ -662,4 +673,5 @@ export const selectFieldSpec: FieldInfo<FieldProps> = {
   fieldPropsSchema: RadioGroupFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
   view: {component: DefaultRenderer, config: {}},
+  consumesConditionValues: true,
 };

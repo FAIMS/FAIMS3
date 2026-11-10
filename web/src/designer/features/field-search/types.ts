@@ -15,6 +15,11 @@ export type FieldSearchScope =
       kind: 'context';
       /** Field whose condition is being edited; scopes to its form and excludes itself. */
       fieldId?: string;
+      /**
+       * When true, the field named by `fieldId` stays in the picker. Option-level
+       * conditions may reference their parent choice field (cascading MultiSelect).
+       */
+      includeFieldId?: boolean;
       /** Section whose condition is being edited; scopes to its form and excludes its fields. */
       sectionId?: string;
     };

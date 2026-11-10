@@ -31,6 +31,12 @@ export type HridFieldMap = z.infer<typeof HridFieldMapSchema>;
 export const RecordValuesSchema = z.record(z.string(), z.any());
 export type RecordValues = z.infer<typeof RecordValuesSchema>;
 
+/**
+ * Callable produced by `compileExpression` and attached in memory by
+ * `compileUiSpecConditionals`. Non-serializable.
+ */
+export type ConditionFn = (v: RecordValues) => boolean;
+
 // ============================================================================
 // UI specification model
 //
@@ -42,7 +48,9 @@ export type RecordValues = z.infer<typeof RecordValuesSchema>;
 
 /**
  * A conditional logic expression, evaluated against a record's values to decide
- * whether a section or field is shown. May nest via `conditions`.
+ * whether a section, field, or individual choice option is shown. May nest via
+ * `conditions`. Option-level `condition` is an additive key on choice
+ * `ElementProps.options` and does not bump the notebook schema.
  *
  * This type is declared explicitly rather than inferred: it is self-referential,
  * and zod needs a type annotation to resolve a recursive `z.lazy` schema.
@@ -65,6 +73,25 @@ export const ConditionalExpressionSchema: z.ZodType<ConditionalExpression> =
       value: z.any().optional(),
     })
   );
+
+/**
+ * A choice option as it appears on a compiled notebook (in memory).
+ *
+ * Stored JSON is the same object without `conditionFn`. Compilation attaches
+ * `conditionFn` only when `condition` is defined; unconditioned options are
+ * left unchanged. `JSON.stringify` drops the function, so persistence stays
+ * backwards compatible without a schema bump.
+ */
+export const CompiledChoiceOptionSchema = z
+  .object({
+    value: z.string(),
+    label: z.string(),
+    key: z.string().optional(),
+    condition: ConditionalExpressionSchema.nullable().optional(),
+    conditionFn: z.custom<ConditionFn>().optional(),
+  })
+  .loose();
+export type CompiledChoiceOption = z.infer<typeof CompiledChoiceOptionSchema>;
 
 /** Annotation & uncertainty capture toggles attached to a field. */
 export const FieldMetaSchema = z.object({
@@ -135,8 +162,11 @@ const compiledFieldExtras = {
    * Compiled form of {@link FieldDefinition.condition}; attached at runtime by
    * `compileUiSpecConditionals`. Non-serializable, so it is only validated as
    * being a function (when present) rather than by structure.
+   *
+   * Choice-field `ElementProps.options` that define `condition` receive their
+   * own `conditionFn` on the option object (see {@link CompiledChoiceOption}).
    */
-  conditionFn: z.custom<(v: RecordValues) => boolean>().optional(),
+  conditionFn: z.custom<ConditionFn>().optional(),
   /**
    * Compiled form of a ComputedField's expression; attached at runtime by
    * `compileUiSpecConditionals`. Non-serializable, validated only as a function.
@@ -208,7 +238,8 @@ export type CompiledFieldDefinitionV1_0_1 = z.infer<
  * A field definition with its conditional logic compiled into a callable
  * function. Same shape as {@link FieldDefinition} but carries the
  * non-serializable `conditionFn`, mirroring the {@link UiSpecSection} ↔
- * {@link CompiledUiSpecSection} relationship.
+ * {@link CompiledUiSpecSection} relationship. Choice options that define
+ * `condition` also receive `conditionFn` (see {@link CompiledChoiceOption}).
  */
 export const CompiledFieldDefinitionSchema =
   CompiledFieldDefinitionV1_0_1Schema;
@@ -320,7 +351,7 @@ export type UiSpecSection = z.infer<typeof UiSpecSectionSchema>;
  * shape as {@link UiSpecSection} but carries the non-serializable `conditionFn`.
  */
 export const CompiledUiSpecSectionSchema = UiSpecSectionSchema.extend({
-  conditionFn: z.custom<(v: RecordValues) => boolean>().optional(),
+  conditionFn: z.custom<ConditionFn>().optional(),
 });
 export type CompiledUiSpecSection = z.infer<typeof CompiledUiSpecSectionSchema>;
 
@@ -390,7 +421,8 @@ export type CompiledUiSpecModelV1_0_1 = z.infer<
 >;
 
 /**
- * A {@link UiSpecModel} with views compiled (conditions turned into functions).
+ * A {@link UiSpecModel} with views, fields, and conditioned choice options
+ * compiled (conditions turned into functions).
  */
 export const CompiledUiSpecModelSchema = CompiledUiSpecModelV1_0_1Schema;
 export type CompiledUiSpecModel = CompiledUiSpecModelV1_0_1;
@@ -601,9 +633,9 @@ export const NotebookUiSpecV1Schema = z
 export type NotebookUiSpecV1 = z.infer<typeof NotebookUiSpecV1Schema>;
 
 /**
- * Compiled counterpart of {@link NotebookUiSpecV1}: same shape but with sections
- * compiled (conditions turned into `conditionFn`s), as per
- * {@link CompiledUiSpecModelSchema}.
+ * Compiled counterpart of {@link NotebookUiSpecV1}: same shape but with sections,
+ * fields, and conditioned choice options compiled (conditions turned into
+ * `conditionFn`s), as per {@link CompiledUiSpecModelSchema}.
  */
 export const CompiledNotebookUiSpecV1Schema = z
   .object({
@@ -693,7 +725,8 @@ export type NotebookUiSpecV1_0_1 = z.infer<typeof NotebookUiSpecV1_0_1Schema>;
 
 /**
  * Compiled counterpart of {@link NotebookUiSpecV1_0_1}: same shape but with
- * sections compiled (conditions turned into `conditionFn`s).
+ * sections, fields, and conditioned choice options compiled (conditions turned
+ * into `conditionFn`s).
  */
 export const CompiledNotebookUiSpecV1_0_1Schema = z
   .object({

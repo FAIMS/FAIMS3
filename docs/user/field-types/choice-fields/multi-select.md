@@ -85,9 +85,22 @@ or formatting to individual options.
   option, or use the **up/down arrow** buttons in the Actions column.
 - **To delete an option:** Click the **trash** icon in the option's Actions
   column.
+- **To show an option only sometimes:** Click the **condition** control in
+  that option's Actions column (**Add condition**, or **Update condition**
+  when a rule is already set). This is not the field-level **Add
+  condition** control. A MultiSelect can also condition an option on the
+  same field, so site-specific hazards appear only after a region is
+  chosen, while "None observed" stays always listed. The
+  **Other** row cannot take a condition.
 - **To make an option exclusive:** Tick the **Exclusive** checkbox in the
   option's row. When a collector selects an exclusive option, all other
   selections are cleared.
+
+If a collector has already selected an option and its condition later
+becomes false, that option stays visible and selected until they change
+it. The stored value is not cleared, and it still appears in view mode
+and in CSV/GIS export. Exclusive options keep today's clear-others
+behaviour among the options the collector can currently interact with.
 
 The **Display label** is shown to collectors, while the **Export value** is stored with their answers and used in exported data.
 
