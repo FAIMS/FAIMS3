@@ -38,7 +38,7 @@ export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
   const toggleVisibilityDialog = isPublic ? (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline" data-testid="web-template-visibility-toggle">
+        <Button data-testid="web-template-visibility-toggle">
           Make private
         </Button>
       </DialogTrigger>
@@ -68,7 +68,7 @@ export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
   ) : (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline" data-testid="web-template-visibility-toggle">
+        <Button data-testid="web-template-visibility-toggle">
           Make public
         </Button>
       </DialogTrigger>

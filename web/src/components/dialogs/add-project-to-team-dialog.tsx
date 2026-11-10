@@ -18,12 +18,7 @@ export const AddProjectToTeamDialog = ({projectId}: {projectId: string}) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button
-          variant="outline"
-          className="bg-primary text-primary-foreground"
-        >
-          Assign {config.notebookNameCapitalized} to Team
-        </Button>
+        <Button>Assign {config.notebookNameCapitalized} to Team</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
