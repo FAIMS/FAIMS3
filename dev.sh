@@ -3,6 +3,8 @@
 # Local development entrypoint. Warns if GDAL, tippecanoe, or pmtiles is
 # missing. GeoPackage export runs on the API host. Map-layer ingest runs in
 # the spatial-worker container (docker compose), which has its own GDAL.
+# Usage: ./dev.sh [--no-spatial] [--all] [--build] [--clear-db]
+# --no-spatial skips GDAL checks, RustFS, and the spatial worker pool.
 
 check_gdal() {
   echo "=========================================="
@@ -61,9 +63,23 @@ check_gdal() {
   echo ""
 }
 
-check_gdal
+NO_SPATIAL=false
+for arg in "$@"; do
+  case $arg in
+  --no-spatial)
+    NO_SPATIAL=true
+    ;;
+  esac
+done
 
-# localdev.sh starts CouchDB and RustFS, migrates Couch, then starts the
-# spatial worker pool. Native api/app/web follow.
-./localdev.sh
+if [ "$NO_SPATIAL" = true ]; then
+  echo "Skipping GDAL/spatial tooling checks (--no-spatial)."
+  echo ""
+else
+  check_gdal
+fi
+
+# localdev.sh starts CouchDB (and RustFS + the spatial worker pool unless
+# --no-spatial). Native api/app/web follow.
+./localdev.sh "$@"
 pnpm run dev
