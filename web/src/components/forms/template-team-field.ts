@@ -152,11 +152,16 @@ export function defaultTeamFromOwner({
 }
 
 /**
- * Builds a {@link Field} definition for a required team select.
+ * Builds a {@link Field} definition for a team select.
  *
- * When `canCreateGlobally` is true the options include {@link NO_TEAM_LABEL}
- * (sentinel {@link NO_TEAM_SENTINEL}). The field is never optional and never
- * clearable unless `allowBlank` is set for map-layer upload.
+ * When `canCreateGlobally` is true and `allowBlank` is false, the options
+ * include {@link NO_TEAM_LABEL} (sentinel {@link NO_TEAM_SENTINEL}). The
+ * schema still requires a choice — pick a team or "No team". Map-layer upload
+ * sets `allowBlank` so Super Users may leave the field empty instead.
+ *
+ * Callers always pass {@link description} so the selector has help text
+ * whether or not the user may create outside a team. Optionality is spelled
+ * out in that help text, not in the label.
  */
 export function buildTeamField({
   canCreateGlobally,
@@ -168,7 +173,7 @@ export function buildTeamField({
   canCreateGlobally: boolean;
   possibleTeams: TeamOption[];
   label: string;
-  description?: string;
+  description: string;
   /**
    * When true (map-layer upload), global creators may leave the field blank
    * and clear it. Survey/template create uses the default: a required select
@@ -211,7 +216,7 @@ export function buildTemplateTeamField({
     possibleTeams,
     label: 'Team',
     description: canCreateGlobally
-      ? 'Choose a team to own this template, or select "No team" to create outside any team.'
-      : undefined,
+      ? 'Choose a team to own this template, or select "No team".'
+      : 'Choose a team to own this template.',
   });
 }

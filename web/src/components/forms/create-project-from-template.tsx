@@ -95,9 +95,9 @@ export function CreateProjectFromTemplateForm({
 
   const teamDescription = canCreateGlobally
     ? defaultTeamId
-      ? `Defaults to the template's team. Select "No team" to create outside any team.`
-      : `Choose a team for this ${config.notebookName}, or select "No team" to create outside any team.`
-    : undefined;
+      ? `Defaults to the template's team, or select "No team".`
+      : `Choose a team for this ${config.notebookName}, or select "No team".`
+    : `Choose a team for this ${config.notebookName}.`;
 
   const formFields = useMemo(() => {
     const result: Field[] = [

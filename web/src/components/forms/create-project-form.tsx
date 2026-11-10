@@ -156,8 +156,8 @@ export function CreateProjectForm({
         possibleTeams,
         label: `Create ${config.notebookName} in this team`,
         description: canCreateGlobally
-          ? `Choose a team for this ${config.notebookName}, or select "No team" to create outside any team.`
-          : undefined,
+          ? `Choose a team for this ${config.notebookName}, or select "No team".`
+          : `Choose a team for this ${config.notebookName}.`,
       })
     );
     dividers.push({index: 4, component: <div className="h-5" />});

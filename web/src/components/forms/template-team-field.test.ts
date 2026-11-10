@@ -19,6 +19,9 @@ function optionValues(field: {options?: {value: string}[]}) {
   return field.options?.map(option => option.value) ?? [];
 }
 
+const chooseTeam = 'Choose a team.';
+const chooseTeamOrNoTeam = `Choose a team, or select "${NO_TEAM_LABEL}".`;
+
 describe('buildTeamField (survey/template create)', () => {
   it('requires a team for both global and in-team creators', () => {
     for (const canCreateGlobally of [true, false]) {
@@ -26,6 +29,7 @@ describe('buildTeamField (survey/template create)', () => {
         canCreateGlobally,
         possibleTeams: [blue, red],
         label: 'Team',
+        description: canCreateGlobally ? chooseTeamOrNoTeam : chooseTeam,
       });
       expect(field.schema.safeParse(undefined).success).toBe(false);
       expect(field.schema.safeParse(blue._id).success).toBe(true);
@@ -33,11 +37,33 @@ describe('buildTeamField (survey/template create)', () => {
     }
   });
 
+  it('keeps the heading plain and puts optionality in the help text', () => {
+    const globalField = buildTeamField({
+      canCreateGlobally: true,
+      possibleTeams: [blue, red],
+      label: 'Team',
+      description: chooseTeamOrNoTeam,
+    });
+    expect(globalField.label).toBe('Team');
+    expect(globalField.label).not.toMatch(/optional/i);
+    expect(globalField.description).toBe(chooseTeamOrNoTeam);
+
+    const inTeamField = buildTeamField({
+      canCreateGlobally: false,
+      possibleTeams: [blue, red],
+      label: 'Team',
+      description: chooseTeam,
+    });
+    expect(inTeamField.label).toBe('Team');
+    expect(inTeamField.description).toBe(chooseTeam);
+  });
+
   it('includes a No team option only when canCreateGlobally', () => {
     const globalField = buildTeamField({
       canCreateGlobally: true,
       possibleTeams: [blue, red],
       label: 'Team',
+      description: chooseTeamOrNoTeam,
     });
     expect(optionValues(globalField)).toEqual([
       NO_TEAM_SENTINEL,
@@ -53,6 +79,7 @@ describe('buildTeamField (survey/template create)', () => {
       canCreateGlobally: false,
       possibleTeams: [blue, red],
       label: 'Team',
+      description: chooseTeam,
     });
     expect(optionValues(inTeamField)).toEqual([blue._id, red._id]);
     expect(optionValues(inTeamField)).not.toContain(NO_TEAM_SENTINEL);
@@ -63,6 +90,7 @@ describe('buildTeamField (survey/template create)', () => {
       canCreateGlobally: true,
       possibleTeams: [],
       label: 'Team',
+      description: chooseTeamOrNoTeam,
     });
     expect(field.options).toEqual([
       {label: NO_TEAM_LABEL, value: NO_TEAM_SENTINEL},
@@ -73,7 +101,7 @@ describe('buildTeamField (survey/template create)', () => {
 });
 
 describe('buildTemplateTeamField copy', () => {
-  it('does not mark the field optional or tell the user to leave it blank', () => {
+  it('does not mark the heading optional and tells the user to select No team', () => {
     const field = buildTemplateTeamField({
       canCreateGlobally: true,
       possibleTeams: [blue],
@@ -84,6 +112,17 @@ describe('buildTemplateTeamField copy', () => {
     expect(field.description).not.toMatch(/leave blank/i);
     expect(field.description).not.toMatch(/clear/i);
   });
+
+  it('always includes help text when the field is required', () => {
+    const field = buildTemplateTeamField({
+      canCreateGlobally: false,
+      possibleTeams: [blue, red],
+    });
+    expect(field.label).toBe('Team');
+    expect(field.label).not.toMatch(/optional/i);
+    expect(field.description).toBe('Choose a team to own this template.');
+    expect(field.description).not.toMatch(/No team/);
+  });
 });
 
 describe('buildTeamField (map-layer optional blank)', () => {
@@ -92,6 +131,7 @@ describe('buildTeamField (map-layer optional blank)', () => {
       canCreateGlobally: false,
       possibleTeams: [blue, red],
       label: 'Team',
+      description: 'The team that will own this layer.',
       allowBlank: true,
     });
     expect(field.clearable).toBe(false);
@@ -104,9 +144,13 @@ describe('buildTeamField (map-layer optional blank)', () => {
     const field = buildTeamField({
       canCreateGlobally: true,
       possibleTeams: [blue, red],
-      label: 'Team (optional)',
+      label: 'Team',
+      description:
+        'Choose a team to own this layer, or leave blank to keep it as your own.',
       allowBlank: true,
     });
+    expect(field.label).toBe('Team');
+    expect(field.label).not.toMatch(/optional/i);
     expect(field.clearable).toBe(true);
     expect(field.schema.safeParse(undefined).success).toBe(true);
     expect(optionValues(field)).toEqual([blue._id, red._id]);

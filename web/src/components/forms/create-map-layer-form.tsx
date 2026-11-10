@@ -86,7 +86,7 @@ export function CreateMapLayerForm({
       buildTeamField({
         canCreateGlobally: canCreateOutsideTeam,
         possibleTeams,
-        label: `Team${canCreateOutsideTeam ? ' (optional)' : ''}`,
+        label: 'Team',
         description: canCreateOutsideTeam
           ? 'Choose a team to own this layer, or leave blank to keep it as your own.'
           : 'The team that will own this layer.',
