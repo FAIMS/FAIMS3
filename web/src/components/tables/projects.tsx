@@ -50,6 +50,7 @@ export const columns: ColumnDef<GetNotebookListWithStatsResponse[number]>[] = [
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Status" />
     ),
+    // class names passed into the header/cells - pins width max
     meta: {
       headerClassName: 'w-24 max-w-24',
       cellClassName: 'w-24 max-w-24',
