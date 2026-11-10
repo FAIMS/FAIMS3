@@ -11,6 +11,7 @@ import {useGetTemplate} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {useQueryClient} from '@tanstack/react-query';
 import {DesignerDialog} from '@/components/dialogs/designer-dialog';
+import {ActionsGrid} from '@/components/tabs/actions-grid';
 import type {NotebookWithHistory} from '@/designer/state/initial';
 import {EditTemplateDialog} from '@/components/dialogs/edit-template';
 import {EditTemplateDetailsDialog} from '@/components/dialogs/edit-template-details-dialog';
@@ -114,31 +115,14 @@ const TemplateActions = () => {
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {canUpdateTemplateDetails && (
-          <Card>
-            <List>
-              <ListItem>
-                <ListLabel>Edit Template details</ListLabel>
-                <ListDescription>
-                  Update template title and short description.
-                </ListDescription>
-              </ListItem>
-              <ListItem>
-                <EditTemplateDetailsDialog />
-              </ListItem>
-            </List>
-          </Card>
-        )}
-
+      <ActionsGrid>
         {canEditTemplate && (
           <Card>
             <List>
               <ListItem>
-                <ListLabel>Edit Template</ListLabel>
+                <ListLabel>Edit Template in Designer</ListLabel>
                 <ListDescription>
-                  Edit this template in the {config.notebookNameCapitalized}{' '}
-                  Editor.
+                  Open the Designer to change this template.
                 </ListDescription>
               </ListItem>
               <ListItem>
@@ -148,7 +132,7 @@ const TemplateActions = () => {
                       <TooltipTrigger asChild>
                         <span className="inline-block w-fit">
                           <Button variant="outline" disabled>
-                            Open in Editor
+                            Open in Designer
                           </Button>
                         </span>
                       </TooltipTrigger>
@@ -172,7 +156,7 @@ const TemplateActions = () => {
                         Saving...
                       </span>
                     ) : (
-                      'Open in Editor'
+                      'Open in Designer'
                     )}
                   </Button>
                 )}
@@ -181,8 +165,40 @@ const TemplateActions = () => {
           </Card>
         )}
 
+        {canCreateProjectFromTemplate && (
+          <Card>
+            <List>
+              <ListItem>
+                <ListLabel>Create {config.notebookNameCapitalized}</ListLabel>
+                <ListDescription>
+                  Create a new {config.notebookName} based on this template.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <ProjectFromTemplateDialog />
+              </ListItem>
+            </List>
+          </Card>
+        )}
+
+        {canUpdateTemplateDetails && (
+          <Card>
+            <List>
+              <ListItem>
+                <ListLabel>Edit Template details</ListLabel>
+                <ListDescription>
+                  Update template title and short description.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <EditTemplateDetailsDialog />
+              </ListItem>
+            </List>
+          </Card>
+        )}
+
         {canAssignTemplateToTeam && (
-          <Card className="flex-1">
+          <Card>
             <List className="flex flex-col gap-4">
               <ListItem>
                 <ListLabel>Assign Template to Team</ListLabel>
@@ -225,7 +241,7 @@ const TemplateActions = () => {
           </Card>
         )}
         {canEditTemplate && (
-          <Card className="flex-1">
+          <Card>
             <List className="flex flex-col gap-4">
               <ListItem>
                 <ListLabel>Replace Template JSON File</ListLabel>
@@ -240,23 +256,8 @@ const TemplateActions = () => {
             </List>
           </Card>
         )}
-        {canCreateProjectFromTemplate && (
-          <Card>
-            <List>
-              <ListItem>
-                <ListLabel>Create {config.notebookNameCapitalized}</ListLabel>
-                <ListDescription>
-                  Create a new {config.notebookName} based on this template.
-                </ListDescription>
-              </ListItem>
-              <ListItem>
-                <ProjectFromTemplateDialog />
-              </ListItem>
-            </List>
-          </Card>
-        )}
         {canChangeTemplateVisibility && (
-          <Card className="flex-1">
+          <Card>
             <TemplateVisibilityDialog templateId={templateId} />
           </Card>
         )}
@@ -282,7 +283,7 @@ const TemplateActions = () => {
             </List>
           </Card>
         ) : null}
-      </div>
+      </ActionsGrid>
       <DesignerDialog
         open={editorOpen && !archived}
         notebook={initialNotebook}
