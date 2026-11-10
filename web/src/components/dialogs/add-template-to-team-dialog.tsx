@@ -54,8 +54,8 @@ export const AddTemplateToTeamDialog = ({
         <DialogHeader>
           <DialogTitle>Assign Template to Team</DialogTitle>
           <DialogDescription>
-            Assign this template to a different team. The template will then be
-            available to members of the new team.
+            Choose which team owns this template. The template will then be
+            available to members of that team.
           </DialogDescription>
         </DialogHeader>
         <AddTemplateToTeamForm

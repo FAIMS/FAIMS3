@@ -26,8 +26,8 @@ export const AddProjectToTeamDialog = ({projectId}: {projectId: string}) => {
             Assign {config.notebookNameCapitalized} to Team
           </DialogTitle>
           <DialogDescription>
-            Assign this {config.notebookName} to a different team. The{' '}
-            {config.notebookName} will then be available to members of the new
+            Choose which team owns this {config.notebookName}. The{' '}
+            {config.notebookName} will then be available to members of that
             team.
           </DialogDescription>
         </DialogHeader>

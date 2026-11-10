@@ -41,8 +41,8 @@ interface CreateTemplateFormProps {
  * CreateTemplateForm component renders a form for creating a template.
  *
  * Team UI follows {@link getTeamFieldState}: a callout when the user must
- * create in their only team, or an optional/required dropdown when they have
- * a choice. Global creators (`CREATE_TEMPLATE`) may omit team ownership.
+ * create in their only team, or a required dropdown when they have a choice.
+ * Global creators (`CREATE_TEMPLATE`) may select "No team" to omit ownership.
  *
  * @param {CreateTemplateFormProps} props - The props for the form.
  * @returns {JSX.Element} The rendered CreateTemplateForm component.

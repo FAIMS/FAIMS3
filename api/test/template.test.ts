@@ -751,6 +751,27 @@ describe('template API tests', () => {
     });
   });
 
+  it('clears team ownership when teamId is omitted', async () => {
+    const team = await createSampleTeam(app, {teamName: 'owned-then-cleared'});
+    const {template} = await createSampleTemplate(app, {
+      teamId: team._id,
+    });
+
+    await getATemplate(app, template._id).then(initial => {
+      expect(initial.ownedByTeamId).toBe(team._id);
+      expect(initial.ownedByTeamDisplayName).toBe('owned-then-cleared');
+    });
+
+    await changeTemplateTeam(app, template._id, {}).then(cleared => {
+      expect(cleared.ownedByTeamId).toBeUndefined();
+    });
+
+    await getATemplate(app, template._id).then(fetched => {
+      expect(fetched.ownedByTeamId).toBeUndefined();
+      expect(fetched.ownedByTeamDisplayName).toBeUndefined();
+    });
+  });
+
   it('will not create or assign a template onto an archived team', async () => {
     const team = await createSampleTeam(app, {
       teamName: 'archived-template-team',
