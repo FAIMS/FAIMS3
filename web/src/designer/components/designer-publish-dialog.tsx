@@ -74,7 +74,10 @@ export function DesignerPublishDialog({
       aria-describedby="publish-dialog-description"
       slotProps={{paper: {sx: {transformOrigin: 'top center'}}}}
     >
-      <DialogTitle id="publish-dialog-title" sx={designerDialogTitleWithCloseSx}>
+      <DialogTitle
+        id="publish-dialog-title"
+        sx={designerDialogTitleWithCloseSx}
+      >
         Publish changes?
         <DesignerDialogCloseButton
           onClick={onCancel}
