@@ -36,7 +36,7 @@ import {useCallback, useEffect, useState} from 'react';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import {useDesignerUndoRedo} from '../state/use-designer-undo-redo';
-import {useDesignerChrome} from '../state/designer-chrome-context';
+import {useDesignerActions} from '../state/designer-actions-context';
 import {useAppSelector} from '../state/hooks';
 import {selectDesignerMode} from '../store/selectors';
 import {
@@ -53,7 +53,7 @@ export type PreviewOutletContext = {
 
 export const NotebookEditor = () => {
   const {onPublish, onPublishAndClose, onCancelRequest, publishDisabled} =
-    useDesignerChrome();
+    useDesignerActions();
   const {pathname} = useLocation();
   const isDesignRoute = pathname.startsWith('/design/');
   const [previewForm, setPreviewForm] = useState(false);

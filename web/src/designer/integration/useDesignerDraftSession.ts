@@ -26,7 +26,7 @@ import {hydrateExportedNotebook} from './notebookAdapters';
 /** Autosave wait after the last store change that can appear in published JSON. */
 export const AUTOSAVE_DEBOUNCE_MS = 500;
 
-/** Visible draft-write status in the designer chrome. */
+/** Draft-write status shown in the editor AppBar. */
 export type DesignerDraftStatus = 'saving' | 'saved' | 'error';
 
 export type DesignerSessionIdentity = DesignerDraftKey;

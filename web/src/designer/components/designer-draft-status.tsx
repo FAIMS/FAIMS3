@@ -10,7 +10,7 @@ type DesignerDraftStatusLabelProps = {
 };
 
 /**
- * Autosave status in the designer chrome. Visible on Design, Info, and Setup.
+ * Autosave status in the editor AppBar. Visible on Design, Info, and Setup.
  */
 export function DesignerDraftStatusLabel({
   status,

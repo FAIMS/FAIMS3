@@ -29,7 +29,7 @@ import type {
 import {slugify} from './domain/notebook/ids';
 import {THEME} from '../lib/theme';
 import {NotebookEditor} from './components/notebook-editor';
-import {DesignerChromeProvider} from './state/designer-chrome-context';
+import {DesignerActionsProvider} from './state/designer-actions-context';
 import {DesignerEditingProvider} from './state/editing-context';
 import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
@@ -327,7 +327,7 @@ export function DesignerWidget({
     };
   }, [unpublishedOrWriting]);
 
-  const chromeValue = useMemo(
+  const designerActions = useMemo(
     () => ({
       onPublish: () => handlePublishRequest('stay'),
       onPublishAndClose: () => handlePublishRequest('close'),
@@ -382,7 +382,7 @@ export function DesignerWidget({
 
   return (
     <ReduxProvider store={store}>
-      <DesignerChromeProvider value={chromeValue}>
+      <DesignerActionsProvider value={designerActions}>
         <DesignerEditingProvider value={editingContextValue}>
           <ThemeProvider theme={mergedTheme}>
             <ScopedCssBaseline />
@@ -449,7 +449,7 @@ export function DesignerWidget({
             </Box>
           </ThemeProvider>
         </DesignerEditingProvider>
-      </DesignerChromeProvider>
+      </DesignerActionsProvider>
     </ReduxProvider>
   );
 }
