@@ -12,6 +12,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 PouchDB.plugin(PouchDBFind);
 
 import {
+  LongLivedTokenExistingDocument,
   PostCreateLongLivedTokenRequest,
   PostLongLivedTokenExchangeInput,
   PutRevokeLongLivedTokenRequest,
@@ -454,7 +455,14 @@ describe('Long-Lived Token Tests', () => {
 
       // Manually expire the token in the database
       const authDB = getAuthDB();
-      const tokenDoc = await authDB.get(record._id);
+      const tokenDoc = await authDB.get<LongLivedTokenExistingDocument>(
+        record._id
+      );
+      if (tokenDoc.documentType !== 'longlived') {
+        throw new Error(
+          `Expected longlived document, got ${tokenDoc.documentType}`
+        );
+      }
       tokenDoc.expiryTimestampMs = Date.now() - 1000; // 1 second ago
       await authDB.put(tokenDoc);
 

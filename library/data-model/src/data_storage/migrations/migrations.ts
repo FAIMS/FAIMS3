@@ -6,6 +6,7 @@ import {
   AuthRecordV3ExistingDocumentSchema,
   AuthRecordV4ExistingDocument,
   AuthRecordV4ExistingDocumentSchema,
+  AuthRecordV5ExistingDocumentSchema,
   RefreshRecordV2ExistingDocument,
 } from '../authDB';
 import {
@@ -684,6 +685,24 @@ export const authV4toV5Migration: MigrationFunc = doc => {
   return {action: 'none'};
 };
 
+/**
+ * Migration from V5 to V6 of the Auth database
+ *
+ * This is a no-op migration since V6 only adds new document types
+ * (download grants and login lockouts) which won't exist in the V5 database,
+ * and doesn't modify the structure of existing types.
+ */
+export const authV5toV6Migration: MigrationFunc = doc => {
+  try {
+    AuthRecordV5ExistingDocumentSchema.parse(doc);
+  } catch (e) {
+    console.warn(
+      `Auth v5 to v6 migration detected an unparseable document. Doc: ${doc}. Id: ${doc._id}. Error: ${e}.`
+    );
+  }
+  return {action: 'none'};
+};
+
 function isIsoDatetime(value: unknown): value is string {
   return typeof value === 'string' && !Number.isNaN(Date.parse(value));
 }
@@ -793,7 +812,7 @@ export const dataV1toV2Migration: MigrationFunc = async (doc, context) => {
 // If we want to promote a database for migration- increment the targetVersion
 // and ensure a migration is defined.
 export const DB_TARGET_VERSIONS: DBTargetVersions = {
-  [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 5},
+  [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 6},
   [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 2},
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 4},
@@ -954,6 +973,14 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       'No-op migration to prompt V5 of schema which includes the new long lived token document.',
     migrationFunction: authV4toV5Migration,
+  },
+  {
+    dbType: DatabaseType.AUTH,
+    from: 5,
+    to: 6,
+    description:
+      'No-op migration to prompt V6 of schema which includes download grants and login lockout documents.',
+    migrationFunction: authV5toV6Migration,
   },
   {
     dbType: DatabaseType.INVITES,

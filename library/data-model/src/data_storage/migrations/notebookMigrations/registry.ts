@@ -44,6 +44,10 @@ import {
  * Latest notebook JSON schema version this build understands and writes.
  * Strict `MAJOR.MINOR.PATCH`; the epoch started at `1.0.0` when the deprecated
  * two-part `1.0`…`7.0` ladder was collapsed.
+ *
+ * Additive keys inside already-`.loose()` envelopes (for example optional
+ * `condition` on a choice option) do not require a bump: older apps ignore
+ * unknown option keys and keep showing every option.
  */
 export const CURRENT_NOTEBOOK_UI_SCHEMA_VERSION: NotebookSchemaSemver = '1.0.1';
 

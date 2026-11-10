@@ -322,6 +322,25 @@ export const viewsDocument = {
         }
       }),
     },
+
+    // LOGIN LOCKOUTS
+    // ==============
+
+    // All login lockout counters by _id (TTL sweeper)
+    loginLockouts: {
+      map: convertToCouchDBString(doc => {
+        const DOCUMENT_TYPE = 'loginlockout';
+        const ID_PREFIX = 'loginlockout_';
+
+        if (
+          doc.documentType &&
+          doc.documentType === DOCUMENT_TYPE &&
+          doc._id.indexOf(ID_PREFIX) === 0
+        ) {
+          emit(doc._id, doc);
+        }
+      }),
+    },
   },
 };
 

@@ -44,6 +44,10 @@ import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {FieldInfo} from '../../types';
 import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
+import {
+  otherOptionPositionAmongVisible,
+  visibleChoiceOptions,
+} from '../visibleChoiceOptions';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
 // ============================================================================
@@ -518,6 +522,7 @@ export const MultiSelect = (props: FieldProps) => {
     setFieldData,
     handleBlur,
     ElementProps,
+    conditionValues,
   } = props;
 
   const rawValue = state.value?.data;
@@ -530,7 +535,19 @@ export const MultiSelect = (props: FieldProps) => {
   const isExpandedChecklist = ElementProps.expandedChecklist ?? true;
   const exclusiveOptions = ElementProps.exclusiveOptions ?? [];
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
-  const otherOptionPosition = ElementProps.otherOptionPosition;
+  // Sibling / parent / metadata bag from ConditionValuesContext — this field's
+  // TanStack state is not enough to evaluate option.condition (including
+  // conditions that reference this MultiSelect itself).
+  const visibleOptions = visibleChoiceOptions(
+    ElementProps.options,
+    conditionValues ?? {},
+    value
+  );
+  const otherOptionPosition = otherOptionPositionAmongVisible(
+    ElementProps.options,
+    visibleOptions,
+    ElementProps.otherOptionPosition
+  );
   // Form values and exclusiveOptions refer to values, not display labels.
   const predefinedValues = ElementProps.options.map(opt => opt.value);
 
@@ -587,7 +604,7 @@ export const MultiSelect = (props: FieldProps) => {
       <Box sx={{mb: 1}}>
         {isExpandedChecklist ? (
           <ExpandedChecklist
-            options={ElementProps.options}
+            options={visibleOptions}
             value={uiValue}
             onChange={handleChange}
             exclusiveOptions={exclusiveOptions}
@@ -601,7 +618,7 @@ export const MultiSelect = (props: FieldProps) => {
           />
         ) : (
           <MuiMultiSelect
-            options={ElementProps.options}
+            options={visibleOptions}
             value={uiValue}
             onChange={handleChange}
             exclusiveOptions={exclusiveOptions}
@@ -725,4 +742,5 @@ export const multiSelectFieldSpec: FieldInfo<FieldProps> = {
     },
     config: {},
   },
+  consumesConditionValues: true,
 };

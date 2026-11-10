@@ -37,8 +37,15 @@ vi.mock('../mdx-editor', () => ({
   ),
 }));
 
+vi.mock('../condition/ConditionModal', () => ({
+  ConditionModal: ({label}: {label: string}) => (
+    <button type="button" aria-label={label} />
+  ),
+}));
+
 vi.mock('../../domain/conditions/conditionReferences', () => ({
   findOptionReferences: () => [],
+  getFieldChoiceOptions: () => [],
   updateConditionReferences: (condition: unknown) => condition,
 }));
 
