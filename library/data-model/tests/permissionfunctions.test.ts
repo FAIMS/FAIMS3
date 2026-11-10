@@ -13,7 +13,13 @@ import {
   drillRoles,
   roleGrantsAction,
 } from '../src/permission/helpers';
-import {Action, actionDetails, Resource, Role} from '../src/permission/model';
+import {
+  Action,
+  actionDetails,
+  getAllActionsForRole,
+  Resource,
+  Role,
+} from '../src/permission/model';
 import {
   DecodedTokenPermissions,
   TokenPermissions,
@@ -1180,5 +1186,45 @@ describe('projectRolesUserCanInvite', () => {
         resourceId: projectId,
       })
     ).toEqual([]);
+  });
+});
+
+describe('CHANGE_TEAM_STATUS grants', () => {
+  it('is granted by TEAM_ADMIN (and GENERAL_ADMIN) but not TEAM_MANAGER', () => {
+    expect(getAllActionsForRole(Role.TEAM_ADMIN)).toContain(
+      Action.CHANGE_TEAM_STATUS
+    );
+    expect(getAllActionsForRole(Role.GENERAL_ADMIN)).toContain(
+      Action.CHANGE_TEAM_STATUS
+    );
+    expect(getAllActionsForRole(Role.TEAM_MANAGER)).not.toContain(
+      Action.CHANGE_TEAM_STATUS
+    );
+
+    const teamAdminToken: TokenPermissions = {
+      [COUCHDB_ROLES_PATH]: [],
+      resourceRoles: [`team1${ENCODING_SEPARATOR}${Role.TEAM_ADMIN}`],
+      globalRoles: [],
+    };
+    const teamManagerToken: TokenPermissions = {
+      [COUCHDB_ROLES_PATH]: [],
+      resourceRoles: [`team1${ENCODING_SEPARATOR}${Role.TEAM_MANAGER}`],
+      globalRoles: [],
+    };
+
+    expect(
+      isTokenAuthorized({
+        token: teamAdminToken,
+        action: Action.CHANGE_TEAM_STATUS,
+        resourceId: 'team1',
+      })
+    ).toBe(true);
+    expect(
+      isTokenAuthorized({
+        token: teamManagerToken,
+        action: Action.CHANGE_TEAM_STATUS,
+        resourceId: 'team1',
+      })
+    ).toBe(false);
   });
 });

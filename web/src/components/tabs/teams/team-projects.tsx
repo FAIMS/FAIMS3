@@ -4,7 +4,7 @@ import {CreateProjectDialog} from '@/components/dialogs/create-project-dialog';
 import {columns} from '@/components/tables/projects';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {useGetProjectsForTeam} from '@/hooks/queries';
+import {useGetProjectsForTeam, useGetTeam} from '@/hooks/queries';
 import {Action} from '@faims3/data-model';
 import {useNavigate} from '@tanstack/react-router';
 
@@ -12,6 +12,8 @@ const TeamProjects = ({teamId}: {teamId: string}) => {
   const {user} = useAuth();
 
   const {isPending, data} = useGetProjectsForTeam({user, teamId});
+  const {data: team} = useGetTeam({user, teamId});
+  const archived = team?.archived === true;
 
   // can the user see the add button?
   const canAddProjectInTeam = useIsAuthorisedTo({
@@ -29,7 +31,8 @@ const TeamProjects = ({teamId}: {teamId: string}) => {
       loading={isPending}
       onRowClick={({_id}) => navigate({to: `/projects/${_id}`})}
       button={
-        canAddProjectInTeam && <CreateProjectDialog specifiedTeam={teamId} />
+        canAddProjectInTeam &&
+        !archived && <CreateProjectDialog specifiedTeam={teamId} />
       }
     />
   );

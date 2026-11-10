@@ -760,7 +760,15 @@ export const TeamDocumentSchema = z.object({
   createdAt: z.number(),
   updatedAt: z.number(),
   createdBy: z.string(),
+  /** Missing/undefined reads as active. */
+  archived: z.boolean().optional(),
 });
+
+/** PUT /api/teams/:id/archive — set top-level `archived`; use `{ archive: false }` to restore. */
+export const PutArchiveTeamRequestSchema = z.object({
+  archive: z.boolean(),
+});
+export type PutArchiveTeamRequest = z.infer<typeof PutArchiveTeamRequestSchema>;
 
 /**
  * GET /api/teams response

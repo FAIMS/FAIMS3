@@ -290,13 +290,19 @@ export const useGetTeam = ({
 export const useGetTeams = ({
   user,
   enabled = true,
+  includeArchived = false,
 }: {
   user: User | null;
   enabled?: boolean;
+  /** When true, lists only archived teams (requires includeArchived=true on the API). */
+  includeArchived?: boolean;
 }) =>
   useQuery({
-    queryKey: ['teams'],
-    queryFn: async () => get<GetListTeamsResponse>('/api/teams/', user),
+    queryKey: ['teams', includeArchived ? 'archived' : 'active'],
+    queryFn: async () => {
+      const qs = includeArchived ? '?includeArchived=true' : '';
+      return get<GetListTeamsResponse>(`/api/teams/${qs}`, user);
+    },
     enabled: !!user && enabled,
   });
 

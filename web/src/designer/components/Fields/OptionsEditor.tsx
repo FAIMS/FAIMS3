@@ -54,12 +54,14 @@ import {alpha, Theme} from '@mui/material/styles';
 import {useMemo, useRef, useState} from 'react';
 import {
   findOptionReferences,
+  getFieldChoiceOptions,
   updateConditionReferences,
 } from '../../domain/conditions/conditionReferences';
 import {cloneField} from '../../domain/notebook/fieldFactory';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {fieldUpdated, sectionConditionChanged} from '../../store/slices/uiSpec';
+import {ConditionType} from '../../types/condition';
 import {
   designerCancelButtonSx,
   designerCheckboxSx,
@@ -67,6 +69,7 @@ import {
   designerDialogTitleSx,
   designerInfoIconSx,
 } from '../designer-style';
+import {ConditionModal} from '../condition/ConditionModal';
 import {DragHandle} from '../drag-handle';
 import {MdxEditor, MdxEditorFeature} from '../mdx-editor';
 import {BaseFieldEditor} from './BaseFieldEditor';
@@ -697,7 +700,18 @@ const SortableOtherOptionRow = ({
             </IconButton>
           </span>
         </Tooltip>
-        {/* Reserve space for the Edit button to align actions. */}
+        {/* Reserve space for the condition and Edit buttons to align actions. */}
+        <IconButton
+          size="small"
+          sx={{
+            visibility: 'hidden',
+            p: {xs: 0.25, sm: 0.5},
+          }}
+          aria-hidden
+          tabIndex={-1}
+        >
+          <EditIcon fontSize="small" />
+        </IconButton>
         <IconButton
           size="small"
           sx={{
@@ -742,6 +756,14 @@ interface SortableItemProps {
   onRemove: (value: string) => void;
   // Nudge by value; the parent converts it into the sortable row ID.
   onMove: (value: string, direction: 'up' | 'down') => void;
+  // parent choice field id (for option-level conditions)
+  fieldName: string;
+  // Keep the parent MultiSelect in the option-condition picker so the list
+  // can cascade. Omit for Select single — a self-referencing option would
+  // only be visible while a different option is selected, then go stale.
+  includeField?: boolean;
+  // persist or clear this option's visibility condition
+  onConditionChange: (value: string, condition: ConditionType | null) => void;
 }
 
 /**
@@ -762,6 +784,9 @@ const SortableItem = ({
   onEdit,
   onRemove,
   onMove,
+  fieldName,
+  includeField,
+  onConditionChange,
 }: SortableItemProps) => {
   // Initialize drag-and-drop functionality
   const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
@@ -845,6 +870,14 @@ const SortableItem = ({
             </IconButton>
           </span>
         </Tooltip>
+        <ConditionModal
+          trigger="icon"
+          label={option.condition ? 'Update condition' : 'Add condition'}
+          initial={(option.condition as ConditionType | undefined) ?? null}
+          onChange={condition => onConditionChange(option.value, condition)}
+          field={fieldName}
+          includeField={includeField}
+        />
         <Tooltip title="Edit option">
           <IconButton
             size="small"
@@ -1012,6 +1045,30 @@ export const OptionsEditor = ({
   };
 
   /**
+   * Rewrite option-level visibility conditions that compare this field's value.
+   */
+  const rewriteOptionConditions = (
+    choiceOptions: ChoiceOption[],
+    oldValue: string,
+    newValue: string
+  ): {options: ChoiceOption[]; changed: boolean} => {
+    let changed = false;
+    const next = choiceOptions.map(option => {
+      if (!option.condition) return option;
+      const updatedCondition = updateConditionReferences(
+        option.condition as ConditionType,
+        fieldName,
+        oldValue,
+        newValue
+      );
+      if (updatedCondition === option.condition) return option;
+      changed = true;
+      return {...option, condition: updatedCondition};
+    });
+    return {options: next, changed};
+  };
+
+  /**
    * Rename condition references only when the stored value changes.
    */
   const updateConditions = (
@@ -1019,25 +1076,54 @@ export const OptionsEditor = ({
     newValue: string,
     updatedField: FieldType
   ) => {
-    // Field-level conditions
+    // Field-level conditions and option-level conditions on other fields.
+    // The field being renamed applies option rewrites on its already-updated
+    // options array in handleEditSubmit.
     for (const fId in allFields) {
       const fieldDef = fId === fieldName ? updatedField : allFields[fId];
-      if (!fieldDef.condition) continue;
+      let nextField = fieldDef;
+      let fieldChanged = false;
 
-      const updatedCondition = updateConditionReferences(
-        fieldDef.condition,
-        fieldName,
-        oldValue,
-        newValue
-      );
-
-      if (updatedCondition !== fieldDef.condition) {
-        dispatch(
-          fieldUpdated({
-            fieldName: fId,
-            newField: {...fieldDef, condition: updatedCondition},
-          })
+      if (fieldDef.condition) {
+        const updatedCondition = updateConditionReferences(
+          fieldDef.condition,
+          fieldName,
+          oldValue,
+          newValue
         );
+
+        if (updatedCondition !== fieldDef.condition) {
+          nextField = {...nextField, condition: updatedCondition};
+          fieldChanged = true;
+        }
+      }
+
+      if (fId !== fieldName) {
+        const choiceOptions = getFieldChoiceOptions(fieldDef);
+        const rewritten = rewriteOptionConditions(
+          choiceOptions as ChoiceOption[],
+          oldValue,
+          newValue
+        );
+        if (rewritten.changed) {
+          nextField = {
+            ...nextField,
+            'component-parameters': {
+              ...nextField['component-parameters'],
+              ElementProps: {
+                ...(
+                  nextField['component-parameters'] as ChoiceComponentParameters
+                ).ElementProps,
+                options: rewritten.options,
+              },
+            },
+          };
+          fieldChanged = true;
+        }
+      }
+
+      if (fieldChanged) {
+        dispatch(fieldUpdated({fieldName: fId, newField: nextField}));
       }
     }
 
@@ -1143,6 +1229,21 @@ export const OptionsEditor = ({
     setAddErrorMessage('');
   };
 
+  const setOptionCondition = (
+    value: string,
+    condition: ConditionType | null
+  ) => {
+    const newOptions = options.map(option => {
+      if (option.value !== value) return option;
+      if (condition === null) {
+        const {condition: _removed, ...rest} = option;
+        return rest;
+      }
+      return {...option, condition};
+    });
+    updateField(newOptions);
+  };
+
   /** Exclusive choices refer to stored values, not rendered Markdown. */
   const handleExclusiveToggle = (value: string) => {
     const newExclusiveOptions = exclusiveOptions.includes(value)
@@ -1215,11 +1316,16 @@ export const OptionsEditor = ({
     }
 
     const valueChanged = newValue !== original.value;
-    const nextOptions = options.map(option =>
+    const renamedOptions = options.map(option =>
       option.value === original.value
         ? {...option, value: newValue, label: newLabel}
         : option
     );
+    const nextOptions =
+      valueChanged && conditionUpdateState?.updateConditions
+        ? rewriteOptionConditions(renamedOptions, original.value, newValue)
+            .options
+        : renamedOptions;
 
     const nextExclusiveOptions = valueChanged
       ? exclusiveOptions.map(id => (id === original.value ? newValue : id))
@@ -1407,6 +1513,9 @@ export const OptionsEditor = ({
                                 onMove={(value, direction) =>
                                   moveRow(getOptionDndId(value), direction)
                                 }
+                                fieldName={fieldName}
+                                includeField={isMultiSelectField}
+                                onConditionChange={setOptionCondition}
                               />
                             );
                           })}

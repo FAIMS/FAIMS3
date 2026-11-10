@@ -19,7 +19,7 @@ Related code:
 | ---------- | ------------------------------------------------- | ------------------------------------ |
 | `OPEN`     | Survey is active for field work                   | In default directory / project lists |
 | `CLOSED`   | Survey is closed; not accepting normal field work | Still listed; can be reopened        |
-| `ARCHIVED` | Soft-retired; hidden from default lists           | Archive UI / `includeArchived=true`  |
+| `ARCHIVED` | Soft-retired; hidden from lists                   | Archive UI / `includeArchived=true`  |
 
 Transitions use `PUT /api/notebooks/:id/status` with `{ status }`.
 

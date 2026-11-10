@@ -60,6 +60,7 @@ import {
 import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {userCanDo} from '../middleware';
+import {assertTeamIdNotArchived, assertTeamNotArchived} from './teams';
 import {nowIso} from '../time';
 
 /**
@@ -321,6 +322,7 @@ export const createNotebook = async ({
   teamId?: string;
   createdBy: string;
 }) => {
+  await assertTeamIdNotArchived(teamId);
   const normalizedUiSpecification =
     normalizeUiSpecificationOrThrow(uiSpecification);
   const projectId = generateProjectID(projectName);
@@ -490,6 +492,8 @@ export const changeNotebookTeam = async ({
 }) => {
   // get existing project record
   const project = await getProjectById(projectId);
+
+  await assertTeamNotArchived(teamId);
 
   // update team
   const updated = {...project, ownedByTeamId: teamId, updatedAt: nowIso()};

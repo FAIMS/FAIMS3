@@ -20,7 +20,7 @@ be visible if you only have the _Operations Administrator_ role.
 - **Map layers** — Upload georeferenced overlays and link them to {{notebooks}} for offline use.
   See [Map layers](map-layers.md)
 - **Teams** — View and manage teams
-- **Archive** — Archived {{notebooks}}, templates, and disabled users (shown when you can
+- **Archive** — Archived {{notebooks}}, templates, teams, and disabled users (shown when you can
   see any of those)
 
 ```{screenshot} user-roles/01-dashboard-sidebar.png

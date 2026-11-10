@@ -167,6 +167,12 @@ export const ApiEnvSchema = z
       SHARED_DEFAULTS.exportRateLimiterPerWindow
     ),
     ATTEMPT_LIMITER_ENABLED: boolWithDefault(true),
+    /**
+     * Couch-backed local-password lockout. Independent of
+     * ATTEMPT_LIMITER_ENABLED (email-code / verification). Forced off under
+     * test so the existing login suite does not write lockout docs.
+     */
+    LOGIN_LOCKOUT_ENABLED: boolWithDefault(true),
     /** Default SMTP; forced to MOCK under test. */
     EMAIL_SERVICE_TYPE: enumWithDefault(EmailServiceTypeSchema, 'SMTP'),
     EMAIL_FROM_ADDRESS: stringWithDefault('notifications@example.com'),
@@ -298,8 +304,8 @@ export type ApiEnv = z.infer<typeof ApiEnvSchema>;
 export interface ParseApiEnvOptions {
   /**
    * Override NODE_ENV/JEST_WORKER_ID detection. Under test: MOCK email,
-   * export limiter off, and `disableMigrateOnStartup` forced on so API unit
-   * tests never walk Couch or notebook JSON on import.
+   * export limiter off, login lockout off, and `disableMigrateOnStartup`
+   * forced on so API unit tests never walk Couch or notebook JSON on import.
    */
   runningUnderTest?: boolean;
 }
@@ -529,6 +535,7 @@ export function parseApiEnv(
     exportRateLimiterWindowMs: env.EXPORT_RATE_LIMITER_WINDOW_MS,
     exportRateLimiterPerWindow: env.EXPORT_RATE_LIMITER_PER_WINDOW,
     authAttemptLimiterEnabled: env.ATTEMPT_LIMITER_ENABLED,
+    loginLockoutEnabled: runningUnderTest ? false : env.LOGIN_LOCKOUT_ENABLED,
     jsonBodyLimit: env.JSON_BODY_LIMIT,
     urlencodedBodyLimit: env.URLENCODED_BODY_LIMIT,
     restoreUploadMaxBytes: env.RESTORE_UPLOAD_MAX_BYTES,
