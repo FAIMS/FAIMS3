@@ -589,6 +589,8 @@ const LoadingImagePlaceholder: React.FC = () => {
   return (
     <ImageItemContainer>
       <Box
+        role="status"
+        aria-label="Loading photo"
         sx={{
           width: '100%',
           height: '100%',
@@ -739,6 +741,8 @@ type GalleryPhoto =
   | {
       type: 'loaded';
       photo: useAttachmentsResult[number];
+      /** Attachment id from query data or the ids passed to useAttachments. */
+      attachmentId?: string;
     }
   | {
       type: 'pending';
@@ -753,6 +757,12 @@ type GalleryPhoto =
  */
 const PhotoGallery: React.FC<{
   photos: useAttachmentsResult;
+  /**
+   * Attachment ids in the same order as `photos`. Used to skip a loading
+   * query whose pending preview is already on screen (`photo.data` is unset
+   * while the blob fetch is in flight).
+   */
+  photoIds: string[];
   pendingPhotos: Map<string, PendingPhoto>;
   maxItems: number | null;
   onDelete: (attachmentId: string) => void;
@@ -767,6 +777,7 @@ const PhotoGallery: React.FC<{
   deleteDisabled?: boolean;
 }> = ({
   photos,
+  photoIds,
   pendingPhotos,
   maxItems,
   onDelete,
@@ -819,24 +830,24 @@ const PhotoGallery: React.FC<{
       result.push({type: 'pending', pending, tempId});
     }
 
-    // Add loaded photos. But skip any that have a pending photo with matching
-    // attachmentId (to prevent duplicates during transition)
+    // Skip stored tiles whose pending preview is still on screen — including
+    // while useAttachments is in flight and photo.data is still undefined.
     const pendingAttachmentIds = new Set(
       Array.from(pendingPhotos.values())
         .map(p => p.attachmentId)
         .filter((id): id is string => id !== null)
     );
 
-    for (const photo of photos) {
-      // Skip if this photo is still showing as pending
-      if (photo.data && pendingAttachmentIds.has(photo.data.id)) {
-        continue;
+    photos.forEach((photo, index) => {
+      const attachmentId = photo.data?.id ?? photoIds[index];
+      if (attachmentId && pendingAttachmentIds.has(attachmentId)) {
+        return;
       }
-      result.push({type: 'loaded', photo});
-    }
+      result.push({type: 'loaded', photo, attachmentId});
+    });
 
     return result;
-  }, [photos, pendingPhotos]);
+  }, [photos, photoIds, pendingPhotos]);
 
   // Count displayed photos, including pending previews.
   const uploadedCountLabel =
@@ -893,7 +904,7 @@ const PhotoGallery: React.FC<{
             if (entry.type === 'pending') {
               return (
                 <PendingPhotoItem
-                  key={`pending-${entry.tempId}`}
+                  key={entry.pending.attachmentId ?? `pending-${entry.tempId}`}
                   url={entry.pending.url}
                   onClick={() => setLightboxUrl(entry.pending.url)}
                   isSaving={entry.pending.attachmentId === null}
@@ -902,23 +913,20 @@ const PhotoGallery: React.FC<{
             }
 
             // Loaded photo
-            const {photo} = entry;
+            const {photo, attachmentId} = entry;
+            const tileKey = attachmentId ?? `loaded-${displayIndex}`;
 
             if (photo.isLoading) {
-              return (
-                <LoadingImagePlaceholder key={`loading-${displayIndex}`} />
-              );
+              return <LoadingImagePlaceholder key={tileKey} />;
             }
 
             if (photo.isError || !photo.data) {
-              return (
-                <UnavailableImagePlaceholder key={`error-${displayIndex}`} />
-              );
+              return <UnavailableImagePlaceholder key={tileKey} />;
             }
 
             return (
               <PhotoItem
-                key={photo.data.id}
+                key={tileKey}
                 data={photo.data}
                 onDelete={() => handleDeleteClick(photo.data.id)}
                 onClick={() => setLightboxUrl(photo.data.url)}
@@ -1072,11 +1080,12 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   // Get attachment service (guaranteed to exist in full mode)
   const attachmentService = context.attachmentEngine();
 
-  // Load all attachments for this field
-  const loadedPhotos = useAttachments(
-    (state.value?.attachments || []).map(att => att.attachmentId),
-    attachmentService
+  const attachmentIds = (state.value?.attachments || []).map(
+    att => att.attachmentId
   );
+
+  // Load all attachments for this field
+  const loadedPhotos = useAttachments(attachmentIds, attachmentService);
 
   // Effect to clean up pending photos once they appear in loadedPhotos
   // This prevents flickering by keeping the optimistic preview until DB confirms
@@ -1681,6 +1690,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         ) : (
           <PhotoGallery
             photos={loadedPhotos}
+            photoIds={attachmentIds}
             pendingPhotos={pendingPhotos}
             maxItems={maxItems}
             onDelete={handleDelete}
