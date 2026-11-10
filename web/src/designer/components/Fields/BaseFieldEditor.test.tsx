@@ -491,3 +491,36 @@ describe('BaseFieldEditor first-edit export-name auto-sync', () => {
     ).toBe('Site-Name');
   });
 });
+
+describe('BaseFieldEditor condition settings', () => {
+  it('can show only conditions when extra config is disabled', () => {
+    const store = storeWithTextField();
+
+    render(
+      <WithProviders store={store}>
+        <BaseFieldEditor
+          fieldName={STORAGE_ID}
+          showExtraConfig={false}
+          showCondition
+          showHelperText={false}
+        />
+      </WithProviders>
+    );
+
+    expect(screen.getByRole('button', {name: 'Add condition'})).toBeDefined();
+    expect(screen.queryByText('Required')).toBeNull();
+  });
+
+  it('shows Required and Add condition by default', () => {
+    const store = storeWithTextField();
+
+    render(
+      <WithProviders store={store}>
+        <BaseFieldEditor fieldName={STORAGE_ID} showHelperText={false} />
+      </WithProviders>
+    );
+
+    expect(screen.getByText('Required')).toBeDefined();
+    expect(screen.getByRole('button', {name: 'Add condition'})).toBeDefined();
+  });
+});
