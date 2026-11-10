@@ -133,7 +133,6 @@ const ProjectActions = (): JSX.Element => {
               </ListItem>
               <ListItem>
                 <Button
-                  variant="outline"
                   disabled={
                     isLoading || !initialNotebook || isProjectNotebookSaving
                   }
@@ -226,7 +225,7 @@ const ProjectActions = (): JSX.Element => {
                 </ListDescription>
               </ListItem>
               <ListItem>
-                <Button variant="outline" disabled={isLoading}>
+                <Button disabled={isLoading}>
                   <a
                     href={`data:text/json;charset=utf-8,${encodeURIComponent(
                       JSON.stringify(data?.uiSpecification ?? {}, null, 2)

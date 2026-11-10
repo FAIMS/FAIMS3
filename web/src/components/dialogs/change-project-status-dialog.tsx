@@ -113,11 +113,7 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
       {isOpen ? (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button
-              variant="outline"
-              className="text-destructive border-border hover:bg-destructive/10 hover:text-destructive"
-              data-testid="web-project-status-close"
-            >
+            <Button data-testid="web-project-status-close">
               Close {config.notebookNameCapitalized}
             </Button>
           </DialogTrigger>
@@ -171,7 +167,7 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
       ) : (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" data-testid="web-project-status-reopen">
+            <Button data-testid="web-project-status-reopen">
               Reopen {config.notebookNameCapitalized}
             </Button>
           </DialogTrigger>

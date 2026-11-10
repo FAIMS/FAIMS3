@@ -31,12 +31,9 @@ export const CreateTemplateFromProjectDialog = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button
-          variant="outline"
-          className="flex items-center space-x-2 bg-primary text-primary-foreground"
-        >
-          <Plus size={16} />
-          <span>Create Template</span>
+        <Button>
+          <Plus />
+          Create Template
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg">

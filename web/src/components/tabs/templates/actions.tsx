@@ -131,9 +131,7 @@ const TemplateActions = () => {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className="inline-block w-fit">
-                          <Button variant="outline" disabled>
-                            Open in Designer
-                          </Button>
+                          <Button disabled>Open in Designer</Button>
                         </span>
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs text-balance">
@@ -144,7 +142,6 @@ const TemplateActions = () => {
                   </TooltipProvider>
                 ) : (
                   <Button
-                    variant="outline"
                     disabled={
                       isLoading || !initialNotebook || isTemplateNotebookSaving
                     }
@@ -226,7 +223,7 @@ const TemplateActions = () => {
                 </ListDescription>
               </ListItem>
               <ListItem>
-                <Button variant="outline" disabled={isLoading}>
+                <Button disabled={isLoading}>
                   <a
                     href={`data:text/json;charset=utf-8,${encodeURIComponent(
                       JSON.stringify(data?.uiSpecification ?? {}, null, 2)
