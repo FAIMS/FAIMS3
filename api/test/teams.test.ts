@@ -927,9 +927,8 @@ describe('Teams API tests', () => {
     await setTeamArchived(app, team._id, true);
     await deleteATeam(app, team._id);
 
-    const afterDelete = await getCouchUserFromEmailOrUserId(
-      'team-delete-member'
-    );
+    const afterDelete =
+      await getCouchUserFromEmailOrUserId('team-delete-member');
     expect(afterDelete).not.toBeNull();
     expect(
       userHasTeamRole({
