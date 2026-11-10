@@ -3,10 +3,12 @@
 /*
  * Timestamped instance-wide usage snapshot for GET /api/admin/stats.
  * Cheap entity counts come from listing helpers. Record, attachment, and byte
- * totals fan out across survey data DBs in BYTE_COUNT_BATCH_SIZE batches using
- * index/recordCount, index/recordRevisions, index/attachmentAttribution, and
- * Couch info(). A failed per-survey query is skipped and the snapshot is marked
- * incomplete rather than 500ing.
+ * totals fan out across survey data DBs in BYTE_COUNT_BATCH_SIZE batches.
+ * Each survey is one parallel pass: index/recordRevisions (record totals +
+ * per-person created_by), index/attachmentAttribution with reduce:false
+ * (attachment totals + attribution), and Couch info() (bytes). A failed
+ * per-survey query is skipped and the snapshot is marked incomplete rather
+ * than 500ing.
  */
 
 import {
@@ -29,7 +31,6 @@ import {getAllTokens} from './longLivedTokens';
 import {listAllAssets} from './mapAssets/store';
 import {
   BYTE_COUNT_BATCH_SIZE,
-  countRecordsInNotebook,
   getAllProjectsListing,
   getByteCount,
 } from './notebooks';
@@ -135,10 +136,21 @@ type AttachmentAttributionValue = {
   created_by?: unknown;
 };
 
+/** Result of one fail-open view query: rows on success, empty on failure. */
+type ViewRowsResult<T> =
+  | {ok: true; rows: Array<{id: string; value?: T}>}
+  | {ok: false};
+
 /**
  * Scan one survey data DB for record / attachment / byte totals and per-person
  * attribution. Failures set `incomplete` and skip that query rather than
  * throwing, so one broken notebook cannot 500 the whole snapshot.
+ *
+ * Record totals come from `index/recordRevisions` (already required for
+ * per-person `created_by`) so this does not also hit `index/recordCount`.
+ * That view is one row per record with a head — the same set the app lists.
+ * Attachment totals come from the unreduced attribution view (already required
+ * for people). Couch `info()` runs in parallel with the two view queries.
  *
  * @param projectId - Notebook / survey id whose data DB to scan
  */
@@ -166,43 +178,67 @@ async function scanNotebookData(projectId: string): Promise<{
     people.set(userId, existing);
   };
 
+  const bytePromise = (async () => {
+    try {
+      const size = await getByteCount(projectId);
+      // getByteCount returns -1 when CouchDB `info()` is unavailable (e.g. Pouch).
+      if (size < 0) {
+        return {byteCount: 0, incomplete: true};
+      }
+      return {byteCount: size, incomplete: false};
+    } catch (error) {
+      console.error(`admin stats: byte count failed for ${projectId}`, error);
+      return {byteCount: 0, incomplete: true};
+    }
+  })();
+
+  const viewsPromise = (async (): Promise<{
+    records: ViewRowsResult<RecordRevisionValue>;
+    attachments: ViewRowsResult<AttachmentAttributionValue>;
+  }> => {
+    let dataDb;
+    try {
+      dataDb = await getDataDb(projectId);
+    } catch (error) {
+      console.error(`admin stats: data-DB open failed for ${projectId}`, error);
+      return {records: {ok: false}, attachments: {ok: false}};
+    }
+    const queryView = async <T>(
+      label: string,
+      run: () => Promise<{rows: Array<{id: string; value?: T}>}>
+    ): Promise<ViewRowsResult<T>> => {
+      try {
+        const result = await run();
+        return {ok: true, rows: result.rows};
+      } catch (error) {
+        console.error(`admin stats: ${label} failed for ${projectId}`, error);
+        return {ok: false};
+      }
+    };
+    const [records, attachments] = await Promise.all([
+      queryView<RecordRevisionValue>('record revisions', () =>
+        dataDb.query(RECORD_REVISIONS_INDEX)
+      ),
+      queryView<AttachmentAttributionValue>('attachment attribution', () =>
+        dataDb.query(ATTACHMENT_ATTRIBUTION_INDEX, {reduce: false})
+      ),
+    ]);
+    return {records, attachments};
+  })();
+
+  const [byteResult, viewResult] = await Promise.all([
+    bytePromise,
+    viewsPromise,
+  ]);
+
+  let incomplete = byteResult.incomplete;
   let recordCount = 0;
   let attachmentCount = 0;
-  let byteCount = 0;
-  let incomplete = false;
+  const createdByByRecordId = new Map<string, string>();
 
-  try {
-    recordCount = await countRecordsInNotebook(projectId);
-  } catch (error) {
-    console.error(`admin stats: record count failed for ${projectId}`, error);
-    incomplete = true;
-    recordCount = 0;
-  }
-
-  try {
-    const size = await getByteCount(projectId);
-    // getByteCount returns -1 when CouchDB `info()` is unavailable (e.g. Pouch).
-    if (size < 0) {
-      incomplete = true;
-      byteCount = 0;
-    } else {
-      byteCount = size;
-    }
-  } catch (error) {
-    console.error(`admin stats: byte count failed for ${projectId}`, error);
-    incomplete = true;
-    byteCount = 0;
-  }
-
-  try {
-    const dataDb = await getDataDb(projectId);
-    const [recordRows, attachmentRows] = await Promise.all([
-      dataDb.query(RECORD_REVISIONS_INDEX),
-      dataDb.query(ATTACHMENT_ATTRIBUTION_INDEX, {reduce: false}),
-    ]);
-    const createdByByRecordId = new Map<string, string>();
-
-    for (const row of recordRows.rows) {
+  if (viewResult.records.ok) {
+    recordCount = viewResult.records.rows.length;
+    for (const row of viewResult.records.rows) {
       const createdBy = (row.value as RecordRevisionValue | undefined)
         ?.created_by;
       if (typeof createdBy === 'string' && createdBy) {
@@ -210,9 +246,13 @@ async function scanNotebookData(projectId: string): Promise<{
         bump(createdBy, 'recordCount');
       }
     }
+  } else {
+    incomplete = true;
+  }
 
-    attachmentCount = attachmentRows.rows.length;
-    for (const row of attachmentRows.rows) {
+  if (viewResult.attachments.ok) {
+    attachmentCount = viewResult.attachments.rows.length;
+    for (const row of viewResult.attachments.rows) {
       const value = row.value as AttachmentAttributionValue | undefined;
       const recordId =
         typeof value?.record_id === 'string' ? value.record_id : undefined;
@@ -225,15 +265,17 @@ async function scanNotebookData(projectId: string): Promise<{
         bump(parentCreatedBy, 'attachmentCount');
       }
     }
-  } catch (error) {
-    console.error(`admin stats: data-DB scan failed for ${projectId}`, error);
+  } else {
     incomplete = true;
-    attachmentCount = 0;
-    // Record counts from index/recordCount still stand; people rows would be partial.
-    people.clear();
   }
 
-  return {recordCount, attachmentCount, byteCount, incomplete, people};
+  return {
+    recordCount,
+    attachmentCount,
+    byteCount: byteResult.byteCount,
+    incomplete,
+    people,
+  };
 }
 
 /**
