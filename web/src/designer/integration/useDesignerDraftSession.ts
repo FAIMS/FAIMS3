@@ -26,7 +26,7 @@ import {hydrateExportedNotebook} from './notebookAdapters';
 /** Autosave wait after the last store change that can appear in published JSON. */
 export const AUTOSAVE_DEBOUNCE_MS = 500;
 
-/** Draft-write status shown in the editor AppBar. */
+/** Draft-write status shown in the editor toolbar. */
 export type DesignerDraftStatus = 'saving' | 'saved' | 'error';
 
 export type DesignerSessionIdentity = DesignerDraftKey;
@@ -40,12 +40,12 @@ export function designerDraftStatusCopy(
   errorMessage?: string
 ): string {
   if (status === 'saving') {
-    return 'Saving…';
+    return 'Saving draft…';
   }
   if (status === 'error') {
     return errorMessage || "Couldn't save draft";
   }
-  return 'Saved';
+  return 'Saved draft';
 }
 
 /**

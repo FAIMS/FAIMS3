@@ -39,6 +39,7 @@ import {useDesignerUndoRedo} from '../state/use-designer-undo-redo';
 import {useDesignerActions} from '../state/designer-actions-context';
 import {useAppSelector} from '../state/hooks';
 import {selectDesignerMode} from '../store/selectors';
+import {DesignerDraftStatusLabel} from './designer-draft-status';
 import {
   designerCancelButtonSx,
   designerResponsiveFrameSx,
@@ -52,8 +53,14 @@ export type PreviewOutletContext = {
 };
 
 export const NotebookEditor = () => {
-  const {onPublish, onPublishAndClose, onCancelRequest, publishDisabled} =
-    useDesignerActions();
+  const {
+    onPublish,
+    onPublishAndClose,
+    onCancelRequest,
+    publishDisabled,
+    draftStatus,
+    draftErrorMessage,
+  } = useDesignerActions();
   const {pathname} = useLocation();
   const isDesignRoute = pathname.startsWith('/design/');
   const [previewForm, setPreviewForm] = useState(false);
@@ -327,6 +334,10 @@ export const NotebookEditor = () => {
                   />
                 </>
               )}
+              <DesignerDraftStatusLabel
+                status={draftStatus}
+                errorMessage={draftErrorMessage}
+              />
             </Stack>
             {isDesignRoute && <DesignerGlobalSearch />}
           </Box>

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import {brandNotebook} from '@/constants';
 import {
   Button,
   Dialog,
@@ -19,18 +20,24 @@ type DesignerPublishDialogProps = {
   intent: DesignerPublishIntent | null;
   busy: boolean;
   animationDuration: number;
+  /** Collected records for this survey. Templates and empty surveys omit this. */
+  existingRecordCount?: number;
   onCancel: () => void;
   onConfirm: () => void;
 };
 
 const PROJECT_PUBLISH_COPY =
-  'Publishing replaces the live survey design. Field users will receive this design on their next sync. Collected records can become inconsistent if the response shape changed.';
+  'Publishing replaces the live survey design. Field users will receive this design on their next sync.';
 
 const TEMPLATE_PUBLISH_COPY =
   'Publishing updates this template only. Existing projects created from it are not rewritten.';
 
+const EXISTING_RECORDS_PUBLISH_COPY =
+  'This {notebook} has existing records. Changing the {notebook} design could result in the loss of existing data.';
+
 /**
  * Confirm that a designer publish is a live write (project vs template copy).
+ * The existing-records warning is survey-only and hidden when none exist.
  */
 export function DesignerPublishDialog({
   open,
@@ -38,11 +45,14 @@ export function DesignerPublishDialog({
   intent,
   busy,
   animationDuration,
+  existingRecordCount,
   onCancel,
   onConfirm,
 }: DesignerPublishDialogProps) {
   const confirmLabel =
     intent === 'close' ? 'Publish and close' : 'Publish changes';
+  const showExistingRecordsWarning =
+    mode !== 'template' && (existingRecordCount ?? 0) > 0;
 
   return (
     <Dialog
@@ -58,6 +68,9 @@ export function DesignerPublishDialog({
       <DialogContent>
         <DialogContentText id="publish-dialog-description">
           {mode === 'template' ? TEMPLATE_PUBLISH_COPY : PROJECT_PUBLISH_COPY}
+          {showExistingRecordsWarning
+            ? ` ${brandNotebook(EXISTING_RECORDS_PUBLISH_COPY)}`
+            : null}
         </DialogContentText>
       </DialogContent>
       <DialogActions>

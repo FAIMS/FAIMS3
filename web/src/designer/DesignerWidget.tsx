@@ -41,7 +41,6 @@ import {
   DesignerPublishDialog,
 } from './components/designer-publish-dialog';
 import {DesignerCloseDraftDialog} from './components/designer-close-draft-dialog';
-import {DesignerDraftStatusLabel} from './components/designer-draft-status';
 import {
   resolveDesignerSessionNotebook,
   useDesignerDraftSession,
@@ -333,8 +332,17 @@ export function DesignerWidget({
       onPublishAndClose: () => handlePublishRequest('close'),
       onCancelRequest: requestClose,
       publishDisabled: !draftSession.isUnpublished || publishing,
+      draftStatus: draftSession.status,
+      draftErrorMessage: draftSession.errorMessage,
     }),
-    [draftSession.isUnpublished, handlePublishRequest, publishing, requestClose]
+    [
+      draftSession.errorMessage,
+      draftSession.isUnpublished,
+      draftSession.status,
+      handlePublishRequest,
+      publishing,
+      requestClose,
+    ]
   );
 
   const routes: RouteObject[] = useMemo(
@@ -402,24 +410,18 @@ export function DesignerWidget({
                   <Typography variant="h6" sx={{fontWeight: 'bold'}}>
                     {config.notebookNameCapitalized} Editor
                   </Typography>
-                  <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
-                    <DesignerDraftStatusLabel
-                      status={draftSession.status}
-                      errorMessage={draftSession.errorMessage}
-                    />
-                    <IconButton
-                      aria-label="close designer"
-                      data-testid="web-designer-close-button"
-                      onClick={requestClose}
-                      size="small"
-                      sx={{
-                        color: 'text.secondary',
-                        '&:hover': {color: 'text.primary'},
-                      }}
-                    >
-                      <CloseRoundedIcon />
-                    </IconButton>
-                  </Box>
+                  <IconButton
+                    aria-label="close designer"
+                    data-testid="web-designer-close-button"
+                    onClick={requestClose}
+                    size="small"
+                    sx={{
+                      color: 'text.secondary',
+                      '&:hover': {color: 'text.primary'},
+                    }}
+                  >
+                    <CloseRoundedIcon />
+                  </IconButton>
                 </Toolbar>
               </AppBar>
 
@@ -437,6 +439,7 @@ export function DesignerWidget({
                 intent={publishIntent}
                 busy={publishing}
                 animationDuration={animationDuration}
+                existingRecordCount={existingRecordCount}
                 onCancel={() => setPublishIntent(null)}
                 onConfirm={() => {
                   void handlePublishConfirm();

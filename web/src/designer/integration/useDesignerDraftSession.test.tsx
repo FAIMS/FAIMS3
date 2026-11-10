@@ -72,26 +72,26 @@ describe('useDesignerDraftSession', () => {
     vi.restoreAllMocks();
   });
 
-  it('shows Saving… then Saved after an edit, without calling fetch', () => {
+  it('shows Saving draft… then Saved draft after an edit, without calling fetch', () => {
     vi.useFakeTimers();
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const store = createDesignerStore(historyFromSample());
     const published = toPublishedNotebook(store.getState().notebook);
     render(<Harness store={store} initialPublished={published} />);
 
-    expect(screen.getByTestId('status').textContent).toBe('Saved');
+    expect(screen.getByTestId('status').textContent).toBe('Saved draft');
     expect(screen.getByTestId('unpublished').textContent).toBe('false');
 
     act(() => {
       editFieldLabel(store, 'Autosaved label');
     });
-    expect(screen.getByTestId('status').textContent).toBe('Saving…');
+    expect(screen.getByTestId('status').textContent).toBe('Saving draft…');
     expect(screen.getByTestId('unpublished').textContent).toBe('true');
 
     act(() => {
       vi.advanceTimersByTime(AUTOSAVE_DEBOUNCE_MS);
     });
-    expect(screen.getByTestId('status').textContent).toBe('Saved');
+    expect(screen.getByTestId('status').textContent).toBe('Saved draft');
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(
       getDraft(identity)?.draft.uiSpec.fields['New-Text-Field'][

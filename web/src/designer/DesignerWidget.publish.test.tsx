@@ -109,6 +109,7 @@ describe('DesignerWidget publish and close', () => {
     expect(
       await screen.findByText(/field users will receive this design/i)
     ).toBeTruthy();
+    expect(screen.queryByText(/has existing records/i)).toBeNull();
     expect(publishNotebook).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByTestId('web-designer-publish-cancel-button'));
@@ -141,7 +142,7 @@ describe('DesignerWidget publish and close', () => {
       ).toBe(true)
     );
     expect(screen.getByTestId('web-designer-draft-status').textContent).toBe(
-      'Saved'
+      'Saved draft'
     );
   });
 
@@ -155,6 +156,7 @@ describe('DesignerWidget publish and close', () => {
       designerMode: 'template',
       resourceKind: 'templates',
       resourceId: 'tmpl-1',
+      existingRecordCount: 12,
     });
     const publish = await screen.findByTestId('web-designer-save-button');
     await waitFor(() => expect(isButtonDisabled(publish)).toBe(false));
@@ -162,6 +164,17 @@ describe('DesignerWidget publish and close', () => {
     expect(
       await screen.findByText(/existing projects created from it are not/i)
     ).toBeTruthy();
+    expect(screen.queryByText(/has existing records/i)).toBeNull();
+  });
+
+  it('warns that existing survey records can be lost', async () => {
+    seedUnpublishedDraft();
+    renderWidget({existingRecordCount: 3});
+    const publish = await screen.findByTestId('web-designer-save-button');
+    await waitFor(() => expect(isButtonDisabled(publish)).toBe(false));
+    fireEvent.click(publish);
+    expect(await screen.findByText(/has existing records/i)).toBeTruthy();
+    expect(screen.getByText(/loss of existing data/i)).toBeTruthy();
   });
 
   it('closes after a successful publish-and-close and not after a failed PUT', async () => {
@@ -274,7 +287,7 @@ describe('DesignerWidget publish and close', () => {
       screen.getByTestId('web-designer-publish-and-close-button')
     ).toBeTruthy();
     expect(screen.getByTestId('web-designer-draft-status').textContent).toBe(
-      'Saved'
+      'Saved draft'
     );
   });
 

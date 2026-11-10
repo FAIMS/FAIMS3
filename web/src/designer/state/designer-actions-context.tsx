@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {createContext, useContext} from 'react';
+import type {DesignerDraftStatus} from '../integration/useDesignerDraftSession';
 
-/** Publish and close handlers shared across Design, Info, and Setup. */
+/** Publish, close, and draft-status values shared across Design, Info, and Setup. */
 export type DesignerActionsValue = {
   onPublish: () => void;
   onPublishAndClose: () => void;
   onCancelRequest: () => void;
   publishDisabled: boolean;
+  draftStatus: DesignerDraftStatus;
+  draftErrorMessage?: string;
 };
 
 const DesignerActionsContext = createContext<DesignerActionsValue>({
@@ -15,9 +18,10 @@ const DesignerActionsContext = createContext<DesignerActionsValue>({
   onPublishAndClose: () => {},
   onCancelRequest: () => {},
   publishDisabled: true,
+  draftStatus: 'saved',
 });
 
-/** Access in-editor publish and close handlers from the notebook editor toolbar. */
+/** Access in-editor publish, close, and draft-status values from the notebook editor toolbar. */
 export function useDesignerActions(): DesignerActionsValue {
   return useContext(DesignerActionsContext);
 }
