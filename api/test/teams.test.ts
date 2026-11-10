@@ -899,4 +899,45 @@ describe('Teams API tests', () => {
     });
     expect(archivedOnly.teams.map(t => t._id)).not.toContain(emptyTeam._id);
   });
+
+  it('POST delete strips team roles from members', async () => {
+    const team = await createSampleTeam(app, {
+      teamName: 'Delete Strips Roles Team',
+    });
+    const [member, memberErr] = await createUser({
+      username: 'team-delete-member',
+      name: 'Team Delete Member',
+    });
+    expect(memberErr).toBe('');
+    expect(member).not.toBeNull();
+    addTeamRole({
+      user: member!,
+      teamId: team._id,
+      role: Role.TEAM_MANAGER,
+    });
+    await saveCouchUser(member!);
+    expect(
+      userHasTeamRole({
+        user: member!,
+        teamId: team._id,
+        role: Role.TEAM_MANAGER,
+      })
+    ).toBe(true);
+
+    await setTeamArchived(app, team._id, true);
+    await deleteATeam(app, team._id);
+
+    const afterDelete = await getCouchUserFromEmailOrUserId(
+      'team-delete-member'
+    );
+    expect(afterDelete).not.toBeNull();
+    expect(
+      userHasTeamRole({
+        user: afterDelete!,
+        teamId: team._id,
+        role: Role.TEAM_MANAGER,
+      })
+    ).toBe(false);
+    expect(afterDelete!.teamRoles ?? []).toEqual([]);
+  });
 });

@@ -49,6 +49,7 @@ import {
   getCouchUserFromEmailOrUserId,
   getUsersForTeam,
   saveCouchUser,
+  stripTeamRolesForTeamId,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {
@@ -293,7 +294,9 @@ api.post(
       );
     }
 
-    // Delete the team
+    // Strip membership here (not in deleteTeam). couchdb/teams cannot import
+    // users: that module already depends on teams via auth/helpers and notebooks.
+    await stripTeamRolesForTeamId(teamId);
     await deleteTeam(teamId);
 
     // Indicate successful deletion

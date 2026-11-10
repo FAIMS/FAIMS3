@@ -246,7 +246,9 @@ export const updateTeam = async (
 };
 
 /**
- * Deletes a team from the teams database
+ * Deletes a team from the teams database.
+ * Callers must strip team membership roles first (see the teams API delete
+ * handler). This module cannot import users without an import cycle.
  * @param teamId The ID of the team to delete
  */
 export const deleteTeam = async (teamId: string): Promise<void> => {
@@ -267,10 +269,6 @@ export const deleteTeam = async (teamId: string): Promise<void> => {
       'Only archived teams can be permanently deleted. Archive the team first, then delete it from the Archive view.'
     );
   }
-
-  // Dynamic import avoids teams ↔ users ↔ auth/helpers cycle at load time.
-  const {stripTeamRolesForTeamId} = await import('./users.js');
-  await stripTeamRolesForTeamId(teamId);
 
   // Delete the team
   try {
