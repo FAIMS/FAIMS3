@@ -4,9 +4,10 @@
  * values (Map / TakePoint components) read via the data engine and returned as
  * GeoJSON features tagged with the owning record.
  *
- * This is the geometry source for the notebook's {@link OverviewMap} tab. It
- * lives in its own module to keep the extraction pipeline and its unit tests
- * separate from the map rendering.
+ * This is the geometry source for the notebook's {@link OverviewMap} tab and
+ * the Map field collection popup (via NotebookRecordMapLayers on the notebook
+ * route). It lives in its own module to keep the extraction pipeline and its
+ * unit tests separate from the map rendering.
  */
 import {
   DatabaseInterface,
@@ -20,55 +21,25 @@ import {
 } from '@faims3/data-model';
 import {
   GeoJSONFeatureOrCollectionSchema,
-  type GeoJSONFeature,
+  recordFeatureCollectionsEqual,
+  type RecordFeatureCollection,
+  type RecordFeatureProps,
+  type RecordGeoJSONFeature,
 } from '@faims3/forms';
 import {useQueries, type UseQueryResult} from '@tanstack/react-query';
 import {useMemo, useRef} from 'react';
 import {localGetDataDb} from '../../../utils/database';
 
-/** Properties tagged onto every extracted feature, tracing it to its record. */
-export type RecordFeatureProps = {
-  name: string;
-  record_id: string;
-  revision_id: string;
-  form_id: string;
-};
-
-/** A parsed GeoJSON feature retagged with its owning record's properties. */
-export type RecordGeoJSONFeature = Omit<GeoJSONFeature, 'properties'> & {
-  properties: RecordFeatureProps;
-};
-
-/** The extracted features of all records, as one GeoJSON FeatureCollection. */
-export type RecordFeatureCollection = {
-  type: 'FeatureCollection';
-  features: RecordGeoJSONFeature[];
-};
-
-/** Split a notebook FeatureCollection into one collection per form type. */
-export function groupRecordFeaturesByForm(
-  collection: RecordFeatureCollection
-): Map<string, RecordFeatureCollection> {
-  const grouped = new Map<string, RecordGeoJSONFeature[]>();
-  for (const feature of collection.features) {
-    const formId = feature.properties.form_id;
-    if (!formId) {
-      continue;
-    }
-    const list = grouped.get(formId);
-    if (list) {
-      list.push(feature);
-    } else {
-      grouped.set(formId, [feature]);
-    }
-  }
-  return new Map(
-    [...grouped.entries()].map(([formId, features]) => [
-      formId,
-      {type: 'FeatureCollection', features},
-    ])
-  );
-}
+export type {
+  RecordFeatureCollection,
+  RecordFeatureProps,
+  RecordGeoJSONFeature,
+} from '@faims3/forms';
+export {
+  groupRecordFeaturesByForm,
+  recordFeatureCollectionsEqual,
+  recordFeatureSyncKey,
+} from '@faims3/forms';
 
 /**
  * Get the names of all GIS fields in a UI Specification: the fields whose AVP
@@ -132,52 +103,6 @@ interface UseRecordFeaturesParams {
    * memoized on it.
    */
   recordTypes: string[];
-}
-
-/**
- * Fingerprint of what is plotted. Keeps collection identity stable across a
- * parent re-render that rebuilt the array, and is the OverviewMap effect dep
- * that refreshes vector sources in place (no MapComponent remount).
- *
- * One `record_id:revision_id:form_id` token per feature — do not unique them,
- * or a second GIS field on the same record looks like a no-op. Empty → first
- * geometry already changes the string.
- *
- * Options:
- * - Identity key (this): cheap every render; live add / delete / new revision.
- *   Misses in-place coordinate edits on an already-plotted feature, and a
- *   GIS-field replace that keeps the same feature count.
- * - `JSON.stringify(geometry)`: catches those two cases; serializes every
- *   geometry on every parent render.
- * - Identity + `gisFieldsKey` here: catches a spec field-list change; the
- *   query key already includes `gisFieldsKey`, so the hook re-extracts.
- *
- * Same-revision late AVPs (create, then finish/flush location onto the same
- * id) are not visible in this string until extract runs again. The query key
- * includes `record.updated` for that; tab-away remount still honours
- * staleTime (5 min). Full reload always re-reads.
- */
-export function recordFeatureSyncKey(
-  collection: RecordFeatureCollection | undefined
-): string {
-  if (!collection) {
-    return '';
-  }
-  // Prefix so an empty plotted collection is not the same key as "no data".
-  return `c:${collection.features
-    .map(
-      feature =>
-        `${feature.properties.record_id}:${feature.properties.revision_id}:${feature.properties.form_id}`
-    )
-    .join('|')}`;
-}
-
-/** True when both collections encode the same records, revisions, and forms. */
-export function recordFeatureCollectionsEqual(
-  left: RecordFeatureCollection | undefined,
-  right: RecordFeatureCollection | undefined
-): boolean {
-  return recordFeatureSyncKey(left) === recordFeatureSyncKey(right);
 }
 
 /**

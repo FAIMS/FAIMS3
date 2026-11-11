@@ -179,6 +179,10 @@ export function MapFormField(props: FieldProps): JSX.Element {
       isLocationSelected={isLocationSelected}
       disabled={props.disabled}
       allowSetToCurrentPoint={props.allowSetToCurrentPoint}
+      includeRecordLayers={props.config.mode === 'full'}
+      excludeRecordId={
+        props.config.mode === 'full' ? props.config.recordId : undefined
+      }
     />
   );
 

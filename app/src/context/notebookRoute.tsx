@@ -7,6 +7,7 @@
  */
 
 import {NotebookContextualLayers} from '../gui/components/maps/NotebookContextualLayers';
+import {NotebookRecordMapLayers} from '../gui/components/maps/NotebookRecordMapLayers';
 import {createContext, ReactNode, useContext, useMemo} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import * as ROUTES from '../constants/routes';
@@ -85,7 +86,9 @@ export const NotebookRouteProvider = ({children}: {children: ReactNode}) => {
         projectId={value.notebook.projectId}
         listedAssetIds={listedAssetIds}
       >
-        {children}
+        <NotebookRecordMapLayers projectId={value.notebook.projectId}>
+          {children}
+        </NotebookRecordMapLayers>
       </NotebookContextualLayers>
     </NotebookRouteContext.Provider>
   );
