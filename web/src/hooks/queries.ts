@@ -34,6 +34,7 @@ import {useState} from 'react';
 import {getTemplateSurveyReferences} from '@/hooks/template-hooks';
 import {
   keepPreviousData,
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -231,23 +232,26 @@ export type TemplatesListQueryArgs = {
   includeArchived?: boolean;
   limit?: number;
   startKey?: string;
+  visibility?: 'public' | 'private';
 };
 
 /**
- * Path and React Query key for GET /api/templates. `limit` / `startKey` are
- * part of the key so each table page is a distinct request.
+ * Path and React Query key for GET /api/templates. `limit` / `startKey` /
+ * `visibility` are part of the key so each table page is a distinct request.
  */
 export function buildTemplatesListRequest({
   teamId,
   includeArchived = false,
   limit,
   startKey,
+  visibility,
 }: TemplatesListQueryArgs): {path: string; queryKey: unknown[]} {
   const params = new URLSearchParams();
   if (includeArchived) params.set('includeArchived', 'true');
   if (teamId) params.set('teamId', teamId);
   if (limit !== undefined) params.set('limit', String(limit));
   if (startKey) params.set('startKey', startKey);
+  if (visibility) params.set('visibility', visibility);
   const qs = params.toString();
   return {
     path: `/api/templates${qs ? `?${qs}` : ''}`,
@@ -257,6 +261,7 @@ export function buildTemplatesListRequest({
       teamId ?? null,
       limit ?? null,
       startKey ?? null,
+      visibility ?? null,
     ],
   };
 }
@@ -365,6 +370,7 @@ export const useGetTemplates = ({
   teamId,
   limit,
   startKey,
+  visibility,
 }: {
   user: User | null;
   enabled?: boolean;
@@ -373,12 +379,14 @@ export const useGetTemplates = ({
   teamId?: string;
   limit?: number;
   startKey?: string;
+  visibility?: 'public' | 'private';
 }) => {
   const {path, queryKey} = buildTemplatesListRequest({
     teamId,
     includeArchived,
     limit,
     startKey,
+    visibility,
   });
   return useQuery({
     queryKey: [...queryKey, user?.token],
@@ -398,16 +406,29 @@ export const usePagedTemplates = ({
   includeArchived = false,
   teamId,
   defaultPageSize = 10,
+  visibility,
 }: {
   user: User | null;
   enabled?: boolean;
   includeArchived?: boolean;
   teamId?: string;
   defaultPageSize?: number;
+  visibility?: 'public' | 'private';
 }) => {
+  const listScope = `${includeArchived ? 'archived' : 'active'}:${teamId ?? ''}:${visibility ?? 'all'}`;
   const [pageSize, setPageSize] = useState(defaultPageSize);
-  const [startKey, setStartKey] = useState<string | undefined>(undefined);
-  const [cursorStack, setCursorStack] = useState<(string | undefined)[]>([]);
+  const [paging, setPaging] = useState<{
+    scope: string;
+    startKey: string | undefined;
+    stack: (string | undefined)[];
+  }>({scope: listScope, startKey: undefined, stack: []});
+
+  if (paging.scope !== listScope) {
+    setPaging({scope: listScope, startKey: undefined, stack: []});
+  }
+
+  const startKey = paging.scope === listScope ? paging.startKey : undefined;
+  const cursorStack = paging.scope === listScope ? paging.stack : [];
 
   const query = useGetTemplates({
     user,
@@ -416,36 +437,42 @@ export const usePagedTemplates = ({
     teamId,
     limit: pageSize,
     startKey,
+    visibility,
   });
 
-  const hasNextPage = query.data?.nextStartKey !== undefined;
+  const fetching = query.isPending || query.isFetching;
+  const hasNextPage =
+    query.data?.nextStartKey !== undefined && !query.isFetching;
   const pageIndex = cursorStack.length;
 
   const goNext = () => {
     const next = query.data?.nextStartKey;
-    if (next === undefined) return;
-    setCursorStack(stack => [...stack, startKey]);
-    setStartKey(next);
+    if (next === undefined || query.isFetching) return;
+    setPaging(current => ({
+      ...current,
+      stack: [...current.stack, current.startKey],
+      startKey: next,
+    }));
   };
 
   const goPrevious = () => {
-    setCursorStack(stack => {
-      if (stack.length === 0) return stack;
-      const nextStack = stack.slice(0, -1);
-      setStartKey(stack[stack.length - 1]);
-      return nextStack;
+    setPaging(current => {
+      if (current.stack.length === 0) return current;
+      return {
+        ...current,
+        startKey: current.stack[current.stack.length - 1],
+        stack: current.stack.slice(0, -1),
+      };
     });
   };
 
   const goFirst = () => {
-    setCursorStack([]);
-    setStartKey(undefined);
+    setPaging(current => ({...current, stack: [], startKey: undefined}));
   };
 
   const changePageSize = (size: number) => {
     setPageSize(size);
-    setCursorStack([]);
-    setStartKey(undefined);
+    setPaging(current => ({...current, stack: [], startKey: undefined}));
   };
 
   return {
@@ -455,6 +482,7 @@ export const usePagedTemplates = ({
     pageIndex,
     hasNextPage,
     canPreviousPage: pageIndex > 0,
+    tableLoading: fetching,
     goNext,
     goPrevious,
     goFirst,
@@ -462,8 +490,49 @@ export const usePagedTemplates = ({
   };
 };
 
-/** Compact consumers (sidebar, create-survey picker) stay on the same GET. */
+/** Sidebar compact catalogue: first page only (see Control Centre nav issue). */
 export const TEMPLATE_CATALOGUE_PICKER_LIMIT = TEMPLATE_LIST_LIMIT_MAX;
+
+/** Create-survey picker page size; follow `nextStartKey` with Get more. */
+export const TEMPLATE_PICKER_PAGE_SIZE = 25;
+
+/**
+ * Infinite template catalogue for selectors. Newest `createdAt` first; Get
+ * more follows `nextStartKey`.
+ */
+export const useInfiniteTemplates = ({
+  user,
+  enabled = true,
+  includeArchived = false,
+  teamId,
+}: {
+  user: User | null;
+  enabled?: boolean;
+  includeArchived?: boolean;
+  teamId?: string;
+}) =>
+  useInfiniteQuery({
+    queryKey: [
+      'templates',
+      'infinite',
+      includeArchived ? 'archived' : 'active',
+      teamId ?? null,
+      TEMPLATE_PICKER_PAGE_SIZE,
+      user?.token,
+    ],
+    queryFn: async ({pageParam}) => {
+      const {path} = buildTemplatesListRequest({
+        teamId,
+        includeArchived,
+        limit: TEMPLATE_PICKER_PAGE_SIZE,
+        startKey: pageParam,
+      });
+      return get<GetListTemplatesResponse>(path, user);
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: lastPage => lastPage.nextStartKey,
+    enabled: !!user && enabled,
+  });
 
 /**
  * useGetUsers hook returns a query for fetching users.

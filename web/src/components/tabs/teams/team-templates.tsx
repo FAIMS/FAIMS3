@@ -13,7 +13,6 @@ import {
 import {useNavigate} from '@tanstack/react-router';
 import {useMemo, useState} from 'react';
 import {
-  filterTemplatesByVisibility,
   PUBLIC_TEMPLATE_ROW_CLASS,
   TemplateVisibilityFilterSelect,
   type TemplateVisibilityFilterValue,
@@ -23,8 +22,10 @@ type TemplateListRow = GetListTemplatesResponse['templates'][number];
 
 const TeamTemplates = ({teamId}: {teamId: string}) => {
   const user = useRequiredUser();
+  const [visibilityFilter, setVisibilityFilter] =
+    useState<TemplateVisibilityFilterValue>('all');
   const {
-    isPending,
+    tableLoading,
     templates,
     pageSize,
     pageIndex,
@@ -34,11 +35,13 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
     goPrevious,
     goFirst,
     changePageSize,
-  } = usePagedTemplates({user, teamId});
+  } = usePagedTemplates({
+    user,
+    teamId,
+    visibility: visibilityFilter === 'all' ? undefined : visibilityFilter,
+  });
   const {data: team} = useGetTeam({user, teamId});
   const archived = team?.archived === true;
-  const [visibilityFilter, setVisibilityFilter] =
-    useState<TemplateVisibilityFilterValue>('all');
 
   // can the user see the add button?
   const canAddTemplateInTeam = useIsAuthorisedTo({
@@ -64,16 +67,11 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
     [user.decodedToken]
   );
 
-  const filteredTemplates = useMemo(
-    () => filterTemplatesByVisibility(templates, visibilityFilter),
-    [templates, visibilityFilter]
-  );
-
   return (
     <DataTable
       columns={columns as ColumnDef<TemplateListRow, unknown>[]}
-      data={filteredTemplates}
-      loading={isPending}
+      data={templates}
+      loading={tableLoading}
       toolbarExtra={
         <TemplateVisibilityFilterSelect
           value={visibilityFilter}

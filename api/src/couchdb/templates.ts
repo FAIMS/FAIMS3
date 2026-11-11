@@ -29,6 +29,10 @@ import {
   TEMPLATES_LISTING_BY_TEMPLATE_ID,
   TEMPLATE_LIST_VIEW_QUERY_MAX,
   TEMPLATE_LIST_VIEW_SCAN_MAX,
+  encodeTemplateListCursor,
+  parseTemplateListCursor,
+  templateListCursorFromViewKey,
+  type TemplateListCursor,
   getPlanTypeDefinition,
   normalizeNotebookTemplateUiSpecification,
   normalizeRootDescriptionForStore,
@@ -50,6 +54,12 @@ import {
 } from './notebooks';
 import {assertTeamNotArchived, getTeamById} from './teams';
 import {stripTemplateRolesForTemplateId} from './users';
+
+function isListingViewRow(
+  row: PouchDB.Query.Response<TemplateListItem>['rows'][number]
+): row is typeof row & {id: string; value: TemplateListItem} {
+  return row.value != null && !!row.id && !row.id.startsWith('_');
+}
 
 /**
  * Lists templates using CouchDB views whose map `value` is the template doc
@@ -80,9 +90,7 @@ export const getTemplates = async ({
             include_docs: false,
           }
         );
-    return resultList.rows
-      .filter(row => row.value != null && row.id && !row.id.startsWith('_'))
-      .map(row => row.value!);
+    return resultList.rows.filter(isListingViewRow).map(row => row.value);
   } catch (error) {
     throw new Exceptions.InternalSystemError(
       'An error occurred while reading templates from the Template DB.'
@@ -90,53 +98,55 @@ export const getTemplates = async ({
   }
 };
 
-function isListingViewRow(
-  row: PouchDB.Query.Response<TemplateListItem>['rows'][number]
-): row is typeof row & {id: string; value: TemplateListItem} {
-  return row.value != null && !!row.id && !row.id.startsWith('_');
-}
-
 export type PaginatedTemplateList = {
   templates: TemplateListItem[];
   nextStartKey?: string;
 };
 
 /**
- * Page of thin listing-view rows the caller may read. `limit` counts visible
- * rows after archive + `canRead`. Scans at most
- * {@link TEMPLATE_LIST_VIEW_SCAN_MAX} view rows across at most
- * {@link TEMPLATE_LIST_VIEW_QUERY_MAX} Couch queries. `startKey` is exclusive
- * (the page starts after that template `_id`). An unknown `startKey` yields an
- * empty page with no `nextStartKey`.
+ * Page of thin listing-view rows the caller may read, newest `createdAt`
+ * first. `limit` counts visible rows after archive + visibility + `canRead`.
+ * Scans at most {@link TEMPLATE_LIST_VIEW_SCAN_MAX} view rows across at most
+ * {@link TEMPLATE_LIST_VIEW_QUERY_MAX} Couch queries. `startKey` is an
+ * exclusive JSON `[createdAtMs, templateId]` cursor. An unknown or unparsable
+ * cursor yields an empty page with no `nextStartKey`.
  */
 export const getTemplatesPage = async ({
   teamId,
   includeArchived,
   limit,
   startKey,
+  visibility,
   canRead,
 }: {
   teamId?: string;
   includeArchived: boolean;
   limit: number;
   startKey?: string;
+  visibility?: 'public' | 'private';
   canRead: (template: TemplateListItem) => boolean;
 }): Promise<PaginatedTemplateList> => {
   const templatesDb = getTemplatesDb();
   const view = teamId
     ? TEMPLATES_LISTING_BY_TEAM_ID
     : TEMPLATES_LISTING_BY_TEMPLATE_ID;
-  const rangeFor = (cursor?: string) =>
+  const rangeFor = (cursor?: TemplateListCursor) =>
     teamId
       ? templateListingTeamRange({teamId, includeArchived, startKey: cursor})
       : templateListingGlobalRange({includeArchived, startKey: cursor});
 
+  if (startKey !== undefined && startKey !== '') {
+    const parsed = parseTemplateListCursor(startKey);
+    if (!parsed) {
+      return {templates: []};
+    }
+  }
+
   const visible: TemplateListItem[] = [];
   let examined = 0;
   let queries = 0;
-  let lastExaminedId: string | undefined;
-  let exclusiveAfter =
-    startKey !== undefined && startKey !== '' ? startKey : undefined;
+  let lastExamined: TemplateListCursor | undefined;
+  let exclusiveAfter = parseTemplateListCursor(startKey);
   let requireExactStart = exclusiveAfter !== undefined;
   let moreRemain = false;
 
@@ -166,12 +176,12 @@ export const getTemplatesPage = async ({
       let rows = result.rows.filter(isListingViewRow);
       if (exclusiveAfter) {
         if (requireExactStart) {
-          if (rows.length === 0 || rows[0].id !== exclusiveAfter) {
+          if (rows.length === 0 || rows[0].id !== exclusiveAfter[1]) {
             return {templates: []};
           }
           requireExactStart = false;
         }
-        if (rows[0]?.id === exclusiveAfter) {
+        if (rows[0]?.id === exclusiveAfter[1]) {
           rows = rows.slice(1);
         }
         exclusiveAfter = undefined;
@@ -190,10 +200,18 @@ export const getTemplatesPage = async ({
           break;
         }
         examined++;
-        lastExaminedId = row.id;
+        lastExamined =
+          templateListCursorFromViewKey(row.key, {teamId}) ??
+          ([0, row.id] satisfies TemplateListCursor);
         const item = row.value;
         const archived = item.archived === true;
         if (includeArchived ? !archived : archived) {
+          continue;
+        }
+        if (visibility === 'public' && item.isPublic !== true) {
+          continue;
+        }
+        if (visibility === 'private' && item.isPublic === true) {
           continue;
         }
         if (!canRead(item)) {
@@ -217,7 +235,7 @@ export const getTemplatesPage = async ({
         moreRemain = false;
         break;
       }
-      exclusiveAfter = lastExaminedId;
+      exclusiveAfter = lastExamined;
     }
   } catch (error) {
     throw new Exceptions.InternalSystemError(
@@ -227,8 +245,13 @@ export const getTemplatesPage = async ({
 
   return {
     templates: visible,
-    ...(moreRemain && lastExaminedId !== undefined
-      ? {nextStartKey: lastExaminedId}
+    ...(moreRemain && lastExamined !== undefined
+      ? {
+          nextStartKey: encodeTemplateListCursor(
+            lastExamined[0],
+            lastExamined[1]
+          ),
+        }
       : {}),
   };
 };

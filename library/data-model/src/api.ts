@@ -653,13 +653,17 @@ function listTemplatesLimitRefine(max: number) {
   };
 }
 
+/** JSON `[createdAtMs, templateId]` cursor is longer than a bare id. */
+export const TEMPLATE_LIST_CURSOR_MAX_LENGTH = 512;
+
 /** GET /api/templates query (all values are strings from the query string). */
 export const GetListTemplatesQuerySchema = z
   .object({
     teamId: z.string().min(1).optional(),
     includeArchived: z.enum(['true', 'false']).optional(),
     limit: z.string().max(16).optional(),
-    startKey: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
+    startKey: z.string().max(TEMPLATE_LIST_CURSOR_MAX_LENGTH).optional(),
+    visibility: z.enum(['public', 'private']).optional(),
   })
   .refine(listTemplatesLimitRefine(TEMPLATE_LIST_LIMIT_MAX), {
     message: 'limit must be between 1 and 500',
@@ -677,7 +681,7 @@ const templateListRowSchema = z
   )
   .pipe(TemplateApiListItemSchema);
 
-// GET list all templates response
+// GET paginated template list response
 export const GetListTemplatesResponseSchema = z.object({
   templates: z.array(templateListRowSchema),
   nextStartKey: z.string().optional(),

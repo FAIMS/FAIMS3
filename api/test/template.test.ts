@@ -111,6 +111,7 @@ export const listTemplates = async (
     limit?: number;
     startKey?: string;
     teamId?: string;
+    visibility?: 'public' | 'private';
   }
 ): Promise<GetListTemplatesResponse> => {
   const params = new URLSearchParams();
@@ -119,6 +120,7 @@ export const listTemplates = async (
   if (query?.limit !== undefined) params.set('limit', String(query.limit));
   if (query?.startKey) params.set('startKey', query.startKey);
   if (query?.teamId) params.set('teamId', query.teamId);
+  if (query?.visibility) params.set('visibility', query.visibility);
   const qs = params.toString();
   return await requestAuthAndType(
     request(app).get(`${TEMPLATE_API_BASE}${qs ? `?${qs}` : ''}`),
@@ -138,6 +140,7 @@ const collectTemplatePages = async (
     limit: number;
     includeArchived?: boolean;
     teamId?: string;
+    visibility?: 'public' | 'private';
   }
 ): Promise<GetListTemplatesResponse[]> => {
   const pages: GetListTemplatesResponse[] = [];
@@ -157,6 +160,7 @@ const seedListingTemplates = async (
     isPublic?: boolean;
     archived?: boolean;
     ownedByTeamId?: string;
+    createdAt?: string;
   }>
 ) => {
   const db = getTemplatesDb();
@@ -170,8 +174,8 @@ const seedListingTemplates = async (
       isPublic: d.isPublic === true,
       ownedByTeamId: d.ownedByTeamId,
       createdBy: 'admin',
-      createdAt: now,
-      updatedAt: now,
+      createdAt: d.createdAt ?? now,
+      updatedAt: d.createdAt ?? now,
       uiSpecification: {uiSpec: {fields: {}}, metadata: {}},
       uiSpecProperties: {
         schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
@@ -540,11 +544,17 @@ describe('template API tests', () => {
     for (const name of ['page-alpha', 'page-bravo', 'page-charlie']) {
       created.push((await createSampleTemplate(app, {name})).template);
     }
-    const expectedIds = created.map(t => t._id).sort();
+    const expectedIds = [...created]
+      .sort(
+        (a, b) =>
+          b.createdAt.localeCompare(a.createdAt) || b._id.localeCompare(a._id)
+      )
+      .map(t => t._id);
 
     const first = await listTemplates(app, adminToken, {limit: 2});
     expect(first.templates).toHaveLength(2);
     expect(first.nextStartKey).toBeDefined();
+    expect(first.nextStartKey?.startsWith('[')).toBe(true);
     const firstIds = first.templates.map(t => t._id);
     expect(new Set(firstIds).size).toBe(2);
 
@@ -554,9 +564,13 @@ describe('template API tests', () => {
     });
     const secondIds = second.templates.map(t => t._id);
     expect(secondIds.some(id => firstIds.includes(id))).toBe(false);
-    expect([...firstIds, ...secondIds]).toEqual(
-      [...firstIds, ...secondIds].sort()
-    );
+    const listed = [...first.templates, ...second.templates];
+    for (let i = 1; i < listed.length; i++) {
+      const order =
+        listed[i - 1].createdAt.localeCompare(listed[i].createdAt) ||
+        listed[i - 1]._id.localeCompare(listed[i]._id);
+      expect(order).toBeGreaterThanOrEqual(0);
+    }
 
     const pages = await collectTemplatePages(app, adminToken, {limit: 2});
     const walked = pages.flatMap(p => p.templates.map(t => t._id));
@@ -579,7 +593,12 @@ describe('template API tests', () => {
       await setTemplateArchived(app, template._id, true);
       archived.push(template);
     }
-    const expectedArchived = archived.map(t => t._id).sort();
+    const expectedArchived = [...archived]
+      .sort(
+        (a, b) =>
+          b.createdAt.localeCompare(a.createdAt) || b._id.localeCompare(a._id)
+      )
+      .map(t => t._id);
 
     const defaultList = await listTemplates(app, adminToken, {limit: 2});
     expect(defaultList.templates.every(t => t.archived !== true)).toBe(true);
@@ -603,7 +622,7 @@ describe('template API tests', () => {
   it('paginates by teamId and teamId+includeArchived', async () => {
     const teamA = await createSampleTeam(app, {teamName: 'Pager Team A'});
     const teamB = await createSampleTeam(app, {teamName: 'Pager Team B'});
-    const inA: {_id: string}[] = [];
+    const inA: {_id: string; createdAt: string}[] = [];
     for (const name of ['team-a-one', 'team-a-two', 'team-a-three']) {
       inA.push(
         (await createSampleTemplate(app, {name, teamId: teamA._id})).template
@@ -618,8 +637,11 @@ describe('template API tests', () => {
 
     const expectedActiveA = inA
       .filter(t => t._id !== inA[0]._id)
-      .map(t => t._id)
-      .sort();
+      .sort(
+        (a, b) =>
+          b.createdAt.localeCompare(a.createdAt) || b._id.localeCompare(a._id)
+      )
+      .map(t => t._id);
     const pages = await collectTemplatePages(app, adminToken, {
       limit: 2,
       teamId: teamA._id,
@@ -656,10 +678,10 @@ describe('template API tests', () => {
 
     const adminPage = await listTemplates(app, adminToken, {limit: 500});
     expect(adminPage.templates.map(t => t._id)).toEqual([
-      'priv-aaa',
-      'priv-bbb',
-      'priv-ccc',
       'pub-visible',
+      'priv-ccc',
+      'priv-bbb',
+      'priv-aaa',
     ]);
   });
 
@@ -669,11 +691,16 @@ describe('template API tests', () => {
       (_, i) => ({
         _id: `aaa-${String(i).padStart(3, '0')}`,
         isPublic: false,
+        createdAt: '2024-06-02T00:00:00.000Z',
       })
     );
     await seedListingTemplates([
       ...unreadables,
-      {_id: 'zzz-readable', isPublic: true},
+      {
+        _id: 'zzz-readable',
+        isPublic: true,
+        createdAt: '2024-06-01T00:00:00.000Z',
+      },
     ]);
 
     const first = await listTemplates(app, localUserToken, {limit: 1});
@@ -696,6 +723,38 @@ describe('template API tests', () => {
     });
     expect(listed.templates).toEqual([]);
     expect(listed.nextStartKey).toBeUndefined();
+
+    const missing = await listTemplates(app, adminToken, {
+      limit: 1,
+      startKey: JSON.stringify([Date.now() + 1_000_000, 'missing-template']),
+    });
+    expect(missing.templates).toEqual([]);
+    expect(missing.nextStartKey).toBeUndefined();
+  });
+
+  it('filters pages by catalogue visibility', async () => {
+    await seedListingTemplates([
+      {
+        _id: 'vis-public',
+        isPublic: true,
+        createdAt: '2024-02-02T00:00:00.000Z',
+      },
+      {
+        _id: 'vis-private',
+        isPublic: false,
+        createdAt: '2024-02-01T00:00:00.000Z',
+      },
+    ]);
+    const pub = await listTemplates(app, adminToken, {
+      limit: 10,
+      visibility: 'public',
+    });
+    expect(pub.templates.map(t => t._id)).toEqual(['vis-public']);
+    const priv = await listTemplates(app, adminToken, {
+      limit: 10,
+      visibility: 'private',
+    });
+    expect(priv.templates.map(t => t._id)).toEqual(['vis-private']);
   });
 
   it('create, list, get, delete', async () => {

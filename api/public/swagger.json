@@ -1528,7 +1528,7 @@
     "/templates/": {
       "get": {
         "summary": "Get a list of templates",
-        "description": "Lists template summaries (no `uiSpecification` form payload in each row). Use GET `/api/templates/{id}` for full detail including the form. Cursor pagination uses `limit` (1–500, default 50) and exclusive `startKey`; `nextStartKey` is present when more listing-view rows remain. Omitting `limit` does not dump the full catalogue. By default only non-archived templates are returned. Pass `includeArchived=true` to list archived templates (still subject to `READ_TEMPLATE_DETAILS` / `READ_PUBLIC_TEMPLATE_DETAILS`). Optional `teamId` scopes to a team. Each item may include `ownedByTeamDisplayName` when the template has `ownedByTeamId` and the server can resolve the team — so clients can show the owning team name without calling the teams API (e.g. for public catalogue templates).",
+        "description": "Lists template summaries (no `uiSpecification` form payload in each row). Use GET `/api/templates/{id}` for full detail including the form. Pages are newest-`createdAt` first. Cursor pagination uses `limit` (1–500, default 50) and exclusive `startKey` (JSON `[createdAtMs, templateId]`); `nextStartKey` is present when more listing-view rows remain. Omitting `limit` does not dump the full catalogue. By default only non-archived templates are returned. Pass `includeArchived=true` to list archived templates (still subject to `READ_TEMPLATE_DETAILS` / `READ_PUBLIC_TEMPLATE_DETAILS`). Optional `teamId` scopes to a team. Optional `visibility=public|private` keeps only matching rows while filling the page. Each item may include `ownedByTeamDisplayName` when the template has `ownedByTeamId` and the server can resolve the team — so clients can show the owning team name without calling the teams API (e.g. for public catalogue templates).",
         "tags": ["Templates"],
         "produces": ["application/json"],
         "security": [
@@ -1573,7 +1573,17 @@
             "schema": {
               "type": "string"
             },
-            "description": "Exclusive pagination cursor (template `_id`) from a previous response’s `nextStartKey`. Omit for the first page. An unknown cursor returns an empty page without `nextStartKey`."
+            "description": "Exclusive pagination cursor from a previous response’s `nextStartKey`: JSON `[createdAtMs, templateId]`. Omit for the first page. An unknown or unparsable cursor returns an empty page without `nextStartKey`."
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["public", "private"]
+            },
+            "description": "When set, only public or only private templates are returned. Omitted means both. Applied while filling the page, so a page may be short while `nextStartKey` is still set."
           }
         ],
         "responses": {
@@ -3313,7 +3323,7 @@
         },
         "nextStartKey": {
           "type": "string",
-          "description": "Present when the server stopped before the end of the listing view; pass as `startKey` on the next request. Omitted when the view is exhausted."
+          "description": "Present when the server stopped before the end of the listing view; pass as `startKey` on the next request. JSON `[createdAtMs, templateId]`. Omitted when the view is exhausted."
         }
       },
       "required": ["templates"]

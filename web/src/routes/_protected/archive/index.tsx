@@ -70,7 +70,7 @@ function RouteComponent() {
   });
 
   const {
-    isPending,
+    tableLoading,
     templates,
     pageSize,
     pageIndex,
@@ -167,7 +167,7 @@ function RouteComponent() {
             <DataTable
               columns={archivedTemplateColumns}
               data={templates}
-              loading={isPending}
+              loading={tableLoading}
               defaultRowsPerPage={pageSize}
               serverPagination={{
                 pageIndex,

@@ -44,8 +44,10 @@ interface DataTableProps<TData, TValue> {
   /** Shown when the table has no rows (after filtering). Defaults to "No results." */
   emptyMessage?: ReactNode;
   /**
-   * When set, the table shows the current API page and Next follows
-   * `nextStartKey`. Unrelated callers keep client-side `getPaginationRowModel`.
+   * When set, the table shows the current API page (server order) and Next
+   * follows `nextStartKey`. Search and column sort are disabled — they would
+   * only apply to the current page. Unrelated callers keep client-side
+   * `getPaginationRowModel`.
    */
   serverPagination?: DataTableServerPagination;
   /** Server-driven paging: skip client slice/filter/sort. */
@@ -96,16 +98,16 @@ export function DataTable<TData, TValue>({
     paginationProp !== undefined && onPaginationChange !== undefined;
   const pagination = isControlled ? paginationProp : uncontrolledPagination;
   const useCursorPagination = Boolean(serverPagination);
+  const hideSearchInput = hideSearch || useCursorPagination;
 
   const table = useReactTable({
     data: data || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
+    enableSorting: !useCursorPagination,
     ...(useCursorPagination
       ? {
           manualPagination: true,
-          getSortedRowModel: getSortedRowModel(),
-          getFilteredRowModel: getFilteredRowModel(),
         }
       : manualPagination
         ? {
@@ -120,27 +122,27 @@ export function DataTable<TData, TValue>({
     onPaginationChange: isControlled
       ? onPaginationChange
       : setUncontrolledPagination,
-    onSortingChange: setSorting,
-    onGlobalFilterChange: hideSearch ? undefined : setGlobalFilter,
+    onSortingChange: useCursorPagination ? undefined : setSorting,
+    onGlobalFilterChange: hideSearchInput ? undefined : setGlobalFilter,
     state: {
-      sorting,
+      sorting: useCursorPagination ? [] : sorting,
       pagination: useCursorPagination
         ? {
             pageIndex: serverPagination!.pageIndex,
             pageSize: serverPagination!.pageSize,
           }
         : pagination,
-      ...(hideSearch ? {} : {globalFilter}),
+      ...(hideSearchInput ? {} : {globalFilter}),
     },
   });
 
-  const showToolbar = !hideSearch || button || toolbarExtra;
+  const showToolbar = !hideSearchInput || button || toolbarExtra;
 
   return (
     <div className="flex flex-col gap-2" data-testid={testId}>
       {showToolbar ? (
         <div className="flex justify-start items-center gap-4">
-          {!hideSearch ? (
+          {!hideSearchInput ? (
             <Input
               placeholder="Search..."
               value={table.getState().globalFilter || ''}

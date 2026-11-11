@@ -19,12 +19,22 @@ describe('buildTemplatesListRequest', () => {
       'team-1',
       10,
       'tpl-cursor',
+      null,
     ]);
   });
 
   it('omits startKey from the first-page URL', () => {
     const {path, queryKey} = buildTemplatesListRequest({limit: 10});
     expect(path).toBe('/api/templates?limit=10');
-    expect(queryKey).toEqual(['templates', 'active', null, 10, null]);
+    expect(queryKey).toEqual(['templates', 'active', null, 10, null, null]);
+  });
+
+  it('includes visibility in the query key and request URL', () => {
+    const {path, queryKey} = buildTemplatesListRequest({
+      limit: 10,
+      visibility: 'public',
+    });
+    expect(path).toBe('/api/templates?limit=10&visibility=public');
+    expect(queryKey).toEqual(['templates', 'active', null, 10, null, 'public']);
   });
 });

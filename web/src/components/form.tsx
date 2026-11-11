@@ -73,6 +73,12 @@ export interface Field {
    * value). Does not replace RHF's input handler.
    */
   onChange?: (value: unknown) => void;
+  /** Replace the default input/select with a custom control. */
+  renderControl?: (props: {
+    value: unknown;
+    onChange: (value: unknown) => void;
+    disabled: boolean;
+  }) => React.ReactNode;
 }
 
 interface Divider {
@@ -272,6 +278,7 @@ export function Form<
                 testId,
                 multiple,
                 accept,
+                renderControl,
               },
               index
             ) => {
@@ -348,130 +355,141 @@ export function Form<
                           {description && (
                             <FormDescription>{description}</FormDescription>
                           )}
-                          <FormControl>
-                            {options ? (
-                              <div className="flex w-full items-center gap-2">
-                                <Select
-                                  // Radix Select does not reliably return to an
-                                  // empty state after clear; remount when cleared.
-                                  key={
-                                    clearable
-                                      ? `${name}-${field.value ?? 'empty'}`
-                                      : name
-                                  }
-                                  onValueChange={field.onChange}
-                                  value={field.value || undefined}
-                                  disabled={isDisabled}
-                                >
-                                  <SelectTrigger
-                                    className="w-full"
-                                    data-testid={testId}
-                                  >
-                                    <SelectValue
-                                      placeholder={
-                                        placeholder ?? `Select ${label ?? name}`
-                                      }
-                                    />
-                                  </SelectTrigger>
-                                  <SelectContent className="max-w-md">
-                                    {options.map(
-                                      ({label, value, description}) => (
-                                        <SelectItem
-                                          key={value}
-                                          value={value}
-                                          description={description}
-                                        >
-                                          {label}
-                                        </SelectItem>
-                                      )
-                                    )}
-                                  </SelectContent>
-                                </Select>
-                                {clearable && field.value ? (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="shrink-0"
-                                    aria-label={`Clear ${label ?? name}`}
+                          {renderControl ? (
+                            renderControl({
+                              value: field.value,
+                              onChange: field.onChange,
+                              disabled: isDisabled,
+                            })
+                          ) : (
+                            <FormControl>
+                              {options ? (
+                                <div className="flex w-full items-center gap-2">
+                                  <Select
+                                    // Radix Select does not reliably return to an
+                                    // empty state after clear; remount when cleared.
+                                    key={
+                                      clearable
+                                        ? `${name}-${field.value ?? 'empty'}`
+                                        : name
+                                    }
+                                    onValueChange={field.onChange}
+                                    value={field.value || undefined}
                                     disabled={isDisabled}
-                                    onClick={() => field.onChange(undefined)}
                                   >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                ) : null}
-                              </div>
-                            ) : type === 'file' ? (
-                              <Input
-                                type="file"
-                                multiple={multiple}
-                                accept={accept}
-                                min={min}
-                                max={max}
-                                step={step}
-                                disabled={isDisabled}
-                                className="cursor-pointer"
-                                placeholder={placeholder}
-                                data-testid={testId}
-                                onChange={event => {
-                                  const chosen = event.target.files;
-                                  if (!chosen || chosen.length === 0) {
-                                    field.onChange(multiple ? [] : undefined);
-                                    return;
+                                    <SelectTrigger
+                                      className="w-full"
+                                      data-testid={testId}
+                                    >
+                                      <SelectValue
+                                        placeholder={
+                                          placeholder ??
+                                          `Select ${label ?? name}`
+                                        }
+                                      />
+                                    </SelectTrigger>
+                                    <SelectContent className="max-w-md">
+                                      {options.map(
+                                        ({label, value, description}) => (
+                                          <SelectItem
+                                            key={value}
+                                            value={value}
+                                            description={description}
+                                          >
+                                            {label}
+                                          </SelectItem>
+                                        )
+                                      )}
+                                    </SelectContent>
+                                  </Select>
+                                  {clearable && field.value ? (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="shrink-0"
+                                      aria-label={`Clear ${label ?? name}`}
+                                      disabled={isDisabled}
+                                      onClick={() => field.onChange(undefined)}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  ) : null}
+                                </div>
+                              ) : type === 'file' ? (
+                                <Input
+                                  type="file"
+                                  multiple={multiple}
+                                  accept={accept}
+                                  min={min}
+                                  max={max}
+                                  step={step}
+                                  disabled={isDisabled}
+                                  className="cursor-pointer"
+                                  placeholder={placeholder}
+                                  data-testid={testId}
+                                  onChange={event => {
+                                    const chosen = event.target.files;
+                                    if (!chosen || chosen.length === 0) {
+                                      field.onChange(multiple ? [] : undefined);
+                                      return;
+                                    }
+                                    field.onChange(
+                                      multiple ? Array.from(chosen) : chosen[0]
+                                    );
+                                  }}
+                                />
+                              ) : type === 'textarea' ? (
+                                <Textarea
+                                  {...field}
+                                  disabled={isDisabled}
+                                  value={field.value ?? ''}
+                                  placeholder={placeholder}
+                                  maxLength={maxLength}
+                                  rows={4}
+                                  data-testid={testId}
+                                />
+                              ) : (
+                                <Input
+                                  {...field}
+                                  type={type || 'text'}
+                                  min={
+                                    type === 'number' ||
+                                    type === 'datetime-local'
+                                      ? min
+                                      : undefined
                                   }
-                                  field.onChange(
-                                    multiple ? Array.from(chosen) : chosen[0]
-                                  );
-                                }}
-                              />
-                            ) : type === 'textarea' ? (
-                              <Textarea
-                                {...field}
-                                disabled={isDisabled}
-                                value={field.value ?? ''}
-                                placeholder={placeholder}
-                                maxLength={maxLength}
-                                rows={4}
-                                data-testid={testId}
-                              />
-                            ) : (
-                              <Input
-                                {...field}
-                                type={type || 'text'}
-                                min={
-                                  type === 'number' || type === 'datetime-local'
-                                    ? min
-                                    : undefined
-                                }
-                                max={
-                                  type === 'number' || type === 'datetime-local'
-                                    ? max
-                                    : undefined
-                                }
-                                maxLength={
-                                  type !== 'number' &&
-                                  type !== 'datetime-local' &&
-                                  maxLength !== undefined
-                                    ? maxLength
-                                    : undefined
-                                }
-                                step={type === 'number' ? step : undefined}
-                                disabled={isDisabled}
-                                value={field.value ?? ''}
-                                placeholder={placeholder}
-                                data-testid={testId}
-                                onChange={event =>
-                                  type === 'number'
-                                    ? field.onChange(
-                                        event.target.value === ''
-                                          ? undefined
-                                          : Number(event.target.value)
-                                      )
-                                    : field.onChange(event)
-                                }
-                              />
-                            )}
-                          </FormControl>
+                                  max={
+                                    type === 'number' ||
+                                    type === 'datetime-local'
+                                      ? max
+                                      : undefined
+                                  }
+                                  maxLength={
+                                    type !== 'number' &&
+                                    type !== 'datetime-local' &&
+                                    maxLength !== undefined
+                                      ? maxLength
+                                      : undefined
+                                  }
+                                  step={type === 'number' ? step : undefined}
+                                  disabled={isDisabled}
+                                  value={field.value ?? ''}
+                                  placeholder={placeholder}
+                                  data-testid={testId}
+                                  onChange={event =>
+                                    type === 'number'
+                                      ? field.onChange(
+                                          event.target.value === ''
+                                            ? undefined
+                                            : Number(event.target.value)
+                                        )
+                                      : field.onChange(event)
+                                  }
+                                />
+                              )}
+                            </FormControl>
+                          )}
                           {showExclusionWarning && (
                             <p className="text-sm text-amber-600 dark:text-amber-500 mt-1.5">
                               {excludedByFunction.explanation}

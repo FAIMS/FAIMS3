@@ -172,9 +172,10 @@ function getFileIcon(contentType: string) {
 if any file is SVG/HTML by declared type, file extension, or leading bytes
 (`isBlockedAttachmentContentType`, `isBlockedAttachmentFilename`,
 `isActiveContentBytes` in `lib/utils.ts`; only the first 512 bytes of a file
-are read). The form manager's `addAttachment` choke point re-checks the
-declared type for every field, and the CouchDB `validate_doc_update` in
-`@faims3/data-model` rejects honestly-labelled active types at replication.
+are read). The form manager's `addAttachment` choke point re-checks declared
+type, filename/format, and leading bytes for every field, and the CouchDB
+`validate_doc_update` in `@faims3/data-model` rejects honestly-labelled
+active types at replication.
 
 ### File Size Formatting
 

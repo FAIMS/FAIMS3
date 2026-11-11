@@ -9,7 +9,6 @@ import {CreateTemplateDialog} from '@/components/dialogs/create-template-dialog'
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {useMemo, useState} from 'react';
 import {
-  filterTemplatesByVisibility,
   PUBLIC_TEMPLATE_ROW_CLASS,
   TemplateVisibilityFilterSelect,
   type TemplateVisibilityFilterValue,
@@ -34,8 +33,11 @@ export const Route = createFileRoute('/_protected/templates/')({
  */
 function RouteComponent() {
   const user = useRequiredUser();
+  const navigate = useNavigate();
+  const [visibilityFilter, setVisibilityFilter] =
+    useState<TemplateVisibilityFilterValue>('all');
   const {
-    isPending,
+    tableLoading,
     templates,
     pageSize,
     pageIndex,
@@ -45,10 +47,10 @@ function RouteComponent() {
     goPrevious,
     goFirst,
     changePageSize,
-  } = usePagedTemplates({user});
-  const navigate = useNavigate();
-  const [visibilityFilter, setVisibilityFilter] =
-    useState<TemplateVisibilityFilterValue>('all');
+  } = usePagedTemplates({
+    user,
+    visibility: visibilityFilter === 'all' ? undefined : visibilityFilter,
+  });
 
   // breadcrumbs addition
   const paths = useMemo(
@@ -81,11 +83,6 @@ function RouteComponent() {
     [user.decodedToken]
   );
 
-  const filteredTemplates = useMemo(
-    () => filterTemplatesByVisibility(templates, visibilityFilter),
-    [templates, visibilityFilter]
-  );
-
   return (
     <div className="flex flex-col gap-6">
       <h1
@@ -97,9 +94,8 @@ function RouteComponent() {
       {/* CreateTemplateDialog returns null when the user lacks create permission */}
       <DataTable
         columns={columns as ColumnDef<TemplateListRow, unknown>[]}
-        data={filteredTemplates}
-        loading={isPending}
-        initialSorting={[{id: 'createdAt', desc: true}]}
+        data={templates}
+        loading={tableLoading}
         toolbarExtra={
           <TemplateVisibilityFilterSelect
             value={visibilityFilter}

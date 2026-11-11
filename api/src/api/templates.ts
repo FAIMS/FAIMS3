@@ -64,7 +64,8 @@ export const api: express.Router = express.Router();
  * ui-specification). Use GET /api/templates/:id for full detail.
  *
  * Cursor pagination (`limit`, `startKey`, `nextStartKey`) matches record
- * listing. Omitting `limit` defaults to 50; there is no unbounded dump.
+ * listing. Pages are newest-`createdAt` first. Omitting `limit` defaults to
+ * 50; there is no unbounded dump.
  */
 api.get(
   '/',
@@ -88,12 +89,14 @@ api.get(
       req.query.startKey !== undefined && req.query.startKey !== ''
         ? req.query.startKey
         : undefined;
+    const visibility = req.query.visibility;
 
     const page = await getTemplatesPage({
       teamId: req.query.teamId,
       includeArchived,
       limit,
       startKey,
+      visibility,
       canRead: template =>
         userCanReadTemplateDocument({
           decodedToken: {

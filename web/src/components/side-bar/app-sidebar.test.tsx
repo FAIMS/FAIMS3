@@ -71,8 +71,9 @@ vi.mock('@/hooks/auth-hooks', () => ({
 
 vi.mock('@/hooks/queries', () => ({
   useGetProjects: () => ({data: []}),
-  useGetTemplates: () => ({data: []}),
+  useGetTemplates: () => ({data: {templates: []}}),
   useGetTeams: () => ({data: {teams: []}}),
+  TEMPLATE_CATALOGUE_PICKER_LIMIT: 500,
 }));
 
 vi.mock('@/context/auth-provider', () => ({

@@ -195,6 +195,15 @@ describe('Request validation (express-zod-safe)', () => {
       }
     });
 
+    it('rejects invalid visibility on template list', async () => {
+      const response = await requestAuthAndType(
+        request(app).get('/api/templates').query({visibility: 'all'}),
+        adminToken
+      ).expect(400);
+
+      expectValidationError(response.body, 'Query');
+    });
+
     it('accepts limit=1 and limit=500 on template list', async () => {
       for (const limit of ['1', '500']) {
         await requestAuthAndType(

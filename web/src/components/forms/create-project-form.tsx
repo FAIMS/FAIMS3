@@ -3,13 +3,9 @@ import {Field, Form} from '@/components/form';
 import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {
-  TEMPLATE_CATALOGUE_PICKER_LIMIT,
-  useGetTeams,
-  useGetTemplate,
-  useGetTemplates,
-} from '@/hooks/queries';
-import {Action, TemplateListItem} from '@faims3/data-model';
+import {useGetTeams, useGetTemplate} from '@/hooks/queries';
+import {Action} from '@faims3/data-model';
+import {TemplatePickerSelect} from '@/components/forms/template-picker-select';
 import {useQueryClient} from '@tanstack/react-query';
 import {useCallback, useState} from 'react';
 import {z} from 'zod';
@@ -68,11 +64,6 @@ export function CreateProjectForm({
   // can they create projects outside team?
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
 
-  const {data: templatesPage} = useGetTemplates({
-    user,
-    limit: TEMPLATE_CATALOGUE_PICKER_LIMIT,
-  });
-  const templates = templatesPage?.templates;
   const {data: teams} = useGetTeams({user});
 
   const possibleTeams = getPossibleTeamsForAction({
@@ -133,12 +124,17 @@ export function CreateProjectForm({
     {
       name: 'template',
       label: `Existing ${config.notebookNameCapitalized} Template (optional)`,
-      options: templates?.map(({_id, name}: TemplateListItem) => ({
-        label: name,
-        value: _id,
-      })),
       schema: z.any().optional(),
       excludedBy: 'file',
+      testId: 'web-projects-create-template',
+      renderControl: ({value, onChange, disabled}) => (
+        <TemplatePickerSelect
+          value={typeof value === 'string' && value ? value : undefined}
+          onChange={id => onChange(id)}
+          disabled={disabled}
+          testId="web-projects-create-template"
+        />
+      ),
       onChange: value =>
         onSelectedTemplateIdChange(
           typeof value === 'string' && value ? value : undefined

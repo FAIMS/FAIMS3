@@ -21,9 +21,12 @@ import {
   upsertFAIMSData,
 } from '../src/data_storage';
 import {
+  encodeTemplateListCursor,
   initTemplatesDB,
+  parseTemplateListCursor,
   TEMPLATES_LISTING_BY_TEAM_ID,
   TEMPLATES_LISTING_BY_TEMPLATE_ID,
+  templateListingGlobalRange,
   templateListingTeamRange,
 } from '../src/data_storage/templatesDB';
 import {listRecordMetadata} from '../src/data_storage/internals';
@@ -592,12 +595,17 @@ describe('templates listing views', () => {
         config: {forceWrite: true, applyPermissions: false},
       });
 
+      const created = '2020-01-01T00:00:00.000Z';
+      const createdMs = Date.parse(created);
       const thin = (id: string, team?: string, archived = false) => ({
         _id: id,
         name: id,
         version: 1,
         archived,
         ownedByTeamId: team,
+        createdAt: created,
+        createdBy: 'admin',
+        updatedAt: created,
         uiSpecification: {secret: 'form-payload'},
         uiSpecProperties: {schemaVersion: '1.0.1', hash: 'a'.repeat(64)},
       });
@@ -614,10 +622,10 @@ describe('templates listing views', () => {
       });
       const globalKeys = global.rows.map((row: {key: unknown}) => row.key);
       expect(globalKeys).toEqual([
-        [0, 'tpl-a'],
-        [0, 'tpl-c'],
-        [0, 'tpl-solo'],
-        [1, 'tpl-b'],
+        [0, createdMs, 'tpl-a'],
+        [0, createdMs, 'tpl-c'],
+        [0, createdMs, 'tpl-solo'],
+        [1, createdMs, 'tpl-b'],
       ]);
       for (const row of global.rows) {
         expect(row.value.uiSpecification).toBeUndefined();
@@ -629,8 +637,8 @@ describe('templates listing views', () => {
         endkey: ['team-1', {}],
       });
       expect(team.rows.map((row: {key: unknown}) => row.key)).toEqual([
-        ['team-1', 0, 'tpl-a'],
-        ['team-1', 1, 'tpl-b'],
+        ['team-1', 0, createdMs, 'tpl-a'],
+        ['team-1', 1, createdMs, 'tpl-b'],
       ]);
 
       const teamActive = await db.query(TEMPLATES_LISTING_BY_TEAM_ID, {
@@ -643,8 +651,32 @@ describe('templates listing views', () => {
       expect(teamActive.rows.map((row: {id: string}) => row.id)).toEqual([
         'tpl-a',
       ]);
+
+      const newer = '2021-06-01T00:00:00.000Z';
+      await db.put({
+        ...thin('tpl-new', 'team-1'),
+        createdAt: newer,
+        updatedAt: newer,
+      });
+      const newestFirst = await db.query(TEMPLATES_LISTING_BY_TEMPLATE_ID, {
+        include_docs: false,
+        ...templateListingGlobalRange({includeArchived: false}),
+      });
+      expect(newestFirst.rows.map((row: {id: string}) => row.id)).toEqual([
+        'tpl-new',
+        'tpl-solo',
+        'tpl-c',
+        'tpl-a',
+      ]);
     } finally {
       await db.destroy();
     }
+  });
+
+  it('encodes and parses createdAt listing cursors', () => {
+    const encoded = encodeTemplateListCursor(1577836800000, 'tpl-a');
+    expect(parseTemplateListCursor(encoded)).toEqual([1577836800000, 'tpl-a']);
+    expect(parseTemplateListCursor('tpl-a')).toBeUndefined();
+    expect(parseTemplateListCursor('')).toBeUndefined();
   });
 });
