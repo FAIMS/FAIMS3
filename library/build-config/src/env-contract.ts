@@ -233,6 +233,7 @@ const apiContract: Record<string, EnvResolver> = {
     SHARED_DEFAULTS.feedbackRateLimiterPerWindow,
   ATTEMPT_LIMITER_ENABLED: runtime =>
     runtime.limits.attemptLimiterEnabled ?? true,
+  LOGIN_LOCKOUT_ENABLED: runtime => runtime.limits.loginLockoutEnabled ?? true,
   REDIRECT_WHITELIST: runtime => runtime.endpoints.redirectWhitelist ?? [],
   EMAIL_SERVICE_TYPE: runtime => runtime.email.emailServiceType ?? 'MOCK',
   EMAIL_FROM_ADDRESS: runtime =>
@@ -266,6 +267,9 @@ const apiContract: Record<string, EnvResolver> = {
   RECORDS_HYDRATED_PAGE_LIMIT: runtime =>
     runtime.limits.recordsHydratedPageLimit ??
     SHARED_DEFAULTS.recordsHydratedPageLimit,
+  // Admin stats snapshot cache TTL in milliseconds (default 2 minutes).
+  ADMIN_STATS_CACHE_TTL_MS: runtime =>
+    runtime.limits.adminStatsCacheTtlMs ?? SHARED_DEFAULTS.adminStatsCacheTtlMs,
   MEMORY_MONITOR_ENABLED: runtime =>
     runtime.observability.memoryMonitorEnabled ?? false,
   REQUEST_LOGGING_ENABLED: runtime =>

@@ -175,6 +175,12 @@ export const ApiEnvSchema = z
       SHARED_DEFAULTS.feedbackRateLimiterPerWindow
     ),
     ATTEMPT_LIMITER_ENABLED: boolWithDefault(true),
+    /**
+     * Couch-backed local-password lockout. Independent of
+     * ATTEMPT_LIMITER_ENABLED (email-code / verification). Forced off under
+     * test so the existing login suite does not write lockout docs.
+     */
+    LOGIN_LOCKOUT_ENABLED: boolWithDefault(true),
     /** Default SMTP; forced to MOCK under test. */
     EMAIL_SERVICE_TYPE: enumWithDefault(EmailServiceTypeSchema, 'SMTP'),
     EMAIL_FROM_ADDRESS: stringWithDefault('notifications@example.com'),
@@ -204,6 +210,10 @@ export const ApiEnvSchema = z
     ),
     RECORDS_HYDRATED_PAGE_LIMIT: intWithDefault(
       SHARED_DEFAULTS.recordsHydratedPageLimit
+    ),
+    /** Admin stats snapshot cache TTL in milliseconds (default 120000 = 2 min). */
+    ADMIN_STATS_CACHE_TTL_MS: intWithDefault(
+      SHARED_DEFAULTS.adminStatsCacheTtlMs
     ),
     /** Start the 1 Hz stdout memory sampler for leak hunts. */
     MEMORY_MONITOR_ENABLED: boolWithDefault(false),
@@ -306,8 +316,8 @@ export type ApiEnv = z.infer<typeof ApiEnvSchema>;
 export interface ParseApiEnvOptions {
   /**
    * Override NODE_ENV/JEST_WORKER_ID detection. Under test: MOCK email,
-   * export limiter off, and `disableMigrateOnStartup` forced on so API unit
-   * tests never walk Couch or notebook JSON on import.
+   * export limiter off, login lockout off, and `disableMigrateOnStartup`
+   * forced on so API unit tests never walk Couch or notebook JSON on import.
    */
   runningUnderTest?: boolean;
 }
@@ -543,6 +553,7 @@ export function parseApiEnv(
     feedbackRateLimiterWindowMs: env.FEEDBACK_RATE_LIMITER_WINDOW_MS,
     feedbackRateLimiterPerWindow: env.FEEDBACK_RATE_LIMITER_PER_WINDOW,
     authAttemptLimiterEnabled: env.ATTEMPT_LIMITER_ENABLED,
+    loginLockoutEnabled: runningUnderTest ? false : env.LOGIN_LOCKOUT_ENABLED,
     jsonBodyLimit: env.JSON_BODY_LIMIT,
     urlencodedBodyLimit: env.URLENCODED_BODY_LIMIT,
     restoreUploadMaxBytes: env.RESTORE_UPLOAD_MAX_BYTES,
@@ -550,6 +561,8 @@ export function parseApiEnv(
       env.RECORDS_HYDRATED_PAGE_LIMIT,
       SHARED_DEFAULTS.recordsHydratedPageLimitMax
     ),
+    // Snapshot TTL for GET /api/admin/stats (milliseconds).
+    adminStatsCacheTtlMs: env.ADMIN_STATS_CACHE_TTL_MS,
     downloadCookieSameSite: env.DOWNLOAD_COOKIE_SAMESITE,
     developerMode: env.DEVELOPER_MODE,
     bugsnagApiKey: parseBugsnagKey(env.BUGSNAG_API_KEY),

@@ -23,6 +23,18 @@ export const attachmentFilterDocument = {
 
 /**
  * Design document for permissions validation (is built from project Id)
+ *
+ * `validate_doc_update` is `toString()`-ed and shipped to CouchDB, so it
+ * cannot reference imports, and it runs on every write to the data DB.
+ *
+ * Attachment content-type gate (stored XSS via uploaded SVG): only
+ * attachment docs (`attach_format_version === 1`, not `_deleted`) are
+ * inspected, and only each stub's `content_type` (normalised) is read. A
+ * blocked or missing type throws `{forbidden}` so replication reports a
+ * per-doc error rather than an auth failure. The blocklist must match
+ * `BLOCKED_ATTACHMENT_CONTENT_TYPES` in `library/forms/lib/utils.ts`.
+ * Propagated by `couchInitialiser({forceWrite: true})` on API startup and
+ * project activation; no migration step needed.
  */
 export const permissionsDocument = (projectId: string) => ({
   _id: '_design/permissions',
@@ -38,6 +50,41 @@ export const permissionsDocument = (projectId: string) => ({
         throw {
           unauthorized: 'You must be logged in. No username given.',
         };
+      }
+
+      // Attachment content-type gate: see the permissionsDocument JSDoc.
+      // Gate first on attachment-doc identity; deletes always pass.
+      if (newDoc.attach_format_version === 1 && !newDoc._deleted) {
+        var atts = newDoc._attachments;
+        if (atts) {
+          for (var attName in atts) {
+            var rawType = atts[attName] && atts[attName].content_type;
+            var contentType = '';
+            if (typeof rawType === 'string') {
+              var semi = rawType.indexOf(';');
+              contentType = (semi === -1 ? rawType : rawType.substring(0, semi))
+                .trim()
+                .toLowerCase();
+            }
+            if (
+              contentType === 'image/svg+xml' ||
+              contentType === 'image/svg' ||
+              contentType === 'text/html' ||
+              contentType === 'application/xhtml+xml' ||
+              contentType === 'application/x-html' ||
+              contentType === 'text/xhtml' ||
+              // Missing/empty type on an attachment stub fails closed.
+              contentType === ''
+            ) {
+              throw {
+                forbidden:
+                  'Attachments of type ' +
+                  (contentType || '(missing)') +
+                  ' are not allowed.',
+              };
+            }
+          }
+        }
       }
 
       // Never allow 'changing' authors - noting this will only catch rec -
@@ -237,6 +284,19 @@ export const indexDocument = {
       map: convertToCouchDBString(doc => {
         if (doc.attach_format_version === 1) emit(doc._id, 1);
       }),
+    },
+    // Attachment ids with parent record_id / created_by. Query reduce:false
+    // for attribution; default reduce `_count` for a total.
+    attachmentAttribution: {
+      map: convertToCouchDBString(doc => {
+        if (doc.attach_format_version === 1) {
+          emit(doc._id, {
+            record_id: doc.record_id,
+            created_by: doc.created_by,
+          });
+        }
+      }),
+      reduce: '_count',
     },
     avp: {
       map: convertToCouchDBString(doc => {

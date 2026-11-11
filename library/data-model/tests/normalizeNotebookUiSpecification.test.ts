@@ -155,3 +155,50 @@ describe('parseNotebookDefinitionUpload', () => {
     }
   });
 });
+
+describe('option-level conditions at schema 1.0.1', () => {
+  it('normalises notebook JSON with choice option conditions without a version bump', () => {
+    const current = normalizeNotebookUiSpecification(sampleNotebook);
+    const [firstFieldId] = Object.keys(current.uiSpec.fields);
+    const hostField = current.uiSpec.fields[firstFieldId];
+    current.uiSpec.fields[firstFieldId] = {
+      ...hostField,
+      'component-parameters': {
+        ...hostField['component-parameters'],
+        ElementProps: {
+          options: [
+            {label: 'Always', value: 'always'},
+            {
+              label: 'Industrial',
+              value: 'industrial',
+              condition: {
+                operator: 'equal',
+                field: 'driving',
+                value: 'factory',
+              },
+            },
+          ],
+        },
+      },
+    };
+
+    const normalized = normalizeNotebookUiSpecification(current);
+    expect(normalized.uiSpec.schemaVersion).toBe(
+      CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+    );
+    expect(CURRENT_NOTEBOOK_UI_SCHEMA_VERSION).toBe('1.0.1');
+    const options = (
+      normalized.uiSpec.fields[firstFieldId]['component-parameters'] as {
+        ElementProps: {
+          options: Array<{value: string; condition?: unknown}>;
+        };
+      }
+    ).ElementProps.options;
+    expect(options[1].condition).toEqual({
+      operator: 'equal',
+      field: 'driving',
+      value: 'factory',
+    });
+    expect(JSON.stringify(options[1])).not.toContain('conditionFn');
+  });
+});

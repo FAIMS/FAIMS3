@@ -14,8 +14,28 @@ type RenderParams = {
   otherOptionPosition?: number;
   exclusiveOptions?: string[];
   initialValue?: string[];
-  options?: {value: string; label: string}[];
+  options?: Array<{
+    value: string;
+    label: string;
+    condition?: {operator: string; field?: string; value?: unknown};
+  }>;
+  conditionValues?: Record<string, unknown>;
 };
+
+const defaultOptions = [
+  {value: 'YES_ID', label: '**Yes**'},
+  {value: 'NO_ID', label: 'No'},
+  {value: 'NONE_ID', label: 'None of the above'},
+];
+
+const conditionedOptions = [
+  {value: 'none', label: 'None observed'},
+  {
+    value: 'asbestos',
+    label: 'Asbestos',
+    condition: {operator: 'equal', field: 'site-type', value: 'industrial'},
+  },
+];
 
 /** Render a controlled MultiSelect and capture the stored field values. */
 function renderMultiSelectField({
@@ -24,52 +44,67 @@ function renderMultiSelectField({
   otherOptionPosition,
   exclusiveOptions = [],
   initialValue = [],
-  options = [
-    {value: 'YES_ID', label: '**Yes**'},
-    {value: 'NO_ID', label: 'No'},
-    {value: 'NONE_ID', label: 'None of the above'},
-  ],
+  options = defaultOptions,
+  conditionValues,
 }: RenderParams = {}) {
   const setFieldDataCalls: string[][] = [];
   const user = userEvent.setup();
 
   const Wrapper = () => {
     const [value, setValue] = useState<string[]>(initialValue);
+    const [liveConditionValues, setLiveConditionValues] = useState(
+      conditionValues ?? {}
+    );
 
     return (
-      <multiSelectFieldSpec.component
-        name="choice-field"
-        fieldId="choice-field"
-        label="Choose options"
-        required={false}
-        helperText=""
-        advancedHelperText=""
-        disabled={false}
-        ElementProps={{
-          options,
-          expandedChecklist,
-          enableOtherOption,
-          otherOptionPosition,
-          exclusiveOptions,
-        }}
-        state={{value: {data: value}, meta: {errors: []}} as never}
-        setFieldData={(nextOrUpdater: unknown) => {
-          setValue(prev => {
-            const next =
-              typeof nextOrUpdater === 'function'
-                ? (nextOrUpdater as (value: string[]) => string[])(prev)
-                : (nextOrUpdater as string[]);
-            setFieldDataCalls.push([...next]);
-            return next;
-          });
-        }}
-        setFieldAnnotation={vi.fn()}
-        addAttachment={vi.fn(async () => 'attachment-id')}
-        removeAttachment={vi.fn(async () => undefined)}
-        handleBlur={vi.fn()}
-        trigger={{commit: vi.fn(async () => undefined)}}
-        config={{} as never}
-      />
+      <>
+        <button
+          type="button"
+          onClick={() => setLiveConditionValues({'site-type': 'industrial'})}
+        >
+          set-industrial
+        </button>
+        <button
+          type="button"
+          onClick={() => setLiveConditionValues({'site-type': 'residential'})}
+        >
+          set-residential
+        </button>
+        <multiSelectFieldSpec.component
+          name="choice-field"
+          fieldId="choice-field"
+          label="Choose options"
+          required={false}
+          helperText=""
+          advancedHelperText=""
+          disabled={false}
+          ElementProps={{
+            options,
+            expandedChecklist,
+            enableOtherOption,
+            otherOptionPosition,
+            exclusiveOptions,
+          }}
+          conditionValues={liveConditionValues}
+          state={{value: {data: value}, meta: {errors: []}} as never}
+          setFieldData={(nextOrUpdater: unknown) => {
+            setValue(prev => {
+              const next =
+                typeof nextOrUpdater === 'function'
+                  ? (nextOrUpdater as (value: string[]) => string[])(prev)
+                  : (nextOrUpdater as string[]);
+              setFieldDataCalls.push([...next]);
+              return next;
+            });
+          }}
+          setFieldAnnotation={vi.fn()}
+          addAttachment={vi.fn(async () => 'attachment-id')}
+          removeAttachment={vi.fn(async () => undefined)}
+          handleBlur={vi.fn()}
+          trigger={{commit: vi.fn(async () => undefined)}}
+          config={{} as never}
+        />
+      </>
     );
   };
 
@@ -238,6 +273,72 @@ describe('MultiSelect Other option', () => {
   });
 });
 
+describe('MultiSelect option conditions', () => {
+  it('hides a false-condition option in expanded checklist and shows it when the sibling matches', async () => {
+    const {user} = renderMultiSelectField({
+      expandedChecklist: true,
+      options: conditionedOptions,
+      conditionValues: {'site-type': 'residential'},
+    });
+
+    expect(
+      screen.getByRole('checkbox', {name: 'None observed'})
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('checkbox', {name: 'Asbestos'})
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'set-industrial'}));
+
+    expect(
+      screen.getByRole('checkbox', {name: 'Asbestos'})
+    ).toBeInTheDocument();
+  });
+
+  it('hides a false-condition option in dropdown and shows it when the sibling matches', async () => {
+    const {user} = renderMultiSelectField({
+      expandedChecklist: false,
+      options: conditionedOptions,
+      conditionValues: {'site-type': 'residential'},
+    });
+
+    await user.click(screen.getByRole('combobox'));
+    let listbox = await screen.findByRole('listbox');
+    expect(
+      within(listbox).getByRole('option', {name: /None observed/})
+    ).toBeInTheDocument();
+    expect(
+      within(listbox).queryByRole('option', {name: /Asbestos/})
+    ).not.toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', {name: 'set-industrial'}));
+    await user.click(screen.getByRole('combobox'));
+    listbox = await screen.findByRole('listbox');
+    expect(
+      within(listbox).getByRole('option', {name: /Asbestos/})
+    ).toBeInTheDocument();
+  });
+
+  it('keeps a selected member whose condition is now false visible and does not auto-clear', async () => {
+    const {user, setFieldDataCalls} = renderMultiSelectField({
+      expandedChecklist: true,
+      options: conditionedOptions,
+      initialValue: ['asbestos'],
+      conditionValues: {'site-type': 'residential'},
+    });
+
+    const asbestos = screen.getByRole('checkbox', {name: 'Asbestos'});
+    expect(asbestos).toBeInTheDocument();
+    expect(asbestos).toBeChecked();
+
+    const callsBefore = setFieldDataCalls.length;
+    await user.click(screen.getByRole('button', {name: 'set-residential'}));
+    expect(setFieldDataCalls.length).toBe(callsBefore);
+    expect(screen.getByRole('checkbox', {name: 'Asbestos'})).toBeChecked();
+  });
+});
+
 describe('MultiSelect value schema', () => {
   const createSchema = (enableOtherOption = false) =>
     multiSelectFieldSpec.fieldDataSchemaFunction!({
@@ -274,5 +375,15 @@ describe('MultiSelect value schema', () => {
     expect(createSchema().safeParse([`${OTHER_PREFIX}Custom`]).success).toBe(
       false
     );
+  });
+
+  it('accepts a stored member that is in the full options list even when that option is currently filtered', () => {
+    const schema = multiSelectFieldSpec.fieldDataSchemaFunction!({
+      required: false,
+      ElementProps: {
+        options: conditionedOptions,
+      },
+    } as never);
+    expect(schema.safeParse(['asbestos']).success).toBe(true);
   });
 });

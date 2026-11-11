@@ -74,6 +74,26 @@ type ViewConditionMap = Record<
   }
 >;
 
+type ChoiceOptionWithCondition = {
+  label: string;
+  value: string;
+  condition?: ConditionType | null;
+};
+
+/**
+ * Choice options on a field, if it has an `ElementProps.options` list.
+ */
+export const getFieldChoiceOptions = (
+  field: FieldType
+): ChoiceOptionWithCondition[] => {
+  const elementProps = (
+    field['component-parameters'] as {
+      ElementProps?: {options?: ChoiceOptionWithCondition[]};
+    }
+  ).ElementProps;
+  return elementProps?.options ?? [];
+};
+
 /**
  * Whether a condition tree references `fieldName` with `expectedValue` (scalar or array member).
  *
@@ -146,6 +166,19 @@ export const findOptionReferences = (
       )
     ) {
       references.push(`Section: ${allFviews[sectionId].label}`);
+    }
+  }
+
+  // Option-level conditions on any choice field
+  for (const [fieldId, fieldDefinition] of Object.entries(allFields)) {
+    const fieldLabel = fieldDefinition['component-parameters'].label ?? fieldId;
+    for (const option of getFieldChoiceOptions(fieldDefinition)) {
+      if (
+        option.condition &&
+        doesConditionContainValue(option.condition, fieldName, oldValue)
+      ) {
+        references.push(`Option: ${option.label} (Field: ${fieldLabel})`);
+      }
     }
   }
 

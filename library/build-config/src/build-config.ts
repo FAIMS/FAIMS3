@@ -459,6 +459,11 @@ const LimitsBuildConfigSchema = z
       .default(SHARED_DEFAULTS.feedbackRateLimiterPerWindow),
     /** Email-code / verification attempt limiter. */
     attemptLimiterEnabled: z.boolean().default(true),
+    /**
+     * Couch-backed local-password lockout (LOGIN_LOCKOUT_ENABLED). Independent
+     * of attemptLimiterEnabled.
+     */
+    loginLockoutEnabled: z.boolean().default(true),
     jsonBodyLimit: z.string().default(SHARED_DEFAULTS.jsonBodyLimit),
     urlencodedBodyLimit: z
       .string()
@@ -474,6 +479,12 @@ const LimitsBuildConfigSchema = z
       .int()
       .positive()
       .default(SHARED_DEFAULTS.recordsHydratedPageLimit),
+    /** Admin stats snapshot cache TTL in milliseconds (default 2 minutes). */
+    adminStatsCacheTtlMs: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.adminStatsCacheTtlMs),
   })
   .strict();
 

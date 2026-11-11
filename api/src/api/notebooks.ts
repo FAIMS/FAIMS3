@@ -420,7 +420,9 @@ api.put(
   }
 );
 
-// PUT change project team
+// PUT change project team.
+// Omitting `teamId` removes ownership and requires `REMOVE_PROJECT_FROM_TEAM`
+// on the project. Reassigning to a team requires `CHANGE_PROJECT_TEAM`.
 api.put(
   '/:projectId/team',
   requireAuthenticationAPI,
@@ -434,7 +436,24 @@ api.put(
     params: z.object({projectId: z.string()}),
     body: PutChangeNotebookTeamInputSchema,
   }),
-  async ({body: {teamId}, params: {projectId}}, res) => {
+  async (req, res) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const {teamId} = req.body;
+    const {projectId} = req.params;
+    if (
+      !teamId &&
+      !userCanDo({
+        user: req.user,
+        action: Action.REMOVE_PROJECT_FROM_TEAM,
+        resourceId: projectId,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to remove team ownership from this project.'
+      );
+    }
     await changeNotebookTeam({projectId, teamId});
     res.sendStatus(200);
     return;

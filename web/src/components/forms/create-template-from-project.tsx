@@ -35,7 +35,8 @@ interface CreateTemplateFromProjectForm {
 /**
  * Form for creating a template from an existing project's UI specification.
  *
- * Uses the same team callout/dropdown rules as {@link CreateTemplateForm}.
+ * Uses the same required team select and permission-gated "No team" option as
+ * {@link CreateTemplateForm}.
  *
  * @param {CreateTemplateFromProjectForm} props - The props for the form.
  * @returns {JSX.Element} The rendered form component.

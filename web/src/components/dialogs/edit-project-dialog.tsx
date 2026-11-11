@@ -27,9 +27,9 @@ export const EditProjectDialog = ({onSuccess}: {onSuccess: () => void}) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline">
-          Replace {config.notebookNameCapitalized} File
+        <Button>
           <Pencil />
+          Replace {config.notebookNameCapitalized} File
         </Button>
       </DialogTrigger>
       <DialogContent>

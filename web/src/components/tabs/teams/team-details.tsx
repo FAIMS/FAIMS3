@@ -14,6 +14,7 @@ import {statusDisplay} from '@/lib/status-display';
 const detailsFields = [
   {field: 'name', label: 'Name'},
   {field: 'description', label: 'Description'},
+  {field: 'statusDisplay', label: 'Status'},
   {field: 'createdBy', label: 'Created By'},
   {field: 'createdAtDisplay', label: 'Created At'},
   {field: 'updatedAtDisplay', label: 'Updated At'},
@@ -39,6 +40,7 @@ const TeamDetails = ({teamId}: {teamId: string}) => {
     return rawData
       ? {
           ...rawData,
+          statusDisplay: rawData.archived === true ? 'Archived' : 'Active',
           createdAtDisplay: displayDateTime({
             timestamp: rawData.createdAt,
           }),

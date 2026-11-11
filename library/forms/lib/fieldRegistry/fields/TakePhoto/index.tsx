@@ -12,6 +12,7 @@ import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ImageIcon from '@mui/icons-material/Image';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import SyncIcon from '@mui/icons-material/Sync';
 import {Alert, Box, Paper, Tooltip, Typography, useTheme} from '@mui/material';
@@ -30,6 +31,7 @@ import {
   CameraPermissionIssue,
   PhotosPermissionIssue,
 } from '../../../components/PermissionAlerts';
+import {ImageWithFallback} from '../../../components/ImageWithFallback';
 import {PhotoLightbox} from '../../../components/PhotoLightbox';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
 import {FormFieldContextProps} from '../../../formModule/types';
@@ -40,6 +42,11 @@ import {
 } from '../../../hooks/useAttachment';
 import {logError, logWarn} from '../../../logging';
 import {TakePhotoRender} from '../../../rendering/fields/view/specialised/TakePhoto';
+import {
+  blockedAttachmentMessage,
+  isBlockedAttachmentSource,
+  isDisplayableImageType,
+} from '../../../utils';
 import {FieldInfo} from '../../types';
 import {getRemainingItemCount} from '../../utils/itemCountHelpers';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -52,7 +59,9 @@ import {takePhotoIsComplete, takePhotoValueSchema} from './valueSchema';
 import {
   IMAGE_QUALITY_0_100,
   MAX_IMAGE_WIDTH,
+  pickGalleryPhotos,
   preparePhotoBlobForStorage,
+  revokeGalleryObjectUrls,
 } from './webPhotoFallback';
 
 const MAX_GALLERY_BATCH = 10;
@@ -63,6 +72,36 @@ const MAX_GALLERY_BATCH = 10;
  */
 const isCancellation = (err: unknown): boolean =>
   /cancel/i.test(err instanceof Error ? err.message : String(err ?? ''));
+
+/**
+ * Label for a rejected gallery/camera pick. Prefers the filename (web picker
+ * stores it on `path`; native `path` is a filesystem URL whose basename
+ * still has the extension).
+ */
+function blockedPhotoLabel(format: string, path?: string): string {
+  if (path) {
+    const base = path.split(/[/\\]/).pop();
+    if (base) return base;
+  }
+  return `photo.${format}`;
+}
+
+/**
+ * Same type / extension / leading-byte checks as FileUploader. Must run
+ * before {@link preparePhotoBlobForStorage}: canvas re-encode would turn an
+ * SVG into a JPEG and the sniff would never see the original bytes.
+ */
+async function blockedPhotoMessage(
+  photoBlob: Blob,
+  format: string,
+  path?: string
+): Promise<string | null> {
+  const filename = blockedPhotoLabel(format, path);
+  if (await isBlockedAttachmentSource({blob: photoBlob, filename, format})) {
+    return blockedAttachmentMessage(filename);
+  }
+  return null;
+}
 
 /** Capacitor iOS still rejects pickImages if Photo Library access was denied. */
 const isPhotosAccessDenied = (err: unknown): boolean =>
@@ -589,6 +628,8 @@ const LoadingImagePlaceholder: React.FC = () => {
   return (
     <ImageItemContainer>
       <Box
+        role="status"
+        aria-label="Loading photo"
         sx={{
           width: '100%',
           height: '100%',
@@ -614,6 +655,11 @@ const PhotoItem: React.FC<{
   deleteDisabled?: boolean;
 }> = ({data, onDelete, onClick, deleteDisabled = false}) => {
   const theme = useTheme();
+  // Loaded attachments come from the database, not the camera: a poisoned or
+  // legacy DB could hand this gallery an SVG/HTML blob. Only safe raster
+  // types are rendered as an <img> and may open the lightbox; anything else
+  // is shown as an inert placeholder that can still be deleted.
+  const isImage = isDisplayableImageType(data.metadata.contentType);
 
   return (
     <ImageItemContainer>
@@ -628,18 +674,52 @@ const PhotoItem: React.FC<{
           bgcolor: theme.palette.grey[100],
         }}
       >
-        <Box
-          component="img"
-          src={data.url}
-          onClick={onClick}
-          alt={`Photo ${data.metadata.filename}`}
-          sx={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            cursor: 'pointer',
-          }}
-        />
+        {isImage ? (
+          <ImageWithFallback
+            src={data.url}
+            onClick={onClick}
+            alt={`Photo ${data.metadata.filename}`}
+            sx={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              cursor: 'pointer',
+            }}
+          />
+        ) : (
+          <Box
+            data-testid="non-image-attachment"
+            sx={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 0.5,
+              p: 1,
+              cursor: 'default',
+            }}
+          >
+            <InsertDriveFileIcon sx={{fontSize: 36, color: 'text.secondary'}} />
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                textAlign: 'center',
+                wordBreak: 'break-word',
+              }}
+            >
+              {data.metadata.filename}
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{color: 'text.disabled', textAlign: 'center'}}
+            >
+              Preview not available
+            </Typography>
+          </Box>
+        )}
         <ImageListItemBar
           sx={{background: 'rgba(0, 0, 0, 0.7)'}}
           position="top"
@@ -739,6 +819,8 @@ type GalleryPhoto =
   | {
       type: 'loaded';
       photo: useAttachmentsResult[number];
+      /** Attachment id from query data or the ids passed to useAttachments. */
+      attachmentId?: string;
     }
   | {
       type: 'pending';
@@ -753,6 +835,12 @@ type GalleryPhoto =
  */
 const PhotoGallery: React.FC<{
   photos: useAttachmentsResult;
+  /**
+   * Attachment ids in the same order as `photos`. Used to skip a loading
+   * query whose pending preview is already on screen (`photo.data` is unset
+   * while the blob fetch is in flight).
+   */
+  photoIds: string[];
   pendingPhotos: Map<string, PendingPhoto>;
   maxItems: number | null;
   onDelete: (attachmentId: string) => void;
@@ -767,6 +855,7 @@ const PhotoGallery: React.FC<{
   deleteDisabled?: boolean;
 }> = ({
   photos,
+  photoIds,
   pendingPhotos,
   maxItems,
   onDelete,
@@ -819,24 +908,24 @@ const PhotoGallery: React.FC<{
       result.push({type: 'pending', pending, tempId});
     }
 
-    // Add loaded photos. But skip any that have a pending photo with matching
-    // attachmentId (to prevent duplicates during transition)
+    // Skip stored tiles whose pending preview is still on screen — including
+    // while useAttachments is in flight and photo.data is still undefined.
     const pendingAttachmentIds = new Set(
       Array.from(pendingPhotos.values())
         .map(p => p.attachmentId)
         .filter((id): id is string => id !== null)
     );
 
-    for (const photo of photos) {
-      // Skip if this photo is still showing as pending
-      if (photo.data && pendingAttachmentIds.has(photo.data.id)) {
-        continue;
+    photos.forEach((photo, index) => {
+      const attachmentId = photo.data?.id ?? photoIds[index];
+      if (attachmentId && pendingAttachmentIds.has(attachmentId)) {
+        return;
       }
-      result.push({type: 'loaded', photo});
-    }
+      result.push({type: 'loaded', photo, attachmentId});
+    });
 
     return result;
-  }, [photos, pendingPhotos]);
+  }, [photos, photoIds, pendingPhotos]);
 
   // Count displayed photos, including pending previews.
   const uploadedCountLabel =
@@ -893,7 +982,7 @@ const PhotoGallery: React.FC<{
             if (entry.type === 'pending') {
               return (
                 <PendingPhotoItem
-                  key={`pending-${entry.tempId}`}
+                  key={entry.pending.attachmentId ?? `pending-${entry.tempId}`}
                   url={entry.pending.url}
                   onClick={() => setLightboxUrl(entry.pending.url)}
                   isSaving={entry.pending.attachmentId === null}
@@ -902,26 +991,29 @@ const PhotoGallery: React.FC<{
             }
 
             // Loaded photo
-            const {photo} = entry;
+            const {photo, attachmentId} = entry;
+            const tileKey = attachmentId ?? `loaded-${displayIndex}`;
 
             if (photo.isLoading) {
-              return (
-                <LoadingImagePlaceholder key={`loading-${displayIndex}`} />
-              );
+              return <LoadingImagePlaceholder key={tileKey} />;
             }
 
             if (photo.isError || !photo.data) {
-              return (
-                <UnavailableImagePlaceholder key={`error-${displayIndex}`} />
-              );
+              return <UnavailableImagePlaceholder key={tileKey} />;
             }
 
+            const loaded = photo.data;
             return (
               <PhotoItem
-                key={photo.data.id}
-                data={photo.data}
-                onDelete={() => handleDeleteClick(photo.data.id)}
-                onClick={() => setLightboxUrl(photo.data.url)}
+                key={tileKey}
+                data={loaded}
+                onDelete={() => handleDeleteClick(loaded.id)}
+                onClick={() => {
+                  // Never open the lightbox for a non-image attachment.
+                  if (isDisplayableImageType(loaded.metadata.contentType)) {
+                    setLightboxUrl(loaded.url);
+                  }
+                }}
                 deleteDisabled={deleteDisabled}
               />
             );
@@ -1072,11 +1164,12 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   // Get attachment service (guaranteed to exist in full mode)
   const attachmentService = context.attachmentEngine();
 
-  // Load all attachments for this field
-  const loadedPhotos = useAttachments(
-    (state.value?.attachments || []).map(att => att.attachmentId),
-    attachmentService
+  const attachmentIds = (state.value?.attachments || []).map(
+    att => att.attachmentId
   );
+
+  // Load all attachments for this field
+  const loadedPhotos = useAttachments(attachmentIds, attachmentService);
 
   // Effect to clean up pending photos once they appear in loadedPhotos
   // This prevents flickering by keeping the optimistic preview until DB confirms
@@ -1363,6 +1456,17 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         photoBlob = await response.blob();
       }
 
+      // Block SVG/HTML before canvas re-encode (browsers can rasterise SVG).
+      const blocked = await blockedPhotoMessage(
+        photoBlob,
+        photoResult.format,
+        photoResult.path
+      );
+      if (blocked) {
+        setSaveError(blocked);
+        return;
+      }
+
       // Web plugin ignores quality/width on getPhoto too; native already
       // resized. See preparePhotoBlobForStorage.
       const prepared = await preparePhotoBlobForStorage(
@@ -1432,6 +1536,9 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
 
     // Slots reserved for picked photos not yet represented by previews.
     let galleryReservations = 0;
+    // Web picker (ours and Capacitor's) creates blob: URLs; revoke leftovers
+    // on every exit so extras / a blocked item / an early return cannot leak.
+    let pickedPhotos: {webPath: string}[] = [];
 
     beginPicker();
     try {
@@ -1458,12 +1565,15 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       // Maximum reached, the component already displays an alert.
       if (pickerLimit === 0) return;
 
-      const {photos} = await Camera.pickImages({
+      // Native: system photo picker. Web: raster-only file input (Capacitor
+      // hardcodes accept="image/*", which includes SVG).
+      const {photos} = await pickGalleryPhotos({
         quality: IMAGE_QUALITY_0_100,
         width: MAX_IMAGE_WIDTH,
         correctOrientation: true,
         limit: pickerLimit,
       });
+      pickedPhotos = photos;
 
       if (photos.length === 0) return;
 
@@ -1499,11 +1609,34 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       // Preview the whole selection first so every thumbnail appears at once,
       // rather than trickling in behind each write. If a fetch fails mid-batch
       // we roll back the previews already added so nothing gets stuck.
+      //
+      // Fetch → sniff → prepare one photo at a time so a 10-image gallery
+      // never holds every original plus every re-encode at once. The sniff
+      // reads 512 bytes only; it must run before canvas re-encode.
       const pending: {tempId: string; photoBlob: Blob; format: string}[] = [];
       try {
         for (const photo of selected) {
-          const response = await fetch(photo.webPath);
-          const photoBlob = await response.blob();
+          let photoBlob: Blob;
+          try {
+            const response = await fetch(photo.webPath);
+            photoBlob = await response.blob();
+          } finally {
+            revokeGalleryObjectUrls([photo]);
+          }
+
+          const blocked = await blockedPhotoMessage(
+            photoBlob,
+            photo.format,
+            photo.path
+          );
+          if (blocked) {
+            for (const item of pending) {
+              removePendingPhoto(item.tempId);
+            }
+            setSaveError(blocked);
+            return;
+          }
+
           // Web: downscale / JPEG-compress here. Native: passthrough.
           const prepared = await preparePhotoBlobForStorage(
             photoBlob,
@@ -1562,6 +1695,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       logError(new Error('Failed to add photos from gallery:'), {error: err});
       setSaveError('Could not add photos from your gallery. Please try again.');
     } finally {
+      revokeGalleryObjectUrls(pickedPhotos);
       // cleanup
       if (galleryReservations > 0)
         reservedCountRef.current -= galleryReservations;
@@ -1681,6 +1815,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         ) : (
           <PhotoGallery
             photos={loadedPhotos}
+            photoIds={attachmentIds}
             pendingPhotos={pendingPhotos}
             maxItems={maxItems}
             onDelete={handleDelete}

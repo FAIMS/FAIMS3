@@ -13,6 +13,75 @@ type RestoreTemplateArgs = {
   templateId: string;
 };
 
+type RestoreTeamArgs = {
+  teamId: string;
+};
+
+export async function putArchiveTeamRequest({
+  teamId,
+  token,
+  archive,
+}: {
+  teamId: string;
+  token: string;
+  archive: boolean;
+}): Promise<void> {
+  const response = await fetch(
+    `${config.apiUrl}/api/teams/${encodeURIComponent(teamId)}/archive`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({archive}),
+    }
+  );
+  if (!response.ok) {
+    const json: unknown = await response.json().catch(() => undefined);
+    const message =
+      json &&
+      typeof json === 'object' &&
+      json !== null &&
+      'error' in json &&
+      typeof (json as {error?: {message?: unknown}}).error?.message === 'string'
+        ? (json as {error: {message: string}}).error.message
+        : response.statusText;
+    throw new Error(message);
+  }
+}
+
+async function postDeleteArchivedTeamRequest({
+  teamId,
+  token,
+}: {
+  teamId: string;
+  token: string;
+}): Promise<void> {
+  const response = await fetch(
+    `${config.apiUrl}/api/teams/${encodeURIComponent(teamId)}/delete`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  if (!response.ok) {
+    const json: unknown = await response.json().catch(() => undefined);
+    const message =
+      json &&
+      typeof json === 'object' &&
+      json !== null &&
+      'error' in json &&
+      typeof (json as {error?: {message?: unknown}}).error?.message === 'string'
+        ? (json as {error: {message: string}}).error.message
+        : response.statusText;
+    throw new Error(message);
+  }
+}
+
 async function putUnarchiveTemplateRequest({
   templateId,
   token,
@@ -175,12 +244,76 @@ export function useRestoreTemplateFromArchive() {
   });
 }
 
-/** Placeholder for team restore — implement when teams support archive listing. */
-export function useRestoreTeamFromArchive() {
+/**
+ * Archives a team via PUT /api/teams/:id/archive { archive: true }.
+ */
+export function useArchiveTeam() {
+  const queryClient = useQueryClient();
+  const {user} = useAuth();
+
   return useMutation({
-    mutationFn: async (_args: {teamId: string}) => {
-      await Promise.resolve();
-      throw new Error('Restore team from archive is not implemented yet.');
+    mutationFn: async ({teamId}: RestoreTeamArgs) => {
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+      await putArchiveTeamRequest({
+        teamId,
+        token: user.token,
+        archive: true,
+      });
+    },
+    onSuccess: (_data, {teamId}) => {
+      queryClient.invalidateQueries({queryKey: ['teams']});
+      queryClient.invalidateQueries({queryKey: ['teams', teamId]});
+    },
+  });
+}
+
+/**
+ * Permanently deletes an archived team via POST /api/teams/:id/delete.
+ */
+export function useDeleteArchivedTeam() {
+  const queryClient = useQueryClient();
+  const {user} = useAuth();
+
+  return useMutation({
+    mutationFn: async ({teamId}: RestoreTeamArgs) => {
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+      await postDeleteArchivedTeamRequest({
+        teamId,
+        token: user.token,
+      });
+    },
+    onSuccess: (_data, {teamId}) => {
+      queryClient.invalidateQueries({queryKey: ['teams']});
+      queryClient.removeQueries({queryKey: ['teams', teamId]});
+    },
+  });
+}
+
+/**
+ * Restores an archived team via PUT /api/teams/:id/archive { archive: false }.
+ */
+export function useRestoreTeamFromArchive() {
+  const queryClient = useQueryClient();
+  const {user} = useAuth();
+
+  return useMutation({
+    mutationFn: async ({teamId}: RestoreTeamArgs) => {
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+      await putArchiveTeamRequest({
+        teamId,
+        token: user.token,
+        archive: false,
+      });
+    },
+    onSuccess: (_data, {teamId}) => {
+      queryClient.invalidateQueries({queryKey: ['teams']});
+      queryClient.invalidateQueries({queryKey: ['teams', teamId]});
     },
   });
 }

@@ -133,6 +133,14 @@ templates, and local signing keys are generated for you.
   ./localdev.sh --all --clear-db
   ```
 
+- **Skip spatial stack**: Use `--no-spatial` to start only CouchDB (no
+  RustFS, no spatial worker pool). Map-layer ingest is unavailable. Cannot
+  be combined with `--all`.
+
+  ```bash
+  ./dev.sh --no-spatial
+  ```
+
 ### Loading sample notebooks and templates
 
 The services start with an empty database. To populate it with the sample
@@ -179,6 +187,13 @@ These two commands are bundled into `dev.sh` i.e.
 
 ```bash
 ./dev.sh
+```
+
+For the data-collection app without map layers, skip RustFS and the spatial
+worker pool:
+
+```bash
+./dev.sh --no-spatial
 ```
 
 Another way to run the applications on MacOS or Linux is to use the `Procfile` and
