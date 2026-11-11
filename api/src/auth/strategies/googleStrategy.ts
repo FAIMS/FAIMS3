@@ -13,6 +13,8 @@ import {
   VerifyCallback,
 } from 'passport-google-oauth20';
 
+import {GoogleAuthProviderConfig} from '@faims3/build-config';
+
 import {config} from '../../buildconfig';
 import {providerAuthReturnUrl} from '../authRoutes';
 import {ssoVerify} from '../helpers';
@@ -66,20 +68,22 @@ async function oauthVerify(
 }
 
 export const googleStrategyGenerator = ({
+  id,
   clientID,
   clientSecret,
   scope,
-}: {
-  clientID: string;
-  clientSecret: string;
-  scope: string[];
-}) => {
+}: GoogleAuthProviderConfig) => {
+  if (!clientID || !clientSecret) {
+    throw new Error(
+      `Google auth provider '${id}' is missing required clientID or clientSecret.`
+    );
+  }
   // This strategy handles both login and registration cases with the same
   // verify function
   const strategy = new Strategy(
     {
-      clientID: clientID,
-      clientSecret: clientSecret,
+      clientID,
+      clientSecret,
       callbackURL: config.conductorPublicUrl + providerAuthReturnUrl('google'),
       passReqToCallback: true,
       scope,

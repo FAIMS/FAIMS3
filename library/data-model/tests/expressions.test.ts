@@ -13,6 +13,7 @@ import {
   ExprType,
   ExprValue,
   extractExpressionReferences,
+  scanExpressionReferences,
 } from '../src/uiSpecification/expressions';
 
 // Field types available to the expressions under test, as would be derived
@@ -283,6 +284,48 @@ describe('compileComputedExpression', () => {
     });
   });
 
+  describe('named constants', () => {
+    it('folds constants into the expression', () => {
+      const compiled = compileComputedExpression(
+        '{_CONSTANT.PI} * {a} ^ 2',
+        fieldTypes
+      );
+      expect(compiled.evaluate(scope({a: 2}))).toBeCloseTo(Math.PI * 4);
+    });
+
+    it('does not report constants as references', () => {
+      const compiled = compileComputedExpression(
+        '{_CONSTANT.E} + {a}',
+        fieldTypes
+      );
+      expect(compiled.references).toEqual(['a']);
+    });
+
+    it('needs no field types to compile', () => {
+      const compiled = compileComputedExpression(
+        '{_CONSTANT.SQRT2}',
+        new Map()
+      );
+      expect(compiled.returnType).toBe('number');
+      expect(compiled.evaluate(new Map())).toBeCloseTo(Math.SQRT2);
+    });
+
+    it('types constants as numbers', () => {
+      expect(() =>
+        compileComputedExpression("{_CONSTANT.PI} & 'x'", fieldTypes)
+      ).toThrow(ExpressionError);
+    });
+
+    it('rejects unknown and bare constant references', () => {
+      expect(() =>
+        compileComputedExpression('{_CONSTANT.pi}', fieldTypes)
+      ).toThrow(/unknown constant/);
+      expect(() =>
+        compileComputedExpression('{_CONSTANT.}', fieldTypes)
+      ).toThrow(/unknown constant/);
+    });
+  });
+
   describe('syntax validation', () => {
     it('rejects unbraced field references', () => {
       expect(() =>
@@ -325,8 +368,47 @@ describe('compileComputedExpression', () => {
   });
 });
 
-// Add to library/data-model/tests/expressions.test.ts as a new describe block
-// (import extractExpressionReferences alongside the existing imports):
+describe('scanExpressionReferences', () => {
+  it('returns offsets including braces', () => {
+    expect(scanExpressionReferences('{f_ab} * 2')).toEqual([
+      {ref: 'f_ab', from: 0, to: 6},
+    ]);
+  });
+
+  it('keeps duplicate spans in source order', () => {
+    expect(scanExpressionReferences('{width} * {height} + {width}')).toEqual([
+      {ref: 'width', from: 0, to: 7},
+      {ref: 'height', from: 10, to: 18},
+      {ref: 'width', from: 21, to: 28},
+    ]);
+  });
+
+  it('handles adjacent refs and hyphenated ids', () => {
+    expect(scanExpressionReferences('{a}{b}')).toEqual([
+      {ref: 'a', from: 0, to: 3},
+      {ref: 'b', from: 3, to: 6},
+    ]);
+    expect(scanExpressionReferences('{Wet-Soil-Mass-g} * 2')).toEqual([
+      {ref: 'Wet-Soil-Mass-g', from: 0, to: 17},
+    ]);
+  });
+
+  it('skips incomplete, empty, and non-reference text', () => {
+    expect(scanExpressionReferences('{width} * {unclosed')).toEqual([
+      {ref: 'width', from: 0, to: 7},
+    ]);
+    expect(scanExpressionReferences('{}')).toEqual([]);
+    expect(scanExpressionReferences('no references here')).toEqual([]);
+    expect(scanExpressionReferences('')).toEqual([]);
+  });
+
+  it('matches the inner span of nested braces', () => {
+    // `{a{b}}` — the outer `{` never closes against a `}` without an inner `{`.
+    expect(scanExpressionReferences('{a{b}}')).toEqual([
+      {ref: 'b', from: 2, to: 5},
+    ]);
+  });
+});
 
 describe('extractExpressionReferences', () => {
   it('extracts unique braced references', () => {

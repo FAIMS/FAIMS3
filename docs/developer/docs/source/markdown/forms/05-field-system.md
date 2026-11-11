@@ -366,7 +366,7 @@ Standard wrapper providing consistent field UI:
 
 ```typescript
 interface FieldWrapperProps {
-  heading?: ReactNode; // Field label
+  heading?: ReactNode; // Field heading
   subheading?: ReactNode; // Helper text
   children: ReactNode; // Field input
   required?: boolean; // Show required indicator

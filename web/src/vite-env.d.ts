@@ -4,17 +4,9 @@
 // Vite define replacements
 declare const __APP_VERSION__: string;
 
-interface ImportMetaEnv {
-  /** Theme name aligned with app: `default` | `fieldmark` | `bssTheme` */
-  readonly VITE_THEME?: string;
-  /** Legacy web theme env; used as fallback when VITE_THEME is unset */
-  readonly VITE_APP_THEME?: string;
-  /** `allow` | `never` — mobile app directory cleanup; optional, defaults to never */
-  readonly VITE_FORCE_REMOTE_DELETION?: string;
-  /** When true, app wipes local Pouch on manual deactivate; optional, defaults to false */
-  readonly VITE_DELETE_ON_DEACTIVATION?: string;
-  /** Comma-separated team Role enum values to hide from team-role dropdowns */
-  readonly VITE_EXCLUDED_TEAM_ROLES?: string;
-  /** When false, hide Add Plan in the designer unless the template already has one */
-  readonly VITE_ENABLE_PLANS_IN_DESIGNER?: string;
-}
+/**
+ * All runtime configuration is read from `@faims3/build-config`
+ * (see ./constants.ts), which parses the generated `VITE_*` env. This file no
+ * longer declares individual `VITE_*` keys — the shared module is the single
+ * source of truth for which keys exist and how they are coerced.
+ */

@@ -153,7 +153,7 @@ export default function MainAppBar() {
   ];
   if (config.offlineMaps)
     bottomMenuItems.push({
-      title: 'Offline Maps',
+      title: 'Manage Maps',
       icon: <MapIcon />,
       to: ROUTES.OFFLINE_MAPS,
       disabled: false,

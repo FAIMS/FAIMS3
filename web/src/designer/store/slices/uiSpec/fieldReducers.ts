@@ -8,14 +8,13 @@ import {
   getViewSetForView,
   removeFieldFromSummary,
   removeFieldFromSummaryForViewset,
-  replaceFieldInCondition,
 } from '../../../state/helpers/uiSpec-helpers';
 import {
-  buildUniqueFieldName,
-  resolveAddedFieldKey,
+  buildUniqueExportName,
+  mintFieldStorageId,
   slugify,
 } from '../../../domain/notebook/ids';
-import {cloneField} from '../../../domain/notebook/fieldFactory';
+import {cloneFieldWithDesignerIdentifier} from '../../../domain/notebook/fieldFactory';
 
 /** Field-level RTK reducers merged into `uiSpecificationReducer`. */
 export const fieldReducers = {
@@ -154,16 +153,18 @@ export const fieldReducers = {
       removeFieldFromSummaryForViewset(state, fieldName, sourceViewSetId);
     }
   },
-  /** Renames storage key and updates conditions, summaries, HRID, and `component-parameters.name`. */
+  /** Updates `exportName` only. The storage key never moves. */
   fieldRenamed: (
     state: NotebookUISpec,
     action: PayloadAction<{
       viewId: string;
+      /** Immutable `uiSpec.fields` key. */
       fieldName: string;
-      newFieldName: string;
+      /** Desired export / column name (slugified for uniqueness). */
+      newExportName: string;
     }>
   ) => {
-    const {viewId, fieldName, newFieldName} = action.payload;
+    const {fieldName, newExportName} = action.payload;
     if (!(fieldName in state.fields)) {
       throw new Error(
         `Cannot rename unknown field ${fieldName} via fieldRenamed action`
@@ -171,72 +172,36 @@ export const fieldReducers = {
     }
 
     const field = state.fields[fieldName];
-
-    const fieldLabel = buildUniqueFieldName(
-      newFieldName,
-      Object.keys(state.fields)
-    );
-
-    field['component-parameters'].name = fieldLabel;
-    state.fields[fieldLabel] = field;
-    delete state.fields[fieldName];
-
-    const viewFields = state.views[viewId].fields;
-    for (let i = 0; i < viewFields.length; i++) {
-      if (viewFields[i] === fieldName) {
-        viewFields[i] = fieldLabel;
-        break;
-      }
+    // Punctuation-only names slugify to "" and fail z.string().min(1) on save.
+    if (!slugify(newExportName)) {
+      return;
     }
 
-    Object.values(state.fields).forEach(f => {
-      if (f.condition) {
-        f.condition = replaceFieldInCondition(
-          f.condition,
-          fieldName,
-          fieldLabel
-        );
-      }
-    });
+    const otherExportNames = Object.entries(state.fields)
+      .filter(([id]) => id !== fieldName)
+      .map(([, f]) => f.exportName);
 
-    Object.values(state.views).forEach(v => {
-      if (v.condition) {
-        const newCondition = replaceFieldInCondition(
-          v.condition,
-          fieldName,
-          fieldLabel
-        );
-        if (newCondition === null) {
-          delete v.condition;
-        } else {
-          v.condition = newCondition;
-        }
-      }
-    });
-
-    Object.values(state.viewsets).forEach(vs => {
-      if (vs.summary_fields) {
-        vs.summary_fields = vs.summary_fields.map(f =>
-          f === fieldName ? fieldLabel : f
-        );
-      }
-      if (vs.hridField === fieldName) {
-        vs.hridField = fieldLabel;
-      }
-    });
+    field.exportName = buildUniqueExportName(newExportName, otherExportNames);
   },
   /**
-   * Clones default spec from `getFieldSpec`, assigns unique slug, inserts after `addAfter` in section.
+   * Clones default spec from `getFieldSpec`, mints a storage id and unique
+   * `exportName`, and inserts after `addAfter` in the section.
    * Applies type-specific defaults (related record, autoincrement `form_id`).
    */
   fieldAdded: (
     state: NotebookUISpec,
     action: PayloadAction<{
+      /** User-facing label; seeds `exportName`. Storage id is minted separately. */
       fieldName: string;
       fieldType: string;
       viewId: string;
       viewSetId: string;
       addAfter: string;
+      /**
+       * Optional pre-minted `uiSpec.fields` key so the add-field UI can expand
+       * and focus the new accordion without a second random mint.
+       */
+      storageId?: string;
     }>
   ) => {
     const {fieldName, fieldType, viewId, viewSetId, addAfter} = action.payload;
@@ -267,21 +232,27 @@ export const fieldReducers = {
     };
     newField['component-parameters'].label = fieldName;
 
-    const fieldLabel = resolveAddedFieldKey(
+    const requestedStorageId = action.payload.storageId;
+    const storageId =
+      requestedStorageId && !(requestedStorageId in state.fields)
+        ? requestedStorageId
+        : mintFieldStorageId(Object.keys(state.fields));
+    const exportName = buildUniqueExportName(
       fieldName,
-      Object.keys(state.fields)
+      Object.values(state.fields).map(f => f.exportName)
     );
-    newField['component-parameters'].name = fieldLabel;
-    state.fields[fieldLabel] = newField;
+    newField['component-parameters'].name = storageId;
+    newField.exportName = exportName;
+    state.fields[storageId] = newField;
 
     if (addAfter === '' || state.views[viewId].fields.indexOf(addAfter) < 0) {
-      state.views[viewId].fields.push(fieldLabel);
+      state.views[viewId].fields.push(storageId);
     } else {
       const fields = state.views[viewId].fields;
       const position = fields.indexOf(addAfter) + 1;
       state.views[viewId].fields = fields
         .slice(0, position)
-        .concat([fieldLabel])
+        .concat([storageId])
         .concat(fields.slice(position));
     }
   },
@@ -314,7 +285,9 @@ export const fieldReducers = {
   fieldDuplicated: (
     state: NotebookUISpec,
     action: PayloadAction<{
+      /** Storage id of the field being copied. */
       originalFieldName: string;
+      /** User-facing label for the copy; seeds the new `exportName`. */
       newFieldName: string;
       viewId: string;
     }>
@@ -328,23 +301,22 @@ export const fieldReducers = {
     }
 
     const originalField = state.fields[originalFieldName];
-    const newField = cloneField(originalField);
-    newField.designerIdentifier = crypto.randomUUID();
+    const newField = cloneFieldWithDesignerIdentifier(originalField);
 
-    let fieldLabel = slugify(newFieldName);
-    let N = 1;
-    while (fieldLabel in state.fields) {
-      fieldLabel = slugify(newFieldName + ' ' + N);
-      N += 1;
-    }
+    const storageId = mintFieldStorageId(Object.keys(state.fields));
+    const exportName = buildUniqueExportName(
+      newFieldName,
+      Object.values(state.fields).map(f => f.exportName)
+    );
 
     newField['component-parameters'].label = newFieldName;
-    newField['component-parameters'].name = fieldLabel;
+    newField['component-parameters'].name = storageId;
+    newField.exportName = exportName;
 
-    state.fields[fieldLabel] = newField;
+    state.fields[storageId] = newField;
 
     const position = state.views[viewId].fields.indexOf(originalFieldName) + 1;
-    state.views[viewId].fields.splice(position, 0, fieldLabel);
+    state.views[viewId].fields.splice(position, 0, storageId);
   },
   /** Set or clear `field.condition` for visibility rules. */
   fieldConditionChanged: (

@@ -28,6 +28,7 @@ This guide does **not** cover:
 
 - Template creation or management
 - {{Notebook}} design and form building (see [Quickstart Guide](../authoring/quick-start-researchers.md))
+- Uploading and linking map layers (see [Map layers](map-layers.md))
 - Data collection and record management
 - API access and tokens
 - System configuration and Single Sign-On (SSO) setup
@@ -44,7 +45,7 @@ Before diving into procedures, here's how management differs across the three ar
 
 ### The Three-Tier Permission Model
 
-{{FAIMS}} uses a role-based permissions system to control access to different functions and data. The model centres around access to **resources**: teams, user accounts, templates, {{notebooks}}, and the system as a whole.
+{{FAIMS}} uses a role-based permissions system to control access to different functions and data. The model centres around access to **resources**: teams, user accounts, templates, {{notebooks}}, map layers, and the system as a whole.
 
 Roles are assigned at three levels:
 
@@ -102,11 +103,12 @@ The **Operations Administrator** role handles routine system management without 
 - Create new teams
 - Assign a role for yourself in a team
 - Assign Team Administrator roles
+- View instance-wide usage stats (aggregates only; not record contents)
 
 **Cannot do (by design):**
 
-- Access {{notebooks}}, templates, or research data
-- The {{Notebooks}} and Templates sidebar items are hidden from this role
+- Access {{notebooks}}, templates, map layers, or research data
+- The {{Notebooks}}, Templates, and Map layers sidebar items are hidden from this role
 
 > **Note:** If you need both administrative control and {{notebook}} access, you need the Super User role.
 
@@ -114,12 +116,13 @@ The **Operations Administrator** role handles routine system management without 
 
 During onboarding, enterprise users are typically assigned:
 
-- **Content Creator** system role — they can create {{notebooks}} and templates
+- **Content Creator** system role — they can create {{notebooks}} and templates globally; map layers are created inside a team
 - **Team Administrator** of their assigned team — they have full control over their team (but they can't change their own role in the team)
 
 These roles are granted through invites created by an Operations Administrator or Super User (see "How Users Are Created" below). Once onboarded, a typical user can immediately:
 
 - Create {{notebooks}} (stand-alone or within their team)
+- Upload map layers and link them to {{notebooks}} they administer (see [Map layers](map-layers.md))
 - Invite users to their team and assign team roles
 - Invite users to {{notebooks}} they administer and assign {{notebook}} roles
 - Manage and update roles for their team members
@@ -132,6 +135,7 @@ The most restricted access level is General User, which can:
 
 - List {{notebooks}} they have access to
 - List templates they have access to
+- List map layers they are allowed to see
 
 General Users have to be granted access to a {{notebook}} directly (via {{notebook}} invite) or through relevant team membership to view or use it.
 
@@ -143,17 +147,19 @@ When you log in to the {{FAIMS}} {{Dashboard}}, you'll see a left sidebar with t
 
 ### Content
 
-- **{{Notebooks}}** — View and manage data collection {{notebooks}}
-- **Templates** — View and manage reusable {{notebook}} templates
+- **{{Notebooks}}**: View and manage data collection {{notebooks}}
+- **Templates**: View and manage reusable {{notebook}} templates
 
 ### Management
 
-- **Users** — View all system users and their roles (requires appropriate permissions)
-- **Teams** — View and manage teams
-- **Archive** — Archived {{notebooks}}, templates, and disabled users
+- **Users**: View all system users and their roles (requires appropriate permissions)
+- **Stats**: Instance-wide usage counts overall, per team, and per person (Operations Administrator and Super User)
+- **Map layers**: Upload georeferenced overlays and link them to {{notebooks}} (see [Map layers](map-layers.md))
+- **Teams**: View and manage teams
+- **Archive**: Archived {{notebooks}}, templates, teams, and disabled users
 
 ```{screenshot} user-roles/01-dashboard-sidebar.png
-:alt: {{FAIMS}} {{Dashboard}} showing left sidebar with Content section ({{Notebooks}}, Templates) and Management section (Users, Teams, Archive), plus the Users page with Users and Invites tabs, displaying Name, Email, Roles, Reset Password, Impersonate, and Disable columns with role badges such as General User and Super User
+:alt: {{FAIMS}} {{Dashboard}} Users page with Users and Invites tabs. The left sidebar has a Content section ({{Notebooks}}, Templates) and a Management section; Users, Map layers, Teams, and Archive appear according to your roles
 :align: right
 :width: 100%
 ```
@@ -177,18 +183,18 @@ In an enterprise deployment, users are created through an invite-based workflow:
 
 You cannot manually create user accounts through the {{Dashboard}} — users must accept an invite and sign in via SSO to create their account.
 
-> **Note:** SSO auto-provisioning (where user accounts are automatically created on first SSO sign-in with default roles) is under development but not yet deployed. Currently, all user creation requires an invite.
+> **Note:** An enterprise deployment can instead be set to create accounts automatically when people first sign in through the institution's SSO, either as general users or each with a personal team. By default it refuses anyone who has not accepted an invite, and the setting is chosen for each deployment. {{FAIMS}} does not synchronise with an institution's directory (through SCIM or LDAP, for example).
 
 ### Viewing Users
 
 1. Click **Users** in the left sidebar (under Management)
 2. You'll see a table with columns:
-   - **Name** — User's display name
-   - **Email** — User's email address
-   - **Roles** — System roles with "add" button and role badges
-   - **Reset Password** — Not applicable for SSO deployments; password management is handled through your institution's identity provider
-   - **Impersonate** — Sign in as this user to see exactly what they see (not available for your own account or Super Users)
-   - **Disable** — Disable the account so the user can no longer sign in ({{notebooks}} and records they contributed are retained). Disabled users appear under **Archive → Users**, where they can be re-enabled.
+   - **Name**: User's display name
+   - **Email**: User's email address
+   - **Roles**: System roles with "add" button and role badges
+   - **Reset Password**: Not applicable for SSO deployments; password management is handled through your institution's identity provider
+   - **Impersonate**: Sign in as this user to see exactly what they see (not available for your own account or Super Users)
+   - **Disable**: Disable the account so the user can no longer sign in ({{notebooks}} and records they contributed are retained). Disabled users appear under **Archive → Users**, where they can be re-enabled.
 
 The screenshot above shows this view, with the sidebar navigation on the left and the Users table in the main content area.
 
@@ -218,7 +224,7 @@ There are four system roles: **General User** (basic access), **Content Creator*
 
 Each role badge (visible in the {{Dashboard}} screenshot earlier) has a small **×** in the upper-right corner — click this to remove the role.
 
-> ⚠️ **Warning**: Be careful when removing roles. If you remove Content Creator from a user, they will no longer be able to create {{notebooks}} globally. However, they can still create {{notebooks}} within teams where they have the Team Member (Creator), Team Manager, or Team Administrator role.
+> ⚠️ **Warning**: Be careful when removing roles. If you remove Content Creator from a user, they will no longer be able to create {{notebooks}} or templates globally. However, they can still create {{notebooks}} and map layers within teams where they have the Team Member (Creator), Team Manager, or Team Administrator role. Only Super Users can upload a map layer that is not owned by a team.
 
 **See also:** Troubleshooting → Can't Assign Team Administrator Role
 
@@ -421,7 +427,7 @@ The **Invites** tab allows you to create invitation links that users can use to 
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Expiry**         | The date/time after which the invite link no longer works. Expired invites cannot be extended — create a new one instead.                            |
 | **Uses remaining** | Limits how many people can use this invite. Use multi-use invites for workshops or group onboarding. Leave unlimited (default) for open invitations. |
-| **QR Code**        | Scannable invite for mobile devices — preferred for in-person onboarding                                                                             |
+| **QR Code**        | Scannable invite for mobile devices, preferred for in-person onboarding                                                                              |
 | **Link**           | A URL that users can open to accept the invitation                                                                                                   |
 | **Code**           | Reveal the invite code for manual entry when a QR/link cannot be used (button labelled **Show code**)                                                |
 
@@ -484,7 +490,8 @@ From here you can:
 | **Invites**     | Invitation links for adding users                                             |
 | **Users**       | Current {{notebook}} users and their roles                                    |
 | **Export**      | Export {{notebook}} data                                                      |
-| **Offline Map** | Configure an offline map region for field use                                 |
+| **Offline Map** | Configure a base-map region (street tiles) for field use                      |
+| **Map layers**  | Link uploaded overlays from the Map layers library to this {{notebook}}       |
 | **Actions**     | Edit {{notebook}}, assign to team, download/replace JSON, {{notebook}} status |
 
 ### Understanding {{Notebook}} Roles
@@ -546,7 +553,7 @@ The Invites tab shows:
 
 Quick share is a temporary QR code created in the app, not from **+ Create Invite**.
 
-On an activated {{notebook}}, someone who can invite opens **Share** (or **Quick share** in Settings), chooses an access level, and generates a QR code. The other person scans it the same way as any other invite. The code lasts one hour. Each person has one live code for that {{notebook}}; generating a new one stops the current code. Creating or replacing a code needs a connection to the server.
+On an activated {{notebook}}, someone who can invite opens **Share** (or **Quick share** in Settings), chooses an access level, and generates a QR code. The other person scans it the same way as any other invite. The code lasts one hour. Each person has one live code for that {{notebook}}. Generating a new one stops the current code. Creating or replacing a code needs a connection to the server.
 
 The code is listed on this **Invites** tab as **Quick share**. Remove it here if it should stop working before it expires.
 
@@ -690,8 +697,7 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
 | View/edit/delete own records |  ✅   |     ✅      |   ✅    |      ✅       |
 | View all records             |  ❌   |     ✅      |   ✅    |      ✅       |
 | Edit/delete others' records  |  ❌   |     ✅      |   ✅    |      ✅       |
-| Export own data              |  ✅   |     ✅      |   ✅    |      ✅       |
-| Export all {{notebook}} data |  ❌   |     ❌      |   ✅    |      ✅       |
+| Export {{notebook}} data     |  ❌   |     ❌      |   ✅    |      ✅       |
 | Edit {{notebook}} design     |  ❌   |     ❌      |   ✅    |      ✅       |
 | Close/reopen {{notebook}}    |  ❌   |     ❌      |   ✅    |      ✅       |
 | Reassign to different team   |  ❌   |     ❌      |   ✅    |      ✅       |
@@ -703,7 +709,7 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
 | Action                                   | Team Member (Contributor) | Team Member (Creator) | Team Manager |             Team Administrator              |
 | ---------------------------------------- | :-----------------------: | :-------------------: | :----------: | :-----------------------------------------: |
 | View team details and members            |            ✅             |          ✅           |      ✅      |                     ✅                      |
-| View team templates                      |            ✅             |          ❌           |      ✅      |                     ✅                      |
+| View team templates                      |            ✅             |          ✅           |      ✅      |                     ✅                      |
 | Access team {{notebooks}} (virtual role) |            ✅             |          ❌           |      ✅      |                     ✅                      |
 | Create {{notebooks}} in team             |            ❌             |          ✅           |      ✅      |                     ✅                      |
 | Create templates in team                 |            ❌             |          ❌           |      ✅      |                     ✅                      |
@@ -716,7 +722,7 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
 
 > ⚠️ **Note**: Team Member (Creator) can create {{notebooks}} but does NOT automatically get access to existing team {{notebooks}}. This is by design for teaching environments where students create isolated {{notebooks}}.
 >
-> Virtual roles: Team Member (Contributor) automatically receives **Contributor** access to team {{notebooks}}. Team Manager automatically receives **Manager** access. Team Administrator inherits Manager's virtual role. Team Member (Creator) receives **no** virtual {{notebook}} access.
+> Virtual roles: Team Member (Contributor) automatically receives **Contributor** access to team {{notebooks}}. Team Manager automatically receives **Manager** access. Team Administrator automatically receives **Administrator** access. Team Member (Creator) receives **no** virtual {{notebook}} access.
 
 ---
 
@@ -775,5 +781,5 @@ Remove from both locations if needed.
 
 ---
 
-_Guide Version: 1.9_
-_Last Updated: 2026-08-13_
+_Guide Version: 1.10_
+_Last Updated: 2026-10-20_

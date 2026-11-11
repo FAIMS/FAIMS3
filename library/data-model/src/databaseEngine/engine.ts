@@ -65,6 +65,7 @@ import {
 } from './types';
 import {
   normalizeRelationshipInstances,
+  readRelatedLinks,
   relatedLinkParts,
   toDbRelationshipInstances,
   withRelatedEdge,
@@ -199,6 +200,48 @@ function initialFormDataFromHydrated(
       hrid: hydrated.hrid,
     },
   };
+}
+
+/**
+ * Build revision-history entries by diffing each revision's AVP map against
+ * its parents. Unchanged fields reuse the parent's AVP id. Does not touch
+ * the database.
+ */
+function revisionHistoryEntriesFromDocs(
+  revisions: ExistingRevisionDBDocument[]
+): RevisionHistoryEntry[] {
+  const revisionsById = new Map(revisions.map(rev => [rev._id, rev]));
+  const history = revisions.map((revision): RevisionHistoryEntry => {
+    return {
+      revisionId: revision._id,
+      created: revision.created,
+      createdBy: revision.created_by,
+      deleted: revision.deleted,
+      changedFields:
+        revision.parents.length === 0
+          ? {root: Object.keys(revision.avps).sort()}
+          : Object.fromEntries(
+              revision.parents.map(parentId => {
+                const parent = revisionsById.get(parentId);
+                const parentAvps = parent?.avps ?? {};
+
+                const changed = new Set<string>();
+                for (const [field, avpId] of Object.entries(revision.avps)) {
+                  if (parentAvps[field] !== avpId) {
+                    changed.add(field);
+                  }
+                }
+                for (const field of Object.keys(parentAvps)) {
+                  if (!(field in revision.avps)) {
+                    changed.add(field);
+                  }
+                }
+                return [parentId, Array.from(changed).sort()];
+              })
+            ),
+    };
+  });
+  return revisionHistoryEntry.array().parse(history);
 }
 
 // =========
@@ -579,7 +622,7 @@ export class CoreOperations {
    * @returns Map of id → validated document for rows that succeeded
    */
   async getDocumentsByIds<T>(
-    ids: string[],
+    ids: readonly string[],
     validator: (doc: unknown) => T
   ): Promise<Map<string, T>> {
     const unique = [...new Set(ids.filter(id => id.length > 0))];
@@ -1084,6 +1127,40 @@ class HydratedOperations {
   }
 
   /**
+   * Assemble {@link InitialFormData} from already-fetched record, revision,
+   * and AVP documents. Throws if an AVP id is missing from `avpDocs`.
+   */
+  private formDataFromFetchedParts({
+    record,
+    revision,
+    avpDocs,
+    hadConflict,
+  }: {
+    record: ExistingRecordDBDocument;
+    revision: ExistingRevisionDBDocument;
+    avpDocs: Map<string, ExistingAvpDBDocument>;
+    hadConflict: boolean;
+  }): InitialFormData {
+    const avps: Record<string, ExistingAvpDBDocument> = {};
+    for (const [fieldName, avpId] of Object.entries(revision.avps)) {
+      const avp = avpDocs.get(avpId);
+      if (!avp) {
+        throw new Exceptions.DocumentNotFoundError(avpId);
+      }
+      avps[fieldName] = avp;
+    }
+    return initialFormDataFromHydrated(
+      this.assembleHydratedRecord({
+        record,
+        revision,
+        avps,
+        hadConflict,
+        conflictBehaviour: 'pickFirst',
+      })
+    );
+  }
+
+  /**
    * Bulk-hydrate a page of {@link MinimalRecordMetadata} stubs into the same
    * {@link InitialFormData} shape as {@link getExistingFormData}.
    *
@@ -1144,25 +1221,15 @@ class HydratedOperations {
         if (!record || !revision) {
           throw new Error('record or revision missing from bulk fetch');
         }
-        const avps: Record<string, ExistingAvpDBDocument> = {};
-        for (const [fieldName, avpId] of Object.entries(revision.avps)) {
-          const avp = avpDocs.get(avpId);
-          if (!avp) {
-            throw new Exceptions.DocumentNotFoundError(avpId);
-          }
-          avps[fieldName] = avp;
-        }
-        const hydrated = this.assembleHydratedRecord({
-          record,
-          revision,
-          avps,
-          hadConflict: stub.conflicts,
-          conflictBehaviour: 'pickFirst',
-        });
         return {
           ok: true as const,
           stub,
-          formData: initialFormDataFromHydrated(hydrated),
+          formData: this.formDataFromFetchedParts({
+            record,
+            revision,
+            avpDocs,
+            hadConflict: stub.conflicts,
+          }),
         };
       } catch (err) {
         console.warn(
@@ -1175,6 +1242,133 @@ class HydratedOperations {
           revisionId: stub.revisionId,
         };
       }
+    });
+  }
+
+  /**
+   * Hydrate many records by id in bulk `allDocs({keys})` waves, the same
+   * shape as {@link getExistingFormData}. Prefer this over one GET per
+   * record when the revision id is not known yet (child-tree generations).
+   *
+   * 1. All record documents.
+   * 2. Each record's resolved head revision (pickFirst, like the record page).
+   * 3. Every AVP id referenced by those revisions.
+   *
+   * Failures are per-id: a missing record, empty heads, missing revision or
+   * AVP, or a parse error yields `{ok: false, recordId, error}` so a tree
+   * walk can skip that child and still return the rest.
+   *
+   * @param recordIds - Record ids to hydrate. Empty input returns `[]`.
+   *   Duplicates are fetched once; results stay in input order.
+   */
+  async hydrateRecordsByIds(
+    recordIds: string[]
+  ): Promise<
+    Array<
+      | {ok: true; recordId: string; formData: InitialFormData}
+      | {ok: false; recordId: string; error: unknown}
+    >
+  > {
+    if (recordIds.length === 0) return [];
+
+    const records = await this.core.getDocumentsByIds(
+      recordIds,
+      existingRecordDocumentSchema.parse
+    );
+
+    const resolved: Array<{
+      recordId: string;
+      record: ExistingRecordDBDocument;
+      revisionId: string;
+      hadConflict: boolean;
+    }> = [];
+    const earlyFailure = new Map<string, unknown>();
+
+    for (const recordId of new Set(recordIds.filter(id => id.length > 0))) {
+      const record = records.get(recordId);
+      if (!record) {
+        earlyFailure.set(
+          recordId,
+          new Exceptions.DocumentNotFoundError(recordId)
+        );
+        continue;
+      }
+      try {
+        const {selectedHead, hadConflict} = this.core.resolveHead({
+          recordId,
+          heads: record.heads,
+          behavior: DEFAULT_CONFLICT_BEHAVIOUR,
+        });
+        resolved.push({
+          recordId,
+          record,
+          revisionId: selectedHead,
+          hadConflict,
+        });
+      } catch (err) {
+        earlyFailure.set(recordId, err);
+      }
+    }
+
+    const revisions = await this.core.getDocumentsByIds(
+      resolved.map(item => item.revisionId),
+      existingRevisionDocumentSchema.parse
+    );
+
+    const avpIds: string[] = [];
+    for (const item of resolved) {
+      const revision = revisions.get(item.revisionId);
+      if (!revision) continue;
+      avpIds.push(...Object.values(revision.avps));
+    }
+
+    const avpDocs = await this.core.getDocumentsByIds(
+      avpIds,
+      existingAvpDocumentSchema.parse
+    );
+
+    const byId = new Map<
+      string,
+      | {ok: true; recordId: string; formData: InitialFormData}
+      | {ok: false; recordId: string; error: unknown}
+    >();
+    for (const item of resolved) {
+      try {
+        const revision = revisions.get(item.revisionId);
+        if (!revision) {
+          throw new Exceptions.DocumentNotFoundError(item.revisionId);
+        }
+        byId.set(item.recordId, {
+          ok: true,
+          recordId: item.recordId,
+          formData: this.formDataFromFetchedParts({
+            record: item.record,
+            revision,
+            avpDocs,
+            hadConflict: item.hadConflict,
+          }),
+        });
+      } catch (err) {
+        byId.set(item.recordId, {
+          ok: false,
+          recordId: item.recordId,
+          error: err,
+        });
+      }
+    }
+
+    return recordIds.map(recordId => {
+      const early = earlyFailure.get(recordId);
+      if (early !== undefined) {
+        return {ok: false as const, recordId, error: early};
+      }
+      return (
+        byId.get(recordId) ?? {
+          ok: false as const,
+          recordId,
+          error: new Exceptions.DocumentNotFoundError(recordId),
+        }
+      );
     });
   }
 
@@ -1551,6 +1745,11 @@ class FormOperations {
       );
     }
     const {related_type, relation_type, multiple} = params.data;
+    // A field that takes one link is free again once its target is deleted.
+    // Only that case needs the lookup; a field that takes many never refuses.
+    const deletedTargetIds = multiple
+      ? undefined
+      : await this.deletedLinkTargets(readRelatedLinks(parentFieldValue));
     // Both checks run before anything is written: a record created and then
     // refused its link is an orphan the parent does not list.
     // The same derivation linking an existing record uses, so creating a child
@@ -1561,6 +1760,7 @@ class FormOperations {
       parentRecordId,
       currentFieldValue: parentFieldValue,
       isMultiple: multiple,
+      deletedTargetIds,
     });
     const {record, revision} = await this.createRecord({
       createdBy,
@@ -1578,6 +1778,45 @@ class FormOperations {
       link,
       linked: withRelatedLink({links, link, isMultiple: multiple}),
     };
+  }
+
+  /**
+   * Which of these links no longer hold a single-link field, read the way the
+   * related records list reads them so the engine and the list agree. Both
+   * creating and linking call this, so a field is judged in one place.
+   *
+   * A target that is not found counts as live: it may not have synced yet.
+   * Any other failure to read it is reported and counts as not holding the
+   * field: a target whose documents cannot be read is one the list cannot
+   * show and the operator cannot detach, so refusing would leave the field
+   * stuck with no way forward. Never throws.
+   */
+  async deletedLinkTargets(
+    links: Array<{record_id: string}>
+  ): Promise<Set<string>> {
+    const deleted = new Set<string>();
+    await Promise.all(
+      links.map(async ({record_id}) => {
+        try {
+          const record = await this.core.getRecord(record_id);
+          const {selectedHead} = this.core.resolveHead({
+            recordId: record_id,
+            heads: record.heads,
+            behavior: 'pickLast',
+          });
+          const revision = await this.core.getRevision(selectedHead);
+          if (revision.deleted === true) deleted.add(record_id);
+        } catch (error) {
+          if (error instanceof Exceptions.DocumentNotFoundError) return;
+          console.warn(
+            `Could not read linked record ${record_id}; its link no longer holds the field`,
+            error
+          );
+          deleted.add(record_id);
+        }
+      })
+    );
+    return deleted;
   }
 
   /**
@@ -2113,54 +2352,33 @@ class FormOperations {
    * whose AVP ID differs (or which was added or removed) is a changed field.
    *
    * @param recordId The record ID to query
+   * @param record Already-loaded record (from a tree walk). When set, skips
+   *   a GET and batch-fetches `record.revisions` via
+   *   {@link CoreOperations.getDocumentsByIds}
    * @returns Array of revision history entries (revisionId, created,
    * createdBy, changedFields)
    */
   async getHistoryData({
     recordId,
+    record,
   }: {
     recordId: string;
+    record?: {revisions: readonly string[]};
   }): Promise<RevisionHistoryEntry[]> {
-    const record = await this.core.getRecord(recordId);
-    const revisions = await Promise.all(
-      record.revisions.map(revisionId => this.core.getRevision(revisionId))
+    const revisionIds = (record ?? (await this.core.getRecord(recordId)))
+      .revisions;
+    const docs = await this.core.getDocumentsByIds(
+      revisionIds,
+      existingRevisionDocumentSchema.parse
     );
-
-    // Index by revision ID so each revision can look up its parent's AVPs.
-    const revisionsById = new Map(revisions.map(rev => [rev._id, rev]));
-
-    const history = revisions.map((revision): RevisionHistoryEntry => {
-      return {
-        revisionId: revision._id,
-        created: revision.created,
-        createdBy: revision.created_by,
-        deleted: revision.deleted,
-        changedFields:
-          revision.parents.length === 0
-            ? {root: Object.keys(revision.avps).sort()}
-            : Object.fromEntries(
-                revision.parents.map(parentId => {
-                  const parent = revisionsById.get(parentId);
-                  const parentAvps = parent?.avps ?? {};
-
-                  const changed = new Set<string>();
-                  for (const [field, avpId] of Object.entries(revision.avps)) {
-                    if (parentAvps[field] !== avpId) {
-                      changed.add(field);
-                    }
-                  }
-                  for (const field of Object.keys(parentAvps)) {
-                    if (!(field in revision.avps)) {
-                      changed.add(field);
-                    }
-                  }
-                  return [parentId, Array.from(changed).sort()];
-                })
-              ),
-      };
+    const revisions = revisionIds.map(id => {
+      const doc = docs.get(id);
+      if (!doc) {
+        throw new Exceptions.DocumentNotFoundError(id);
+      }
+      return doc;
     });
-
-    return revisionHistoryEntry.array().parse(history);
+    return revisionHistoryEntriesFromDocs(revisions);
   }
 
   /**

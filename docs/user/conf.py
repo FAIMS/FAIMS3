@@ -14,7 +14,7 @@ sys.path.append(str(Path('_ext').resolve()))
 project = os.getenv("VITE_APP_NAME", "FAIMS")
 copyright = "2023, Electronic Field Notebooks Pty Ltd"
 author = "Electronic Field Notebooks Pty Ltd"
-release = "1.9.1"
+release = "1.10.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -41,12 +41,39 @@ html_theme = 'sphinx_wagtail_theme'
 
 # These folders are copied to the documentation's HTML output.
 html_static_path = ["_static"]
-html_css_files = ["custom.css"]
+
+THEME_NAME = os.getenv("VITE_THEME", "default")
+
+# Theme-specific documentation assets.
+THEME_CONFIG = {
+    "default": {
+        "logo": "img/default-logo.png",
+        "css": ["css/custom.css"],
+    },
+    "fieldmark": {
+        "logo": "img/fieldmark-logo.png",
+        "css": ["css/custom.css"],
+    },
+    "bssTheme": {
+        "logo": "img/bssTheme-logo.png",
+        "css": ["css/bss-custom.css"],
+    },
+}
+
+# Use the default theme configuration if the theme is not recognised.
+theme_config = THEME_CONFIG.get(THEME_NAME, THEME_CONFIG["default"])
+
+# Warn if the theme logo has not been copied from the app.
+logo_path = Path(__file__).parent / "_static" / theme_config["logo"]
+if not logo_path.is_file():
+    print(f"Warning: Documentation logo not found: {logo_path}")
+
+html_css_files = theme_config["css"]
 
 # These are options specifically for the Wagtail Theme.
 html_theme_options = dict(
     project_name = project + " Documentation",
-    logo = "img/logo-dark.png",
+    logo = theme_config["logo"],
     logo_alt = project,
     logo_height = 59,
     logo_url = "/",
@@ -65,7 +92,6 @@ myst_enable_extensions = [
 
 NOTEBOOK_NAME = os.getenv("VITE_NOTEBOOK_NAME", "notebook")
 DASHBOARD_NAME = os.getenv("VITE_WEBSITE_TITLE", "dashboard")
-THEME_NAME = os.getenv("VITE_THEME", "default")
 
 API_URL = os.getenv("VITE_API_URL")
 APP_URL = os.getenv("VITE_APP_URL")
@@ -79,6 +105,7 @@ myst_substitutions = {
   "theme": THEME_NAME, # the theme name, used to select screenshots
   "notebook": NOTEBOOK_NAME, # the name of a project (notebook or survey)
   "Notebook": NOTEBOOK_NAME.title(), # variations of the notebook name
+  "NOTEBOOK": NOTEBOOK_NAME.upper(),
   "notebooks": NOTEBOOK_NAME + 's',
   "Notebooks": NOTEBOOK_NAME.title() + 's',
   "dashboard": DASHBOARD_NAME, # the name of the web management app
@@ -89,3 +116,35 @@ myst_substitutions = {
   "IOS_APP_LINK": "<a href=\"" + IOS_APP_URL + "\">" + project + " IOS App</a>",
   "ANDROID_APP_LINK": "<a href=\"" + ANDROID_APP_URL + "\">" + project + " Android App</a>",
 }
+
+
+# -- Macros in image alt text ------------------------------------------------
+# MyST expands {{name}} substitutions in the text of a page, but not inside a
+# directive's options, so the :alt: of an {image} or {screenshot} kept its
+# braces. Once each page is read, the same values are put into image alt
+# text; an address value drops the <...> it carries for autolinking.
+
+import re
+from docutils import nodes
+
+_MACRO = re.compile(r"\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}")
+
+
+def _expand_alt_macros(app, doctree):
+    """Replace {{name}} in every image's alt text with its substitution."""
+
+    def value(match):
+        text = str(myst_substitutions.get(match.group(1), match.group(0)))
+        if text.startswith("<") and text.endswith(">"):
+            text = text[1:-1]
+        return text
+
+    # findall replaced traverse in docutils 0.18
+    find = getattr(doctree, "findall", doctree.traverse)
+    for image in find(nodes.image):
+        if "alt" in image:
+            image["alt"] = _MACRO.sub(value, image["alt"])
+
+
+def setup(app):
+    app.connect("doctree-read", _expand_alt_macros)

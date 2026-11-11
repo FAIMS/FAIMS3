@@ -40,6 +40,8 @@ import {NotebookEditor} from './components/notebook-editor';
 import {DesignerEditingProvider} from './state/editing-context';
 import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
+import {SetupFormPanel} from './components/setup-form-panel';
+import {config} from '@/constants';
 
 /**
  * @file Full-screen designer shell: hydrate notebook, Redux, memory router, export without internal ids.
@@ -53,7 +55,10 @@ export interface DesignerWidgetProps {
   designerMode?: DesignerDocumentMode;
   /** Used for the exported JSON filename (survey/template display name). */
   exportBaseName?: string;
-  /** Records already collected. Drives the field-ID warning; omit for templates. */
+  /**
+   * Records already collected. Omit for templates.
+   * Field delete warns when this is greater than 0 and the field existed at open.
+   */
   existingRecordCount?: number;
   /** Called with exported JSON `File` on Done, or undefined on cancel. */
   onClose: (notebookJsonFile: File | undefined) => void;
@@ -118,23 +123,6 @@ export function DesignerWidget({
     };
   }, [notebook]);
 
-  // Fields present at load. Built from the same `processedNotebook` the store is
-  // created from, so fields added later are absent and skip the warning.
-  const originalFieldIdentifiers = useMemo(
-    () =>
-      new Set(
-        Object.values(processedNotebook?.uiSpec.present.fields ?? {})
-          .map(field => field.designerIdentifier)
-          .filter((id): id is string => Boolean(id))
-      ),
-    [processedNotebook]
-  );
-
-  const editingContextValue = useMemo(
-    () => ({existingRecordCount, originalFieldIdentifiers}),
-    [existingRecordCount, originalFieldIdentifiers]
-  );
-
   // 2. Keep one Redux store for a notebook identity; do not reset on same-notebook refetch.
   const [store, setStore] = useState(() =>
     createDesignerStore(processedNotebook, debug, designerMode)
@@ -143,6 +131,24 @@ export function DesignerWidget({
   useEffect(() => {
     setStore(createDesignerStore(processedNotebook, debug, designerMode));
   }, [notebookIdentity, debug, designerMode]);
+
+  // Fields present at load. Read from the store as created, not from
+  // `processedNotebook`: a same-notebook refetch re-injects fresh random
+  // identifiers there while the store keeps the originals.
+  const originalFieldIdentifiers = useMemo(
+    () =>
+      new Set(
+        Object.values(store.getState().notebook.uiSpec.present.fields)
+          .map(field => field.designerIdentifier)
+          .filter((id): id is string => Boolean(id))
+      ),
+    [store]
+  );
+
+  const editingContextValue = useMemo(
+    () => ({existingRecordCount, originalFieldIdentifiers}),
+    [existingRecordCount, originalFieldIdentifiers]
+  );
 
   // Local UI state
   const [loading, setLoading] = useState(true);
@@ -214,6 +220,7 @@ export function DesignerWidget({
         children: [
           {index: true, element: <Navigate to="/design/0" replace />},
           {path: 'info', element: <InfoPanel />},
+          {path: 'setup', element: <SetupFormPanel />},
           {path: 'design/*', element: <DesignPanel />},
         ],
       },
@@ -240,7 +247,7 @@ export function DesignerWidget({
         }}
       >
         <Typography variant="h4" sx={{mb: 2, fontWeight: 'bold'}}>
-          Notebook Editor
+          {config.notebookNameCapitalized} Editor
         </Typography>
         <CircularProgress sx={{color: '#669911'}} />
       </Box>
@@ -268,7 +275,7 @@ export function DesignerWidget({
             <AppBar position="static" color="default" elevation={1}>
               <Toolbar sx={{justifyContent: 'space-between'}}>
                 <Typography variant="h6" sx={{fontWeight: 'bold'}}>
-                  Notebook Editor
+                  {config.notebookNameCapitalized} Editor
                 </Typography>
                 <IconButton
                   aria-label="close designer"

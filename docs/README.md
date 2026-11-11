@@ -9,7 +9,8 @@ just be made available as part of the repository.
 
 ## Writing Documentation
 
-For developer documentation, just add markdown formatted files in the `docs/source/markdown` directory.
+For developer documentation, just add markdown formatted files in the
+`developer/docs/source/markdown` directory.
 Since the developer documentation is not intended for user-facing publication, this can be
 in whatever form is useful to future developers.
 

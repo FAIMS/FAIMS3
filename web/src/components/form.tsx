@@ -10,6 +10,7 @@ import {
 } from 'react-hook-form';
 import {z} from 'zod';
 import {Button, ButtonProps} from '@/components/ui/button';
+import {Progress} from '@/components/ui/progress';
 import {
   Form as FormProvider,
   FormControl,
@@ -21,6 +22,7 @@ import {
   useFormField,
 } from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
+import {Textarea} from '@/components/ui/textarea';
 import {Checkbox} from '@/components/ui/checkbox';
 import {Label} from '@/components/ui/label';
 import React, {useEffect, useRef, useState} from 'react';
@@ -39,6 +41,8 @@ export interface Field {
   name: string;
   label?: string;
   description?: string;
+  /** Draws a required marker after the label. Validation is still the schema's job. */
+  required?: boolean;
   schema: z.ZodSchema;
   type?: string;
   options?: {label: string; value: string; description?: string}[];
@@ -56,6 +60,10 @@ export interface Field {
   maxLength?: number;
   /** Optional stable selector for e2e tests. */
   testId?: string;
+  /** When `type` is `file`, allow choosing more than one file. The value is `File[]`. */
+  multiple?: boolean;
+  /** When `type` is `file`, the input `accept` attribute. */
+  accept?: string;
   /** Inline label beside the control when `type` is `checkbox` (defaults to `label`) */
   checkboxLabel?: string;
   /** When true, optional select fields show a clear button to reset the value. */
@@ -132,6 +140,7 @@ export function Form<
   footer = undefined,
   disableSubmission,
   watch,
+  submitProgress,
 }: {
   fields: TFields;
   dividers?: Divider[];
@@ -148,6 +157,11 @@ export function Form<
   };
   /** Per-field watchers; merged with each field's `onChange`. */
   watch?: Partial<Record<string, (value: unknown) => void>>;
+  /**
+   * 0–1 while `onSubmit` is uploading a file. Shows a bar and percent on the
+   * submit button. Omit for requests that have no byte progress.
+   */
+  submitProgress?: number | null;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -243,6 +257,7 @@ export function Form<
                 name,
                 label,
                 description,
+                required,
                 type,
                 options,
                 excludedBy,
@@ -255,6 +270,8 @@ export function Form<
                 checkboxLabel,
                 clearable,
                 testId,
+                multiple,
+                accept,
               },
               index
             ) => {
@@ -282,7 +299,20 @@ export function Form<
                     render={({field}) =>
                       type === 'checkbox' ? (
                         <FormItem>
-                          {label && <FormLabel>{label}</FormLabel>}
+                          {label && (
+                            <FormLabel>
+                              {label}
+                              {required && (
+                                <span
+                                  aria-hidden="true"
+                                  className="text-destructive"
+                                >
+                                  {' '}
+                                  *
+                                </span>
+                              )}
+                            </FormLabel>
+                          )}
                           {description && (
                             <FormDescription>{description}</FormDescription>
                           )}
@@ -301,7 +331,20 @@ export function Form<
                         </FormItem>
                       ) : (
                         <FormItem>
-                          {label && <FormLabel>{label}</FormLabel>}
+                          {label && (
+                            <FormLabel>
+                              {label}
+                              {required && (
+                                <span
+                                  aria-hidden="true"
+                                  className="text-destructive"
+                                >
+                                  {' '}
+                                  *
+                                </span>
+                              )}
+                            </FormLabel>
+                          )}
                           {description && (
                             <FormDescription>{description}</FormDescription>
                           )}
@@ -361,6 +404,8 @@ export function Form<
                             ) : type === 'file' ? (
                               <Input
                                 type="file"
+                                multiple={multiple}
+                                accept={accept}
                                 min={min}
                                 max={max}
                                 step={step}
@@ -368,10 +413,26 @@ export function Form<
                                 className="cursor-pointer"
                                 placeholder={placeholder}
                                 data-testid={testId}
-                                onChange={event =>
-                                  event.target.files &&
-                                  field.onChange(event.target.files[0])
-                                }
+                                onChange={event => {
+                                  const chosen = event.target.files;
+                                  if (!chosen || chosen.length === 0) {
+                                    field.onChange(multiple ? [] : undefined);
+                                    return;
+                                  }
+                                  field.onChange(
+                                    multiple ? Array.from(chosen) : chosen[0]
+                                  );
+                                }}
+                              />
+                            ) : type === 'textarea' ? (
+                              <Textarea
+                                {...field}
+                                disabled={isDisabled}
+                                value={field.value ?? ''}
+                                placeholder={placeholder}
+                                maxLength={maxLength}
+                                rows={4}
+                                data-testid={testId}
                               />
                             ) : (
                               <Input
@@ -445,6 +506,20 @@ export function Form<
             {disableSubmission.reason}
           </p>
         )}
+        {isSubmitting &&
+        submitProgress !== undefined &&
+        submitProgress !== null ? (
+          <div className="flex flex-col gap-1.5">
+            <Progress
+              value={Math.round(Math.min(1, Math.max(0, submitProgress)) * 100)}
+              label="Upload progress"
+            />
+            <p className="text-xs text-muted-foreground">
+              {Math.round(Math.min(1, Math.max(0, submitProgress)) * 100)}%
+              complete
+            </p>
+          </div>
+        ) : null}
         <Button
           type="submit"
           variant={submitButtonVariant}
@@ -452,7 +527,13 @@ export function Form<
           disabled={isSubmitDisabled}
           data-testid={submitButtonTestId}
         >
-          {submitButtonText}
+          {isSubmitting &&
+          submitProgress !== undefined &&
+          submitProgress !== null
+            ? submitProgress > 0
+              ? `Uploading… ${Math.round(submitProgress * 100)}%`
+              : 'Preparing upload…'
+            : submitButtonText}
         </Button>
       </form>
     </FormProvider>

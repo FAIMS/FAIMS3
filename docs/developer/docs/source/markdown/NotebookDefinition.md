@@ -76,7 +76,7 @@ Dropped from the typed core (not migrated into `custom`): `accesses`, `ispublic`
 
 ### Zod models and versioned types
 
-`library/data-model/src/uiSpecification/types.ts` defines the notebook JSON model in **versioned blocks** with paired inferred types — `NotebookDefinitionV1Schema` / `NotebookDefinitionV1`, `NotebookUiSpecV1Schema`, `NotebookMetadataV1Schema`, `TemplateDefinitionV1Schema`, `CompiledNotebookDefinitionV1Schema`, … — following the `projectsDB/types.ts` / `templatesDB/types.ts` convention. The unversioned names (`NotebookDefinitionSchema`, `NotebookDefinition`, `TemplateDefinition`, …) are **aliases of the latest block**; import those unless you are writing a migration step. `schemaVersion` is validated by `NotebookSchemaSemverSchema` (`uiSpecification/schemaVersion.ts`).
+`library/data-model/src/uiSpecification/types.ts` defines the notebook JSON model in **versioned blocks** named after `uiSpec.schemaVersion` (`V1` = `1.0.0`, `V1_0_1` = `1.0.1`, …) with paired inferred types (`NotebookDefinitionV1Schema` / `NotebookDefinitionV1`, `NotebookDefinitionV1_0_1Schema`, …). Unchanged envelopes (settings, metadata) are aliased forward. The unversioned names (`NotebookDefinitionSchema`, `NotebookDefinition`, `TemplateDefinition`, …) are **aliases of the latest block**; import those unless you are writing a migration step. `schemaVersion` is validated by `NotebookSchemaSemverSchema` (`uiSpecification/schemaVersion.ts`).
 
 ## Deploying an upgrade
 
@@ -84,15 +84,15 @@ Step-by-step rollout (Couch migrate, validation, deleting `metadata-*` DBs, when
 
 ## API surfaces
 
-| Operation            | Route                                    | Body                                                                                           |
-| -------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Get full survey      | `GET /api/notebooks/:id`                 | Full `ProjectDocument` (+ optional `recordCount`)                                              |
-| List surveys         | `GET /api/notebooks`                     | Lean `ProjectListItem` (no `uiSpecification`). Pass `includeByteCount=true` for storage sizes. |
-| Device directory     | `GET /api/directory`                     | Cheap alias of the notebooks list (no `byteCount`)                                             |
-| Update title / blurb | `PUT /api/notebooks/:id`                 | `{ name?, description?, disableQuickShare? }` partial; `UPDATE_PROJECT_DETAILS`                |
-| Replace design       | `PUT /api/notebooks/:id/uiSpecification` | Loose JSON; server runs `migrateNotebook` + strict validation; `UPDATE_PROJECT_UISPEC`         |
-| Create from scratch  | `POST /api/notebooks`                    | `{ name, description?, uiSpecification, teamId? }`                                             |
-| Create from template | `POST /api/notebooks`                    | `{ name, description?, template_id, teamId? }`                                                 |
+| Operation            | Route                                    | Body                                                                                                                                                                 |
+| -------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Get full survey      | `GET /api/notebooks/:id`                 | Full `ProjectDocument` (+ optional `recordCount`)                                                                                                                    |
+| List surveys         | `GET /api/notebooks`                     | Lean `ProjectListItem` (no `uiSpecification`). Pass `includeByteCount=true` for storage sizes.                                                                       |
+| Device directory     | `GET /api/directory`                     | Cheap alias of the notebooks list (no `byteCount`). `contextualLayers` is the ready keep-set; see [Map Layers](./MapLayers.md#survey-listings-and-on-device-copies). |
+| Update title / blurb | `PUT /api/notebooks/:id`                 | `{ name?, description?, disableQuickShare? }` partial; `UPDATE_PROJECT_DETAILS`                                                                                      |
+| Replace design       | `PUT /api/notebooks/:id/uiSpecification` | Loose JSON; server runs `migrateNotebook` + strict validation; `UPDATE_PROJECT_UISPEC`                                                                               |
+| Create from scratch  | `POST /api/notebooks`                    | `{ name, description?, uiSpecification, teamId? }`                                                                                                                   |
+| Create from template | `POST /api/notebooks`                    | `{ name, description?, template_id, teamId? }`                                                                                                                       |
 
 Templates mirror this: `PUT /api/templates/:id` for optional `name` / `description`, `PUT /api/templates/:id/uiSpecification` for the design bundle. **Create:** `POST /api/templates` with `{ name, description?, uiSpecification, teamId?, isPublic? }`.
 

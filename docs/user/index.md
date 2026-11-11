@@ -23,6 +23,7 @@ maxdepth: 1
 ---
 
 core/about.md
+authoring/first-notebook-tutorial.md
 data-collection/getting-started-data-collection.md
 authoring/quick-start-researchers.md
 admin/intro-admin.md

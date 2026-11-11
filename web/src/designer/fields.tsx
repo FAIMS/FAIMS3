@@ -8,7 +8,8 @@
 import {CategoryKey} from './field-categories';
 import {FieldType} from './state/initial';
 
-const fields: {[key: string]: FieldType} = {
+// Omit the export name as designer builds and adds in dynamically
+const fields: {[key: string]: Omit<FieldType, 'exportName'>} = {
   // Canonical "Text field" entry — new notebooks emit `faims-custom::TextField`.
   // Existing notebooks that still reference `FAIMSTextField` (or the legacy
   // `formik-material-ui::MultipleTextField`) are migrated to this canonical
@@ -164,6 +165,10 @@ const fields: {[key: string]: FieldType} = {
       name: 'file-upload-field',
       id: 'file-upload-field',
       helperText: '',
+      // Optional attachment-count constraints.
+      // null means no additional minimum or maximum restriction.
+      minItems: null,
+      maxItems: null,
     },
     initialValue: null,
     humanReadableName: 'Upload a File',
@@ -202,7 +207,7 @@ const fields: {[key: string]: FieldType} = {
       variant: 'outlined',
       required: false,
       featureType: 'Point',
-      zoom: 12,
+      zoom: 14,
       label: 'Map Field',
       geoTiff: '',
     },
@@ -235,10 +240,7 @@ const fields: {[key: string]: FieldType} = {
         // Default to expanded checklist mode; users can opt into compact dropdown.
         expandedChecklist: true,
         enableOtherOption: false,
-        options: [
-          {value: 'Default', label: 'Default'},
-          {value: 'Default2', label: 'Default2'},
-        ],
+        options: [],
       },
     },
     initialValue: [],
@@ -264,9 +266,7 @@ const fields: {[key: string]: FieldType} = {
       required: false,
       ElementProps: {
         enableOtherOption: false,
-        options: [
-          {value: '1', label: '1', RadioProps: {id: 'radio-group-field-1'}},
-        ],
+        options: [],
       },
       helperText: '',
     },
@@ -309,8 +309,8 @@ const fields: {[key: string]: FieldType} = {
       related_type: '',
       relation_type: 'faims-core::Child',
       multiple: false,
-      allowLinkToExisting: true,
-      hideCreateAnotherButton: false,
+      allowLinkToExisting: false,
+      hideCreateAnotherButton: true,
     },
     humanReadableName: 'Add Related Record',
     humanReadableDescription: 'Add a child or other linked record',
@@ -383,6 +383,10 @@ const fields: {[key: string]: FieldType} = {
       helperText: '',
       advancedHelperText: '',
       label: 'Take Photo',
+      // Optional photo-count constraints.
+      // null means no additional minimum or maximum restriction.
+      minItems: null,
+      maxItems: null,
     },
     initialValue: null,
     humanReadableName: 'Take Photo',
@@ -613,6 +617,13 @@ export const getFieldNames = () => {
  * @param fieldType - Key in the `fields` map (e.g. `FAIMSTextField`).
  * @returns Clone of the template; invalid keys produce a clone of `undefined` (callers should validate).
  */
-export const getFieldSpec = (fieldType: string) => {
-  return JSON.parse(JSON.stringify(fields[fieldType])) as FieldType;
+export const getFieldSpec = (fieldType: string): FieldType => {
+  const spec = JSON.parse(JSON.stringify(fields[fieldType])) as Omit<
+    FieldType,
+    'exportName'
+  >;
+  return {
+    ...spec,
+    exportName: spec['component-parameters'].name,
+  };
 };

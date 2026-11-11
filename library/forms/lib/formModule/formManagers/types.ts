@@ -111,7 +111,7 @@ export interface FormManagerAdditions {
   };
   /**
    * When in full mode, indicates whether any field is currently saving an attachment.
-   * Section navigation should be blocked while this is true.
+   * Section navigation and creating related records should be blocked while this is true.
    */
   attachmentSaving?: {
     isSaving: () => boolean;

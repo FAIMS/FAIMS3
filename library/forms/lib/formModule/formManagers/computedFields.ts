@@ -13,7 +13,7 @@ import {
   RecordContext,
   CompiledUiSpecModel,
 } from '@faims3/data-model';
-import {formDataExtractor} from '../../utils';
+import {formDataExtractor, writeFieldUpdates} from '../../utils';
 import {FaimsForm} from '../types';
 
 /**
@@ -48,13 +48,7 @@ export function onChangeComputedFields({
     context,
   });
 
-  for (const [k, v] of Object.entries(updates)) {
-    form.setFieldValue(
-      k,
-      {...(form.state.values[k] ?? {}), data: v},
-      {dontRunListeners: !runListeners}
-    );
-  }
+  writeFieldUpdates({form, updates, runListeners});
 
   return changes;
 }

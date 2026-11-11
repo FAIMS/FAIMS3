@@ -19,13 +19,21 @@ export default defineConfig({
     react(),
   ],
   resolve: {
-    alias: {'@': path.resolve(__dirname, './src')},
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
     dedupe: ['@mui/material', '@emotion/react', '@emotion/styled'],
   },
   server: {
     port: 3001,
     host: true,
+    // Fail rather than drift to 3002, which the env files' 3001 URLs would miss.
+    strictPort: true,
     fs: {allow: ['..']},
+  },
+  // Same port when serving the build, so CI and the dev stack agree.
+  preview: {
+    port: 3001,
   },
   optimizeDeps: {
     include: [

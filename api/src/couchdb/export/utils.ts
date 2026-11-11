@@ -3,6 +3,8 @@ import {
   Annotations,
   FAIMSAttachmentReference,
   FieldSummary,
+  sanitizeExportColumnName,
+  uniqueFieldExportColumnName,
 } from '@faims3/data-model';
 import {generateFilenameForAttachment} from './attachmentExport';
 
@@ -12,7 +14,7 @@ import {generateFilenameForAttachment} from './attachmentExport';
  * ZIP files support paths up to 65535 bytes, but many tools have issues with
  * paths > 255 chars. We use conservative limits per component:
  * - viewID: 30 chars (directory name)
- * - fieldId: 30 chars (subdirectory name)
+ * - exportName: 30 chars (subdirectory name; sanitised then truncated)
  * - hrid (filename base): 40 chars
  * - csv filename: 40
  *
@@ -20,7 +22,7 @@ import {generateFilenameForAttachment} from './attachmentExport';
  * This leaves room for pathPrefix in full exports.
  */
 export const MAX_VIEW_ID_LENGTH = 30;
-export const MAX_FIELD_ID_LENGTH = 30;
+export const MAX_EXPORT_NAME_SEGMENT_LENGTH = 30;
 export const MAX_HRID_LENGTH = 40;
 export const MAX_CSV_FILENAME_LENGTH = 40;
 
@@ -53,11 +55,20 @@ const MAP_COMPONENT = 'mapping-plugin::MapFormField';
 const RELATIONSHIP_COMPONENT = 'faims-custom::RelatedRecordSelector';
 
 /**
- * generate a suitable value for the CSV export from a field value.  Serialise
- * filenames, gps coordinates, etc.
+ * Serialise one field value into a map of export column names → values.
+ *
+ * Column keys always come from a sanitised {@link exportName} (the editable
+ * CSV / GIS header). Attachment ZIP path segments use the same sanitised
+ * name so the CSV cell matches the archive folder. Uploaded notebooks may
+ * skip designer slugify, so this function never interpolates the stored
+ * value raw — sanitise before a ZIP path or Content-Disposition filename.
  *
  * Serialization is determined by the field's component (namespace + name), not
  * by the return type.
+ *
+ * Suffix column names must match {@link extraExportColumnNames} /
+ * `EXTRA_EXPORT_COLUMN_SUFFIXES` so uniquify reserves the same keys
+ * `csvFormatValue` writes.
  *
  * TODO it would be better to merge the header generation and value formatting
  * logic together - currently some parts are encoded twice in two different
@@ -66,18 +77,18 @@ const RELATIONSHIP_COMPONENT = 'faims-custom::RelatedRecordSelector';
  * @param params
  *   - componentNamespace: The component namespace from the UI spec.
  *   - componentName: The component name from the UI spec.
- *   - fieldName: The column/field name.
- *   - value: The raw value to serialize.
+ *   - exportName: Editable column header (`FieldSummary.exportName`).
+ *   - value: The raw value to serialize (looked up by storage id).
  *   - hrid: Human-readable ID (for attachment filenames, etc).
  *   - filenames: List to which CSV attachment filenames are appended.
  *   - viewsetId: The current view set ID for this export context.
  *
- * @returns Object mapping column names to their serialized values.
+ * @returns Object mapping export column names to their serialized values.
  */
 export const csvFormatValue = ({
   componentNamespace,
   componentName,
-  fieldName,
+  exportName,
   value,
   hrid,
   filenames,
@@ -85,7 +96,7 @@ export const csvFormatValue = ({
 }: {
   componentNamespace: string;
   componentName: string;
-  fieldName: string;
+  exportName: string;
   value: any;
   hrid: string;
   filenames: string[];
@@ -93,21 +104,25 @@ export const csvFormatValue = ({
 }) => {
   const result: {[key: string]: any} = {};
   const componentKey = getComponentKey(componentNamespace, componentName);
+  // Defence in depth: callers should already pass a sanitised name, but
+  // csvFormatValue is also used directly from tests and must not trust
+  // a raw stored exportName.
+  const columnName = sanitizeExportColumnName(exportName);
 
   // Handle attachment/file field serialization.
   if (ATTACHMENT_COMPONENTS.has(componentKey)) {
     if (Array.isArray(value)) {
       if (value.length === 0) {
-        result[fieldName] = '';
+        result[columnName] = '';
         return result;
       }
       // Only serialize valid files with a file_type.
       const valueList = value
         .filter((f: FAIMSAttachmentReference) => !!f.file_type)
         .map((fInfo: FAIMSAttachmentReference) => {
-          // Generate a CSV-safe filename for this attachment and track it.
+          // ZIP folder and CSV cell share the sanitised export name.
           const filename = generateFilenameForAttachment({
-            fieldId: fieldName,
+            exportName: columnName,
             hrid,
             viewID: viewsetId,
             fileMimeType: fInfo.file_type,
@@ -116,10 +131,10 @@ export const csvFormatValue = ({
           filenames.push(filename);
           return filename;
         });
-      result[fieldName] = valueList.join(';');
+      result[columnName] = valueList.join(';');
     } else {
       // If somehow not an array, just emit whatever is there.
-      result[fieldName] = value;
+      result[columnName] = value;
     }
     return result;
   }
@@ -133,20 +148,20 @@ export const csvFormatValue = ({
       value.geometry.coordinates.length === 2
     ) {
       // Emit lat/long (GeoJSON is lng,lat order).
-      result[fieldName] = value;
-      result[`${fieldName}_latitude`] = value.geometry.coordinates[1];
-      result[`${fieldName}_longitude`] = value.geometry.coordinates[0];
+      result[columnName] = value;
+      result[`${columnName}_latitude`] = value.geometry.coordinates[1];
+      result[`${columnName}_longitude`] = value.geometry.coordinates[0];
       // Accuracy, if available.
-      result[`${fieldName}_accuracy`] =
+      result[`${columnName}_accuracy`] =
         value.properties && value.properties.accuracy
           ? value.properties.accuracy
           : '';
     } else {
       // Default to blank on error/malformed shape.
-      result[fieldName] = value;
-      result[`${fieldName}_latitude`] = '';
-      result[`${fieldName}_longitude`] = '';
-      result[`${fieldName}_accuracy`] = '';
+      result[columnName] = value;
+      result[`${columnName}_latitude`] = '';
+      result[`${columnName}_longitude`] = '';
+      result[`${columnName}_accuracy`] = '';
     }
     return result;
   }
@@ -161,21 +176,21 @@ export const csvFormatValue = ({
           value.manuallyEnteredAddress) ||
         '';
 
-      result[fieldName] = display;
+      result[columnName] = display;
 
       // Always emit every address piece, even if empty.
       const addr = value.address || {};
-      result[`${fieldName}_house_number`] = addr.house_number ?? '';
-      result[`${fieldName}_road`] = addr.road ?? '';
-      result[`${fieldName}_suburb`] = addr.suburb ?? '';
-      result[`${fieldName}_town`] = addr.town ?? '';
-      result[`${fieldName}_state`] = addr.state ?? '';
-      result[`${fieldName}_postcode`] = addr.postcode ?? '';
-      result[`${fieldName}_country`] = addr.country ?? '';
-      result[`${fieldName}_country_code`] = addr.country_code ?? '';
+      result[`${columnName}_house_number`] = addr.house_number ?? '';
+      result[`${columnName}_road`] = addr.road ?? '';
+      result[`${columnName}_suburb`] = addr.suburb ?? '';
+      result[`${columnName}_town`] = addr.town ?? '';
+      result[`${columnName}_state`] = addr.state ?? '';
+      result[`${columnName}_postcode`] = addr.postcode ?? '';
+      result[`${columnName}_country`] = addr.country ?? '';
+      result[`${columnName}_country_code`] = addr.country_code ?? '';
 
       // Emit the manually entered address verbatim if present.
-      result[`${fieldName}_manual`] =
+      result[`${columnName}_manual`] =
         typeof value.manuallyEnteredAddress === 'string'
           ? value.manuallyEnteredAddress
           : '';
@@ -194,16 +209,16 @@ export const csvFormatValue = ({
       Array.isArray(value.features[0].geometry.coordinates) &&
       value.features[0].geometry.coordinates.length === 2
     ) {
-      result[fieldName] = value;
-      result[`${fieldName}_latitude`] =
+      result[columnName] = value;
+      result[`${columnName}_latitude`] =
         value.features[0].geometry.coordinates[1];
-      result[`${fieldName}_longitude`] =
+      result[`${columnName}_longitude`] =
         value.features[0].geometry.coordinates[0];
       return result;
     } else {
-      result[fieldName] = value;
-      result[`${fieldName}_latitude`] = '';
-      result[`${fieldName}_longitude`] = '';
+      result[columnName] = value;
+      result[`${columnName}_latitude`] = '';
+      result[`${columnName}_longitude`] = '';
     }
     return result;
   }
@@ -211,7 +226,7 @@ export const csvFormatValue = ({
   // Handle relationship fields (array of relations, as "type/id" joined with ;)
   if (componentKey === RELATIONSHIP_COMPONENT) {
     if (Array.isArray(value)) {
-      result[fieldName] = value
+      result[columnName] = value
         .map((v: any) => {
           const relation_name = Array.isArray(v.relation_type_vocabPair)
             ? v.relation_type_vocabPair[0]
@@ -220,13 +235,13 @@ export const csvFormatValue = ({
         })
         .join(';');
     } else {
-      result[fieldName] = value;
+      result[columnName] = value;
     }
     return result;
   }
 
   // Default: emit value verbatim.
-  result[fieldName] = value;
+  result[columnName] = value;
   return result;
 };
 
@@ -235,22 +250,27 @@ export const csvFormatValue = ({
  */
 export const csvFormatAnnotation = (
   field: FieldSummary,
-  {annotation, uncertainty}: Annotations
+  {annotation, uncertainty}: Annotations,
+  exportName: string = sanitizeExportColumnName(field.exportName)
 ) => {
   const result: {[key: string]: any} = {};
   if (field.annotation !== '')
-    result[field.name + '_' + field.annotation] = annotation;
+    result[exportName + '_' + field.annotation] = annotation;
   if (field.uncertainty !== '')
-    result[field.name + '_' + field.uncertainty] = uncertainty
+    result[exportName + '_' + field.uncertainty] = uncertainty
       ? 'true'
       : 'false';
   return result;
 };
 
 /**
- * Format the data for a single record for CSV export
+ * Format the data for a single record for CSV / GIS export.
  *
- * @returns a map of column headings to values
+ * Looks up values and annotations by {@link FieldSummary.name} (storage id).
+ * Emits columns keyed by a sanitised, uniquified
+ * {@link FieldSummary.exportName} (falls back to {@link FieldSummary.name}).
+ *
+ * @returns a map of export column headings to values
  */
 export const convertDataForOutput = (
   fields: FieldSummary[],
@@ -261,12 +281,18 @@ export const convertDataForOutput = (
   viewsetId: string
 ) => {
   let result: {[key: string]: any} = {};
-  fields.forEach((field: any) => {
+  const usedExportNames = new Set<string>();
+  fields.forEach((field: FieldSummary) => {
+    const exportName = uniqueFieldExportColumnName(
+      field.exportName || field.name,
+      usedExportNames,
+      field
+    );
     if (field.name in data) {
       const formattedValue = csvFormatValue({
         componentNamespace: field.componentNamespace,
         componentName: field.componentName,
-        fieldName: field.name,
+        exportName,
         value: data[field.name],
         hrid,
         filenames,
@@ -274,13 +300,64 @@ export const convertDataForOutput = (
       });
       const formattedAnnotation = csvFormatAnnotation(
         field,
-        annotations[field.name] || {}
+        annotations[field.name] || {},
+        exportName
       );
       result = {...result, ...formattedValue, ...formattedAnnotation};
     }
   });
   return result;
 };
+
+/**
+ * Replace File objects in a JSON / GIS record dump with ZIP attachment paths.
+ *
+ * Looks up the editable {@link FieldSummary.exportName} by storage id
+ * (`FieldSummary.name`). Falls back to the field key when exportName is
+ * missing (pre-1.0.1 specs). Mutates `data` in place, matching GET
+ * `/:id/records/`.
+ */
+export function rewriteFileFieldsForJsonExport({
+  data,
+  fields,
+  hrid,
+  viewID,
+  filenames,
+  resolveViewId,
+}: {
+  data: Record<string, unknown>;
+  fields?: FieldSummary[];
+  hrid: string;
+  viewID: string;
+  filenames: string[];
+  resolveViewId?: (fieldName: string) => string;
+}): void {
+  for (const fieldName in data) {
+    const values = data[fieldName];
+    if (values instanceof Array) {
+      const names = values.map(v => {
+        if (v instanceof File) {
+          const resolvedViewID = resolveViewId?.(fieldName) ?? viewID;
+          const exportName =
+            fields?.find(f => f.name === fieldName)?.exportName ?? fieldName;
+          const filename = generateFilenameForAttachment({
+            file: v,
+            exportName,
+            hrid,
+            viewID: resolvedViewID,
+            filenames,
+          });
+          filenames.push(filename);
+          return filename;
+        }
+        return v;
+      });
+      if (names.length > 0) {
+        data[fieldName] = names;
+      }
+    }
+  }
+}
 
 /**
  * Simple deterministic hash function for strings.

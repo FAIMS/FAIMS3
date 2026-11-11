@@ -41,7 +41,7 @@ export const selectCustomMetadata = (state: AppState) =>
 export const selectUiViewSets = (state: AppState) =>
   selectPresentUiSpec(state).viewsets;
 
-/** Tab order of form ids in the designer chrome. */
+/** Tab order of form ids in the designer. */
 export const selectVisibleTypes = (state: AppState) =>
   selectPresentUiSpec(state).visible_types;
 

@@ -257,4 +257,14 @@ describe('normalizeNotebookTemplateUiSpecification', () => {
     delete bundle.planTemplates[0].label;
     expect(() => normalizeNotebookTemplateUiSpecification(bundle)).toThrow();
   });
+
+  it('strips leftover metadata.setup so notebook instance values are not persisted', () => {
+    const bundle = template();
+    bundle.metadata.setup = {technician: 'Thomas Bevan'};
+    const definition = normalizeNotebookTemplateUiSpecification(bundle);
+    expect(definition.metadata.setup).toBeUndefined();
+    expect(definition.metadata.information).toEqual(
+      bundle.metadata.information
+    );
+  });
 });

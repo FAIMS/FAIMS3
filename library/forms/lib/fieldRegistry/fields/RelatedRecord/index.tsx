@@ -48,7 +48,10 @@ import {useMemo, useState} from 'react';
 import {FullFormManagerConfig} from '../../../formModule/formManagers/types';
 import {BaseFieldParameters} from '@faims3/data-model';
 import {FormFieldContextProps} from '../../../formModule/types';
-import {RelatedRecordRenderer} from '../../../rendering/fields/view/specialised/RelatedRecord';
+import {
+  RELATED_HYDRATION_QUERY_KEY,
+  RelatedRecordRenderer,
+} from '../../../rendering/fields/view/specialised/RelatedRecord';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {
@@ -525,6 +528,11 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
   const queryClient = useQueryClient();
 
+  // Route changes are blocked while a photo/file is still writing to PouchDB.
+  // Creating a related record would persist the child but never navigate, so
+  // refuse the action until the attachment save finishes.
+  const isAttachmentSaving = props.config.attachmentSaving?.isSaving() === true;
+
   // Field value may be a single link object or an array when `multiple` is
   // true; normalize for mapping.
   const rawValue = props.state.value?.data || undefined;
@@ -555,6 +563,12 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     error: createError,
   } = useMutation({
     mutationFn: async () => {
+      if (props.config.attachmentSaving?.isSaving()) {
+        throw new Error(
+          'Wait for photos to finish saving before creating a new record.'
+        );
+      }
+
       // The engine derives the related form, the relation and its vocab pair
       // from this field, and writes the new row's own edge.
       const res = await props.config.dataEngine().form.createRelatedRecord({
@@ -601,8 +615,35 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
   const [linkError, setLinkError] = useState<string | undefined>(undefined);
 
+  // One query per linked id (order matches `normalizedLinks`) for list display
+  // and permission checks.
+  const relatedRecordQueries = useQueries({
+    queries: normalizedLinks.map(({record_id}) => ({
+      queryKey: [...RELATED_HYDRATION_QUERY_KEY, record_id],
+      queryFn: async () => {
+        const record = await props.config
+          .dataEngine()
+          .hydrated.getHydratedRecord({
+            recordId: record_id,
+            config: {conflictBehaviour: 'pickLast'},
+          });
+
+        return record ?? undefined;
+      },
+      networkMode: 'always',
+      staleTime: 0,
+      refetchOnMount: true,
+    })),
+  });
+
   const handleLinkExisting = async (record: HydratedRecord) => {
     setLinkError(undefined);
+    const engine = props.config.dataEngine();
+    // The engine judges whether a dead link still holds a single-link field,
+    // as it does on create, so the two paths cannot disagree.
+    const deletedTargetIds = props.multiple
+      ? undefined
+      : await engine.form.deletedLinkTargets(normalizedLinks);
     // Both halves come from one place, so a caller outside a form derives the
     // same link this field does.
     const {fieldValue, relationship} = relatedLinkWrites({
@@ -617,11 +658,12 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       // Matches how detaching writes it back: an array while the field takes
       // many, a bare entry while it takes one.
       isMultiple: props.multiple,
+      deletedTargetIds,
     });
 
     // The field value is form state; the target's revision is not.
     props.setFieldData(fieldValue);
-    await props.config.dataEngine().hydrated.updateRevision(
+    await engine.hydrated.updateRevision(
       {
         ...record.revision,
         relationship,
@@ -646,27 +688,6 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       );
     }
   };
-
-  // One query per linked id (order matches `normalizedLinks`) for list display
-  // and permission checks.
-  const relatedRecordQueries = useQueries({
-    queries: normalizedLinks.map(({record_id}) => ({
-      queryKey: ['related-hydration', record_id],
-      queryFn: async () => {
-        const record = await props.config
-          .dataEngine()
-          .hydrated.getHydratedRecord({
-            recordId: record_id,
-            config: {conflictBehaviour: 'pickLast'},
-          });
-
-        return record ?? undefined;
-      },
-      networkMode: 'always',
-      staleTime: 0,
-      refetchOnMount: true,
-    })),
-  });
 
   // Navigates to an existing link
   const handleLinkClick = (recordId: string) => {
@@ -732,7 +753,9 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           : remaining[0];
     props.setFieldData(next as RelatedFieldValue);
     await props.config.trigger.commit();
-    await queryClient.invalidateQueries({queryKey: ['related-hydration']});
+    await queryClient.invalidateQueries({
+      queryKey: RELATED_HYDRATION_QUERY_KEY,
+    });
   };
 
   // Delete the linked record entirely (same as deleting from that record’s page).
@@ -762,7 +785,9 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         baseRevisionId: peer.revision._id,
         userId: props.config.user,
       });
-      await queryClient.invalidateQueries({queryKey: ['related-hydration']});
+      await queryClient.invalidateQueries({
+        queryKey: RELATED_HYDRATION_QUERY_KEY,
+      });
       setDeleteTarget(null);
     } catch (e) {
       setDeleteError(
@@ -859,21 +884,31 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
       {/* Action Buttons */}
       <div style={{display: 'flex', gap: 8, marginBottom: 16}}>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => createNewRecord()}
-          disabled={isCreating}
-          startIcon={
-            isCreating ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : (
-              <AddIcon />
-            )
+        <Tooltip
+          title={
+            isAttachmentSaving
+              ? 'Wait for photos to finish saving before creating a new record.'
+              : ''
           }
         >
-          {isCreating ? 'Creating...' : 'Add new ' + relatedRecordTypeLabel}
-        </Button>
+          <span>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => createNewRecord()}
+              disabled={isCreating || isAttachmentSaving}
+              startIcon={
+                isCreating || isAttachmentSaving ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  <AddIcon />
+                )
+              }
+            >
+              {isCreating ? 'Creating...' : 'Add new ' + relatedRecordTypeLabel}
+            </Button>
+          </span>
+        </Tooltip>
 
         {props.allowLinkToExisting && (
           <Button

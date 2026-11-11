@@ -6,5 +6,8 @@
     "// SPDX-License-Identifier: Apache-2.0"
   ],
   "library/forms/lib/**/*.ts?(x)": ["// SPDX-License-Identifier: Apache-2.0"],
+  "library/build-config/src/**/*.ts?(x)": [
+    "// SPDX-License-Identifier: Apache-2.0"
+  ],
   "ignore": ["library/data-model/tests/eqTestSupport.ts"]
 }

@@ -10,6 +10,12 @@ import {
   optionalRootDescriptionField,
   rootDescriptionForApi,
 } from '@/lib/rootDescriptionField';
+import {
+  collectSetupValues,
+  setupFieldsToFormFields,
+  setupSubmissionGate,
+} from '@/lib/setupFormFields';
+import {SetupFormHeading} from './setup-form-heading';
 import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useMemo} from 'react';
@@ -35,8 +41,11 @@ interface CreateProjectFromTemplateFormProps {
  *
  * Team selection mirrors other create flows ({@link getTeamFieldState}). When
  * the template has `ownedByTeamId` and the user may create projects in that
- * team, the dropdown defaults to that team; global creators can clear it to
- * create outside any team.
+ * team, the dropdown defaults to that team; global creators must select
+ * "No team" to create outside any team.
+ *
+ * When the template defines a setup form (#2216), its fields are appended
+ * to the form and the submitted values are sent as `setupValues`.
  *
  * @param {CreateProjectFromTemplateFormProps} props - The props for the form.
  * @returns {JSX.Element} The rendered form.
@@ -73,6 +82,8 @@ export function CreateProjectFromTemplateForm({
     possibleTeams,
   });
 
+  const setupForm = template?.uiSpecification?.uiSpec?.settings?.setupForm;
+  const setupGate = setupForm ? setupSubmissionGate(setupForm) : undefined;
   // Every plan template needs its own config, keyed by plan id, sent as planConfigs
   const plans = usePlanConfigs({
     planTemplates: template?.uiSpecification?.planTemplates ?? [],
@@ -80,15 +91,13 @@ export function CreateProjectFromTemplateForm({
     isLoading: templateLoading,
   });
 
-  const teamLabel = `Create ${config.notebookName} in this team${
-    canCreateGlobally ? ' (optional)' : ''
-  }`;
+  const teamLabel = `Create ${config.notebookName} in this team`;
 
   const teamDescription = canCreateGlobally
     ? defaultTeamId
-      ? `Defaults to the template's team. Clear the selection to create outside any team.`
-      : `Choose a team for this ${config.notebookName}, or leave blank to create outside any team.`
-    : undefined;
+      ? `Defaults to the template's team, or select "No team".`
+      : `Choose a team for this ${config.notebookName}, or select "No team".`
+    : `Choose a team for this ${config.notebookName}.`;
 
   const formFields = useMemo(() => {
     const result: Field[] = [
@@ -114,9 +123,16 @@ export function CreateProjectFromTemplateForm({
       );
     }
 
-    return plans.appendTo({fields: result});
+    const dividers: {index: number; component: React.ReactNode}[] = [];
+    if (setupForm) {
+      dividers.push({index: result.length, component: <SetupFormHeading />});
+      result.push(...setupFieldsToFormFields(setupForm));
+    }
+
+    return plans.appendTo({fields: result, dividers});
   }, [
     canCreateGlobally,
+    setupForm,
     plans,
     possibleTeams,
     showTeamDropdown,
@@ -130,7 +146,8 @@ export function CreateProjectFromTemplateForm({
       unknown
     >
   ) => {
-    const {name, description, team} = values;
+    // `rest` is every other field: the setup form's own values live there.
+    const {name, description, team, ...rest} = values;
     const planConfigs = plans.toPlanConfigs(values);
     const chosenTeamId = resolveTeamId({
       canCreateGlobally,
@@ -149,6 +166,9 @@ export function CreateProjectFromTemplateForm({
         name,
         ...rootDescriptionForApi(description),
         ...(chosenTeamId ? {teamId: chosenTeamId} : {}),
+        ...(setupForm
+          ? {setupValues: collectSetupValues(setupForm, rest)}
+          : {}),
         ...(planConfigs ? {planConfigs} : {}),
       } satisfies PostCreateNotebookInput),
     });
@@ -199,7 +219,17 @@ export function CreateProjectFromTemplateForm({
         submitButtonText={`Create ${config.notebookNameCapitalized}`}
         defaultValues={defaultTeamId ? {team: defaultTeamId} : undefined}
         footer={plans.footer}
-        disableSubmission={plans.gate}
+        // A plan config that is not ready is a hard block. Required setup
+        // fields validate on submit; only multiselects gate here.
+        disableSubmission={
+          plans.gate ??
+          (setupGate
+            ? {
+                disabled: data => setupGate.isBlocked(data),
+                reason: setupGate.reason,
+              }
+            : undefined)
+        }
       />
     </div>
   );

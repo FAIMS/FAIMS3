@@ -34,6 +34,9 @@ export const tokenPayloadSchema = z
     // Present only for impersonation sessions: the user id of the admin who
     // initiated the impersonation. Used for auditing.
     impersonatingUserId: z.string().optional(),
+    // Optional this release so tokens without the claim still parse. Absent
+    // means false (no local password login). Flip to required later.
+    hasLocalProfile: z.boolean().optional(),
   })
   .merge(tokenPermissionsSchema);
 export type TokenPayload = z.infer<typeof tokenPayloadSchema>;
@@ -50,6 +53,8 @@ export interface TokenContents extends DecodedTokenPermissions {
   // Present only for impersonation sessions: the user id of the admin who
   // initiated the impersonation. Used for auditing.
   impersonatingUserId?: string;
+  // Optional this release; absent means false. Flip to required later.
+  hasLocalProfile?: boolean;
 }
 
 // =======================================

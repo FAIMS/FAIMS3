@@ -42,6 +42,7 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
 import {config} from '../buildconfig';
+import {attachContextualLayers} from '../couchdb/mapAssets/store';
 import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {deleteAllInvitesForProject} from '../couchdb/invites';
@@ -236,6 +237,7 @@ api.post(
         teamId: req.body.teamId,
         createdBy: req.user.user_id,
         planConfigs: req.body.planConfigs,
+        setupValues: req.body.setupValues,
       });
     } else if (isFromScratch(req.body)) {
       projectID = await createNotebook({
@@ -295,11 +297,17 @@ api.get(
       );
     }
 
-    res.json({
-      ...project,
-      recordCount: await countRecordsInNotebook(projectId),
-      byteCount: await getByteCount(projectId),
-    } satisfies GetNotebookResponse);
+    // Same fail-open as directory/list: omit layer fields on a map-assets
+    // read error so activation still gets the design payload. An empty
+    // array would be treated as "unlink and delete local files".
+    const [payload] = await attachContextualLayers([
+      {
+        ...project,
+        recordCount: await countRecordsInNotebook(projectId),
+        byteCount: await getByteCount(projectId),
+      },
+    ]);
+    res.json(payload satisfies GetNotebookResponse);
   }
 );
 
@@ -412,7 +420,9 @@ api.put(
   }
 );
 
-// PUT change project team
+// PUT change project team.
+// Omitting `teamId` removes ownership and requires `REMOVE_PROJECT_FROM_TEAM`
+// on the project. Reassigning to a team requires `CHANGE_PROJECT_TEAM`.
 api.put(
   '/:projectId/team',
   requireAuthenticationAPI,
@@ -426,7 +436,24 @@ api.put(
     params: z.object({projectId: z.string()}),
     body: PutChangeNotebookTeamInputSchema,
   }),
-  async ({body: {teamId}, params: {projectId}}, res) => {
+  async (req, res) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const {teamId} = req.body;
+    const {projectId} = req.params;
+    if (
+      !teamId &&
+      !userCanDo({
+        user: req.user,
+        action: Action.REMOVE_PROJECT_FROM_TEAM,
+        resourceId: projectId,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to remove team ownership from this project.'
+      );
+    }
     await changeNotebookTeam({projectId, teamId});
     res.sendStatus(200);
     return;

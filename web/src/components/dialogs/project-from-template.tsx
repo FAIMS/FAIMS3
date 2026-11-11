@@ -37,11 +37,7 @@ export const ProjectFromTemplateDialog = () => {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger>
-          <Button
-            variant="outline"
-            className="bg-primary text-primary-foreground"
-            disabled={true}
-          >
+          <Button disabled={true}>
             <Plus />
             Create {config.notebookNameCapitalized}
           </Button>
@@ -55,10 +51,7 @@ export const ProjectFromTemplateDialog = () => {
   ) : (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button
-          variant="outline"
-          className="bg-primary text-primary-foreground"
-        >
+        <Button>
           <Plus />
           Create {config.notebookNameCapitalized}
         </Button>

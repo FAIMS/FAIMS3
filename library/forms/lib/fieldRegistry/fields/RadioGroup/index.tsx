@@ -4,19 +4,20 @@
  * RadioGroup Component
  * This component renders a group of radio buttons using Material-UI.
  * It integrates with the form system for managing state and includes:
- * - A heading (field label) rendered using FieldWrapper.
+ * - A heading (field heading) rendered using FieldWrapper.
  * - A subheading (help text) rendered using FieldWrapper.
  * - Toggle behavior: clicking a selected radio deselects it.
  * - Rich text labels: option labels support sanitized HTML content.
  * - "Other" option: allows users to enter custom text beyond predefined choices.
  * Props:
- * - label (string, optional): The field label displayed as a heading.
+ * - label (string, optional): The text displayed as the field heading.
  * - helperText (string, optional): The field help text displayed below the heading.
  * - ElementProps (object): Contains the radio options array and enableOtherOption flag.
  * - required: To visually show if the field is required.
  * - disabled: Whether the field is disabled.
  */
 
+import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {
   Button,
   Dialog,
@@ -24,17 +25,24 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
+  ListItemText,
+  MenuItem,
+  Select as MuiSelect,
+  OutlinedInput,
+  SelectChangeEvent,
   TextField,
 } from '@mui/material';
 import FormControl from '@mui/material/FormControl';
 import MuiRadio from '@mui/material/Radio';
 import MuiRadioGroup from '@mui/material/RadioGroup';
 import {alpha} from '@mui/material/styles';
+import {useRef, useState} from 'react';
 import {z} from 'zod';
-import {schemaWithAbsent} from '../../../validationModule/readableErrors';
-import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
-import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
+import {
+  otherOptionPositionAmongVisible,
+  visibleChoiceOptions,
+} from '../visibleChoiceOptions';
 import {
   OTHER_MARKER,
   OTHER_PREFIX,
@@ -42,10 +50,11 @@ import {
   useOtherOption,
 } from '../../../hooks/useOtherOption';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {FieldInfo} from '../../types';
+import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {useState} from 'react';
 
 // ============================================================================
 // Types & Schema
@@ -78,12 +87,28 @@ export const RadioGroup = (props: FieldProps) => {
     setFieldData,
     handleBlur,
     ElementProps,
+    conditionValues,
   } = props;
 
   const rawValue = (state.value?.data as string) ?? '';
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
-  const otherOptionPosition = ElementProps.options.length;
+  // Sibling / parent / metadata bag from ConditionValuesContext — this field's
+  // TanStack state is not enough to evaluate option.condition.
+  const visibleOptions = visibleChoiceOptions(
+    ElementProps.options,
+    conditionValues ?? {},
+    rawValue
+  );
+  // Other stays after the same visible predecessors; older notebooks default to the end.
+  const otherOptionPosition = otherOptionPositionAmongVisible(
+    ElementProps.options,
+    visibleOptions,
+    ElementProps.otherOptionPosition
+  );
+  // Selections are stored as values; display labels are render-only.
   const predefinedValues = ElementProps.options.map(opt => opt.value);
+  // if expandedChecklist is missing, we default to true - expanded by default
+  const expandedChecklist = ElementProps.expandedChecklist !== false;
 
   const {setOtherSelected, hasOtherSelected, otherText, handleOtherTextChange} =
     useOtherOption({
@@ -94,6 +119,7 @@ export const RadioGroup = (props: FieldProps) => {
     });
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
+  // Control selection is the stored value (or the special Other marker).
   const displayValue = hasOtherSelected
     ? OTHER_MARKER
     : predefinedValues.includes(rawValue)
@@ -138,143 +164,46 @@ export const RadioGroup = (props: FieldProps) => {
       advancedHelperText={advancedHelperText}
       errors={props.state.meta.errors as unknown as string[]}
     >
-      <FormControl>
-        <MuiRadioGroup
-          value={displayValue}
-          onChange={handleChange}
-          onBlur={handleBlur}
-        >
-          {/* Render options and "Other" in correct order */}
-          {(() => {
-            const items: React.ReactNode[] = [];
-            let optionIndex = 0;
-            const options = ElementProps.options;
-
-            // Render the "Other" option component
-            const renderOtherOption = () => (
-              <FormControlLabel
-                key="__other__"
-                value={OTHER_MARKER}
-                control={
-                  <MuiRadio
-                    sx={{
-                      alignSelf: 'flex-start',
-                      paddingTop: '6px',
-                    }}
-                  />
-                }
-                label={
-                  <TextField
-                    size="small"
-                    placeholder="Other"
-                    value={otherText}
-                    onChange={e => {
-                      if (!hasOtherSelected && e.target.value.length > 0) {
-                        setOtherSelected(true);
-                      }
-                      handleOtherTextChange(e.target.value);
-                    }}
-                    onFocus={() => {
-                      if (!hasOtherSelected) {
-                        setOtherSelected(true);
-                      }
-                    }}
-                    onBlur={handleBlur}
-                    disabled={disabled}
-                    variant="standard"
-                    multiline
-                    slotProps={{
-                      htmlInput: {
-                        maxLength: INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH,
-                      },
-                    }}
-                    sx={{
-                      minWidth: '200px',
-                      marginTop: '2px',
-                      ...otherTextFieldSx,
-                    }}
-                  />
-                }
-                disabled={disabled}
-                sx={{
-                  alignItems: 'flex-start',
-                  marginBottom: 1,
-                  '& .MuiFormControlLabel-label': {
-                    display: 'block',
-                    marginTop: '0px',
-                    alignSelf: 'flex-start',
-                  },
-                }}
-              />
-            );
-
-            // Render a regular option
-            const renderOption = (option: ChoiceOption) => (
-              <FormControlLabel
-                key={option.key || option.value}
-                value={option.value}
-                control={
-                  <MuiRadio
-                    sx={{
-                      alignSelf: 'flex-start',
-                      paddingTop: '6px',
-                    }}
-                  />
-                }
-                label={
-                  <div
-                    style={{
-                      display: 'block',
-                      whiteSpace: 'normal',
-                      wordBreak: 'break-word',
-                      lineHeight: '1.5',
-                      paddingTop: '6px',
-                      paddingLeft: '0px',
-                      marginTop: '0px',
-                    }}
-                    dangerouslySetInnerHTML={{
-                      __html: contentToSanitizedHtml(option.label),
-                    }}
-                  />
-                }
-                disabled={disabled}
-                sx={{
-                  alignItems: 'flex-start',
-                  marginBottom: 1,
-                  '& .MuiFormControlLabel-label': {
-                    display: 'block',
-                    marginTop: '0px',
-                    alignSelf: 'flex-start',
-                    '& p': {
-                      margin: 0,
-                      padding: 0,
-                    },
-                    '& p:first-of-type': {
-                      marginTop: 0,
-                    },
-                    '& p:last-of-type': {
-                      marginBottom: 0,
-                    },
-                  },
-                }}
-              />
-            );
-
-            for (let i = 0; i <= options.length; i++) {
-              // Render "Other" at its position
-              if (enableOtherOption && i === otherOptionPosition) {
-                items.push(renderOtherOption());
-              }
-              // Render regular option
-              if (optionIndex < options.length) {
-                items.push(renderOption(options[optionIndex]));
-                optionIndex++;
-              }
-            }
-
-            return items;
-          })()}
-        </MuiRadioGroup>
+      <FormControl
+        sx={{
+          width: '100%',
+          '& .MuiSelect-select': {
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
+            padding: '12px',
+          },
+        }}
+      >
+        {expandedChecklist && (
+          <RadioGroupWidget
+            displayValue={displayValue}
+            options={visibleOptions}
+            enableOtherOption={enableOtherOption}
+            otherOptionPosition={otherOptionPosition}
+            handleChange={handleChange}
+            handleBlur={handleBlur}
+            hasOtherSelected={hasOtherSelected}
+            setOtherSelected={setOtherSelected}
+            otherText={otherText}
+            handleOtherTextChange={handleOtherTextChange}
+            disabled={disabled}
+          />
+        )}
+        {!expandedChecklist && (
+          <DropDownWidget
+            displayValue={displayValue}
+            options={visibleOptions}
+            enableOtherOption={enableOtherOption}
+            otherOptionPosition={otherOptionPosition}
+            handleChange={handleChange}
+            handleBlur={handleBlur}
+            hasOtherSelected={hasOtherSelected}
+            setOtherSelected={setOtherSelected}
+            otherText={otherText}
+            handleOtherTextChange={handleOtherTextChange}
+            disabled={disabled}
+          />
+        )}
         <Button
           variant="outlined"
           size="medium"
@@ -337,11 +266,355 @@ export const RadioGroup = (props: FieldProps) => {
   );
 };
 
+interface WidgetProps {
+  displayValue: string;
+  options: ChoiceOption[];
+  enableOtherOption: boolean;
+  otherOptionPosition: number;
+  handleChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  handleBlur: (event: React.FocusEvent<HTMLInputElement>) => void;
+  hasOtherSelected: boolean;
+  setOtherSelected: (value: boolean) => void;
+  otherText: string;
+  handleOtherTextChange: (value: string) => void;
+  disabled: boolean | undefined;
+}
+
+/**
+ * Render the select as a radio group component
+ */
+const RadioGroupWidget = ({
+  displayValue,
+  options,
+  enableOtherOption,
+  otherOptionPosition,
+  handleChange,
+  handleBlur,
+  hasOtherSelected,
+  setOtherSelected,
+  otherText,
+  handleOtherTextChange,
+  disabled,
+}: WidgetProps) => {
+  return (
+    <>
+      <MuiRadioGroup
+        value={displayValue}
+        onChange={handleChange}
+        onBlur={handleBlur}
+      >
+        {/* Render options and "Other" in correct order */}
+        {(() => {
+          const items: React.ReactNode[] = [];
+          let optionIndex = 0;
+
+          // Render the "Other" option component
+          const renderOtherOption = () => (
+            <FormControlLabel
+              key="__other__"
+              value={OTHER_MARKER}
+              control={
+                <MuiRadio
+                  sx={{
+                    alignSelf: 'flex-start',
+                    paddingTop: '6px',
+                  }}
+                />
+              }
+              label={
+                <TextField
+                  size="small"
+                  placeholder="Other"
+                  value={otherText}
+                  onChange={e => {
+                    if (!hasOtherSelected && e.target.value.length > 0) {
+                      setOtherSelected(true);
+                    }
+                    handleOtherTextChange(e.target.value);
+                  }}
+                  onFocus={() => {
+                    if (!hasOtherSelected) {
+                      setOtherSelected(true);
+                    }
+                  }}
+                  onBlur={handleBlur}
+                  disabled={disabled}
+                  variant="standard"
+                  multiline
+                  slotProps={{
+                    htmlInput: {
+                      maxLength: INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH,
+                    },
+                  }}
+                  sx={{
+                    minWidth: '200px',
+                    marginTop: '2px',
+                    ...otherTextFieldSx,
+                  }}
+                />
+              }
+              disabled={disabled}
+              sx={{
+                alignItems: 'flex-start',
+                marginBottom: 1,
+                '& .MuiFormControlLabel-label': {
+                  display: 'block',
+                  marginTop: '0px',
+                  alignSelf: 'flex-start',
+                },
+              }}
+            />
+          );
+
+          // Render a regular option
+          const renderOption = (option: ChoiceOption) => (
+            <FormControlLabel
+              key={option.key ?? option.value}
+              value={option.value}
+              control={
+                <MuiRadio
+                  sx={{
+                    alignSelf: 'flex-start',
+                    paddingTop: '6px',
+                  }}
+                />
+              }
+              label={
+                <div
+                  style={{
+                    display: 'block',
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                    lineHeight: '1.5',
+                    paddingTop: '6px',
+                    paddingLeft: '0px',
+                    marginTop: '0px',
+                  }}
+                  dangerouslySetInnerHTML={{
+                    // we don't want inline html here - wraps label in a <p> tag
+                    __html: contentToSanitizedHtml({
+                      content: option.label,
+                      inline: false,
+                    }),
+                  }}
+                />
+              }
+              disabled={disabled}
+              sx={{
+                alignItems: 'flex-start',
+                marginBottom: 1,
+                '& .MuiFormControlLabel-label': {
+                  display: 'block',
+                  marginTop: '0px',
+                  alignSelf: 'flex-start',
+                  '& p': {
+                    margin: 0,
+                    padding: 0,
+                  },
+                  '& p:first-of-type': {
+                    marginTop: 0,
+                  },
+                  '& p:last-of-type': {
+                    marginBottom: 0,
+                  },
+                },
+              }}
+            />
+          );
+
+          for (let i = 0; i <= options.length; i++) {
+            // Render "Other" at its position
+            if (enableOtherOption && i === otherOptionPosition) {
+              items.push(renderOtherOption());
+            }
+            // Render regular option
+            if (optionIndex < options.length) {
+              items.push(renderOption(options[optionIndex]));
+              optionIndex++;
+            }
+          }
+
+          return items;
+        })()}
+      </MuiRadioGroup>
+    </>
+  );
+};
+
+/**
+ * Render the select as a dropdown component
+ */
+const DropDownWidget = ({
+  displayValue,
+  options,
+  enableOtherOption,
+  otherOptionPosition,
+  handleChange,
+  handleBlur,
+  setOtherSelected,
+  otherText,
+  handleOtherTextChange,
+  disabled,
+}: WidgetProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  // ref to the select element for programmatic closing
+  const selectRef = useRef<HTMLDivElement>(null);
+
+  // match types with the main event handler
+  const localChangeHandler = (
+    event: SelectChangeEvent<typeof displayValue>
+  ) => {
+    handleChange(event as React.ChangeEvent<HTMLInputElement>);
+  };
+
+  return (
+    <MuiSelect
+      ref={selectRef}
+      open={isOpen}
+      onOpen={() => setIsOpen(true)}
+      onClose={() => setIsOpen(false)}
+      onChange={localChangeHandler}
+      value={displayValue}
+      input={<OutlinedInput />}
+      disabled={disabled}
+      onBlur={handleBlur}
+      renderValue={selected => {
+        // Render the label (or the free-text Other value), not the value.
+        let value = selected === OTHER_MARKER ? otherText || 'Other' : selected;
+        const option = options.find(opt => opt.value === selected);
+        if (option) {
+          value = option.label;
+        }
+        return (
+          <span
+            dangerouslySetInnerHTML={{
+              __html: contentToSanitizedHtml({
+                content: value,
+                inline: true,
+              }),
+            }}
+          />
+        );
+      }}
+    >
+      {/* Render options and "Other" in correct order */}
+      {(() => {
+        const items: React.ReactNode[] = [];
+        let optionIndex = 0;
+
+        // Render the "Other" option MenuItem
+        const renderOtherMenuItem = () => (
+          <MenuItem
+            key="__other__"
+            value={OTHER_MARKER}
+            sx={{
+              whiteSpace: 'normal',
+              wordWrap: 'break-word',
+              display: 'block',
+              padding: '8px 16px',
+            }}
+            onKeyDown={e => e.stopPropagation()}
+          >
+            <TextField
+              size="small"
+              placeholder="Other"
+              value={otherText}
+              onChange={e => {
+                e.stopPropagation();
+                setOtherSelected(true);
+                handleOtherTextChange(e.target.value);
+              }}
+              onBlur={e => {
+                e.stopPropagation();
+                handleOtherTextChange(otherText);
+              }}
+              onClick={e => e.stopPropagation()}
+              onMouseDown={e => e.stopPropagation()}
+              onFocus={e => e.stopPropagation()}
+              onKeyDown={e => {
+                e.stopPropagation();
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleOtherTextChange(otherText);
+                  setIsOpen(false);
+                }
+              }}
+              disabled={disabled}
+              variant="standard"
+              multiline
+              fullWidth
+              slotProps={{
+                htmlInput: {
+                  maxLength: INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH,
+                },
+              }}
+              sx={{
+                ...otherTextFieldSx,
+                '& .MuiInput-input': {
+                  ...((otherTextFieldSx as any)['& .MuiInput-input'] || {}),
+                  padding: '4px 0',
+                },
+              }}
+            />
+          </MenuItem>
+        );
+
+        // Render a regular option MenuItem
+        const renderOptionMenuItem = (option: ChoiceOption) => (
+          <MenuItem
+            key={option.key ?? option.value}
+            value={option.value}
+            sx={{
+              whiteSpace: 'normal',
+              wordWrap: 'break-word',
+            }}
+          >
+            <ListItemText
+              primary={
+                <span
+                  style={{
+                    display: 'contents',
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                    lineHeight: '0.1rem',
+                  }}
+                  dangerouslySetInnerHTML={{
+                    // generate inline html for the option label
+                    __html: contentToSanitizedHtml({
+                      content: option.label,
+                      inline: true,
+                    }),
+                  }}
+                />
+              }
+            />
+          </MenuItem>
+        );
+
+        for (let i = 0; i <= options.length; i++) {
+          // Render "Other" at its position
+          if (enableOtherOption && i === otherOptionPosition) {
+            items.push(renderOtherMenuItem());
+          }
+          // Render regular option
+          if (optionIndex < options.length) {
+            items.push(renderOptionMenuItem(options[optionIndex]));
+            optionIndex++;
+          }
+        }
+
+        return items;
+      })()}
+    </MuiSelect>
+  );
+};
+
 // ============================================================================
 // Value Schema
 // ============================================================================
 
 const valueSchema = (props: RadioGroupFieldProps) => {
+  // Validate stored selections against configured values.
   const optionValues = props.ElementProps.options.map(option => option.value);
   const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
 
@@ -386,4 +659,19 @@ export const radioGroupFieldSpec: FieldInfo<FieldProps> = {
   fieldPropsSchema: RadioGroupFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
   view: {component: DefaultRenderer, config: {}},
+  consumesConditionValues: true,
+};
+
+// We also register this as the 'Select' field for backward
+// compatibility.  Select and RadioGroup are now merged into a
+// single field type.
+export const selectFieldSpec: FieldInfo<FieldProps> = {
+  namespace: 'faims-custom',
+  name: 'Select',
+  returns: 'faims-core::String',
+  component: RadioGroup,
+  fieldPropsSchema: RadioGroupFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchema,
+  view: {component: DefaultRenderer, config: {}},
+  consumesConditionValues: true,
 };

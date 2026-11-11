@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import {PaletteOptions, TypeBackground} from '@mui/material/styles';
+import type {} from '@mui/lab/themeAugmentation';
 import {StepperColors} from '.';
 
 declare module '@mui/material/styles' {
@@ -66,6 +67,21 @@ declare module '@mui/material/styles' {
       buttonActiveBackground: string;
       buttonActiveBackgroundHover: string;
       buttonForeground: string;
+      scrim: string;
+      sheetShadow: string;
+      locationRing: string;
+      satelliteSwatch: string;
+      vectorSwatch: string;
+      colorPickerFallback: string;
+    };
+    history: {
+      marker: string;
+      markerCreated: string;
+      markerUpdated: string;
+      markerDeleted: string;
+      connector: string;
+      iconBackground: string;
+      iconForeground: string;
     };
     stepperGradient: string[];
   }
@@ -129,6 +145,21 @@ declare module '@mui/material/styles' {
       buttonActiveBackground: string;
       buttonActiveBackgroundHover: string;
       buttonForeground: string;
+      scrim?: string;
+      sheetShadow?: string;
+      locationRing?: string;
+      satelliteSwatch?: string;
+      vectorSwatch?: string;
+      colorPickerFallback?: string;
+    };
+    history?: {
+      marker: string;
+      markerCreated: string;
+      markerUpdated: string;
+      markerDeleted: string;
+      connector: string;
+      iconBackground: string;
+      iconForeground: string;
     };
     stepperGradient?: string[];
   }

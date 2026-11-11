@@ -3,7 +3,7 @@ import {DataTable} from '@/components/data-table/data-table';
 import {AddTeamUserDialog} from '@/components/dialogs/teams/add-team-user-dialog';
 import {useGetColumns} from '@/components/tables/team-users';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {useGetUsersForTeam} from '@/hooks/queries';
+import {useGetTeam, useGetUsersForTeam} from '@/hooks/queries';
 import {Action} from '@faims3/data-model';
 import {LoaderCircle, Plus} from 'lucide-react';
 
@@ -11,6 +11,8 @@ const TeamUsers = ({teamId}: {teamId: string}) => {
   const user = useRequiredUser();
 
   const {isLoading, data} = useGetUsersForTeam({user, teamId});
+  const {data: team} = useGetTeam({user, teamId});
+  const archived = team?.archived === true;
 
   // permission checks
 
@@ -42,7 +44,8 @@ const TeamUsers = ({teamId}: {teamId: string}) => {
           data={data?.members || []}
           loading={isLoading}
           button={
-            canAddSomeUser && (
+            canAddSomeUser &&
+            !archived && (
               <AddTeamUserDialog
                 teamId={teamId}
                 buttonContent={

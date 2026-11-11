@@ -12,7 +12,10 @@ import {
 } from './conditionReferences';
 import type {FieldType} from '../../state/initial';
 import type {ConditionType, RuleCondition} from '../../types/condition';
-import {isBooleanCondition} from '@/lib/conditionUtils';
+import {
+  findInvalidConditionReferences,
+  isBooleanCondition,
+} from '@/lib/conditionUtils';
 
 describe('conditionReferences — field usage and rename', () => {
   it('detects field usage in nested boolean conditions', () => {
@@ -61,6 +64,7 @@ describe('conditionReferences — field usage and rename', () => {
 });
 
 const selectField: FieldType = {
+  exportName: 'choice',
   'component-namespace': 'faims-custom',
   'component-name': 'Select',
   'type-returned': 'faims-core::String',
@@ -77,6 +81,7 @@ const selectField: FieldType = {
 };
 
 const dependentField: FieldType = {
+  exportName: 'dependent',
   'component-namespace': 'faims-custom',
   'component-name': 'FAIMSTextField',
   'type-returned': 'faims-core::String',
@@ -150,5 +155,86 @@ describe('conditionReferences — option value references', () => {
 
     expect((firstCondition as RuleCondition).value).toBe('AA');
     expect((secondCondition as RuleCondition).value).toBe('A');
+  });
+
+  it('finds option-level conditions that compare against the renamed value', () => {
+    const vegetation: FieldType = {
+      exportName: 'vegetation',
+      'component-namespace': 'faims-custom',
+      'component-name': 'RadioGroup',
+      'type-returned': 'faims-core::String',
+      'component-parameters': {
+        name: 'vegetation',
+        label: 'Vegetation',
+        ElementProps: {
+          options: [
+            {label: 'Forest', value: 'Forest'},
+            {
+              label: 'Wet sclerophyll',
+              value: 'Wet sclerophyll',
+              condition: {operator: 'equal', field: 'choice', value: 'A'},
+            },
+          ],
+        },
+      },
+    };
+
+    const references = findOptionReferences(
+      {choice: selectField, dependent: dependentField, vegetation},
+      {
+        sectionA: {
+          label: 'Section A',
+          condition: {operator: 'equal', field: 'choice', value: 'A'},
+        },
+      },
+      'choice',
+      'A'
+    );
+
+    expect(references).toContain('Field: Dependent');
+    expect(references).toContain('Section: Section A');
+    expect(references).toContain('Option: Wet sclerophyll (Field: Vegetation)');
+  });
+
+  it('flags option-level conditions that expect a removed option value', () => {
+    const choiceWithOneOption: FieldType = {
+      ...selectField,
+      'component-parameters': {
+        ...selectField['component-parameters'],
+        ElementProps: {
+          options: [{label: 'B', value: 'B'}],
+        },
+      },
+    };
+    const vegetation: FieldType = {
+      exportName: 'vegetation',
+      'component-namespace': 'faims-custom',
+      'component-name': 'RadioGroup',
+      'type-returned': 'faims-core::String',
+      'component-parameters': {
+        name: 'vegetation',
+        label: 'Vegetation',
+        ElementProps: {
+          options: [
+            {
+              label: 'Wet sclerophyll',
+              value: 'Wet sclerophyll',
+              condition: {operator: 'equal', field: 'choice', value: 'A'},
+            },
+          ],
+        },
+      },
+    };
+
+    const invalid = findInvalidConditionReferences(
+      'choice',
+      choiceWithOneOption,
+      {choice: choiceWithOneOption, vegetation},
+      {}
+    );
+
+    expect(invalid).toContain(
+      "Option: Wet sclerophyll (Field: Vegetation) (expects 'A')"
+    );
   });
 });

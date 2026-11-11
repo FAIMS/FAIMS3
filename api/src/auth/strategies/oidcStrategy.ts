@@ -10,7 +10,7 @@ import {Profile, Strategy, VerifyCallback} from 'passport-openidconnect';
 import {config} from '../../buildconfig';
 import {providerAuthReturnUrl} from '../authRoutes';
 import {ssoVerify} from '../helpers';
-import {OIDCAuthProviderConfig} from './strategyTypes';
+import {OIDCAuthProviderConfig} from '@faims3/build-config';
 
 /**
  * The verify function receives the verified profile information from an IdP
@@ -67,6 +67,11 @@ const generateOIDCVerifyFunction = ({
 // - issuer, authorizationURL, tokenURL, userInfoURL, clientID, clientSecret
 //   are all as per the passport-openidconnect Strategy configuration
 export const oidcStrategyGenerator = (options: OIDCAuthProviderConfig) => {
+  if (!options.clientID || !options.clientSecret) {
+    throw new Error(
+      `OIDC auth provider '${options.id}' is missing required clientID or clientSecret.`
+    );
+  }
   // This strategy handles both login and registration cases with the same
   // verify function
   const strategy = new Strategy(

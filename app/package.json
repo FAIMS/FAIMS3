@@ -1,6 +1,6 @@
 {
   "name": "@faims3/app",
-  "version": "1.9.1",
+  "version": "1.10.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -21,7 +21,6 @@
     "preintegration": "pnpm run compile",
     "integration": "NODE_ENV=test react-scripts test --env=node --forceExit --runInBand --detectOpenHandles src/integration_tests --transformIgnorePatterns \"node_modules/(?!ol)/\"",
     "postintegration": "pnpm run lint",
-    "preserve": "pnpm run build",
     "serve": "vite preview",
     "prewebapp-build": "pnpm run build",
     "webapp-build": "cap copy",
@@ -61,6 +60,7 @@
     "@capgo/capacitor-speech-recognition": "^8.0.4",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
+    "@faims3/build-config": "workspace:*",
     "@faims3/data-model": "workspace:*",
     "@faims3/forms": "workspace:*",
     "@fast-check/vitest": "^0.0.7",

@@ -6,7 +6,7 @@ _A guide to selecting the right field type for your data._
 
 ## Overview
 
-When you add a field to a form in the Notebook Editor, the
+When you add a field to a form in the {{Notebook}} Editor, the
 [ADD A FIELD dialog](../shared-settings/adding-a-field.md) presents nearly two dozen
 field types across eight tabs. This guide helps you choose the right one
 by matching your data requirements to specific fields. It covers design
@@ -212,6 +212,8 @@ Choose based on the level of temporal detail you need:
 > is deprecated as a separate field type. Existing fields keep working; for
 > new forms, use **Date time picker** with **Show "Now" button** enabled.
 
+(choices-and-controlled-vocabularies)=
+
 ### Choices and Controlled Vocabularies
 
 The number of options and the selection type determine which field to
@@ -261,8 +263,8 @@ document and media types.
   accuracy metadata.
 - **Boundaries, transects, or areas** →
   **[Map field](../location-fields/map-input.md)** — draw points,
-  lines, and polygons on a base map. Requires an internet connection
-  for initial tile loading (offline maps are experimental).
+  lines, and polygons on a base map. Prepare overlays and Map
+  regions before you go offline.
 - **Both point and area data** → combine both field types in the same
   form.
 
@@ -285,9 +287,10 @@ document and media types.
   are too tight — match precision to your actual research
   needs.
 - **Ignoring platform constraints.** QR / Barcode Scanner is
-  mobile only; Map field requires an internet connection;
-  location accuracy in the web app on desktop may be poor.
-  Design for your actual deployment platform.
+  mobile only; Map field needs overlays and Map regions
+  prepared before you go offline; location accuracy in the
+  web app on desktop may be poor. Design for your actual
+  deployment platform.
 - **Over-using required fields.** Marking fields as required
   "just in case" antagonises users if applied to minor
   omissions, and too many alerts in the interface hide the
@@ -312,12 +315,13 @@ document and media types.
   "rec-5f8a9b3c"). A dedicated HRID guide is planned.
 - **[QR / Barcode Scanner](../text-fields/qr-barcode-scanner.md) is mobile only.**
   It will not function on desktop browsers.
-- **[Map field](../location-fields/map-input.md) requires an internet
-  connection** for initial tile loading. Offline map support
-  is experimental.
-- **Plan your vocabularies before building.** The display label and
-  stored value are always the same — what users see is exactly what
-  appears in exported data.
+- **[Map field](../location-fields/map-input.md) can show downloaded
+  map layers and cached base-map tiles when you are offline.**
+  Prepare overlays and Map regions before you go offline.
+  That download needs internet.
+- **Plan your vocabularies before building.** The **Display label** is
+  shown to collectors, while the **Export value** is stored with their
+  answers and used in exported data.
 - **Each record type exports as a separate CSV.** Relationships are
   preserved through identifier columns. Plan your data model with
   export in mind.

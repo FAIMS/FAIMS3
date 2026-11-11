@@ -45,6 +45,7 @@ import {
   isInviteValid,
 } from '../couchdb/invites';
 import {getProjectById} from '../couchdb/notebooks';
+import {assertTeamNotArchived} from '../couchdb/teams';
 import {getCouchUserFromEmailOrUserId, saveCouchUser} from '../couchdb/users';
 import {validateAndApplyInviteToUser} from '../auth/helpers';
 import {
@@ -390,6 +391,8 @@ api.post(
         'You are not authorized to create this invite'
       );
     }
+
+    await assertTeamNotArchived(teamId);
 
     const invite = await createResourceInvite({
       resourceType: Resource.TEAM,

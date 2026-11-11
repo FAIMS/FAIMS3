@@ -23,6 +23,29 @@ each commit with `git commit -s`. See [app/DCO](app/DCO).
 
 An automated license check is run via `pnpm license-check` in the CI build-lint script, it will fail if the license line is missing from any new files. To inject the license into new files you can run `pnpm license-check --inject`.
 
+## Contributors
+
+FAIMS3 is developed by people at CSIRO's
+[National Bushfire Intelligence Capability](https://research.csiro.au/nbic/)
+(NBIC), Electronic Field Notebooks, Macquarie University, and elsewhere.
+People are named here if they wrote at least 1% of the lines in the current
+code, or made 100 or more commits in the last three years, or if the
+maintainers name them for sustained contributions to the project's design and
+direction. The list is checked whenever it is updated.
+Everyone else who has contributed is in the commit history, and the
+organisations that hold copyright are in [AUTHORS](AUTHORS).
+
+- Jayen Ashar, contractor to Electronic Field Notebooks
+- Peter Baker, NBIC (CSIRO)
+- Brian Ballsun-Stanton, Macquarie University
+- Tom Bevan, Electronic Field Notebooks
+- Steve Cassidy, Electronic Field Notebooks (previously Macquarie University)
+- Ranisa Gupta, NBIC (CSIRO)
+- Xinyu Hou, NBIC (CSIRO)
+- Ryan Kontos, Electronic Field Notebooks (intern, 2024 to 2025)
+- Luke McFarlane, contractor to NBIC (CSIRO)
+- Shawn Ross, Electronic Field Notebooks
+
 ## Directory Structure
 
 The repository contains the following:
@@ -51,17 +74,26 @@ nvm use 24
 
 You will also need Docker and Docker Compose installed.
 
-GeoPackage export requires [GDAL](https://gdal.org/) (`ogr2ogr` on PATH). This is
-included in the API Docker image and devcontainer. For native development, `./dev.sh`
-warns if GDAL is missing; install locally when you need `.gpkg` export:
+GeoPackage export and map-layer ingest require [GDAL](https://gdal.org/)
+(`ogr2ogr`, `gdalinfo`, `gdalwarp`, `gdal_translate`, `gdaladdo` on PATH),
+[tippecanoe](https://github.com/felt/tippecanoe), and the
+[pmtiles](https://github.com/protomaps/go-pmtiles) CLI. Georeferenced PDF
+uploads also need GDAL's PDF driver (Poppler), and raster tiles need the
+MBTiles and WEBP drivers. This is included in the API Docker image and
+devcontainer. For native development, `./dev.sh` warns if any of them are
+missing:
 
 ```bash
 # Ubuntu / Debian
-sudo apt-get install gdal-bin
+sudo apt-get install gdal-bin poppler-utils unzip tippecanoe
 
 # macOS (Homebrew)
-brew install gdal
+brew install gdal poppler tippecanoe
 ```
+
+Install the `pmtiles` binary from the go-pmtiles releases (or `go install
+github.com/protomaps/go-pmtiles@v1.28.1`, which produces `go-pmtiles`). Set
+`PMTILES_BIN` if the executable has another name.
 
 ### Starting all services
 
@@ -71,12 +103,14 @@ Run the script to get all services running locally:
 ./localdev.sh --all
 ```
 
-This spins up four services:
+This spins up the application services plus CouchDB, RustFS, and the spatial worker pool:
 
 - Conductor API (`/api`) live reloading on http://localhost:8080
 - FAIMS3 app (`/app`) live reloading on http://localhost:3000
 - Web app (`/web`) live reloading on http://localhost:3001
 - CouchDB on http://localhost:5984/\_utils
+- RustFS (S3-compatible object store) on http://localhost:9000 (console http://localhost:9001)
+- `capacity-manager` and `spatial-worker` (map-layer ingest; uploads stay `pending` without the worker)
 
 On the **first run** this also installs all monorepo dependencies
 (`pnpm install`) and builds the shared libraries (`turbo build`) before the
@@ -99,6 +133,14 @@ templates, and local signing keys are generated for you.
   ./localdev.sh --all --clear-db
   ```
 
+- **Skip spatial stack**: Use `--no-spatial` to start only CouchDB (no
+  RustFS, no spatial worker pool). Map-layer ingest is unavailable. Cannot
+  be combined with `--all`.
+
+  ```bash
+  ./dev.sh --no-spatial
+  ```
+
 ### Loading sample notebooks and templates
 
 The services start with an empty database. To populate it with the sample
@@ -115,25 +157,19 @@ notebooks and templates:
    pnpm run load-templates
    ```
 
-## CouchDB-only local development (recommended for live-reloading)
+## Native services with Docker dependencies (recommended for live-reloading)
 
-If you prefer to run the application services natively and only use Docker for CouchDB:
+If you prefer to run the application services natively and only use Docker for CouchDB, RustFS, and the spatial worker pool:
 
-1. Start CouchDB only (default behaviour without `--all` flag):
+1. Start CouchDB and RustFS, migrate Couch, then start the spatial worker pool (default behaviour without `--all` flag):
 
 ```bash
 ./localdev.sh
 ```
 
-This starts CouchDB on http://localhost:5984/\_utils
+This starts CouchDB on http://localhost:5984/\_utils, RustFS on http://localhost:9000 (console http://localhost:9001), runs `pnpm run migrate-with-keys`, then starts `capacity-manager` / `spatial-worker`. Map-layer files are stored in RustFS; CouchDB holds only the metadata (including an S3 resource URI). If your existing `api/.env` predates these settings, copy the `ATTACHMENT_*` block from `api/.env.dist`.
 
-2. Migrate the CouchDB:
-
-```bash
-pnpm run migrate-with-keys
-```
-
-3. Run development services natively (in a separate terminal):
+2. Run development services natively (in a separate terminal):
 
 ```bash
 pnpm run dev
@@ -147,10 +183,17 @@ This runs:
 
 Use the admin user/password from `api/.env` to login.
 
-These three commands are bundled into `dev.sh` i.e.
+These two commands are bundled into `dev.sh` i.e.
 
 ```bash
 ./dev.sh
+```
+
+For the data-collection app without map layers, skip RustFS and the spatial
+worker pool:
+
+```bash
+./dev.sh --no-spatial
 ```
 
 Another way to run the applications on MacOS or Linux is to use the `Procfile` and
@@ -158,12 +201,21 @@ a tool such as [Overmind](https://github.com/DarthSim/overmind). The `Procfile`
 contains the commands to run the different services and Overmind can be used
 to run them together. The advantage over `pnpm run dev` is that you can
 run them in the background, restart individual services easily and attach/detach
-the output from the servers in the terminal.
+the output from the servers in the terminal. The repo ships with `Procfile.dev` which you can rename to `Procfile` locally - committing `Procfile` would mess up some
+automated deployments.
+
+Run `pnpm build` before `overmind start`, because Overmind starts every process
+at once, so a service can compile against a library whose watch build is still
+writing. With valid output already on disk, a service that compiles immediately
+resolves the library, leaving only the watch builds' re-emit as a short race.
+Restart `api` with `overmind restart api` if it logs a compile error and waits
+for file changes in that window.
 
 Example commands:
 
 ```bash
-# Run all services and detach
+# Build first, then run all services and detach
+pnpm build
 overmind start -d
 
 # Echo output to the terminal
@@ -196,6 +248,24 @@ cp ./app/.env.dist ./app/.env &&
 code ./api/.env &&
 code ./app/.env
 ```
+
+### Generating the local config from `core.json`
+
+Instead of hand-editing the `.env` files, you can generate **all** of them from a
+single shared config file (`config/dev/core.json`) using the same schema every other
+platform (mobile CI, AWS CDK) uses:
+
+```bash
+cp library/build-config/config/core.sample.json config/dev/core.json
+scripts/generateDevEnv.sh   # -> api/.env, app/.env, web/.env, docs/.env
+```
+
+`config/dev/` is git-ignored. Set its `domains.localOverride` (or concrete
+`endpoints`) to the `localhost` hosts so the generated env points at the local
+services. The JSON is the source of truth — the generated env var names are derived
+by the shared contract. See the
+[Build Configuration](docs/developer/docs/source/markdown/Build-Configuration.md)
+page for the JSON structure.
 
 ### API Setup
 
@@ -357,9 +427,8 @@ are:
 
 - `pnpm run build-app`: builds the webapp (not the Android/iOS apps)
 - `pnpm run test-app`: runs the main test suite
-- `pnpm run serve-app`: runs the webapp in a browser (currently via capacitor's
-  system, to ensure that the webapp and the phone apps are as similar as
-  possible).
+- `pnpm run serve-app`: builds the webapp and serves it in a browser, so it runs
+  the same bundle the phone apps do.
 - `pnpm run start-app`: runs the webapp in a browser (unoptimized dev build).
 
 You should also be aware of the

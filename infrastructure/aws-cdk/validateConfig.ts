@@ -1,45 +1,30 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import {ZodError} from 'zod';
 import {exit} from 'process';
-import {Config, ConfigSchema} from './lib/config';
+import {loadConfigFromEnv} from './lib/config';
 
-function validateConfig(configPath: string): boolean {
-  try {
-    const configContent = fs.readFileSync(configPath, 'utf8');
-    const config: Config = JSON.parse(configContent);
-
-    ConfigSchema.parse(config);
-    console.log('Configuration is valid.');
-    return true;
-  } catch (error) {
-    if (error instanceof ZodError) {
-      console.error('Configuration validation failed:');
-      error.issues.forEach(err => {
-        console.error(`- ${err.path.join('.')}: ${err.message}`);
-      });
-    } else if (error instanceof Error) {
-      console.error('Error validating configuration:', error.message);
-    } else {
-      console.error('An unknown error occurred during validation');
-    }
-    return false;
-  }
-}
-
-// Get the CONFIG_FILE_NAME from environment variable
-const configFileName = process.env.CONFIG_FILE_NAME;
-if (!configFileName) {
-  console.error(
-    'Please provide a config file name with CONFIG_FILE_NAME env variable. E.g. export CONFIG_FILE_NAME=dev.json.'
+// Validates the deployment config exactly as the CDK app will load it
+// (core.json via @faims3/build-config + aws.json), using the same env
+// resolution as bin/aws-cdk-faims-infra.ts. E.g.:
+//   CONFIG_ENV=prod pnpm run validate-config
+//   CONFIG_DIR=../../config-repo/configs/prod pnpm run validate-config
+try {
+  const config = loadConfigFromEnv(path.resolve(__dirname));
+  console.log(
+    `Configuration is valid. Stack: ${config.aws.stackName}, account: ${config.aws.account}, region: ${config.aws.region}.`
   );
-  exit(1);
-}
-const configPath = path.resolve(__dirname, 'configs', configFileName);
-
-if (validateConfig(configPath)) {
   process.exitCode = 0;
-} else {
+} catch (error) {
+  if (error instanceof ZodError) {
+    console.error('Configuration validation failed:');
+    error.issues.forEach(err => {
+      console.error(`- ${err.path.join('.')}: ${err.message}`);
+    });
+  } else if (error instanceof Error) {
+    console.error('Error validating configuration:', error.message);
+  } else {
+    console.error('An unknown error occurred during validation');
+  }
   process.exitCode = 1;
-  throw new Error(`Invalid Configuration file at ${configPath}`);
+  exit(1);
 }

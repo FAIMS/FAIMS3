@@ -146,11 +146,12 @@ lockfile/workflow files change (`workflow_dispatch` always available). The job:
    `RATE_LIMITER_ENABLED=false`, and `ATTEMPT_LIMITER_ENABLED=false`
 3. Generates signing keys + CouchDB `local.ini`, starts CouchDB via Compose
 4. `pnpm build`, `migrate-with-keys`, `seed-test-dataset`
-5. Starts `pnpm run dev` (api `:8080`, app `:3000`, web `:3001`)
+5. Serves the build: api `start:prod` (`:8080`), app and web `serve`
+   (`vite preview` on `:3000` and `:3001`). No dev server, nothing compiling
 6. Installs pinned Chrome + ChromeDriver (`browser-actions/setup-chrome`)
 7. Runs `pnpm test:e2e:headless:ci` (smoke → web/conductor/journeys → app)
 8. Stages and uploads a flat zip: `artifacts/` (HTML galleries), `screenshots/`,
-   and `faims-dev.log`
+   and one `faims-<service>.log` per service
 
 Reviewers: download the `e2e-artifacts-*` Action artifact and open
 `artifacts/index.html` (or the latest `artifacts/<runId>/index.html`).

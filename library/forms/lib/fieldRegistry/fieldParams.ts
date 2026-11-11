@@ -39,10 +39,6 @@ export {
   type AdvancedSelectFieldProps,
 } from './fields/AdvancedSelect';
 export {
-  SelectFieldPropsSchema,
-  type SelectFieldProps,
-} from './fields/SelectField';
-export {
   RadioGroupFieldPropsSchema,
   type RadioGroupFieldProps,
 } from './fields/RadioGroup';

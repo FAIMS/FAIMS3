@@ -23,6 +23,7 @@ import {TemplatedStringFieldEditor} from '../../components/Fields/TemplatedStrin
 import {TextFieldEditor} from '../../components/Fields/TextFieldEditor';
 import {ComputedFieldEditor} from '@/designer/components/Fields/ComputedFieldEditor';
 import {ParentFieldDisplayEditor} from '../../components/Fields/ParentFieldDisplayEditor';
+import {FileUploaderFieldEditor} from '@/designer/components/Fields/FileUploaderFieldEditor';
 
 /** Identifiers passed into type-specific editors (e.g. HRID / related record context). */
 export type FieldEditorRenderContext = {
@@ -101,6 +102,9 @@ export const fieldEditorRegistry: Record<string, FieldEditorRenderer> = {
       viewId={viewId}
       viewsetId={viewSetId}
     />
+  ),
+  FileUploader: ({fieldName}) => (
+    <FileUploaderFieldEditor fieldName={fieldName} />
   ),
 };
 

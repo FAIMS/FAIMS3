@@ -15,7 +15,7 @@ selection, and the stored value can be either the full path
 (e.g., "Ceramics > Coarseware > Cooking pot") or just the leaf node name.
 
 > **Note:** This field is a **beta feature**. The hierarchy structure
-> must be defined via JSON editing — the Notebook Editor does not yet
+> must be defined via JSON editing — the {{Notebook}} Editor does not yet
 > provide a visual tree editor. Also consider the display
 > size of the field on mobile devices.
 
@@ -39,13 +39,14 @@ tab, and click the **Select Field (Hierarchical)** card. Then click the
 ## Configuring the Field
 
 Click the field's **grey header bar** to expand it and see its settings.
-For an overview of the settings shared by all fields — including Label,
-Helper Text, Field ID, and the field toolbar — see
+For an overview of the settings shared by all fields — including Field Heading,
+Helper Text, Export Title, and the field toolbar — see
 [Field Identity](../shared-settings/field-identity.md) and
 [Field Toolbar](../shared-settings/field-toolbar.md).
 
-Give the field a meaningful Label, review the auto-populated
-Field ID, and add any desired Helper Text.
+Give the field a meaningful Field Heading (the title collectors see), review
+the auto-populated Export Title (the CSV/GIS column header), and add any
+desired Helper Text.
 
 ```{screenshot} field-types-design/hierarchical-select-02-configured.png
 :alt: Select Field (Hierarchical) configuration in the {{Notebook}} Editor
@@ -54,7 +55,7 @@ Field ID, and add any desired Helper Text.
 
 ### Select Field (Hierarchical)-Specific Settings
 
-The Notebook Editor exposes only basic field properties for this field
+The {{Notebook}} Editor exposes only basic field properties for this field
 type. The hierarchy structure itself must be defined by editing the
 {{notebook}} JSON directly. A JSON editor is provided in the
 Editor UI, pre-populated with a simple template. Expanding
@@ -66,7 +67,7 @@ a valid JSON structure with two levels.
 | **Value type** | Controls what is stored when a selection is made: "full" stores the complete path (e.g., "Ceramics > Coarseware > Cooking pot"), while "child" stores only the selected node name (e.g., "Cooking pot"). |
 
 The **hierarchy tree** (the `optiontree` structure) is not configurable
-in the Notebook Editor and must be defined via JSON editing.
+in the {{Notebook}} Editor and must be defined via JSON editing.
 
 ### Shared Field Options
 

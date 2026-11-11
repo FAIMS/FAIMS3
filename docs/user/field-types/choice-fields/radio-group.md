@@ -1,24 +1,22 @@
-# Select one option
+# Select single
 
-_How to add and configure a Select one option field in the {{Notebook}}
+_How to add and configure a Select single field in the {{Notebook}}
 Editor._
 
 ---
 
 ## What This Field Does
 
-A Select one option field displays all choices as radio buttons,
-letting users pick exactly one. All options are visible
-simultaneously without opening a dropdown, which can be faster
-for short lists (~2–8 items). Use it when you want collectors to
-see every option at a glance — for example, a soil texture class,
-a condition rating, yes/no, or a Likert scale.
+Allows the user to select a single option from a list. The options
+are displayed either as a set of radio buttons or as a drop-down
+menu. You can also configure an 'other' option which allows the user
+to enter free text.
 
 ## Adding the Field
 
 To add this field, open the
 [ADD A FIELD dialog](../shared-settings/adding-a-field.md), navigate to the **CHOICE**
-tab, and click the **Select one option** card. Then click the
+tab, and click the **Select single** card. Then click the
 **ADD FIELD** button in the lower right.
 
 > **Note:** The CHOICE tab may not be visible in the tab bar initially —
@@ -26,7 +24,7 @@ tab, and click the **Select one option** card. Then click the
 > until it appears.
 
 ```{screenshot} field-types-design/radio-group-01-add-field.png
-:alt: Adding a Select one option — the CHOICE tab in the ADD A FIELD dialog
+:alt: Adding a Select single — the CHOICE tab in the ADD A FIELD dialog
 :align: right
 :width: 100%
 ```
@@ -34,44 +32,65 @@ tab, and click the **Select one option** card. Then click the
 ## Configuring the Field
 
 Click the field's **grey header bar** to expand it and see its settings.
-For an overview of the settings shared by all fields — including Label,
-Helper Text, Field ID, and the field toolbar — see
+For an overview of the settings shared by all fields — including Field Heading,
+Helper Text, Export Title, and the field toolbar — see
 [Field Identity](../shared-settings/field-identity.md) and
 [Field Toolbar](../shared-settings/field-toolbar.md).
 
-Give the field a meaningful Label, review the auto-populated
-Field ID, and add any desired Helper Text.
+Give the field a meaningful Field Heading (the title collectors see), review
+the auto-populated Export Title (the CSV/GIS column header), and add any
+desired Helper Text.
 
 ```{screenshot} field-types-design/radio-group-02-configured.png
-:alt: Select one option configuration in the {{Notebook}} Editor
+:alt: Select single configuration in the {{Notebook}} Editor
 :align: right
 :width: 100%
 ```
 
-### Select one option-Specific Settings
+### Select single-Specific Settings
 
-The Select one option field provides an **options list** identical in
+The Select single field provides an **options list** identical in
 structure to the Select Field. Below the Markdown syntax info banner,
 you will find the **Add Option** input and a table listing all current
 options.
 
-| Setting          | What It Does                                                                       |
-| ---------------- | ---------------------------------------------------------------------------------- |
-| **Options list** | The choices displayed as radio buttons. Each option appears as a row in the table. |
+| Setting                | What It Does                                                                                                                                        |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Options list**       | The choices displayed as radio buttons. Each option appears as a row in the table.                                                                  |
+| **Export value**       | The value saved in exported data.                                                                                                                   |
+| **Display label**      | The text shown to users when viewing options. Supports formatting such as bold, italic, and underline. If left blank, defaults to the Export value. |
+| **Add "Other" Option** | Adds a special "Other" choice that prompts the collector to type a custom value when selected.                                                      |
+| **Display mode**       | Select _Expanded Checklist_ or _Dropdown list_.                                                                                                     |
 
 **Managing options:**
 
-- **To add an option:** Type the option text in the **Add Option** input
-  field and click **Add** (or press Enter).
-- **To edit an option:** Click the **pencil** icon in the option's Actions
-  column.
+- **To add an option:** Enter a value in the **Add Option** input and click **Add** (or press Enter). The Display label defaults to the Export value.
+- **To edit an option:** Click the **pencil** icon in the option's Actions column. You can edit the **Display label** and **Export value** separately.
 - **To reorder options:** Drag the **six-dot handle** on the left of the
   option, or use the **up/down arrow** buttons in the Actions column.
 - **To delete an option:** Click the **trash** icon in the option's Actions
   column.
+- **To show an option only sometimes:** Click the **condition** control in
+  that option's Actions column (**Add condition**, or **Update condition**
+  when a rule is already set). This is not the field-level **Add
+  condition** control. Use it so a choice such as "Asbestos" appears only
+  when Site type is Industrial. The **Other** row cannot take a
+  condition.
+- **Add "Other" Option** Click to allow the user to select 'Other' from the
+  list and enter free text into this field.
+
+If a collector has already selected an option and its condition later
+becomes false (for example they change Site type away from Industrial),
+that option stays visible and selected until they choose something else.
+The stored value is not cleared, and it still appears in view mode and
+in CSV/GIS export.
+
+**Note**: You can use Markdown syntax in
+Display label (e.g., \*\*bold\*\* or \*italic\*) to add emphasis
+or formatting to individual options.
 
 ```{screenshot} field-types-design/radio-group-03-options.png
-:alt: Select one option options list
+:alt: Select single options list
 :align: right
 :width: 100%
 ```
@@ -86,14 +105,12 @@ Annotation, Uncertainty, Conditions, and Copy value to new records — see
 
 ## Tips
 
-- **Best for short lists of ca. 2–8 options** where seeing
-  every choice at once speeds selection. For longer lists,
-  use [Select Field](select.md) (dropdown) to conserve
-  screen space.
-- **On small screens, err towards Select Field.**
+- **Expanded Checklist is best for short lists of ca. 2–8 options** where seeing
+  every choice at once speeds selection.
+- **On small screens, err towards dropdown lists.**
   Radio buttons take more vertical space than a dropdown;
   on mobile devices with small screens a long radio list
   requires scrolling, offsetting their speed advantage.
-- **Option text supports Markdown formatting** — use
+- **Display label supports Markdown formatting** — use
   \*\*bold\*\* or \*italic\* to add emphasis to individual
   options.

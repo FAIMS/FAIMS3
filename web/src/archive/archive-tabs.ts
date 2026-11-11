@@ -4,7 +4,6 @@ import {config} from '@/constants';
 /**
  * URL/search keys and values for /archive — keep in sync with sidebar + route validateSearch.
  * The first tab is the plural of `VITE_NOTEBOOK_NAME` (e.g. notebooks, surveys).
- * Teams are omitted until team archive is implemented.
  *
  * Template archive row actions (restore, delete) and copy for delete confirmations:
  * see `archived-templates.tsx` and `template-delete-warnings.ts` in this folder.
@@ -12,6 +11,7 @@ import {config} from '@/constants';
 export const ARCHIVE_TAB_VALUES = [
   config.notebookNamePlural,
   'templates',
+  'teams',
   'users',
 ] as const;
 
@@ -24,6 +24,7 @@ export const ARCHIVE_TAB_LABELS: Record<ArchiveTab, string> = {
   [config.notebookNamePlural as ArchiveTab]:
     config.notebookNamePluralCapitalized,
   templates: 'Templates',
+  teams: 'Teams',
   users: 'Users',
 };
 
@@ -31,11 +32,13 @@ export const ARCHIVE_TAB_LABELS: Record<ArchiveTab, string> = {
 export function getVisibleArchiveTabs(flags: {
   canSeeProjects: boolean;
   canSeeTemplates: boolean;
+  canSeeTeams: boolean;
   canSeeUsers: boolean;
 }): ArchiveTab[] {
   const tabs: ArchiveTab[] = [];
   if (flags.canSeeProjects) tabs.push(config.notebookNamePlural as ArchiveTab);
   if (flags.canSeeTemplates) tabs.push('templates');
+  if (flags.canSeeTeams) tabs.push('teams');
   if (flags.canSeeUsers) tabs.push('users');
   return tabs;
 }

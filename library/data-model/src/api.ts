@@ -18,6 +18,7 @@ import {
   newFormRecordSchema,
 } from './databaseEngine';
 import {
+  ContextualLayerListingSchema,
   CreateRootDescriptionSchema,
   PeopleDBDocumentSchema,
   ProjectStatus,
@@ -36,6 +37,7 @@ import {
 import {
   NotebookDefinitionSchema,
   NotebookUiSpecificationInputSchema,
+  SetupValuesSchema,
   TemplateDefinition,
 } from './uiSpecification';
 import {projectInviteRoles} from './permission/functions';
@@ -115,12 +117,26 @@ export type PostResetPasswordInput = z.infer<
   typeof PostResetPasswordInputSchema
 >;
 
+/**
+ * True only when `hasLocalProfile` is explicitly true. Absent or false means
+ * no local password login — do not prefill login email. The field is optional
+ * this release so older payloads still parse; flip the schema to required once
+ * stored sessions without it are gone.
+ */
+export function hasLocalLoginProfile(
+  hasLocalProfile: boolean | undefined
+): boolean {
+  return hasLocalProfile === true;
+}
+
 // Get current user
 export const GetCurrentUserResponseSchema = z.object({
   id: z.string(),
   name: z.string(),
   email: z.string(),
   isVerified: z.boolean(),
+  // Optional this release (absent → false). Flip to required later.
+  hasLocalProfile: z.boolean().optional(),
 });
 
 export type GetCurrentUserResponse = z.infer<
@@ -289,11 +305,14 @@ export type PostImpersonateUserResponse = z.infer<
 /** GET /api/notebooks and GET /api/directory row. Lean project; no uiSpecification. */
 export const APINotebookListSchema = ProjectListItemSchema.extend({
   byteCount: z.number().optional(),
+  /** Ready linked layers. Omitted on attach failure; empty means none are ready. */
+  contextualLayers: z.array(ContextualLayerListingSchema).optional(),
+  contextualLayersHash: z.string().optional(),
 });
 export type APINotebookList = z.infer<typeof APINotebookListSchema>;
 
-/** GET /api/notebooks?includeByteCount=true */
-export const APINotebookListWithStatsSchema = ProjectListItemSchema.extend({
+/** GET /api/notebooks?includeByteCount=true — same as list, with required `byteCount`. */
+export const APINotebookListWithStatsSchema = APINotebookListSchema.extend({
   byteCount: z.number(),
 });
 export type APINotebookListWithStats = z.infer<
@@ -304,6 +323,9 @@ export type APINotebookListWithStats = z.infer<
 export const GetNotebookResponseSchema = ExistingProjectDocumentSchema.extend({
   recordCount: z.number().optional(),
   byteCount: z.number(),
+  /** Ready linked layers. Omitted on attach failure; empty means none are ready. */
+  contextualLayers: z.array(ContextualLayerListingSchema).optional(),
+  contextualLayersHash: z.string().optional(),
 });
 export type GetNotebookResponse = z.infer<typeof GetNotebookResponseSchema>;
 
@@ -341,6 +363,7 @@ export const CreateNotebookFromTemplateSchema = z.object({
   planConfigs: z
     .record(z.string(), z.record(z.string(), z.unknown()))
     .optional(),
+  setupValues: SetupValuesSchema.optional(),
 });
 export type CreateNotebookFromTemplate = z.infer<
   typeof CreateNotebookFromTemplateSchema
@@ -374,12 +397,9 @@ export type PutChangeNotebookStatusInput = z.infer<
   typeof PutChangeNotebookStatusInputSchema
 >;
 
-// PUT :/id change project team
+// PUT :/id change project team. Omit teamId to remove team ownership.
 export const PutChangeNotebookTeamInputSchema = z.object({
-  teamId: z
-    .string()
-    .min(1, 'Team ID is required')
-    .max(INPUT_LIMITS.ID_MAX_LENGTH),
+  teamId: z.string().trim().min(1).max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
 });
 
 export type PutChangeNotebookTeamInput = z.infer<
@@ -565,13 +585,9 @@ export type PutUpdateTemplateInput = z.infer<
   typeof PutUpdateTemplateInputSchema
 >;
 
-/** PUT /api/templates/:id/team — change owning team only. */
+/** PUT /api/templates/:id/team — change owning team only. Omit teamId to remove team ownership. */
 export const PutChangeTemplateTeamInputSchema = z.object({
-  teamId: z
-    .string()
-    .trim()
-    .min(1, 'Team ID is required')
-    .max(INPUT_LIMITS.ID_MAX_LENGTH),
+  teamId: z.string().trim().min(1).max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
 });
 export type PutChangeTemplateTeamInput = z.infer<
   typeof PutChangeTemplateTeamInputSchema
@@ -737,7 +753,15 @@ export const TeamDocumentSchema = z.object({
   createdAt: z.number(),
   updatedAt: z.number(),
   createdBy: z.string(),
+  /** Missing/undefined reads as active. */
+  archived: z.boolean().optional(),
 });
+
+/** PUT /api/teams/:id/archive — set top-level `archived`; use `{ archive: false }` to restore. */
+export const PutArchiveTeamRequestSchema = z.object({
+  archive: z.boolean(),
+});
+export type PutArchiveTeamRequest = z.infer<typeof PutArchiveTeamRequestSchema>;
 
 /**
  * GET /api/teams response
@@ -1465,4 +1489,171 @@ export const GetTombstoneByIdResponseSchema = TombstoneDocumentSchema;
 export type TombstoneDocument = z.infer<typeof TombstoneDocumentSchema>;
 export type GetTombstoneByIdResponse = z.infer<
   typeof GetTombstoneByIdResponseSchema
+>;
+
+// =====
+// ADMIN STATS
+// =====
+
+/** Sentinel team id for notebooks with no `ownedByTeamId`. */
+export const ADMIN_STATS_UNTEAMED_TEAM_ID = '__unteamed__';
+
+/** Default page size for GET /api/admin/stats/teams and /people. */
+export const ADMIN_STATS_DEFAULT_PAGE_LIMIT = 50;
+
+/** Absolute ceiling applied to stats list `limit`. */
+export const ADMIN_STATS_MAX_PAGE_LIMIT = 200;
+
+/** JSON field name (`incomplete`) for the skipped-query flag on stats responses. */
+export const ADMIN_STATS_INCOMPLETE_SENTINEL = 'incomplete' as const;
+
+/** Shared cache timestamps echoed on every stats response. */
+export const AdminStatsCacheMetaSchema = z.object({
+  /** ISO-8601 time when this snapshot was computed. */
+  generatedAt: z.string(),
+  /** ISO-8601 time when the API will recompute this snapshot. */
+  expiresAt: z.string(),
+});
+export type AdminStatsCacheMeta = z.infer<typeof AdminStatsCacheMetaSchema>;
+
+/**
+ * Overall instance counts. There is no `photoCount` — attachments (including
+ * photos) are a single bucket.
+ */
+export const GetAdminStatsResponseSchema = AdminStatsCacheMetaSchema.extend({
+  /** Number of teams (does not include the unteamed sentinel row). */
+  teamCount: z.number().int().nonnegative(),
+  userCount: z.number().int().nonnegative(),
+  notebookCount: z.number().int().nonnegative(),
+  archivedNotebookCount: z.number().int().nonnegative(),
+  templateCount: z.number().int().nonnegative(),
+  archivedTemplateCount: z.number().int().nonnegative(),
+  mapAssetCount: z.number().int().nonnegative(),
+  /** Sum of map-layer `byteSize` (normalized file; 0 while pending). */
+  mapAssetByteCount: z.number().int().nonnegative(),
+  recordCount: z.number().int().nonnegative(),
+  /** Attachments of every kind, including photos. */
+  attachmentCount: z.number().int().nonnegative(),
+  /** Sum of CouchDB `sizes.active` across survey data DBs. */
+  byteCount: z.number().int().nonnegative(),
+  disabledUserCount: z.number().int().nonnegative(),
+  /**
+   * Distinct users with at least one enabled, unexpired refresh token
+   * (currently logged in).
+   */
+  loggedInUserCount: z.number().int().nonnegative(),
+  inviteCount: z.number().int().nonnegative(),
+  longLivedTokenCount: z.number().int().nonnegative(),
+  tombstoneCount: z.number().int().nonnegative(),
+  /**
+   * True when at least one per-survey data-DB query failed and was skipped.
+   * The rest of the snapshot is still valid.
+   */
+  incomplete: z.boolean(),
+  /** Survey ids whose data-DB query failed; omitted when `incomplete` is false. */
+  incompleteNotebookIds: z.array(z.string()).optional(),
+});
+export type GetAdminStatsResponse = z.infer<typeof GetAdminStatsResponseSchema>;
+
+/** One team's aggregated notebook / record / attachment / byte counts. */
+export const AdminStatsTeamRowSchema = z.object({
+  /** Team id, or {@link ADMIN_STATS_UNTEAMED_TEAM_ID} for notebooks with no team. */
+  teamId: z.string(),
+  name: z.string(),
+  notebookCount: z.number().int().nonnegative(),
+  recordCount: z.number().int().nonnegative(),
+  attachmentCount: z.number().int().nonnegative(),
+  byteCount: z.number().int().nonnegative(),
+  /** Sum of this team's map-layer `byteSize`; personal layers use the unteamed row. */
+  mapAssetByteCount: z.number().int().nonnegative(),
+});
+export type AdminStatsTeamRow = z.infer<typeof AdminStatsTeamRowSchema>;
+
+/** Paginated team rows from the same snapshot as overall counts. */
+export const GetAdminStatsTeamsResponseSchema =
+  AdminStatsCacheMetaSchema.extend({
+    teams: z.array(AdminStatsTeamRowSchema),
+    total: z.number().int().nonnegative(),
+    limit: z.number().int().positive(),
+    offset: z.number().int().nonnegative(),
+    incomplete: z.boolean(),
+  });
+export type GetAdminStatsTeamsResponse = z.infer<
+  typeof GetAdminStatsTeamsResponseSchema
+>;
+
+/**
+ * One person's aggregated record / attachment counts. Records are keyed by
+ * the record's `created_by`; attachments by the attachment's `created_by`
+ * (the uploader, who may differ from the record owner). Users with an
+ * active refresh token are included even when both counts are zero.
+ * Email/name are omitted when the user doc is missing.
+ */
+export const AdminStatsPersonRowSchema = z.object({
+  userId: z.string(),
+  email: z.string().nullable().optional(),
+  name: z.string().optional(),
+  recordCount: z.number().int().nonnegative(),
+  attachmentCount: z.number().int().nonnegative(),
+  /** True when this user has at least one enabled, unexpired refresh token. */
+  loggedIn: z.boolean(),
+});
+export type AdminStatsPersonRow = z.infer<typeof AdminStatsPersonRowSchema>;
+
+/** Paginated people rows from the same snapshot as overall counts. */
+export const GetAdminStatsPeopleResponseSchema =
+  AdminStatsCacheMetaSchema.extend({
+    people: z.array(AdminStatsPersonRowSchema),
+    total: z.number().int().nonnegative(),
+    limit: z.number().int().positive(),
+    offset: z.number().int().nonnegative(),
+    incomplete: z.boolean(),
+  });
+export type GetAdminStatsPeopleResponse = z.infer<
+  typeof GetAdminStatsPeopleResponseSchema
+>;
+
+/**
+ * Zod refine: optional `limit` must parse as 1..{@link ADMIN_STATS_MAX_PAGE_LIMIT}.
+ */
+const adminStatsLimitRefine = (data: {limit?: string}) => {
+  if (data.limit === undefined || data.limit === '') return true;
+  const n = parseInt(data.limit, 10);
+  return !Number.isNaN(n) && n >= 1 && n <= ADMIN_STATS_MAX_PAGE_LIMIT;
+};
+
+/**
+ * Zod refine: optional `offset` must parse as a non-negative integer.
+ */
+const adminStatsOffsetRefine = (data: {offset?: string}) => {
+  if (data.offset === undefined || data.offset === '') return true;
+  const n = parseInt(data.offset, 10);
+  return !Number.isNaN(n) && n >= 0;
+};
+
+/** GET /api/admin/stats query (refresh bypasses the API snapshot cache). */
+export const GetAdminStatsQuerySchema = z.object({
+  /** `'true'` forces a recompute; omitted or `'false'` uses the TTL cache. */
+  refresh: z.enum(['true', 'false']).optional(),
+});
+export type GetAdminStatsQuery = z.infer<typeof GetAdminStatsQuerySchema>;
+
+/** GET /api/admin/stats/teams and /people query. */
+export const GetAdminStatsListQuerySchema = z
+  .object({
+    /** `'true'` forces a recompute; omitted or `'false'` uses the TTL cache. */
+    refresh: z.enum(['true', 'false']).optional(),
+    /** Page size as a decimal string (1..{@link ADMIN_STATS_MAX_PAGE_LIMIT}). */
+    limit: z.string().max(16).optional(),
+    /** Page offset as a decimal string (non-negative). */
+    offset: z.string().max(16).optional(),
+  })
+  .refine(adminStatsLimitRefine, {
+    message: `limit must be between 1 and ${ADMIN_STATS_MAX_PAGE_LIMIT}`,
+  })
+  .refine(adminStatsOffsetRefine, {
+    message: 'offset must be a non-negative integer',
+  });
+export type GetAdminStatsListQuery = z.infer<
+  typeof GetAdminStatsListQuerySchema
 >;

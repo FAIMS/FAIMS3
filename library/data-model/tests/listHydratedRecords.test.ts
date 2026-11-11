@@ -162,3 +162,65 @@ describe('listHydratedRecords', () => {
     expect(result.records.every(r => r.data['First-1']?.data)).toBe(true);
   });
 });
+
+describe('hydrateRecordsByIds', () => {
+  let db: DatabaseInterface<DataDocument>;
+  let engine: DataEngine;
+
+  const uiSpecPath = path.join(__dirname, 'engineTestUiSpec.json');
+  const uiSpecData = fs.readFileSync(uiSpecPath, 'utf-8');
+  const {uiSpec} = JSON.parse(uiSpecData) as NotebookDefinition;
+
+  beforeEach(async () => {
+    db = new PouchDB('test-hydrate-by-ids-db', {
+      adapter: 'memory',
+    }) as DatabaseInterface<DataDocument>;
+    engine = new DataEngine({
+      dataDb: db,
+      uiSpec: uiSpec as unknown as CompiledNotebookUiSpec,
+    });
+  });
+
+  afterEach(async () => {
+    await db.destroy();
+  });
+
+  test('hydrates several records in one wave and skips a missing id', async () => {
+    const a = await engine.form.createRecord({
+      formId: 'A',
+      createdBy: 'user-1',
+      initial: {'First-1': {data: 'alpha'}},
+    });
+    const b = await engine.form.createRecord({
+      formId: 'A',
+      createdBy: 'user-1',
+      initial: {'First-1': {data: 'beta'}},
+    });
+
+    const results = await engine.hydrated.hydrateRecordsByIds([
+      a.record._id,
+      'no-such-record',
+      b.record._id,
+    ]);
+
+    expect(results).toHaveLength(3);
+    expect(results[0]).toMatchObject({
+      ok: true,
+      recordId: a.record._id,
+    });
+    if (results[0].ok) {
+      expect(results[0].formData.data['First-1'].data).toBe('alpha');
+    }
+    expect(results[1]).toMatchObject({
+      ok: false,
+      recordId: 'no-such-record',
+    });
+    expect(results[2]).toMatchObject({
+      ok: true,
+      recordId: b.record._id,
+    });
+    if (results[2].ok) {
+      expect(results[2].formData.data['First-1'].data).toBe('beta');
+    }
+  });
+});

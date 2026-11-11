@@ -184,8 +184,23 @@ function assertPlansAddressable({
 }
 
 /**
+ * Drops `metadata.setup`. Those values are captured when a notebook is created
+ * from a template, not part of the template design — leftover instance data
+ * from a notebook-turned-template must not be stored or copied forward.
+ */
+export function omitSetupFromMetadata<T extends {setup?: unknown}>(
+  metadata: T
+): Omit<T, 'setup'> {
+  const {setup: _setup, ...rest} = metadata;
+  return rest;
+}
+
+/**
  * Accept a legacy or current notebook template JSON bundle, then validate each
  * plan template it carries against that plan type's own schema.
+ *
+ * Strips `metadata.setup` so create/update persist cannot keep instance values
+ * that arrived with a notebook copied as a template.
  */
 export function normalizeNotebookTemplateUiSpecification(
   raw: unknown
@@ -203,7 +218,10 @@ export function normalizeNotebookTemplateUiSpecification(
     label: 'template uiSpecification',
   });
 
-  return definition;
+  return {
+    ...definition,
+    metadata: omitSetupFromMetadata(definition.metadata),
+  };
 }
 
 /**

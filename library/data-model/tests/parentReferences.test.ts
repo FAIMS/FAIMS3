@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import {compileUiSpecConditionals, UiSpecModel} from '@faims3/data-model';
-import {recomputeDerivedFields} from '../src';
-import {recomputeComputedFields} from '../src';
+import {
+  isDerivedFieldName,
+  recomputeComputedFields,
+  recomputeDerivedFields,
+} from '../src';
 
 // Site parents Feature via a Child-relation Related Records field.
 const makeSpec = (): UiSpecModel => {
@@ -144,5 +147,14 @@ describe('computed fields with parent references', () => {
       formId: 'Feature',
     });
     expect(updates['Feature-Density'] ?? null).toBeNull();
+  });
+});
+
+describe('isDerivedFieldName', () => {
+  it('matches computed and templated component names', () => {
+    expect(isDerivedFieldName('ComputedNumber')).toBe(true);
+    expect(isDerivedFieldName('ComputedText')).toBe(true);
+    expect(isDerivedFieldName('TemplatedStringField')).toBe(true);
+    expect(isDerivedFieldName('NumberField')).toBe(false);
   });
 });

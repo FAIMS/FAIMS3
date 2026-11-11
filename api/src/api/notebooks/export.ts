@@ -37,10 +37,7 @@ import {
   getDownloadGrant,
   verifyDownloadGrantCookieSecret,
 } from '../../couchdb/downloadGrants';
-import {
-  generateFilenameForAttachment,
-  streamNotebookFilesAsZip,
-} from '../../couchdb/export/attachmentExport';
+import {streamNotebookFilesAsZip} from '../../couchdb/export/attachmentExport';
 import {streamNotebookRecordsAsCSV} from '../../couchdb/export/csvExport';
 import {
   generateFullExportFilename,
@@ -56,6 +53,7 @@ import {
 import {stripDeletedRelatedRefsFromRecordData} from '../../couchdb/export/stripDeletedRelatedRefs';
 import {
   contentDispositionAttachment,
+  rewriteFileFieldsForJsonExport,
   sanitizeDownloadFilename,
 } from '../../couchdb/export/utils';
 import {getCompiledUiSpecModel, getUiSpecModel} from '../../couchdb/notebooks';
@@ -433,8 +431,8 @@ notebookExportRouter.get(
       }
       // Process any file fields to give the file name in the zip download
       for (const record of records) {
+        const fields = fieldTypesByViewId[record.type];
         if (record.data) {
-          const fields = fieldTypesByViewId[record.type];
           if (fields) {
             try {
               const dataCopy = {...record.data};
@@ -457,45 +455,29 @@ notebookExportRouter.get(
         if (!exportData) {
           continue;
         }
-        const hrid = record.hrid || record.record_id;
-        for (const fieldName in exportData) {
-          const values = exportData[fieldName];
-          if (values instanceof Array) {
-            const names = values.map((v: any) => {
-              if (v instanceof File) {
-                let viewID = record.type;
-                try {
-                  const viewsetId = getIdsByFieldName({
-                    fieldName,
-                    uiSpecification,
-                  }).viewSetId;
-                  viewID = viewsetId;
-                } catch (e) {
-                  console.error(
-                    'missing viewset for field',
-                    fieldName,
-                    'falling back to type'
-                  );
-                }
-                const filename = generateFilenameForAttachment({
-                  file: v,
-                  fieldId: fieldName,
-                  hrid,
-                  // The view ID is the viewset ID - which is the 'type'
-                  viewID,
-                  filenames,
-                });
-                filenames.push(filename);
-                return filename;
-              } else {
-                return v;
-              }
-            });
-            if (names.length > 0) {
-              exportData[fieldName] = names;
+        rewriteFileFieldsForJsonExport({
+          data: exportData,
+          fields,
+          hrid: record.hrid || record.record_id,
+          // The view ID is the viewset ID - which is the 'type'
+          viewID: record.type,
+          filenames,
+          resolveViewId: fieldName => {
+            try {
+              return getIdsByFieldName({
+                fieldName,
+                uiSpecification,
+              }).viewSetId;
+            } catch (e) {
+              console.error(
+                'missing viewset for field',
+                fieldName,
+                'falling back to type'
+              );
+              return record.type;
             }
-          }
-        }
+          },
+        });
       }
       res.json({records});
     } else {

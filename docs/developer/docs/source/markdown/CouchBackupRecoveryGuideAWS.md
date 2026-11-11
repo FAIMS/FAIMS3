@@ -61,16 +61,19 @@ keys/migrate.
 
 ### CDK config
 
-From `infrastructure/aws-cdk`:
+Pull the env config (from the FAIMS3 repo root; add
+`--config-repo <git clone string>` the first time on a stage), then validate
+from `infrastructure/aws-cdk`:
 
 ```bash
-./config.sh pull <env> # note you may need --config_repo <git clone string> if first time running on a stage
-export CONFIG_FILE_NAME=<env>.json
+./scripts/sync-deployment-config.sh pull <env>
+cd infrastructure/aws-cdk
+export CONFIG_ENV=<env>
 pnpm run validate-config
 ```
 
-Keep `CONFIG_FILE_NAME` set for the whole window. `stackName` / region are in
-`configs/<env>.json`.
+Keep `CONFIG_ENV` set for the whole window. `stackName` / region are in
+`config/<env>/aws.json` (beside `core.json`, in the repo-root local mirror).
 
 ### Repo revision and build
 
@@ -117,7 +120,7 @@ cp scripts/.env.dist scripts/.env
 
 Then use the values from `api/.env` to fill out the first fields (db url,
 username, password) in `scripts/.env`, and set `STACK_NAME` to the CloudFormation
-stack name from `configs/<env>.json` (same as `stackName`).
+stack name from `config/<env>/aws.json` (same as `stackName`).
 
 ### Local access to VPC-only Couch (couch auth proxy)
 
@@ -184,7 +187,7 @@ to snapshot):
 
 ## 2. Set recovery snapshot in config
 
-In `configs/<env>.json`:
+In `config/<env>/aws.json` (local mirror):
 
 ```json
 "couch": {
@@ -196,7 +199,7 @@ In `configs/<env>.json`:
 `volumeSize` is ignored while a snapshot id is set (size comes from the snap).
 
 ```bash
-./config.sh push <env>   # if you use the private config repo
+./scripts/sync-deployment-config.sh push <env>   # from repo root, if you use the private config repo
 pnpm cdk diff            # expect new Volume (+ attachment) ids (…FromSnap…); stop if blast radius is wrong
 ```
 

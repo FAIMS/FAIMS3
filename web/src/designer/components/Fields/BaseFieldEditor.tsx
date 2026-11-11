@@ -9,15 +9,9 @@ import SyncIcon from '@mui/icons-material/Sync';
 import {
   Alert,
   Box,
-  Button,
   Card,
   Checkbox,
   Collapse,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   Divider,
   FormControlLabel,
   Grid,
@@ -30,16 +24,12 @@ import {
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import {debounce} from 'lodash';
-import {useCallback, useEffect, useRef, useState} from 'react';
-import {config as appConfig} from '@/constants';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {config} from '../../buildconfig';
 import {designerHtmlInput, INPUT_LIMITS} from '../../lib/input-limits';
 import {getViewIDForField} from '../../state/helpers/uiSpec-helpers';
-import {
-  useDesignerEditingContext,
-  useIsFieldNewInSession,
-} from '../../state/editing-context';
-import {useAppDispatch, useAppSelector} from '../../state/hooks';
+import {useExportNameAutoSync} from '../../state/editing-context';
+import {useAppDispatch, useAppSelector, useAppStore} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {
   fieldConditionChanged,
@@ -53,17 +43,11 @@ import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 import {getSpeechSettings, updateSpeechSettings} from './SpeechSettingsEditor';
-import {slugify} from '../../domain/notebook/ids';
+import {isOwnExportNameEcho, slugify} from '../../domain/notebook/ids';
 import {
-  designerCancelButtonSx,
   designerCheckboxSx,
-  designerDialogActionsSx,
-  designerDialogBodyTextSx,
-  designerDialogContentSx,
-  designerDialogTitleSx,
   designerInfoCalloutSx,
   designerInfoIconSx,
-  designerPrimaryActionButtonSx,
   designerSoftPanelCardSx,
 } from '../designer-style';
 
@@ -80,9 +64,67 @@ const FIRST_AUTO_SYNC_DELAY_MS = 700;
 type Props = {
   fieldName: string;
   showExtraConfig?: boolean;
+  /** Show the visibility condition while keeping the other general settings hidden. */
+  showCondition?: boolean;
   showHelperText?: boolean;
   children?: React.ReactNode;
+  // Allow field-specific updates when Required changes.
+  // Modifies the new field before dispatch so related changes share one undo step.
+  onRequiredChange?: (field: FieldType, required: boolean) => void;
 };
+
+const ConditionSettings = ({
+  condition,
+  onChange,
+  field,
+}: {
+  condition?: ConditionType | null;
+  onChange: (condition: ConditionType | null) => void;
+  field: string;
+}) => (
+  <>
+    <Stack
+      direction="row"
+      sx={{
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        gap: 2,
+        flexWrap: 'wrap',
+      }}
+    >
+      <ConditionModal
+        label={condition ? 'Update condition' : 'Add condition'}
+        initial={condition}
+        onChange={onChange}
+        field={field}
+        buttonSx={{
+          textTransform: 'none',
+          fontWeight: 600,
+          fontSize: '0.875rem',
+        }}
+      />
+    </Stack>
+
+    {condition && (
+      <Box
+        sx={{
+          ...(designerInfoCalloutSx as Record<string, unknown>),
+          p: 1.5,
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{fontWeight: 600, color: 'text.secondary'}}
+        >
+          Show this field if{' '}
+        </Typography>
+        <Typography variant="caption" color="text.primary">
+          <ConditionSummary condition={condition} />
+        </Typography>
+      </Box>
+    )}
+  </>
+);
 
 type StateType = {
   label?: string;
@@ -99,7 +141,6 @@ type StateType = {
   allowHiding: boolean;
 };
 
-/** sx applied to every Checkbox — green tick when checked, grey when unchecked. */
 /**
  * Default property sheet: label, persistence, meta flags, visibility condition, template protection.
  * Type-specific panels pass extra controls as `children`.
@@ -107,14 +148,17 @@ type StateType = {
 export const BaseFieldEditor = ({
   fieldName,
   showExtraConfig = true,
+  showCondition = showExtraConfig,
   showHelperText = true,
   children,
+  onRequiredChange,
 }: Props) => {
   const field = useAppSelector(
     state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const uiSpec = useAppSelector(state => state.notebook.uiSpec.present);
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const mdxEditorRef = useRef<MDXEditorMethods>(null);
   // The exact markdown the editor itself last emitted via onChange. The sync
   // effect uses this to tell our own edits (echoed back through the store) from
@@ -131,172 +175,155 @@ export const BaseFieldEditor = ({
   const idInputRef = useRef<HTMLInputElement>(null);
   const labelInputRef = useRef<HTMLInputElement>(null);
   const isMounted = useRef(false);
-  // Enable one-time auto-sync (Label -> Field ID) for newly added fields only.
-  const autoSyncFieldIdEnabled = useRef(true);
-  const initialAutoSyncDone = useRef(false);
-  // A rename changes the field's key, so this component re-renders with a new
-  // `fieldName` — indistinguishable from the user selecting another field. Set
-  // before dispatching so the `fieldName` effect can tell the two apart and skip
-  // re-arming auto-sync and re-focusing.
-  const internalRenameInFlight = useRef(false);
+  // One-shot Field Heading → export title for fields added this session. Consumed
+  // state lives on the editing context so remounting (collapse, section
+  // change) cannot re-arm sync and overwrite a custom export title.
+  const {pending: autoSyncPending, consume: consumeExportNameAutoSync} =
+    useExportNameAutoSync(field.designerIdentifier);
+  const autoSyncExportNameEnabled = useRef(autoSyncPending);
   const labelSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [localFieldName, setLocalFieldName] = useState(fieldName);
-  const [pendingFieldID, setPendingFieldID] = useState<{
-    from: string;
-    to: string;
-  } | null>(null);
-  const {existingRecordCount} = useDesignerEditingContext();
-  const hasExistingRecords = (existingRecordCount ?? 0) > 0;
-  const isFieldNewInSession = useIsFieldNewInSession(field.designerIdentifier);
-  // Only an existing field in a survey that already holds records can orphan
-  // data. Gates the confirm-before-rename flow below.
-  const changingIdMayOrphanData = hasExistingRecords && !isFieldNewInSession;
+  /** Latest label that scheduled an auto-sync (blur must not use stale Redux). */
+  const pendingSyncLabelRef = useRef<string | null>(null);
+  const [localExportName, setLocalExportName] = useState(field.exportName);
+  // Keep debounce identity stable: uiSpec / exportName change after every
+  // commit, and recreating the lodash debounce cancels pending keystrokes.
+  const uiSpecRef = useRef(uiSpec);
+  uiSpecRef.current = uiSpec;
+  const exportNameRef = useRef(field.exportName);
+  exportNameRef.current = field.exportName;
+  const lastRequestedExportNameRef = useRef(field.exportName);
 
-  const debouncedRename = useCallback(
-    debounce((newFieldName: string) => {
-      const viewId = getViewIDForField(uiSpec, fieldName);
-      if (viewId && newFieldName.trim() && newFieldName.trim() !== fieldName) {
-        internalRenameInFlight.current = true;
-        dispatch(
-          fieldRenamed({
-            viewId,
-            fieldName,
-            newFieldName: newFieldName.trim(),
-          })
-        );
-      }
-    }, 500),
-    [dispatch, uiSpec, fieldName]
+  const debouncedRename = useMemo(
+    () =>
+      debounce((newExportName: string) => {
+        const viewId = getViewIDForField(uiSpecRef.current, fieldName);
+        const desired = newExportName.trim();
+        if (
+          viewId &&
+          desired &&
+          slugify(desired) &&
+          desired !== exportNameRef.current
+        ) {
+          lastRequestedExportNameRef.current = desired;
+          dispatch(
+            fieldRenamed({
+              viewId,
+              fieldName,
+              newExportName: desired,
+            })
+          );
+        }
+      }, 500),
+    [dispatch, fieldName]
   );
 
-  // The single write path for a Field ID change; no-ops when blank or unchanged.
-  const commitFieldID = (newFieldName: string) => {
-    const desired = newFieldName.trim();
-    const viewId = getViewIDForField(uiSpec, fieldName);
-    if (viewId && desired && desired !== fieldName) {
-      internalRenameInFlight.current = true;
-      setLocalFieldName(desired);
-      dispatch(fieldRenamed({viewId, fieldName, newFieldName: desired}));
+  const readStoredExportName = () =>
+    store.getState().notebook.uiSpec.present.fields[fieldName]?.exportName ??
+    '';
+
+  /**
+   * Commit `newExportName`, then show what the reducer actually stored
+   * (slugified and uniquified, e.g. `width` → `width-1`). Invalid input
+   * just restores the stored value.
+   */
+  const commitExportName = (newExportName: string) => {
+    debouncedRename.cancel();
+    const desired = newExportName.trim();
+    const viewId = getViewIDForField(
+      store.getState().notebook.uiSpec.present,
+      fieldName
+    );
+    if (
+      viewId &&
+      desired &&
+      slugify(desired) &&
+      desired !== readStoredExportName()
+    ) {
+      dispatch(fieldRenamed({viewId, fieldName, newExportName: desired}));
     }
+    const stored = readStoredExportName();
+    lastRequestedExportNameRef.current = stored;
+    setLocalExportName(stored);
   };
 
-  const syncFieldIDToLabel = (label: string) => {
-    commitFieldID(slugify(label || ''));
+  const syncExportNameToLabel = (label: string) => {
+    commitExportName(slugify(label || ''));
+  };
+
+  const disableAutoSync = () => {
+    autoSyncExportNameEnabled.current = false;
+    consumeExportNameAutoSync();
   };
 
   const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // User is explicitly controlling Field ID, so pause auto-sync from label.
-    autoSyncFieldIdEnabled.current = false;
-    initialAutoSyncDone.current = true;
-    setLocalFieldName(e.target.value);
-    // Renames that could orphan data are deferred to blur, so the user confirms
-    // before anything is written.
-    if (!changingIdMayOrphanData) debouncedRename(e.target.value);
+    disableAutoSync();
+    setLocalExportName(e.target.value);
+    debouncedRename(e.target.value);
   };
 
-  /** Stages the typed ID so the confirm dialog opens; nothing is written yet. */
   const handleIdBlur = () => {
-    if (!changingIdMayOrphanData) return;
-    const desired = localFieldName.trim();
-    if (!desired) {
-      setLocalFieldName(fieldName);
-      return;
-    }
-    if (desired === fieldName) return;
-    setPendingFieldID({from: fieldName, to: desired});
-  };
-
-  const applyFieldIDSync = (desired: string) => {
-    // Manual sync is one-shot and should not re-enable continuous auto-sync.
-    autoSyncFieldIdEnabled.current = false;
-    initialAutoSyncDone.current = true;
-    commitFieldID(desired);
+    commitExportName(localExportName);
   };
 
   const syncFieldID = () => {
     const desired = slugify(state.label || '');
-    if (!desired || desired === fieldName) return;
-    if (changingIdMayOrphanData) {
-      setPendingFieldID({from: fieldName, to: desired});
-      return;
-    }
-    applyFieldIDSync(desired);
+    if (!desired) return;
+    disableAutoSync();
+    commitExportName(desired);
   };
 
-  const confirmFieldIDChange = () => {
-    const pending = pendingFieldID;
-    setPendingFieldID(null);
-    // Ignore a stale confirmation if the selected field changed underneath us.
-    if (pending && pending.from === fieldName) applyFieldIDSync(pending.to);
-  };
-
-  const cancelFieldIDChange = () => {
-    setPendingFieldID(null);
-    setLocalFieldName(fieldName);
-  };
-
-  // Stops the sync button stealing blur, which would open the dialog twice.
+  // Keep focus on the export-name input so the sync button does not steal it.
   const keepFocusOnMouseDown = (e: React.MouseEvent) => e.preventDefault();
 
   const handleLabelChange = (newLabel: string) => {
     updateProperty('label', newLabel);
 
-    // - do one automatic Label -> Field ID sync for fresh fields
-    // - only after the user pauses typing
-    // - never keep re-syncing forever while they continue editing label text
-    if (autoSyncFieldIdEnabled.current && !initialAutoSyncDone.current) {
+    // First-edit session for fields added this session: keep Field Heading → export
+    // name in sync after each typing pause. Do not consume here — later
+    // keystrokes (and the eventual tab/click-away) must still sync.
+    if (autoSyncExportNameEnabled.current) {
       if (labelSyncTimerRef.current) {
         clearTimeout(labelSyncTimerRef.current);
       }
+      pendingSyncLabelRef.current = newLabel;
       labelSyncTimerRef.current = setTimeout(() => {
-        syncFieldIDToLabel(newLabel);
-        initialAutoSyncDone.current = true;
-        autoSyncFieldIdEnabled.current = false;
+        syncExportNameToLabel(pendingSyncLabelRef.current ?? newLabel);
         labelSyncTimerRef.current = null;
       }, FIRST_AUTO_SYNC_DELAY_MS);
     }
   };
 
   const handleLabelBlur = () => {
-    // Only flush a sync the user's typing scheduled. Blurring an untouched fresh
-    // field (focus moving to a newly added field) must not rename it, or several
-    // default "New Field" fields chase the same slug in a rename loop.
-    const hadPendingSync = labelSyncTimerRef.current !== null;
     if (labelSyncTimerRef.current) {
       clearTimeout(labelSyncTimerRef.current);
       labelSyncTimerRef.current = null;
     }
+    // Only flush if the user typed during this first-edit session. Blurring an
+    // untouched fresh field (focus moving to a newly added field) must not
+    // rename it, or several default "New Field" fields chase the same slug.
     if (
-      hadPendingSync &&
-      autoSyncFieldIdEnabled.current &&
-      !initialAutoSyncDone.current
+      autoSyncExportNameEnabled.current &&
+      pendingSyncLabelRef.current !== null
     ) {
-      syncFieldIDToLabel(state.label || '');
-      initialAutoSyncDone.current = true;
-      autoSyncFieldIdEnabled.current = false;
+      // DebouncedTextField flushes onChange immediately before this blur. The
+      // Redux label is still the previous render; use the value that scheduled
+      // the timer (or the input) so tab-away syncs what the user typed.
+      const typedLabel =
+        pendingSyncLabelRef.current ??
+        labelInputRef.current?.value ??
+        state.label ??
+        '';
+      pendingSyncLabelRef.current = null;
+      syncExportNameToLabel(typedLabel);
+      disableAutoSync();
     }
   };
 
   useEffect(() => {
-    const wasInternalRename = internalRenameInFlight.current;
-    internalRenameInFlight.current = false;
+    lastRequestedExportNameRef.current = field.exportName;
+    setLocalExportName(field.exportName);
 
-    // "New-Field*" means this field was just created by designer scaffolding.
-    // We allow first-time auto-sync only for this new-field state.
-    const isFreshGeneratedFieldId = /^New-Field(?:-\d+)?$/i.test(fieldName);
-    // Don't re-arm after our own rename, or a synced "New-Field-N" id re-enables
-    // sync and the rename repeats.
-    if (!wasInternalRename) {
-      autoSyncFieldIdEnabled.current = isFreshGeneratedFieldId;
-      initialAutoSyncDone.current = !isFreshGeneratedFieldId;
-    }
-
-    setLocalFieldName(fieldName);
-
-    if (isMounted.current && !wasInternalRename) {
-      // Focus policy:
-      // when user lands on a new field, keep them in Label first (fast naming flow);
-      // do not jump focus to Field ID because that interrupts editing.
+    if (isMounted.current) {
       window.setTimeout(() => {
         labelInputRef.current?.focus();
       }, 0);
@@ -304,6 +331,21 @@ export const BaseFieldEditor = ({
       isMounted.current = true;
     }
   }, [fieldName]);
+
+  useEffect(() => {
+    // Own rename echoing back through the store, including a uniquified
+    // suffix (`width` → `width-1`). Do not reset the input — the user may
+    // already have typed past this committed prefix. Only while focused:
+    // otherwise an undo to `width-1` would look like an echo and be ignored.
+    if (
+      document.activeElement === idInputRef.current &&
+      isOwnExportNameEcho(lastRequestedExportNameRef.current, field.exportName)
+    ) {
+      return;
+    }
+    lastRequestedExportNameRef.current = field.exportName;
+    setLocalExportName(field.exportName);
+  }, [field.exportName]);
 
   useEffect(() => {
     return () => {
@@ -404,6 +446,11 @@ export const BaseFieldEditor = ({
 
     newField.persistent = newState.persistent || false;
 
+    // Apply field-specific changes in the same Redux update for consistent undo/redo.
+    if (newState.required !== state.required) {
+      onRequiredChange?.(newField, newState.required);
+    }
+
     updateField(fieldName, newField);
   };
 
@@ -418,16 +465,13 @@ export const BaseFieldEditor = ({
 
   const isSpeechEnabled = checkSpeechEnabled(field);
   const speechSettings = isSpeechEnabled ? getSpeechSettings(field) : null;
-  const isChoiceField =
-    field['component-name'] === 'Select' ||
-    field['component-name'] === 'MultiSelect';
   // Always use the unified wrapper pattern so labels are rendered as headings
   // above inputs (no floating labels), even for legacy/deprecated field types.
   const useUnifiedFieldWrapper = true;
 
   return (
     <Grid container spacing={2}>
-      {/* ── Top card: Label / Field ID / Helper Text / type-specific children ── */}
+      {/* ── Top card: Field Heading / Export Title / Helper Text / type-specific children ── */}
       <Grid size={12}>
         <Card
           variant="outlined"
@@ -443,158 +487,54 @@ export const BaseFieldEditor = ({
           <Grid container spacing={2}>
             <Grid size={{xs: 12, md: 4}}>
               <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                {isChoiceField ? (
-                  <>
-                    <SimpleFieldWrapper heading="Label">
-                      <DebouncedTextField
-                        fullWidth
-                        label=""
-                        placeholder="Enter field label"
-                        value={state.label}
-                        onChange={e => handleLabelChange(e.target.value)}
-                        onBlur={handleLabelBlur}
-                        inputRef={labelInputRef}
-                        slotProps={{
-                          htmlInput: {'data-field-label-input': 'true'},
-                        }}
-                      />
-                    </SimpleFieldWrapper>
-                    <SimpleFieldWrapper heading="Field ID">
-                      <TextField
-                        fullWidth
-                        label=""
-                        placeholder="Enter field ID"
-                        value={localFieldName}
-                        onChange={handleIdChange}
-                        onBlur={handleIdBlur}
-                        inputRef={idInputRef}
-                        slotProps={{
-                          htmlInput: designerHtmlInput(
-                            INPUT_LIMITS.ID_MAX_LENGTH
-                          ),
-                          input: {
-                            endAdornment:
-                              state.label &&
-                              slugify(state.label) !== localFieldName ? (
-                                <InputAdornment position="end">
-                                  <Tooltip title="Sync with field name">
-                                    <IconButton
-                                      size="small"
-                                      onClick={syncFieldID}
-                                      onMouseDown={keepFocusOnMouseDown}
-                                      edge="end"
-                                    >
-                                      <SyncIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
-                                </InputAdornment>
-                              ) : undefined,
-                          },
-                        }}
-                      />
-                    </SimpleFieldWrapper>
-                  </>
-                ) : (
-                  <>
-                    {useUnifiedFieldWrapper ? (
-                      <>
-                        <SimpleFieldWrapper heading="Label">
-                          <DebouncedTextField
-                            fullWidth
-                            label=""
-                            placeholder="Enter field label"
-                            value={state.label}
-                            onChange={e => handleLabelChange(e.target.value)}
-                            onBlur={handleLabelBlur}
-                            inputRef={labelInputRef}
-                            slotProps={{
-                              htmlInput: {'data-field-label-input': 'true'},
-                            }}
-                          />
-                        </SimpleFieldWrapper>
-                        <SimpleFieldWrapper heading="Field ID">
-                          <TextField
-                            fullWidth
-                            label=""
-                            placeholder="Enter field ID"
-                            value={localFieldName}
-                            onChange={handleIdChange}
-                            onBlur={handleIdBlur}
-                            inputRef={idInputRef}
-                            slotProps={{
-                              htmlInput: designerHtmlInput(
-                                INPUT_LIMITS.ID_MAX_LENGTH
-                              ),
-                              input: {
-                                endAdornment:
-                                  state.label &&
-                                  slugify(state.label) !== localFieldName ? (
-                                    <InputAdornment position="end">
-                                      <Tooltip title="Sync with field name">
-                                        <IconButton
-                                          size="small"
-                                          onClick={syncFieldID}
-                                          onMouseDown={keepFocusOnMouseDown}
-                                          edge="end"
-                                        >
-                                          <SyncIcon fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                    </InputAdornment>
-                                  ) : undefined,
-                              },
-                            }}
-                          />
-                        </SimpleFieldWrapper>
-                      </>
-                    ) : (
-                      <>
-                        <DebouncedTextField
-                          fullWidth
-                          label="Label"
-                          value={state.label}
-                          onChange={e => handleLabelChange(e.target.value)}
-                          onBlur={handleLabelBlur}
-                          inputRef={labelInputRef}
-                          slotProps={{
-                            htmlInput: {'data-field-label-input': 'true'},
-                          }}
-                        />
-                        <TextField
-                          fullWidth
-                          label="Field ID"
-                          value={localFieldName}
-                          onChange={handleIdChange}
-                          onBlur={handleIdBlur}
-                          inputRef={idInputRef}
-                          slotProps={{
-                            htmlInput: designerHtmlInput(
-                              INPUT_LIMITS.ID_MAX_LENGTH
-                            ),
-                            input: {
-                              endAdornment:
-                                state.label &&
-                                slugify(state.label) !== localFieldName ? (
-                                  <InputAdornment position="end">
-                                    <Tooltip title="Sync with field name">
-                                      <IconButton
-                                        size="small"
-                                        onClick={syncFieldID}
-                                        onMouseDown={keepFocusOnMouseDown}
-                                        edge="end"
-                                      >
-                                        <SyncIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                  </InputAdornment>
-                                ) : undefined,
-                            },
-                          }}
-                        />
-                      </>
-                    )}
-                  </>
-                )}
+                <SimpleFieldWrapper heading="Field Heading">
+                  <DebouncedTextField
+                    fullWidth
+                    label=""
+                    placeholder="Enter field heading"
+                    helperText="Main heading displayed to users during data collection."
+                    value={state.label}
+                    onChange={e => handleLabelChange(e.target.value)}
+                    onBlur={handleLabelBlur}
+                    inputRef={labelInputRef}
+                    slotProps={{
+                      htmlInput: {'data-field-label-input': 'true'},
+                    }}
+                  />
+                </SimpleFieldWrapper>
+                <SimpleFieldWrapper heading="Export Title">
+                  <TextField
+                    fullWidth
+                    label=""
+                    placeholder="Enter export title"
+                    helperText="Column name used in data exports. Changing it does not affect collected data."
+                    value={localExportName}
+                    onChange={handleIdChange}
+                    onBlur={handleIdBlur}
+                    inputRef={idInputRef}
+                    slotProps={{
+                      htmlInput: designerHtmlInput(INPUT_LIMITS.ID_MAX_LENGTH),
+                      input: {
+                        endAdornment:
+                          state.label &&
+                          slugify(state.label) !== localExportName ? (
+                            <InputAdornment position="end">
+                              <Tooltip title="Sync with Field Heading">
+                                <IconButton
+                                  size="small"
+                                  onClick={syncFieldID}
+                                  onMouseDown={keepFocusOnMouseDown}
+                                  edge="end"
+                                >
+                                  <SyncIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </InputAdornment>
+                          ) : undefined,
+                      },
+                    }}
+                  />
+                </SimpleFieldWrapper>
               </Box>
             </Grid>
             {showHelperText && (
@@ -606,6 +546,7 @@ export const BaseFieldEditor = ({
                         fullWidth
                         label=""
                         placeholder="Enter helper text"
+                        helperText="Displayed under the field heading to provide extra instruction to users."
                         value={state.helperText}
                         multiline
                         rows={2}
@@ -637,7 +578,25 @@ export const BaseFieldEditor = ({
                               sx={designerCheckboxSx}
                             />
                           }
-                          label="Include advanced helper text"
+                          label={
+                            <Stack
+                              direction="row"
+                              spacing={0.75}
+                              sx={{alignItems: 'center'}}
+                            >
+                              <Typography>
+                                Include advanced helper text
+                              </Typography>
+                              <Tooltip title="Detailed instructions and images shown when users click the info icon.">
+                                <InfoIcon
+                                  sx={{
+                                    ...designerInfoIconSx,
+                                    fontSize: '1.35rem',
+                                  }}
+                                />
+                              </Tooltip>
+                            </Stack>
+                          }
                         />
                       </Box>
 
@@ -742,7 +701,7 @@ export const BaseFieldEditor = ({
                               >
                                 This markdown-based helper will appear in a
                                 dialog when users click the info icon next to
-                                the field label in the app. You can resize
+                                the field heading in the app. You can resize
                                 inserted images by dragging their resize
                                 handles.
                               </Alert>
@@ -760,6 +719,21 @@ export const BaseFieldEditor = ({
           </Grid>
         </Card>
       </Grid>
+
+      {/* ── Condition-only card ── */}
+      {showCondition && !showExtraConfig && (
+        <Grid size={12}>
+          <Card variant="outlined" sx={{overflow: 'hidden'}}>
+            <Box sx={{p: 2}}>
+              <ConditionSettings
+                condition={state.condition}
+                onChange={conditionChanged}
+                field={fieldName}
+              />
+            </Box>
+          </Card>
+        </Grid>
+      )}
 
       {/* ── General field settings card ── */}
       {showExtraConfig && (
@@ -811,22 +785,24 @@ export const BaseFieldEditor = ({
                       </Typography>
                     }
                   />
-                  <ConditionModal
-                    label={
-                      state.condition ? 'Update condition' : 'Add condition'
-                    }
-                    initial={state.condition}
-                    onChange={conditionChanged}
-                    field={fieldName}
-                    buttonSx={{
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      fontSize: '0.875rem',
-                    }}
-                  />
+                  {showCondition && (
+                    <ConditionModal
+                      label={
+                        state.condition ? 'Update condition' : 'Add condition'
+                      }
+                      initial={state.condition}
+                      onChange={conditionChanged}
+                      field={fieldName}
+                      buttonSx={{
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        fontSize: '0.875rem',
+                      }}
+                    />
+                  )}
                 </Stack>
 
-                {state.condition && (
+                {showCondition && state.condition && (
                   <Box
                     sx={{
                       ...(designerInfoCalloutSx as Record<string, unknown>),
@@ -1136,44 +1112,6 @@ export const BaseFieldEditor = ({
           </Card>
         </Grid>
       )}
-      {/* Portalled, so its position inside the grid has no layout effect. */}
-      <Dialog
-        open={pendingFieldID !== null}
-        onClose={cancelFieldIDChange}
-        fullWidth
-        maxWidth="xs"
-        aria-labelledby="field-id-sync-dialog-title"
-        aria-describedby="field-id-sync-dialog-description"
-      >
-        <DialogTitle id="field-id-sync-dialog-title" sx={designerDialogTitleSx}>
-          Are you sure you want to change this Field's ID?
-        </DialogTitle>
-        <DialogContent sx={designerDialogContentSx}>
-          <DialogContentText
-            id="field-id-sync-dialog-description"
-            sx={designerDialogBodyTextSx}
-          >
-            This {appConfig.notebookName} already has {existingRecordCount}{' '}
-            record{existingRecordCount === 1 ? '' : 's'}. Data collected in this{' '}
-            {appConfig.notebookName} for the field{' '}
-            <strong>{pendingFieldID?.from}</strong> may no longer appear once
-            this field becomes <strong>{pendingFieldID?.to}</strong>.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={designerDialogActionsSx}>
-          <Button sx={designerCancelButtonSx} onClick={cancelFieldIDChange}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            sx={designerPrimaryActionButtonSx}
-            onClick={confirmFieldIDChange}
-            autoFocus
-          >
-            Sync
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Grid>
   );
 };

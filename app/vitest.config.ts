@@ -6,7 +6,10 @@
  *   Configuration for Vitest testing
  */
 
+import {loadEnvDistIfUnset} from '@faims3/build-config/node';
 import {defineConfig} from 'vitest/config';
+
+const distEnv = loadEnvDistIfUnset(process.cwd());
 
 export default defineConfig({
   plugins: [],
@@ -22,6 +25,7 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
   },
   test: {
+    env: distEnv,
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',

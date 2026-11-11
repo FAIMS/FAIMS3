@@ -163,7 +163,7 @@ Different feature types require different information. A "Feature type" radio bu
 ### Data Quality Strategies
 
 1. **Consistent naming** – Establish and document naming conventions
-2. **Unit specification** – Include units in field labels: "Depth (cm)"
+2. **Unit specification** – Include units in field headings: "Depth (cm)"
 3. **Validation rules** – Configure appropriate constraints for numeric fields
 4. **Export planning** – Design with your analysis workflow in mind
 5. **Documentation** – Maintain a data dictionary alongside your notebook

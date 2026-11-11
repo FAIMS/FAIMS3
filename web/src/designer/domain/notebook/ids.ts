@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * @file Slug helpers for stable field and section ids inside a notebook.
+ * @file Slug helpers plus minted storage ids and unique export names.
  */
 
 /**
@@ -44,48 +44,73 @@ export const sanitizeUserLabel = (label: string): string =>
     .join('')
     .trim();
 
+/** Used when a label slugifies to empty (e.g. `!!!`) so export names stay non-empty. */
+const EMPTY_SLUG_FALLBACK = 'field';
+
 /**
- * Picks a slugified field id that does not collide with existing keys.
+ * Picks a slug that does not collide with existing names (field keys or export names).
  *
  * @param preferredName - User-facing label or desired base id.
- * @param existingFieldNames - Current keys in `ui-specification.fields`.
- * @returns Unique slug (may append numeric suffix).
+ * @param existingFieldNames - Names that must remain unique.
+ * @returns Unique non-empty slug (may append numeric suffix).
  */
 export const buildUniqueFieldName = (
   preferredName: string,
   existingFieldNames: string[]
 ): string => {
   const taken = new Set(existingFieldNames);
-  let candidate = slugify(preferredName);
+  const base = slugify(preferredName) || EMPTY_SLUG_FALLBACK;
+  let candidate = base;
   let attempt = 1;
 
   while (taken.has(candidate)) {
-    candidate = slugify(`${preferredName} ${attempt}`);
+    candidate = `${base}-${attempt}`;
     attempt += 1;
   }
 
   return candidate;
 };
 
+/** Hex chars after `f_` in a minted storage id (24 bits). */
+const STORAGE_ID_HEX_LENGTH = 6;
+
 /**
- * Resolves the storage key for a field about to be added via `fieldAdded`.
- * Mirrors reducer logic so UI can expand/focus the new field after dispatch.
- *
- * @param fieldName - Default label passed to `fieldAdded` (e.g. "New Field").
- * @param existingFieldNames - All field keys in the notebook spec.
+ * Mint an opaque, immutable storage id (`f_` + random hex) that does not
+ * collide with existing `uiSpec.fields` keys.
  */
-export const resolveAddedFieldKey = (
-  fieldName: string,
-  existingFieldNames: string[]
-): string => {
-  let fieldLabel = slugify(fieldName);
-
+export const mintFieldStorageId = (existingFieldNames: string[]): string => {
   const taken = new Set(existingFieldNames);
-  let suffix = 1;
-  while (taken.has(fieldLabel)) {
-    fieldLabel = slugify(`${fieldName} ${suffix}`);
-    suffix += 1;
-  }
+  let candidate: string;
+  do {
+    candidate = `f_${crypto.randomUUID().replace(/-/g, '').slice(0, STORAGE_ID_HEX_LENGTH)}`;
+  } while (taken.has(candidate));
+  return candidate;
+};
 
-  return fieldLabel;
+/**
+ * Unique export / column name among existing export names (slug + suffix).
+ */
+export const buildUniqueExportName = (
+  preferredName: string,
+  existingExportNames: string[]
+): string => buildUniqueFieldName(preferredName, existingExportNames);
+
+/**
+ * Whether `actual` is what {@link buildUniqueExportName} would store for
+ * `requested`: the raw string, its slug, or that slug plus a numeric
+ * uniquify suffix (`width` → `width-1`).
+ *
+ * The export-name input uses this so a colliding commit does not clobber
+ * keystrokes the user has already typed past that prefix.
+ */
+export const isOwnExportNameEcho = (
+  requested: string,
+  actual: string
+): boolean => {
+  if (actual === requested) return true;
+  const base = slugify(requested);
+  if (!base) return false;
+  if (actual === base) return true;
+  const prefix = `${base}-`;
+  return actual.startsWith(prefix) && /^\d+$/.test(actual.slice(prefix.length));
 };

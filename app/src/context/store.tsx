@@ -26,6 +26,9 @@ import LoadingApp from '../gui/components/loadingApp';
 import {logError as logAppError} from '../logging';
 import {initialise} from '../sync/initialize';
 import alertsReducer, {addAlert} from './slices/alertSlice';
+import contextualLayersReducer, {
+  bindContextualLayersStore,
+} from './slices/contextualLayersSlice';
 import authReducer, {
   refreshAllUsers,
   refreshIsAuthenticated,
@@ -33,6 +36,7 @@ import authReducer, {
 } from './slices/authSlice';
 import {databaseService} from './slices/helpers/databaseService';
 import projectsReducer from './slices/projectSlice';
+import {PROJECTS_PERSIST_BLACKLIST} from './projectsPersistConfig';
 import {
   migrateProjectsActivationSplitV3,
   migrateProjectsPersistedState,
@@ -58,7 +62,7 @@ const projectsPersistConfig = {
   key: 'projects',
   version: 4,
   storage: storage('faims-projects-db'),
-  blacklist: ['isInitialised'],
+  blacklist: [...PROJECTS_PERSIST_BLACKLIST],
   migrate: createMigrate(
     {
       0: (state: PersistedState) => state,
@@ -178,6 +182,17 @@ const persistedProjectsReducer = persistReducer(
   projectsReducer
 );
 
+// Downloaded map-layer metadata and paint preferences. New on this branch;
+// kept out of the deprecated Pouch local_state database.
+const contextualLayersPersistConfig = {
+  key: 'contextual-layers',
+  storage: storage('faims-contextual-layers-db'),
+};
+const persistedContextualLayersReducer = persistReducer(
+  contextualLayersPersistConfig,
+  contextualLayersReducer
+);
+
 // Configure the store
 export const store = configureStore({
   reducer: {
@@ -185,6 +200,8 @@ export const store = configureStore({
     auth: persistedAuthReducer,
     // projects slice (persisted)
     projects: persistedProjectsReducer,
+    // map layer files, style, and seen-listing hashes (persisted)
+    contextualLayers: persistedContextualLayersReducer,
     // not persisted - alerts
     alerts: alertsReducer,
   },
@@ -198,6 +215,7 @@ export const store = configureStore({
 
 // Setup persistor export for app persist gate
 const persistor = persistStore(store);
+bindContextualLayersStore(store);
 
 // Infer types from store
 export type RootState = ReturnType<typeof store.getState>;

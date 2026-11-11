@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import {describe, expect, it} from 'vitest';
 import {z} from 'zod';
-import {advancedSelectFieldSpec} from '../fieldRegistry/fields/AdvancedSelect';
 import {addressFieldSpec} from '../fieldRegistry/fields/AddressField';
+import {advancedSelectFieldSpec} from '../fieldRegistry/fields/AdvancedSelect';
 import {audioRecorderFieldSpec} from '../fieldRegistry/fields/AudioRecorder';
 import {checkboxFieldSpec} from '../fieldRegistry/fields/CheckboxField';
 import {
@@ -15,6 +15,11 @@ import {
   monthPickerFieldSpec,
 } from '../fieldRegistry/fields/DateFields';
 import {fileUploaderFieldSpec} from '../fieldRegistry/fields/FileUploader';
+import {
+  FILE_UPLOADER_REQUIRED_MESSAGE,
+  getFileUploaderMaximumMessage,
+  getFileUploaderMinimumMessage,
+} from '../fieldRegistry/fields/FileUploader/valueSchema';
 import {mapFieldSpec} from '../fieldRegistry/fields/MapField';
 import {multiSelectFieldSpec} from '../fieldRegistry/fields/MultiSelect';
 import {numberFieldSpec} from '../fieldRegistry/fields/NumberField';
@@ -22,9 +27,12 @@ import {percentageSliderFieldSpec} from '../fieldRegistry/fields/PercentageSlide
 import {qrCodeFieldSpec} from '../fieldRegistry/fields/QRCodeFormField';
 import {radioGroupFieldSpec} from '../fieldRegistry/fields/RadioGroup';
 import {relatedRecordFieldSpec} from '../fieldRegistry/fields/RelatedRecord';
-import {selectFieldSpec} from '../fieldRegistry/fields/SelectField';
 import {takePhotoFieldSpec} from '../fieldRegistry/fields/TakePhoto';
-import {TAKE_PHOTO_REQUIRED_MESSAGE} from '../fieldRegistry/fields/TakePhoto/valueSchema';
+import {
+  TAKE_PHOTO_REQUIRED_MESSAGE,
+  getTakePhotoMaximumMessage,
+  getTakePhotoMinimumMessage,
+} from '../fieldRegistry/fields/TakePhoto/valueSchema';
 import {takePointFieldSpec} from '../fieldRegistry/fields/TakePoint';
 import {templatedStringFieldSpec} from '../fieldRegistry/fields/TemplatedStringField';
 import {
@@ -78,15 +86,6 @@ const cases: Case[] = [
     absentValues: [undefined, null, ''],
     valid: 'ada@example.com',
     invalid: {value: 'not-an-email', message: 'Enter a valid email address'},
-  },
-  {
-    name: 'Select',
-    spec: selectFieldSpec,
-    props: choiceProps,
-    requiredMessage: 'Please select an option',
-    absentValues: [undefined, null, ''],
-    valid: 'yes',
-    invalid: {value: 'nope', message: /select/i},
   },
   {
     name: 'RadioGroup',
@@ -179,8 +178,8 @@ const cases: Case[] = [
   {
     name: 'FileUploader',
     spec: fileUploaderFieldSpec,
-    props: {maximum_number_of_files: 1},
-    requiredMessage: 'At least one attachment is required',
+    props: {maxItems: 1},
+    requiredMessage: FILE_UPLOADER_REQUIRED_MESSAGE,
     absentValues: [undefined, null, []],
     valid: ['file-1'],
     invalid: {value: 'file-1', message: /file|valid/i},
@@ -321,7 +320,6 @@ describe('field validation error messages', () => {
     const validating = [
       textFieldSpec,
       emailFieldSpec,
-      selectFieldSpec,
       radioGroupFieldSpec,
       multiSelectFieldSpec,
       advancedSelectFieldSpec,
@@ -412,7 +410,40 @@ describe('field validation error messages', () => {
       true
     );
     const messages = interfaceMessages(schema, ['a', 'b']);
-    expect(messages[0]).toBe('Maximum 1 file allowed');
+    expect(messages[0]).toBe(getFileUploaderMaximumMessage(1));
+  });
+
+  it('shows a minimum attachment count error', () => {
+    const schema = fileUploaderFieldSpec.fieldDataSchemaFunction!({
+      required: true,
+      minItems: 2,
+    });
+
+    expect(interfaceMessages(schema, ['a'])[0]).toBe(
+      getFileUploaderMinimumMessage(2)
+    );
+  });
+
+  it('shows a minimum photo count error', () => {
+    const schema = takePhotoFieldSpec.fieldDataSchemaFunction!({
+      required: true,
+      minItems: 2,
+    });
+
+    expect(interfaceMessages(schema, ['a'])[0]).toBe(
+      getTakePhotoMinimumMessage(2)
+    );
+  });
+
+  it('shows a maximum photo count error', () => {
+    const schema = takePhotoFieldSpec.fieldDataSchemaFunction!({
+      required: true,
+      maxItems: 2,
+    });
+
+    expect(interfaceMessages(schema, ['a', 'b', 'c'])[0]).toBe(
+      getTakePhotoMaximumMessage(2)
+    );
   });
 
   it('rewrites a raw Zod type error before it reaches the field', () => {

@@ -7,6 +7,8 @@
  *   parent/linked records and an edit button.
  * - Info: Shows record metadata (creation/modification details) and provides
  *   delete functionality.
+ * - History: Date-grouped timeline of who created, updated, or deleted the
+ *   record and its child records, with expandable changed-field details.
  * - Status: Completion of the record rolled up over its child-record tree.
  *
  * Features:
@@ -24,8 +26,6 @@ import {
   DataEngine,
   ProjectID,
   RecordID,
-  RevisionHistoryEntry,
-  formatTimestamp,
   getRecordContextFromRecord,
   RecordContext,
   resolveParentValues,
@@ -48,7 +48,6 @@ import {
   Box,
   Button,
   CircularProgress,
-  Link,
   Stack,
   Tab,
   Typography,
@@ -77,6 +76,7 @@ import {tryLocalGetDataDb} from '../../utils/database';
 import {NOTEBOOK_LIST_ROUTE} from '../../utils/remoteProjectRemoval';
 import RecordDelete from '../components/notebook/delete';
 import {NotebookDesignLockedAlert} from '../components/notebook/NotebookSchemaCompatibility';
+import {HistoryTabContent} from '../components/record/history';
 import RecordMeta from '../components/record/meta';
 import {RecordStatus} from '../components/record/status';
 import UGCReport from '../components/record/UGCReport';
@@ -402,125 +402,6 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
 };
 
 /**
- * Content for the History tab - displays revision history and metadata
- * @param props.recordId - ID of the record to fetch history for
- * @param props.dataEngine - DataEngine instance for fetching data
- */
-const HistoryTabContent: React.FC<{
-  recordId: RecordID;
-  dataEngine: DataEngine;
-  uiSpec: NonNullable<ReturnType<typeof compiledSpecService.getSpec>>;
-}> = ({recordId, dataEngine, uiSpec}) => {
-  // Fetch the revision history (createdBy / created per revision)
-  const {
-    data: historyData,
-    isError,
-    isPending,
-    error,
-  } = useQuery({
-    queryKey: ['historyData', recordId],
-    queryFn: async () =>
-      dataEngine.form.getHistoryData({
-        recordId,
-      }),
-    networkMode: 'always',
-    // Refetch on every mount so the trail is fresh, but keep the cached data
-    // available during the background refetch so revisiting the tab does not
-    // blank the list behind a spinner.
-    refetchOnMount: 'always',
-  });
-
-  if (isPending) {
-    return (
-      <Box sx={{display: 'flex', justifyContent: 'center', p: 4}}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (isError) {
-    return (
-      <Box sx={{p: 2}}>
-        <Typography color="error">
-          An error occurred while fetching record history. Error:{' '}
-          {error?.message ?? 'unknown'}.
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (!historyData) {
-    return (
-      <Box sx={{p: 2}}>
-        <Typography color="error">Record data not found.</Typography>
-      </Box>
-    );
-  }
-
-  const revisionIdsRevision = new Map<string, RevisionHistoryEntry>(
-    historyData.map(entry => [entry.revisionId, entry])
-  );
-
-  const formatRevisionMetadata = (entry?: RevisionHistoryEntry) => {
-    return entry
-      ? `${entry.createdBy} at ${formatTimestamp(new Date(entry.created).getTime())}`
-      : 'unknown';
-  };
-
-  return (
-    <Stack spacing={4}>
-      <Typography variant="h5">Revision History</Typography>
-      {historyData
-        .slice()
-        .sort((a, b) => b.created.localeCompare(a.created))
-        .map((entry, e, historyData) => {
-          const parentFields = Object.entries(entry.changedFields);
-          return (
-            <Stack key={entry.revisionId} spacing={2}>
-              <Typography variant="body1" id={entry.revisionId}>
-                {entry.deleted ? 'Record deleted by ' : 'Revision created by '}
-                <span style={{textDecoration: 'underline'}}>
-                  {formatRevisionMetadata(entry)}
-                </span>
-              </Typography>
-              <Stack sx={{pl: 2}}>
-                {parentFields.map(([parentId, fields]) => (
-                  <Typography variant="body1" key={parentId}>
-                    Fields changed
-                    {revisionIdsRevision.has(parentId) &&
-                    (parentFields.length > 1 ||
-                      parentId !== historyData[e + 1]?.revisionId) ? (
-                      <>
-                        {' '}
-                        compared to{' '}
-                        <Link href={`#${parentId}`}>
-                          {formatRevisionMetadata(
-                            revisionIdsRevision.get(parentId)
-                          )}
-                        </Link>
-                      </>
-                    ) : (
-                      ''
-                    )}
-                    :{' '}
-                    {fields
-                      .map(
-                        fieldId =>
-                          uiSpec.fields[fieldId]?.['component-parameters']
-                            ?.label ?? fieldId
-                      )
-                      .join(', ') || 'None'}
-                  </Typography>
-                ))}
-              </Stack>
-            </Stack>
-          );
-        })}
-    </Stack>
-  );
-};
-
-/**
  * Main ViewRecordPage component with tab navigation.
  *
  * Hooks are declared unconditionally so upstream notebook removal (which drops
@@ -772,11 +653,13 @@ export const ViewRecordPage: React.FC = () => {
           )}
         </TabPanel>
 
-        <TabPanel value={RECORD_TABS.HISTORY} sx={{p: 0, pt: 2}}>
+        <TabPanel value={RECORD_TABS.HISTORY} sx={{p: 0, pt: 1}}>
           <HistoryTabContent
             recordId={recordId}
+            projectId={projectId}
             dataEngine={getDataEngine()}
             uiSpec={uiSpec}
+            notebook={notebook}
           />
         </TabPanel>
 

@@ -37,7 +37,11 @@ async function mockGetTokenForCluster(listing_id: string) {
   return 'token-' + listing_id;
 }
 
-vi.mock('./users', () => ({
-  getTokenForCluster: mockGetTokenForCluster,
-  shouldDisplayRecord: () => true,
-}));
+vi.mock('./users', async importOriginal => {
+  const actual = await importOriginal<typeof import('./users')>();
+  return {
+    ...actual,
+    getTokenForCluster: mockGetTokenForCluster,
+    shouldDisplayRecord: () => true,
+  };
+});

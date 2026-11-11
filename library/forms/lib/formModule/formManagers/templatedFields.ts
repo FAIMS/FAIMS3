@@ -16,7 +16,7 @@ import {
   ValuesObject,
 } from '@faims3/data-model';
 import {getFieldInfo} from '../../fieldRegistry/registry';
-import {formDataExtractor} from '../../utils';
+import {formDataExtractor, writeFieldUpdates} from '../../utils';
 import {FaimsForm} from '../types';
 
 // Template functions resolve through the field registry. Registry entries
@@ -75,15 +75,7 @@ export function onChangeTemplatedFields({
     values: data,
   });
 
-  for (const [k, v] of Object.entries(updates)) {
-    // Update just the data field
-    form.setFieldValue(
-      k,
-      {...(form.state.values[k] ?? {}), data: v},
-      // The form can determine whether to run listeners or not
-      {dontRunListeners: !runListeners}
-    );
-  }
+  writeFieldUpdates({form, updates, runListeners});
 
   return changes;
 }

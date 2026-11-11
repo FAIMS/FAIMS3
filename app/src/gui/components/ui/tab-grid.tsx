@@ -19,8 +19,11 @@ import {
   notebookListDataGridSx,
 } from '../workspace/notebooks';
 import {isNotebookActivationBlocked} from '../../../context/slices/helpers/notebookDefinition';
-import {Project} from '../../../context/slices/projectSlice';
-import {sortProjectsByNewest} from '../../../lib/notebookListDisplay';
+import type {Project} from '../../../context/slices/projectSlice';
+import {
+  isProjectActivating,
+  partitionNotebookListProjects,
+} from '../../../lib/notebookListDisplay';
 
 /**
  * Renders a tabbed grid component.
@@ -37,18 +40,18 @@ export default function TabProjectGrid({
   handleChange,
   activatedColumns,
   notActivatedColumns,
+  activatingProjectKeys = [],
 }: {
   projects: Project[];
   tabID: string;
   handleChange: React.Dispatch<React.SetStateAction<string>>;
   activatedColumns: GridColDef<Project>[];
   notActivatedColumns: GridColDef<Project>[];
+  activatingProjectKeys?: readonly string[];
 }) {
-  const activatedProjects = sortProjectsByNewest(
-    projects.filter(({isActivated}) => isActivated)
-  );
-  const availableProjects = sortProjectsByNewest(
-    projects.filter(({isActivated}) => !isActivated)
+  const {activatedProjects, availableProjects} = partitionNotebookListProjects(
+    projects,
+    activatingProjectKeys
   );
 
   // we need a state variable to track pagination model since we want to use a
@@ -111,9 +114,7 @@ export default function TabProjectGrid({
                   ? 'app-notebooks-tab-active'
                   : 'app-notebooks-tab-not-active'
               }
-              disabled={
-                !projects.filter(r => r.isActivated).length && tab === '1'
-              }
+              disabled={activatedProjects.length === 0 && tab === '1'}
             />
           ))}
         </TabList>
@@ -132,6 +133,11 @@ export default function TabProjectGrid({
                 ...notebookListDataGridSx,
               }}
               getRowId={({projectId}) => projectId}
+              getRowClassName={({row}) =>
+                isProjectActivating(row, activatingProjectKeys)
+                  ? 'notebook-row-activating'
+                  : ''
+              }
               rowHeight={75}
               autoHeight
               hideFooter

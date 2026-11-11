@@ -1,6 +1,6 @@
 # Multi-line Text Field
 
-_How to add and configure a Multi-line Text Field in the Notebook Editor._
+_How to add and configure a Multi-line Text Field in the {{Notebook}} Editor._
 
 ---
 
@@ -30,13 +30,14 @@ For new forms, add **Text field** instead and enable the **multi-line** option t
 ## Configuring the Field
 
 Click the field's **grey header bar** to expand it and see its settings.
-For an overview of the settings shared by all fields — including Label,
-Helper Text, Field ID, and the field toolbar — see
+For an overview of the settings shared by all fields — including Field Heading,
+Helper Text, Export Title, and the field toolbar — see
 [Field Identity](../shared-settings/field-identity.md) and
 [Field Toolbar](../shared-settings/field-toolbar.md).
 
-Give the field a meaningful Label, review the auto-populated
-Field ID, and add any desired Helper Text.
+Give the field a meaningful Field Heading (the title collectors see), review
+the auto-populated Export Title (the CSV/GIS column header), and add any
+desired Helper Text.
 
 ```{screenshot} field-types-design/multiline-text-field-02-configured.png
 :alt: Multiline Text Field configuration in the {{Notebook}} Editor

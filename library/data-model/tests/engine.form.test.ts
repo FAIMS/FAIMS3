@@ -390,8 +390,60 @@ describe('Form Operations', () => {
         })
       ).rejects.toThrow(/takes only one/);
       // The refusal must come before the write, or the new row is an orphan
-      // its parent never lists.
+      // its parent never lists. `site-0` does not exist, so this also covers a
+      // target that cannot be read: unknown counts as live.
       expect((await db.allDocs({})).rows.length).toBe(before);
+    });
+
+    it('takes a new link on a field whose one link points at a deleted record', async () => {
+      const engineWithRelations = relatedEngine();
+      const dead = await engineWithRelations.form.createRecord({
+        createdBy: 'alice',
+        formId: 'Site',
+      });
+      await engineWithRelations.form.deleteRecord({
+        recordId: dead.record._id,
+        baseRevisionId: dead.revision._id,
+        userId: 'alice',
+      });
+      const {link, linked} = await engineWithRelations.form.createRelatedRecord(
+        {
+          parentRecordId: 'parent-1',
+          parentFieldId: 'peer',
+          createdBy: 'alice',
+          parentFieldValue: {
+            record_id: dead.record._id,
+            relation_type_vocabPair: ['is linked to', 'is linked from'],
+          },
+        }
+      );
+      // The dead link is replaced, not kept beside the new one.
+      expect(linked).toEqual(link);
+    });
+
+    it('takes a new link on a field whose one link points at a record it cannot read', async () => {
+      const engineWithRelations = relatedEngine();
+      // A document under the linked id that is not a record at all.
+      await db.put({_id: 'rec-broken-1', type: 'not-a-record'});
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        const {link, linked} =
+          await engineWithRelations.form.createRelatedRecord({
+            parentRecordId: 'parent-1',
+            parentFieldId: 'peer',
+            createdBy: 'alice',
+            parentFieldValue: {
+              record_id: 'rec-broken-1',
+              relation_type_vocabPair: ['is linked to', 'is linked from'],
+            },
+          });
+        // Reported, then replaced: the list cannot show this target and the
+        // operator cannot detach it, so refusing would strand the field.
+        expect(warn).toHaveBeenCalled();
+        expect(linked).toEqual(link);
+      } finally {
+        warn.mockRestore();
+      }
     });
 
     it('writes no record when the field holds a value it cannot read', async () => {
@@ -1433,6 +1485,46 @@ describe('Form Operations', () => {
       expect(Object.values(history[0].changedFields).flat()).toContain(
         'First-1'
       );
+    });
+
+    test('reuses a loaded record and batch-fetches its revisions', async () => {
+      const created = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+        initial: {'First-1': {data: 'first'}},
+      });
+      const next = await engine.form.createRevision({
+        recordId: created.record._id,
+        revisionId: created.revision._id,
+        createdBy: 'user-2',
+      });
+      await engine.form.updateRevision({
+        revisionId: next._id,
+        recordId: created.record._id,
+        update: {'First-1': {data: 'second'}},
+        mode: 'parent',
+        updatedBy: 'user-2',
+      });
+
+      const record = await engine.core.getRecord(created.record._id);
+      const getRecord = jest.spyOn(engine.core, 'getRecord');
+      const getRevision = jest.spyOn(engine.core, 'getRevision');
+      const getDocumentsByIds = jest.spyOn(engine.core, 'getDocumentsByIds');
+
+      const history = await engine.form.getHistoryData({
+        recordId: created.record._id,
+        record,
+      });
+
+      expect(getRecord).not.toHaveBeenCalled();
+      expect(getRevision).not.toHaveBeenCalled();
+      expect(getDocumentsByIds).toHaveBeenCalled();
+      expect(history).toHaveLength(2);
+      expect(history.map(entry => entry.createdBy)).toEqual(
+        expect.arrayContaining(['user-1', 'user-2'])
+      );
+      const update = history.find(entry => entry.revisionId === next._id);
+      expect(update?.changedFields[created.revision._id]).toContain('First-1');
     });
   });
 

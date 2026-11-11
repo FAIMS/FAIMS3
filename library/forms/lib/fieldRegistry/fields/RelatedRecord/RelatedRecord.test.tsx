@@ -49,6 +49,7 @@ function renderRelatedRecordField({
   onSetFieldData,
   multiple = true,
   stateValueUndefined = false,
+  attachmentSaving = false,
 }: {
   initialData: LinkEntry[] | LinkEntry | undefined;
   createRelatedRecord: (args: {
@@ -63,6 +64,7 @@ function renderRelatedRecordField({
   onSetFieldData?: (value: unknown) => void;
   multiple?: boolean;
   stateValueUndefined?: boolean;
+  attachmentSaving?: boolean;
 }) {
   const commit = vi.fn(async () => undefined);
   const toRecord = vi.fn();
@@ -168,6 +170,9 @@ function renderRelatedRecordField({
               appName: 'test-app',
               user: 'user-1',
               trigger: {commit},
+              attachmentSaving: {
+                isSaving: () => attachmentSaving,
+              },
             } as any
           }
         />
@@ -373,5 +378,24 @@ describe('RelatedRecord create flow', () => {
 
     expect(setFieldDataValues.at(-1)).toEqual([makeLink('sample-1')]);
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('disables creating a related record while a photo is still saving', async () => {
+    const createRelatedRecord = vi.fn(async () => {
+      throw new Error('createRelatedRecord should not run while photos save');
+    });
+
+    const {commit, toRecord} = renderRelatedRecordField({
+      initialData: undefined,
+      createRelatedRecord,
+      attachmentSaving: true,
+    });
+
+    expect(
+      screen.getByRole('button', {name: /add new sample/i})
+    ).toBeDisabled();
+    expect(createRelatedRecord).not.toHaveBeenCalled();
+    expect(commit).not.toHaveBeenCalled();
+    expect(toRecord).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,6 @@
 # FAIMS Text Field
 
-_How to add and configure a FAIMS Text Field in the Notebook Editor._
+_How to add and configure a FAIMS Text Field in the {{Notebook}} Editor._
 
 ---
 
@@ -27,13 +27,14 @@ For new forms, add **Text field** instead — it produces a single-line input by
 ## Configuring the Field
 
 Click the field's **grey header bar** to expand it and see its settings.
-For an overview of the settings shared by all fields — including Label,
-Helper Text, Field ID, and the field toolbar — see
+For an overview of the settings shared by all fields — including Field Heading,
+Helper Text, Export Title, and the field toolbar — see
 [Field Identity](../shared-settings/field-identity.md) and
 [Field Toolbar](../shared-settings/field-toolbar.md).
 
-Give the field a meaningful Label, review the auto-populated
-Field ID, and add any desired Helper Text.
+Give the field a meaningful Field Heading (the title collectors see), review
+the auto-populated Export Title (the CSV/GIS column header), and add any
+desired Helper Text.
 
 ```{screenshot} field-types-design/faims-text-field-02-configured.png
 :alt: FAIMS Text Field configuration in the {{Notebook}} Editor
@@ -64,8 +65,10 @@ Annotation, Uncertainty, Conditions, and Copy value to new records — see
   (descriptions, narratives), use Multi-line Text Field instead.
 - **Enable Speech-to-Text** for fields where collectors may be working
   hands-free or in wet/dirty conditions.
-- **Review the Field ID before saving** — it is auto-generated from the
-  Label. Once records exist, changing the Field ID can break data continuity.
+- **Renaming is safe; deleting is not.** You can change the Field Heading (what
+  collectors see) or the Export Title (the CSV/GIS column header) after
+  records exist — collected values stay attached to the field. Deleting
+  the field still drops its stored data.
 - **Use for metadata.** One valuable use of free-text fields is
   to capture record-level metadata — information about the data
   collected in the record, such as unexpected environmental

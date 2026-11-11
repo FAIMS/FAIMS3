@@ -1,11 +1,23 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+set -e
 # Takes down any running docker compose in this project, optionally prunes volumes,
-# and starts again
-# Usage: ./script.sh [--all] [--build] [--clear-db]
+# then brings CouchDB (and RustFS) up, migrates Couch, and starts the rest of
+# the stack (worker pool, or every service with --all).
+# Usage: ./localdev.sh [--all] [--build] [--clear-db] [--no-spatial]
+# --no-spatial starts CouchDB only (no RustFS, no spatial worker pool).
+# Incompatible with --all.
+
+# `wait -n` on the library watchers below needs bash 4.3+; macOS ships 3.2.
+if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 3))); then
+  echo "localdev.sh needs bash 4.3+ (found $BASH_VERSION)." >&2
+  echo "On macOS: brew install bash" >&2
+  exit 1
+fi
 
 ALL_SERVICES=false
 BUILD_FLAG=""
 CLEAR_DB=false
+NO_SPATIAL=false
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -22,13 +34,22 @@ while [[ $# -gt 0 ]]; do
     CLEAR_DB=true
     shift
     ;;
+  --no-spatial)
+    NO_SPATIAL=true
+    shift
+    ;;
   *)
     echo "Unknown option: $1"
-    echo "Usage: $0 [--all] [--build] [--clear-db]"
+    echo "Usage: $0 [--all] [--build] [--clear-db] [--no-spatial]"
     exit 1
     ;;
   esac
 done
+
+if [ "$ALL_SERVICES" = true ] && [ "$NO_SPATIAL" = true ]; then
+  echo "--no-spatial cannot be used with --all (Docker API depends on RustFS)." >&2
+  exit 1
+fi
 
 # Function to check and set Node.js version
 setup_node_version() {
@@ -104,27 +125,39 @@ setup_node_version() {
   echo "✓ Node.js version check passed (v${major_version}.x)"
 }
 
-manage_docker_volumes() {
-  docker_prefix="docker compose"
+docker_prefix="docker compose"
+
+stop_docker_services() {
   echo "Stopping existing Docker containers..."
 
   if [ "$CLEAR_DB" = true ]; then
     # Let compose remove its own volumes: couchdb_data is this project's only
     # named volume, and removing by volume label instead matched every
     # project's couchdb_data on the host (other checkouts and worktrees).
-    echo "Pruning volume containing the couchdb database..."
+    echo "Pruning volumes containing the couchdb database and rustfs objects..."
     ${docker_prefix} down --volumes
   else
     ${docker_prefix} down
     echo "Skipping volume pruning (use --clear-db to clear volumes)"
   fi
+}
 
-  echo "Starting Docker containers..."
-  if [ "$ALL_SERVICES" = true ]; then
-    ${docker_prefix} up ${BUILD_FLAG} -d
-  else
-    ${docker_prefix} up ${BUILD_FLAG} -d couchdb
-  fi
+# Host migrate talks to published Couch on localhost even when api/.env was
+# previously rewritten for Docker DNS (`http://couchdb:5984`).
+migrate_couchdb() {
+  echo "Migrating CouchDB..."
+  echo "> COUCHDB_INTERNAL_URL=http://localhost:5984 pnpm run migrate-with-keys"
+  COUCHDB_INTERNAL_URL=http://localhost:5984 pnpm run migrate-with-keys
+}
+
+apply_docker_env_overrides() {
+  echo "Applying Docker environment overrides to api/.env"
+  echo "" >>./api/.env
+  echo "# Docker environment overrides" >>./api/.env
+  echo "CONDUCTOR_INTERNAL_PORT=8000" >>./api/.env
+  echo "COUCHDB_INTERNAL_URL=http://couchdb:5984" >>./api/.env
+  echo "ATTACHMENT_S3_ENDPOINT=http://rustfs:9000" >>./api/.env
+  echo "ATTACHMENT_S3_PUBLIC_ENDPOINT=http://localhost:9000" >>./api/.env
 }
 
 wait_for_service() {
@@ -147,6 +180,35 @@ wait_for_service() {
       fi
     fi
     echo "Service not yet available. Retrying in 2 seconds..."
+    sleep 2
+  done
+}
+
+wait_for_rustfs() {
+  local start_time
+  local end_time
+  local current_time
+  local response
+  start_time=$(date +%s)
+  end_time=$((start_time + 30))
+
+  RUSTFS_PORT=9000
+
+  echo "Waiting for RustFS on port ${RUSTFS_PORT}..."
+
+  while true; do
+    current_time=$(date +%s)
+    if [ $current_time -ge $end_time ]; then
+      echo "Global timeout reached. RustFS did not become available within 30 seconds."
+      return 1
+    fi
+    if response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://localhost:${RUSTFS_PORT}/health); then
+      if [ "$response" -eq 200 ]; then
+        echo "RustFS is now available!"
+        return 0
+      fi
+    fi
+    echo "RustFS not yet available. Retrying in 2 seconds..."
     sleep 2
   done
 }
@@ -228,40 +290,76 @@ if [ ! -f ./app/.env ]; then
   cp ./app/.env.dist ./app/.env
 fi
 
-# Override API configuration for Docker environment (only when running all services)
-# We need this since docker needs 8000 internal + couchdb dns (rather than localhost)
-if [ "$ALL_SERVICES" = true ]; then
-  echo "" >>./api/.env
-  echo "# Docker environment overrides" >>./api/.env
-  echo "CONDUCTOR_INTERNAL_PORT=8000" >>./api/.env
-  echo "COUCHDB_INTERNAL_URL=http://couchdb:5984" >>./api/.env
-fi
-
 # create local keys
 echo "Generating local keys"
 echo "> pnpm run generate-local-keys"
 pnpm run generate-local-keys
 
 echo "Starting docker service..."
-manage_docker_volumes
+stop_docker_services
+
+if [ "$NO_SPATIAL" = true ]; then
+  echo "Starting CouchDB (skipping RustFS and spatial workers)..."
+  ${docker_prefix} up ${BUILD_FLAG} -d couchdb
+else
+  echo "Starting CouchDB and RustFS..."
+  ${docker_prefix} up ${BUILD_FLAG} -d couchdb rustfs
+fi
+
+echo "Waiting for CouchDB to become available..."
+if wait_for_couchdb; then
+  echo "CouchDB is ready!"
+else
+  echo "Failed to connect to CouchDB. Exiting."
+  exit 1
+fi
+
+migrate_couchdb
+
+if [ "$NO_SPATIAL" = false ]; then
+  echo "Waiting for RustFS to become available..."
+  if wait_for_rustfs; then
+    echo "RustFS is ready!"
+  else
+    echo "Failed to connect to RustFS. Exiting."
+    exit 1
+  fi
+fi
 
 if [ "$ALL_SERVICES" = false ]; then
-  echo "Waiting for CouchDB to become available..."
-  if wait_for_couchdb; then
-    echo "CouchDB is ready!"
-    COUCHDB_PORT=5984
+  COUCHDB_PORT=5984
+  if [ "$NO_SPATIAL" = false ]; then
+    echo "Starting spatial worker pool..."
+    ${docker_prefix} up ${BUILD_FLAG} -d capacity-manager spatial-worker
+    RUSTFS_PORT=9000
+    echo ""
+    echo "=========================================="
+    echo "CouchDB is running:"
+    echo "CouchDB Admin UI: http://localhost:${COUCHDB_PORT}/_utils"
+    echo "RustFS S3 API: http://localhost:${RUSTFS_PORT}"
+    echo "RustFS Console: http://localhost:9001"
+    echo "=========================================="
+    echo ""
+    echo "Note: CouchDB, RustFS, and the spatial worker pool are running."
+    echo "To start all services in Docker, run with --all flag."
+  else
     echo ""
     echo "=========================================="
     echo "CouchDB is running:"
     echo "CouchDB Admin UI: http://localhost:${COUCHDB_PORT}/_utils"
     echo "=========================================="
     echo ""
-    echo "Note: Only CouchDB is running. To start all services, run with --all flag."
-  else
-    echo "Failed to connect to CouchDB. Exiting."
-    exit 1
+    echo "Note: CouchDB only (--no-spatial). RustFS and the spatial worker"
+    echo "pool are not running; map-layer ingest and object storage are unavailable."
   fi
 else
+  # Docker needs 8000 internal + couchdb DNS (rather than localhost). Apply
+  # after host migrate so the migrate process still reaches published Couch.
+  apply_docker_env_overrides
+
+  echo "Starting remaining Docker services..."
+  ${docker_prefix} up ${BUILD_FLAG} -d
+
   echo "Waiting for service to become available at http://localhost:8080..."
   if wait_for_service; then
     echo "Continuing with the rest of the script..."
@@ -269,11 +367,6 @@ else
     echo "Failed to connect to the service. Exiting."
     exit 1
   fi
-
-echo "Initialising database using API container"
-echo ">docker compose exec api sh -c \"cd api && pnpm run migrate --keys\""
-docker compose exec api sh -c "cd api && pnpm run migrate --keys"
-
 
   echo "Service is setup, to load notebooks and templates follow the below steps"
   cat <<EOF
@@ -298,12 +391,18 @@ EOF
   echo "App (live reloading /app): http://localhost:3000"
   echo "Web (live reloading /web): http://localhost:3001"
   echo "CouchDB: http://localhost:5984/_utils"
+  echo "RustFS S3 API: http://localhost:9000"
+  echo "RustFS Console: http://localhost:9001"
 
   echo ""
-  echo "Starting shared-library watchers (data-model + forms)..."
+  echo "Starting shared-library watchers (build-config + data-model + forms)..."
   echo "Press Ctrl-C to stop watching; containers keep running."
   trap 'kill 0' EXIT
+  pnpm --filter=@faims3/build-config run watch &
   pnpm --filter=@faims3/data-model run watch &
   pnpm --filter=@faims3/forms run watch &
-  wait
+  # A bare `wait` returns only once both watches are gone, so a watch that dies
+  # leaves its library silently stale. Return on the first exit and say so.
+  wait -n || true
+  echo "A library watch exited; run ./localdev.sh --all to restart the watchers."
 fi

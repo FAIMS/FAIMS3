@@ -1,32 +1,62 @@
 // SPDX-License-Identifier: Apache-2.0
+
 import {FormDataEntry} from '@faims3/data-model';
 import {z} from 'zod';
+import {getMinimumItemCount} from '../../utils/itemCountHelpers';
 
-/** User-facing Zod message when a required TakePhoto field has no attachments. */
+/** User-facing message when at least one photo is required. */
 export const TAKE_PHOTO_REQUIRED_MESSAGE = 'At least one photo is required';
 
+/** Minimum photo count validation message. */
+export function getTakePhotoMinimumMessage(minimum: number): string {
+  return minimum === 1
+    ? TAKE_PHOTO_REQUIRED_MESSAGE
+    : `At least ${minimum} photos are required`;
+}
+
+/** Maximum photo count validation message. */
+export function getTakePhotoMaximumMessage(maximum: number): string {
+  return `Maximum ${maximum} photo${maximum === 1 ? '' : 's'} allowed`;
+}
+
 /**
- * Attachment IDs, or absent (`undefined` / `null`) when the field was never set.
+ * Validate the number of stored photo attachment IDs.
  *
- * A bare `z.array()` fails on `undefined` with Zod's type error
- * ("expected array, received undefined") before any required-length refine
- * can run. Accept the empty state first so required fields surface the
- * attachment-minimum message instead.
+ * A bare `z.array()` fails on an untouched field before count validation runs.
+ * Include null and undefined in the union so empty required/minimum fields
+ * receive a useful message, even when the field is missing from a z.object.
  *
- * Do not use `.nullish()` / `.optional()` here: Zod then treats a missing
- * object key as skipped, so an untouched required photo would pass when the
- * form schema is compiled as `z.object(...)`.
+ * Required means at least one photo; null/undefined limits are unrestricted.
+ * Do not use `.nullish()` / `.optional()` around the schema: a missing object
+ * key could then skip the count validation.
  */
 export function takePhotoValueSchema(props: {
   required?: boolean;
+  minItems?: number | null;
+  maxItems?: number | null;
 }): z.ZodTypeAny {
-  const ids = z.union([z.array(z.string()), z.null(), z.undefined()]);
-  if (props.required) {
-    return ids.refine(val => (val ?? []).length > 0, {
-      message: TAKE_PHOTO_REQUIRED_MESSAGE,
+  const minimum = getMinimumItemCount(props);
+  const maximum = props.maxItems;
+
+  return z
+    .union([z.array(z.string()), z.null(), z.undefined()])
+    .superRefine((value, ctx) => {
+      const count = value?.length ?? 0;
+
+      if (count < minimum) {
+        ctx.addIssue({
+          code: 'custom',
+          message: getTakePhotoMinimumMessage(minimum),
+        });
+      }
+
+      if (maximum != null && count > maximum) {
+        ctx.addIssue({
+          code: 'custom',
+          message: getTakePhotoMaximumMessage(maximum),
+        });
+      }
     });
-  }
-  return ids;
 }
 
 /** At least one stored attachment ID. Empty / absent photos are incomplete. */

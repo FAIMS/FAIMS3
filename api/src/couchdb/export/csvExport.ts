@@ -8,7 +8,9 @@ import {
   notebookRecordIterator,
   ProjectID,
   UpdatedTimeFilter,
+  extraExportColumnNames,
   slugify,
+  uniqueFieldExportColumnName,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stringifier, stringify} from 'csv-stringify';
@@ -18,7 +20,6 @@ import {getCompiledUiSpecModel} from '../notebooks';
 import {stripDeletedRelatedRefsFromRecordData} from './stripDeletedRelatedRefs';
 import {
   convertDataForOutput,
-  getComponentKey,
   MAX_CSV_FILENAME_LENGTH,
   truncateWithHash,
 } from './utils';
@@ -70,64 +71,11 @@ function generateRecordPrefixInformation(record: HydratedDataRecord) {
   ];
 }
 
-// Type for a field header generator function
-type FieldHeaderGenerator = (fieldName: string) => string[];
-
-// Registry of component header generators (keyed by namespace::name)
-const FIELD_COMPONENT_HEADER_GENERATORS: Record<string, FieldHeaderGenerator> =
-  {
-    'faims-custom::TakePoint': (fieldName: string) => [
-      fieldName,
-      `${fieldName}_latitude`,
-      `${fieldName}_longitude`,
-      `${fieldName}_accuracy`,
-    ],
-
-    'faims-custom::AddressField': (fieldName: string) => [
-      fieldName,
-      `${fieldName}_house_number`,
-      `${fieldName}_road`,
-      `${fieldName}_suburb`,
-      `${fieldName}_town`,
-      `${fieldName}_state`,
-      `${fieldName}_postcode`,
-      `${fieldName}_country`,
-      `${fieldName}_country_code`,
-      `${fieldName}_manual`,
-    ],
-
-    'mapping-plugin::MapFormField': (fieldName: string) => [
-      fieldName,
-      `${fieldName}_latitude`,
-      `${fieldName}_longitude`,
-    ],
-
-    'faims-custom::TakePhoto': (fieldName: string) => [fieldName],
-    'faims-custom::FileUploader': (fieldName: string) => [fieldName],
-
-    'faims-custom::RelatedRecordSelector': (fieldName: string) => [fieldName],
-  };
-
-// Default generator for unregistered components
-const defaultHeaderGenerator: FieldHeaderGenerator = (fieldName: string) => [
-  fieldName,
-];
-
 /**
- * Get the header generator for a given component (namespace + name).
- */
-function getHeaderGeneratorForComponent(
-  componentNamespace: string,
-  componentName: string
-): FieldHeaderGenerator {
-  const key = getComponentKey(componentNamespace, componentName);
-  return FIELD_COMPONENT_HEADER_GENERATORS[key] || defaultHeaderGenerator;
-}
-
-/**
- * Generate CSV headers from UI specification fields. Uses the registered
- * component header generators (by namespace + name) to produce the additional
- * headers for each field type.
+ * Generate CSV headers from UI specification fields. Column names come from
+ * a sanitised, uniquified `field.exportName` plus the derived suffix columns
+ * ({@link extraExportColumnNames}) so GPS / address / annotation headers
+ * cannot collide with a later field.
  */
 export function getHeaderInfoFromUiSpecification({
   fields,
@@ -135,25 +83,23 @@ export function getHeaderInfoFromUiSpecification({
   fields: FieldSummary[];
 }): string[] {
   const additionalHeaders: string[] = [];
+  const usedExportNames = new Set<string>();
 
   for (const field of fields) {
-    const generator = getHeaderGeneratorForComponent(
-      field.componentNamespace,
-      field.componentName
+    const exportName = uniqueFieldExportColumnName(
+      field.exportName || field.name,
+      usedExportNames,
+      field
     );
-    const fieldHeaders = generator(field.name);
-    additionalHeaders.push(...fieldHeaders);
-
-    // Add annotation and uncertainty columns if present
-    if (field.annotation !== '') {
-      additionalHeaders.push(`${field.name}_${field.annotation}`);
-    }
-    if (field.uncertainty !== '') {
-      additionalHeaders.push(`${field.name}_${field.uncertainty}`);
-    }
+    additionalHeaders.push(
+      exportName,
+      ...extraExportColumnNames(field, exportName)
+    );
   }
 
-  return additionalHeaders;
+  return additionalHeaders.filter(
+    (header): header is string => typeof header === 'string' && header !== ''
+  );
 }
 
 /**

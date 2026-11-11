@@ -19,7 +19,6 @@ const DEFAULT_CAPACITOR_APP_ID = 'org.fedarch.faims3';
 export type CorsAllowlistSources = {
   conductorPublicUrl?: string;
   webAppPublicUrl?: string;
-  newConductorUrl?: string;
   androidAppUrl?: string;
   iosAppUrl?: string;
   redirectWhitelist?: readonly string[];
@@ -68,16 +67,15 @@ const capacitorIosOrigin = (scheme: string): string => `${scheme}://localhost`;
 const defaultSources = (): CorsAllowlistSources => ({
   conductorPublicUrl: config.conductorPublicUrl,
   webAppPublicUrl: config.webAppPublicUrl,
-  newConductorUrl: config.newConductorUrl,
   androidAppUrl: config.androidAppUrl,
   iosAppUrl: config.iosAppUrl,
   redirectWhitelist: config.redirectWhitelist,
 });
 
 /**
- * Origins Conductor may CORS-allow: Conductor, the web app, the new
- * Conductor, http(s) entries from {@link config.redirectWhitelist}, the
- * Android Capacitor WebView (`https://localhost`), and iOS Capacitor
+ * Origins Conductor may CORS-allow: Conductor, the web app, http(s) entries
+ * from {@link config.redirectWhitelist} (which includes the Control Centre / web
+ * URL), the Android Capacitor WebView (`https://localhost`), and iOS Capacitor
  * custom-scheme origins (`${appId}://localhost`) derived from app URL /
  * redirect-whitelist schemes when present.
  */
@@ -87,7 +85,6 @@ export const buildCorsAllowlist = (
   const httpCandidates = [
     sources.conductorPublicUrl,
     sources.webAppPublicUrl,
-    sources.newConductorUrl,
     ...(sources.redirectWhitelist ?? []),
   ];
   const origins = new Set<string>();

@@ -29,7 +29,8 @@ implementations.
 The available
 providers are configured via environment variables using a pattern of variable
 names to encode an object structure. Variables starting with `AUTH_` define
-the properties of different providers with the pattern `AUTH_{provider}_{property}`. There are two kinds of provider: Google and OIDC. These are configured
+the properties of different providers with the pattern `AUTH_{provider}_{property}`.
+There are three kinds of provider: Google, SAML and OIDC. These are configured
 as follows:
 
 For a Google provider, the TYPE property should be `google` and the following
@@ -85,9 +86,9 @@ AUTH_SAML_CALLBACK_URL="https://your-app.example.com/auth/saml/callback"
 
 # Private key: Your SP's private key for signing requests
 AUTH_SAML_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nYourPrivateKeyHere\n-----END RSA PRIVATE KEY-----"
-# Public key: The IdP's certificate for verifying signatures (from IdP metadata)
-AUTH_SAML_PUBLIC_KEY="-----BEGIN CERTIFICATE-----\nIdPCertificateHere\n-----END CERTIFICATE-----"
-# IDP Public key: The IdP's public key for encrypting assertions (from IdP metadata)
+# Public key: Your SP's public key (included in metadata for the IdP)
+AUTH_SAML_PUBLIC_KEY="-----BEGIN CERTIFICATE-----\nYourPublicKeyHere\n-----END CERTIFICATE-----"
+# IDP Public key: The IdP's certificate for verifying IdP signatures (from IdP metadata)
 AUTH_SAML_IDP_PUBLIC_KEY=abcd1234
 # Sign the SAML metadata document? Requires private key
 AUTH_SAML_SIGN_METADATA=true
@@ -127,7 +128,9 @@ of buttons on the login page.
 - `strategies/applyStrategies.ts`: Configures Passport.js strategies
 - `strategies/localStrategy.ts`: Local authentication strategy
 - `strategies/googleStrategy.ts`: Google OAuth strategy
-- `helpers.ts`: Utility functions for authentication including `completePostAuth` (shared post-authentication handler for all flows) and `ssoVerify` (Passport verify callback for all SSO strategies)
+- `helpers.ts`: Utility functions for authentication including `completePostAuth`
+  (shared post-authentication handler for all flows) and `ssoVerify` (Passport
+  verify callback for all SSO strategies)
 
 ## Token Exchange System
 

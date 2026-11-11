@@ -11,7 +11,7 @@ import {SignedXml} from 'xml-crypto';
 import {config} from '../../buildconfig';
 import {providerAuthReturnUrl} from '../authRoutes';
 import {ssoVerify} from '../helpers';
-import {SAMLAuthProviderConfig} from './strategyTypes';
+import {SAMLAuthProviderConfig} from '@faims3/build-config';
 
 /**
  * Extracts email from SAML profile/assertion
@@ -130,12 +130,17 @@ const generateSamlVerifyFunction = ({
 export const samlStrategyGenerator = (
   options: SAMLAuthProviderConfig
 ): Strategy => {
+  if (!options.idpPublicKey) {
+    throw new Error(
+      `SAML auth provider '${options.id}' is missing required idpPublicKey.`
+    );
+  }
   const strategy = new Strategy(
     {
       // Required
       entryPoint: options.entryPoint,
       issuer: options.issuer,
-      // The IdP's public cert (for verifying IdP signatures)
+      // The IdP's public cert (for verifying IdP signatures).
       cert: options.idpPublicKey,
       // Callback URL
       callbackUrl:

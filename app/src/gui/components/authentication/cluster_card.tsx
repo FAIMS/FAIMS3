@@ -34,7 +34,7 @@ import {
   useTheme,
 } from '@mui/material';
 import {useState} from 'react';
-import {config, IS_WEB_PLATFORM} from '../../../buildconfig';
+import {IS_WEB_PLATFORM} from '../../../buildconfig';
 import {
   isTokenValid,
   removeServerConnection,
@@ -44,6 +44,7 @@ import {
 } from '../../../context/slices/authSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import MainCard from '../ui/main-card';
+import {localReauthIdentifier, openConductorLogin} from './conductorLoginUrl';
 import {LoginButton} from './login_form';
 
 const ADD_NEW_USER_FOR_LOGGED_IN_SERVER_ENABLED = true;
@@ -123,16 +124,8 @@ export default function ClusterCard(props: ClusterCardProps) {
     }
   };
 
-  const handleAddNewUser = async () => {
-    if (IS_WEB_PLATFORM) {
-      const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
-      window.location.href =
-        props.conductor_url + '/login?redirect=' + redirect;
-    } else {
-      await Browser.open({
-        url: `${props.conductor_url}/login?redirect=${config.appId}://auth-return`,
-      });
-    }
+  const handleAddNewUser = () => {
+    void openConductorLogin({conductorUrl: props.conductor_url});
   };
 
   return (
@@ -337,6 +330,11 @@ export default function ClusterCard(props: ClusterCardProps) {
                           key={props.serverId}
                           conductor_url={props.conductor_url}
                           is_refresh={true}
+                          email={localReauthIdentifier({
+                            username,
+                            hasLocalProfile:
+                              tokenInfo?.parsedToken.hasLocalProfile,
+                          })}
                           label="Renew"
                           size="small"
                           variant="contained"

@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import {HRID_STRING} from '../datamodel';
 import {FAIMSTypeName} from '../types';
-import {slugify} from '../utils';
+import {
+  EMPTY_EXPORT_COLUMN_FALLBACK,
+  slugify,
+  uniqueExportColumnName,
+} from '../utils';
 import {compileExpression} from './conditionals';
 import {ExprType, FAIMS_TYPE_TO_EXPR_TYPE} from './expressions';
 import {
+  CompiledChoiceOption,
+  CompiledFieldDefinition,
   CompiledUiSpecModel,
   FieldDefinition,
   HridFieldMap,
@@ -268,8 +274,82 @@ export const getFieldToIdsMap = (
 // Maintain this list of spatially relevant fields
 export const SPATIAL_FIELDS = ['MapFormField', 'TakePoint'];
 
+/**
+ * Extra CSV / GIS columns appended to a field's export name, keyed by
+ * `namespace::component`. Must match the suffix keys `csvFormatValue` writes
+ * (asserted in `api/test/exportFieldIdentity.test.ts`).
+ */
+export const EXTRA_EXPORT_COLUMN_SUFFIXES: Record<string, readonly string[]> = {
+  'faims-custom::TakePoint': ['_latitude', '_longitude', '_accuracy'],
+  'faims-custom::AddressField': [
+    '_house_number',
+    '_road',
+    '_suburb',
+    '_town',
+    '_state',
+    '_postcode',
+    '_country',
+    '_country_code',
+    '_manual',
+  ],
+  'mapping-plugin::MapFormField': ['_latitude', '_longitude'],
+};
+
+/** Field facts needed to list derived export columns. */
+export type ExportColumnField = {
+  componentNamespace: string;
+  componentName: string;
+  annotation?: string;
+  uncertainty?: string;
+};
+
+/**
+ * Columns this field emits besides its base export name (GPS / address
+ * pieces, annotation, uncertainty).
+ */
+export function extraExportColumnNames(
+  field: ExportColumnField,
+  exportName: string
+): string[] {
+  const key = field.componentNamespace
+    ? `${field.componentNamespace}::${field.componentName}`
+    : field.componentName;
+  const extras = (EXTRA_EXPORT_COLUMN_SUFFIXES[key] ?? []).map(
+    suffix => `${exportName}${suffix}`
+  );
+  if (field.annotation) extras.push(`${exportName}_${field.annotation}`);
+  if (field.uncertainty) extras.push(`${exportName}_${field.uncertainty}`);
+  return extras;
+}
+
+/**
+ * {@link uniqueExportColumnName} that also reserves
+ * {@link extraExportColumnNames} so a later field cannot take `location`
+ * from a TakePoint's `location_latitude`.
+ */
+export function uniqueFieldExportColumnName(
+  raw: string,
+  used: Set<string>,
+  field: ExportColumnField
+): string {
+  return uniqueExportColumnName(
+    raw,
+    used,
+    EMPTY_EXPORT_COLUMN_FALLBACK,
+    candidate => extraExportColumnNames(field, candidate)
+  );
+}
+
 export type FieldSummary = {
+  /** Immutable storage id (`uiSpec.fields` key). */
   name: string;
+  /**
+   * CSV / GIS column name. When built by {@link getNotebookFieldTypes} this
+   * is sanitised (`sanitizeExportColumnName`) and uniquified against other
+   * bases and derived suffix columns — do not treat it as the raw stored
+   * `exportName` from an uploaded notebook.
+   */
+  exportName: string;
   type: string;
   /** Component namespace from the UI spec (e.g. "faims-custom", "mapping-plugin"). */
   componentNamespace: string;
@@ -284,8 +364,12 @@ export type FieldSummary = {
 
 /**
  * Get a list of fields for a notebook with relevant information
- * on each for the export
-
+ * on each for the export.
+ *
+ * `exportName` is sanitised here: uploaded notebooks may skip designer
+ * slugify, so column names must not carry CR/LF, quotes, or path
+ * separators into CSV / GIS / KML output.
+ *
  * @param uiSpecification UI Specification (decoded)
  * @param viewID View ID
  * @returns an array of FieldSummary objects
@@ -306,25 +390,35 @@ export const getNotebookFieldTypes = ({
   }
   const views = uiSpecification.viewsets[viewID].views;
   const fields: FieldSummary[] = [];
+  const usedExportNames = new Set<string>();
 
   views.forEach((view: string) => {
-    uiSpecification.views[view].fields.forEach((field: any) => {
+    uiSpecification.views[view].fields.forEach((field: string) => {
       const fieldInfo = uiSpecification.fields[field];
+      const componentNamespace = fieldInfo['component-namespace'] ?? '';
+      const componentName = fieldInfo['component-name'];
+      const annotation = fieldInfo.meta?.annotation.include
+        ? slugify(fieldInfo.meta.annotation.label)
+        : '';
+      const uncertainty = fieldInfo.meta?.uncertainty.include
+        ? slugify(fieldInfo.meta.uncertainty.label)
+        : '';
       fields.push({
         name: field,
-        componentNamespace: fieldInfo['component-namespace'] ?? '',
-        componentName: fieldInfo['component-name'],
+        exportName: uniqueFieldExportColumnName(
+          fieldInfo.exportName || field,
+          usedExportNames,
+          {componentNamespace, componentName, annotation, uncertainty}
+        ),
+        componentNamespace,
+        componentName,
         type: fieldInfo['type-returned'],
         viewsetId: viewID,
         viewId: view,
         // include a hint as to whether this is a spatial field
-        isSpatial: SPATIAL_FIELDS.some(f => f === fieldInfo['component-name']),
-        annotation: fieldInfo.meta?.annotation.include
-          ? slugify(fieldInfo.meta.annotation.label)
-          : '',
-        uncertainty: fieldInfo.meta?.uncertainty.include
-          ? slugify(fieldInfo.meta.uncertainty.label)
-          : '',
+        isSpatial: SPATIAL_FIELDS.some(f => f === componentName),
+        annotation,
+        uncertainty,
       });
     });
   });
@@ -536,15 +630,61 @@ export function getViewsMatchingCondition(
   });
 }
 
+/**
+ * Choice-field options live on unmodelled `component-parameters.ElementProps`.
+ * Only RadioGroup / Select / MultiSelect populate this array.
+ */
+const choiceOptionsOnField = (
+  fieldDef: CompiledFieldDefinition
+): CompiledChoiceOption[] | undefined => {
+  const options = (
+    fieldDef['component-parameters'] as {
+      ElementProps?: {options?: CompiledChoiceOption[]};
+    }
+  ).ElementProps?.options;
+  return Array.isArray(options) ? options : undefined;
+};
+
+/**
+ * Compile option-level visibility conditions in place. Only options that
+ * define `condition` receive a `conditionFn`; others stay serializable-only.
+ *
+ * A malformed option AST does not fail notebook compile: that option is
+ * hidden (`() => false`) so sibling options and the rest of the spec still
+ * load.
+ */
+const compileChoiceOptionConditionFns = (
+  fieldDef: CompiledFieldDefinition,
+  fieldId: string
+) => {
+  const options = choiceOptionsOnField(fieldDef);
+  if (!options) return;
+  for (const option of options) {
+    if (option?.condition == null) continue;
+    try {
+      option.conditionFn = compileExpression(option.condition);
+    } catch (e) {
+      option.conditionFn = () => false;
+      console.warn(
+        `Choice option "${option.value}" on field "${fieldId}" has an invalid condition`,
+        e
+      );
+    }
+  }
+};
+
 // compile all conditional expressions in this UiSpec and store the
-// compiled versions as a property `conditionFn` on the field or view
+// compiled versions as a property `conditionFn` on the field, view, or
+// choice option (when that option defines a condition)
 export function compileUiSpecConditionals(
   uiSpecification: UiSpecModel | NotebookUiSpec
 ) {
-  // conditionals can appear on views or fields
-  // compile each one and add compiled fn as a property on the field/view
+  // conditionals can appear on views, fields, or choice options
+  // compile each one and add compiled fn as a property on the field/view/option
   // any field/view with no condition will get a conditionFn returning true
   // so we can always just call this fn to filter fields/views
+  // choice options only get a conditionFn when `condition` is defined;
+  // a bad option AST hides that option instead of failing the whole compile
 
   // Compiled functions are attached in place; the function returns nothing.
   const expressionFieldTypes = new Map<string, ExprType>();
@@ -561,8 +701,9 @@ export function compileUiSpecConditionals(
   };
 
   for (const field in uiSpecification.fields) {
-    const fieldDef = uiSpecification.fields[field];
+    const fieldDef = uiSpecification.fields[field] as CompiledFieldDefinition;
     fieldDef.conditionFn = compileExpression(fieldDef.condition);
+    compileChoiceOptionConditionFns(fieldDef, field);
 
     // Compile computed field expressions at notebook load, attaching the
     // evaluator and its references in place (mirrors conditionFn above).

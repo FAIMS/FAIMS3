@@ -56,6 +56,7 @@ export const REVISIONS_INDEX = 'index/revision';
 export const AVP_INDEX = 'index/avp';
 // ID = record id, emitted = revision - use include_docs
 export const RECORD_REVISIONS_INDEX = 'index/recordRevisions';
+export const ATTACHMENT_ATTRIBUTION_INDEX = 'index/attachmentAttribution';
 export {RECORD_BY_UPDATED_INDEX} from './updatedTimeFilter';
 // Index emits _id and _rev for record, revision and avp docs
 export const RECORD_AUDIT_INDEX = 'record_audit/by_record_id';

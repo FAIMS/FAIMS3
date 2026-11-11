@@ -3,13 +3,15 @@
  * @file Integration-style tests for UI-spec reducers (fields, sections, viewsets).
  */
 
+import type {ChoiceElementProps} from '@faims3/forms';
 import {describe, expect, it} from 'vitest';
 import {getFieldSpec} from '../../../fields';
-import type {NotebookUISpec} from '../../../state/initial';
+import type {FieldType, NotebookUISpec} from '../../../state/initial';
 import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../../../state/initial';
 import {
   fieldAdded,
   fieldDeleted,
+  fieldDuplicated,
   fieldMoved,
   fieldReordered,
   formVisibilityUpdated,
@@ -24,6 +26,10 @@ import {
   viewSetDisplayInOverviewMapUpdated,
   viewSetSummaryFieldsUpdated,
 } from '.';
+
+function choiceElementProps(field: FieldType): ChoiceElementProps {
+  return field['component-parameters'].ElementProps as ChoiceElementProps;
+}
 
 const createBaseUiSpec = (): NotebookUISpec => ({
   fields: {},
@@ -54,7 +60,52 @@ const createBaseUiSpec = (): NotebookUISpec => ({
 });
 
 describe('uiSpecificationReducer', () => {
-  it('adds fields with slugged key and designer identifier', () => {
+  it('uses the requested defaults for related-record and map field templates', () => {
+    expect(
+      getFieldSpec('RelatedRecordSelector')['component-parameters']
+    ).toMatchObject({
+      allowLinkToExisting: false,
+      hideCreateAnotherButton: true,
+    });
+    expect(getFieldSpec('MapFormField')['component-parameters'].zoom).toBe(14);
+  });
+
+  it('copies related-record and map defaults when adding fields', () => {
+    const initial = createBaseUiSpec();
+
+    const relatedAdded = uiSpecificationReducer.reducer(
+      initial,
+      fieldAdded({
+        fieldName: 'Related Record',
+        fieldType: 'RelatedRecordSelector',
+        viewId: 'sectionA',
+        viewSetId: 'formA',
+        addAfter: '',
+      })
+    );
+    const relatedField =
+      relatedAdded.fields[relatedAdded.views.sectionA.fields[0]];
+    expect(relatedField['component-parameters']).toMatchObject({
+      allowLinkToExisting: false,
+      hideCreateAnotherButton: true,
+      related_type: 'formA',
+    });
+
+    const mapAdded = uiSpecificationReducer.reducer(
+      createBaseUiSpec(),
+      fieldAdded({
+        fieldName: 'Map',
+        fieldType: 'MapFormField',
+        viewId: 'sectionA',
+        viewSetId: 'formA',
+        addAfter: '',
+      })
+    );
+    const mapField = mapAdded.fields[mapAdded.views.sectionA.fields[0]];
+    expect(mapField['component-parameters'].zoom).toBe(14);
+  });
+
+  it('adds fields with minted storage id, export name, and designer identifier', () => {
     const initial = createBaseUiSpec();
 
     const next = uiSpecificationReducer.reducer(
@@ -68,12 +119,15 @@ describe('uiSpecificationReducer', () => {
       })
     );
 
-    expect(Object.keys(next.fields)).toEqual(['Text-Field']);
-    expect(next.fields['Text-Field'].designerIdentifier).toBeTypeOf('string');
-    expect(next.views.sectionA.fields).toEqual(['Text-Field']);
+    const [storageId] = Object.keys(next.fields);
+    expect(storageId).toMatch(/^f_[0-9a-f]{6}$/);
+    expect(next.fields[storageId].designerIdentifier).toBeTypeOf('string');
+    expect(next.fields[storageId].exportName).toBe('Text-Field');
+    expect(next.fields[storageId]['component-parameters'].name).toBe(storageId);
+    expect(next.views.sectionA.fields).toEqual([storageId]);
   });
 
-  it('adds templated string fields with a slugged key', () => {
+  it('adds templated string fields with a minted storage id and slugged export name', () => {
     const initial = createBaseUiSpec();
 
     const next = uiSpecificationReducer.reducer(
@@ -87,16 +141,19 @@ describe('uiSpecificationReducer', () => {
       })
     );
 
-    expect(Object.keys(next.fields)).toEqual(['New-Field']);
-    expect(next.views.sectionA.fields).toEqual(['New-Field']);
-    expect(next.fields['New-Field']['component-parameters'].hidden).toBe(true);
+    const [storageId] = Object.keys(next.fields);
+    expect(storageId).toMatch(/^f_[0-9a-f]{6}$/);
+    expect(next.views.sectionA.fields).toEqual([storageId]);
+    expect(next.fields[storageId].exportName).toBe('New-Field');
+    expect(next.fields[storageId]['component-parameters'].hidden).toBe(true);
   });
 
-  it('renames field and updates summary/hrid references', () => {
+  it('renames exportName without moving the storage key or references', () => {
     const initial = createBaseUiSpec();
     const existingField = getFieldSpec('TextField');
     existingField['component-parameters'].name = 'old-field';
     existingField['component-parameters'].label = 'Old Field';
+    existingField.exportName = 'old-field';
 
     initial.fields['old-field'] = existingField;
     initial.views.sectionA.fields = ['old-field'];
@@ -108,15 +165,57 @@ describe('uiSpecificationReducer', () => {
       fieldRenamed({
         viewId: 'sectionA',
         fieldName: 'old-field',
-        newFieldName: 'New Field',
+        newExportName: 'New Field',
       })
     );
 
-    expect(next.fields['New-Field']).toBeDefined();
-    expect(next.fields['old-field']).toBeUndefined();
-    expect(next.views.sectionA.fields).toEqual(['New-Field']);
-    expect(next.viewsets.formA.summary_fields).toEqual(['New-Field']);
-    expect(next.viewsets.formA.hridField).toBe('New-Field');
+    expect(next.fields['old-field']).toBeDefined();
+    expect(next.fields['New-Field']).toBeUndefined();
+    expect(next.fields['old-field'].exportName).toBe('New-Field');
+    expect(next.fields['old-field']['component-parameters'].name).toBe(
+      'old-field'
+    );
+    expect(next.views.sectionA.fields).toEqual(['old-field']);
+    expect(next.viewsets.formA.summary_fields).toEqual(['old-field']);
+    expect(next.viewsets.formA.hridField).toBe('old-field');
+  });
+
+  it('keeps the existing exportName when the typed name slugifies to empty', () => {
+    const initial = createBaseUiSpec();
+    const existingField = getFieldSpec('TextField');
+    existingField['component-parameters'].name = 'old-field';
+    existingField.exportName = 'Site-Name';
+    initial.fields['old-field'] = existingField;
+    initial.views.sectionA.fields = ['old-field'];
+
+    const next = uiSpecificationReducer.reducer(
+      initial,
+      fieldRenamed({
+        viewId: 'sectionA',
+        fieldName: 'old-field',
+        newExportName: '!!!',
+      })
+    );
+
+    expect(next.fields['old-field'].exportName).toBe('Site-Name');
+  });
+
+  it('adds a non-empty fallback exportName when the field label slugifies to empty', () => {
+    const initial = createBaseUiSpec();
+
+    const next = uiSpecificationReducer.reducer(
+      initial,
+      fieldAdded({
+        fieldName: '!!!',
+        fieldType: 'TextField',
+        viewId: 'sectionA',
+        viewSetId: 'formA',
+        addAfter: '',
+      })
+    );
+
+    const [storageId] = Object.keys(next.fields);
+    expect(next.fields[storageId].exportName).toBe('field');
   });
 
   it('moves then deletes fields and removes summary references', () => {
@@ -183,6 +282,7 @@ describe('uiSpecificationReducer', () => {
     const sourceField = getFieldSpec('TextField');
     sourceField['component-parameters'].name = 'field-a';
     sourceField['component-parameters'].label = 'Field A';
+    sourceField.exportName = 'field-a';
     initial.fields['field-a'] = sourceField;
     initial.views.sectionA.fields = ['field-a'];
 
@@ -203,10 +303,13 @@ describe('uiSpecificationReducer', () => {
 
     const duplicatedFieldName = duplicatedSection.fields[0];
     expect(duplicatedFieldName).not.toBe('field-a');
+    expect(duplicatedFieldName).toMatch(/^f_[0-9a-f]{6}$/);
     expect(duplicated.fields[duplicatedFieldName]).toBeDefined();
     expect(
       duplicated.fields[duplicatedFieldName].designerIdentifier
     ).toBeTypeOf('string');
+    expect(duplicated.fields[duplicatedFieldName].exportName).toBe('field-a-1');
+    expect(duplicated.fields['field-a'].exportName).toBe('field-a');
 
     const moved = uiSpecificationReducer.reducer(
       duplicated,
@@ -225,6 +328,141 @@ describe('uiSpecificationReducer', () => {
     expect(deleted.views[duplicatedSectionId]).toBeUndefined();
     expect(deleted.fields[duplicatedFieldName]).toBeUndefined();
     expect(deleted.viewsets.formB.views).toEqual(['sectionB']);
+  });
+
+  it('uniquifies exportName when duplicating a section in the same form', () => {
+    const initial = createBaseUiSpec();
+    const sourceField = getFieldSpec('TextField');
+    sourceField['component-parameters'].name = 'field-a';
+    sourceField['component-parameters'].label = 'Site Name';
+    sourceField.exportName = 'Site-Name';
+    initial.fields['field-a'] = sourceField;
+    initial.views.sectionA.fields = ['field-a'];
+
+    const duplicated = uiSpecificationReducer.reducer(
+      initial,
+      sectionDuplicated({
+        sourceViewId: 'sectionA',
+        newSectionLabel: 'Section A Copy',
+      })
+    );
+
+    const clonedSection = duplicated.views['formA-Section-A-Copy'];
+    expect(clonedSection).toBeDefined();
+    const clonedFieldName = clonedSection.fields[0];
+    expect(clonedFieldName).toMatch(/^f_[0-9a-f]{6}$/);
+    expect(duplicated.fields[clonedFieldName].exportName).toBe('Site-Name-1');
+    expect(duplicated.fields['field-a'].exportName).toBe('Site-Name');
+    expect(duplicated.viewsets.formA.views).toEqual([
+      'sectionA',
+      'formA-Section-A-Copy',
+    ]);
+  });
+
+  it('duplicates a field with a minted storage id and a unique export name', () => {
+    const initial = createBaseUiSpec();
+    const sourceField = getFieldSpec('TextField');
+    sourceField['component-parameters'].name = 'field-a';
+    sourceField['component-parameters'].label = 'Site Name';
+    sourceField.exportName = 'Site-Name';
+    initial.fields['field-a'] = sourceField;
+    initial.views.sectionA.fields = ['field-a'];
+
+    const next = uiSpecificationReducer.reducer(
+      initial,
+      fieldDuplicated({
+        originalFieldName: 'field-a',
+        newFieldName: 'Site Name',
+        viewId: 'sectionA',
+      })
+    );
+
+    expect(next.fields['field-a']).toBeDefined();
+    expect(next.fields['field-a'].exportName).toBe('Site-Name');
+    expect(next.fields['field-a']['component-parameters'].name).toBe('field-a');
+
+    const copyId = next.views.sectionA.fields.find(id => id !== 'field-a');
+    expect(copyId).toBeDefined();
+    expect(copyId).toMatch(/^f_[0-9a-f]{6}$/);
+    expect(next.fields[copyId!]).toBeDefined();
+    expect(next.fields[copyId!].exportName).toBe('Site-Name-1');
+    expect(next.fields[copyId!]['component-parameters'].name).toBe(copyId);
+    expect(next.fields[copyId!]['component-parameters'].label).toBe(
+      'Site Name'
+    );
+    expect(next.views.sectionA.fields).toEqual(['field-a', copyId]);
+  });
+
+  it('adds RadioGroup and MultiSelect fields with empty, unshared options', () => {
+    const initial = createBaseUiSpec();
+
+    const withRadio = uiSpecificationReducer.reducer(
+      initial,
+      fieldAdded({
+        fieldName: 'Select Single',
+        fieldType: 'RadioGroup',
+        viewId: 'sectionA',
+        viewSetId: 'formA',
+        addAfter: '',
+      })
+    );
+    const withBoth = uiSpecificationReducer.reducer(
+      withRadio,
+      fieldAdded({
+        fieldName: 'Select Multiple',
+        fieldType: 'MultiSelect',
+        viewId: 'sectionA',
+        viewSetId: 'formA',
+        addAfter: '',
+      })
+    );
+
+    const [radioId, multiId] = withBoth.views.sectionA.fields;
+    const radioProps = choiceElementProps(withBoth.fields[radioId]);
+    const multiProps = choiceElementProps(withBoth.fields[multiId]);
+
+    expect(radioProps.options).toEqual([]);
+    expect(multiProps.options).toEqual([]);
+    expect(radioProps.enableOtherOption).toBe(false);
+    expect(multiProps.enableOtherOption).toBe(false);
+    expect(multiProps.expandedChecklist).toBe(true);
+    expect(radioProps.options).not.toBe(multiProps.options);
+    expect(radioProps.options).not.toBe(
+      choiceElementProps(getFieldSpec('RadioGroup')).options
+    );
+
+    const mutatedRadio = JSON.parse(
+      JSON.stringify(withBoth.fields[radioId])
+    ) as FieldType;
+    choiceElementProps(mutatedRadio).options.push({
+      value: 'mutated',
+      label: 'mutated',
+    });
+    expect(choiceElementProps(withBoth.fields[radioId]).options).toEqual([]);
+    expect(choiceElementProps(withBoth.fields[multiId]).options).toEqual([]);
+    expect(choiceElementProps(getFieldSpec('RadioGroup')).options).toEqual([]);
+    expect(choiceElementProps(getFieldSpec('MultiSelect')).options).toEqual([]);
+  });
+
+  it('uses a caller-supplied storage id when adding a field', () => {
+    const initial = createBaseUiSpec();
+    const storageId = 'f_0123456789ab';
+
+    const next = uiSpecificationReducer.reducer(
+      initial,
+      fieldAdded({
+        fieldName: 'New Field',
+        fieldType: 'TextField',
+        viewId: 'sectionA',
+        viewSetId: 'formA',
+        addAfter: '',
+        storageId,
+      })
+    );
+
+    expect(next.fields[storageId]).toBeDefined();
+    expect(next.views.sectionA.fields).toEqual([storageId]);
+    expect(next.fields[storageId].exportName).toBe('New-Field');
   });
 
   it('updates viewset visibility and display settings', () => {

@@ -101,7 +101,10 @@ const AuthenticatedDisplayComponent = () => {
     globalRolesGrantAction(activeUser.parsedToken, Action.IMPERSONATE_USER);
 
   const userInitial =
-    activeUser?.parsedToken.username.charAt(0).toUpperCase() || '';
+    (activeUser?.parsedToken.name || activeUser?.parsedToken.username)
+      ?.trim()
+      .charAt(0)
+      .toUpperCase() || '';
 
   const servers = useAppSelector(state => state.projects.servers);
   const activeServerInfo = activeUser

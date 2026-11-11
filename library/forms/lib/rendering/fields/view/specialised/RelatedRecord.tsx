@@ -26,6 +26,10 @@ import {
 } from '../../../types';
 import {EmptyResponsePlaceholder, TextWrapper} from '../wrappers';
 
+/** Prefix for anything hydrated from a record's relations. The Related Records
+ * field invalidates the whole prefix, so every reader keyed under it re-resolves. */
+export const RELATED_HYDRATION_QUERY_KEY = ['related-hydration'] as const;
+
 // ============================================================================
 // Type Definitions & Schemas
 // ============================================================================
@@ -425,7 +429,7 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
   const relatedRecordQueries = useQueries({
     queries: (relatedRecords ?? []).map(({record_id}) => ({
       queryKey: [
-        'related-hydration',
+        ...RELATED_HYDRATION_QUERY_KEY,
         record_id,
         'nest',
         isMobile,

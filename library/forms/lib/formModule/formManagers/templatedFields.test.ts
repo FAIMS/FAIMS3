@@ -15,6 +15,7 @@ function makeAddressTemplateSpec(): UiSpecModel {
         'component-namespace': 'faims-custom',
         'component-name': 'AddressField',
         'type-returned': 'faims-core::JSON',
+        exportName: 'addr',
         'component-parameters': {
           label: 'Address',
           name: 'addr',
@@ -30,6 +31,7 @@ function makeAddressTemplateSpec(): UiSpecModel {
         'component-namespace': 'faims-custom',
         'component-name': 'TemplatedStringField',
         'type-returned': 'faims-core::String',
+        exportName: 'derived',
         'component-parameters': {
           label: 'Derived',
           name: 'derived',

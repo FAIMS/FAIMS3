@@ -1,6 +1,6 @@
 # Field Identity
 
-_The Label, Helper Text, and Field ID that every field shares._
+_The Field Heading, Helper Text, and Export Title that every field shares._
 
 ---
 
@@ -9,44 +9,43 @@ _The Label, Helper Text, and Field ID that every field shares._
 When you expand a field by clicking its grey header bar, you will see the
 field's type badge (e.g., "FAIMSTextField"), its Helper Text preview in
 italic, and the toolbar icons. Below that, the first panel contains
-two identity inputs ("Label" and "Field ID") plus a "Helper Text"
-input field. Identity inputs control how the field appears to
-collectors and how its data is stored in exports, while Helper Text
-allows you to provide guidance to data collectors using the {{notebook}}.
+two identity inputs ("Field Heading" and "Export Title") plus a "Helper Text"
+input field. The Field Heading is what collectors see. The Export Title is the
+column header in CSV and GIS exports. Helper Text allows you to provide
+guidance to data collectors using the {{notebook}}.
 
 ```{screenshot} field-types-design/shared-03-field-identity.png
-:alt: Field identity panel showing Label, Helper Text, and Field ID for the Feature description field
+:alt: Field identity panel showing Field Heading, Helper Text, and Export Title for the Feature description field
 :align: right
 :width: 100%
 ```
 
-## Label
+## Field Heading
 
-The **Label** is the display name shown above the field during data
-collection. It also appears as the column header when you export data
-to CSV or JSON.
+The **Field Heading** is the display name shown above the field during data
+collection.
 
-**Choose a label that is short, descriptive, and unambiguous.** Good
-labels read naturally as column headers in a spreadsheet — for example,
-"Feature type", "Soil colour", or "Artefact count".
+**Choose a field heading that is short, descriptive, and unambiguous.** Good
+field headings read naturally on a phone — for example, "Feature type", "Soil
+colour", or "Artefact count".
 
-## Field ID
+Changing the Field Heading does not change stored data or export column names.
 
-The **Field ID** is the machine-readable identifier used as the JSON key
-in exports and the internal database key. When you type a Label, the
-Field ID auto-generates by converting spaces to hyphens — for example,
+## Export Title
+
+The **Export Title** is the column header used when you export data to
+CSV or GIS. When you type a Field Heading on a new field, the Export Title
+auto-generates by converting spaces to hyphens — for example,
 "Feature description" becomes `Feature-description`. The original
 capitalisation is preserved.
 
-You can **edit the Field ID directly** if you need a different key, but
-it must be unique within the {{notebook}}. Once data has been collected
-against a field, changing its Field ID will break the link to existing
-records. In most cases, if you've chosen a good Label, you can accept
-the default Field ID.
+You can **edit the Export Title directly** if you need a different
+column. It must be unique within the {{notebook}}. Changing it does
+**not** affect collected values; it only changes the header in future
+exports.
 
-> **Warning:** Avoid changing the Field ID after data collection has
-> begun. Existing records reference the original ID, and changing it
-> will orphan that data.
+Each field also has an internal storage id (minted when the field is
+created) that never changes. You do not need to edit it.
 
 ## Helper Text
 
@@ -60,9 +59,11 @@ instructions.
 
 ## Tips
 
-- **Keep Labels concise** — they appear in mobile interfaces where
-  screen space is limited, and as export column headers where brevity
-  aids readability.
-- **Use Helper Text for instructions, not titles** — the Label already
+- **Keep Field Headings concise** — they appear in mobile interfaces where
+  screen space is limited.
+- **Use Helper Text for instructions, not titles** — the Field Heading already
   serves as the field's title. Use Helper Text to explain _how_ to
   fill in the field, not _what_ the field is.
+- **Treat Export Title as the spreadsheet column** — change it when you
+  want a tidier export, not when you want collectors to see a different
+  heading.

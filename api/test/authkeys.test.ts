@@ -12,7 +12,9 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 PouchDB.plugin(PouchDBFind);
 
 import {addGlobalRole, Role} from '@faims3/data-model';
+import {decodeJwt} from 'jose';
 import {beforeEach, describe, expect, it} from 'vitest';
+import {addLocalPasswordForUser} from '../src/auth/helpers';
 import {
   generateJwtFromUser,
   upgradeCouchUserToExpressUser,
@@ -65,5 +67,30 @@ describe('roundtrip creating and reading token', () => {
           expect(valid_user.name).toBe(user.name);
         }
       });
+  });
+
+  it('embeds hasLocalProfile only when the user has a local password', async () => {
+    const signing_key = await keyService.getSigningKey();
+    const [dbUser, err] = await createUser({
+      username: 'local-or-not',
+      name: 'Local Or Not',
+    });
+    if (!dbUser) {
+      throw new Error('Create user failed!. Error: ' + err);
+    }
+    const user = await upgradeCouchUserToExpressUser({dbUser});
+
+    const withoutLocal = await generateJwtFromUser({
+      user,
+      signingKey: signing_key,
+    });
+    expect(decodeJwt(withoutLocal).hasLocalProfile).toBe(false);
+
+    await addLocalPasswordForUser(user, 'verysecret');
+    const withLocal = await generateJwtFromUser({
+      user,
+      signingKey: signing_key,
+    });
+    expect(decodeJwt(withLocal).hasLocalProfile).toBe(true);
   });
 });

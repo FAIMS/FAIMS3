@@ -15,7 +15,8 @@ Windows environment.
 │       ▼         │         │                 │         │                 │
 │  localhost:3000 │◄────────────────adb reverse─────────│  API (8080)     │
 │  localhost:8080 │◄────────────────adb reverse─────────│  CouchDB (5984) │
-│  localhost:5984 │◄────────────────adb reverse─────────│                 │
+│  localhost:5984 │◄────────────────adb reverse─────────│  RustFS (9000)  │
+│  localhost:9000 │◄────────────────adb reverse─────────│                 │
 └─────────────────┘         └─────────────────┘         └─────────────────┘
 ```
 
@@ -28,7 +29,8 @@ Windows environment.
 │       ▼         │                │                 │
 │  localhost:3000 │◄──adb reverse──│  API (8080)     │
 │  localhost:8080 │◄──adb reverse──│  CouchDB (5984) │
-│  localhost:5984 │◄──adb reverse──│                 │
+│  localhost:5984 │◄──adb reverse──│  RustFS (9000)  │
+│  localhost:9000 │◄──adb reverse──│                 │
 └─────────────────┘                └─────────────────┘
 ```
 
@@ -279,6 +281,7 @@ Should show:
 (reverse) tcp:3000 tcp:3000
 (reverse) tcp:8080 tcp:8080
 (reverse) tcp:5984 tcp:5984
+(reverse) tcp:9000 tcp:9000
 ```
 
 Also verify the generated Capacitor config has the live-reload server URL:

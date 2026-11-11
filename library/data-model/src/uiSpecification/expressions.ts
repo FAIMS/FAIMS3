@@ -11,6 +11,9 @@
  *   delimit the exact field ID, so an ID containing characters that would
  *   otherwise be operators (e.g. the hyphens in {Wet-Soil-Mass-g}) is treated
  *   as a single reference rather than parsed as arithmetic.
+ *   Named constants use the same syntax with the _CONSTANT. prefix, e.g.
+ *   {_CONSTANT.PI}, and compile to number literals (see
+ *   expressionConstants.ts).
  *   Typing is strict - there is no implicit coercion, and mismatches are
  *   rejected at compile time so the designer can surface them:
  *   - + - * / % ^ numbers only (^ is exponentiation, right-associative)
@@ -23,6 +26,12 @@
 
 import jsep from 'jsep';
 import ternary from '@jsep-plugin/ternary';
+import {
+  decodeConstantRef,
+  EXPRESSION_CONSTANT_NAMES,
+  EXPRESSION_CONSTANTS,
+  isConstantRef,
+} from './expressionConstants';
 
 // Enable the ternary operator (x ? y : z). Comparison, logical and the '&'
 // operator (used here for concatenation) are built into jsep already.
@@ -144,6 +153,42 @@ function substituteReferences(source: string): {
   return {processed: out, placeholders};
 }
 
+/** A complete `{ref}` span in an expression source. `to` is exclusive. */
+export type ExprRefSpan = {
+  /** Inner id, e.g. `f_abc` or `_CONSTANT.PI`. */
+  ref: string;
+  /** Index of the opening `{`. */
+  from: number;
+  /** Index after the closing `}`. */
+  to: number;
+};
+
+/** Complete `{[^{}]+}` spans, including braces. Incomplete `{foo` and empty
+ * `{}` produce no span. Nested `{a{b}}` matches the inner `{b}` only — the
+ * same scan `extractExpressionReferences` has always used. */
+const EXPRESSION_REF_PATTERN = /\{([^{}]+)\}/g;
+
+/**
+ * Offset-aware scan of braced references in an expression source.
+ * Tolerant of malformed or incomplete expressions — never throws.
+ *
+ * @param source The expression source, e.g. "{Width} * {Height}"
+ * @returns Each complete brace span, in source order (duplicates kept)
+ */
+export const scanExpressionReferences = (source: string): ExprRefSpan[] => {
+  const spans: ExprRefSpan[] = [];
+  const pattern = new RegExp(EXPRESSION_REF_PATTERN.source, 'g');
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(source)) !== null) {
+    spans.push({
+      ref: match[1],
+      from: match.index,
+      to: match.index + match[0].length,
+    });
+  }
+  return spans;
+};
+
 /**
  * Extracts the field IDs referenced in braces in an expression source.
  * Tolerant of malformed or incomplete expressions - unlike
@@ -154,15 +199,9 @@ function substituteReferences(source: string): {
  * @param source The expression source, e.g. "{Width} * {Height}"
  * @returns The unique field IDs referenced
  */
-export const extractExpressionReferences = (source: string): string[] => {
-  const refs = new Set<string>();
-  const pattern = /\{([^{}]+)\}/g;
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(source)) !== null) {
-    refs.add(match[1]);
-  }
-  return [...refs];
-};
+export const extractExpressionReferences = (source: string): string[] => [
+  ...new Set(scanExpressionReferences(source).map(span => span.ref)),
+];
 
 // Recursively compiles an AST node into a typed closure, collecting referenced
 // field ids and type checking as it goes. Disallowed node types (member access,
@@ -199,6 +238,19 @@ function compileNode(
         throw new ExpressionError(
           `Field references must be wrapped in braces, e.g. {${raw}}`
         );
+      }
+      // Named constants fold to number literals and are not references.
+      if (isConstantRef(fieldId)) {
+        const name = decodeConstantRef(fieldId);
+        const value =
+          name === null ? undefined : EXPRESSION_CONSTANTS.get(name);
+        if (value === undefined) {
+          throw new ExpressionError(
+            `{${fieldId}}: unknown constant - available constants are ` +
+              `${EXPRESSION_CONSTANT_NAMES.join(', ')} (case-sensitive)`
+          );
+        }
+        return {type: 'number', ev: () => value};
       }
       const fieldType = fieldTypes.get(fieldId);
       if (fieldType === undefined) {

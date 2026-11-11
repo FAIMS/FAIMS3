@@ -235,7 +235,10 @@ describe('migrateNotebook (runner)', () => {
     expect(migrated.uiSpec.schemaVersion).toBe(
       CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
     );
-    expect(applied.map(a => `${a.from}→${a.to}`)).toEqual(['legacy→1.0.0']);
+    expect(applied.map(a => `${a.from}→${a.to}`)).toEqual([
+      'legacy→1.0.0',
+      '1.0.0→1.0.1',
+    ]);
     expect(migrated).not.toHaveProperty('ui-specification');
   });
 

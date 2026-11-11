@@ -19,7 +19,9 @@ import {Action, GetListTemplatesResponse} from '@faims3/data-model';
 import {Link, useLocation} from '@tanstack/react-router';
 import {
   ArchiveRestore,
+  BarChart3,
   House,
+  Layers,
   LayoutTemplate,
   LetterText,
   Users,
@@ -43,6 +45,9 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const canSeeProjects = useIsAuthorisedTo({action: Action.LIST_PROJECTS});
   const canSeeTemplates = useIsAuthorisedTo({action: Action.LIST_TEMPLATES});
   const canSeeUsers = useIsAuthorisedTo({action: Action.VIEW_USER_LIST});
+  // VIEW_SYSTEM_STATS is ops/general admin only; hides Stats for everyone else.
+  const canSeeStats = useIsAuthorisedTo({action: Action.VIEW_SYSTEM_STATS});
+  const canSeeMapLayers = useIsAuthorisedTo({action: Action.LIST_MAP_ASSETS});
 
   // currently anyone can list teams - but it is filtered per resource
   const canSeeTeams = true;
@@ -101,6 +106,26 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
     });
   }
 
+  // Instance-usage snapshot; gated to VIEW_SYSTEM_STATS (ops / general admin).
+  if (canSeeStats) {
+    bottomSectionNavItems.push({
+      title: 'Stats',
+      url: '/stats',
+      icon: BarChart3,
+      testId: 'web-nav-stats',
+    });
+  }
+
+  if (canSeeMapLayers) {
+    bottomSectionNavItems.push({
+      title: 'Map layers',
+      url: '/map-layers',
+      icon: Layers,
+      testId: 'web-nav-map-layers',
+      isActive: pathname.startsWith('/map-layers'),
+    });
+  }
+
   if (canSeeTeams) {
     bottomSectionNavItems.push({
       title: 'Teams',
@@ -122,6 +147,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const visibleArchiveTabs = getVisibleArchiveTabs({
     canSeeProjects,
     canSeeTemplates,
+    canSeeTeams,
     canSeeUsers,
   });
 

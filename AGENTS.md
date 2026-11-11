@@ -5,20 +5,23 @@
 FAIMS3 is an offline field data-collection platform. It is a pnpm + Turborepo
 monorepo (Node 24, `pnpm@10.7.0`). The relevant runnable services are:
 
-| Service                   | Package               | Dev URL                       | Notes                            |
-| ------------------------- | --------------------- | ----------------------------- | -------------------------------- |
-| Conductor API             | `api` (`@faims3/api`) | http://localhost:8080         | Express server, talks to CouchDB |
-| Data-collection app       | `app` (`@faims3/app`) | http://localhost:3000         | Vite PWA                         |
-| Control Centre / Designer | `web` (`@faims3/web`) | http://localhost:3001         | Vite web app (admin UI)          |
-| CouchDB                   | docker                | http://localhost:5984/\_utils | Runs in Docker, not Node         |
+| Service                   | Package               | Dev URL                       | Notes                                              |
+| ------------------------- | --------------------- | ----------------------------- | -------------------------------------------------- |
+| Conductor API             | `api` (`@faims3/api`) | http://localhost:8080         | Express server, talks to CouchDB                   |
+| Data-collection app       | `app` (`@faims3/app`) | http://localhost:3000         | Vite PWA                                           |
+| Control Centre / Designer | `web` (`@faims3/web`) | http://localhost:3001         | Vite web app (admin UI)                            |
+| CouchDB                   | docker                | http://localhost:5984/\_utils | Runs in Docker, not Node                           |
+| RustFS                    | docker                | http://localhost:9000         | S3-compatible store for map layers (console :9001) |
 
-Shared libraries: `library/data-model` (`@faims3/data-model`) and
-`library/forms` (`@faims3/forms`). Browser e2e: `e2e` (`@faims3/e2e`).
+Shared libraries: `library/data-model` (`@faims3/data-model`),
+`library/build-config` (`@faims3/build-config`), and `library/forms`
+(`@faims3/forms`). Browser e2e: `e2e` (`@faims3/e2e`).
 
 ### Runtime configuration
 
 Each runnable package exposes a typed `config` singleton parsed once from env
-via Zod (shared helpers live in `@faims3/data-model` as `configHelpers`):
+via `@faims3/build-config` (`parseApiEnv`, `parseAppEnv`, `parseWebEnv`,
+`parseDesignerEnv`):
 
 | Package  | Module                            | Env source               |
 | -------- | --------------------------------- | ------------------------ |
@@ -43,25 +46,43 @@ session:
    `.env` files are gitignored so they may be missing on a fresh VM):
    `pnpm run generate-local-keys`. Then create env files if missing:
    `cp ./.env.dist ./.env; for d in api web app e2e; do [ -f ./$d/.env ] || cp ./$d/.env.dist ./$d/.env; done`
-3. Start CouchDB only: `sudo docker compose up -d --build couchdb`, then wait
-   for `curl http://localhost:5984/_up` to return 200.
+3. Start CouchDB and RustFS first:
+   `sudo docker compose up -d couchdb rustfs`,
+   then wait for `curl http://localhost:5984/_up` and
+   `curl http://localhost:9000/health` to return 200.
 4. Initialise the database (creates the `admin` user): `pnpm run migrate-with-keys`.
-5. Run all dev services with live reload: `pnpm run dev` (turbo runs api, app,
-   web and the data-model watcher in parallel). Run it in a long-lived tmux
-   session; it stays in the foreground.
+5. Start the spatial worker pool:
+   `sudo docker compose up -d capacity-manager spatial-worker`.
+   Compose builds `faims-dev-worker:local` the first time that image is
+   missing. Pass `--build` only after `Dockerfile.dev` or the lockfile
+   changes. A TypeScript edit does not need a rebuild: the worker
+   bind-mounts `api/src`. Map-layer GDAL runs in `spatial-worker` (idle
+   exit disabled). `capacity-manager` uses the FIXED provider and does
+   not start extra tasks. Without the worker, uploads stay `pending`.
+6. Run all dev services with live reload: `pnpm run dev` (turbo builds the
+   shared libraries first, then runs api, app, web and the data-model watcher
+   together). Run it in a long-lived tmux session; it stays in the foreground.
 
-`./localdev.sh` / `./dev.sh` automate steps 1-5 but assume `nvm`; running the
-steps directly (as above) is more reliable in this VM. `./localdev.sh --all`
+`./localdev.sh` / `./dev.sh` automate steps 1-6 but assume `nvm`; running the
+steps directly (as above) is more reliable in this VM. `./dev.sh --no-spatial`
+skips RustFS and the spatial worker pool (steps 3's rustfs and step 5) and
+only starts CouchDB plus native api/app/web. `./localdev.sh --all`
 runs every service inside Docker instead of natively — slower and not needed
 for code work.
 
 ### Non-obvious gotchas
 
 - Shared libraries must be built before the API/migrate can resolve
-  `@faims3/data-model` / `@faims3/forms` (their package `main` points at build
-  output). `pnpm run dev` builds them automatically via the turbo `dev` ->
-  `build` dependency; if you run `pnpm run migrate-with-keys` on a fresh tree
-  first, run `pnpm build` (or `npx turbo build`) once beforehand.
+  `@faims3/data-model` / `@faims3/build-config` / `@faims3/forms` (their package
+  `main` points at build output). `pnpm run dev` builds them automatically: the app, web and api dev
+  tasks wait on their dependencies' builds (`dev` -> `^build`), and
+  `@faims3/data-model`'s own `dev` waits on its `build`, so the watcher never
+  starts beside the build that writes the same directory. If you run
+  `pnpm run migrate-with-keys` on a fresh tree first, run `pnpm build` (or
+  `npx turbo build`) once beforehand.
+- The library `watch` scripts pick up their sub-scripts with a regex
+  (`pnpm run /^watch:/`). Never add pnpm's `--parallel` there: it implies
+  `--recursive`, so it starts every workspace package's `watch:*` scripts.
 - Local admin credentials: username `admin`, password
   `aSecretPasswordThatCantBeGuessed` (the `COUCHDB_PASSWORD` in `api/.env`).
   The Control Centre (`:3001`) redirects to the Conductor login at
@@ -77,12 +98,19 @@ for code work.
   `RATE_LIMITER_ENABLED=false` and `ATTEMPT_LIMITER_ENABLED=false` in
   `api/.env` and restart the API. The former is the Express HTTP IP limiter;
   the latter gates CouchDB-backed email-code / verification-challenge limits.
+  Local-password lockout is a separate Couch-backed control
+  (`LOGIN_LOCKOUT_ENABLED`, default true; forced off in API unit tests).
 - Startup migration lock (`STARTUP_MIGRATION_LOCK_ENABLED`) defaults **off**.
   That avoids a 30-minute wait after a killed `pnpm run dev` reload left a
   `running` lock. Clustered / multi-replica production MUST set it `true`
-  (AWS CDK hard-enables it unless JSON `disableStartupMigrationLock` is
-  set). `DISABLE_MIGRATE_ON_STARTUP` (default off) skips boot migrate
+  (AWS CDK defaults it on unless `core.migration.startupMigrationLockEnabled`
+  is `false`). `DISABLE_MIGRATE_ON_STARTUP` (default off) skips boot migrate
   entirely — no lock, no Couch migrate — and attaches the API immediately.
+- Both `api` dev loops run the same `tsc --incremental`, whose `tsbuildinfo`
+  diagnostics cache under `outDir` can replay errors already gone from the
+  source. Reset it with `pnpm --filter=@faims3/api run clean`, or, in the
+  container, `docker compose exec api sh -c "cd api && pnpm run clean"`. Then
+  save any `.ts` file: nodemon ignores the delete, so nothing recompiles.
 
 ### Lint / test / build (standard commands, see `package.json`)
 
@@ -92,6 +120,7 @@ for code work.
 - Build everything: `pnpm build` (`npx turbo build`).
 - Tests per package (no single repo-wide test script):
   `pnpm --filter=@faims3/data-model test` (jest),
+  `pnpm --filter=@faims3/build-config test` (`node:test` via tsx),
   `pnpm --filter=@faims3/api test` (vitest; uses in-memory PouchDB, no CouchDB
   needed), `pnpm --filter=@faims3/app test` (vitest).
   Note `web` and `forms` use bare `vitest`, which watches in a TTY — pass

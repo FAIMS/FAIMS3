@@ -8,7 +8,11 @@
  *   those fields.
  */
 
-import {CompiledUiSpecModel, decodeParentRef} from '../uiSpecification';
+import {
+  CompiledUiSpecModel,
+  decodeParentRef,
+  fieldIdsForViewset,
+} from '../uiSpecification';
 
 /** Matches {{_PARENT.Field-ID}} and {{{_PARENT.Field-ID}}} template forms. */
 const TEMPLATE_PARENT_REF = /\{\{\{?\s*_PARENT\.([^}\s]+)\s*\}?\}\}/g;
@@ -25,9 +29,7 @@ export function referencedParentFields({
   uiSpecification: CompiledUiSpecModel;
   formId: string;
 }): string[] | null {
-  const fieldIds = (uiSpecification.viewsets[formId]?.views ?? []).flatMap(
-    viewId => uiSpecification.views[viewId]?.fields ?? []
-  );
+  const fieldIds = fieldIdsForViewset(uiSpecification, formId);
   if (fieldIds.length === 0) {
     return null;
   }

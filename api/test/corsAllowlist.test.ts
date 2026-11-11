@@ -5,7 +5,7 @@ import {buildCorsAllowlist, isCorsOriginAllowed} from '../src/corsAllowlist';
 const WEB_SOURCES = {
   conductorPublicUrl: 'https://conductor.example.com',
   webAppPublicUrl: 'https://app.example.com/path',
-  newConductorUrl: 'https://web.example.com',
+  // The Control Centre / web URL is covered via the redirect whitelist.
   redirectWhitelist: [
     'https://conductor.example.com',
     'https://app.example.com',

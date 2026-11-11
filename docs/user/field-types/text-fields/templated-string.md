@@ -30,13 +30,14 @@ button in the lower right.
 ## Configuring the Field
 
 Click the field's **grey header bar** to expand it and see its settings.
-For an overview of the settings shared by all fields — including Label,
-Helper Text, Field ID, and the field toolbar — see
+For an overview of the settings shared by all fields — including Field Heading,
+Helper Text, Export Title, and the field toolbar — see
 [Field Identity](../shared-settings/field-identity.md) and
 [Field Toolbar](../shared-settings/field-toolbar.md).
 
-Give the field a meaningful Label, review the auto-populated
-Field ID, and add any desired Helper Text.
+Give the field a meaningful Field Heading (the title collectors see), review
+the auto-populated Export Title (the CSV/GIS column header), and add any
+desired Helper Text.
 
 ```{screenshot} field-types-design/templated-string-02-configured.png
 :alt: Templated String configuration in the {{Notebook}} Editor
@@ -94,9 +95,9 @@ The same reference can be used in
 When the form holds a
 [Related Records](../relationship-fields/related-records.md) field with
 a **Linked** relation that allows only a single link, the template can
-reference fields on the linked record by joining the two Field IDs with
-a dot: `{{Link-Field-ID.Field-ID}}`. For example, with a Related
-Records field `Core-Calibration` linking one Calibration record,
+reference fields on the linked record by joining the two field
+references with a dot: `{{Link-Field.Target-Field}}`. For example, with
+a Related Records field `Core-Calibration` linking one Calibration record,
 `{{Core-Calibration.Cutter-ID}}-{{Wet-Mass-g}}` includes the linked
 record's cutter ID. The Visual Builder lists the available linked
 record fields as "Link field > Field".

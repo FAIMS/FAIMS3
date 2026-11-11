@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
-import type {
-  CreateNotebookFromScratch,
-  NotebookDefinition,
+import {
+  type CreateNotebookFromScratch,
+  type NotebookDefinition,
+  normalizeNotebookTemplateUiSpecification,
+  normalizeNotebookUiSpecification,
 } from '@faims3/data-model';
 import fs from 'fs';
 import path from 'path';
@@ -55,7 +57,9 @@ export function sampleCreateNotebookPayload(
   return {
     name,
     description,
-    uiSpecification: sample.uiSpecification,
+    // On-disk fixtures may lag CURRENT_NOTEBOOK_UI_SCHEMA_VERSION; create
+    // paths migrate, so tests compare against the migrated bundle.
+    uiSpecification: normalizeNotebookUiSpecification(sample.uiSpecification),
   };
 }
 
@@ -72,7 +76,9 @@ export function sampleCreateTemplatePayload(
   return {
     name,
     description,
-    uiSpecification: sample.uiSpecification,
+    uiSpecification: normalizeNotebookTemplateUiSpecification(
+      sample.uiSpecification
+    ),
   };
 }
 

@@ -6,6 +6,7 @@ PouchDB.plugin(require('pouchdb-security-helper'));
 
 import type {
   NotebookDefinition,
+  SetupValues,
   RegisteredPlan,
   TemplateApiDocument,
   TemplateApiListItem,
@@ -29,6 +30,8 @@ import {
   getPlanTypeDefinition,
   normalizeNotebookTemplateUiSpecification,
   normalizeRootDescriptionForStore,
+  omitSetupFromMetadata,
+  validateSetupValues,
   notebookUiSpecificationValidationMessage,
   buildUiSpecProperties,
 } from '@faims3/data-model';
@@ -40,7 +43,7 @@ import {
   clearTemplateIdFromProjectsReferencingTemplate,
   createNotebook,
 } from './notebooks';
-import {getTeamById} from './teams';
+import {assertTeamNotArchived, getTeamById} from './teams';
 import {stripTemplateRolesForTemplateId} from './users';
 
 /**
@@ -233,11 +236,14 @@ export const createTemplate = async ({
   // Get a unique id for the template Id
   const templateId = generateTemplateId(payload.name);
 
-  // if there is a team id provided, it must be an actual team
+  // if there is a team id provided, it must be an actual, non-archived team
   if (payload.teamId) {
     try {
-      await getTeamById(payload.teamId);
+      await assertTeamNotArchived(payload.teamId);
     } catch (error) {
+      if (error instanceof Exceptions.InvalidRequestException) {
+        throw error;
+      }
       throw new Exceptions.InternalSystemError(
         'The specified team ID does not exist.'
       );
@@ -347,7 +353,8 @@ export const updateExistingTemplate = async (
 };
 
 /**
- * Updates the team associated with a template.
+ * Updates the team associated with a template. Omitting `teamId` removes
+ * team ownership.
  */
 export const changeTemplateTeam = async (
   templateId: string,
@@ -364,22 +371,30 @@ export const changeTemplateTeam = async (
     );
   }
 
-  // check that it is a valid team
-  try {
-    await getTeamById(payload.teamId);
-  } catch (error) {
-    throw new Exceptions.InternalSystemError(
-      'The specified team ID does not exist.'
-    );
+  if (payload.teamId) {
+    try {
+      await assertTeamNotArchived(payload.teamId);
+    } catch (error) {
+      if (error instanceof Exceptions.InvalidRequestException) {
+        throw error;
+      }
+      throw new Exceptions.InternalSystemError(
+        'The specified team ID does not exist.'
+      );
+    }
   }
 
   const newDocument: TemplateDocument = {
     ...existingTemplate,
     _id: templateId,
     _rev: existingTemplate._rev,
-    ownedByTeamId: payload.teamId,
     updatedAt: nowIso(),
   };
+  if (payload.teamId) {
+    newDocument.ownedByTeamId = payload.teamId;
+  } else {
+    delete newDocument.ownedByTeamId;
+  }
 
   // Now on the new put, we make sure to include the _rev of previous document which allows replacement
   const templateDb = getTemplatesDb();
@@ -594,6 +609,7 @@ export const createNotebookFromTemplate = async ({
   createdBy,
   teamId,
   planConfigs,
+  setupValues,
 }: {
   template: ExistingTemplateDocument;
   projectName: string;
@@ -601,6 +617,7 @@ export const createNotebookFromTemplate = async ({
   createdBy: string;
   teamId?: string;
   planConfigs?: Record<string, Record<string, unknown>>;
+  setupValues?: SetupValues;
 }) => {
   if (template.archived === true) {
     throw new Exceptions.InvalidRequestException(
@@ -608,9 +625,11 @@ export const createNotebookFromTemplate = async ({
     );
   }
 
-  // create the proto notebook definition from the template's uiSpecification
+  // create the proto notebook definition from the template's uiSpecification.
+  // Drop leftover metadata.setup so a notebook-turned-template cannot ship
+  // the previous notebook's values when the setup form has been removed.
   const uiSpecification: NotebookDefinition = {
-    metadata: {...template.uiSpecification.metadata},
+    metadata: omitSetupFromMetadata(template.uiSpecification.metadata),
     uiSpec: template.uiSpecification.uiSpec,
   };
 
@@ -691,6 +710,25 @@ export const createNotebookFromTemplate = async ({
 
   if (plans.length > 0) {
     uiSpecification.plans = plans;
+  }
+
+  // Does the template define a setup form for notebook metadata (#2216)
+  const setupForm = template.uiSpecification.uiSpec.settings.setupForm;
+  if (setupForm) {
+    if (!setupValues) {
+      // required whenever the template defines a form, matching planConfig
+      throw new Exceptions.InvalidRequestException(
+        `The template ${template._id} has a setup form, so setup values must be provided.`
+      );
+    }
+    const errors = validateSetupValues(setupForm, setupValues);
+    if (errors.length > 0) {
+      throw new Exceptions.InvalidRequestException(
+        `The setup values provided are invalid: ${errors.join(' ')}`
+      );
+    }
+    // values land in the notebook's typed setup metadata
+    uiSpecification.metadata.setup = setupValues;
   }
 
   return await createNotebook({

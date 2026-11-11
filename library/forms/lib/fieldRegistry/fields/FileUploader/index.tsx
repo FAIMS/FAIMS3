@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
-  formatFileSize,
   attachmentSaveTrace,
+  BaseFieldParametersSchema,
+  formatFileSize,
   logError,
 } from '@faims3/data-model';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
@@ -28,12 +29,11 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import React, {useCallback, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useRef, useState} from 'react';
 import Dropzone, {FileRejection} from 'react-dropzone';
 import {z} from 'zod';
-import {schemaWithAbsent} from '../../../validationModule/readableErrors';
+import {ImageWithFallback} from '../../../components/ImageWithFallback';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
-import {BaseFieldParametersSchema} from '@faims3/data-model';
 import {FormFieldContextProps} from '../../../formModule/types';
 import {
   LoadedPhoto,
@@ -41,8 +41,16 @@ import {
   useAttachmentsResult,
 } from '../../../hooks/useAttachment';
 import {FileUploaderRender} from '../../../rendering/fields/view/specialised/FileUploader';
+import {
+  blockedAttachmentMessage,
+  hasBlockedAttachmentMetadata,
+  isBlockedAttachmentFile,
+  isDisplayableImageType,
+} from '../../../utils';
 import {FieldInfo} from '../../types';
+import {getRemainingItemCount} from '../../utils/itemCountHelpers';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import {fileUploaderValueSchema} from './valueSchema';
 
 // ============================================================================
 // Types & Schema
@@ -62,7 +70,9 @@ export const HARD_MAXIMUM_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100 MiB
 
 const fileUploaderPropsSchema = BaseFieldParametersSchema.extend({
   multiple: z.boolean().optional().default(true),
-  maximum_number_of_files: z.number().optional().default(0),
+  // Null or missing means no additional count restriction.
+  minItems: z.number().int().positive().nullable().optional(),
+  maxItems: z.number().int().positive().nullable().optional(),
   maximum_file_size: z.number().optional(), // in bytes
   minimum_file_size: z.number().optional(), // in bytes
 });
@@ -79,20 +89,32 @@ interface FullFileUploaderFieldProps extends FileUploaderFieldProps {
 // ============================================================================
 
 /**
- * Determines if a file is an image based on MIME type
- */
-function isImageFile(contentType: string): boolean {
-  return contentType.startsWith('image/');
-}
-
-/**
  * Gets appropriate icon for file type
  */
 function getFileIcon(contentType: string) {
-  if (isImageFile(contentType)) {
+  if (isDisplayableImageType(contentType)) {
     return <ImageIcon />;
   }
   return <InsertDriveFileIcon />;
+}
+
+/**
+ * Count saved files, recently uploaded files, and reserved upload slots.
+ * Excludes IDs already reflected in form state to avoid double-counting.
+ */
+function getOccupiedFileCount({
+  attachments,
+  newIds,
+  reservedCount,
+}: {
+  attachments: {attachmentId: string}[];
+  newIds: string[];
+  reservedCount: number;
+}): number {
+  const savedIds = new Set(attachments.map(a => a.attachmentId));
+  const recentlySavedCount = newIds.filter(id => !savedIds.has(id)).length;
+
+  return savedIds.size + recentlySavedCount + reservedCount;
 }
 
 // ============================================================================
@@ -113,7 +135,7 @@ const AttachmentDialog: React.FC<{
 
   if (!attachment) return null;
 
-  const isImage = isImageFile(attachment.metadata.contentType);
+  const isImage = isDisplayableImageType(attachment.metadata.contentType);
 
   return (
     <Dialog
@@ -159,8 +181,7 @@ const AttachmentDialog: React.FC<{
               minHeight: 400,
             }}
           >
-            <Box
-              component="img"
+            <ImageWithFallback
               src={attachment.url}
               alt={attachment.metadata.filename}
               sx={{
@@ -284,15 +305,20 @@ const DropzoneArea: React.FC<{
           sx={{
             padding: theme.spacing(4),
             textAlign: 'center',
-            backgroundColor: isDragActive
-              ? theme.palette.action.hover
-              : theme.palette.grey[100],
+            backgroundColor: disabled
+              ? theme.palette.action.disabledBackground
+              : isDragActive
+                ? theme.palette.action.hover
+                : theme.palette.grey[100],
             border: `2px dashed ${
-              isDragActive
-                ? theme.palette.primary.main
-                : theme.palette.grey[400]
+              disabled
+                ? theme.palette.action.disabled
+                : isDragActive
+                  ? theme.palette.primary.main
+                  : theme.palette.grey[400]
             }`,
             borderRadius: theme.spacing(2),
+            opacity: disabled ? 0.6 : 1,
             cursor: disabled ? 'not-allowed' : 'pointer',
             transition: 'all 0.2s ease-in-out',
             '&:hover': disabled
@@ -307,17 +333,25 @@ const DropzoneArea: React.FC<{
           <UploadFileIcon
             sx={{
               fontSize: 48,
-              color: isDragActive
-                ? theme.palette.primary.main
-                : 'text.secondary',
+              color: disabled
+                ? 'action.disabled'
+                : isDragActive
+                  ? theme.palette.primary.main
+                  : 'text.secondary',
               mb: 2,
             }}
           />
           <Typography variant="h6" gutterBottom>
-            {isDragActive ? 'Drop files here' : 'Upload Files'}
+            {disabled
+              ? 'Uploads Currently Unavailable'
+              : isDragActive
+                ? 'Drop files here'
+                : 'Upload Files'}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Drag and drop files here, or click to select
+            {disabled
+              ? 'If at the limit, try removing a file to upload more.'
+              : 'Drag and drop files here, or click to select'}
           </Typography>
         </Paper>
       )}
@@ -361,7 +395,7 @@ const FileItem: React.FC<{
   disabled: boolean;
 }> = ({data, onDelete, onClick, disabled}) => {
   const theme = useTheme();
-  const isImage = isImageFile(data.metadata.contentType);
+  const isImage = isDisplayableImageType(data.metadata.contentType);
 
   return (
     <ListItem
@@ -417,10 +451,10 @@ const FileItem: React.FC<{
             }}
             onClick={onClick}
           >
-            <Box
-              component="img"
+            <ImageWithFallback
               src={data.url}
               alt={data.metadata.filename}
+              fallbackLabel=""
               sx={{
                 width: '100%',
                 height: '100%',
@@ -482,16 +516,21 @@ const FileItem: React.FC<{
  */
 const FileList: React.FC<{
   files: useAttachmentsResult;
+  maxItems: number | null;
   onDelete: (index: number) => void;
   onView: (index: number) => void;
   disabled: boolean;
-}> = ({files, onDelete, onView, disabled}) => {
+}> = ({files, maxItems, onDelete, onView, disabled}) => {
   if (files.length === 0) return null;
+
+  // only files already represented in the attachment list are counted
+  const uploadedCountLabel =
+    maxItems == null ? files.length : `${files.length}/${maxItems}`;
 
   return (
     <Box sx={{mt: 2}}>
       <Typography variant="subtitle2" gutterBottom>
-        Uploaded Files ({files.length})
+        Uploaded files ({uploadedCountLabel})
       </Typography>
       <List sx={{width: '100%'}}>
         {files.map((file, index) => {
@@ -546,7 +585,7 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
     advancedHelperText,
     disabled = false,
     multiple = true,
-    maximum_number_of_files: maximumNumberOfFiles = 0,
+    maxItems = null,
     maximum_file_size: maximumFileSize = DEFAULT_MAXIMUM_FILE_SIZE_BYTES,
     minimum_file_size: minimumFileSize,
     state,
@@ -569,6 +608,35 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
   /** True while the native file picker is open (click-to-select path). */
   const filePickerLockHeldRef = useRef(false);
 
+  // Track the number of active upload batches.
+  const activeUploadsRef = useRef(0);
+
+  // Track reserved slots immediately and update the UI.
+  const reservedCountRef = useRef(0);
+  const [reservedCount, setReservedCount] = useState(0);
+
+  // Track uploaded IDs that may not yet appear in form state.
+  const newIdsRef = useRef<string[]>([]);
+
+  // Count all occupied file slots for the UI.
+  const currentCount = getOccupiedFileCount({
+    attachments: state.value?.attachments ?? [],
+    newIds: newIdsRef.current,
+    reservedCount,
+  });
+
+  // Calculate remaining capacity and whether the maximum is reached.
+  // Returns null when no maximum is configured.
+  const remainingFiles = getRemainingItemCount({maxItems, currentCount});
+  const atMaximum = remainingFiles === 0;
+  const exceedsMaximum = maxItems != null && currentCount > maxItems;
+
+  // Clear the picker state; release the form lock if no uploads remain.
+  const releasePicker = useCallback(() => {
+    filePickerLockHeldRef.current = false;
+    if (activeUploadsRef.current === 0) setAttachmentSaving?.(false);
+  }, [setAttachmentSaving]);
+
   // Get attachment service
   const attachmentService = context.attachmentEngine();
 
@@ -587,87 +655,134 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
   }, [setAttachmentSaving]);
 
   const handleFileDialogCancel = useCallback(() => {
-    if (filePickerLockHeldRef.current) {
-      setAttachmentSaving?.(false);
-      filePickerLockHeldRef.current = false;
-    }
-  }, [setAttachmentSaving]);
+    if (filePickerLockHeldRef.current) releasePicker();
+  }, [releasePicker]);
 
   const handleDrop = useCallback(
     async (acceptedFiles: File[]) => {
       setError(null);
 
-      try {
-        // Check file count limit
-        const currentCount = state.value?.attachments?.length || 0;
-        if (
-          maximumNumberOfFiles > 0 &&
-          currentCount + acceptedFiles.length > maximumNumberOfFiles
-        ) {
-          setError(
-            `Maximum ${maximumNumberOfFiles} file${
-              maximumNumberOfFiles === 1 ? '' : 's'
-            } allowed`
-          );
-          return;
-        }
+      // No file selected
+      if (acceptedFiles.length === 0) {
+        releasePicker();
+        return;
+      }
 
+      // Reject the whole batch if any file is SVG/HTML by declared type or
+      // extension. These checks are synchronous and run before any capacity
+      // is reserved or any attachment is stored. (The leading-byte sniff is
+      // async and runs below, before the first addAttachment.)
+      const blockedByName = acceptedFiles.find(f =>
+        hasBlockedAttachmentMetadata(f)
+      );
+      if (blockedByName) {
+        setError(blockedAttachmentMessage(blockedByName.name));
+        releasePicker();
+        return;
+      }
+
+      // Recheck capacity using the latest reservations before uploading.
+      const currentCount = getOccupiedFileCount({
+        attachments: state.value?.attachments ?? [],
+        newIds: newIdsRef.current,
+        reservedCount: reservedCountRef.current,
+      });
+      // Check remaining capacity before accepting another batch.
+      const remaining = getRemainingItemCount({maxItems, currentCount});
+
+      if (remaining !== null && acceptedFiles.length > remaining) {
+        setError(
+          `Maximum of ${maxItems} file${maxItems === 1 ? '' : 's'} allowed. You can add ${remaining} more.`
+        );
+        releasePicker();
+        return;
+      }
+
+      // Reserve capacity and register this batch.
+      reservedCountRef.current += acceptedFiles.length;
+      setReservedCount(reservedCountRef.current);
+      activeUploadsRef.current += 1;
+
+      // A picker already holds the form lock, dropped files acquire it here.
+      const lockFromPicker = filePickerLockHeldRef.current;
+      filePickerLockHeldRef.current = false;
+
+      try {
         // Block section navigation until all files are stored in PouchDB.
         // Drag-and-drop sets the lock here; click-to-select sets it on dialog open.
-        const lockFromPicker = filePickerLockHeldRef.current;
         if (!lockFromPicker) {
           setAttachmentSaving?.(true);
+        }
+
+        // Leading-byte sniff (<= 512 bytes per file, one slice read each):
+        // catches SVG/HTML bytes hiding behind a benign name/type. The batch
+        // holds its reservation while this runs so a concurrent drop cannot
+        // over-commit; the finally block releases it on rejection. Nothing
+        // is stored until every file has passed.
+        for (const file of acceptedFiles) {
+          if (await isBlockedAttachmentFile(file)) {
+            setError(blockedAttachmentMessage(file.name));
+            return;
+          }
         }
 
         attachmentSaveTrace('FileUploader:save-start', {
           fieldId,
           fileCount: acceptedFiles.length,
         });
-        try {
-          // Upload each file
-          const newAttachments: string[] = [];
-          for (const file of acceptedFiles) {
-            attachmentSaveTrace('FileUploader:upload-file', {
-              fieldId,
-              fileName: file.name,
-              fileSize: file.size,
-            });
-            newAttachments.push(
-              await addAttachment({
-                blob: file,
-                contentType: file.type || 'application/octet-stream',
-                // Split on the file name
-                fileFormat: file.name.split('.').pop() || 'txt',
-                // File type - this helps inform naming scheme
-                type: 'file',
-              })
-            );
-          }
 
-          props.setFieldData((prev: string[] | undefined) => [
-            ...(prev ?? []),
-            ...newAttachments,
-          ]);
-
-          attachmentSaveTrace('FileUploader:save-complete', {
+        // Upload each file
+        const newAttachmentIds: string[] = [];
+        for (const file of acceptedFiles) {
+          attachmentSaveTrace('FileUploader:upload-file', {
             fieldId,
-            attachmentIds: newAttachments,
+            fileName: file.name,
+            fileSize: file.size,
           });
-        } finally {
-          setAttachmentSaving?.(false);
-          filePickerLockHeldRef.current = false;
+          newAttachmentIds.push(
+            await addAttachment({
+              blob: file,
+              contentType: file.type || 'application/octet-stream',
+              // Split on the file name
+              fileFormat: file.name.split('.').pop() || 'txt',
+              // File type - this helps inform naming scheme
+              type: 'file',
+            })
+          );
         }
-      } catch (err: any) {
+
+        // Account for completed uploads until the form state catches up.
+        newIdsRef.current.push(...newAttachmentIds);
+
+        props.setFieldData((prev: string[] | undefined) => [
+          ...(prev ?? []),
+          ...newAttachmentIds,
+        ]);
+
+        attachmentSaveTrace('FileUploader:save-complete', {
+          fieldId,
+          attachmentIds: newAttachmentIds,
+        });
+      } catch (err) {
         logError(err);
         setError('Failed to upload file(s). Please try again.');
+      } finally {
+        reservedCountRef.current -= acceptedFiles.length;
+        setReservedCount(reservedCountRef.current);
+        activeUploadsRef.current -= 1;
+
+        if (activeUploadsRef.current === 0 && !filePickerLockHeldRef.current) {
+          setAttachmentSaving?.(false);
+        }
       }
     },
     [
       state.value,
       addAttachment,
       setAttachmentSaving,
-      maximumNumberOfFiles,
       fieldId,
+      maxItems,
+      releasePicker,
     ]
   );
 
@@ -698,15 +813,30 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
             : 'File is too small';
           break;
         case 'too-many-files':
-          errorMessage = 'Too many files selected';
+          errorMessage =
+            remainingFiles !== null
+              ? remainingFiles === 0
+                ? `Maximum of ${maxItems} files reached. Remove a file to add another.`
+                : `Too many files selected. You can add ${remainingFiles} more.`
+              : multiple
+                ? 'Too many files selected'
+                : 'Select one file at a time.';
           break;
         default:
           errorMessage = rejection.errors[0]?.message || 'File upload failed';
       }
 
       setError(errorMessage);
+      releasePicker();
     },
-    [effectiveMaximumFileSize, minimumFileSize]
+    [
+      effectiveMaximumFileSize,
+      minimumFileSize,
+      remainingFiles,
+      maxItems,
+      multiple,
+      releasePicker,
+    ]
   );
 
   /**
@@ -717,8 +847,12 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
       const currentAttachments = state.value?.attachments || [];
       const targetId = currentAttachments[index].attachmentId;
       removeAttachment({attachmentId: targetId});
-      const currentData = props.state.value?.data as string[] | undefined;
-      props.setFieldData((currentData ?? []).filter(v => v !== targetId));
+      // Stop counting the deleted file as recently uploaded.
+      newIdsRef.current = newIdsRef.current.filter(id => id !== targetId);
+      // Use the latest form data to preserve concurrent uploads.
+      props.setFieldData((prev: string[] | undefined) =>
+        (prev ?? []).filter(id => id !== targetId)
+      );
       setError(null);
     },
     [state.value, removeAttachment]
@@ -731,13 +865,8 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
     setViewingAttachment(index);
   }, []);
 
-  // Calculate max files for dropzone
-  const maxFiles = useMemo(() => {
-    if (!multiple) return 1;
-    if (maximumNumberOfFiles === 0) return 0;
-    const currentCount = state.value?.attachments?.length || 0;
-    return Math.max(0, maximumNumberOfFiles - currentCount);
-  }, [multiple, maximumNumberOfFiles, state.value?.attachments]);
+  // react-dropzone uses 0 for unlimited, multiple=false limits each selection.
+  const dropZoneMaxFiles = multiple ? (remainingFiles ?? 0) : 1;
 
   // Get currently viewing attachment data
   const viewingData =
@@ -765,36 +894,33 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
           </Alert>
         )}
 
+        {/* Warn when the file count exceeds the configured maximum. */}
+        {exceedsMaximum && !disabled && (
+          <Alert severity="info" sx={{mt: 1}}>
+            Maximum of {maxItems} file{maxItems === 1 ? '' : 's'} allowed.
+            Remove extra files to meet the limit.
+          </Alert>
+        )}
+
         {/* Upload Area */}
-        {!disabled && maxFiles >= 0 && (
+        {!disabled && (
           <DropzoneArea
             onDrop={handleDrop}
             onReject={handleReject}
             onFileDialogOpen={handleFileDialogOpen}
             onFileDialogCancel={handleFileDialogCancel}
-            disabled={disabled}
+            disabled={disabled || atMaximum}
             multiple={multiple}
-            maxFiles={maxFiles}
+            maxFiles={dropZoneMaxFiles}
             maxSize={effectiveMaximumFileSize}
             minSize={minimumFileSize}
           />
         )}
 
-        {/* File Limit Info */}
-        {maximumNumberOfFiles > 0 && (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{display: 'block', mt: 1}}
-          >
-            {state.value?.attachments?.length || 0} / {maximumNumberOfFiles}{' '}
-            file{maximumNumberOfFiles === 1 ? '' : 's'}
-          </Typography>
-        )}
-
         {/* File List */}
         <FileList
           files={loadedFiles}
+          maxItems={maxItems}
           onDelete={handleDelete}
           onView={handleView}
           disabled={disabled}
@@ -844,19 +970,7 @@ export const fileUploaderFieldSpec: FieldInfo<FileUploaderFieldProps> = {
   returns: 'faims-attachment::Files',
   component: FileUploader,
   fieldPropsSchema: fileUploaderPropsSchema,
-  fieldDataSchemaFunction: (props: FileUploaderProps) => {
-    const maxFiles = props.maximum_number_of_files ?? 0;
-    let base = z.array(z.string(), {error: 'Add a valid file'});
-    if (props.required) {
-      base = base.min(1, {message: 'At least one attachment is required'});
-    }
-    if (maxFiles > 0) {
-      base = base.max(maxFiles, {
-        message: `Maximum ${maxFiles} file${maxFiles === 1 ? '' : 's'} allowed`,
-      });
-    }
-    return schemaWithAbsent([], base);
-  },
+  fieldDataSchemaFunction: fileUploaderValueSchema,
   view: {
     component: FileUploaderRender,
     config: {},

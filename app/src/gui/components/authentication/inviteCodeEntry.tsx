@@ -50,6 +50,7 @@ import {
 import {initialiseProjects, Server} from '../../../context/slices/projectSlice';
 import {store, useAppDispatch, useAppSelector} from '../../../context/store';
 import {parseToken} from '../../../users';
+import {authReturnRedirect} from './conductorLoginUrl';
 import {
   activeInviteUsername,
   chooseInviteHandoff,
@@ -85,18 +86,6 @@ function activeUserConnection(
 }
 
 /**
- * Where Conductor should send the browser after register or login.
- * Web stays on this origin (`/auth-return`). Native uses the app id as a
- * custom scheme (`{appId}://auth-return`) so the OS reopens the app.
- */
-function authRedirect(): string {
-  if (IS_WEB_PLATFORM) {
-    return `${window.location.protocol}//${window.location.host}/auth-return`;
-  }
-  return `${config.appId}://auth-return`;
-}
-
-/**
  * Shared redeem-or-redirect path for the QR scanner and the typed-code form.
  *
  * Only the switched active user on this Conductor may redeem, and only with
@@ -122,7 +111,7 @@ function useInviteHandoff(onRedeemed?: () => void) {
       serverUrl: server.serverUrl,
       inviteId,
       page,
-      redirectTo: authRedirect(),
+      redirectTo: authReturnRedirect(),
     });
     // Replace the page on web so Conductor's redirect can land on /auth-return.
     // On device, the in-app browser follows the custom-scheme redirect back.
