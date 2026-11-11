@@ -64,12 +64,67 @@ const FIRST_AUTO_SYNC_DELAY_MS = 700;
 type Props = {
   fieldName: string;
   showExtraConfig?: boolean;
+  /** Show the visibility condition while keeping the other general settings hidden. */
+  showCondition?: boolean;
   showHelperText?: boolean;
   children?: React.ReactNode;
   // Allow field-specific updates when Required changes.
   // Modifies the new field before dispatch so related changes share one undo step.
   onRequiredChange?: (field: FieldType, required: boolean) => void;
 };
+
+const ConditionSettings = ({
+  condition,
+  onChange,
+  field,
+}: {
+  condition?: ConditionType | null;
+  onChange: (condition: ConditionType | null) => void;
+  field: string;
+}) => (
+  <>
+    <Stack
+      direction="row"
+      sx={{
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        gap: 2,
+        flexWrap: 'wrap',
+      }}
+    >
+      <ConditionModal
+        label={condition ? 'Update condition' : 'Add condition'}
+        initial={condition}
+        onChange={onChange}
+        field={field}
+        buttonSx={{
+          textTransform: 'none',
+          fontWeight: 600,
+          fontSize: '0.875rem',
+        }}
+      />
+    </Stack>
+
+    {condition && (
+      <Box
+        sx={{
+          ...(designerInfoCalloutSx as Record<string, unknown>),
+          p: 1.5,
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{fontWeight: 600, color: 'text.secondary'}}
+        >
+          Show this field if{' '}
+        </Typography>
+        <Typography variant="caption" color="text.primary">
+          <ConditionSummary condition={condition} />
+        </Typography>
+      </Box>
+    )}
+  </>
+);
 
 type StateType = {
   label?: string;
@@ -93,6 +148,7 @@ type StateType = {
 export const BaseFieldEditor = ({
   fieldName,
   showExtraConfig = true,
+  showCondition = showExtraConfig,
   showHelperText = true,
   children,
   onRequiredChange,
@@ -119,9 +175,9 @@ export const BaseFieldEditor = ({
   const idInputRef = useRef<HTMLInputElement>(null);
   const labelInputRef = useRef<HTMLInputElement>(null);
   const isMounted = useRef(false);
-  // One-shot Label → export name for fields added this session. Consumed
+  // One-shot Field Heading → export title for fields added this session. Consumed
   // state lives on the editing context so remounting (collapse, section
-  // change) cannot re-arm sync and overwrite a custom export name.
+  // change) cannot re-arm sync and overwrite a custom export title.
   const {pending: autoSyncPending, consume: consumeExportNameAutoSync} =
     useExportNameAutoSync(field.designerIdentifier);
   const autoSyncExportNameEnabled = useRef(autoSyncPending);
@@ -222,7 +278,7 @@ export const BaseFieldEditor = ({
   const handleLabelChange = (newLabel: string) => {
     updateProperty('label', newLabel);
 
-    // First-edit session for fields added this session: keep Label → export
+    // First-edit session for fields added this session: keep Field Heading → export
     // name in sync after each typing pause. Do not consume here — later
     // keystrokes (and the eventual tab/click-away) must still sync.
     if (autoSyncExportNameEnabled.current) {
@@ -415,7 +471,7 @@ export const BaseFieldEditor = ({
 
   return (
     <Grid container spacing={2}>
-      {/* ── Top card: Label / Export name / Helper Text / type-specific children ── */}
+      {/* ── Top card: Field Heading / Export Title / Helper Text / type-specific children ── */}
       <Grid size={12}>
         <Card
           variant="outlined"
@@ -431,11 +487,12 @@ export const BaseFieldEditor = ({
           <Grid container spacing={2}>
             <Grid size={{xs: 12, md: 4}}>
               <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                <SimpleFieldWrapper heading="Label">
+                <SimpleFieldWrapper heading="Field Heading">
                   <DebouncedTextField
                     fullWidth
                     label=""
-                    placeholder="Enter field label"
+                    placeholder="Enter field heading"
+                    helperText="Main heading displayed to users during data collection."
                     value={state.label}
                     onChange={e => handleLabelChange(e.target.value)}
                     onBlur={handleLabelBlur}
@@ -445,12 +502,12 @@ export const BaseFieldEditor = ({
                     }}
                   />
                 </SimpleFieldWrapper>
-                <SimpleFieldWrapper heading="Export name">
+                <SimpleFieldWrapper heading="Export Title">
                   <TextField
                     fullWidth
                     label=""
-                    placeholder="Enter export name"
-                    helperText="Column name in CSV and GIS exports. Changing it does not affect collected data."
+                    placeholder="Enter export title"
+                    helperText="Column name used in data exports. Changing it does not affect collected data."
                     value={localExportName}
                     onChange={handleIdChange}
                     onBlur={handleIdBlur}
@@ -462,7 +519,7 @@ export const BaseFieldEditor = ({
                           state.label &&
                           slugify(state.label) !== localExportName ? (
                             <InputAdornment position="end">
-                              <Tooltip title="Sync with Label">
+                              <Tooltip title="Sync with Field Heading">
                                 <IconButton
                                   size="small"
                                   onClick={syncFieldID}
@@ -489,6 +546,7 @@ export const BaseFieldEditor = ({
                         fullWidth
                         label=""
                         placeholder="Enter helper text"
+                        helperText="Displayed under the field heading to provide extra instruction to users."
                         value={state.helperText}
                         multiline
                         rows={2}
@@ -520,7 +578,25 @@ export const BaseFieldEditor = ({
                               sx={designerCheckboxSx}
                             />
                           }
-                          label="Include advanced helper text"
+                          label={
+                            <Stack
+                              direction="row"
+                              spacing={0.75}
+                              sx={{alignItems: 'center'}}
+                            >
+                              <Typography>
+                                Include advanced helper text
+                              </Typography>
+                              <Tooltip title="Detailed instructions and images shown when users click the info icon.">
+                                <InfoIcon
+                                  sx={{
+                                    ...designerInfoIconSx,
+                                    fontSize: '1.35rem',
+                                  }}
+                                />
+                              </Tooltip>
+                            </Stack>
+                          }
                         />
                       </Box>
 
@@ -625,7 +701,7 @@ export const BaseFieldEditor = ({
                               >
                                 This markdown-based helper will appear in a
                                 dialog when users click the info icon next to
-                                the field label in the app. You can resize
+                                the field heading in the app. You can resize
                                 inserted images by dragging their resize
                                 handles.
                               </Alert>
@@ -643,6 +719,21 @@ export const BaseFieldEditor = ({
           </Grid>
         </Card>
       </Grid>
+
+      {/* ── Condition-only card ── */}
+      {showCondition && !showExtraConfig && (
+        <Grid size={12}>
+          <Card variant="outlined" sx={{overflow: 'hidden'}}>
+            <Box sx={{p: 2}}>
+              <ConditionSettings
+                condition={state.condition}
+                onChange={conditionChanged}
+                field={fieldName}
+              />
+            </Box>
+          </Card>
+        </Grid>
+      )}
 
       {/* ── General field settings card ── */}
       {showExtraConfig && (
@@ -694,22 +785,24 @@ export const BaseFieldEditor = ({
                       </Typography>
                     }
                   />
-                  <ConditionModal
-                    label={
-                      state.condition ? 'Update condition' : 'Add condition'
-                    }
-                    initial={state.condition}
-                    onChange={conditionChanged}
-                    field={fieldName}
-                    buttonSx={{
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      fontSize: '0.875rem',
-                    }}
-                  />
+                  {showCondition && (
+                    <ConditionModal
+                      label={
+                        state.condition ? 'Update condition' : 'Add condition'
+                      }
+                      initial={state.condition}
+                      onChange={conditionChanged}
+                      field={fieldName}
+                      buttonSx={{
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        fontSize: '0.875rem',
+                      }}
+                    />
+                  )}
                 </Stack>
 
-                {state.condition && (
+                {showCondition && state.condition && (
                   <Box
                     sx={{
                       ...(designerInfoCalloutSx as Record<string, unknown>),

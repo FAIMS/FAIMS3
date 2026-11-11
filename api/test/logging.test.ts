@@ -7,7 +7,9 @@
  */
 
 import crypto from 'crypto';
-import {describe, expect, it, vi} from 'vitest';
+import Bugsnag from '@bugsnag/js';
+import {afterEach, describe, expect, it, vi} from 'vitest';
+import {config} from '../src/buildconfig';
 import {
   ForbiddenException,
   TooManyRequestsException,
@@ -17,6 +19,7 @@ import {
 import {
   fingerprintInviteIdForAudit,
   formatMapAssetProcessingLine,
+  logError,
   logMapAssetProcessing,
   MAP_ASSET_PROCESSING_LOG,
   shouldReportErrorToBugsnag,
@@ -55,6 +58,64 @@ describe('shouldReportErrorToBugsnag', () => {
     expect(shouldReportErrorToBugsnag({status: 404, name: 'not_found'})).toBe(
       true
     );
+  });
+});
+
+describe('logError', () => {
+  const originalBugsnagKey = config.bugsnagApiKey;
+
+  afterEach(() => {
+    config.bugsnagApiKey = originalBugsnagKey;
+    vi.restoreAllMocks();
+  });
+
+  it('writes the error to console.error', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const err = new Error('boom');
+    logError(err);
+    expect(spy).toHaveBeenCalledWith(err);
+  });
+
+  it('includes an optional context message alongside the error', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const err = new Error('info failed');
+    logError(err, 'admin stats: data-DB open failed for notebook-1');
+    expect(spy).toHaveBeenCalledWith(
+      'admin stats: data-DB open failed for notebook-1',
+      err
+    );
+  });
+
+  it('notifies Bugsnag with the original error and context when configured', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const notify = vi.spyOn(Bugsnag, 'notify').mockImplementation(() => {});
+    config.bugsnagApiKey = 'test-key';
+    const err = new Error('info failed');
+    logError(err, 'admin stats: data-DB open failed for notebook-1');
+
+    expect(notify).toHaveBeenCalledTimes(1);
+    expect(notify.mock.calls[0][0]).toBe(err);
+    const onError = notify.mock.calls[0][1];
+    expect(typeof onError).toBe('function');
+    const event = {
+      context: undefined as string | undefined,
+      addMetadata: vi.fn(),
+    };
+    onError!(event as any, () => {});
+    expect(event.context).toBe(
+      'admin stats: data-DB open failed for notebook-1'
+    );
+    expect(event.addMetadata).toHaveBeenCalledWith('log', {
+      context: 'admin stats: data-DB open failed for notebook-1',
+    });
+  });
+
+  it('does not notify Bugsnag for ordinary 401s', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const notify = vi.spyOn(Bugsnag, 'notify').mockImplementation(() => {});
+    config.bugsnagApiKey = 'test-key';
+    logError(new UnauthorizedException(), 'auth failed');
+    expect(notify).not.toHaveBeenCalled();
   });
 });
 

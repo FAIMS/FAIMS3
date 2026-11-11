@@ -110,10 +110,8 @@ Fields are the basic building block of a {{notebook}} form and there are many [f
 to choose from in building your form. The configuration of each field type is different
 but the editor view of a text field here shows the common properties of all fields.
 
-A field has a _Label_ that is a human readable name for the field, this is presented to the user
-and shown in most places where we refer to the field. There is also an _Export name_ which is
-the column header in CSV and GIS exports — it needs to have no spaces and be unique within
-the {{notebook}}. The export name is usually derived from the label but you can change it if
+A field has a _"Field Heading"_ that is a human readable name for the field, this is presented to the user and shown in most places where we refer to the field. There is also an _Export Title_ which is the column header in CSV and GIS exports — it needs to have no spaces and be unique within
+the {{notebook}}. The export title is usually derived from the field heading but you can change it if
 you wish; collected data is stored against a separate internal id that never changes.
 
 There are two options for adding helper text to a field. The main _"Helper Text"_

@@ -103,6 +103,7 @@ The **Operations Administrator** role handles routine system management without 
 - Create new teams
 - Assign a role for yourself in a team
 - Assign Team Administrator roles
+- View instance-wide usage stats (aggregates only; not record contents)
 
 **Cannot do (by design):**
 
@@ -152,9 +153,10 @@ When you log in to the {{FAIMS}} {{Dashboard}}, you'll see a left sidebar with t
 ### Management
 
 - **Users**: View all system users and their roles (requires appropriate permissions)
+- **Stats**: Instance-wide usage counts overall, per team, and per person (Operations Administrator and Super User)
 - **Map layers**: Upload georeferenced overlays and link them to {{notebooks}} (see [Map layers](map-layers.md))
 - **Teams**: View and manage teams
-- **Archive**: Archived {{notebooks}}, templates, and disabled users
+- **Archive**: Archived {{notebooks}}, templates, teams, and disabled users
 
 ```{screenshot} user-roles/01-dashboard-sidebar.png
 :alt: {{FAIMS}} {{Dashboard}} Users page with Users and Invites tabs. The left sidebar has a Content section ({{Notebooks}}, Templates) and a Management section; Users, Map layers, Teams, and Archive appear according to your roles

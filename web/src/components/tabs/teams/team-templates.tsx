@@ -4,7 +4,7 @@ import type {ColumnDef} from '@tanstack/react-table';
 import {CreateTemplateDialog} from '@/components/dialogs/create-template-dialog';
 import {getTemplatesTableColumns} from '@/components/tables/templates';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {usePagedTemplates} from '@/hooks/queries';
+import {useGetTeam, usePagedTemplates} from '@/hooks/queries';
 import {
   Action,
   globalRolesGrantAction,
@@ -35,6 +35,8 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
     goFirst,
     changePageSize,
   } = usePagedTemplates({user, teamId});
+  const {data: team} = useGetTeam({user, teamId});
+  const archived = team?.archived === true;
   const [visibilityFilter, setVisibilityFilter] =
     useState<TemplateVisibilityFilterValue>('all');
 
@@ -83,7 +85,8 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
       }
       onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
       button={
-        canAddTemplateInTeam && <CreateTemplateDialog specifiedTeam={teamId} />
+        canAddTemplateInTeam &&
+        !archived && <CreateTemplateDialog specifiedTeam={teamId} />
       }
       defaultRowsPerPage={pageSize}
       serverPagination={{

@@ -21,6 +21,7 @@ import {AddTeamRolePopover} from '../popovers/add-team-role-popover';
 import {Button} from '../ui/button';
 import {RoleCard} from '../ui/role-card';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
+import {useGetTeam} from '@/hooks/queries';
 
 export const useGetColumns = ({
   teamId,
@@ -29,6 +30,8 @@ export const useGetColumns = ({
 }): ColumnDef<GetTeamMembersResponse['members'][number]>[] => {
   const user = useRequiredUser();
   const queryClient = useQueryClient();
+  const {data: team} = useGetTeam({user, teamId});
+  const archived = team?.archived === true;
 
   const canRemoveAdmin = useIsAuthorisedTo({
     action: Action.REMOVE_ADMIN_FROM_TEAM,
@@ -163,7 +166,7 @@ export const useGetColumns = ({
                   </RoleCard>
                 );
               })}
-            {username !== user.user.id && (
+            {!archived && username !== user.user.id && (
               <AddTeamRolePopover
                 roles={roles
                   .filter(role => !role.hasRole)

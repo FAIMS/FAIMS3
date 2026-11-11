@@ -4,7 +4,7 @@ import {CreateTeamInvite} from '@/components/dialogs/teams/create-team-invite';
 import {useGetTeamInviteColumns} from '@/components/tables/team-invites';
 import {config} from '@/constants';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {useGetTeamInvites} from '@/hooks/queries';
+import {useGetTeam, useGetTeamInvites} from '@/hooks/queries';
 import {removeInviteForTeam} from '@/hooks/teams-hooks';
 import {Action} from '@faims3/data-model';
 
@@ -23,6 +23,8 @@ const TeamInvites = ({teamId}: {teamId: string}) => {
     teamId,
     redirect: `${config.webUrl}/teams/${teamId}`,
   });
+  const {data: team} = useGetTeam({user, teamId});
+  const archived = team?.archived === true;
 
   const columns = useGetTeamInviteColumns({
     teamId,
@@ -53,7 +55,9 @@ const TeamInvites = ({teamId}: {teamId: string}) => {
       columns={columns}
       data={data || []}
       loading={isLoading}
-      button={canAddSomeUser && <CreateTeamInvite teamId={teamId} />}
+      button={
+        canAddSomeUser && !archived && <CreateTeamInvite teamId={teamId} />
+      }
     />
   );
 };

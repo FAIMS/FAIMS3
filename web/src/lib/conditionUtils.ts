@@ -5,7 +5,10 @@
  *
  */
 
-import {isFieldUsedInCondition} from '@/designer/domain/conditions/conditionReferences';
+import {
+  getFieldChoiceOptions,
+  isFieldUsedInCondition,
+} from '@/designer/domain/conditions/conditionReferences';
 import {FieldType} from '@/designer/state/initial';
 import {
   ConditionBooleanOperator,
@@ -1367,6 +1370,22 @@ export function findInvalidConditionReferences(
       if (invalidVals.length > 0) {
         invalidVals.forEach(invalidVal => {
           invalidConditions.push(`Section: ${viewDef.label} (${invalidVal})`);
+        });
+      }
+    }
+  }
+
+  // Check option-level conditions
+  for (const [fId, fieldDef] of Object.entries(allFields)) {
+    const fieldLabel = fieldDef['component-parameters']?.label ?? fId;
+    for (const option of getFieldChoiceOptions(fieldDef)) {
+      const cond = option.condition;
+      if (cond && isFieldUsedInCondition(cond, targetFieldName)) {
+        const invalidVals = getInvalidExpectedValue(cond);
+        invalidVals.forEach(invalidVal => {
+          invalidConditions.push(
+            `Option: ${option.label} (Field: ${fieldLabel}) (${invalidVal})`
+          );
         });
       }
     }

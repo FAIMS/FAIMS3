@@ -6,6 +6,8 @@ import {
   getPaginationRowModel,
   getFilteredRowModel,
   getSortedRowModel,
+  OnChangeFn,
+  PaginationState,
   SortingState,
   useReactTable,
 } from '@tanstack/react-table';
@@ -46,6 +48,15 @@ interface DataTableProps<TData, TValue> {
    * `nextStartKey`. Unrelated callers keep client-side `getPaginationRowModel`.
    */
   serverPagination?: DataTableServerPagination;
+  /** Server-driven paging: skip client slice/filter/sort. */
+  manualPagination?: boolean;
+  /** Page count when {@link manualPagination} is set (at least 1). */
+  pageCount?: number;
+  pagination?: PaginationState;
+  onPaginationChange?: OnChangeFn<PaginationState>;
+  /** Hide the client search input (use with {@link manualPagination}). */
+  hideSearch?: boolean;
+  testId?: string;
 }
 
 /**
@@ -66,53 +77,83 @@ export function DataTable<TData, TValue>({
   initialSorting = [],
   emptyMessage = 'No results.',
   serverPagination,
+  manualPagination = false,
+  pageCount,
+  pagination: paginationProp,
+  onPaginationChange,
+  hideSearch = false,
+  testId,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>(initialSorting);
   const [globalFilter, setGlobalFilter] = useState('');
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: defaultRowsPerPage,
-  });
+  const [uncontrolledPagination, setUncontrolledPagination] =
+    useState<PaginationState>({
+      pageIndex: 0,
+      pageSize: defaultRowsPerPage,
+    });
+
+  const isControlled =
+    paginationProp !== undefined && onPaginationChange !== undefined;
+  const pagination = isControlled ? paginationProp : uncontrolledPagination;
+  const useCursorPagination = Boolean(serverPagination);
 
   const table = useReactTable({
     data: data || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: serverPagination
-      ? undefined
-      : getPaginationRowModel(),
-    onPaginationChange: setPagination,
+    ...(useCursorPagination
+      ? {
+          manualPagination: true,
+          getSortedRowModel: getSortedRowModel(),
+          getFilteredRowModel: getFilteredRowModel(),
+        }
+      : manualPagination
+        ? {
+            manualPagination: true,
+            pageCount: Math.max(pageCount ?? 0, 1),
+          }
+        : {
+            getPaginationRowModel: getPaginationRowModel(),
+            getSortedRowModel: getSortedRowModel(),
+            getFilteredRowModel: getFilteredRowModel(),
+          }),
+    onPaginationChange: isControlled
+      ? onPaginationChange
+      : setUncontrolledPagination,
     onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    onGlobalFilterChange: setGlobalFilter,
-    getFilteredRowModel: getFilteredRowModel(),
-    manualPagination: Boolean(serverPagination),
+    onGlobalFilterChange: hideSearch ? undefined : setGlobalFilter,
     state: {
       sorting,
-      pagination: serverPagination
+      pagination: useCursorPagination
         ? {
-            pageIndex: serverPagination.pageIndex,
-            pageSize: serverPagination.pageSize,
+            pageIndex: serverPagination!.pageIndex,
+            pageSize: serverPagination!.pageSize,
           }
         : pagination,
-      globalFilter,
+      ...(hideSearch ? {} : {globalFilter}),
     },
   });
 
+  const showToolbar = !hideSearch || button || toolbarExtra;
+
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex justify-start items-center gap-4">
-        <Input
-          placeholder="Search..."
-          value={table.getState().globalFilter || ''}
-          onChange={event => table.setGlobalFilter(event.target.value)}
-          className="max-w-sm"
-          maxLength={INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH}
-          data-testid="web-data-table-search"
-        />
-        {toolbarExtra}
-        {button}
-      </div>
+    <div className="flex flex-col gap-2" data-testid={testId}>
+      {showToolbar ? (
+        <div className="flex justify-start items-center gap-4">
+          {!hideSearch ? (
+            <Input
+              placeholder="Search..."
+              value={table.getState().globalFilter || ''}
+              onChange={event => table.setGlobalFilter(event.target.value)}
+              className="max-w-sm"
+              maxLength={INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH}
+              data-testid="web-data-table-search"
+            />
+          ) : null}
+          {toolbarExtra}
+          {button}
+        </div>
+      ) : null}
 
       <div className="rounded-md border bg-card">
         <Table>

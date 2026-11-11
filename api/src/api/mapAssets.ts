@@ -56,7 +56,7 @@ import {
   safeUploadFilename,
   UploadedMapFile,
 } from '../couchdb/mapAssets/uploadRules';
-import {getAllTeams} from '../couchdb/teams';
+import {assertTeamIdNotArchived, getAllTeams} from '../couchdb/teams';
 import * as Exceptions from '../exceptions';
 import {
   inviteAuditFromRequest,
@@ -491,6 +491,7 @@ api.post(
         throw new Exceptions.InvalidRequestException('Team is not valid.');
       }
       const teamId = teamIdRaw;
+      await assertTeamIdNotArchived(teamId);
       const details = parseDetails(name, description);
       if (!canUpload(user, teamId)) {
         throw new Exceptions.UnauthorizedException(

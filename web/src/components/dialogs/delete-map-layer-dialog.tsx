@@ -44,9 +44,9 @@ export function DeleteMapLayerDialog({assetId}: {assetId: string}) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="destructive">
+        <Button>
+          <Trash2 aria-hidden />
           Delete map layer
-          <Trash2 className="ml-1 h-4 w-4" aria-hidden />
         </Button>
       </DialogTrigger>
       <DialogContent>

@@ -2,9 +2,10 @@
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import {Box, Paper, Typography} from '@mui/material';
 import {useMemo, useState} from 'react';
+import {ImageWithFallback} from '../../../../components/ImageWithFallback';
 import {PhotoLightbox} from '../../../../components/PhotoLightbox';
 import {useAttachments} from '../../../../hooks/useAttachment';
-import {IMAGE_TYPES} from '../../../../utils';
+import {isDisplayableImageType} from '../../../../utils';
 import {DataViewFieldRender} from '../../../types';
 import {TextWrapper} from '../wrappers';
 
@@ -31,8 +32,10 @@ export const TakePhotoRender: DataViewFieldRender = props => {
     data: att.blob,
     url: att.url,
   }));
+  // Only safe raster types are rendered; SVG/HTML-typed attachments are
+  // silently excluded from the gallery (never an <img>, never the lightbox).
   const displayableImages = toDisplay.filter(item =>
-    IMAGE_TYPES.includes(item.contentType.toLowerCase())
+    isDisplayableImageType(item.contentType)
   );
 
   return (
@@ -42,7 +45,7 @@ export const TakePhotoRender: DataViewFieldRender = props => {
       ) : (
         <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 2}}>
           {displayableImages.map((img, idx) => (
-            <img
+            <ImageWithFallback
               key={idx}
               src={img.url}
               alt={`Attachment ${idx + 1}`}
@@ -52,11 +55,12 @@ export const TakePhotoRender: DataViewFieldRender = props => {
               onKeyDown={e => {
                 if (e.key === 'Enter' || e.key === ' ') setZoomUrl(img.url);
               }}
-              style={{
+              sx={{
                 maxWidth: '300px',
                 maxHeight: '300px',
                 objectFit: 'contain',
                 cursor: 'zoom-in',
+                display: 'block',
               }}
             />
           ))}

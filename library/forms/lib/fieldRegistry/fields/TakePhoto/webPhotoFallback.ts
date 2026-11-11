@@ -15,8 +15,21 @@
  * Canvas re-encoding strips EXIF — acceptable on web (no geotag path).
  */
 
+import {Camera, GalleryPhoto} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
 import {logInfo, logWarn} from '../../../logging';
+import {IMAGE_TYPES} from '../../../utils';
+
+/**
+ * `accept` for the web gallery file input. Raster types only: Capacitor's
+ * `pickImages` hardcodes `accept="image/*"`, which includes SVG, and there
+ * is no plugin option to change it. Native photo pickers already hide
+ * documents, so they keep using `Camera.pickImages`.
+ *
+ * Users can still choose "All files" in some OS dialogs; the leading-byte
+ * sniff in TakePhoto rejects SVG/HTML after selection.
+ */
+export const WEB_GALLERY_ACCEPT = IMAGE_TYPES.join(',');
 
 /**
  * JPEG quality on the 0–100 scale Capacitor Camera uses for `quality`.
@@ -48,6 +61,127 @@ export type PreparedPhoto = {
   /** True only when `photoBlob` is a new canvas JPEG, not the input. */
   resized: boolean;
 };
+
+/** Options for {@link pickGalleryPhotos}. */
+export type PickGalleryPhotosOptions = {
+  quality: number;
+  width: number;
+  correctOrientation: boolean;
+  limit: number;
+  /**
+   * Platform id used to decide between the native picker and the web
+   * raster-only file input. Defaults to `Capacitor.getPlatform()`. Tests
+   * pass `'web'` / `'ios'` / `'android'` to avoid touching Capacitor.
+   */
+  platform?: string;
+};
+
+/**
+ * Capacitor-style format from a picked `File`.
+ *
+ * Capacitor's web plugin only special-cases png/gif and reports everything
+ * else (including SVG) as `jpeg`, which is why an SVG gallery pick used to
+ * be stored as a JPEG after canvas re-encode. We keep the real subtype.
+ */
+export function formatFromGalleryFile(file: File): string {
+  const type = (file.type ?? '').split(';')[0].trim().toLowerCase();
+  if (type.startsWith('image/')) {
+    const subtype = type.slice('image/'.length);
+    return subtype === 'jpg' ? 'jpeg' : subtype;
+  }
+  const dot = file.name.lastIndexOf('.');
+  if (dot !== -1 && dot < file.name.length - 1) {
+    const ext = file.name
+      .slice(dot + 1)
+      .trim()
+      .toLowerCase();
+    if (ext) return ext === 'jpg' ? 'jpeg' : ext;
+  }
+  return 'jpeg';
+}
+
+/**
+ * Open the gallery picker and return Capacitor-shaped photos.
+ *
+ * Native: `Camera.pickImages` (system photo library; SVG is not offered).
+ * Web: a file input with {@link WEB_GALLERY_ACCEPT} so SVG is hidden from
+ * the default filter. `path` is set to the chosen filename so the same
+ * extension check as FileUploader can run.
+ */
+export async function pickGalleryPhotos(
+  options: PickGalleryPhotosOptions
+): Promise<{photos: GalleryPhoto[]}> {
+  const platform = options.platform ?? Capacitor.getPlatform();
+  if (platform !== 'web') {
+    return Camera.pickImages({
+      quality: options.quality,
+      width: options.width,
+      correctOrientation: options.correctOrientation,
+      limit: options.limit,
+    });
+  }
+  return pickWebRasterGallery(options.limit);
+}
+
+/**
+ * Drop blob: object URLs created by {@link pickGalleryPhotos} (web) or
+ * Capacitor's web picker. Safe to call twice; ignores non-blob paths.
+ */
+export function revokeGalleryObjectUrls(
+  photos: ReadonlyArray<{webPath: string}>
+): void {
+  for (const photo of photos) {
+    if (photo.webPath.startsWith('blob:')) {
+      URL.revokeObjectURL(photo.webPath);
+    }
+  }
+}
+
+/**
+ * Web-only file input that excludes SVG from the default accept list.
+ * Cancel maps to the same message Capacitor uses so TakePhoto treats it
+ * as a user abort, not a failure.
+ */
+function pickWebRasterGallery(
+  limit: number
+): Promise<{photos: GalleryPhoto[]}> {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = WEB_GALLERY_ACCEPT;
+    input.multiple = limit !== 1;
+    input.hidden = true;
+
+    const cleanup = () => {
+      input.remove();
+    };
+
+    input.addEventListener('change', () => {
+      const files = Array.from(input.files ?? []).slice(0, Math.max(0, limit));
+      cleanup();
+      if (files.length === 0) {
+        reject(new Error('User cancelled photos app'));
+        return;
+      }
+      resolve({
+        photos: files.map(file => ({
+          webPath: URL.createObjectURL(file),
+          format: formatFromGalleryFile(file),
+          // Filename, not a filesystem path: TakePhoto uses this for the
+          // same extension check as FileUploader.
+          path: file.name,
+        })),
+      });
+    });
+    input.addEventListener('cancel', () => {
+      cleanup();
+      reject(new Error('User cancelled photos app'));
+    });
+
+    document.body.appendChild(input);
+    input.click();
+  });
+}
 
 /**
  * Optional overrides for {@link preparePhotoBlobForStorage}.

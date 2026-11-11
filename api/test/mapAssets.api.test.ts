@@ -208,6 +208,35 @@ describe('GET/POST /api/map-assets', () => {
     expect(created.body.createdBy).toBe('map-manager');
   });
 
+  it('rejects uploading into an archived team and still lists existing layers', async () => {
+    const team = await createTeam('Archived Map Team');
+    const created = await upload(adminToken, {teamId: team._id}).expect(201);
+
+    await auth(request(app).put(`/api/teams/${team._id}/archive`), adminToken)
+      .send({archive: true})
+      .expect(200);
+
+    const blocked = await upload(adminToken, {teamId: team._id});
+    expect(blocked.status).toBe(400);
+
+    await auth(
+      request(app).get(`/api/teams/${team._id}/map-assets`),
+      adminToken
+    )
+      .expect(200)
+      .then(res => {
+        expect(
+          res.body.assets.some((a: {_id: string}) => a._id === created.body._id)
+        ).toBe(true);
+      });
+
+    const deleteRes = await auth(
+      request(app).post(`/api/teams/${team._id}/delete`),
+      adminToken
+    );
+    expect(deleteRes.status).toBe(400);
+  });
+
   it('blocks a team manager from uploading outside a team or into another team', async () => {
     const team = await createTeam();
     const otherTeam = await createTeam('Other Map Team');

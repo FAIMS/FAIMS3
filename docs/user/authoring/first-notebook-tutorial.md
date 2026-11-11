@@ -350,14 +350,14 @@ editor.
 1. **Find the new field** in the "Visible fields" list (it's called
    "New Field") and **click its header bar** to expand it
 2. **Configure the field**:
-   - **Label**: Change "New Field" to **"Site Name"**
-   - **Field ID**: Updates automatically to match ("Site-Name"). No need to
+   - **Field Heading**: Change "New Field" to **"Site Name"**
+   - **Export Title**: Updates automatically to match ("Site-Name"). No need to
      touch it
    - **Helper Text**: Type "Enter the official site designation or name"
    - **Required**: Toggle ON ☑
 
 > ⚠️ **Name fields now, before collecting data.** Records store their values
-> under the Field ID, which follows the label for newly added fields. If you
+> under the Export Title, which follows the Field Heading for newly added fields. If you
 > rename a field after records already exist, those records' values stop
 > appearing in lists (they show "-" instead). Renaming _before_ any data is
 > collected (as we're doing here) is completely safe.
@@ -369,7 +369,7 @@ editor.
 > on the next field.
 
 ```{screenshot} first-notebook-tutorial/qs-012-site-name-editor-desktop.png
-:alt: Expanded Site Name field in the field editor, with Text field and Required badges under its header: Label reads Site Name, Field ID reads Site-Name, Helper Text reads Enter the official site designation or name, Short answer is selected above an empty Default Text box, Required is ticked, and the Advanced controls group shows unticked Copy value to new records, Annotation, and Uncertainty boxes above a Voice-to-text section with Enable voice-to-text input for this field ticked
+:alt: Expanded Site Name field in the field editor, with Text field and Required badges under its header: Field Heading reads Site Name, Export Title reads Site-Name, Helper Text reads Enter the official site designation or name, Short answer is selected above an empty Default Text box, Required is ticked, and the Advanced controls group shows unticked Copy value to new records, Annotation, and Uncertainty boxes above a Voice-to-text section with Enable voice-to-text input for this field ticked
 :align: right
 :width: 100%
 ```
@@ -404,17 +404,16 @@ Now let's add a choice field where users select one option from a list.
 ```
 
 1. **Expand the new field** ("New Field" in Visible fields) and change its
-   **Label** to **"Site Type"**
+   **Field Heading** to **"Site Type"**
 2. **Add your options** in the **Options** table - these are the choices
    users will see:
    - You'll see one default option, "1", with a pencil (**Edit option**) and
      bin (**Delete option**) icon in its Actions column
-   - Click the **pencil icon** to open the "Edit Option" dialogue, change
-     "1" to **"Habitation"**, and click **Save**
+   - Click the pencil icon to open the **Edit Option** dialogue. Change both **Export value** and **Display label** from "1" to "Habitation", then click Save.
    - Now use the **"Add option"** box to add the remaining options: type
      **"Mortuary"** and click **"Add"**, then repeat for **"Ceremonial"**,
      **"Workshop/Industrial"**, **"Defensive"**, **"Agricultural"**, and
-     **"Other"**
+     **"Other"**. The **Display label** defaults to the **Export value** when adding a new option.
    - Reorder options if needed using the drag handle (⠿) or the up/down
      arrows in each row
 
@@ -423,7 +422,7 @@ Now let's add a choice field where users select one option from a list.
 > as the radio-button list data collectors see) or **Dropdown list**.
 
 ```{screenshot} first-notebook-tutorial/qs-014-edit-option-dialog-desktop.png
-:alt: Edit Option dialogue with the Option Text field containing Habitation, and Cancel and Save buttons
+:alt: Edit Option dialogue with Export value and Display label both set to Habitation, and Cancel and Save buttons
 :align: right
 :width: 100%
 ```
@@ -453,7 +452,7 @@ Now let's add a choice field where users select one option from a list.
 > - **Annotation**: Add contextual notes (e.g., when selecting "Other", use annotation to describe what type of site it actually is)
 > - **Uncertainty**: Flag observations you're unsure about for later review
 >
-> 💡 **Pro Tip**: You can use markdown in option text - try `**Important Option**` to make text bold!
+> 💡 **Pro Tip**: You can use Markdown formatting in the Display label — try `**Important Option**` to make the text bold!
 
 **Quick Save**: Click the **Save** button at the left of the toolbar to save your progress.
 
@@ -475,7 +474,7 @@ Let's add the ability to capture photos - essential for field documentation!
 ```
 
 1. **Expand the new field** ("New Field" in Visible fields) and change its
-   **Label** to **"Site Photo"**
+   **Field Heading** to **"Site Photo"**
 2. **Configure the field**:
    - **Helper Text**: Type "Photograph the site for documentation"
    - Leave **Required** unchecked (photos can be optional)
@@ -483,7 +482,7 @@ Let's add the ability to capture photos - essential for field documentation!
    - **Annotation Label**: Change from "annotation" to **"Photo notes"**
 
 ```{screenshot} first-notebook-tutorial/qs-017-site-photo-editor-desktop.png
-:alt: Site Photo field expanded in the field editor beneath the collapsed Site Name and Site Type fields, with a TakePhoto badge under its header: Label reads Site Photo, Field ID reads Site-Photo, Helper Text reads Photograph the site for documentation, Required is unticked, and in the Advanced controls group Copy value to new records and Uncertainty are unticked whilst Annotation is ticked, with the Annotation Label changed to Photo notes
+:alt: Site Photo field expanded in the field editor beneath the collapsed Site Name and Site Type fields, with a TakePhoto badge under its header: Field Heading reads Site Photo, Export Title reads Site-Photo, Helper Text reads Photograph the site for documentation, Required is unticked, and in the Advanced controls group Copy value to new records and Uncertainty are unticked whilst Annotation is ticked, with the Annotation Label changed to Photo notes
 :align: right
 :width: 100%
 ```
@@ -1010,7 +1009,7 @@ Editor.
 **Solution**: This is a common issue! If no Human-Readable ID Field is set,
 records are identified by a long code like "rec-de618aef-...": it appears as
 the record's heading when you open it, and, if no Summary Fields are set
-either, in the record list under a column headed "Field ID". Go back to
+either, in the record list under a column headed "Export Title". Go back to
 editing your {{notebook}}: Actions → Open in Editor → click **Settings** in the
 form control row → set the **Human-Readable ID Field** to "Site Name" →
 Close, then Save. New records will display properly (existing records will

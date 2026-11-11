@@ -5,6 +5,7 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 import {displayDateTime} from '@/lib/time';
 import {TeamCellComponent} from './cells/team-cell';
 import {TemplateCellComponent} from './cells/template-cell';
+import {ProjectStatusBadge, projectStatusDisplay} from './project-status';
 import {
   Tooltip,
   TooltipContent,
@@ -42,6 +43,19 @@ export const columns: ColumnDef<GetNotebookListWithStatsResponse[number]>[] = [
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Name" />
     ),
+  },
+  {
+    id: 'status',
+    accessorFn: row => projectStatusDisplay(row.status).label,
+    header: ({column}) => (
+      <DataTableColumnHeader column={column} title="Status" />
+    ),
+    // class names passed into the header/cells - pins width max
+    meta: {
+      headerClassName: 'w-24 max-w-24',
+      cellClassName: 'w-24 max-w-24',
+    },
+    cell: ({row}) => <ProjectStatusBadge status={row.original.status} />,
   },
   {
     id: 'team',

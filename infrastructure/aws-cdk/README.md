@@ -408,6 +408,7 @@ The **`aws`** fields are documented below.
   - `maximumLongLivedDurationDays` (`core.authTokens`): (Optional) Max lifetime in days for long-lived tokens (default 90), or `"unlimited"` for no cap.
   - `rateLimiterEnabled` (`core.limits`): (default `true`) Express HTTP IP rate limiter (`RATE_LIMITER_ENABLED`). Set `false` when per-IP limiting is handled upstream (e.g. ALB/WAF). Does **not** control CouchDB-backed auth attempt limits or the export limiter.
   - `attemptLimiterEnabled` (`core.limits`): (default `true`) Per-user email-code / verification-challenge attempt limits (`ATTEMPT_LIMITER_ENABLED`). Keep `true` in production even when HTTP rate limiting is disabled upstream.
+  - `loginLockoutEnabled` (`core.limits`): (default `true`) Couch-backed progressive local-password lockout (`LOGIN_LOCKOUT_ENABLED`). Independent of `attemptLimiterEnabled`. Keep `true` in production so lockout counters are shared across Fargate tasks.
   - `exportRateLimiterEnabled` (`core.limits`): (default `true`) Dedicated limiter for notebook export mint/redeem (`EXPORT_RATE_LIMITER_ENABLED`). Independent of `rateLimiterEnabled` so ZIP/GDAL work stays capped when the global IP limiter is off.
   - `exportRateLimiterWindowMs` (`core.limits`): (default `600000`) Export-limiter window in milliseconds (`EXPORT_RATE_LIMITER_WINDOW_MS`).
   - `exportRateLimiterPerWindow` (`core.limits`): (default `20`) Export mint/redeem requests allowed per window (`EXPORT_RATE_LIMITER_PER_WINDOW`). Raise for bulk scripted dumps.
