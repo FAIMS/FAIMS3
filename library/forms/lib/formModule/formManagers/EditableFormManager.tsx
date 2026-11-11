@@ -35,7 +35,7 @@ import {
   CompiledFormSchema,
   FormValidation,
 } from '../../validationModule';
-import {FaimsForm, FaimsFormData} from '../types';
+import {ConditionValuesContext, FaimsForm, FaimsFormData} from '../types';
 import {LiveFormProgress} from './components/FormProgress';
 import {FormManager} from './FormManager';
 import {
@@ -196,6 +196,14 @@ export const EditableFormManager: React.FC<
       viewsetId: props.formId,
     })
   );
+  // Same bag currentlyVisibleMap already uses, kept in state because option
+  // conditions need the values — visibleMap is only field/section hide-show.
+  const [conditionValues, setConditionValues] = useState(() =>
+    buildConditionValues({
+      values: formDataExtractor({fullData: props.initialData ?? {}}),
+      context: buildContext(),
+    })
+  );
 
   const validationSchema = useRef<CompiledFormSchema>(
     FormValidation.compileFormSchema({
@@ -284,12 +292,15 @@ export const EditableFormManager: React.FC<
   // Visibility Updates
   // ---------------------------------------------------------------------------
   const updateVisibility = useCallback(() => {
+    const values = buildConditionValues({
+      values: formDataExtractor({fullData: form.state.values}),
+      context: buildContext(),
+    });
+    // Publish both: field/section visibility, and the live bag for option filters.
+    setConditionValues(values);
     setVisibleMap(
       currentlyVisibleMap({
-        values: buildConditionValues({
-          values: formDataExtractor({fullData: form.state.values}),
-          context: buildContext(),
-        }),
+        values,
         uiSpec: dataEngine.uiSpec,
         viewsetId: props.formId,
       })
@@ -1207,17 +1218,21 @@ export const EditableFormManager: React.FC<
         visibilityMap={visibleMap}
       />
 
-      {/* Main Form */}
-      <FormManager
-        key={props.recordId}
-        form={form as FaimsForm}
-        formName={props.formId}
-        uiSpec={dataEngine.uiSpec}
-        config={formManagerConfig}
-        navigationContext={props.navigationContext}
-        fieldVisibilityMap={visibleMap}
-        debugMode={debugMode}
-      />
+      {/* Main Form. Context (not a Field prop) so memo'd fields that do not
+          consume condition values skip bag updates; only ConditionValuesBridge
+          subscribes. */}
+      <ConditionValuesContext.Provider value={conditionValues}>
+        <FormManager
+          key={props.recordId}
+          form={form as FaimsForm}
+          formName={props.formId}
+          uiSpec={dataEngine.uiSpec}
+          config={formManagerConfig}
+          navigationContext={props.navigationContext}
+          fieldVisibilityMap={visibleMap}
+          debugMode={debugMode}
+        />
+      </ConditionValuesContext.Provider>
 
       {/* Navigation Buttons (Bottom) */}
       <NavigationButtonsDisplay

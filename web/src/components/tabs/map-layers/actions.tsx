@@ -2,6 +2,7 @@
 import {DeleteMapLayerDialog} from '@/components/dialogs/delete-map-layer-dialog';
 import {EditMapLayerDetailsDialog} from '@/components/dialogs/edit-map-layer-details-dialog';
 import {ReplaceMapLayerDialog} from '@/components/dialogs/replace-map-layer-dialog';
+import {ActionsGrid} from '@/components/tabs/actions-grid';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
@@ -37,7 +38,7 @@ export function MapLayerActions({assetId}: {assetId: string}) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <ActionsGrid>
       {canUpdateDetails ? (
         <Card>
           <List>
@@ -88,6 +89,6 @@ export function MapLayerActions({assetId}: {assetId: string}) {
           </List>
         </Card>
       ) : null}
-    </div>
+    </ActionsGrid>
   );
 }

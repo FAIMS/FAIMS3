@@ -154,7 +154,7 @@ When you log in to the {{FAIMS}} {{Dashboard}}, you'll see a left sidebar with t
 - **Users**: View all system users and their roles (requires appropriate permissions)
 - **Map layers**: Upload georeferenced overlays and link them to {{notebooks}} (see [Map layers](map-layers.md))
 - **Teams**: View and manage teams
-- **Archive**: Archived {{notebooks}}, templates, and disabled users
+- **Archive**: Archived {{notebooks}}, templates, teams, and disabled users
 
 ```{screenshot} user-roles/01-dashboard-sidebar.png
 :alt: {{FAIMS}} {{Dashboard}} Users page with Users and Invites tabs. The left sidebar has a Content section ({{Notebooks}}, Templates) and a Management section; Users, Map layers, Teams, and Archive appear according to your roles

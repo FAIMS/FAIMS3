@@ -221,6 +221,7 @@ const apiContract: Record<string, EnvResolver> = {
     SHARED_DEFAULTS.exportRateLimiterPerWindow,
   ATTEMPT_LIMITER_ENABLED: runtime =>
     runtime.limits.attemptLimiterEnabled ?? true,
+  LOGIN_LOCKOUT_ENABLED: runtime => runtime.limits.loginLockoutEnabled ?? true,
   REDIRECT_WHITELIST: runtime => runtime.endpoints.redirectWhitelist ?? [],
   EMAIL_SERVICE_TYPE: runtime => runtime.email.emailServiceType ?? 'MOCK',
   EMAIL_FROM_ADDRESS: runtime =>

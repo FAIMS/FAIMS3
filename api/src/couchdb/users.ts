@@ -200,6 +200,24 @@ export async function getUsersForResource({
 }
 
 /**
+ * Drops every `teamRoles` entry pointing at the given team id for all
+ * affected people documents. Run when a team is permanently deleted so roles
+ * in Couch stay consistent with JWT regeneration on next login.
+ */
+export async function stripTeamRolesForTeamId(teamId: string): Promise<void> {
+  const users = await getUsersForResource({resourceId: teamId});
+  for (const user of users) {
+    const roles = user.teamRoles ?? [];
+    const next = roles.filter(r => r.resourceId !== teamId);
+    if (next.length === roles.length) {
+      continue;
+    }
+    user.teamRoles = next;
+    await saveCouchUser(user);
+  }
+}
+
+/**
  * Drops every `templateRoles` entry pointing at the given template id for all
  * affected people documents. Run when a template is permanently deleted so roles
  * in Couch stay consistent with JWT regeneration on next login.

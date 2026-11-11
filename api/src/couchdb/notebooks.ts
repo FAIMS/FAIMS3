@@ -60,6 +60,7 @@ import {
 import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {userCanDo} from '../middleware';
+import {assertTeamIdNotArchived, assertTeamNotArchived} from './teams';
 import {nowIso} from '../time';
 
 /**
@@ -321,6 +322,7 @@ export const createNotebook = async ({
   teamId?: string;
   createdBy: string;
 }) => {
+  await assertTeamIdNotArchived(teamId);
   const normalizedUiSpecification =
     normalizeUiSpecificationOrThrow(uiSpecification);
   const projectId = generateProjectID(projectName);
@@ -479,20 +481,26 @@ export const applyNotebookLifecycleStatus = async (
 };
 
 /**
- * Updates the team associated with a notebook
+ * Updates the team associated with a notebook. Omitting `teamId` removes
+ * team ownership.
  */
 export const changeNotebookTeam = async ({
   projectId,
   teamId,
 }: {
   projectId: string;
-  teamId: string;
+  teamId?: string;
 }) => {
   // get existing project record
   const project = await getProjectById(projectId);
 
-  // update team
-  const updated = {...project, ownedByTeamId: teamId, updatedAt: nowIso()};
+  const updated = {...project, updatedAt: nowIso()};
+  if (teamId) {
+    await assertTeamNotArchived(teamId);
+    updated.ownedByTeamId = teamId;
+  } else {
+    delete updated.ownedByTeamId;
+  }
   await putProjectDoc(updated);
 };
 

@@ -4,7 +4,7 @@
  * @description A reusable wrapper component for form fields.
  *
  * This component provides a consistent structure for form fields, ensuring:
- * - A bold heading for field labels.
+ * - A bold text for field headings.
  * - A subheading for help text or descriptions.
  * - A proper layout with spacing.
  * - A subtle glowing red border when validation errors are present.
@@ -53,7 +53,7 @@ interface FieldWrapperProps {
  * @component FieldWrapper
  * @description A higher-order component that standardizes the display of form fields.
  *
- * - **Heading:** Renders the field label as a bold title (`Typography variant="h6"`).
+ * - **Heading:** Renders the field heading as a bold title (`Typography variant="h6"`).
  * - **Subheading:** Renders help text in a smaller, muted format (`Typography variant="caption"`).
  * - **Children:** Wraps the actual form input component.
  * - **Error State:** Shows a subtle glowing red border when errors are present.
@@ -106,7 +106,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
         transition: 'border-color 0.3s ease-in-out',
       }}
     >
-      {/* Heading (Label) + Info Icon for advanced help */}
+      {/* Field Heading + Info Icon for advanced help */}
       {(!!heading || advancedHelperText) && (
         <Typography
           variant="h5"

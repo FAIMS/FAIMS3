@@ -58,7 +58,7 @@ The tab bar organises field types into nine categories:
 ## Tips
 
 - **Name your field right after adding it.** After you click a field card,
-  the new field opens in the editor and focus moves to the Label input,
+  the new field opens in the editor and focus moves to the Field Heading input,
   so you can type the field name immediately.
 - **Use the ALL tab** to browse every field type at a glance, or
   **switch to a category tab** when you know what kind of field you

@@ -138,6 +138,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider} from '@mui/material/styles';
 import testTheme from './themes/fieldmark';
 import {ActiveUser} from '../context/slices/authSlice';
+import {NotificationContext} from '../context/popup';
 import {Router} from 'react-router-dom';
 import {NotebookRouteProvider} from '../context/notebookRoute';
 import {NotebookViewTabProvider} from '../context/notebookViewTab';
@@ -150,9 +151,6 @@ const mockNotificationContext = {
   showWarning: vi.fn(),
   showInfo: vi.fn(),
 };
-
-// You'll need to import or mock the NotificationContext
-const NotificationContext = React.createContext(mockNotificationContext);
 
 // Test wrapper component
 export const TestWrapper: React.FC<{children: React.ReactNode}> = ({

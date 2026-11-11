@@ -134,6 +134,7 @@
     "exportRateLimiterWindowMs": 60000,
     "exportRateLimiterPerWindow": 100,
     "attemptLimiterEnabled": true,
+    "loginLockoutEnabled": true,
     "jsonBodyLimit": "25mb",
     "urlencodedBodyLimit": "1mb",
     "restoreUploadMaxBytes": 1073741824,

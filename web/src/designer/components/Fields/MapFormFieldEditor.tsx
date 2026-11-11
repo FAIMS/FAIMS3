@@ -123,7 +123,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
 
           <SimpleFieldWrapper
             heading="Button Label Text"
-            helperText="Custom text for the location button. If empty, the field label will be used."
+            helperText="Custom text for the location button. If empty, the field heading will be used."
           >
             <DebouncedTextField
               fullWidth
@@ -132,7 +132,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
               value={buttonLabelValue}
               error={!!buttonLabelErrorTxt}
               helperText={buttonLabelErrorTxt}
-              placeholder="Leave empty to use the field label"
+              placeholder="Leave empty to use the field heading"
               onChange={e =>
                 validateAndUpdateButtonLabelText(e.target.value, validValue =>
                   updateProperty('buttonLabelText', validValue)
