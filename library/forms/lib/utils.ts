@@ -229,15 +229,69 @@ export async function fileHasActiveContent(blob: Blob): Promise<boolean> {
 }
 
 /**
+ * Synchronous half of the upload check: declared MIME type and filename
+ * extension. Used to reject a batch before any bytes are read.
+ */
+export function hasBlockedAttachmentMetadata(file: {
+  type?: string;
+  name?: string;
+}): boolean {
+  return (
+    isBlockedAttachmentContentType(file.type) ||
+    isBlockedAttachmentFilename(file.name)
+  );
+}
+
+/**
+ * Whether a Capacitor-style format string (`jpeg`, `png`, `svg+xml`) or a
+ * full MIME type names a blocked attachment. Covers gallery picks that
+ * report a format instead of a filename.
+ */
+export function isBlockedAttachmentFormat(
+  format: string | null | undefined
+): boolean {
+  if (typeof format !== 'string') return false;
+  const normalised = format.trim().toLowerCase();
+  if (!normalised) return false;
+  return (
+    isBlockedAttachmentContentType(normalised) ||
+    isBlockedAttachmentContentType(`image/${normalised}`) ||
+    isBlockedAttachmentFilename(`file.${normalised}`)
+  );
+}
+
+/**
+ * Full client-side upload check for a blob that may not be a `File`
+ * (camera / gallery picks). Same three signals as
+ * {@link isBlockedAttachmentFile}: declared type, filename/format, and
+ * leading-byte sniff.
+ *
+ * Sniff **before** any canvas re-encode: browsers can decode SVG into a
+ * bitmap, which would turn a blocked file into a JPEG and sneak it through.
+ */
+export async function isBlockedAttachmentSource({
+  blob,
+  filename,
+  format,
+}: {
+  blob: Blob;
+  filename?: string | null;
+  format?: string | null;
+}): Promise<boolean> {
+  return (
+    isBlockedAttachmentContentType(blob.type) ||
+    isBlockedAttachmentFilename(filename) ||
+    isBlockedAttachmentFormat(format) ||
+    (await fileHasActiveContent(blob))
+  );
+}
+
+/**
  * Full client-side upload check for one file: declared type, extension and
  * leading-byte sniff. Returns true if the file must be rejected.
  */
 export async function isBlockedAttachmentFile(file: File): Promise<boolean> {
-  return (
-    isBlockedAttachmentContentType(file.type) ||
-    isBlockedAttachmentFilename(file.name) ||
-    (await fileHasActiveContent(file))
-  );
+  return isBlockedAttachmentSource({blob: file, filename: file.name});
 }
 
 /** User-facing message for a rejected upload batch. */

@@ -45,9 +45,11 @@ vi.mock('../../fieldRegistry/fields/TakePhoto/webPhotoFallback', async () => {
   const actual = await vi.importActual<
     typeof import('../../fieldRegistry/fields/TakePhoto/webPhotoFallback')
   >('../../fieldRegistry/fields/TakePhoto/webPhotoFallback');
+  const {Camera} = await import('@capacitor/camera');
   return {
     ...actual,
     preparePhotoBlobForStorage: vi.fn(),
+    pickGalleryPhotos: vi.fn(opts => Camera.pickImages(opts as never)),
   };
 });
 
@@ -189,7 +191,10 @@ describe('handleAddAttachment content-type choke point', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => ({
-        blob: async () => new Blob(['<svg/>'], {type: 'image/jpeg'}),
+        blob: async () =>
+          new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0])], {
+            type: 'image/jpeg',
+          }),
       }))
     );
     vi.stubGlobal('URL', {
@@ -209,12 +214,20 @@ describe('handleAddAttachment content-type choke point', () => {
     const {createRevision, storeAttachmentFromBlob, storeAttachmentFromBase64} =
       renderManager();
 
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        blob: async () => new Blob(['<svg/>'], {type: 'image/svg+xml'}),
+      }))
+    );
+
     await pickOnePhoto('svg+xml');
 
-    // TakePhoto surfaces the thrown error to the user as a failed save.
+    // TakePhoto now sniffs before the choke point; format `svg+xml` is
+    // blocked and nothing reaches the attachment engine.
     await waitFor(() => {
       expect(
-        screen.getByText(/Could not save 1 of 1 photo/i)
+        screen.getByText(/SVG and HTML files cannot be uploaded/)
       ).toBeInTheDocument();
     });
     expect(storeAttachmentFromBlob).not.toHaveBeenCalled();

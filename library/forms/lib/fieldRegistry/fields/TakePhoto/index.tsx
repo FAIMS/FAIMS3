@@ -31,6 +31,7 @@ import {
   CameraPermissionIssue,
   PhotosPermissionIssue,
 } from '../../../components/PermissionAlerts';
+import {ImageWithFallback} from '../../../components/ImageWithFallback';
 import {PhotoLightbox} from '../../../components/PhotoLightbox';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
 import {FormFieldContextProps} from '../../../formModule/types';
@@ -41,7 +42,11 @@ import {
 } from '../../../hooks/useAttachment';
 import {logError, logWarn} from '../../../logging';
 import {TakePhotoRender} from '../../../rendering/fields/view/specialised/TakePhoto';
-import {isDisplayableImageType} from '../../../utils';
+import {
+  blockedAttachmentMessage,
+  isBlockedAttachmentSource,
+  isDisplayableImageType,
+} from '../../../utils';
 import {FieldInfo} from '../../types';
 import {getRemainingItemCount} from '../../utils/itemCountHelpers';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -54,7 +59,9 @@ import {takePhotoIsComplete, takePhotoValueSchema} from './valueSchema';
 import {
   IMAGE_QUALITY_0_100,
   MAX_IMAGE_WIDTH,
+  pickGalleryPhotos,
   preparePhotoBlobForStorage,
+  revokeGalleryObjectUrls,
 } from './webPhotoFallback';
 
 const MAX_GALLERY_BATCH = 10;
@@ -65,6 +72,36 @@ const MAX_GALLERY_BATCH = 10;
  */
 const isCancellation = (err: unknown): boolean =>
   /cancel/i.test(err instanceof Error ? err.message : String(err ?? ''));
+
+/**
+ * Label for a rejected gallery/camera pick. Prefers the filename (web picker
+ * stores it on `path`; native `path` is a filesystem URL whose basename
+ * still has the extension).
+ */
+function blockedPhotoLabel(format: string, path?: string): string {
+  if (path) {
+    const base = path.split(/[/\\]/).pop();
+    if (base) return base;
+  }
+  return `photo.${format}`;
+}
+
+/**
+ * Same type / extension / leading-byte checks as FileUploader. Must run
+ * before {@link preparePhotoBlobForStorage}: canvas re-encode would turn an
+ * SVG into a JPEG and the sniff would never see the original bytes.
+ */
+async function blockedPhotoMessage(
+  photoBlob: Blob,
+  format: string,
+  path?: string
+): Promise<string | null> {
+  const filename = blockedPhotoLabel(format, path);
+  if (await isBlockedAttachmentSource({blob: photoBlob, filename, format})) {
+    return blockedAttachmentMessage(filename);
+  }
+  return null;
+}
 
 /** Capacitor iOS still rejects pickImages if Photo Library access was denied. */
 const isPhotosAccessDenied = (err: unknown): boolean =>
@@ -636,8 +673,7 @@ const PhotoItem: React.FC<{
         }}
       >
         {isImage ? (
-          <Box
-            component="img"
+          <ImageWithFallback
             src={data.url}
             onClick={onClick}
             alt={`Photo ${data.metadata.filename}`}
@@ -1411,6 +1447,17 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         photoBlob = await response.blob();
       }
 
+      // Block SVG/HTML before canvas re-encode (browsers can rasterise SVG).
+      const blocked = await blockedPhotoMessage(
+        photoBlob,
+        photoResult.format,
+        photoResult.path
+      );
+      if (blocked) {
+        setSaveError(blocked);
+        return;
+      }
+
       // Web plugin ignores quality/width on getPhoto too; native already
       // resized. See preparePhotoBlobForStorage.
       const prepared = await preparePhotoBlobForStorage(
@@ -1480,6 +1527,9 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
 
     // Slots reserved for picked photos not yet represented by previews.
     let galleryReservations = 0;
+    // Web picker (ours and Capacitor's) creates blob: URLs; revoke leftovers
+    // on every exit so extras / a blocked item / an early return cannot leak.
+    let pickedPhotos: {webPath: string}[] = [];
 
     beginPicker();
     try {
@@ -1506,12 +1556,15 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       // Maximum reached, the component already displays an alert.
       if (pickerLimit === 0) return;
 
-      const {photos} = await Camera.pickImages({
+      // Native: system photo picker. Web: raster-only file input (Capacitor
+      // hardcodes accept="image/*", which includes SVG).
+      const {photos} = await pickGalleryPhotos({
         quality: IMAGE_QUALITY_0_100,
         width: MAX_IMAGE_WIDTH,
         correctOrientation: true,
         limit: pickerLimit,
       });
+      pickedPhotos = photos;
 
       if (photos.length === 0) return;
 
@@ -1547,11 +1600,34 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       // Preview the whole selection first so every thumbnail appears at once,
       // rather than trickling in behind each write. If a fetch fails mid-batch
       // we roll back the previews already added so nothing gets stuck.
+      //
+      // Fetch → sniff → prepare one photo at a time so a 10-image gallery
+      // never holds every original plus every re-encode at once. The sniff
+      // reads 512 bytes only; it must run before canvas re-encode.
       const pending: {tempId: string; photoBlob: Blob; format: string}[] = [];
       try {
         for (const photo of selected) {
-          const response = await fetch(photo.webPath);
-          const photoBlob = await response.blob();
+          let photoBlob: Blob;
+          try {
+            const response = await fetch(photo.webPath);
+            photoBlob = await response.blob();
+          } finally {
+            revokeGalleryObjectUrls([photo]);
+          }
+
+          const blocked = await blockedPhotoMessage(
+            photoBlob,
+            photo.format,
+            photo.path
+          );
+          if (blocked) {
+            for (const item of pending) {
+              removePendingPhoto(item.tempId);
+            }
+            setSaveError(blocked);
+            return;
+          }
+
           // Web: downscale / JPEG-compress here. Native: passthrough.
           const prepared = await preparePhotoBlobForStorage(
             photoBlob,
@@ -1610,6 +1686,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       logError(new Error('Failed to add photos from gallery:'), {error: err});
       setSaveError('Could not add photos from your gallery. Please try again.');
     } finally {
+      revokeGalleryObjectUrls(pickedPhotos);
       // cleanup
       if (galleryReservations > 0)
         reservedCountRef.current -= galleryReservations;

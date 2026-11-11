@@ -32,6 +32,7 @@ import {
 import React, {useCallback, useRef, useState} from 'react';
 import Dropzone, {FileRejection} from 'react-dropzone';
 import {z} from 'zod';
+import {ImageWithFallback} from '../../../components/ImageWithFallback';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
 import {FormFieldContextProps} from '../../../formModule/types';
 import {
@@ -42,9 +43,8 @@ import {
 import {FileUploaderRender} from '../../../rendering/fields/view/specialised/FileUploader';
 import {
   blockedAttachmentMessage,
-  fileHasActiveContent,
-  isBlockedAttachmentContentType,
-  isBlockedAttachmentFilename,
+  hasBlockedAttachmentMetadata,
+  isBlockedAttachmentFile,
   isDisplayableImageType,
 } from '../../../utils';
 import {FieldInfo} from '../../types';
@@ -181,8 +181,7 @@ const AttachmentDialog: React.FC<{
               minHeight: 400,
             }}
           >
-            <Box
-              component="img"
+            <ImageWithFallback
               src={attachment.url}
               alt={attachment.metadata.filename}
               sx={{
@@ -452,10 +451,10 @@ const FileItem: React.FC<{
             }}
             onClick={onClick}
           >
-            <Box
-              component="img"
+            <ImageWithFallback
               src={data.url}
               alt={data.metadata.filename}
+              fallbackLabel=""
               sx={{
                 width: '100%',
                 height: '100%',
@@ -673,10 +672,8 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
       // extension. These checks are synchronous and run before any capacity
       // is reserved or any attachment is stored. (The leading-byte sniff is
       // async and runs below, before the first addAttachment.)
-      const blockedByName = acceptedFiles.find(
-        f =>
-          isBlockedAttachmentContentType(f.type) ||
-          isBlockedAttachmentFilename(f.name)
+      const blockedByName = acceptedFiles.find(f =>
+        hasBlockedAttachmentMetadata(f)
       );
       if (blockedByName) {
         setError(blockedAttachmentMessage(blockedByName.name));
@@ -723,7 +720,7 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
         // over-commit; the finally block releases it on rejection. Nothing
         // is stored until every file has passed.
         for (const file of acceptedFiles) {
-          if (await fileHasActiveContent(file)) {
+          if (await isBlockedAttachmentFile(file)) {
             setError(blockedAttachmentMessage(file.name));
             return;
           }

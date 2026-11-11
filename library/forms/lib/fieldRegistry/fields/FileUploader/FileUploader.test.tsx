@@ -12,7 +12,7 @@
 
 import '@testing-library/jest-dom/vitest';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {act, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState, type ReactNode} from 'react';
 import {z} from 'zod';
@@ -749,5 +749,20 @@ describe('FileUploader attachment display', () => {
       expect(document.querySelectorAll('img[src="blob:pic"]')).toHaveLength(2);
     });
     expect(screen.queryByText('File preview not available')).toBeNull();
+  });
+
+  it('swaps a raster thumbnail that fails to decode for a placeholder', () => {
+    mockAttachmentTypes['spoof'] = {
+      filename: 'spoof.png',
+      contentType: 'image/png',
+    };
+    renderUploader({initialIds: ['spoof']});
+
+    const thumbnail = document.querySelector('img[src="blob:spoof"]');
+    expect(thumbnail).not.toBeNull();
+    fireEvent.error(thumbnail as HTMLImageElement);
+
+    expect(screen.getByTestId('broken-image-thumbnail')).toBeInTheDocument();
+    expect(document.querySelector('img[src="blob:spoof"]')).toBeNull();
   });
 });

@@ -6,6 +6,7 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import {Box, Paper, Typography} from '@mui/material';
 import {useMemo} from 'react';
+import {ImageWithFallback} from '../../../../components/ImageWithFallback';
 import {useAttachments} from '../../../../hooks/useAttachment';
 import {isDisplayableImageType} from '../../../../utils';
 import {DataViewFieldRender} from '../../../types';
@@ -80,10 +81,10 @@ const ImageAttachment: React.FC<{
       borderColor: 'divider',
     }}
   >
-    <img
+    <ImageWithFallback
       src={url}
       alt={filename || `Attachment ${index + 1}`}
-      style={{
+      sx={{
         width: '100%',
         height: '100%',
         objectFit: 'cover',

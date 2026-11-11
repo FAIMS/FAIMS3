@@ -10,7 +10,7 @@
  * rendering as before.
  */
 import '@testing-library/jest-dom/vitest';
-import {render, screen} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import type {DataViewFieldRenderProps} from '../../../types';
@@ -158,5 +158,22 @@ describe('TakePhotoRender', () => {
       'data-url',
       'blob:jpg'
     );
+  });
+
+  it('shows a broken-image thumbnail when a raster attachment fails to decode', () => {
+    mockAttachments['png'] = {
+      filename: 'spoof.png',
+      contentType: 'image/png',
+    };
+    render(<TakePhotoRender {...renderProps(['png'])} />);
+
+    const img = document.querySelector('img');
+    expect(img).not.toBeNull();
+    fireEvent.error(img as HTMLImageElement);
+
+    expect(screen.getByTestId('broken-image-thumbnail')).toBeInTheDocument();
+    expect(screen.getByText('Image preview not available')).toBeInTheDocument();
+    expect(document.querySelector('img')).toBeNull();
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });

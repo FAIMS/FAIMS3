@@ -7,10 +7,13 @@ import {
   IMAGE_TYPES,
   blockedAttachmentMessage,
   fileHasActiveContent,
+  hasBlockedAttachmentMetadata,
   isActiveContentBytes,
   isBlockedAttachmentContentType,
   isBlockedAttachmentFile,
   isBlockedAttachmentFilename,
+  isBlockedAttachmentFormat,
+  isBlockedAttachmentSource,
   isDisplayableImageType,
   normaliseContentType,
   writeFieldUpdates,
@@ -347,6 +350,34 @@ describe('isActiveContentBytes', () => {
   });
 });
 
+describe('hasBlockedAttachmentMetadata / isBlockedAttachmentFormat', () => {
+  it('blocks by declared type or extension', () => {
+    expect(
+      hasBlockedAttachmentMetadata({type: 'image/svg+xml', name: 'x.bin'})
+    ).toBe(true);
+    expect(hasBlockedAttachmentMetadata({type: '', name: 'PHOTO.SVG'})).toBe(
+      true
+    );
+    expect(
+      hasBlockedAttachmentMetadata({type: 'image/png', name: 'photo.png'})
+    ).toBe(false);
+  });
+
+  it.each(['svg', 'svg+xml', 'SVG', 'image/svg+xml', 'html', 'xhtml'])(
+    'blocks format %j',
+    format => {
+      expect(isBlockedAttachmentFormat(format)).toBe(true);
+    }
+  );
+
+  it.each(['jpeg', 'png', 'gif', 'webp', 'heic', '', undefined])(
+    'allows format %j',
+    format => {
+      expect(isBlockedAttachmentFormat(format)).toBe(false);
+    }
+  );
+});
+
 describe('fileHasActiveContent / isBlockedAttachmentFile', () => {
   it('reads only the leading slice of a File', async () => {
     const file = new File([FIXTURES.scriptSvg], 'photo.png', {
@@ -387,5 +418,34 @@ describe('fileHasActiveContent / isBlockedAttachmentFile', () => {
     expect(blockedAttachmentMessage('evil.svg')).toBe(
       '"evil.svg": SVG and HTML files cannot be uploaded.'
     );
+  });
+});
+
+describe('isBlockedAttachmentSource', () => {
+  it('blocks SVG bytes behind a PNG type (TakePhoto spoofed extension)', async () => {
+    const blob = new Blob([FIXTURES.scriptSvg], {type: 'image/png'});
+    await expect(
+      isBlockedAttachmentSource({blob, filename: 'photo.png', format: 'png'})
+    ).resolves.toBe(true);
+  });
+
+  it('blocks by Capacitor format even when the blob type is jpeg', async () => {
+    // Capacitor's web plugin reports SVG as format `jpeg` for getPhoto, but
+    // pickImages format can be the real subtype when we supply it.
+    const blob = new Blob(['not markup'], {type: 'image/jpeg'});
+    await expect(
+      isBlockedAttachmentSource({blob, format: 'svg+xml'})
+    ).resolves.toBe(true);
+  });
+
+  it('allows a JPEG photo', async () => {
+    const blob = new Blob([FIXTURES.jpeg], {type: 'image/jpeg'});
+    await expect(
+      isBlockedAttachmentSource({
+        blob,
+        filename: 'photo.jpeg',
+        format: 'jpeg',
+      })
+    ).resolves.toBe(false);
   });
 });
