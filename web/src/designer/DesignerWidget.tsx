@@ -42,7 +42,7 @@ import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
 import {SetupFormPanel} from './components/setup-form-panel';
 import {config} from '@/constants';
-import {FeedbackDialog} from '@/components/feedback/feedback-dialog';
+import {FeedbackButton} from '@/components/feedback/feedback-dialog';
 
 /**
  * @file Full-screen designer shell: hydrate notebook, Redux, memory router, export without internal ids.
@@ -159,7 +159,6 @@ export function DesignerWidget({
   const [animateIn, setAnimateIn] = useState(false);
   const [animateOut, setAnimateOut] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // Kick off loading animation
   useEffect(() => {
@@ -284,13 +283,15 @@ export function DesignerWidget({
                 </Typography>
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                   {feedbackToken && (
-                    <Button
-                      color="inherit"
-                      data-testid="web-designer-feedback-button"
-                      onClick={() => setFeedbackOpen(true)}
-                    >
-                      Feedback
-                    </Button>
+                    <FeedbackButton
+                      source="designer"
+                      token={feedbackToken}
+                      testId="web-designer-feedback-button"
+                      component={() => {
+                        const location = memoryRouterInstance.state.location;
+                        return `${location.pathname}${location.search}${location.hash}`;
+                      }}
+                    />
                   )}
                   <IconButton
                     aria-label="close designer"
@@ -307,15 +308,6 @@ export function DesignerWidget({
                 </Box>
               </Toolbar>
             </AppBar>
-            {feedbackToken && (
-              <FeedbackDialog
-                open={feedbackOpen}
-                onOpenChange={setFeedbackOpen}
-                source="designer"
-                token={feedbackToken}
-              />
-            )}
-
             <Dialog
               open={cancelDialogOpen}
               onClose={() => setCancelDialogOpen(false)}

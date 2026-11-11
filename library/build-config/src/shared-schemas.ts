@@ -165,6 +165,8 @@ export const SHARED_DEFAULTS = {
   feedbackRateLimiterPerWindow: 5,
   /** Default destination for in-app feedback mail. */
   feedbackEmail: 'support@fieldmark.au',
+  /** Default subject for in-app feedback mail. */
+  feedbackSubject: 'In-app feedback',
   /** Age of a stuck `running` migration lock before it is stolen (30 min). */
   startupMigrationLockTimeoutMs: 1800000,
   /** Max uploaded design JSON size in the designer. */

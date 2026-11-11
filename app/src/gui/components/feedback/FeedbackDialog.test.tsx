@@ -38,6 +38,9 @@ describe('FeedbackDialog', () => {
   it('requires a message before submit', () => {
     renderDialog();
     expect(screen.getByTestId('app-feedback-submit')).toBeDisabled();
+    expect(screen.getByTestId('app-feedback-description')).toHaveTextContent(
+      'Tell us what is working and what is not. We will email this to the support inbox. Do not include record data or passwords.'
+    );
   });
 
   it('submits to POST /api/feedback with the bearer token and closes on success', async () => {
@@ -61,6 +64,9 @@ describe('FeedbackDialog', () => {
     const body = JSON.parse(init.body);
     expect(body.message).toBe('Maps lag.');
     expect(body.source).toBe('app');
+    expect(typeof body.path).toBe('string');
+    expect(typeof body.component).toBe('string');
+    expect(body.component.length).toBeGreaterThan(0);
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 

@@ -64,4 +64,17 @@ describe('Check appbarAuth', () => {
     expect(screen.getByTestId('app-feedback-button')).toBeTruthy();
     expect(screen.getByText('Send feedback')).toBeTruthy();
   });
+
+  it('opens the shared feedback workflow from the profile menu', async () => {
+    const onOpenFeedback = vi.fn();
+    render(
+      <TestWrapper>
+        <AppBarAuth onOpenFeedback={onOpenFeedback} />
+      </TestWrapper>
+    );
+
+    await userEvent.click(screen.getByTestId('app-nav-user-menu'));
+    await userEvent.click(screen.getByTestId('app-feedback-button'));
+    expect(onOpenFeedback).toHaveBeenCalledTimes(1);
+  });
 });

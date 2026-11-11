@@ -408,6 +408,7 @@ test('generated API env includes conductor, auth, and email contract values', ()
   assert.equal(raw.RATE_LIMITER_ENABLED, 'false');
   assert.equal(raw.JSON_BODY_LIMIT, '50mb');
   assert.equal(raw.FEEDBACK_EMAIL, 'support@fieldmark.au');
+  assert.equal(raw.FEEDBACK_SUBJECT, 'In-app feedback');
   assert.equal(raw.FEEDBACK_RATE_LIMITER_ENABLED, 'true');
   assert.equal(raw.FEEDBACK_RATE_LIMITER_WINDOW_MS, '600000');
   assert.equal(raw.FEEDBACK_RATE_LIMITER_PER_WINDOW, '5');
@@ -438,6 +439,28 @@ test('FEEDBACK_EMAIL falls back to support.supportEmail and prefers limits.feedb
     includeEmpty: true,
   });
   assert.equal(envMap(fromLimits).FEEDBACK_EMAIL, 'product@example.org');
+});
+
+test('FEEDBACK_SUBJECT defaults and honours limits.feedbackSubject', () => {
+  const fromDefault = generateEnv({
+    config: sampleConfig,
+    platform: 'api',
+    includeEmpty: true,
+  });
+  assert.equal(envMap(fromDefault).FEEDBACK_SUBJECT, 'In-app feedback');
+
+  const fromLimits = generateEnv({
+    config: {
+      ...sampleConfig,
+      limits: {feedbackSubject: 'Fieldmark product feedback'},
+    },
+    platform: 'api',
+    includeEmpty: true,
+  });
+  assert.equal(
+    envMap(fromLimits).FEEDBACK_SUBJECT,
+    'Fieldmark product feedback'
+  );
 });
 
 // The mobile CI workflows pass --platform android / --platform ios.

@@ -27,6 +27,14 @@ export function truncateDiagnostic(value: string, max: number): string {
   return value.length <= max ? value : value.slice(0, max);
 }
 
+/** SPA route (pathname + search + hash) for the feedback `component` field. */
+export function currentRouteComponent(): string {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+  return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+}
+
 /**
  * Bounded diagnostics plus the user message. Identity is not included —
  * Conductor reads it from the access token.
@@ -35,10 +43,12 @@ export function buildAppFeedbackPayload({
   message,
   source,
   category,
+  component,
 }: {
   message: string;
   source: FeedbackSource;
   category?: FeedbackCategory;
+  component?: string;
 }): PostFeedbackRequest {
   const payload: PostFeedbackRequest = {
     message,
@@ -58,6 +68,13 @@ export function buildAppFeedbackPayload({
   };
   if (category) {
     payload.category = category;
+  }
+  const resolvedComponent = truncateDiagnostic(
+    (component ?? currentRouteComponent()).trim(),
+    INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH
+  );
+  if (resolvedComponent) {
+    payload.component = resolvedComponent;
   }
   return payload;
 }

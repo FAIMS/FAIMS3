@@ -335,9 +335,11 @@ export type FeedbackEmailParams = {
   source?: string;
   category?: string;
   path?: string;
+  component?: string;
   clientVersion?: string;
   userAgent?: string;
   replyTo: string;
+  subject?: string;
 };
 
 /** Display-or-em-dash for optional diagnostic lines. */
@@ -359,18 +361,20 @@ export function buildFeedbackEmailOptions({
   source,
   category,
   path,
+  component,
   clientVersion,
   userAgent,
   replyTo,
+  subject = config.feedbackSubject,
 }: FeedbackEmailParams): EmailOptions {
-  const subject = 'In-app feedback';
   const submittedAt = new Date().toISOString();
   const impersonationLine = impersonatingUserId
     ? `Impersonated by: ${impersonatingUserId}`
     : undefined;
+  const heading = subject.trim() || config.feedbackSubject;
 
   const textContent = `
-In-app feedback
+${heading}
 
 Submitted at: ${submittedAt}
 User ID: ${userId}
@@ -379,6 +383,7 @@ Email: ${feedbackField(userEmail)}
 ${impersonationLine ? `${impersonationLine}\n` : ''}Source: ${feedbackField(source)}
 Category: ${feedbackField(category)}
 Path: ${feedbackField(path)}
+Component: ${feedbackField(component)}
 Client version: ${feedbackField(clientVersion)}
 User agent: ${feedbackField(userAgent)}
 
@@ -387,6 +392,7 @@ ${message}
   `.trim();
 
   const htmlMessage = escapeHtml(message).replace(/\r\n|\r|\n/g, '<br>\n');
+  const htmlHeading = escapeHtml(heading);
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -394,10 +400,10 @@ ${message}
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>In-app feedback</title>
+  <title>${htmlHeading}</title>
 </head>
 <body>
-  <p><strong>In-app feedback</strong></p>
+  <p><strong>${htmlHeading}</strong></p>
   <ul>
     <li>Submitted at: ${escapeHtml(submittedAt)}</li>
     <li>User ID: ${escapeHtml(userId)}</li>
@@ -411,6 +417,7 @@ ${message}
     <li>Source: ${escapeHtml(feedbackField(source))}</li>
     <li>Category: ${escapeHtml(feedbackField(category))}</li>
     <li>Path: ${escapeHtml(feedbackField(path))}</li>
+    <li>Component: ${escapeHtml(feedbackField(component))}</li>
     <li>Client version: ${escapeHtml(feedbackField(clientVersion))}</li>
     <li>User agent: ${escapeHtml(feedbackField(userAgent))}</li>
   </ul>
@@ -422,7 +429,7 @@ ${message}
 
   return {
     to: recipientEmail,
-    subject,
+    subject: heading,
     text: textContent,
     html: htmlContent,
     replyTo,

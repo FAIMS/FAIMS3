@@ -68,19 +68,28 @@ describe('POST /api/feedback', () => {
   it('returns 200 and sends mail to the configured destination', async () => {
     const sendEmailSpy = mockSendEmail();
     const previousDestination = config.feedbackEmail;
+    const previousSubject = config.feedbackSubject;
     config.feedbackEmail = 'product@example.org';
+    config.feedbackSubject = 'Fieldmark product feedback';
     try {
       const result = await requestAuthAndType(
-        request(app).post(FEEDBACK_PATH).send({message: 'The map is slow.'})
+        request(app).post(FEEDBACK_PATH).send({
+          message: 'The map is slow.',
+          path: 'https://app.example/notebooks/abc',
+          component: '/notebooks/abc',
+        })
       );
       expect(result.status).toBe(200);
       expect(result.body).toEqual({success: true});
       expect(sendEmailSpy).toHaveBeenCalledTimes(1);
-      expect(sendEmailSpy.mock.calls[0][0].options.to).toBe(
-        'product@example.org'
-      );
+      const options = sendEmailSpy.mock.calls[0][0].options;
+      expect(options.to).toBe('product@example.org');
+      expect(options.subject).toBe('Fieldmark product feedback');
+      expect(options.text).toContain('Path: https://app.example/notebooks/abc');
+      expect(options.text).toContain('Component: /notebooks/abc');
     } finally {
       config.feedbackEmail = previousDestination;
+      config.feedbackSubject = previousSubject;
       sendEmailSpy.mockRestore();
     }
   });
@@ -228,12 +237,32 @@ describe('buildFeedbackEmailOptions', () => {
       impersonatingUserId: 'admin-user',
       source: 'web',
       category: 'bug',
+      path: 'https://web.example/projects/abc',
+      component: '/projects/abc',
       replyTo: 'target@example.com',
     });
+    expect(options.subject).toBe(config.feedbackSubject);
     expect(options.html).toContain('User ID: target-user');
     expect(options.html).toContain('Impersonated by: admin-user');
+    expect(options.html).toContain('Path: https://web.example/projects/abc');
+    expect(options.html).toContain('Component: /projects/abc');
     expect(options.html).toContain('See &lt;b&gt;this&lt;/b&gt;');
     expect(options.html).not.toContain('See <b>this</b>');
     expect(options.text).toContain('Impersonated by: admin-user');
+    expect(options.text).toContain('Component: /projects/abc');
+  });
+
+  it('uses the configured feedback subject', () => {
+    const options = buildFeedbackEmailOptions({
+      recipientEmail: 'support@fieldmark.au',
+      message: 'Maps lag.',
+      userId: 'user-1',
+      username: 'Ada',
+      replyTo: 'ada@example.com',
+      subject: 'Fieldmark product feedback',
+    });
+    expect(options.subject).toBe('Fieldmark product feedback');
+    expect(options.text.startsWith('Fieldmark product feedback')).toBe(true);
+    expect(options.html).toContain('<title>Fieldmark product feedback</title>');
   });
 });

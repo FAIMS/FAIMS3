@@ -223,6 +223,8 @@ const apiContract: Record<string, EnvResolver> = {
     runtime.limits.feedbackEmail ||
     runtime.support.supportEmail ||
     SHARED_DEFAULTS.feedbackEmail,
+  FEEDBACK_SUBJECT: runtime =>
+    runtime.limits.feedbackSubject || SHARED_DEFAULTS.feedbackSubject,
   FEEDBACK_RATE_LIMITER_ENABLED: runtime =>
     runtime.limits.feedbackRateLimiterEnabled ?? true,
   FEEDBACK_RATE_LIMITER_WINDOW_MS: runtime =>

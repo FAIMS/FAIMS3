@@ -83,7 +83,11 @@ const SignInButtonComponent = () => {
   );
 };
 
-const AuthenticatedDisplayComponent = () => {
+const AuthenticatedDisplayComponent = ({
+  onOpenFeedback,
+}: {
+  onOpenFeedback?: () => void;
+}) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [switchMenuOpen, setSwitchMenuOpen] = React.useState(false);
   const [impersonateOpen, setImpersonateOpen] = React.useState(false);
@@ -398,7 +402,11 @@ const AuthenticatedDisplayComponent = () => {
         <MenuItem
           data-testid="app-feedback-button"
           onClick={() => {
-            setFeedbackOpen(true);
+            if (onOpenFeedback) {
+              onOpenFeedback();
+            } else {
+              setFeedbackOpen(true);
+            }
             handleClose();
           }}
         >
@@ -439,7 +447,7 @@ const AuthenticatedDisplayComponent = () => {
         open={impersonateOpen}
         onClose={() => setImpersonateOpen(false)}
       />
-      {activeUser && (
+      {activeUser && !onOpenFeedback && (
         <FeedbackDialog
           open={feedbackOpen}
           onClose={() => setFeedbackOpen(false)}
@@ -456,14 +464,18 @@ const AuthenticatedDisplayComponent = () => {
  * Renders either a sign in button or a profile icon button with click menu
  * depending on the global auth state for the active user.
  */
-export default function AppBarAuth() {
+export default function AppBarAuth({
+  onOpenFeedback,
+}: {
+  onOpenFeedback?: () => void;
+} = {}) {
   // Do we have an active user?
   const hasActiveUser = !!useAppSelector(selectActiveUser);
   // Is the active user logged in with valid token?
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
   if (isAuthenticated || hasActiveUser) {
-    return <AuthenticatedDisplayComponent />;
+    return <AuthenticatedDisplayComponent onOpenFeedback={onOpenFeedback} />;
   } else {
     return <SignInButtonComponent />;
   }

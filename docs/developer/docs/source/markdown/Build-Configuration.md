@@ -352,6 +352,7 @@ resolved from Secrets Manager on AWS. Non-secret fields (`displayName`, `helperT
 | `exportRateLimiterWindowMs`    | number  | `600000`               | Export-limiter window.                                          |
 | `exportRateLimiterPerWindow`   | number  | `20`                   | Export requests allowed per window.                             |
 | `feedbackEmail`                | string  | `support.supportEmail` | Destination for in-app feedback (`FEEDBACK_EMAIL`).             |
+| `feedbackSubject`              | string  | `In-app feedback`      | Subject line for in-app feedback mail (`FEEDBACK_SUBJECT`).     |
 | `feedbackRateLimiterEnabled`   | boolean | `true`                 | Couch-backed in-app feedback limiter.                           |
 | `feedbackRateLimiterWindowMs`  | number  | `600000`               | Feedback-limiter window.                                        |
 | `feedbackRateLimiterPerWindow` | number  | `5`                    | Feedback submissions allowed per authenticated user per window. |

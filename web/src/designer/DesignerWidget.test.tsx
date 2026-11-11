@@ -102,5 +102,6 @@ describe('DesignerWidget', () => {
     );
     const button = await screen.findByTestId('web-designer-feedback-button');
     expect(button.textContent).toContain('Feedback');
+    expect(button.querySelector('svg')).toBeTruthy();
   });
 });

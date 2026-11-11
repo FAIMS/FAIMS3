@@ -14,6 +14,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import DescriptionIcon from '@mui/icons-material/Description';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
+import FeedbackIcon from '@mui/icons-material/Feedback';
 import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MapIcon from '@mui/icons-material/Map';
@@ -37,7 +38,10 @@ import React, {useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {config} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
-import {selectIsAuthenticated} from '../../context/slices/authSlice';
+import {
+  selectActiveUser,
+  selectIsAuthenticated,
+} from '../../context/slices/authSlice';
 import {
   Project,
   selectActiveServerProjects,
@@ -46,6 +50,7 @@ import {useAppSelector} from '../../context/store';
 import SystemAlert from '../components/alert';
 import {AppBarHeading} from '../components/app-bar/app-bar-heading';
 import AppBarAuth from '../components/authentication/appbarAuth';
+import FeedbackDialog from '../components/feedback/FeedbackDialog';
 import SyncStatus from '../../sync/sync-state';
 
 const drawerWidth = 240;
@@ -115,9 +120,19 @@ export default function MainAppBar() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   //const activeServerId = useAppSelector(selectActiveServerId);
   const projectList = useAppSelector(selectActiveServerProjects);
+  const activeUser = useAppSelector(selectActiveUser);
+  const servers = useAppSelector(state => state.projects.servers);
+  const activeServerInfo = activeUser
+    ? servers[activeUser.serverId]
+    : undefined;
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [feedbackOpen, setFeedbackOpen] = useState<boolean>(false);
   const toggle = () => setIsOpen(!isOpen);
+  const openFeedback = () => {
+    setIsOpen(false);
+    setFeedbackOpen(true);
+  };
 
   const topMenuItems: Array<MenuItemProps> = [
     {
@@ -219,7 +234,7 @@ export default function MainAppBar() {
               }}
             >
               {isAuthenticated ? <SyncStatus /> : ''}
-              <AppBarAuth />
+              <AppBarAuth onOpenFeedback={openFeedback} />
             </div>
           </Toolbar>
         </MuiAppBar>
@@ -368,6 +383,26 @@ export default function MainAppBar() {
                 py: 2,
               })}
             >
+              {activeUser && (
+                <ListItemButton
+                  data-testid="app-nav-feedback"
+                  onClick={openFeedback}
+                >
+                  <ListItemIcon>
+                    <FeedbackIcon />
+                  </ListItemIcon>
+                  <ListItemText
+                    sx={{
+                      '& .MuiListItemText-primary': {
+                        fontSize: '1.1rem',
+                        fontWeight: 'bold',
+                        color: 'rgba(0, 0, 0, 0.54)',
+                      },
+                    }}
+                    primary="Send feedback"
+                  />
+                </ListItemButton>
+              )}
               {bottomMenuItems.map(
                 (item: {
                   title: string;
@@ -400,6 +435,14 @@ export default function MainAppBar() {
           </Box>
         </Drawer>
       </div>
+      {activeUser && (
+        <FeedbackDialog
+          open={feedbackOpen}
+          onClose={() => setFeedbackOpen(false)}
+          conductorUrl={activeServerInfo?.serverUrl ?? ''}
+          token={activeUser.token}
+        />
+      )}
       <SystemAlert />
     </React.Fragment>
   );

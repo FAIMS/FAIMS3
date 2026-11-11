@@ -20,11 +20,13 @@ describe('PostFeedbackRequestSchema', () => {
       source: 'app',
       category: 'bug',
       path: 'https://app.example/notebooks/abc',
+      component: '/notebooks/abc',
       clientVersion: '1.10.0',
       userAgent: 'Mozilla/5.0',
     });
     expect(parsed.source).toBe('app');
     expect(parsed.category).toBe('bug');
+    expect(parsed.component).toBe('/notebooks/abc');
   });
 
   it('rejects empty or whitespace-only messages', () => {
@@ -64,6 +66,14 @@ describe('PostFeedbackRequestSchema', () => {
     const result = PostFeedbackRequestSchema.safeParse({
       message: 'hello',
       path: longString(INPUT_LIMITS.REDIRECT_URL_MAX_LENGTH + 1),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects an over-long component diagnostic', () => {
+    const result = PostFeedbackRequestSchema.safeParse({
+      message: 'hello',
+      component: longString(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH + 1),
     });
     expect(result.success).toBe(false);
   });

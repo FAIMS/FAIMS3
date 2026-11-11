@@ -446,6 +446,11 @@ const LimitsBuildConfigSchema = z
      * back to `support.supportEmail`.
      */
     feedbackEmail: z.string().optional(),
+    /**
+     * Subject line for in-app feedback mail. When omitted, env generation
+     * uses {@link SHARED_DEFAULTS.feedbackSubject}.
+     */
+    feedbackSubject: z.string().min(1).default(SHARED_DEFAULTS.feedbackSubject),
     feedbackRateLimiterEnabled: z.boolean().default(true),
     feedbackRateLimiterWindowMs: z
       .number()

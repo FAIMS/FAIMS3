@@ -8,7 +8,7 @@
  */
 
 import {Feedback as FeedbackIcon} from '@mui/icons-material';
-import {Alert, TextField} from '@mui/material';
+import {Alert, TextField, Typography} from '@mui/material';
 import {FeedbackCategory, INPUT_LIMITS} from '@faims3/data-model';
 import React, {useState} from 'react';
 import {addAlert} from '../../../context/slices/alertSlice';
@@ -101,6 +101,15 @@ export default function FeedbackDialog({
       primaryActionTestId="app-feedback-submit"
       cancelTestId="app-feedback-cancel"
     >
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{mb: 2}}
+        data-testid="app-feedback-description"
+      >
+        Tell us what is working and what is not. We will email this to the
+        support inbox. Do not include record data or passwords.
+      </Typography>
       {error && (
         <Alert severity="error" sx={{mb: 2}} data-testid="app-feedback-error">
           {error}

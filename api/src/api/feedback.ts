@@ -49,8 +49,15 @@ api.post(
     }
 
     const user = req.user;
-    const {message, source, category, path, clientVersion, userAgent} =
-      req.body;
+    const {
+      message,
+      source,
+      category,
+      path,
+      component,
+      clientVersion,
+      userAgent,
+    } = req.body;
     const userEmail = submitterEmail(user);
     const replyTo = userEmail || config.email.replyTo || config.email.fromEmail;
 
@@ -71,9 +78,11 @@ api.post(
         source,
         category,
         path,
+        component,
         clientVersion,
         userAgent,
         replyTo,
+        subject: config.feedbackSubject,
       });
     } catch (error) {
       if (!config.runningUnderTest) {

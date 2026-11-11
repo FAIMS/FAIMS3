@@ -25,8 +25,14 @@ describe('FeedbackButton', () => {
     expect(trigger.textContent).toContain('Feedback');
     await user.click(trigger);
     expect(await screen.findByTestId('web-feedback-dialog')).toBeTruthy();
+    expect(
+      screen.getByTestId('web-feedback-description').textContent
+    ).toContain(
+      'Tell us what is working and what is not. We will email this to the support inbox. Do not include record data or passwords.'
+    );
     expect(screen.getByTestId('web-feedback-message')).toBeTruthy();
     expect(screen.getByTestId('web-feedback-submit')).toBeTruthy();
+    expect(trigger.querySelector('svg')).toBeTruthy();
   });
 
   it('POSTs to config.apiUrl/api/feedback with the bearer token', async () => {
@@ -59,6 +65,9 @@ describe('FeedbackButton', () => {
     const body = JSON.parse(init.body as string);
     expect(body.message).toBe('Please add bulk export.');
     expect(body.source).toBe('web');
+    expect(typeof body.path).toBe('string');
+    expect(typeof body.component).toBe('string');
+    expect(body.component.length).toBeGreaterThan(0);
     await waitFor(() =>
       expect(screen.queryByTestId('web-feedback-dialog')).toBeNull()
     );
@@ -113,6 +122,7 @@ describe('FeedbackDialog designer source', () => {
         onOpenChange={() => {}}
         source="designer"
         token="designer-token"
+        component="/design/0"
       />
     );
     await user.type(
@@ -123,5 +133,6 @@ describe('FeedbackDialog designer source', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
     expect(body.source).toBe('designer');
+    expect(body.component).toBe('/design/0');
   });
 });

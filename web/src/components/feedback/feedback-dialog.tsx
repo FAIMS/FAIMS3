@@ -35,11 +35,14 @@ export function FeedbackDialog({
   onOpenChange,
   source,
   token,
+  component,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   source: FeedbackSource;
   token: string;
+  /** Override the SPA route sent as `component` (Designer memory-router path). */
+  component?: string | (() => string);
 }) {
   const [message, setMessage] = useState('');
   const [category, setCategory] = useState<FeedbackCategory | ''>('');
@@ -76,12 +79,15 @@ export function FeedbackDialog({
     setSubmitting(true);
     setError(null);
     try {
+      const resolvedComponent =
+        typeof component === 'function' ? component() : component;
       const result = await postFeedback({
         token,
         body: buildWebFeedbackPayload({
           message: trimmed,
           source,
           category: category || undefined,
+          component: resolvedComponent,
         }),
       });
       if (result.ok) {
@@ -108,7 +114,7 @@ export function FeedbackDialog({
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Send feedback</DialogTitle>
-            <DialogDescription>
+            <DialogDescription data-testid="web-feedback-description">
               Tell us what is working and what is not. We will email this to the
               support inbox. Do not include record data or passwords.
             </DialogDescription>
@@ -182,12 +188,15 @@ export function FeedbackButton({
   testId,
   label = 'Feedback',
   variant = 'outline',
+  component,
 }: {
   source: FeedbackSource;
   token: string;
   testId: string;
   label?: string;
   variant?: 'outline' | 'ghost';
+  /** Override the SPA route sent as `component` (Designer memory-router path). */
+  component?: string | (() => string);
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -207,6 +216,7 @@ export function FeedbackButton({
         onOpenChange={setOpen}
         source={source}
         token={token}
+        component={component}
       />
     </>
   );

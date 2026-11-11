@@ -1524,6 +1524,11 @@ export const PostFeedbackRequestSchema = z
       .trim()
       .max(INPUT_LIMITS.REDIRECT_URL_MAX_LENGTH)
       .optional(),
+    component: z
+      .string()
+      .trim()
+      .max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH)
+      .optional(),
     clientVersion: z
       .string()
       .trim()

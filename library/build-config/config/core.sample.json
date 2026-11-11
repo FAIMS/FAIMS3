@@ -133,6 +133,7 @@
     "exportRateLimiterEnabled": true,
     "exportRateLimiterWindowMs": 60000,
     "exportRateLimiterPerWindow": 100,
+    "feedbackSubject": "In-app feedback",
     "feedbackRateLimiterEnabled": true,
     "feedbackRateLimiterWindowMs": 600000,
     "feedbackRateLimiterPerWindow": 5,

@@ -167,6 +167,7 @@ export const ApiEnvSchema = z
       SHARED_DEFAULTS.exportRateLimiterPerWindow
     ),
     FEEDBACK_EMAIL: stringWithDefault(SHARED_DEFAULTS.feedbackEmail),
+    FEEDBACK_SUBJECT: stringWithDefault(SHARED_DEFAULTS.feedbackSubject),
     FEEDBACK_RATE_LIMITER_ENABLED: boolWithDefault(true),
     FEEDBACK_RATE_LIMITER_WINDOW_MS: intWithDefault(
       SHARED_DEFAULTS.feedbackRateLimiterWindowMs
@@ -547,6 +548,7 @@ export function parseApiEnv(
     exportRateLimiterWindowMs: env.EXPORT_RATE_LIMITER_WINDOW_MS,
     exportRateLimiterPerWindow: env.EXPORT_RATE_LIMITER_PER_WINDOW,
     feedbackEmail: env.FEEDBACK_EMAIL,
+    feedbackSubject: env.FEEDBACK_SUBJECT,
     feedbackRateLimiterEnabled: runningUnderTest
       ? false
       : env.FEEDBACK_RATE_LIMITER_ENABLED,
