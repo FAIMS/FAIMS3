@@ -358,6 +358,7 @@ resolved from Secrets Manager on AWS. Non-secret fields (`displayName`, `helperT
 | `restoreUploadMaxBytes`      | number  | `1073741824` | Max restore-upload size.               |
 | `downloadCookieSameSite`     | string  | `lax`        | Download-cookie SameSite.              |
 | `recordsHydratedPageLimit`   | number  | `150`        | Hydrated-record page limit.            |
+| `adminStatsCacheTtlMs`       | number  | `120000`     | Admin stats snapshot cache TTL (ms).   |
 
 ### `email`
 

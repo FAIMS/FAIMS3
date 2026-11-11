@@ -238,6 +238,19 @@ export const indexDocument = {
         if (doc.attach_format_version === 1) emit(doc._id, 1);
       }),
     },
+    // Attachment ids with parent record_id / created_by. Query reduce:false
+    // for attribution; default reduce `_count` for a total.
+    attachmentAttribution: {
+      map: convertToCouchDBString(doc => {
+        if (doc.attach_format_version === 1) {
+          emit(doc._id, {
+            record_id: doc.record_id,
+            created_by: doc.created_by,
+          });
+        }
+      }),
+      reduce: '_count',
+    },
     avp: {
       map: convertToCouchDBString(doc => {
         if (doc.avp_format_version === 1) emit(doc._id, 1);

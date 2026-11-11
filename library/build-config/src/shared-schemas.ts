@@ -167,6 +167,8 @@ export const SHARED_DEFAULTS = {
   recordsHydratedPageLimit: 150,
   /** Hard ceiling applied to `recordsHydratedPageLimit`. */
   recordsHydratedPageLimitMax: 500,
+  /** Admin stats snapshot cache TTL (2 minutes; spec range 1–5 minutes). */
+  adminStatsCacheTtlMs: 120000,
   /** Express JSON body parser limit. */
   jsonBodyLimit: '25mb',
   /** Express urlencoded body parser limit. */

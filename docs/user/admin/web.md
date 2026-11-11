@@ -17,6 +17,8 @@ be visible if you only have the _Operations Administrator_ role.
 ## Management
 
 - **Users** — View all system users and their roles (admin users only)
+- **Stats** — Instance-wide usage counts overall, per team, and per person
+  (Operations Administrator and Super User)
 - **Map layers** — Upload georeferenced overlays and link them to {{notebooks}} for offline use.
   See [Map layers](map-layers.md)
 - **Teams** — View and manage teams

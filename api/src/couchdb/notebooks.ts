@@ -59,6 +59,7 @@ import {
 } from './mapAssets/store';
 import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
+import {logError} from '../logging';
 import {userCanDo} from '../middleware';
 import {assertTeamIdNotArchived, assertTeamNotArchived} from './teams';
 import {nowIso} from '../time';
@@ -210,13 +211,14 @@ export const getAllProjectsListing = async (): Promise<ProjectListItem[]> => {
 };
 
 /**
- * How many projects {@link getUserProjectsListing} resolves per batch when
- * computing each project's `byteCount`. Each `byteCount` costs one CouchDB
- * `info()` call, so this caps the concurrent `info()` round-trips and stops a
+ * How many projects {@link getUserProjectsListing} and the admin-stats
+ * snapshot resolve per batch when computing each project's `byteCount` (and,
+ * for stats, scanning the data DB). Each `byteCount` costs one CouchDB
+ * `info()` call, so this caps concurrent `info()` round-trips and stops a
  * user/team with many notebooks from opening one connection per project at once
  * and exhausting CouchDB's connection limits.
  */
-const BYTE_COUNT_BATCH_SIZE = 10;
+export const BYTE_COUNT_BATCH_SIZE = 10;
 
 /** Filters for {@link getUserProjectsListing}. `byteCount` is off by default. */
 export type GetUserProjectsListingOptions = {
@@ -621,10 +623,11 @@ export async function countRecordsInNotebook(
 /**
  * Returns the storage size in bytes of a notebook's data database.
  *
- * PouchDB does not surface database sizes, so this uses CouchDB's GET /{db}
- * info endpoint via nano. `sizes.active` is the size of the live data, matching
- * the value shown in CouchDB Fauxton. (Use `sizes.file` instead if you want the
- * on-disk size including view indexes and not-yet-compacted revisions.)
+ * Uses CouchDB's GET /{db} info endpoint via nano (`sizes.active` is the live
+ * data size shown in Fauxton). Returns `-1` when that call fails — connect
+ * error, missing DB, or `info()` itself throwing — so listings can surface
+ * "unknown" per notebook. (Use `sizes.file` instead if you want on-disk size
+ * including view indexes and not-yet-compacted revisions.)
  */
 export async function getByteCount(project_id: ProjectID): Promise<number> {
   try {
@@ -632,7 +635,7 @@ export async function getByteCount(project_id: ProjectID): Promise<number> {
     const info = await dataDb.info();
     return info.sizes.active;
   } catch (error) {
-    console.error(error);
+    logError(error, `getByteCount failed for ${project_id}`);
     return -1;
   }
 }

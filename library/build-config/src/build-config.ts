@@ -463,6 +463,12 @@ const LimitsBuildConfigSchema = z
       .int()
       .positive()
       .default(SHARED_DEFAULTS.recordsHydratedPageLimit),
+    /** Admin stats snapshot cache TTL in milliseconds (default 2 minutes). */
+    adminStatsCacheTtlMs: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.adminStatsCacheTtlMs),
   })
   .strict();
 

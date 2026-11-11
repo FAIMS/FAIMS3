@@ -3,6 +3,9 @@ import {config, buildRegisterUrl} from '@/constants';
 import {User} from '@/context/auth-provider';
 import {sortNotebookListNewestFirst} from '@/lib/utils';
 import type {
+  GetAdminStatsPeopleResponse,
+  GetAdminStatsResponse,
+  GetAdminStatsTeamsResponse,
   GetCurrentUserResponse,
   GetListAllUsersResponse,
   GetLongLivedTokensResponse,
@@ -27,7 +30,12 @@ import {
   GetTeamMembersResponse,
 } from '@faims3/data-model';
 import {getTemplateSurveyReferences} from '@/hooks/template-hooks';
-import {useMutation, useQuery} from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import QRCode from 'qrcode';
 
 /**
@@ -654,4 +662,149 @@ export const revokeLongLivedToken = async ({
   if (!response.ok) throw new Error(response.statusText);
 
   return (await response.json()) as PutRevokeLongLivedTokenResponse;
+};
+
+/**
+ * Build `/api/admin/stats/teams` or `/people` with pagination query params.
+ * Lists always read the cached snapshot; Refresh uses POST `/refresh`.
+ */
+function adminStatsListPath(
+  path: '/api/admin/stats/teams' | '/api/admin/stats/people',
+  {limit, offset}: {limit: number; offset: number}
+) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  return `${path}?${params.toString()}`;
+}
+
+/** Keep unused snapshots in memory after leaving /stats so a quick return is free. */
+const ADMIN_STATS_GC_MS = 10 * 60 * 1000;
+
+/**
+ * Milliseconds until the API snapshot TTL (`expiresAt`) elapses.
+ * Used as React Query `staleTime` so a recent visit does not refetch.
+ */
+function adminStatsRemainingMs(expiresAt?: string): number {
+  if (!expiresAt) return 0;
+  const remaining = Date.parse(expiresAt) - Date.now();
+  return Number.isFinite(remaining) ? Math.max(0, remaining) : 0;
+}
+
+const adminStatsQueryCache = {
+  staleTime: (query: {state: {data?: {expiresAt?: string}}}) =>
+    adminStatsRemainingMs(query.state.data?.expiresAt),
+  refetchInterval: (query: {state: {data?: {expiresAt?: string}}}) => {
+    const remaining = adminStatsRemainingMs(query.state.data?.expiresAt);
+    return remaining > 0 ? remaining : false;
+  },
+  gcTime: ADMIN_STATS_GC_MS,
+};
+
+/**
+ * Overall admin stats (`GET /api/admin/stats`). Fetches on landing; React Query
+ * keeps the snapshot fresh until `expiresAt`, then GET again. Refresh POSTs.
+ *
+ * @param user - Authenticated Control Centre user
+ * @param enabled - When false, the query does not run
+ */
+export const useGetAdminStats = ({
+  user,
+  enabled = true,
+}: {
+  user: User | null;
+  enabled?: boolean;
+}) =>
+  useQuery({
+    queryKey: ['admin-stats', user?.token],
+    queryFn: () => get<GetAdminStatsResponse>('/api/admin/stats', user),
+    enabled: !!user && enabled,
+    ...adminStatsQueryCache,
+  });
+
+/**
+ * Paginated per-team admin stats from the same snapshot as overall counts.
+ *
+ * @param user - Authenticated Control Centre user
+ * @param enabled - When false, the query does not run
+ * @param limit - Page size forwarded to the API
+ * @param offset - Page offset forwarded to the API
+ */
+export const useGetAdminStatsTeams = ({
+  user,
+  enabled = true,
+  limit,
+  offset,
+}: {
+  user: User | null;
+  enabled?: boolean;
+  limit: number;
+  offset: number;
+}) =>
+  useQuery({
+    queryKey: ['admin-stats-teams', user?.token, limit, offset],
+    queryFn: () =>
+      get<GetAdminStatsTeamsResponse>(
+        adminStatsListPath('/api/admin/stats/teams', {limit, offset}),
+        user
+      ),
+    enabled: !!user && enabled,
+    placeholderData: keepPreviousData,
+    ...adminStatsQueryCache,
+  });
+
+/**
+ * Paginated per-person admin stats from the same snapshot as overall counts.
+ * People rows are keyed by record/attachment `created_by`.
+ *
+ * @param user - Authenticated Control Centre user
+ * @param enabled - When false, the query does not run
+ * @param limit - Page size forwarded to the API
+ * @param offset - Page offset forwarded to the API
+ */
+export const useGetAdminStatsPeople = ({
+  user,
+  enabled = true,
+  limit,
+  offset,
+}: {
+  user: User | null;
+  enabled?: boolean;
+  limit: number;
+  offset: number;
+}) =>
+  useQuery({
+    queryKey: ['admin-stats-people', user?.token, limit, offset],
+    queryFn: () =>
+      get<GetAdminStatsPeopleResponse>(
+        adminStatsListPath('/api/admin/stats/people', {limit, offset}),
+        user
+      ),
+    enabled: !!user && enabled,
+    placeholderData: keepPreviousData,
+    ...adminStatsQueryCache,
+  });
+
+/**
+ * Recompute the admin stats snapshot once (`POST /api/admin/stats/refresh`),
+ * then update overall counts and refetch paged teams/people from the new cache.
+ */
+export const useRefreshAdminStats = ({user}: {user: User | null}) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error('Not authenticated');
+      return await post<Record<string, never>, GetAdminStatsResponse>({
+        path: '/api/admin/stats/refresh',
+        data: {},
+        user,
+      });
+    },
+    onSuccess: data => {
+      queryClient.setQueryData(['admin-stats', user?.token], data);
+      queryClient.invalidateQueries({queryKey: ['admin-stats-teams']});
+      queryClient.invalidateQueries({queryKey: ['admin-stats-people']});
+    },
+  });
 };

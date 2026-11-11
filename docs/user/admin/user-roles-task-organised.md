@@ -518,6 +518,7 @@ The **Operations Administrator** role handles routine system management without 
 - Create new teams
 - Assign a role for yourself in a team
 - Assign Team Administrator roles
+- View instance-wide usage stats (aggregates only; not record contents)
 
 **Cannot do (by design):**
 

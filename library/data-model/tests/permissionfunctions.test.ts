@@ -1079,6 +1079,84 @@ describe('Virtual Resource Roles', () => {
   });
 });
 
+/**
+ * VIEW_SYSTEM_STATS is a non-resource-specific SYSTEM action granted to
+ * OPERATIONS_ADMIN (and inherited by GENERAL_ADMIN). It is aggregates-only
+ * and must not leak to ordinary users, creators, or team/project admins.
+ */
+describe('VIEW_SYSTEM_STATS permission', () => {
+  it('is granted to OPERATIONS_ADMIN', () => {
+    expect(
+      roleGrantsAction({
+        roles: [Role.OPERATIONS_ADMIN],
+        action: Action.VIEW_SYSTEM_STATS,
+      })
+    ).toBe(true);
+    expect(drillRoleActions({role: Role.OPERATIONS_ADMIN})).toContain(
+      Action.VIEW_SYSTEM_STATS
+    );
+  });
+
+  it('is granted to GENERAL_ADMIN (via inheritance)', () => {
+    expect(
+      roleGrantsAction({
+        roles: [Role.GENERAL_ADMIN],
+        action: Action.VIEW_SYSTEM_STATS,
+      })
+    ).toBe(true);
+    expect(drillRoleActions({role: Role.GENERAL_ADMIN})).toContain(
+      Action.VIEW_SYSTEM_STATS
+    );
+  });
+
+  it('is NOT granted to GENERAL_USER', () => {
+    expect(
+      roleGrantsAction({
+        roles: [Role.GENERAL_USER],
+        action: Action.VIEW_SYSTEM_STATS,
+      })
+    ).toBe(false);
+    expect(drillRoleActions({role: Role.GENERAL_USER})).not.toContain(
+      Action.VIEW_SYSTEM_STATS
+    );
+  });
+
+  it('is NOT granted to GENERAL_CREATOR', () => {
+    expect(
+      roleGrantsAction({
+        roles: [Role.GENERAL_CREATOR],
+        action: Action.VIEW_SYSTEM_STATS,
+      })
+    ).toBe(false);
+    expect(drillRoleActions({role: Role.GENERAL_CREATOR})).not.toContain(
+      Action.VIEW_SYSTEM_STATS
+    );
+  });
+
+  it('is NOT granted to TEAM_ADMIN, TEAM_MEMBER, or PROJECT_ADMIN', () => {
+    for (const role of [
+      Role.TEAM_ADMIN,
+      Role.TEAM_MEMBER,
+      Role.PROJECT_ADMIN,
+    ]) {
+      expect(
+        roleGrantsAction({
+          roles: [role],
+          action: Action.VIEW_SYSTEM_STATS,
+        })
+      ).toBe(false);
+      expect(drillRoleActions({role})).not.toContain(Action.VIEW_SYSTEM_STATS);
+    }
+  });
+
+  it('is a non-resource-specific SYSTEM action', () => {
+    const details = actionDetails[Action.VIEW_SYSTEM_STATS];
+    expect(details).toBeDefined();
+    expect(details.resource).toBe(Resource.SYSTEM);
+    expect(details.resourceSpecific).toBe(false);
+  });
+});
+
 describe('IMPERSONATE_USER permission', () => {
   it('is granted to OPERATIONS_ADMIN', () => {
     expect(
