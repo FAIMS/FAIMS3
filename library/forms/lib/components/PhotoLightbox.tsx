@@ -143,7 +143,7 @@ function fitInside(
  *  - Double-tap / double-click to reset.
  *  - Tap the dark area outside the image to close (suppressed during a pan
  *    so we don't close right after the user lifts their finger).
- *  - Tap the X (visible below the app bar) to close.
+ *  - Tap the X (top-right, visible below the app bar) to close.
  *
  * Used by TakePhoto (edit + view), the advanced helper image viewer in
  * FieldWrapper, and the Quick Share QR preview.
@@ -207,7 +207,7 @@ export const PhotoLightbox: React.FC<{
           sx={{
             position: 'absolute',
             top: 'max(56px, env(safe-area-inset-top, 0px) + 48px)',
-            left: 16,
+            right: 16,
             // Sit above the transform wrapper so it stays tappable when zoomed.
             zIndex: 2,
             color: 'white',
