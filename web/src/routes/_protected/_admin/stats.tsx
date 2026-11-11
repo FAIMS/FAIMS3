@@ -12,6 +12,7 @@ import {
   useRefreshAdminStats,
 } from '@/hooks/queries';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
+import {displayIsoTimestamp} from '@/lib/time';
 import {
   Action,
   AdminStatsPersonRow,
@@ -125,6 +126,11 @@ export function StatsPage() {
     () => [
       {accessorKey: 'email', header: 'Email'},
       {accessorKey: 'userId', header: 'User ID'},
+      {
+        accessorKey: 'loggedIn',
+        header: 'Logged in',
+        cell: ({getValue}) => (getValue<boolean>() ? 'Yes' : 'No'),
+      },
       {accessorKey: 'recordCount', header: 'Records'},
       {
         accessorKey: 'attachmentCount',
@@ -147,6 +153,7 @@ export function StatsPage() {
   }[] = [
     {label: 'Teams', value: overall?.teamCount},
     {label: 'Users', value: overall?.userCount},
+    {label: 'Logged in users', value: overall?.loggedInUserCount},
     {
       label: config.notebookNamePluralCapitalized,
       value: overall?.notebookCount,
@@ -170,7 +177,18 @@ export function StatsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Stats</h1>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Stats</h1>
+          {overall?.generatedAt ? (
+            <time
+              className="text-sm text-muted-foreground"
+              data-testid="web-stats-generated-at"
+              dateTime={overall.generatedAt}
+            >
+              Generated {displayIsoTimestamp(overall.generatedAt)}
+            </time>
+          ) : null}
+        </div>
         <div className="flex gap-2">
           <Button
             data-testid="web-stats-refresh"
@@ -238,7 +256,7 @@ export function StatsPage() {
           columns={peopleColumns}
           data={peopleQuery.data?.people ?? []}
           loading={peopleQuery.isPending}
-          emptyMessage="No people with records or attachments in this snapshot."
+          emptyMessage="No people with records, attachments, or an active session in this snapshot."
           hideSearch
           manualPagination
           pageCount={Math.ceil(

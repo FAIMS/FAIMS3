@@ -95,8 +95,9 @@ api.get(
 );
 
 /**
- * GET /api/admin/stats/people — paginated per-person rows keyed by record
- * `created_by`, from the same snapshot as overall counts.
+ * GET /api/admin/stats/people — paginated per-person rows keyed by
+ * record/attachment `created_by`, plus users with an active refresh token,
+ * from the same snapshot as overall counts.
  */
 api.get(
   '/people',

@@ -750,7 +750,7 @@ export const useGetAdminStatsTeams = ({
 
 /**
  * Paginated per-person admin stats from the same snapshot as overall counts.
- * People rows are keyed by record `created_by`.
+ * People rows are keyed by record/attachment `created_by`.
  *
  * @param user - Authenticated Control Centre user
  * @param enabled - When false, the query does not run

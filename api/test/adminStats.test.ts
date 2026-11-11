@@ -13,7 +13,7 @@ PouchDB.plugin(PouchDBFind);
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-/** Mocked nano `info()` used by `getByteCount` (Pouch has no `sizes.active`). */
+/** Mock nano `info()`: `getByteCount` uses Couch HTTP, not in-memory Pouch. */
 const getNanoDataDb = vi.hoisted(() => vi.fn());
 
 vi.mock('../src/couchdb', async importOriginal => {
@@ -42,8 +42,12 @@ import {
   upgradeCouchUserToExpressUser,
 } from '../src/auth/keySigning/create';
 import {keyService} from '../src/buildconfig';
-import {getDataDb, getMapAssetsDB} from '../src/couchdb';
+import {getAuthDB, getDataDb, getMapAssetsDB} from '../src/couchdb';
 import {resetAdminStatsCache} from '../src/couchdb/adminStats';
+import {
+  createNewRefreshToken,
+  invalidateToken,
+} from '../src/couchdb/refreshTokens';
 import {
   applyNotebookLifecycleStatus,
   countRecordsInNotebook,
@@ -283,6 +287,7 @@ describe('admin stats API', () => {
 
       expect(adminBody.teamCount).toBeTypeOf('number');
       expect(adminBody.userCount).toBeTypeOf('number');
+      expect(adminBody.loggedInUserCount).toBeTypeOf('number');
       expect(adminBody.notebookCount).toBeTypeOf('number');
       expect(adminBody.templateCount).toBeTypeOf('number');
       expect(adminBody.mapAssetCount).toBeTypeOf('number');
@@ -360,6 +365,7 @@ describe('admin stats API', () => {
       expect(body.teamCount).toBe(1);
       expect(body.templateCount).toBe(1);
       expect(body.userCount).toBeGreaterThanOrEqual(3);
+      expect(body.loggedInUserCount).toBe(0);
       expect(body.mapAssetCount).toBe(0);
       expect(body.mapAssetByteCount).toBe(0);
       expect(body.recordCount).toBe(expectedRecords);
@@ -367,6 +373,65 @@ describe('admin stats API', () => {
       expect(body.attachmentCount).toBe(2);
       expect(body).not.toHaveProperty('photoCount');
       expect(body.byteCount).toBe(111 + 222);
+      expect(body.incomplete).toBe(false);
+      expect(body).not.toHaveProperty('incompleteNotebookIds');
+    });
+
+    it('marks incomplete and omits unknown sizes when Couch info() fails', async () => {
+      const team = await createTeamDocument({
+        name: 'Partial Team',
+        description: '',
+        createdBy: 'admin',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      const healthy = await createNamedNotebook({
+        name: 'Healthy bytes',
+        teamId: team._id,
+        bytes: 500,
+      });
+      const broken = await createNamedNotebook({
+        name: 'Broken bytes',
+        teamId: team._id,
+        bytes: 999,
+      });
+
+      getNanoDataDb.mockImplementation(async (projectId: string) => {
+        if (projectId === broken) {
+          throw new Error('info failed');
+        }
+        return {
+          info: async () => ({
+            sizes: {active: byteCountByProject.get(projectId) ?? 0},
+          }),
+        } as any;
+      });
+
+      const body = await request(app)
+        .get('/api/admin/stats')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+        .then(res => GetAdminStatsResponseSchema.parse(res.body));
+
+      expect(body.incomplete).toBe(true);
+      expect(body.incompleteNotebookIds).toEqual([broken]);
+      expect(body.incompleteNotebookIds).not.toContain(healthy);
+      // Healthy notebook still contributes; the -1 sentinel is not summed.
+      expect(body.byteCount).toBe(500);
+      expect(body.notebookCount).toBe(2);
+
+      const teams = await request(app)
+        .get('/api/admin/stats/teams')
+        .query({limit: 50})
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+        .then(res => GetAdminStatsTeamsResponseSchema.parse(res.body));
+
+      expect(teams.incomplete).toBe(true);
+      const teamRow = teams.teams.find(row => row.teamId === team._id);
+      expect(teamRow).toBeDefined();
+      expect(teamRow!.notebookCount).toBe(2);
+      expect(teamRow!.byteCount).toBe(500);
     });
   });
 
@@ -586,8 +651,8 @@ describe('admin stats API', () => {
   });
 
   describe('people', () => {
-    // Rows keyed by record created_by; attachments attributed to the parent.
-    it('pages people by created_by, includes email, omits users with no records', async () => {
+    // Records keyed by record created_by; attachments by the uploader.
+    it('pages people by created_by, includes email, omits users with no records or session', async () => {
       await createUser({
         username: 'alice',
         name: 'Alice',
@@ -679,8 +744,138 @@ describe('admin stats API', () => {
       expect(bob.email).toBe('bob@example.com');
       expect(alice.recordCount).toBe(1);
       expect(alice.attachmentCount).toBe(1);
+      expect(alice.loggedIn).toBe(false);
       expect(bob.recordCount).toBe(1);
       expect(bob.attachmentCount).toBe(1);
+      expect(bob.loggedIn).toBe(false);
+    });
+
+    it('attributes attachments to the uploader, not the parent record owner', async () => {
+      await createUser({
+        username: 'alice',
+        name: 'Alice',
+        email: 'alice@example.com',
+      }).then(async ([user, error]) => {
+        expect(user, error).not.toBeNull();
+        await saveCouchUser(user!);
+      });
+      await createUser({
+        username: 'bob',
+        name: 'Bob',
+        email: 'bob@example.com',
+      }).then(async ([user, error]) => {
+        expect(user, error).not.toBeNull();
+        await saveCouchUser(user!);
+      });
+
+      const notebook = await createNamedNotebook({
+        name: 'Cross-user attach',
+        bytes: 5,
+      });
+      await putRecord({
+        projectId: notebook,
+        recordId: 'rec-alice',
+        createdBy: 'alice',
+      });
+      await putAttachment({
+        projectId: notebook,
+        attachmentId: 'att-bob-on-alice',
+        recordId: 'rec-alice',
+        createdBy: 'bob',
+        contentType: 'image/jpeg',
+      });
+
+      const all = await request(app)
+        .get('/api/admin/stats/people')
+        .query({limit: 50})
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+        .then(res => GetAdminStatsPeopleResponseSchema.parse(res.body));
+
+      const alice = all.people.find(row => row.userId === 'alice');
+      const bob = all.people.find(row => row.userId === 'bob');
+      expect(alice).toBeDefined();
+      expect(bob).toBeDefined();
+      expect(alice!.recordCount).toBe(1);
+      expect(alice!.attachmentCount).toBe(0);
+      expect(bob!.recordCount).toBe(0);
+      expect(bob!.attachmentCount).toBe(1);
+    });
+
+    it('includes users with active refresh tokens and counts unique logged-in users', async () => {
+      await createUser({
+        username: 'carol',
+        name: 'Carol',
+        email: 'carol@example.com',
+      }).then(async ([user, error]) => {
+        expect(user, error).not.toBeNull();
+        await saveCouchUser(user!);
+      });
+      await createUser({
+        username: 'dave',
+        name: 'Dave',
+        email: 'dave@example.com',
+      }).then(async ([user, error]) => {
+        expect(user, error).not.toBeNull();
+        await saveCouchUser(user!);
+      });
+      await createUser({
+        username: 'eve',
+        name: 'Eve',
+        email: 'eve@example.com',
+      }).then(async ([user, error]) => {
+        expect(user, error).not.toBeNull();
+        await saveCouchUser(user!);
+      });
+      await createUser({
+        username: 'frank',
+        name: 'Frank',
+        email: 'frank@example.com',
+      }).then(async ([user, error]) => {
+        expect(user, error).not.toBeNull();
+        await saveCouchUser(user!);
+      });
+
+      await createNewRefreshToken({userId: 'carol'});
+      const {refresh: expired} = await createNewRefreshToken({userId: 'dave'});
+      await getAuthDB().put({
+        ...expired,
+        expiryTimestampMs: Date.now() - 1000,
+      });
+      const {refresh: disabled} = await createNewRefreshToken({userId: 'eve'});
+      await invalidateToken(disabled.token);
+      await createNewRefreshToken({userId: 'frank'});
+      await createNewRefreshToken({userId: 'frank'});
+
+      const overall = await request(app)
+        .get('/api/admin/stats')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+        .then(res => GetAdminStatsResponseSchema.parse(res.body));
+
+      expect(overall.loggedInUserCount).toBe(2);
+
+      const all = await request(app)
+        .get('/api/admin/stats/people')
+        .query({limit: 50})
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+        .then(res => GetAdminStatsPeopleResponseSchema.parse(res.body));
+
+      const ids = all.people.map(row => row.userId);
+      expect(ids).toContain('carol');
+      expect(ids).toContain('frank');
+      expect(ids).not.toContain('dave');
+      expect(ids).not.toContain('eve');
+
+      const carol = all.people.find(row => row.userId === 'carol')!;
+      const frank = all.people.find(row => row.userId === 'frank')!;
+      expect(carol.email).toBe('carol@example.com');
+      expect(carol.recordCount).toBe(0);
+      expect(carol.attachmentCount).toBe(0);
+      expect(carol.loggedIn).toBe(true);
+      expect(frank.loggedIn).toBe(true);
+      expect(frank.recordCount).toBe(0);
     });
   });
 

@@ -7,6 +7,7 @@ import {Action, Role} from '@faims3/data-model';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {User} from '@/context/auth-provider';
+import {displayIsoTimestamp} from '@/lib/time';
 
 const canSeeStats = vi.hoisted(() => ({value: true}));
 
@@ -62,6 +63,7 @@ const overall = {
   expiresAt: '2026-11-08T10:02:00.000Z',
   teamCount: 2,
   userCount: 4,
+  loggedInUserCount: 1,
   notebookCount: 3,
   archivedNotebookCount: 1,
   templateCount: 1,
@@ -120,6 +122,7 @@ describe('Stats page', () => {
     ).toBeDefined();
     expect(screen.queryByTestId('web-stats-load')).toBeNull();
     expect(screen.queryByTestId('web-stats-refresh')).toBeNull();
+    expect(screen.queryByTestId('web-stats-generated-at')).toBeNull();
     expect(useGetAdminStats).toHaveBeenCalledWith(
       expect.objectContaining({enabled: false})
     );
@@ -186,7 +189,14 @@ describe('Stats page', () => {
     expect(screen.queryByTestId('web-stats-empty')).toBeNull();
     expect(screen.queryByTestId('web-stats-cache-times')).toBeNull();
     expect(screen.queryByText(/cached until/i)).toBeNull();
+    expect(screen.getByTestId('web-stats-generated-at').textContent).toBe(
+      `Generated ${displayIsoTimestamp(overall.generatedAt)}`
+    );
+    expect(
+      screen.getByTestId('web-stats-generated-at').getAttribute('dateTime')
+    ).toBe(overall.generatedAt);
     expect(screen.queryByText('Storage (bytes)')).toBeNull();
+    expect(screen.getByText('Logged in users')).toBeDefined();
     expect(screen.getByText('1.41 MB')).toBeDefined();
     expect(screen.getByText('2 MB')).toBeDefined();
     expect(screen.getByText('10 KB')).toBeDefined();

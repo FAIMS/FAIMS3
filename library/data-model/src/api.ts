@@ -1536,6 +1536,11 @@ export const GetAdminStatsResponseSchema = AdminStatsCacheMetaSchema.extend({
   /** Sum of CouchDB `sizes.active` across survey data DBs. */
   byteCount: z.number().int().nonnegative(),
   disabledUserCount: z.number().int().nonnegative(),
+  /**
+   * Distinct users with at least one enabled, unexpired refresh token
+   * (currently logged in).
+   */
+  loggedInUserCount: z.number().int().nonnegative(),
   inviteCount: z.number().int().nonnegative(),
   longLivedTokenCount: z.number().int().nonnegative(),
   tombstoneCount: z.number().int().nonnegative(),
@@ -1577,8 +1582,11 @@ export type GetAdminStatsTeamsResponse = z.infer<
 >;
 
 /**
- * One person's aggregated record / attachment counts, keyed by record
- * `created_by`. Email/name are omitted when the user doc is missing.
+ * One person's aggregated record / attachment counts. Records are keyed by
+ * the record's `created_by`; attachments by the attachment's `created_by`
+ * (the uploader, who may differ from the record owner). Users with an
+ * active refresh token are included even when both counts are zero.
+ * Email/name are omitted when the user doc is missing.
  */
 export const AdminStatsPersonRowSchema = z.object({
   userId: z.string(),
@@ -1586,6 +1594,8 @@ export const AdminStatsPersonRowSchema = z.object({
   name: z.string().optional(),
   recordCount: z.number().int().nonnegative(),
   attachmentCount: z.number().int().nonnegative(),
+  /** True when this user has at least one enabled, unexpired refresh token. */
+  loggedIn: z.boolean(),
 });
 export type AdminStatsPersonRow = z.infer<typeof AdminStatsPersonRowSchema>;
 

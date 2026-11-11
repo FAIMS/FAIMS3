@@ -16,16 +16,29 @@ import {config} from './buildconfig';
 import {nowIso} from './time';
 
 /**
- * Logs an error to the console and reports it to Bugsnag when configured. TODO:
- * there is a pending PR which properly handles errors and logs them to Bugsnag.
- * But this GDAL error is worthy of particular concern at this stage. Hence this
- * temporary workaround.
+ * Logs an error to the console and reports it to Bugsnag when configured.
+ *
+ * Ordinary 401s and intentional tombstone 404s are still written to stderr
+ * but are not sent to Bugsnag ({@link shouldReportErrorToBugsnag}).
+ *
+ * @param error - Caught value (Error or otherwise)
+ * @param context - Optional where/why this failed; logged and attached as
+ *   Bugsnag `event.context` so grouped errors still show the call site
  */
-export const logError = (error: unknown) => {
-  console.error(error);
+export const logError = (error: unknown, context?: string) => {
+  if (context !== undefined) {
+    console.error(context, error);
+  } else {
+    console.error(error);
+  }
   if (config.bugsnagApiKey && shouldReportErrorToBugsnag(error)) {
     const err = error instanceof Error ? error : new Error(String(error));
-    Bugsnag.notify(err);
+    Bugsnag.notify(err, event => {
+      if (context !== undefined) {
+        event.context = context;
+        event.addMetadata('log', {context});
+      }
+    });
   }
 };
 

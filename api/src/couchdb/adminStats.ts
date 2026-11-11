@@ -26,9 +26,11 @@ import {
   RECORD_REVISIONS_INDEX,
 } from '@faims3/data-model';
 import {config} from '../buildconfig';
+import {logError} from '../logging';
 import {getDataDb, getInvitesDB, getTombstoneDB} from '.';
 import {getAllTokens} from './longLivedTokens';
 import {listAllAssets} from './mapAssets/store';
+import {getAllTokens as getAllRefreshTokens} from './refreshTokens';
 import {
   BYTE_COUNT_BATCH_SIZE,
   getAllProjectsListing,
@@ -38,7 +40,7 @@ import {getAllTeams} from './teams';
 import {getTemplates} from './templates';
 import {getUsers} from './users';
 
-/** Running per-person totals keyed by record `created_by`. */
+/** Running per-person totals keyed by record/attachment `created_by`. */
 type PersonAccumulator = {
   userId: string;
   recordCount: number;
@@ -132,7 +134,6 @@ type RecordRevisionValue = {
 
 /** View value from `index/attachmentAttribution` (no document body). */
 type AttachmentAttributionValue = {
-  record_id?: unknown;
   created_by?: unknown;
 };
 
@@ -181,13 +182,17 @@ async function scanNotebookData(projectId: string): Promise<{
   const bytePromise = (async () => {
     try {
       const size = await getByteCount(projectId);
-      // getByteCount returns -1 when CouchDB `info()` is unavailable (e.g. Pouch).
       if (size < 0) {
+        // Listings attach this -1 sentinel on the notebook itself. This
+        // snapshot sums sizes into overall/team totals, so adding -1 would
+        // look like a slightly-low real count. Skip the contribution and
+        // mark incomplete; callers already have incompleteNotebookIds.
+        // getByteCount already logError'd the underlying Couch failure.
         return {byteCount: 0, incomplete: true};
       }
       return {byteCount: size, incomplete: false};
     } catch (error) {
-      console.error(`admin stats: byte count failed for ${projectId}`, error);
+      logError(error, `admin stats: byte count failed for ${projectId}`);
       return {byteCount: 0, incomplete: true};
     }
   })();
@@ -200,7 +205,7 @@ async function scanNotebookData(projectId: string): Promise<{
     try {
       dataDb = await getDataDb(projectId);
     } catch (error) {
-      console.error(`admin stats: data-DB open failed for ${projectId}`, error);
+      logError(error, `admin stats: data-DB open failed for ${projectId}`);
       return {records: {ok: false}, attachments: {ok: false}};
     }
     const queryView = async <T>(
@@ -211,7 +216,7 @@ async function scanNotebookData(projectId: string): Promise<{
         const result = await run();
         return {ok: true, rows: result.rows};
       } catch (error) {
-        console.error(`admin stats: ${label} failed for ${projectId}`, error);
+        logError(error, `admin stats: ${label} failed for ${projectId}`);
         return {ok: false};
       }
     };
@@ -234,7 +239,6 @@ async function scanNotebookData(projectId: string): Promise<{
   let incomplete = byteResult.incomplete;
   let recordCount = 0;
   let attachmentCount = 0;
-  const createdByByRecordId = new Map<string, string>();
 
   if (viewResult.records.ok) {
     recordCount = viewResult.records.rows.length;
@@ -242,7 +246,6 @@ async function scanNotebookData(projectId: string): Promise<{
       const createdBy = (row.value as RecordRevisionValue | undefined)
         ?.created_by;
       if (typeof createdBy === 'string' && createdBy) {
-        createdByByRecordId.set(row.id, createdBy);
         bump(createdBy, 'recordCount');
       }
     }
@@ -253,16 +256,12 @@ async function scanNotebookData(projectId: string): Promise<{
   if (viewResult.attachments.ok) {
     attachmentCount = viewResult.attachments.rows.length;
     for (const row of viewResult.attachments.rows) {
-      const value = row.value as AttachmentAttributionValue | undefined;
-      const recordId =
-        typeof value?.record_id === 'string' ? value.record_id : undefined;
-      const ownCreatedBy =
-        typeof value?.created_by === 'string' ? value.created_by : undefined;
-      // Prefer the parent record's created_by; fall back to the attachment's own.
-      const parentCreatedBy =
-        (recordId && createdByByRecordId.get(recordId)) || ownCreatedBy;
-      if (parentCreatedBy) {
-        bump(parentCreatedBy, 'attachmentCount');
+      // Uploader, not parent record owner — they diverge when someone else
+      // adds a file later. The view always emits created_by.
+      const createdBy = (row.value as AttachmentAttributionValue | undefined)
+        ?.created_by;
+      if (typeof createdBy === 'string' && createdBy) {
+        bump(createdBy, 'attachmentCount');
       }
     }
   } else {
@@ -296,39 +295,44 @@ async function computeSnapshot(): Promise<AdminStatsSnapshot> {
     templates,
     mapAssets,
     tokens,
+    refreshTokens,
     inviteCount,
     tombstoneCount,
   ] = await Promise.all([
     getAllTeams().catch(error => {
-      console.error('admin stats: teams listing failed', error);
+      logError(error, 'admin stats: teams listing failed');
       return [];
     }),
     getUsers().catch(error => {
-      console.error('admin stats: users listing failed', error);
+      logError(error, 'admin stats: users listing failed');
       return [];
     }),
     getAllProjectsListing().catch(error => {
-      console.error('admin stats: notebooks listing failed', error);
+      logError(error, 'admin stats: notebooks listing failed');
       return [];
     }),
     getTemplates({}).catch(error => {
-      console.error('admin stats: templates listing failed', error);
+      logError(error, 'admin stats: templates listing failed');
       return [];
     }),
     listAllAssets().catch(error => {
-      console.error('admin stats: map assets listing failed', error);
+      logError(error, 'admin stats: map assets listing failed');
       return [];
     }),
     getAllTokens().catch(error => {
-      console.error('admin stats: long-lived tokens listing failed', error);
+      logError(error, 'admin stats: long-lived tokens listing failed');
+      return [];
+    }),
+    getAllRefreshTokens().catch(error => {
+      logError(error, 'admin stats: refresh tokens listing failed');
       return [];
     }),
     countNonDesignDocs(() => getInvitesDB().allDocs()).catch(error => {
-      console.error('admin stats: invites listing failed', error);
+      logError(error, 'admin stats: invites listing failed');
       return 0;
     }),
     countNonDesignDocs(() => getTombstoneDB().allDocs()).catch(error => {
-      console.error('admin stats: tombstones listing failed', error);
+      logError(error, 'admin stats: tombstones listing failed');
       return 0;
     }),
   ]);
@@ -427,6 +431,32 @@ async function computeSnapshot(): Promise<AdminStatsSnapshot> {
     ensureTeam(teamId, teamName).mapAssetByteCount += size;
   }
 
+  // Enabled + unexpired refresh tokens count as a live session. A user with
+  // several devices still contributes one logged-in id.
+  const nowMs = Date.now();
+  const loggedInUserIds = new Set<string>();
+  for (const token of refreshTokens) {
+    if (
+      token &&
+      token.documentType === 'refresh' &&
+      token.enabled &&
+      typeof token.userId === 'string' &&
+      token.userId &&
+      token.expiryTimestampMs >= nowMs
+    ) {
+      loggedInUserIds.add(token.userId);
+    }
+  }
+  for (const userId of loggedInUserIds) {
+    if (!peopleAcc.has(userId)) {
+      peopleAcc.set(userId, {
+        userId,
+        recordCount: 0,
+        attachmentCount: 0,
+      });
+    }
+  }
+
   const overall: AdminStatsSnapshot['overall'] = {
     teamCount: teams.length,
     userCount: users.length,
@@ -444,6 +474,7 @@ async function computeSnapshot(): Promise<AdminStatsSnapshot> {
     byteCount,
     disabledUserCount: users.filter(user => isPeopleUserAccountDisabled(user))
       .length,
+    loggedInUserCount: loggedInUserIds.size,
     inviteCount,
     longLivedTokenCount: tokens.length,
     tombstoneCount,
@@ -458,14 +489,20 @@ async function computeSnapshot(): Promise<AdminStatsSnapshot> {
     return a.name.localeCompare(b.name) || a.teamId.localeCompare(b.teamId);
   });
 
-  // Users with neither records nor attachments are omitted from the people list.
+  // Users with neither records, attachments, nor an active session are omitted.
   const peopleRows: AdminStatsPersonRow[] = [...peopleAcc.values()]
-    .filter(person => person.recordCount > 0 || person.attachmentCount > 0)
+    .filter(
+      person =>
+        person.recordCount > 0 ||
+        person.attachmentCount > 0 ||
+        loggedInUserIds.has(person.userId)
+    )
     .map(person => {
       const row: AdminStatsPersonRow = {
         userId: person.userId,
         recordCount: person.recordCount,
         attachmentCount: person.attachmentCount,
+        loggedIn: loggedInUserIds.has(person.userId),
       };
       // Email/name are optional: deleted users still appear by userId.
       const email = emailByUserId.get(person.userId);
