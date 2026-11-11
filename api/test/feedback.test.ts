@@ -262,7 +262,7 @@ describe('buildFeedbackEmailOptions', () => {
       subject: 'Fieldmark product feedback',
     });
     expect(options.subject).toBe('Fieldmark product feedback');
-    expect(options.text.startsWith('Fieldmark product feedback')).toBe(true);
+    expect(options.text).toMatch(/^Fieldmark product feedback/);
     expect(options.html).toContain('<title>Fieldmark product feedback</title>');
   });
 });
