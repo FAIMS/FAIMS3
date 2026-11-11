@@ -14,13 +14,8 @@ import {
 } from '@/components/ui/sidebar';
 import {config} from '@/constants';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {
-  TEMPLATE_CATALOGUE_PICKER_LIMIT,
-  useGetProjects,
-  useGetTeams,
-  useGetTemplates,
-} from '@/hooks/queries';
-import {Action, GetListTemplatesResponse} from '@faims3/data-model';
+import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/queries';
+import {Action} from '@faims3/data-model';
 import {Link, useLocation} from '@tanstack/react-router';
 import {
   ArchiveRestore,
@@ -33,6 +28,82 @@ import {
 } from 'lucide-react';
 import * as React from 'react';
 import Logo from '../logo';
+
+/** Max nested catalogue names in the Control Centre left nav (not the picker max). */
+export const SIDEBAR_CATALOGUE_RECENT_LIMIT = 10;
+
+const VIEW_ALL_TITLE = 'View all';
+
+type NamedCatalogueItem = {
+  _id: string;
+  name: string;
+};
+
+/**
+ * Normalises template listing payloads: `{templates, nextStartKey}` from the
+ * paginated GET, or a bare `templates[]` for tests.
+ */
+export function templatesFromQueryData(data: unknown): {
+  items: NamedCatalogueItem[];
+  nextStartKey?: string;
+} {
+  if (!data) {
+    return {items: []};
+  }
+  if (Array.isArray(data)) {
+    return {items: data};
+  }
+  if (typeof data === 'object' && data !== null && 'templates' in data) {
+    const page = data as {
+      templates?: NamedCatalogueItem[];
+      nextStartKey?: string;
+    };
+    return {
+      items: Array.isArray(page.templates) ? page.templates : [],
+      nextStartKey: page.nextStartKey,
+    };
+  }
+  return {items: []};
+}
+
+/**
+ * Builds nested catalogue rows: up to {@link SIDEBAR_CATALOGUE_RECENT_LIMIT}
+ * recent names, a "View all" row when more exist (length or `nextStartKey`),
+ * and the empty placeholder only when the catalogue is truly empty.
+ */
+export function catalogueSubItems({
+  items,
+  nextStartKey,
+  urlPrefix,
+  emptyId,
+  emptyTitle,
+}: {
+  items: NamedCatalogueItem[];
+  nextStartKey?: string;
+  urlPrefix: string;
+  emptyId: string;
+  emptyTitle: string;
+}): NonNullable<NavItem['items']> {
+  const visible = items.slice(0, SIDEBAR_CATALOGUE_RECENT_LIMIT);
+  const hasMore =
+    items.length > SIDEBAR_CATALOGUE_RECENT_LIMIT || Boolean(nextStartKey);
+  if (visible.length === 0 && !hasMore) {
+    return [{id: emptyId, title: emptyTitle}];
+  }
+  const rows: NonNullable<NavItem['items']> = visible.map(({_id, name}) => ({
+    id: _id,
+    title: name,
+    url: `${urlPrefix}/${_id}`,
+  }));
+  if (hasMore) {
+    rows.push({
+      id: `view-all-${urlPrefix.replace(/^\//, '')}`,
+      title: VIEW_ALL_TITLE,
+      url: urlPrefix,
+    });
+  }
+  return rows;
+}
 
 /**
  * AppSidebar component renders the main application sidebar with navigation items
@@ -57,13 +128,16 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   // currently anyone can list teams - but it is filtered per resource
   const canSeeTeams = true;
 
-  const {data: projects} = useGetProjects({user, enabled: canSeeProjects});
-  const {data: templatesPage} = useGetTemplates({
+  const {data: projects} = useGetProjects({
+    user,
+    enabled: canSeeProjects,
+    includeByteCount: false,
+  });
+  const {data: templates} = useGetTemplates({
     user,
     enabled: canSeeTemplates,
-    limit: TEMPLATE_CATALOGUE_PICKER_LIMIT,
+    limit: SIDEBAR_CATALOGUE_RECENT_LIMIT,
   });
-  const templates = templatesPage?.templates;
   const {data: teams} = useGetTeams({user, enabled: canSeeTeams});
 
   const topSectionNavItems: NavItem[] = [];
@@ -76,34 +150,30 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       icon: LetterText,
       testId: 'web-nav-projects',
       isActive: pathname.startsWith('/projects') || pathname === '/',
-      items:
-        projects && projects?.length > 0
-          ? projects.map(({name, _id}) => ({
-              id: _id,
-              title: name,
-              url: `/projects/${_id}`,
-            }))
-          : [{id: 'no-projects', title: `No ${config.notebookNamePlural}...`}],
+      items: catalogueSubItems({
+        items: projects ?? [],
+        urlPrefix: '/projects',
+        emptyId: 'no-projects',
+        emptyTitle: `No ${config.notebookNamePlural}...`,
+      }),
     });
   }
 
   if (canSeeTemplates) {
+    const templatePage = templatesFromQueryData(templates);
     topSectionNavItems.push({
       title: 'Templates',
       url: '/templates',
       icon: LayoutTemplate,
       testId: 'web-nav-templates',
       isActive: pathname.startsWith('/templates'),
-      items:
-        templates && templates?.length > 0
-          ? templates.map(
-              ({_id, name}: GetListTemplatesResponse['templates'][number]) => ({
-                id: _id,
-                title: name,
-                url: `/templates/${_id}`,
-              })
-            )
-          : [{id: 'no-templates', title: 'No templates...'}],
+      items: catalogueSubItems({
+        items: templatePage.items,
+        nextStartKey: templatePage.nextStartKey,
+        urlPrefix: '/templates',
+        emptyId: 'no-templates',
+        emptyTitle: 'No templates...',
+      }),
     });
   }
 
@@ -143,14 +213,12 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       icon: House,
       testId: 'web-nav-teams',
       isActive: pathname.startsWith('/teams'),
-      items:
-        teams && teams.teams.length > 0
-          ? teams.teams.map(({_id, name}) => ({
-              id: _id,
-              title: name,
-              url: `/teams/${_id}`,
-            }))
-          : [{id: 'no-teams', title: 'No teams...'}],
+      items: catalogueSubItems({
+        items: teams?.teams ?? [],
+        urlPrefix: '/teams',
+        emptyId: 'no-teams',
+        emptyTitle: 'No teams...',
+      }),
     });
   }
 

@@ -28,7 +28,6 @@ import {
   GetTeamByIdResponse,
   GetTeamInvitesResponse,
   GetTeamMembersResponse,
-  TEMPLATE_LIST_LIMIT_MAX,
 } from '@faims3/data-model';
 import {useState} from 'react';
 import {getTemplateSurveyReferences} from '@/hooks/template-hooks';
@@ -128,6 +127,28 @@ export const useGetProject = ({
   });
 
 /**
+ * Builds GET /api/notebooks path. `includeByteCount=true` triggers per-notebook
+ * Couch `info()` on the server; omit it for name-only consumers such as the nav.
+ */
+export function notebooksListPath({
+  includeArchived = false,
+  includeByteCount = true,
+}: {
+  includeArchived?: boolean;
+  includeByteCount?: boolean;
+} = {}): string {
+  const params = new URLSearchParams();
+  if (includeByteCount) {
+    params.set('includeByteCount', 'true');
+  }
+  if (includeArchived) {
+    params.set('includeArchived', 'true');
+  }
+  const qs = params.toString();
+  return qs ? `/api/notebooks/?${qs}` : '/api/notebooks/';
+}
+
+/**
  * useGetProjects hook returns a query for fetching projects.
  *
  * @param {User} user - The user object.
@@ -137,19 +158,28 @@ export const useGetProjects = ({
   user,
   enabled = true,
   includeArchived = false,
+  includeByteCount = true,
 }: {
   user: User | null;
   enabled?: boolean;
   /** When true, lists archived notebooks/projects too (directory-style sync uses this). */
   includeArchived?: boolean;
+  /**
+   * When true, attach per-notebook `byteCount` (Couch `info()`). Defaults true so
+   * the Projects index keeps stats. The sidebar passes false — names do not need it.
+   */
+  includeByteCount?: boolean;
 }) =>
   useQuery({
-    queryKey: ['projects', user?.token, includeArchived, 'stats'],
+    queryKey: [
+      'projects',
+      user?.token,
+      includeArchived,
+      includeByteCount ? 'stats' : 'list',
+    ],
     queryFn: () =>
       get<GetNotebookListWithStatsResponse>(
-        includeArchived
-          ? '/api/notebooks/?includeByteCount=true&includeArchived=true'
-          : '/api/notebooks/?includeByteCount=true',
+        notebooksListPath({includeArchived, includeByteCount}),
         user
       ),
     select: sortNotebookListNewestFirst,
@@ -227,6 +257,7 @@ export const useGetProjectsForTeam = ({
     select: sortNotebookListNewestFirst,
   });
 
+/** Query fields for GET /api/templates list requests. */
 export type TemplatesListQueryArgs = {
   teamId?: string;
   includeArchived?: boolean;
@@ -489,9 +520,6 @@ export const usePagedTemplates = ({
     changePageSize,
   };
 };
-
-/** Sidebar compact catalogue: first page only (see Control Centre nav issue). */
-export const TEMPLATE_CATALOGUE_PICKER_LIMIT = TEMPLATE_LIST_LIMIT_MAX;
 
 /** Create-survey picker page size; follow `nextStartKey` with Get more. */
 export const TEMPLATE_PICKER_PAGE_SIZE = 25;
