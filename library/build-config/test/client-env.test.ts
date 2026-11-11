@@ -221,6 +221,33 @@ test('parseApiEnv forces MOCK email under test even when SMTP is configured', ()
   assert.equal(parsed.emailServiceType, 'MOCK');
   assert.equal(parsed.smtp, undefined);
   assert.equal(parsed.exportRateLimiterEnabled, false);
+  assert.equal(parsed.feedbackRateLimiterEnabled, false);
+});
+
+test('parseApiEnv defaults feedback destination and limiter, and honours overrides', () => {
+  const defaults = parseApiEnv(MINIMAL_API, {runningUnderTest: false});
+  assert.equal(defaults.feedbackEmail, 'support@fieldmark.au');
+  assert.equal(defaults.feedbackSubject, 'In-app feedback');
+  assert.equal(defaults.feedbackRateLimiterEnabled, true);
+  assert.equal(defaults.feedbackRateLimiterWindowMs, 600000);
+  assert.equal(defaults.feedbackRateLimiterPerWindow, 5);
+
+  const overridden = parseApiEnv(
+    {
+      ...MINIMAL_API,
+      FEEDBACK_EMAIL: 'product@example.org',
+      FEEDBACK_SUBJECT: 'Fieldmark product feedback',
+      FEEDBACK_RATE_LIMITER_ENABLED: 'false',
+      FEEDBACK_RATE_LIMITER_WINDOW_MS: '120000',
+      FEEDBACK_RATE_LIMITER_PER_WINDOW: '3',
+    },
+    {runningUnderTest: false}
+  );
+  assert.equal(overridden.feedbackEmail, 'product@example.org');
+  assert.equal(overridden.feedbackSubject, 'Fieldmark product feedback');
+  assert.equal(overridden.feedbackRateLimiterEnabled, false);
+  assert.equal(overridden.feedbackRateLimiterWindowMs, 120000);
+  assert.equal(overridden.feedbackRateLimiterPerWindow, 3);
 });
 
 test('parseApiEnv defaults loginLockoutEnabled true outside test and forces false under test', () => {

@@ -320,3 +320,127 @@ If you did not request a password reset, you can safely ignore this email. Your 
 
   await emailService.sendEmail({options: emailOptions});
 }
+
+/**
+ * Fields used to build an in-app feedback email. Identity must come from the
+ * authenticated user, never from the client body.
+ */
+export type FeedbackEmailParams = {
+  recipientEmail: string;
+  message: string;
+  userId: string;
+  username: string;
+  userEmail?: string;
+  impersonatingUserId?: string;
+  source?: string;
+  category?: string;
+  path?: string;
+  component?: string;
+  clientVersion?: string;
+  userAgent?: string;
+  replyTo: string;
+  subject?: string;
+};
+
+/** Display-or-em-dash for optional diagnostic lines. */
+function feedbackField(value: string | undefined): string {
+  return value && value.trim() !== '' ? value : '—';
+}
+
+/**
+ * Build the HTML + text email for an in-app feedback submission.
+ * User-controlled text is HTML-escaped in the HTML part.
+ */
+export function buildFeedbackEmailOptions({
+  recipientEmail,
+  message,
+  userId,
+  username,
+  userEmail,
+  impersonatingUserId,
+  source,
+  category,
+  path,
+  component,
+  clientVersion,
+  userAgent,
+  replyTo,
+  subject = config.feedbackSubject,
+}: FeedbackEmailParams): EmailOptions {
+  const submittedAt = new Date().toISOString();
+  const impersonationLine = impersonatingUserId
+    ? `Impersonated by: ${impersonatingUserId}`
+    : undefined;
+  const heading = subject.trim() || config.feedbackSubject;
+
+  const textContent = `
+${heading}
+
+Submitted at: ${submittedAt}
+User ID: ${userId}
+Username: ${username}
+Email: ${feedbackField(userEmail)}
+${impersonationLine ? `${impersonationLine}\n` : ''}Source: ${feedbackField(source)}
+Category: ${feedbackField(category)}
+Path: ${feedbackField(path)}
+Component: ${feedbackField(component)}
+Client version: ${feedbackField(clientVersion)}
+User agent: ${feedbackField(userAgent)}
+
+Message:
+${message}
+  `.trim();
+
+  const htmlMessage = escapeHtml(message).replace(/\r\n|\r|\n/g, '<br>\n');
+  const htmlHeading = escapeHtml(heading);
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${htmlHeading}</title>
+</head>
+<body>
+  <p><strong>${htmlHeading}</strong></p>
+  <ul>
+    <li>Submitted at: ${escapeHtml(submittedAt)}</li>
+    <li>User ID: ${escapeHtml(userId)}</li>
+    <li>Username: ${escapeHtml(username)}</li>
+    <li>Email: ${escapeHtml(feedbackField(userEmail))}</li>
+    ${
+      impersonatingUserId
+        ? `<li>Impersonated by: ${escapeHtml(impersonatingUserId)}</li>`
+        : ''
+    }
+    <li>Source: ${escapeHtml(feedbackField(source))}</li>
+    <li>Category: ${escapeHtml(feedbackField(category))}</li>
+    <li>Path: ${escapeHtml(feedbackField(path))}</li>
+    <li>Component: ${escapeHtml(feedbackField(component))}</li>
+    <li>Client version: ${escapeHtml(feedbackField(clientVersion))}</li>
+    <li>User agent: ${escapeHtml(feedbackField(userAgent))}</li>
+  </ul>
+  <p><strong>Message</strong></p>
+  <p>${htmlMessage}</p>
+</body>
+</html>
+  `.trim();
+
+  return {
+    to: recipientEmail,
+    subject: heading,
+    text: textContent,
+    html: htmlContent,
+    replyTo,
+  };
+}
+
+/**
+ * Send in-app feedback to the configured support inbox.
+ */
+export async function sendFeedbackEmail(
+  params: FeedbackEmailParams
+): Promise<void> {
+  await emailService.sendEmail({options: buildFeedbackEmailOptions(params)});
+}
