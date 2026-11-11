@@ -147,18 +147,34 @@ const handleReject = useCallback(
 
 ### File Type Detection
 
+All attachment display decisions (thumbnail, full-size dialog, icon) go
+through the shared `isDisplayableImageType` predicate from `lib/utils.ts`. It
+is an exact, normalised (lower-cased, parameters stripped) match against the
+`IMAGE_TYPES` allowlist of raster formats and fails closed for anything else.
+`image/svg+xml` is deliberately **not** in the list: SVG can carry script, so
+an SVG attachment is always shown as a generic file and never rendered as an
+`<img>`.
+
 ```typescript
-function isImageFile(contentType: string): boolean {
-  return contentType.startsWith('image/');
-}
+import {isDisplayableImageType} from '../../../utils';
 
 function getFileIcon(contentType: string) {
-  if (isImageFile(contentType)) {
+  if (isDisplayableImageType(contentType)) {
     return <ImageIcon />;
   }
   return <InsertDriveFileIcon />;
 }
 ```
+
+### Blocked Uploads
+
+`handleDrop` rejects a whole batch (no `addAttachment` calls, lock released)
+if any file is SVG/HTML by declared type, file extension, or leading bytes
+(`isBlockedAttachmentContentType`, `isBlockedAttachmentFilename`,
+`isActiveContentBytes` in `lib/utils.ts`; only the first 512 bytes of a file
+are read). The form manager's `addAttachment` choke point re-checks the
+declared type for every field, and the CouchDB `validate_doc_update` in
+`@faims3/data-model` rejects honestly-labelled active types at replication.
 
 ### File Size Formatting
 

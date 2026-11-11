@@ -4,6 +4,7 @@ import {Dialog, DialogContent, IconButton} from '@mui/material';
 import {Box} from '@mui/material';
 import React, {useEffect, useRef, useState} from 'react';
 import {TransformComponent, TransformWrapper} from 'react-zoom-pan-pinch';
+import {ImageWithFallback} from './ImageWithFallback';
 
 /** How far a width-fit image (a QR code) can shrink below its fitted size. */
 const WIDTH_FIT_MIN_SCALE = 0.5;
@@ -257,17 +258,26 @@ export const PhotoLightbox: React.FC<{
                 justifyContent: 'center',
               }}
             >
-              <Box
-                component="img"
+              <ImageWithFallback
                 src={url}
                 alt="Full size preview"
                 draggable={false}
+                fallbackTypographyVariant="body2"
                 sx={{
                   maxWidth: '100%',
                   maxHeight: '100%',
                   objectFit: 'contain',
                   display: 'block',
                   userSelect: 'none',
+                }}
+                fallbackSx={{
+                  width: 'auto',
+                  height: 'auto',
+                  p: 0,
+                  gap: 1,
+                  bgcolor: 'transparent',
+                  color: 'common.white',
+                  '& .MuiSvgIcon-root': {fontSize: 64},
                 }}
               />
             </TransformComponent>

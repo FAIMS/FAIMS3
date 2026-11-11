@@ -15,7 +15,7 @@
 import '@testing-library/jest-dom/vitest';
 import {Camera} from '@capacitor/camera';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {act, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useMemo, useState} from 'react';
 import {z} from 'zod';
@@ -37,8 +37,11 @@ import {
 import {
   computeWebPhotoTargetSize,
   encodePhotoBlobForWeb,
+  formatFromGalleryFile,
   IMAGE_QUALITY_0_100,
   MAX_IMAGE_WIDTH,
+  preparePhotoBlobForStorage,
+  WEB_GALLERY_ACCEPT,
   WEB_RESIZED_FORMAT,
 } from './webPhotoFallback';
 import {
@@ -78,6 +81,7 @@ vi.mock('./webPhotoFallback', async () => {
     await vi.importActual<typeof import('./webPhotoFallback')>(
       './webPhotoFallback'
     );
+  const {Camera} = await import('@capacitor/camera');
   return {
     ...actual,
     preparePhotoBlobForStorage: vi.fn(async (blob: Blob, format: string) => ({
@@ -85,6 +89,9 @@ vi.mock('./webPhotoFallback', async () => {
       format,
       resized: false,
     })),
+    // Tests drive the gallery through Camera.pickImages; production web
+    // uses a raster-only file input (see pickGalleryPhotos).
+    pickGalleryPhotos: vi.fn(opts => Camera.pickImages(opts)),
   };
 });
 
@@ -1417,5 +1424,401 @@ describe('TakePhoto pending-to-loaded gallery merge', () => {
     expect(
       screen.getByText('Could not save the photo. Please try again.')
     ).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Gallery display: loaded attachments are gated by content type
+// ---------------------------------------------------------------------------
+
+describe('TakePhoto gallery content-type gating', () => {
+  beforeEach(() => {
+    stubBrowserPhotoApis();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function renderWithLoaded(contentType: string, filename: string) {
+    const client = queryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <TakePhoto
+          name="photos"
+          label="Photos"
+          required={false}
+          helperText=""
+          advancedHelperText=""
+          fieldId="photos"
+          state={
+            {
+              value: {
+                data: ['att-1'],
+                attachments: [{attachmentId: 'att-1', filename, fileType: ''}],
+              },
+              meta: {errors: []},
+            } as never
+          }
+          setFieldData={vi.fn()}
+          setFieldAnnotation={vi.fn()}
+          addAttachment={vi.fn(async () => 'x')}
+          removeAttachment={vi.fn(async () => undefined)}
+          setAttachmentSaving={vi.fn()}
+          handleBlur={vi.fn()}
+          trigger={{commit: vi.fn(async () => undefined)}}
+          config={
+            {
+              mode: 'full',
+              layout: 'inline',
+              platform: 'web',
+              mapConfig: () => ({}),
+              appName: 'test-app',
+              attachmentEngine: () => ({
+                loadAttachmentAsBlob: vi.fn(async () => ({
+                  blob: new Blob(['<svg/>'], {type: contentType}),
+                  metadata: {filename, contentType},
+                })),
+              }),
+            } as never
+          }
+        />
+      </QueryClientProvider>
+    );
+  }
+
+  it('does not render a loaded SVG-typed attachment as an <img>', async () => {
+    const user = userEvent.setup();
+    renderWithLoaded('image/svg+xml', 'script.svg');
+
+    const placeholder = await screen.findByTestId('non-image-attachment');
+    expect(placeholder).toBeInTheDocument();
+    expect(screen.getByText('script.svg')).toBeInTheDocument();
+    expect(document.querySelector('img')).toBeNull();
+    expect(document.querySelectorAll('object, embed, iframe')).toHaveLength(0);
+
+    // Clicking the placeholder must not open the lightbox.
+    await user.click(placeholder);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.querySelector('img')).toBeNull();
+
+    // The hostile attachment can still be deleted.
+    expect(
+      screen.getByRole('button', {name: 'Delete photo'})
+    ).toBeInTheDocument();
+  });
+
+  it('still renders a loaded JPEG as an <img>', async () => {
+    renderWithLoaded('image/jpeg', 'photo.jpeg');
+
+    await waitFor(() => {
+      expect(document.querySelector('img')).not.toBeNull();
+    });
+    expect(screen.queryByTestId('non-image-attachment')).toBeNull();
+  });
+
+  it('swaps a loaded raster that fails to decode for a broken-image thumbnail', async () => {
+    // SVG bytes stored as image/png: the type is "displayable" so we render
+    // an <img>, then the browser cannot decode it.
+    renderWithLoaded('image/png', 'spoof.png');
+
+    const img = await waitFor(() => {
+      const node = document.querySelector('img');
+      expect(node).not.toBeNull();
+      return node as HTMLImageElement;
+    });
+    fireEvent.error(img);
+
+    expect(screen.getByTestId('broken-image-thumbnail')).toBeInTheDocument();
+    expect(screen.getByText('Image preview not available')).toBeInTheDocument();
+    expect(document.querySelector('img')).toBeNull();
+    expect(
+      screen.getByRole('button', {name: 'Delete photo'})
+    ).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Gallery / camera: SVG and spoofed extensions are rejected before storage
+// ---------------------------------------------------------------------------
+
+const SCRIPT_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>';
+
+describe('TakePhoto gallery upload blocking', () => {
+  beforeEach(() => {
+    stubBrowserPhotoApis();
+    vi.mocked(Camera.pickImages).mockReset();
+    vi.mocked(preparePhotoBlobForStorage).mockClear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('rejects an SVG gallery pick before re-encode or storage', async () => {
+    const addAttachment = vi.fn(async () => 'att-new');
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        blob: async () => new Blob([SCRIPT_SVG], {type: 'image/svg+xml'}),
+      }))
+    );
+    vi.mocked(Camera.pickImages).mockResolvedValue({
+      photos: [{webPath: 'blob:svg', format: 'jpeg', path: 'evil.svg'}],
+    } as never);
+
+    renderTakePhoto({addAttachment});
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add photos from gallery, multiple selection allowed',
+      })
+    );
+
+    expect(
+      await screen.findByText(
+        '"evil.svg": SVG and HTML files cannot be uploaded.'
+      )
+    ).toBeInTheDocument();
+    expect(addAttachment).not.toHaveBeenCalled();
+    expect(preparePhotoBlobForStorage).not.toHaveBeenCalled();
+  });
+
+  it('rejects SVG bytes labelled as PNG (spoofed extension)', async () => {
+    const addAttachment = vi.fn(async () => 'att-new');
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        blob: async () => new Blob([SCRIPT_SVG], {type: 'image/png'}),
+      }))
+    );
+    vi.mocked(Camera.pickImages).mockResolvedValue({
+      photos: [{webPath: 'blob:spoof', format: 'png', path: 'photo.png'}],
+    } as never);
+
+    renderTakePhoto({addAttachment});
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add photos from gallery, multiple selection allowed',
+      })
+    );
+
+    expect(
+      await screen.findByText(
+        '"photo.png": SVG and HTML files cannot be uploaded.'
+      )
+    ).toBeInTheDocument();
+    expect(addAttachment).not.toHaveBeenCalled();
+    expect(preparePhotoBlobForStorage).not.toHaveBeenCalled();
+  });
+
+  it('rejects the whole gallery batch when one pick is SVG', async () => {
+    const addAttachment = vi.fn(async () => 'att-new');
+    const user = userEvent.setup();
+    const jpeg = new Blob([new Uint8Array([0xff, 0xd8, 0xff])], {
+      type: 'image/jpeg',
+    });
+    const svg = new Blob([SCRIPT_SVG], {type: 'image/png'});
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: () => 'blob:photo',
+      revokeObjectURL,
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => ({
+        blob: async () => (String(url).includes('svg') ? svg : jpeg),
+      }))
+    );
+    vi.mocked(Camera.pickImages).mockResolvedValue({
+      photos: [
+        {webPath: 'blob:jpeg', format: 'jpeg', path: 'ok.jpeg'},
+        {webPath: 'blob:svg', format: 'png', path: 'spoof.png'},
+        {webPath: 'blob:later', format: 'jpeg', path: 'later.jpeg'},
+      ],
+    } as never);
+
+    renderTakePhoto({addAttachment});
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add photos from gallery, multiple selection allowed',
+      })
+    );
+
+    expect(
+      await screen.findByText(
+        '"spoof.png": SVG and HTML files cannot be uploaded.'
+      )
+    ).toBeInTheDocument();
+    expect(addAttachment).not.toHaveBeenCalled();
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:jpeg');
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:svg');
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:later');
+  });
+
+  it('still stores a JPEG gallery pick', async () => {
+    const addAttachment = vi.fn(async () => 'att-new');
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        blob: async () =>
+          new Blob([new Uint8Array([0xff, 0xd8, 0xff])], {
+            type: 'image/jpeg',
+          }),
+      }))
+    );
+    vi.mocked(Camera.pickImages).mockResolvedValue({
+      photos: [{webPath: 'blob:jpeg', format: 'jpeg', path: 'ok.jpeg'}],
+    } as never);
+
+    renderTakePhoto({addAttachment});
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add photos from gallery, multiple selection allowed',
+      })
+    );
+
+    await waitFor(() => {
+      expect(addAttachment).toHaveBeenCalledTimes(1);
+    });
+    expect(preparePhotoBlobForStorage).toHaveBeenCalled();
+    expect(
+      screen.queryByText(/SVG and HTML files cannot be uploaded/)
+    ).toBeNull();
+  });
+});
+
+describe('web gallery picker', () => {
+  it('does not include SVG in the web file-input accept list', () => {
+    expect(WEB_GALLERY_ACCEPT.split(',')).toEqual([
+      'image/png',
+      'image/jpeg',
+      'image/jpg',
+      'image/webp',
+      'image/gif',
+      'image/bmp',
+    ]);
+    expect(WEB_GALLERY_ACCEPT).not.toMatch(/svg/i);
+  });
+
+  it.each([
+    ['image/svg+xml', 'evil.svg', 'svg+xml'],
+    ['image/png', 'photo.png', 'png'],
+    ['image/jpeg', 'photo.jpg', 'jpeg'],
+    ['image/jpg', 'photo.jpg', 'jpeg'],
+    ['', 'diagram.svg', 'svg'],
+    ['', 'photo.JPG', 'jpeg'],
+  ])('formatFromGalleryFile(%s, %s) → %s', (type, name, format) => {
+    expect(formatFromGalleryFile(new File(['x'], name, {type}))).toBe(format);
+  });
+
+  it('delegates to Camera.pickImages on native platforms', async () => {
+    const {pickGalleryPhotos} =
+      await vi.importActual<typeof import('./webPhotoFallback')>(
+        './webPhotoFallback'
+      );
+    vi.mocked(Camera.pickImages).mockResolvedValue({photos: []} as never);
+
+    await pickGalleryPhotos({
+      quality: IMAGE_QUALITY_0_100,
+      width: MAX_IMAGE_WIDTH,
+      correctOrientation: true,
+      limit: 4,
+      platform: 'ios',
+    });
+
+    expect(Camera.pickImages).toHaveBeenCalledWith({
+      quality: IMAGE_QUALITY_0_100,
+      width: MAX_IMAGE_WIDTH,
+      correctOrientation: true,
+      limit: 4,
+    });
+  });
+
+  it('opens a raster-only file input on web and treats cancel as abort', async () => {
+    const {pickGalleryPhotos} =
+      await vi.importActual<typeof import('./webPhotoFallback')>(
+        './webPhotoFallback'
+      );
+
+    const pending = pickGalleryPhotos({
+      quality: IMAGE_QUALITY_0_100,
+      width: MAX_IMAGE_WIDTH,
+      correctOrientation: true,
+      limit: 10,
+      platform: 'web',
+    });
+
+    const input = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement | null;
+    expect(input).not.toBeNull();
+    expect(input?.accept).toBe(WEB_GALLERY_ACCEPT);
+    expect(input?.multiple).toBe(true);
+
+    input?.dispatchEvent(new Event('cancel'));
+    await expect(pending).rejects.toThrow(/cancel/i);
+  });
+
+  it('caps web picks to limit before creating object URLs', async () => {
+    const {pickGalleryPhotos} =
+      await vi.importActual<typeof import('./webPhotoFallback')>(
+        './webPhotoFallback'
+      );
+    const createObjectURL = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:file');
+
+    const pending = pickGalleryPhotos({
+      quality: IMAGE_QUALITY_0_100,
+      width: MAX_IMAGE_WIDTH,
+      correctOrientation: true,
+      limit: 2,
+      platform: 'web',
+    });
+
+    const input = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement;
+    Object.defineProperty(input, 'files', {
+      configurable: true,
+      value: [
+        new File(['a'], 'a.jpg', {type: 'image/jpeg'}),
+        new File(['b'], 'b.jpg', {type: 'image/jpeg'}),
+        new File(['c'], 'c.jpg', {type: 'image/jpeg'}),
+      ],
+    });
+    input.dispatchEvent(new Event('change'));
+
+    const result = await pending;
+    expect(result.photos).toHaveLength(2);
+    expect(result.photos.map(p => p.path)).toEqual(['a.jpg', 'b.jpg']);
+    expect(createObjectURL).toHaveBeenCalledTimes(2);
+    createObjectURL.mockRestore();
+  });
+
+  it('revokes blob: gallery URLs and ignores other paths', async () => {
+    const {revokeGalleryObjectUrls} =
+      await vi.importActual<typeof import('./webPhotoFallback')>(
+        './webPhotoFallback'
+      );
+    const revoke = vi
+      .spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => {});
+
+    revokeGalleryObjectUrls([
+      {webPath: 'blob:one'},
+      {webPath: 'https://example/photo.jpg'},
+      {webPath: 'blob:two'},
+    ]);
+
+    expect(revoke).toHaveBeenCalledTimes(2);
+    expect(revoke).toHaveBeenCalledWith('blob:one');
+    expect(revoke).toHaveBeenCalledWith('blob:two');
+    revoke.mockRestore();
   });
 });
