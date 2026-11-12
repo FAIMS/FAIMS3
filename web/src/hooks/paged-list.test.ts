@@ -5,9 +5,11 @@ import {createElement, type ReactNode} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type {User} from '@/context/auth-provider';
 import {
+  LIST_SEARCH_DEBOUNCE_MS,
   listPath,
   useInfiniteList,
   useListCursor,
+  useListSearch,
   usePagedList,
   type ListPageArgs,
 } from './paged-list';
@@ -33,20 +35,23 @@ type ThingPage = {things: {id: string}[]; nextStartKey?: string};
 /** Request for one page of a made-up `/api/things` list. */
 const buildThingsRequest =
   (filter: string) =>
-  ({limit, startKey}: ListPageArgs) => ({
-    path: listPath('/api/things', {filter, limit, startKey}),
-    queryKey: ['things', filter, limit ?? null, startKey ?? null],
+  ({limit, startKey, q}: ListPageArgs) => ({
+    path: listPath('/api/things', {filter, q, limit, startKey}),
+    queryKey: ['things', filter, q ?? null, limit ?? null, startKey ?? null],
   });
 
 /**
- * Serves `/api/things` from `ids` the way the API does: `limit` rows after
- * the exclusive `startKey`, with `nextStartKey` while rows remain.
+ * Serves `/api/things` from `allIds` the way the API does: `limit` rows after
+ * the exclusive `startKey`, with `nextStartKey` while rows remain. With `q`,
+ * only the ids that start with it.
  */
-function stubThingsApi(ids: string[]) {
+function stubThingsApi(allIds: string[]) {
   const fetchMock = vi.fn(async (input: unknown) => {
     const url = new URL(String(input));
     const limit = Number(url.searchParams.get('limit'));
     const startKey = url.searchParams.get('startKey');
+    const q = url.searchParams.get('q');
+    const ids = q ? allIds.filter(id => id.startsWith(q)) : allIds;
     const from = startKey ? ids.indexOf(startKey) + 1 : 0;
     const things = ids.slice(from, from + limit).map(id => ({id}));
     const more = from + limit < ids.length;
@@ -150,6 +155,53 @@ describe('useListCursor', () => {
   });
 });
 
+describe('useListSearch', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const pause = (ms: number) => act(() => void vi.advanceTimersByTime(ms));
+
+  it('holds q back until typing pauses, and trims it', () => {
+    const {result} = renderHook(() => useListSearch());
+    expect(result.current).toMatchObject({input: '', q: ''});
+
+    act(() => result.current.setInput(' bl'));
+    pause(LIST_SEARCH_DEBOUNCE_MS - 1);
+    act(() => result.current.setInput(' blue '));
+    // The box follows every keystroke; the pause restarts with each one.
+    expect(result.current).toMatchObject({input: ' blue ', q: ''});
+    pause(LIST_SEARCH_DEBOUNCE_MS - 1);
+    expect(result.current.q).toBe('');
+    pause(1);
+    expect(result.current).toMatchObject({input: ' blue ', q: 'blue'});
+  });
+
+  it('clears q at once when the box is emptied', () => {
+    const {result} = renderHook(() => useListSearch());
+    act(() => result.current.setInput('blue'));
+    pause(LIST_SEARCH_DEBOUNCE_MS);
+    expect(result.current.q).toBe('blue');
+
+    act(() => result.current.setInput('  '));
+    expect(result.current).toMatchObject({input: '  ', q: ''});
+    // No late search for the text that was there.
+    pause(LIST_SEARCH_DEBOUNCE_MS);
+    expect(result.current.q).toBe('');
+  });
+
+  it('does not search for text that was cleared before the pause ended', () => {
+    const {result} = renderHook(() => useListSearch());
+    act(() => result.current.setInput('blue'));
+    act(() => result.current.setInput(''));
+    pause(LIST_SEARCH_DEBOUNCE_MS);
+    expect(result.current.q).toBe('');
+  });
+});
+
 describe('usePagedList', () => {
   let fetchMock: ReturnType<typeof stubThingsApi>;
 
@@ -242,6 +294,93 @@ describe('usePagedList', () => {
     expect(requestedUrls(fetchMock).at(-1)).toBe(
       '/api/things?filter=y&limit=3'
     );
+  });
+
+  describe('search', () => {
+    const renderSearchable = () =>
+      renderHook(
+        () =>
+          usePagedList<ThingPage, 'things'>({
+            user: mockUser,
+            scope: 'x',
+            searchable: true,
+            defaultPageSize: 2,
+            buildRequest: buildThingsRequest('x'),
+            itemsKey: 'things',
+          }),
+        {wrapper: createWrapper()}
+      );
+
+    beforeEach(() => {
+      fetchMock = stubThingsApi(['a1', 'a2', 'a3', 'b1', 'b2']);
+    });
+
+    it('offers no search box unless the list is searchable', async () => {
+      const {result} = renderThings();
+      await waitFor(() => expect(result.current.items).toBeDefined());
+      expect(result.current.serverSearch).toBeUndefined();
+    });
+
+    it('requests the text typed and pages through its results', async () => {
+      const {result} = renderSearchable();
+      await waitFor(() =>
+        expect(ids(result.current.items)).toEqual(['a1', 'a2'])
+      );
+      expect(result.current.serverSearch?.value).toBe('');
+
+      act(() => result.current.serverSearch?.onChange('a'));
+      expect(result.current.serverSearch?.value).toBe('a');
+      await waitFor(() =>
+        expect(requestedUrls(fetchMock)).toContain(
+          '/api/things?filter=x&q=a&limit=2'
+        )
+      );
+
+      act(() => result.current.serverSearch?.onChange('b'));
+      await waitFor(() =>
+        expect(ids(result.current.items)).toEqual(['b1', 'b2'])
+      );
+      expect(result.current.hasNextPage).toBe(false);
+
+      act(() => result.current.serverSearch?.onChange('a'));
+      await waitFor(() =>
+        expect(ids(result.current.items)).toEqual(['a1', 'a2'])
+      );
+      act(() => result.current.goNext());
+      await waitFor(() => expect(ids(result.current.items)).toEqual(['a3']));
+      expect(requestedUrls(fetchMock).at(-1)).toBe(
+        '/api/things?filter=x&q=a&limit=2&startKey=a2'
+      );
+    });
+
+    it('goes back to the first page when the search changes', async () => {
+      const {result} = renderSearchable();
+      await waitFor(() =>
+        expect(ids(result.current.items)).toEqual(['a1', 'a2'])
+      );
+      act(() => result.current.goNext());
+      await waitFor(() =>
+        expect(ids(result.current.items)).toEqual(['a3', 'b1'])
+      );
+      expect(result.current.pageIndex).toBe(1);
+
+      act(() => result.current.serverSearch?.onChange('b'));
+      await waitFor(() =>
+        expect(ids(result.current.items)).toEqual(['b1', 'b2'])
+      );
+      expect(result.current.pageIndex).toBe(0);
+      // A cursor from the unsearched list is never sent with the search.
+      expect(requestedUrls(fetchMock).at(-1)).toBe(
+        '/api/things?filter=x&q=b&limit=2'
+      );
+
+      // Emptying the box returns to the first page of the whole list.
+      act(() => result.current.serverSearch?.onChange(''));
+      await waitFor(() =>
+        expect(ids(result.current.items)).toEqual(['a1', 'a2'])
+      );
+      expect(result.current.pageIndex).toBe(0);
+    });
   });
 
   it('does not fetch while disabled', () => {

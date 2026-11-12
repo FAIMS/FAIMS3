@@ -15,7 +15,7 @@ import {ProjectFromTemplateDialog} from '@/components/dialogs/project-from-templ
  */
 const TemplateProjects = ({templateId}: {templateId: string}) => {
   const {user} = useAuth();
-  const {tableLoading, notebooks, pageSize, serverPagination} =
+  const {tableLoading, notebooks, pageSize, serverPagination, serverSearch} =
     usePagedProjects({user, templateId});
   const navigate = useNavigate();
 
@@ -27,6 +27,7 @@ const TemplateProjects = ({templateId}: {templateId: string}) => {
       loading={tableLoading}
       defaultRowsPerPage={pageSize}
       serverPagination={serverPagination}
+      serverSearch={serverSearch}
       onRowClick={({_id}) => navigate({to: `/projects/${_id}`})}
     />
   );

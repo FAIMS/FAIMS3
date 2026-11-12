@@ -46,6 +46,7 @@ import {
 import express, {Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
+import {resolveListSearch} from './listSearch';
 import {config} from '../buildconfig';
 import {attachContextualLayers} from '../couchdb/mapAssets/store';
 import {getDataDb} from '../couchdb';
@@ -132,6 +133,9 @@ api.use('/:id/records', recordsRouter);
  * (active then archived). `teamId` / `templateId` narrow the list.
  * `includeByteCount=true` sizes only the rows of the returned page.
  *
+ * `q` searches active surveys by name (within `teamId` / `templateId` when
+ * given) and pages in word order. Archived surveys are not searchable.
+ *
  * The field app's complete catalogue is GET /api/directory, not this route.
  */
 api.get(
@@ -142,11 +146,18 @@ api.get(
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
+    const status = resolveNotebookListStatus(req.query);
     res.json(
       await getUserProjectsPage(req.user, {
         teamId: req.query.teamId,
         templateId: req.query.templateId,
-        status: resolveNotebookListStatus(req.query),
+        status,
+        search: resolveListSearch(req.query.q, {
+          unavailable:
+            status === 'active'
+              ? undefined
+              : 'q searches active surveys only; it cannot be combined with this status.',
+        }),
         includeByteCount: req.query.includeByteCount === 'true',
         limit: resolveListLimit(req.query.limit),
         startKey: resolveListStartKey(req.query.startKey),

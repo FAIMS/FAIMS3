@@ -23,8 +23,14 @@ export const Route = createFileRoute('/_protected/projects/')({
 function ProjectsRouteComponent() {
   const user = useRequiredUser();
 
-  const {isLoading, tableLoading, notebooks, pageSize, serverPagination} =
-    usePagedProjects({user});
+  const {
+    isLoading,
+    tableLoading,
+    notebooks,
+    pageSize,
+    serverPagination,
+    serverSearch,
+  } = usePagedProjects({user});
   const pathname = useRouter().state.location.pathname;
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
   const canCreateInSomeTeam =
@@ -66,6 +72,7 @@ function ProjectsRouteComponent() {
         loading={tableLoading}
         defaultRowsPerPage={pageSize}
         serverPagination={serverPagination}
+        serverSearch={serverSearch}
         onRowClick={({_id}) => navigate({to: `/projects/${_id}`})}
         button={
           (canCreateGlobally || canCreateInSomeTeam) && <CreateProjectDialog />

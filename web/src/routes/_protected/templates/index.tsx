@@ -36,7 +36,7 @@ function RouteComponent() {
   const navigate = useNavigate();
   const [visibilityFilter, setVisibilityFilter] =
     useState<TemplateVisibilityFilterValue>('all');
-  const {tableLoading, templates, pageSize, serverPagination} =
+  const {tableLoading, templates, pageSize, serverPagination, serverSearch} =
     usePagedTemplates({
       user,
       visibility: visibilityFilter === 'all' ? undefined : visibilityFilter,
@@ -99,6 +99,7 @@ function RouteComponent() {
         button={<CreateTemplateDialog />}
         defaultRowsPerPage={pageSize}
         serverPagination={serverPagination}
+        serverSearch={serverSearch}
       />
     </div>
   );

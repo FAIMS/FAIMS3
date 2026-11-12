@@ -343,13 +343,27 @@ describe('map asset list cache helpers', () => {
       'page',
       10,
       null,
+      null,
     ]);
     expect(
       mapAssetListPageKey(user, {teamId: 'team-1'}, {limit: 10, startKey: 'c'})
-    ).toEqual([...mapAssetTeamQueryKey(user, 'team-1'), 'page', 10, 'c']);
+    ).toEqual([...mapAssetTeamQueryKey(user, 'team-1'), 'page', 10, 'c', null]);
     expect(
       mapAssetListPageKey(user, {projectId: 'project-1'}, {limit: 25})
-    ).toEqual([...mapAssetQueryKey(user, 'project-1'), 'page', 25, null]);
+    ).toEqual([...mapAssetQueryKey(user, 'project-1'), 'page', 25, null, null]);
+    // A search is its own page of the same list; blank text is no search.
+    expect(
+      mapAssetListPageKey(user, {teamId: 'team-1'}, {limit: 10, q: 'site'})
+    ).toEqual([
+      ...mapAssetTeamQueryKey(user, 'team-1'),
+      'page',
+      10,
+      null,
+      'site',
+    ]);
+    expect(mapAssetListPageKey(user, {}, {limit: 10, q: ''})).toEqual(
+      mapAssetListPageKey(user, {}, {limit: 10})
+    );
     expect(
       mapAssetListPageKey(user, {linkableToProjectId: 'project-1'}, {limit: 10})
     ).toEqual([
@@ -359,7 +373,24 @@ describe('map asset list cache helpers', () => {
       'page',
       10,
       null,
+      null,
     ]);
+  });
+
+  it('does not seed a created layer into search results, but patches them', () => {
+    const queryClient = new QueryClient();
+    const existing = asset({_id: 'asset-2', status: 'processing'});
+    const created = asset({_id: 'asset-1', status: 'pending', name: 'Roads'});
+    const searchPage = mapAssetListPageKey(user, {}, {limit: 10, q: 'sites'});
+    queryClient.setQueryData(searchPage, {assets: [existing]});
+
+    // Whether the new layer matches the search is for the server to say.
+    cacheCreatedMapAsset(queryClient, user, created);
+    expect(queryClient.getQueryData(searchPage)).toEqual({assets: [existing]});
+
+    const ready = asset({_id: 'asset-2', status: 'ready', updatedAt: 9});
+    patchMapAssetInLists(queryClient, user, ready);
+    expect(queryClient.getQueryData(searchPage)).toEqual({assets: [ready]});
   });
 
   it('seeds a created layer into first pages only, and patches any page', () => {

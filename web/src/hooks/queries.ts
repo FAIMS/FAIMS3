@@ -108,6 +108,7 @@ export function buildNotebooksListRequest(
     includeByteCount = false,
     limit,
     startKey,
+    q,
   }: NotebooksListQueryArgs,
   user: User | null
 ): ListRequest {
@@ -117,6 +118,7 @@ export function buildNotebooksListRequest(
       templateId,
       status: status === 'active' ? undefined : status,
       includeByteCount,
+      q,
       limit,
       startKey,
     }),
@@ -128,6 +130,7 @@ export function buildNotebooksListRequest(
       status,
       templateId ?? null,
       includeByteCount ? 'stats' : 'names',
+      q || null,
       limit ?? null,
       startKey ?? null,
     ],
@@ -158,7 +161,8 @@ export const useGetProjects = ({
 /**
  * Cursor-paged surveys for Control Centre tables: the whole catalogue, one
  * team's (`teamId`), one template's (`templateId`), or the archive
- * (`status: 'archived'`).
+ * (`status: 'archived'`). Active lists return `serverSearch` for the
+ * table's search box; the archive has no search.
  */
 export const usePagedProjects = ({
   user,
@@ -179,6 +183,7 @@ export const usePagedProjects = ({
     user,
     enabled,
     scope: `${status}:${teamId ?? ''}:${templateId ?? ''}`,
+    searchable: status === 'active',
     defaultPageSize,
     buildRequest: page =>
       buildNotebooksListRequest({teamId, templateId, status, ...page}, user),
@@ -262,6 +267,8 @@ export type TemplatesListQueryArgs = {
   limit?: number;
   startKey?: string;
   visibility?: 'public' | 'private';
+  /** Search text; active templates only. */
+  q?: string;
 };
 
 /**
@@ -274,11 +281,13 @@ export function buildTemplatesListRequest({
   limit,
   startKey,
   visibility,
+  q,
 }: TemplatesListQueryArgs): {path: string; queryKey: unknown[]} {
   return {
     path: listPath('/api/templates', {
       includeArchived,
       teamId,
+      q,
       limit,
       startKey,
       visibility,
@@ -290,6 +299,7 @@ export function buildTemplatesListRequest({
       limit ?? null,
       startKey ?? null,
       visibility ?? null,
+      q || null,
     ],
   };
 }
@@ -388,12 +398,14 @@ export function buildTeamsListRequest({
   includeArchived = false,
   limit,
   startKey,
+  q,
 }: TeamsListQueryArgs): ListRequest {
   return {
-    path: listPath('/api/teams/', {includeArchived, limit, startKey}),
+    path: listPath('/api/teams/', {includeArchived, q, limit, startKey}),
     queryKey: [
       'teams',
       includeArchived ? 'archived' : 'active',
+      q || null,
       limit ?? null,
       startKey ?? null,
     ],
@@ -436,6 +448,7 @@ export const usePagedTeams = ({
     user,
     enabled,
     scope: includeArchived ? 'archived' : 'active',
+    searchable: !includeArchived,
     defaultPageSize,
     buildRequest: page => buildTeamsListRequest({includeArchived, ...page}),
     itemsKey: 'teams',
@@ -445,19 +458,21 @@ export const usePagedTeams = ({
 
 /**
  * Active teams for pickers, newest first. `items` grows a page at a time;
- * Get more follows `nextStartKey`.
+ * Get more follows `nextStartKey`. With `q`, the teams whose name matches.
  */
 export const useInfiniteTeams = ({
   user,
   enabled = true,
+  q,
 }: {
   user: User | null;
   enabled?: boolean;
+  q?: string;
 }) =>
   useInfiniteList<GetListTeamsResponse, 'teams'>({
     user,
     enabled,
-    buildRequest: buildTeamsListRequest,
+    buildRequest: page => buildTeamsListRequest({q, ...page}),
     itemsKey: 'teams',
   });
 
@@ -503,6 +518,7 @@ export const useGetTemplates = ({
  * Cursor-stack pagination for Control Centre template tables. Next uses
  * `nextStartKey`; Previous re-requests the previous page's startKey.
  * Next stays available when `nextStartKey` is set even on a short or empty page.
+ * Active lists return `serverSearch` for the table's search box.
  */
 export const usePagedTemplates = ({
   user,
@@ -524,6 +540,7 @@ export const usePagedTemplates = ({
       user,
       enabled,
       scope: `${includeArchived ? 'archived' : 'active'}:${teamId ?? ''}:${visibility ?? 'all'}`,
+      searchable: !includeArchived,
       defaultPageSize,
       buildRequest: page => {
         const {path, queryKey} = buildTemplatesListRequest({
@@ -545,18 +562,20 @@ export const TEMPLATE_PICKER_PAGE_SIZE = PICKER_PAGE_SIZE;
 
 /**
  * Infinite template catalogue for selectors. Newest `createdAt` first; Get
- * more follows `nextStartKey`.
+ * more follows `nextStartKey`. With `q`, the templates whose name matches.
  */
 export const useInfiniteTemplates = ({
   user,
   enabled = true,
   includeArchived = false,
   teamId,
+  q,
 }: {
   user: User | null;
   enabled?: boolean;
   includeArchived?: boolean;
   teamId?: string;
+  q?: string;
 }) =>
   useInfiniteList<GetListTemplatesResponse, 'templates'>({
     user,
@@ -566,6 +585,7 @@ export const useInfiniteTemplates = ({
       const {path, queryKey} = buildTemplatesListRequest({
         teamId,
         includeArchived,
+        q,
         ...page,
       });
       return {path, queryKey: [...queryKey, user?.token]};
@@ -587,12 +607,14 @@ export function buildUsersListRequest({
   includeArchived = false,
   limit,
   startKey,
+  q,
 }: UsersListQueryArgs): ListRequest {
   return {
-    path: listPath('/api/users', {includeArchived, limit, startKey}),
+    path: listPath('/api/users', {includeArchived, q, limit, startKey}),
     queryKey: [
       'users',
       includeArchived ? 'disabled' : 'enabled',
+      q || null,
       limit ?? null,
       startKey ?? null,
     ],
@@ -601,7 +623,8 @@ export function buildUsersListRequest({
 
 /**
  * Cursor-paged user accounts in name order: enabled accounts, or disabled
- * ones only when `includeArchived` is true (the Archive tab).
+ * ones only when `includeArchived` is true (the Archive tab). The enabled
+ * list returns `serverSearch`, which matches names and email addresses.
  */
 export const usePagedUsers = ({
   user,
@@ -614,15 +637,26 @@ export const usePagedUsers = ({
   includeArchived?: boolean;
   defaultPageSize?: number;
 }) => {
-  const {items, ...paged} = usePagedList<GetListAllUsersResponse, 'users'>({
+  const {items, serverSearch, ...paged} = usePagedList<
+    GetListAllUsersResponse,
+    'users'
+  >({
     user,
     enabled,
     scope: includeArchived ? 'disabled' : 'enabled',
+    searchable: !includeArchived,
     defaultPageSize,
     buildRequest: page => buildUsersListRequest({includeArchived, ...page}),
     itemsKey: 'users',
   });
-  return {...paged, users: items};
+  return {
+    ...paged,
+    users: items,
+    serverSearch: serverSearch && {
+      ...serverSearch,
+      placeholder: 'Search by name or email...',
+    },
+  };
 };
 
 /** Invite row plus its registration link and a QR code for that link. */

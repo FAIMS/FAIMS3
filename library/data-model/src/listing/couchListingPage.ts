@@ -223,6 +223,11 @@ function sameCursor(a: ListCursor, b: ListCursor): boolean {
 
 /** Sorts after every string and number in CouchDB collation. */
 const LISTING_KEY_MAX = {};
+/**
+ * Appended to a string to make the upper bound of "every string that starts
+ * with it": a very high code point, as the CouchDB guide recommends.
+ */
+const LISTING_STRING_PREFIX_MAX = '\ufff0';
 
 /** View query range for one listing-key prefix. */
 export type ListingViewRange = {
@@ -237,16 +242,33 @@ export type ListingViewRange = {
  *
  * Descending (default) reads highest sort value first, e.g. newest
  * `createdAt`. Ascending suits name-ordered listings.
+ *
+ * `startsWith` narrows the range to keys whose first part after `prefix` is
+ * a string starting with it, and always reads ascending. CouchDB collates
+ * strings by language rules, not by code unit, so the range can hold a few
+ * keys that do not literally start with it; callers check each row.
  */
 export function listingViewRange({
   prefix = [],
   cursor,
   descending = true,
+  startsWith,
 }: {
   prefix?: readonly unknown[];
   cursor?: ListCursor;
   descending?: boolean;
+  startsWith?: string;
 }): ListingViewRange {
+  if (startsWith !== undefined) {
+    return {
+      startkey: cursor ? [...prefix, ...cursor] : [...prefix, startsWith],
+      endkey: [
+        ...prefix,
+        startsWith + LISTING_STRING_PREFIX_MAX,
+        LISTING_KEY_MAX,
+      ],
+    };
+  }
   if (descending) {
     return {
       startkey: cursor ? [...prefix, ...cursor] : [...prefix, LISTING_KEY_MAX],
@@ -321,6 +343,12 @@ export type QueryListingPageArgs<V> = {
   descending?: boolean;
   /** Scalars after the prefix. Default `[sortMs, id]`. */
   cursorShape?: ListCursorShape;
+  /**
+   * Reads only keys whose first part after `prefix` is a string starting
+   * with this, in ascending order (`descending` is ignored). The first
+   * cursor part must be a string. See {@link listingViewRange}.
+   */
+  keyStartsWith?: string;
   /** Visible rows wanted. */
   limit: number;
   /** Exclusive cursor from the previous page's `nextStartKey`. */
@@ -331,6 +359,12 @@ export type QueryListingPageArgs<V> = {
    * scan cap.
    */
   include?: (value: V, row: ListingViewRow<V>) => boolean | Promise<boolean>;
+  /**
+   * Called once per view query with the rows it returned, before `include`
+   * sees any of them. Lets a caller load related data for the whole batch
+   * in one query instead of one per row.
+   */
+  onBatch?: (rows: ListingViewRow<V>[]) => Promise<void>;
   /** Max view rows examined in this call. */
   scanMax?: number;
   /** Max view queries in this call. */
@@ -357,15 +391,25 @@ export async function queryListingPage<V>({
   prefix = [],
   descending = true,
   cursorShape = LIST_CURSOR_SHAPE_MS_ID,
+  keyStartsWith,
   limit,
   startKey,
   include,
+  onBatch,
   scanMax = LIST_VIEW_SCAN_MAX,
   queryMax = LIST_VIEW_QUERY_MAX,
 }: QueryListingPageArgs<V>): Promise<ListingPage<V>> {
   let exclusiveAfter = parseListCursor(startKey, cursorShape);
   if (startKey !== undefined && startKey !== '' && !exclusiveAfter) {
     return {items: []};
+  }
+  // A cursor from outside the searched range is unknown: it would also put
+  // the start of the Couch range after its end, which Couch rejects.
+  if (keyStartsWith !== undefined && exclusiveAfter) {
+    const first = exclusiveAfter[0];
+    if (typeof first !== 'string' || !first.startsWith(keyStartsWith)) {
+      return {items: []};
+    }
   }
 
   type CursorRow = {row: ListingViewRow<V>; cursor: ListCursor};
@@ -394,7 +438,12 @@ export async function queryListingPage<V>({
     // One lookahead row tells us whether the view continues past this batch,
     // so a page that ends exactly on the last row carries no `nextStartKey`.
     const result = await query(view, {
-      ...listingViewRange({prefix, cursor: exclusiveAfter, descending}),
+      ...listingViewRange({
+        prefix,
+        cursor: exclusiveAfter,
+        descending,
+        startsWith: keyStartsWith,
+      }),
       include_docs: false,
       limit: batchLimit + 1,
     });
@@ -423,6 +472,7 @@ export async function queryListingPage<V>({
       moreRemain = false;
       break;
     }
+    if (onBatch) await onBatch(rows.map(({row}) => row));
 
     for (let i = 0; i < rows.length; i++) {
       const {row, cursor} = rows[i];

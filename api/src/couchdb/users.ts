@@ -13,12 +13,16 @@ import {
   GetListAllUsersItem,
   isPeopleUserAccountDisabled,
   ListingPage,
+  ListingSearch,
+  ListingSearchPointer,
   PeopleDBDocument,
   PeopleDBFields,
   peopleListingViewAndPrefix,
+  peopleSearchViewAndPrefix,
   PeopleResourceMemberRow,
   peopleResourceListingViewAndPrefix,
   queryListingPage,
+  queryListingSearchPage,
   Role,
   safeWriteDocument,
 } from '@faims3/data-model';
@@ -186,17 +190,40 @@ export async function getUsers(): Promise<ExistingPeopleDBDocument[]> {
  * XOR: true lists disabled accounts only. The exclusive cursor is JSON
  * `[nameLower, userId]`; paging comes from the shared `queryListingPage`.
  * Rows are the listing-view value, which carries no login secrets.
+ *
+ * With `search`, the page holds the enabled accounts whose name or email
+ * address matches, in word order; the caller must not combine it with
+ * `includeArchived`.
  */
 export async function getUsersPage({
   includeArchived,
+  search,
   limit,
   startKey,
 }: {
   includeArchived: boolean;
+  search?: ListingSearch;
   limit: number;
   startKey?: string;
 }): Promise<ListingPage<GetListAllUsersItem>> {
   const usersDb = getUsersDB();
+  if (search) {
+    const {view, prefix, listingView} = peopleSearchViewAndPrefix();
+    return queryListingSearchPage<GetListAllUsersItem>({
+      query: (name, options) =>
+        usersDb.query<ListingSearchPointer>(name, options),
+      view,
+      prefix,
+      search,
+      loadRows: keys =>
+        usersDb.query<GetListAllUsersItem>(listingView, {
+          keys,
+          include_docs: false,
+        }),
+      limit,
+      startKey,
+    });
+  }
   return queryListingPage<GetListAllUsersItem>({
     query: (view, options) => usersDb.query<GetListAllUsersItem>(view, options),
     ...peopleListingViewAndPrefix({includeArchived}),

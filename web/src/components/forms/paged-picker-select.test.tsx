@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import {cleanup, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {useState} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {Dialog, DialogContent, DialogTitle} from '@/components/ui/dialog';
-import {PagedPickerSelect} from './paged-picker-select';
+import {PagedPickerSelect, type PagedPickerOption} from './paged-picker-select';
 
 const options = [
   {value: 'blue', label: 'Blue'},
@@ -166,6 +167,145 @@ describe('PagedPickerSelect', () => {
     await user.click(screen.getByRole('combobox'));
     expect(onOpenChange).not.toHaveBeenCalled();
     expect(screen.queryByText('Blue')).toBeNull();
+  });
+
+  describe('search', () => {
+    const teams: PagedPickerOption[] = [
+      ...options,
+      {value: 'blue-2', label: 'Blue Two'},
+    ];
+
+    /**
+     * A picker wired the way a caller wires it: the options are the teams
+     * whose label starts with the text in the search box.
+     */
+    function SearchablePicker({
+      onSearch,
+      isPending = false,
+    }: {
+      onSearch?: (text: string) => void;
+      isPending?: boolean;
+    }) {
+      const [value, setValue] = useState<string>();
+      const [text, setText] = useState('');
+      return (
+        <PagedPickerSelect
+          noun="teams"
+          value={value}
+          onChange={setValue}
+          options={teams.filter(team =>
+            team.label.toLowerCase().startsWith(text.trim().toLowerCase())
+          )}
+          isPending={isPending}
+          search={{
+            value: text,
+            onChange: next => {
+              setText(next);
+              onSearch?.(next);
+            },
+          }}
+          testId="team-picker"
+        />
+      );
+    }
+
+    it('has no search box unless the caller supplies a search', async () => {
+      const user = userEvent.setup();
+      render(
+        <PagedPickerSelect noun="teams" options={options} onChange={vi.fn()} />
+      );
+      await user.click(screen.getByRole('combobox'));
+      expect(screen.queryByRole('searchbox')).toBeNull();
+    });
+
+    it('passes the text typed to the caller and lists the options it gets back', async () => {
+      const user = userEvent.setup();
+      const onSearch = vi.fn();
+      render(<SearchablePicker onSearch={onSearch} />);
+      await user.click(screen.getByRole('combobox'));
+      expect(screen.getByText('Red')).toBeTruthy();
+
+      const box = screen.getByRole('searchbox', {name: 'Search teams'});
+      expect(box.getAttribute('data-testid')).toBe('team-picker-search');
+      await user.type(box, 'blu');
+      expect(onSearch).toHaveBeenLastCalledWith('blu');
+      expect(screen.queryByText('Red')).toBeNull();
+      expect(screen.getByText('Blue')).toBeTruthy();
+      expect(screen.getByText('Blue Two')).toBeTruthy();
+    });
+
+    it('says when nothing matches, and that it is searching', async () => {
+      const user = userEvent.setup();
+      const {rerender} = render(<SearchablePicker />);
+      await user.click(screen.getByRole('combobox'));
+      await user.type(screen.getByRole('searchbox'), ' zebra ');
+      expect(
+        screen.getByText('No teams with a name matching "zebra".')
+      ).toBeTruthy();
+
+      rerender(<SearchablePicker isPending />);
+      expect(screen.getByText('Searching teams…')).toBeTruthy();
+    });
+
+    it('keeps naming the team picked once the search is gone', async () => {
+      const user = userEvent.setup();
+      // The caller's unsearched list does not hold the team that is picked.
+      function Picker() {
+        const [value, setValue] = useState<string>();
+        const [text, setText] = useState('');
+        return (
+          <PagedPickerSelect
+            noun="teams"
+            value={value}
+            onChange={setValue}
+            options={text ? [{value: 'far', label: 'Far Away'}] : options}
+            search={{value: text, onChange: setText}}
+          />
+        );
+      }
+      render(<Picker />);
+      await user.click(screen.getByRole('combobox'));
+      await user.type(screen.getByRole('searchbox'), 'far');
+      await user.click(screen.getByText('Far Away'));
+
+      // Picking closes the list, which clears the search.
+      expect(screen.queryByRole('searchbox')).toBeNull();
+      expect(screen.getByRole('combobox').textContent).toContain('Far Away');
+
+      await user.click(screen.getByRole('combobox'));
+      expect((screen.getByRole('searchbox') as HTMLInputElement).value).toBe(
+        ''
+      );
+      expect(screen.getByText('Blue')).toBeTruthy();
+    });
+
+    it('clears the search when the list is closed without a choice', async () => {
+      const user = userEvent.setup();
+      const onSearch = vi.fn();
+      render(<SearchablePicker onSearch={onSearch} />);
+      await user.click(screen.getByRole('combobox'));
+      await user.type(screen.getByRole('searchbox'), 'blu');
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('searchbox')).toBeNull();
+      expect(onSearch).toHaveBeenLastCalledWith('');
+    });
+
+    it('hides Get more while a search is loading', async () => {
+      const user = userEvent.setup();
+      render(
+        <PagedPickerSelect
+          noun="teams"
+          options={[]}
+          onChange={vi.fn()}
+          search={{value: 'blu', onChange: vi.fn()}}
+          isPending
+          hasNextPage
+          onGetMore={vi.fn()}
+        />
+      );
+      await user.click(screen.getByRole('combobox'));
+      expect(screen.queryByRole('button', {name: 'Get more'})).toBeNull();
+    });
   });
 
   it('lets the mouse wheel scroll its list inside a dialog', async () => {

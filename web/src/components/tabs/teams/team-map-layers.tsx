@@ -27,6 +27,7 @@ const TeamMapLayers = ({teamId}: {teamId: string}) => {
       loading={assets.tableLoading}
       defaultRowsPerPage={assets.pageSize}
       serverPagination={assets.serverPagination}
+      serverSearch={assets.serverSearch}
       onRowClick={asset =>
         navigate({
           to: '/map-layers/$assetId',

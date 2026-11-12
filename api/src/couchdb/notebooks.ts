@@ -20,6 +20,8 @@ import {
   file_data_to_attachments,
   getDataDB,
   isListingViewRow,
+  ListingSearch,
+  ListingSearchPointer,
   listingViewPrefixRange,
   NotebookDefinition,
   NotebookUiSpecificationInput,
@@ -31,6 +33,7 @@ import {
   PROJECTS_LISTING_BY_TEAM_ID,
   PROJECTS_LISTING_BY_TEMPLATE_ID,
   projectListingViewAndPrefix,
+  projectSearchViewAndPrefix,
   ProjectListItem,
   ProjectListStatus,
   ProjectStatus,
@@ -38,6 +41,7 @@ import {
   PutUpdateNotebookOfflineMapRegionInput,
   PutUpdateNotebookUiSpecificationInput,
   queryListingPage,
+  queryListingSearchPage,
   Resource,
   resourceRoles,
   setAttachmentDumperForType,
@@ -321,6 +325,9 @@ export type PaginatedNotebookList = {
  * exclusive JSON cursor and the scan cap come from the shared
  * `queryListingPage`. `byteCount` is opt-in and costs one Couch `info()` per
  * row of the returned page only.
+ *
+ * With `search`, the page holds the active surveys whose name matches, in
+ * word order; the caller must not combine it with another `status`.
  */
 export const getUserProjectsPage = async (
   user: Express.User,
@@ -329,6 +336,7 @@ export const getUserProjectsPage = async (
     templateId,
     status,
     includeByteCount = false,
+    search,
     limit,
     startKey,
   }: {
@@ -336,32 +344,56 @@ export const getUserProjectsPage = async (
     templateId?: string;
     status: ProjectListStatus;
     includeByteCount?: boolean;
+    search?: ListingSearch;
     limit: number;
     startKey?: string;
   }
 ): Promise<PaginatedNotebookList> => {
   const projectsDb = localGetProjectsDb();
+  const include = (project: ProjectListItem) => {
+    // The template range is not keyed by team; filter the team here.
+    if (templateId && teamId && project.ownedByTeamId !== teamId) {
+      return false;
+    }
+    return userCanDo({
+      action: Action.READ_PROJECT_METADATA,
+      resourceId: project._id,
+      user,
+    });
+  };
 
   let page;
   try {
-    page = await queryListingPage<ProjectListItem>({
-      query: (view, options) =>
-        projectsDb.query<ProjectListItem>(view, options),
-      ...projectListingViewAndPrefix({teamId, templateId, status}),
-      limit,
-      startKey,
-      include: project => {
-        // The template view is not keyed by team; filter the team here.
-        if (templateId && teamId && project.ownedByTeamId !== teamId) {
-          return false;
-        }
-        return userCanDo({
-          action: Action.READ_PROJECT_METADATA,
-          resourceId: project._id,
-          user,
-        });
-      },
-    });
+    if (search) {
+      const {view, prefix, listingView} = projectSearchViewAndPrefix({
+        teamId,
+        templateId,
+      });
+      page = await queryListingSearchPage<ProjectListItem>({
+        query: (name, options) =>
+          projectsDb.query<ListingSearchPointer>(name, options),
+        view,
+        prefix,
+        search,
+        loadRows: keys =>
+          projectsDb.query<ProjectListItem>(listingView, {
+            keys,
+            include_docs: false,
+          }),
+        limit,
+        startKey,
+        include,
+      });
+    } else {
+      page = await queryListingPage<ProjectListItem>({
+        query: (view, options) =>
+          projectsDb.query<ProjectListItem>(view, options),
+        ...projectListingViewAndPrefix({teamId, templateId, status}),
+        limit,
+        startKey,
+        include,
+      });
+    }
   } catch (error) {
     throw new Exceptions.InternalSystemError(
       'An error occurred while reading projects from the Project DB.'

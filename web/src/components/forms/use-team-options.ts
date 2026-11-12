@@ -10,10 +10,12 @@
  *   complete however many teams exist.
  * - Any visible team qualifies (a global creator, or an assign-to-team
  *   dialog). Teams load a page at a time, newest first, and the picker shows
- *   "Get more" while further pages remain.
+ *   "Get more" while further pages remain. Its search box asks the API for
+ *   the teams whose name matches, so a team need not be paged to.
  */
 import type {User} from '@/context/auth-provider';
 import {get} from '@/hooks/api-fetch';
+import {useListSearch} from '@/hooks/paged-list';
 import {useInfiniteTeams} from '@/hooks/queries';
 import {
   getUserResourcesForAction,
@@ -36,6 +38,9 @@ import {
  *   visible active team is offered a page at a time.
  * @param ensureTeamId A team to offer even when it is not on a loaded page,
  *   such as the resource's current owner, so it can be the default value.
+ *
+ * `teams` is never narrowed by the picker's search: callers derive defaults
+ * from it. Search results are returned separately in `more.search.results`.
  */
 export function useTeamOptions({
   user,
@@ -54,6 +59,21 @@ export function useTeamOptions({
 } {
   const fetchById = eligibleTeamIds !== undefined;
   const list = useInfiniteTeams({user, enabled: !fetchById});
+
+  const search = useListSearch();
+  const typed = search.input.trim();
+  const searching = !fetchById && typed !== '';
+  // False while the text typed is ahead of the search requested.
+  const searchSettled = search.q === typed;
+  const matches = useInfiniteTeams({
+    user,
+    enabled: searching && search.q !== '',
+    q: search.q || undefined,
+  });
+  const matchingTeams = useMemo(
+    () => matches.items.map(({_id, name}) => ({_id, name})),
+    [matches.items]
+  );
 
   const idsToFetch = useMemo(
     () => [
@@ -102,9 +122,26 @@ export function useTeamOptions({
     isLoading: list.isPending || fetchedPending,
     more: {
       paged: (list.data?.pages.length ?? 0) > 1 || list.hasNextPage,
-      hasNextPage: list.hasNextPage,
-      isFetchingNextPage: list.isFetchingNextPage,
-      fetchNextPage: () => void list.fetchNextPage(),
+      hasNextPage: searching
+        ? searchSettled && matches.hasNextPage
+        : list.hasNextPage,
+      isFetchingNextPage: searching
+        ? matches.isFetchingNextPage
+        : list.isFetchingNextPage,
+      fetchNextPage: () => void (searching ? matches : list).fetchNextPage(),
+      search: {
+        value: search.input,
+        onChange: search.setInput,
+        ...(searching
+          ? {
+              results: {
+                teams: searchSettled ? matchingTeams : [],
+                isPending: !searchSettled || matches.isPending,
+                isError: searchSettled && matches.isError,
+              },
+            }
+          : {}),
+      },
     },
   };
 }

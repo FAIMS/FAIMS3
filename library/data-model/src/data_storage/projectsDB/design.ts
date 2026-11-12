@@ -2,6 +2,10 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 import {convertToCouchDBString} from '../utils';
+import {
+  listingSearchMap,
+  listingSearchPrefix,
+} from '../../listing/listingSearch';
 
 // Index constants
 const INDEX_DOCUMENT_NAME = 'index';
@@ -9,6 +13,7 @@ const PROJECTS_BY_TEAM_ID_POSTFIX = 'byTeamId';
 const PROJECTS_LISTING_BY_PROJECT_ID_POSTFIX = 'listingByProjectId';
 const PROJECTS_LISTING_BY_TEAM_ID_POSTFIX = 'listingByTeam';
 const PROJECTS_LISTING_BY_TEMPLATE_ID_POSTFIX = 'listingByTemplate';
+const PROJECTS_SEARCH_POSTFIX = 'search';
 
 export const PROJECTS_BY_TEAM_ID = `${INDEX_DOCUMENT_NAME}/${PROJECTS_BY_TEAM_ID_POSTFIX}`;
 /**
@@ -27,6 +32,13 @@ export const PROJECTS_LISTING_BY_TEAM_ID = `${INDEX_DOCUMENT_NAME}/${PROJECTS_LI
  * `[templateId, statusFlag, createdAtMs, _id]` (surveys made from a template).
  */
 export const PROJECTS_LISTING_BY_TEMPLATE_ID = `${INDEX_DOCUMENT_NAME}/${PROJECTS_LISTING_BY_TEMPLATE_ID_POSTFIX}`;
+
+/**
+ * Name search over active (OPEN and CLOSED) surveys, keyed
+ * `[scopeKind, scopeId, word, _id]` for the whole catalogue, the owning team
+ * and the source template. See `listingSearch.ts`.
+ */
+export const PROJECTS_SEARCH = `${INDEX_DOCUMENT_NAME}/${PROJECTS_SEARCH_POSTFIX}`;
 
 /**
  * Status key component for ARCHIVED surveys. Lower than
@@ -83,6 +95,34 @@ export function projectListingViewAndPrefix({
         : PROJECT_LIST_ACTIVE_FLAG,
     ],
     cursorShape: ['number', 'string'],
+  };
+}
+
+/**
+ * Search view, key prefix and listing view for one GET /api/notebooks?q=
+ * page; spread into `queryListingSearchPage` with `loadRows` reading
+ * `listingView`. Active surveys only.
+ *
+ * `templateId` takes the template scope; otherwise `teamId` takes the team
+ * scope. A caller passing both filters the other one itself.
+ */
+export function projectSearchViewAndPrefix({
+  teamId,
+  templateId,
+}: {
+  teamId?: string;
+  templateId?: string;
+}): {view: string; prefix: unknown[]; listingView: string} {
+  return {
+    view: PROJECTS_SEARCH,
+    prefix: listingSearchPrefix(
+      templateId
+        ? {kind: 'template', id: templateId}
+        : teamId
+          ? {kind: 'team', id: teamId}
+          : undefined
+    ),
+    listingView: PROJECTS_LISTING_BY_PROJECT_ID,
   };
 }
 
@@ -161,6 +201,32 @@ const indexDocument = {
           createdMs = 0;
         }
         emit([doc.templateId, status, createdMs, doc._id], row);
+      }),
+    },
+    // GET /api/notebooks?q=. Rows point at the `listingByProjectId` row.
+    [PROJECTS_SEARCH_POSTFIX]: {
+      map: listingSearchMap((doc, tokenize) => {
+        if (!doc || !doc._id || doc._id[0] === '_') {
+          return;
+        }
+        if (doc.status === 'ARCHIVED') {
+          return;
+        }
+        var createdMs = Date.parse(doc.createdAt);
+        if (!(createdMs > 0)) {
+          createdMs = 0;
+        }
+        var tokens = tokenize(doc.name);
+        var value = {tokens: tokens, key: [1, createdMs, doc._id]};
+        for (var i = 0; i < tokens.length; i++) {
+          emit(['all', '', tokens[i], doc._id], value);
+          if (doc.ownedByTeamId) {
+            emit(['team', doc.ownedByTeamId, tokens[i], doc._id], value);
+          }
+          if (doc.templateId) {
+            emit(['template', doc.templateId, tokens[i], doc._id], value);
+          }
+        }
       }),
     },
   },

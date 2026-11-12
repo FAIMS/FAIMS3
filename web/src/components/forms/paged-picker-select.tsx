@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import {Button} from '@/components/ui/button';
+import {Input} from '@/components/ui/input';
 import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover';
 import {cn} from '@/lib/utils';
+import {LIST_SEARCH_MAX_LENGTH} from '@faims3/data-model';
 import {Check, ChevronDown, X} from 'lucide-react';
 import {useState} from 'react';
 
@@ -9,9 +11,21 @@ import {useState} from 'react';
 export type PagedPickerOption = {value: string; label: string};
 
 /**
+ * Search box of a {@link PagedPickerSelect}. The caller sends `value` to the
+ * list endpoint and passes the matches back as `options`.
+ */
+export type PagedPickerSearch = {
+  value: string;
+  onChange: (value: string) => void;
+};
+
+/**
  * Single-choice selector over a list that arrives a page at a time. It shows
  * the options loaded so far and a "Get more" button while the list has
  * further pages, so a long list is never silently cut short.
+ *
+ * With `search`, a box above the list lets the user type part of a name
+ * instead of paging to it. The box is cleared when the list closes.
  *
  * Presentational: the caller owns the query and passes its state in. Use
  * `onOpenChange` to start loading only once the list is opened.
@@ -28,6 +42,7 @@ export function PagedPickerSelect({
   isFetchingNextPage = false,
   onGetMore,
   onOpenChange,
+  search,
   disabled = false,
   clearable = false,
   placeholder,
@@ -47,6 +62,8 @@ export function PagedPickerSelect({
   isFetchingNextPage?: boolean;
   onGetMore?: () => void;
   onOpenChange?: (open: boolean) => void;
+  /** Show a search box; `options` are then the matches for its text. */
+  search?: PagedPickerSearch;
   disabled?: boolean;
   /** Show a button that resets the value to `undefined`. */
   clearable?: boolean;
@@ -54,14 +71,21 @@ export function PagedPickerSelect({
   testId?: string;
 }) {
   const [open, setOpenState] = useState(false);
+  // The option last picked here. Its label names the value once the options
+  // change (a search is cleared, or shows other matches).
+  const [picked, setPicked] = useState<PagedPickerOption>();
   const setOpen = (next: boolean) => {
     if (disabled) return;
     setOpenState(next);
+    if (!next && search?.value) search.onChange('');
     onOpenChange?.(next);
   };
 
   const shownLabel =
-    options.find(option => option.value === value)?.label ?? selectedLabel;
+    options.find(option => option.value === value)?.label ??
+    (picked && picked.value === value ? picked.label : undefined) ??
+    selectedLabel;
+  const searchText = search?.value.trim() ?? '';
 
   return (
     <div className="flex w-full items-center gap-2">
@@ -94,10 +118,23 @@ export function PagedPickerSelect({
           align="start"
           className="w-[var(--radix-popover-trigger-width)] min-w-64 p-0"
         >
+          {search ? (
+            <div className="border-b p-2">
+              <Input
+                type="search"
+                value={search.value}
+                onChange={event => search.onChange(event.target.value)}
+                placeholder={`Search ${noun} by name...`}
+                aria-label={`Search ${noun}`}
+                maxLength={LIST_SEARCH_MAX_LENGTH}
+                data-testid={testId ? `${testId}-search` : undefined}
+              />
+            </div>
+          ) : null}
           <div className="max-h-72 overflow-y-auto py-1">
             {isPending ? (
               <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-                Loading {noun}…
+                {searchText ? `Searching ${noun}…` : `Loading ${noun}…`}
               </p>
             ) : isError ? (
               <p className="px-3 py-6 text-center text-sm text-destructive">
@@ -105,7 +142,9 @@ export function PagedPickerSelect({
               </p>
             ) : options.length === 0 ? (
               <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-                No {noun}.
+                {searchText
+                  ? `No ${noun} with a name matching "${searchText}".`
+                  : `No ${noun}.`}
               </p>
             ) : (
               options.map(option => {
@@ -119,6 +158,7 @@ export function PagedPickerSelect({
                       selected && 'bg-accent'
                     )}
                     onClick={() => {
+                      setPicked(option);
                       onChange(option.value);
                       setOpen(false);
                     }}
@@ -134,7 +174,7 @@ export function PagedPickerSelect({
                 );
               })
             )}
-            {hasNextPage && onGetMore ? (
+            {hasNextPage && onGetMore && !isPending && !isError ? (
               <div className="border-t p-1">
                 <Button
                   type="button"

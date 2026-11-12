@@ -24,6 +24,7 @@ import {
   type MapAssetAuthorizationInput,
   MapAssetDetailsSchema,
   ListingPage,
+  ListingSearch,
   PostMapAssetLinkInputSchema,
   resolveListLimit,
   resolveListStartKey,
@@ -69,6 +70,7 @@ import {
 } from '../logging';
 import {requireAuthenticationAPI, userCanDo} from '../middleware';
 import validate from '../middleware/validate';
+import {resolveListSearch} from './listSearch';
 import patch from '../utils/patchExpressAsync';
 
 patch();
@@ -279,11 +281,18 @@ function authorizeAsset(
  * other teams. When the caller's team role (or a global role) grants
  * READ_MAP_ASSET, the view rows are returned as-is. Otherwise each asset is
  * checked for creator / explicit read access (e.g. TEAM_MEMBER_CREATOR).
+ *
+ * With `search`, the page holds the team's layers whose name matches, in
+ * word order.
  */
 export async function listReadableTeamMapAssetsPage(
   user: Express.User,
   teamId: string,
-  {limit, startKey}: {limit: number; startKey?: string}
+  {
+    search,
+    limit,
+    startKey,
+  }: {search?: ListingSearch; limit: number; startKey?: string}
 ): Promise<GetMapAssetListResponse> {
   const teamGrantsRead = teamGrantsMapAssetAction({
     decodedToken: tokenOf(user),
@@ -293,6 +302,7 @@ export async function listReadableTeamMapAssetsPage(
   return mapAssetListResponse(
     await getMapAssetsPage({
       teamId,
+      search,
       limit,
       startKey,
       canRead: teamGrantsRead
@@ -413,6 +423,10 @@ function assertFiles(files: UploadedMapFile[]): UploadedMapFile[] {
  * `teamId` lists a team's layers, and neither lists every layer the caller
  * can read. `linkableToProjectId` narrows that library list to ready layers
  * not yet linked to the survey.
+ *
+ * `q` searches the team's layers or the library (with or without
+ * `linkableToProjectId`) by name and pages in word order. It is refused
+ * with `projectId`: a survey's linked layers are not searchable.
  */
 api.get(
   '/',
@@ -426,6 +440,11 @@ api.get(
     const {teamId, projectId, linkableToProjectId} = req.query;
     const limit = resolveListLimit(req.query.limit);
     const startKey = resolveListStartKey(req.query.startKey);
+    const search = resolveListSearch(req.query.q, {
+      unavailable: projectId
+        ? 'q cannot be combined with projectId.'
+        : undefined,
+    });
 
     if (projectId) {
       if (
@@ -464,7 +483,11 @@ api.get(
         throw new Exceptions.UnauthorizedException();
       }
       res.json(
-        await listReadableTeamMapAssetsPage(user, teamId, {limit, startKey})
+        await listReadableTeamMapAssetsPage(user, teamId, {
+          search,
+          limit,
+          startKey,
+        })
       );
       return;
     }
@@ -499,6 +522,7 @@ api.get(
     res.json(
       await mapAssetListResponse(
         await getMapAssetsPage({
+          search,
           limit,
           startKey,
           canRead: linked

@@ -23,10 +23,14 @@ import {
   MAP_ASSETS_BY_TEAM,
   mapAssetLinkListingViewAndPrefix,
   mapAssetListingViewAndPrefix,
+  mapAssetSearchViewAndPrefix,
   isListingViewRow,
   ListingPage,
+  ListingSearch,
+  ListingSearchPointer,
   listingViewPrefixRange,
   queryListingPage,
+  queryListingSearchPage,
   MapAssetFields,
   MapAssetLinkFields,
   GetMapAssetDownloadUrlResponse,
@@ -130,25 +134,46 @@ export async function listAssetsByTeam(
  * the exclusive JSON `[createdAtMs, assetId]` cursor and the scan cap come
  * from the shared `queryListingPage`. Omit `canRead` when the caller may
  * read every row in the range.
+ *
+ * With `search`, the page holds the layers in that range whose name
+ * matches, in word order.
  */
 export async function getMapAssetsPage({
   teamId,
+  search,
   limit,
   startKey,
   canRead,
 }: {
   teamId?: string;
+  search?: ListingSearch;
   limit: number;
   startKey?: string;
   canRead?: (asset: ExistingMapAsset) => boolean;
 }): Promise<ListingPage<ExistingMapAsset>> {
   const db = getMapAssetsDB();
+  const include = (asset: ExistingMapAsset) =>
+    isAsset(asset) && (canRead ? canRead(asset) : true);
+  if (search) {
+    const {view, prefix, listingView} = mapAssetSearchViewAndPrefix({teamId});
+    return queryListingSearchPage<ExistingMapAsset>({
+      query: (name, options) => db.query<ListingSearchPointer>(name, options),
+      view,
+      prefix,
+      search,
+      loadRows: keys =>
+        db.query<ExistingMapAsset>(listingView, {keys, include_docs: false}),
+      limit,
+      startKey,
+      include,
+    });
+  }
   return queryListingPage<ExistingMapAsset>({
     query: (view, options) => db.query<ExistingMapAsset>(view, options),
     ...mapAssetListingViewAndPrefix({teamId}),
     limit,
     startKey,
-    include: asset => isAsset(asset) && (canRead ? canRead(asset) : true),
+    include,
   });
 }
 

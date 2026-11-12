@@ -28,6 +28,18 @@ export type DataTableServerPagination = {
   onPageSizeChange: (size: number) => void;
 };
 
+/**
+ * Server-driven search: the table shows a search box, and the caller sends
+ * its text to the API (see `useListSearch`). Rows are not filtered in the
+ * browser.
+ */
+export type DataTableServerSearch = {
+  /** Text in the box. */
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+};
+
 interface DataTablePaginationProps<TData> {
   table: Table<TData>;
   serverPagination?: DataTableServerPagination;

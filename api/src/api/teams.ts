@@ -37,6 +37,7 @@ import {
 import express, {Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
+import {resolveListSearch} from './listSearch';
 import {deleteAllInvitesForTeam} from '../couchdb/invites';
 import {listAssetsByTeam} from '../couchdb/mapAssets/store';
 import {
@@ -79,7 +80,8 @@ export const api: express.Router = express.Router();
  * GET list teams — one page of the teams the caller can view, newest
  * `createdAt` first. Cursor pagination (`limit`, `startKey`, `nextStartKey`);
  * omitting `limit` returns the default page, never the whole DB.
- * `includeArchived=true` lists archived teams only.
+ * `includeArchived=true` lists archived teams only. `q` searches
+ * non-archived teams by name and pages in word order.
  */
 api.get(
   '/',
@@ -90,9 +92,15 @@ api.get(
       throw new Exceptions.UnauthorizedException();
     }
     const user = req.user;
+    const includeArchived = req.query.includeArchived === 'true';
     res.json(
       await getTeamsPage({
-        includeArchived: req.query.includeArchived === 'true',
+        includeArchived,
+        search: resolveListSearch(req.query.q, {
+          unavailable: includeArchived
+            ? 'q cannot be combined with includeArchived=true.'
+            : undefined,
+        }),
         limit: resolveListLimit(req.query.limit),
         startKey: resolveListStartKey(req.query.startKey),
         // Only teams the caller can see count towards the page.
@@ -189,6 +197,7 @@ api.get(
     await getTeamById(teamId);
     res.json(
       await listReadableTeamMapAssetsPage(req.user, teamId, {
+        search: resolveListSearch(req.query.q),
         limit: resolveListLimit(req.query.limit),
         startKey: resolveListStartKey(req.query.startKey),
       })

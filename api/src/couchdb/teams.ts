@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   ExistingTeamsDBDocument,
+  ListingSearch,
+  ListingSearchPointer,
   queryListingPage,
+  queryListingSearchPage,
   safeWriteDocument,
   slugify,
   teamListingViewAndPrefix,
+  teamSearchViewAndPrefix,
   TeamsDBDocument,
   TeamsDBFields,
   toPaginatedList,
@@ -48,20 +52,46 @@ export type PaginatedTeamList = {
  * is XOR: true lists archived teams only. Paging, the exclusive JSON
  * `[createdAtMs, teamId]` cursor and the scan cap come from the shared
  * `queryListingPage`.
+ *
+ * With `search`, the page holds the non-archived teams whose name matches,
+ * in word order; the caller must not combine it with `includeArchived`.
  */
 export const getTeamsPage = async ({
   includeArchived,
+  search,
   limit,
   startKey,
   canView,
 }: {
   includeArchived: boolean;
+  search?: ListingSearch;
   limit: number;
   startKey?: string;
   canView: (team: ExistingTeamsDBDocument) => boolean;
 }): Promise<PaginatedTeamList> => {
   const teamsDb = getTeamsDB();
   try {
+    if (search) {
+      const {view, prefix, listingView} = teamSearchViewAndPrefix();
+      return toPaginatedList(
+        await queryListingSearchPage<ExistingTeamsDBDocument>({
+          query: (name, options) =>
+            teamsDb.query<ListingSearchPointer>(name, options),
+          view,
+          prefix,
+          search,
+          loadRows: keys =>
+            teamsDb.query<ExistingTeamsDBDocument>(listingView, {
+              keys,
+              include_docs: false,
+            }),
+          limit,
+          startKey,
+          include: canView,
+        }),
+        'teams'
+      );
+    }
     const page = await queryListingPage<ExistingTeamsDBDocument>({
       query: (view, options) =>
         teamsDb.query<ExistingTeamsDBDocument>(view, options),

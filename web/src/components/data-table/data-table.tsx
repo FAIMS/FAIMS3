@@ -23,10 +23,11 @@ import {useState, ReactNode} from 'react';
 import {
   DataTablePagination,
   type DataTableServerPagination,
+  type DataTableServerSearch,
 } from './pagination';
 import {Input} from '@/components/ui/input';
 import {Skeleton} from '@/components/ui/skeleton';
-import {INPUT_LIMITS} from '@faims3/data-model';
+import {INPUT_LIMITS, LIST_SEARCH_MAX_LENGTH} from '@faims3/data-model';
 import {cn} from '@/lib/utils';
 
 interface DataTableProps<TData, TValue> {
@@ -45,11 +46,16 @@ interface DataTableProps<TData, TValue> {
   emptyMessage?: ReactNode;
   /**
    * When set, the table shows the current API page (server order) and Next
-   * follows `nextStartKey`. Search and column sort are disabled — they would
-   * only apply to the current page. Unrelated callers keep client-side
+   * follows `nextStartKey`. Client search and column sort are disabled — they
+   * would only apply to the current page. Unrelated callers keep client-side
    * `getPaginationRowModel`.
    */
   serverPagination?: DataTableServerPagination;
+  /**
+   * Search box for a server-paged table whose list endpoint takes `q`. The
+   * API does the matching; the table only shows the box.
+   */
+  serverSearch?: DataTableServerSearch;
   /** Server-driven paging: skip client slice/filter/sort. */
   manualPagination?: boolean;
   /** Page count when {@link manualPagination} is set (at least 1). */
@@ -79,6 +85,7 @@ export function DataTable<TData, TValue>({
   initialSorting = [],
   emptyMessage = 'No results.',
   serverPagination,
+  serverSearch,
   manualPagination = false,
   pageCount,
   pagination: paginationProp,
@@ -136,7 +143,9 @@ export function DataTable<TData, TValue>({
     },
   });
 
-  const showToolbar = !hideSearchInput || button || toolbarExtra;
+  const showServerSearch = useCursorPagination && !!serverSearch && !hideSearch;
+  const showToolbar =
+    !hideSearchInput || showServerSearch || button || toolbarExtra;
 
   return (
     <div className="flex flex-col gap-2" data-testid={testId}>
@@ -149,6 +158,17 @@ export function DataTable<TData, TValue>({
               onChange={event => table.setGlobalFilter(event.target.value)}
               className="max-w-sm"
               maxLength={INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH}
+              data-testid="web-data-table-search"
+            />
+          ) : null}
+          {showServerSearch ? (
+            <Input
+              placeholder={serverSearch.placeholder ?? 'Search by name...'}
+              value={serverSearch.value}
+              onChange={event => serverSearch.onChange(event.target.value)}
+              className="max-w-sm"
+              maxLength={LIST_SEARCH_MAX_LENGTH}
+              type="search"
               data-testid="web-data-table-search"
             />
           ) : null}

@@ -271,6 +271,7 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
             loading={available.tableLoading || links.isPending}
             defaultRowsPerPage={available.pageSize}
             serverPagination={available.serverPagination}
+            serverSearch={available.serverSearch}
             onRowClick={openSurvey}
             emptyMessage={`No available ${config.notebookNamePlural}.`}
           />

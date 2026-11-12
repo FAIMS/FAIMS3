@@ -14,10 +14,11 @@ import {GeneratePasswordReset} from '@/components/dialogs/generate-password-rese
  */
 export function UsersTab() {
   const {user: authUser} = useAuth();
-  const {users, tableLoading, pageSize, serverPagination} = usePagedUsers({
-    user: authUser,
-    defaultPageSize: 15,
-  });
+  const {users, tableLoading, pageSize, serverPagination, serverSearch} =
+    usePagedUsers({
+      user: authUser,
+      defaultPageSize: 15,
+    });
   const [resetDialog, setResetDialog] = useState<boolean>(false);
   const [resetUserId, setResetUserId] = useState<string | undefined>(undefined);
 
@@ -39,6 +40,7 @@ export function UsersTab() {
         loading={tableLoading}
         defaultRowsPerPage={pageSize}
         serverPagination={serverPagination}
+        serverSearch={serverSearch}
       />
       <GeneratePasswordReset
         open={resetDialog}

@@ -30,6 +30,7 @@ import {
 import express, {Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
+import {resolveListSearch} from './listSearch';
 import {getProjectIdsReferencingTemplate} from '../couchdb/notebooks';
 import {
   archiveTemplate,
@@ -67,6 +68,9 @@ export const api: express.Router = express.Router();
  * Cursor pagination (`limit`, `startKey`, `nextStartKey`) matches record
  * listing. Pages are newest-`createdAt` first. Omitting `limit` defaults to
  * 50; there is no unbounded dump.
+ *
+ * `q` searches non-archived templates by name (within `teamId` when given)
+ * and pages in word order.
  */
 api.get(
   '/',
@@ -88,6 +92,11 @@ api.get(
     const page = await getTemplatesPage({
       teamId: req.query.teamId,
       includeArchived,
+      search: resolveListSearch(req.query.q, {
+        unavailable: includeArchived
+          ? 'q cannot be combined with includeArchived=true.'
+          : undefined,
+      }),
       limit,
       startKey,
       visibility,

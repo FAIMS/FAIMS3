@@ -3,10 +3,15 @@
 // @ts-nocheck
 
 import {convertToCouchDBString} from '../utils';
+import {
+  listingSearchMap,
+  listingSearchPrefix,
+} from '../../listing/listingSearch';
 
 const INDEX_DOCUMENT_NAME = 'indexes';
 const PEOPLE_LISTING_BY_NAME_POSTFIX = 'listingByName';
 const PEOPLE_LISTING_BY_RESOURCE_POSTFIX = 'listingByResource';
+const PEOPLE_SEARCH_POSTFIX = 'search';
 
 /**
  * User list rows keyed `[disabledFlag, nameLower, _id]`. People documents
@@ -18,6 +23,12 @@ export const PEOPLE_LISTING_BY_NAME = `${INDEX_DOCUMENT_NAME}/${PEOPLE_LISTING_B
  * user per team / survey / template they hold a role on.
  */
 export const PEOPLE_LISTING_BY_RESOURCE = `${INDEX_DOCUMENT_NAME}/${PEOPLE_LISTING_BY_RESOURCE_POSTFIX}`;
+
+/**
+ * Search over enabled accounts by the words of the name and of every email
+ * address, keyed `['all', '', word, _id]`. See `listingSearch.ts`.
+ */
+export const PEOPLE_SEARCH = `${INDEX_DOCUMENT_NAME}/${PEOPLE_SEARCH_POSTFIX}`;
 
 /** Key component for enabled accounts. */
 export const PEOPLE_LIST_ACTIVE_FLAG = 0;
@@ -59,6 +70,23 @@ export function peopleListingViewAndPrefix({
     ],
     descending: false,
     cursorShape: PEOPLE_LIST_CURSOR_SHAPE,
+  };
+}
+
+/**
+ * Search view, key prefix and listing view for one GET /api/users?q= page;
+ * spread into `queryListingSearchPage` with `loadRows` reading
+ * `listingView`. Enabled accounts only.
+ */
+export function peopleSearchViewAndPrefix(): {
+  view: string;
+  prefix: unknown[];
+  listingView: string;
+} {
+  return {
+    view: PEOPLE_SEARCH,
+    prefix: listingSearchPrefix(),
+    listingView: PEOPLE_LISTING_BY_NAME,
   };
 }
 
@@ -199,6 +227,31 @@ const designDoc = {
           profiles: profiles,
           disabled: doc.disabled === true,
         });
+      }),
+    },
+    // GET /api/users?q=. Rows point at the `listingByName` row.
+    [PEOPLE_SEARCH_POSTFIX]: {
+      map: listingSearchMap((doc, tokenize) => {
+        if (!doc || !doc._id || doc._id[0] === '_' || !doc.user_id) {
+          return;
+        }
+        if (doc.disabled === true) {
+          return;
+        }
+        var name = typeof doc.name === 'string' ? doc.name : '';
+        var text = name;
+        if (doc.emails) {
+          for (var e = 0; e < doc.emails.length; e++) {
+            if (doc.emails[e] && typeof doc.emails[e].email === 'string') {
+              text += ' ' + doc.emails[e].email;
+            }
+          }
+        }
+        var tokens = tokenize(text);
+        var value = {tokens: tokens, key: [0, name.toLowerCase(), doc._id]};
+        for (var i = 0; i < tokens.length; i++) {
+          emit(['all', '', tokens[i], doc._id], value);
+        }
       }),
     },
     // Members of one resource (team, survey or template). One row per user

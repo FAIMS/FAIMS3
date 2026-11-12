@@ -40,7 +40,11 @@ import {
   SetupValuesSchema,
   TemplateDefinition,
 } from './uiSpecification';
-import {listPageQueryFields, paginatedListSchema} from './listing';
+import {
+  listPageQueryFields,
+  listSearchQueryField,
+  paginatedListSchema,
+} from './listing';
 import {projectInviteRoles} from './permission/functions';
 import {Resource, Role, roleDetails, RoleScope} from './permission/model';
 import {
@@ -169,6 +173,11 @@ export const UserListItemSchema =
 export const GetListAllUsersQuerySchema = z.object({
   /** XOR: `true` lists disabled accounts only; default lists enabled only. */
   includeArchived: z.enum(['true', 'false']).optional(),
+  /**
+   * Search: enabled accounts where a word of the name or of an email address
+   * starts with each word given. Not allowed with `includeArchived=true`.
+   */
+  q: listSearchQueryField,
   ...listPageQueryFields,
 });
 export type GetListAllUsersQuery = z.infer<typeof GetListAllUsersQuerySchema>;
@@ -364,6 +373,12 @@ export const GetNotebookListQuerySchema = z.object({
   includeArchived: z.enum(['true', 'false']).optional(),
   /** When `"true"`, attach `byteCount` to each row of the returned page. */
   includeByteCount: z.enum(['true', 'false']).optional(),
+  /**
+   * Search: active surveys where a word of the name starts with each word
+   * given, in word order. Works with `teamId` and `templateId`; not allowed
+   * with a `status` other than `active`.
+   */
+  q: listSearchQueryField,
   ...listPageQueryFields,
 });
 export type GetNotebookListQuery = z.infer<typeof GetNotebookListQuerySchema>;
@@ -693,6 +708,12 @@ export const GetListTemplatesQuerySchema = z.object({
   teamId: z.string().min(1).optional(),
   /** XOR: `true` lists archived templates only; default lists active only. */
   includeArchived: z.enum(['true', 'false']).optional(),
+  /**
+   * Search: non-archived templates where a word of the name starts with
+   * each word given, in word order. Works with `teamId` and `visibility`;
+   * not allowed with `includeArchived=true`.
+   */
+  q: listSearchQueryField,
   ...listPageQueryFields,
   visibility: z.enum(['public', 'private']).optional(),
 });
@@ -855,6 +876,11 @@ export const GetListTeamsResponseSchema = paginatedListSchema(
 export const GetListTeamsQuerySchema = z.object({
   /** XOR: `true` lists archived teams only; default lists active only. */
   includeArchived: z.enum(['true', 'false']).optional(),
+  /**
+   * Search: non-archived teams where a word of the name starts with each
+   * word given, in word order. Not allowed with `includeArchived=true`.
+   */
+  q: listSearchQueryField,
   ...listPageQueryFields,
 });
 export type GetListTeamsQuery = z.infer<typeof GetListTeamsQuerySchema>;

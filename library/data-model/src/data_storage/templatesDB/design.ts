@@ -2,12 +2,17 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 import {convertToCouchDBString} from '../utils';
+import {
+  listingSearchMap,
+  listingSearchPrefix,
+} from '../../listing/listingSearch';
 
 // Index constants
 const INDEX_DOCUMENT_NAME = 'index';
 const TEMPLATES_BY_TEAM_ID_POSTFIX = 'byTeamId';
 const TEMPLATES_LISTING_BY_TEMPLATE_ID_POSTFIX = 'listingByTemplateId';
 const TEMPLATES_LISTING_BY_TEAM_ID_POSTFIX = 'listingByTeam';
+const TEMPLATES_SEARCH_POSTFIX = 'search';
 
 export const TEMPLATES_BY_TEAM_ID = `${INDEX_DOCUMENT_NAME}/${TEMPLATES_BY_TEAM_ID_POSTFIX}`;
 /**
@@ -21,6 +26,13 @@ export const TEMPLATES_LISTING_BY_TEMPLATE_ID = `${INDEX_DOCUMENT_NAME}/${TEMPLA
  * `[ownedByTeamId, archivedFlag, createdAtMs, _id]`.
  */
 export const TEMPLATES_LISTING_BY_TEAM_ID = `${INDEX_DOCUMENT_NAME}/${TEMPLATES_LISTING_BY_TEAM_ID_POSTFIX}`;
+
+/**
+ * Name search over non-archived templates, keyed
+ * `[scopeKind, scopeId, word, _id]` for the whole catalogue and the owning
+ * team. See `listingSearch.ts`.
+ */
+export const TEMPLATES_SEARCH = `${INDEX_DOCUMENT_NAME}/${TEMPLATES_SEARCH_POSTFIX}`;
 
 /** First key component for active (non-archived) listing ranges. */
 export const TEMPLATE_LIST_ACTIVE_FLAG = 0;
@@ -52,6 +64,25 @@ export function templateListingViewAndPrefix({
   return teamId
     ? {view: TEMPLATES_LISTING_BY_TEAM_ID, prefix: [teamId, flag]}
     : {view: TEMPLATES_LISTING_BY_TEMPLATE_ID, prefix: [flag]};
+}
+
+/**
+ * Search view, key prefix and listing view for one GET /api/templates?q=
+ * page; spread into `queryListingSearchPage` with `loadRows` reading
+ * `listingView`. Non-archived templates only.
+ */
+export function templateSearchViewAndPrefix({teamId}: {teamId?: string}): {
+  view: string;
+  prefix: unknown[];
+  listingView: string;
+} {
+  return {
+    view: TEMPLATES_SEARCH,
+    prefix: listingSearchPrefix(
+      teamId ? {kind: 'team', id: teamId} : undefined
+    ),
+    listingView: TEMPLATES_LISTING_BY_TEMPLATE_ID,
+  };
 }
 
 /**
@@ -108,6 +139,29 @@ const indexDocument = {
           createdMs = 0;
         }
         emit([doc.ownedByTeamId, archived, createdMs, doc._id], row);
+      }),
+    },
+    // GET /api/templates?q=. Rows point at the `listingByTemplateId` row.
+    [TEMPLATES_SEARCH_POSTFIX]: {
+      map: listingSearchMap((doc, tokenize) => {
+        if (!doc || !doc._id || doc._id[0] === '_') {
+          return;
+        }
+        if (doc.archived === true) {
+          return;
+        }
+        var createdMs = Date.parse(doc.createdAt);
+        if (!(createdMs > 0)) {
+          createdMs = 0;
+        }
+        var tokens = tokenize(doc.name);
+        var value = {tokens: tokens, key: [0, createdMs, doc._id]};
+        for (var i = 0; i < tokens.length; i++) {
+          emit(['all', '', tokens[i], doc._id], value);
+          if (doc.ownedByTeamId) {
+            emit(['team', doc.ownedByTeamId, tokens[i], doc._id], value);
+          }
+        }
       }),
     },
   },

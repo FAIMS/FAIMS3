@@ -13,6 +13,8 @@ import type {Field} from '@/components/form';
 import {
   Action,
   getUserResourcesForAction,
+  listingSearchTokens,
+  parseListingSearch,
   type DecodedTokenPermissions,
 } from '@faims3/data-model';
 import {createElement} from 'react';
@@ -23,17 +25,45 @@ import {PagedPickerSelect} from './paged-picker-select';
 export type TeamOption = {_id: string; name: string};
 
 /**
+ * Search box of a paged team picker (see `useTeamOptions`). `results` is
+ * present while the box has text.
+ */
+export type TeamPickerSearch = {
+  /** Text in the box. */
+  value: string;
+  onChange: (value: string) => void;
+  /** The teams whose name matches `value`, loaded so far. */
+  results?: {teams: TeamOption[]; isPending: boolean; isError: boolean};
+};
+
+/**
  * Paging state of a team list that loads a page at a time (see
  * `useTeamOptions`). Passed to {@link buildTeamField} so the select can
- * offer "Get more".
+ * offer "Get more" and a search box.
  */
 export type TeamPickerMore = {
   /** True once the list is known to span more than one page. */
   paged: boolean;
+  /** Paging of the list shown: the search results while searching. */
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   fetchNextPage: () => void;
+  search?: TeamPickerSearch;
 };
+
+/**
+ * Whether `label` would be found by searching for `text`, by the rule the
+ * list endpoints use: every word typed starts a word of the label. Decides
+ * whether the "No team" row stays in a picker that is showing search results.
+ */
+export function labelMatchesListSearch(label: string, text: string): boolean {
+  const search = parseListingSearch(text);
+  if (!search) return true;
+  const words = listingSearchTokens(label);
+  return search.tokens.every(token =>
+    words.some(word => word.startsWith(token))
+  );
+}
 
 /**
  * Form value meaning “create outside any team”. Radix Select rejects `""`, so
@@ -209,8 +239,9 @@ export function defaultTeamForReassign({
  *
  * `possibleTeams` may be only the pages loaded so far. Pass `more` from
  * `useTeamOptions`: when the team list spans more than one page the field
- * renders a picker with "Get more" instead of the plain select, so teams on
- * later pages stay reachable.
+ * renders a picker with "Get more" and a search box instead of the plain
+ * select, so teams on later pages stay reachable. While the box has text
+ * the picker lists `more.search.results` in place of `possibleTeams`.
  */
 export function buildTeamField({
   canCreateGlobally,
@@ -262,11 +293,38 @@ export function buildTeamField({
     placeholder,
     ...(more?.paged
       ? {
-          renderControl: ({value, onChange, disabled}) =>
-            createElement(PagedPickerSelect, {
-              value: typeof value === 'string' && value ? value : undefined,
+          renderControl: ({value, onChange, disabled}) => {
+            const selected =
+              typeof value === 'string' && value ? value : undefined;
+            const results = more.search?.results;
+            return createElement(PagedPickerSelect, {
+              value: selected,
               onChange,
-              options,
+              options: results
+                ? [
+                    ...options.filter(
+                      option =>
+                        option.value === NO_TEAM_SENTINEL &&
+                        labelMatchesListSearch(
+                          option.label,
+                          more.search?.value ?? ''
+                        )
+                    ),
+                    ...results.teams.map(({_id, name}) => ({
+                      label: name,
+                      value: _id,
+                    })),
+                  ]
+                : options,
+              // Names the value while the results do not include it.
+              selectedLabel: options.find(option => option.value === selected)
+                ?.label,
+              isPending: results?.isPending,
+              isError: results?.isError,
+              search: more.search && {
+                value: more.search.value,
+                onChange: more.search.onChange,
+              },
               noun: 'teams',
               hasNextPage: more.hasNextPage,
               isFetchingNextPage: more.isFetchingNextPage,
@@ -275,7 +333,8 @@ export function buildTeamField({
               clearable,
               placeholder,
               testId: TEAM_FIELD_TEST_ID,
-            }),
+            });
+          },
         }
       : {}),
   };

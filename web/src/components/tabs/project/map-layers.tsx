@@ -212,6 +212,7 @@ export default function ProjectMapLayers({projectId}: ProjectMapLayersProps) {
             loading={available.tableLoading}
             defaultRowsPerPage={available.pageSize}
             serverPagination={available.serverPagination}
+            serverSearch={available.serverSearch}
             onRowClick={openLayer}
             emptyMessage="No available map layers."
           />

@@ -43,9 +43,10 @@ function RouteComponent() {
 
   // Can the user create a new team?
   const canCreateTeam = useIsAuthorisedTo({action: Action.CREATE_TEAM});
-  const {tableLoading, teams, pageSize, serverPagination} = usePagedTeams({
-    user,
-  });
+  const {tableLoading, teams, pageSize, serverPagination, serverSearch} =
+    usePagedTeams({
+      user,
+    });
   const navigate = useNavigate();
 
   return (
@@ -62,6 +63,7 @@ function RouteComponent() {
         loading={tableLoading}
         defaultRowsPerPage={pageSize}
         serverPagination={serverPagination}
+        serverSearch={serverSearch}
         onRowClick={({_id}) => navigate({to: `/teams/${_id}`})}
         button={canCreateTeam && <CreateTeamDialog />}
       />

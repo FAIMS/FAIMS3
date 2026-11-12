@@ -8,21 +8,29 @@
  *   `nextStartKey`, Previous replays the cursor the page was reached with.
  * - {@link useInfiniteList} drives a picker: pages accumulate behind a
  *   "Get more" button.
+ * - {@link useListSearch} holds a search box's text and the debounced `q`
+ *   sent to lists that support search.
  *
  * Resource hooks in `queries.ts` and `map-asset-hooks.ts` are thin wrappers
  * that supply a request builder and the name of the items field.
  */
-import type {DataTableServerPagination} from '@/components/data-table/pagination';
+import type {
+  DataTableServerPagination,
+  DataTableServerSearch,
+} from '@/components/data-table/pagination';
 import type {User} from '@/context/auth-provider';
 import {useInfiniteQuery, useQuery} from '@tanstack/react-query';
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {get} from './api-fetch';
 
 /** A list response: some items field plus the optional cursor to the next page. */
 export type ListResponse = {nextStartKey?: string};
 
-/** The paging part of a list request. */
-export type ListPageArgs = {limit?: number; startKey?: string};
+/**
+ * The paging part of a list request. `q` is the search text, on lists that
+ * support it; a search pages like any other list.
+ */
+export type ListPageArgs = {limit?: number; startKey?: string; q?: string};
 
 /** Path to GET and the React Query key that identifies that exact page. */
 export type ListRequest = {path: string; queryKey: readonly unknown[]};
@@ -32,6 +40,34 @@ export const TABLE_DEFAULT_PAGE_SIZE = 10;
 
 /** Rows per "Get more" step in pickers. */
 export const PICKER_PAGE_SIZE = 25;
+
+/** How long typing must pause before a search request is sent. */
+export const LIST_SEARCH_DEBOUNCE_MS = 300;
+
+/**
+ * Text of a search box and the `q` to request with.
+ *
+ * `input` follows every keystroke. `q` is the trimmed text once typing has
+ * paused for `delayMs`, so a request is not sent per letter. Clearing the box
+ * clears `q` at once.
+ */
+export function useListSearch(delayMs: number = LIST_SEARCH_DEBOUNCE_MS) {
+  const [input, setInputState] = useState('');
+  const [q, setQ] = useState('');
+  const trimmed = input.trim();
+
+  useEffect(() => {
+    if (trimmed === '') return;
+    const timer = setTimeout(() => setQ(trimmed), delayMs);
+    return () => clearTimeout(timer);
+  }, [trimmed, delayMs]);
+
+  const setInput = (value: string) => {
+    setInputState(value);
+    if (value.trim() === '') setQ('');
+  };
+  return {input, setInput, q};
+}
 
 /**
  * `base` plus a query string of the defined params. `undefined`, `null`,
@@ -161,6 +197,10 @@ export function pagedListControls(
  * `limit` / `startKey` into a path and query key; `itemsKey` names the array
  * in the response. `fetchPage` replaces the plain GET when rows need work
  * before display (it runs for the visible page only).
+ *
+ * With `searchable`, the hook also holds a search box: `buildRequest`
+ * receives the debounced `q`, a new search starts again from the first page,
+ * and `serverSearch` is ready to pass to `<DataTable>`.
  */
 export function usePagedList<
   TResponse extends ListResponse,
@@ -169,6 +209,7 @@ export function usePagedList<
   user,
   enabled = true,
   scope,
+  searchable = false,
   defaultPageSize,
   buildRequest,
   itemsKey,
@@ -177,6 +218,8 @@ export function usePagedList<
   user: User | null;
   enabled?: boolean;
   scope: string;
+  /** The list accepts `q`. Off for lists with no search (e.g. the archive). */
+  searchable?: boolean;
   defaultPageSize?: number;
   buildRequest: (
     page: Required<Pick<ListPageArgs, 'limit'>> & ListPageArgs
@@ -184,11 +227,21 @@ export function usePagedList<
   itemsKey: TKey;
   fetchPage?: (path: string) => Promise<TResponse>;
 }) {
-  const cursor = useListCursor({scope, defaultPageSize});
+  const search = useListSearch();
+  const q = searchable ? search.q : '';
+  // A cursor belongs to one search: a new `q` is a new scope.
+  const cursor = useListCursor({
+    scope: JSON.stringify([scope, q]),
+    defaultPageSize,
+  });
   const {path, queryKey} = buildRequest({
     limit: cursor.pageSize,
     startKey: cursor.startKey,
+    ...(q ? {q} : {}),
   });
+  const serverSearch: DataTableServerSearch | undefined = searchable
+    ? {value: search.input, onChange: search.setInput}
+    : undefined;
   const query = useQuery({
     queryKey,
     queryFn: () => (fetchPage ? fetchPage(path) : get<TResponse>(path, user)),
@@ -198,6 +251,8 @@ export function usePagedList<
     ...query,
     items: query.data?.[itemsKey] as TResponse[TKey] | undefined,
     ...pagedListControls(cursor, query),
+    /** Ready to pass as `<DataTable serverSearch>`; absent when not searchable. */
+    serverSearch,
   };
 }
 

@@ -27,6 +27,7 @@ import {
 import express, {Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
+import {resolveListSearch} from './listSearch';
 import {
   generateUserToken,
   upgradeCouchUserToExpressUser,
@@ -138,7 +139,8 @@ api.get(
 
 // GET users — one page in name order. Cursor pagination (`limit`, `startKey`,
 // `nextStartKey`); omitting `limit` returns the default page, never the whole
-// DB. `includeArchived=true` lists disabled accounts only.
+// DB. `includeArchived=true` lists disabled accounts only. `q` searches
+// enabled accounts by name and email address and pages in word order.
 api.get(
   '/',
   requireAuthenticationAPI,
@@ -149,8 +151,14 @@ api.get(
       throw new Exceptions.UnauthorizedException('You are not logged in.');
     }
 
+    const includeArchived = req.query.includeArchived === 'true';
     const page = await getUsersPage({
-      includeArchived: req.query.includeArchived === 'true',
+      includeArchived,
+      search: resolveListSearch(req.query.q, {
+        unavailable: includeArchived
+          ? 'q cannot be combined with includeArchived=true.'
+          : undefined,
+      }),
       limit: resolveListLimit(req.query.limit),
       startKey: resolveListStartKey(req.query.startKey),
     });

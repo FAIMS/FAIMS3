@@ -24,7 +24,7 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
   const user = useRequiredUser();
   const [visibilityFilter, setVisibilityFilter] =
     useState<TemplateVisibilityFilterValue>('all');
-  const {tableLoading, templates, pageSize, serverPagination} =
+  const {tableLoading, templates, pageSize, serverPagination, serverSearch} =
     usePagedTemplates({
       user,
       teamId,
@@ -78,6 +78,7 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
       }
       defaultRowsPerPage={pageSize}
       serverPagination={serverPagination}
+      serverSearch={serverSearch}
     />
   );
 };

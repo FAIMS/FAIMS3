@@ -11,7 +11,7 @@ import {useNavigate} from '@tanstack/react-router';
 const TeamProjects = ({teamId}: {teamId: string}) => {
   const {user} = useAuth();
 
-  const {tableLoading, notebooks, pageSize, serverPagination} =
+  const {tableLoading, notebooks, pageSize, serverPagination, serverSearch} =
     usePagedProjects({user, teamId});
   const {data: team} = useGetTeam({user, teamId});
   const archived = team?.archived === true;
@@ -32,6 +32,7 @@ const TeamProjects = ({teamId}: {teamId: string}) => {
       loading={tableLoading}
       defaultRowsPerPage={pageSize}
       serverPagination={serverPagination}
+      serverSearch={serverSearch}
       onRowClick={({_id}) => navigate({to: `/projects/${_id}`})}
       button={
         canAddProjectInTeam &&

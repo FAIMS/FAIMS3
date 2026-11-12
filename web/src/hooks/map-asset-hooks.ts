@@ -18,10 +18,12 @@ import {
   useQueryClient,
   type QueryClient,
 } from '@tanstack/react-query';
+import type {DataTableServerSearch} from '@/components/data-table/pagination';
 import {
   listPath,
   pagedListControls,
   useListCursor,
+  useListSearch,
   type ListPageArgs,
 } from './paged-list';
 import {errorMessageFromNotebookJsonBody} from './project-hooks';
@@ -79,14 +81,15 @@ const LIST_PAGE_MARKER = 'page';
 
 /**
  * React Query key for one page of a map-layer list: the list's prefix, then
- * `'page'`, the page size and the cursor (`null` on the first page). The
- * `linkableToProjectId` list sits under the library prefix so a new layer
- * and progress polls reach it too.
+ * `'page'`, the page size, the cursor (`null` on the first page) and the
+ * search text (`null` when not searching). The `linkableToProjectId` list
+ * sits under the library prefix so a new layer and progress polls reach it
+ * too.
  */
 export function mapAssetListPageKey(
   user: User | null,
   {projectId, teamId, linkableToProjectId}: MapAssetListScope,
-  {limit, startKey}: ListPageArgs = {}
+  {limit, startKey, q}: ListPageArgs = {}
 ): unknown[] {
   const root = teamId
     ? mapAssetTeamQueryKey(user, teamId)
@@ -96,16 +99,27 @@ export function mapAssetListPageKey(
           ? ['linkable', linkableToProjectId]
           : []),
       ];
-  return [...root, LIST_PAGE_MARKER, limit ?? null, startKey ?? null];
+  return [
+    ...root,
+    LIST_PAGE_MARKER,
+    limit ?? null,
+    startKey ?? null,
+    q || null,
+  ];
 }
 
 /**
- * True when a list key is a first page (or carries no paging part). A new
- * layer is the newest, so it belongs at the top of first pages only.
+ * True when a list key is a first page of an unsearched list (or carries no
+ * paging part). A new layer is the newest, so it belongs at the top of first
+ * pages only; whether it matches a search is for the server to say.
  */
 function isFirstMapAssetListPage(queryKey: readonly unknown[]): boolean {
   const marker = queryKey.indexOf(LIST_PAGE_MARKER, 3);
-  return marker < 0 || (queryKey[marker + 2] ?? null) === null;
+  return (
+    marker < 0 ||
+    ((queryKey[marker + 2] ?? null) === null &&
+      (queryKey[marker + 3] ?? null) === null)
+  );
 }
 
 /** React Query key for one layer's details. */
@@ -391,6 +405,7 @@ export async function fetchMapAssets({
   linkableToProjectId,
   limit,
   startKey,
+  q,
 }: {
   user: User;
 } & MapAssetListScope &
@@ -400,6 +415,7 @@ export async function fetchMapAssets({
       projectId,
       teamId,
       linkableToProjectId,
+      q,
       limit,
       startKey,
     })}`,
@@ -420,6 +436,7 @@ export async function fetchTeamMapAssets({
   teamId,
   limit,
   startKey,
+  q,
 }: {
   user: User;
   teamId: string;
@@ -427,7 +444,7 @@ export async function fetchTeamMapAssets({
   const response = await fetch(
     `${config.apiUrl}${listPath(
       `/api/teams/${encodeURIComponent(teamId)}/map-assets`,
-      {limit, startKey}
+      {q, limit, startKey}
     )}`,
     {
       headers: {Authorization: `Bearer ${user.token}`},
@@ -488,6 +505,7 @@ export function useMapAssets({
   linkableToProjectId,
   limit,
   startKey,
+  q,
   enabled = true,
 }: {
   user: User | null;
@@ -499,7 +517,7 @@ export function useMapAssets({
     queryKey: mapAssetListPageKey(
       user,
       {projectId, teamId, linkableToProjectId},
-      {limit, startKey}
+      {limit, startKey, q}
     ),
     enabled: !!user && enabled,
     staleTime: MAP_ASSET_LIST_STALE_MS,
@@ -512,6 +530,7 @@ export function useMapAssets({
             teamId,
             limit,
             startKey,
+            q,
           })
         : await fetchMapAssets({
             user: user as User,
@@ -519,6 +538,7 @@ export function useMapAssets({
             linkableToProjectId,
             limit,
             startKey,
+            q,
           });
       seedMapAssetDetailsFromList(queryClient, user as User, data.assets);
       return overlayListWithCachedMapAssets(queryClient, user as User, data);
@@ -543,6 +563,10 @@ export function useMapAssets({
 /**
  * {@link useMapAssets} for a table: holds the page size and cursor, and
  * returns the page's `assets` plus `serverPagination` for `<DataTable>`.
+ *
+ * Also holds the search box of the lists that can be searched by name: the
+ * library, a team's layers and the layers a survey could link. Those return
+ * `serverSearch`; a survey's linked layers (`projectId`) do not.
  */
 export function usePagedMapAssets({
   user,
@@ -556,8 +580,12 @@ export function usePagedMapAssets({
   enabled?: boolean;
   defaultPageSize?: number;
 } & MapAssetListScope) {
+  const search = useListSearch();
+  const searchable = !projectId;
+  const q = searchable ? search.q : '';
+  // A cursor belongs to one search: a new `q` is a new scope.
   const cursor = useListCursor({
-    scope: JSON.stringify([projectId, teamId, linkableToProjectId]),
+    scope: JSON.stringify([projectId, teamId, linkableToProjectId, q]),
     defaultPageSize,
   });
   const query = useMapAssets({
@@ -568,12 +596,18 @@ export function usePagedMapAssets({
     enabled,
     limit: cursor.pageSize,
     startKey: cursor.startKey,
+    ...(q ? {q} : {}),
   });
   const controls = pagedListControls(cursor, query);
+  const serverSearch: DataTableServerSearch | undefined = searchable
+    ? {value: search.input, onChange: search.setInput}
+    : undefined;
   return {
     ...query,
     assets: query.data?.assets,
     ...controls,
+    /** Ready to pass as `<DataTable serverSearch>`; absent when not searchable. */
+    serverSearch,
     // Not `isFetching`: the in-progress poll must not blank the table, and
     // `isPlaceholderData` already covers a page change.
     tableLoading: query.isPending || query.isPlaceholderData,

@@ -126,6 +126,47 @@ describe('list request builders', () => {
     expect(disabled.queryKey[0]).toBe('users');
   });
 
+  it('send the search text and key each search separately', () => {
+    const cases = [
+      {
+        plain: buildNotebooksListRequest(
+          {teamId: 'team-a', limit: 10},
+          mockUser
+        ),
+        search: buildNotebooksListRequest(
+          {teamId: 'team-a', limit: 10, q: 'blue team'},
+          mockUser
+        ),
+        blank: buildNotebooksListRequest(
+          {teamId: 'team-a', limit: 10, q: ''},
+          mockUser
+        ),
+        path: '/api/notebooks/?teamId=team-a&q=blue+team&limit=10',
+      },
+      {
+        plain: buildTeamsListRequest({limit: 10}),
+        search: buildTeamsListRequest({limit: 10, q: 'blue team'}),
+        blank: buildTeamsListRequest({limit: 10, q: ''}),
+        path: '/api/teams/?q=blue+team&limit=10',
+      },
+      {
+        plain: buildUsersListRequest({limit: 10}),
+        search: buildUsersListRequest({limit: 10, q: 'blue team'}),
+        blank: buildUsersListRequest({limit: 10, q: ''}),
+        path: '/api/users?q=blue+team&limit=10',
+      },
+    ];
+    for (const {plain, search, blank, path} of cases) {
+      expect(search.path).toBe(path);
+      expect(search.queryKey).toContain('blue team');
+      expect(search.queryKey).not.toEqual(plain.queryKey);
+      // The same list, so invalidating the list also drops its searches.
+      expect(search.queryKey[0]).toBe(plain.queryKey[0]);
+      // No text is the plain list, not a search for nothing.
+      expect(blank).toEqual(plain);
+    }
+  });
+
   it('team members: keyed under teamusers for the team', () => {
     const request = buildTeamMembersListRequest('team-a', {limit: 10});
     expect(request.path).toBe('/api/teams/team-a/members?limit=10');

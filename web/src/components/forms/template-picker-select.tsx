@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import {useRequiredUser} from '@/hooks/auth-hooks';
+import {useListSearch} from '@/hooks/paged-list';
 import {useGetTemplate, useInfiniteTemplates} from '@/hooks/queries';
 import {useMemo, useState} from 'react';
 import {PagedPickerSelect} from './paged-picker-select';
 
 /**
  * Template catalogue selector: newest-created first, Get more follows
- * `nextStartKey` instead of silently truncating at 500.
+ * `nextStartKey` instead of silently truncating at 500. Typing in its search
+ * box lists the templates whose name matches instead.
  */
 export function TemplatePickerSelect({
   value,
@@ -24,6 +26,7 @@ export function TemplatePickerSelect({
   const user = useRequiredUser();
   // The catalogue is fetched the first time the list is opened.
   const [open, setOpen] = useState(false);
+  const search = useListSearch();
   const {
     data,
     isPending,
@@ -31,7 +34,13 @@ export function TemplatePickerSelect({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useInfiniteTemplates({user, enabled: open && !disabled});
+  } = useInfiniteTemplates({
+    user,
+    enabled: open && !disabled,
+    q: search.q || undefined,
+  });
+  // The text typed is ahead of the search requested until typing pauses.
+  const awaitingSearch = search.input.trim() !== search.q;
   // Names the selected template when it is not on a loaded page.
   const {data: selectedTemplate} = useGetTemplate({
     user,
@@ -57,8 +66,9 @@ export function TemplatePickerSelect({
       options={options}
       selectedLabel={selectedTemplate?.name}
       noun="templates"
-      isPending={isPending}
+      isPending={isPending || awaitingSearch}
       isError={isError}
+      search={{value: search.input, onChange: search.setInput}}
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
       onGetMore={() => void fetchNextPage()}

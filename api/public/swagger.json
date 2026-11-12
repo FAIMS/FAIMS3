@@ -351,6 +351,16 @@
             "description": "When `true`, attach `byteCount` on each row of the page (one Couch `info()` per returned notebook). Default omits `byteCount` and does not call `info()`."
           },
           {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Search: only active notebooks where a word of the name starts with each word given (case-insensitive; `blu` finds \"Blue Team\", `lue` does not). Works with `teamId` and `templateId`. Pages in word order, then id, with the usual `startKey` / `nextStartKey`. Returns 400 with a `status` other than `active`. A value with no letters or digits is ignored."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -1441,6 +1451,16 @@
             "description": "When `true`, returns disabled user accounts only; when omitted or `false`, returns enabled accounts only."
           },
           {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Search: only enabled users where a word of the name or of an email address starts with each word given (case-insensitive). Pages in word order, then id, with the usual `startKey` / `nextStartKey`. Returns 400 with `includeArchived=true`. A value with no letters or digits is ignored."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -1646,6 +1666,16 @@
               "enum": ["true", "false"]
             },
             "description": "When `true`, returns archived templates only; when omitted or `false`, returns non-archived templates only."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Search: only non-archived templates where a word of the name starts with each word given (case-insensitive). Works with `teamId` and `visibility`. Pages in word order, then id, with the usual `startKey` / `nextStartKey`. Returns 400 with `includeArchived=true`. A value with no letters or digits is ignored."
           },
           {
             "name": "limit",
@@ -2154,6 +2184,16 @@
             "description": "When `true`, returns archived teams only; when omitted or `false`, returns non-archived teams only."
           },
           {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Search: only non-archived teams where a word of the name starts with each word given (case-insensitive). Pages in word order, then id, with the usual `startKey` / `nextStartKey`. Returns 400 with `includeArchived=true`. A value with no letters or digits is ignored."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -2364,6 +2404,16 @@
             "description": "Team identifier"
           },
           {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Search: only the team's layers where a word of the name starts with each word given (case-insensitive). Pages in word order, then id, with the usual `startKey` / `nextStartKey`. A value with no letters or digits is ignored."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -2548,6 +2598,16 @@
               "minLength": 1
             },
             "description": "When set, only ready library layers that are not yet linked to this notebook. Requires read access to the notebook."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Search: only layers where a word of the name starts with each word given (case-insensitive). Works with `teamId` and `linkableToProjectId`. Pages in word order, then id, with the usual `startKey` / `nextStartKey`. Returns 400 with `projectId`. A value with no letters or digits is ignored."
           },
           {
             "name": "limit",

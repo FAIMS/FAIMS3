@@ -19,10 +19,15 @@ function xpathLiteral(text: string): string {
 /**
  * Find the first data-table row whose text contains `text`.
  *
- * Control Centre tables show one server page at a time and have no search
- * box, so the row may not be on the page that loads first. While the row is
- * not on the current page this presses Next; it fails once the last page has
- * been read (or `timeout` passes) without a match.
+ * Control Centre tables show one server page at a time, so the row may not
+ * be on the page that loads first. While the row is not on the current page
+ * this presses Next; it fails once the last page has been read (or `timeout`
+ * passes) without a match.
+ *
+ * Some tables have a search box (`web-data-table-search`) that searches
+ * names on the server shortly after typing stops. A spec may type there
+ * first to shorten the walk, then call this to wait for the row; lists
+ * without the box (archive, members, invites) need the walk.
  */
 export async function findTableRow(
   text: string,
