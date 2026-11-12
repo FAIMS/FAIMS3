@@ -2,7 +2,7 @@
 
 import FileDownloadRoundedIcon from '@mui/icons-material/FileDownloadRounded';
 import {Box, ButtonBase} from '@mui/material';
-import {alpha} from '@mui/material/styles';
+import {alpha, type SxProps, type Theme} from '@mui/material/styles';
 import {designerInfoCalloutSx} from './designer-style';
 
 const BACKUP_HELPER =
@@ -28,27 +28,31 @@ export function DesignerDraftBackupCallout({
       onClick={onDownload}
       aria-label="Download backup"
       data-testid={testId}
-      sx={[
-        designerInfoCalloutSx,
-        {
-          mt: 2,
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'flex-start',
-          gap: 1.5,
-          width: '100%',
-          px: 2,
-          py: 1.5,
-          textAlign: 'left',
-          color: 'text.primary',
-          backgroundColor: theme => alpha(theme.palette.info.main, 0.08),
-          borderColor: theme => alpha(theme.palette.info.main, 0.28),
-          '&:hover': {
-            backgroundColor: theme => alpha(theme.palette.info.main, 0.14),
+      sx={
+        [
+          designerInfoCalloutSx,
+          {
+            mt: 2,
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'flex-start',
+            gap: 1.5,
+            width: '100%',
+            px: 2,
+            py: 1.5,
+            textAlign: 'left',
+            color: 'text.primary',
+            backgroundColor: (theme: Theme) =>
+              alpha(theme.palette.info.main, 0.08),
+            borderColor: (theme: Theme) => alpha(theme.palette.info.main, 0.28),
+            '&:hover': {
+              backgroundColor: (theme: Theme) =>
+                alpha(theme.palette.info.main, 0.14),
+            },
+            '&.Mui-disabled': {opacity: 0.65},
           },
-          '&.Mui-disabled': {opacity: 0.65},
-        },
-      ]}
+        ] as SxProps<Theme>
+      }
     >
       <FileDownloadRoundedIcon
         color="info"
