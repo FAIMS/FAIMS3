@@ -10,6 +10,7 @@ import {
   Action,
   ExistingInvitesDBDocument,
   GetInviteByIdResponse,
+  GetInviteListQuerySchema,
   GetProjectInvitesResponse,
   GetTeamInvitesResponse,
   IdInputSchema,
@@ -28,6 +29,9 @@ import {
   PostCreateQuickShareResponse,
   PostUseInviteResponse,
   QUICK_SHARE_KIND,
+  resolveListLimit,
+  resolveListStartKey,
+  toPaginatedList,
 } from '@faims3/data-model';
 import express, {Request, Response} from 'express';
 import {z} from 'zod';
@@ -37,10 +41,8 @@ import {
   createQuickShareInvite,
   createResourceInvite,
   deleteInvite,
-  getGlobalInvites,
   getInvite,
-  getInvitesForResource,
-  getProjectInvites,
+  getInvitesPage,
   getQuickSharesForProjectAndUser,
   isInviteValid,
 } from '../couchdb/invites';
@@ -119,16 +121,18 @@ function logInviteSuccess(
 }
 
 /**
- * GET all project invites
+ * GET project invites — one page of valid invites, newest `createdAt` first.
+ * Cursor pagination (`limit`, `startKey`, `nextStartKey`).
  */
 api.get(
   '/notebook/:projectId',
   requireAuthenticationAPI,
   validate({
     params: z.object({projectId: IdInputSchema}),
+    query: GetInviteListQuerySchema,
   }),
   async (
-    {user, params: {projectId}},
+    {user, params: {projectId}, query},
     res: Response<GetProjectInvitesResponse>
   ) => {
     if (!user) {
@@ -151,25 +155,35 @@ api.get(
       );
     }
 
-    // Project invites. Quick shares come from the quickShares view.
-    const invites = (await getProjectInvites(projectId)).filter(
-      invite => isInviteValid({invite}).isValid
+    // Valid project invites only, Quick Shares included.
+    res.json(
+      toPaginatedList(
+        await getInvitesPage({
+          resource: {resourceType: Resource.PROJECT, resourceId: projectId},
+          limit: resolveListLimit(query.limit),
+          startKey: resolveListStartKey(query.startKey),
+        }),
+        'invites'
+      )
     );
-
-    res.json(invites);
   }
 );
 
 /**
- * GET all team invites
+ * GET team invites — one page of valid invites, newest `createdAt` first.
+ * Cursor pagination (`limit`, `startKey`, `nextStartKey`).
  */
 api.get(
   '/team/:teamId',
   requireAuthenticationAPI,
   validate({
     params: z.object({teamId: IdInputSchema}),
+    query: GetInviteListQuerySchema,
   }),
-  async ({user, params: {teamId}}, res: Response<GetTeamInvitesResponse>) => {
+  async (
+    {user, params: {teamId}, query},
+    res: Response<GetTeamInvitesResponse>
+  ) => {
     if (!user) {
       throw new Exceptions.UnauthorizedException();
     }
@@ -191,14 +205,16 @@ api.get(
     }
 
     // only return valid invites
-    const invites = (
-      await getInvitesForResource({
-        resourceType: Resource.TEAM,
-        resourceId: teamId,
-      })
-    ).filter(invite => isInviteValid({invite}).isValid);
-
-    res.json(invites);
+    res.json(
+      toPaginatedList(
+        await getInvitesPage({
+          resource: {resourceType: Resource.TEAM, resourceId: teamId},
+          limit: resolveListLimit(query.limit),
+          startKey: resolveListStartKey(query.startKey),
+        }),
+        'invites'
+      )
+    );
   }
 );
 
@@ -566,23 +582,29 @@ api.delete(
  */
 
 /**
- * GET all global invites
+ * GET global invites — one page of valid invites, newest `createdAt` first.
+ * Cursor pagination (`limit`, `startKey`, `nextStartKey`).
  */
 api.get(
   '/global',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.VIEW_GLOBAL_INVITES}),
-  async ({user}, res: Response<GetGlobalInvitesResponse>) => {
+  validate({query: GetInviteListQuerySchema}),
+  async ({user, query}, res: Response<GetGlobalInvitesResponse>) => {
     if (!user) {
       throw new Exceptions.UnauthorizedException();
     }
 
     // only return valid invites
-    const invites = (await getGlobalInvites()).filter(
-      invite => isInviteValid({invite}).isValid
+    res.json(
+      toPaginatedList(
+        await getInvitesPage({
+          limit: resolveListLimit(query.limit),
+          startKey: resolveListStartKey(query.startKey),
+        }),
+        'invites'
+      )
     );
-
-    res.json(invites);
   }
 );
 

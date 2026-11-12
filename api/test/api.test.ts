@@ -137,14 +137,16 @@ describe('API tests', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200)
       .expect(response => {
-        expect(response.body).toHaveLength(1);
-        expect(response.body[0]).not.toHaveProperty('uiSpecification');
-        expect(response.body[0]).not.toHaveProperty('byteCount');
-        expect(response.body[0]).not.toHaveProperty('is_admin');
-        expect(response.body[0].uiSpecProperties.hash).toHaveLength(64);
-        expect(response.body[0].uiSpecProperties.schemaVersion).toBeTruthy();
-        expect(response.body[0].contextualLayers).toEqual([]);
-        expect(response.body[0].contextualLayersHash).toHaveLength(64);
+        const {notebooks, nextStartKey} = response.body;
+        expect(nextStartKey).toBeUndefined();
+        expect(notebooks).toHaveLength(1);
+        expect(notebooks[0]).not.toHaveProperty('uiSpecification');
+        expect(notebooks[0]).not.toHaveProperty('byteCount');
+        expect(notebooks[0]).not.toHaveProperty('is_admin');
+        expect(notebooks[0].uiSpecProperties.hash).toHaveLength(64);
+        expect(notebooks[0].uiSpecProperties.schemaVersion).toBeTruthy();
+        expect(notebooks[0].contextualLayers).toEqual([]);
+        expect(notebooks[0].contextualLayersHash).toHaveLength(64);
       });
   });
 
@@ -157,9 +159,9 @@ describe('API tests', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
-    expect(response.body).toHaveLength(1);
-    expect(response.body[0].byteCount).toBeTypeOf('number');
-    expect(response.body[0]).not.toHaveProperty('is_admin');
+    expect(response.body.notebooks).toHaveLength(1);
+    expect(response.body.notebooks[0].byteCount).toBeTypeOf('number');
+    expect(response.body.notebooks[0]).not.toHaveProperty('is_admin');
   });
 
   it('GET /api/directory requires authentication', async () => {
@@ -745,10 +747,11 @@ describe('API tests', () => {
         const res = GetListAllUsersResponseSchema.parse(response.body);
 
         // there are a couple of users
-        expect(res.length).toBe(3);
+        expect(res.users.length).toBe(3);
+        expect(res.nextStartKey).toBeUndefined();
 
         // ensure that profiles.local info is boolean only
-        for (const user of res) {
+        for (const user of res.users) {
           expect((user as any).profiles.local).toBeTypeOf('boolean');
 
           // but other properties should be valid

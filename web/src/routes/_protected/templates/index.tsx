@@ -36,21 +36,11 @@ function RouteComponent() {
   const navigate = useNavigate();
   const [visibilityFilter, setVisibilityFilter] =
     useState<TemplateVisibilityFilterValue>('all');
-  const {
-    tableLoading,
-    templates,
-    pageSize,
-    pageIndex,
-    hasNextPage,
-    canPreviousPage,
-    goNext,
-    goPrevious,
-    goFirst,
-    changePageSize,
-  } = usePagedTemplates({
-    user,
-    visibility: visibilityFilter === 'all' ? undefined : visibilityFilter,
-  });
+  const {tableLoading, templates, pageSize, serverPagination} =
+    usePagedTemplates({
+      user,
+      visibility: visibilityFilter === 'all' ? undefined : visibilityFilter,
+    });
 
   // breadcrumbs addition
   const paths = useMemo(
@@ -108,16 +98,7 @@ function RouteComponent() {
         onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
         button={<CreateTemplateDialog />}
         defaultRowsPerPage={pageSize}
-        serverPagination={{
-          pageIndex,
-          pageSize,
-          hasNextPage,
-          canPreviousPage,
-          onNextPage: goNext,
-          onPreviousPage: goPrevious,
-          onFirstPage: goFirst,
-          onPageSizeChange: changePageSize,
-        }}
+        serverPagination={serverPagination}
       />
     </div>
   );

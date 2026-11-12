@@ -24,22 +24,12 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
   const user = useRequiredUser();
   const [visibilityFilter, setVisibilityFilter] =
     useState<TemplateVisibilityFilterValue>('all');
-  const {
-    tableLoading,
-    templates,
-    pageSize,
-    pageIndex,
-    hasNextPage,
-    canPreviousPage,
-    goNext,
-    goPrevious,
-    goFirst,
-    changePageSize,
-  } = usePagedTemplates({
-    user,
-    teamId,
-    visibility: visibilityFilter === 'all' ? undefined : visibilityFilter,
-  });
+  const {tableLoading, templates, pageSize, serverPagination} =
+    usePagedTemplates({
+      user,
+      teamId,
+      visibility: visibilityFilter === 'all' ? undefined : visibilityFilter,
+    });
   const {data: team} = useGetTeam({user, teamId});
   const archived = team?.archived === true;
 
@@ -87,16 +77,7 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
         !archived && <CreateTemplateDialog specifiedTeam={teamId} />
       }
       defaultRowsPerPage={pageSize}
-      serverPagination={{
-        pageIndex,
-        pageSize,
-        hasNextPage,
-        canPreviousPage,
-        onNextPage: goNext,
-        onPreviousPage: goPrevious,
-        onFirstPage: goFirst,
-        onPageSizeChange: changePageSize,
-      }}
+      serverPagination={serverPagination}
     />
   );
 };

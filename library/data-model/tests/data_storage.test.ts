@@ -21,14 +21,16 @@ import {
   upsertFAIMSData,
 } from '../src/data_storage';
 import {
-  encodeTemplateListCursor,
   initTemplatesDB,
-  parseTemplateListCursor,
   TEMPLATES_LISTING_BY_TEAM_ID,
   TEMPLATES_LISTING_BY_TEMPLATE_ID,
-  templateListingGlobalRange,
-  templateListingTeamRange,
+  templateListingViewAndPrefix,
 } from '../src/data_storage/templatesDB';
+import {
+  encodeListCursor,
+  listingViewRange,
+  parseListCursor,
+} from '../src/listing';
 import {listRecordMetadata} from '../src/data_storage/internals';
 import {getAllRecordsWithRegex} from '../src/data_storage/queries';
 import {Record, RecordMetadata} from '../src/types';
@@ -643,9 +645,11 @@ describe('templates listing views', () => {
 
       const teamActive = await db.query(TEMPLATES_LISTING_BY_TEAM_ID, {
         include_docs: false,
-        ...templateListingTeamRange({
-          teamId: 'team-1',
-          includeArchived: false,
+        ...listingViewRange({
+          prefix: templateListingViewAndPrefix({
+            teamId: 'team-1',
+            includeArchived: false,
+          }).prefix,
         }),
       });
       expect(teamActive.rows.map((row: {id: string}) => row.id)).toEqual([
@@ -660,7 +664,9 @@ describe('templates listing views', () => {
       });
       const newestFirst = await db.query(TEMPLATES_LISTING_BY_TEMPLATE_ID, {
         include_docs: false,
-        ...templateListingGlobalRange({includeArchived: false}),
+        ...listingViewRange({
+          prefix: templateListingViewAndPrefix({includeArchived: false}).prefix,
+        }),
       });
       expect(newestFirst.rows.map((row: {id: string}) => row.id)).toEqual([
         'tpl-new',
@@ -674,9 +680,9 @@ describe('templates listing views', () => {
   });
 
   it('encodes and parses createdAt listing cursors', () => {
-    const encoded = encodeTemplateListCursor(1577836800000, 'tpl-a');
-    expect(parseTemplateListCursor(encoded)).toEqual([1577836800000, 'tpl-a']);
-    expect(parseTemplateListCursor('tpl-a')).toBeUndefined();
-    expect(parseTemplateListCursor('')).toBeUndefined();
+    const encoded = encodeListCursor([1577836800000, 'tpl-a']);
+    expect(parseListCursor(encoded)).toEqual([1577836800000, 'tpl-a']);
+    expect(parseListCursor('tpl-a')).toBeUndefined();
+    expect(parseListCursor('')).toBeUndefined();
   });
 });

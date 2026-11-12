@@ -103,8 +103,10 @@ api.get('/info', async (req, res) => {
 });
 
 /**
- * Cheap listing alias of `GET /api/notebooks` (no `teamId`, no `byteCount`).
- * Field-app Refresh treats absence from this URL as the lifecycle signal.
+ * Complete lean catalogue of the surveys the caller can read (no `teamId`,
+ * no `byteCount`), as one array. Deliberately NOT paginated, unlike
+ * `GET /api/notebooks`: field-app Refresh treats absence from this URL as the
+ * lifecycle signal, so a capped list would make devices drop surveys.
  * Do not add stats here — that would make every device refresh pay Couch `info()`.
  */
 api.get(

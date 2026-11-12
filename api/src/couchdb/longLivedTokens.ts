@@ -12,8 +12,11 @@ import {
   ExistingPeopleDBDocument,
   GetLongLivedTokenIndex,
   isPeopleUserAccountDisabled,
+  ListingPage,
   LongLivedTokenExistingDocument,
   LongLivedTokenFields,
+  longLivedTokenListingViewAndPrefix,
+  queryListingPage,
   safeWriteDocument,
 } from '@faims3/data-model';
 import {getAuthDB} from '.';
@@ -347,8 +350,40 @@ export const getTokenById = async (
   return await authDB.get<LongLivedTokenExistingDocument>(tokenId);
 };
 
+/** Token list row: the stored document without its `tokenHash`. */
+export type LongLivedTokenListRow = Omit<
+  LongLivedTokenExistingDocument,
+  'tokenHash'
+>;
+
 /**
- * Retrieves all long-lived tokens in the database.
+ * One page of long-lived tokens, newest `createdTimestampMs` first: one
+ * user's tokens when `userId` is set, otherwise every user's. Paging and the
+ * exclusive JSON `[createdTimestampMs, tokenId]` cursor come from the shared
+ * `queryListingPage`.
+ */
+export const getTokensPage = async ({
+  userId,
+  limit,
+  startKey,
+}: {
+  userId?: string;
+  limit: number;
+  startKey?: string;
+}): Promise<ListingPage<LongLivedTokenListRow>> => {
+  const authDB = getAuthDB();
+  return queryListingPage<LongLivedTokenListRow>({
+    query: (view, options) =>
+      authDB.query<LongLivedTokenListRow>(view, options),
+    ...longLivedTokenListingViewAndPrefix({userId}),
+    limit,
+    startKey,
+  });
+};
+
+/**
+ * Retrieves all long-lived tokens in the database. Unbounded: for admin-stats
+ * snapshots only. HTTP lists use {@link getTokensPage}.
  * @returns A Promise that resolves to an array of all token records
  */
 export const getAllTokens = async (): Promise<

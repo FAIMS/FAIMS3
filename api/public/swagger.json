@@ -26,6 +26,10 @@
     {
       "name": "Admin Stats",
       "description": "Instance-wide usage snapshots for system administrators (`VIEW_SYSTEM_STATS`). Overall counts plus paginated per-team and per-person rows from the same cached snapshot. Attachments (including photos) are a single bucket; there is no photoCount."
+    },
+    {
+      "name": "Map Layers",
+      "description": "Map layer library: uploaded spatial layers that can be linked to notebooks."
     }
   ],
   "components": {
@@ -243,7 +247,7 @@
     "/directory/": {
       "get": {
         "summary": "List notebooks visible to the caller (directory)",
-        "description": "Cheap listing alias of `GET /notebooks/` (same lean rows, no `byteCount`, no `teamId`). Requires `LIST_PROJECTS`. By default, notebooks with status `ARCHIVED` are omitted; pass `includeArchived=true` to include them. Field-app Refresh treats absence from this list as the lifecycle signal.",
+        "description": "Complete catalogue of the notebooks the caller can read (lean rows, no `byteCount`, no `teamId`). Requires `LIST_PROJECTS`. Deliberately NOT paginated: it returns every notebook in one array and ignores `limit` / `startKey`, because field-app Refresh treats absence from this list as the lifecycle signal. By default, notebooks with status `ARCHIVED` are omitted; pass `includeArchived=true` to include them. For a paged listing use GET `/notebooks/`.",
         "tags": ["Utilities"],
         "produces": ["application/json"],
         "security": [
@@ -286,7 +290,7 @@
     "/notebooks/": {
       "get": {
         "summary": "Get a list of notebooks",
-        "description": "Returns notebooks (projects) the caller can access. Optional `teamId` filters by team. By default this is a lean listing: no `uiSpecification`, no `byteCount`, and no Couch `info()` calls. Pass `includeByteCount=true` to attach per-project storage sizes. By default, notebooks with status `ARCHIVED` are omitted; pass `includeArchived=true` to include archived notebooks alongside others.",
+        "description": "Returns one page of notebooks (projects) the caller can read, newest `createdAt` first. Lean rows: no `uiSpecification`, no `byteCount`, and no Couch `info()` calls. Cursor pagination uses `limit` (1–500, default 50) and exclusive `startKey`; `nextStartKey` is present when more rows remain. Omitting `limit` does not dump the full list. Rows the caller cannot read are skipped while filling the page, so a page may be short or empty while `nextStartKey` is still set — keep paging until it is absent. `status` selects `active` (default: every status except `ARCHIVED`), `archived`, or `all`; with `all` the active notebooks are listed before the archived ones. Optional `teamId` restricts to a team's notebooks and `templateId` to notebooks created from a template (`templateId` wins when both are sent). Pass `includeByteCount=true` to attach storage sizes for the rows of the returned page only. For the complete unpaginated catalogue the field app needs, use GET `/directory/`.",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
         "security": [
@@ -306,6 +310,26 @@
             "description": "When set, restrict to notebooks owned by this team"
           },
           {
+            "name": "templateId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "When set, restrict to notebooks created from this template. Takes precedence over `teamId`."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["active", "archived", "all"]
+            },
+            "description": "`active` (default) omits `ARCHIVED` notebooks, `archived` returns only them, `all` returns active notebooks first and then archived ones."
+          },
+          {
             "name": "includeArchived",
             "in": "query",
             "required": false,
@@ -313,7 +337,8 @@
               "type": "string",
               "enum": ["true", "false"]
             },
-            "description": "When `true`, includes notebooks with status `ARCHIVED`. Default excludes them."
+            "deprecated": true,
+            "description": "Deprecated: use `status`. `true` is the same as `status=all`. Ignored when `status` is sent."
           },
           {
             "name": "includeByteCount",
@@ -323,18 +348,40 @@
               "type": "string",
               "enum": ["true", "false"]
             },
-            "description": "When `true`, attach `byteCount` on each row (one Couch `info()` per notebook). Default omits `byteCount` and does not call `info()`."
+            "description": "When `true`, attach `byteCount` on each row of the page (one Couch `info()` per returned notebook). Default omits `byteCount` and does not call `info()`."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (1–500). Default 50 when omitted or empty. There is no unbounded dump."
+          },
+          {
+            "name": "startKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive pagination cursor from a previous response’s `nextStartKey`: JSON `[createdAtMs, notebookId]` (`[statusFlag, createdAtMs, notebookId]` when `status=all`)`. Omit for the first page. An unknown or unparsable cursor returns an empty page without `nextStartKey`."
           }
         ],
         "responses": {
           "200": {
             "description": "successful operation",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/NotebookMeta"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/GetNotebookListResponse"
+                }
               }
             }
+          },
+          "400": {
+            "description": "Invalid query parameters (for example `limit` outside 1–500)"
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
@@ -758,7 +805,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Page size (1–500, default server-chosen)"
+            "description": "Page size (1–500). Default 50 when omitted or empty."
           },
           {
             "name": "startKey",
@@ -1259,8 +1306,8 @@
     },
     "/notebooks/{id}/users": {
       "get": {
-        "summary": "Get users for a notebook",
-        "description": "Returns roles and users who may be assigned for this notebook. Disabled user accounts are omitted from the selectable user list.",
+        "summary": "Get users with a role on a notebook",
+        "description": "Returns one page of the users who hold a role on this notebook, in display-name order, with a flag per notebook role. `roles` (every notebook role) is repeated on each page. Users whose access comes only from a team or a global role are not listed. Disabled user accounts are omitted. Cursor pagination uses `limit` (1–500, default 50) and exclusive `startKey`; `nextStartKey` is present when more rows remain. Omitting `limit` does not dump the full list.",
         "tags": ["Users"],
         "parameters": [
           {
@@ -1269,6 +1316,24 @@
             "description": "Notebook id",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (1–500). Default 50 when omitted or empty. There is no unbounded dump."
+          },
+          {
+            "name": "startKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive pagination cursor from a previous response’s `nextStartKey`: JSON `[nameLowerCase, userId]`. Omit for the first page. An unknown or unparsable cursor returns an empty page without `nextStartKey`."
           }
         ],
         "produces": ["application/json"],
@@ -1280,12 +1345,16 @@
         "responses": {
           "200": {
             "description": "successful operation",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/UserList"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/UserList"
+                }
               }
             }
+          },
+          "400": {
+            "description": "Invalid query parameters (for example `limit` outside 1–500)"
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
@@ -1352,7 +1421,7 @@
     "/users/": {
       "get": {
         "summary": "List all user accounts",
-        "description": "Returns people-db user documents (sanitized) for admins with `VIEW_USER_LIST`. Disabled accounts are omitted by default; pass `includeArchived=true` to include users with `disabled: true`.",
+        "description": "Returns one page of sanitized people-db user rows, in display-name order, for admins with `VIEW_USER_LIST`. Rows carry no login secrets: `profiles` only says which login methods exist. By default only enabled accounts are returned; pass `includeArchived=true` to list disabled accounts only. Cursor pagination uses `limit` (1–500, default 50) and exclusive `startKey`; `nextStartKey` is present when more rows remain. Omitting `limit` does not dump the full list.",
         "tags": ["Users"],
         "produces": ["application/json"],
         "security": [
@@ -1369,7 +1438,25 @@
               "type": "string",
               "enum": ["true", "false"]
             },
-            "description": "When `true`, includes disabled user accounts in the list."
+            "description": "When `true`, returns disabled user accounts only; when omitted or `false`, returns enabled accounts only."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (1–500). Default 50 when omitted or empty. There is no unbounded dump."
+          },
+          {
+            "name": "startKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive pagination cursor from a previous response’s `nextStartKey`: JSON `[nameLowerCase, userId]`. Omit for the first page. An unknown or unparsable cursor returns an empty page without `nextStartKey`."
           }
         ],
         "responses": {
@@ -1382,6 +1469,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid query parameters (for example `limit` outside 1–500)"
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
@@ -2045,7 +2135,7 @@
     "/teams/": {
       "get": {
         "summary": "Get a list of teams",
-        "description": "Gets a list of teams the caller can view. By default only non-archived teams are returned. Pass `includeArchived=true` to list archived teams only (still subject to `VIEW_TEAM_DETAILS`).",
+        "description": "Returns one page of the teams the caller can view, newest `createdAt` first. By default only non-archived teams are returned. Pass `includeArchived=true` to list archived teams only (still subject to `VIEW_TEAM_DETAILS`). Cursor pagination uses `limit` (1–500, default 50) and exclusive `startKey`; `nextStartKey` is present when more rows remain. Omitting `limit` does not dump the full list. Rows the caller cannot read are skipped while filling the page, so a page may be short or empty while `nextStartKey` is still set — keep paging until it is absent.",
         "tags": ["Teams"],
         "security": [
           {
@@ -2062,6 +2152,24 @@
               "enum": ["true", "false"]
             },
             "description": "When `true`, returns archived teams only; when omitted or `false`, returns non-archived teams only."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (1–500). Default 50 when omitted or empty. There is no unbounded dump."
+          },
+          {
+            "name": "startKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive pagination cursor from a previous response’s `nextStartKey`: JSON `[createdAtMs, teamId]`. Omit for the first page. An unknown or unparsable cursor returns an empty page without `nextStartKey`."
           }
         ],
         "responses": {
@@ -2074,6 +2182,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid query parameters (for example `limit` outside 1–500)"
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
@@ -2240,7 +2351,131 @@
     "/teams/{id}/map-assets": {
       "get": {
         "summary": "List map layers owned by a team",
-        "description": "Returns map layers owned by the team from the Couch `assetsByTeam` view. Does not scan the global library. Requires VIEW_TEAM_DETAILS on the team and LIST_MAP_ASSETS. Layers the caller cannot READ_MAP_ASSET (for example a TEAM_MEMBER_CREATOR who did not upload them) are omitted.",
+        "description": "Returns one page of the map layers owned by the team, newest `createdAt` first, from the Couch `assetsByTeam` view. Does not scan the global library. Requires VIEW_TEAM_DETAILS on the team and LIST_MAP_ASSETS. Layers the caller cannot READ_MAP_ASSET (for example a TEAM_MEMBER_CREATOR who did not upload them) are omitted. Cursor pagination uses `limit` (1–500, default 50) and exclusive `startKey`; `nextStartKey` is present when more rows remain. Omitting `limit` does not dump the full list. Rows the caller cannot read are skipped while filling the page, so a page may be short or empty while `nextStartKey` is still set — keep paging until it is absent.",
+        "tags": ["Teams"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Team identifier"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (1–500). Default 50 when omitted or empty. There is no unbounded dump."
+          },
+          {
+            "name": "startKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive pagination cursor from a previous response’s `nextStartKey`: JSON `[createdAtMs, mapAssetId]`. Omit for the first page. An unknown or unparsable cursor returns an empty page without `nextStartKey`."
+          }
+        ],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/GetMapAssetListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters (for example `limit` outside 1–500)"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "description": "Team not found"
+          }
+        }
+      }
+    },
+    "/teams/{id}/members": {
+      "get": {
+        "summary": "List the members of a team",
+        "description": "Returns one page of the users who hold a role on the team, in display-name order, with a flag per team role. Requires `VIEW_TEAM_MEMBERS` on the team. Disabled user accounts are omitted. Cursor pagination uses `limit` (1–500, default 50) and exclusive `startKey`; `nextStartKey` is present when more rows remain. Omitting `limit` does not dump the full list.",
+        "tags": ["Teams"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Team identifier"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (1–500). Default 50 when omitted or empty. There is no unbounded dump."
+          },
+          {
+            "name": "startKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive pagination cursor from a previous response’s `nextStartKey`: JSON `[nameLowerCase, userId]`. Omit for the first page. An unknown or unparsable cursor returns an empty page without `nextStartKey`."
+          }
+        ],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/GetTeamMembersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters (for example `limit` outside 1–500)"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "description": "Team not found"
+          }
+        }
+      }
+    },
+    "/teams/{id}/notebook-storage": {
+      "get": {
+        "summary": "Get the storage used by a team's notebooks",
+        "description": "Counts and total stored bytes for every notebook the team owns that the caller can read, overall and per status. Summed on the server so clients do not have to page GET `/notebooks/?includeByteCount=true`. Requires `VIEW_TEAM_DETAILS` on the team. Makes one Couch `info()` call per notebook.",
         "tags": ["Teams"],
         "parameters": [
           {
@@ -2264,7 +2499,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/definitions/GetMapAssetListResponse"
+                  "$ref": "#/definitions/GetTeamNotebookStorageResponse"
                 }
               }
             }
@@ -2278,9 +2513,89 @@
         }
       }
     },
+    "/map-assets/": {
+      "get": {
+        "summary": "List map layers",
+        "description": "Returns one page of the map layers the caller can read, newest `createdAt` first. Requires LIST_MAP_ASSETS. Without filters this is the whole library; `teamId` restricts to a team's layers and `projectId` to the layers linked to a notebook (newest link first, `projectId` wins when both are sent). `linkableToProjectId` narrows the library to the layers that can be linked to a notebook now: ready, and not already linked to it; it is ignored when `projectId` or `teamId` is sent. Layers are ordered by creation time, not last update, so a cursor stays valid while a layer is processing. Cursor pagination uses `limit` (1–500, default 50) and exclusive `startKey`; `nextStartKey` is present when more rows remain. Omitting `limit` does not dump the full list. Rows the caller cannot read are skipped while filling the page, so a page may be short or empty while `nextStartKey` is still set — keep paging until it is absent.",
+        "tags": ["Map Layers"],
+        "parameters": [
+          {
+            "name": "teamId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "When set, only layers owned by this team"
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "When set, only layers linked to this notebook. Requires read access to the notebook."
+          },
+          {
+            "name": "linkableToProjectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "When set, only ready library layers that are not yet linked to this notebook. Requires read access to the notebook."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (1–500). Default 50 when omitted or empty. There is no unbounded dump."
+          },
+          {
+            "name": "startKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive pagination cursor from a previous response’s `nextStartKey`: JSON `[createdAtMs, mapAssetId]` (`[linkCreatedAtMs, linkId]` when `projectId` is sent)`. Omit for the first page. An unknown or unparsable cursor returns an empty page without `nextStartKey`."
+          }
+        ],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/GetMapAssetListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters (for example `limit` outside 1–500)"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
     "/invites/notebook/{projectId}": {
       "get": {
-        "summary": "Get all project invites",
+        "summary": "Get notebook invites",
         "tags": ["Invites"],
         "parameters": [
           {
@@ -2290,6 +2605,24 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (1–500). Default 50 when omitted or empty. There is no unbounded dump."
+          },
+          {
+            "name": "startKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive pagination cursor from a previous response’s `nextStartKey`: JSON `[createdAtMs, inviteId]`. Omit for the first page. An unknown or unparsable cursor returns an empty page without `nextStartKey`."
           }
         ],
         "security": [
@@ -2308,10 +2641,14 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid query parameters (for example `limit` outside 1–500)"
+          },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
           }
-        }
+        },
+        "description": "Returns one page of the notebook's valid invites, newest `createdAt` first. Quick Shares are included. Cursor pagination uses `limit` (1–500, default 50) and exclusive `startKey`; `nextStartKey` is present when more rows remain. Omitting `limit` does not dump the full list. Expired and used-up invites are skipped while filling the page, so a page may be short or empty while `nextStartKey` is still set — keep paging until it is absent."
       },
       "post": {
         "summary": "Create a project invite",
@@ -2362,7 +2699,7 @@
     },
     "/invites/team/{teamId}": {
       "get": {
-        "summary": "Get all team invites",
+        "summary": "Get team invites",
         "tags": ["Invites"],
         "parameters": [
           {
@@ -2372,6 +2709,24 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (1–500). Default 50 when omitted or empty. There is no unbounded dump."
+          },
+          {
+            "name": "startKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive pagination cursor from a previous response’s `nextStartKey`: JSON `[createdAtMs, inviteId]`. Omit for the first page. An unknown or unparsable cursor returns an empty page without `nextStartKey`."
           }
         ],
         "security": [
@@ -2390,10 +2745,14 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid query parameters (for example `limit` outside 1–500)"
+          },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
           }
-        }
+        },
+        "description": "Returns one page of the team's valid invites, newest `createdAt` first. Cursor pagination uses `limit` (1–500, default 50) and exclusive `startKey`; `nextStartKey` is present when more rows remain. Omitting `limit` does not dump the full list. Expired and used-up invites are skipped while filling the page, so a page may be short or empty while `nextStartKey` is still set — keep paging until it is absent."
       },
       "post": {
         "summary": "Create a team invite",
@@ -2442,10 +2801,60 @@
         }
       }
     },
+    "/invites/global": {
+      "get": {
+        "summary": "Get global invites",
+        "description": "Returns one page of the valid global-role invites, newest `createdAt` first. Requires `VIEW_GLOBAL_INVITES`. Cursor pagination uses `limit` (1–500, default 50) and exclusive `startKey`; `nextStartKey` is present when more rows remain. Omitting `limit` does not dump the full list. Expired and used-up invites are skipped while filling the page, so a page may be short or empty while `nextStartKey` is still set — keep paging until it is absent.",
+        "tags": ["Invites"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (1–500). Default 50 when omitted or empty. There is no unbounded dump."
+          },
+          {
+            "name": "startKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive pagination cursor from a previous response’s `nextStartKey`: JSON `[createdAtMs, inviteId]`. Omit for the first page. An unknown or unparsable cursor returns an empty page without `nextStartKey`."
+          }
+        ],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/GetGlobalInvitesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters (for example `limit` outside 1–500)"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
     "/long-lived-tokens/": {
       "get": {
         "summary": "Get long-lived tokens",
-        "description": "Get tokens for the authenticated user or all tokens (admin only)",
+        "description": "Returns one page of long-lived tokens, newest first: the authenticated user's tokens, or every user's with `all=true` (admin only). Token secrets are never returned. `maxAllowedExpiryTimestamp` and `maxDurationDays` are repeated on every page. Cursor pagination uses `limit` (1–500, default 50) and exclusive `startKey`; `nextStartKey` is present when more rows remain. Omitting `limit` does not dump the full list.",
         "tags": ["Long-Lived Tokens"],
         "security": [
           {
@@ -2462,8 +2871,43 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid query parameters (for example `limit` outside 1–500)"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "all",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "When `true`, list every user's tokens instead of the caller's. Requires `READ_ANY_LONG_LIVED_TOKENS`."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (1–500). Default 50 when omitted or empty. There is no unbounded dump."
+          },
+          {
+            "name": "startKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive pagination cursor from a previous response’s `nextStartKey`: JSON `[createdTimestampMs, tokenId]`. Omit for the first page. An unknown or unparsable cursor returns an empty page without `nextStartKey`."
+          }
+        ]
       },
       "post": {
         "summary": "Create a new long-lived token",
@@ -2884,10 +3328,21 @@
       }
     },
     "GetListAllUsersResponse": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/PeopleUserListItem"
-      }
+      "type": "object",
+      "description": "One page of user list rows. `nextStartKey` is present when more rows remain; pass it as `startKey` on the next request.",
+      "properties": {
+        "users": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PeopleUserListItem"
+          }
+        },
+        "nextStartKey": {
+          "type": "string",
+          "description": "Present when the server stopped before the end of the listing view; pass as `startKey` on the next request. JSON `[nameLowerCase, userId]`. Omitted when the view is exhausted."
+        }
+      },
+      "required": ["users"]
     },
     "GetTemplateSurveyReferencesResponse": {
       "type": "object",
@@ -3264,9 +3719,11 @@
     },
     "UserList": {
       "type": "object",
+      "description": "One page of the users with a role on a notebook.",
       "properties": {
         "roles": {
           "type": "array",
+          "description": "Every notebook role, in the order used by each user's `roles`.",
           "items": {
             "type": "string"
           }
@@ -3276,8 +3733,13 @@
           "items": {
             "$ref": "#/definitions/User"
           }
+        },
+        "nextStartKey": {
+          "type": "string",
+          "description": "Present when the server stopped before the end of the listing view; pass as `startKey` on the next request. JSON `[nameLowerCase, userId]`. Omitted when the view is exhausted."
         }
-      }
+      },
+      "required": ["roles", "users"]
     },
     "User": {
       "type": "object",
@@ -3297,7 +3759,8 @@
                 "type": "string"
               },
               "value": {
-                "type": "string"
+                "type": "boolean",
+                "description": "Whether the user holds this role on the notebook"
               }
             }
           }
@@ -3543,24 +4006,47 @@
     },
     "GetListTeamsResponse": {
       "type": "object",
+      "description": "One page of teams. `nextStartKey` is present when more listing-view rows remain; pass it as `startKey` on the next request.",
       "properties": {
         "teams": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/TeamDocument"
           }
+        },
+        "nextStartKey": {
+          "type": "string",
+          "description": "Present when the server stopped before the end of the listing view; pass as `startKey` on the next request. JSON `[createdAtMs, teamId]`. Omitted when the view is exhausted."
         }
-      }
+      },
+      "required": ["teams"]
     },
     "GetMapAssetListResponse": {
       "type": "object",
-      "description": "Map layer library listing. Used by GET /api/map-assets and GET /api/teams/{id}/map-assets.",
+      "description": "One page of the map layer library, newest `createdAt` first. Used by GET /api/map-assets and GET /api/teams/{id}/map-assets. `nextStartKey` is present when more rows remain; pass it as `startKey` on the next request.",
       "properties": {
         "assets": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/MapAssetDocument"
+            "allOf": [
+              {
+                "$ref": "#/definitions/MapAssetDocument"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "linkCount": {
+                    "type": "integer",
+                    "description": "Number of notebooks the layer is linked to"
+                  }
+                }
+              }
+            ]
           }
+        },
+        "nextStartKey": {
+          "type": "string",
+          "description": "Present when the server stopped before the end of the listing view; pass as `startKey` on the next request. JSON `[createdAtMs, mapAssetId]` (`[linkCreatedAtMs, linkId]` when `projectId` is sent)`. Omitted when the view is exhausted."
         }
       },
       "required": ["assets"]
@@ -3718,25 +4204,37 @@
     },
     "GetProjectInvitesResponse": {
       "type": "object",
+      "description": "One page of valid notebook invites, newest `createdAt` first. `nextStartKey` is present when more rows remain; pass it as `startKey` on the next request.",
       "properties": {
         "invites": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/ProjectInviteDocument"
           }
+        },
+        "nextStartKey": {
+          "type": "string",
+          "description": "Present when the server stopped before the end of the listing view; pass as `startKey` on the next request. JSON `[createdAtMs, inviteId]`. Omitted when the view is exhausted."
         }
-      }
+      },
+      "required": ["invites"]
     },
     "GetTeamInvitesResponse": {
       "type": "object",
+      "description": "One page of valid team invites, newest `createdAt` first. `nextStartKey` is present when more rows remain; pass it as `startKey` on the next request.",
       "properties": {
         "invites": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/TeamInviteDocument"
           }
+        },
+        "nextStartKey": {
+          "type": "string",
+          "description": "Present when the server stopped before the end of the listing view; pass as `startKey` on the next request. JSON `[createdAtMs, inviteId]`. Omitted when the view is exhausted."
         }
-      }
+      },
+      "required": ["invites"]
     },
     "ProjectInviteDocument": {
       "type": "object",
@@ -3872,14 +4370,28 @@
     },
     "GetLongLivedTokensResponse": {
       "type": "object",
+      "description": "One page of long-lived tokens. `nextStartKey` is present when more rows remain; pass it as `startKey` on the next request.",
       "properties": {
         "tokens": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/LongLivedTokenDocument"
           }
+        },
+        "nextStartKey": {
+          "type": "string",
+          "description": "Present when the server stopped before the end of the listing view; pass as `startKey` on the next request. JSON `[createdTimestampMs, tokenId]`. Omitted when the view is exhausted."
+        },
+        "maxAllowedExpiryTimestamp": {
+          "type": "integer",
+          "description": "Latest expiry (epoch ms) a new token may have. Absent when tokens may never expire."
+        },
+        "maxDurationDays": {
+          "type": "integer",
+          "description": "Longest allowed token lifetime in days. Absent when unlimited."
         }
-      }
+      },
+      "required": ["tokens"]
     },
     "PostCreateLongLivedTokenRequest": {
       "type": "object",
@@ -4201,6 +4713,143 @@
         "offset": {"type": "integer"},
         "incomplete": {"type": "boolean"}
       }
+    },
+    "GetNotebookListResponse": {
+      "type": "object",
+      "description": "One page of notebook list rows. `nextStartKey` is present when more listing-view rows remain; pass it as `startKey` on the next request.",
+      "properties": {
+        "notebooks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NotebookMeta"
+          }
+        },
+        "nextStartKey": {
+          "type": "string",
+          "description": "Present when the server stopped before the end of the listing view; pass as `startKey` on the next request. JSON `[createdAtMs, notebookId]` (`[statusFlag, createdAtMs, notebookId]` when `status=all`)`. Omitted when the view is exhausted."
+        }
+      },
+      "required": ["notebooks"]
+    },
+    "TeamMember": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "User id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string"
+              },
+              "hasRole": {
+                "type": "boolean",
+                "description": "Whether the member holds this team role"
+              }
+            }
+          }
+        }
+      },
+      "required": ["username", "name", "roles"]
+    },
+    "GetTeamMembersResponse": {
+      "type": "object",
+      "description": "One page of team members. `availableRoles` is repeated on every page.",
+      "properties": {
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TeamMember"
+          }
+        },
+        "availableRoles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "nextStartKey": {
+          "type": "string",
+          "description": "Present when the server stopped before the end of the listing view; pass as `startKey` on the next request. JSON `[nameLowerCase, userId]`. Omitted when the view is exhausted."
+        }
+      },
+      "required": ["members", "availableRoles"]
+    },
+    "NotebookStorageBucket": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "description": "Number of notebooks"
+        },
+        "byteCount": {
+          "type": "integer",
+          "description": "Sum of the notebooks' stored bytes. A notebook whose size lookup failed adds nothing."
+        }
+      },
+      "required": ["count", "byteCount"]
+    },
+    "GetTeamNotebookStorageResponse": {
+      "type": "object",
+      "description": "Storage used by every notebook a team owns, summed on the server.",
+      "properties": {
+        "total": {
+          "$ref": "#/definitions/NotebookStorageBucket"
+        },
+        "byStatus": {
+          "type": "object",
+          "properties": {
+            "OPEN": {
+              "$ref": "#/definitions/NotebookStorageBucket"
+            },
+            "CLOSED": {
+              "$ref": "#/definitions/NotebookStorageBucket"
+            },
+            "ARCHIVED": {
+              "$ref": "#/definitions/NotebookStorageBucket"
+            }
+          },
+          "required": ["OPEN", "CLOSED", "ARCHIVED"]
+        }
+      },
+      "required": ["total", "byStatus"]
+    },
+    "GetGlobalInvitesResponse": {
+      "type": "object",
+      "description": "One page of valid global invites, newest `createdAt` first. `nextStartKey` is present when more rows remain; pass it as `startKey` on the next request.",
+      "properties": {
+        "invites": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Global invite document"
+          }
+        },
+        "nextStartKey": {
+          "type": "string",
+          "description": "Present when the server stopped before the end of the listing view; pass as `startKey` on the next request. JSON `[createdAtMs, inviteId]`. Omitted when the view is exhausted."
+        }
+      },
+      "required": ["invites"]
     }
   }
 }

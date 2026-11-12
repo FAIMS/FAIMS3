@@ -10,6 +10,11 @@ import {
 import {SidebarProvider} from '@/components/ui/sidebar';
 import {config} from '@/constants';
 
+/** One list page as the paginated GETs return it. */
+type NamedPage<K extends string> = Record<K, {_id: string; name: string}[]> & {
+  nextStartKey?: string;
+};
+
 const {
   authorised,
   mockUser,
@@ -19,9 +24,9 @@ const {
   useGetTeamsMock,
 } = vi.hoisted(() => {
   const queryState = {
-    projects: [] as {_id: string; name: string}[],
+    projects: {notebooks: []} as NamedPage<'notebooks'>,
     templates: [] as unknown,
-    teams: {teams: [] as {_id: string; name: string}[]},
+    teams: {teams: []} as NamedPage<'teams'>,
   };
   return {
     authorised: {
@@ -143,7 +148,7 @@ beforeEach(() => {
   authorised.canSeeProjects = false;
   authorised.canSeeTemplates = false;
   authorised.canSeeMapLayers = false;
-  queryState.projects = [];
+  queryState.projects = {notebooks: []};
   queryState.templates = [];
   queryState.teams = {teams: []};
   useGetProjectsMock.mockClear();
@@ -225,21 +230,75 @@ describe('AppSidebar stats nav', () => {
 });
 
 describe('AppSidebar catalogue recent rows', () => {
-  it('requests the recent cap for templates and omits notebook byte counts', () => {
+  it('requests only the recent cap for every catalogue, without byte counts', () => {
     enableCatalogueNav();
     renderSidebar();
-    expect(useGetTemplatesMock).toHaveBeenCalledWith(
-      expect.objectContaining({limit: SIDEBAR_CATALOGUE_RECENT_LIMIT})
-    );
     expect(SIDEBAR_CATALOGUE_RECENT_LIMIT).toBe(10);
-    expect(useGetProjectsMock).toHaveBeenCalledWith(
-      expect.objectContaining({includeByteCount: false})
-    );
+    for (const hook of [
+      useGetProjectsMock,
+      useGetTemplatesMock,
+      useGetTeamsMock,
+    ]) {
+      expect(hook).toHaveBeenCalledWith(
+        expect.objectContaining({limit: SIDEBAR_CATALOGUE_RECENT_LIMIT})
+      );
+    }
+    const [projectArgs] = useGetProjectsMock.mock.calls[0] as unknown as [
+      Record<string, unknown>,
+    ];
+    expect(projectArgs.includeByteCount).toBeUndefined();
+  });
+
+  it('shows 10 notebook names plus View all when the page has a nextStartKey', () => {
+    enableCatalogueNav();
+    queryState.projects = {
+      notebooks: namedItems('project', 10),
+      nextStartKey: '[1,"project-10"]',
+    };
+    renderSidebar();
+    const projects = navGroup('web-nav-projects');
+    const links = hrefs(projects);
+    for (let i = 1; i <= 10; i++) {
+      expect(links).toContain(`/projects/project-${i}`);
+    }
+    expect(
+      projects.getByRole('link', {name: 'View all'}).getAttribute('href')
+    ).toBe('/projects');
+  });
+
+  it('shows View all and not the empty placeholder when a notebook page is empty with nextStartKey', () => {
+    enableCatalogueNav();
+    queryState.projects = {notebooks: [], nextStartKey: 'cursor'};
+    renderSidebar();
+    const projects = navGroup('web-nav-projects');
+    expect(
+      projects.queryByText(`No ${config.notebookNamePlural}...`)
+    ).toBeNull();
+    expect(
+      projects.getByRole('link', {name: 'View all'}).getAttribute('href')
+    ).toBe('/projects');
+  });
+
+  it('shows 10 team names plus View all when the page has a nextStartKey', () => {
+    enableCatalogueNav();
+    queryState.teams = {
+      teams: namedItems('team', 10),
+      nextStartKey: '[1,"team-10"]',
+    };
+    renderSidebar();
+    const teams = navGroup('web-nav-teams');
+    const links = hrefs(teams);
+    for (let i = 1; i <= 10; i++) {
+      expect(links).toContain(`/teams/team-${i}`);
+    }
+    expect(
+      teams.getByRole('link', {name: 'View all'}).getAttribute('href')
+    ).toBe('/teams');
   });
 
   it('caps 11 notebooks at 10 names plus View all to /projects', () => {
     enableCatalogueNav();
-    queryState.projects = namedItems('project', 11);
+    queryState.projects = {notebooks: namedItems('project', 11)};
     renderSidebar();
     const projects = navGroup('web-nav-projects');
     const links = hrefs(projects);
@@ -255,7 +314,7 @@ describe('AppSidebar catalogue recent rows', () => {
 
   it('renders every notebook name and no View all when there are 2', () => {
     enableCatalogueNav();
-    queryState.projects = namedItems('project', 2);
+    queryState.projects = {notebooks: namedItems('project', 2)};
     renderSidebar();
     const projects = navGroup('web-nav-projects');
     expect(hrefs(projects)).toEqual(
@@ -272,7 +331,7 @@ describe('AppSidebar catalogue recent rows', () => {
 
   it('shows the empty notebooks placeholder and no View all', () => {
     enableCatalogueNav();
-    queryState.projects = [];
+    queryState.projects = {notebooks: []};
     renderSidebar();
     const projects = navGroup('web-nav-projects');
     expect(

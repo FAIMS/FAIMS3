@@ -18,6 +18,12 @@ import {
   useQueryClient,
   type QueryClient,
 } from '@tanstack/react-query';
+import {
+  listPath,
+  pagedListControls,
+  useListCursor,
+  type ListPageArgs,
+} from './paged-list';
 import {errorMessageFromNotebookJsonBody} from './project-hooks';
 
 /** How often in-progress layers are polled via GET /api/map-assets/:id. */
@@ -40,20 +46,67 @@ export function mapAssetQueryUserKey(user: User | null): string | undefined {
   return user?.user?.id ?? user?.decodedToken?.username ?? user?.token;
 }
 
-/** React Query key for the library or one survey's linked layers. */
+/**
+ * React Query key prefix for the library or one survey's linked layers.
+ * Every page of that list is keyed under it (see {@link mapAssetListPageKey}).
+ */
 export const mapAssetQueryKey = (user: User | null, projectId?: string) => [
   'map-assets',
   mapAssetQueryUserKey(user),
   projectId ?? 'library',
 ];
 
-/** React Query key for layers owned by one team. */
+/** React Query key prefix for layers owned by one team. */
 export const mapAssetTeamQueryKey = (user: User | null, teamId: string) => [
   'map-assets',
   mapAssetQueryUserKey(user),
   'team',
   teamId,
 ];
+
+/** Which map-layer list a request reads. */
+export type MapAssetListScope = {
+  /** Layers linked to this survey. */
+  projectId?: string;
+  /** Layers owned by this team. */
+  teamId?: string;
+  /** Library layers that are ready and not yet linked to this survey. */
+  linkableToProjectId?: string;
+};
+
+/** Marks the paging part of a list key; the cursor follows two places on. */
+const LIST_PAGE_MARKER = 'page';
+
+/**
+ * React Query key for one page of a map-layer list: the list's prefix, then
+ * `'page'`, the page size and the cursor (`null` on the first page). The
+ * `linkableToProjectId` list sits under the library prefix so a new layer
+ * and progress polls reach it too.
+ */
+export function mapAssetListPageKey(
+  user: User | null,
+  {projectId, teamId, linkableToProjectId}: MapAssetListScope,
+  {limit, startKey}: ListPageArgs = {}
+): unknown[] {
+  const root = teamId
+    ? mapAssetTeamQueryKey(user, teamId)
+    : [
+        ...mapAssetQueryKey(user, projectId),
+        ...(!projectId && linkableToProjectId
+          ? ['linkable', linkableToProjectId]
+          : []),
+      ];
+  return [...root, LIST_PAGE_MARKER, limit ?? null, startKey ?? null];
+}
+
+/**
+ * True when a list key is a first page (or carries no paging part). A new
+ * layer is the newest, so it belongs at the top of first pages only.
+ */
+function isFirstMapAssetListPage(queryKey: readonly unknown[]): boolean {
+  const marker = queryKey.indexOf(LIST_PAGE_MARKER, 3);
+  return marker < 0 || (queryKey[marker + 2] ?? null) === null;
+}
 
 /** React Query key for one layer's details. */
 export const mapAssetDetailQueryKey = (user: User | null, assetId: string) => [
@@ -115,7 +168,9 @@ export function upsertAssetInList(
   }
   const index = old.assets.findIndex(item => item._id === asset._id);
   if (index < 0) {
+    // Keep `nextStartKey`: the page still has the same rows after it.
     return {
+      ...old,
       assets: [withLinkCount(asset), ...old.assets],
     };
   }
@@ -131,14 +186,17 @@ export function upsertAssetInList(
   return {...old, assets};
 }
 
-/** Library list, or the team list that owns this layer. Not survey lists. */
+/**
+ * Library list, or the team list that owns this layer. Not survey lists,
+ * and not a "linkable" list: a new layer is not ready to link.
+ */
 function isListForCreatedAsset(
   queryKey: readonly unknown[],
   asset: ExistingMapAsset
 ): boolean {
   const kind = queryKey[2];
   if (kind === 'library') {
-    return true;
+    return queryKey[3] !== 'linkable';
   }
   if (kind === 'team') {
     return queryKey[3] === asset.ownedByTeamId;
@@ -322,26 +380,29 @@ function sendFormData({
   });
 }
 
-/** GET /api/map-assets, optionally filtered by survey or team. */
+/**
+ * GET one page of /api/map-assets, optionally filtered by survey or team.
+ * Without `limit` the API returns its default page, never the whole list.
+ */
 export async function fetchMapAssets({
   user,
   projectId,
   teamId,
+  linkableToProjectId,
+  limit,
+  startKey,
 }: {
   user: User;
-  projectId?: string;
-  teamId?: string;
-}): Promise<GetMapAssetListResponse> {
-  const params = new URLSearchParams();
-  if (projectId) {
-    params.set('projectId', projectId);
-  }
-  if (teamId) {
-    params.set('teamId', teamId);
-  }
-  const query = params.toString();
+} & MapAssetListScope &
+  ListPageArgs): Promise<GetMapAssetListResponse> {
   const response = await fetch(
-    `${config.apiUrl}/api/map-assets${query ? `?${query}` : ''}`,
+    `${config.apiUrl}${listPath('/api/map-assets', {
+      projectId,
+      teamId,
+      linkableToProjectId,
+      limit,
+      startKey,
+    })}`,
     {
       headers: {Authorization: `Bearer ${user.token}`},
       cache: 'no-store',
@@ -353,16 +414,21 @@ export async function fetchMapAssets({
   return (await response.json()) as GetMapAssetListResponse;
 }
 
-/** GET /api/teams/:teamId/map-assets. */
+/** GET one page of /api/teams/:teamId/map-assets. */
 export async function fetchTeamMapAssets({
   user,
   teamId,
+  limit,
+  startKey,
 }: {
   user: User;
   teamId: string;
-}): Promise<GetMapAssetListResponse> {
+} & ListPageArgs): Promise<GetMapAssetListResponse> {
   const response = await fetch(
-    `${config.apiUrl}/api/teams/${encodeURIComponent(teamId)}/map-assets`,
+    `${config.apiUrl}${listPath(
+      `/api/teams/${encodeURIComponent(teamId)}/map-assets`,
+      {limit, startKey}
+    )}`,
     {
       headers: {Authorization: `Bearer ${user.token}`},
       cache: 'no-store',
@@ -407,11 +473,11 @@ function mapAssetDetailQueryOptions({
 }
 
 /**
- * List layers for the library, a survey, or a team.
+ * One page of layers for the library, a survey, or a team, newest first.
  *
- * Fetches the list once (plus invalidation). Ready rows stay in that
- * snapshot and in per-asset detail queries. In-progress layers are
- * refreshed via GET /api/map-assets/:id and patched back into the list.
+ * Fetches the page once (plus invalidation). Ready rows stay in that
+ * snapshot and in per-asset detail queries. In-progress layers on the page
+ * are refreshed via GET /api/map-assets/:id and patched back into it.
  * Window-focus refetch is off so a file picker or alt-tab does not remount
  * open dialogs.
  */
@@ -419,26 +485,41 @@ export function useMapAssets({
   user,
   projectId,
   teamId,
+  linkableToProjectId,
+  limit,
+  startKey,
   enabled = true,
 }: {
   user: User | null;
-  projectId?: string;
-  teamId?: string;
   enabled?: boolean;
-}) {
+} & MapAssetListScope &
+  ListPageArgs) {
   const queryClient = useQueryClient();
   const listQuery = useQuery({
-    queryKey: teamId
-      ? mapAssetTeamQueryKey(user, teamId)
-      : mapAssetQueryKey(user, projectId),
+    queryKey: mapAssetListPageKey(
+      user,
+      {projectId, teamId, linkableToProjectId},
+      {limit, startKey}
+    ),
     enabled: !!user && enabled,
     staleTime: MAP_ASSET_LIST_STALE_MS,
     refetchOnWindowFocus: false,
     placeholderData: keepPreviousData,
     queryFn: async () => {
       const data = teamId
-        ? await fetchTeamMapAssets({user: user as User, teamId})
-        : await fetchMapAssets({user: user as User, projectId});
+        ? await fetchTeamMapAssets({
+            user: user as User,
+            teamId,
+            limit,
+            startKey,
+          })
+        : await fetchMapAssets({
+            user: user as User,
+            projectId,
+            linkableToProjectId,
+            limit,
+            startKey,
+          });
       seedMapAssetDetailsFromList(queryClient, user as User, data.assets);
       return overlayListWithCachedMapAssets(queryClient, user as User, data);
     },
@@ -457,6 +538,46 @@ export function useMapAssets({
   });
 
   return listQuery;
+}
+
+/**
+ * {@link useMapAssets} for a table: holds the page size and cursor, and
+ * returns the page's `assets` plus `serverPagination` for `<DataTable>`.
+ */
+export function usePagedMapAssets({
+  user,
+  projectId,
+  teamId,
+  linkableToProjectId,
+  enabled = true,
+  defaultPageSize,
+}: {
+  user: User | null;
+  enabled?: boolean;
+  defaultPageSize?: number;
+} & MapAssetListScope) {
+  const cursor = useListCursor({
+    scope: JSON.stringify([projectId, teamId, linkableToProjectId]),
+    defaultPageSize,
+  });
+  const query = useMapAssets({
+    user,
+    projectId,
+    teamId,
+    linkableToProjectId,
+    enabled,
+    limit: cursor.pageSize,
+    startKey: cursor.startKey,
+  });
+  const controls = pagedListControls(cursor, query);
+  return {
+    ...query,
+    assets: query.data?.assets,
+    ...controls,
+    // Not `isFetching`: the in-progress poll must not blank the table, and
+    // `isPlaceholderData` already covers a page change.
+    tableLoading: query.isPending || query.isPlaceholderData,
+  };
 }
 
 /** GET /api/map-assets/:assetId. */
@@ -585,6 +706,7 @@ export function cacheCreatedMapAsset(
         query.queryKey[0] === 'map-assets' &&
         query.queryKey[1] === mapAssetQueryUserKey(user) &&
         isMapAssetListQueryKey(query.queryKey) &&
+        isFirstMapAssetListPage(query.queryKey) &&
         isListForCreatedAsset(query.queryKey, asset),
     },
     old => upsertAssetInList(old, asset)

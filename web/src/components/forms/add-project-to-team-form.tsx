@@ -3,7 +3,7 @@ import {Form} from '@/components/form';
 import {config} from '@/constants';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {modifyTeamForProject} from '@/hooks/project-hooks';
-import {useGetProject, useGetTeams} from '@/hooks/queries';
+import {useGetProject} from '@/hooks/queries';
 import {Action} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {
@@ -11,6 +11,7 @@ import {
   defaultTeamForReassign,
   NO_TEAM_SENTINEL,
 } from './template-team-field';
+import {useTeamOptions} from './use-team-options';
 
 interface AddProjectToTeamFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -32,11 +33,13 @@ export function AddProjectToTeamForm({
 }: AddProjectToTeamFormProps) {
   const user = useRequiredUser();
   const QueryClient = useQueryClient();
-  const teams = useGetTeams({user});
   const {data: project, isLoading: projectLoading} = useGetProject({
     user,
     projectId,
   });
+  // Any visible team can take the survey. The current owner is offered even
+  // when it is not on the first page of teams.
+  const teams = useTeamOptions({user, ensureTeamId: project?.ownedByTeamId});
 
   // can we add a user to the team?
   const canAddProjectToTeam = useIsAuthorisedTo({
@@ -49,7 +52,7 @@ export function AddProjectToTeamForm({
     resourceId: projectId,
   });
 
-  const possibleTeams = teams.data?.teams ?? [];
+  const possibleTeams = teams.teams;
 
   if (!canAddProjectToTeam) {
     return (
@@ -73,6 +76,7 @@ export function AddProjectToTeamForm({
       canCreateGlobally: false,
       includeNoTeam: canRemoveFromTeam,
       possibleTeams,
+      more: teams.more,
       label: 'Team',
       description: canRemoveFromTeam
         ? `Choose a team to own this ${config.notebookName}, or select "No team" to remove team ownership.`

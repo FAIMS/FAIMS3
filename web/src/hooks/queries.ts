@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import {config, buildRegisterUrl} from '@/constants';
 import {User} from '@/context/auth-provider';
-import {sortNotebookListNewestFirst} from '@/lib/utils';
 import type {
   GetAdminStatsPeopleResponse,
   GetAdminStatsResponse,
   GetAdminStatsTeamsResponse,
   GetCurrentUserResponse,
+  GetGlobalInvitesResponse,
   GetListAllUsersResponse,
   GetLongLivedTokensResponse,
-  GetNotebookListWithStatsResponse,
+  GetNotebookListResponse,
+  GetTeamNotebookStorageResponse,
   GetTemplateByIdResponse,
+  NotebookListStatus,
   PostCreateLongLivedTokenRequest,
   PostCreateLongLivedTokenResponse,
   PostRequestEmailVerificationRequest,
@@ -29,73 +31,25 @@ import {
   GetTeamInvitesResponse,
   GetTeamMembersResponse,
 } from '@faims3/data-model';
-import {useState} from 'react';
 import {getTemplateSurveyReferences} from '@/hooks/template-hooks';
 import {
   keepPreviousData,
-  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import QRCode from 'qrcode';
+import {get, post} from './api-fetch';
+import {
+  listPath,
+  PICKER_PAGE_SIZE,
+  useInfiniteList,
+  usePagedList,
+  type ListPageArgs,
+  type ListRequest,
+} from './paged-list';
 
-/**
- * post function is a utility function for making POST requests to the API.
- *
- * @param {string} path - The path to the API endpoint.
- * @param {User | null} user - The user object.
- * @returns {Promise<any>} A promise that resolves to the response data.
- */
-export const post = async <TPayload, TResponse>({
-  user,
-  data,
-  path,
-}: {
-  path: string;
-  data: TPayload;
-  user: User;
-}) => {
-  const response = await fetch(`${config.apiUrl}${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${user.token}`,
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) throw new Error(response.statusText);
-
-  return (await response.json()) as TResponse;
-};
-
-/**
- * get function is a utility function for making GET requests to the API.
- *
- * @param {string} path - The path to the API endpoint.
- * @param {User | null} user - The user object.
- * @returns {Promise<any>} A promise that resolves to the response data.
- */
-export const get = async <T = any>(
-  path: string,
-  user: User | null,
-  token: string | null = null
-) => {
-  if (!user && !token) throw new Error('Not authenticated');
-
-  const response = await fetch(`${config.apiUrl}${path}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${user ? user.token : token}`,
-    },
-  });
-
-  if (!response.ok) throw new Error(response.statusText);
-
-  return (await response.json()) as T;
-};
+export {get, post};
 
 /**
  * Fetches details about the current user
@@ -126,64 +80,133 @@ export const useGetProject = ({
     enabled: !!user,
   });
 
-/**
- * Builds GET /api/notebooks path. `includeByteCount=true` triggers per-notebook
- * Couch `info()` on the server; omit it for name-only consumers such as the nav.
- */
-export function notebooksListPath({
-  includeArchived = false,
-  includeByteCount = true,
-}: {
-  includeArchived?: boolean;
+/** Query fields for GET /api/notebooks list requests. */
+export type NotebooksListQueryArgs = ListPageArgs & {
+  /** Only surveys owned by this team. */
+  teamId?: string;
+  /** Only surveys created from this template. */
+  templateId?: string;
+  /** `active` (default) leaves archived surveys out; `all` lists active first. */
+  status?: NotebookListStatus;
+  /**
+   * Attach `byteCount` to each row of the page (one Couch `info()` per row on
+   * the server). Off by default: no Control Centre table shows it.
+   */
   includeByteCount?: boolean;
-} = {}): string {
-  const params = new URLSearchParams();
-  if (includeByteCount) {
-    params.set('includeByteCount', 'true');
-  }
-  if (includeArchived) {
-    params.set('includeArchived', 'true');
-  }
-  const qs = params.toString();
-  return qs ? `/api/notebooks/?${qs}` : '/api/notebooks/';
+};
+
+/**
+ * Path and React Query key for one GET /api/notebooks page. Team lists live
+ * under `['projectsbyteam', token, teamId]` and the rest under
+ * `['projects', token]`, so the existing invalidations reach every page.
+ */
+export function buildNotebooksListRequest(
+  {
+    teamId,
+    templateId,
+    status = 'active',
+    includeByteCount = false,
+    limit,
+    startKey,
+  }: NotebooksListQueryArgs,
+  user: User | null
+): ListRequest {
+  return {
+    path: listPath('/api/notebooks/', {
+      teamId,
+      templateId,
+      status: status === 'active' ? undefined : status,
+      includeByteCount,
+      limit,
+      startKey,
+    }),
+    queryKey: [
+      ...(teamId
+        ? ['projectsbyteam', user?.token, teamId]
+        : ['projects', user?.token]),
+      'list',
+      status,
+      templateId ?? null,
+      includeByteCount ? 'stats' : 'names',
+      limit ?? null,
+      startKey ?? null,
+    ],
+  };
 }
 
 /**
- * useGetProjects hook returns a query for fetching projects.
- *
- * @param {User} user - The user object.
- * @returns {Query} A query for fetching projects.
+ * One page of surveys the user can read, newest first. Read
+ * `data.notebooks` and `data.nextStartKey`; omitting `limit` gets the API
+ * default page (50), never the whole catalogue.
  */
 export const useGetProjects = ({
   user,
   enabled = true,
-  includeArchived = false,
-  includeByteCount = true,
+  ...args
+}: NotebooksListQueryArgs & {
+  user: User | null;
+  enabled?: boolean;
+}) => {
+  const {path, queryKey} = buildNotebooksListRequest(args, user);
+  return useQuery({
+    queryKey,
+    queryFn: () => get<GetNotebookListResponse>(path, user),
+    enabled: !!user && enabled,
+  });
+};
+
+/**
+ * Cursor-paged surveys for Control Centre tables: the whole catalogue, one
+ * team's (`teamId`), one template's (`templateId`), or the archive
+ * (`status: 'archived'`).
+ */
+export const usePagedProjects = ({
+  user,
+  enabled = true,
+  teamId,
+  templateId,
+  status = 'active',
+  defaultPageSize,
 }: {
   user: User | null;
   enabled?: boolean;
-  /** When true, lists archived notebooks/projects too (directory-style sync uses this). */
-  includeArchived?: boolean;
-  /**
-   * When true, attach per-notebook `byteCount` (Couch `info()`). Defaults true so
-   * the Projects index keeps stats. The sidebar passes false — names do not need it.
-   */
-  includeByteCount?: boolean;
+  teamId?: string;
+  templateId?: string;
+  status?: NotebookListStatus;
+  defaultPageSize?: number;
+}) => {
+  const {items, ...paged} = usePagedList<GetNotebookListResponse, 'notebooks'>({
+    user,
+    enabled,
+    scope: `${status}:${teamId ?? ''}:${templateId ?? ''}`,
+    defaultPageSize,
+    buildRequest: page =>
+      buildNotebooksListRequest({teamId, templateId, status, ...page}, user),
+    itemsKey: 'notebooks',
+  });
+  return {...paged, notebooks: items};
+};
+
+/**
+ * Survey counts and stored bytes for a team, overall and per status, summed
+ * on the server (`GET /api/teams/:id/notebook-storage`). Keyed under
+ * `projectsbyteam` so survey changes refresh it.
+ */
+export const useGetTeamNotebookStorage = ({
+  user,
+  teamId,
+}: {
+  user: User | null;
+  teamId: string;
 }) =>
   useQuery({
-    queryKey: [
-      'projects',
-      user?.token,
-      includeArchived,
-      includeByteCount ? 'stats' : 'list',
-    ],
+    queryKey: ['projectsbyteam', user?.token, teamId, 'storage'],
     queryFn: () =>
-      get<GetNotebookListWithStatsResponse>(
-        notebooksListPath({includeArchived, includeByteCount}),
+      get<GetTeamNotebookStorageResponse>(
+        `/api/teams/${teamId}/notebook-storage`,
         user
       ),
-    select: sortNotebookListNewestFirst,
-    enabled: !!user && enabled,
+    enabled: !!user && !!teamId,
   });
 
 /**
@@ -232,31 +255,6 @@ export const useTemplateSurveyReferences = ({
     enabled: !!user && !!templateId && enabled,
   });
 
-/**
- * useGetProjectsForTeam hook returns a query for fetching projects.
- *
- * @param {User} user - The user object.
- * @returns {Query} A query for fetching projects.
- */
-export const useGetProjectsForTeam = ({
-  teamId,
-  user,
-  includeArchived = false,
-}: {
-  user: User | null;
-  teamId: string;
-  includeArchived?: boolean;
-}) =>
-  useQuery({
-    queryKey: ['projectsbyteam', user?.token, teamId, includeArchived, 'stats'],
-    queryFn: () =>
-      get<GetNotebookListWithStatsResponse>(
-        `/api/notebooks?teamId=${teamId}&includeByteCount=true${includeArchived ? '&includeArchived=true' : ''}`,
-        user
-      ),
-    select: sortNotebookListNewestFirst,
-  });
-
 /** Query fields for GET /api/templates list requests. */
 export type TemplatesListQueryArgs = {
   teamId?: string;
@@ -277,15 +275,14 @@ export function buildTemplatesListRequest({
   startKey,
   visibility,
 }: TemplatesListQueryArgs): {path: string; queryKey: unknown[]} {
-  const params = new URLSearchParams();
-  if (includeArchived) params.set('includeArchived', 'true');
-  if (teamId) params.set('teamId', teamId);
-  if (limit !== undefined) params.set('limit', String(limit));
-  if (startKey) params.set('startKey', startKey);
-  if (visibility) params.set('visibility', visibility);
-  const qs = params.toString();
   return {
-    path: `/api/templates${qs ? `?${qs}` : ''}`,
+    path: listPath('/api/templates', {
+      includeArchived,
+      teamId,
+      limit,
+      startKey,
+      visibility,
+    }),
     queryKey: [
       'templates',
       includeArchived ? 'archived' : 'active',
@@ -322,24 +319,38 @@ export const useGetTemplatesForTeam = ({
   });
 
 /**
- * @param {User} user - The user object.
+ * Path and React Query key for one GET /api/teams/:id/members page. Keyed
+ * under `['teamusers', teamId]`.
  */
-export const useGetUsersForTeam = ({
+export function buildTeamMembersListRequest(
+  teamId: string,
+  {limit, startKey}: ListPageArgs
+): ListRequest {
+  return {
+    path: listPath(`/api/teams/${teamId}/members`, {limit, startKey}),
+    queryKey: ['teamusers', teamId, limit ?? null, startKey ?? null],
+  };
+}
+
+/** Cursor-paged team members in name order, for the team Users tab. */
+export const usePagedTeamMembers = ({
   teamId,
   user,
+  defaultPageSize,
 }: {
-  user: User;
+  user: User | null;
   teamId: string;
-}) =>
-  useQuery({
-    queryKey: ['teamusers', teamId],
-    queryFn: async () => {
-      return (await get(
-        `/api/teams/${teamId}/members`,
-        user
-      )) as GetTeamMembersResponse;
-    },
+  defaultPageSize?: number;
+}) => {
+  const {items, ...paged} = usePagedList<GetTeamMembersResponse, 'members'>({
+    user,
+    scope: teamId,
+    defaultPageSize,
+    buildRequest: page => buildTeamMembersListRequest(teamId, page),
+    itemsKey: 'members',
   });
+  return {...paged, members: items};
+};
 
 /**
  * Gets a particular team
@@ -363,29 +374,91 @@ export const useGetTeam = ({
     enabled: !!user && !!teamId && enabledOption,
   });
 
+/** Query fields for GET /api/teams list requests. */
+export type TeamsListQueryArgs = ListPageArgs & {
+  /** When true, lists archived teams only. */
+  includeArchived?: boolean;
+};
+
 /**
- * useGetTeams hook returns a query for fetching projects.
- *
- * @param {User} user - The user object.
- * @returns {Query} A query for fetching projects.
+ * Path and React Query key for one GET /api/teams page. Keyed under
+ * `['teams']` so team mutations invalidate every page.
+ */
+export function buildTeamsListRequest({
+  includeArchived = false,
+  limit,
+  startKey,
+}: TeamsListQueryArgs): ListRequest {
+  return {
+    path: listPath('/api/teams/', {includeArchived, limit, startKey}),
+    queryKey: [
+      'teams',
+      includeArchived ? 'archived' : 'active',
+      limit ?? null,
+      startKey ?? null,
+    ],
+  };
+}
+
+/**
+ * One page of teams the user can view, newest first. Read `data.teams` and
+ * `data.nextStartKey`; omitting `limit` gets the API default page (50).
  */
 export const useGetTeams = ({
   user,
   enabled = true,
+  ...args
+}: TeamsListQueryArgs & {
+  user: User | null;
+  enabled?: boolean;
+}) => {
+  const {path, queryKey} = buildTeamsListRequest(args);
+  return useQuery({
+    queryKey,
+    queryFn: () => get<GetListTeamsResponse>(path, user),
+    enabled: !!user && enabled,
+  });
+};
+
+/** Cursor-paged teams for Control Centre tables (active, or the archive). */
+export const usePagedTeams = ({
+  user,
+  enabled = true,
   includeArchived = false,
+  defaultPageSize,
 }: {
   user: User | null;
   enabled?: boolean;
-  /** When true, lists only archived teams (requires includeArchived=true on the API). */
   includeArchived?: boolean;
+  defaultPageSize?: number;
+}) => {
+  const {items, ...paged} = usePagedList<GetListTeamsResponse, 'teams'>({
+    user,
+    enabled,
+    scope: includeArchived ? 'archived' : 'active',
+    defaultPageSize,
+    buildRequest: page => buildTeamsListRequest({includeArchived, ...page}),
+    itemsKey: 'teams',
+  });
+  return {...paged, teams: items};
+};
+
+/**
+ * Active teams for pickers, newest first. `items` grows a page at a time;
+ * Get more follows `nextStartKey`.
+ */
+export const useInfiniteTeams = ({
+  user,
+  enabled = true,
+}: {
+  user: User | null;
+  enabled?: boolean;
 }) =>
-  useQuery({
-    queryKey: ['teams', includeArchived ? 'archived' : 'active'],
-    queryFn: async () => {
-      const qs = includeArchived ? '?includeArchived=true' : '';
-      return get<GetListTeamsResponse>(`/api/teams/${qs}`, user);
-    },
-    enabled: !!user && enabled,
+  useInfiniteList<GetListTeamsResponse, 'teams'>({
+    user,
+    enabled,
+    buildRequest: buildTeamsListRequest,
+    itemsKey: 'teams',
   });
 
 /**
@@ -436,7 +509,7 @@ export const usePagedTemplates = ({
   enabled = true,
   includeArchived = false,
   teamId,
-  defaultPageSize = 10,
+  defaultPageSize,
   visibility,
 }: {
   user: User | null;
@@ -446,83 +519,29 @@ export const usePagedTemplates = ({
   defaultPageSize?: number;
   visibility?: 'public' | 'private';
 }) => {
-  const listScope = `${includeArchived ? 'archived' : 'active'}:${teamId ?? ''}:${visibility ?? 'all'}`;
-  const [pageSize, setPageSize] = useState(defaultPageSize);
-  const [paging, setPaging] = useState<{
-    scope: string;
-    startKey: string | undefined;
-    stack: (string | undefined)[];
-  }>({scope: listScope, startKey: undefined, stack: []});
-
-  if (paging.scope !== listScope) {
-    setPaging({scope: listScope, startKey: undefined, stack: []});
-  }
-
-  const startKey = paging.scope === listScope ? paging.startKey : undefined;
-  const cursorStack = paging.scope === listScope ? paging.stack : [];
-
-  const query = useGetTemplates({
-    user,
-    enabled,
-    includeArchived,
-    teamId,
-    limit: pageSize,
-    startKey,
-    visibility,
-  });
-
-  const fetching = query.isPending || query.isFetching;
-  const hasNextPage =
-    query.data?.nextStartKey !== undefined && !query.isFetching;
-  const pageIndex = cursorStack.length;
-
-  const goNext = () => {
-    const next = query.data?.nextStartKey;
-    if (next === undefined || query.isFetching) return;
-    setPaging(current => ({
-      ...current,
-      stack: [...current.stack, current.startKey],
-      startKey: next,
-    }));
-  };
-
-  const goPrevious = () => {
-    setPaging(current => {
-      if (current.stack.length === 0) return current;
-      return {
-        ...current,
-        startKey: current.stack[current.stack.length - 1],
-        stack: current.stack.slice(0, -1),
-      };
-    });
-  };
-
-  const goFirst = () => {
-    setPaging(current => ({...current, stack: [], startKey: undefined}));
-  };
-
-  const changePageSize = (size: number) => {
-    setPageSize(size);
-    setPaging(current => ({...current, stack: [], startKey: undefined}));
-  };
-
-  return {
-    ...query,
-    templates: query.data?.templates,
-    pageSize,
-    pageIndex,
-    hasNextPage,
-    canPreviousPage: pageIndex > 0,
-    tableLoading: fetching,
-    goNext,
-    goPrevious,
-    goFirst,
-    changePageSize,
-  };
+  const {items, ...paged} = usePagedList<GetListTemplatesResponse, 'templates'>(
+    {
+      user,
+      enabled,
+      scope: `${includeArchived ? 'archived' : 'active'}:${teamId ?? ''}:${visibility ?? 'all'}`,
+      defaultPageSize,
+      buildRequest: page => {
+        const {path, queryKey} = buildTemplatesListRequest({
+          teamId,
+          includeArchived,
+          visibility,
+          ...page,
+        });
+        return {path, queryKey: [...queryKey, user?.token]};
+      },
+      itemsKey: 'templates',
+    }
+  );
+  return {...paged, templates: items};
 };
 
 /** Create-survey picker page size; follow `nextStartKey` with Get more. */
-export const TEMPLATE_PICKER_PAGE_SIZE = 25;
+export const TEMPLATE_PICKER_PAGE_SIZE = PICKER_PAGE_SIZE;
 
 /**
  * Infinite template catalogue for selectors. Newest `createdAt` first; Get
@@ -539,163 +558,198 @@ export const useInfiniteTemplates = ({
   includeArchived?: boolean;
   teamId?: string;
 }) =>
-  useInfiniteQuery({
-    queryKey: [
-      'templates',
-      'infinite',
-      includeArchived ? 'archived' : 'active',
-      teamId ?? null,
-      TEMPLATE_PICKER_PAGE_SIZE,
-      user?.token,
-    ],
-    queryFn: async ({pageParam}) => {
-      const {path} = buildTemplatesListRequest({
+  useInfiniteList<GetListTemplatesResponse, 'templates'>({
+    user,
+    enabled,
+    pageSize: TEMPLATE_PICKER_PAGE_SIZE,
+    buildRequest: page => {
+      const {path, queryKey} = buildTemplatesListRequest({
         teamId,
         includeArchived,
-        limit: TEMPLATE_PICKER_PAGE_SIZE,
-        startKey: pageParam,
+        ...page,
       });
-      return get<GetListTemplatesResponse>(path, user);
+      return {path, queryKey: [...queryKey, user?.token]};
     },
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: lastPage => lastPage.nextStartKey,
-    enabled: !!user && enabled,
+    itemsKey: 'templates',
   });
 
+/** Query fields for GET /api/users list requests. */
+export type UsersListQueryArgs = ListPageArgs & {
+  /** When true, lists disabled accounts only. */
+  includeArchived?: boolean;
+};
+
 /**
- * useGetUsers hook returns a query for fetching users.
- * Disabled accounts are omitted unless `includeArchived` is true (matches API `includeArchived` query param).
- *
- * @param {User} user - The user object.
- * @returns {Query} A query for fetching users.
+ * Path and React Query key for one GET /api/users page. Keyed under
+ * `['users']`.
  */
-export const useGetUsers = ({
+export function buildUsersListRequest({
+  includeArchived = false,
+  limit,
+  startKey,
+}: UsersListQueryArgs): ListRequest {
+  return {
+    path: listPath('/api/users', {includeArchived, limit, startKey}),
+    queryKey: [
+      'users',
+      includeArchived ? 'disabled' : 'enabled',
+      limit ?? null,
+      startKey ?? null,
+    ],
+  };
+}
+
+/**
+ * Cursor-paged user accounts in name order: enabled accounts, or disabled
+ * ones only when `includeArchived` is true (the Archive tab).
+ */
+export const usePagedUsers = ({
   user,
   enabled = true,
   includeArchived = false,
+  defaultPageSize,
 }: {
   user: User | null;
   enabled?: boolean;
   includeArchived?: boolean;
-}) =>
-  useQuery({
-    queryKey: ['users', includeArchived],
-    queryFn: () => {
-      const qs = includeArchived ? '?includeArchived=true' : '';
-      return get<GetListAllUsersResponse>(`/api/users${qs}`, user);
-    },
-    enabled: !!user && enabled,
+  defaultPageSize?: number;
+}) => {
+  const {items, ...paged} = usePagedList<GetListAllUsersResponse, 'users'>({
+    user,
+    enabled,
+    scope: includeArchived ? 'disabled' : 'enabled',
+    defaultPageSize,
+    buildRequest: page => buildUsersListRequest({includeArchived, ...page}),
+    itemsKey: 'users',
   });
+  return {...paged, users: items};
+};
+
+/** Invite row plus its registration link and a QR code for that link. */
+export type InviteWithLink<T> = T & {url: string; qrCode: string};
 
 /**
- * useGetProjectInvites hook returns a query for fetching invites.
- *
- * @param {User} user - The user object.
- * @param {string} projectId - The ID of the notebook.
- * @returns {Query} A query for fetching invites.
+ * Fetches one invite page and adds each invite's registration URL and QR
+ * code. QR rendering is the slow part, so it runs for the fetched page only.
  */
-export const useGetProjectInvites = ({
+async function fetchInvitePage<T extends {_id: string}>({
+  path,
+  user,
+  redirect,
+}: {
+  path: string;
+  user: User | null;
+  redirect: string;
+}): Promise<{invites: InviteWithLink<T>[]; nextStartKey?: string}> {
+  const page = await get<{invites: T[]; nextStartKey?: string}>(path, user);
+  const invites = await Promise.all(
+    page.invites.map(async invite => {
+      const url = buildRegisterUrl({inviteId: invite._id, redirect});
+      return {...invite, url, qrCode: await QRCode.toDataURL(url)};
+    })
+  );
+  return {...page, invites};
+}
+
+type ProjectInvite = GetProjectInvitesResponse['invites'][number];
+type TeamInvite = GetTeamInvitesResponse['invites'][number];
+type GlobalInvite = GetGlobalInvitesResponse['invites'][number];
+
+/**
+ * Cursor-paged valid invites for a survey, newest first, each with its
+ * registration link and QR code. Keyed under `['projectinvites', projectId]`.
+ */
+export const usePagedProjectInvites = ({
   user,
   redirect,
   projectId,
+  defaultPageSize,
 }: {
   user: User | null;
   projectId: string;
   redirect: string;
-}) =>
-  useQuery({
-    queryKey: ['projectinvites', projectId],
-    queryFn: async () => {
-      const invites = await get<GetProjectInvitesResponse>(
-        `/api/invites/notebook/${projectId}`,
-        user
-      );
-      const promises = invites.map(async invite => {
-        const url = buildRegisterUrl({inviteId: invite._id, redirect});
-        return {
-          ...invite,
-          url: url,
-          qrCode: await QRCode.toDataURL(url),
-        };
-      });
-      // Resolving all promises to get enhanced invites
-      return Promise.all(promises);
-    },
-    // Only run the query if both user and notebookId are available
-    enabled: !!user && !!projectId,
+  defaultPageSize?: number;
+}) => {
+  const {items, ...paged} = usePagedList<
+    {invites: InviteWithLink<ProjectInvite>[]; nextStartKey?: string},
+    'invites'
+  >({
+    user,
+    enabled: !!projectId,
+    scope: projectId,
+    defaultPageSize,
+    buildRequest: ({limit, startKey}) => ({
+      path: listPath(`/api/invites/notebook/${projectId}`, {limit, startKey}),
+      queryKey: ['projectinvites', projectId, limit, startKey ?? null],
+    }),
+    itemsKey: 'invites',
+    fetchPage: path => fetchInvitePage<ProjectInvite>({path, user, redirect}),
   });
+  return {...paged, invites: items};
+};
 
 /**
- * useGetTeamInvites hook returns a query for fetching invites.
- *
- * @param {User} user - The user object.
- * @param {string} teamId - The ID of the notebook.
- * @returns {Query} A query for fetching invites.
+ * Cursor-paged valid invites for a team, newest first, each with its
+ * registration link and QR code. Keyed under `['teaminvites', teamId]`.
  */
-export const useGetTeamInvites = ({
+export const usePagedTeamInvites = ({
   user,
   teamId,
   redirect,
+  defaultPageSize,
 }: {
   user: User | null;
   teamId: string;
   redirect: string;
-}) =>
-  useQuery({
-    queryKey: ['teaminvites', teamId],
-    queryFn: async () => {
-      const invites = await get<GetTeamInvitesResponse>(
-        `/api/invites/team/${teamId}`,
-        user
-      );
-      const promises = invites.map(async invite => {
-        const url = buildRegisterUrl({inviteId: invite._id, redirect});
-        return {
-          ...invite,
-          url: url,
-          qrCode: await QRCode.toDataURL(url),
-        };
-      });
-      return Promise.all(promises);
-    },
-    // Only run the query if both user and notebookId are available
-    enabled: !!user && !!teamId,
+  defaultPageSize?: number;
+}) => {
+  const {items, ...paged} = usePagedList<
+    {invites: InviteWithLink<TeamInvite>[]; nextStartKey?: string},
+    'invites'
+  >({
+    user,
+    enabled: !!teamId,
+    scope: teamId,
+    defaultPageSize,
+    buildRequest: ({limit, startKey}) => ({
+      path: listPath(`/api/invites/team/${teamId}`, {limit, startKey}),
+      queryKey: ['teaminvites', teamId, limit, startKey ?? null],
+    }),
+    itemsKey: 'invites',
+    fetchPage: path => fetchInvitePage<TeamInvite>({path, user, redirect}),
   });
+  return {...paged, invites: items};
+};
 
 /**
- * useGetTeamInvites hook returns a query for fetching invites.
- *
- * @param {User} user - The user object.
- * @param {string} teamId - The ID of the notebook.
- * @returns {Query} A query for fetching invites.
+ * Cursor-paged valid global invites, newest first, each with its
+ * registration link and QR code. Keyed under `['globalinvites']`.
  */
-export const useGetGlobalInvites = ({
+export const usePagedGlobalInvites = ({
   user,
   redirect,
+  defaultPageSize,
 }: {
   user: User | null;
   redirect: string;
-}) =>
-  useQuery({
-    queryKey: ['globalinvites'],
-    queryFn: async () => {
-      const invites = await get<GetTeamInvitesResponse>(
-        '/api/invites/global',
-        user
-      );
-      const promises = invites.map(async invite => {
-        const url = buildRegisterUrl({inviteId: invite._id, redirect});
-        return {
-          ...invite,
-          url: url,
-          qrCode: await QRCode.toDataURL(url),
-        };
-      });
-      return Promise.all(promises);
-    },
-    // Only run the query if both user and notebookId are available
-    enabled: !!user,
+  defaultPageSize?: number;
+}) => {
+  const {items, ...paged} = usePagedList<
+    {invites: InviteWithLink<GlobalInvite>[]; nextStartKey?: string},
+    'invites'
+  >({
+    user,
+    scope: 'global',
+    defaultPageSize,
+    buildRequest: ({limit, startKey}) => ({
+      path: listPath('/api/invites/global', {limit, startKey}),
+      queryKey: ['globalinvites', limit, startKey ?? null],
+    }),
+    itemsKey: 'invites',
+    fetchPage: path => fetchInvitePage<GlobalInvite>({path, user, redirect}),
   });
+  return {...paged, invites: items};
+};
 
 /**
  * useGetRecords hook returns a query for fetching records.
@@ -721,26 +775,31 @@ export const useGetRecords = ({
   });
 
 /**
- * @param projectId - the project ID to lookup
- * @param user - The user object.
+ * Cursor-paged users holding a role on a survey, in name order. `data.roles`
+ * (every survey role) comes with each page. Keyed under
+ * `['projectusers', projectId]`.
  */
-export const useGetUsersForProject = ({
+export const usePagedProjectUsers = ({
   projectId,
   user,
+  defaultPageSize,
 }: {
   user: User | null;
   projectId: string;
-}) =>
-  useQuery({
-    queryKey: ['projectusers', projectId],
-    queryFn: async () => {
-      return await get<GetNotebookUsersResponse>(
-        `/api/notebooks/${projectId}/users`,
-        user
-      );
-    },
-    enabled: !!user,
+  defaultPageSize?: number;
+}) => {
+  const {items, ...paged} = usePagedList<GetNotebookUsersResponse, 'users'>({
+    user,
+    scope: projectId,
+    defaultPageSize,
+    buildRequest: ({limit, startKey}) => ({
+      path: listPath(`/api/notebooks/${projectId}/users`, {limit, startKey}),
+      queryKey: ['projectusers', projectId, limit, startKey ?? null],
+    }),
+    itemsKey: 'users',
   });
+  return {...paged, users: items};
+};
 
 /**
  * useGetProject hook returns a query for fetching a project.
@@ -761,27 +820,42 @@ export const useRequestVerify = () => {
 };
 
 /**
- * useGetLongLivedTokens hook returns a query for fetching long lived tokens.
- *
- * @param {User} user - The user object.
- * @param {boolean} fetchAll - Whether to fetch all long lived tokens or only the user's.
- * @returns {Query} A query for fetching long lived tokens.
+ * Cursor-paged long-lived tokens, newest first: the user's own, or every
+ * user's when `fetchAll` is true (admins). `data.maxDurationDays` and
+ * `data.maxAllowedExpiryTimestamp` come with each page. Keyed under
+ * `['long-lived-tokens']`.
  */
-export const useGetLongLivedTokens = ({
+export const usePagedLongLivedTokens = ({
   user,
   fetchAll,
+  defaultPageSize,
 }: {
   user: User;
   fetchAll: boolean;
-}) =>
-  useQuery({
-    queryKey: ['long-lived-tokens', user.user.id, fetchAll],
-    queryFn: () =>
-      get<GetLongLivedTokensResponse>(
-        '/api/long-lived-tokens' + (fetchAll ? '?all=true' : ''),
-        user
-      ),
+  defaultPageSize?: number;
+}) => {
+  const {items, ...paged} = usePagedList<GetLongLivedTokensResponse, 'tokens'>({
+    user,
+    scope: fetchAll ? 'all' : 'mine',
+    defaultPageSize,
+    buildRequest: ({limit, startKey}) => ({
+      path: listPath('/api/long-lived-tokens', {
+        all: fetchAll ? 'true' : undefined,
+        limit,
+        startKey,
+      }),
+      queryKey: [
+        'long-lived-tokens',
+        user.user.id,
+        fetchAll,
+        limit,
+        startKey ?? null,
+      ],
+    }),
+    itemsKey: 'tokens',
   });
+  return {...paged, tokens: items};
+};
 
 /**
  * Creates a long-lived token for a user.

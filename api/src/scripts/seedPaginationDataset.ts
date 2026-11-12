@@ -4,7 +4,8 @@
  * seedPaginationDataset.ts
  *
  * Bulk fixture seed for Control Centre pagination (teams, templates,
- * surveys/notebooks, and users). Distinct from seedTestDataset.ts: that
+ * surveys/notebooks, users, map layers and invites). Distinct from
+ * seedTestDataset.ts: that
  * script creates a small, permission-testing persona matrix; this one
  * mints a large, labelled set so list pages have multiple pages.
  *
@@ -15,6 +16,20 @@
  *   notebook_bulk_001    Bulk Survey 001    (owned by team_bulk_001)
  *   bulk-user-001@faims.test  Bulk User 001 (TEAM_MEMBER of matching team,
  *                             PROJECT_CONTRIBUTOR of matching survey)
+ *   asset-bulk-001       Bulk Map Layer 001
+ *   bulk-invite-global-001 / -team-001 / -survey-001   Bulk … Invite 001
+ *
+ * Lists that belong to one team or one survey would hold a single row if
+ * the fixtures were spread evenly, so the first team and survey also get
+ * the lot: every bulk user is a TEAM_MEMBER of team_bulk_001 and a
+ * PROJECT_CONTRIBUTOR of notebook_bulk_001, every map layer is owned by
+ * team_bulk_001 and linked to notebook_bulk_001, and the team and survey
+ * invites are all for those two. Their Members, Users, Map layers and
+ * Invites tabs then have several pages.
+ *
+ * Map layers are documents only, with no uploaded file. They are stored as
+ * `failed` so no spatial worker picks them up; they list and link, but
+ * cannot be downloaded and never appear as ready layers.
  *
  * Usage (from api/):
  *   pnpm run seed-pagination-dataset
@@ -33,21 +48,29 @@
  *
  * Safe to re-run: bulk entities are restored in place via stable IDs. Only
  * those documents and bulk-user-*@faims.test personas are created or
- * updated; nothing is deleted.
+ * updated; nothing is deleted. A re-run also renews the bulk invites, which
+ * otherwise expire and drop out of the invite lists.
  */
 
 import {
   addProjectRole,
   addTeamRole,
   buildUiSpecProperties,
+  DEFAULT_INVITE_EXPIRY_MS,
+  DEFAULT_MAP_ASSET_STYLE,
   ExistingPeopleDBDocument,
   ExistingProjectDocument,
   ExistingTeamsDBDocument,
   ExistingTemplateDocument,
+  InvitesDBFields,
+  MAP_ASSET_DOC_TYPE,
+  MapAssetFields,
   PeopleDBDocument,
   ProjectDocument,
   ProjectStatus,
+  Resource,
   Role,
+  RoleScope,
   ROOT_DESCRIPTION_MAX_LENGTH,
   normalizeRootDescriptionForStore,
   safeWriteDocument,
@@ -57,6 +80,8 @@ import {readFileSync} from 'fs';
 import {addLocalPasswordForUser} from '../auth/helpers';
 import {config} from '../buildconfig';
 import {
+  getInvitesDB,
+  getMapAssetsDB,
   getTeamsDB,
   getTemplatesDb,
   initialiseAndMigrateDBs,
@@ -64,6 +89,7 @@ import {
   localGetProjectsDb,
   registerDataDbAtCurrentVersion,
 } from '../couchdb';
+import {linkMapAsset} from '../couchdb/mapAssets/store';
 import {
   getProjectById,
   normalizeUiSpecificationOrThrow,
@@ -121,6 +147,16 @@ function bulkNotebookId(index: number): string {
 
 function bulkUserEmail(index: number): string {
   return `bulk-user-${padIndex(index)}@faims.test`;
+}
+
+function bulkMapAssetId(index: number): string {
+  return `asset-bulk-${padIndex(index)}`;
+}
+
+type BulkInviteScope = 'global' | 'team' | 'survey';
+
+function bulkInviteId(scope: BulkInviteScope, index: number): string {
+  return `bulk-invite-${scope}-${padIndex(index)}`;
 }
 
 /**
@@ -184,7 +220,8 @@ function assertDevLikeTarget(): void {
     .join('\n');
   throw new Error(
     `Refusing to seed pagination data against a non-development URL.\n${detail}\n` +
-      'This script writes ~100 teams, templates, surveys and users. Point it at ' +
+      'This script writes ~100 teams, templates, surveys, users, map layers ' +
+      'and invites. Point it at ' +
       'a local/dev CouchDB (localhost, http://, or a host containing "dev").'
   );
 }
@@ -433,16 +470,19 @@ function resetBulkUserBaseline(
   return user;
 }
 
+/**
+ * Creates or resets one bulk user with a role on each given team and survey.
+ */
 async function upsertBulkUser({
   email,
   name,
-  teamId,
-  projectId,
+  teamIds,
+  projectIds,
 }: {
   email: string;
   name: string;
-  teamId: string;
-  projectId: string;
+  teamIds: string[];
+  projectIds: string[];
 }): Promise<PeopleDBDocument> {
   const existing = await getCouchUserFromEmailOrUserId(email);
   let user: PeopleDBDocument;
@@ -461,16 +501,122 @@ async function upsertBulkUser({
     user = created;
   }
 
-  addTeamRole({user, role: Role.TEAM_MEMBER, teamId});
-  addProjectRole({
-    user,
-    role: Role.PROJECT_CONTRIBUTOR,
-    projectId,
-  });
+  for (const teamId of new Set(teamIds)) {
+    addTeamRole({user, role: Role.TEAM_MEMBER, teamId});
+  }
+  for (const projectId of new Set(projectIds)) {
+    addProjectRole({user, role: Role.PROJECT_CONTRIBUTOR, projectId});
+  }
 
   await saveCouchUser(user);
   await addLocalPasswordForUser(user, SEED_PASSWORD);
   return user;
+}
+
+/**
+ * Creates or restores one map-layer document owned by `teamId` and links it
+ * to `projectId`. No file is uploaded: the layer is stored as `failed`, a
+ * finished state, so spatial workers leave it alone. `createdAt` is kept on
+ * re-run so the layer keeps its place in the newest-first lists.
+ */
+async function upsertBulkMapAsset({
+  id,
+  name,
+  teamId,
+  projectId,
+  createdAt,
+}: {
+  id: string;
+  name: string;
+  teamId: string;
+  projectId: string;
+  createdAt: number;
+}): Promise<void> {
+  const db = getMapAssetsDB();
+  const now = Date.now();
+  const fields: MapAssetFields = {
+    docType: MAP_ASSET_DOC_TYPE,
+    name,
+    description: 'Pagination fixture. No file was uploaded for this layer.',
+    ownedByTeamId: teamId,
+    createdBy: SEED_CREATED_BY,
+    originalFilename: 'pagination-fixture.geojson',
+    byteSize: 0,
+    status: 'failed',
+    failureReason: 'Pagination fixture: no file was uploaded.',
+    defaultStyle: DEFAULT_MAP_ASSET_STYLE,
+    createdAt,
+    updatedAt: now,
+  };
+  try {
+    const existing = await db.get(id);
+    await db.put({
+      ...fields,
+      _id: id,
+      _rev: existing._rev,
+      createdAt: (existing as {createdAt?: number}).createdAt ?? createdAt,
+    });
+  } catch (error) {
+    if (!isNotFoundError(error)) {
+      throw error;
+    }
+    await db.put({_id: id, ...fields});
+  }
+  // Returns the existing link when the layer is already linked.
+  await linkMapAsset({assetId: id, projectId, linkedBy: SEED_CREATED_BY});
+}
+
+/**
+ * Creates or renews one unused single-use invite under a stable id. A global
+ * invite grants GENERAL_USER; a team invite TEAM_MEMBER on `resourceId`; a
+ * survey invite PROJECT_GUEST on `resourceId`. The expiry is pushed out on
+ * every run because expired invites are left out of the invite lists.
+ */
+async function upsertBulkInvite({
+  scope,
+  index,
+  resourceId,
+  createdAt,
+}: {
+  scope: BulkInviteScope;
+  index: number;
+  resourceId?: string;
+  createdAt: number;
+}): Promise<void> {
+  const db = getInvitesDB();
+  const id = bulkInviteId(scope, index);
+  const label = {global: 'Global', team: 'Team', survey: 'Survey'}[scope];
+  const fields: InvitesDBFields = {
+    name: `Bulk ${label} Invite ${padIndex(index)}`,
+    expiry: Date.now() + DEFAULT_INVITE_EXPIRY_MS,
+    createdBy: SEED_CREATED_BY,
+    createdAt,
+    usesOriginal: 1,
+    usesConsumed: 0,
+    uses: [],
+    ...(scope === 'global'
+      ? {inviteType: RoleScope.GLOBAL, role: Role.GENERAL_USER}
+      : {
+          inviteType: RoleScope.RESOURCE_SPECIFIC,
+          resourceType: scope === 'team' ? Resource.TEAM : Resource.PROJECT,
+          resourceId,
+          role: scope === 'team' ? Role.TEAM_MEMBER : Role.PROJECT_GUEST,
+        }),
+  };
+  try {
+    const existing = await db.get(id);
+    await db.put({
+      ...fields,
+      _id: id,
+      _rev: existing._rev,
+      createdAt: (existing as {createdAt?: number}).createdAt ?? createdAt,
+    });
+  } catch (error) {
+    if (!isNotFoundError(error)) {
+      throw error;
+    }
+    await db.put({_id: id, ...fields});
+  }
 }
 
 function printSummary({
@@ -483,6 +629,8 @@ function printSummary({
   lastNotebookId,
   firstUserEmail,
   lastUserEmail,
+  firstMapAssetId,
+  lastMapAssetId,
 }: {
   count: number;
   firstTeamId: string;
@@ -493,11 +641,16 @@ function printSummary({
   lastNotebookId: string;
   firstUserEmail: string;
   lastUserEmail: string;
+  firstMapAssetId: string;
+  lastMapAssetId: string;
 }): void {
   console.log('\n═══════════════════════════════════════════════════════════');
   console.log('            PAGINATION DATASET SEED COMPLETE                ');
   console.log('═══════════════════════════════════════════════════════════\n');
-  console.log(`Upserted ${count} of each: teams, templates, surveys, users.\n`);
+  console.log(
+    `Upserted ${count} of each: teams, templates, surveys, users, map layers,`
+  );
+  console.log('and global, team and survey invites.\n');
   console.log('TEAMS');
   console.log(`  ${firstTeamId}  …  ${lastTeamId}`);
   console.log('TEMPLATES');
@@ -506,13 +659,28 @@ function printSummary({
   console.log(`  ${firstNotebookId}  …  ${lastNotebookId}`);
   console.log('USERS');
   console.log(`  ${firstUserEmail}  …  ${lastUserEmail}`);
+  console.log('MAP LAYERS (documents only, stored as failed; no file)');
+  console.log(`  ${firstMapAssetId}  …  ${lastMapAssetId}`);
+  console.log('INVITES (single use, renewed on every run)');
+  for (const scope of ['global', 'team', 'survey'] as const) {
+    console.log(
+      `  ${bulkInviteId(scope, 1)}  …  ${bulkInviteId(scope, count)}`
+    );
+  }
   console.log('\nCREDENTIALS (all bulk users share this password)');
   console.log(`  Password : ${SEED_PASSWORD}`);
   console.log(
     '\nEach user is TEAM_MEMBER of the matching team and PROJECT_CONTRIBUTOR'
   );
+  console.log('of the matching survey.');
   console.log(
-    'of the matching survey. Log in as admin to see every list page.\n'
+    `\n${firstTeamId} and ${firstNotebookId} also hold every bulk user, map`
+  );
+  console.log(
+    'layer and team/survey invite, so their Members, Users, Map layers and'
+  );
+  console.log(
+    'Invites tabs have several pages. Log in as admin to see every list page.\n'
   );
 }
 
@@ -525,7 +693,7 @@ const main = async () => {
     assertDevLikeTarget();
 
     console.log(
-      `\nSeeding ${COUNT} teams, templates, surveys and users for pagination…`
+      `\nSeeding ${COUNT} teams, templates, surveys, users, map layers and invites for pagination…`
     );
 
     console.log(
@@ -591,12 +759,49 @@ const main = async () => {
       await upsertBulkUser({
         email: bulkUserEmail(index),
         name: `Bulk User ${padIndex(index)}`,
-        teamId: bulkTeamId(index),
-        projectId: bulkNotebookId(index),
+        teamIds: [bulkTeamId(index), bulkTeamId(1)],
+        projectIds: [bulkNotebookId(index), bulkNotebookId(1)],
       });
       logProgress('users', index, COUNT);
     }
     console.log(`✓ ${COUNT} users`);
+
+    // New fixtures get distinct, ascending creation times so the
+    // newest-first lists show them in a predictable order: 001 is oldest.
+    const fixtureCreatedAt = (index: number) => now - (COUNT - index);
+
+    console.log('\nPhase 6: Upserting map layers...');
+    for (let index = 1; index <= COUNT; index++) {
+      await upsertBulkMapAsset({
+        id: bulkMapAssetId(index),
+        name: `Bulk Map Layer ${padIndex(index)}`,
+        teamId: bulkTeamId(1),
+        projectId: bulkNotebookId(1),
+        createdAt: fixtureCreatedAt(index),
+      });
+      logProgress('map layers', index, COUNT);
+    }
+    console.log(`✓ ${COUNT} map layers`);
+
+    console.log('\nPhase 7: Upserting invites...');
+    for (let index = 1; index <= COUNT; index++) {
+      const createdAt = fixtureCreatedAt(index);
+      await upsertBulkInvite({scope: 'global', index, createdAt});
+      await upsertBulkInvite({
+        scope: 'team',
+        index,
+        resourceId: bulkTeamId(1),
+        createdAt,
+      });
+      await upsertBulkInvite({
+        scope: 'survey',
+        index,
+        resourceId: bulkNotebookId(1),
+        createdAt,
+      });
+      logProgress('invites', index, COUNT);
+    }
+    console.log(`✓ ${COUNT} global, team and survey invites`);
 
     printSummary({
       count: COUNT,
@@ -608,6 +813,8 @@ const main = async () => {
       lastNotebookId: bulkNotebookId(COUNT),
       firstUserEmail: bulkUserEmail(1),
       lastUserEmail: bulkUserEmail(COUNT),
+      firstMapAssetId: bulkMapAssetId(1),
+      lastMapAssetId: bulkMapAssetId(COUNT),
     });
 
     process.exit(0);

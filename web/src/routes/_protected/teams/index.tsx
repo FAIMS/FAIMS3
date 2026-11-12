@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {DataTable} from '@/components/data-table/data-table';
 import {columns} from '@/components/tables/teams';
-import {useGetTeams} from '@/hooks/queries';
+import {usePagedTeams} from '@/hooks/queries';
 import {createFileRoute, useNavigate, useRouter} from '@tanstack/react-router';
 
 import {CreateTeamDialog} from '@/components/dialogs/teams/create-team-dialog';
@@ -43,7 +43,9 @@ function RouteComponent() {
 
   // Can the user create a new team?
   const canCreateTeam = useIsAuthorisedTo({action: Action.CREATE_TEAM});
-  const {isPending, data} = useGetTeams({user});
+  const {tableLoading, teams, pageSize, serverPagination} = usePagedTeams({
+    user,
+  });
   const navigate = useNavigate();
 
   return (
@@ -56,8 +58,10 @@ function RouteComponent() {
       </h1>
       <DataTable
         columns={columns}
-        data={data ? data?.teams : []}
-        loading={isPending}
+        data={teams}
+        loading={tableLoading}
+        defaultRowsPerPage={pageSize}
+        serverPagination={serverPagination}
         onRowClick={({_id}) => navigate({to: `/teams/${_id}`})}
         button={canCreateTeam && <CreateTeamDialog />}
       />

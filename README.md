@@ -378,7 +378,7 @@ Seed personas, notebook defaults, and role matrix are documented in
 Copy matching credentials into `e2e/.env` from `e2e/.env.dist` when running e2e.
 
 To fill Control Centre lists for pagination testing (100 teams, templates,
-surveys, and users), from `api/`:
+surveys, users, map layers, and invites), from `api/`:
 
 ```bash
 pnpm seed-pagination-dataset

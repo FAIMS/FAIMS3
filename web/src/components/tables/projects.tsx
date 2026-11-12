@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import {GetNotebookListWithStatsResponse} from '@faims3/data-model';
+import type {GetNotebookListResponse} from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {displayDateTime} from '@/lib/time';
@@ -37,7 +37,9 @@ function truncatedDescriptionCell(description: string | undefined) {
   );
 }
 
-export const columns: ColumnDef<GetNotebookListWithStatsResponse[number]>[] = [
+export const columns: ColumnDef<
+  GetNotebookListResponse['notebooks'][number]
+>[] = [
   {
     accessorKey: 'name',
     header: ({column}) => (

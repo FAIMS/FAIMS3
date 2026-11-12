@@ -6,6 +6,7 @@ import {
   INPUT_LIMITS,
   resourceNameString,
 } from '../../inputLimits';
+import {listPageQueryFields, paginatedListSchema} from '../../listing';
 import {DatabaseInterface} from '../../types';
 import {RootDescriptionInputSchema} from '../rootMetadata';
 import {CouchExistingDocumentSchema} from '../utils';
@@ -523,9 +524,36 @@ export type MapAssetWithLinkCount = z.infer<typeof MapAssetWithLinkCountSchema>;
 export const GetMapAssetResponseSchema = MapAssetWithLinkCountSchema;
 export type GetMapAssetResponse = MapAssetWithLinkCount;
 
-export const GetMapAssetListResponseSchema = z.object({
-  assets: z.array(MapAssetWithLinkCountSchema),
+/**
+ * GET /api/map-assets query. `projectId` lists the layers linked to one
+ * survey; `teamId` lists one team's layers; neither lists the library.
+ * `linkableToProjectId` narrows the library to the layers that could be
+ * linked to that survey now: ready, and not linked to it already.
+ */
+export const GetMapAssetListQuerySchema = z.object({
+  teamId: IdInputSchema.min(1).optional(),
+  projectId: IdInputSchema.min(1).optional(),
+  linkableToProjectId: IdInputSchema.min(1).optional(),
+  ...listPageQueryFields,
 });
+export type GetMapAssetListQuery = z.infer<typeof GetMapAssetListQuerySchema>;
+
+/** GET /api/teams/:id/map-assets query. */
+export const GetTeamMapAssetListQuerySchema = z.object({
+  ...listPageQueryFields,
+});
+export type GetTeamMapAssetListQuery = z.infer<
+  typeof GetTeamMapAssetListQuerySchema
+>;
+
+/**
+ * GET /api/map-assets and GET /api/teams/:id/map-assets page, newest
+ * `createdAt` first.
+ */
+export const GetMapAssetListResponseSchema = paginatedListSchema(
+  MapAssetWithLinkCountSchema,
+  'assets'
+);
 export type GetMapAssetListResponse = z.infer<
   typeof GetMapAssetListResponseSchema
 >;

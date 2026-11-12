@@ -6,7 +6,7 @@
  *   Dialog allowing an authorised admin to pick a user to impersonate.
  */
 
-import {GetListAllUsersItem, INPUT_LIMITS, Role} from '@faims3/data-model';
+import {INPUT_LIMITS, Role} from '@faims3/data-model';
 import {
   Alert,
   Box,
@@ -29,7 +29,7 @@ import {
   startImpersonation,
 } from '../../../context/slices/authSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
-import {listUsers} from '../../../utils/apiOperations/users';
+import {listAllUsers} from '../../../utils/apiOperations/users';
 
 /**
  * A dialog which lists users on the active server and lets the admin start
@@ -73,15 +73,16 @@ export default function ImpersonateDialog({
       pinnedAdmin?.serverId,
       pinnedAdmin?.username,
     ],
+    // The search box filters on this device, so every page is loaded.
     queryFn: async () =>
-      listUsers(pinnedAdmin!.serverId, pinnedAdmin!.username),
+      listAllUsers(pinnedAdmin!.serverId, pinnedAdmin!.username),
     enabled: open && !!pinnedAdmin,
     networkMode: 'always',
     retry: false,
   });
 
   const candidates = useMemo(() => {
-    const users = (data ?? []) as GetListAllUsersItem[];
+    const users = data ?? [];
     const term = search.trim().toLowerCase();
     return users
       .filter(u => {

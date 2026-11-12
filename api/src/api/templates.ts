@@ -23,7 +23,8 @@ import {
   PutUpdateTemplateResponse,
   PutUpdateTemplateUiSpecificationInputSchema,
   Role,
-  TEMPLATE_LIST_DEFAULT_LIMIT,
+  resolveListLimit,
+  resolveListStartKey,
   userCanReadTemplateDocument,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
@@ -80,15 +81,8 @@ api.get(
     }
 
     const includeArchived = req.query.includeArchived === 'true';
-    const rawLimit = req.query.limit;
-    const limit =
-      rawLimit !== undefined && rawLimit !== ''
-        ? parseInt(rawLimit, 10)
-        : TEMPLATE_LIST_DEFAULT_LIMIT;
-    const startKey =
-      req.query.startKey !== undefined && req.query.startKey !== ''
-        ? req.query.startKey
-        : undefined;
+    const limit = resolveListLimit(req.query.limit);
+    const startKey = resolveListStartKey(req.query.startKey);
     const visibility = req.query.visibility;
 
     const page = await getTemplatesPage({

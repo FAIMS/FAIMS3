@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   ExistingTeamsDBDocument,
+  queryListingPage,
   safeWriteDocument,
   slugify,
+  teamListingViewAndPrefix,
   TeamsDBDocument,
   TeamsDBFields,
+  toPaginatedList,
 } from '@faims3/data-model';
 import {getTeamsDB} from '.';
 import * as Exceptions from '../exceptions';
 
 /**
- * Lists all documents in the teams DB.
+ * Lists all documents in the teams DB. Unbounded: for admin-stats snapshots
+ * and internal walks only. HTTP lists use {@link getTeamsPage}.
  * @returns an array of team objects
  */
 export const getAllTeams = async (): Promise<ExistingTeamsDBDocument[]> => {
@@ -26,6 +30,47 @@ export const getAllTeams = async (): Promise<ExistingTeamsDBDocument[]> => {
       .map(document => {
         return document.doc!;
       });
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading teams from the Teams DB.'
+    );
+  }
+};
+
+/** One GET /api/teams page: visible teams plus optional `nextStartKey`. */
+export type PaginatedTeamList = {
+  teams: ExistingTeamsDBDocument[];
+  nextStartKey?: string;
+};
+
+/**
+ * Page of teams `canView` accepts, newest `createdAt` first. `includeArchived`
+ * is XOR: true lists archived teams only. Paging, the exclusive JSON
+ * `[createdAtMs, teamId]` cursor and the scan cap come from the shared
+ * `queryListingPage`.
+ */
+export const getTeamsPage = async ({
+  includeArchived,
+  limit,
+  startKey,
+  canView,
+}: {
+  includeArchived: boolean;
+  limit: number;
+  startKey?: string;
+  canView: (team: ExistingTeamsDBDocument) => boolean;
+}): Promise<PaginatedTeamList> => {
+  const teamsDb = getTeamsDB();
+  try {
+    const page = await queryListingPage<ExistingTeamsDBDocument>({
+      query: (view, options) =>
+        teamsDb.query<ExistingTeamsDBDocument>(view, options),
+      ...teamListingViewAndPrefix({includeArchived}),
+      limit,
+      startKey,
+      include: canView,
+    });
+    return toPaginatedList(page, 'teams');
   } catch (error) {
     throw new Exceptions.InternalSystemError(
       'An error occurred while reading teams from the Teams DB.'

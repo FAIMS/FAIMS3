@@ -282,6 +282,47 @@ export const viewsDocument = {
       }),
     },
 
+    // Token list rows for GET /api/long-lived-tokens?all=true, keyed
+    // `[createdTimestampMs, _id]`. The value omits `tokenHash`.
+    longLivedTokensListing: {
+      map: convertToCouchDBString(doc => {
+        if (
+          !doc ||
+          doc.documentType !== 'longlived' ||
+          doc._id.indexOf('longlived_') !== 0
+        ) {
+          return;
+        }
+        var row = {...doc};
+        delete row.tokenHash;
+        var createdMs = doc.createdTimestampMs;
+        if (!(createdMs > 0)) {
+          createdMs = 0;
+        }
+        emit([createdMs, doc._id], row);
+      }),
+    },
+    // One user's token list rows, keyed `[userId, createdTimestampMs, _id]`.
+    longLivedTokensListingByUser: {
+      map: convertToCouchDBString(doc => {
+        if (
+          !doc ||
+          doc.documentType !== 'longlived' ||
+          doc._id.indexOf('longlived_') !== 0 ||
+          !doc.userId
+        ) {
+          return;
+        }
+        var row = {...doc};
+        delete row.tokenHash;
+        var createdMs = doc.createdTimestampMs;
+        if (!(createdMs > 0)) {
+          createdMs = 0;
+        }
+        emit([doc.userId, createdMs, doc._id], row);
+      }),
+    },
+
     // DOWNLOAD GRANTS
     // ===============
 
@@ -343,6 +384,28 @@ export const viewsDocument = {
     },
   },
 };
+
+/** `db.query` name for the `longLivedTokensListing` view. */
+export const LONG_LIVED_TOKENS_LISTING = 'viewsDocument/longLivedTokensListing';
+/** `db.query` name for the `longLivedTokensListingByUser` view. */
+export const LONG_LIVED_TOKENS_LISTING_BY_USER =
+  'viewsDocument/longLivedTokensListingByUser';
+
+/**
+ * Listing view and key prefix for one long-lived-token page; spread into
+ * `queryListingPage`. The rest of each key is the
+ * `[createdTimestampMs, tokenId]` cursor. Omit `userId` for every user's
+ * tokens.
+ */
+export function longLivedTokenListingViewAndPrefix({
+  userId,
+}: {
+  userId?: string;
+}): {view: string; prefix: unknown[]} {
+  return userId
+    ? {view: LONG_LIVED_TOKENS_LISTING_BY_USER, prefix: [userId]}
+    : {view: LONG_LIVED_TOKENS_LISTING, prefix: []};
+}
 
 export const permissionDocument = {
   _id: '_design/permissionDocument',

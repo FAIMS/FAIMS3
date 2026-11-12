@@ -12,7 +12,7 @@ import {
   invalidateMapAssets,
   linkMapAsset,
   unlinkMapAsset,
-  useMapAssets,
+  usePagedMapAssets,
 } from '@/hooks/map-asset-hooks';
 import {Action, type MapAssetWithLinkCount} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
@@ -141,15 +141,14 @@ export default function ProjectMapLayers({projectId}: ProjectMapLayersProps) {
     action: Action.UPDATE_PROJECT_DETAILS,
     resourceId: projectId,
   });
-  const linked = useMapAssets({user, projectId});
-  const library = useMapAssets({user, enabled: canLink});
-
-  const linkedLayers = linked.data?.assets ?? [];
-  const linkedIds = new Set(linkedLayers.map(asset => asset._id));
-  /** Ready library layers that are not already linked to this survey. */
-  const availableLayers = (library.data?.assets ?? []).filter(
-    asset => asset.status === 'ready' && !linkedIds.has(asset._id)
-  );
+  const linked = usePagedMapAssets({user, projectId});
+  // Ready library layers not already linked to this survey. The API applies
+  // that filter, so each page is full and nothing is hidden on later pages.
+  const available = usePagedMapAssets({
+    user,
+    linkableToProjectId: projectId,
+    enabled: canLink,
+  });
   const linkedColumns = useMemo(
     () => mapLayerColumns({projectId, mode: 'unlink', showAction: canLink}),
     [projectId, canLink]
@@ -167,13 +166,11 @@ export default function ProjectMapLayers({projectId}: ProjectMapLayersProps) {
     });
   };
 
-  if (linked.isError || (canLink && library.isError)) {
+  if (linked.isError || (canLink && available.isError)) {
     return (
       <p className="text-sm text-destructive">Could not load map layers.</p>
     );
   }
-
-  const loading = linked.isPending || (canLink && library.isPending);
 
   return (
     <div className="flex flex-col gap-8">
@@ -187,9 +184,10 @@ export default function ProjectMapLayers({projectId}: ProjectMapLayersProps) {
         </div>
         <DataTable
           columns={linkedColumns}
-          data={linkedLayers}
-          loading={loading}
-          initialSorting={[{id: 'updatedAt', desc: true}]}
+          data={linked.assets}
+          loading={linked.tableLoading}
+          defaultRowsPerPage={linked.pageSize}
+          serverPagination={linked.serverPagination}
           onRowClick={openLayer}
           emptyMessage={
             <span data-testid="web-project-map-layers-empty">
@@ -210,9 +208,10 @@ export default function ProjectMapLayers({projectId}: ProjectMapLayersProps) {
           </div>
           <DataTable
             columns={availableColumns}
-            data={availableLayers}
-            loading={loading}
-            initialSorting={[{id: 'updatedAt', desc: true}]}
+            data={available.assets}
+            loading={available.tableLoading}
+            defaultRowsPerPage={available.pageSize}
+            serverPagination={available.serverPagination}
             onRowClick={openLayer}
             emptyMessage="No available map layers."
           />

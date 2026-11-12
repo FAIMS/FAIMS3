@@ -40,6 +40,7 @@ import {
   SetupValuesSchema,
   TemplateDefinition,
 } from './uiSpecification';
+import {listPageQueryFields, paginatedListSchema} from './listing';
 import {projectInviteRoles} from './permission/functions';
 import {Resource, Role, roleDetails, RoleScope} from './permission/model';
 import {
@@ -143,7 +144,11 @@ export type GetCurrentUserResponse = z.infer<
   typeof GetCurrentUserResponseSchema
 >;
 
-export const GetListAllUsersResponseSchema = z.array(
+/**
+ * One row of GET /api/users. `profiles` says which login profiles exist
+ * (`{local: true}`), never their contents.
+ */
+export const UserListItemSchema =
   // Be careful here - do NOT expose any salt info etc
   PeopleDBDocumentSchema.pick({
     _id: true,
@@ -154,28 +159,31 @@ export const GetListAllUsersResponseSchema = z.array(
     templateRoles: true,
     name: true,
     user_id: true,
-    profiles: true,
     disabled: true,
   })
+    .extend({profiles: z.record(z.string(), z.boolean())})
     // configure to strip not fail for extra fields
-    .strip()
-    // turn profiles properties into booleans
-    .transform(user => ({
-      ...user,
-      profiles: Object.fromEntries(
-        Object.entries(user.profiles ?? {}).map(([key, value]) => [
-          key,
-          !!value,
-        ])
-      ),
-    }))
+    .strip();
+
+/** GET /api/users query (all values are strings from the query string). */
+export const GetListAllUsersQuerySchema = z.object({
+  /** XOR: `true` lists disabled accounts only; default lists enabled only. */
+  includeArchived: z.enum(['true', 'false']).optional(),
+  ...listPageQueryFields,
+});
+export type GetListAllUsersQuery = z.infer<typeof GetListAllUsersQuerySchema>;
+
+/** GET /api/users page, in name order. */
+export const GetListAllUsersResponseSchema = paginatedListSchema(
+  UserListItemSchema,
+  'users'
 );
 export type GetListAllUsersResponse = z.infer<
   typeof GetListAllUsersResponseSchema
 >;
 
 /** One row from GET /api/users (admin list). Includes `profiles`; unlike {@link GetCurrentUserResponse}. */
-export type GetListAllUsersItem = GetListAllUsersResponse[number];
+export type GetListAllUsersItem = z.infer<typeof UserListItemSchema>;
 
 // Information about users and roles for a notebook
 export const NotebookAuthSummarySchema = z.object({
@@ -196,6 +204,8 @@ export const NotebookAuthSummarySchema = z.object({
   ),
 });
 export type NotebookAuthSummary = z.infer<typeof NotebookAuthSummarySchema>;
+/** One user row of {@link NotebookAuthSummary}. */
+export type NotebookAuthSummaryUser = NotebookAuthSummary['users'][number];
 
 // Post update a user UpdateUser input
 export const PostUpdateUserInputSchema = z.object({
@@ -333,23 +343,65 @@ export type GetNotebookResponse = z.infer<typeof GetNotebookResponseSchema>;
 export const APINotebookGetSchema = GetNotebookResponseSchema;
 export type APINotebookGet = GetNotebookResponse;
 
-// GET notebook list
-export const GetNotebookListResponseSchema = z.array(APINotebookListSchema);
+/**
+ * `status` filter on GET /api/notebooks. `active` is OPEN + CLOSED,
+ * `archived` is ARCHIVED, `all` is active surveys then archived surveys.
+ */
+export const NotebookListStatusSchema = z.enum(['active', 'archived', 'all']);
+export type NotebookListStatus = z.infer<typeof NotebookListStatusSchema>;
+
+/** GET /api/notebooks query (all values are strings from the query string). */
+export const GetNotebookListQuerySchema = z.object({
+  teamId: z.string().min(1).optional(),
+  /** Only surveys created from this template. */
+  templateId: z.string().min(1).optional(),
+  /** Default `active`. */
+  status: NotebookListStatusSchema.optional(),
+  /**
+   * @deprecated Use `status`. `true` means `status=all`; ignored when
+   * `status` is sent.
+   */
+  includeArchived: z.enum(['true', 'false']).optional(),
+  /** When `"true"`, attach `byteCount` to each row of the returned page. */
+  includeByteCount: z.enum(['true', 'false']).optional(),
+  ...listPageQueryFields,
+});
+export type GetNotebookListQuery = z.infer<typeof GetNotebookListQuerySchema>;
+
+/** Resolves the `status` / legacy `includeArchived` pair. Default `active`. */
+export function resolveNotebookListStatus(query: {
+  status?: NotebookListStatus;
+  includeArchived?: 'true' | 'false';
+}): NotebookListStatus {
+  if (query.status) return query.status;
+  return query.includeArchived === 'true' ? 'all' : 'active';
+}
+
+/** GET /api/notebooks page, newest `createdAt` first. */
+export const GetNotebookListResponseSchema = paginatedListSchema(
+  APINotebookListSchema,
+  'notebooks'
+);
 export type GetNotebookListResponse = z.infer<
   typeof GetNotebookListResponseSchema
 >;
 
-/** GET /api/notebooks?includeByteCount=true — list rows with required `byteCount`. */
-export const GetNotebookListWithStatsResponseSchema = z.array(
-  APINotebookListWithStatsSchema
+/** GET /api/notebooks?includeByteCount=true — page rows with required `byteCount`. */
+export const GetNotebookListWithStatsResponseSchema = paginatedListSchema(
+  APINotebookListWithStatsSchema,
+  'notebooks'
 );
 export type GetNotebookListWithStatsResponse = z.infer<
   typeof GetNotebookListWithStatsResponseSchema
 >;
 
-/** @deprecated Same as GetNotebookListResponse. Directory is the cheap alias. */
-export const GetDirectoryResponseSchema = GetNotebookListResponseSchema;
-export type GetDirectoryResponse = GetNotebookListResponse;
+/**
+ * GET /api/directory — every survey the caller can read, as one array.
+ * Deliberately not paginated: the field app treats a survey missing from
+ * this list as deleted or archived.
+ */
+export const GetDirectoryResponseSchema = z.array(APINotebookListSchema);
+export type GetDirectoryResponse = z.infer<typeof GetDirectoryResponseSchema>;
 
 export const CreateNotebookFromTemplateSchema = z.object({
   name: resourceNameString('Name'),
@@ -422,8 +474,14 @@ export type PostCreateNotebookResponse = z.infer<
   typeof PostCreateNotebookResponseSchema
 >;
 
-// GET users for a notebook - no input
-export const GetNotebookUsersResponseSchema = NotebookAuthSummarySchema;
+/** GET /api/notebooks/:id/users query. */
+export const GetNotebookUsersQuerySchema = z.object({...listPageQueryFields});
+export type GetNotebookUsersQuery = z.infer<typeof GetNotebookUsersQuerySchema>;
+
+/** GET /api/notebooks/:id/users page: users with a role here, in name order. */
+export const GetNotebookUsersResponseSchema = NotebookAuthSummarySchema.extend({
+  nextStartKey: z.string().optional(),
+});
 export type GetNotebookUsersResponse = z.infer<
   typeof GetNotebookUsersResponseSchema
 >;
@@ -630,44 +688,14 @@ export const TemplateApiListItemSchema = TemplateListItemSchema.extend({
 });
 export type TemplateApiListItem = z.infer<typeof TemplateApiListItemSchema>;
 
-/** Default page size when GET /api/templates omits `limit`. */
-export const TEMPLATE_LIST_DEFAULT_LIMIT = 50;
-/** Absolute ceiling for GET /api/templates `limit`. */
-export const TEMPLATE_LIST_LIMIT_MAX = 500;
-/**
- * Per-request listing-view scan cap (same number as max `limit`). A caller who
- * cannot read most rows iterates with `nextStartKey` instead of forcing a
- * full-catalogue scan in one HTTP request.
- */
-export const TEMPLATE_LIST_VIEW_SCAN_MAX = 500;
-/** Max Couch listing-view queries used to fill one GET /api/templates page. */
-export const TEMPLATE_LIST_VIEW_QUERY_MAX = 5;
-
-/** Zod refine: omitted/empty `limit` is ok; otherwise a decimal integer 1…`max`. */
-function listTemplatesLimitRefine(max: number) {
-  return (data: {limit?: string}) => {
-    if (data.limit === undefined || data.limit === '') return true;
-    if (!/^[0-9]+$/.test(data.limit)) return false;
-    const n = Number(data.limit);
-    return n >= 1 && n <= max;
-  };
-}
-
-/** JSON `[createdAtMs, templateId]` cursor is longer than a bare id. */
-export const TEMPLATE_LIST_CURSOR_MAX_LENGTH = 512;
-
 /** GET /api/templates query (all values are strings from the query string). */
-export const GetListTemplatesQuerySchema = z
-  .object({
-    teamId: z.string().min(1).optional(),
-    includeArchived: z.enum(['true', 'false']).optional(),
-    limit: z.string().max(16).optional(),
-    startKey: z.string().max(TEMPLATE_LIST_CURSOR_MAX_LENGTH).optional(),
-    visibility: z.enum(['public', 'private']).optional(),
-  })
-  .refine(listTemplatesLimitRefine(TEMPLATE_LIST_LIMIT_MAX), {
-    message: 'limit must be between 1 and 500',
-  });
+export const GetListTemplatesQuerySchema = z.object({
+  teamId: z.string().min(1).optional(),
+  /** XOR: `true` lists archived templates only; default lists active only. */
+  includeArchived: z.enum(['true', 'false']).optional(),
+  ...listPageQueryFields,
+  visibility: z.enum(['public', 'private']).optional(),
+});
 export type GetListTemplatesQuery = z.infer<typeof GetListTemplatesQuerySchema>;
 
 const templateListRowSchema = z
@@ -682,10 +710,10 @@ const templateListRowSchema = z
   .pipe(TemplateApiListItemSchema);
 
 // GET paginated template list response
-export const GetListTemplatesResponseSchema = z.object({
-  templates: z.array(templateListRowSchema),
-  nextStartKey: z.string().optional(),
-});
+export const GetListTemplatesResponseSchema = paginatedListSchema(
+  templateListRowSchema,
+  'templates'
+);
 export type GetListTemplatesResponse = z.infer<
   typeof GetListTemplatesResponseSchema
 >;
@@ -818,14 +846,47 @@ export type PutArchiveTeamRequest = z.infer<typeof PutArchiveTeamRequestSchema>;
 /**
  * GET /api/teams response
  */
-export const GetListTeamsResponseSchema = z.object({
-  teams: z.array(TeamDocumentSchema),
+export const GetListTeamsResponseSchema = paginatedListSchema(
+  TeamDocumentSchema,
+  'teams'
+);
+
+/** GET /api/teams query (all values are strings from the query string). */
+export const GetListTeamsQuerySchema = z.object({
+  /** XOR: `true` lists archived teams only; default lists active only. */
+  includeArchived: z.enum(['true', 'false']).optional(),
+  ...listPageQueryFields,
 });
+export type GetListTeamsQuery = z.infer<typeof GetListTeamsQuerySchema>;
 
 /**
  * GET /api/teams/:id response
  */
 export const GetTeamByIdResponseSchema = TeamDocumentSchema;
+
+const TeamNotebookStorageBucketSchema = z.object({
+  /** Surveys the caller can read. */
+  count: z.number().int().nonnegative(),
+  /** Sum of those surveys' data-DB sizes in bytes. */
+  byteCount: z.number().nonnegative(),
+});
+
+/**
+ * GET /api/teams/:id/notebook-storage response: survey count and storage for
+ * the team, overall and per survey status. Computed server-side over every
+ * survey the team owns.
+ */
+export const GetTeamNotebookStorageResponseSchema = z.object({
+  total: TeamNotebookStorageBucketSchema,
+  byStatus: z.object({
+    [ProjectStatus.OPEN]: TeamNotebookStorageBucketSchema,
+    [ProjectStatus.CLOSED]: TeamNotebookStorageBucketSchema,
+    [ProjectStatus.ARCHIVED]: TeamNotebookStorageBucketSchema,
+  }),
+});
+export type GetTeamNotebookStorageResponse = z.infer<
+  typeof GetTeamNotebookStorageResponseSchema
+>;
 
 /**
  * POST /api/teams response
@@ -910,10 +971,17 @@ export const AvailableRoleInfoSchema = z.object({
 /**
  * GET /api/teams/:id/members response
  */
-export const GetTeamMembersResponseSchema = z.object({
-  members: z.array(TeamMemberInfoSchema),
+export const GetTeamMembersResponseSchema = paginatedListSchema(
+  TeamMemberInfoSchema,
+  'members'
+).extend({
+  /** Present on every page. */
   availableRoles: z.array(AvailableRoleInfoSchema),
 });
+
+/** GET /api/teams/:id/members query. Members page in name order. */
+export const GetTeamMembersQuerySchema = z.object({...listPageQueryFields});
+export type GetTeamMembersQuery = z.infer<typeof GetTeamMembersQuerySchema>;
 
 export type TeamMembershipInput = z.infer<typeof TeamMembershipInputSchema>;
 export type TeamMemberRole = z.infer<typeof TeamMemberRoleSchema>;
@@ -1042,17 +1110,33 @@ export const GetInviteByIdResponseSchema = InviteInfoResponseSchema;
 /**
  * GET /api/invites/project/:projectId response
  */
-export const GetProjectInvitesResponseSchema = z.array(InviteDocumentSchema);
+export const GetProjectInvitesResponseSchema = paginatedListSchema(
+  InviteDocumentSchema,
+  'invites'
+);
 
 /**
  * GET /api/invites/team/:teamId response
  */
-export const GetTeamInvitesResponseSchema = z.array(InviteDocumentSchema);
+export const GetTeamInvitesResponseSchema = paginatedListSchema(
+  InviteDocumentSchema,
+  'invites'
+);
 
 /**
  * GET /api/invites/global response
  */
-export const GetGlobalInvitesResponseSchema = z.array(InviteDocumentSchema);
+export const GetGlobalInvitesResponseSchema = paginatedListSchema(
+  InviteDocumentSchema,
+  'invites'
+);
+
+/**
+ * Query for the three invite list GETs. Pages hold valid invites only
+ * (not expired, uses remaining), newest `createdAt` first.
+ */
+export const GetInviteListQuerySchema = z.object({...listPageQueryFields});
+export type GetInviteListQuery = z.infer<typeof GetInviteListQuerySchema>;
 
 /**
  * POST /api/invites/project/:projectId response
@@ -1468,11 +1552,24 @@ export const PutRevokeLongLivedTokenResponseSchema =
     message: z.string(),
   });
 
-export const GetLongLivedTokensResponseSchema = z.object({
-  tokens: z.array(LongLivedTokenResponseSchema),
+export const GetLongLivedTokensResponseSchema = paginatedListSchema(
+  LongLivedTokenResponseSchema,
+  'tokens'
+).extend({
+  /** Present on every page. */
   maxAllowedExpiryTimestamp: z.number().optional(),
   maxDurationDays: z.number().optional(),
 });
+
+/** GET /api/long-lived-tokens query. Pages are newest `createdAt` first. */
+export const GetLongLivedTokensQuerySchema = z.object({
+  /** `true` lists every user's tokens (admins) instead of the caller's own. */
+  all: z.string().optional(),
+  ...listPageQueryFields,
+});
+export type GetLongLivedTokensQuery = z.infer<
+  typeof GetLongLivedTokensQuerySchema
+>;
 
 export const PostLongLivedTokenExchangeInputSchema = z.object({
   token: z

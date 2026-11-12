@@ -14,7 +14,11 @@ import {
   PutUpdateLongLivedTokenResponse,
   PutRevokeLongLivedTokenRequestSchema,
   PutRevokeLongLivedTokenResponse,
+  GetLongLivedTokensQuerySchema,
   GetLongLivedTokensResponse,
+  resolveListLimit,
+  resolveListStartKey,
+  toPaginatedList,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import validate from '../middleware/validate';
@@ -22,10 +26,9 @@ import {
   createNewLongLivedToken,
   updateLongLivedToken,
   revokeLongLivedToken,
-  getTokensByUserId,
   getTokenById,
+  getTokensPage,
   getMaxAllowedExpiryTimestamp,
-  getAllTokens,
 } from '../couchdb/longLivedTokens';
 import * as Exceptions from '../exceptions';
 import {
@@ -34,7 +37,6 @@ import {
   userCanDo,
 } from '../middleware';
 import {config} from '../buildconfig';
-import {z} from 'zod';
 
 export const api: express.Router = express.Router();
 
@@ -101,10 +103,11 @@ api.post(
 
 /**
  * GET /
- * Retrieves all long-lived tokens for the authenticated user.
- * Requires user authentication.
+ * Retrieves one page of long-lived tokens for the authenticated user, newest
+ * first. Requires user authentication. Cursor pagination (`limit`,
+ * `startKey`, `nextStartKey`); the max-expiry fields are on every page.
  *
- * If the query parameter 'all' is set to 'true', it retrieves all tokens
+ * If the query parameter 'all' is set to 'true', it pages over all tokens
  *
  * @returns 200 - List of user's tokens (without token values)
  * @returns 401 - Unauthorized
@@ -113,12 +116,7 @@ api.get(
   '/',
   requireAuthenticationAPI,
   // Validate query before permission middleware reads `all`.
-  validate({
-    query: z.object({
-      // get all of the tokens, not just current user's - for admins
-      all: z.string().optional(),
-    }),
-  }),
+  validate({query: GetLongLivedTokensQuerySchema}),
   isAllowedToMiddleware({
     getAction(req) {
       // If the query parameter 'all' is set to 'true', require reading any
@@ -141,14 +139,13 @@ api.get(
     const all = (req.query.all ?? '').toLowerCase() === 'true';
 
     try {
-      let tokens;
-      if (all) {
-        tokens = await getAllTokens();
-      } else {
-        tokens = await getTokensByUserId(user.user_id);
-      }
+      const page = await getTokensPage({
+        userId: all ? undefined : user.user_id,
+        limit: resolveListLimit(req.query.limit),
+        startKey: resolveListStartKey(req.query.startKey),
+      });
 
-      const tokenList = tokens.map(token => ({
+      const tokenList = page.items.map(token => ({
         id: token._id,
         title: token.title,
         description: token.description,
@@ -161,7 +158,7 @@ api.get(
       }));
 
       res.json({
-        tokens: tokenList,
+        ...toPaginatedList({...page, items: tokenList}, 'tokens'),
         maxAllowedExpiryTimestamp: getMaxAllowedExpiryTimestamp(),
         maxDurationDays: config.maximumLongLivedDurationDays,
       });

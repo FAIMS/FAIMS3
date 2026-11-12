@@ -40,10 +40,14 @@ type NamedCatalogueItem = {
 };
 
 /**
- * Normalises template listing payloads: `{templates, nextStartKey}` from the
- * paginated GET, or a bare `templates[]` for tests.
+ * Reads one catalogue page from a list query: the `{<itemsKey>, nextStartKey}`
+ * object every paginated list GET returns. A bare array is accepted too and
+ * treated as a complete list.
  */
-export function templatesFromQueryData(data: unknown): {
+export function cataloguePageFromQueryData(
+  data: unknown,
+  itemsKey: 'notebooks' | 'templates' | 'teams'
+): {
   items: NamedCatalogueItem[];
   nextStartKey?: string;
 } {
@@ -53,13 +57,11 @@ export function templatesFromQueryData(data: unknown): {
   if (Array.isArray(data)) {
     return {items: data};
   }
-  if (typeof data === 'object' && data !== null && 'templates' in data) {
-    const page = data as {
-      templates?: NamedCatalogueItem[];
-      nextStartKey?: string;
-    };
+  if (typeof data === 'object' && itemsKey in data) {
+    const page = data as {nextStartKey?: string} & Record<string, unknown>;
+    const items = page[itemsKey];
     return {
-      items: Array.isArray(page.templates) ? page.templates : [],
+      items: Array.isArray(items) ? (items as NamedCatalogueItem[]) : [],
       nextStartKey: page.nextStartKey,
     };
   }
@@ -128,22 +130,29 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   // currently anyone can list teams - but it is filtered per resource
   const canSeeTeams = true;
 
+  // Each catalogue asks for its newest few names only. `nextStartKey` on the
+  // page says more exist, which is what turns on "View all".
   const {data: projects} = useGetProjects({
     user,
     enabled: canSeeProjects,
-    includeByteCount: false,
+    limit: SIDEBAR_CATALOGUE_RECENT_LIMIT,
   });
   const {data: templates} = useGetTemplates({
     user,
     enabled: canSeeTemplates,
     limit: SIDEBAR_CATALOGUE_RECENT_LIMIT,
   });
-  const {data: teams} = useGetTeams({user, enabled: canSeeTeams});
+  const {data: teams} = useGetTeams({
+    user,
+    enabled: canSeeTeams,
+    limit: SIDEBAR_CATALOGUE_RECENT_LIMIT,
+  });
 
   const topSectionNavItems: NavItem[] = [];
   const bottomSectionNavItems: NavItem[] = [];
 
   if (canSeeProjects) {
+    const projectPage = cataloguePageFromQueryData(projects, 'notebooks');
     topSectionNavItems.push({
       title: config.notebookNamePluralCapitalized,
       url: '/projects',
@@ -151,7 +160,8 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       testId: 'web-nav-projects',
       isActive: pathname.startsWith('/projects') || pathname === '/',
       items: catalogueSubItems({
-        items: projects ?? [],
+        items: projectPage.items,
+        nextStartKey: projectPage.nextStartKey,
         urlPrefix: '/projects',
         emptyId: 'no-projects',
         emptyTitle: `No ${config.notebookNamePlural}...`,
@@ -160,7 +170,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   }
 
   if (canSeeTemplates) {
-    const templatePage = templatesFromQueryData(templates);
+    const templatePage = cataloguePageFromQueryData(templates, 'templates');
     topSectionNavItems.push({
       title: 'Templates',
       url: '/templates',
@@ -207,6 +217,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   }
 
   if (canSeeTeams) {
+    const teamPage = cataloguePageFromQueryData(teams, 'teams');
     bottomSectionNavItems.push({
       title: 'Teams',
       url: '/teams',
@@ -214,7 +225,8 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       testId: 'web-nav-teams',
       isActive: pathname.startsWith('/teams'),
       items: catalogueSubItems({
-        items: teams?.teams ?? [],
+        items: teamPage.items,
+        nextStartKey: teamPage.nextStartKey,
         urlPrefix: '/teams',
         emptyId: 'no-teams',
         emptyTitle: 'No teams...',

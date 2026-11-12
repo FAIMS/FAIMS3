@@ -10,19 +10,22 @@ import {
   addGlobalRole,
   CouchDBUsername,
   ExistingPeopleDBDocument,
+  GetListAllUsersItem,
   isPeopleUserAccountDisabled,
-  NotebookAuthSummary,
+  ListingPage,
   PeopleDBDocument,
   PeopleDBFields,
+  peopleListingViewAndPrefix,
+  PeopleResourceMemberRow,
+  peopleResourceListingViewAndPrefix,
+  queryListingPage,
   Role,
   safeWriteDocument,
-  userHasProjectRole,
 } from '@faims3/data-model';
 import {getUsersDB} from '.';
 import {upgradeCouchUserToExpressUser} from '../auth/keySigning/create';
 import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
-import {getRolesForNotebook} from './notebooks';
 import {registerLocalUser, addLocalPasswordForUser} from '../auth/helpers';
 
 /**
@@ -165,7 +168,8 @@ export async function updateUserPassword(
 
 /**
  * Return all users from the users database, if it does not exist, throws error.
- * TODO wherever possible dumping the whole db will not be ideal as scales.
+ * Unbounded: for admin-stats snapshots and scripts only. HTTP lists use
+ * {@link getUsersPage} / {@link getResourceMembersPage}.
  * @returns all users as Express.User[]
  */
 export async function getUsers(): Promise<ExistingPeopleDBDocument[]> {
@@ -175,6 +179,57 @@ export async function getUsers(): Promise<ExistingPeopleDBDocument[]> {
   return (await users_db.allDocs({include_docs: true})).rows
     .map(r => r.doc!)
     .filter(d => !d._id.startsWith('_'));
+}
+
+/**
+ * One GET /api/users page of list rows in name order. `includeArchived` is
+ * XOR: true lists disabled accounts only. The exclusive cursor is JSON
+ * `[nameLower, userId]`; paging comes from the shared `queryListingPage`.
+ * Rows are the listing-view value, which carries no login secrets.
+ */
+export async function getUsersPage({
+  includeArchived,
+  limit,
+  startKey,
+}: {
+  includeArchived: boolean;
+  limit: number;
+  startKey?: string;
+}): Promise<ListingPage<GetListAllUsersItem>> {
+  const usersDb = getUsersDB();
+  return queryListingPage<GetListAllUsersItem>({
+    query: (view, options) => usersDb.query<GetListAllUsersItem>(view, options),
+    ...peopleListingViewAndPrefix({includeArchived}),
+    limit,
+    startKey,
+  });
+}
+
+/**
+ * One page of the enabled users holding a role on a team, survey or
+ * template, in name order. Each row carries only that user's roles on the
+ * resource. `include` narrows by role scope (e.g. survey roles only).
+ */
+export async function getResourceMembersPage({
+  resourceId,
+  limit,
+  startKey,
+  include,
+}: {
+  resourceId: string;
+  limit: number;
+  startKey?: string;
+  include?: (member: PeopleResourceMemberRow) => boolean;
+}): Promise<ListingPage<PeopleResourceMemberRow>> {
+  const usersDb = getUsersDB();
+  return queryListingPage<PeopleResourceMemberRow>({
+    query: (view, options) =>
+      usersDb.query<PeopleResourceMemberRow>(view, options),
+    ...peopleResourceListingViewAndPrefix({resourceId}),
+    limit,
+    startKey,
+    include,
+  });
 }
 
 /**
@@ -254,28 +309,6 @@ export async function stripProjectRolesForProjectId(
     user.projectRoles = next;
     await saveCouchUser(user);
   }
-}
-
-/**
- * Gets users from the people db by team ID
- */
-export async function getUsersForTeam({
-  teamId,
-}: {
-  teamId: string;
-}): Promise<ExistingPeopleDBDocument[]> {
-  // Get the users database
-  const usersDb = getUsersDB();
-
-  // Fetch all user records from the database and get doc
-  return (
-    await usersDb.query<PeopleDBFields>('indexes/byResource', {
-      key: teamId,
-      include_docs: true,
-    })
-  ).rows
-    .filter(r => !!r.doc && !r.id.startsWith('_'))
-    .map(r => r.doc!);
 }
 
 /**
@@ -392,37 +425,6 @@ export async function saveExpressUser(user: Express.User): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const {resourceRoles, ...dbUser} = user;
   await saveCouchUser(dbUser);
-}
-
-export async function getUserInfoForProject({
-  projectId,
-}: {
-  projectId: string;
-}): Promise<NotebookAuthSummary> {
-  const roleDetails = getRolesForNotebook();
-  const roles = roleDetails.map(r => r.role);
-
-  // TODO filter this better?
-  const allUsers = filterPeopleUsersForList(await getUsers(), false);
-
-  const userList: NotebookAuthSummary = {
-    // What roles does the notebook have
-    roles,
-    users: allUsers.map(user => ({
-      name: user.name,
-      username: user.user_id,
-      roles: roles.map(role => ({
-        name: role,
-        value: userHasProjectRole({
-          user,
-          projectId,
-          role,
-        }),
-      })),
-    })),
-  };
-
-  return userList;
 }
 
 /**

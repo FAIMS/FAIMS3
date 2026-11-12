@@ -4,7 +4,7 @@ import {CreateProjectDialog} from '@/components/dialogs/create-project-dialog';
 import {columns} from '@/components/tables/projects';
 import {config} from '@/constants';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {useGetProjects} from '@/hooks/queries';
+import {usePagedProjects} from '@/hooks/queries';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {Action, getUserResourcesForAction} from '@faims3/data-model';
 import {createFileRoute, useNavigate, useRouter} from '@tanstack/react-router';
@@ -23,7 +23,8 @@ export const Route = createFileRoute('/_protected/projects/')({
 function ProjectsRouteComponent() {
   const user = useRequiredUser();
 
-  const {isLoading, data} = useGetProjects({user});
+  const {isLoading, tableLoading, notebooks, pageSize, serverPagination} =
+    usePagedProjects({user});
   const pathname = useRouter().state.location.pathname;
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
   const canCreateInSomeTeam =
@@ -61,9 +62,10 @@ function ProjectsRouteComponent() {
       </h1>
       <DataTable
         columns={columns}
-        data={data || []}
-        loading={isLoading}
-        initialSorting={[{id: 'createdAt', desc: true}]}
+        data={notebooks}
+        loading={tableLoading}
+        defaultRowsPerPage={pageSize}
+        serverPagination={serverPagination}
         onRowClick={({_id}) => navigate({to: `/projects/${_id}`})}
         button={
           (canCreateGlobally || canCreateInSomeTeam) && <CreateProjectDialog />

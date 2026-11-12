@@ -3,7 +3,7 @@ import {useAuth} from '@/context/auth-provider';
 import {columns} from '@/components/tables/projects';
 import {DataTable} from '@/components/data-table/data-table';
 import {useNavigate} from '@tanstack/react-router';
-import {useGetProjects} from '@/hooks/queries';
+import {usePagedProjects} from '@/hooks/queries';
 import {ProjectFromTemplateDialog} from '@/components/dialogs/project-from-template';
 
 /**
@@ -15,15 +15,18 @@ import {ProjectFromTemplateDialog} from '@/components/dialogs/project-from-templ
  */
 const TemplateProjects = ({templateId}: {templateId: string}) => {
   const {user} = useAuth();
-  const {isPending, data} = useGetProjects({user});
+  const {tableLoading, notebooks, pageSize, serverPagination} =
+    usePagedProjects({user, templateId});
   const navigate = useNavigate();
 
   return (
     <DataTable
       columns={columns}
-      data={data?.filter(notebook => notebook.templateId === templateId) || []}
+      data={notebooks}
       button={<ProjectFromTemplateDialog />}
-      loading={isPending}
+      loading={tableLoading}
+      defaultRowsPerPage={pageSize}
+      serverPagination={serverPagination}
       onRowClick={({_id}) => navigate({to: `/projects/${_id}`})}
     />
   );

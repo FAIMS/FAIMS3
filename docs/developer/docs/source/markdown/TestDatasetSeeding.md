@@ -322,9 +322,23 @@ valid for the persona.
 ## Pagination fixtures
 
 `seed-pagination-dataset` is a separate volume script for Control Centre
-list pagination. It upserts 100 teams, templates, surveys, and users with
-stable IDs (`team_bulk_001` … `bulk-user-001@faims.test`). It is idempotent
-and does not replace the permission-testing dataset above.
+list pagination. It upserts 100 teams, templates, surveys, users, map
+layers, and global, team and survey invites with stable IDs
+(`team_bulk_001` … `bulk-user-001@faims.test`, `asset-bulk-001`,
+`bulk-invite-global-001`). It is idempotent and does not replace the
+permission-testing dataset above.
+
+Each bulk user belongs to the team and survey with the same number. So that
+lists scoped to one team or one survey also have several pages,
+`team_bulk_001` and `notebook_bulk_001` hold everything: every bulk user is
+a member of both, every map layer is owned by that team and linked to that
+survey, and every team and survey invite is for them.
+
+The map layers are documents only. No file is uploaded, and they are stored
+as `failed` so no spatial worker processes them. They appear in the library,
+team and linked-layer lists but cannot be downloaded, and they never appear
+as layers available to link. Bulk invites are single use and are renewed on
+each run; an expired invite is left out of the invite lists.
 
 From `api/`:
 

@@ -1872,7 +1872,7 @@ describe('Team integration with templates and projects', () => {
       adminToken
     ).expect(200);
     expect(
-      (listed.body as Array<{_id: string}>).some(
+      (listed.body.notebooks as Array<{_id: string}>).some(
         n => n._id === project.notebook
       )
     ).toBe(true);

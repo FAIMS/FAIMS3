@@ -112,6 +112,47 @@ describe('buildTeamField (survey/template create)', () => {
   });
 });
 
+describe('buildTeamField (paginated team list)', () => {
+  const more = {
+    hasNextPage: true,
+    isFetchingNextPage: false,
+    fetchNextPage: () => undefined,
+  };
+  const build = (paged?: boolean) =>
+    buildTeamField({
+      canCreateGlobally: true,
+      possibleTeams: [blue, red],
+      label: 'Team',
+      description: chooseTeamOrNoTeam,
+      ...(paged === undefined ? {} : {more: {...more, paged}}),
+    });
+
+  it('keeps the plain select while the teams fit on one page', () => {
+    expect(build().renderControl).toBeUndefined();
+    expect(build(false).renderControl).toBeUndefined();
+  });
+
+  it('renders a Get more picker over the same options once the list is paged', () => {
+    const field = build(true);
+    expect(optionValues(field)).toEqual([NO_TEAM_SENTINEL, 'blue', 'red']);
+    const onChange = () => undefined;
+    const control = field.renderControl?.({
+      value: 'blue',
+      onChange,
+      disabled: false,
+    }) as {props: Record<string, unknown>};
+    expect(control.props).toMatchObject({
+      value: 'blue',
+      onChange,
+      options: field.options,
+      hasNextPage: true,
+      onGetMore: more.fetchNextPage,
+      clearable: false,
+      testId: field.testId,
+    });
+  });
+});
+
 describe('buildTemplateTeamField copy', () => {
   it('does not mark the heading optional and tells the user to select No team', () => {
     const field = buildTemplateTeamField({

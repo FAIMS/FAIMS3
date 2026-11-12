@@ -42,8 +42,8 @@ import {
   createQuickShareInvite,
   createResourceInvite,
   deleteInvite,
-  getGlobalInvites,
   getInvite,
+  getInvitesPage,
   getInvitesForResource,
   getQuickSharesForProject,
   getQuickSharesForProjectAndUser,
@@ -429,7 +429,7 @@ describe('Invite Tests', () => {
         createdBy: 'admin',
       });
 
-      const invites = await getGlobalInvites();
+      const {items: invites} = await getInvitesPage({limit: 50});
 
       expect(invites).toBeInstanceOf(Array);
       expect(invites).toHaveLength(2);
@@ -450,7 +450,7 @@ describe('Invite Tests', () => {
           createdBy: 'admin',
         });
       }
-      const invites = await getGlobalInvites();
+      const {items: invites} = await getInvitesPage({limit: 50});
       expect(invites).toHaveLength(30);
     });
 
@@ -590,12 +590,13 @@ describe('Invite Tests', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body).toBeInstanceOf(Array);
-      expect(response.body).toHaveLength(2);
-      expect(response.body[0].name).toSatisfy(v =>
+      expect(response.body.invites).toBeInstanceOf(Array);
+      expect(response.body.invites).toHaveLength(2);
+      expect(response.body.nextStartKey).toBeUndefined();
+      expect(response.body.invites[0].name).toSatisfy(v =>
         ['Contributor Invite', 'Admin Invite'].includes(v)
       );
-      expect(response.body[1].name).toSatisfy(v =>
+      expect(response.body.invites[1].name).toSatisfy(v =>
         ['Contributor Invite', 'Admin Invite'].includes(v)
       );
     });
@@ -630,12 +631,13 @@ describe('Invite Tests', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body).toBeInstanceOf(Array);
-      expect(response.body).toHaveLength(2);
-      expect(response.body[0].name).toSatisfy(v =>
+      expect(response.body.invites).toBeInstanceOf(Array);
+      expect(response.body.invites).toHaveLength(2);
+      expect(response.body.nextStartKey).toBeUndefined();
+      expect(response.body.invites[0].name).toSatisfy(v =>
         ['Member Invite', 'Admin Invite'].includes(v)
       );
-      expect(response.body[1].name).toSatisfy(v =>
+      expect(response.body.invites[1].name).toSatisfy(v =>
         ['Member Invite', 'Admin Invite'].includes(v)
       );
     });
@@ -985,7 +987,7 @@ describe('Invite Tests', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
       expect(
-        listed.body.some(
+        listed.body.invites.some(
           (invite: {_id: string}) => invite._id === response.body._id
         )
       ).toBe(true);
@@ -1574,12 +1576,13 @@ describe('Invite Tests', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
-    expect(response.body).toBeInstanceOf(Array);
-    expect(response.body).toHaveLength(2);
-    expect(response.body[0].name).toSatisfy(v =>
+    expect(response.body.invites).toBeInstanceOf(Array);
+    expect(response.body.invites).toHaveLength(2);
+    expect(response.body.nextStartKey).toBeUndefined();
+    expect(response.body.invites[0].name).toSatisfy(v =>
       ['Admin Invite', 'Another Admin Invite'].includes(v)
     );
-    expect(response.body[1].name).toSatisfy(v =>
+    expect(response.body.invites[1].name).toSatisfy(v =>
       ['Admin Invite', 'Another Admin Invite'].includes(v)
     );
   });

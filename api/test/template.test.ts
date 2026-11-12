@@ -27,8 +27,8 @@ import {
   PutUpdateTemplateInput,
   PutUpdateTemplateResponse,
   PutUpdateTemplateResponseSchema,
-  TEMPLATE_LIST_LIMIT_MAX,
-  TEMPLATE_LIST_VIEW_SCAN_MAX,
+  LIST_LIMIT_MAX,
+  LIST_VIEW_SCAN_MAX,
   TemplateApiDocumentSchema,
   TemplateApiListItemSchema,
 } from '@faims3/data-model';
@@ -578,7 +578,7 @@ describe('template API tests', () => {
     expect(walked).toEqual(expectedIds);
 
     const highLimit = await listTemplates(app, adminToken, {
-      limit: TEMPLATE_LIST_LIMIT_MAX,
+      limit: LIST_LIMIT_MAX,
     });
     expect(highLimit.templates.map(t => t._id)).toEqual(expectedIds);
     expect(highLimit.nextStartKey).toBeUndefined();
@@ -686,14 +686,11 @@ describe('template API tests', () => {
   });
 
   it('scan cap returns an empty page with nextStartKey before a later readable row', async () => {
-    const unreadables = Array.from(
-      {length: TEMPLATE_LIST_VIEW_SCAN_MAX},
-      (_, i) => ({
-        _id: `aaa-${String(i).padStart(3, '0')}`,
-        isPublic: false,
-        createdAt: '2024-06-02T00:00:00.000Z',
-      })
-    );
+    const unreadables = Array.from({length: LIST_VIEW_SCAN_MAX}, (_, i) => ({
+      _id: `aaa-${String(i).padStart(3, '0')}`,
+      isPublic: false,
+      createdAt: '2024-06-02T00:00:00.000Z',
+    }));
     await seedListingTemplates([
       ...unreadables,
       {

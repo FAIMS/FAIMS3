@@ -3,16 +3,15 @@ import {Field, Form} from '@/components/form';
 import {TemplateOwnerCallout} from '@/components/forms/template-owner-callout';
 import {
   buildTeamField,
-  getPossibleTeamsForAction,
   getTeamFieldState,
   resolveTeamId,
 } from '@/components/forms/template-team-field';
+import {usePossibleTeamsForAction} from '@/components/forms/use-team-options';
 import {useRequiredUser, useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {
   invalidateMapAssetsAfterCreate,
   uploadMapAsset,
 } from '@/hooks/map-asset-hooks';
-import {useGetTeams} from '@/hooks/queries';
 import {
   MAP_LAYER_FILE_ACCEPT,
   mapLayerFilesSchema,
@@ -40,15 +39,13 @@ export function CreateMapLayerForm({
   const user = useRequiredUser();
   const queryClient = useQueryClient();
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const {data: teams} = useGetTeams({user});
   const canCreateOutsideTeam = useIsAuthorisedTo({
     action: Action.CREATE_MAP_ASSET_OUTSIDE_TEAM,
   });
-  const possibleTeams = getPossibleTeamsForAction({
-    teams: teams?.teams,
+  const {possibleTeams, more: moreTeams} = usePossibleTeamsForAction({
+    user,
     canCreateGlobally: canCreateOutsideTeam,
     createInTeamAction: Action.CREATE_MAP_ASSET_IN_TEAM,
-    decodedToken: user.decodedToken,
   });
   const {showTeamCallout, showTeamDropdown} = getTeamFieldState({
     canCreateGlobally: canCreateOutsideTeam,
@@ -86,6 +83,7 @@ export function CreateMapLayerForm({
       buildTeamField({
         canCreateGlobally: canCreateOutsideTeam,
         possibleTeams,
+        more: moreTeams,
         label: 'Team',
         description: canCreateOutsideTeam
           ? 'Choose a team to own this layer, or leave blank to keep it as your own.'

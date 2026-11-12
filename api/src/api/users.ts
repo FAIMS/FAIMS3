@@ -9,15 +9,19 @@ import {
   Action,
   addGlobalRole,
   GetCurrentUserResponse,
+  GetListAllUsersQuerySchema,
   GetListAllUsersResponse,
   GetListAllUsersResponseSchema,
   isPeopleUserAccountDisabled,
   PostImpersonateUserResponse,
   PostUpdateUserInputSchema,
   removeGlobalRole,
+  resolveListLimit,
+  resolveListStartKey,
   Role,
   roleDetails,
   RoleScope,
+  toPaginatedList,
   userHasGlobalRole,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
@@ -30,9 +34,8 @@ import {
 import {config} from '../buildconfig';
 import {revokeUnusedGrantsForUser} from '../couchdb/downloadGrants';
 import {
-  filterPeopleUsersForList,
   getCouchUserFromEmailOrUserId,
-  getUsers,
+  getUsersPage,
   removeUser,
   saveCouchUser,
 } from '../couchdb/users';
@@ -133,30 +136,30 @@ api.get(
   }
 );
 
-// GET all users
+// GET users — one page in name order. Cursor pagination (`limit`, `startKey`,
+// `nextStartKey`); omitting `limit` returns the default page, never the whole
+// DB. `includeArchived=true` lists disabled accounts only.
 api.get(
   '/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.VIEW_USER_LIST}),
-  validate({
-    query: z.object({
-      includeArchived: z.enum(['true', 'false']).optional(),
-    }),
-  }),
+  validate({query: GetListAllUsersQuerySchema}),
   async (req, res: Response<GetListAllUsersResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException('You are not logged in.');
     }
 
-    const includeArchived = req.query.includeArchived === 'true';
-    const allUsers = filterPeopleUsersForList(
-      await getUsers(),
-      includeArchived
-    );
+    const page = await getUsersPage({
+      includeArchived: req.query.includeArchived === 'true',
+      limit: resolveListLimit(req.query.limit),
+      startKey: resolveListStartKey(req.query.startKey),
+    });
 
     // We explicitly parse here so as to make sure we strip out anything we don't want!
     try {
-      return res.json(GetListAllUsersResponseSchema.parse(allUsers));
+      return res.json(
+        GetListAllUsersResponseSchema.parse(toPaginatedList(page, 'users'))
+      );
     } catch (e) {
       throw new Exceptions.InternalSystemError(
         `User data from database could not be parsed into the correct model. Error: ${e}.`

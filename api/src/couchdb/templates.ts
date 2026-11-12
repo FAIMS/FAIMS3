@@ -27,12 +27,11 @@ import {
   TEMPLATES_BY_TEAM_ID,
   TEMPLATES_LISTING_BY_TEAM_ID,
   TEMPLATES_LISTING_BY_TEMPLATE_ID,
-  TEMPLATE_LIST_VIEW_QUERY_MAX,
-  TEMPLATE_LIST_VIEW_SCAN_MAX,
-  encodeTemplateListCursor,
-  parseTemplateListCursor,
-  templateListCursorFromViewKey,
-  type TemplateListCursor,
+  isListingViewRow,
+  listingViewPrefixRange,
+  queryListingPage,
+  templateListingViewAndPrefix,
+  toPaginatedList,
   getPlanTypeDefinition,
   normalizeNotebookTemplateUiSpecification,
   normalizeRootDescriptionForStore,
@@ -40,9 +39,6 @@ import {
   validateSetupValues,
   notebookUiSpecificationValidationMessage,
   buildUiSpecProperties,
-  templateListingGlobalRange,
-  templateListingTeamAllRange,
-  templateListingTeamRange,
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
@@ -54,12 +50,6 @@ import {
 } from './notebooks';
 import {assertTeamNotArchived, getTeamById} from './teams';
 import {stripTemplateRolesForTemplateId} from './users';
-
-function isListingViewRow(
-  row: PouchDB.Query.Response<TemplateListItem>['rows'][number]
-): row is typeof row & {id: string; value: TemplateListItem} {
-  return row.value != null && !!row.id && !row.id.startsWith('_');
-}
 
 /**
  * Lists templates using CouchDB views whose map `value` is the template doc
@@ -80,7 +70,7 @@ export const getTemplates = async ({
       ? await templatesDb.query<TemplateListItem>(
           TEMPLATES_LISTING_BY_TEAM_ID,
           {
-            ...templateListingTeamAllRange(teamId),
+            ...listingViewPrefixRange([teamId]),
             include_docs: false,
           }
         )
@@ -107,10 +97,8 @@ export type PaginatedTemplateList = {
 /**
  * Page of thin listing-view rows the caller may read, newest `createdAt`
  * first. `limit` counts visible rows after archive + visibility + `canRead`.
- * Scans at most {@link TEMPLATE_LIST_VIEW_SCAN_MAX} view rows across at most
- * {@link TEMPLATE_LIST_VIEW_QUERY_MAX} Couch queries. `startKey` is an
- * exclusive JSON `[createdAtMs, templateId]` cursor. An unknown or unparsable
- * cursor yields an empty page with no `nextStartKey`.
+ * Paging, the exclusive JSON `[createdAtMs, templateId]` cursor and the scan
+ * cap come from the shared {@link queryListingPage}.
  */
 export const getTemplatesPage = async ({
   teamId,
@@ -128,133 +116,27 @@ export const getTemplatesPage = async ({
   canRead: (template: TemplateListItem) => boolean;
 }): Promise<PaginatedTemplateList> => {
   const templatesDb = getTemplatesDb();
-  const view = teamId
-    ? TEMPLATES_LISTING_BY_TEAM_ID
-    : TEMPLATES_LISTING_BY_TEMPLATE_ID;
-  const rangeFor = (cursor?: TemplateListCursor) =>
-    teamId
-      ? templateListingTeamRange({teamId, includeArchived, startKey: cursor})
-      : templateListingGlobalRange({includeArchived, startKey: cursor});
-
-  if (startKey !== undefined && startKey !== '') {
-    const parsed = parseTemplateListCursor(startKey);
-    if (!parsed) {
-      return {templates: []};
-    }
-  }
-
-  const visible: TemplateListItem[] = [];
-  let examined = 0;
-  let queries = 0;
-  let lastExamined: TemplateListCursor | undefined;
-  let exclusiveAfter = parseTemplateListCursor(startKey);
-  let requireExactStart = exclusiveAfter !== undefined;
-  let moreRemain = false;
-
   try {
-    while (
-      visible.length < limit &&
-      examined < TEMPLATE_LIST_VIEW_SCAN_MAX &&
-      queries < TEMPLATE_LIST_VIEW_QUERY_MAX
-    ) {
-      const remainingScan = TEMPLATE_LIST_VIEW_SCAN_MAX - examined;
-      const remainingQueries = TEMPLATE_LIST_VIEW_QUERY_MAX - queries;
-      const extra = exclusiveAfter ? 1 : 0;
-      const remainingFill = limit - visible.length;
-      const minBatch = Math.ceil((remainingScan + extra) / remainingQueries);
-      const batchLimit = Math.min(
-        remainingScan + extra,
-        Math.max(remainingFill + extra, minBatch)
-      );
-
-      const result = await templatesDb.query<TemplateListItem>(view, {
-        ...rangeFor(exclusiveAfter),
-        include_docs: false,
-        limit: batchLimit,
-      });
-      queries++;
-
-      let rows = result.rows.filter(isListingViewRow);
-      if (exclusiveAfter) {
-        if (requireExactStart) {
-          if (rows.length === 0 || rows[0].id !== exclusiveAfter[1]) {
-            return {templates: []};
-          }
-          requireExactStart = false;
-        }
-        if (rows[0]?.id === exclusiveAfter[1]) {
-          rows = rows.slice(1);
-        }
-        exclusiveAfter = undefined;
-      }
-
-      const couchExhausted = result.rows.length < batchLimit;
-      if (rows.length === 0) {
-        moreRemain = false;
-        break;
-      }
-
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        if (examined >= TEMPLATE_LIST_VIEW_SCAN_MAX) {
-          moreRemain = true;
-          break;
-        }
-        examined++;
-        lastExamined =
-          templateListCursorFromViewKey(row.key, {teamId}) ??
-          ([0, row.id] satisfies TemplateListCursor);
-        const item = row.value;
+    const page = await queryListingPage<TemplateListItem>({
+      query: (view, options) =>
+        templatesDb.query<TemplateListItem>(view, options),
+      ...templateListingViewAndPrefix({teamId, includeArchived}),
+      limit,
+      startKey,
+      include: item => {
         const archived = item.archived === true;
-        if (includeArchived ? !archived : archived) {
-          continue;
-        }
-        if (visibility === 'public' && item.isPublic !== true) {
-          continue;
-        }
-        if (visibility === 'private' && item.isPublic === true) {
-          continue;
-        }
-        if (!canRead(item)) {
-          continue;
-        }
-        visible.push(item);
-        if (visible.length >= limit) {
-          moreRemain = i < rows.length - 1 || !couchExhausted;
-          break;
-        }
-      }
-
-      if (visible.length >= limit) {
-        break;
-      }
-      if (examined >= TEMPLATE_LIST_VIEW_SCAN_MAX) {
-        moreRemain = moreRemain || !couchExhausted;
-        break;
-      }
-      if (couchExhausted) {
-        moreRemain = false;
-        break;
-      }
-      exclusiveAfter = lastExamined;
-    }
+        if (includeArchived ? !archived : archived) return false;
+        if (visibility === 'public' && item.isPublic !== true) return false;
+        if (visibility === 'private' && item.isPublic === true) return false;
+        return canRead(item);
+      },
+    });
+    return toPaginatedList(page, 'templates');
   } catch (error) {
     throw new Exceptions.InternalSystemError(
       'An error occurred while reading templates from the Template DB.'
     );
   }
-
-  return {
-    templates: visible,
-    ...(moreRemain && lastExamined !== undefined
-      ? {
-          nextStartKey: encodeTemplateListCursor(
-            lastExamined[0],
-            lastExamined[1]
-          ),
-        }
-      : {}),
-  };
 };
 
 /**
