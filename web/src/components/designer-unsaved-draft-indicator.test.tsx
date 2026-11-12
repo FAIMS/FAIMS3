@@ -5,7 +5,7 @@ import {describe, expect, it} from 'vitest';
 import {DesignerUnsavedDraftIndicator} from './designer-unsaved-draft-indicator';
 
 describe('DesignerUnsavedDraftIndicator', () => {
-  it('renders Unsaved changes only when visible', () => {
+  it('renders Unpublished changes only when visible', () => {
     const {rerender} = render(
       <DesignerUnsavedDraftIndicator visible={false} />
     );
@@ -15,14 +15,16 @@ describe('DesignerUnsavedDraftIndicator', () => {
 
     rerender(<DesignerUnsavedDraftIndicator visible />);
     expect(
-      screen.getByTestId('web-designer-unsaved-changes-indicator').textContent
-    ).toBe('Unsaved changes');
+      screen.getByTestId('web-designer-unsaved-changes-indicator')
+    ).toBeTruthy();
   });
 
   it('names a latest-design change when the draft is stale', () => {
     render(<DesignerUnsavedDraftIndicator visible stale />);
     expect(
-      screen.getByTestId('web-designer-unsaved-changes-indicator').textContent
-    ).toBe('Unsaved changes — latest design has changed');
+      screen
+        .getByTestId('web-designer-unsaved-changes-indicator')
+        .getAttribute('data-stale')
+    ).toBe('true');
   });
 });

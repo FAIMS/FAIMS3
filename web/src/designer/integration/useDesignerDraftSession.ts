@@ -4,7 +4,9 @@
  * @file Debounced local draft autosave, unpublished compare, and restore helper.
  */
 
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {stableStringify} from '@faims3/data-model';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {config} from '@/constants';
 import type {DesignerStore} from '../createDesignerStore';
 import {toPublishedNotebook} from '../domain/notebook/adapters';
 import type {
@@ -18,8 +20,8 @@ import {
   discardDraft,
   getDraft,
   isStoredDraftStaleVsLive,
+  isUnpublishedDraft,
   setDraft,
-  stableStringify,
   type DraftWriteResult,
 } from './draftStorage';
 import {hydrateExportedNotebook} from './notebookAdapters';
@@ -27,31 +29,94 @@ import {hydrateExportedNotebook} from './notebookAdapters';
 /** Autosave wait after the last store change that can appear in published JSON. */
 export const AUTOSAVE_DEBOUNCE_MS = 500;
 
-/** Draft-write status shown in the editor toolbar. */
-export type DesignerDraftStatus = 'saving' | 'saved' | 'error';
+/** Local-write phase used to derive the toolbar indicator. */
+export type DesignerDraftWriteStatus = 'saving' | 'saved' | 'error';
+
+/**
+ * Toolbar indicator: hidden until the first edit (`idle`), then local save
+ * progress, or `{notebook} published` after a successful in-session publish.
+ */
+export type DesignerDraftStatus =
+  | 'idle'
+  | 'saving'
+  | 'saved'
+  | 'published'
+  | 'error';
 
 export type DesignerSessionIdentity = DesignerDraftKey;
 
+/** Identity of the slices that appear in published JSON (not undo stacks). */
+function publishedFacingFingerprint(notebook: NotebookWithHistory): unknown[] {
+  return [
+    notebook.metadata,
+    notebook.uiSpec.present,
+    notebook.planTemplates,
+    notebook.plans,
+  ];
+}
+
+function samePublishedFacing(
+  left: unknown[] | undefined,
+  right: unknown[]
+): boolean {
+  return Boolean(
+    left &&
+    left.length === right.length &&
+    left.every((item, i) => item === right[i])
+  );
+}
+
+/**
+ * Map write status, unpublished compare, and in-session publish onto the
+ * toolbar indicator.
+ */
+export function resolveDesignerDraftDisplayStatus({
+  writeStatus,
+  isUnpublished,
+  hasPublishedThisSession,
+}: {
+  writeStatus: DesignerDraftWriteStatus;
+  isUnpublished: boolean;
+  hasPublishedThisSession: boolean;
+}): DesignerDraftStatus {
+  if (writeStatus === 'saving' || writeStatus === 'error') {
+    return writeStatus;
+  }
+  if (isUnpublished) {
+    return 'saved';
+  }
+  if (hasPublishedThisSession) {
+    return 'published';
+  }
+  return 'idle';
+}
+
 /**
  * Status copy for the aria-live region. Uses an ellipsis while a write or
- * debounce is pending.
+ * debounce is pending. Idle has no copy; the indicator is hidden.
  */
 export function designerDraftStatusCopy(
   status: DesignerDraftStatus,
   errorMessage?: string
 ): string {
+  if (status === 'idle') {
+    return '';
+  }
   if (status === 'saving') {
     return 'Saving draft…';
   }
   if (status === 'error') {
     return errorMessage || "Couldn't save draft";
   }
+  if (status === 'published') {
+    return `${config.notebookNameCapitalized} published`;
+  }
   return 'Saved draft';
 }
 
 /**
- * Choose the session notebook: a stored draft hydrated through the load
- * adapters, or the server snapshot when none exists.
+ * Choose the session notebook: an unpublished stored draft hydrated through
+ * the load adapters, or the live server snapshot when none exists.
  */
 export function resolveDesignerSessionNotebook({
   identity,
@@ -74,7 +139,7 @@ export function resolveDesignerSessionNotebook({
     : undefined;
   if (identity) {
     const stored = getDraft(identity);
-    if (stored) {
+    if (stored && isUnpublishedDraft(stored.draft, stored.published)) {
       const restored = hydrateExportedNotebook(stored.draft, mode);
       if (restored) {
         return {
@@ -134,10 +199,15 @@ export function useDesignerDraftSession({
   const lastWrittenRef = useRef(
     stableStringify(toPublishedNotebook(store.getState().notebook))
   );
+  const lastFingerprintRef = useRef(
+    publishedFacingFingerprint(store.getState().notebook)
+  );
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [published, setPublished] = useState(initialPublished);
-  const [status, setStatus] = useState<DesignerDraftStatus>('saved');
+  const [writeStatus, setWriteStatus] =
+    useState<DesignerDraftWriteStatus>('saved');
+  const [hasPublishedThisSession, setHasPublishedThisSession] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [debouncePending, setDebouncePending] = useState(false);
   const [writeInFlight, setWriteInFlight] = useState(false);
@@ -160,23 +230,31 @@ export function useDesignerDraftSession({
     flushPendingDesignerEdits();
     flushingRef.current = false;
 
+    lastFingerprintRef.current = publishedFacingFingerprint(
+      store.getState().notebook
+    );
     const exported = toPublishedNotebook(store.getState().notebook);
     const signature = stableStringify(exported);
     setExportSignature(signature);
+    setDebouncePending(false);
+
+    if (signature === lastWrittenRef.current) {
+      setWriteStatus('saved');
+      setErrorMessage(undefined);
+      return {ok: true};
+    }
 
     const currentIdentity = identityRef.current;
     if (!currentIdentity) {
       lastWrittenRef.current = signature;
-      setDebouncePending(false);
-      setStatus('saved');
+      setWriteStatus('saved');
       setErrorMessage(undefined);
       return {ok: true};
     }
 
     const publishedHash = publishedHashRef.current;
     if (!publishedHash) {
-      setDebouncePending(false);
-      setStatus('error');
+      setWriteStatus('error');
       setErrorMessage('The local draft could not be saved.');
       return {ok: false, error: 'The local draft could not be saved.'};
     }
@@ -188,14 +266,13 @@ export function useDesignerDraftSession({
       publishedHash,
     });
     setWriteInFlight(false);
-    setDebouncePending(false);
 
     if (result.ok) {
       lastWrittenRef.current = signature;
-      setStatus('saved');
+      setWriteStatus('saved');
       setErrorMessage(undefined);
     } else {
-      setStatus('error');
+      setWriteStatus('error');
       setErrorMessage(result.error);
     }
     return result;
@@ -209,7 +286,7 @@ export function useDesignerDraftSession({
       return;
     }
     setDebouncePending(true);
-    setStatus('saving');
+    setWriteStatus('saving');
     if (timerRef.current !== null) {
       clearTimeout(timerRef.current);
     }
@@ -229,8 +306,12 @@ export function useDesignerDraftSession({
       toPublishedNotebook(store.getState().notebook)
     );
     lastWrittenRef.current = signature;
+    lastFingerprintRef.current = publishedFacingFingerprint(
+      store.getState().notebook
+    );
     setExportSignature(signature);
-    setStatus('saved');
+    setWriteStatus('saved');
+    setHasPublishedThisSession(false);
     setErrorMessage(undefined);
     setDebouncePending(false);
     setWriteInFlight(false);
@@ -239,16 +320,13 @@ export function useDesignerDraftSession({
       if (flushingRef.current || discardedRef.current) {
         return;
       }
-      const next = stableStringify(
-        toPublishedNotebook(store.getState().notebook)
+      const nextFingerprint = publishedFacingFingerprint(
+        store.getState().notebook
       );
-      setExportSignature(next);
-      if (!identityRef.current) {
+      if (samePublishedFacing(lastFingerprintRef.current, nextFingerprint)) {
         return;
       }
-      if (next === lastWrittenRef.current) {
-        return;
-      }
+      lastFingerprintRef.current = nextFingerprint;
       schedulePersist();
     });
 
@@ -298,16 +376,26 @@ export function useDesignerDraftSession({
       const signature = stableStringify(snapshot);
       lastWrittenRef.current = signature;
       setExportSignature(signature);
-      setStatus('saved');
+      setWriteStatus('saved');
+      setHasPublishedThisSession(true);
       setErrorMessage(undefined);
     },
     []
   );
 
-  const publishedSignature = published ? stableStringify(published) : undefined;
-  const isUnpublished = Boolean(
-    publishedSignature && exportSignature !== publishedSignature
+  const publishedSignature = useMemo(
+    () => (published ? stableStringify(published) : undefined),
+    [published]
   );
+  const isUnpublished = Boolean(
+    debouncePending ||
+    (publishedSignature && exportSignature !== publishedSignature)
+  );
+  const status = resolveDesignerDraftDisplayStatus({
+    writeStatus,
+    isUnpublished,
+    hasPublishedThisSession,
+  });
 
   return {
     status,

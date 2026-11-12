@@ -15,13 +15,7 @@ import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {Spinner} from '@/components/ui/spinner';
 import {config} from '@/constants';
-import {
-  closeDesignerHostOverlay,
-  toDesignerNotebookWithHistory,
-  useDesignerDraftHostStatus,
-  useDesignerSaveMutation,
-} from '@/designer/integration';
-import type {NotebookWithHistory} from '@/designer/state/initial';
+import {useDesignerHostOverlay} from '@/designer/integration';
 import {
   useCanCreateTemplate,
   useIsAuthorisedTo,
@@ -31,7 +25,6 @@ import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {Action, ProjectStatus} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
-import {useMemo, useState} from 'react';
 
 /**
  * ProjectActions component renders action cards for editing and closing a project.
@@ -45,42 +38,21 @@ import {useMemo, useState} from 'react';
 const ProjectActions = (): JSX.Element => {
   const user = useRequiredUser();
   const {projectId} = Route.useParams();
-  const {data, isLoading} = useGetProject({user, projectId});
+  const {data, isLoading, refetch} = useGetProject({user, projectId});
   const queryClient = useQueryClient();
-
-  const [editorOpen, setEditorOpen] = useState(false);
-  const liveUiSpecHash = data?.uiSpecProperties?.hash;
-  const draftHost = useDesignerDraftHostStatus(
-    {
-      userId: user.user.id,
-      resourceKind: 'projects',
-      resourceId: projectId,
-    },
-    liveUiSpecHash ? {uiSpecHash: liveUiSpecHash} : undefined,
-    editorOpen
-  );
-
-  // Prepare notebook data for the Designer
-  const initialNotebook = useMemo<NotebookWithHistory | undefined>(() => {
-    return toDesignerNotebookWithHistory(data);
-  }, [data]);
-
-  // PUT notebook JSON from the designer; react-query updates cache on success.
-  const saveProjectNotebook = useDesignerSaveMutation({
-    resourceType: 'projects',
-    apiResourceType: 'notebooks',
-    resourceId: projectId,
+  const overlay = useDesignerHostOverlay({
+    userId: user.user.id,
     token: user.token,
+    resourceKind: 'projects',
+    resourceId: projectId,
+    apiResourceType: 'notebooks',
+    data,
+    refetch,
   });
 
   // need to invalidate the project query after upload
   const uploadProjectCallback = () => {
     queryClient.invalidateQueries({queryKey: ['projects', projectId]});
-  };
-
-  // Publish is in-editor; closing without a file must not PUT.
-  const handleEditorClose = (file?: File) => {
-    closeDesignerHostOverlay(() => setEditorOpen(false), file);
   };
 
   const canUpdateProjectDetails = useIsAuthorisedTo({
@@ -125,7 +97,7 @@ const ProjectActions = (): JSX.Element => {
   });
 
   // Prevent reopening the editor while the latest design is still saving.
-  const isProjectNotebookSaving = saveProjectNotebook.isPending;
+  const isProjectNotebookSaving = overlay.isSaving;
 
   return (
     <>
@@ -135,27 +107,27 @@ const ProjectActions = (): JSX.Element => {
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <div className="flex flex-wrap items-center gap-2">
-                  <ListLabel>
-                    Edit {config.notebookNameCapitalized} in Designer
-                  </ListLabel>
+                  <ListLabel>Edit {config.notebookNameCapitalized}</ListLabel>
                   <DesignerUnsavedDraftIndicator
-                    visible={draftHost.unpublished}
-                    stale={draftHost.stale}
+                    visible={overlay.draftHost.unpublished}
+                    stale={overlay.draftHost.stale}
                   />
                 </div>
               </ListItem>
               <ListItem>
                 <ListDescription>
-                  Open the Designer to change forms and fields for this{' '}
+                  Open the designer to edit forms and fields for this{' '}
                   {config.notebookName}.
                 </ListDescription>
               </ListItem>
               <ListItem>
                 <Button
                   disabled={
-                    isLoading || !initialNotebook || isProjectNotebookSaving
+                    isLoading ||
+                    !overlay.initialNotebook ||
+                    isProjectNotebookSaving
                   }
-                  onClick={() => setEditorOpen(true)}
+                  onClick={() => overlay.setEditorOpen(true)}
                 >
                   {isProjectNotebookSaving ? (
                     <span className="flex items-center gap-2">
@@ -163,7 +135,7 @@ const ProjectActions = (): JSX.Element => {
                       Saving...
                     </span>
                   ) : (
-                    'Open in Designer'
+                    `Edit ${config.notebookNameCapitalized}`
                   )}
                 </Button>
               </ListItem>
@@ -324,18 +296,7 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
       </ActionsGrid>
-      <DesignerDialog
-        open={editorOpen}
-        notebook={initialNotebook}
-        exportBaseName={data?.name}
-        existingRecordCount={data?.recordCount}
-        onClose={handleEditorClose}
-        userId={user.user.id}
-        resourceKind="projects"
-        resourceId={projectId}
-        publishNotebook={saveProjectNotebook.mutateAsyncWithToast}
-        liveUiSpecHash={liveUiSpecHash}
-      />
+      <DesignerDialog open={overlay.editorOpen} {...overlay.dialogProps} />
     </>
   );
 };

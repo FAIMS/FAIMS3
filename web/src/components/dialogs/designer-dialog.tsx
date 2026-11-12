@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
+import {Spinner} from '@/components/ui/spinner';
 import {DesignerWidget} from '../../designer/DesignerWidget';
 import type {DesignerResourceKind} from '../../designer/integration/draftStorage';
+import type {DesignerLiveDesignSnapshot} from '../../designer/integration/notebookAdapters';
 import type {
   DesignerDocumentMode,
   NotebookWithHistory,
@@ -33,10 +35,15 @@ interface DesignerDialogProps {
     options?: {ifMatch?: string}
   ) => Promise<unknown>;
   /**
-   * `uiSpecProperties.hash` of the live design when the overlay opened.
-   * Pinned for the session so a refetch cannot change If-Match.
+   * Cached `uiSpecProperties.hash` while the live GET is in flight. Replaced
+   * by {@link refreshLiveDesign} before the overlay session is pinned.
    */
   liveUiSpecHash?: string;
+  /**
+   * Fetch the current survey/template source before pinning the overlay.
+   * Called once when the overlay opens. Cached props are used if this fails.
+   */
+  refreshLiveDesign?: () => Promise<DesignerLiveDesignSnapshot | void>;
 }
 
 export function DesignerDialog({
@@ -53,6 +60,7 @@ export function DesignerDialog({
   resourceId,
   publishNotebook,
   liveUiSpecHash,
+  refreshLiveDesign,
 }: DesignerDialogProps) {
   const [mounted, setMounted] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
@@ -61,21 +69,66 @@ export function DesignerDialog({
     NotebookWithHistory | undefined
   >(undefined);
   const [sessionLiveHash, setSessionLiveHash] = useState<string | undefined>();
+  const latestPropsRef = useRef({
+    notebook,
+    liveUiSpecHash,
+    refreshLiveDesign,
+  });
+  latestPropsRef.current = {notebook, liveUiSpecHash, refreshLiveDesign};
 
-  // Open: capture notebook once, mount, animate in. The functional updater
-  // makes the snapshot idempotent — once `sessionNotebook` is set, later
-  // upstream refetches (React Query refetchOnWindowFocus, polling) cannot
-  // overwrite a restored or in-session draft. The session is only cleared
-  // on close.
+  // Open: refetch the live source once, then pin notebook + hash for the
+  // session. Later React Query refetches must not replace a restored draft.
+  // Reopen (including during the close animation) must reset exit state and
+  // drop the previous pin so a new GET can replace it.
   useEffect(() => {
     if (!open) return;
+    let cancelled = false;
+    setMounted(true);
+    setAnimateOut(false);
+    setAnimateIn(false);
+    setSessionNotebook(undefined);
+    setSessionLiveHash(undefined);
+    const animateTid = window.setTimeout(() => setAnimateIn(true), 50);
+
+    const pinLiveDesign = async () => {
+      const {
+        notebook: cachedNotebook,
+        liveUiSpecHash: cachedHash,
+        refreshLiveDesign: refresh,
+      } = latestPropsRef.current;
+      let nextNotebook = cachedNotebook;
+      let nextHash = cachedHash;
+      if (refresh) {
+        try {
+          const fresh = await refresh();
+          if (fresh?.notebook) {
+            nextNotebook = fresh.notebook;
+          }
+          if (fresh?.liveUiSpecHash) {
+            nextHash = fresh.liveUiSpecHash;
+          }
+        } catch {
+          // Keep the cached snapshot so a failed GET cannot block the editor.
+        }
+      }
+      if (cancelled) return;
+      setSessionNotebook(nextNotebook);
+      setSessionLiveHash(nextHash);
+    };
+
+    void pinLiveDesign();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(animateTid);
+    };
+  }, [open]);
+
+  // When the host does not refetch, pin the notebook as soon as it arrives.
+  useEffect(() => {
+    if (!open || refreshLiveDesign) return;
     setSessionNotebook(prev => prev ?? notebook);
     setSessionLiveHash(prev => prev ?? liveUiSpecHash);
-    setMounted(true);
-    if (animateIn) return;
-    const tid = window.setTimeout(() => setAnimateIn(true), 50);
-    return () => window.clearTimeout(tid);
-  }, [open, notebook, liveUiSpecHash, animateIn]);
+  }, [open, notebook, liveUiSpecHash, refreshLiveDesign]);
 
   // Close: animate out, then unmount and clear the snapshot so the next
   // open starts fresh.
@@ -106,13 +159,17 @@ export function DesignerDialog({
     onClose(file);
   };
 
-  if (!mounted || !sessionNotebook) return null;
+  if (!mounted) return null;
+
+  const overlayVisible = animateIn && !animateOut;
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20"
+      data-testid="web-designer-dialog-overlay"
+      data-visible={overlayVisible ? 'true' : 'false'}
       style={{
-        opacity: animateIn && !animateOut ? 1 : 0,
+        opacity: overlayVisible ? 1 : 0,
         transition: `opacity ${animationDuration}ms ease`,
         pointerEvents: animateOut ? 'none' : 'auto',
       }}
@@ -121,24 +178,36 @@ export function DesignerDialog({
         className="bg-white w-[95vw] h-[95vh] rounded-lg overflow-hidden shadow-xl"
         onClick={e => e.stopPropagation()}
         style={{
-          opacity: animateIn && !animateOut ? 1 : 0,
-          transform:
-            animateIn && !animateOut ? 'scale(1)' : `scale(${animationScale})`,
+          opacity: overlayVisible ? 1 : 0,
+          transform: overlayVisible ? 'scale(1)' : `scale(${animationScale})`,
           transition: `opacity ${animationDuration}ms ease, transform ${animationDuration}ms ease`,
         }}
       >
-        <DesignerWidget
-          notebook={sessionNotebook}
-          exportBaseName={exportBaseName}
-          existingRecordCount={existingRecordCount}
-          onClose={handleWidgetClose}
-          designerMode={designerMode}
-          userId={userId}
-          resourceKind={resourceKind}
-          resourceId={resourceId}
-          publishNotebook={publishNotebook}
-          liveUiSpecHash={sessionLiveHash}
-        />
+        {sessionNotebook ? (
+          <DesignerWidget
+            notebook={sessionNotebook}
+            exportBaseName={exportBaseName}
+            existingRecordCount={existingRecordCount}
+            onClose={handleWidgetClose}
+            designerMode={designerMode}
+            userId={userId}
+            resourceKind={resourceKind}
+            resourceId={resourceId}
+            publishNotebook={publishNotebook}
+            liveUiSpecHash={sessionLiveHash}
+            refreshLiveDesign={refreshLiveDesign}
+          />
+        ) : (
+          <div
+            className="flex h-full w-full flex-col items-center justify-center gap-3"
+            data-testid="web-designer-live-source-loading"
+          >
+            <Spinner className="h-8 w-8" />
+            <p className="text-sm text-muted-foreground">
+              Loading latest design…
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

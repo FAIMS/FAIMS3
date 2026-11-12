@@ -4,6 +4,7 @@
  * @file Map API/template records into the designer's `NotebookWithHistory` shape.
  */
 
+import {UI_SPECIFICATION_HASH_HEX_LENGTH} from '@faims3/data-model';
 import type {
   Notebook,
   NotebookUISpec,
@@ -19,9 +20,29 @@ export type {NormalizeApiUiSpecificationResult};
 export {tryNormalizeApiUiSpecification};
 
 /** Project or template GET payload carrying an inlined design bundle. */
-type ApiRecordWithUiSpecification = {
+export type ApiRecordWithUiSpecification = {
   uiSpecification?: unknown;
+  uiSpecProperties?: {hash?: unknown};
 };
+
+/** Live survey/template snapshot used to pin a designer overlay session. */
+export type DesignerLiveDesignSnapshot = {
+  notebook?: NotebookWithHistory;
+  liveUiSpecHash?: string;
+};
+
+/**
+ * Accept a `uiSpecProperties.hash` only when it is a SHA-256 hex digest.
+ */
+export const parseUiSpecHash = (hash: unknown): string | undefined =>
+  typeof hash === 'string' && hash.length === UI_SPECIFICATION_HASH_HEX_LENGTH
+    ? hash
+    : undefined;
+
+/** Read `uiSpecProperties.hash` from a publish result or GET payload. */
+export const uiSpecHashFromRecord = (
+  record?: ApiRecordWithUiSpecification | {uiSpecProperties?: {hash?: unknown}}
+): string | undefined => parseUiSpecHash(record?.uiSpecProperties?.hash);
 
 /**
  * Maps a project or template record from the main app into the designer's
@@ -41,6 +62,20 @@ export const toDesignerNotebookWithHistory = (
     return undefined;
   }
   return notebookDefinitionToDesignerHistory(result.data);
+};
+
+/**
+ * Map a project or template GET payload to the designer overlay snapshot
+ * (normalized notebook plus `uiSpecProperties.hash`).
+ */
+export const designerLiveSnapshotFromRecord = (
+  record?: ApiRecordWithUiSpecification,
+  mode: DesignerDocumentMode = 'project'
+): DesignerLiveDesignSnapshot => {
+  return {
+    notebook: toDesignerNotebookWithHistory(record, mode),
+    liveUiSpecHash: uiSpecHashFromRecord(record),
+  };
 };
 
 /**

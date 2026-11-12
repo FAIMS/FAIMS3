@@ -4,6 +4,7 @@ import {migrateNotebook} from '@faims3/data-model';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import type {ComponentProps} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
+import {config} from '@/constants';
 import {downloadFile} from '@/lib/utils';
 import {DesignerWidget} from './DesignerWidget';
 import {toPublishedNotebook} from './domain/notebook/adapters';
@@ -100,7 +101,7 @@ const renderWidget = (
   return {onClose, publishNotebook, ...result};
 };
 
-describe('DesignerWidget publish and close', () => {
+describe('DesignerWidget publish', () => {
   afterEach(() => {
     localStorage.clear();
     vi.mocked(downloadFile).mockClear();
@@ -123,9 +124,15 @@ describe('DesignerWidget publish and close', () => {
 
     fireEvent.click(publish);
     expect(
-      await screen.findByText(/field users will receive this design/i)
+      await screen.findByText(
+        new RegExp(
+          `Users will receive this ${config.notebookName} when they reopen or refresh the app`
+        )
+      )
     ).toBeTruthy();
-    expect(screen.queryByText(/has existing records/i)).toBeNull();
+    expect(
+      screen.queryByTestId('web-designer-publish-records-warning')
+    ).toBeNull();
     expect(publishNotebook).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByTestId('web-designer-publish-cancel-button'));
@@ -158,7 +165,7 @@ describe('DesignerWidget publish and close', () => {
       ).toBe(true)
     );
     expect(screen.getByTestId('web-designer-draft-status').textContent).toBe(
-      'Saved draft'
+      `${config.notebookNameCapitalized} published`
     );
   });
 
@@ -178,9 +185,16 @@ describe('DesignerWidget publish and close', () => {
     await waitFor(() => expect(isButtonDisabled(publish)).toBe(false));
     fireEvent.click(publish);
     expect(
-      await screen.findByText(/existing projects created from it are not/i)
+      await screen.findByText(
+        new RegExp(
+          `existing ${config.notebookNamePlural} created from it are not`,
+          'i'
+        )
+      )
     ).toBeTruthy();
-    expect(screen.queryByText(/has existing records/i)).toBeNull();
+    expect(
+      screen.queryByTestId('web-designer-publish-records-warning')
+    ).toBeNull();
   });
 
   it('warns that existing survey records can be lost', async () => {
@@ -189,46 +203,12 @@ describe('DesignerWidget publish and close', () => {
     const publish = await screen.findByTestId('web-designer-save-button');
     await waitFor(() => expect(isButtonDisabled(publish)).toBe(false));
     fireEvent.click(publish);
-    expect(await screen.findByText(/has existing records/i)).toBeTruthy();
-    expect(screen.getByText(/loss of existing data/i)).toBeTruthy();
-  });
-
-  it('closes after a successful publish-and-close and not after a failed PUT', async () => {
-    seedUnpublishedDraft();
-    const {onClose, publishNotebook} = renderWidget();
-    publishNotebook.mockRejectedValueOnce(new Error('server error'));
-
-    const publishAndClose = await screen.findByTestId(
-      'web-designer-publish-and-close-button'
+    const warning = await screen.findByTestId(
+      'web-designer-publish-records-warning'
     );
-    fireEvent.click(publishAndClose);
-    fireEvent.click(
-      await screen.findByTestId('web-designer-publish-confirm-button')
-    );
-
-    await waitFor(() => expect(publishNotebook).toHaveBeenCalledTimes(1));
-    expect(onClose).not.toHaveBeenCalled();
-    expect(screen.getByTestId('web-designer-shell')).toBeTruthy();
-    expect(getDraft(identity)).toBeDefined();
-
-    fireEvent.click(publishAndClose);
-    fireEvent.click(
-      await screen.findByTestId('web-designer-publish-confirm-button')
-    );
-    await waitFor(() => expect(publishNotebook).toHaveBeenCalledTimes(2));
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
-    expect(onClose.mock.calls[0][0]).toBeUndefined();
-  });
-
-  it('closes immediately with no dialog or PUT when there is nothing to publish', async () => {
-    const {onClose, publishNotebook} = renderWidget();
-    const publishAndClose = await screen.findByTestId(
-      'web-designer-publish-and-close-button'
-    );
-    fireEvent.click(publishAndClose);
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
-    expect(publishNotebook).not.toHaveBeenCalled();
-    expect(screen.queryByText(/Publish changes\?/)).toBeNull();
+    expect(warning.textContent).toMatch(/collected data/i);
+    expect(warning.textContent).toMatch(/3 records/);
+    expect(warning.textContent).toMatch(/loss of this data/i);
   });
 
   it('warns on close when unpublished, keeps the draft, and discard clears storage', async () => {
@@ -237,22 +217,18 @@ describe('DesignerWidget publish and close', () => {
     await screen.findByTestId('web-designer-shell');
 
     fireEvent.click(screen.getByTestId('web-designer-close-button'));
-    expect(
-      await screen.findByText(/You have unpublished changes/i)
-    ).toBeTruthy();
+    expect(await screen.findByText(/You have unsaved changes/i)).toBeTruthy();
 
     fireEvent.click(screen.getByTestId('web-designer-keep-editing-button'));
     await waitFor(() =>
-      expect(screen.queryByText(/You have unpublished changes/i)).toBeNull()
+      expect(screen.queryByText(/You have unsaved changes/i)).toBeNull()
     );
     expect(onClose).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByTestId('web-designer-cancel-button'));
+    fireEvent.click(screen.getByTestId('web-designer-close-button'));
+    expect(await screen.findByRole('button', {name: 'Cancel'})).toBeTruthy();
     expect(
-      await screen.findByRole('button', {name: 'Keep working'})
-    ).toBeTruthy();
-    expect(
-      screen.getByRole('button', {name: 'Close and keep draft'})
+      screen.getByRole('button', {name: 'Save draft & exit'})
     ).toBeTruthy();
     fireEvent.click(
       await screen.findByTestId('web-designer-close-keep-draft-button')
@@ -263,7 +239,7 @@ describe('DesignerWidget publish and close', () => {
     expect(getDraft(identity)).toBeDefined();
   });
 
-  it('opens the publish dialog from Publish now and does not close the editor', async () => {
+  it('opens the publish dialog from Publish changes and does not close the editor', async () => {
     seedUnpublishedDraft();
     const {onClose, publishNotebook} = renderWidget();
     await screen.findByTestId('web-designer-shell');
@@ -271,8 +247,10 @@ describe('DesignerWidget publish and close', () => {
     fireEvent.click(
       await screen.findByTestId('web-designer-close-publish-now-button')
     );
-    expect(await screen.findByText(/Publish changes\?/)).toBeTruthy();
-    expect(screen.queryByText(/You have unpublished changes/i)).toBeNull();
+    expect(
+      await screen.findByText('Are you sure you want to publish these changes?')
+    ).toBeTruthy();
+    expect(screen.queryByText(/You have unsaved changes/i)).toBeNull();
     expect(onClose).not.toHaveBeenCalled();
     expect(publishNotebook).not.toHaveBeenCalled();
   });
@@ -299,8 +277,11 @@ describe('DesignerWidget publish and close', () => {
       false
     );
 
-    fireEvent.click(screen.getByTestId('web-designer-close-button'));
-    expect(screen.queryByText(/You have unpublished changes/i)).toBeNull();
+    expect(screen.queryByTestId('web-designer-cancel-button')).toBeNull();
+    const close = screen.getByRole('button', {name: 'close designer'});
+    expect(close.textContent).toContain('Close');
+    fireEvent.click(close);
+    expect(screen.queryByText(/You have unsaved changes/i)).toBeNull();
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
@@ -316,28 +297,47 @@ describe('DesignerWidget publish and close', () => {
     );
   });
 
-  it('keeps publish controls and status visible on Info', async () => {
+  it('keeps publish controls visible on Info and hides idle draft status', async () => {
     renderWidget();
     await screen.findByTestId('web-designer-save-button');
     fireEvent.click(screen.getByRole('tab', {name: 'Info'}));
     expect(screen.getByTestId('web-designer-save-button')).toBeTruthy();
-    expect(
-      screen.getByTestId('web-designer-publish-and-close-button')
-    ).toBeTruthy();
+    expect(screen.queryByTestId('web-designer-draft-status')).toBeNull();
+  });
+
+  it('keeps Saved draft visible on Info while unpublished', async () => {
+    seedUnpublishedDraft();
+    renderWidget();
+    await screen.findByTestId('web-designer-save-button');
+    fireEvent.click(screen.getByRole('tab', {name: 'Info'}));
     expect(screen.getByTestId('web-designer-draft-status').textContent).toBe(
       'Saved draft'
     );
+  });
+
+  it('does not warn on open when a stored draft has no unpublished changes', async () => {
+    setDraft(identity, {
+      draft: structuredClone(sampleNotebook) as Notebook,
+      published: structuredClone(sampleNotebook) as Notebook,
+      publishedHash: HASH_A,
+    });
+    renderWidget({liveUiSpecHash: HASH_B});
+    await screen.findByTestId('web-designer-shell');
+    expect(
+      screen.queryByTestId('web-designer-stale-load-live-button')
+    ).toBeNull();
+    expect(screen.queryByTestId('web-designer-stale-draft-banner')).toBeNull();
   });
 
   it('warns on open when the local draft is based on an older live hash', async () => {
     seedUnpublishedDraft(identity, DRAFT_LABEL, HASH_A);
     renderWidget({liveUiSpecHash: HASH_B, exportBaseName: 'Field Survey'});
     expect(
-      await screen.findByRole('button', {name: 'Switch to latest version'})
+      await screen.findByRole('button', {
+        name: 'Discard draft & edit latest version',
+      })
     ).toBeTruthy();
-    expect(
-      screen.getByRole('button', {name: 'Download JSON backup'})
-    ).toBeTruthy();
+    expect(screen.getByRole('button', {name: 'Download backup'})).toBeTruthy();
     expect(
       screen.getByRole('button', {name: 'Work on my version'})
     ).toBeTruthy();
@@ -428,7 +428,7 @@ describe('DesignerWidget publish and close', () => {
       screen.getByRole('button', {name: 'Switch to latest version'})
     ).toBeTruthy();
     expect(
-      screen.getByRole('button', {name: 'Download JSON backup'})
+      screen.getByRole('button', {name: 'Download backup'})
     ).toBeTruthy();
     expect(publishNotebook).toHaveBeenCalledTimes(1);
     expect(publishNotebook.mock.calls[0][1]).toEqual({ifMatch: HASH_A});
@@ -515,6 +515,40 @@ describe('DesignerWidget publish and close', () => {
     expect(
       screen.queryByTestId('web-designer-conflict-overwrite-button')
     ).toBeNull();
+  });
+
+  it('refetches the live design when switching to latest after a 409', async () => {
+    seedUnpublishedDraft(identity, DRAFT_LABEL, HASH_A);
+    const refreshLiveDesign = vi.fn().mockResolvedValue({
+      notebook: serverNotebook(),
+      liveUiSpecHash: HASH_B,
+    });
+    const {publishNotebook} = renderWidget({
+      liveUiSpecHash: HASH_A,
+      refreshLiveDesign,
+    });
+    publishNotebook.mockRejectedValueOnce(new DesignerUiSpecConflictError());
+
+    const publish = await screen.findByTestId('web-designer-save-button');
+    await waitFor(() => expect(isButtonDisabled(publish)).toBe(false));
+    fireEvent.click(publish);
+    fireEvent.click(
+      await screen.findByTestId('web-designer-publish-confirm-button')
+    );
+
+    fireEvent.click(
+      await screen.findByTestId('web-designer-conflict-switch-latest-button')
+    );
+    await waitFor(() => expect(refreshLiveDesign).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(
+        screen
+          .getByTestId('web-designer-shell')
+          .getAttribute('data-published-hash')
+      ).toBe(HASH_B)
+    );
+    expect(getDraft(identity)).toBeUndefined();
+    expect(publishNotebook).toHaveBeenCalledTimes(1);
   });
 
   it('does not call fetch during restore of an unpublished draft', async () => {

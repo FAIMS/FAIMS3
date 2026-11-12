@@ -1,19 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {brandNotebook} from '@/constants';
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Grow,
-} from '@mui/material';
-import {
-  DesignerDialogCloseButton,
-  designerDialogTitleWithCloseSx,
-} from './designer-dialog-close-button';
+import {Box, Button, DialogContentText} from '@mui/material';
+import {DesignerDecisionDialog} from './designer-decision-dialog';
+import {DesignerDraftBackupCallout} from './designer-draft-backup-callout';
+import {designerCancelButtonSx, designerDialogButtonSx} from './designer-style';
 
 type DesignerStaleDraftDialogProps = {
   open: boolean;
@@ -24,13 +15,16 @@ type DesignerStaleDraftDialogProps = {
   onDownloadBackup: () => void;
 };
 
-const STALE_DRAFT_COPY =
-  'The {notebook} has been updated remotely since you created your draft. You can switch to the latest version (losing your draft changes). You may continue working on your stale draft, but beware that you will need to overwrite the latest version in order to save it. You can download your draft design as a backup, if needed.';
+const STALE_INTRO =
+  "Another user has published a new version of the {notebook} while you're working on your draft. You can:";
 
-const staleButtonSx = {
-  textTransform: 'none',
-  fontWeight: 700,
-} as const;
+const STALE_OPTIONS = [
+  'Continue work on your draft.',
+  'Discard your draft and work on the latest version.',
+] as const;
+
+const STALE_BACKUP =
+  "If you'd like to save a backup of your draft, you can download it below.";
 
 /**
  * Open-time warning when a local draft is based on an older published design.
@@ -44,60 +38,57 @@ export function DesignerStaleDraftDialog({
   onDownloadBackup,
 }: DesignerStaleDraftDialogProps) {
   return (
-    <Dialog
+    <DesignerDecisionDialog
       open={open}
+      animationDuration={animationDuration}
+      titleId="stale-draft-dialog-title"
+      descriptionId="stale-draft-dialog-description"
+      title="Warning: This design has changed."
+      closeTestId="web-designer-stale-dismiss-button"
+      closeLabel="Cancel"
       onClose={onDismiss}
-      slots={{transition: Grow}}
-      transitionDuration={animationDuration}
-      aria-labelledby="stale-draft-dialog-title"
-      aria-describedby="stale-draft-dialog-description"
-      slotProps={{paper: {sx: {transformOrigin: 'top center'}}}}
+      titleSx={{gap: 4}}
+      actionsSx={{justifyContent: 'flex-end'}}
+      actions={
+        <>
+          <Button
+            variant="outlined"
+            color="warning"
+            onClick={onWorkOnMyVersion}
+            data-testid="web-designer-stale-continue-button"
+            sx={designerDialogButtonSx}
+          >
+            Work on my version
+          </Button>
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={onSwitchToLatest}
+            autoFocus
+            data-testid="web-designer-stale-load-live-button"
+            sx={designerCancelButtonSx}
+          >
+            Discard draft & edit latest version
+          </Button>
+        </>
+      }
     >
-      <DialogTitle
-        id="stale-draft-dialog-title"
-        sx={designerDialogTitleWithCloseSx}
-      >
-        Warning: this design has changed
-        <DesignerDialogCloseButton
-          onClick={onDismiss}
-          data-testid="web-designer-stale-dismiss-button"
-        />
-      </DialogTitle>
-      <DialogContent sx={{'&&': {pt: 1}}}>
-        <DialogContentText id="stale-draft-dialog-description">
-          {brandNotebook(STALE_DRAFT_COPY)}
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions sx={{flexWrap: 'wrap', gap: 1, px: 2, pb: 2}}>
-        <Button
-          variant="outlined"
-          color="inherit"
-          onClick={onSwitchToLatest}
-          autoFocus
-          data-testid="web-designer-stale-load-live-button"
-          sx={{...staleButtonSx, color: 'text.secondary'}}
+      <DialogContentText id="stale-draft-dialog-description" component="div">
+        <Box>{brandNotebook(STALE_INTRO)}</Box>
+        <Box
+          component="ol"
+          sx={{mt: 1, mb: 0, pl: 3.5, listStyleType: 'decimal'}}
         >
-          Switch to latest version
-        </Button>
-        <Button
-          variant="outlined"
-          color="warning"
-          onClick={onWorkOnMyVersion}
-          data-testid="web-designer-stale-continue-button"
-          sx={staleButtonSx}
-        >
-          Work on my version
-        </Button>
-        <Button
-          variant="text"
-          color="inherit"
-          onClick={onDownloadBackup}
-          data-testid="web-designer-stale-download-backup-button"
-          sx={{...staleButtonSx, color: 'text.secondary'}}
-        >
-          Download JSON backup
-        </Button>
-      </DialogActions>
-    </Dialog>
+          {STALE_OPTIONS.map(option => (
+            <li key={option}>{option}</li>
+          ))}
+        </Box>
+        <Box sx={{mt: 2}}>{STALE_BACKUP}</Box>
+      </DialogContentText>
+      <DesignerDraftBackupCallout
+        onDownload={onDownloadBackup}
+        data-testid="web-designer-stale-download-backup-button"
+      />
+    </DesignerDecisionDialog>
   );
 }

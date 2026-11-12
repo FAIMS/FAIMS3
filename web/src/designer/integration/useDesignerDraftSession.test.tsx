@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {migrateNotebook} from '@faims3/data-model';
-import {act, render, screen} from '@testing-library/react';
+import {act, render, renderHook, screen} from '@testing-library/react';
 import {ActionCreators} from 'redux-undo';
 import {afterEach, describe, expect, it, vi} from 'vitest';
+import {config} from '@/constants';
 import {createDesignerStore, type DesignerStore} from '../createDesignerStore';
 import {toPublishedNotebook} from '../domain/notebook/adapters';
 import type {Notebook, NotebookWithHistory} from '../state/initial';
@@ -11,8 +12,10 @@ import {sampleNotebook} from '../test-notebook';
 import {fieldUpdated} from '../store/slices/uiSpec';
 import {getDraft, setDraft, type DesignerDraftKey} from './draftStorage';
 import {notebookDefinitionToDesignerHistory} from './notebookAdapters';
+import {registerPendingEditFlush} from '../state/pendingEditFlush';
 import {
   AUTOSAVE_DEBOUNCE_MS,
+  resolveDesignerDraftDisplayStatus,
   resolveDesignerSessionNotebook,
   useDesignerDraftSession,
 } from './useDesignerDraftSession';
@@ -66,6 +69,13 @@ function Harness({
     <div>
       <span data-testid="status">{session.statusCopy}</span>
       <span data-testid="unpublished">{String(session.isUnpublished)}</span>
+      <button
+        type="button"
+        data-testid="mark-published"
+        onClick={() => session.markPublished(session.exportPresentNotebook())}
+      >
+        Publish
+      </button>
     </div>
   );
 }
@@ -77,14 +87,14 @@ describe('useDesignerDraftSession', () => {
     vi.restoreAllMocks();
   });
 
-  it('shows Saving draft… then Saved draft after an edit, without calling fetch', () => {
+  it('hides status until an edit, then shows Saving draft… then Saved draft', () => {
     vi.useFakeTimers();
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const store = createDesignerStore(historyFromSample());
     const published = toPublishedNotebook(store.getState().notebook);
     render(<Harness store={store} initialPublished={published} />);
 
-    expect(screen.getByTestId('status').textContent).toBe('Saved draft');
+    expect(screen.getByTestId('status').textContent).toBe('');
     expect(screen.getByTestId('unpublished').textContent).toBe('false');
 
     act(() => {
@@ -103,6 +113,23 @@ describe('useDesignerDraftSession', () => {
         'component-parameters'
       ].label
     ).toBe('Autosaved label');
+  });
+
+  it('shows the branded published copy after markPublished', () => {
+    const store = createDesignerStore(historyFromSample());
+    const published = toPublishedNotebook(store.getState().notebook);
+    render(<Harness store={store} initialPublished={published} />);
+
+    act(() => {
+      editFieldLabel(store, 'Ready to publish');
+    });
+    act(() => {
+      screen.getByTestId('mark-published').click();
+    });
+    expect(screen.getByTestId('unpublished').textContent).toBe('false');
+    expect(screen.getByTestId('status').textContent).toBe(
+      `${config.notebookNameCapitalized} published`
+    );
   });
 
   it('persists the live uiSpec hash with the draft', () => {
@@ -128,6 +155,7 @@ describe('useDesignerDraftSession', () => {
   });
 
   it('disables unpublished after undo back to the published snapshot', () => {
+    vi.useFakeTimers();
     const store = createDesignerStore(historyFromSample());
     const published = toPublishedNotebook(store.getState().notebook);
     render(<Harness store={store} initialPublished={published} />);
@@ -140,7 +168,44 @@ describe('useDesignerDraftSession', () => {
     act(() => {
       store.dispatch(ActionCreators.undo());
     });
+    act(() => {
+      vi.advanceTimersByTime(AUTOSAVE_DEBOUNCE_MS);
+    });
     expect(screen.getByTestId('unpublished').textContent).toBe('false');
+  });
+
+  it('flushes pending editors before persist and export', () => {
+    const store = createDesignerStore(historyFromSample());
+    const published = toPublishedNotebook(store.getState().notebook);
+    const unregister = registerPendingEditFlush(() => {
+      editFieldLabel(store, 'Flushed keystroke');
+    });
+    const {result} = renderHook(() =>
+      useDesignerDraftSession({
+        store,
+        identity,
+        initialPublished: published,
+        publishedHash: LIVE_HASH,
+      })
+    );
+
+    let exported: Notebook | undefined;
+    act(() => {
+      exported = result.current.exportPresentNotebook();
+    });
+    expect(
+      exported?.uiSpec.fields['New-Text-Field']['component-parameters'].label
+    ).toBe('Flushed keystroke');
+
+    act(() => {
+      result.current.persistDraftNow();
+    });
+    expect(
+      getDraft(identity)?.draft.uiSpec.fields['New-Text-Field'][
+        'component-parameters'
+      ].label
+    ).toBe('Flushed keystroke');
+    unregister();
   });
 
   it('surfaces a quota failure in the status copy', () => {
@@ -164,6 +229,52 @@ describe('useDesignerDraftSession', () => {
     expect(screen.getByTestId('status').textContent).toMatch(
       /full|quota|Couldn't save/i
     );
+  });
+});
+
+describe('resolveDesignerDraftDisplayStatus', () => {
+  it('is idle until unpublished changes or an in-session publish', () => {
+    expect(
+      resolveDesignerDraftDisplayStatus({
+        writeStatus: 'saved',
+        isUnpublished: false,
+        hasPublishedThisSession: false,
+      })
+    ).toBe('idle');
+  });
+
+  it('prefers saving and error over published or saved', () => {
+    expect(
+      resolveDesignerDraftDisplayStatus({
+        writeStatus: 'saving',
+        isUnpublished: true,
+        hasPublishedThisSession: false,
+      })
+    ).toBe('saving');
+    expect(
+      resolveDesignerDraftDisplayStatus({
+        writeStatus: 'error',
+        isUnpublished: false,
+        hasPublishedThisSession: true,
+      })
+    ).toBe('error');
+  });
+
+  it('shows saved while unpublished and published after a successful publish', () => {
+    expect(
+      resolveDesignerDraftDisplayStatus({
+        writeStatus: 'saved',
+        isUnpublished: true,
+        hasPublishedThisSession: false,
+      })
+    ).toBe('saved');
+    expect(
+      resolveDesignerDraftDisplayStatus({
+        writeStatus: 'saved',
+        isUnpublished: false,
+        hasPublishedThisSession: true,
+      })
+    ).toBe('published');
   });
 });
 
@@ -214,6 +325,23 @@ describe('resolveDesignerSessionNotebook', () => {
     });
     expect(resolved.isStale).toBe(true);
     expect(resolved.publishedHash).toBe('a'.repeat(64));
+  });
+
+  it('loads the live design when the stored draft has no unpublished changes', () => {
+    const server = historyFromSample();
+    setDraft(identity, {
+      draft: toPublishedNotebook(server),
+      published: toPublishedNotebook(server),
+      publishedHash: 'a'.repeat(64),
+    });
+
+    const resolved = resolveDesignerSessionNotebook({
+      identity,
+      serverNotebook: server,
+      liveUiSpecHash: 'b'.repeat(64),
+    });
+    expect(resolved.isStale).toBe(false);
+    expect(resolved.publishedHash).toBe('b'.repeat(64));
   });
 
   it('does not restore a draft for a different resource id', () => {

@@ -4,6 +4,7 @@
  * @file Origin-private designer draft storage keyed by user, resource kind, and id.
  */
 
+import {stableStringify} from '@faims3/data-model';
 import type {Notebook} from '../state/initial';
 
 /** Host resource collection used in draft keys and React Query cache keys. */
@@ -46,28 +47,7 @@ export function designerDraftStorageKey(key: DesignerDraftKey): string {
   ].join(':');
 }
 
-/**
- * Stable JSON serialisation: object keys are sorted recursively so unpublished
- * compare does not depend on insertion order.
- */
-export function stableStringify(value: unknown): string {
-  return JSON.stringify(sortValue(value));
-}
-
-function sortValue(value: unknown): unknown {
-  if (value === null || typeof value !== 'object') {
-    return value;
-  }
-  if (Array.isArray(value)) {
-    return value.map(sortValue);
-  }
-  const obj = value as Record<string, unknown>;
-  const sorted: Record<string, unknown> = {};
-  for (const key of Object.keys(obj).sort()) {
-    sorted[key] = sortValue(obj[key]);
-  }
-  return sorted;
-}
+export {stableStringify};
 
 /**
  * True when the draft export is not deep-equal to the last published snapshot.
@@ -182,6 +162,7 @@ export type DesignerDraftHostStatus = {
   stale: boolean;
 };
 
+/** Read unpublished/stale status for this user and resource. */
 export function getDesignerDraftHostStatus(
   key: DesignerDraftKey,
   live?: DesignerLiveDesignRef

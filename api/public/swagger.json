@@ -479,7 +479,7 @@
     "/notebooks/{id}/uiSpecification": {
       "put": {
         "summary": "Replace notebook uiSpecification",
-        "description": "Full replace of the design bundle (`uiSpec` + `metadata`). Accepts current NotebookDefinition JSON at the request root (not wrapped in a `uiSpecification` property) or legacy wire JSON that the server migrates. Requires `UPDATE_PROJECT_UISPEC` on the project. Returns the updated project document.",
+        "description": "Full replace of the design bundle (`uiSpec` + `metadata`). Accepts current NotebookDefinition JSON at the request root (not wrapped in a `uiSpecification` property) or legacy wire JSON that the server migrates. Optional `If-Match` is the quoted `uiSpecProperties.hash` of the live design; omit it for last-write-wins (JSON upload or confirmed overwrite). Requires `UPDATE_PROJECT_UISPEC` on the project. Returns the updated project document.",
         "tags": ["Notebooks"],
         "parameters": [
           {
@@ -487,6 +487,15 @@
             "in": "path",
             "description": "Notebook (project) identifier",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "description": "Quoted SHA-256 hex `uiSpecProperties.hash` of the live design. When present, the write is refused with 409 if the live hash has moved. Omit for last-write-wins.",
             "schema": {
               "type": "string"
             }
@@ -520,8 +529,14 @@
               }
             }
           },
+          "400": {
+            "description": "If-Match is present but is not a 64-character uiSpecification hash"
+          },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "409": {
+            "description": "If-Match does not match the live `uiSpecProperties.hash`"
           }
         }
       }
@@ -1752,7 +1767,7 @@
     "/templates/{id}/uiSpecification": {
       "put": {
         "summary": "Replace template uiSpecification",
-        "description": "Full replace of the design bundle (`uiSpec` + `metadata`). Accepts current NotebookDefinition JSON at the request root (not wrapped in a `uiSpecification` property) or legacy wire JSON that the server migrates. Requires `UPDATE_TEMPLATE_DETAILS` on the template. Returns the updated template document.",
+        "description": "Full replace of the design bundle (`uiSpec` + `metadata`). Accepts current NotebookDefinition JSON at the request root (not wrapped in a `uiSpecification` property) or legacy wire JSON that the server migrates. Optional `If-Match` is the quoted `uiSpecProperties.hash` of the live design; omit it for last-write-wins (JSON upload or confirmed overwrite). Requires `UPDATE_TEMPLATE_DETAILS` on the template. Returns the updated template document.",
         "tags": ["Templates"],
         "parameters": [
           {
@@ -1760,6 +1775,15 @@
             "in": "path",
             "description": "Template id",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "description": "Quoted SHA-256 hex `uiSpecProperties.hash` of the live design. When present, the write is refused with 409 if the live hash has moved. Omit for last-write-wins.",
             "schema": {
               "type": "string"
             }
@@ -1793,8 +1817,14 @@
               }
             }
           },
+          "400": {
+            "description": "If-Match is present but is not a 64-character uiSpecification hash"
+          },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "409": {
+            "description": "If-Match does not match the live `uiSpecProperties.hash`"
           }
         }
       }

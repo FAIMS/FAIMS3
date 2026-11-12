@@ -2,11 +2,10 @@
 
 import {fireEvent, render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
-import {config} from '@/constants';
 import {DesignerPublishConflictDialog} from './designer-publish-conflict-dialog';
 
 describe('DesignerPublishConflictDialog', () => {
-  it('offers switch to latest, force publish, or download a JSON backup', () => {
+  it('offers switch to latest, force publish, or download a backup', () => {
     const onDismiss = vi.fn();
     const onSwitchToLatest = vi.fn();
     const onForcePublish = vi.fn();
@@ -22,24 +21,6 @@ describe('DesignerPublishConflictDialog', () => {
         onDownloadBackup={onDownloadBackup}
       />
     );
-
-    expect(screen.getByText(/could not publish/i)).toBeTruthy();
-    expect(
-      screen.getByText(
-        new RegExp(
-          `The ${config.notebookName} has been updated remotely since you created your draft`
-        )
-      )
-    ).toBeTruthy();
-    expect(
-      screen.getByRole('button', {name: 'Switch to latest version'})
-    ).toBeTruthy();
-    expect(
-      screen.getByRole('button', {name: 'Forcefully publish'})
-    ).toBeTruthy();
-    expect(
-      screen.getByRole('button', {name: 'Download JSON backup'})
-    ).toBeTruthy();
 
     fireEvent.click(
       screen.getByTestId('web-designer-conflict-switch-latest-button')

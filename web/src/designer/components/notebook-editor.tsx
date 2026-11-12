@@ -40,10 +40,7 @@ import {useDesignerActions} from '../state/designer-actions-context';
 import {useAppSelector} from '../state/hooks';
 import {selectDesignerMode} from '../store/selectors';
 import {DesignerDraftStatusLabel} from './designer-draft-status';
-import {
-  designerCancelButtonSx,
-  designerResponsiveFrameSx,
-} from './designer-style';
+import {designerResponsiveFrameSx} from './designer-style';
 import {DesignerGlobalSearch} from './design-search';
 
 /** Layout shell: Design / Info tabs and `Outlet` for nested designer routes. */
@@ -53,14 +50,8 @@ export type PreviewOutletContext = {
 };
 
 export const NotebookEditor = () => {
-  const {
-    onPublish,
-    onPublishAndClose,
-    onCancelRequest,
-    publishDisabled,
-    draftStatus,
-    draftErrorMessage,
-  } = useDesignerActions();
+  const {onPublish, publishDisabled, draftStatus, draftErrorMessage} =
+    useDesignerActions();
   const {pathname} = useLocation();
   const isDesignRoute = pathname.startsWith('/design/');
   const [previewForm, setPreviewForm] = useState(false);
@@ -183,7 +174,11 @@ export const NotebookEditor = () => {
             </TabList>
           </Box>
           <Box sx={toolbarSx}>
-            <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{alignItems: 'center', flexWrap: 'wrap'}}
+            >
               <Tooltip
                 title={
                   publishDisabled
@@ -212,36 +207,6 @@ export const NotebookEditor = () => {
                   </Button>
                 </span>
               </Tooltip>
-              <Button
-                variant="outlined"
-                color="primary"
-                size="small"
-                onClick={onPublishAndClose}
-                data-testid="web-designer-publish-and-close-button"
-                sx={{
-                  textTransform: 'none',
-                  fontWeight: 700,
-                  boxShadow: 'none',
-                  fontSize: '0.78rem',
-                  py: 0.4,
-                }}
-              >
-                Publish changes and close
-              </Button>
-              <Button
-                onClick={onCancelRequest}
-                color="primary"
-                size="small"
-                data-testid="web-designer-cancel-button"
-                sx={{
-                  ...designerCancelButtonSx,
-                  fontSize: '0.78rem',
-                  py: 0.4,
-                  minWidth: 72,
-                }}
-              >
-                Cancel
-              </Button>
               {isDesignRoute && (
                 <>
                   <Tooltip
@@ -290,48 +255,6 @@ export const NotebookEditor = () => {
                       </Button>
                     </span>
                   </Tooltip>
-                  <FormControlLabel
-                    sx={{
-                      ml: 0.5,
-                      alignItems: 'center',
-                      '& .MuiFormControlLabel-label': {
-                        display: 'flex',
-                        alignItems: 'center',
-                        color: 'text.secondary',
-                        fontWeight: 600,
-                        fontSize: '0.8rem',
-                      },
-                    }}
-                    label={
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        sx={{userSelect: 'none', alignItems: 'center'}}
-                      >
-                        <Typography variant="body2" sx={{fontWeight: 600}}>
-                          Preview
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: 'text.disabled',
-                            lineHeight: 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                          }}
-                        >
-                          {previewForm ? 'On' : 'Off'}
-                        </Typography>
-                      </Stack>
-                    }
-                    control={
-                      <Switch
-                        size="small"
-                        checked={previewForm}
-                        onChange={e => setPreviewForm(e.target.checked)}
-                      />
-                    }
-                  />
                 </>
               )}
               <DesignerDraftStatusLabel
@@ -339,7 +262,57 @@ export const NotebookEditor = () => {
                 errorMessage={draftErrorMessage}
               />
             </Stack>
-            {isDesignRoute && <DesignerGlobalSearch />}
+            {isDesignRoute && (
+              <Stack
+                direction="row"
+                spacing={1.5}
+                sx={{alignItems: 'center', flexWrap: 'wrap'}}
+              >
+                <FormControlLabel
+                  sx={{
+                    mr: 0,
+                    alignItems: 'center',
+                    '& .MuiFormControlLabel-label': {
+                      display: 'flex',
+                      alignItems: 'center',
+                      color: 'text.secondary',
+                      fontWeight: 600,
+                      fontSize: '0.8rem',
+                    },
+                  }}
+                  label={
+                    <Stack
+                      direction="row"
+                      spacing={0.5}
+                      sx={{userSelect: 'none', alignItems: 'center'}}
+                    >
+                      <Typography variant="body2" sx={{fontWeight: 600}}>
+                        Preview
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.disabled',
+                          lineHeight: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                      >
+                        {previewForm ? 'On' : 'Off'}
+                      </Typography>
+                    </Stack>
+                  }
+                  control={
+                    <Switch
+                      size="small"
+                      checked={previewForm}
+                      onChange={e => setPreviewForm(e.target.checked)}
+                    />
+                  }
+                />
+                <DesignerGlobalSearch />
+              </Stack>
+            )}
           </Box>
         </Box>
         <Box sx={[contentSx, designerResponsiveFrameSx]}>

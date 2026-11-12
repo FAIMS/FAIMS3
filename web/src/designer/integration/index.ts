@@ -10,5 +10,6 @@ export * from './hostClose';
 export * from './legacyNotebook';
 export * from './notebookAdapters';
 export * from './useDesignerDraftSession';
+export * from './useDesignerHostOverlay';
 export * from './useDesignerSaveMutation';
 export * from './useHasUnpublishedDesignerDraft';

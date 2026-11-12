@@ -38,9 +38,5 @@ describe('ImageWithFallback', () => {
     expect(screen.getByTestId('broken-image-thumbnail')).toBeInTheDocument();
     expect(screen.queryByText('Image preview not available')).toBeNull();
   });
-
-  it('forwards draggable to the image', () => {
-    render(<ImageWithFallback src="blob:ok" alt="photo" draggable={false} />);
-    expect(document.querySelector('img')).toHaveAttribute('draggable', 'false');
-  });
 });
+

@@ -6,8 +6,6 @@ import type {DesignerDraftStatus} from '../integration/useDesignerDraftSession';
 /** Publish, close, and draft-status values shared across Design, Info, and Setup. */
 export type DesignerActionsValue = {
   onPublish: () => void;
-  onPublishAndClose: () => void;
-  onCancelRequest: () => void;
   publishDisabled: boolean;
   draftStatus: DesignerDraftStatus;
   draftErrorMessage?: string;
@@ -15,10 +13,8 @@ export type DesignerActionsValue = {
 
 const DesignerActionsContext = createContext<DesignerActionsValue>({
   onPublish: () => {},
-  onPublishAndClose: () => {},
-  onCancelRequest: () => {},
   publishDisabled: true,
-  draftStatus: 'saved',
+  draftStatus: 'idle',
 });
 
 /** Access in-editor publish, close, and draft-status values from the notebook editor toolbar. */

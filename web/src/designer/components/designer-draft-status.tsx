@@ -28,7 +28,8 @@ function DraftStatusIcon({status}: {status: DesignerDraftStatus}) {
       <ErrorOutlineRoundedIcon
         aria-hidden
         data-testid="web-designer-draft-status-error-icon"
-        sx={{fontSize: 18, color: 'error.main'}}
+        fontSize="small"
+        sx={{color: 'error.main'}}
       />
     );
   }
@@ -36,18 +37,24 @@ function DraftStatusIcon({status}: {status: DesignerDraftStatus}) {
     <CheckCircleRoundedIcon
       aria-hidden
       data-testid="web-designer-draft-status-saved-icon"
-      sx={{fontSize: 18, color: 'success.main'}}
+      fontSize="small"
+      sx={{color: 'success.main'}}
     />
   );
 }
 
 /**
- * Autosave status in the editor toolbar, after Preview. Visible on Design, Info, and Setup.
+ * Autosave status in the editor toolbar, after Undo/Redo. Hidden until the
+ * first edit; then local save progress, or a published confirmation.
+ * Visible on Design, Info, and Setup.
  */
 export function DesignerDraftStatusLabel({
   status,
   errorMessage,
 }: DesignerDraftStatusLabelProps) {
+  if (status === 'idle') {
+    return null;
+  }
   return (
     <Stack
       direction="row"
@@ -55,7 +62,7 @@ export function DesignerDraftStatusLabel({
       data-testid="web-designer-draft-status"
       aria-live="polite"
       aria-atomic="true"
-      sx={{alignItems: 'center', flexShrink: 0}}
+      sx={{alignItems: 'center', flexWrap: 'wrap'}}
     >
       <DraftStatusIcon status={status} />
       <Typography
@@ -64,7 +71,6 @@ export function DesignerDraftStatusLabel({
         sx={{
           color: status === 'error' ? 'error.main' : 'text.secondary',
           fontWeight: 600,
-          whiteSpace: 'nowrap',
         }}
       >
         {designerDraftStatusCopy(status, errorMessage)}

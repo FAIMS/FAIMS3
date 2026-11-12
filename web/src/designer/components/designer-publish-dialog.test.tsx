@@ -12,7 +12,6 @@ const renderDialog = (
     <DesignerPublishDialog
       open
       mode="project"
-      intent="stay"
       busy={false}
       animationDuration={0}
       onCancel={vi.fn()}
@@ -23,22 +22,43 @@ const renderDialog = (
 
 describe('DesignerPublishDialog', () => {
   it('warns about existing records only for surveys that have them', () => {
-    renderDialog({existingRecordCount: 3});
+    renderDialog({existingRecordCount: 33});
+    const warning = screen.getByTestId('web-designer-publish-records-warning');
+    expect(warning.textContent).toMatch(
+      new RegExp(`Users have collected data in this ${config.notebookName}`)
+    );
+    expect(warning.textContent).toMatch(/33 records/);
+    expect(warning.textContent).toMatch(/loss of this data/i);
     expect(
       screen.getByText(
-        new RegExp(`This ${config.notebookName} has existing records`)
+        new RegExp(
+          `Publishing these changes updates the live ${config.notebookName}`
+        )
       )
     ).toBeTruthy();
-    expect(screen.getByText(/loss of existing data/i)).toBeTruthy();
+  });
+
+  it('singularises the record count in the warning banner', () => {
+    renderDialog({existingRecordCount: 1});
+    expect(
+      screen.getByTestId('web-designer-publish-records-warning').textContent
+    ).toMatch(/1 record(?!s)/);
   });
 
   it('does not warn when the survey has no collected records', () => {
     renderDialog({existingRecordCount: 0});
     expect(
-      screen.getByText(/field users will receive this design/i)
+      screen.getByText(
+        new RegExp(
+          `Users will receive this ${config.notebookName} when they reopen or refresh the app`
+        )
+      )
     ).toBeTruthy();
-    expect(screen.queryByText(/has existing records/i)).toBeNull();
-    expect(screen.queryByText(/loss of existing data/i)).toBeNull();
+    expect(
+      screen.queryByTestId('web-designer-publish-records-warning')
+    ).toBeNull();
+    expect(screen.queryByText(/collected data/i)).toBeNull();
+    expect(screen.queryByText(/loss of this data/i)).toBeNull();
   });
 
   it('adds a live-design-changed sentence when the draft is stale', () => {
@@ -60,9 +80,17 @@ describe('DesignerPublishDialog', () => {
   it('does not warn for templates, even if a record count is supplied', () => {
     renderDialog({mode: 'template', existingRecordCount: 12});
     expect(
-      screen.getByText(/existing projects created from it are not/i)
+      screen.getByText(
+        new RegExp(
+          `existing ${config.notebookNamePlural} created from it are not`,
+          'i'
+        )
+      )
     ).toBeTruthy();
-    expect(screen.queryByText(/has existing records/i)).toBeNull();
-    expect(screen.queryByText(/loss of existing data/i)).toBeNull();
+    expect(
+      screen.queryByTestId('web-designer-publish-records-warning')
+    ).toBeNull();
+    expect(screen.queryByText(/collected data/i)).toBeNull();
+    expect(screen.queryByText(/loss of this data/i)).toBeNull();
   });
 });

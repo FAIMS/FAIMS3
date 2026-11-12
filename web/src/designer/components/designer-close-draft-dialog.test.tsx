@@ -4,8 +4,15 @@ import {fireEvent, render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {DesignerCloseDraftDialog} from './designer-close-draft-dialog';
 
+const ACTION_NAMES = [
+  'Publish changes',
+  'Save draft & exit',
+  'Discard & exit',
+  'Cancel',
+] as const;
+
 describe('DesignerCloseDraftDialog', () => {
-  it('offers publish, keep-draft, keep-working, and discard actions', () => {
+  it('offers publish, save-draft, discard, and cancel actions', () => {
     const onPublishNow = vi.fn();
     const onKeepEditing = vi.fn();
     const onCloseKeepDraft = vi.fn();
@@ -21,23 +28,17 @@ describe('DesignerCloseDraftDialog', () => {
       />
     );
 
-    for (const name of [
-      'Publish now',
-      'Close and keep draft',
-      'Keep working',
-      'Close and discard draft',
-    ]) {
-      expect(screen.getByRole('button', {name}).className).toMatch(
-        /MuiButton-outlined/
-      );
-    }
+    expect(
+      screen
+        .getAllByRole('button')
+        .filter(button => button.getAttribute('aria-label') !== 'close')
+        .map(button => button.textContent)
+    ).toEqual([...ACTION_NAMES]);
 
-    fireEvent.click(screen.getByRole('button', {name: 'Publish now'}));
-    fireEvent.click(screen.getByRole('button', {name: 'Close and keep draft'}));
-    fireEvent.click(screen.getByRole('button', {name: 'Keep working'}));
-    fireEvent.click(
-      screen.getByRole('button', {name: 'Close and discard draft'})
-    );
+    fireEvent.click(screen.getByRole('button', {name: 'Publish changes'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Save draft & exit'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Discard & exit'}));
     fireEvent.click(
       screen.getByTestId('web-designer-close-draft-dismiss-button')
     );

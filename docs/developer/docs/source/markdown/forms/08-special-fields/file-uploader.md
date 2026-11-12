@@ -56,11 +56,16 @@ sequenceDiagram
         FU->>FU: Show error message
     else Validation Passed
         DZ-->>FU: onDrop(files)
-        loop Each File
-            FU->>AS: addAttachment(blob)
-            AS-->>FU: attachmentId
+        FU->>FU: Reject SVG/HTML (type, extension, bytes)
+        alt Blocked upload
+            FU->>FU: Show blocked-upload error
+        else Allowed
+            loop Each File
+                FU->>AS: addAttachment(blob)
+                AS-->>FU: attachmentId
+            end
+            FU->>FU: Update field state
         end
-        FU->>FU: Update field state
     end
 ```
 

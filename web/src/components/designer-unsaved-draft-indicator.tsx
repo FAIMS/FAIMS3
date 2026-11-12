@@ -7,6 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {config} from '@/constants';
 
 /**
  * Actions-tab chip when this device has an unpublished designer draft.
@@ -14,13 +15,24 @@ import {
 export function DesignerUnsavedDraftIndicator({
   visible,
   stale = false,
+  resourceName = config.notebookName,
+  resourceNameCapitalized = config.notebookNameCapitalized,
 }: {
   visible: boolean;
   stale?: boolean;
+  resourceName?: string;
+  resourceNameCapitalized?: string;
 }) {
   if (!visible) {
     return null;
   }
+
+  const chipLabel = stale
+    ? 'unsafe changes - latest design has changed'
+    : 'Unpublished changes';
+  const tooltip = stale
+    ? `Another user has published a new version of the ${resourceName} while you are working on your draft. 'Edit ${resourceNameCapitalized}' to resolve this conflict.`
+    : `This device has an unpublished local draft. 'Edit ${resourceNameCapitalized}' to continue working or publish your changes.`;
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -40,18 +52,12 @@ export function DesignerUnsavedDraftIndicator({
                 className="h-1.5 w-1.5 rounded-full bg-current"
                 aria-hidden
               />
-              {stale
-                ? 'Unsaved changes — latest design has changed'
-                : 'Unsaved changes'}
+              {chipLabel}
             </Badge>
           </span>
         </TooltipTrigger>
         <TooltipContent className="max-w-sm">
-          <p>
-            {stale
-              ? 'This device has an unpublished local draft based on an older design. Open in Designer to download a backup, switch to the latest design, or keep working on your version.'
-              : 'This device has an unpublished local draft. Open in Designer to continue or publish.'}
-          </p>
+          <p>{tooltip}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

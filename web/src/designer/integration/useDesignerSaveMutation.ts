@@ -42,6 +42,7 @@ export class DesignerUiSpecConflictError extends Error {
   }
 }
 
+/** Quote a uiSpec hash for the If-Match header, or omit when unset. */
 export function quoteUiSpecIfMatch(hash?: string): string | undefined {
   if (!hash) {
     return undefined;
