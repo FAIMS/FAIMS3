@@ -64,7 +64,9 @@ session:
    together). Run it in a long-lived tmux session; it stays in the foreground.
 
 `./localdev.sh` / `./dev.sh` automate steps 1-6 but assume `nvm`; running the
-steps directly (as above) is more reliable in this VM. `./localdev.sh --all`
+steps directly (as above) is more reliable in this VM. `./dev.sh --no-spatial`
+skips RustFS and the spatial worker pool (steps 3's rustfs and step 5) and
+only starts CouchDB plus native api/app/web. `./localdev.sh --all`
 runs every service inside Docker instead of natively — slower and not needed
 for code work.
 
@@ -96,6 +98,8 @@ for code work.
   `RATE_LIMITER_ENABLED=false` and `ATTEMPT_LIMITER_ENABLED=false` in
   `api/.env` and restart the API. The former is the Express HTTP IP limiter;
   the latter gates CouchDB-backed email-code / verification-challenge limits.
+  Local-password lockout is a separate Couch-backed control
+  (`LOGIN_LOCKOUT_ENABLED`, default true; forced off in API unit tests).
 - Startup migration lock (`STARTUP_MIGRATION_LOCK_ENABLED`) defaults **off**.
   That avoids a 30-minute wait after a killed `pnpm run dev` reload left a
   `running` lock. Clustered / multi-replica production MUST set it `true`

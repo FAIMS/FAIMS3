@@ -49,8 +49,8 @@ export function DesignerUnsavedDraftIndicator({
         <TooltipContent className="max-w-sm">
           <p>
             {stale
-              ? 'This device has an unpublished local draft based on an older design. Open in Editor to download a backup, switch to the latest design, or keep working on your version.'
-              : 'This device has an unpublished local draft. Open in Editor to continue or publish.'}
+              ? 'This device has an unpublished local draft based on an older design. Open in Designer to download a backup, switch to the latest design, or keep working on your version.'
+              : 'This device has an unpublished local draft. Open in Designer to continue or publish.'}
           </p>
         </TooltipContent>
       </Tooltip>

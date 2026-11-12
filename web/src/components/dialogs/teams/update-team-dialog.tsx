@@ -10,18 +10,12 @@ import {
 import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTeam} from '@/hooks/queries';
 import {ErrorComponent} from '@tanstack/react-router';
-import {LoaderCircleIcon} from 'lucide-react';
-import React, {useState} from 'react';
+import {LoaderCircleIcon, Pencil} from 'lucide-react';
+import {useState} from 'react';
 import {UpdateTeamForm} from '../../forms/teams/update-team-form';
 import {Button} from '../../ui/button';
 
-export const UpdateTeamDialog = ({
-  teamId,
-  buttonContent,
-}: {
-  teamId: string;
-  buttonContent?: React.ReactNode;
-}) => {
+export const UpdateTeamDialog = ({teamId}: {teamId: string}) => {
   const user = useRequiredUser();
   const {data, isLoading, isError} = useGetTeam({user, teamId});
   const [open, setOpen] = useState(false);
@@ -31,9 +25,11 @@ export const UpdateTeamDialog = ({
       <DialogTrigger asChild className="w-fit">
         <Button
           variant="outline"
-          className="bg-primary text-primary-foreground"
+          disabled={isLoading}
+          data-testid="web-team-edit-details-button"
         >
-          {buttonContent ?? 'Update Team'}
+          Edit name &amp; description
+          <Pencil className="ml-1 h-4 w-4" aria-hidden />
         </Button>
       </DialogTrigger>
       <DialogContent>

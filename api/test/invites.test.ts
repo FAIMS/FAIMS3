@@ -50,7 +50,7 @@ import {
   isInviteValid,
 } from '../src/couchdb/invites';
 import {createNotebook, updateProjectMetadata} from '../src/couchdb/notebooks';
-import {createTeamDocument} from '../src/couchdb/teams';
+import {archiveTeam, createTeamDocument} from '../src/couchdb/teams';
 import {
   getCouchUserFromEmailOrUserId,
   getExpressUserFromEmailOrUserId,
@@ -725,6 +725,53 @@ describe('Invite Tests', () => {
       expect(response.body.role).toBe(Role.TEAM_MEMBER);
       expect(response.body.name).toBe('Team API Invite');
       expect(response.body.usesOriginal).toBe(10);
+    });
+
+    it('refuses create and redeem of team invites while the team is archived', async () => {
+      const team = await createTeamDocument({
+        name: 'Archived Invite Team',
+        description: 'A team for archive invite tests',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        createdBy: 'admin',
+      });
+
+      const invite = await createResourceInvite({
+        resourceType: Resource.TEAM,
+        resourceId: team._id,
+        role: Role.TEAM_MEMBER,
+        name: 'Pre-archive invite',
+        createdBy: 'admin',
+        usesOriginal: 1,
+      });
+
+      await archiveTeam(team._id, true);
+
+      const createRes = await request(app)
+        .post(`/api/invites/team/${team._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          role: Role.TEAM_MEMBER,
+          name: 'Should not create',
+        });
+      expect(createRes.status).toBe(400);
+
+      const redeemRes = await request(app)
+        .post(`/api/invites/${invite._id}/use`)
+        .set('Authorization', `Bearer ${localUserToken}`);
+      expect(redeemRes.status).toBe(400);
+
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
+      expect(
+        localUser?.teamRoles?.some(
+          r => r.resourceId === team._id && r.role === Role.TEAM_MEMBER
+        )
+      ).toBeFalsy();
+
+      await request(app)
+        .get(`/api/invites/team/${team._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
     });
 
     it('POST /api/invites/team/:teamId does not create team invite if role is not global', async () => {

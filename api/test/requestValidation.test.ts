@@ -180,6 +180,15 @@ describe('Request validation (express-zod-safe)', () => {
       expectValidationError(response.body, 'Query');
     });
 
+    it('rejects invalid includeArchived values on team list', async () => {
+      const response = await requestAuthAndType(
+        request(app).get('/api/teams').query({includeArchived: 'yes'}),
+        adminToken
+      ).expect(400);
+
+      expectValidationError(response.body, 'Query');
+    });
+
     it('rejects invalid filterDeleted on record metadata list', async () => {
       const projectId = await createNotebook({
         projectName: 'validation-records',

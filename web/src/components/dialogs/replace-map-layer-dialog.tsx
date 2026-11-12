@@ -27,9 +27,9 @@ export function ReplaceMapLayerDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline" disabled={disabled}>
+        <Button disabled={disabled}>
+          <Upload aria-hidden />
           Upload replacement
-          <Upload className="ml-1 h-4 w-4" aria-hidden />
         </Button>
       </DialogTrigger>
       <DialogContent

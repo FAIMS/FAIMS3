@@ -44,7 +44,7 @@ describe('projectStatusDisplay', () => {
     expect(display.className).not.toContain('text-destructive');
     expect(display.tooltip).toBe(projectStatusHelpText(ProjectStatus.ARCHIVED));
     expect(display.tooltip).toBe(
-      `This ${config.notebookName} is archived and hidden from default lists.`
+      `This ${config.notebookName} is archived and hidden from lists.`
     );
   });
 });

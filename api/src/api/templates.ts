@@ -43,7 +43,11 @@ import {
   withOwnedByTeamDisplayNames,
 } from '../couchdb/templates';
 import * as Exceptions from '../exceptions';
-import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
+import {
+  isAllowedToMiddleware,
+  requireAuthenticationAPI,
+  userCanDo,
+} from '../middleware';
 
 import {saveExpressUser} from '../couchdb/users';
 import patch from '../utils/patchExpressAsync';
@@ -264,6 +268,10 @@ api.put(
 
 /**
  * PUT change template owning team.
+ *
+ * Omitting `teamId` removes ownership and requires
+ * `REMOVE_TEMPLATE_FROM_TEAM` on the template. Reassigning to a team requires
+ * `CHANGE_TEMPLATE_TEAM`.
  */
 api.put(
   '/:id/team',
@@ -279,6 +287,21 @@ api.put(
     body: PutChangeTemplateTeamInputSchema,
   }),
   async (req, res: Response<PutUpdateTemplateResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    if (
+      !req.body.teamId &&
+      !userCanDo({
+        user: req.user,
+        action: Action.REMOVE_TEMPLATE_FROM_TEAM,
+        resourceId: req.params.id,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to remove team ownership from this template.'
+      );
+    }
     const updatedTemplate = await changeTemplateTeam(req.params.id, req.body);
     res.json(await withOwnedByTeamDisplayName(updatedTemplate));
   }

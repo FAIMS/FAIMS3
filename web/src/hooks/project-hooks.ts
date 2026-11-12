@@ -202,7 +202,7 @@ export const modifyTeamForProject = async ({
   user,
 }: {
   projectId: string;
-  teamId: string;
+  teamId?: string;
   user: User;
 }) =>
   await fetch(`${config.apiUrl}/api/notebooks/${projectId}/team`, {
@@ -211,7 +211,7 @@ export const modifyTeamForProject = async ({
       'Content-Type': 'application/json',
       Authorization: `Bearer ${user.token}`,
     },
-    body: JSON.stringify({teamId}),
+    body: JSON.stringify(teamId ? {teamId} : {}),
   });
 
 export const removeInviteForProject = async ({

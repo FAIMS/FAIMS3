@@ -26,6 +26,7 @@ import { Route as ProtectedProjectsProjectIdRouteImport } from './routes/_protec
 import { Route as ProtectedProfileLongLivedTokensRouteImport } from './routes/_protected/profile/long-lived-tokens'
 import { Route as ProtectedMapLayersAssetIdRouteImport } from './routes/_protected/map-layers/$assetId'
 import { Route as ProtectedAdminUsersRouteImport } from './routes/_protected/_admin/users'
+import { Route as ProtectedAdminStatsRouteImport } from './routes/_protected/_admin/stats'
 
 const ProtectedRoute = ProtectedRouteImport.update({
   id: '/_protected',
@@ -104,9 +105,15 @@ const ProtectedAdminUsersRoute = ProtectedAdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => ProtectedAdminRoute,
 } as any)
+const ProtectedAdminStatsRoute = ProtectedAdminStatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => ProtectedAdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof ProtectedIndexRoute
+  '/stats': typeof ProtectedAdminStatsRoute
   '/users': typeof ProtectedAdminUsersRoute
   '/map-layers/$assetId': typeof ProtectedMapLayersAssetIdRoute
   '/profile/long-lived-tokens': typeof ProtectedProfileLongLivedTokensRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof ProtectedIndexRoute
+  '/stats': typeof ProtectedAdminStatsRoute
   '/users': typeof ProtectedAdminUsersRoute
   '/map-layers/$assetId': typeof ProtectedMapLayersAssetIdRoute
   '/profile/long-lived-tokens': typeof ProtectedProfileLongLivedTokensRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteWithChildren
   '/_protected/_admin': typeof ProtectedAdminRouteWithChildren
   '/_protected/': typeof ProtectedIndexRoute
+  '/_protected/_admin/stats': typeof ProtectedAdminStatsRoute
   '/_protected/_admin/users': typeof ProtectedAdminUsersRoute
   '/_protected/map-layers/$assetId': typeof ProtectedMapLayersAssetIdRoute
   '/_protected/profile/long-lived-tokens': typeof ProtectedProfileLongLivedTokensRoute
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/stats'
     | '/users'
     | '/map-layers/$assetId'
     | '/profile/long-lived-tokens'
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/stats'
     | '/users'
     | '/map-layers/$assetId'
     | '/profile/long-lived-tokens'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/_protected'
     | '/_protected/_admin'
     | '/_protected/'
+    | '/_protected/_admin/stats'
     | '/_protected/_admin/users'
     | '/_protected/map-layers/$assetId'
     | '/_protected/profile/long-lived-tokens'
@@ -314,14 +326,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedAdminUsersRouteImport
       parentRoute: typeof ProtectedAdminRoute
     }
+    '/_protected/_admin/stats': {
+      id: '/_protected/_admin/stats'
+      path: '/stats'
+      fullPath: '/stats'
+      preLoaderRoute: typeof ProtectedAdminStatsRouteImport
+      parentRoute: typeof ProtectedAdminRoute
+    }
   }
 }
 
 interface ProtectedAdminRouteChildren {
+  ProtectedAdminStatsRoute: typeof ProtectedAdminStatsRoute
   ProtectedAdminUsersRoute: typeof ProtectedAdminUsersRoute
 }
 
 const ProtectedAdminRouteChildren: ProtectedAdminRouteChildren = {
+  ProtectedAdminStatsRoute: ProtectedAdminStatsRoute,
   ProtectedAdminUsersRoute: ProtectedAdminUsersRoute,
 }
 

@@ -32,6 +32,34 @@ This module contains the embedded notebook designer used by the web app.
 - `types/`
   - Shared designer type definitions (including condition types).
 
+## Condition field picker
+
+Condition editors (`components/condition/*`) do not each decide which
+fields appear in the picker. They call
+`web/src/hooks/use-condition-field-context.ts`
+(`useConditionRuleFieldContext`), which is the shared field-picker
+context for:
+
+- same-form fields
+- parent-record, linked-record, and notebook-metadata references
+- the selectable-field count used to disable the editor when nothing
+  can be referenced
+
+`ConditionModal` uses that count to decide whether the builder can open;
+`ConditionRuleInputs` uses the field map, search scope, and reference
+entries to populate the picker.
+
+Field and section conditions omit the target field (or the current
+section's fields) so a rule cannot depend on itself.
+
+Option-level conditions on MultiSelect pass `includeField`. The option
+is not a field, so the parent MultiSelect must stay in the picker —
+otherwise it cannot cascade inside one list. Select single (RadioGroup)
+omits the parent: a self-referencing option would only be visible while
+a different option is selected, then go stale the moment it is chosen.
+`FieldSearchScope.includeFieldId` in `features/field-search` is the
+corresponding flag.
+
 ## Undo/Redo Architecture
 
 - Undo/redo behavior is implemented once at the store layer with `redux-undo`:

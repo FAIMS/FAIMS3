@@ -14,7 +14,7 @@ export function projectStatusHelpText(status: ProjectStatus): string {
     case ProjectStatus.CLOSED:
       return `${config.notebookNameCapitalized} is read-only. Users will not be able to activate this ${config.notebookName} for data collection.`;
     case ProjectStatus.ARCHIVED:
-      return `This ${config.notebookName} is archived and hidden from default lists.`;
+      return `This ${config.notebookName} is archived and hidden from lists.`;
   }
 }
 

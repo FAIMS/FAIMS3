@@ -100,6 +100,99 @@ export const createTeamDocument = async (
   }
 };
 
+export const ARCHIVED_TEAM_MUTATION_MESSAGE =
+  'Cannot perform this action on an archived team. Restore the team from the Archive first.';
+
+/** Missing/undefined `archived` reads as active. */
+export function teamIsArchived(team: {archived?: boolean}): boolean {
+  return team.archived === true;
+}
+
+/**
+ * Fetches a team and rejects team-as-container mutations while it is archived.
+ */
+export const assertTeamNotArchived = async (
+  teamId: string
+): Promise<ExistingTeamsDBDocument> => {
+  const team = await getTeamById(teamId);
+  if (teamIsArchived(team)) {
+    throw new Exceptions.InvalidRequestException(
+      ARCHIVED_TEAM_MUTATION_MESSAGE
+    );
+  }
+  return team;
+};
+
+/**
+ * No-op when `teamId` is omitted or the team document does not exist.
+ * Rejects only when the team is present and archived, so callers that
+ * historically stored an unknown `ownedByTeamId` keep that behaviour.
+ */
+export const assertTeamIdNotArchived = async (
+  teamId: string | undefined
+): Promise<void> => {
+  if (!teamId) {
+    return;
+  }
+  try {
+    await assertTeamNotArchived(teamId);
+  } catch (error) {
+    if (error instanceof Exceptions.ItemNotFoundException) {
+      return;
+    }
+    throw error;
+  }
+};
+
+/**
+ * Archives or restores a team (top-level `archived` flag) and bumps `updatedAt`.
+ */
+export const archiveTeam = async (
+  teamId: string,
+  archive: boolean
+): Promise<ExistingTeamsDBDocument> => {
+  const teamsDb = getTeamsDB();
+  const existingTeam = await getTeamById(teamId);
+
+  const updatedDoc = {
+    ...existingTeam,
+    archived: archive,
+    updatedAt: Date.now(),
+  } satisfies TeamsDBDocument;
+
+  try {
+    await safeWriteDocument({db: teamsDb, data: updatedDoc});
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to archive a team. Exception ' +
+        e
+    );
+  }
+
+  try {
+    return (await teamsDb.get(teamId)) as ExistingTeamsDBDocument;
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to fetch the archived team.'
+    );
+  }
+};
+
+/**
+ * Restores an archived team. Rejected if the team is not archived.
+ */
+export const restoreTeamFromArchive = async (
+  teamId: string
+): Promise<ExistingTeamsDBDocument> => {
+  const team = await getTeamById(teamId);
+  if (!teamIsArchived(team)) {
+    throw new Exceptions.InvalidRequestException(
+      'Only archived teams can be restored.'
+    );
+  }
+  return archiveTeam(teamId, false);
+};
+
 /**
  * Updates an existing team in the teams database
  * @param teamId The ID of the team to update
@@ -112,11 +205,14 @@ export const updateTeam = async (
 ): Promise<ExistingTeamsDBDocument> => {
   const teamsDb = getTeamsDB();
 
-  // Fetch the existing team
+  // Fetch the existing team (and refuse while archived)
   let existingTeam;
   try {
-    existingTeam = await getTeamById(teamId);
+    existingTeam = await assertTeamNotArchived(teamId);
   } catch (e) {
+    if (e instanceof Exceptions.InvalidRequestException) {
+      throw e;
+    }
     throw new Exceptions.ItemNotFoundException(
       'An error occurred while trying to fetch an existing team in order to update. Are you sure the ID is correct?'
     );
@@ -150,7 +246,9 @@ export const updateTeam = async (
 };
 
 /**
- * Deletes a team from the teams database
+ * Deletes a team from the teams database.
+ * Callers must strip team membership roles first (see the teams API delete
+ * handler). This module cannot import users without an import cycle.
  * @param teamId The ID of the team to delete
  */
 export const deleteTeam = async (teamId: string): Promise<void> => {
@@ -163,6 +261,12 @@ export const deleteTeam = async (teamId: string): Promise<void> => {
   } catch (e) {
     throw new Exceptions.ItemNotFoundException(
       'An error occurred while trying to fetch an existing team in order to delete. Are you sure the ID is correct?'
+    );
+  }
+
+  if (!teamIsArchived(existingTeam)) {
+    throw new Exceptions.InvalidRequestException(
+      'Only archived teams can be permanently deleted. Archive the team first, then delete it from the Archive view.'
     );
   }
 
