@@ -427,9 +427,7 @@ describe('DesignerWidget publish', () => {
     expect(
       screen.getByRole('button', {name: 'Switch to latest version'})
     ).toBeTruthy();
-    expect(
-      screen.getByRole('button', {name: 'Download backup'})
-    ).toBeTruthy();
+    expect(screen.getByRole('button', {name: 'Download backup'})).toBeTruthy();
     expect(publishNotebook).toHaveBeenCalledTimes(1);
     expect(publishNotebook.mock.calls[0][1]).toEqual({ifMatch: HASH_A});
 

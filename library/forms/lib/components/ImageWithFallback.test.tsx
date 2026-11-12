@@ -39,4 +39,3 @@ describe('ImageWithFallback', () => {
     expect(screen.queryByText('Image preview not available')).toBeNull();
   });
 });
-
