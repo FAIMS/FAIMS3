@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import {Button, DialogContentText} from '@mui/material';
+import {Button} from '@mui/material';
 import {DesignerDecisionDialog} from './designer-decision-dialog';
 import {designerCancelButtonSx, designerDialogButtonSx} from './designer-style';
 
@@ -29,7 +29,6 @@ export function DesignerCloseDraftDialog({
       open={open}
       animationDuration={animationDuration}
       titleId="close-draft-dialog-title"
-      descriptionId="close-draft-dialog-description"
       title="You have unsaved changes."
       closeTestId="web-designer-close-draft-dismiss-button"
       onClose={onKeepEditing}
@@ -74,10 +73,6 @@ export function DesignerCloseDraftDialog({
           </Button>
         </>
       }
-    >
-      <DialogContentText id="close-draft-dialog-description">
-        Select an option to proceed.
-      </DialogContentText>
-    </DesignerDecisionDialog>
+    />
   );
 }

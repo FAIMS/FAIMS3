@@ -31,10 +31,7 @@ import {
   CameraPermissionIssue,
   PhotosPermissionIssue,
 } from '../../../components/PermissionAlerts';
-import {
-  AttachmentPreviewPlaceholder,
-  ImageWithFallback,
-} from '../../../components/ImageWithFallback';
+import {ImageWithFallback} from '../../../components/ImageWithFallback';
 import {PhotoLightbox} from '../../../components/PhotoLightbox';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
 import {FormFieldContextProps} from '../../../formModule/types';
@@ -690,15 +687,21 @@ const PhotoItem: React.FC<{
             }}
           />
         ) : (
-          <AttachmentPreviewPlaceholder
+          <Box
             data-testid="non-image-attachment"
-            icon={
-              <InsertDriveFileIcon
-                fontSize="large"
-                sx={{color: 'text.secondary'}}
-              />
-            }
+            sx={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 0.5,
+              p: 1,
+              cursor: 'default',
+            }}
           >
+            <InsertDriveFileIcon sx={{fontSize: 36, color: 'text.secondary'}} />
             <Typography
               variant="caption"
               sx={{
@@ -715,7 +718,7 @@ const PhotoItem: React.FC<{
             >
               Preview not available
             </Typography>
-          </AttachmentPreviewPlaceholder>
+          </Box>
         )}
         <ImageListItemBar
           sx={{background: 'rgba(0, 0, 0, 0.7)'}}

@@ -4,39 +4,6 @@ import {Box, Typography} from '@mui/material';
 import {SxProps, Theme} from '@mui/material/styles';
 import React, {useEffect, useState} from 'react';
 
-/** Tile layout for a broken image, non-image attachment, or similar placeholder. */
-export const attachmentPreviewPlaceholderSx = {
-  width: '100%',
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 0.5,
-  p: 1,
-  bgcolor: 'grey.100',
-  color: 'text.secondary',
-  cursor: 'default',
-} as const;
-
-/**
- * Inert tile used when an attachment cannot be shown as an image.
- */
-export const AttachmentPreviewPlaceholder: React.FC<{
-  icon: React.ReactNode;
-  children?: React.ReactNode;
-  'data-testid'?: string;
-  sx?: Exclude<SxProps<Theme>, ReadonlyArray<unknown>>;
-}> = ({icon, children, 'data-testid': testId, sx}) => (
-  <Box
-    data-testid={testId}
-    sx={[attachmentPreviewPlaceholderSx, ...(sx === undefined ? [] : [sx])]}
-  >
-    {icon}
-    {children}
-  </Box>
-);
-
 /**
  * `<img>` that swaps to an inert placeholder when the browser cannot
  * decode the bytes (wrong extension, corrupt raster, SVG labelled as PNG).
@@ -83,11 +50,27 @@ export const ImageWithFallback: React.FC<{
     // gallery, FileUploader thumbs). No intrinsic min size: view-mode photos
     // have no parent box, so the placeholder shrinks to the icon + caption.
     return (
-      <AttachmentPreviewPlaceholder
+      <Box
         data-testid="broken-image-thumbnail"
-        icon={<BrokenImageIcon fontSize="large" />}
-        sx={fallbackSx}
+        sx={[
+          {
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.5,
+            p: 1,
+            bgcolor: 'grey.100',
+            color: 'text.secondary',
+            cursor: 'default',
+            '& .MuiSvgIcon-root': {fontSize: 36},
+          },
+          ...(fallbackSx === undefined ? [] : [fallbackSx]),
+        ]}
       >
+        <BrokenImageIcon />
         {fallbackLabel ? (
           <Typography
             variant={fallbackTypographyVariant}
@@ -96,7 +79,7 @@ export const ImageWithFallback: React.FC<{
             {fallbackLabel}
           </Typography>
         ) : null}
-      </AttachmentPreviewPlaceholder>
+      </Box>
     );
   }
 

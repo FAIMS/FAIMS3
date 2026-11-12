@@ -27,7 +27,7 @@ type DesignerDecisionDialogProps = {
   closeDisabled?: boolean;
   busy?: boolean;
   onClose?: () => void;
-  children: ReactNode;
+  children?: ReactNode;
   actions: ReactNode;
   actionsSx?: SxProps<Theme>;
   titleSx?: SxProps<Theme>;
@@ -82,7 +82,9 @@ export function DesignerDecisionDialog({
           data-testid={closeTestId}
         />
       </DialogTitle>
-      <DialogContent sx={designerDialogContentSx}>{children}</DialogContent>
+      {children ? (
+        <DialogContent sx={designerDialogContentSx}>{children}</DialogContent>
+      ) : null}
       <DialogActions
         sx={
           (actionsSx

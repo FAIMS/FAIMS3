@@ -34,6 +34,7 @@ describe('DesignerCloseDraftDialog', () => {
         .filter(button => button.getAttribute('aria-label') !== 'close')
         .map(button => button.textContent)
     ).toEqual([...ACTION_NAMES]);
+    expect(screen.queryByText(/Select an option to proceed/i)).toBeNull();
 
     fireEvent.click(screen.getByRole('button', {name: 'Publish changes'}));
     fireEvent.click(screen.getByRole('button', {name: 'Save draft & exit'}));
