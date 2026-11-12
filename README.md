@@ -377,6 +377,16 @@ Seed personas, notebook defaults, and role matrix are documented in
 [Test Dataset Seeding](docs/developer/docs/source/markdown/TestDatasetSeeding.md).
 Copy matching credentials into `e2e/.env` from `e2e/.env.dist` when running e2e.
 
+To fill Control Centre lists for pagination testing (100 teams, templates,
+surveys, and users), from `api/`:
+
+```bash
+pnpm seed-pagination-dataset
+```
+
+That script refuses to run unless the Couch/Conductor URL looks like a
+development target (`localhost`, `http://`, or `dev`).
+
 ### End-to-end tests
 
 Browser e2e lives in [`e2e/`](e2e/) (WebdriverIO 9 + Mocha). With CouchDB,

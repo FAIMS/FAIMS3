@@ -32,6 +32,7 @@
     "migrate-test-backup-ui-specs": "tsx src/scripts/migrateBackupNotebookSchema.ts --replace test/backup-short.jsonl test/backup.jsonl",
     "migrate-notebook-json": "tsx src/scripts/migrateNotebookJson.ts",
     "seed-test-dataset": "env-cmd tsx src/scripts/seedTestDataset.ts",
+    "seed-pagination-dataset": "env-cmd tsx src/scripts/seedPaginationDataset.ts",
     "debug-migration-lock": "env-cmd tsx scripts/debugMigrationLock.ts",
     "generate-example-geojson": "tsx src/scripts/exampleGeoJSONGenerator.ts",
     "build-geojson-test-suite": "tsx src/scripts/buildGeojsonTestSuite.ts",

@@ -6,10 +6,11 @@ _How to add and configure an Upload a file field in the {{Notebook}} Editor._
 
 ## What This Field Does
 
-An Attach File field provides general-purpose file upload, accepting any
-file type without restriction — PDFs, spreadsheets, audio recordings,
-sketches, scanned documents, or data files. It supports drag-and-drop on
-desktop and integrates with platform-native file pickers on mobile.
+An Attach File field provides general-purpose file upload, accepting most
+file types — PDFs, spreadsheets, audio recordings, sketches, scanned
+documents, or data files. SVG and HTML files cannot be uploaded. It
+supports drag-and-drop on desktop and integrates with platform-native
+file pickers on mobile.
 Use it when you need to attach reference material, lab results, or any
 non-photographic media to a record.
 
@@ -64,5 +65,5 @@ Annotation, Uncertainty, Conditions, and Copy value to new records — see
   small or defer uploads to when connectivity improves. Files are
   queued locally and synced when a connection is available.
 - **Good for**: scanned field notes, lab results, reference documents,
-  audio recordings of oral descriptions, or any file type that does
-  not need camera integration.
+  audio recordings of oral descriptions, or files that do not need
+  camera integration.

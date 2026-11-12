@@ -319,6 +319,25 @@ valid for the persona.
 
 ---
 
+## Pagination fixtures
+
+`seed-pagination-dataset` is a separate volume script for Control Centre
+list pagination. It upserts 100 teams, templates, surveys, and users with
+stable IDs (`team_bulk_001` … `bulk-user-001@faims.test`). It is idempotent
+and does not replace the permission-testing dataset above.
+
+From `api/`:
+
+```bash
+pnpm run seed-pagination-dataset
+```
+
+Override the count with `BULK_SEED_COUNT`. The script refuses to run unless
+`COUCHDB_INTERNAL_URL` / `CONDUCTOR_PUBLIC_URL` look like a development
+target (`localhost`, `http://`, or `dev` in the URL).
+
+---
+
 ## Related Documentation
 
 - [Permissions Model](PermissionModel.md) — detailed description of roles,

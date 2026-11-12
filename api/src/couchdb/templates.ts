@@ -98,6 +98,7 @@ export const getTemplates = async ({
   }
 };
 
+/** One GET /api/templates page: visible rows plus optional `nextStartKey`. */
 export type PaginatedTemplateList = {
   templates: TemplateListItem[];
   nextStartKey?: string;

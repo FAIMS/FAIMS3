@@ -219,11 +219,11 @@ For other files: Download prompt
 
 ## View Mode
 
-Currently uses default renderer:
+Uses the specialised `FileUploaderRender` (thumbnails for displayable raster types, icon cards otherwise):
 
 ```typescript
 view: {
-  component: DefaultRenderer,
+  component: FileUploaderRender,
   config: {},
 }
 ```
@@ -290,12 +290,13 @@ const fileUploaderSchemaFunction = (props: FileUploaderProps) => {
 
 ## Error Messages
 
-| Condition      | Message                                       |
-| -------------- | --------------------------------------------- |
-| File too large | "File is too large. Maximum size: {size}"     |
-| File too small | "File is too small. Minimum size: {size}"     |
-| Too many files | "Maximum {n} files allowed"                   |
-| Upload failed  | "Failed to upload file(s). Please try again." |
+| Condition      | Message                                                    |
+| -------------- | ---------------------------------------------------------- |
+| File too large | "File is too large. Maximum size: {size}"                  |
+| File too small | "File is too small. Minimum size: {size}"                  |
+| Too many files | "Maximum {n} files allowed"                                |
+| SVG or HTML    | `"{filename}": SVG and HTML files cannot be uploaded.`     |
+| Upload failed  | "Failed to upload file(s). Please try again."              |
 
 ## Dependencies
 
