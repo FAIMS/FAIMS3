@@ -67,6 +67,27 @@ function samePublishedFacing(
 }
 
 /**
+ * True when localStorage already has this session's published snapshot and
+ * hash. Draft JSON matching `lastWrittenRef` is not enough after publish:
+ * `published` / `publishedHash` can change without the export changing.
+ */
+function isStoredDraftAlignedWithSession(
+  identity: DesignerSessionIdentity | undefined,
+  publishedHash: string | undefined
+): boolean {
+  if (!identity) {
+    return true;
+  }
+  const stored = getDraft(identity);
+  return Boolean(
+    stored &&
+    publishedHash &&
+    stored.publishedHash === publishedHash &&
+    !isUnpublishedDraft(stored.draft, stored.published)
+  );
+}
+
+/**
  * Map write status, unpublished compare, and in-session publish onto the
  * toolbar indicator.
  */
@@ -238,13 +259,16 @@ export function useDesignerDraftSession({
     setExportSignature(signature);
     setDebouncePending(false);
 
-    if (signature === lastWrittenRef.current) {
+    const currentIdentity = identityRef.current;
+    if (
+      signature === lastWrittenRef.current &&
+      isStoredDraftAlignedWithSession(currentIdentity, publishedHashRef.current)
+    ) {
       setWriteStatus('saved');
       setErrorMessage(undefined);
       return {ok: true};
     }
 
-    const currentIdentity = identityRef.current;
     if (!currentIdentity) {
       lastWrittenRef.current = signature;
       setWriteStatus('saved');
@@ -367,6 +391,11 @@ export function useDesignerDraftSession({
 
   const markPublished = useCallback(
     (snapshot: Notebook, nextPublishedHash?: string) => {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      setDebouncePending(false);
       publishedRef.current = snapshot;
       setPublished(snapshot);
       if (nextPublishedHash) {
@@ -379,6 +408,16 @@ export function useDesignerDraftSession({
       setWriteStatus('saved');
       setHasPublishedThisSession(true);
       setErrorMessage(undefined);
+
+      const currentIdentity = identityRef.current;
+      const publishedHash = publishedHashRef.current;
+      if (currentIdentity && publishedHash && !discardedRef.current) {
+        setDraft(currentIdentity, {
+          draft: snapshot,
+          published: snapshot,
+          publishedHash,
+        });
+      }
     },
     []
   );

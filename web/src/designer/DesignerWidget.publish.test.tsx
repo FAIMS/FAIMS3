@@ -10,6 +10,7 @@ import {DesignerWidget} from './DesignerWidget';
 import {toPublishedNotebook} from './domain/notebook/adapters';
 import {
   discardDraft,
+  getDesignerDraftHostStatus,
   getDraft,
   setDraft,
   type DesignerDraftKey,
@@ -167,6 +168,29 @@ describe('DesignerWidget publish', () => {
     expect(screen.getByTestId('web-designer-draft-status').textContent).toBe(
       `${config.notebookNameCapitalized} published`
     );
+  });
+
+  it('aligns the stored draft with the new live hash so close does not look stale', async () => {
+    seedUnpublishedDraft();
+    const {publishNotebook} = renderWidget({liveUiSpecHash: HASH_A});
+    publishNotebook.mockResolvedValue({
+      uiSpecProperties: {hash: HASH_B},
+    });
+
+    const publish = await screen.findByTestId('web-designer-save-button');
+    await waitFor(() => expect(isButtonDisabled(publish)).toBe(false));
+    fireEvent.click(publish);
+    fireEvent.click(
+      await screen.findByTestId('web-designer-publish-confirm-button')
+    );
+
+    await waitFor(() => expect(publishNotebook).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(getDraft(identity)?.publishedHash).toBe(HASH_B)
+    );
+    expect(
+      getDesignerDraftHostStatus(identity, {uiSpecHash: HASH_B})
+    ).toEqual({unpublished: false, stale: false});
   });
 
   it('uses template confirmation copy in template mode', async () => {

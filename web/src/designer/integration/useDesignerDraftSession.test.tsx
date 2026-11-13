@@ -72,7 +72,9 @@ function Harness({
       <button
         type="button"
         data-testid="mark-published"
-        onClick={() => session.markPublished(session.exportPresentNotebook())}
+        onClick={() =>
+          session.markPublished(session.exportPresentNotebook(), publishedHash)
+        }
       >
         Publish
       </button>
@@ -130,6 +132,53 @@ describe('useDesignerDraftSession', () => {
     expect(screen.getByTestId('status').textContent).toBe(
       `${config.notebookNameCapitalized} published`
     );
+  });
+
+  it('rewrites the stored snapshot and hash after publish so the live design is not stale', () => {
+    vi.useFakeTimers();
+    const nextHash = 'b'.repeat(64);
+    const store = createDesignerStore(historyFromSample());
+    const published = toPublishedNotebook(store.getState().notebook);
+    const {result} = renderHook(() =>
+      useDesignerDraftSession({
+        store,
+        identity,
+        initialPublished: published,
+        publishedHash: LIVE_HASH,
+      })
+    );
+
+    act(() => {
+      editFieldLabel(store, 'Ready to publish');
+    });
+    act(() => {
+      vi.advanceTimersByTime(AUTOSAVE_DEBOUNCE_MS);
+    });
+    expect(getDraft(identity)?.publishedHash).toBe(LIVE_HASH);
+    expect(
+      getDraft(identity)?.published.uiSpec.fields['New-Text-Field'][
+        'component-parameters'
+      ].label
+    ).not.toBe('Ready to publish');
+
+    act(() => {
+      result.current.markPublished(
+        result.current.exportPresentNotebook(),
+        nextHash
+      );
+    });
+
+    const stored = getDraft(identity);
+    expect(stored?.publishedHash).toBe(nextHash);
+    expect(
+      stored?.draft.uiSpec.fields['New-Text-Field']['component-parameters']
+        .label
+    ).toBe('Ready to publish');
+    expect(
+      stored?.published.uiSpec.fields['New-Text-Field']['component-parameters']
+        .label
+    ).toBe('Ready to publish');
+    expect(result.current.isUnpublished).toBe(false);
   });
 
   it('persists the live uiSpec hash with the draft', () => {
