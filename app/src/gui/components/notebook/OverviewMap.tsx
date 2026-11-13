@@ -16,18 +16,12 @@ import {
   formatTimestamp,
 } from '@faims3/data-model';
 import {
-  applyRecordFormLayerPaint,
-  applyRecordFormLayerPatch,
-  buildRecordFormLayers,
-  contextualVectorStyle,
-  defaultRecordFormLayerPrefs,
-  formIdFromRecordFormLayerId,
+  emptyRecordFormMapLayers,
   MapComponent,
-  prefsFromRecordFormLayer,
-  readRecordFormLayerPrefs,
-  selectedVectorStyle,
-  writeRecordFormLayerPrefs,
-  type RecordFormLayerPatch,
+  RecordFormMapLayersContext,
+  recordFormLayerDescriptors,
+  useRecordFormLayerList,
+  useRecordFormLayersPlot,
 } from '@faims3/forms';
 import {
   Alert,
@@ -41,23 +35,20 @@ import {
 } from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {Extent} from 'ol/extent';
-import {FeatureLike} from 'ol/Feature';
-import GeoJSON from 'ol/format/GeoJSON';
-import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
-import {transformExtent} from 'ol/proj';
-import VectorSource from 'ol/source/Vector';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {useNotebookRoute} from '../../../context/notebookRoute';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
-import {
-  groupRecordFeaturesByForm,
-  recordFeatureSyncKey,
-  useRecordFeatures,
-  type RecordFeatureProps,
-} from './recordFeatures';
+import {useRecordFeatures, type RecordFeatureProps} from './recordFeatures';
 
 interface OverviewMapProps {
   /** Notebook UI spec (compiled fields/views + settings / schemaVersion for {@link DataEngine}). */
@@ -83,28 +74,6 @@ interface SelectedRecordPopoverContentProps {
 /** Short time which is used for various checks in the file, including guarding
  * the popover button, and for tap detection. */
 const SHORT_WAIT_CONSTANT = 400;
-
-/**
- * True when two form-id → bbox maps have the same keys and extents.
- * Used to skip overview-map recentering when the record set did not move.
- */
-function formExtentsEqual(
-  left: Record<string, [number, number, number, number]>,
-  right: Record<string, [number, number, number, number]>
-): boolean {
-  const leftKeys = Object.keys(left);
-  const rightKeys = Object.keys(right);
-  if (leftKeys.length !== rightKeys.length) {
-    return false;
-  }
-  return leftKeys.every(key => {
-    const a = left[key];
-    const b = right[key];
-    return (
-      !!b && a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3]
-    );
-  });
-}
 
 const SelectedRecordPopoverContent = ({
   feature,
@@ -265,26 +234,14 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const [formExtents, setFormExtents] = useState<
     Record<string, [number, number, number, number]>
   >({});
-  const [recordLayerPrefs, setRecordLayerPrefs] = useState(() =>
-    readRecordFormLayerPrefs(project_id)
-  );
 
   // When the popover was opened (timestamp). Used to ignore immediate backdropClick from the same touch.
   const popoverOpenedAtRef = useRef<number>(0);
-  // Ref so the vector layer style function can read current selection and highlight it
-  const selectedFeatureRef = useRef<RecordFeatureProps | null>(null);
-  const layersByFormRef = useRef(
-    new globalThis.Map<string, VectorLayer<VectorSource>>()
-  );
 
   const mapConfig = getMapConfig();
 
   // Only forms configured to display on the overview map: this tab's own scope
   const overviewMapTypes = useMemo(() => getOverviewMapTypes(uiSpec), [uiSpec]);
-
-  useEffect(() => {
-    setRecordLayerPrefs(readRecordFormLayerPrefs(project_id));
-  }, [project_id]);
 
   // The records' GIS features, plus the hook's memoized data engine and GIS
   // field list
@@ -314,189 +271,61 @@ export const OverviewMap = (props: OverviewMapProps) => {
       ? lastCollectionRef.current
       : featureCollection;
 
-  const recordFormDescriptors = useMemo(() => {
-    if (!plottedCollection) {
-      return [];
-    }
-    const formIds = [
-      ...new Set(
-        plottedCollection.features
-          .map(feature => feature.properties.form_id)
-          .filter(Boolean)
-      ),
-    ].sort();
-    return formIds.map(formId => ({
-      formId,
-      name: uiSpec.viewsets[formId]?.label ?? formId,
-      extent4326: formExtents[formId],
-    }));
-  }, [formExtents, plottedCollection, uiSpec]);
-
-  const recordLayers = useMemo(
+  const recordFormDescriptors = useMemo(
     () =>
-      buildRecordFormLayers(
-        recordFormDescriptors,
-        recordLayerPrefs,
-        overviewMapTypes
+      recordFormLayerDescriptors(
+        plottedCollection,
+        formId => uiSpec.viewsets[formId]?.label ?? formId,
+        formExtents
       ),
-    [overviewMapTypes, recordFormDescriptors, recordLayerPrefs]
+    [formExtents, plottedCollection, uiSpec]
   );
-  const recordLayersRef = useRef(recordLayers);
-  recordLayersRef.current = recordLayers;
 
-  const updateRecordLayer = useCallback(
-    (id: string, patch: RecordFormLayerPatch) => {
-      setRecordLayerPrefs(current => {
-        const layer = recordLayersRef.current.find(item => item.id === id);
-        const formId = layer?.formId ?? formIdFromRecordFormLayerId(id) ?? id;
-        const fallback = layer
-          ? prefsFromRecordFormLayer(layer)
-          : defaultRecordFormLayerPrefs(formId, overviewMapTypes, 0);
-        const next = applyRecordFormLayerPatch(current, id, patch, fallback);
-        writeRecordFormLayerPrefs(project_id, next);
-        return next;
-      });
+  // Same RecordFormMapLayersContext MapWrapper reads in the collection popup
+  // (`map-record-form-prefs:<projectId>`). Isolated tests without a notebook
+  // provider keep a local list so OverviewMap.test.tsx stays self-contained.
+  const sharedRecordMapLayers = useContext(RecordFormMapLayersContext);
+  const hasSharedRecordLayers =
+    sharedRecordMapLayers !== emptyRecordFormMapLayers;
+  const localRecordFormList = useRecordFormLayerList({
+    projectId: project_id,
+    descriptors: recordFormDescriptors,
+    colorFormIds: overviewMapTypes,
+  });
+  const updateRecordLayer = hasSharedRecordLayers
+    ? sharedRecordMapLayers.updateRecordLayer
+    : localRecordFormList.updateRecordLayer;
+  const resetRecordLayers = hasSharedRecordLayers
+    ? sharedRecordMapLayers.resetRecordLayers
+    : localRecordFormList.resetRecordLayers;
+  const recordLayers = hasSharedRecordLayers
+    ? sharedRecordMapLayers.recordLayers.map(layer => {
+        const extent = formExtents[layer.formId];
+        return extent ? {...layer, extent4326: extent} : layer;
+      })
+    : localRecordFormList.recordLayers;
+
+  const handleFormExtents = useCallback(
+    (extents: Record<string, [number, number, number, number]>) => {
+      setFormExtents(extents);
     },
-    [overviewMapTypes, project_id]
+    []
   );
-
-  const resetRecordLayers = useCallback(() => {
-    writeRecordFormLayerPrefs(project_id, {});
-    setRecordLayerPrefs({});
-  }, [project_id]);
-
-  useEffect(() => {
-    selectedFeatureRef.current = selectedFeature;
-    for (const layer of layersByFormRef.current.values()) {
-      layer.changed();
-    }
-  }, [selectedFeature]);
-
-  const plottedCollectionRef = useRef(plottedCollection);
-  plottedCollectionRef.current = plottedCollection;
-  const plottedSyncKey = recordFeatureSyncKey(plottedCollection);
-
-  useEffect(() => {
-    const collection = plottedCollectionRef.current;
-    if (!map || !collection || collection.features.length === 0) {
-      return;
-    }
-
-    const grouped = groupRecordFeaturesByForm(collection);
-    const formIds = new Set(grouped.keys());
-    const geoJson = new GeoJSON();
-    const nextExtents: Record<string, [number, number, number, number]> = {};
-    let overallExtent: Extent | undefined;
-
-    for (const [formId, layer] of layersByFormRef.current) {
-      if (!formIds.has(formId)) {
-        map.removeLayer(layer);
-        layersByFormRef.current.delete(formId);
-      }
-    }
-
-    for (const [formId, collection] of grouped) {
-      let layer = layersByFormRef.current.get(formId);
-      if (!layer) {
-        layer = new VectorLayer({
-          source: new VectorSource(),
-          style: (olFeature: FeatureLike) => {
-            const spec =
-              recordLayersRef.current.find(item => item.formId === formId) ??
-              defaultRecordFormLayerPrefs(formId, overviewMapTypes, 0);
-            const recordId = olFeature.get('record_id') as string | undefined;
-            const revisionId = olFeature.get('revision_id') as
-              | string
-              | undefined;
-            const selected = selectedFeatureRef.current;
-            const isSelected = Boolean(
-              selected &&
-              recordId === selected.record_id &&
-              revisionId === selected.revision_id
-            );
-            return isSelected
-              ? selectedVectorStyle(spec)
-              : contextualVectorStyle(spec);
-          },
-        });
-        map.addLayer(layer);
-        layersByFormRef.current.set(formId, layer);
-      }
-
-      const source = layer.getSource();
-      if (!source) {
-        continue;
-      }
-      source.clear();
-      try {
-        const parsedFeatures = geoJson.readFeatures(collection, {
-          dataProjection: 'EPSG:4326',
-          featureProjection: map.getView().getProjection(),
-        });
-        source.addFeatures(parsedFeatures);
-        const sourceExtent = source.getExtent();
-        if (
-          sourceExtent &&
-          !sourceExtent.some((val: number) => !isFinite(val))
-        ) {
-          const extent = transformExtent(
-            sourceExtent,
-            map.getView().getProjection(),
-            'EPSG:4326'
-          );
-          if (!extent.some((val: number) => !isFinite(val))) {
-            nextExtents[formId] = extent as [number, number, number, number];
-            overallExtent = overallExtent
-              ? [
-                  Math.min(overallExtent[0], extent[0]),
-                  Math.min(overallExtent[1], extent[1]),
-                  Math.max(overallExtent[2], extent[2]),
-                  Math.max(overallExtent[3], extent[3]),
-                ]
-              : extent;
-          }
-        }
-      } catch (error) {
-        console.error('Failed to parse GeoJSON features:', error);
-      }
-
-      const spec = recordLayersRef.current.find(item => item.formId === formId);
-      if (spec) {
-        applyRecordFormLayerPaint(layer, spec);
-      }
-    }
-
-    setFormExtents(current =>
-      formExtentsEqual(current, nextExtents) ? current : nextExtents
-    );
+  const handleOverallExtent = useCallback((extent: Extent) => {
     // Fit the view only the first time features exist. Later syncs refresh
-    // the vector sources above; re-fitting here is what makes the map jump.
-    if (overallExtent) {
-      setFeaturesExtent(current => current ?? overallExtent);
-    }
-  }, [map, overviewMapTypes, plottedSyncKey]);
+    // the vector sources; re-fitting here is what makes the map jump.
+    setFeaturesExtent(current => current ?? extent);
+  }, []);
 
-  useEffect(() => {
-    return () => {
-      if (!map) {
-        return;
-      }
-      for (const layer of layersByFormRef.current.values()) {
-        map.removeLayer(layer);
-      }
-      layersByFormRef.current.clear();
-    };
-  }, [map]);
-
-  useEffect(() => {
-    for (const spec of recordLayers) {
-      const layer = layersByFormRef.current.get(spec.formId);
-      if (layer) {
-        applyRecordFormLayerPaint(layer, spec);
-        layer.changed();
-      }
-    }
-  }, [recordLayers]);
+  useRecordFormLayersPlot({
+    map,
+    collection: plottedCollection,
+    recordLayers,
+    overviewMapTypes,
+    selectedFeature,
+    onFormExtents: handleFormExtents,
+    onOverallExtent: handleOverallExtent,
+  });
 
   useEffect(() => {
     if (!map) {

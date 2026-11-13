@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Per-form record geometry layers on the notebook overview map.
- * Paint prefs are stored per project so hide/show and style survive reloads.
+ * Per-form record geometry layers on the notebook overview map and the
+ * collection-popup map. Paint prefs are stored per project so hide/show and
+ * style survive reloads and stay in sync across both maps.
  */
 
 import type {ContextualMapLayerPatch} from './contextualMapLayers';
