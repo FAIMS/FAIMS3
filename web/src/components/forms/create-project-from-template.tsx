@@ -3,7 +3,7 @@ import {Field, Form} from '@/components/form';
 import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {useGetTeams, useGetTemplate} from '@/hooks/queries';
+import {useGetTemplate} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {Action, PostCreateNotebookInput} from '@faims3/data-model';
 import {
@@ -25,10 +25,10 @@ import {TemplateOwnerCallout} from './template-owner-callout';
 import {
   buildTeamField,
   defaultTeamFromOwner,
-  getPossibleTeamsForAction,
   getTeamFieldState,
   resolveTeamId,
 } from './template-team-field';
+import {usePossibleTeamsForAction} from './use-team-options';
 import {usePlanConfigs} from '@/components/plans/usePlanConfigs';
 import {errorMessageFromNotebookJsonBody} from '@/hooks/project-hooks';
 
@@ -57,18 +57,23 @@ export function CreateProjectFromTemplateForm({
   const {refreshToken} = useAuth();
   const {templateId} = Route.useParams();
   const queryClient = useQueryClient();
-  const {data: teamsData} = useGetTeams({user});
   const {data: template, isLoading: templateLoading} = useGetTemplate({
     user,
     templateId,
   });
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
 
-  const possibleTeams = getPossibleTeamsForAction({
-    teams: teamsData?.teams,
+  // The template's own team is offered even when it is not on the first
+  // page of teams, so it can be the default.
+  const {
+    possibleTeams,
+    isLoading: teamsLoading,
+    more: moreTeams,
+  } = usePossibleTeamsForAction({
+    user,
     canCreateGlobally,
     createInTeamAction: Action.CREATE_PROJECT_IN_TEAM,
-    decodedToken: user.decodedToken,
+    ensureTeamId: template?.ownedByTeamId,
   });
 
   const {showTeamCallout, showTeamDropdown} = getTeamFieldState({
@@ -117,6 +122,7 @@ export function CreateProjectFromTemplateForm({
         buildTeamField({
           canCreateGlobally,
           possibleTeams,
+          more: moreTeams,
           label: teamLabel,
           description: teamDescription,
         })
@@ -203,6 +209,12 @@ export function CreateProjectFromTemplateForm({
   };
 
   const calloutTeamName = showTeamCallout ? possibleTeams[0]?.name : undefined;
+
+  // The form reads its default team once, when it mounts, so wait for the
+  // teams (and the template that names the default) before showing it.
+  if (teamsLoading || templateLoading) {
+    return <p className="text-sm text-muted-foreground">Loading…</p>;
+  }
 
   return (
     <div className="flex flex-col gap-4">

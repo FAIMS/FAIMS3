@@ -151,7 +151,7 @@ const ownerColumn: ColumnDef<MapAssetWithLinkCount> = {
 const updatedColumn: ColumnDef<MapAssetWithLinkCount> = {
   accessorKey: 'updatedAt',
   header: ({column}) => (
-    <DataTableColumnHeader column={column} title="Updated" />
+    <DataTableColumnHeader column={column} title="Updated at" />
   ),
   cell: ({getValue}) => displayDateTime({timestamp: getValue<number>()}),
 };

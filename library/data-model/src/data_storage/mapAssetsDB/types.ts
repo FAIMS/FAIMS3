@@ -6,6 +6,11 @@ import {
   INPUT_LIMITS,
   resourceNameString,
 } from '../../inputLimits';
+import {
+  listPageQueryFields,
+  listSearchQueryField,
+  paginatedListSchema,
+} from '../../listing';
 import {DatabaseInterface} from '../../types';
 import {RootDescriptionInputSchema} from '../rootMetadata';
 import {CouchExistingDocumentSchema} from '../utils';
@@ -451,9 +456,8 @@ export const MapAssetFieldsSchema = z.object({
 
 /**
  * Latest write used to prefer one in-memory snapshot over another.
- * Listing sort uses `updatedAt` only; this includes the processing
- * heartbeat so a progress poll is not treated as older than a list row
- * with the same `updatedAt`.
+ * Uses `updatedAt` plus the processing heartbeat so a progress poll is
+ * not treated as older than a list row with the same `updatedAt`.
  */
 export function mapAssetSnapshotMs(asset: {
   updatedAt: number;
@@ -523,9 +527,42 @@ export type MapAssetWithLinkCount = z.infer<typeof MapAssetWithLinkCountSchema>;
 export const GetMapAssetResponseSchema = MapAssetWithLinkCountSchema;
 export type GetMapAssetResponse = MapAssetWithLinkCount;
 
-export const GetMapAssetListResponseSchema = z.object({
-  assets: z.array(MapAssetWithLinkCountSchema),
+/**
+ * GET /api/map-assets query. `projectId` lists the layers linked to one
+ * survey; `teamId` lists one team's layers; neither lists the library.
+ * `linkableToProjectId` narrows the library to the layers that could be
+ * linked to that survey now: ready, and not linked to it already.
+ * `q` searches the library or the team's layers by name (a word of the name
+ * starts with each word given), in word order; it is not allowed with
+ * `projectId`.
+ */
+export const GetMapAssetListQuerySchema = z.object({
+  teamId: IdInputSchema.min(1).optional(),
+  projectId: IdInputSchema.min(1).optional(),
+  linkableToProjectId: IdInputSchema.min(1).optional(),
+  q: listSearchQueryField,
+  ...listPageQueryFields,
 });
+export type GetMapAssetListQuery = z.infer<typeof GetMapAssetListQuerySchema>;
+
+/** GET /api/teams/:id/map-assets query. `q` searches the team's layers by name. */
+export const GetTeamMapAssetListQuerySchema = z.object({
+  q: listSearchQueryField,
+  ...listPageQueryFields,
+});
+export type GetTeamMapAssetListQuery = z.infer<
+  typeof GetTeamMapAssetListQuerySchema
+>;
+
+/**
+ * GET /api/map-assets and GET /api/teams/:id/map-assets page, newest
+ * `updatedAt` first. Linked-to-survey pages (`projectId`) are newest link
+ * `createdAt` first; link documents have no `updatedAt`.
+ */
+export const GetMapAssetListResponseSchema = paginatedListSchema(
+  MapAssetWithLinkCountSchema,
+  'assets'
+);
 export type GetMapAssetListResponse = z.infer<
   typeof GetMapAssetListResponseSchema
 >;

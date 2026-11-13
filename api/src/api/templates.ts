@@ -9,6 +9,7 @@
 import {
   Action,
   addTemplateRole,
+  GetListTemplatesQuerySchema,
   GetListTemplatesResponse,
   GetTemplateByIdResponse,
   GetTemplateSurveyReferencesResponse,
@@ -22,11 +23,14 @@ import {
   PutUpdateTemplateResponse,
   PutUpdateTemplateUiSpecificationInputSchema,
   Role,
+  resolveListLimit,
+  resolveListStartKey,
   userCanReadTemplateDocument,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
+import {resolveListSearch} from './listSearch';
 import {getProjectIdsReferencingTemplate} from '../couchdb/notebooks';
 import {
   archiveTemplate,
@@ -34,7 +38,7 @@ import {
   createTemplate,
   deleteExistingTemplate,
   getTemplate,
-  getTemplates,
+  getTemplatesPage,
   restoreTemplateFromArchive,
   setTemplateVisibility,
   updateExistingTemplate,
@@ -61,45 +65,56 @@ export const api: express.Router = express.Router();
  * GET list templates — lightweight summaries from a CouchDB view (no
  * ui-specification). Use GET /api/templates/:id for full detail.
  *
- * Can filter by team; uses an index that omits the form payload.
+ * Cursor pagination (`limit`, `startKey`, `nextStartKey`) matches record
+ * listing. Pages are newest-`updatedAt` first. Omitting `limit` defaults to
+ * 50; there is no unbounded dump.
+ *
+ * `q` searches non-archived templates by name (within `teamId` when given)
+ * and pages in word order.
  */
 api.get(
   '/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.LIST_TEMPLATES}),
   validate({
-    query: z.object({
-      teamId: z.string().min(1).optional(),
-      // Query strings only: omit (default) or includeArchived=true|false
-      includeArchived: z.enum(['true', 'false']).optional(),
-    }),
+    query: GetListTemplatesQuerySchema,
   }),
   async (req, res: Response<GetListTemplatesResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
 
-    const templatesRaw = await getTemplates({
-      teamId: req.query.teamId,
-    });
     const includeArchived = req.query.includeArchived === 'true';
+    const limit = resolveListLimit(req.query.limit);
+    const startKey = resolveListStartKey(req.query.startKey);
+    const visibility = req.query.visibility;
 
-    const filteredByArchive = templatesRaw.filter(t => {
-      const archived = t.archived === true;
-      return includeArchived ? archived : !archived;
+    const page = await getTemplatesPage({
+      teamId: req.query.teamId,
+      includeArchived,
+      search: resolveListSearch(req.query.q, {
+        unavailable: includeArchived
+          ? 'q cannot be combined with includeArchived=true.'
+          : undefined,
+      }),
+      limit,
+      startKey,
+      visibility,
+      canRead: template =>
+        userCanReadTemplateDocument({
+          decodedToken: {
+            globalRoles: req.user!.globalRoles,
+            resourceRoles: req.user!.resourceRoles,
+          },
+          template,
+        }),
     });
 
-    const visible = filteredByArchive.filter(t =>
-      userCanReadTemplateDocument({
-        decodedToken: {
-          globalRoles: req.user!.globalRoles,
-          resourceRoles: req.user!.resourceRoles,
-        },
-        template: t,
-      })
-    );
     res.json({
-      templates: await withOwnedByTeamDisplayNames(visible),
+      templates: await withOwnedByTeamDisplayNames(page.templates),
+      ...(page.nextStartKey !== undefined
+        ? {nextStartKey: page.nextStartKey}
+        : {}),
     });
   }
 );

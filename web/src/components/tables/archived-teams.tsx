@@ -15,6 +15,7 @@ import {userCanDo} from '@/hooks/auth-hooks';
 import {Button} from '@/components/ui/button';
 import {ArchiveRestore, Trash2} from 'lucide-react';
 import {useState} from 'react';
+import {displayDateTime} from '@/lib/time';
 
 export type ArchivedTeamRow = GetListTeamsResponse['teams'][number];
 
@@ -190,6 +191,26 @@ export const archivedTeamColumns: ColumnDef<ArchivedTeamRow>[] = [
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Created by" />
     ),
+  },
+  {
+    accessorKey: 'createdAt',
+    header: ({column}) => (
+      <DataTableColumnHeader column={column} title="Created At" />
+    ),
+    cell: ({row}) => {
+      const timestamp = row.getValue('createdAt') as number;
+      return timestamp ? displayDateTime({timestamp}) : '';
+    },
+  },
+  {
+    accessorKey: 'updatedAt',
+    header: ({column}) => (
+      <DataTableColumnHeader column={column} title="Updated At" />
+    ),
+    cell: ({row}) => {
+      const timestamp = row.getValue('updatedAt') as number;
+      return timestamp ? displayDateTime({timestamp}) : '';
+    },
   },
   {
     id: 'restore',

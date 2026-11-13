@@ -8,10 +8,11 @@ import {
   Action,
   DecodedTokenPermissions,
   ExistingMapAssetLink,
+  ExistingMapAsset,
   GetMapAssetDownloadUrlResponse,
+  GetMapAssetListQuerySchema,
   GetMapAssetListResponse,
   GetMapAssetResponse,
-  IdInputSchema,
   INPUT_LIMITS,
   globalRolesGrantAction,
   isAuthorizedToDeleteMapAsset,
@@ -22,7 +23,12 @@ import {
   mapAssetUploadTooLargeMessage,
   type MapAssetAuthorizationInput,
   MapAssetDetailsSchema,
+  ListingPage,
+  ListingSearch,
   PostMapAssetLinkInputSchema,
+  resolveListLimit,
+  resolveListStartKey,
+  toPaginatedList,
 } from '@faims3/data-model';
 import {randomUUID} from 'crypto';
 import express, {NextFunction, Request, Response} from 'express';
@@ -38,10 +44,9 @@ import {
   deleteMapAsset,
   getMapAsset,
   linkMapAsset,
-  listAllAssets,
-  listAssetsByCreator,
-  listAssetsByProject,
-  listAssetsByTeam,
+  getMapAssetsPage,
+  getProjectMapAssetsPage,
+  listLinkedAssetIds,
   listLinkProjectIds,
   presignNormalizedAttachment,
   replaceMapAssetFiles,
@@ -56,7 +61,7 @@ import {
   safeUploadFilename,
   UploadedMapFile,
 } from '../couchdb/mapAssets/uploadRules';
-import {assertTeamIdNotArchived, getAllTeams} from '../couchdb/teams';
+import {assertTeamIdNotArchived} from '../couchdb/teams';
 import * as Exceptions from '../exceptions';
 import {
   inviteAuditFromRequest,
@@ -65,6 +70,7 @@ import {
 } from '../logging';
 import {requireAuthenticationAPI, userCanDo} from '../middleware';
 import validate from '../middleware/validate';
+import {resolveListSearch} from './listSearch';
 import patch from '../utils/patchExpressAsync';
 
 patch();
@@ -267,30 +273,52 @@ function authorizeAsset(
 }
 
 /**
- * Team-owned layers from the Couch `assetsByTeam` view.
+ * One page of team-owned layers from the Couch `assetsByTeam` view, newest
+ * `updatedAt` first.
  *
  * Used by GET /api/teams/:id/map-assets and GET /api/map-assets?teamId=.
  * The view is the team filter — this does not scan the library and drop
  * other teams. When the caller's team role (or a global role) grants
  * READ_MAP_ASSET, the view rows are returned as-is. Otherwise each asset is
  * checked for creator / explicit read access (e.g. TEAM_MEMBER_CREATOR).
+ *
+ * With `search`, the page holds the team's layers whose name matches, in
+ * word order.
  */
-export async function listReadableTeamMapAssets(
+export async function listReadableTeamMapAssetsPage(
   user: Express.User,
-  teamId: string
-) {
-  const assets = await listAssetsByTeam(teamId);
-  if (
-    teamGrantsMapAssetAction({
-      decodedToken: tokenOf(user),
+  teamId: string,
+  {
+    search,
+    limit,
+    startKey,
+  }: {search?: ListingSearch; limit: number; startKey?: string}
+): Promise<GetMapAssetListResponse> {
+  const teamGrantsRead = teamGrantsMapAssetAction({
+    decodedToken: tokenOf(user),
+    teamId,
+    action: Action.READ_MAP_ASSET,
+  });
+  return mapAssetListResponse(
+    await getMapAssetsPage({
       teamId,
-      action: Action.READ_MAP_ASSET,
+      search,
+      limit,
+      startKey,
+      canRead: teamGrantsRead
+        ? undefined
+        : asset => authorizeAsset(user, asset, isAuthorizedToReadMapAsset),
     })
-  ) {
-    return assets;
-  }
-  return assets.filter(asset =>
-    authorizeAsset(user, asset, isAuthorizedToReadMapAsset)
+  );
+}
+
+/** Page of assets as the list response body, with linked-survey counts. */
+async function mapAssetListResponse(
+  page: ListingPage<ExistingMapAsset>
+): Promise<GetMapAssetListResponse> {
+  return toPaginatedList(
+    {...page, items: await attachLinkCounts(page.items)},
+    'assets'
   );
 }
 
@@ -386,21 +414,37 @@ function assertFiles(files: UploadedMapFile[]): UploadedMapFile[] {
   return files;
 }
 
+/**
+ * GET list map layers — one page, newest `updatedAt` first. Cursor
+ * pagination (`limit`, `startKey`, `nextStartKey`); omitting `limit` returns
+ * the default page, never the whole library.
+ *
+ * `projectId` lists the layers linked to a survey (newest link first),
+ * `teamId` lists a team's layers, and neither lists every layer the caller
+ * can read. `linkableToProjectId` narrows that library list to ready layers
+ * not yet linked to the survey.
+ *
+ * `q` searches the team's layers or the library (with or without
+ * `linkableToProjectId`) by name and pages in word order. It is refused
+ * with `projectId`: a survey's linked layers are not searchable.
+ */
 api.get(
   '/',
   requireAuthenticationAPI,
-  validate({
-    query: z.object({
-      teamId: IdInputSchema.min(1).optional(),
-      projectId: IdInputSchema.min(1).optional(),
-    }),
-  }),
+  validate({query: GetMapAssetListQuerySchema}),
   async (req, res: Response<GetMapAssetListResponse>) => {
     const user = requireUser(req);
     if (!userCanDo({user, action: Action.LIST_MAP_ASSETS})) {
       throw new Exceptions.UnauthorizedException();
     }
-    const {teamId, projectId} = req.query;
+    const {teamId, projectId, linkableToProjectId} = req.query;
+    const limit = resolveListLimit(req.query.limit);
+    const startKey = resolveListStartKey(req.query.startKey);
+    const search = resolveListSearch(req.query.q, {
+      unavailable: projectId
+        ? 'q cannot be combined with projectId.'
+        : undefined,
+    });
 
     if (projectId) {
       if (
@@ -412,14 +456,19 @@ api.get(
       ) {
         throw new Exceptions.UnauthorizedException();
       }
-      const linked = await listAssetsByProject(projectId);
-      res.json({
-        assets: await attachLinkCounts(
-          linked.filter(asset =>
-            authorizeAsset(user, asset, isAuthorizedToReadMapAsset, [projectId])
-          )
-        ),
-      });
+      res.json(
+        await mapAssetListResponse(
+          await getProjectMapAssetsPage({
+            projectId,
+            limit,
+            startKey,
+            canRead: asset =>
+              authorizeAsset(user, asset, isAuthorizedToReadMapAsset, [
+                projectId,
+              ]),
+          })
+        )
+      );
       return;
     }
 
@@ -433,38 +482,60 @@ api.get(
       ) {
         throw new Exceptions.UnauthorizedException();
       }
-      res.json({
-        assets: await attachLinkCounts(
-          await listReadableTeamMapAssets(user, teamId)
-        ),
-      });
+      res.json(
+        await listReadableTeamMapAssetsPage(user, teamId, {
+          search,
+          limit,
+          startKey,
+        })
+      );
       return;
     }
 
-    if (globalRolesGrantAction(tokenOf(user), Action.READ_MAP_ASSET)) {
-      res.json({assets: await attachLinkCounts(await listAllAssets())});
-      return;
-    }
-
-    const own = await listAssetsByCreator(user.user_id);
-    const teams = await getAllTeams();
-    const visibleTeams = teams.filter(team =>
-      userCanDo({
-        user,
-        action: Action.VIEW_TEAM_DETAILS,
-        resourceId: team._id,
-      })
-    );
-    const teamAssets = (
-      await Promise.all(visibleTeams.map(team => listAssetsByTeam(team._id)))
-    ).flat();
-    const byId = new Map<string, (typeof own)[number]>();
-    for (const asset of [...own, ...teamAssets]) {
-      if (authorizeAsset(user, asset, isAuthorizedToReadMapAsset)) {
-        byId.set(asset._id, asset);
+    // Layers already linked to the survey named by `linkableToProjectId`.
+    // Which layers a survey links is survey metadata, so the caller must be
+    // able to read the survey.
+    let alreadyLinked: Set<string> | undefined;
+    if (linkableToProjectId) {
+      if (
+        !userCanDo({
+          user,
+          action: Action.READ_PROJECT_METADATA,
+          resourceId: linkableToProjectId,
+        })
+      ) {
+        throw new Exceptions.UnauthorizedException();
       }
+      alreadyLinked = await listLinkedAssetIds(linkableToProjectId);
     }
-    res.json({assets: await attachLinkCounts([...byId.values()])});
+
+    // Library: walk every layer newest first and keep the ones this caller
+    // can read. A global reader keeps every row; anyone else fills the page
+    // with their own and their teams' layers inside the scan cap.
+    const readsAll = globalRolesGrantAction(
+      tokenOf(user),
+      Action.READ_MAP_ASSET
+    );
+    const canRead = (asset: ExistingMapAsset) =>
+      readsAll || authorizeAsset(user, asset, isAuthorizedToReadMapAsset);
+    const linked = alreadyLinked;
+    res.json(
+      await mapAssetListResponse(
+        await getMapAssetsPage({
+          search,
+          limit,
+          startKey,
+          canRead: linked
+            ? asset =>
+                asset.status === 'ready' &&
+                !linked.has(asset._id) &&
+                canRead(asset)
+            : readsAll
+              ? undefined
+              : canRead,
+        })
+      )
+    );
   }
 );
 

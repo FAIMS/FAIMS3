@@ -2,7 +2,7 @@
 import {DataTable} from '@/components/data-table/data-table';
 import {columns} from '@/components/tables/project-users';
 import {useAuth} from '@/context/auth-provider';
-import {useGetUsersForProject} from '@/hooks/queries';
+import {usePagedProjectUsers} from '@/hooks/queries';
 
 /**
  * ProjectUsers component renders a table of users for a project.
@@ -13,18 +13,22 @@ import {useGetUsersForProject} from '@/hooks/queries';
  */
 const ProjectUsers = ({projectId}: {projectId: string}) => {
   const {user} = useAuth();
-  const {isLoading, data: projectUsers} = useGetUsersForProject({
-    user,
-    projectId,
-  });
+  const {users, tableLoading, pageSize, serverPagination} =
+    usePagedProjectUsers({user, projectId});
 
-  const tableData = projectUsers?.users.map(user => ({
+  const tableData = users?.map(user => ({
     ...user,
     projectRoles: user.roles.filter(role => role.value).map(role => role.name),
   }));
 
   return (
-    <DataTable columns={columns} data={tableData || []} loading={isLoading} />
+    <DataTable
+      columns={columns}
+      data={tableData}
+      loading={tableLoading}
+      defaultRowsPerPage={pageSize}
+      serverPagination={serverPagination}
+    />
   );
 };
 

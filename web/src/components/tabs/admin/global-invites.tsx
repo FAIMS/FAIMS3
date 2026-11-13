@@ -4,7 +4,7 @@ import {CreateGlobalInvite} from '@/components/dialogs/create-global-invite';
 import {useGetGlobalInviteColumns} from '@/components/tables/global-invites';
 import {config} from '@/constants';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {useGetGlobalInvites} from '@/hooks/queries';
+import {usePagedGlobalInvites} from '@/hooks/queries';
 import {removeGlobalInvite} from '@/hooks/global-hooks';
 import {Action} from '@faims3/data-model';
 
@@ -17,10 +17,11 @@ import {Action} from '@faims3/data-model';
 const GlobalInvites = () => {
   const user = useRequiredUser();
 
-  const {data, isLoading} = useGetGlobalInvites({
-    user,
-    redirect: `${config.webUrl}`,
-  });
+  const {invites, tableLoading, pageSize, serverPagination} =
+    usePagedGlobalInvites({
+      user,
+      redirect: `${config.webUrl}`,
+    });
 
   const columns = useGetGlobalInviteColumns({
     deleteInviteHandler: async (inviteId: string) => {
@@ -36,8 +37,10 @@ const GlobalInvites = () => {
   return (
     <DataTable
       columns={columns}
-      data={data || []}
-      loading={isLoading}
+      data={invites}
+      loading={tableLoading}
+      defaultRowsPerPage={pageSize}
+      serverPagination={serverPagination}
       button={canCreateGlobalInvite && <CreateGlobalInvite />}
     />
   );

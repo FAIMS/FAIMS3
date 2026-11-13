@@ -5,17 +5,14 @@
 import {loginWebPersona} from '../../helpers/auth.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
 import {byTestId} from '../../helpers/selectors.ts';
+import {findTableRow} from '../../helpers/table.ts';
 import {waitForTestId} from '../../helpers/wait.ts';
 import {getWebUrl} from '../../helpers/env.ts';
 
 async function openBlueProject() {
   await browser.url(`${getWebUrl()}/projects`);
   await waitForTestId('web-main', {timeout: 15000});
-  const search = byTestId('web-data-table-search');
-  if (await search.isExisting()) {
-    await search.setValue('Blue');
-  }
-  const row = await $('tbody tr');
+  const row = await findTableRow('Blue');
   await row.waitForClickable({timeout: 10000});
   await row.click();
   await browser.waitUntil(

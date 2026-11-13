@@ -4,12 +4,11 @@ import type {ColumnDef} from '@tanstack/react-table';
 import {DataTable} from '@/components/data-table/data-table';
 import {getTemplatesTableColumns} from '@/components/tables/templates';
 import {useRequiredUser} from '@/hooks/auth-hooks';
-import {useGetTemplates} from '@/hooks/queries';
+import {usePagedTemplates} from '@/hooks/queries';
 import {CreateTemplateDialog} from '@/components/dialogs/create-template-dialog';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {useMemo, useState} from 'react';
 import {
-  filterTemplatesByVisibility,
   PUBLIC_TEMPLATE_ROW_CLASS,
   TemplateVisibilityFilterSelect,
   type TemplateVisibilityFilterValue,
@@ -34,10 +33,14 @@ export const Route = createFileRoute('/_protected/templates/')({
  */
 function RouteComponent() {
   const user = useRequiredUser();
-  const {isPending, data} = useGetTemplates({user});
   const navigate = useNavigate();
   const [visibilityFilter, setVisibilityFilter] =
     useState<TemplateVisibilityFilterValue>('all');
+  const {tableLoading, templates, pageSize, serverPagination, serverSearch} =
+    usePagedTemplates({
+      user,
+      visibility: visibilityFilter === 'all' ? undefined : visibilityFilter,
+    });
 
   // breadcrumbs addition
   const paths = useMemo(
@@ -70,11 +73,6 @@ function RouteComponent() {
     [user.decodedToken]
   );
 
-  const filteredTemplates = useMemo(
-    () => filterTemplatesByVisibility(data, visibilityFilter),
-    [data, visibilityFilter]
-  );
-
   return (
     <div className="flex flex-col gap-6">
       <h1
@@ -86,9 +84,8 @@ function RouteComponent() {
       {/* CreateTemplateDialog returns null when the user lacks create permission */}
       <DataTable
         columns={columns as ColumnDef<TemplateListRow, unknown>[]}
-        data={filteredTemplates}
-        loading={isPending}
-        initialSorting={[{id: 'createdAt', desc: true}]}
+        data={templates}
+        loading={tableLoading}
         toolbarExtra={
           <TemplateVisibilityFilterSelect
             value={visibilityFilter}
@@ -100,6 +97,9 @@ function RouteComponent() {
         }
         onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
         button={<CreateTemplateDialog />}
+        defaultRowsPerPage={pageSize}
+        serverPagination={serverPagination}
+        serverSearch={serverSearch}
       />
     </div>
   );

@@ -23,8 +23,10 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/setupTests.ts',
+    // jsdom by default. Chrome via WebdriverIO is opt-in:
+    // `pnpm exec vitest --browser.enabled`
     browser: {
-      enabled: true,
+      enabled: false,
       headless: true,
       provider: webdriverio(),
       instances: [

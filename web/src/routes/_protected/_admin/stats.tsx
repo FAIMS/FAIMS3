@@ -5,6 +5,7 @@ import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import {config} from '@/constants';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
+import {TABLE_DEFAULT_PAGE_SIZE} from '@/hooks/paged-list';
 import {
   useGetAdminStats,
   useGetAdminStatsPeople,
@@ -29,7 +30,7 @@ export const Route = createFileRoute('/_protected/_admin/stats')({
 });
 
 /** Default page size for the Teams and People tables. */
-const DEFAULT_PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = TABLE_DEFAULT_PAGE_SIZE;
 
 /**
  * Format a numeric stat for display. Undefined (snapshot not yet loaded)

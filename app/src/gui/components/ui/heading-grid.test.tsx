@@ -8,6 +8,7 @@ import * as ROUTES from '../../../constants/routes';
 import type {Project} from '../../../context/slices/projectSlice';
 import {isProjectActivating} from '../../../lib/notebookListDisplay';
 import HeadingProjectGrid from './heading-grid';
+import {MIT_DATA_GRID_MAX_PAGE_SIZE} from './notebook-list-pagination';
 
 const navigate = vi.fn();
 
@@ -52,6 +53,15 @@ const ready = {
   isActivated: true,
   name: 'Ready survey',
 } as Project;
+
+function makeProjects(count: number, isActivated: boolean): Project[] {
+  return Array.from({length: count}, (_, index) => ({
+    projectId: `survey-${isActivated ? 'active' : 'listed'}-${index}`,
+    serverId: 'server-1',
+    isActivated,
+    name: `Survey ${index}`,
+  })) as Project[];
+}
 
 function columns(
   activatingProjectKeys: readonly string[]
@@ -137,5 +147,27 @@ describe('HeadingProjectGrid activating rows', () => {
         projectId: ready.projectId,
       })
     );
+  });
+});
+
+describe('HeadingProjectGrid MIT pageSize cap', () => {
+  beforeEach(() => {
+    vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+  });
+
+  it('does not throw when a section has more than 100 surveys', () => {
+    expect(() =>
+      renderGrid({
+        projects: makeProjects(MIT_DATA_GRID_MAX_PAGE_SIZE + 1, false),
+      })
+    ).not.toThrow();
+    expect(screen.getByRole('button', {name: /go to next page/i})).toBeTruthy();
+  });
+
+  it('hides the pager when every section is within the MIT limit', () => {
+    renderGrid({
+      projects: [...makeProjects(50, true), ...makeProjects(51, false)],
+    });
+    expect(screen.queryByRole('button', {name: /go to next page/i})).toBeNull();
   });
 });

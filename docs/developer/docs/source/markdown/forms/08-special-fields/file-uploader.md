@@ -172,9 +172,10 @@ function getFileIcon(contentType: string) {
 if any file is SVG/HTML by declared type, file extension, or leading bytes
 (`isBlockedAttachmentContentType`, `isBlockedAttachmentFilename`,
 `isActiveContentBytes` in `lib/utils.ts`; only the first 512 bytes of a file
-are read). The form manager's `addAttachment` choke point re-checks the
-declared type for every field, and the CouchDB `validate_doc_update` in
-`@faims3/data-model` rejects honestly-labelled active types at replication.
+are read). The form manager's `addAttachment` choke point re-checks declared
+type, filename/format, and leading bytes for every field, and the CouchDB
+`validate_doc_update` in `@faims3/data-model` rejects honestly-labelled
+active types at replication.
 
 ### File Size Formatting
 
@@ -218,11 +219,11 @@ For other files: Download prompt
 
 ## View Mode
 
-Currently uses default renderer:
+Uses the specialised `FileUploaderRender` (thumbnails for displayable raster types, icon cards otherwise):
 
 ```typescript
 view: {
-  component: DefaultRenderer,
+  component: FileUploaderRender,
   config: {},
 }
 ```
@@ -289,12 +290,13 @@ const fileUploaderSchemaFunction = (props: FileUploaderProps) => {
 
 ## Error Messages
 
-| Condition      | Message                                       |
-| -------------- | --------------------------------------------- |
-| File too large | "File is too large. Maximum size: {size}"     |
-| File too small | "File is too small. Minimum size: {size}"     |
-| Too many files | "Maximum {n} files allowed"                   |
-| Upload failed  | "Failed to upload file(s). Please try again." |
+| Condition      | Message                                                |
+| -------------- | ------------------------------------------------------ |
+| File too large | "File is too large. Maximum size: {size}"              |
+| File too small | "File is too small. Minimum size: {size}"              |
+| Too many files | "Maximum {n} files allowed"                            |
+| SVG or HTML    | `"{filename}": SVG and HTML files cannot be uploaded.` |
+| Upload failed  | "Failed to upload file(s). Please try again."          |
 
 ## Dependencies
 

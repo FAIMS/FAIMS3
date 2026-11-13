@@ -2,7 +2,7 @@
 import {useAuth} from '@/context/auth-provider';
 import {useUsersColumns} from '@/components/tables/users';
 import {DataTable} from '@/components/data-table/data-table';
-import {useGetUsers} from '@/hooks/queries';
+import {usePagedUsers} from '@/hooks/queries';
 import {useState} from 'react';
 import {GeneratePasswordReset} from '@/components/dialogs/generate-password-reset';
 
@@ -14,7 +14,11 @@ import {GeneratePasswordReset} from '@/components/dialogs/generate-password-rese
  */
 export function UsersTab() {
   const {user: authUser} = useAuth();
-  const {data, isPending} = useGetUsers({user: authUser});
+  const {users, tableLoading, pageSize, serverPagination, serverSearch} =
+    usePagedUsers({
+      user: authUser,
+      defaultPageSize: 15,
+    });
   const [resetDialog, setResetDialog] = useState<boolean>(false);
   const [resetUserId, setResetUserId] = useState<string | undefined>(undefined);
 
@@ -25,22 +29,18 @@ export function UsersTab() {
 
   const columns = useUsersColumns({onReset});
 
-  if (!data) return <></>;
-
   return (
     <>
       <DataTable
         columns={columns}
-        data={
-          isPending
-            ? []
-            : data.map((user: any) => ({
-                ...user,
-                email: user.emails[0]?.email ?? '',
-              }))
-        }
-        loading={isPending}
-        defaultRowsPerPage={15}
+        data={users?.map(user => ({
+          ...user,
+          email: user.emails[0]?.email ?? '',
+        }))}
+        loading={tableLoading}
+        defaultRowsPerPage={pageSize}
+        serverPagination={serverPagination}
+        serverSearch={serverSearch}
       />
       <GeneratePasswordReset
         open={resetDialog}

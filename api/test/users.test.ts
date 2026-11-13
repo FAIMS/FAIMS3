@@ -30,7 +30,7 @@ import {validateLocalUser} from '../src/auth/strategies/localStrategy';
 import {getUsersDB, initialiseDbAndKeys} from '../src/couchdb';
 import {
   createUser,
-  getUserInfoForProject,
+  getResourceMembersPage,
   registerAdminUser,
   saveCouchUser,
 } from '../src/couchdb/users';
@@ -404,17 +404,24 @@ describe('user creation', () => {
       });
       await saveCouchUser(user);
 
-      const projectUserInfo = await getUserInfoForProject({
-        projectId: project_id,
+      // Only users holding a role on the survey are listed, each with just
+      // their roles on that survey.
+      const members = await getResourceMembersPage({
+        resourceId: project_id,
+        limit: 50,
       });
+      expect(members.nextStartKey).toBeUndefined();
+      expect(members.items.map(member => member.user_id)).toEqual([username]);
+      expect([...members.items[0].projectRoles].sort()).toEqual(
+        [Role.PROJECT_CONTRIBUTOR, Role.PROJECT_MANAGER].sort()
+      );
+      expect(members.items[0].teamRoles).toEqual([]);
 
-      expect(projectUserInfo.roles).toContain(Role.PROJECT_ADMIN);
-      expect(projectUserInfo.roles).toContain(Role.PROJECT_MANAGER);
-      expect(projectUserInfo.roles).toContain(Role.PROJECT_CONTRIBUTOR);
-      // should have the admin user and this new one
-      expect(projectUserInfo.users.length).toBe(2);
-      expect(projectUserInfo.users[1].username).toBe(username);
-      expect(projectUserInfo.users[1].roles[0].value).toBe(false);
+      const elsewhere = await getResourceMembersPage({
+        resourceId: 'some-other-survey',
+        limit: 50,
+      });
+      expect(elsewhere.items).toEqual([]);
     }
   });
 });

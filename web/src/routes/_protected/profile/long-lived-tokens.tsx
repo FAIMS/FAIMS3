@@ -16,7 +16,7 @@ import {Separator} from '@/components/ui/separator';
 import {Switch} from '@/components/ui/switch';
 import {config} from '@/constants';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {revokeLongLivedToken, useGetLongLivedTokens} from '@/hooks/queries';
+import {revokeLongLivedToken, usePagedLongLivedTokens} from '@/hooks/queries';
 import {nowMs} from '@/lib/time';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {Action, GetLongLivedTokensResponse} from '@faims3/data-model';
@@ -69,10 +69,12 @@ function RouteComponent() {
   const [showRevoked, setShowRevoked] = useState<boolean>(false);
   const [showExpired, setShowExpired] = useState<boolean>(false);
 
-  const {data, isPending} = useGetLongLivedTokens({
-    user: authUser,
-    fetchAll: adminMode,
-  });
+  const {tokens, isPending, tableLoading, pageSize, serverPagination} =
+    usePagedLongLivedTokens({
+      user: authUser,
+      fetchAll: adminMode,
+      defaultPageSize: 15,
+    });
 
   // Can the user create a long lived token?
   const canCreateToken = useIsAuthorisedTo({
@@ -84,11 +86,13 @@ function RouteComponent() {
     action: Action.READ_ANY_LONG_LIVED_TOKENS,
   });
 
-  // Filter tokens based on control panel settings
+  // Filter the current page based on control panel settings. Hidden tokens
+  // still count towards the page, so a page can show fewer rows than its
+  // size (or none) while Next is still available.
   const filteredTokens = useMemo(() => {
-    if (!data?.tokens) return [];
+    if (!tokens) return undefined;
 
-    return data.tokens.filter(token => {
+    return tokens.filter(token => {
       // Filter out revoked tokens if not showing them
       if (!showRevoked && !token.enabled) {
         return false;
@@ -101,11 +105,11 @@ function RouteComponent() {
 
       return true;
     });
-  }, [data?.tokens, showRevoked, showExpired]);
+  }, [tokens, showRevoked, showExpired]);
 
   const columns = useGetLongLivedTokensColumns({
     editTokenHandler: async tokenId => {
-      const token = (data?.tokens ?? []).find(t => t.id === tokenId);
+      const token = (tokens ?? []).find(t => t.id === tokenId);
       if (token) {
         setSelectedToken(token);
         setUpdateDialogOpen(true);
@@ -271,8 +275,9 @@ function RouteComponent() {
         <DataTable
           columns={columns}
           data={filteredTokens}
-          loading={isPending}
-          defaultRowsPerPage={15}
+          loading={tableLoading}
+          defaultRowsPerPage={pageSize}
+          serverPagination={serverPagination}
           button={canCreateToken && <CreateLongLivedTokenDialog />}
         />
       </div>

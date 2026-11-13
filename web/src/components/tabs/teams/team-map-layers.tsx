@@ -3,7 +3,7 @@ import {DataTable} from '@/components/data-table/data-table';
 import {CreateMapLayerDialog} from '@/components/dialogs/create-map-layer-dialog';
 import {getMapLayerTableColumns} from '@/components/tables/map-layers';
 import {useRequiredUser} from '@/hooks/auth-hooks';
-import {useMapAssets} from '@/hooks/map-asset-hooks';
+import {usePagedMapAssets} from '@/hooks/map-asset-hooks';
 import {useGetTeam} from '@/hooks/queries';
 import {useNavigate} from '@tanstack/react-router';
 import {useMemo} from 'react';
@@ -11,7 +11,7 @@ import {useMemo} from 'react';
 /** Team tab: layers owned by this team, plus create when permitted. */
 const TeamMapLayers = ({teamId}: {teamId: string}) => {
   const user = useRequiredUser();
-  const assets = useMapAssets({user, teamId});
+  const assets = usePagedMapAssets({user, teamId});
   const {data: team} = useGetTeam({user, teamId});
   const archived = team?.archived === true;
   const navigate = useNavigate();
@@ -23,9 +23,11 @@ const TeamMapLayers = ({teamId}: {teamId: string}) => {
   return (
     <DataTable
       columns={columns}
-      data={assets.data?.assets}
-      loading={assets.isPending}
-      initialSorting={[{id: 'updatedAt', desc: true}]}
+      data={assets.assets}
+      loading={assets.tableLoading}
+      defaultRowsPerPage={assets.pageSize}
+      serverPagination={assets.serverPagination}
+      serverSearch={assets.serverSearch}
       onRowClick={asset =>
         navigate({
           to: '/map-layers/$assetId',

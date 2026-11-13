@@ -18,7 +18,7 @@
 import {Camera, GalleryPhoto} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
 import {logInfo, logWarn} from '../../../logging';
-import {IMAGE_TYPES} from '../../../utils';
+import {IMAGE_TYPES, normaliseContentType} from '../../../utils';
 
 /**
  * `accept` for the web gallery file input. Raster types only: Capacitor's
@@ -84,7 +84,7 @@ export type PickGalleryPhotosOptions = {
  * be stored as a JPEG after canvas re-encode. We keep the real subtype.
  */
 export function formatFromGalleryFile(file: File): string {
-  const type = (file.type ?? '').split(';')[0].trim().toLowerCase();
+  const type = normaliseContentType(file.type);
   if (type.startsWith('image/')) {
     const subtype = type.slice('image/'.length);
     return subtype === 'jpg' ? 'jpeg' : subtype;

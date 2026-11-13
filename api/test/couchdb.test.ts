@@ -14,6 +14,7 @@ PouchDB.plugin(PouchDBFind);
 import {
   Action,
   addProjectRole,
+  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   DatabaseType,
   DB_TARGET_VERSIONS,
   FieldDefinition,
@@ -28,10 +29,15 @@ import {beforeEach, describe, expect, it} from 'vitest';
 import {upgradeCouchUserToExpressUser} from '../src/auth/keySigning/create';
 import {config} from '../src/buildconfig';
 import {
+  DB_INIT_CONCURRENCY,
+  getDataDb,
   getDirectoryDB,
   getMigrationDb,
   initialiseDbAndKeys,
+  localGetProjectsDb,
+  migrateAllProjectDataDbs,
 } from '../src/couchdb';
+import {migrateProjectUiSpecificationsOnStartup} from '../src/couchdb/validateDatabases';
 import {
   createNotebook,
   deleteNotebook,
@@ -46,6 +52,7 @@ import {
 import {
   createNotebookFromSampleFile,
   EMPTY_UI_SPECIFICATION,
+  readLegacyNotebookFile,
   readSampleNotebookFile,
 } from './sampleNotebook';
 import {
@@ -487,5 +494,159 @@ describe('notebook api', () => {
       }
     );
     expect(migrationDocs.rows).toHaveLength(0);
+  });
+
+  describe('startup init with more projects than the concurrency limit', () => {
+    const PERMISSIONS_DESIGN_DOC = '_design/permissions';
+    // Enough projects that every worker slot is reused more than once.
+    const projectCount = DB_INIT_CONCURRENCY * 2 + 3;
+
+    const createProjects = async (): Promise<string[]> => {
+      const projectIds: string[] = [];
+      for (let i = 0; i < projectCount; i++) {
+        const projectId = await createNotebook({
+          projectName: `Bulk Init ${i}`,
+          uiSpecification: EMPTY_UI_SPECIFICATION,
+          description: '',
+          createdBy: 'admin',
+        });
+        if (!projectId) {
+          throw new Error('could not make test notebook');
+        }
+        projectIds.push(projectId);
+      }
+      return projectIds;
+    };
+
+    /** Drop a design doc from every data DB so a re-init has work to do. */
+    const removePermissionsDesignDocs = async (projectIds: string[]) => {
+      for (const projectId of projectIds) {
+        const dataDb = await getDataDb(projectId);
+        await dataDb.remove(await dataDb.get(PERMISSIONS_DESIGN_DOC));
+        await expect(dataDb.get(PERMISSIONS_DESIGN_DOC)).rejects.toMatchObject({
+          status: 404,
+        });
+      }
+    };
+
+    const expectPermissionsDesignDocs = async (projectIds: string[]) => {
+      for (const projectId of projectIds) {
+        const dataDb = await getDataDb(projectId);
+        const designDoc = await dataDb.get(PERMISSIONS_DESIGN_DOC);
+        expect(designDoc._id).toBe(PERMISSIONS_DESIGN_DOC);
+      }
+    };
+
+    it('initialiseDbAndKeys re-initialises every project data DB', async () => {
+      const projectIds = await createProjects();
+      await removePermissionsDesignDocs(projectIds);
+
+      await initialiseDbAndKeys({force: true});
+
+      await expectPermissionsDesignDocs(projectIds);
+    });
+
+    it('initialiseDbAndKeys does not rewrite design docs that already match', async () => {
+      const projectIds = await createProjects();
+      const designDocRevs = async () => {
+        const revs: Record<string, string> = {};
+        for (const projectId of projectIds) {
+          const dataDb = await getDataDb(projectId);
+          revs[projectId] = (await dataDb.get(PERMISSIONS_DESIGN_DOC))._rev;
+        }
+        // A global DB too: every design doc in the projects DB.
+        const projectsDesignDocs = await localGetProjectsDb().allDocs({
+          startkey: '_design/',
+          endkey: '_design/\ufff0',
+        });
+        for (const row of projectsDesignDocs.rows) {
+          revs[`projects/${row.id}`] = row.value.rev;
+        }
+        return revs;
+      };
+      const before = await designDocRevs();
+      // One per data DB, plus at least one from the projects DB.
+      expect(Object.keys(before).length).toBeGreaterThan(projectCount);
+
+      await initialiseDbAndKeys({force: true});
+
+      expect(await designDocRevs()).toEqual(before);
+    });
+
+    it('the startup project walk visits every project once and leaves data DBs alone', async () => {
+      const projectIds = await createProjects();
+      await removePermissionsDesignDocs(projectIds);
+
+      const walk = await migrateProjectUiSpecificationsOnStartup();
+
+      expect(walk.count).toBe(projectCount);
+      // Every project is counted exactly once across the outcomes.
+      expect(
+        Object.values(walk.outcomes).reduce((sum, count) => sum + count, 0)
+      ).toBe(projectCount);
+      expect(walk.outcomes.up_to_date).toBe(projectCount);
+      // Data DB init belongs to initialiseDbAndKeys, not the uiSpec walk.
+      for (const projectId of projectIds) {
+        const dataDb = await getDataDb(projectId);
+        await expect(dataDb.get(PERMISSIONS_DESIGN_DOC)).rejects.toMatchObject({
+          status: 404,
+        });
+      }
+    });
+
+    it('the startup project walk migrates every stale uiSpec', async () => {
+      const projectIds = await createProjects();
+      const projectsDb = localGetProjectsDb();
+      const staleIds = projectIds.filter((_, index) => index % 2 === 0);
+      // Pre-semver wire is not a typed project document; write it raw so the
+      // walk has to migrate it and rebuild uiSpecProperties.
+      for (const projectId of staleIds) {
+        const project = await projectsDb.get(projectId);
+        await projectsDb.put({
+          ...project,
+          uiSpecification: readLegacyNotebookFile(),
+          uiSpecProperties: {schemaVersion: '7.0', hash: '0'.repeat(64)},
+        } as unknown as typeof project);
+      }
+
+      const walk = await migrateProjectUiSpecificationsOnStartup();
+
+      expect(walk.count).toBe(projectCount);
+      expect(walk.outcomes.migrated).toBe(staleIds.length);
+      expect(walk.outcomes.up_to_date).toBe(projectCount - staleIds.length);
+      for (const projectId of staleIds) {
+        const project = await getProjectById(projectId);
+        expect(project.uiSpecProperties.schemaVersion).toBe(
+          CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+        );
+        expect(project.uiSpecProperties.hash).not.toBe('0'.repeat(64));
+        expect(project.uiSpecification.uiSpec.schemaVersion).toBe(
+          CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+        );
+      }
+    });
+
+    it('migrateAllProjectDataDbs leaves one current migration document per data DB', async () => {
+      const projectIds = await createProjects();
+
+      await migrateAllProjectDataDbs();
+
+      for (const projectId of projectIds) {
+        const project = await getProjectById(projectId);
+        const migrationDocs = await getMigrationDb().query(
+          MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+          {
+            key: [DatabaseType.DATA, project.dataDb.db_name],
+            include_docs: true,
+          }
+        );
+        expect(migrationDocs.rows).toHaveLength(1);
+        const migrationDoc = migrationDocs.rows[0].doc as MigrationsDBDocument;
+        expect(migrationDoc.version).toBe(
+          DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion
+        );
+        expect(migrationDoc.status).toBe('healthy');
+      }
+    });
   });
 });

@@ -7,7 +7,11 @@ import {
 import {columns} from '@/components/tables/projects';
 import {Button} from '@/components/ui/button';
 import {config} from '@/constants';
-import {useRequiredUser, userCanDo} from '@/hooks/auth-hooks';
+import {
+  useRequiredUser,
+  userCanDo,
+  userCanUpdateSomeProject,
+} from '@/hooks/auth-hooks';
 import {Info} from 'lucide-react';
 import {
   invalidateMapAssets,
@@ -15,19 +19,19 @@ import {
   unlinkMapAsset,
   useMapAssetLinks,
 } from '@/hooks/map-asset-hooks';
-import {useGetProjects} from '@/hooks/queries';
+import {get, usePagedProjects} from '@/hooks/queries';
 import {
   Action,
-  GetNotebookListWithStatsResponse,
-  ProjectStatus,
+  type GetNotebookListResponse,
+  type GetNotebookResponse,
 } from '@faims3/data-model';
-import {useQueryClient} from '@tanstack/react-query';
+import {useQueries, useQueryClient} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
 import {ColumnDef} from '@tanstack/react-table';
 import {useMemo, useState} from 'react';
 import {toast} from 'sonner';
 
-type SurveyRow = GetNotebookListWithStatsResponse[number];
+type SurveyRow = GetNotebookListResponse['notebooks'][number];
 
 /** Link or unlink this layer from one survey the user can administer. */
 function SurveyLinkAction({
@@ -137,15 +141,38 @@ function surveyColumns({
   return showAction ? [actionColumn, ...columns] : columns;
 }
 
-/** Surveys this layer is linked to, plus a table to add more links. */
+/**
+ * Surveys this layer is linked to, plus a table to add more links.
+ *
+ * Neither table downloads the survey catalogue. Linked surveys are fetched
+ * by id from the layer's link list; surveys available for linking are one
+ * server page at a time.
+ */
 export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
   const user = useRequiredUser();
   const navigate = useNavigate();
-  const projects = useGetProjects({user, includeArchived: true});
   const links = useMapAssetLinks({user, assetId});
+  const linkedIdList = links.data ?? [];
+  const linkedIds = new Set(linkedIdList);
 
-  const linkedIds = new Set(links.data ?? []);
-  const surveys = projects.data ?? [];
+  // One detail request per linked survey, sharing the survey page's cache.
+  // A survey the user cannot read fails its request and is left out.
+  const linkedQueries = useQueries({
+    queries: linkedIdList.map(projectId => ({
+      queryKey: ['projects', projectId],
+      queryFn: () =>
+        get<GetNotebookResponse>(`/api/notebooks/${projectId}`, user),
+      retry: false,
+    })),
+  });
+  const linkedSurveys: SurveyRow[] = linkedQueries.flatMap(query =>
+    query.data ? [query.data] : []
+  );
+  const linkedLoading = linkedQueries.some(query => query.isPending);
+
+  // Active surveys only: an archived survey cannot take new links.
+  const available = usePagedProjects({user, status: 'active'});
+
   /** True when the user can change this survey's details (and thus its links). */
   const canAdminister = (project: SurveyRow) =>
     userCanDo({
@@ -153,21 +180,17 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
       action: Action.UPDATE_PROJECT_DETAILS,
       resourceId: project._id,
     });
-  const linkedSurveys = surveys.filter(project => linkedIds.has(project._id));
-  const availableSurveys = surveys.filter(project => {
-    if (
-      linkedIds.has(project._id) ||
-      project.status === ProjectStatus.ARCHIVED
-    ) {
-      return false;
-    }
-    return canAdminister(project);
-  });
-  const canUnlinkSome = linkedSurveys.some(canAdminister);
-  const canLinkSome = surveys.some(
-    project =>
-      project.status !== ProjectStatus.ARCHIVED && canAdminister(project)
+  // The page's rows the user could link. A page may show fewer rows than its
+  // size (or none) while Next is still available.
+  const availableSurveys = available.notebooks?.filter(
+    project => !linkedIds.has(project._id) && canAdminister(project)
   );
+  const canUnlinkSome = linkedSurveys.some(canAdminister);
+  // Whether to offer linking at all is decided from the user's roles, since
+  // the surveys they administer may not be on the first page. Do not call
+  // `userCanDo` without a survey id: UPDATE_PROJECT_DETAILS is
+  // resource-specific, so that is always false (including for Super Users).
+  const canLinkSome = userCanUpdateSomeProject(user);
   const linkedColumns = useMemo(
     () => surveyColumns({assetId, mode: 'unlink', showAction: canUnlinkSome}),
     [assetId, canUnlinkSome]
@@ -182,7 +205,7 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
     void navigate({to: `/projects/${_id}`});
   };
 
-  if (projects.isError || links.isError) {
+  if (available.isError || links.isError) {
     return (
       <p className="text-sm text-destructive">
         Could not load {config.notebookNamePlural}.
@@ -190,8 +213,8 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
     );
   }
 
-  const loading = projects.isPending || links.isPending;
-  const hasLinks = (links.data?.length ?? 0) > 0;
+  const loading = links.isPending || linkedLoading;
+  const hasLinks = linkedIdList.length > 0;
 
   return (
     <div className="flex flex-col gap-8">
@@ -230,8 +253,11 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
           />
         </section>
       ) : null}
-      {loading || canLinkSome ? (
-        <section className="flex flex-col gap-3">
+      {canLinkSome ? (
+        <section
+          className="flex flex-col gap-3"
+          data-testid="web-map-layers-available"
+        >
           <div>
             <h2 className="text-lg font-semibold">
               Available {config.notebookNamePluralCapitalized}
@@ -245,8 +271,10 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
           <DataTable
             columns={availableColumns}
             data={availableSurveys}
-            loading={loading}
-            initialSorting={[{id: 'createdAt', desc: true}]}
+            loading={available.tableLoading || links.isPending}
+            defaultRowsPerPage={available.pageSize}
+            serverPagination={available.serverPagination}
+            serverSearch={available.serverSearch}
             onRowClick={openSurvey}
             emptyMessage={`No available ${config.notebookNamePlural}.`}
           />

@@ -3,8 +3,9 @@ import {Field, Form} from '@/components/form';
 import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {useGetTeams, useGetTemplate, useGetTemplates} from '@/hooks/queries';
-import {Action, TemplateListItem} from '@faims3/data-model';
+import {useGetTemplate} from '@/hooks/queries';
+import {Action} from '@faims3/data-model';
+import {TemplatePickerSelect} from '@/components/forms/template-picker-select';
 import {useQueryClient} from '@tanstack/react-query';
 import {useCallback, useState} from 'react';
 import {z} from 'zod';
@@ -27,10 +28,10 @@ import {SetupFormHeading} from './setup-form-heading';
 import {TemplateOwnerCallout} from './template-owner-callout';
 import {
   buildTeamField,
-  getPossibleTeamsForAction,
   getTeamFieldState,
   resolveTeamId,
 } from './template-team-field';
+import {usePossibleTeamsForAction} from './use-team-options';
 
 // Import the default sample notebook JSON
 import blankNotebook from '../../../notebooks/blank-notebook.json';
@@ -63,14 +64,10 @@ export function CreateProjectForm({
   // can they create projects outside team?
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
 
-  const {data: templates} = useGetTemplates({user});
-  const {data: teams} = useGetTeams({user});
-
-  const possibleTeams = getPossibleTeamsForAction({
-    teams: teams?.teams,
+  const {possibleTeams, more: moreTeams} = usePossibleTeamsForAction({
+    user,
     canCreateGlobally,
     createInTeamAction: Action.CREATE_PROJECT_IN_TEAM,
-    decodedToken: user.decodedToken,
   });
 
   const {showTeamCallout, showTeamDropdown} = getTeamFieldState({
@@ -124,12 +121,17 @@ export function CreateProjectForm({
     {
       name: 'template',
       label: `Existing ${config.notebookNameCapitalized} Template (optional)`,
-      options: templates?.map(({_id, name}: TemplateListItem) => ({
-        label: name,
-        value: _id,
-      })),
       schema: z.any().optional(),
       excludedBy: 'file',
+      testId: 'web-projects-create-template',
+      renderControl: ({value, onChange, disabled}) => (
+        <TemplatePickerSelect
+          value={typeof value === 'string' && value ? value : undefined}
+          onChange={id => onChange(id)}
+          disabled={disabled}
+          testId="web-projects-create-template"
+        />
+      ),
       onChange: value =>
         onSelectedTemplateIdChange(
           typeof value === 'string' && value ? value : undefined
@@ -154,6 +156,7 @@ export function CreateProjectForm({
       buildTeamField({
         canCreateGlobally,
         possibleTeams,
+        more: moreTeams,
         label: `Create ${config.notebookName} in this team`,
         description: canCreateGlobally
           ? `Choose a team for this ${config.notebookName}, or select "No team".`

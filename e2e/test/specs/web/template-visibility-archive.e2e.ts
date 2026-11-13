@@ -4,17 +4,20 @@
 import {loginWebPersona} from '../../helpers/auth.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
 import {byTestId} from '../../helpers/selectors.ts';
+import {findTableRow} from '../../helpers/table.ts';
 import {waitForTestId} from '../../helpers/wait.ts';
 import {getWebUrl} from '../../helpers/env.ts';
 
 async function openTemplateActions(searchTerm: string) {
   await browser.url(`${getWebUrl()}/templates`);
   await waitForTestId('web-templates-heading', {timeout: 15000});
+  // The table searches on the server a moment after typing stops, so wait
+  // for a row that names the template rather than taking the first row.
   const search = byTestId('web-data-table-search');
   if (await search.isExisting()) {
     await search.setValue(searchTerm);
   }
-  const row = await $('tbody tr');
+  const row = await findTableRow(searchTerm);
   await row.waitForClickable({timeout: 15000});
   await row.click();
   await browser.waitUntil(

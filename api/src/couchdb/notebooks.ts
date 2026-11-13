@@ -19,6 +19,10 @@ import {
   file_attachments_to_data,
   file_data_to_attachments,
   getDataDB,
+  isListingViewRow,
+  ListingSearch,
+  ListingSearchPointer,
+  listingViewPrefixRange,
   NotebookDefinition,
   NotebookUiSpecificationInput,
   ProjectDBFields,
@@ -27,16 +31,23 @@ import {
   PROJECTS_BY_TEAM_ID,
   PROJECTS_LISTING_BY_PROJECT_ID,
   PROJECTS_LISTING_BY_TEAM_ID,
+  PROJECTS_LISTING_BY_TEMPLATE_ID,
+  projectListingViewAndPrefix,
+  projectSearchViewAndPrefix,
   ProjectListItem,
+  ProjectListStatus,
   ProjectStatus,
   PutUpdateNotebookMetadataInput,
   PutUpdateNotebookOfflineMapRegionInput,
   PutUpdateNotebookUiSpecificationInput,
+  queryListingPage,
+  queryListingSearchPage,
   Resource,
   resourceRoles,
   setAttachmentDumperForType,
   setAttachmentLoaderForType,
   slugify,
+  toPaginatedList,
   NotebookUiSpec,
   normalizeNotebookUiSpecification,
   normalizeRootDescriptionForStore,
@@ -149,10 +160,17 @@ export const putProjectDoc = async (doc: ProjectDocument) => {
 export const getProjectIdsReferencingTemplate = async (
   templateId: string
 ): Promise<string[]> => {
-  const projects = await getAllProjectsListing();
-  return projects
-    .filter(project => project.templateId === templateId)
-    .map(project => project._id);
+  try {
+    const result = await localGetProjectsDb().query<ProjectListItem>(
+      PROJECTS_LISTING_BY_TEMPLATE_ID,
+      {...listingViewPrefixRange([templateId]), include_docs: false}
+    );
+    return result.rows.filter(isListingViewRow).map(row => row.id);
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading projects by template ID from the Project DB.'
+    );
+  }
 };
 
 /**
@@ -202,8 +220,8 @@ export const getAllProjectsListing = async (): Promise<ProjectListItem[]> => {
       {include_docs: false}
     );
     return resultList.rows
-      .filter(row => row.value != null && row.id && !row.id.startsWith('_'))
-      .map(row => stampListingCouchUrl({...row.value!}));
+      .filter(isListingViewRow)
+      .map(row => stampListingCouchUrl({...row.value}));
   } catch (error) {
     throw new Exceptions.InternalSystemError(
       'An error occurred while reading the project listing from the Project DB.'
@@ -212,7 +230,7 @@ export const getAllProjectsListing = async (): Promise<ProjectListItem[]> => {
 };
 
 /**
- * How many projects {@link getUserProjectsListing} and the admin-stats
+ * How many projects {@link getUserProjectsPage} and the admin-stats
  * snapshot resolve per batch when computing each project's `byteCount` (and,
  * for stats, scanning the data DB). Each `byteCount` costs one CouchDB
  * `info()` call, so this caps concurrent `info()` round-trips and stops a
@@ -221,31 +239,31 @@ export const getAllProjectsListing = async (): Promise<ProjectListItem[]> => {
  */
 export const BYTE_COUNT_BATCH_SIZE = 10;
 
-/** Filters for {@link getUserProjectsListing}. `byteCount` is off by default. */
+/** Filters for {@link getUserProjectsListing}. */
 export type GetUserProjectsListingOptions = {
   teamId?: string;
   includeArchived?: boolean;
-  includeByteCount?: boolean;
 };
 
 /**
- * Lean listing of notebooks the user can read. Shared by `GET /api/notebooks`
- * and `GET /api/directory`. Uses listing views (`include_docs: false`) so the
- * form payload is never loaded. `byteCount` is opt-in — it costs one Couch
- * `info()` per project.
+ * Every notebook the user can read, as lean listing rows. Unbounded on
+ * purpose: `GET /api/directory` must return the complete catalogue because
+ * the field app treats a missing survey as deleted. `GET /api/notebooks`
+ * pages with {@link getUserProjectsPage} instead. Uses listing views
+ * (`include_docs: false`) so the form payload is never loaded.
  */
 export const getUserProjectsListing = async (
   user: Express.User,
   options: GetUserProjectsListingOptions = {}
 ): Promise<APINotebookList[]> => {
-  const {teamId, includeArchived = false, includeByteCount = false} = options;
+  const {teamId, includeArchived = false} = options;
   const projectsDb = localGetProjectsDb();
 
   let resultList;
   try {
     resultList = teamId
       ? await projectsDb.query<ProjectListItem>(PROJECTS_LISTING_BY_TEAM_ID, {
-          key: teamId,
+          ...listingViewPrefixRange([teamId]),
           include_docs: false,
         })
       : await projectsDb.query<ProjectListItem>(
@@ -261,8 +279,8 @@ export const getUserProjectsListing = async (
   }
 
   const userProjects = resultList.rows
-    .filter(row => row.value != null && row.id && !row.id.startsWith('_'))
-    .map(row => stampListingCouchUrl({...row.value!}))
+    .filter(isListingViewRow)
+    .map(row => stampListingCouchUrl({...row.value}))
     .filter(project => {
       if (!includeArchived && project.status === ProjectStatus.ARCHIVED) {
         return false;
@@ -274,13 +292,16 @@ export const getUserProjectsListing = async (
       });
     });
 
-  if (!includeByteCount) {
-    return attachContextualLayers(userProjects);
-  }
+  return attachContextualLayers(userProjects);
+};
 
-  const detailed: APINotebookList[] = [];
-  for (let p = 0; p < userProjects.length; p += BYTE_COUNT_BATCH_SIZE) {
-    const batch = userProjects.slice(p, p + BYTE_COUNT_BATCH_SIZE);
+/** `byteCount` for each project, at most {@link BYTE_COUNT_BATCH_SIZE} at once. */
+async function withByteCounts<T extends {_id: string}>(
+  projects: T[]
+): Promise<(T & {byteCount: number})[]> {
+  const detailed: (T & {byteCount: number})[] = [];
+  for (let p = 0; p < projects.length; p += BYTE_COUNT_BATCH_SIZE) {
+    const batch = projects.slice(p, p + BYTE_COUNT_BATCH_SIZE);
     detailed.push(
       ...(await Promise.all(
         batch.map(async project => ({
@@ -290,7 +311,163 @@ export const getUserProjectsListing = async (
       ))
     );
   }
-  return attachContextualLayers(detailed);
+  return detailed;
+}
+
+/** One GET /api/notebooks page: readable notebooks plus optional `nextStartKey`. */
+export type PaginatedNotebookList = {
+  notebooks: APINotebookList[];
+  nextStartKey?: string;
+};
+
+/**
+ * Page of lean notebook rows the user can read, newest `updatedAt` first.
+ * `limit` counts rows after the `READ_PROJECT_METADATA` check. Paging, the
+ * exclusive JSON cursor and the scan cap come from the shared
+ * `queryListingPage`. `byteCount` is opt-in and costs one Couch `info()` per
+ * row of the returned page only.
+ *
+ * With `search`, the page holds the active surveys whose name matches, in
+ * word order; the caller must not combine it with another `status`.
+ */
+export const getUserProjectsPage = async (
+  user: Express.User,
+  {
+    teamId,
+    templateId,
+    status,
+    includeByteCount = false,
+    search,
+    limit,
+    startKey,
+  }: {
+    teamId?: string;
+    templateId?: string;
+    status: ProjectListStatus;
+    includeByteCount?: boolean;
+    search?: ListingSearch;
+    limit: number;
+    startKey?: string;
+  }
+): Promise<PaginatedNotebookList> => {
+  const projectsDb = localGetProjectsDb();
+  const include = (project: ProjectListItem) => {
+    // The template range is not keyed by team; filter the team here.
+    if (templateId && teamId && project.ownedByTeamId !== teamId) {
+      return false;
+    }
+    return userCanDo({
+      action: Action.READ_PROJECT_METADATA,
+      resourceId: project._id,
+      user,
+    });
+  };
+
+  let page;
+  try {
+    if (search) {
+      const {view, prefix, listingView} = projectSearchViewAndPrefix({
+        teamId,
+        templateId,
+      });
+      page = await queryListingSearchPage<ProjectListItem>({
+        query: (name, options) =>
+          projectsDb.query<ListingSearchPointer>(name, options),
+        view,
+        prefix,
+        search,
+        loadRows: keys =>
+          projectsDb.query<ProjectListItem>(listingView, {
+            keys,
+            include_docs: false,
+          }),
+        limit,
+        startKey,
+        include,
+      });
+    } else {
+      page = await queryListingPage<ProjectListItem>({
+        query: (view, options) =>
+          projectsDb.query<ProjectListItem>(view, options),
+        ...projectListingViewAndPrefix({teamId, templateId, status}),
+        limit,
+        startKey,
+        include,
+      });
+    }
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading projects from the Project DB.'
+    );
+  }
+
+  const projects = page.items.map(project => stampListingCouchUrl(project));
+  return toPaginatedList(
+    {
+      ...page,
+      items: await attachContextualLayers(
+        includeByteCount ? await withByteCounts(projects) : projects
+      ),
+    },
+    'notebooks'
+  );
+};
+
+/** Survey count and data-DB size for a team's surveys in one status. */
+export type TeamNotebookStorageBucket = {count: number; byteCount: number};
+
+/**
+ * Count and total `byteCount` of the team's surveys the user can read,
+ * overall and per status. Walks every survey the team owns server-side so a
+ * client never has to page-sum a storage total.
+ */
+export const getTeamNotebookStorage = async (
+  user: Express.User,
+  teamId: string
+): Promise<{
+  total: TeamNotebookStorageBucket;
+  byStatus: Record<ProjectStatus, TeamNotebookStorageBucket>;
+}> => {
+  const projectsDb = localGetProjectsDb();
+  let rows;
+  try {
+    rows = (
+      await projectsDb.query<ProjectListItem>(PROJECTS_LISTING_BY_TEAM_ID, {
+        ...listingViewPrefixRange([teamId]),
+        include_docs: false,
+      })
+    ).rows.filter(isListingViewRow);
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading projects from the Project DB.'
+    );
+  }
+  const readable = rows
+    .map(row => row.value)
+    .filter(project =>
+      userCanDo({
+        action: Action.READ_PROJECT_METADATA,
+        resourceId: project._id,
+        user,
+      })
+    );
+
+  const total: TeamNotebookStorageBucket = {count: 0, byteCount: 0};
+  const byStatus: Record<ProjectStatus, TeamNotebookStorageBucket> = {
+    [ProjectStatus.OPEN]: {count: 0, byteCount: 0},
+    [ProjectStatus.CLOSED]: {count: 0, byteCount: 0},
+    [ProjectStatus.ARCHIVED]: {count: 0, byteCount: 0},
+  };
+  for (const project of await withByteCounts(readable)) {
+    total.count += 1;
+    total.byteCount += project.byteCount;
+    const bucket = byStatus[project.status as ProjectStatus];
+    if (bucket) {
+      bucket.count += 1;
+      bucket.byteCount += project.byteCount;
+    }
+  }
+  return {total, byStatus};
 };
 
 /**

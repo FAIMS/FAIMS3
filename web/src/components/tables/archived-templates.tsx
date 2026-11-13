@@ -17,6 +17,7 @@ import {templateDeleteDialogLabels} from '@/archive/template-delete-warnings';
 import {Button} from '@/components/ui/button';
 import {ArchiveRestore, Trash2} from 'lucide-react';
 import {useState} from 'react';
+import {displayIsoTimestamp} from '@/lib/time';
 
 export type ArchivedTemplateRow = GetListTemplatesResponse['templates'][number];
 
@@ -205,6 +206,26 @@ export const archivedTemplateColumns: ColumnDef<ArchivedTemplateRow>[] = [
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Created by" />
     ),
+  },
+  {
+    accessorKey: 'createdAt',
+    header: ({column}) => (
+      <DataTableColumnHeader column={column} title="Created" />
+    ),
+    cell: ({getValue}) => {
+      const v = getValue<string | undefined>();
+      return v ? displayIsoTimestamp(v) : null;
+    },
+  },
+  {
+    accessorKey: 'updatedAt',
+    header: ({column}) => (
+      <DataTableColumnHeader column={column} title="Updated at" />
+    ),
+    cell: ({getValue}) => {
+      const v = getValue<string | undefined>();
+      return v ? displayIsoTimestamp(v) : null;
+    },
   },
   {
     accessorKey: 'description',

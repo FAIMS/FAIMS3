@@ -153,7 +153,7 @@ await Exif.setCoordinates({
 ### Actions
 
 - **Take Photo**: Opens camera
-- **Choose from Gallery**: Opens photo picker (native only)
+- **Choose from Gallery**: Opens the photo picker (native system library, or a raster-only file input on web)
 - **Delete**: Removes photo with confirmation dialog
 - **View**: Full-screen image preview
 

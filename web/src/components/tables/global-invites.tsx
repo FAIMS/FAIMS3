@@ -28,7 +28,7 @@ export const useGetGlobalInviteColumns = ({
 }: {
   deleteInviteHandler: (inviteId: string) => Promise<Response>;
 }): ColumnDef<
-  GetGlobalInvitesResponse[number] & {url: string; qrCode: string}
+  GetGlobalInvitesResponse['invites'][number] & {url: string; qrCode: string}
 >[] => {
   const queryClient = useQueryClient();
 
@@ -37,7 +37,7 @@ export const useGetGlobalInviteColumns = ({
   });
 
   const baseColumns: ColumnDef<
-    GetGlobalInvitesResponse[number] & {url: string; qrCode: string}
+    GetGlobalInvitesResponse['invites'][number] & {url: string; qrCode: string}
   >[] = [
     {
       accessorKey: 'name',

@@ -180,10 +180,10 @@ describe('Stats page', () => {
       expect.objectContaining({enabled: true})
     );
     expect(useGetAdminStatsTeams).toHaveBeenCalledWith(
-      expect.objectContaining({enabled: true, limit: 10, offset: 0})
+      expect.objectContaining({enabled: true, limit: 15, offset: 0})
     );
     expect(useGetAdminStatsPeople).toHaveBeenCalledWith(
-      expect.objectContaining({enabled: true, limit: 10, offset: 0})
+      expect.objectContaining({enabled: true, limit: 15, offset: 0})
     );
     expect(screen.queryByTestId('web-stats-load')).toBeNull();
     expect(screen.queryByTestId('web-stats-empty')).toBeNull();
@@ -249,7 +249,7 @@ describe('Stats page', () => {
     render(<StatsPage />);
 
     expect(useGetAdminStatsTeams).toHaveBeenCalledWith(
-      expect.objectContaining({limit: 10, offset: 0})
+      expect.objectContaining({limit: 15, offset: 0})
     );
 
     const nextButtons = screen.getAllByRole('button', {
@@ -258,7 +258,7 @@ describe('Stats page', () => {
     fireEvent.click(nextButtons[0]);
 
     expect(useGetAdminStatsTeams).toHaveBeenCalledWith(
-      expect.objectContaining({limit: 10, offset: 10})
+      expect.objectContaining({limit: 15, offset: 15})
     );
   });
 });

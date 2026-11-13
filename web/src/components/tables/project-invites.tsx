@@ -37,7 +37,7 @@ export const useGetInviteColumns = ({
   projectId: string;
   deleteInviteHandler: (inviteId: string) => Promise<Response>;
 }): ColumnDef<
-  GetProjectInvitesResponse[number] & {url: string; qrCode: string}
+  GetProjectInvitesResponse['invites'][number] & {url: string; qrCode: string}
 >[] => {
   const user = useRequiredUser();
   const queryClient = useQueryClient();
@@ -73,7 +73,7 @@ export const useGetInviteColumns = ({
     });
 
   const baseColumns: ColumnDef<
-    GetProjectInvitesResponse[number] & {url: string; qrCode: string}
+    GetProjectInvitesResponse['invites'][number] & {url: string; qrCode: string}
   >[] = [
     {
       accessorKey: 'name',

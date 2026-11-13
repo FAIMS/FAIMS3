@@ -1,0 +1,61 @@
+import {$, browser} from '@wdio/globals';
+
+const NEXT_PAGE_BUTTON = '//button[.//span[text()="Go to next page"]]';
+
+/** An XPath string literal for `text`, whatever quotes it contains. */
+function xpathLiteral(text: string): string {
+  if (!text.includes("'")) {
+    return `'${text}'`;
+  }
+  if (!text.includes('"')) {
+    return `"${text}"`;
+  }
+  return `concat(${text
+    .split("'")
+    .map(part => `'${part}'`)
+    .join(', "\'", ')})`;
+}
+
+/**
+ * Find the first data-table row whose text contains `text`.
+ *
+ * Control Centre tables show one server page at a time, so the row may not
+ * be on the page that loads first. While the row is not on the current page
+ * this presses Next; it fails once the last page has been read (or `timeout`
+ * passes) without a match.
+ *
+ * Some tables have a search box (`web-data-table-search`) that searches
+ * names on the server shortly after typing stops. A spec may type there
+ * first to shorten the walk, then call this to wait for the row; lists
+ * without the box (archive, members, invites) need the walk.
+ */
+export async function findTableRow(
+  text: string,
+  options: {timeout?: number} = {}
+) {
+  const timeout = options.timeout ?? 20000;
+  const rowSelector = `//tbody/tr[contains(., ${xpathLiteral(text)})]`;
+  let pagesRead = 1;
+
+  await browser.waitUntil(
+    async () => {
+      if (await $(rowSelector).isExisting()) {
+        return true;
+      }
+      // Next is disabled while a page is loading and on the last page, so
+      // this only moves on once the current page has been read in full.
+      const next = $(NEXT_PAGE_BUTTON);
+      if ((await next.isExisting()) && (await next.isEnabled())) {
+        await next.click();
+        pagesRead += 1;
+      }
+      return false;
+    },
+    {
+      timeout,
+      interval: 250,
+      timeoutMsg: `Expected a table row containing "${text}" (read ${pagesRead} page(s))`,
+    }
+  );
+  return $(rowSelector);
+}

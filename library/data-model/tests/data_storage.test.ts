@@ -7,8 +7,10 @@
  */
 
 import {fc, test} from '@fast-check/jest';
+import PouchDB from 'pouchdb';
 import {getDataDB, registerClient} from '../src';
 import {
+  couchInitialiser,
   deleteFAIMSDataForID,
   generateFAIMSDataID,
   getFirstRecordHead,
@@ -18,6 +20,17 @@ import {
   undeleteFAIMSDataForID,
   upsertFAIMSData,
 } from '../src/data_storage';
+import {
+  initTemplatesDB,
+  TEMPLATES_LISTING_BY_TEAM_ID,
+  TEMPLATES_LISTING_BY_TEMPLATE_ID,
+  templateListingViewAndPrefix,
+} from '../src/data_storage/templatesDB';
+import {
+  encodeListCursor,
+  listingViewRange,
+  parseListCursor,
+} from '../src/listing';
 import {listRecordMetadata} from '../src/data_storage/internals';
 import {getAllRecordsWithRegex} from '../src/data_storage/queries';
 import {Record, RecordMetadata} from '../src/types';
@@ -569,5 +582,108 @@ describe.skip('record queries', () => {
     } else {
       fail('Failed to get database');
     }
+  });
+});
+
+describe('templates listing views', () => {
+  it('emits unique ordered keys including template _id', async () => {
+    const db = new PouchDB(`templates-listing-${Date.now()}`, {
+      adapter: 'memory',
+    });
+    try {
+      await couchInitialiser({
+        db,
+        content: initTemplatesDB({}),
+        config: {forceWrite: true, applyPermissions: false},
+      });
+
+      const created = '2020-01-01T00:00:00.000Z';
+      const createdMs = Date.parse(created);
+      const thin = (id: string, team?: string, archived = false) => ({
+        _id: id,
+        name: id,
+        version: 1,
+        archived,
+        ownedByTeamId: team,
+        createdAt: created,
+        createdBy: 'admin',
+        updatedAt: created,
+        uiSpecification: {secret: 'form-payload'},
+        uiSpecProperties: {schemaVersion: '1.0.1', hash: 'a'.repeat(64)},
+      });
+
+      await db.bulkDocs([
+        thin('tpl-a', 'team-1'),
+        thin('tpl-b', 'team-1', true),
+        thin('tpl-c', 'team-2'),
+        thin('tpl-solo'),
+      ]);
+
+      const global = await db.query(TEMPLATES_LISTING_BY_TEMPLATE_ID, {
+        include_docs: false,
+      });
+      const globalKeys = global.rows.map((row: {key: unknown}) => row.key);
+      expect(globalKeys).toEqual([
+        [0, createdMs, 'tpl-a'],
+        [0, createdMs, 'tpl-c'],
+        [0, createdMs, 'tpl-solo'],
+        [1, createdMs, 'tpl-b'],
+      ]);
+      for (const row of global.rows) {
+        expect(row.value.uiSpecification).toBeUndefined();
+      }
+
+      const team = await db.query(TEMPLATES_LISTING_BY_TEAM_ID, {
+        include_docs: false,
+        startkey: ['team-1'],
+        endkey: ['team-1', {}],
+      });
+      expect(team.rows.map((row: {key: unknown}) => row.key)).toEqual([
+        ['team-1', 0, createdMs, 'tpl-a'],
+        ['team-1', 1, createdMs, 'tpl-b'],
+      ]);
+
+      const teamActive = await db.query(TEMPLATES_LISTING_BY_TEAM_ID, {
+        include_docs: false,
+        ...listingViewRange({
+          prefix: templateListingViewAndPrefix({
+            teamId: 'team-1',
+            includeArchived: false,
+          }).prefix,
+        }),
+      });
+      expect(teamActive.rows.map((row: {id: string}) => row.id)).toEqual([
+        'tpl-a',
+      ]);
+
+      const newer = '2021-06-01T00:00:00.000Z';
+      await db.put({
+        ...thin('tpl-new', 'team-1'),
+        // Older createdAt, newer updatedAt: listing keys on updatedAt.
+        createdAt: created,
+        updatedAt: newer,
+      });
+      const newestFirst = await db.query(TEMPLATES_LISTING_BY_TEMPLATE_ID, {
+        include_docs: false,
+        ...listingViewRange({
+          prefix: templateListingViewAndPrefix({includeArchived: false}).prefix,
+        }),
+      });
+      expect(newestFirst.rows.map((row: {id: string}) => row.id)).toEqual([
+        'tpl-new',
+        'tpl-solo',
+        'tpl-c',
+        'tpl-a',
+      ]);
+    } finally {
+      await db.destroy();
+    }
+  });
+
+  it('encodes and parses listing cursors', () => {
+    const encoded = encodeListCursor([1577836800000, 'tpl-a']);
+    expect(parseListCursor(encoded)).toEqual([1577836800000, 'tpl-a']);
+    expect(parseListCursor('tpl-a')).toBeUndefined();
+    expect(parseListCursor('')).toBeUndefined();
   });
 });

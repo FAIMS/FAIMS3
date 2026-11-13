@@ -13,7 +13,7 @@ import {RestoreArchivedProjectDialog} from '../dialogs/restore-archived-project-
 import {DeleteArchivedProjectDialog} from '../dialogs/delete-archived-project-dialog';
 import {
   Action,
-  GetNotebookListWithStatsResponse,
+  GetNotebookListResponse,
   ProjectStatus,
 } from '@faims3/data-model';
 import {useAuth} from '@/context/auth-provider';
@@ -21,7 +21,9 @@ import {userCanDo} from '@/hooks/auth-hooks';
 import {Button} from '@/components/ui/button';
 import {ArchiveRestore, Trash2} from 'lucide-react';
 import {useState} from 'react';
-export type ArchivedProjectRow = GetNotebookListWithStatsResponse[number];
+import {displayIsoTimestamp} from '@/lib/time';
+
+export type ArchivedProjectRow = GetNotebookListResponse['notebooks'][number];
 
 const ARCHIVE_ACTION_COL_META = {
   headerClassName: 'w-10 max-w-10 px-0.5 text-center align-middle',
@@ -210,6 +212,26 @@ export const archivedProjectColumns: ColumnDef<ArchivedProjectRow>[] = [
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Created by" />
     ),
+  },
+  {
+    accessorKey: 'createdAt',
+    header: ({column}) => (
+      <DataTableColumnHeader column={column} title="Created" />
+    ),
+    cell: ({getValue}) => {
+      const v = getValue<string | undefined>();
+      return v ? displayIsoTimestamp(v) : null;
+    },
+  },
+  {
+    accessorKey: 'updatedAt',
+    header: ({column}) => (
+      <DataTableColumnHeader column={column} title="Updated at" />
+    ),
+    cell: ({getValue}) => {
+      const v = getValue<string | undefined>();
+      return v ? displayIsoTimestamp(v) : null;
+    },
   },
   {
     accessorKey: 'description',

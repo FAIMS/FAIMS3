@@ -180,6 +180,39 @@ describe('Request validation (express-zod-safe)', () => {
       expectValidationError(response.body, 'Query');
     });
 
+    it('rejects out-of-range and non-numeric limit on template list', async () => {
+      for (const limit of ['0', '501', 'abc']) {
+        const response = await requestAuthAndType(
+          request(app).get('/api/templates').query({limit}),
+          adminToken
+        ).expect(400);
+
+        expectValidationError(
+          response.body,
+          'Query',
+          'limit must be between 1 and 500'
+        );
+      }
+    });
+
+    it('rejects invalid visibility on template list', async () => {
+      const response = await requestAuthAndType(
+        request(app).get('/api/templates').query({visibility: 'all'}),
+        adminToken
+      ).expect(400);
+
+      expectValidationError(response.body, 'Query');
+    });
+
+    it('accepts limit=1 and limit=500 on template list', async () => {
+      for (const limit of ['1', '500']) {
+        await requestAuthAndType(
+          request(app).get('/api/templates').query({limit}),
+          adminToken
+        ).expect(200);
+      }
+    });
+
     it('rejects invalid includeArchived values on team list', async () => {
       const response = await requestAuthAndType(
         request(app).get('/api/teams').query({includeArchived: 'yes'}),

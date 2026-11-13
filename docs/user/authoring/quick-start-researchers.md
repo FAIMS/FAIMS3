@@ -33,7 +33,7 @@ This guide helps researchers design effective digital data collection notebooks 
 | Boundaries and features      | Map drawing           | Polygons, lines, points                    | Visual feature creation on base maps            |
 | **Media & Files**            |                       |                                            |                                                 |
 | Field photographs            | Take photo            | Site images, specimen photos               | Camera or gallery selection                     |
-| Document attachments         | File upload           | PDFs, spreadsheets, reports                | Accepts any file type                           |
+| Document attachments         | File upload           | PDFs, spreadsheets, reports                | Most file types (not SVG/HTML)                  |
 | **Relationships**            |                       |                                            |                                                 |
 | Record connections           | Related records       | Links between contexts, samples to sites   | Creates data relationships                      |
 | **Instructions**             |                       |                                            |                                                 |

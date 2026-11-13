@@ -119,6 +119,17 @@ export const useGetLongLivedTokensColumns = ({
         }) => displayDateTime({timestamp: createdAt}),
       },
       {
+        accessorKey: 'updatedAt',
+        header: ({column}) => (
+          <DataTableColumnHeader column={column} title="Updated at" />
+        ),
+        cell: ({
+          row: {
+            original: {updatedAt},
+          },
+        }) => displayDateTime({timestamp: updatedAt}),
+      },
+      {
         accessorKey: 'lastUsedAt',
         header: ({column}) => (
           <DataTableColumnHeader column={column} title="Last Used" />

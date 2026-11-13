@@ -32,6 +32,7 @@ import {
   GetDbById,
   collectProjectDataDbs,
   dataDbNameForProject,
+  mapWithConcurrencyLimit,
   migrateDbs,
   ProjectDataDbRef,
   registerDbAtCurrentVersion,
@@ -448,6 +449,25 @@ export const getDbById: GetDbById = async ({dbType, id}) => {
 const DB_INIT_LOG = '[db-initialisation]';
 
 /**
+ * How many projects or databases startup works on at once for its light
+ * per-item steps: checking design/security documents, opening data DB
+ * handles and the per-project uiSpec walk. The items are independent of each
+ * other there, so the only shared resource is CouchDB itself. Work for one
+ * item stays sequential, so this is also the cap on in-flight CouchDB
+ * requests from these steps.
+ */
+export const DB_INIT_CONCURRENCY = 8;
+
+/**
+ * How many project data DBs are migrated at once. Lower than
+ * {@link DB_INIT_CONCURRENCY} because a pending migration scans and rewrites
+ * every document in the database. Safe to run side by side only while every
+ * DATA migration step stays inside its own database (true of all current
+ * steps); drop this to 1 if a step ever reads or writes another data DB.
+ */
+const DATA_DB_MIGRATION_CONCURRENCY = 4;
+
+/**
  * Initialises the database level configuration for a project's data DB. Can
  * create the DB if it doesn't already exist.
  */
@@ -615,39 +635,50 @@ export const initialiseDbAndKeys = async ({
       .join(', ')}`
   );
 
-  for (const {dbName, db, content} of globalDbs) {
-    const designIds = content.designDocuments.map(doc => doc._id).join(', ');
-    console.log(
-      `${DB_INIT_LOG} Initialising global DB ${dbName} (${content.designDocuments.length} design doc(s)${
-        designIds ? `: ${designIds}` : ''
-      }${content.defaultDocument ? ', default document' : ''}, force=${force})`
-    );
-    try {
-      await couchInitialiser({
-        db,
-        content,
-        config: {applyPermissions: !isTesting, forceWrite: force},
-      });
-    } catch (e) {
-      console.error(
-        `${DB_INIT_LOG} Failed to initialise global DB ${dbName}`,
-        e
+  // Global DBs do not depend on each other at init time, so they are written
+  // side by side. All of them are done before the project listing is read
+  // below. The first failure still aborts initialisation.
+  await mapWithConcurrencyLimit({
+    items: globalDbs,
+    concurrency: DB_INIT_CONCURRENCY,
+    mapper: async ({dbName, db, content}) => {
+      const designIds = content.designDocuments.map(doc => doc._id).join(', ');
+      console.log(
+        `${DB_INIT_LOG} Initialising global DB ${dbName} (${content.designDocuments.length} design doc(s)${
+          designIds ? `: ${designIds}` : ''
+        }${content.defaultDocument ? ', default document' : ''}, force=${force})`
       );
-      throw new Exceptions.InternalSystemError(
-        `An error occurred while initialising the ${dbName} database!...` + e
-      );
-    }
-  }
+      try {
+        await couchInitialiser({
+          db,
+          content,
+          config: {applyPermissions: !isTesting, forceWrite: force},
+        });
+      } catch (e) {
+        console.error(
+          `${DB_INIT_LOG} Failed to initialise global DB ${dbName}`,
+          e
+        );
+        throw new Exceptions.InternalSystemError(
+          `An error occurred while initialising the ${dbName} database!...` + e
+        );
+      }
+    },
+  });
 
   // For each project, ensure the data DBs are also initialised/synced
   const projects = await getAllProjectsListing();
   console.log(
-    `${DB_INIT_LOG} Found ${projects.length} project(s); initialising data DBs`
+    `${DB_INIT_LOG} Found ${projects.length} project(s); initialising data DBs (up to ${DB_INIT_CONCURRENCY} at a time)`
   );
 
-  for (const project of projects) {
-    await initialiseDataDb({projectId: project._id, force});
-  }
+  // One data DB per project, each independent of the others. The first
+  // failure still aborts initialisation.
+  await mapWithConcurrencyLimit({
+    items: projects,
+    concurrency: DB_INIT_CONCURRENCY,
+    mapper: project => initialiseDataDb({projectId: project._id, force}),
+  });
 
   if (pushKeys) {
     console.log(`${DB_INIT_LOG} Pushing JWT key configuration`);
@@ -686,6 +717,8 @@ export const migrateAllProjectDataDbs = async () => {
       projects,
       openDataDb: async (projectId: string) =>
         (await getDataDb(projectId)) as DatabaseInterface,
+      // Each open is one project-document read
+      concurrency: DB_INIT_CONCURRENCY,
     });
 
   for (const {projectId, dbName} of dataDbs) {
@@ -717,6 +750,7 @@ export const migrateAllProjectDataDbs = async () => {
     migrationDb: getMigrationDb(),
     userId: 'system',
     getDbById,
+    concurrency: DATA_DB_MIGRATION_CONCURRENCY,
   });
 };
 
@@ -777,7 +811,8 @@ export const initialiseAndMigrateDBs = async ({
     },
   ];
 
-  // Migrate these first
+  // Migrate these first. Deliberately one at a time, in this order: global
+  // migrations can read other databases, so they are not independent.
   const migrationsDb = getMigrationDb();
   console.log(
     `[migrate] Migrating ${dbs.length} global DB(s): ${dbs

@@ -1,16 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   ExistingTeamsDBDocument,
+  ListingSearch,
+  ListingSearchPointer,
+  queryListingPage,
+  queryListingSearchPage,
   safeWriteDocument,
   slugify,
+  teamListingViewAndPrefix,
+  teamSearchViewAndPrefix,
   TeamsDBDocument,
   TeamsDBFields,
+  toPaginatedList,
 } from '@faims3/data-model';
 import {getTeamsDB} from '.';
 import * as Exceptions from '../exceptions';
 
 /**
- * Lists all documents in the teams DB.
+ * Lists all documents in the teams DB. Unbounded: for admin-stats snapshots
+ * and internal walks only. HTTP lists use {@link getTeamsPage}.
  * @returns an array of team objects
  */
 export const getAllTeams = async (): Promise<ExistingTeamsDBDocument[]> => {
@@ -26,6 +34,73 @@ export const getAllTeams = async (): Promise<ExistingTeamsDBDocument[]> => {
       .map(document => {
         return document.doc!;
       });
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading teams from the Teams DB.'
+    );
+  }
+};
+
+/** One GET /api/teams page: visible teams plus optional `nextStartKey`. */
+export type PaginatedTeamList = {
+  teams: ExistingTeamsDBDocument[];
+  nextStartKey?: string;
+};
+
+/**
+ * Page of teams `canView` accepts, newest `updatedAt` first. `includeArchived`
+ * is XOR: true lists archived teams only. Paging, the exclusive JSON
+ * `[updatedAtMs, teamId]` cursor and the scan cap come from the shared
+ * `queryListingPage`.
+ *
+ * With `search`, the page holds the non-archived teams whose name matches,
+ * in word order; the caller must not combine it with `includeArchived`.
+ */
+export const getTeamsPage = async ({
+  includeArchived,
+  search,
+  limit,
+  startKey,
+  canView,
+}: {
+  includeArchived: boolean;
+  search?: ListingSearch;
+  limit: number;
+  startKey?: string;
+  canView: (team: ExistingTeamsDBDocument) => boolean;
+}): Promise<PaginatedTeamList> => {
+  const teamsDb = getTeamsDB();
+  try {
+    if (search) {
+      const {view, prefix, listingView} = teamSearchViewAndPrefix();
+      return toPaginatedList(
+        await queryListingSearchPage<ExistingTeamsDBDocument>({
+          query: (name, options) =>
+            teamsDb.query<ListingSearchPointer>(name, options),
+          view,
+          prefix,
+          search,
+          loadRows: keys =>
+            teamsDb.query<ExistingTeamsDBDocument>(listingView, {
+              keys,
+              include_docs: false,
+            }),
+          limit,
+          startKey,
+          include: canView,
+        }),
+        'teams'
+      );
+    }
+    const page = await queryListingPage<ExistingTeamsDBDocument>({
+      query: (view, options) =>
+        teamsDb.query<ExistingTeamsDBDocument>(view, options),
+      ...teamListingViewAndPrefix({includeArchived}),
+      limit,
+      startKey,
+      include: canView,
+    });
+    return toPaginatedList(page, 'teams');
   } catch (error) {
     throw new Exceptions.InternalSystemError(
       'An error occurred while reading teams from the Teams DB.'
