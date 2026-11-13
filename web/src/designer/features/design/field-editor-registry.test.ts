@@ -3,13 +3,17 @@
  * @file Tests for `fieldEditorRegistry` lookup and `renderFieldEditor` fallback.
  */
 
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
+import {BaseFieldEditor} from '../../components/Fields/BaseFieldEditor';
+import {TextFieldEditor} from '../../components/Fields/TextFieldEditor';
 import {
   getFieldEditorRenderer,
   renderFieldEditor,
 } from './field-editor-registry';
-import {BaseFieldEditor} from '../../components/Fields/BaseFieldEditor';
-import {TextFieldEditor} from '../../components/Fields/TextFieldEditor';
+
+vi.mock('../../components/mdx-editor', () => ({
+  MdxEditor: () => null,
+}));
 
 describe('field editor registry', () => {
   it('contains renderers for core field components', () => {

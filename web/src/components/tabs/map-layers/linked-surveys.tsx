@@ -7,7 +7,11 @@ import {
 import {columns} from '@/components/tables/projects';
 import {Button} from '@/components/ui/button';
 import {config} from '@/constants';
-import {useRequiredUser, userCanDo} from '@/hooks/auth-hooks';
+import {
+  useRequiredUser,
+  userCanDo,
+  userCanUpdateSomeProject,
+} from '@/hooks/auth-hooks';
 import {Info} from 'lucide-react';
 import {
   invalidateMapAssets,
@@ -18,7 +22,6 @@ import {
 import {get, usePagedProjects} from '@/hooks/queries';
 import {
   Action,
-  getUserResourcesForAction,
   type GetNotebookListResponse,
   type GetNotebookResponse,
 } from '@faims3/data-model';
@@ -184,13 +187,10 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
   );
   const canUnlinkSome = linkedSurveys.some(canAdminister);
   // Whether to offer linking at all is decided from the user's roles, since
-  // the surveys they administer may not be on the first page.
-  const canLinkSome =
-    userCanDo({user, action: Action.UPDATE_PROJECT_DETAILS}) ||
-    getUserResourcesForAction({
-      decodedToken: user.decodedToken,
-      action: Action.UPDATE_PROJECT_DETAILS,
-    }).length > 0;
+  // the surveys they administer may not be on the first page. Do not call
+  // `userCanDo` without a survey id: UPDATE_PROJECT_DETAILS is
+  // resource-specific, so that is always false (including for Super Users).
+  const canLinkSome = userCanUpdateSomeProject(user);
   const linkedColumns = useMemo(
     () => surveyColumns({assetId, mode: 'unlink', showAction: canUnlinkSome}),
     [assetId, canUnlinkSome]
@@ -254,7 +254,10 @@ export function MapLayerLinkedSurveys({assetId}: {assetId: string}) {
         </section>
       ) : null}
       {canLinkSome ? (
-        <section className="flex flex-col gap-3">
+        <section
+          className="flex flex-col gap-3"
+          data-testid="web-map-layers-available"
+        >
           <div>
             <h2 className="text-lg font-semibold">
               Available {config.notebookNamePluralCapitalized}

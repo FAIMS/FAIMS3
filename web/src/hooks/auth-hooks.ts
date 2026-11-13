@@ -3,6 +3,7 @@ import {isUserExpired, useAuth, User} from '@/context/auth-provider';
 import {
   Action,
   getUserResourcesForAction,
+  globalRolesGrantAction,
   isAuthorized,
   Role,
 } from '@faims3/data-model';
@@ -104,6 +105,40 @@ export const userCanUploadMapLayer = (user: User | null): boolean => {
       decodedToken: user.decodedToken,
       action: Action.CREATE_MAP_ASSET_IN_TEAM,
     }).length > 0
+  );
+};
+
+/**
+ * True when the user can change details of at least one survey — the grant
+ * needed to link or unlink a map layer.
+ *
+ * `UPDATE_PROJECT_DETAILS` is resource-specific: `isAuthorized` without a
+ * survey id is always false, including for Super Users. Super Users are
+ * granted it via global roles; project managers have it on listed surveys;
+ * team managers/admins virtually manage their team's surveys even when those
+ * survey ids are not all in the JWT.
+ */
+export const userCanUpdateSomeProject = (user: User | null): boolean => {
+  if (!user?.decodedToken) {
+    return false;
+  }
+  if (
+    globalRolesGrantAction(user.decodedToken, Action.UPDATE_PROJECT_DETAILS)
+  ) {
+    return true;
+  }
+  if (
+    getUserResourcesForAction({
+      decodedToken: user.decodedToken,
+      action: Action.UPDATE_PROJECT_DETAILS,
+    }).length > 0
+  ) {
+    return true;
+  }
+  return user.decodedToken.resourceRoles.some(
+    resourceRole =>
+      resourceRole.role === Role.TEAM_MANAGER ||
+      resourceRole.role === Role.TEAM_ADMIN
   );
 };
 
