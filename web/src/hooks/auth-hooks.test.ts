@@ -10,7 +10,7 @@ function user(
   return {
     token: 'token',
     refreshToken: 'refresh',
-    user: {id: 'u', name: 'User', emails: [], globalRoles: []},
+    user: {id: 'u', name: 'User', email: 'u@example.com', isVerified: true},
     decodedToken: {
       username: 'u',
       name: 'User',

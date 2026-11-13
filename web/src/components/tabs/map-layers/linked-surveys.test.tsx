@@ -53,8 +53,8 @@ function adminUser(): User {
     user: {
       id: 'admin',
       name: 'Admin',
-      emails: [],
-      globalRoles: [Role.GENERAL_ADMIN],
+      email: 'admin@example.com',
+      isVerified: true,
     },
     decodedToken: {
       username: 'admin',
@@ -74,8 +74,8 @@ function guestUser(): User {
     user: {
       id: 'guest',
       name: 'Guest',
-      emails: [],
-      globalRoles: [Role.GENERAL_USER],
+      email: 'guest@example.com',
+      isVerified: true,
     },
     decodedToken: {
       username: 'guest',
