@@ -9,6 +9,7 @@ import {act, fireEvent, render, screen} from '@testing-library/react';
 import {createRef} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import globalTheme from '../../theme/index';
+import {flushPendingDesignerEdits} from '../../state/pendingEditFlush';
 import {createChipCatalog} from './chipModel';
 import {
   ExpressionEditor,
@@ -202,6 +203,22 @@ describe('ExpressionEditor', () => {
       handle.current?.insertRef('f_xyz');
     });
     expect(handle.current?.getValue()).toBe('{f_xyz} {f_abc}');
+  });
+
+  it('flushPendingDesignerEdits emits onChange without waiting for debounce', () => {
+    vi.useFakeTimers();
+    const onChange = vi.fn();
+    renderEditor({value: '', onChange});
+    const view = viewFromEditor();
+    act(() => {
+      view.dispatch({changes: {from: 0, insert: '1 + 2'}});
+    });
+    expect(onChange).not.toHaveBeenCalled();
+    act(() => {
+      flushPendingDesignerEdits();
+    });
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('1 + 2');
   });
 
   it('debounces onChange', () => {

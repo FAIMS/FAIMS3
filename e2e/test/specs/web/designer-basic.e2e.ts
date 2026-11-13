@@ -13,7 +13,7 @@ describe('Web Dashboard — Designer basic', () => {
     await loginWebPersona('redMemberCreator');
   });
 
-  it('should open designer from a template when Open in Designer is available', async () => {
+  it('should open designer from a template when Edit Template is available', async () => {
     await browser.url(`${getWebUrl()}/templates`);
     await browser.waitUntil(
       async () =>
@@ -37,7 +37,7 @@ describe('Web Dashboard — Designer basic', () => {
       await actionsTab.click();
     }
 
-    const openDesigner = await $('button*=Designer');
+    const openDesigner = await $('button*=Edit Template');
     if (!(await openDesigner.isExisting())) {
       await captureStep({
         surface: 'web',
@@ -53,6 +53,52 @@ describe('Web Dashboard — Designer basic', () => {
     await captureStep({
       surface: 'web',
       label: 'designer-open',
+    });
+  });
+
+  it('should keep a draft on close and publish after an edit', async () => {
+    await browser.url(`${getWebUrl()}/templates`);
+    await browser.waitUntil(
+      async () =>
+        (await $('table').isExisting()) ||
+        (await byTestId('web-templates-heading').isExisting()),
+      {timeout: 15000}
+    );
+
+    const link = await $('a[href*="/templates/"]');
+    if (!(await link.isExisting())) {
+      return;
+    }
+    await link.click();
+
+    const actionsTab = await $('button*=Actions');
+    if (await actionsTab.isExisting()) {
+      await actionsTab.click();
+    }
+
+    const openDesigner = await $('button*=Edit Template');
+    if (!(await openDesigner.isExisting())) {
+      return;
+    }
+    await openDesigner.click();
+    await WebDesignerPage.waitForOpen();
+
+    await WebDesignerPage.addForm(`E2E Form ${Date.now()}`);
+    await WebDesignerPage.close();
+    await WebDesignerPage.closeKeepDraft();
+    await browser.waitUntil(async () => !(await WebDesignerPage.isOpen()), {
+      timeout: 15000,
+    });
+
+    await openDesigner.waitForClickable({timeout: 10000});
+    await openDesigner.click();
+    await WebDesignerPage.waitForOpen();
+    await WebDesignerPage.save();
+    await WebDesignerPage.confirmPublish();
+    await expect(byTestId('web-designer-shell')).toBeDisplayed();
+    await captureStep({
+      surface: 'web',
+      label: 'designer-published',
     });
   });
 });

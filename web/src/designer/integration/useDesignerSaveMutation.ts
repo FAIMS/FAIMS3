@@ -23,6 +23,33 @@ type UseDesignerSaveMutationParams = {
   token?: string;
 };
 
+/** Optional If-Match (`uiSpecProperties.hash`) for a conditional publish. */
+export type DesignerPublishOptions = {
+  ifMatch?: string;
+};
+
+/**
+ * PUT /uiSpecification returned 409: the live hash no longer matches If-Match.
+ * The host overlay should confirm overwrite (omit If-Match) rather than retry.
+ */
+export class DesignerUiSpecConflictError extends Error {
+  readonly status = 409;
+  constructor(
+    message = 'The live design has changed since this draft was opened. Reload the live design or confirm overwrite.'
+  ) {
+    super(message);
+    this.name = 'DesignerUiSpecConflictError';
+  }
+}
+
+/** Quote a uiSpec hash for the If-Match header, or omit when unset. */
+export function quoteUiSpecIfMatch(hash?: string): string | undefined {
+  if (!hash) {
+    return undefined;
+  }
+  return `"${hash}"`;
+}
+
 const downloadJsonFile = (jsonText: string, filename: string) => {
   const blob = new Blob([jsonText], {type: 'application/json'});
 
@@ -35,6 +62,18 @@ const downloadJsonFile = (jsonText: string, filename: string) => {
 
   URL.revokeObjectURL(url);
 };
+
+function conflictMessageFromBody(errorText: string): string {
+  try {
+    const body = JSON.parse(errorText) as {error?: {message?: string}};
+    if (body.error?.message) {
+      return body.error.message;
+    }
+  } catch {
+    // Body is not JSON; keep the default conflict copy.
+  }
+  return new DesignerUiSpecConflictError().message;
+}
 
 /**
  * Mutation that uploads designer-exported JSON (File) via PUT and refreshes
@@ -53,19 +92,31 @@ export const useDesignerSaveMutation = ({
   const queryKey = [resourceType, resourceId] as const;
 
   const mutation = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({file, ifMatch}: {file: File; ifMatch?: string}) => {
       const jsonText = await file.text();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      };
+      const quoted = quoteUiSpecIfMatch(ifMatch);
+      if (quoted) {
+        headers['If-Match'] = quoted;
+      }
       const response = await fetch(
         `${config.apiUrl}/api/${apiResourceType}/${resourceId}/uiSpecification`,
         {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers,
           body: jsonText,
         }
       );
+
+      if (response.status === 409) {
+        const errorText = await response.text();
+        throw new DesignerUiSpecConflictError(
+          conflictMessageFromBody(errorText)
+        );
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -80,8 +131,12 @@ export const useDesignerSaveMutation = ({
       return response.json();
     },
 
-    // Retry failed saves.
-    retry: 3,
+    retry: (failureCount, error) => {
+      if (error instanceof DesignerUiSpecConflictError) {
+        return false;
+      }
+      return failureCount < 3;
+    },
     retryDelay: 1000 * 2,
 
     onSuccess: updatedNotebook => {
@@ -92,30 +147,44 @@ export const useDesignerSaveMutation = ({
 
   // Wraps the designer save mutation with toast feedback
   // and a JSON download fallback link if the save fails.
-  const mutateAsyncWithToast = async (file: File) => {
+  const mutateAsyncWithToast = async (
+    file: File,
+    options?: DesignerPublishOptions
+  ) => {
     const jsonText = await file.text();
+    const toastId = toast.loading('Designer saving...');
 
-    return toast.promise(mutation.mutateAsync(file), {
-      loading: 'Designer saving...',
-      success: 'Designer saved successfully.',
-      error: error => {
-        const errorMessage = error?.message || 'No error message provided';
+    try {
+      const result = await mutation.mutateAsync({
+        file,
+        ifMatch: options?.ifMatch,
+      });
+      toast.success('Designer saved successfully.', {id: toastId});
+      return result;
+    } catch (error) {
+      if (error instanceof DesignerUiSpecConflictError) {
+        toast.dismiss(toastId);
+        throw error;
+      }
 
-        return {
-          message: 'Designer save failed',
-          description: `${errorMessage}. Your changes were not saved. Download the updated JSON and upload it again later.`,
-          action: {
-            label: 'Download JSON',
-            onClick: () => {
-              downloadJsonFile(
-                jsonText,
-                `${resourceType}-${resourceId}-unsaved-designer.json`
-              );
-            },
+      const errorMessage =
+        error instanceof Error ? error.message : 'No error message provided';
+
+      toast.error('Designer save failed', {
+        id: toastId,
+        description: `${errorMessage}. Your changes were not saved. Download the updated JSON and upload it again later.`,
+        action: {
+          label: 'Download JSON',
+          onClick: () => {
+            downloadJsonFile(
+              jsonText,
+              `${resourceType}-${resourceId}-unsaved-designer.json`
+            );
           },
-        };
-      },
-    });
+        },
+      });
+      throw error;
+    }
   };
 
   return {

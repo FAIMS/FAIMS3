@@ -45,6 +45,7 @@ import {
   compileUiSpecConditionals,
   buildUiSpecProperties,
 } from '@faims3/data-model';
+import {assertUiSpecIfMatch} from '../utils/uiSpecIfMatch';
 import {
   getDataDb,
   getNanoDataDb,
@@ -409,16 +410,19 @@ export const updateProjectMetadata = async (
 
 /**
  * Replaces the full uiSpecification bundle on a project.
+ * Optional If-Match (uiSpec hash) refuses the write when the live design moved.
  */
 export const updateProjectUiSpecification = async (
   projectId: string,
   uiSpecification:
     | PutUpdateNotebookUiSpecificationInput
-    | NotebookUiSpecificationInput
+    | NotebookUiSpecificationInput,
+  options?: {ifMatchHeader?: string}
 ): Promise<ExistingProjectDocument> => {
   const normalizedUiSpecification =
     normalizeUiSpecificationOrThrow(uiSpecification);
   const project = await getProjectById(projectId);
+  assertUiSpecIfMatch(project.uiSpecProperties.hash, options?.ifMatchHeader);
   const updated: ProjectDocument = {
     ...project,
     uiSpecification: normalizedUiSpecification,

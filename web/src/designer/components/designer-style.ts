@@ -169,6 +169,15 @@ export const designerDialogTitleSx: SxProps<Theme> = {
     alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.2 : 0.08),
 };
 
+/** DialogTitle that also hosts a corner close control. */
+export const designerDialogTitleWithCloseSx: SxProps<Theme> = {
+  ...designerDialogTitleSx,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 1,
+};
+
 export const designerCancelButtonSx: SxProps<Theme> = {
   textTransform: 'none',
   fontWeight: 700,
@@ -187,11 +196,43 @@ export const designerCancelButtonSx: SxProps<Theme> = {
   },
 };
 
+/** Overlay header Close control: labelled, icon included, subtle primary wash. */
+export const designerOverlayCloseButtonSx: SxProps<Theme> = {
+  textTransform: 'none',
+  fontWeight: 700,
+  minWidth: 0,
+  px: 1.5,
+  py: 0.6,
+  color: 'primary.main',
+  backgroundColor: (t: Theme) =>
+    alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.22 : 0.1),
+  border: '1px solid',
+  borderColor: (t: Theme) =>
+    alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.45 : 0.28),
+  '& .MuiButton-endIcon': {
+    ml: 0.6,
+    mr: -0.25,
+  },
+  '&:hover': {
+    backgroundColor: (t: Theme) =>
+      alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.32 : 0.16),
+    borderColor: (t: Theme) =>
+      alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.6 : 0.42),
+  },
+};
+
+/** Outlined / text action buttons inside designer decision dialogs. */
+export const designerDialogButtonSx: SxProps<Theme> = {
+  textTransform: 'none',
+  fontWeight: 700,
+};
+
 export const designerDialogActionsSx: SxProps<Theme> = {
   px: {xs: 2.25, sm: 3.25},
   pb: {xs: 2.25, sm: 2.75},
   pt: 1.75,
   gap: 1,
+  flexWrap: 'wrap',
 };
 
 export const designerDialogFieldLabelSx: SxProps<Theme> = {
