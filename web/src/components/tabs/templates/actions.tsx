@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import React, {useMemo, useState} from 'react';
+import React from 'react';
 import {ArchiveTemplateDialog} from '@/components/dialogs/archive-template-dialog';
 import {TemplateVisibilityDialog} from '@/components/dialogs/template-visibility-dialog';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
@@ -10,9 +10,9 @@ import {Card} from '@/components/ui/card';
 import {useGetTemplate} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {useQueryClient} from '@tanstack/react-query';
+import {DesignerUnsavedDraftIndicator} from '@/components/designer-unsaved-draft-indicator';
 import {DesignerDialog} from '@/components/dialogs/designer-dialog';
 import {ActionsGrid} from '@/components/tabs/actions-grid';
-import type {NotebookWithHistory} from '@/designer/state/initial';
 import {EditTemplateDialog} from '@/components/dialogs/edit-template';
 import {EditTemplateDetailsDialog} from '@/components/dialogs/edit-template-details-dialog';
 import {Action, getUserResourcesForAction} from '@faims3/data-model';
@@ -24,10 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-  toDesignerNotebookWithHistory,
-  useDesignerSaveMutation,
-} from '@/designer/integration';
+import {useDesignerHostOverlay} from '@/designer/integration';
 import {Spinner} from '@/components/ui/spinner';
 
 /**
@@ -40,26 +37,18 @@ import {Spinner} from '@/components/ui/spinner';
 const TemplateActions = () => {
   const user = useRequiredUser();
   const {templateId} = Route.useParams();
-  const {data, isLoading} = useGetTemplate({user, templateId});
+  const {data, isLoading, refetch} = useGetTemplate({user, templateId});
   const queryClient = useQueryClient();
-  const [editorOpen, setEditorOpen] = useState(false);
-
-  // PUT template notebook JSON from the designer; react-query updates cache on success.
-  const saveTemplateNotebook = useDesignerSaveMutation({
-    resourceType: 'templates',
-    apiResourceType: 'templates',
-    resourceId: templateId,
+  const overlay = useDesignerHostOverlay({
+    userId: user.user.id,
     token: user.token,
+    resourceKind: 'templates',
+    resourceId: templateId,
+    apiResourceType: 'templates',
+    mode: 'template',
+    data,
+    refetch,
   });
-
-  const initialNotebook = useMemo<NotebookWithHistory | undefined>(() => {
-    return toDesignerNotebookWithHistory(data, 'template');
-  }, [data]);
-
-  const handleEditorClose = (file?: File) => {
-    if (file) saveTemplateNotebook.mutateAsyncWithToast(file);
-    setEditorOpen(false);
-  };
 
   // Invalidate template query after notebook file upload from elsewhere in the UI.
   const uploadTemplateCallback = () => {
@@ -111,7 +100,7 @@ const TemplateActions = () => {
   const archived = data?.archived === true;
 
   // Prevent reopening the editor while the latest design is still saving.
-  const isTemplateNotebookSaving = saveTemplateNotebook.isPending;
+  const isTemplateNotebookSaving = overlay.isSaving;
 
   return (
     <>
@@ -120,9 +109,17 @@ const TemplateActions = () => {
           <Card>
             <List>
               <ListItem>
-                <ListLabel>Edit Template in Designer</ListLabel>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ListLabel>Edit Template</ListLabel>
+                  <DesignerUnsavedDraftIndicator
+                    visible={overlay.draftHost.unpublished}
+                    stale={overlay.draftHost.stale}
+                    resourceName="template"
+                    resourceNameCapitalized="Template"
+                  />
+                </div>
                 <ListDescription>
-                  Open the Designer to change this template.
+                  Open the designer to edit forms and fields for this template.
                 </ListDescription>
               </ListItem>
               <ListItem>
@@ -131,7 +128,7 @@ const TemplateActions = () => {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className="inline-block w-fit">
-                          <Button disabled>Open in Designer</Button>
+                          <Button disabled>Edit Template</Button>
                         </span>
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs text-balance">
@@ -143,9 +140,11 @@ const TemplateActions = () => {
                 ) : (
                   <Button
                     disabled={
-                      isLoading || !initialNotebook || isTemplateNotebookSaving
+                      isLoading ||
+                      !overlay.initialNotebook ||
+                      isTemplateNotebookSaving
                     }
-                    onClick={() => setEditorOpen(true)}
+                    onClick={() => overlay.setEditorOpen(true)}
                   >
                     {isTemplateNotebookSaving ? (
                       <span className="flex items-center gap-2">
@@ -153,7 +152,7 @@ const TemplateActions = () => {
                         Saving...
                       </span>
                     ) : (
-                      'Open in Designer'
+                      'Edit Template'
                     )}
                   </Button>
                 )}
@@ -282,11 +281,8 @@ const TemplateActions = () => {
         ) : null}
       </ActionsGrid>
       <DesignerDialog
-        open={editorOpen && !archived}
-        notebook={initialNotebook}
-        exportBaseName={data?.name}
-        onClose={handleEditorClose}
-        designerMode="template"
+        open={overlay.editorOpen && !archived}
+        {...overlay.dialogProps}
       />
     </>
   );

@@ -9,6 +9,8 @@ import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../state/initial';
 import {tryNormalizeApiUiSpecification} from './legacyNotebook';
 import {
   designerHistoryToNotebookDefinition,
+  designerLiveSnapshotFromRecord,
+  hydrateExportedNotebook,
   notebookDefinitionToDesignerHistory,
   toDesignerNotebookWithHistory,
 } from './notebookAdapters';
@@ -143,10 +145,45 @@ describe('designer load is tolerant of a newer schemaVersion', () => {
     ).toBeDefined();
   });
 
+  it('hydrates an exported notebook through the load adapters', () => {
+    const definition = createDefinition();
+    const history = hydrateExportedNotebook(definition);
+    expect(history?.metadata).toEqual(definition.metadata);
+    expect(history?.uiSpec.present).toEqual(definition.uiSpec);
+  });
+
   it('does not throw when the design cannot be parsed', () => {
     expect(tryNormalizeApiUiSpecification({not: 'a notebook'}).ok).toBe(false);
     expect(
       toDesignerNotebookWithHistory({uiSpecification: {not: 'a notebook'}})
     ).toBeUndefined();
+  });
+});
+
+describe('designerLiveSnapshotFromRecord', () => {
+  it('returns the normalized notebook and live uiSpec hash', () => {
+    const definition = createDefinition();
+    const snapshot = designerLiveSnapshotFromRecord({
+      uiSpecification: definition,
+      uiSpecProperties: {hash: 'a'.repeat(64)},
+    });
+    expect(snapshot.notebook).toBeDefined();
+    expect(snapshot.liveUiSpecHash).toBe('a'.repeat(64));
+  });
+
+  it('omits the hash when the record has none', () => {
+    const snapshot = designerLiveSnapshotFromRecord({
+      uiSpecification: createDefinition(),
+    });
+    expect(snapshot.notebook).toBeDefined();
+    expect(snapshot.liveUiSpecHash).toBeUndefined();
+  });
+
+  it('omits a hash that is not a SHA-256 hex digest', () => {
+    const snapshot = designerLiveSnapshotFromRecord({
+      uiSpecification: createDefinition(),
+      uiSpecProperties: {hash: 'short'},
+    });
+    expect(snapshot.liveUiSpecHash).toBeUndefined();
   });
 });

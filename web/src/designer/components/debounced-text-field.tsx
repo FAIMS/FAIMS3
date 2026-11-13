@@ -10,6 +10,7 @@ import React, {
 import {TextField, TextFieldProps} from '@mui/material';
 import {INPUT_LIMITS} from '@faims3/data-model';
 import debounce from 'lodash/debounce';
+import {registerPendingEditFlush} from '../state/pendingEditFlush';
 
 export interface DebouncedTextFieldProps extends Omit<
   TextFieldProps,
@@ -57,10 +58,17 @@ const DebouncedTextField: React.FC<DebouncedTextFieldProps> = ({
     );
   }, [onChange, debounceTime]);
 
-  // Flush on unmount
+  // Flush on unmount, and expose the timer to autosave/publish.
   useEffect(() => {
+    if (!debouncedChange) {
+      return;
+    }
+    const unregister = registerPendingEditFlush(() => {
+      debouncedChange.flush();
+    });
     return () => {
-      debouncedChange?.flush();
+      unregister();
+      debouncedChange.flush();
     };
   }, [debouncedChange]);
 

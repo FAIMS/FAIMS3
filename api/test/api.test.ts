@@ -234,6 +234,62 @@ describe('API tests', () => {
     expect(afterSpec.uiSpecProperties.hash).toHaveLength(64);
   });
 
+  it('PUT uiSpecification If-Match refuses a stale hash and allows a matching hash', async () => {
+    const createRes = await request(app)
+      .post('/api/notebooks')
+      .send(sampleCreateNotebookPayload('if-match notebook'))
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const projectId = createRes.body.notebook as string;
+    const created = await getProjectById(projectId);
+    const originalHash = created.uiSpecProperties.hash;
+    const nextSpec = {
+      ...created.uiSpecification,
+      uiSpec: {
+        ...created.uiSpecification.uiSpec,
+        visible_types: [
+          ...created.uiSpecification.uiSpec.visible_types,
+          'if-match-form',
+        ],
+      },
+    };
+
+    const stale = await request(app)
+      .put(`/api/notebooks/${projectId}/uiSpecification`)
+      .send(nextSpec)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .set('If-Match', `"${'c'.repeat(64)}"`)
+      .expect(409);
+    expect(stale.body.error.message).toMatch(/live design has changed/i);
+    expect((await getProjectById(projectId)).uiSpecProperties.hash).toBe(
+      originalHash
+    );
+
+    await request(app)
+      .put(`/api/notebooks/${projectId}/uiSpecification`)
+      .send(nextSpec)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .set('If-Match', `"${originalHash}"`)
+      .expect(200);
+
+    const afterMatch = await getProjectById(projectId);
+    expect(afterMatch.uiSpecProperties.hash).not.toBe(originalHash);
+
+    await request(app)
+      .put(`/api/notebooks/${projectId}/uiSpecification`)
+      .send(created.uiSpecification)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+    expect((await getProjectById(projectId)).uiSpecProperties.hash).toBe(
+      originalHash
+    );
+  });
+
   it('can create a notebook', () => {
     return request(app)
       .post('/api/notebooks')

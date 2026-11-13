@@ -368,7 +368,13 @@ api.put(
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const updated = await updateProjectUiSpecification(req.params.id, req.body);
+    const updated = await updateProjectUiSpecification(
+      req.params.id,
+      req.body,
+      {
+        ifMatchHeader: req.get('If-Match') ?? undefined,
+      }
+    );
     return res.json(updated);
   }
 );
