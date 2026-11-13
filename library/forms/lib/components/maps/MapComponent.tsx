@@ -46,6 +46,7 @@ import {logWarn} from '../../logging';
 import {CompassReference, displayHeadingDegrees} from './heading';
 import {headingIndicatorCoordinate} from './headingIndicator';
 import {loadLastLocation, saveLastLocation} from './lastKnownLocation';
+import {magneticDeclination} from './magneticDeclination';
 import {mapAttributionSx} from './mapAttributionSx';
 import {topVisibleAttribution} from './mapHelpers';
 import {useIsOnline} from './useIsOnline';
@@ -246,29 +247,37 @@ const MapComponentImpl = (props: MapComponentProps) => {
   const positionLayerRef = useRef<VectorLayer>();
   const watchIdRef = useRef<string | null>(null);
   const liveLocationRef = useRef<Position | null>(null);
-  // Compass is copied into refs so createLiveCursorFeatures (captured once
-  // by createMap) always reads the latest sample without recreating the map.
+  // Keep sensor updates out of React state so each reading does not rerender the map.
+  // Refs let createLiveCursorFeatures (captured once) read the latest sample.
   const compassHeadingRef = useRef<number | null>(null);
   const compassReferenceRef = useRef<CompassReference | null>(null);
   const liveCursorRef = useRef<{
+    // Update the live marker from a GPS fix.
     updateCursorLocation: (position: Position) => void;
+    // Resize the accuracy circle after a fix or zoom change.
     updateCursorAccuracy: (accuracy: number) => void;
+    // Redraw the bearing triangle from the latest compass/GPS values.
     updateHeadingTriangle: () => void;
   } | null>(null);
 
-  const {
-    headingDeg: compassHeadingDeg,
-    reference: compassReference,
-    requestWebPermission,
-  } = useDeviceHeading();
-
-  // Compass updates ~10 Hz; GPS is ~1 Hz. Redraw the triangle on its own
-  // so standing still still shows a live bearing.
-  useEffect(() => {
-    compassHeadingRef.current = compassHeadingDeg;
-    compassReferenceRef.current = compassReference;
-    liveCursorRef.current?.updateHeadingTriangle();
-  }, [compassHeadingDeg, compassReference]);
+  /** Update map refs and redraw the triangle for each compass sample. */
+  const handleHeadingChange = useCallback(
+    ({
+      headingDeg,
+      reference,
+    }: {
+      // Current smoothed compass bearing, or null when it is unavailable.
+      headingDeg: number | null;
+      // Whether the bearing is relative to true or magnetic north.
+      reference: CompassReference | null;
+    }) => {
+      compassHeadingRef.current = headingDeg;
+      compassReferenceRef.current = reference;
+      liveCursorRef.current?.updateHeadingTriangle();
+    },
+    []
+  );
+  const {requestWebPermission} = useDeviceHeading(handleHeadingChange);
 
   const hasInitialisedViewRef = useRef(false);
   const hasHandledFirstCurrentLocationRef = useRef(false);
@@ -504,8 +513,12 @@ const MapComponentImpl = (props: MapComponentProps) => {
     );
   }, [map, currentPosition, autoFlyToCurrentLocation]);
 
-  // Live GPS overlay: blue dot, accuracy circle, and heading triangle.
-  // Returns updaters so GPS (~1 Hz) and compass (~10 Hz) can redraw independently.
+  /**
+   * Create the live GPS overlay and its independent GPS/compass update handlers.
+   *
+   * @param theMap - Map that owns the overlay layer.
+   * @returns Updaters for GPS position, accuracy, and heading changes.
+   */
   const createLiveCursorFeatures = (theMap: Map) => {
     // Clean up before re-adding
     if (positionLayerRef.current) {
@@ -544,7 +557,37 @@ const MapComponentImpl = (props: MapComponentProps) => {
     // Last projected GPS position. Compass ticks reuse this so the triangle
     // can move without waiting for the next watchPosition callback.
     let lastMapCoords: [number, number] | null = null;
+    let magneticDeclinationDeg: number | undefined;
+    let headingRadians = 0;
 
+    const triangleImage = new RegularShape({
+      points: 3,
+      radius: 12,
+      // angle PI draws one point facing down; add PI so heading 0 points north.
+      rotation: Math.PI,
+      // Default is screen-fixed, which leaves the marker pointing the
+      // same way after the user rotates the map.
+      rotateWithView: true,
+      angle: Math.PI,
+      fill: new Fill({color: '#1a73e8'}),
+      stroke: new Stroke({color: 'white', width: 2}),
+    });
+
+    const triangleStyle = new Style({
+      image: triangleImage,
+      geometry: () => {
+        const coords = lastMapCoords;
+        if (!coords) {
+          return new Point([0, 0]);
+        }
+        const resolution = theMap.getView().getResolution() ?? 1;
+        return new Point(
+          headingIndicatorCoordinate(coords, headingRadians, resolution)
+        );
+      },
+    });
+
+    /** Resolve the current bearing and update the map marker. */
     const updateHeadingTriangle = () => {
       const coords = lastMapCoords;
       const headingDeg = displayHeadingDegrees({
@@ -553,6 +596,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
         compassReference: compassReferenceRef.current,
         latitude: liveLocationRef.current?.coords.latitude,
         longitude: liveLocationRef.current?.coords.longitude,
+        magneticDeclinationDeg,
       });
 
       // Nothing to attach the triangle to until we have a GPS fix, even if
@@ -562,33 +606,15 @@ const MapComponentImpl = (props: MapComponentProps) => {
         return;
       }
 
-      const headingRadians = (headingDeg * Math.PI) / 180;
-      triangleFeature.setGeometry(new Point(coords));
-      triangleFeature.setStyle(
-        new Style({
-          image: new RegularShape({
-            points: 3,
-            radius: 12,
-            // angle PI draws one point facing down; add PI so heading 0 points north.
-            rotation: headingRadians + Math.PI,
-            // Default is screen-fixed, which leaves the marker pointing the
-            // same way after the user rotates the map.
-            rotateWithView: true,
-            angle: Math.PI,
-            fill: new Fill({color: '#1a73e8'}),
-            stroke: new Stroke({color: 'white', width: 2}),
-          }),
-          geometry: () => {
-            const resolution = theMap.getView().getResolution() ?? 1;
-            return new Point(
-              headingIndicatorCoordinate(coords, headingRadians, resolution)
-            );
-          },
-        })
-      );
+      headingRadians = (headingDeg * Math.PI) / 180;
+      // Reuse these objects instead of allocating a new style for each sample.
+      triangleImage.setRotation(headingRadians + Math.PI);
+      triangleFeature.setStyle(triangleStyle);
     };
 
-    // function to update the cursor location when we move
+    /**
+     * Update the GPS position, declination, heading marker, and accuracy circle.
+     */
     const updateCursorLocation = (position: Position) => {
       const coords = transform(
         [position.coords.longitude, position.coords.latitude],
@@ -596,8 +622,13 @@ const MapComponentImpl = (props: MapComponentProps) => {
         theMap.getView().getProjection()
       ) as [number, number];
       lastMapCoords = coords;
+      // Declination changes with location, so compute it on GPS updates only.
+      magneticDeclinationDeg = magneticDeclination(
+        position.coords.latitude,
+        position.coords.longitude
+      );
 
-      // set the location of the blue dot marking our position
+      // Update the blue dot position.
       dotFeature.setGeometry(new Point(coords));
       dotFeature.setStyle(
         new Style({
@@ -611,7 +642,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
 
       updateHeadingTriangle();
 
-      // set the location of the accuracy circle
+      // Update the accuracy circle position and size.
       accuracyFeature.setGeometry(new Point(coords));
       updateCursorAccuracy(position.coords.accuracy);
     };

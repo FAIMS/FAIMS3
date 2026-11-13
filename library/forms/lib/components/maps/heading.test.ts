@@ -9,12 +9,14 @@
 import {afterEach, describe, expect, it} from 'vitest';
 import {
   applyMagneticDeclination,
+  createHeadingSmoothingState,
   displayHeadingDegrees,
   isFiniteHeading,
   lerpHeading,
   normalizeHeading,
   resolveMapHeading,
   smoothHeading,
+  smoothHeadingSample,
 } from './heading';
 import {decimalYear, magneticDeclination} from './magneticDeclination';
 import {
@@ -90,6 +92,56 @@ describe('smoothHeading', () => {
   });
 });
 
+describe('smoothHeadingSample', () => {
+  it('damps a simulated jittering sensor stream', () => {
+    let state = createHeadingSmoothingState();
+    const samples = [90, 96, 84, 94, 86, 92];
+    samples.forEach((sample, index) => {
+      state = smoothHeadingSample(state, sample, index * 100);
+    });
+
+    expect(state.headingDeg).toBeGreaterThan(86);
+    expect(state.headingDeg).toBeLessThan(94);
+    expect(Math.abs(state.headingDeg! - samples.at(-1)!)).toBeLessThan(6);
+  });
+
+  it('smooths clockwise wraparound along the short path', () => {
+    let state = smoothHeadingSample(createHeadingSmoothingState(), 359, 0);
+    state = smoothHeadingSample(state, 1, 100);
+
+    expect(state.headingDeg).toBeCloseTo(359.4, 1);
+  });
+
+  it('uses elapsed time consistently when sample intervals vary', () => {
+    let regular = smoothHeadingSample(createHeadingSmoothingState(), 0, 0);
+    regular = smoothHeadingSample(regular, 20, 100);
+    regular = smoothHeadingSample(regular, 20, 200);
+
+    let irregular = smoothHeadingSample(createHeadingSmoothingState(), 0, 0);
+    irregular = smoothHeadingSample(irregular, 20, 200);
+
+    expect(regular.headingDeg).toBeCloseTo(irregular.headingDeg!, 5);
+  });
+
+  it('holds a one-sample large spike but quickly follows a confirmed turn', () => {
+    let state = smoothHeadingSample(createHeadingSmoothingState(), 0, 0);
+    state = smoothHeadingSample(state, 100, 100);
+    expect(state.headingDeg).toBe(0);
+
+    state = smoothHeadingSample(state, 120, 200);
+    expect(state.headingDeg).toBeGreaterThan(45);
+    expect(state.headingDeg).toBeLessThan(120);
+  });
+
+  it('discards an isolated large spike that returns to the prior heading', () => {
+    let state = smoothHeadingSample(createHeadingSmoothingState(), 10, 0);
+    state = smoothHeadingSample(state, 100, 100);
+    state = smoothHeadingSample(state, 11, 200);
+
+    expect(state.headingDeg).toBeCloseTo(10.36, 2);
+  });
+});
+
 describe('normalizeHeading', () => {
   it('wraps negative and >360 values', () => {
     expect(normalizeHeading(-10)).toBe(350);
@@ -157,6 +209,17 @@ describe('displayHeadingDegrees', () => {
         date,
       })
     ).toBeCloseTo(applyMagneticDeclination(magnetic, 0, 21, date), 5);
+  });
+
+  it('uses a declination precomputed with the latest GPS fix', () => {
+    expect(
+      displayHeadingDegrees({
+        compass: 355,
+        gps: 90,
+        compassReference: 'magnetic',
+        magneticDeclinationDeg: 10,
+      })
+    ).toBe(5);
   });
 });
 

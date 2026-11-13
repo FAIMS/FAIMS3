@@ -37,10 +37,15 @@ vi.mock('../logging', () => ({
   logWarn: (...args: unknown[]) => mocks.logWarn(...args),
 }));
 
-import {resetNativeCompassForTests, useDeviceHeading} from './useDeviceHeading';
+import {
+  ANDROID_HEADING_STALE_AFTER_MS,
+  resetNativeCompassForTests,
+  useDeviceHeading,
+} from './useDeviceHeading';
 
 type HeadingChange = (event: {value: number}) => void;
 
+/** Let queued permission and sensor-start promises settle inside React's act. */
 async function flushNativeStart() {
   await act(async () => {
     for (let i = 0; i < 10; i += 1) {
@@ -49,6 +54,7 @@ async function flushNativeStart() {
   });
 }
 
+/** Set up a granted native compass session and expose its test listener. */
 function mockGrantedNativeListener() {
   const listener: {current?: HeadingChange} = {};
   const remove = vi.fn().mockResolvedValue(undefined);
@@ -80,6 +86,7 @@ describe('useDeviceHeading', () => {
   afterEach(() => {
     window.DeviceOrientationEvent = originalDeviceOrientationEvent;
     resetNativeCompassForTests();
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -131,8 +138,9 @@ describe('useDeviceHeading', () => {
 
     act(() => {
       listener.current?.({value: 40});
+      listener.current?.({value: 42});
     });
-    expect(result.current.headingDeg).toBe(40);
+    expect(result.current.headingDeg).toBe(42);
   });
 
   it('prompts with rationale the same way as prompt', async () => {
@@ -215,6 +223,7 @@ describe('useDeviceHeading', () => {
     await flushNativeStart();
 
     act(() => {
+      listener.current?.({value: 70});
       listener.current?.({value: 77});
     });
 
@@ -268,6 +277,43 @@ describe('useDeviceHeading', () => {
     expect(result.current.headingDeg).toBeNull();
   });
 
+  it('drops the first Android sensor event during warm-up', async () => {
+    mocks.getPlatform.mockReturnValue('android');
+    const {listener} = mockGrantedNativeListener();
+    const {result} = renderHook(() => useDeviceHeading());
+    await flushNativeStart();
+
+    act(() => {
+      listener.current?.({value: 270});
+    });
+    expect(result.current.headingDeg).toBeNull();
+
+    act(() => {
+      listener.current?.({value: 45});
+    });
+    expect(result.current.headingDeg).toBe(45);
+  });
+
+  it('expires stale Android compass data so map rendering can use GPS course', async () => {
+    vi.useFakeTimers();
+    mocks.getPlatform.mockReturnValue('android');
+    const {listener} = mockGrantedNativeListener();
+    const {result} = renderHook(() => useDeviceHeading());
+    await flushNativeStart();
+
+    act(() => {
+      listener.current?.({value: 15}); // Android warm-up sample
+      listener.current?.({value: 90});
+    });
+    expect(result.current.headingDeg).toBe(90);
+
+    act(() => {
+      vi.advanceTimersByTime(ANDROID_HEADING_STALE_AFTER_MS);
+    });
+    expect(result.current.headingDeg).toBeNull();
+    expect(result.current.reference).toBeNull();
+  });
+
   it('stops the native session if the map unmounts while startListening is pending', async () => {
     mocks.getPlatform.mockReturnValue('android');
     let resolveStart: (() => void) | undefined;
@@ -303,6 +349,7 @@ describe('useDeviceHeading', () => {
     expect(mocks.startListening).toHaveBeenCalledTimes(1);
 
     act(() => {
+      listener.current?.({value: 88});
       listener.current?.({value: 88});
     });
     expect(first.result.current.headingDeg).toBe(88);

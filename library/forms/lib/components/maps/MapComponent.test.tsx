@@ -21,6 +21,13 @@ const headingState = vi.hoisted(() => ({
   source: 'compass' as 'compass' | null,
   reference: 'true' as 'true' | 'magnetic' | null,
   requestWebPermission: vi.fn(),
+  onHeadingChange: undefined as
+    | ((update: {
+        headingDeg: number | null;
+        source: 'compass' | null;
+        reference: 'true' | 'magnetic' | null;
+      }) => void)
+    | undefined,
 }));
 
 const watchState = vi.hoisted(() => ({
@@ -30,12 +37,15 @@ const watchState = vi.hoisted(() => ({
 }));
 
 vi.mock('../../hooks/useDeviceHeading', () => ({
-  useDeviceHeading: () => ({
-    headingDeg: headingState.headingDeg,
-    source: headingState.source,
-    reference: headingState.reference,
-    requestWebPermission: headingState.requestWebPermission,
-  }),
+  useDeviceHeading: (onHeadingChange: typeof headingState.onHeadingChange) => {
+    headingState.onHeadingChange = onHeadingChange;
+    return {
+      headingDeg: headingState.headingDeg,
+      source: headingState.source,
+      reference: headingState.reference,
+      requestWebPermission: headingState.requestWebPermission,
+    };
+  },
 }));
 
 vi.mock('../../hooks/useLocation', () => ({
@@ -96,6 +106,7 @@ const SYDNEY: Position = {
   },
 };
 
+/** Find the three-point heading marker image in the map's live-cursor layer. */
 function headingTriangle(map: Map): RegularShape | undefined {
   for (const layer of map.getLayers().getArray()) {
     if (layer.getZIndex() !== 999 || !(layer instanceof VectorLayer)) {
@@ -115,6 +126,7 @@ function headingTriangle(map: Map): RegularShape | undefined {
   return undefined;
 }
 
+/** Mount the map test fixture and wait for OpenLayers initialization. */
 async function renderMap(): Promise<Map> {
   let created: Map | undefined;
   render(
@@ -154,6 +166,7 @@ describe('MapComponent heading', () => {
     headingState.source = 'compass';
     headingState.reference = 'true';
     headingState.requestWebPermission.mockReset();
+    headingState.onHeadingChange = undefined;
     watchState.callback = undefined;
   });
 
@@ -161,12 +174,41 @@ describe('MapComponent heading', () => {
     const map = await renderMap();
 
     await act(async () => {
+      headingState.onHeadingChange?.({
+        headingDeg: 90,
+        source: 'compass',
+        reference: 'true',
+      });
       watchState.callback?.(SYDNEY);
     });
 
     const triangle = headingTriangle(map);
     expect(triangle).toBeDefined();
     expect(triangle!.getRotation()).toBeCloseTo((90 * Math.PI) / 180 + Math.PI);
+  });
+
+  it('updates the existing triangle image for each compass sample', async () => {
+    const map = await renderMap();
+    await act(async () => {
+      watchState.callback?.(SYDNEY);
+    });
+
+    const initialTriangle = headingTriangle(map);
+    expect(initialTriangle).toBeDefined();
+
+    act(() => {
+      headingState.onHeadingChange?.({
+        headingDeg: 125,
+        source: 'compass',
+        reference: 'true',
+      });
+    });
+
+    const updatedTriangle = headingTriangle(map);
+    expect(updatedTriangle).toBe(initialTriangle);
+    expect(updatedTriangle!.getRotation()).toBeCloseTo(
+      (125 * Math.PI) / 180 + Math.PI
+    );
   });
 
   it('falls back to GPS heading when the compass is missing', async () => {
