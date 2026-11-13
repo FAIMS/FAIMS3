@@ -456,9 +456,8 @@ export const MapAssetFieldsSchema = z.object({
 
 /**
  * Latest write used to prefer one in-memory snapshot over another.
- * Listing sort uses `updatedAt` only; this includes the processing
- * heartbeat so a progress poll is not treated as older than a list row
- * with the same `updatedAt`.
+ * Uses `updatedAt` plus the processing heartbeat so a progress poll is
+ * not treated as older than a list row with the same `updatedAt`.
  */
 export function mapAssetSnapshotMs(asset: {
   updatedAt: number;
@@ -557,7 +556,8 @@ export type GetTeamMapAssetListQuery = z.infer<
 
 /**
  * GET /api/map-assets and GET /api/teams/:id/map-assets page, newest
- * `createdAt` first.
+ * `updatedAt` first. Linked-to-survey pages (`projectId`) are newest link
+ * `createdAt` first; link documents have no `updatedAt`.
  */
 export const GetMapAssetListResponseSchema = paginatedListSchema(
   MapAssetWithLinkCountSchema,

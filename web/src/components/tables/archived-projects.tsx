@@ -21,6 +21,8 @@ import {userCanDo} from '@/hooks/auth-hooks';
 import {Button} from '@/components/ui/button';
 import {ArchiveRestore, Trash2} from 'lucide-react';
 import {useState} from 'react';
+import {displayIsoTimestamp} from '@/lib/time';
+
 export type ArchivedProjectRow = GetNotebookListResponse['notebooks'][number];
 
 const ARCHIVE_ACTION_COL_META = {
@@ -210,6 +212,26 @@ export const archivedProjectColumns: ColumnDef<ArchivedProjectRow>[] = [
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Created by" />
     ),
+  },
+  {
+    accessorKey: 'createdAt',
+    header: ({column}) => (
+      <DataTableColumnHeader column={column} title="Created" />
+    ),
+    cell: ({getValue}) => {
+      const v = getValue<string | undefined>();
+      return v ? displayIsoTimestamp(v) : null;
+    },
+  },
+  {
+    accessorKey: 'updatedAt',
+    header: ({column}) => (
+      <DataTableColumnHeader column={column} title="Updated at" />
+    ),
+    cell: ({getValue}) => {
+      const v = getValue<string | undefined>();
+      return v ? displayIsoTimestamp(v) : null;
+    },
   },
   {
     accessorKey: 'description',

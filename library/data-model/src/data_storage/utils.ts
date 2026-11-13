@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import {isEqual} from 'lodash';
 import PouchDB from 'pouchdb';
 import PouchDBSecurity from 'pouchdb-security-helper';
 import {z} from 'zod';
@@ -255,11 +256,78 @@ export async function writeNewDocument<T extends {}>({
 }
 
 /**
+ * True when storing `desired` would leave `existing` unchanged. Compares the
+ * documents as CouchDB stores them (a JSON round-trip drops `undefined`
+ * fields) and ignores `_rev`.
+ */
+function hasSameStoredContent(desired: {}, existing: {}): boolean {
+  const withoutRev = (doc: {}) => {
+    const {_rev: _ignored, ...fields} = JSON.parse(JSON.stringify(doc));
+    return fields;
+  };
+  return isEqual(withoutRev(desired), withoutRev(existing));
+}
+
+/**
+ * Writes one piece of initialisation content (a design document or the
+ * default document).
+ *
+ * Without `forceWrite` the document is only created: an existing one is left
+ * as it is.
+ *
+ * With `forceWrite` the stored document is made to match `data`, but it is
+ * read first and the write is skipped when it already matches. Initialisation
+ * runs on every API boot against every database, and its content rarely
+ * changes, so this turns the usual case into a single read and stops each
+ * boot adding a revision to every design document.
+ */
+async function writeInitialisationDocument({
+  db,
+  data,
+  forceWrite,
+}: {
+  db: DatabaseInterface;
+  data: PouchDB.Core.Document<{}>;
+  forceWrite: boolean;
+}): Promise<void> {
+  if (!forceWrite) {
+    await safeWriteDocument({db, data, writeOnClash: false});
+    return;
+  }
+
+  let existing: PouchDB.Core.ExistingDocument<{}> | undefined;
+  try {
+    existing = await db.get(data._id);
+  } catch (err: any) {
+    // Not found is the only expected failure: the document is new
+    if (err.status !== 404) {
+      throw err;
+    }
+  }
+
+  if (existing === undefined) {
+    await safeWriteDocument({db, data, writeOnClash: true});
+    return;
+  }
+  if (hasSameStoredContent(data, existing)) {
+    return;
+  }
+  // Write over the revision just read. If another writer got in first,
+  // safeWriteDocument re-reads the revision and retries.
+  const replacement: PouchDB.Core.ExistingDocument<{}> = {
+    ...data,
+    _rev: existing._rev,
+  };
+  await safeWriteDocument({db, data: replacement, writeOnClash: true});
+}
+
+/**
  * Method to apply initialisation content to a database.
  *
  * @param db DatabaseInterface to initialise
  * @param content The documents to write
- * @param config.forceWrite Override on clash?
+ * @param config.forceWrite Make existing documents match `content`? Documents
+ *   that already match are not rewritten.
  * @param config.applyPermissions Actually write security document?
  */
 export const couchInitialiser = async ({
@@ -277,7 +345,7 @@ export const couchInitialiser = async ({
   // For each design document - write - forcing if necessary
   for (const designDoc of content.designDocuments) {
     // We only write over an existing document if the force argument is provided
-    await safeWriteDocument({data: designDoc, db, writeOnClash: forceWrite});
+    await writeInitialisationDocument({data: designDoc, db, forceWrite});
   }
   // For security model - always write for now (unless asked not to)
   if (applyPermissions) {
@@ -285,10 +353,10 @@ export const couchInitialiser = async ({
   }
   // Also write a default document, if one is provided
   if (content.defaultDocument) {
-    await safeWriteDocument({
+    await writeInitialisationDocument({
       data: content.defaultDocument,
       db,
-      writeOnClash: forceWrite,
+      forceWrite,
     });
   }
 };

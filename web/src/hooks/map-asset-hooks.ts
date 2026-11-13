@@ -490,7 +490,9 @@ function mapAssetDetailQueryOptions({
 }
 
 /**
- * One page of layers for the library, a survey, or a team, newest first.
+ * One page of layers for the library, a survey, or a team. Library and team
+ * pages are newest-updated first; a survey's linked layers are newest link
+ * first.
  *
  * Fetches the page once (plus invalidation). Ready rows stay in that
  * snapshot and in per-asset detail queries. In-progress layers on the page

@@ -129,9 +129,9 @@ export async function listAssetsByTeam(
 }
 
 /**
- * One page of map layers `canRead` accepts, newest `createdAt` first: one
+ * One page of map layers `canRead` accepts, newest `updatedAt` first: one
  * team's layers when `teamId` is set, otherwise the whole library. Paging,
- * the exclusive JSON `[createdAtMs, assetId]` cursor and the scan cap come
+ * the exclusive JSON `[updatedAtMs, assetId]` cursor and the scan cap come
  * from the shared `queryListingPage`. Omit `canRead` when the caller may
  * read every row in the range.
  *

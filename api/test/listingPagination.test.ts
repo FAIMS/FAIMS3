@@ -130,7 +130,7 @@ async function archiveNotebook(projectId: string) {
   );
 }
 
-/** Teams with explicit, strictly increasing `createdAt` (index = age rank). */
+/** Teams with explicit, strictly increasing `updatedAt` (index = age rank). */
 async function createTeams(count: number, prefix = 'Team') {
   const teams = [];
   for (let i = 0; i < count; i++) {
@@ -242,10 +242,10 @@ describe('list endpoint pagination', () => {
       const ids = pages.flatMap(page => page.items.map(n => n._id));
       expect([...ids].sort()).toEqual([...created].sort());
 
-      const createdAt = pages.flatMap(page =>
-        page.items.map(n => Date.parse(n.createdAt as string))
+      const updatedAt = pages.flatMap(page =>
+        page.items.map(n => Date.parse(n.updatedAt as string))
       );
-      expect(createdAt).toEqual([...createdAt].sort((a, b) => b - a));
+      expect(updatedAt).toEqual([...updatedAt].sort((a, b) => b - a));
     });
 
     it('omits nextStartKey when the page ends on the last survey', async () => {

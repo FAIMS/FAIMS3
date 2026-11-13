@@ -19,11 +19,13 @@ const LINKS_LISTING_BY_PROJECT = 'linksListingByProject';
 const ASSETS_SEARCH = 'assetsSearch';
 
 /**
- * Team-owned asset documents keyed `[ownedByTeamId, createdAtMs, _id]`, so a
+ * Team-owned asset documents keyed `[ownedByTeamId, updatedAtMs, _id]`, so a
  * team's layers page newest first. A whole-team read ranges over `[teamId]`.
+ * Processing stage/progress writes do not bump `updatedAt`, so a cursor stays
+ * valid while a layer is processing.
  */
 export const MAP_ASSETS_BY_TEAM = `${INDEX_DOCUMENT_NAME}/${ASSETS_BY_TEAM}`;
-/** Every asset document keyed `[createdAtMs, _id]` (library listing). */
+/** Every asset document keyed `[updatedAtMs, _id]` (library listing). */
 export const MAP_ASSETS_LISTING = `${INDEX_DOCUMENT_NAME}/${ASSETS_LISTING}`;
 /**
  * Survey links keyed `[projectId, linkCreatedAtMs, linkId]` with the asset id
@@ -42,10 +44,11 @@ export const MAP_ASSET_LINKS_BY_ASSET = `${INDEX_DOCUMENT_NAME}/${LINKS_BY_ASSET
 
 /**
  * Listing view and key prefix for one map-layer page; spread into
- * `queryListingPage`. Pages are newest `createdAt` first: unlike `updatedAt`,
- * it does not move while a layer is processing, so cursors stay valid.
- * With `teamId` the cursor is `[createdAtMs, assetId]` inside that team;
- * otherwise it walks the whole library.
+ * `queryListingPage`. Pages are newest `updatedAt` first. Processing
+ * stage/progress writes do not bump `updatedAt`, so a cursor stays valid
+ * while a layer is processing. With `teamId` the cursor is
+ * `[updatedAtMs, assetId]` inside that team; otherwise it walks the whole
+ * library.
  */
 export function mapAssetListingViewAndPrefix({teamId}: {teamId?: string}): {
   view: string;
@@ -95,11 +98,14 @@ const indexDocument = {
         }
         var row = {...doc};
         delete row._attachments;
-        var createdMs = doc.createdAt;
-        if (!(createdMs > 0)) {
-          createdMs = 0;
+        var updatedMs = doc.updatedAt;
+        if (!(updatedMs > 0)) {
+          updatedMs = doc.createdAt;
         }
-        emit([doc.ownedByTeamId, createdMs, doc._id], row);
+        if (!(updatedMs > 0)) {
+          updatedMs = 0;
+        }
+        emit([doc.ownedByTeamId, updatedMs, doc._id], row);
       }),
     },
     // Library listing (GET /api/map-assets).
@@ -110,11 +116,14 @@ const indexDocument = {
         }
         var row = {...doc};
         delete row._attachments;
-        var createdMs = doc.createdAt;
-        if (!(createdMs > 0)) {
-          createdMs = 0;
+        var updatedMs = doc.updatedAt;
+        if (!(updatedMs > 0)) {
+          updatedMs = doc.createdAt;
         }
-        emit([createdMs, doc._id], row);
+        if (!(updatedMs > 0)) {
+          updatedMs = 0;
+        }
+        emit([updatedMs, doc._id], row);
       }),
     },
     // GET /api/map-assets?q=. Rows point at the `assetsListing` row.
@@ -123,12 +132,15 @@ const indexDocument = {
         if (!doc || doc.docType !== 'asset') {
           return;
         }
-        var createdMs = doc.createdAt;
-        if (!(createdMs > 0)) {
-          createdMs = 0;
+        var updatedMs = doc.updatedAt;
+        if (!(updatedMs > 0)) {
+          updatedMs = doc.createdAt;
+        }
+        if (!(updatedMs > 0)) {
+          updatedMs = 0;
         }
         var tokens = tokenize(doc.name);
-        var value = {tokens: tokens, key: [createdMs, doc._id]};
+        var value = {tokens: tokens, key: [updatedMs, doc._id]};
         for (var i = 0; i < tokens.length; i++) {
           emit(['all', '', tokens[i], doc._id], value);
           if (doc.ownedByTeamId) {

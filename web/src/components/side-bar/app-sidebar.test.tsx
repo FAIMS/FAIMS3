@@ -504,3 +504,36 @@ describe('AppSidebar catalogue recent rows', () => {
     expect(archive.queryByText('View all')).toBeNull();
   });
 });
+
+function navSection(title: string) {
+  const label = screen
+    .getAllByText(title)
+    .find(el => el.getAttribute('data-sidebar') === 'group-label');
+  const group = label?.closest('[data-sidebar="group"]');
+  if (!group) {
+    throw new Error(`No sidebar section labelled ${title}`);
+  }
+  return within(group as HTMLElement);
+}
+
+describe('AppSidebar Map layers nav', () => {
+  it('places Map layers at the bottom of Content after Templates', () => {
+    authorised.canSeeProjects = true;
+    authorised.canSeeTemplates = true;
+    authorised.canSeeMapLayers = true;
+    authorised.canSeeUsers = true;
+    renderSidebar();
+
+    const content = navSection('Content');
+    const management = navSection('Management');
+    expect(content.getByTestId('web-nav-map-layers')).toBeDefined();
+    expect(management.queryByTestId('web-nav-map-layers')).toBeNull();
+
+    const templates = screen.getByTestId('web-nav-templates');
+    const mapLayers = screen.getByTestId('web-nav-map-layers');
+    expect(
+      templates.compareDocumentPosition(mapLayers) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+});

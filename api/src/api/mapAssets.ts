@@ -274,7 +274,7 @@ function authorizeAsset(
 
 /**
  * One page of team-owned layers from the Couch `assetsByTeam` view, newest
- * `createdAt` first.
+ * `updatedAt` first.
  *
  * Used by GET /api/teams/:id/map-assets and GET /api/map-assets?teamId=.
  * The view is the team filter — this does not scan the library and drop
@@ -415,7 +415,7 @@ function assertFiles(files: UploadedMapFile[]): UploadedMapFile[] {
 }
 
 /**
- * GET list map layers — one page, newest `createdAt` first. Cursor
+ * GET list map layers — one page, newest `updatedAt` first. Cursor
  * pagination (`limit`, `startKey`, `nextStartKey`); omitting `limit` returns
  * the default page, never the whole library.
  *

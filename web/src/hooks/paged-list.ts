@@ -36,7 +36,7 @@ export type ListPageArgs = {limit?: number; startKey?: string; q?: string};
 export type ListRequest = {path: string; queryKey: readonly unknown[]};
 
 /** Default rows per page for Control Centre tables. */
-export const TABLE_DEFAULT_PAGE_SIZE = 10;
+export const TABLE_DEFAULT_PAGE_SIZE = 15;
 
 /** Rows per "Get more" step in pickers. */
 export const PICKER_PAGE_SIZE = 25;

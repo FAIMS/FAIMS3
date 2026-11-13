@@ -14,12 +14,18 @@ export function TemplatePickerSelect({
   value,
   onChange,
   disabled = false,
+  clearable = true,
   placeholder = 'Select a template',
   testId,
 }: {
   value?: string;
   onChange: (value: string | undefined) => void;
   disabled?: boolean;
+  /**
+   * Show a button that resets the value. Defaults on because the create-
+   * survey template field is optional; pass false for a required picker.
+   */
+  clearable?: boolean;
   placeholder?: string;
   testId?: string;
 }) {
@@ -74,6 +80,7 @@ export function TemplatePickerSelect({
       onGetMore={() => void fetchNextPage()}
       onOpenChange={setOpen}
       disabled={disabled}
+      clearable={clearable}
       placeholder={placeholder}
       testId={testId}
     />

@@ -6,7 +6,7 @@ import {TemplatesDBSecurityDocument} from './security';
 export type TemplatesDBInitialisationConfig = {};
 /**
  * Templates DB design docs include listing views keyed so GET /api/templates
- * can seek by `createdAt` then `_id` (and team + archive flag). Updating the
+ * can seek by `updatedAt` then `_id` (and team + archive flag). Updating the
  * map functions requires this initialiser to rewrite `_design/index`.
  */
 export function initTemplatesDB(

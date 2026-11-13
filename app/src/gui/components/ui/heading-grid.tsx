@@ -1,15 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import {Stack} from '@mui/material';
-import {
-  DataGrid,
-  GridColDef,
-  GridEventListener,
-  GridPaginationModel,
-} from '@mui/x-data-grid';
+import {DataGrid, GridColDef, GridEventListener} from '@mui/x-data-grid';
 import {config} from '../../../buildconfig';
 import {useNavigate} from 'react-router';
 import * as ROUTES from '../../../constants/routes';
-import {useEffect, useState} from 'react';
 import {theme} from '../../themes';
 import {
   ACTIVATED_LABEL,
@@ -22,6 +16,7 @@ import {
   isProjectActivating,
   partitionNotebookListProjects,
 } from '../../../lib/notebookListDisplay';
+import {useNotebookListPagination} from './notebook-list-pagination';
 
 /**
  * Renders a grid with two sections: Active and Not Active.
@@ -61,23 +56,12 @@ export default function HeadingProjectGrid({
     }
   };
 
-  // we need a state variable to track pagination model since we want to use a
-  // controlled component style to force pagination to behave how we want
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: projects.length,
-  });
-
-  // Update pagination settings when the projects changes
-  useEffect(() => {
-    setPaginationModel(prev => {
-      const next = {page: 0, pageSize: projects.length};
-      if (prev.page === next.page && prev.pageSize === next.pageSize) {
-        return prev;
-      }
-      return next;
-    });
-  }, [projects.length]);
+  const activatedPagination = useNotebookListPagination(
+    activatedProjects.length
+  );
+  const availablePagination = useNotebookListPagination(
+    availableProjects.length
+  );
 
   return (
     <div
@@ -113,9 +97,10 @@ export default function HeadingProjectGrid({
             ? 'notebook-row-activating'
             : ''
         }
-        hideFooter={true}
-        paginationModel={paginationModel}
-        onPaginationModelChange={setPaginationModel}
+        hideFooter={activatedPagination.hideFooter}
+        paginationModel={activatedPagination.paginationModel}
+        onPaginationModelChange={activatedPagination.onPaginationModelChange}
+        pageSizeOptions={activatedPagination.pageSizeOptions}
         slots={{
           noRowsOverlay: () => (
             <Stack
@@ -150,9 +135,10 @@ export default function HeadingProjectGrid({
         getRowId={({projectId}) => projectId}
         rowHeight={75}
         autoHeight
-        hideFooter
-        paginationModel={paginationModel}
-        onPaginationModelChange={setPaginationModel}
+        hideFooter={availablePagination.hideFooter}
+        paginationModel={availablePagination.paginationModel}
+        onPaginationModelChange={availablePagination.onPaginationModelChange}
+        pageSizeOptions={availablePagination.pageSizeOptions}
         slots={{
           noRowsOverlay: () => (
             <Stack

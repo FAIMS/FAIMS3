@@ -18,18 +18,18 @@ const PROJECTS_SEARCH_POSTFIX = 'search';
 export const PROJECTS_BY_TEAM_ID = `${INDEX_DOCUMENT_NAME}/${PROJECTS_BY_TEAM_ID_POSTFIX}`;
 /**
  * View value: project list metadata only (no ui-specification / form
- * payload). Keyed `[statusFlag, createdAtMs, _id]` so GET /api/notebooks
+ * payload). Keyed `[statusFlag, updatedAtMs, _id]` so GET /api/notebooks
  * pages newest first within a status range.
  */
 export const PROJECTS_LISTING_BY_PROJECT_ID = `${INDEX_DOCUMENT_NAME}/${PROJECTS_LISTING_BY_PROJECT_ID_POSTFIX}`;
 /**
  * Same list shape as {@link PROJECTS_LISTING_BY_PROJECT_ID}, keyed
- * `[ownedByTeamId, statusFlag, createdAtMs, _id]`.
+ * `[ownedByTeamId, statusFlag, updatedAtMs, _id]`.
  */
 export const PROJECTS_LISTING_BY_TEAM_ID = `${INDEX_DOCUMENT_NAME}/${PROJECTS_LISTING_BY_TEAM_ID_POSTFIX}`;
 /**
  * Same list shape as {@link PROJECTS_LISTING_BY_PROJECT_ID}, keyed
- * `[templateId, statusFlag, createdAtMs, _id]` (surveys made from a template).
+ * `[templateId, statusFlag, updatedAtMs, _id]` (surveys made from a template).
  */
 export const PROJECTS_LISTING_BY_TEMPLATE_ID = `${INDEX_DOCUMENT_NAME}/${PROJECTS_LISTING_BY_TEMPLATE_ID_POSTFIX}`;
 
@@ -57,9 +57,9 @@ export type ProjectListStatus = 'active' | 'archived' | 'all';
  * spread into `queryListingPage`.
  *
  * - `active` (OPEN + CLOSED) and `archived` range over one status flag; the
- *   cursor is `[createdAtMs, projectId]`.
+ *   cursor is `[updatedAtMs, projectId]`.
  * - `all` ranges over both flags, so the cursor is
- *   `[statusFlag, createdAtMs, projectId]`: active surveys newest first,
+ *   `[statusFlag, updatedAtMs, projectId]`: active surveys newest first,
  *   then archived surveys newest first.
  *
  * `templateId` takes the template view; otherwise `teamId` takes the team
@@ -154,11 +154,14 @@ const indexDocument = {
         var row = {...doc};
         delete row.uiSpecification;
         var status = doc.status === 'ARCHIVED' ? 0 : 1;
-        var createdMs = Date.parse(doc.createdAt);
-        if (!(createdMs > 0)) {
-          createdMs = 0;
+        var updatedMs = Date.parse(doc.updatedAt);
+        if (!(updatedMs > 0)) {
+          updatedMs = Date.parse(doc.createdAt);
         }
-        emit([status, createdMs, doc._id], row);
+        if (!(updatedMs > 0)) {
+          updatedMs = 0;
+        }
+        emit([status, updatedMs, doc._id], row);
       }),
     },
     [PROJECTS_LISTING_BY_TEAM_ID_POSTFIX]: {
@@ -175,11 +178,14 @@ const indexDocument = {
         var row = {...doc};
         delete row.uiSpecification;
         var status = doc.status === 'ARCHIVED' ? 0 : 1;
-        var createdMs = Date.parse(doc.createdAt);
-        if (!(createdMs > 0)) {
-          createdMs = 0;
+        var updatedMs = Date.parse(doc.updatedAt);
+        if (!(updatedMs > 0)) {
+          updatedMs = Date.parse(doc.createdAt);
         }
-        emit([doc.ownedByTeamId, status, createdMs, doc._id], row);
+        if (!(updatedMs > 0)) {
+          updatedMs = 0;
+        }
+        emit([doc.ownedByTeamId, status, updatedMs, doc._id], row);
       }),
     },
     [PROJECTS_LISTING_BY_TEMPLATE_ID_POSTFIX]: {
@@ -196,11 +202,14 @@ const indexDocument = {
         var row = {...doc};
         delete row.uiSpecification;
         var status = doc.status === 'ARCHIVED' ? 0 : 1;
-        var createdMs = Date.parse(doc.createdAt);
-        if (!(createdMs > 0)) {
-          createdMs = 0;
+        var updatedMs = Date.parse(doc.updatedAt);
+        if (!(updatedMs > 0)) {
+          updatedMs = Date.parse(doc.createdAt);
         }
-        emit([doc.templateId, status, createdMs, doc._id], row);
+        if (!(updatedMs > 0)) {
+          updatedMs = 0;
+        }
+        emit([doc.templateId, status, updatedMs, doc._id], row);
       }),
     },
     // GET /api/notebooks?q=. Rows point at the `listingByProjectId` row.
@@ -212,12 +221,15 @@ const indexDocument = {
         if (doc.status === 'ARCHIVED') {
           return;
         }
-        var createdMs = Date.parse(doc.createdAt);
-        if (!(createdMs > 0)) {
-          createdMs = 0;
+        var updatedMs = Date.parse(doc.updatedAt);
+        if (!(updatedMs > 0)) {
+          updatedMs = Date.parse(doc.createdAt);
+        }
+        if (!(updatedMs > 0)) {
+          updatedMs = 0;
         }
         var tokens = tokenize(doc.name);
-        var value = {tokens: tokens, key: [1, createdMs, doc._id]};
+        var value = {tokens: tokens, key: [1, updatedMs, doc._id]};
         for (var i = 0; i < tokens.length; i++) {
           emit(['all', '', tokens[i], doc._id], value);
           if (doc.ownedByTeamId) {

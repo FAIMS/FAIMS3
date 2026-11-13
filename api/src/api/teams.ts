@@ -78,7 +78,7 @@ export const api: express.Router = express.Router();
 
 /**
  * GET list teams — one page of the teams the caller can view, newest
- * `createdAt` first. Cursor pagination (`limit`, `startKey`, `nextStartKey`);
+ * `updatedAt` first. Cursor pagination (`limit`, `startKey`, `nextStartKey`);
  * omitting `limit` returns the default page, never the whole DB.
  * `includeArchived=true` lists archived teams only. `q` searches
  * non-archived teams by name and pages in word order.
@@ -165,7 +165,7 @@ api.get(
 );
 
 /**
- * GET map layers owned by a team — one page, newest `createdAt` first, with
+ * GET map layers owned by a team — one page, newest `updatedAt` first, with
  * cursor pagination (`limit`, `startKey`, `nextStartKey`).
  *
  * Reads the Couch `assetsByTeam` view (`MAP_ASSETS_BY_TEAM`) rather than

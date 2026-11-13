@@ -50,9 +50,9 @@ This comprehensive reference provides detailed specifications for all {{FAIMS}} 
 
 ## Media Fields
 
-| Field Type      | Purpose & Description               | Typical Examples                               | Technical Specifications                                                 | Validation Capabilities                              | Platform Considerations                            |
-| --------------- | ----------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- | -------------------------------------------------- |
-| **Take Photo**  | Camera capture or gallery selection | Context photos, artefact images, working shots | JPEG/PNG<br/>EXIF preserved<br/>Returns: File reference                  | File size limits<br/>Required field option           | Compression settings<br/>Storage considerations    |
+| Field Type      | Purpose & Description               | Typical Examples                               | Technical Specifications                                                                  | Validation Capabilities                              | Platform Considerations                            |
+| --------------- | ----------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------- |
+| **Take Photo**  | Camera capture or gallery selection | Context photos, artefact images, working shots | JPEG/PNG<br/>EXIF preserved<br/>Returns: File reference                                   | File size limits<br/>Required field option           | Compression settings<br/>Storage considerations    |
 | **File Upload** | Arbitrary file attachment           | PDFs, spreadsheets, audio, video               | Most file types (not SVG/HTML)<br/>No size limits (practical)<br/>Returns: File reference | Type restrictions possible<br/>Required field option | Upload time considerations<br/>Bandwidth dependent |
 
 ## Relationship Fields

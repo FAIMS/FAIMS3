@@ -28,6 +28,7 @@ import {
 import {Input} from '@/components/ui/input';
 import {Skeleton} from '@/components/ui/skeleton';
 import {INPUT_LIMITS, LIST_SEARCH_MAX_LENGTH} from '@faims3/data-model';
+import {TABLE_DEFAULT_PAGE_SIZE} from '@/hooks/paged-list';
 import {cn} from '@/lib/utils';
 
 interface DataTableProps<TData, TValue> {
@@ -81,7 +82,7 @@ export function DataTable<TData, TValue>({
   toolbarExtra,
   onRowClick,
   getRowClassName,
-  defaultRowsPerPage = 10,
+  defaultRowsPerPage = TABLE_DEFAULT_PAGE_SIZE,
   initialSorting = [],
   emptyMessage = 'No results.',
   serverPagination,

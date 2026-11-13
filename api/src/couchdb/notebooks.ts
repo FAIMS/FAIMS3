@@ -320,7 +320,7 @@ export type PaginatedNotebookList = {
 };
 
 /**
- * Page of lean notebook rows the user can read, newest `createdAt` first.
+ * Page of lean notebook rows the user can read, newest `updatedAt` first.
  * `limit` counts rows after the `READ_PROJECT_METADATA` check. Paging, the
  * exclusive JSON cursor and the scan cap come from the shared
  * `queryListingPage`. `byteCount` is opt-in and costs one Couch `info()` per

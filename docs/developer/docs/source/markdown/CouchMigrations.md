@@ -447,6 +447,15 @@ export const dataV2toV3Migration: MigrationFunc = doc => {
 4. **Execution**: Migrations are applied one at a time, with detailed logging
 5. **Completion**: Migration documents are updated with results and status
 
+Steps for a single database always run in order. Across databases, the API
+migrates the global databases one after another in a fixed order, because
+their steps can read other databases. Per-project **data** databases are
+migrated a few at a time (`DATA_DB_MIGRATION_CONCURRENCY` in
+`api/src/couchdb/index.ts`, passed to `migrateDbs` as `concurrency`). A DATA
+migration step must therefore read and write only its own database
+(`context.db`). If a step ever needs another data database, set that constant
+to 1 first.
+
 The migration system handles common challenges like:
 
 - Batch processing for large databases

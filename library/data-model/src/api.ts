@@ -392,7 +392,7 @@ export function resolveNotebookListStatus(query: {
   return query.includeArchived === 'true' ? 'all' : 'active';
 }
 
-/** GET /api/notebooks page, newest `createdAt` first. */
+/** GET /api/notebooks page, newest `updatedAt` first. */
 export const GetNotebookListResponseSchema = paginatedListSchema(
   APINotebookListSchema,
   'notebooks'
@@ -730,7 +730,7 @@ const templateListRowSchema = z
   )
   .pipe(TemplateApiListItemSchema);
 
-// GET paginated template list response
+// GET paginated template list response, newest `updatedAt` first.
 export const GetListTemplatesResponseSchema = paginatedListSchema(
   templateListRowSchema,
   'templates'
@@ -865,7 +865,7 @@ export const PutArchiveTeamRequestSchema = z.object({
 export type PutArchiveTeamRequest = z.infer<typeof PutArchiveTeamRequestSchema>;
 
 /**
- * GET /api/teams response
+ * GET /api/teams page, newest `updatedAt` first.
  */
 export const GetListTeamsResponseSchema = paginatedListSchema(
   TeamDocumentSchema,
@@ -1587,7 +1587,7 @@ export const GetLongLivedTokensResponseSchema = paginatedListSchema(
   maxDurationDays: z.number().optional(),
 });
 
-/** GET /api/long-lived-tokens query. Pages are newest `createdAt` first. */
+/** GET /api/long-lived-tokens query. Pages are newest `updatedAt` first. */
 export const GetLongLivedTokensQuerySchema = z.object({
   /** `true` lists every user's tokens (admins) instead of the caller's own. */
   all: z.string().optional(),

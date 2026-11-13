@@ -99,9 +99,9 @@ export type PaginatedTemplateList = {
 };
 
 /**
- * Page of thin listing-view rows the caller may read, newest `createdAt`
+ * Page of thin listing-view rows the caller may read, newest `updatedAt`
  * first. `limit` counts visible rows after archive + visibility + `canRead`.
- * Paging, the exclusive JSON `[createdAtMs, templateId]` cursor and the scan
+ * Paging, the exclusive JSON `[updatedAtMs, templateId]` cursor and the scan
  * cap come from the shared {@link queryListingPage}.
  *
  * With `search`, the page holds the non-archived templates whose name

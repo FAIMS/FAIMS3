@@ -283,7 +283,7 @@ export const viewsDocument = {
     },
 
     // Token list rows for GET /api/long-lived-tokens?all=true, keyed
-    // `[createdTimestampMs, _id]`. The value omits `tokenHash`.
+    // `[updatedTimestampMs, _id]`. The value omits `tokenHash`.
     longLivedTokensListing: {
       map: convertToCouchDBString(doc => {
         if (
@@ -295,14 +295,17 @@ export const viewsDocument = {
         }
         var row = {...doc};
         delete row.tokenHash;
-        var createdMs = doc.createdTimestampMs;
-        if (!(createdMs > 0)) {
-          createdMs = 0;
+        var updatedMs = doc.updatedTimestampMs;
+        if (!(updatedMs > 0)) {
+          updatedMs = doc.createdTimestampMs;
         }
-        emit([createdMs, doc._id], row);
+        if (!(updatedMs > 0)) {
+          updatedMs = 0;
+        }
+        emit([updatedMs, doc._id], row);
       }),
     },
-    // One user's token list rows, keyed `[userId, createdTimestampMs, _id]`.
+    // One user's token list rows, keyed `[userId, updatedTimestampMs, _id]`.
     longLivedTokensListingByUser: {
       map: convertToCouchDBString(doc => {
         if (
@@ -315,11 +318,14 @@ export const viewsDocument = {
         }
         var row = {...doc};
         delete row.tokenHash;
-        var createdMs = doc.createdTimestampMs;
-        if (!(createdMs > 0)) {
-          createdMs = 0;
+        var updatedMs = doc.updatedTimestampMs;
+        if (!(updatedMs > 0)) {
+          updatedMs = doc.createdTimestampMs;
         }
-        emit([doc.userId, createdMs, doc._id], row);
+        if (!(updatedMs > 0)) {
+          updatedMs = 0;
+        }
+        emit([doc.userId, updatedMs, doc._id], row);
       }),
     },
 
@@ -394,7 +400,7 @@ export const LONG_LIVED_TOKENS_LISTING_BY_USER =
 /**
  * Listing view and key prefix for one long-lived-token page; spread into
  * `queryListingPage`. The rest of each key is the
- * `[createdTimestampMs, tokenId]` cursor. Omit `userId` for every user's
+ * `[updatedTimestampMs, tokenId]` cursor. Omit `userId` for every user's
  * tokens.
  */
 export function longLivedTokenListingViewAndPrefix({

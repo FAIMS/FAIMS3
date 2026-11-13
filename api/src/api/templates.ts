@@ -66,7 +66,7 @@ export const api: express.Router = express.Router();
  * ui-specification). Use GET /api/templates/:id for full detail.
  *
  * Cursor pagination (`limit`, `startKey`, `nextStartKey`) matches record
- * listing. Pages are newest-`createdAt` first. Omitting `limit` defaults to
+ * listing. Pages are newest-`updatedAt` first. Omitting `limit` defaults to
  * 50; there is no unbounded dump.
  *
  * `q` searches non-archived templates by name (within `teamId` when given)

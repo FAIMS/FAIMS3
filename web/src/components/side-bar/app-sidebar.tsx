@@ -187,6 +187,16 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
     });
   }
 
+  if (canSeeMapLayers) {
+    topSectionNavItems.push({
+      title: 'Map layers',
+      url: '/map-layers',
+      icon: Layers,
+      testId: 'web-nav-map-layers',
+      isActive: pathname.startsWith('/map-layers'),
+    });
+  }
+
   if (canSeeUsers) {
     bottomSectionNavItems.push({
       title: 'Users',
@@ -203,16 +213,6 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       url: '/stats',
       icon: BarChart3,
       testId: 'web-nav-stats',
-    });
-  }
-
-  if (canSeeMapLayers) {
-    bottomSectionNavItems.push({
-      title: 'Map layers',
-      url: '/map-layers',
-      icon: Layers,
-      testId: 'web-nav-map-layers',
-      isActive: pathname.startsWith('/map-layers'),
     });
   }
 

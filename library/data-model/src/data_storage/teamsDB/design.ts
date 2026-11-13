@@ -12,7 +12,7 @@ const TEAMS_LISTING_POSTFIX = 'listing';
 const TEAMS_SEARCH_POSTFIX = 'search';
 
 /**
- * Team documents keyed `[archivedFlag, createdAtMs, _id]` so GET /api/teams
+ * Team documents keyed `[archivedFlag, updatedAtMs, _id]` so GET /api/teams
  * pages newest first within the active or archived range.
  */
 export const TEAMS_LISTING = `${INDEX_DOCUMENT_NAME}/${TEAMS_LISTING_POSTFIX}`;
@@ -30,7 +30,7 @@ export const TEAM_LIST_ARCHIVED_FLAG = 1;
 
 /**
  * Listing view and key prefix for one GET /api/teams page. The rest of each
- * key is the `[createdAtMs, teamId]` cursor. `includeArchived` is XOR: true
+ * key is the `[updatedAtMs, teamId]` cursor. `includeArchived` is XOR: true
  * lists archived teams only.
  */
 export function teamListingViewAndPrefix({
@@ -73,11 +73,14 @@ const designDoc = {
           return;
         }
         var archived = doc.archived === true ? 1 : 0;
-        var createdMs = doc.createdAt;
-        if (!(createdMs > 0)) {
-          createdMs = 0;
+        var updatedMs = doc.updatedAt;
+        if (!(updatedMs > 0)) {
+          updatedMs = doc.createdAt;
         }
-        emit([archived, createdMs, doc._id], doc);
+        if (!(updatedMs > 0)) {
+          updatedMs = 0;
+        }
+        emit([archived, updatedMs, doc._id], doc);
       }),
     },
     // GET /api/teams?q=. Rows point at the `listing` row.
@@ -89,12 +92,15 @@ const designDoc = {
         if (doc.archived === true) {
           return;
         }
-        var createdMs = doc.createdAt;
-        if (!(createdMs > 0)) {
-          createdMs = 0;
+        var updatedMs = doc.updatedAt;
+        if (!(updatedMs > 0)) {
+          updatedMs = doc.createdAt;
+        }
+        if (!(updatedMs > 0)) {
+          updatedMs = 0;
         }
         var tokens = tokenize(doc.name);
-        var value = {tokens: tokens, key: [0, createdMs, doc._id]};
+        var value = {tokens: tokens, key: [0, updatedMs, doc._id]};
         for (var i = 0; i < tokens.length; i++) {
           emit(['all', '', tokens[i], doc._id], value);
         }

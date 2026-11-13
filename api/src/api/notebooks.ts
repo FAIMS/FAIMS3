@@ -126,7 +126,7 @@ api.use('/:id/records', recordsRouter);
 
 /**
  * GET list notebooks — one page of the notebooks the caller can read, newest
- * `createdAt` first. Cursor pagination (`limit`, `startKey`, `nextStartKey`);
+ * `updatedAt` first. Cursor pagination (`limit`, `startKey`, `nextStartKey`);
  * omitting `limit` returns the default page, never the whole DB.
  *
  * `status` is `active` (default; OPEN + CLOSED), `archived`, or `all`

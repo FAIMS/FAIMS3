@@ -659,7 +659,8 @@ describe('templates listing views', () => {
       const newer = '2021-06-01T00:00:00.000Z';
       await db.put({
         ...thin('tpl-new', 'team-1'),
-        createdAt: newer,
+        // Older createdAt, newer updatedAt: listing keys on updatedAt.
+        createdAt: created,
         updatedAt: newer,
       });
       const newestFirst = await db.query(TEMPLATES_LISTING_BY_TEMPLATE_ID, {
@@ -679,7 +680,7 @@ describe('templates listing views', () => {
     }
   });
 
-  it('encodes and parses createdAt listing cursors', () => {
+  it('encodes and parses listing cursors', () => {
     const encoded = encodeListCursor([1577836800000, 'tpl-a']);
     expect(parseListCursor(encoded)).toEqual([1577836800000, 'tpl-a']);
     expect(parseListCursor('tpl-a')).toBeUndefined();

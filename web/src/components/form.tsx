@@ -66,7 +66,12 @@ export interface Field {
   accept?: string;
   /** Inline label beside the control when `type` is `checkbox` (defaults to `label`) */
   checkboxLabel?: string;
-  /** When true, optional select fields show a clear button to reset the value. */
+  /**
+   * When true, a select with a value shows a button that resets it. Defaults
+   * to true for optional selects (schema accepts empty). Team fields that use
+   * "No team" as the empty choice set this false — picking that option is
+   * the clear action.
+   */
   clearable?: boolean;
   /**
    * Watcher: called when this field's value changes (including the initial
@@ -84,6 +89,20 @@ export interface Field {
 interface Divider {
   index: number;
   component: React.ReactNode;
+}
+
+/**
+ * Optional selects can be emptied; required ones cannot. An explicit
+ * `clearable` flag wins, so a required-looking team field can still opt in
+ * (map-layer upload) and a field with a "No team" sentinel can opt out.
+ */
+function selectIsClearable({
+  clearable,
+  options,
+  schema,
+}: Pick<Field, 'clearable' | 'options' | 'schema'>): boolean {
+  if (clearable !== undefined) return clearable;
+  return Boolean(options) && schema.safeParse(undefined).success;
 }
 
 /** Checkbox row wired to react-hook-form field id for accessible labelling. */
@@ -264,6 +283,7 @@ export function Form<
                 label,
                 description,
                 required,
+                schema,
                 type,
                 options,
                 excludedBy,
@@ -282,6 +302,11 @@ export function Form<
               },
               index
             ) => {
+              const isClearable = selectIsClearable({
+                clearable,
+                options,
+                schema,
+              });
               const fieldName = name as Path<TSchema>;
               const isDisabled =
                 (excludedBy !== undefined &&
@@ -358,7 +383,9 @@ export function Form<
                           {renderControl ? (
                             renderControl({
                               value: field.value,
-                              onChange: field.onChange,
+                              // Empty string, not undefined: RHF treats
+                              // undefined as "fall back to defaultValues".
+                              onChange: next => field.onChange(next ?? ''),
                               disabled: isDisabled,
                             })
                           ) : (
@@ -369,7 +396,7 @@ export function Form<
                                     // Radix Select does not reliably return to an
                                     // empty state after clear; remount when cleared.
                                     key={
-                                      clearable
+                                      isClearable
                                         ? `${name}-${field.value ?? 'empty'}`
                                         : name
                                     }
@@ -402,7 +429,7 @@ export function Form<
                                       )}
                                     </SelectContent>
                                   </Select>
-                                  {clearable && field.value ? (
+                                  {isClearable && field.value ? (
                                     <Button
                                       type="button"
                                       variant="ghost"
@@ -410,7 +437,7 @@ export function Form<
                                       className="shrink-0"
                                       aria-label={`Clear ${label ?? name}`}
                                       disabled={isDisabled}
-                                      onClick={() => field.onChange(undefined)}
+                                      onClick={() => field.onChange('')}
                                     >
                                       <X className="h-4 w-4" />
                                     </Button>

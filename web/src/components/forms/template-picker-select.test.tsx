@@ -91,4 +91,26 @@ describe('TemplatePickerSelect', () => {
     // Closing the list drops the search.
     expect(lastQ()).toBeUndefined();
   });
+
+  it('clears the selected template', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<TemplatePickerSelect value="tpl-new" onChange={onChange} />);
+    await user.click(screen.getByRole('button', {name: 'Clear selection'}));
+    expect(onChange).toHaveBeenCalledWith(undefined);
+  });
+
+  it('hides clear when nothing is selected or clearable is off', () => {
+    const {rerender} = render(<TemplatePickerSelect onChange={vi.fn()} />);
+    expect(screen.queryByRole('button', {name: 'Clear selection'})).toBeNull();
+
+    rerender(
+      <TemplatePickerSelect
+        value="tpl-new"
+        onChange={vi.fn()}
+        clearable={false}
+      />
+    );
+    expect(screen.queryByRole('button', {name: 'Clear selection'})).toBeNull();
+  });
 });

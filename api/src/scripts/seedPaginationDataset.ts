@@ -516,7 +516,7 @@ async function upsertBulkUser({
 /**
  * Creates or restores one map-layer document owned by `teamId` and links it
  * to `projectId`. No file is uploaded: the layer is stored as `failed`, a
- * finished state, so spatial workers leave it alone. `createdAt` is kept on
+ * finished state, so spatial workers leave it alone. `updatedAt` is kept on
  * re-run so the layer keeps its place in the newest-first lists.
  */
 async function upsertBulkMapAsset({
@@ -533,7 +533,6 @@ async function upsertBulkMapAsset({
   createdAt: number;
 }): Promise<void> {
   const db = getMapAssetsDB();
-  const now = Date.now();
   const fields: MapAssetFields = {
     docType: MAP_ASSET_DOC_TYPE,
     name,
@@ -546,7 +545,7 @@ async function upsertBulkMapAsset({
     failureReason: 'Pagination fixture: no file was uploaded.',
     defaultStyle: DEFAULT_MAP_ASSET_STYLE,
     createdAt,
-    updatedAt: now,
+    updatedAt: createdAt,
   };
   try {
     const existing = await db.get(id);
@@ -555,6 +554,7 @@ async function upsertBulkMapAsset({
       _id: id,
       _rev: existing._rev,
       createdAt: (existing as {createdAt?: number}).createdAt ?? createdAt,
+      updatedAt: (existing as {updatedAt?: number}).updatedAt ?? createdAt,
     });
   } catch (error) {
     if (!isNotFoundError(error)) {
@@ -766,8 +766,8 @@ const main = async () => {
     }
     console.log(`✓ ${COUNT} users`);
 
-    // New fixtures get distinct, ascending creation times so the
-    // newest-first lists show them in a predictable order: 001 is oldest.
+    // New fixtures get distinct, ascending timestamps so the newest-first
+    // lists show them in a predictable order: 001 is oldest.
     const fixtureCreatedAt = (index: number) => now - (COUNT - index);
 
     console.log('\nPhase 6: Upserting map layers...');

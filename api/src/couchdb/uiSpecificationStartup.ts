@@ -12,8 +12,8 @@
  * `buildUiSpecProperties` in one document write so `schemaVersion` and `hash`
  * stay aligned with the stored bundle. This module never hashes itself.
  *
- * Orchestration (Couch connection check, walking both DBs, data-DB init) lives
- * in `validateDatabases.ts` so this file does not import `notebooks` or
+ * Orchestration (Couch connection check, walking both DBs) lives in
+ * `validateDatabases.ts` so this file does not import `notebooks` or
  * `templates`.
  */
 import {

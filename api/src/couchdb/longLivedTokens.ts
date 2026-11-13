@@ -357,9 +357,9 @@ export type LongLivedTokenListRow = Omit<
 >;
 
 /**
- * One page of long-lived tokens, newest `createdTimestampMs` first: one
+ * One page of long-lived tokens, newest `updatedTimestampMs` first: one
  * user's tokens when `userId` is set, otherwise every user's. Paging and the
- * exclusive JSON `[createdTimestampMs, tokenId]` cursor come from the shared
+ * exclusive JSON `[updatedTimestampMs, tokenId]` cursor come from the shared
  * `queryListingPage`.
  */
 export const getTokensPage = async ({

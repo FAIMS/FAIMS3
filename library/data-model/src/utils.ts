@@ -153,6 +153,54 @@ export function differenceSets<T>(setA: Set<T>, setB: Set<T>): Set<T> {
 }
 
 /**
+ * Run `mapper` over `items` with at most `concurrency` calls in flight.
+ * Result order matches input order.
+ *
+ * Fails fast without abandoning work: after the first rejection no further
+ * items are started, calls already in flight are awaited, and only then does
+ * the returned promise reject with that first error. Nothing is still
+ * running when this settles. `concurrency: 1` behaves exactly like a
+ * sequential `for … await` loop.
+ *
+ * A `concurrency` below 1 (or not a number) is treated as 1.
+ */
+export async function mapWithConcurrencyLimit<T, R>({
+  items,
+  concurrency,
+  mapper,
+}: {
+  items: readonly T[];
+  concurrency: number;
+  mapper: (item: T, index: number) => Promise<R>;
+}): Promise<R[]> {
+  const results: R[] = Array.from({length: items.length});
+  const workerCount = Math.max(
+    1,
+    Math.min(Math.floor(concurrency) || 1, items.length)
+  );
+  const failures: unknown[] = [];
+  let next = 0;
+
+  const worker = async () => {
+    while (failures.length === 0 && next < items.length) {
+      const index = next;
+      next += 1;
+      try {
+        results[index] = await mapper(items[index], index);
+      } catch (error) {
+        failures.push(error);
+      }
+    }
+  };
+
+  await Promise.all(Array.from({length: workerCount}, worker));
+  if (failures.length > 0) {
+    throw failures[0];
+  }
+  return results;
+}
+
+/**
  * Formats a timestamp into a date-time string in the format "DD-MM-YY H:MMam/pm"
  *
  * @param timestamp - Unix timestamp in milliseconds (e.g., from Date.now())

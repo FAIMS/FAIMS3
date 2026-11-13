@@ -104,7 +104,7 @@ api.post(
 /**
  * GET /
  * Retrieves one page of long-lived tokens for the authenticated user, newest
- * first. Requires user authentication. Cursor pagination (`limit`,
+ * `updatedAt` first. Requires user authentication. Cursor pagination (`limit`,
  * `startKey`, `nextStartKey`); the max-expiry fields are on every page.
  *
  * If the query parameter 'all' is set to 'true', it pages over all tokens

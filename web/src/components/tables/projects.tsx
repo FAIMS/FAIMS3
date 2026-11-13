@@ -2,7 +2,7 @@
 import type {GetNotebookListResponse} from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
-import {displayDateTime} from '@/lib/time';
+import {displayIsoTimestamp} from '@/lib/time';
 import {TeamCellComponent} from './cells/team-cell';
 import {TemplateCellComponent} from './cells/template-cell';
 import {ProjectStatusBadge, projectStatusDisplay} from './project-status';
@@ -104,7 +104,17 @@ export const columns: ColumnDef<
     ),
     cell: ({getValue}) => {
       const v = getValue<string | undefined>();
-      return v ? displayDateTime({timestamp: new Date(v).getTime()}) : null;
+      return v ? displayIsoTimestamp(v) : null;
+    },
+  },
+  {
+    accessorKey: 'updatedAt',
+    header: ({column}) => (
+      <DataTableColumnHeader column={column} title="Updated at" />
+    ),
+    cell: ({getValue}) => {
+      const v = getValue<string | undefined>();
+      return v ? displayIsoTimestamp(v) : null;
     },
   },
   {

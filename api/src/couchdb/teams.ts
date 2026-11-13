@@ -48,9 +48,9 @@ export type PaginatedTeamList = {
 };
 
 /**
- * Page of teams `canView` accepts, newest `createdAt` first. `includeArchived`
+ * Page of teams `canView` accepts, newest `updatedAt` first. `includeArchived`
  * is XOR: true lists archived teams only. Paging, the exclusive JSON
- * `[createdAtMs, teamId]` cursor and the scan cap come from the shared
+ * `[updatedAtMs, teamId]` cursor and the scan cap come from the shared
  * `queryListingPage`.
  *
  * With `search`, the page holds the non-archived teams whose name matches,

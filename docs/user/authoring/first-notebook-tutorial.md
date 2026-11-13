@@ -146,12 +146,12 @@ In the creation dialogue:
 
 After you click **Create {{Notebook}}**, the dialogue closes and you stay on the
 {{notebook}} list, which refreshes to include your new {{notebook}}. The list is
-sorted by creation date, **newest first**, so your new {{notebook}} appears at
-the **top of the list**. It also appears in the left sidebar under
+sorted by last-updated date, **newest first**, so your new {{notebook}} appears
+at the **top of the list**. It also appears in the left sidebar under
 **{{Notebooks}}**.
 
 ```{screenshot} first-notebook-tutorial/qs-005-notebook-at-top-desktop.png
-:alt: {{Notebook}} list with My First Survey in the top row, the Created column sorted newest first, and My First Survey also listed in the left sidebar under {{Notebooks}}
+:alt: {{Notebook}} list with My First Survey in the top row, sorted newest-updated first, and My First Survey also listed in the left sidebar under {{Notebooks}}
 :align: right
 :width: 100%
 ```
@@ -988,7 +988,7 @@ Ready to take your {{notebook}} further? All of these features are managed throu
 ### {{Notebook}} Not in List After Creation
 
 **Solution**: New {{notebooks}} appear at the TOP of the list (the list is sorted
-newest first). If you still can't see it, use the search bar to find your
+newest-updated first). If you still can't see it, use the search bar to find your
 {{notebook}} by name, or check the left sidebar under {{Notebooks}}.
 
 ### Fields Not Showing in the Form

@@ -138,7 +138,7 @@ export function buildNotebooksListRequest(
 }
 
 /**
- * One page of surveys the user can read, newest first. Read
+ * One page of surveys the user can read, newest-updated first. Read
  * `data.notebooks` and `data.nextStartKey`; omitting `limit` gets the API
  * default page (50), never the whole catalogue.
  */
@@ -413,7 +413,7 @@ export function buildTeamsListRequest({
 }
 
 /**
- * One page of teams the user can view, newest first. Read `data.teams` and
+ * One page of teams the user can view, newest-updated first. Read `data.teams` and
  * `data.nextStartKey`; omitting `limit` gets the API default page (50).
  */
 export const useGetTeams = ({
@@ -457,7 +457,7 @@ export const usePagedTeams = ({
 };
 
 /**
- * Active teams for pickers, newest first. `items` grows a page at a time;
+ * Active teams for pickers, newest-updated first. `items` grows a page at a time;
  * Get more follows `nextStartKey`. With `q`, the teams whose name matches.
  */
 export const useInfiniteTeams = ({
@@ -854,7 +854,7 @@ export const useRequestVerify = () => {
 };
 
 /**
- * Cursor-paged long-lived tokens, newest first: the user's own, or every
+ * Cursor-paged long-lived tokens, newest-updated first: the user's own, or every
  * user's when `fetchAll` is true (admins). `data.maxDurationDays` and
  * `data.maxAllowedExpiryTimestamp` come with each page. Keyed under
  * `['long-lived-tokens']`.

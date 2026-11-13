@@ -9,7 +9,7 @@
  *   ids are in their token). Those teams are fetched by id, so the result is
  *   complete however many teams exist.
  * - Any visible team qualifies (a global creator, or an assign-to-team
- *   dialog). Teams load a page at a time, newest first, and the picker shows
+ *   dialog). Teams load a page at a time, newest-updated first, and the picker shows
  *   "Get more" while further pages remain. Its search box asks the API for
  *   the teams whose name matches, so a team need not be paged to.
  */

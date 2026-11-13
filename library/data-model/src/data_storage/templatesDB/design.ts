@@ -17,13 +17,13 @@ const TEMPLATES_SEARCH_POSTFIX = 'search';
 export const TEMPLATES_BY_TEAM_ID = `${INDEX_DOCUMENT_NAME}/${TEMPLATES_BY_TEAM_ID_POSTFIX}`;
 /**
  * Thin listing rows (no `uiSpecification`). Keyed
- * `[archivedFlag, createdAtMs, _id]` so Control Centre pages match the
- * created-date column (newest first when queried descending).
+ * `[archivedFlag, updatedAtMs, _id]` so Control Centre pages match the
+ * last-updated column (newest first when queried descending).
  */
 export const TEMPLATES_LISTING_BY_TEMPLATE_ID = `${INDEX_DOCUMENT_NAME}/${TEMPLATES_LISTING_BY_TEMPLATE_ID_POSTFIX}`;
 /**
  * Same list shape as {@link TEMPLATES_LISTING_BY_TEMPLATE_ID}, keyed by
- * `[ownedByTeamId, archivedFlag, createdAtMs, _id]`.
+ * `[ownedByTeamId, archivedFlag, updatedAtMs, _id]`.
  */
 export const TEMPLATES_LISTING_BY_TEAM_ID = `${INDEX_DOCUMENT_NAME}/${TEMPLATES_LISTING_BY_TEAM_ID_POSTFIX}`;
 
@@ -50,7 +50,7 @@ export function templateListingArchivedFlag(
 
 /**
  * Listing view and key prefix for one GET /api/templates page. The rest of
- * each key is the `[createdAtMs, templateId]` cursor, so pass both to
+ * each key is the `[updatedAtMs, templateId]` cursor, so pass both to
  * `queryListingPage` / `listingViewRange`.
  */
 export function templateListingViewAndPrefix({
@@ -113,11 +113,14 @@ const indexDocument = {
         var row = {...doc};
         delete row.uiSpecification;
         var archived = doc.archived === true ? 1 : 0;
-        var createdMs = Date.parse(doc.createdAt);
-        if (!(createdMs > 0)) {
-          createdMs = 0;
+        var updatedMs = Date.parse(doc.updatedAt);
+        if (!(updatedMs > 0)) {
+          updatedMs = Date.parse(doc.createdAt);
         }
-        emit([archived, createdMs, doc._id], row);
+        if (!(updatedMs > 0)) {
+          updatedMs = 0;
+        }
+        emit([archived, updatedMs, doc._id], row);
       }),
     },
     [TEMPLATES_LISTING_BY_TEAM_ID_POSTFIX]: {
@@ -134,11 +137,14 @@ const indexDocument = {
         var row = {...doc};
         delete row.uiSpecification;
         var archived = doc.archived === true ? 1 : 0;
-        var createdMs = Date.parse(doc.createdAt);
-        if (!(createdMs > 0)) {
-          createdMs = 0;
+        var updatedMs = Date.parse(doc.updatedAt);
+        if (!(updatedMs > 0)) {
+          updatedMs = Date.parse(doc.createdAt);
         }
-        emit([doc.ownedByTeamId, archived, createdMs, doc._id], row);
+        if (!(updatedMs > 0)) {
+          updatedMs = 0;
+        }
+        emit([doc.ownedByTeamId, archived, updatedMs, doc._id], row);
       }),
     },
     // GET /api/templates?q=. Rows point at the `listingByTemplateId` row.
@@ -150,12 +156,15 @@ const indexDocument = {
         if (doc.archived === true) {
           return;
         }
-        var createdMs = Date.parse(doc.createdAt);
-        if (!(createdMs > 0)) {
-          createdMs = 0;
+        var updatedMs = Date.parse(doc.updatedAt);
+        if (!(updatedMs > 0)) {
+          updatedMs = Date.parse(doc.createdAt);
+        }
+        if (!(updatedMs > 0)) {
+          updatedMs = 0;
         }
         var tokens = tokenize(doc.name);
-        var value = {tokens: tokens, key: [0, createdMs, doc._id]};
+        var value = {tokens: tokens, key: [0, updatedMs, doc._id]};
         for (var i = 0; i < tokens.length; i++) {
           emit(['all', '', tokens[i], doc._id], value);
           if (doc.ownedByTeamId) {

@@ -14,7 +14,7 @@ membership and ownership. See [Roles and Permissions](../core/permissions.md).
 
 ## Upload a layer
 
-1. Open **Map layers** in the left sidebar (under Management)
+1. Open **Map layers** in the left sidebar (under Content)
 2. Click **Add map layer**
 3. Give the layer a short name and, if useful, a description
 4. Choose a team to own the layer. Team is required unless you are a Super

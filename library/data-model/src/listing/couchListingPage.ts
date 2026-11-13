@@ -142,7 +142,7 @@ export function toPaginatedList<T, K extends string>(
 export type ListCursorPart = string | number;
 /**
  * The part of a listing-view key after the range prefix, e.g.
- * `[createdAtMs, id]` or `[nameLower, id]`. The last part is the row id so
+ * `[updatedAtMs, id]` or `[nameLower, id]`. The last part is the row id so
  * the cursor is unique.
  */
 export type ListCursor = readonly ListCursorPart[];
@@ -241,7 +241,7 @@ export type ListingViewRange = {
  * `cursor` (inclusive; the pager drops the cursor row itself).
  *
  * Descending (default) reads highest sort value first, e.g. newest
- * `createdAt`. Ascending suits name-ordered listings.
+ * `updatedAt`. Ascending suits name-ordered listings.
  *
  * `startsWith` narrows the range to keys whose first part after `prefix` is
  * a string starting with it, and always reads ascending. CouchDB collates
