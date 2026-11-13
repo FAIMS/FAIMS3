@@ -185,12 +185,11 @@ describe('DesignerWidget publish', () => {
     );
 
     await waitFor(() => expect(publishNotebook).toHaveBeenCalledTimes(1));
-    await waitFor(() =>
-      expect(getDraft(identity)?.publishedHash).toBe(HASH_B)
-    );
-    expect(
-      getDesignerDraftHostStatus(identity, {uiSpecHash: HASH_B})
-    ).toEqual({unpublished: false, stale: false});
+    await waitFor(() => expect(getDraft(identity)?.publishedHash).toBe(HASH_B));
+    expect(getDesignerDraftHostStatus(identity, {uiSpecHash: HASH_B})).toEqual({
+      unpublished: false,
+      stale: false,
+    });
   });
 
   it('uses template confirmation copy in template mode', async () => {
