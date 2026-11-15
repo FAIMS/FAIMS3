@@ -103,10 +103,10 @@ const paged = {
   tableLoading: false,
   isError: false,
   isPending: false,
-  pageSize: 15,
+  pageSize: 10,
   serverPagination: {
     pageIndex: 0,
-    pageSize: 15,
+    pageSize: 10,
     hasNextPage: false,
     canPreviousPage: false,
     onNextPage: () => undefined,

@@ -137,10 +137,10 @@ export function getTemplatesTableColumns(options: {
   return [
     nameColumn,
     ...team,
-    lastUpdatedColumn,
     ...visibility,
     createdByColumn,
     createdAtColumn,
+    lastUpdatedColumn,
     descriptionColumn,
   ];
 }

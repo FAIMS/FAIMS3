@@ -17,7 +17,6 @@ export function UsersTab() {
   const {users, tableLoading, pageSize, serverPagination, serverSearch} =
     usePagedUsers({
       user: authUser,
-      defaultPageSize: 15,
     });
   const [resetDialog, setResetDialog] = useState<boolean>(false);
   const [resetUserId, setResetUserId] = useState<string | undefined>(undefined);

@@ -71,25 +71,36 @@ describe('resource list timestamp columns', () => {
   });
 
   it('keeps Updated at on templates, map layers, and archived resource lists', () => {
+    const columnKey = (column: {accessorKey?: unknown; id?: string}): unknown =>
+      'accessorKey' in column ? column.accessorKey : column.id;
     const templateAccessors = getTemplatesTableColumns({
       includeVisibility: false,
-    }).map(column =>
-      'accessorKey' in column ? column.accessorKey : column.id
-    );
-    const mapLayerAccessors = getMapLayerTableColumns().map(column =>
-      'accessorKey' in column ? column.accessorKey : column.id
-    );
-    const archivedProjectAccessors = archivedProjectColumns.map(column =>
-      'accessorKey' in column ? column.accessorKey : column.id
-    );
-    const archivedTemplateAccessors = archivedTemplateColumns.map(column =>
-      'accessorKey' in column ? column.accessorKey : column.id
-    );
-    const archivedTeamAccessors = archivedTeamColumns.map(column =>
-      'accessorKey' in column ? column.accessorKey : column.id
-    );
+    }).map(columnKey);
+    const templateAccessorsWithVisibility = getTemplatesTableColumns({
+      includeVisibility: true,
+    }).map(columnKey);
+    const mapLayerAccessors = getMapLayerTableColumns().map(columnKey);
+    const archivedProjectAccessors = archivedProjectColumns.map(columnKey);
+    const archivedTemplateAccessors = archivedTemplateColumns.map(columnKey);
+    const archivedTeamAccessors = archivedTeamColumns.map(columnKey);
 
-    expect(templateAccessors).toContain('updatedAt');
+    expect(templateAccessors).toEqual([
+      'name',
+      'ownedByTeamId',
+      'createdBy',
+      'createdAt',
+      'updatedAt',
+      'description',
+    ]);
+    expect(templateAccessorsWithVisibility).toEqual([
+      'name',
+      'ownedByTeamId',
+      'visibility',
+      'createdBy',
+      'createdAt',
+      'updatedAt',
+      'description',
+    ]);
     expect(mapLayerAccessors).toContain('updatedAt');
     expect(archivedProjectAccessors).toEqual(
       expect.arrayContaining(['createdAt', 'updatedAt'])

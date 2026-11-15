@@ -73,7 +73,6 @@ function RouteComponent() {
     usePagedLongLivedTokens({
       user: authUser,
       fetchAll: adminMode,
-      defaultPageSize: 15,
     });
 
   // Can the user create a long lived token?
