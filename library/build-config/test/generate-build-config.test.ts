@@ -418,7 +418,7 @@ test('generated API env includes conductor, auth, and email contract values', ()
   assert.equal(raw.CONDUCTOR_SHORT_CODE_PREFIX, 'EXM');
 });
 
-test('FEEDBACK_EMAIL falls back to support.supportEmail and prefers limits.feedbackEmail', () => {
+test('FEEDBACK_EMAIL falls back to support.supportEmail and prefers support.feedbackEmail', () => {
   const fromSupport = generateEnv({
     config: {
       ...sampleConfig,
@@ -429,19 +429,21 @@ test('FEEDBACK_EMAIL falls back to support.supportEmail and prefers limits.feedb
   });
   assert.equal(envMap(fromSupport).FEEDBACK_EMAIL, 'ops@example.org');
 
-  const fromLimits = generateEnv({
+  const fromFeedbackEmail = generateEnv({
     config: {
       ...sampleConfig,
-      support: {supportEmail: 'ops@example.org'},
-      limits: {feedbackEmail: 'product@example.org'},
+      support: {
+        supportEmail: 'ops@example.org',
+        feedbackEmail: 'product@example.org',
+      },
     },
     platform: 'api',
     includeEmpty: true,
   });
-  assert.equal(envMap(fromLimits).FEEDBACK_EMAIL, 'product@example.org');
+  assert.equal(envMap(fromFeedbackEmail).FEEDBACK_EMAIL, 'product@example.org');
 });
 
-test('FEEDBACK_SUBJECT defaults and honours limits.feedbackSubject', () => {
+test('FEEDBACK_SUBJECT defaults and honours support.feedbackSubject', () => {
   const fromDefault = generateEnv({
     config: sampleConfig,
     platform: 'api',
@@ -449,16 +451,16 @@ test('FEEDBACK_SUBJECT defaults and honours limits.feedbackSubject', () => {
   });
   assert.equal(envMap(fromDefault).FEEDBACK_SUBJECT, 'In-app feedback');
 
-  const fromLimits = generateEnv({
+  const fromSupport = generateEnv({
     config: {
       ...sampleConfig,
-      limits: {feedbackSubject: 'Fieldmark product feedback'},
+      support: {feedbackSubject: 'Fieldmark product feedback'},
     },
     platform: 'api',
     includeEmpty: true,
   });
   assert.equal(
-    envMap(fromLimits).FEEDBACK_SUBJECT,
+    envMap(fromSupport).FEEDBACK_SUBJECT,
     'Fieldmark product feedback'
   );
 });

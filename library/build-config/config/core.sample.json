@@ -31,6 +31,8 @@
   },
   "support": {
     "supportEmail": "support@fieldmark.au",
+    "feedbackEmail": "support@fieldmark.au",
+    "feedbackSubject": "In-app feedback",
     "privacyPolicyUrl": "https://fieldnote.au/privacy",
     "appContactUrl": "https://fieldnote.au/contact",
     "docsUrl": "https://docs.fieldmark.app"
@@ -133,7 +135,6 @@
     "exportRateLimiterEnabled": true,
     "exportRateLimiterWindowMs": 60000,
     "exportRateLimiterPerWindow": 100,
-    "feedbackSubject": "In-app feedback",
     "feedbackRateLimiterEnabled": true,
     "feedbackRateLimiterWindowMs": 600000,
     "feedbackRateLimiterPerWindow": 5,
