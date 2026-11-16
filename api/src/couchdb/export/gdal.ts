@@ -15,6 +15,92 @@
 import {spawn} from 'child_process';
 import {logError} from '../../logging';
 
+/** Thrown when a GDAL/OGR command exits non-zero. */
+export class GdalCommandError extends Error {
+  constructor(
+    readonly command: string,
+    readonly args: string[],
+    readonly stderr: string,
+    readonly exitCode: number | null
+  ) {
+    super(
+      `${command} failed (exit ${exitCode ?? 'signal'}): ${stderr.trim() || 'no error output'}`
+    );
+    this.name = 'GdalCommandError';
+  }
+}
+
+/**
+ * Runs a GDAL/OGR binary and returns stdout. Rejects with {@link GdalCommandError}
+ * when the process fails.
+ */
+export const runGdalCommand = ({
+  command,
+  args,
+  env,
+  onStderr,
+  onStdout,
+}: {
+  command: string;
+  args: string[];
+  /** Extra / override env. When omitted, the child inherits `process.env`. */
+  env?: NodeJS.ProcessEnv;
+  /** Live stderr (tippecanoe progress). Also still collected for the result. */
+  onStderr?: (chunk: string) => void;
+  /** Live stdout (GDALTermProgress). Also still collected. */
+  onStdout?: (chunk: string) => void;
+}): Promise<{stdout: string; stderr: string}> =>
+  new Promise((resolve, reject) => {
+    const proc = spawn(command, args, env ? {env} : undefined);
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    const finish = (handler: () => void) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      handler();
+    };
+
+    proc.stdout.on('data', chunk => {
+      const text = chunk.toString();
+      stdout += text;
+      onStdout?.(text);
+    });
+    proc.stderr.on('data', chunk => {
+      const text = chunk.toString();
+      stderr += text;
+      onStderr?.(text);
+    });
+    proc.on('error', error => {
+      finish(() => reject(error));
+    });
+    proc.on('close', code => {
+      finish(() => {
+        if (code === 0) {
+          resolve({stdout, stderr});
+          return;
+        }
+        reject(new GdalCommandError(command, args, stderr, code));
+      });
+    });
+  });
+
+/** Parses `gdalinfo -json` or `ogrinfo -json` output. */
+export const readGdalJson = async ({
+  command,
+  args,
+  env,
+}: {
+  command: string;
+  args: string[];
+  env?: NodeJS.ProcessEnv;
+}): Promise<unknown> => {
+  const {stdout} = await runGdalCommand({command, args, env});
+  return JSON.parse(stdout) as unknown;
+};
+
 /** Fallback layer name when converting a single undifferentiated GeoJSON file. */
 const DEFAULT_LAYER_NAME = 'faims_export';
 

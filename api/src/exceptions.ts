@@ -97,3 +97,12 @@ export class TooManyRequestsException extends CustomException {
     super(message, 429);
   }
 }
+
+/**
+ * Use when this node cannot accept more work right now (e.g. disk pressure).
+ */
+export class ServiceUnavailableException extends CustomException {
+  constructor(message = 'Service unavailable') {
+    super(message, 503);
+  }
+}

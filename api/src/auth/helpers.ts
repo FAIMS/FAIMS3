@@ -31,6 +31,7 @@ import {
 } from './passwordStrength';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {createTeamDocument} from '../couchdb/teams';
+import * as Exceptions from '../exceptions';
 import {inviteAuditFromRequest, logInviteAudit} from '../logging';
 
 /**
@@ -357,6 +358,9 @@ export async function validateAndApplyInviteToUser({
     try {
       consumedInvite = await consumeInvite({invite, user: targetDbUser});
     } catch (e) {
+      if (e instanceof Exceptions.InvalidRequestException) {
+        throw e;
+      }
       // Failed to consume the invite - do not save the user
       throw new Error(
         `Unable to consume the invite which appears valid. Error: ${e}.`

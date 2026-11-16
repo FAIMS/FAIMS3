@@ -33,6 +33,7 @@ export type ConditionRuleRowProps = {
   activeDropTargetId: string | null;
   field?: string;
   view?: string;
+  includeField?: boolean;
   // Disables this rule as a drop target.
   // Used when this rule is inside a group currently being dragged.
   disableDropZones?: boolean;
@@ -47,6 +48,7 @@ export const ConditionRuleRow = (props: ConditionRuleRowProps) => {
     activeDropTargetId,
     field,
     view,
+    includeField,
     disableDropZones = false,
     showLabels = false,
   } = props;
@@ -119,6 +121,7 @@ export const ConditionRuleRow = (props: ConditionRuleRowProps) => {
               rule={rule}
               field={field}
               view={view}
+              includeField={includeField}
               onChange={patch => actions.updateRule(rule.editorId, patch)}
               showLabels={showLabels}
             />

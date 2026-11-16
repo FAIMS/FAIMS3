@@ -1,16 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   ExistingTeamsDBDocument,
+  ListingSearch,
+  ListingSearchPointer,
+  queryListingPage,
+  queryListingSearchPage,
   safeWriteDocument,
   slugify,
+  teamListingViewAndPrefix,
+  teamSearchViewAndPrefix,
   TeamsDBDocument,
   TeamsDBFields,
+  toPaginatedList,
 } from '@faims3/data-model';
 import {getTeamsDB} from '.';
 import * as Exceptions from '../exceptions';
 
 /**
- * Lists all documents in the teams DB.
+ * Lists all documents in the teams DB. Unbounded: for admin-stats snapshots
+ * and internal walks only. HTTP lists use {@link getTeamsPage}.
  * @returns an array of team objects
  */
 export const getAllTeams = async (): Promise<ExistingTeamsDBDocument[]> => {
@@ -26,6 +34,73 @@ export const getAllTeams = async (): Promise<ExistingTeamsDBDocument[]> => {
       .map(document => {
         return document.doc!;
       });
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading teams from the Teams DB.'
+    );
+  }
+};
+
+/** One GET /api/teams page: visible teams plus optional `nextStartKey`. */
+export type PaginatedTeamList = {
+  teams: ExistingTeamsDBDocument[];
+  nextStartKey?: string;
+};
+
+/**
+ * Page of teams `canView` accepts, newest `updatedAt` first. `includeArchived`
+ * is XOR: true lists archived teams only. Paging, the exclusive JSON
+ * `[updatedAtMs, teamId]` cursor and the scan cap come from the shared
+ * `queryListingPage`.
+ *
+ * With `search`, the page holds the non-archived teams whose name matches,
+ * in word order; the caller must not combine it with `includeArchived`.
+ */
+export const getTeamsPage = async ({
+  includeArchived,
+  search,
+  limit,
+  startKey,
+  canView,
+}: {
+  includeArchived: boolean;
+  search?: ListingSearch;
+  limit: number;
+  startKey?: string;
+  canView: (team: ExistingTeamsDBDocument) => boolean;
+}): Promise<PaginatedTeamList> => {
+  const teamsDb = getTeamsDB();
+  try {
+    if (search) {
+      const {view, prefix, listingView} = teamSearchViewAndPrefix();
+      return toPaginatedList(
+        await queryListingSearchPage<ExistingTeamsDBDocument>({
+          query: (name, options) =>
+            teamsDb.query<ListingSearchPointer>(name, options),
+          view,
+          prefix,
+          search,
+          loadRows: keys =>
+            teamsDb.query<ExistingTeamsDBDocument>(listingView, {
+              keys,
+              include_docs: false,
+            }),
+          limit,
+          startKey,
+          include: canView,
+        }),
+        'teams'
+      );
+    }
+    const page = await queryListingPage<ExistingTeamsDBDocument>({
+      query: (view, options) =>
+        teamsDb.query<ExistingTeamsDBDocument>(view, options),
+      ...teamListingViewAndPrefix({includeArchived}),
+      limit,
+      startKey,
+      include: canView,
+    });
+    return toPaginatedList(page, 'teams');
   } catch (error) {
     throw new Exceptions.InternalSystemError(
       'An error occurred while reading teams from the Teams DB.'
@@ -100,6 +175,99 @@ export const createTeamDocument = async (
   }
 };
 
+export const ARCHIVED_TEAM_MUTATION_MESSAGE =
+  'Cannot perform this action on an archived team. Restore the team from the Archive first.';
+
+/** Missing/undefined `archived` reads as active. */
+export function teamIsArchived(team: {archived?: boolean}): boolean {
+  return team.archived === true;
+}
+
+/**
+ * Fetches a team and rejects team-as-container mutations while it is archived.
+ */
+export const assertTeamNotArchived = async (
+  teamId: string
+): Promise<ExistingTeamsDBDocument> => {
+  const team = await getTeamById(teamId);
+  if (teamIsArchived(team)) {
+    throw new Exceptions.InvalidRequestException(
+      ARCHIVED_TEAM_MUTATION_MESSAGE
+    );
+  }
+  return team;
+};
+
+/**
+ * No-op when `teamId` is omitted or the team document does not exist.
+ * Rejects only when the team is present and archived, so callers that
+ * historically stored an unknown `ownedByTeamId` keep that behaviour.
+ */
+export const assertTeamIdNotArchived = async (
+  teamId: string | undefined
+): Promise<void> => {
+  if (!teamId) {
+    return;
+  }
+  try {
+    await assertTeamNotArchived(teamId);
+  } catch (error) {
+    if (error instanceof Exceptions.ItemNotFoundException) {
+      return;
+    }
+    throw error;
+  }
+};
+
+/**
+ * Archives or restores a team (top-level `archived` flag) and bumps `updatedAt`.
+ */
+export const archiveTeam = async (
+  teamId: string,
+  archive: boolean
+): Promise<ExistingTeamsDBDocument> => {
+  const teamsDb = getTeamsDB();
+  const existingTeam = await getTeamById(teamId);
+
+  const updatedDoc = {
+    ...existingTeam,
+    archived: archive,
+    updatedAt: Date.now(),
+  } satisfies TeamsDBDocument;
+
+  try {
+    await safeWriteDocument({db: teamsDb, data: updatedDoc});
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to archive a team. Exception ' +
+        e
+    );
+  }
+
+  try {
+    return (await teamsDb.get(teamId)) as ExistingTeamsDBDocument;
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to fetch the archived team.'
+    );
+  }
+};
+
+/**
+ * Restores an archived team. Rejected if the team is not archived.
+ */
+export const restoreTeamFromArchive = async (
+  teamId: string
+): Promise<ExistingTeamsDBDocument> => {
+  const team = await getTeamById(teamId);
+  if (!teamIsArchived(team)) {
+    throw new Exceptions.InvalidRequestException(
+      'Only archived teams can be restored.'
+    );
+  }
+  return archiveTeam(teamId, false);
+};
+
 /**
  * Updates an existing team in the teams database
  * @param teamId The ID of the team to update
@@ -112,11 +280,14 @@ export const updateTeam = async (
 ): Promise<ExistingTeamsDBDocument> => {
   const teamsDb = getTeamsDB();
 
-  // Fetch the existing team
+  // Fetch the existing team (and refuse while archived)
   let existingTeam;
   try {
-    existingTeam = await getTeamById(teamId);
+    existingTeam = await assertTeamNotArchived(teamId);
   } catch (e) {
+    if (e instanceof Exceptions.InvalidRequestException) {
+      throw e;
+    }
     throw new Exceptions.ItemNotFoundException(
       'An error occurred while trying to fetch an existing team in order to update. Are you sure the ID is correct?'
     );
@@ -150,7 +321,9 @@ export const updateTeam = async (
 };
 
 /**
- * Deletes a team from the teams database
+ * Deletes a team from the teams database.
+ * Callers must strip team membership roles first (see the teams API delete
+ * handler). This module cannot import users without an import cycle.
  * @param teamId The ID of the team to delete
  */
 export const deleteTeam = async (teamId: string): Promise<void> => {
@@ -163,6 +336,12 @@ export const deleteTeam = async (teamId: string): Promise<void> => {
   } catch (e) {
     throw new Exceptions.ItemNotFoundException(
       'An error occurred while trying to fetch an existing team in order to delete. Are you sure the ID is correct?'
+    );
+  }
+
+  if (!teamIsArchived(existingTeam)) {
+    throw new Exceptions.InvalidRequestException(
+      'Only archived teams can be permanently deleted. Archive the team first, then delete it from the Archive view.'
     );
   }
 

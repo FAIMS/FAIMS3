@@ -55,7 +55,7 @@ myst_heading_anchors = 3
 def generate_toctree():
     root_dir = pathlib.Path(__file__).parent
     docs = []
-    for path in root_dir.rglob('*.md'):
+    for path in sorted(root_dir.rglob('*.md')):
         relative_path = str(path.relative_to(root_dir))
         docs.append(relative_path)
     return docs

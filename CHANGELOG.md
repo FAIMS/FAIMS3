@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-11-04
+
+### Changes
+
+- fix: git ignore token ([#2466](https://github.com/FAIMS/FAIMS3/pull/2466))
+- fix: missing dep ([#2465](https://github.com/FAIMS/FAIMS3/pull/2465))
+- fix: if expression with secret ([#2464](https://github.com/FAIMS/FAIMS3/pull/2464))
+- fix: bss-docs-logo ([#2459](https://github.com/FAIMS/FAIMS3/pull/2459))
+- fix: survey-table-right-side-unclickable ([#2458](https://github.com/FAIMS/FAIMS3/pull/2458))
+- fix: rename Procfile to Procfile.dev ([#2456](https://github.com/FAIMS/FAIMS3/pull/2456))
+- fix: drop localdev's anonymous node_modules volumes ([#2441](https://github.com/FAIMS/FAIMS3/pull/2441))
+- feat: contextual data layers ([#2431](https://github.com/FAIMS/FAIMS3/pull/2431))
+- feat: photo-attachment-count-validation ([#2428](https://github.com/FAIMS/FAIMS3/pull/2428))
+- feat: stable designer IDs ([#2413](https://github.com/FAIMS/FAIMS3/pull/2413))
+- feat: email suggestion when the app redirects from expired refresh in app/web ([#2404](https://github.com/FAIMS/FAIMS3/pull/2404))
+- feat: template setup forms for notebook creation (#2216) ([#2377](https://github.com/FAIMS/FAIMS3/pull/2377))
+- feat: use json config in app workflows ([#2260](https://github.com/FAIMS/FAIMS3/pull/2260))
+
 ## [1.9.2] - 2026-10-21
 
 ### Changes

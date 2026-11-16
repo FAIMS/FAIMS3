@@ -111,3 +111,11 @@ For each locally known survey missing from the directory:
 4. **Active** or **unreachable** — keep local data.
 
 Tombstones are the proof that a survey was intentionally destroyed on the server.
+
+Activated surveys also reconcile on-device map layers against `contextualLayers`
+on each directory row. That array is the **ready** keep-set only. Ids omitted
+because a layer is pending, being replaced, or failed are dropped on purpose —
+replace withdraws the old overlay immediately rather than keeping last-good.
+If the listing fields are missing entirely (attach failure), skip cleanup so a
+transient error is not treated as "this survey no longer has layers." See
+[Map Layers](./MapLayers.md#survey-listings-and-on-device-copies).

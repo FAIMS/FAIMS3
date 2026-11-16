@@ -67,6 +67,12 @@ declare module '@mui/material/styles' {
       buttonActiveBackground: string;
       buttonActiveBackgroundHover: string;
       buttonForeground: string;
+      scrim: string;
+      sheetShadow: string;
+      locationRing: string;
+      satelliteSwatch: string;
+      vectorSwatch: string;
+      colorPickerFallback: string;
     };
     history: {
       marker: string;
@@ -139,6 +145,12 @@ declare module '@mui/material/styles' {
       buttonActiveBackground: string;
       buttonActiveBackgroundHover: string;
       buttonForeground: string;
+      scrim?: string;
+      sheetShadow?: string;
+      locationRing?: string;
+      satelliteSwatch?: string;
+      vectorSwatch?: string;
+      colorPickerFallback?: string;
     };
     history?: {
       marker: string;

@@ -6,7 +6,7 @@ _Shared options available on every field type in the {{Notebook}} Editor._
 
 ## Overview
 
-Below the field identity inputs (Label, Export name), Helper text, and any
+Below the field identity inputs (Field Heading, Export Title), Helper text, and any
 field-specific settings, every field has a shared options panel. These
 options control validation, annotations, visibility logic, and data
 persistence.
@@ -25,7 +25,7 @@ persistence.
 {{FAIMS}} uses soft validation: collectors see visual feedback in the
 app if a required field is blank, but saving and syncing are
 unaffected. In the Editor, required fields display a green **Required**
-badge below the field's label.
+badge below the field's Field Heading.
 
 ### Annotation
 

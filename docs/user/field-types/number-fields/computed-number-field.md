@@ -34,13 +34,13 @@ button in the lower right.
 ## Configuring the Field
 
 Click the field's **grey header bar** to expand it and see its settings.
-For an overview of the settings shared by all fields — including Label,
-Helper Text, Export name, and the field toolbar — see
+For an overview of the settings shared by all fields — including Field Heading,
+Helper Text, Export Title, and the field toolbar — see
 [Field Identity](../shared-settings/field-identity.md) and
 [Field Toolbar](../shared-settings/field-toolbar.md).
 
-Give the field a meaningful Label (the title collectors see), review
-the auto-populated Export name (the CSV/GIS column header), and add any
+Give the field a meaningful Field Heading (the title collectors see), review
+the auto-populated Export Title (the CSV/GIS column header), and add any
 desired Helper Text.
 
 ```{screenshot} field-types-design/computed-number-02-configured.png
@@ -55,9 +55,9 @@ The Computed Number's key feature is the **Expression** editor, which
 defines the calculated value. Field references are stored as braces
 around the field's storage id (for example `{f_a1b2c3}`), but the
 editor shows each complete reference as a **chip** with that field's
-Label. Hover a chip for the field's type, export name, and storage id.
+Field Heading. Hover a chip for the field's type, export title, and storage id.
 Below the expression, a searchable field picker lists fields by their
-Label; selecting one inserts a chip at the cursor.
+Field Heading; selecting one inserts a chip at the cursor.
 
 | Setting          | What It Does                                                                                                                           |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -94,7 +94,7 @@ Child-relation Related Records field), the expression can reference
 fields on the record's parent by prefixing the field's reference with
 `_PARENT.`, e.g. `{_PARENT.Calibration-Factor} * {Reading}`. An
 **Insert parent field** picker below the expression lists the available
-parent fields by Label.
+parent fields by Field Heading.
 
 Parent references are type checked like any other reference, and —
 unlike same-form references — may point at the parent's computed fields
@@ -186,7 +186,7 @@ records — see
 ## Tips
 
 - **Use the field picker to build expressions** rather than typing
-  references by hand. Selecting a field by its Label inserts the exact
+  references by hand. Selecting a field by its Field Heading inserts the exact
   braced reference, so you avoid typos.
 - **The result stays blank until all referenced fields have values.**
   This is intentional — a partially complete record shows no value rather

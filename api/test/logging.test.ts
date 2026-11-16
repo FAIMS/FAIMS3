@@ -7,7 +7,9 @@
  */
 
 import crypto from 'crypto';
-import {describe, expect, it} from 'vitest';
+import Bugsnag from '@bugsnag/js';
+import {afterEach, describe, expect, it, vi} from 'vitest';
+import {config} from '../src/buildconfig';
 import {
   ForbiddenException,
   TooManyRequestsException,
@@ -16,7 +18,12 @@ import {
 } from '../src/exceptions';
 import {
   fingerprintInviteIdForAudit,
+  formatMapAssetProcessingLine,
+  logError,
+  logMapAssetProcessing,
+  MAP_ASSET_PROCESSING_LOG,
   shouldReportErrorToBugsnag,
+  withMapAssetProcessingWait,
 } from '../src/logging';
 
 function sha256Hex8(value: string): string {
@@ -54,6 +61,64 @@ describe('shouldReportErrorToBugsnag', () => {
   });
 });
 
+describe('logError', () => {
+  const originalBugsnagKey = config.bugsnagApiKey;
+
+  afterEach(() => {
+    config.bugsnagApiKey = originalBugsnagKey;
+    vi.restoreAllMocks();
+  });
+
+  it('writes the error to console.error', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const err = new Error('boom');
+    logError(err);
+    expect(spy).toHaveBeenCalledWith(err);
+  });
+
+  it('includes an optional context message alongside the error', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const err = new Error('info failed');
+    logError(err, 'admin stats: data-DB open failed for notebook-1');
+    expect(spy).toHaveBeenCalledWith(
+      'admin stats: data-DB open failed for notebook-1',
+      err
+    );
+  });
+
+  it('notifies Bugsnag with the original error and context when configured', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const notify = vi.spyOn(Bugsnag, 'notify').mockImplementation(() => {});
+    config.bugsnagApiKey = 'test-key';
+    const err = new Error('info failed');
+    logError(err, 'admin stats: data-DB open failed for notebook-1');
+
+    expect(notify).toHaveBeenCalledTimes(1);
+    expect(notify.mock.calls[0][0]).toBe(err);
+    const onError = notify.mock.calls[0][1];
+    expect(typeof onError).toBe('function');
+    const event = {
+      context: undefined as string | undefined,
+      addMetadata: vi.fn(),
+    };
+    onError!(event as any, () => {});
+    expect(event.context).toBe(
+      'admin stats: data-DB open failed for notebook-1'
+    );
+    expect(event.addMetadata).toHaveBeenCalledWith('log', {
+      context: 'admin stats: data-DB open failed for notebook-1',
+    });
+  });
+
+  it('does not notify Bugsnag for ordinary 401s', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const notify = vi.spyOn(Bugsnag, 'notify').mockImplementation(() => {});
+    config.bugsnagApiKey = 'test-key';
+    logError(new UnauthorizedException(), 'auth failed');
+    expect(notify).not.toHaveBeenCalled();
+  });
+});
+
 describe('fingerprintInviteIdForAudit', () => {
   it('masks the body as PREFIX-a..[hash]..z and is stable', () => {
     const inviteId = 'FAIMS-abcdefghijklmnop';
@@ -84,5 +149,60 @@ describe('fingerprintInviteIdForAudit', () => {
 
   it('returns undefined when no invite id is provided', () => {
     expect(fingerprintInviteIdForAudit(undefined)).toBeUndefined();
+  });
+});
+
+describe('map asset processing audit', () => {
+  it('formats a greppable JSON line with the processing tag', () => {
+    const line = formatMapAssetProcessingLine(
+      {
+        event: 'gdal.command',
+        outcome: 'waiting',
+        assetId: 'asset-1',
+        command: 'gdalwarp',
+        filename: 'plan.tif',
+        elapsedMs: 15000,
+        detail: 'EPSG:3857 bilinear GeoTIFF',
+      },
+      '2026-10-14T00:00:00.000Z'
+    );
+    expect(line.startsWith(`${MAP_ASSET_PROCESSING_LOG} `)).toBe(true);
+    expect(JSON.parse(line.slice(MAP_ASSET_PROCESSING_LOG.length + 1))).toEqual(
+      {
+        ts: '2026-10-14T00:00:00.000Z',
+        event: 'gdal.command',
+        outcome: 'waiting',
+        assetId: 'asset-1',
+        command: 'gdalwarp',
+        filename: 'plan.tif',
+        elapsedMs: 15000,
+        detail: 'EPSG:3857 bilinear GeoTIFF',
+      }
+    );
+  });
+
+  it('does not write audit lines while tests are running', () => {
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    try {
+      logMapAssetProcessing({
+        event: 'processing.run',
+        outcome: 'started',
+        assetId: 'asset-1',
+      });
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('returns the waited work and rethrows failures', async () => {
+    await expect(
+      withMapAssetProcessingWait({event: 'gdal.command'}, async () => 42)
+    ).resolves.toBe(42);
+    await expect(
+      withMapAssetProcessingWait({event: 'gdal.command'}, async () => {
+        throw new Error('ogr2ogr failed');
+      })
+    ).rejects.toThrow('ogr2ogr failed');
   });
 });

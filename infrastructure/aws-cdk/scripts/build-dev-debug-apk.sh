@@ -118,10 +118,21 @@ echo "App dir: ${APP_DIR}" >&2
 
 # Load KEY=value from the generated .env so Vite, env-cmd --no-override, and
 # Gradle all see the same values even if ENV_FILE is not app/.env.
-set -a
-# shellcheck disable=SC1090
-source "${ENV_ABS}"
-set +a
+# Do not `source` the file: dotenv values are unquoted and can contain spaces
+# (e.g. VITE_APP_NAME=Bushfire Surveyor System), which bash would execute.
+while IFS= read -r line || [[ -n "${line}" ]]; do
+  case "${line}" in
+    '' | \#*) continue ;;
+  esac
+  [[ "${line}" == *=* ]] || continue
+  key="${line%%=*}"
+  value="${line#*=}"
+  [[ "${key}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+  if [[ "${value}" =~ ^\"(.*)\"$ || "${value}" =~ ^\'(.*)\'$ ]]; then
+    value="${BASH_REMATCH[1]}"
+  fi
+  export "${key}=${value}"
+done <"${ENV_ABS}"
 
 # Live-reload would point the WebView at localhost instead of the bundled build.
 unset CAP_ANDROID_ADB_FORWARD CAP_SERVER_URL

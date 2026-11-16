@@ -351,6 +351,8 @@ The **`aws`** fields are documented below.
 
 - `support` (**in `core.support`**): Links shown in the app (support, privacy, contact, docs).
   - `supportEmail`: Support email address (default: support@fieldmark.au)
+  - `feedbackEmail`: Destination for in-app feedback mail (`FEEDBACK_EMAIL`). When omitted, env generation falls back to `supportEmail`.
+  - `feedbackSubject`: Subject line for in-app feedback mail (`FEEDBACK_SUBJECT`). Defaults to `In-app feedback`.
   - `privacyPolicyUrl`: Privacy policy URL (default: https://fieldnote.au/privacy)
   - `appContactUrl`: Contact page URL; empty string hides the contact link
   - `docsUrl`: (Optional) Documentation site URL
@@ -380,6 +382,7 @@ The **`aws`** fields are documented below.
   - `enhancedObservability`: (Optional) Enable ECS enhanced observability (container insights)
   - `cpu`: The number of CPU units for the Fargate task
   - `memory`: The amount of memory (in MiB) for the Fargate task
+  - `ephemeralStorageGiB`: (default `21`, range 21–200) Fargate ephemeral disk for the API task. Map-layer GDAL scratch is on the spatial worker (`spatialCapacity.ephemeralStorageGiB`, default 80), not here.
   - `localhostWhitelist`: (default false) Allow localhost-style redirects; not recommended for production
   - `autoScaling`: Auto scaling configuration for the Conductor service
     - `desiredCapacity`: The desired number of tasks to run
@@ -407,9 +410,13 @@ The **`aws`** fields are documented below.
   - `maximumLongLivedDurationDays` (`core.authTokens`): (Optional) Max lifetime in days for long-lived tokens (default 90), or `"unlimited"` for no cap.
   - `rateLimiterEnabled` (`core.limits`): (default `true`) Express HTTP IP rate limiter (`RATE_LIMITER_ENABLED`). Set `false` when per-IP limiting is handled upstream (e.g. ALB/WAF). Does **not** control CouchDB-backed auth attempt limits or the export limiter.
   - `attemptLimiterEnabled` (`core.limits`): (default `true`) Per-user email-code / verification-challenge attempt limits (`ATTEMPT_LIMITER_ENABLED`). Keep `true` in production even when HTTP rate limiting is disabled upstream.
+  - `loginLockoutEnabled` (`core.limits`): (default `true`) Couch-backed progressive local-password lockout (`LOGIN_LOCKOUT_ENABLED`). Independent of `attemptLimiterEnabled`. Keep `true` in production so lockout counters are shared across Fargate tasks.
   - `exportRateLimiterEnabled` (`core.limits`): (default `true`) Dedicated limiter for notebook export mint/redeem (`EXPORT_RATE_LIMITER_ENABLED`). Independent of `rateLimiterEnabled` so ZIP/GDAL work stays capped when the global IP limiter is off.
   - `exportRateLimiterWindowMs` (`core.limits`): (default `600000`) Export-limiter window in milliseconds (`EXPORT_RATE_LIMITER_WINDOW_MS`).
   - `exportRateLimiterPerWindow` (`core.limits`): (default `20`) Export mint/redeem requests allowed per window (`EXPORT_RATE_LIMITER_PER_WINDOW`). Raise for bulk scripted dumps.
+  - `feedbackRateLimiterEnabled` (`core.limits`): (default `true`) Dedicated limiter for `POST /api/feedback` (`FEEDBACK_RATE_LIMITER_ENABLED`). Independent of `rateLimiterEnabled` so authenticated users cannot use Conductor as an open mail relay when the global IP limiter is off.
+  - `feedbackRateLimiterWindowMs` (`core.limits`): (default `600000`) Feedback-limiter window in milliseconds (`FEEDBACK_RATE_LIMITER_WINDOW_MS`).
+  - `feedbackRateLimiterPerWindow` (`core.limits`): (default `5`) Feedback submissions allowed per authenticated user per window (`FEEDBACK_RATE_LIMITER_PER_WINDOW`).
 
 To use a specific configuration when deploying or synthesizing your CDK stack:
 
@@ -665,3 +672,61 @@ This will:
 1. Send a test email to the configured test address
 2. Return detailed diagnostics about the process
 3. Help identify any configuration issues
+
+# Map-layer object storage
+
+CDK creates a private S3 bucket for map-layer originals and normalized files, with CORS `GET`/`HEAD` so the app and Control Centre can download via a Conductor-issued presigned URL. CouchDB stores only metadata, including an S3 resource URI (`s3://region/bucket/key`). The Conductor task role and the spatial-worker task role are granted read/write; the capacity manager is not. Static AWS access keys are not set.
+
+The capacity manager is a Fargate service with desired count 1 (min and max 1). It reads the Couch `pending` / `processing` queue and calls `ecs:RunTask` on the spatial-worker **task definition** (there is no worker service). Each worker polls and processes jobs until `spatialCapacity.idleExitMs` (default 60s) with nothing to claim, then exits. Idle tasks are not replaced. The manager role can `RunTask`, `ListTasks`, and `DescribeTasks`; it cannot `StopTask` or `UpdateService`.
+
+Worker count is a threshold map of total queue depth (`inFlight` + `unclaimed`), not one task per job. `scaleThresholds` are the depths at which count increases from 1: `[3, 8, 16, 32]` means 1 worker below 3 jobs, 2 below 8, 3 below 16, 4 below 32, and 5 at 32+, always capped by `maxCapacity`. `starvationMs` (default 5 minutes) is a second scale-up trigger: if the oldest unclaimed job has waited that long, the manager asks for one extra worker above the depth step. `scaleInCooldownMs` (default `2 * starvationMs`, 10 minutes) spaces further extras from that same stale job so a worker coming online is not treated as another scale-up. Worker count never exceeds `maxCapacity` or the number of jobs in the queue (`inFlight` + `unclaimed`). `starvationMs: 0` disables the staleness trigger; `scaleInCooldownMs: 0` keeps only the first extra.
+
+Optional `aws.json` block (defaults shown). Performance knobs are conservative for the
+default 1 vCPU / 2 GiB worker. `gdalNumThreads: "ALL_CPUS"` already uses the
+task vCPU count; raise `gdalCacheMaxMb` and `gdalWarpMemoryMb` on larger
+tasks (for example 2048 / 1024 on an 8 vCPU / 32 GiB worker). Omit
+`tippecanoeMaxThreads` to let tippecanoe use all CPUs.
+
+```json
+"spatialCapacity": {
+  "maxCapacity": 4,
+  "scaleThresholds": [3, 8, 16, 32],
+  "reconcileMs": 15000,
+  "starvationMs": 300000,
+  "scaleInCooldownMs": 600000,
+  "idleExitMs": 60000,
+  "cpu": 1024,
+  "memory": 2048,
+  "ephemeralStorageGiB": 80,
+  "managerCpu": 256,
+  "managerMemory": 512,
+  "gdalNumThreads": "ALL_CPUS",
+  "gdalCacheMaxMb": 256,
+  "gdalWarpMemoryMb": 256,
+  "gdalWarpMulti": true
+}
+```
+
+Those fields become worker-task env (`GDAL_NUM_THREADS`, `GDAL_CACHEMAX`,
+`GDAL_WARP_MEMORY_MB`, `GDAL_WARP_MULTI`, and optional
+`TIPPECANOE_MAX_THREADS`). The capacity manager does not receive them.
+`gdalwarp` also gets `-multi`, `-wm`, `-wo NUM_THREADS=…`, and
+`-co TILED=YES`. Homogeneous vector layers are written as FlatGeobuf;
+mixed or unknown geometry becomes GeoJSONSeq. Both are tiled with
+`tippecanoe` with family-specific thinning (polygons `-z 16`, drop and simplify at low zoom, no `--coalesce`; `--drop-fraction-as-needed --extend-zooms-if-still-dropping` so dense cadastre does not exit 100 or dissolve street blocks).
+
+Attachment storage JSON in `core.json` (defaults shown):
+
+```json
+"attachmentStorage": {
+  "serviceType": "S3",
+  "prefix": "map-assets"
+}
+```
+
+Conductor receives `ATTACHMENT_STORAGE_TYPE`, `ATTACHMENT_S3_BUCKET`, `ATTACHMENT_S3_PREFIX`, and `ATTACHMENT_S3_REGION`. After deploy, an operations admin can smoke-test auth with:
+
+```bash
+curl -X POST https://your-conductor-endpoint.com/api/admin/test-attachment-storage \
+  -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN"
+```

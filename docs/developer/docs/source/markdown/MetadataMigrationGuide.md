@@ -195,8 +195,8 @@ The current notebook schema version is applied by `migrateNotebook` (often wrapp
 
 | Trigger                               | Location                                                        | Persists?                                               |
 | ------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------- |
-| Open designer                         | `toDesignerNotebookWithHistory` → `normalizeApiUiSpecification` | In memory until save                                    |
-| Save designer                         | `PUT …/uiSpecification`                                         | Yes (server normalises again)                           |
+| Open designer                         | `toDesignerNotebookWithHistory` → `normalizeApiUiSpecification` | Local draft until publish                               |
+| Publish designer                      | `PUT …/uiSpecification`                                         | Yes (server normalises again)                           |
 | Create survey/template from JSON file | `prepareNotebookUiSpecificationInputForApi` then POST           | Server migrates on create                               |
 | Replace JSON file                     | `prepareNotebookUiSpecificationInputForApi` then PUT            | Server migrates on replace (same loose input as create) |
 

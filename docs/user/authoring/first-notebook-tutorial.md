@@ -146,12 +146,12 @@ In the creation dialogue:
 
 After you click **Create {{Notebook}}**, the dialogue closes and you stay on the
 {{notebook}} list, which refreshes to include your new {{notebook}}. The list is
-sorted by creation date, **newest first**, so your new {{notebook}} appears at
-the **top of the list**. It also appears in the left sidebar under
+sorted by last-updated date, **newest first**, so your new {{notebook}} appears
+at the **top of the list**. It also appears in the left sidebar under
 **{{Notebooks}}**.
 
 ```{screenshot} first-notebook-tutorial/qs-005-notebook-at-top-desktop.png
-:alt: {{Notebook}} list with My First Survey in the top row, the Created column sorted newest first, and My First Survey also listed in the left sidebar under {{Notebooks}}
+:alt: {{Notebook}} list with My First Survey in the top row, sorted newest-updated first, and My First Survey also listed in the left sidebar under {{Notebooks}}
 :align: right
 :width: 100%
 ```
@@ -168,7 +168,7 @@ Your {{notebook}}'s page has a row of tabs: Details, Invites, Users, Export,
 Offline Map, and Actions.
 
 1. Click the **Actions** tab
-2. Click **Open in Editor**
+2. Click **Edit {{Notebook}}**
 
 The Actions tab also has a **Quick share** panel, set to **Enabled** by
 default. It lets users with the right permissions share the {{notebook}} from
@@ -188,8 +188,9 @@ The Editor opens as a full-screen window titled "{{Notebook}} Editor". You'll se
 the main interface elements:
 
 - **Tab bar**: DESIGN and INFO tabs at the top left
-- **Toolbar**: **Save** (blue), **Cancel**, **Undo**, and **Redo** buttons on
-  the left, with a **Preview** toggle beside them
+- **Toolbar**: **Publish changes** (blue), **Close**, **Undo**, and **Redo**
+  buttons on the left, with a draft-status label and a **Preview** toggle
+  beside them
 - **Search design...**: A search box at the top right for finding fields in
   large {{notebooks}} (once your {{notebook}} has some content, press `/` to jump
   to it)
@@ -204,12 +205,12 @@ the main interface elements:
 > be different colours. Button labels, positions, and behaviour stay the same
 > whatever the theme. Where a colour does not match, go by the button's name.
 >
-> ⚠️ **Common Mistake**: Don't worry if it looks empty - that's normal! We're about to fill it with useful fields. Remember to click the blue **Save** button in the toolbar when you want to save your work.
+> ⚠️ **Common Mistake**: Don't worry if it looks empty - that's normal! We're about to fill it with useful fields. Edits auto-save as a local draft. Click **Publish changes** when you want the live {{notebook}} to update.
 >
 > 💡 **Tip**: Notice the UNDO and REDO buttons in the toolbar. Use these to recover from accidental deletions or changes. They're your safety net while building forms!
 
 ```{screenshot} first-notebook-tutorial/qs-007-editor-fresh-desktop.png
-:alt: {{Notebook}} Editor open at the DESIGN tab: Save, Cancel, Undo, and Redo buttons with a Preview toggle set to Off, a Search design box at the top right, and the Forms heading with a New Form button above an otherwise empty workspace
+:alt: {{Notebook}} Editor open at the DESIGN tab: Publish changes, Close, Undo, and Redo buttons with a Preview toggle set to Off, a Search design box at the top right, and the Forms heading with a New Form button above an otherwise empty workspace
 :align: right
 :width: 100%
 ```
@@ -219,7 +220,7 @@ the main interface elements:
 - The {{Notebook}} Editor opens as a full-screen window with the DESIGN tab
   selected
 - The **Forms** heading is visible with a blue **+ New Form** button
-- Save, Cancel, Undo, and Redo buttons are visible in the toolbar
+- Publish changes, Close, Undo, and Redo buttons are visible in the toolbar
 - The "Search design..." box is visible at the top right
 - No error messages appear
 
@@ -350,14 +351,14 @@ editor.
 1. **Find the new field** in the "Visible fields" list (it's called
    "New Field") and **click its header bar** to expand it
 2. **Configure the field**:
-   - **Label**: Change "New Field" to **"Site Name"**
-   - **Field ID**: Updates automatically to match ("Site-Name"). No need to
+   - **Field Heading**: Change "New Field" to **"Site Name"**
+   - **Export Title**: Updates automatically to match ("Site-Name"). No need to
      touch it
    - **Helper Text**: Type "Enter the official site designation or name"
    - **Required**: Toggle ON ☑
 
 > ⚠️ **Name fields now, before collecting data.** Records store their values
-> under the Field ID, which follows the label for newly added fields. If you
+> under the Export Title, which follows the Field Heading for newly added fields. If you
 > rename a field after records already exist, those records' values stop
 > appearing in lists (they show "-" instead). Renaming _before_ any data is
 > collected (as we're doing here) is completely safe.
@@ -369,7 +370,7 @@ editor.
 > on the next field.
 
 ```{screenshot} first-notebook-tutorial/qs-012-site-name-editor-desktop.png
-:alt: Expanded Site Name field in the field editor, with Text field and Required badges under its header: Label reads Site Name, Field ID reads Site-Name, Helper Text reads Enter the official site designation or name, Short answer is selected above an empty Default Text box, Required is ticked, and the Advanced controls group shows unticked Copy value to new records, Annotation, and Uncertainty boxes above a Voice-to-text section with Enable voice-to-text input for this field ticked
+:alt: Expanded Site Name field in the field editor, with Text field and Required badges under its header: Field Heading reads Site Name, Export Title reads Site-Name, Helper Text reads Enter the official site designation or name, Short answer is selected above an empty Default Text box, Required is ticked, and the Advanced controls group shows unticked Copy value to new records, Annotation, and Uncertainty boxes above a Voice-to-text section with Enable voice-to-text input for this field ticked
 :align: right
 :width: 100%
 ```
@@ -404,17 +405,16 @@ Now let's add a choice field where users select one option from a list.
 ```
 
 1. **Expand the new field** ("New Field" in Visible fields) and change its
-   **Label** to **"Site Type"**
+   **Field Heading** to **"Site Type"**
 2. **Add your options** in the **Options** table - these are the choices
    users will see:
    - You'll see one default option, "1", with a pencil (**Edit option**) and
      bin (**Delete option**) icon in its Actions column
-   - Click the **pencil icon** to open the "Edit Option" dialogue, change
-     "1" to **"Habitation"**, and click **Save**
+   - Click the pencil icon to open the **Edit Option** dialogue. Change both **Export value** and **Display label** from "1" to "Habitation", then click Save.
    - Now use the **"Add option"** box to add the remaining options: type
      **"Mortuary"** and click **"Add"**, then repeat for **"Ceremonial"**,
      **"Workshop/Industrial"**, **"Defensive"**, **"Agricultural"**, and
-     **"Other"**
+     **"Other"**. The **Display label** defaults to the **Export value** when adding a new option.
    - Reorder options if needed using the drag handle (⠿) or the up/down
      arrows in each row
 
@@ -423,7 +423,7 @@ Now let's add a choice field where users select one option from a list.
 > as the radio-button list data collectors see) or **Dropdown list**.
 
 ```{screenshot} first-notebook-tutorial/qs-014-edit-option-dialog-desktop.png
-:alt: Edit Option dialogue with the Option Text field containing Habitation, and Cancel and Save buttons
+:alt: Edit Option dialogue with Export value and Display label both set to Habitation, and Cancel and Save buttons
 :align: right
 :width: 100%
 ```
@@ -453,9 +453,10 @@ Now let's add a choice field where users select one option from a list.
 > - **Annotation**: Add contextual notes (e.g., when selecting "Other", use annotation to describe what type of site it actually is)
 > - **Uncertainty**: Flag observations you're unsure about for later review
 >
-> 💡 **Pro Tip**: You can use markdown in option text - try `**Important Option**` to make text bold!
+> 💡 **Pro Tip**: You can use Markdown formatting in the Display label — try `**Important Option**` to make the text bold!
 
-**Quick Save**: Click the **Save** button at the left of the toolbar to save your progress.
+**Local draft**: The Editor auto-saves your work as a local draft. Click
+**Publish changes** when you want to update the live {{notebook}}.
 
 #### Field 3: Site Photo (Camera)
 
@@ -475,7 +476,7 @@ Let's add the ability to capture photos - essential for field documentation!
 ```
 
 1. **Expand the new field** ("New Field" in Visible fields) and change its
-   **Label** to **"Site Photo"**
+   **Field Heading** to **"Site Photo"**
 2. **Configure the field**:
    - **Helper Text**: Type "Photograph the site for documentation"
    - Leave **Required** unchecked (photos can be optional)
@@ -483,7 +484,7 @@ Let's add the ability to capture photos - essential for field documentation!
    - **Annotation Label**: Change from "annotation" to **"Photo notes"**
 
 ```{screenshot} first-notebook-tutorial/qs-017-site-photo-editor-desktop.png
-:alt: Site Photo field expanded in the field editor beneath the collapsed Site Name and Site Type fields, with a TakePhoto badge under its header: Label reads Site Photo, Field ID reads Site-Photo, Helper Text reads Photograph the site for documentation, Required is unticked, and in the Advanced controls group Copy value to new records and Uncertainty are unticked whilst Annotation is ticked, with the Annotation Label changed to Photo notes
+:alt: Site Photo field expanded in the field editor beneath the collapsed Site Name and Site Type fields, with a TakePhoto badge under its header: Field Heading reads Site Photo, Export Title reads Site-Photo, Helper Text reads Photograph the site for documentation, Required is unticked, and in the Advanced controls group Copy value to new records and Uncertainty are unticked whilst Annotation is ticked, with the Annotation Label changed to Photo notes
 :align: right
 :width: 100%
 ```
@@ -579,25 +580,26 @@ Now let's configure how the form behaves when collecting data.
 - After closing the dialogue, all 3 fields are visible in your "Basic
   Information" section
 
-### Save Your Work
+### Publish Your Work
 
-**Important:** The {{Notebook}} Editor does not auto-save. Let's save your progress now.
+**Important:** The {{Notebook}} Editor auto-saves a local draft as you type.
+Publishing writes that draft to the live {{notebook}}. Let's publish now.
 
-1. **Click the blue Save button** in the Editor toolbar
-2. **The Editor closes** and you're back on your {{notebook}}'s page, with a
-   green confirmation message: "Designer saved successfully."
-3. **To continue editing later**, click the **Actions** tab and choose
-   **"Open in Editor"** again
+1. **Click Publish changes** in the Editor toolbar
+2. **Confirm** in the publish dialogue. A confirmation message appears:
+   "Designer saved successfully." The Editor stays open.
+3. **Click Close** when you are done. If you still have unpublished edits, you
+   can save the draft and exit, discard it, or publish first.
 
 ```{screenshot} first-notebook-tutorial/qs-022-designer-saved-desktop.png
-:alt: {{Notebook}} page on the Actions tab immediately after saving, showing the Edit {{Notebook}} details, Quick share, Edit {{Notebook}}, Assign {{notebook}} to a Team, Download JSON, and Replace {{Notebook}} JSON File panels, with a green message in the bottom-right corner reading Designer saved successfully
+:alt: {{Notebook}} Editor after publishing, with a green message reading Designer saved successfully. The Editor stays open so you can keep editing or click Close.
 :align: right
 :width: 100%
 ```
 
-> ⚠️ **Remember to Save**: Get in the habit of clicking Save periodically as you work. The Editor closes each time you save, but you can immediately reopen it from the Actions tab to resume editing.
+> ⚠️ **Remember to Publish**: Local drafts stay on this browser until you click **Publish changes**. Close keeps the draft so you can come back later from the Actions tab.
 >
-> 💡 **Tip**: You can always resume editing your {{notebook}} at any time: select your {{notebook}} from the list, click the **Actions** tab, and choose **Open in Editor**. Your work is saved and ready to continue.
+> 💡 **Tip**: You can always resume editing your {{notebook}} at any time: select your {{notebook}} from the list, click the **Actions** tab, and choose **Edit {{Notebook}}**. An unpublished-draft chip appears if a local draft is waiting.
 >
 > ✨ **Pro Tip**: Start simple like we just did. You can always come back to add more fields, validation rules, or conditional logic. Most successful {{notebooks}} begin with 3-7 core fields and evolve based on actual use. Once you're comfortable with the basics, explore the **INFO tab** to add project metadata like project lead, organisation, and custom key-value pairs. You can also try adding more field types - date/time fields, multi-line text for observations, location capture, and more!
 
@@ -950,7 +952,7 @@ Congratulations! 🎊 Let's review everything you've accomplished:
 - Created a new {{notebook}} using the {{Notebook}} Editor
 - Added three fields: text, choice, and photo
 - Configured the Human-Readable ID Field (critical step!)
-- Saved your {{notebook}} (and understood that Save closes the Editor)
+- Published your {{notebook}} (and understood that Close keeps a local draft)
 - Activated your {{notebook}} in the {{FAIMS}} app
 - Created and saved your first record
 - Saw your record display properly in the records list
@@ -984,12 +986,12 @@ Ready to take your {{notebook}} further? All of these features are managed throu
 
 ### Can't Find the {{Notebook}} Editor
 
-**Solution**: Look for "{{Notebooks}}" in your navigation, click "Create {{Notebook}}" and supply required information. Note the name you give your {{notebook}}. Then find your {{notebook}} at the top of the list. Click the {{notebook}} name → Actions tab → Open in Editor. If you don't see this option, check with your administrator about permissions.
+**Solution**: Look for "{{Notebooks}}" in your navigation, click "Create {{Notebook}}" and supply required information. Note the name you give your {{notebook}}. Then find your {{notebook}} at the top of the list. Click the {{notebook}} name → Actions tab → Edit {{Notebook}}. If you don't see this option, check with your administrator about permissions.
 
 ### {{Notebook}} Not in List After Creation
 
 **Solution**: New {{notebooks}} appear at the TOP of the list (the list is sorted
-newest first). If you still can't see it, use the search bar to find your
+newest-updated first). If you still can't see it, use the search bar to find your
 {{notebook}} by name, or check the left sidebar under {{Notebooks}}.
 
 ### Fields Not Showing in the Form
@@ -998,22 +1000,22 @@ newest first). If you still can't see it, use the search bar to find your
 "Visible fields" list for a field called "New Field". Also check that your
 fields are in "Visible fields", not "Hidden fields", in the Editor.
 
-### Editor Closed After Clicking Save
+### Editor Closed After Clicking Close
 
-**This is expected behaviour**: The Editor does not auto-save. Clicking Save
-closes the Editor and returns you to your {{notebook}}'s page ("Designer saved
-successfully."). Your work is saved. To resume editing: Actions → Open in
-Editor.
+**This is expected behaviour**: Close leaves the Editor. If you had unpublished
+edits, choose **Save draft & exit** to keep them, **Discard & exit** to throw
+them away, or **Publish changes** first. Local drafts auto-save while you
+work. To resume editing: Actions → Edit {{Notebook}}.
 
 ### Records Show "rec-xxxxx..." Instead of Readable Names
 
 **Solution**: This is a common issue! If no Human-Readable ID Field is set,
 records are identified by a long code like "rec-de618aef-...": it appears as
 the record's heading when you open it, and, if no Summary Fields are set
-either, in the record list under a column headed "Field ID". Go back to
-editing your {{notebook}}: Actions → Open in Editor → click **Settings** in the
+either, in the record list under a column headed "Export Title". Go back to
+editing your {{notebook}}: Actions → Edit {{Notebook}} → click **Settings** in the
 form control row → set the **Human-Readable ID Field** to "Site Name" →
-Close, then Save. New records will display properly (existing records will
+Close, then Publish changes. New records will display properly (existing records will
 keep the old format).
 
 ### {{Notebook}} Not Appearing in the {{FAIMS}} App

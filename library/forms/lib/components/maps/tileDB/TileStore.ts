@@ -11,6 +11,7 @@ import {containsExtent, Extent} from 'ol/extent';
 import Feature, {FeatureLike} from 'ol/Feature';
 import MVT from 'ol/format/MVT';
 import {Geometry} from 'ol/geom';
+import ImageTile from 'ol/ImageTile';
 import TileLayer from 'ol/layer/Tile';
 import VectorTileLayer from 'ol/layer/VectorTile';
 import {XYZ} from 'ol/source';
@@ -19,6 +20,7 @@ import ImageTileSource from 'ol/source/ImageTile';
 import OSM, {ATTRIBUTION} from 'ol/source/OSM';
 import VectorTileSource from 'ol/source/VectorTile';
 import Tile from 'ol/Tile';
+import TileState from 'ol/TileState';
 import {TileCoord} from 'ol/tilecoord';
 import VectorTile from 'ol/VectorTile';
 import {IDBObjectStore} from '../IDBObjectStore';
@@ -29,11 +31,20 @@ import {
   TileDbMigrationError,
   TileDbMigrationState,
 } from '../migrations';
+import {bindVectorTileBackgroundToLayerOpacity} from '../baseMapLayers';
 import {getMapStylesheet} from '../styles';
 import {InitTileDbResult} from './tileStoreUtils';
 import {MapConfig} from '../types';
 import {StoredTile, StoredTileSet} from './types';
 import {deleteDatabase} from '../IDBUtils';
+import {
+  TILE_LOAD_CONTROLLER,
+  TILE_LOAD_GATE,
+  createTileLoadController,
+  setSatelliteTileLoadPriority,
+  TileLoadPausedError,
+  type TileLoadController,
+} from '../tileLoadControl';
 
 // When downloading maps we start at this zoom level
 const START_ZOOM = 2;
@@ -264,6 +275,7 @@ abstract class TileStoreBase {
   tileStore: MapTileDatabase;
   config: MapConfig;
   private activeDownloads = new Map<string, {cancelled: boolean}>();
+  protected readonly satelliteLoads = createTileLoadController();
 
   constructor(config: MapConfig) {
     this.tileStore = MapTileDatabase.getInstance();
@@ -316,7 +328,7 @@ abstract class TileStoreBase {
    * Get a satellite tile layer (raster imagery)
    * Returns undefined if satellite is not configured
    */
-  getSatelliteLayer(): TileLayer | undefined {
+  getSatelliteLayer(): TileLayer<XYZ> | undefined {
     if (!this.config.satelliteSource) return undefined;
 
     const config = TILE_URL_MAP[this.config.satelliteSource]?.satellite;
@@ -331,17 +343,80 @@ abstract class TileStoreBase {
       url = config.url.replace('{key}', this.config.mapSourceKey || '');
     }
 
+    const loads = this.satelliteLoads;
     const source = new XYZ({
       url: url,
       attributions: this.getSatelliteAttribution(),
       minZoom: config.minZoom,
       maxZoom: config.maxZoom,
+      tileLoadFunction: (tile, src) => {
+        const imageTile = tile as ImageTile;
+        void loads
+          .run(
+            signal =>
+              new Promise<void>((resolve, reject) => {
+                const image = imageTile.getImage();
+                // Abort replaces the <img> with a blank canvas. Setting
+                // .src on that canvas never completes and holds a limiter
+                // slot. ImageTile.load() from ERROR allocates a new image.
+                if (
+                  typeof HTMLCanvasElement !== 'undefined' &&
+                  image instanceof HTMLCanvasElement
+                ) {
+                  reject(new Error('Satellite tile image is not reloadable'));
+                  return;
+                }
+                const tileImage = image as HTMLImageElement;
+                const cleanup = () => {
+                  signal.removeEventListener('abort', onAbort);
+                  tileImage.removeEventListener('load', onLoad);
+                  tileImage.removeEventListener('error', onError);
+                };
+                const onLoad = () => {
+                  cleanup();
+                  resolve();
+                };
+                const onError = () => {
+                  cleanup();
+                  reject(new Error('Satellite tile failed to load'));
+                };
+                const onAbort = () => {
+                  cleanup();
+                  // Drop src so WebKit cancels the decode. Do not skip this:
+                  // a pan trail of in-flight JPEGs crashed WebContent.
+                  tileImage.removeAttribute('src');
+                  tileImage.src = '';
+                  reject(new TileLoadPausedError());
+                };
+                if (signal.aborted) {
+                  reject(new TileLoadPausedError());
+                  return;
+                }
+                tileImage.addEventListener('load', onLoad, {once: true});
+                tileImage.addEventListener('error', onError, {once: true});
+                signal.addEventListener('abort', onAbort, {once: true});
+                if (signal.aborted) {
+                  onAbort();
+                  return;
+                }
+                tileImage.src = src;
+              })
+          )
+          .catch(() => {
+            imageTile.setState(TileState.ERROR);
+          });
+      },
     });
 
-    return new TileLayer({
+    const layer = new TileLayer({
       source: source,
       visible: false,
+      preload: 0,
     });
+    layer.set(TILE_LOAD_GATE, loads.gate);
+    layer.set(TILE_LOAD_CONTROLLER, loads);
+    setSatelliteTileLoadPriority(layer);
+    return layer;
   }
 
   getSatelliteAttribution(): string {
@@ -414,7 +489,10 @@ abstract class TileStoreBase {
    * @param url Tile URL
    * @returns A blob from the cache or the network or `undefined` if we can't find it
    */
-  async getTileBlob(url: string | undefined): Promise<Blob | undefined> {
+  async getTileBlob(
+    url: string | undefined,
+    signal?: AbortSignal
+  ): Promise<Blob | undefined> {
     if (url) {
       if (this.tileStore.tileDB) {
         // we don't want the map key in the tileDB
@@ -422,8 +500,17 @@ abstract class TileStoreBase {
         const image = await this.tileStore.tileDB.get([cleanURL]);
         if (image) return image.data;
       }
+      if (signal?.aborted) {
+        throw new TileLoadPausedError();
+      }
       if (navigator.onLine) {
-        const response = await fetch(url);
+        const response = await fetch(url, signal ? {signal} : undefined);
+        if (signal?.aborted) {
+          throw new TileLoadPausedError();
+        }
+        if (!response.ok) {
+          return undefined;
+        }
         return await response.blob();
       }
     }
@@ -863,6 +950,8 @@ export const failedURLs = new Set<string>();
 export class VectorTileStore extends TileStoreBase {
   declare source: VectorTileSource;
   declare tileLayer: VectorTileLayer;
+  private readonly streetsLoads: TileLoadController =
+    createTileLoadController();
 
   constructor(config: MapConfig) {
     super(config);
@@ -877,10 +966,16 @@ export class VectorTileStore extends TileStoreBase {
     this.tileLayer = new VectorTileLayer({
       source: this.source,
       background: 'hsl(40, 26%, 93%)',
+      preload: 0,
     });
+    this.tileLayer.set(TILE_LOAD_GATE, this.streetsLoads.gate);
+    this.tileLayer.set(TILE_LOAD_CONTROLLER, this.streetsLoads);
+    bindVectorTileBackgroundToLayerOpacity(this.tileLayer);
     this.preCacheSprites();
-    applyStyle(this.tileLayer, getMapStylesheet(this.config.mapStyle), {
+    void applyStyle(this.tileLayer, getMapStylesheet(this.config.mapStyle), {
       transformRequest: this.transformRequest.bind(this),
+    }).then(() => {
+      bindVectorTileBackgroundToLayerOpacity(this.tileLayer);
     });
   }
 
@@ -934,35 +1029,47 @@ export class VectorTileStore extends TileStoreBase {
   }
 
   /**
-   * @param {tile} a VectorTile
-   * @param {url} the URL of the target tile
-   * @return {}
+   * Load one streets tile from the cache or the network.
+   * OpenLayers holds the shared tile queue until this tile leaves LOADING.
+   * A miss or a bad decode has to set ERROR, or later tiles — including
+   * contextual layers — never start.
    */
-  async tileLoader(tile: Tile) {
-    // a little dance for Typescript...
+  tileLoader(tile: Tile) {
     const vTile = tile as VectorTile<FeatureLike>;
-    vTile.setLoader(async (extent, resolution, projection) => {
-      const tileCoords = tile.getTileCoord();
-      const tileUrl = this.getURLForTile({
-        z: tileCoords[0],
-        x: tileCoords[1],
-        y: tileCoords[2],
-      });
-      this.getTileBlob(tileUrl).then(blob => {
-        if (blob) {
-          blob.arrayBuffer().then(data => {
-            const format = vTile.getFormat(); // ol/format/MVT configured as source format
-            const features = format.readFeatures(data, {
-              extent: extent,
+    vTile.setLoader(async (extent, _resolution, projection) => {
+      try {
+        await this.streetsLoads.run(async signal => {
+          if (signal.aborted) {
+            throw new TileLoadPausedError();
+          }
+          const tileCoords = vTile.getTileCoord();
+          const tileUrl = this.getURLForTile({
+            z: tileCoords[0],
+            x: tileCoords[1],
+            y: tileCoords[2],
+          });
+          const blob = await this.getTileBlob(tileUrl, signal);
+          if (signal.aborted) {
+            throw new TileLoadPausedError();
+          }
+          if (!blob) {
+            vTile.setState(TileState.ERROR);
+            return;
+          }
+          const features = vTile
+            .getFormat()
+            .readFeatures(await blob.arrayBuffer(), {
+              extent,
               featureProjection: projection,
             });
-            vTile.setFeatures(features);
-          });
-        }
-      });
-      // the function signature requires that we return
-      // an array of features although we are setting the features
-      // directly above, just return an empty array here to satisfy the signature
+          if (signal.aborted) {
+            throw new TileLoadPausedError();
+          }
+          vTile.setFeatures(features);
+        });
+      } catch {
+        vTile.setState(TileState.ERROR);
+      }
       return [];
     });
   }

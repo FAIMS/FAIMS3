@@ -8,6 +8,8 @@
 
 import {test, fc} from '@fast-check/jest';
 import {resolve_record_id, split_full_record_id} from '../src/datamodel/core';
+import {GetListTemplatesResponseSchema} from '../src/api';
+import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../src/uiSpecification';
 
 // disable debug output for tests
 console.debug = () => {};
@@ -35,4 +37,47 @@ describe('test splitting record ids', () => {
       );
     }
   );
+});
+
+const templateListItem = {
+  _id: 't',
+  _rev: '1-x',
+  name: 'n',
+  version: 1,
+  createdBy: 'admin',
+  createdAt: '2020-01-01T00:00:00.000Z',
+  updatedAt: '2020-01-01T00:00:00.000Z',
+  uiSpecProperties: {
+    schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+    hash: 'a'.repeat(64),
+  },
+};
+
+describe('GetListTemplatesResponseSchema', () => {
+  it('parses an empty list and a list with nextStartKey', () => {
+    expect(
+      GetListTemplatesResponseSchema.safeParse({templates: []}).success
+    ).toBe(true);
+    const withCursor = GetListTemplatesResponseSchema.safeParse({
+      templates: [templateListItem],
+      nextStartKey: 'abc',
+    });
+    expect(withCursor.success).toBe(true);
+    if (withCursor.success) {
+      expect(withCursor.data.nextStartKey).toBe('abc');
+      expect(withCursor.data.templates).toHaveLength(1);
+    }
+  });
+
+  it('rejects a template element that still has uiSpecification', () => {
+    const parsed = GetListTemplatesResponseSchema.safeParse({
+      templates: [
+        {
+          ...templateListItem,
+          uiSpecification: {uiSpec: {}, metadata: {}},
+        },
+      ],
+    });
+    expect(parsed.success).toBe(false);
+  });
 });

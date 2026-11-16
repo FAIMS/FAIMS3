@@ -19,8 +19,11 @@
  * untouched. A failed walk logs and returns `{valid: false}` so the full API
  * can still attach; a bad Couch connection aborts the walks entirely.
  */
-import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '@faims3/data-model';
-import {initialiseDataDb, verifyCouchDBConnection} from '.';
+import {
+  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+  mapWithConcurrencyLimit,
+} from '@faims3/data-model';
+import {DB_INIT_CONCURRENCY, verifyCouchDBConnection} from '.';
 import {
   getAllProjectsListing,
   getProjectById,
@@ -41,8 +44,15 @@ import {
 
 /**
  * Walk the projects listing. Each behind-schema survey is persisted through
- * {@link updateProjectUiSpecification}. Always re-inits the per-project data
- * DB (design docs), whether or not the uiSpec changed.
+ * {@link updateProjectUiSpecification}.
+ *
+ * Does not touch the per-project data DBs. Their design docs do not depend
+ * on the uiSpec, and `initialiseAndMigrateDBs` has already initialised every
+ * one of them earlier in the same boot.
+ *
+ * Projects are handled up to {@link DB_INIT_CONCURRENCY} at a time: each one
+ * only touches its own project document. The first failure still aborts the
+ * walk.
  */
 export async function migrateProjectUiSpecificationsOnStartup(): Promise<{
   count: number;
@@ -51,23 +61,23 @@ export async function migrateProjectUiSpecificationsOnStartup(): Promise<{
   const projects = await getAllProjectsListing();
   logNotebookStartup('projects_loaded', {count: projects.length});
   const outcomes = emptyNotebookStartupUiSpecCounts();
-  for (const project of projects) {
-    await migrateStoredUiSpecificationIfNeeded({
-      listedVersion: project.uiSpecProperties?.schemaVersion,
-      fetchRaw: async () => (await getProjectById(project._id)).uiSpecification,
-      persist: raw => updateProjectUiSpecification(project._id, raw),
-      logContext: {
-        kind: 'project',
-        projectId: project._id,
-        projectName: project.name,
-      },
-      counts: outcomes,
-    });
-    await initialiseDataDb({
-      projectId: project._id,
-      force: true,
-    });
-  }
+  await mapWithConcurrencyLimit({
+    items: projects,
+    concurrency: DB_INIT_CONCURRENCY,
+    mapper: project =>
+      migrateStoredUiSpecificationIfNeeded({
+        listedVersion: project.uiSpecProperties?.schemaVersion,
+        fetchRaw: async () =>
+          (await getProjectById(project._id)).uiSpecification,
+        persist: raw => updateProjectUiSpecification(project._id, raw),
+        logContext: {
+          kind: 'project',
+          projectId: project._id,
+          projectName: project.name,
+        },
+        counts: outcomes,
+      }),
+  });
   return {count: projects.length, outcomes};
 }
 
@@ -80,6 +90,8 @@ export async function migrateTemplateUiSpecificationsOnStartup(): Promise<{
   count: number;
   outcomes: NotebookStartupUiSpecCounts;
 }> {
+  // Full server-side walk (not the paginated HTTP list). Startup must see
+  // every stored template, including archived.
   const templates = await getTemplates({});
   logNotebookStartup('templates_loaded', {count: templates.length});
   const outcomes = emptyNotebookStartupUiSpecCounts();

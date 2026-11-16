@@ -71,6 +71,32 @@ describe('relatedLinkWrites', () => {
     ).toThrow(/already holds a record and takes only one/);
   });
 
+  it('takes the link when the one the field holds points at a deleted record', () => {
+    // The list already hides such a link, and a field that takes one stores
+    // the bare entry, so the new link replaces the dead one.
+    const {fieldValue} = relatedLinkWrites({
+      ...base,
+      relationType: 'faims-core::Linked',
+      currentFieldValue: held,
+      deletedTargetIds: new Set(['target-0']),
+    });
+    expect(fieldValue).toEqual({
+      record_id: 'target-1',
+      relation_type_vocabPair: ['is linked to', 'is linked from'],
+    });
+  });
+
+  it('still refuses when the held link is not among the deleted', () => {
+    expect(() =>
+      relatedLinkWrites({
+        ...base,
+        relationType: 'faims-core::Linked',
+        currentFieldValue: held,
+        deletedTargetIds: new Set(['someone-else']),
+      })
+    ).toThrow(/takes only one/);
+  });
+
   it('keeps the edges the target already had', () => {
     const {relationship} = relatedLinkWrites({
       ...base,

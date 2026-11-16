@@ -26,7 +26,7 @@ export function GenerateTestRecordsDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-fit" disabled={disabled}>
+        <Button className="w-fit" disabled={disabled}>
           Generate test records
         </Button>
       </DialogTrigger>

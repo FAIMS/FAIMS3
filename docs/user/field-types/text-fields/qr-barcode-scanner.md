@@ -35,13 +35,13 @@ tab, and click the **QR / Barcode Scanner** card. Then click the
 ## Configuring the Field
 
 Click the field's **grey header bar** to expand it and see its settings.
-For an overview of the settings shared by all fields — including Label,
-Helper Text, Export name, and the field toolbar — see
+For an overview of the settings shared by all fields — including Field Heading,
+Helper Text, Export Title, and the field toolbar — see
 [Field Identity](../shared-settings/field-identity.md) and
 [Field Toolbar](../shared-settings/field-toolbar.md).
 
-Give the field a meaningful Label (the title collectors see), review
-the auto-populated Export name (the CSV/GIS column header), and add any
+Give the field a meaningful Field Heading (the title collectors see), review
+the auto-populated Export Title (the CSV/GIS column header), and add any
 desired Helper Text.
 
 ```{screenshot} field-types-design/qr-barcode-scanner-02-configured.png

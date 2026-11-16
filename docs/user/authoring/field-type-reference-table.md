@@ -43,17 +43,17 @@ This comprehensive reference provides detailed specifications for all {{FAIMS}} 
 
 ## Spatial Fields
 
-| Field Type         | Purpose & Description                | Typical Examples                              | Technical Specifications                                           | Validation Capabilities                         | Platform Considerations                                        |
-| ------------------ | ------------------------------------ | --------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------- | -------------------------------------------------------------- |
-| **Take GPS Point** | Single coordinate capture            | Find spots, sample locations, photo positions | Returns: GeoJSON point<br/>Includes metadata (accuracy, altitude)  | Accuracy thresholds<br/>Required field option   | Mobile GPS superior<br/>Browser geolocation limited            |
-| **Map Drawing**    | Visual feature creation on base maps | Site boundaries, excavation areas, transects  | Points, lines, polygons<br/>Returns: GeoJSON<br/>Multiple features | Geometry validation<br/>Area/length constraints | **Requires internet for base maps**<br/>Touch precision varies |
+| Field Type         | Purpose & Description                | Typical Examples                              | Technical Specifications                                           | Validation Capabilities                         | Platform Considerations                                                                                                                                         |
+| ------------------ | ------------------------------------ | --------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Take GPS Point** | Single coordinate capture            | Find spots, sample locations, photo positions | Returns: GeoJSON point<br/>Includes metadata (accuracy, altitude)  | Accuracy thresholds<br/>Required field option   | Mobile GPS superior<br/>Browser geolocation limited                                                                                                             |
+| **Map Drawing**    | Visual feature creation on base maps | Site boundaries, excavation areas, transects  | Points, lines, polygons<br/>Returns: GeoJSON<br/>Multiple features | Geometry validation<br/>Area/length constraints | Base-map tiles need a network unless a Map region is downloaded; linked [map layers](../admin/map-layers.md) overlay when downloaded<br/>Touch precision varies |
 
 ## Media Fields
 
-| Field Type      | Purpose & Description               | Typical Examples                               | Technical Specifications                                                 | Validation Capabilities                              | Platform Considerations                            |
-| --------------- | ----------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- | -------------------------------------------------- |
-| **Take Photo**  | Camera capture or gallery selection | Context photos, artefact images, working shots | JPEG/PNG<br/>EXIF preserved<br/>Returns: File reference                  | File size limits<br/>Required field option           | Compression settings<br/>Storage considerations    |
-| **File Upload** | Arbitrary file attachment           | PDFs, spreadsheets, audio, video               | Any file type<br/>No size limits (practical)<br/>Returns: File reference | Type restrictions possible<br/>Required field option | Upload time considerations<br/>Bandwidth dependent |
+| Field Type      | Purpose & Description               | Typical Examples                               | Technical Specifications                                                                  | Validation Capabilities                              | Platform Considerations                            |
+| --------------- | ----------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------- |
+| **Take Photo**  | Camera capture or gallery selection | Context photos, artefact images, working shots | JPEG/PNG<br/>EXIF preserved<br/>Returns: File reference                                   | File size limits<br/>Required field option           | Compression settings<br/>Storage considerations    |
+| **File Upload** | Arbitrary file attachment           | PDFs, spreadsheets, audio, video               | Most file types (not SVG/HTML)<br/>No size limits (practical)<br/>Returns: File reference | Type restrictions possible<br/>Required field option | Upload time considerations<br/>Bandwidth dependent |
 
 ## Relationship Fields
 
@@ -82,7 +82,7 @@ Fields capable of controlling logic (marked in specifications) can trigger visib
 Critical platform disparities require careful consideration:
 
 - QR/Barcode scanning functions exclusively on mobile applications
-- Map fields require internet connectivity for initial tile loading
+- Map fields need a network for base-map tiles unless a Map region has been downloaded; linked [map layers](../admin/map-layers.md) overlay once they are on the device
 - GPS accuracy varies significantly between mobile devices and browsers
 - Touch interfaces present challenges for precise selection and text entry
 

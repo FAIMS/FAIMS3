@@ -24,6 +24,7 @@ import {
   initMigrationsDB,
   initPeopleDB,
   initProjectsDB,
+  initMapAssetsDB,
   initTeamsDB,
   initTemplatesDB,
   initTombstoneDB,
@@ -31,6 +32,7 @@ import {
   GetDbById,
   collectProjectDataDbs,
   dataDbNameForProject,
+  mapWithConcurrencyLimit,
   migrateDbs,
   ProjectDataDbRef,
   registerDbAtCurrentVersion,
@@ -42,6 +44,7 @@ import {
   ProjectDataObject,
   ProjectDocument,
   ProjectID,
+  MapAssetsDB,
   TeamsDB,
   TemplateDB,
   TombstoneDB,
@@ -61,6 +64,7 @@ const PEOPLE_DB_NAME = 'people';
 const MIGRATIONS_DB_NAME = 'migrations';
 const INVITE_DB_NAME = 'invites';
 const TEAMS_DB_NAME = 'teams';
+const MAP_ASSETS_DB_NAME = 'mapassets';
 const TOMBSTONE_DB_NAME = 'tombstone';
 
 let _directoryDB: DatabaseInterface | undefined;
@@ -70,6 +74,7 @@ let _authDB: AuthDatabase | undefined;
 let _usersDB: PeopleDB | undefined;
 let _invitesDB: InvitesDB | undefined;
 let _teamsDB: TeamsDB | undefined;
+let _mapAssetsDB: MapAssetsDB | undefined;
 let _tombstoneDB: TombstoneDB | undefined;
 let _migrationsDB: MigrationsDB | undefined;
 
@@ -102,6 +107,10 @@ export const databaseValidityReport: CouchDBConnectionResult = {
 
 export const verifyCouchDBConnection = async () => {
   const result = databaseValidityReport;
+  result.valid = true;
+  result.server_msg = '';
+  result.database_errors = [];
+  result.validate_error = '';
   const url = config.couchdbInternalUrl;
 
   // can we reach the couchdb server?
@@ -110,19 +119,18 @@ export const verifyCouchDBConnection = async () => {
     headers: {
       'Content-Type': 'application/json',
     },
-  }).catch(() => {
-    console.log('Catching error');
+  }).catch((error: unknown) => {
+    result.server_msg = error instanceof Error ? error.message : String(error);
     return null;
   });
 
   if (!response) {
     result.valid = false;
-    result.server_msg = `Unable to connect to CouchDB server at ${url}`;
+    result.server_msg =
+      `Unable to connect to CouchDB server at ${url}` +
+      (result.server_msg ? ` (${result.server_msg})` : '');
     return result;
   }
-
-  // reset valid to true here, will set to falsel below if something is missing
-  result.valid = true;
 
   // now we know we can connect to the server, but can we connect to the database?
   const pouch_options = pouchOptions();
@@ -142,15 +150,47 @@ export const verifyCouchDBConnection = async () => {
         result.valid = false;
         result.database_errors?.push(`Database ${db} not found`);
       }
-    } catch {
+    } catch (error: unknown) {
       result.valid = false;
+      const detail = error instanceof Error ? error.message : String(error);
       result.database_errors?.push(
-        `Unable to connect to CouchDB database ${db}`
+        `Unable to connect to CouchDB database ${db}: ${detail}`
       );
     }
   }
 
   return result;
+};
+
+/** Resolve after `ms` milliseconds. */
+const sleep = (ms: number) =>
+  new Promise<void>(resolve => {
+    setTimeout(resolve, ms);
+  });
+
+/**
+ * Retry {@link verifyCouchDBConnection} until Couch accepts traffic and the
+ * required databases exist. Compose `depends_on` only waits for the container
+ * to start, so workers can race Couch's HTTP listener.
+ */
+export const waitForCouchDBConnection = async (
+  attempts = 15,
+  delayMs = 2000
+): Promise<CouchDBConnectionResult> => {
+  let last = await verifyCouchDBConnection();
+  for (let attempt = 1; attempt < attempts && !last.valid; attempt++) {
+    const detail =
+      last.validate_error ||
+      last.server_msg ||
+      last.database_errors?.join('; ') ||
+      'unknown error';
+    console.warn(
+      `CouchDB not ready (attempt ${attempt}/${attempts}): ${detail}`
+    );
+    await sleep(delayMs);
+    last = await verifyCouchDBConnection();
+  }
+  return last;
 };
 
 export const getDirectoryDB = (): DatabaseInterface => {
@@ -275,6 +315,22 @@ export const getTeamsDB = (): TeamsDB => {
   return _teamsDB;
 };
 
+/** Lazy Pouch handle for the map-assets database (layers and survey links). */
+export const getMapAssetsDB = (): MapAssetsDB => {
+  if (!_mapAssetsDB) {
+    const pouch_options = pouchOptions();
+    const dbName = config.couchdbInternalUrl + '/' + MAP_ASSETS_DB_NAME;
+    try {
+      _mapAssetsDB = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting map assets database.'
+      );
+    }
+  }
+  return _mapAssetsDB;
+};
+
 export const getTombstoneDB = (): TombstoneDB => {
   if (!_tombstoneDB) {
     const pouch_options = pouchOptions();
@@ -377,6 +433,8 @@ export const getDbById: GetDbById = async ({dbType, id}) => {
       return getTemplatesDb();
     case DatabaseType.TEAMS:
       return getTeamsDB();
+    case DatabaseType.MAP_ASSETS:
+      return getMapAssetsDB();
     case DatabaseType.TOMBSTONE:
       return getTombstoneDB();
     default: {
@@ -389,6 +447,25 @@ export const getDbById: GetDbById = async ({dbType, id}) => {
 };
 
 const DB_INIT_LOG = '[db-initialisation]';
+
+/**
+ * How many projects or databases startup works on at once for its light
+ * per-item steps: checking design/security documents, opening data DB
+ * handles and the per-project uiSpec walk. The items are independent of each
+ * other there, so the only shared resource is CouchDB itself. Work for one
+ * item stays sequential, so this is also the cap on in-flight CouchDB
+ * requests from these steps.
+ */
+export const DB_INIT_CONCURRENCY = 8;
+
+/**
+ * How many project data DBs are migrated at once. Lower than
+ * {@link DB_INIT_CONCURRENCY} because a pending migration scans and rewrites
+ * every document in the database. Safe to run side by side only while every
+ * DATA migration step stays inside its own database (true of all current
+ * steps); drop this to 1 if a step ever reads or writes another data DB.
+ */
+const DATA_DB_MIGRATION_CONCURRENCY = 4;
 
 /**
  * Initialises the database level configuration for a project's data DB. Can
@@ -536,6 +613,11 @@ export const initialiseDbAndKeys = async ({
     {dbName: INVITE_DB_NAME, db: getInvitesDB(), content: initInvitesDB({})},
     {dbName: TEAMS_DB_NAME, db: getTeamsDB(), content: initTeamsDB({})},
     {
+      dbName: MAP_ASSETS_DB_NAME,
+      db: getMapAssetsDB(),
+      content: initMapAssetsDB({}),
+    },
+    {
       dbName: TOMBSTONE_DB_NAME,
       db: getTombstoneDB(),
       content: initTombstoneDB({}),
@@ -553,39 +635,50 @@ export const initialiseDbAndKeys = async ({
       .join(', ')}`
   );
 
-  for (const {dbName, db, content} of globalDbs) {
-    const designIds = content.designDocuments.map(doc => doc._id).join(', ');
-    console.log(
-      `${DB_INIT_LOG} Initialising global DB ${dbName} (${content.designDocuments.length} design doc(s)${
-        designIds ? `: ${designIds}` : ''
-      }${content.defaultDocument ? ', default document' : ''}, force=${force})`
-    );
-    try {
-      await couchInitialiser({
-        db,
-        content,
-        config: {applyPermissions: !isTesting, forceWrite: force},
-      });
-    } catch (e) {
-      console.error(
-        `${DB_INIT_LOG} Failed to initialise global DB ${dbName}`,
-        e
+  // Global DBs do not depend on each other at init time, so they are written
+  // side by side. All of them are done before the project listing is read
+  // below. The first failure still aborts initialisation.
+  await mapWithConcurrencyLimit({
+    items: globalDbs,
+    concurrency: DB_INIT_CONCURRENCY,
+    mapper: async ({dbName, db, content}) => {
+      const designIds = content.designDocuments.map(doc => doc._id).join(', ');
+      console.log(
+        `${DB_INIT_LOG} Initialising global DB ${dbName} (${content.designDocuments.length} design doc(s)${
+          designIds ? `: ${designIds}` : ''
+        }${content.defaultDocument ? ', default document' : ''}, force=${force})`
       );
-      throw new Exceptions.InternalSystemError(
-        `An error occurred while initialising the ${dbName} database!...` + e
-      );
-    }
-  }
+      try {
+        await couchInitialiser({
+          db,
+          content,
+          config: {applyPermissions: !isTesting, forceWrite: force},
+        });
+      } catch (e) {
+        console.error(
+          `${DB_INIT_LOG} Failed to initialise global DB ${dbName}`,
+          e
+        );
+        throw new Exceptions.InternalSystemError(
+          `An error occurred while initialising the ${dbName} database!...` + e
+        );
+      }
+    },
+  });
 
   // For each project, ensure the data DBs are also initialised/synced
   const projects = await getAllProjectsListing();
   console.log(
-    `${DB_INIT_LOG} Found ${projects.length} project(s); initialising data DBs`
+    `${DB_INIT_LOG} Found ${projects.length} project(s); initialising data DBs (up to ${DB_INIT_CONCURRENCY} at a time)`
   );
 
-  for (const project of projects) {
-    await initialiseDataDb({projectId: project._id, force});
-  }
+  // One data DB per project, each independent of the others. The first
+  // failure still aborts initialisation.
+  await mapWithConcurrencyLimit({
+    items: projects,
+    concurrency: DB_INIT_CONCURRENCY,
+    mapper: project => initialiseDataDb({projectId: project._id, force}),
+  });
 
   if (pushKeys) {
     console.log(`${DB_INIT_LOG} Pushing JWT key configuration`);
@@ -624,6 +717,8 @@ export const migrateAllProjectDataDbs = async () => {
       projects,
       openDataDb: async (projectId: string) =>
         (await getDataDb(projectId)) as DatabaseInterface,
+      // Each open is one project-document read
+      concurrency: DB_INIT_CONCURRENCY,
     });
 
   for (const {projectId, dbName} of dataDbs) {
@@ -655,6 +750,7 @@ export const migrateAllProjectDataDbs = async () => {
     migrationDb: getMigrationDb(),
     userId: 'system',
     getDbById,
+    concurrency: DATA_DB_MIGRATION_CONCURRENCY,
   });
 };
 
@@ -704,13 +800,19 @@ export const initialiseAndMigrateDBs = async ({
       dbName: TEAMS_DB_NAME,
     },
     {
+      db: getMapAssetsDB(),
+      dbType: DatabaseType.MAP_ASSETS,
+      dbName: MAP_ASSETS_DB_NAME,
+    },
+    {
       db: getTombstoneDB(),
       dbType: DatabaseType.TOMBSTONE,
       dbName: TOMBSTONE_DB_NAME,
     },
   ];
 
-  // Migrate these first
+  // Migrate these first. Deliberately one at a time, in this order: global
+  // migrations can read other databases, so they are not independent.
   const migrationsDb = getMigrationDb();
   console.log(
     `[migrate] Migrating ${dbs.length} global DB(s): ${dbs
@@ -753,6 +855,14 @@ const getNanoInstance = async (): Promise<Nano.ServerScope> => {
   }
 
   return _nanoInstance;
+};
+
+/** Nano document scope for the mapassets database (metadata only). */
+export const getMapAssetsNano = async (): Promise<
+  Nano.DocumentScope<unknown>
+> => {
+  const nano = await getNanoInstance();
+  return nano.use(MAP_ASSETS_DB_NAME);
 };
 
 /** Lists all database names on the configured CouchDB server. */

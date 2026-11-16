@@ -65,6 +65,7 @@ import {
 } from './types';
 import {
   normalizeRelationshipInstances,
+  readRelatedLinks,
   relatedLinkParts,
   toDbRelationshipInstances,
   withRelatedEdge,
@@ -1744,6 +1745,11 @@ class FormOperations {
       );
     }
     const {related_type, relation_type, multiple} = params.data;
+    // A field that takes one link is free again once its target is deleted.
+    // Only that case needs the lookup; a field that takes many never refuses.
+    const deletedTargetIds = multiple
+      ? undefined
+      : await this.deletedLinkTargets(readRelatedLinks(parentFieldValue));
     // Both checks run before anything is written: a record created and then
     // refused its link is an orphan the parent does not list.
     // The same derivation linking an existing record uses, so creating a child
@@ -1754,6 +1760,7 @@ class FormOperations {
       parentRecordId,
       currentFieldValue: parentFieldValue,
       isMultiple: multiple,
+      deletedTargetIds,
     });
     const {record, revision} = await this.createRecord({
       createdBy,
@@ -1771,6 +1778,45 @@ class FormOperations {
       link,
       linked: withRelatedLink({links, link, isMultiple: multiple}),
     };
+  }
+
+  /**
+   * Which of these links no longer hold a single-link field, read the way the
+   * related records list reads them so the engine and the list agree. Both
+   * creating and linking call this, so a field is judged in one place.
+   *
+   * A target that is not found counts as live: it may not have synced yet.
+   * Any other failure to read it is reported and counts as not holding the
+   * field: a target whose documents cannot be read is one the list cannot
+   * show and the operator cannot detach, so refusing would leave the field
+   * stuck with no way forward. Never throws.
+   */
+  async deletedLinkTargets(
+    links: Array<{record_id: string}>
+  ): Promise<Set<string>> {
+    const deleted = new Set<string>();
+    await Promise.all(
+      links.map(async ({record_id}) => {
+        try {
+          const record = await this.core.getRecord(record_id);
+          const {selectedHead} = this.core.resolveHead({
+            recordId: record_id,
+            heads: record.heads,
+            behavior: 'pickLast',
+          });
+          const revision = await this.core.getRevision(selectedHead);
+          if (revision.deleted === true) deleted.add(record_id);
+        } catch (error) {
+          if (error instanceof Exceptions.DocumentNotFoundError) return;
+          console.warn(
+            `Could not read linked record ${record_id}; its link no longer holds the field`,
+            error
+          );
+          deleted.add(record_id);
+        }
+      })
+    );
+    return deleted;
   }
 
   /**

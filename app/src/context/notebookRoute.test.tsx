@@ -21,6 +21,11 @@ vi.mock('react-router-dom', async () => ({
   useNavigate: () => navigate,
   useParams: () => routeParams.current,
 }));
+vi.mock('./store', () => ({
+  useAppSelector: (
+    selector: (state: {projects: {servers: object}}) => unknown
+  ) => selector({projects: {servers: {}}}),
+}));
 
 /** Reports what the context says, and moves within the notebook on demand. */
 const Consumer = () => {

@@ -32,6 +32,7 @@ export const DraggableConditionEditor = (props: {
   actions: ConditionEditorActions;
   field?: string;
   view?: string;
+  includeField?: boolean;
 }) => {
   const {root, actions} = props;
 
@@ -86,6 +87,7 @@ export const DraggableConditionEditor = (props: {
         isRoot
         field={props.field}
         view={props.view}
+        includeField={props.includeField}
         actions={actions}
         activeDragId={activeDragId}
         activeDropTargetId={activeDropTargetId}

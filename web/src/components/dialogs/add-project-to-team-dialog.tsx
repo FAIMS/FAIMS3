@@ -18,12 +18,7 @@ export const AddProjectToTeamDialog = ({projectId}: {projectId: string}) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button
-          variant="outline"
-          className="bg-primary text-primary-foreground"
-        >
-          Assign {config.notebookNameCapitalized} to Team
-        </Button>
+        <Button>Assign {config.notebookNameCapitalized} to Team</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -31,8 +26,8 @@ export const AddProjectToTeamDialog = ({projectId}: {projectId: string}) => {
             Assign {config.notebookNameCapitalized} to Team
           </DialogTitle>
           <DialogDescription>
-            Assign this {config.notebookName} to a different team. The{' '}
-            {config.notebookName} will then be available to members of the new
+            Choose which team owns this {config.notebookName}. The{' '}
+            {config.notebookName} will then be available to members of that
             team.
           </DialogDescription>
         </DialogHeader>

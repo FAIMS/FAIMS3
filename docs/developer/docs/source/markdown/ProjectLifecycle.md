@@ -19,7 +19,7 @@ Related code:
 | ---------- | ------------------------------------------------- | ------------------------------------ |
 | `OPEN`     | Survey is active for field work                   | In default directory / project lists |
 | `CLOSED`   | Survey is closed; not accepting normal field work | Still listed; can be reopened        |
-| `ARCHIVED` | Soft-retired; hidden from default lists           | Archive UI / `includeArchived=true`  |
+| `ARCHIVED` | Soft-retired; hidden from lists                   | Archive UI / `includeArchived=true`  |
 
 Transitions use `PUT /api/notebooks/:id/status` with `{ status }`.
 
@@ -86,6 +86,11 @@ It shares the same lister as `GET /api/notebooks` and never computes `byteCount`
 (that is opt-in on `/api/notebooks?includeByteCount=true` for Control Centre
 storage). The full design is `GET /api/notebooks/:id`, used on first activation
 and when an activated notebook's directory hash changes.
+
+Each directory row may also include `contextualLayers` (ready linked map
+layers only). That array is the field app's keep-set for on-device files;
+replace withdraws the previous overlay immediately. See
+[Map Layers](./MapLayers.md#survey-listings-and-on-device-copies).
 
 When the app refreshes the project list (`initialiseProjects` / workspace
 Refresh):

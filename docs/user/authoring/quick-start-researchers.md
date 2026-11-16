@@ -33,7 +33,7 @@ This guide helps researchers design effective digital data collection notebooks 
 | Boundaries and features      | Map drawing           | Polygons, lines, points                    | Visual feature creation on base maps            |
 | **Media & Files**            |                       |                                            |                                                 |
 | Field photographs            | Take photo            | Site images, specimen photos               | Camera or gallery selection                     |
-| Document attachments         | File upload           | PDFs, spreadsheets, reports                | Accepts any file type                           |
+| Document attachments         | File upload           | PDFs, spreadsheets, reports                | Most file types (not SVG/HTML)                  |
 | **Relationships**            |                       |                                            |                                                 |
 | Record connections           | Related records       | Links between contexts, samples to sites   | Creates data relationships                      |
 | **Instructions**             |                       |                                            |                                                 |
@@ -163,7 +163,7 @@ Different feature types require different information. A "Feature type" radio bu
 ### Data Quality Strategies
 
 1. **Consistent naming** – Establish and document naming conventions
-2. **Unit specification** – Include units in field labels: "Depth (cm)"
+2. **Unit specification** – Include units in field headings: "Depth (cm)"
 3. **Validation rules** – Configure appropriate constraints for numeric fields
 4. **Export planning** – Design with your analysis workflow in mind
 5. **Documentation** – Maintain a data dictionary alongside your notebook

@@ -57,6 +57,7 @@ export type ConditionGroupCardProps = {
   isRoot?: boolean;
   field?: string;
   view?: string;
+  includeField?: boolean;
   // Disables drop zones inside this group.
   // Used when this group or one of its parent groups is being dragged.
   disableDropZones?: boolean;
@@ -73,6 +74,7 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
     isRoot = false,
     field,
     view,
+    includeField,
     disableDropZones = false,
     firstRuleEditorId,
   } = props;
@@ -251,6 +253,7 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
                 group={child}
                 field={field}
                 view={view}
+                includeField={includeField}
                 actions={actions}
                 activeDragId={activeDragId}
                 activeDropTargetId={activeDropTargetId}
@@ -262,6 +265,7 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
                 rule={child}
                 field={field}
                 view={view}
+                includeField={includeField}
                 actions={actions}
                 activeDragId={activeDragId}
                 activeDropTargetId={activeDropTargetId}

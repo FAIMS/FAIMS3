@@ -9,13 +9,13 @@ import {Geolocation} from '@capacitor/geolocation';
 import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
 import {Alert, Box, Button, Paper, Typography, useTheme} from '@mui/material';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
-import GeoJSON from 'ol/format/GeoJSON';
-import {useEffect, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {z} from 'zod';
 import {schemaWithAbsent} from '../../../validationModule/readableErrors';
-import {createTileStore} from '../../../components';
-import {defaultMapProjection} from '../../../components/maps/MapComponent';
+import {ContextualMapLayersContext} from '../../../components/maps/contextualMapLayers';
+import {createTileStore} from '../../../components/maps/tileDB/TileStore';
 import {GeoJSONFeatureCollectionSchema} from '../../../components/maps/types';
+import {useIsOnline} from '../../../components/maps/useIsOnline';
 import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
 import {FullFieldProps} from '../../../formModule/types';
 import {MapRenderer} from '../../../rendering/fields/view/specialised/Mapping';
@@ -60,6 +60,8 @@ export function MapFormField(props: FieldProps): JSX.Element {
   const [canShowMap, setCanShowMap] = useState(true);
 
   const theme = useTheme();
+  const isOnline = useIsOnline();
+  const {layers: contextualLayers} = useContext(ContextualMapLayersContext);
 
   const mapConfig = props.config.mapConfig();
 
@@ -100,43 +102,32 @@ export function MapFormField(props: FieldProps): JSX.Element {
     drawnFeatures.features.length > 0;
 
   /**
-   * canShowMapNear - can we show a map near this location?
-   *
-   * Return true if we are online or if we have a cached map that includes
-   * the center location.
+   * Offline map edits are available when any offline map region or downloaded
+   * map layer exists on the device. Location overlap is not required.
    */
-  const canShowMapNear = async (
-    features: GeoJSONFeatureCollection | undefined
-  ) => {
-    if (navigator.onLine) return true;
-
-    if (features) {
-      const geoJson = new GeoJSON();
-      const parsedFeatures = geoJson.readFeatures(features, {
-        dataProjection: 'EPSG:4326',
-        featureProjection: defaultMapProjection,
-      });
-
-      // now work out if we have a stored map
-      const tileStore = createTileStore(mapConfig);
-      return await tileStore.mapCacheIncludes(parsedFeatures);
-    } else {
-      return false;
-    }
-  };
-
-  // when the center changes, check if we can show this map
   useEffect(() => {
-    if (isLocationSelected) {
-      // can we draw a map around the drawn features?
-      canShowMapNear(drawnFeatures).then(flag => setCanShowMap(flag));
-    } else if (props.center) {
-      // can we draw a map around the configured center
-      canShowMapNear(createPointFeature(props.center)).then(flag =>
-        setCanShowMap(flag)
-      );
-    }
-  }, [props.center, drawnFeatures]);
+    let cancelled = false;
+
+    const checkCanShowMap = async () => {
+      if (isOnline || contextualLayers.length > 0) {
+        if (!cancelled) setCanShowMap(true);
+        return;
+      }
+
+      try {
+        const tileStore = createTileStore(mapConfig);
+        const tileSets = await tileStore.getTileSets();
+        if (!cancelled) setCanShowMap((tileSets?.length ?? 0) > 0);
+      } catch {
+        if (!cancelled) setCanShowMap(false);
+      }
+    };
+
+    void checkCanShowMap();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOnline, contextualLayers.length]);
 
   // Callback function when a location is selected
   const setFeaturesCallback = (
@@ -246,7 +237,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
       advancedHelperText={props.advancedHelperText}
       errors={props.state.meta.errors as unknown as string[]}
     >
-      {/* if offline and no downloaded map, offer to use current location for point features only */}
+      {/* if offline and nothing is downloaded, offer GPS for point features */}
 
       <Box
         sx={{
@@ -262,8 +253,8 @@ export function MapFormField(props: FieldProps): JSX.Element {
               <>
                 <Alert variant="outlined" severity="warning">
                   The interactive map is not available while <b>offline</b> and
-                  and there is no downloaded map covering this location. Use the
-                  button below to submit your current GPS location.
+                  there is no downloaded map or map layer on this device. Use
+                  the button below to submit your current GPS location.
                 </Alert>
                 <Button
                   variant="outlined"
@@ -278,7 +269,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
               <>
                 <Alert variant="outlined" severity="warning">
                   The interactive map is not available while <b>offline</b> and
-                  and there is no downloaded map covering this location.
+                  there is no downloaded map or map layer on this device.
                 </Alert>
               </>
             )}

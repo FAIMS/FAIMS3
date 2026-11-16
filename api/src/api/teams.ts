@@ -9,36 +9,58 @@
 import {
   Action,
   addTeamRole,
+  GetListTeamsQuerySchema,
   GetListTeamsResponse,
+  GetMapAssetListResponse,
+  GetTeamMapAssetListQuerySchema,
   GetTeamByIdResponse,
   getTeamMembershipAction,
+  GetTeamMembersQuerySchema,
+  GetTeamNotebookStorageResponse,
   GetTeamMembersResponse,
+  IdInputSchema,
   PostCreateTeamInputSchema,
   PostCreateTeamResponse,
+  PutArchiveTeamRequestSchema,
   PutUpdateTeamInputSchema,
   PutUpdateTeamResponse,
   removeTeamRole,
+  resolveListLimit,
+  resolveListStartKey,
   Resource,
   Role,
   roleDetails,
   isPeopleUserAccountDisabled,
   TeamMembershipInputSchema,
+  toPaginatedList,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
+import {resolveListSearch} from './listSearch';
+import {deleteAllInvitesForTeam} from '../couchdb/invites';
+import {listAssetsByTeam} from '../couchdb/mapAssets/store';
 import {
+  getProjectIdsByTeamId,
+  getTeamNotebookStorage,
+} from '../couchdb/notebooks';
+import {getTemplateIdsByTeamId} from '../couchdb/templates';
+import {
+  archiveTeam,
+  assertTeamNotArchived,
   createTeamDocument,
   deleteTeam,
-  getAllTeams,
   getTeamById,
+  getTeamsPage,
+  restoreTeamFromArchive,
+  teamIsArchived,
   updateTeam,
 } from '../couchdb/teams';
 import {
-  filterPeopleUsersForList,
   getCouchUserFromEmailOrUserId,
-  getUsersForTeam,
+  getResourceMembersPage,
   saveCouchUser,
+  stripTeamRolesForTeamId,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {
@@ -46,6 +68,7 @@ import {
   requireAuthenticationAPI,
   userCanDo,
 } from '../middleware';
+import {listReadableTeamMapAssetsPage} from './mapAssets';
 import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
@@ -54,27 +77,41 @@ patch();
 export const api: express.Router = express.Router();
 
 /**
- * GET list teams
- * Gets a list of all teams from the teams DB.
+ * GET list teams — one page of the teams the caller can view, newest
+ * `updatedAt` first. Cursor pagination (`limit`, `startKey`, `nextStartKey`);
+ * omitting `limit` returns the default page, never the whole DB.
+ * `includeArchived=true` lists archived teams only. `q` searches
+ * non-archived teams by name and pages in word order.
  */
 api.get(
   '/',
   requireAuthenticationAPI,
+  validate({query: GetListTeamsQuerySchema}),
   async (req, res: Response<GetListTeamsResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const allTeams = await getAllTeams();
-
-    // filter to only visible teams
-    const visible = allTeams.filter(t =>
-      userCanDo({
-        action: Action.VIEW_TEAM_DETAILS,
-        user: req.user!,
-        resourceId: t._id,
+    const user = req.user;
+    const includeArchived = req.query.includeArchived === 'true';
+    res.json(
+      await getTeamsPage({
+        includeArchived,
+        search: resolveListSearch(req.query.q, {
+          unavailable: includeArchived
+            ? 'q cannot be combined with includeArchived=true.'
+            : undefined,
+        }),
+        limit: resolveListLimit(req.query.limit),
+        startKey: resolveListStartKey(req.query.startKey),
+        // Only teams the caller can see count towards the page.
+        canView: team =>
+          userCanDo({
+            action: Action.VIEW_TEAM_DETAILS,
+            user,
+            resourceId: team._id,
+          }),
       })
     );
-    res.json({teams: visible});
   }
 );
 
@@ -97,6 +134,74 @@ api.get(
   async (req, res: Response<GetTeamByIdResponse>) => {
     const team = await getTeamById(req.params.id);
     res.json(team);
+  }
+);
+
+/**
+ * GET survey count and storage for a team, overall and per survey status.
+ * Sums server-side over every survey the team owns that the caller can read,
+ * so the Control Centre never page-sums `byteCount`.
+ */
+api.get(
+  '/:id/notebook-storage',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.VIEW_TEAM_DETAILS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  validate({
+    params: z.object({id: IdInputSchema.min(1)}),
+  }),
+  async (req, res: Response<GetTeamNotebookStorageResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const teamId = req.params.id;
+    await getTeamById(teamId);
+    res.json(await getTeamNotebookStorage(req.user, teamId));
+  }
+);
+
+/**
+ * GET map layers owned by a team — one page, newest `updatedAt` first, with
+ * cursor pagination (`limit`, `startKey`, `nextStartKey`).
+ *
+ * Reads the Couch `assetsByTeam` view (`MAP_ASSETS_BY_TEAM`) rather than
+ * listing the library and filtering. Requires `VIEW_TEAM_DETAILS` on the
+ * team and `LIST_MAP_ASSETS`. Each returned layer is still subject to
+ * `READ_MAP_ASSET` (team virtual roles, or creator ownership).
+ */
+api.get(
+  '/:id/map-assets',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.VIEW_TEAM_DETAILS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  validate({
+    params: z.object({id: IdInputSchema.min(1)}),
+    query: GetTeamMapAssetListQuerySchema,
+  }),
+  async (req, res: Response<GetMapAssetListResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    if (!userCanDo({user: req.user, action: Action.LIST_MAP_ASSETS})) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const teamId = req.params.id;
+    await getTeamById(teamId);
+    res.json(
+      await listReadableTeamMapAssetsPage(req.user, teamId, {
+        search: resolveListSearch(req.query.q),
+        limit: resolveListLimit(req.query.limit),
+        startKey: resolveListStartKey(req.query.startKey),
+      })
+    );
   }
 );
 
@@ -164,8 +269,36 @@ api.put(
 );
 
 /**
+ * PUT archive or restore a team. `{ archive: true }` archives; `{ archive: false }`
+ * restores (rejected unless the team is currently archived).
+ */
+api.put(
+  '/:id/archive',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.CHANGE_TEAM_STATUS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  validate({
+    params: z.object({id: z.string()}),
+    body: PutArchiveTeamRequestSchema,
+  }),
+  async ({params: {id}, body: {archive}}, res) => {
+    if (archive) {
+      await archiveTeam(id, true);
+    } else {
+      await restoreTeamFromArchive(id);
+    }
+    res.sendStatus(200);
+  }
+);
+
+/**
  * POST delete existing team
- * Deletes an existing team.
+ * Deletes an existing team. The team must already be archived and must not
+ * own surveys, templates, or map layers.
  */
 api.post(
   '/:id/delete',
@@ -183,7 +316,34 @@ api.post(
     // Pull out team ID
     const teamId = req.params.id;
 
-    // Delete the team
+    const team = await getTeamById(teamId);
+    if (!teamIsArchived(team)) {
+      throw new Exceptions.InvalidRequestException(
+        'Only archived teams can be permanently deleted. Archive the team first, then delete it from the Archive view.'
+      );
+    }
+
+    const [projectIds, templateIds, mapAssets] = await Promise.all([
+      getProjectIdsByTeamId({teamId}),
+      getTemplateIdsByTeamId({teamId}),
+      listAssetsByTeam(teamId),
+    ]);
+    if (
+      projectIds.length > 0 ||
+      templateIds.length > 0 ||
+      mapAssets.length > 0
+    ) {
+      throw new Exceptions.InvalidRequestException(
+        'Cannot permanently delete a team that still owns surveys, templates, or map layers. Reassign or delete them first.'
+      );
+    }
+
+    // Strip membership and invites here (not in deleteTeam). couchdb/teams
+    // cannot import users: that module already depends on teams via
+    // auth/helpers and notebooks. Invites are removed so leftover codes cannot
+    // be redeemed against a missing team (that path 500s).
+    await deleteAllInvitesForTeam(teamId);
+    await stripTeamRolesForTeamId(teamId);
     await deleteTeam(teamId);
 
     // Indicate successful deletion
@@ -192,8 +352,9 @@ api.post(
 );
 
 /**
- * GET team members
- * Gets a list of all members for a specific team
+ * GET team members — one page of the team's enabled members in name order.
+ * Cursor pagination (`limit`, `startKey`, `nextStartKey`); `availableRoles`
+ * is on every page.
  */
 api.get(
   '/:id/members',
@@ -206,6 +367,7 @@ api.get(
   }),
   validate({
     params: z.object({id: z.string()}),
+    query: GetTeamMembersQuerySchema,
   }),
   async (req, res: Response<GetTeamMembersResponse>) => {
     const teamId = req.params.id;
@@ -213,11 +375,13 @@ api.get(
     // First verify team exists
     await getTeamById(teamId);
 
-    // Get all users who have roles for this team
-    const teamUsers = filterPeopleUsersForList(
-      await getUsersForTeam({teamId}),
-      false
-    );
+    // One page of the enabled users who have roles for this team
+    const page = await getResourceMembersPage({
+      resourceId: teamId,
+      limit: resolveListLimit(req.query.limit),
+      startKey: resolveListStartKey(req.query.startKey),
+      include: member => member.teamRoles.length > 0,
+    });
 
     // Define available team roles
     const availableRoles = Object.entries(roleDetails)
@@ -229,20 +393,21 @@ api.get(
       }));
 
     // Format member info
-    const members = teamUsers.map(user => {
+    const members = page.items.map(member => {
       return {
-        username: user.user_id,
-        name: user.name,
+        username: member.user_id,
+        name: member.name,
         roles: availableRoles.map(roleInfo => ({
           role: roleInfo.role as Role,
-          hasRole: user.teamRoles.some(
-            r => r.resourceId === teamId && r.role === roleInfo.role
-          ),
+          hasRole: member.teamRoles.includes(roleInfo.role),
         })),
       };
     });
 
-    res.json({members, availableRoles});
+    res.json({
+      ...toPaginatedList({...page, items: members}, 'members'),
+      availableRoles,
+    });
   }
 );
 
@@ -265,8 +430,13 @@ api.post(
     const teamId = req.params.id;
     const {username, role, action} = req.body;
 
-    // First verify team exists
-    await getTeamById(teamId);
+    // Archived teams still grant virtual roles on owned surveys/templates, so
+    // removals stay allowed. New membership is what archive is meant to stop.
+    if (action === 'ADD_ROLE') {
+      await assertTeamNotArchived(teamId);
+    } else {
+      await getTeamById(teamId);
+    }
 
     // Get user to modify
     const targetUser = await getCouchUserFromEmailOrUserId(username);

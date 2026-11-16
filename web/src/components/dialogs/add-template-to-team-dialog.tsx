@@ -33,13 +33,7 @@ export const AddTemplateToTeamDialog = ({
         <Tooltip>
           <TooltipTrigger asChild>
             <span className="inline-block w-fit">
-              <Button
-                variant="outline"
-                className="bg-primary text-primary-foreground"
-                disabled
-              >
-                Assign Template to Team
-              </Button>
+              <Button disabled>Assign Template to Team</Button>
             </span>
           </TooltipTrigger>
           <TooltipContent className="max-w-xs text-balance">
@@ -54,19 +48,14 @@ export const AddTemplateToTeamDialog = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button
-          variant="outline"
-          className="bg-primary text-primary-foreground"
-        >
-          Assign Template to Team
-        </Button>
+        <Button>Assign Template to Team</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Assign Template to Team</DialogTitle>
           <DialogDescription>
-            Assign this template to a different team. The template will then be
-            available to members of the new team.
+            Choose which team owns this template. The template will then be
+            available to members of that team.
           </DialogDescription>
         </DialogHeader>
         <AddTemplateToTeamForm

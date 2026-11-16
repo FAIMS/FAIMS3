@@ -28,7 +28,7 @@ How you fill our the form will vary will depend on the configuration of the {{no
 
 {{FAIMS}} has a number of different _field types_ that you can interact with.
 
-There will usually be a short help text along with each field and in some cases, longer help is available via an icon next to the field label.
+There will usually be a short help text along with each field and in some cases, longer help is available via an icon next to the field heading.
 
 ### Parts of a Form
 

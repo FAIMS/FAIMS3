@@ -4,7 +4,7 @@
  *
  * This editor exists because TakePoint needs a custom "Button Label Text" field
  * that isn't part of BaseFieldEditor. Without this, TakePoint would just fall
- * through to BaseFieldEditor which only provides Label, Export name, Helper Text, etc.
+ * through to BaseFieldEditor which only provides Field Heading, Export Title, Helper Text, etc.
  */
 
 import {Grid} from '@mui/material';
@@ -59,7 +59,7 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
         <Grid size={{xs: 12, sm: 6}}>
           <SimpleFieldWrapper
             heading="Button Label Text"
-            helperText="Custom text for the button. If empty, the field label will be used."
+            helperText="Custom text for the button. If empty, the field heading will be used."
           >
             <DebouncedTextField
               variant="outlined"
@@ -67,7 +67,7 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
               value={buttonLabelValue}
               error={!!buttonLabelErrorTxt}
               helperText={buttonLabelErrorTxt}
-              placeholder="Leave empty to use the field label"
+              placeholder="Leave empty to use the field heading"
               onChange={e =>
                 validateAndUpdateButtonLabelText(
                   e.target.value,

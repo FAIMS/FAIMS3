@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
+  ContextualLayerListing,
   couchInitialiser,
   initDataDB,
   NotebookDefinition,
   NotebookSchemaCompatibility,
   OfflineMapRegion,
   ProjectDataObject,
-  ProjectListItem,
+  APINotebookList,
   ProjectStatus,
   PublicServerInfo,
   Role,
@@ -49,12 +50,25 @@ import {syncStateService} from './helpers/syncStateService';
 import {addAlert} from './alertSlice';
 import {resolveActivationSyncMode} from '../../sync/syncModeDefaults';
 import {
+  activatedSurveysFromServers,
+  collectActivatedLayerKeepSet,
+} from '../../gui/components/maps/contextualLayerIndex';
+import {
+  areContextualLayersOnDevice,
+  getSeenContextualLayersHash,
+  markContextualLayersSeen,
+  notifyContextualLayersChanged,
+  releaseContextualLayersForProject,
+  retainListedContextualLayers,
+} from '../../gui/components/maps/contextualLayerStore';
+import {
   reconcileOfflineMapRegionPlanChange,
   shouldSkipOfflineMapActivationPrompt,
 } from '../../gui/components/maps/projectOfflineMap';
 import {offlineMapRegionsEqual} from '@faims3/forms';
 import type {SyncMode} from '../../sync/syncMode';
 import {isReplicating, syncModeIncludesPull} from '../../sync/syncMode';
+import {createAsyncMutex} from '../../utils/asyncMutex';
 import {clearPushOnlyBannerDismissal} from '../../utils/pushOnlyBannerDismissal';
 import {reportNotebookSchemaCompatibility} from '../../logging';
 import {
@@ -63,28 +77,6 @@ import {
 } from '../../utils/remoteProjectRemoval';
 
 export type {SyncMode};
-
-/**
- * Promise-queue mutex: each `runExclusive` waits for the previous job to finish
- * before running `fn`, so overlapping async work is serialized. A rejected
- * predecessor must not block the queue, hence `await prev.catch(() => {})`.
- */
-function createAsyncMutex() {
-  let mutex = Promise.resolve();
-  return async function runExclusive<T>(fn: () => Promise<T>): Promise<T> {
-    const prev = mutex;
-    let resolveNext!: () => void;
-    mutex = new Promise<void>(r => {
-      resolveNext = r;
-    });
-    await prev.catch(() => {});
-    try {
-      return await fn();
-    } finally {
-      resolveNext();
-    }
-  };
-}
 
 // `initialiseProjects` does many awaits (directory, metadata, dispatches). Without
 // a per-server lock, a user refresh and token refresh could interleave: double
@@ -95,6 +87,7 @@ const initialiseProjectsMutexByServer = new Map<
   ReturnType<typeof createAsyncMutex>
 >();
 
+/** Run `fn` under the per-server initialise lock so refreshes cannot interleave. */
 function withInitialiseProjectsLock<T>(
   serverId: string,
   fn: () => Promise<T>
@@ -200,6 +193,16 @@ export interface ProjectListingInformation {
   disableQuickShare?: boolean;
   /** Digest of the server's uiSpecification (hash + schemaVersion). */
   uiSpecProperties: UiSpecProperties;
+  /**
+   * Ready contextual layers linked to this survey. Directory sync unions this
+   * with other activated surveys as the device keep-set: ids that are pending,
+   * replacing, or failed are omitted, and the device drops a file only when no
+   * activated survey still lists it. A stored file is available to every
+   * survey that lists that asset.
+   */
+  contextualLayers?: ContextualLayerListing[];
+  /** SHA-256 of the ready listing's asset id and content hash pairs. */
+  contextualLayersHash?: string;
 }
 
 interface ProjectIdentityFields {
@@ -339,6 +342,7 @@ function offlineMapDownloadPromptKey(identity: ProjectIdentity): string {
   return projectIdentityKey(identity);
 }
 
+/** The in-flight activation list, creating it on older persisted state. */
 function ensureActivatingProjects(state: ProjectsState): string[] {
   if (!state.activatingProjects) {
     state.activatingProjects = [];
@@ -346,6 +350,7 @@ function ensureActivatingProjects(state: ProjectsState): string[] {
   return state.activatingProjects;
 }
 
+/** Record that this survey is mid-activation (prompt / overlay). */
 function addActivatingProject(
   state: ProjectsState,
   identity: ProjectIdentity
@@ -357,6 +362,7 @@ function addActivatingProject(
   }
 }
 
+/** Clear the mid-activation flag once activation finishes or fails. */
 function removeActivatingProject(
   state: ProjectsState,
   identity: ProjectIdentity
@@ -389,6 +395,8 @@ export interface ProjectsState {
   selectedServerId?: string;
   /** FIFO queue of offline map download dialogs to show one at a time. */
   pendingOfflineMapDownloadPrompts?: PendingOfflineMapDownloadPrompt[];
+  /** FIFO queue of contextual layer download dialogs. */
+  pendingContextualLayerPrompts?: ProjectIdentity[];
   /**
    * Notebooks currently running {@link activateProject}. Not persisted — a
    * reload must not leave a stuck spinner after the thunk is gone.
@@ -408,6 +416,7 @@ export const initialProjectState: ProjectsState = {
   // start out uninitialised
   isInitialised: false,
   pendingOfflineMapDownloadPrompts: [],
+  pendingContextualLayerPrompts: [],
   activatingProjects: [],
 };
 
@@ -438,6 +447,8 @@ function retainedActivatedFields(project: ActivatedProject) {
     recordCount: project.recordCount,
     offlineMapRegion: project.offlineMapRegion,
     disableQuickShare: project.disableQuickShare,
+    contextualLayers: project.contextualLayers,
+    contextualLayersHash: project.contextualLayersHash,
     quickShare: project.quickShare,
   };
 }
@@ -783,6 +794,12 @@ const projectsSlice = createSlice({
 
       server.couchDbUrl = payload.couchDbUrl;
 
+      const existingListing = (existingActivated ?? existingListed)!;
+      // Omitted contextualLayers means attach failed (API contract). Keep the
+      // last-known listing so maps and settings still show downloaded layers.
+      // A present array, including empty, is the new ready list.
+      const keepExistingLayers = !Array.isArray(payload.contextualLayers);
+
       const listing: ProjectListingInformation = {
         name: payload.name,
         description: payload.description,
@@ -792,10 +809,16 @@ const projectsSlice = createSlice({
         status: payload.status,
         recordCount: mergeRecordCount(
           payload.recordCount,
-          (existingActivated ?? existingListed)!.recordCount
+          existingListing.recordCount
         ),
         offlineMapRegion: payload.offlineMapRegion,
         disableQuickShare: payload.disableQuickShare,
+        contextualLayers: keepExistingLayers
+          ? existingListing.contextualLayers
+          : payload.contextualLayers,
+        contextualLayersHash: keepExistingLayers
+          ? existingListing.contextualLayersHash
+          : payload.contextualLayersHash,
         uiSpecProperties: payload.uiSpecProperties,
       };
 
@@ -1035,6 +1058,8 @@ const projectsSlice = createSlice({
         recordCount: project.recordCount,
         offlineMapRegion: project.offlineMapRegion,
         disableQuickShare: project.disableQuickShare,
+        contextualLayers: project.contextualLayers,
+        contextualLayersHash: project.contextualLayersHash,
         uiSpecProperties: project.uiSpecProperties,
         isActivated: false,
         ...(project.quickShare ? {quickShare: project.quickShare} : {}),
@@ -1066,6 +1091,26 @@ const projectsSlice = createSlice({
      */
     clearPendingOfflineMapDownloadPrompt: state => {
       ensureOfflineMapPromptQueue(state).shift();
+    },
+
+    setPendingContextualLayerPrompt: (
+      state,
+      action: PayloadAction<ProjectIdentity>
+    ) => {
+      if (!state.pendingContextualLayerPrompts) {
+        state.pendingContextualLayerPrompts = [];
+      }
+      const key = offlineMapDownloadPromptKey(action.payload);
+      const alreadyQueued = state.pendingContextualLayerPrompts.some(
+        prompt => offlineMapDownloadPromptKey(prompt) === key
+      );
+      if (!alreadyQueued) {
+        state.pendingContextualLayerPrompts.push(action.payload);
+      }
+    },
+
+    clearPendingContextualLayerPrompt: state => {
+      state.pendingContextualLayerPrompts?.shift();
     },
 
     /**
@@ -1557,6 +1602,10 @@ export const selectProjectById = createSelector(
 export const selectPendingOfflineMapDownloadPrompt = (state: RootState) =>
   state.projects.pendingOfflineMapDownloadPrompts?.[0];
 
+/** Next survey whose linked-layer download prompt has not been shown. */
+export const selectPendingContextualLayerPrompt = (state: RootState) =>
+  state.projects.pendingContextualLayerPrompts?.[0];
+
 /** Keys of notebooks whose `activateProject` thunk is still in flight. */
 export const selectActivatingProjects = (state: RootState): string[] =>
   state.projects.activatingProjects ?? [];
@@ -1757,6 +1806,10 @@ export const updateDatabaseCredentials = createAsyncThunk<
   }
 });
 
+/**
+ * Open local DBs, attach listing metadata, and queue the offline-map and
+ * contextual-layer prompts when this activation has new files to download.
+ */
 async function runActivateProject(
   payload: ProjectIdentity & DatabaseAuth,
   dispatch: AppDispatch,
@@ -1941,6 +1994,24 @@ async function runActivateProject(
       );
     }
   }
+
+  const layerHash = activating.contextualLayersHash;
+  const layers = activating.contextualLayers ?? [];
+  if (layers.length > 0 && layerHash) {
+    const seen = await getSeenContextualLayersHash(payload.projectId);
+    if (seen !== layerHash) {
+      if (areContextualLayersOnDevice(layers)) {
+        await markContextualLayersSeen(payload.projectId, layerHash);
+      } else {
+        dispatch(
+          setPendingContextualLayerPrompt({
+            projectId: payload.projectId,
+            serverId: payload.serverId,
+          })
+        );
+      }
+    }
+  }
 }
 
 interface ActivateProjectSuccessPayload {
@@ -2046,6 +2117,198 @@ function activatedProjectNeedsSpecFetch({
   );
 }
 
+/** GET /api/notebooks/:id body after {@link fetchNotebookDetails}. */
+type NotebookDetails = Awaited<ReturnType<typeof fetchNotebookDetails>>;
+
+/** Store update produced from a notebooks GET (hash-change or explicit refresh). */
+type NotebookDetailsUpdate = ProjectListingInformation &
+  ProjectIdentity & {
+    couchDbUrl: string;
+    uiDefinition?: NotebookDefinition;
+  };
+
+/**
+ * Build the {@link updateProjectDetails} payload from GET /api/notebooks/:id.
+ * Activated surveys keep the last-good graph when the incoming spec is
+ * incompatible. Listed surveys receive listing fields only.
+ */
+function updatePayloadFromNotebookDetails({
+  existing,
+  meta,
+  couchDbUrl,
+}: {
+  existing: Project;
+  meta: NotebookDetails;
+  couchDbUrl: string;
+}): NotebookDetailsUpdate {
+  const listing: NotebookDetailsUpdate = {
+    name: meta.name ?? existing.name,
+    description: meta.description ?? existing.description,
+    templateId: meta.templateId ?? existing.templateId,
+    updatedAt: meta.updatedAt ?? existing.updatedAt,
+    schemaCompatibility: meta.schemaCompatibility,
+    uiSpecProperties: meta.uiSpecProperties,
+    projectId: existing.projectId,
+    serverId: existing.serverId,
+    couchDbUrl,
+    status: meta.status ?? existing.status,
+    recordCount: mergeRecordCount(meta.recordCount, existing.recordCount),
+    offlineMapRegion: meta.offlineMapRegion,
+    disableQuickShare: meta.disableQuickShare,
+    contextualLayers: meta.contextualLayers,
+    contextualLayersHash: meta.contextualLayersHash,
+  };
+
+  if (!isActivatedProject(existing)) {
+    return listing;
+  }
+
+  const incomingIncompatible =
+    meta.schemaCompatibility?.tier === 'incompatible';
+  const existingHasUsableGraph = !isPlaceholderNotebookDefinition(
+    existing.uiDefinition
+  );
+  return {
+    ...listing,
+    uiDefinition:
+      incomingIncompatible && existingHasUsableGraph
+        ? existing.uiDefinition
+        : meta.uiDefinition,
+  };
+}
+
+/** Report schema compatibility for a fetched notebooks GET body. */
+function reportFetchedNotebookCompatibility({
+  meta,
+  projectId,
+  serverId,
+  serverVersion,
+}: {
+  meta: NotebookDetails;
+  projectId: string;
+  serverId: string;
+  serverVersion?: string;
+}): void {
+  if (!meta.schemaCompatibility) {
+    return;
+  }
+  reportNotebookSchemaCompatibility({
+    compatibility: meta.schemaCompatibility,
+    projectId,
+    serverId,
+    serverVersion,
+    notebookName: meta.name,
+    source: 'app-ingest',
+  });
+}
+
+/**
+ * Offer the contextual-layer download prompt for one survey when its listing
+ * hash is new relative to the seen hash. Empty or already-on-device listings
+ * are recorded as seen instead.
+ */
+async function maybePromptContextualLayersForSurvey({
+  dispatch,
+  projectId,
+  serverId,
+  isActivated,
+  hash,
+  layers,
+}: {
+  dispatch: AppDispatch;
+  projectId: string;
+  serverId: string;
+  isActivated: boolean;
+  hash: string | undefined;
+  layers: ContextualLayerListing[] | undefined;
+}): Promise<void> {
+  if (!isActivated || !hash || !Array.isArray(layers)) {
+    return;
+  }
+  const seen = await getSeenContextualLayersHash(projectId);
+  if (seen === hash) {
+    return;
+  }
+  if (layers.length === 0 || areContextualLayersOnDevice(layers)) {
+    await markContextualLayersSeen(projectId, hash);
+    return;
+  }
+  dispatch(setPendingContextualLayerPrompt({projectId, serverId}));
+}
+
+/**
+ * Reconcile this survey's recommended offline map region after a successful
+ * notebooks GET. No-ops when offline maps are disabled, the survey is not
+ * activated, or the region is unchanged.
+ */
+async function maybePromptOfflineMapForSurvey({
+  dispatch,
+  projectId,
+  serverId,
+  isActivated,
+  previousRegion,
+  nextRegion,
+}: {
+  dispatch: AppDispatch;
+  projectId: string;
+  serverId: string;
+  isActivated: boolean;
+  previousRegion: OfflineMapRegion | undefined;
+  nextRegion: OfflineMapRegion | undefined;
+}): Promise<void> {
+  if (
+    !config.offlineMaps ||
+    !isActivated ||
+    offlineMapRegionsEqual(previousRegion, nextRegion)
+  ) {
+    return;
+  }
+  const result = await reconcileOfflineMapRegionPlanChange({
+    projectId,
+    previousRegion,
+    nextRegion,
+  });
+  if (result.action !== 'prompt') {
+    return;
+  }
+  if (
+    nextRegion &&
+    (await shouldSkipOfflineMapActivationPrompt(projectId, nextRegion))
+  ) {
+    return;
+  }
+  dispatch(
+    setPendingOfflineMapDownloadPrompt({
+      projectId,
+      serverId,
+      isRegionUpdate: result.isRegionUpdate,
+    })
+  );
+}
+
+/**
+ * Drop on-device contextual layers that no activated survey still lists.
+ * Call after this survey's listing has been written to the store.
+ */
+async function retainActivatedLayersFromStore(
+  servers: ProjectsState['servers']
+): Promise<void> {
+  const {keepIds, uncertain} = collectActivatedLayerKeepSet(
+    activatedSurveysFromServers(servers)
+  );
+  if (uncertain) {
+    return;
+  }
+  try {
+    const dropped = await retainListedContextualLayers(keepIds);
+    if (dropped) {
+      notifyContextualLayersChanged();
+    }
+  } catch (error) {
+    console.error('[map-assets] failed to drop unlinked layers', error);
+  }
+}
+
 /**
  * Initialises projects for the specified server. Merges superficial details for
  * existing projects, creates new ones for new.
@@ -2110,7 +2373,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         );
       }
 
-      const directoryResults = (await response.json()) as ProjectListItem[];
+      const directoryResults = (await response.json()) as APINotebookList[];
 
       const stateBeforeSync = getState() as RootState;
       const serverBefore = stateBeforeSync.projects.servers[serverId];
@@ -2256,47 +2519,21 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           continue;
         }
 
-        if (meta.schemaCompatibility) {
-          reportNotebookSchemaCompatibility({
-            compatibility: meta.schemaCompatibility,
-            projectId,
-            serverId,
-            serverVersion: server.serverVersion,
-            notebookName: meta.name,
-            source: 'app-ingest',
-          });
-        }
-
-        const incomingIncompatible =
-          meta.schemaCompatibility?.tier === 'incompatible';
-        const existingHasUsableGraph = !isPlaceholderNotebookDefinition(
-          existingProject.uiDefinition
-        );
-        const nextUiDefinition =
-          incomingIncompatible && existingHasUsableGraph
-            ? existingProject.uiDefinition
-            : meta.uiDefinition;
+        reportFetchedNotebookCompatibility({
+          meta,
+          projectId,
+          serverId,
+          serverVersion: server.serverVersion,
+        });
 
         actions.push(
-          updateProjectDetails({
-            name: meta.name ?? existingProject.name,
-            description: meta.description ?? existingProject.description,
-            templateId: meta.templateId ?? existingProject.templateId,
-            updatedAt: meta.updatedAt ?? existingProject.updatedAt,
-            uiDefinition: nextUiDefinition,
-            schemaCompatibility: meta.schemaCompatibility,
-            uiSpecProperties: meta.uiSpecProperties,
-            projectId,
-            serverId,
-            couchDbUrl: details.dataDb.base_url,
-            status: meta.status ?? existingProject.status,
-            recordCount: mergeRecordCount(
-              meta.recordCount,
-              existingProject.recordCount
-            ),
-            offlineMapRegion: meta.offlineMapRegion,
-            disableQuickShare: meta.disableQuickShare,
-          })
+          updateProjectDetails(
+            updatePayloadFromNotebookDetails({
+              existing: existingProject,
+              meta,
+              couchDbUrl: details.dataDb.base_url,
+            })
+          )
         );
       }
 
@@ -2341,6 +2578,66 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       // Cleanup decisions must see the same project list the user would after
       // the dispatches above (add/update), not pre-dispatch state.
       const stateAfterDirectory = getState() as RootState;
+
+      const listingByProjectId = new Map<
+        string,
+        readonly string[] | undefined
+      >();
+      for (const details of directoryResults) {
+        if (Array.isArray(details.contextualLayers)) {
+          listingByProjectId.set(
+            details._id,
+            details.contextualLayers.map(layer => layer.id)
+          );
+        }
+      }
+      const {keepIds, uncertain} = collectActivatedLayerKeepSet(
+        activatedSurveysFromServers(stateAfterDirectory.projects.servers),
+        listingByProjectId
+      );
+      // Present arrays (including empty) are the ready keep-set. Replace
+      // withdraws the old overlay immediately. Omitted fields mean attach
+      // failed — skip GC so a glitch is not treated as unlink.
+      if (!uncertain) {
+        try {
+          const dropped = await retainListedContextualLayers(keepIds);
+          if (dropped) {
+            notifyContextualLayersChanged();
+          }
+        } catch (error) {
+          console.error('[map-assets] failed to drop unlinked layers', error);
+        }
+      }
+
+      for (const details of directoryResults) {
+        const local = projectByIdentity(stateAfterDirectory.projects, {
+          projectId: details._id,
+          serverId,
+        });
+        const hash = details.contextualLayersHash;
+        const layers = details.contextualLayers;
+        // Omitted field is attach-failed, not unlink — leave the seen hash.
+        // A present empty array is unlink: still record that hash so a later
+        // relink of the same set is not skipped as already-seen.
+        if (!local?.isActivated || !hash || !Array.isArray(layers)) {
+          continue;
+        }
+        const seen = await getSeenContextualLayersHash(details._id);
+        if (seen === hash) {
+          continue;
+        }
+        if (layers.length === 0 || areContextualLayersOnDevice(layers)) {
+          await markContextualLayersSeen(details._id, hash);
+          continue;
+        }
+        appDispatch(
+          setPendingContextualLayerPrompt({
+            projectId: details._id,
+            serverId,
+          })
+        );
+      }
+
       const directoryByProjectId = new Map(
         directoryResults.map(d => [d._id, d])
       );
@@ -2389,13 +2686,32 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         ).map(({projectId, tombstone}) => [projectId, tombstone])
       );
 
-      const removeLocalProjectAfterRemoteLifecycle = (projectId: string) => {
+      const removeLocalProjectAfterRemoteLifecycle = async (
+        projectId: string
+      ) => {
         const proj = projectByIdentity(stateAfterDirectory.projects, {
           serverId,
           projectId,
         });
         if (!proj) {
           return;
+        }
+
+        try {
+          const {keepIds, uncertain} = collectActivatedLayerKeepSet(
+            activatedSurveysFromServers(
+              stateAfterDirectory.projects.servers
+            ).filter(survey => survey.projectId !== projectId)
+          );
+          await releaseContextualLayersForProject(
+            projectId,
+            uncertain ? undefined : keepIds
+          );
+        } catch (error) {
+          console.error(
+            '[map-assets] failed to remove layers for a deleted survey',
+            error
+          );
         }
 
         if (config.forceRemoteDeletion === 'allow') {
@@ -2426,16 +2742,123 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         }
 
         if (lifecycle === 'archived') {
-          removeLocalProjectAfterRemoteLifecycle(projectId);
+          await removeLocalProjectAfterRemoteLifecycle(projectId);
           continue;
         }
 
         // lifecycle === 'missing' — only remove when tombstone proves deletion.
         const tombstone = tombstoneByMissingId.get(projectId) ?? 'unreachable';
         if (tombstone === 'tombstoned') {
-          removeLocalProjectAfterRemoteLifecycle(projectId);
+          await removeLocalProjectAfterRemoteLifecycle(projectId);
         }
       }
+    });
+  }
+);
+
+/**
+ * Reloads one survey from GET `/api/notebooks/:id`, bypassing the directory
+ * hash skip used by {@link initialiseProjects}. A matching stored
+ * `uiSpecProperties.hash` must not prevent the GET. Sibling surveys are not
+ * requested. A failed GET does not stamp a new hash or drop the last-good
+ * definition.
+ *
+ * Callers must gate on online status before dispatch. Ingest reuses
+ * {@link fetchNotebookDetails} and {@link updateProjectDetails} (last-good
+ * graph kept when the incoming spec is incompatible, compiled-spec register,
+ * contextual-layer / offline-map prompts for this survey).
+ */
+export const refreshProjectDetails = createAsyncThunk<void, ProjectIdentity>(
+  'projects/refreshProjectDetails',
+  async (args, {dispatch, getState}) => {
+    const {serverId, projectId} = args;
+    const state = getState() as RootState;
+    const server = serverById(state.projects, serverId);
+    if (!server) {
+      throw new Error(
+        `Cannot refresh project for missing server: ${serverId}.`
+      );
+    }
+    const existing = projectByIdentity(state.projects, args);
+    if (!existing) {
+      throw new Error(
+        `Cannot refresh missing project ${projectId} on server ${serverId}.`
+      );
+    }
+    const token = findValidToken(state.auth, serverId, server);
+    if (!token) {
+      throw new Error(
+        `Could not find a suitable token to refresh project ${projectId}.`
+      );
+    }
+
+    const appDispatch = dispatch as AppDispatch;
+
+    await withInitialiseProjectsLock(serverId, async () => {
+      const lockedState = getState() as RootState;
+      const lockedServer = serverById(lockedState.projects, serverId);
+      const lockedExisting = projectByIdentity(lockedState.projects, args);
+      if (!lockedServer || !lockedExisting) {
+        throw new Error(
+          `Cannot refresh missing project ${projectId} on server ${serverId}.`
+        );
+      }
+
+      // Always GET this survey. Do not consult activatedProjectNeedsSpecFetch.
+      const meta = await fetchNotebookDetails({
+        projectId,
+        serverUrl: lockedServer.serverUrl,
+        token,
+      });
+
+      const couchDbUrl = meta.dataDb?.base_url ?? lockedServer.couchDbUrl;
+      if (!couchDbUrl) {
+        throw new Error(
+          `Missing CouchDB URL while refreshing project ${projectId}.`
+        );
+      }
+
+      reportFetchedNotebookCompatibility({
+        meta,
+        projectId,
+        serverId,
+        serverVersion: lockedServer.serverVersion,
+      });
+
+      const previousRegion = lockedExisting.offlineMapRegion;
+
+      appDispatch(
+        updateProjectDetails(
+          updatePayloadFromNotebookDetails({
+            existing: lockedExisting,
+            meta,
+            couchDbUrl,
+          })
+        )
+      );
+
+      await maybePromptOfflineMapForSurvey({
+        dispatch: appDispatch,
+        projectId,
+        serverId,
+        isActivated: lockedExisting.isActivated,
+        previousRegion,
+        nextRegion: meta.offlineMapRegion,
+      });
+
+      if (Array.isArray(meta.contextualLayers)) {
+        const stateAfter = getState() as RootState;
+        await retainActivatedLayersFromStore(stateAfter.projects.servers);
+      }
+
+      await maybePromptContextualLayersForSurvey({
+        dispatch: appDispatch,
+        projectId,
+        serverId,
+        isActivated: lockedExisting.isActivated,
+        hash: meta.contextualLayersHash,
+        layers: meta.contextualLayers,
+      });
     });
   }
 );
@@ -2760,6 +3183,8 @@ export const {
   reassessSchemaCompatibility,
   setPendingOfflineMapDownloadPrompt,
   clearPendingOfflineMapDownloadPrompt,
+  setPendingContextualLayerPrompt,
+  clearPendingContextualLayerPrompt,
 } = projectsSlice.actions;
 
 export default projectsSlice.reducer;

@@ -21,6 +21,13 @@ Large {{notebook}}s with numerous records and attachments may take some time to 
 
 Once activated, you can begin to create records in your {{notebook}} and these will be automatically saved to the server. You may also be able to see records from other users, depending on your role with respect to this {{notebook}}.
 
+If the {{notebook}} has map layers linked to it, the app asks which ones to
+download (**Download map layers**). Choose all, a selection, or none. The
+files stay on the device for offline use on Map fields and the {{notebook}}
+overview map. You can download or remove them later from **Offline Maps**
+→ **Map layers** if that menu is shown. See
+[Map layers](../admin/map-layers.md).
+
 Once activated, your notebook will appear in the _Active_ list in your workspace.
 
 ```{screenshot} getting-started/notebook-list-mobile.png

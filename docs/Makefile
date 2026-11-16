@@ -21,7 +21,7 @@ user-docs: docker
 
 developer-docs: docker
 	docker run -it --rm\
-		-v ./developer:/docs\
+		-v ./developer/docs:/docs\
 		-e VITE_APP_NAME\
 		-e VITE_NOTEBOOK_NAME\
 		-e VITE_WEBSITE_TITLE\

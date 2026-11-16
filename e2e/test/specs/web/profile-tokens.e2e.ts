@@ -4,6 +4,7 @@
 import {loginWebPersona} from '../../helpers/auth.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
 import {byTestId} from '../../helpers/selectors.ts';
+import {findTableRow} from '../../helpers/table.ts';
 import {waitForTestId} from '../../helpers/wait.ts';
 import {getWebUrl} from '../../helpers/env.ts';
 
@@ -105,17 +106,12 @@ describe('Web — Profile tokens', () => {
     await browser.url(`${getWebUrl()}/profile/long-lived-tokens`);
     await waitForTestId('web-profile-tokens-heading');
 
-    const search = byTestId('web-data-table-search');
-    if (await search.isExisting()) {
-      await search.setValue(tokenTitle);
-    }
-
-    await browser.waitUntil(
-      async () => (await $('main').getText()).includes(tokenTitle),
-      {timeout: 10000, timeoutMsg: 'Token row not found before revoke'}
+    // The table is paged by the server and has no search box: find the
+    // token's own row and use the revoke button in it.
+    const row = await findTableRow(tokenTitle);
+    const revoke = await row.$(
+      '[data-testid="web-profile-tokens-revoke-button"]'
     );
-
-    const revoke = byTestId('web-profile-tokens-revoke-button');
     await revoke.waitForClickable({timeout: 10000});
     await revoke.click();
 

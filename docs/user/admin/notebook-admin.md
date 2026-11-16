@@ -1,6 +1,11 @@
 # {{Notebook}} Administration
 
-From the `Actions` tab of the {{Notebook}} [{{dashboard}}](../admin/web.md), you can:
+Each {{notebook}} in the [{{dashboard}}](../admin/web.md) has tabs for details,
+users, export, an **Offline Map** region (base-map street tiles), and
+**Map layers** (uploaded overlays to link from the library — see
+[Map layers](map-layers.md)).
+
+From the `Actions` tab of the {{Notebook}} {{dashboard}}, you can:
 
 1. Edit your {{Notebook}}
 2. Assign your {{Notebook}} to a Team

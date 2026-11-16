@@ -4,6 +4,7 @@
 import {loginWebPersona} from '../../helpers/auth.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
 import {byTestId} from '../../helpers/selectors.ts';
+import {waitForTestId} from '../../helpers/wait.ts';
 import WebTeamsPage from '../../pageobjects/web/web-teams.ts';
 import {getWebUrl} from '../../helpers/env.ts';
 
@@ -64,10 +65,15 @@ describe('Web Dashboard — Teams', () => {
     );
     // Radix TabsTrigger
     const details = await $('button*=Details');
-    // Prefer a simple text match if compound selector is invalid
-    const tab = details;
-    await tab.waitForDisplayed({timeout: 10000});
-    expect(await tab.isDisplayed()).toBe(true);
+    await details.waitForDisplayed({timeout: 10000});
+    expect(await details.isDisplayed()).toBe(true);
+
+    const actionsTab = await $('button*=Actions');
+    await actionsTab.waitForClickable({timeout: 10000});
+    await actionsTab.click();
+    await waitForTestId('web-team-edit-details-button', {timeout: 10000});
+    await expect(byTestId('web-team-edit-details-button')).toBeDisplayed();
+    await expect(byTestId('web-team-archive-button')).toBeDisplayed();
     await captureStep({
       surface: 'web',
       label: 'team-detail-tabs',

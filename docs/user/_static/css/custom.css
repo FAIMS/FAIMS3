@@ -1,0 +1,27 @@
+/* --------------------------------------------------------------------------
+   Page Layout
+   -------------------------------------------------------------------------- */
+
+/* Ensure the page fills the viewport height */
+html,
+body {
+  min-height: 100%;
+}
+/* Keep the footer at the bottom of short pages */
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+/* targets the .container-fluid element immediately following a <header> that is a direct child of <body> */
+body > header + .container-fluid {
+  flex: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Theme Overrides
+   -------------------------------------------------------------------------- */
+
+.bg-primary {
+  background-color: #324c08 !important;
+}

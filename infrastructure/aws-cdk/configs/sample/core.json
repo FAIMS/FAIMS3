@@ -27,6 +27,10 @@
     "forceRemoteDeletion": "never",
     "deleteOnDeactivation": false
   },
+  "attachmentStorage": {
+    "serviceType": "S3",
+    "prefix": "map-assets"
+  },
   "teamAndRolePolicy": {
     "excludedTeamRoles": ["TEAM_MEMBER_CREATOR"]
   },
@@ -35,6 +39,8 @@
   },
   "support": {
     "supportEmail": "support@your-domain.com",
+    "feedbackEmail": "support@your-domain.com",
+    "feedbackSubject": "In-app feedback",
     "privacyPolicyUrl": "https://your-domain.com/privacy-policy",
     "appContactUrl": "https://your-domain.com/contact",
     "docsUrl": "https://docs.your-domain.com"
@@ -94,9 +100,13 @@
   "limits": {
     "rateLimiterEnabled": true,
     "attemptLimiterEnabled": true,
+    "loginLockoutEnabled": true,
     "exportRateLimiterEnabled": true,
     "exportRateLimiterWindowMs": 600000,
-    "exportRateLimiterPerWindow": 20
+    "exportRateLimiterPerWindow": 20,
+    "feedbackRateLimiterEnabled": true,
+    "feedbackRateLimiterWindowMs": 600000,
+    "feedbackRateLimiterPerWindow": 5
   },
   "observability": {
     "bugsnagApiKey": "1234-your-key"

@@ -78,7 +78,7 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
   return archived ? (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline" data-testid="web-template-archive-button">
+        <Button data-testid="web-template-archive-button">
           Un-archive Template
         </Button>
       </DialogTrigger>
@@ -103,7 +103,7 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
   ) : (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline" data-testid="web-template-archive-button">
+        <Button data-testid="web-template-archive-button">
           Archive Template
         </Button>
       </DialogTrigger>

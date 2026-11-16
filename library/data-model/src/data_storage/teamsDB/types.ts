@@ -25,6 +25,12 @@ export interface TeamsV1Fields {
 
   // Who created it (user_id of PeopleDB)
   createdBy: string;
+
+  /**
+   * Archive flag. Missing or undefined reads as active (`false`).
+   * Follows the template shape: no Teams DB schema-version bump.
+   */
+  archived?: boolean;
 }
 
 // We are at v1

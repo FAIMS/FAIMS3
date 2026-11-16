@@ -30,8 +30,8 @@ Select **Parent Field Value**.
 :width: 100%
 ```
 
-Give the field a meaningful Label (the title collectors see), review
-the auto-populated Export name (the CSV/GIS column header), and add any
+Give the field a meaningful Field Heading (the title collectors see), review
+the auto-populated Export Title (the CSV/GIS column header), and add any
 desired Helper Text.
 
 ## Configuration

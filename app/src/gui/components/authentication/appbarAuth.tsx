@@ -11,6 +11,7 @@ import {
   AccountCircle,
   ExpandLess,
   ExpandMore,
+  Feedback as FeedbackIcon,
   Person,
   Settings,
   SupervisorAccount,
@@ -50,6 +51,7 @@ import {
   PutLogoutInput,
 } from '@faims3/data-model';
 import ImpersonateDialog from './impersonate-dialog';
+import FeedbackDialog from '../feedback/FeedbackDialog';
 
 const SignInButtonComponent = () => {
   return (
@@ -81,10 +83,15 @@ const SignInButtonComponent = () => {
   );
 };
 
-const AuthenticatedDisplayComponent = () => {
+const AuthenticatedDisplayComponent = ({
+  onOpenFeedback,
+}: {
+  onOpenFeedback?: () => void;
+}) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [switchMenuOpen, setSwitchMenuOpen] = React.useState(false);
   const [impersonateOpen, setImpersonateOpen] = React.useState(false);
+  const [feedbackOpen, setFeedbackOpen] = React.useState(false);
   const open = Boolean(anchorEl);
   const navigate = useNavigate();
 
@@ -392,6 +399,23 @@ const AuthenticatedDisplayComponent = () => {
           </MenuItem>
         )}
 
+        <MenuItem
+          data-testid="app-feedback-button"
+          onClick={() => {
+            if (onOpenFeedback) {
+              onOpenFeedback();
+            } else {
+              setFeedbackOpen(true);
+            }
+            handleClose();
+          }}
+        >
+          <ListItemIcon>
+            <FeedbackIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Send feedback" />
+        </MenuItem>
+
         {/* Manage Button */}
         <MenuItem component={NavLink} to={ROUTES.SIGN_IN} onClick={handleClose}>
           <ListItemIcon>
@@ -423,6 +447,14 @@ const AuthenticatedDisplayComponent = () => {
         open={impersonateOpen}
         onClose={() => setImpersonateOpen(false)}
       />
+      {activeUser && !onOpenFeedback && (
+        <FeedbackDialog
+          open={feedbackOpen}
+          onClose={() => setFeedbackOpen(false)}
+          conductorUrl={activeServerInfo?.serverUrl ?? ''}
+          token={activeUser.token}
+        />
+      )}
     </>
   );
 };
@@ -432,14 +464,18 @@ const AuthenticatedDisplayComponent = () => {
  * Renders either a sign in button or a profile icon button with click menu
  * depending on the global auth state for the active user.
  */
-export default function AppBarAuth() {
+export default function AppBarAuth({
+  onOpenFeedback,
+}: {
+  onOpenFeedback?: () => void;
+} = {}) {
   // Do we have an active user?
   const hasActiveUser = !!useAppSelector(selectActiveUser);
   // Is the active user logged in with valid token?
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
   if (isAuthenticated || hasActiveUser) {
-    return <AuthenticatedDisplayComponent />;
+    return <AuthenticatedDisplayComponent onOpenFeedback={onOpenFeedback} />;
   } else {
     return <SignInButtonComponent />;
   }

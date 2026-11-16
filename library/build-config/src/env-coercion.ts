@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import {z} from 'zod';
+import {
+  DEFAULT_CAPACITY_SCALE_THRESHOLDS_CSV,
+  DEFAULT_GDAL_NUM_THREADS,
+  parseCapacityScaleThresholds,
+} from './shared-schemas.js';
 
 /**
  * Shared env-string coercion helpers.
@@ -336,6 +341,150 @@ export function intWithDefault(def: number) {
         return z.NEVER;
       }
       return parsed;
+    });
+}
+
+/** Blank / missing → `def`; non-numeric or negative fails parse (`0` allowed). */
+export function nonNegativeIntWithDefault(def: number) {
+  return z
+    .unknown()
+    .optional()
+    .transform((value, ctx) => {
+      if (isBlankEnv(value)) return def;
+      const raw = String(value).trim();
+      if (!/^[0-9]+$/.test(raw)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Must be a non-negative integer.`,
+        });
+        return z.NEVER;
+      }
+      const parsed = Number.parseInt(raw, 10);
+      if (!Number.isInteger(parsed) || parsed < 0) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Must be a non-negative integer.`,
+        });
+        return z.NEVER;
+      }
+      return parsed;
+    });
+}
+
+/** Blank / missing → `undefined`; non-numeric or negative fails parse (`0` allowed). */
+export function optionalNonNegativeInt(envKey?: string) {
+  const message = envKey
+    ? `${envKey} must be a non-negative integer`
+    : 'Must be a non-negative integer.';
+  return z
+    .unknown()
+    .optional()
+    .transform((value, ctx) => {
+      if (isBlankEnv(value)) return undefined;
+      const raw = String(value).trim();
+      if (!/^[0-9]+$/.test(raw)) {
+        ctx.addIssue({
+          code: 'custom',
+          message,
+        });
+        return z.NEVER;
+      }
+      const parsed = Number.parseInt(raw, 10);
+      if (!Number.isInteger(parsed) || parsed < 0) {
+        ctx.addIssue({
+          code: 'custom',
+          message,
+        });
+        return z.NEVER;
+      }
+      return parsed;
+    });
+}
+
+/** Blank / missing → `undefined`; non-numeric or non-positive fails parse. */
+export function optionalPositiveInt(envKey?: string) {
+  const message = envKey
+    ? `${envKey} must be a positive integer`
+    : 'Must be a positive integer.';
+  return z
+    .unknown()
+    .optional()
+    .transform((value, ctx) => {
+      if (isBlankEnv(value)) return undefined;
+      const raw = String(value).trim();
+      if (!/^[0-9]+$/.test(raw)) {
+        ctx.addIssue({
+          code: 'custom',
+          message,
+        });
+        return z.NEVER;
+      }
+      const parsed = Number.parseInt(raw, 10);
+      if (!Number.isInteger(parsed) || parsed <= 0) {
+        ctx.addIssue({
+          code: 'custom',
+          message,
+        });
+        return z.NEVER;
+      }
+      return parsed;
+    });
+}
+
+/**
+ * `GDAL_NUM_THREADS`: blank / missing → `def`, `ALL_CPUS` (case-insensitive)
+ * → `'ALL_CPUS'`, positive integer → stringified integer, else fails parse.
+ */
+export function gdalNumThreadsWithDefault(
+  def: string = DEFAULT_GDAL_NUM_THREADS
+) {
+  return z
+    .unknown()
+    .optional()
+    .transform((value, ctx) => {
+      if (isBlankEnv(value)) return def;
+      const raw = String(value).trim();
+      if (raw.toUpperCase() === 'ALL_CPUS') return 'ALL_CPUS';
+      if (!/^[0-9]+$/.test(raw)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'GDAL_NUM_THREADS must be ALL_CPUS or a positive integer',
+        });
+        return z.NEVER;
+      }
+      const parsed = Number.parseInt(raw, 10);
+      if (!Number.isInteger(parsed) || parsed < 1) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'GDAL_NUM_THREADS must be ALL_CPUS or a positive integer',
+        });
+        return z.NEVER;
+      }
+      return String(parsed);
+    });
+}
+
+/**
+ * `CAPACITY_SCALE_THRESHOLDS`: blank / missing → parsed `defCsv`, else
+ * strictly increasing positive integers.
+ */
+export function capacityScaleThresholdsWithDefault(
+  defCsv: string = DEFAULT_CAPACITY_SCALE_THRESHOLDS_CSV
+) {
+  return z
+    .unknown()
+    .optional()
+    .transform((value, ctx) => {
+      const raw = isBlankEnv(value) ? defCsv : String(value);
+      try {
+        return parseCapacityScaleThresholds(raw);
+      } catch (error) {
+        ctx.addIssue({
+          code: 'custom',
+          message: error instanceof Error ? error.message : String(error),
+        });
+        return z.NEVER;
+      }
     });
 }
 

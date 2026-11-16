@@ -74,10 +74,15 @@ const SUPPORTED_NODE_TYPES = new Set([
   'imageReference',
 ]);
 
+// Editor features that can be hidden from the toolbar.
+export type MdxEditorFeature = 'headings' | 'lists' | 'tables' | 'images';
+
 type Props = {
   initialMarkdown: string;
   editorRef: React.Ref<MDXEditorMethods> | undefined;
   handleChange: ((markdown: string) => void) | undefined;
+  // Hide toolbar buttons without disabling Markdown support.
+  hiddenToolbarFeatures?: MdxEditorFeature[];
 };
 
 /** Constrained MDX/Markdown editor for long-form metadata (toolbar + allowed mdast nodes). */
@@ -85,6 +90,7 @@ export const MdxEditor = ({
   initialMarkdown,
   editorRef,
   handleChange,
+  hiddenToolbarFeatures = [],
 }: Props) => {
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -124,6 +130,9 @@ export const MdxEditor = ({
       },
     };
 
+    // Hide selected toolbar buttons while keeping all Markdown plugins enabled.
+    const hidden = new Set(hiddenToolbarFeatures);
+
     const [catchAllPlugin] = realmPlugin({
       id: 'catchAll',
       systemSpec: system(() => ({})),
@@ -154,14 +163,30 @@ export const MdxEditor = ({
             <UndoRedo />
             <Separator />
             <BoldItalicUnderlineToggles />
-            <Separator />
-            <BlockTypeSelect />
-            <Separator />
-            <ListsToggle />
-            <Separator />
-            <InsertTable />
-            <Separator />
-            <InsertImage />
+            {!hidden.has('headings') && (
+              <>
+                <Separator />
+                <BlockTypeSelect />
+              </>
+            )}
+            {!hidden.has('lists') && (
+              <>
+                <Separator />
+                <ListsToggle />
+              </>
+            )}
+            {!hidden.has('tables') && (
+              <>
+                <Separator />
+                <InsertTable />
+              </>
+            )}
+            {!hidden.has('images') && (
+              <>
+                <Separator />
+                <InsertImage />
+              </>
+            )}
           </DiffSourceToggleWrapper>
         ),
       }),

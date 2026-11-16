@@ -1,10 +1,23 @@
 #!/bin/bash
 
+set -euo pipefail
+
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 PROJECT_DIR="${SCRIPT_DIR}/../"
+cd "${PROJECT_DIR}"
 
 APP_NAME_PLACEHOLDER=APPNAME
 APP_ID_PLACEHOLDER=org.fedarch.faims3
+
+# Bundle id can differ from VITE_APP_ID (URL scheme). Fall back so an unset
+# VITE_APPLE_BUNDLE_IDENTIFIER does not write `PRODUCT_BUNDLE_IDENTIFIER = ;`
+# which CocoaPods cannot parse.
+BUNDLE_ID="${VITE_APPLE_BUNDLE_IDENTIFIER:-${VITE_APP_ID:-}}"
+if [ -z "${BUNDLE_ID}" ]; then
+  echo "Error: set VITE_APPLE_BUNDLE_IDENTIFIER or VITE_APP_ID in app/.env" >&2
+  exit 1
+fi
+TEAM_ID="${VITE_APP_STORE_CONNECT_TEAM_ID:-}"
 
 ## IOS specific configuration
 
@@ -26,12 +39,12 @@ if test -f /usr/libexec/PlistBuddy; then
 fi
 
 
-echo "Updating project.pbxproj with", ${VITE_APPLE_BUNDLE_IDENTIFIER}, ${VITE_APP_STORE_CONNECT_TEAM_ID}
+echo "Updating project.pbxproj with", ${BUNDLE_ID}, ${TEAM_ID:-"(no team id)"}
 # update project file for local build
 # Bundle-id substitution also rewrites the default Match profile name to
 # "match AppStore <bundle-id>". Optionally override with PROVISIONING_PROFILE_SPECIFIER.
-sed -e "s/${APP_ID_PLACEHOLDER}/${VITE_APPLE_BUNDLE_IDENTIFIER}/g" ./ios/App/App.xcodeproj/project.pbxproj.dist |\
-  sed -e "s/VITE_APP_STORE_CONNECT_TEAM_ID/${VITE_APP_STORE_CONNECT_TEAM_ID}/g" |\
+sed -e "s/${APP_ID_PLACEHOLDER}/${BUNDLE_ID}/g" ./ios/App/App.xcodeproj/project.pbxproj.dist |\
+  sed -e "s/VITE_APP_STORE_CONNECT_TEAM_ID/${TEAM_ID}/g" |\
   if [ -n "${PROVISIONING_PROFILE_SPECIFIER:-}" ]; then
     echo "Overriding PROVISIONING_PROFILE_SPECIFIER -> ${PROVISIONING_PROFILE_SPECIFIER}" >&2
     sed -e "s#\"PROVISIONING_PROFILE_SPECIFIER\[sdk=iphoneos\*\]\" = \"[^\"]*\"#\"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]\" = \"${PROVISIONING_PROFILE_SPECIFIER}\"#"

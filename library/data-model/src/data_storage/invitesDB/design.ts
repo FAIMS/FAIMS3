@@ -106,6 +106,43 @@ const designDoc = {
       }),
     },
 
+    // Invite documents for one team or survey, keyed
+    // `[resourceType, resourceId, createdAtMs, _id]` so the invite tables page
+    // newest first. Quick Shares are survey invites and are included.
+    listingByResource: {
+      map: convertToCouchDBString(doc => {
+        if (!doc || !doc._id || doc._id[0] === '_') {
+          return;
+        }
+        if (!doc.resourceType || !doc.resourceId) {
+          return;
+        }
+        var createdMs = doc.createdAt;
+        if (!(createdMs > 0)) {
+          createdMs = 0;
+        }
+        emit([doc.resourceType, doc.resourceId, createdMs, doc._id], doc);
+      }),
+    },
+
+    // Global invite documents keyed `[createdAtMs, _id]`. The scope literal
+    // must match RoleScope.GLOBAL.
+    listingGlobal: {
+      map: convertToCouchDBString(doc => {
+        if (!doc || !doc._id || doc._id[0] === '_') {
+          return;
+        }
+        if (doc.inviteType !== 'GLOBAL') {
+          return;
+        }
+        var createdMs = doc.createdAt;
+        if (!(createdMs > 0)) {
+          createdMs = 0;
+        }
+        emit([createdMs, doc._id], doc);
+      }),
+    },
+
     // Quick Share invites for one survey and the user who created them.
     quickSharesByProjectAndUser: {
       map: convertToCouchDBString(doc => {
@@ -131,6 +168,28 @@ export const QUICK_SHARES_INDEX = 'indexes/quickShares';
  */
 export const QUICK_SHARES_BY_PROJECT_AND_USER_INDEX =
   'indexes/quickSharesByProjectAndUser';
+
+/** `db.query` name for the {@link designDoc} `listingByResource` view. */
+export const INVITES_LISTING_BY_RESOURCE = 'indexes/listingByResource';
+/** `db.query` name for the {@link designDoc} `listingGlobal` view. */
+export const INVITES_LISTING_GLOBAL = 'indexes/listingGlobal';
+
+/**
+ * Listing view and key prefix for one invite page; spread into
+ * `queryListingPage`. The rest of each key is the `[createdAtMs, inviteId]`
+ * cursor. Omit the resource for global invites.
+ */
+export function inviteListingViewAndPrefix(resource?: {
+  resourceType: string;
+  resourceId: string;
+}): {view: string; prefix: unknown[]} {
+  return resource
+    ? {
+        view: INVITES_LISTING_BY_RESOURCE,
+        prefix: [resource.resourceType, resource.resourceId],
+      }
+    : {view: INVITES_LISTING_GLOBAL, prefix: []};
+}
 
 /**
  * Exports all design documents for the invites database

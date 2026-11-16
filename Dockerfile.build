@@ -73,8 +73,44 @@ RUN sh bundle.sh json . out && cp -R json/* /app/out/
 # ==========================
 FROM alpine AS runner
 
-# GeoPackage export uses ogr2ogr at runtime (see api/src/couchdb/export/gdal.ts)
-RUN apk add --no-cache gdal-tools
+# GeoPackage export and map-layer ingest. Alpine ships optional GDAL
+# drivers as separate community packages — gdal-tools alone has no PDF
+# or WEBP, so the format checks below fail in CI. MBTiles is in core
+# libgdal. tippecanoe 2.79.0 (Makefile requires bash) and go-pmtiles
+# 1.28.1 build the archives.
+RUN apk add --no-cache \
+      gdal-tools \
+      gdal-driver-pdf \
+      gdal-driver-webp \
+      gdal-driver-png \
+      gdal-driver-jpeg \
+      poppler-utils \
+      unzip \
+      sqlite-libs \
+      zlib \
+      curl \
+  && apk add --no-cache --virtual .mapbuild \
+      git g++ make bash sqlite-dev zlib-dev \
+  && gdalinfo --formats | grep -qi pdf \
+  && gdalinfo --formats | grep -qi MBTiles \
+  && gdalinfo --formats | grep -qi WEBP \
+  && git clone --depth 1 --branch 2.79.0 https://github.com/felt/tippecanoe.git /tmp/tippecanoe \
+  && make -C /tmp/tippecanoe -j"$(nproc)" \
+  && make -C /tmp/tippecanoe install \
+  && rm -rf /tmp/tippecanoe \
+  && arch="$(uname -m)" \
+  && case "$arch" in \
+       x86_64) pm_arch=x86_64 ;; \
+       aarch64) pm_arch=arm64 ;; \
+       *) echo "unsupported architecture $arch" && exit 1 ;; \
+     esac \
+  && curl -fsSL -o /tmp/pmtiles.tar.gz "https://github.com/protomaps/go-pmtiles/releases/download/v1.28.1/go-pmtiles_1.28.1_Linux_${pm_arch}.tar.gz" \
+  && tar -C /usr/local/bin -xzf /tmp/pmtiles.tar.gz pmtiles \
+  && chmod 755 /usr/local/bin/pmtiles \
+  && rm /tmp/pmtiles.tar.gz \
+  && apk del .mapbuild \
+  && command -v tippecanoe \
+  && command -v pmtiles
 
 WORKDIR /app
 

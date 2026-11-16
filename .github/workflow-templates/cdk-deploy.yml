@@ -21,7 +21,8 @@
 #   2. Run config setup action to extract AWS account/region and the env
 #      folder path (read in place via CDK CONFIG_DIR; nothing is copied)
 #   3. Authenticate with AWS using OIDC (no long-lived credentials)
-#   4. Install dependencies and run CDK diff or deploy based on user input
+#   4. Install dependencies, build @faims3/build-config, then run CDK
+#      diff or deploy based on user input
 
 name: CDK Deploy FAIMS3 to AWS
 on:
@@ -192,11 +193,10 @@ jobs:
           echo "pnpm version: $(pnpm --version)"
 
       - name: Install dependencies
-        working-directory: infrastructure/aws-cdk
-        run: |
-          echo "Installing project dependencies..."
-          pnpm install --frozen-lockfile
-          echo "Dependencies installed successfully"
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared config library
+        run: pnpm --filter=@faims3/build-config run build
 
       - name: Display Final Configuration Before CDK
         working-directory: infrastructure/aws-cdk

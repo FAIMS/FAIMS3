@@ -34,7 +34,7 @@ When recording a measurement, combine:
   measurement type (e.g., length, width, depth).
 - A **Controlled Number** for the numeric value, with minimum and
   maximum bounds set to catch entry errors.
-- A unit indicator — either included in the field label (e.g.,
+- A unit indicator — either included in the field heading (e.g.,
   "Depth (cm)") or as a separate **Select one option** field if
   multiple units are possible.
 - An **Annotation** enabled on the number field for recording

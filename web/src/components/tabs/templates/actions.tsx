@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import React, {useMemo, useState} from 'react';
+import React from 'react';
 import {ArchiveTemplateDialog} from '@/components/dialogs/archive-template-dialog';
 import {TemplateVisibilityDialog} from '@/components/dialogs/template-visibility-dialog';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
@@ -10,8 +10,9 @@ import {Card} from '@/components/ui/card';
 import {useGetTemplate} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {useQueryClient} from '@tanstack/react-query';
+import {DesignerUnsavedDraftIndicator} from '@/components/designer-unsaved-draft-indicator';
 import {DesignerDialog} from '@/components/dialogs/designer-dialog';
-import type {NotebookWithHistory} from '@/designer/state/initial';
+import {ActionsGrid} from '@/components/tabs/actions-grid';
 import {EditTemplateDialog} from '@/components/dialogs/edit-template';
 import {EditTemplateDetailsDialog} from '@/components/dialogs/edit-template-details-dialog';
 import {Action, getUserResourcesForAction} from '@faims3/data-model';
@@ -23,10 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-  toDesignerNotebookWithHistory,
-  useDesignerSaveMutation,
-} from '@/designer/integration';
+import {useDesignerHostOverlay} from '@/designer/integration';
 import {Spinner} from '@/components/ui/spinner';
 
 /**
@@ -39,26 +37,18 @@ import {Spinner} from '@/components/ui/spinner';
 const TemplateActions = () => {
   const user = useRequiredUser();
   const {templateId} = Route.useParams();
-  const {data, isLoading} = useGetTemplate({user, templateId});
+  const {data, isLoading, refetch} = useGetTemplate({user, templateId});
   const queryClient = useQueryClient();
-  const [editorOpen, setEditorOpen] = useState(false);
-
-  // PUT template notebook JSON from the designer; react-query updates cache on success.
-  const saveTemplateNotebook = useDesignerSaveMutation({
-    resourceType: 'templates',
-    apiResourceType: 'templates',
-    resourceId: templateId,
+  const overlay = useDesignerHostOverlay({
+    userId: user.user.id,
     token: user.token,
+    resourceKind: 'templates',
+    resourceId: templateId,
+    apiResourceType: 'templates',
+    mode: 'template',
+    data,
+    refetch,
   });
-
-  const initialNotebook = useMemo<NotebookWithHistory | undefined>(() => {
-    return toDesignerNotebookWithHistory(data, 'template');
-  }, [data]);
-
-  const handleEditorClose = (file?: File) => {
-    if (file) saveTemplateNotebook.mutateAsyncWithToast(file);
-    setEditorOpen(false);
-  };
 
   // Invalidate template query after notebook file upload from elsewhere in the UI.
   const uploadTemplateCallback = () => {
@@ -110,11 +100,83 @@ const TemplateActions = () => {
   const archived = data?.archived === true;
 
   // Prevent reopening the editor while the latest design is still saving.
-  const isTemplateNotebookSaving = saveTemplateNotebook.isPending;
+  const isTemplateNotebookSaving = overlay.isSaving;
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <ActionsGrid>
+        {canEditTemplate && (
+          <Card>
+            <List>
+              <ListItem>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ListLabel>Edit Template</ListLabel>
+                  <DesignerUnsavedDraftIndicator
+                    visible={overlay.draftHost.unpublished}
+                    stale={overlay.draftHost.stale}
+                    resourceName="template"
+                    resourceNameCapitalized="Template"
+                  />
+                </div>
+                <ListDescription>
+                  Open the designer to edit forms and fields for this template.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                {archived ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-block w-fit">
+                          <Button disabled>Edit Template</Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs text-balance">
+                        Archived templates cannot be opened in the editor.
+                        Un-archive the template first.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <Button
+                    disabled={
+                      isLoading ||
+                      !overlay.initialNotebook ||
+                      isTemplateNotebookSaving
+                    }
+                    onClick={() => overlay.setEditorOpen(true)}
+                  >
+                    {isTemplateNotebookSaving ? (
+                      <span className="flex items-center gap-2">
+                        <Spinner className="h-4 w-4 animate-spin" />
+                        Saving...
+                      </span>
+                    ) : (
+                      'Edit Template'
+                    )}
+                  </Button>
+                )}
+              </ListItem>
+            </List>
+          </Card>
+        )}
+
+        {canCreateProjectFromTemplate && (
+          <Card>
+            <List>
+              <ListItem>
+                <ListLabel>Create {config.notebookNameCapitalized}</ListLabel>
+                <ListDescription>
+                  Create a new {config.notebookName} based on this template.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <ProjectFromTemplateDialog />
+              </ListItem>
+            </List>
+          </Card>
+        )}
+
         {canUpdateTemplateDetails && (
           <Card>
             <List>
@@ -131,58 +193,8 @@ const TemplateActions = () => {
           </Card>
         )}
 
-        {canEditTemplate && (
-          <Card>
-            <List>
-              <ListItem>
-                <ListLabel>Edit Template</ListLabel>
-                <ListDescription>
-                  Edit this template in the {config.notebookNameCapitalized}{' '}
-                  Editor.
-                </ListDescription>
-              </ListItem>
-              <ListItem>
-                {archived ? (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="inline-block w-fit">
-                          <Button variant="outline" disabled>
-                            Open in Editor
-                          </Button>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs text-balance">
-                        Archived templates cannot be opened in the editor.
-                        Un-archive the template first.
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                ) : (
-                  <Button
-                    variant="outline"
-                    disabled={
-                      isLoading || !initialNotebook || isTemplateNotebookSaving
-                    }
-                    onClick={() => setEditorOpen(true)}
-                  >
-                    {isTemplateNotebookSaving ? (
-                      <span className="flex items-center gap-2">
-                        <Spinner className="h-4 w-4 animate-spin" />
-                        Saving...
-                      </span>
-                    ) : (
-                      'Open in Editor'
-                    )}
-                  </Button>
-                )}
-              </ListItem>
-            </List>
-          </Card>
-        )}
-
         {canAssignTemplateToTeam && (
-          <Card className="flex-1">
+          <Card>
             <List className="flex flex-col gap-4">
               <ListItem>
                 <ListLabel>Assign Template to Team</ListLabel>
@@ -210,7 +222,7 @@ const TemplateActions = () => {
                 </ListDescription>
               </ListItem>
               <ListItem>
-                <Button variant="outline" disabled={isLoading}>
+                <Button disabled={isLoading}>
                   <a
                     href={`data:text/json;charset=utf-8,${encodeURIComponent(
                       JSON.stringify(data?.uiSpecification ?? {}, null, 2)
@@ -225,7 +237,7 @@ const TemplateActions = () => {
           </Card>
         )}
         {canEditTemplate && (
-          <Card className="flex-1">
+          <Card>
             <List className="flex flex-col gap-4">
               <ListItem>
                 <ListLabel>Replace Template JSON File</ListLabel>
@@ -240,23 +252,8 @@ const TemplateActions = () => {
             </List>
           </Card>
         )}
-        {canCreateProjectFromTemplate && (
-          <Card>
-            <List>
-              <ListItem>
-                <ListLabel>Create {config.notebookNameCapitalized}</ListLabel>
-                <ListDescription>
-                  Create a new {config.notebookName} based on this template.
-                </ListDescription>
-              </ListItem>
-              <ListItem>
-                <ProjectFromTemplateDialog />
-              </ListItem>
-            </List>
-          </Card>
-        )}
         {canChangeTemplateVisibility && (
-          <Card className="flex-1">
+          <Card>
             <TemplateVisibilityDialog templateId={templateId} />
           </Card>
         )}
@@ -282,13 +279,10 @@ const TemplateActions = () => {
             </List>
           </Card>
         ) : null}
-      </div>
+      </ActionsGrid>
       <DesignerDialog
-        open={editorOpen && !archived}
-        notebook={initialNotebook}
-        exportBaseName={data?.name}
-        onClose={handleEditorClose}
-        designerMode="template"
+        open={overlay.editorOpen && !archived}
+        {...overlay.dialogProps}
       />
     </>
   );

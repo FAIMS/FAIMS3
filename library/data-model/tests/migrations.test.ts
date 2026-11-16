@@ -15,6 +15,8 @@ import {
   EmailCodeV1ExistingDocument,
   EmailCodeV3ExistingDocument,
   EmailCodeV4ExistingDocument,
+  EmailCodeV5ExistingDocument,
+  LongLivedTokenV5ExistingDocument,
   MigrationFuncReturn,
   PeopleV1Document,
   PeopleV2Document,
@@ -30,10 +32,12 @@ import {
   RefreshRecordV1ExistingDocument,
   RefreshRecordV2ExistingDocument,
   RefreshRecordV3ExistingDocument,
+  RefreshRecordV5ExistingDocument,
   V1InviteDBFields,
   V2InviteDBFields,
   V3InviteDBFields,
   VerificationChallengeV3ExistingDocument,
+  VerificationChallengeV5ExistingDocument,
   LEGACY_INLINE_NOTEBOOK_DB_PREFIX,
   dataV1toV2Migration,
 } from '../src/data_storage';
@@ -2023,9 +2027,87 @@ const AUTH_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
   },
 ];
 
+// Test cases for authV5toV6Migration (no-op for download grants + login lockout)
+const AUTH_V5_TO_V6_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'authV5toV6Migration - refresh token (no changes)',
+    dbType: DatabaseType.AUTH,
+    from: 5,
+    to: 6,
+    inputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.refresh}v5v6-refresh`,
+      _rev: '5-abc123',
+      documentType: 'refresh',
+      userId: 'user123',
+      token: 'token123456',
+      enabled: true,
+      expiryTimestampMs: Date.now() + 3600000,
+      exchangeTokenHash: 'hash789',
+      exchangeTokenUsed: false,
+      exchangeTokenExpiryTimestampMs: Date.now() + 1800000,
+    } satisfies RefreshRecordV5ExistingDocument,
+    expectedResult: {action: 'none'},
+  },
+  {
+    name: 'authV5toV6Migration - email code (no changes)',
+    dbType: DatabaseType.AUTH,
+    from: 5,
+    to: 6,
+    inputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.emailcode}v5v6-email`,
+      _rev: '5-def456',
+      documentType: 'emailcode',
+      userId: 'user456',
+      code: 'hashedcode123',
+      used: false,
+      expiryTimestampMs: Date.now() + 1800000,
+      createdTimestampMs: Date.now() - 60000,
+    } satisfies EmailCodeV5ExistingDocument,
+    expectedResult: {action: 'none'},
+  },
+  {
+    name: 'authV5toV6Migration - verification challenge (no changes)',
+    dbType: DatabaseType.AUTH,
+    from: 5,
+    to: 6,
+    inputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.verification}v5v6-verify`,
+      _rev: '5-ghi789',
+      documentType: 'verification',
+      userId: 'user789',
+      email: 'user@example.com',
+      code: 'hashed_verification_code',
+      used: false,
+      createdTimestampMs: Date.now() - 3600000,
+      expiryTimestampMs: Date.now() + 86400000,
+    } satisfies VerificationChallengeV5ExistingDocument,
+    expectedResult: {action: 'none'},
+  },
+  {
+    name: 'authV5toV6Migration - long lived token (no changes)',
+    dbType: DatabaseType.AUTH,
+    from: 5,
+    to: 6,
+    inputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.longlived}v5v6-llt`,
+      _rev: '5-jkl012',
+      documentType: 'longlived',
+      userId: 'user012',
+      tokenHash: 'tokenhashabc',
+      title: 'CI token',
+      description: 'used in tests',
+      enabled: true,
+      createdTimestampMs: Date.now() - 86400000,
+      updatedTimestampMs: Date.now() - 3600000,
+    } satisfies LongLivedTokenV5ExistingDocument,
+    expectedResult: {action: 'none'},
+  },
+];
+
 // Add the new test cases to the MIGRATION_TEST_CASES array
 MIGRATION_TEST_CASES.push(...AUTH_V3_TO_V4_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...AUTH_V2_TO_V3_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...AUTH_V5_TO_V6_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PROJECT_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PROJECT_V2_TO_V3_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...INVITES_MIGRATION_TEST_CASES);

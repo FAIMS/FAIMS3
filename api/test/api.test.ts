@@ -33,7 +33,12 @@ import {
   generateJwtFromUser,
   upgradeCouchUserToExpressUser,
 } from '../src/auth/keySigning/create';
-import {config, emailService, keyService} from '../src/buildconfig';
+import {
+  attachmentStorageService,
+  config,
+  emailService,
+  keyService,
+} from '../src/buildconfig';
 import {getDataDb} from '../src/couchdb';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {
@@ -132,12 +137,16 @@ describe('API tests', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200)
       .expect(response => {
-        expect(response.body).toHaveLength(1);
-        expect(response.body[0]).not.toHaveProperty('uiSpecification');
-        expect(response.body[0]).not.toHaveProperty('byteCount');
-        expect(response.body[0]).not.toHaveProperty('is_admin');
-        expect(response.body[0].uiSpecProperties.hash).toHaveLength(64);
-        expect(response.body[0].uiSpecProperties.schemaVersion).toBeTruthy();
+        const {notebooks, nextStartKey} = response.body;
+        expect(nextStartKey).toBeUndefined();
+        expect(notebooks).toHaveLength(1);
+        expect(notebooks[0]).not.toHaveProperty('uiSpecification');
+        expect(notebooks[0]).not.toHaveProperty('byteCount');
+        expect(notebooks[0]).not.toHaveProperty('is_admin');
+        expect(notebooks[0].uiSpecProperties.hash).toHaveLength(64);
+        expect(notebooks[0].uiSpecProperties.schemaVersion).toBeTruthy();
+        expect(notebooks[0].contextualLayers).toEqual([]);
+        expect(notebooks[0].contextualLayersHash).toHaveLength(64);
       });
   });
 
@@ -150,9 +159,9 @@ describe('API tests', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
-    expect(response.body).toHaveLength(1);
-    expect(response.body[0].byteCount).toBeTypeOf('number');
-    expect(response.body[0]).not.toHaveProperty('is_admin');
+    expect(response.body.notebooks).toHaveLength(1);
+    expect(response.body.notebooks[0].byteCount).toBeTypeOf('number');
+    expect(response.body.notebooks[0]).not.toHaveProperty('is_admin');
   });
 
   it('GET /api/directory requires authentication', async () => {
@@ -176,6 +185,8 @@ describe('API tests', () => {
     expect(item).not.toHaveProperty('is_admin');
     expect(item.uiSpecProperties.hash).toHaveLength(64);
     expect(item.uiSpecProperties.schemaVersion).toBeTruthy();
+    expect(item.contextualLayers).toEqual([]);
+    expect(item.contextualLayersHash).toHaveLength(64);
   });
 
   it('writes uiSpecProperties on create/update uiSpec and not on metadata PUT', async () => {
@@ -221,6 +232,62 @@ describe('API tests', () => {
     const afterSpec = await getProjectById(projectId);
     expect(afterSpec.uiSpecProperties.hash).not.toBe(originalHash);
     expect(afterSpec.uiSpecProperties.hash).toHaveLength(64);
+  });
+
+  it('PUT uiSpecification If-Match refuses a stale hash and allows a matching hash', async () => {
+    const createRes = await request(app)
+      .post('/api/notebooks')
+      .send(sampleCreateNotebookPayload('if-match notebook'))
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const projectId = createRes.body.notebook as string;
+    const created = await getProjectById(projectId);
+    const originalHash = created.uiSpecProperties.hash;
+    const nextSpec = {
+      ...created.uiSpecification,
+      uiSpec: {
+        ...created.uiSpecification.uiSpec,
+        visible_types: [
+          ...created.uiSpecification.uiSpec.visible_types,
+          'if-match-form',
+        ],
+      },
+    };
+
+    const stale = await request(app)
+      .put(`/api/notebooks/${projectId}/uiSpecification`)
+      .send(nextSpec)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .set('If-Match', `"${'c'.repeat(64)}"`)
+      .expect(409);
+    expect(stale.body.error.message).toMatch(/live design has changed/i);
+    expect((await getProjectById(projectId)).uiSpecProperties.hash).toBe(
+      originalHash
+    );
+
+    await request(app)
+      .put(`/api/notebooks/${projectId}/uiSpecification`)
+      .send(nextSpec)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .set('If-Match', `"${originalHash}"`)
+      .expect(200);
+
+    const afterMatch = await getProjectById(projectId);
+    expect(afterMatch.uiSpecProperties.hash).not.toBe(originalHash);
+
+    await request(app)
+      .put(`/api/notebooks/${projectId}/uiSpecification`)
+      .send(created.uiSpecification)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+    expect((await getProjectById(projectId)).uiSpecProperties.hash).toBe(
+      originalHash
+    );
   });
 
   it('can create a notebook', () => {
@@ -684,6 +751,8 @@ describe('API tests', () => {
       .expect(response => {
         expect(response.body.name).toBe('test-notebook');
         expect(response.body.uiSpecification).toBeTruthy();
+        expect(response.body.contextualLayers).toEqual([]);
+        expect(response.body.contextualLayersHash).toHaveLength(64);
       });
   });
 
@@ -734,10 +803,11 @@ describe('API tests', () => {
         const res = GetListAllUsersResponseSchema.parse(response.body);
 
         // there are a couple of users
-        expect(res.length).toBe(3);
+        expect(res.users.length).toBe(3);
+        expect(res.nextStartKey).toBeUndefined();
 
         // ensure that profiles.local info is boolean only
-        for (const user of res) {
+        for (const user of res.users) {
           expect((user as any).profiles.local).toBeTypeOf('boolean');
 
           // but other properties should be valid
@@ -1100,6 +1170,74 @@ describe('API tests', () => {
       expect(result.body.timings).toHaveProperty('total');
     } finally {
       sendEmailSpy.mockRestore();
+    }
+  });
+
+  it('test attachment storage route - not authenticated', async () => {
+    const result = await request(app).post(
+      '/api/admin/test-attachment-storage'
+    );
+    expect(result.statusCode).toBe(401);
+  });
+
+  it('test attachment storage route - not admin', async () => {
+    const result = await request(app)
+      .post('/api/admin/test-attachment-storage')
+      .set('Authorization', `Bearer ${localUserToken}`);
+    expect(result.statusCode).toBe(401);
+  });
+
+  it('test attachment storage route - admin user', async () => {
+    const uploadSpy = vi.spyOn(attachmentStorageService, 'upload');
+    const existsSpy = vi.spyOn(attachmentStorageService, 'exists');
+    const downloadSpy = vi.spyOn(attachmentStorageService, 'download');
+    const deleteSpy = vi.spyOn(attachmentStorageService, 'delete');
+
+    try {
+      const result = await request(app)
+        .post('/api/admin/test-attachment-storage')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(result.statusCode).toBe(200);
+      expect(result.body.success).toBe(true);
+      expect(result.body.status).toBe('ok');
+      expect(result.body.details.attachmentStorageType).toBe('MOCK');
+      expect(result.body.timings).toHaveProperty('total');
+      expect(uploadSpy).toHaveBeenCalled();
+      expect(existsSpy).toHaveBeenCalled();
+      expect(downloadSpy).toHaveBeenCalled();
+      expect(deleteSpy).toHaveBeenCalled();
+    } finally {
+      uploadSpy.mockRestore();
+      existsSpy.mockRestore();
+      downloadSpy.mockRestore();
+      deleteSpy.mockRestore();
+    }
+  });
+
+  it('test attachment storage route - handles errors', async () => {
+    const uploadSpy = vi
+      .spyOn(attachmentStorageService, 'upload')
+      .mockRejectedValue(new Error('S3 connection failed'));
+
+    try {
+      const result = await request(app)
+        .post('/api/admin/test-attachment-storage')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(result.statusCode).toBe(200);
+      expect(result.body.success).toBe(false);
+      expect(result.body.status).toBe('error');
+      expect(result.body.message).toContain(
+        'Attachment storage smoke test failed'
+      );
+      expect(result.body.details.error).toHaveProperty(
+        'message',
+        'S3 connection failed'
+      );
+      expect(result.body.details.error).toHaveProperty('suggestion');
+    } finally {
+      uploadSpy.mockRestore();
     }
   });
 

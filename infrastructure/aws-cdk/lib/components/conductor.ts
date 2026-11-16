@@ -14,7 +14,7 @@
  * 25-07-2024 | Peter Baker | use the same LB as the couch DB network to save $$$.
  */
 
-import {Duration} from 'aws-cdk-lib';
+import {Duration, Stack} from 'aws-cdk-lib';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
@@ -22,6 +22,7 @@ import * as elb from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as r53 from 'aws-cdk-lib/aws-route53';
 import * as r53Targets from 'aws-cdk-lib/aws-route53-targets';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import {Construct} from 'constructs';
 import {getPathToRoot} from '../util/mono';
@@ -83,11 +84,34 @@ export interface ConductorRuntimeEnvInput {
   enabledAuthProviders: string[];
   /** Plain-env keys that ECS will deliver via Secrets Manager instead. */
   secretEnvKeys: string[];
+  /** Private S3 bucket name for map-layer objects. */
+  mapAssetBucketName?: string;
+  /** Key prefix inside the map-layer bucket (defaults to core.attachmentStorage.prefix). */
+  mapAssetPrefix?: string;
+  /** AWS region for the map-layer bucket. */
+  awsRegion?: string;
 }
+
+const SPATIAL_WORKER_AND_CAPACITY_ENV_KEYS = [
+  'CAPACITY_PROVIDER',
+  'CAPACITY_MAX',
+  'CAPACITY_SCALE_THRESHOLDS',
+  'CAPACITY_RECONCILE_MS',
+  'CAPACITY_STARVATION_MS',
+  'CAPACITY_SCALE_IN_COOLDOWN_MS',
+  'CAPACITY_FIXED_REPLICAS',
+  'SPATIAL_WORKER_IDLE_EXIT_MS',
+  'SPATIAL_WORKER_POLL_MS',
+  'GDAL_NUM_THREADS',
+  'GDAL_CACHEMAX',
+  'GDAL_WARP_MEMORY_MB',
+  'GDAL_WARP_MULTI',
+  'TIPPECANOE_MAX_THREADS',
+] as const;
 
 /**
  * Build the Conductor container's non-secret environment: the shared API
- * contract, AWS-resolved URL/port overlays, enabled-provider AUTH_* fields,
+ * contract, AWS-resolved URL/port/S3 overlays, enabled-provider AUTH_* fields,
  * and no keys that also appear in `secrets`.
  */
 export function buildConductorRuntimeEnv(
@@ -128,6 +152,29 @@ export function buildConductorRuntimeEnv(
         ]
       : []),
   ].join(',');
+
+  // Map-layer object storage: on AWS ECS, the bucket/region come from CDK and
+  // credentials come from the task role (never local endpoints or static keys).
+  env.ATTACHMENT_STORAGE_TYPE = 'S3';
+  if (input.mapAssetBucketName !== undefined) {
+    env.ATTACHMENT_S3_BUCKET = input.mapAssetBucketName;
+  }
+  env.ATTACHMENT_S3_PREFIX =
+    input.mapAssetPrefix ?? input.coreConfig.attachmentStorage.prefix;
+  if (input.awsRegion !== undefined) {
+    env.ATTACHMENT_S3_REGION = input.awsRegion;
+  }
+  delete env.ATTACHMENT_S3_ENDPOINT;
+  delete env.ATTACHMENT_S3_PUBLIC_ENDPOINT;
+  delete env.ATTACHMENT_S3_FORCE_PATH_STYLE;
+  delete env.ATTACHMENT_S3_ACCESS_KEY_ID;
+  delete env.ATTACHMENT_S3_SECRET_ACCESS_KEY;
+
+  // Spatial worker and capacity manager env are wired onto their own task
+  // definitions by FaimsSpatialCapacity from aws.spatialCapacity.
+  for (const key of SPATIAL_WORKER_AND_CAPACITY_ENV_KEYS) {
+    delete env[key];
+  }
 
   const enabled = new Set(
     input.enabledAuthProviders.map(providerIdToEnvProvider)
@@ -184,6 +231,10 @@ export interface FaimsConductorProps {
   cookieSecret: sm.Secret;
   /** SMTP credentials secret ARN */
   smtpCredsArn: string;
+  /** Private bucket for map-layer originals and normalized files. */
+  mapAssetBucket: s3.IBucket;
+  /** Key prefix inside {@link mapAssetBucket} (defaults to core.attachmentStorage.prefix). */
+  mapAssetPrefix?: string;
   /** Social providers info (if enabled) */
   authProviders?: AuthProvidersConfig;
   /** If true, adds typical localhost addresses to the allowable redirect
@@ -247,11 +298,12 @@ export class FaimsConductor extends Construct {
       this,
       'conductor-task-dfn',
       {
-        ephemeralStorageGiB: 21, // 20GB ephemeral storage (minimum)
+        ephemeralStorageGiB: props.config.ephemeralStorageGiB,
         cpu: props.config.cpu,
         memoryLimitMiB: props.config.memory,
       }
     );
+    props.mapAssetBucket.grantReadWrite(conductorTaskDfn.taskRole);
 
     // Add container to the task definition
     const smtpSecret = sm.Secret.fromSecretCompleteArn(
@@ -328,8 +380,8 @@ export class FaimsConductor extends Construct {
     // The shared API env comes from build-config's apiContract via
     // buildEnvMapFromRuntime (including AUTH_* from buildAuthProviderEnvMap).
     // Only AWS-resolved endpoints/ports, KEY_SOURCE/SM ARN, PROFILE_NAME,
-    // the redirect whitelist, the enabled-provider filter, and SM-key
-    // deletions are overlaid here.
+    // map-layer bucket/region, the redirect whitelist, the enabled-provider
+    // filter, and SM-key deletions are overlaid here.
     this.environment = buildConductorRuntimeEnv({
       coreConfig: props.coreConfig,
       conductorEndpoint: this.conductorEndpoint,
@@ -344,6 +396,10 @@ export class FaimsConductor extends Construct {
       localhostWhitelist: props.localhostWhitelist,
       enabledAuthProviders: props.authProviders?.providers ?? [],
       secretEnvKeys: Object.keys(this.secrets),
+      mapAssetBucketName: props.mapAssetBucket.bucketName,
+      mapAssetPrefix:
+        props.mapAssetPrefix ?? props.coreConfig.attachmentStorage.prefix,
+      awsRegion: Stack.of(this).region,
     });
 
     conductorTaskDfn.addContainer('conductor-container-dfn', {

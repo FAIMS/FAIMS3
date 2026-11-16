@@ -18,6 +18,7 @@ extra window so in-flight auth and rate-limiting still work, then removed.
 | `refresh`      | `auth`    | Kept for **1 day after expiry** (override with `--grace-ms`), then deleted                                                                      |
 | `emailcode`    | `auth`    | Kept for **rate-limit window + cooldown + 1h** from creation (fallback: expiry). Not deleted when the code itself expires                       |
 | `verification` | `auth`    | Same idea: kept for **24h window + 30m cooldown + 1h** from creation (fallback: expiry)                                                         |
+| `loginlockout` | `auth`    | Deleted when `lastAttemptMs` is older than **15 minutes + 1h grace**. Fresher counters are retained so progressive delay still applies          |
 | invite         | `invites` | Deleted once `expiry` has passed (no extra wait by default; `--grace-ms` can add one). Exhausted-but-unexpired invites are **kept** by default  |
 | `longlived`    | `auth`    | Opt-in (`--include-longlived`): revoked or expired tokens kept **30 days** for audit, then deleted. Active non-expired tokens are never deleted |
 

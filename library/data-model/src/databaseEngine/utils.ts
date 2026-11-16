@@ -94,6 +94,10 @@ export const withRelatedLink = ({
  * Throws when a field that takes one link already holds one. Replacing it
  * instead would drop a link while leaving the old target's entry pointing back,
  * and a caller that means to replace can detach first.
+ *
+ * A link whose target is deleted does not hold the field: the list already
+ * hides it, and a field that takes one stores the bare entry, so the new link
+ * replaces the dead one rather than sitting beside it.
  */
 export const relatedLinkParts = ({
   fieldId,
@@ -101,6 +105,7 @@ export const relatedLinkParts = ({
   parentRecordId,
   currentFieldValue,
   isMultiple,
+  deletedTargetIds,
 }: {
   /** The related-record field on the parent doing the linking. */
   fieldId: string;
@@ -112,6 +117,8 @@ export const relatedLinkParts = ({
   currentFieldValue: unknown;
   /** Whether the field takes more than one link. */
   isMultiple: boolean;
+  /** Targets known to be deleted; a link to one does not hold the field. */
+  deletedTargetIds?: ReadonlySet<string>;
 }): {
   links: RelatedRecordFieldAvpEntry[];
   relationTypeVocabPair: [string, string];
@@ -119,7 +126,10 @@ export const relatedLinkParts = ({
   isChild: boolean;
 } => {
   const links = readRelatedLinks(currentFieldValue);
-  if (!isMultiple && links.length > 0) {
+  const holdsLiveLink = links.some(
+    link => !deletedTargetIds?.has(link.record_id)
+  );
+  if (!isMultiple && holdsLiveLink) {
     throw new Error(
       `Field ${fieldId} already holds a record and takes only one`
     );
@@ -171,6 +181,7 @@ export const relatedLinkWrites = ({
   currentFieldValue,
   targetRelationship,
   isMultiple,
+  deletedTargetIds,
 }: {
   /** The related-record field on the parent doing the linking. */
   fieldId: string;
@@ -186,6 +197,8 @@ export const relatedLinkWrites = ({
   targetRelationship: FormRelationship | undefined;
   /** Whether the field takes more than one link. */
   isMultiple: boolean;
+  /** Targets known to be deleted; a link to one does not hold the field. */
+  deletedTargetIds?: ReadonlySet<string>;
 }): {
   /** What the parent's field must hold now. */
   fieldValue: RelatedRecordFieldAvpValue;
@@ -198,6 +211,7 @@ export const relatedLinkWrites = ({
     parentRecordId,
     currentFieldValue,
     isMultiple,
+    deletedTargetIds,
   });
   const link: RelatedRecordFieldAvpEntry = {
     record_id: targetRecordId,

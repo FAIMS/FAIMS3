@@ -35,7 +35,7 @@ export const CreateTemplateDialog = ({
 
   // Global list: hide trigger when user cannot create at all.
   // Team tab passes specifiedTeam and relies on parent permission checks.
-  if (!canCreateTemplate && !specifiedTeam) {
+  if ((!canCreateTemplate && !specifiedTeam) || team?.archived === true) {
     return null;
   }
 

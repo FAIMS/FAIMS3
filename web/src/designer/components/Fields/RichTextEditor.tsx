@@ -51,6 +51,7 @@ export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
       fieldName={fieldName}
       showHelperText={false}
       showExtraConfig={false}
+      showCondition
     >
       <Grid container size={{xs: 12, sm: 8}} sx={{m: 'auto'}}>
         <Grid size={12}>

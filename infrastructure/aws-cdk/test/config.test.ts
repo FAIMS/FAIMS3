@@ -7,9 +7,11 @@
  */
 import {ZodError} from 'zod';
 import {
+  AttachmentStorageConfigSchema,
   AwsConfigSchema,
   ConductorConfigSchema,
   ConfigSchema,
+  SpatialCapacityConfigSchema,
   loadConfigFromEnv,
   parseConfig,
 } from '../lib/config';
@@ -53,7 +55,11 @@ describe('AwsConfigSchema', () => {
     expect(parsed.ttlCleanup?.enabled).toBe(false);
     // conductor defaults
     expect(parsed.conductor.conductorDockerImageTag).toBe('latest');
+    expect(parsed.conductor.ephemeralStorageGiB).toBe(21);
     expect(parsed.conductor.localhostWhitelist).toBe(false);
+    // spatialCapacity defaults
+    expect(parsed.spatialCapacity.maxCapacity).toBe(4);
+    expect(parsed.spatialCapacity.ephemeralStorageGiB).toBe(80);
   });
 
   it('has no secrets.publicKey slot (public key lives in the privateKey secret)', () => {
@@ -83,6 +89,20 @@ describe('AwsConfigSchema', () => {
 });
 
 describe('ConductorConfigSchema is AWS-only', () => {
+  it('accepts an ephemeral storage override and rejects out of range', () => {
+    const base = minimalAws().conductor;
+    expect(
+      ConductorConfigSchema.parse({...base, ephemeralStorageGiB: 100})
+        .ephemeralStorageGiB
+    ).toBe(100);
+    expect(() =>
+      ConductorConfigSchema.parse({...base, ephemeralStorageGiB: 20})
+    ).toThrow();
+    expect(() =>
+      ConductorConfigSchema.parse({...base, ephemeralStorageGiB: 201})
+    ).toThrow();
+  });
+
   it('rejects shared fields that moved to core', () => {
     // `name` is no longer on the conductor config; it lives in core.branding.
     expect(() =>
@@ -105,6 +125,22 @@ describe('ConductorConfigSchema is AWS-only', () => {
   });
 });
 
+describe('AttachmentStorageConfigSchema', () => {
+  it('defaults to S3 and the map-assets prefix', () => {
+    const parsed = AttachmentStorageConfigSchema.parse({});
+    expect(parsed.serviceType).toBe('S3');
+    expect(parsed.prefix).toBe('map-assets');
+  });
+
+  it('accepts a custom prefix', () => {
+    const parsed = AttachmentStorageConfigSchema.parse({
+      serviceType: 'S3',
+      prefix: 'layers',
+    });
+    expect(parsed.prefix).toBe('layers');
+  });
+});
+
 describe('ConfigSchema is { core, aws }', () => {
   it('requires both slots', () => {
     expect(() => ConfigSchema.parse({aws: minimalAws()})).toThrow(ZodError);
@@ -115,6 +151,7 @@ describe('ConfigSchema is { core, aws }', () => {
     const parsed = ConfigSchema.parse({core: {}, aws: minimalAws()});
     // core defaults apply
     expect(parsed.core.branding.theme).toBe('default');
+    expect(parsed.core.attachmentStorage.prefix).toBe('map-assets');
     expect(parsed.aws.stackName).toBe('faims-test');
   });
 
@@ -247,5 +284,72 @@ describe('loadConfigFromEnv', () => {
     expect(() => loadConfigFromEnv(baseDir, {CONFIG_ENV: 'nope'})).toThrow(
       /Error loading configuration/
     );
+  });
+});
+
+describe('SpatialCapacityConfigSchema GDAL / tippecanoe knobs', () => {
+  it('fills conservative performance defaults', () => {
+    const parsed = SpatialCapacityConfigSchema.parse({
+      cpu: 8192,
+      memory: 32768,
+    });
+    expect(parsed.gdalNumThreads).toBe('ALL_CPUS');
+    expect(parsed.gdalCacheMaxMb).toBe(256);
+    expect(parsed.gdalWarpMemoryMb).toBe(256);
+    expect(parsed.gdalWarpMulti).toBe(true);
+    expect(parsed.tippecanoeMaxThreads).toBeUndefined();
+    expect(parsed).not.toHaveProperty('tippecanoeReadParallel');
+    expect(parsed.starvationMs).toBe(5 * 60 * 1000);
+    expect(parsed.scaleInCooldownMs).toBeUndefined();
+  });
+
+  it('accepts a custom scale-in cooldown including disable', () => {
+    expect(
+      SpatialCapacityConfigSchema.parse({scaleInCooldownMs: 0})
+        .scaleInCooldownMs
+    ).toBe(0);
+    expect(
+      SpatialCapacityConfigSchema.parse({scaleInCooldownMs: 120_000})
+        .scaleInCooldownMs
+    ).toBe(120_000);
+  });
+
+  it('accepts a custom starvation timeout including disable', () => {
+    expect(
+      SpatialCapacityConfigSchema.parse({starvationMs: 0}).starvationMs
+    ).toBe(0);
+    expect(
+      SpatialCapacityConfigSchema.parse({starvationMs: 120_000}).starvationMs
+    ).toBe(120_000);
+  });
+
+  it('rejects a negative starvation timeout', () => {
+    expect(() => SpatialCapacityConfigSchema.parse({starvationMs: -1})).toThrow(
+      ZodError
+    );
+  });
+
+  it('rejects a negative scale-in cooldown', () => {
+    expect(() =>
+      SpatialCapacityConfigSchema.parse({scaleInCooldownMs: -1})
+    ).toThrow(ZodError);
+  });
+
+  it('accepts an explicit thread cap and larger warp buffer', () => {
+    const parsed = SpatialCapacityConfigSchema.parse({
+      gdalNumThreads: 8,
+      gdalCacheMaxMb: 2048,
+      gdalWarpMemoryMb: 1024,
+      tippecanoeMaxThreads: 8,
+    });
+    expect(parsed.gdalNumThreads).toBe(8);
+    expect(parsed.gdalCacheMaxMb).toBe(2048);
+    expect(parsed.tippecanoeMaxThreads).toBe(8);
+  });
+
+  it('rejects a zero warp buffer', () => {
+    expect(() =>
+      SpatialCapacityConfigSchema.parse({gdalWarpMemoryMb: 0})
+    ).toThrow(ZodError);
   });
 });

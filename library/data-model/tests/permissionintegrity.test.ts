@@ -345,4 +345,27 @@ describe('Permission Model Validation', () => {
       });
     });
   });
+
+  describe('CHANGE_TEAM_STATUS', () => {
+    it('is a TEAM action granted by TEAM_ADMIN and GENERAL_ADMIN, not TEAM_MANAGER', () => {
+      expect(actionDetails[Action.CHANGE_TEAM_STATUS].resource).toBe(
+        Resource.TEAM
+      );
+      expect(resourceToActions[Resource.TEAM]).toContain(
+        Action.CHANGE_TEAM_STATUS
+      );
+      expect(getAllActionsForRole(Role.TEAM_ADMIN)).toContain(
+        Action.CHANGE_TEAM_STATUS
+      );
+      expect(getAllActionsForRole(Role.GENERAL_ADMIN)).toContain(
+        Action.CHANGE_TEAM_STATUS
+      );
+      expect(getAllActionsForRole(Role.OPERATIONS_ADMIN)).toContain(
+        Action.CHANGE_TEAM_STATUS
+      );
+      expect(getAllActionsForRole(Role.TEAM_MANAGER)).not.toContain(
+        Action.CHANGE_TEAM_STATUS
+      );
+    });
+  });
 });

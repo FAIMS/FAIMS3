@@ -390,8 +390,60 @@ describe('Form Operations', () => {
         })
       ).rejects.toThrow(/takes only one/);
       // The refusal must come before the write, or the new row is an orphan
-      // its parent never lists.
+      // its parent never lists. `site-0` does not exist, so this also covers a
+      // target that cannot be read: unknown counts as live.
       expect((await db.allDocs({})).rows.length).toBe(before);
+    });
+
+    it('takes a new link on a field whose one link points at a deleted record', async () => {
+      const engineWithRelations = relatedEngine();
+      const dead = await engineWithRelations.form.createRecord({
+        createdBy: 'alice',
+        formId: 'Site',
+      });
+      await engineWithRelations.form.deleteRecord({
+        recordId: dead.record._id,
+        baseRevisionId: dead.revision._id,
+        userId: 'alice',
+      });
+      const {link, linked} = await engineWithRelations.form.createRelatedRecord(
+        {
+          parentRecordId: 'parent-1',
+          parentFieldId: 'peer',
+          createdBy: 'alice',
+          parentFieldValue: {
+            record_id: dead.record._id,
+            relation_type_vocabPair: ['is linked to', 'is linked from'],
+          },
+        }
+      );
+      // The dead link is replaced, not kept beside the new one.
+      expect(linked).toEqual(link);
+    });
+
+    it('takes a new link on a field whose one link points at a record it cannot read', async () => {
+      const engineWithRelations = relatedEngine();
+      // A document under the linked id that is not a record at all.
+      await db.put({_id: 'rec-broken-1', type: 'not-a-record'});
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        const {link, linked} =
+          await engineWithRelations.form.createRelatedRecord({
+            parentRecordId: 'parent-1',
+            parentFieldId: 'peer',
+            createdBy: 'alice',
+            parentFieldValue: {
+              record_id: 'rec-broken-1',
+              relation_type_vocabPair: ['is linked to', 'is linked from'],
+            },
+          });
+        // Reported, then replaced: the list cannot show this target and the
+        // operator cannot detach it, so refusing would strand the field.
+        expect(warn).toHaveBeenCalled();
+        expect(linked).toEqual(link);
+      } finally {
+        warn.mockRestore();
+      }
     });
 
     it('writes no record when the field holds a value it cannot read', async () => {

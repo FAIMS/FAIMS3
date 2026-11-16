@@ -34,6 +34,11 @@ import {
 import {revokeUnusedGrantsForUser} from '../couchdb/downloadGrants';
 import {getTokenByToken, invalidateToken} from '../couchdb/refreshTokens';
 import {
+  claimLoginAttemptForIdentifier,
+  formatLoginLockoutMessage,
+  resetLoginLockoutForIdentifier,
+} from '../couchdb/loginLockout';
+import {
   getCouchUserFromEmailOrUserId,
   saveCouchUser,
   updateUserPassword,
@@ -90,107 +95,16 @@ export const providerSsoErrorPath = (provider: string) => {
   return `/auth/${provider}/sso-error`;
 };
 
-// we will implement progressive delays on failed login attempts
-const LOCKOUT_PERIOD_SHORT = 10 * 1000; // 10 seconds
-const LOCKOUT_PERIOD_MEDIUM = 60 * 1000; // 1 minute
-const LOCKOUT_PERIOD_LONG = 5 * 60 * 1000; // 5 minutes
-const LOCKOUT_PERIOD_MAX = 15 * 60 * 1000; // 15 minutes (only after many attempts)
+const GENERIC_LOGIN_FAILURE = 'Login failed';
 
-const LOCKOUT_THRESHOLD_STORE_SIZE = 100; // purge if we have more than this many entries to mitigate DDOS risk
-
-// In-memory store of failed login attempts
-interface FailedAttempt {
-  count: number;
-  lastAttempt: Date;
-}
-const failedLoginAttempts: Record<string, FailedAttempt> = {};
-
-// Log a failed login attempt for a user
-const logFailedLoginAttempt = async (username: string) => {
-  // only log for known usernames
-  const user = await getCouchUserFromEmailOrUserId(username);
-  if (user) {
-    if (!failedLoginAttempts[username]) {
-      failedLoginAttempts[username] = {
-        count: 1,
-        lastAttempt: new Date(),
-      };
-    } else {
-      failedLoginAttempts[username].count += 1;
-      failedLoginAttempts[username].lastAttempt = new Date();
-    }
+const clearFailedLocalLogin = async (identifier: string) => {
+  if (!config.loginLockoutEnabled) {
+    return;
   }
-  // purge if we have lots of entries
-  if (Object.keys(failedLoginAttempts).length > LOCKOUT_THRESHOLD_STORE_SIZE) {
-    purgeLockoutStore();
-  }
-};
-// reset the count once a user logs in successfully
-const resetFailedLoginAttempts = (username: string) => {
-  delete failedLoginAttempts[username];
-};
-
-// Calculate progressive delay based on failed attempt count
-const getAccountLockoutDelay = (username: string): number => {
-  const attempt = failedLoginAttempts[username];
-  if (!attempt) return 0;
-
-  const timeSinceLastAttempt =
-    new Date().getTime() - attempt.lastAttempt.getTime();
-
-  // Progressive delays - legitimate users can still eventually get through
-  if (attempt.count >= 15) {
-    // After 15 attempts: 15 minute delay
-    const remaining = LOCKOUT_PERIOD_MAX - timeSinceLastAttempt;
-    return remaining > 0 ? LOCKOUT_PERIOD_MAX : 0;
-  } else if (attempt.count >= 10) {
-    // After 10 attempts: 5 minute delay
-    const remaining = LOCKOUT_PERIOD_LONG - timeSinceLastAttempt;
-    return remaining > 0 ? LOCKOUT_PERIOD_LONG : 0;
-  } else if (attempt.count >= 7) {
-    // After 7 attempts: 1 minute delay
-    const remaining = LOCKOUT_PERIOD_MEDIUM - timeSinceLastAttempt;
-    return remaining > 0 ? LOCKOUT_PERIOD_MEDIUM : 0;
-  } else if (attempt.count >= 5) {
-    // After 5 attempts: 10 second delay
-    const remaining = LOCKOUT_PERIOD_SHORT - timeSinceLastAttempt;
-    return remaining > 0 ? LOCKOUT_PERIOD_SHORT : 0;
-  }
-  return 0; // No delay for first few attempts
-};
-
-// Check whether a user is locked out due to too many failed login attempts
-const userIsLockedOut = (
-  username: string,
-  flash: (t: string, s: any) => void
-): boolean => {
-  // Only check account-based delays (not IP)
-  const delayMs = getAccountLockoutDelay(username);
-  if (delayMs > 0) {
-    const delaySec = Math.ceil(delayMs / 1000);
-    const delayMin = Math.ceil(delaySec / 60);
-
-    const message =
-      delaySec > 60
-        ? `Too many failed login attempts. Please try again in ${delayMin} minute${delayMin > 1 ? 's' : ''}`
-        : `Too many failed login attempts. Please try again in ${delaySec} second${delaySec > 1 ? 's' : ''}`;
-    flash('error', {
-      loginError: {msg: message},
-    });
-    return true;
-  }
-  return false;
-};
-
-// purge old entries from the failed login attempts store
-const purgeLockoutStore = () => {
-  const now = new Date().getTime();
-  for (const username in failedLoginAttempts) {
-    const attempt = failedLoginAttempts[username];
-    // if last attempt was more than max lockout period ago, remove entry
-    if (now - attempt.lastAttempt.getTime() > LOCKOUT_PERIOD_MAX) {
-      delete failedLoginAttempts[username];
-    }
+  try {
+    await resetLoginLockoutForIdentifier(identifier);
+  } catch (error) {
+    console.error('Failed to reset login lockout after success:', error);
   }
 };
 
@@ -262,13 +176,6 @@ export function addAuthRoutes(
 
         // Now we have a validated login payload - proceed
 
-        // first check for lockout
-        if (userIsLockedOut(loginPayload.email, req.flash)) {
-          // we log this as a failed attempt to keep track of the most recent attempt
-          await logFailedLoginAttempt(loginPayload.email);
-          return res.redirect(errorRedirect);
-        }
-
         // Are we redirecting?
         const {valid, redirect} = validateRedirect(
           loginPayload.redirect || DEFAULT_REDIRECT_URL
@@ -276,6 +183,30 @@ export function addAuthRoutes(
 
         if (!valid) {
           return res.render('redirect-error', {redirect});
+        }
+
+        // Claim a guess in Couch before PBKDF2. Parallel requests serialize
+        // on 409; once delay applies, further claims reject with no write
+        // and no hash. Couch errors fail closed. When the flag is off we
+        // skip reads/writes entirely.
+        if (config.loginLockoutEnabled) {
+          try {
+            const claim = await claimLoginAttemptForIdentifier(
+              loginPayload.email
+            );
+            if (claim.status === 'delayed') {
+              req.flash('error', {
+                loginError: {msg: formatLoginLockoutMessage(claim.delayMs)},
+              });
+              return res.redirect(errorRedirect);
+            }
+          } catch (error) {
+            console.error('Login lockout claim failed:', error);
+            req.flash('error', {
+              loginError: {msg: GENERIC_LOGIN_FAILURE},
+            });
+            return res.redirect(errorRedirect);
+          }
         }
 
         // Login with local passport strategy - catching the on success to apply
@@ -290,9 +221,8 @@ export function addAuthRoutes(
           async (err: Error | null, user: Express.User, info: any) => {
             if (err) {
               req.flash('error', {
-                loginError: {msg: err.message || 'Login failed'},
+                loginError: {msg: err.message || GENERIC_LOGIN_FAILURE},
               });
-              await logFailedLoginAttempt(req.body.email);
               return res.redirect(errorRedirect);
             }
             if (!user) {
@@ -300,12 +230,11 @@ export function addAuthRoutes(
               // the type of info is unconstrained (object | string | Array<string | undefined>)
               console.warn('User is false after local auth:', info);
               req.flash('error', {
-                loginError: {msg: info?.message || 'Login failed'},
+                loginError: {msg: info?.message || GENERIC_LOGIN_FAILURE},
               });
               return res.redirect(errorRedirect);
             }
-            // reset any failed login attempts
-            resetFailedLoginAttempts(req.body.email);
+            await clearFailedLocalLogin(req.body.email);
             // Apply invite (if present) then redirect with token
             return completePostAuth({
               dbUser: user,

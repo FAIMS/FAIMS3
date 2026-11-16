@@ -6,8 +6,9 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import {Box, Paper, Typography} from '@mui/material';
 import {useMemo} from 'react';
+import {ImageWithFallback} from '../../../../components/ImageWithFallback';
 import {useAttachments} from '../../../../hooks/useAttachment';
-import {IMAGE_TYPES} from '../../../../utils';
+import {isDisplayableImageType} from '../../../../utils';
 import {DataViewFieldRender} from '../../../types';
 import {TextWrapper} from '../wrappers';
 
@@ -16,19 +17,12 @@ import {TextWrapper} from '../wrappers';
 // ============================================================================
 
 /**
- * Determines if a file is an image based on MIME type
- */
-function isImageFile(contentType: string): boolean {
-  return IMAGE_TYPES.includes(contentType.toLowerCase());
-}
-
-/**
  * Gets appropriate icon for file type
  */
 function getFileIcon(contentType: string) {
   const type = contentType.toLowerCase();
 
-  if (isImageFile(type)) {
+  if (isDisplayableImageType(type)) {
     return <ImageIcon sx={{fontSize: 48, color: 'primary.main'}} />;
   }
 
@@ -87,10 +81,10 @@ const ImageAttachment: React.FC<{
       borderColor: 'divider',
     }}
   >
-    <img
+    <ImageWithFallback
       src={url}
       alt={filename || `Attachment ${index + 1}`}
-      style={{
+      sx={{
         width: '100%',
         height: '100%',
         objectFit: 'cover',
@@ -216,10 +210,10 @@ export const FileUploaderRender: DataViewFieldRender = props => {
 
   // Separate images from other files for different rendering
   const imageAttachments = loadedAttachments.filter(att =>
-    isImageFile(att.metadata.contentType)
+    isDisplayableImageType(att.metadata.contentType)
   );
   const otherAttachments = loadedAttachments.filter(
-    att => !isImageFile(att.metadata.contentType)
+    att => !isDisplayableImageType(att.metadata.contentType)
   );
 
   return (

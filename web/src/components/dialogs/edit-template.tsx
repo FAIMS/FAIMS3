@@ -39,9 +39,9 @@ export const EditTemplateDialog = ({onSuccess}: {onSuccess: () => void}) => {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger className="w-fit">
-              <Button variant="outline" disabled={true}>
-                Replace Template JSON
+              <Button disabled={true}>
                 <Pencil />
+                Replace Template JSON
               </Button>
             </TooltipTrigger>
             <TooltipContent className="w-32 text-balance">
@@ -52,9 +52,9 @@ export const EditTemplateDialog = ({onSuccess}: {onSuccess: () => void}) => {
       ) : (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild className="w-fit">
-            <Button variant="outline">
-              Replace Template JSON
+            <Button>
               <Pencil />
+              Replace Template JSON
             </Button>
           </DialogTrigger>
           <DialogContent>

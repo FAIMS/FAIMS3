@@ -4,19 +4,20 @@
  * RadioGroup Component
  * This component renders a group of radio buttons using Material-UI.
  * It integrates with the form system for managing state and includes:
- * - A heading (field label) rendered using FieldWrapper.
+ * - A heading (field heading) rendered using FieldWrapper.
  * - A subheading (help text) rendered using FieldWrapper.
  * - Toggle behavior: clicking a selected radio deselects it.
  * - Rich text labels: option labels support sanitized HTML content.
  * - "Other" option: allows users to enter custom text beyond predefined choices.
  * Props:
- * - label (string, optional): The field label displayed as a heading.
+ * - label (string, optional): The text displayed as the field heading.
  * - helperText (string, optional): The field help text displayed below the heading.
  * - ElementProps (object): Contains the radio options array and enableOtherOption flag.
  * - required: To visually show if the field is required.
  * - disabled: Whether the field is disabled.
  */
 
+import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {
   Button,
   Dialog,
@@ -35,11 +36,13 @@ import FormControl from '@mui/material/FormControl';
 import MuiRadio from '@mui/material/Radio';
 import MuiRadioGroup from '@mui/material/RadioGroup';
 import {alpha} from '@mui/material/styles';
+import {useRef, useState} from 'react';
 import {z} from 'zod';
-import {schemaWithAbsent} from '../../../validationModule/readableErrors';
-import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
-import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
+import {
+  otherOptionPositionAmongVisible,
+  visibleChoiceOptions,
+} from '../visibleChoiceOptions';
 import {
   OTHER_MARKER,
   OTHER_PREFIX,
@@ -47,10 +50,11 @@ import {
   useOtherOption,
 } from '../../../hooks/useOtherOption';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
+import {schemaWithAbsent} from '../../../validationModule/readableErrors';
 import {FieldInfo} from '../../types';
+import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {useRef, useState} from 'react';
 
 // ============================================================================
 // Types & Schema
@@ -83,11 +87,25 @@ export const RadioGroup = (props: FieldProps) => {
     setFieldData,
     handleBlur,
     ElementProps,
+    conditionValues,
   } = props;
 
   const rawValue = (state.value?.data as string) ?? '';
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
-  const otherOptionPosition = ElementProps.options.length;
+  // Sibling / parent / metadata bag from ConditionValuesContext — this field's
+  // TanStack state is not enough to evaluate option.condition.
+  const visibleOptions = visibleChoiceOptions(
+    ElementProps.options,
+    conditionValues ?? {},
+    rawValue
+  );
+  // Other stays after the same visible predecessors; older notebooks default to the end.
+  const otherOptionPosition = otherOptionPositionAmongVisible(
+    ElementProps.options,
+    visibleOptions,
+    ElementProps.otherOptionPosition
+  );
+  // Selections are stored as values; display labels are render-only.
   const predefinedValues = ElementProps.options.map(opt => opt.value);
   // if expandedChecklist is missing, we default to true - expanded by default
   const expandedChecklist = ElementProps.expandedChecklist !== false;
@@ -101,6 +119,7 @@ export const RadioGroup = (props: FieldProps) => {
     });
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
+  // Control selection is the stored value (or the special Other marker).
   const displayValue = hasOtherSelected
     ? OTHER_MARKER
     : predefinedValues.includes(rawValue)
@@ -158,7 +177,7 @@ export const RadioGroup = (props: FieldProps) => {
         {expandedChecklist && (
           <RadioGroupWidget
             displayValue={displayValue}
-            options={ElementProps.options}
+            options={visibleOptions}
             enableOtherOption={enableOtherOption}
             otherOptionPosition={otherOptionPosition}
             handleChange={handleChange}
@@ -173,7 +192,7 @@ export const RadioGroup = (props: FieldProps) => {
         {!expandedChecklist && (
           <DropDownWidget
             displayValue={displayValue}
-            options={ElementProps.options}
+            options={visibleOptions}
             enableOtherOption={enableOtherOption}
             otherOptionPosition={otherOptionPosition}
             handleChange={handleChange}
@@ -249,7 +268,7 @@ export const RadioGroup = (props: FieldProps) => {
 
 interface WidgetProps {
   displayValue: string;
-  options: {value: string; label: string}[];
+  options: ChoiceOption[];
   enableOtherOption: boolean;
   otherOptionPosition: number;
   handleChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -350,7 +369,7 @@ const RadioGroupWidget = ({
           // Render a regular option
           const renderOption = (option: ChoiceOption) => (
             <FormControlLabel
-              key={option.key || option.value}
+              key={option.key ?? option.value}
               value={option.value}
               control={
                 <MuiRadio
@@ -460,8 +479,7 @@ const DropDownWidget = ({
       disabled={disabled}
       onBlur={handleBlur}
       renderValue={selected => {
-        // Get either the 'other' text or the value and
-        // render as markdown before displaying
+        // Render the label (or the free-text Other value), not the value.
         let value = selected === OTHER_MARKER ? otherText || 'Other' : selected;
         const option = options.find(opt => opt.value === selected);
         if (option) {
@@ -542,9 +560,9 @@ const DropDownWidget = ({
         );
 
         // Render a regular option MenuItem
-        const renderOptionMenuItem = (option: any) => (
+        const renderOptionMenuItem = (option: ChoiceOption) => (
           <MenuItem
-            key={option.key ? option.key : option.value}
+            key={option.key ?? option.value}
             value={option.value}
             sx={{
               whiteSpace: 'normal',
@@ -596,6 +614,7 @@ const DropDownWidget = ({
 // ============================================================================
 
 const valueSchema = (props: RadioGroupFieldProps) => {
+  // Validate stored selections against configured values.
   const optionValues = props.ElementProps.options.map(option => option.value);
   const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
 
@@ -640,6 +659,7 @@ export const radioGroupFieldSpec: FieldInfo<FieldProps> = {
   fieldPropsSchema: RadioGroupFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
   view: {component: DefaultRenderer, config: {}},
+  consumesConditionValues: true,
 };
 
 // We also register this as the 'Select' field for backward
@@ -653,4 +673,5 @@ export const selectFieldSpec: FieldInfo<FieldProps> = {
   fieldPropsSchema: RadioGroupFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
   view: {component: DefaultRenderer, config: {}},
+  consumesConditionValues: true,
 };

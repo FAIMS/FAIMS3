@@ -50,4 +50,11 @@ export interface FieldInfo<T extends FullFieldProps = FullFieldProps> {
    * no meaningful single value). Defaults to false.
    */
   excludeFromParentDisplay?: boolean;
+  /**
+   * When true, Field.tsx subscribes this control to ConditionValuesContext
+   * so option-level visibility can re-filter when sibling / parent / metadata
+   * values change. TanStack `form.Field` only re-renders on this field's own
+   * state. Defaults to false.
+   */
+  consumesConditionValues?: boolean;
 }

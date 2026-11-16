@@ -30,6 +30,7 @@ import {isNotebookActivationBlocked} from '../../context/slices/helpers/notebook
 import {selectProjectByIdentity} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {removedNotebookUnavailableCopy} from '../../utils/remoteProjectRemoval';
+import NotebookDetailsRefresh from '../components/notebook/refreshDetails';
 import NotebookQuickShare from '../components/notebook/settings/quickShare';
 import BackButton from '../components/ui/BackButton';
 import NotFound404 from './404';
@@ -108,6 +109,7 @@ export default function Notebook() {
           {project.name}
         </Typography>
 
+        <NotebookDetailsRefresh project={project} />
         <NotebookQuickShare project={project} />
       </Stack>
 

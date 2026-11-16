@@ -116,22 +116,29 @@ export function logImpersonatedRequestMiddleware(
 
 /**
  * A middleware which checks if the user (use the requireAuthenticationAPI above
- * first) can perform an action
+ * first) can perform an action.
  *
+ * By default a denied caller gets 401. Pass `forbiddenOnDeny: true` for
+ * authenticated-but-unauthorized 403 (admin stats uses this so the UI can
+ * tell "log in" from "you cannot see this").
  *
  * @param action The action to do (or provide a generator function)
  * @param getAction the function which generates the action (or known action above)
  * @param getResourceId the function which generates the resource ID
+ * @param forbiddenOnDeny When true, deny is 403 instead of 401
  * @returns
  */
 export const isAllowedToMiddleware = ({
   action,
   getAction,
   getResourceId,
+  forbiddenOnDeny = false,
 }: {
   action?: Action;
   getAction?: (req: Express.Request) => Action;
   getResourceId?: (req: Express.Request) => string | undefined;
+  /** When true, an authenticated but unauthorized caller gets 403 instead of 401. */
+  forbiddenOnDeny?: boolean;
 }) => {
   return (
     req: Express.Request,
@@ -175,6 +182,10 @@ export const isAllowedToMiddleware = ({
 
     if (isAllowed) {
       next();
+    } else if (forbiddenOnDeny) {
+      throw new Exceptions.ForbiddenException(
+        'You are not authorized to perform this action.'
+      );
     } else {
       throw new Exceptions.UnauthorizedException(
         'You are not authorized to perform this action.'

@@ -36,6 +36,8 @@ export interface EmailOptions {
     content: string | Buffer;
     contentType?: string;
   }>;
+  /** Per-message Reply-To; falls back to the service default. */
+  replyTo?: string;
 }
 
 /**
@@ -202,7 +204,7 @@ export class SMTPEmailService extends BaseEmailService {
       cc: options.cc,
       bcc: options.bcc,
       attachments: options.attachments,
-      replyTo: this.config.replyTo || this.config.fromEmail,
+      replyTo: options.replyTo || this.config.replyTo || this.config.fromEmail,
     };
 
     try {

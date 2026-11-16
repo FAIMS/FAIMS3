@@ -18,6 +18,7 @@ import {
   newFormRecordSchema,
 } from './databaseEngine';
 import {
+  ContextualLayerListingSchema,
   CreateRootDescriptionSchema,
   PeopleDBDocumentSchema,
   ProjectStatus,
@@ -39,6 +40,11 @@ import {
   SetupValuesSchema,
   TemplateDefinition,
 } from './uiSpecification';
+import {
+  listPageQueryFields,
+  listSearchQueryField,
+  paginatedListSchema,
+} from './listing';
 import {projectInviteRoles} from './permission/functions';
 import {Resource, Role, roleDetails, RoleScope} from './permission/model';
 import {
@@ -142,7 +148,11 @@ export type GetCurrentUserResponse = z.infer<
   typeof GetCurrentUserResponseSchema
 >;
 
-export const GetListAllUsersResponseSchema = z.array(
+/**
+ * One row of GET /api/users. `profiles` says which login profiles exist
+ * (`{local: true}`), never their contents.
+ */
+export const UserListItemSchema =
   // Be careful here - do NOT expose any salt info etc
   PeopleDBDocumentSchema.pick({
     _id: true,
@@ -153,28 +163,36 @@ export const GetListAllUsersResponseSchema = z.array(
     templateRoles: true,
     name: true,
     user_id: true,
-    profiles: true,
     disabled: true,
   })
+    .extend({profiles: z.record(z.string(), z.boolean())})
     // configure to strip not fail for extra fields
-    .strip()
-    // turn profiles properties into booleans
-    .transform(user => ({
-      ...user,
-      profiles: Object.fromEntries(
-        Object.entries(user.profiles ?? {}).map(([key, value]) => [
-          key,
-          !!value,
-        ])
-      ),
-    }))
+    .strip();
+
+/** GET /api/users query (all values are strings from the query string). */
+export const GetListAllUsersQuerySchema = z.object({
+  /** XOR: `true` lists disabled accounts only; default lists enabled only. */
+  includeArchived: z.enum(['true', 'false']).optional(),
+  /**
+   * Search: enabled accounts where a word of the name or of an email address
+   * starts with each word given. Not allowed with `includeArchived=true`.
+   */
+  q: listSearchQueryField,
+  ...listPageQueryFields,
+});
+export type GetListAllUsersQuery = z.infer<typeof GetListAllUsersQuerySchema>;
+
+/** GET /api/users page, in name order. */
+export const GetListAllUsersResponseSchema = paginatedListSchema(
+  UserListItemSchema,
+  'users'
 );
 export type GetListAllUsersResponse = z.infer<
   typeof GetListAllUsersResponseSchema
 >;
 
 /** One row from GET /api/users (admin list). Includes `profiles`; unlike {@link GetCurrentUserResponse}. */
-export type GetListAllUsersItem = GetListAllUsersResponse[number];
+export type GetListAllUsersItem = z.infer<typeof UserListItemSchema>;
 
 // Information about users and roles for a notebook
 export const NotebookAuthSummarySchema = z.object({
@@ -195,6 +213,8 @@ export const NotebookAuthSummarySchema = z.object({
   ),
 });
 export type NotebookAuthSummary = z.infer<typeof NotebookAuthSummarySchema>;
+/** One user row of {@link NotebookAuthSummary}. */
+export type NotebookAuthSummaryUser = NotebookAuthSummary['users'][number];
 
 // Post update a user UpdateUser input
 export const PostUpdateUserInputSchema = z.object({
@@ -304,11 +324,14 @@ export type PostImpersonateUserResponse = z.infer<
 /** GET /api/notebooks and GET /api/directory row. Lean project; no uiSpecification. */
 export const APINotebookListSchema = ProjectListItemSchema.extend({
   byteCount: z.number().optional(),
+  /** Ready linked layers. Omitted on attach failure; empty means none are ready. */
+  contextualLayers: z.array(ContextualLayerListingSchema).optional(),
+  contextualLayersHash: z.string().optional(),
 });
 export type APINotebookList = z.infer<typeof APINotebookListSchema>;
 
-/** GET /api/notebooks?includeByteCount=true */
-export const APINotebookListWithStatsSchema = ProjectListItemSchema.extend({
+/** GET /api/notebooks?includeByteCount=true — same as list, with required `byteCount`. */
+export const APINotebookListWithStatsSchema = APINotebookListSchema.extend({
   byteCount: z.number(),
 });
 export type APINotebookListWithStats = z.infer<
@@ -319,6 +342,9 @@ export type APINotebookListWithStats = z.infer<
 export const GetNotebookResponseSchema = ExistingProjectDocumentSchema.extend({
   recordCount: z.number().optional(),
   byteCount: z.number(),
+  /** Ready linked layers. Omitted on attach failure; empty means none are ready. */
+  contextualLayers: z.array(ContextualLayerListingSchema).optional(),
+  contextualLayersHash: z.string().optional(),
 });
 export type GetNotebookResponse = z.infer<typeof GetNotebookResponseSchema>;
 
@@ -326,23 +352,71 @@ export type GetNotebookResponse = z.infer<typeof GetNotebookResponseSchema>;
 export const APINotebookGetSchema = GetNotebookResponseSchema;
 export type APINotebookGet = GetNotebookResponse;
 
-// GET notebook list
-export const GetNotebookListResponseSchema = z.array(APINotebookListSchema);
+/**
+ * `status` filter on GET /api/notebooks. `active` is OPEN + CLOSED,
+ * `archived` is ARCHIVED, `all` is active surveys then archived surveys.
+ */
+export const NotebookListStatusSchema = z.enum(['active', 'archived', 'all']);
+export type NotebookListStatus = z.infer<typeof NotebookListStatusSchema>;
+
+/** GET /api/notebooks query (all values are strings from the query string). */
+export const GetNotebookListQuerySchema = z.object({
+  teamId: z.string().min(1).optional(),
+  /** Only surveys created from this template. */
+  templateId: z.string().min(1).optional(),
+  /** Default `active`. */
+  status: NotebookListStatusSchema.optional(),
+  /**
+   * @deprecated Use `status`. `true` means `status=all`; ignored when
+   * `status` is sent.
+   */
+  includeArchived: z.enum(['true', 'false']).optional(),
+  /** When `"true"`, attach `byteCount` to each row of the returned page. */
+  includeByteCount: z.enum(['true', 'false']).optional(),
+  /**
+   * Search: active surveys where a word of the name starts with each word
+   * given, in word order. Works with `teamId` and `templateId`; not allowed
+   * with a `status` other than `active`.
+   */
+  q: listSearchQueryField,
+  ...listPageQueryFields,
+});
+export type GetNotebookListQuery = z.infer<typeof GetNotebookListQuerySchema>;
+
+/** Resolves the `status` / legacy `includeArchived` pair. Default `active`. */
+export function resolveNotebookListStatus(query: {
+  status?: NotebookListStatus;
+  includeArchived?: 'true' | 'false';
+}): NotebookListStatus {
+  if (query.status) return query.status;
+  return query.includeArchived === 'true' ? 'all' : 'active';
+}
+
+/** GET /api/notebooks page, newest `updatedAt` first. */
+export const GetNotebookListResponseSchema = paginatedListSchema(
+  APINotebookListSchema,
+  'notebooks'
+);
 export type GetNotebookListResponse = z.infer<
   typeof GetNotebookListResponseSchema
 >;
 
-/** GET /api/notebooks?includeByteCount=true — list rows with required `byteCount`. */
-export const GetNotebookListWithStatsResponseSchema = z.array(
-  APINotebookListWithStatsSchema
+/** GET /api/notebooks?includeByteCount=true — page rows with required `byteCount`. */
+export const GetNotebookListWithStatsResponseSchema = paginatedListSchema(
+  APINotebookListWithStatsSchema,
+  'notebooks'
 );
 export type GetNotebookListWithStatsResponse = z.infer<
   typeof GetNotebookListWithStatsResponseSchema
 >;
 
-/** @deprecated Same as GetNotebookListResponse. Directory is the cheap alias. */
-export const GetDirectoryResponseSchema = GetNotebookListResponseSchema;
-export type GetDirectoryResponse = GetNotebookListResponse;
+/**
+ * GET /api/directory — every survey the caller can read, as one array.
+ * Deliberately not paginated: the field app treats a survey missing from
+ * this list as deleted or archived.
+ */
+export const GetDirectoryResponseSchema = z.array(APINotebookListSchema);
+export type GetDirectoryResponse = z.infer<typeof GetDirectoryResponseSchema>;
 
 export const CreateNotebookFromTemplateSchema = z.object({
   name: resourceNameString('Name'),
@@ -390,12 +464,9 @@ export type PutChangeNotebookStatusInput = z.infer<
   typeof PutChangeNotebookStatusInputSchema
 >;
 
-// PUT :/id change project team
+// PUT :/id change project team. Omit teamId to remove team ownership.
 export const PutChangeNotebookTeamInputSchema = z.object({
-  teamId: z
-    .string()
-    .min(1, 'Team ID is required')
-    .max(INPUT_LIMITS.ID_MAX_LENGTH),
+  teamId: z.string().trim().min(1).max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
 });
 
 export type PutChangeNotebookTeamInput = z.infer<
@@ -418,8 +489,14 @@ export type PostCreateNotebookResponse = z.infer<
   typeof PostCreateNotebookResponseSchema
 >;
 
-// GET users for a notebook - no input
-export const GetNotebookUsersResponseSchema = NotebookAuthSummarySchema;
+/** GET /api/notebooks/:id/users query. */
+export const GetNotebookUsersQuerySchema = z.object({...listPageQueryFields});
+export type GetNotebookUsersQuery = z.infer<typeof GetNotebookUsersQuerySchema>;
+
+/** GET /api/notebooks/:id/users page: users with a role here, in name order. */
+export const GetNotebookUsersResponseSchema = NotebookAuthSummarySchema.extend({
+  nextStartKey: z.string().optional(),
+});
 export type GetNotebookUsersResponse = z.infer<
   typeof GetNotebookUsersResponseSchema
 >;
@@ -581,13 +658,9 @@ export type PutUpdateTemplateInput = z.infer<
   typeof PutUpdateTemplateInputSchema
 >;
 
-/** PUT /api/templates/:id/team — change owning team only. */
+/** PUT /api/templates/:id/team — change owning team only. Omit teamId to remove team ownership. */
 export const PutChangeTemplateTeamInputSchema = z.object({
-  teamId: z
-    .string()
-    .trim()
-    .min(1, 'Team ID is required')
-    .max(INPUT_LIMITS.ID_MAX_LENGTH),
+  teamId: z.string().trim().min(1).max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
 });
 export type PutChangeTemplateTeamInput = z.infer<
   typeof PutChangeTemplateTeamInputSchema
@@ -630,10 +703,38 @@ export const TemplateApiListItemSchema = TemplateListItemSchema.extend({
 });
 export type TemplateApiListItem = z.infer<typeof TemplateApiListItemSchema>;
 
-// GET list all templates response
-export const GetListTemplatesResponseSchema = z.object({
-  templates: z.array(TemplateApiListItemSchema),
+/** GET /api/templates query (all values are strings from the query string). */
+export const GetListTemplatesQuerySchema = z.object({
+  teamId: z.string().min(1).optional(),
+  /** XOR: `true` lists archived templates only; default lists active only. */
+  includeArchived: z.enum(['true', 'false']).optional(),
+  /**
+   * Search: non-archived templates where a word of the name starts with
+   * each word given, in word order. Works with `teamId` and `visibility`;
+   * not allowed with `includeArchived=true`.
+   */
+  q: listSearchQueryField,
+  ...listPageQueryFields,
+  visibility: z.enum(['public', 'private']).optional(),
 });
+export type GetListTemplatesQuery = z.infer<typeof GetListTemplatesQuerySchema>;
+
+const templateListRowSchema = z
+  .unknown()
+  .refine(
+    (val: unknown) =>
+      val !== null &&
+      typeof val === 'object' &&
+      !Object.prototype.hasOwnProperty.call(val, 'uiSpecification'),
+    {message: 'uiSpecification must not be present on template list items'}
+  )
+  .pipe(TemplateApiListItemSchema);
+
+// GET paginated template list response, newest `updatedAt` first.
+export const GetListTemplatesResponseSchema = paginatedListSchema(
+  templateListRowSchema,
+  'templates'
+);
 export type GetListTemplatesResponse = z.infer<
   typeof GetListTemplatesResponseSchema
 >;
@@ -753,19 +854,65 @@ export const TeamDocumentSchema = z.object({
   createdAt: z.number(),
   updatedAt: z.number(),
   createdBy: z.string(),
+  /** Missing/undefined reads as active. */
+  archived: z.boolean().optional(),
 });
 
-/**
- * GET /api/teams response
- */
-export const GetListTeamsResponseSchema = z.object({
-  teams: z.array(TeamDocumentSchema),
+/** PUT /api/teams/:id/archive — set top-level `archived`; use `{ archive: false }` to restore. */
+export const PutArchiveTeamRequestSchema = z.object({
+  archive: z.boolean(),
 });
+export type PutArchiveTeamRequest = z.infer<typeof PutArchiveTeamRequestSchema>;
+
+/**
+ * GET /api/teams page, newest `updatedAt` first.
+ */
+export const GetListTeamsResponseSchema = paginatedListSchema(
+  TeamDocumentSchema,
+  'teams'
+);
+
+/** GET /api/teams query (all values are strings from the query string). */
+export const GetListTeamsQuerySchema = z.object({
+  /** XOR: `true` lists archived teams only; default lists active only. */
+  includeArchived: z.enum(['true', 'false']).optional(),
+  /**
+   * Search: non-archived teams where a word of the name starts with each
+   * word given, in word order. Not allowed with `includeArchived=true`.
+   */
+  q: listSearchQueryField,
+  ...listPageQueryFields,
+});
+export type GetListTeamsQuery = z.infer<typeof GetListTeamsQuerySchema>;
 
 /**
  * GET /api/teams/:id response
  */
 export const GetTeamByIdResponseSchema = TeamDocumentSchema;
+
+const TeamNotebookStorageBucketSchema = z.object({
+  /** Surveys the caller can read. */
+  count: z.number().int().nonnegative(),
+  /** Sum of those surveys' data-DB sizes in bytes. */
+  byteCount: z.number().nonnegative(),
+});
+
+/**
+ * GET /api/teams/:id/notebook-storage response: survey count and storage for
+ * the team, overall and per survey status. Computed server-side over every
+ * survey the team owns.
+ */
+export const GetTeamNotebookStorageResponseSchema = z.object({
+  total: TeamNotebookStorageBucketSchema,
+  byStatus: z.object({
+    [ProjectStatus.OPEN]: TeamNotebookStorageBucketSchema,
+    [ProjectStatus.CLOSED]: TeamNotebookStorageBucketSchema,
+    [ProjectStatus.ARCHIVED]: TeamNotebookStorageBucketSchema,
+  }),
+});
+export type GetTeamNotebookStorageResponse = z.infer<
+  typeof GetTeamNotebookStorageResponseSchema
+>;
 
 /**
  * POST /api/teams response
@@ -850,10 +997,17 @@ export const AvailableRoleInfoSchema = z.object({
 /**
  * GET /api/teams/:id/members response
  */
-export const GetTeamMembersResponseSchema = z.object({
-  members: z.array(TeamMemberInfoSchema),
+export const GetTeamMembersResponseSchema = paginatedListSchema(
+  TeamMemberInfoSchema,
+  'members'
+).extend({
+  /** Present on every page. */
   availableRoles: z.array(AvailableRoleInfoSchema),
 });
+
+/** GET /api/teams/:id/members query. Members page in name order. */
+export const GetTeamMembersQuerySchema = z.object({...listPageQueryFields});
+export type GetTeamMembersQuery = z.infer<typeof GetTeamMembersQuerySchema>;
 
 export type TeamMembershipInput = z.infer<typeof TeamMembershipInputSchema>;
 export type TeamMemberRole = z.infer<typeof TeamMemberRoleSchema>;
@@ -982,17 +1136,33 @@ export const GetInviteByIdResponseSchema = InviteInfoResponseSchema;
 /**
  * GET /api/invites/project/:projectId response
  */
-export const GetProjectInvitesResponseSchema = z.array(InviteDocumentSchema);
+export const GetProjectInvitesResponseSchema = paginatedListSchema(
+  InviteDocumentSchema,
+  'invites'
+);
 
 /**
  * GET /api/invites/team/:teamId response
  */
-export const GetTeamInvitesResponseSchema = z.array(InviteDocumentSchema);
+export const GetTeamInvitesResponseSchema = paginatedListSchema(
+  InviteDocumentSchema,
+  'invites'
+);
 
 /**
  * GET /api/invites/global response
  */
-export const GetGlobalInvitesResponseSchema = z.array(InviteDocumentSchema);
+export const GetGlobalInvitesResponseSchema = paginatedListSchema(
+  InviteDocumentSchema,
+  'invites'
+);
+
+/**
+ * Query for the three invite list GETs. Pages hold valid invites only
+ * (not expired, uses remaining), newest `createdAt` first.
+ */
+export const GetInviteListQuerySchema = z.object({...listPageQueryFields});
+export type GetInviteListQuery = z.infer<typeof GetInviteListQuerySchema>;
 
 /**
  * POST /api/invites/project/:projectId response
@@ -1408,11 +1578,24 @@ export const PutRevokeLongLivedTokenResponseSchema =
     message: z.string(),
   });
 
-export const GetLongLivedTokensResponseSchema = z.object({
-  tokens: z.array(LongLivedTokenResponseSchema),
+export const GetLongLivedTokensResponseSchema = paginatedListSchema(
+  LongLivedTokenResponseSchema,
+  'tokens'
+).extend({
+  /** Present on every page. */
   maxAllowedExpiryTimestamp: z.number().optional(),
   maxDurationDays: z.number().optional(),
 });
+
+/** GET /api/long-lived-tokens query. Pages are newest `updatedAt` first. */
+export const GetLongLivedTokensQuerySchema = z.object({
+  /** `true` lists every user's tokens (admins) instead of the caller's own. */
+  all: z.string().optional(),
+  ...listPageQueryFields,
+});
+export type GetLongLivedTokensQuery = z.infer<
+  typeof GetLongLivedTokensQuerySchema
+>;
 
 export const PostLongLivedTokenExchangeInputSchema = z.object({
   token: z
@@ -1481,4 +1664,230 @@ export const GetTombstoneByIdResponseSchema = TombstoneDocumentSchema;
 export type TombstoneDocument = z.infer<typeof TombstoneDocumentSchema>;
 export type GetTombstoneByIdResponse = z.infer<
   typeof GetTombstoneByIdResponseSchema
+>;
+
+// =====
+// FEEDBACK
+// =====
+
+/** Client surface that submitted in-app feedback. */
+export const FeedbackSourceSchema = z.enum(['app', 'web', 'designer']);
+export type FeedbackSource = z.infer<typeof FeedbackSourceSchema>;
+
+/** Optional triage label for in-app feedback. */
+export const FeedbackCategorySchema = z.enum(['bug', 'suggestion', 'other']);
+export type FeedbackCategory = z.infer<typeof FeedbackCategorySchema>;
+
+/**
+ * POST /api/feedback body. Identity is taken from the access token, not the
+ * body. Unknown fields are rejected so clients cannot inject a sender.
+ */
+export const PostFeedbackRequestSchema = z
+  .object({
+    message: z
+      .string()
+      .trim()
+      .min(1, 'Message is required')
+      .max(
+        INPUT_LIMITS.LONG_TEXT_MAX_LENGTH,
+        `Message must be at most ${INPUT_LIMITS.LONG_TEXT_MAX_LENGTH} characters`
+      ),
+    source: FeedbackSourceSchema.optional(),
+    category: FeedbackCategorySchema.optional(),
+    path: z
+      .string()
+      .trim()
+      .max(INPUT_LIMITS.REDIRECT_URL_MAX_LENGTH)
+      .optional(),
+    component: z
+      .string()
+      .trim()
+      .max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH)
+      .optional(),
+    clientVersion: z
+      .string()
+      .trim()
+      .max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH)
+      .optional(),
+    userAgent: z
+      .string()
+      .trim()
+      .max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH)
+      .optional(),
+  })
+  .strict();
+
+export type PostFeedbackRequest = z.infer<typeof PostFeedbackRequestSchema>;
+
+/** POST /api/feedback success body. */
+export const PostFeedbackResponseSchema = z.object({
+  success: z.literal(true),
+});
+export type PostFeedbackResponse = z.infer<typeof PostFeedbackResponseSchema>;
+
+// =====
+// ADMIN STATS
+// =====
+
+/** Sentinel team id for notebooks with no `ownedByTeamId`. */
+export const ADMIN_STATS_UNTEAMED_TEAM_ID = '__unteamed__';
+
+/** Default page size for GET /api/admin/stats/teams and /people. */
+export const ADMIN_STATS_DEFAULT_PAGE_LIMIT = 50;
+
+/** Absolute ceiling applied to stats list `limit`. */
+export const ADMIN_STATS_MAX_PAGE_LIMIT = 200;
+
+/** JSON field name (`incomplete`) for the skipped-query flag on stats responses. */
+export const ADMIN_STATS_INCOMPLETE_SENTINEL = 'incomplete' as const;
+
+/** Shared cache timestamps echoed on every stats response. */
+export const AdminStatsCacheMetaSchema = z.object({
+  /** ISO-8601 time when this snapshot was computed. */
+  generatedAt: z.string(),
+  /** ISO-8601 time when the API will recompute this snapshot. */
+  expiresAt: z.string(),
+});
+export type AdminStatsCacheMeta = z.infer<typeof AdminStatsCacheMetaSchema>;
+
+/**
+ * Overall instance counts. There is no `photoCount` — attachments (including
+ * photos) are a single bucket.
+ */
+export const GetAdminStatsResponseSchema = AdminStatsCacheMetaSchema.extend({
+  /** Number of teams (does not include the unteamed sentinel row). */
+  teamCount: z.number().int().nonnegative(),
+  userCount: z.number().int().nonnegative(),
+  notebookCount: z.number().int().nonnegative(),
+  archivedNotebookCount: z.number().int().nonnegative(),
+  templateCount: z.number().int().nonnegative(),
+  archivedTemplateCount: z.number().int().nonnegative(),
+  mapAssetCount: z.number().int().nonnegative(),
+  /** Sum of map-layer `byteSize` (normalized file; 0 while pending). */
+  mapAssetByteCount: z.number().int().nonnegative(),
+  recordCount: z.number().int().nonnegative(),
+  /** Attachments of every kind, including photos. */
+  attachmentCount: z.number().int().nonnegative(),
+  /** Sum of CouchDB `sizes.active` across survey data DBs. */
+  byteCount: z.number().int().nonnegative(),
+  disabledUserCount: z.number().int().nonnegative(),
+  /**
+   * Distinct users with at least one enabled, unexpired refresh token
+   * (currently logged in).
+   */
+  loggedInUserCount: z.number().int().nonnegative(),
+  inviteCount: z.number().int().nonnegative(),
+  longLivedTokenCount: z.number().int().nonnegative(),
+  tombstoneCount: z.number().int().nonnegative(),
+  /**
+   * True when at least one per-survey data-DB query failed and was skipped.
+   * The rest of the snapshot is still valid.
+   */
+  incomplete: z.boolean(),
+  /** Survey ids whose data-DB query failed; omitted when `incomplete` is false. */
+  incompleteNotebookIds: z.array(z.string()).optional(),
+});
+export type GetAdminStatsResponse = z.infer<typeof GetAdminStatsResponseSchema>;
+
+/** One team's aggregated notebook / record / attachment / byte counts. */
+export const AdminStatsTeamRowSchema = z.object({
+  /** Team id, or {@link ADMIN_STATS_UNTEAMED_TEAM_ID} for notebooks with no team. */
+  teamId: z.string(),
+  name: z.string(),
+  notebookCount: z.number().int().nonnegative(),
+  recordCount: z.number().int().nonnegative(),
+  attachmentCount: z.number().int().nonnegative(),
+  byteCount: z.number().int().nonnegative(),
+  /** Sum of this team's map-layer `byteSize`; personal layers use the unteamed row. */
+  mapAssetByteCount: z.number().int().nonnegative(),
+});
+export type AdminStatsTeamRow = z.infer<typeof AdminStatsTeamRowSchema>;
+
+/** Paginated team rows from the same snapshot as overall counts. */
+export const GetAdminStatsTeamsResponseSchema =
+  AdminStatsCacheMetaSchema.extend({
+    teams: z.array(AdminStatsTeamRowSchema),
+    total: z.number().int().nonnegative(),
+    limit: z.number().int().positive(),
+    offset: z.number().int().nonnegative(),
+    incomplete: z.boolean(),
+  });
+export type GetAdminStatsTeamsResponse = z.infer<
+  typeof GetAdminStatsTeamsResponseSchema
+>;
+
+/**
+ * One person's aggregated record / attachment counts. Records are keyed by
+ * the record's `created_by`; attachments by the attachment's `created_by`
+ * (the uploader, who may differ from the record owner). Users with an
+ * active refresh token are included even when both counts are zero.
+ * Email/name are omitted when the user doc is missing.
+ */
+export const AdminStatsPersonRowSchema = z.object({
+  userId: z.string(),
+  email: z.string().nullable().optional(),
+  name: z.string().optional(),
+  recordCount: z.number().int().nonnegative(),
+  attachmentCount: z.number().int().nonnegative(),
+  /** True when this user has at least one enabled, unexpired refresh token. */
+  loggedIn: z.boolean(),
+});
+export type AdminStatsPersonRow = z.infer<typeof AdminStatsPersonRowSchema>;
+
+/** Paginated people rows from the same snapshot as overall counts. */
+export const GetAdminStatsPeopleResponseSchema =
+  AdminStatsCacheMetaSchema.extend({
+    people: z.array(AdminStatsPersonRowSchema),
+    total: z.number().int().nonnegative(),
+    limit: z.number().int().positive(),
+    offset: z.number().int().nonnegative(),
+    incomplete: z.boolean(),
+  });
+export type GetAdminStatsPeopleResponse = z.infer<
+  typeof GetAdminStatsPeopleResponseSchema
+>;
+
+/**
+ * Zod refine: optional `limit` must parse as 1..{@link ADMIN_STATS_MAX_PAGE_LIMIT}.
+ */
+const adminStatsLimitRefine = (data: {limit?: string}) => {
+  if (data.limit === undefined || data.limit === '') return true;
+  const n = parseInt(data.limit, 10);
+  return !Number.isNaN(n) && n >= 1 && n <= ADMIN_STATS_MAX_PAGE_LIMIT;
+};
+
+/**
+ * Zod refine: optional `offset` must parse as a non-negative integer.
+ */
+const adminStatsOffsetRefine = (data: {offset?: string}) => {
+  if (data.offset === undefined || data.offset === '') return true;
+  const n = parseInt(data.offset, 10);
+  return !Number.isNaN(n) && n >= 0;
+};
+
+/** GET /api/admin/stats query (refresh bypasses the API snapshot cache). */
+export const GetAdminStatsQuerySchema = z.object({
+  /** `'true'` forces a recompute; omitted or `'false'` uses the TTL cache. */
+  refresh: z.enum(['true', 'false']).optional(),
+});
+export type GetAdminStatsQuery = z.infer<typeof GetAdminStatsQuerySchema>;
+
+/** GET /api/admin/stats/teams and /people query. */
+export const GetAdminStatsListQuerySchema = z
+  .object({
+    /** `'true'` forces a recompute; omitted or `'false'` uses the TTL cache. */
+    refresh: z.enum(['true', 'false']).optional(),
+    /** Page size as a decimal string (1..{@link ADMIN_STATS_MAX_PAGE_LIMIT}). */
+    limit: z.string().max(16).optional(),
+    /** Page offset as a decimal string (non-negative). */
+    offset: z.string().max(16).optional(),
+  })
+  .refine(adminStatsLimitRefine, {
+    message: `limit must be between 1 and ${ADMIN_STATS_MAX_PAGE_LIMIT}`,
+  })
+  .refine(adminStatsOffsetRefine, {
+    message: 'offset must be a non-negative integer',
+  });
+export type GetAdminStatsListQuery = z.infer<
+  typeof GetAdminStatsListQuerySchema
 >;

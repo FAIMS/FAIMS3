@@ -26,7 +26,9 @@ vi.mock('react-router-dom', async () => ({
   useParams: () => ({}),
 }));
 vi.mock('../../../context/store', () => ({
-  useAppSelector: () => ({username: 'testuser'}),
+  useAppSelector: (
+    selector: (state: {projects: {servers: object}}) => unknown
+  ) => selector({projects: {servers: {}}}) ?? {username: 'testuser'},
 }));
 vi.mock('../../../context/slices/authSlice', () => ({
   selectActiveUser: vi.fn(),

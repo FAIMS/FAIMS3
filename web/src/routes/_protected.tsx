@@ -28,6 +28,7 @@ import {
   PostExchangeTokenResponseSchema,
 } from '@faims3/data-model';
 import {createFileRoute, Outlet} from '@tanstack/react-router';
+import {FeedbackButton} from '@/components/feedback/feedback-dialog';
 import {ExternalLinkIcon} from 'lucide-react';
 import {toast} from 'sonner';
 
@@ -165,11 +166,11 @@ function RouteComponent() {
         <AppSidebar />
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-            <div className="flex justify-between w-full px-4">
-              <div className="flex items-center gap-2">
+            <div className="flex w-full items-center justify-between gap-4 px-4">
+              <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
                 <Breadcrumbs />
               </div>
-              <div className="flex">
+              <div className="flex shrink-0">
                 {config.docsUrl && (
                   <Button variant="outline" className="mr-2 p-2">
                     <a href={config.docsUrl} target="_blank">
@@ -205,6 +206,13 @@ function RouteComponent() {
                   </Tooltip>
                 </TooltipProvider>
 
+                {user && (
+                  <FeedbackButton
+                    source="web"
+                    token={user.token}
+                    testId="web-feedback-button"
+                  />
+                )}
                 <ModeToggle />
               </div>
             </div>

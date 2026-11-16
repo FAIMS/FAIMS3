@@ -26,7 +26,7 @@ type PropType = {
 };
 
 /**
- * Property editor for TemplatedStringField. Label, export name and helper text
+ * Property editor for TemplatedStringField. Field Heading, Export Title and helper text
  * come from {@link BaseFieldEditor}; this adds the Mustache template input and
  * visual builder.
  */

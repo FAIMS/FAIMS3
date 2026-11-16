@@ -29,6 +29,7 @@ const MINIMAL_API = {
   COUCHDB_PASSWORD: 'aSecretPasswordThatCantBeGuessed',
   REDIRECT_WHITELIST: 'http://localhost:3000,http://localhost:3001',
   EMAIL_SERVICE_TYPE: 'MOCK',
+  ATTACHMENT_STORAGE_TYPE: 'MOCK',
 };
 
 function envMap(output: string): Record<string, unknown> {
@@ -220,6 +221,182 @@ test('parseApiEnv forces MOCK email under test even when SMTP is configured', ()
   assert.equal(parsed.emailServiceType, 'MOCK');
   assert.equal(parsed.smtp, undefined);
   assert.equal(parsed.exportRateLimiterEnabled, false);
+  assert.equal(parsed.feedbackRateLimiterEnabled, false);
+});
+
+test('parseApiEnv defaults feedback destination and limiter, and honours overrides', () => {
+  const defaults = parseApiEnv(MINIMAL_API, {runningUnderTest: false});
+  assert.equal(defaults.feedbackEmail, 'support@fieldmark.au');
+  assert.equal(defaults.feedbackSubject, 'In-app feedback');
+  assert.equal(defaults.feedbackRateLimiterEnabled, true);
+  assert.equal(defaults.feedbackRateLimiterWindowMs, 600000);
+  assert.equal(defaults.feedbackRateLimiterPerWindow, 5);
+
+  const overridden = parseApiEnv(
+    {
+      ...MINIMAL_API,
+      FEEDBACK_EMAIL: 'product@example.org',
+      FEEDBACK_SUBJECT: 'Fieldmark product feedback',
+      FEEDBACK_RATE_LIMITER_ENABLED: 'false',
+      FEEDBACK_RATE_LIMITER_WINDOW_MS: '120000',
+      FEEDBACK_RATE_LIMITER_PER_WINDOW: '3',
+    },
+    {runningUnderTest: false}
+  );
+  assert.equal(overridden.feedbackEmail, 'product@example.org');
+  assert.equal(overridden.feedbackSubject, 'Fieldmark product feedback');
+  assert.equal(overridden.feedbackRateLimiterEnabled, false);
+  assert.equal(overridden.feedbackRateLimiterWindowMs, 120000);
+  assert.equal(overridden.feedbackRateLimiterPerWindow, 3);
+});
+
+test('parseApiEnv defaults loginLockoutEnabled true outside test and forces false under test', () => {
+  const unsetOutsideTest = parseApiEnv(MINIMAL_API, {runningUnderTest: false});
+  assert.equal(unsetOutsideTest.loginLockoutEnabled, true);
+  assert.equal(unsetOutsideTest.authAttemptLimiterEnabled, true);
+
+  const envTrueOutsideTest = parseApiEnv(
+    {...MINIMAL_API, LOGIN_LOCKOUT_ENABLED: 'true'},
+    {runningUnderTest: false}
+  );
+  assert.equal(envTrueOutsideTest.loginLockoutEnabled, true);
+
+  const envFalseOutsideTest = parseApiEnv(
+    {...MINIMAL_API, LOGIN_LOCKOUT_ENABLED: 'false'},
+    {runningUnderTest: false}
+  );
+  assert.equal(envFalseOutsideTest.loginLockoutEnabled, false);
+
+  const forcedOffUnderTest = parseApiEnv(
+    {...MINIMAL_API, LOGIN_LOCKOUT_ENABLED: 'true'},
+    {runningUnderTest: true}
+  );
+  assert.equal(forcedOffUnderTest.loginLockoutEnabled, false);
+
+  const independentOfAttemptLimiter = parseApiEnv(
+    {
+      ...MINIMAL_API,
+      ATTEMPT_LIMITER_ENABLED: 'false',
+    },
+    {runningUnderTest: false}
+  );
+  assert.equal(independentOfAttemptLimiter.authAttemptLimiterEnabled, false);
+  assert.equal(independentOfAttemptLimiter.loginLockoutEnabled, true);
+});
+
+test('parseApiEnv requires S3 bucket, prefix, and region when ATTACHMENT_STORAGE_TYPE is S3', () => {
+  assert.throws(
+    () =>
+      parseApiEnv(
+        {
+          ...MINIMAL_API,
+          ATTACHMENT_STORAGE_TYPE: 'S3',
+        },
+        {runningUnderTest: false}
+      ),
+    /ATTACHMENT_S3_BUCKET.*ATTACHMENT_S3_PREFIX.*ATTACHMENT_S3_REGION/
+  );
+  const parsed = parseApiEnv(
+    {
+      ...MINIMAL_API,
+      ATTACHMENT_STORAGE_TYPE: 'S3',
+      ATTACHMENT_S3_BUCKET: 'my-bucket',
+      ATTACHMENT_S3_PREFIX: 'layers',
+      ATTACHMENT_S3_REGION: 'ap-southeast-2',
+      ATTACHMENT_S3_ENDPOINT: 'http://localhost:9000',
+    },
+    {runningUnderTest: false}
+  );
+  assert.equal(parsed.attachmentStorageType, 'S3');
+  assert.equal(parsed.attachmentStorage.bucket, 'my-bucket');
+  assert.equal(parsed.attachmentStorage.prefix, 'layers');
+  assert.equal(parsed.attachmentStorage.region, 'ap-southeast-2');
+  assert.equal(parsed.attachmentStorage.endpoint, 'http://localhost:9000');
+  assert.equal(parsed.attachmentStorage.forcePathStyle, true);
+});
+
+test('parseApiEnv forces MOCK attachment storage and capacity provider under test', () => {
+  const parsed = parseApiEnv(
+    {
+      ...MINIMAL_API,
+      ATTACHMENT_STORAGE_TYPE: 'S3',
+      CAPACITY_PROVIDER: 'ECS',
+    },
+    {runningUnderTest: true}
+  );
+  assert.equal(parsed.attachmentStorageType, 'MOCK');
+  assert.equal(parsed.capacityProviderType, 'MOCK');
+  assert.equal(parsed.capacityEcs, undefined);
+});
+
+test('parseApiEnv requires ECS capacity fields when CAPACITY_PROVIDER is ECS outside test', () => {
+  assert.throws(
+    () =>
+      parseApiEnv(
+        {
+          ...MINIMAL_API,
+          CAPACITY_PROVIDER: 'ECS',
+        },
+        {runningUnderTest: false}
+      ),
+    /CAPACITY_ECS_CLUSTER/
+  );
+  const parsed = parseApiEnv(
+    {
+      ...MINIMAL_API,
+      CAPACITY_PROVIDER: 'ECS',
+      CAPACITY_ECS_CLUSTER: 'cluster-1',
+      CAPACITY_ECS_WORKER_TASK_DEFINITION: 'arn:task-def/worker:1',
+      CAPACITY_ECS_WORKER_TASK_FAMILY: 'worker',
+      CAPACITY_ECS_WORKER_CONTAINER: 'spatial-worker-container',
+      CAPACITY_ECS_SUBNETS: 'subnet-1, subnet-2',
+      CAPACITY_ECS_SECURITY_GROUPS: 'sg-1',
+    },
+    {runningUnderTest: false}
+  );
+  assert.equal(parsed.capacityProviderType, 'ECS');
+  assert.deepEqual(parsed.capacityEcs, {
+    cluster: 'cluster-1',
+    taskDefinition: 'arn:task-def/worker:1',
+    taskFamily: 'worker',
+    containerName: 'spatial-worker-container',
+    subnets: ['subnet-1', 'subnet-2'],
+    securityGroups: ['sg-1'],
+    assignPublicIp: 'ENABLED',
+  });
+});
+
+test('parseApiEnv parses spatial worker, GDAL, and observability flags', () => {
+  const parsed = parseApiEnv(
+    {
+      ...MINIMAL_API,
+      MEMORY_MONITOR_ENABLED: 'true',
+      REQUEST_LOGGING_ENABLED: 'false',
+      CAPACITY_MAX: '8',
+      CAPACITY_SCALE_THRESHOLDS: '2,6,12',
+      CAPACITY_STARVATION_MS: '0',
+      CAPACITY_SCALE_IN_COOLDOWN_MS: '0',
+      SPATIAL_WORKER_IDLE_EXIT_MS: '0',
+      GDAL_NUM_THREADS: '4',
+      GDAL_CACHEMAX: '1024',
+      GDAL_WARP_MEMORY_MB: '512',
+      GDAL_WARP_MULTI: 'false',
+      TIPPECANOE_MAX_THREADS: '4',
+    },
+    {runningUnderTest: false}
+  );
+  assert.equal(parsed.memoryMonitorEnabled, true);
+  assert.equal(parsed.requestLoggingEnabled, false);
+  assert.equal(parsed.capacityMax, 8);
+  assert.deepEqual(parsed.capacityScaleThresholds, [2, 6, 12]);
+  assert.equal(parsed.capacityStarvationMs, 0);
+  assert.equal(parsed.capacityScaleInCooldownMs, 0);
+  assert.equal(parsed.spatialWorkerIdleExitMs, 0);
+  assert.equal(parsed.gdalNumThreads, '4');
+  assert.equal(parsed.gdalCacheMaxMb, 1024);
+  assert.equal(parsed.gdalWarpMemoryMb, 512);
+  assert.equal(parsed.gdalWarpMulti, false);
+  assert.equal(parsed.tippecanoeMaxThreads, 4);
 });
 
 test('parseApiEnv forces disableMigrateOnStartup under test', () => {
@@ -299,6 +476,30 @@ test('parseWebEnv maps a generated apps env into WebRuntimeConfig', () => {
     'https://api.example.org/login?redirect=https://web.example.org'
   );
   assert.equal(parsed.notebookNamePlural, 'projects');
+  assert.equal(parsed.docsUrl, '');
+});
+
+test('parseWebEnv maps derived domains.docs onto docsUrl', () => {
+  const parsed = parseWebEnv(
+    envMap(
+      generateEnv({
+        config: {
+          endpoints: {
+            apiUrl: 'https://api.example.org',
+            webUrl: 'https://web.example.org',
+            appUrl: 'https://app.example.org',
+          },
+          domains: {
+            base: 'bss.nbic.cloud',
+            services: {docs: 'docs'},
+          },
+          branding: {appName: 'BSS'},
+        },
+        platform: 'apps',
+      })
+    )
+  );
+  assert.equal(parsed.docsUrl, 'https://docs.bss.nbic.cloud');
 });
 
 test('parseApiEnv maps a generated api env into ApiRuntimeConfig', () => {

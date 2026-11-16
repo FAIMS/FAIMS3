@@ -15,7 +15,7 @@
 import '@testing-library/jest-dom/vitest';
 import {Camera} from '@capacitor/camera';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {act, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useMemo, useState} from 'react';
 import {z} from 'zod';
@@ -37,8 +37,11 @@ import {
 import {
   computeWebPhotoTargetSize,
   encodePhotoBlobForWeb,
+  formatFromGalleryFile,
   IMAGE_QUALITY_0_100,
   MAX_IMAGE_WIDTH,
+  preparePhotoBlobForStorage,
+  WEB_GALLERY_ACCEPT,
   WEB_RESIZED_FORMAT,
 } from './webPhotoFallback';
 import {
@@ -78,6 +81,7 @@ vi.mock('./webPhotoFallback', async () => {
     await vi.importActual<typeof import('./webPhotoFallback')>(
       './webPhotoFallback'
     );
+  const {Camera} = await import('@capacitor/camera');
   return {
     ...actual,
     preparePhotoBlobForStorage: vi.fn(async (blob: Blob, format: string) => ({
@@ -85,6 +89,9 @@ vi.mock('./webPhotoFallback', async () => {
       format,
       resized: false,
     })),
+    // Tests drive the gallery through Camera.pickImages; production web
+    // uses a raster-only file input (see pickGalleryPhotos).
+    pickGalleryPhotos: vi.fn(opts => Camera.pickImages(opts)),
   };
 });
 
@@ -92,14 +99,20 @@ vi.mock('./webPhotoFallback', async () => {
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-type Deferred<T> = {promise: Promise<T>; resolve: (value: T) => void};
+type Deferred<T> = {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason?: unknown) => void;
+};
 
 function deferred<T>(): Deferred<T> {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>(res => {
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
     resolve = res;
+    reject = rej;
   });
-  return {promise, resolve};
+  return {promise, resolve, reject};
 }
 
 function photoBlob(contents = 'photo') {
@@ -173,7 +186,27 @@ function stubBrowserPhotoApis() {
   });
 }
 
-function takePhotoConfig() {
+type LoadAttachmentParams = {identifier: {id: string}};
+
+function defaultLoadAttachmentAsBlob({identifier}: LoadAttachmentParams) {
+  return {
+    blob: photoBlob(),
+    metadata: {
+      filename:
+        identifier.id === 'att-existing'
+          ? 'existing.jpeg'
+          : `${identifier.id}.jpeg`,
+      contentType: 'image/jpeg',
+    },
+  };
+}
+
+function takePhotoConfig(
+  loadAttachmentAsBlob?: (
+    params: LoadAttachmentParams
+  ) => Promise<ReturnType<typeof defaultLoadAttachmentAsBlob>>
+) {
+  const load = loadAttachmentAsBlob ?? defaultLoadAttachmentAsBlob;
   return {
     mode: 'full',
     layout: 'inline',
@@ -181,10 +214,7 @@ function takePhotoConfig() {
     mapConfig: () => ({}),
     appName: 'test-app',
     attachmentEngine: () => ({
-      loadAttachmentAsBlob: vi.fn(async () => ({
-        blob: photoBlob(),
-        metadata: {filename: 'existing.jpeg'},
-      })),
+      loadAttachmentAsBlob: vi.fn(load),
     }),
   } as never;
 }
@@ -196,6 +226,7 @@ function renderTakePhoto({
   withExistingPhoto = false,
   minItems,
   maxItems,
+  loadAttachmentAsBlob,
 }: {
   addAttachment: () => Promise<string>;
   setAttachmentSaving?: (saving: boolean) => void;
@@ -203,23 +234,34 @@ function renderTakePhoto({
   withExistingPhoto?: boolean;
   minItems?: number | null;
   maxItems?: number | null;
+  loadAttachmentAsBlob?: (
+    params: LoadAttachmentParams
+  ) => Promise<ReturnType<typeof defaultLoadAttachmentAsBlob>>;
 }) {
   const client = queryClient();
-
-  const attachments = withExistingPhoto
-    ? [
-        {
-          attachmentId: 'att-existing',
-          filename: 'existing.jpeg',
-          fileType: 'image/jpeg',
-        },
-      ]
-    : [];
+  const initialIds = withExistingPhoto ? ['att-existing'] : [];
 
   const Wrapper = () => {
-    const query = useMemo(() => client, []);
+    const [data, setData] = useState<string[]>(initialIds);
+
+    const setFieldData = (value: unknown) => {
+      setData(previous => {
+        const updated =
+          typeof value === 'function'
+            ? (value as (prev: string[] | undefined) => string[])(previous)
+            : (value as string[] | undefined);
+        return updated ?? [];
+      });
+    };
+
+    const attachments = data.map(id => ({
+      attachmentId: id,
+      filename: id === 'att-existing' ? 'existing.jpeg' : `${id}.jpeg`,
+      fileType: 'image/jpeg',
+    }));
+
     return (
-      <QueryClientProvider client={query}>
+      <QueryClientProvider client={client}>
         <TakePhoto
           name="photos"
           label="Photos"
@@ -232,20 +274,20 @@ function renderTakePhoto({
           state={
             {
               value: {
-                data: withExistingPhoto ? ['att-existing'] : [],
+                data,
                 attachments,
               },
               meta: {errors: []},
             } as never
           }
-          setFieldData={vi.fn()}
+          setFieldData={setFieldData}
           setFieldAnnotation={vi.fn()}
           addAttachment={addAttachment}
           removeAttachment={removeAttachment}
           setAttachmentSaving={setAttachmentSaving}
           handleBlur={vi.fn()}
           trigger={{commit: vi.fn(async () => undefined)}}
-          config={takePhotoConfig()}
+          config={takePhotoConfig(loadAttachmentAsBlob)}
         />
       </QueryClientProvider>
     );
@@ -253,6 +295,14 @@ function renderTakePhoto({
 
   render(<Wrapper />);
   return {setAttachmentSaving, removeAttachment};
+}
+
+/** Pending previews + loaded thumbnails (`<img>`) plus in-flight placeholders. */
+function galleryTileCount() {
+  return (
+    screen.queryAllByRole('img').length +
+    screen.queryAllByRole('status', {name: 'Loading photo'}).length
+  );
 }
 
 /**
@@ -910,7 +960,9 @@ describe('TakePhoto parallel save UI', () => {
       attachmentId: 'att-existing',
     });
 
-    save.resolve('att-new');
+    await act(async () => {
+      save.resolve('att-new');
+    });
   });
 
   it('caps parallel gallery saves and disables capture at capacity', async () => {
@@ -1058,5 +1110,715 @@ describe('TakePhoto handleDelete during parallel saves', () => {
       expect(store.current).toEqual(['photo-b', 'new-1', 'new-2']);
     });
     expect(removeAttachment).toHaveBeenCalledWith({attachmentId: 'photo-a'});
+  });
+});
+
+describe('TakePhoto pending-to-loaded gallery merge', () => {
+  beforeEach(() => {
+    vi.mocked(Camera.getPhoto).mockReset();
+    vi.mocked(Camera.pickImages).mockReset();
+    stubBrowserPhotoApis();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('keeps one tile while the saved attachment is still loading, then swaps to the loaded thumbnail', async () => {
+    const user = userEvent.setup();
+    const save = deferred<string>();
+    const load = deferred<ReturnType<typeof defaultLoadAttachmentAsBlob>>();
+    const loadAttachmentAsBlob = vi.fn(
+      async ({identifier}: LoadAttachmentParams) => {
+        const result = await load.promise;
+        return {
+          ...result,
+          metadata: {
+            ...result.metadata,
+            filename: `${identifier.id}.jpeg`,
+          },
+        };
+      }
+    );
+    vi.mocked(Camera.getPhoto).mockResolvedValue({
+      base64String: btoa('photo'),
+      format: 'jpeg',
+    } as never);
+
+    renderTakePhoto({
+      addAttachment: () => save.promise,
+      loadAttachmentAsBlob,
+    });
+
+    expect(screen.queryByText(/Uploaded photos \(/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Camera'}));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('img', {name: 'Saving photo...'})
+      ).toBeInTheDocument();
+    });
+    expect(galleryTileCount()).toBe(1);
+    expect(screen.getByText('Uploaded photos (1)')).toBeInTheDocument();
+
+    await act(async () => {
+      save.resolve('att-new');
+    });
+
+    await waitFor(() => {
+      expect(loadAttachmentAsBlob).toHaveBeenCalledWith(
+        expect.objectContaining({identifier: {id: 'att-new'}})
+      );
+    });
+    expect(
+      screen.getByRole('img', {name: 'Saving photo...'})
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('status', {name: 'Loading photo'})
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole('img')).toHaveLength(1);
+    expect(galleryTileCount()).toBe(1);
+    expect(screen.getByText('Uploaded photos (1)')).toBeInTheDocument();
+
+    await act(async () => {
+      load.resolve(defaultLoadAttachmentAsBlob({identifier: {id: 'att-new'}}));
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('img', {name: 'Photo att-new.jpeg'})
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole('img', {name: 'Saving photo...'})
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getAllByRole('img', {name: 'Photo att-new.jpeg'})
+    ).toHaveLength(1);
+    expect(
+      screen.getByRole('button', {name: 'Delete photo'})
+    ).toBeInTheDocument();
+    expect(galleryTileCount()).toBe(1);
+    expect(screen.getByText('Uploaded photos (1)')).toBeInTheDocument();
+  });
+
+  it('does not duplicate an already-loaded photo while a new capture is mid-transition', async () => {
+    const user = userEvent.setup();
+    const save = deferred<string>();
+    const load = deferred<ReturnType<typeof defaultLoadAttachmentAsBlob>>();
+    const loadAttachmentAsBlob = vi.fn(
+      async ({identifier}: LoadAttachmentParams) => {
+        if (identifier.id === 'att-existing') {
+          return defaultLoadAttachmentAsBlob({identifier});
+        }
+        const result = await load.promise;
+        return {
+          ...result,
+          metadata: {
+            ...result.metadata,
+            filename: `${identifier.id}.jpeg`,
+          },
+        };
+      }
+    );
+    vi.mocked(Camera.getPhoto).mockResolvedValue({
+      base64String: btoa('photo'),
+      format: 'jpeg',
+    } as never);
+
+    renderTakePhoto({
+      withExistingPhoto: true,
+      addAttachment: () => save.promise,
+      loadAttachmentAsBlob,
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('img', {name: 'Photo existing.jpeg'})
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getAllByRole('img', {name: 'Photo existing.jpeg'})
+    ).toHaveLength(1);
+    expect(galleryTileCount()).toBe(1);
+    expect(screen.getByText('Uploaded photos (1)')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Camera'}));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('img', {name: 'Saving photo...'})
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getAllByRole('img', {name: 'Photo existing.jpeg'})
+    ).toHaveLength(1);
+    expect(galleryTileCount()).toBe(2);
+    expect(screen.getByText('Uploaded photos (2)')).toBeInTheDocument();
+
+    await act(async () => {
+      save.resolve('att-new');
+    });
+
+    await waitFor(() => {
+      expect(loadAttachmentAsBlob).toHaveBeenCalledWith(
+        expect.objectContaining({identifier: {id: 'att-new'}})
+      );
+    });
+    expect(
+      screen.getByRole('img', {name: 'Saving photo...'})
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('img', {name: 'Photo existing.jpeg'})
+    ).toHaveLength(1);
+    expect(
+      screen.queryByRole('status', {name: 'Loading photo'})
+    ).not.toBeInTheDocument();
+    expect(galleryTileCount()).toBe(2);
+    expect(screen.getByText('Uploaded photos (2)')).toBeInTheDocument();
+
+    await act(async () => {
+      load.resolve(defaultLoadAttachmentAsBlob({identifier: {id: 'att-new'}}));
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('img', {name: 'Photo att-new.jpeg'})
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getAllByRole('img', {name: 'Photo existing.jpeg'})
+    ).toHaveLength(1);
+    expect(
+      screen.queryByRole('img', {name: 'Saving photo...'})
+    ).not.toBeInTheDocument();
+    expect(galleryTileCount()).toBe(2);
+    expect(screen.getByText('Uploaded photos (2)')).toBeInTheDocument();
+  });
+
+  it('never shows more than N photo tiles while a gallery batch is mid-transition', async () => {
+    const user = userEvent.setup();
+    const load = deferred<ReturnType<typeof defaultLoadAttachmentAsBlob>>();
+    const saves = [deferred<string>(), deferred<string>()];
+    let saveCalls = 0;
+    const loadAttachmentAsBlob = vi.fn(
+      async ({identifier}: LoadAttachmentParams) => {
+        const result = await load.promise;
+        return {
+          ...result,
+          metadata: {
+            ...result.metadata,
+            filename: `${identifier.id}.jpeg`,
+          },
+        };
+      }
+    );
+    vi.mocked(Camera.pickImages).mockResolvedValue({
+      photos: [
+        {webPath: 'blob:one', format: 'jpeg'},
+        {webPath: 'blob:two', format: 'jpeg'},
+      ],
+    } as never);
+
+    renderTakePhoto({
+      addAttachment: () => {
+        const pending = saves[saveCalls];
+        saveCalls += 1;
+        return pending.promise;
+      },
+      loadAttachmentAsBlob,
+    });
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add photos from gallery, multiple selection allowed',
+      })
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getAllByRole('img', {name: 'Saving photo...'})
+      ).toHaveLength(2);
+    });
+    expect(galleryTileCount()).toBe(2);
+    expect(screen.getByText('Uploaded photos (2)')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(saveCalls).toBe(2);
+    });
+
+    await act(async () => {
+      saves[0].resolve('att-batch-1');
+      saves[1].resolve('att-batch-2');
+    });
+
+    await waitFor(() => {
+      expect(loadAttachmentAsBlob).toHaveBeenCalledWith(
+        expect.objectContaining({identifier: {id: 'att-batch-1'}})
+      );
+      expect(loadAttachmentAsBlob).toHaveBeenCalledWith(
+        expect.objectContaining({identifier: {id: 'att-batch-2'}})
+      );
+    });
+    expect(screen.getAllByRole('img', {name: 'Saving photo...'})).toHaveLength(
+      2
+    );
+    expect(
+      screen.queryByRole('status', {name: 'Loading photo'})
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole('img')).toHaveLength(2);
+    expect(galleryTileCount()).toBe(2);
+    expect(screen.getByText('Uploaded photos (2)')).toBeInTheDocument();
+
+    await act(async () => {
+      load.resolve(
+        defaultLoadAttachmentAsBlob({identifier: {id: 'att-batch-1'}})
+      );
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('img', {name: 'Saving photo...'})
+      ).not.toBeInTheDocument();
+    });
+    expect(galleryTileCount()).toBe(2);
+    expect(screen.getByText('Uploaded photos (2)')).toBeInTheDocument();
+  });
+
+  it('drops the optimistic preview when addAttachment rejects', async () => {
+    const user = userEvent.setup();
+    const save = deferred<string>();
+    vi.mocked(Camera.getPhoto).mockResolvedValue({
+      base64String: btoa('photo'),
+      format: 'jpeg',
+    } as never);
+
+    renderTakePhoto({
+      addAttachment: () => save.promise,
+    });
+
+    await user.click(screen.getByRole('button', {name: 'Camera'}));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('img', {name: 'Saving photo...'})
+      ).toBeInTheDocument();
+    });
+    expect(galleryTileCount()).toBe(1);
+
+    await act(async () => {
+      save.reject(new Error('disk full'));
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('img', {name: 'Saving photo...'})
+      ).not.toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole('status', {name: 'Loading photo'})
+    ).not.toBeInTheDocument();
+    expect(screen.queryAllByRole('img')).toHaveLength(0);
+    expect(screen.getByText('No photos selected yet')).toBeInTheDocument();
+    expect(
+      screen.getByText('Could not save the photo. Please try again.')
+    ).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Gallery display: loaded attachments are gated by content type
+// ---------------------------------------------------------------------------
+
+describe('TakePhoto gallery content-type gating', () => {
+  beforeEach(() => {
+    stubBrowserPhotoApis();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function renderWithLoaded(contentType: string, filename: string) {
+    const client = queryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <TakePhoto
+          name="photos"
+          label="Photos"
+          required={false}
+          helperText=""
+          advancedHelperText=""
+          fieldId="photos"
+          state={
+            {
+              value: {
+                data: ['att-1'],
+                attachments: [{attachmentId: 'att-1', filename, fileType: ''}],
+              },
+              meta: {errors: []},
+            } as never
+          }
+          setFieldData={vi.fn()}
+          setFieldAnnotation={vi.fn()}
+          addAttachment={vi.fn(async () => 'x')}
+          removeAttachment={vi.fn(async () => undefined)}
+          setAttachmentSaving={vi.fn()}
+          handleBlur={vi.fn()}
+          trigger={{commit: vi.fn(async () => undefined)}}
+          config={
+            {
+              mode: 'full',
+              layout: 'inline',
+              platform: 'web',
+              mapConfig: () => ({}),
+              appName: 'test-app',
+              attachmentEngine: () => ({
+                loadAttachmentAsBlob: vi.fn(async () => ({
+                  blob: new Blob(['<svg/>'], {type: contentType}),
+                  metadata: {filename, contentType},
+                })),
+              }),
+            } as never
+          }
+        />
+      </QueryClientProvider>
+    );
+  }
+
+  it('does not render a loaded SVG-typed attachment as an <img>', async () => {
+    const user = userEvent.setup();
+    renderWithLoaded('image/svg+xml', 'script.svg');
+
+    const placeholder = await screen.findByTestId('non-image-attachment');
+    expect(placeholder).toBeInTheDocument();
+    expect(screen.getByText('script.svg')).toBeInTheDocument();
+    expect(document.querySelector('img')).toBeNull();
+    expect(document.querySelectorAll('object, embed, iframe')).toHaveLength(0);
+
+    // Clicking the placeholder must not open the lightbox.
+    await user.click(placeholder);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.querySelector('img')).toBeNull();
+
+    // The hostile attachment can still be deleted.
+    expect(
+      screen.getByRole('button', {name: 'Delete photo'})
+    ).toBeInTheDocument();
+  });
+
+  it('still renders a loaded JPEG as an <img>', async () => {
+    renderWithLoaded('image/jpeg', 'photo.jpeg');
+
+    await waitFor(() => {
+      expect(document.querySelector('img')).not.toBeNull();
+    });
+    expect(screen.queryByTestId('non-image-attachment')).toBeNull();
+  });
+
+  it('swaps a loaded raster that fails to decode for a broken-image thumbnail', async () => {
+    // SVG bytes stored as image/png: the type is "displayable" so we render
+    // an <img>, then the browser cannot decode it.
+    renderWithLoaded('image/png', 'spoof.png');
+
+    const img = await waitFor(() => {
+      const node = document.querySelector('img');
+      expect(node).not.toBeNull();
+      return node as HTMLImageElement;
+    });
+    fireEvent.error(img);
+
+    expect(screen.getByTestId('broken-image-thumbnail')).toBeInTheDocument();
+    expect(screen.getByText('Image preview not available')).toBeInTheDocument();
+    expect(document.querySelector('img')).toBeNull();
+    expect(
+      screen.getByRole('button', {name: 'Delete photo'})
+    ).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Gallery / camera: SVG and spoofed extensions are rejected before storage
+// ---------------------------------------------------------------------------
+
+const SCRIPT_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>';
+
+describe('TakePhoto gallery upload blocking', () => {
+  beforeEach(() => {
+    stubBrowserPhotoApis();
+    vi.mocked(Camera.pickImages).mockReset();
+    vi.mocked(preparePhotoBlobForStorage).mockClear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('rejects an SVG gallery pick before re-encode or storage', async () => {
+    const addAttachment = vi.fn(async () => 'att-new');
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        blob: async () => new Blob([SCRIPT_SVG], {type: 'image/svg+xml'}),
+      }))
+    );
+    vi.mocked(Camera.pickImages).mockResolvedValue({
+      photos: [{webPath: 'blob:svg', format: 'jpeg', path: 'evil.svg'}],
+    } as never);
+
+    renderTakePhoto({addAttachment});
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add photos from gallery, multiple selection allowed',
+      })
+    );
+
+    expect(
+      await screen.findByText(
+        '"evil.svg": SVG and HTML files cannot be uploaded.'
+      )
+    ).toBeInTheDocument();
+    expect(addAttachment).not.toHaveBeenCalled();
+    expect(preparePhotoBlobForStorage).not.toHaveBeenCalled();
+  });
+
+  it('rejects SVG bytes labelled as PNG (spoofed extension)', async () => {
+    const addAttachment = vi.fn(async () => 'att-new');
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        blob: async () => new Blob([SCRIPT_SVG], {type: 'image/png'}),
+      }))
+    );
+    vi.mocked(Camera.pickImages).mockResolvedValue({
+      photos: [{webPath: 'blob:spoof', format: 'png', path: 'photo.png'}],
+    } as never);
+
+    renderTakePhoto({addAttachment});
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add photos from gallery, multiple selection allowed',
+      })
+    );
+
+    expect(
+      await screen.findByText(
+        '"photo.png": SVG and HTML files cannot be uploaded.'
+      )
+    ).toBeInTheDocument();
+    expect(addAttachment).not.toHaveBeenCalled();
+    expect(preparePhotoBlobForStorage).not.toHaveBeenCalled();
+  });
+
+  it('rejects the whole gallery batch when one pick is SVG', async () => {
+    const addAttachment = vi.fn(async () => 'att-new');
+    const user = userEvent.setup();
+    const jpeg = new Blob([new Uint8Array([0xff, 0xd8, 0xff])], {
+      type: 'image/jpeg',
+    });
+    const svg = new Blob([SCRIPT_SVG], {type: 'image/png'});
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: () => 'blob:photo',
+      revokeObjectURL,
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => ({
+        blob: async () => (String(url).includes('svg') ? svg : jpeg),
+      }))
+    );
+    vi.mocked(Camera.pickImages).mockResolvedValue({
+      photos: [
+        {webPath: 'blob:jpeg', format: 'jpeg', path: 'ok.jpeg'},
+        {webPath: 'blob:svg', format: 'png', path: 'spoof.png'},
+        {webPath: 'blob:later', format: 'jpeg', path: 'later.jpeg'},
+      ],
+    } as never);
+
+    renderTakePhoto({addAttachment});
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add photos from gallery, multiple selection allowed',
+      })
+    );
+
+    expect(
+      await screen.findByText(
+        '"spoof.png": SVG and HTML files cannot be uploaded.'
+      )
+    ).toBeInTheDocument();
+    expect(addAttachment).not.toHaveBeenCalled();
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:jpeg');
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:svg');
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:later');
+  });
+
+  it('still stores a JPEG gallery pick', async () => {
+    const addAttachment = vi.fn(async () => 'att-new');
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        blob: async () =>
+          new Blob([new Uint8Array([0xff, 0xd8, 0xff])], {
+            type: 'image/jpeg',
+          }),
+      }))
+    );
+    vi.mocked(Camera.pickImages).mockResolvedValue({
+      photos: [{webPath: 'blob:jpeg', format: 'jpeg', path: 'ok.jpeg'}],
+    } as never);
+
+    renderTakePhoto({addAttachment});
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add photos from gallery, multiple selection allowed',
+      })
+    );
+
+    await waitFor(() => {
+      expect(addAttachment).toHaveBeenCalledTimes(1);
+    });
+    expect(preparePhotoBlobForStorage).toHaveBeenCalled();
+    expect(
+      screen.queryByText(/SVG and HTML files cannot be uploaded/)
+    ).toBeNull();
+  });
+});
+
+describe('web gallery picker', () => {
+  it('does not include SVG in the web file-input accept list', () => {
+    expect(WEB_GALLERY_ACCEPT.split(',')).toEqual([
+      'image/png',
+      'image/jpeg',
+      'image/jpg',
+      'image/webp',
+      'image/gif',
+      'image/bmp',
+    ]);
+    expect(WEB_GALLERY_ACCEPT).not.toMatch(/svg/i);
+  });
+
+  it.each([
+    ['image/svg+xml', 'evil.svg', 'svg+xml'],
+    ['image/png', 'photo.png', 'png'],
+    ['image/jpeg', 'photo.jpg', 'jpeg'],
+    ['image/jpg', 'photo.jpg', 'jpeg'],
+    ['', 'diagram.svg', 'svg'],
+    ['', 'photo.JPG', 'jpeg'],
+  ])('formatFromGalleryFile(%s, %s) → %s', (type, name, format) => {
+    expect(formatFromGalleryFile(new File(['x'], name, {type}))).toBe(format);
+  });
+
+  it('delegates to Camera.pickImages on native platforms', async () => {
+    const {pickGalleryPhotos} =
+      await vi.importActual<typeof import('./webPhotoFallback')>(
+        './webPhotoFallback'
+      );
+    vi.mocked(Camera.pickImages).mockResolvedValue({photos: []} as never);
+
+    await pickGalleryPhotos({
+      quality: IMAGE_QUALITY_0_100,
+      width: MAX_IMAGE_WIDTH,
+      correctOrientation: true,
+      limit: 4,
+      platform: 'ios',
+    });
+
+    expect(Camera.pickImages).toHaveBeenCalledWith({
+      quality: IMAGE_QUALITY_0_100,
+      width: MAX_IMAGE_WIDTH,
+      correctOrientation: true,
+      limit: 4,
+    });
+  });
+
+  it('opens a raster-only file input on web and treats cancel as abort', async () => {
+    const {pickGalleryPhotos} =
+      await vi.importActual<typeof import('./webPhotoFallback')>(
+        './webPhotoFallback'
+      );
+
+    const pending = pickGalleryPhotos({
+      quality: IMAGE_QUALITY_0_100,
+      width: MAX_IMAGE_WIDTH,
+      correctOrientation: true,
+      limit: 10,
+      platform: 'web',
+    });
+
+    const input = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement | null;
+    expect(input).not.toBeNull();
+    expect(input?.accept).toBe(WEB_GALLERY_ACCEPT);
+    expect(input?.multiple).toBe(true);
+
+    input?.dispatchEvent(new Event('cancel'));
+    await expect(pending).rejects.toThrow(/cancel/i);
+  });
+
+  it('caps web picks to limit before creating object URLs', async () => {
+    const {pickGalleryPhotos} =
+      await vi.importActual<typeof import('./webPhotoFallback')>(
+        './webPhotoFallback'
+      );
+    const createObjectURL = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:file');
+
+    const pending = pickGalleryPhotos({
+      quality: IMAGE_QUALITY_0_100,
+      width: MAX_IMAGE_WIDTH,
+      correctOrientation: true,
+      limit: 2,
+      platform: 'web',
+    });
+
+    const input = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement;
+    Object.defineProperty(input, 'files', {
+      configurable: true,
+      value: [
+        new File(['a'], 'a.jpg', {type: 'image/jpeg'}),
+        new File(['b'], 'b.jpg', {type: 'image/jpeg'}),
+        new File(['c'], 'c.jpg', {type: 'image/jpeg'}),
+      ],
+    });
+    input.dispatchEvent(new Event('change'));
+
+    const result = await pending;
+    expect(result.photos).toHaveLength(2);
+    expect(result.photos.map(p => p.path)).toEqual(['a.jpg', 'b.jpg']);
+    expect(createObjectURL).toHaveBeenCalledTimes(2);
+    createObjectURL.mockRestore();
+  });
+
+  it('revokes blob: gallery URLs and ignores other paths', async () => {
+    const {revokeGalleryObjectUrls} =
+      await vi.importActual<typeof import('./webPhotoFallback')>(
+        './webPhotoFallback'
+      );
+    const revoke = vi
+      .spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => {});
+
+    revokeGalleryObjectUrls([
+      {webPath: 'blob:one'},
+      {webPath: 'https://example/photo.jpg'},
+      {webPath: 'blob:two'},
+    ]);
+
+    expect(revoke).toHaveBeenCalledTimes(2);
+    expect(revoke).toHaveBeenCalledWith('blob:one');
+    expect(revoke).toHaveBeenCalledWith('blob:two');
+    revoke.mockRestore();
   });
 });

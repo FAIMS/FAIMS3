@@ -7,16 +7,22 @@ import {
 } from '@/archive/archive-tabs';
 import {DataTable} from '@/components/data-table/data-table';
 import {archivedDisabledUserColumns} from '@/components/tables/archived-disabled-users';
+import {archivedTeamColumns} from '@/components/tables/archived-teams';
 import {archivedTemplateColumns} from '@/components/tables/archived-templates';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {archivedProjectColumns} from '@/components/tables/archived-projects';
-import {useGetProjects, useGetTemplates, useGetUsers} from '@/hooks/queries';
+import {
+  usePagedProjects,
+  usePagedTeams,
+  usePagedTemplates,
+  usePagedUsers,
+} from '@/hooks/queries';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {createFileRoute, Navigate, useNavigate} from '@tanstack/react-router';
-import {Action, ProjectStatus} from '@faims3/data-model';
+import {Action} from '@faims3/data-model';
 import {useMemo} from 'react';
 
 export const Route = createFileRoute('/_protected/archive/')({
@@ -34,15 +40,18 @@ function RouteComponent() {
   const canSeeProjects = useIsAuthorisedTo({action: Action.LIST_PROJECTS});
   const canSeeTemplates = useIsAuthorisedTo({action: Action.LIST_TEMPLATES});
   const canSeeUsers = useIsAuthorisedTo({action: Action.VIEW_USER_LIST});
+  // Same visibility as /teams: anyone who can list teams (filtered per resource).
+  const canSeeTeams = true;
 
   const visibleArchiveTabs = useMemo(
     () =>
       getVisibleArchiveTabs({
         canSeeProjects,
         canSeeTemplates,
+        canSeeTeams,
         canSeeUsers,
       }),
-    [canSeeProjects, canSeeTemplates, canSeeUsers]
+    [canSeeProjects, canSeeTemplates, canSeeTeams, canSeeUsers]
   );
 
   const paths = useMemo(
@@ -60,34 +69,30 @@ function RouteComponent() {
     paths,
   });
 
-  const {isPending, data} = useGetTemplates({
+  // Each tab asks the API for its archived rows only and pages through them.
+  const archivedTemplates = usePagedTemplates({
     user,
     includeArchived: true,
     enabled: !!user && canSeeTemplates,
   });
 
-  const {isPending: projectsLoading, data: projectsData} = useGetProjects({
+  const archivedProjects = usePagedProjects({
     user,
-    includeArchived: true,
+    status: 'archived',
     enabled: !!user && canSeeProjects,
   });
 
-  const {isPending: disabledUsersLoading, data: allUsersForArchive} =
-    useGetUsers({
-      user,
-      includeArchived: true,
-      enabled: !!user && canSeeUsers,
-    });
+  const archivedTeams = usePagedTeams({
+    user,
+    includeArchived: true,
+    enabled: !!user && canSeeTeams,
+  });
 
-  const disabledUsers = useMemo(
-    () => (allUsersForArchive ?? []).filter(u => u.disabled === true),
-    [allUsersForArchive]
-  );
-
-  const archivedProjects = useMemo(
-    () => (projectsData ?? []).filter(p => p.status === ProjectStatus.ARCHIVED),
-    [projectsData]
-  );
+  const disabledUsers = usePagedUsers({
+    user,
+    includeArchived: true,
+    enabled: !!user && canSeeUsers,
+  });
 
   const setTab = (value: string) => {
     if (!visibleArchiveTabs.includes(value as ArchiveTab)) return;
@@ -130,8 +135,10 @@ function RouteComponent() {
           <TabsContent value={config.notebookNamePlural} className="mt-4">
             <DataTable
               columns={archivedProjectColumns}
-              data={archivedProjects}
-              loading={projectsLoading}
+              data={archivedProjects.notebooks}
+              loading={archivedProjects.tableLoading}
+              defaultRowsPerPage={archivedProjects.pageSize}
+              serverPagination={archivedProjects.serverPagination}
             />
           </TabsContent>
         )}
@@ -140,8 +147,22 @@ function RouteComponent() {
           <TabsContent value="templates" className="mt-4">
             <DataTable
               columns={archivedTemplateColumns}
-              data={data}
-              loading={isPending}
+              data={archivedTemplates.templates}
+              loading={archivedTemplates.tableLoading}
+              defaultRowsPerPage={archivedTemplates.pageSize}
+              serverPagination={archivedTemplates.serverPagination}
+            />
+          </TabsContent>
+        )}
+
+        {canSeeTeams && (
+          <TabsContent value="teams" className="mt-4">
+            <DataTable
+              columns={archivedTeamColumns}
+              data={archivedTeams.teams}
+              loading={archivedTeams.tableLoading}
+              defaultRowsPerPage={archivedTeams.pageSize}
+              serverPagination={archivedTeams.serverPagination}
             />
           </TabsContent>
         )}
@@ -156,8 +177,10 @@ function RouteComponent() {
               </p>
               <DataTable
                 columns={archivedDisabledUserColumns}
-                data={disabledUsers}
-                loading={disabledUsersLoading}
+                data={disabledUsers.users}
+                loading={disabledUsers.tableLoading}
+                defaultRowsPerPage={disabledUsers.pageSize}
+                serverPagination={disabledUsers.serverPagination}
               />
             </div>
           </TabsContent>

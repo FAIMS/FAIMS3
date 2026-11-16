@@ -15,10 +15,12 @@
  */
 
 export {
+  AttachmentStorageBuildConfigSchema,
   BuildConfigCoreObjectSchema,
   BuildConfigSchema,
   DEFAULT_LONG_LIVED_TOKEN_DURATION_HINTS,
   SHARED_DEFAULTS,
+  SpatialCapacityBuildConfigSchema,
   DomainsBuildConfigSchema,
   DomainServiceName,
   RuntimeConfigSchema,
@@ -41,6 +43,8 @@ export type {
   ParseApiEnvOptions,
   ApiEmailConfig,
   ApiSmtpConfig,
+  ApiAttachmentStorageConfig,
+  ApiEcsCapacityConfig,
 } from './client-env/api-env.js';
 export {AppEnvSchema, parseAppEnv} from './client-env/app-env.js';
 export type {
@@ -108,6 +112,23 @@ export {
   ProvisionSsoUsersPolicySchema,
   EmailServiceTypeSchema,
   DownloadCookieSameSiteSchema,
+  AttachmentStorageTypeSchema,
+  CapacityProviderTypeSchema,
+  EcsAssignPublicIpSchema,
+  GdalNumThreadsJsonSchema,
+  CapacityScaleThresholdsArraySchema,
+  DEFAULT_CAPACITY_SCALE_THRESHOLDS_CSV,
+  DEFAULT_CAPACITY_SCALE_THRESHOLDS,
+  DEFAULT_CAPACITY_STARVATION_MS,
+  DEFAULT_CAPACITY_SCALE_IN_COOLDOWN_FACTOR,
+  DEFAULT_CAPACITY_SCALE_IN_COOLDOWN_MS,
+  DEFAULT_GDAL_NUM_THREADS,
+  DEFAULT_GDAL_CACHE_MAX_MB,
+  DEFAULT_GDAL_WARP_MEMORY_MB,
+  DEFAULT_GDAL_WARP_MULTI,
+  defaultScaleInCooldownMs,
+  parseCapacityScaleThresholds,
+  validateCapacityScaleThresholds,
   deriveNotebookNames,
   buildMapConfig,
 } from './shared-schemas.js';
@@ -124,4 +145,8 @@ export type {
   ProvisionSsoUsersPolicy,
   EmailServiceType,
   DownloadCookieSameSite,
+  AttachmentStorageType,
+  CapacityProviderType,
+  EcsAssignPublicIp,
+  GdalNumThreads,
 } from './shared-schemas.js';

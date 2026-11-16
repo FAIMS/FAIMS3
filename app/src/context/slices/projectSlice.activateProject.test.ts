@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+  DEFAULT_MAP_ASSET_STYLE,
   ProjectStatus,
 } from '@faims3/data-model';
 import {configureStore} from '@reduxjs/toolkit';
@@ -81,12 +82,34 @@ vi.mock('../../logging', () => ({
   logError: vi.fn(),
 }));
 
+const contextualLayerStore = vi.hoisted(() => ({
+  getSeenContextualLayersHash: vi.fn(),
+  retainListedContextualLayers: vi.fn(),
+  notifyContextualLayersChanged: vi.fn(),
+  releaseContextualLayersForProject: vi.fn(),
+  areContextualLayersOnDevice: vi.fn(),
+  markContextualLayersSeen: vi.fn(),
+}));
+
+vi.mock('../../gui/components/maps/contextualLayerStore', () => ({
+  getSeenContextualLayersHash: contextualLayerStore.getSeenContextualLayersHash,
+  retainListedContextualLayers:
+    contextualLayerStore.retainListedContextualLayers,
+  notifyContextualLayersChanged:
+    contextualLayerStore.notifyContextualLayersChanged,
+  releaseContextualLayersForProject:
+    contextualLayerStore.releaseContextualLayersForProject,
+  areContextualLayersOnDevice: contextualLayerStore.areContextualLayersOnDevice,
+  markContextualLayersSeen: contextualLayerStore.markContextualLayersSeen,
+}));
+
 import alertsReducer from './alertSlice';
 import {compiledSpecService} from './helpers/compiledSpecService';
 import projectsReducer, {
   activateProject,
   initialProjectState,
   projectIdentityKey,
+  selectPendingContextualLayerPrompt,
   type ListedProject,
   type ProjectsState,
 } from './projectSlice';
@@ -143,6 +166,17 @@ const getDetailsPayload = {
   recordCount: 3,
 };
 
+const sampleLayer = {
+  id: 'asset-ready',
+  name: 'Site boundaries',
+  kind: 'vector-tiles' as const,
+  byteSize: 2048,
+  contentHash: 'layer-content-a',
+  extent: [0, 0, 1, 1] as [number, number, number, number],
+  defaultStyle: DEFAULT_MAP_ASSET_STYLE,
+};
+const layersHash = 'c'.repeat(64);
+
 function listedFixture(overrides: Partial<ListedProject> = {}): ListedProject {
   return {
     projectId,
@@ -159,7 +193,7 @@ function listedFixture(overrides: Partial<ListedProject> = {}): ListedProject {
   };
 }
 
-function makeStore() {
+function makeStore(listed: ListedProject = listedFixture()) {
   const projectsState: ProjectsState = {
     ...initialProjectState,
     servers: {
@@ -171,7 +205,7 @@ function makeStore() {
         shortCodePrefix: 'T',
         description: '',
         couchDbUrl: 'https://couch.example',
-        listed: {[projectId]: listedFixture()},
+        listed: {[listed.projectId]: listed},
         activated: {},
       },
     },
@@ -216,6 +250,15 @@ describe('activateProject requires downloaded design details', () => {
     registerSync.mockReset().mockResolvedValue(undefined);
     couchInitialiser.mockReset().mockResolvedValue(undefined);
     vi.mocked(compiledSpecService.compileAndRegisterSpec).mockClear();
+    contextualLayerStore.getSeenContextualLayersHash
+      .mockReset()
+      .mockResolvedValue(undefined);
+    contextualLayerStore.areContextualLayersOnDevice
+      .mockReset()
+      .mockReturnValue(false);
+    contextualLayerStore.markContextualLayersSeen
+      .mockReset()
+      .mockResolvedValue(undefined);
   });
 
   it('throws when resolveActivationSyncMode omits the GET details payload', async () => {
@@ -366,5 +409,171 @@ describe('activateProject requires downloaded design details', () => {
     expect(activated.name).toBe('Notebook One from GET');
     expect(activated.recordCount).toBe(3);
     expect(store.getState().projects.activatingProjects).toEqual([]);
+  });
+
+  it('prompts for contextual layers when the listing is unseen', async () => {
+    resolveActivationSyncMode.mockResolvedValue({
+      syncMode: 'both',
+      usedPushOnlyDefault: false,
+      details: getDetailsPayload,
+      recordCount: 3,
+    });
+    const store = makeStore(
+      listedFixture({
+        contextualLayers: [sampleLayer],
+        contextualLayersHash: layersHash,
+      })
+    );
+
+    await store
+      .dispatch(
+        activateProject({
+          serverId,
+          projectId,
+          jwtToken: 'tok',
+        }) as any
+      )
+      .unwrap();
+
+    expect(selectPendingContextualLayerPrompt(store.getState() as any)).toEqual(
+      {
+        projectId,
+        serverId,
+      }
+    );
+  });
+
+  it('does not prompt when the listing hash was already seen', async () => {
+    contextualLayerStore.getSeenContextualLayersHash.mockResolvedValue(
+      layersHash
+    );
+    resolveActivationSyncMode.mockResolvedValue({
+      syncMode: 'both',
+      usedPushOnlyDefault: false,
+      details: getDetailsPayload,
+      recordCount: 3,
+    });
+    const store = makeStore(
+      listedFixture({
+        contextualLayers: [sampleLayer],
+        contextualLayersHash: layersHash,
+      })
+    );
+
+    await store
+      .dispatch(
+        activateProject({
+          serverId,
+          projectId,
+          jwtToken: 'tok',
+        }) as any
+      )
+      .unwrap();
+
+    expect(
+      selectPendingContextualLayerPrompt(store.getState() as any)
+    ).toBeUndefined();
+  });
+
+  it('does not prompt when the listing has no ready layers', async () => {
+    resolveActivationSyncMode.mockResolvedValue({
+      syncMode: 'both',
+      usedPushOnlyDefault: false,
+      details: getDetailsPayload,
+      recordCount: 3,
+    });
+    const store = makeStore(
+      listedFixture({
+        contextualLayers: [],
+        contextualLayersHash: layersHash,
+      })
+    );
+
+    await store
+      .dispatch(
+        activateProject({
+          serverId,
+          projectId,
+          jwtToken: 'tok',
+        }) as any
+      )
+      .unwrap();
+
+    expect(
+      selectPendingContextualLayerPrompt(store.getState() as any)
+    ).toBeUndefined();
+    expect(
+      contextualLayerStore.getSeenContextualLayersHash
+    ).not.toHaveBeenCalled();
+  });
+
+  it('marks the listing seen instead of prompting when layers are already on the device', async () => {
+    contextualLayerStore.areContextualLayersOnDevice.mockReturnValue(true);
+    resolveActivationSyncMode.mockResolvedValue({
+      syncMode: 'both',
+      usedPushOnlyDefault: false,
+      details: getDetailsPayload,
+      recordCount: 3,
+    });
+    const store = makeStore(
+      listedFixture({
+        contextualLayers: [sampleLayer],
+        contextualLayersHash: layersHash,
+      })
+    );
+
+    await store
+      .dispatch(
+        activateProject({
+          serverId,
+          projectId,
+          jwtToken: 'tok',
+        }) as any
+      )
+      .unwrap();
+
+    expect(contextualLayerStore.markContextualLayersSeen).toHaveBeenCalledWith(
+      projectId,
+      layersHash
+    );
+    expect(
+      selectPendingContextualLayerPrompt(store.getState() as any)
+    ).toBeUndefined();
+  });
+
+  it('prompts using fresh details.contextualLayers when the listed row is stale or empty', async () => {
+    resolveActivationSyncMode.mockResolvedValue({
+      syncMode: 'both',
+      usedPushOnlyDefault: false,
+      details: {
+        ...getDetailsPayload,
+        contextualLayers: [sampleLayer],
+        contextualLayersHash: layersHash,
+      },
+      recordCount: 3,
+    });
+    const store = makeStore(
+      listedFixture({
+        contextualLayers: [],
+        contextualLayersHash: undefined,
+      })
+    );
+
+    await store
+      .dispatch(
+        activateProject({
+          serverId,
+          projectId,
+          jwtToken: 'tok',
+        }) as any
+      )
+      .unwrap();
+
+    expect(selectPendingContextualLayerPrompt(store.getState() as any)).toEqual(
+      {
+        projectId,
+        serverId,
+      }
+    );
   });
 });

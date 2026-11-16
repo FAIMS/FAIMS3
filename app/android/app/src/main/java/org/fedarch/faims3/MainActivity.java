@@ -13,6 +13,8 @@ import java.util.ArrayList;
 public class MainActivity extends BridgeActivity {
   @Override
   public void onCreate(Bundle savedInstanceState) {
+    // Before super.onCreate: BridgeActivity registers plugins while loading.
+    registerPlugin(MapFileRangePlugin.class);
     super.onCreate(savedInstanceState);
     EdgeToEdge.enable(this);
     WebView.setWebContentsDebuggingEnabled(true);

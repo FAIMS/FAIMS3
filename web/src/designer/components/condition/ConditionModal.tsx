@@ -10,9 +10,11 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  IconButton,
   Stack,
   SxProps,
   Theme,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import type {ReactNode} from 'react';
@@ -52,6 +54,11 @@ export const ConditionModal = (
     label: string;
     icon?: ReactNode;
     buttonSx?: SxProps<Theme>;
+    /**
+     * `icon` renders a compact Actions-column IconButton (option rows).
+     * `button` is the labeled field/section control.
+     */
+    trigger?: 'button' | 'icon';
   }
 ) => {
   const [open, setOpen] = useState(false);
@@ -65,6 +72,7 @@ export const ConditionModal = (
   const {selectableFieldCount} = useConditionRuleFieldContext({
     field: props.field,
     view: props.view,
+    includeField: props.includeField,
   });
   // If there are no fields to select, show a message instead of the editor.
   const canEditCondition = selectableFieldCount > 0;
@@ -106,16 +114,36 @@ export const ConditionModal = (
     close();
   };
 
+  const trigger = props.trigger ?? 'button';
+  const hasCondition = Boolean(props.initial);
+
   return (
     <>
-      <Button
-        onClick={handleOpen}
-        size="small"
-        startIcon={props.icon ?? <QuizIcon />}
-        sx={props.buttonSx}
-      >
-        {props.label}
-      </Button>
+      {trigger === 'icon' ? (
+        <Tooltip title={props.label}>
+          <IconButton
+            onClick={handleOpen}
+            size="small"
+            aria-label={props.label}
+            aria-pressed={hasCondition}
+            sx={{
+              p: {xs: 0.25, sm: 0.5},
+              color: hasCondition ? 'primary.main' : 'text.secondary',
+            }}
+          >
+            {props.icon ?? <QuizIcon fontSize="small" />}
+          </IconButton>
+        </Tooltip>
+      ) : (
+        <Button
+          onClick={handleOpen}
+          size="small"
+          startIcon={props.icon ?? <QuizIcon />}
+          sx={props.buttonSx}
+        >
+          {props.label}
+        </Button>
+      )}
 
       <Dialog open={open} fullWidth={true} maxWidth="lg" onClose={handleCancel}>
         <DialogContent sx={designerDialogContentSx}>
@@ -125,6 +153,7 @@ export const ConditionModal = (
               onChange={setDraft}
               field={props.field}
               view={props.view}
+              includeField={props.includeField}
             />
           ) : (
             <NoConditionFieldsMessage view={props.view} />

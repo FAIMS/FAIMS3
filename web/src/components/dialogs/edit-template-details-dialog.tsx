@@ -27,9 +27,9 @@ export const EditTemplateDetailsDialog = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline" disabled={isLoading}>
+        <Button disabled={isLoading}>
+          <Pencil aria-hidden />
           Edit name &amp; description
-          <Pencil className="ml-1 h-4 w-4" aria-hidden />
         </Button>
       </DialogTrigger>
       <DialogContent>

@@ -9,7 +9,23 @@
 import {TestWrapper} from '../testUtils';
 import {act, cleanup, render, screen} from '@testing-library/react';
 import Notebook from './notebook';
-import {expect, vi, afterEach, it, describe} from 'vitest';
+import {expect, vi, afterEach, beforeEach, it, describe} from 'vitest';
+
+beforeEach(() => {
+  if (!window.matchMedia) {
+    window.matchMedia = (query: string) =>
+      ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }) as MediaQueryList;
+  }
+});
 
 afterEach(() => {
   cleanup();

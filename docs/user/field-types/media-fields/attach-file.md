@@ -6,10 +6,11 @@ _How to add and configure an Upload a file field in the {{Notebook}} Editor._
 
 ## What This Field Does
 
-An Attach File field provides general-purpose file upload, accepting any
-file type without restriction — PDFs, spreadsheets, audio recordings,
-sketches, scanned documents, or data files. It supports drag-and-drop on
-desktop and integrates with platform-native file pickers on mobile.
+An Attach File field provides general-purpose file upload, accepting most
+file types — PDFs, spreadsheets, audio recordings, sketches, scanned
+documents, or data files. SVG and HTML files cannot be uploaded. It
+supports drag-and-drop on desktop and integrates with platform-native
+file pickers on mobile.
 Use it when you need to attach reference material, lab results, or any
 non-photographic media to a record.
 
@@ -29,13 +30,13 @@ To add this field, open the
 ## Configuring the Field
 
 Click the field's **grey header bar** to expand it and see its settings.
-For an overview of the settings shared by all fields — including Label,
-Helper Text, Export name, and the field toolbar — see
+For an overview of the settings shared by all fields — including Field Heading,
+Helper Text, Export Title, and the field toolbar — see
 [Field Identity](../shared-settings/field-identity.md) and
 [Field Toolbar](../shared-settings/field-toolbar.md).
 
-Give the field a meaningful Label (the title collectors see), review
-the auto-populated Export name (the CSV/GIS column header), and add any
+Give the field a meaningful Field Heading (the title collectors see), review
+the auto-populated Export Title (the CSV/GIS column header), and add any
 desired Helper Text.
 
 ```{screenshot} field-types-design/attach-file-02-configured.png
@@ -64,5 +65,5 @@ Annotation, Uncertainty, Conditions, and Copy value to new records — see
   small or defer uploads to when connectivity improves. Files are
   queued locally and synced when a connection is available.
 - **Good for**: scanned field notes, lab results, reference documents,
-  audio recordings of oral descriptions, or any file type that does
-  not need camera integration.
+  audio recordings of oral descriptions, or files that do not need
+  camera integration.

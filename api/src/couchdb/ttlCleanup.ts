@@ -3,9 +3,9 @@
  * TTL cleanup for ephemeral auth / invite CouchDB documents.
  *
  * Deletes expired refresh tokens, email codes, verification challenges,
- * download grants, invites, and (optionally) long-lived tokens after
- * retention windows that preserve auth rate-limiting. Never touches people,
- * projects, data-*, or survey tombstones.
+ * download grants, login lockouts, invites, and (optionally) long-lived
+ * tokens after retention windows that preserve auth rate-limiting. Never
+ * touches people, projects, data-*, or survey tombstones.
  *
  * Pure retention predicates are exported for unit tests; {@link runTtlCleanup}
  * performs the paginated sweep + bulkDocs deletes.
@@ -17,6 +17,7 @@ import {
   DownloadGrantExistingDocument,
   EmailCodeExistingDocument,
   ExistingInvitesDBDocument,
+  LoginLockoutExistingDocument,
   LongLivedTokenExistingDocument,
   RefreshRecordExistingDocument,
   VerificationChallengeExistingDocument,
@@ -26,6 +27,7 @@ import {
   EMAIL_CODE_COOLDOWN_MS,
   EMAIL_CODE_RATE_LIMIT_WINDOW_MS,
 } from './emailReset';
+import {LOCKOUT_PERIOD_MAX_MS} from './loginLockout';
 import {
   VERIFICATION_COOLDOWN_MS,
   VERIFICATION_RATE_LIMIT_WINDOW_MS,
@@ -47,7 +49,8 @@ export type TtlDocType =
   | 'verification'
   | 'invite'
   | 'longlived'
-  | 'downloadgrant';
+  | 'downloadgrant'
+  | 'loginlockout';
 
 export type TtlTypeStats = {
   scanned: number;
@@ -97,6 +100,7 @@ const emptyStats = (): TtlCleanupStats => ({
   invite: {scanned: 0, deleted: 0, skipped: 0, errors: 0},
   longlived: {scanned: 0, deleted: 0, skipped: 0, errors: 0},
   downloadgrant: {scanned: 0, deleted: 0, skipped: 0, errors: 0},
+  loginlockout: {scanned: 0, deleted: 0, skipped: 0, errors: 0},
 });
 
 type DeletableDoc = {_id: string; _rev: string};
@@ -114,6 +118,11 @@ export const emailCodeRetentionMs = (graceMs = DEFAULT_RATE_LIMIT_GRACE_MS) =>
 export const verificationRetentionMs = (
   graceMs = DEFAULT_RATE_LIMIT_GRACE_MS
 ) => VERIFICATION_RATE_LIMIT_WINDOW_MS + VERIFICATION_COOLDOWN_MS + graceMs;
+
+/** Retention age for login lockouts: 15m stale window + rate-limit grace. */
+export const loginLockoutRetentionMs = (
+  graceMs = DEFAULT_RATE_LIMIT_GRACE_MS
+) => LOCKOUT_PERIOD_MAX_MS + graceMs;
 
 /**
  * Refresh tokens: delete when expiry is older than now - grace.
@@ -248,6 +257,23 @@ export const shouldDeleteLongLivedToken = (
       doc.createdTimestampMs);
 
   return auditAnchor < nowMs - auditRetentionMs;
+};
+
+/**
+ * Login lockouts: delete when lastAttemptMs is older than the 15-minute
+ * stale window plus rate-limit grace (default 1 hour).
+ */
+export const shouldDeleteLoginLockout = (
+  doc: Pick<
+    LoginLockoutExistingDocument,
+    '_id' | 'documentType' | 'lastAttemptMs'
+  >,
+  nowMs: number,
+  graceMs = DEFAULT_RATE_LIMIT_GRACE_MS
+): boolean => {
+  if (doc.documentType !== 'loginlockout') return false;
+  if (!isAuthPrefixMatch(doc._id, 'loginlockout')) return false;
+  return doc.lastAttemptMs < nowMs - loginLockoutRetentionMs(graceMs);
 };
 
 /**
@@ -569,6 +595,16 @@ export const runTtlCleanup = async (
     docType: 'downloadgrant',
     shouldDelete: doc =>
       shouldDeleteDownloadGrant(doc, nowMs, downloadGrantGraceMs),
+    stats,
+    batchSize,
+    dryRun,
+  });
+
+  // 3c. Login lockouts (stale lastAttempt + grace)
+  await sweepAuthType<LoginLockoutExistingDocument>({
+    viewName: 'viewsDocument/loginLockouts',
+    docType: 'loginlockout',
+    shouldDelete: doc => shouldDeleteLoginLockout(doc, nowMs, rateLimitGraceMs),
     stats,
     batchSize,
     dryRun,

@@ -80,8 +80,19 @@ jobs:
           fi
           ls -la "${{ steps.faims-config-setup.outputs.config-dir }}"
 
+      - name: Check SOPS key present
+        id: sops-key
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          if [ -n "${SOPS_AGE_KEY}" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup sops
-        if: ${{ steps.faims-config-setup.outputs.has-secrets-enc == 'true' && secrets.SOPS_AGE_KEY != '' }}
+        if: ${{ steps.faims-config-setup.outputs.has-secrets-enc == 'true' && steps.sops-key.outputs.present == 'true' }}
         uses: nhedger/setup-sops@v2
         with:
           version: 3.13.3

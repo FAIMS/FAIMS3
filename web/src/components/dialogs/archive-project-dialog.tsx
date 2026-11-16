@@ -61,7 +61,6 @@ export function ArchiveProjectDialog({
   if (disabled) {
     return (
       <Button
-        variant="outline"
         className="w-fit"
         disabled
         data-testid="web-project-archive-button"
@@ -74,11 +73,7 @@ export function ArchiveProjectDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          className="w-fit"
-          data-testid="web-project-archive-button"
-        >
+        <Button className="w-fit" data-testid="web-project-archive-button">
           Archive {config.notebookNameCapitalized}
         </Button>
       </DialogTrigger>

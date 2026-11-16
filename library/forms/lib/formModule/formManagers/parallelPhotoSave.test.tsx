@@ -35,6 +35,7 @@ vi.mock('../../fieldRegistry/fields/TakePhoto/webPhotoFallback', async () => {
   const actual = await vi.importActual<
     typeof import('../../fieldRegistry/fields/TakePhoto/webPhotoFallback')
   >('../../fieldRegistry/fields/TakePhoto/webPhotoFallback');
+  const {Camera} = await import('@capacitor/camera');
   return {
     ...actual,
     preparePhotoBlobForStorage: vi.fn(async (blob: Blob) => ({
@@ -42,6 +43,7 @@ vi.mock('../../fieldRegistry/fields/TakePhoto/webPhotoFallback', async () => {
       format: 'jpeg',
       resized: false,
     })),
+    pickGalleryPhotos: vi.fn(opts => Camera.pickImages(opts as never)),
   };
 });
 

@@ -154,19 +154,20 @@ fully-populated local-dev config. The authoritative field types and defaults are
 ### `endpoints` — service URLs
 
 Concrete URLs. If you also set `domains` (below), the derived endpoint fields
-(`apiUrl`, `webUrl`, `appUrl`, `couchdbPublicUrl`, `conductorUrls`) override these.
+(`apiUrl`, `webUrl`, `appUrl`, `docsUrl`, `couchdbPublicUrl`, `conductorUrls`) override these.
 
-| Field                 | Type     | Notes                                               |
-| --------------------- | -------- | --------------------------------------------------- |
-| `apiUrl`              | string   | Conductor API base URL.                             |
-| `webUrl`              | string   | Control Centre (web) base URL.                      |
-| `appUrl`              | string   | Mobile app (PWA) base URL.                          |
-| `couchdbInternalUrl`  | string   | CouchDB URL reachable from the API.                 |
-| `couchdbPublicUrl`    | string   | CouchDB URL the app syncs to.                       |
-| `androidAppPublicUrl` | string   | Google Play store listing URL.                      |
-| `iosAppPublicUrl`     | string   | Apple App Store listing URL.                        |
-| `conductorUrls`       | string[] | Conductor URLs the app may contact (CSV in env).    |
-| `redirectWhitelist`   | string[] | Allowed redirect origins (the app adds `appId://`). |
+| Field                 | Type     | Notes                                                 |
+| --------------------- | -------- | ----------------------------------------------------- |
+| `apiUrl`              | string   | Conductor API base URL.                               |
+| `webUrl`              | string   | Control Centre (web) base URL.                        |
+| `appUrl`              | string   | Mobile app (PWA) base URL.                            |
+| `docsUrl`             | string   | User-docs site. Derived from `domains.services.docs`. |
+| `couchdbInternalUrl`  | string   | CouchDB URL reachable from the API.                   |
+| `couchdbPublicUrl`    | string   | CouchDB URL the app syncs to.                         |
+| `androidAppPublicUrl` | string   | Google Play store listing URL.                        |
+| `iosAppPublicUrl`     | string   | Apple App Store listing URL.                          |
+| `conductorUrls`       | string[] | Conductor URLs the app may contact (CSV in env).      |
+| `redirectWhitelist`   | string[] | Allowed redirect origins (the app adds `appId://`).   |
 
 ### `domains` — derived endpoints (optional)
 
@@ -209,12 +210,14 @@ the "local mode" switch — there is no separate `environment` flag). Example:
 
 ### `support` — contacts and links
 
-| Field              | Type   | Notes                               |
-| ------------------ | ------ | ----------------------------------- |
-| `supportEmail`     | string | Support contact.                    |
-| `privacyPolicyUrl` | string | Privacy policy link.                |
-| `appContactUrl`    | string | Contact page; empty hides the link. |
-| `docsUrl`          | string | Documentation site URL (optional).  |
+| Field              | Type   | Default                | Notes                                                                           |
+| ------------------ | ------ | ---------------------- | ------------------------------------------------------------------------------- |
+| `supportEmail`     | string | `support@fieldmark.au` | Support contact (app footer `mailto`, and fallback inbox for in-app feedback).  |
+| `feedbackEmail`    | string | `support.supportEmail` | Destination for in-app feedback (`FEEDBACK_EMAIL`). Omit to use `supportEmail`. |
+| `feedbackSubject`  | string | `In-app feedback`      | Subject line for in-app feedback mail (`FEEDBACK_SUBJECT`).                     |
+| `privacyPolicyUrl` | string |                        | Privacy policy link.                                                            |
+| `appContactUrl`    | string |                        | Contact page; empty hides the link.                                             |
+| `docsUrl`          | string |                        | Documentation site URL (optional).                                              |
 
 ### `notebookAndRecordUX` — notebook/record presentation
 
@@ -259,6 +262,39 @@ so only use keys suitable for public consumption.
 | ---------------------------- | ------ | ------- | ----------------------------------- |
 | `attachmentServiceType`      | string | `COUCH` | Where attachments are stored.       |
 | `attachmentDocumentIdPrefix` | string | `''`    | Prefix for attachment document IDs. |
+
+### `attachmentStorage` — map-layer object storage
+
+| Field             | Type    | Default            | Notes                                                                   |
+| ----------------- | ------- | ------------------ | ----------------------------------------------------------------------- |
+| `serviceType`     | string  | `S3`               | `S3` \| `MOCK`.                                                         |
+| `bucket`          | string  | `faims-map-assets` | S3 bucket name (overridden on AWS by the CDK-created bucket).           |
+| `prefix`          | string  | `map-assets`       | Key prefix inside the bucket.                                           |
+| `region`          | string  | `us-east-1`        | AWS region or RustFS dummy region (overridden on AWS by stack region).  |
+| `endpoint`        | string  | —                  | Custom S3 endpoint (e.g. `http://localhost:9000` for RustFS).           |
+| `publicEndpoint`  | string  | —                  | Host-visible signing endpoint when `endpoint` is internal-only.         |
+| `forcePathStyle`  | boolean | —                  | Path-style S3 URLs (defaults to `true` when `endpoint` is set).         |
+| `accessKeyId`     | string  | —                  | **Secret slot** — static S3 access key (omit on AWS ECS for task role). |
+| `secretAccessKey` | string  | —                  | **Secret slot** — static S3 secret key (omit on AWS ECS for task role). |
+
+### `spatialCapacity` — spatial worker pool & GDAL tuning
+
+| Field                  | Type                | Default          | Notes                                                                |
+| ---------------------- | ------------------- | ---------------- | -------------------------------------------------------------------- |
+| `provider`             | string              | `FIXED`          | `FIXED` \| `ECS` \| `MOCK`.                                          |
+| `maxCapacity`          | number              | `4`              | Max workers the capacity manager will ask for at once.               |
+| `scaleThresholds`      | number[]            | `[3, 8, 16, 32]` | Strictly-increasing queue depths that add a worker.                  |
+| `reconcileMs`          | number              | `15000`          | Queue reconciliation interval (ms).                                  |
+| `starvationMs`         | number              | `300000`         | Age of oldest unclaimed job before asking for an extra worker (`0`). |
+| `scaleInCooldownMs`    | number              | —                | Cooldown between staleness scale-ups (defaults to `2 * starvation`). |
+| `fixedReplicas`        | number              | `1`              | Replica count reported by the `FIXED` provider.                      |
+| `idleExitMs`           | number              | `60000`          | Worker idle timeout before exit (`0` never exits).                   |
+| `pollMs`               | number              | `5000`           | Delay between empty worker polls (ms).                               |
+| `gdalNumThreads`       | `"ALL_CPUS"` \| int | `"ALL_CPUS"`     | GDAL worker thread count.                                            |
+| `gdalCacheMaxMb`       | number              | `256`            | GDAL raster block cache (MB).                                        |
+| `gdalWarpMemoryMb`     | number              | `256`            | `gdalwarp -wm` working buffer (MB).                                  |
+| `gdalWarpMulti`        | boolean             | `true`           | `gdalwarp -multi` overlap I/O with compute.                          |
+| `tippecanoeMaxThreads` | number              | —                | Optional cap on tippecanoe threads.                                  |
 
 ### `migration`
 
@@ -309,20 +345,25 @@ resolved from Secrets Manager on AWS. Non-secret fields (`displayName`, `helperT
 
 ### `limits`
 
-| Field                        | Type    | Default      | Notes                                  |
-| ---------------------------- | ------- | ------------ | -------------------------------------- |
-| `rateLimiterWindowMs`        | number  | `600000`     | Express HTTP IP-limiter window.        |
-| `rateLimiterPerWindow`       | number  | `1000`       | Requests allowed per window.           |
-| `rateLimiterEnabled`         | boolean | `true`       | Enable the HTTP IP limiter.            |
-| `exportRateLimiterEnabled`   | boolean | `true`       | Dedicated notebook-export limiter.     |
-| `exportRateLimiterWindowMs`  | number  | `600000`     | Export-limiter window.                 |
-| `exportRateLimiterPerWindow` | number  | `20`         | Export requests allowed per window.    |
-| `attemptLimiterEnabled`      | boolean | `true`       | Email-code/verification attempt limit. |
-| `jsonBodyLimit`              | string  | `25mb`       | JSON request body limit.               |
-| `urlencodedBodyLimit`        | string  | `1mb`        | URL-encoded request body limit.        |
-| `restoreUploadMaxBytes`      | number  | `1073741824` | Max restore-upload size.               |
-| `downloadCookieSameSite`     | string  | `lax`        | Download-cookie SameSite.              |
-| `recordsHydratedPageLimit`   | number  | `150`        | Hydrated-record page limit.            |
+| Field                          | Type    | Default      | Notes                                                           |
+| ------------------------------ | ------- | ------------ | --------------------------------------------------------------- |
+| `rateLimiterWindowMs`          | number  | `600000`     | Express HTTP IP-limiter window.                                 |
+| `rateLimiterPerWindow`         | number  | `1000`       | Requests allowed per window.                                    |
+| `rateLimiterEnabled`           | boolean | `true`       | Enable the HTTP IP limiter.                                     |
+| `exportRateLimiterEnabled`     | boolean | `true`       | Dedicated notebook-export limiter.                              |
+| `exportRateLimiterWindowMs`    | number  | `600000`     | Export-limiter window.                                          |
+| `exportRateLimiterPerWindow`   | number  | `20`         | Export requests allowed per window.                             |
+| `feedbackRateLimiterEnabled`   | boolean | `true`       | Couch-backed in-app feedback limiter.                           |
+| `feedbackRateLimiterWindowMs`  | number  | `600000`     | Feedback-limiter window.                                        |
+| `feedbackRateLimiterPerWindow` | number  | `5`          | Feedback submissions allowed per authenticated user per window. |
+| `attemptLimiterEnabled`        | boolean | `true`       | Email-code/verification attempt limit.                          |
+| `loginLockoutEnabled`          | boolean | `true`       | Couch-backed local-password lockout.                            |
+| `jsonBodyLimit`                | string  | `25mb`       | JSON request body limit.                                        |
+| `urlencodedBodyLimit`          | string  | `1mb`        | URL-encoded request body limit.                                 |
+| `restoreUploadMaxBytes`        | number  | `1073741824` | Max restore-upload size.                                        |
+| `downloadCookieSameSite`       | string  | `lax`        | Download-cookie SameSite.                                       |
+| `recordsHydratedPageLimit`     | number  | `150`        | Hydrated-record page limit.                                     |
+| `adminStatsCacheTtlMs`         | number  | `120000`     | Admin stats snapshot cache TTL (ms).                            |
 
 ### `email`
 
@@ -342,10 +383,12 @@ resolved from Secrets Manager on AWS. Non-secret fields (`displayName`, `helperT
 
 ### `observability`
 
-| Field           | Type   | Default | Notes                                                                          |
-| --------------- | ------ | ------- | ------------------------------------------------------------------------------ |
-| `bugsnagApiKey` | string | `''`    | **Secret slot.** Client key.                                                   |
-| `commitVersion` | string | —       | Build commit; `output of \`git rev-parse HEAD\`` is resolved at generate time. |
+| Field                   | Type    | Default | Notes                                                                          |
+| ----------------------- | ------- | ------- | ------------------------------------------------------------------------------ |
+| `bugsnagApiKey`         | string  | `''`    | **Secret slot.** Client key.                                                   |
+| `commitVersion`         | string  | —       | Build commit; `output of \`git rev-parse HEAD\`` is resolved at generate time. |
+| `memoryMonitorEnabled`  | boolean | `false` | Start the 1 Hz API stdout memory sampler for leak hunts.                       |
+| `requestLoggingEnabled` | boolean | `true`  | Write Morgan combined-format HTTP access lines on the API server.              |
 
 ### `teamAndRolePolicy`
 

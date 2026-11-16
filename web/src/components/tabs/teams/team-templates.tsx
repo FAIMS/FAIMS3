@@ -4,7 +4,7 @@ import type {ColumnDef} from '@tanstack/react-table';
 import {CreateTemplateDialog} from '@/components/dialogs/create-template-dialog';
 import {getTemplatesTableColumns} from '@/components/tables/templates';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {useGetTemplatesForTeam} from '@/hooks/queries';
+import {useGetTeam, usePagedTemplates} from '@/hooks/queries';
 import {
   Action,
   globalRolesGrantAction,
@@ -13,7 +13,6 @@ import {
 import {useNavigate} from '@tanstack/react-router';
 import {useMemo, useState} from 'react';
 import {
-  filterTemplatesByVisibility,
   PUBLIC_TEMPLATE_ROW_CLASS,
   TemplateVisibilityFilterSelect,
   type TemplateVisibilityFilterValue,
@@ -23,9 +22,16 @@ type TemplateListRow = GetListTemplatesResponse['templates'][number];
 
 const TeamTemplates = ({teamId}: {teamId: string}) => {
   const user = useRequiredUser();
-  const {isPending, data} = useGetTemplatesForTeam({user, teamId});
   const [visibilityFilter, setVisibilityFilter] =
     useState<TemplateVisibilityFilterValue>('all');
+  const {tableLoading, templates, pageSize, serverPagination, serverSearch} =
+    usePagedTemplates({
+      user,
+      teamId,
+      visibility: visibilityFilter === 'all' ? undefined : visibilityFilter,
+    });
+  const {data: team} = useGetTeam({user, teamId});
+  const archived = team?.archived === true;
 
   // can the user see the add button?
   const canAddTemplateInTeam = useIsAuthorisedTo({
@@ -51,16 +57,11 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
     [user.decodedToken]
   );
 
-  const filteredTemplates = useMemo(
-    () => filterTemplatesByVisibility(data?.templates, visibilityFilter),
-    [data?.templates, visibilityFilter]
-  );
-
   return (
     <DataTable
       columns={columns as ColumnDef<TemplateListRow, unknown>[]}
-      data={filteredTemplates}
-      loading={isPending}
+      data={templates}
+      loading={tableLoading}
       toolbarExtra={
         <TemplateVisibilityFilterSelect
           value={visibilityFilter}
@@ -72,8 +73,12 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
       }
       onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
       button={
-        canAddTemplateInTeam && <CreateTemplateDialog specifiedTeam={teamId} />
+        canAddTemplateInTeam &&
+        !archived && <CreateTemplateDialog specifiedTeam={teamId} />
       }
+      defaultRowsPerPage={pageSize}
+      serverPagination={serverPagination}
+      serverSearch={serverSearch}
     />
   );
 };

@@ -4,6 +4,7 @@ import {Dialog, DialogContent, IconButton} from '@mui/material';
 import {Box} from '@mui/material';
 import React, {useEffect, useRef, useState} from 'react';
 import {TransformComponent, TransformWrapper} from 'react-zoom-pan-pinch';
+import {ImageWithFallback} from './ImageWithFallback';
 
 /** How far a width-fit image (a QR code) can shrink below its fitted size. */
 const WIDTH_FIT_MIN_SCALE = 0.5;
@@ -143,7 +144,7 @@ function fitInside(
  *  - Double-tap / double-click to reset.
  *  - Tap the dark area outside the image to close (suppressed during a pan
  *    so we don't close right after the user lifts their finger).
- *  - Tap the X (visible below the app bar) to close.
+ *  - Tap the X (top-right, visible below the app bar) to close.
  *
  * Used by TakePhoto (edit + view), the advanced helper image viewer in
  * FieldWrapper, and the Quick Share QR preview.
@@ -207,7 +208,7 @@ export const PhotoLightbox: React.FC<{
           sx={{
             position: 'absolute',
             top: 'max(56px, env(safe-area-inset-top, 0px) + 48px)',
-            left: 16,
+            right: 16,
             // Sit above the transform wrapper so it stays tappable when zoomed.
             zIndex: 2,
             color: 'white',
@@ -257,17 +258,26 @@ export const PhotoLightbox: React.FC<{
                 justifyContent: 'center',
               }}
             >
-              <Box
-                component="img"
+              <ImageWithFallback
                 src={url}
                 alt="Full size preview"
                 draggable={false}
+                fallbackTypographyVariant="body2"
                 sx={{
                   maxWidth: '100%',
                   maxHeight: '100%',
                   objectFit: 'contain',
                   display: 'block',
                   userSelect: 'none',
+                }}
+                fallbackSx={{
+                  width: 'auto',
+                  height: 'auto',
+                  p: 0,
+                  gap: 1,
+                  bgcolor: 'transparent',
+                  color: 'common.white',
+                  '& .MuiSvgIcon-root': {fontSize: 64},
                 }}
               />
             </TransformComponent>
