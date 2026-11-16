@@ -362,7 +362,7 @@ const fields: {[key: string]: Omit<FieldType, 'exportName'>} = {
       helperText: '',
       required: false,
       ElementProps: {
-        optiontree: [{name: 'Default', children: []}],
+        optiontree: [{name: 'Default', children: [{name: 'Child'}]}],
       },
       valuetype: 'full',
     },

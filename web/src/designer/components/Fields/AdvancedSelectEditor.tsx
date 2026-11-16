@@ -1,33 +1,33 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-
 import {yaml as yamlLanguage} from '@codemirror/lang-yaml';
 import {EditorState} from '@codemirror/state';
-import {EditorView} from '@codemirror/view';
+import {EditorView, keymap} from '@codemirror/view';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
-  AlertTitle,
-  Button,
   Card,
-  Collapse,
   FormControl,
   FormControlLabel,
   FormLabel,
   Grid,
+  Paper,
   Radio,
   RadioGroup,
+  Typography,
 } from '@mui/material';
 import debounce from 'lodash/debounce';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import YAML from 'yaml';
-
 import {AdvancedSelectFieldProps} from '@faims3/forms';
 import {FieldType} from '../../state/initial';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {indentWithTab} from '@codemirror/commands';
 
 type OptionTreeType = {
   name: string;
@@ -43,9 +43,21 @@ type NewState = {
 
 const DEBOUNCE_MS = 500;
 
+/**
+ * Generates a YAML string from the given option tree.
+ *
+ * @param optionTree an option tree structure from the field
+ * @returns the YAML string representation of the option tree
+ */
 const serializeOptionTree = (optionTree: OptionTreeType[] = []) =>
   YAML.stringify(optionTree, {indent: 2, lineWidth: 0});
 
+/**
+ * Validates the structure of the option tree.
+ *
+ * @param optionTree an option tree structure from the field
+ * @throws Error if the option tree contains invalid properties or types
+ */
 const isTypeMatch = (optionTree: OptionTreeType[]) => {
   optionTree.forEach((opt: OptionTreeType) => {
     const validKeys: string[] = ['name', 'type', 'label', 'children'];
@@ -87,6 +99,13 @@ const isTypeMatch = (optionTree: OptionTreeType[]) => {
   });
 };
 
+/**
+ * Parses a YAML string into an option tree structure.
+ *
+ * @param yamlText the YAML string representing the option tree
+ * @returns the parsed option tree as an array of OptionTreeType
+ * @throws Error if the YAML is invalid or the structure does not match the expected option tree format
+ */
 const parseOptionTreeFromYaml = (yamlText: string): OptionTreeType[] => {
   let parsed: unknown;
 
@@ -111,7 +130,11 @@ const parseOptionTreeFromYaml = (yamlText: string): OptionTreeType[] => {
   return parsed;
 };
 
-/** Hierarchical option tree editor and value mode (`full` vs stored id) for `AdvancedSelect`. */
+/**
+ * Hierarchical option tree editor for the `AdvancedSelect` field.
+ *
+ * @param fieldName the name of the field being edited
+ */
 export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
     state => state.notebook.uiSpec.present.fields[fieldName]
@@ -233,6 +256,7 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
         doc: yamlValue,
         extensions: [
           yamlLanguage(),
+          keymap.of([indentWithTab]),
           EditorView.lineWrapping,
           EditorView.updateListener.of(update => {
             if (!update.docChanged) {
@@ -276,7 +300,7 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid size={{xs: 12, sm: 9}}>
+      <Grid>
         <Card variant="outlined">
           <Grid size={12} sx={{mx: 1.5, my: 2}}>
             <Grid
@@ -284,54 +308,6 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
               size={12}
               sx={{flexDirection: 'column', alignItems: 'center'}}
             >
-              <Alert severity="info" sx={{mb: 2}}>
-                <AlertTitle>Example Structure</AlertTitle>
-
-                <p>
-                  The following is an example of a valid YAML structure with 2
-                  levels. The first level goes 1 level deep (i.e., stops at
-                  Level 1), the second goes 2 levels deep (i.e., includes Level
-                  2 and Level 2.1). The properties <code>name</code> and{' '}
-                  <code>children</code> must be included, whereas the{' '}
-                  <code>label</code> property is optional.
-                </p>
-
-                <Button
-                  onClick={() => setOpen(!open)}
-                  size="small"
-                  color="info"
-                  endIcon={
-                    open ? (
-                      <ExpandLess fontSize="small" />
-                    ) : (
-                      <ExpandMore fontSize="small" />
-                    )
-                  }
-                >
-                  {open ? 'Close' : 'Show Help'}
-                </Button>
-
-                <Collapse in={open} unmountOnExit>
-                  <pre>
-                    {serializeOptionTree([
-                      {
-                        name: 'level-1',
-                        label: 'Level 1',
-                      },
-                      {
-                        name: 'level-2',
-                        children: [
-                          {
-                            name: 'level-2-1',
-                            label: 'Level 2.1',
-                          },
-                        ],
-                      },
-                    ])}
-                  </pre>
-                </Collapse>
-              </Alert>
-
               <div
                 ref={editorHostRef}
                 style={{
@@ -342,7 +318,6 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
                   backgroundColor: 'rgba(0, 0, 0, 0.02)',
                 }}
               />
-
               {errorMessage && (
                 <Alert severity="error" sx={{mt: 2.5, width: '100%'}}>
                   {errorMessage}
@@ -354,17 +329,63 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
                   {successMessage}
                 </Alert>
               )}
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography component="span">
+                    Example Configuration
+                  </Typography>
+                </AccordionSummary>
+
+                <AccordionDetails>
+                  <Typography variant="body2">
+                    The following is an example of a valid YAML structure with 2
+                    levels. The first level goes 1 level deep (i.e., stops at
+                    Level 1), the second goes 2 levels deep (i.e., includes
+                    Level 2 and Level 2.1). The property <code>name</code> must
+                    be included, whereas the <code>children</code> and{' '}
+                    <code>label</code> properties are optional.
+                  </Typography>
+
+                  <Paper sx={{margin: 1}}>
+                    <Typography variant="body2">
+                      <pre>
+                        {serializeOptionTree([
+                          {
+                            name: 'level-1',
+                            label: 'Level 1',
+                          },
+                          {
+                            name: 'level-2',
+                            children: [
+                              {
+                                name: 'level-2-1',
+                                label: 'Level 2.1',
+                              },
+                            ],
+                          },
+                        ])}
+                      </pre>
+                    </Typography>
+                  </Paper>
+                </AccordionDetails>
+              </Accordion>
+
+              <Alert severity="info" sx={{mt: 2.5, width: '100%'}}>
+                <strong>Note:</strong> this editor captures the Tab key for
+                indentation. To tab to the next field, hit the Escape key first.
+              </Alert>
             </Grid>
           </Grid>
         </Card>
       </Grid>
 
-      <Grid size={{xs: 12, sm: 3}}>
+      <Grid>
         <Card variant="outlined">
           <Grid size={12} sx={{mx: 1.5, my: 2}}>
             <FormControl>
               <FormLabel id="value-type">Value Type</FormLabel>
               <RadioGroup
+                row={true}
                 aria-labelledby="value-type"
                 value={currentValueType}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -383,6 +404,11 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
                 />
               </RadioGroup>
             </FormControl>
+            <Typography variant="body2" sx={{mt: 2}}>
+              Select 'Full' to include all labels to the chosen value in the
+              result, eg. 'Level 1&gt;Level 2&gt;Level 2.1'. Select 'Child' to
+              include only the selected name.
+            </Typography>
           </Grid>
         </Card>
       </Grid>
