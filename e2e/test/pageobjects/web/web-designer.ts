@@ -11,14 +11,9 @@ class WebDesignerPage extends Page {
     return byTestId('web-designer-shell');
   }
 
-  /** Persist current notebook design. */
+  /** Publish current notebook design (primary persist control). */
   get saveButton() {
     return byTestId('web-designer-save-button');
-  }
-
-  /** Discard / cancel designer changes. */
-  get cancelButton() {
-    return byTestId('web-designer-cancel-button');
   }
 
   /** Close the designer overlay. */
@@ -41,16 +36,42 @@ class WebDesignerPage extends Page {
     return this.shell.isDisplayed().catch(() => false);
   }
 
-  /** Click Save. */
+  /** Click Publish changes. */
   async save() {
     await this.saveButton.waitForClickable({timeout: 10000});
     await this.saveButton.click();
   }
 
-  /** Click Cancel. */
-  async cancel() {
-    await this.cancelButton.waitForClickable({timeout: 10000});
-    await this.cancelButton.click();
+  /** Click Close. */
+  async close() {
+    await this.closeButton.waitForClickable({timeout: 10000});
+    await this.closeButton.click();
+  }
+
+  /** Confirm Publish changes in the confirmation dialog. */
+  async confirmPublish() {
+    const confirm = byTestId('web-designer-publish-confirm-button');
+    await confirm.waitForClickable({timeout: 10000});
+    await confirm.click();
+  }
+
+  /** Keep the local draft and leave the overlay. */
+  async closeKeepDraft() {
+    const keepDraft = byTestId('web-designer-close-keep-draft-button');
+    await keepDraft.waitForClickable({timeout: 10000});
+    await keepDraft.click();
+  }
+
+  /** Add a named form so the session has unpublished changes. */
+  async addForm(name: string) {
+    await this.newFormButton.waitForClickable({timeout: 10000});
+    await this.newFormButton.click();
+    const input = byTestId('formNameDialog');
+    await input.waitForDisplayed({timeout: 10000});
+    await input.setValue(name);
+    const add = await $('button=Add Form');
+    await add.waitForClickable({timeout: 10000});
+    await add.click();
   }
 }
 

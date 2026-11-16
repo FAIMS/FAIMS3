@@ -3,15 +3,9 @@ import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import {Box, Tab} from '@mui/material';
-import {
-  DataGrid,
-  GridColDef,
-  GridEventListener,
-  GridPaginationModel,
-} from '@mui/x-data-grid';
+import {DataGrid, GridColDef, GridEventListener} from '@mui/x-data-grid';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {useEffect, useState} from 'react';
 import {theme} from '../../themes';
 import {
   ACTIVATED_LABEL,
@@ -24,6 +18,7 @@ import {
   isProjectActivating,
   partitionNotebookListProjects,
 } from '../../../lib/notebookListDisplay';
+import {useNotebookListPagination} from './notebook-list-pagination';
 
 /**
  * Renders a tabbed grid component.
@@ -54,23 +49,12 @@ export default function TabProjectGrid({
     activatingProjectKeys
   );
 
-  // we need a state variable to track pagination model since we want to use a
-  // controlled component style to force pagination to behave how we want
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: projects.length,
-  });
-
-  // Update pagination settings when the projects changes
-  useEffect(() => {
-    setPaginationModel(prev => {
-      const next = {page: 0, pageSize: projects.length};
-      if (prev.page === next.page && prev.pageSize === next.pageSize) {
-        return prev;
-      }
-      return next;
-    });
-  }, [projects.length]);
+  const activatedPagination = useNotebookListPagination(
+    activatedProjects.length
+  );
+  const availablePagination = useNotebookListPagination(
+    availableProjects.length
+  );
 
   const history = useNavigate();
 
@@ -119,40 +103,45 @@ export default function TabProjectGrid({
           ))}
         </TabList>
       </Box>
-      {['1', '2'].map(tab => (
-        <TabPanel key={tab} value={tab} sx={{px: 0}}>
-          <div style={{width: '100%', minWidth: 0}}>
-            <DataGrid
-              onRowClick={handleRowClick}
-              key={`notebook_list_datagrid_${tab}`}
-              rows={tab === '1' ? activatedProjects : availableProjects}
-              columns={tab === '1' ? activatedColumns : notActivatedColumns}
-              sx={{
-                width: '100%',
-                cursor: tab === '1' ? 'pointer' : 'default',
-                ...notebookListDataGridSx,
-              }}
-              getRowId={({projectId}) => projectId}
-              getRowClassName={({row}) =>
-                isProjectActivating(row, activatingProjectKeys)
-                  ? 'notebook-row-activating'
-                  : ''
-              }
-              rowHeight={75}
-              autoHeight
-              hideFooter
-              paginationModel={paginationModel}
-              onPaginationModelChange={setPaginationModel}
-              slotProps={{
-                row: {
-                  // Shared landmark for e2e; activated rows navigate on click.
-                  'data-testid': 'app-notebook-row',
-                },
-              }}
-            />
-          </div>
-        </TabPanel>
-      ))}
+      {['1', '2'].map(tab => {
+        const pagination =
+          tab === '1' ? activatedPagination : availablePagination;
+        return (
+          <TabPanel key={tab} value={tab} sx={{px: 0}}>
+            <div style={{width: '100%', minWidth: 0}}>
+              <DataGrid
+                onRowClick={handleRowClick}
+                key={`notebook_list_datagrid_${tab}`}
+                rows={tab === '1' ? activatedProjects : availableProjects}
+                columns={tab === '1' ? activatedColumns : notActivatedColumns}
+                sx={{
+                  width: '100%',
+                  cursor: tab === '1' ? 'pointer' : 'default',
+                  ...notebookListDataGridSx,
+                }}
+                getRowId={({projectId}) => projectId}
+                getRowClassName={({row}) =>
+                  isProjectActivating(row, activatingProjectKeys)
+                    ? 'notebook-row-activating'
+                    : ''
+                }
+                rowHeight={75}
+                autoHeight
+                hideFooter={pagination.hideFooter}
+                paginationModel={pagination.paginationModel}
+                onPaginationModelChange={pagination.onPaginationModelChange}
+                pageSizeOptions={pagination.pageSizeOptions}
+                slotProps={{
+                  row: {
+                    // Shared landmark for e2e; activated rows navigate on click.
+                    'data-testid': 'app-notebook-row',
+                  },
+                }}
+              />
+            </div>
+          </TabPanel>
+        );
+      })}
     </TabContext>
   );
 }

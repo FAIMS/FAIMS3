@@ -29,14 +29,18 @@ export const columns: ColumnDef<GetListTeamsResponse['teams'][number]>[] = [
       <DataTableColumnHeader column={column} title="Created At" />
     ),
     cell: ({row}) => {
-      // Get the Unix timestamp from the row data
       const timestamp = row.getValue('createdAt') as number;
-
-      // Convert timestamp to a readable date format
-      if (timestamp) {
-        return displayDateTime({timestamp});
-      }
-      return '';
+      return timestamp ? displayDateTime({timestamp}) : '';
+    },
+  },
+  {
+    accessorKey: 'updatedAt',
+    header: ({column}) => (
+      <DataTableColumnHeader column={column} title="Updated At" />
+    ),
+    cell: ({row}) => {
+      const timestamp = row.getValue('updatedAt') as number;
+      return timestamp ? displayDateTime({timestamp}) : '';
     },
   },
 ];

@@ -14,11 +14,16 @@
  *
  * Filename: notebookStorageStats.test.ts
  * Description:
- *   Tests for getUserProjectsListing's opt-in per-project byteCount, the team
- *   storage total it feeds, the N+1 info() fan-out over a team's notebooks,
- *   and the cheap default that skips Couch info().
+ *   Tests for getUserProjectsPage's opt-in per-project byteCount (sized for
+ *   the returned page only), the server-side team storage summary, the N+1
+ *   info() fan-out over a team's notebooks, and the cheap default that skips
+ *   Couch info().
  */
-import {APINotebookListWithStatsSchema} from '@faims3/data-model';
+import {
+  APINotebookListWithStatsSchema,
+  LIST_LIMIT_MAX,
+  ProjectStatus,
+} from '@faims3/data-model';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 const getNanoDataDb = vi.hoisted(() => vi.fn());
@@ -31,7 +36,13 @@ vi.mock('../src/couchdb', async importOriginal => {
   };
 });
 
-import {createNotebook, getUserProjectsListing} from '../src/couchdb/notebooks';
+import {
+  applyNotebookLifecycleStatus,
+  createNotebook,
+  getProjectById,
+  getTeamNotebookStorage,
+  getUserProjectsPage,
+} from '../src/couchdb/notebooks';
 import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
 import {resetDatabases} from './mocks';
 import {EMPTY_UI_SPECIFICATION} from './sampleNotebook';
@@ -103,9 +114,11 @@ describe('notebook storage stats', () => {
     const betaId = await createTeamNotebook('Beta', teamId, sizes.beta);
     const gammaId = await createTeamNotebook('Gamma', teamId, sizes.gamma);
 
-    const notebooks = await getUserProjectsListing(admin, {
+    const {notebooks} = await getUserProjectsPage(admin, {
       teamId,
+      status: 'active',
       includeByteCount: true,
+      limit: LIST_LIMIT_MAX,
     });
     expect(notebooks).toHaveLength(3);
 
@@ -141,9 +154,11 @@ describe('notebook storage stats', () => {
     }
 
     infoCallCount = 0;
-    const notebooks = await getUserProjectsListing(admin, {
+    const {notebooks} = await getUserProjectsPage(admin, {
       teamId,
+      status: 'active',
       includeByteCount: true,
+      limit: LIST_LIMIT_MAX,
     });
 
     expect(notebooks).toHaveLength(projectCount);
@@ -163,7 +178,11 @@ describe('notebook storage stats', () => {
     await createTeamNotebook('Cheap', teamId, 512);
 
     infoCallCount = 0;
-    const notebooks = await getUserProjectsListing(admin, {teamId});
+    const {notebooks} = await getUserProjectsPage(admin, {
+      teamId,
+      status: 'active',
+      limit: LIST_LIMIT_MAX,
+    });
     expect(notebooks).toHaveLength(1);
     expect(infoCallCount).toBe(0);
     expect(notebooks[0]).not.toHaveProperty('byteCount');
@@ -180,9 +199,11 @@ describe('notebook storage stats', () => {
     const brokenId = await createTeamNotebook('Broken', teamId, 999);
     erroringProjects.add(brokenId);
 
-    const notebooks = await getUserProjectsListing(admin, {
+    const {notebooks} = await getUserProjectsPage(admin, {
       teamId,
+      status: 'active',
       includeByteCount: true,
+      limit: LIST_LIMIT_MAX,
     });
     expect(notebooks).toHaveLength(2);
 
@@ -198,5 +219,70 @@ describe('notebook storage stats', () => {
     const byteCountById = new Map(notebooks.map(n => [n._id, n.byteCount]));
     expect(byteCountById.get(healthyId)).toBe(512);
     expect(byteCountById.get(brokenId)).toBe(-1);
+  });
+
+  it('sizes only the rows of the returned page', async () => {
+    const admin = await getExpressUserFromEmailOrUserId('admin');
+    if (!admin) {
+      throw new Error('admin user missing');
+    }
+
+    const teamId = 'team-page-sized';
+    for (let i = 0; i < 7; i++) {
+      await createTeamNotebook(`Paged ${i}`, teamId, 100);
+    }
+
+    infoCallCount = 0;
+    const first = await getUserProjectsPage(admin, {
+      teamId,
+      status: 'active',
+      includeByteCount: true,
+      limit: 3,
+    });
+    expect(first.notebooks).toHaveLength(3);
+    expect(first.nextStartKey).toBeDefined();
+    expect(infoCallCount).toBe(3);
+    expect(first.notebooks.every(n => n.byteCount === 100)).toBe(true);
+  });
+
+  it('summarises team storage server-side, overall and per status', async () => {
+    const admin = await getExpressUserFromEmailOrUserId('admin');
+    if (!admin) {
+      throw new Error('admin user missing');
+    }
+
+    const teamId = 'team-storage-summary';
+    await createTeamNotebook('Open one', teamId, 100);
+    await createTeamNotebook('Open two', teamId, 250);
+    const closedId = await createTeamNotebook('Closed', teamId, 1000);
+    const archivedId = await createTeamNotebook('Archived', teamId, 4096);
+    await createTeamNotebook('Other team', 'team-storage-other', 9999);
+    await applyNotebookLifecycleStatus(
+      await getProjectById(closedId),
+      ProjectStatus.CLOSED
+    );
+    await applyNotebookLifecycleStatus(
+      await getProjectById(archivedId),
+      ProjectStatus.ARCHIVED
+    );
+
+    expect(await getTeamNotebookStorage(admin, teamId)).toEqual({
+      total: {count: 4, byteCount: 100 + 250 + 1000 + 4096},
+      byStatus: {
+        [ProjectStatus.OPEN]: {count: 2, byteCount: 350},
+        [ProjectStatus.CLOSED]: {count: 1, byteCount: 1000},
+        [ProjectStatus.ARCHIVED]: {count: 1, byteCount: 4096},
+      },
+    });
+    expect(await getTeamNotebookStorage(admin, 'team-with-no-surveys')).toEqual(
+      {
+        total: {count: 0, byteCount: 0},
+        byStatus: {
+          [ProjectStatus.OPEN]: {count: 0, byteCount: 0},
+          [ProjectStatus.CLOSED]: {count: 0, byteCount: 0},
+          [ProjectStatus.ARCHIVED]: {count: 0, byteCount: 0},
+        },
+      }
+    );
   });
 });

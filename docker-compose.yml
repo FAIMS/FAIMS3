@@ -152,6 +152,14 @@ services:
         target: /opt/couchdb/data
     ports:
       - '0.0.0.0:${COUCHDB_EXTERNAL_PORT}:5984'
+    # CouchDB holds several file descriptors per open database (about 8 per
+    # project data DB here) and keeps recently used databases open. Docker's
+    # default soft limit of 1024 runs out at roughly 115 projects, and CouchDB
+    # then answers "No DB shards could be opened" (emfile).
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:5984/_up']
       interval: 5s

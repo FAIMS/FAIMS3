@@ -216,16 +216,29 @@ async function apiFetchJson(
   );
 }
 
-/** GET /api/teams — teams visible to the current session. */
+/**
+ * GET /api/teams — every active team visible to the current session. The
+ * endpoint is paginated, so this follows `nextStartKey` to the last page.
+ */
 export async function listTeams(token?: string): Promise<TeamSummary[]> {
-  const result = await apiFetchJson('/api/teams', {token});
-  if (!result.ok) {
-    throw new Error(
-      `GET /api/teams failed (${result.status}): ${JSON.stringify(result.body)}`
-    );
-  }
-  const body = result.body as {teams?: TeamSummary[]};
-  return body.teams ?? [];
+  const teams: TeamSummary[] = [];
+  let startKey: string | undefined;
+  do {
+    const query = new URLSearchParams({limit: '500'});
+    if (startKey) {
+      query.set('startKey', startKey);
+    }
+    const result = await apiFetchJson(`/api/teams?${query}`, {token});
+    if (!result.ok) {
+      throw new Error(
+        `GET /api/teams failed (${result.status}): ${JSON.stringify(result.body)}`
+      );
+    }
+    const body = result.body as {teams?: TeamSummary[]; nextStartKey?: string};
+    teams.push(...(body.teams ?? []));
+    startKey = body.nextStartKey;
+  } while (startKey);
+  return teams;
 }
 
 export async function findTeamIdByName(

@@ -11,6 +11,7 @@ duplicating env reads, waits, or screenshot logic in specs.
 | `auth.ts`       | `loginWeb` / `loginApp` / `loginConductor` / `seedExpiredWebSession` / logout                                                              |
 | `wait.ts`       | `waitForUrl`, `waitForTestId`, `waitForGone` (prefer over `browser.pause`)                                                                 |
 | `selectors.ts`  | `byTestId('…')` → `$('[data-testid="…"]')`                                                                                                 |
+| `table.ts`      | `findTableRow(text)` finds a data-table row, pressing Next through server pages until it appears                                           |
 | `screenshot.ts` | `captureStep`, `captureDocs`, `captureRaw`, failure dumps                                                                                  |
 | `artifacts.ts`  | Run id (`{stamp}-{suite}-{hex}`), dirs, manifest + gallery                                                                                 |
 | `report.ts`     | Static `index.html` gallery (failure-first) from `manifest.json`                                                                           |

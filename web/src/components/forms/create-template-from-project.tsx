@@ -4,7 +4,7 @@ import {Field, Form} from '@/components/form';
 import {resourceNameSchema} from '@/lib/input-limits';
 import {INPUT_LIMITS} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
-import {useGetProject, useGetTeams} from '@/hooks/queries';
+import {useGetProject} from '@/hooks/queries';
 import {
   useIsAuthorisedTo,
   useCanCreateTemplate,
@@ -19,10 +19,10 @@ import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 import {TemplateOwnerCallout} from './template-owner-callout';
 import {
   buildTemplateTeamField,
-  getPossibleTeamsForAction,
   getTemplateTeamFieldState,
   resolveTemplateTeamId,
 } from './template-team-field';
+import {usePossibleTeamsForAction} from './use-team-options';
 import {config} from '@/constants';
 
 interface CreateTemplateFromProjectForm {
@@ -50,7 +50,6 @@ export function CreateTemplateFromProjectForm({
   const user = useRequiredUser();
   const {refreshToken} = useAuth();
   const queryClient = useQueryClient();
-  const {data: teams} = useGetTeams({user});
   const {data: projectData} = useGetProject({user, projectId});
 
   const canCreateTemplate = useCanCreateTemplate();
@@ -60,11 +59,10 @@ export function CreateTemplateFromProjectForm({
     action: Action.CREATE_TEMPLATE,
   });
 
-  const possibleTeams = getPossibleTeamsForAction({
-    teams: teams?.teams,
+  const {possibleTeams, more: moreTeams} = usePossibleTeamsForAction({
+    user,
     canCreateGlobally,
     createInTeamAction: Action.CREATE_TEMPLATE_IN_TEAM,
-    decodedToken: user.decodedToken,
   });
 
   const {showTeamCallout, showTeamDropdown} = getTemplateTeamFieldState({
@@ -87,7 +85,13 @@ export function CreateTemplateFromProjectForm({
   ];
 
   if (showTeamDropdown) {
-    fields.push(buildTemplateTeamField({canCreateGlobally, possibleTeams}));
+    fields.push(
+      buildTemplateTeamField({
+        canCreateGlobally,
+        possibleTeams,
+        more: moreTeams,
+      })
+    );
   }
 
   const onSubmit = async (values: {

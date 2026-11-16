@@ -6,6 +6,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 vi.mock('../../utils/apiOperations/users', () => ({
   impersonateUser: vi.fn(),
   listUsers: vi.fn(),
+  listAllUsers: vi.fn(),
 }));
 // Mocked so the slice under test does not transitively import the real store
 // (client.tsx -> store.tsx) which sets up redux-persist/IndexedDB.

@@ -588,7 +588,7 @@ This guide focuses on user, team, and {{notebook}} management. It does **not** c
    - **Disable**: Disable the account so the user can no longer sign in ({{notebooks}} and records they contributed are retained). Disabled users appear under **Archive → Users**, where they can be re-enabled.
 
 ```{screenshot} user-roles/01-dashboard-sidebar.png
-:alt: {{FAIMS}} {{Dashboard}} Users page with Users and Invites tabs. The left sidebar has a Content section ({{Notebooks}}, Templates) and a Management section; Users, Map layers, Teams, and Archive appear according to your roles
+:alt: {{FAIMS}} {{Dashboard}} Users page with Users and Invites tabs. The left sidebar has a Content section ({{Notebooks}}, Templates, Map layers) and a Management section; Users, Teams, and Archive appear according to your roles
 :align: right
 :width: 100%
 ```

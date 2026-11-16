@@ -6,7 +6,6 @@ import {designFileSchema, resourceNameSchema} from '@/lib/input-limits';
 import {INPUT_LIMITS} from '@faims3/data-model';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
-import {useGetTeams} from '@/hooks/queries';
 import {
   useIsAuthorisedTo,
   useCanCreateTemplate,
@@ -26,10 +25,10 @@ import {
 import {TemplateOwnerCallout} from './template-owner-callout';
 import {
   buildTemplateTeamField,
-  getPossibleTeamsForAction,
   getTemplateTeamFieldState,
   resolveTemplateTeamId,
 } from './template-team-field';
+import {usePossibleTeamsForAction} from './use-team-options';
 
 interface CreateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -55,7 +54,6 @@ export function CreateTemplateForm({
   const user = useRequiredUser();
   const {refreshToken} = useAuth();
   const queryClient = useQueryClient();
-  const {data: teams} = useGetTeams({user});
 
   const canCreateTemplate = useCanCreateTemplate();
 
@@ -68,11 +66,10 @@ export function CreateTemplateForm({
     action: Action.CREATE_PUBLIC_TEMPLATE,
   });
 
-  const possibleTeams = getPossibleTeamsForAction({
-    teams: teams?.teams,
+  const {possibleTeams, more: moreTeams} = usePossibleTeamsForAction({
+    user,
     canCreateGlobally,
     createInTeamAction: Action.CREATE_TEMPLATE_IN_TEAM,
-    decodedToken: user.decodedToken,
   });
 
   const {showTeamCallout, showTeamDropdown} = getTemplateTeamFieldState({
@@ -125,7 +122,13 @@ export function CreateTemplateForm({
   }
 
   if (showTeamDropdown) {
-    fields.push(buildTemplateTeamField({canCreateGlobally, possibleTeams}));
+    fields.push(
+      buildTemplateTeamField({
+        canCreateGlobally,
+        possibleTeams,
+        more: moreTeams,
+      })
+    );
   }
 
   const onSubmit = async (values: {

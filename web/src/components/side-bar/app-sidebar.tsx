@@ -15,7 +15,7 @@ import {
 import {config} from '@/constants';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/queries';
-import {Action, GetListTemplatesResponse} from '@faims3/data-model';
+import {Action} from '@faims3/data-model';
 import {Link, useLocation} from '@tanstack/react-router';
 import {
   ArchiveRestore,
@@ -28,6 +28,84 @@ import {
 } from 'lucide-react';
 import * as React from 'react';
 import Logo from '../logo';
+
+/** Max nested catalogue names in the Control Centre left nav (not the picker max). */
+export const SIDEBAR_CATALOGUE_RECENT_LIMIT = 10;
+
+const VIEW_ALL_TITLE = 'View all';
+
+type NamedCatalogueItem = {
+  _id: string;
+  name: string;
+};
+
+/**
+ * Reads one catalogue page from a list query: the `{<itemsKey>, nextStartKey}`
+ * object every paginated list GET returns. A bare array is accepted too and
+ * treated as a complete list.
+ */
+export function cataloguePageFromQueryData(
+  data: unknown,
+  itemsKey: 'notebooks' | 'templates' | 'teams'
+): {
+  items: NamedCatalogueItem[];
+  nextStartKey?: string;
+} {
+  if (!data) {
+    return {items: []};
+  }
+  if (Array.isArray(data)) {
+    return {items: data};
+  }
+  if (typeof data === 'object' && itemsKey in data) {
+    const page = data as {nextStartKey?: string} & Record<string, unknown>;
+    const items = page[itemsKey];
+    return {
+      items: Array.isArray(items) ? (items as NamedCatalogueItem[]) : [],
+      nextStartKey: page.nextStartKey,
+    };
+  }
+  return {items: []};
+}
+
+/**
+ * Builds nested catalogue rows: up to {@link SIDEBAR_CATALOGUE_RECENT_LIMIT}
+ * recent names, a "View all" row when more exist (length or `nextStartKey`),
+ * and the empty placeholder only when the catalogue is truly empty.
+ */
+export function catalogueSubItems({
+  items,
+  nextStartKey,
+  urlPrefix,
+  emptyId,
+  emptyTitle,
+}: {
+  items: NamedCatalogueItem[];
+  nextStartKey?: string;
+  urlPrefix: string;
+  emptyId: string;
+  emptyTitle: string;
+}): NonNullable<NavItem['items']> {
+  const visible = items.slice(0, SIDEBAR_CATALOGUE_RECENT_LIMIT);
+  const hasMore =
+    items.length > SIDEBAR_CATALOGUE_RECENT_LIMIT || Boolean(nextStartKey);
+  if (visible.length === 0 && !hasMore) {
+    return [{id: emptyId, title: emptyTitle}];
+  }
+  const rows: NonNullable<NavItem['items']> = visible.map(({_id, name}) => ({
+    id: _id,
+    title: name,
+    url: `${urlPrefix}/${_id}`,
+  }));
+  if (hasMore) {
+    rows.push({
+      id: `view-all-${urlPrefix.replace(/^\//, '')}`,
+      title: VIEW_ALL_TITLE,
+      url: urlPrefix,
+    });
+  }
+  return rows;
+}
 
 /**
  * AppSidebar component renders the main application sidebar with navigation items
@@ -52,48 +130,70 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   // currently anyone can list teams - but it is filtered per resource
   const canSeeTeams = true;
 
-  const {data: projects} = useGetProjects({user, enabled: canSeeProjects});
-  const {data: templates} = useGetTemplates({user, enabled: canSeeTemplates});
-  const {data: teams} = useGetTeams({user, enabled: canSeeTeams});
+  // Each catalogue asks for its newest few names only. `nextStartKey` on the
+  // page says more exist, which is what turns on "View all".
+  const {data: projects} = useGetProjects({
+    user,
+    enabled: canSeeProjects,
+    limit: SIDEBAR_CATALOGUE_RECENT_LIMIT,
+  });
+  const {data: templates} = useGetTemplates({
+    user,
+    enabled: canSeeTemplates,
+    limit: SIDEBAR_CATALOGUE_RECENT_LIMIT,
+  });
+  const {data: teams} = useGetTeams({
+    user,
+    enabled: canSeeTeams,
+    limit: SIDEBAR_CATALOGUE_RECENT_LIMIT,
+  });
 
   const topSectionNavItems: NavItem[] = [];
   const bottomSectionNavItems: NavItem[] = [];
 
   if (canSeeProjects) {
+    const projectPage = cataloguePageFromQueryData(projects, 'notebooks');
     topSectionNavItems.push({
       title: config.notebookNamePluralCapitalized,
       url: '/projects',
       icon: LetterText,
       testId: 'web-nav-projects',
       isActive: pathname.startsWith('/projects') || pathname === '/',
-      items:
-        projects && projects?.length > 0
-          ? projects.map(({name, _id}) => ({
-              id: _id,
-              title: name,
-              url: `/projects/${_id}`,
-            }))
-          : [{id: 'no-projects', title: `No ${config.notebookNamePlural}...`}],
+      items: catalogueSubItems({
+        items: projectPage.items,
+        nextStartKey: projectPage.nextStartKey,
+        urlPrefix: '/projects',
+        emptyId: 'no-projects',
+        emptyTitle: `No ${config.notebookNamePlural}...`,
+      }),
     });
   }
 
   if (canSeeTemplates) {
+    const templatePage = cataloguePageFromQueryData(templates, 'templates');
     topSectionNavItems.push({
       title: 'Templates',
       url: '/templates',
       icon: LayoutTemplate,
       testId: 'web-nav-templates',
       isActive: pathname.startsWith('/templates'),
-      items:
-        templates && templates?.length > 0
-          ? templates.map(
-              ({_id, name}: GetListTemplatesResponse['templates'][number]) => ({
-                id: _id,
-                title: name,
-                url: `/templates/${_id}`,
-              })
-            )
-          : [{id: 'no-templates', title: 'No templates...'}],
+      items: catalogueSubItems({
+        items: templatePage.items,
+        nextStartKey: templatePage.nextStartKey,
+        urlPrefix: '/templates',
+        emptyId: 'no-templates',
+        emptyTitle: 'No templates...',
+      }),
+    });
+  }
+
+  if (canSeeMapLayers) {
+    topSectionNavItems.push({
+      title: 'Map layers',
+      url: '/map-layers',
+      icon: Layers,
+      testId: 'web-nav-map-layers',
+      isActive: pathname.startsWith('/map-layers'),
     });
   }
 
@@ -116,31 +216,21 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
     });
   }
 
-  if (canSeeMapLayers) {
-    bottomSectionNavItems.push({
-      title: 'Map layers',
-      url: '/map-layers',
-      icon: Layers,
-      testId: 'web-nav-map-layers',
-      isActive: pathname.startsWith('/map-layers'),
-    });
-  }
-
   if (canSeeTeams) {
+    const teamPage = cataloguePageFromQueryData(teams, 'teams');
     bottomSectionNavItems.push({
       title: 'Teams',
       url: '/teams',
       icon: House,
       testId: 'web-nav-teams',
       isActive: pathname.startsWith('/teams'),
-      items:
-        teams && teams.teams.length > 0
-          ? teams.teams.map(({_id, name}) => ({
-              id: _id,
-              title: name,
-              url: `/teams/${_id}`,
-            }))
-          : [{id: 'no-teams', title: 'No teams...'}],
+      items: catalogueSubItems({
+        items: teamPage.items,
+        nextStartKey: teamPage.nextStartKey,
+        urlPrefix: '/teams',
+        emptyId: 'no-teams',
+        emptyTitle: 'No teams...',
+      }),
     });
   }
 

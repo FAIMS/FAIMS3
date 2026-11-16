@@ -4,9 +4,13 @@
  * @file Smoke tests for {@link InfoPanel} with Redux + theme providers.
  */
 
-import {describe, expect, test} from 'vitest';
+import {describe, expect, test, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {InfoPanel} from './info-panel';
+
+vi.mock('./mdx-editor', () => ({
+  MdxEditor: () => null,
+}));
 
 import {createDesignerStore} from '../createDesignerStore';
 import {Provider} from 'react-redux';

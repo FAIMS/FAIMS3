@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: Apache-2.0
-import type {GetNotebookListWithStatsResponse} from '@faims3/data-model';
 import {clsx, type ClassValue} from 'clsx';
 import {twMerge} from 'tailwind-merge';
 import {z} from 'zod';
@@ -91,32 +90,3 @@ export const downloadFile = async (
 
   link.click();
 };
-
-function notebookCreatedMs(
-  row: GetNotebookListWithStatsResponse[number]
-): number {
-  if (row.createdAt) {
-    const t = Date.parse(row.createdAt);
-    if (!Number.isNaN(t)) {
-      return t;
-    }
-  }
-  const head = row._id.split('-')[0] ?? '';
-  const n = parseInt(head, 10);
-  if (!Number.isNaN(n) && String(n) === head) {
-    return n;
-  }
-  return 0;
-}
-
-/**
- * Returns a new array of notebook list rows sorted newest first (by `createdAt`
- * when present, else the millisecond prefix of standard Couch `_id` values).
- */
-export function sortNotebookListNewestFirst(
-  notebooks: GetNotebookListWithStatsResponse
-): GetNotebookListWithStatsResponse {
-  return [...notebooks].sort(
-    (a, b) => notebookCreatedMs(b) - notebookCreatedMs(a)
-  );
-}

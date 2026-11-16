@@ -34,6 +34,14 @@ export function dateToIso(date: Date): string {
   return date.toISOString();
 }
 
+/** Compact Australian calendar date (DD/MM/YY) in the local timezone. */
+function formatCompactAuDate(date: Date): string {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(-2);
+  return `${day}/${month}/${year}`;
+}
+
 /** Format an ISO-8601 timestamp string for display in detail panels. */
 export function displayIsoTimestamp(timestamp: string): string {
   const ms = Date.parse(timestamp);
@@ -43,20 +51,17 @@ export function displayIsoTimestamp(timestamp: string): string {
   return displayDateTime({timestamp: ms});
 }
 
+/** Format a Unix ms timestamp for tables and panels (`3:30 PM, 02/04/25`). */
 export function displayDateTime({timestamp}: {timestamp: number}): string {
   const date = new Date(timestamp);
-  // Format: Apr 2, 2025, 3:30 PM
+  // Format: 3:30 PM, 02/04/25
   return (
     date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
     }) +
     ', ' +
-    date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
+    formatCompactAuDate(date)
   );
 }
 
@@ -72,12 +77,9 @@ export const formatDateTimeLocal = (date: Date): string => {
 
 /** Format date for display (DD/MM/YY HH:MM). */
 export const formatDisplayDate = (date: Date): string => {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = String(date.getFullYear()).slice(-2);
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes} on ${day}/${month}/${year}`;
+  return `${hours}:${minutes} on ${formatCompactAuDate(date)}`;
 };
 
 /** Whole days from now until {@link date} (ceil). */

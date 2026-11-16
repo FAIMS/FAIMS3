@@ -13,20 +13,20 @@ be visible if you only have the _Operations Administrator_ role.
 
 - **{{Notebooks}}** — View and manage data collection {{notebooks}}
 - **Templates** — View and manage reusable notebook templates
+- **Map layers** — Upload georeferenced overlays and link them to {{notebooks}} for offline use.
+  See [Map layers](map-layers.md)
 
 ## Management
 
 - **Users** — View all system users and their roles (admin users only)
 - **Stats** — Instance-wide usage counts overall, per team, and per person
   (Operations Administrator and Super User)
-- **Map layers** — Upload georeferenced overlays and link them to {{notebooks}} for offline use.
-  See [Map layers](map-layers.md)
 - **Teams** — View and manage teams
 - **Archive** — Archived {{notebooks}}, templates, teams, and disabled users (shown when you can
   see any of those)
 
 ```{screenshot} user-roles/01-dashboard-sidebar.png
-:alt: {{Dashboard}} Users page with the left sidebar. Content lists {{Notebooks}} and Templates; Management lists Users, Map layers, Teams, and Archive depending on your roles
+:alt: {{Dashboard}} Users page with the left sidebar. Content lists {{Notebooks}}, Templates, and Map layers; Management lists Users, Teams, and Archive depending on your roles
 :width: 100%
 ```
 

@@ -122,9 +122,12 @@ for code work.
   `pnpm --filter=@faims3/data-model test` (jest),
   `pnpm --filter=@faims3/build-config test` (`node:test` via tsx),
   `pnpm --filter=@faims3/api test` (vitest; uses in-memory PouchDB, no CouchDB
-  needed), `pnpm --filter=@faims3/app test` (vitest).
-  Note `web` and `forms` use bare `vitest`, which watches in a TTY — pass
-  `--run` (e.g. `pnpm --filter=@faims3/web exec vitest --run`) for one-shot runs.
+  needed), `pnpm --filter=@faims3/app test` (vitest),
+  `pnpm --filter=@faims3/web test` (vitest run in jsdom; does not start
+  Chrome). Watch with `pnpm --filter=@faims3/web run test:watch`. Opt into
+  Chrome with `pnpm --filter=@faims3/web exec vitest --browser.enabled`.
+  `@faims3/forms` uses bare `vitest`, which watches in a TTY — pass `--run`
+  (e.g. `pnpm --filter=@faims3/forms exec vitest --run`) for one-shot runs.
 - Browser e2e (stack must be up + seeded):
   `pnpm --filter=@faims3/e2e test:e2e:headless:ci` (smoke → web → app).
   See `e2e/README.md` and `e2e/SUITE.md`. CI:

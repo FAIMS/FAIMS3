@@ -5,6 +5,8 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-security-helper'));
 
 import type {
+  ListingSearch,
+  ListingSearchPointer,
   NotebookDefinition,
   SetupValues,
   RegisteredPlan,
@@ -27,6 +29,13 @@ import {
   TEMPLATES_BY_TEAM_ID,
   TEMPLATES_LISTING_BY_TEAM_ID,
   TEMPLATES_LISTING_BY_TEMPLATE_ID,
+  isListingViewRow,
+  listingViewPrefixRange,
+  queryListingPage,
+  queryListingSearchPage,
+  templateListingViewAndPrefix,
+  templateSearchViewAndPrefix,
+  toPaginatedList,
   getPlanTypeDefinition,
   normalizeNotebookTemplateUiSpecification,
   normalizeRootDescriptionForStore,
@@ -37,6 +46,7 @@ import {
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
+import {assertUiSpecIfMatch} from '../utils/uiSpecIfMatch';
 import {nowIso} from '../time';
 import {generateRandomString} from '../utils';
 import {
@@ -65,7 +75,7 @@ export const getTemplates = async ({
       ? await templatesDb.query<TemplateListItem>(
           TEMPLATES_LISTING_BY_TEAM_ID,
           {
-            key: teamId,
+            ...listingViewPrefixRange([teamId]),
             include_docs: false,
           }
         )
@@ -75,9 +85,88 @@ export const getTemplates = async ({
             include_docs: false,
           }
         );
-    return resultList.rows
-      .filter(row => row.value != null && row.id && !row.id.startsWith('_'))
-      .map(row => row.value!);
+    return resultList.rows.filter(isListingViewRow).map(row => row.value);
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading templates from the Template DB.'
+    );
+  }
+};
+
+/** One GET /api/templates page: visible rows plus optional `nextStartKey`. */
+export type PaginatedTemplateList = {
+  templates: TemplateListItem[];
+  nextStartKey?: string;
+};
+
+/**
+ * Page of thin listing-view rows the caller may read, newest `updatedAt`
+ * first. `limit` counts visible rows after archive + visibility + `canRead`.
+ * Paging, the exclusive JSON `[updatedAtMs, templateId]` cursor and the scan
+ * cap come from the shared {@link queryListingPage}.
+ *
+ * With `search`, the page holds the non-archived templates whose name
+ * matches, in word order; the caller must not combine it with
+ * `includeArchived`.
+ */
+export const getTemplatesPage = async ({
+  teamId,
+  includeArchived,
+  search,
+  limit,
+  startKey,
+  visibility,
+  canRead,
+}: {
+  teamId?: string;
+  includeArchived: boolean;
+  search?: ListingSearch;
+  limit: number;
+  startKey?: string;
+  visibility?: 'public' | 'private';
+  canRead: (template: TemplateListItem) => boolean;
+}): Promise<PaginatedTemplateList> => {
+  const templatesDb = getTemplatesDb();
+  const include = (item: TemplateListItem) => {
+    const archived = item.archived === true;
+    if (includeArchived ? !archived : archived) return false;
+    if (visibility === 'public' && item.isPublic !== true) return false;
+    if (visibility === 'private' && item.isPublic === true) return false;
+    return canRead(item);
+  };
+  try {
+    if (search) {
+      const {view, prefix, listingView} = templateSearchViewAndPrefix({
+        teamId,
+      });
+      return toPaginatedList(
+        await queryListingSearchPage<TemplateListItem>({
+          query: (name, options) =>
+            templatesDb.query<ListingSearchPointer>(name, options),
+          view,
+          prefix,
+          search,
+          loadRows: keys =>
+            templatesDb.query<TemplateListItem>(listingView, {
+              keys,
+              include_docs: false,
+            }),
+          limit,
+          startKey,
+          include,
+        }),
+        'templates'
+      );
+    }
+    const page = await queryListingPage<TemplateListItem>({
+      query: (view, options) =>
+        templatesDb.query<TemplateListItem>(view, options),
+      ...templateListingViewAndPrefix({teamId, includeArchived}),
+      limit,
+      startKey,
+      include,
+    });
+    return toPaginatedList(page, 'templates');
   } catch (error) {
     throw new Exceptions.InternalSystemError(
       'An error occurred while reading templates from the Template DB.'
@@ -416,12 +505,14 @@ export const changeTemplateTeam = async (
 
 /**
  * Replaces the full uiSpecification bundle and bumps version.
+ * Optional If-Match (uiSpec hash) refuses the write when the live design moved.
  */
 export const updateTemplateUiSpecification = async (
   templateId: string,
   uiSpecification:
     | PutUpdateTemplateUiSpecificationInput
-    | NotebookUiSpecificationInput
+    | NotebookUiSpecificationInput,
+  options?: {ifMatchHeader?: string}
 ): Promise<ExistingTemplateDocument> => {
   let normalizedUiSpecification;
   try {
@@ -442,6 +533,10 @@ export const updateTemplateUiSpecification = async (
       'An error occurred while trying to fetch an existing template. Are you sure the ID is correct?'
     );
   }
+  assertUiSpecIfMatch(
+    existingTemplate.uiSpecProperties.hash,
+    options?.ifMatchHeader
+  );
 
   // Now on the new put, we make sure to include the _rev of previous document which allows replacement
   const templateDb = getTemplatesDb();
