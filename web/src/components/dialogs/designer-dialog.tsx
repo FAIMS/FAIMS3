@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import React, {useEffect, useRef, useState} from 'react';
+import {useAuth} from '@/context/auth-provider';
 import {Spinner} from '@/components/ui/spinner';
 import {DesignerWidget} from '../../designer/DesignerWidget';
 import type {DesignerResourceKind} from '../../designer/integration/draftStorage';
@@ -62,6 +63,7 @@ export function DesignerDialog({
   liveUiSpecHash,
   refreshLiveDesign,
 }: DesignerDialogProps) {
+  const {user} = useAuth();
   const [mounted, setMounted] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
   const [animateOut, setAnimateOut] = useState(false);
@@ -190,6 +192,7 @@ export function DesignerDialog({
             existingRecordCount={existingRecordCount}
             onClose={handleWidgetClose}
             designerMode={designerMode}
+            feedbackToken={user?.token}
             userId={userId}
             resourceKind={resourceKind}
             resourceId={resourceId}

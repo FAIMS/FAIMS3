@@ -28,6 +28,7 @@ import {
   PostExchangeTokenResponseSchema,
 } from '@faims3/data-model';
 import {createFileRoute, Outlet} from '@tanstack/react-router';
+import {FeedbackButton} from '@/components/feedback/feedback-dialog';
 import {ExternalLinkIcon} from 'lucide-react';
 import {toast} from 'sonner';
 
@@ -205,6 +206,13 @@ function RouteComponent() {
                   </Tooltip>
                 </TooltipProvider>
 
+                {user && (
+                  <FeedbackButton
+                    source="web"
+                    token={user.token}
+                    testId="web-feedback-button"
+                  />
+                )}
                 <ModeToggle />
               </div>
             </div>

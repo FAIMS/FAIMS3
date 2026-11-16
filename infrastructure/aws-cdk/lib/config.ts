@@ -353,6 +353,11 @@ export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS =
   SHARED_DEFAULTS.exportRateLimiterWindowMs;
 export const DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW =
   SHARED_DEFAULTS.exportRateLimiterPerWindow;
+/** Defaults shared with Conductor env wiring (`FEEDBACK_RATE_LIMITER_*`). */
+export const DEFAULT_FEEDBACK_RATE_LIMITER_WINDOW_MS =
+  SHARED_DEFAULTS.feedbackRateLimiterWindowMs;
+export const DEFAULT_FEEDBACK_RATE_LIMITER_PER_WINDOW =
+  SHARED_DEFAULTS.feedbackRateLimiterPerWindow;
 
 /**
  * The AWS-specific extension of the shared core config.

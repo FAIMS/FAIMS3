@@ -36,6 +36,7 @@ import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
 import {SetupFormPanel} from './components/setup-form-panel';
 import {config} from '@/constants';
+import {FeedbackButton} from '@/components/feedback/feedback-dialog';
 import {downloadFile} from '@/lib/utils';
 import {
   discardDraft,
@@ -85,6 +86,8 @@ export interface DesignerWidgetProps {
   animationDuration?: number;
   /** Scale factor when hidden (`scale(animationScale)` before fade-in). */
   animationScale?: number;
+  /** Access token for in-app feedback. Omitted in tests that do not exercise it. */
+  feedbackToken?: string;
   /** Signed-in user id (`user.user.id`) for origin-private draft keys. */
   userId?: string;
   /** Resource collection; a project draft must not load as a template. */
@@ -178,6 +181,7 @@ export function DesignerWidget({
   loadingDuration = 1000,
   animationDuration = 300,
   animationScale = 0.95,
+  feedbackToken,
   userId,
   resourceKind,
   resourceId,
@@ -517,16 +521,29 @@ export function DesignerWidget({
                   <Typography variant="h6" sx={{fontWeight: 'bold'}}>
                     {config.notebookNameCapitalized} Editor
                   </Typography>
-                  <Button
-                    aria-label="close designer"
-                    data-testid="web-designer-close-button"
-                    onClick={requestClose}
-                    size="medium"
-                    endIcon={<CloseRoundedIcon fontSize="medium" />}
-                    sx={designerOverlayCloseButtonSx}
-                  >
-                    Close
-                  </Button>
+                  <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                    {feedbackToken && (
+                      <FeedbackButton
+                        source="designer"
+                        token={feedbackToken}
+                        testId="web-designer-feedback-button"
+                        component={() => {
+                          const location = memoryRouterInstance.state.location;
+                          return `${location.pathname}${location.search}${location.hash}`;
+                        }}
+                      />
+                    )}
+                    <Button
+                      aria-label="close designer"
+                      data-testid="web-designer-close-button"
+                      onClick={requestClose}
+                      size="medium"
+                      endIcon={<CloseRoundedIcon fontSize="medium" />}
+                      sx={designerOverlayCloseButtonSx}
+                    >
+                      Close
+                    </Button>
+                  </Box>
                 </Toolbar>
               </AppBar>
 

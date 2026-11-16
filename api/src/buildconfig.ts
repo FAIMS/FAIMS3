@@ -38,6 +38,12 @@ export const DEFAULT_EXPORT_RATE_LIMITER_WINDOW_MS =
 /** Fallback export-limiter allowance if a caller needs the constant. */
 export const DEFAULT_EXPORT_RATE_LIMITER_PER_WINDOW =
   SHARED_DEFAULTS.exportRateLimiterPerWindow;
+/** Fallback feedback-limiter window (10 min) if a caller needs the constant. */
+export const DEFAULT_FEEDBACK_RATE_LIMITER_WINDOW_MS =
+  SHARED_DEFAULTS.feedbackRateLimiterWindowMs;
+/** Fallback feedback-limiter allowance if a caller needs the constant. */
+export const DEFAULT_FEEDBACK_RATE_LIMITER_PER_WINDOW =
+  SHARED_DEFAULTS.feedbackRateLimiterPerWindow;
 
 const parsed = parseApiEnv(process.env);
 

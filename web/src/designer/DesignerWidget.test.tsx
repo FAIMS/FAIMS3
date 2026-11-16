@@ -5,7 +5,7 @@
  */
 
 import {migrateNotebook} from '@faims3/data-model';
-import {render, waitFor} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import {ReactNode} from 'react';
 import {useStore} from 'react-redux';
 import {afterEach, describe, expect, it, vi} from 'vitest';
@@ -113,6 +113,20 @@ describe('DesignerWidget', () => {
     expect(storeIds.length).toBeGreaterThan(0);
     expect(new Set(storeIds).size).toBe(storeIds.length);
     expect(seen.contextIds.at(-1)).toEqual(new Set(storeIds));
+  });
+
+  it('shows a Feedback control on the designer app bar when given a token', async () => {
+    render(
+      <DesignerWidget
+        notebook={fetchNotebook()}
+        onClose={() => {}}
+        loadingDuration={0}
+        feedbackToken="test-token"
+      />
+    );
+    const button = await screen.findByTestId('web-designer-feedback-button');
+    expect(button.textContent).toContain('Feedback');
+    expect(button.querySelector('svg')).toBeTruthy();
   });
 
   it('restores a local draft instead of the server notebook', async () => {
