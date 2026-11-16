@@ -220,11 +220,11 @@ const apiContract: Record<string, EnvResolver> = {
     runtime.limits.exportRateLimiterPerWindow ??
     SHARED_DEFAULTS.exportRateLimiterPerWindow,
   FEEDBACK_EMAIL: runtime =>
-    runtime.limits.feedbackEmail ||
+    runtime.support.feedbackEmail ||
     runtime.support.supportEmail ||
     SHARED_DEFAULTS.feedbackEmail,
   FEEDBACK_SUBJECT: runtime =>
-    runtime.limits.feedbackSubject || SHARED_DEFAULTS.feedbackSubject,
+    runtime.support.feedbackSubject || SHARED_DEFAULTS.feedbackSubject,
   FEEDBACK_RATE_LIMITER_ENABLED: runtime =>
     runtime.limits.feedbackRateLimiterEnabled ?? true,
   FEEDBACK_RATE_LIMITER_WINDOW_MS: runtime =>

@@ -351,6 +351,8 @@ The **`aws`** fields are documented below.
 
 - `support` (**in `core.support`**): Links shown in the app (support, privacy, contact, docs).
   - `supportEmail`: Support email address (default: support@fieldmark.au)
+  - `feedbackEmail`: Destination for in-app feedback mail (`FEEDBACK_EMAIL`). When omitted, env generation falls back to `supportEmail`.
+  - `feedbackSubject`: Subject line for in-app feedback mail (`FEEDBACK_SUBJECT`). Defaults to `In-app feedback`.
   - `privacyPolicyUrl`: Privacy policy URL (default: https://fieldnote.au/privacy)
   - `appContactUrl`: Contact page URL; empty string hides the contact link
   - `docsUrl`: (Optional) Documentation site URL
@@ -412,8 +414,6 @@ The **`aws`** fields are documented below.
   - `exportRateLimiterEnabled` (`core.limits`): (default `true`) Dedicated limiter for notebook export mint/redeem (`EXPORT_RATE_LIMITER_ENABLED`). Independent of `rateLimiterEnabled` so ZIP/GDAL work stays capped when the global IP limiter is off.
   - `exportRateLimiterWindowMs` (`core.limits`): (default `600000`) Export-limiter window in milliseconds (`EXPORT_RATE_LIMITER_WINDOW_MS`).
   - `exportRateLimiterPerWindow` (`core.limits`): (default `20`) Export mint/redeem requests allowed per window (`EXPORT_RATE_LIMITER_PER_WINDOW`). Raise for bulk scripted dumps.
-  - `feedbackEmail` (`core.limits`): Destination for in-app feedback mail (`FEEDBACK_EMAIL`). When omitted, env generation falls back to `support.supportEmail` (default `support@fieldmark.au`).
-  - `feedbackSubject` (`core.limits`): Subject line for in-app feedback mail (`FEEDBACK_SUBJECT`). Defaults to `In-app feedback`.
   - `feedbackRateLimiterEnabled` (`core.limits`): (default `true`) Dedicated limiter for `POST /api/feedback` (`FEEDBACK_RATE_LIMITER_ENABLED`). Independent of `rateLimiterEnabled` so authenticated users cannot use Conductor as an open mail relay when the global IP limiter is off.
   - `feedbackRateLimiterWindowMs` (`core.limits`): (default `600000`) Feedback-limiter window in milliseconds (`FEEDBACK_RATE_LIMITER_WINDOW_MS`).
   - `feedbackRateLimiterPerWindow` (`core.limits`): (default `5`) Feedback submissions allowed per authenticated user per window (`FEEDBACK_RATE_LIMITER_PER_WINDOW`).
