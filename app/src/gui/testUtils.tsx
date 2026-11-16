@@ -47,6 +47,9 @@ const mockState = {
   projects: {
     servers: {
       'test-server': {
+        serverId: 'test-server',
+        serverUrl: 'http://test-server.example',
+        serverTitle: 'Test Server',
         listed: {},
         activated: {
           'test-project': testProject,

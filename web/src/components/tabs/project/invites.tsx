@@ -5,7 +5,7 @@ import {useGetInviteColumns} from '@/components/tables/project-invites';
 import {config} from '@/constants';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {removeInviteForProject} from '@/hooks/project-hooks';
-import {useGetProjectInvites} from '@/hooks/queries';
+import {usePagedProjectInvites} from '@/hooks/queries';
 import {Action} from '@faims3/data-model';
 
 /**
@@ -18,13 +18,14 @@ import {Action} from '@faims3/data-model';
 const ProjectInvites = ({projectId}: {projectId: string}) => {
   const user = useRequiredUser();
 
-  const {data, isLoading} = useGetProjectInvites({
-    user,
-    projectId,
-    // this redirect is designed to bring the user back to the main app logged
-    // in
-    redirect: config.appTokenReturnPath,
-  });
+  const {invites, tableLoading, pageSize, serverPagination} =
+    usePagedProjectInvites({
+      user,
+      projectId,
+      // this redirect is designed to bring the user back to the main app logged
+      // in
+      redirect: config.appTokenReturnPath,
+    });
 
   const columns = useGetInviteColumns({
     projectId,
@@ -60,8 +61,10 @@ const ProjectInvites = ({projectId}: {projectId: string}) => {
   return (
     <DataTable
       columns={columns}
-      data={data || []}
-      loading={isLoading}
+      data={invites}
+      loading={tableLoading}
+      defaultRowsPerPage={pageSize}
+      serverPagination={serverPagination}
       button={canInviteSomeUser && <CreateProjectInvite />}
     />
   );

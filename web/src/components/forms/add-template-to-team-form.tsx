@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {Form} from '@/components/form';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
-import {useGetTeams, useGetTemplate} from '@/hooks/queries';
+import {useGetTemplate} from '@/hooks/queries';
 import {
   errorMessageFromTemplateJsonBody,
   modifyTeamForTemplate,
@@ -13,6 +13,7 @@ import {
   defaultTeamForReassign,
   NO_TEAM_SENTINEL,
 } from './template-team-field';
+import {useTeamOptions} from './use-team-options';
 
 interface AddTemplateToTeamFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -35,11 +36,13 @@ export function AddTemplateToTeamForm({
 }: AddTemplateToTeamFormProps) {
   const user = useRequiredUser();
   const queryClient = useQueryClient();
-  const teams = useGetTeams({user});
   const {data: template, isLoading: templateLoading} = useGetTemplate({
     user,
     templateId,
   });
+  // Any visible team can take the template. The current owner is offered
+  // even when it is not on the first page of teams.
+  const teams = useTeamOptions({user, ensureTeamId: template?.ownedByTeamId});
 
   const canAddTemplateToTeam = useIsAuthorisedTo({
     action: Action.CHANGE_TEMPLATE_TEAM,
@@ -61,7 +64,7 @@ export function AddTemplateToTeamForm({
     return <>Loading teams...</>;
   }
 
-  const possibleTeams = teams.data?.teams ?? [];
+  const possibleTeams = teams.teams;
 
   if (!teams.isLoading && possibleTeams.length === 0 && !canRemoveFromTeam) {
     return <>No teams available to assign this template to.</>;
@@ -72,6 +75,7 @@ export function AddTemplateToTeamForm({
       canCreateGlobally: false,
       includeNoTeam: canRemoveFromTeam,
       possibleTeams,
+      more: teams.more,
       label: 'Team',
       description: canRemoveFromTeam
         ? 'Choose a team to own this template, or select "No team" to remove team ownership.'

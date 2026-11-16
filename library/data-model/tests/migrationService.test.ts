@@ -473,6 +473,47 @@ describe('Migration System Tests', () => {
       expect(String(skipped[0].error)).toContain('data DB missing');
     });
 
+    it('keeps project order in queued and skipped when opening concurrently', async () => {
+      const projects = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5'].map(id => ({
+        _id: id,
+        dataDb: {db_name: `data-${id}`},
+      }));
+      let inFlight = 0;
+      let peak = 0;
+
+      const {queued, skipped} = await collectProjectDataDbs({
+        projects,
+        concurrency: 3,
+        openDataDb: async projectId => {
+          inFlight += 1;
+          peak = Math.max(peak, inFlight);
+          // Earlier projects take longer, so completion order is reversed.
+          const index = Number(projectId.slice(1));
+          await new Promise(resolve => setTimeout(resolve, (6 - index) * 3));
+          inFlight -= 1;
+          if (projectId === 'p1' || projectId === 'p4') {
+            throw new Error(`cannot open ${projectId}`);
+          }
+          return {name: `pouch-${projectId}`} as DatabaseInterface;
+        },
+      });
+
+      expect(peak).toBe(3);
+      expect(queued.map(entry => entry.projectId)).toEqual([
+        'p0',
+        'p2',
+        'p3',
+        'p5',
+      ]);
+      expect(queued.map(entry => entry.dbName)).toEqual([
+        'data-p0',
+        'data-p2',
+        'data-p3',
+        'data-p5',
+      ]);
+      expect(skipped.map(entry => entry.projectId)).toEqual(['p1', 'p4']);
+    });
+
     it('returns an empty queue when there are no projects', async () => {
       const {queued, skipped} = await collectProjectDataDbs({
         projects: [],
@@ -1304,6 +1345,107 @@ describe('Migration System Tests', () => {
       } finally {
         await dataA.destroy();
         await dataB.destroy();
+      }
+    });
+
+    it('migrates every DATA database when run with concurrency', async () => {
+      const dbNames = ['c-0', 'c-1', 'c-2', 'c-3', 'c-4'].map(
+        suffix => `data-db-${suffix}`
+      );
+      const dataDbs = await Promise.all(dbNames.map(seedUnmigratedDataDb));
+      try {
+        await migrateDbs({
+          dbs: dataDbs.map((db, index) => ({
+            dbType: DatabaseType.DATA,
+            dbName: dbNames[index],
+            db,
+          })),
+          migrationDb: testMigrationDb as unknown as MigrationsDB,
+          getDbById,
+          concurrency: 3,
+        });
+
+        for (const [index, dbName] of dbNames.entries()) {
+          const migrationDocs = await testMigrationDb.query(
+            MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+            {
+              key: [DatabaseType.DATA, dbName],
+              include_docs: true,
+            }
+          );
+          // Exactly one migration document per database, at the target.
+          expect(migrationDocs.rows).toHaveLength(1);
+          const migrationDoc = migrationDocs.rows[0]
+            .doc as MigrationsDBDocument;
+          expect(migrationDoc.version).toBe(
+            DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion
+          );
+          expect(migrationDoc.status).toBe('healthy');
+
+          const record = await dataDbs[index].get<{updatedAt?: string}>(
+            'rec-1'
+          );
+          expect(record.updatedAt).toBe('2020-06-01T00:00:00.000Z');
+        }
+      } finally {
+        await Promise.all(dataDbs.map(db => db.destroy()));
+      }
+    });
+
+    it('a failing database does not stop the others when run with concurrency', async () => {
+      const healthyNames = ['data-db-ok-0', 'data-db-ok-1', 'data-db-ok-2'];
+      const healthyDbs = await Promise.all(
+        healthyNames.map(seedUnmigratedDataDb)
+      );
+      const brokenDb = {
+        allDocs: async () => {
+          throw new Error('data DB unreachable');
+        },
+      } as unknown as DatabaseInterface;
+
+      try {
+        await migrateDbs({
+          dbs: [
+            {
+              dbType: DatabaseType.DATA,
+              dbName: 'data-db-broken',
+              db: brokenDb,
+            },
+            ...healthyDbs.map((db, index) => ({
+              dbType: DatabaseType.DATA,
+              dbName: healthyNames[index],
+              db,
+            })),
+          ],
+          migrationDb: testMigrationDb as unknown as MigrationsDB,
+          getDbById,
+          concurrency: 2,
+        });
+
+        const migrationDocFor = async (dbName: string) => {
+          const result = await testMigrationDb.query(
+            MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+            {key: [DatabaseType.DATA, dbName], include_docs: true}
+          );
+          expect(result.rows).toHaveLength(1);
+          return result.rows[0].doc as MigrationsDBDocument;
+        };
+
+        const broken = await migrationDocFor('data-db-broken');
+        expect(broken.status).toBe('not-healthy');
+        expect(broken.version).toBe(
+          DB_TARGET_VERSIONS[DatabaseType.DATA].defaultVersion
+        );
+
+        for (const dbName of healthyNames) {
+          const healthy = await migrationDocFor(dbName);
+          expect(healthy.status).toBe('healthy');
+          expect(healthy.version).toBe(
+            DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion
+          );
+        }
+      } finally {
+        await Promise.all(healthyDbs.map(db => db.destroy()));
       }
     });
 

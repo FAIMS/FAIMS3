@@ -13,7 +13,8 @@
     "lint": "oxlint -c ../.oxlintrc.json .",
     "compile": "tsc",
     "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt -c ../.oxfmtrc.json .",
-    "test": "vitest"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@bugsnag/js": "^7.20.2",

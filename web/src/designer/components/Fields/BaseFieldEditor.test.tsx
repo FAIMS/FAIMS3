@@ -18,6 +18,7 @@ import {DesignerEditingProvider} from '../../state/editing-context';
 import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../../state/initial';
 import {fieldRenamed, loaded} from '../../store/slices/uiSpec';
 import globalTheme from '../../theme/index';
+import {flushPendingDesignerEdits} from '../../state/pendingEditFlush';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
 vi.mock('../mdx-editor', () => ({
@@ -489,6 +490,42 @@ describe('BaseFieldEditor first-edit export-name auto-sync', () => {
     expect(
       store.getState().notebook.uiSpec.present.fields[STORAGE_ID].exportName
     ).toBe('Site-Name');
+  });
+});
+
+describe('BaseFieldEditor pending edit flush', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('commits DebouncedTextField keystrokes without blur', () => {
+    vi.useFakeTimers();
+    const store = storeWithTextField();
+
+    render(
+      <WithProviders store={store}>
+        <BaseFieldEditor fieldName={STORAGE_ID} showHelperText={false} />
+      </WithProviders>
+    );
+
+    const labelInput = screen.getByPlaceholderText('Enter field heading');
+    fireEvent.change(labelInput, {target: {value: 'Typed without blur'}});
+
+    expect(
+      store.getState().notebook.uiSpec.present.fields[STORAGE_ID][
+        'component-parameters'
+      ].label
+    ).toBe('Site Name');
+
+    act(() => {
+      flushPendingDesignerEdits();
+    });
+
+    expect(
+      store.getState().notebook.uiSpec.present.fields[STORAGE_ID][
+        'component-parameters'
+      ].label
+    ).toBe('Typed without blur');
   });
 });
 

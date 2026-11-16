@@ -23,6 +23,7 @@ import {
   GetListRecordsResponse,
   GetRecordQuerySchema,
   GetRecordResponse,
+  LIST_LIMIT_MAX,
   MalformedParentsError,
   newFormRecordSchema,
   NoHeadsError,
@@ -34,6 +35,7 @@ import {
   PostCreateRevisionResponse,
   RecordConflictError,
   RecordDeletedError,
+  resolveListLimit,
   RevisionMismatchError,
   setRecordAsDeleted,
 } from '@faims3/data-model';
@@ -177,13 +179,8 @@ recordsRouter.get(
     const filterDeleted = req.query.filterDeleted === 'false' ? false : true;
     const {formId, limit, startKey} = req.query;
     const updatedFilter = parseUpdatedTimeFilterFromQuery(req.query);
-    const rawLimit =
-      limit !== undefined && limit !== '' ? parseInt(limit, 10) : NaN;
-    // Cap page size; invalid or missing limit leaves choice to the data engine.
-    const limitNum =
-      Number.isFinite(rawLimit) && rawLimit >= 1
-        ? Math.min(500, rawLimit)
-        : undefined;
+    // Always paginated: an omitted `limit` is one default page, never a dump.
+    const limitNum = Math.min(LIST_LIMIT_MAX, resolveListLimit(limit));
 
     try {
       const dataDb = await getDataDb(projectId);

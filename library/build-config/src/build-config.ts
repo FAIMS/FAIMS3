@@ -150,6 +150,16 @@ const BrandingBuildConfigSchema = z
 const SupportBuildConfigSchema = z
   .object({
     supportEmail: z.string().default('support@fieldmark.au'),
+    /**
+     * Destination for in-app feedback. When omitted, env generation falls
+     * back to `supportEmail`.
+     */
+    feedbackEmail: z.string().optional(),
+    /**
+     * Subject line for in-app feedback mail. When omitted, env generation
+     * uses {@link SHARED_DEFAULTS.feedbackSubject}.
+     */
+    feedbackSubject: z.string().min(1).default(SHARED_DEFAULTS.feedbackSubject),
     privacyPolicyUrl: z.string().default('https://fieldnote.au/privacy'),
     /** Empty hides the contact link. */
     appContactUrl: z.string().default(''),
@@ -441,6 +451,17 @@ const LimitsBuildConfigSchema = z
       .int()
       .positive()
       .default(SHARED_DEFAULTS.exportRateLimiterPerWindow),
+    feedbackRateLimiterEnabled: z.boolean().default(true),
+    feedbackRateLimiterWindowMs: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.feedbackRateLimiterWindowMs),
+    feedbackRateLimiterPerWindow: z
+      .number()
+      .int()
+      .positive()
+      .default(SHARED_DEFAULTS.feedbackRateLimiterPerWindow),
     /** Email-code / verification attempt limiter. */
     attemptLimiterEnabled: z.boolean().default(true),
     /**
