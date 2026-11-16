@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import {DatabaseInterface} from '../../types';
+import {mapWithConcurrencyLimit} from '../../utils';
 import {
   MigrationLog,
   MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
@@ -81,13 +82,19 @@ export function dataDbNameForProject({
  *
  * Must accumulate with push/reassign. `Array.concat` without assignment
  * silently discards every database and `migrateDbs` becomes a no-op.
+ *
+ * `concurrency` bounds how many `openDataDb` calls are in flight (default 1,
+ * i.e. sequential). `queued` and `skipped` keep the order of `projects`
+ * whatever the concurrency.
  */
 export async function collectProjectDataDbs({
   projects,
   openDataDb,
+  concurrency = 1,
 }: {
   projects: ProjectDataDbRef[];
   openDataDb: (projectId: string) => Promise<DatabaseInterface>;
+  concurrency?: number;
 }): Promise<{
   queued: QueuedProjectDataDb[];
   skipped: {projectId: string; error: unknown}[];
@@ -95,21 +102,42 @@ export async function collectProjectDataDbs({
   const queued: QueuedProjectDataDb[] = [];
   const skipped: {projectId: string; error: unknown}[] = [];
 
-  for (const project of projects) {
-    const projectId = project._id;
-    try {
-      const dataDb = await openDataDb(projectId);
-      queued.push({
-        projectId,
-        db: dataDb,
-        dbType: DatabaseType.DATA,
-        dbName: dataDbNameForProject({
-          project,
-          fallbackName: dataDb.name,
-        }),
-      });
-    } catch (error) {
-      skipped.push({projectId, error});
+  // A failed open is an outcome, not a rejection, so one bad project never
+  // stops the others from being opened.
+  const outcomes = await mapWithConcurrencyLimit({
+    items: projects,
+    concurrency,
+    mapper: async (
+      project
+    ): Promise<
+      | {queued: QueuedProjectDataDb}
+      | {skipped: {projectId: string; error: unknown}}
+    > => {
+      const projectId = project._id;
+      try {
+        const dataDb = await openDataDb(projectId);
+        return {
+          queued: {
+            projectId,
+            db: dataDb,
+            dbType: DatabaseType.DATA,
+            dbName: dataDbNameForProject({
+              project,
+              fallbackName: dataDb.name,
+            }),
+          },
+        };
+      } catch (error) {
+        return {skipped: {projectId, error}};
+      }
+    },
+  });
+
+  for (const outcome of outcomes) {
+    if ('queued' in outcome) {
+      queued.push(outcome.queued);
+    } else {
+      skipped.push(outcome.skipped);
     }
   }
 
@@ -518,6 +546,13 @@ export async function performMigration({
  * @param userId - The user ID to record for the migration log
  * @param getDbById - Opens other databases by type and id for cross-db migrations
  * @param migrationCreatedBy - Username for migrated `createdBy` audit fields on project/template docs
+ * @param concurrency - How many databases to migrate at once. Defaults to 1:
+ *   strictly one after the other, in `dbs` order. Only raise it when every
+ *   queued database is independent of the others — no migration step reads or
+ *   writes another queued database, and no step relies on an earlier entry in
+ *   `dbs` having finished. Each database keeps its own migration document, so
+ *   the bookkeeping itself never contends. Steps for a single database always
+ *   run in order.
  */
 export async function migrateDbs({
   dbs,
@@ -525,12 +560,14 @@ export async function migrateDbs({
   userId = 'system',
   getDbById,
   migrationCreatedBy = DEFAULT_MIGRATION_CREATED_BY,
+  concurrency = 1,
 }: {
   dbs: MigrationDbHandle[];
   migrationDb: MigrationsDB;
   userId?: string;
   getDbById: GetDbById;
   migrationCreatedBy?: string;
+  concurrency?: number;
 }): Promise<void> {
   const migrationContext: MigrationContext = buildMigrationContext({
     getDbById,
@@ -546,8 +583,13 @@ export async function migrateDbs({
   let migratedOk = 0;
   let migratedFailed = 0;
 
-  // Process each database one by one
-  for (const {dbType, dbName, db} of dbs) {
+  // Migrate one database. Never rejects: every failure is caught, counted and
+  // logged below, so one bad database does not stop the rest.
+  const migrateOne = async ({
+    dbType,
+    dbName,
+    db,
+  }: MigrationDbHandle): Promise<void> => {
     // Track migration start time
     const migrationStartTime = Date.now();
 
@@ -596,7 +638,7 @@ export async function migrateDbs({
           version: migrationDoc.version,
         });
         skippedUpToDate++;
-        continue; // Skip to the next database
+        return; // Nothing to do for this database
       }
 
       // Database needs migration - identify required migration details
@@ -611,7 +653,7 @@ export async function migrateDbs({
           targetVersion: DB_TARGET_VERSIONS[dbType].targetVersion,
         });
         skippedUpToDate++;
-        continue;
+        return;
       }
 
       // Create a migration log entry to track this migration process
@@ -766,7 +808,14 @@ export async function migrateDbs({
         );
       }
     }
-  }
+  };
+
+  // Sequential by default (concurrency 1); see the `concurrency` param.
+  await mapWithConcurrencyLimit({
+    items: dbs,
+    concurrency,
+    mapper: migrateOne,
+  });
 
   migrateAudit('migrateDbs finished', {
     queued: dbs.length,

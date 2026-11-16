@@ -12,8 +12,8 @@ import {
   contextualLayersForProject,
   createMapAsset,
   linkDocumentId,
+  getProjectMapAssetsPage,
   linkMapAsset,
-  listAssetsByProject,
   listAssetsByTeam,
 } from '../src/couchdb/mapAssets/store';
 import {resetDatabases} from './mocks';
@@ -74,7 +74,10 @@ describe('map asset bulk listing', () => {
       linkedBy: 'user-1',
       createdAt: Date.now(),
     });
-    const listed = await listAssetsByProject('survey-1');
+    const {items: listed} = await getProjectMapAssetsPage({
+      projectId: 'survey-1',
+      limit: 50,
+    });
     expect(listed.map(asset => asset._id)).toEqual([linked._id]);
     expect(listed.some(asset => asset._id === unlinked._id)).toBe(false);
   });

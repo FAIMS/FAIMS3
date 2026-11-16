@@ -625,7 +625,7 @@ describe('map asset survey links HTTP', () => {
       request(app).get('/api/notebooks'),
       adminToken
     ).expect(200);
-    const listRow = list.body.find(
+    const listRow = list.body.notebooks.find(
       (row: {_id: string}) => row._id === projectId
     );
     expect(
@@ -743,9 +743,15 @@ describe('GET /api/teams/:id/map-assets', () => {
         request(app).get(`/api/teams/${team._id}/map-assets`),
         adminToken
       ).expect(200);
+      // One bounded range over the team's key prefix, newest first.
       expect(query).toHaveBeenCalledWith(
         MAP_ASSETS_BY_TEAM,
-        expect.objectContaining({key: team._id, include_docs: false})
+        expect.objectContaining({
+          startkey: [team._id, {}],
+          endkey: [team._id],
+          descending: true,
+          include_docs: false,
+        })
       );
     } finally {
       query.mockRestore();
@@ -809,5 +815,168 @@ describe('GET /api/teams/:id/map-assets', () => {
       adminToken
     ).expect(200);
     expect(listed.body.assets).toEqual([]);
+  });
+});
+
+describe('map layer list pagination', () => {
+  beforeEach(async () => {
+    await beforeApiTests();
+    await clearMapAssetDocs();
+  });
+
+  type AssetPage = {assets: Array<{_id: string}>; nextStartKey?: string};
+
+  /** Follows `nextStartKey` until it is absent; returns each page's ids. */
+  async function collectAssetPages(
+    path: string,
+    query: Record<string, string | number>,
+    token: string = adminToken
+  ): Promise<string[][]> {
+    const pages: string[][] = [];
+    let startKey: string | undefined;
+    for (;;) {
+      const res = await auth(
+        request(app)
+          .get(path)
+          .query({...query, ...(startKey ? {startKey} : {})}),
+        token
+      ).expect(200);
+      const page = res.body as AssetPage;
+      pages.push(page.assets.map(asset => asset._id));
+      if (!page.nextStartKey) {
+        return pages;
+      }
+      expect(pages.length).toBeLessThan(50);
+      startKey = page.nextStartKey;
+    }
+  }
+
+  it('walks the whole library exactly once', async () => {
+    const created: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      created.push((await createPendingAsset())._id);
+    }
+    const pages = await collectAssetPages(MAP_ASSETS, {limit: 2});
+    expect(pages.map(page => page.length)).toEqual([2, 2, 1]);
+    expect(pages.flat().sort()).toEqual([...created].sort());
+  });
+
+  it('rejects an out-of-range limit and ignores an unknown startKey', async () => {
+    await createPendingAsset();
+    for (const limit of ['0', 'abc', '501']) {
+      await auth(
+        request(app).get(MAP_ASSETS).query({limit}),
+        adminToken
+      ).expect(400);
+    }
+    const unknown = await auth(
+      request(app)
+        .get(MAP_ASSETS)
+        .query({startKey: JSON.stringify([1, 'no-such-layer'])}),
+      adminToken
+    ).expect(200);
+    expect(unknown.body).toEqual({assets: []});
+  });
+
+  it('fills library pages with only the layers the caller can read', async () => {
+    const team = await createTeam();
+    const member = await createRoleUser({
+      username: 'paged-layer-member',
+      teamId: team._id,
+      teamRole: Role.TEAM_MEMBER,
+    });
+    const readable: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      readable.push((await createPendingAsset('admin', team._id))._id);
+      // Personal layers of another user sit between the readable ones.
+      await createPendingAsset('admin');
+    }
+
+    const pages = await collectAssetPages(MAP_ASSETS, {limit: 2}, member.token);
+    expect(pages[0]).toHaveLength(2);
+    expect(pages.flat().sort()).toEqual([...readable].sort());
+  });
+
+  it('pages a team library and a team filter the same way', async () => {
+    const team = await createTeam();
+    const other = await createTeam('Other Map Team');
+    const inTeam: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      inTeam.push((await createPendingAsset('admin', team._id))._id);
+    }
+    await createPendingAsset('admin', other._id);
+    await createPendingAsset('admin');
+
+    const viaTeamRoute = await collectAssetPages(
+      `/api/teams/${team._id}/map-assets`,
+      {limit: 2}
+    );
+    expect(viaTeamRoute.map(page => page.length)).toEqual([2, 1]);
+    expect(viaTeamRoute.flat().sort()).toEqual([...inTeam].sort());
+
+    const viaFilter = await collectAssetPages(MAP_ASSETS, {
+      teamId: team._id,
+      limit: 2,
+    });
+    expect(viaFilter).toEqual(viaTeamRoute);
+  });
+
+  it('pages the layers linked to a survey', async () => {
+    const projectId = await createNotebookFromSampleFile('paged link notebook');
+    const linked: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const asset = await createPendingAsset();
+      await auth(
+        request(app).post(`${MAP_ASSETS}/${asset._id}/links`),
+        adminToken
+      )
+        .send({projectId})
+        .expect(201);
+      linked.push(asset._id);
+    }
+    await createPendingAsset();
+
+    const pages = await collectAssetPages(MAP_ASSETS, {
+      projectId: projectId as string,
+      limit: 2,
+    });
+    expect(pages.map(page => page.length)).toEqual([2, 1]);
+    expect(pages.flat().sort()).toEqual([...linked].sort());
+  });
+
+  it('pages the ready layers a survey could still link', async () => {
+    const projectId = (await createNotebookFromSampleFile(
+      'linkable notebook'
+    )) as string;
+    const linkable: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const ready = await createPendingAsset();
+      await markReady(ready._id);
+      linkable.push(ready._id);
+      // Not ready, so it cannot be linked yet.
+      await createPendingAsset();
+    }
+    const linked = await createPendingAsset();
+    await markReady(linked._id);
+    await auth(
+      request(app).post(`${MAP_ASSETS}/${linked._id}/links`),
+      adminToken
+    )
+      .send({projectId})
+      .expect(201);
+
+    const pages = await collectAssetPages(MAP_ASSETS, {
+      linkableToProjectId: projectId,
+      limit: 2,
+    });
+    expect(pages.map(page => page.length)).toEqual([2, 1]);
+    expect(pages.flat().sort()).toEqual([...linkable].sort());
+
+    // A caller who cannot read the survey may not ask what it links.
+    const outsider = await createRoleUser({username: 'linkable-outsider'});
+    await auth(
+      request(app).get(MAP_ASSETS).query({linkableToProjectId: projectId}),
+      outsider.token
+    ).expect(401);
   });
 });

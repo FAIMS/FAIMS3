@@ -96,7 +96,7 @@ export function MapLayerDetails({assetId}: {assetId: string}) {
     },
     {
       key: 'updatedAt',
-      label: 'Updated',
+      label: 'Updated at',
       value: asset => displayDateTime({timestamp: asset.updatedAt}),
     },
   ];

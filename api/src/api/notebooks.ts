@@ -11,8 +11,10 @@ import {
   addProjectRole,
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
+  GetNotebookListQuerySchema,
   GetNotebookListResponse,
   GetNotebookResponse,
+  GetNotebookUsersQuerySchema,
   GetNotebookUsersResponse,
   getRecordListAudit,
   isPeopleUserAccountDisabled,
@@ -34,13 +36,17 @@ import {
   PutUpdateNotebookResponse,
   PutUpdateNotebookUiSpecificationInputSchema,
   removeProjectRole,
+  resolveListLimit,
+  resolveListStartKey,
+  resolveNotebookListStatus,
   Role,
+  toPaginatedList,
   userCanReadTemplateDocument,
-  userHasProjectRole,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
+import {resolveListSearch} from './listSearch';
 import {config} from '../buildconfig';
 import {attachContextualLayers} from '../couchdb/mapAssets/store';
 import {getDataDb} from '../couchdb';
@@ -55,7 +61,7 @@ import {
   getByteCount,
   getProjectById,
   getRolesForNotebook,
-  getUserProjectsListing,
+  getUserProjectsPage,
   updateProjectMetadata,
   updateProjectOfflineMapRegion,
   updateProjectUiSpecification,
@@ -63,10 +69,8 @@ import {
 import {createNotebookFromTemplate, getTemplate} from '../couchdb/templates';
 import {createTombstoneDocument} from '../couchdb/tombstones';
 import {
-  filterPeopleUsersForList,
   getCouchUserFromEmailOrUserId,
-  getUserInfoForProject,
-  getUsers,
+  getResourceMembersPage,
   saveCouchUser,
   saveExpressUser,
   stripProjectRolesForProjectId,
@@ -121,32 +125,44 @@ api.use(notebookExportRouter);
 api.use('/:id/records', recordsRouter);
 
 /**
- * Gets a list of notebooks
+ * GET list notebooks — one page of the notebooks the caller can read, newest
+ * `updatedAt` first. Cursor pagination (`limit`, `startKey`, `nextStartKey`);
+ * omitting `limit` returns the default page, never the whole DB.
+ *
+ * `status` is `active` (default; OPEN + CLOSED), `archived`, or `all`
+ * (active then archived). `teamId` / `templateId` narrow the list.
+ * `includeByteCount=true` sizes only the rows of the returned page.
+ *
+ * `q` searches active surveys by name (within `teamId` / `templateId` when
+ * given) and pages in word order. Archived surveys are not searchable.
+ *
+ * The field app's complete catalogue is GET /api/directory, not this route.
  */
 api.get(
   '/',
   requireAuthenticationAPI,
-  validate({
-    query: z.object({
-      teamId: z.string().min(1).optional(),
-      /** When `"true"`, lists archived surveys (`ARCHIVED`). Default excludes them. */
-      includeArchived: z.enum(['true', 'false']).optional(),
-      /** When `"true"`, attach per-project `byteCount` (Couch `info()` per notebook). */
-      includeByteCount: z.enum(['true', 'false']).optional(),
-    }),
-  }),
+  validate({query: GetNotebookListQuerySchema}),
   async (req, res: Response<GetNotebookListResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const includeArchived = req.query.includeArchived === 'true';
-    const includeByteCount = req.query.includeByteCount === 'true';
-    const notebooks = await getUserProjectsListing(req.user, {
-      teamId: req.query.teamId,
-      includeArchived,
-      includeByteCount,
-    });
-    res.json(notebooks);
+    const status = resolveNotebookListStatus(req.query);
+    res.json(
+      await getUserProjectsPage(req.user, {
+        teamId: req.query.teamId,
+        templateId: req.query.templateId,
+        status,
+        search: resolveListSearch(req.query.q, {
+          unavailable:
+            status === 'active'
+              ? undefined
+              : 'q searches active surveys only; it cannot be combined with this status.',
+        }),
+        includeByteCount: req.query.includeByteCount === 'true',
+        limit: resolveListLimit(req.query.limit),
+        startKey: resolveListStartKey(req.query.startKey),
+      })
+    );
   }
 );
 
@@ -505,6 +521,10 @@ api.post(
   }
 );
 
+/**
+ * GET users with a role on this notebook — one page in name order. Cursor
+ * pagination (`limit`, `startKey`, `nextStartKey`); `roles` is on every page.
+ */
 api.get(
   '/:id/users/',
   requireAuthenticationAPI,
@@ -514,28 +534,36 @@ api.get(
       return req.params.id;
     },
   }),
-  validate({params: z.object({id: z.string()})}),
+  validate({
+    params: z.object({id: z.string()}),
+    query: GetNotebookUsersQuerySchema,
+  }),
   async (req, res: Response<GetNotebookUsersResponse>) => {
-    const users = filterPeopleUsersForList(await getUsers(), false);
     const allRoles = getRolesForNotebook().map(r => r.role);
+    // Enabled users holding a role on this survey, from the by-resource
+    // listing view. Team-granted (virtual) access is not listed here.
+    const page = await getResourceMembersPage({
+      resourceId: req.params.id,
+      limit: resolveListLimit(req.query.limit),
+      startKey: resolveListStartKey(req.query.startKey),
+      include: member => member.projectRoles.length > 0,
+    });
     res.json({
       roles: allRoles,
-      users: users
-        .map(u => {
-          return {
-            name: u.name,
-            username: u.user_id,
-            roles: allRoles.map(r => ({
-              value: userHasProjectRole({
-                user: u,
-                projectId: req.params.id,
-                role: r,
-              }),
-              name: r,
+      ...toPaginatedList(
+        {
+          ...page,
+          items: page.items.map(member => ({
+            name: member.name,
+            username: member.user_id,
+            roles: allRoles.map(role => ({
+              name: role,
+              value: member.projectRoles.includes(role),
             })),
-          };
-        })
-        .filter(d => d.roles.filter(r => r.value).length > 0),
+          })),
+        },
+        'users'
+      ),
     });
   }
 );
@@ -692,17 +720,13 @@ api.delete(
       throw new Exceptions.UnauthorizedException('Must be authenticated.');
     }
 
-    // Check what resource role the user has on this notebook
-    const userInfo = await getUserInfoForProject({
-      projectId: req.params.notebook_id,
-    });
-    const userHasRoles =
-      userInfo.users.find(u => u.username === req.params.user_id)?.roles ?? [];
+    const user = await getCouchUserFromEmailOrUserId(req.params.user_id);
 
-    // Need all actions from these roles
-    const requiredActions = userHasRoles.map(role =>
-      projectRoleToAction({add: false, role: role.name})
-    );
+    // Removing a user needs the remove-action of every role they hold on
+    // this notebook.
+    const requiredActions = (user?.projectRoles ?? [])
+      .filter(role => role.resourceId === req.params.notebook_id)
+      .map(role => projectRoleToAction({add: false, role: role.role}));
     for (const required of requiredActions) {
       if (
         !userCanDo({
@@ -716,8 +740,6 @@ api.delete(
         );
       }
     }
-
-    const user = await getCouchUserFromEmailOrUserId(req.params.user_id);
 
     if (!user) {
       throw new Exceptions.ItemNotFoundException(

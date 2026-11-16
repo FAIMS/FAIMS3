@@ -15,14 +15,14 @@ import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {archivedProjectColumns} from '@/components/tables/archived-projects';
 import {
-  useGetProjects,
-  useGetTeams,
-  useGetTemplates,
-  useGetUsers,
+  usePagedProjects,
+  usePagedTeams,
+  usePagedTemplates,
+  usePagedUsers,
 } from '@/hooks/queries';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {createFileRoute, Navigate, useNavigate} from '@tanstack/react-router';
-import {Action, ProjectStatus} from '@faims3/data-model';
+import {Action} from '@faims3/data-model';
 import {useMemo} from 'react';
 
 export const Route = createFileRoute('/_protected/archive/')({
@@ -69,40 +69,30 @@ function RouteComponent() {
     paths,
   });
 
-  const {isPending, data} = useGetTemplates({
+  // Each tab asks the API for its archived rows only and pages through them.
+  const archivedTemplates = usePagedTemplates({
     user,
     includeArchived: true,
     enabled: !!user && canSeeTemplates,
   });
 
-  const {isPending: projectsLoading, data: projectsData} = useGetProjects({
+  const archivedProjects = usePagedProjects({
     user,
-    includeArchived: true,
+    status: 'archived',
     enabled: !!user && canSeeProjects,
   });
 
-  const {isPending: teamsLoading, data: archivedTeamsData} = useGetTeams({
+  const archivedTeams = usePagedTeams({
     user,
     includeArchived: true,
     enabled: !!user && canSeeTeams,
   });
 
-  const {isPending: disabledUsersLoading, data: allUsersForArchive} =
-    useGetUsers({
-      user,
-      includeArchived: true,
-      enabled: !!user && canSeeUsers,
-    });
-
-  const disabledUsers = useMemo(
-    () => (allUsersForArchive ?? []).filter(u => u.disabled === true),
-    [allUsersForArchive]
-  );
-
-  const archivedProjects = useMemo(
-    () => (projectsData ?? []).filter(p => p.status === ProjectStatus.ARCHIVED),
-    [projectsData]
-  );
+  const disabledUsers = usePagedUsers({
+    user,
+    includeArchived: true,
+    enabled: !!user && canSeeUsers,
+  });
 
   const setTab = (value: string) => {
     if (!visibleArchiveTabs.includes(value as ArchiveTab)) return;
@@ -145,8 +135,10 @@ function RouteComponent() {
           <TabsContent value={config.notebookNamePlural} className="mt-4">
             <DataTable
               columns={archivedProjectColumns}
-              data={archivedProjects}
-              loading={projectsLoading}
+              data={archivedProjects.notebooks}
+              loading={archivedProjects.tableLoading}
+              defaultRowsPerPage={archivedProjects.pageSize}
+              serverPagination={archivedProjects.serverPagination}
             />
           </TabsContent>
         )}
@@ -155,8 +147,10 @@ function RouteComponent() {
           <TabsContent value="templates" className="mt-4">
             <DataTable
               columns={archivedTemplateColumns}
-              data={data}
-              loading={isPending}
+              data={archivedTemplates.templates}
+              loading={archivedTemplates.tableLoading}
+              defaultRowsPerPage={archivedTemplates.pageSize}
+              serverPagination={archivedTemplates.serverPagination}
             />
           </TabsContent>
         )}
@@ -165,8 +159,10 @@ function RouteComponent() {
           <TabsContent value="teams" className="mt-4">
             <DataTable
               columns={archivedTeamColumns}
-              data={archivedTeamsData?.teams ?? []}
-              loading={teamsLoading}
+              data={archivedTeams.teams}
+              loading={archivedTeams.tableLoading}
+              defaultRowsPerPage={archivedTeams.pageSize}
+              serverPagination={archivedTeams.serverPagination}
             />
           </TabsContent>
         )}
@@ -181,8 +177,10 @@ function RouteComponent() {
               </p>
               <DataTable
                 columns={archivedDisabledUserColumns}
-                data={disabledUsers}
-                loading={disabledUsersLoading}
+                data={disabledUsers.users}
+                loading={disabledUsers.tableLoading}
+                defaultRowsPerPage={disabledUsers.pageSize}
+                serverPagination={disabledUsers.serverPagination}
               />
             </div>
           </TabsContent>

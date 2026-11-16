@@ -11,16 +11,19 @@ import {
   ExistingInvitesDBDocument,
   INVITE_CODE_ALPHABET,
   INVITE_CODE_LENGTH,
+  inviteListingViewAndPrefix,
   InvitesDBDocument,
   InvitesDBFields,
   DEFAULT_QUICK_SHARE_LIFETIME_MS,
   isInviteExpiryWithinMax,
+  ListingPage,
   MAX_INVITE_EXPIRY_DAYS,
   PeopleDBDocument,
   QUICK_SHARE_KIND,
   QUICK_SHARE_NAME,
   QUICK_SHARES_BY_PROJECT_AND_USER_INDEX,
   QUICK_SHARES_INDEX,
+  queryListingPage,
   Resource,
   Role,
   RoleScope,
@@ -349,8 +352,43 @@ export async function consumeInvite({
 }
 
 /**
+ * One page of valid invites (not expired, uses remaining), newest
+ * `createdAt` first: a team's or survey's invites when `resource` is set
+ * (Quick Shares included), otherwise global invites. Paging, the exclusive
+ * JSON `[createdAtMs, inviteId]` cursor and the scan cap come from the shared
+ * `queryListingPage`; invalid invites are skipped while filling the page.
+ */
+export async function getInvitesPage({
+  resource,
+  limit,
+  startKey,
+}: {
+  resource?: {
+    resourceType: Resource.TEAM | Resource.PROJECT;
+    resourceId: string;
+  };
+  limit: number;
+  startKey?: string;
+}): Promise<ListingPage<ExistingInvitesDBDocument>> {
+  const inviteDb = getInvitesDB();
+  if (!inviteDb) {
+    throw Error('Unable to connect to invites database');
+  }
+  return queryListingPage<ExistingInvitesDBDocument>({
+    query: (view, options) =>
+      inviteDb.query<ExistingInvitesDBDocument>(view, options),
+    ...inviteListingViewAndPrefix(resource),
+    limit,
+    startKey,
+    include: invite => isInviteValid({invite}).isValid,
+  });
+}
+
+/**
  * pouchdb-find (and CouchDB Mango) default `limit` to 25. Callers that need
  * every match must page; a short page means there are no further documents.
+ * Unbounded: only the delete-all helpers use this. HTTP lists use
+ * {@link getInvitesPage}.
  */
 const INVITE_FIND_PAGE_SIZE = 200;
 
@@ -421,8 +459,9 @@ export async function getQuickSharesForProjectAndUser({
 }
 
 /**
- * Project invites, with Quick Shares taken from the `quickShares` view so a
- * paged find of the other invites cannot drop them.
+ * Every project invite, with Quick Shares taken from the `quickShares` view
+ * so a paged find of the other invites cannot drop them. Unbounded: used to
+ * delete all of a survey's invites.
  */
 export async function getProjectInvites(
   projectId: string
@@ -492,18 +531,6 @@ export async function deleteAllInvitesForTeam(teamId: string): Promise<void> {
       resourceId: teamId,
     })
   );
-}
-
-/**
- * Get all global invites
- *
- * @returns {Promise<ExistingInvitesDBDocument[]>} Array of invite documents
- * @throws {Error} If unable to connect to the invites database
- */
-export async function getGlobalInvites(): Promise<ExistingInvitesDBDocument[]> {
-  return findEveryInvite({
-    inviteType: {$eq: RoleScope.GLOBAL},
-  });
 }
 
 /**

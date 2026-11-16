@@ -5,6 +5,7 @@
 import {loginWebPersona, persona} from '../../helpers/auth.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
 import {byTestId} from '../../helpers/selectors.ts';
+import {findTableRow} from '../../helpers/table.ts';
 import {waitForTestId} from '../../helpers/wait.ts';
 import {getWebUrl} from '../../helpers/env.ts';
 
@@ -17,41 +18,20 @@ async function openUsersAdmin() {
   await waitForTestId('web-main');
 }
 
-async function searchUsers(query: string) {
-  const search = byTestId('web-data-table-search');
-  await search.waitForExist({timeout: 10000});
-  await search.clearValue();
-  await search.setValue(query);
-  // Wait until at least one data row is visible for the filter.
-  await browser.waitUntil(
-    async () => {
-      const rows = await $$('tbody tr');
-      const count = await rows.length;
-      if (count === 0) return false;
-      const text = await rows[0].getText();
-      return text.length > 0 && !text.toLowerCase().includes('no results');
-    },
-    {
-      timeout: 10000,
-      timeoutMsg: `Expected users table to show a row matching "${query}"`,
-    }
-  );
-}
-
-async function clickFirstVisibleTestId(testId: string) {
-  const el = byTestId(testId);
-  await el.waitForExist({timeout: 15000});
-  await el.scrollIntoView({block: 'center', inline: 'center'});
+/**
+ * Click a row action for the user whose row shows `email`. The users table
+ * is paged by the server, so the row is looked for across pages.
+ */
+async function clickUserRowAction(email: string, testId: string) {
+  const row = await findTableRow(email);
+  const action = await row.$(`[data-testid="${testId}"]`);
+  await action.waitForExist({timeout: 15000});
+  await action.scrollIntoView({block: 'center', inline: 'center'});
   try {
-    await el.waitForClickable({timeout: 5000});
-    await el.click();
+    await action.waitForClickable({timeout: 5000});
+    await action.click();
   } catch {
-    await browser.execute((id: string) => {
-      const node = document.querySelector(
-        `[data-testid="${id}"]`
-      ) as HTMLElement | null;
-      node?.click();
-    }, testId);
+    await browser.execute((node: HTMLElement) => node.click(), action);
   }
 }
 
@@ -103,9 +83,7 @@ describe('Web — Users admin', () => {
 
   it('should generate password reset link for seed-user', async () => {
     await openUsersAdmin();
-    await searchUsers(target.email);
-
-    await clickFirstVisibleTestId('web-users-reset-button');
+    await clickUserRowAction(target.email, 'web-users-reset-button');
 
     await waitForTestId('web-users-reset-dialog');
     await byTestId('web-users-reset-generate').click();
@@ -123,9 +101,7 @@ describe('Web — Users admin', () => {
 
   it('should open disable-user dialog and cancel', async () => {
     await openUsersAdmin();
-    await searchUsers(target.email);
-
-    await clickFirstVisibleTestId('web-users-disable-button');
+    await clickUserRowAction(target.email, 'web-users-disable-button');
     await waitForTestId('web-users-disable-dialog');
     await expect(byTestId('web-users-disable-confirm')).toBeDisplayed();
     await captureStep({

@@ -19,9 +19,18 @@ import {
   MAP_ASSET_ORIGINAL_ATTACHMENT,
   normalizedMapAssetExtension,
   normalizedMapAssetMediaType,
-  MAP_ASSETS_BY_CREATOR,
   MAP_ASSETS_BY_STATUS,
   MAP_ASSETS_BY_TEAM,
+  mapAssetLinkListingViewAndPrefix,
+  mapAssetListingViewAndPrefix,
+  mapAssetSearchViewAndPrefix,
+  isListingViewRow,
+  ListingPage,
+  ListingSearch,
+  ListingSearchPointer,
+  listingViewPrefixRange,
+  queryListingPage,
+  queryListingSearchPage,
   MapAssetFields,
   MapAssetLinkFields,
   GetMapAssetDownloadUrlResponse,
@@ -101,34 +110,109 @@ export async function getMapAsset(assetId: string): Promise<ExistingMapAsset> {
   }
 }
 
-/** Document ids from a map-assets view for a single key. */
-async function queryIds(view: string, key: string): Promise<string[]> {
-  const result = await getMapAssetsDB().query<number | string>(view, {
-    key,
-    include_docs: false,
-  });
-  return result.rows
-    .map(row => row.id)
-    .filter((id): id is string => Boolean(id));
-}
-
-/** Team-owned layers from the Couch `assetsByTeam` view. Does not scan the library. */
+/**
+ * Every layer a team owns, from the Couch `assetsByTeam` view. Does not scan
+ * the library. Unbounded: for internal checks (e.g. team delete). HTTP lists
+ * use {@link getMapAssetsPage}.
+ */
 export async function listAssetsByTeam(
   teamId: string
 ): Promise<ExistingMapAsset[]> {
-  const ids = await queryIds(MAP_ASSETS_BY_TEAM, teamId);
-  return loadAssets(ids);
+  const result = await getMapAssetsDB().query<ExistingMapAsset>(
+    MAP_ASSETS_BY_TEAM,
+    {...listingViewPrefixRange([teamId]), include_docs: false}
+  );
+  return result.rows
+    .filter(isListingViewRow)
+    .map(row => row.value)
+    .filter(isAsset);
 }
 
-/** Layers created by `userId` (personal library and team-owned). */
-export async function listAssetsByCreator(
-  userId: string
-): Promise<ExistingMapAsset[]> {
-  const ids = await queryIds(MAP_ASSETS_BY_CREATOR, userId);
-  return loadAssets(ids);
+/**
+ * One page of map layers `canRead` accepts, newest `updatedAt` first: one
+ * team's layers when `teamId` is set, otherwise the whole library. Paging,
+ * the exclusive JSON `[updatedAtMs, assetId]` cursor and the scan cap come
+ * from the shared `queryListingPage`. Omit `canRead` when the caller may
+ * read every row in the range.
+ *
+ * With `search`, the page holds the layers in that range whose name
+ * matches, in word order.
+ */
+export async function getMapAssetsPage({
+  teamId,
+  search,
+  limit,
+  startKey,
+  canRead,
+}: {
+  teamId?: string;
+  search?: ListingSearch;
+  limit: number;
+  startKey?: string;
+  canRead?: (asset: ExistingMapAsset) => boolean;
+}): Promise<ListingPage<ExistingMapAsset>> {
+  const db = getMapAssetsDB();
+  const include = (asset: ExistingMapAsset) =>
+    isAsset(asset) && (canRead ? canRead(asset) : true);
+  if (search) {
+    const {view, prefix, listingView} = mapAssetSearchViewAndPrefix({teamId});
+    return queryListingSearchPage<ExistingMapAsset>({
+      query: (name, options) => db.query<ListingSearchPointer>(name, options),
+      view,
+      prefix,
+      search,
+      loadRows: keys =>
+        db.query<ExistingMapAsset>(listingView, {keys, include_docs: false}),
+      limit,
+      startKey,
+      include,
+    });
+  }
+  return queryListingPage<ExistingMapAsset>({
+    query: (view, options) => db.query<ExistingMapAsset>(view, options),
+    ...mapAssetListingViewAndPrefix({teamId}),
+    limit,
+    startKey,
+    include,
+  });
 }
 
-/** Every map-asset document, via the `assetsByStatus` view. */
+/**
+ * One page of the layers linked to a survey, newest link first, including
+ * ones still processing or failed. Pages over the link documents, then loads
+ * that page's assets in one `allDocs`. A page can hold fewer than `limit`
+ * layers when a linked layer is gone or `canRead` rejects it; follow
+ * `nextStartKey` regardless.
+ */
+export async function getProjectMapAssetsPage({
+  projectId,
+  limit,
+  startKey,
+  canRead,
+}: {
+  projectId: string;
+  limit: number;
+  startKey?: string;
+  canRead?: (asset: ExistingMapAsset) => boolean;
+}): Promise<ListingPage<ExistingMapAsset>> {
+  const db = getMapAssetsDB();
+  const links = await queryListingPage<string>({
+    query: (view, options) => db.query<string>(view, options),
+    ...mapAssetLinkListingViewAndPrefix({projectId}),
+    limit,
+    startKey,
+  });
+  const assets = await loadAssets(links.items);
+  return {
+    ...links,
+    items: canRead ? assets.filter(canRead) : assets,
+  };
+}
+
+/**
+ * Every map-asset document, via the `assetsByStatus` view. Unbounded: for
+ * admin-stats snapshots only.
+ */
 export async function listAllAssets(): Promise<ExistingMapAsset[]> {
   const result = await getMapAssetsDB().query<number | string>(
     MAP_ASSETS_BY_STATUS,
@@ -139,16 +223,9 @@ export async function listAllAssets(): Promise<ExistingMapAsset[]> {
   );
 }
 
-/** Layers linked to a survey, including ones still processing or failed. */
-export async function listAssetsByProject(
-  projectId: string
-): Promise<ExistingMapAsset[]> {
-  return loadAssets(await listLinkAssetIds(projectId));
-}
-
 /**
- * Fetch asset documents for `ids` in one `allDocs`. Missing rows and
- * non-asset documents are skipped.
+ * Fetch asset documents for `ids` in one `allDocs`, in `ids` order. Missing
+ * rows and non-asset documents are skipped.
  */
 async function loadAssets(ids: string[]): Promise<ExistingMapAsset[]> {
   const unique = [...new Set(ids.filter(id => id.length > 0))];
@@ -236,6 +313,17 @@ export async function attachLinkCounts(
     ...asset,
     linkCount: counts.get(asset._id) ?? 0,
   }));
+}
+
+/**
+ * Ids of every layer linked to one survey, in one `linksByProject` query.
+ * Ids only and not paged: a survey links a handful of layers.
+ */
+export async function listLinkedAssetIds(
+  projectId: string
+): Promise<Set<string>> {
+  const byProject = await listLinkAssetIdsByProject([projectId]);
+  return new Set(byProject.get(projectId) ?? []);
 }
 
 /**

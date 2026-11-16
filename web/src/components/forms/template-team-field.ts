@@ -13,12 +13,57 @@ import type {Field} from '@/components/form';
 import {
   Action,
   getUserResourcesForAction,
+  listingSearchTokens,
+  parseListingSearch,
   type DecodedTokenPermissions,
 } from '@faims3/data-model';
+import {createElement} from 'react';
 import {z} from 'zod';
+import {PagedPickerSelect} from './paged-picker-select';
 
 /** Minimal team shape from GET /api/teams. */
 export type TeamOption = {_id: string; name: string};
+
+/**
+ * Search box of a paged team picker (see `useTeamOptions`). `results` is
+ * present while the box has text.
+ */
+export type TeamPickerSearch = {
+  /** Text in the box. */
+  value: string;
+  onChange: (value: string) => void;
+  /** The teams whose name matches `value`, loaded so far. */
+  results?: {teams: TeamOption[]; isPending: boolean; isError: boolean};
+};
+
+/**
+ * Paging state of a team list that loads a page at a time (see
+ * `useTeamOptions`). Passed to {@link buildTeamField} so the select can
+ * offer "Get more" and a search box.
+ */
+export type TeamPickerMore = {
+  /** True once the list is known to span more than one page. */
+  paged: boolean;
+  /** Paging of the list shown: the search results while searching. */
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  fetchNextPage: () => void;
+  search?: TeamPickerSearch;
+};
+
+/**
+ * Whether `label` would be found by searching for `text`, by the rule the
+ * list endpoints use: every word typed starts a word of the label. Decides
+ * whether the "No team" row stays in a picker that is showing search results.
+ */
+export function labelMatchesListSearch(label: string, text: string): boolean {
+  const search = parseListingSearch(text);
+  if (!search) return true;
+  const words = listingSearchTokens(label);
+  return search.tokens.every(token =>
+    words.some(word => word.startsWith(token))
+  );
+}
 
 /**
  * Form value meaning “create outside any team”. Radix Select rejects `""`, so
@@ -191,6 +236,12 @@ export function defaultTeamForReassign({
  * Callers always pass {@link description} so the selector has help text
  * whether or not the user may create outside a team. Optionality is spelled
  * out in that help text, not in the label.
+ *
+ * `possibleTeams` may be only the pages loaded so far. Pass `more` from
+ * `useTeamOptions`: when the team list spans more than one page the field
+ * renders a picker with "Get more" and a search box instead of the plain
+ * select, so teams on later pages stay reachable. While the box has text
+ * the picker lists `more.search.results` in place of `possibleTeams`.
  */
 export function buildTeamField({
   canCreateGlobally,
@@ -199,6 +250,7 @@ export function buildTeamField({
   description,
   allowBlank = false,
   includeNoTeam = canCreateGlobally,
+  more,
 }: {
   canCreateGlobally: boolean;
   possibleTeams: TeamOption[];
@@ -215,6 +267,8 @@ export function buildTeamField({
    * dialogs set this from `REMOVE_*_FROM_TEAM` instead of create permission.
    */
   includeNoTeam?: boolean;
+  /** Paging state when `possibleTeams` is a paginated list. */
+  more?: TeamPickerMore;
 }): Field {
   const teamOptions = possibleTeams.map(({_id, name}) => ({
     label: name,
@@ -225,16 +279,64 @@ export function buildTeamField({
       ? [{label: NO_TEAM_LABEL, value: NO_TEAM_SENTINEL}, ...teamOptions]
       : teamOptions;
 
+  const clearable = allowBlank && canCreateGlobally;
+  const placeholder = 'Select a team';
+
   return {
     name: 'team',
     label,
     description,
     options,
-    schema:
-      allowBlank && canCreateGlobally ? z.string().optional() : z.string(),
-    clearable: allowBlank && canCreateGlobally,
+    schema: clearable ? z.string().optional() : z.string(),
+    clearable,
     testId: TEAM_FIELD_TEST_ID,
-    placeholder: 'Select a team',
+    placeholder,
+    ...(more?.paged
+      ? {
+          renderControl: ({value, onChange, disabled}) => {
+            const selected =
+              typeof value === 'string' && value ? value : undefined;
+            const results = more.search?.results;
+            return createElement(PagedPickerSelect, {
+              value: selected,
+              onChange,
+              options: results
+                ? [
+                    ...options.filter(
+                      option =>
+                        option.value === NO_TEAM_SENTINEL &&
+                        labelMatchesListSearch(
+                          option.label,
+                          more.search?.value ?? ''
+                        )
+                    ),
+                    ...results.teams.map(({_id, name}) => ({
+                      label: name,
+                      value: _id,
+                    })),
+                  ]
+                : options,
+              // Names the value while the results do not include it.
+              selectedLabel: options.find(option => option.value === selected)
+                ?.label,
+              isPending: results?.isPending,
+              isError: results?.isError,
+              search: more.search && {
+                value: more.search.value,
+                onChange: more.search.onChange,
+              },
+              noun: 'teams',
+              hasNextPage: more.hasNextPage,
+              isFetchingNextPage: more.isFetchingNextPage,
+              onGetMore: more.fetchNextPage,
+              disabled,
+              clearable,
+              placeholder,
+              testId: TEAM_FIELD_TEST_ID,
+            });
+          },
+        }
+      : {}),
   };
 }
 
@@ -242,13 +344,16 @@ export function buildTeamField({
 export function buildTemplateTeamField({
   canCreateGlobally,
   possibleTeams,
+  more,
 }: {
   canCreateGlobally: boolean;
   possibleTeams: TeamOption[];
+  more?: TeamPickerMore;
 }): Field {
   return buildTeamField({
     canCreateGlobally,
     possibleTeams,
+    more,
     label: 'Team',
     description: canCreateGlobally
       ? 'Choose a team to own this template, or select "No team".'

@@ -69,6 +69,29 @@ describe('setupFieldsToFormFields', () => {
     expect(byName['setup__4__opt__1'].required).toBeUndefined();
   });
 
+  it('makes an optional select clearable and leaves a required one uncleared', () => {
+    const mixed: SetupForm = {
+      fields: [
+        {
+          name: 'officer',
+          label: 'Officer',
+          type: 'select',
+          required: true,
+          options: ['Alpha', 'Bravo'],
+        },
+        {
+          name: 'shift',
+          label: 'Shift',
+          type: 'select',
+          options: ['Morning', 'Night'],
+        },
+      ],
+    };
+    const fields = setupFieldsToFormFields(mixed);
+    expect(fields[0].clearable).toBeUndefined();
+    expect(fields[1].clearable).toBe(true);
+  });
+
   it('maps longtext to a textarea control', () => {
     const notes: SetupForm = {
       fields: [{name: 'notes', label: 'Notes', type: 'longtext'}],

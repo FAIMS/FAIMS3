@@ -8,6 +8,7 @@ import {
   defaultTeamFromOwner,
   getPossibleTeamsForAction,
   getTeamFieldState,
+  labelMatchesListSearch,
   NO_TEAM_LABEL,
   NO_TEAM_SENTINEL,
   resolveTeamId,
@@ -109,6 +110,151 @@ describe('buildTeamField (survey/template create)', () => {
     ]);
     expect(field.schema.safeParse(undefined).success).toBe(false);
     expect(field.schema.safeParse(NO_TEAM_SENTINEL).success).toBe(true);
+  });
+});
+
+describe('buildTeamField (paginated team list)', () => {
+  const more = {
+    hasNextPage: true,
+    isFetchingNextPage: false,
+    fetchNextPage: () => undefined,
+  };
+  const build = (paged?: boolean) =>
+    buildTeamField({
+      canCreateGlobally: true,
+      possibleTeams: [blue, red],
+      label: 'Team',
+      description: chooseTeamOrNoTeam,
+      ...(paged === undefined ? {} : {more: {...more, paged}}),
+    });
+
+  it('keeps the plain select while the teams fit on one page', () => {
+    expect(build().renderControl).toBeUndefined();
+    expect(build(false).renderControl).toBeUndefined();
+  });
+
+  it('renders a Get more picker over the same options once the list is paged', () => {
+    const field = build(true);
+    expect(optionValues(field)).toEqual([NO_TEAM_SENTINEL, 'blue', 'red']);
+    const onChange = () => undefined;
+    const control = field.renderControl?.({
+      value: 'blue',
+      onChange,
+      disabled: false,
+    }) as {props: Record<string, unknown>};
+    expect(control.props).toMatchObject({
+      value: 'blue',
+      onChange,
+      options: field.options,
+      hasNextPage: true,
+      onGetMore: more.fetchNextPage,
+      clearable: false,
+      testId: field.testId,
+    });
+  });
+
+  describe('search', () => {
+    const green = {_id: 'green', name: 'Green'};
+    type Control = {props: Record<string, unknown>};
+
+    /** The picker's props when `text` is in the box with these results. */
+    const controlFor = ({
+      text,
+      results,
+      value = 'blue',
+    }: {
+      text: string;
+      results?: {
+        teams: {_id: string; name: string}[];
+        isPending?: boolean;
+        isError?: boolean;
+      };
+      value?: string;
+    }) => {
+      const onSearch = () => undefined;
+      const field = buildTeamField({
+        canCreateGlobally: true,
+        possibleTeams: [blue, red],
+        label: 'Team',
+        description: chooseTeamOrNoTeam,
+        more: {
+          ...more,
+          paged: true,
+          search: {
+            value: text,
+            onChange: onSearch,
+            ...(results
+              ? {
+                  results: {
+                    isPending: false,
+                    isError: false,
+                    ...results,
+                  },
+                }
+              : {}),
+          },
+        },
+      });
+      const control = field.renderControl?.({
+        value,
+        onChange: () => undefined,
+        disabled: false,
+      }) as Control;
+      return {field, props: control.props, onSearch};
+    };
+
+    it('gives the picker a search box and its usual options while the box is empty', () => {
+      const {field, props, onSearch} = controlFor({text: ''});
+      expect(props.search).toEqual({value: '', onChange: onSearch});
+      expect(props.options).toEqual(field.options);
+    });
+
+    it('lists the matching teams in place of the loaded ones', () => {
+      const {props} = controlFor({text: 'gre', results: {teams: [green]}});
+      expect(props.options).toEqual([{label: 'Green', value: 'green'}]);
+      // The selected team is not among the matches, but is still named.
+      expect(props.selectedLabel).toBe('Blue');
+    });
+
+    it('keeps No team in the results only when the text matches it', () => {
+      const withNoTeam = controlFor({text: 'te', results: {teams: [green]}});
+      expect(withNoTeam.props.options).toEqual([
+        {label: NO_TEAM_LABEL, value: NO_TEAM_SENTINEL},
+        {label: 'Green', value: 'green'},
+      ]);
+      const without = controlFor({text: 'gre', results: {teams: []}});
+      expect(without.props.options).toEqual([]);
+    });
+
+    it('passes on that a search is loading or failed', () => {
+      expect(
+        controlFor({text: 'gre', results: {teams: [], isPending: true}}).props
+      ).toMatchObject({isPending: true, isError: false, options: []});
+      expect(
+        controlFor({text: 'gre', results: {teams: [], isError: true}}).props
+      ).toMatchObject({isPending: false, isError: true});
+    });
+
+    it('still keeps the form options and schema unsearched', () => {
+      // Defaults and validation use `options`, which a search must not narrow.
+      const {field} = controlFor({text: 'gre', results: {teams: [green]}});
+      expect(optionValues(field)).toEqual([NO_TEAM_SENTINEL, 'blue', 'red']);
+    });
+  });
+});
+
+describe('labelMatchesListSearch', () => {
+  it('matches when every word typed starts a word of the label', () => {
+    expect(labelMatchesListSearch('No team', 'no')).toBe(true);
+    expect(labelMatchesListSearch('No team', 'TEA')).toBe(true);
+    expect(labelMatchesListSearch('No team', 'team no')).toBe(true);
+    expect(labelMatchesListSearch('No team', 'eam')).toBe(false);
+    expect(labelMatchesListSearch('No team', 'no blue')).toBe(false);
+  });
+
+  it('matches anything when no word is typed', () => {
+    expect(labelMatchesListSearch('No team', '')).toBe(true);
+    expect(labelMatchesListSearch('No team', '  - ')).toBe(true);
   });
 });
 
