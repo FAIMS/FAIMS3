@@ -1,0 +1,13 @@
+do_token                   = "<your-do-token>"
+contact_email              = "<your-email>"
+subdomain                  = "fieldmark.app"
+conductor_docker_image_tag = "<pin-a-release-tag>"
+
+# Required secrets (populate from your secure config source)
+couchdb_password     = "<couchdb-password>"
+cookie_secret        = "<cookie-secret>"
+smtp_password        = "<smtp-password>"
+registry_credentials = "<registry-user:token>"
+
+# Optional auth providers map
+auth_providers = {}

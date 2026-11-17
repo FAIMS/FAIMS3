@@ -4,6 +4,8 @@
 max_document_size = 4294967296 ; bytes
 os_process_timeout = 5000 ; 5 sec
 uuid = <UUID_PLACEHOLDER>
+database_dir = /mnt/couchdb/data
+view_index_dir = /mnt/couchdb/data
 
 [chttpd]
 port = 5984
