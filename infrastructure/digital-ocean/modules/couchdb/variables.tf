@@ -1,24 +1,24 @@
 variable "do_token" {
   description = "digital ocean access token"
-  type = string
+  type        = string
 }
 
 variable "region" {
   description = "Region to deploy to"
-  type = string
-  default = "syd1"
+  type        = string
+  default     = "syd1"
 }
 
 variable "droplet_size" {
   description = "Size of the droplet to provision for couchdb"
-  type = string
-  default = "s-1vcpu-1gb"
+  type        = string
+  default     = "s-1vcpu-1gb"
 }
 
 variable "couchdb_volume_size" {
   description = "Size of the volume to attach to the couchdb droplet"
-  type = number
-  default = 100
+  type        = number
+  default     = 100
 }
 
 variable "instance_count" {
@@ -29,22 +29,25 @@ variable "instance_count" {
 
 variable "subdomain" {
   description = "Subdomain for this deployment, eg. testing.fieldmark.app"
-  type = string
+  type        = string
 }
 
 variable "local_ini_b64" {
   description = "Base64 encoded version of the local.ini file for couchdb"
-  type = string
+  type        = string
 }
 variable "couchdb_env_b64" {
   description = "Base64 encoded version of .env for couchdb containing COUCHDB_PASSWORD"
+  type        = string
+  sensitive   = true
 }
 variable "authorized_key" {
   description = "public key for ssh login, added to authorized_keys"
-  type = string
+  type        = string
 }
 
 variable "backup_env_b64" {
   description = "Base64 encoded version of .env for backup scripts containing env vars needed for restic backups"
-  type = string
+  type        = string
+  sensitive   = true
 }

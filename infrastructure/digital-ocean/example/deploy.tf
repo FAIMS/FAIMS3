@@ -1,53 +1,140 @@
 
+variable "config_dir" {
+  description = "Required path to the deployment config directory containing core.json, do.json, and optional secrets.enc.json."
+  type        = string
+}
+
+locals {
+  config_core = jsondecode(file("${var.config_dir}/core.json"))
+  do_config   = jsondecode(file("${var.config_dir}/do.json"))
+
+  contact_email = try(local.config_core.support.supportEmail, try(local.do_config.contact_email, "support@example.com"))
+  base_domain   = try(local.do_config.baseDomain, "example.com")
+  region        = try(local.do_config.region, "syd1")
+
+  conductor_image_tag = try(local.do_config.conductor.imageTag, "replace-with-pinned-tag")
+  conductor_size      = try(local.do_config.conductor.instanceSize, "basic-m")
+  couch_droplet_size  = try(local.do_config.couch.dropletSize, "s-2vcpu-4gb-intel")
+  couch_volume_size   = try(local.do_config.couch.volumeSize, 400)
+
+  generated_local_ini = <<-EOT
+; CouchDB Configuration Settings for FAIMS
+
+[couchdb]
+max_document_size = 4294967296
+os_process_timeout = 5000
+uuid = ${try(local.api_env_map.FAIMS_COOKIE_SECRET, "")}
+database_dir = /mnt/couchdb/data
+view_index_dir = /mnt/couchdb/data
+
+[chttpd]
+port = 5984
+bind_address = 0.0.0.0
+authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {chttpd_auth, jwt_authentication_handler}, {chttpd_auth, default_authentication_handler}
+
+[httpd]
+enable_cors = true
+
+[couchdb]
+single_node=true
+
+[log]
+writer = syslog
+level = info
+
+[chttpd_auth]
+secret = ${try(local.api_env_map.FAIMS_COOKIE_SECRET, "")}
+
+[cors]
+origins = *
+headers = accept, authorization, content-type, origin, referer
+credentials = true
+methods = GET, PUT, POST, HEAD, DELETE
+EOT
+
+  generated_backup_env = <<-EOT
+COUCHDB_DATA_DIR=/mnt/couchdb/data
+DO_SPACES_ENDPOINT=${try(local.do_config.storage.endpoint, "https://syd1.digitaloceanspaces.com")}
+DO_SPACES_BUCKET=${try(local.do_config.storage.bucket, "fieldmark-example-backups")}
+AWS_ACCESS_KEY_ID=replace-with-spaces-key
+AWS_SECRET_ACCESS_KEY=replace-with-spaces-secret
+RESTIC_PASSWORD=${try(local.api_env_map.FAIMS_COOKIE_SECRET, "")}
+KEEP_DAILY=7
+KEEP_WEEKLY=4
+KEEP_MONTHLY=12
+BACKUP_TAG=couchdb-backup
+LOG_DIR=/var/log/couchdb-backup
+NOTIFY_EMAIL=
+NOTIFY_WEBHOOK=
+EOT
+
+  generated_authorized_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCplaceholder user@example.com"
+
+  generated_api_env  = module.config_api.env
+  generated_apps_env = module.config_apps.env
+  api_env_map = {
+    for line in split("\n", local.generated_api_env) :
+    split("=", line)[0] => join("=", slice(split("=", line), 1, length(split("=", line))))
+    if length(split("=", line)) >= 2 && !startswith(line, "#") && trimspace(line) != ""
+  }
+}
+
+module "config_api" {
+  source     = "../modules/config"
+  config_dir = var.config_dir
+  platform   = "api"
+}
+
+module "config_apps" {
+  source     = "../modules/config"
+  config_dir = var.config_dir
+  platform   = "apps"
+}
+
 module "couchdb" {
   source              = "../modules/couchdb"
-  subdomain           = var.subdomain
-  local_ini_b64       = base64encode(file("./assets/local.ini"))
-  couchdb_env_b64     = filebase64("./fieldmark.env")
+  subdomain           = local.base_domain
+  local_ini_b64       = base64encode(local.generated_local_ini)
+  couchdb_env_b64     = base64encode(local.generated_api_env)
   do_token            = var.do_token
-  authorized_key      = file("./assets/public_key.pub")
-  region              = "syd1"
-  droplet_size        = "s-2vcpu-4gb-intel"
-  couchdb_volume_size = 400
-  instance_count      = 1
-  backup_env_b64      = base64encode(file("./assets/backup.env"))
+  authorized_key      = local.generated_authorized_key
+  region              = local.region
+  droplet_size        = local.couch_droplet_size
+  couchdb_volume_size = local.couch_volume_size
+  instance_count      = try(local.do_config.couch.instanceCount, 1)
+  backup_env_b64      = base64encode(local.generated_backup_env)
 }
 
 module "apps" {
   source = "../modules/webapps"
 
-  subdomain     = "fieldmark.app"
-  env_b64       = filebase64("./fieldmark.env")
+  subdomain     = local.base_domain
+  env_b64       = base64encode(local.generated_apps_env)
   do_token      = var.do_token
-  region        = "syd"
-  contact_email = var.contact_email
+  region        = local.region
+  contact_email = local.contact_email
 }
 
 module "api" {
   source                     = "../modules/api"
-  subdomain                  = var.subdomain
-  contact_email              = var.contact_email
+  subdomain                  = local.base_domain
+  contact_email              = local.contact_email
   do_token                   = var.do_token
-  conductor_env_b64          = filebase64("./fieldmark.env")
-  conductor_pub_key_b64      = filebase64("./assets/public_key.pem")
-  conductor_pvt_key_b64      = filebase64("./assets/private_key.pem")
-  authorized_key             = file("./assets/public_key.pub")
-  region                     = "syd1"
-  instance_size              = "basic-m"
-  couchdb_password           = var.couchdb_password
-  cookie_secret              = var.cookie_secret
-  smtp_password              = var.smtp_password
+  conductor_env_b64          = base64encode(module.config_api.public_env)
+  conductor_secret_env_b64   = base64encode(module.config_api.secret_env)
+  authorized_key             = local.generated_authorized_key
+  region                     = local.region
+  instance_size              = local.conductor_size
   registry_credentials       = var.registry_credentials
-  auth_providers             = var.auth_providers
-  conductor_docker_image_tag = var.conductor_docker_image_tag
+  conductor_docker_image_tag = local.conductor_image_tag
 }
 
 module "documentation" {
   source              = "../modules/documentation"
-  subdomain           = var.subdomain
-  env_b64             = filebase64("./fieldmark.env")
+  subdomain           = local.base_domain
+  env_b64             = base64encode(local.generated_apps_env)
   do_token            = var.do_token
-  region              = "syd1"
+  region              = local.region
   docs_source_dir     = "docs"
   docs_output_dir     = "user/_build/html"
   docs_build_command  = "cd user && make html"
@@ -62,80 +149,8 @@ variable "do_token" {
     error_message = "do_token must be set to a non-placeholder value."
   }
 }
-variable "contact_email" {
-  description = "contact email for Lets Encrypt SSL certificate"
-  type        = string
-  validation {
-    condition     = trimspace(var.contact_email) != "" && can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.contact_email))
-    error_message = "contact_email must be a valid email address."
-  }
-}
-variable "subdomain" {
-  description = "subdomain for the site"
-  type        = string
-  validation {
-    condition     = trimspace(var.subdomain) != "" && can(regex("^[a-zA-Z0-9]([a-zA-Z0-9-]*\\.)+[a-zA-Z]{2,}$", var.subdomain))
-    error_message = "subdomain must be a non-empty FQDN-style hostname."
-  }
-}
-variable "conductor_docker_image_tag" {
-  description = "Tag of the Conductor API Docker image to deploy"
-  type        = string
-  validation {
-    condition     = trimspace(var.conductor_docker_image_tag) != "" && lower(trimspace(var.conductor_docker_image_tag)) != "latest" && !contains(["x", "changeme", "replace-me"], lower(trimspace(var.conductor_docker_image_tag)))
-    error_message = "conductor_docker_image_tag must be explicitly pinned and cannot be latest or a placeholder value."
-  }
-}
-
-# Secrets
-variable "couchdb_password" {
-  description = "Password for CouchDB admin user"
-  type        = string
-  sensitive   = true
-  validation {
-    condition     = trimspace(var.couchdb_password) != "" && !contains(["x", "changeme", "replace-me"], lower(trimspace(var.couchdb_password)))
-    error_message = "couchdb_password must be set to a non-placeholder value."
-  }
-}
-variable "cookie_secret" {
-  description = "Secret for signing cookies"
-  type        = string
-  sensitive   = true
-  validation {
-    condition     = trimspace(var.cookie_secret) != "" && !contains(["x", "changeme", "replace-me"], lower(trimspace(var.cookie_secret)))
-    error_message = "cookie_secret must be set to a non-placeholder value."
-  }
-}
-variable "smtp_password" {
-  description = "Password for SMTP email sending"
-  type        = string
-  sensitive   = true
-  validation {
-    condition     = trimspace(var.smtp_password) != "" && !contains(["x", "changeme", "replace-me"], lower(trimspace(var.smtp_password)))
-    error_message = "smtp_password must be set to a non-placeholder value."
-  }
-}
 variable "registry_credentials" {
   description = "Github registry credentials for pulling private images"
   type        = any
 }
 
-variable "auth_providers" {
-  description = "Configuration for authentication providers"
-  type = map(object({
-    type          = string
-    index         = number
-    display_name  = string
-    helper_text   = string
-    client_id     = string
-    client_secret = string
-    scope         = string
-    # OIDC-specific fields (optional)
-    issuer            = optional(string)
-    authorization_url = optional(string)
-    token_url         = optional(string)
-    user_info_url     = optional(string)
-  }))
-  sensitive = true
-  default   = {}
-}

@@ -1,0 +1,76 @@
+{
+  "stackName": "faims-do-dev",
+  "region": "syd1",
+  "baseDomain": "example.com",
+  "domains": {
+    "baseDomain": "example.com",
+    "conductor": "conductor",
+    "couch": "couchdb",
+    "faims": "faims",
+    "web": "web",
+    "docs": "docs"
+  },
+  "secrets": {
+    "privateKey": "replace-with-secret-reference",
+    "smtpCredentials": "replace-with-secret-reference",
+    "authProviders": "replace-with-secret-reference"
+  },
+  "couch": {
+    "dropletSize": "s-2vcpu-4gb-intel",
+    "volumeSize": 400,
+    "instanceCount": 1,
+    "backupBucket": "fieldmark-example-backups"
+  },
+  "backup": {
+    "bucket": "fieldmark-example-backups",
+    "retentionDays": 30,
+    "scheduleExpression": "cron(0 3 * * ? *)"
+  },
+  "ttlCleanup": {
+    "enabled": false,
+    "scheduleExpression": "cron(0 2 * * ? *)",
+    "scheduleExpressionTimezone": "Australia/Sydney",
+    "dryRun": true,
+    "compact": false,
+    "includeLongLived": false,
+    "deleteExhaustedInvites": false,
+    "cpu": 256,
+    "memory": 512
+  },
+  "conductor": {
+    "image": "ghcr.io/faims/faims3-api",
+    "imageTag": "replace-with-pinned-tag",
+    "cpu": 1024,
+    "memory": 2048,
+    "instanceSize": "basic-m",
+    "localHttpWhitelist": false
+  },
+  "spatialCapacity": {
+    "maxCapacity": 4,
+    "scaleThresholds": [3, 8, 16, 32],
+    "reconcileMs": 15000,
+    "starvationMs": 300000,
+    "scaleInCooldownMs": 600000,
+    "idleExitMs": 60000,
+    "cpu": 1024,
+    "memory": 2048,
+    "ephemeralStorageGiB": 80,
+    "managerCpu": 256,
+    "managerMemory": 512,
+    "gdalNumThreads": "ALL_CPUS",
+    "gdalCacheMaxMb": 256,
+    "gdalWarpMemoryMb": 256,
+    "gdalWarpMulti": true
+  },
+  "storage": {
+    "provider": "digitalocean-spaces",
+    "region": "syd1",
+    "bucket": "fieldmark-map-assets",
+    "endpoint": "https://syd1.digitaloceanspaces.com",
+    "privateAccess": true
+  },
+  "authProviders": {
+    "providers": ["google"],
+    "secretArn": "replace-with-secret-reference"
+  }
+}

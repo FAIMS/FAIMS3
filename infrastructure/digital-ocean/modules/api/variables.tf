@@ -31,16 +31,13 @@ variable "conductor_docker_image_tag" {
   }
 }
 variable "conductor_env_b64" {
-  description = "base64 encoded version of the .env file for conductor deployment"
+  description = "base64 encoded non-secret environment payload for conductor deployment"
   type        = string
 }
-variable "conductor_pvt_key_b64" {
-  description = "base64 encoded content of private key file for conductor deployment"
+variable "conductor_secret_env_b64" {
+  description = "base64 encoded secret environment payload for conductor deployment"
   type        = string
-}
-variable "conductor_pub_key_b64" {
-  description = "base64 encoded content of public key file for conductor deployment"
-  type        = string
+  sensitive   = true
 }
 variable "authorized_key" {
   description = "public key for ssh login, added to authorized_keys"
@@ -66,44 +63,6 @@ variable "instance_size" {
   }
 }
 
-## Authentication Providers
-
-variable "auth_providers" {
-  description = "Configuration for authentication providers"
-  type = map(object({
-    type          = string
-    index         = number
-    display_name  = string
-    helper_text   = string
-    client_id     = string
-    client_secret = string
-    scope         = string
-    # OIDC-specific fields (optional)
-    issuer            = optional(string)
-    authorization_url = optional(string)
-    token_url         = optional(string)
-    user_info_url     = optional(string)
-  }))
-  sensitive = true
-  default   = {}
-}
-
-## Secrets
-variable "couchdb_password" {
-  description = "Password for CouchDB admin user"
-  type        = string
-  sensitive   = true
-}
-variable "cookie_secret" {
-  description = "Secret for signing cookies"
-  type        = string
-  sensitive   = true
-}
-variable "smtp_password" {
-  description = "Password for SMTP email sending"
-  type        = string
-  sensitive   = true
-}
 variable "registry_credentials" {
   description = "Github registry credentials for pulling private images"
   type        = any

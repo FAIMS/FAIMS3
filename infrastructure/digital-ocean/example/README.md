@@ -16,28 +16,21 @@ This folder contains the Terraform configuration for deploying FAIMS3 to Digital
 
 ## Configuration
 
-Configure your deployment by copying the file `terraform.tfvars.dist` as
-`terraform.tfvars`.  Edit this file to add your Digital Ocean
-credentials and a contact email address for the Let's Encrypt SSL certificate.
-These settings relate to the deployment process.
+The deployment is driven by an explicit `config_dir` input. This must point at the environment folder that contains the canonical config files, for example:
 
-Create `conductor.env` by copying `conductor.env.dist` and adding your configuration
-for the server deployment. This file is copied to the server and contains
-runtime settings for the server instance.
-
-Run the script to create a key pair and CouchDB configuration
-file for your deployment.  This will create a folder `assets` that will be
-used as part of the deployment process.
-
-```bash
-./makeInstanceKeys.sh
+```text
+config/dev/core.json
+config/dev/do.json
+config/dev/secrets.enc.json   # optional SOPS-encrypted overlay
 ```
 
-Add these new files to version control including the key pair and configured
-secrets.  You __must__ ensure that the repository is __private__ if it is to be
-stored on e.g. Github.  This repository will be the record of your deployment
-and the files are required to update the deployment or gain access to the
-servers.
+No fixed fallback path is used. The example deployment is intentionally required to receive its config location as a Terraform input so every deployment remains explicit and reproducible.
+
+The shared logic for merging the JSON config and generating the platform env values lives in the reusable module at `infrastructure/digital-ocean/modules/config`. It reads the canonical `core.json` + `do.json` layout, decrypts and merges `secrets.enc.json` via SOPS when present, and invokes the repo-wide `generate-build-config.ts` contract instead of hand-building a custom `.env` flow.
+
+For API deployment, that module now emits separate non-secret and secret env payloads. Secret keys are derived from values that come from `secrets.enc.json` and are sent to DigitalOcean App Platform with `type = "SECRET"`.
+
+Deployment/runtime secrets should come from `secrets.enc.json` and be decrypted at deploy time via SOPS. The generated API env is loaded into DigitalOcean App Platform as `type = "SECRET"` entries. Terraform inputs should be limited to deployment credentials such as `do_token` (and registry auth if required), not a second source of app secrets.
 
 ## Deployment
 
