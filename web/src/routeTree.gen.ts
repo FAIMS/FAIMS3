@@ -12,16 +12,16 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as ProtectedIndexRouteImport } from './routes/_protected/index'
 import { Route as ProtectedAdminRouteImport } from './routes/_protected/_admin'
-import { Route as ProtectedTemplatesIndexRouteImport } from './routes/_protected/templates/index'
-import { Route as ProtectedTeamsIndexRouteImport } from './routes/_protected/teams/index'
-import { Route as ProtectedProjectsIndexRouteImport } from './routes/_protected/projects/index'
-import { Route as ProtectedProfileIndexRouteImport } from './routes/_protected/profile/index'
-import { Route as ProtectedArchiveIndexRouteImport } from './routes/_protected/archive/index'
-import { Route as ProtectedTemplatesTemplateIdRouteImport } from './routes/_protected/templates/$templateId'
-import { Route as ProtectedTeamsTeamIdRouteImport } from './routes/_protected/teams/$teamId'
-import { Route as ProtectedProjectsProjectIdRouteImport } from './routes/_protected/projects/$projectId'
-import { Route as ProtectedProfileLongLivedTokensRouteImport } from './routes/_protected/profile/long-lived-tokens'
 import { Route as ProtectedAdminUsersRouteImport } from './routes/_protected/_admin/users'
+import { Route as ProtectedArchiveIndexRouteImport } from './routes/_protected/archive/index'
+import { Route as ProtectedProfileIndexRouteImport } from './routes/_protected/profile/index'
+import { Route as ProtectedProfileLongLivedTokensRouteImport } from './routes/_protected/profile/long-lived-tokens'
+import { Route as ProtectedProjectsIndexRouteImport } from './routes/_protected/projects/index'
+import { Route as ProtectedProjectsProjectIdRouteImport } from './routes/_protected/projects/$projectId'
+import { Route as ProtectedTeamsIndexRouteImport } from './routes/_protected/teams/index'
+import { Route as ProtectedTeamsTeamIdRouteImport } from './routes/_protected/teams/$teamId'
+import { Route as ProtectedTemplatesIndexRouteImport } from './routes/_protected/templates/index'
+import { Route as ProtectedTemplatesTemplateIdRouteImport } from './routes/_protected/templates/$templateId'
 
 const ProtectedRoute = ProtectedRouteImport.update({
   id: '/_protected',
@@ -36,19 +36,14 @@ const ProtectedAdminRoute = ProtectedAdminRouteImport.update({
   id: '/_admin',
   getParentRoute: () => ProtectedRoute,
 } as any)
-const ProtectedTemplatesIndexRoute = ProtectedTemplatesIndexRouteImport.update({
-  id: '/templates/',
-  path: '/templates/',
-  getParentRoute: () => ProtectedRoute,
+const ProtectedAdminUsersRoute = ProtectedAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => ProtectedAdminRoute,
 } as any)
-const ProtectedTeamsIndexRoute = ProtectedTeamsIndexRouteImport.update({
-  id: '/teams/',
-  path: '/teams/',
-  getParentRoute: () => ProtectedRoute,
-} as any)
-const ProtectedProjectsIndexRoute = ProtectedProjectsIndexRouteImport.update({
-  id: '/projects/',
-  path: '/projects/',
+const ProtectedArchiveIndexRoute = ProtectedArchiveIndexRouteImport.update({
+  id: '/archive/',
+  path: '/archive/',
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedProfileIndexRoute = ProtectedProfileIndexRouteImport.update({
@@ -56,20 +51,15 @@ const ProtectedProfileIndexRoute = ProtectedProfileIndexRouteImport.update({
   path: '/profile/',
   getParentRoute: () => ProtectedRoute,
 } as any)
-const ProtectedArchiveIndexRoute = ProtectedArchiveIndexRouteImport.update({
-  id: '/archive/',
-  path: '/archive/',
-  getParentRoute: () => ProtectedRoute,
-} as any)
-const ProtectedTemplatesTemplateIdRoute =
-  ProtectedTemplatesTemplateIdRouteImport.update({
-    id: '/templates/$templateId',
-    path: '/templates/$templateId',
+const ProtectedProfileLongLivedTokensRoute =
+  ProtectedProfileLongLivedTokensRouteImport.update({
+    id: '/profile/long-lived-tokens',
+    path: '/profile/long-lived-tokens',
     getParentRoute: () => ProtectedRoute,
   } as any)
-const ProtectedTeamsTeamIdRoute = ProtectedTeamsTeamIdRouteImport.update({
-  id: '/teams/$teamId',
-  path: '/teams/$teamId',
+const ProtectedProjectsIndexRoute = ProtectedProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedProjectsProjectIdRoute =
@@ -78,17 +68,27 @@ const ProtectedProjectsProjectIdRoute =
     path: '/projects/$projectId',
     getParentRoute: () => ProtectedRoute,
   } as any)
-const ProtectedProfileLongLivedTokensRoute =
-  ProtectedProfileLongLivedTokensRouteImport.update({
-    id: '/profile/long-lived-tokens',
-    path: '/profile/long-lived-tokens',
+const ProtectedTeamsIndexRoute = ProtectedTeamsIndexRouteImport.update({
+  id: '/teams/',
+  path: '/teams/',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedTeamsTeamIdRoute = ProtectedTeamsTeamIdRouteImport.update({
+  id: '/teams/$teamId',
+  path: '/teams/$teamId',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedTemplatesIndexRoute = ProtectedTemplatesIndexRouteImport.update({
+  id: '/templates/',
+  path: '/templates/',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedTemplatesTemplateIdRoute =
+  ProtectedTemplatesTemplateIdRouteImport.update({
+    id: '/templates/$templateId',
+    path: '/templates/$templateId',
     getParentRoute: () => ProtectedRoute,
   } as any)
-const ProtectedAdminUsersRoute = ProtectedAdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => ProtectedAdminRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof ProtectedIndexRoute
@@ -203,25 +203,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedAdminRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/_protected/templates/': {
-      id: '/_protected/templates/'
-      path: '/templates'
-      fullPath: '/templates/'
-      preLoaderRoute: typeof ProtectedTemplatesIndexRouteImport
-      parentRoute: typeof ProtectedRoute
+    '/_protected/_admin/users': {
+      id: '/_protected/_admin/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof ProtectedAdminUsersRouteImport
+      parentRoute: typeof ProtectedAdminRoute
     }
-    '/_protected/teams/': {
-      id: '/_protected/teams/'
-      path: '/teams'
-      fullPath: '/teams/'
-      preLoaderRoute: typeof ProtectedTeamsIndexRouteImport
-      parentRoute: typeof ProtectedRoute
-    }
-    '/_protected/projects/': {
-      id: '/_protected/projects/'
-      path: '/projects'
-      fullPath: '/projects/'
-      preLoaderRoute: typeof ProtectedProjectsIndexRouteImport
+    '/_protected/archive/': {
+      id: '/_protected/archive/'
+      path: '/archive'
+      fullPath: '/archive/'
+      preLoaderRoute: typeof ProtectedArchiveIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/profile/': {
@@ -231,25 +224,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedProfileIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/_protected/archive/': {
-      id: '/_protected/archive/'
-      path: '/archive'
-      fullPath: '/archive/'
-      preLoaderRoute: typeof ProtectedArchiveIndexRouteImport
+    '/_protected/profile/long-lived-tokens': {
+      id: '/_protected/profile/long-lived-tokens'
+      path: '/profile/long-lived-tokens'
+      fullPath: '/profile/long-lived-tokens'
+      preLoaderRoute: typeof ProtectedProfileLongLivedTokensRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/_protected/templates/$templateId': {
-      id: '/_protected/templates/$templateId'
-      path: '/templates/$templateId'
-      fullPath: '/templates/$templateId'
-      preLoaderRoute: typeof ProtectedTemplatesTemplateIdRouteImport
-      parentRoute: typeof ProtectedRoute
-    }
-    '/_protected/teams/$teamId': {
-      id: '/_protected/teams/$teamId'
-      path: '/teams/$teamId'
-      fullPath: '/teams/$teamId'
-      preLoaderRoute: typeof ProtectedTeamsTeamIdRouteImport
+    '/_protected/projects/': {
+      id: '/_protected/projects/'
+      path: '/projects'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof ProtectedProjectsIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/projects/$projectId': {
@@ -259,19 +245,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedProjectsProjectIdRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/_protected/profile/long-lived-tokens': {
-      id: '/_protected/profile/long-lived-tokens'
-      path: '/profile/long-lived-tokens'
-      fullPath: '/profile/long-lived-tokens'
-      preLoaderRoute: typeof ProtectedProfileLongLivedTokensRouteImport
+    '/_protected/teams/': {
+      id: '/_protected/teams/'
+      path: '/teams'
+      fullPath: '/teams/'
+      preLoaderRoute: typeof ProtectedTeamsIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/_protected/_admin/users': {
-      id: '/_protected/_admin/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof ProtectedAdminUsersRouteImport
-      parentRoute: typeof ProtectedAdminRoute
+    '/_protected/teams/$teamId': {
+      id: '/_protected/teams/$teamId'
+      path: '/teams/$teamId'
+      fullPath: '/teams/$teamId'
+      preLoaderRoute: typeof ProtectedTeamsTeamIdRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/templates/': {
+      id: '/_protected/templates/'
+      path: '/templates'
+      fullPath: '/templates/'
+      preLoaderRoute: typeof ProtectedTemplatesIndexRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/templates/$templateId': {
+      id: '/_protected/templates/$templateId'
+      path: '/templates/$templateId'
+      fullPath: '/templates/$templateId'
+      preLoaderRoute: typeof ProtectedTemplatesTemplateIdRouteImport
+      parentRoute: typeof ProtectedRoute
     }
   }
 }

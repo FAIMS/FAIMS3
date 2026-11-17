@@ -432,11 +432,13 @@ export const OverviewMap = (props: OverviewMapProps) => {
         // Anchor popover to click position so it's reliable on first open (map container
         // rect can be wrong before layout has settled)
         const mapEl = map.getTargetElement();
-        const rect = mapEl.getBoundingClientRect();
-        setPopoverAnchorPosition({
-          left: rect.left + pixel[0],
-          top: rect.top + pixel[1],
-        });
+        if (mapEl) {
+          const rect = mapEl.getBoundingClientRect();
+          setPopoverAnchorPosition({
+            left: rect.left + pixel[0],
+            top: rect.top + pixel[1],
+          });
+        }
         setSelectedFeature(feature);
       }
     };
@@ -477,13 +479,17 @@ export const OverviewMap = (props: OverviewMapProps) => {
     };
 
     const mapEl = map.getTargetElement();
-    mapEl.addEventListener('pointerdown', handlePointerDown);
-    mapEl.addEventListener('pointerup', handlePointerUp);
+    if (mapEl) {
+      mapEl.addEventListener('pointerdown', handlePointerDown);
+      mapEl.addEventListener('pointerup', handlePointerUp);
+    }
 
     // Cleanup
     return () => {
-      mapEl.removeEventListener('pointerdown', handlePointerDown);
-      mapEl.removeEventListener('pointerup', handlePointerUp);
+      if (mapEl) {
+        mapEl.removeEventListener('pointerdown', handlePointerDown);
+        mapEl.removeEventListener('pointerup', handlePointerUp);
+      }
       if (vectorLayerRef.current) {
         map.removeLayer(vectorLayerRef.current);
         vectorLayerRef.current = null;

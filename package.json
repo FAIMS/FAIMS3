@@ -43,17 +43,17 @@
   "dependencies": {
     "@capacitor-community/exif": "^7.0.0",
     "env-cmd": "^10.1.0",
-    "esbuild": "^0.28.1"
+    "esbuild": "^0.28.2"
   },
   "devDependencies": {
-    "@types/node": "^24",
+    "@types/node": "^24.19.2",
     "gts": "^5.3.1",
     "husky": "^9.1.7",
-    "knip": "^6.27.0",
-    "lint-staged": "^17.0.8",
+    "knip": "^6.44.2",
+    "lint-staged": "^17.6.0",
     "oxfmt": "^0.42.0",
-    "oxlint": "^1.57.0",
-    "turbo": "^2.9.14",
+    "oxlint": "^1.93.0",
+    "turbo": "^2.11.10",
     "typescript": "^7.0.2"
   },
   "lint-staged": {

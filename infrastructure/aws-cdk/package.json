@@ -17,20 +17,20 @@
     "fix": "oxlint --config ../../.oxlintrc.json --fix . && oxfmt --config ../../.oxfmtrc.json ."
   },
   "dependencies": {
-    "@cloudcomponents/cdk-static-website": "^2.0.0",
-    "aws-cdk-lib": "^2.260.0",
-    "constructs": "^10.0.0",
+    "@cloudcomponents/cdk-static-website": "^2.2.0",
+    "aws-cdk-lib": "^2.275.0",
+    "constructs": "^10.8.1",
     "source-map-support": "^0.5.21",
-    "zod": "^4.1.12"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@swc/core": "^1.13.3",
+    "@swc/core": "^1.16.22",
     "@swc/jest": "^0.2.39",
-    "@types/jest": "^29.5.12",
-    "@types/node": "^24",
-    "aws-cdk": "^2.178.2",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^24.19.2",
+    "aws-cdk": "^2.1148.0",
     "jest": "^29.7.0",
-    "tsx": "^4.20.3",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   },
   "engines": {
