@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-11-18
+
+### Changes
+
+- fix: move new config variable location ([#2502](https://github.com/FAIMS/FAIMS3/pull/2502))
+- build(deps): bump addressable from 2.9.0 to 2.9.1 in /app/android ([#2501](https://github.com/FAIMS/FAIMS3/pull/2501))
+- fix: consistent icon positioning ([#2495](https://github.com/FAIMS/FAIMS3/pull/2495))
+- fix: nightly android build failures ([#2494](https://github.com/FAIMS/FAIMS3/pull/2494))
+- feat: designer state and saving ([#2493](https://github.com/FAIMS/FAIMS3/pull/2493))
+- fix: photo flicker during transition between snapshot states ([#2492](https://github.com/FAIMS/FAIMS3/pull/2492))
+- feat: explicitly select no team in create survey/template workflows ([#2491](https://github.com/FAIMS/FAIMS3/pull/2491))
+- feat: consistent layout of action tabs and ordered by importance ([#2490](https://github.com/FAIMS/FAIMS3/pull/2490))
+- feat: in app feedback button ([#2489](https://github.com/FAIMS/FAIMS3/pull/2489))
+- feat: enable visibility conditions in the designer for RichText fields ([#2488](https://github.com/FAIMS/FAIMS3/pull/2488))
+- feat: explicit per-survey refresh button ([#2487](https://github.com/FAIMS/FAIMS3/pull/2487))
+- feat: improving status display for surveys in control centre ([#2486](https://github.com/FAIMS/FAIMS3/pull/2486))
+- fix: updating some designer defaults ([#2485](https://github.com/FAIMS/FAIMS3/pull/2485))
+- feat: remove default numbering in designer for select fields ([#2484](https://github.com/FAIMS/FAIMS3/pull/2484))
+- fix: insufficient account lockout mechanisms (security) ([#2483](https://github.com/FAIMS/FAIMS3/pull/2483))
+- feat: server-side pagination and search for all list endpoints, and faster startup database initialisation ([#2482](https://github.com/FAIMS/FAIMS3/pull/2482))
+- feat: team archive lifecycle ([#2481](https://github.com/FAIMS/FAIMS3/pull/2481))
+- feat: admin stats for photos, number of surveys, map storage, number of records etc. overall, per team, per person ([#2480](https://github.com/FAIMS/FAIMS3/pull/2480))
+- feat: conditional options ([#2479](https://github.com/FAIMS/FAIMS3/pull/2479))
+- fix: prevent SVG injection attacks with improved attachment checks ([#2473](https://github.com/FAIMS/FAIMS3/pull/2473))
+- # fix: let a single-link related field relink once its target is deleted (#2365) ([#2470](https://github.com/FAIMS/FAIMS3/pull/2470))
+- feat: select-option-id-label ([#2451](https://github.com/FAIMS/FAIMS3/pull/2451))
+- Pull request #2365 (title unavailable — fetch manually)
+
 ## [1.10.0] - 2026-11-04
 
 ### Changes
