@@ -63,7 +63,7 @@ const isTypeMatch = (optionTree: OptionTreeType[]) => {
 
     if (!Object.keys(opt).every(key => validKeys.includes(key))) {
       throw new Error(
-        "Invalid property. Only 'name', 'type', 'label' and 'children' properties are accepted."
+        "Invalid property. Only 'name', 'label' and 'children' properties are accepted."
       );
     }
 
@@ -351,7 +351,7 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
               <div
                 ref={editorHostRef}
                 style={{
-                  width: '100%',
+                  width: '95%',
                   minHeight: 220,
                   border: '1px solid rgba(0, 0, 0, 0.12)',
                   borderRadius: 4,
@@ -359,12 +359,12 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
                 }}
               />
               {errorMessage && (
-                <Alert severity="error" sx={{mt: 2.5, width: '100%'}}>
+                <Alert severity="error" sx={{mt: 2.5, width: '95%'}}>
                   {errorMessage}
                 </Alert>
               )}
 
-              <Alert severity="info" sx={{mt: 2.5, width: '100%'}}>
+              <Alert severity="info" sx={{mt: 2.5, width: '95%'}}>
                 <strong>Note:</strong> this editor captures the Tab key for
                 indentation. To tab to the next field, hit the Escape key first.
               </Alert>
