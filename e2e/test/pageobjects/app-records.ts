@@ -1,6 +1,6 @@
 import {$, browser} from '@wdio/globals';
 import {Page} from './page.ts';
-import {getAppUrl} from '../helpers/env.ts';
+import {getAppUrl, getNotebookNamePlural} from '../helpers/env.ts';
 import {
   DEFAULT_TEST_COORDS,
   stubGeolocation,
@@ -60,7 +60,9 @@ class AppRecordsPage extends Page {
       const row = byTestId('app-notebook-row');
       if (await row.isExisting()) {
         await row.click();
-        await waitForUrl(/\/surveys\//, {timeout: 15000});
+        await waitForUrl(new RegExp(`/${getNotebookNamePlural()}/`), {
+          timeout: 15000,
+        });
         return;
       }
     }
@@ -85,7 +87,9 @@ class AppRecordsPage extends Page {
     );
 
     await byTestId('app-notebook-row').click();
-    await waitForUrl(/\/surveys\//, {timeout: 15000});
+    await waitForUrl(new RegExp(`/${getNotebookNamePlural()}/`), {
+      timeout: 15000,
+    });
   }
 
   /** Open the notebook Settings tab. */
@@ -119,7 +123,8 @@ class AppRecordsPage extends Page {
       await finishAnyway.click();
     }
     await browser.waitUntil(
-      async () => (await browser.getUrl()).includes('/surveys/'),
+      async () =>
+        (await browser.getUrl()).includes(`/${getNotebookNamePlural()}/`),
       {timeout: 20000, timeoutMsg: 'Expected return to notebook after finish'}
     );
   }
@@ -198,7 +203,8 @@ class AppRecordsPage extends Page {
       await finishAnyway.click();
     }
     await browser.waitUntil(
-      async () => (await browser.getUrl()).includes('/surveys/'),
+      async () =>
+        (await browser.getUrl()).includes(`/${getNotebookNamePlural()}/`),
       {timeout: 20000, timeoutMsg: 'Expected return to notebook after finish'}
     );
   }

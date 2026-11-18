@@ -168,7 +168,7 @@ function classifyQuickShareError(error: unknown): QuickShareFailure {
   if (isNotFound(error)) {
     return {
       kind: 'not-found',
-      message: 'This survey is no longer on the server.',
+      message: `This ${config.notebookName} is no longer on the server.`,
     };
   }
   const server = error instanceof HttpError ? error.serverMessage() : undefined;
@@ -197,7 +197,7 @@ function classifyQuickShareError(error: unknown): QuickShareFailure {
   ) {
     return {
       kind: 'level',
-      message: 'You are not allowed to share this survey at that level.',
+      message: `You are not allowed to share this ${config.notebookName} at that level.`,
     };
   }
   return {

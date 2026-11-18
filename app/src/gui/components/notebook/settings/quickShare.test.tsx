@@ -83,6 +83,7 @@ vi.mock('qrcode', () => ({
 import QRCode from 'qrcode';
 import {HttpError} from '../../../../utils/apiOperations/client';
 import NotebookQuickShare from './quickShare';
+import {config} from '../../../../buildconfig';
 
 function conductorError(status: number, statusText: string, message: string) {
   return new HttpError(
@@ -218,7 +219,7 @@ describe('NotebookQuickShare', () => {
     expect(screen.getByRole('heading', {name: 'Quick share'})).toBeTruthy();
     expect(
       screen.getByText(
-        'Share this survey with another user by generating a temporary QR code.'
+        `Share this ${config.notebookName} with another user by generating a temporary QR code.`
       )
     ).toBeTruthy();
     const open = screen.getByRole('button', {name: /^Share this /});
@@ -470,7 +471,9 @@ describe('NotebookQuickShare', () => {
     openShareDialog();
     fireEvent.click(screen.getByTestId('app-quick-share-generate'));
     expect(
-      await screen.findByText('This survey is no longer on the server.')
+      await screen.findByText(
+        `This ${config.notebookName} is no longer on the server.`
+      )
     ).toBeTruthy();
     expect(harness.dispatch).not.toHaveBeenCalled();
     expect(screen.queryByTestId('app-quick-share-result')).toBeNull();
@@ -497,7 +500,9 @@ describe('NotebookQuickShare', () => {
       })
     );
     expect(
-      screen.queryByText('This survey is no longer on the server.')
+      screen.queryByText(
+        `This ${config.notebookName} is no longer on the server.`
+      )
     ).toBeNull();
     expect(
       screen.queryByText(
@@ -517,7 +522,7 @@ describe('NotebookQuickShare', () => {
       conductorError(
         401,
         'Unauthorized',
-        'You are not authorized to share this survey at that level'
+        `You are not authorized to share this survey at that level`
       )
     );
     renderShare();
@@ -525,7 +530,7 @@ describe('NotebookQuickShare', () => {
     fireEvent.click(screen.getByTestId('app-quick-share-generate'));
     expect(
       await screen.findByText(
-        'You are not allowed to share this survey at that level.'
+        `You are not allowed to share this ${config.notebookName} at that level.`
       )
     ).toBeTruthy();
     expect(screen.queryByTestId('app-quick-share-revoke-own')).toBeNull();
@@ -550,7 +555,7 @@ describe('NotebookQuickShare', () => {
     ).toBeTruthy();
     expect(
       screen.queryByText(
-        'You are not allowed to share this survey at that level.'
+        `You are not allowed to share this ${config.notebookName} at that level.`
       )
     ).toBeNull();
     expect(screen.queryByTestId('app-quick-share-revoke-own')).toBeNull();
@@ -605,7 +610,7 @@ describe('NotebookQuickShare', () => {
     ).toBeTruthy();
     expect(
       screen.queryByText(
-        'You are not allowed to share this survey at that level.'
+        `You are not allowed to share this ${config.notebookName} at that level.`
       )
     ).toBeNull();
   });
