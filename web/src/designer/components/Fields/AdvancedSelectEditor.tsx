@@ -3,20 +3,17 @@
 import {yaml as yamlLanguage} from '@codemirror/lang-yaml';
 import {EditorState} from '@codemirror/state';
 import {EditorView, keymap} from '@codemirror/view';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import InfoIcon from '@mui/icons-material/Info';
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Alert,
   Card,
   FormControl,
   FormControlLabel,
   FormLabel,
   Grid,
-  Paper,
   Radio,
   RadioGroup,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import debounce from 'lodash/debounce';
@@ -28,6 +25,8 @@ import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {indentWithTab} from '@codemirror/commands';
+import {designerInfoIconSx} from '../designer-style';
+import React from 'react';
 
 type OptionTreeType = {
   name: string;
@@ -298,11 +297,52 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
     }
   }, [yamlValue]);
 
+  const sampleOptionTree: OptionTreeType[] = [
+    {
+      name: 'option-1',
+      label: 'Option 1',
+      children: [
+        {
+          name: 'option-1-1',
+          label: 'Option 1.1',
+        },
+      ],
+    },
+    {
+      name: 'option-2',
+    },
+    {
+      name: 'option-3',
+    },
+  ];
+
   return (
     <BaseFieldEditor fieldName={fieldName}>
       <Grid>
         <Card variant="outlined">
           <Grid size={12} sx={{mx: 1.5, my: 2}}>
+            <Typography variant="body2">
+              Enter a YAML formatted option tree below.
+              <Tooltip
+                title={
+                  <React.Fragment>
+                    <Typography>YAML Example</Typography>
+                    <pre>{serializeOptionTree(sampleOptionTree)}</pre>
+                    <Typography>
+                      <em>name</em> is required for every option. <em>label</em>{' '}
+                      and <em>children</em> are optional.
+                    </Typography>
+                  </React.Fragment>
+                }
+              >
+                <InfoIcon
+                  sx={{
+                    ...designerInfoIconSx,
+                    fontSize: '1.35rem',
+                  }}
+                />
+              </Tooltip>
+            </Typography>
             <Grid
               container
               size={12}
@@ -323,52 +363,6 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
                   {errorMessage}
                 </Alert>
               )}
-
-              {successMessage && (
-                <Alert severity="success" sx={{mt: 2.5, width: '100%'}}>
-                  {successMessage}
-                </Alert>
-              )}
-              <Accordion>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography component="span">
-                    Example Configuration
-                  </Typography>
-                </AccordionSummary>
-
-                <AccordionDetails>
-                  <Typography variant="body2">
-                    The following is an example of a valid YAML structure with 2
-                    levels. The first level goes 1 level deep (i.e., stops at
-                    Level 1), the second goes 2 levels deep (i.e., includes
-                    Level 2 and Level 2.1). The property <code>name</code> must
-                    be included, whereas the <code>children</code> and{' '}
-                    <code>label</code> properties are optional.
-                  </Typography>
-
-                  <Paper sx={{margin: 1}}>
-                    <Typography variant="body2">
-                      <pre>
-                        {serializeOptionTree([
-                          {
-                            name: 'level-1',
-                            label: 'Level 1',
-                          },
-                          {
-                            name: 'level-2',
-                            children: [
-                              {
-                                name: 'level-2-1',
-                                label: 'Level 2.1',
-                              },
-                            ],
-                          },
-                        ])}
-                      </pre>
-                    </Typography>
-                  </Paper>
-                </AccordionDetails>
-              </Accordion>
 
               <Alert severity="info" sx={{mt: 2.5, width: '100%'}}>
                 <strong>Note:</strong> this editor captures the Tab key for
