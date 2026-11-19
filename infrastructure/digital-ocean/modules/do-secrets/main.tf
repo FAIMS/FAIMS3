@@ -44,12 +44,12 @@ data "external" "do_secrets" {
 }
 
 output "backup_access_key_id" {
-  value     = data.external.do_secrets.result.access_key_id
+  value     = data.external.do_secrets.result.backup_access_key_id
   sensitive = true
 }
 
 output "backup_secret_access_key" {
-  value     = data.external.do_secrets.result.secret_access_key
+  value     = data.external.do_secrets.result.backup_secret_access_key
   sensitive = true
 }
 

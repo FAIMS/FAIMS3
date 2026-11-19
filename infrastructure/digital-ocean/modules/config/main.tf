@@ -58,6 +58,24 @@ def deep_merge(a, b):
         return out
     return b
 
+def mask_overlay_strings(target, overlay, sentinel):
+    if isinstance(overlay, dict) and isinstance(target, dict):
+        out = dict(target)
+        for key, overlay_value in overlay.items():
+            if key in target:
+                out[key] = mask_overlay_strings(
+                    target[key], overlay_value, sentinel
+                )
+        return out
+    if isinstance(overlay, list) and isinstance(target, list):
+        return [
+            sentinel if isinstance(overlay_value, str) else overlay_value
+            for overlay_value in overlay
+        ]
+    if isinstance(overlay, str):
+        return sentinel
+    return target
+
 base_path = config_dir / 'core.json'
 base = json.loads(base_path.read_text())
 merged = base
@@ -118,17 +136,21 @@ def parse_env(text):
         env[key] = value
     return env
 
-base_env = parse_env(generate_env(config_path=base_path))
 merged_env = (
     parse_env(generate_env(config=merged))
     if has_secrets_overlay
-    else base_env
+    else parse_env(generate_env(config_path=base_path))
 )
 
 secret_keys = []
 if has_secrets_overlay:
+    # Mask secret overlay strings and compare env after parsing the complete
+    # merged config. This avoids validating core.json before its secret overlay
+    # supplies values required by the build-config invariants.
+    masked = mask_overlay_strings(merged, secrets_cfg, '<SOPS_SECRET_REDACTED>')
+    masked_env = parse_env(generate_env(config=masked))
     for key, value in merged_env.items():
-        if base_env.get(key) != value:
+        if masked_env.get(key) != value:
             secret_keys.append(key)
 
 public_env = {
