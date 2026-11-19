@@ -84,7 +84,15 @@ async function runMigrationWork(
   fingerprint?: string
 ): Promise<void> {
   logStartupMigration('db_migrate_begin', {instance: instanceId});
-  await initialiseAndMigrateDBs({force: true, pushKeys: true});
+  await initialiseAndMigrateDBs({
+    force: true,
+    pushKeys: true,
+    setupDiagnostics: {
+      fingerprint,
+      apiVersion: config.apiVersion,
+      writerId: instanceId,
+    },
+  });
   logStartupMigration('db_migrate_complete', {instance: instanceId});
 
   logStartupMigration('notebook_migrate_begin', {instance: instanceId});

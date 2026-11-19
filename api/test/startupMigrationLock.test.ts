@@ -3,6 +3,8 @@ import PouchDB from 'pouchdb';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+  DB_SETUP_DOC_KIND,
+  dbSetupDocId,
   NOTEBOOK_UI_SCHEMA_MARKER_ID,
   STARTUP_MIGRATION_FINGERPRINT_LENGTH,
 } from '@faims3/data-model';
@@ -1150,5 +1152,35 @@ describe('startup migration lock with the live ahead check', () => {
     const after = await readLock(migrationsDb());
     expect(after._rev).toBe(before._rev);
     expect(after.fingerprint).toBe('previous-fingerprint');
+  });
+
+  it('skips becoming doer after a foreign settlement when a setup version is newer', async () => {
+    const setupId = dbSetupDocId('PEOPLE', 'people');
+    const existing = await migrationsDb().get(setupId);
+    await migrationsDb().put({
+      _id: setupId,
+      _rev: existing._rev,
+      kind: DB_SETUP_DOC_KIND,
+      dbType: 'PEOPLE',
+      dbName: 'people',
+      design: {version: 99, hash: 'ahead', updatedAtMs: 1},
+    });
+    const before = await readLock(migrationsDb());
+    const run = vi.fn();
+
+    const result = await withStartupMigrationLock({
+      db: asStore(migrationsDb()),
+      instanceId: 'older-api',
+      run,
+      fingerprint: 'older-fingerprint',
+      apiVersion: '1.9.0',
+      pollIntervalMs: 10,
+      isClusterAhead: isStartupMigrationClusterAhead,
+    });
+
+    expect(result).toEqual({role: 'waiter', status: 'complete'});
+    expect(run).not.toHaveBeenCalled();
+    const after = await readLock(migrationsDb());
+    expect(after._rev).toBe(before._rev);
   });
 });

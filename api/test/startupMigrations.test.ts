@@ -102,6 +102,11 @@ describe('runStartupMigrations', () => {
     expect(initialiseAndMigrateDBs).toHaveBeenCalledWith({
       force: true,
       pushKeys: true,
+      setupDiagnostics: {
+        fingerprint: PROCESS_FINGERPRINT,
+        apiVersion: '1.11.0',
+        writerId: expect.stringContaining(`:${process.pid}:`),
+      },
     });
     expect(validateDatabases).toHaveBeenCalledOnce();
     expect(initialiseAndMigrateDBs.mock.invocationCallOrder[0]).toBeLessThan(
@@ -189,6 +194,11 @@ describe('runStartupMigrations', () => {
     expect(initialiseAndMigrateDBs).toHaveBeenCalledWith({
       force: true,
       pushKeys: true,
+      setupDiagnostics: {
+        fingerprint: undefined,
+        apiVersion: '1.11.0',
+        writerId: expect.stringContaining(`:${process.pid}:`),
+      },
     });
     expect(validateDatabases).toHaveBeenCalledOnce();
     expect(writeNotebookSchemaMarker).toHaveBeenCalledOnce();

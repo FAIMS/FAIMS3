@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 /* eslint-disable n/no-process-exit */
+import {startBugsnag} from '../bugsnag';
 import {initialiseAndMigrateDBs} from '../couchdb';
 
 /**
@@ -15,6 +16,8 @@ const main = async () => {
     console.log(
       `Public keys will ${pushKeys ? '' : 'not '}be configured during migration`
     );
+
+    startBugsnag();
 
     // Run database initialisation and migration with force and pushKeys parameters
     await initialiseAndMigrateDBs({

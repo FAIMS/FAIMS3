@@ -12,6 +12,9 @@
  * itself, never from user content:
  *
  * - Couch DB version documents (written by `migrateDbs`).
+ * - Per-database `db-setup` design/security versions (written by
+ *   `applyVersionedInitialisation`). Hashes are not ordered and never
+ *   count as ahead.
  * - The {@link NOTEBOOK_UI_SCHEMA_MARKER_ID} marker, written by a doer after
  *   its notebook uiSpec walk. Individual project / template
  *   `uiSpecProperties.schemaVersion` values are NOT consulted: they are
@@ -27,6 +30,13 @@ import {
   compareNotebookSchemaSemver,
   isNotebookSchemaSemver,
 } from '../../uiSpecification/schemaVersion';
+import {
+  DB_SETUP_VERSIONS,
+  isDbSetupType,
+  type DbSetupPart,
+  type DbSetupType,
+  type DbSetupVersions,
+} from './dbSetup';
 import {DB_TARGET_VERSIONS} from './migrations';
 import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from './notebookMigrations/registry';
 import {
@@ -47,8 +57,7 @@ export const NOTEBOOK_UI_SCHEMA_MARKER_KIND = 'notebook-ui-schema';
  * tolerates per-notebook failures); it answers "has a newer build already
  * been here?".
  *
- * Deliberately has no `dbType`: the migrations-DB views only index documents
- * with `dbType`, so `migrationService` never sees it.
+ * Kind `'notebook-ui-schema'` keeps it out of the version-record views.
  */
 export type NotebookUiSchemaMarkerDoc = {
   _id: typeof NOTEBOOK_UI_SCHEMA_MARKER_ID;
@@ -100,6 +109,14 @@ export type StartupMigrationLiveDbVersion = {
   version: number;
 };
 
+/** One recorded design or security version from a `db-setup` document. */
+export type StartupMigrationLiveSetupVersion = {
+  setupType: string;
+  dbName: string;
+  designVersion?: number;
+  securityVersion?: number;
+};
+
 /** Why {@link isStartupMigrationClusterAhead} returned true. */
 export type StartupMigrationAheadReason =
   | {
@@ -113,6 +130,14 @@ export type StartupMigrationAheadReason =
       kind: 'notebook';
       liveVersion: string;
       targetVersion: string;
+    }
+  | {
+      kind: 'setup';
+      part: DbSetupPart;
+      setupType: DbSetupType;
+      dbName: string;
+      liveVersion: number;
+      targetVersion: number;
     };
 
 function isDatabaseType(value: string): value is DATABASE_TYPE {
@@ -127,12 +152,15 @@ function isDatabaseType(value: string): value is DATABASE_TYPE {
 export function findStartupMigrationAheadReasons(input: {
   databases: readonly StartupMigrationLiveDbVersion[];
   notebookMarker?: string;
+  setups?: readonly StartupMigrationLiveSetupVersion[];
   targetVersions?: DBTargetVersions;
   notebookTarget?: string;
+  setupTargets?: Record<DbSetupType, DbSetupVersions>;
 }): StartupMigrationAheadReason[] {
   const targetVersions = input.targetVersions ?? DB_TARGET_VERSIONS;
   const notebookTarget =
     input.notebookTarget ?? CURRENT_NOTEBOOK_UI_SCHEMA_VERSION;
+  const setupTargets = input.setupTargets ?? DB_SETUP_VERSIONS;
   const reasons: StartupMigrationAheadReason[] = [];
 
   for (const database of input.databases) {
@@ -147,6 +175,39 @@ export function findStartupMigrationAheadReasons(input: {
         dbName: database.dbName,
         liveVersion: database.version,
         targetVersion,
+      });
+    }
+  }
+
+  for (const setup of input.setups ?? []) {
+    if (!isDbSetupType(setup.setupType)) {
+      continue;
+    }
+    const targets = setupTargets[setup.setupType];
+    if (
+      setup.designVersion !== undefined &&
+      setup.designVersion > targets.design
+    ) {
+      reasons.push({
+        kind: 'setup',
+        part: 'design',
+        setupType: setup.setupType,
+        dbName: setup.dbName,
+        liveVersion: setup.designVersion,
+        targetVersion: targets.design,
+      });
+    }
+    if (
+      setup.securityVersion !== undefined &&
+      setup.securityVersion > targets.security
+    ) {
+      reasons.push({
+        kind: 'setup',
+        part: 'security',
+        setupType: setup.setupType,
+        dbName: setup.dbName,
+        liveVersion: setup.securityVersion,
+        targetVersion: targets.security,
       });
     }
   }
@@ -187,7 +248,9 @@ export function formatStartupMigrationAheadSample(
     .map(reason =>
       reason.kind === 'db'
         ? `${reason.dbName}:${reason.liveVersion}>${reason.targetVersion}`
-        : `${NOTEBOOK_UI_SCHEMA_MARKER_KIND}:${reason.liveVersion}>${reason.targetVersion}`
+        : reason.kind === 'notebook'
+          ? `${NOTEBOOK_UI_SCHEMA_MARKER_KIND}:${reason.liveVersion}>${reason.targetVersion}`
+          : `setup:${reason.part}:${reason.setupType}:${reason.dbName}:${reason.liveVersion}>${reason.targetVersion}`
     )
     .join(',');
 }

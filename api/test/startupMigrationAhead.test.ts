@@ -3,6 +3,9 @@ import {beforeEach, describe, expect, it} from 'vitest';
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   DatabaseType,
+  DB_SETUP_DOC_KIND,
+  DB_SETUP_VERSIONS,
+  dbSetupDocId,
   DB_TARGET_VERSIONS,
   NOTEBOOK_UI_SCHEMA_MARKER_ID,
   NOTEBOOK_UI_SCHEMA_MARKER_KIND,
@@ -103,9 +106,12 @@ describe('startupMigrationAhead', () => {
     });
     await upsert({
       _id: 'mig-auth',
+      kind: 'db-version',
       dbType: DatabaseType.AUTH,
       dbName: 'auth',
       version: authTarget,
+      status: 'healthy',
+      migrationLog: [],
     });
 
     await expect(readStartupMigrationAheadReasons()).resolves.toEqual([]);
@@ -115,9 +121,12 @@ describe('startupMigrationAhead', () => {
     const authTarget = DB_TARGET_VERSIONS[DatabaseType.AUTH].targetVersion;
     await upsert({
       _id: 'mig-auth',
+      kind: 'db-version',
       dbType: DatabaseType.AUTH,
       dbName: 'auth',
       version: authTarget + 1,
+      status: 'healthy',
+      migrationLog: [],
     });
 
     await expect(readStartupMigrationAheadReasons()).resolves.toEqual([
@@ -129,5 +138,41 @@ describe('startupMigrationAhead', () => {
         targetVersion: authTarget,
       },
     ]);
+  });
+
+  it('is ahead when a db-setup version is past this process', async () => {
+    await upsert({
+      _id: dbSetupDocId('PEOPLE', 'people'),
+      kind: DB_SETUP_DOC_KIND,
+      dbType: 'PEOPLE',
+      dbName: 'people',
+      design: {version: 99, hash: 'abc', updatedAtMs: 1},
+    });
+
+    await expect(readStartupMigrationAheadReasons()).resolves.toEqual([
+      {
+        kind: 'setup',
+        part: 'design',
+        setupType: 'PEOPLE',
+        dbName: 'people',
+        liveVersion: 99,
+        targetVersion: DB_SETUP_VERSIONS.PEOPLE.design,
+      },
+    ]);
+  });
+
+  it('does not treat a db-setup document as a DB version record', async () => {
+    await upsert({
+      _id: dbSetupDocId('AUTH', 'auth'),
+      kind: DB_SETUP_DOC_KIND,
+      dbType: 'AUTH',
+      dbName: 'auth',
+      version: 99,
+      status: 'healthy',
+      migrationLog: [],
+      design: {version: 1, hash: 'abc', updatedAtMs: 1},
+    });
+
+    await expect(readStartupMigrationAheadReasons()).resolves.toEqual([]);
   });
 });

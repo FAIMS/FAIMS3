@@ -552,6 +552,8 @@ export const createNotebook = async ({
     return undefined;
   }
 
+  // Design/security setup record is written here, alongside the version
+  // document registered above.
   await initialiseDataDb({
     projectId,
     force: true,

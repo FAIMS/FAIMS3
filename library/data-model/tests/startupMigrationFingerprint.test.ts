@@ -16,21 +16,34 @@ describe('startupMigrationFingerprint', () => {
     expect(first).toBe(second);
     expect(
       await hashStartupMigrationFingerprintInput(
-        buildStartupMigrationFingerprintInput()
+        await buildStartupMigrationFingerprintInput()
       )
     ).toBe(first);
   });
 
-  it('does not include the directory env default document', () => {
-    const directory = buildStartupMigrationFingerprintInput().initPayloads.find(
-      payload => payload.name === 'DIRECTORY'
-    );
+  it('does not include the directory env default document', async () => {
+    const directory = (
+      await buildStartupMigrationFingerprintInput()
+    ).initPayloads.find(payload => payload.name === 'DIRECTORY');
     expect(directory).toBeDefined();
     expect(directory?.content.defaultDocument).toBeUndefined();
   });
 
+  it('includes setup versions and hashes for every database type', async () => {
+    const input = await buildStartupMigrationFingerprintInput();
+    expect(input.setupTargets.map(entry => entry.type)).toEqual(
+      input.initPayloads.map(payload => payload.name)
+    );
+    for (const entry of input.setupTargets) {
+      expect(entry.designHash).toMatch(/^[0-9a-f]{64}$/);
+      expect(entry.securityHash).toMatch(/^[0-9a-f]{64}$/);
+      expect(entry.designVersion).toBeGreaterThanOrEqual(1);
+      expect(entry.securityVersion).toBeGreaterThanOrEqual(1);
+    }
+  });
+
   it('changes when a targetVersion is tweaked on a clone', async () => {
-    const original = buildStartupMigrationFingerprintInput();
+    const original = await buildStartupMigrationFingerprintInput();
     const tweaked = structuredClone(original);
     const auth = tweaked.targetVersions.find(entry => entry.dbType === 'AUTH');
     expect(auth).toBeDefined();
@@ -42,7 +55,7 @@ describe('startupMigrationFingerprint', () => {
   });
 
   it('changes when the notebook uiSpec target is tweaked on a clone', async () => {
-    const original = buildStartupMigrationFingerprintInput();
+    const original = await buildStartupMigrationFingerprintInput();
     const tweaked = structuredClone(original);
     tweaked.notebookUiSchemaVersion = `${tweaked.notebookUiSchemaVersion}-tweaked`;
 
@@ -52,7 +65,7 @@ describe('startupMigrationFingerprint', () => {
   });
 
   it('changes when an init payload is tweaked on a clone', async () => {
-    const original = buildStartupMigrationFingerprintInput();
+    const original = await buildStartupMigrationFingerprintInput();
     const tweaked = structuredClone(original);
     const auth = tweaked.initPayloads.find(payload => payload.name === 'AUTH');
     expect(auth).toBeDefined();
@@ -63,8 +76,32 @@ describe('startupMigrationFingerprint', () => {
     );
   });
 
+  it('changes when a setup version is tweaked on a clone', async () => {
+    const original = await buildStartupMigrationFingerprintInput();
+    const tweaked = structuredClone(original);
+    const people = tweaked.setupTargets.find(entry => entry.type === 'PEOPLE');
+    expect(people).toBeDefined();
+    people!.designVersion += 1;
+
+    expect(await hashStartupMigrationFingerprintInput(tweaked)).not.toBe(
+      await hashStartupMigrationFingerprintInput(original)
+    );
+  });
+
+  it('changes when a setup hash is tweaked on a clone', async () => {
+    const original = await buildStartupMigrationFingerprintInput();
+    const tweaked = structuredClone(original);
+    const people = tweaked.setupTargets.find(entry => entry.type === 'PEOPLE');
+    expect(people).toBeDefined();
+    people!.designHash = 'f'.repeat(64);
+
+    expect(await hashStartupMigrationFingerprintInput(tweaked)).not.toBe(
+      await hashStartupMigrationFingerprintInput(original)
+    );
+  });
+
   it('does not change when only apiVersion is present beside the canonical input', async () => {
-    const original = buildStartupMigrationFingerprintInput();
+    const original = await buildStartupMigrationFingerprintInput();
     expect(original).not.toHaveProperty('apiVersion');
     const withApiVersion = {
       ...structuredClone(original),

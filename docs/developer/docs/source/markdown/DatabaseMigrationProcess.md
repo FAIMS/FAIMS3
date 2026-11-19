@@ -19,26 +19,55 @@ It is written for operators and for developers who need to understand the runnin
 
 ## What gets migrated
 
-The server migrates two kinds of thing.
+The server keeps three kinds of thing up to date.
 
-| What                                     | Example                                                                  | Versioned by                                                                                                        |
-| ---------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| **Couch databases** (document structure) | Rename a field on every user document in `people`                        | An integer version per database, stored in the `migrations` database. Targets live in `DB_TARGET_VERSIONS`.         |
-| **Notebook designs** (`uiSpecification`) | Rewrite an old notebook design stored on a project to the current format | `uiSpec.schemaVersion` on each project and template, compared to this build's `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`. |
+| What                                                        | Example                                                                                                          | Versioned by                                                                                                                                                        |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Database setup**: design documents and security documents | Add a view to `projects`, tighten the `validate_doc_update` rule on data databases, change who can read `people` | Separate integer versions per database type for design and for security, plus a hash of the contents, stored in a `db-setup` document in the `migrations` database. |
+| **Couch databases** (document structure)                    | Rename a field on every user document in `people`                                                                | An integer version per database, stored in the `migrations` database. Targets live in `DB_TARGET_VERSIONS`.                                                         |
+| **Notebook designs** (`uiSpecification`)                    | Rewrite an old notebook design stored on a project to the current format                                         | `uiSpec.schemaVersion` on each project and template, compared to this build's `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`.                                                 |
 
 The mobile app and the web designer also migrate notebook designs in memory when they load them. That is covered in [Notebook migrations](./NotebookMigrations.md), not here.
+
+### Design and security documents
+
+Each database has some setup documents that come from the code rather than from users. They are defined by the `init*DB` functions in `library/data-model/src/data_storage/*/init.ts`:
+
+- **Design documents** (`_design/…`). These hold the database's **views and indexes** (for example, the project listing), and sometimes a **`validate_doc_update`** function. CouchDB runs that function on every write and rejects writes that break its rules.
+- **The security document** (`_security`). This says which users and roles can read or write the database.
+- **A default document**, for some databases. For example, the `directory` database holds a document that identifies this Conductor.
+
+Every migration run (step 1 below) decides what to do from the `db-setup` record for that database. Design and security are decided **separately**:
+
+- **Recorded version higher than this build** (rule a): leave the stored documents alone, log an error, and report it to Bugsnag (one event per run, not per database). Do not downgrade.
+- **Recorded version equal, and the stored hash matches this build** (rule b, happy path): skip all reads and writes of that part. The record is trusted.
+- **Recorded version equal, but the hash does not match** (rule b, patch): log a warning and push this build's documents. Use this for a quick fix you do not want to promote as a new version.
+- **Recorded version lower, or no record yet** (rule c): push this build's documents and update the record. This is a normal migrate.
+
+The default document (for example the directory identity document) is **not** versioned. It still uses the old "write if missing, overwrite if `force` and the content differs" behaviour.
+
+Hand edits made directly in Couch are not repaired on the happy path. `debug-migration-lock verify-setup` shows the drift; `reset-setup` clears the record so the next run pushes.
+
+Changing a view also makes CouchDB rebuild that index. On a large database, the first query that uses the view can be slow while the rebuild runs.
+
+#### How to change a design or security document
+
+1. Edit the `init*DB` / design / security module.
+2. For a real change, bump `DB_SETUP_VERSIONS` for that type's `design` or `security` number in `library/data-model/src/data_storage/migrations/dbSetup.ts`. For a same-version patch, leave the number and accept that mixed rollouts with different hashes will rewrite each other's docs until the rollout finishes.
+3. Update the pinned hashes in `library/data-model/tests/dbSetupHashes.test.ts` (the test fails until you do).
+4. Run the data-model tests.
 
 ### Which databases
 
 These global databases each have one version record: `auth`, `directory`, `invites`, `people`, `projects`, `templates`, `teams`, `mapassets` and `tombstone`. Each survey (project) also has its own `data-{projectId}` database, and each of those has its own version record.
 
-The `migrations` database holds the version records themselves (see [The migrations database](#the-migrations-database)). It is initialised, but has no version of its own.
+The `migrations` database holds the version records, setup records, lock and notebook marker (see [The migrations database](#the-migrations-database)). It has its own `db-setup` record (design and security versions) like every other database.
 
 ## What one migration run does
 
 A full run happens in this order. API startup does all of it; the command-line `migrate` script does steps 1–4 (see [Command line](#from-the-command-line)).
 
-1. **Initialise.** Make sure every global database exists, and write its design documents (views/indexes) and security document (who can read it). Then do the same for every project's data database. Existing documents are overwritten (`force`), so the stored design docs always match the running code.
+1. **Initialise.** Make sure every global database exists (the `migrations` database first), and bring its [design and security documents](#design-and-security-documents) in line with the running code using the rules above. Then do the same for every project's data database. Creating a survey also writes that data database's `db-setup` record, at the same time as its version record.
 2. **Push the JWT signing key** to CouchDB's configuration, so CouchDB accepts tokens signed by this API. (The CLI only does this with `migrate-with-keys`.)
 3. **Migrate the global databases**, one at a time, in a fixed order. They run one at a time because a step for one database may read another.
 4. **Migrate every project's data database**, four at a time. Then make sure the admin user exists.
@@ -121,6 +150,7 @@ The `migrations` database is where migration state lives. It holds three kinds o
 
 ```json
 {
+  "kind": "db-version",
   "dbType": "PEOPLE",
   "dbName": "people",
   "version": 3,
@@ -140,7 +170,32 @@ The `migrations` database is where migration state lives. It holds three kinds o
 }
 ```
 
-`version` is the last version that fully succeeded. `status` is `not-healthy` if the last attempt had problems.
+`version` is the last version that fully succeeded. `status` is `not-healthy` if the last attempt had problems. New records set `kind` to `db-version`. Older records have no `kind`; the views still treat them as version records. Other migrations-DB documents (lock, notebook marker, `db-setup`) have a different `kind`, so they are never indexed as version records.
+
+### Database setup (`db-setup::<TYPE>::<dbName>`)
+
+One document per database, including the `migrations` database itself. Design and security are stored separately:
+
+```json
+{
+  "_id": "db-setup::PEOPLE::people",
+  "kind": "db-setup",
+  "dbType": "PEOPLE",
+  "dbName": "people",
+  "design": {
+    "version": 1,
+    "hash": "3f9a…",
+    "updatedAtMs": 1763520000000
+  },
+  "security": {
+    "version": 1,
+    "hash": "8c21…",
+    "updatedAtMs": 1763520000000
+  }
+}
+```
+
+The hash is a SHA-256 of the canonical JSON of that part (design documents sorted by `_id`, with `_rev` dropped). Data-database security documents include the project id, so their hash is per database; their version is per type. Creating a survey writes this document as well as the version record; deleting a survey removes both.
 
 ### The startup lock (`startup-migration-lock`)
 
@@ -162,7 +217,7 @@ One document that coordinates replicas. It records who holds it (`holderId`, as 
 
 It means "a build targeting notebook schema `1.0.1` has run the notebook walk". It does **not** mean every notebook is at that version: the walk carries on past individual notebooks that fail. Only startup writes it, and only upwards. The fingerprint, API version and writer are there to help with debugging.
 
-The lock and the marker have no `dbType`, so the migration service never mistakes them for version records.
+Version-record views select by `kind` (`db-version`, or missing for old records) plus the version-record fields. The lock, marker and `db-setup` documents have a different `kind`, so the migration service never mistakes them for version records.
 
 ## The startup lock (clustered deployments)
 
@@ -226,6 +281,7 @@ So each replica computes a short **fingerprint** of what its migration is meant 
 - every database's target version,
 - the target notebook schema version,
 - the design and security documents each database should have,
+- each database type's design/security setup versions and hashes,
 - the public JWT signing key.
 
 It does not include the API version number, so two builds with identical migrations share a fingerprint even if their version numbers differ.
@@ -240,9 +296,10 @@ During a rolling deploy or a rollback, an old replica can start after a new one 
 - try to "migrate" databases that are already past its target, which marks their records `not-healthy`, and
 - possibly mark the lock `failed` over the new release's successful result.
 
-To prevent that, when a replica finds the lock finished by a **different** fingerprint, it first asks: _has the cluster already been migrated past what I know about?_ The cluster is **ahead** if either:
+To prevent that, when a replica finds the lock finished by a **different** fingerprint, it first asks: _has the cluster already been migrated past what I know about?_ The cluster is **ahead** if any of:
 
 - any version record has a `version` higher than this build's target for that database, or
+- any `db-setup` design or security `version` is higher than this build's `DB_SETUP_VERSIONS` for that type (hashes are not ordered and never count as ahead), or
 - the notebook marker's `schemaVersion` is a valid version **higher** than this build's `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`.
 
 If so, the replica starts its API without migrating and leaves the lock untouched (log event `skip_doer_cluster_ahead`). If not, it claims the lock and migrates as normal. If the check itself fails (for example, CouchDB hiccups), it logs `cluster_ahead_check_failed` and claims as normal.
@@ -255,18 +312,19 @@ The marker avoids this: only startup writes it, and only after running the noteb
 
 ## Rolling deploys and rollbacks
 
-| Situation                                                                | What happens                                                                                                                                                                                                 |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Normal upgrade.** New replicas start while old ones are still running. | The first new replica sees an old fingerprint on the lock. The cluster is not ahead of it, so it claims and migrates. Other new replicas wait for it, or re-claim and skip quickly.                          |
-| **Old replica restarts mid-deploy**, after the new release has migrated. | It sees a newer fingerprint. If the new release raised a database version or the notebook schema, the cluster is ahead, so it starts without migrating.                                                      |
-| **New release only changed design documents** (no version bump).         | The cluster is not "ahead" by version, so an old replica that restarts will re-claim and rewrite the older design docs. The next new replica to start rewrites them back. Finish the rollout to settle this. |
-| **Deliberate rollback** to an older release after the new one migrated.  | Old replicas see the cluster as ahead and skip migration on every start. This is intended: they cannot downgrade data. See below.                                                                            |
+| Situation                                                                           | What happens                                                                                                                                                                                                     |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Normal upgrade.** New replicas start while old ones are still running.            | The first new replica sees an old fingerprint on the lock. The cluster is not ahead of it, so it claims and migrates. Other new replicas wait for it, or re-claim and skip quickly.                              |
+| **Old replica restarts mid-deploy**, after the new release has migrated.            | It sees a newer fingerprint. If the new release raised a database version or the notebook schema, the cluster is ahead, so it starts without migrating.                                                          |
+| **New release only changed design documents** (same setup version, different hash). | Rule b (patch): each replica pushes its own hash. The two builds rewrite each other's docs until the rollout finishes. Their fingerprints differ, so the lock re-claims. This is the cost of patch-without-bump. |
+| **Deliberate rollback** to an older release after the new one migrated.             | Old replicas see the cluster as ahead and skip migration on every start. This is intended: they cannot downgrade data. See below.                                                                                |
 
 ### After a deliberate rollback
 
 Database migrations only go forward; there are no "down" steps. After rolling back:
 
 - **Database versions ahead of the old code** stay ahead. The old code skips them and keeps running against the newer structure. Only lower a recorded version (`set-version`) if you have actually restored the data to that older shape, for example from a backup.
+- **A `db-setup` version ahead of the old code** also makes it skip startup migration. That is what a bumped design/security version is for. A same-version patch is not "ahead".
 - **The notebook marker ahead of the old code** makes it skip startup migration entirely. If you want the older release to run its startup migration again (for example, to rewrite design documents or push its JWT key), reset the marker:
 
   ```bash
@@ -277,38 +335,43 @@ Database migrations only go forward; there are no "down" steps. After rolling ba
 
   Then restart the API. The next doer recreates the marker at its own version.
 
+  Rolling back **past this release** to a build that still has the old, loose migrations-DB views: delete the `db-setup` documents first (`reset-setup --all`), or that older `findMigrationDoc` can return a setup document as a version record.
+
 ## When things go wrong
 
-| What failed                                                   | What happens                                                                                                     | What to do                                                                                                                                                      |
-| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A step reports problems on some documents                     | That database stops at the last good version, marked `not-healthy`. Other databases continue.                    | Read the issues in the logs or with `debug-migration-lock show <db>`, fix the cause, restart (or run `pnpm run migrate`). It resumes from the recorded version. |
-| A step throws, or the code is older than the recorded version | That database's record is marked `not-healthy` with the error. Other databases continue.                         | As above. For "cannot downgrade", see [rollbacks](#after-a-deliberate-rollback).                                                                                |
-| Initialisation or the JWT key push throws                     | The run stops. The lock is marked `failed` with the error. The API still starts.                                 | Fix the cause (often CouchDB credentials or connectivity) and restart.                                                                                          |
-| An individual notebook fails to migrate                       | Logged; the walk carries on.                                                                                     | Check `[notebook-startup]` logs for that project or template.                                                                                                   |
-| Writing the notebook marker fails                             | Logged as `notebook_schema_marker_write_failed`; the run still counts as successful.                             | Usually nothing. The next successful run writes it.                                                                                                             |
-| The lock is stuck `running` (the doer crashed)                | Waiters take it over after the timeout.                                                                          | Wait, or settle it now with `debug-migration-lock unlock`.                                                                                                      |
-| CouchDB is unreachable while reading or writing the lock      | Retries with back-off (1s, 2s, 4s… up to 16s). After 5 failures in a row it gives up waiting and starts the API. | Fix CouchDB, then restart so migration runs.                                                                                                                    |
+| What failed                                                   | What happens                                                                                                       | What to do                                                                                                                                                      |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A step reports problems on some documents                     | That database stops at the last good version, marked `not-healthy`. Other databases continue.                      | Read the issues in the logs or with `debug-migration-lock show <db>`, fix the cause, restart (or run `pnpm run migrate`). It resumes from the recorded version. |
+| A step throws, or the code is older than the recorded version | That database's record is marked `not-healthy` with the error. Other databases continue.                           | As above. For "cannot downgrade", see [rollbacks](#after-a-deliberate-rollback).                                                                                |
+| A `db-setup` version is newer than this build                 | That part is left alone. One aggregated error is sent to Bugsnag (`[db-setup] … ahead`). Other databases continue. | Expected during rollback. To make this build push anyway, `reset-setup` that database (or `--all`).                                                             |
+| Initialisation or the JWT key push throws                     | The run stops. The lock is marked `failed` with the error. The API still starts.                                   | Fix the cause (often CouchDB credentials or connectivity) and restart.                                                                                          |
+| An individual notebook fails to migrate                       | Logged; the walk carries on.                                                                                       | Check `[notebook-startup]` logs for that project or template.                                                                                                   |
+| Writing the notebook marker fails                             | Logged as `notebook_schema_marker_write_failed`; the run still counts as successful.                               | Usually nothing. The next successful run writes it.                                                                                                             |
+| The lock is stuck `running` (the doer crashed)                | Waiters take it over after the timeout.                                                                            | Wait, or settle it now with `debug-migration-lock unlock`.                                                                                                      |
+| CouchDB is unreachable while reading or writing the lock      | Retries with back-off (1s, 2s, 4s… up to 16s). After 5 failures in a row it gives up waiting and starts the API.   | Fix CouchDB, then restart so migration runs.                                                                                                                    |
 
 ## Operator tool: `debug-migration-lock`
 
 Run from `api/` with `.env` pointing at the target CouchDB. It reads by default and never runs migration code; write commands only change records in the `migrations` database, and ask for confirmation (skip with `--yes`).
 
-| Command                                | What it does                                                                                                                                                                                                                   |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `status` (default)                     | Lock, notebook marker and every database version, with what each means. `--json` for scripts; `--strict` exits 1 if the lock is running, any database is not current, unhealthy or missing its record, or the marker is ahead. |
-| `lock`                                 | The lock document and its attempt history.                                                                                                                                                                                     |
-| `watch`                                | Polls the lock until it finishes.                                                                                                                                                                                              |
-| `dbs`                                  | List version records (filter with `--behind`, `--ahead`, `--unhealthy`, `--type=…`).                                                                                                                                           |
-| `show <db>`                            | One version record, its log, and the steps this build would apply.                                                                                                                                                             |
-| `targets`                              | This build's target versions and registered steps.                                                                                                                                                                             |
-| `notebooks`                            | Each project and template's notebook schema version compared to this build.                                                                                                                                                    |
-| `unlock`                               | Mark a `running` lock as finished (`--status=failed` optional). Waiters then start.                                                                                                                                            |
-| `delete-lock`                          | Remove the lock document. The next start creates a fresh one.                                                                                                                                                                  |
-| `claim`                                | Take the lock for this tool, so replicas wait (for example, during manual work).                                                                                                                                               |
-| `set-version <db> <n>`                 | Change a database's recorded version **without** changing data. Use with care: the next run trusts this number.                                                                                                                |
-| `set-health <db> healthy\|not-healthy` | Change a record's health flag.                                                                                                                                                                                                 |
-| `unregister <db>`                      | Delete a version record. The next run treats the database as unknown and starts from its default version.                                                                                                                      |
-| `reset-notebook-marker [x.y.z]`        | Delete the notebook marker, or set it to a specific version.                                                                                                                                                                   |
+| Command                                | What it does                                                                                                                                                                                                                                                 |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `status` (default)                     | Lock, notebook marker, every database version, and every `db-setup` record. `--json` for scripts; `--strict` exits 1 if the lock is running, any database is not current, unhealthy or missing its record, the marker is ahead, or a setup version is ahead. |
+| `lock`                                 | The lock document and its attempt history.                                                                                                                                                                                                                   |
+| `watch`                                | Polls the lock until it finishes.                                                                                                                                                                                                                            |
+| `dbs`                                  | List version records (filter with `--behind`, `--ahead`, `--unhealthy`, `--type=…`).                                                                                                                                                                         |
+| `show <db>`                            | One version record, its log, and the steps this build would apply.                                                                                                                                                                                           |
+| `targets`                              | This build's target versions and registered steps.                                                                                                                                                                                                           |
+| `notebooks`                            | Each project and template's notebook schema version compared to this build.                                                                                                                                                                                  |
+| `unlock`                               | Mark a `running` lock as finished (`--status=failed` optional). Waiters then start.                                                                                                                                                                          |
+| `delete-lock`                          | Remove the lock document. The next start creates a fresh one.                                                                                                                                                                                                |
+| `claim`                                | Take the lock for this tool, so replicas wait (for example, during manual work).                                                                                                                                                                             |
+| `set-version <db> <n>`                 | Change a database's recorded version **without** changing data. Use with care: the next run trusts this number.                                                                                                                                              |
+| `set-health <db> healthy\|not-healthy` | Change a record's health flag.                                                                                                                                                                                                                               |
+| `unregister <db>`                      | Delete a version record. The next run treats the database as unknown and starts from its default version.                                                                                                                                                    |
+| `reset-notebook-marker [x.y.z]`        | Delete the notebook marker, or set it to a specific version.                                                                                                                                                                                                 |
+| `reset-setup <db>\|--all`              | Delete a `db-setup` record (or `--design` / `--security` to clear one part) so the next migrate pushes. `--all` is the rollback-past-this-release safety step.                                                                                               |
+| `verify-setup [db]`                    | Compare stored design/security documents in Couch with this build. Reports hash drift; does not write.                                                                                                                                                       |
 
 Common tasks:
 
@@ -324,6 +387,7 @@ Common tasks:
 | `[startup-migration]` | The lock and startup orchestration: `begin`, `claimed`, `wait_for_doer`, `still_waiting`, `doer_settled`, `doer_settled_foreign_fingerprint`, `cluster_ahead`, `skip_doer_cluster_ahead`, `doer_timeout`, `settled`, `notebook_schema_marker_written`, `finish`. Most lines include `instance=`, `fingerprint=` and `apiVersion=`. |
 | `[db-initialisation]` | Step 1: creating databases and writing design and security documents, and the JWT key push.                                                                                                                                                                                                                                        |
 | `[migrate]`           | Steps 3–4: which databases were found, skipped or migrated, with per-step processed, written and deleted counts. If projects exist but **0 data DBs** are queued, data migrations did not run.                                                                                                                                     |
+| `[db-setup]`          | Design/security version decisions: `upgrade`, `patch`, `ahead`. Aggregated ahead errors are also sent to Bugsnag.                                                                                                                                                                                                                  |
 | `[notebook-startup]`  | Step 5: one `ui_spec` line per project or template (`up_to_date`, `migrated`, `skipped_…`) and totals at the end.                                                                                                                                                                                                                  |
 
 ## Where the code lives
@@ -334,6 +398,7 @@ Common tasks:
 | Startup lock                         | `api/src/couchdb/startupMigrationLock.ts`                                                                                         |
 | Cluster-ahead check                  | `api/src/couchdb/startupMigrationAhead.ts`, `library/data-model/src/data_storage/migrations/startupMigrationAhead.ts`             |
 | Notebook marker                      | `api/src/couchdb/notebookSchemaMarker.ts`                                                                                         |
+| Design/security versions             | `library/data-model/src/data_storage/migrations/dbSetup.ts`, `api/src/couchdb/dbSetupLog.ts`                                      |
 | Fingerprint                          | `api/src/couchdb/startupMigrationFingerprint.ts`, `library/data-model/src/data_storage/migrations/startupMigrationFingerprint.ts` |
 | Initialise + migrate all databases   | `initialiseAndMigrateDBs` in `api/src/couchdb/index.ts`                                                                           |
 | Migration service, steps and targets | `library/data-model/src/data_storage/migrations/` (`migrationService.ts`, `migrations.ts`)                                        |

@@ -13,7 +13,7 @@ PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {
   AuthDatabase,
-  couchInitialiser,
+  applyVersionedInitialisation,
   DATABASE_TYPE,
   DatabaseInterface,
   DatabaseType,
@@ -37,6 +37,7 @@ import {
   ProjectDataDbRef,
   registerDbAtCurrentVersion,
   unregisterDbMigrationDoc,
+  unregisterDbSetupDoc,
   MigrationsDB,
   PeopleDB,
   PeopleDBFields,
@@ -48,11 +49,17 @@ import {
   TeamsDB,
   TemplateDB,
   TombstoneDB,
+  type DbSetupDiagnostics,
+  type DbSetupEvent,
+  type DbSetupStore,
+  type DbSetupType,
+  type InitialisationContent,
 } from '@faims3/data-model';
 import Nano from 'nano';
 import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
 import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
+import {createDbSetupRunLogger, handleDbSetupEvent} from './dbSetupLog';
 import {getAllProjectsListing} from './notebooks';
 import {registerAdminUser} from './users';
 
@@ -474,9 +481,13 @@ const DATA_DB_MIGRATION_CONCURRENCY = 4;
 export const initialiseDataDb = async ({
   projectId,
   force = false,
+  onSetupEvent,
+  setupDiagnostics,
 }: {
   projectId: string;
   force?: boolean;
+  onSetupEvent?: (event: DbSetupEvent) => void;
+  setupDiagnostics?: DbSetupDiagnostics;
 }): Promise<DatabaseInterface<ProjectDataObject>> => {
   // Are we in a testing environment?
   const isTesting = process.env.NODE_ENV === 'test';
@@ -487,12 +498,25 @@ export const initialiseDataDb = async ({
 
   // Get the metadata DB
   const dataDb = await getDataDb(projectId);
+  const projectDoc = await localGetProjectsDb().get(projectId);
+  const dbName = dataDbNameForProject({
+    project: projectDoc,
+    fallbackName: `data-${projectId}`,
+  });
 
   try {
-    await couchInitialiser({
+    // Writes the data DB's db-setup record (design + security) in the
+    // migrations DB. Survey create, restore, and seeds all come through here.
+    await applyVersionedInitialisation({
       db: dataDb,
       content: initDataDB({projectId}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
+      setupType: DatabaseType.DATA,
+      dbName,
+      setupStore: getMigrationDb() as unknown as DbSetupStore,
+      applyPermissions: !isTesting,
+      forceDefaultDoc: force,
+      diagnostics: setupDiagnostics,
+      onEvent: onSetupEvent ?? handleDbSetupEvent,
     });
   } catch (e) {
     console.error(
@@ -539,12 +563,27 @@ export const unregisterDataDbMigration = async ({
   project,
 }: {
   project: ProjectDataDbRef;
-}) =>
-  unregisterDbMigrationDoc({
+}) => {
+  const dbName = dataDbNameForProjectRef(project);
+  const removed = await unregisterDbMigrationDoc({
     dbType: DatabaseType.DATA,
-    dbName: dataDbNameForProjectRef(project),
+    dbName,
     migrationDb: getMigrationDb(),
   });
+  try {
+    await unregisterDbSetupDoc({
+      setupType: DatabaseType.DATA,
+      dbName,
+      setupStore: getMigrationDb() as unknown as DbSetupStore,
+    });
+  } catch (error) {
+    console.error(
+      `${DB_INIT_LOG} Failed to remove db-setup document for ${dbName}`,
+      error
+    );
+  }
+  return removed;
+};
 
 /**
  * Critical method which initialises all databases, including remotely on the
@@ -568,25 +607,38 @@ export const unregisterDataDbMigration = async ({
 export const initialiseDbAndKeys = async ({
   force = false,
   pushKeys = true,
+  onSetupEvent,
+  setupDiagnostics,
 }: {
   force?: boolean;
   // Should we push the key configuration?
   pushKeys?: boolean;
+  onSetupEvent?: (event: DbSetupEvent) => void;
+  setupDiagnostics?: DbSetupDiagnostics;
 }) => {
   // Are we in a testing environment?
   const isTesting = process.env.NODE_ENV === 'test';
+  const ownedLog = onSetupEvent ? undefined : createDbSetupRunLogger();
+  const onEvent = onSetupEvent ?? ownedLog!.onEvent;
 
   console.log(`${DB_INIT_LOG} Starting (force=${force}, pushKeys=${pushKeys})`);
 
   // Directory DB includes a default document which establishes identity of
   // this conductor
   const globalDbs: {
+    setupType: DbSetupType;
     dbName: string;
     db: DatabaseInterface;
-    content: ReturnType<typeof initAuthDB>;
+    content: InitialisationContent;
   }[] = [
-    {dbName: AUTH_DB_NAME, db: getAuthDB(), content: initAuthDB({})},
     {
+      setupType: DatabaseType.AUTH,
+      dbName: AUTH_DB_NAME,
+      db: getAuthDB(),
+      content: initAuthDB({}),
+    },
+    {
+      setupType: DatabaseType.DIRECTORY,
       dbName: DIRECTORY_DB_NAME,
       db: getDirectoryDB(),
       content: initDirectoryDB({
@@ -600,29 +652,49 @@ export const initialiseDbAndKeys = async ({
       }),
     },
     {
+      setupType: DatabaseType.PROJECTS,
       dbName: PROJECTS_DB_NAME,
       db: localGetProjectsDb(),
       content: initProjectsDB({}),
     },
     {
+      setupType: DatabaseType.TEMPLATES,
       dbName: TEMPLATES_DB_NAME,
       db: getTemplatesDb(),
       content: initTemplatesDB({}),
     },
-    {dbName: PEOPLE_DB_NAME, db: getUsersDB(), content: initPeopleDB({})},
-    {dbName: INVITE_DB_NAME, db: getInvitesDB(), content: initInvitesDB({})},
-    {dbName: TEAMS_DB_NAME, db: getTeamsDB(), content: initTeamsDB({})},
     {
+      setupType: DatabaseType.PEOPLE,
+      dbName: PEOPLE_DB_NAME,
+      db: getUsersDB(),
+      content: initPeopleDB({}),
+    },
+    {
+      setupType: DatabaseType.INVITES,
+      dbName: INVITE_DB_NAME,
+      db: getInvitesDB(),
+      content: initInvitesDB({}),
+    },
+    {
+      setupType: DatabaseType.TEAMS,
+      dbName: TEAMS_DB_NAME,
+      db: getTeamsDB(),
+      content: initTeamsDB({}),
+    },
+    {
+      setupType: DatabaseType.MAP_ASSETS,
       dbName: MAP_ASSETS_DB_NAME,
       db: getMapAssetsDB(),
       content: initMapAssetsDB({}),
     },
     {
+      setupType: DatabaseType.TOMBSTONE,
       dbName: TOMBSTONE_DB_NAME,
       db: getTombstoneDB(),
       content: initTombstoneDB({}),
     },
     {
+      setupType: 'MIGRATIONS',
       dbName: MIGRATIONS_DB_NAME,
       db: getMigrationDb(),
       content: initMigrationsDB({}),
@@ -635,35 +707,56 @@ export const initialiseDbAndKeys = async ({
       .join(', ')}`
   );
 
-  // Global DBs do not depend on each other at init time, so they are written
-  // side by side. All of them are done before the project listing is read
-  // below. The first failure still aborts initialisation.
-  await mapWithConcurrencyLimit({
-    items: globalDbs,
-    concurrency: DB_INIT_CONCURRENCY,
-    mapper: async ({dbName, db, content}) => {
-      const designIds = content.designDocuments.map(doc => doc._id).join(', ');
-      console.log(
-        `${DB_INIT_LOG} Initialising global DB ${dbName} (${content.designDocuments.length} design doc(s)${
-          designIds ? `: ${designIds}` : ''
-        }${content.defaultDocument ? ', default document' : ''}, force=${force})`
+  const initGlobal = async ({
+    setupType,
+    dbName,
+    db,
+    content,
+  }: (typeof globalDbs)[number]) => {
+    const designIds = content.designDocuments.map(doc => doc._id).join(', ');
+    console.log(
+      `${DB_INIT_LOG} Initialising global DB ${dbName} (${content.designDocuments.length} design doc(s)${
+        designIds ? `: ${designIds}` : ''
+      }${content.defaultDocument ? ', default document' : ''}, force=${force})`
+    );
+    try {
+      await applyVersionedInitialisation({
+        db,
+        content,
+        setupType,
+        dbName,
+        setupStore: getMigrationDb() as unknown as DbSetupStore,
+        applyPermissions: !isTesting,
+        forceDefaultDoc: force,
+        diagnostics: setupDiagnostics,
+        onEvent,
+      });
+    } catch (e) {
+      console.error(
+        `${DB_INIT_LOG} Failed to initialise global DB ${dbName}`,
+        e
       );
-      try {
-        await couchInitialiser({
-          db,
-          content,
-          config: {applyPermissions: !isTesting, forceWrite: force},
-        });
-      } catch (e) {
-        console.error(
-          `${DB_INIT_LOG} Failed to initialise global DB ${dbName}`,
-          e
-        );
-        throw new Exceptions.InternalSystemError(
-          `An error occurred while initialising the ${dbName} database!...` + e
-        );
-      }
-    },
+      throw new Exceptions.InternalSystemError(
+        `An error occurred while initialising the ${dbName} database!...` + e
+      );
+    }
+  };
+
+  // Migrations DB first so its design docs (kind-aware views) and its own
+  // db-setup record exist before other databases write setup docs into it.
+  const migrationsEntry = globalDbs.find(
+    entry => entry.setupType === 'MIGRATIONS'
+  );
+  const otherGlobalDbs = globalDbs.filter(
+    entry => entry.setupType !== 'MIGRATIONS'
+  );
+  if (migrationsEntry) {
+    await initGlobal(migrationsEntry);
+  }
+  await mapWithConcurrencyLimit({
+    items: otherGlobalDbs,
+    concurrency: DB_INIT_CONCURRENCY,
+    mapper: initGlobal,
   });
 
   // For each project, ensure the data DBs are also initialised/synced
@@ -677,8 +770,16 @@ export const initialiseDbAndKeys = async ({
   await mapWithConcurrencyLimit({
     items: projects,
     concurrency: DB_INIT_CONCURRENCY,
-    mapper: project => initialiseDataDb({projectId: project._id, force}),
+    mapper: project =>
+      initialiseDataDb({
+        projectId: project._id,
+        force,
+        onSetupEvent: onEvent,
+        setupDiagnostics,
+      }),
   });
+
+  ownedLog?.flush();
 
   if (pushKeys) {
     console.log(`${DB_INIT_LOG} Pushing JWT key configuration`);
@@ -764,12 +865,24 @@ export const migrateAllProjectDataDbs = async () => {
 export const initialiseAndMigrateDBs = async ({
   force = false,
   pushKeys = true,
+  setupDiagnostics,
 }: {
   force?: boolean;
   // Should we push the key configuration?
   pushKeys?: boolean;
+  setupDiagnostics?: DbSetupDiagnostics;
 }) => {
-  await initialiseDbAndKeys({force, pushKeys});
+  const setupLog = createDbSetupRunLogger();
+  try {
+    await initialiseDbAndKeys({
+      force,
+      pushKeys,
+      onSetupEvent: setupLog.onEvent,
+      setupDiagnostics,
+    });
+  } finally {
+    setupLog.flush();
+  }
 
   let dbs: {dbType: DATABASE_TYPE; dbName: string; db: DatabaseInterface}[] = [
     {db: getAuthDB(), dbType: DatabaseType.AUTH, dbName: AUTH_DB_NAME},

@@ -17,6 +17,8 @@ The system maintains a separate migration metadata database that tracks the vers
 
 This page is about **writing** migrations. For how they are **run** (on API startup, from the command line, and under the clustered startup lock), see [How database migrations run](./DatabaseMigrationProcess.md).
 
+Changing a **design document** or **security document** is not a `DB_TARGET_VERSIONS` step. Those have their own per-type versions and hashes (`DB_SETUP_VERSIONS` in `library/data-model/src/data_storage/migrations/dbSetup.ts`). Bump the matching number, update the pinned hashes in `library/data-model/tests/dbSetupHashes.test.ts`, and see the checklist on the process page.
+
 ## Core Concepts
 
 ### Database Types

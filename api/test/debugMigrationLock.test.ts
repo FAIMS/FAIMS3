@@ -4,10 +4,13 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   DatabaseType,
+  DB_SETUP_DOC_KIND,
+  dbSetupDocId,
   DB_TARGET_VERSIONS,
   NOTEBOOK_UI_SCHEMA_MARKER_ID,
   NOTEBOOK_UI_SCHEMA_MARKER_KIND,
   parseNotebookSchemaSemver,
+  type DbSetupDoc,
   type MigrationsDBDocument,
   type MigrationsDBFields,
   type NotebookUiSchemaMarkerDoc,
@@ -31,6 +34,7 @@ import {
   matchMigrationDocs,
   parseArgs,
   resetNotebookMarker,
+  resetSetup,
   resolveMigrationDoc,
   runCommand,
   setDbHealth,
@@ -212,6 +216,38 @@ describe('debug-migration-lock parseArgs', () => {
     });
     expect(() => parseArgs(['reset-notebook-marker', '1.0'])).toThrow(
       /MAJOR\.MINOR\.PATCH/
+    );
+  });
+
+  it('parses reset-setup and verify-setup', () => {
+    expect(parseArgs(['reset-setup', 'people', '--yes'])).toEqual({
+      name: 'reset-setup',
+      db: 'people',
+      all: false,
+      part: undefined,
+      type: undefined,
+      yes: true,
+    });
+    expect(
+      parseArgs(['reset-setup', '--all', '--design', '--type=MIGRATIONS'])
+    ).toEqual({
+      name: 'reset-setup',
+      all: true,
+      part: 'design',
+      type: 'MIGRATIONS',
+      yes: false,
+    });
+    expect(parseArgs(['verify-setup', 'people', '--json'])).toEqual({
+      name: 'verify-setup',
+      db: 'people',
+      type: undefined,
+      json: true,
+    });
+    expect(() => parseArgs(['reset-setup'])).toThrow(
+      /requires a database name/
+    );
+    expect(() => parseArgs(['reset-setup', '--design', '--security'])).toThrow(
+      /at most one/
     );
   });
 
@@ -518,6 +554,13 @@ describe('debug-migration-lock mutations', () => {
     });
     await seedMarker(db, CURRENT_NOTEBOOK_UI_SCHEMA_VERSION);
     await seedMigrationDoc(db, peopleDoc());
+    await db.put({
+      _id: dbSetupDocId('PEOPLE', 'people'),
+      kind: DB_SETUP_DOC_KIND,
+      dbType: 'PEOPLE',
+      dbName: 'people',
+      design: {version: 1, hash: 'abc', updatedAtMs: 1},
+    });
     await db.put({_id: 'junk', hello: 'world'});
 
     const loaded = await loadMigrationsDb(asDebuggerDb(db));
@@ -527,6 +570,8 @@ describe('debug-migration-lock mutations', () => {
     );
     expect(loaded.databases).toHaveLength(1);
     expect(loaded.databases[0]?.dbName).toBe('people');
+    expect(loaded.setups).toHaveLength(1);
+    expect(loaded.setups[0]?.dbName).toBe('people');
     expect(loaded.unrecognised).toEqual([
       expect.objectContaining({id: 'junk'}),
     ]);
@@ -1044,5 +1089,104 @@ describe('debug-migration-lock mutations', () => {
       STARTUP_MIGRATION_LOCK_ID
     );
     expect(lock.status).toBe('complete');
+  });
+
+  it('status lists db-setup records and strict-fails when one is ahead', async () => {
+    const db = freshDb();
+    await db.put({
+      _id: dbSetupDocId('PEOPLE', 'people'),
+      kind: DB_SETUP_DOC_KIND,
+      dbType: 'PEOPLE',
+      dbName: 'people',
+      design: {version: 99, hash: 'abc', updatedAtMs: 1},
+      security: {version: 1, hash: 'def', updatedAtMs: 1},
+    } satisfies DbSetupDoc);
+    const stdout: string[] = [];
+    const logSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation((message?: unknown) => {
+        stdout.push(String(message ?? ''));
+      });
+    try {
+      const result = await runCommand(
+        {name: 'status', json: false, strict: true},
+        {db: asDebuggerDb(db), nowMs: 10, timeoutMs: 1_000}
+      );
+      expect(result.exitCode).toBe(1);
+      expect(stdout.join('\n')).toContain('=== Database setup ===');
+      expect(stdout.join('\n')).toContain('PEOPLE');
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it('reset-setup deletes a record or clears one part', async () => {
+    const db = freshDb();
+    const id = dbSetupDocId('PEOPLE', 'people');
+    await db.put({
+      _id: id,
+      kind: DB_SETUP_DOC_KIND,
+      dbType: 'PEOPLE',
+      dbName: 'people',
+      design: {version: 1, hash: 'abc', updatedAtMs: 1},
+      security: {version: 1, hash: 'def', updatedAtMs: 1},
+    } satisfies DbSetupDoc);
+
+    const cleared = await resetSetup({
+      db: asDebuggerDb(db),
+      docs: [(await db.get(id)) as DbSetupDoc],
+      selector: {db: 'people', all: false},
+      part: 'design',
+      nowMs: 1,
+    });
+    expect(cleared.cleared).toBe(1);
+    expect(((await db.get(id)) as DbSetupDoc).design).toBeUndefined();
+    expect(((await db.get(id)) as DbSetupDoc).security?.hash).toBe('def');
+
+    const deleted = await resetSetup({
+      db: asDebuggerDb(db),
+      docs: [(await db.get(id)) as DbSetupDoc],
+      selector: {all: true},
+      nowMs: 2,
+    });
+    expect(deleted.deleted).toBe(1);
+    await expect(db.get(id)).rejects.toMatchObject({status: 404});
+  });
+
+  it('verify-setup reports live hash drift', async () => {
+    const db = freshDb();
+    await db.put({
+      _id: dbSetupDocId('AUTH', 'auth'),
+      kind: DB_SETUP_DOC_KIND,
+      dbType: 'AUTH',
+      dbName: 'auth',
+      design: {version: 1, hash: 'recorded', updatedAtMs: 1},
+    } satisfies DbSetupDoc);
+    const stdout: string[] = [];
+    const logSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation((message?: unknown) => {
+        stdout.push(String(message ?? ''));
+      });
+    try {
+      const result = await runCommand(
+        {name: 'verify-setup', json: true},
+        {
+          db: asDebuggerDb(db),
+          loadLiveSetup: async () => ({
+            designHash: 'live-different',
+            securityHash: 'sec',
+          }),
+        }
+      );
+      expect(result.exitCode).toBe(1);
+      const parsed = JSON.parse(stdout[0]);
+      expect(parsed.rows[0]).toMatchObject({
+        part: 'design',
+        drift: 'hash-mismatch',
+      });
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 });

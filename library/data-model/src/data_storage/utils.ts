@@ -281,7 +281,7 @@ function hasSameStoredContent(desired: {}, existing: {}): boolean {
  * changes, so this turns the usual case into a single read and stops each
  * boot adding a revision to every design document.
  */
-async function writeInitialisationDocument({
+export async function writeInitialisationDocument({
   db,
   data,
   forceWrite,

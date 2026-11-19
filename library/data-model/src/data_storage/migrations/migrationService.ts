@@ -2,7 +2,9 @@
 import {DatabaseInterface} from '../../types';
 import {mapWithConcurrencyLimit} from '../../utils';
 import {
+  isMigrationVersionRecord,
   MigrationLog,
+  MIGRATION_VERSION_RECORD_KIND,
   MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
   MigrationsDB,
   MigrationsDBDocument,
@@ -163,6 +165,7 @@ export function buildDefaultMigrationDoc({
 }): MigrationsDBFields {
   const version = DB_TARGET_VERSIONS[dbType].defaultVersion;
   return {
+    kind: MIGRATION_VERSION_RECORD_KIND,
     dbType: dbType,
     dbName: dbName,
     version,
@@ -205,10 +208,10 @@ export async function findMigrationDoc({
       include_docs: true,
     }
   );
-  if (migrationDocs.rows.length === 0) {
-    return undefined;
-  }
-  return migrationDocs.rows[0].doc;
+  const match = migrationDocs.rows.find(row =>
+    isMigrationVersionRecord(row.doc)
+  );
+  return match?.doc;
 }
 
 /**
@@ -228,6 +231,7 @@ export function buildCurrentVersionMigrationDoc({
   const version = DB_TARGET_VERSIONS[dbType].targetVersion;
   const now = Date.now();
   return {
+    kind: MIGRATION_VERSION_RECORD_KIND,
     dbType,
     dbName,
     version,

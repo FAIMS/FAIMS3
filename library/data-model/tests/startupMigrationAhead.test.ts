@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+  DB_SETUP_VERSIONS,
   DB_TARGET_VERSIONS,
   DatabaseType,
   findStartupMigrationAheadReasons,
@@ -123,6 +124,60 @@ describe('startupMigrationAhead', () => {
           {dbType: 'NOT_A_TYPE', dbName: 'mystery', version: 99},
           {dbType: DatabaseType.AUTH, dbName: 'auth', version: authTarget - 1},
         ],
+      })
+    ).toEqual([]);
+  });
+
+  it('is ahead when a db-setup design or security version is past this process', () => {
+    const reasons = findStartupMigrationAheadReasons({
+      databases: currentAuth,
+      setups: [
+        {
+          setupType: 'PEOPLE',
+          dbName: 'people',
+          designVersion: 3,
+          securityVersion: 1,
+        },
+      ],
+      setupTargets: {
+        ...DB_SETUP_VERSIONS,
+        PEOPLE: {design: 1, security: 1},
+      },
+    });
+    expect(reasons).toEqual([
+      {
+        kind: 'setup',
+        part: 'design',
+        setupType: 'PEOPLE',
+        dbName: 'people',
+        liveVersion: 3,
+        targetVersion: 1,
+      },
+    ]);
+    expect(formatStartupMigrationAheadSample(reasons)).toBe(
+      'setup:design:PEOPLE:people:3>1'
+    );
+  });
+
+  it('is not ahead when setup versions match or are behind, or hashes would differ', () => {
+    expect(
+      findStartupMigrationAheadReasons({
+        databases: currentAuth,
+        setups: [
+          {
+            setupType: 'PEOPLE',
+            dbName: 'people',
+            designVersion: 1,
+            securityVersion: 1,
+          },
+          {
+            setupType: 'AUTH',
+            dbName: 'auth',
+            designVersion: 0,
+          },
+          {setupType: 'NOT_A_TYPE', dbName: 'x', designVersion: 99},
+        ],
+        setupTargets: DB_SETUP_VERSIONS,
       })
     ).toEqual([]);
   });
