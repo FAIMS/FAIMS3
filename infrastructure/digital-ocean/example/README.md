@@ -1,5 +1,11 @@
 # FAIMS3 Digital Ocean Deployment
 
+The example root is deliberately thin: it accepts `config_dir`,
+`do_token`, and optional registry credentials, then delegates resource
+coordination to `modules/deployment`. That module owns core/DO config parsing,
+domain derivation, env generation, and wiring between the API, apps, CouchDB,
+and documentation modules.
+
 This folder contains the Terraform configuration for deploying FAIMS3 to Digital Ocean. When using this template:
 
 1. Create a new private repository for your deployment
@@ -65,10 +71,10 @@ Deploy the infrastructure:
 terraform apply
 ```
 
-The deployment will show some output as the various resources are created.  Once
+The deployment will show some output as the various resources are created. Once
 complete, the configuration of the servers may take a little longer as they
-run the scripts to install the required software.  When this is complete you
-should be able to access the server at the configured subdomain.  If
+run the scripts to install the required software. When this is complete you
+should be able to access the server at the configured subdomain. If
 the SUBDOMAIN setting in conductor.env is 'faims.example.com' then you
 should be able to access couchdb at <http://db.faims.example.com> and
 the conductor server at <https://conductor.faims.example.com>.
@@ -94,6 +100,6 @@ this would deploy an updated version of the container (destroying the current se
 and creating a new one).
 
 Data for CouchDB is stored on a volume which should not change even if the CouchDB droplet
-is updated.  However, backups before updating any infrastructure are recommended.
+is updated. However, backups before updating any infrastructure are recommended.
 
 Remember to run terraform plan before any changes to review potential impacts to your infrastructure.

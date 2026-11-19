@@ -1,3 +1,53 @@
+locals {
+  generated_backup_env = <<-EOT
+COUCHDB_DATA_DIR=/mnt/couchdb/data
+DO_SPACES_ENDPOINT=${var.backup_endpoint}
+DO_SPACES_BUCKET=${var.backup_bucket}
+AWS_ACCESS_KEY_ID=${var.backup_access_key_id}
+AWS_SECRET_ACCESS_KEY=${var.backup_secret_access_key}
+RESTIC_PASSWORD=${var.restic_password}
+KEEP_DAILY=7
+KEEP_WEEKLY=4
+KEEP_MONTHLY=12
+BACKUP_TAG=couchdb-backup
+LOG_DIR=/var/log/couchdb-backup
+NOTIFY_EMAIL=
+NOTIFY_WEBHOOK=
+EOT
+
+  generated_local_ini = <<-EOT
+; CouchDB Configuration Settings for FAIMS
+
+[couchdb]
+max_document_size = 4294967296
+os_process_timeout = 5000
+database_dir = /mnt/couchdb/data
+view_index_dir = /mnt/couchdb/data
+single_node = true
+
+[chttpd]
+port = 5984
+bind_address = 0.0.0.0
+authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {chttpd_auth, jwt_authentication_handler}, {chttpd_auth, default_authentication_handler}
+
+[httpd]
+enable_cors = true
+
+[log]
+writer = syslog
+level = info
+
+[chttpd_auth]
+secret = ${var.cookie_secret}
+
+[cors]
+origins = *
+headers = accept, authorization, content-type, origin, referer
+credentials = true
+methods = GET, PUT, POST, HEAD, DELETE
+EOT
+}
+
 data "cloudinit_config" "couchdb_config" {
   gzip          = false
   base64_encode = false
@@ -10,7 +60,7 @@ data "cloudinit_config" "couchdb_config" {
           name                = "couchdb"
           shell               = "/bin/bash"
           sudo                = "ALL=(ALL) NOPASSWD:ALL"
-          ssh_authorized_keys = [var.authorized_key]
+          ssh_authorized_keys = [data.digitalocean_ssh_key.terraform.public_key]
         }
       ]
       disable_root = true
@@ -48,7 +98,7 @@ data "cloudinit_config" "couchdb_config" {
         },
         {
           encoding    = "b64"
-          content     = var.backup_env_b64
+          content     = base64encode(local.generated_backup_env)
           path        = "/opt/backup/backup.env"
           permissions = "0600"
         }
@@ -60,7 +110,7 @@ data "cloudinit_config" "couchdb_config" {
         "mount /mnt/couchdb/",
         "mkdir /mnt/couchdb/data",
         "chown -R couchdb.couchdb /mnt/couchdb/data",
-        "echo '${var.local_ini_b64}' | base64 -d > /opt/couchdb/etc/local.d/local.ini",
+        "echo '${base64encode(local.generated_local_ini)}' | base64 -d > /opt/couchdb/etc/local.d/local.ini",
         "chmod 0600 /opt/couchdb/etc/local.d/local.ini",
         "service couchdb start"
       ]

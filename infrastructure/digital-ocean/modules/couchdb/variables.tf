@@ -37,22 +37,51 @@ variable "couch_domain" {
   type        = string
 }
 
-variable "local_ini_b64" {
-  description = "Base64 encoded version of the local.ini file for couchdb"
-  type        = string
-}
-variable "couchdb_env_b64" {
-  description = "Base64 encoded version of .env for couchdb containing COUCHDB_PASSWORD"
+variable "cookie_secret" {
+  description = "Secret used for CouchDB cookie authentication"
   type        = string
   sensitive   = true
 }
-variable "authorized_key" {
-  description = "public key for ssh login, added to authorized_keys"
+
+variable "backup_endpoint" {
+  description = "S3-compatible endpoint used by the restic backup repository"
   type        = string
 }
 
-variable "backup_env_b64" {
-  description = "Base64 encoded version of .env for backup scripts containing env vars needed for restic backups"
+variable "backup_bucket" {
+  description = "S3-compatible bucket used by the restic backup repository"
+  type        = string
+}
+
+variable "backup_access_key_id" {
+  description = "Access key ID used by the restic backup repository"
   type        = string
   sensitive   = true
+  default     = ""
+  validation {
+    condition     = trimspace(var.backup_access_key_id) != ""
+    error_message = "backup_access_key_id must be supplied from secrets.enc.json."
+  }
+}
+
+variable "backup_secret_access_key" {
+  description = "Secret access key used by the restic backup repository"
+  type        = string
+  sensitive   = true
+  default     = ""
+  validation {
+    condition     = trimspace(var.backup_secret_access_key) != ""
+    error_message = "backup_secret_access_key must be supplied from secrets.enc.json."
+  }
+}
+
+variable "restic_password" {
+  description = "Restic repository encryption password"
+  type        = string
+  sensitive   = true
+  default     = ""
+  validation {
+    condition     = trimspace(var.restic_password) != ""
+    error_message = "restic_password must be supplied."
+  }
 }

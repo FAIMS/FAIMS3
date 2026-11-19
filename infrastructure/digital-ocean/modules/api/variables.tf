@@ -47,10 +47,6 @@ variable "conductor_secret_env_b64" {
   type        = string
   sensitive   = true
 }
-variable "authorized_key" {
-  description = "public key for ssh login, added to authorized_keys"
-  type        = string
-}
 variable "region" {
   description = "Region to deploy to"
   type        = string
