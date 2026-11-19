@@ -40,6 +40,12 @@ level = info
 [chttpd_auth]
 secret = ${var.cookie_secret}
 
+[jwt_auth]
+required_claims = exp
+
+[admins]
+${var.couchdb_user} = ${var.couchdb_password}
+
 [cors]
 origins = *
 headers = accept, authorization, content-type, origin, referer
@@ -104,12 +110,18 @@ data "cloudinit_config" "couchdb_config" {
         }
       ]
       runcmd = [
-        # mount the volume over the couchdb data directory
-        "echo /dev/disk/by-id/* '/mnt/couchdb/ ext4 defaults,nofail,discard 0 0' >> /etc/fstab",
-        "mkdir -p /mnt/couchdb/",
-        "mount /mnt/couchdb/",
-        "mkdir /mnt/couchdb/data",
-        "chown -R couchdb.couchdb /mnt/couchdb/data",
+        # Wait for the attached block volume, preserve existing/restored
+        # filesystems, and mount once by its stable device path.
+        "DEVICE=\"\"",
+        "for i in $(seq 1 30); do for link in /dev/disk/by-id/scsi-0DO_Volume_*; do if [[ -e \"$link\" ]]; then DEVICE=\"$(readlink -f \"$link\")\"; break 2; fi; done; sleep 2; done",
+        "test -n \"$DEVICE\"",
+        "test -b \"$DEVICE\"",
+        "mkdir -p /mnt/couchdb",
+        "if ! blkid -q \"$DEVICE\"; then mkfs -t ext4 \"$DEVICE\"; fi",
+        "grep -q \" $DEVICE /mnt/couchdb \" /proc/mounts || mountpoint -q /mnt/couchdb || (grep -q \"/mnt/couchdb\" /etc/fstab || echo \"$DEVICE /mnt/couchdb ext4 defaults,nofail,discard 0 2\" >> /etc/fstab)",
+        "mountpoint -q /mnt/couchdb || mount /mnt/couchdb",
+        "mkdir -p /mnt/couchdb/data",
+        "chown -R couchdb:couchdb /mnt/couchdb/data",
         "echo '${base64encode(local.generated_local_ini)}' | base64 -d > /opt/couchdb/etc/local.d/local.ini",
         "chmod 0600 /opt/couchdb/etc/local.d/local.ini",
         "service couchdb start"
@@ -118,17 +130,13 @@ data "cloudinit_config" "couchdb_config" {
   }
 }
 
-resource "random_string" "cookie" {
-  length  = 32
-  special = false
-}
-
 resource "digitalocean_volume" "couchdb-volume" {
   region                  = var.region
   count                   = var.instance_count
   name                    = "couchdb-data-${count.index}-${replace(var.deployment_domain, ".", "-")}"
   size                    = var.couchdb_volume_size
   initial_filesystem_type = "ext4"
+  snapshot_id             = trimspace(var.couchdb_volume_snapshot_id) == "" ? null : var.couchdb_volume_snapshot_id
   description             = "couchdb storage"
 }
 

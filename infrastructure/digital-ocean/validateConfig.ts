@@ -24,6 +24,7 @@ export const DoConfigSchema = z
         dropletSize: nonEmptyString,
         volumeSize: z.number().int().positive(),
         instanceCount: z.number().int().positive(),
+        snapshotId: z.string().trim().min(1).optional(),
       })
       .strict(),
     storage: z

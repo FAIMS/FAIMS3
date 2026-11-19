@@ -19,12 +19,26 @@ variable "couchdb_volume_size" {
   description = "Size of the volume to attach to the couchdb droplet"
   type        = number
   default     = 100
+  validation {
+    condition     = var.couchdb_volume_size > 0
+    error_message = "couchdb_volume_size must be greater than zero."
+  }
+}
+
+variable "couchdb_volume_snapshot_id" {
+  description = "Optional DigitalOcean volume snapshot ID used to restore CouchDB data"
+  type        = string
+  default     = ""
 }
 
 variable "instance_count" {
   description = "Number of couchdb instances to provision."
   type        = number
   default     = 1
+  validation {
+    condition     = var.instance_count == 1
+    error_message = "The DigitalOcean CouchDB module currently supports exactly one instance; clustering is not implemented."
+  }
 }
 
 variable "deployment_domain" {
@@ -41,6 +55,29 @@ variable "cookie_secret" {
   description = "Secret used for CouchDB cookie authentication"
   type        = string
   sensitive   = true
+  validation {
+    condition     = trimspace(var.cookie_secret) != ""
+    error_message = "cookie_secret must be supplied."
+  }
+}
+
+variable "couchdb_user" {
+  description = "CouchDB admin user"
+  type        = string
+  validation {
+    condition     = trimspace(var.couchdb_user) != ""
+    error_message = "couchdb_user must be supplied."
+  }
+}
+
+variable "couchdb_password" {
+  description = "CouchDB admin password"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = trimspace(var.couchdb_password) != ""
+    error_message = "couchdb_password must be supplied."
+  }
 }
 
 variable "backup_endpoint" {

@@ -11,10 +11,11 @@ locals {
   web_domain    = "${local.config_core.domains.services.web}.${local.base_domain}"
   region        = try(local.do_config.region, "syd1")
 
-  conductor_image_tag = try(local.do_config.conductor.imageTag, "replace-with-pinned-tag")
-  conductor_size      = try(local.do_config.conductor.instanceSize, "basic-m")
-  couch_droplet_size  = try(local.do_config.couch.dropletSize, "s-2vcpu-4gb-intel")
-  couch_volume_size   = try(local.do_config.couch.volumeSize, 400)
+  conductor_image_tag      = try(local.do_config.conductor.imageTag, "replace-with-pinned-tag")
+  conductor_size           = try(local.do_config.conductor.instanceSize, "basic-m")
+  couch_droplet_size       = try(local.do_config.couch.dropletSize, "s-2vcpu-4gb-intel")
+  couch_volume_size        = try(local.do_config.couch.volumeSize, 400)
+  couch_volume_snapshot_id = try(local.do_config.couch.snapshotId, "")
 
   generated_api_env  = module.config_api.env
   generated_apps_env = module.config_apps.env
@@ -56,20 +57,23 @@ module "do_secrets" {
 }
 
 module "couchdb" {
-  source                   = "../couchdb"
-  deployment_domain        = local.base_domain
-  couch_domain             = local.couch_domain
-  cookie_secret            = try(local.api_env_map.FAIMS_COOKIE_SECRET, "")
-  backup_endpoint          = local.do_config.backup.endpoint
-  backup_bucket            = local.do_config.backup.bucket
-  backup_access_key_id     = module.do_secrets.backup_access_key_id
-  backup_secret_access_key = module.do_secrets.backup_secret_access_key
-  restic_password          = module.do_secrets.restic_password
-  do_token                 = var.do_token
-  region                   = local.region
-  droplet_size             = local.couch_droplet_size
-  couchdb_volume_size      = local.couch_volume_size
-  instance_count           = try(local.do_config.couch.instanceCount, 1)
+  source                     = "../couchdb"
+  deployment_domain          = local.base_domain
+  couch_domain               = local.couch_domain
+  cookie_secret              = local.api_env_map.FAIMS_COOKIE_SECRET
+  couchdb_user               = local.api_env_map.COUCHDB_USER
+  couchdb_password           = local.api_env_map.COUCHDB_PASSWORD
+  backup_endpoint            = local.do_config.backup.endpoint
+  backup_bucket              = local.do_config.backup.bucket
+  backup_access_key_id       = module.do_secrets.backup_access_key_id
+  backup_secret_access_key   = module.do_secrets.backup_secret_access_key
+  restic_password            = module.do_secrets.restic_password
+  do_token                   = var.do_token
+  region                     = local.region
+  droplet_size               = local.couch_droplet_size
+  couchdb_volume_size        = local.couch_volume_size
+  couchdb_volume_snapshot_id = local.couch_volume_snapshot_id
+  instance_count             = try(local.do_config.couch.instanceCount, 1)
 }
 
 module "apps" {

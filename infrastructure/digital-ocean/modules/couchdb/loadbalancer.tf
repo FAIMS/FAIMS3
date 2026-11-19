@@ -23,8 +23,10 @@ resource "digitalocean_loadbalancer" "couchdb-lb" {
   }
 
   healthcheck {
-    port     = 22
-    protocol = "tcp"
+    port     = 5984
+    path     = "/"
+    protocol = "http"
+    check_interval_seconds = 60
   }
 
   depends_on = [digitalocean_certificate.lb_certificate]
