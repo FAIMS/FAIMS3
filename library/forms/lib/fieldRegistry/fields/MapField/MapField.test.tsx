@@ -20,8 +20,25 @@ vi.mock('../../../components/maps/tileDB/TileStore', () => ({
   }),
 }));
 
+const wrapperProps = vi.hoisted(() => ({
+  current: undefined as
+    | {
+        label: string;
+        includeRecordLayers?: boolean;
+        excludeRecordId?: string;
+      }
+    | undefined,
+}));
+
 vi.mock('./MapWrapper', () => ({
-  default: ({label}: {label: string}) => <button type="button">{label}</button>,
+  default: (props: {
+    label: string;
+    includeRecordLayers?: boolean;
+    excludeRecordId?: string;
+  }) => {
+    wrapperProps.current = props;
+    return <button type="button">{props.label}</button>;
+  },
 }));
 
 function downloadedLayer(): ContextualMapLayer {
@@ -45,10 +62,12 @@ function renderMapField({
   online,
   layers = [],
   featureType = 'Point',
+  mode = 'full',
 }: {
   online: boolean;
   layers?: ContextualMapLayer[];
   featureType?: 'Point' | 'Polygon' | 'LineString';
+  mode?: 'full' | 'preview';
 }) {
   Object.defineProperty(navigator, 'onLine', {
     configurable: true,
@@ -84,15 +103,25 @@ function renderMapField({
         handleBlur={vi.fn()}
         trigger={{commit: vi.fn(async () => undefined)}}
         config={
-          {
-            mode: 'full',
-            appName: 'test-app',
-            mapConfig: () => ({
-              mapSource: 'osm',
-              mapSourceKey: '',
-              mapStyle: 'osm',
-            }),
-          } as never
+          (mode === 'full'
+            ? {
+                mode: 'full',
+                appName: 'test-app',
+                recordId: 'record-1',
+                mapConfig: () => ({
+                  mapSource: 'osm',
+                  mapSourceKey: '',
+                  mapStyle: 'osm',
+                }),
+              }
+            : {
+                mode: 'preview',
+                mapConfig: () => ({
+                  mapSource: 'osm',
+                  mapSourceKey: '',
+                  mapStyle: 'osm',
+                }),
+              }) as never
         }
       />
     </ContextualMapLayersContext.Provider>
@@ -103,6 +132,7 @@ describe('MapFormField offline availability', () => {
   beforeEach(() => {
     getTileSets.mockReset();
     getTileSets.mockResolvedValue([]);
+    wrapperProps.current = undefined;
   });
 
   it('offers map edits while online even with nothing downloaded', async () => {
@@ -152,6 +182,26 @@ describe('MapFormField offline availability', () => {
       screen.queryByText(/no downloaded map or map layer on this device/i)
     ).not.toBeInTheDocument();
     expect(getTileSets).not.toHaveBeenCalled();
+  });
+
+  it('asks the collection popup for record layers in full mode', async () => {
+    renderMapField({online: true});
+
+    expect(
+      await screen.findByRole('button', {name: 'Select Point'})
+    ).toBeInTheDocument();
+    expect(wrapperProps.current?.includeRecordLayers).toBe(true);
+    expect(wrapperProps.current?.excludeRecordId).toBe('record-1');
+  });
+
+  it('does not request record layers in Designer preview', async () => {
+    renderMapField({online: true, mode: 'preview'});
+
+    expect(
+      await screen.findByRole('button', {name: 'Select Point'})
+    ).toBeInTheDocument();
+    expect(wrapperProps.current?.includeRecordLayers).toBe(false);
+    expect(wrapperProps.current?.excludeRecordId).toBeUndefined();
   });
 
   it('hides polygon edits while offline when nothing is downloaded', async () => {

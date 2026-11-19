@@ -6,6 +6,7 @@ import {
   type NotebookUiSpec,
 } from '@faims3/data-model';
 import {act, render, screen} from '@testing-library/react';
+import {useContext, type ReactNode} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type {RecordFeatureCollection} from './recordFeatures';
 
@@ -70,28 +71,6 @@ const features = vi.hoisted(() => ({
 }));
 
 vi.mock('./recordFeatures', () => ({
-  recordFeatureSyncKey: (collection?: RecordFeatureCollection) =>
-    (collection?.features ?? [])
-      .map(
-        feature =>
-          `${feature.properties.record_id}:${feature.properties.revision_id}:${feature.properties.form_id}`
-      )
-      .join('|'),
-  groupRecordFeaturesByForm: (collection: RecordFeatureCollection) => {
-    const grouped = new Map<string, RecordFeatureCollection['features']>();
-    for (const feature of collection.features) {
-      const formId = feature.properties.form_id;
-      const list = grouped.get(formId) ?? [];
-      list.push(feature);
-      grouped.set(formId, list);
-    }
-    return new Map(
-      [...grouped.entries()].map(([formId, items]) => [
-        formId,
-        {type: 'FeatureCollection' as const, features: items},
-      ])
-    );
-  },
   useRecordFeatures: () => ({
     data: features.data,
     isLoading: features.isLoading,
@@ -102,7 +81,74 @@ vi.mock('./recordFeatures', () => ({
   }),
 }));
 
+import {
+  MapComponent,
+  RecordFormMapLayersContext,
+  useRecordFormLayerList,
+} from '@faims3/forms';
 import {OverviewMap} from './OverviewMap';
+
+const feature = (
+  formId: string,
+  recordId: string
+): RecordFeatureCollection['features'][number] => ({
+  type: 'Feature',
+  geometry: {type: 'Point', coordinates: [151.2, -33.9]},
+  properties: {
+    name: recordId,
+    record_id: recordId,
+    revision_id: `${recordId}-rev`,
+    form_id: formId,
+  },
+});
+
+/**
+ * Notebook-route record-layer source (same as NotebookRecordMapLayers).
+ * OverviewMap and MapWrapper both read this context for prefs.
+ */
+function SharedRecordFormLayers({children}: {children: ReactNode}) {
+  const list = useRecordFormLayerList({
+    projectId: 'project-1',
+    descriptors: [
+      {formId: 'Observation', name: 'Observations'},
+      {formId: 'Site', name: 'Sites'},
+    ],
+    colorFormIds: ['Site', 'Observation'],
+  });
+  return (
+    <RecordFormMapLayersContext.Provider
+      value={{
+        collection: {
+          type: 'FeatureCollection',
+          features: [
+            feature('Site', 'site-1'),
+            feature('Observation', 'obs-1'),
+          ],
+        },
+        recordLayers: list.recordLayers,
+        overviewMapTypes: ['Site', 'Observation'],
+        updateRecordLayer: list.updateRecordLayer,
+        resetRecordLayers: list.resetRecordLayers,
+      }}
+    >
+      {children}
+    </RecordFormMapLayersContext.Provider>
+  );
+}
+
+/** Same context → recordLayers / onUpdateRecordLayer wiring as MapWrapper. */
+function CollectionPopup() {
+  const layers = useContext(RecordFormMapLayersContext);
+  return (
+    <MapComponent
+      config={{} as never}
+      parentSetMap={() => undefined}
+      recordLayers={layers.recordLayers}
+      onUpdateRecordLayer={layers.updateRecordLayer}
+      onResetRecordLayers={layers.resetRecordLayers}
+    />
+  );
+}
 
 const rawUiSpec: NotebookUiSpec = {
   fields: {
@@ -127,20 +173,6 @@ const rawUiSpec: NotebookUiSpec = {
 };
 compileUiSpecConditionals(rawUiSpec);
 const uiSpec = rawUiSpec as CompiledNotebookUiSpec;
-
-const feature = (
-  formId: string,
-  recordId: string
-): RecordFeatureCollection['features'][number] => ({
-  type: 'Feature',
-  geometry: {type: 'Point', coordinates: [151.2, -33.9]},
-  properties: {
-    name: recordId,
-    record_id: recordId,
-    revision_id: `${recordId}-rev`,
-    form_id: formId,
-  },
-});
 
 describe('OverviewMap record layers', () => {
   beforeEach(() => {
@@ -174,6 +206,74 @@ describe('OverviewMap record layers', () => {
     expect(layers.map(layer => layer.name)).toEqual(['Observations', 'Sites']);
     expect(layers.every(layer => layer.kind === 'record-form')).toBe(true);
     expect(layers.every(layer => layer.visible)).toBe(true);
+  });
+
+  it('hides a record-form layer on OverviewMap after the popup onUpdateRecordLayer', () => {
+    const {unmount} = render(
+      <SharedRecordFormLayers>
+        <CollectionPopup />
+      </SharedRecordFormLayers>
+    );
+    act(() => {
+      mapProps.current?.onUpdateRecordLayer?.('record-form:Site', {
+        visible: false,
+      });
+    });
+    unmount();
+
+    render(
+      <SharedRecordFormLayers>
+        <OverviewMap
+          uiSpec={uiSpec}
+          project_id="project-1"
+          records={{allRecords: []}}
+        />
+      </SharedRecordFormLayers>
+    );
+
+    expect(
+      mapProps.current?.recordLayers?.find(layer => layer.formId === 'Site')
+        ?.visible
+    ).toBe(false);
+    expect(
+      mapProps.current?.recordLayers?.find(
+        layer => layer.formId === 'Observation'
+      )?.visible
+    ).toBe(true);
+  });
+
+  it('hides a record-form layer on the collection popup after OverviewMap onUpdateRecordLayer', () => {
+    const {unmount} = render(
+      <SharedRecordFormLayers>
+        <OverviewMap
+          uiSpec={uiSpec}
+          project_id="project-1"
+          records={{allRecords: []}}
+        />
+      </SharedRecordFormLayers>
+    );
+    act(() => {
+      mapProps.current?.onUpdateRecordLayer?.('record-form:Site', {
+        visible: false,
+      });
+    });
+    unmount();
+
+    render(
+      <SharedRecordFormLayers>
+        <CollectionPopup />
+      </SharedRecordFormLayers>
+    );
+
+    expect(
+      mapProps.current?.recordLayers?.find(layer => layer.formId === 'Site')
+        ?.visible
+    ).toBe(false);
+    expect(
+      mapProps.current?.recordLayers?.find(
+        layer => layer.formId === 'Observation'
+      )?.visible
+    ).toBe(true);
   });
 
   it('hides a form layer through the same panel patch path', () => {

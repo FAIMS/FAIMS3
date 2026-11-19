@@ -142,8 +142,9 @@ export interface MapComponentProps {
   lockNavigation?: boolean;
 
   /**
-   * Per-form record geometry on the overview map. Listed in the Layers panel
-   * with the same visibility and vector paint controls as downloaded overlays.
+   * Per-form record geometry on the overview map and the collection popup.
+   * Listed in the Layers panel with the same visibility and vector paint
+   * controls as downloaded overlays.
    */
   recordLayers?: RecordFormLayer[];
   onUpdateRecordLayer?: (id: string, patch: RecordFormLayerPatch) => void;

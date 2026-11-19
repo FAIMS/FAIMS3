@@ -36,10 +36,15 @@ import {register} from 'ol/proj/proj4';
 import VectorSource from 'ol/source/Vector';
 import {Fill, Icon, Stroke, Style} from 'ol/style';
 import proj4 from 'proj4';
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useContext, useEffect, useRef, useState} from 'react';
 import {MapComponent} from '../../../components/maps/MapComponent';
 import {USER_FEATURE_LAYER_Z_INDEX} from '../../../components/maps/layerStack';
+import {
+  excludeRecordFormMapFeatures,
+  RecordFormMapLayersContext,
+} from '../../../components/maps/recordFormMapLayers';
 import {MapConfig} from '../../../components/maps/types';
+import {useRecordFormLayersPlot} from '../../../components/maps/useRecordFormLayersPlot';
 import {logError, logWarn} from '../../../logging';
 
 export type MapAction = 'save' | 'close';
@@ -59,6 +64,13 @@ interface MapProps extends ButtonProps {
   openMap?: () => void;
   disabled?: boolean;
   allowSetToCurrentPoint?: boolean;
+  /**
+   * When true (full collection mode), plot notebook record-form layers from
+   * {@link RecordFormMapLayersContext}. Designer preview must leave this false.
+   */
+  includeRecordLayers?: boolean;
+  /** Omit this record's saved geometry so the live sketch is the only copy. */
+  excludeRecordId?: string;
 }
 
 // define some EPSG codes - these are for two sample images
@@ -141,6 +153,27 @@ function MapWrapper(props: MapProps) {
   );
 
   const theme = useTheme();
+
+  const includeRecordLayers = props.includeRecordLayers === true;
+  const recordMapLayers = useContext(RecordFormMapLayersContext);
+  const recordLayers = includeRecordLayers ? recordMapLayers.recordLayers : [];
+  const plottedRecordCollection = includeRecordLayers
+    ? excludeRecordFormMapFeatures(
+        recordMapLayers.collection,
+        props.excludeRecordId
+      )
+    : undefined;
+
+  // Collected-record overlays sit in the record-form z-band (below the
+  // sketch). Pointer hit-testing / View-record popover stays on OverviewMap.
+  useRecordFormLayersPlot({
+    map,
+    collection: plottedRecordCollection,
+    recordLayers,
+    overviewMapTypes: includeRecordLayers
+      ? recordMapLayers.overviewMapTypes
+      : [],
+  });
 
   // draw interaction with pin mark added and scaled
   const addDrawInteraction = useCallback(
@@ -470,6 +503,17 @@ function MapWrapper(props: MapProps) {
               center={props.center}
               extent={featuresExtent}
               zoom={props.zoom}
+              recordLayers={recordLayers}
+              onUpdateRecordLayer={
+                includeRecordLayers
+                  ? recordMapLayers.updateRecordLayer
+                  : undefined
+              }
+              onResetRecordLayers={
+                includeRecordLayers
+                  ? recordMapLayers.resetRecordLayers
+                  : undefined
+              }
               topOverlay={
                 /* Instruction banner - laid out by the map controls overlay so
                    it never collides with the control buttons */
