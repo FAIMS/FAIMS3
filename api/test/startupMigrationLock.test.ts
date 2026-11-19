@@ -8,11 +8,8 @@ import {
   NOTEBOOK_UI_SCHEMA_MARKER_ID,
   STARTUP_MIGRATION_FINGERPRINT_LENGTH,
 } from '@faims3/data-model';
-import {getMigrationDb} from '../src/couchdb';
-import {
-  writeNotebookSchemaMarker,
-  type NotebookSchemaMarkerStore,
-} from '../src/couchdb/notebookSchemaMarker';
+import {getMigrationDb, getMigrationDbStore} from '../src/couchdb';
+import {writeNotebookSchemaMarker} from '../src/couchdb/notebookSchemaMarker';
 import {isStartupMigrationClusterAhead} from '../src/couchdb/startupMigrationAhead';
 import {
   createStartupInstanceId,
@@ -1099,7 +1096,7 @@ describe('startup migration lock with the live ahead check', () => {
     await seedFutureStampedNotebooks();
     const run = vi.fn(async () => {
       await writeNotebookSchemaMarker({
-        db: getMigrationDb() as unknown as NotebookSchemaMarkerStore,
+        db: getMigrationDbStore(),
       });
     });
 
@@ -1126,7 +1123,7 @@ describe('startup migration lock with the live ahead check', () => {
 
   it('skips becoming doer after a foreign settlement when the marker is newer', async () => {
     await writeNotebookSchemaMarker({
-      db: getMigrationDb() as unknown as NotebookSchemaMarkerStore,
+      db: getMigrationDbStore(),
       schemaVersion: newerNotebookSchemaVersion(),
     });
     const before = await readLock(migrationsDb());

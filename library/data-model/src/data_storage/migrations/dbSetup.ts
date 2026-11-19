@@ -6,9 +6,13 @@
  * Design and security are versioned separately. When applying:
  *
  * - recorded version **higher** than this build: skip (do not downgrade)
- * - recorded version **equal** and hash matches: skip (happy path)
+ * - recorded version **equal** and hash matches: skip
  * - recorded version **equal** and hash differs: push this build (patch)
  * - recorded version **lower** or missing: push this build (upgrade)
+ *
+ * With `forceSetup` (manual `pnpm migrate`), `up_to_date` and `patch` become
+ * `forced`: this build is pushed and recorded regardless of hashes. `ahead`
+ * is still skipped so a forced run never downgrades.
  */
 import {initAuthDB} from '../authDB/init';
 import {initDataDB} from '../dataDB/init';
@@ -26,11 +30,13 @@ import {
   createHash,
   type DesignDocument,
   type InitialisationContent,
+  isPouchConflict,
+  isPouchNotFound,
   type SecurityDocument,
   writeInitialisationDocument,
 } from '../utils';
 import {stableCanonicalJson} from './canonicalJson';
-import {DATABASE_TYPES} from './types';
+import {DATABASE_TYPES, type DatabaseType} from './types';
 
 /** `kind` of a per-database setup record in the migrations DB. */
 export const DB_SETUP_DOC_KIND = 'db-setup';
@@ -41,12 +47,21 @@ export const DB_SETUP_FINGERPRINT_PROJECT_ID = '__fingerprint__';
 /** Attempts (initial + retries) when the setup-record put loses a 409 race. */
 export const DB_SETUP_WRITE_ATTEMPTS = 5;
 
-export const DB_SETUP_TYPES = [...DATABASE_TYPES, 'MIGRATIONS'] as const;
-export type DbSetupType = (typeof DB_SETUP_TYPES)[number];
+/** String values, so callers may pass `'PEOPLE'` as well as `DatabaseType.PEOPLE`. */
+export type DbSetupType = `${DatabaseType}` | 'MIGRATIONS';
+export const DB_SETUP_TYPES: readonly DbSetupType[] = [
+  ...DATABASE_TYPES,
+  'MIGRATIONS',
+];
 
 export type DbSetupPart = 'design' | 'security';
 
-export type SetupAction = 'ahead' | 'up_to_date' | 'patch' | 'upgrade';
+export type SetupAction =
+  | 'ahead'
+  | 'up_to_date'
+  | 'patch'
+  | 'upgrade'
+  | 'forced';
 
 export type DbSetupPartState = {
   version: number;
@@ -115,32 +130,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function pouchStatus(error: unknown): number | undefined {
-  if (!isRecord(error)) {
-    return undefined;
-  }
-  return typeof error.status === 'number' ? error.status : undefined;
-}
-
-function pouchName(error: unknown): string | undefined {
-  if (!isRecord(error)) {
-    return undefined;
-  }
-  return typeof error.name === 'string' ? error.name : undefined;
-}
-
-function isNotFound(error: unknown): boolean {
-  return pouchStatus(error) === 404 || pouchName(error) === 'not_found';
-}
-
-function isConflict(error: unknown): boolean {
-  return pouchStatus(error) === 409 || pouchName(error) === 'conflict';
-}
-
+/** True when `value` is one of {@link DB_SETUP_TYPES}. */
 export function isDbSetupType(value: string): value is DbSetupType {
   return (DB_SETUP_TYPES as readonly string[]).includes(value);
 }
 
+/** `_id` of the `db-setup` record for one database in the migrations DB. */
 export function dbSetupDocId(setupType: DbSetupType, dbName: string): string {
   return `db-setup::${setupType}::${dbName}`;
 }
@@ -235,6 +230,7 @@ export async function hashSecurityDocument(
   return createHash(stableCanonicalJson(doc));
 }
 
+/** Compare a recorded design/security part with this build's target. */
 export function decideSetupAction({
   recorded,
   target,
@@ -254,6 +250,7 @@ export function decideSetupAction({
   return recorded.hash === target.hash ? 'up_to_date' : 'patch';
 }
 
+/** Read a database's `db-setup` record; `null` when missing or malformed. */
 export async function readDbSetupDoc(
   store: DbSetupStore,
   setupType: DbSetupType,
@@ -263,7 +260,7 @@ export async function readDbSetupDoc(
     const doc = await store.get(dbSetupDocId(setupType, dbName));
     return isDbSetupDoc(doc) ? doc : null;
   } catch (error) {
-    if (isNotFound(error)) {
+    if (isPouchNotFound(error)) {
       return null;
     }
     throw error;
@@ -294,7 +291,14 @@ export async function unregisterDbSetupDoc({
 }
 
 function shouldPush(action: SetupAction): boolean {
-  return action === 'upgrade' || action === 'patch';
+  return action === 'upgrade' || action === 'patch' || action === 'forced';
+}
+
+function applyForce(action: SetupAction, forceSetup: boolean): SetupAction {
+  if (forceSetup && (action === 'up_to_date' || action === 'patch')) {
+    return 'forced';
+  }
+  return action;
 }
 
 function emitEvent(
@@ -310,6 +314,10 @@ function emitEvent(
  *
  * The default document (when present) is unversioned and always uses
  * {@link writeInitialisationDocument} with `forceDefaultDoc`.
+ *
+ * `forceSetup` pushes design and security docs even when the record says
+ * `up_to_date`, so a manual migrate repairs a live DB that drifted from its
+ * record. Boot leaves it off and trusts the record.
  */
 export async function applyVersionedInitialisation({
   db,
@@ -319,6 +327,7 @@ export async function applyVersionedInitialisation({
   setupStore,
   applyPermissions = true,
   forceDefaultDoc = false,
+  forceSetup = false,
   diagnostics,
   onEvent,
   now = Date.now,
@@ -331,6 +340,7 @@ export async function applyVersionedInitialisation({
   setupStore: DbSetupStore;
   applyPermissions?: boolean;
   forceDefaultDoc?: boolean;
+  forceSetup?: boolean;
   diagnostics?: DbSetupDiagnostics;
   onEvent?: (event: DbSetupEvent) => void;
   now?: () => number;
@@ -349,15 +359,21 @@ export async function applyVersionedInitialisation({
 
   for (let attempt = 1; ; attempt += 1) {
     const existing = await readDbSetupDoc(setupStore, setupType, dbName);
-    designAction = decideSetupAction({
-      recorded: existing?.design,
-      target: designTarget,
-    });
+    designAction = applyForce(
+      decideSetupAction({
+        recorded: existing?.design,
+        target: designTarget,
+      }),
+      forceSetup
+    );
     securityAction = applyPermissions
-      ? decideSetupAction({
-          recorded: existing?.security,
-          target: securityTarget,
-        })
+      ? applyForce(
+          decideSetupAction({
+            recorded: existing?.security,
+            target: securityTarget,
+          }),
+          forceSetup
+        )
       : undefined;
 
     const report = () => {
@@ -448,7 +464,7 @@ export async function applyVersionedInitialisation({
       report();
       return {design: designAction, security: securityAction};
     } catch (error) {
-      if (isConflict(error) && attempt < maxAttempts) {
+      if (isPouchConflict(error) && attempt < maxAttempts) {
         continue;
       }
       throw error;

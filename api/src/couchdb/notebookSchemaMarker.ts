@@ -15,12 +15,13 @@
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   isNotebookUiSchemaMarker,
+  isPouchConflict,
+  isPouchNotFound,
   mergeNotebookUiSchemaMarkerVersion,
   NOTEBOOK_UI_SCHEMA_MARKER_ID,
   NOTEBOOK_UI_SCHEMA_MARKER_KIND,
   type NotebookUiSchemaMarkerDoc,
 } from '@faims3/data-model';
-import {isConflict, isNotFound} from './startupMigrationLock';
 
 /** Attempts (initial + retries) when the marker put loses a 409 race. */
 export const NOTEBOOK_SCHEMA_MARKER_WRITE_ATTEMPTS = 5;
@@ -39,7 +40,7 @@ export async function readNotebookSchemaMarker(
     const doc = await db.get(NOTEBOOK_UI_SCHEMA_MARKER_ID);
     return isNotebookUiSchemaMarker(doc) ? doc : null;
   } catch (error) {
-    if (isNotFound(error)) {
+    if (isPouchNotFound(error)) {
       return null;
     }
     throw error;
@@ -55,7 +56,7 @@ async function readRawMarker(
       schemaVersion?: unknown;
     };
   } catch (error) {
-    if (isNotFound(error)) {
+    if (isPouchNotFound(error)) {
       return null;
     }
     throw error;
@@ -111,7 +112,7 @@ export async function writeNotebookSchemaMarker(options: {
       await options.db.put(doc);
       return {written: true, schemaVersion: next};
     } catch (error) {
-      if (isConflict(error) && attempt < maxAttempts) {
+      if (isPouchConflict(error) && attempt < maxAttempts) {
         continue;
       }
       throw error;

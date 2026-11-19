@@ -23,6 +23,12 @@ export function handleDbSetupEvent(event: DbSetupEvent): void {
     );
     return;
   }
+  if (event.action === 'forced') {
+    console.log(
+      `${DB_SETUP_LOG} forced ${formatEvent(event)} recordedHash=${event.recordedHash ?? 'none'} newHash=${event.targetHash}`
+    );
+    return;
+  }
   if (event.action === 'upgrade') {
     console.log(`${DB_SETUP_LOG} upgrade ${formatEvent(event)}`);
     return;
@@ -55,7 +61,7 @@ export function reportAheadSetupEvents(events: readonly DbSetupEvent[]): void {
 
 /**
  * Collect setup events for one initialise/migrate run. Call {@link flush}
- * once at the end so rule-a errors reach Bugsnag a single time.
+ * once at the end so recorded-ahead errors reach Bugsnag a single time.
  */
 export function createDbSetupRunLogger(): {
   onEvent: (event: DbSetupEvent) => void;

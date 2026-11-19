@@ -32,8 +32,8 @@
  * that attempt is still young; they proceed once it writes `complete`/`failed`
  * with a matching fingerprint.
  * After a *foreign* settlement, {@link StartupMigrationLockOptions.isClusterAhead}
- * can skip becoming doer when recorded DB versions or the notebook UI-schema
- * marker are already past this process — the lock stays as the newer
+ * can skip becoming doer when recorded DB versions, `db-setup` versions or
+ * the notebook UI-schema marker are already past this process — the lock stays as the newer
  * settlement.
  *
  * Timeout is not "give up and attach". After
@@ -56,7 +56,11 @@
  * fail-opens so the full API can still attach. A successful read resets the
  * streak. 409 on claim is not I/O failure — it means another instance won.
  */
-import {startupMigrationFingerprint} from '@faims3/data-model';
+import {
+  isPouchConflict,
+  isPouchNotFound,
+  startupMigrationFingerprint,
+} from '@faims3/data-model';
 import {randomUUID} from 'node:crypto';
 import {hostname} from 'node:os';
 import {version as packageVersion} from '../../package.json';
@@ -206,8 +210,8 @@ export type StartupMigrationLockOptions = {
   apiVersion?: string;
   /**
    * After a foreign `complete`/`failed` lock, return true when state the
-   * boot-migrate process itself writes (DB version docs, the notebook
-   * UI-schema marker) is already past this process. Never decide this from
+   * boot-migrate process itself writes (DB version docs, `db-setup` docs,
+   * the notebook UI-schema marker) is already past this process. Never decide this from
    * user content such as uploaded notebook `schemaVersion`s, or one imported
    * notebook would make every upgraded replica skip migrate forever. The
    * waiter then proceeds without claiming, so an older replica cannot
@@ -253,32 +257,6 @@ export function startupMigrationIoBackoffMs(
 ): number {
   const exp = Math.max(0, consecutiveErrors - 1);
   return Math.min(maxMs, baseMs * 2 ** exp);
-}
-
-/** Pouch/Couch 409 — another replica wrote the document first. */
-export function isConflict(error: unknown): boolean {
-  return pouchStatus(error) === 409 || pouchName(error) === 'conflict';
-}
-
-/** Pouch/Couch 404 — the document has never been created. */
-export function isNotFound(error: unknown): boolean {
-  return pouchStatus(error) === 404 || pouchName(error) === 'not_found';
-}
-
-function pouchStatus(error: unknown): number | undefined {
-  if (typeof error !== 'object' || error === null) {
-    return undefined;
-  }
-  const status = (error as {status?: unknown}).status;
-  return typeof status === 'number' ? status : undefined;
-}
-
-function pouchName(error: unknown): string | undefined {
-  if (typeof error !== 'object' || error === null) {
-    return undefined;
-  }
-  const name = (error as {name?: unknown}).name;
-  return typeof name === 'string' ? name : undefined;
 }
 
 function errorMessage(error: unknown): string {
@@ -373,7 +351,7 @@ async function readLock(
   try {
     return await db.get(STARTUP_MIGRATION_LOCK_ID);
   } catch (error) {
-    if (isNotFound(error)) {
+    if (isPouchNotFound(error)) {
       return null;
     }
     throw error;
@@ -510,7 +488,7 @@ async function tryClaim(options: {
   try {
     await db.put(next);
   } catch (error) {
-    if (isConflict(error)) {
+    if (isPouchConflict(error)) {
       logStartupMigration('claim_conflict', {
         instance: instanceId,
         fingerprint,

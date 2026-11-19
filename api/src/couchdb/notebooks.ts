@@ -556,6 +556,7 @@ export const createNotebook = async ({
   // document registered above.
   await initialiseDataDb({
     projectId,
+    project: projectDoc,
     force: true,
   });
 

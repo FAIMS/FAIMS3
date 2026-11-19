@@ -7,8 +7,8 @@
  * walk. Use when migrate is handled out of band.
  *
  * Otherwise, when {@link config.startupMigrationLockEnabled} is on
- * (clustered production; AWS CDK hard-enables this unless the JSON
- * disable flag is set):
+ * (clustered production; AWS CDK defaults it on unless
+ * `core.migration.startupMigrationLockEnabled` is `false`):
  *   under a Couch-mediated lock (so replicas do not race):
  *     1. initialise + migrate every DB (`initialiseAndMigrateDBs`, same
  *        path as `pnpm migrate-with-keys`)
@@ -18,8 +18,8 @@
  *
  * Init/migrate run only on the lock doer — waiters attach without rewriting
  * design docs. After a foreign settlement, an older replica skips becoming
- * doer when recorded DB versions or the notebook marker are already ahead of
- * this process. Notebook "ahead" comes from the marker, not from individual
+ * doer when recorded DB versions, `db-setup` versions or the notebook marker
+ * are already ahead of this process. Notebook "ahead" comes from the marker, not from individual
  * notebooks, because uploaded uiSpecs can carry any `schemaVersion`.
  *
  * When the lock is off (default, local/dev): those steps run on this
@@ -33,11 +33,8 @@
  * existing error-tolerant boot.
  */
 import {config} from '../buildconfig';
-import {getMigrationDb, initialiseAndMigrateDBs} from '.';
-import {
-  writeNotebookSchemaMarker,
-  type NotebookSchemaMarkerStore,
-} from './notebookSchemaMarker';
+import {getMigrationDbStore, initialiseAndMigrateDBs} from '.';
+import {writeNotebookSchemaMarker} from './notebookSchemaMarker';
 import {isStartupMigrationClusterAhead} from './startupMigrationAhead';
 import {getStartupMigrationFingerprint} from './startupMigrationFingerprint';
 import {
@@ -45,7 +42,6 @@ import {
   logStartupMigration,
   STARTUP_MIGRATION_LOG,
   withStartupMigrationLock,
-  type StartupMigrationLockStore,
 } from './startupMigrationLock';
 import {validateDatabases} from './validateDatabases';
 
@@ -60,7 +56,7 @@ async function recordNotebookSchemaMarker(
 ): Promise<void> {
   try {
     const result = await writeNotebookSchemaMarker({
-      db: getMigrationDb() as unknown as NotebookSchemaMarkerStore,
+      db: getMigrationDbStore(),
       fingerprint,
       apiVersion: config.apiVersion,
       writerId: instanceId,
@@ -129,7 +125,7 @@ export async function runStartupMigrations(): Promise<void> {
 
     const fingerprint = await getStartupMigrationFingerprint();
     await withStartupMigrationLock({
-      db: getMigrationDb() as unknown as StartupMigrationLockStore,
+      db: getMigrationDbStore(),
       instanceId,
       timeoutMs: config.startupMigrationLockTimeoutMs,
       fingerprint,

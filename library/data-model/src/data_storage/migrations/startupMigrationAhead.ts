@@ -74,7 +74,11 @@ export type NotebookUiSchemaMarkerDoc = {
   writerId?: string;
 };
 
-/** True for a document with the marker `_id` and `kind`. */
+/**
+ * True for a document with the marker `_id` and `kind` and a string
+ * `schemaVersion` and numeric `updatedAtMs`. The version is not checked as
+ * semver; readers do that.
+ */
 export function isNotebookUiSchemaMarker(
   doc: unknown
 ): doc is NotebookUiSchemaMarkerDoc {
@@ -84,7 +88,9 @@ export function isNotebookUiSchemaMarker(
   const record = doc as Record<string, unknown>;
   return (
     record._id === NOTEBOOK_UI_SCHEMA_MARKER_ID &&
-    record.kind === NOTEBOOK_UI_SCHEMA_MARKER_KIND
+    record.kind === NOTEBOOK_UI_SCHEMA_MARKER_KIND &&
+    typeof record.schemaVersion === 'string' &&
+    typeof record.updatedAtMs === 'number'
   );
 }
 

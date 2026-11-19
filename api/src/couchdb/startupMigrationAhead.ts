@@ -25,7 +25,7 @@ import {
   type StartupMigrationLiveDbVersion,
   type StartupMigrationLiveSetupVersion,
 } from '@faims3/data-model';
-import {getMigrationDb} from '.';
+import {getMigrationDbStore} from '.';
 import {
   logStartupMigration,
   STARTUP_MIGRATION_LOCK_ID,
@@ -36,37 +36,35 @@ async function loadRecordedState(): Promise<{
   notebookMarker?: string;
   setups: StartupMigrationLiveSetupVersion[];
 }> {
-  const result = await getMigrationDb().allDocs({include_docs: true});
+  const result = await getMigrationDbStore().allDocs({include_docs: true});
   const databases: StartupMigrationLiveDbVersion[] = [];
   const setups: StartupMigrationLiveSetupVersion[] = [];
   let notebookMarker: string | undefined;
   for (const row of result.rows) {
+    const doc = row.doc;
     if (row.id === NOTEBOOK_UI_SCHEMA_MARKER_ID) {
-      if (
-        isNotebookUiSchemaMarker(row.doc) &&
-        typeof row.doc.schemaVersion === 'string'
-      ) {
-        notebookMarker = row.doc.schemaVersion;
+      if (isNotebookUiSchemaMarker(doc)) {
+        notebookMarker = doc.schemaVersion;
       }
       continue;
     }
     if (row.id.startsWith('_design/') || row.id === STARTUP_MIGRATION_LOCK_ID) {
       continue;
     }
-    if (isDbSetupDoc(row.doc)) {
+    if (isDbSetupDoc(doc)) {
       setups.push({
-        setupType: row.doc.dbType,
-        dbName: row.doc.dbName,
-        designVersion: row.doc.design?.version,
-        securityVersion: row.doc.security?.version,
+        setupType: doc.dbType,
+        dbName: doc.dbName,
+        designVersion: doc.design?.version,
+        securityVersion: doc.security?.version,
       });
       continue;
     }
-    if (isMigrationVersionRecord(row.doc)) {
+    if (isMigrationVersionRecord(doc)) {
       databases.push({
-        dbType: row.doc.dbType,
-        dbName: row.doc.dbName,
-        version: row.doc.version,
+        dbType: doc.dbType,
+        dbName: doc.dbName,
+        version: doc.version,
       });
     }
   }

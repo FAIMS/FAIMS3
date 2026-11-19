@@ -59,6 +59,15 @@ export type MigrationsDBDocument =
   PouchDB.Core.ExistingDocument<MigrationsDBFields>;
 export type MigrationsDB = DatabaseInterface<MigrationsDBFields>;
 
+/**
+ * What {@link isMigrationVersionRecord} checks: version-record fields plus an
+ * `_id`. `_rev` is not checked, so it stays optional.
+ */
+export type MigrationVersionRecord = MigrationsDBFields & {
+  _id: string;
+  _rev?: string;
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -74,7 +83,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  */
 export function isMigrationVersionRecord(
   doc: unknown
-): doc is MigrationsDBDocument {
+): doc is MigrationVersionRecord {
   if (!isRecord(doc)) {
     return false;
   }
@@ -83,6 +92,7 @@ export function isMigrationVersionRecord(
     return false;
   }
   return (
+    typeof doc._id === 'string' &&
     typeof doc.dbType === 'string' &&
     typeof doc.dbName === 'string' &&
     typeof doc.version === 'number' &&

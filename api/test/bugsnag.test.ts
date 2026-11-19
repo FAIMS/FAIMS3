@@ -40,7 +40,7 @@ describe('startBugsnag', () => {
   });
 
   it('starts Bugsnag once and is idempotent', async () => {
-    const {startBugsnag} = await import('../src/bugsnag');
+    const {startBugsnag} = await import('../src/bugsnag.js');
     expect(startBugsnag()).toBe(true);
     expect(startBugsnag()).toBe(true);
     expect(start).toHaveBeenCalledTimes(1);
@@ -54,7 +54,7 @@ describe('startBugsnag', () => {
 
   it('does not start when no API key is set', async () => {
     configMock.bugsnagApiKey = '';
-    const {startBugsnag} = await import('../src/bugsnag');
+    const {startBugsnag} = await import('../src/bugsnag.js');
     expect(startBugsnag()).toBe(false);
     expect(start).not.toHaveBeenCalled();
   });

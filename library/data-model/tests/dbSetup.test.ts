@@ -133,7 +133,7 @@ describe('applyVersionedInitialisation', () => {
 
   const apply = (
     payload = content(),
-    extra: {forceDefaultDoc?: boolean} = {}
+    extra: {forceDefaultDoc?: boolean; forceSetup?: boolean} = {}
   ) =>
     applyVersionedInitialisation({
       db: target,
@@ -203,6 +203,38 @@ describe('applyVersionedInitialisation', () => {
     expect(result.design).toBe('patch');
     const views = await target.get<any>(DESIGN_A._id);
     expect(views.views.byId.map).toContain('patched');
+  });
+
+  it('forceSetup repairs a drifted design doc and rewrites the record when up to date', async () => {
+    await apply();
+    const drifted = await target.get<any>(DESIGN_A._id);
+    await target.put({...drifted, views: {byId: {map: 'function (doc) {}'}}});
+    events.length = 0;
+    const result = await apply(content(), {forceSetup: true});
+    expect(result.design).toBe('forced');
+    const views = await target.get<typeof DESIGN_A>(DESIGN_A._id);
+    expect(views.views).toEqual(DESIGN_A.views);
+    const record = await readDbSetupDoc(setupStore(), 'PEOPLE', 'people');
+    expect(record?.design).toEqual({
+      version: DB_SETUP_VERSIONS.PEOPLE.design,
+      hash: await hashDesignDocuments(content().designDocuments),
+      updatedAtMs: 1000,
+    });
+    expect(events.map(event => event.action)).toEqual(['forced']);
+  });
+
+  it('forceSetup still leaves a higher recorded version alone', async () => {
+    await apply();
+    const id = dbSetupDocId('PEOPLE', 'people');
+    const existing = await setupDb.get<DbSetupDoc>(id);
+    await setupDb.put({
+      ...existing,
+      design: {...existing.design!, version: 99},
+    });
+    const result = await apply(content(), {forceSetup: true});
+    expect(result.design).toBe('ahead');
+    const record = await readDbSetupDoc(setupStore(), 'PEOPLE', 'people');
+    expect(record?.design?.version).toBe(99);
   });
 
   it('leaves docs and the record untouched when the recorded version is higher', async () => {

@@ -37,12 +37,12 @@ Each database has some setup documents that come from the code rather than from 
 - **The security document** (`_security`). This says which users and roles can read or write the database.
 - **A default document**, for some databases. For example, the `directory` database holds a document that identifies this Conductor.
 
-Every migration run (step 1 below) decides what to do from the `db-setup` record for that database. Design and security are decided **separately**:
+Every migration run (step 1 below) decides what to do from the `db-setup` record for that database. Design and security are decided **separately**. The names in brackets are the `SetupAction` values used in code and logs:
 
-- **Recorded version higher than this build** (rule a): leave the stored documents alone, log an error, and report it to Bugsnag (one event per run, not per database). Do not downgrade.
-- **Recorded version equal, and the stored hash matches this build** (rule b, happy path): skip all reads and writes of that part. The record is trusted.
-- **Recorded version equal, but the hash does not match** (rule b, patch): log a warning and push this build's documents. Use this for a quick fix you do not want to promote as a new version.
-- **Recorded version lower, or no record yet** (rule c): push this build's documents and update the record. This is a normal migrate.
+- **Recorded version higher than this build** (`ahead`): leave the stored documents alone, log an error, and report it to Bugsnag (one event per run, not per database). Do not downgrade.
+- **Recorded version equal, and the stored hash matches this build** (`up_to_date`): skip all reads and writes of that part. The record is trusted.
+- **Recorded version equal, but the hash does not match** (`patch`): log a warning and push this build's documents. Use this for a quick fix you do not want to promote as a new version.
+- **Recorded version lower, or no record yet** (`upgrade`): push this build's documents and update the record. This is a normal migrate.
 
 The default document (for example the directory identity document) is **not** versioned. It still uses the old "write if missing, overwrite if `force` and the content differs" behaviour.
 
@@ -122,7 +122,10 @@ The command line differs from startup in a few ways:
 | Notebook design walk       | Yes                           | No                                       |
 | Writes the notebook marker | Yes                           | No                                       |
 | Pushes the JWT key         | Yes                           | Only `migrate-with-keys`                 |
+| Design / security docs     | Only when `db-setup` says so  | Always pushed, and `db-setup` rewritten  |
 | On failure                 | Logs, then starts the API     | Exits with code 1                        |
+
+The command line pushes every database's design and security documents even when its `db-setup` record says they are up to date. It then rewrites the record with this build's version and hash, and logs the result as `[db-setup] forced`. Use it to repair a database whose live documents drifted from the record, for example after the database was recreated. A record whose version is ahead of this build is still left alone; clear it with `reset-setup` first if you mean to push over it. Couch version records and migration statuses work the same as at startup.
 
 Because the command line does not take the lock, **do not run it against a live cluster that is also starting up**. Scale the API down first, or just let startup do the work. The command line is useful for a controlled run before replicas start, to push keys, or to retry after a failure.
 
@@ -304,7 +307,7 @@ To prevent that, when a replica finds the lock finished by a **different** finge
 
 If so, the replica starts its API without migrating and leaves the lock untouched (log event `skip_doer_cluster_ahead`). If not, it claims the lock and migrates as normal. If the check itself fails (for example, CouchDB hiccups), it logs `cluster_ahead_check_failed` and claims as normal.
 
-#### Why notebooks use a marker
+### Why notebooks use a marker
 
 The cluster-ahead check only trusts documents that the migration itself writes. Notebook designs are uploaded by users, and a design can carry any `schemaVersion`: imported from a newer server, hand-edited, or deliberately future-stamped (the test seed dataset does this). If the check looked at individual notebooks, one such notebook would make every upgraded replica think the cluster was ahead. They would then skip **all** startup migration (databases, design documents and the JWT key) on every start, until someone removed the notebook.
 
@@ -312,12 +315,12 @@ The marker avoids this: only startup writes it, and only after running the noteb
 
 ## Rolling deploys and rollbacks
 
-| Situation                                                                           | What happens                                                                                                                                                                                                     |
-| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Normal upgrade.** New replicas start while old ones are still running.            | The first new replica sees an old fingerprint on the lock. The cluster is not ahead of it, so it claims and migrates. Other new replicas wait for it, or re-claim and skip quickly.                              |
-| **Old replica restarts mid-deploy**, after the new release has migrated.            | It sees a newer fingerprint. If the new release raised a database version or the notebook schema, the cluster is ahead, so it starts without migrating.                                                          |
-| **New release only changed design documents** (same setup version, different hash). | Rule b (patch): each replica pushes its own hash. The two builds rewrite each other's docs until the rollout finishes. Their fingerprints differ, so the lock re-claims. This is the cost of patch-without-bump. |
-| **Deliberate rollback** to an older release after the new one migrated.             | Old replicas see the cluster as ahead and skip migration on every start. This is intended: they cannot downgrade data. See below.                                                                                |
+| Situation                                                                           | What happens                                                                                                                                                                                              |
+| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Normal upgrade.** New replicas start while old ones are still running.            | The first new replica sees an old fingerprint on the lock. The cluster is not ahead of it, so it claims and migrates. Other new replicas wait for it, or re-claim and skip quickly.                       |
+| **Old replica restarts mid-deploy**, after the new release has migrated.            | It sees a newer fingerprint. If the new release raised a database version or the notebook schema, the cluster is ahead, so it starts without migrating.                                                   |
+| **New release only changed design documents** (same setup version, different hash). | `patch`: each replica pushes its own hash. The two builds rewrite each other's docs until the rollout finishes. Their fingerprints differ, so the lock re-claims. This is the cost of patch-without-bump. |
+| **Deliberate rollback** to an older release after the new one migrated.             | Old replicas see the cluster as ahead and skip migration on every start. This is intended: they cannot downgrade data. See below.                                                                         |
 
 ### After a deliberate rollback
 

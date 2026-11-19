@@ -2,7 +2,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {StartupMigrationLockOptions} from '../src/couchdb/startupMigrationLock';
 
-const getMigrationDb = vi.hoisted(() => vi.fn());
+const getMigrationDbStore = vi.hoisted(() => vi.fn());
 const initialiseAndMigrateDBs = vi.hoisted(() => vi.fn());
 const validateDatabases = vi.hoisted(() => vi.fn());
 const withStartupMigrationLock = vi.hoisted(() => vi.fn());
@@ -22,7 +22,7 @@ vi.mock('../src/buildconfig', () => ({
 }));
 
 vi.mock('../src/couchdb', () => ({
-  getMigrationDb,
+  getMigrationDbStore,
   initialiseAndMigrateDBs,
 }));
 
@@ -60,7 +60,7 @@ describe('runStartupMigrations', () => {
   const lockDb = {get: vi.fn(), put: vi.fn()};
 
   beforeEach(() => {
-    getMigrationDb.mockReset();
+    getMigrationDbStore.mockReset();
     initialiseAndMigrateDBs.mockReset();
     validateDatabases.mockReset();
     withStartupMigrationLock.mockReset();
@@ -75,7 +75,7 @@ describe('runStartupMigrations', () => {
       return {role: 'doer', status: 'complete'};
     });
     getStartupMigrationFingerprint.mockResolvedValue(PROCESS_FINGERPRINT);
-    getMigrationDb.mockReturnValue(lockDb);
+    getMigrationDbStore.mockReturnValue(lockDb);
     initialiseAndMigrateDBs.mockResolvedValue(undefined);
     validateDatabases.mockResolvedValue({valid: true});
     configMock.disableMigrateOnStartup = false;
@@ -214,7 +214,7 @@ describe('runStartupMigrations', () => {
 
     expect(withStartupMigrationLock).not.toHaveBeenCalled();
     expect(getStartupMigrationFingerprint).not.toHaveBeenCalled();
-    expect(getMigrationDb).not.toHaveBeenCalled();
+    expect(getMigrationDbStore).not.toHaveBeenCalled();
     expect(initialiseAndMigrateDBs).not.toHaveBeenCalled();
     expect(validateDatabases).not.toHaveBeenCalled();
   });

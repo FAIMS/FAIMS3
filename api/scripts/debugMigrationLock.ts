@@ -42,6 +42,8 @@ import {
   isMigrationVersionRecord,
   isNotebookSchemaSemver,
   isNotebookUiSchemaMarker,
+  isPouchConflict,
+  isPouchNotFound,
   NOTEBOOK_UI_SCHEMA_MARKER_ID,
   NOTEBOOK_UI_SCHEMA_MARKER_KIND,
   type DATABASE_TYPE,
@@ -58,9 +60,11 @@ import {config} from '../src/buildconfig';
 import {
   getDbById,
   getMigrationDb,
+  getMigrationDbStore,
   verifyCouchDBConnection,
 } from '../src/couchdb';
 import {getAllProjectsListing} from '../src/couchdb/notebooks';
+import {readNotebookSchemaMarker} from '../src/couchdb/notebookSchemaMarker';
 import {getStartupMigrationFingerprint} from '../src/couchdb/startupMigrationFingerprint';
 import {
   STARTUP_MIGRATION_LOCK_ID,
@@ -318,26 +322,6 @@ export type NotebookRow = {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
-}
-
-function pouchStatus(error: unknown): number | undefined {
-  return isRecord(error) && typeof error.status === 'number'
-    ? error.status
-    : undefined;
-}
-
-function pouchName(error: unknown): string | undefined {
-  return isRecord(error) && typeof error.name === 'string'
-    ? error.name
-    : undefined;
-}
-
-export function isNotFound(error: unknown): boolean {
-  return pouchStatus(error) === 404 || pouchName(error) === 'not_found';
-}
-
-export function isConflict(error: unknown): boolean {
-  return pouchStatus(error) === 409 || pouchName(error) === 'conflict';
 }
 
 function errorMessage(error: unknown): string {
@@ -710,6 +694,7 @@ Examples:
 export function isMigrationDoc(doc: unknown): doc is MigrationsDBDocument {
   return (
     isMigrationVersionRecord(doc) &&
+    typeof doc._rev === 'string' &&
     (doc.status === 'healthy' || doc.status === 'not-healthy')
   );
 }
@@ -941,7 +926,7 @@ export async function readLock(
     const doc = await db.get(STARTUP_MIGRATION_LOCK_ID);
     return isLockDoc(doc) ? doc : null;
   } catch (error) {
-    if (isNotFound(error)) {
+    if (isPouchNotFound(error)) {
       return null;
     }
     throw error;
@@ -951,15 +936,7 @@ export async function readLock(
 export async function readNotebookMarker(
   db: DebuggerDb
 ): Promise<NotebookUiSchemaMarkerDoc | null> {
-  try {
-    const doc = await db.get(NOTEBOOK_UI_SCHEMA_MARKER_ID);
-    return isNotebookUiSchemaMarker(doc) ? doc : null;
-  } catch (error) {
-    if (isNotFound(error)) {
-      return null;
-    }
-    throw error;
-  }
+  return readNotebookSchemaMarker(db);
 }
 
 export async function loadMigrationsDb(db: DebuggerDb): Promise<{
@@ -1174,7 +1151,7 @@ async function putLock(
   try {
     await db.put(doc);
   } catch (error) {
-    if (isConflict(error)) {
+    if (isPouchConflict(error)) {
       throw new Error(
         'Conflict writing the lock document (another process updated it). Re-run status and retry.'
       );
@@ -1266,7 +1243,7 @@ export async function resetNotebookMarker(options: {
   try {
     raw = await options.db.get(NOTEBOOK_UI_SCHEMA_MARKER_ID);
   } catch (error) {
-    if (!isNotFound(error)) {
+    if (!isPouchNotFound(error)) {
       throw error;
     }
   }
@@ -1298,7 +1275,7 @@ export async function resetNotebookMarker(options: {
   try {
     await options.db.put(after);
   } catch (error) {
-    if (isConflict(error)) {
+    if (isPouchConflict(error)) {
       throw new Error(
         'Conflict writing the notebook marker (another process updated it). Re-run status and retry.'
       );
@@ -2586,7 +2563,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     `${DEBUG_MIGRATION_LOCK_LOG} couch=${config.couchdbInternalUrl} lockEnabled=${config.startupMigrationLockEnabled}`
   );
   await requireCouch();
-  const db = getMigrationDb() as unknown as DebuggerDb;
+  const db = getMigrationDbStore();
   const result = await runCommand(command, {db});
   return result.exitCode;
 }

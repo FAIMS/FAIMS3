@@ -19,9 +19,11 @@ const main = async () => {
 
     startBugsnag();
 
-    // Run database initialisation and migration with force and pushKeys parameters
+    // Manual migrate repairs design/security docs regardless of the db-setup
+    // records (boot trusts them)
     await initialiseAndMigrateDBs({
       force: true,
+      forceSetup: true,
       pushKeys: pushKeys,
     });
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {z} from 'zod';
 import {createHash} from '../data_storage/utils';
+import {stableCanonicalJson} from '../data_storage/migrations/canonicalJson';
 import {
   getNotebookSchemaVersion,
   type NotebookWithSchemaVersion,
@@ -23,21 +24,11 @@ export type UiSpecProperties = z.infer<typeof UiSpecPropertiesSchema>;
 
 /**
  * Stable stringify: sorts object keys so logically identical values
- * serialise identically regardless of key order.
+ * serialise identically regardless of key order. Keeps `undefined` fields
+ * (as `"key":undefined`) so existing uiSpecification hashes stay valid.
  */
-export const stableStringify = (value: unknown): string => {
-  if (value === null || typeof value !== 'object') {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map(stableStringify).join(',')}]`;
-  }
-  const record = value as Record<string, unknown>;
-  return `{${Object.keys(record)
-    .sort()
-    .map(k => `${JSON.stringify(k)}:${stableStringify(record[k])}`)
-    .join(',')}}`;
-};
+export const stableStringify = (value: unknown): string =>
+  stableCanonicalJson(value, {keepUndefined: true});
 
 /**
  * SHA-256 hex digest of the normalised `uiSpecification` (notebook or
