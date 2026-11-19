@@ -8,6 +8,11 @@ export type DataDbInitialisationConfig = {
   projectId: string;
 };
 
+/**
+ * Design and security documents for one project's data DB. The startup
+ * migration fingerprint hashes this payload with a placeholder project id so
+ * the digest does not depend on a live survey.
+ */
 export function initDataDB({
   projectId,
 }: DataDbInitialisationConfig): InitialisationContent {

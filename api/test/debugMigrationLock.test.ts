@@ -2,14 +2,23 @@
 import PouchDB from 'pouchdb';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {
+  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   DatabaseType,
+  DB_SETUP_DOC_KIND,
+  dbSetupDocId,
   DB_TARGET_VERSIONS,
+  NOTEBOOK_UI_SCHEMA_MARKER_ID,
+  NOTEBOOK_UI_SCHEMA_MARKER_KIND,
+  parseNotebookSchemaSemver,
+  type DbSetupDoc,
   type MigrationsDBDocument,
   type MigrationsDBFields,
+  type NotebookUiSchemaMarkerDoc,
 } from '@faims3/data-model';
 import {
   ADMIN_ACTOR_PREFIX,
   classifyLock,
+  classifyNotebookMarker,
   collectStatus,
   deleteLock,
   describeDbVersion,
@@ -18,11 +27,14 @@ import {
   forceClaim,
   forceUnlock,
   formatDuration,
+  formatLockHuman,
   formatStatusHuman,
   isDirectExecution,
   loadMigrationsDb,
   matchMigrationDocs,
   parseArgs,
+  resetNotebookMarker,
+  resetSetup,
   resolveMigrationDoc,
   runCommand,
   setDbHealth,
@@ -73,6 +85,26 @@ async function seedMigrationDoc(
     ? await db.put({...fields, _id: fields._id})
     : await db.post(fields);
   return db.get<MigrationsDBDocument>(response.id);
+}
+
+function newerMajor(): string {
+  const parsed = parseNotebookSchemaSemver(CURRENT_NOTEBOOK_UI_SCHEMA_VERSION)!;
+  return `${parsed.major + 1}.0.0`;
+}
+
+async function seedMarker(
+  db: PouchDB.Database,
+  schemaVersion: string
+): Promise<void> {
+  await db.put({
+    _id: NOTEBOOK_UI_SCHEMA_MARKER_ID,
+    kind: NOTEBOOK_UI_SCHEMA_MARKER_KIND,
+    schemaVersion,
+    updatedAtMs: 5,
+    fingerprint: 'aabbccddeeff',
+    apiVersion: '1.11.0',
+    writerId: 'api-a',
+  });
 }
 
 function peopleDoc(version = 5): MigrationsDBFields {
@@ -171,6 +203,54 @@ describe('debug-migration-lock parseArgs', () => {
     });
   });
 
+  it('parses reset-notebook-marker with and without a version', () => {
+    expect(parseArgs(['reset-notebook-marker', '--yes'])).toEqual({
+      name: 'reset-notebook-marker',
+      version: undefined,
+      yes: true,
+    });
+    expect(parseArgs(['reset-notebook-marker', '1.0.0'])).toEqual({
+      name: 'reset-notebook-marker',
+      version: '1.0.0',
+      yes: false,
+    });
+    expect(() => parseArgs(['reset-notebook-marker', '1.0'])).toThrow(
+      /MAJOR\.MINOR\.PATCH/
+    );
+  });
+
+  it('parses reset-setup and verify-setup', () => {
+    expect(parseArgs(['reset-setup', 'people', '--yes'])).toEqual({
+      name: 'reset-setup',
+      db: 'people',
+      all: false,
+      part: undefined,
+      type: undefined,
+      yes: true,
+    });
+    expect(
+      parseArgs(['reset-setup', '--all', '--design', '--type=MIGRATIONS'])
+    ).toEqual({
+      name: 'reset-setup',
+      all: true,
+      part: 'design',
+      type: 'MIGRATIONS',
+      yes: false,
+    });
+    expect(parseArgs(['verify-setup', 'people', '--json'])).toEqual({
+      name: 'verify-setup',
+      db: 'people',
+      type: undefined,
+      json: true,
+    });
+    expect(() => parseArgs(['reset-setup'])).toThrow(
+      /requires a database name/
+    );
+    expect(() => parseArgs(['reset-setup', '--design', '--security'])).toThrow(
+      /at most one/
+    );
+  });
+
   it('rejects unknown commands and bad values', () => {
     expect(() => parseArgs(['explode'])).toThrow(/Unknown command/);
     expect(() => parseArgs(['unlock', '--status=maybe'])).toThrow(
@@ -247,6 +327,62 @@ describe('debug-migration-lock formatters and classifiers', () => {
     );
     expect(expired.expired).toBe(true);
     expect(expired.stealable).toBe(true);
+  });
+
+  it('formatLockHuman includes fingerprint and apiVersion on the doc and history', () => {
+    const view = classifyLock(
+      {
+        _id: STARTUP_MIGRATION_LOCK_ID,
+        kind: 'startup-migration-lock',
+        status: 'complete',
+        holderId: 'api-a',
+        startedAtMs: 0,
+        updatedAtMs: 10,
+        attempt: 2,
+        fingerprint: 'aabbccddeeff',
+        apiVersion: '1.11.0',
+        history: [
+          {
+            holderId: 'api-a',
+            startedAtMs: 0,
+            finishedAtMs: 10,
+            status: 'complete',
+            fingerprint: 'aabbccddeeff',
+            apiVersion: '1.11.0',
+          },
+        ],
+      },
+      10_000,
+      1_000
+    );
+    const human = formatLockHuman(view, 1_000);
+    expect(human).toContain('fingerprint');
+    expect(human).toContain('aabbccddeeff');
+    expect(human).toContain('apiVersion');
+    expect(human).toMatch(/API version:\s+1\.11\.0/);
+    expect(human).toContain('1.11.0');
+  });
+
+  it('classifies the notebook marker against this build', () => {
+    const marker = (schemaVersion: string): NotebookUiSchemaMarkerDoc => ({
+      _id: NOTEBOOK_UI_SCHEMA_MARKER_ID,
+      kind: NOTEBOOK_UI_SCHEMA_MARKER_KIND,
+      schemaVersion,
+      updatedAtMs: 1,
+    });
+    expect(classifyNotebookMarker(null, '1.0.1').relation).toBe('missing');
+    expect(classifyNotebookMarker(marker('1.0.1'), '1.0.1').relation).toBe(
+      'current'
+    );
+    expect(classifyNotebookMarker(marker('1.0.0'), '1.0.1').relation).toBe(
+      'behind'
+    );
+    const ahead = classifyNotebookMarker(marker('2.0.0'), '1.0.1');
+    expect(ahead.relation).toBe('ahead');
+    expect(ahead.interpretation).toMatch(/reset-notebook-marker/);
+    expect(classifyNotebookMarker(marker('7.0'), '1.0.1').relation).toBe(
+      'invalid'
+    );
   });
 
   it('describes current, behind, ahead, and unknown versions', () => {
@@ -408,7 +544,7 @@ describe('debug-migration-lock mutations', () => {
     );
   });
 
-  it('lists migration docs and skips design + lock documents', async () => {
+  it('lists migration docs and skips design, lock, and marker documents', async () => {
     const db = freshDb();
     await db.put({_id: '_design/index', views: {}});
     await seedLock(db, {
@@ -416,13 +552,26 @@ describe('debug-migration-lock mutations', () => {
       holderId: 'api-a',
       startedAtMs: 1,
     });
+    await seedMarker(db, CURRENT_NOTEBOOK_UI_SCHEMA_VERSION);
     await seedMigrationDoc(db, peopleDoc());
+    await db.put({
+      _id: dbSetupDocId('PEOPLE', 'people'),
+      kind: DB_SETUP_DOC_KIND,
+      dbType: 'PEOPLE',
+      dbName: 'people',
+      design: {version: 1, hash: 'abc', updatedAtMs: 1},
+    });
     await db.put({_id: 'junk', hello: 'world'});
 
     const loaded = await loadMigrationsDb(asDebuggerDb(db));
     expect(loaded.lock?.status).toBe('complete');
+    expect(loaded.notebookMarker?.schemaVersion).toBe(
+      CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+    );
     expect(loaded.databases).toHaveLength(1);
     expect(loaded.databases[0]?.dbName).toBe('people');
+    expect(loaded.setups).toHaveLength(1);
+    expect(loaded.setups[0]?.dbName).toBe('people');
     expect(loaded.unrecognised).toEqual([
       expect.objectContaining({id: 'junk'}),
     ]);
@@ -442,6 +591,8 @@ describe('debug-migration-lock mutations', () => {
       holderId: 'crashed',
       startedAtMs: 1_000,
       attempt: 3,
+      fingerprint: 'aabbccddeeff',
+      apiVersion: '1.11.0',
     });
 
     const unlocked = await forceUnlock({
@@ -457,7 +608,11 @@ describe('debug-migration-lock mutations', () => {
       holderId: 'crashed',
       status: 'failed',
       error: 'stuck doer',
+      fingerprint: 'aabbccddeeff',
+      apiVersion: '1.11.0',
     });
+    expect(unlocked.after?.fingerprint).toBe('aabbccddeeff');
+    expect(unlocked.after?.apiVersion).toBe('1.11.0');
 
     const again = await forceUnlock({
       db: asDebuggerDb(db),
@@ -510,9 +665,13 @@ describe('debug-migration-lock mutations', () => {
       nowMs: 1_000,
       instanceId: 'admin-1',
       timeoutMs: 5_000,
+      fingerprint: 'aabbccddeeff',
+      apiVersion: '1.11.0',
     });
     expect(first.after.status).toBe('running');
     expect(first.after.holderId).toBe('admin-1');
+    expect(first.after.fingerprint).toBe('aabbccddeeff');
+    expect(first.after.apiVersion).toBe('1.11.0');
     expect(first.stolen).toBe(false);
 
     await expect(
@@ -521,6 +680,8 @@ describe('debug-migration-lock mutations', () => {
         nowMs: 2_000,
         instanceId: 'admin-2',
         timeoutMs: 5_000,
+        fingerprint: 'aabbccddeeff',
+        apiVersion: '1.11.0',
       })
     ).rejects.toThrow(/still live/);
 
@@ -530,11 +691,16 @@ describe('debug-migration-lock mutations', () => {
       instanceId: 'admin-2',
       timeoutMs: 5_000,
       force: true,
+      fingerprint: 'newnewnewnew',
+      apiVersion: '1.12.0',
     });
     expect(stolen.stolen).toBe(true);
     expect(stolen.after.holderId).toBe('admin-2');
     expect(stolen.after.attempt).toBe(2);
+    expect(stolen.after.fingerprint).toBe('newnewnewnew');
     expect(stolen.after.history[0]?.status).toBe('timed_out');
+    expect(stolen.after.history[0]?.fingerprint).toBe('aabbccddeeff');
+    expect(stolen.after.history[0]?.apiVersion).toBe('1.11.0');
   });
 
   it('steals an expired running lock without --force', async () => {
@@ -549,6 +715,8 @@ describe('debug-migration-lock mutations', () => {
       nowMs: 10_000,
       instanceId: 'admin',
       timeoutMs: 1_000,
+      fingerprint: 'aabbccddeeff',
+      apiVersion: '1.11.0',
     });
     expect(claimed.stolen).toBe(true);
     expect(claimed.after.holderId).toBe('admin');
@@ -688,6 +856,188 @@ describe('debug-migration-lock mutations', () => {
     }
   });
 
+  it('JSON lock output includes fingerprint and apiVersion on the doc and history', async () => {
+    const db = freshDb();
+    await seedLock(db, {
+      status: 'complete',
+      holderId: 'api-a',
+      startedAtMs: 1,
+      fingerprint: 'aabbccddeeff',
+      apiVersion: '1.11.0',
+      history: [
+        {
+          holderId: 'api-a',
+          startedAtMs: 1,
+          finishedAtMs: 2,
+          status: 'complete',
+          fingerprint: 'aabbccddeeff',
+          apiVersion: '1.11.0',
+        },
+      ],
+    });
+    const stdout: string[] = [];
+    const logSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation((message?: unknown) => {
+        stdout.push(String(message ?? ''));
+      });
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const result = await runCommand(
+        {name: 'lock', json: true},
+        {
+          db: asDebuggerDb(db),
+          nowMs: 10,
+          timeoutMs: 1_000,
+          confirm: async () => undefined,
+        }
+      );
+      expect(result.exitCode).toBe(0);
+      const parsed = JSON.parse(stdout[0]);
+      expect(parsed.doc.fingerprint).toBe('aabbccddeeff');
+      expect(parsed.doc.apiVersion).toBe('1.11.0');
+      expect(parsed.doc.history[0].fingerprint).toBe('aabbccddeeff');
+      expect(parsed.doc.history[0].apiVersion).toBe('1.11.0');
+    } finally {
+      logSpy.mockRestore();
+      errSpy.mockRestore();
+    }
+  });
+
+  it('status shows the notebook marker in human and JSON output', async () => {
+    const db = freshDb();
+    await seedMarker(db, newerMajor());
+    const stdout: string[] = [];
+    const logSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation((message?: unknown) => {
+        stdout.push(String(message ?? ''));
+      });
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const run = (json: boolean, strict = false) =>
+      runCommand(
+        {name: 'status', json, strict},
+        {db: asDebuggerDb(db), nowMs: 10, timeoutMs: 1_000}
+      );
+    try {
+      await run(false);
+      const human = stdout.join('\n');
+      expect(human).toContain('=== Notebook UI-schema marker ===');
+      expect(human).toMatch(new RegExp(`Recorded:\\s+${newerMajor()}`));
+      expect(human).toMatch(/State:\s+ahead/);
+      expect(human).toMatch(/Writer:\s+api-a/);
+
+      stdout.length = 0;
+      await run(true);
+      const parsed = JSON.parse(stdout[0]);
+      expect(parsed.notebookMarker).toMatchObject({
+        present: true,
+        relation: 'ahead',
+        target: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+        doc: {schemaVersion: newerMajor(), apiVersion: '1.11.0'},
+      });
+      expect(parsed.unrecognised).toEqual([]);
+
+      stdout.length = 0;
+      expect((await run(true, true)).exitCode).toBe(1);
+    } finally {
+      logSpy.mockRestore();
+      errSpy.mockRestore();
+    }
+  });
+
+  it('resets the notebook marker by delete or explicit version', async () => {
+    const db = freshDb();
+    await seedMarker(db, '9.0.0');
+
+    const set = await resetNotebookMarker({
+      db: asDebuggerDb(db),
+      nowMs: 77,
+      instanceId: 'admin',
+      schemaVersion: '1.0.0',
+    });
+    expect(set.changed).toBe(true);
+    expect(set.before?.schemaVersion).toBe('9.0.0');
+    const stored = await db.get<NotebookUiSchemaMarkerDoc>(
+      NOTEBOOK_UI_SCHEMA_MARKER_ID
+    );
+    expect(stored).toMatchObject({
+      kind: NOTEBOOK_UI_SCHEMA_MARKER_KIND,
+      schemaVersion: '1.0.0',
+      updatedAtMs: 77,
+      writerId: 'admin',
+    });
+    expect(stored.fingerprint).toBeUndefined();
+
+    const removed = await resetNotebookMarker({
+      db: asDebuggerDb(db),
+      nowMs: 78,
+      instanceId: 'admin',
+    });
+    expect(removed).toMatchObject({changed: true, after: null});
+    await expect(db.get(NOTEBOOK_UI_SCHEMA_MARKER_ID)).rejects.toMatchObject({
+      status: 404,
+    });
+    expect(
+      (
+        await resetNotebookMarker({
+          db: asDebuggerDb(db),
+          nowMs: 79,
+          instanceId: 'admin',
+        })
+      ).changed
+    ).toBe(false);
+
+    await expect(
+      resetNotebookMarker({
+        db: asDebuggerDb(db),
+        nowMs: 80,
+        instanceId: 'admin',
+        schemaVersion: 'nope',
+      })
+    ).rejects.toThrow(/MAJOR\.MINOR\.PATCH/);
+  });
+
+  it('reset-notebook-marker via runCommand requires confirm', async () => {
+    const db = freshDb();
+    await seedMarker(db, '9.0.0');
+    const prompts: string[] = [];
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      await runCommand(
+        {name: 'reset-notebook-marker', yes: false},
+        {
+          db: asDebuggerDb(db),
+          nowMs: 1,
+          instanceId: 'admin',
+          confirm: async message => {
+            prompts.push(message);
+          },
+        }
+      );
+      await expect(
+        runCommand(
+          {name: 'reset-notebook-marker', version: '1.0.0', yes: false},
+          {
+            db: asDebuggerDb(db),
+            nowMs: 2,
+            instanceId: 'admin',
+            confirm: async () => {
+              throw new Error('Aborted.');
+            },
+          }
+        )
+      ).rejects.toThrow(/Aborted/);
+    } finally {
+      errSpy.mockRestore();
+    }
+    expect(prompts[0]).toMatch(/Delete the notebook UI-schema marker/);
+    expect(prompts[0]).toContain('currently 9.0.0');
+    await expect(db.get(NOTEBOOK_UI_SCHEMA_MARKER_ID)).rejects.toMatchObject({
+      status: 404,
+    });
+  });
+
   it('runs status --strict through the command dispatcher', async () => {
     const db = freshDb();
     await seedLock(db, {
@@ -739,5 +1089,104 @@ describe('debug-migration-lock mutations', () => {
       STARTUP_MIGRATION_LOCK_ID
     );
     expect(lock.status).toBe('complete');
+  });
+
+  it('status lists db-setup records and strict-fails when one is ahead', async () => {
+    const db = freshDb();
+    await db.put({
+      _id: dbSetupDocId('PEOPLE', 'people'),
+      kind: DB_SETUP_DOC_KIND,
+      dbType: 'PEOPLE',
+      dbName: 'people',
+      design: {version: 99, hash: 'abc', updatedAtMs: 1},
+      security: {version: 1, hash: 'def', updatedAtMs: 1},
+    } satisfies DbSetupDoc);
+    const stdout: string[] = [];
+    const logSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation((message?: unknown) => {
+        stdout.push(String(message ?? ''));
+      });
+    try {
+      const result = await runCommand(
+        {name: 'status', json: false, strict: true},
+        {db: asDebuggerDb(db), nowMs: 10, timeoutMs: 1_000}
+      );
+      expect(result.exitCode).toBe(1);
+      expect(stdout.join('\n')).toContain('=== Database setup ===');
+      expect(stdout.join('\n')).toContain('PEOPLE');
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it('reset-setup deletes a record or clears one part', async () => {
+    const db = freshDb();
+    const id = dbSetupDocId('PEOPLE', 'people');
+    await db.put({
+      _id: id,
+      kind: DB_SETUP_DOC_KIND,
+      dbType: 'PEOPLE',
+      dbName: 'people',
+      design: {version: 1, hash: 'abc', updatedAtMs: 1},
+      security: {version: 1, hash: 'def', updatedAtMs: 1},
+    } satisfies DbSetupDoc);
+
+    const cleared = await resetSetup({
+      db: asDebuggerDb(db),
+      docs: [(await db.get(id)) as DbSetupDoc],
+      selector: {db: 'people', all: false},
+      part: 'design',
+      nowMs: 1,
+    });
+    expect(cleared.cleared).toBe(1);
+    expect(((await db.get(id)) as DbSetupDoc).design).toBeUndefined();
+    expect(((await db.get(id)) as DbSetupDoc).security?.hash).toBe('def');
+
+    const deleted = await resetSetup({
+      db: asDebuggerDb(db),
+      docs: [(await db.get(id)) as DbSetupDoc],
+      selector: {all: true},
+      nowMs: 2,
+    });
+    expect(deleted.deleted).toBe(1);
+    await expect(db.get(id)).rejects.toMatchObject({status: 404});
+  });
+
+  it('verify-setup reports live hash drift', async () => {
+    const db = freshDb();
+    await db.put({
+      _id: dbSetupDocId('AUTH', 'auth'),
+      kind: DB_SETUP_DOC_KIND,
+      dbType: 'AUTH',
+      dbName: 'auth',
+      design: {version: 1, hash: 'recorded', updatedAtMs: 1},
+    } satisfies DbSetupDoc);
+    const stdout: string[] = [];
+    const logSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation((message?: unknown) => {
+        stdout.push(String(message ?? ''));
+      });
+    try {
+      const result = await runCommand(
+        {name: 'verify-setup', json: true},
+        {
+          db: asDebuggerDb(db),
+          loadLiveSetup: async () => ({
+            designHash: 'live-different',
+            securityHash: 'sec',
+          }),
+        }
+      );
+      expect(result.exitCode).toBe(1);
+      const parsed = JSON.parse(stdout[0]);
+      expect(parsed.rows[0]).toMatchObject({
+        part: 'design',
+        drift: 'hash-mismatch',
+      });
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 });

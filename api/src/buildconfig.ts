@@ -62,6 +62,7 @@ export const config = {
   emailServiceType: parsed.emailServiceType as EmailServiceType,
   attachmentStorageType: parsed.attachmentStorageType as AttachmentStorageType,
   capacityProviderType: parsed.capacityProviderType as CapacityProviderType,
+  /** From package.json. Stored/logged on the startup-migration lock; not hashed. */
   apiVersion: packageVersion,
   /** Directory / invite server id; same slug rules as `@faims3/data-model`. */
   conductorServerId: slugify(parsed.conductorInstanceName),
